@@ -1,0 +1,19 @@
+Package: ngme2
+Type: Package
+Title: Latent Mixed Effects Models With Flexible Distributions
+Version: 0.1.0
+Author: c(
+    person("David", "Bolin", email = "davidbolin@gmail.com", role = c("aut", "cre")), 
+    person("Jonas", "Wallin", email = "jonas.wallin81@gmail.com", role = c("aut")))
+Maintainer: David Bolin <davidbolin@gmail.com>
+Description: Inference and prediction for mixed effects models with flexible non-Gaussian and Gaussian distributions. 
+License: GPL (>= 2)
+Encoding: UTF-8
+LazyData: true
+Imports: Rcpp (>= 1.0.6)
+LinkingTo: Rcpp, RcppEigen
+Suggests: knitr,
+    rmarkdown,
+    INLA
+VignetteBuilder: knitr
+RoxygenNote: 7.1.1

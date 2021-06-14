@@ -5,8 +5,8 @@
 \alias{ngme2}
 \title{ngme2}
 \description{
-Description of your package
+Inference and prediction for mixed effects models with flexible non-Gaussian and Gaussian distributions.
 }
 \author{
-david <davidbolin@gmail.com>
+David Bolin <davidbolin@gmail.com>
 }

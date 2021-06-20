@@ -10,7 +10,9 @@ Description: Inference and prediction for mixed effects models with flexible non
 License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true
-Imports: Rcpp (>= 1.0.6)
+Imports: 
+    Formula,
+    Rcpp (>= 1.0.6)
 LinkingTo: Rcpp, RcppEigen
 Suggests: knitr,
     rmarkdown,

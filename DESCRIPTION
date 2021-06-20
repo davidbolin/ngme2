@@ -16,6 +16,10 @@ Imports:
 LinkingTo: Rcpp, RcppEigen
 Suggests: knitr,
     rmarkdown,
-    INLA
+    INLA,
+    ggplot2,
+    dplyr,
+    plyr,
+    MASS
 VignetteBuilder: knitr
 RoxygenNote: 7.1.1

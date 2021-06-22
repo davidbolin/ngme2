@@ -51,7 +51,7 @@ random generation for the generalised inverse-Gaussian distribution
 \details{
 The generalised inverse-Gaussian distribution has density given
 by
- \deqn{f(x; p, a, b) = ((a/b)^(p/2))/(2K_p(sqrt(ab))) x^(p-1) exp(-(a/2)x - (b/2)/x),}
+ \deqn{f(x; p, a, b) = ((a/b)^{p/2})/(2K_p(\sqrt{ab})) x^{p-1} \exp\{-(a/2)x - (b/2)/x\},}
  where \eqn{K_p} is modified Bessel function of the second kind of order \eqn{p},
  \eqn{x>0}, \eqn{a,b>0} and \eqn{p\in\mathbb{R}}.
  See Jørgensen (1982) for further details.

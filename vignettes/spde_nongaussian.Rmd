@@ -19,7 +19,7 @@ knitr::opts_chunk$set(
 In modern applied statistics gaussian processes are ubiquitous. Gaussian processes indexed by 1d parameters can be found from time series with discrete time and with continuous time to regression models with depedent noise. Gaussian processes indexed by multidimensional parameters are widely used in geostatistics.
 
 A common geostatistical model is given by
-$$ Y_i = x(\mathbf{s}_i) + \varepsilon_i, \quad i=1,\ldots,N, \quad \epsilon_i\sim N(0, \sigma^2),$$
+$$ Y_i = x(\mathbf{s}_i) + \varepsilon_i, \quad i=1,\ldots,N, \quad \varepsilon_i\sim N(0, \sigma^2),$$
 $$x(\mathbf{s}) \sim GP\left(\sum_{k=1}^{n_b} b_k(\mathbf{s})w_k, c(\mathbf{s},\mathbf{s}')\right),$$
 where $N$ is the number of spatial observations, $GP(m,c)$ stands for a Gaussian process with mean function $m$ and covariance function $c$, $n_b$ is the number of basis functions, $\{b_k(\cdot)\}_{k=1}^{n_b}$ are basis functions, $w_k$ are weights to be estimated and $c(\cdot,\cdot)$ is a covariance function.
 
@@ -40,7 +40,7 @@ It is well-known (Whittle, 1963) that a Gaussian process $u(\mathbf{s})$ with Ma
 \end{equation}
 where $\Delta = \sum_{i=1}^d \frac{\partial^2}{\partial_{x_i^2}}$ is the Laplacian operator, $\mathcal{W}$ is the Gaussian spatial white noise on $\mathcal{D}=\mathbb{R}^d$, and $4\beta = 2\nu + d$.
 
-Inspired by this relation between Gaussian processes with Matérn covariance functions and solutions of the above SPDE, Lindgren et al. (2011) constructed computationally efficient Gaussian Markov random field approximations of $u(\mathbf{s})$, where the domain $\mathcal{D}\subsetneq \mathbb{R}^d$ is bounded and $2\beta\in\mathbb{N}$.
+Inspired by this relation between Gaussian processes with Matérn covariance functions and solutions of the above SPDE, [Lindgren et al. (2011)](https://rss.onlinelibrary.wiley.com/doi/full/10.1111/j.1467-9868.2011.00777.x) constructed computationally efficient Gaussian Markov random field approximations of $u(\mathbf{s})$, where the domain $\mathcal{D}\subsetneq \mathbb{R}^d$ is bounded and $2\beta\in\mathbb{N}$.
 
 The approximate solutions of the SPDE are obtained through a finite element discretization. 
 
@@ -476,3 +476,10 @@ ggplot(df_samp, aes(x=x,y=y)) +
   geom_raster(aes(fill=w), interpolate = TRUE) +
   scale_fill_gradientn(colours=c("blue","yellow"))
 ```
+
+## References
+
+* Lindgren, F., Rue, H., and Lindstrom, J. (2011). An explicit link between Gaussian fields and Gaussian Markov random fields: the stochastic partial differential equation approach. Journal of the Royal Statistical Society: Series B (Statistical Methodology), 73(4):423–498.
+
+* Whittle, P. (1963). Stochastic-processes in several dimensions. Bulletin of the International Statistical
+Institute, 40(2):974–994.

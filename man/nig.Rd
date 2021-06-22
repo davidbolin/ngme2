@@ -57,7 +57,7 @@ The normal inverse-Gaussian distribution has density given
 by
  \deqn{f(x; p, a, b) =
  \frac{e^{\nu+\mu(x-\delta)/\sigma^2}\sqrt{\nu\mu^2/\sigma^2+\nu^2}}{\pi\sqrt{\nu\sigma^2+(x-\delta)^2}}
- K_1\left(\sqrt{(\nu\sigma^2+(x-\delta)^2)(\mu^2/\sigma^4+\nu/\sigma^2)}\right),}
+ K_1(\sqrt{(\nu\sigma^2+(x-\delta)^2)(\mu^2/\sigma^4+\nu/\sigma^2)}),}
  where \eqn{K_p} is modified Bessel function of the second kind of order \eqn{p},
  \eqn{x>0}, \eqn{\nu>0} and \eqn{\mu,\delta, \sigma\in\mathbb{R}}.
  See Barndorff-Nielsen (1977, 1978 and 1997) for further details.
@@ -72,8 +72,11 @@ xlim = c(0,10))
 }
 \references{
 Barndorff-Nielsen, O. (1977) Exponentially decreasing distributions for the logarithm of particle size. Proceedings of the Royal Society of London.
+ 
  Series A, Mathematical and Physical Sciences. The Royal Society. 353, 401–409. \doi{10.1098/rspa.1977.0041}
+ 
  Barndorff-Nielsen, O. (1978) Hyperbolic Distributions and Distributions on Hyperbolae, Scandinavian Journal of Statistics. 5, 151–157.
+ 
  Barndorff-Nielsen, O. (1997) Normal Inverse Gaussian Distributions and Stochastic Volatility Modelling, Scandinavian Journal of Statistics. 24, 1-13. \doi{10.1111/1467-9469.00045}
 }
 \seealso{

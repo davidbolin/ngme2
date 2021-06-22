@@ -24,7 +24,7 @@
 #' The length of the result is determined by \code{n} for rgig.
 #' @details The generalised inverse-Gaussian distribution has density given
 #' by
-#'  \deqn{f(x; p, a, b) = ((a/b)^(p/2))/(2K_p(sqrt(ab))) x^(p-1) exp(-(a/2)x - (b/2)/x),}
+#'  \deqn{f(x; p, a, b) = ((a/b)^{p/2})/(2K_p(\sqrt{ab})) x^{p-1} \exp\{-(a/2)x - (b/2)/x\},}
 #'  where \eqn{K_p} is modified Bessel function of the second kind of order \eqn{p},
 #'  \eqn{x>0}, \eqn{a,b>0} and \eqn{p\in\mathbb{R}}.
 #'  See Jørgensen (1982) for further details.
@@ -55,14 +55,31 @@ dgig <- function(x, p, a ,b, log=FALSE){
   if(missing(b)){
     stop('argument "b" missing, with no default')
   }
-  if (length(a) != length(p))
-    stop("vector a does not have same length as vector p")
-  if (length(a) != length(b))
-    stop("vector a does not have same length as vector b")
+  if (length(a) != length(p)){
+    if(length(a) == 1){
+      a <- rep(a, length(p))
+    } else if(length(p)==1){
+      p <- rep(p, length(a))
+    } else {
+      stop("a and p are vectors of different lengths")
+    }
+  }
+  if (length(a) != length(b)){
+    if(length(a) == 1){
+      a <- rep(a, length(b))
+      if(length(p)==1){
+        p <- rep(p, length(b))
+      }
+    } else if(length(b) == 1){
+      b <- rep(b, length(a))
+    } else{
+      stop("a and b are vectors of different lengths")      
+    }
+  }
   if (min(a) < 0)
-    stop("vector a must be  pos")
+    stop("vector a must be  positive")
   if (min(b) < 0)
-    stop("vector b must be  pos")
+    stop("vector b must be  positive")
   n = length(x)
   if(n < length(p)){
     p_new = p[1:n]
@@ -118,14 +135,31 @@ rgig <- function (n, p, a, b, seed = 0)
   if(missing(b)){
     stop('argument "b" missing, with no default')
   }
-  if (length(a) != length(p))
-    stop("vector a does not have same length as vector p")
-  if (length(a) != length(b))
-    stop("vector a does not have same length as vector b")
+  if (length(a) != length(p)){
+    if(length(a) == 1){
+      a <- rep(a, length(p))
+    } else if(length(p)==1){
+      p <- rep(p, length(a))
+    } else {
+      stop("a and p are vectors of different lengths")
+    }
+  }
+  if (length(a) != length(b)){
+    if(length(a) == 1){
+      a <- rep(a, length(b))
+      if(length(p)==1){
+        p <- rep(p, length(b))
+      }
+    } else if(length(b) == 1){
+      b <- rep(b, length(a))
+    } else{
+      stop("a and b are vectors of different lengths")      
+    }
+  }
   if (min(a) < 0)
-    stop("vector a must be  pos")
+    stop("vector a must be  positive")
   if (min(b) < 0)
-    stop("vector b must be  pos")
+    stop("vector b must be  positive")
   if(n < length(p)){
     p_new = p[1:n]
     a_new = a[1:n]
@@ -166,14 +200,31 @@ pgig <- function(q, p, a, b, lower.tail = TRUE, log.p = FALSE){
   if(missing(b)){
     stop('argument "b" missing, with no default')
   }
-  if (length(a) != length(p))
-    stop("vector a does not have same length as vector p")
-  if (length(a) != length(b))
-    stop("vector a does not have same length as vector b")
+  if (length(a) != length(p)){
+    if(length(a) == 1){
+      a <- rep(a, length(p))
+    } else if(length(p)==1){
+      p <- rep(p, length(a))
+    } else {
+      stop("a and p are vectors of different lengths")
+    }
+  }
+  if (length(a) != length(b)){
+    if(length(a) == 1){
+      a <- rep(a, length(b))
+      if(length(p)==1){
+        p <- rep(p, length(b))
+      }
+    } else if(length(b) == 1){
+      b <- rep(b, length(a))
+    } else{
+      stop("a and b are vectors of different lengths")      
+    }
+  }
   if (min(a) < 0)
-    stop("vector a must be  pos")
+    stop("vector a must be  positive")
   if (min(b) < 0)
-    stop("vector b must be  pos")
+    stop("vector b must be  positive")
   n = length(q)
   if(n < length(p)){
     p_new = p[1:n]
@@ -232,14 +283,31 @@ qgig <- function(prob, p, a, b, lower.tail = TRUE, log.p = FALSE){
   if(missing(b)){
     stop('argument "b" missing, with no default')
   }
-  if (length(a) != length(p))
-    stop("vector a does not have same length as vector p")
-  if (length(a) != length(b))
-    stop("vector a does not have same length as vector b")
+  if (length(a) != length(p)){
+    if(length(a) == 1){
+      a <- rep(a, length(p))
+    } else if(length(p)==1){
+      p <- rep(p, length(a))
+    } else {
+      stop("a and p are vectors of different lengths")
+    }
+  }
+  if (length(a) != length(b)){
+    if(length(a) == 1){
+      a <- rep(a, length(b))
+      if(length(p)==1){
+        p <- rep(p, length(b))
+      }
+    } else if(length(b) == 1){
+      b <- rep(b, length(a))
+    } else{
+      stop("a and b are vectors of different lengths")      
+    }
+  }
   if (min(a) < 0)
-    stop("vector a must be  pos")
+    stop("vector a must be  positive")
   if (min(b) < 0)
-    stop("vector b must be  pos")
+    stop("vector b must be  positive")
   n = length(prob)
   if(n < length(p)){
     p_new = p[1:n]
@@ -320,14 +388,15 @@ qgig <- function(prob, p, a, b, lower.tail = TRUE, log.p = FALSE){
 #' The length of the result is determined by \code{n} for rig.
 #' @details The inverse-Gaussian distribution has density given
 #' by
-#'  \deqn{f(x; a, b) = \frac{\sqrt{b}}{\sqrt{2\pi x^3}}\exp\left(
-#'  -\frac{a}{2}x -\frac{b}{2x} + \sqrt{ab}\right),}
+#'  \deqn{f(x; a, b) = \frac{\sqrt{b}}{\sqrt{2\pi x^3}}\exp(
+#'  -\frac{a}{2}x -\frac{b}{2x} + \sqrt{ab}),}
 #'  where \eqn{x>0} and \eqn{a,b>0}. In this parameterization,
 #'  \eqn{E(X) = \sqrt{b}/\sqrt{a}}. See Tweedie (1957a, 1957b) for
 #'  further details.
 #'
 #' @references
 #' Tweedie, M. C. K. (1957a). "Statistical Properties of Inverse Gaussian Distributions I". Annals of Mathematical Statistics. 28 (2): 362–377. \doi{10.1214/aoms/1177706964}
+#' 
 #' Tweedie, M. C. K. (1957b). "Statistical Properties of Inverse Gaussian Distributions II". Annals of Mathematical Statistics. 28 (3): 696–705. \doi{10.1214/aoms/1177706881}
 #'
 #' @seealso
@@ -348,12 +417,19 @@ dig <- function(x, a ,b, log=FALSE){
   if(missing(b)){
     stop('argument "b" missing, with no default')
   }
-  if (length(a) != length(b))
-    stop("vector a does not have same length as vector b")
+  if (length(a) != length(b)){
+    if(length(a)==1){
+      a <- rep(a, length(b))
+    } else if(length(b)==1){
+      b <- rep(b, length(a))
+    } else{
+      stop("a and b are vectors of different lengths")
+    }
+  }
   if (min(a) < 0)
-    stop("vector a must be  pos")
+    stop("vector a must be  positive")
   if (min(b) < 0)
-    stop("vector b must be  pos")
+    stop("vector b must be  positive")
   n = length(x)
   if(n < length(a)){
     a_new = a[1:n]
@@ -399,12 +475,19 @@ rig <- function (n, a, b, seed = 0)
   if(missing(b)){
     stop('argument "b" missing, with no default')
   }
-  if (length(a) != length(b))
-    stop("vector a does not have same length as vector b")
+  if (length(a) != length(b)){
+    if(length(a)==1){
+      a <- rep(a, length(b))
+    } else if(length(b)==1){
+      b <- rep(b, length(a))
+    } else{
+      stop("a and b are vectors of different lengths")
+    }
+  }
   if (min(a) < 0)
-    stop("vector a must be  pos")
+    stop("vector a must be  positive")
   if (min(b) < 0)
-    stop("vector b must be  pos")
+    stop("vector b must be  positive")
   if(n < length(a)){
     a_new = a[1:n]
     b_new = b[1:n]
@@ -457,14 +540,19 @@ qig <- function(p, a, b, lower.tail = TRUE, log.p = FALSE){
   if(missing(b)){
     stop('argument "b" missing, with no default')
   }
-  if (length(a) != length(p))
-    stop("vector a does not have same length as vector p")
-  if (length(a) != length(b))
-    stop("vector a does not have same length as vector b")
+  if (length(a) != length(b)){
+    if(length(a)==1){
+      a <- rep(a, length(b))
+    } else if(length(b)==1){
+      b <- rep(b, length(a))
+    } else{
+      stop("a and b are vectors of different lengths")
+    }
+  }
   if (min(a) < 0)
-    stop("vector a must be  pos")
+    stop("vector a must be  positive")
   if (min(b) < 0)
-    stop("vector b must be  pos")
+    stop("vector b must be  positive")
   n = length(p)
   if(n < length(a)){
     a_new = a[1:n]
@@ -533,8 +621,8 @@ qig <- function(p, a, b, lower.tail = TRUE, log.p = FALSE){
 #' The length of the result is determined by \code{n} for rig.
 #' @details The inverse-Gamma distribution has density given
 #' by
-#'  \deqn{f(x; a, b) = \frac{b^a}{\Gamma(a)}x^{a-1}\exp\left(
-#'  -\frac{b}{x}\right),}
+#'  \deqn{f(x; a, b) = \frac{b^a}{\Gamma(a)}x^{a-1}\exp(
+#'  -\frac{b}{x}),}
 #'  where \eqn{x>0} and \eqn{a,b>0}.
 #'
 #' @seealso
@@ -555,12 +643,19 @@ digam <- function(x, a ,b, log=FALSE){
   if(missing(b)){
     stop('argument "b" missing, with no default')
   }
-  if (length(a) != length(b))
-    stop("vector a does not have same length as vector b")
+  if (length(a) != length(b)){
+    if(length(a)==1){
+      a <- rep(a, length(b))
+    } else if(length(b)==1){
+      b <- rep(b, length(a))
+    } else{
+      stop("a and b are vectors of different lengths")
+    }
+  }
   if (min(a) < 0)
-    stop("vector a must be  pos")
+    stop("vector a must be  positive")
   if (min(b) < 0)
-    stop("vector b must be  pos")
+    stop("vector b must be  positive")
   n = length(x)
   if(n < length(a)){
     a_new = a[1:n]
@@ -651,15 +746,18 @@ qigam <- function(p, a, b, lower.tail = TRUE, log.p = FALSE){
 #' by
 #'  \deqn{f(x; p, a, b) =
 #'  \frac{e^{\nu+\mu(x-\delta)/\sigma^2}\sqrt{\nu\mu^2/\sigma^2+\nu^2}}{\pi\sqrt{\nu\sigma^2+(x-\delta)^2}}
-#'  K_1\left(\sqrt{(\nu\sigma^2+(x-\delta)^2)(\mu^2/\sigma^4+\nu/\sigma^2)}\right),}
+#'  K_1(\sqrt{(\nu\sigma^2+(x-\delta)^2)(\mu^2/\sigma^4+\nu/\sigma^2)}),}
 #'  where \eqn{K_p} is modified Bessel function of the second kind of order \eqn{p},
 #'  \eqn{x>0}, \eqn{\nu>0} and \eqn{\mu,\delta, \sigma\in\mathbb{R}}.
 #'  See Barndorff-Nielsen (1977, 1978 and 1997) for further details.
 #'
 #' @references
 #'  Barndorff-Nielsen, O. (1977) Exponentially decreasing distributions for the logarithm of particle size. Proceedings of the Royal Society of London.
+#'  
 #'  Series A, Mathematical and Physical Sciences. The Royal Society. 353, 401–409. \doi{10.1098/rspa.1977.0041}
+#'  
 #'  Barndorff-Nielsen, O. (1978) Hyperbolic Distributions and Distributions on Hyperbolae, Scandinavian Journal of Statistics. 5, 151–157.
+#'  
 #'  Barndorff-Nielsen, O. (1997) Normal Inverse Gaussian Distributions and Stochastic Volatility Modelling, Scandinavian Journal of Statistics. 24, 1-13. \doi{10.1111/1467-9469.00045}
 #'
 #' @seealso
@@ -686,14 +784,44 @@ dnig <- function(x, delta, mu, nu, sigma, log=FALSE){
   if(missing(sigma)){
     stop('argument "sigma" missing, with no default')
   }
-  if (length(delta) != length(mu))
-    stop("vector delta does not have same length as vector mu")
-  if (length(mu) != length(nu))
-    stop("vector mu does not have same length as vector nu")
-  if (length(nu) != length(sigma))
-    stop("vector nu does not have same length as vector sigma")
+  if (length(delta) != length(mu)){
+    if(length(delta)==1){
+      delta <- rep(delta, length(mu))
+    } else if(length(mu)==1){
+      mu <- rep(mu, length(delta))
+    } else{
+      stop("delta and mu are vectors of different lenghts")  
+    }
+  }
+  if (length(mu) != length(nu)){
+    if(length(nu)==1){
+      nu <- rep(nu, length(mu))
+    } else if(length(mu)==1){
+      mu <- rep(mu, length(nu))
+      if(length(delta)==1){
+        delta <- rep(delta, length(nu))
+      }
+      } else{
+      stop("mu and nu are vectors of different lengths")
+    } 
+  }
+  if (length(nu) != length(sigma)){
+    if(length(sigma)==1){
+      sigma <- rep(sigma, length(nu))
+    } else if(length(nu)==1){
+      nu <- rep(nu, length(sigma))
+      if(length(mu)==1){
+        mu <- rep(mu,length(sigma))
+      }
+      if(length(delta)==1){
+        delta <- rep(delta, length(sigma))
+      }
+      } else{
+      stop("nu and sigma are vectors of different lengths")
+    }
+  }
   if (min(nu) < 0)
-    stop("vector nu must be  pos")
+    stop("vector nu must be  positive")
   n = length(x)
   if(n < length(delta)){
     delta_new = delta[1:n]
@@ -762,14 +890,44 @@ rnig <- function (n, delta, mu, nu, sigma, seed = 0)
   if(missing(sigma)){
     stop('argument "sigma" missing, with no default')
   }
-  if (length(delta) != length(mu))
-    stop("vector delta does not have same length as vector mu")
-  if (length(mu) != length(nu))
-    stop("vector mu does not have same length as vector nu")
-  if (length(nu) != length(sigma))
-    stop("vector nu does not have same length as vector sigma")
+  if (length(delta) != length(mu)){
+    if(length(delta)==1){
+      delta <- rep(delta, length(mu))
+    } else if(length(mu)==1){
+      mu <- rep(mu, length(delta))
+    } else{
+      stop("delta and mu are vectors of different lenghts")  
+    }
+  }
+  if (length(mu) != length(nu)){
+    if(length(nu)==1){
+      nu <- rep(nu, length(mu))
+    } else if(length(mu)==1){
+      mu <- rep(mu, length(nu))
+      if(length(delta)==1){
+        delta <- rep(delta, length(nu))
+      }
+    } else{
+      stop("mu and nu are vectors of different lengths")
+    } 
+  }
+  if (length(nu) != length(sigma)){
+    if(length(sigma)==1){
+      sigma <- rep(sigma, length(nu))
+    } else if(length(nu)==1){
+      nu <- rep(nu, length(sigma))
+      if(length(mu)==1){
+        mu <- rep(mu,length(sigma))
+      }
+      if(length(delta)==1){
+        delta <- rep(delta, length(sigma))
+      }
+    } else{
+      stop("nu and sigma are vectors of different lengths")
+    }
+  }
   if (min(nu) < 0)
-    stop("vector nu must be  pos")
+    stop("vector nu must be  positive")
   if(n < length(delta)){
     delta_new = delta[1:n]
     mu_new = mu[1:n]
@@ -820,14 +978,44 @@ pnig <- function(q, delta, mu, nu, sigma, lower.tail = TRUE, log.p = FALSE){
   if(missing(sigma)){
     stop('argument "sigma" missing, with no default')
   }
-  if (length(delta) != length(mu))
-    stop("vector delta does not have same length as vector mu")
-  if (length(mu) != length(nu))
-    stop("vector mu does not have same length as vector nu")
-  if (length(nu) != length(sigma))
-    stop("vector nu does not have same length as vector sigma")
+  if (length(delta) != length(mu)){
+    if(length(delta)==1){
+      delta <- rep(delta, length(mu))
+    } else if(length(mu)==1){
+      mu <- rep(mu, length(delta))
+    } else{
+      stop("delta and mu are vectors of different lenghts")  
+    }
+  }
+  if (length(mu) != length(nu)){
+    if(length(nu)==1){
+      nu <- rep(nu, length(mu))
+    } else if(length(mu)==1){
+      mu <- rep(mu, length(nu))
+      if(length(delta)==1){
+        delta <- rep(delta, length(nu))
+      }
+    } else{
+      stop("mu and nu are vectors of different lengths")
+    } 
+  }
+  if (length(nu) != length(sigma)){
+    if(length(sigma)==1){
+      sigma <- rep(sigma, length(nu))
+    } else if(length(nu)==1){
+      nu <- rep(nu, length(sigma))
+      if(length(mu)==1){
+        mu <- rep(mu,length(sigma))
+      }
+      if(length(delta)==1){
+        delta <- rep(delta, length(sigma))
+      }
+    } else{
+      stop("nu and sigma are vectors of different lengths")
+    }
+  }
   if (min(nu) < 0)
-    stop("vector nu must be  pos")
+    stop("vector nu must be  positive")
   n = length(q)
   if(n < length(delta)){
     delta_new = delta[1:n]
@@ -895,14 +1083,44 @@ qnig <- function(p, delta, mu, nu, sigma, lower.tail = TRUE, log.p = FALSE){
   if(missing(sigma)){
     stop('argument "sigma" missing, with no default')
   }
-  if (length(delta) != length(mu))
-    stop("vector delta does not have same length as vector mu")
-  if (length(mu) != length(nu))
-    stop("vector mu does not have same length as vector nu")
-  if (length(nu) != length(sigma))
-    stop("vector nu does not have same length as vector sigma")
+  if (length(delta) != length(mu)){
+    if(length(delta)==1){
+      delta <- rep(delta, length(mu))
+    } else if(length(mu)==1){
+      mu <- rep(mu, length(delta))
+    } else{
+      stop("delta and mu are vectors of different lenghts")  
+    }
+  }
+  if (length(mu) != length(nu)){
+    if(length(nu)==1){
+      nu <- rep(nu, length(mu))
+    } else if(length(mu)==1){
+      mu <- rep(mu, length(nu))
+      if(length(delta)==1){
+        delta <- rep(delta, length(nu))
+      }
+    } else{
+      stop("mu and nu are vectors of different lengths")
+    } 
+  }
+  if (length(nu) != length(sigma)){
+    if(length(sigma)==1){
+      sigma <- rep(sigma, length(nu))
+    } else if(length(nu)==1){
+      nu <- rep(nu, length(sigma))
+      if(length(mu)==1){
+        mu <- rep(mu,length(sigma))
+      }
+      if(length(delta)==1){
+        delta <- rep(delta, length(sigma))
+      }
+    } else{
+      stop("nu and sigma are vectors of different lengths")
+    }
+  }
   if (min(nu) < 0)
-    stop("vector nu must be  pos")
+    stop("vector nu must be  positive")
   n = length(p)
   if(n < length(delta)){
     delta_new = delta[1:n]

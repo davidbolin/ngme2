@@ -49,8 +49,8 @@ random generation for the inverse-Gaussian distribution
 \details{
 The inverse-Gaussian distribution has density given
 by
- \deqn{f(x; a, b) = \frac{\sqrt{b}}{\sqrt{2\pi x^3}}\exp\left(
- -\frac{a}{2}x -\frac{b}{2x} + \sqrt{ab}\right),}
+ \deqn{f(x; a, b) = \frac{\sqrt{b}}{\sqrt{2\pi x^3}}\exp(
+ -\frac{a}{2}x -\frac{b}{2x} + \sqrt{ab}),}
  where \eqn{x>0} and \eqn{a,b>0}. In this parameterization,
  \eqn{E(X) = \sqrt{b}/\sqrt{a}}. See Tweedie (1957a, 1957b) for
  further details.
@@ -65,6 +65,7 @@ xlim = c(0,10))
 }
 \references{
 Tweedie, M. C. K. (1957a). "Statistical Properties of Inverse Gaussian Distributions I". Annals of Mathematical Statistics. 28 (2): 362–377. \doi{10.1214/aoms/1177706964}
+
 Tweedie, M. C. K. (1957b). "Statistical Properties of Inverse Gaussian Distributions II". Annals of Mathematical Statistics. 28 (3): 696–705. \doi{10.1214/aoms/1177706881}
 }
 \seealso{

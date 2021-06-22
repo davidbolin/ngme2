@@ -35,7 +35,7 @@ where $\dot{\mathcal{M}}$ is a non-Gaussian white-noise. More specifically, we a
 
 We say that a Lévy process is of type G if its increments can be represented as location-scale mixtures:
 $$\gamma + \mu V + \sigma \sqrt{V}Z,$$
-where $\gamma, \mu$ are parameters, $Z\sim N(0,1)$ and is independent of $V$, and $V$ is a positive infinitely divisible random variable. In the SPDE
+where $\gamma, \mu$ and $\sigma$ are parameters, $Z\sim N(0,1)$ and is independent of $V$, and $V$ is a positive infinitely divisible random variable. In the SPDE
 we will assume $\gamma = -\mu E(V)$ and $\sigma = 1$.
 
 Finally, we assume we have observations  $Y_1,\ldots,Y_N$, observed at locations $\mathbf{s}_1,\ldots,\mathbf{s}_N\in\mathcal{D}$,
@@ -71,10 +71,11 @@ The matrix $\mathbf{C}$ is known as the *mass matrix* in FEM theory. Let, also, 
 $$\mathbf{G}_{i,j} = \int_{\mathcal{D}} \nabla \varphi_i(\mathbf{s})\nabla\varphi_j(\mathbf{s})d\mathbf{s}.$$
 The matrix $\mathbf{G}$ is known in FEM theory as stiffness matrix. Finally, let
 $$h_i = \int_{\mathcal{D}} \varphi_i(\mathbf{s}) d\mathbf{s}, \quad i=1,\ldots,n.$$
+Recall that $\gamma = -\mu E(V)$. $\mathbf{V}$ is chosen such  that $E[V_i] = h_i$ to ensure parameter identifiability.
 Then, we have that the FEM weights $\mathbf{w} = (w_1,\ldots,w_n)$ satisfy
-$$\mathbf{w}|\mathbf{V} \sim N(\mathbf{K}^{-1}(-\mu \mathbf{h}+\mu\mathbf{V}), \mathbf{K}^{-1}{\rm diag}(\mathbf{V})\mathbf{K}^{-1}),$$
+$$\mathbf{w}|\mathbf{V} \sim N(\mathbf{K}^{-1}(-\mu \mathbf{h}+\mu\mathbf{V}), \sigma^2\mathbf{K}^{-1}{\rm diag}(\mathbf{V})\mathbf{K}^{-1}),$$
 where $\mathbf{K} = \kappa^2\mathbf{C}+\mathbf{G}$ is the discretization of the differential operator and $\mathbf{h} =  (h_1,\ldots,h_n)$. 
-$\mathbf{V}$ is chosen such  that $E[V_i] = h_i$ to ensure parameter identifiability.
+
 
 ## Prediction
 
@@ -130,9 +131,9 @@ captured by the measurement noise.
 Therefore, under this assumption we have that
 $$\mathbf{Y}|\mathbf{w} \sim N(\mathbf{A}\mathbf{w}, \sigma_\varepsilon^{2} \mathbf{I}).$$
 Also recall that
-$$\mathbf{w}|\mathbf{V} \sim N(\mathbf{K}^{-1}(-\mu \mathbf{h}+\mu\mathbf{V}), \mathbf{K}^{-1}{\rm diag}(\mathbf{V})\mathbf{K}^{-1}).$$
+$$\mathbf{w}|\mathbf{V} \sim N(\mathbf{K}^{-1}(-\mu \mathbf{h}+\mu\mathbf{V}), \sigma^2\mathbf{K}^{-1}{\rm diag}(\mathbf{V})\mathbf{K}^{-1}).$$
 Let
-$$\mathbf{m} = \mathbf{K}^{-1}(-\mu \mathbf{h}+\mu\mathbf{V})\quad \hbox{and}\quad \mathbf{Q} = \mathbf{K}{\rm diag}(\mathbf{V})^{-1}\mathbf{K}.$$
+$$\mathbf{m} = \mathbf{K}^{-1}(-\mu \mathbf{h}+\mu\mathbf{V})\quad \hbox{and}\quad \mathbf{Q} = \frac{1}{\sigma^2}\mathbf{K}{\rm diag}(\mathbf{V})^{-1}\mathbf{K}.$$
 
 It thus follows (see, also, [Wallin and Bolin (2015)](https://onlinelibrary.wiley.com/doi/full/10.1111/sjos.12141) or [Asar et al. (2020)](https://rss.onlinelibrary.wiley.com/doi/full/10.1111/rssc.12405?af=R)) that
 $$\mathbf{w} | \mathbf{V}, \mathbf{Y} \sim N\big(\widetilde{\mathbf{m}}, \widetilde{\mathbf{Q}}^{-1}),$$
@@ -145,7 +146,7 @@ are conditionally independent given $\mathbf{w}$. Furthermore, we also have from
 from [Asar et al. (2020)](https://rss.onlinelibrary.wiley.com/doi/full/10.1111/rssc.12405?af=R))
 that if $V\sim GIG(p,a,b)$, where $GIG$ stands for the [generalized inverse Gaussian distribution](https://en.wikipedia.org/wiki/Generalized_inverse_Gaussian_distribution) with parameters
 $p, a$ and $b$, then, for every $j=1,\ldots,n$,
-$$V_j|\mathbf{w},\mathbf{Y} \sim GIG(p-0.5, a+\mu^2, b + (\mathbf{K}\mathbf{w}+\mathbf{h}\mu)_j^2).$$
+$$V_j|\mathbf{w},\mathbf{Y} \sim GIG\Bigg(p-0.5, a+\frac{\mu^2}{\sigma^2}, b + \frac{(\mathbf{K}\mathbf{w}+\mathbf{h}\mu)_j^2}{\sigma^2}\Bigg).$$
 
 We are now in a position to use the Gibbs sampling algorithm:
 
@@ -217,10 +218,10 @@ where $\dot{\mathcal{M}}$ is a NIG-distributed white-noise. For more details on 
 from such a process we refer the reader to [Sampling from processes given by solutions of SPDEs driven by non-Gaussian noise](spde_nongaussian.html)
 vignette. We will also be using the notation from that vignette.
 
-We will take $\kappa=1$, $\sigma=1$, $\mu = 1$, $\mathcal{D}=[0,1]$ and $\eta=0.5$. We will also assume that we
+We will take $\kappa=1$, $\sigma_\varepsilon=1$, $\sigma=1$, $\mu = 1$, $\mathcal{D}=[0,1]$ and $\eta=0.5$. We will also assume that we
 have 10 observations
 $$Y_i = X(t_i) + \varepsilon_i,\quad i=1,\ldots,10,$$
-where $\varepsilon_i \sim N(0,1)$ and $t_1,\ldots,t_{10}\in [0,1]$.
+where $t_1,\ldots,t_{10}\in [0,1]$. Notice that $\varepsilon_i \sim N(0,1)$.
 
 
 We will consider a mesh with 10 equally spaced nodes. 
@@ -252,9 +253,11 @@ n=length(h_nig_1d)
 # (a=eta, b = h^2*eta)
 
 eta = 0.5
+mu = 1
+sigma = 1
 
 V = ngme2::rig(n, a = rep(eta,n), b = h_nig_1d^2*eta, sample.int(10^6, 1))
-temp = rnorm(n, mean = -h_nig_1d + V, sd = sqrt(V))
+temp = rnorm(n, mean = (-h_nig_1d + V)*mu, sd = sigma^2*sqrt(V))
 W = solve(K, temp)
 plot(loc_nig_1d, W, type="l")
 
@@ -273,7 +276,9 @@ new_loc_1d <- sort(runif(9))
 
 A_matrix <- inla.spde.make.A(mesh_loc_nig_1d, new_loc_1d)
 
-Y = A_matrix %*% W + rnorm(9)
+sigma_eps = 1
+
+Y = A_matrix %*% W + sigma_eps * rnorm(9)
 
 plot(new_loc_1d, Y, type="h")
 abline(0,0)
@@ -294,10 +299,10 @@ V_1 <- matrix(ngme2::rig(10, rep(eta,10), eta*h_nig_1d^2), nrow=1)
 V_2 <- matrix(ngme2::rig(10, rep(eta,10), eta*h_nig_1d^2), nrow=1)
 ```
 
-Recall that $V_j \sim IG(\eta, h_j^2 \cdot \eta), j=1,\ldots,10$, $\mu=1$, so that 
+Recall that $V_j \sim IG(\eta, h_j^2 \cdot \eta), j=1,\ldots,10$, $\mu=1$ and $\sigma=1$, so that 
 $$V_j|\mathbf{w},\mathbf{Y} \sim GIG(-1,\eta + 1, \eta\cdot h_j^2 + (\mathbf{K}\mathbf{w}+\mathbf{h})_j^2)$$
 and
-$$\mathbf{w} | \mathbf{V}, \mathbf{Y} \sim N\big( (\mathbf{K}{\rm diag}(\mathbf{V})^{-1}\mathbf{K} + \mathbf{A}^\top\mathbf{A})^{-1}(\mathbf{K}{\rm diag}(\mathbf{V})^{-1}\mathbf{K}(\mu\mathbf{V}-\mathbf{h}\mu)+\mathbf{A}^\top \mathbf{Y}), (\mathbf{K}{\rm diag}(\mathbf{V})^{-1}\mathbf{K} + \mathbf{A}^\top\mathbf{A})^{-1}\big).$$
+$$\mathbf{w} | \mathbf{V}, \mathbf{Y} \sim N\big( (\mathbf{K}{\rm diag}(\mathbf{V})^{-1}\mathbf{K} + \mathbf{A}^\top\mathbf{A})^{-1}(\mathbf{K}{\rm diag}(\mathbf{V})^{-1}(\mathbf{V}-\mathbf{h})+\mathbf{A}^\top \mathbf{Y}), (\mathbf{K}{\rm diag}(\mathbf{V})^{-1}\mathbf{K} + \mathbf{A}^\top\mathbf{A})^{-1}\big).$$
 
 Let us sample 1000 times for each chain. Let us also record the values of $E[\mathbf{w} | \mathbf{V}, \mathbf{Y}]$ during the sampling.
 
@@ -310,18 +315,19 @@ N_sim = 1000
 m_W_1 <- matrix(0, nrow=1, ncol=10)
 m_W_2 <- matrix(0, nrow=1, ncol=10)
 
-sigma_eps <- 1
-sigma_W  <- 1
+# Recall that sigma_eps = 1
 
 Asq <- t(A_matrix)%*%A_matrix/sigma_eps^2
 
+# Recall that mu = 1 and sigma = 1
+
 # Gibbs sampling
 for(i in 1:N_sim){
-  Q_1 <- K%*%diag(1/V_1[i,])%*%K
-  Q_2 <- K%*%diag(1/V_2[i,])%*%K
+  Q_1 <- K%*%diag(1/V_1[i,])%*%K/sigma^2
+  Q_2 <- K%*%diag(1/V_2[i,])%*%K/sigma^2
   
-  resp_1 <- Q_1%*%solve(K,-h_nig_1d + V_1[i,]) + t(A_matrix)%*%Y/sigma_eps^2
-  resp_2 <- Q_2%*%solve(K,-h_nig_1d + V_2[i,]) + t(A_matrix)%*%Y/sigma_eps^2
+  resp_1 <- Q_1%*%solve(K,(-h_nig_1d + V_1[i,])*mu) + t(A_matrix)%*%Y/sigma_eps^2
+  resp_2 <- Q_2%*%solve(K,(-h_nig_1d + V_2[i,])*mu) + t(A_matrix)%*%Y/sigma_eps^2
   
   m_W_1 <- rbind(m_W_1, t(solve(Q_1 + Asq, resp_1)))
   m_W_2 <- rbind(m_W_2, t(solve(Q_2 + Asq, resp_2)))
@@ -334,15 +340,15 @@ for(i in 1:N_sim){
   V_1 <- rbind(V_1, 
                ngme2::rgig(10, 
                            rep(-1,10), 
-                           rep(eta + 1,10), 
+                           rep(eta + (mu/sigma)^2,10), 
                            eta*h_nig_1d^2 +
-                           as.vector((K%*%W_1[i+1,] +h_nig_1d)^2)))
+                           as.vector((K%*%W_1[i+1,] +h_nig_1d)^2)/sigma^2))
   
   V_2 <- rbind(V_2, ngme2::rgig(10, 
                                 rep(-1,10), 
-                                rep(eta + 1,10), 
+                                rep(eta + (mu/sigma)^2,10), 
                                 eta*h_nig_1d^2 +
-                                as.vector((K%*%W_2[i+1,] +h_nig_1d)^2)))
+                                as.vector((K%*%W_2[i+1,] +h_nig_1d)^2)/sigma^2))
 }
 ```
 

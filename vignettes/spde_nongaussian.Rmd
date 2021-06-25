@@ -420,7 +420,7 @@ n=length(h_nig_1d)
 # Generating V from an inverse Gaussian distribution 
 #(a=eta, b = h^2*eta)
 
-V = ngme2::rig(n, a = rep(0.5,n), b = h_nig_1d^2*0.5, sample.int(10^6, 1))
+V = ngme2::rig(n, a = 0.5, b = h_nig_1d^2*0.5, sample.int(10^6, 1))
 temp = rnorm(n, mean = 0, sd = sqrt(V))
 W = solve(K, temp)
 plot(loc_nig_1d, W, type="l")
@@ -463,7 +463,7 @@ n_2d=length(h_2d_samp)
 # Generating V from an inverse Gaussian distribution 
 #(a=eta, b = h^2*eta)
 
-V_2d = ngme2::rig(n_2d, a = rep(0.5,n_2d), b = h_2d_samp^2*0.5, seed  = sample.int(10^6, 1))
+V_2d = ngme2::rig(n_2d, a = 0.5, b = h_2d_samp^2*0.5, seed  = sample.int(10^6, 1))
 temp = rnorm(n_2d, mean = 0, sd = sqrt(V_2d))
 W_2d = solve(K_2d, temp)
 

@@ -1,0 +1,1163 @@
+---
+title: "Estimation of parameters on SPDE-based models driven by non-Gaussian noise"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{"Estimation of parameters on SPDE-based models driven by non-Gaussian noise"}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+---
+
+## Description of the model (with Gaussian measurement noise)
+
+A popular and flexible covariance function for random fields on $\mathbb{R}^d$ is the Matérn covariance function:
+$$c(\mathbf{s}, \mathbf{s}') = \frac{\sigma^2}{\Gamma(\nu)2^{\nu-1}}(\kappa \|\mathbf{s}-\mathbf{s}'\|)^\nu K_\nu(\kappa\|\mathbf{s}-\mathbf{s}'\|),$$
+where $\Gamma(\cdot)$ is the Gamma function, $K_\nu(\cdot)$ is the modified Bessel function of the second kind, $\nu>0$ controls the correlation range and $\sigma^2$ is the variance. Finally, $\nu>0$ determines the smoothness of the field.
+
+It is well-known (Whittle, 1963) that a Gaussian process $u(\mathbf{s})$ with Matérn covariance function solves the stochastic partial differential equation (SPDE)
+\begin{equation}\label{spde}
+(\kappa^2 -\Delta)^\beta u = \mathcal{W}\quad \hbox{in } \mathcal{D},
+\end{equation}
+where $\Delta = \sum_{i=1}^d \frac{\partial^2}{\partial_{x_i^2}}$ is the Laplacian operator, $\mathcal{W}$ is the Gaussian spatial white noise on $\mathcal{D}=\mathbb{R}^d$, and $4\beta = 2\nu + d$.
+
+Inspired by this relation between Gaussian processes with Matérn covariance functions and solutions of the above SPDE, [Lindgren et al. (2011)](https://rss.onlinelibrary.wiley.com/doi/full/10.1111/j.1467-9868.2011.00777.x) constructed computationally efficient Gaussian Markov random field approximations of $u(\mathbf{s})$, where the domain $\mathcal{D}\subsetneq \mathbb{R}^d$ is bounded and $2\beta\in\mathbb{N}$.
+
+In order to model departures from Gaussian behaviour we will consider the following
+extension due to [Bolin (2014)](https://onlinelibrary.wiley.com/doi/full/10.1111/sjos.12046):
+$$(\kappa^2 - \Delta)^\beta X(\mathbf{s}) = \dot{\mathcal{M}}(\mathbf{s}),\quad \mathbf{s}\in\mathcal{D},$$
+where $\dot{\mathcal{M}}$ is a non-Gaussian white-noise. More specifically, we assume $\mathcal{M}$ to be a type-G Lévy process.
+
+We say that a Lévy process is of type G if its increments can be represented as location-scale mixtures:
+$$\gamma + \mu V + \sigma \sqrt{V}Z,$$
+where $\gamma, \mu$ and $\sigma$ are parameters, $Z\sim N(0,1)$ and is independent of $V$, and $V$ is a positive infinitely divisible random variable. In the SPDE
+we will assume $\gamma = -\mu E(V)$ and $\sigma = 1$.
+
+Finally, we assume we have observations  $Y_1,\ldots,Y_N$, observed at locations $\mathbf{s}_1,\ldots,\mathbf{s}_N\in\mathcal{D}$,
+where $Y_1,\ldots, Y_N$ satisfy
+$$ Y_i = X(\mathbf{s}_i) + \varepsilon_i, \quad i=1,\ldots,N,$$
+where $\varepsilon_1,\ldots,\varepsilon_N$ are i.i.d. following $\varepsilon_i\sim N(0, \sigma_\varepsilon^2)$.
+
+In the above model we will assume $\beta=1, \mu = 1, \sigma=1$ and $\sigma_\varepsilon=1$,
+so we will estimate $\kappa^2$. 
+
+## Finite element approximations
+
+In this vignette we will assume basic understanding of Galerkin's finite element
+method. For further details we refer the reader to the
+[Sampling from processes given by solutions of SPDEs driven by non-Gaussian noise](spde_nongaussian.html)
+vignette.
+
+Recall that we are assuming $\beta=1$, so our SPDE is given by
+$$(\kappa^2 - \Delta) X(\mathbf{s}) = \dot{\mathcal{M}}(\mathbf{s}),\quad \mathbf{s}\in\mathcal{D}.$$
+
+Let us introduce some notation regarding the finite element method (FEM). 
+Let $V_n = {\rm span}\{\varphi_1,\ldots,\varphi_n\}$, where $\varphi_i(\mathbf{s}), i=1,\ldots, n$ 
+are piecewise linear basis functions obtained from a triangulation of $\mathcal{D}$.  
+
+An approximate solution $X_n$ of $X$ is written in terms of the finite element basis functions as 
+$$X_n(\mathbf{s}) = \sum_{i=1}^n w_i \varphi_i(\mathbf{s}),$$
+where $w_i$ are the FEM weights. Let, also, 
+$$\mathbf{f} = (\dot{\mathcal{M}}(\varphi_1),\ldots, \dot{\mathcal{M}}(\varphi_n)),$$
+Therefore, given a vector $\mathbf{V} = (V_1,\ldots,V_n)$ of independent stochastic variances (in our case, positive infinitely divisible random variables), we obtain that
+$$\mathbf{f}|\mathbf{V} \sim N(\gamma + \mu\mathbf{V}, \sigma^2{\rm diag}(\mathbf{V})).$$
+
+Let us now introduce some useful notation. Let $\mathbf{C}$ be the $n\times n$ matrix with $(i,j)$th entry given by
+$$\mathbf{C}_{i,j} = \int_{\mathcal{D}} \varphi_i(\mathbf{s})\varphi_j(\mathbf{s}) d\mathbf{s}.$$
+The matrix $\mathbf{C}$ is known as the *mass matrix* in FEM theory. Let, also, $\mathbf{G}$ be the $n\times n$ matrix with $(i,j)$th entry given by
+$$\mathbf{G}_{i,j} = \int_{\mathcal{D}} \nabla \varphi_i(\mathbf{s})\nabla\varphi_j(\mathbf{s})d\mathbf{s}.$$
+The matrix $\mathbf{G}$ is known in FEM theory as stiffness matrix. Finally, let
+$$h_i = \int_{\mathcal{D}} \varphi_i(\mathbf{s}) d\mathbf{s}, \quad i=1,\ldots,n.$$
+Recall that $\gamma = -\mu E(V)$. $\mathbf{V}$ is chosen such  that $E[V_i] = h_i$ to ensure parameter identifiability.
+Then, we have that the FEM weights $\mathbf{w} = (w_1,\ldots,w_n)$ satisfy
+$$\mathbf{w}|\mathbf{V} \sim N(\mathbf{K}^{-1}(-\mu \mathbf{h}+\mu\mathbf{V}), \sigma^2\mathbf{K}^{-1}{\rm diag}(\mathbf{V})\mathbf{K}^{-1}),$$
+where $\mathbf{K} = \kappa^2\mathbf{C}+\mathbf{G}$ is the discretization of the differential operator and $\mathbf{h} =  (h_1,\ldots,h_n)$. 
+
+## Gibbs sampler
+
+We will now briefly recall the Gibbs sampler used in the [Gibbs sampling and prediction for SPDE-based models driven by non-Gaussian noise](samp_pred_spde_nongaussian.html)
+vignette.
+
+Let $\mathbf{A}$ be the $N\times n$ matrix, whose $(i,j)$th entry is given by
+$\mathbf{A}_{ij} = \varphi_j(\mathbf{s}_i)$. Therefore, we have that 
+$$(X_n(\mathbf{s}_1),\ldots,X_n(\mathbf{s}_N)) = \mathbf{A}\mathbf{w},$$
+so that
+$$\mathbf{Y} \approx \mathbf{A}\mathbf{w} + \boldsymbol{\varepsilon},$$
+where $\boldsymbol{\varepsilon} = (\varepsilon_1,\ldots,\varepsilon_N)$. We will
+consider the above representation, i.e., we will assume that 
+$$\mathbf{Y} = \mathbf{A}\mathbf{w} + \boldsymbol{\varepsilon},$$
+and that any error from the approximation of $X(\cdot)$ by $X_n(\cdot)$ is
+captured by the measurement noise.
+
+Therefore, under this assumption we have that
+$$\mathbf{Y}|\mathbf{w} \sim N(\mathbf{A}\mathbf{w}, \sigma_\varepsilon^{2} \mathbf{I}).$$
+Also recall that
+$$\mathbf{w}|\mathbf{V} \sim N(\mathbf{K}^{-1}(-\mu \mathbf{h}+\mu\mathbf{V}), \sigma^2\mathbf{K}^{-1}{\rm diag}(\mathbf{V})\mathbf{K}^{-1}).$$
+Let
+$$\mathbf{m} = \mathbf{K}^{-1}(-\mu \mathbf{h}+\mu\mathbf{V})\quad \hbox{and}\quad \mathbf{Q} = \frac{1}{\sigma^2}\mathbf{K}{\rm diag}(\mathbf{V})^{-1}\mathbf{K}.$$
+
+It thus follows (see, also, [Wallin and Bolin (2015)](https://onlinelibrary.wiley.com/doi/full/10.1111/sjos.12141) or [Asar et al. (2020)](https://rss.onlinelibrary.wiley.com/doi/full/10.1111/rssc.12405?af=R)) that
+$$\mathbf{w} | \mathbf{V}, \mathbf{Y} \sim N\big(\widetilde{\mathbf{m}}, \widetilde{\mathbf{Q}}^{-1}),$$
+where
+$$\widetilde{\mathbf{Q}} = \mathbf{Q} + \sigma_\varepsilon^{-2} \mathbf{A}^\top\mathbf{A}\quad\hbox{and}\quad \widetilde{\mathbf{m}} = \widetilde{\mathbf{Q}}^{-1}\big(\mathbf{Q}\mathbf{m}+\sigma_\varepsilon^{-2}\mathbf{A}^\top\mathbf{Y}\big).$$
+
+To compute the conditional distribution $\mathbf{V}|\mathbf{w}, \mathbf{Y}$ one
+can see from [Wallin and Bolin (2015)](https://onlinelibrary.wiley.com/doi/full/10.1111/sjos.12141), pp. 879, that $V_1,\ldots,V_n$
+are conditionally independent given $\mathbf{w}$. Furthermore, we also have from Proposition 1
+from [Asar et al. (2020)](https://rss.onlinelibrary.wiley.com/doi/full/10.1111/rssc.12405?af=R))
+that if $V\sim GIG(p,a,b)$, where $GIG$ stands for the [generalized inverse Gaussian distribution](https://en.wikipedia.org/wiki/Generalized_inverse_Gaussian_distribution) with parameters
+$p, a$ and $b$, then, for every $j=1,\ldots,n$,
+$$V_j|\mathbf{w},\mathbf{Y} \sim GIG\Bigg(p-0.5, a+\frac{\mu^2}{\sigma^2}, b + \frac{(\mathbf{K}\mathbf{w}+\mathbf{h}\mu)_j^2}{\sigma^2}\Bigg).$$
+
+We are now in a position to use the Gibbs sampling algorithm:
+
+* Provide initial values $\mathbf{V}^{(0)}$;
+* Sample $\mathbf{w}^{(1)} | \mathbf{V}^{(0)},\mathbf{Y}$;
+* Sample $\mathbf{V}^{(1)} | \mathbf{w}^{(1)}, \mathbf{Y}$;
+* Continue by sequentially sampling $\mathbf{w}^{(i)}|\mathbf{V}^{(i-1)},\mathbf{Y}$, and
+then $\mathbf{V}^{(i)}|\mathbf{w}^{(i)}, \mathbf{Y}$ for $i=1,\ldots,k$.
+
+One should stop when equilibrium is reached. To obtain evidence that equilibrium 
+has been achieved, it is best to consider more than one chain, starting from
+different locations, and see if they mixed well. It might also be useful to see
+autocorrelation plots.
+
+Depending on the starting values, one might consider to do **burn-in** samples, 
+that is, one runs a chain for some iterations, then saves the last position,
+throw away the rest of the samples, and use that as starting values.
+
+It is important to observe that the samples $\{\mathbf{w}^{(i)},\mathbf{V}^{(i)}\}_{i=1}^k$
+will not be independent. However, under very general assumptions, the Gibbs sampler
+provides samples satisfying the law of large numbers for functionals of the sample.
+Therefore, one can use these samples to compute means and variances.
+
+## Estimation
+
+We now move to the situation in which we assume some (or all) parameters to 
+be unknown. Our goal is to estimate the parameters.
+
+To this end we will need to maximize the likelihood and, therefore, 
+we will need optmization algorithms. 
+
+Hence, we begin by quickly reviewing gradient descent and Newton's
+algorithm.
+
+### Gradient descent
+
+Let $f:U\subset\mathbb{R}^d\to \mathbb{R}$ be a differentiable function on
+an open set $U$. The problem consists on minimizing the function $f(\cdot)$ (usually
+we assume $f$ and $U$ to be convex to ensure convergence).
+
+Now, fix some point $\mathbf{x}_0\in U$. Given a vector $\nu\neq 0$ in $\mathbb{R}^d$,
+the rate of change of $f$ in the direction $\nu$ is
+$$\lim_{h\to 0} \frac{f(\mathbf{x}_0 + h\mathbf{\nu}) - f(\mathbf{x}_0)}{h} = \frac{\partial f}{\partial\mathbf{\nu}}(\mathbf{x}_0).$$
+Since $f$ is differentiable, let $Df(\mathbf{x}_0)$ be its derivative at $\mathbf{x}_0$. Then, we
+have that
+$$\frac{\partial f}{\partial\mathbf{\nu}}(\mathbf{x}_0) = Df(\mathbf{x}_0) \mathbf{\nu} = \langle \nabla f(\mathbf{x}_0), \mathbf{\nu}\rangle,$$
+where $\nabla f(\mathbf{x}_0) = (\partial f(\mathbf{x}_0)/\partial x_1,\ldots, \partial f(\mathbf{x}_0)/\partial x_d)$
+is the gradient vector. 
+
+Now, fix any direction $\mathbf{\nu}\in\mathbb{R}^d$ with unit norm, that is, $\|\mathbf{\nu}\|=1$,
+where $\|\cdot\|$ is the Euclidean norm in $\mathbb{R}^d$. 
+
+Our goal now is to find the direction in which the function $f$ decreases fastest.
+By Cauchy-Schwartz inequality, we have that
+$$\Bigg|\frac{\partial f}{\partial\mathbf{\nu}}(\mathbf{x}_0)\Bigg| = |\langle \nabla f(\mathbf{x}_0), \mathbf{\nu}\rangle|\leq \|\nabla f(\mathbf{x}_0)\|,$$
+
+since $\|\mathbf{\nu}\|=1$. Therefore,
+$$-\|\nabla f(\mathbf{x}_0)\|\leq \frac{\partial f}{\partial\mathbf{\nu}}(\mathbf{x}_0) \leq \|\nabla f(\mathbf{x}_0)\|.$$
+Finally, by choosing $\mathbf{\nu}_0 = -\nabla f(\mathbf{x}_0)/\|\nabla f(\mathbf{x}_0)\|$ we have that
+$$\frac{\partial f}{\partial\mathbf{\nu}_0}(\mathbf{x}_0) = -\|\nabla f(\mathbf{x}_0)\|.$$
+Therefore, the direction of fastest decrease is the direction of $-\nabla f(x_0)$.
+
+With this in mind, the idea of the gradient descent is to search the minimum of
+$f$ by moving towards the direction of maximum decrease. The idea is that
+if $\gamma$ is sufficiently small, then
+$$f(\mathbf{x}_0 - \gamma \nabla f(\mathbf{x}_0)) < f(\mathbf{x}_0).$$
+Thus, the gradient descent algorithm consists on considering some initial point
+$\mathbf{x}_0$, a sequence of step sizes $\gamma_n$ that decreases as $\mathbf{x}_0$ approches the
+minimum, and then define the sequence of points recursively as
+$$\mathbf{x}_n = \mathbf{x}_{n-1} - \gamma_n \nabla f(\mathbf{x}_{n-1}), \quad n\geq 1.$$
+If the step size is too big, the sequence $(\mathbf{x}_n)$ can diverge and if the
+step size is too small, the convergence can be very slow. 
+
+We need to stop at some point. One stop criterion is to stop when the
+change $\|\mathbf{x}_{n+1}-\mathbf{x}_n\|$,
+is smaller than a prescribed level, or when the norm of the gradient vector
+is smaller than some prescribed level, or even when the change $|f(x_{n+1})-f(x_n)|$
+is smaller than some prescribed level. One can also use combinations or modifications
+of these criteria.
+
+A common strategy to define the step sizes is to do line search in the gradient direction. The idea
+is to define the parameter $\alpha_n$ that minimizes (at least approximately, if one cannot do exactly) the
+function
+$$g(\alpha) = f(\mathbf{x}_{n} + \alpha \nabla f(\mathbf{x}_{n})).$$
+and then choose $\alpha_n$ as the step size:
+$$\mathbf{x}_{n+1} = \mathbf{x}_{n} - \alpha_n \nabla f(\mathbf{x}_{n}), \quad n\geq 1.$$
+
+
+### Example in *R*
+
+Let us do an example in *R*. Further, let $\gamma_n = n^{-\gamma}$, where
+$\gamma = 1$. 
+
+Consider $f(x,y)  = \log(1+x^2+2y^2)$ and initial value at $(x_0,y_0)=(4,-3)$. 
+We have that 
+$$\nabla f(x,y) = \Bigg(\frac{2x}{1+x^2+2y^2},\frac{4y}{1+x^2+2y^2}\Bigg).$$
+
+Then
+```{r}
+f <- function(x,y){
+  log(1+x^2+2*y^2)
+}
+
+grad_f <- function(v){
+  c(2*v[1]/(1+v[1]^2+2*v[2]^2), 4*v[2]/(1+v[1]^2+2*v[2]^2))
+}
+
+epsilon <- 10^{-5}
+tol = 1
+
+min_f <- c(4,-3)
+n = 1
+min_f_hist <- min_f
+
+while(tol > epsilon){
+  temp <- min_f
+  min_f = min_f - grad_f(min_f) * n^(-1)
+  min_f_hist <- rbind(min_f_hist,min_f)
+  tol <- sqrt(sum((min_f-temp)^2))
+  n = n+1
+}
+
+min_f
+min_f_hist <- data.frame(x = min_f_hist[,1], y = min_f_hist[,2], z=0)
+n
+```
+We see that the global minimum has been approximately achieved.
+
+```{r, fig.width=7, fig.height=5, message=FALSE}
+library(dplyr)
+library(ggplot2)
+values <- expand.grid(seq(-4,4,length=100), seq(-4,4,length=100))
+df_values <- data.frame(x = values$Var1, y = values$Var2)
+df_values <- df_values %>% mutate(z = f(x,y))
+
+ggplot(data = df_values, aes(x, y, fill = z)) + geom_raster() +
+  geom_path(data = min_f_hist) + geom_point(data = min_f_hist)+
+  scale_fill_distiller(palette = "Spectral")
+```
+
+Let us now consider another example. Consider $g(x,y)  = \exp(1+x^2+2y^2)$ and initial value at $(x_0,y_0)=(1.5,-1.5)$. 
+We have that 
+$$\nabla g(x,y) = \Bigg(2x\exp(1+x^2+2y^2),4y\exp(1+x^2+2y^2)\Bigg)$$
+
+```{r}
+g <- function(x,y){
+  exp(1+x^2+2*y^2)
+}
+
+grad_g <- function(v){
+  c(2*v[1]*f(v[1],v[2]), 4*v[2]*f(v[1],v[2]))
+}
+
+epsilon <- 10^{-5}
+tol = 1
+
+min_g <- c(1.5,-1.5)
+n = 1
+
+min_g_hist <- min_g
+
+while(tol > epsilon){
+  temp <- min_g
+  min_g = min_g - grad_f(min_g) * n^(-1)
+  min_g_hist <- rbind(min_g_hist,min_g)
+  tol <- sqrt(sum((min_g-temp)^2))
+  n = n+1
+}
+
+min_g
+min_g_hist <- data.frame(x = min_g_hist[,1], y = min_g_hist[,2], z=0)
+n
+```
+
+
+```{r, fig.width=7, fig.height=5}
+values <- expand.grid(seq(-1.5,1.5,length=100), seq(-1.5,1.5,length=100))
+df_values <- data.frame(x = values$Var1, y = values$Var2)
+df_values <- df_values %>% mutate(z = g(x,y))
+
+ggplot(data = df_values, aes(x, y, fill = z)) + geom_raster() +
+  geom_path(data = min_g_hist) + geom_point(data = min_g_hist) +
+  scale_fill_distiller(palette = "Spectral")
+  
+```
+
+We can notice that the minimum was also approximately achieved in this example.
+
+### Newton's method for optimization
+
+Let us consider the following alternative approach to minimize $f$. We assume that
+$f$ is twice differentiable and that its Hessian matrix $Hf(\mathbf{x}_0) = f''(\mathbf{x}_0)$
+is positive-definite for every $\mathbf{x}_0$ in the domain.
+
+The strategy consists in doing a second order approximation for $f$ and choose $\mathbf{h}$
+so that $\mathbf{x+h}$ minimizes the second-order approximation.
+
+More precisely, the second-order approximation is given by
+$$f(\mathbf{x+h}) \approx f(\mathbf{x}) + \langle \nabla f(\mathbf{x}), \mathbf{h}\rangle + \frac{1}{2} \langle Hf(\mathbf{x}) \mathbf{h}, \mathbf{h}\rangle.$$
+The right-hand side is a quadratic form on $h$, say
+$$Q_{f,\mathbf{x}}(\mathbf{h}) = f(\mathbf{x}) + \langle \nabla f(\mathbf{x}), \mathbf{h}\rangle + \frac{1}{2} \langle Hf(\mathbf{x}) \mathbf{h}, \mathbf{h}\rangle.$$
+Since $Hf(\mathbf{x})$ is positive-definite, $Q_{f,\mathbf{x}}(\cdot)$ has a minimum. We then have that
+the derivative of $Q_{f,\mathbf{x}}$ is given by
+$$Q_{f,\mathbf{x}}'(\mathbf{x}) = \nabla f(\mathbf{x}) + Hf(\mathbf{x}) \mathbf{h}.$$
+Hence, the minimum is achieved at
+$$\mathbf{h}^\ast = - (Hf(\mathbf{x}))^{-1} \nabla f(\mathbf{x}).$$
+Thus, the idea is to choose the next point as
+$$\mathbf{x}+\mathbf{h}^\ast = \mathbf{x} - (Hf(\mathbf{x}))^{-1} \nabla f(\mathbf{x}).$$
+
+Therefore, Newton's algorithm consists on choosing some initial point $x_0$ 
+and then define the sequence as
+$$\mathbf{x}_{n+1} = \mathbf{x}_n -  (Hf(\mathbf{x}_n))^{-1} \nabla f(\mathbf{x}_n).$$
+Inspired by the gradient descent method one often modify the above algorithm to include a 
+step size:
+$$\mathbf{x}_{n+1} = \mathbf{x}_n -  \gamma_n(Hf(\mathbf{x}_n))^{-1} \nabla f(\mathbf{x}_n).$$
+
+### Example in *R*
+
+Let us do the same example in *R*. For this case we will consider
+Newton's method with step size 1, so that we have the standard method.
+
+Let us consider the same function as before. Consider $f(x,y)  = \log(1+x^2+2y^2)$ and initial value at $(x_0,y_0)=(4,-3)$. 
+We have that 
+$$\nabla f(x,y) = \Bigg(\frac{2x}{1+x^2+2y^2},\frac{4y}{1+x^2+2y^2}\Bigg)$$
+and
+$$Hf(x,y) = \Bigg[
+\begin{array}{cc}
+\frac{2}{1+x^2+2y^2} - \frac{4x^2}{(1+x^2+2y^2)^2} & -\frac{8xy}{(1+x^2+2y^2)^2}\\
+-\frac{8xy}{(1+x^2+2y^2)^2} & \frac{4}{1+x^2+2y^2} - \frac{16y^2}{(1+x^2+2y^2)^2}
+\end{array}
+\Bigg].$$
+Then
+```{r}
+f <- function(x,y){
+  log(1+x^2+2*y^2)
+}
+grad_f <- function(v){
+  c(2*v[1]/(1+v[1]^2+2*v[2]^2), 4*v[2]/(1+v[1]^2+2*v[2]^2))
+}
+hess_f <- function(v){
+  a_1 <- 2/(v[1]^2+2*v[2]^2+1) - 4*v[1]^2/(v[1]^2+2*v[2]^2+1)^2
+  a_2 <- -(8*v[1]*v[2])/(1 + v[1]^2 + 2*v[2]^2)^2
+  a_3 <- 4/(v[1]^2+2*v[2]^2+1) - 16*v[2]^2/(v[1]^2+2*v[2]^2+1)^2
+  matrix(c(a_1,a_2,a_2,a_3), nrow=2)
+}
+epsilon <- 10^{-5}
+tol = 1
+min_f <- c(4,-3)
+n = 1
+min_f_hist <- min_f
+while(tol > epsilon & n <= 6){
+  temp <- min_f
+  min_f = min_f - solve(hess_f(min_f),grad_f(min_f))
+  min_f_hist <- rbind(min_f_hist,min_f)
+  tol <- sqrt(sum((min_f-temp)^2))
+  n = n+1
+}
+
+min_f
+min_f_hist <- data.frame(x = min_f_hist[,1], y = min_f_hist[,2], z=0)
+```
+
+We see that the sequence of points obtained from the algorithm was not moving towards the direction of the minimum. 
+Let us see a graphical illustration of this fact:
+
+```{r, fig.width=7, fig.height=5}
+library(dplyr)
+library(ggplot2)
+values <- expand.grid(seq(-100,300,length=100), seq(-300,100,length=100))
+df_values <- data.frame(x = values$Var1, y = values$Var2)
+df_values <- df_values %>% mutate(z = f(x,y))
+
+ggplot(data = df_values, aes(x, y, fill = z)) + geom_raster() +
+  geom_path(data = min_f_hist) + geom_point(data = min_f_hist)+
+  scale_fill_distiller(palette = "Spectral")
+```
+
+The problem came from the fact that the Hessian matrix was not positive-definite.
+Let us see how many of the 10 first iterations were positive-definite:
+
+```{r}
+min_f <- c(4,-3)
+n = 1
+min_f_hist <- min_f
+
+while(tol > epsilon & n < 10){
+  print(all(eigen(hess_f(min_f))$values>0))
+  temp <- min_f
+  min_f = min_f - solve(hess_f(min_f),grad_f(min_f))
+  tol <- sqrt(sum((min_f-temp)^2))
+  n = n+1
+}
+```
+That is, none of them were positive-definite.
+
+For this situation, in which the hessian matrix not positive-definite, it is best
+to use the gradient descent algorithm.
+
+Let us now consider another example. 
+Consider $g(x,y)  = \exp(1+x^2+2y^2)$ and initial value at $(x_0,y_0)=(1.5,-1.5)$. 
+We have that 
+$$\nabla g(x,y) = \Bigg(2x\exp(1+x^2+2y^2),4y\exp(1+x^2+2y^2)\Bigg)$$
+and 
+$$Hg(x,y) = \Bigg[
+\begin{array}{cc}
+(4x^2+2)\exp(1+x^2+2y^2) & 8xy\exp(1+x^2+2y^2)\\
+8xy\exp(1+x^2+2y^2)& (16y^2+4)\exp(1+x^2+2y^2)
+\end{array}
+\Bigg].$$
+
+Then,
+```{r}
+g <- function(x,y){
+  exp(1+x^2+2*y^2)
+}
+
+grad_g <- function(v){
+  c(2*v[1]*f(v[1],v[2]), 4*v[2]*f(v[1],v[2]))
+}
+
+
+hess_g <- function(v){
+  a_1 <- (4*v[1]^2+2)*f(v[1], v[2])
+  a_2 <- 8*v[1]*v[2]*f(v[1],v[2])
+  a_3 <- (16*v[2]^2+4)*f(v[1],v[2])
+  matrix(c(a_1,a_2,a_2,a_3), nrow=2)
+}
+
+epsilon <- 10^{-3}
+tol = 1
+
+min_g <- c(1.5,-1.5)
+n = 1
+
+min_g_hist <- min_g
+
+while(tol > epsilon){
+  temp <- min_g
+  min_g = min_g - solve(hess_g(min_g),grad_g(min_g))
+  min_g_hist <- rbind(min_g_hist,min_g)
+  tol <- sqrt(sum((min_g-temp)^2))
+  n = n+1
+}
+
+min_g
+min_g_hist <- data.frame(x = min_g_hist[,1], y = min_g_hist[,2], z=0)
+n
+```
+
+
+```{r, fig.width=7, fig.height=5}
+values <- expand.grid(seq(-1.5,1.5,length=100), seq(-1.5,1.5,length=100))
+df_values <- data.frame(x = values$Var1, y = values$Var2)
+df_values <- df_values %>% mutate(z = g(x,y))
+
+ggplot(data = df_values, aes(x, y, fill = z)) + geom_raster() +
+  geom_path(data = min_g_hist) + geom_point(data = min_g_hist) +
+  scale_fill_distiller(palette = "Spectral")
+  
+```
+
+We can notice that the by doing the second-order approximations, Newton's algorithm
+takes the geometry of the function into consideration and adjusts the direction to get a more
+``direct'' route towards the minimum. 
+
+
+### Stochastic gradient estimation
+
+We will consider a modification of the standard gradient descent when one
+cannot compute the gradient explicitly but is able to approximate it by some
+Monte Carlo approach. More precisely, the iterative procedure is given by
+$$\mathbf{x}_{n+1} = \mathbf{x}_n -\gamma_n Q_n(\mathbf{x}_n),$$
+where $Q_n(\mathbf{x})$ is a random variable such that $E[Q_n(\mathbf{x})]=\nabla_\mathbf{x} f(\mathbf{x})$
+and $\gamma_n$ is a sequence of positive numbers such that $\sum_{n=1}^\infty \gamma_n = \infty$
+and $\sum_{n=1}^\infty \gamma_n^2<\infty$. A typical example is $\gamma_n = n^\gamma$,
+where $\gamma \in (0.5,1]$. 
+
+Furthermore, when the goal is to optimize over many parameters, it is better
+to scale the gradient by a preconditioner to give a Newton-like iteration. 
+$$\mathbf{x}_{n+1} = \mathbf{x}_n -\gamma_n \mathbf{I}(\mathbf{x})^{-1}Q_n(\mathbf{x}_n),$$
+where there are several strategies to determine $\mathbf{I}(\mathbf{x})$ and
+it is usually related to Fisher's information matrix.
+
+### Stochastic gradient descent and maximum likelihood
+
+For maximum likelihood estimation the goal is to minimize 
+$f({\boldsymbol{\theta}}) = -L({\boldsymbol{\theta}}; \mathbf{Y})$, where $L$ is the
+log-likelihood function of $\mathbf{Y}$.
+
+For non-Gaussian models there is an additional complication that the
+log-likelihood function $L$ is not known in explicit form. A way to 
+solve this problem is to use Fisher's identity (Fisher, 1925). See also Douc et al. (2014)
+for further details.
+
+Let $\mathbf{U} = (U_1,\ldots, U_n)$ be a sequence of observed random variables
+with latent variables $\mathbf{Z} = (Z_1,\ldots,Z_n)$, $Z_i$ being a random variable
+in $\mathbb{R}^p$. Assume that the joint 
+distribution of $\mathbf{U}$ and $\mathbf{Z}$ is parameterized by some ${\boldsymbol{\theta}}$,
+where $\mathbf{{\boldsymbol{\theta}}} \in \Theta$ and $\Theta\subset\mathbb{R}^p$. 
+Assume that the complete log-likelihood $L({\boldsymbol{\theta}}; \mathbf{U},\mathbf{Z})$
+(with respect to some reference $\sigma$-finite measure) is differentiable with
+respect to ${\boldsymbol{\theta}}$ and are regular, in the sense that one may
+differentiate through the integral sign. Then, the marginal log-likelihood with respect to $\mathbf{U}$
+satisfies
+$$\nabla_{\boldsymbol{\theta}} L({\boldsymbol{\theta}}; \mathbf{U}) = E_{\mathbf{Z}}[\nabla_{\boldsymbol{\theta}} L({\boldsymbol{\theta}}; \mathbf{U}, \mathbf{Z})|\mathbf{U}].$$
+
+
+### Standard MC approximation of the gradient
+In our context, we assume $\mathbf{w}$ and $\mathbf{V}$
+to be hidden. Therefore, we may use Fisher's identity above to the latent variable
+$(\mathbf{V},\mathbf{w})$ to obtain that
+$$\nabla_{\boldsymbol{\theta}} L({\boldsymbol{\theta}}; \mathbf{Y}) = E_{\mathbf{V},\mathbf{w}}[\nabla_{\boldsymbol{\theta}} L({\boldsymbol{\theta}}; \mathbf{Y}, \mathbf{V}, \mathbf{w})|\mathbf{Y}].$$
+Thus, the idea here is to use both samples of $\mathbf{V}$ and $\mathbf{w}$ obtained from the Gibbs
+sampler to approximate the gradient as
+
+$$\nabla_{{\boldsymbol{\theta}}}L({\boldsymbol{\theta}};\mathbf{Y}) \approx \frac{1}{k} \sum_{j=1}^k \nabla_{{\boldsymbol{\theta}}} L({\boldsymbol{\theta}};\mathbf{Y},\mathbf{V}^{(j)}, \mathbf{w}^{(j)}).$$
+To this end, we will compute the gradients $\nabla_{{\boldsymbol{\theta}}} L({\boldsymbol{\theta}};\mathbf{Y},\mathbf{V}, \mathbf{w})$.
+
+We have that
+$$\mathbf{Y}|\mathbf{w} \sim N(\mathbf{A}\mathbf{w}, \sigma_\varepsilon^{-2} \mathbf{I}),$$
+$$\mathbf{w}|\mathbf{V} \sim N(\mathbf{K}^{-1}(-\mu \mathbf{h}+\mu\mathbf{V}), \mathbf{K}^{-1}{\rm diag}(\mathbf{V})\mathbf{K}^{-1})$$
+and $\mathbf{V}$ follows a GIG distribution such that for every $i$, $E[V_i]=h_i$.
+
+Therefore, we have that
+$$\begin{array}{ccl}
+L((\mu,\sigma_\varepsilon); \mathbf{w}, \mathbf{V},\mathbf{Y}) &=& -n\log(\sigma_\varepsilon)-0.5\sigma_\varepsilon^{-2} (\mathbf{Y} - \mathbf{A}\mathbf{K}^{-1}(-\mu \mathbf{h}+\mu\mathbf{V}))\\
+&-&0.5\sigma_\varepsilon^{-2}(\mathbf{A}(\mathbf{w}-\mathbf{m})^\top{\rm diag} (1/V_i) (\mathbf{Y} - \mathbf{A}\mathbf{K}^{-1}(-\mu \mathbf{h}+\mu\mathbf{V})-\mathbf{A}(\mathbf{w}-\mathbf{m})) + const,
+\end{array}$$
+where $const$ does not depend on $(\mu,\sigma)$. Thus, we have that
+$$\nabla_\mu L((\mu,\sigma_\varepsilon); \mathbf{w}, \mathbf{V},\mathbf{Y}) =  \sigma_\varepsilon^{-2}\mathbf{A}\mathbf{K}^{-1}(-\mathbf{h}+\mathbf{V}) {\rm diag} (1/V_i)(\mathbf{Y}  - \mathbf{A}\mathbf{K}^{-1}(-\mu \mathbf{h}+\mu\mathbf{V}) - \mathbf{A}(\mathbf{w}-\mathbf{m})).$$
+Now, with respect to $\sigma_\varepsilon$ we have that
+$$\nabla_{\sigma_\varepsilon} L((\mu,\sigma_\varepsilon); \mathbf{w}, \mathbf{V},\mathbf{Y}) = -\frac{n}{\sigma_\varepsilon} + \frac{1}{\sigma_\varepsilon^3} (\mathbf{Y} - \mathbf{A}\mathbf{K}^{-1}(-\mu \mathbf{h}+\mu\mathbf{V})-\mathbf{A}(\mathbf{w}-\mathbf{m}))^\top{\rm diag} (1/V_i) (\mathbf{Y} - \mathbf{A}\mathbf{K}^{-1}(-\mu \mathbf{h}+\mu\mathbf{V})-\mathbf{A}(\mathbf{w}-\mathbf{m}))$$
+By proceeding analogously, we obtain that the gradient with respect to $\kappa^2$ is given by
+$$\nabla_{\kappa^2} L(\kappa^2; \mathbf{Y}, \mathbf{w}, \mathbf{V}) = tr(\mathbf{C}\mathbf{K}^{-1})- \mathbf{w}^\top \mathbf{C}^\top{\rm diag} (1/V_i)(\mathbf{K}\mathbf{w}+(\mathbf{h}-\mathbf{V})\mu).$$
+Finally, for the gradient of the parameter of the distribution of $\mathbf{V}$,
+we use the Rao-Blackwellized version, see the next subsection.
+
+### Rao-Blackwellized approximation of the gradient
+
+Now, observe that we can compute the log-likelihood $L({\boldsymbol{\theta}}; \mathbf{Y}, \mathbf{V})$. Indeed, we apply Fisher's identity again
+to find that
+$$\nabla_{\boldsymbol{\theta}} L({\boldsymbol{\theta}}; \mathbf{Y}, \mathbf{V}) = E_\mathbf{w}[\nabla_{\boldsymbol{\theta}} L({\boldsymbol{\theta}}; \mathbf{Y}, \mathbf{V}, \mathbf{w})|\mathbf{Y},\mathbf{V}].$$
+So, with the above gradients, we can approximate the gradient $\nabla_{\boldsymbol{\theta}} L({\boldsymbol{\theta}}; \mathbf{Y})$ by taking the mean
+over the samples of $\mathbf{V}$ obtained by the Gibbs sampling:
+$$\nabla_{{\boldsymbol{\theta}}}L({\boldsymbol{\theta}};\mathbf{Y}) \approx \frac{1}{k} \sum_{j=1}^k \nabla_{{\boldsymbol{\theta}}} L({\boldsymbol{\theta}};\mathbf{Y},\mathbf{V}^{(j)}).$$
+
+
+Let us now compute the gradients $\nabla_{{\boldsymbol{\theta}}} L({\boldsymbol{\theta}};\mathbf{Y},\mathbf{V})$.
+We begin by computing $\nabla_\mu L((\mu,\sigma_\varepsilon); \mathbf{V},\mathbf{Y})$. To this end,
+we use the expression for $\nabla_\mu L((\mu,\sigma_\varepsilon); \mathbf{w}, \mathbf{V},\mathbf{Y})$ given in the previous subsection
+together with $E[\mathbf{w}|\mathbf{V},\mathbf{Y}] = \widetilde{\mathbf{m}}$, to conclude that
+$$\nabla_\mu L((\mu,\sigma_\varepsilon); \mathbf{V},\mathbf{Y}) =  \sigma_\varepsilon^{-2}\mathbf{A}\mathbf{K}^{-1}(-\mathbf{h}+\mathbf{V}) {\rm diag} (1/V_i)(\mathbf{Y}  - \mathbf{A}\mathbf{K}^{-1}(-\mu \mathbf{h}+\mu\mathbf{V}) - \mathbf{A}(\widetilde{\mathbf{m}}-\mathbf{m}))$$
+Analogously, we also obtain that
+$$\nabla_{\sigma_\varepsilon} L((\mu,\sigma_\varepsilon); \mathbf{V},\mathbf{Y}) = -\frac{n}{\sigma_\varepsilon} + \frac{1}{\sigma_\varepsilon^3} (\mathbf{Y} - \mathbf{A}\mathbf{K}^{-1}(-\mu \mathbf{h}+\mu\mathbf{V})-\mathbf{A}(\widetilde{\mathbf{m}}-\mathbf{m}))^\top{\rm diag} (1/V_i) (\mathbf{Y} - \mathbf{A}\mathbf{K}^{-1}(-\mu \mathbf{h}+\mu\mathbf{V})-\mathbf{A}(\widetilde{\mathbf{m}}-\mathbf{m})).$$
+
+Now, notice that
+$$\nabla_{\kappa^2} L(\kappa^2; \mathbf{Y}, \mathbf{w}, \mathbf{V}) = tr(\mathbf{C}\mathbf{K}^{-1})- \mathbf{w}^\top \mathbf{C}^\top{\rm diag} (1/V_i)\mathbf{K}\mathbf{w}-\mathbf{w}^\top \mathbf{C}^\top{\rm diag} (1/V_i)(\mathbf{h}-\mathbf{V})\mu,$$
+that
+$$E[\mathbf{w}|\mathbf{V},\mathbf{Y}] = \widetilde{\mathbf{m}}$$
+and that
+$$E[\mathbf{w}^\top \mathbf{C}^\top{\rm diag} (1/V_i)\mathbf{K}\mathbf{w}|\mathbf{V},\mathbf{Y}] =  tr(\mathbf{C}^\top{\rm diag} (1/V_i)\mathbf{K}\widetilde{\mathbf{Q}}^{-1}) +   \widetilde{\mathbf{m}}^\top\mathbf{C}^\top{\rm diag} (1/V_i)\mathbf{K}\widetilde{\mathbf{m}}$$
+to conclude that
+$$\nabla_{\kappa^2} L(\kappa^2; \mathbf{Y}, \mathbf{V}) = tr(\mathbf{C}\mathbf{K}^{-1})- tr(\mathbf{C}^\top{\rm diag} (1/V_i)\mathbf{K}\widetilde{\mathbf{Q}}^{-1}) -   \widetilde{\mathbf{m}}^\top\mathbf{C}^\top{\rm diag} (1/V_i)\mathbf{K}\widetilde{\mathbf{m}}-\widetilde{\mathbf{m}}^\top \mathbf{C}^\top{\rm diag} (1/V_i)(\mathbf{h}-\mathbf{V})\mu.$$
+
+Finally, the gradient for the parameter of the distribution of $\mathbf{V}$ depends on the
+distribution of $\mathbf{V}$. To illustrate we will present the gradient with
+respect to the parameter $\nu$ when $\mathbf{V}$ follows inverse-Gaussian distribution,
+which is the situation in which we have NIG noise.
+
+For this case we have that
+$$\nabla_\nu L(\nu; \mathbf{Y},\mathbf{V}) = -\sum_{j=1}^n \frac{1}{2}\Bigg(\nu^{-1} -\frac{h_{j}^2}{V_j} +V_j -h_j\Bigg).$$
+
+#### A remark on traces
+
+On the gradients $\nabla_{\kappa^2} L(\kappa^2; \mathbf{Y}, \mathbf{V})$ and $\nabla_{\kappa^2} L(\kappa^2; \mathbf{Y}, \mathbf{w}, \mathbf{V})$,
+we can see the traces $tr(\mathbf{C}\mathbf{K}^{-1})$ and $tr(\mathbf{C}^\top{\rm diag} (1/V_i)\mathbf{K}\widetilde{\mathbf{Q}}^{-1})$.
+These traces contain the inverses $\mathbf{K}^{-1}$ and $\widetilde{\mathbf{Q}}^{-1}$.
+
+There are efficient alternatives to handling these traces. For instance, if
+we want to compute $tr(AB^{-1})$, $B$ is symmetric, and the sparsity of $B$ is the same as the
+sparsity of $A$, we only need to compute the elements of $B^{-1}$ for the coordinates
+with non-zero entries. This is what happens, for instance,
+in $tr(\mathbf{C}\mathbf{K}^{-1})$. So, to compute this trace there is this efficient
+alternative. It is implemented in the *ngme* package.
+
+### Example in R: SPDE based model driven by NIG noise with Gaussian measurement errors in 1D
+
+For this example we will consider the latent process $X$ solving the equation
+$$(\kappa^2 - \partial^2/\partial t^2)X(t) = \dot{\mathcal{M}}(t),$$
+where $\dot{\mathcal{M}}$ is a NIG-distributed white-noise. For more details on the NIG distribution as well as on how to sample
+from such a process we refer the reader to [Sampling from processes given by solutions of SPDEs driven by non-Gaussian noise](spde_nongaussian.html)
+vignette. We will also be using the notation from that vignette.
+
+We will assume we do not know the parameter $\kappa^2$. 
+
+To estimate $\kappa^2$ we will consider stochastic gradient descent with step size
+$\gamma_n = n^{-1}$.
+
+Notice that we will, then, be assuming $V_i$ to follow an inverse Gaussian 
+distribution with parameters $\eta$ and $\eta h_i^2$. 
+
+We will take $\kappa=1$, $\sigma_\varepsilon=1$, $\sigma=1$, $\mu = 1$, $\mathcal{D}=[0,20]$ and $\eta=0.5$. We will also assume that we
+have 60 observations
+$$Y_i = X(t_i) + \varepsilon_i,\quad i=1,\ldots,60,$$
+where $t_1,\ldots,t_{60}\in [0,20]$. Notice that $\varepsilon_i \sim N(0,1)$.
+
+We will consider a mesh with 100 equally spaced nodes. 
+The code to sample for such a process is given below.
+
+```{r, message=FALSE}
+library(INLA)
+library(ngme2)
+
+set.seed(123)
+
+n_mesh <- 100
+
+loc_nig_1d <- (0:(n_mesh-1)/(n_mesh-1))*20
+
+mesh_loc_nig_1d <- inla.mesh.1d(loc_nig_1d)
+fem_loc_nig_1d <- inla.mesh.1d.fem(mesh_loc_nig_1d)
+
+C_nig_1d <- fem_loc_nig_1d$c1
+G_nig_1d <- fem_loc_nig_1d$g1
+h_nig_1d <- diag(fem_loc_nig_1d$c0)
+```
+
+Let us now build the matrix $K$, generate $V$ and then sample from the NIG model:
+```{r, fig.width=7, fig.height=5}
+K = C_nig_1d + G_nig_1d
+
+# Generating V from an inverse Gaussian distribution 
+# (a=eta, b = h^2*eta)
+
+eta = 0.5
+mu = 1
+sigma = 1
+
+V = ngme2::rig(n_mesh, a = eta, b = h_nig_1d^2*eta, sample.int(10^6, 1))
+temp = rnorm(n_mesh, mean = (-h_nig_1d + V)*mu, sd = sigma^2*sqrt(V))
+W = solve(K, temp)
+plot(loc_nig_1d, W, type="l")
+
+# plot of V
+plot(loc_nig_1d, V, type="l")
+```
+
+We will now generate 60 uniformly distributed random locations to determine
+the locations of the observations. Once we determine the locations we will
+need to build the $A$ matrix to obtain the values of the process $X$
+at those locations. We can build the $A$ matrix by using the
+function *inla.spde.make.A*.
+
+```{r, fig.width=7, fig.height=5}
+n_obs <- 60
+
+new_loc_1d <- sort(runif(n_obs,0,20))
+
+A_matrix <- inla.spde.make.A(mesh_loc_nig_1d, new_loc_1d)
+
+sigma_eps = 1
+
+Y = A_matrix %*% W + sigma_eps * rnorm(n_obs)
+
+plot(new_loc_1d, Y, type="h")
+abline(0,0)
+```
+
+Let us now create a function that performs Gibbs sampling for a parameter $\kappa^2$:
+
+```{r}
+Asq <- t(A_matrix)%*%A_matrix/sigma_eps^2
+
+gibbs_sample <- function(kappa_sq, N_sim, V_init, W_init){
+  V <- V_init
+  
+  W <- W_init
+  
+  # Vector of conditional means E[w|V,Y]
+  m_W <- matrix(0, nrow=1, ncol=n_mesh)
+  
+  # Gibbs sampling
+  
+  K_kappa <- kappa_sq*C_nig_1d + G_nig_1d
+  
+for(i in 1:N_sim){
+  Q <- K_kappa%*%diag(1/V[i,])%*%K_kappa/sigma^2
+  
+  resp <- Q%*%solve(K_kappa,(-h_nig_1d + V[i,])*mu) + t(A_matrix)%*%Y/sigma_eps^2
+  
+  m_W <- rbind(m_W, t(solve(Q + Asq, resp)))
+  
+  Prec <- K_kappa%*%diag(1/V[i,])%*%K_kappa + Asq
+  
+  Chol <- chol(Q + Asq)
+  
+  W <- rbind(W, m_W[i+1,] + t(solve(Chol, rnorm(n_mesh))))
+  V <- rbind(V, 
+               ngme2::rgig(n_mesh, 
+                           -1, 
+                           eta + (mu/sigma)^2, 
+                           eta*h_nig_1d^2 +
+                           as.vector((K_kappa%*%W[i+1,] +h_nig_1d)^2)/sigma^2))
+}
+ 
+return(list(W = W[2:(N_sim+1),], V = V[2:(N_sim+1),], m_W = m_W[2:(N_sim+1),]))
+}
+```
+
+
+#### Standard MC estimation in R
+Let us create a function for the gradient with respect to $\kappa^2$. 
+Recall that $\mu=1$ in this example.
+
+```{r}
+grad_kappa <- function(kappa_sq, V,  W){
+  K_kappa <- kappa_sq*C_nig_1d + G_nig_1d
+  return(sum(diag(solve(as.matrix(K_kappa),C_nig_1d))) - 
+           t(W) %*% C_nig_1d %*%diag(1/V)%*%(K_kappa%*%W+(h_nig_1d-V)*mu))
+}
+```
+
+
+Now, let us proceed with the stochastic gradient descent:
+
+```{r, fig.width=7, fig.height=5, warning=FALSE}
+
+epsilon <- 10^{-5}
+tol = 1
+
+#Initial guess for kappa
+kappa_est <- 0.5
+#True kappa is 1
+
+kappa_list <- kappa_est
+
+n = 1
+
+#Gibbs sample sizes
+gibbs_nsim <- 10
+
+V_init <- matrix(ngme2::rig(n_mesh, eta, eta*h_nig_1d^2), nrow=1)
+W_init <- matrix(0, nrow=1, ncol=n_mesh)
+
+#Burn in for the first one
+list_VW <- gibbs_sample(kappa_est, 300, V_init, W_init)
+
+V_init <- matrix(list_VW[["V"]][gibbs_nsim,],nrow=1)
+W_init <- matrix(list_VW[["W"]][gibbs_nsim,],nrow=1)
+
+while(tol > epsilon){
+  temp <- kappa_est
+  
+  list_VW <- gibbs_sample(kappa_est, gibbs_nsim, V_init, W_init)
+  V_matrix <- list_VW[["V"]]
+  W_matrix <- list_VW[["W"]]
+  
+  V_init <- matrix(V_matrix[gibbs_nsim,],nrow=1)
+  W_init <- matrix(W_matrix[gibbs_nsim,],nrow=1)
+  
+  grad_k_V <- sapply(1:(gibbs_nsim), function(i){
+    grad_kappa(kappa_est, as.vector(V_matrix[i,]), as.vector(W_matrix[i,]))[1,1]
+  })
+  
+  grad_kappa_est <- mean(grad_k_V)
+  
+  # We are summing because we want to maximize
+  
+  kappa_est = kappa_est + grad_kappa_est * n^(-1)
+
+  kappa_list <- c(kappa_list, kappa_est)
+  tol <- sqrt(sum((kappa_est-temp)^2))
+  n = n+1
+}
+
+sqrt(kappa_est)
+n
+plot(sqrt(kappa_list), type="l")
+```
+
+This produces our estimate for $\kappa^2$. 
+
+Finally, let us compare with another initial guess:
+
+```{r, fig.width=7, fig.height=5, warning=FALSE}
+
+epsilon <- 10^{-5}
+tol = 1
+
+#Initial guess for kappa
+kappa_est <- 5
+#True kappa is 1
+
+kappa_list <- kappa_est
+
+n = 1
+
+#Gibbs sample sizes
+gibbs_nsim <- 10
+
+V_init <- matrix(ngme2::rig(n_mesh, eta, eta*h_nig_1d^2), nrow=1)
+W_init <- matrix(0, nrow=1, ncol=n_mesh)
+
+#Burn in for the first one
+list_VW <- gibbs_sample(kappa_est, 300, V_init, W_init)
+
+V_init <- matrix(list_VW[["V"]][gibbs_nsim,],nrow=1)
+W_init <- matrix(list_VW[["W"]][gibbs_nsim,],nrow=1)
+
+while(tol > epsilon){
+  temp <- kappa_est
+  
+  list_VW <- gibbs_sample(kappa_est, gibbs_nsim, V_init, W_init)
+  V_matrix <- list_VW[["V"]]
+  W_matrix <- list_VW[["W"]]
+  
+  V_init <- matrix(V_matrix[gibbs_nsim,],nrow=1)
+  W_init <- matrix(W_matrix[gibbs_nsim,],nrow=1)
+  
+  grad_k_V <- sapply(1:(gibbs_nsim), function(i){
+    grad_kappa(kappa_est, as.vector(V_matrix[i,]), as.vector(W_matrix[i,]))[1,1]
+  })
+  
+  grad_kappa_est <- mean(grad_k_V)
+  
+  # We are summing because we want to maximize
+  
+  kappa_est = kappa_est + grad_kappa_est * n^(-1)
+  
+  kappa_list <- c(kappa_list, kappa_est)
+  tol <- sqrt(sum((kappa_est-temp)^2))
+  n = n+1
+}
+sqrt(kappa_est)
+n
+plot(sqrt(kappa_list), type="l")
+```
+
+#### Rao-Blackwellized estimation in R
+Let us create a function for the Rao-Blackwellized gradient with respect to $\kappa^2$. 
+Recall that $\mu=1$ in this example.
+
+```{r}
+
+grad_kappa_rb <- function(kappa_sq, V,  W){
+  K_kappa <- kappa_sq*C_nig_1d + G_nig_1d
+  Q <- K_kappa%*%diag(1/V)%*%K_kappa
+  m <- solve(K_kappa, -h_nig_1d + V)
+  Q_tilde <- Q + Asq
+  m_tilde <- solve(Q_tilde, Q%*%m + t(A_matrix)%*%Y)
+  return(sum(diag(solve(as.matrix(K_kappa),C_nig_1d))) - 
+           sum(diag(solve(Q_tilde,C_nig_1d%*%diag(1/V)%*%K_kappa)))-
+           t(m_tilde)%*%C_nig_1d %*%diag(1/V)%*%K_kappa%*%m_tilde - 
+           t(m_tilde)%*%C_nig_1d%*%diag(1/V)%*%(h_nig_1d-V)*mu)
+}
+
+```
+
+
+Now, let us proceed with the Rao-Blackwellized stochastic gradient descent:
+
+```{r, fig.width=7, fig.height=5, warning=FALSE}
+
+epsilon <- 10^{-5}
+tol = 1
+
+#Initial guess for kappa
+kappa_est <- 0.5
+#True kappa is 1
+
+kappa_list <- kappa_est
+
+n = 1
+
+#Gibbs sample sizes
+gibbs_nsim <- 10
+
+V_init <- matrix(ngme2::rig(n_mesh, eta, eta*h_nig_1d^2), nrow=1)
+W_init <- matrix(0, nrow=1, ncol=n_mesh)
+
+#Burn in for the first one
+list_VW <- gibbs_sample(kappa_est, 300, V_init, W_init)
+
+V_init <- matrix(list_VW[["V"]][gibbs_nsim,],nrow=1)
+W_init <- matrix(list_VW[["W"]][gibbs_nsim,],nrow=1)
+
+while(tol > epsilon){
+  temp <- kappa_est
+  
+  list_VW <- gibbs_sample(kappa_est, gibbs_nsim, V_init, W_init)
+  V_matrix <- list_VW[["V"]]
+  W_matrix <- list_VW[["W"]]
+  
+  V_init <- matrix(V_matrix[gibbs_nsim,],nrow=1)
+  W_init <- matrix(W_matrix[gibbs_nsim,],nrow=1)
+  
+  grad_k_V <- sapply(1:(gibbs_nsim), function(i){
+    grad_kappa_rb(kappa_est, as.vector(V_matrix[i,]), as.vector(W_matrix[i,]))[1,1]
+  })
+  
+  grad_kappa_est <- mean(grad_k_V)
+  
+  # We are summing because we want to maximize
+  
+  kappa_est = kappa_est + grad_kappa_est * n^(-1)
+  
+  kappa_list <- c(kappa_list, kappa_est)
+  tol <- sqrt(sum((kappa_est-temp)^2))
+  n = n+1
+}
+
+sqrt(kappa_est)
+n
+plot(sqrt(kappa_list), type="l")
+```
+
+Now, let us consider another inital condition:
+
+```{r, fig.width=7, fig.height=5, warning=FALSE}
+
+epsilon <- 10^{-5}
+tol = 1
+
+#Initial guess for kappa
+kappa_est <- 5
+#True kappa is 1
+
+kappa_list <- kappa_est
+
+n = 1
+
+#Gibbs sample sizes
+gibbs_nsim <- 10
+
+V_init <- matrix(ngme2::rig(n_mesh, eta, eta*h_nig_1d^2), nrow=1)
+W_init <- matrix(0, nrow=1, ncol=n_mesh)
+
+#Burn in for the first one
+list_VW <- gibbs_sample(kappa_est, 300, V_init, W_init)
+
+V_init <- matrix(list_VW[["V"]][gibbs_nsim,],nrow=1)
+W_init <- matrix(list_VW[["W"]][gibbs_nsim,],nrow=1)
+
+while(tol > epsilon){
+  temp <- kappa_est
+  
+  list_VW <- gibbs_sample(kappa_est, gibbs_nsim, V_init, W_init)
+  V_matrix <- list_VW[["V"]]
+  W_matrix <- list_VW[["W"]]
+  
+  V_init <- matrix(V_matrix[gibbs_nsim,],nrow=1)
+  W_init <- matrix(W_matrix[gibbs_nsim,],nrow=1)
+  
+  grad_k_V <- sapply(1:(gibbs_nsim), function(i){
+    grad_kappa_rb(kappa_est, as.vector(V_matrix[i,]), as.vector(W_matrix[i,]))[1,1]
+  })
+  
+  grad_kappa_est <- mean(grad_k_V)
+  
+  # We are summing because we want to maximize
+  
+  kappa_est = kappa_est + grad_kappa_est * n^(-1)
+
+  kappa_list <- c(kappa_list, kappa_est)
+  tol <- sqrt(sum((kappa_est-temp)^2))
+  n = n+1
+}
+
+sqrt(kappa_est)
+n
+plot(sqrt(kappa_list), type="l")
+```
+
+We notice that the Rao-Blackwellization approach converges faster than the standard
+MC approach.
+
+### An example with a preconditioner
+
+We will use 
+$$-\mathbf{I}({\boldsymbol{\theta}}) = E_{\mathbf{V}}[\nabla_{\boldsymbol{\theta}}^2L({\boldsymbol{\theta}};\mathbf{Y},\mathbf{V})|\mathbf{Y}]$$
+as preconditioner.
+
+More precisely, we will compute $\nabla_{\boldsymbol{\theta}}^2L({\boldsymbol{\theta}};\mathbf{Y},\mathbf{V})$
+and use the approximation
+$$E_{\mathbf{V}}[\nabla_{\boldsymbol{\theta}}^2L({\boldsymbol{\theta}};\mathbf{Y},\mathbf{V})|\mathbf{Y}] \approx \frac{1}{k} \sum_{i=1}^k \nabla_{{\boldsymbol{\theta}}}^2 L({\boldsymbol{\theta}}; \mathbf{Y}, \mathbf{V}^{(i)})$$
+
+An important observation is that if we use the same Gibbs samples we used to approximate
+the gradient, the joint update step 
+$$\mathbf{x}_{n+1} = \mathbf{x}_n -\gamma_n \mathbf{I}(\mathbf{x})^{-1}Q_n(\mathbf{x}_n)$$
+will be biased because of correlation between the estimated expectations. To circumvent
+this problem, we will use another Gibbs sample. More precisely, we will use the
+Gibbs sample from the previous iteration. 
+
+In order to use the Gibbs sample from the previous iteration, we need the estimated parameter from the previous iteration
+to be close to the current estimated parameter. To this end, we will begin with 
+stochastic gradient descent, and at the moment that the distance between the previous
+iteration and the current iteration becomes less than $10^{-1}$ we start using
+the preconditioner with the Gibbs sample from the previous iteration.
+
+Since we are interested on the estimation of $\kappa^2$, let us now compute $\nabla_{\kappa^2}^2L(\kappa^2;\mathbf{Y},\mathbf{V})$.
+Begin by recalling that 
+$$\nabla_{\kappa^2} L(\kappa^2; \mathbf{Y}, \mathbf{V}) = tr(\mathbf{C}\mathbf{K}^{-1})- tr(\mathbf{C}^\top{\rm diag} (1/V_i)\mathbf{K}\widetilde{\mathbf{Q}}^{-1}) -   \widetilde{\mathbf{m}}^\top\mathbf{C}^\top{\rm diag} (1/V_i)\mathbf{K}\widetilde{\mathbf{m}}-\widetilde{\mathbf{m}}^\top \mathbf{C}^\top{\rm diag} (1/V_i)(\mathbf{h}-\mathbf{V})\mu.$$
+
+Notice now that
+$$\nabla_{\kappa^2} tr(\mathbf{C}\mathbf{K}^{-1}) = -tr( (\mathbf{C}\mathbf{K}^{-1})^2),$$
+$$\nabla_{\kappa^2} \widetilde{\mathbf{Q}} = \nabla_{\kappa^2} \mathbf{Q} = \frac{1}{\sigma^2}(\mathbf{C}{\rm diag}(\mathbf{V})^{-1}\mathbf{K} + \mathbf{K}{\rm diag}(\mathbf{V})^{-1}\mathbf{C)},$$
+
+
+$$\nabla_{\kappa^2} \widetilde{\mathbf{m}} = -\widetilde{\mathbf{Q}}^{-1}(\nabla_{\kappa^2} \widetilde{\mathbf{Q}})\widetilde{\mathbf{Q}}^{-1}\big(\mathbf{Q}\mathbf{m}+\sigma_\varepsilon^{-2}\mathbf{A}^\top\mathbf{Y}\big) + \widetilde{\mathbf{Q}}^{-1}\Bigg((\nabla_{\kappa^2} \mathbf{Q} )\mathbf{m} - \mathbf{Q}\mathbf{K}^{-1}\mathbf{C}\mathbf{K}^{-1}(-\mu \mathbf{h}+\mu\mathbf{V})\Bigg).$$
+$$\nabla_{\kappa^2} tr(\mathbf{C}^\top{\rm diag} (1/V_i)\mathbf{K}\widetilde{\mathbf{Q}}^{-1}) = tr(\mathbf{C}^\top{\rm diag} (1/V_i)\mathbf{C}\widetilde{\mathbf{Q}}^{-1}) - tr(\mathbf{C}^\top{\rm diag} (1/V_i)\mathbf{K}\widetilde{\mathbf{Q}}^{-1}(\nabla_{\kappa^2} \widetilde{\mathbf{Q}})\widetilde{\mathbf{Q}}^{-1}),$$
+
+$$
+\nabla_{\kappa^2}(\widetilde{\mathbf{m}}^\top\mathbf{C}^\top{\rm diag} (1/V_i)\mathbf{K}\widetilde{\mathbf{m}}) = (\nabla_{\kappa^2} \widetilde{\mathbf{m}})^\top\mathbf{C}^\top{\rm diag} (1/V_i)\mathbf{K}\widetilde{\mathbf{m}} + \widetilde{\mathbf{m}}\mathbf{C}^\top{\rm diag} (1/V_i)\mathbf{C}\widetilde{\mathbf{m}} + \widetilde{\mathbf{m}}\mathbf{C}^\top{\rm diag} (1/V_i)\mathbf{K}(\nabla_{\kappa^2} \widetilde{\mathbf{m}})
+$$
+and, finally,
+$$\nabla_{\kappa^2}(\widetilde{\mathbf{m}}^\top \mathbf{C}^\top{\rm diag} (1/V_i)(\mathbf{h}-\mathbf{V})\mu) = (\nabla_{\kappa^2} \widetilde{\mathbf{m}})\mathbf{C}^\top{\rm diag} (1/V_i)(\mathbf{h}-\mathbf{V})\mu.$$
+
+Let us now construct the function $\nabla_{\kappa^2}^2 L(\kappa^2; \mathbf{Y}, \mathbf{w}, \mathbf{V})$:
+
+
+```{r}
+hess_kappa <- function(kappa_sq, V,  W){
+  K_kappa <- kappa_sq*C_nig_1d + G_nig_1d
+  M <- solve(as.matrix(K_kappa),C_nig_1d)
+  
+  Q <- K_kappa%*%diag(1/V)%*%K_kappa
+  m <- solve(K_kappa, -h_nig_1d + V)
+  Q_tilde <- Q + Asq
+  m_tilde <- solve(Q_tilde, Q%*%m + t(A_matrix)%*%Y)
+  
+  dQ <- 1/sigma * (C_nig_1d %*%diag(1/V)%*%K_kappa + 
+                      K_kappa%*%diag(1/V)%*%C_nig_1d)
+  
+  temp <- dQ%*%m - Q%*%solve(K_kappa,C_nig_1d)%*%solve(K_kappa,-h_nig_1d + V)
+  
+  Q_t_inv <- solve(Q_tilde)
+  
+  dm_tilde <- -Q_t_inv%*%dQ%*%
+    Q_t_inv%*%(Q%*%m + sigma_eps^(-2)*t(A_matrix)%*%Y) +
+    Q_t_inv%*%temp
+  
+  term1 <- -sum(diag(M%*%M))
+  term2 <- sum(diag(C_nig_1d%*%diag(1/V)%*%C_nig_1d%*%Q_t_inv)) -
+    sum(diag(C_nig_1d%*%diag(1/V)%*%K_kappa%*%Q_t_inv%*%dQ%*%Q_t_inv))
+  term3 <- t(dm_tilde)%*%C_nig_1d%*%diag(1/V)%*%K_kappa%*%m_tilde +
+    t(m_tilde)%*%C_nig_1d%*%diag(1/V)%*%C_nig_1d%*%m_tilde +
+    t(m_tilde)%*%C_nig_1d%*%diag(1/V)%*%K_kappa%*%dm_tilde
+  term4 <- t(dm_tilde)%*%C_nig_1d%*%diag(1/V)%*%(h_nig_1d-V)
+  return(term1-term2-term3-term4)
+}
+```
+
+Now, let us proceed with the estimation:
+
+```{r, fig.width=7, fig.height=5}
+
+epsilon <- 10^{-5}
+tol = 1
+
+#Initial guess for kappa
+kappa_est <- 5
+#True kappa is 1
+
+kappa_list <- kappa_est
+
+n = 1
+
+#Gibbs sample sizes
+gibbs_nsim <- 10
+
+V_init <- matrix(ngme2::rig(n_mesh, eta, eta*h_nig_1d^2), nrow=1)
+W_init <- matrix(0, nrow=1, ncol=n_mesh)
+
+#Burn in for the first one
+list_VW <- gibbs_sample(kappa_est, 300, V_init, W_init)
+
+V_init <- matrix(list_VW[["V"]][gibbs_nsim,],nrow=1)
+W_init <- matrix(list_VW[["W"]][gibbs_nsim,],nrow=1)
+
+previous_Gibbs <- list_VW
+switch_hessian <- FALSE
+
+while(tol > epsilon){
+  temp <- kappa_est
+  
+  list_VW <- gibbs_sample(kappa_est, gibbs_nsim, V_init, W_init)
+  V_matrix <- list_VW[["V"]]
+  W_matrix <- list_VW[["W"]]
+  
+  V_init <- matrix(V_matrix[gibbs_nsim,],nrow=1)
+  W_init <- matrix(W_matrix[gibbs_nsim,],nrow=1)
+  
+  grad_k_V <- sapply(1:(gibbs_nsim), function(i){
+    grad_kappa_rb(kappa_est, as.vector(V_matrix[i,]), as.vector(W_matrix[i,]))[1,1]
+  })
+  
+  grad_kappa_est <- mean(grad_k_V)
+  
+  if(!switch_hessian){
+  # We are summing because we want to maximize
+  kappa_est = kappa_est + grad_kappa_est * n^(-1)
+    if(sqrt(sum((kappa_est-temp)^2)) < 0.1){
+    switch_hessian <- TRUE
+    }
+  }
+
+  if(switch_hessian){
+    
+    #Computing the hessian for the previous Gibbs sample
+    previous_V <- previous_Gibbs[["V"]]
+    previous_W <- previous_Gibbs[["W"]]
+    hess_kappa_est_V <- sapply(1:(gibbs_nsim), function(i){
+      hess_kappa(kappa_est, as.vector(previous_V[i,]), 
+                 as.vector(previous_W[i,]))[1,1] 
+    })
+  
+  I_kappa <- -mean(hess_kappa_est_V)
+  kappa_est = kappa_est + grad_kappa_est/I_kappa * n^{-1}
+  }
+
+  kappa_list <- c(kappa_list, kappa_est)
+  tol <- sqrt(sum((kappa_est-temp)^2))
+  n = n+1
+  previous_Gibbs <- list_VW
+}
+
+sqrt(kappa_est)
+n
+plot(sqrt(kappa_list), type="l")
+```
+
+We can notice that the preconditioner helped the algorithm to converge faster.
+
+## References
+
+* Douc, R., Moulines, E., Stoffer, D. (2014). Nonlinear time series theory, methods and applications. Chapman and Hall/CRC
+
+* Fisher, R. A. (1925). Theory of statistical estimation. Proc. Camb. Phil. Soc., 22, 700-725.
+
+* Lindgren, F., Rue, H., and Lindstrom, J. (2011). An explicit link between Gaussian fields and Gaussian Markov random fields: the stochastic partial differential equation approach. Journal of the Royal Statistical Society: Series B (Statistical Methodology), 73(4):423–498.
+
+* Robert, C., G. Casella (2004). Monte Carlo statistical methods, Springer Texts in Statistics, Springer, New York, USA.
+
+* Wallin, J., Bollin, D. (2015). Geostatistical Modelling Using Non-Gaussian Matérn Fields. Scandinavian Journal of Statistics. 42(3):872-890.
+
+* Whittle, P. (1963). Stochastic-processes in several dimensions. Bulletin of the International Statistical
+Institute, 40(2):974–994.
+

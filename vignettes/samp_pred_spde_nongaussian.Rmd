@@ -43,9 +43,6 @@ where $Y_1,\ldots, Y_N$ satisfy
 $$ Y_i = X(\mathbf{s}_i) + \varepsilon_i, \quad i=1,\ldots,N,$$
 where $\varepsilon_1,\ldots,\varepsilon_N$ are i.i.d. following $\varepsilon_i\sim N(0, \sigma_\varepsilon^2)$.
 
-In the above model we will assume $\beta=1$, so we will estimate $\kappa^2$, $\mu$ and
-$\sigma_\varepsilon$. 
-
 ## Finite element approximations
 
 In this vignette we will assume basic understanding of Galerkin's finite element
@@ -212,11 +209,14 @@ of $\mathbf{w}$, given $\mathbf{V}$ and $\mathbf{Y}$, evaluated at $\mathbf{V}^{
 
 ### SPDE based model driven by NIG noise with Gaussian measurement errors in 1D
 
-For this first example we will consider the latent process $X$ solving the equation
+For this example we will consider the latent process $X$ solving the equation
 $$(\kappa^2 - \partial^2/\partial t^2)X(t) = \dot{\mathcal{M}}(t),$$
 where $\dot{\mathcal{M}}$ is a NIG-distributed white-noise. For more details on the NIG distribution as well as on how to sample
 from such a process we refer the reader to [Sampling from processes given by solutions of SPDEs driven by non-Gaussian noise](spde_nongaussian.html)
-vignette. We will also be using the notation from that vignette.
+vignette. We will also be using the notation from that vignette. 
+
+Notice that we will, then, be assuming $V_i$ to follow an inverse Gaussian 
+distribution with parameters $\eta$ and $\eta h_i^2$.
 
 We will take $\kappa=1$, $\sigma_\varepsilon=1$, $\sigma=1$, $\mu = 1$, $\mathcal{D}=[0,1]$ and $\eta=0.5$. We will also assume that we
 have 10 observations
@@ -256,7 +256,7 @@ eta = 0.5
 mu = 1
 sigma = 1
 
-V = ngme2::rig(n, a = rep(eta,n), b = h_nig_1d^2*eta, sample.int(10^6, 1))
+V = ngme2::rig(n, a = eta, b = h_nig_1d^2*eta, sample.int(10^6, 1))
 temp = rnorm(n, mean = (-h_nig_1d + V)*mu, sd = sigma^2*sqrt(V))
 W = solve(K, temp)
 plot(loc_nig_1d, W, type="l")
@@ -295,8 +295,8 @@ We will build 2 chains with different starting values and no burn-in samples.
 # First step - Starting values for V
 # Considering a sample of inv-Gaussian as starting values for both chains
 
-V_1 <- matrix(ngme2::rig(10, rep(eta,10), eta*h_nig_1d^2), nrow=1)
-V_2 <- matrix(ngme2::rig(10, rep(eta,10), eta*h_nig_1d^2), nrow=1)
+V_1 <- matrix(ngme2::rig(10, eta, eta*h_nig_1d^2), nrow=1)
+V_2 <- matrix(ngme2::rig(10, eta, eta*h_nig_1d^2), nrow=1)
 ```
 
 Recall that $V_j \sim IG(\eta, h_j^2 \cdot \eta), j=1,\ldots,10$, $\mu=1$ and $\sigma=1$, so that 
@@ -339,14 +339,14 @@ for(i in 1:N_sim){
   W_2 <- rbind(W_2, m_W_2[i+1,] + t(solve(Chol_2, rnorm(10))))
   V_1 <- rbind(V_1, 
                ngme2::rgig(10, 
-                           rep(-1,10), 
-                           rep(eta + (mu/sigma)^2,10), 
+                           -1,10, 
+                           eta + (mu/sigma)^2, 
                            eta*h_nig_1d^2 +
                            as.vector((K%*%W_1[i+1,] +h_nig_1d)^2)/sigma^2))
   
   V_2 <- rbind(V_2, ngme2::rgig(10, 
-                                rep(-1,10), 
-                                rep(eta + (mu/sigma)^2,10), 
+                                -1,
+                                eta + (mu/sigma)^2, 
                                 eta*h_nig_1d^2 +
                                 as.vector((K%*%W_2[i+1,] +h_nig_1d)^2)/sigma^2))
 }
@@ -506,10 +506,6 @@ MC approach.
 
 
 ## References
-
-* Douc, R., Moulines, E., Stoffer, D. (2014). Nonlinear time series theory, methods and applications. Chapman and Hall/CRC
-
-* Fisher, R. A. (1925). Theory of statistical estimation. Proc. Camb. Phil. Soc., 22, 700-725.
 
 * Lindgren, F., Rue, H., and Lindstrom, J. (2011). An explicit link between Gaussian fields and Gaussian Markov random fields: the stochastic partial differential equation approach. Journal of the Royal Statistical Society: Series B (Statistical Methodology), 73(4):423–498.
 

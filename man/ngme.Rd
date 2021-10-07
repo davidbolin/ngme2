@@ -22,4 +22,5 @@ Fit a non-guassian model
 \examples{
 ngme(formula = Formula::Formula(Y | Z ~ X1 + X2 + f(S, model="SPDE", type="..") + f(W) | X3 + X4 + f(X|I, model="SPDE")),
 data=list(Z=1:3, Y=2:4, X1=3:5, X2=4:6, X3=5:7, X4=6:8))
+
 }

@@ -10,7 +10,12 @@
 #' @examples
 #' ngme(formula = Formula::Formula(Y | Z ~ X1 + X2 + f(S, model="SPDE", type="..") + f(W) | X3 + X4 + f(X|I, model="SPDE")),
 #' data=list(Z=1:3, Y=2:4, X1=3:5, X2=4:6, X3=5:7, X4=6:8))
+#'
 
+# X1 <- 1:3; X2 <- 2:4; X3 <- 7:9; X4 <- 5:7;  Z <- 3:5; Y <- 10:12
+# ff <- Y | Z ~ X1 + X2 + f(S, model="SPDE", type="..") + f(W) | X3 + X4 + f(X|I, model="SPDE")
+# ff <- Formula::Formula(ff)
+# ngme(ff)
 
 ngme <- function(formula, data, ...) {
   ngme_call <- match.call()
@@ -31,8 +36,10 @@ ngme <- function(formula, data, ...) {
   # index for functional and non-functional terms
   first_drop <- grep("^f[(]", attr(terms(formula(rtrn$first)), "term.labels"))
   second_drop <- grep("^f[(]", attr(terms(formula(rtrn$second)), "term.labels"))
+
   first_keep <- 1:length(terms(rtrn$first))
   second_keep <- 1:length(terms(rtrn$second))
+
   first_keep <- first_keep[! first_keep %in% first_drop]
   second_keep <- second_keep[! second_keep %in% second_drop]
 
@@ -74,5 +81,7 @@ ngme <- function(formula, data, ...) {
   class(rtrn) <- "ngme"
   return (rtrn)
 }
+
+
 
 

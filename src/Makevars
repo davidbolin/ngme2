@@ -5,7 +5,7 @@ R_XTRA_CPPFLAGS =  -I$(R_INCLUDE_DIR)
 
 UTILS = util/rgig.o util/GIG.o
 
-OBJECTS = RcppExports.o  sample_rGIG.o $(UTILS)
+OBJECTS = RcppExports.o sample_rGIG.o test-runner.o test-opt.o $(UTILS)
 $(SHLIB): $(OBJECTS)
 
 

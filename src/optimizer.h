@@ -13,13 +13,16 @@ class optimizer
 {
 private:
 public:
-    VectorXd gd(model& m1, 
-                const VectorXd x0, 
+    // to-do: terminate criteria
+    // to-do: regularizer? -> proximal operator wrt regularization
+    VectorXd sgd(Model& m1,
+                const VectorXd& x0, 
                 const double stepsize, 
                 const double eps,
-                const bool precondion);
+                const bool precondioner);
+
+
 
 };
-
 
 #endif

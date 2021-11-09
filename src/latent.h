@@ -2,32 +2,51 @@
 #define NGME_LATANT_H
 
 #include <eigen/Dense>
+#include <string>
 #include "operator.h"
 #include "var.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
-class Latent
-{
-private:
+
+class Latent {
+friend class Var;
+protected:
+    double size;
     VectorXd theta_K, theta_m, theta_V;
 
-    VectorXd m;
+    // VectorXd m = 0;
     MatrixXd A; // comes from data ()
 
-// 2 important components - Operator and Variance component
     Operator K;
-    Var V;
+    Var var;
 public:
     // initFromList(Rlist)
     Latent(MatrixXd A) {}
     
     // sample V given w and Y
-    virtual void sample_V() {}
+    virtual void sample_V();
+    // { ngme2::rig(n_obs, nu, nu) for AR}
 
-    // VectorXd mean(); // K, m
-    // MatrixXd cov(); // V, K
+    virtual void sample_cond_V();
+};
+
+class AR : public Latent {
+friend class Var;
+
+public:
+    void sample_V() {
+        if (var.var_type == "IG") {
+            VectorXd v(size);
+            // ngme2::rig(n_obs, nu, nu) for AR
+
+            // v <- rGIG(size, nu, nu)
+            var.V = v;
+        }
+        
+        
+    }
 };
 
 

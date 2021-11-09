@@ -4,7 +4,6 @@
 #include <iostream>
 #include "model.h"
 #include "optimizer.h"
-#include "optimizer.cpp"
 
 context("tests for models") {
     test_that("case 1") {

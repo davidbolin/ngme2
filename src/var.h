@@ -4,14 +4,20 @@
 #include <eigen/Dense>
 #include <string>
 
+using Eigen::VectorXd;
 using std::string;
 
 class Var {
-protected:
-    string var_type;
 public:
+    VectorXd V;
+    string var_type;
+
 
 };
 
+// 
+class indepent_IG : Var {
+
+};
 
 #endif

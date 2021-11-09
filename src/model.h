@@ -1,36 +1,32 @@
-// Store parameters for optimization
-
 #ifndef NGME_MODEL_H
 #define NGME_MODEL_H
 
 #include <Eigen/Dense>
-#include "Block.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
-class Model
-{
-friend class optimizer;
-private:
-// current w and V -> generate new sample
-    VectorXd Y, w, V;
-    
-
-    string noise;
+class Model {
 public:
-    // Model(initial value)
+    virtual VectorXd& const get_parameter()=0;
+    virtual void            set_parameter(const VectorXd&)=0;
 
-    // to-do: how to generate preconditioner
-    MatrixXd precond();
-
-    // to-do: generate gradient
-    VectorXd grad();
+    virtual MatrixXd& const precond()=0;
+    virtual VectorXd& const grad()=0;
+};
 
 
-    // -----  Only for testing, f(x, y) = 3x^2 + 2y^2 + x + 3y + 5;
+// -----  For testing, f(x, y) = 3x^2 + 2y^2 + x + 3y + 5;
+class SomeFun : public Model {
+friend class Optimizer;
+private:
+    Eigen::VectorXd x;
+public:
+    SomeFun()            : x(2) { x << 0, 0; }
+    SomeFun(VectorXd x0) : x(x0) {}
+
     // gradient of f(x, y)
-    VectorXd gradient(const VectorXd& x) {
+    VectorXd& const grad() {
         VectorXd g (2);
         g(0) = 6 * x(0) + 1;
         g(1) = 4 * x(1) + 3;
@@ -38,14 +34,20 @@ public:
     }
 
     // hessian of f(x, y)
-    MatrixXd hessian(const VectorXd&) {
+    MatrixXd& const precond() {
         MatrixXd H (2,2);
         H << 6, 0,
              0, 4;
         return H;
     };
 
+    void set_parameter(const VectorXd& x) {
+        (*this).x = x;
+    }
 
+    VectorXd& const get_parameter() {
+        return x;
+    }
 };
 
 

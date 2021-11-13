@@ -2,8 +2,8 @@
 
 #include <testthat.h>
 #include <iostream>
-#include "model.h"
-#include "optimizer.h"
+#include "../model.h"
+#include "../optimizer.h"
 
 
 context("tests for optimizer") {

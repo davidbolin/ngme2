@@ -1,7 +1,7 @@
 #ifndef NGME_OPERATOR_H
 #define NGME_OPERATOR_H
 
-#include <eigen/Dense>
+#include <Eigen/Dense>
 #include <cassert>
 
 using Eigen::MatrixXd;

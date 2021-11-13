@@ -8,11 +8,11 @@ using Eigen::VectorXd;
 
 class Model {
 public:
-    virtual VectorXd& const get_parameter()=0;
-    virtual void            set_parameter(const VectorXd&)=0;
+    virtual VectorXd& get_parameter()=0;
+    virtual void      set_parameter(const VectorXd&)=0;
 
-    virtual MatrixXd& const precond()=0;
-    virtual VectorXd& const grad()=0;
+    virtual MatrixXd& precond()=0;
+    virtual VectorXd& grad()=0;
 };
 
 
@@ -21,23 +21,26 @@ class SomeFun : public Model {
 friend class Optimizer;
 private:
     Eigen::VectorXd x;
+    Eigen::VectorXd g;
+    Eigen::MatrixXd H;
 public:
-    SomeFun()            : x(2) { x << 0, 0; }
+    SomeFun()            : x(2), g(2), H(2, 2) { 
+        x << 0, 0; 
+        H << 6, 0,
+             0, 4;
+    }
+
     SomeFun(VectorXd x0) : x(x0) {}
 
     // gradient of f(x, y)
-    VectorXd& const grad() {
-        VectorXd g (2);
+    VectorXd& grad() {
         g(0) = 6 * x(0) + 1;
         g(1) = 4 * x(1) + 3;
         return g;
     }
 
     // hessian of f(x, y)
-    MatrixXd& const precond() {
-        MatrixXd H (2,2);
-        H << 6, 0,
-             0, 4;
+    MatrixXd& precond() {
         return H;
     };
 
@@ -45,7 +48,7 @@ public:
         (*this).x = x;
     }
 
-    VectorXd& const get_parameter() {
+    VectorXd& get_parameter() {
         return x;
     }
 };

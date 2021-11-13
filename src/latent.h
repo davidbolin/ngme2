@@ -1,14 +1,13 @@
 #ifndef NGME_LATANT_H
 #define NGME_LATANT_H
 
-#include <eigen/Dense>
+#include <Eigen/Dense>
 #include <string>
 #include "operator.h"
 #include "var.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
-
 
 class Latent {
 friend class Var;
@@ -25,10 +24,11 @@ public:
     // initFromList(Rlist)
     Latent(MatrixXd A) {}
     
-    // sample V given w and Y
+    
     virtual void sample_V();
     // { ngme2::rig(n_obs, nu, nu) for AR}
 
+    // sample V given w and Y
     virtual void sample_cond_V();
 };
 

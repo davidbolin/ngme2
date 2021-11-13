@@ -3,10 +3,20 @@ PKG_CPPFLAGS = -DDEBUG -Iinclude
 PKG_CXXFLAGS = -DDEBUG  -std=c++11
 R_XTRA_CPPFLAGS =  -I$(R_INCLUDE_DIR)
 
-UTILS = util/rgig.o util/GIG.o
 
-OBJECTS = RcppExports.o sample_rGIG.o test-runner.o test-opt.o $(UTILS)
+TESTS = test/test-opt.o
+UTILS = util/GIG.o  util/rgig.o
+
+OBJECTS = RcppExports.o sample_rGIG.o predict.o test-runner.o optimizer.o \
+   $(UTILS) $(TESTS)
+
+# Make the shared object
 $(SHLIB): $(OBJECTS)
+
+# Provide recipe to remove all objects
+clean:
+	@rm -f $(OBJECTS)
+
 
 
 

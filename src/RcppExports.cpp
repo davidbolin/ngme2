@@ -7,7 +7,7 @@
 using namespace Rcpp;
 
 // predict_cpp
-List predict_cpp(Rcpp::List in_list);
+Rcpp::List predict_cpp(Rcpp::List in_list);
 RcppExport SEXP _ngme2_predict_cpp(SEXP in_listSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;

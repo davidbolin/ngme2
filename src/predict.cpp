@@ -3,36 +3,35 @@
 #include "optimizer.h"
 #include "model.h"
 #include "block.h"
+#include "latent.h"
+// #include "var.h"
 
 using namespace Rcpp;
 
 // [[Rcpp::export]]
-List predict_cpp(Rcpp::List in_list) {
-    // read from in_list
-    Rcpp::List observe_in   = Rcpp::as<Rcpp::List> (in_list["observe_in"]);
-    Rcpp::List operator_in  = Rcpp::as<Rcpp::List> (in_list["operator_in"]);
-    Rcpp::List var_in       = Rcpp::as<Rcpp::List> (in_list["var_in"]);
-
-    // Block block;
-    // Operator operator(operator_in)
-    //
-
+Rcpp::List predict_cpp(Rcpp::List in_list) {
+    // *****************   Read From Input   *****************  
     
+    //observations and latents
+    Rcpp::List obs_list     = Rcpp::as<Rcpp::List> (in_list["observe_in"]);
+    Eigen::VectorXd Y       = obs_list["Y"];
+
+    Rcpp::List latents_list = Rcpp::as<Rcpp::List> (in_list["latents_in"]);
+    
+    // config_list
+    Rcpp::List config_list  = Rcpp::as<Rcpp::List> (in_list["config_in"]);
+    
+    Block block (Y, latents_list);
+
     // *****************   Main Process   *****************  
-    SomeFun f;
+    
     Optimizer opt;
-    VectorXd out = opt.sgd(f, 0.05, 0.01, false);
+    // opt.sgd(block, 0.01, 0.01, false);
     
 
-
-
-
-
-
-
-    // construct output
+    // *****************   Construct Output   *****************  
     Rcpp::List out_list;
+    out_list = block.result();
 
-    out_list["operator_in"] = operator_in;
     return out_list;
 }

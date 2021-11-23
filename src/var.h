@@ -1,31 +1,60 @@
 #ifndef NGME_VAR_H
 #define NGME_VAR_H
 
+#include <Rcpp.h>
+#include <RcppEigen.h>
 #include <Eigen/Dense>
 #include <string>
+#include "rgig.h"
 
 using Eigen::VectorXd;
+using Eigen::MatrixXd;
 using std::string;
 
 class Var {
-public:
+protected:
+    unsigned n_obs;
     VectorXd V;
-    string var_type;
     VectorXd theta_V;
     
+
     VectorXd grad;
     MatrixXd hess;
 
-    virtual void sample_V();
-    // { ngme2::rig(n_obs, nu, nu) for AR}
+public: 
+    Var(){}
+    Var(Rcpp::List);
+    ~Var(){}
 
+    VectorXd getV()    const {return V;}
+    
+    void sample_V() {};
     // sample V given w and Y
-    virtual void sample_cond_V();
+    void sample_cond_V() {};
 };
 
-// 
-class indepent_IG : Var {
 
+class ind_IG : public Var{
+private:
+    double a, b;
+public:
+    ind_IG(){}
+    ind_IG(unsigned n, double a, double b) : a(a), b(b) {
+        n_obs = n;
+        V.resize(n_obs);
+        sample_V();
+    }
+
+    void sample_V() {
+        gig sampler;
+        for(int i = 0; i < n_obs; i++)
+            V[i] = sampler.sample(-0.5, a, b);
+    };
+    
+    // sample V given w and Y
+    void sample_cond_V() {
+
+    };
 };
 
 #endif

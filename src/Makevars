@@ -15,7 +15,7 @@ $(SHLIB): $(OBJECTS)
 
 # Provide recipe to remove all objects
 clean:
-	@rm -f $(OBJECTS)
+	@rm -f $(LOCAL_OBJECTS)
 
 
 

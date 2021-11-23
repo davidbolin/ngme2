@@ -1,8 +1,11 @@
 #ifndef NGME_LATANT_H
 #define NGME_LATANT_H
 
-#include <Eigen/Dense>
 #include <string>
+#include <iostream>
+#include <Rcpp.h>
+#include <RcppEigen.h>
+#include <Eigen/Dense>
 #include "operator.h"
 #include "var.h"
 
@@ -10,9 +13,9 @@ using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
 class Latent {
-friend class Var;
+// friend class Var;
 protected:
-    double size;
+    unsigned n_obs;
     VectorXd theta_K, theta_m, theta_V;
 
     // VectorXd m = 0;
@@ -21,33 +24,61 @@ protected:
     Operator K;
     Var var;
 public:
-    // initFromList(Rlist)
-    Latent(MatrixXd A) {}
-    
-    
-    virtual void sample_V();
-    // { ngme2::rig(n_obs, nu, nu) for AR}
+    Latent() {}
+    // Latent(Rcpp::List){};
+    ~Latent() {}
+
+    void init_var(Rcpp::List var_in) {
+        string type = var_in["type"];
+        Rcpp::List v_init = var_in["v_init"];
+
+        if (type == "ind_IG") {
+            double a = v_init["a"];
+            double b = v_init["b"];
+            var = ind_IG(n_obs, a, b);
+        }
+    }
+
+    virtual void sample_V() {};
 
     // sample V given w and Y
-    virtual void sample_cond_V();
-};
+    virtual void sample_cond_V() {};
 
-class AR : public Latent {
-friend class Var;
 
-public:
-    void sample_V() {
-        if (var.var_type == "IG") {
-            VectorXd v(size);
-            // ngme2::rig(n_obs, nu, nu) for AR
+    MatrixXd getA() {
+        return A;
+    }
 
-            // v <- rGIG(size, nu, nu)
-            var.V = v;
-        }
-        
-        
+    VectorXd getV() {
+        return var.getV();
+    }
+
+    MatrixXd getK()  {
+        return K.getK();
     }
 };
 
+class AR : public Latent {
+// class AR  {
+// friend class Var;
+
+public:
+    AR(){}
+    AR(Rcpp::List ar1_in) {
+        A = ar1_in["A"];
+        n_obs = ar1_in["n"];
+
+        Rcpp::List ope_in = ar1_in["operator_in"]; // containing C and G
+        K = GC(ope_in);
+
+        Rcpp::List var_in = ar1_in["var_in"];
+        init_var(var_in);
+    }
+
+    void sample_V() {
+    }
+
+    void sample_cond_V() {};
+};
 
 #endif

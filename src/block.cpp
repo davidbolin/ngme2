@@ -1,80 +1,47 @@
 #include "block.h"
 
-
-
-// Block::Block() {
-//     Y = VectorXd(2); Y << 1,2;
-// }
-
-// Block::~Block() {
-
-// }
-
 inline void 
-Block::init_from_list(const Rcpp::List in_list) {
+Block::sampleW(){ 
+    // A, huge A, K <- huge K , V <- huge V
+    VectorXd inv_V = VectorXd::Constant(V.size(), 1).cwiseQuotient(V);
+    
+    Eigen::SparseMatrix<double> Asq = A.transpose() * A / (sigma_eps * sigma_eps);
+    Eigen::SparseMatrix<double> Q = K * inv_V.asDiagonal() * K; 
 
+    Q = Q/(sigma_eps*sigma_eps);
+
+    Q = Q + Asq; 
+
+    Eigen::VectorXd resp = K * inv_V.asDiagonal() * (-h + V_temp);
+
+    resp = resp.cwiseProduct(mu_gibbs)/(sigma_eps*sigma_eps);
+
+    resp = resp + A.transpose()*Y/(sigma_eps * sigma_eps);
+
+// chloskey solver for sparse matrix
+    Eigen::SimplicialLLT <Eigen::SparseMatrix<double>, Eigen::Lower, Eigen::NaturalOrdering<int> > chol_Q;
+    chol_Q.analyzePattern(Q);
+    chol_Q.factorize(Q);
+
+    Eigen::VectorXd m_W_new = chol_Q.solve(resp);
+//
+
+    Eigen::MatrixXd chol_W;
+
+    chol_W = chol_Q.matrixU().eval();
+
+    m_W.col(i+1) = m_W_new;
+
+    Eigen::VectorXd norm_temp;
+
+    norm_temp = rnorm_vec(m,0,1);
+
+    Eigen::VectorXd new_W;
+
+    new_W = chol_W.triangularView<Eigen::Upper>().solve(norm_temp);
+
+    new_W = m_W_new + new_W;
 }
-
-
-inline VectorXd&
-Block::_grad() {
-    // (sum(diag(solve(as.matrix(K_matrix), dK))) - 
-    //    t(W) %*% dK %*% diag(1/V) %*%(K_matrix%*%W+(1-V) * mu))
-
-    VectorXd a (1); return a;
-}
-
-inline VectorXd&
-Block::_grad_rb() {
-    // sum(diag(solve(Q_tilde,t(dK)%*%diag(1/V)%*%K_matrix)))-
-    // t(m_tilde)%*%t(dK) %*%diag(1/V)%*%K_matrix%*%m_tilde - 
-    // t(m_tilde)%*%t(dK)%*%diag(1/V)%*%(1-V)*mu)
-
-    VectorXd a (1); return a;
-}
-
-
-
-// void sampleW(){ 
-// //     // A_obs, huge A, K <- huge K , V <- huge V
-// //     Eigen::SparseMatrix<double> Asq = A_obs.transpose() * A_obs / (sigma_eps * sigma_eps);
-
-// //     Eigen::SparseMatrix<double> Q = K * inv_V.asDiagonal() * K; 
-
-// //     Q = Q/(sigma_eps*sigma_eps);
-
-// //     Q = Q + Asq; 
-
-// //     Eigen::VectorXd resp = K * inv_V.asDiagonal() * (-h + V_temp);
-
-// //     resp = resp.cwiseProduct(mu_gibbs)/(sigma_eps*sigma_eps);
-
-// //     resp = resp + A_obs.transpose()*Y/(sigma_eps * sigma_eps);
-
-// // // chloskey solver for sparse matrix
-// //     Eigen::SimplicialLLT <Eigen::SparseMatrix<double>, Eigen::Lower, Eigen::NaturalOrdering<int>> chol_Q;
-// //     chol_Q.analyzePattern(Q);
-// //     chol_Q.factorize(Q);
-
-// //     Eigen::VectorXd m_W_new = chol_Q.solve(resp);
-// // //
-
-// //     Eigen::MatrixXd chol_W;
-
-// //     chol_W = chol_Q.matrixU().eval();
-
-// //     m_W.col(i+1) = m_W_new;
-
-// //     Eigen::VectorXd norm_temp;
-
-// //     norm_temp = rnorm_vec(m,0,1);
-
-// //     Eigen::VectorXd new_W;
-
-// //     new_W = chol_W.triangularView<Eigen::Upper>().solve(norm_temp);
-
-// //     new_W = m_W_new + new_W;
-// }
 
 MatrixXd&
 precond() {

@@ -13,26 +13,25 @@
 
 using Eigen::SparseMatrix;
 
-
 class Block : public Model {
 protected:
     unsigned n_obs, n_latent;
 
     std::vector<Latent> latents;
 
-    VectorXd Y, w, V; 
-    MatrixXd As, Ks;
+    VectorXd Y, W, V; 
+    MatrixXd As, Ks, dKs;
 
+    SparseMatrix<double> A, K, dK;
     // SparseMatrix<double> As, Ks;
-    
 public:
     Block() {}
     Block(VectorXd, Rcpp::List);
     ~Block() {}
 
-//     // void sample_w();
+    void sampleW(){};
     MatrixXd& precond();
-    VectorXd& grad();
+    VectorXd& grad() {};
     VectorXd& get_parameter();
     void      set_parameter(const VectorXd&);
 
@@ -54,6 +53,12 @@ public:
         }
     }  
     
+    void assemble_dK() {
+        if (n_latent == 1) {
+            dKs = latents[0].get_dK();
+        }
+    }  
+
     // huge vector
     void assembleV() {
         if (n_latent == 1) {
@@ -61,23 +66,22 @@ public:
         }
     }
 
-    Rcpp::List result() {
+    Rcpp::List testResult() {
         Rcpp::List res;
 
         res["A"] = As;
         res["K"] = Ks;
+        res["dK"] = dKs;
         res["V"] = V;
         return res;
     }
 
-
 //     // void getA(Latent l) {};
-
 //     // void set_theta(const VectorXd& theta); 
 //     // { dispatch theta according to latents }
 
 
-//     // VectorXd& _grad();
+    VectorXd& _grad();
 //     // VectorXd& _grad_rb();
 };
 
@@ -98,41 +102,58 @@ Block::Block(VectorXd Y,
         // construct acoording to different models
         string type = latent_in["type"];
         if (type == "ar1") {
-// std::cout << "yes" << std::endl;
             latents.push_back( AR(latent_in) );
-        } else {
-            
         }
     }
     
     assembleA();
     assembleK();
     assembleV();
+    assemble_dK();
+
+    // assenble_mu();
 }
 
 inline VectorXd&
-Block::grad() {
-    // use current w and V
+Block::_grad() {
+    // solve(K) sparse
+    // chloskey solver for sparse matrix
+
+    Eigen::SparseLU<SparseMatrix<double> > solver; 
+    solver.analyzePattern(K);   // for this step the numerical values of A are not used
+    solver.factorize(K);
     
+    // solver.solve(dK).trace(); // solve a matrix
+    // -
+    // W.transpose() * (dK) * (VectorXd::Constant(V.size(), 1).cwiseQuotient(V).asDiagonal() * (K * W + (VectorXd::Constant(V.size(), 1) - V) * mu);
+    
+    //// (sum(diag(solve(K, dK))) - 
+    ////    t(W) %*% dK %*% diag(1/V) %*%(K_matrix%*%W+(1-V) * mu))
 
-    VectorXd a (1); return a;
-}
-
-inline MatrixXd&
-Block::precond() {
-    // use previous w and V or new one
-
-  MatrixXd a(1,1); return a;
+    // VectorXd a (1); return a;
 }
 
 inline VectorXd& 
 Block::get_parameter() {
-    VectorXd a (1); return a;
+    for (std::vector<Latent>::iterator it = latents.begin(); it != latents.end(); it++) {
+// concat theta_K, theta_m, theta_V
+// stack together?
+    }
 }
 
 inline void
 Block::set_parameter(const VectorXd&) {
-
+    for (std::vector<Latent>::iterator it = latents.begin(); it != latents.end(); it++) {
+// set theta_K, theta_m, theta_V
+    }
 }
+
+inline MatrixXd&
+Block::precond() {
+    // use previous W and V or new one
+
+  MatrixXd a(1,1); return a;
+}
+
 
 #endif

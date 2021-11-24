@@ -26,12 +26,15 @@ Rcpp::List predict_cpp(Rcpp::List in_list) {
     // *****************   Main Process   *****************  
     
     Optimizer opt;
+
+//?? Specify what parameter to optimize
+
     // opt.sgd(block, 0.01, 0.01, false);
     
 
     // *****************   Construct Output   *****************  
     Rcpp::List out_list;
-    out_list = block.result();
+    out_list = block.testResult();
 
     return out_list;
 }

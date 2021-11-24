@@ -18,8 +18,8 @@ protected:
     unsigned n_obs;
     VectorXd theta_K, theta_m, theta_V;
 
-    // VectorXd m = 0;
-    MatrixXd A; // comes from data ()
+    VectorXd m; 
+    MatrixXd A; // sparse Matrix?
 
     Operator K;
     Var var;
@@ -55,6 +55,10 @@ public:
 
     MatrixXd getK()  {
         return K.getK();
+    }
+
+    MatrixXd get_dK()  {
+        return K.get_dK();
     }
 };
 

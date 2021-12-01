@@ -6,13 +6,14 @@
 #include <Eigen/Dense>
 #include <cassert>
 
+using Eigen::SparseMatrix;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
 class Operator {
 protected:
-    // VectorXd theta_K;
-    MatrixXd K, dK, d2K;
+    VectorXd theta_K;
+    SparseMatrix<double, 0, int> K, dK, d2K;
 public:
     Operator() {};
     Operator(VectorXd theta_K) {};
@@ -20,9 +21,9 @@ public:
     virtual void update(VectorXd theta_K) {}; 
 
     // getter for K, dK, d2K
-    MatrixXd getK()    const {return K;}
-    MatrixXd get_dK()  const {return dK;}
-    MatrixXd get_d2K() const {return d2K;}
+    SparseMatrix<double, 0, int>& const getK() {return K;}
+    SparseMatrix<double, 0, int>& const get_dK() {return dK;}
+    SparseMatrix<double, 0, int>& const get_d2K() {return d2K;}
 };
 
 // fit for AR and Matern 

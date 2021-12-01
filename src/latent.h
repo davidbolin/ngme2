@@ -9,20 +9,21 @@
 #include "operator.h"
 #include "var.h"
 
+using Eigen::SparseMatrix;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
 class Latent {
-// friend class Var;
 protected:
     unsigned n_obs;
-    VectorXd theta_K, theta_m, theta_V;
-
-    VectorXd m; 
-    MatrixXd A; // sparse Matrix?
+    VectorXd theta_K, theta_m, theta_V, Mu, W;
+    
+    SparseMatrix<double,0,int> A;
 
     Operator K;
     Var var;
+
+    // MeanComponent Mu
 public:
     Latent() {}
     // Latent(Rcpp::List){};
@@ -44,28 +45,32 @@ public:
     // sample V given w and Y
     virtual void sample_cond_V() {};
 
-
-    MatrixXd getA() {
-        return A;
+    VectorXd& const getMu() {
+        return Mu;
     }
 
-    VectorXd getV() {
+    VectorXd& const getW() {
+        return W;
+    }
+
+    VectorXd& const getV() {
         return var.getV();
     }
 
-    MatrixXd getK()  {
+    SparseMatrix<double, 0, int>& const getA() {
+        return A;
+    }
+
+    SparseMatrix<double, 0, int>& const getK()  {
         return K.getK();
     }
 
-    MatrixXd get_dK()  {
+    SparseMatrix<double, 0, int>& const get_dK()  {
         return K.get_dK();
     }
 };
 
 class AR : public Latent {
-// class AR  {
-// friend class Var;
-
 public:
     AR(){}
     AR(Rcpp::List ar1_in) {

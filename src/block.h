@@ -8,26 +8,23 @@
 #include <vector>
 #include <iostream>
 
+#include "include/MatrixAlgebra.h"
 #include "model.h"
 #include "latent.h"
 
 using Eigen::SparseMatrix;
 
-class Block : public Model {
+class BlockModel : public Model {
 protected:
     unsigned n_obs, n_latent;
-
     std::vector<Latent> latents;
 
-    VectorXd Y, W, V; 
-    MatrixXd As, Ks, dKs;
-
-    SparseMatrix<double> A, K, dK;
-    // SparseMatrix<double> As, Ks;
+    VectorXd Y, W, V, Mu;
+    SparseMatrix<double> A, K, dK, d2K;
 public:
-    Block() {}
-    Block(VectorXd, Rcpp::List);
-    ~Block() {}
+    BlockModel() {}
+    BlockModel(VectorXd, Rcpp::List);
+    ~BlockModel() {}
 
     void sampleW(){};
     MatrixXd& precond();
@@ -40,38 +37,58 @@ public:
 
     // horizontal
     void assembleA() {
-        if (n_latent == 1) {
-            As = latents[0].getA();
+        for (unsigned i=0; i < n_latent; i++) {
+            setSparseBlock(&A, 0, i*n_obs, latents[i].getA());
         }
     };  
     
     // block diagnol
     void assembleK() {
-        // get K and assemble
-        if (n_latent == 1) {
-            Ks = latents[0].getK();
+        for (unsigned i=0; i < n_latent; i++) {
+            setSparseBlock(&K, i*n_obs, i*n_obs, latents[i].getK());
         }
     }  
     
     void assemble_dK() {
-        if (n_latent == 1) {
-            dKs = latents[0].get_dK();
+        for (unsigned i=0; i < n_latent; i++) {
+            setSparseBlock(&dK, i*n_obs, i*n_obs, latents[i].get_dK());
         }
     }  
 
     // huge vector
     void assembleV() {
-        if (n_latent == 1) {
-            V = latents[0].getV();
+        // if (n_latent == 1) {
+        //     V = latents[0].getV();
+        // }
+        for (unsigned i=0; i < n_latent; i++) {
+            setSparseBlock(&K, i*n_obs, i*n_obs, latents[i].get_dK());
         }
     }
+    
+    // huge vector
+    void assembleW() {
+        for (unsigned i=0; i < n_latent; i++) {
+            W.segment(i*n_obs, i*(n_obs+1)) = latents[i].getW();
+        }
+    }
+
+    // huge vector
+    void assembleMu() {
+        for (unsigned i=0; i < n_latent; i++) {
+            Mu.segment(i*n_obs, i*(n_obs+1)) = latents[i].getMu();
+        }
+    }
+
+    void assembleGrad() {
+
+    }    
 
     Rcpp::List testResult() {
         Rcpp::List res;
 
-        res["A"] = As;
-        res["K"] = Ks;
-        res["dK"] = dKs;
+        res["A"] = A;
+        res["K"] = K;
+        res["dK"] = dK;
         res["V"] = V;
         return res;
     }
@@ -87,13 +104,12 @@ public:
 
 
 inline 
-Block::Block(VectorXd Y,
+BlockModel::BlockModel(VectorXd Y,
              Rcpp::List latents_in) 
     //init
     : n_obs(Y.size()), n_latent(latents_in.size()), Y(Y), 
-      As(n_obs, n_latent * n_obs), Ks(n_latent * n_obs, n_latent * n_obs)
+      A(n_obs, n_latent * n_obs), K(n_latent * n_obs, n_latent * n_obs), V(n_latent * n_obs)
     {
-    
 // std::cout << latents_in.size() << std::endl;
 
     for (int i=0; i < n_latent; ++i) {
@@ -115,7 +131,7 @@ Block::Block(VectorXd Y,
 }
 
 inline VectorXd&
-Block::_grad() {
+BlockModel::_grad() {
     // solve(K) sparse
     // chloskey solver for sparse matrix
 
@@ -134,7 +150,7 @@ Block::_grad() {
 }
 
 inline VectorXd& 
-Block::get_parameter() {
+BlockModel::get_parameter() {
     for (std::vector<Latent>::iterator it = latents.begin(); it != latents.end(); it++) {
 // concat theta_K, theta_m, theta_V
 // stack together?
@@ -142,14 +158,14 @@ Block::get_parameter() {
 }
 
 inline void
-Block::set_parameter(const VectorXd&) {
+BlockModel::set_parameter(const VectorXd&) {
     for (std::vector<Latent>::iterator it = latents.begin(); it != latents.end(); it++) {
 // set theta_K, theta_m, theta_V
     }
 }
 
 inline MatrixXd&
-Block::precond() {
+BlockModel::precond() {
     // use previous W and V or new one
 
   MatrixXd a(1,1); return a;

@@ -15,10 +15,8 @@ class Var {
 protected:
     unsigned n_obs;
     VectorXd V;
-    VectorXd theta_V;
-    
-
     VectorXd grad;
+    
     MatrixXd hess;
 
 public: 
@@ -26,7 +24,7 @@ public:
     Var(Rcpp::List);
     ~Var(){}
 
-    VectorXd getV()    const {return V;}
+    VectorXd& const getV()  {return V;}
     
     void sample_V() {};
     // sample V given w and Y
@@ -50,7 +48,7 @@ public:
         for(int i = 0; i < n_obs; i++)
             V[i] = sampler.sample(-0.5, a, b);
     };
-    
+
     // sample V given w and Y
     void sample_cond_V() {
 

@@ -1,10 +1,7 @@
 #include <Rcpp.h>
 #include <RcppEigen.h>
 #include "optimizer.h"
-#include "model.h"
 #include "block.h"
-#include "latent.h"
-// #include "var.h"
 
 using namespace Rcpp;
 
@@ -20,17 +17,19 @@ Rcpp::List predict_cpp(Rcpp::List in_list) {
     
     // config_list
     Rcpp::List config_list  = Rcpp::as<Rcpp::List> (in_list["config_in"]);
-    
-    Block block (Y, latents_list);
 
-    // *****************   Main Process   *****************  
+    // Flag to Specify what parameter to optimize
+    const int OPT_m = config_list["opt_m"];
+    const int OPT_K = config_list["opt_k"];
+    const int OPT_V = config_list["opt_v"];
+
+    BlockModel block (Y, latents_list);
+
+    // *****************   Main Process - Optimization *****************  
     
     Optimizer opt;
 
-//?? Specify what parameter to optimize
-
     // opt.sgd(block, 0.01, 0.01, false);
-    
 
     // *****************   Construct Output   *****************  
     Rcpp::List out_list;

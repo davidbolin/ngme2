@@ -16,6 +16,9 @@ public:
 };
 
 
+
+
+
 // -----  For testing, f(x, y) = 3x^2 + 2y^2 + x + 3y + 5;
 class SomeFun : public Model {
 friend class Optimizer;
@@ -24,7 +27,8 @@ private:
     Eigen::VectorXd g;
     Eigen::MatrixXd H;
 public:
-    SomeFun()            : x(2), g(2), H(2, 2) { 
+    SomeFun()            
+    : x(2), g(2), H(2, 2) { 
         x << 0, 0; 
         H << 6, 0,
              0, 4;

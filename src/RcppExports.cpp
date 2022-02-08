@@ -6,6 +6,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // predict_cpp
 Rcpp::List predict_cpp(Rcpp::List in_list);
 RcppExport SEXP _ngme2_predict_cpp(SEXP in_listSEXP) {

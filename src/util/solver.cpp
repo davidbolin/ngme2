@@ -1,4 +1,4 @@
-#include "include/solver.h"
+#include "../include/solver.h"
 using namespace Eigen;
 double myround(double x)
 {
@@ -271,20 +271,24 @@ void lu_solver::initFromList(int nin, Rcpp::List const &in_list)
 void lu_solver::analyze(Eigen::SparseMatrix<double, 0, int> &K)
 {
 }
+
 void lu_solver::compute(Eigen::SparseMatrix<double, 0, int> &M)
 {
   LU_K.compute(MatrixXd(M));
 }
+
 void lu_solver::compute(Eigen::MatrixXd &K)
 {
 
   LU_K.compute(K);
   Kinv_computed = 0;
 }
+
 Eigen::VectorXd lu_solver::solve(Eigen::VectorXd &v, Eigen::VectorXd &d)
 {
   return (LU_K.solve(v));
 }
+
 // Solve trace(M*K^-1)
 double lu_solver::trace(Eigen::MatrixXd &M)
 {
@@ -296,6 +300,7 @@ double lu_solver::trace(Eigen::MatrixXd &M)
   Eigen::MatrixXd tmp1 = M * Kinv;
   return (tmp1.diagonal().sum());
 }
+
 double lu_solver::trace(Eigen::SparseMatrix<double, 0, int> &M)
 {
   if (Kinv_computed == 0)
@@ -306,6 +311,7 @@ double lu_solver::trace(Eigen::SparseMatrix<double, 0, int> &M)
   Eigen::MatrixXd tmp1 = M * Kinv;
   return (tmp1.diagonal().sum());
 }
+
 double lu_solver::trace2(SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &g)
 {
   Rcpp::Rcout << "lu_solver::trace2 not implemented\n";
@@ -332,6 +338,7 @@ void lu_sparse_solver::initFromList(int nin, Rcpp::List const &)
   KKtinv.resize(n, n);
   KKtinv_computed = 0;
 }
+
 void lu_sparse_solver::compute(SparseMatrix<double, 0, int> &K_in)
 {
   K = K_in;
@@ -346,7 +353,7 @@ void lu_sparse_solver::compute(SparseMatrix<double, 0, int> &K_in)
   }
 
   LU_K.factorize(K);
-  L_KKt.factorize(K.transpose() * K);
+  L_KKt.factorize(K.transpose() * K); // KKT
   KKtinv_computed = 0;
 }
 
@@ -379,11 +386,13 @@ double lu_sparse_solver::trace2(SparseMatrix<double, 0, int> &M1, SparseMatrix<d
   throw;
   return 0;
 }
+
 inline double lu_sparse_solver::logdet()
 {
   SparseMatrix<double, 0, int> R_Q = L_KKt.matrixL();
   return R_Q.diagonal().array().log().sum();
 }
+
 void lu_sparse_solver::analyze(Eigen::SparseMatrix<double, 0, int> &M)
 {
   if (M.isCompressed() == 0)

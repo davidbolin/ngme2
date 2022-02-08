@@ -3,6 +3,11 @@
 #include "optimizer.h"
 #include "block.h"
 
+#include <Eigen/Sparse>
+// using Eigen::MappedSparseMatrix;
+using Eigen::SparseMatrix;
+using Eigen::Map;
+
 using namespace Rcpp;
 
 // [[Rcpp::export]]
@@ -11,19 +16,19 @@ Rcpp::List predict_cpp(Rcpp::List in_list) {
     
     //observations and latents
     Rcpp::List obs_list     = Rcpp::as<Rcpp::List> (in_list["observe_in"]);
-    Eigen::VectorXd Y       = obs_list["Y"];
-
+        Eigen::VectorXd Y       = Rcpp::as<VectorXd>   (obs_list["Y"]);
+    
     Rcpp::List latents_list = Rcpp::as<Rcpp::List> (in_list["latents_in"]);
     
     // config_list
     Rcpp::List config_list  = Rcpp::as<Rcpp::List> (in_list["config_in"]);
-
-    // Flag to Specify what parameter to optimize
-    const int OPT_m = config_list["opt_m"];
-    const int OPT_K = config_list["opt_k"];
-    const int OPT_V = config_list["opt_v"];
+        // Flag to Specify what parameter to optimize
+        const int OPT_m = config_list["opt_m"];
+        const int OPT_K = config_list["opt_k"];
+        const int OPT_V = config_list["opt_v"];
 
     BlockModel block (Y, latents_list);
+
 
     // *****************   Main Process - Optimization *****************  
     
@@ -31,8 +36,12 @@ Rcpp::List predict_cpp(Rcpp::List in_list) {
 
     // opt.sgd(block, 0.01, 0.01, false);
 
-    // *****************   Construct Output   *****************  
+    // *****************   Construct Output   ***************** 
+
+
     Rcpp::List out_list;
+
+    // out_list = latents_list;
     out_list = block.testResult();
 
     return out_list;

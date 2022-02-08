@@ -6,36 +6,35 @@
 #include <Rcpp.h>
 #include <RcppEigen.h>
 #include <Eigen/Dense>
+
+#include "include/solver.h"
 #include "operator.h"
 #include "var.h"
 
 using Eigen::SparseMatrix;
-using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
 class Latent {
 protected:
     unsigned n_obs;
-    VectorXd theta_K, theta_m, theta_V, Mu, W;
-    
-    SparseMatrix<double,0,int> A;
+    VectorXd Theta, Mu, W, Grad;
 
+    SparseMatrix<double,0,int> A;
     Operator K;
     Var var;
 
-    // MeanComponent Mu
 public:
     Latent() {}
     // Latent(Rcpp::List){};
     ~Latent() {}
 
     void init_var(Rcpp::List var_in) {
-        string type = var_in["type"];
-        Rcpp::List v_init = var_in["v_init"];
+        string type       = Rcpp::as<string>     (var_in["type"]);
+        Rcpp::List v_init = Rcpp::as<Rcpp::List> (var_in["v_init"]);
 
         if (type == "ind_IG") {
-            double a = v_init["a"];
-            double b = v_init["b"];
+            double a = Rcpp::as<double>  (v_init["a"]);
+            double b = Rcpp::as<double>  (v_init["b"]);
             var = ind_IG(n_obs, a, b);
         }
     }
@@ -45,49 +44,21 @@ public:
     // sample V given w and Y
     virtual void sample_cond_V() {};
 
-    VectorXd& const getMu() {
-        return Mu;
-    }
+    // compute the grad. wrt parameter
+    virtual void compute_grad() {}; 
 
-    VectorXd& const getW() {
-        return W;
-    }
+    void setTheta(VectorXd& theta) {Theta = theta; } 
+    VectorXd& getTheta() {return Theta; } 
+    VectorXd& getGrad() {return Grad; } 
 
-    VectorXd& const getV() {
-        return var.getV();
-    }
+    VectorXd& getMu() { return Mu; }
+    VectorXd& getW()  { return W; }
+    VectorXd& getV()  { return var.getV(); }
 
-    SparseMatrix<double, 0, int>& const getA() {
-        return A;
-    }
-
-    SparseMatrix<double, 0, int>& const getK()  {
-        return K.getK();
-    }
-
-    SparseMatrix<double, 0, int>& const get_dK()  {
-        return K.get_dK();
-    }
-};
-
-class AR : public Latent {
-public:
-    AR(){}
-    AR(Rcpp::List ar1_in) {
-        A = ar1_in["A"];
-        n_obs = ar1_in["n"];
-
-        Rcpp::List ope_in = ar1_in["operator_in"]; // containing C and G
-        K = GC(ope_in);
-
-        Rcpp::List var_in = ar1_in["var_in"];
-        init_var(var_in);
-    }
-
-    void sample_V() {
-    }
-
-    void sample_cond_V() {};
+    SparseMatrix<double, 0, int>& getA()     { return A; }
+    SparseMatrix<double, 0, int>& getK()     { return K.getK(); }
+    SparseMatrix<double, 0, int>& get_dK()   { return K.get_dK(); }
+    SparseMatrix<double, 0, int>& get_d2K()  { return K.get_d2K(); }
 };
 
 #endif

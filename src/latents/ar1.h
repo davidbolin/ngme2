@@ -37,6 +37,8 @@ public:
         // K_solver.init(n_obs, 1, 1, 0);
         solver.analyzePattern(getK());
         // compute_grad();
+
+        // var::sample_cond_V(Mu, W, K, var.get_a(), var.get_b(), &V);
     }
 
     void compute_grad() {

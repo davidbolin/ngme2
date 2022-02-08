@@ -58,6 +58,7 @@ BlockModel::_grad() {
 inline void
 BlockModel::sampleW()
 {
+std::cout << "V =" << V << std::endl;
   VectorXd h = VectorXd::Constant(V.rows(), 1);
 
   double sigma_eps = 1;
@@ -94,7 +95,7 @@ BlockModel::sampleW()
 
   new_W = m_W_new + new_W;
 
-std::cout << "W =" << new_W;
+std::cout << "W =" << new_W << std::endl;
 }
 
 MatrixXd &
@@ -150,12 +151,12 @@ A.makeCompressed();
 K.makeCompressed();
 dK.makeCompressed();
 d2K.makeCompressed();
-  res["A"] = A;
-  res["K"] = K;
-  res["dK"] = dK;
-  res["d2K"] = d2K;
-  res["V"] = V;
-  res["Mu"] = Mu;
+  // res["A"] = A;
+  // res["K"] = K;
+  // res["dK"] = dK;
+  // res["d2K"] = d2K;
+  // res["V"] = V;
+  // res["Mu"] = Mu;
 
   sampleW();
 

@@ -12,6 +12,11 @@ using Eigen::VectorXd;
 using Eigen::SparseMatrix;
 using std::string;
 
+Eigen::VectorXd rGIG_cpp(Eigen::VectorXd   p,
+                       Eigen::VectorXd   a,
+                       Eigen::VectorXd   b,
+                       unsigned long            seed= 0);
+
 class Var {
 protected:
     unsigned n_obs;
@@ -51,15 +56,19 @@ public:
 
     // sample V given W
     // V|W ~ GIG(p-0.5, a+mu, b+(K W + h mu)^2)
-    void sample_cond_V(VectorXd W) {
-        VectorXd Mu;
-
+    void sample_cond_V(VectorXd& W, 
+                       VectorXd& Mu, 
+                       SparseMatrix<double>& K
+                       ) {
+        
+        VectorXd h = VectorXd::Constant(n_obs, 1);
+        double sigma = 1;
         VectorXd arg_1;
         arg_1.setOnes(n_obs);
         arg_1 = -arg_1;
 
-        VectorXd arg_2 = Mu.cwiseProduct(Mu)/(sigma*sigma) + eta * VectorXd::Ones(temporal.rows());
-        VectorXd arg_3 = b + (K * W + h * Mu).cwiseProduct((K * W + h * Mu));
+        VectorXd arg_2 = VectorXd::Constant(n_obs, a) + Mu.cwiseProduct(Mu)/(sigma*sigma);   //+ eta * VectorXd::Ones(temporal.rows());
+        VectorXd arg_3 = VectorXd::Constant(n_obs, b) + (K * W + h * Mu).cwiseProduct((K * W + h * Mu));
 
         // V = rGIG_cpp(arg_1, arg_2, arg_3);
     };

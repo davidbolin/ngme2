@@ -115,7 +115,7 @@ public:
 //     // { dispatch theta according to latents }
 
 
-    // VectorXd& _grad();
+    VectorXd& _grad();
     // VectorXd& _grad_rb();
 
     Rcpp::List testResult();
@@ -189,7 +189,8 @@ BlockModel::set_parameter(const VectorXd&) {
     int pos = 0;
     for (std::vector<Latent*>::iterator it = latents.begin(); it != latents.end(); it++) {
         int theta_len = (*it)->getTheta().size();
-        (*it)->setTheta(Theta.segment(pos, pos + theta_len));
+        VectorXd theta = Theta.segment(pos, pos + theta_len);
+        (*it)->setTheta(theta);
         pos += theta_len;
     }
 }

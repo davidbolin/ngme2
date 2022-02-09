@@ -73,6 +73,7 @@ std::cout << "V =" << V << std::endl;
   Q = Q + Asq;
 
   Eigen::VectorXd resp = K * inv_V.asDiagonal() * (-h + V);
+
   resp = resp.cwiseProduct(Mu) / (sigma_eps * sigma_eps);
   resp = resp + A.transpose() * Y / (sigma_eps * sigma_eps);
 
@@ -83,19 +84,18 @@ std::cout << "V =" << V << std::endl;
 
   Eigen::VectorXd m_W_new = chol_Q.solve(resp);
 
-  Eigen::MatrixXd chol_W;
+  Eigen::MatrixXd chol_W = chol_Q.matrixU().eval();
 
-  chol_W = chol_Q.matrixU().eval();
+  Eigen::VectorXd norm_temp = rnorm_vec(V_len, 0, 1);
 
-  Eigen::VectorXd norm_temp;
-  norm_temp = rnorm_vec(V_len, 0, 1);
-
-  Eigen::VectorXd new_W;
-  new_W = chol_W.triangularView<Eigen::Upper>().solve(norm_temp);
+  Eigen::VectorXd new_W = chol_W.triangularView<Eigen::Upper>().solve(norm_temp);
 
   new_W = m_W_new + new_W;
 
-std::cout << "W =" << new_W << std::endl;
+  // distribute W
+  setW(new_W);
+// std::cout << "W =" << new_W << std::endl;
+  
 }
 
 MatrixXd &
@@ -158,7 +158,16 @@ d2K.makeCompressed();
   // res["V"] = V;
   // res["Mu"] = Mu;
 
-  sampleW();
+sampleW();
+ind_IG ig(n_obs, 0.5, 0.5);
+ig.sample_cond_V((*latents[0]).getW(), Mu, K);
+(*latents[0]).compute_grad();
 
   return res;
 }
+
+
+// std::cout << "Q =" << Q << std::endl;
+// std::cout << "K =" << K << std::endl;
+// std::cout << "resp1 =" << resp << std::endl;
+// std::cout << "resp2 =" << resp << std::endl;

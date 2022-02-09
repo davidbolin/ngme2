@@ -35,6 +35,8 @@ public:
 
     // W|V
     void sampleW();
+    void setW(const VectorXd&);
+
     void gibbsSample();
 
     VectorXd& get_parameter();
@@ -146,13 +148,13 @@ BlockModel::BlockModel(VectorXd Y, Rcpp::List latents_in)
         }
     }
     
-    Mu = VectorXd::Zero(n_latent * n_obs);
+    Mu = VectorXd::Ones(n_latent * n_obs);
     assembleA();
     assembleK();
     assemble_dK();
     assemble_d2K();
     assembleV();
-    assembleMu();
+    // assembleMu();
 }
 
 // ---- inherited functions ------
@@ -185,7 +187,7 @@ BlockModel::grad() {
 }
 
 inline void
-BlockModel::set_parameter(const VectorXd&) {
+BlockModel::set_parameter(const VectorXd& Theta) {
     int pos = 0;
     for (std::vector<Latent*>::iterator it = latents.begin(); it != latents.end(); it++) {
         int theta_len = (*it)->getTheta().size();
@@ -195,5 +197,20 @@ BlockModel::set_parameter(const VectorXd&) {
     }
 }
 
+inline void
+BlockModel::setW(const VectorXd& W) {
+    // for (std::vector<Latent*>::iterator it = latents.begin(); it != latents.end(); it++) {
+    //     int theta_len = (*it)->getTheta().size();
+    //     VectorXd theta = Theta.segment(pos, pos + theta_len);
+    //     (*it)->setTheta(theta);
+    //     pos += theta_len;
+    // }
+
+    for (unsigned i=0; i < n_latent; i++) {
+        VectorXd new_W = W.segment(i*n_obs, n_obs);
+std::cout << "new_W in the setW=" << new_W << std::endl;
+        (*latents[i]).setW(new_W);
+    }
+}
 
 #endif

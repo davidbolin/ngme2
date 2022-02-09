@@ -31,9 +31,11 @@ public:
 
     VectorXd&  getV() {return V;}
     
-    void sample_V() {};
+    virtual void sample_V() {};
     // sample V given w and Y
-    void sample_cond_V() {};
+    virtual void sample_cond_V(VectorXd&, 
+                       VectorXd&, 
+                       SparseMatrix<double>&) {};
 };
 
 
@@ -56,21 +58,24 @@ public:
 
     // sample V given W
     // V|W ~ GIG(p-0.5, a+mu, b+(K W + h mu)^2)
-    void sample_cond_V(VectorXd& W, 
-                       VectorXd& Mu, 
+    void sample_cond_V(VectorXd& W, VectorXd& Mu, 
                        SparseMatrix<double>& K
                        ) {
         
         VectorXd h = VectorXd::Constant(n_obs, 1);
+        
         double sigma = 1;
         VectorXd arg_1;
         arg_1.setOnes(n_obs);
         arg_1 = -arg_1;
 
         VectorXd arg_2 = VectorXd::Constant(n_obs, a) + Mu.cwiseProduct(Mu)/(sigma*sigma);   //+ eta * VectorXd::Ones(temporal.rows());
-        VectorXd arg_3 = VectorXd::Constant(n_obs, b) + (K * W + h * Mu).cwiseProduct((K * W + h * Mu));
+        VectorXd arg_3 = VectorXd::Constant(n_obs, b) + (K * W + h).cwiseProduct((K * W + h));
 
-        // V = rGIG_cpp(arg_1, arg_2, arg_3);
+        V = rGIG_cpp(arg_1, arg_2, arg_3);
+std::cout << "cond V|W=" << V << std::endl;
+// std::cout << "arg_2" << arg_2 << std::endl;
+// std::cout << "arg_3" << arg_3 << std::endl;
     };
 };
 

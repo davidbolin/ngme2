@@ -54,7 +54,9 @@ public:
     VectorXd& getMu() { return Mu; }
     VectorXd& getW()  { return W; }
     VectorXd& getV()  { return var.getV(); }
-
+    
+    void      setW(VectorXd& new_W)  { W = new_W; }
+    
     SparseMatrix<double, 0, int>& getA()     { return A; }
     SparseMatrix<double, 0, int>& getK()     { return K.getK(); }
     SparseMatrix<double, 0, int>& get_dK()   { return K.get_dK(); }

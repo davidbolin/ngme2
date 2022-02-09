@@ -94,8 +94,8 @@ std::cout << "V =" << V << std::endl;
 
   // distribute W
   setW(new_W);
+
 // std::cout << "W =" << new_W << std::endl;
-  
 }
 
 MatrixXd &

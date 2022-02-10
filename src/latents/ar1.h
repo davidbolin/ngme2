@@ -43,9 +43,7 @@ public:
 
     }
 
-    // virtual void sample_cond_V() {
-        
-    // };
+    // virtual void sample_cond_V() {};
 
     void compute_grad() {
         SparseMatrix<double> K = getK();
@@ -73,7 +71,6 @@ public:
         double rhs = W.transpose() * dK.transpose() * (VectorXd::Constant(n_obs, 1).cwiseQuotient(V).asDiagonal()) * (K * W + (h - V) * mu);
         Grad << g - rhs;
 std::cout << "Grad=" << Grad << std::endl;;
-
     }
 
 };

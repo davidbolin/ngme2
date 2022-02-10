@@ -157,6 +157,7 @@ BlockModel::BlockModel(VectorXd Y, Rcpp::List latents_in)
     // assembleMu();
 }
 
+
 // ---- inherited functions ------
 
 inline MatrixXd&
@@ -184,6 +185,7 @@ BlockModel::grad() {
         pos += grad.size();
     }
     return Grad;
+
 }
 
 inline void
@@ -199,12 +201,6 @@ BlockModel::set_parameter(const VectorXd& Theta) {
 
 inline void
 BlockModel::setW(const VectorXd& W) {
-    // for (std::vector<Latent*>::iterator it = latents.begin(); it != latents.end(); it++) {
-    //     int theta_len = (*it)->getTheta().size();
-    //     VectorXd theta = Theta.segment(pos, pos + theta_len);
-    //     (*it)->setTheta(theta);
-    //     pos += theta_len;
-    // }
 
     for (unsigned i=0; i < n_latent; i++) {
         VectorXd new_W = W.segment(i*n_obs, n_obs);

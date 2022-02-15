@@ -18,7 +18,7 @@ public:
     Operator() {};
     Operator(VectorXd theta_K) {};
 
-    virtual void update(VectorXd theta_K) {}; 
+    virtual void update(VectorXd& theta_K)=0;
 
     // getter for K, dK, d2K
     SparseMatrix<double, 0, int>& getK()    {return K;}
@@ -39,15 +39,14 @@ public:
         G = Rcpp::as< SparseMatrix<double,0,int> > (ope_in["G"]);
         C = Rcpp::as< SparseMatrix<double,0,int> > (ope_in["C"]);
         
-        K = G + theta * C;
+        K = theta * G + C;
         dK = C;
         d2K = 0 * C;
     }
 
-    void update(VectorXd theta_K) {
+    void update(VectorXd& theta_K) {
         assert (theta_K.size() == 1);
-        
-        K = G + theta_K(1) * C;
+        K = theta_K(0) * G + C;
     }
 
 };

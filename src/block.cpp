@@ -1,6 +1,6 @@
 #include "block.h"
-#include "include/solver.h"
 
+// helper function for sampleW
 Eigen::VectorXd rnorm_vec(int n, double mu, double sigma)
 {
   Eigen::VectorXd out(n);
@@ -11,61 +11,59 @@ Eigen::VectorXd rnorm_vec(int n, double mu, double sigma)
   return (out);
 }
 
-inline VectorXd&
-BlockModel::_grad() {
-    // solve(K) sparse
-    // chloskey solver for sparse matrix
 
-    lu_sparse_solver K_solver;
-    K_solver.analyze(K);
-    K_solver.compute(K);
-
-    VectorXd h = VectorXd::Constant(V.size(), 1);
-    K_solver.trace(dK) - W.transpose() * dK.transpose() * (VectorXd::Constant(V.size(), 1).cwiseQuotient(V).asDiagonal()) * (K * W + (h - V) * Mu);
-    
-
-    // Eigen::SparseLU<SparseMatrix<double> > solver; 
-    // solver.analyzePattern(K);   // for this step the numerical values of A are not used
-    // solver.factorize(K);
-    
-//Q: How to solve for a matrix? 
-    // K_solver.solve(dK).trace(); // solve a matrix
-
-    
-    //// (sum(diag(solve(K, dK))) - 
-    ////    t(W) %*% dK %*% diag(1/V) %*%(K_matrix%*%W+(1-V) * mu))
-
-    // VectorXd a (1); return a;
+inline void
+BlockModel::set_parameter(const VectorXd& Theta) {
+    int pos = 0;
+    for (std::vector<Latent*>::iterator it = latents.begin(); it != latents.end(); it++) {
+        int theta_len = (*it)->getTheta().size();
+        VectorXd theta = Theta.segment(pos, pos + theta_len);
+// std::cout << theta << std::endl;
+        (*it)->setTheta(theta);
+        pos += theta_len;
+    }
 }
 
-// inline void
-// Rcpp::List gibbs_sample(Eigen::VectorXd mu_coef, double kap,
-//                         int N_sim, 
-//                         Eigen::VectorXd V_init,
-//                         Eigen::VectorXd W_init, Eigen::SparseMatrix<double> C,
-//                         Eigen::SparseMatrix<double> G,
-//                         Eigen::VectorXd h,
-//                         Eigen::SparseMatrix<double> A_obs,
-//                         Eigen::VectorXd Y,
-//                         double eta,
-//                         double sigma_eps, double sigma, Eigen::VectorXd loc
-// ){
+
+inline VectorXd &
+BlockModel::grad() {
+  assembleK();
+  _grad();
+  return Grad;
+}
+
+// compute gradient 
+inline void
+BlockModel::_grad()
+{
+  VectorXd h = VectorXd::Constant(V.size(), 1);
   
-// }
+  // 1. To compute tr(dK * K^-1)
+  SparseMatrix<double> I (n_obs, n_obs); 
+  I.setIdentity();
+  double g = (dK * solver.solve(I)).eval().diagonal().sum();
+
+  // 2. Compute the rest
+  double rhs = W.transpose() * dK.transpose() * 
+               (VectorXd::Constant(n_obs, 1).cwiseQuotient(V).asDiagonal()) * (K * W + (h - V) * mu);
+  
+// std::cout << g-rhs << std::endl;
+  Grad << g - rhs;
+}
 
 
 // sample W|V
 inline void
 BlockModel::sampleW()
 {
-std::cout << "V =" << V << std::endl;
+  std::cout << "V =" << V << std::endl;
   VectorXd h = VectorXd::Constant(V.rows(), 1);
 
   double sigma_eps = 1;
   int V_len = V.rows();
 
   // A, K, V
-  VectorXd inv_V = VectorXd::Constant(V.size(), 1).cwiseQuotient(V); 
+  VectorXd inv_V = VectorXd::Constant(V.size(), 1).cwiseQuotient(V);
   Eigen::SparseMatrix<double> Q = K.transpose() * inv_V.asDiagonal() * K;
   Eigen::SparseMatrix<double> Asq = A.transpose() * A / (sigma_eps * sigma_eps);
 
@@ -77,8 +75,7 @@ std::cout << "V =" << V << std::endl;
   resp = resp.cwiseProduct(Mu) / (sigma_eps * sigma_eps);
   resp = resp + A.transpose() * Y / (sigma_eps * sigma_eps);
 
-
-  Eigen::SimplicialLLT<Eigen::SparseMatrix<double>, Eigen::Lower, Eigen::NaturalOrdering<int> > chol_Q;
+  Eigen::SimplicialLLT<Eigen::SparseMatrix<double>, Eigen::Lower, Eigen::NaturalOrdering<int>> chol_Q;
   chol_Q.analyzePattern(Q);
   chol_Q.factorize(Q);
 
@@ -95,7 +92,7 @@ std::cout << "V =" << V << std::endl;
   // distribute W
   setW(new_W);
 
-// std::cout << "W =" << new_W << std::endl;
+  // std::cout << "W =" << new_W << std::endl;
 }
 
 MatrixXd &
@@ -141,31 +138,48 @@ precond()
 }
 
 // for testing
-
 Rcpp::List
 BlockModel::testResult()
 {
 
-  Rcpp::List res;
-A.makeCompressed();
-K.makeCompressed();
-dK.makeCompressed();
-d2K.makeCompressed();
-  // res["A"] = A;
-  // res["K"] = K;
-  // res["dK"] = dK;
-  // res["d2K"] = d2K;
-  // res["V"] = V;
-  // res["Mu"] = Mu;
+  sampleW();
 
-sampleW();
-ind_IG ig(n_obs, 0.5, 0.5);
-ig.sample_cond_V((*latents[0]).getW(), Mu, K);
-(*latents[0]).compute_grad();
+  Rcpp::List res;
+  A.makeCompressed();
+  K.makeCompressed();
+  dK.makeCompressed();
+  d2K.makeCompressed();
+  res["A"] = A;
+  res["K"] = K;
+  res["dK"] = dK;
+  res["d2K"] = d2K;
+  res["V"] = V;
+  res["W"] = W;
+
+  
+  // res["Mu"] = Mu;
+  // ind_IG ig(n_obs, 0.5, 0.5);
+  // ig.sample_cond_V((*latents[0]).getW(), Mu, K);
+  
+  // grad();
+// std::cout << Grad << std::endl;
 
   return res;
 }
 
+
+Rcpp::List
+BlockModel::testGrad()
+{
+  // set TrueV
+  // std::cout << "V=" << V.size() << std::endl;
+  // std::cout << "W=" << W.size() << std::endl;
+  V << 0.9375010, 0.2752556, 0.3895697, 1.7309434, 0.5218133, 0.3935415, 1.7542207, 0.5890800, 0.6039723, 2.6892251;
+  W << -0.63479296, -1.27376433, -1.35513971, -1.55145669, -0.87165923, -0.31881076, 1.04077067, 1.72322077,  0.01019182, 4.14311608;
+
+  Rcpp::List res;
+  return res;
+}
 
 // std::cout << "Q =" << Q << std::endl;
 // std::cout << "K =" << K << std::endl;

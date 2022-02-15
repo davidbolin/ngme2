@@ -18,7 +18,8 @@ public:
     VectorXd sgd(Model& model,
                 const double stepsize, 
                 const double eps,
-                const bool precondioner);
+                const bool precondioner,
+                const int iterations);
 };
 
 #endif

@@ -13,7 +13,7 @@ context("tests for optimizer") {
         Optimizer opt;
         Eigen::Vector2d x0 (10, 10);
 
-        VectorXd out = opt.sgd(f, 0.05, 0.01, false);
+        VectorXd out = opt.sgd(f, 0.05, 0.01, false, 10000);
 
         // optimum should be (-1/6, -3/4)
         expect_true(out(0) + 1.0/6 < 0.001);
@@ -27,7 +27,7 @@ context("tests for optimizer") {
         Optimizer opt;
         Eigen::Vector2d x0(10, 10);
 
-        VectorXd out = opt.sgd(f, 0.05, 0.01, true);
+        VectorXd out = opt.sgd(f, 0.05, 0.01, true, 10000);
 
         expect_true(out(0) + 1.0/6 < 0.001);
         expect_true(out(1) + 3.0/4 < 0.001);

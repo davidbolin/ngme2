@@ -10,6 +10,8 @@ using Eigen::Map;
 
 using namespace Rcpp;
 
+void testGradConvergence(BlockModel& );
+
 // [[Rcpp::export]]
 Rcpp::List predict_cpp(Rcpp::List in_list) {
     // *****************   Read From Input   *****************  
@@ -40,9 +42,19 @@ Rcpp::List predict_cpp(Rcpp::List in_list) {
 
 
     Rcpp::List out_list;
+    // out_list = block.testResult();
 
-    // out_list = latents_list;
-    out_list = block.testResult();
+    // *****************   testing  ***************** 
+
+    // 1. test convergence
+    block.testGrad(); // setting the trueV and trueW
+    testGradConvergence(block);
 
     return out_list;
+}
+
+
+void testGradConvergence(BlockModel& block) {
+    Optimizer opt;
+    opt.sgd(block, 0.005, 0.1, false, 100);
 }

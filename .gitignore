@@ -39,6 +39,11 @@ vignettes/*.pdf
 .Renviron
 *.o
 *.so
-*.so
 src/util/.DS_Store
 src/test/.DS_Store
+
+myscripts/
+.DS_Store
+*.json
+*.so
+src/ngme2.so

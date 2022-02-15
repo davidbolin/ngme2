@@ -16,11 +16,11 @@ using Eigen::VectorXd;
 
 class Latent {
 protected:
-    unsigned n_obs;
+    unsigned n_obs, n_paras;
     VectorXd Theta, Mu, W, Grad;
 
     SparseMatrix<double,0,int> A;
-    Operator K;
+    Operator *ope;
     Var var;
 
 public:
@@ -47,7 +47,6 @@ public:
     // compute the grad. wrt parameter
     virtual void compute_grad() {}; 
 
-    void setTheta(VectorXd& theta) {Theta = theta; } 
     VectorXd& getTheta() {return Theta; } 
     VectorXd& getGrad() {return Grad; } 
 
@@ -55,12 +54,13 @@ public:
     VectorXd& getW()  { return W; }
     VectorXd& getV()  { return var.getV(); }
     
-    void      setW(VectorXd& new_W)  { W = new_W; }
+    virtual void setTheta(VectorXd& theta) {Theta = theta; } 
+    virtual void setW(VectorXd& new_W)  { W = new_W; }
     
     SparseMatrix<double, 0, int>& getA()     { return A; }
-    SparseMatrix<double, 0, int>& getK()     { return K.getK(); }
-    SparseMatrix<double, 0, int>& get_dK()   { return K.get_dK(); }
-    SparseMatrix<double, 0, int>& get_d2K()  { return K.get_d2K(); }
+    SparseMatrix<double, 0, int>& getK()     { return ope->getK(); }
+    SparseMatrix<double, 0, int>& get_dK()   { return ope->get_dK(); }
+    SparseMatrix<double, 0, int>& get_d2K()  { return ope->get_d2K(); }
 };
 
 #endif

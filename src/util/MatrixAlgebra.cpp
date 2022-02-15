@@ -588,6 +588,8 @@ SparseMatrix<double, 0, int> kronecker(SparseMatrix<double, 0, int> &A, SparseMa
 	return AB;
 }
 
+// change insert into coeffRef
+// "S.coeffRef(ii,ii)=new_value" instead of "S.insert(ii,ii)=new_value". It says :"insert() assumes that the element does not already exist; otherwise, use coeffRef()".
 /*
   B of size n1 x n2
  Set A(i:i+n1,j:j+n2) = B
@@ -598,7 +600,7 @@ void setSparseBlock(SparseMatrix<double, 0, int> *A, int i, int j, SparseMatrix<
 	{
 		for (SparseMatrix<double, 0, int>::InnerIterator it(B, k); it; ++it)
 		{
-			A->insert(it.row() + i, it.col() + j) = it.value();
+			A->coeffRef(it.row() + i, it.col() + j) = it.value();
 		}
 	}
 }

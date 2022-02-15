@@ -17,17 +17,18 @@
 
 using Eigen::SparseMatrix;
 
-// 
 
 class BlockModel : public Model {
 protected:
     unsigned n_obs, n_latent;
     std::vector<Latent*> latents;
+    double mu=1;
 
+    SparseLU<SparseMatrix<double> > solver;
     VectorXd Y, W, V, Mu, Grad, Theta;
     SparseMatrix<double> A, K, dK, d2K;
     
-    lu_sparse_solver K_solver;
+    // lu_sparse_solver K_solver;
 public:
     BlockModel() {}
     BlockModel(VectorXd, Rcpp::List);
@@ -61,6 +62,7 @@ public:
         for (unsigned i=0; i < n_latent; i++) {
             setSparseBlock(&K, i*n_obs, i*n_obs, (*latents[i]).getK());
         }
+// std::cout << K << std::endl; 
     }  
     
     void assemble_dK() {
@@ -117,13 +119,14 @@ public:
 //     // { dispatch theta according to latents }
 
 
-    VectorXd& _grad();
+    void _grad();
     // VectorXd& _grad_rb();
 
     Rcpp::List testResult();
+    Rcpp::List testGrad();
 };
 
-// ---- Constructor ----
+// ------------------ Constructor ----------------------
 
 inline 
 BlockModel::BlockModel(VectorXd Y, Rcpp::List latents_in) 
@@ -134,10 +137,12 @@ BlockModel::BlockModel(VectorXd Y, Rcpp::List latents_in)
       dK(n_latent * n_obs, n_latent * n_obs),
       d2K(n_latent * n_obs, n_latent * n_obs),
       V(n_latent * n_obs), 
+      W(n_latent * n_obs),
       Mu(n_latent * n_obs),
-      Theta(30), Grad(30)
+      Theta(n_latent), Grad(n_latent)
     {
 
+    // Init each latent model
     for (int i=0; i < n_latent; ++i) {
         Rcpp::List latent_in = Rcpp::as<Rcpp::List> (latents_in[i]);
 
@@ -148,13 +153,16 @@ BlockModel::BlockModel(VectorXd Y, Rcpp::List latents_in)
         }
     }
     
-    Mu = VectorXd::Ones(n_latent * n_obs);
     assembleA();
     assembleK();
     assemble_dK();
     assemble_d2K();
     assembleV();
+    assembleW();
     // assembleMu();
+
+    solver.analyzePattern(K);
+    solver.factorize(K);
 }
 
 
@@ -176,29 +184,6 @@ BlockModel::get_parameter() {
     return Theta;
 }
 
-inline VectorXd& 
-BlockModel::grad() {
-    int pos = 0;
-    for (std::vector<Latent*>::iterator it = latents.begin(); it != latents.end(); it++) {
-        VectorXd grad = (*it)->getGrad();
-        Grad.segment(pos, pos + grad.size()) = grad;
-        pos += grad.size();
-    }
-    return Grad;
-
-}
-
-inline void
-BlockModel::set_parameter(const VectorXd& Theta) {
-    int pos = 0;
-    for (std::vector<Latent*>::iterator it = latents.begin(); it != latents.end(); it++) {
-        int theta_len = (*it)->getTheta().size();
-        VectorXd theta = Theta.segment(pos, pos + theta_len);
-        (*it)->setTheta(theta);
-        pos += theta_len;
-    }
-}
-
 inline void
 BlockModel::setW(const VectorXd& W) {
 
@@ -208,5 +193,16 @@ std::cout << "new_W in the setW=" << new_W << std::endl;
         (*latents[i]).setW(new_W);
     }
 }
+
+// inline VectorXd& 
+// BlockModel::grad() {
+//     int pos = 0;
+//     for (std::vector<Latent*>::iterator it = latents.begin(); it != latents.end(); it++) {
+//         VectorXd grad = (*it)->getGrad();
+//         Grad.segment(pos, pos + grad.size()) = grad;
+//         pos += grad.size();
+//     }
+//     return Grad;
+// }
 
 #endif

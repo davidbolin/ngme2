@@ -4,7 +4,8 @@ VectorXd
 Optimizer::sgd(Model& model,
                         const double stepsize, 
                         const double eps,
-                        const bool precondioner) {
+                        const bool precondioner,
+                        const int iterations) {
 
     int count = 0;
     VectorXd x = model.get_parameter();
@@ -30,8 +31,9 @@ Optimizer::sgd(Model& model,
         model.set_parameter(x);
 
         // to-do: criteria of eps
-        if (grad.norm() <= pow(10, -6))
+        if ((grad.norm() <= pow(10, -6)) || (count > iterations))
             terminate = true;
+
     }
     return x;
 }

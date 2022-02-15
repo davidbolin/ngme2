@@ -5,14 +5,7 @@
 
 class AR : public Latent {
     SparseLU<SparseMatrix<double> > solver;
-    // lu_sparse_solver K_solver;
 
-    // unsigned n_obs;
-    // VectorXd theta_K, theta_m, theta_V, Mu, W, grad;
-
-    // SparseMatrix<double,0,int> A;
-    // Operator ope;
-    // Var var;
 public:
     AR(){}
     AR(Rcpp::List ar1_in) 
@@ -25,7 +18,7 @@ public:
         Rcpp::List var_in = Rcpp::as<Rcpp::List> (ar1_in["var_in"]);
         
         // Init
-        Theta.resize(n_paras); Grad.resize(n_paras); Mu.resize(n_obs); W.resize(n_obs);
+        Theta.resize(n_paras); Mu.resize(n_obs); W.resize(n_obs);
 
         Theta << theta;
 
@@ -46,11 +39,10 @@ public:
 
     // virtual void sample_cond_V() {};
 
-    void setTheta(VectorXd& theta) {
-        Theta = theta; 
-        ope->update(Theta);
-// std::cout << "K=" << getK() <<std::endl;
+    void setTheta(VectorXd& theta) { 
 std::cout << "theta=" << theta <<std::endl;
+        ope->update(theta);
+std::cout << "K=" << getK() <<std::endl;
     } 
 
 //     void compute_grad() {

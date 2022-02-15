@@ -1,3 +1,7 @@
+/*
+BlockModel
+*/
+
 #ifndef NGME_BLOCK_H
 #define NGME_BLOCK_H
 
@@ -34,7 +38,6 @@ public:
     BlockModel(VectorXd, Rcpp::List);
     ~BlockModel() {}
 
-    // W|V
     void sampleW();
     void setW(const VectorXd&);
 
@@ -45,54 +48,22 @@ public:
     MatrixXd& precond();
     VectorXd& grad();
 
-// //  m <- sparseSolve(K_matrix, -1 + V, upper.tri =F) chloskey
-// // (sum(diag(solve(as.matrix(K_matrix),dK))) - 
-
-    // horizontal
-    void assembleA() {
-// setSparseBlock(&A, 0, 0*n_obs, latents[0].getA());
-// std::cout << A << std::endl;
+    void assemble() {
         for (unsigned i=0; i < n_latent; i++) {
-            setSparseBlock(&A, 0, i*n_obs, (*latents[i]).getA());
-        }
-    };  
-    
-    // block diagonal
-    void assembleK() {
-        for (unsigned i=0; i < n_latent; i++) {
-            setSparseBlock(&K, i*n_obs, i*n_obs, (*latents[i]).getK());
-        }
-// std::cout << K << std::endl; 
-    }  
-    
-    void assemble_dK() {
-        for (unsigned i=0; i < n_latent; i++) {
-            setSparseBlock(&dK, i*n_obs, i*n_obs, (*latents[i]).get_dK());
+            setSparseBlock(&A, 0, i*n_obs, (*latents[i]).getA());            // A
+            setSparseBlock(&K, i*n_obs, i*n_obs, (*latents[i]).getK());      // K
+            setSparseBlock(&dK, i*n_obs, i*n_obs, (*latents[i]).get_dK());   // dK
+            setSparseBlock(&d2K, i*n_obs, i*n_obs, (*latents[i]).get_d2K()); // d2K
+            // V.segment(i*n_obs, n_obs) = (*latents[i]).getV();
+            // W.segment(i*n_obs, n_obs) = (*latents[i]).getW();
+            // Mu.segment(i*n_obs, n_obs) = (*latents[i]).getMu();
         }
     }
 
-    void assemble_d2K() {
-        for (unsigned i=0; i < n_latent; i++) {
-            setSparseBlock(&d2K, i*n_obs, i*n_obs, (*latents[i]).get_d2K());
-        }
-    }  
-
-    // vector
     void assembleV() {
         for (unsigned i=0; i < n_latent; i++) {
             V.segment(i*n_obs, n_obs) = (*latents[i]).getV();
-        }
-    }
-    
-    void assembleW() {
-        for (unsigned i=0; i < n_latent; i++) {
-            W.segment(i*n_obs, n_obs) = (*latents[i]).getW();
-        }
-    }
-
-    void assembleMu() {
-        for (unsigned i=0; i < n_latent; i++) {
-            Mu.segment(i*n_obs, n_obs) = (*latents[i]).getMu();
+            // Mu.segment(i*n_obs, n_obs) = (*latents[i]).getMu();
         }
     }
 
@@ -153,46 +124,14 @@ BlockModel::BlockModel(VectorXd Y, Rcpp::List latents_in)
         }
     }
     
-    assembleA();
-    assembleK();
-    assemble_dK();
-    assemble_d2K();
-    assembleV();
-    assembleW();
-    // assembleMu();
+    assemble();
 
     solver.analyzePattern(K);
     solver.factorize(K);
 }
 
 
-// ---- inherited functions ------
 
-inline MatrixXd&
-BlockModel::precond() {
-    MatrixXd a(1,1); return a;
-}
-
-inline VectorXd& 
-BlockModel::get_parameter() {
-    int pos = 0;
-    for (std::vector<Latent*>::iterator it = latents.begin(); it != latents.end(); it++) {
-        VectorXd theta = (*it)->getTheta();
-        Theta.segment(pos, pos + theta.size()) = theta;
-        pos += theta.size();
-    }
-    return Theta;
-}
-
-inline void
-BlockModel::setW(const VectorXd& W) {
-
-    for (unsigned i=0; i < n_latent; i++) {
-        VectorXd new_W = W.segment(i*n_obs, n_obs);
-std::cout << "new_W in the setW=" << new_W << std::endl;
-        (*latents[i]).setW(new_W);
-    }
-}
 
 // inline VectorXd& 
 // BlockModel::grad() {

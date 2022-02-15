@@ -17,15 +17,14 @@ using Eigen::VectorXd;
 class Latent {
 protected:
     unsigned n_obs, n_paras;
-    VectorXd Theta, Mu, W, Grad;
+    VectorXd Theta, Mu, W, V;
 
     SparseMatrix<double,0,int> A;
     Operator *ope;
-    Var var;
+    Var *var;
 
 public:
     Latent() {}
-    // Latent(Rcpp::List){};
     ~Latent() {}
 
     void init_var(Rcpp::List var_in) {
@@ -35,24 +34,19 @@ public:
         if (type == "ind_IG") {
             double a = Rcpp::as<double>  (v_init["a"]);
             double b = Rcpp::as<double>  (v_init["b"]);
-            var = ind_IG(n_obs, a, b);
+            var = new ind_IG(n_obs, a, b);
         }
     }
 
-    virtual void sample_V() {};
-
-    // sample V given w and Y
+    virtual void sample_V() {  };
     virtual void sample_cond_V() {};
 
-    // compute the grad. wrt parameter
-    virtual void compute_grad() {}; 
-
+    unsigned getThetaSize() {return n_paras; } 
     VectorXd& getTheta() {return Theta; } 
-    VectorXd& getGrad() {return Grad; } 
 
     VectorXd& getMu() { return Mu; }
     VectorXd& getW()  { return W; }
-    VectorXd& getV()  { return var.getV(); }
+    VectorXd& getV()  { return var->getV(); }
     
     virtual void setTheta(VectorXd& theta) {Theta = theta; } 
     virtual void setW(VectorXd& new_W)  { W = new_W; }

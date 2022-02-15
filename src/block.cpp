@@ -1,6 +1,6 @@
 #include "block.h"
 
-// helper function for sampleW
+// ---- helper function for sampleW ----
 Eigen::VectorXd rnorm_vec(int n, double mu, double sigma)
 {
   Eigen::VectorXd out(n);
@@ -11,26 +11,55 @@ Eigen::VectorXd rnorm_vec(int n, double mu, double sigma)
   return (out);
 }
 
+// ---- inherited functions ------
+
+inline VectorXd& 
+BlockModel::get_parameter() {
+    int pos = 0;
+    for (std::vector<Latent*>::iterator it = latents.begin(); it != latents.end(); it++) {
+        VectorXd theta = (*it)->getTheta();
+        Theta.segment(pos, pos + theta.size()) = theta;
+        pos += theta.size();
+    }
+    return Theta;
+}
 
 inline void
 BlockModel::set_parameter(const VectorXd& Theta) {
     int pos = 0;
     for (std::vector<Latent*>::iterator it = latents.begin(); it != latents.end(); it++) {
-        int theta_len = (*it)->getTheta().size();
+        int theta_len = (*it)->getThetaSize();
         VectorXd theta = Theta.segment(pos, pos + theta_len);
-// std::cout << theta << std::endl;
         (*it)->setTheta(theta);
         pos += theta_len;
     }
 }
 
-
 inline VectorXd &
 BlockModel::grad() {
-  assembleK();
+  assemble();
   _grad();
+std::cout << "Grad=" << Grad <<std::endl;
   return Grad;
 }
+
+inline MatrixXd&
+BlockModel::precond() {
+    MatrixXd a(1,1); return a;
+}
+
+
+// ---- other functions ------
+
+inline void
+BlockModel::setW(const VectorXd& W) {
+    for (unsigned i=0; i < n_latent; i++) {
+        VectorXd new_W = W.segment(i*n_obs, n_obs);
+std::cout << "new_W in the setW=" << new_W << std::endl;
+        (*latents[i]).setW(new_W);
+    }
+}
+
 
 // compute gradient 
 inline void
@@ -48,7 +77,7 @@ BlockModel::_grad()
                (VectorXd::Constant(n_obs, 1).cwiseQuotient(V).asDiagonal()) * (K * W + (h - V) * mu);
   
 // std::cout << g-rhs << std::endl;
-  Grad << g - rhs;
+  Grad(0) = g - rhs;
 }
 
 
@@ -141,9 +170,6 @@ precond()
 Rcpp::List
 BlockModel::testResult()
 {
-
-  sampleW();
-
   Rcpp::List res;
   A.makeCompressed();
   K.makeCompressed();
@@ -174,8 +200,13 @@ BlockModel::testGrad()
   // set TrueV
   // std::cout << "V=" << V.size() << std::endl;
   // std::cout << "W=" << W.size() << std::endl;
+  
+  // V,W = 10
   V << 0.9375010, 0.2752556, 0.3895697, 1.7309434, 0.5218133, 0.3935415, 1.7542207, 0.5890800, 0.6039723, 2.6892251;
   W << -0.63479296, -1.27376433, -1.35513971, -1.55145669, -0.87165923, -0.31881076, 1.04077067, 1.72322077,  0.01019182, 4.14311608;
+  
+  // V << 0.9375010, 0.2752556, 0.3895697, 1.7309434, 0.5218133, 0.3935415, 1.7542207, 0.5890800, 0.6039723, 2.6892251, 0.9375010, 0.2752556, 0.3895697, 1.7309434, 0.5218133, 0.3935415, 1.7542207, 0.5890800, 0.6039723, 2.6892251;
+  // W << -0.63479296, -1.27376433, -1.35513971, -1.55145669, -0.87165923, -0.31881076, 1.04077067, 1.72322077,  0.01019182, 4.14311608, -0.63479296, -1.27376433, -1.35513971, -1.55145669, -0.87165923, -0.31881076, 1.04077067, 1.72322077,  0.01019182, 4.14311608;
 
   Rcpp::List res;
   return res;

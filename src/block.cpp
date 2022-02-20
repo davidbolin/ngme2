@@ -26,6 +26,7 @@ BlockModel::get_parameter() {
 
 inline void
 BlockModel::set_parameter(const VectorXd& Theta) {
+std::cout << "Theta=" << Theta <<std::endl;
     int pos = 0;
     for (std::vector<Latent*>::iterator it = latents.begin(); it != latents.end(); it++) {
         int theta_len = (*it)->getThetaSize();
@@ -37,8 +38,20 @@ BlockModel::set_parameter(const VectorXd& Theta) {
 
 inline VectorXd &
 BlockModel::grad() {
+
+  // Gibbs sampling
+  int n_samples = 10;
+  double g = 0;
+  for (int i=0; i < n_samples; i++) {
+    // sampleW();
+    // sampleV();
+    g += _grad();
+  }
+  g /= n_samples;
+
   assemble();
-  _grad();
+
+  Grad(0) = g;  
 std::cout << "Grad=" << Grad <<std::endl;
   return Grad;
 }
@@ -55,14 +68,14 @@ inline void
 BlockModel::setW(const VectorXd& W) {
     for (unsigned i=0; i < n_latent; i++) {
         VectorXd new_W = W.segment(i*n_obs, n_obs);
-std::cout << "new_W in the setW=" << new_W << std::endl;
+// std::cout << "new_W in the setW=" << new_W << std::endl;
         (*latents[i]).setW(new_W);
     }
 }
 
 
 // compute gradient 
-inline void
+inline double
 BlockModel::_grad()
 {
   VectorXd h = VectorXd::Constant(V.size(), 1);
@@ -77,7 +90,16 @@ BlockModel::_grad()
                (VectorXd::Constant(n_obs, 1).cwiseQuotient(V).asDiagonal()) * (K * W + (h - V) * mu);
   
 // std::cout << g-rhs << std::endl;
-  Grad(0) = g - rhs;
+  // Grad(0) = g - rhs;
+  return -(g - rhs);
+}
+
+// sample V|W
+inline void
+BlockModel::sampleV() {
+  for (unsigned i=0; i < n_latent; i++) {
+      (*latents[i]).sample_cond_V();
+  }
 }
 
 
@@ -85,7 +107,8 @@ BlockModel::_grad()
 inline void
 BlockModel::sampleW()
 {
-  std::cout << "V =" << V << std::endl;
+  assembleV();
+std::cout << "V =" << V << std::endl;
   VectorXd h = VectorXd::Constant(V.rows(), 1);
 
   double sigma_eps = 1;
@@ -103,9 +126,7 @@ BlockModel::sampleW()
 
   resp = resp.cwiseProduct(Mu) / (sigma_eps * sigma_eps);
   resp = resp + A.transpose() * Y / (sigma_eps * sigma_eps);
-
-  Eigen::SimplicialLLT<Eigen::SparseMatrix<double>, Eigen::Lower, Eigen::NaturalOrdering<int>> chol_Q;
-  chol_Q.analyzePattern(Q);
+  
   chol_Q.factorize(Q);
 
   Eigen::VectorXd m_W_new = chol_Q.solve(resp);
@@ -118,12 +139,13 @@ BlockModel::sampleW()
 
   new_W = m_W_new + new_W;
 
-  // distribute W
+  // distribute W to every latent
   setW(new_W);
 
   // std::cout << "W =" << new_W << std::endl;
 }
 
+// precondioner
 MatrixXd &
 precond()
 {
@@ -202,8 +224,10 @@ BlockModel::testGrad()
   // std::cout << "W=" << W.size() << std::endl;
   
   // V,W = 10
-  V << 0.9375010, 0.2752556, 0.3895697, 1.7309434, 0.5218133, 0.3935415, 1.7542207, 0.5890800, 0.6039723, 2.6892251;
-  W << -0.63479296, -1.27376433, -1.35513971, -1.55145669, -0.87165923, -0.31881076, 1.04077067, 1.72322077,  0.01019182, 4.14311608;
+  if (n_obs==10) {
+    V << 0.9375010, 0.2752556, 0.3895697, 1.7309434, 0.5218133, 0.3935415, 1.7542207, 0.5890800, 0.6039723, 2.6892251;
+    W << -0.63479296, -1.27376433, -1.35513971, -1.55145669, -0.87165923, -0.31881076, 1.04077067, 1.72322077,  0.01019182, 4.14311608;
+  }
   
   // V << 0.9375010, 0.2752556, 0.3895697, 1.7309434, 0.5218133, 0.3935415, 1.7542207, 0.5890800, 0.6039723, 2.6892251, 0.9375010, 0.2752556, 0.3895697, 1.7309434, 0.5218133, 0.3935415, 1.7542207, 0.5890800, 0.6039723, 2.6892251;
   // W << -0.63479296, -1.27376433, -1.35513971, -1.55145669, -0.87165923, -0.31881076, 1.04077067, 1.72322077,  0.01019182, 4.14311608, -0.63479296, -1.27376433, -1.35513971, -1.55145669, -0.87165923, -0.31881076, 1.04077067, 1.72322077,  0.01019182, 4.14311608;

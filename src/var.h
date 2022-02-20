@@ -6,16 +6,11 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <string>
-#include "rgig.h"
+#include "sample_rGIG.h"
 
 using Eigen::VectorXd;
 using Eigen::SparseMatrix;
 using std::string;
-
-Eigen::VectorXd rGIG_cpp(Eigen::VectorXd   p,
-                       Eigen::VectorXd   a,
-                       Eigen::VectorXd   b,
-                       unsigned long            seed= 0);
 
 class Var {
 protected:
@@ -31,11 +26,10 @@ public:
 
     VectorXd&  getV() {return V;}
     
-    virtual void sample_V() {};
-    // sample V given w and Y
+    virtual void sample_V()=0;
     virtual void sample_cond_V(VectorXd&, 
                        VectorXd&, 
-                       SparseMatrix<double>&) {};
+                       SparseMatrix<double>&)=0;
 };
 
 
@@ -71,9 +65,9 @@ public:
 
         VectorXd arg_2 = VectorXd::Constant(n_obs, a) + Mu.cwiseProduct(Mu)/(sigma*sigma);   //+ eta * VectorXd::Ones(temporal.rows());
         VectorXd arg_3 = VectorXd::Constant(n_obs, b) + (K * W + h).cwiseProduct((K * W + h));
-
         V = rGIG_cpp(arg_1, arg_2, arg_3);
 std::cout << "cond V|W=" << V << std::endl;
+
 // std::cout << "arg_2" << arg_2 << std::endl;
 // std::cout << "arg_3" << arg_3 << std::endl;
     };

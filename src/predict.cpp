@@ -4,7 +4,7 @@
 #include "block.h"
 
 #include <Eigen/Sparse>
-// using Eigen::MappedSparseMatrix;
+
 using Eigen::SparseMatrix;
 using Eigen::Map;
 
@@ -17,8 +17,10 @@ Rcpp::List predict_cpp(Rcpp::List in_list) {
     // *****************   Read From Input   *****************  
     
     //observations and latents
-    Rcpp::List obs_list     = Rcpp::as<Rcpp::List> (in_list["observe_in"]);
-        Eigen::VectorXd Y       = Rcpp::as<VectorXd>   (obs_list["Y"]);
+    Rcpp::List gen_list     = Rcpp::as<Rcpp::List> (in_list["general_in"]);
+        const Eigen::VectorXd Y       = Rcpp::as<VectorXd>   (gen_list["Y"]);
+        const int n_paras       = Rcpp::as<int>   (gen_list["n_paras"]);
+        const int n_reg         = Rcpp::as<int>   (gen_list["n_reg"]);
     
     Rcpp::List latents_list = Rcpp::as<Rcpp::List> (in_list["latents_in"]);
     
@@ -29,7 +31,7 @@ Rcpp::List predict_cpp(Rcpp::List in_list) {
         const int OPT_K = config_list["opt_k"];
         const int OPT_V = config_list["opt_v"];
 
-    BlockModel block (Y, latents_list);
+    BlockModel block (Y, n_paras, n_reg, latents_list);
 
 
     // *****************   Main Process - Optimization *****************  
@@ -42,19 +44,50 @@ Rcpp::List predict_cpp(Rcpp::List in_list) {
 
 
     Rcpp::List out_list;
-    // out_list = block.testResult();
+    out_list = block.testResult();
 
     // *****************   testing  ***************** 
 
     // 1. test convergence
-    block.testGrad(); // setting the trueV and trueW
-    testGradConvergence(block);
+    // block.testGrad(); // setting the trueV and trueW
+    // testGradConvergence(block);
 
     return out_list;
 }
 
-
 void testGradConvergence(BlockModel& block) {
     Optimizer opt;
     opt.sgd(block, 0.005, 0.1, false, 100);
+}
+
+
+
+
+// [[Rcpp::export]]
+Rcpp::List test_init(Rcpp::List in_list) {
+    // *****************   Read From Input   *****************  
+    
+    //observations and latents
+    Rcpp::List gen_list     = Rcpp::as<Rcpp::List> (in_list["general_in"]);
+        const Eigen::VectorXd Y       = Rcpp::as<VectorXd>   (gen_list["Y"]);
+        const int n_paras       = Rcpp::as<int>   (gen_list["n_paras"]);
+        const int n_reg         = Rcpp::as<int>   (gen_list["n_reg"]);
+
+    
+    Rcpp::List latents_list = Rcpp::as<Rcpp::List> (in_list["latents_in"]);
+    
+    // config_list
+    Rcpp::List config_list  = Rcpp::as<Rcpp::List> (in_list["config_in"]);
+        // Flag to Specify what parameter to optimize
+        const int OPT_m = config_list["opt_m"];
+        const int OPT_K = config_list["opt_k"];
+        const int OPT_V = config_list["opt_v"];
+
+    BlockModel block (Y, n_paras, n_reg, latents_list);
+
+
+    Rcpp::List out_list;
+    out_list = block.testResult();
+
+    return out_list;
 }

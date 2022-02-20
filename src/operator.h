@@ -18,7 +18,7 @@ public:
     Operator() {};
     Operator(VectorXd theta_K) {};
 
-    virtual void update(VectorXd& theta_K)=0;
+    virtual void update(const VectorXd& theta_K)=0;
 
     // getter for K, dK, d2K
     SparseMatrix<double, 0, int>& getK()    {return K;}
@@ -26,27 +26,27 @@ public:
     SparseMatrix<double, 0, int>& get_d2K() {return d2K;}
 };
 
-// fit for AR and Matern 
 
+// fit for AR and Matern 
 class GC : public Operator {
 private:
-    double theta {1};
+    double kappa {1};
     SparseMatrix<double, 0, int> G, C;
 
 public:
     GC(Rcpp::List ope_in) {
-        theta = ope_in["a_init"];
+        kappa = ope_in["a_init"];
         G = Rcpp::as< SparseMatrix<double,0,int> > (ope_in["G"]);
         C = Rcpp::as< SparseMatrix<double,0,int> > (ope_in["C"]);
         
-        K = theta * G + C;
+        K =  G + kappa * C;
         dK = C;
         d2K = 0 * C;
     }
 
-    void update(VectorXd& theta_K) {
+    void update(const VectorXd& theta_K) {
         assert (theta_K.size() == 1);
-        K = theta_K(0) * G + C;
+        K = theta_K(0) * C + G;
     }
 
 };

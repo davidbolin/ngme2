@@ -1,13 +1,15 @@
-#include <Rcpp.h>
-#include <RcppEigen.h>
-#include <chrono>
-#include "rgig.h"
+// #include <Rcpp.h>
+// #include <RcppEigen.h>
+// #include <chrono>
+// #include "rgig.h"
+
+#include "sample_rGIG.h"
 
 // [[Rcpp::export]]
-Eigen::VectorXd rGIG_cpp(Eigen::VectorXd   p,
+Eigen::VectorXd rGIG_cpp(Eigen::VectorXd p,
                        Eigen::VectorXd   a,
                        Eigen::VectorXd   b,
-                       unsigned long            seed= 0) {
+                       unsigned long     seed) {
   
   gig sampler;
   if(seed == 0)

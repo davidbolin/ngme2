@@ -12,7 +12,7 @@ class Model {
 public:
     virtual VectorXd             get_parameter() const=0;
     virtual void                 set_parameter(const VectorXd&)=0;
-    virtual VectorXd             grad() const=0;
+    virtual VectorXd             grad()=0;
     virtual SparseMatrix<double> precond() const=0;
 };
 
@@ -44,7 +44,7 @@ public:
     SomeFun(VectorXd x0) : x(x0) {}
 
     // gradient of f(x, y)
-    VectorXd grad() const {
+    VectorXd grad() {
         VectorXd g (2);
         g(0) = 6 * x(0) + 1;
         g(1) = 4 * x(1) + 3;

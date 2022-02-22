@@ -66,7 +66,6 @@ public:
 
     /*  2 Variance component   */
     const VectorXd& getV() const { return var->getV(); }
-    virtual void sample_V()=0;
     virtual void sample_cond_V()=0;
 
     /*  3 Operator component   */

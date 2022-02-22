@@ -25,14 +25,6 @@ void BlockModel::setW(const VectorXd& W) {
   }
 }
 
-// sample V|W
-inline void
-BlockModel::sampleV() {
-  for (unsigned i=0; i < n_latent; i++) {
-      (*latents[i]).sample_cond_V();
-  }
-}
-
 // sample W|VY 
 void BlockModel::sampleW_VY()
 {
@@ -40,10 +32,10 @@ void BlockModel::sampleW_VY()
   VectorXd inv_V = VectorXd::Constant(V.size(), 1).cwiseQuotient(V);
 
   SparseMatrix<double> Q = pow(sigma, -2) * K.transpose() * inv_V.asDiagonal() * K;
-  SparseMatrix<double> QQ = Q + pow(sigma_eps, 2) * A.transpose() * A;
+  SparseMatrix<double> QQ = Q + pow(sigma_eps, -2) * A.transpose() * A;
 
   chol_Q.compute(QQ);
-  VectorXd M = K.transpose() * inv_V.asDiagonal() * mu*(V-h) + pow(sigma_eps,2) * A.transpose() * Y;
+  VectorXd M = K.transpose() * inv_V.asDiagonal() * (mu*(V-h)) + pow(sigma_eps,2) * A.transpose() * Y;
 
   VectorXd z (n_regs); 
   z = rnorm_vec(n_regs, 0, 1);
@@ -51,6 +43,8 @@ void BlockModel::sampleW_VY()
   // sample W ~ N(QQ^-1*M, QQ^-1)
   VectorXd W = chol_Q.rMVN(M, z);
 
+// std::cout<< "V = " << V << std::endl;
+// std::cout<< "W = " << W << std::endl;
   setW(W);
 }
 

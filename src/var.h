@@ -64,8 +64,6 @@ public:
         VectorXd a_vec = VectorXd::Constant(n, a+std::pow((mu/sigma), 2));   //+ eta * VectorXd::Ones(temporal.rows());
         VectorXd b_vec = VectorXd::Constant(n, b) + std::pow(sigma, -2) * (K*W + mu*h).cwiseProduct((K * W + mu*h));
         V = rGIG_cpp(p_vec, a_vec, b_vec);
-
-// std::cout << "cond V|W=" << V << std::endl;
     };
 };
 

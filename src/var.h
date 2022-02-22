@@ -6,6 +6,7 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <string>
+#include <cmath>
 #include "sample_rGIG.h"
 
 using Eigen::VectorXd;
@@ -14,22 +15,21 @@ using std::string;
 
 class Var {
 protected:
-    unsigned n_obs;
+    unsigned n;
     VectorXd V;
-    VectorXd grad;
-    
-    SparseMatrix<double> hess;
 public: 
     Var(){}
     Var(Rcpp::List);
     ~Var(){}
 
-    VectorXd&  getV() {return V;}
+    const VectorXd& getV() const {return V;}
     
     virtual void sample_V()=0;
-    virtual void sample_cond_V(VectorXd&, 
-                       VectorXd&, 
-                       SparseMatrix<double>&)=0;
+    virtual void sample_cond_V(SparseMatrix<double>& K,
+                                VectorXd& W,
+                                VectorXd& h, 
+                                double mu, 
+                                double sigma)=0;
 };
 
 
@@ -39,37 +39,33 @@ private:
 public:
     ind_IG(){}
     ind_IG(unsigned n, double a, double b) : a(a), b(b) {
-        n_obs = n;
-        V.resize(n_obs);
+        this->n = n;
+        V.resize(n);
         sample_V();
     }
 
     void sample_V() {
         gig sampler;
-        for(int i = 0; i < n_obs; i++)
+        for(int i = 0; i < n; i++)
             V[i] = sampler.sample(-0.5, a, b);
     };
 
     // sample V given W
-    // V|W ~ GIG(p-0.5, a+mu, b+(K W + h mu)^2)
-    void sample_cond_V(VectorXd& W, VectorXd& Mu, 
-                       SparseMatrix<double>& K
+    // V|W, Y ~ GIG(p-0.5, a+mu, b+(K W + h mu)^2)
+    void sample_cond_V(SparseMatrix<double>& K,
+                       VectorXd& W,
+                       VectorXd& h, 
+                       double mu, 
+                       double sigma
                        ) {
-        
-        VectorXd h = VectorXd::Constant(n_obs, 1);
-        
-        double sigma = 1;
-        VectorXd arg_1;
-        arg_1.setOnes(n_obs);
-        arg_1 = -arg_1;
 
-        VectorXd arg_2 = VectorXd::Constant(n_obs, a) + Mu.cwiseProduct(Mu)/(sigma*sigma);   //+ eta * VectorXd::Ones(temporal.rows());
-        VectorXd arg_3 = VectorXd::Constant(n_obs, b) + (K * W + h).cwiseProduct((K * W + h));
-        V = rGIG_cpp(arg_1, arg_2, arg_3);
-std::cout << "cond V|W=" << V << std::endl;
+        // VectorXd arg_2 = VectorXd::Constant(n, a) + Mu.cwiseProduct(Mu)/(sigma*sigma);   //+ eta * VectorXd::Ones(temporal.rows());
+        VectorXd p_vec = VectorXd::Constant(n, -1);
+        VectorXd a_vec = VectorXd::Constant(n, a+std::pow((mu/sigma), 2));   //+ eta * VectorXd::Ones(temporal.rows());
+        VectorXd b_vec = VectorXd::Constant(n, b) + std::pow(sigma, -2) * (K*W + mu*h).cwiseProduct((K * W + mu*h));
+        V = rGIG_cpp(p_vec, a_vec, b_vec);
 
-// std::cout << "arg_2" << arg_2 << std::endl;
-// std::cout << "arg_3" << arg_3 << std::endl;
+// std::cout << "cond V|W=" << V << std::endl;
     };
 };
 

@@ -2,49 +2,57 @@
 #define NGME_MODEL_H
 
 #include <Eigen/Dense>
-
-using Eigen::MatrixXd;
+#include <Eigen/Sparse>
+#include <vector>
+using Eigen::SparseMatrix;
 using Eigen::VectorXd;
+using Eigen::Triplet;
 
 class Model {
 public:
-    virtual VectorXd& get_parameter()=0;
-    virtual void      set_parameter(const VectorXd&)=0;
-
-    virtual MatrixXd& precond()=0;
-    virtual VectorXd& grad()=0;
+    virtual VectorXd             get_parameter() const=0;
+    virtual void                 set_parameter(const VectorXd&)=0;
+    virtual VectorXd             grad() const=0;
+    virtual SparseMatrix<double> precond() const=0;
 };
 
 
-
-
-
 // -----  For testing, f(x, y) = 3x^2 + 2y^2 + x + 3y + 5;
+
+typedef Eigen::Triplet<double> T;
+
 class SomeFun : public Model {
 friend class Optimizer;
 private:
     Eigen::VectorXd x;
-    Eigen::VectorXd g;
-    Eigen::MatrixXd H;
+    Eigen::SparseMatrix<double> H;
 public:
     SomeFun()            
-    : x(2), g(2), H(2, 2) { 
+    : x(2), H(2, 2) { 
         x << 0, 0; 
-        H << 6, 0,
-             0, 4;
+
+        // set H
+        std::vector<T> tripletList;
+        tripletList.reserve(2);
+        tripletList.push_back(T(0, 0, 6));
+        tripletList.push_back(T(1, 1, 4));
+        H.setFromTriplets(tripletList.begin(), tripletList.end());
+        // H << 6, 0,
+        //      0, 4;
     }
 
     SomeFun(VectorXd x0) : x(x0) {}
 
     // gradient of f(x, y)
-    VectorXd& grad() {
+    VectorXd grad() const {
+        VectorXd g (2);
         g(0) = 6 * x(0) + 1;
         g(1) = 4 * x(1) + 3;
         return g;
     }
 
     // hessian of f(x, y)
-    MatrixXd& precond() {
+    SparseMatrix<double> precond() const {
         return H;
     };
 
@@ -52,7 +60,7 @@ public:
         (*this).x = x;
     }
 
-    VectorXd& get_parameter() {
+    VectorXd get_parameter() const {
         return x;
     }
 };

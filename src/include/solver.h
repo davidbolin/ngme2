@@ -68,6 +68,7 @@ public:
   }
 };
 
+
 class cholesky_solver : public virtual solver
 {
 private:
@@ -86,6 +87,7 @@ public:
   inline void analyze(Eigen::SparseMatrix<double, 0, int> &M) { R.analyzePattern(M); }
   void compute(Eigen::SparseMatrix<double, 0, int> &);
   inline Eigen::VectorXd solve(Eigen::VectorXd &v, Eigen::VectorXd &x) { return R.solve(v); }
+  inline Eigen::VectorXd solve(const Eigen::VectorXd &v)               { return R.solve(v); }
   double trace(Eigen::MatrixXd &);
   double trace(Eigen::SparseMatrix<double, 0, int> &);
   double trace2(SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &);
@@ -98,6 +100,9 @@ public:
   Eigen::VectorXd rMVN(Eigen::VectorXd &, Eigen::VectorXd &);
   SparseMatrix<double, 0, int> return_Qinv();
 };
+
+
+
 class lu_solver : public virtual solver
 {
 private:

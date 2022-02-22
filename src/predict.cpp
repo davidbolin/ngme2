@@ -20,7 +20,7 @@ Rcpp::List predict_cpp(Rcpp::List in_list) {
     Rcpp::List gen_list     = Rcpp::as<Rcpp::List> (in_list["general_in"]);
         const Eigen::VectorXd Y       = Rcpp::as<VectorXd>   (gen_list["Y"]);
         const int n_paras       = Rcpp::as<int>   (gen_list["n_paras"]);
-        const int n_reg         = Rcpp::as<int>   (gen_list["n_reg"]);
+        const int n_regs        = Rcpp::as<int>   (gen_list["n_regs"]);
     
     Rcpp::List latents_list = Rcpp::as<Rcpp::List> (in_list["latents_in"]);
     
@@ -31,7 +31,7 @@ Rcpp::List predict_cpp(Rcpp::List in_list) {
         const int OPT_K = config_list["opt_k"];
         const int OPT_V = config_list["opt_v"];
 
-    BlockModel block (Y, n_paras, n_reg, latents_list);
+    BlockModel block (Y, n_paras, n_regs, latents_list);
 
 
     // *****************   Main Process - Optimization *****************  
@@ -44,14 +44,15 @@ Rcpp::List predict_cpp(Rcpp::List in_list) {
 
 
     Rcpp::List out_list;
-    out_list = block.testResult();
+
 
     // *****************   testing  ***************** 
 
     // 1. test convergence
-    // block.testGrad(); // setting the trueV and trueW
+    block.setVW(); // setting the trueV and trueW
     // testGradConvergence(block);
-
+    
+    out_list = block.testResult();
     return out_list;
 }
 
@@ -71,7 +72,7 @@ Rcpp::List test_init(Rcpp::List in_list) {
     Rcpp::List gen_list     = Rcpp::as<Rcpp::List> (in_list["general_in"]);
         const Eigen::VectorXd Y       = Rcpp::as<VectorXd>   (gen_list["Y"]);
         const int n_paras       = Rcpp::as<int>   (gen_list["n_paras"]);
-        const int n_reg         = Rcpp::as<int>   (gen_list["n_reg"]);
+        const int n_regs        = Rcpp::as<int>   (gen_list["n_regs"]);
 
     
     Rcpp::List latents_list = Rcpp::as<Rcpp::List> (in_list["latents_in"]);
@@ -83,8 +84,9 @@ Rcpp::List test_init(Rcpp::List in_list) {
         const int OPT_K = config_list["opt_k"];
         const int OPT_V = config_list["opt_v"];
 
-    BlockModel block (Y, n_paras, n_reg, latents_list);
-
+    BlockModel block (Y, n_paras, n_regs, latents_list);
+    block.sampleW_VY();
+    // block.setVW(); 
 
     Rcpp::List out_list;
     out_list = block.testResult();

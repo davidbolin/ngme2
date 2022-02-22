@@ -24,92 +24,106 @@ using Eigen::SparseMatrix;
 
 class BlockModel : public Model {
 protected:
-// n_reg   = row(A1) + ... + row(An)
+// n_regs   = row(A1) + ... + row(An)
 // n_paras = total paras need to optimize
-    unsigned n_obs, n_latent, n_reg, n_paras;
+    unsigned n_obs, n_latent, n_regs, n_paras;
     std::vector<Latent*> latents;
 
-    double mu;
-    VectorXd Y, W, V, Mu, Grad, Theta;
+// Q: what is mu, sigma here
+    double mu, sigma, sigma_eps;
+    
+    VectorXd Y, Mu, h;
+
     SparseMatrix<double> A, K, dK, d2K;
 
-    SparseLU<SparseMatrix<double> > solver;
-    Eigen::SimplicialLLT<Eigen::SparseMatrix<double>, Eigen::Lower, Eigen::NaturalOrdering<int>> chol_Q;
-    
-    // lu_sparse_solver K_solver;
+    cholesky_solver chol_Q;
 public:
     BlockModel() {}
     // main constructor
     BlockModel(const VectorXd Y, 
                const int n_paras,
-               const int n_reg,
+               const int n_regs,
                Rcpp::List latents_in) 
     : n_obs(Y.size()),
       n_latent(latents_in.size()), 
-      n_reg(n_reg),
+      n_regs(n_regs),
       n_paras(n_paras),
+      mu(1),
+      sigma(1),
+      sigma_eps(1),
+      h(n_regs),
       Y(Y), 
-      A(n_obs, n_reg), 
-      K(n_reg, n_reg), 
-      dK(n_reg, n_reg),
-      d2K(n_reg, n_reg),
-      V(n_reg), 
-      W(n_reg),
-      Mu(n_reg),
-      Theta(n_latent), 
-      Grad(n_latent)
+      A(n_obs, n_regs), 
+      K(n_regs, n_regs), 
+      dK(n_regs, n_regs),
+      d2K(n_regs, n_regs),
+      Mu(n_regs)
     {
     // Init each latent model
     for (int i=0; i < n_latent; ++i) {
         Rcpp::List latent_in = Rcpp::as<Rcpp::List> (latents_in[i]);
 
-        // construct acoording to different models
+        // construct acoording to models
         string type = latent_in["type"];
         if (type == "ar1") {
             latents.push_back(new AR(latent_in) );
         }
     }
     
+    /* Init variables */
+    h = VectorXd::Constant(n_regs, 1);
+
     assemble();
-    
-    // VectorXd inv_V = VectorXd::Constant(V.size(), 1).cwiseQuotient(V);
-    // Eigen::SparseMatrix<double> Q = K.transpose() * inv_V.asDiagonal() * K;
-    // chol_Q.analyzePattern(Q);
-    
-    // solver.analyzePattern(K);
-    // solver.factorize(K);
+        VectorXd inv_V = VectorXd::Constant(n_regs, 1).cwiseQuotient(getV());
+        SparseMatrix<double> QQ = pow(sigma, -2) * K.transpose() * inv_V.asDiagonal() * K + pow(sigma_eps, 2) * A.transpose() * A;
+    chol_Q.analyze(QQ);
 }
 
     ~BlockModel() {}
 
-    void sampleW();
+    void sampleW_VY();
     void sampleV();
     void setW(const VectorXd&);
 
     // void gibbsSample();
 
-    VectorXd& get_parameter();
-    void set_parameter(const VectorXd&);
-    MatrixXd& precond();
-    VectorXd& grad();
+    VectorXd             get_parameter() const;
+    void                 set_parameter(const VectorXd&);
+    VectorXd             grad() const;
+    SparseMatrix<double> precond() const;
 
     void assemble() {
-        for (unsigned i=0; i < n_latent; i++) {
-            setSparseBlock(&A, 0, i*n_obs, (*latents[i]).getA());            // A
-            setSparseBlock(&K, i*n_obs, i*n_obs, (*latents[i]).getK());      // K
-            setSparseBlock(&dK, i*n_obs, i*n_obs, (*latents[i]).get_dK());   // dK
-            setSparseBlock(&d2K, i*n_obs, i*n_obs, (*latents[i]).get_d2K()); // d2K
-            // V.segment(i*n_obs, n_obs) = (*latents[i]).getV();
-            // W.segment(i*n_obs, n_obs) = (*latents[i]).getW();
-            // Mu.segment(i*n_obs, n_obs) = (*latents[i]).getMu();
+        int n = 0;
+        for (std::vector<Latent*>::iterator it = latents.begin(); it != latents.end(); it++) {
+            setSparseBlock(&A,   0, n, (*it)->getA());         
+            setSparseBlock(&K,   n, n, (*it)->getK());      
+            setSparseBlock(&dK,  n, n, (*it)->get_dK());   
+            setSparseBlock(&d2K, n, n, (*it)->get_d2K()); 
+            
+            n += (*it)->getSize();
         }
     }
 
-    void assembleV() {
-        for (unsigned i=0; i < n_latent; i++) {
-            V.segment(i*n_obs, n_obs) = (*latents[i]).getV();
-            // Mu.segment(i*n_obs, n_obs) = (*latents[i]).getMu();
+    VectorXd getV() const {
+        VectorXd V (n_regs);
+        int pos = 0;
+        for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+            int size = (*it)->getSize();
+            V.segment(pos, size) = (*it)->getV();
+            pos += size;
         }
+        return V;
+    }
+
+    VectorXd getW() const {
+        VectorXd W (n_regs);
+        int pos = 0;
+        for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+            int size = (*it)->getSize();
+            W.segment(pos, size) = (*it)->getW();
+            pos += size;
+        }
+        return W;
     }
 
     // void assembleTheta() {
@@ -134,24 +148,69 @@ public:
 //     // void set_theta(const VectorXd& theta); 
 //     // { dispatch theta according to latents }
 
-
-    double _grad();
     // VectorXd& _grad_rb();
 
-    Rcpp::List testResult();
-    Rcpp::List testGrad();
+
+// FOR TESTING
+Rcpp::List testResult() {
+    Rcpp::List res;
+    A.makeCompressed();
+    K.makeCompressed();
+    dK.makeCompressed();
+    d2K.makeCompressed();
+    res["A"] = A;
+    res["K"] = K;
+    res["dK"] = dK;
+    res["d2K"] = d2K;
+    res["V"] = getV();
+    res["W"] = getW();
+    return res;
+}
+
+void setVW() {
+    // if (n_regs==10) {
+    //     V << 0.9375010, 0.2752556, 0.3895697, 1.7309434, 0.5218133, 0.3935415, 1.7542207, 0.5890800, 0.6039723, 2.6892251;
+    //     W << -0.63479296, -1.27376433, -1.35513971, -1.55145669, -0.87165923, -0.31881076, 1.04077067, 1.72322077,  0.01019182, 4.14311608;
+    // }
 };
 
-// inline VectorXd& 
-// BlockModel::grad() {
-//     int pos = 0;
-//     for (std::vector<Latent*>::iterator it = latents.begin(); it != latents.end(); it++) {
-//         VectorXd grad = (*it)->getGrad();
-//         Grad.segment(pos, pos + grad.size()) = grad;
-//         pos += grad.size();
-//     }
-//     return Grad;
-// }
+};
+
+// ---- inherited functions ------
+
+inline VectorXd BlockModel::get_parameter() const {
+    VectorXd thetas (n_paras);
+    int pos = 0;
+    for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+        VectorXd theta = (*it)->getTheta();
+        thetas.segment(pos, theta.size()) = theta;
+        pos += theta.size();
+    }
+    return thetas;
+}
+
+inline void BlockModel::set_parameter(const VectorXd& Theta) {
+std::cout << "Theta=" << Theta <<std::endl;
+    int pos = 0;
+    for (std::vector<Latent*>::iterator it = latents.begin(); it != latents.end(); it++) {
+        int theta_len = (*it)->getThetaSize();
+        VectorXd theta = Theta.segment(pos, theta_len);
+        (*it)->setTheta(theta);
+        pos += theta_len;
+    }
+}
+
+inline VectorXd BlockModel::grad() const {
+    VectorXd gradient (n_paras);
+
+    return gradient;
+}
+
+inline SparseMatrix<double> BlockModel::precond() const {
+    SparseMatrix<double> precond;
+
+    return precond;
+}
 
 
 

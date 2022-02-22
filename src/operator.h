@@ -12,13 +12,17 @@ using Eigen::VectorXd;
 
 class Operator {
 protected:
-    VectorXd theta_K;
+    double kappa; // parameter
     SparseMatrix<double, 0, int> K, dK, d2K;
 public:
-    Operator() {};
-    Operator(VectorXd theta_K) {};
+    Operator(): kappa(1) {};
+    Operator(double kappa): kappa(kappa) {};
 
-    virtual void update(const VectorXd& theta_K)=0;
+    // update matrices when kappa is updated
+    virtual void update()=0;
+
+    const double getKappa() const {return kappa; }
+    void         setKappa(const double kappa) {this->kappa = kappa; update();}
 
     // getter for K, dK, d2K
     SparseMatrix<double, 0, int>& getK()    {return K;}
@@ -30,7 +34,6 @@ public:
 // fit for AR and Matern 
 class GC : public Operator {
 private:
-    double kappa {1};
     SparseMatrix<double, 0, int> G, C;
 
 public:
@@ -39,14 +42,13 @@ public:
         G = Rcpp::as< SparseMatrix<double,0,int> > (ope_in["G"]);
         C = Rcpp::as< SparseMatrix<double,0,int> > (ope_in["C"]);
         
-        K =  G + kappa * C;
+        K =  kappa * C + G;
         dK = C;
         d2K = 0 * C;
     }
 
-    void update(const VectorXd& theta_K) {
-        assert (theta_K.size() == 1);
-        K = theta_K(0) * C + G;
+    void update() {
+        K = kappa * C + G;
     }
 
 };

@@ -6,7 +6,6 @@
 #include <Eigen/Sparse>
 
 using Eigen::SparseMatrix;
-using Eigen::Map;
 
 using namespace Rcpp;
 
@@ -36,7 +35,7 @@ Rcpp::List predict_cpp(Rcpp::List in_list) {
         const Eigen::VectorXd trueW = Rcpp::as<VectorXd>   (config_list["trueW"]);
     
     BlockModel block (Y, n_paras, n_regs, latents_list);
-        block.setW(trueW);
+        // block.setW(trueW);
 
     // *****************   Main Process - Optimization *****************  
     
@@ -53,7 +52,6 @@ Rcpp::List predict_cpp(Rcpp::List in_list) {
     // *****************   testing  ***************** 
 
     // 1. test convergence
-    // block.setVW(); // setting the trueV and trueW
     testGradConvergence(block, interations);
     
     // out_list = block.testResult();
@@ -64,6 +62,9 @@ void testGradConvergence(BlockModel& block, int iterations) {
     Optimizer opt;
     opt.sgd(block, 0.05, 0.1, false, iterations);
 }
+
+
+
 
 
 
@@ -90,9 +91,9 @@ Rcpp::List test_init(Rcpp::List in_list) {
 
     BlockModel block (Y, n_paras, n_regs, latents_list);
     block.sampleW_VY();
-// std::cout << "theta=" << block.get_parameter() <<std::endl;
-// std::cout << "grad=" << block.grad() <<std::endl;
-    // block.setVW(); 
+
+std::cout << "theta=" << block.get_parameter() <<std::endl;
+std::cout << "grad=" << block.grad() <<std::endl;
 
     Rcpp::List out_list;
     out_list = block.testResult();

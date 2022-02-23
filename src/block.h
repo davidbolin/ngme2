@@ -142,18 +142,18 @@ public:
 
 // FOR TESTING
 Rcpp::List testResult() {
-    Rcpp::List res;
-    A.makeCompressed();
-    K.makeCompressed();
-    dK.makeCompressed();
-    d2K.makeCompressed();
-    res["A"] = A;
-    res["K"] = K;
-    res["dK"] = dK;
-    res["d2K"] = d2K;
-    res["V"] = getV();
-    res["W"] = getW();
-    return res;
+Rcpp::List res;
+A.makeCompressed();
+K.makeCompressed();
+dK.makeCompressed();
+d2K.makeCompressed();
+res["A"] = A;
+res["K"] = K;
+res["dK"] = dK;
+res["d2K"] = d2K;
+res["V"] = getV();
+res["W"] = getW();
+return res;
 }
 
 };
@@ -168,7 +168,7 @@ inline VectorXd BlockModel::get_parameter() const {
         thetas.segment(pos, theta.size()) = theta;
         pos += theta.size();
     }
-
+std::cout << "getTheta=" << thetas <<std::endl;
     return thetas;
 }
 
@@ -188,7 +188,7 @@ inline VectorXd BlockModel::grad() {
             gradient.segment(pos, theta_len) = (*it)->getGrad();
             pos += theta_len;
         }
-std::cout << "1grad=" << gradient << std::endl;
+// std::cout << "1grad=" << gradient << std::endl;
         avg_gradient += gradient;
         sampleV_WY(); 
         sampleW_VY();

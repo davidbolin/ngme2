@@ -34,7 +34,7 @@ public:
         double rhs = W.transpose() * dK.transpose() * 
                     (VectorXd::Constant(n_reg, 1).cwiseQuotient(V).asDiagonal()) * (K * W + (h - V) * mu);
 // std::cout << "factorized rhs=" << rhs << std::endl; 
-        return (1.0/n_reg) * (rhs - lhs);
+        return (rhs - lhs) / n_reg;
     }
 
 };

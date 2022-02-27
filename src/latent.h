@@ -57,14 +57,22 @@ public:
     
     const VectorXd& getW()  const             {return W; }
     void            setW(const VectorXd& W)   {this->W = W; }
+
+    const VectorXd getMean() const { return mu * (getV() - h); }
     
     // Related to optimizer
     const VectorXd getTheta() const;
     const VectorXd getGrad();
     void           setTheta(const VectorXd);
 
+    // mean(mu, V, h) = mu*(V-h)
+// getSV
+// getdK(num )
+// change parametrization theta(kappa)
+
 
     /*  2 Variance component   */
+    const VectorXd getSV() const { VectorXd V=getV(); return (V*sigma); } // local object
     const VectorXd& getV() const { return var->getV(); }
     virtual void sample_cond_V()=0;
 
@@ -76,6 +84,9 @@ public:
     const double getKappa() const             {return ope->getKappa(); } 
     void         setKappa(const double kappa) {ope->setKappa(kappa);} 
     virtual double _grad_kappa()=0;
+   
+    // virtual double _grad_theta()=0;
+    
 };
 
 // according to the config, decide what parameters to return

@@ -28,16 +28,14 @@ protected:
 /* config */
     unsigned n_gibbs;
 
-
 // n_regs   = row(A1) + ... + row(An)
 // n_paras = total paras need to optimize
     unsigned n_obs, n_latent, n_regs, n_paras;
     std::vector<Latent*> latents;
 
-// Q: what is mu, sigma here
-    double mu, sigma, sigma_eps;
+    double sigma_eps;
     
-    VectorXd Y, Mu, h;
+    VectorXd Y;
 
     SparseMatrix<double> A, K, dK, d2K;
 
@@ -54,16 +52,12 @@ public:
       n_latent(latents_in.size()), 
       n_regs(n_regs),
       n_paras(n_paras),
-      mu(1),
-      sigma(1),
       sigma_eps(1),
-      h(n_regs),
       Y(Y), 
       A(n_obs, n_regs), 
       K(n_regs, n_regs), 
       dK(n_regs, n_regs),
-      d2K(n_regs, n_regs),
-      Mu(n_regs)
+      d2K(n_regs, n_regs)
     {
     // Init each latent model
     for (int i=0; i < n_latent; ++i) {
@@ -77,19 +71,20 @@ public:
     }
     
     /* Init variables: h, A */
-    h = VectorXd::Constant(n_regs, 1);
     int n = 0;
     for (std::vector<Latent*>::iterator it = latents.begin(); it != latents.end(); it++) {
         setSparseBlock(&A,   0, n, (*it)->getA());            
         n += (*it)->getSize();
     }
     assemble();
-
-        VectorXd inv_V = VectorXd::Constant(n_regs, 1).cwiseQuotient(getV());
-        SparseMatrix<double> QQ = pow(sigma, -2) * K.transpose() * inv_V.asDiagonal() * K + pow(sigma_eps, 2) * A.transpose() * A;
+std::cout << "after assemble" << std::endl;    
+        VectorXd inv_SV = VectorXd::Constant(n_regs, 1).cwiseQuotient(getSV());
+std::cout << "invsv=" << inv_SV << std::endl;    
+        SparseMatrix<double> QQ = K.transpose() * inv_SV.asDiagonal() * K + pow(sigma_eps, 2) * A.transpose() * A;
     chol_Q.analyze(QQ);
-    
+std::cout << "before sample" << std::endl;    
     sampleW_VY();
+std::cout << "after sample" << std::endl;
     }
 
     void sampleW_VY();
@@ -117,15 +112,31 @@ public:
         }
     }
 
-    VectorXd getV() const {
-        VectorXd V (n_regs);
+    // return mean
+    VectorXd getMean() const {
+        VectorXd mean (n_regs);
         int pos = 0;
         for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
             int size = (*it)->getSize();
-            V.segment(pos, size) = (*it)->getV();
+            mean.segment(pos, size) = (*it)->getMean();
             pos += size;
         }
-        return V;
+        return mean;
+    }
+
+    // return sigma * V
+    VectorXd getSV() const {
+        VectorXd SV (n_regs);
+        int pos = 0;
+        for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+            int size = (*it)->getSize();
+// std::cout << "latentSV=" <<  latentSV << std::endl;    
+            SV.segment(pos, size) = (*it)->getSV();
+// std::cout << "sv after segment=" <<  SV << std::endl;    
+            pos += size;
+        }
+// std::cout << "SV=" << SV << std::endl;    
+        return SV;
     }
 
     VectorXd getW() const {
@@ -151,7 +162,7 @@ res["A"] = A;
 res["K"] = K;
 res["dK"] = dK;
 res["d2K"] = d2K;
-res["V"] = getV();
+res["V"] = getSV();
 res["W"] = getW();
 return res;
 }

@@ -28,14 +28,17 @@ void BlockModel::setW(const VectorXd& W) {
 // sample W|VY 
 void BlockModel::sampleW_VY()
 {
-  VectorXd V = getV();
-  VectorXd inv_V = VectorXd::Constant(V.size(), 1).cwiseQuotient(V);
+  // for loop latent
+// mean <- 
+// V <- sigma * V
+  VectorXd SV = getSV();
+  VectorXd inv_SV = VectorXd::Constant(SV.size(), 1).cwiseQuotient(SV);
 
-  SparseMatrix<double> Q = pow(sigma, -2) * K.transpose() * inv_V.asDiagonal() * K;
+  SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
   SparseMatrix<double> QQ = Q + pow(sigma_eps, -2) * A.transpose() * A;
 
   chol_Q.compute(QQ);
-  VectorXd M = K.transpose() * inv_V.asDiagonal() * (mu*(V-h)) + pow(sigma_eps,2) * A.transpose() * Y;
+  VectorXd M = K.transpose() * inv_SV.asDiagonal() * getMean() + pow(sigma_eps,2) * A.transpose() * Y;
 
   VectorXd z (n_regs); 
   z = rnorm_vec(n_regs, 0, 1);

@@ -12,11 +12,17 @@ using Eigen::VectorXd;
 
 class Operator {
 protected:
+    bool use_num {false};
     double kappa; // parameter
     SparseMatrix<double, 0, int> K, dK, d2K;
 public:
     Operator(): kappa(1) {};
     Operator(double kappa): kappa(kappa) {};
+    
+    Operator(Rcpp::List ope_in) {
+        use_num = Rcpp::as<bool> (ope_in["use_numerical"]);
+std::cout << "use_num" << use_num << std::endl;
+    };
 
     // update matrices when kappa is updated
     virtual void update()=0;
@@ -37,7 +43,7 @@ private:
     SparseMatrix<double, 0, int> G, C;
 
 public:
-    GC(Rcpp::List ope_in) {
+    GC(Rcpp::List ope_in) : Operator(ope_in) {
         kappa = ope_in["a_init"];
         G = Rcpp::as< SparseMatrix<double,0,int> > (ope_in["G"]);
         C = Rcpp::as< SparseMatrix<double,0,int> > (ope_in["C"]);
@@ -49,6 +55,12 @@ public:
 
     void update() {
         K = kappa * C + G;
+        
+        if (use_num) {
+            double eps = 0.01;
+            SparseMatrix<double> Keps = (kappa + eps) * C + G;
+            dK = (Keps - K) / eps;
+        }
     }
 
 };

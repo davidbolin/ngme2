@@ -9,7 +9,7 @@ using Eigen::SparseMatrix;
 
 using namespace Rcpp;
 
-void testGradConvergence(BlockModel&, int);
+void testGradConvergence(BlockModel&, int, double);
 
 // [[Rcpp::export]]
 Rcpp::List predict_cpp(Rcpp::List in_list) {
@@ -30,6 +30,7 @@ Rcpp::List predict_cpp(Rcpp::List in_list) {
         const int OPT_K = config_list["opt_k"];
         const int OPT_V = config_list["opt_v"];
         const int interations = config_list["iterations"];
+        const double stepsize = config_list["stepsize"];
         
         const Eigen::VectorXd trueV = Rcpp::as<VectorXd>   (config_list["trueV"]);
         const Eigen::VectorXd trueW = Rcpp::as<VectorXd>   (config_list["trueW"]);
@@ -52,15 +53,15 @@ Rcpp::List predict_cpp(Rcpp::List in_list) {
     // *****************   testing  ***************** 
 
     // 1. test convergence
-    testGradConvergence(block, interations);
+    testGradConvergence(block, interations, stepsize);
     
     // out_list = block.testResult();
     return out_list;
 }
 
-void testGradConvergence(BlockModel& block, int iterations) {
+void testGradConvergence(BlockModel& block, int iterations, double stepsize) {
     Optimizer opt;
-    opt.sgd(block, 0.05, 0.1, false, iterations);
+    opt.sgd(block, stepsize, 0.1, false, iterations);
 }
 
 

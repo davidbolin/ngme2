@@ -2,6 +2,11 @@
 #include "../include/solver.h"
 #include "../latent.h"
 #include "../var.h"
+#include <cmath>
+
+using std::exp;
+using std::log;
+using std::pow;
 
 class AR : public Latent {
     lu_sparse_solver solver_K;
@@ -35,6 +40,32 @@ public:
                     (VectorXd::Constant(n_reg, 1).cwiseQuotient(V).asDiagonal()) * (K * W + (h - V) * mu);
 // std::cout << "factorized rhs=" << rhs << std::endl; 
         return (rhs - lhs) / n_reg;
+    }
+    
+    const double th2a(const double th) const {
+        return (-1 + 2*exp(th) / (1+exp(th)));
+    }
+    const double a2th(const double a) const {
+        return (log((-1-a)/(-1+a)));
+    }
+
+    const double get_theta_kappa() const {
+        double a = getKappa();
+        return a2th(a);
+    }
+
+    void set_theta_kappa(const VectorXd v) {
+        double th = v(0);
+        double a = th2a(th);
+        setKappa(a);
+    }
+
+    // grad_kappa * dkappa/dtheta
+    double _grad_theta_kappa() {
+        double a = getKappa();
+        double th = a2th(a);
+        double dth = 2 * exp(th) / pow(1+exp(th), 2);
+        return _grad_kappa() * dth;
     }
 
 };

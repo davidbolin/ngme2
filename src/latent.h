@@ -83,7 +83,10 @@ public:
 
     const double getKappa() const             {return ope->getKappa(); } 
     void         setKappa(const double kappa) {ope->setKappa(kappa);} 
-    virtual double _grad_kappa()=0;
+    
+    virtual const double get_theta_kappa() const=0;
+    virtual void set_theta_kappa(const VectorXd v)=0;
+    virtual double _grad_theta_kappa()=0;
    
     // virtual double _grad_theta()=0;
     
@@ -91,22 +94,24 @@ public:
 
 // according to the config, decide what parameters to return
 inline const VectorXd Latent::getTheta() const {
-    // for now, just return kappa
+    // for now, just return theta(kappa)
     VectorXd theta (1);
-    theta << getKappa();
+    theta << get_theta_kappa();
     return theta;
 }
 
 inline const VectorXd Latent::getGrad() {
-    // for now, just return kappa
+    // for now, just return theta(kappa)
     VectorXd grad (1);
-    grad << _grad_kappa();
+    // grad << _grad_kappa();
+    grad << _grad_theta_kappa();
     return grad;
 }
 
 inline void Latent::setTheta(const VectorXd v) {
-    // for now, just set kappa
-    setKappa(v(0));
+    // for now, just set theta(kappa)
+    // setKappa(v(0));
+    set_theta_kappa(v);
 }
 
 #endif

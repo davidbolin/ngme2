@@ -36,7 +36,6 @@ protected:
     double sigma_eps;
     
     VectorXd Y;
-
     SparseMatrix<double> A, K, dK, d2K;
 
     cholesky_solver chol_Q;
@@ -46,8 +45,9 @@ public:
     BlockModel(const VectorXd Y, 
                const int n_paras,
                const int n_regs,
-               Rcpp::List latents_in) 
-    : n_gibbs(20),
+               Rcpp::List latents_in,
+               const int n_gibbs) 
+    : n_gibbs(n_gibbs),
       n_obs(Y.size()),
       n_latent(latents_in.size()), 
       n_regs(n_regs),
@@ -77,14 +77,11 @@ public:
         n += (*it)->getSize();
     }
     assemble();
-std::cout << "after assemble" << std::endl;    
+
         VectorXd inv_SV = VectorXd::Constant(n_regs, 1).cwiseQuotient(getSV());
-std::cout << "invsv=" << inv_SV << std::endl;    
         SparseMatrix<double> QQ = K.transpose() * inv_SV.asDiagonal() * K + pow(sigma_eps, 2) * A.transpose() * A;
     chol_Q.analyze(QQ);
-std::cout << "before sample" << std::endl;    
     sampleW_VY();
-std::cout << "after sample" << std::endl;
     }
 
     void sampleW_VY();
@@ -130,12 +127,10 @@ std::cout << "after sample" << std::endl;
         int pos = 0;
         for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
             int size = (*it)->getSize();
-// std::cout << "latentSV=" <<  latentSV << std::endl;    
             SV.segment(pos, size) = (*it)->getSV();
-// std::cout << "sv after segment=" <<  SV << std::endl;    
             pos += size;
         }
-// std::cout << "SV=" << SV << std::endl;    
+
         return SV;
     }
 
@@ -176,6 +171,7 @@ inline VectorXd BlockModel::get_parameter() const {
     int pos = 0;
     for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
         VectorXd theta = (*it)->getTheta();
+std::cout << "theta here is " << theta << std::endl;
         thetas.segment(pos, theta.size()) = theta;
         pos += theta.size();
     }

@@ -42,19 +42,19 @@ public:
         return (rhs - lhs) / n_reg;
     }
     
-    const double th2a(const double th) const {
+    double th2a(double th) const {
         return (-1 + 2*exp(th) / (1+exp(th)));
     }
-    const double a2th(const double a) const {
+    double a2th(double a) const {
         return (log((-1-a)/(-1+a)));
     }
 
-    const double get_theta_kappa() const {
+    double get_theta_kappa() const {
         double a = getKappa();
         return a2th(a);
     }
 
-    void set_theta_kappa(const VectorXd v) {
+    void set_theta_kappa(const VectorXd& v) {
         double th = v(0);
         double a = th2a(th);
         setKappa(a);

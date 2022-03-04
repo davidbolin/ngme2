@@ -16,10 +16,10 @@ public:
     // to-do: terminate criteria
     // to-do: regularizer? -> proximal operator wrt regularization
     VectorXd sgd(Model& model,
-                const double stepsize, 
-                const double eps,
-                const bool precondioner,
-                const int iterations);
+                double stepsize, 
+                double eps,
+                bool precondioner,
+                int iterations);
 };
 
 #endif

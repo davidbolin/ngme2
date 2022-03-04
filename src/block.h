@@ -42,11 +42,11 @@ protected:
 public:
     BlockModel() {}
     // main constructor
-    BlockModel(const VectorXd Y, 
-               const int n_paras,
-               const int n_regs,
+    BlockModel(VectorXd Y, 
+               int n_paras,
+               int n_regs,
                Rcpp::List latents_in,
-               const int n_gibbs) 
+               int n_gibbs) 
     : n_gibbs(n_gibbs),
       n_obs(Y.size()),
       n_latent(latents_in.size()), 

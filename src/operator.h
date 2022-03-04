@@ -21,14 +21,13 @@ public:
     
     Operator(Rcpp::List ope_in) {
         use_num = Rcpp::as<bool> (ope_in["use_numerical"]);
-std::cout << "use_num" << use_num << std::endl;
     };
 
     // update matrices when kappa is updated
     virtual void update()=0;
 
-    const double getKappa() const {return kappa; }
-    void         setKappa(const double kappa) {this->kappa = kappa; update();}
+    double getKappa() const {return kappa; }
+    void   setKappa(double kappa) {this->kappa = kappa; update();}
 
     // getter for K, dK, d2K
     SparseMatrix<double, 0, int>& getK()    {return K;}
@@ -57,12 +56,15 @@ public:
         K = kappa * C + G;
         
         if (use_num) {
-            double eps = 0.01;
-            SparseMatrix<double> Keps = (kappa + eps) * C + G;
-            dK = (Keps - K) / eps;
+            update_num();
         }
     }
 
+    void update_num() {
+        double eps = 0.01;
+        SparseMatrix<double> Keps = (kappa + eps) * C + G;
+        dK = (Keps - K) / eps;
+    }
 };
 
 #endif

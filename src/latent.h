@@ -63,16 +63,24 @@ public:
     // Related to optimizer
     const VectorXd getTheta() const;
     const VectorXd getGrad();
-    void           setTheta(const VectorXd);
+    void           setTheta(const VectorXd&);
 
     // mean(mu, V, h) = mu*(V-h)
 // getSV
 // getdK(num )
 // change parametrization theta(kappa)
 
+    // Parameter mu
+    double getMu() const     {return mu;} 
+    void   setMu (double mu) {this->mu = mu;} 
+
+// mu is unbounded, do i need to use theta
+    // virtual double get_theta_kappa() const=0;
+    // virtual void   set_theta_kappa(const VectorXd& v)=0;
+    // virtual double _grad_theta_kappa()=0;
 
     /*  2 Variance component   */
-    const VectorXd getSV() const { VectorXd V=getV(); return (V*sigma); } // local object
+    VectorXd getSV() const { VectorXd V=getV(); return (V*sigma); } // local object
     const VectorXd& getV() const { return var->getV(); }
     virtual void sample_cond_V()=0;
 
@@ -81,11 +89,12 @@ public:
     SparseMatrix<double, 0, int>& get_dK()  { return ope->get_dK(); }
     SparseMatrix<double, 0, int>& get_d2K() { return ope->get_d2K(); }
 
-    const double getKappa() const             {return ope->getKappa(); } 
-    void         setKappa(const double kappa) {ope->setKappa(kappa);} 
+    // Paramter kappa
+    double getKappa() const       {return ope->getKappa(); } 
+    void   setKappa(double kappa) {ope->setKappa(kappa);} 
     
-    virtual const double get_theta_kappa() const=0;
-    virtual void set_theta_kappa(const VectorXd v)=0;
+    virtual double get_theta_kappa() const=0;
+    virtual void   set_theta_kappa(const VectorXd& v)=0;
     virtual double _grad_theta_kappa()=0;
    
     // virtual double _grad_theta()=0;
@@ -108,7 +117,7 @@ inline const VectorXd Latent::getGrad() {
     return grad;
 }
 
-inline void Latent::setTheta(const VectorXd v) {
+inline void Latent::setTheta(const VectorXd& v) {
     // for now, just set theta(kappa)
     // setKappa(v(0));
     set_theta_kappa(v);

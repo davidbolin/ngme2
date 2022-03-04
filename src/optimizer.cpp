@@ -1,11 +1,11 @@
 #include "optimizer.h"
 
 VectorXd 
-Optimizer::sgd(Model& model,
-                        const double stepsize, 
-                        const double eps,
-                        const bool precondioner,
-                        const int iterations) {
+Optimizer::sgd( Model& model,
+                double stepsize, 
+                double eps,
+                bool precondioner,
+                int iterations) {
 
     int count = 0;
     VectorXd x = model.get_parameter();

@@ -170,11 +170,10 @@ inline VectorXd BlockModel::get_parameter() const {
     int pos = 0;
     for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
         VectorXd theta = (*it)->getTheta();
-std::cout << "theta here is " << theta << std::endl;
         thetas.segment(pos, theta.size()) = theta;
         pos += theta.size();
     }
-std::cout << "getTheta=" << thetas <<std::endl;
+// std::cout << "getTheta=" << thetas <<std::endl;
     return thetas;
 }
 
@@ -194,7 +193,7 @@ inline VectorXd BlockModel::grad() {
             gradient.segment(pos, theta_len) = (*it)->getGrad();
             pos += theta_len;
         }
-std::cout << "1 grad=" << gradient << std::endl;
+
         avg_gradient += gradient;
         sampleV_WY(); 
         sampleW_VY();

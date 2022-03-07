@@ -18,7 +18,7 @@ using Eigen::VectorXd;
 
 class Latent {
 protected:
-    unsigned n_reg, n_paras {4}; //regressors, parameters
+    int n_reg, n_paras {4}; //regressors, parameters
     
     // indicate which parameter to optimize
     bool opt_mu {false}, opt_sigma {false}, opt_kappa {false}, opt_var {false};
@@ -57,9 +57,8 @@ public:
         Rcpp::List v_init = Rcpp::as<Rcpp::List> (var_in["v_init"]);
 
         if (type == "ind_IG") {
-            double a = Rcpp::as<double>  (v_init["a"]);
-            double b = Rcpp::as<double>  (v_init["b"]);
-            var = new ind_IG(n_reg, a, b);
+            double nu = Rcpp::as<double>  (v_init["nu"]);
+            var = new ind_IG(n_reg, nu);
         }
     }
     ~Latent() {}
@@ -109,13 +108,13 @@ public:
     double _grad_kappa();
     
     // nu
-    virtual double get_theta_var() const { return mu; }
-    virtual void   set_theta_var(double v) { this->mu = v; }
-    // virtual double _grad_theta_var()=0;
+    virtual double get_theta_var() const   { return var->get_theta_var(); }
+    virtual void   set_theta_var(double v) { var->set_theta_var(v); }
+    virtual double grad_theta_var()        { return var->grad_theta_var();}
 
     // sigma
-    virtual double get_theta_sigma() const        {return sigma;}     //  { return log(sigma); }
-    virtual void   set_theta_sigma(double sigma)  {this->sigma=sigma;} // { this->sigma = exp(theta); std::cout << "SET SIGMA= " << sigma << std::endl;}
+    virtual double get_theta_sigma() const        { return log(sigma); }
+    virtual void   set_theta_sigma(double theta)  { this->sigma = exp(theta); }
     virtual double grad_theta_sigma();
 
 };
@@ -135,17 +134,18 @@ inline const VectorXd Latent::getTheta() const {
 inline const VectorXd Latent::getGrad() {
     VectorXd grad (n_paras);
     if (opt_kappa) grad(0) = grad_theta_kappa(); else grad(0) = 0;
-    if (opt_mu)    grad(1) = 0;         else grad(1) = 0;
+    if (opt_mu)    grad(1) = 0;                  else grad(1) = 0;
     if (opt_sigma) grad(2) = grad_theta_sigma(); else grad(2) = 0;
-    if (opt_var)   grad(3) = 0;        else grad(3) = 0;
-    
+    if (opt_var)   grad(3) = grad_theta_var();   else grad(3) = 0;
+
     return grad;
 }
 
 inline void Latent::setTheta(const VectorXd& theta) {
-    if (opt_sigma) set_theta_kappa(theta(0)); 
-    
+    if (opt_kappa) set_theta_kappa(theta(0)); 
+    // if (opt_sigma) set_theta_sigma(theta(2)); 
     if (opt_sigma) set_theta_sigma(theta(2)); 
+    if (opt_var)   set_theta_sigma(theta(3)); 
     
 }
 
@@ -170,13 +170,12 @@ inline double Latent::grad_theta_sigma() {
         VectorXd inv_V = VectorXd::Constant(V.size(), 1).cwiseQuotient(V);
 
     VectorXd mm = (K*W + (h-V)*mu);
-    double g = -n_reg * log(sigma) + pow(sigma, -3) * mm.transpose() * inv_V.asDiagonal() * mm;
-std::cout << "g here=" << g << std::endl;
 
-    return -g/n_reg;
+    double l = log(sigma) * (-n_reg);
+    double r = (mm.transpose() * inv_V.asDiagonal() * mm); r = r * pow(sigma, -3);
 
     // grad. wrt theta
-    // return -g/n_reg * sigma;
+    return -(l+r)/n_reg * sigma;
 }
 
 #endif

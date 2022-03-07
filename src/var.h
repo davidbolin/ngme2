@@ -30,24 +30,43 @@ public:
                                 VectorXd& h, 
                                 double mu, 
                                 double sigma)=0;
+
+    // optimizer related
+    virtual double get_theta_var()         const=0;
+    virtual void   set_theta_var(double)=0;
+    virtual double grad_theta_var()        const=0;
 };
 
-
+// a=b=nu
 class ind_IG : public Var{
 private:
-    double a, b;
+    double nu;
 public:
     ind_IG(){}
-    ind_IG(unsigned n, double a, double b) : a(a), b(b) {
+    ind_IG(unsigned n, double nu) : nu(nu) {
         this->n = n;
         V.resize(n);
         sample_V();
     }
 
+    // optimizer related
+    double get_theta_var() const   { return log(nu); }
+    void   set_theta_var(double theta) { nu = exp(theta); }
+    double grad_theta_var() const {
+        VectorXd tmp = VectorXd::Constant(n, 1/(2*nu)) - 0.5*V - VectorXd::Constant(n, 1).cwiseQuotient(2*V);
+        double g = tmp.sum()/n + 1;
+
+        // -g is grad. of nu
+        g = g * nu;
+// std::cout << "g = " << g << std::endl;
+        return g;
+    }
+
+    // sampling realted
     void sample_V() {
         gig sampler;
         for(int i = 0; i < n; i++)
-            V[i] = sampler.sample(-0.5, a, b);
+            V[i] = sampler.sample(-0.5, nu, nu);
     };
 
     // sample V given W
@@ -61,8 +80,8 @@ public:
 
         // VectorXd arg_2 = VectorXd::Constant(n, a) + Mu.cwiseProduct(Mu)/(sigma*sigma);   //+ eta * VectorXd::Ones(temporal.rows());
         VectorXd p_vec = VectorXd::Constant(n, -1);
-        VectorXd a_vec = VectorXd::Constant(n, a+std::pow((mu/sigma), 2));   //+ eta * VectorXd::Ones(temporal.rows());
-        VectorXd b_vec = VectorXd::Constant(n, b) + std::pow(sigma, -2) * (K*W + mu*h).cwiseProduct((K * W + mu*h));
+        VectorXd a_vec = VectorXd::Constant(n, nu+std::pow((mu/sigma), 2));   //+ eta * VectorXd::Ones(temporal.rows());
+        VectorXd b_vec = VectorXd::Constant(n, nu) + std::pow(sigma, -2) * (K*W + mu*h).cwiseProduct((K * W + mu*h));
         V = rGIG_cpp(p_vec, a_vec, b_vec);
     };
 };

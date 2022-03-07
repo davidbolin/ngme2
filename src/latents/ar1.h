@@ -9,7 +9,7 @@ using std::log;
 using std::pow;
 
 class AR : public Latent {
-    lu_sparse_solver solver_K;
+    
     
 public:
     AR(Rcpp::List ar1_in) 
@@ -26,22 +26,8 @@ public:
     void sample_cond_V() {
         var->sample_cond_V(getK(), W, h, mu, sigma);
     };
-
-    double _grad_kappa() {
-        SparseMatrix<double> K = getK();
-        SparseMatrix<double> dK = get_dK();
-        VectorXd V = getV();
-        solver_K.compute(K);
-
-        double lhs = solver_K.trace(dK); // tr(dK * K^-1)
-// std::cout << "factorized lhs=" << lhs << std::endl; 
-        // 2. Compute the rest
-        double rhs = W.transpose() * dK.transpose() * 
-                    (VectorXd::Constant(n_reg, 1).cwiseQuotient(V).asDiagonal()) * (K * W + (h - V) * mu);
-// std::cout << "factorized rhs=" << rhs << std::endl; 
-        return (rhs - lhs) / n_reg;
-    }
     
+
     double th2a(double th) const {
         return (-1 + 2*exp(th) / (1+exp(th)));
     }
@@ -54,14 +40,13 @@ public:
         return a2th(a);
     }
 
-    void set_theta_kappa(const VectorXd& v) {
-        double th = v(0);
-        double a = th2a(th);
+    void set_theta_kappa(double v) {
+        double a = th2a(v);
         setKappa(a);
     }
 
     // grad_kappa * dkappa/dtheta
-    double _grad_theta_kappa() {
+    double grad_theta_kappa() {
         double a = getKappa();
         double th = a2th(a);
         double dth = 2 * exp(th) / pow(1+exp(th), 2);

@@ -43,15 +43,14 @@ public:
     BlockModel() {}
     // main constructor
     BlockModel(VectorXd Y, 
-               int n_paras,
                int n_regs,
                Rcpp::List latents_in,
                int n_gibbs) 
     : n_gibbs(n_gibbs),
       n_obs(Y.size()),
+      n_paras(n_latent * 4),
       n_latent(latents_in.size()), 
       n_regs(n_regs),
-      n_paras(n_paras),
       sigma_eps(1),
       Y(Y), 
       A(n_obs, n_regs), 
@@ -195,14 +194,14 @@ inline VectorXd BlockModel::grad() {
             gradient.segment(pos, theta_len) = (*it)->getGrad();
             pos += theta_len;
         }
-// std::cout << "1grad=" << gradient << std::endl;
+std::cout << "1 grad=" << gradient << std::endl;
         avg_gradient += gradient;
         sampleV_WY(); 
         sampleW_VY();
     }
     avg_gradient = (1.0/n_gibbs) * avg_gradient;
 
-std::cout << "grad=" << avg_gradient <<std::endl;
+std::cout << "avg grad=" << avg_gradient <<std::endl;
     return avg_gradient;
 }
 

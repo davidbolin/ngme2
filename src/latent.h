@@ -3,6 +3,7 @@
 
 #include <string>
 #include <iostream>
+#include <cmath>
 #include <Rcpp.h>
 #include <RcppEigen.h>
 #include <Eigen/Dense>
@@ -17,26 +18,39 @@ using Eigen::VectorXd;
 
 class Latent {
 protected:
-    unsigned n_reg, n_paras; //regressors, parameters
+    unsigned n_reg, n_paras {4}; //regressors, parameters
     
+    // indicate which parameter to optimize
+    bool opt_mu {false}, opt_sigma {false}, opt_kappa {false}, opt_var {false};
+
     // data
+    VectorXd Y;
+    double sigma_eps;
+
     double mu, sigma;
     VectorXd W, h;
     SparseMatrix<double,0,int> A;
     
     Operator *ope;
     Var *var;
+    lu_sparse_solver solver_K;
 
 public:
     Latent(Rcpp::List latent_in) 
-    : n_paras ( Rcpp::as< unsigned > (latent_in["n_paras"]) ), 
-      n_reg   ( Rcpp::as< unsigned > (latent_in["n_reg"]) ),
+    : n_reg   ( Rcpp::as< unsigned > (latent_in["n_reg"]) ),
       A       ( Rcpp::as< SparseMatrix<double,0,int> > (latent_in["A"])),
       mu      (1),
       sigma   (1),
       W       (n_reg),
-      h       (VectorXd::Constant(n_reg, 1))
+      h       (VectorXd::Constant(n_reg, 1)),
+      sigma_eps(1)
     {
+        // Init opt. flag
+        opt_mu = Rcpp::as<bool>         (latent_in["opt_mu"]);
+        opt_sigma = Rcpp::as<bool>      (latent_in["opt_sigma"]);
+        opt_kappa = Rcpp::as<bool>      (latent_in["opt_kappa"]);
+        opt_var = Rcpp::as<bool>        (latent_in["opt_var"]);
+
         // Init var
         Rcpp::List var_in = Rcpp::as<Rcpp::List> (latent_in["var_in"]);
         string type       = Rcpp::as<string>     (var_in["type"]);
@@ -59,22 +73,11 @@ public:
     void            setW(const VectorXd& W)   {this->W = W; }
 
     const VectorXd getMean() const { return mu * (getV() - h); }
-    
-    // Related to optimizer
-    const VectorXd getTheta() const;
-    const VectorXd getGrad();
-    void           setTheta(const VectorXd&);
-
-    // mean(mu, V, h) = mu*(V-h)
-// getSV
-// getdK(num )
-// change parametrization theta(kappa)
 
     // Parameter mu
     double getMu() const     {return mu;} 
     void   setMu (double mu) {this->mu = mu;} 
 
-// mu is unbounded, do i need to use theta
     // virtual double get_theta_kappa() const=0;
     // virtual void   set_theta_kappa(const VectorXd& v)=0;
     // virtual double _grad_theta_kappa()=0;
@@ -93,34 +96,87 @@ public:
     double getKappa() const       {return ope->getKappa(); } 
     void   setKappa(double kappa) {ope->setKappa(kappa);} 
     
+    /* 4 for optimizer */
+
+    const VectorXd getTheta() const;
+    const VectorXd getGrad();
+    void           setTheta(const VectorXd&);
+
+    // kappa
     virtual double get_theta_kappa() const=0;
-    virtual void   set_theta_kappa(const VectorXd& v)=0;
-    virtual double _grad_theta_kappa()=0;
-   
-    // virtual double _grad_theta()=0;
+    virtual void   set_theta_kappa(double v)=0;
+    virtual double grad_theta_kappa()=0;
+    double _grad_kappa();
     
+    // nu
+    virtual double get_theta_var() const { return mu; }
+    virtual void   set_theta_var(double v) { this->mu = v; }
+    // virtual double _grad_theta_var()=0;
+
+    // sigma
+    virtual double get_theta_sigma() const        {return sigma;}     //  { return log(sigma); }
+    virtual void   set_theta_sigma(double sigma)  {this->sigma=sigma;} // { this->sigma = exp(theta); std::cout << "SET SIGMA= " << sigma << std::endl;}
+    virtual double grad_theta_sigma();
+
 };
 
-// according to the config, decide what parameters to return
+/*    Optimizer related    */
+//  bool opt_mu {false}, opt_sigma {false}, opt_kappa {false}, opt_var {false};
 inline const VectorXd Latent::getTheta() const {
-    // for now, just return theta(kappa)
-    VectorXd theta (1);
-    theta << get_theta_kappa();
+    VectorXd theta (n_paras);
+    if (opt_kappa) theta(0) = get_theta_kappa(); else theta(0) = 0;
+    if (opt_mu)    theta(1) = getMu();           else theta(1) = 0;
+    if (opt_sigma) theta(2) = get_theta_sigma(); else theta(2) = 0;
+    if (opt_var)   theta(3) = get_theta_var();   else theta(3) = 0;
+    
     return theta;
 }
 
 inline const VectorXd Latent::getGrad() {
-    // for now, just return theta(kappa)
-    VectorXd grad (1);
-    // grad << _grad_kappa();
-    grad << _grad_theta_kappa();
+    VectorXd grad (n_paras);
+    if (opt_kappa) grad(0) = grad_theta_kappa(); else grad(0) = 0;
+    if (opt_mu)    grad(1) = 0;         else grad(1) = 0;
+    if (opt_sigma) grad(2) = grad_theta_sigma(); else grad(2) = 0;
+    if (opt_var)   grad(3) = 0;        else grad(3) = 0;
+    
     return grad;
 }
 
-inline void Latent::setTheta(const VectorXd& v) {
-    // for now, just set theta(kappa)
-    // setKappa(v(0));
-    set_theta_kappa(v);
+inline void Latent::setTheta(const VectorXd& theta) {
+    if (opt_sigma) set_theta_kappa(theta(0)); 
+    
+    if (opt_sigma) set_theta_sigma(theta(2)); 
+    
+}
+
+inline double Latent::_grad_kappa() {
+    SparseMatrix<double> K = getK();
+    SparseMatrix<double> dK = get_dK();
+    VectorXd V = getV();
+    solver_K.compute(K);
+
+    double lhs = solver_K.trace(dK); // tr(dK * K^-1)
+    // 2. Compute the rest
+    double rhs = W.transpose() * dK.transpose() * 
+                (VectorXd::Constant(n_reg, 1).cwiseQuotient(V).asDiagonal()) * (K * W + (h - V) * mu);
+    return (rhs - lhs) / n_reg;
+}
+
+// sigma>0 -> theta=log(sigma)
+// return the gradient wrt. theta, theta=log(sigma)
+inline double Latent::grad_theta_sigma() {
+    SparseMatrix<double> K = getK();
+    VectorXd V = getV();
+        VectorXd inv_V = VectorXd::Constant(V.size(), 1).cwiseQuotient(V);
+
+    VectorXd mm = (K*W + (h-V)*mu);
+    double g = -n_reg * log(sigma) + pow(sigma, -3) * mm.transpose() * inv_V.asDiagonal() * mm;
+std::cout << "g here=" << g << std::endl;
+
+    return -g/n_reg;
+
+    // grad. wrt theta
+    // return -g/n_reg * sigma;
 }
 
 #endif

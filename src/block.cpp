@@ -28,9 +28,6 @@ void BlockModel::setW(const VectorXd& W) {
 // sample W|VY 
 void BlockModel::sampleW_VY()
 {
-  // for loop latent to build V
-// mean <- 
-// V <- sigma * V
   VectorXd SV = getSV();
   VectorXd inv_SV = VectorXd::Constant(SV.size(), 1).cwiseQuotient(SV);
 

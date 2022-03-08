@@ -57,7 +57,7 @@ public:
         double g = tmp.sum()/n + 1;
 
         // -g is grad. of nu
-        g = g * nu;
+        g = -g * nu;
 // std::cout << "g = " << g << std::endl;
         return g;
     }

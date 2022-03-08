@@ -10,7 +10,6 @@ using std::pow;
 
 class AR : public Latent {
     
-    
 public:
     AR(Rcpp::List ar1_in) 
     : Latent(ar1_in)
@@ -18,7 +17,8 @@ public:
         // Init operator
         Rcpp::List ope_in = Rcpp::as<Rcpp::List> (ar1_in["operator_in"]); // containing C and G
         ope = new GC(ope_in);
-
+        
+        // Init K
         solver_K.init(n_reg, 0,0,0);
         solver_K.analyze(getK());
     }

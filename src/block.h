@@ -200,7 +200,7 @@ inline VectorXd BlockModel::grad() {
     }
     avg_gradient = (1.0/n_gibbs) * avg_gradient;
 
-std::cout << "avg grad=" << avg_gradient <<std::endl;
+// std::cout << "avg grad=" << avg_gradient <<std::endl;
     return avg_gradient;
 }
 
@@ -213,7 +213,7 @@ inline void BlockModel::set_parameter(const VectorXd& Theta) {
         pos += theta_len;
     }
     assemble(); //update K,dK,d2K after
-std::cout << "Theta=" << Theta <<std::endl;
+// std::cout << "Theta=" << Theta <<std::endl;
 }
 
 

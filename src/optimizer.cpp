@@ -1,11 +1,14 @@
 #include "optimizer.h"
 
-VectorXd 
-Optimizer::sgd( Model& model,
+
+Rcpp::List Optimizer::sgd( Model& model,
                 double stepsize, 
                 double eps,
                 bool precondioner,
                 int iterations) {
+
+    vector<VectorXd> x_traj;
+    vector<VectorXd> grad_traj;
 
     int count = 0;
     VectorXd x = model.get_parameter();
@@ -28,6 +31,10 @@ Optimizer::sgd( Model& model,
             x = x - stepsize * grad;
         }
 
+        // record x and grad
+        x_traj.push_back(x);
+        grad_traj.push_back(grad);
+
         model.set_parameter(x);
 
         // to-do: criteria of eps
@@ -35,5 +42,7 @@ Optimizer::sgd( Model& model,
             terminate = true;
 
     }
-    return x;
+    return Rcpp::List::create(Rcpp::Named("grad_traj") = grad_traj,
+                              Rcpp::Named("x_traj") = x_traj);
 }
+

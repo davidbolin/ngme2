@@ -22,6 +22,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// test_output
+Rcpp::List test_output(Rcpp::List in_list);
+RcppExport SEXP _ngme2_test_output(SEXP in_listSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type in_list(in_listSEXP);
+    rcpp_result_gen = Rcpp::wrap(test_output(in_list));
+    return rcpp_result_gen;
+END_RCPP
+}
 // rGIG_cpp
 Eigen::VectorXd rGIG_cpp(Eigen::VectorXd p, Eigen::VectorXd a, Eigen::VectorXd b, unsigned long seed);
 RcppExport SEXP _ngme2_rGIG_cpp(SEXP pSEXP, SEXP aSEXP, SEXP bSEXP, SEXP seedSEXP) {
@@ -41,6 +52,7 @@ RcppExport SEXP run_testthat_tests(SEXP);
 
 static const R_CallMethodDef CallEntries[] = {
     {"_ngme2_predict_cpp", (DL_FUNC) &_ngme2_predict_cpp, 1},
+    {"_ngme2_test_output", (DL_FUNC) &_ngme2_test_output, 1},
     {"_ngme2_rGIG_cpp", (DL_FUNC) &_ngme2_rGIG_cpp, 4},
     {"run_testthat_tests", (DL_FUNC) &run_testthat_tests, 1},
     {NULL, NULL, 0}

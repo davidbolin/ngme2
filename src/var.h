@@ -53,9 +53,9 @@ public:
     double get_theta_var() const   { return log(nu); }
     void   set_theta_var(double theta) { nu = exp(theta); }
     double grad_theta_var() const {
-        VectorXd tmp = VectorXd::Constant(n, 1/(2*nu)) - 0.5*V - VectorXd::Constant(n, 1).cwiseQuotient(2*V);
-        double g = tmp.sum()/n + 1;
-
+        VectorXd tmp = VectorXd::Constant(n, 1+1/(2*nu)) - 0.5*V - VectorXd::Constant(n, 1).cwiseQuotient(2*V);
+        double g = tmp.mean();
+        
         // -g is grad. of nu
         g = -g * nu;
 // std::cout << "g = " << g << std::endl;

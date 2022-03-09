@@ -131,7 +131,6 @@ public:
 };
 
 /*    Optimizer related    */
-//  bool opt_mu {false}, opt_sigma {false}, opt_kappa {false}, opt_var {false};
 inline const VectorXd Latent::getTheta() const {
     VectorXd theta (n_paras);
 
@@ -139,10 +138,6 @@ inline const VectorXd Latent::getTheta() const {
     theta(1) = get_mu();         
     theta(2) = get_theta_sigma();
     theta(3) = get_theta_var();  
-    // if (opt_kappa) theta(0) = get_theta_kappa(); else theta(0) = 0;
-    // if (opt_mu)    theta(1) = get_mu();           else theta(1) = 0;
-    // if (opt_sigma) theta(2) = get_theta_sigma(); else theta(2) = 0;
-    // if (opt_var)   theta(3) = get_theta_var();   else theta(3) = 0;
     
     return theta;
 }

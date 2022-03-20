@@ -43,7 +43,7 @@ public:
     Latent(Rcpp::List latent_in) 
     : n_reg   ( Rcpp::as< unsigned > (latent_in["n_reg"]) ),
       A       ( Rcpp::as< SparseMatrix<double,0,int> > (latent_in["A"])),
-      mu      (1),
+      mu      (0),
       sigma   (1),
       W       (n_reg),
       h       (VectorXd::Constant(n_reg, 1)),
@@ -82,16 +82,8 @@ public:
 
     VectorXd getMean() const { return mu * (getV() - h); }
 
-    // Parameter mu
-    double get_mu() const     {return mu;} 
-    void   set_mu (double mu) {this->mu = mu;} 
-
-    // virtual double get_theta_kappa() const=0;
-    // virtual void   set_theta_kappa(const VectorXd& v)=0;
-    // virtual double _grad_theta_kappa()=0;
-
     /*  2 Variance component   */
-    VectorXd getSV() const { VectorXd V=getV(); return (V*sigma); } // local object
+    VectorXd getSV() const { VectorXd V=getV(); return (V*pow(sigma,2)); }
     const VectorXd& getV() const { return var->getV(); }
     virtual void sample_cond_V()=0;
 
@@ -127,7 +119,9 @@ public:
     virtual double grad_theta_sigma();
 
     // mu
-    virtual double grad_theta_mu();
+    double get_mu() const     {return mu;} 
+    void   set_mu (double mu) {this->mu = mu;} 
+    virtual double grad_mu();
 };
 
 /*    Optimizer related    */
@@ -145,7 +139,7 @@ inline const VectorXd Latent::getTheta() const {
 inline const VectorXd Latent::getGrad() {
     VectorXd grad (n_paras);
     if (opt_kappa) grad(0) = grad_theta_kappa(); else grad(0) = 0;
-    if (opt_mu)    grad(1) = grad_theta_mu();    else grad(1) = 0;
+    if (opt_mu)    grad(1) = grad_mu();          else grad(1) = 0;
     if (opt_sigma) grad(2) = grad_theta_sigma(); else grad(2) = 0;
     if (opt_var)   grad(3) = grad_theta_var();   else grad(3) = 0;
 
@@ -154,7 +148,7 @@ inline const VectorXd Latent::getGrad() {
 
 inline void Latent::setTheta(const VectorXd& theta) {
     if (opt_kappa) set_theta_kappa(theta(0)); 
-    if (opt_mu)    set_mu(theta(2)); 
+    if (opt_mu)    set_mu(theta(1)); 
     if (opt_sigma) set_theta_sigma(theta(2)); 
     if (opt_var)   set_theta_var(theta(3)); 
 }
@@ -163,12 +157,16 @@ inline double Latent::_grad_kappa() {
     SparseMatrix<double> K = getK();
     SparseMatrix<double> dK = get_dK();
     VectorXd V = getV();
+    VectorXd SV = getSV();
     solver_K.compute(K);
 
-    double lhs = solver_K.trace(dK); // tr(dK * K^-1)
-    // 2. Compute the rest
-    double rhs = W.transpose() * dK.transpose() * 
-                (VectorXd::Constant(n_reg, 1).cwiseQuotient(V).asDiagonal()) * (K * W + (h - V) * mu);
+    SparseMatrix<double> M = dK.transpose() * K;
+    double lhs = solver_K.trace(M);
+
+    // double lhs = solver_K.trace(dK); // tr(dK * K^-1)
+    // double rhs = W.transpose() * dK.transpose() * 
+    //             (VectorXd::Constant(n_reg, 1).cwiseQuotient(V).asDiagonal()) * (K * W + (h - V) * mu);
+    double rhs = (dK*W).cwiseProduct(SV.cwiseInverse()).cwiseProduct(K * W + (h - V) * mu).sum();
     return (rhs - lhs) / n_reg;
 }
 
@@ -188,32 +186,46 @@ inline double Latent::grad_theta_sigma() {
     return -(l+r)/n_reg * sigma;
 }
 
-inline double Latent::grad_theta_mu() {
+inline double Latent::grad_mu() {
     SparseMatrix<double> K = getK();
-    solver_K.compute(K);
-    VectorXd mean = getMean();
-    VectorXd m = solver_K.solve(mean);
-
     VectorXd V = getV();
-        VectorXd inv_V = VectorXd::Constant(V.size(), 1).cwiseQuotient(V);
-    VectorXd SV = getSV();
-        VectorXd inv_SV = VectorXd::Constant(SV.size(), 1).cwiseQuotient(SV);
+    VectorXd inv_V = V.cwiseInverse();
+    VectorXd Vmh = V-h;
 
-    SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
-    SparseMatrix<double> QQ = Q + pow(sigma_eps, -2) * A.transpose() * A;
-        if (!Q_analyzed) { solver_Q.analyze(QQ); Q_analyzed=true; }
-    solver_Q.compute(QQ);
+    // double hess_mu = -(Vmh).transpose() * inv_SV.asDiagonal() * Vmh;  // get previous V
+    // double g = (Vmh).transpose() * inv_SV.asDiagonal() * (K*W - mu*Vmh);
+    double hess_mu = -pow(sigma,-2) * (Vmh).cwiseProduct(inv_V).cwiseProduct(Vmh).sum();
+    double g = pow(sigma,-2) * (Vmh).cwiseProduct(inv_V).cwiseProduct(K*W-mu*Vmh).sum();
 
-
-    VectorXd tmp = K.transpose() * inv_SV.asDiagonal() * getMean() + 
-                   pow(sigma_eps, -2) * A.transpose() * Y;
-    
-    VectorXd mm = solver_Q.solve(tmp);
-        tmp = V - h;
-        VectorXd tmp2 = A * solver_K.solve(tmp);
-    double g = tmp2.transpose() * inv_V.asDiagonal() * (Y - mu*tmp2 - A * (mm-m));
-
-    return -g/n_reg;
+    return g / hess_mu;
 }
+
+// inline double Latent::grad_mu() {
+//     SparseMatrix<double> K = getK();
+//     solver_K.compute(K);
+//     VectorXd mean = getMean();
+//     VectorXd m = solver_K.solve(mean);
+
+//     VectorXd V = getV();
+//         VectorXd inv_V = VectorXd::Constant(V.size(), 1).cwiseQuotient(V);
+//     VectorXd SV = getSV();
+//         VectorXd inv_SV = VectorXd::Constant(SV.size(), 1).cwiseQuotient(SV);
+
+//     SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
+//     SparseMatrix<double> QQ = Q + pow(sigma_eps, -2) * A.transpose() * A;
+//         if (!Q_analyzed) { solver_Q.analyze(QQ); Q_analyzed=true; }
+//     solver_Q.compute(QQ);
+
+
+//     VectorXd tmp = K.transpose() * inv_SV.asDiagonal() * getMean() + 
+//                    pow(sigma_eps, -2) * A.transpose() * Y;
+    
+//     VectorXd mm = solver_Q.solve(tmp);
+//         tmp = V - h;
+//         VectorXd tmp2 = A * solver_K.solve(tmp);
+//     double g = tmp2.transpose() * inv_V.asDiagonal() * (Y - mu*tmp2 - A * (mm-m));
+
+//     return -g/n_reg;
+// }
 
 #endif

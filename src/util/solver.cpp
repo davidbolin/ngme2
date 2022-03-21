@@ -357,6 +357,24 @@ void lu_sparse_solver::compute(SparseMatrix<double, 0, int> &K_in)
   KKtinv_computed = 0;
 }
 
+// similar to compute
+void lu_sparse_solver::computeKKT(SparseMatrix<double, 0, int> &K_in)
+{
+  K = K_in;
+
+  if (K.isCompressed() == 0)
+    K.makeCompressed();
+
+  if (K.rows() != n)
+  {
+    Rcpp::Rcout << "incorrect matrix size: n= " << n;
+    Rcpp::Rcout << ", K = " << K.rows() << " * " << K.cols() << std::endl;
+  }
+
+  L_KKt.factorize(K.transpose() * K); // KKT
+  KKtinv_computed = 0;
+}
+
 // Solve trace(M*Q^-1)
 double lu_sparse_solver::trace(MatrixXd &M)
 {

@@ -8,6 +8,7 @@
 #include <RcppEigen.h>
 #include <Eigen/Dense>
 
+#include "include/timer.h"
 #include "include/solver.h"
 #include "operator.h"
 #include "var.h"
@@ -138,10 +139,21 @@ inline const VectorXd Latent::getTheta() const {
 
 inline const VectorXd Latent::getGrad() {
     VectorXd grad (n_paras);
+auto grad1 = std::chrono::steady_clock::now();
     if (opt_kappa) grad(0) = grad_theta_kappa(); else grad(0) = 0;
+std::cout << "grad1 (ms): " << since(grad1).count() << std::endl;   
+
+auto grad2 = std::chrono::steady_clock::now();
     if (opt_mu)    grad(1) = grad_mu();          else grad(1) = 0;
+std::cout << "grad2 (ms): " << since(grad2).count() << std::endl;   
+
+auto grad3 = std::chrono::steady_clock::now();
     if (opt_sigma) grad(2) = grad_theta_sigma(); else grad(2) = 0;
+std::cout << "grad3 (ms): " << since(grad3).count() << std::endl;   
+
+auto grad4 = std::chrono::steady_clock::now();
     if (opt_var)   grad(3) = grad_theta_var();   else grad(3) = 0;
+std::cout << "grad4 (ms): " << since(grad4).count() << std::endl;   
 
     return grad;
 }
@@ -158,16 +170,39 @@ inline double Latent::_grad_kappa() {
     SparseMatrix<double> dK = get_dK();
     VectorXd V = getV();
     VectorXd SV = getSV();
-    solver_K.compute(K);
 
+// compute trace in 1 way
+auto timer_init = std::chrono::steady_clock::now();
+    solver_K.computeKKT(K);
+std::cout << "time for compute K (ms): " << since(timer_init).count() << std::endl;
+
+auto timer_trace = std::chrono::steady_clock::now();
     SparseMatrix<double> M = dK.transpose() * K;
-    double lhs = solver_K.trace(M);
+    double trace = solver_K.trace(M);
+std::cout << "time for the trace (ms): " << since(timer_trace).count() << std::endl;   
 
-    // double lhs = solver_K.trace(dK); // tr(dK * K^-1)
+std::cout << "trace1=: " << trace << std::endl;   
+
+// 2. ordinary way
+// auto timer_init2 = std::chrono::steady_clock::now();
+//     SparseLU<SparseMatrix<double>> eigen_solver_K;
+//     eigen_solver_K.compute(K);
+// std::cout << "time for compute K2 (ms): " << since(timer_init2).count() << std::endl;
+
+// ///// takes 1s to compute the trace
+// auto timer_trace2 = std::chrono::steady_clock::now();
+//     SparseMatrix<double> trace_mat = eigen_solver_K.solve(dK);
+    
+//     double trace2 = trace_mat.diagonal().sum();
+// std::cout << "time for the trace2 (ms): " << since(timer_trace2).count() << std::endl;   
+// std::cout << "trace2=: " << trace2 << std::endl;   
+    
+    // tr(dK * K^-1)
+    // double lhs = solver_K.trace(dK); 
     // double rhs = W.transpose() * dK.transpose() * 
     //             (VectorXd::Constant(n_reg, 1).cwiseQuotient(V).asDiagonal()) * (K * W + (h - V) * mu);
     double rhs = (dK*W).cwiseProduct(SV.cwiseInverse()).cwiseProduct(K * W + (h - V) * mu).sum();
-    return (rhs - lhs) / n_reg;
+    return (rhs - trace) / n_reg;
 }
 
 // sigma>0 -> theta=log(sigma)

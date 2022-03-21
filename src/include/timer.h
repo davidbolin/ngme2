@@ -1,3 +1,6 @@
+#ifndef NGME_TIMER
+#define NGME_TIMER
+
 #include <chrono>
 
 // timer
@@ -10,3 +13,5 @@ auto since(std::chrono::time_point<clock_t, duration_t> const& start)
 {
     return std::chrono::duration_cast<result_t>(clock_t::now() - start);
 }
+
+#endif

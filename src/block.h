@@ -13,6 +13,7 @@ BlockModel
 #include <vector>
 #include <iostream>
 
+#include "include/timer.h"
 #include "include/solver.h"
 #include "include/MatrixAlgebra.h"
 #include "model.h"
@@ -190,13 +191,17 @@ inline VectorXd BlockModel::grad() {
         int pos = 0;
         for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
             int theta_len = (*it)->getThetaSize();
+auto timer_computeg = std::chrono::steady_clock::now();
             gradient.segment(pos, theta_len) = (*it)->getGrad();
+std::cout << "timer_computeg (ms): " << since(timer_computeg).count() << std::endl;   
             pos += theta_len;
         }
 
         avg_gradient += gradient;
         sampleV_WY(); 
+auto timer_sampleW = std::chrono::steady_clock::now();
         sampleW_VY();
+std::cout << "sampleW (ms): " << since(timer_sampleW).count() << std::endl;   
     }
     avg_gradient = (1.0/n_gibbs) * avg_gradient;
 

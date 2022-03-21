@@ -43,8 +43,6 @@ void BlockModel::sampleW_VY()
   // sample W ~ N(QQ^-1*M, QQ^-1)
   VectorXd W = chol_Q.rMVN(M, z);
 
-// std::cout<< "V = " << V << std::endl;
-// std::cout<< "W = " << W << std::endl;
   setW(W);
 }
 

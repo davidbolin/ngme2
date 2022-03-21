@@ -2,15 +2,13 @@
 #include <RcppEigen.h>
 #include "optimizer.h"
 #include "block.h"
+#include "include/timer.h"
 
 #include <Eigen/Sparse>
 
 using Eigen::SparseMatrix;
 
 using namespace Rcpp;
-
-
-
 
 
 // [[Rcpp::export]]
@@ -34,8 +32,9 @@ Rcpp::List predict_cpp(Rcpp::List in_list) {
         const Eigen::VectorXd trueV = Rcpp::as<VectorXd>   (config_list["trueV"]);
         const Eigen::VectorXd trueW = Rcpp::as<VectorXd>   (config_list["trueW"]);
     
+
     BlockModel block (Y, n_regs, latents_list, n_gibbs);
-        // block.setW(trueW);
+
 
     // *****************   Main Process - Optimization *****************  
     
@@ -77,21 +76,17 @@ Rcpp::List test_output(Rcpp::List in_list) {
         
         const Eigen::VectorXd trueV = Rcpp::as<VectorXd>   (config_list["trueV"]);
         const Eigen::VectorXd trueW = Rcpp::as<VectorXd>   (config_list["trueW"]);
-    
     BlockModel block (Y, n_regs, latents_list, n_gibbs);
-        // block.setW(trueW);
 
     // *****************   Main Process - Optimization *****************  
     
     Optimizer opt;
 
-    // opt.sgd(block, 0.01, 0.01, false);
 
     // *****************   Construct Output   ***************** 
 
+    Rcpp::List out_list = opt.sgd(block, stepsize, 0.1, false, iterations);
 
-    Rcpp::List out_list;
-
-    return opt.sgd(block, stepsize, 0.1, false, iterations);
+    return out_list;
 }
 

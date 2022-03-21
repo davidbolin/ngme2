@@ -1,5 +1,5 @@
+#include "include/timer.h"
 #include "optimizer.h"
-
 
 Rcpp::List Optimizer::sgd( Model& model,
                 double stepsize, 
@@ -18,9 +18,10 @@ Rcpp::List Optimizer::sgd( Model& model,
     while (!terminate)
     {
         count += 1;
-        
+// auto timer_grad = std::chrono::steady_clock::now();
         VectorXd grad = model.grad();
-        
+// std::cout << "get gradient (ms): " << since(timer_grad).count() << std::endl;    
+
         if (precondioner) {
             MatrixXd cond = model.precond();
 

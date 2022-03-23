@@ -29,8 +29,8 @@ Rcpp::List predict_cpp(Rcpp::List in_list) {
         const int n_gibbs = config_list["gibbs_sample"];
         const double stepsize = config_list["stepsize"];
         
-        const Eigen::VectorXd trueV = Rcpp::as<VectorXd>   (config_list["trueV"]);
-        const Eigen::VectorXd trueW = Rcpp::as<VectorXd>   (config_list["trueW"]);
+        // const Eigen::VectorXd trueV = Rcpp::as<VectorXd>   (config_list["trueV"]);
+        // const Eigen::VectorXd trueW = Rcpp::as<VectorXd>   (config_list["trueW"]);
     
 
     BlockModel block (Y, n_regs, latents_list, n_gibbs);

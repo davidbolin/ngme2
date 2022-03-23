@@ -2,6 +2,7 @@ ngme.interpret.formula <- function(
                                   gf,
                                   debug = FALSE,
                                   data = NULL,
+                                  data.model=NULL,
                                   parent.frame = NULL
                                   ) {
   if (!is.null(data.model)) {
@@ -21,7 +22,7 @@ ngme.interpret.formula <- function(
     }
   }
 
-  ###### CHECK f #######
+## check f func
   tf <- terms.formula(gf, specials = c("f"), data = NULL)
   terms <- attr(tf, "term.labels")
   nt <- length(terms)
@@ -41,8 +42,8 @@ ngme.interpret.formula <- function(
   if (nt > 0) {
     for (i in 1:nt) {
       if (k <= len.rt && ((ks <= len.rt && rt[ks] == i))) {
-        # st <- eval(parse(text = gsub("^f\\(", "ngme2::f(", terms[i])), envir = data, enclos = p.env)
-        st <- eval(parse(text = gsub("^f\\(", "f(", terms[i])), envir = data, enclos = p.env)
+        st <- eval(parse(text = gsub("^f\\(", "ngme2::f(", terms[i])), envir = data, enclos = p.env)
+        # st <- eval(parse(text = gsub("^f\\(", "f(", terms[i])), envir = data, enclos = p.env)
         random.spec[[k]] <- st
         if (ks <= len.rt && rt[ks] == i) {
           ks <- ks + 1
@@ -61,11 +62,29 @@ ngme.interpret.formula <- function(
     }
   }
 
-  if (debug) {
-    print(p.env)
-    print(nt)
+## check response
+  if (attr(tf, "response") > 0) {
+    ## fixf formula with ONLY fixed effects.  randf formula with
+    ## ONLY random effect.  weightf formula where are the names of
+    ## the (possible) weigths for the covariates
+    response <- as.character(attr(tf, "variables")[2])
+    fixf <- randf <- weightf <- paste(response, "~", sep = "")
+  } else {
+    stop("\n\tA response variable has to be present")
   }
+
+  if (debug) {
+    print(response)
+    # print(random.spec)
+  }
+
+# build in_list
+  n_regs = Reduce("+", lapply(random.spec, function(l) {l$n_reg}))
+  Y = eval(parse(text=response))
+  general_in=list(Y=Y, n=length(Y), n_regs=n_regs)
+
+  return(list(general_in=general_in, latents_in=random.spec))
 }
 
-ngme.interpret.formula(y ~ f(x, model="AR1", noise="NIG"), debug=T)
+# terms.formula(y~x)
 

@@ -9,10 +9,9 @@
 #'
 #' @return a list of objects
 #' @export
-
 f <- function(...,
               model=NULL,
-              noise="gaussian",
+              var="gaussian",
               init=NULL,
               debug=FALSE,
               config=NULL)
@@ -47,12 +46,11 @@ f <- function(...,
   }
 
   ## check the model
-  if (model=="AR1") {
-    ar_in <- ngme.model.ar1(term)
+  if (model=="ar1") {
+    latent_in <- ngme.model.ar1(term, var=var)
   }
 
-  ar_in
-
+  return (latent_in)
 
   # expr_formula <- rlang::enexpr(formula)
   # index <- NULL
@@ -118,6 +116,7 @@ f <- function(...,
   #     return (rtrn)
   # }
 }
+
 
 
 #

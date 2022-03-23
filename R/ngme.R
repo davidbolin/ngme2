@@ -18,12 +18,16 @@
 # ff <- Formula::Formula(ff)
 # ngme(ff)
 
+# ngme(y ~ f(x, model="AR1", var="NIG"), family="gaussian", data=df)
+
 ngme <- function(formula,
                  family,
-                 data
+                 data,
+                 iterations=10,
+                 gibbs_sample=5,
+                 stepsize=0.3
                  )
 {
-
   time.start <- Sys.time()
 
   # 1. check up
@@ -43,8 +47,15 @@ ngme <- function(formula,
                                    data = data,
                                    parent.frame = NULL)
 
+  config_in <- list(iterations=iterations,
+                    gibbs_sample=gibbs_sample,
+                    stepsize=stepsize)
 
-  predict_cpp(in_list)
+  in_list$config_in = config_in
+
+  # return (in_list)
+  out <- test_output(in_list)
+  return (out)
 }
 
 

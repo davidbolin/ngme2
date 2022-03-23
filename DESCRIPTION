@@ -31,5 +31,5 @@ Suggests:
     testthat (>= 3.0.0),
     xml2
 VignetteBuilder: knitr
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
 Config/testthat/edition: 3

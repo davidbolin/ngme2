@@ -1,0 +1,37 @@
+---
+title: "Untitled"
+author: "Xiaotian Jin"
+date: "3/22/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+alpha <- 0.5
+n_obs <- 100
+mu <- 2
+delta <- -mu
+nu <-  1.5
+sigma <- 2
+sigma_eps <- 1
+
+trueV <- ngme2::rig(n_obs, nu, nu) 
+noise <- delta + mu*trueV + sigma * sqrt(trueV) * rnorm(n_obs)
+
+trueW <- Reduce(function(x,y){y + alpha*x}, noise, accumulate = T)
+Y <- trueW + rnorm(n_obs, mean=0, sd=sqrt(sigma_eps))
+
+########### generate input list 
+
+a_init <- 0.1
+nu_init <- 2
+
+df <- data.frame(y=Y, x=1:length(Y))
+ngme(y ~ f(x, model="AR1", noise="NIG"), family="gaussian", data=df)
+```
+
+what is covariates here? 
+

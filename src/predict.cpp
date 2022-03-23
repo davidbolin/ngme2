@@ -74,8 +74,8 @@ Rcpp::List test_output(Rcpp::List in_list) {
         const int n_gibbs = config_list["gibbs_sample"];
         const double stepsize = config_list["stepsize"];
         
-        const Eigen::VectorXd trueV = Rcpp::as<VectorXd>   (config_list["trueV"]);
-        const Eigen::VectorXd trueW = Rcpp::as<VectorXd>   (config_list["trueW"]);
+        // const Eigen::VectorXd trueV = Rcpp::as<VectorXd>   (config_list["trueV"]);
+        // const Eigen::VectorXd trueW = Rcpp::as<VectorXd>   (config_list["trueW"]);
     BlockModel block (Y, n_regs, latents_list, n_gibbs);
 
     // *****************   Main Process - Optimization *****************  
@@ -84,8 +84,9 @@ Rcpp::List test_output(Rcpp::List in_list) {
 
 
     // *****************   Construct Output   ***************** 
-
+auto timer = std::chrono::steady_clock::now();
     Rcpp::List out_list = opt.sgd(block, stepsize, 0.1, false, iterations);
+std::cout << "total time is (ms): " << since(timer).count() << std::endl;   
 
     return out_list;
 }

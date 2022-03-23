@@ -1,6 +1,7 @@
 #' Fit a non-guassian model
 #'
 #' @param formula some formula
+#' @param family dist. family
 #' @param data a list with data input
 #' @param ... additional arguments
 #'
@@ -17,71 +18,100 @@
 # ff <- Formula::Formula(ff)
 # ngme(ff)
 
-ngme <- function(formula, data, ...) {
-  ngme_call <- match.call()
-  MF <- match.call(expand.dots = FALSE)
+ngme <- function(formula,
+                 family,
+                 data
+                 )
+{
 
-  # if data is not provided, verify the current R workspace
-  if (missing(data)) {
-    data <- environment(formula)
+  time.start <- Sys.time()
+
+  # 1. check up
+  if (is.null(formula)) {
+    stop("Usage: ngme(formula, family, data, ...); see ?ngme\n")
+  }
+  if (is.null(data)) {
+    stop("Missing data.frame/list `data'. Leaving `data' empty might lead to\n\t\tuncontrolled behaviour, therefore is it required.")
+  }
+  if (!is.data.frame(data) && !is.list(data)) {
+    stop("\n\tArgument `data' must be a data.frame or a list.")
   }
 
-  formula <- Formula::Formula(formula)
+  # 2. parse the formula
+  in_list <- ngme.interpret.formula(formula,
+                                   debug = FALSE,
+                                   data = data,
+                                   parent.frame = NULL)
 
-  rtrn <- list()
-  rtrn$call <- ngme_call
-  rtrn$first <- formula(formula, lhs=1, rhs=1)
-  rtrn$second <- formula(formula, lhs=2, rhs=2)
 
-  # index for functional and non-functional terms
-  first_drop <- grep("^f[(]", attr(terms(formula(rtrn$first)), "term.labels"))
-  second_drop <- grep("^f[(]", attr(terms(formula(rtrn$second)), "term.labels"))
-
-  first_keep <- 1:length(terms(rtrn$first))
-  second_keep <- 1:length(terms(rtrn$second))
-
-  first_keep <- first_keep[! first_keep %in% first_drop]
-  second_keep <- second_keep[! second_keep %in% second_drop]
-
-  # extract non-functional terms
-  if (length(first_drop)) {
-    rtrn$first_v <- formula(drop.terms(terms(rtrn$first), first_drop, keep.response = T))
-  } else {
-    rtrn$first_v <- rtrn$first
-  }
-  if (length(second_drop)) {
-    rtrn$second_v <- formula(drop.terms(terms(rtrn$second), second_drop, keep.response = T))
-  } else {
-    rtrn$second_v <- rtrn$second
-  }
-
-  # extract functional terms
-  if (length(first_keep)) {
-    rtrn$first_f <- formula(drop.terms(terms(rtrn$first), first_keep, keep.response = T))
-  } else {
-    rtrn$first_f <- rtrn$first
-  }
-  if (length(second_keep)) {
-    rtrn$second_f <- formula(drop.terms(terms(rtrn$second), second_keep, keep.response = T))
-  } else {
-    rtrn$second_f <- rtrn$second
-  }
-  rtrn$first_f <- attr(terms(rtrn$first_f), "term.labels")
-  rtrn$second_f <- attr(terms(rtrn$second_f), "term.labels")
-
-  # split formula into 2 parts
-  formula <- Formula::Formula(formula)
-  terms_formula <- terms(formula)
-  term_labels <- attr(terms_formula, "term.labels")
-
-  # model matrix
-  rtrn$first_mf <- model.frame(rtrn$first_v, data)
-  rtrn$second_mf <- model.frame(rtrn$second_v, data)
-
-  class(rtrn) <- "ngme"
-  return (rtrn)
+  predict_cpp(in_list)
 }
 
 
 
 
+
+
+
+# ngme_call <- match.call()
+# MF <- match.call(expand.dots = FALSE)
+#
+# # if data is not provided, verify the current R workspace
+# if (missing(data)) {
+#   data <- environment(formula)
+# }
+#
+# formula <- Formula::Formula(formula)
+#
+# rtrn <- list()
+# rtrn$call <- ngme_call
+# rtrn$first <- formula(formula, lhs=1, rhs=1)
+# rtrn$second <- formula(formula, lhs=2, rhs=2)
+#
+# # index for functional and non-functional terms
+# first_drop <- grep("^f[(]", attr(terms(formula(rtrn$first)), "term.labels"))
+# second_drop <- grep("^f[(]", attr(terms(formula(rtrn$second)), "term.labels"))
+#
+# first_keep <- 1:length(terms(rtrn$first))
+# second_keep <- 1:length(terms(rtrn$second))
+#
+# first_keep <- first_keep[! first_keep %in% first_drop]
+# second_keep <- second_keep[! second_keep %in% second_drop]
+#
+# # extract non-functional terms
+# if (length(first_drop)) {
+#   rtrn$first_v <- formula(drop.terms(terms(rtrn$first), first_drop, keep.response = T))
+# } else {
+#   rtrn$first_v <- rtrn$first
+# }
+# if (length(second_drop)) {
+#   rtrn$second_v <- formula(drop.terms(terms(rtrn$second), second_drop, keep.response = T))
+# } else {
+#   rtrn$second_v <- rtrn$second
+# }
+#
+# # extract functional terms
+# if (length(first_keep)) {
+#   rtrn$first_f <- formula(drop.terms(terms(rtrn$first), first_keep, keep.response = T))
+# } else {
+#   rtrn$first_f <- rtrn$first
+# }
+# if (length(second_keep)) {
+#   rtrn$second_f <- formula(drop.terms(terms(rtrn$second), second_keep, keep.response = T))
+# } else {
+#   rtrn$second_f <- rtrn$second
+# }
+# rtrn$first_f <- attr(terms(rtrn$first_f), "term.labels")
+# rtrn$second_f <- attr(terms(rtrn$second_f), "term.labels")
+#
+# # split formula into 2 parts
+# formula <- Formula::Formula(formula)
+# terms_formula <- terms(formula)
+# term_labels <- attr(terms_formula, "term.labels")
+#
+# # model matrix
+# rtrn$first_mf <- model.frame(rtrn$first_v, data)
+# rtrn$second_mf <- model.frame(rtrn$second_v, data)
+#
+# class(rtrn) <- "ngme"
+# return (rtrn)

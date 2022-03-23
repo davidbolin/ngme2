@@ -12,6 +12,7 @@ Encoding: UTF-8
 LazyData: true
 Imports: 
     Formula,
+    Matrix,
     lme4,
     Rcpp,
     rlang

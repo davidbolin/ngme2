@@ -16,13 +16,14 @@ using std::string;
 class Var {
 protected:
     unsigned n;
-    VectorXd V;
+    VectorXd V, prevV;
 public: 
-    Var(){}
+    Var() : V(n), prevV(n) {}
     Var(Rcpp::List);
     ~Var(){}
 
-    const VectorXd& getV() const {return V;}
+    const VectorXd& getV()     const {return V;}
+    const VectorXd& getPrevV() const {return prevV;}
     
     virtual void sample_V()=0;
     virtual void sample_cond_V(SparseMatrix<double>& K,
@@ -45,8 +46,9 @@ public:
     ind_IG(){}
     ind_IG(unsigned n, double nu) : nu(nu) {
         this->n = n;
-        V.resize(n);
-        sample_V();
+        
+        V.resize(n); prevV.resize(n);
+        sample_V(); sample_V(); // sample twice
     }
 
     // optimizer related
@@ -63,6 +65,8 @@ public:
 
     // sampling realted
     void sample_V() {
+        prevV = V;
+
         gig sampler;
         for(int i = 0; i < n; i++)
             V[i] = sampler.sample(-0.5, nu, nu);
@@ -76,6 +80,8 @@ public:
                        double mu, 
                        double sigma
                        ) {
+
+        prevV = V;
 
         // VectorXd arg_2 = VectorXd::Constant(n, a) + Mu.cwiseProduct(Mu)/(sigma*sigma);   //+ eta * VectorXd::Ones(temporal.rows());
         VectorXd p_vec = VectorXd::Constant(n, -1);

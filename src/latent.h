@@ -16,7 +16,6 @@
 using Eigen::SparseMatrix;
 using Eigen::VectorXd;
 
-
 class Latent {
 protected:
     int n_reg, n_paras {4}; //regressors, parameters
@@ -24,12 +23,8 @@ protected:
     // indicate which parameter to optimize
     bool opt_mu {false}, opt_sigma {false}, opt_kappa {false}, opt_var {false};
 
-    // data
-    VectorXd Y;
-    double sigma_eps;
-
     double mu, sigma;
-    VectorXd W, h;
+    VectorXd W, prevW, h;
     SparseMatrix<double,0,int> A;
     
     Operator *ope;
@@ -47,11 +42,10 @@ public:
       mu      (0),
       sigma   (1),
       W       (n_reg),
-      h       (VectorXd::Constant(n_reg, 1)),
-      sigma_eps(1)
+      prevW   (n_reg),
+      h       (VectorXd::Constant(n_reg, 1))
     {
         // Init Data
-        Y = Rcpp::as<VectorXd>         (latent_in["Y"]);
         
         // Init opt. flag
         opt_mu = Rcpp::as<bool>         (latent_in["opt_mu"]);
@@ -79,13 +73,14 @@ public:
     SparseMatrix<double, 0, int>& getA()      {return A; }
     
     const VectorXd& getW()  const             {return W; }
-    void            setW(const VectorXd& W)   {this->W = W; }
+    void            setW(const VectorXd& W)   { prevW = this->W; this->W = W; }
 
     VectorXd getMean() const { return mu * (getV() - h); }
 
     /*  2 Variance component   */
     VectorXd getSV() const { VectorXd V=getV(); return (V*pow(sigma,2)); }
-    const VectorXd& getV() const { return var->getV(); }
+    const VectorXd& getV()     const { return var->getV(); }
+    const VectorXd& getPrevV() const { return var->getPrevV(); }
     virtual void sample_cond_V()=0;
 
     /*  3 Operator component   */
@@ -141,19 +136,13 @@ inline const VectorXd Latent::getGrad() {
     VectorXd grad (n_paras);
 auto grad1 = std::chrono::steady_clock::now();
     if (opt_kappa) grad(0) = grad_theta_kappa(); else grad(0) = 0;
-std::cout << "grad1 (ms): " << since(grad1).count() << std::endl;   
+std::cout << "grad_kappa (ms): " << since(grad1).count() << std::endl;   
 
-auto grad2 = std::chrono::steady_clock::now();
     if (opt_mu)    grad(1) = grad_mu();          else grad(1) = 0;
-std::cout << "grad2 (ms): " << since(grad2).count() << std::endl;   
 
-auto grad3 = std::chrono::steady_clock::now();
     if (opt_sigma) grad(2) = grad_theta_sigma(); else grad(2) = 0;
-std::cout << "grad3 (ms): " << since(grad3).count() << std::endl;   
 
-auto grad4 = std::chrono::steady_clock::now();
     if (opt_var)   grad(3) = grad_theta_var();   else grad(3) = 0;
-std::cout << "grad4 (ms): " << since(grad4).count() << std::endl;   
 
     return grad;
 }
@@ -180,7 +169,6 @@ auto timer_trace = std::chrono::steady_clock::now();
     SparseMatrix<double> M = dK.transpose() * K;
     double trace = solver_K.trace(M);
 std::cout << "time for the trace (ms): " << since(timer_trace).count() << std::endl;   
-
 std::cout << "trace1=: " << trace << std::endl;   
 
 // 2. ordinary way
@@ -226,10 +214,14 @@ inline double Latent::grad_mu() {
     VectorXd V = getV();
     VectorXd inv_V = V.cwiseInverse();
     VectorXd Vmh = V-h;
+    
+    VectorXd prevV = getPrevV();
+    VectorXd prev_inv_V = prevV.cwiseInverse();
+    VectorXd prevVmh = prevV-h;
 
     // double hess_mu = -(Vmh).transpose() * inv_SV.asDiagonal() * Vmh;  // get previous V
     // double g = (Vmh).transpose() * inv_SV.asDiagonal() * (K*W - mu*Vmh);
-    double hess_mu = -pow(sigma,-2) * (Vmh).cwiseProduct(inv_V).cwiseProduct(Vmh).sum();
+    double hess_mu = -pow(sigma,-2) * (prevVmh).cwiseProduct(prev_inv_V).cwiseProduct(prevVmh).sum();
     double g = pow(sigma,-2) * (Vmh).cwiseProduct(inv_V).cwiseProduct(K*W-mu*Vmh).sum();
 
     return g / hess_mu;

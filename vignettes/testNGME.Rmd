@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 alpha <- 0.5
-n_obs <- 100
+n_obs <- 10
 mu <- 2
 delta <- -mu
 nu <-  1.5
@@ -32,14 +32,23 @@ nu_init <- 2
 
 
 ```{r}
-df <- data.frame(y=Y, x=1:length(Y))
-out <- ngme(y ~ f(x, model="ar1", var="NIG"), 
+
+y=Y; x=1:length(Y); x2=x^2;
+df <- data.frame(y=y, x=x, x2=x2)
+out <- ngme(y ~ x + f(x, model="ar1", var="NIG") + f(x2, model="ar1", var="NIG"), 
             family="gaussian", 
             data=df,
-            iterations=100,
+            iterations=10,
             gibbs_sample = 10,
             stepsize = 0.5)
+out
+
 ```
+
+```{r}
+plot_out(out)
+```
+
 
 what is covariates here? 
 

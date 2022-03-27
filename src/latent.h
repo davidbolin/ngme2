@@ -169,7 +169,7 @@ auto timer_trace = std::chrono::steady_clock::now();
     SparseMatrix<double> M = dK.transpose() * K;
     double trace = solver_K.trace(M);
 std::cout << "time for the trace (ms): " << since(timer_trace).count() << std::endl;   
-std::cout << "trace1=: " << trace << std::endl;   
+// std::cout << "trace1=: " << trace << std::endl;   
 
 // 2. ordinary way
 // auto timer_init2 = std::chrono::steady_clock::now();

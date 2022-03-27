@@ -19,6 +19,7 @@ Rcpp::List predict_cpp(Rcpp::List in_list) {
     Rcpp::List gen_list     = Rcpp::as<Rcpp::List> (in_list["general_in"]);
         const Eigen::VectorXd Y       = Rcpp::as<VectorXd>   (gen_list["Y"]);
         const int n_regs        = Rcpp::as<int>   (gen_list["n_regs"]);
+        const string type       = Rcpp::as<string>   (gen_list["type"]);
 
     Rcpp::List latents_list = Rcpp::as<Rcpp::List> (in_list["latents_in"]);
     
@@ -33,7 +34,7 @@ Rcpp::List predict_cpp(Rcpp::List in_list) {
         // const Eigen::VectorXd trueW = Rcpp::as<VectorXd>   (config_list["trueW"]);
     
 
-    BlockModel block (Y, n_regs, latents_list, n_gibbs);
+    BlockModel block (Y, type, n_regs, latents_list, n_gibbs);
 
 
     // *****************   Main Process - Optimization *****************  
@@ -62,8 +63,9 @@ Rcpp::List test_output(Rcpp::List in_list) {
     
     //observations and latents
     Rcpp::List gen_list     = Rcpp::as<Rcpp::List> (in_list["general_in"]);
-        const Eigen::VectorXd Y       = Rcpp::as<VectorXd>   (gen_list["Y"]);
+        const Eigen::VectorXd Y = Rcpp::as<VectorXd>   (gen_list["Y"]);
         const int n_regs        = Rcpp::as<int>   (gen_list["n_regs"]);
+        const string type       = Rcpp::as<string>   (gen_list["type"]);
 
     Rcpp::List latents_list = Rcpp::as<Rcpp::List> (in_list["latents_in"]);
     
@@ -76,7 +78,7 @@ Rcpp::List test_output(Rcpp::List in_list) {
         
         // const Eigen::VectorXd trueV = Rcpp::as<VectorXd>   (config_list["trueV"]);
         // const Eigen::VectorXd trueW = Rcpp::as<VectorXd>   (config_list["trueW"]);
-    BlockModel block (Y, n_regs, latents_list, n_gibbs);
+    BlockModel block (Y, type, n_regs, latents_list, n_gibbs);
 
     // *****************   Main Process - Optimization *****************  
     

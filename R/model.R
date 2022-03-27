@@ -26,10 +26,10 @@ ngme.model.ar1 <- function(term, var) {
   ar_in <- list(type="ar1",
                 A=A,
                 n_reg=n,
-                opt_kappa     = T,
-                opt_mu        = T,
-                opt_sigma     = T,
-                opt_var       = T,
+                opt_kappa     = TRUE,
+                opt_mu        = TRUE,
+                opt_sigma     = TRUE,
+                opt_var       = TRUE,
                 operator_in   = ope_in,
                 var_in        = var_in
                 )
@@ -37,8 +37,9 @@ ngme.model.ar1 <- function(term, var) {
   return (ar_in)
 }
 
-# x=1:3
 # ngme.model.ar1(quote(x), var="NIG")
+
+# x=1:3
 
 # # return a function of alpha
 # # construct K(a)

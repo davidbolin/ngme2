@@ -23,6 +23,8 @@ BlockModel
 
 using Eigen::SparseMatrix;
 
+const int latent_para = 4;
+
 class BlockModel : public Model {
 protected:
 
@@ -30,10 +32,11 @@ protected:
     unsigned n_gibbs;
 
 // n_regs   = row(A1) + ... + row(An)
-// n_paras = total paras need to optimize
+// n_paras = 4 * n_latent + 1
     unsigned n_obs, n_latent, n_regs, n_paras;
     std::vector<Latent*> latents;
 
+    string type;
     double sigma_eps;
     
     VectorXd Y;
@@ -44,16 +47,18 @@ public:
     BlockModel() {}
     // main constructor
     BlockModel(VectorXd Y, 
+               string type,
                int n_regs,
                Rcpp::List latents_in,
                int n_gibbs) 
     : n_gibbs(n_gibbs),
       n_obs(Y.size()),
-      n_paras(n_latent * 4),
+      n_paras(n_latent * latent_para + 1),
       n_latent(latents_in.size()), 
       n_regs(n_regs),
-      sigma_eps(1),
+      sigma_eps(2),
       Y(Y), 
+      type(type),
       A(n_obs, n_regs), 
       K(n_regs, n_regs), 
       dK(n_regs, n_regs),
@@ -145,6 +150,25 @@ public:
         return W;
     }
 
+    double get_theta_sigma_eps() const {
+        return log(sigma_eps);
+    }
+
+// scale is too big, why
+    double grad_theta_sigma_eps() const {
+        double g = 0;
+        if (type=="normal") {
+            VectorXd tmp = Y - A * getW();
+            g = log(sigma_eps) - pow(sigma_eps, -3) * tmp.dot(tmp) / n_obs;
+        }
+// std::cout << "n_obs=" << n_obs << std::endl;
+        return -g * sigma_eps / (n_obs*10);
+    }
+
+    void set_theta_sgima_eps(double theta) {
+        sigma_eps = exp(theta);
+    }
+
 
 // FOR TESTING
 Rcpp::List testResult() {
@@ -174,7 +198,9 @@ inline VectorXd BlockModel::get_parameter() const {
         thetas.segment(pos, theta.size()) = theta;
         pos += theta.size();
     }
-// std::cout << "getTheta=" << thetas <<std::endl;
+    
+    // sigma_eps
+    thetas(n_paras-1) = get_theta_sigma_eps();
     return thetas;
 }
 
@@ -205,7 +231,7 @@ std::cout << "sampleW (ms): " << since(timer_sampleW).count() << std::endl;
     }
     avg_gradient = (1.0/n_gibbs) * avg_gradient;
 
-// std::cout << "avg grad=" << avg_gradient <<std::endl;
+    avg_gradient(n_paras-1) = grad_theta_sigma_eps();
     return avg_gradient;
 }
 
@@ -217,6 +243,7 @@ inline void BlockModel::set_parameter(const VectorXd& Theta) {
         (*it)->setTheta(theta);
         pos += theta_len;
     }
+    set_theta_sgima_eps(Theta(n_paras-1));
     assemble(); //update K,dK,d2K after
 // std::cout << "Theta=" << Theta <<std::endl;
 }

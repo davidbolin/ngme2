@@ -55,6 +55,9 @@ ngme <- function(formula,
 
   # return (in_list)
   out <- test_output(in_list)
+
+print(paste("total time is", Sys.time()-time.start))
+
   return (out)
 }
 

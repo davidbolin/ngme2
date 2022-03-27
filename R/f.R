@@ -9,11 +9,15 @@
 #'
 #' @return a list of objects
 #' @export
+#'
+#'
+
 f <- function(...,
               model=NULL,
               var="gaussian",
               init=NULL,
               debug=FALSE,
+              # control=
               config=NULL)
   {
   ## in ... is the name of the covariate  and possibly the location of the weights

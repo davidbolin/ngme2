@@ -36,21 +36,27 @@ protected:
     unsigned n_obs, n_latent, n_regs, n_paras;
     std::vector<Latent*> latents;
 
-    string type;
+    string family;
     double sigma_eps;
     
-    VectorXd Y;
+    MatrixXd X;
+    VectorXd Y, beta;
+    bool opt_fix_effect {true};
+
     SparseMatrix<double> A, K, dK, d2K;
 
     cholesky_solver chol_Q;
 public:
     BlockModel() {}
     // main constructor
-    BlockModel(VectorXd Y, 
-               string type,
+    BlockModel(MatrixXd X,
+               VectorXd Y, 
+               string family,
                int n_regs,
                Rcpp::List latents_in,
-               int n_gibbs) 
+               int n_gibbs,
+               VectorXd beta,
+               bool opt_fix_effect) 
     : n_gibbs(n_gibbs),
       n_obs(Y.size()),
       n_paras(n_latent * latent_para + 1),
@@ -58,11 +64,14 @@ public:
       n_regs(n_regs),
       sigma_eps(2),
       Y(Y), 
-      type(type),
+      X(X),
+      beta(beta),
+      family(family),
       A(n_obs, n_regs), 
       K(n_regs, n_regs), 
       dK(n_regs, n_regs),
-      d2K(n_regs, n_regs)
+      d2K(n_regs, n_regs),
+      opt_fix_effect(opt_fix_effect)
     {
     // Init each latent model
     for (int i=0; i < n_latent; ++i) {
@@ -75,6 +84,12 @@ public:
         }
     }
     
+    /* Fixed effects */
+    if (opt_fix_effect) {
+        int n_beta = beta.size();
+        n_paras = latent_para + 1 + n_beta;
+    }
+
     /* Init variables: h, A */
     int n = 0;
     for (std::vector<Latent*>::iterator it = latents.begin(); it != latents.end(); it++) {
@@ -157,18 +172,24 @@ public:
 // scale is too big, why
     double grad_theta_sigma_eps() const {
         double g = 0;
-        if (type=="normal") {
+        if (family=="normal") {
             VectorXd tmp = Y - A * getW();
             g = log(sigma_eps) - pow(sigma_eps, -3) * tmp.dot(tmp) / n_obs;
         }
 // std::cout << "n_obs=" << n_obs << std::endl;
-        return -g * sigma_eps / (n_obs*10);
+        // return -g * sigma_eps / (n_obs*n_obs);
+        return 0;
     }
 
     void set_theta_sgima_eps(double theta) {
         sigma_eps = exp(theta);
     }
 
+// fixed effects
+    VectorXd grad_beta() const {
+        VectorXd grads = pow(sigma_eps, -2) * X.transpose() * (Y - X*beta - A*getW());
+        return -grads / (n_obs * n_obs);
+    }
 
 // FOR TESTING
 Rcpp::List testResult() {
@@ -201,6 +222,13 @@ inline VectorXd BlockModel::get_parameter() const {
     
     // sigma_eps
     thetas(n_paras-1) = get_theta_sigma_eps();
+    
+    // fixed effects
+    if (opt_fix_effect) {
+        int n_beta = beta.size();
+        thetas.segment(n_paras - n_beta-1, n_beta) = beta;
+    }
+
     return thetas;
 }
 
@@ -231,7 +259,15 @@ std::cout << "sampleW (ms): " << since(timer_sampleW).count() << std::endl;
     }
     avg_gradient = (1.0/n_gibbs) * avg_gradient;
 
+    // sigma_eps 
     avg_gradient(n_paras-1) = grad_theta_sigma_eps();
+
+    // fixed effects
+    if (opt_fix_effect) {
+        int n_beta = beta.size();
+        avg_gradient.segment(n_paras - n_beta-1, n_beta) = grad_beta();
+    }
+
     return avg_gradient;
 }
 
@@ -243,7 +279,15 @@ inline void BlockModel::set_parameter(const VectorXd& Theta) {
         (*it)->setTheta(theta);
         pos += theta_len;
     }
+    // sigma_eps
     set_theta_sgima_eps(Theta(n_paras-1));
+    
+    // fixed effects
+    if (opt_fix_effect) {
+        int n_beta = beta.size();
+        beta = Theta.segment(n_paras - n_beta-1, n_beta);
+    }
+
     assemble(); //update K,dK,d2K after
 // std::cout << "Theta=" << Theta <<std::endl;
 }

@@ -7,7 +7,39 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+load_all()
 ```
+
+# test f function
+
+```{r}
+y=1:4; x1=1:4; x2=3:6
+df = data.frame(y=1:4, x1=1:4, x2=3:6)
+f(x1, model = "ar1", data=df)
+```
+
+# test interpret.formula
+
+```{r}
+ngme.interpret.formula(y ~ x1 + x2 + f(x1, model = "ar1", data=df), data=df, debug=F)
+ngme.interpret.formula(y ~ f(x1, model = "ar1", data=df) + 
+                           f(x2, model = "ar1", data=df) , data=df, debug=F)
+```
+
+
+```{r}
+load_all()
+ngme(formula=y ~ x1 + f(x1, model = "ar1"),
+             data=df,
+             family  = "gaussian",
+             init    = list(),
+             controls = list(iterations=10,
+                             gibbs_sample=5,
+                             stepsize=0.3)
+             )
+# eval(x, envir=list(x=5))
+```
+
 
 ```{r}
 alpha <- 0.5

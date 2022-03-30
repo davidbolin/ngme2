@@ -1,7 +1,7 @@
 #' f function
 #'
-#' @param formula provide a formula
-#' @param data  provide data
+#' @param ... a symbol like x
+#' @param data  provide data.frame or
 #' @param model specify a model
 #' @param noise noise type
 #' @param response response type
@@ -9,19 +9,23 @@
 #'
 #' @return a list of objects
 #' @export
-#'
-#'
-
 f <- function(...,
-              model=NULL,
-              var="gaussian",
-              init=NULL,
-              debug=FALSE,
-              # control=
-              config=NULL)
-  {
+              data   = NULL,
+              model  = NULL,
+              debug  = FALSE,
+              var    = "NIG",
+              init   = list(kappa     = 0.5,
+                            mu        = 0,
+                            sigma     = 1,
+                            nu        = 0.5,),
+              config = list(opt_kappa     = TRUE,
+                            opt_mu        = TRUE,
+                            opt_sigma     = TRUE,
+                            opt_var       = TRUE,)
+              ) {
   ## in ... is the name of the covariate  and possibly the location of the weights
   ## like f(covariate, weights)
+
   vars <- as.list(substitute(list(...)))[-1]
   d <- length(vars)
   if (d == 0L) {
@@ -49,9 +53,13 @@ f <- function(...,
     weigths <- attr(terms(reformulate(weights)), "weights.labels")
   }
 
-  ## check the model
+  # use model.frame to extract the covariates
+
+  x = model.frame(paste0("~", term), data=data)[[term]]
+
+  ## get the model
   if (model=="ar1") {
-    latent_in <- ngme.model.ar1(term, var=var)
+    latent_in <- ngme.model.ar1(x, var=var, init=init, config=config)
   }
 
   return (latent_in)
@@ -122,50 +130,3 @@ f <- function(...,
 }
 
 
-
-#
-# library(lme4)
-# str(sleepstudy)
-# lmod <- lFormula(Reaction ~ (0+Days|Subject), sleepstudy)
-# lmod$X
-# lmod$reTrms
-#
-# library(rlang)
-# # test
-# X <- c(1,2,3,4)
-# f_rtrn <- f(X, list(X=X), model="AR(1)")
-# f_rtrn[[1]]$K(0.5)
-# f_rtrn[[1]]$m(0.5)
-#
-# class(expr(X|I))
-#
-# I <- 1:5
-# f_rtrn <- f(X|I, list(X=X, I=I), model="AR(1)")
-# f_rtrn
-#
-#
-#
-# X <- diag(x=1, nrow=5, ncol=5)
-# X
-# X[seq(2, 5*5, by=6)] <- 0.5
-# X
-#
-# expression(X|I)
-#
-# class(expr(X))
-# class(expr(X|I))
-# class(expr(X|I)[[2]])
-# eval(expr(X), envir = data.frame(X=1))
-#
-#
-#
-#
-# for (i in 1:5) {
-#   l[[length(l) + 1]] = 1
-# }
-# l
-#
-#
-# lmod <- lFormula(Reaction ~ Days + (Days|Subject), sleepstudy)
-# names(lmod)
-# lmod$reTrms

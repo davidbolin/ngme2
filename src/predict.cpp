@@ -4,6 +4,8 @@
 #include "block.h"
 #include "include/timer.h"
 
+#include <iostream>
+#include <Eigen/Dense>
 #include <Eigen/Sparse>
 
 using Eigen::SparseMatrix;
@@ -16,57 +18,18 @@ Rcpp::List predict_cpp(Rcpp::List in_list) {
     // *****************   Read From Input   *****************  
     
     //observations and latents
-    Rcpp::List gen_list     = Rcpp::as<Rcpp::List> (in_list["general_in"]);
-        const Eigen::VectorXd Y       = Rcpp::as<VectorXd>   (gen_list["Y"]);
-        const int n_regs        = Rcpp::as<int>   (gen_list["n_regs"]);
-        const string type       = Rcpp::as<string>   (gen_list["type"]);
-
-    Rcpp::List latents_list = Rcpp::as<Rcpp::List> (in_list["latents_in"]);
-    
-    // config_list
-    Rcpp::List config_list  = Rcpp::as<Rcpp::List> (in_list["config_in"]);
-        // Flag to Specify what parameter to optimize
-        const int interations = config_list["iterations"];
-        const int n_gibbs = config_list["gibbs_sample"];
-        const double stepsize = config_list["stepsize"];
-        
-        // const Eigen::VectorXd trueV = Rcpp::as<VectorXd>   (config_list["trueV"]);
-        // const Eigen::VectorXd trueW = Rcpp::as<VectorXd>   (config_list["trueW"]);
-    
-
-    BlockModel block (Y, type, n_regs, latents_list, n_gibbs);
-
-
-    // *****************   Main Process - Optimization *****************  
-    
-    Optimizer opt;
-
-    // opt.sgd(block, 0.01, 0.01, false);
-
-    // *****************   Construct Output   ***************** 
-
-
-    Rcpp::List out_list;
-
-
-    // *****************   testing  ***************** 
-
-    
-    // out_list = block.testResult();
-    return out_list;
-}
-
-
-// [[Rcpp::export]]
-Rcpp::List test_output(Rcpp::List in_list) {
-    // *****************   Read From Input   *****************  
-    
-    //observations and latents
-    Rcpp::List gen_list     = Rcpp::as<Rcpp::List> (in_list["general_in"]);
+    Rcpp::List gen_list         = Rcpp::as<Rcpp::List> (in_list["general_in"]);
         const Eigen::VectorXd Y = Rcpp::as<VectorXd>   (gen_list["Y"]);
+        const Eigen::MatrixXd X = Rcpp::as<MatrixXd>   (gen_list["X"]);
+// std::cout << X << std::endl;
         const int n_regs        = Rcpp::as<int>   (gen_list["n_regs"]);
-        const string type       = Rcpp::as<string>   (gen_list["type"]);
+        const string family     = Rcpp::as<string>   (gen_list["family"]);
+        const bool opt_fix_effect = Rcpp::as<bool>   (gen_list["opt_fix_effect"]);
 
+    // init list
+    Rcpp::List inits         = Rcpp::as<Rcpp::List> (gen_list["init"]);
+        VectorXd beta = Rcpp::as<VectorXd>   (inits["beta"]);
+    
     Rcpp::List latents_list = Rcpp::as<Rcpp::List> (in_list["latents_in"]);
     
     // config_list
@@ -78,10 +41,9 @@ Rcpp::List test_output(Rcpp::List in_list) {
         
         // const Eigen::VectorXd trueV = Rcpp::as<VectorXd>   (config_list["trueV"]);
         // const Eigen::VectorXd trueW = Rcpp::as<VectorXd>   (config_list["trueW"]);
-    BlockModel block (Y, type, n_regs, latents_list, n_gibbs);
+    BlockModel block (X, Y, family, n_regs, latents_list, n_gibbs, beta, opt_fix_effect);
 
     // *****************   Main Process - Optimization *****************  
-    
     Optimizer opt;
 
 
@@ -90,6 +52,7 @@ auto timer = std::chrono::steady_clock::now();
     Rcpp::List out_list = opt.sgd(block, stepsize, 0.1, false, iterations);
 std::cout << "total time is (ms): " << since(timer).count() << std::endl;   
 
+// Rcpp::List out_list;
     return out_list;
 }
 

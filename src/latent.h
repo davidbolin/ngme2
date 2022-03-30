@@ -109,7 +109,7 @@ public:
     virtual void   set_theta_var(double v) { var->set_theta_var(v); }
     virtual double grad_theta_var()        { return var->grad_theta_var();}
 
-    // sigma
+    // sigma.tilde = sigma / sqrt(1 + eta * nu^2)
     virtual double get_theta_sigma() const        { return log(sigma); }
     virtual void   set_theta_sigma(double theta)  { this->sigma = exp(theta); }
     virtual double grad_theta_sigma();
@@ -135,15 +135,15 @@ inline const VectorXd Latent::getTheta() const {
 inline const VectorXd Latent::getGrad() {
     VectorXd grad (n_paras);
 auto grad1 = std::chrono::steady_clock::now();
-    if (opt_kappa) grad(0) = grad_theta_kappa(); else grad(0) = 0;
+    if (opt_kappa) grad(0) = grad_theta_kappa() / n_reg; else grad(0) = 0;
+
+    if (opt_mu)    grad(1) = grad_mu();                  else grad(1) = 0;
+
+    if (opt_sigma) grad(2) = grad_theta_sigma() / n_reg; else grad(2) = 0;
+
+    if (opt_var)   grad(3) = grad_theta_var();           else grad(3) = 0;
+
 std::cout << "grad_kappa (ms): " << since(grad1).count() << std::endl;   
-
-    if (opt_mu)    grad(1) = grad_mu();          else grad(1) = 0;
-
-    if (opt_sigma) grad(2) = grad_theta_sigma(); else grad(2) = 0;
-
-    if (opt_var)   grad(3) = grad_theta_var();   else grad(3) = 0;
-
     return grad;
 }
 

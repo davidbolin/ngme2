@@ -1,9 +1,15 @@
-ngme.interpret.formula <- function(
-                                  gf,
-                                  debug = FALSE,
-                                  data = NULL,
-                                  data.model=NULL,
-                                  parent.frame = NULL
+# parameter:
+#   gf - formula
+#   data - data.frame
+# return:
+#   general_in - list(X, Y, n, n_regs)
+#   latents_in - list of models
+
+ngme.interpret.formula <- function(gf,
+                                   debug = FALSE,
+                                   data = NULL,
+                                   data.model=NULL,
+                                   parent.frame = NULL
                                   ) {
   if (!is.null(data.model)) {
     ## make a copy of the environment
@@ -27,6 +33,16 @@ ngme.interpret.formula <- function(
   terms <- attr(tf, "term.labels")
   nt <- length(terms)
 
+  if (attr(tf, "response") > 0) {
+    ## fixf formula with ONLY fixed effects.  randf formula with
+    ## ONLY random effect.  weightf formula where are the names of
+    ## the (possible) weigths for the covariates
+    response <- as.character(attr(tf, "variables")[2])
+    fixf <- randf <- weightf <- paste(response, "~", sep = "")
+  } else {
+    stop("\n\tA response variable has to be present")
+  }
+
   rt <- attr(tf, "specials")$f
   vtab <- attr(tf, "factors")
   if (length(rt) > 0) {
@@ -42,6 +58,7 @@ ngme.interpret.formula <- function(
   if (nt > 0) {
     for (i in 1:nt) {
       if (k <= len.rt && ((ks <= len.rt && rt[ks] == i))) {
+# print(data)
         st <- eval(parse(text = gsub("^f\\(", "ngme2::f(", terms[i])), envir = data, enclos = p.env)
         # st <- eval(parse(text = gsub("^f\\(", "f(", terms[i])), envir = data, enclos = p.env)
         random.spec[[k]] <- st
@@ -62,29 +79,45 @@ ngme.interpret.formula <- function(
     }
   }
 
-## check response
-  if (attr(tf, "response") > 0) {
-    ## fixf formula with ONLY fixed effects.  randf formula with
-    ## ONLY random effect.  weightf formula where are the names of
-    ## the (possible) weigths for the covariates
-    response <- as.character(attr(tf, "variables")[2])
-    fixf <- randf <- weightf <- paste(response, "~", sep = "")
-  } else {
-    stop("\n\tA response variable has to be present")
-  }
-
   if (debug) {
-    print(response)
+    print(fixf)
     # print(random.spec)
   }
 
 # build in_list
-  n_regs = Reduce("+", lapply(random.spec, function(l) {l$n_reg}))
-  Y = eval(parse(text=response))
-  general_in=list(Y=Y, n=length(Y), n_regs=n_regs)
+  # create design matrix for fix effect
+  # fix is string "y~x"
+  X = NULL
+  tryCatch({
+    X = model.matrix(formula(fixf), data=data)
+  },
+  error=function(cond) {
+    if (attr(tf, "intercept")==1)
+      fixf <- paste(fixf, 1, sep = "")
+    else
+      fixf <- paste(fixf, -1, sep = "")
+    X <<- model.matrix(formula(fixf), data=data)
+  },
+  finally = {
+  })
 
-  return(list(general_in=general_in, latents_in=random.spec))
+  n_regs = Reduce("+", lapply(random.spec, function(l) {l$n_reg}))
+  Y = eval(parse(text=response), env=data)
+  general_in=list(X=X, Y=Y, n=length(Y), n_regs=n_regs)
+
+  return(list(general_in=general_in,
+              latents_in=random.spec))
 }
 
-# terms.formula(y~x)
+# test
+# a = 3;
+# environment(y~x)
+# evalq(1+1, list(`+`=`-`))
+#
+# eval({ xx <- pi; xx^2}) ; xx
+# ngme.interpret.formula(y~x+f(x,model="ar1"), debug=T)
+
+# evalq(x+x, envir=list(x=1))
+
+
 

@@ -3,7 +3,6 @@
 #' @param formula some formula
 #' @param family dist. family
 #' @param data a list with data input
-#' @param ... additional arguments
 #'
 #' @return a list of outputs
 #' @export
@@ -21,11 +20,12 @@
 # ngme(y ~ f(x, model="AR1", var="NIG"), family="gaussian", data=df)
 
 ngme <- function(formula,
-                 family,
                  data,
-                 iterations=10,
-                 gibbs_sample=5,
-                 stepsize=0.3
+                 family  = "gaussian",
+                 init    = list(),
+                 controls = list(iterations=10,
+                                 gibbs_sample=5,
+                                 stepsize=0.3)
                  )
 {
   time.start <- Sys.time()
@@ -47,11 +47,9 @@ ngme <- function(formula,
                                    data = data,
                                    parent.frame = NULL)
 
-  config_in <- list(iterations=iterations,
-                    gibbs_sample=gibbs_sample,
-                    stepsize=stepsize)
+  in_list$general_in$family = family
 
-  in_list$config_in = config_in
+  in_list$config_in = controls
 
   # return (in_list)
   out <- test_output(in_list)
@@ -60,11 +58,6 @@ print(paste("total time is", Sys.time()-time.start))
 
   return (out)
 }
-
-
-
-
-
 
 
 # ngme_call <- match.call()

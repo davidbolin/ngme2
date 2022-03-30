@@ -4,14 +4,19 @@
 \alias{ngme}
 \title{Fit a non-guassian model}
 \usage{
-ngme(formula, data, ...)
+ngme(
+  formula,
+  data,
+  family = "gaussian",
+  controls = list(iterations = 10, gibbs_sample = 5, stepsize = 0.3)
+)
 }
 \arguments{
 \item{formula}{some formula}
 
 \item{data}{a list with data input}
 
-\item{...}{additional arguments}
+\item{family}{dist. family}
 }
 \value{
 a list of outputs

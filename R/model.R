@@ -1,7 +1,17 @@
-ngme.model.ar1 <- function(term, var) {
-  # here term is a string, parse it to language
-  x = eval(parse(text=term))
+# usage: ngme.model.ar1(1:3, var="NIG)
 
+# parameter:
+#   x - numeric
+#   var - string
+# return:
+#   list of stuff
+
+ngme.model.ar1 <- function(x,
+                           var="NIG",
+                           init,
+                           config)
+  {
+  # x is a numeric vector - covariates
   n <- length(x)
   # construct A
   A <- as(Matrix(diag(n)), "dgCMatrix");
@@ -26,44 +36,13 @@ ngme.model.ar1 <- function(term, var) {
   ar_in <- list(type="ar1",
                 A=A,
                 n_reg=n,
+                operator_in   = ope_in,
+                var_in        = var_in,
                 opt_kappa     = TRUE,
                 opt_mu        = TRUE,
                 opt_sigma     = TRUE,
-                opt_var       = TRUE,
-                operator_in   = ope_in,
-                var_in        = var_in
+                opt_var       = TRUE
                 )
 
   return (ar_in)
 }
-
-# ngme.model.ar1(quote(x), var="NIG")
-
-# x=1:3
-
-# # return a function of alpha
-# # construct K(a)
-# K <- function(a){
-#   K_temp <- diag(n)
-#   K_temp[seq(2, n*n, by=n+1)] <- -a
-#   K_temp
-# }
-#
-# # construct R
-# R <- NULL
-#
-# # m(theta, v)
-# m <- function(a) {
-#   rep(0, n)
-# }
-#
-# # construct the derivative of K
-# dK <- function(a) {
-#   K_temp <- matrix(data=0, nrow=n, ncol=n)
-#   K_temp[seq(2, n*n, by=n+1)] <- -1
-#   K_temp
-# }
-#
-# d2K <- function(a) {
-#   diag(n) * 0
-# }

@@ -4,12 +4,20 @@
 \alias{f}
 \title{f function}
 \usage{
-f(formula, data, model = NULL, noise = "gaussian", response = NULL)
+f(
+  ...,
+  data = NULL,
+  model = NULL,
+  var = "gaussian",
+  init = NULL,
+  debug = FALSE,
+  config = NULL
+)
 }
 \arguments{
-\item{formula}{provide a formula}
+\item{...}{a symbol like x}
 
-\item{data}{provide data}
+\item{data}{provide data.frame or}
 
 \item{model}{specify a model}
 

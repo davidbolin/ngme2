@@ -5,10 +5,6 @@ predict_cpp <- function(in_list) {
     .Call('_ngme2_predict_cpp', PACKAGE = 'ngme2', in_list)
 }
 
-test_output <- function(in_list) {
-    .Call('_ngme2_test_output', PACKAGE = 'ngme2', in_list)
-}
-
 rGIG_cpp <- function(p, a, b, seed) {
     .Call('_ngme2_rGIG_cpp', PACKAGE = 'ngme2', p, a, b, seed)
 }

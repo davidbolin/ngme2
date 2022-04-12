@@ -52,7 +52,7 @@ ngme <- function(formula,
   in_list$config_in = controls
 
   # return (in_list)
-  out <- test_output(in_list)
+  out <- predict_cpp(in_list)
 
 print(paste("total time is", Sys.time()-time.start))
 

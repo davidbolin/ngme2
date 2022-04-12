@@ -33,6 +33,8 @@ public:
                                 double sigma)=0;
 
     // optimizer related
+    virtual double get_var()         const=0;
+
     virtual double get_theta_var()         const=0;
     virtual double grad_theta_var()        const=0;
     virtual void   set_theta_var(double)=0;
@@ -51,16 +53,19 @@ public:
         sample_V(); sample_V(); // sample twice
     }
 
+    double get_var() const {return nu;} 
+    
     // optimizer related
     double get_theta_var() const   { return log(nu); }
     void   set_theta_var(double theta) { nu = exp(theta); }
+    
     double grad_theta_var() const {
         VectorXd tmp = VectorXd::Constant(n, 1+1/(2*nu)) - 0.5*V - VectorXd::Constant(n, 1).cwiseQuotient(2*V);
-        double g = tmp.mean();
+        double grad = tmp.mean();
         double hess = -0.5 * pow(nu, -2);
         
-        g = pow(hess,-1) * g * nu;
-        return g;
+        grad = grad / (hess * nu + grad);
+        return grad;
     }
 
     // sampling realted

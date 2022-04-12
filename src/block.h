@@ -28,27 +28,23 @@ const int latent_para = 4;
 class BlockModel : public Model {
 protected:
 
-/* config */
-    unsigned n_gibbs;
-
 // n_regs   = row(A1) + ... + row(An)
 // n_paras = 4 * n_latent + 1
-    unsigned n_obs, n_latent, n_regs, n_paras;
+    int n_obs, n_latent, n_regs, n_paras, n_gibbs;
     std::vector<Latent*> latents;
 
-    string family;
-    double sigma_eps;
-    
     MatrixXd X;
     VectorXd Y, beta;
+    
+    string family;
     bool opt_fix_effect {true};
-
+    double sigma_eps;
+    
     SparseMatrix<double> A, K, dK, d2K;
-
     cholesky_solver chol_Q;
 public:
     BlockModel() {}
-    // main constructor
+
     BlockModel(MatrixXd X,
                VectorXd Y, 
                string family,
@@ -56,22 +52,26 @@ public:
                Rcpp::List latents_in,
                int n_gibbs,
                VectorXd beta,
+               double sigma_eps,
                bool opt_fix_effect) 
-    : n_gibbs(n_gibbs),
-      n_obs(Y.size()),
-      n_paras(n_latent * latent_para + 1),
+    : n_obs(Y.size()),
       n_latent(latents_in.size()), 
       n_regs(n_regs),
-      sigma_eps(2),
-      Y(Y), 
+      n_paras(n_latent * latent_para + 1),
+      n_gibbs(n_gibbs),
+      
       X(X),
+      Y(Y), 
       beta(beta),
+
       family(family),
+      opt_fix_effect(opt_fix_effect),
+      sigma_eps(sigma_eps), 
+
       A(n_obs, n_regs), 
       K(n_regs, n_regs), 
       dK(n_regs, n_regs),
-      d2K(n_regs, n_regs),
-      opt_fix_effect(opt_fix_effect)
+      d2K(n_regs, n_regs)
     {
     // Init each latent model
     for (int i=0; i < n_latent; ++i) {
@@ -101,6 +101,9 @@ public:
         VectorXd inv_SV = VectorXd::Constant(n_regs, 1).cwiseQuotient(getSV());
         SparseMatrix<double> QQ = K.transpose() * inv_SV.asDiagonal() * K + pow(sigma_eps, 2) * A.transpose() * A;
     chol_Q.analyze(QQ);
+    
+    // sample 2 W
+    sampleW_VY();
     sampleW_VY();
     }
 
@@ -167,28 +170,42 @@ public:
 
     double get_theta_sigma_eps() const {
         return log(sigma_eps);
+        // return sigma_eps;
     }
 
-// scale is too big, why
     double grad_theta_sigma_eps() const {
         double g = 0;
         if (family=="normal") {
-            VectorXd tmp = Y - A * getW();
-            g = log(sigma_eps) - pow(sigma_eps, -3) * tmp.dot(tmp) / n_obs;
+            VectorXd W = getW();
+            VectorXd tmp = Y - A * W - X * beta;
+            double norm2 =  tmp.dot(tmp);
+            
+            g = -(1.0 / sigma_eps) * n_obs  + pow(sigma_eps, -3) * norm2;
+            
+            double hess = -2.0 * n_obs * pow(sigma_eps, -2);
+            // double hess = 1.0 * n_obs * pow(sigma_eps, -2)  - 3 * pow(sigma_eps, -4) * norm2;
+
+            g = g / (hess * sigma_eps + 2 * g); 
+std::cout << "******************** ||Y-AW||^2 = " << (Y - A * getW()).dot(Y - A * getW()) << std::endl;
+std::cout << "******************** sigma_eps = " << sigma_eps << std::endl;
         }
-// std::cout << "n_obs=" << n_obs << std::endl;
-        // return -g * sigma_eps / (n_obs*n_obs);
-        return 0;
+        return g;
     }
 
     void set_theta_sgima_eps(double theta) {
         sigma_eps = exp(theta);
+        // sigma_eps = theta;
     }
 
+// Q: it's converging too slow
 // fixed effects
     VectorXd grad_beta() const {
-        VectorXd grads = pow(sigma_eps, -2) * X.transpose() * (Y - X*beta - A*getW());
-        return -grads / (n_obs * n_obs);
+        MatrixXd hess = X.transpose() * X;
+        VectorXd grads = X.transpose() * (Y - X*beta - A*getW());
+std::cout << "old grads=" << -grads << std::endl;
+        grads = hess.ldlt().solve(grads);
+std::cout << "new grads=" << -grads << std::endl;        
+        return grads;
     }
 
 // FOR TESTING

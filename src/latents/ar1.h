@@ -14,9 +14,14 @@ public:
     AR(Rcpp::List ar1_in) 
     : Latent(ar1_in)
     {
+        
+        // read init kappa
+        Rcpp::List init_value = Rcpp::as<Rcpp::List> (ar1_in["init_value"]);
+        double kappa = Rcpp::as<double>  (init_value["kappa"]);
+
         // Init operator
         Rcpp::List ope_in = Rcpp::as<Rcpp::List> (ar1_in["operator_in"]); // containing C and G
-        ope = new GC(ope_in);
+        ope = new GC(ope_in, kappa);
         
         // Init K
         solver_K.init(n_reg, 0,0,0);

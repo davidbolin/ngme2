@@ -42,8 +42,8 @@ private:
     SparseMatrix<double, 0, int> G, C;
 
 public:
-    GC(Rcpp::List ope_in) : Operator(ope_in) {
-        kappa = ope_in["a_init"];
+    GC(Rcpp::List ope_in, double kappa) : Operator(ope_in) {
+        this->kappa = kappa;
         G = Rcpp::as< SparseMatrix<double,0,int> > (ope_in["G"]);
         C = Rcpp::as< SparseMatrix<double,0,int> > (ope_in["C"]);
         

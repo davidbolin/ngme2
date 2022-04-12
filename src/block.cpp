@@ -35,7 +35,8 @@ void BlockModel::sampleW_VY()
   SparseMatrix<double> QQ = Q + pow(sigma_eps, -2) * A.transpose() * A;
 
   chol_Q.compute(QQ);
-  VectorXd M = K.transpose() * inv_SV.asDiagonal() * getMean() + pow(sigma_eps,2) * A.transpose() * Y;
+  VectorXd M = K.transpose() * inv_SV.asDiagonal() * getMean() + 
+      pow(sigma_eps, -2) * A.transpose() * Y;
 
   VectorXd z (n_regs); 
   z = rnorm_vec(n_regs, 0, 1);
@@ -44,6 +45,7 @@ void BlockModel::sampleW_VY()
   VectorXd W = chol_Q.rMVN(M, z);
 
   setW(W);
+// std::cout << "***************** W=" << W << std::endl;
 }
 
 // std::cout << "W=" << W << std::endl;

@@ -29,6 +29,7 @@ Rcpp::List predict_cpp(Rcpp::List in_list) {
     // init list
     Rcpp::List inits         = Rcpp::as<Rcpp::List> (gen_list["init"]);
         VectorXd beta = Rcpp::as<VectorXd>   (inits["beta"]);
+        double sigma_eps = Rcpp::as<double>   (inits["sigma_eps"]);
     
     Rcpp::List latents_list = Rcpp::as<Rcpp::List> (in_list["latents_in"]);
     
@@ -41,7 +42,7 @@ Rcpp::List predict_cpp(Rcpp::List in_list) {
         
         // const Eigen::VectorXd trueV = Rcpp::as<VectorXd>   (config_list["trueV"]);
         // const Eigen::VectorXd trueW = Rcpp::as<VectorXd>   (config_list["trueW"]);
-    BlockModel block (X, Y, family, n_regs, latents_list, n_gibbs, beta, opt_fix_effect);
+    BlockModel block (X, Y, family, n_regs, latents_list, n_gibbs, beta, sigma_eps, opt_fix_effect);
 
     // *****************   Main Process - Optimization *****************  
     Optimizer opt;

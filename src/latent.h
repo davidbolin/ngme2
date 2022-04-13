@@ -23,7 +23,7 @@ protected:
     // indicate which parameter to optimize
     bool opt_mu {false}, opt_sigma {false}, opt_kappa {false}, opt_var {false};
 
-    double mu, sigma;
+    double mu, sigma, trace, trace2;
     VectorXd W, prevW, h;
     SparseMatrix<double,0,int> A;
     
@@ -41,6 +41,8 @@ public:
       
       mu      (0),
       sigma   (1),
+      trace   (0),
+      trace2  (0),
       
       W       (n_reg),
       prevW   (n_reg),
@@ -64,7 +66,6 @@ public:
         if (type == "ind_IG") {
             var = new ind_IG(n_reg, nu);
         }
-
     }
     ~Latent() {}
 
@@ -91,8 +92,11 @@ public:
 
     // Paramter kappa
     double getKappa() const       {return ope->getKappa(); } 
-    void   setKappa(double kappa) {ope->setKappa(kappa);} 
-    
+    void   setKappa(double kappa) {
+        ope->setKappa(kappa);
+        compute_trace();
+    } 
+
     /* 4 for optimizer */
     const VectorXd getTheta() const;
     const VectorXd getGrad();
@@ -102,7 +106,23 @@ public:
     virtual double get_theta_kappa() const=0;
     virtual void   set_theta_kappa(double v)=0;
     virtual double grad_theta_kappa()=0;
+    
+    // deprecated
     double _grad_kappa();
+    
+    void compute_trace() {
+        SparseMatrix<double> K = getK();
+        SparseMatrix<double> dK = get_dK();
+// compute trace
+        solver_K.computeKKT(K);
+
+// auto timer_trace = std::chrono::steady_clock::now();
+        SparseMatrix<double> M = dK.transpose() * K;
+        trace = solver_K.trace(M);
+// std::cout << "time for the trace (ms): " << since(timer_trace).count() << std::endl;   
+        SparseMatrix<double> M2 = M * M;
+        trace2 = solver_K.trace(M2);
+    };
     
     // nu
     virtual double get_theta_var() const   { return var->get_theta_var(); }
@@ -175,19 +195,13 @@ inline double Latent::_grad_kappa() {
     VectorXd V = getV();
     VectorXd SV = getSV();
 
-// compute trace
-auto timer_init = std::chrono::steady_clock::now();
-    solver_K.computeKKT(K);
-std::cout << "time for compute K (ms): " << since(timer_init).count() << std::endl;
+    double rhs = (dK*W).cwiseProduct(SV.cwiseInverse()).dot(K * W + (h - V) * mu);
+std::cout << "************grad_kappa_trace = " << (trace) << std::endl;   
+std::cout << "************grad_kappa_rhs = " << (rhs) << std::endl;   
+    double grad = rhs - trace;
+    
+    return grad;
 
-auto timer_trace = std::chrono::steady_clock::now();
-    SparseMatrix<double> M = dK.transpose() * K;
-    double trace = solver_K.trace(M);
-std::cout << "time for the trace (ms): " << since(timer_trace).count() << std::endl;   
-// std::cout << "trace1=: " << trace << std::endl;   
-
-double rhs = (dK*W).cwiseProduct(SV.cwiseInverse()).dot(K * W + (h - V) * mu);
-    return (rhs - trace);
 }
 
 // sigma>0 -> theta=log(sigma)

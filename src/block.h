@@ -42,6 +42,7 @@ protected:
     
     SparseMatrix<double> A, K, dK, d2K;
     cholesky_solver chol_Q;
+    SparseLU<SparseMatrix<double> > LU_K;
 public:
     BlockModel() {}
 
@@ -100,14 +101,19 @@ public:
 
         VectorXd inv_SV = VectorXd::Constant(n_regs, 1).cwiseQuotient(getSV());
         SparseMatrix<double> QQ = K.transpose() * inv_SV.asDiagonal() * K + pow(sigma_eps, 2) * A.transpose() * A;
-    chol_Q.analyze(QQ);
     
-    // sample 2 W
+    chol_Q.analyze(QQ);
+    LU_K.analyzePattern(K);
+
+    // sample W
+    
     sampleW_VY();
-    sampleW_VY();
+    // sampleW_V();
     }
 
     void sampleW_VY();
+    void sampleW_V();
+
     void sampleV_WY() {
         for (unsigned i=0; i < n_latent; i++) {
             (*latents[i]).sample_cond_V();
@@ -115,7 +121,6 @@ public:
     }
 
     void setW(const VectorXd&);
-
     VectorXd             get_parameter() const;
     void                 set_parameter(const VectorXd&);
     VectorXd             grad();
@@ -186,8 +191,6 @@ public:
             // double hess = 1.0 * n_obs * pow(sigma_eps, -2)  - 3 * pow(sigma_eps, -4) * norm2;
 
             g = g / (hess * sigma_eps + 2 * g); 
-std::cout << "******************** ||Y-AW||^2 = " << (Y - A * getW()).dot(Y - A * getW()) << std::endl;
-std::cout << "******************** sigma_eps = " << sigma_eps << std::endl;
         }
         return g;
     }
@@ -205,7 +208,7 @@ std::cout << "******************** sigma_eps = " << sigma_eps << std::endl;
 std::cout << "old grads=" << -grads << std::endl;
         grads = hess.ldlt().solve(grads);
 std::cout << "new grads=" << -grads << std::endl;        
-        return grads;
+        return -grads;
     }
 
 // FOR TESTING
@@ -250,15 +253,14 @@ inline VectorXd BlockModel::get_parameter() const {
 }
 
 inline VectorXd BlockModel::grad() {
-    VectorXd avg_gradient (n_paras);
-        avg_gradient = VectorXd::Constant(n_paras, 0);
+    VectorXd avg_gradient = VectorXd::Zero(n_paras);
     
     for (int i=0; i < n_gibbs; i++) {
         
         // stack grad
-        VectorXd gradient (n_paras); 
-            gradient = VectorXd::Constant(n_paras, 0);
+        VectorXd gradient = VectorXd::Zero(n_paras);
         
+        // get grad for each latent
         int pos = 0;
         for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
             int theta_len = (*it)->getThetaSize();
@@ -269,10 +271,13 @@ std::cout << "timer_computeg (ms): " << since(timer_computeg).count() << std::en
         }
 
         avg_gradient += gradient;
+
+        // gibbs sampling
         sampleV_WY(); 
 auto timer_sampleW = std::chrono::steady_clock::now();
         sampleW_VY();
-std::cout << "sampleW (ms): " << since(timer_sampleW).count() << std::endl;   
+        // sampleW_V();
+std::cout << "sampleW (ms): " << since(timer_sampleW).count() << std::endl;
     }
     avg_gradient = (1.0/n_gibbs) * avg_gradient;
 

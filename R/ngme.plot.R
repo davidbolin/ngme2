@@ -27,6 +27,22 @@ plot_out <- function(output, order=1, type="traj") {
     return()
   }
 
+  if (order==-1) {
+    par(mfrow=c(2,2))
+    fe1 <- unlist(lapply(x_traj, function(x) {x[n.paras-2]} ))
+    fe2 <- unlist(lapply(x_traj, function(x) {x[n.paras-1]} ))
+    gr1 <- unlist(lapply(grad_traj, function(x) {x[n.paras-2]} ))
+    gr2 <- unlist(lapply(grad_traj, function(x) {x[n.paras-1]} ))
+
+    plot(fe1, type="l", main = "traj of fe1")
+    plot(fe2, type="l", main = "traj of fe2")
+    plot(gr1, type="l", main = "grad of fe1")
+    plot(gr2, type="l", main = "grad of fe2")
+
+    par(mfrow=c(1,1))
+    return()
+  }
+
   if ((type=="traj") || (type==1)) {
     x_kappa <- unlist(lapply(x_traj, function(x) {x[(order-1)*4 + 1]} ))
     x_mu    <- unlist(lapply(x_traj, function(x) {x[(order-1)*4 + 2]} ))
@@ -60,6 +76,8 @@ plot_out <- function(output, order=1, type="traj") {
 
     return()
   }
+
+
 
   stop("Unknown parameter")
 }

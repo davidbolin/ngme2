@@ -45,7 +45,23 @@ void BlockModel::sampleW_VY()
   VectorXd W = chol_Q.rMVN(M, z);
 
   setW(W);
-// std::cout << "***************** W=" << W << std::endl;
+}
+
+// sample W|V
+void BlockModel::sampleW_V()
+{
+  // sample KW ~ N(mu*(V-h), diag(V))
+  VectorXd SV = getSV();
+  Eigen::VectorXd KW (n_regs);
+  for (int i=0; i < n_regs; i++) {
+    KW[i] = R::rnorm(0, sqrt(SV[i]));
+  }
+  KW = getMean() + KW;
+
+  LU_K.factorize(K);
+  VectorXd W = LU_K.solve(KW);
+
+  setW(W);
 }
 
 // std::cout << "W=" << W << std::endl;

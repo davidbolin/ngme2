@@ -146,6 +146,7 @@ public:
   void computeKKT(Eigen::SparseMatrix<double, 0, int> &);
   double trace(Eigen::MatrixXd &);
   double trace(Eigen::SparseMatrix<double, 0, int> &);
+  double trace0(Eigen::SparseMatrix<double, 0, int> &);
   double trace2(SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &);
   inline Eigen::VectorXd solve(Eigen::VectorXd &v, Eigen::VectorXd &x) { return LU_K.solve(v); }
   inline Eigen::VectorXd solve(Eigen::VectorXd &v) { return LU_K.solve(v); }

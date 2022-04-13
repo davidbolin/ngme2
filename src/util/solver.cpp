@@ -317,6 +317,7 @@ double lu_solver::trace2(SparseMatrix<double, 0, int> &, SparseMatrix<double, 0,
   Rcpp::Rcout << "lu_solver::trace2 not implemented\n";
   throw;
 }
+
 inline double lu_solver::logdet()
 {
   return (log(fabs(LU_K.determinant())));
@@ -380,6 +381,13 @@ double lu_sparse_solver::trace(MatrixXd &M)
 {
 
   std::cout << "lu_sparse_solver::trace for dense matrix M not implimented\n";
+  throw;
+  return 0;
+}
+
+double lu_sparse_solver::trace0(SparseMatrix<double, 0, int> &M)
+{
+  std::cout << "lu_sparse_solver0 not implemented";
   throw;
   return 0;
 }

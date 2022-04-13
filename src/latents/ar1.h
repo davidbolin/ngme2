@@ -26,6 +26,7 @@ public:
         // Init K
         solver_K.init(n_reg, 0,0,0);
         solver_K.analyze(getK());
+        compute_trace();
     }
 
     void sample_cond_V() {
@@ -52,10 +53,30 @@ public:
 
     // grad_kappa * dkappa/dtheta
     double grad_theta_kappa() {
+        SparseMatrix<double> K = getK();
+        SparseMatrix<double> dK = get_dK();
+        VectorXd V = getV();
+        VectorXd prevV = getPrevV();
+        
+        VectorXd SV = pow(sigma, 2) * V;
+        VectorXd prevSV = pow(sigma, 2) * prevV;
+        
         double a = getKappa();
         double th = a2th(a);
-        double dth = 2 * exp(th) / pow(1+exp(th), 2);
-        return _grad_kappa() * dth;
+
+        double da  = 2 * (exp(th) / pow(1+exp(th), 2));
+        double d2a = -2 * (exp(th) * (-1+exp(th)) / pow(1+exp(th), 3));
+
+        double tmp = (dK*W).cwiseProduct(SV.cwiseInverse()).dot(K * W + (h - V) * mu);
+        double grad = trace - tmp;
+
+        tmp = (dK*W).cwiseProduct(prevSV.cwiseInverse()).dot(dK * W);
+        double hess = -trace2 - tmp;
+
+std::cout << "******* grad of kappa: " << grad << std::endl;   
+std::cout << "******* hess of kappa: " << hess << std::endl;   
+
+        return (grad * da) / (hess * da * da + grad * d2a) * n_reg;
     }
 
 };

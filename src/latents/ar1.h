@@ -23,10 +23,17 @@ public:
         Rcpp::List ope_in = Rcpp::as<Rcpp::List> (ar1_in["operator_in"]); // containing C and G
         ope = new GC(ope_in, kappa);
         
-        // Init K
+        // Init K and Q
+        SparseMatrix<double> K = getK();
+        SparseMatrix<double> Q = K.transpose() * K;
+        
         solver_K.init(n_reg, 0,0,0);
-        solver_K.analyze(getK());
+        solver_K.analyze(K);
         compute_trace();
+
+        // Init Q
+        solver_Q.init(n_reg, 0,0,0);
+        solver_Q.analyze(Q);
     }
 
     void sample_cond_V() {
@@ -69,9 +76,9 @@ public:
 
         double tmp = (dK*W).cwiseProduct(SV.cwiseInverse()).dot(K * W + (h - V) * mu);
         double grad = trace - tmp;
-
-        tmp = (dK*W).cwiseProduct(prevSV.cwiseInverse()).dot(dK * W);
-        double hess = -trace2 - tmp;
+        
+        
+        double hess = num_hess(0.001);
 
 std::cout << "******* grad of kappa: " << grad << std::endl;   
 std::cout << "******* hess of kappa: " << hess << std::endl;   

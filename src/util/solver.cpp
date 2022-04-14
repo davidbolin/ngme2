@@ -142,11 +142,13 @@ void cholesky_solver::initFromList(int nin, Rcpp::List const &)
   Qi.resize(n, n);
   Qi_computed = 0;
 }
+
 void cholesky_solver::compute(SparseMatrix<double, 0, int> &M)
 {
   R.factorize(M);
   Qi_computed = 0;
 }
+
 void cholesky_solver::set_ld()
 {
   SparseMatrix<double, 0, int> R_Q = R.matrixL();

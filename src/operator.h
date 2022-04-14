@@ -33,6 +33,8 @@ public:
     SparseMatrix<double, 0, int>& getK()    {return K;}
     SparseMatrix<double, 0, int>& get_dK()  {return dK;}
     SparseMatrix<double, 0, int>& get_d2K() {return d2K;}
+
+    virtual SparseMatrix<double, 0, int> getK(double) const=0;
 };
 
 
@@ -52,6 +54,11 @@ public:
         d2K = 0 * C;
     }
 
+    SparseMatrix<double> getK(double kappa) const {
+        SparseMatrix<double> K =  kappa * C + G;
+        return K;
+    }
+
     void update() {
         K = kappa * C + G;
         
@@ -65,6 +72,7 @@ public:
         SparseMatrix<double> Keps = (kappa + eps) * C + G;
         dK = (Keps - K) / eps;
     }
+
 };
 
 #endif

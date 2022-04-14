@@ -32,8 +32,7 @@ protected:
 
     // solver
     lu_sparse_solver solver_K;
-    cholesky_solver  solver_Q;
-    bool Q_analyzed {false};
+    cholesky_solver  solver_Q; // Q = KT diag(1/SV) K
 
 public:
     Latent(Rcpp::List latent_in) 
@@ -102,13 +101,14 @@ public:
     const VectorXd getGrad();
     void           setTheta(const VectorXd&);
 
-    // kappa
+    // Parameter: kappa
     virtual double get_theta_kappa() const=0;
     virtual void   set_theta_kappa(double v)=0;
     virtual double grad_theta_kappa()=0;
+
+    virtual double log_likelihood(double kappa);
+    virtual double num_hess(double eps);
     
-    // deprecated
-    double _grad_kappa();
     
     void compute_trace() {
         SparseMatrix<double> K = getK();
@@ -120,36 +120,21 @@ public:
         SparseMatrix<double> M = dK.transpose() * K;
         trace = solver_K.trace(M);
 // std::cout << "time for the trace (ms): " << since(timer_trace).count() << std::endl;   
-        SparseMatrix<double> M2 = M * M;
-        trace2 = solver_K.trace(M2);
     };
     
-    // nu
+    // Parameter: nu
     virtual double get_theta_var() const   { return var->get_theta_var(); }
     virtual void   set_theta_var(double v) { var->set_theta_var(v); }
     virtual double grad_theta_var()        { 
-        
-        // sigma -> sigma.tilde
-        // double nu = var->get_var();
-        // double dst_dnu = -0.5 * (sigma * mu * mu) / pow(1+nu*mu*mu, 1.5);
-        double dst_dnu = 1;
-        
-        return var->grad_theta_var() * dst_dnu;
+        return var->grad_theta_var();
     }
 
-    /* Old parameterization */
+    // Parameter: sigma
     virtual double get_theta_sigma() const        { return log(sigma); }
     virtual void   set_theta_sigma(double theta)  { this->sigma = exp(theta); }
     virtual double grad_theta_sigma();
 
-    /* Use new sigma tilde parametrization */
-    // sigma.tilde = sigma / sqrt(1 + eta * nu^2)
-    // double get_sigma_tilde() const {return sigma / sqrt(1 + mu*mu * var->get_var()); }
-    // virtual double get_theta_sigma() const        { return log(get_sigma_tilde()); }
-    // virtual void   set_theta_sigma(double theta)  { this->sigma = exp(theta) * sqrt(1 + mu*mu * var->get_var()); }
-    // virtual double grad_theta_sigma();
-
-    // mu
+    // Parameter: mu
     double get_mu() const     {return mu;} 
     void   set_mu (double mu) {this->mu = mu;} 
     virtual double grad_mu();
@@ -189,21 +174,6 @@ inline void Latent::setTheta(const VectorXd& theta) {
     if (opt_var)   set_theta_var(theta(3)); 
 }
 
-inline double Latent::_grad_kappa() {
-    SparseMatrix<double> K = getK();
-    SparseMatrix<double> dK = get_dK();
-    VectorXd V = getV();
-    VectorXd SV = getSV();
-
-    double rhs = (dK*W).cwiseProduct(SV.cwiseInverse()).dot(K * W + (h - V) * mu);
-std::cout << "************grad_kappa_trace = " << (trace) << std::endl;   
-std::cout << "************grad_kappa_rhs = " << (rhs) << std::endl;   
-    double grad = rhs - trace;
-    
-    return grad;
-
-}
-
 // sigma>0 -> theta=log(sigma)
 // return the gradient wrt. theta, theta=log(sigma)
 inline double Latent::grad_theta_sigma() {
@@ -239,6 +209,32 @@ inline double Latent::grad_mu() {
     double grad = pow(sigma,-2) * (V-h).cwiseProduct(inv_V).dot(K*W - mu*(V-h));
 
     return grad / hess;
+}
+
+// W|V ~ N(K^-1 mu(V-h), sigma^2 K-1 diag(V) K-T)
+inline double Latent::log_likelihood(double kappa) {
+    SparseMatrix<double> K = ope->getK(kappa);
+
+    VectorXd V = getV();
+    VectorXd SV = getSV();
+
+    solver_K.compute(K);
+    VectorXd mean = solver_K.solve(mu * (V-h));
+    SparseMatrix<double> Q = K.transpose() * SV.cwiseInverse().asDiagonal() * K;
+    
+    solver_Q.compute(Q);
+    
+    double l = 0.5 * solver_Q.logdet() 
+                - 0.5 * pow(sigma, -2) * (W-mean).transpose() * Q * (W-mean);
+
+    return l;
+}
+
+inline double Latent::num_hess(double eps) {
+    double kappa = ope->getKappa();
+
+    return (log_likelihood(kappa + eps) + log_likelihood(kappa - eps)
+            - 2*log_likelihood(kappa)) / pow(eps, 2);
 }
 
 #endif

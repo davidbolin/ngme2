@@ -36,13 +36,15 @@ Rcpp::List predict_cpp(Rcpp::List in_list) {
     // config_list
     Rcpp::List config_list  = Rcpp::as<Rcpp::List> (in_list["config_in"]);
         // Flag to Specify what parameter to optimize
+        const int burnin = config_list["burnin"];
         const int iterations = config_list["iterations"];
         const int n_gibbs = config_list["gibbs_sample"];
         const double stepsize = config_list["stepsize"];
         
         // const Eigen::VectorXd trueV = Rcpp::as<VectorXd>   (config_list["trueV"]);
         // const Eigen::VectorXd trueW = Rcpp::as<VectorXd>   (config_list["trueW"]);
-    BlockModel block (X, Y, family, n_regs, latents_list, n_gibbs, beta, sigma_eps, opt_fix_effect);
+    BlockModel block (X, Y, family, n_regs, latents_list, 
+        n_gibbs, beta, sigma_eps, opt_fix_effect, burnin);
 
     // *****************   Main Process - Optimization *****************  
     Optimizer opt;

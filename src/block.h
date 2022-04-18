@@ -54,7 +54,8 @@ public:
                int n_gibbs,
                VectorXd beta,
                double sigma_eps,
-               bool opt_fix_effect) 
+               bool opt_fix_effect,
+               int burnin) 
     : n_obs(Y.size()),
       n_latent(latents_in.size()), 
       n_regs(n_regs),
@@ -74,41 +75,46 @@ public:
       dK(n_regs, n_regs),
       d2K(n_regs, n_regs)
     {
-    // Init each latent model
-    for (int i=0; i < n_latent; ++i) {
-        Rcpp::List latent_in = Rcpp::as<Rcpp::List> (latents_in[i]);
+        // Init each latent model
+        for (int i=0; i < n_latent; ++i) {
+            Rcpp::List latent_in = Rcpp::as<Rcpp::List> (latents_in[i]);
 
-        // construct acoording to models
-        string type = latent_in["type"];
-        if (type == "ar1") {
-            latents.push_back(new AR(latent_in) );
+            // construct acoording to models
+            string type = latent_in["type"];
+            if (type == "ar1") {
+                latents.push_back(new AR(latent_in) );
+            }
         }
-    }
-    
-    /* Fixed effects */
-    if (opt_fix_effect) {
-        int n_beta = beta.size();
-        n_paras = latent_para + 1 + n_beta;
+        
+        /* Fixed effects */
+        if (opt_fix_effect) {
+            int n_beta = beta.size();
+            n_paras = latent_para + 1 + n_beta;
+        }
+
+        /* Init variables: h, A */
+        int n = 0;
+        for (std::vector<Latent*>::iterator it = latents.begin(); it != latents.end(); it++) {
+            setSparseBlock(&A,   0, n, (*it)->getA());            
+            n += (*it)->getSize();
+        }
+        assemble();
+
+            VectorXd inv_SV = VectorXd::Constant(n_regs, 1).cwiseQuotient(getSV());
+            SparseMatrix<double> QQ = K.transpose() * inv_SV.asDiagonal() * K + pow(sigma_eps, 2) * A.transpose() * A;
+        
+        chol_Q.analyze(QQ);
+        LU_K.analyzePattern(K);
+
+        burn_in(burnin);
     }
 
-    /* Init variables: h, A */
-    int n = 0;
-    for (std::vector<Latent*>::iterator it = latents.begin(); it != latents.end(); it++) {
-        setSparseBlock(&A,   0, n, (*it)->getA());            
-        n += (*it)->getSize();
-    }
-    assemble();
-
-        VectorXd inv_SV = VectorXd::Constant(n_regs, 1).cwiseQuotient(getSV());
-        SparseMatrix<double> QQ = K.transpose() * inv_SV.asDiagonal() * K + pow(sigma_eps, 2) * A.transpose() * A;
-    
-    chol_Q.analyze(QQ);
-    LU_K.analyzePattern(K);
-
-    // sample W
-    
-    sampleW_VY();
-    // sampleW_V();
+    /* Gibbs Sampler */
+    void burn_in(int iterations) {
+        for (int i=0; i < iterations; i++) {
+            sampleW_VY();
+            sampleV_WY();
+        }
     }
 
     void sampleW_VY();
@@ -119,13 +125,16 @@ public:
             (*latents[i]).sample_cond_V();
         }
     }
-
     void setW(const VectorXd&);
+    
+    /* Optimizer related */
     VectorXd             get_parameter() const;
     void                 set_parameter(const VectorXd&);
     VectorXd             grad();
     SparseMatrix<double> precond() const;
 
+
+    /* Aseemble */
     void assemble() {
         int n = 0;
         for (std::vector<Latent*>::iterator it = latents.begin(); it != latents.end(); it++) {
@@ -175,7 +184,6 @@ public:
 
     double get_theta_sigma_eps() const {
         return log(sigma_eps);
-        // return sigma_eps;
     }
 
     double grad_theta_sigma_eps() const {
@@ -197,15 +205,17 @@ public:
 
     void set_theta_sgima_eps(double theta) {
         sigma_eps = exp(theta);
-        // sigma_eps = theta;
     }
 
 // Q: it's converging too slow
 // fixed effects
     VectorXd grad_beta() const {
-        MatrixXd hess = X.transpose() * X;
-        VectorXd grads = X.transpose() * (Y - X*beta - A*getW());
+      //  MatrixXd hess = - X.transpose() * X;
+      MatrixXd hess = X.transpose() * X;
+       VectorXd grads = X.transpose() * (Y - X*beta - A*getW());
+        // VectorXd grads = X.transpose() * (Y - X*beta);
 std::cout << "old grads=" << -grads << std::endl;
+
         grads = hess.ldlt().solve(grads);
 std::cout << "new grads=" << -grads << std::endl;        
         return -grads;
@@ -269,6 +279,12 @@ auto timer_computeg = std::chrono::steady_clock::now();
 std::cout << "timer_computeg (ms): " << since(timer_computeg).count() << std::endl;   
             pos += theta_len;
         }
+        
+        // fixed effects
+        if (opt_fix_effect) {
+            int n_beta = beta.size();
+            gradient.segment(n_paras - n_beta-1, n_beta) = grad_beta();
+        }
 
         avg_gradient += gradient;
 
@@ -279,16 +295,13 @@ auto timer_sampleW = std::chrono::steady_clock::now();
         // sampleW_V();
 std::cout << "sampleW (ms): " << since(timer_sampleW).count() << std::endl;
     }
+
     avg_gradient = (1.0/n_gibbs) * avg_gradient;
 
     // sigma_eps 
     avg_gradient(n_paras-1) = grad_theta_sigma_eps();
 
-    // fixed effects
-    if (opt_fix_effect) {
-        int n_beta = beta.size();
-        avg_gradient.segment(n_paras - n_beta-1, n_beta) = grad_beta();
-    }
+
 
     return avg_gradient;
 }

@@ -41,8 +41,11 @@ protected:
     double sigma_eps;
     
     SparseMatrix<double> A, K, dK, d2K;
-    cholesky_solver chol_Q;
+    cholesky_solver chol_Q, chol_QQ;
     SparseLU<SparseMatrix<double> > LU_K;
+
+    bool fix_trueVW {false};
+    VectorXd trueSV, trueW;
 public:
     BlockModel() {}
 
@@ -55,7 +58,11 @@ public:
                VectorXd beta,
                double sigma_eps,
                bool opt_fix_effect,
-               int burnin) 
+               int burnin,
+               bool fix_trueVW,
+               VectorXd trueSV, 
+               VectorXd trueW
+               ) 
     : n_obs(Y.size()),
       n_latent(latents_in.size()), 
       n_regs(n_regs),
@@ -73,7 +80,11 @@ public:
       A(n_obs, n_regs), 
       K(n_regs, n_regs), 
       dK(n_regs, n_regs),
-      d2K(n_regs, n_regs)
+      d2K(n_regs, n_regs),
+
+      fix_trueVW(fix_trueVW),
+      trueSV(trueSV),
+      trueW(trueW)
     {
         // Init each latent model
         for (int i=0; i < n_latent; ++i) {
@@ -101,10 +112,14 @@ public:
         assemble();
 
             VectorXd inv_SV = VectorXd::Constant(n_regs, 1).cwiseQuotient(getSV());
-            SparseMatrix<double> QQ = K.transpose() * inv_SV.asDiagonal() * K + pow(sigma_eps, 2) * A.transpose() * A;
+            SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
+            SparseMatrix<double> QQ = Q + pow(sigma_eps, -2) * A.transpose() * A;
         
-        chol_Q.analyze(QQ);
+        chol_Q.analyze(Q);
+        chol_QQ.analyze(QQ);
         LU_K.analyzePattern(K);
+
+// output the block model
 
         burn_in(burnin);
     }
@@ -146,7 +161,7 @@ public:
         }
     }
 
-    // return mean
+    // return mean = mu*(V-h)
     VectorXd getMean() const {
         VectorXd mean (n_regs);
         int pos = 0;
@@ -167,7 +182,11 @@ public:
             SV.segment(pos, size) = (*it)->getSV();
             pos += size;
         }
-
+        
+        // debug
+        if (fix_trueVW) {
+            SV = trueSV;
+        }
         return SV;
     }
 
@@ -189,8 +208,7 @@ public:
     double grad_theta_sigma_eps() const {
         double g = 0;
         if (family=="normal") {
-            VectorXd W = getW();
-            VectorXd tmp = Y - A * W - X * beta;
+            VectorXd tmp = Y - A * getW() - X * beta;
             double norm2 =  tmp.dot(tmp);
             
             g = -(1.0 / sigma_eps) * n_obs  + pow(sigma_eps, -3) * norm2;
@@ -207,36 +225,29 @@ public:
         sigma_eps = exp(theta);
     }
 
-// Q: it's converging too slow
 // fixed effects
-    VectorXd grad_beta() const {
-      //  MatrixXd hess = - X.transpose() * X;
-      MatrixXd hess = X.transpose() * X;
-       VectorXd grads = X.transpose() * (Y - X*beta - A*getW());
-        // VectorXd grads = X.transpose() * (Y - X*beta);
-std::cout << "old grads=" << -grads << std::endl;
+    VectorXd grad_beta() {
+        VectorXd inv_SV = VectorXd::Constant(n_regs, 1).cwiseQuotient(getSV());
+        VectorXd grads = X.transpose() * (Y - X*beta - A*getW());
+        
+        // SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
+        // SparseMatrix<double> QQ = Q + pow(sigma_eps, -2) * A.transpose() * A;
 
+        // LU_K.factorize(K);
+        // chol_Q.compute(Q);
+
+        // VectorXd mean = getMean(); // mean = mu*(V-h)
+        // VectorXd b = LU_K.solve(mean);
+        
+        // VectorXd b_tilde = QQ * chol_Q.solve(b) + pow(sigma_eps, -2) * A.transpose() * (Y-X*beta);
+        // VectorXd grads = X.transpose() * (Y - X*beta - A*b_tilde);
+
+        MatrixXd hess = X.transpose() * X;
         grads = hess.ldlt().solve(grads);
-std::cout << "new grads=" << -grads << std::endl;        
+
+std::cout << "grads of beta=" << -grads << std::endl;        
         return -grads;
     }
-
-// FOR TESTING
-Rcpp::List testResult() {
-Rcpp::List res;
-A.makeCompressed();
-K.makeCompressed();
-dK.makeCompressed();
-d2K.makeCompressed();
-res["A"] = A;
-res["K"] = K;
-res["dK"] = dK;
-res["d2K"] = d2K;
-res["V"] = getSV();
-res["W"] = getW();
-return res;
-}
-
 };
 
 // ---- inherited functions ------
@@ -285,6 +296,9 @@ std::cout << "timer_computeg (ms): " << since(timer_computeg).count() << std::en
             int n_beta = beta.size();
             gradient.segment(n_paras - n_beta-1, n_beta) = grad_beta();
         }
+        
+        // sigma_eps 
+        gradient(n_paras-1) = grad_theta_sigma_eps();
 
         avg_gradient += gradient;
 
@@ -297,12 +311,6 @@ std::cout << "sampleW (ms): " << since(timer_sampleW).count() << std::endl;
     }
 
     avg_gradient = (1.0/n_gibbs) * avg_gradient;
-
-    // sigma_eps 
-    avg_gradient(n_paras-1) = grad_theta_sigma_eps();
-
-
-
     return avg_gradient;
 }
 

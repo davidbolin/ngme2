@@ -72,18 +72,22 @@ public:
         double th = a2th(a);
 
         double da  = 2 * (exp(th) / pow(1+exp(th), 2));
-        double d2a = -2 * (exp(th) * (-1+exp(th)) / pow(1+exp(th), 3));
+        double d2a = 2 * (exp(th) * (-1+exp(th)) / pow(1+exp(th), 3));
 
         double tmp = (dK*W).cwiseProduct(SV.cwiseInverse()).dot(K * W + (h - V) * mu);
         double grad = trace - tmp;
         
-        
-        double hess = num_hess(0.001);
+        double ret = 0;
+        if (use_precond) {
+            double hess = num_hess(0.001);
+            ret = (grad * da) / (hess * da * da + grad * d2a);
+        } else {
+            ret = -grad * da;
+        }
 
-std::cout << "******* grad of kappa: " << grad << std::endl;   
-std::cout << "******* hess of kappa: " << hess << std::endl;   
+std::cout << "******* grad of kappa: " << ret << std::endl;   
 
-        return (grad * da) / (hess * da * da + grad * d2a) * n_reg;
+        return ret;
     }
 
 };

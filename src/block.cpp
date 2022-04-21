@@ -34,17 +34,22 @@ void BlockModel::sampleW_VY()
   SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
   SparseMatrix<double> QQ = Q + pow(sigma_eps, -2) * A.transpose() * A;
 
-  chol_Q.compute(QQ);
+  chol_QQ.compute(QQ);
   VectorXd M = K.transpose() * inv_SV.asDiagonal() * getMean() + 
-      pow(sigma_eps, -2) * A.transpose() * Y;
+      pow(sigma_eps, -2) * A.transpose() * (Y - X * beta);
 
   VectorXd z (n_regs); 
   z = rnorm_vec(n_regs, 0, 1);
   
   // sample W ~ N(QQ^-1*M, QQ^-1)
-  VectorXd W = chol_Q.rMVN(M, z);
+  VectorXd W = chol_QQ.rMVN(M, z);
 
   setW(W);
+
+  // for debug
+  if (fix_trueVW) {
+    setW(trueW);
+  }
 }
 
 // sample W|V

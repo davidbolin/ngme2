@@ -21,7 +21,7 @@ protected:
     int n_reg, n_paras {4}; //regressors, parameters
     
     // indicate which parameter to optimize
-    bool opt_mu {false}, opt_sigma {false}, opt_kappa {false}, opt_var {false};
+    bool opt_mu {false}, opt_sigma {false}, opt_kappa {false}, opt_var {false}, use_precond {false};
 
     double mu, sigma, trace, trace2;
     VectorXd W, prevW, h;
@@ -49,10 +49,11 @@ public:
       A       (Rcpp::as< SparseMatrix<double,0,int> > (latent_in["A"]))
     {
         // Init opt. flag
-        opt_mu = Rcpp::as<bool>         (latent_in["opt_mu"]);
-        opt_sigma = Rcpp::as<bool>      (latent_in["opt_sigma"]);
-        opt_kappa = Rcpp::as<bool>      (latent_in["opt_kappa"]);
-        opt_var = Rcpp::as<bool>        (latent_in["opt_var"]);
+        opt_mu      = Rcpp::as<bool>        (latent_in["opt_mu"]);
+        opt_sigma   = Rcpp::as<bool>        (latent_in["opt_sigma"]);
+        opt_kappa   = Rcpp::as<bool>        (latent_in["opt_kappa"]);
+        opt_var     = Rcpp::as<bool>        (latent_in["opt_var"]);
+        use_precond = Rcpp::as<bool>        (latent_in["use_precond"]);
 
         // Init var
         Rcpp::List var_in = Rcpp::as<Rcpp::List> (latent_in["var_in"]);
@@ -155,11 +156,11 @@ inline const VectorXd Latent::getTheta() const {
 inline const VectorXd Latent::getGrad() {
     VectorXd grad (n_paras);
 auto grad1 = std::chrono::steady_clock::now();
-    if (opt_kappa) grad(0) = grad_theta_kappa() / n_reg; else grad(0) = 0;
+    if (opt_kappa) grad(0) = grad_theta_kappa();         else grad(0) = 0;
 
     if (opt_mu)    grad(1) = grad_mu();                  else grad(1) = 0;
 
-    if (opt_sigma) grad(2) = grad_theta_sigma() / n_reg; else grad(2) = 0;
+    if (opt_sigma) grad(2) = grad_theta_sigma();         else grad(2) = 0;
 
     if (opt_var)   grad(3) = grad_theta_var();           else grad(3) = 0;
 
@@ -192,8 +193,9 @@ inline double Latent::grad_theta_sigma() {
     // grad. wrt theta
 std::cout << "******* grad of sigma is: " << grad / (hess * sigma + grad) * n_reg << std::endl;   
 
-    return grad / (hess * sigma + grad) * n_reg;
+    return grad / (hess * sigma + grad);
 }
+
 
 inline double Latent::grad_mu() {
     SparseMatrix<double> K = getK();
@@ -218,14 +220,15 @@ inline double Latent::log_likelihood(double kappa) {
     VectorXd V = getV();
     VectorXd SV = getSV();
 
-    solver_K.compute(K);
-    VectorXd mean = solver_K.solve(mu * (V-h));
     SparseMatrix<double> Q = K.transpose() * SV.cwiseInverse().asDiagonal() * K;
     
     solver_Q.compute(Q);
     
+    VectorXd tmp = K * prevW - mu*(V-h);
+
     double l = 0.5 * solver_Q.logdet() 
-                - 0.5 * pow(sigma, -2) * (W-mean).transpose() * Q * (W-mean);
+               - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
+                // - 0.5 * (prevW-mean).transpose() * Q * (prevW-mean);
 
     return l;
 }

@@ -24,7 +24,6 @@ Rcpp::List predict_cpp(Rcpp::List in_list) {
 // std::cout << X << std::endl;
         const int n_regs        = Rcpp::as<int>   (gen_list["n_regs"]);
         const string family     = Rcpp::as<string>   (gen_list["family"]);
-        const bool opt_fix_effect = Rcpp::as<bool>   (gen_list["opt_fix_effect"]);
 
     // init list
     Rcpp::List inits         = Rcpp::as<Rcpp::List> (gen_list["init"]);
@@ -41,10 +40,12 @@ Rcpp::List predict_cpp(Rcpp::List in_list) {
         const int n_gibbs = config_list["gibbs_sample"];
         const double stepsize = config_list["stepsize"];
         
-        // const Eigen::VectorXd trueV = Rcpp::as<VectorXd>   (config_list["trueV"]);
-        // const Eigen::VectorXd trueW = Rcpp::as<VectorXd>   (config_list["trueW"]);
+        const bool opt_fix_effect = Rcpp::as<bool>   (config_list["opt_fix_effect"]);
+        const bool fix_trueVW = Rcpp::as<bool>   (config_list["fix_trueVW"]);
+        const Eigen::VectorXd trueSV = Rcpp::as<VectorXd>   (config_list["trueSV"]);
+        const Eigen::VectorXd trueW = Rcpp::as<VectorXd>   (config_list["trueW"]);
     BlockModel block (X, Y, family, n_regs, latents_list, 
-        n_gibbs, beta, sigma_eps, opt_fix_effect, burnin);
+        n_gibbs, beta, sigma_eps, opt_fix_effect, burnin, fix_trueVW, trueSV, trueW);
 
     // *****************   Main Process - Optimization *****************  
     Optimizer opt;

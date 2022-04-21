@@ -28,16 +28,21 @@ plot_out <- function(output, order=1, type="traj") {
   }
 
   if (order==-1) {
-    par(mfrow=c(2,2))
-    fe1 <- unlist(lapply(x_traj, function(x) {x[n.paras-2]} ))
-    fe2 <- unlist(lapply(x_traj, function(x) {x[n.paras-1]} ))
-    gr1 <- unlist(lapply(grad_traj, function(x) {x[n.paras-2]} ))
-    gr2 <- unlist(lapply(grad_traj, function(x) {x[n.paras-1]} ))
+    par(mfrow=c(2,3))
+    fe1 <- unlist(lapply(x_traj, function(x) {x[n.paras-3]} ))
+    fe2 <- unlist(lapply(x_traj, function(x) {x[n.paras-2]} ))
+    fe3 <- unlist(lapply(x_traj, function(x) {x[n.paras-1]} ))
 
-    plot(fe1, type="l", main = "traj of fe1")
+    gr1 <- unlist(lapply(grad_traj, function(x) {x[n.paras-3]} ))
+    gr2 <- unlist(lapply(grad_traj, function(x) {x[n.paras-2]} ))
+    gr3 <- unlist(lapply(grad_traj, function(x) {x[n.paras-1]} ))
+
+    plot(fe1, type="l", main = "traj of fe1 (intercept)")
     plot(fe2, type="l", main = "traj of fe2")
+    plot(fe3, type="l", main = "traj of fe3")
     plot(gr1, type="l", main = "grad of fe1")
     plot(gr2, type="l", main = "grad of fe2")
+    plot(gr3, type="l", main = "grad of fe3")
 
     par(mfrow=c(1,1))
     return()

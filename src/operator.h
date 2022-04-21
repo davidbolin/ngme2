@@ -12,7 +12,7 @@ using Eigen::VectorXd;
 
 class Operator {
 protected:
-    bool use_num {false};
+    bool numerical_dK {false};
     double kappa; // parameter
     SparseMatrix<double, 0, int> K, dK, d2K;
 public:
@@ -20,7 +20,7 @@ public:
     Operator(double kappa): kappa(kappa) {};
     
     Operator(Rcpp::List ope_in) {
-        use_num = Rcpp::as<bool> (ope_in["use_numerical"]);
+        numerical_dK = Rcpp::as<bool> (ope_in["numerical_dK"]);
     };
 
     // update matrices when kappa is updated
@@ -34,7 +34,9 @@ public:
     SparseMatrix<double, 0, int>& get_dK()  {return dK;}
     SparseMatrix<double, 0, int>& get_d2K() {return d2K;}
 
-    virtual SparseMatrix<double, 0, int> getK(double) const=0;
+    // K(kappa + eps)
+    virtual SparseMatrix<double, 0, int> getK(double eps)   const=0;
+    virtual SparseMatrix<double, 0, int> get_dK(double eps) const=0;
 };
 
 
@@ -54,15 +56,19 @@ public:
         d2K = 0 * C;
     }
 
-    SparseMatrix<double> getK(double kappa) const {
-        SparseMatrix<double> K =  kappa * C + G;
+    SparseMatrix<double> getK(double eps) const {
+        SparseMatrix<double> K =  (kappa+eps) * C + G;
         return K;
+    }
+
+    SparseMatrix<double> get_dK(double eps) const {
+        return C;
     }
 
     void update() {
         K = kappa * C + G;
         
-        if (use_num) {
+        if (numerical_dK) {
             update_num();
         }
     }

@@ -63,10 +63,7 @@ public:
         SparseMatrix<double> K = getK();
         SparseMatrix<double> dK = get_dK();
         VectorXd V = getV();
-        VectorXd prevV = getPrevV();
-        
         VectorXd SV = pow(sigma, 2) * V;
-        VectorXd prevSV = pow(sigma, 2) * prevV;
         
         double a = getKappa();
         double th = a2th(a);
@@ -74,19 +71,44 @@ public:
         double da  = 2 * (exp(th) / pow(1+exp(th), 2));
         double d2a = 2 * (exp(th) * (-1+exp(th)) / pow(1+exp(th), 3));
 
-        double tmp = (dK*W).cwiseProduct(SV.cwiseInverse()).dot(K * W + (h - V) * mu);
-        double grad = trace - tmp;
-        
         double ret = 0;
-        if (use_precond) {
-            double hess = num_hess(0.001);
-            ret = (grad * da) / (hess * da * da + grad * d2a);
-        } else {
-            ret = -grad * da;
+        if (numer_grad) {
+            // 1. numerical gradient
+            double kappa = ope->getKappa();
+
+            if (!use_precond) {
+                double grad = (function_kappa(kappa + eps) - function_kappa(kappa)) / eps;
+                ret = - grad * da; 
+            } else {
+                double f1 = function_kappa(-eps);
+                double f2 = function_kappa(0);
+                double f3 = function_kappa(+eps);
+
+                double hess = (f1 + f3 - 2*f2) / pow(eps, 2);
+                double grad = (f3 - f2) / eps;
+                ret = (grad * da) / (hess * da * da + grad * d2a);
+            }
+        } else { 
+            // 2. analytical gradient and numerical hessian
+            double tmp = (dK*W).cwiseProduct(SV.cwiseInverse()).dot(K * W + (h - V) * mu);
+            double grad = trace - tmp;
+
+            if (!use_precond) {
+                ret = -grad * da;
+            } else {
+                // compute numerical hessian
+                SparseMatrix<double> K2 = ope->getK(eps);
+                SparseMatrix<double> dK2 = ope->get_dK(eps);
+
+                double tmp_eps = (dK2*prevW).cwiseProduct(SV.cwiseInverse()).dot(K2 * prevW + (h - V) * mu);
+                double grad_eps = trace_eps - tmp_eps;
+                double hess = (grad_eps - grad) / eps;
+
+                ret = (grad * da) / (hess * da * da + grad * d2a);
+            }
         }
 
 std::cout << "******* grad of kappa: " << ret << std::endl;   
-
         return ret;
     }
 

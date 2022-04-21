@@ -21,9 +21,11 @@ protected:
     int n_reg, n_paras {4}; //regressors, parameters
     
     // indicate which parameter to optimize
-    bool opt_mu {false}, opt_sigma {false}, opt_kappa {false}, opt_var {false}, use_precond {false};
+    bool opt_mu {false}, opt_sigma {false}, opt_kappa {false}, opt_var {false}, 
+        use_precond {false}, numer_grad {false};
 
-    double mu, sigma, trace, trace2;
+
+    double mu, sigma, trace, trace_eps, eps;
     VectorXd W, prevW, h;
     SparseMatrix<double,0,int> A;
     
@@ -38,10 +40,11 @@ public:
     Latent(Rcpp::List latent_in) 
     : n_reg   ( Rcpp::as< unsigned > (latent_in["n_reg"]) ),
       
-      mu      (0),
-      sigma   (1),
-      trace   (0),
-      trace2  (0),
+      mu        (0),
+      sigma     (1),
+      trace     (0),
+      trace_eps (0),
+      eps       (0.001), 
       
       W       (n_reg),
       prevW   (n_reg),
@@ -54,6 +57,7 @@ public:
         opt_kappa   = Rcpp::as<bool>        (latent_in["opt_kappa"]);
         opt_var     = Rcpp::as<bool>        (latent_in["opt_var"]);
         use_precond = Rcpp::as<bool>        (latent_in["use_precond"]);
+        numer_grad  = Rcpp::as<bool>        (latent_in["numer_grad"]);
 
         // Init var
         Rcpp::List var_in = Rcpp::as<Rcpp::List> (latent_in["var_in"]);
@@ -94,7 +98,8 @@ public:
     double getKappa() const       {return ope->getKappa(); } 
     void   setKappa(double kappa) {
         ope->setKappa(kappa);
-        compute_trace();
+        
+        if (!numer_grad) compute_trace(); 
     } 
 
     /* 4 for optimizer */
@@ -107,9 +112,7 @@ public:
     virtual void   set_theta_kappa(double v)=0;
     virtual double grad_theta_kappa()=0;
 
-    virtual double log_likelihood(double kappa);
-    virtual double num_hess(double eps);
-    
+    virtual double function_kappa(double kappa);    
     
     void compute_trace() {
         SparseMatrix<double> K = getK();
@@ -121,6 +124,14 @@ public:
         SparseMatrix<double> M = dK.transpose() * K;
         trace = solver_K.trace(M);
 // std::cout << "time for the trace (ms): " << since(timer_trace).count() << std::endl;   
+
+        // update trace_eps if using hessian
+        if ((!numer_grad) && (use_precond)) {
+            SparseMatrix<double> K = ope->getK(eps);
+            SparseMatrix<double> dK = ope->get_dK(eps);
+            SparseMatrix<double> M = dK.transpose() * K;
+            trace_eps = solver_K.trace(M);
+        }
     };
     
     // Parameter: nu
@@ -137,7 +148,7 @@ public:
 
     // Parameter: mu
     double get_mu() const     {return mu;} 
-    void   set_mu (double mu) {this->mu = mu;} 
+    void   set_mu(double mu) {this->mu = mu;} 
     virtual double grad_mu();
 };
 
@@ -157,11 +168,8 @@ inline const VectorXd Latent::getGrad() {
     VectorXd grad (n_paras);
 auto grad1 = std::chrono::steady_clock::now();
     if (opt_kappa) grad(0) = grad_theta_kappa();         else grad(0) = 0;
-
     if (opt_mu)    grad(1) = grad_mu();                  else grad(1) = 0;
-
     if (opt_sigma) grad(2) = grad_theta_sigma();         else grad(2) = 0;
-
     if (opt_var)   grad(3) = grad_theta_var();           else grad(3) = 0;
 
 std::cout << "grad_kappa (ms): " << since(grad1).count() << std::endl;   
@@ -214,8 +222,8 @@ inline double Latent::grad_mu() {
 }
 
 // W|V ~ N(K^-1 mu(V-h), sigma^2 K-1 diag(V) K-T)
-inline double Latent::log_likelihood(double kappa) {
-    SparseMatrix<double> K = ope->getK(kappa);
+inline double Latent::function_kappa(double eps) {
+    SparseMatrix<double> K = ope->getK(eps);
 
     VectorXd V = getV();
     VectorXd SV = getSV();
@@ -233,11 +241,5 @@ inline double Latent::log_likelihood(double kappa) {
     return l;
 }
 
-inline double Latent::num_hess(double eps) {
-    double kappa = ope->getKappa();
-
-    return (log_likelihood(kappa + eps) + log_likelihood(kappa - eps)
-            - 2*log_likelihood(kappa)) / pow(eps, 2);
-}
 
 #endif

@@ -112,16 +112,16 @@ public:
     virtual void   set_theta_kappa(double v)=0;
     virtual double grad_theta_kappa()=0;
 
-    virtual double function_kappa(double kappa);    
+    virtual double function_kappa(double eps);    
     
     void compute_trace() {
         SparseMatrix<double> K = getK();
         SparseMatrix<double> dK = get_dK();
 // compute trace
-        solver_K.computeKKT(K);
+        solver_K.computeKTK(K);
 
 // auto timer_trace = std::chrono::steady_clock::now();
-        SparseMatrix<double> M = dK.transpose() * K;
+        SparseMatrix<double> M = dK;
         trace = solver_K.trace(M);
 // std::cout << "time for the trace (ms): " << since(timer_trace).count() << std::endl;   
 
@@ -129,7 +129,9 @@ public:
         if ((!numer_grad) && (use_precond)) {
             SparseMatrix<double> K = ope->getK(eps);
             SparseMatrix<double> dK = ope->get_dK(eps);
-            SparseMatrix<double> M = dK.transpose() * K;
+            SparseMatrix<double> M = dK;
+
+            solver_K.computeKTK(K);
             trace_eps = solver_K.trace(M);
         }
     };
@@ -150,7 +152,12 @@ public:
     double get_mu() const     {return mu;} 
     void   set_mu(double mu) {this->mu = mu;} 
     virtual double grad_mu();
+
+    // Output
+    virtual Rcpp::List get_estimates() const=0;
 };
+
+
 
 /*    Optimizer related    */
 inline const VectorXd Latent::getTheta() const {
@@ -232,7 +239,7 @@ inline double Latent::function_kappa(double eps) {
     
     solver_Q.compute(Q);
     
-    VectorXd tmp = K * prevW - mu*(V-h);
+    VectorXd tmp = K * W - mu*(V-h);
 
     double l = 0.5 * solver_Q.logdet() 
                - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);

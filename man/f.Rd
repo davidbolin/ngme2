@@ -8,10 +8,10 @@ f(
   ...,
   data = NULL,
   model = NULL,
-  var = "gaussian",
-  init = NULL,
   debug = FALSE,
-  config = NULL
+  var = "NIG",
+  init = list(kappa = 0.5, mu = 0, sigma = 1, nu = 0.5, ),
+  config = list(opt_kappa = TRUE, opt_mu = TRUE, opt_sigma = TRUE, opt_var = TRUE, )
 )
 }
 \arguments{

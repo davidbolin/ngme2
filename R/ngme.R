@@ -23,10 +23,17 @@ ngme <- function(formula,
                  data,
                  family  = "gaussian",
                  init    = list(),
-                 controls = list(iterations=10,
-                                 gibbs_sample=5,
-                                 stepsize=0.3)
-                 )
+                 controls = list(burnin=100,
+                                iterations=100,
+                                gibbs_sample=5,
+                                stepsize=0.5,
+
+                                opt_fix_effect   =TRUE,
+                                fix_trueVW       =TRUE,
+                                trueSV =(sigma^2)*trueV,
+                                trueW  =trueW)
+
+                  )
 {
   time.start <- Sys.time()
 
@@ -48,7 +55,6 @@ ngme <- function(formula,
                                    parent.frame = NULL)
 
   in_list$general_in$family = family
-
   in_list$config_in = controls
 
   # return (in_list)

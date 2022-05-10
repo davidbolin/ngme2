@@ -77,8 +77,8 @@ public:
             double kappa = ope->getKappa();
 
             if (!use_precond) {
-                double grad = (function_kappa(kappa + eps) - function_kappa(kappa)) / eps;
-                ret = - grad * da; 
+                double grad = (function_kappa(eps) - function_kappa(0)) / eps;
+                ret = - grad * da / n_reg;
             } else {
                 double f1 = function_kappa(-eps);
                 double f2 = function_kappa(0);
@@ -94,22 +94,34 @@ public:
             double grad = trace - tmp;
 
             if (!use_precond) {
-                ret = -grad * da;
+                ret = - grad * da / n_reg;
             } else {
+                VectorXd prevV = getPrevV();
                 // compute numerical hessian
                 SparseMatrix<double> K2 = ope->getK(eps);
                 SparseMatrix<double> dK2 = ope->get_dK(eps);
 
-                double tmp_eps = (dK2*prevW).cwiseProduct(SV.cwiseInverse()).dot(K2 * prevW + (h - V) * mu);
-                double grad_eps = trace_eps - tmp_eps;
-                double hess = (grad_eps - grad) / eps;
+                // grad(x+eps) - grad(x) / eps
+                VectorXd prevSV = pow(sigma, 2) * prevV;
+                double grad2_eps = trace_eps - (dK2*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K2 * prevW + (h - prevV) * mu);
+                double grad_eps  = trace - (dK*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K * prevW + (h - prevV) * mu);
 
-                ret = (grad * da) / (hess * da * da + grad * d2a);
+                double hess = (grad2_eps - grad_eps) / eps;
+
+                ret = (grad * da) / (hess * da * da + grad_eps * d2a);
             }
         }
 
 std::cout << "******* grad of kappa: " << ret << std::endl;   
         return ret;
     }
-
+    
+    Rcpp::List get_estimates() const {
+        return Rcpp::List::create(
+            Rcpp::Named("alpha") = ope->getKappa(),
+            Rcpp::Named("mu")    = mu,
+            Rcpp::Named("sigma") = sigma,
+            Rcpp::Named("var")   = var->get_var()
+        );
+    }
 };

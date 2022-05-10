@@ -361,7 +361,7 @@ void lu_sparse_solver::compute(SparseMatrix<double, 0, int> &K_in)
 }
 
 // similar to compute
-void lu_sparse_solver::computeKKT(SparseMatrix<double, 0, int> &K_in)
+void lu_sparse_solver::computeKTK(SparseMatrix<double, 0, int> &K_in)
 {
   K = K_in;
 
@@ -374,11 +374,11 @@ void lu_sparse_solver::computeKKT(SparseMatrix<double, 0, int> &K_in)
     Rcpp::Rcout << ", K = " << K.rows() << " * " << K.cols() << std::endl;
   }
 
-  L_KKt.factorize(K.transpose() * K); // KKT
+  L_KKt.factorize(K.transpose() * K); // KTK
   KKtinv_computed = 0;
 }
 
-// Solve trace(M*Q^-1)
+// Solve trace(K^-1 M)
 double lu_sparse_solver::trace(MatrixXd &M)
 {
 

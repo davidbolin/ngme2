@@ -8,7 +8,9 @@ ngme(
   formula,
   data,
   family = "gaussian",
-  controls = list(iterations = 10, gibbs_sample = 5, stepsize = 0.3)
+  init = list(),
+  controls = list(burnin = 100, iterations = 100, gibbs_sample = 5, stepsize = 0.5,
+    opt_fix_effect = TRUE, fix_trueVW = TRUE, trueSV = (sigma^2) * trueV, trueW = trueW)
 )
 }
 \arguments{

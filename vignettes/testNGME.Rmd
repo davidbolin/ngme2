@@ -13,9 +13,14 @@ load_all()
 # test f function
 
 ```{r}
-y=1:4; x1=1:4; x2=3:6
+y1=0:3; y2=1:4; x1=1:4; x2=3:6
+
+F = Formula(y1|y2 ~ x1|x2)
+model.part()
+
 df = data.frame(y=1:4, x1=1:4, x2=3:6)
-f(x1, model = "ar1", data=df)
+
+ngme2::f(x1, model = "ar1", data=df)
 ```
 
 # test interpret.formula

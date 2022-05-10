@@ -143,7 +143,7 @@ public:
   void initFromList(int, Rcpp::List const &);
   void analyze(Eigen::SparseMatrix<double, 0, int> &);
   void compute(Eigen::SparseMatrix<double, 0, int> &);
-  void computeKKT(Eigen::SparseMatrix<double, 0, int> &);
+  void computeKTK(Eigen::SparseMatrix<double, 0, int> &);
   double trace(Eigen::MatrixXd &);
   double trace(Eigen::SparseMatrix<double, 0, int> &);
   double trace0(Eigen::SparseMatrix<double, 0, int> &);

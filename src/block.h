@@ -225,7 +225,7 @@ public:
         sigma_eps = exp(theta);
     }
 
-// fixed effects
+    // fixed effects
     VectorXd grad_beta() {
         VectorXd inv_SV = VectorXd::Constant(n_regs, 1).cwiseQuotient(getSV());
         VectorXd grads = X.transpose() * (Y - X*beta - A*getW());
@@ -247,6 +247,21 @@ public:
 
 std::cout << "grads of beta=" << -grads << std::endl;        
         return -grads;
+    }
+
+    // return estimates
+    Rcpp::List get_estimates() const {
+        Rcpp::List latents_estimates;
+        
+        for (int i=0; i < n_latent; i++) {
+            latents_estimates.push_back((*latents[i]).get_estimates());
+        }
+
+        return Rcpp::List::create(
+            Rcpp::Named("m_err")        = sigma_eps,
+            Rcpp::Named("f_eff")        = beta,
+            Rcpp::Named("latents_est")  = latents_estimates
+        );
     }
 };
 
@@ -335,12 +350,12 @@ inline void BlockModel::set_parameter(const VectorXd& Theta) {
 // std::cout << "Theta=" << Theta <<std::endl;
 }
 
-
 inline SparseMatrix<double> BlockModel::precond() const {
     SparseMatrix<double> precond;
 
     return precond;
 }
+
 
 
 

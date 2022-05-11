@@ -8,34 +8,116 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 load_all()
+
+# set example
+set.seed(1090)
+dat = as.data.frame(matrix(round(runif(21), digits = 2), ncol=7))
+colnames(dat) <- c("y1", "y2", "y3", "x1", "x2", "x3", "x4")
+for (i in c(2, 6,7)) {
+  dat[[i]] = factor(dat[[i]] < 0.5, labels = c("a", "b"))
+}
+dat$y2[1] = NA
+dat
 ```
 
-# test f function
+# test 
 
 ```{r}
-y1=0:3; y2=1:4; x1=1:4; x2=3:6
+sss <- function(x) {x}
+evalq(sss(w), envir=list(w=3))
 
+# model.part(Formula(y1~x1+x2), data=dat, rhs=1)
+# test extract f
+fff = y ~ x1 + x2 + f(xx, model="ar1") + x3 + f(xxx, model="ar1")
+tf = terms.formula(fff, specials = c("f"), data = NULL)
+tf
+
+terms = attr(tf, "term.labels"); terms
+
+spec.order = attr(tf, "specials")$f - 1
+
+fixf = terms[-spec.order]
+
+fm = as.character(attr(tf, "variables")[[2]])
+fm = paste(fm, "~")
+
+paste(fm, "+") 
+
+paste(fixf, collapse = " + ")
+
+for (term in fixf) {
+  fm = paste(fm, term)
+}
+
+st <- eval(parse(text = gsub("^f\\(", "ngme2::f(", terms[i])), 
+           envir = data, enclos = p.env)
+
+as.character(attr(tf, "variables")[2])
+
+# 
+eval(parse(text = gsub("^f\\(", "ngme2::f(", terms[1])), envir=dat)
+```
+
+
+# goal
+
+```{r}
+load_all()
+# estimate
+ngme(y1 ~ x1 + x2 + f(x=x1, model="ar1"), 
+     data = dat,
+     family="gaussian"
+     )
+
+```
+
+## ngme without f function
+
+```{r}
+load_all()
+evalq(parse(text=f(x=x1, model="ar1")), envir=dat)
+
+ngme(y1 ~ x1 + x2, data=dat)
+```
+
+# f function
+
+```{r}
+append(list(), 1)
+y1=0:3; y2=1:4; x1=1:4; x2=3:6
+tf
 F = Formula(y1|y2 ~ x1|x2)
 model.part()
 
 df = data.frame(y=1:4, x1=1:4, x2=3:6)
 
-ngme2::f(x1, model = "ar1", data=df)
+ngme2::f(x=, model = "ar1", var="NIG")
 ```
 
-# test interpret.formula
-
-```{r}
-ngme.interpret.formula(y ~ x1 + x2 + f(x1, model = "ar1", data=df), data=df, debug=F)
-ngme.interpret.formula(y ~ f(x1, model = "ar1", data=df) + 
-                           f(x2, model = "ar1", data=df) , data=df, debug=F)
-```
-
+# Interpret.formula
 
 ```{r}
 load_all()
-ngme(formula=y ~ x1 + f(x1, model = "ar1"),
-             data=df,
+res = ngme.interpret.formula(y ~ x1 + x2 
+                       + f(x1, model = "ar1") + f(x2, model = "ar1"), data=dat, debug=F)
+
+res
+
+ngme.interpret.formula(y ~ f(x1, model = "ar1", data=df) + 
+  f(x2, model = "ar1", data=df) , data=df, debug=F)
+
+eval(expression(x1), envir=dat)
+parse(text="ngme2::f(x1, model = \"ar1\")")
+eval(expression(19))
+eval(parse(text="ngme2::f(x1, model = \"ar1\")"), envir=dat)
+
+c(list(1,2,3), "wc")
+```
+
+```{r}
+load_all()
+ngme(formula = y1 ~ x1 + f(x1, model = "ar1"),
+             data = dat,
              family  = "gaussian",
              init    = list(),
              controls = list(iterations=10,
@@ -44,7 +126,6 @@ ngme(formula=y ~ x1 + f(x1, model = "ar1"),
              )
 # eval(x, envir=list(x=5))
 ```
-
 
 ```{r}
 alpha <- 0.5
@@ -67,9 +148,7 @@ a_init <- 0.1
 nu_init <- 2
 ```
 
-
 ```{r}
-
 y=Y; x=1:length(Y); x2=x^2;
 df <- data.frame(y=y, x=x, x2=x2)
 out <- ngme(y ~ x + f(x, model="ar1", var="NIG") + f(x2, model="ar1", var="NIG"), 
@@ -86,8 +165,7 @@ out
 plot_out(out)
 ```
 
-
-what is covariates here? 
+what is covariates here?
 
 ```{r}
     ngme.interpret.formula(y ~ f(x, model="AR1", var="NIG"), debug=T)

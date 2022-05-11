@@ -1,39 +1,34 @@
 #' Fit a non-guassian model
 #'
-#' @param formula some formula
-#' @param family dist. family
-#' @param data a list with data input
+#' @param formula formula
+#' @param family  distribution family
+#' @param data    a dataframe contains data
+#' @param init    initial values 
+#' @param controls control variables
 #'
 #' @return a list of outputs
 #' @export
 #'
 #' @examples
-#' ngme(formula = Formula::Formula(Y | Z ~ X1 + X2 + f(S, model="SPDE", type="..") + f(W) | X3 + X4 + f(X|I, model="SPDE")),
-#' data=list(Z=1:3, Y=2:4, X1=3:5, X2=4:6, X3=5:7, X4=6:8))
+#' ngme(formula = (y1 | y2 ~ x1 + x2 + f(x1, model="SPDE", var="nig") + f(W) | x3 + f(X|I, model="ar1", var="nig")),
 #'
+#' ngme(y ~ f(x, model="AR1", var="NIG"), family="normal", data=df)
 
-# X1 <- 1:3; X2 <- 2:4; X3 <- 7:9; X4 <- 5:7;  Z <- 3:5; Y <- 10:12
-# ff <- Y | Z ~ X1 + X2 + f(S, model="SPDE", type="..") + f(W) | X3 + X4 + f(X|I, model="SPDE")
-# ff <- Formula::Formula(ff)
-# ngme(ff)
-
-# ngme(y ~ f(x, model="AR1", var="NIG"), family="gaussian", data=df)
 
 ngme <- function(formula,
                  data,
-                 family  = "gaussian",
+                 family  = "normal",
                  init    = list(),
-                 controls = list(burnin=100,
-                                iterations=100,
-                                gibbs_sample=5,
-                                stepsize=0.5,
+                 controls = list(burnin           = 100,
+                                iterations        = 100,
+                                gibbs_sample      = 5,
+                                stepsize          = 0.5,
 
-                                opt_fix_effect   =TRUE,
-                                fix_trueVW       =TRUE,
-                                trueSV =(sigma^2)*trueV,
-                                trueW  =trueW)
-
-                  )
+                                opt_fix_effect    = TRUE,
+                                fix_trueVW        = FALSE,
+                                trueSV            = NULL,
+                                trueW             = NULL),
+                  debug = FALSE)
 {
   time.start <- Sys.time()
 
@@ -41,90 +36,73 @@ ngme <- function(formula,
   if (is.null(formula)) {
     stop("Usage: ngme(formula, family, data, ...); see ?ngme\n")
   }
+
   if (is.null(data)) {
     stop("Missing data.frame/list `data'. Leaving `data' empty might lead to\n\t\tuncontrolled behaviour, therefore is it required.")
   }
+
   if (!is.data.frame(data) && !is.list(data)) {
     stop("\n\tArgument `data' must be a data.frame or a list.")
   }
 
   # 2. parse the formula
-  in_list <- ngme.interpret.formula(formula,
-                                   debug = FALSE,
-                                   data = data,
-                                   parent.frame = NULL)
+  fm = Formula::Formula(formula)
 
-  in_list$general_in$family = family
-  in_list$config_in = controls
+  if (all(length(fm)==c(2,2))) {
+    # bivariate model
+    ########## todo
+    lfm = formula(fm, lhs=1, rhs=1)
+    rfm = formula(fm, lhs=2, rhs=2)
 
-  # return (in_list)
-  out <- predict_cpp(in_list)
+    # todo
+  }
+  else if (all(length(fm)==c(1,1))) {
+    ####### univariate case  
+    fm = formula(fm)
+    
+    # 1. extract f and eval  2. get the formula without f function
+    res = ngme.interpret.formula(fm, data)
+    latents_in = res$latents_in
+    plain.fm = res$plain.fm
 
-print(paste("total time is", Sys.time()-time.start))
+    # eval part without f (fm = y ~ x1 + x2)
+    Y = model.frame(plain.fm, data)[[1]]
+    X = model.matrix(plain.fm, data) # design matrix
+    n =length(Y)
 
+    ############### n_regs is the dim of the block matrix
+    n_regs = sum(unlist(lapply(latents_in, function(x) x["n_reg"] )))
+
+    # 3. prepare in_list for estimate
+    general_in <- list( n                = n,
+                      Y                = Y,
+                      X                = X,
+                      family           = "normal",
+                      n_regs           = n,
+                      init             = list(beta=lm.fit(X, Y)$coeff,
+                                              sigma_eps = 1),
+                      debug=debug)
+
+    in_list = list(general_in = general_in,
+                  latents_in = latents_in,
+                  config_in  = controls)
+
+  } else {
+    stop("unknown structure of formula")
+  }
+
+  # debug
+  if (debug) print(in_list)
+
+  # estimate
+  out = estimate_cpp(in_list)
+  
+  # construct output
+  out$n_fe     = ncol(X)
+  out$n_latent = length(latents_in)
+  class(out)   = "ngme"
+
+  print(paste("total time is", Sys.time()-time.start))
   return (out)
 }
 
-
-# ngme_call <- match.call()
-# MF <- match.call(expand.dots = FALSE)
-#
-# # if data is not provided, verify the current R workspace
-# if (missing(data)) {
-#   data <- environment(formula)
-# }
-#
-# formula <- Formula::Formula(formula)
-#
-# rtrn <- list()
-# rtrn$call <- ngme_call
-# rtrn$first <- formula(formula, lhs=1, rhs=1)
-# rtrn$second <- formula(formula, lhs=2, rhs=2)
-#
-# # index for functional and non-functional terms
-# first_drop <- grep("^f[(]", attr(terms(formula(rtrn$first)), "term.labels"))
-# second_drop <- grep("^f[(]", attr(terms(formula(rtrn$second)), "term.labels"))
-#
-# first_keep <- 1:length(terms(rtrn$first))
-# second_keep <- 1:length(terms(rtrn$second))
-#
-# first_keep <- first_keep[! first_keep %in% first_drop]
-# second_keep <- second_keep[! second_keep %in% second_drop]
-#
-# # extract non-functional terms
-# if (length(first_drop)) {
-#   rtrn$first_v <- formula(drop.terms(terms(rtrn$first), first_drop, keep.response = T))
-# } else {
-#   rtrn$first_v <- rtrn$first
-# }
-# if (length(second_drop)) {
-#   rtrn$second_v <- formula(drop.terms(terms(rtrn$second), second_drop, keep.response = T))
-# } else {
-#   rtrn$second_v <- rtrn$second
-# }
-#
-# # extract functional terms
-# if (length(first_keep)) {
-#   rtrn$first_f <- formula(drop.terms(terms(rtrn$first), first_keep, keep.response = T))
-# } else {
-#   rtrn$first_f <- rtrn$first
-# }
-# if (length(second_keep)) {
-#   rtrn$second_f <- formula(drop.terms(terms(rtrn$second), second_keep, keep.response = T))
-# } else {
-#   rtrn$second_f <- rtrn$second
-# }
-# rtrn$first_f <- attr(terms(rtrn$first_f), "term.labels")
-# rtrn$second_f <- attr(terms(rtrn$second_f), "term.labels")
-#
-# # split formula into 2 parts
-# formula <- Formula::Formula(formula)
-# terms_formula <- terms(formula)
-# term_labels <- attr(terms_formula, "term.labels")
-#
-# # model matrix
-# rtrn$first_mf <- model.frame(rtrn$first_v, data)
-# rtrn$second_mf <- model.frame(rtrn$second_v, data)
-#
-# class(rtrn) <- "ngme"
-# return (rtrn)

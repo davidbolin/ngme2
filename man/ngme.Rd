@@ -7,18 +7,23 @@
 ngme(
   formula,
   data,
-  family = "gaussian",
+  family = "normal",
   init = list(),
   controls = list(burnin = 100, iterations = 100, gibbs_sample = 5, stepsize = 0.5,
-    opt_fix_effect = TRUE, fix_trueVW = TRUE, trueSV = (sigma^2) * trueV, trueW = trueW)
+    opt_fix_effect = TRUE, fix_trueVW = FALSE, trueSV = NULL, trueW = NULL),
+  debug = FALSE
 )
 }
 \arguments{
-\item{formula}{some formula}
+\item{formula}{formula}
 
-\item{data}{a list with data input}
+\item{data}{a dataframe contains data}
 
-\item{family}{dist. family}
+\item{family}{distribution family}
+
+\item{init}{initial values}
+
+\item{controls}{control variables}
 }
 \value{
 a list of outputs
@@ -27,7 +32,7 @@ a list of outputs
 Fit a non-guassian model
 }
 \examples{
-ngme(formula = Formula::Formula(Y | Z ~ X1 + X2 + f(S, model="SPDE", type="..") + f(W) | X3 + X4 + f(X|I, model="SPDE")),
-data=list(Z=1:3, Y=2:4, X1=3:5, X2=4:6, X3=5:7, X4=6:8))
+ngme(formula = (y1 | y2 ~ x1 + x2 + f(x1, model="SPDE", var="nig") + f(W) | x3 + f(X|I, model="ar1", var="nig")),
 
+ngme(y ~ f(x, model="AR1", var="NIG"), family="normal", data=df)
 }

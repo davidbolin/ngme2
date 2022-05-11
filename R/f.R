@@ -1,68 +1,99 @@
 #' f function
 #'
-#' @param ... a symbol like x
-#' @param data  provide data.frame or
+#' @param x numerical vector, which is the covariate
 #' @param model specify a model
-#' @param noise noise type
-#' @param response response type
-#'
+#' @param var variance component type
+#' @param init initial value
+#' @param config control variables
+#' @param debug debug
 #'
 #' @return a list of objects
 #' @export
-f <- function(...,
-              data   = NULL,
-              model  = NULL,
-              debug  = FALSE,
+f <- function(x = NULL,
+              model  = "ar1",
               var    = "NIG",
               init   = list(kappa     = 0.5,
                             mu        = 0,
                             sigma     = 1,
-                            nu        = 0.5,),
+                            nu        = 0.5),
               config = list(opt_kappa     = TRUE,
                             opt_mu        = TRUE,
                             opt_sigma     = TRUE,
-                            opt_var       = TRUE,)
+                            opt_var       = TRUE,
+                            numer_grad    = FALSE,
+                            use_precond   = TRUE,
+                            eps           = 0.01),
+              debug  = FALSE
               ) {
   ## in ... is the name of the covariate  and possibly the location of the weights
-  ## like f(covariate, weights)
+  ## like f(x, weights)
 
-  vars <- as.list(substitute(list(...)))[-1]
-  d <- length(vars)
-  if (d == 0L) {
-    stop(paste("Missing covariate in f(...) for model=", model))
-  }
-  term <- deparse(vars[[1]], backtick = TRUE, width.cutoff = 500)
-  if (debug) {
-    print(vars)
-  }
-
-  ## the second term in ... is the (possible) weights for the selected covariate!
-  if (d == 1) {
-    weights <- NULL
-  } else if (d == 2) {
-    weights <- deparse(vars[[2]], backtick = TRUE, width.cutoff = 500)
-  } else if (d > 2) {
-    stop(paste("To many variables included in f():", inla.paste(vars)))
-  } else if (d == 0) {
-    stop("At least one variable in f() needs to be defined")
-  }
-
-  ## get the weights
-  term <- attr(terms(reformulate(term)), "term.labels")
-  if (d > 1) {
-    weigths <- attr(terms(reformulate(weights)), "weights.labels")
-  }
-
-  # use model.frame to extract the covariates
-
-  x = model.frame(paste0("~", term), data=data)[[term]]
-
-  ## get the model
+  n = length(x)
+  
+  # construct operator 
   if (model=="ar1") {
-    latent_in <- ngme.model.ar1(x, var=var, init=init, config=config)
+    # G
+      G <- Matrix::Matrix(diag(n));
+      G <- as(G, "dgCMatrix");
+
+    # C
+      C <- Matrix::Matrix(0, n, n)
+      C[seq(2, n*n, by=n+1)] <- -1
+      C <- as(C, "dgCMatrix");
+    
+    # A 
+      A <- as(Matrix::Matrix(diag(n)), "dgCMatrix");
+    
+    operator_in   = list(C=C, G=G, numerical_dK=FALSE)
   }
 
-  return (latent_in)
+  # construct variance component
+  if (var=="NIG") {
+    var_in = list(type="ind_IG")
+  }
+
+  # construct latent_in
+  la_in <- list(type          = model,
+                n_reg         = n,        # !: make sure this is the second place
+                A             = A,
+                opt_kappa     = config$opt_kappa,
+                opt_mu        = config$opt_mu,
+                opt_sigma     = config$opt_sigma,
+                opt_var       = config$opt_var,
+                numer_grad    = config$numer_grad,
+                use_precond   = config$use_precond,
+                eps           = config$eps,
+                operator_in   = operator_in,
+                var_in        = var_in,
+                init_value    = init)
+  
+  return (la_in)
+}
+
+  # vars <- as.list(substitute(list(...)))[-1]
+  # d <- length(vars)
+  # if (d == 0L) {
+  #   stop(paste("Missing covariate in f(...) for model=", model))
+  # }
+  # term <- deparse(vars[[1]], backtick = TRUE, width.cutoff = 500)
+  # if (debug) {
+  #   print(vars)
+  # }
+
+  # ## get the weights
+  # term <- attr(terms(reformulate(term)), "term.labels")
+  # if (d > 1) {
+  #   weigths <- attr(terms(reformulate(weights)), "weights.labels")
+  # }
+
+  # # use model.frame to extract the covariates
+
+  # x = model.frame(paste0("~", term), data=data)[[term]]
+
+  # ## get the model
+  # if (model=="ar1") {
+  #   latent_in <- ngme.model.ar1(x, var=var, init=init, config=config)
+  # }
 
   # expr_formula <- rlang::enexpr(formula)
   # index <- NULL
@@ -127,6 +158,6 @@ f <- function(...,
   #     class(rtrn) <- "f"
   #     return (rtrn)
   # }
-}
+
 
 

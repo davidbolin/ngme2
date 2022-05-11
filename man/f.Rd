@@ -5,25 +5,27 @@
 \title{f function}
 \usage{
 f(
-  ...,
-  data = NULL,
-  model = NULL,
-  debug = FALSE,
+  x = NULL,
+  model = "ar1",
   var = "NIG",
-  init = list(kappa = 0.5, mu = 0, sigma = 1, nu = 0.5, ),
-  config = list(opt_kappa = TRUE, opt_mu = TRUE, opt_sigma = TRUE, opt_var = TRUE, )
+  init = list(kappa = 0.5, mu = 0, sigma = 1, nu = 0.5),
+  config = list(opt_kappa = TRUE, opt_mu = TRUE, opt_sigma = TRUE, opt_var = TRUE,
+    numer_grad = FALSE, use_precond = TRUE, eps = 0.01),
+  debug = FALSE
 )
 }
 \arguments{
-\item{...}{a symbol like x}
-
-\item{data}{provide data.frame or}
+\item{x}{numerical vector, which is the covariate}
 
 \item{model}{specify a model}
 
-\item{noise}{noise type}
+\item{var}{variance component type}
 
-\item{response}{response type}
+\item{init}{initial value}
+
+\item{config}{control variables}
+
+\item{debug}{debug}
 }
 \value{
 a list of objects

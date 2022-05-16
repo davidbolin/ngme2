@@ -21,7 +21,7 @@ f <- function(x = NULL,
                             opt_sigma     = TRUE,
                             opt_var       = TRUE,
                             numer_grad    = FALSE,
-                            use_precond   = TRUE,
+                            use_precond   = FALSE,
                             eps           = 0.01),
               debug  = FALSE
               ) {
@@ -29,8 +29,8 @@ f <- function(x = NULL,
   ## like f(x, weights)
 
   n = length(x)
-  
-  # construct operator 
+
+  # construct operator
   if (model=="ar1") {
     # G
       G <- Matrix::Matrix(diag(n));
@@ -40,22 +40,30 @@ f <- function(x = NULL,
       C <- Matrix::Matrix(0, n, n)
       C[seq(2, n*n, by=n+1)] <- -1
       C <- as(C, "dgCMatrix");
-    
-    # A 
+
+    # A
       A <- as(Matrix::Matrix(diag(n)), "dgCMatrix");
-    
+
+    # h
+      h <- rep(1, n)
+
     operator_in   = list(C=C, G=G, numerical_dK=FALSE)
   }
 
   # construct variance component
-  if (var=="NIG") {
-    var_in = list(type="ind_IG")
+  if (var=="nig" || var=="NIG") {
+    var_in = list(type = "ind_IG")
+  }
+
+  if (var=="normal") {
+    var_in = list(type = "normal")
   }
 
   # construct latent_in
   la_in <- list(type          = model,
                 n_reg         = n,        # !: make sure this is the second place
                 A             = A,
+                h             = h,
                 opt_kappa     = config$opt_kappa,
                 opt_mu        = config$opt_mu,
                 opt_sigma     = config$opt_sigma,
@@ -66,7 +74,7 @@ f <- function(x = NULL,
                 operator_in   = operator_in,
                 var_in        = var_in,
                 init_value    = init)
-  
+
   return (la_in)
 }
 

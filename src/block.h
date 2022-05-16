@@ -322,6 +322,7 @@ std::cout << "timer_computeg (ms): " << since(timer_computeg).count() << std::en
 auto timer_sampleW = std::chrono::steady_clock::now();
         sampleW_VY();
         // sampleW_V();
+// std::cout << "sampleW: " << getW() << std::endl;
 std::cout << "sampleW (ms): " << since(timer_sampleW).count() << std::endl;
     }
 
@@ -355,8 +356,6 @@ inline SparseMatrix<double> BlockModel::precond() const {
 
     return precond;
 }
-
-
 
 
 #endif

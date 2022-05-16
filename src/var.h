@@ -16,7 +16,7 @@ using std::string;
 class Var {
 protected:
     unsigned n;
-    VectorXd V, prevV;
+    VectorXd V, prevV, h;
 public: 
     Var() : V(n), prevV(n) {}
     Var(Rcpp::List);
@@ -28,13 +28,10 @@ public:
     virtual void sample_V()=0;
     virtual void sample_cond_V(SparseMatrix<double>& K,
                                 VectorXd& W,
-                                VectorXd& h, 
                                 double mu, 
                                 double sigma)=0;
 
-    // optimizer related
-    virtual double get_var()         const=0;
-
+    virtual double get_var()               const=0;
     virtual double get_theta_var()         const=0;
     virtual double grad_theta_var()        const=0;
     virtual void   set_theta_var(double)=0;
@@ -46,8 +43,12 @@ private:
     double nu;
 public:
     ind_IG(){}
-    ind_IG(unsigned n, double nu) : nu(nu) {
-        this->n = n;
+    
+    ind_IG(unsigned n, double nu, VectorXd h) 
+    : nu(nu)
+    {   
+        this->n = n; 
+        this->h = h;
         
         V.resize(n); prevV.resize(n);
         sample_V(); sample_V(); // sample twice
@@ -81,7 +82,6 @@ public:
     // V|W, Y ~ GIG(p-0.5, a+mu, b+(K W + h mu)^2)
     void sample_cond_V(SparseMatrix<double>& K,
                        VectorXd& W,
-                       VectorXd& h, 
                        double mu, 
                        double sigma
                        ) {
@@ -93,6 +93,44 @@ public:
         VectorXd a_vec = VectorXd::Constant(n, nu+std::pow((mu/sigma), 2));   //+ eta * VectorXd::Ones(temporal.rows());
         VectorXd b_vec = VectorXd::Constant(n, nu) + std::pow(sigma, -2) * (K*W + mu*h).cwiseProduct((K * W + mu*h));
         V = rGIG_cpp(p_vec, a_vec, b_vec);
+    };
+};
+
+// adding the case for normal
+class normal : public Var {
+public:
+    normal() {}
+    normal(unsigned n, VectorXd h) {
+        this->n = n;
+        this->h = h;
+        
+        V.resize(n); prevV.resize(n);
+        sample_V(); sample_V(); // sample twice
+    }
+
+    double get_var() const {return 0;} 
+
+    // nothing to optimize
+    double get_theta_var() const   { return 0; }
+    void   set_theta_var(double theta) {}    
+    double grad_theta_var() const {
+        return 0;
+    }
+
+    // return V=h
+    void sample_V() {
+        prevV = h;
+        V = h;
+    };
+
+    // return V=h
+    void sample_cond_V(SparseMatrix<double>& K,
+                       VectorXd& W,
+                       double mu, 
+                       double sigma
+                       ) {
+        prevV = h;
+        V = h;
     };
 };
 

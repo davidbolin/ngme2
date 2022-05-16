@@ -14,15 +14,15 @@ plot.ngme <- function(object, param="fe", type="traj", which=1) {
 print(object)
   n_latent  <- object$n_latent
   n_fe      <- object$n_fe
-  
+
   grad_traj <- object$trajectory$grad_traj
   x_traj    <- object$trajectory$x_traj
 
   n.paras <- length(x_traj[[1]])
 
   # fixed effects
-  if (param=="fe") {
-    if ((type=="traj") || (type==1)) {
+  if ((param=="fe")) {
+    if (((type=="traj") || (type==1)) && (n_fe > 0)) {
       par(mfrow=c(2,2))
 
       fe_traj = list()
@@ -54,7 +54,7 @@ print(object)
       x_mu    <- unlist(lapply(x_traj, function(x) {x[(which-1)*4 + 2]} ))
       x_sigma <- unlist(lapply(x_traj, function(x) {x[(which-1)*4 + 3]} ))
       x_var   <- unlist(lapply(x_traj, function(x) {x[(which-1)*4 + 4]} ))
-      
+
       x_kappa = (-1 + 2*exp(x_kappa) / (1+exp(x_kappa)))
       x_sigma = exp(x_sigma)
       x_var   = exp(x_var)
@@ -66,7 +66,7 @@ print(object)
       plot(x_var,   type="l", main = "traj of var")
       par(mfrow=c(1,1))
     }
-    
+
     if ((type=="grad") || (type==2)) {
       grads_kappa <- unlist(lapply(grad_traj, function(x) {x[(which-1)*4 + 1]} ))
       grads_mu    <- unlist(lapply(grad_traj, function(x) {x[(which-1)*4 + 2]} ))

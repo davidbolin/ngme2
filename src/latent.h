@@ -23,7 +23,8 @@ protected:
     // indicate which parameter to optimize
     bool opt_mu {false}, opt_sigma {false}, opt_kappa {false}, opt_var {false}, 
         use_precond {false}, numer_grad {false};
-
+    
+    bool hess_mu {true}, hess_sigma {true}, hess_kappa {true}, hess_var {true};
 
     double mu, sigma, trace, trace_eps, eps;
     VectorXd W, prevW, h;
@@ -48,7 +49,7 @@ public:
       
       W       (n_reg),
       prevW   (n_reg),
-      h       (VectorXd::Constant(n_reg, 1)),
+      h       (Rcpp::as< VectorXd > (latent_in["h"])),
       A       (Rcpp::as< SparseMatrix<double,0,int> > (latent_in["A"]))
     {
         // Init opt. flag
@@ -62,14 +63,22 @@ public:
         // Init var
         Rcpp::List var_in = Rcpp::as<Rcpp::List> (latent_in["var_in"]);
         string type       = Rcpp::as<string>     (var_in["type"]);
+
         // Set initial values
         Rcpp::List init_value = Rcpp::as<Rcpp::List> (latent_in["init_value"]);
         mu           = Rcpp::as<double>  (init_value["mu"]);
         sigma        = Rcpp::as<double>  (init_value["sigma"]);
         double nu    = Rcpp::as<double>  (init_value["nu"]);
+        
+        // construct var
         if (type == "ind_IG") {
-            var = new ind_IG(n_reg, nu);
+            var = new ind_IG(n_reg, nu, h);
+        } else if (type == "normal") {
+            var = new normal(n_reg, h);
+            
+            opt_mu = false;
         }
+
     }
     ~Latent() {}
 
@@ -180,6 +189,10 @@ auto grad1 = std::chrono::steady_clock::now();
     if (opt_var)   grad(3) = grad_theta_var();           else grad(3) = 0;
 
 std::cout << "grad_kappa (ms): " << since(grad1).count() << std::endl;   
+std::cout << "******* grad of kappa is: " << grad(0) << std::endl;   
+std::cout << "******* grad of mu is:    " << grad(1) << std::endl;   
+std::cout << "******* grad of sigma is: " << grad(2) << std::endl;   
+
     return grad;
 }
 
@@ -206,7 +219,6 @@ inline double Latent::grad_theta_sigma() {
     double hess = n_reg / pow(sigma, 2) - 3 * pow(sigma, -4) * msq2;
     
     // grad. wrt theta
-std::cout << "******* grad of sigma is: " << grad / (hess * sigma + grad) * n_reg << std::endl;   
 
     return grad / (hess * sigma + grad);
 }
@@ -220,10 +232,16 @@ inline double Latent::grad_mu() {
     VectorXd prevV = getPrevV();
     VectorXd prev_inv_V = prevV.cwiseInverse();
 
-    // double hess_mu = -(Vmh).transpose() * inv_SV.asDiagonal() * Vmh;  // get previous V
-    // double g = (Vmh).transpose() * inv_SV.asDiagonal() * (K*W - mu*Vmh);
-    double hess = -pow(sigma,-2) * (prevV-h).cwiseProduct(prev_inv_V).dot(prevV-h);
     double grad = pow(sigma,-2) * (V-h).cwiseProduct(inv_V).dot(K*W - mu*(V-h));
+    double hess = -pow(sigma,-2) * (prevV-h).cwiseProduct(prev_inv_V).dot(prevV-h);
+    double ret;
+
+    // if (hess_mu) {
+    //     double hess = -pow(sigma,-2) * (prevV-h).cwiseProduct(prev_inv_V).dot(prevV-h);
+    //     ret = grad / hess;
+    // } else {
+    //     ret = grad;
+    // }
 
     return grad / hess;
 }

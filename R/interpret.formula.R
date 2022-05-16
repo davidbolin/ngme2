@@ -5,14 +5,15 @@
 #   1. plain formula without f
 #   2. latents_in - list of models
 
-ngme.interpret.formula <- function(gf, 
+ngme.interpret.formula <- function(gf,
                                    data,
                                    debug=FALSE) {
-  
+
   tf <- terms.formula(gf, specials = c("f"))
   terms <- attr(tf, "term.labels")
+  intercept <- attr(tf, "intercept")
   nt <- length(terms)
-  
+
   latents_in = list()
   # order of f terms in labels
   spec.order = attr(tf, "specials")$f - 1
@@ -21,13 +22,16 @@ ngme.interpret.formula <- function(gf,
     res = eval(parse(text = str), envir = data)
     latents_in[[length(latents_in) + 1]] = res
   }
-  
-  fixf = terms[-spec.order]
-  
-  # construct formula without f
-    fm = as.character(attr(tf, "variables")[[2]]) 
-    fm = paste(fm, "~", paste(fixf, collapse = " + "))
 
+  fixf = terms[-spec.order]
+
+
+  # construct formula without f
+    fm = as.character(attr(tf, "variables")[[2]])
+    fm = paste(fm, "~", paste(fixf, collapse = " + "))
+    fm = paste(fm, intercept)
+
+  print(fm)
   return(list(latents_in=latents_in,
               plain.fm = formula(fm)))
 }

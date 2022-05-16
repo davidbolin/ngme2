@@ -37,7 +37,7 @@ public:
     }
 
     void sample_cond_V() {
-        var->sample_cond_V(getK(), W, h, mu, sigma);
+        var->sample_cond_V(getK(), W, mu, sigma);
     };
     
 
@@ -112,7 +112,6 @@ public:
             }
         }
 
-std::cout << "******* grad of kappa: " << ret << std::endl;   
         return ret;
     }
     

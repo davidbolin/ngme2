@@ -3,7 +3,6 @@
 #' @param formula formula
 #' @param family  distribution family
 #' @param data    a dataframe contains data
-#' @param init    initial values 
 #' @param controls control variables
 #'
 #' @return a list of outputs
@@ -17,18 +16,9 @@
 
 ngme <- function(formula,
                  data,
-                 family  = "normal",
-                 init    = list(),
-                 controls = list(burnin           = 100,
-                                iterations        = 100,
-                                gibbs_sample      = 5,
-                                stepsize          = 0.5,
-
-                                opt_fix_effect    = TRUE,
-                                fix_trueVW        = FALSE,
-                                trueSV            = NULL,
-                                trueW             = NULL),
-                  debug = FALSE)
+                 family   = "normal",
+                 controls = control.ngme(),
+                 debug    = FALSE)
 {
   time.start <- Sys.time()
 
@@ -57,9 +47,9 @@ ngme <- function(formula,
     # todo
   }
   else if (all(length(fm)==c(1,1))) {
-    ####### univariate case  
+    ####### univariate case
     fm = formula(fm)
-    
+
     # 1. extract f and eval  2. get the formula without f function
     res = ngme.interpret.formula(fm, data)
     latents_in = res$latents_in
@@ -74,14 +64,15 @@ ngme <- function(formula,
     n_regs = sum(unlist(lapply(latents_in, function(x) x["n_reg"] )))
 
     # 3. prepare in_list for estimate
+    lm.model = lm.fit(X, Y)
     general_in <- list( n                = n,
-                      Y                = Y,
-                      X                = X,
-                      family           = "normal",
-                      n_regs           = n,
-                      init             = list(beta=lm.fit(X, Y)$coeff,
-                                              sigma_eps = 1),
-                      debug=debug)
+                        Y                = Y,
+                        X                = X,
+                        family           = "normal",
+                        n_regs           = n,
+                        init             = list(beta=lm.model$coeff,
+                                                sigma_eps = sd(lm.model$residuals)),
+                        debug=debug)
 
     in_list = list(general_in = general_in,
                   latents_in = latents_in,
@@ -96,7 +87,7 @@ ngme <- function(formula,
 
   # estimate
   out = estimate_cpp(in_list)
-  
+
   # construct output
   out$n_fe     = ncol(X)
   out$n_latent = length(latents_in)
@@ -105,4 +96,11 @@ ngme <- function(formula,
   print(paste("total time is", Sys.time()-time.start))
   return (out)
 }
+
+# x = rnorm(1000)
+# y = 3 * x + 1 + rnorm(1000, 0, 2)
+# X = model.matrix(y~x, list(x=x, y=y))
+# str(lm.fit(X, y))
+# sd(residuals(lm(y~x)))
+
 

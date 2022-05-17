@@ -28,9 +28,8 @@ ngme.interpret.formula <- function(gf,
 
   # construct formula without f
     fm = as.character(attr(tf, "variables")[[2]])
-    fm = paste(fm, "~", paste(fixf, collapse = " + "))
-    fm = paste(fm, intercept)
-
+    fm = paste(fm, "~", intercept, paste(c("", fixf), collapse = " + "))
+# paste(c("", "x1", "x2"), collapse = "+")
   return(list(latents_in=latents_in,
               plain.fm = formula(fm)))
 }

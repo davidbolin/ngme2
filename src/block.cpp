@@ -30,12 +30,10 @@ void BlockModel::sampleW_VY()
   VectorXd SV = getSV();
   VectorXd inv_SV = VectorXd::Constant(SV.size(), 1).cwiseQuotient(SV);
 
-  // SparseMatrix<double> Q = K * inv_SV.asDiagonal() * K.transpose();
   SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
   SparseMatrix<double> QQ = Q + pow(sigma_eps, -2) * A.transpose() * A;
 
   chol_QQ.compute(QQ);
-  // VectorXd M = K * inv_SV.asDiagonal() * getMean() + 
   VectorXd M = K.transpose() * inv_SV.asDiagonal() * getMean() + 
       pow(sigma_eps, -2) * A.transpose() * (Y - X * beta);
 

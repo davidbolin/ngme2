@@ -11,7 +11,6 @@
 #' @examples
 
 plot.ngme <- function(object, param="fe", type="traj", which=1) {
-print(object)
   n_latent  <- object$n_latent
   n_fe      <- object$n_fe
 

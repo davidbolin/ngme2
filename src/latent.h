@@ -192,6 +192,7 @@ std::cout << "grad_kappa (ms): " << since(grad1).count() << std::endl;
 std::cout << "******* grad of kappa is: " << grad(0) << std::endl;   
 std::cout << "******* grad of mu is:    " << grad(1) << std::endl;   
 std::cout << "******* grad of sigma is: " << grad(2) << std::endl;   
+std::cout << "******* grad of var   is: " << grad(3) << std::endl;   
 
     return grad;
 }
@@ -236,8 +237,8 @@ std::cout << "h in grad mu = " << h ;
 
     double grad = pow(sigma,-2) * (V-h).cwiseProduct(inv_V).dot(K*W - mu*(V-h));
     double hess = -pow(sigma,-2) * (prevV-h).cwiseProduct(prev_inv_V).dot(prevV-h);
-    double ret;
 
+    // double ret;
     // if (hess_mu) {
     //     double hess = -pow(sigma,-2) * (prevV-h).cwiseProduct(prev_inv_V).dot(prevV-h);
     //     ret = grad / hess;

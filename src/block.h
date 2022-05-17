@@ -100,7 +100,7 @@ public:
         /* Fixed effects */
         if (opt_fix_effect) {
             int n_beta = beta.size();
-            n_paras = latent_para + 1 + n_beta;
+            n_paras = n_latent * latent_para + 1 + n_beta;
         }
 
         /* Init variables: h, A */
@@ -205,9 +205,11 @@ public:
         return log(sigma_eps);
     }
 
+    // measurement error
     double grad_theta_sigma_eps() const {
         double g = 0;
         if (family=="normal") {
+
             VectorXd tmp = Y - A * getW() - X * beta;
             double norm2 =  tmp.dot(tmp);
             

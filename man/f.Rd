@@ -9,8 +9,7 @@ f(
   model = "ar1",
   var = "NIG",
   init = list(kappa = 0.5, mu = 0, sigma = 1, nu = 0.5),
-  config = list(opt_kappa = TRUE, opt_mu = TRUE, opt_sigma = TRUE, opt_var = TRUE,
-    numer_grad = FALSE, use_precond = TRUE, eps = 0.01),
+  control = control.f(),
   debug = FALSE
 )
 }
@@ -23,9 +22,9 @@ f(
 
 \item{init}{initial value}
 
-\item{config}{control variables}
-
 \item{debug}{debug}
+
+\item{config}{control variables}
 }
 \value{
 a list of objects

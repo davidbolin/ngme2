@@ -8,9 +8,7 @@ ngme(
   formula,
   data,
   family = "normal",
-  init = list(),
-  controls = list(burnin = 100, iterations = 100, gibbs_sample = 5, stepsize = 0.5,
-    opt_fix_effect = TRUE, fix_trueVW = FALSE, trueSV = NULL, trueW = NULL),
+  controls = control.ngme(),
   debug = FALSE
 )
 }
@@ -20,8 +18,6 @@ ngme(
 \item{data}{a dataframe contains data}
 
 \item{family}{distribution family}
-
-\item{init}{initial values}
 
 \item{controls}{control variables}
 }

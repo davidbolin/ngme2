@@ -31,7 +31,6 @@ ngme.interpret.formula <- function(gf,
     fm = paste(fm, "~", paste(fixf, collapse = " + "))
     fm = paste(fm, intercept)
 
-  print(fm)
   return(list(latents_in=latents_in,
               plain.fm = formula(fm)))
 }

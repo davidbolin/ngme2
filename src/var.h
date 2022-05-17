@@ -49,7 +49,7 @@ public:
     {   
         this->n = n; 
         this->h = h;
-        
+
         V.resize(n); prevV.resize(n);
         sample_V(); sample_V(); // sample twice
     }

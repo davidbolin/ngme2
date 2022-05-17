@@ -69,7 +69,7 @@ ngme <- function(formula,
                         Y                = Y,
                         X                = X,
                         family           = "normal",
-                        n_regs           = n,
+                        n_regs           = n_regs,
                         init             = list(beta=lm.model$coeff,
                                                 sigma_eps = sd(lm.model$residuals)),
                         debug=debug)

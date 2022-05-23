@@ -1,0 +1,69 @@
+---
+title: "nig"
+author: "Xiaotian Jin"
+date: "2/17/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(INLA)
+
+set.seed(123)
+
+n_mesh <- 100
+
+loc_nig_1d <- (0:(n_mesh-1)) / (n_mesh-1) * 20
+mesh_loc_nig_1d <- inla.mesh.1d(loc_nig_1d)
+fem_loc_nig_1d <- inla.mesh.1d.fem(mesh_loc_nig_1d)
+
+C_nig_1d <- fem_loc_nig_1d$c1       # 100*100
+G_nig_1d <- fem_loc_nig_1d$g1 
+h_nig_1d <- diag(fem_loc_nig_1d$c0) # 100*1
+```
+
+```{r}
+K = C_nig_1d + G_nig_1d
+
+# Generating V from an inverse Gaussian distribution # (a=eta, b = hˆ2*eta)
+
+eta = 0.5 
+mu = 1 
+sigma = 1
+
+V = ngme2::rig(n_mesh, a = eta, b = h_nig_1d^2*eta, sample.int(10^6, 1)) 
+temp = rnorm(n_mesh, mean =  (-h_nig_1d + V)*mu, sd = sigma^2*sqrt(V)) 
+W = solve(K, temp) 
+
+plot(loc_nig_1d, W, type="l")
+plot(loc_nig_1d, V, type="l")
+```
+
+```{r}
+n_obs <- 60
+new_loc_1d <- sort(runif(n_obs, 0, 20))
+
+A_matrix <- inla.spde.make.A(mesh=mesh_loc_nig_1d, loc=new_loc_1d)
+
+sigma_eps <- 1
+
+Y = A_matrix %*% W + sigma_eps * rnorm(n_obs)
+
+plot(new_loc_1d, Y, type="h"); abline(0, 0)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+

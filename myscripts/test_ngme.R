@@ -1,0 +1,80 @@
+library(devtools)
+load_all()
+
+n_obs <- 100
+sigma_eps = 0.2
+
+############  1.1 construct AR with nig noise
+# parameter for ar1
+alpha1 <- 0.5
+mu1 = 2; delta = -mu1
+nu1 = 1
+sigma1 = 2
+
+trueV1 <- ngme2::rig(n_obs, nu1, nu1)
+noise1 <- delta + mu1*trueV1 + sigma1 * sqrt(trueV1) * rnorm(n_obs)
+
+trueW1 <- Reduce(function(x,y){y + alpha1*x}, noise1, accumulate = T)
+Y1 = trueW1 + rnorm(n_obs, mean=0, sd=sigma_eps)
+
+############  1.2 construct AR with normal noise
+# parameter for ar1
+alpha2 <- 0.7
+sigma2 = 3
+
+noise2 = sigma2*rnorm(n_obs)
+
+trueW2 <- Reduce(function(x,y){y + alpha2*x}, noise2, accumulate = T)
+Y2 = trueW2
+Y2 = trueW2 + rnorm(n_obs, mean=0, sd=sigma_eps)
+
+########### 2. generate fixed effect and measurement noise
+
+Y <- trueW1 + trueW2 + rnorm(n_obs, mean=0, sd=sigma_eps)
+
+x1 = runif(length(Y))
+x2 = rexp(length(Y))
+X <- (model.matrix(Y ~ x1 + x2))  # design matrix
+beta <- c(-3, -1, 2)
+
+Y = as.numeric(Y + X %*% beta)
+
+
+########### 3. run ngme
+
+# specify the control for ngme
+# args(control.ngme)
+# args(control.f)
+control = control.ngme(burnin=100, iterations = 100,
+                       gibbs_sample = 5, stepsize = 0.1)
+
+##### ngme for nig ar
+# ngme_out = ngme(Y1 ~ x1+x2 +
+#                   f(Y1, model="ar1", var="nig", control=control.f(numer_grad = FALSE)),
+#                 data=data.frame(Y1=(as.numeric(Y1)), x1=x1, x2=x2),
+#                 control=control)
+
+##### ngme for 2 ar
+ngme_out = ngme(Y1 ~ 0 +
+                  # f(1:length(Y2), model="ar1", var="normal"),
+                  f(1:length(Y1), model="ar1", var="nig", debug = TRUE),
+                data=data.frame(Y1=Y1),
+                control=control)
+
+########### 4. results
+
+# nig ar1: a=0.5, mu=2, sigma=2, nu=1
+# normal ar1: a=0.7 sigma=3
+
+plot(ngme_out, param = "fe", type = "traj")
+plot(ngme_out, param = "me", type = "traj")
+plot(ngme_out, param = "la", type = "traj", which=1)
+# plot(ngme_out, param = "la", type = "traj", which=2)
+
+summary(ngme_out)
+
+# plot(Y2)
+# lines(trueW2)
+# library(INLA)
+# inla.getOption("debug")
+

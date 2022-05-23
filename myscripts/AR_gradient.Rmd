@@ -1,0 +1,437 @@
+---
+title: "AR_grads"
+date: "3/7/2022"
+author: "Xiaotian Jin"
+output: html_document
+---
+
+# R version of grad of components in AR
+
+## setting
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+load_all()
+
+gen_ar_nig <- function(alpha, n_obs, mu, sigma, nu, sigma_eps) {
+  delta <- -mu
+  h <- rep(1, n_obs)
+  
+  trueV <- ngme2::rig(n_obs, nu, nu) 
+  noise <- delta + mu*trueV + sigma * sqrt(trueV) * rnorm(n_obs)
+  
+  trueW <- Reduce(function(x,y){y + alpha*x}, noise, accumulate = T)
+  Y <- trueW + rnorm(n_obs, mean=0, sd=sigma_eps)
+  
+  ts.plot(Y)
+  
+  library(Matrix)
+  G <- Matrix(diag(n_obs)); 
+  G <- as(G, "dgCMatrix"); 
+  
+  C <- Matrix(0, n_obs, n_obs)
+  C[seq(2, n_obs*n_obs, by=n_obs+1)] <- -1
+  C <- as(C, "dgCMatrix"); 
+  
+  A <- as(Matrix(diag(n_obs)), "dgCMatrix"); 
+  
+  K_func <- function(a) {a*C + G}
+  
+  dK <- C;
+  d2K <- 0 * C;
+  
+  return (list(Y=Y, trueV=trueV, trueW=trueW, A=A, K=K_func, dK=dK, d2K=d2K))
+}
+
+```
+
+```{r}
+alpha <- 0.5
+n_obs <- 1000
+mu <- 3
+
+eta <- nu <-  2
+sigma <- 1
+sigma_eps <-  3
+h <- rep(1, n_obs)
+ar1 <- gen_ar_nig(alpha, n_obs, mu, sigma, nu, sigma_eps)
+
+Y=ar1$Y; trueV=ar1$trueV; trueW=ar1$trueW; A=ar1$A; K_func=ar1$K; dK=ar1$dK; d2K=ar1$d2K;
+
+x = 1:length(Y)
+X = model.matrix(Y ~ x)
+
+# adding fix effect
+beta = c(2,1)
+Y = Y + as.vector(X %*% beta)
+
+# randomV = ngme2::rig(n_obs, nu, nu) 
+```
+
+## mu
+
+```{r}
+hessian_mu <- function(V, h, sigma) {
+  K <- K_func(alpha)
+  hess = -sigma^(-2) * ((V-h) *(1/V)) %*% (V-h)
+  as.double(hess)
+}
+
+hess_mu = hessian_mu(trueV, h, sigma)
+
+grad_mu <- function(mu, V, W, h, sigma) {
+  K <- K_func(alpha)
+  g = sigma^(-2) * ((V-h) *(1/V)) %*% (K %*% W - mu * (V-h))
+  g = as.double(g) * 1/hess_mu
+  -g
+}
+
+grad_mu(mu-3, trueV, trueW, h, sigma)
+grad_mu(mu-2, trueV, trueW, h, sigma)
+grad_mu(mu-1, trueV, trueW, h, sigma)
+grad_mu(mu, trueV, trueW, h, sigma)
+grad_mu(mu+1, trueV, trueW, h, sigma)
+```
+
+## kappa
+
+```{r}
+th2a <- function(th) {
+  a = -1 + 2*exp(th)/(1+exp(th))
+  a
+}
+
+a2th <- function(a) {
+  th = log((-1-a)/(-1+a))
+  th
+}
+
+grad_kappa <- function(a, V, W, sigma){
+  K <- K_func(a)
+  # g <- sum(diag(dK %*% solve(K))) - 
+  g <- sum(diag(solve(K, dK))) - 
+           t(W) %*% t(dK) %*% diag(1/(sigma^2 * V)) %*% (K %*% W + (h-V)*mu)
+  
+  as.double(-g/n_obs)
+}
+
+grad_th_kappa <- function(th, V, W, sigma) {
+  dth = 2 * exp(th) / (1+exp(th))^2
+  a = th2a(th)
+  grad_kappa(a, V, W, sigma) * dth
+}
+
+grad_kappa(alpha+0.1, trueV, trueW, sigma)
+grad_kappa(alpha     , trueV, trueW, sigma)
+grad_kappa(alpha-0.1, trueV, trueW, sigma)
+
+# grad_th_kappa(a2th(alpha+0.1), trueV, trueW, sigma)
+# grad_th_kappa(a2th(alpha), trueV, trueW, sigma)
+# grad_th_kappa(a2th(alpha-0.1), trueV, trueW, sigma)
+```
+
+### using numerical hessian
+
+```{r}
+log.l <- function(a, V, W, sigma, mu, h) {
+  K = K_func(a)
+  m = solve(K, mu*(V-h))
+  
+  Q = t(K) %*% diag(1/(sigma^2*V)) %*% K
+  
+  lhs = 0.5 * log(det(Q))
+  rhs = -0.5 / (sigma^2) * as.double(t(W-m) %*% Q %*% (W-m))
+  lhs + rhs
+}
+
+log.l(a=0.5, trueV, trueW, sigma, mu, h)
+
+num.hess <- function(a, V, W, sigma, mu, h, eps) {
+  K = K_func(a)
+  
+  v = log.l(a+eps, V, W, sigma, mu, h) + log.l(a-eps, V, W, sigma, mu, h) -
+    2 * log.l(a, V, W, sigma, mu, h)
+  v / eps^2
+}
+
+num.hess(a=0.5, trueV, trueW, sigma, mu, h, 0.0001)
+
+
+
+grad_kappa_theta <- function(theta, V, W, sigma, h){
+  a = th2a(theta)
+  
+  da = 2*(exp(theta) / (1+exp(theta))^2)
+  d2a = -2*(exp(theta)*(-1+exp(theta)) / (1+exp(theta))^3)
+  
+  K <- K_func(a)
+  M = solve(K, dK)
+  
+  hess <- -sum(diag(M %*% M)) - 
+    t(W) %*% t(dK) %*% diag(1/(sigma^2 * V)) %*% (dK %*% W)
+
+print(paste("hess=", as.double(hess)))
+  hess2 = num.hess(a=a, V, W, sigma, mu, h, 0.0001)
+print(paste("hess2=", hess2))
+  
+  grad <- sum(diag(M)) - 
+           t(W) %*% t(dK) %*% diag(1/(sigma^2 * V)) %*% (K %*% W + (h-V)*mu)
+  
+  grad = as.double(grad); hess = as.double(hess)
+  
+  return ((grad * da) / (hess * da^2 + grad * d2a))
+}
+
+grad_kappa_theta(a2th(alpha+0.1), trueV, trueW, sigma, h)
+grad_kappa_theta(a2th(alpha)     , trueV, trueW, sigma, h)
+grad_kappa_theta(a2th(alpha-0.1), trueV, trueW, sigma, h)
+```
+
+
+## sigma
+
+### original para
+
+```{r}
+grad_sigma <- function(log.sigma, V, W, mu) {
+  sigma = exp(log.sigma)
+  K <- K_func(alpha)
+  mm = (K %*% W - (V-h) * mu) 
+  
+  g = -n_obs / sigma + sigma^(-3) * sum(mm^2 * 1/V)
+  
+  # using hessian
+  h = n_obs / sigma^2 - 3 * sigma^(-4) * sum(mm^2 * 1/V)
+  
+  # return (as.double(-g) / n_obs) * sigma
+  return (g / (h * sigma + g))
+}
+
+# test
+grad_sigma(log(sigma-0.5), trueV, trueW, mu)
+grad_sigma(log(sigma),     trueV, trueW, mu)
+grad_sigma(log(sigma+0.5), trueV, trueW, mu)
+```
+
+### new para
+
+$$\tilde{\sigma} = \sigma/\sqrt{1+\eta \mu^2}$$
+
+```{r}
+new_grad_sigma <- function(sigma, V, W, mu, nu) {
+  g <- grad_sigma(sigma, V, W, mu)
+  sqrt(1+sqrt(1+nu * mu^2)) * g
+}
+
+# test
+new_grad_sigma(sigma-0.5, trueV, trueW, mu, nu)
+new_grad_sigma(sigma,     trueV, trueW, mu, nu)
+new_grad_sigma(sigma+0.5, trueV, trueW, mu, nu)
+```
+
+### test GD
+
+```{r}
+log.sigma = log(9)
+for (i in 1:20) {
+  sigma = exp(log.sigma)
+  g = new_grad_sigma(sigma,     trueV, trueW, mu, nu) * sigma
+  log.sigma = log.sigma - 0.05 * g
+  
+  print(sigma)
+}
+```
+
+```{r}
+# gd 
+gd_sigma <- function(sigma) {
+  for (i in 1:10) {
+    g = grad_sigma(sigma, trueV, trueW, mu)
+    
+    sigma = sigma - 1 * g
+    print(sigma)
+  }
+  sigma
+}
+gd_sigma(1)
+
+gd_theta_sigma <- function(theta) {
+  for (i in 1:30) {
+    sigma = exp(theta)
+    g = grad_theta_sigma(sigma, trueV, trueW, mu)
+    
+    theta = theta - 0.01 * g
+    print(g)
+  }
+  exp(theta)
+}
+gd_theta_sigma(1)
+```
+
+```{r}
+grad_theta_sigma <- function(sigma, V, W, mu) {
+  theta=log(sigma)
+  grad_sigma(sigma, V, W, mu) * exp(theta)
+}
+
+grad_theta_sigma((sigma-0.5), trueV, trueW, mu)
+grad_theta_sigma((sigma),     trueV, trueW, mu)
+grad_theta_sigma((sigma+0.5), trueV, trueW, mu)
+```
+
+## nu/eta
+
+```{r}
+grad_nu <- function(nu, V) {
+  mean(1/(2*nu) - V/2 - 1/(2*V) +1)
+}
+
+hessian_nu <- function(nu, V) {
+  -0.5 * nu^(-2)
+}
+
+grad_nu <- function(nu, V) {
+  g = mean(1/(2*nu) - V/2 - 1/(2*V) +1)
+  return(g * hessian_nu(nu)^(-1))
+}
+
+
+
+grad_nu(nu-1, trueV)
+grad_nu(nu-.5, trueV)
+grad_nu(nu, trueV)
+grad_nu(nu+.5, trueV)
+grad_nu(nu+1, trueV)
+```
+
+## fixed effect
+
+```{r}
+# X %*% beta - A %*% trueW
+grad_beta <- function(beta, X, Y, A, W, sigma_eps) {
+  # (Y - X %*% beta - A %*% W)
+  grad = sigma_eps^(-2) * (t(X) %*% (Y - X %*% beta - A %*% W))
+  hess = sigma_eps^(-2) * t(X) %*% X
+  solve(hess, -grad)
+}
+
+# grad of beta
+grad_beta(beta+3, X, Y, A, trueW, sigma_eps)
+grad_beta(beta, X, Y, A, trueW, sigma_eps)
+grad_beta(beta-3, X, Y, A, trueW, sigma_eps)
+
+beta0 = c(0, 0)
+for (i in 1:100) {
+  beta0 = beta0 - 1* grad_beta(beta0, X, Y, A, trueW, sigma_eps)
+  print(as.vector(beta0))
+}
+beta0
+
+```
+
+## sigma_eps
+
+```{r}
+# norm(X %*% beta, '2')
+
+grad_sigma_eps <- function(sigma_eps, Y, A, W, X, beta) {
+  n = length(Y)
+  tmp = (Y- A %*%W - X %*% beta)
+# print(sum(tmp^2))
+  g = -n/sigma_eps + sigma_eps^(-3) * sum(tmp^2)
+  
+  hess = n / (sigma_eps^2) - 3* sigma_eps^(-4) * sum(tmp^2)
+  
+  g = g / (hess * sigma_eps + g)
+  
+  -g
+}
+
+# theta_eps = log(sigma_eps)
+# grad_theta_eps = grad_sigma_eps * sigma_eps
+# sigma_eps = exp(theta_eps)
+
+# test
+grad_sigma_eps(sigma_eps-0.5, Y, A, trueW, X, beta)
+grad_sigma_eps(sigma_eps, Y, A, trueW,X, beta)
+grad_sigma_eps(sigma_eps+0.5, Y, A, trueW,X, beta)
+```
+
+
+```{r}
+grad_theta_eps <- function(theta_eps, Y, A, W, X, beta) {
+  sigma_eps = exp(theta_eps)
+  grad_sigma_eps(sigma_eps, Y, A, W, X, beta) * sigma_eps
+}
+
+# test
+grad_theta_eps(log(sigma_eps-0.5), Y, A, trueW, X, beta)
+grad_theta_eps(log(sigma_eps), Y, A, trueW, X, beta=beta)
+grad_theta_eps(log(sigma_eps+1), Y, A, trueW, X, beta)
+```
+
+```{r}
+nn <- 100; cc = 1:nn
+xx <- matrix(data=c(rep(1, nn), 1:nn), nrow=nn)
+bb <- c(1,3)
+
+yy <- xx %*% bb + rnorm(nn)
+
+lm(yy ~ cc)
+
+deps <- function(sigma, y,x,beta,d) {
+  g <- -d/sigma + norm(y-x%*%beta, '2') / (2 * sigma^3)
+  g / d
+}
+
+deps(1, y=yy, x=xx, beta=bb, d=nn)
+```
+
+```{r}
+gd_theta_nu <- function(theta) {
+  for (i in 1:30) {
+    nu = exp(theta)
+    g = grad_nu(nu, trueV)
+    
+    theta = theta - 0.5 * (g * nu)
+    print(g)
+  }
+  exp(theta)
+}
+
+gd_theta_nu(0)
+```
+
+```{r}
+# gd of nu
+# grad_nu(2, trueV)
+gd_nu <- function(nu) {
+  for (i in 1:20) {
+    g = grad_nu(nu, trueV)
+    
+    nu = nu - 0.05 * (g)
+    print(g)
+  }
+  nu
+}
+
+gd_nu(5)
+```
+
+```{r}
+# gd of nu
+nu_ite = 3
+nu_list= 3
+for (i in 1:10) {
+  g =  grad_nu(nu_ite, trueV)
+  nu_ite = nu_ite - hessian_nu(nu_ite)^(-1) * g
+  nu_list = c(nu_list, nu_ite)
+  print(g)
+}
+nu_ite
+
+hessian_nu(3)
+
+plot(nu_list)
+```

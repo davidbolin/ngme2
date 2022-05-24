@@ -39,7 +39,7 @@ f <- function(x = NULL,
       A <- as(Matrix::Matrix(diag(n)), "dgCMatrix");
 
     # h
-      h <- rep(1, n)
+      h <- rep(1.0, n)
 
     operator_in   = list(C=C, G=G, numerical_dK=FALSE)
   }
@@ -55,6 +55,7 @@ f <- function(x = NULL,
 
   # construct latent_in
   la_in <- list(type          = model,
+                var.type      = var,
                 n_reg         = n,        # !: make sure this is the second place
                 A             = A,
                 h             = h,
@@ -65,6 +66,7 @@ f <- function(x = NULL,
                 numer_grad    = control$numer_grad,
                 use_precond   = control$use_precond,
                 eps           = control$eps,
+                debug         = debug,
                 operator_in   = operator_in,
                 var_in        = var_in,
                 init_value    = init)

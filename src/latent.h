@@ -30,6 +30,8 @@ protected:
     VectorXd W, prevW, h;
     SparseMatrix<double,0,int> A;
     
+    bool debug;
+
     Operator *ope;
     Var *var;
 
@@ -50,7 +52,8 @@ public:
       W       (n_reg),
       prevW   (n_reg),
       h       (Rcpp::as< VectorXd > (latent_in["h"])),
-      A       (Rcpp::as< SparseMatrix<double,0,int> > (latent_in["A"]))
+      A       (Rcpp::as< SparseMatrix<double,0,int> > (latent_in["A"])),
+      debug   (Rcpp::as< bool > (latent_in["debug"]))
     {
         // Init opt. flag
         opt_mu      = Rcpp::as<bool>        (latent_in["opt_mu"]);
@@ -188,12 +191,14 @@ auto grad1 = std::chrono::steady_clock::now();
     if (opt_sigma) grad(2) = grad_theta_sigma();         else grad(2) = 0;
     if (opt_var)   grad(3) = grad_theta_var();           else grad(3) = 0;
 
-std::cout << "grad_kappa (ms): " << since(grad1).count() << std::endl;   
-std::cout << "******* grad of kappa is: " << grad(0) << std::endl;   
-std::cout << "******* grad of mu is:    " << grad(1) << std::endl;   
-std::cout << "******* grad of sigma is: " << grad(2) << std::endl;   
-std::cout << "******* grad of var   is: " << grad(3) << std::endl;   
-
+// DEBUG: checking grads
+if (debug) {
+    std::cout << "grad_kappa (ms): " << since(grad1).count() << std::endl;   
+    std::cout << "******* grad of kappa is: " << grad(0) << std::endl;   
+    std::cout << "******* grad of mu is:    " << grad(1) << std::endl;   
+    std::cout << "******* grad of sigma is: " << grad(2) << std::endl;   
+    std::cout << "******* grad of var   is: " << grad(3) << std::endl;
+}
     return grad;
 }
 
@@ -212,7 +217,7 @@ inline double Latent::grad_theta_sigma() {
     VectorXd prevV = getPrevV();
 
     double msq = (K*W - mu*(V-h)).cwiseProduct(V.cwiseInverse()).dot(K*W - mu*(V-h));
-    double msq2 = (K*W - mu*(prevV-h)).cwiseProduct(prevV.cwiseInverse()).dot(K*W - mu*(prevV-h));
+    double msq2 = (K*prevW - mu*(prevV-h)).cwiseProduct(prevV.cwiseInverse()).dot(K*prevW - mu*(prevV-h));
 
     double grad = - n_reg / sigma + pow(sigma, -3) * msq;
 
@@ -233,18 +238,8 @@ inline double Latent::grad_mu() {
     VectorXd prevV = getPrevV();
     VectorXd prev_inv_V = prevV.cwiseInverse();
 
-std::cout << "h in grad mu = " << h ;
-
     double grad = pow(sigma,-2) * (V-h).cwiseProduct(inv_V).dot(K*W - mu*(V-h));
     double hess = -pow(sigma,-2) * (prevV-h).cwiseProduct(prev_inv_V).dot(prevV-h);
-
-    // double ret;
-    // if (hess_mu) {
-    //     double hess = -pow(sigma,-2) * (prevV-h).cwiseProduct(prev_inv_V).dot(prevV-h);
-    //     ret = grad / hess;
-    // } else {
-    //     ret = grad;
-    // }
 
     return grad / hess;
 }

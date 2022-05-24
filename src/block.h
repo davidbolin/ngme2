@@ -44,8 +44,8 @@ protected:
     cholesky_solver chol_Q, chol_QQ;
     SparseLU<SparseMatrix<double> > LU_K;
 
-    bool fix_trueVW {false};
-    VectorXd trueSV, trueW;
+    bool debug, fixW, fixSV, fixSigEps;
+    VectorXd trueW, trueSV;
 public:
     BlockModel() {}
 
@@ -59,9 +59,13 @@ public:
                double sigma_eps,
                bool opt_fix_effect,
                int burnin,
-               bool fix_trueVW,
-               VectorXd trueSV, 
-               VectorXd trueW
+
+               bool debug,
+               bool fixW,
+               bool fixSV,
+               bool fixSigEps,
+               VectorXd trueW, 
+               VectorXd trueSV
                ) 
     : n_obs(Y.size()),
       n_latent(latents_in.size()), 
@@ -82,9 +86,12 @@ public:
       dK(n_regs, n_regs),
       d2K(n_regs, n_regs),
 
-      fix_trueVW(fix_trueVW),
-      trueSV(trueSV),
-      trueW(trueW)
+      debug(debug),
+      fixW(fixW),
+      fixSV(fixSV),
+      fixSigEps(fixSigEps),
+      trueW(trueW),
+      trueSV(trueSV)
     {
         // Init each latent model
         for (int i=0; i < n_latent; ++i) {
@@ -184,7 +191,7 @@ public:
         }
         
         // debug
-        if (fix_trueVW) {
+        if (fixSV) {
             SV = trueSV;
         }
         return SV;
@@ -213,12 +220,15 @@ public:
             VectorXd tmp = Y - A * getW() - X * beta;
             double norm2 =  tmp.dot(tmp);
             
-            g = -(1.0 / sigma_eps) * n_obs  + pow(sigma_eps, -3) * norm2;
+            // g = -(1.0 / sigma_eps) * n_obs + pow(sigma_eps, -3) * norm2;
+            g = -(1.0) * n_obs + pow(sigma_eps, -2) * norm2;
             
             double hess = -2.0 * n_obs * pow(sigma_eps, -2);
             // double hess = 1.0 * n_obs * pow(sigma_eps, -2)  - 3 * pow(sigma_eps, -4) * norm2;
 
-            g = g / (hess * sigma_eps + 2 * g); 
+            g = g / (hess * pow(sigma_eps, 2) + g * sigma_eps); 
+
+            if (fixSigEps)  g=0;
         }
         return g;
     }
@@ -247,7 +257,7 @@ public:
         MatrixXd hess = X.transpose() * X;
         grads = hess.ldlt().solve(grads);
 
-std::cout << "grads of beta=" << -grads << std::endl;        
+// std::cout << "grads of beta=" << -grads << std::endl;        
         return -grads;
     }
 

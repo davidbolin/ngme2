@@ -19,7 +19,8 @@ Imports:
 LinkingTo: 
     testthat,
     Rcpp,
-    RcppEigen
+    RcppEigen,
+    lme4
 Suggests: 
     knitr,
     rmarkdown,

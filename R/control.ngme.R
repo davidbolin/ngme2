@@ -5,9 +5,6 @@
 #' @param gibbs_sample
 #' @param stepsize
 #' @param opt_fix_effect
-#' @param fix_trueVW
-#' @param trueSV
-#' @param trueW
 #'
 #' @return list of control variables
 #' @export
@@ -17,21 +14,15 @@ control.ngme <- function(burnin            = 100,
                          iterations        = 100,
                          gibbs_sample      = 5,
                          stepsize          = 0.5,
-
-                         opt_fix_effect    = TRUE,
-                         fix_trueVW        = FALSE,
-                         trueSV            = NULL,
-                         trueW             = NULL) {
+                         opt_fix_effect    = TRUE
+                         ) {
 
   control = list(burnin            = burnin,
                  iterations        = iterations,
                  gibbs_sample      = gibbs_sample,
                  stepsize          = stepsize,
-
-                 fix_trueVW        = fix_trueVW,
-                 opt_fix_effect    = opt_fix_effect,
-                 trueSV            = trueSV,
-                 trueW             = trueW)
+                 opt_fix_effect    = opt_fix_effect
+                )
 
   class(control) <- "control.ngme"
 
@@ -73,3 +64,35 @@ control.f <- function(opt_kappa     = TRUE,
 
   return (control)
 }
+
+#' Generate debug option
+#'
+#' @param debug
+#' @param trueW
+#' @param trueSV
+#'
+#' @return
+#' @export
+#'
+#' @examples
+debug.ngme <- function(debug     = TRUE,
+                       fixW      = FALSE,
+                       fixSV     = FALSE,
+                       fixSigEps = FALSE,
+                       sigEps    = NULL,
+                       trueW     = NULL,
+                       trueSV    = NULL
+) {
+  control  = list(debug     = debug,
+                  fixW      = fixW,
+                  fixSV     = fixSV,
+                  trueW     = trueW,
+                  trueSV    = trueSV,
+                  fixSigEps = fixSigEps,
+                  sigEps    = sigEps
+  )
+
+  return (control)
+}
+
+

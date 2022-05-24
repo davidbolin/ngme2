@@ -18,7 +18,7 @@ ngme <- function(formula,
                  data,
                  family   = "normal",
                  controls = control.ngme(),
-                 debug    = FALSE)
+                 debug    = debug.ngme())
 {
   time.start <- Sys.time()
 
@@ -33,6 +33,14 @@ ngme <- function(formula,
 
   if (!is.data.frame(data) && !is.list(data)) {
     stop("\n\tArgument `data' must be a data.frame or a list.")
+  }
+
+  # generate debug option
+  if (!is.null(debug$trueW)) {
+    debug$fixW = TRUE
+  }
+  if (!is.null(debug$trueSV)) {
+    debug$fixSV = TRUE
   }
 
   # 2. parse the formula
@@ -62,6 +70,8 @@ ngme <- function(formula,
 
     ############### n_regs is the dim of the block matrix
     n_regs = sum(unlist(lapply(latents_in, function(x) x["n_reg"] )))
+    model.types = unlist(lapply(latents_in, function(x) x["type"] ))
+    var.types = unlist(lapply(latents_in, function(x) x["var.type"] ))
 
     # 3. prepare in_list for estimate
     lm.model = lm.fit(X, Y)
@@ -71,26 +81,33 @@ ngme <- function(formula,
                         family           = "normal",
                         n_regs           = n_regs,
                         init             = list(beta=lm.model$coeff,
-                                                sigma_eps = sd(lm.model$residuals)),
-                        debug=debug)
+                                                sigma_eps = sd(lm.model$residuals))
+                        )
 
     in_list = list(general_in = general_in,
-                  latents_in = latents_in,
-                  config_in  = controls)
+                  latents_in  = latents_in,
+                  control_in  = controls,
+                  debug       = debug)
 
   } else {
     stop("unknown structure of formula")
   }
 
-  # debug
-  if (debug) print(in_list)
-
   # estimate
   out = estimate_cpp(in_list)
 
   # construct output
-  out$n_fe     = ncol(X)
-  out$n_latent = length(latents_in)
+    # fix_eff
+    out$n_fe     = ncol(X)
+
+    # m_err
+    out$family = general_in$family
+
+    # process
+    out$n_latent = length(latents_in)
+    out$model.types = model.types
+    out$var.types   = var.types
+
   class(out)   = "ngme"
 
   print(paste("total time is", Sys.time()-time.start))
@@ -102,5 +119,3 @@ ngme <- function(formula,
 # X = model.matrix(y~x, list(x=x, y=y))
 # str(lm.fit(X, y))
 # sd(residuals(lm(y~x)))
-
-

@@ -21,10 +21,8 @@ Rcpp::List estimate_cpp(Rcpp::List in_list) {
     Rcpp::List gen_list         = Rcpp::as<Rcpp::List> (in_list["general_in"]);
         const Eigen::VectorXd Y = Rcpp::as<VectorXd>   (gen_list["Y"]);
         const Eigen::MatrixXd X = Rcpp::as<MatrixXd>   (gen_list["X"]);
-// std::cout << X << std::endl;
         const int n_regs        = Rcpp::as<int>    (gen_list["n_regs"]);
         const string family     = Rcpp::as<string> (gen_list["family"]);
-        const bool debug        = Rcpp::as<bool>   (gen_list["debug"]);
 
     // init list
     Rcpp::List inits         = Rcpp::as<Rcpp::List> (gen_list["init"]);
@@ -33,26 +31,32 @@ Rcpp::List estimate_cpp(Rcpp::List in_list) {
     
     Rcpp::List latents_list = Rcpp::as<Rcpp::List> (in_list["latents_in"]);
     
-    // config_list
-    Rcpp::List config_list  = Rcpp::as<Rcpp::List> (in_list["config_in"]);
+    // control_list
+    Rcpp::List control_list  = Rcpp::as<Rcpp::List> (in_list["control_in"]);
         // Flag to Specify what parameter to optimize
-        const int burnin = config_list["burnin"];
-        const int iterations = config_list["iterations"];
-        const int n_gibbs = config_list["gibbs_sample"];
-        const double stepsize = config_list["stepsize"];
+        const int burnin = control_list["burnin"];
+        const int iterations = control_list["iterations"];
+        const int n_gibbs = control_list["gibbs_sample"];
+        const double stepsize = control_list["stepsize"];
         
-        const bool opt_fix_effect = Rcpp::as<bool>   (config_list["opt_fix_effect"]);
-        const bool fix_trueVW = Rcpp::as<bool>   (config_list["fix_trueVW"]);
+        const bool opt_fix_effect = Rcpp::as<bool>   (control_list["opt_fix_effect"]);
 
-    Eigen::VectorXd trueW, trueSV; 
-    
-    if (debug) {
-        trueW = Rcpp::as<VectorXd>   (config_list["trueW"]);
-        trueSV = Rcpp::as<VectorXd>  (config_list["trueSV"]);
-    }
+    // debug list
+    Rcpp::List debug_list  = Rcpp::as<Rcpp::List> (in_list["debug"]);
+        const bool debug = Rcpp::as<bool> (debug_list["debug"]);
+        const bool fixW  = Rcpp::as<bool> (debug_list["fixW"]);
+        const bool fixSV = Rcpp::as<bool> (debug_list["fixSV"]);
+        const bool fixSigEps = Rcpp::as<bool> (debug_list["fixSigEps"]);
+
+        Eigen::VectorXd trueW, trueSV; 
+        if (fixW)      trueW = Rcpp::as<VectorXd>   (debug_list["trueW"]);
+        if (fixSV)     trueSV = Rcpp::as<VectorXd>  (debug_list["trueSV"]);
+        if (fixSigEps) sigma_eps = Rcpp::as<double> (debug_list["sigEps"]);
     
     BlockModel block (X, Y, family, n_regs, latents_list, 
-        n_gibbs, beta, sigma_eps, opt_fix_effect, burnin, fix_trueVW, trueSV, trueW);
+        n_gibbs, beta, sigma_eps, opt_fix_effect, burnin, 
+        // debug
+        debug, fixW, fixSV, fixSigEps, trueW, trueSV);
 
     // *****************   Main Process - Optimization *****************  
     Optimizer opt;

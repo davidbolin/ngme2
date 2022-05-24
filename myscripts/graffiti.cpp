@@ -30,18 +30,34 @@ public:
 
 int main(int argc, char const *argv[])
 {
-auto start = std::chrono::steady_clock::now();
+    
 
-//     Matrix2f v (4,1,2,3);
-    Vector2d k (3,2);
-// v.segment(2, 2) = k;
-    double sigma_eps = 2.0;
-    unsigned n_obs = 100;
-//  g = -1.0 * n_obs / sigma_eps + pow(sigma_eps, -3) * tmp.dot(tmp);
-    double tmp = 100;
+// auto start = std::chrono::steady_clock::now();
 
-    cout<< k.cwiseInverse() << endl ;
+// //     Matrix2f v (4,1,2,3);
+//     Vector2d k (3,2);
+// // v.segment(2, 2) = k;
+//     double sigma_eps = 2.0;
+//     unsigned n_obs = 100;
+// //  g = -1.0 * n_obs / sigma_eps + pow(sigma_eps, -3) * tmp.dot(tmp);
+//     double tmp = 100;
+
+//     cout<< k.cwiseInverse() << endl ;
 
     return 0;
 }
 
+
+// Eigen::VectorXd cholesky_solver::rMVN(Eigen::VectorXd &mu, Eigen::VectorXd &z)
+// {
+
+//   // dest = R.permutationP() * mu;
+//   Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> RP;
+//   RP.resize(mu.size());
+//   RP = R.permutationP();
+//   Eigen::VectorXd dest = R.permutationP() * mu;
+//   dest = R.matrixL().solve(dest);
+//   dest = R.matrixU().solve(dest + z);
+//   dest = R.permutationPinv() * dest;
+//   return dest;
+// }

@@ -27,6 +27,8 @@ void BlockModel::setW(const VectorXd& W) {
 // sample W|VY 
 void BlockModel::sampleW_VY()
 {
+  // VectroXd V = getV();
+
   VectorXd SV = getSV();
   VectorXd inv_SV = VectorXd::Constant(SV.size(), 1).cwiseQuotient(SV);
 
@@ -45,8 +47,8 @@ void BlockModel::sampleW_VY()
 
   setW(W);
 
-  // for debug
-  if (fix_trueVW) {
+  // fixW
+  if (fixW) {
     setW(trueW);
   }
 }

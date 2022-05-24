@@ -42,7 +42,7 @@ vignettes/*.pdf
 src/util/.DS_Store
 src/test/.DS_Store
 
-myscripts/
+man/
 .DS_Store
 *.json
 *.so

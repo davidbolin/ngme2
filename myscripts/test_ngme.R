@@ -45,8 +45,10 @@ Y = as.numeric(Y + X %*% beta)
 # specify the control for ngme
 # args(control.ngme)
 # args(control.f)
-control = control.ngme(burnin=100, iterations = 100,
+
+control = control.ngme(burnin=100, iterations = 2000,
                        gibbs_sample = 5, stepsize = 0.1)
+debug = debug.ngme(fixW = TRUE, trueW = trueW1)
 
 ##### ngme for nig ar
 # ngme_out = ngme(Y1 ~ x1+x2 +
@@ -58,8 +60,9 @@ control = control.ngme(burnin=100, iterations = 100,
 ngme_out = ngme(Y1 ~ 0 +
                   # f(1:length(Y2), model="ar1", var="normal"),
                   f(1:length(Y1), model="ar1", var="nig", debug = TRUE),
-                data=data.frame(Y1=Y1),
-                control=control)
+                data     = data.frame(Y1=Y1),
+                control  = control,
+                debug    = debug)
 
 ########### 4. results
 

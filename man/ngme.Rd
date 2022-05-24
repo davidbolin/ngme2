@@ -9,7 +9,7 @@ ngme(
   data,
   family = "normal",
   controls = control.ngme(),
-  debug = FALSE
+  debug = debug.ngme()
 )
 }
 \arguments{

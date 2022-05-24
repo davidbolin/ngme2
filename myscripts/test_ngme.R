@@ -1,8 +1,12 @@
 library(devtools)
 load_all()
 
-n_obs <- 100
-sigma_eps = 0.2
+n_obs <- 1000
+sigma_eps = 0.1
+
+x1 = runif(n_obs)
+x2 = rexp(n_obs)
+beta <- c(-3, -1, 2)
 
 ############  1.1 construct AR with nig noise
 # parameter for ar1
@@ -17,23 +21,30 @@ noise1 <- delta + mu1*trueV1 + sigma1 * sqrt(trueV1) * rnorm(n_obs)
 trueW1 <- Reduce(function(x,y){y + alpha1*x}, noise1, accumulate = T)
 Y1 = trueW1 + rnorm(n_obs, mean=0, sd=sigma_eps)
 
+# fix effects
+X <- (model.matrix(Y1 ~ x1 + x2))  # design matrix
+Y1 = as.numeric(Y1 + X %*% beta)
+
 ############  1.2 construct AR with normal noise
 # parameter for ar1
 alpha2 <- 0.7
-sigma2 = 3
+sigma2 = 2
 
-noise2 = sigma2*rnorm(n_obs)
+noise2 = sigma2 * rnorm(n_obs)
 
 trueW2 <- Reduce(function(x,y){y + alpha2*x}, noise2, accumulate = T)
-Y2 = trueW2
+
 Y2 = trueW2 + rnorm(n_obs, mean=0, sd=sigma_eps)
+
+# fix effects
+X <- (model.matrix(Y2 ~ x1 + x2))  # design matrix
+Y2 = as.numeric(Y2 + X %*% beta)
 
 ########### 2. generate fixed effect and measurement noise
 
 Y <- trueW1 + trueW2 + rnorm(n_obs, mean=0, sd=sigma_eps)
 
-x1 = runif(length(Y))
-x2 = rexp(length(Y))
+
 X <- (model.matrix(Y ~ x1 + x2))  # design matrix
 beta <- c(-3, -1, 2)
 
@@ -46,23 +57,32 @@ Y = as.numeric(Y + X %*% beta)
 # args(control.ngme)
 # args(control.f)
 
-control = control.ngme(burnin=100, iterations = 2000,
-                       gibbs_sample = 5, stepsize = 0.1)
-debug = debug.ngme(fixW = TRUE, trueW = trueW1)
+control = control.ngme(burnin=1000, iterations = 3000,
+                       gibbs_sample = 5, stepsize = 0.2)
+debug = debug.ngme(fixW = FALSE, trueW = trueW1)
 
-##### ngme for nig ar
-# ngme_out = ngme(Y1 ~ x1+x2 +
-#                   f(Y1, model="ar1", var="nig", control=control.f(numer_grad = FALSE)),
-#                 data=data.frame(Y1=(as.numeric(Y1)), x1=x1, x2=x2),
+##### ngme for 1 ar
+# nig
+ngme_out = ngme(Y1 ~ x1 + x2 +
+                  f(Y1, model="ar1", var="nig",
+                    control=control.f(numer_grad = FALSE)),
+                data=data.frame(Y1=(as.numeric(Y1)), x1=x1, x2=x2),
+                control=control)
+# normal
+# ngme_out = ngme(Y2 ~ x1 + x2 +
+#                   f(Y2, model="ar1", var="normal",
+#                     control=control.f(numer_grad = FALSE)),
+#                 data=data.frame(Y2=(as.numeric(Y2)), x1=x1, x2=x2),
 #                 control=control)
 
+
 ##### ngme for 2 ar
-ngme_out = ngme(Y1 ~ 0 +
-                  # f(1:length(Y2), model="ar1", var="normal"),
-                  f(1:length(Y1), model="ar1", var="nig", debug = TRUE),
-                data     = data.frame(Y1=Y1),
-                control  = control,
-                debug    = debug)
+# ngme_out = ngme(Y1 ~ 0 +
+#                   # f(1:length(Y2), model="ar1", var="normal"),
+#                   f(1:length(Y1), model="ar1", var="nig", debug = TRUE),
+#                 data     = data.frame(Y1=Y1),
+#                 control  = control,
+#                 debug    = debug)
 
 ########### 4. results
 
@@ -75,9 +95,4 @@ plot(ngme_out, param = "la", type = "traj", which=1)
 # plot(ngme_out, param = "la", type = "traj", which=2)
 
 summary(ngme_out)
-
-# plot(Y2)
-# lines(trueW2)
-# library(INLA)
-# inla.getOption("debug")
 

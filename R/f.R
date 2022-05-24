@@ -162,6 +162,3 @@ f <- function(x = NULL,
   #     class(rtrn) <- "f"
   #     return (rtrn)
   # }
-
-
-

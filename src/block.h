@@ -208,6 +208,17 @@ public:
         return W;
     }
 
+    VectorXd getPrevW() const {
+        VectorXd W (n_regs);
+        int pos = 0;
+        for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+            int size = (*it)->getSize();
+            W.segment(pos, size) = (*it)->getPrevW();
+            pos += size;
+        }
+        return W;
+    }
+
     double get_theta_sigma_eps() const {
         return log(sigma_eps);
     }
@@ -221,15 +232,18 @@ public:
             double norm2 =  tmp.dot(tmp);
             
             // g = -(1.0 / sigma_eps) * n_obs + pow(sigma_eps, -3) * norm2;
-            g = -(1.0) * n_obs + pow(sigma_eps, -2) * norm2;
+            double gTimesSigmaEps = -(1.0) * n_obs + pow(sigma_eps, -2) * norm2;
             
             double hess = -2.0 * n_obs * pow(sigma_eps, -2);
             // double hess = 1.0 * n_obs * pow(sigma_eps, -2)  - 3 * pow(sigma_eps, -4) * norm2;
 
-            g = g / (hess * pow(sigma_eps, 2) + g * sigma_eps); 
+            // g = gTimeSigmaEps / (hess * pow(sigma_eps, 2) + gTimeSigmaEps); 
+            
+            g = - gTimesSigmaEps / (2 * n_obs);
 
             if (fixSigEps)  g=0;
         }
+
         return g;
     }
 

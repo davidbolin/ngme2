@@ -91,6 +91,7 @@ public:
     SparseMatrix<double, 0, int>& getA()      {return A; }
     
     const VectorXd& getW()  const             {return W; }
+    const VectorXd& getPrevW()  const         {return prevW; }
     void            setW(const VectorXd& W)   { prevW = this->W; this->W = W; }
 
     VectorXd getMean() const { return mu * (getV() - h); }

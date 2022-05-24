@@ -13,7 +13,7 @@
 control.ngme <- function(burnin            = 100,
                          iterations        = 100,
                          gibbs_sample      = 5,
-                         stepsize          = 0.5,
+                         stepsize          = 1,
                          opt_fix_effect    = TRUE
                          ) {
 

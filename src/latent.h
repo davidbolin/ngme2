@@ -16,13 +16,16 @@
 using Eigen::SparseMatrix;
 using Eigen::VectorXd;
 
+
+
 class Latent {
 protected:
     int n_reg, n_paras {4}; //regressors, parameters
     
-    // indicate which parameter to optimize
-    bool opt_mu {false}, opt_sigma {false}, opt_kappa {false}, opt_var {false}, 
-        use_precond {false}, numer_grad {false};
+    // indicate which parameter to optimize (kappa, mu, sigma, var)
+    int opt_flag[4] {1, 1, 1, 1};
+    
+    bool use_precond {false}, numer_grad {false};
     
     bool hess_mu {true}, hess_sigma {true}, hess_kappa {true}, hess_var {true};
 
@@ -56,10 +59,11 @@ public:
       debug   (Rcpp::as< bool > (latent_in["debug"]))
     {
         // Init opt. flag
-        opt_mu      = Rcpp::as<bool>        (latent_in["opt_mu"]);
-        opt_sigma   = Rcpp::as<bool>        (latent_in["opt_sigma"]);
-        opt_kappa   = Rcpp::as<bool>        (latent_in["opt_kappa"]);
-        opt_var     = Rcpp::as<bool>        (latent_in["opt_var"]);
+        opt_flag[0]   = Rcpp::as<int>        (latent_in["opt_kappa"]);
+        opt_flag[1]   = Rcpp::as<int>        (latent_in["opt_mu"]);
+        opt_flag[2]   = Rcpp::as<int>        (latent_in["opt_sigma"]);
+        opt_flag[3]   = Rcpp::as<int>        (latent_in["opt_var"]);
+
         use_precond = Rcpp::as<bool>        (latent_in["use_precond"]);
         numer_grad  = Rcpp::as<bool>        (latent_in["numer_grad"]);
 
@@ -79,7 +83,8 @@ public:
         } else if (type == "normal") {
             var = new normal(n_reg, h);
             
-            opt_mu = false;
+            // no optimizing mu
+            opt_flag[1] = 0;  
         }
 
     }
@@ -119,6 +124,7 @@ public:
     const VectorXd getTheta() const;
     const VectorXd getGrad();
     void           setTheta(const VectorXd&);
+    void           finishOpt(int i) {opt_flag[i] = 0; }
 
     // Parameter: kappa
     virtual double get_theta_kappa() const=0;
@@ -187,10 +193,10 @@ inline const VectorXd Latent::getTheta() const {
 inline const VectorXd Latent::getGrad() {
     VectorXd grad (n_paras);
 auto grad1 = std::chrono::steady_clock::now();
-    if (opt_kappa) grad(0) = grad_theta_kappa();         else grad(0) = 0;
-    if (opt_mu)    grad(1) = grad_mu();                  else grad(1) = 0;
-    if (opt_sigma) grad(2) = grad_theta_sigma();         else grad(2) = 0;
-    if (opt_var)   grad(3) = grad_theta_var();           else grad(3) = 0;
+    if (opt_flag[0]) grad(0) = grad_theta_kappa();         else grad(0) = 0;
+    if (opt_flag[1]) grad(1) = grad_mu();                  else grad(1) = 0;
+    if (opt_flag[2]) grad(2) = grad_theta_sigma();         else grad(2) = 0;
+    if (opt_flag[3]) grad(3) = grad_theta_var();           else grad(3) = 0;
 
 // DEBUG: checking grads
 if (debug) {
@@ -204,10 +210,10 @@ if (debug) {
 }
 
 inline void Latent::setTheta(const VectorXd& theta) {
-    if (opt_kappa) set_theta_kappa(theta(0)); 
-    if (opt_mu)    set_mu(theta(1)); 
-    if (opt_sigma) set_theta_sigma(theta(2)); 
-    if (opt_var)   set_theta_var(theta(3)); 
+    if (opt_flag[0])  set_theta_kappa(theta(0)); 
+    if (opt_flag[1])  set_mu(theta(1)); 
+    if (opt_flag[2])  set_theta_sigma(theta(2)); 
+    if (opt_flag[3])  set_theta_var(theta(3)); 
 }
 
 // sigma>0 -> theta=log(sigma)

@@ -47,3 +47,41 @@ Rcpp::List Optimizer::sgd( Model& model,
                               Rcpp::Named("x_traj") = x_traj);
 }
 
+
+Rcpp::List Optimizer::sgd( Model& model,
+                double eps,
+                int iterations) {
+
+    vector<VectorXd> x_traj;
+    vector<VectorXd> grad_traj;
+
+    int count = 0;
+    VectorXd x = model.get_parameter();
+
+    bool terminate = false;
+
+    while (!terminate)
+    {
+        count += 1;
+// auto timer_grad = std::chrono::steady_clock::now();
+        VectorXd grad = model.grad();
+// std::cout << "get gradient (ms): " << since(timer_grad).count() << std::endl;    
+
+        VectorXd stepsizes = model.get_stepsizes();
+        x = x - grad.cwiseProduct(stepsizes);
+
+        // record x and grad
+        x_traj.push_back(x);
+        grad_traj.push_back(grad);
+
+        model.set_parameter(x);
+
+        // to-do: criteria of eps
+        if ((grad.norm() <= pow(10, -6)) || (count > iterations))
+            terminate = true;
+
+    }
+    return Rcpp::List::create(Rcpp::Named("grad_traj") = grad_traj,
+                              Rcpp::Named("x_traj") = x_traj);
+}
+

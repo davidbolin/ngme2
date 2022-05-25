@@ -9,6 +9,8 @@
 #include <Eigen/Sparse>
 
 using Eigen::SparseMatrix;
+using Eigen::VectorXd;
+using Eigen::MatrixXd;
 
 using namespace Rcpp;
 
@@ -19,8 +21,8 @@ Rcpp::List estimate_cpp(Rcpp::List in_list) {
     
     //observations and latents
     Rcpp::List gen_list         = Rcpp::as<Rcpp::List> (in_list["general_in"]);
-        const Eigen::VectorXd Y = Rcpp::as<VectorXd>   (gen_list["Y"]);
-        const Eigen::MatrixXd X = Rcpp::as<MatrixXd>   (gen_list["X"]);
+        const VectorXd Y        = Rcpp::as<VectorXd>   (gen_list["Y"]);
+        const MatrixXd X        = Rcpp::as<MatrixXd>   (gen_list["X"]);
         const int n_regs        = Rcpp::as<int>    (gen_list["n_regs"]);
         const string family     = Rcpp::as<string> (gen_list["family"]);
 
@@ -60,11 +62,13 @@ Rcpp::List estimate_cpp(Rcpp::List in_list) {
 
     // *****************   Main Process - Optimization *****************  
     Optimizer opt;
-
-
+    
     // *****************   Construct Output   ***************** 
 auto timer = std::chrono::steady_clock::now();
-    Rcpp::List trajectory = opt.sgd(block, stepsize, 0.1, false, iterations);
+    
+    // Rcpp::List trajectory = opt.sgd(block, stepsize, 0.1, false, iterations);
+    Rcpp::List trajectory = opt.sgd(block, 0.1, iterations);
+
 std::cout << "total time is (ms): " << since(timer).count() << std::endl;   
 
     // final estimate from block model

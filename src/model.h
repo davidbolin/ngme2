@@ -11,6 +11,7 @@ using Eigen::Triplet;
 class Model {
 public:
     virtual VectorXd             get_parameter() const=0;
+    virtual VectorXd             get_stepsizes() const=0;
     virtual void                 set_parameter(const VectorXd&)=0;
     virtual VectorXd             grad()=0;
     virtual SparseMatrix<double> precond() const=0;
@@ -62,6 +63,10 @@ public:
 
     VectorXd get_parameter() const {
         return x;
+    }
+
+    VectorXd get_stepsizes() const {
+        return Eigen::VectorXd::Constant(2, 0);
     }
 };
 

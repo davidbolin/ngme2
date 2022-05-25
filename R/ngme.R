@@ -119,3 +119,4 @@ ngme <- function(formula,
 # X = model.matrix(y~x, list(x=x, y=y))
 # str(lm.fit(X, y))
 # sd(residuals(lm(y~x)))
+

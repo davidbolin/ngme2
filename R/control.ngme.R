@@ -14,14 +14,18 @@ control.ngme <- function(burnin            = 100,
                          iterations        = 100,
                          gibbs_sample      = 5,
                          stepsize          = 1,
-                         opt_fix_effect    = TRUE
+                         opt_fix_effect    = TRUE,
+
+                         threshold         = 0.0000001
                          ) {
 
   control = list(burnin            = burnin,
                  iterations        = iterations,
                  gibbs_sample      = gibbs_sample,
                  stepsize          = stepsize,
-                 opt_fix_effect    = opt_fix_effect
+                 opt_fix_effect    = opt_fix_effect,
+
+                 threshold         = threshold
                 )
 
   class(control) <- "control.ngme"
@@ -50,6 +54,10 @@ control.f <- function(opt_kappa     = TRUE,
                       opt_var       = TRUE,
                       numer_grad    = FALSE,
                       use_precond   = TRUE,
+                      init_kappa    = 0.5,
+                      init_mu       = 0,
+                      init_sigma    = 1,
+                      init_nu      = 1,
                       eps           = 0.01) {
 
   control = list(opt_kappa     = opt_kappa,
@@ -58,6 +66,10 @@ control.f <- function(opt_kappa     = TRUE,
                 opt_var       = opt_var,
                 numer_grad    = numer_grad,
                 use_precond   = use_precond,
+                init_kappa    = init_kappa,
+                init_mu       = init_mu,
+                init_sigma    = init_sigma,
+                init_nu       = init_nu,
                 eps           = eps)
 
   class(control) <- "control.f"

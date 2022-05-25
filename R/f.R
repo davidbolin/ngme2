@@ -3,7 +3,6 @@
 #' @param x numerical vector, which is the covariate
 #' @param model specify a model
 #' @param var variance component type
-#' @param init initial value
 #' @param config control variables
 #' @param debug debug
 #'
@@ -12,10 +11,6 @@
 f <- function(x = NULL,
               model  = "ar1",
               var    = "NIG",
-              init   = list(kappa     = 0.5,
-                            mu        = 0,
-                            sigma     = 1,
-                            nu        = 0.5),
               control = control.f(),
               debug  = FALSE
               ) {
@@ -69,7 +64,11 @@ f <- function(x = NULL,
                 debug         = debug,
                 operator_in   = operator_in,
                 var_in        = var_in,
-                init_value    = init)
+                init_value    = list(kappa     = control$init_kappa,
+                                     mu        = control$init_mu,
+                                     sigma     = control$init_sigma,
+                                     nu        = control$init_nu)
+                )
 
   return (la_in)
 }

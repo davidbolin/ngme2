@@ -30,7 +30,7 @@ public:
 
 int main(int argc, char const *argv[])
 {
-    
+    Vector3d v (1,2,3);
 
 // auto start = std::chrono::steady_clock::now();
 
@@ -41,8 +41,8 @@ int main(int argc, char const *argv[])
 //     unsigned n_obs = 100;
 // //  g = -1.0 * n_obs / sigma_eps + pow(sigma_eps, -3) * tmp.dot(tmp);
 //     double tmp = 100;
-
-//     cout<< k.cwiseInverse() << endl ;
+    v = v.array().pow(3);
+    cout<< v << endl ;
 
     return 0;
 }

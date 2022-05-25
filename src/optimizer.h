@@ -20,13 +20,16 @@ class Optimizer
 private:
     int iterations;
 public:
-    // terminate criteria
-    // regularizer -> proximal operator wrt regularization
     Rcpp::List sgd(Model& model,
                 double stepsize, 
                 double eps,
                 bool precondioner,
                 int iterations);
+
+    // provide model.get_stepsizes()
+    Rcpp::List sgd(Model& model,
+            double eps,
+            int iterations);
 
 };
 

@@ -46,6 +46,13 @@ protected:
 
     bool debug, fixW, fixSV, fixSigEps;
     VectorXd trueW, trueSV;
+    
+    // optimize related
+    VectorXd stepsizes, gradients;
+    int counting {0};
+    double opt_power {0.75}, threshold {1e-4}; // (1/2, 1)
+    VectorXd indicate_threshold, steps_to_threshold;
+
 public:
     BlockModel() {}
 
@@ -110,6 +117,7 @@ public:
             n_paras = n_latent * latent_para + 1 + n_beta;
         }
 
+
         /* Init variables: h, A */
         int n = 0;
         for (std::vector<Latent*>::iterator it = latents.begin(); it != latents.end(); it++) {
@@ -126,7 +134,10 @@ public:
         chol_QQ.analyze(QQ);
         LU_K.analyzePattern(K);
 
-// output the block model
+        // optimizer related
+        stepsizes = VectorXd::Constant(n_paras, 1);
+        steps_to_threshold = VectorXd::Constant(n_paras, 0);
+        indicate_threshold = VectorXd::Constant(n_paras, 0);
 
         burn_in(burnin);
     }
@@ -151,10 +162,12 @@ public:
     
     /* Optimizer related */
     VectorXd             get_parameter() const;
+    VectorXd             get_stepsizes() const;
     void                 set_parameter(const VectorXd&);
     VectorXd             grad();
     SparseMatrix<double> precond() const;
-
+    
+    void                 examine();
 
     /* Aseemble */
     void assemble() {
@@ -231,15 +244,19 @@ public:
             VectorXd tmp = Y - A * getW() - X * beta;
             double norm2 =  tmp.dot(tmp);
             
+            VectorXd tmp2 = Y - A * getPrevW() - X * beta;
+            double prevnorm2 = tmp2.dot(tmp2);
+
             // g = -(1.0 / sigma_eps) * n_obs + pow(sigma_eps, -3) * norm2;
             double gTimesSigmaEps = -(1.0) * n_obs + pow(sigma_eps, -2) * norm2;
+            double prevgTimesSigmaEps = -(1.0) * n_obs + pow(sigma_eps, -2) * prevnorm2;
             
             double hess = -2.0 * n_obs * pow(sigma_eps, -2);
             // double hess = 1.0 * n_obs * pow(sigma_eps, -2)  - 3 * pow(sigma_eps, -4) * norm2;
 
-            // g = gTimeSigmaEps / (hess * pow(sigma_eps, 2) + gTimeSigmaEps); 
+            g = gTimeSigmaEps / (hess * pow(sigma_eps, 2) + prevgTimesSigmaEps); 
             
-            g = - gTimesSigmaEps / (2 * n_obs);
+            // g = - gTimesSigmaEps / (2 * n_obs);
 
             if (fixSigEps)  g=0;
         }
@@ -353,7 +370,13 @@ std::cout << "sampleW (ms): " << since(timer_sampleW).count() << std::endl;
     }
 
     avg_gradient = (1.0/n_gibbs) * avg_gradient;
-    return avg_gradient;
+    
+    gradients = avg_gradient;
+    
+    // EXAMINE the gradient to change the stepsize
+    examine();
+
+    return gradients;
 }
 
 inline void BlockModel::set_parameter(const VectorXd& Theta) {
@@ -375,6 +398,41 @@ inline void BlockModel::set_parameter(const VectorXd& Theta) {
 
     assemble(); //update K,dK,d2K after
 // std::cout << "Theta=" << Theta <<std::endl;
+}
+
+inline void BlockModel::examine() {
+    
+    // examine if the gradient under the threshold
+    for (int i=0; i < n_paras; i++) {
+        if (abs(gradients(i)) < threshold) {
+            indicate_threshold(i) = 1;
+        }      // mark if under threshold
+        if (!indicate_threshold(i)) steps_to_threshold(i) = counting; // counting up
+    }
+    
+    counting += 1;
+    stepsizes = (VectorXd::Constant(n_paras, counting) - steps_to_threshold).cwiseInverse().array().pow(opt_power);
+
+    // finish opt fo latents
+    for (int i=0; i < n_latent; i++) {
+        for (int j=0; j < latent_para; j++) {
+            int index = latent_para*i + j;
+            
+            if (counting - steps_to_threshold(index) > 100) 
+                latents[i]->finishOpt(j);
+        }
+    }
+    // finish opt for feff and merr
+
+// std::cout << "steps=" << steps_to_threshold <<std::endl;
+// std::cout << "gradients=" << gradients <<std::endl;
+// std::cout << "stepsizes=" << stepsizes <<std::endl;
+}
+
+inline VectorXd BlockModel::get_stepsizes() const {
+
+
+    return stepsizes;
 }
 
 inline SparseMatrix<double> BlockModel::precond() const {

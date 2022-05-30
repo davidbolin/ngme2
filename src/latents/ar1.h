@@ -40,7 +40,6 @@ public:
         var->sample_cond_V(getK(), W, mu, sigma);
     };
     
-
     double th2a(double th) const {
         return (-1 + 2*exp(th) / (1+exp(th)));
     }

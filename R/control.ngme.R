@@ -16,16 +16,26 @@ control.ngme <- function(burnin            = 100,
                          stepsize          = 1,
                          opt_fix_effect    = TRUE,
 
-                         threshold         = 0.0000001
+                         killVar           = FALSE,
+                         killPower         = 0.75,
+                         threshold         = 1e-5,
+                         termination       = 1e-7
                          ) {
 
-  control = list(burnin            = burnin,
-                 iterations        = iterations,
-                 gibbs_sample      = gibbs_sample,
-                 stepsize          = stepsize,
-                 opt_fix_effect    = opt_fix_effect,
+  if ((killPower <= 0.5) || (killPower > 1)) {
+    error("reduceVar should be in (0.5,1]")
+  }
 
-                 threshold         = threshold
+  control = list( burnin            = burnin,
+                  iterations        = iterations,
+                  gibbs_sample      = gibbs_sample,
+                  stepsize          = stepsize,
+                  opt_fix_effect    = opt_fix_effect,
+
+                  killVar           = killVar,
+                  killPower         = killPower,
+                  threshold         = threshold,
+                  termination       = termination
                 )
 
   class(control) <- "control.ngme"
@@ -57,7 +67,7 @@ control.f <- function(opt_kappa     = TRUE,
                       init_kappa    = 0.5,
                       init_mu       = 0,
                       init_sigma    = 1,
-                      init_nu      = 1,
+                      init_nu       = 1,
                       eps           = 0.01) {
 
   control = list(opt_kappa     = opt_kappa,
@@ -95,6 +105,9 @@ debug.ngme <- function(debug     = TRUE,
                        trueW     = NULL,
                        trueSV    = NULL
 ) {
+  if (fixW  && is.null(trueW))  error("Please provide W")
+  if (fixSV && is.null(trueSV)) error("Please provide SV")
+
   control  = list(debug     = debug,
                   fixW      = fixW,
                   fixSV     = fixSV,
@@ -106,5 +119,3 @@ debug.ngme <- function(debug     = TRUE,
 
   return (control)
 }
-
-

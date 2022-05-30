@@ -30,76 +30,82 @@ protected:
 
 // n_regs   = row(A1) + ... + row(An)
 // n_paras = 4 * n_latent + 1
-    int n_obs, n_latent, n_regs, n_paras, n_gibbs;
-    std::vector<Latent*> latents;
-
+    // general_in
     MatrixXd X;
-    VectorXd Y, beta;
-    
+    VectorXd Y; 
+    int n_regs;
     string family;
-    bool opt_fix_effect {true};
+    
+    VectorXd beta;
     double sigma_eps;
     
-    SparseMatrix<double> A, K, dK, d2K;
-    cholesky_solver chol_Q, chol_QQ;
-    SparseLU<SparseMatrix<double> > LU_K;
+    int n_latent;
+    
+    int n_obs, n_paras; 
 
+    int n_gibbs;
+    bool opt_fix_effect {true};
+
+    SparseMatrix<double> A, K, dK, d2K;
+
+    // debug
     bool debug, fixW, fixSV, fixSigEps;
-    VectorXd trueW, trueSV;
     
     // optimize related
     VectorXd stepsizes, gradients;
     int counting {0};
-    double opt_power {0.75}, threshold {1e-4}; // (1/2, 1)
+    double reduceVar {0.75}, threshold {1e-4}, termination {1e-7}; // (1/2, 1)
     VectorXd indicate_threshold, steps_to_threshold;
 
+    // No initializer
+    std::vector<Latent*> latents;
+    cholesky_solver chol_Q, chol_QQ;
+    SparseLU<SparseMatrix<double> > LU_K;
+
+    VectorXd trueW, trueSV;
+    
 public:
     BlockModel() {}
 
-    BlockModel(MatrixXd X,
-               VectorXd Y, 
-               string family,
-               int n_regs,
+    BlockModel(Rcpp::List gen_list,
+               Rcpp::List inits,
                Rcpp::List latents_in,
-               int n_gibbs,
-               VectorXd beta,
-               double sigma_eps,
-               bool opt_fix_effect,
-               int burnin,
+               Rcpp::List control_list,
+            //    Rcpp::List control_list
+               Rcpp::List debug_list
+               ) : 
+    X             ( Rcpp::as<MatrixXd>   (gen_list["X"]) ),
+    Y             ( Rcpp::as<VectorXd>   (gen_list["Y"]) ), 
+    n_regs        ( Rcpp::as<int>    (gen_list["n_regs"]) ),
+    family        ( Rcpp::as<string> (gen_list["family"]) ),
+    
+    beta          ( Rcpp::as<VectorXd>   (inits["beta"]) ),
+    sigma_eps     ( Rcpp::as<double>   (inits["sigma_eps"]) ), 
+    
+    n_latent      ( latents_in.size()), 
+    
+    n_obs         ( Y.size()),
+    n_paras       ( n_latent * latent_para + 1),
+    
+    n_gibbs       ( Rcpp::as<int> (control_list["gibbs_sample"]) ),
+    opt_fix_effect( Rcpp::as<bool>   (control_list["opt_fix_effect"]) ),
 
-               bool debug,
-               bool fixW,
-               bool fixSV,
-               bool fixSigEps,
-               VectorXd trueW, 
-               VectorXd trueSV
-               ) 
-    : n_obs(Y.size()),
-      n_latent(latents_in.size()), 
-      n_regs(n_regs),
-      n_paras(n_latent * latent_para + 1),
-      n_gibbs(n_gibbs),
-      
-      X(X),
-      Y(Y), 
-      beta(beta),
+    A             ( n_obs, n_regs), 
+    K             ( n_regs, n_regs), 
+    dK            ( n_regs, n_regs),
+    d2K           ( n_regs, n_regs),
 
-      family(family),
-      opt_fix_effect(opt_fix_effect),
-      sigma_eps(sigma_eps), 
-
-      A(n_obs, n_regs), 
-      K(n_regs, n_regs), 
-      dK(n_regs, n_regs),
-      d2K(n_regs, n_regs),
-
-      debug(debug),
-      fixW(fixW),
-      fixSV(fixSV),
-      fixSigEps(fixSigEps),
-      trueW(trueW),
-      trueSV(trueSV)
+    debug         ( Rcpp::as<bool> (debug_list["debug"]) ),
+    fixW          ( Rcpp::as<bool> (debug_list["fixW"]) ),
+    fixSV         ( Rcpp::as<bool> (debug_list["fixSV"])),
+    fixSigEps     ( Rcpp::as<bool> (debug_list["fixSigEps"]))
     {
+        const int burnin = control_list["burnin"];
+        const double stepsize = control_list["stepsize"];
+        
+        if (fixW)      trueW = Rcpp::as<VectorXd>   (debug_list["trueW"]);
+        if (fixSV)     trueSV = Rcpp::as<VectorXd>  (debug_list["trueSV"]);
+        
         // Init each latent model
         for (int i=0; i < n_latent; ++i) {
             Rcpp::List latent_in = Rcpp::as<Rcpp::List> (latents_in[i]);
@@ -135,7 +141,7 @@ public:
         LU_K.analyzePattern(K);
 
         // optimizer related
-        stepsizes = VectorXd::Constant(n_paras, 1);
+        stepsizes = VectorXd::Constant(n_paras, stepsize);
         steps_to_threshold = VectorXd::Constant(n_paras, 0);
         indicate_threshold = VectorXd::Constant(n_paras, 0);
 
@@ -167,7 +173,7 @@ public:
     VectorXd             grad();
     SparseMatrix<double> precond() const;
     
-    void                 examine();
+    void                 examine_gradient();
 
     /* Aseemble */
     void assemble() {
@@ -254,7 +260,7 @@ public:
             double hess = -2.0 * n_obs * pow(sigma_eps, -2);
             // double hess = 1.0 * n_obs * pow(sigma_eps, -2)  - 3 * pow(sigma_eps, -4) * norm2;
 
-            g = gTimeSigmaEps / (hess * pow(sigma_eps, 2) + prevgTimesSigmaEps); 
+            g = gTimesSigmaEps / (hess * pow(sigma_eps, 2) + prevgTimesSigmaEps); 
             
             // g = - gTimesSigmaEps / (2 * n_obs);
 
@@ -374,7 +380,7 @@ std::cout << "sampleW (ms): " << since(timer_sampleW).count() << std::endl;
     gradients = avg_gradient;
     
     // EXAMINE the gradient to change the stepsize
-    examine();
+    examine_gradient();
 
     return gradients;
 }
@@ -400,7 +406,9 @@ inline void BlockModel::set_parameter(const VectorXd& Theta) {
 // std::cout << "Theta=" << Theta <<std::endl;
 }
 
-inline void BlockModel::examine() {
+
+// provide stepsize
+inline void BlockModel::examine_gradient() {
     
     // examine if the gradient under the threshold
     for (int i=0; i < n_paras; i++) {
@@ -411,7 +419,7 @@ inline void BlockModel::examine() {
     }
     
     counting += 1;
-    stepsizes = (VectorXd::Constant(n_paras, counting) - steps_to_threshold).cwiseInverse().array().pow(opt_power);
+    stepsizes = (VectorXd::Constant(n_paras, counting) - steps_to_threshold).cwiseInverse().array().pow(reduceVar);
 
     // finish opt fo latents
     for (int i=0; i < n_latent; i++) {
@@ -424,20 +432,22 @@ inline void BlockModel::examine() {
     }
     // finish opt for feff and merr
 
-// std::cout << "steps=" << steps_to_threshold <<std::endl;
-// std::cout << "gradients=" << gradients <<std::endl;
-// std::cout << "stepsizes=" << stepsizes <<std::endl;
+std::cout << "steps=" << steps_to_threshold <<std::endl;
+std::cout << "gradients=" << gradients <<std::endl;
+std::cout << "stepsizes=" << stepsizes <<std::endl;
 }
 
+
 inline VectorXd BlockModel::get_stepsizes() const {
-
-
     return stepsizes;
 }
 
+
+// Not Implemented
 inline SparseMatrix<double> BlockModel::precond() const {
     SparseMatrix<double> precond;
-
+    std::cout << "Not implemented \n";
+    throw;
     return precond;
 }
 

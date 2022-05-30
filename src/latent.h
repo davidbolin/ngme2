@@ -17,24 +17,21 @@ using Eigen::SparseMatrix;
 using Eigen::VectorXd;
 
 
-
 class Latent {
 protected:
+    bool debug;
     int n_reg, n_paras {4}; //regressors, parameters
     
-    // indicate which parameter to optimize (kappa, mu, sigma, var)
+    // indicate optimize (kappa, mu, sigma, var)
     int opt_flag[4] {1, 1, 1, 1};
     
     bool use_precond {false}, numer_grad {false};
-    
-    bool hess_mu {true}, hess_sigma {true}, hess_kappa {true}, hess_var {true};
 
     double mu, sigma, trace, trace_eps, eps;
+
     VectorXd W, prevW, h;
     SparseMatrix<double,0,int> A;
     
-    bool debug;
-
     Operator *ope;
     Var *var;
 
@@ -44,7 +41,8 @@ protected:
 
 public:
     Latent(Rcpp::List latent_in) 
-    : n_reg   ( Rcpp::as< unsigned > (latent_in["n_reg"]) ),
+    : debug   (Rcpp::as< bool > (latent_in["debug"])),
+      n_reg   ( Rcpp::as< unsigned > (latent_in["n_reg"]) ),
       
       mu        (0),
       sigma     (1),
@@ -55,8 +53,7 @@ public:
       W       (n_reg),
       prevW   (n_reg),
       h       (Rcpp::as< VectorXd > (latent_in["h"])),
-      A       (Rcpp::as< SparseMatrix<double,0,int> > (latent_in["A"])),
-      debug   (Rcpp::as< bool > (latent_in["debug"]))
+      A       (Rcpp::as< SparseMatrix<double,0,int> > (latent_in["A"]))
     {
         // Init opt. flag
         opt_flag[0]   = Rcpp::as<int>        (latent_in["opt_kappa"]);
@@ -86,7 +83,6 @@ public:
             // no optimizing mu
             opt_flag[1] = 0;  
         }
-
     }
     ~Latent() {}
 

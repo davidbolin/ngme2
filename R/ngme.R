@@ -114,9 +114,3 @@ ngme <- function(formula,
   return (out)
 }
 
-# x = rnorm(1000)
-# y = 3 * x + 1 + rnorm(1000, 0, 2)
-# X = model.matrix(y~x, list(x=x, y=y))
-# str(lm.fit(X, y))
-# sd(residuals(lm(y~x)))
-

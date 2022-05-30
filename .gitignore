@@ -47,3 +47,4 @@ man/
 *.json
 *.so
 src/ngme2.so
+myscripts/Rplots.pdf

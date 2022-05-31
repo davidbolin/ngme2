@@ -1,7 +1,7 @@
 library(devtools)
 load_all(reset = FALSE, recompile = FALSE)
 
-n_obs <- 100
+n_obs <- 1000
 sigma_eps = 0.1
 
 x1 = runif(n_obs)
@@ -44,21 +44,20 @@ Y2 = as.numeric(Y2 + X %*% beta)
 
 Y <- trueW1 + trueW2 + rnorm(n_obs, mean=0, sd=sigma_eps)
 
-
 X <- (model.matrix(Y ~ x1 + x2))  # design matrix
 beta <- c(-3, -1, 2)
 
 Y = as.numeric(Y + X %*% beta)
-
 
 ########### 3. run ngme
 
 # specify the control for ngme
 # args(control.ngme)
 # args(control.f)
-
-control = control.ngme(burnin=100, iterations = 10,
-                       gibbs_sample = 5, stepsize = 1)
+# args(control.ngme)
+control = control.ngme(burnin=100, iterations = 1000,
+                       gibbs_sample = 5, stepsize = 1,
+                       kill_var = FALSE, threshold = 1e-4)
 
 debug = debug.ngme(fixW = FALSE)
 

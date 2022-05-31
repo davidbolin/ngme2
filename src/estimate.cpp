@@ -20,15 +20,9 @@ Rcpp::List estimate_cpp(Rcpp::List in_list) {
     // *****************   Read From Input   *****************  
     //observations and latents
     Rcpp::List gen_list         = Rcpp::as<Rcpp::List> (in_list["general_in"]);
-        const VectorXd Y        = Rcpp::as<VectorXd>   (gen_list["Y"]);
-        const MatrixXd X        = Rcpp::as<MatrixXd>   (gen_list["X"]);
-        const int n_regs        = Rcpp::as<int>    (gen_list["n_regs"]);
-        const string family     = Rcpp::as<string> (gen_list["family"]);
 
     // init list
     Rcpp::List inits         = Rcpp::as<Rcpp::List> (gen_list["init"]);
-        VectorXd beta = Rcpp::as<VectorXd>   (inits["beta"]);
-        double sigma_eps = Rcpp::as<double>   (inits["sigma_eps"]);
     
     Rcpp::List latents_list = Rcpp::as<Rcpp::List> (in_list["latents_in"]);
     

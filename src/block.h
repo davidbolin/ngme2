@@ -43,8 +43,10 @@ protected:
     
     int n_obs, n_paras; 
 
+    // controls 
     int n_gibbs;
-    bool opt_fix_effect {true};
+    bool opt_fix_effect, kill_var;
+    double kill_power, threshold, termination;
 
     SparseMatrix<double> A, K, dK, d2K;
 
@@ -54,7 +56,6 @@ protected:
     // optimize related
     VectorXd stepsizes, gradients;
     int counting {0};
-    double reduceVar {0.75}, threshold {1e-4}, termination {1e-7}; // (1/2, 1)
     VectorXd indicate_threshold, steps_to_threshold;
 
     // No initializer
@@ -76,19 +77,23 @@ public:
                ) : 
     X             ( Rcpp::as<MatrixXd>   (gen_list["X"]) ),
     Y             ( Rcpp::as<VectorXd>   (gen_list["Y"]) ), 
-    n_regs        ( Rcpp::as<int>    (gen_list["n_regs"]) ),
-    family        ( Rcpp::as<string> (gen_list["family"]) ),
+    n_regs        ( Rcpp::as<int>        (gen_list["n_regs"]) ),
+    family        ( Rcpp::as<string>     (gen_list["family"]) ),
     
     beta          ( Rcpp::as<VectorXd>   (inits["beta"]) ),
-    sigma_eps     ( Rcpp::as<double>   (inits["sigma_eps"]) ), 
+    sigma_eps     ( Rcpp::as<double>     (inits["sigma_eps"]) ), 
     
     n_latent      ( latents_in.size()), 
     
     n_obs         ( Y.size()),
     n_paras       ( n_latent * latent_para + 1),
     
-    n_gibbs       ( Rcpp::as<int> (control_list["gibbs_sample"]) ),
-    opt_fix_effect( Rcpp::as<bool>   (control_list["opt_fix_effect"]) ),
+    n_gibbs       ( Rcpp::as<int>     (control_list["gibbs_sample"]) ),
+    opt_fix_effect( Rcpp::as<bool>    (control_list["opt_fix_effect"]) ),
+    kill_var      ( Rcpp::as<bool>    (control_list["kill_var"]) ),
+    kill_power    ( Rcpp::as<double>  (control_list["kill_power"]) ), 
+    threshold     ( Rcpp::as<double>  (control_list["threshold"]) ), 
+    termination   ( Rcpp::as<double>  (control_list["termination"]) ), 
 
     A             ( n_obs, n_regs), 
     K             ( n_regs, n_regs), 
@@ -380,7 +385,7 @@ std::cout << "sampleW (ms): " << since(timer_sampleW).count() << std::endl;
     gradients = avg_gradient;
     
     // EXAMINE the gradient to change the stepsize
-    examine_gradient();
+    if (kill_var) examine_gradient();
 
     return gradients;
 }
@@ -419,22 +424,31 @@ inline void BlockModel::examine_gradient() {
     }
     
     counting += 1;
-    stepsizes = (VectorXd::Constant(n_paras, counting) - steps_to_threshold).cwiseInverse().array().pow(reduceVar);
+    stepsizes = (VectorXd::Constant(n_paras, counting) - steps_to_threshold).cwiseInverse().array().pow(kill_power);
 
     // finish opt fo latents
     for (int i=0; i < n_latent; i++) {
         for (int j=0; j < latent_para; j++) {
             int index = latent_para*i + j;
             
-            if (counting - steps_to_threshold(index) > 100) 
+            // if (counting - steps_to_threshold(index) > 100) 
+            if (abs(gradients(i)) < termination) 
                 latents[i]->finishOpt(j);
         }
     }
-    // finish opt for feff and merr
 
-std::cout << "steps=" << steps_to_threshold <<std::endl;
-std::cout << "gradients=" << gradients <<std::endl;
-std::cout << "stepsizes=" << stepsizes <<std::endl;
+    // stop opt feff
+    // for (int i=0; i < beta.size(); i++) {
+    //     int index = latent_para * n_latent + i;
+    // }
+    // stop opt merr
+    // ...
+
+if (debug) {
+    std::cout << "steps=" << steps_to_threshold <<std::endl;
+    std::cout << "gradients=" << gradients <<std::endl;
+    std::cout << "stepsizes=" << stepsizes <<std::endl;
+}
 }
 
 

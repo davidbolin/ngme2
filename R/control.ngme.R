@@ -16,14 +16,14 @@ control.ngme <- function(burnin            = 100,
                          stepsize          = 1,
                          opt_fix_effect    = TRUE,
 
-                         killVar           = FALSE,
-                         killPower         = 0.75,
+                         kill_var           = FALSE,
+                         kill_power         = 0.75,
                          threshold         = 1e-5,
                          termination       = 1e-7
                          ) {
 
-  if ((killPower <= 0.5) || (killPower > 1)) {
-    error("reduceVar should be in (0.5,1]")
+  if ((kill_power <= 0.5) || (kill_power > 1)) {
+    stop("reduceVar should be in (0.5,1]")
   }
 
   control = list( burnin            = burnin,
@@ -32,8 +32,9 @@ control.ngme <- function(burnin            = 100,
                   stepsize          = stepsize,
                   opt_fix_effect    = opt_fix_effect,
 
-                  killVar           = killVar,
-                  killPower         = killPower,
+                  # variance reduction
+                  kill_var          = kill_var,
+                  kill_power        = kill_power,
                   threshold         = threshold,
                   termination       = termination
                 )
@@ -105,8 +106,8 @@ debug.ngme <- function(debug     = TRUE,
                        trueW     = NULL,
                        trueSV    = NULL
 ) {
-  if (fixW  && is.null(trueW))  error("Please provide W")
-  if (fixSV && is.null(trueSV)) error("Please provide SV")
+  if (fixW  && is.null(trueW))  stop("Please provide W")
+  if (fixSV && is.null(trueSV)) stop("Please provide SV")
 
   control  = list(debug     = debug,
                   fixW      = fixW,

@@ -7,18 +7,18 @@
 using std::exp;
 using std::log;
 using std::pow;
-class AR : public Latent {
+class Matern : public Latent {
     
 public:
-    AR(Rcpp::List ar1_in) 
-    : Latent(ar1_in)
+    Matern(Rcpp::List matern_in) 
+    : Latent(matern_in)
     {
         // read init kappa
-        Rcpp::List init_value = Rcpp::as<Rcpp::List> (ar1_in["init_value"]);
+        Rcpp::List init_value = Rcpp::as<Rcpp::List> (matern_in["init_value"]);
         double kappa = Rcpp::as<double>  (init_value["kappa"]);
 
         // Init operator
-        Rcpp::List ope_in = Rcpp::as<Rcpp::List> (ar1_in["operator_in"]); // containing C and G
+        Rcpp::List ope_in = Rcpp::as<Rcpp::List> (matern_in["operator_in"]); // containing C and G
         ope = new GC(ope_in, kappa);
         
         // Init K and Q
@@ -35,10 +35,10 @@ public:
     }
     
     double th2k(double th) const {
-        return (-1 + 2*exp(th) / (1+exp(th)));
+        return exp(th);
     }
     double k2th(double k) const {
-        return (log((-1-k)/(-1+k)));
+        return log(k);
     }
 
     double get_theta_kappa() const {
@@ -58,11 +58,11 @@ public:
         VectorXd V = getV();
         VectorXd SV = pow(sigma, 2) * V;
         
-        double a = ope->getKappa();
-        double th = k2th(a);
+        double k = ope->getKappa();
+        double th = k2th(k);
 
-        double da  = 2 * (exp(th) / pow(1+exp(th), 2));
-        double d2a = 2 * (exp(th) * (-1+exp(th)) / pow(1+exp(th), 3));
+        double dk  = k;
+        double d2k = k;
 
         double ret = 0;
         if (numer_grad) {
@@ -71,7 +71,7 @@ public:
 
             if (!use_precond) {
                 double grad = (function_kappa(eps) - function_kappa(0)) / eps;
-                ret = - grad * da / n_reg;
+                ret = - grad * dk / n_reg;
             } else {
                 double f1 = function_kappa(-eps);
                 double f2 = function_kappa(0);
@@ -79,7 +79,7 @@ public:
 
                 double hess = (f1 + f3 - 2*f2) / pow(eps, 2);
                 double grad = (f3 - f2) / eps;
-                ret = (grad * da) / (hess * da * da + grad * d2a);
+                ret = (grad * dk) / (hess * dk * dk + grad * d2k);
             }
         } else { 
             // 2. analytical gradient and numerical hessian
@@ -87,7 +87,7 @@ public:
             double grad = trace - tmp;
 
             if (!use_precond) {
-                ret = - grad * da / n_reg;
+                ret = - grad * dk / n_reg;
             } else {
                 VectorXd prevV = getPrevV();
                 // compute numerical hessian
@@ -101,7 +101,7 @@ public:
 
                 double hess = (grad2_eps - grad_eps) / eps;
 
-                ret = (grad * da) / (hess * da * da + grad_eps * d2a);
+                ret = (grad * dk) / (hess * dk * dk + grad_eps * d2k);
             }
         }
 
@@ -110,7 +110,7 @@ public:
     
     Rcpp::List get_estimates() const {
         return Rcpp::List::create(
-            Rcpp::Named("alpha") = ope->getKappa(),
+            Rcpp::Named("kappa") = ope->getKappa(),
             Rcpp::Named("mu")    = mu,
             Rcpp::Named("sigma") = sigma,
             Rcpp::Named("var")   = var->get_var()

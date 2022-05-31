@@ -16,11 +16,12 @@
 using Eigen::SparseMatrix;
 using Eigen::VectorXd;
 
-
 class Latent {
 protected:
+    const int latent_para {4};
+
     bool debug;
-    int n_reg, n_paras {4}; //regressors, parameters
+    int n_reg; //regressors
     
     // indicate optimize (kappa, mu, sigma, var)
     int opt_flag[4] {1, 1, 1, 1};
@@ -41,8 +42,8 @@ protected:
 
 public:
     Latent(Rcpp::List latent_in) 
-    : debug   (Rcpp::as< bool > (latent_in["debug"])),
-      n_reg   ( Rcpp::as< unsigned > (latent_in["n_reg"]) ),
+    : debug   ( Rcpp::as< bool >        (latent_in["debug"])),
+      n_reg   ( Rcpp::as< unsigned >    (latent_in["n_reg"]) ),
       
       mu        (0),
       sigma     (1),
@@ -72,15 +73,14 @@ public:
         Rcpp::List init_value = Rcpp::as<Rcpp::List> (latent_in["init_value"]);
         mu           = Rcpp::as<double>  (init_value["mu"]);
         sigma        = Rcpp::as<double>  (init_value["sigma"]);
-        double nu    = Rcpp::as<double>  (init_value["nu"]);
         
         // construct var
         if (type == "ind_IG") {
+            double nu    = Rcpp::as<double>  (init_value["nu"]);
             var = new ind_IG(n_reg, nu, h);
         } else if (type == "normal") {
             var = new normal(n_reg, h);
-            
-            // no optimizing mu
+            // Not optimizing mu
             opt_flag[1] = 0;  
         }
     }
@@ -88,7 +88,7 @@ public:
 
     /*  1 Model itself   */
     unsigned getSize() const                  {return n_reg; } 
-    unsigned getThetaSize() const             {return n_paras; } 
+    unsigned getThetaSize() const             {return latent_para; } 
     SparseMatrix<double, 0, int>& getA()      {return A; }
     
     const VectorXd& getW()  const             {return W; }
@@ -101,7 +101,10 @@ public:
     VectorXd getSV() const { VectorXd V=getV(); return (V*pow(sigma,2)); }
     const VectorXd& getV()     const { return var->getV(); }
     const VectorXd& getPrevV() const { return var->getPrevV(); }
-    virtual void sample_cond_V()=0;
+    
+    void sample_cond_V() {
+        var->sample_cond_V(getK(), W, mu, sigma);
+    }
 
     /*  3 Operator component   */
     SparseMatrix<double, 0, int>& getK()    { return ope->getK(); }
@@ -109,7 +112,6 @@ public:
     SparseMatrix<double, 0, int>& get_d2K() { return ope->get_d2K(); }
 
     // Paramter kappa
-    double getKappa() const       {return ope->getKappa(); } 
     void   setKappa(double kappa) {
         ope->setKappa(kappa);
         
@@ -173,10 +175,9 @@ public:
 };
 
 
-
 /*    Optimizer related    */
 inline const VectorXd Latent::getTheta() const {
-    VectorXd theta (n_paras);
+    VectorXd theta (latent_para);
 
     theta(0) = get_theta_kappa();
     theta(1) = get_mu();         
@@ -187,7 +188,7 @@ inline const VectorXd Latent::getTheta() const {
 }
 
 inline const VectorXd Latent::getGrad() {
-    VectorXd grad (n_paras);
+    VectorXd grad (latent_para);
 auto grad1 = std::chrono::steady_clock::now();
     if (opt_flag[0]) grad(0) = grad_theta_kappa();         else grad(0) = 0;
     if (opt_flag[1]) grad(1) = grad_mu();                  else grad(1) = 0;

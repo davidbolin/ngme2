@@ -25,12 +25,12 @@ public:
         SparseMatrix<double> K = getK();
         SparseMatrix<double> Q = K.transpose() * K;
         
-        solver_K.init(n_reg, 0,0,0);
+        solver_K.init(n_mesh, 0,0,0);
         solver_K.analyze(K);
         compute_trace();
 
         // Init Q
-        solver_Q.init(n_reg, 0,0,0);
+        solver_Q.init(n_mesh, 0,0,0);
         solver_Q.analyze(Q);
     }
     
@@ -59,7 +59,6 @@ public:
         VectorXd SV = pow(sigma, 2) * V;
         
         double k = ope->getKappa();
-        double th = k2th(k);
 
         double dk  = k;
         double d2k = k;
@@ -71,7 +70,7 @@ public:
 
             if (!use_precond) {
                 double grad = (function_kappa(eps) - function_kappa(0)) / eps;
-                ret = - grad * dk / n_reg;
+                ret = - grad * dk / n_mesh;
             } else {
                 double f1 = function_kappa(-eps);
                 double f2 = function_kappa(0);
@@ -87,7 +86,7 @@ public:
             double grad = trace - tmp;
 
             if (!use_precond) {
-                ret = - grad * dk / n_reg;
+                ret = - grad * dk / n_mesh;
             } else {
                 VectorXd prevV = getPrevV();
                 // compute numerical hessian

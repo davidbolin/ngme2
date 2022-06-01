@@ -21,7 +21,7 @@ protected:
     const int latent_para {4};
 
     bool debug;
-    int n_reg; //regressors
+    int n_mesh; //regressors
     
     // indicate optimize (kappa, mu, sigma, var)
     int opt_flag[4] {1, 1, 1, 1};
@@ -43,7 +43,7 @@ protected:
 public:
     Latent(Rcpp::List latent_in) 
     : debug   ( Rcpp::as< bool >        (latent_in["debug"])),
-      n_reg   ( Rcpp::as< unsigned >    (latent_in["n_reg"]) ),
+      n_mesh   ( Rcpp::as< unsigned >    (latent_in["n_mesh"]) ),
       
       mu        (0),
       sigma     (1),
@@ -51,8 +51,8 @@ public:
       trace_eps (0),
       eps       (0.001), 
       
-      W       (n_reg),
-      prevW   (n_reg),
+      W       (n_mesh),
+      prevW   (n_mesh),
       h       (Rcpp::as< VectorXd > (latent_in["h"])),
       A       (Rcpp::as< SparseMatrix<double,0,int> > (latent_in["A"]))
     {
@@ -77,9 +77,9 @@ public:
         // construct var
         if (type == "ind_IG") {
             double nu    = Rcpp::as<double>  (init_value["nu"]);
-            var = new ind_IG(n_reg, nu, h);
+            var = new ind_IG(n_mesh, nu, h);
         } else if (type == "normal") {
-            var = new normal(n_reg, h);
+            var = new normal(n_mesh, h);
             // Not optimizing mu
             opt_flag[1] = 0;  
         }
@@ -87,7 +87,7 @@ public:
     ~Latent() {}
 
     /*  1 Model itself   */
-    unsigned getSize() const                  {return n_reg; } 
+    unsigned getSize() const                  {return n_mesh; } 
     unsigned getThetaSize() const             {return latent_para; } 
     SparseMatrix<double, 0, int>& getA()      {return A; }
     
@@ -223,10 +223,10 @@ inline double Latent::grad_theta_sigma() {
     double msq = (K*W - mu*(V-h)).cwiseProduct(V.cwiseInverse()).dot(K*W - mu*(V-h));
     double msq2 = (K*prevW - mu*(prevV-h)).cwiseProduct(prevV.cwiseInverse()).dot(K*prevW - mu*(prevV-h));
 
-    double grad = - n_reg / sigma + pow(sigma, -3) * msq;
+    double grad = - n_mesh / sigma + pow(sigma, -3) * msq;
 
     // hessian using prevous V
-    double hess = n_reg / pow(sigma, 2) - 3 * pow(sigma, -4) * msq2;
+    double hess = n_mesh / pow(sigma, 2) - 3 * pow(sigma, -4) * msq2;
     
     // grad. wrt theta
 

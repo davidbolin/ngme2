@@ -66,20 +66,18 @@ ngme <- function(formula,
     # eval part without f (fm = y ~ x1 + x2)
     Y = model.frame(plain.fm, data)[[1]]
     X = model.matrix(plain.fm, data) # design matrix
-    n =length(Y)
 
-    ############### n_regs is the dim of the block matrix
-    n_regs = sum(unlist(lapply(latents_in, function(x) x["n_reg"] )))
+    ############### n_meshs is the dim of the block matrix
+    n_meshs = sum(unlist(lapply(latents_in, function(x) x["n_mesh"] )))
     model.types = unlist(lapply(latents_in, function(x) x["type"] ))
     var.types = unlist(lapply(latents_in, function(x) x["var.type"] ))
 
     # 3. prepare in_list for estimate
     lm.model = lm.fit(X, Y)
-    general_in <- list( n                = n,
-                        Y                = Y,
+    general_in <- list( Y                = Y,
                         X                = X,
                         family           = "normal",
-                        n_regs           = n_regs,
+                        n_meshs          = n_meshs,
                         init             = list(beta=lm.model$coeff,
                                                 sigma_eps = sd(lm.model$residuals))
                         )

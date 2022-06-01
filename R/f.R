@@ -17,10 +17,10 @@ f <- function(x = NULL,
   ## in ... is the name of the covariate  and possibly the location of the weights
   ## like f(x, weights)
 
-  n = length(x)
-
   # construct operator
   if (model=="ar1") {
+      n = length(x)
+
     # G
       G <- Matrix::Matrix(diag(n));
       G <- as(G, "dgCMatrix");
@@ -38,9 +38,14 @@ f <- function(x = NULL,
 
     operator_in   = list(C=C, G=G, numerical_dK=FALSE)
   }
-  else if (model=="matern") {
+  else if (model=="matern1d") {
+    model = "matern"
+
     mesh <- INLA::inla.mesh.1d(x)
     fem <- INLA::inla.mesh.1d.fem(mesh)
+    n <- mesh$n
+print(n)
+
     # G
     G <- fem$g1
 
@@ -48,27 +53,32 @@ f <- function(x = NULL,
     C <- fem$c1
 
     # A
-    A <- INLA::inla.spde.make.A(x)
+    A <- INLA::inla.spde.make.A(mesh, loc = x)
 
     # h
     h <- rep(1.0, n)
 
     operator_in   = list(C=C, G=G, numerical_dK=FALSE)
   }
+  else {
+    stop("unknown model")
+  }
 
   # construct variance component
   if (var=="nig" || var=="NIG") {
     var_in = list(type = "ind_IG")
   }
-
-  if (var=="normal") {
+  else if (var=="normal") {
     var_in = list(type = "normal")
+  }
+  else {
+    stop("unknown var name")
   }
 
   # construct latent_in
   la_in <- list(type          = model,
                 var.type      = var,
-                n_reg         = n,        # !: make sure this is the second place
+                n_mesh        = n,        # !: make sure this is the second place
                 A             = A,
                 h             = h,
                 opt_kappa     = control$opt_kappa,

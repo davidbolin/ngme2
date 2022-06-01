@@ -54,12 +54,18 @@ plot.ngme <- function(object, param="fe", type="traj", which=1) {
       x_sigma <- unlist(lapply(x_traj, function(x) {x[(which-1)*4 + 3]} ))
       x_var   <- unlist(lapply(x_traj, function(x) {x[(which-1)*4 + 4]} ))
 
-      x_kappa = (-1 + 2*exp(x_kappa) / (1+exp(x_kappa)))
+      if (object$model.types == "ar1") {
+        x_kappa = (-1 + 2*exp(x_kappa) / (1+exp(x_kappa)))
+        k_title = "traj of alpha"
+      } else if (object$model.types == "matern") {
+        x_kappa = exp(x_kappa)
+        k_title = "traj of kappa"
+      }
       x_sigma = exp(x_sigma)
       x_var   = exp(x_var)
 
       par(mfrow=c(2,2))
-      plot(x_kappa, type="l", main = "traj of kappa")
+      plot(x_kappa, type="l", main = k_title)
       plot(x_mu,    type="l", main = "traj of mu")
       plot(x_sigma, type="l", main = "traj of sigma")
       plot(x_var,   type="l", main = "traj of var")

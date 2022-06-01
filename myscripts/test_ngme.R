@@ -64,7 +64,7 @@ debug = debug.ngme(fixW = FALSE)
 ##### ngme for 1 ar
 # nig
 ngme_out = ngme(Y1 ~ x1 + x2 +
-                  f(Y1, model="ar1", var="nig",
+                  f(Y1, model="matern1d", var="nig",
                     control=control.f(numer_grad = FALSE,
                                       init_kappa    = 0.5,
                                       init_mu       = 0,

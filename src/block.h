@@ -20,6 +20,7 @@ BlockModel
 #include "latent.h"
 
 #include "latents/ar1.h"
+#include "latents/matern.h"
 
 using Eigen::SparseMatrix;
 
@@ -28,12 +29,12 @@ const int latent_para = 4;
 class BlockModel : public Model {
 protected:
 
-// n_regs   = row(A1) + ... + row(An)
+// n_meshs   = row(A1) + ... + row(An)
 // n_paras = 4 * n_latent + 1
     // general_in
     MatrixXd X;
     VectorXd Y; 
-    int n_regs;
+    int n_meshs;
     string family;
     
     VectorXd beta;
@@ -77,7 +78,7 @@ public:
                ) : 
     X             ( Rcpp::as<MatrixXd>   (gen_list["X"]) ),
     Y             ( Rcpp::as<VectorXd>   (gen_list["Y"]) ), 
-    n_regs        ( Rcpp::as<int>        (gen_list["n_regs"]) ),
+    n_meshs        ( Rcpp::as<int>        (gen_list["n_meshs"]) ),
     family        ( Rcpp::as<string>     (gen_list["family"]) ),
     
     beta          ( Rcpp::as<VectorXd>   (inits["beta"]) ),
@@ -95,10 +96,10 @@ public:
     threshold     ( Rcpp::as<double>  (control_list["threshold"]) ), 
     termination   ( Rcpp::as<double>  (control_list["termination"]) ), 
 
-    A             ( n_obs, n_regs), 
-    K             ( n_regs, n_regs), 
-    dK            ( n_regs, n_regs),
-    d2K           ( n_regs, n_regs),
+    A             ( n_obs, n_meshs), 
+    K             ( n_meshs, n_meshs), 
+    dK            ( n_meshs, n_meshs),
+    d2K           ( n_meshs, n_meshs),
 
     debug         ( Rcpp::as<bool> (debug_list["debug"]) ),
     fixW          ( Rcpp::as<bool> (debug_list["fixW"]) ),
@@ -119,6 +120,8 @@ public:
             string type = latent_in["type"];
             if (type == "ar1") {
                 latents.push_back(new AR(latent_in) );
+            } else if (type == "matern") {
+                latents.push_back(new Matern(latent_in));
             }
         }
         
@@ -137,7 +140,9 @@ public:
         }
         assemble();
 
-            VectorXd inv_SV = VectorXd::Constant(n_regs, 1).cwiseQuotient(getSV());
+if (debug) std::cout << "Assemble complete." << std::endl;        
+
+            VectorXd inv_SV = VectorXd::Constant(n_meshs, 1).cwiseQuotient(getSV());
             SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
             SparseMatrix<double> QQ = Q + pow(sigma_eps, -2) * A.transpose() * A;
         
@@ -194,7 +199,7 @@ public:
 
     // return mean = mu*(V-h)
     VectorXd getMean() const {
-        VectorXd mean (n_regs);
+        VectorXd mean (n_meshs);
         int pos = 0;
         for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
             int size = (*it)->getSize();
@@ -206,7 +211,7 @@ public:
 
     // return sigma * V
     VectorXd getSV() const {
-        VectorXd SV (n_regs);
+        VectorXd SV (n_meshs);
         int pos = 0;
         for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
             int size = (*it)->getSize();
@@ -222,7 +227,7 @@ public:
     }
 
     VectorXd getW() const {
-        VectorXd W (n_regs);
+        VectorXd W (n_meshs);
         int pos = 0;
         for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
             int size = (*it)->getSize();
@@ -233,7 +238,7 @@ public:
     }
 
     VectorXd getPrevW() const {
-        VectorXd W (n_regs);
+        VectorXd W (n_meshs);
         int pos = 0;
         for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
             int size = (*it)->getSize();
@@ -281,7 +286,7 @@ public:
 
     // fixed effects
     VectorXd grad_beta() {
-        VectorXd inv_SV = VectorXd::Constant(n_regs, 1).cwiseQuotient(getSV());
+        VectorXd inv_SV = VectorXd::Constant(n_meshs, 1).cwiseQuotient(getSV());
         VectorXd grads = X.transpose() * (Y - X*beta - A*getW());
         
         // SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
@@ -345,21 +350,24 @@ inline VectorXd BlockModel::get_parameter() const {
 inline VectorXd BlockModel::grad() {
     VectorXd avg_gradient = VectorXd::Zero(n_paras);
     
+long long time_compute_g = 0;
+long long time_sample_w = 0;
+
     for (int i=0; i < n_gibbs; i++) {
         
         // stack grad
         VectorXd gradient = VectorXd::Zero(n_paras);
         
+auto timer_computeg = std::chrono::steady_clock::now();
         // get grad for each latent
         int pos = 0;
         for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
             int theta_len = (*it)->getThetaSize();
-auto timer_computeg = std::chrono::steady_clock::now();
             gradient.segment(pos, theta_len) = (*it)->getGrad();
-std::cout << "timer_computeg (ms): " << since(timer_computeg).count() << std::endl;   
             pos += theta_len;
         }
-        
+time_compute_g += since(timer_computeg).count();
+
         // fixed effects
         if (opt_fix_effect) {
             int n_beta = beta.size();
@@ -375,13 +383,15 @@ std::cout << "timer_computeg (ms): " << since(timer_computeg).count() << std::en
         sampleV_WY(); 
 auto timer_sampleW = std::chrono::steady_clock::now();
         sampleW_VY();
-        // sampleW_V();
-// std::cout << "sampleW: " << getW() << std::endl;
-std::cout << "sampleW (ms): " << since(timer_sampleW).count() << std::endl;
+time_sample_w += since(timer_sampleW).count();
     }
 
+if (debug) {
+std::cout << "avg time for compute grad (ms): " << time_compute_g / n_gibbs << std::endl;   
+std::cout << "avg time for sampling W(ms): " << time_sample_w / n_gibbs << std::endl;   
+}
+
     avg_gradient = (1.0/n_gibbs) * avg_gradient;
-    
     gradients = avg_gradient;
     
     // EXAMINE the gradient to change the stepsize
@@ -432,7 +442,7 @@ inline void BlockModel::examine_gradient() {
             int index = latent_para*i + j;
             
             // if (counting - steps_to_threshold(index) > 100) 
-            if (abs(gradients(i)) < termination) 
+            if (abs(gradients(index)) < termination) 
                 latents[i]->finishOpt(j);
         }
     }

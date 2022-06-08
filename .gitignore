@@ -48,3 +48,5 @@ man/
 *.so
 src/ngme2.so
 myscripts/Rplots.pdf
+myscripts/Rplots.pdf
+myscripts/graffiti

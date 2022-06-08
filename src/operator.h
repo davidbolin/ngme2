@@ -81,4 +81,46 @@ public:
 
 };
 
+// // fit for non-stationary matern
+// class maternOperator : public Operator {
+// private:
+//     VectorXd theta;
+//     SparseMatrix<double, 0, int> G, C;
+
+// public:
+//     GC(Rcpp::List ope_in, double kappa) : Operator(ope_in) {
+//         this->kappa = kappa;
+//         G = Rcpp::as< SparseMatrix<double,0,int> > (ope_in["G"]);
+//         C = Rcpp::as< SparseMatrix<double,0,int> > (ope_in["C"]);
+        
+//         K =  kappa * C + G;
+//         dK = C;
+//         d2K = 0 * C;
+//     }
+
+//     SparseMatrix<double> getK(double eps) const {
+//         SparseMatrix<double> K =  (kappa+eps) * C + G;
+//         return K;
+//     }
+
+//     SparseMatrix<double> get_dK(double eps) const {
+//         return C;
+//     }
+
+//     void update() {
+//         K = kappa * C + G;
+        
+//         if (numerical_dK) {
+//             update_num();
+//         }
+//     }
+
+//     void update_num() {
+//         double eps = 0.01;
+//         SparseMatrix<double> Keps = (kappa + eps) * C + G;
+//         dK = (Keps - K) / eps;
+//     }
+
+// };
+
 #endif

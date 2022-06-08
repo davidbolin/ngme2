@@ -59,5 +59,21 @@ summary(ngme_out)
 # A
 
 
+# ngme.spde.matern
+loc = matrix(runif(10 * 2), ncol=2)
+mesh_2d = inla.mesh.2d(loc=loc, max.edge = c(1, 10))
+plot(mesh_2d)
+points(loc[, 1], loc[, 2])
+
+fem <- inla.mesh.fem(mesh_2d, order=2)
+str(fem)
 
 
+spde.model = ngme.spde.matern(mesh=mesh_2d)
+inherits(spde.model, "ngme.spde")
+args(ngme)
+
+ngme(formula=Y~0+f(1:length(mesh_2d), model=spde))
+load_all()
+
+# simulate data and write test case

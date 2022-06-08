@@ -1,6 +1,6 @@
 #' f function
 #'
-#' @param x numerical vector, which is the covariate
+#' @param x covariates
 #' @param model specify a model
 #' @param var variance component type
 #' @param config control variables
@@ -18,7 +18,10 @@ f <- function(x = NULL,
   ## like f(x, weights)
 
   # construct operator
-  if (model=="ar1") {
+  if (inherits(model, "ngme.spde")) {
+
+  }
+  else if (model=="ar1") {
       n = length(x)
 
     # G
@@ -44,7 +47,6 @@ f <- function(x = NULL,
     mesh <- INLA::inla.mesh.1d(x)
     fem <- INLA::inla.mesh.1d.fem(mesh)
     n <- mesh$n
-print(n)
 
     # G
     G <- fem$g1

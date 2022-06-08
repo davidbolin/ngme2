@@ -31,7 +31,8 @@ public:
 int main(int argc, char const *argv[])
 {
     Vector3d v (1,2,3);
-
+    VectorXd v2; v2.resize(v.size()+1);
+    v2 << 0, v;
 // auto start = std::chrono::steady_clock::now();
 
 // //     Matrix2f v (4,1,2,3);
@@ -41,8 +42,8 @@ int main(int argc, char const *argv[])
 //     unsigned n_obs = 100;
 // //  g = -1.0 * n_obs / sigma_eps + pow(sigma_eps, -3) * tmp.dot(tmp);
 //     double tmp = 100;
-    v = v.array().pow(3);
-    cout<< v << endl ;
+    // v = v.array().pow(3);
+    cout<< v2 << endl ;
 
     return 0;
 }

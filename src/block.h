@@ -42,7 +42,8 @@ protected:
     
     int n_latent;
     
-    int n_obs, n_paras; 
+    int n_obs;
+    int n_paras, n_feff, n_merr; 
 
     // controls 
     int n_gibbs;
@@ -87,7 +88,9 @@ public:
     n_latent      ( latents_in.size()), 
     
     n_obs         ( Y.size()),
-    n_paras       ( n_latent * latent_para + 1),
+    n_paras       ( n_latent * latent_para + 1), // change
+    n_feff        ( beta.size()),
+    n_merr        ( 1 ),
     
     n_gibbs       ( Rcpp::as<int>     (control_list["gibbs_sample"]) ),
     opt_fix_effect( Rcpp::as<bool>    (control_list["opt_fix_effect"]) ),
@@ -120,9 +123,10 @@ public:
             string type = latent_in["type"];
             if (type == "ar1") {
                 latents.push_back(new AR(latent_in) );
-            } else if (type == "matern") {
-                latents.push_back(new Matern(latent_in));
-            }
+            } 
+            // else if (type == "matern") {
+            //     latents.push_back(new Matern(latent_in));
+            // }
         }
         
         /* Fixed effects */
@@ -325,12 +329,18 @@ if (debug) std::cout << "Assemble complete." << std::endl;
 };
 
 // ---- inherited functions ------
+/* the way structuring the parameter 
+    latents[1].get_parameter 
+        ...
+    sigma_eps
+    beta (fixed effects)
+*/
 
 inline VectorXd BlockModel::get_parameter() const {
     VectorXd thetas (n_paras);
     int pos = 0;
     for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
-        VectorXd theta = (*it)->getTheta();
+        VectorXd theta = (*it)->get_parameter();
         thetas.segment(pos, theta.size()) = theta;
         pos += theta.size();
     }
@@ -362,8 +372,8 @@ auto timer_computeg = std::chrono::steady_clock::now();
         // get grad for each latent
         int pos = 0;
         for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
-            int theta_len = (*it)->getThetaSize();
-            gradient.segment(pos, theta_len) = (*it)->getGrad();
+            int theta_len = (*it)->get_n_params();
+            gradient.segment(pos, theta_len) = (*it)->get_grad();
             pos += theta_len;
         }
 time_compute_g += since(timer_computeg).count();
@@ -403,9 +413,9 @@ std::cout << "avg time for sampling W(ms): " << time_sample_w / n_gibbs << std::
 inline void BlockModel::set_parameter(const VectorXd& Theta) {
     int pos = 0;
     for (std::vector<Latent*>::iterator it = latents.begin(); it != latents.end(); it++) {
-        int theta_len = (*it)->getThetaSize();
+        int theta_len = (*it)->get_n_params();
         VectorXd theta = Theta.segment(pos, theta_len);
-        (*it)->setTheta(theta);
+        (*it)->set_parameter(theta);
         pos += theta_len;
     }
     // sigma_eps

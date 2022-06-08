@@ -18,11 +18,11 @@ using Eigen::VectorXd;
 
 class Latent {
 protected:
-    const int latent_para {4};
+    int n_params;
 
     bool debug;
-    int n_mesh; //regressors
-    
+    int n_mesh; 
+
     // indicate optimize (kappa, mu, sigma, var)
     int opt_flag[4] {1, 1, 1, 1};
     
@@ -42,8 +42,9 @@ protected:
 
 public:
     Latent(Rcpp::List latent_in) 
-    : debug   ( Rcpp::as< bool >        (latent_in["debug"])),
+    : debug    ( Rcpp::as< bool >        (latent_in["debug"])),
       n_mesh   ( Rcpp::as< unsigned >    (latent_in["n_mesh"]) ),
+      n_params ( Rcpp::as< unsigned >    (latent_in["n_params"]) ),
       
       mu        (0),
       sigma     (1),
@@ -88,7 +89,7 @@ public:
 
     /*  1 Model itself   */
     unsigned getSize() const                  {return n_mesh; } 
-    unsigned getThetaSize() const             {return latent_para; } 
+    unsigned get_n_params() const             {return n_params; } 
     SparseMatrix<double, 0, int>& getA()      {return A; }
     
     const VectorXd& getW()  const             {return W; }
@@ -103,37 +104,37 @@ public:
     const VectorXd& getPrevV() const { return var->getPrevV(); }
     
     void sample_cond_V() {
-        var->sample_cond_V(getK(), W, mu, sigma);
+        var->sample_cond_V(ope->getK(), W, mu, sigma);
     }
 
     /*  3 Operator component   */
+    // for block use
     SparseMatrix<double, 0, int>& getK()    { return ope->getK(); }
     SparseMatrix<double, 0, int>& get_dK()  { return ope->get_dK(); }
     SparseMatrix<double, 0, int>& get_d2K() { return ope->get_d2K(); }
 
-    // Paramter kappa
-    void   setKappa(double kappa) {
-        ope->setKappa(kappa);
-        
-        if (!numer_grad) compute_trace(); 
-    } 
-
     /* 4 for optimizer */
-    const VectorXd getTheta() const;
-    const VectorXd getGrad();
-    void           setTheta(const VectorXd&);
+    const VectorXd get_parameter() const;
+    const VectorXd get_grad();
+    void           set_parameter(const VectorXd&);
     void           finishOpt(int i) {opt_flag[i] = 0; }
 
-    // Parameter: kappa
-    virtual double get_theta_kappa() const=0;
-    virtual void   set_theta_kappa(double v)=0;
-    virtual double grad_theta_kappa()=0;
+    // Parameter: Operator
+    virtual VectorXd    get_K_parameter() const {return ope->get_parameter();} // no change of variable
+    virtual VectorXd    grad_K_parameter() = 0;
+    virtual void        set_K_parameter(VectorXd) = 0;
+
+    // void   setKappa(double kappa) {
+    //     ope->setKappa(kappa);
+        
+    //     if (!numer_grad) compute_trace(); 
+    // } 
 
     virtual double function_kappa(double eps);    
     
     void compute_trace() {
-        SparseMatrix<double> K = getK();
-        SparseMatrix<double> dK = get_dK();
+        SparseMatrix<double> K = ope->getK();
+        SparseMatrix<double> dK = ope->get_dK();
 // compute trace
         solver_K.computeKTK(K);
 
@@ -176,41 +177,47 @@ public:
 
 
 /*    Optimizer related    */
-inline const VectorXd Latent::getTheta() const {
-    VectorXd theta (latent_para);
-
-    theta(0) = get_theta_kappa();
-    theta(1) = get_mu();         
-    theta(2) = get_theta_sigma();
-    theta(3) = get_theta_var();  
+inline const VectorXd Latent::get_parameter() const {
+    int n_ope = ope->get_n_params();
     
-    return theta;
+    VectorXd parameter (n_params);
+        parameter.segment(0, n_ope) = ope->get_parameter();
+        parameter(n_ope)            = get_mu();         
+        parameter(n_ope+1)          = get_theta_sigma();
+        parameter(n_ope+2)          = get_theta_var();  
+    
+    return parameter;
 }
 
-inline const VectorXd Latent::getGrad() {
-    VectorXd grad (latent_para);
+inline const VectorXd Latent::get_grad() {
+    int n_ope = ope->get_n_params();
+    VectorXd grad (n_params);
 auto grad1 = std::chrono::steady_clock::now();
-    if (opt_flag[0]) grad(0) = grad_theta_kappa();         else grad(0) = 0;
-    if (opt_flag[1]) grad(1) = grad_mu();                  else grad(1) = 0;
-    if (opt_flag[2]) grad(2) = grad_theta_sigma();         else grad(2) = 0;
-    if (opt_flag[3]) grad(3) = grad_theta_var();           else grad(3) = 0;
+
+    if (opt_flag[0]) grad.segment(0, n_ope) = grad_K_parameter();     else grad.segment(0, n_ope) = VectorXd::Constant(n_ope, 0);
+    if (opt_flag[1]) grad(n_ope)            = grad_mu();              else grad(n_ope) = 0;
+    if (opt_flag[2]) grad(n_ope+1)          = grad_theta_sigma();     else grad(n_ope+1) = 0;
+    if (opt_flag[3]) grad(n_ope+2)          = grad_theta_var();       else grad(n_ope+2) = 0;
 
 // DEBUG: checking grads
 if (debug) {
-    std::cout << "grad_kappa (ms): " << since(grad1).count() << std::endl;   
-    std::cout << "******* grad of kappa is: " << grad(0) << std::endl;   
-    std::cout << "******* grad of mu is:    " << grad(1) << std::endl;   
-    std::cout << "******* grad of sigma is: " << grad(2) << std::endl;   
-    std::cout << "******* grad of var   is: " << grad(3) << std::endl;
+    // std::cout << "grad_kappa (ms): " << since(grad1).count() << std::endl;   
+    // std::cout << "******* grad of kappa is: " << grad(0) << std::endl;   
+    // std::cout << "******* grad of mu is:    " << grad(1) << std::endl;   
+    // std::cout << "******* grad of sigma is: " << grad(2) << std::endl;   
+    // std::cout << "******* grad of var   is: " << grad(3) << std::endl;
 }
     return grad;
 }
 
-inline void Latent::setTheta(const VectorXd& theta) {
-    if (opt_flag[0])  set_theta_kappa(theta(0)); 
-    if (opt_flag[1])  set_mu(theta(1)); 
-    if (opt_flag[2])  set_theta_sigma(theta(2)); 
-    if (opt_flag[3])  set_theta_var(theta(3)); 
+inline void Latent::set_parameter(const VectorXd& theta) {
+    int n_ope = ope->get_n_params();
+
+    // if (opt_flag[0])  set_theta_kappa(theta(0)); 
+    if (opt_flag[0])  set_K_parameter(theta.segment(0, n_ope));
+    if (opt_flag[1])  set_mu(theta(n_ope)); 
+    if (opt_flag[2])  set_theta_sigma(theta(n_ope+1)); 
+    if (opt_flag[3])  set_theta_var(theta(n_ope+2)); 
 }
 
 // sigma>0 -> theta=log(sigma)

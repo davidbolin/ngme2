@@ -23,6 +23,7 @@ f <- function(x = NULL,
   }
   else if (model=="ar1") {
       n = length(x)
+      n_ope = 1
 
     # G
       G <- Matrix::Matrix(diag(n));
@@ -39,10 +40,11 @@ f <- function(x = NULL,
     # h
       h <- rep(1.0, n)
 
-    operator_in   = list(C=C, G=G, numerical_dK=FALSE)
+    operator_in   = list(n_params=n_ope, C=C, G=G, numerical_dK=FALSE)
   }
   else if (model=="matern1d") {
     model = "matern"
+    n_ope = 1
 
     mesh <- INLA::inla.mesh.1d(x)
     fem <- INLA::inla.mesh.1d.fem(mesh)
@@ -60,7 +62,7 @@ f <- function(x = NULL,
     # h
     h <- rep(1.0, n)
 
-    operator_in   = list(C=C, G=G, numerical_dK=FALSE)
+    operator_in   = list(n_params=n_ope, C=C, G=G, numerical_dK=FALSE)
   }
   else {
     stop("unknown model")
@@ -81,6 +83,7 @@ f <- function(x = NULL,
   la_in <- list(type          = model,
                 var.type      = var,
                 n_mesh        = n,        # !: make sure this is the second place
+                n_params      = n_ope + 3,
                 A             = A,
                 h             = h,
                 opt_kappa     = control$opt_kappa,

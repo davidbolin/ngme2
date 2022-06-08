@@ -7,8 +7,8 @@
 using std::exp;
 using std::log;
 using std::pow;
+// get_K_params, grad_K_params, set_K_params, output
 class AR : public Latent {
-    
 public:
     AR(Rcpp::List ar1_in) 
     : Latent(ar1_in)
@@ -19,7 +19,7 @@ public:
 
         // Init operator
         Rcpp::List ope_in = Rcpp::as<Rcpp::List> (ar1_in["operator_in"]); // containing C and G
-        ope = new GC(ope_in, kappa);
+        ope = new stationaryGC(ope_in, kappa);
         
         // Init K and Q
         SparseMatrix<double> K = getK();
@@ -34,31 +34,24 @@ public:
         solver_Q.analyze(Q);
     }
     
-    double th2k(double th) const {
-        return (-1 + 2*exp(th) / (1+exp(th)));
-    }
-    double k2th(double k) const {
-        return (log((-1-k)/(-1+k)));
-    }
-
-    double get_theta_kappa() const {
-        double k = ope->getKappa();
-        return k2th(k);
+    // change of variable
+    VectorXd get_K_parameter() const {
+        VectorXd params = ope->get_parameter();
+            assert (params.size() == 1);
+        // change of variable
+        double th = k2th(params(0));
+        return VectorXd::Constant(1, th);
     }
 
-    void set_theta_kappa(double v) {
-        double k = th2k(v);
-        setKappa(k);
-    }
-
-    // grad_kappa * dkappa/dtheta
-    double grad_theta_kappa() {
+    // return length 1 vectorxd : grad_kappa * dkappa/dtheta 
+    VectorXd grad_K_parameter() {
         SparseMatrix<double> K = getK();
         SparseMatrix<double> dK = get_dK();
         VectorXd V = getV();
         VectorXd SV = pow(sigma, 2) * V;
         
-        double a = ope->getKappa();
+        VectorXd params = ope->get_parameter();
+            double a = params(0);
         double th = k2th(a);
 
         double da  = 2 * (exp(th) / pow(1+exp(th), 2));
@@ -103,13 +96,40 @@ public:
                 ret = (grad * da) / (hess * da * da + grad_eps * d2a);
             }
         }
+        
+        return VectorXd::Constant(1, ret);
+    }
 
-        return ret;
+    void set_K_parameter(VectorXd param) {
+        // change of variable
+        double k = th2k(param(0));
+        ope->set_parameter(VectorXd::Constant(1, k));
+
+        if (!numer_grad) compute_trace(); 
+    }
+
+    double th2k(double th) const {
+        return (-1 + 2*exp(th) / (1+exp(th)));
+    }
+    double k2th(double k) const {
+        return (log((-1-k)/(-1+k)));
     }
     
+    // void set_theta_kappa(double v) {
+    //     double k = th2k(v);
+    //     setKappa(k);
+    // }
+
+    // double get_theta_kappa() const {
+    //     VectorXd params = ope->get_parameter();
+    //     double k = params(0);
+    //     return k2th(k);
+    // }
+    
+    // generating output
     Rcpp::List get_estimates() const {
         return Rcpp::List::create(
-            Rcpp::Named("alpha") = ope->getKappa(),
+            Rcpp::Named("alpha") = ope->get_parameter()(0),
             Rcpp::Named("mu")    = mu,
             Rcpp::Named("sigma") = sigma,
             Rcpp::Named("var")   = var->get_var()

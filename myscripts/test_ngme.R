@@ -1,7 +1,8 @@
 library(devtools)
-load_all(reset = FALSE, recompile = FALSE)
+load_all()
+# load_all(reset = FALSE, recompile = FALSE)
 
-n_obs <- 1000
+n_obs <- 100
 sigma_eps = 0.1
 
 x1 = runif(n_obs)
@@ -65,11 +66,11 @@ debug = debug.ngme(fixW = FALSE)
 # nig
 ngme_out = ngme(Y1 ~ x1 + x2 +
                   f(Y1, model="ar1", var="nig",
-                    control=control.f(numer_grad = FALSE,
-                                      init_kappa    = 0.5,
+                    control=control.f(numer_grad = TRUE,
+                                      init_operator = 0.5,
                                       init_mu       = 0,
                                       init_sigma    = 1,
-                                      init_nu       = 1)
+                                      init_var      = 1)
                     ),
                 family="normal",
                 data=data.frame(Y1=(as.numeric(Y1)), x1=x1, x2=x2),

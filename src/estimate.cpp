@@ -14,48 +14,36 @@ using Eigen::MatrixXd;
 
 using namespace Rcpp;
 
-
 // [[Rcpp::export]]
 Rcpp::List estimate_cpp(Rcpp::List in_list) {
+    
     // *****************   Read From Input   *****************  
-    //observations and latents
-    Rcpp::List gen_list         = Rcpp::as<Rcpp::List> (in_list["general_in"]);
-
-    // init list
-    Rcpp::List inits         = Rcpp::as<Rcpp::List> (gen_list["init"]);
-    
-    Rcpp::List latents_list = Rcpp::as<Rcpp::List> (in_list["latents_in"]);
-    
-    // control_list
+    Rcpp::List general_in    = Rcpp::as<Rcpp::List> (in_list["general_in"]);
+    Rcpp::List init_values   = Rcpp::as<Rcpp::List> (in_list["init_values"]);
+    Rcpp::List latents_list  = Rcpp::as<Rcpp::List> (in_list["latents_in"]);
     Rcpp::List control_list  = Rcpp::as<Rcpp::List> (in_list["control_in"]);
         const int iterations = control_list["iterations"];
-
-    // debug list
     Rcpp::List debug_list  = Rcpp::as<Rcpp::List> (in_list["debug"]);
     
     BlockModel block (
-        gen_list, 
-        inits, 
+        general_in, 
         latents_list, 
         control_list,
+        init_values, 
         debug_list);
 
     // *****************   Main Process - Optimization *****************  
     Optimizer opt;
     
-    // *****************   Construct Output   ***************** 
 auto timer = std::chrono::steady_clock::now();
-    
     // Rcpp::List trajectory = opt.sgd(block, stepsize, 0.1, false, iterations);
     Rcpp::List trajectory = opt.sgd(block, 0.1, iterations);
+std::cout << "Total time is (ms): " << since(timer).count() << std::endl;   
 
-std::cout << "total time is (ms): " << since(timer).count() << std::endl;   
-
-    // final estimate from block model
-
-// Rcpp::List out_list;
+    // *****************   Construct Output   ***************** 
     return Rcpp::List::create(
         Rcpp::Named("trajectory") = trajectory,
+        // final estimate from block model
         Rcpp::Named("estimates") = block.get_estimates()
     );
 }

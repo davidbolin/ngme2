@@ -1,79 +1,47 @@
-# Matern1d case
+library(devtools)
+library(INLA)
+load_all(reset = FALSE, recompile = FALSE)
+
 data("mcycle", package="MASS")
 # mydata = data.frame(times=c(1,2,3), accel=c(2,3,4))
 
-library(devtools)
-load_all(reset = FALSE, recompile = FALSE)
+# Matern 2d case
+pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
+mesh <- inla.mesh.2d(loc.domain = pl01, cutoff = 0.5,
+                     max.edge = c(0.5, 1), offset = c(0.5, 1.5))
+plot(mesh)
+points(pl01)
 
-########### 3. run ngme
-# specify the control for ngme
-# args(control.ngme)
-# args(control.f)
-# args(control.ngme)
+################## simulation (alpha = 2)
+n_obs = 10
+alpha = 2
+mu = 2; delta = -mu
+nu = 1
+sigma = 2
 
-control = control.ngme(burnin=100, iterations = 1000,
-                       gibbs_sample = 5, stepsize = 1,
-                       kill_var = FALSE)
-debug = debug.ngme(debug=TRUE)
+trueV <- ngme2::rig(n_obs, nu, nu)
+noise <- delta + mu*trueV + sigma * sqrt(trueV) * rnorm(n_obs)
+trueW1 <- Reduce(function(x,y){y + alpha1*x}, noise1, accumulate = T)
 
-##### ngme for matern1d
-# f(x=mcycle$times, model="matern1d")$operator_in$G # 94*94
-# f(x=mcycle$times, model="ar1")$operator_in$G      # 133*133
-#
-# f(x=mcycle$times, model="matern1d")$operator_in$C
-
-# f(x=mydata$times, model="matern1d")
+# w|V = delta + mu*V + sigma*sqrt(V)*Z ~ N(delta+mu*V, sigma^2 diag(V))
 
 
-ngme_out = ngme(accel ~ -1 +
-                  f(times, model="matern1d", var="nig",
-                    control=control.f(numer_grad = FALSE,
-                                      init_kappa    = 0.5,
-                                      init_mu       = 0,
-                                      init_sigma    = 1,
-                                      init_nu       = 1),
-                    debug=TRUE
-                  ),
-                family="normal",
-                data=mcycle,
-                control=control)
-
-########### 4. results
-
-# nig ar1: a=0.5, mu=2, sigma=2, nu=1
-# normal ar1: a=0.7 sigma=3
-
-# plot(ngme_out, param = "fe", type = "traj")
-plot(ngme_out, param = "me", type = "traj")
-plot(ngme_out, param = "la", type = "traj", which=1)
-# plot(ngme_out, param = "la", type = "traj", which=2)
-ngme_out$model.types == "matern"
-summary(ngme_out)
-
-# mcycle$times
-# mesh <- INLA::inla.mesh.1d(mcycle$times)
-# mesh
-# fem <- INLA::inla.mesh.1d.fem(mesh)
-# mesh$loc
-# A <- INLA::inla.spde.make.A(mesh, loc=mcycle$times)
-# A
+Y1 = trueW1 + rnorm(n_obs, mean=0, sd=sigma_eps)
 
 
-# ngme.spde.matern
-loc = matrix(runif(10 * 2), ncol=2)
-mesh_2d = inla.mesh.2d(loc=loc, max.edge = c(1, 10))
-plot(mesh_2d)
-points(loc[, 1], loc[, 2])
-
-fem <- inla.mesh.fem(mesh_2d, order=2)
-str(fem)
-
-
-spde.model = ngme.spde.matern(mesh=mesh_2d)
-inherits(spde.model, "ngme.spde")
-args(ngme)
-
-ngme(formula=Y~0+f(1:length(mesh_2d), model=spde))
-load_all()
-
-# simulate data and write test case
+nu <- 1
+alpha <- nu + 2 / 2
+# log(kappa)
+logkappa0 <- log(8 * nu) / 2
+# log(tau); in two lines to keep code width within range
+logtau0 <- (lgamma(nu) - lgamma(alpha) -1 * log(4 * pi)) / 2
+logtau0 <- logtau0 - logkappa0
+# SPDE model
+spde <- inla.spde2.matern(mesh,
+                          B.tau = cbind(logtau0, -1, nu, nu * (mesh$loc[,1] - 5) / 10),
+                          B.kappa = cbind(logkappa0, 0, -1, -1 * (mesh$loc[,1] - 5) / 10),
+                          theta.prior.mean = rep(0, 3),
+                          theta.prior.prec = rep(1, 3))
+theta <- c(-1, 0, 1)
+Q <- inla.spde2.precision(spde, theta = theta)
+Q

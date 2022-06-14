@@ -10,16 +10,12 @@ using std::pow;
 // get_K_params, grad_K_params, set_K_params, output
 class AR : public Latent {
 public:
-    AR(Rcpp::List ar1_in) 
-    : Latent(ar1_in)
+    AR(Rcpp::List latent_in) 
+    : Latent(latent_in)
     {
-        // read init kappa
-        Rcpp::List init_value = Rcpp::as<Rcpp::List> (ar1_in["init_value"]);
-        double kappa = Rcpp::as<double>  (init_value["kappa"]);
-
-        // Init operator
-        Rcpp::List ope_in = Rcpp::as<Rcpp::List> (ar1_in["operator_in"]); // containing C and G
-        ope = new stationaryGC(ope_in, kappa);
+        Rcpp::List operator_in = Rcpp::as<Rcpp::List> (latent_in["operator_in"]); // containing C and G
+        // Init operator for ar1
+        ope = new stationaryGC(operator_in);
         
         // Init K and Q
         SparseMatrix<double> K = getK();
@@ -60,8 +56,8 @@ public:
         double ret = 0;
         if (numer_grad) {
             // 1. numerical gradient
-
             if (!use_precond) {
+                // double grad = (function_K(eps) - function_K(0)) / eps;
                 double grad = (function_kappa(eps) - function_kappa(0)) / eps;
                 ret = - grad * da / n_mesh;
             } else {
@@ -83,8 +79,8 @@ public:
             } else {
                 VectorXd prevV = getPrevV();
                 // compute numerical hessian
-                SparseMatrix<double> K2 = ope->getK(eps);
-                SparseMatrix<double> dK2 = ope->get_dK(eps);
+                SparseMatrix<double> K2 = ope->getK(0, eps);
+                SparseMatrix<double> dK2 = ope->get_dK(0, eps);
 
                 // grad(x+eps) - grad(x) / eps
                 VectorXd prevSV = pow(sigma, 2) * prevV;
@@ -114,17 +110,6 @@ public:
     double k2th(double k) const {
         return (log((-1-k)/(-1+k)));
     }
-    
-    // void set_theta_kappa(double v) {
-    //     double k = th2k(v);
-    //     setKappa(k);
-    // }
-
-    // double get_theta_kappa() const {
-    //     VectorXd params = ope->get_parameter();
-    //     double k = params(0);
-    //     return k2th(k);
-    // }
     
     // generating output
     Rcpp::List get_estimates() const {

@@ -1,10 +1,13 @@
-# parameter:
-#   gf - formula
-#   data - data.frame
-# return:
-#   1. plain formula without f
-#   2. latents_in - list of models
-
+#' Interpret the formula
+#'
+#' @param gf formula
+#' @param data data.frame
+#' @param debug
+#'
+#' @return 1. plain formula without f 2. latents_in - a list of lists
+#' @export
+#'
+#' @examples
 ngme.interpret.formula <- function(gf,
                                    data,
                                    debug=FALSE) {

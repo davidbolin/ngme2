@@ -4,39 +4,40 @@
 #include "../var.h"
 #include <cmath>
 
-using Eigen::MatrixXd;
 using std::exp;
 using std::log;
 using std::pow;
-
-class Matern_ns {
+// get_K_params, grad_K_params, set_K_params, output
+class matern_ns : public Latent {
 public:
-    // parameter
-    int alpha, n_mesh; // 2 or 4
-    
-    VectorXd paras;  // theta = (1 para1 para2 ...)
-    MatrixXd Btau, Bkappa;
-    SparseMatrix<double> C, G;
-    SparseMatrix<double> Tau, Kappa;
-
-    void update(VectorXd paras) { // update K, dK 
-        VectorXd theta;
-            theta.resize(paras.size() + 1);
-            theta << 1, paras;
-        if (alpha==2) {
-            Tau = (Btau * theta).diagonal();
-            // Kappa
-            // K = ...
-            
-        } else if (alpha==4) {
-
-        }
+    matern_ns(Rcpp::List latent_in) 
+    : Latent(latent_in)
+    {
+        Rcpp::List operator_in = Rcpp::as<Rcpp::List> (latent_in["operator_in"]); // containing C and G
+        ope = new nonstationaryGC(ope_in);
         
+        // Init K and Q
+        SparseMatrix<double> K = getK();
+        SparseMatrix<double> Q = K.transpose() * K;
+        
+        solver_K.init(n_mesh, 0,0,0);
+        solver_K.analyze(K);
+        compute_trace();
+
+        // Init Q
+        solver_Q.init(n_mesh, 0,0,0);
+        solver_Q.analyze(Q);
     }
-
     
-    // const VectorXd Latent::getGrad() {}
-    // void Latent::setTheta(const VectorXd& theta) {}
-    
+    // inherit get_K_parameter, grad_K_parameter, set_K_parameter
 
+    // generating output
+    Rcpp::List get_estimates() const {
+        return Rcpp::List::create(
+            Rcpp::Named("theta in Matern operator") = ope->get_parameter(),
+            Rcpp::Named("mu")    = mu,
+            Rcpp::Named("sigma") = sigma,
+            Rcpp::Named("var")   = var->get_var()
+        );
+    }
 };

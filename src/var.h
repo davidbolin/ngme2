@@ -19,7 +19,6 @@ protected:
     VectorXd V, prevV, h;
 public: 
     Var() : V(n), prevV(n) {}
-    Var(Rcpp::List);
     ~Var(){}
 
     const VectorXd& getV()     const {return V;}
@@ -44,9 +43,10 @@ private:
 public:
     ind_IG(){}
     
-    ind_IG(unsigned n, double nu, VectorXd h) 
-    : nu(nu)
+    ind_IG(Rcpp::List var_in, unsigned n, VectorXd h) 
+    : nu(0)
     {   
+        nu = (Rcpp::as<double>) (var_in["nu"]);
         this->n = n; 
         this->h = h;
 
@@ -100,7 +100,7 @@ public:
 class normal : public Var {
 public:
     normal() {}
-    normal(unsigned n, VectorXd h) {
+    normal(Rcpp::List var_in, unsigned n, VectorXd h) {
         this->n = n;
         this->h = h;
         

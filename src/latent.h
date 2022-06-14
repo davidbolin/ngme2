@@ -28,6 +28,7 @@ protected:
     
     bool use_precond {false}, numer_grad {false};
 
+    // eps for numerical gradient.
     double mu, sigma, trace, trace_eps, eps;
 
     VectorXd W, prevW, h;
@@ -43,8 +44,6 @@ protected:
 public:
     Latent(Rcpp::List latent_in) 
     : debug    ( Rcpp::as< bool >        (latent_in["debug"])),
-      n_mesh   ( Rcpp::as< unsigned >    (latent_in["n_mesh"]) ),
-      n_params ( Rcpp::as< unsigned >    (latent_in["n_params"]) ),
       
       mu        (0),
       sigma     (1),
@@ -54,33 +53,36 @@ public:
       
       W       (n_mesh),
       prevW   (n_mesh),
-      h       (Rcpp::as< VectorXd > (latent_in["h"])),
-      A       (Rcpp::as< SparseMatrix<double,0,int> > (latent_in["A"]))
+      h       ( Rcpp::as< VectorXd >                     (latent_in["h"])),
+      A       ( Rcpp::as< SparseMatrix<double,0,int> >   (latent_in["A"]))
     {
-        // Init opt. flag
-        opt_flag[0]   = Rcpp::as<int>        (latent_in["opt_kappa"]);
-        opt_flag[1]   = Rcpp::as<int>        (latent_in["opt_mu"]);
-        opt_flag[2]   = Rcpp::as<int>        (latent_in["opt_sigma"]);
-        opt_flag[3]   = Rcpp::as<int>        (latent_in["opt_var"]);
+        // general input
+            n_mesh   = Rcpp::as< int >                          (latent_in["n_mesh"]);
+            n_params = Rcpp::as< int >                          (latent_in["n_la_params"]);
 
-        use_precond = Rcpp::as<bool>        (latent_in["use_precond"]);
-        numer_grad  = Rcpp::as<bool>        (latent_in["numer_grad"]);
+            string var_type = Rcpp::as<string>     (latent_in["var_type"]);
+        
+        Rcpp::List control_f = Rcpp::as<Rcpp::List> (latent_in["control_f"]);
+            opt_flag[0]   = Rcpp::as<int>        (control_f["opt_operator"]);
+            opt_flag[1]   = Rcpp::as<int>        (control_f["opt_mu"]);
+            opt_flag[2]   = Rcpp::as<int>        (control_f["opt_sigma"]);
+            opt_flag[3]   = Rcpp::as<int>        (control_f["opt_var"]);
 
-        // Init var
+            use_precond = Rcpp::as<bool>        (control_f["use_precond"]);
+            numer_grad  = Rcpp::as<bool>        (control_f["numer_grad"]);
+            eps         = Rcpp::as<double>      (control_f["eps"]);
+            
+            // init values
+            mu           = Rcpp::as<double>     (control_f["init_mu"]);
+            sigma        = Rcpp::as<double>     (control_f["init_sigma"]);
+        
         Rcpp::List var_in = Rcpp::as<Rcpp::List> (latent_in["var_in"]);
-        string type       = Rcpp::as<string>     (var_in["type"]);
-
-        // Set initial values
-        Rcpp::List init_value = Rcpp::as<Rcpp::List> (latent_in["init_value"]);
-        mu           = Rcpp::as<double>  (init_value["mu"]);
-        sigma        = Rcpp::as<double>  (init_value["sigma"]);
         
         // construct var
-        if (type == "ind_IG") {
-            double nu    = Rcpp::as<double>  (init_value["nu"]);
-            var = new ind_IG(n_mesh, nu, h);
-        } else if (type == "normal") {
-            var = new normal(n_mesh, h);
+        if (var_type == "nig") {
+            var = new ind_IG(var_in, n_mesh, h);
+        } else if (var_type == "normal") {
+            var = new normal(var_in, n_mesh, h);
             // Not optimizing mu
             opt_flag[1] = 0;  
         }
@@ -120,18 +122,19 @@ public:
     void           finishOpt(int i) {opt_flag[i] = 0; }
 
     // Parameter: Operator
-    virtual VectorXd    get_K_parameter() const {return ope->get_parameter();} // no change of variable
-    virtual VectorXd    grad_K_parameter() = 0;
-    virtual void        set_K_parameter(VectorXd) = 0;
+    virtual VectorXd    get_K_parameter() const {return ope->get_parameter(); } // no change of variable
+    virtual VectorXd    grad_K_parameter() { return numerical_grad(); }
+    virtual void        set_K_parameter(VectorXd params) {ope->set_parameter(params); }
 
-    // void   setKappa(double kappa) {
-    //     ope->setKappa(kappa);
-        
-    //     if (!numer_grad) compute_trace(); 
-    // } 
 
+    // used for ar
     virtual double function_kappa(double eps);    
     
+    // used for general case
+    virtual double function_K(VectorXd parameter);    
+    virtual VectorXd numerical_grad(); // given eps
+
+    // only for stationary case
     void compute_trace() {
         SparseMatrix<double> K = ope->getK();
         SparseMatrix<double> dK = ope->get_dK();
@@ -145,8 +148,8 @@ public:
 
         // update trace_eps if using hessian
         if ((!numer_grad) && (use_precond)) {
-            SparseMatrix<double> K = ope->getK(eps);
-            SparseMatrix<double> dK = ope->get_dK(eps);
+            SparseMatrix<double> K = ope->getK(0, eps);
+            SparseMatrix<double> dK = ope->get_dK(0, eps);
             SparseMatrix<double> M = dK;
 
             solver_K.computeKTK(K);
@@ -255,9 +258,10 @@ inline double Latent::grad_mu() {
     return grad / hess;
 }
 
+// only for stationary case, delete later
 // W|V ~ N(K^-1 mu(V-h), sigma^2 K-1 diag(V) K-T)
 inline double Latent::function_kappa(double eps) {
-    SparseMatrix<double> K = ope->getK(eps);
+    SparseMatrix<double> K = ope->getK(0, eps);
 
     VectorXd V = getV();
     VectorXd SV = getSV();
@@ -273,6 +277,51 @@ inline double Latent::function_kappa(double eps) {
                 // - 0.5 * (prevW-mean).transpose() * Q * (prevW-mean);
 
     return l;
+}
+
+// function_K(params += ( 0,0,eps,0,0) )
+inline double Latent::function_K(VectorXd parameter) {
+    assert(parameter.size()==ope->get_n_params());
+    SparseMatrix<double> K = ope->getK(parameter);
+    
+    VectorXd V = getV();
+    VectorXd SV = getSV();
+
+    SparseMatrix<double> Q = K.transpose() * SV.cwiseInverse().asDiagonal() * K;
+    
+    solver_Q.compute(Q);
+    
+    VectorXd tmp = K * W - mu*(V-h);
+
+    double l = 0.5 * solver_Q.logdet() 
+               - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
+
+    return l;
+}
+
+inline VectorXd Latent::numerical_grad() {
+    int n_ope = ope->get_n_params();
+    VectorXd params = ope->get_parameter();
+    double val = function_K(params);
+
+    VectorXd grad (n_ope);
+    for (int i=0; i < n_ope; i++) {
+        VectorXd params_add_eps = params;
+            params_add_eps(i) += eps;
+        double val_add_eps = function_K(params_add_eps);
+        
+        double num_g = (val_add_eps - val) / eps;
+        
+        if (!use_precond) {
+            grad(i) = - num_g / n_mesh;
+        } else {
+            VectorXd params_minus_eps = params;
+                params_minus_eps(i) -= eps;
+            double val_minus_eps = function_K(params_minus_eps);
+            double num_hess = (val_minus_eps + val_add_eps - 2*val) / pow(eps, 2);
+            grad(i) = num_g / num_hess;
+        }
+    } 
 }
 
 

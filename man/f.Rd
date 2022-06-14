@@ -7,27 +7,29 @@
 f(
   x = NULL,
   model = "ar1",
-  var = "NIG",
-  init = list(kappa = 0.5, mu = 0, sigma = 1, nu = 0.5),
+  var = "nig",
   control = control.f(),
-  debug = FALSE
+  debug = FALSE,
+  A = NULL
 )
 }
 \arguments{
-\item{x}{numerical vector, which is the covariate}
+\item{x}{covariates}
 
-\item{model}{specify a model}
+\item{model}{1. string: type of model, 2. ngme.spde object}
 
-\item{var}{variance component type}
+\item{var}{1. string: type of variance component}
 
-\item{init}{initial value}
-
-\item{debug}{debug}
+\item{debug}{debug variables}
 
 \item{config}{control variables}
 }
 \value{
-a list of objects
+a list latent_in for constructing latent model, e.g. A, h, C, G,
+which also has
+1. list ope_in for building operator,
+2. list var_in for variance component,
+3. list init_values of parameters
 }
 \description{
 f function

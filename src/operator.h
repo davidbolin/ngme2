@@ -1,3 +1,9 @@
+/*
+    Operator class is for :
+        1. store K_parameter, 
+        2. compute K, dK.
+*/
+
 #ifndef NGME_OPERATOR_H
 #define NGME_OPERATOR_H
 
@@ -13,51 +19,63 @@ using Eigen::VectorXd;
 class Operator {
 protected:
     VectorXd parameter;
-    int n_params;
-    bool numerical_dK {false};
+    int n_params; // how many parameters
+    bool use_num_dK {false};
 
     SparseMatrix<double, 0, int> K, dK, d2K;
 public:
-    Operator(Rcpp::List ope_in) {
-        n_params = Rcpp::as<bool> (ope_in["n_params"]);
-std::cout << "n_params in latent = " << n_params << std::endl;
-        numerical_dK = Rcpp::as<bool> (ope_in["numerical_dK"]);
+    Operator(Rcpp::List ope_in)
+    {
+        n_params = Rcpp::as<int> (ope_in["n_params"]);
+        use_num_dK = Rcpp::as<bool> (ope_in["use_num_dK"]);
     };
 
-    virtual VectorXd get_parameter() const {return parameter; }
     int get_n_params() const {return parameter.size(); }
-    
-    virtual void set_parameter(VectorXd parameter)=0;
+    virtual VectorXd get_parameter() const {return parameter; }
+    virtual void set_parameter(VectorXd parameter) {this->parameter = parameter;}
 
     // getter for K, dK, d2K
     SparseMatrix<double, 0, int>& getK()    {return K;}
     SparseMatrix<double, 0, int>& get_dK()  {return dK;}
     SparseMatrix<double, 0, int>& get_d2K() {return d2K;}
 
-    // K(kappa + eps), dK(kappa + eps)
-    virtual SparseMatrix<double, 0, int> getK(double eps)   const=0;
-    virtual SparseMatrix<double, 0, int> get_dK(double eps) const=0;
+    // get K/dK using different parameter
+    virtual SparseMatrix<double, 0, int> getK(VectorXd) const=0;
+    virtual SparseMatrix<double, 0, int> get_dK(VectorXd) const=0;
+
+    // param(pos) += eps;  getK(param);
+    SparseMatrix<double, 0, int> getK(int pos, double eps) {
+        VectorXd tmp = parameter;
+        tmp(pos) += eps;
+        return getK(tmp);
+    }
+
+    SparseMatrix<double, 0, int> get_dK(int pos, double eps) {
+        VectorXd tmp = parameter;
+        tmp(pos) += eps;
+        return get_dK(tmp);
+    }
+    
 };
 
-// fit for stationary AR and Matern 
+// for 1. AR model 2. stationary Matern model
 class stationaryGC : public Operator {
 private:
     // kappa = parameter(0)
     SparseMatrix<double, 0, int> G, C;
 
 public:
-    stationaryGC(Rcpp::List ope_in, double kappa) 
-    : Operator(ope_in) 
+    stationaryGC(Rcpp::List ope_in) 
+    :   Operator    (ope_in),
+        G           ( Rcpp::as< SparseMatrix<double,0,int> > (ope_in["G"]) ),
+        C           ( Rcpp::as< SparseMatrix<double,0,int> > (ope_in["C"]) )
     {
         // init parameter
             parameter.resize(1);
-            parameter(0) = kappa;
-
-        G = Rcpp::as< SparseMatrix<double,0,int> > (ope_in["G"]);
-        C = Rcpp::as< SparseMatrix<double,0,int> > (ope_in["C"]);
+            parameter(0) = Rcpp::as<double> (ope_in["kappa"]);        
         
-        K =  kappa * C + G;
-        dK = C;
+        K  = getK(parameter);
+        dK = get_dK(parameter);
         d2K = 0 * C;
     }
 
@@ -65,79 +83,96 @@ public:
         assert (parameter.size() == 1);
         this->parameter = parameter;
 
-        K = parameter(0) * C + G;
-        if (numerical_dK) {
+        K = getK(parameter);
+        if (use_num_dK) {
             update_num_dK();
         }
     }
 
-    SparseMatrix<double> getK(double eps) const {
-        double kappa = parameter(0);
-        SparseMatrix<double> K =  (kappa+eps) * C + G;
+    SparseMatrix<double> getK(VectorXd params) const {
+        assert (params.size()==1);
+        SparseMatrix<double> K = params(0) * C + G;
         return K;
     }
 
-    SparseMatrix<double> get_dK(double eps) const {
+    SparseMatrix<double> get_dK(VectorXd params) const {
         return C;
     }
 
+    // compute numerical dK
     void update_num_dK() {
         double kappa = parameter(0);
         double eps = 0.01;
-        SparseMatrix<double> Keps = (kappa + eps) * C + G;
-        dK = (Keps - K) / eps;
+        SparseMatrix<double> K_add_eps = (kappa + eps) * C + G;
+        dK = (K_add_eps - K) / eps;
+    }
+};
+
+// Q: how to unify stationary and nonstationary case?
+// for non stationary Matern model
+class nonstationaryGC : public Operator {
+private:
+    // kappa = parameter(0)
+    int alpha; 
+    VectorXd Cdiag;
+    SparseMatrix<double, 0, int> G;
+    MatrixXd Btau, Bkappa;
+public:
+    nonstationaryGC(Rcpp::List ope_in) 
+    :   Operator    ( ope_in),
+        alpha       ( Rcpp::as<int> (ope_in["alpha"])),
+        Btau        ( Rcpp::as<MatrixXd> (ope_in["Btau"]) ),
+        Bkappa      ( Rcpp::as<MatrixXd> (ope_in["Bkappa"]) ),
+        G           ( Rcpp::as< SparseMatrix<double,0,int> > (ope_in["G"]) )
+    {
+        VectorXd init_parames = ope_in["init_operator"];
+        SparseMatrix<double> C = Rcpp::as< SparseMatrix<double,0,int> > (ope_in["C"]);
+        Cdiag = C.diagonal();
+        
+        set_parameter(init_parames);
+    }
+
+    // here C is diagonal
+    void set_parameter(VectorXd parameter) {
+        this->parameter = parameter;
+
+        K = getK(parameter);
+        // update dK?
+    }
+
+    SparseMatrix<double> getK(VectorXd params) const {
+        
+        VectorXd taus = (Btau * params).array().exp();
+        VectorXd kappas = (Bkappa * params).array().exp();
+
+        int n_dim = G.rows();
+        SparseMatrix<double> K (n_dim, n_dim);
+        SparseMatrix<double> KCK (n_dim, n_dim);
+            KCK.diagonal() = kappas.cwiseProduct(kappas).cwiseProduct(Cdiag);
+        
+        if (alpha==2) {             
+            // K_a = T (G + KCK) C^(-1/2)
+            K = taus.asDiagonal() * 
+            (G + KCK) * 
+            Cdiag.cwiseSqrt().cwiseInverse().asDiagonal();
+        } else if (alpha==4) {      
+            // K_a = T (G + KCK) C^(-1) (G+KCK) C^(1/2)
+            K = taus.asDiagonal() * 
+            (G + KCK) * Cdiag.cwiseInverse().asDiagonal() *
+            (G + KCK) * 
+            Cdiag.cwiseSqrt().cwiseInverse().asDiagonal();
+        } else {
+            throw("alpha not equal to 2 or 4 is not implemented");
+        }
+        
+        return K;
+    }
+
+    // to-do: what is dK here?
+    SparseMatrix<double> get_dK(VectorXd params) const {
+        return G;
     }
 
 };
-
-// class nonstationaryGC : public Operator {
-// private:
-//     // kappa = parameter(0)
-//     SparseMatrix<double, 0, int> G, C;
-
-// public:
-//     stationaryGC(Rcpp::List ope_in, double kappa) 
-//     : Operator(ope_in) 
-//     {
-//         // init parameter
-//             parameter.resize(1);
-//             parameter(0) = kappa;
-
-//         G = Rcpp::as< SparseMatrix<double,0,int> > (ope_in["G"]);
-//         C = Rcpp::as< SparseMatrix<double,0,int> > (ope_in["C"]);
-        
-//         K =  kappa * C + G;
-//         dK = C;
-//         d2K = 0 * C;
-//     }
-
-//     void set_parameter(VectorXd parameter) {
-//         assert (parameter.size() == 1);
-//         this->parameter = parameter;
-
-//         K = parameter(0) * C + G;
-//         if (numerical_dK) {
-//             update_num_dK();
-//         }
-//     }
-
-//     SparseMatrix<double> getK(double eps) const {
-//         double kappa = parameter(0);
-//         SparseMatrix<double> K =  (kappa+eps) * C + G;
-//         return K;
-//     }
-
-//     SparseMatrix<double> get_dK(double eps) const {
-//         return C;
-//     }
-
-//     void update_num_dK() {
-//         double kappa = parameter(0);
-//         double eps = 0.01;
-//         SparseMatrix<double> Keps = (kappa + eps) * C + G;
-//         dK = (Keps - K) / eps;
-//     }
-
-// };
 
 #endif

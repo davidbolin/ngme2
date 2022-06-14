@@ -69,7 +69,7 @@ ngme <- function(formula,
 
     ############### n_meshs is the dim of the block matrix
     n_meshs = sum(unlist(lapply(latents_in, function(x) x["n_mesh"] )))
-    model.types = unlist(lapply(latents_in, function(x) x["type"] ))
+    model.types = unlist(lapply(latents_in, function(x) x["model_type"] ))
     var.types = unlist(lapply(latents_in, function(x) x["var.type"] ))
 
     # 3. prepare in_list for estimate
@@ -77,14 +77,16 @@ ngme <- function(formula,
     general_in <- list( Y                = Y,
                         X                = X,
                         family           = "normal",
-                        n_meshs          = n_meshs,
-                        init             = list(beta=lm.model$coeff,
-                                                sigma_eps = sd(lm.model$residuals))
+                        n_meshs          = n_meshs
                         )
+
+    init_values <- list(beta=lm.model$coeff,
+                        sigma_eps = sd(lm.model$residuals))
 
     in_list = list(general_in = general_in,
                   latents_in  = latents_in,
                   control_in  = controls,
+                  init_values = init_values,
                   debug       = debug)
 
   } else {

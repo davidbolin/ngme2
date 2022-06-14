@@ -70,20 +70,19 @@ protected:
 public:
     BlockModel() {}
 
-    BlockModel(Rcpp::List gen_list,
-               Rcpp::List inits,
+    BlockModel(Rcpp::List general_in,
                Rcpp::List latents_in,
                Rcpp::List control_list,
-            //    Rcpp::List control_list
+               Rcpp::List init_values,
                Rcpp::List debug_list
                ) : 
-    X             ( Rcpp::as<MatrixXd>   (gen_list["X"]) ),
-    Y             ( Rcpp::as<VectorXd>   (gen_list["Y"]) ), 
-    n_meshs        ( Rcpp::as<int>        (gen_list["n_meshs"]) ),
-    family        ( Rcpp::as<string>     (gen_list["family"]) ),
+    X             ( Rcpp::as<MatrixXd>   (general_in["X"]) ),
+    Y             ( Rcpp::as<VectorXd>   (general_in["Y"]) ), 
+    n_meshs       ( Rcpp::as<int>        (general_in["n_meshs"]) ),
+    family        ( Rcpp::as<string>     (general_in["family"]) ),
     
-    beta          ( Rcpp::as<VectorXd>   (inits["beta"]) ),
-    sigma_eps     ( Rcpp::as<double>     (inits["sigma_eps"]) ), 
+    beta          ( Rcpp::as<VectorXd>   (init_values["beta"]) ),
+    sigma_eps     ( Rcpp::as<double>     (init_values["sigma_eps"]) ), 
     
     n_latent      ( latents_in.size()), 
     
@@ -108,7 +107,7 @@ public:
     fixW          ( Rcpp::as<bool> (debug_list["fixW"]) ),
     fixSV         ( Rcpp::as<bool> (debug_list["fixSV"])),
     fixSigEps     ( Rcpp::as<bool> (debug_list["fixSigEps"]))
-    {
+    {        
         const int burnin = control_list["burnin"];
         const double stepsize = control_list["stepsize"];
         
@@ -120,7 +119,7 @@ public:
             Rcpp::List latent_in = Rcpp::as<Rcpp::List> (latents_in[i]);
 
             // construct acoording to models
-            string type = latent_in["type"];
+            string type = latent_in["model_type"];
             if (type == "ar1") {
                 latents.push_back(new AR(latent_in) );
             } 

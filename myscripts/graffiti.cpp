@@ -3,9 +3,9 @@
 #include <iostream>
 #include <cmath>
 
+using namespace std;
 using std::pow;
 using namespace Eigen;
-using namespace std;
 void help() {}
 
 const double a = 0.5;
@@ -30,9 +30,11 @@ public:
 
 int main(int argc, char const *argv[])
 {
-    Vector3d v (1,2,3);
-    VectorXd v2; v2.resize(v.size()+1);
-    v2 << 0, v;
+    // Vector3d v (1,2,3);
+    // VectorXd v2; v2.resize(v.size()+1);
+    // v2 << 0, v;
+
+    Base b;
 // auto start = std::chrono::steady_clock::now();
 
 // //     Matrix2f v (4,1,2,3);
@@ -43,7 +45,20 @@ int main(int argc, char const *argv[])
 // //  g = -1.0 * n_obs / sigma_eps + pow(sigma_eps, -3) * tmp.dot(tmp);
 //     double tmp = 100;
     // v = v.array().pow(3);
-    cout<< v2 << endl ;
+    // cout<< b.getVec()(1) << endl ;
+    Vector4d v (1,2,3,4);
+    Vector4d vv (1,2,3,4);
+    // v = v.array().log();
+    MatrixXd spm = v.asDiagonal();
+    spm.sparseView();
+    const int i = v.size();
+    // Eigen::DiagonalMatrix<double, i> D (1,2,3,4);
+    // cout << spm;
+    vv(0) += 10;
+
+    double a = 3;
+    VectorXd myres = Rcpp::as<VectorXd> (a);
+    cout << myres;
 
     return 0;
 }

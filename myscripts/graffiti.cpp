@@ -46,19 +46,30 @@ int main(int argc, char const *argv[])
 //     double tmp = 100;
     // v = v.array().pow(3);
     // cout<< b.getVec()(1) << endl ;
-    Vector4d v (1,2,3,4);
-    Vector4d vv (1,2,3,4);
-    // v = v.array().log();
-    MatrixXd spm = v.asDiagonal();
-    spm.sparseView();
-    const int i = v.size();
-    // Eigen::DiagonalMatrix<double, i> D (1,2,3,4);
-    // cout << spm;
-    vv(0) += 10;
+    // Vector4d v (1,2,3,4);
+    // Vector4d vv (1,2,3,4);
+    // // v = v.array().log();
+    // MatrixXd spm = v.asDiagonal();
+    // spm.sparseView();
+    // const int i = v.size();
+    // // Eigen::DiagonalMatrix<double, i> D (1,2,3,4);
+    // // cout << spm;
+    // vv(0) += 10;
 
-    double a = 3;
-    VectorXd myres = Rcpp::as<VectorXd> (a);
-    cout << myres;
+    VectorXd v1 (3);
+    v1 << 1,2,3;
+
+    // MatrixXd m1 (3, 3);
+    SparseMatrix<double> m1 (3, 3);
+    m1 = v1.asDiagonal();
+
+    VectorXd v2 (2);
+    v2 << 1,2;
+    
+    // v1.resize(2);
+    v1 = v2;
+
+    cout << m1.rows(); 
 
     return 0;
 }

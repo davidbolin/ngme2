@@ -68,16 +68,22 @@ ngme <- function(formula,
     X = model.matrix(plain.fm, data) # design matrix
 
     ############### n_meshs is the dim of the block matrix
-    n_meshs = sum(unlist(lapply(latents_in, function(x) x["n_mesh"] )))
+    n_meshs     = sum(unlist(lapply(latents_in, function(x) x["n_mesh"] )))
+    n_la_params = sum(unlist(lapply(latents_in, function(x) x["n_la_params"] )))
     model.types = unlist(lapply(latents_in, function(x) x["model_type"] ))
-    var.types = unlist(lapply(latents_in, function(x) x["var.type"] ))
+    var.types   = unlist(lapply(latents_in, function(x) x["var.type"] ))
+
+    n_feff = ncol(X); n_merr = 1
+    n_params = n_la_params + n_feff + n_merr
 
     # 3. prepare in_list for estimate
     lm.model = lm.fit(X, Y)
     general_in <- list( Y                = Y,
                         X                = X,
                         family           = "normal",
-                        n_meshs          = n_meshs
+                        n_meshs          = n_meshs,
+                        n_la_params      = n_la_params,
+                        n_params         = n_params # how many param to opt. in total
                         )
 
     init_values <- list(beta=lm.model$coeff,
@@ -93,6 +99,9 @@ ngme <- function(formula,
     stop("unknown structure of formula")
   }
 
+# print
+if (debug$debug) print(str(in_list))
+
   # estimate
   out = estimate_cpp(in_list)
 
@@ -102,6 +111,9 @@ ngme <- function(formula,
 
     # m_err
     out$family = general_in$family
+
+    # operator
+    out$n_la_params = unlist(lapply(latents_in, function(x) x["n_la_params"] ))
 
     # process
     out$n_latent = length(latents_in)

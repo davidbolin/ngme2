@@ -79,6 +79,7 @@ control.f <- function(
 
   numer_grad    = FALSE,
   use_precond   = TRUE,
+  use_num_hess  = TRUE,
   eps           = 0.01
   ) {
 
@@ -95,6 +96,7 @@ control.f <- function(
 
     numer_grad    = numer_grad,
     use_precond   = use_precond,
+    use_num_hess  = use_num_hess,
     eps           = eps
     )
 

@@ -46,6 +46,9 @@ plot.ngme <- function(object, param="fe", type="traj", which=1) {
     return()
   }
 
+  # ope
+  # if (param==)
+
   # latent model
   if (param=="la") {
     if ((type=="traj") || (type==1)) {
@@ -91,3 +94,37 @@ plot.ngme <- function(object, param="fe", type="traj", which=1) {
   stop("Unknown parameter")
 }
 
+
+#' Title
+#'
+#' @param traj
+#' @param start
+#' @param n
+#' @param type
+#'
+#' @return
+#' @export
+#'
+#' @examples
+plot_out <- function(trajectory, start=1, n=1, type="traj", transform=identity, ylab="variable") {
+  # plot trajectory of out$trajectory[]
+  if (type=="traj") {
+    if (n==2) par(mfrow=c(2,1))
+    if (n==3||n==4) par(mfrow=c(2,2))
+
+    for (i in start:(start+n-1)) {
+      y <-  unlist(lapply(trajectory$x_traj, function(x) {x[i]} ))
+      plot(transform(y), type="l", ylab=ylab)
+    }
+
+  } else if (type=="grad") {
+    if (n==2) par(mfrow=c(2,1))
+    if (n==3||n==4) par(mfrow=c(2,2))
+
+    for (i in start:(start+n-1)) {
+      y <-  unlist(lapply(trajectory$grad_traj, function(x) {x[i]} ))
+      plot(transform(y), type="l", ylab=ylab)
+    }
+  }
+  par(mfrow=c(1,1))
+}

@@ -2,7 +2,7 @@ library(devtools)
 load_all()
 # load_all(reset = FALSE, recompile = FALSE)
 
-n_obs <- 100
+n_obs <- 1000
 sigma_eps = 0.1
 
 x1 = runif(n_obs)
@@ -56,7 +56,7 @@ Y = as.numeric(Y + X %*% beta)
 # args(control.ngme)
 # args(control.f)
 # args(control.ngme)
-control = control.ngme(burnin=100, iterations = 100,
+control = control.ngme(burnin=100, iterations = 500,
                        gibbs_sample = 5, stepsize = 1,
                        kill_var = FALSE, threshold = 1e-4)
 
@@ -67,7 +67,7 @@ debug = debug.ngme(fixW = FALSE)
 ngme_out = ngme(Y1 ~ x1 + x2 +
                   f(Y1, model="ar1", var="nig",
                     control=control.f(numer_grad = TRUE,
-                                      init_operator = 0.5,
+                                      init_operator = 0.9,
                                       init_mu       = 0,
                                       init_sigma    = 1,
                                       init_var      = 1)

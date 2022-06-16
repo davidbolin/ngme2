@@ -15,6 +15,7 @@
 
 using Eigen::SparseMatrix;
 using Eigen::VectorXd;
+using Eigen::MatrixXd;
 
 class Operator {
 protected:
@@ -26,8 +27,10 @@ protected:
 public:
     Operator(Rcpp::List ope_in)
     {
+std::cout << "constructor of Operator" << std::endl;
         n_params = Rcpp::as<int> (ope_in["n_params"]);
         use_num_dK = Rcpp::as<bool> (ope_in["use_num_dK"]);
+std::cout << "finish constructor of Operator" << std::endl;
     };
 
     int get_n_params() const {return parameter.size(); }
@@ -114,50 +117,68 @@ class nonstationaryGC : public Operator {
 private:
     // kappa = parameter(0)
     int alpha; 
-    VectorXd Cdiag;
+    VectorXd Cdiag, taus, kappas;
     SparseMatrix<double, 0, int> G;
     MatrixXd Btau, Bkappa;
 public:
     nonstationaryGC(Rcpp::List ope_in) 
-    :   Operator    ( ope_in),
-        alpha       ( Rcpp::as<int> (ope_in["alpha"])),
-        Btau        ( Rcpp::as<MatrixXd> (ope_in["Btau"]) ),
-        Bkappa      ( Rcpp::as<MatrixXd> (ope_in["Bkappa"]) ),
-        G           ( Rcpp::as< SparseMatrix<double,0,int> > (ope_in["G"]) )
+    :   Operator    ( ope_in)
+        // alpha       ( Rcpp::as<int> (ope_in["alpha"])),
+        // G           ( Rcpp::as< SparseMatrix<double,0,int> > (ope_in["G"]) )
+        // Btau        ( Rcpp::as<MatrixXd> (ope_in["B.tau"]) ),
+        // Bkappa      ( Rcpp::as<MatrixXd> (ope_in["B.kappa"]) )
     {
-        VectorXd init_parames = ope_in["init_operator"];
+        alpha = Rcpp::as<int> (ope_in["alpha"]);
+        G = Rcpp::as< SparseMatrix<double,0,int> > (ope_in["G"]);
+        Btau   = Rcpp::as<MatrixXd> (ope_in["B.tau"]);
+        Bkappa = Rcpp::as<MatrixXd> (ope_in["B.kappa"]);
+
+        VectorXd init_params = ope_in["init_operator"];
         SparseMatrix<double> C = Rcpp::as< SparseMatrix<double,0,int> > (ope_in["C"]);
         Cdiag = C.diagonal();
-        
-        set_parameter(init_parames);
+        set_parameter(init_params);
+
+std::cout << "Finish constructor of nonGC" << std::endl;
     }
 
     // here C is diagonal
-    void set_parameter(VectorXd parameter) {
-        this->parameter = parameter;
+    void set_parameter(VectorXd params) {
+        this->parameter = params;
+        
+        // assemble (1, params)
+        VectorXd params_add_1(1 + params.size());
+            params_add_1 << 1, params;
 
-        K = getK(parameter);
-        // update dK?
+        taus = (Btau * params_add_1).array().exp();
+        kappas = (Bkappa * params_add_1).array().exp();
+        
+        K = getK(params);
+    }
+
+    VectorXd& get_taus() {
+        return taus;
     }
 
     SparseMatrix<double> getK(VectorXd params) const {
+        VectorXd params_add_1(1 + params.size());
+            params_add_1 << 1, params;
         
-        VectorXd taus = (Btau * params).array().exp();
-        VectorXd kappas = (Bkappa * params).array().exp();
-
+        taus = (Btau * params_add_1).array().exp();
+        kappas = (Bkappa * params_add_1).array().exp();
+        
         int n_dim = G.rows();
-        SparseMatrix<double> K (n_dim, n_dim);
+        SparseMatrix<double> K_a (n_dim, n_dim);
         SparseMatrix<double> KCK (n_dim, n_dim);
-            KCK.diagonal() = kappas.cwiseProduct(kappas).cwiseProduct(Cdiag);
+            KCK = kappas.cwiseProduct(kappas).cwiseProduct(Cdiag).asDiagonal();
         
         if (alpha==2) {             
             // K_a = T (G + KCK) C^(-1/2)
-            K = taus.asDiagonal() * 
+            K_a = taus.asDiagonal() * 
             (G + KCK) * 
             Cdiag.cwiseSqrt().cwiseInverse().asDiagonal();
         } else if (alpha==4) {      
             // K_a = T (G + KCK) C^(-1) (G+KCK) C^(1/2)
-            K = taus.asDiagonal() * 
+            K_a = taus.asDiagonal() * 
             (G + KCK) * Cdiag.cwiseInverse().asDiagonal() *
             (G + KCK) * 
             Cdiag.cwiseSqrt().cwiseInverse().asDiagonal();
@@ -165,10 +186,10 @@ public:
             throw("alpha not equal to 2 or 4 is not implemented");
         }
         
-        return K;
+        return K_a;
     }
 
-    // to-do: what is dK here?
+    // ignore
     SparseMatrix<double> get_dK(VectorXd params) const {
         return G;
     }

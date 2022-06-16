@@ -1,3 +1,8 @@
+/*
+    latent class:
+        dim. of paramter: n_ope_params + 3
+*/
+
 #ifndef NGME_LATANT_H
 #define NGME_LATANT_H
 
@@ -18,15 +23,13 @@ using Eigen::VectorXd;
 
 class Latent {
 protected:
-    int n_params;
-
     bool debug;
-    int n_mesh; 
+    int n_mesh, n_params;
 
-    // indicate optimize (kappa, mu, sigma, var)
+    // indicate optimize (K, mu, sigma, var)
     int opt_flag[4] {1, 1, 1, 1};
     
-    bool use_precond {false}, numer_grad {false};
+    bool use_precond {false}, numer_grad {false}, use_num_hess {true};
 
     // eps for numerical gradient.
     double mu, sigma, trace, trace_eps, eps;
@@ -43,23 +46,23 @@ protected:
 
 public:
     Latent(Rcpp::List latent_in) 
-    : debug    ( Rcpp::as< bool >        (latent_in["debug"])),
-      
+    : debug     ( Rcpp::as< bool >        (latent_in["debug"])),
+      n_mesh    ( Rcpp::as< int >         (latent_in["n_mesh"])),
+      n_params    ( Rcpp::as< int >       (latent_in["n_la_params"])),
+
       mu        (0),
       sigma     (1),
       trace     (0),
       trace_eps (0),
       eps       (0.001), 
       
-      W       (n_mesh),
-      prevW   (n_mesh),
+      W       ( n_mesh),
+      prevW   ( n_mesh),
       h       ( Rcpp::as< VectorXd >                     (latent_in["h"])),
       A       ( Rcpp::as< SparseMatrix<double,0,int> >   (latent_in["A"]))
     {
+if (debug) std::cout << "constructor of latent" << std::endl;
         // general input
-            n_mesh   = Rcpp::as< int >                          (latent_in["n_mesh"]);
-            n_params = Rcpp::as< int >                          (latent_in["n_la_params"]);
-
             string var_type = Rcpp::as<string>     (latent_in["var_type"]);
         
         Rcpp::List control_f = Rcpp::as<Rcpp::List> (latent_in["control_f"]);
@@ -68,9 +71,10 @@ public:
             opt_flag[2]   = Rcpp::as<int>        (control_f["opt_sigma"]);
             opt_flag[3]   = Rcpp::as<int>        (control_f["opt_var"]);
 
-            use_precond = Rcpp::as<bool>        (control_f["use_precond"]);
-            numer_grad  = Rcpp::as<bool>        (control_f["numer_grad"]);
-            eps         = Rcpp::as<double>      (control_f["eps"]);
+            use_precond  = Rcpp::as<bool>        (control_f["use_precond"] );
+            use_num_hess = Rcpp::as<bool>        (control_f["use_num_hess"]);
+            numer_grad   = Rcpp::as<bool>        (control_f["numer_grad"]) ;
+            eps          = Rcpp::as<double>      (control_f["eps"]) ;
             
             // init values
             mu           = Rcpp::as<double>     (control_f["init_mu"]);
@@ -86,6 +90,7 @@ public:
             // Not optimizing mu
             opt_flag[1] = 0;  
         }
+if (debug) std::cout << "finish constructor of latent" << std::endl;
     }
     ~Latent() {}
 
@@ -98,7 +103,9 @@ public:
     const VectorXd& getPrevW()  const         {return prevW; }
     void            setW(const VectorXd& W)   { prevW = this->W; this->W = W; }
 
-    VectorXd getMean() const { return mu * (getV() - h); }
+    VectorXd getMean() const { 
+        return mu * (getV() - h); 
+    }
 
     /*  2 Variance component   */
     VectorXd getSV() const { VectorXd V=getV(); return (V*pow(sigma,2)); }
@@ -181,6 +188,7 @@ public:
 
 /*    Optimizer related    */
 inline const VectorXd Latent::get_parameter() const {
+if (debug) std::cout << "Start latent get parameter"<< std::endl;   
     int n_ope = ope->get_n_params();
     
     VectorXd parameter (n_params);
@@ -189,10 +197,12 @@ inline const VectorXd Latent::get_parameter() const {
         parameter(n_ope+1)          = get_theta_sigma();
         parameter(n_ope+2)          = get_theta_var();  
     
+if (debug) std::cout << "Finish latent get parameter"<< std::endl;   
     return parameter;
 }
 
 inline const VectorXd Latent::get_grad() {
+if (debug) std::cout << "Start latent gradient"<< std::endl;   
     int n_ope = ope->get_n_params();
     VectorXd grad (n_params);
 auto grad1 = std::chrono::steady_clock::now();
@@ -204,11 +214,8 @@ auto grad1 = std::chrono::steady_clock::now();
 
 // DEBUG: checking grads
 if (debug) {
-    // std::cout << "grad_kappa (ms): " << since(grad1).count() << std::endl;   
-    // std::cout << "******* grad of kappa is: " << grad(0) << std::endl;   
-    // std::cout << "******* grad of mu is:    " << grad(1) << std::endl;   
-    // std::cout << "******* grad of sigma is: " << grad(2) << std::endl;   
-    // std::cout << "******* grad of var   is: " << grad(3) << std::endl;
+    std::cout << "gradient time " << since(grad1).count() << std::endl;   
+    std::cout << "gradient= " << grad << std::endl;   
 }
     return grad;
 }
@@ -254,7 +261,11 @@ inline double Latent::grad_mu() {
 
     double grad = pow(sigma,-2) * (V-h).cwiseProduct(inv_V).dot(K*W - mu*(V-h));
     double hess = -pow(sigma,-2) * (prevV-h).cwiseProduct(prev_inv_V).dot(prevV-h);
-
+    
+if (debug) {
+// std::cout << "grad of mu=" << grad <<std::endl;   
+// std::cout << "hess of mu=" << hess <<std::endl;
+}
     return grad / hess;
 }
 
@@ -299,6 +310,7 @@ inline double Latent::function_K(VectorXd parameter) {
     return l;
 }
 
+// numerical gradient for K parameters
 inline VectorXd Latent::numerical_grad() {
     int n_ope = ope->get_n_params();
     VectorXd params = ope->get_parameter();
@@ -312,7 +324,7 @@ inline VectorXd Latent::numerical_grad() {
         
         double num_g = (val_add_eps - val) / eps;
         
-        if (!use_precond) {
+        if (!use_num_hess) {
             grad(i) = - num_g / n_mesh;
         } else {
             VectorXd params_minus_eps = params;
@@ -322,6 +334,8 @@ inline VectorXd Latent::numerical_grad() {
             grad(i) = num_g / num_hess;
         }
     } 
+    
+    return grad;
 }
 
 

@@ -13,8 +13,9 @@ public:
     matern_ns(Rcpp::List latent_in) 
     : Latent(latent_in)
     {
+if (debug) std::cout << "constructor of matern ns" << std::endl;
         Rcpp::List operator_in = Rcpp::as<Rcpp::List> (latent_in["operator_in"]); // containing C and G
-        ope = new nonstationaryGC(ope_in);
+        ope = new nonstationaryGC(operator_in);
         
         // Init K and Q
         SparseMatrix<double> K = getK();
@@ -22,11 +23,17 @@ public:
         
         solver_K.init(n_mesh, 0,0,0);
         solver_K.analyze(K);
-        compute_trace();
+        // compute_trace();
 
         // Init Q
         solver_Q.init(n_mesh, 0,0,0);
         solver_Q.analyze(Q);
+
+        // fix sigma 
+        sigma = 1;
+        opt_flag[2] = false; 
+
+if (debug) std::cout << "finish constructor of matern ns" << std::endl;
     }
     
     // inherit get_K_parameter, grad_K_parameter, set_K_parameter
@@ -41,3 +48,4 @@ public:
         );
     }
 };
+

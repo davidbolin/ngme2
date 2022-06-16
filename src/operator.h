@@ -117,7 +117,7 @@ class nonstationaryGC : public Operator {
 private:
     // kappa = parameter(0)
     int alpha; 
-    VectorXd Cdiag, taus, kappas;
+    VectorXd Cdiag; //, taus, kappas;
     SparseMatrix<double, 0, int> G;
     MatrixXd Btau, Bkappa;
 public:
@@ -145,26 +145,19 @@ std::cout << "Finish constructor of nonGC" << std::endl;
     void set_parameter(VectorXd params) {
         this->parameter = params;
         
-        // assemble (1, params)
-        VectorXd params_add_1(1 + params.size());
-            params_add_1 << 1, params;
-
-        taus = (Btau * params_add_1).array().exp();
-        kappas = (Bkappa * params_add_1).array().exp();
-        
         K = getK(params);
     }
 
-    VectorXd& get_taus() {
-        return taus;
-    }
+    // VectorXd& get_taus() {
+    //     return taus;
+    // }
 
     SparseMatrix<double> getK(VectorXd params) const {
         VectorXd params_add_1(1 + params.size());
             params_add_1 << 1, params;
         
-        taus = (Btau * params_add_1).array().exp();
-        kappas = (Bkappa * params_add_1).array().exp();
+        VectorXd taus = (Btau * params_add_1).array().exp();
+        VectorXd kappas = (Bkappa * params_add_1).array().exp();
         
         int n_dim = G.rows();
         SparseMatrix<double> K_a (n_dim, n_dim);

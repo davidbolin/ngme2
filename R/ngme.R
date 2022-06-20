@@ -73,7 +73,8 @@ ngme <- function(formula,
     model.types = unlist(lapply(latents_in, function(x) x["model_type"] ))
     var.types   = unlist(lapply(latents_in, function(x) x["var.type"] ))
 
-    n_feff = ncol(X); n_merr = 1
+    n_feff = ncol(X);
+    n_merr = 1
     n_params = n_la_params + n_feff + n_merr
 
     # 3. prepare in_list for estimate

@@ -1,6 +1,7 @@
 /*
     latent class:
         dim. of paramter: n_ope_params + 3
+    // goal: change mu, sigma -> multi-var case
 */
 
 #ifndef NGME_LATANT_H
@@ -24,15 +25,21 @@ using Eigen::VectorXd;
 class Latent {
 protected:
     bool debug;
-    int n_mesh, n_params;
+    int n_mesh, n_params, n_ope, n_mu {1}, n_sigma {1}, n_var {1}; // n_params=n_ope + n_mu + n_sigma + n_var
 
     // indicate optimize (K, mu, sigma, var)
     int opt_flag[4] {1, 1, 1, 1};
     
     bool use_precond {false}, numer_grad {false}, use_num_hess {true};
 
+    MatrixXd B_sigma, B_mu;
+
+    VectorXd theta_sigma, theta_mu;
+    VectorXd mu; 
+    
     // eps for numerical gradient.
-    double mu, sigma, trace, trace_eps, eps;
+    double sigma, trace, trace_eps, eps;
+
 
     VectorXd W, prevW, h;
     SparseMatrix<double,0,int> A;
@@ -46,20 +53,26 @@ protected:
 
 public:
     Latent(Rcpp::List latent_in) 
-    : debug     ( Rcpp::as< bool >        (latent_in["debug"])),
-      n_mesh    ( Rcpp::as< int >         (latent_in["n_mesh"])),
-      n_params    ( Rcpp::as< int >       (latent_in["n_la_params"])),
-
-      mu        (0),
-      sigma     (1),
-      trace     (0),
-      trace_eps (0),
-      eps       (0.001), 
+    : debug         (Rcpp::as< bool >        (latent_in["debug"])),
+      n_mesh        (Rcpp::as< int >         (latent_in["n_mesh"])),
+    
+      B_sigma       (Rcpp::as< MatrixXd >    (latent_in["B_sigma"])),
+      B_mu          (Rcpp::as< MatrixXd >    (latent_in["B_mu"])),
       
-      W       ( n_mesh),
-      prevW   ( n_mesh),
-      h       ( Rcpp::as< VectorXd >                     (latent_in["h"])),
-      A       ( Rcpp::as< SparseMatrix<double,0,int> >   (latent_in["A"]))
+      theta_sigma   (Rcpp::as< VectorXd >                 (latent_in["theta_sigma"])),
+      theta_mu      (Rcpp::as< VectorXd >                 (latent_in["theta_mu"])),
+      
+      mu            (n_mu),
+      sigma         (1),
+      
+      trace         (0),
+      trace_eps     (0),
+      eps           (0.001), 
+      
+      W             (n_mesh),
+      prevW         (n_mesh),
+      h             (Rcpp::as< VectorXd >                     (latent_in["h"])),
+      A             (Rcpp::as< SparseMatrix<double,0,int> >   (latent_in["A"]))
     {
 if (debug) std::cout << "constructor of latent" << std::endl;
         // general input
@@ -76,13 +89,19 @@ if (debug) std::cout << "constructor of latent" << std::endl;
             numer_grad   = Rcpp::as<bool>        (control_f["numer_grad"]) ;
             eps          = Rcpp::as<double>      (control_f["eps"]) ;
             
-            // init values
-            mu           = Rcpp::as<double>     (control_f["init_mu"]);
-            sigma        = Rcpp::as<double>     (control_f["init_sigma"]);
-        
-        Rcpp::List var_in = Rcpp::as<Rcpp::List> (latent_in["var_in"]);
-        
+        // init values
+            mu           = Rcpp::as<VectorXd>     (control_f["init_mu"]);
+            n_mu         = mu.size();
+            sigma        = Rcpp::as<double>       (control_f["init_sigma"]);
+            n_sigma      = 1;
+
+        Rcpp::List ope_in = Rcpp::as<Rcpp::List> (latent_in["operator_in"]);
+            n_ope = ope_in["n_params"];
+            n_var = 1;
+            n_params = n_ope + n_mu + n_sigma + n_var;
+
         // construct var
+        Rcpp::List var_in = Rcpp::as<Rcpp::List> (latent_in["var_in"]);
         if (var_type == "nig") {
             var = new ind_IG(var_in, n_mesh, h);
         } else if (var_type == "normal") {
@@ -104,7 +123,14 @@ if (debug) std::cout << "finish constructor of latent" << std::endl;
     void            setW(const VectorXd& W)   { prevW = this->W; this->W = W; }
 
     VectorXd getMean() const { 
-        return mu * (getV() - h); 
+        VectorXd mean;
+        if (mu.size()==1) {
+            mean = mu(0) * (getV()-h);
+        }
+        else {
+            throw("mu.size > 1 Not implemented in getMean()");    
+        }
+        return mean; 
     }
 
     /*  2 Variance component   */
@@ -177,9 +203,9 @@ if (debug) std::cout << "finish constructor of latent" << std::endl;
     virtual double grad_theta_sigma();
 
     // Parameter: mu
-    double get_mu() const     {return mu;} 
-    void   set_mu(double mu) {this->mu = mu;} 
-    virtual double grad_mu();
+    VectorXd get_mu() const     {return mu;} 
+    void   set_mu(VectorXd mu)  {this->mu = mu;} 
+    virtual VectorXd grad_mu();
 
     // Output
     virtual Rcpp::List get_estimates() const=0;
@@ -192,8 +218,8 @@ if (debug) std::cout << "Start latent get parameter"<< std::endl;
     int n_ope = ope->get_n_params();
     
     VectorXd parameter (n_params);
-        parameter.segment(0, n_ope) = ope->get_parameter();
-        parameter(n_ope)            = get_mu();         
+        parameter.segment(0, n_ope)         = ope->get_parameter();
+        parameter.segment(n_ope, n_mu)      = get_mu();          
         parameter(n_ope+1)          = get_theta_sigma();
         parameter(n_ope+2)          = get_theta_var();  
     
@@ -207,8 +233,8 @@ if (debug) std::cout << "Start latent gradient"<< std::endl;
     VectorXd grad (n_params);
 auto grad1 = std::chrono::steady_clock::now();
 
-    if (opt_flag[0]) grad.segment(0, n_ope) = grad_K_parameter();     else grad.segment(0, n_ope) = VectorXd::Constant(n_ope, 0);
-    if (opt_flag[1]) grad(n_ope)            = grad_mu();              else grad(n_ope) = 0;
+    if (opt_flag[0]) grad.segment(0, n_ope)     = grad_K_parameter();     else grad.segment(0, n_ope) = VectorXd::Constant(n_ope, 0);
+    if (opt_flag[1]) grad.segment(n_ope, n_mu)  = grad_mu();              else grad.segment(n_ope, n_mu) = VectorXd::Constant(n_mu, 0);
     if (opt_flag[2]) grad(n_ope+1)          = grad_theta_sigma();     else grad(n_ope+1) = 0;
     if (opt_flag[3]) grad(n_ope+2)          = grad_theta_var();       else grad(n_ope+2) = 0;
 
@@ -225,9 +251,9 @@ inline void Latent::set_parameter(const VectorXd& theta) {
 
     // if (opt_flag[0])  set_theta_kappa(theta(0)); 
     if (opt_flag[0])  set_K_parameter(theta.segment(0, n_ope));
-    if (opt_flag[1])  set_mu(theta(n_ope)); 
-    if (opt_flag[2])  set_theta_sigma(theta(n_ope+1)); 
-    if (opt_flag[3])  set_theta_var(theta(n_ope+2)); 
+    if (opt_flag[1])  set_mu(theta.segment(n_ope, n_mu)); 
+    if (opt_flag[2])  set_theta_sigma(theta(n_ope + n_mu)); 
+    if (opt_flag[3])  set_theta_var(theta(n_ope + n_mu + n_sigma)); 
 }
 
 // sigma>0 -> theta=log(sigma)
@@ -237,36 +263,54 @@ inline double Latent::grad_theta_sigma() {
     VectorXd V = getV();
     VectorXd prevV = getPrevV();
 
-    double msq = (K*W - mu*(V-h)).cwiseProduct(V.cwiseInverse()).dot(K*W - mu*(V-h));
-    double msq2 = (K*prevW - mu*(prevV-h)).cwiseProduct(prevV.cwiseInverse()).dot(K*prevW - mu*(prevV-h));
+    double result;
 
-    double grad = - n_mesh / sigma + pow(sigma, -3) * msq;
+    if (n_mu > 1) {
+        throw("non-stationary case not implemented");
+    } else {
+        // stationary case
+        double msq = (K*W - mu(0)*(V-h)).cwiseProduct(V.cwiseInverse()).dot(K*W - mu(0)*(V-h));
+        double msq2 = (K*prevW - mu(0)*(prevV-h)).cwiseProduct(prevV.cwiseInverse()).dot(K*prevW - mu(0)*(prevV-h));
 
-    // hessian using prevous V
-    double hess = n_mesh / pow(sigma, 2) - 3 * pow(sigma, -4) * msq2;
-    
-    // grad. wrt theta
+        double grad = - n_mesh / sigma + pow(sigma, -3) * msq;
 
-    return grad / (hess * sigma + grad);
+        // hessian using prevous V
+        double hess = n_mesh / pow(sigma, 2) - 3 * pow(sigma, -4) * msq2;
+        
+        // grad. wrt theta
+
+        return grad / (hess * sigma + grad);
+    }
+    return result;
 }
 
+// double
+inline VectorXd Latent::grad_mu() {
+    VectorXd result(n_mu);
 
-inline double Latent::grad_mu() {
-    SparseMatrix<double> K = getK();
-    VectorXd V = getV();
-    VectorXd inv_V = V.cwiseInverse();
-    
-    VectorXd prevV = getPrevV();
-    VectorXd prev_inv_V = prevV.cwiseInverse();
+    if (n_mu > 1) {
+        throw("not implemented now");
+    }
+    else {
+        // stationary case
+        SparseMatrix<double> K = getK();
+        VectorXd V = getV();
+        VectorXd inv_V = V.cwiseInverse();
+        
+        VectorXd prevV = getPrevV();
+        VectorXd prev_inv_V = prevV.cwiseInverse();
 
-    double grad = pow(sigma,-2) * (V-h).cwiseProduct(inv_V).dot(K*W - mu*(V-h));
-    double hess = -pow(sigma,-2) * (prevV-h).cwiseProduct(prev_inv_V).dot(prevV-h);
+        double grad = pow(sigma,-2) * (V-h).cwiseProduct(inv_V).dot(K*W - mu(0) * (V-h));
+        double hess = -pow(sigma,-2) * (prevV-h).cwiseProduct(prev_inv_V).dot(prevV-h);
+
+        result(0) = grad / hess;
+    }
     
 if (debug) {
 // std::cout << "grad of mu=" << grad <<std::endl;   
 // std::cout << "hess of mu=" << hess <<std::endl;
 }
-    return grad / hess;
+    return result;
 }
 
 // only for stationary case, delete later

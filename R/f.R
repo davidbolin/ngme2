@@ -3,12 +3,16 @@
 #' @param x covariates
 #' @param model 1. string: type of model, 2. ngme.spde object
 #' @param var 1. string: type of variance component
-#' @param config control variables
 #' @param debug debug variables
+#' @param control
+#' @param A
+#' @param B.sigma
+#' @param theta.sigma
+#' @param B.mu
 #'
 #' @return a list latent_in for constructing latent model, e.g. A, h, C, G,
 #' which also has
-#' 1. list ope_in for building operator,
+#' 1. list operator_in for building operator,
 #' 2. list var_in for variance component,
 #' 3. list init_values of parameters
 #'
@@ -19,20 +23,25 @@ f <- function(
   var    = "nig",
   control = control.f(),
   debug  = FALSE,
-  A = NULL
-  ) {
-
+  A = NULL,
+  B.sigma = 1, # non-stationary case -> into matrix n_mesh * n_sigma
+  theta.sigma = 0, # exp(0) = 1
+  B.mu = 1,
+  theta.mu = 0
+) {
   # construct variance component
   build.var <- function(var) {
     if (var=="nig") {
       var_in = list(
         # V_type = "ind_IG",
-        nu = control$init_var
+        nu    = control$init_var,
+        n_params = 1
       )
     }
     else if (var=="normal") {
       var_in = list(
         # V_type = "normal"
+        n_params = 1
       )
     }
     else {
@@ -42,7 +51,6 @@ f <- function(
   }
 
   # 1. construct operator (n_covar, n_ope, C, G, A, h)
-
   ################ SPDE ##################
   if (inherits(model, "ngme.spde")) {
     # # construct latent_in
@@ -65,7 +73,6 @@ f <- function(
     # 1. general
     n = length(x)
     model.type = "spde.matern"
-    n_la_params = model$n_params + 3
     var = model$var # var from spde
     h = rep(1, n)
 
@@ -85,11 +92,14 @@ f <- function(
 
     # 1. for general latent model
     model.type = "ar1"
-    n_la_params = n_ope_params + 3
 
     # A <- as(Matrix::Matrix(diag(n)), "dgCMatrix");
     A <- ngme.ts.make.A(x)
     n = ncol(A)
+
+    n_mu <- 1
+    n_sigma <- length(theta.sigma)
+
     # n = length(x) # length of covariates
 
     h <- rep(1.0, n)
@@ -112,7 +122,8 @@ f <- function(
       use_num_dK=FALSE
     )
 
-    var <- build.var(var)
+    # 3. var
+    var_in <- build.var(var)
   }
   ################ MATERN ##################
   else if (model=="matern1d") {
@@ -142,14 +153,25 @@ f <- function(
     stop("unknown model")
   }
 
+  # turn B.sigma and B.mu into matrix
+  B.sigma <- matrix(B.sigma, nrow=n, ncol=n_sigma)
+  B.mu <- matrix(B.mu, nrow=n, ncol=n_mu)
+
   # construct latent_in
   latent_in <- list(
     model_type  = model.type,
     var_type    = var,
     n_mesh      = n,        # !: make sure this is the second place
-    n_la_params = n_la_params,
     A           = A,
     h           = h,
+
+    B_sigma     = B.sigma,
+    theta_sigma = theta.sigma,
+    n_sigma     = n_sigma,
+    B_mu        = B.mu,
+    theta_mu    = theta.mu,
+    n_mu        = n_mu,
+    n_la_params = operator_in$n_params + var_in$n_params + n_mu + n_sigma,
 
     # lists
     special_in    = special_in, # for specific model input
@@ -161,5 +183,4 @@ f <- function(
 
   return (latent_in)
 }
-
 

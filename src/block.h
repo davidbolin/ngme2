@@ -29,7 +29,6 @@ const int latent_para = 4;
 
 class BlockModel : public Model {
 protected:
-
 // n_meshs   = row(A1) + ... + row(An)
 // n_params = 4 * n_latent + 1
     // general_in
@@ -343,13 +342,13 @@ if (debug) std::cout << "Start block get parameter"<< std::endl;
         pos += theta.size();
     }
     
-    // sigma_eps
-    thetas(n_params-1) = get_theta_sigma_eps();
-    
     // fixed effects
     if (opt_fix_effect) {
         thetas.segment(n_la_params - 1, n_feff) = beta;
     }
+    
+    // sigma_eps
+    thetas(n_params-1) = get_theta_sigma_eps();
 
 if (debug) std::cout << "Finish block get parameter"<< std::endl;   
     return thetas;

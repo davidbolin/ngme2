@@ -69,7 +69,7 @@ int main(int argc, char const *argv[])
     // v1.resize(2);
     v1 = v2;
 
-    cout << m1.rows(); 
+    cout << v2(1) * v2;
 
     return 0;
 }

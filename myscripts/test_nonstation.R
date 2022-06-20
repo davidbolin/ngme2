@@ -84,7 +84,7 @@ res <- ngme(formula = Y ~ 0 + f(
             debug=debug.ngme(fixW = FALSE),
             control=control.ngme(
               burnin=10,
-              iterations=500,
+              iterations=10,
               gibbs_sample = 5),
   # ngme.start(result from ngme object(lastW, lastV)),
             )
@@ -101,8 +101,4 @@ plot_out(res$trajectory, start=7, n=1, transform = exp, ylab="sigma_eps")
 # results
 res$estimates
 
-
-
-
-# 1 numerical gradient takes 0.08s (500 * 0.08=40)
 

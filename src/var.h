@@ -27,7 +27,7 @@ public:
     virtual void sample_V()=0;
     virtual void sample_cond_V(SparseMatrix<double>& K,
                                 VectorXd& W,
-                                double mu, 
+                                VectorXd& mu, 
                                 double sigma)=0;
 
     virtual double get_var()               const=0;
@@ -82,17 +82,19 @@ public:
     // V|W, Y ~ GIG(p-0.5, a+mu, b+(K W + h mu)^2)
     void sample_cond_V(SparseMatrix<double>& K,
                        VectorXd& W,
-                       double mu, 
+                       VectorXd& mu, 
                        double sigma
                        ) {
-
         prevV = V;
-
+        if (mu.size() == 1) {
         // VectorXd arg_2 = VectorXd::Constant(n, a) + Mu.cwiseProduct(Mu)/(sigma*sigma);   //+ eta * VectorXd::Ones(temporal.rows());
-        VectorXd p_vec = VectorXd::Constant(n, -1);
-        VectorXd a_vec = VectorXd::Constant(n, nu+std::pow((mu/sigma), 2));   //+ eta * VectorXd::Ones(temporal.rows());
-        VectorXd b_vec = VectorXd::Constant(n, nu) + std::pow(sigma, -2) * (K*W + mu*h).cwiseProduct((K * W + mu*h));
-        V = rGIG_cpp(p_vec, a_vec, b_vec);
+            VectorXd p_vec = VectorXd::Constant(n, -1);
+            VectorXd a_vec = VectorXd::Constant(n, nu+std::pow((mu(0) / sigma), 2));   //+ eta * VectorXd::Ones(temporal.rows());
+            VectorXd b_vec = VectorXd::Constant(n, nu) + std::pow(sigma, -2) * (K*W + mu(0) * h).cwiseProduct((K * W + mu(0) * h));
+            V = rGIG_cpp(p_vec, a_vec, b_vec);
+        } else {
+            throw ("sample conditional V not implemented for non-stationary case");
+        }
     };
 };
 
@@ -126,7 +128,7 @@ public:
     // return V=h
     void sample_cond_V(SparseMatrix<double>& K,
                        VectorXd& W,
-                       double mu, 
+                       VectorXd& mu, 
                        double sigma
                        ) {
         prevV = h;

@@ -1,9 +1,9 @@
 library(devtools)
-load_all()
 # load_all(reset = FALSE, recompile = FALSE)
+load_all()
 
 n_obs <- 1000
-sigma_eps = 0.1
+sigma_eps = 0.5
 
 x1 = runif(n_obs)
 x2 = rexp(n_obs)
@@ -65,13 +65,17 @@ debug = debug.ngme(fixW = FALSE)
 ##### ngme for 1 ar
 # nig
 ngme_out = ngme(Y1 ~ x1 + x2 +
-                  f(Y1, model="ar1", var="nig",
-                    control=control.f(numer_grad = TRUE,
-                                      init_operator = 0.9,
-                                      init_mu       = 0,
-                                      init_sigma    = 1,
-                                      init_var      = 1)
-                    ),
+                  f(1:length(Y1),
+                    model="ar1",
+                    var="nig",
+                    control=control.f(numer_grad       = FALSE,
+                                      init_operator    = 0.7,
+                                      init_mu          = 0,
+                                      init_sigma       = 1,
+                                      init_var         = 1,
+                                      opt_sigma        = TRUE,
+                                      opt_var          = TRUE),
+                    debug=F),
                 family="normal",
                 data=data.frame(Y1=(as.numeric(Y1)), x1=x1, x2=x2),
                 control=control)
@@ -102,4 +106,5 @@ plot(ngme_out, param = "la", type = "traj", which=1)
 # plot(ngme_out, param = "la", type = "traj", which=2)
 
 summary(ngme_out)
+
 

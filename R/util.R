@@ -17,7 +17,5 @@ ngme.ts.make.A <- function(loc) {
     A[i, loc[i]-min(loc)+1] = 1
   }
 
-  A
+  as(A, "dgCMatrix")
 }
-
-

@@ -44,7 +44,7 @@ public:
         SparseMatrix<double> K = getK();
         SparseMatrix<double> dK = get_dK();
         VectorXd V = getV();
-        VectorXd SV = pow(sigma, 2) * V;
+        VectorXd SV = getSV();
         
         VectorXd params = ope->get_parameter();
             double a = params(0);
@@ -71,26 +71,30 @@ public:
             }
         } else { 
             // 2. analytical gradient and numerical hessian
-            double tmp = (dK*W).cwiseProduct(SV.cwiseInverse()).dot(K * W + (h - V) * mu);
-            double grad = trace - tmp;
+            if (n_mu==1) {
+                // stationary case
+                double tmp = (dK*W).cwiseProduct(SV.cwiseInverse()).dot(K * W + (h - V) * mu(0));
+                double grad = trace - tmp;
 
-            if (!use_precond) {
-                ret = - grad * da / n_mesh;
-            } else {
-                VectorXd prevV = getPrevV();
-                // compute numerical hessian
-                SparseMatrix<double> K2 = ope->getK(0, eps);
-                SparseMatrix<double> dK2 = ope->get_dK(0, eps);
+                if (!use_precond) {
+                    ret = - grad * da / n_mesh;
+                } else {
+                    VectorXd prevV = getPrevV();
+                    // compute numerical hessian
+                    SparseMatrix<double> K2 = ope->getK(0, eps);
+                    SparseMatrix<double> dK2 = ope->get_dK(0, eps);
 
-                // grad(x+eps) - grad(x) / eps
-                VectorXd prevSV = pow(sigma, 2) * prevV;
-                double grad2_eps = trace_eps - (dK2*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K2 * prevW + (h - prevV) * mu);
-                double grad_eps  = trace - (dK*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K * prevW + (h - prevV) * mu);
+                    // grad(x+eps) - grad(x) / eps
+                    VectorXd prevSV = getPrevSV();
+                    double grad2_eps = trace_eps - (dK2*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K2 * prevW + (h - prevV) * mu(0));
+                    double grad_eps  = trace - (dK*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K * prevW + (h - prevV) * mu(0));
 
-                double hess = (grad2_eps - grad_eps) / eps;
+                    double hess = (grad2_eps - grad_eps) / eps;
 
-                ret = (grad * da) / (hess * da * da + grad_eps * d2a);
+                    ret = (grad * da) / (hess * da * da + grad_eps * d2a);
+                }
             }
+
         }
         
         return VectorXd::Constant(1, ret);
@@ -115,8 +119,8 @@ public:
     Rcpp::List get_estimates() const {
         return Rcpp::List::create(
             Rcpp::Named("alpha") = ope->get_parameter()(0),
-            Rcpp::Named("mu")    = mu,
-            Rcpp::Named("sigma") = sigma,
+            Rcpp::Named("mu")    = theta_mu,
+            Rcpp::Named("sigma") = theta_sigma,
             Rcpp::Named("var")   = var->get_var()
         );
     }

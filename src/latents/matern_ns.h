@@ -29,10 +29,6 @@ if (debug) std::cout << "constructor of matern ns" << std::endl;
         solver_Q.init(n_mesh, 0,0,0);
         solver_Q.analyze(Q);
 
-        // fix sigma 
-        sigma = 1;
-        opt_flag[2] = false; 
-
 if (debug) std::cout << "finish constructor of matern ns" << std::endl;
     }
     

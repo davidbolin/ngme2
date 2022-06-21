@@ -25,21 +25,22 @@ using Eigen::VectorXd;
 class Latent {
 protected:
     bool debug;
-    int n_mesh, n_params, n_ope, n_mu {1}, n_sigma {1}, n_var {1}; // n_params=n_ope + n_mu + n_sigma + n_var
+    int n_mesh, n_params, n_ope, n_var {1}; // n_params=n_ope + n_mu + n_sigma + n_var
 
     // indicate optimize (K, mu, sigma, var)
     int opt_flag[4] {1, 1, 1, 1};
     
     bool use_precond {false}, numer_grad {false}, use_num_hess {true};
 
-    MatrixXd B_sigma, B_mu;
-
-    VectorXd theta_sigma, theta_mu;
-    VectorXd mu; 
+    // mu and sigma
+    MatrixXd B_mu,  B_sigma;
+    VectorXd theta_mu, theta_sigma;
     
-    // eps for numerical gradient.
-    double sigma, trace, trace_eps, eps;
+    int n_mu, n_sigma;
+    VectorXd mu, sigma;
 
+    // eps for numerical gradient.
+    double trace, trace_eps, eps;
 
     VectorXd W, prevW, h;
     SparseMatrix<double,0,int> A;
@@ -56,14 +57,16 @@ public:
     : debug         (Rcpp::as< bool >        (latent_in["debug"])),
       n_mesh        (Rcpp::as< int >         (latent_in["n_mesh"])),
     
-      B_sigma       (Rcpp::as< MatrixXd >    (latent_in["B_sigma"])),
       B_mu          (Rcpp::as< MatrixXd >    (latent_in["B_mu"])),
+      B_sigma       (Rcpp::as< MatrixXd >    (latent_in["B_sigma"])),
       
-      theta_sigma   (Rcpp::as< VectorXd >                 (latent_in["theta_sigma"])),
-      theta_mu      (Rcpp::as< VectorXd >                 (latent_in["theta_mu"])),
+      theta_mu      (Rcpp::as< VectorXd >    (latent_in["theta_mu"])),
+      theta_sigma   (Rcpp::as< VectorXd >    (latent_in["theta_sigma"])),
       
-      mu            (n_mu),
-      sigma         (1),
+      n_mu          (theta_mu.size()),
+      n_sigma       (theta_sigma.size()),
+    //   n_mu          (Rcpp::as< double >    (latent_in["n_mu"])),
+    //   n_sigma       (Rcpp::as< double >    (latent_in["n_sigma"])),
       
       trace         (0),
       trace_eps     (0),
@@ -90,10 +93,10 @@ if (debug) std::cout << "constructor of latent" << std::endl;
             eps          = Rcpp::as<double>      (control_f["eps"]) ;
             
         // init values
-            mu           = Rcpp::as<VectorXd>     (control_f["init_mu"]);
-            n_mu         = mu.size();
-            sigma        = Rcpp::as<double>       (control_f["init_sigma"]);
-            n_sigma      = 1;
+            set_theta_mu(theta_mu);
+            set_theta_sigma(theta_sigma);
+            
+            // sigma        = Rcpp::as<double>      (control_f["init_sigma"]);
 
         Rcpp::List ope_in = Rcpp::as<Rcpp::List> (latent_in["operator_in"]);
             n_ope = ope_in["n_params"];
@@ -124,7 +127,7 @@ if (debug) std::cout << "finish constructor of latent" << std::endl;
 
     VectorXd getMean() const { 
         VectorXd mean;
-        if (mu.size()==1) {
+        if (n_mu==1) {
             mean = mu(0) * (getV()-h);
         }
         else {
@@ -134,10 +137,24 @@ if (debug) std::cout << "finish constructor of latent" << std::endl;
     }
 
     /*  2 Variance component   */
-    VectorXd getSV() const { VectorXd V=getV(); return (V*pow(sigma,2)); }
     const VectorXd& getV()     const { return var->getV(); }
     const VectorXd& getPrevV() const { return var->getPrevV(); }
+    VectorXd getSV() const { 
+        VectorXd V=getV(); 
+        if (n_sigma==1)
+            return (V * pow(sigma(0),2)); 
+        else 
+            return (sigma.cwiseProduct(sigma).cwiseProduct(V));
+    }
+    VectorXd getPrevSV() const { 
+        VectorXd V=getPrevV(); 
+        if (n_sigma==1)
+            return (V * pow(sigma(0),2)); 
+        else 
+            return (sigma.cwiseProduct(sigma).cwiseProduct(V));
+    }
     
+
     void sample_cond_V() {
         var->sample_cond_V(ope->getK(), W, mu, sigma);
     }
@@ -189,23 +206,30 @@ if (debug) std::cout << "finish constructor of latent" << std::endl;
             trace_eps = solver_K.trace(M);
         }
     };
-    
-    // Parameter: nu
-    virtual double get_theta_var() const   { return var->get_theta_var(); }
-    virtual void   set_theta_var(double v) { var->set_theta_var(v); }
-    virtual double grad_theta_var()        { 
-        return var->grad_theta_var();
-    }
-
-    // Parameter: sigma
-    virtual double get_theta_sigma() const        { return log(sigma); }
-    virtual void   set_theta_sigma(double theta)  { this->sigma = exp(theta); }
-    virtual double grad_theta_sigma();
 
     // Parameter: mu
-    VectorXd get_mu() const     {return mu;} 
-    void   set_mu(VectorXd mu)  {this->mu = mu;} 
-    virtual VectorXd grad_mu();
+    VectorXd get_theta_mu() const {return theta_mu;} 
+    void   set_theta_mu(VectorXd theta_mu)  {
+        this->theta_mu = theta_mu;
+        mu = (B_mu * theta_mu);
+    } 
+    virtual VectorXd grad_theta_mu();
+
+    // Parameter: sigma
+    virtual VectorXd get_theta_sigma() const { return theta_sigma; }
+    virtual void set_theta_sigma(VectorXd theta_sigma) { 
+        this->theta_sigma = theta_sigma;
+        sigma = (B_sigma * theta_sigma).array().exp();
+    }
+    virtual VectorXd grad_theta_sigma();
+
+    // virtual double get_theta_sigma() const        { return log(sigma); }
+    // virtual void   set_theta_sigma(double theta)  { this->sigma = exp(theta); }
+
+    // Parameter: var
+    virtual double get_theta_var() const   { return var->get_theta_var(); }
+    virtual void   set_theta_var(double v) { var->set_theta_var(v); }
+    virtual double grad_theta_var()        { return var->grad_theta_var(); }
 
     // Output
     virtual Rcpp::List get_estimates() const=0;
@@ -218,10 +242,10 @@ if (debug) std::cout << "Start latent get parameter"<< std::endl;
     int n_ope = ope->get_n_params();
     
     VectorXd parameter (n_params);
-        parameter.segment(0, n_ope)         = ope->get_parameter();
-        parameter.segment(n_ope, n_mu)      = get_mu();          
-        parameter(n_ope+1)          = get_theta_sigma();
-        parameter(n_ope+2)          = get_theta_var();  
+        parameter.segment(0, n_ope)             = ope->get_parameter();
+        parameter.segment(n_ope, n_mu)          = get_theta_mu();
+        parameter.segment(n_ope+n_mu, n_sigma)  = get_theta_sigma();
+        parameter(n_ope+2)                      = get_theta_var();
     
 if (debug) std::cout << "Finish latent get parameter"<< std::endl;   
     return parameter;
@@ -233,10 +257,10 @@ if (debug) std::cout << "Start latent gradient"<< std::endl;
     VectorXd grad (n_params);
 auto grad1 = std::chrono::steady_clock::now();
 
-    if (opt_flag[0]) grad.segment(0, n_ope)     = grad_K_parameter();     else grad.segment(0, n_ope) = VectorXd::Constant(n_ope, 0);
-    if (opt_flag[1]) grad.segment(n_ope, n_mu)  = grad_mu();              else grad.segment(n_ope, n_mu) = VectorXd::Constant(n_mu, 0);
-    if (opt_flag[2]) grad(n_ope+1)          = grad_theta_sigma();     else grad(n_ope+1) = 0;
-    if (opt_flag[3]) grad(n_ope+2)          = grad_theta_var();       else grad(n_ope+2) = 0;
+    if (opt_flag[0]) grad.segment(0, n_ope)             = grad_K_parameter();     else grad.segment(0, n_ope) = VectorXd::Constant(n_ope, 0);
+    if (opt_flag[1]) grad.segment(n_ope, n_mu)          = grad_theta_mu();        else grad.segment(n_ope, n_mu) = VectorXd::Constant(n_mu, 0);
+    if (opt_flag[2]) grad.segment(n_ope+n_mu, n_sigma)  = grad_theta_sigma();     else grad.segment(n_ope+n_mu, n_sigma) = VectorXd::Constant(n_sigma, 0);
+    if (opt_flag[3]) grad(n_ope+2)                      = grad_theta_var();       else grad(n_ope+2) = 0;
 
 // DEBUG: checking grads
 if (debug) {
@@ -247,49 +271,51 @@ if (debug) {
 }
 
 inline void Latent::set_parameter(const VectorXd& theta) {
+if (debug) std::cout << "Start latent set parameter"<< std::endl;   
     int n_ope = ope->get_n_params();
 
     // if (opt_flag[0])  set_theta_kappa(theta(0)); 
-    if (opt_flag[0])  set_K_parameter(theta.segment(0, n_ope));
-    if (opt_flag[1])  set_mu(theta.segment(n_ope, n_mu)); 
-    if (opt_flag[2])  set_theta_sigma(theta(n_ope + n_mu)); 
-    if (opt_flag[3])  set_theta_var(theta(n_ope + n_mu + n_sigma)); 
+    if (opt_flag[0])  set_K_parameter   (theta.segment(0, n_ope));
+    if (opt_flag[1])  set_theta_mu      (theta.segment(n_ope, n_mu)); 
+    if (opt_flag[2])  set_theta_sigma   (theta.segment(n_ope+n_mu, n_sigma)); 
+    if (opt_flag[3])  set_theta_var     (theta(n_ope + n_mu + n_sigma)); 
 }
 
 // sigma>0 -> theta=log(sigma)
 // return the gradient wrt. theta, theta=log(sigma)
-inline double Latent::grad_theta_sigma() {
+inline VectorXd Latent::grad_theta_sigma() {
     SparseMatrix<double> K = getK();
     VectorXd V = getV();
     VectorXd prevV = getPrevV();
 
-    double result;
+    VectorXd result(n_sigma);
 
-    if (n_mu > 1) {
+    if (n_mu > 1 || n_sigma > 1) {
         throw("non-stationary case not implemented");
     } else {
         // stationary case
         double msq = (K*W - mu(0)*(V-h)).cwiseProduct(V.cwiseInverse()).dot(K*W - mu(0)*(V-h));
         double msq2 = (K*prevW - mu(0)*(prevV-h)).cwiseProduct(prevV.cwiseInverse()).dot(K*prevW - mu(0)*(prevV-h));
 
-        double grad = - n_mesh / sigma + pow(sigma, -3) * msq;
+        double grad = - n_mesh / sigma(0) + pow(sigma(0), -3) * msq;
 
         // hessian using prevous V
-        double hess = n_mesh / pow(sigma, 2) - 3 * pow(sigma, -4) * msq2;
+        double hess = n_mesh / pow(sigma(0), 2) - 3 * pow(sigma(0), -4) * msq2;
         
         // grad. wrt theta
 
-        return grad / (hess * sigma + grad);
+        result(0) =  grad / (hess * sigma(0) + grad);
     }
+
     return result;
 }
 
-// double
-inline VectorXd Latent::grad_mu() {
+inline VectorXd Latent::grad_theta_mu() {
+if (debug) std::cout << "Start mu gradient"<< std::endl;   
     VectorXd result(n_mu);
 
-    if (n_mu > 1) {
-        throw("not implemented now");
+    if (n_mu > 1 || n_sigma > 1) {
+        throw("non-stationary case not implemented");
     }
     else {
         // stationary case
@@ -300,14 +326,14 @@ inline VectorXd Latent::grad_mu() {
         VectorXd prevV = getPrevV();
         VectorXd prev_inv_V = prevV.cwiseInverse();
 
-        double grad = pow(sigma,-2) * (V-h).cwiseProduct(inv_V).dot(K*W - mu(0) * (V-h));
-        double hess = -pow(sigma,-2) * (prevV-h).cwiseProduct(prev_inv_V).dot(prevV-h);
+        double grad = pow(sigma(0),-2) * (V-h).cwiseProduct(inv_V).dot(K*W - mu(0) * (V-h));
+        double hess = -pow(sigma(0),-2) * (prevV-h).cwiseProduct(prev_inv_V).dot(prevV-h);
 
         result(0) = grad / hess;
     }
-    
+
 if (debug) {
-// std::cout << "grad of mu=" << grad <<std::endl;   
+// std::cout << "grad of mu=" << grad <<std::endl;
 // std::cout << "hess of mu=" << hess <<std::endl;
 }
     return result;

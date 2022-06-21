@@ -28,7 +28,7 @@ public:
     virtual void sample_cond_V(SparseMatrix<double>& K,
                                 VectorXd& W,
                                 VectorXd& mu, 
-                                double sigma)=0;
+                                VectorXd& sigma)=0;
 
     virtual double get_var()               const=0;
     virtual double get_theta_var()         const=0;
@@ -83,18 +83,20 @@ public:
     void sample_cond_V(SparseMatrix<double>& K,
                        VectorXd& W,
                        VectorXd& mu, 
-                       double sigma
-                       ) {
+                       VectorXd& sigma
+    ) {
         prevV = V;
-        if (mu.size() == 1) {
+
         // VectorXd arg_2 = VectorXd::Constant(n, a) + Mu.cwiseProduct(Mu)/(sigma*sigma);   //+ eta * VectorXd::Ones(temporal.rows());
-            VectorXd p_vec = VectorXd::Constant(n, -1);
-            VectorXd a_vec = VectorXd::Constant(n, nu+std::pow((mu(0) / sigma), 2));   //+ eta * VectorXd::Ones(temporal.rows());
-            VectorXd b_vec = VectorXd::Constant(n, nu) + std::pow(sigma, -2) * (K*W + mu(0) * h).cwiseProduct((K * W + mu(0) * h));
-            V = rGIG_cpp(p_vec, a_vec, b_vec);
-        } else {
-            throw ("sample conditional V not implemented for non-stationary case");
-        }
+        VectorXd p_vec = VectorXd::Constant(n, -1);
+    // stationary case (mu and sigma is a number)
+        // VectorXd a_vec = VectorXd::Constant(n, nu+std::pow((mu / sigma), 2));   //+ eta * VectorXd::Ones(temporal.rows());
+        // VectorXd b_vec = VectorXd::Constant(n, nu) + std::pow(sigma, -2) * (K*W + mu * h).cwiseProduct((K * W + mu * h));
+        
+    // non-stationary case
+        VectorXd a_vec = VectorXd::Constant(n, nu).array() + mu.cwiseQuotient(sigma).array().pow(2); 
+        VectorXd b_vec = VectorXd::Constant(n, nu).array() + sigma.array().pow(-2).cwiseProduct( (K*W + mu.cwiseProduct(h)).array().pow(2) ) ;
+        V = rGIG_cpp(p_vec, a_vec, b_vec);
     };
 };
 
@@ -129,7 +131,7 @@ public:
     void sample_cond_V(SparseMatrix<double>& K,
                        VectorXd& W,
                        VectorXd& mu, 
-                       double sigma
+                       VectorXd& sigma
                        ) {
         prevV = h;
         V = h;

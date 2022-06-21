@@ -165,12 +165,14 @@ f <- function(
     A           = A,
     h           = h,
 
-    B_sigma     = B.sigma,
-    theta_sigma = theta.sigma,
-    n_sigma     = n_sigma,
+    # mu and sigma
     B_mu        = B.mu,
+    B_sigma     = B.sigma,
     theta_mu    = theta.mu,
+    theta_sigma = theta.sigma,
     n_mu        = n_mu,
+    n_sigma     = n_sigma,
+
     n_la_params = operator_in$n_params + var_in$n_params + n_mu + n_sigma,
 
     # lists

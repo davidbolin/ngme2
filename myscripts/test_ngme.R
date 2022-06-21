@@ -2,6 +2,9 @@ library(devtools)
 # load_all(reset = FALSE, recompile = FALSE)
 load_all()
 
+k2th <- function(k) {log((-1-k)/(-1+k))}
+th2k <- function(th) {-1 + (2*exp(th)) / (1+exp(th))}
+
 n_obs <- 1000
 sigma_eps = 0.5
 
@@ -28,27 +31,27 @@ Y1 = as.numeric(Y1 + X %*% beta)
 
 ############  1.2 construct AR with normal noise
 # parameter for ar1
-alpha2 <- 0.7
-sigma2 = 2
-
-noise2 = sigma2 * rnorm(n_obs)
-
-trueW2 <- Reduce(function(x,y){y + alpha2*x}, noise2, accumulate = T)
-
-Y2 = trueW2 + rnorm(n_obs, mean=0, sd=sigma_eps)
-
-# fix effects
-X <- (model.matrix(Y2 ~ x1 + x2))  # design matrix
-Y2 = as.numeric(Y2 + X %*% beta)
+# alpha2 <- 0.7
+# sigma2 = 2
+#
+# noise2 = sigma2 * rnorm(n_obs)
+#
+# trueW2 <- Reduce(function(x,y){y + alpha2*x}, noise2, accumulate = T)
+#
+# Y2 = trueW2 + rnorm(n_obs, mean=0, sd=sigma_eps)
+#
+# # fix effects
+# X <- (model.matrix(Y2 ~ x1 + x2))  # design matrix
+# Y2 = as.numeric(Y2 + X %*% beta)
 
 ########### 2. generate fixed effect and measurement noise
 
-Y <- trueW1 + trueW2 + rnorm(n_obs, mean=0, sd=sigma_eps)
-
-X <- (model.matrix(Y ~ x1 + x2))  # design matrix
-beta <- c(-3, -1, 2)
-
-Y = as.numeric(Y + X %*% beta)
+# Y <- trueW1 + trueW2 + rnorm(n_obs, mean=0, sd=sigma_eps)
+#
+# X <- (model.matrix(Y ~ x1 + x2))  # design matrix
+# beta <- c(-3, -1, 2)
+#
+# Y = as.numeric(Y + X %*% beta)
 
 ########### 3. run ngme
 
@@ -56,9 +59,11 @@ Y = as.numeric(Y + X %*% beta)
 # args(control.ngme)
 # args(control.f)
 # args(control.ngme)
-control = control.ngme(burnin=100, iterations = 500,
+
+control = control.ngme(burnin=100, iterations = 100,
                        gibbs_sample = 5, stepsize = 1,
-                       kill_var = FALSE, threshold = 1e-4)
+                       kill_var = FALSE, threshold = 1e-4,
+                       opt_fix_effect = T)
 
 debug = debug.ngme(fixW = FALSE)
 
@@ -69,13 +74,15 @@ ngme_out = ngme(Y1 ~ x1 + x2 +
                     model="ar1",
                     var="nig",
                     control=control.f(numer_grad       = FALSE,
-                                      init_operator    = 0.7,
-                                      init_mu          = 0,
-                                      init_sigma       = 1,
+                                      init_operator    = k2th(0.5),
                                       init_var         = 1,
-                                      opt_sigma        = TRUE,
-                                      opt_var          = TRUE),
-                    debug=F),
+                                      opt_operator     = F,
+                                      opt_mu           = F,
+                                      opt_sigma        = F,
+                                      opt_var          = T),
+                    theta.mu = 2,
+                    theta.sigma = log(2),
+                    debug=T),
                 family="normal",
                 data=data.frame(Y1=(as.numeric(Y1)), x1=x1, x2=x2),
                 control=control)
@@ -97,14 +104,32 @@ ngme_out = ngme(Y1 ~ x1 + x2 +
 
 ########### 4. results
 
+# xx <- seq(-10, 10, length=1000);
+# plot(xx, th2k(xx))
+
 # nig ar1: a=0.5, mu=2, sigma=2, nu=1
 # normal ar1: a=0.7 sigma=3
 
-plot(ngme_out, param = "fe", type = "traj")
-plot(ngme_out, param = "me", type = "traj")
-plot(ngme_out, param = "la", type = "traj", which=1)
-# plot(ngme_out, param = "la", type = "traj", which=2)
+# plot alpha
+  plot_out(ngme_out$trajectory, start=1, n=1, transform = th2k)
+# plot mu
+  plot_out(ngme_out$trajectory, start=2, n=1)
+# plot sigma
+  plot_out(ngme_out$trajectory, start=3, n=1, transform = exp)
+# plot var
+  plot_out(ngme_out$trajectory, start=4, n=1, transform = exp)
+# plot fix effects
+  plot_out(ngme_out$trajectory, start=5, n=3)
+# plot m err
+  plot_out(ngme_out$trajectory, start=8, n=1)
 
-summary(ngme_out)
+# ngme_out
+ngme_out$trajectory
+
+# plot(ngme_out, param = "fe", type = "traj")
+# plot(ngme_out, param = "me", type = "traj")
+# plot(ngme_out, param = "la", type = "traj", which=1)
+# plot(ngme_out, param = "la", type = "traj", which=2)
+# summary(ngme_out)
 
 

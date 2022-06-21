@@ -171,9 +171,11 @@ if (debug) std::cout << "End Block Constructor" << std::endl;
     void sampleW_V();
 
     void sampleV_WY() {
+if (debug) std::cout << "Start sampling V" << std::endl;        
         for (unsigned i=0; i < n_latent; i++) {
             (*latents[i]).sample_cond_V();
         }
+if (debug) std::cout << "Finish sampling V" << std::endl;        
     }
     void setW(const VectorXd&);
     
@@ -344,7 +346,7 @@ if (debug) std::cout << "Start block get parameter"<< std::endl;
     
     // fixed effects
     if (opt_fix_effect) {
-        thetas.segment(n_la_params - 1, n_feff) = beta;
+        thetas.segment(n_la_params, n_feff) = beta;
     }
     
     // sigma_eps
@@ -378,7 +380,7 @@ time_compute_g += since(timer_computeg).count();
 
         // fixed effects
         if (opt_fix_effect) {
-            gradient.segment(n_la_params - 1, n_feff) = grad_beta();
+            gradient.segment(n_la_params, n_feff) = grad_beta();
         }
         
         // sigma_eps 
@@ -421,7 +423,7 @@ inline void BlockModel::set_parameter(const VectorXd& Theta) {
     
     // fixed effects
     if (opt_fix_effect) {
-        beta = Theta.segment(n_la_params - 1, n_feff);
+        beta = Theta.segment(n_la_params, n_feff);
     }
 
     assemble(); //update K,dK,d2K after

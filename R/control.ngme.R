@@ -73,9 +73,6 @@ control.f <- function(
   opt_var       = TRUE,
 
   init_operator = 1, # for spde model, use spde(theta.int=...)
-  init_mu       = 0,
-  init_sigma    = 1,
-  init_var      = 1,
 
   numer_grad    = FALSE,
   use_precond   = TRUE,
@@ -90,9 +87,6 @@ control.f <- function(
     opt_var       = opt_var,
 
     init_operator = init_operator,
-    init_mu       = init_mu,
-    init_sigma    = init_sigma,
-    init_var      = init_var,
 
     numer_grad    = numer_grad,
     use_precond   = use_precond,

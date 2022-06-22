@@ -142,9 +142,9 @@ public:
     Rcpp::List get_estimates() const {
         return Rcpp::List::create(
             Rcpp::Named("alpha") = ope->get_parameter()(0),
-            Rcpp::Named("mu")    = theta_mu,
-            Rcpp::Named("sigma") = theta_sigma,
-            Rcpp::Named("var")   = var->get_var()
+            Rcpp::Named("theta.mu")    = theta_mu,
+            Rcpp::Named("theta.sigma") = theta_sigma,
+            Rcpp::Named("theta.noise")   = var->get_var()
         );
     }
 };

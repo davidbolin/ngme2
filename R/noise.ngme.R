@@ -1,19 +1,20 @@
 #' ngme noise specification
 #'
-#' @param noise noise type
-#' @param init.param initial value
+#' @param type
+#' @param theta.noise
 #'
 #' @return
 #' @export
 #'
 #' @examples
-ngme.noise.spec <- function(
-  noise="nig",
-  init.param=1
+ngme.noise <- function(
+  type="nig",
+  theta.noise=1
   ) {
 
   list(
-    noise=noise,
-    init.param=init.param
+    type=type,
+    theta.noise=theta.noise,
+    n_params = length(theta.noise)
   )
 }

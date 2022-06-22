@@ -17,11 +17,13 @@ mu <- drop(B.mu %*% c(3, 5))
 delta = -mu
 
 # sigma = 2;
-B.sigma <- cbind(1, runif(n_obs))
+# B.sigma <- cbind(1, runif(n_obs))
+B.sigma <- cbind(1, (1:n_obs)*2/n_obs - 0.5)
+sigma <- drop(exp(B.sigma %*% c(-0.5, -0.2)))
+
 B.sigma <- B.sigma[, 1]
-# sigma <- drop(exp(B.sigma %*% c(-0.5, -0.2)))
-sigma <- drop(exp(B.sigma * -0.5))
-max(sigma)
+sigma <- drop(exp(B.sigma * -0.4))
+range(sigma)
 
 trueV <- ngme2::rig(n_obs, nu, nu)
 noise <- delta + mu*trueV + sigma * sqrt(trueV) * rnorm(n_obs)
@@ -31,7 +33,7 @@ Y = trueW + rnorm(n_obs, mean=0, sd=sigma_eps)
 range(Y)
 
 # fitting
-control = control.ngme(burnin=100, iterations = 100,
+control = control.ngme(burnin=100, iterations = 1000,
                        gibbs_sample = 5, stepsize = 1,
                        kill_var = FALSE, threshold = 1e-4,
                        opt_fix_effect = T)
@@ -41,20 +43,18 @@ debug = debug.ngme(fixW = FALSE)
 ngme_out = ngme(Y ~ 0 +
                   f(1:length(Y),
                     model = "ar1",
-                    var = "nig",
+                    noise = ngme.noise(type="nig",
+                                       theta.noise=1),
+                    B.mu=B.mu,
+                    theta.mu=c(1, 1),
+                    B.sigma = B.sigma,
+                    theta.sigma = log(c(1)),
                     control = control.f(numer_grad     = FALSE,
                                       init_operator    = 0.5,
-                                      init_var         = 1,
                                       opt_operator     = TRUE,
-                                      opt_mu           = FALSE,
+                                      opt_mu           = TRUE,
                                       opt_sigma        = TRUE,
                                       opt_var          = FALSE),
-
-                    B.mu=B.mu,
-                    theta.mu=c(3, 5),
-                    theta.sigma = log(2),
-                    B.sigma = B.sigma,
-                    # theta.sigma = log(c(1,1)),
                     debug = TRUE),
                 family = "normal",
                 data = data.frame(Y=(as.numeric(Y))),
@@ -69,8 +69,8 @@ plot_out(ngme_out$trajectory, start=1, n=1, transform = th2k)
 # # plot mu
 plot_out(ngme_out$trajectory, start=2, n=2)
 # # plot sigma
-plot_out(ngme_out$trajectory, start=4, n=1)
 plot_out(ngme_out$trajectory, start=4, n=2, type="grad")
+plot_out(ngme_out$trajectory, start=4, n=1)
 # # plot var
 # plot_out(ngme_out$trajectory, start=5, n=1, transform = exp)
 # # plot m err

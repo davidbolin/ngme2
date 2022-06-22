@@ -20,37 +20,36 @@
 f <- function(
   x = NULL,
   model  = "ar1",
-  var    = "nig",
+  # var    = "nig",
   control = control.f(),
   debug  = FALSE,
   A = NULL,
   B.sigma = 1, # non-stationary case -> into matrix n_mesh * n_sigma
   theta.sigma = 0, # exp(0) = 1
   B.mu = 1,
-  theta.mu = 0
-  # ,
-  # noise.spec = noise.spec()
+  theta.mu = 0,
+  noise = ngme.noise()
 ) {
-  # construct variance component
-  build.var <- function(var) {
-    if (var=="nig") {
-      var_in = list(
-        # V_type = "ind_IG",
-        nu    = control$init_var,
-        n_params = 1
-      )
-    }
-    else if (var=="normal") {
-      var_in = list(
-        # V_type = "normal"
-        n_params = 1
-      )
-    }
-    else {
-      stop("unknown var name")
-    }
-    var_in
-  }
+  # # construct variance component
+  # build.var <- function(var) {
+  #   if (var=="nig") {
+  #     var_in = list(
+  #       # V_type = "ind_IG",
+  #       nu    = control$init_var,
+  #       n_params = 1
+  #     )
+  #   }
+  #   else if (var=="normal") {
+  #     var_in = list(
+  #       # V_type = "normal"
+  #       n_params = 1
+  #     )
+  #   }
+  #   else {
+  #     stop("unknown var name")
+  #   }
+  #   var_in
+  # }
 
   # 1. construct operator (n_covar, n_ope, C, G, A, h)
   ################ SPDE ##################
@@ -75,16 +74,12 @@ f <- function(
     # 1. general
     n = length(x)
     model.type = "spde.matern"
-    var = model$var # var from spde
     h = rep(1, n)
 
     if (is.null(A)) stop("Provide A matrix")
 
     # 2. ope
     operator_in <- model$operator_in
-
-    # 3. var
-    var_in <- build.var(var)
 
     special_in <- list()
   }
@@ -121,8 +116,6 @@ f <- function(
       use_num_dK=FALSE
     )
 
-    # 3. var
-    var_in <- build.var(var)
   }
   ################ MATERN ##################
   else if (model=="matern1d") {
@@ -144,7 +137,6 @@ f <- function(
       G=G,
       use_num_dK=FALSE
     )
-    var <- build.var(var)
 
     special_in <- list()
   }
@@ -162,7 +154,7 @@ f <- function(
   # construct latent_in
   latent_in <- list(
     model_type  = model.type,
-    var_type    = var,
+    var_type    = noise$type,
     n_mesh      = n,        # !: make sure this is the second place
     A           = A,
     h           = h,
@@ -175,12 +167,12 @@ f <- function(
     n_mu        = n_mu,
     n_sigma     = n_sigma,
 
-    n_la_params = operator_in$n_params + var_in$n_params + n_mu + n_sigma,
+    n_la_params = operator_in$n_params + noise$n_params + n_mu + n_sigma,
 
     # lists
     special_in    = special_in, # for specific model input
     operator_in   = operator_in,
-    var_in        = var_in,
+    var_in        = noise,
     control_f     = control,
     debug         = debug
     )

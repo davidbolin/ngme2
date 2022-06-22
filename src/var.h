@@ -46,7 +46,7 @@ public:
     ind_IG(Rcpp::List var_in, unsigned n, VectorXd h) 
     : nu(0)
     {   
-        nu = (Rcpp::as<double>) (var_in["nu"]);
+        nu = (Rcpp::as<double>) (var_in["theta.noise"]);
         this->n = n; 
         this->h = h;
 

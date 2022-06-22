@@ -141,16 +141,16 @@ if (debug) std::cout << "finish constructor of latent" << std::endl;
     const VectorXd& getPrevV() const { return var->getPrevV(); }
     VectorXd getSV() const { 
         VectorXd V=getV(); 
-        if (n_sigma==1)
-            return (V * pow(sigma(0),2)); 
-        else 
-            return (sigma.cwiseProduct(sigma).cwiseProduct(V));
+        // if (n_sigma==1)
+        //     return (V * pow(sigma(0),2)); 
+        // else 
+        return (sigma.cwiseProduct(sigma).cwiseProduct(V));
     }
     VectorXd getPrevSV() const { 
         VectorXd V=getPrevV(); 
-        if (n_sigma==1)
-            return (V * pow(sigma(0),2)); 
-        else 
+        // if (n_sigma==1)
+        //     return (V * pow(sigma(0),2)); 
+        // else 
             return (sigma.cwiseProduct(sigma).cwiseProduct(V));
     }
 
@@ -318,10 +318,11 @@ inline VectorXd Latent::grad_theta_sigma() {
 
         MatrixXd hess (n_sigma, n_sigma);
         VectorXd tmp3 = -2*vsq.cwiseProduct(sigma.array().pow(-2).matrix());
+        // change
         hess = B_sigma.transpose() * tmp3.asDiagonal() * B_sigma;
 
-        // result = - 1.0 / n_mesh * grad;
-        result = hess.llt().solve(grad);
+        result = - 1.0 / n_mesh * grad;
+        // result = hess.llt().solve(grad);
     }
 
     return result;
@@ -372,7 +373,7 @@ inline double Latent::function_kappa(double eps) {
     
     solver_Q.compute(Q);
     
-    VectorXd tmp = K * W - mu*(V-h);
+    VectorXd tmp = K * W - mu.cwiseProduct(V-h);
 
     double l = 0.5 * solver_Q.logdet() 
                - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
@@ -393,7 +394,7 @@ inline double Latent::function_K(VectorXd parameter) {
     
     solver_Q.compute(Q);
     
-    VectorXd tmp = K * W - mu*(V-h);
+    VectorXd tmp = K * W - mu.cwiseProduct(V-h);
 
     double l = 0.5 * solver_Q.logdet() 
                - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
@@ -403,6 +404,7 @@ inline double Latent::function_K(VectorXd parameter) {
 
 // numerical gradient for K parameters
 inline VectorXd Latent::numerical_grad() {
+std::cout << "start numerical gradient" <<std::endl;
     int n_ope = ope->get_n_params();
     VectorXd params = ope->get_parameter();
     double val = function_K(params);
@@ -412,7 +414,6 @@ inline VectorXd Latent::numerical_grad() {
         VectorXd params_add_eps = params;
             params_add_eps(i) += eps;
         double val_add_eps = function_K(params_add_eps);
-        
         double num_g = (val_add_eps - val) / eps;
         
         if (!use_num_hess) {
@@ -425,7 +426,6 @@ inline VectorXd Latent::numerical_grad() {
             grad(i) = num_g / num_hess;
         }
     } 
-    
     return grad;
 }
 

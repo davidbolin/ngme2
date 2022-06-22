@@ -37,10 +37,10 @@ if (debug) std::cout << "finish constructor of matern ns" << std::endl;
     // generating output
     Rcpp::List get_estimates() const {
         return Rcpp::List::create(
-            Rcpp::Named("theta in Matern operator") = ope->get_parameter(),
-            Rcpp::Named("mu")    = mu,
-            Rcpp::Named("sigma") = sigma,
-            Rcpp::Named("var")   = var->get_var()
+            Rcpp::Named("theta.kappa") = ope->get_parameter(),
+            Rcpp::Named("theta.mu")    = theta_mu,
+            Rcpp::Named("theta.sigma") = theta_sigma,
+            Rcpp::Named("theta.noise")   = var->get_var()
         );
     }
 };

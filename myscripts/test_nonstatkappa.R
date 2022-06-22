@@ -8,7 +8,6 @@ pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
 mesh <- inla.mesh.2d(loc.domain = pl01, cutoff = 0.3,
                      max.edge = c(0.3, 1), offset = c(0.5, 1.5))
 plot(mesh)
-mesh$n
 
 # ################### 2. simulation nig (alpha = 2)
 sigma = 1
@@ -61,32 +60,40 @@ spde <- ngme.spde.matern(alpha=2,
                          B.kappa = B.kappa)
 
 str(spde)
-# str(ff <- f(1:mesh$n, model=spde, A=A,
-#             B.sigma=,
+ff <- f(1:mesh$n, model=spde, A=A, noise=ngme.noise(type="nig", theta.noise=1)); str(ff)
 
-#             B.mu))
+ngme_out <- ngme(
+  formula = Y ~ 0 + f(
+    1:mesh$n,
+    model=spde,
+    A=A,
+    debug=TRUE,
+    theta.mu=2,
+    theta.sigma=log(1),
+    control=control.f(
+      use_num_hess = FALSE,
+      init_operator    = 0.5,
+      opt_operator     = TRUE,
+      opt_mu           = FALSE,
+      opt_sigma        = FALSE,
+      opt_var          = FALSE
+    )
+  ),
+  data=data.frame(Y=Y),
+  family = "normal",
+  control=control.ngme(
+    burnin=100,
+    iterations=100,
+    gibbs_sample = 5
+  ),
+  debug=debug.ngme(fixW = FALSE)
+)
+# plot theta.kappa
+plot_out(ngme_out$trajectory, start=1, n=2)
+ngme_out$estimates
 
-# ngme.noise.spec(noise="nig", )
-
-# class(ff$operator_in$B.tau)
-
-# res <- ngme(formula = Y ~ 0 + f(
-#   1:mesh$n, model=spde, A=A, debug=TRUE,
-#   # noise="nig",
-#   # noise=ngme.noise.spec(),
-#   control=control.f(use_num_hess = FALSE)),
-#             data=data.frame(Y=Y),
-#             family = "normal",
-#             debug=debug.ngme(fixW = FALSE),
-#             control=control.ngme(
-#               burnin=10,
-#               iterations=10,
-#               gibbs_sample = 5),
 #   # ngme.start(result from ngme object(lastW, lastV)),
-#             )
-
 # # plot operator
-# plot_out(res$trajectory, start=1, n=3)
 # # plot mu
 # plot_out(res$trajectory, start=4, n=1, ylab="mu")
 # # plot nu

@@ -19,8 +19,3 @@ ngme.ts.make.A <- function(loc) {
 
   as(A, "dgCMatrix")
 }
-
-
-# noise.spec <- function(noise="nig") {
-#
-# }

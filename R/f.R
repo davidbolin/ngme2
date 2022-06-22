@@ -53,7 +53,19 @@ f <- function(
 
   # 1. construct operator (n_covar, n_ope, C, G, A, h)
   ################ SPDE ##################
-  if (inherits(model, "ngme.spde")) {
+  if (inherits(model, "ngme.matern")) {
+    n = length(x)
+    model.type = "matern"
+    h = rep(1, n)
+
+    if (is.null(A)) stop("Provide A matrix")
+
+    special_in <- list()
+
+    # 2. ope
+    operator_in <- model$operator_in
+  }
+  else if (inherits(model, "ngme.spde")) {
     # # construct latent_in
     # latent_in <- list(
     #   model_type  = model.type,

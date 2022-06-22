@@ -17,7 +17,7 @@ beta <- c(-3, -1, 2)
 alpha1 <- 0.5
 mu1 = 2; delta = -mu1
 nu1 = 1
-sigma1 = 2
+sigma1 = 3
 
 trueV1 <- ngme2::rig(n_obs, nu1, nu1)
 noise1 <- delta + mu1*trueV1 + sigma1 * sqrt(trueV1) * rnorm(n_obs)
@@ -60,7 +60,7 @@ Y1 = as.numeric(Y1 + X %*% beta)
 # args(control.f)
 # args(control.ngme)
 
-control = control.ngme(burnin=30, iterations = 10,
+control = control.ngme(burnin=30, iterations = 1000,
                        gibbs_sample = 5, stepsize = 1,
                        kill_var = FALSE, threshold = 1e-4,
                        opt_fix_effect = T)
@@ -77,10 +77,10 @@ ngme_out = ngme(Y1 ~ x1 + x2 +
                                       init_operator    = 0.5,
                                       opt_operator     = T,
                                       opt_mu           = T,
-                                      opt_sigma        = F,
+                                      opt_sigma        = T,
                                       opt_var          = F),
                     theta.mu = 1,
-                    theta.sigma = log(2),
+                    theta.sigma = log(1),
                     debug=T),
                 family="normal",
                 data=data.frame(Y1=(as.numeric(Y1)), x1=x1, x2=x2),
@@ -121,7 +121,7 @@ ngme_out = ngme(Y1 ~ x1 + x2 +
 # plot fix effects
   plot_out(ngme_out$trajectory, start=5, n=3)
 # plot m err
-  plot_out(ngme_out$trajectory, start=8, n=1)
+  plot_out(ngme_out$trajectory, start=8, n=1, transform = exp)
 
 # ngme_out
   ngme_out$estimates

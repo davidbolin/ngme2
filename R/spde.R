@@ -91,6 +91,72 @@ ngme.spde.matern <- function(
 }
 
 
+#' Title
+#'
+#' @param alpha
+#' @param var
+#' @param mesh
+#' @param fem.mesh.matrices
+#' @param d
+#' @param B.kappa
+#' @param theta.kappa
+#'
+#' @return
+#' @export
+#'
+#' @examples
+ngme.matern <- function(
+    alpha = 2,
+    var="nig",
+    mesh = NULL,
+    fem.mesh.matrices = NULL,
+    d = NULL,
+    theta.kappa = 0
+)
+{
+  if (is.null(mesh) && is.null(fem.mesh.matrices)) stop("At least specify mesh or matrices")
+  if (alpha - round(alpha) != 0) {
+    stop("alpha should be integer")
+  }
+
+  # supply mesh
+  if (!is.null(mesh)) {
+    n <- mesh$n
+    d <- get_inla_mesh_dimension(mesh)
+    if (d == 1) {
+      fem <- INLA::inla.mesh.1d.fem(mesh)
+      C <- fem$c1
+      G <- fem$g1
+    } else {
+      fem <- INLA::inla.mesh.fem(mesh, order = alpha)
+      C <- fem$c0 # diag
+      G <- fem$g1
+    }
+
+    n <- mesh$n
+    spde.spec <- list(
+      # general
+      n_params = 1,
+      init_operator = theta.kappa,
+      var="nig",
+
+      # spde
+      operator_in = list(
+        alpha = alpha,
+        kappa = exp(theta.kappa),
+        n_params = length(theta.kappa),
+        n = n,
+        C = as(C, "dgCMatrix"),
+        G = as(G, "dgCMatrix"),
+        use_num_dK = FALSE
+      )
+    )
+    class(spde.spec) <- "ngme.matern"
+  }
+
+  spde.spec
+}
+
 #' @name get_inla_mesh_dimension
 #' @title Get the dimension of an INLA mesh
 #' @description Get the dimension of an INLA mesh

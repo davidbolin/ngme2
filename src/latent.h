@@ -144,14 +144,14 @@ if (debug) std::cout << "finish constructor of latent" << std::endl;
         // if (n_sigma==1)
         //     return (V * pow(sigma(0),2)); 
         // else 
-        return (sigma.cwiseProduct(sigma).cwiseProduct(V));
+        return (sigma.array().pow(2).matrix().cwiseProduct(V));
     }
     VectorXd getPrevSV() const { 
         VectorXd V=getPrevV(); 
         // if (n_sigma==1)
         //     return (V * pow(sigma(0),2)); 
         // else 
-            return (sigma.cwiseProduct(sigma).cwiseProduct(V));
+        return (sigma.array().pow(2).matrix().cwiseProduct(V));
     }
 
     void sample_cond_V() {
@@ -289,9 +289,10 @@ inline VectorXd Latent::grad_theta_sigma() {
 
     VectorXd result(n_sigma);
 
-    if (n_sigma < 0) {
+    if (n_sigma == 1) {
         // stationary case
         // double msq = (K*W - mu(0)*(V-h)).cwiseProduct(V.cwiseInverse()).dot(K*W - mu(0)*(V-h));
+        if (debug) std::cout << "Using stationary sigma"<< std::endl;   
         double msq = (K*W - mu.cwiseProduct(V-h)).array().pow(2).matrix().dot(V.cwiseInverse());
         double grad = - n_mesh / sigma(0) + pow(sigma(0), -3) * msq;
 
@@ -302,23 +303,29 @@ inline VectorXd Latent::grad_theta_sigma() {
         
         // grad. wrt theta
         result(0) =  grad / (hess * sigma(0) + grad);
-        result(0) = -1.0 / n_mesh * grad * sigma(0);
+       // result(0) = -1.0 / n_mesh * grad * sigma(0);
     } else {
+
+         if (debug) std::cout << "Using non-stationary sigma"<< std::endl;  
 
         // double msq = (K*W - mu.cwiseProduct(V-h)).cwiseProduct(V.cwiseInverse()).dot(K*W - mu(0)*(V-h));
         // VectorXd vsq = (K*W - mu.cwiseProduct(V-h)).array().pow(2);
         VectorXd vsq = (K*W - mu.cwiseProduct(V-h)).array().pow(2).matrix().cwiseProduct(V.cwiseInverse());
         VectorXd grad (n_sigma);
+        // for (int l=0; l < n_sigma; l++) {
+        //     VectorXd tmp1 = vsq.cwiseProduct(sigma.array().pow(-2).matrix()) - VectorXd::Constant(n_mesh, 1);
+        //     VectorXd tmp2 = B_sigma.col(l).cwiseProduct(tmp1);
+        //     grad(l) = tmp2.sum();
+        // }
 
-        for (int l=0; l < n_sigma; l++) {
-            VectorXd tmp1 = vsq.cwiseProduct(sigma.array().pow(-2).matrix()) - VectorXd::Constant(n_mesh, 1);
-            VectorXd tmp2 = B_sigma.col(l).cwiseProduct(tmp1);
-            grad(l) = tmp2.sum();
-        }
+        // vector manner
+        VectorXd tmp1 = vsq.cwiseProduct(sigma.array().pow(-2).matrix()) - VectorXd::Constant(n_mesh, 1);
+        grad = B_sigma.transpose() * tmp1;
 
+        VectorXd prev_vsq = (K*prevW - mu.cwiseProduct(prevV-h)).array().pow(2).matrix().cwiseProduct(prevV.cwiseInverse());
         MatrixXd hess (n_sigma, n_sigma);
-        VectorXd tmp3 = -2*vsq.cwiseProduct(sigma.array().pow(-2).matrix());
-        // change
+        VectorXd tmp3 = -2*prev_vsq.cwiseProduct(sigma.array().pow(-2).matrix());
+
         hess = B_sigma.transpose() * tmp3.asDiagonal() * B_sigma;
 
         result = - 1.0 / n_mesh * grad;
@@ -418,6 +425,7 @@ std::cout << "start numerical gradient" <<std::endl;
         
         if (!use_num_hess) {
             grad(i) = - num_g / n_mesh;
+            // grad(i) = - num_g;
         } else {
             VectorXd params_minus_eps = params;
                 params_minus_eps(i) -= eps;

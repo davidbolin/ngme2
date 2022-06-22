@@ -5,7 +5,7 @@ load_all()
 
 # ################### 1. create mesh
 pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
-mesh <- inla.mesh.2d(loc.domain = pl01, cutoff = 0.1,
+mesh <- inla.mesh.2d(loc.domain = pl01, cutoff = 0.2,
                      max.edge = c(0.3, 1), offset = c(0.5, 1.5))
 plot(mesh)
 
@@ -19,10 +19,11 @@ nu = 1
 n_mesh <- mesh$n
 trueV <- ngme2::rig(n_mesh, nu, nu)
 noise <- delta + mu*trueV + sigma * sqrt(trueV) * rnorm(n_mesh)
-theta.kappa <- c(-1,1)
-B.kappa = cbind(1, -1 * (mesh$loc[,1] - 5) / 10)
-kappa <- drop(exp(B.kappa %*% theta.kappa)); max(kappa)
-Kappa <- diag(kappa)
+
+theta.kappa <- log(20)
+
+# kappa <- drop(exp(B.kappa %*% theta.kappa)); max(kappa)
+Kappa <- diag(rep(exp(theta.kappa), mesh$n))
 
 fem <- inla.mesh.fem(mesh)
 C = fem$c0 ; G = fem$g1
@@ -30,7 +31,7 @@ C = fem$c0 ; G = fem$g1
 
 # Tau = diag(drop(exp(B.tau %*% c(1, theta))))
 # Kappa = diag(drop(exp(B.kappa %*% c(1, theta))))
-K = (Kappa %*% C %*% Kappa + G)
+# K = (Kappa %*% C %*% Kappa + G)
 C.sqrt.inv <- as(diag(sqrt(1/diag(C))), "sparseMatrix")
 
 if (alpha==2) {
@@ -43,7 +44,7 @@ if (alpha==2) {
 trueW = solve(K_a, sqrt(trueV)) * rnorm(mesh$n) + solve(K_a, delta+mu*trueV)
 trueW = drop(trueW)
 
-n.samples = 1000
+n.samples = 500
 loc = mesh$loc[sample(1:mesh$n, n.samples), c(1,2)]
 A = inla.spde.make.A(mesh=mesh, loc=loc)
 dim(A)
@@ -54,13 +55,15 @@ Y = A%*%trueW + sigma.e * rnorm(n.samples); Y = drop(Y)
 # ###################### 3. NGME
 # ?ngme.spde.matern
 
-spde <- ngme.spde.matern(alpha=2,
-                         mesh=mesh,
-                         theta.kappa=c(-1, -1),
-                         B.kappa = B.kappa)
+spde <- ngme.matern(
+  alpha=2,
+  mesh=mesh,
+  theta.kappa=c(1)
+)
 
 str(spde)
-ff <- f(1:mesh$n, model=spde, A=A, noise=ngme.noise(type="nig", theta.noise=1)); str(ff)
+
+# ff <- f(1:mesh$n, model=spde, A=A, noise=ngme.noise(type="nig", theta.noise=1)); str(ff)
 
 ngme_out <- ngme(
   formula = Y ~ 0 + f(
@@ -71,7 +74,7 @@ ngme_out <- ngme(
     theta.mu=2,
     theta.sigma=log(1),
     control=control.f(
-      use_num_hess     = FALSE,
+      use_num_hess = FALSE,
       opt_operator     = TRUE,
       opt_mu           = FALSE,
       opt_sigma        = FALSE,
@@ -83,11 +86,12 @@ ngme_out <- ngme(
   family = "normal",
   control=control.ngme(
     burnin=100,
-    iterations=100,
+    iterations=10,
     gibbs_sample = 5
   ),
   debug=debug.ngme(fixW = FALSE)
 )
+
 # plot theta.kappa
 plot_out(ngme_out$trajectory, start=1, n=2)
 ngme_out$estimates

@@ -111,6 +111,95 @@ public:
     }
 };
 
+
+// for 1. AR model 2. stationary Matern model
+class matern_ope : public Operator {
+private:
+    // kappa = parameter(0)
+    int alpha;
+    VectorXd Cdiag; //, taus, kappas;
+    SparseMatrix<double, 0, int> G, C;
+
+public:
+    matern_ope(Rcpp::List ope_in) 
+    :   Operator    (ope_in),
+        G           ( Rcpp::as< SparseMatrix<double,0,int> > (ope_in["G"]) ),
+        C           ( Rcpp::as< SparseMatrix<double,0,int> > (ope_in["C"]) )
+    {
+        alpha = Rcpp::as<int> (ope_in["alpha"]);
+        Cdiag = C.diagonal();
+        
+        // init parameter
+            parameter.resize(1);
+            parameter(0) = Rcpp::as<double> (ope_in["kappa"]);        
+        
+        int n_dim = G.rows();
+
+        set_parameter(parameter);
+        K  = getK(parameter);
+        dK = get_dK(parameter);
+        d2K = 0 * C;
+    }
+    
+    void set_parameter(VectorXd parameter) {
+        assert (parameter.size() == 1);
+        this->parameter = parameter;
+
+        K = getK(parameter);
+        dK = get_dK(parameter);
+
+        if (use_num_dK) {
+            update_num_dK();
+        }
+    }
+
+    SparseMatrix<double> getK(VectorXd params) const {
+        int n_dim = G.rows();
+        
+        VectorXd kappas = VectorXd::Constant(n_dim, params(0));
+        SparseMatrix<double> K_a (n_dim, n_dim);
+        SparseMatrix<double> KCK (n_dim, n_dim);
+            KCK = kappas.cwiseProduct(kappas).cwiseProduct(Cdiag).asDiagonal();
+        
+        if (alpha==2) {
+            // K_a = T (G + KCK) C^(-1/2)
+            // Actually, K_a = C^{-1/2} (G+KCK), since Q = K^T K.
+            K_a = Cdiag.cwiseSqrt().cwiseInverse().asDiagonal() * (G + KCK);
+        } else if (alpha==4) {      
+            // K_a = T (G + KCK) C^(-1) (G+KCK) C^(-1/2)
+            // Actually, K_a = C^{-1/2} (G + KCK) C^(-1) (G+KCK), since Q = K^T K.
+            K_a = Cdiag.cwiseSqrt().cwiseInverse().asDiagonal() * (G + KCK) * Cdiag.cwiseInverse().asDiagonal() *
+            (G + KCK);
+        } else {
+            throw("alpha not equal to 2 or 4 is not implemented");
+        }
+
+        return K_a;
+    }
+
+    SparseMatrix<double> get_dK(VectorXd params) const {
+        int n_dim = G.rows();
+        SparseMatrix<double> dK (n_dim, n_dim);
+        double kappa = params(0);
+        if (alpha==2) 
+            dK = 2*kappa*C.cwiseSqrt();
+        else if (alpha==4)
+            dK = 4*kappa*C.cwiseSqrt() * G + 4* pow(kappa, 3) * C.cwiseSqrt();
+        else 
+            throw("alpha != 2 or 4");
+        return dK;
+    }
+
+    // compute numerical dK
+    void update_num_dK() {
+        double kappa = parameter(0);
+        double eps = 0.01;
+        SparseMatrix<double> K_add_eps = (kappa + eps) * C + G;
+        dK = (K_add_eps - K) / eps;
+    }
+};
+
+
 // Q: how to unify stationary and nonstationary case?
 // for non stationary Matern model
 class nonstationaryGC : public Operator {
@@ -156,12 +245,13 @@ std::cout << "Finish constructor of nonGC" << std::endl;
         
         if (alpha==2) {
             // K_a = T (G + KCK) C^(-1/2)
-            K_a = (G + KCK) * 
-            Cdiag.cwiseSqrt().cwiseInverse().asDiagonal();
+            // Actually, K_a = C^{-1/2} (G+KCK), since Q = K^T K.
+            K_a = Cdiag.cwiseSqrt().cwiseInverse().asDiagonal() * (G + KCK);
         } else if (alpha==4) {      
-            // K_a = T (G + KCK) C^(-1) (G+KCK) C^(1/2)
-            K_a = (G + KCK) * Cdiag.cwiseInverse().asDiagonal() *
-            (G + KCK) * Cdiag.cwiseSqrt().cwiseInverse().asDiagonal();
+            // K_a = T (G + KCK) C^(-1) (G+KCK) C^(-1/2)
+            // Actually, K_a = C^{-1/2} (G + KCK) C^(-1) (G+KCK), since Q = K^T K.
+            K_a = Cdiag.cwiseSqrt().cwiseInverse().asDiagonal() * (G + KCK) * Cdiag.cwiseInverse().asDiagonal() *
+            (G + KCK);
         } else {
             throw("alpha not equal to 2 or 4 is not implemented");
         }
@@ -169,9 +259,8 @@ std::cout << "Finish constructor of nonGC" << std::endl;
         return K_a;
     }
 
-    // ignore
     SparseMatrix<double> get_dK(VectorXd params) const {
-        return G;
+        return G;        
     }
 
 };

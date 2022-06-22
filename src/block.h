@@ -128,6 +128,8 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
             } 
             else if (type == "spde.matern") {
                 latents.push_back(new matern_ns(latent_in));
+            } else if (type=="matern") {
+                latents.push_back(new Matern(latent_in));
             }
         }
         

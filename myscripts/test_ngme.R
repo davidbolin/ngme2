@@ -60,27 +60,27 @@ Y1 = as.numeric(Y1 + X %*% beta)
 # args(control.f)
 # args(control.ngme)
 
-control = control.ngme(burnin=100, iterations = 100,
+control = control.ngme(burnin=30, iterations = 10,
                        gibbs_sample = 5, stepsize = 1,
                        kill_var = FALSE, threshold = 1e-4,
                        opt_fix_effect = T)
 
-debug = debug.ngme(fixW = FALSE)
-
 ##### ngme for 1 ar
 # nig
+# th2k(0.5)
+
 ngme_out = ngme(Y1 ~ x1 + x2 +
                   f(1:length(Y1),
                     model="ar1",
                     var="nig",
                     control=control.f(numer_grad       = FALSE,
-                                      init_operator    = k2th(0.5),
+                                      init_operator    = 0.5,
                                       init_var         = 1,
-                                      opt_operator     = F,
-                                      opt_mu           = F,
+                                      opt_operator     = T,
+                                      opt_mu           = T,
                                       opt_sigma        = F,
-                                      opt_var          = T),
-                    theta.mu = 2,
+                                      opt_var          = F),
+                    theta.mu = 1,
                     theta.sigma = log(2),
                     debug=T),
                 family="normal",
@@ -110,6 +110,7 @@ ngme_out = ngme(Y1 ~ x1 + x2 +
 # nig ar1: a=0.5, mu=2, sigma=2, nu=1
 # normal ar1: a=0.7 sigma=3
 
+
 # plot alpha
   plot_out(ngme_out$trajectory, start=1, n=1, transform = th2k)
 # plot mu
@@ -124,7 +125,8 @@ ngme_out = ngme(Y1 ~ x1 + x2 +
   plot_out(ngme_out$trajectory, start=8, n=1)
 
 # ngme_out
-ngme_out$trajectory
+  ngme_out$estimates
+  ngme_out$trajectory
 
 # plot(ngme_out, param = "fe", type = "traj")
 # plot(ngme_out, param = "me", type = "traj")

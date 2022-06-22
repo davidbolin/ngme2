@@ -34,7 +34,7 @@ std::cout << "finish constructor of Operator" << std::endl;
     };
 
     int get_n_params() const {return parameter.size(); }
-    virtual VectorXd get_parameter() const {return parameter; }
+    virtual VectorXd get_parameter() const {return parameter; } // kappa
     virtual void set_parameter(VectorXd parameter) {this->parameter = parameter;}
 
     // getter for K, dK, d2K
@@ -64,7 +64,7 @@ std::cout << "finish constructor of Operator" << std::endl;
 // for 1. AR model 2. stationary Matern model
 class stationaryGC : public Operator {
 private:
-    // kappa = parameter(0)
+    // theta = parameter(0)
     SparseMatrix<double, 0, int> G, C;
 
 public:
@@ -115,66 +115,53 @@ public:
 // for non stationary Matern model
 class nonstationaryGC : public Operator {
 private:
-    // kappa = parameter(0)
     int alpha; 
     VectorXd Cdiag; //, taus, kappas;
     SparseMatrix<double, 0, int> G;
-    MatrixXd Btau, Bkappa;
+    MatrixXd Bkappa;
 public:
     nonstationaryGC(Rcpp::List ope_in) 
     :   Operator    ( ope_in)
         // alpha       ( Rcpp::as<int> (ope_in["alpha"])),
         // G           ( Rcpp::as< SparseMatrix<double,0,int> > (ope_in["G"]) )
-        // Btau        ( Rcpp::as<MatrixXd> (ope_in["B.tau"]) ),
         // Bkappa      ( Rcpp::as<MatrixXd> (ope_in["B.kappa"]) )
     {
         alpha = Rcpp::as<int> (ope_in["alpha"]);
         G = Rcpp::as< SparseMatrix<double,0,int> > (ope_in["G"]);
-        Btau   = Rcpp::as<MatrixXd> (ope_in["B.tau"]);
         Bkappa = Rcpp::as<MatrixXd> (ope_in["B.kappa"]);
 
-        VectorXd init_params = ope_in["init_operator"];
+        VectorXd theta_kappa = ope_in["init_operator"];
         SparseMatrix<double> C = Rcpp::as< SparseMatrix<double,0,int> > (ope_in["C"]);
         Cdiag = C.diagonal();
-        set_parameter(init_params);
+        set_parameter(theta_kappa);
 
 std::cout << "Finish constructor of nonGC" << std::endl;
     }
 
     // here C is diagonal
-    void set_parameter(VectorXd params) {
-        this->parameter = params;
+    void set_parameter(VectorXd theta_kappa) {
+        this->parameter = theta_kappa;
         
-        K = getK(params);
+        // update K
+        K = getK(theta_kappa);
     }
 
-    // VectorXd& get_taus() {
-    //     return taus;
-    // }
-
-    SparseMatrix<double> getK(VectorXd params) const {
-        VectorXd params_add_1(1 + params.size());
-            params_add_1 << 1, params;
-        
-        VectorXd taus = (Btau * params_add_1).array().exp();
-        VectorXd kappas = (Bkappa * params_add_1).array().exp();
+    SparseMatrix<double> getK(VectorXd theta_kappa) const {
+        VectorXd kappas = (Bkappa * theta_kappa).array().exp();
         
         int n_dim = G.rows();
         SparseMatrix<double> K_a (n_dim, n_dim);
         SparseMatrix<double> KCK (n_dim, n_dim);
             KCK = kappas.cwiseProduct(kappas).cwiseProduct(Cdiag).asDiagonal();
         
-        if (alpha==2) {             
+        if (alpha==2) {
             // K_a = T (G + KCK) C^(-1/2)
-            K_a = taus.asDiagonal() * 
-            (G + KCK) * 
+            K_a = (G + KCK) * 
             Cdiag.cwiseSqrt().cwiseInverse().asDiagonal();
         } else if (alpha==4) {      
             // K_a = T (G + KCK) C^(-1) (G+KCK) C^(1/2)
-            K_a = taus.asDiagonal() * 
-            (G + KCK) * Cdiag.cwiseInverse().asDiagonal() *
-            (G + KCK) * 
-            Cdiag.cwiseSqrt().cwiseInverse().asDiagonal();
+            K_a = (G + KCK) * Cdiag.cwiseInverse().asDiagonal() *
+            (G + KCK) * Cdiag.cwiseSqrt().cwiseInverse().asDiagonal();
         } else {
             throw("alpha not equal to 2 or 4 is not implemented");
         }

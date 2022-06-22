@@ -131,7 +131,7 @@ if (debug) std::cout << "finish constructor of latent" << std::endl;
             mean = mu(0) * (getV()-h);
         }
         else {
-            throw("mu.size > 1 Not implemented in getMean()");    
+            mean = mu.cwiseProduct(getV()-h);
         }
         return mean; 
     }
@@ -153,7 +153,6 @@ if (debug) std::cout << "finish constructor of latent" << std::endl;
         else 
             return (sigma.cwiseProduct(sigma).cwiseProduct(V));
     }
-    
 
     void sample_cond_V() {
         var->sample_cond_V(ope->getK(), W, mu, sigma);
@@ -245,7 +244,7 @@ if (debug) std::cout << "Start latent get parameter"<< std::endl;
         parameter.segment(0, n_ope)             = ope->get_parameter();
         parameter.segment(n_ope, n_mu)          = get_theta_mu();
         parameter.segment(n_ope+n_mu, n_sigma)  = get_theta_sigma();
-        parameter(n_ope+2)                      = get_theta_var();
+        parameter(n_ope+n_mu+n_sigma)           = get_theta_var();
     
 if (debug) std::cout << "Finish latent get parameter"<< std::endl;   
     return parameter;
@@ -260,7 +259,7 @@ auto grad1 = std::chrono::steady_clock::now();
     if (opt_flag[0]) grad.segment(0, n_ope)             = grad_K_parameter();     else grad.segment(0, n_ope) = VectorXd::Constant(n_ope, 0);
     if (opt_flag[1]) grad.segment(n_ope, n_mu)          = grad_theta_mu();        else grad.segment(n_ope, n_mu) = VectorXd::Constant(n_mu, 0);
     if (opt_flag[2]) grad.segment(n_ope+n_mu, n_sigma)  = grad_theta_sigma();     else grad.segment(n_ope+n_mu, n_sigma) = VectorXd::Constant(n_sigma, 0);
-    if (opt_flag[3]) grad(n_ope+2)                      = grad_theta_var();       else grad(n_ope+2) = 0;
+    if (opt_flag[3]) grad(n_ope+n_mu+n_sigma)           = grad_theta_var();       else grad(n_ope+n_mu+n_sigma) = 0;
 
 // DEBUG: checking grads
 if (debug) {
@@ -278,7 +277,7 @@ if (debug) std::cout << "Start latent set parameter"<< std::endl;
     if (opt_flag[0])  set_K_parameter   (theta.segment(0, n_ope));
     if (opt_flag[1])  set_theta_mu      (theta.segment(n_ope, n_mu)); 
     if (opt_flag[2])  set_theta_sigma   (theta.segment(n_ope+n_mu, n_sigma)); 
-    if (opt_flag[3])  set_theta_var     (theta(n_ope + n_mu + n_sigma)); 
+    if (opt_flag[3])  set_theta_var     (theta(n_ope+n_mu+n_sigma)); 
 }
 
 // sigma>0 -> theta=log(sigma)
@@ -290,21 +289,39 @@ inline VectorXd Latent::grad_theta_sigma() {
 
     VectorXd result(n_sigma);
 
-    if (n_mu > 1 || n_sigma > 1) {
-        throw("non-stationary case not implemented");
-    } else {
+    if (n_sigma < 0) {
         // stationary case
-        double msq = (K*W - mu(0)*(V-h)).cwiseProduct(V.cwiseInverse()).dot(K*W - mu(0)*(V-h));
-        double msq2 = (K*prevW - mu(0)*(prevV-h)).cwiseProduct(prevV.cwiseInverse()).dot(K*prevW - mu(0)*(prevV-h));
-
+        // double msq = (K*W - mu(0)*(V-h)).cwiseProduct(V.cwiseInverse()).dot(K*W - mu(0)*(V-h));
+        double msq = (K*W - mu.cwiseProduct(V-h)).array().pow(2).matrix().dot(V.cwiseInverse());
         double grad = - n_mesh / sigma(0) + pow(sigma(0), -3) * msq;
 
         // hessian using prevous V
+        // double msq2 = (K*prevW - mu(0)*(prevV-h)).cwiseProduct(prevV.cwiseInverse()).dot(K*prevW - mu(0)*(prevV-h));
+        double msq2 = (K*prevW - mu.cwiseProduct(prevV-h)).array().pow(2).matrix().dot(prevV.cwiseInverse());
         double hess = n_mesh / pow(sigma(0), 2) - 3 * pow(sigma(0), -4) * msq2;
         
         // grad. wrt theta
-
         result(0) =  grad / (hess * sigma(0) + grad);
+        result(0) = -1.0 / n_mesh * grad * sigma(0);
+    } else {
+
+        // double msq = (K*W - mu.cwiseProduct(V-h)).cwiseProduct(V.cwiseInverse()).dot(K*W - mu(0)*(V-h));
+        // VectorXd vsq = (K*W - mu.cwiseProduct(V-h)).array().pow(2);
+        VectorXd vsq = (K*W - mu.cwiseProduct(V-h)).array().pow(2).matrix().cwiseProduct(V.cwiseInverse());
+        VectorXd grad (n_sigma);
+
+        for (int l=0; l < n_sigma; l++) {
+            VectorXd tmp1 = vsq.cwiseProduct(sigma.array().pow(-2).matrix()) - VectorXd::Constant(n_mesh, 1);
+            VectorXd tmp2 = B_sigma.col(l).cwiseProduct(tmp1);
+            grad(l) = tmp2.sum();
+        }
+
+        MatrixXd hess (n_sigma, n_sigma);
+        VectorXd tmp3 = -2*vsq.cwiseProduct(sigma.array().pow(-2).matrix());
+        hess = B_sigma.transpose() * tmp3.asDiagonal() * B_sigma;
+
+        // result = - 1.0 / n_mesh * grad;
+        result = hess.llt().solve(grad);
     }
 
     return result;
@@ -314,22 +331,26 @@ inline VectorXd Latent::grad_theta_mu() {
 if (debug) std::cout << "Start mu gradient"<< std::endl;   
     VectorXd result(n_mu);
 
-    if (n_mu > 1 || n_sigma > 1) {
-        throw("non-stationary case not implemented");
-    }
-    else {
+    SparseMatrix<double> K = getK();
+    VectorXd V = getV();
+    VectorXd inv_V = V.cwiseInverse();
+    VectorXd prevV = getPrevV();
+    VectorXd prev_inv_V = prevV.cwiseInverse();
+    
+    if (n_mu == 1 && n_sigma == 1) {
         // stationary case
-        SparseMatrix<double> K = getK();
-        VectorXd V = getV();
-        VectorXd inv_V = V.cwiseInverse();
-        
-        VectorXd prevV = getPrevV();
-        VectorXd prev_inv_V = prevV.cwiseInverse();
-
         double grad = pow(sigma(0),-2) * (V-h).cwiseProduct(inv_V).dot(K*W - mu(0) * (V-h));
         double hess = -pow(sigma(0),-2) * (prevV-h).cwiseProduct(prev_inv_V).dot(prevV-h);
 
         result(0) = grad / hess;
+    }
+    else {
+        VectorXd grad (n_mu);
+        for (int l=0; l < n_mu; l++) {
+            grad(l) = (V-h).cwiseProduct( B_mu.col(l).cwiseQuotient(getSV()) ).dot(K*W - mu.cwiseProduct(V-h));
+        }
+
+        result = - 1.0 / n_mesh * grad;
     }
 
 if (debug) {

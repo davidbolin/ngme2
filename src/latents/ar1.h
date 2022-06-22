@@ -37,7 +37,7 @@ public:
         // change of variable
         double th = k2th(params(0));
         return VectorXd::Constant(1, th);
-    }
+    } 
 
     // return length 1 vectorxd : grad_kappa * dkappa/dtheta 
     VectorXd grad_K_parameter() {
@@ -93,16 +93,39 @@ public:
 
                     ret = (grad * da) / (hess * da * da + grad_eps * d2a);
                 }
-            }
+            } else {
+                // non-stationary case
+                double tmp = (dK*W).cwiseProduct(SV.cwiseInverse()).dot(K * W + (h - V).cwiseProduct(mu));
+                double grad = trace - tmp;
 
+                if (!use_precond) {
+                    ret = - grad * da / n_mesh;
+                } else {
+                    VectorXd prevV = getPrevV();
+                    // compute numerical hessian
+                    SparseMatrix<double> K2 = ope->getK(0, eps);
+                    SparseMatrix<double> dK2 = ope->get_dK(0, eps);
+
+                    // grad(x+eps) - grad(x) / eps
+                    VectorXd prevSV = getPrevSV();
+                    double grad2_eps = trace_eps - (dK2*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K2 * prevW + (h - prevV).cwiseProduct(mu));
+                    double grad_eps  = trace - (dK*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K * prevW + (h - prevV).cwiseProduct(mu));
+
+                    double hess = (grad2_eps - grad_eps) / eps;
+
+                    ret = (grad * da) / (hess * da * da + grad_eps * d2a);
+                }
+            }
         }
         
         return VectorXd::Constant(1, ret);
     }
 
-    void set_K_parameter(VectorXd param) {
+    void set_K_parameter(VectorXd theta) {
+        // ope->set_parameter(k);
+        
         // change of variable
-        double k = th2k(param(0));
+        double k = th2k(theta(0));
         ope->set_parameter(VectorXd::Constant(1, k));
 
         if (!numer_grad) compute_trace(); 

@@ -4,11 +4,10 @@
 #' @param mesh mesh argument
 #' @param fem.mesh.matrices specify the FEM matrices
 #' @param d indicating the dimension of mesh (together with fem.mesh.matrices)
-#' @param B.tau bases for tau
 #' @param B.kappa bases for kappa
 #' @param theta.init
 #'
-#' @return a list (n, C (diagonal), G, B.tau, B.kappa) for constructing operator
+#' @return a list (n, C (diagonal), G, B.kappa) for constructing operator
 #' @export
 #'
 #' @examples
@@ -19,12 +18,10 @@ ngme.spde.matern <- function(
     mesh = NULL,
     fem.mesh.matrices = NULL,
     d = NULL,
-    B.tau = matrix(c(0,1,0), 1, 3),
-    B.kappa = matrix(c(0,0,1), 1, 3),
-    theta.init = c(1, 1)
+    B.kappa = matrix(1, 1, 2),
+    theta.kappa = c(0, 0)
     )
 {
-  if (ncol(B.tau) != ncol(B.kappa)) stop ("B.tau and B.kappa should have same number of columns")
   if (is.null(mesh) && is.null(fem.mesh.matrices)) stop("At least specify mesh or matrices")
   if (alpha - round(alpha) != 0) {
     stop("alpha should be integer")
@@ -69,20 +66,19 @@ ngme.spde.matern <- function(
     n <- mesh$n
     spde.spec <- list(
       # general
-      n_params = ncol(B.kappa)-1,
-      init_operator = theta.init,
+      n_params = ncol(B.kappa),
+      init_operator = theta.kappa,
       var="nig",
 
       # spde
       operator_in = list(
         alpha = alpha,
-        n_params = length(theta.init),
+        B.kappa = B.kappa,
+        init_operator = theta.kappa,
+        n_params = length(theta.kappa),
         n = n,
         C = as(C, "dgCMatrix"),
         G = as(G, "dgCMatrix"),
-        B.tau = B.tau,
-        B.kappa = B.kappa,
-        init_operator = theta.init,
         use_num_dK = FALSE
       )
     )

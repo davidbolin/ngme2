@@ -28,6 +28,8 @@ f <- function(
   theta.sigma = 0, # exp(0) = 1
   B.mu = 1,
   theta.mu = 0
+  # ,
+  # noise.spec = noise.spec()
 ) {
   # construct variance component
   build.var <- function(var) {
@@ -97,9 +99,6 @@ f <- function(
     A <- ngme.ts.make.A(x)
     n = ncol(A)
 
-    n_mu <- 1
-    n_sigma <- length(theta.sigma)
-
     # n = length(x) # length of covariates
 
     h <- rep(1.0, n)
@@ -154,8 +153,11 @@ f <- function(
   }
 
   # turn B.sigma and B.mu into matrix
-  B.sigma <- matrix(B.sigma, nrow=n, ncol=n_sigma)
+  n_mu <- length(theta.mu)
+  n_sigma <- length(theta.sigma)
+
   B.mu <- matrix(B.mu, nrow=n, ncol=n_mu)
+  B.sigma <- matrix(B.sigma, nrow=n, ncol=n_sigma)
 
   # construct latent_in
   latent_in <- list(

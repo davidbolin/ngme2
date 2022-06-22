@@ -69,7 +69,12 @@ int main(int argc, char const *argv[])
     // v1.resize(2);
     v1 = v2;
 
-    cout << v2.cwiseInverse().array().pow(2) + v2;
+    Matrix3f m;
+m << 1, 2, 3,
+     4, 5, 6,
+     7, 8, 9;
+
+    cout << m.col(0); // m(Eigen::all, 1) * 5;
 
     return 0;
 }

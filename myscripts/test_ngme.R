@@ -78,7 +78,6 @@ ngme_out = ngme(Y1 ~ x1 + x2 +
 # plot m err
   plot_out(ngme_out$trajectory, start=8, n=1, transform = exp)
 # plot alpha
-
 plot_out(ngme_out$trajectory, start=1, n=1, transform = th2a)
   ngme_out$estimates
 

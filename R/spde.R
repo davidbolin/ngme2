@@ -1,4 +1,4 @@
-#' Create spde model object
+#' Create Matern spde model object with nonstationary kappa
 #'
 #' @param alpha
 #' @param mesh mesh argument
@@ -14,7 +14,6 @@
 
 ngme.spde.matern <- function(
     alpha = 2,
-    var="nig",
     mesh = NULL,
     fem.mesh.matrices = NULL,
     d = NULL,
@@ -67,8 +66,6 @@ ngme.spde.matern <- function(
     spde.spec <- list(
       # general
       n_params = ncol(B.kappa),
-      init_operator = theta.kappa,
-      var="nig",
 
       # spde
       operator_in = list(
@@ -91,10 +88,9 @@ ngme.spde.matern <- function(
 }
 
 
-#' Title
+#' Create Matern spde model object with stationary kappa
 #'
 #' @param alpha
-#' @param var
 #' @param mesh
 #' @param fem.mesh.matrices
 #' @param d
@@ -107,11 +103,11 @@ ngme.spde.matern <- function(
 #' @examples
 ngme.matern <- function(
     alpha = 2,
-    var="nig",
     mesh = NULL,
     fem.mesh.matrices = NULL,
     d = NULL,
-    theta.kappa = 0
+    kappa = 1, 
+    use_num_dK = FALSE
 )
 {
   if (is.null(mesh) && is.null(fem.mesh.matrices)) stop("At least specify mesh or matrices")
@@ -137,18 +133,16 @@ ngme.matern <- function(
     spde.spec <- list(
       # general
       n_params = 1,
-      init_operator = theta.kappa,
-      var="nig",
 
       # spde
       operator_in = list(
         alpha = alpha,
-        kappa = exp(theta.kappa),
-        n_params = length(theta.kappa),
+        kappa = kappa,
+        n_params = 1,
         n = n,
         C = as(C, "dgCMatrix"),
         G = as(G, "dgCMatrix"),
-        use_num_dK = FALSE
+        use_num_dK = use_num_dK
       )
     )
     class(spde.spec) <- "ngme.matern"
@@ -156,6 +150,7 @@ ngme.matern <- function(
 
   spde.spec
 }
+
 
 #' @name get_inla_mesh_dimension
 #' @title Get the dimension of an INLA mesh

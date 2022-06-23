@@ -20,10 +20,10 @@ n_mesh <- mesh$n
 trueV <- ngme2::rig(n_mesh, nu, nu)
 noise <- delta + mu*trueV + sigma * sqrt(trueV) * rnorm(n_mesh)
 
-theta.kappa <- log(20)
+kappa = 4
+Kappa <- diag(rep(kappa, mesh$n))
 
 # kappa <- drop(exp(B.kappa %*% theta.kappa)); max(kappa)
-Kappa <- diag(rep(exp(theta.kappa), mesh$n))
 
 fem <- inla.mesh.fem(mesh)
 C = fem$c0 ; G = fem$g1
@@ -55,26 +55,22 @@ Y = A%*%trueW + sigma.e * rnorm(n.samples); Y = drop(Y)
 # ###################### 3. NGME
 # ?ngme.spde.matern
 
-spde <- ngme.matern(
-  alpha=2,
-  mesh=mesh,
-  theta.kappa=c(1)
-)
-
-str(spde)
-
 # ff <- f(1:mesh$n, model=spde, A=A, noise=ngme.noise(type="nig", theta.noise=1)); str(ff)
 
 ngme_out <- ngme(
   formula = Y ~ 0 + f(
     1:mesh$n,
-    model=spde,
+    model=ngme.matern(
+      alpha=2,
+      mesh=mesh,
+      kappa=1
+    ),
     A=A,
     debug=TRUE,
     theta.mu=2,
     theta.sigma=log(1),
-    control=control.f(
-      use_num_hess = FALSE,
+    control=ngme.control.f(
+      use_num_hess     = FALSE,
       opt_operator     = TRUE,
       opt_mu           = FALSE,
       opt_sigma        = FALSE,
@@ -84,16 +80,26 @@ ngme_out <- ngme(
   ),
   data=data.frame(Y=Y),
   family = "normal",
-  control=control.ngme(
+  control=ngme.control(
     burnin=100,
-    iterations=10,
+    iterations=500,
     gibbs_sample = 5
   ),
-  debug=debug.ngme(fixW = FALSE)
+  debug=ngme.debug(fixW = FALSE)
 )
+# results
 
-# plot theta.kappa
-plot_out(ngme_out$trajectory, start=1, n=2)
+# plot mu
+plot_out(ngme_out$trajectory, start=2, n=1)
+# plot sigma
+plot_out(ngme_out$trajectory, start=3, n=1, transform = exp)
+# plot var
+plot_out(ngme_out$trajectory, start=4, n=1, transform = exp)
+# plot m err
+plot_out(ngme_out$trajectory, start=5, n=1, transform = exp)
+
+# plot kappa
+plot_out(ngme_out$trajectory, start=1, n=1, transform=exp)
 ngme_out$estimates
 
 #   # ngme.start(result from ngme object(lastW, lastV)),

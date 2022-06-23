@@ -14,7 +14,11 @@ using std::exp;
 using std::log;
 using std::pow;
 
-// For AR1 model: parameter_K(0) = alpha (everything wrt. alpha)
+/*
+    AR model:
+        parameter_K(0) = alpha
+        K = C * alpha + G
+*/
 class ar_operator : public Operator {
 private:
     SparseMatrix<double, 0, int> G, C;
@@ -97,6 +101,7 @@ public:
         double th = a2th(alpha(0));
         return VectorXd::Constant(1, th);
     } 
+
     // return length 1 vectorxd : grad_kappa * dkappa/dtheta 
     VectorXd grad_theta_K() {
 std::cout << "begin ar1 grad_theta_kappa" << std::endl;

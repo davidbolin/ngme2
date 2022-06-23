@@ -1,3 +1,6 @@
+#ifndef NGME_MATERN_H
+#define NGME_MATERN_H
+
 #include <Eigen/SparseLU>
 #include "../include/solver.h"
 #include "../latent.h"
@@ -7,8 +10,98 @@
 using std::exp;
 using std::log;
 using std::pow;
-class Matern : public Latent {
+
+/*
+    Matern model with stationary kappa:
+        alpha is the smoothness parameter
+        parameter_K(0) = kappa
+        K = kappa^2 * C + G
+*/
+class matern_ope : public Operator {
+private:
+    int alpha;
+    VectorXd Cdiag; //, taus, kappas;
+    SparseMatrix<double, 0, int> G, C;
+
+public:
+    matern_ope(Rcpp::List ope_in) 
+    :   Operator    (ope_in),
+        G           ( Rcpp::as< SparseMatrix<double,0,int> > (ope_in["G"]) ),
+        C           ( Rcpp::as< SparseMatrix<double,0,int> > (ope_in["C"]) )
+    {
+        // init parameter
+        alpha = Rcpp::as<int> (ope_in["alpha"]);
+        Cdiag = C.diagonal();
+        parameter_K.resize(1);
+        parameter_K(0) = Rcpp::as<double> (ope_in["kappa"]);        
+        
+        set_parameter(parameter_K);
+    }
     
+    // set kappa
+    void set_parameter(VectorXd kappa) {
+        assert (kappa.size() == 1);
+        this->parameter_K = kappa;
+
+        K = getK(kappa);
+        dK = get_dK(kappa);
+
+        if (use_num_dK) {
+            update_num_dK();
+        }
+    }
+
+    SparseMatrix<double> getK(VectorXd parameter_K) const {
+        double kappa = parameter_K(0);
+        int n_mesh = G.rows();
+        
+        SparseMatrix<double> K_a (n_mesh, n_mesh);
+            // VectorXd k2C = (kappa * kappa * Cdiag);
+            // SparseMatrix<double> KCK = k2C.asDiagonal();
+        SparseMatrix<double> KCK = kappa * kappa * C;
+        
+        // VectorXd kappas = VectorXd::Constant(n_mesh, parameter_K(0));
+        // SparseMatrix<double> KCK (n_mesh, n_mesh);
+        //     KCK = kappas.cwiseProduct(kappas).cwiseProduct(Cdiag).asDiagonal();
+        
+        if (alpha==2) {
+            // K_a = T (G + KCK) C^(-1/2) -> Actually, K_a = C^{-1/2} (G+KCK), since Q = K^T K.
+            K_a = Cdiag.cwiseSqrt().cwiseInverse().asDiagonal() * (G + KCK);
+        } else if (alpha==4) {      
+            // K_a = T (G + KCK) C^(-1) (G+KCK) C^(-1/2) -> Actually, K_a = C^{-1/2} (G + KCK) C^(-1) (G+KCK), since Q = K^T K.
+            K_a = Cdiag.cwiseSqrt().cwiseInverse().asDiagonal() * (G + KCK) * 
+                Cdiag.cwiseInverse().asDiagonal() * (G + KCK);
+        } else {
+            throw("alpha not equal to 2 or 4 is not implemented");
+        }
+
+        return K_a;
+    }
+
+    SparseMatrix<double> get_dK(VectorXd parameter_K) const {
+        double kappa = parameter_K(0);        
+        int n_mesh = G.rows();
+        SparseMatrix<double> dK (n_mesh, n_mesh);
+        
+        if (alpha==2) 
+            dK = 2*kappa*C.cwiseSqrt();
+        else if (alpha==4)
+            dK = 4*kappa*C.cwiseSqrt() * G + 4* pow(kappa, 3) * C.cwiseSqrt();
+        else 
+            throw("alpha != 2 or 4");
+        return dK;
+    }
+
+    // compute numerical dK
+    void update_num_dK() {
+        double kappa = parameter_K(0);
+        double eps = 0.01;
+        SparseMatrix<double> K_add_eps = pow(kappa + eps, 2) * C + G;
+        dK = (K_add_eps - K) / eps;
+    }
+};
+
+class Matern : public Latent {
 public:
     Matern(Rcpp::List latent_in) 
     : Latent(latent_in)
@@ -32,24 +125,25 @@ public:
     }
     
     // change of variable
-    VectorXd get_K_parameter() const {
-        VectorXd params = ope->get_parameter();
-            assert (params.size() == 1);
-        // change of variable
-        double th = k2th(params(0));
+    VectorXd get_theta_K() const {
+std::cout << "begin get theta K " << std::endl;
+        VectorXd kappa = ope->get_parameter();
+            assert (kappa.size() == 1);
+        
+        double th = k2th(kappa(0));
         return VectorXd::Constant(1, th);
     }
 
     // return length 1 vectorxd : grad_kappa * dkappa/dtheta 
-    VectorXd grad_K_parameter() {
+    VectorXd grad_theta_K() {
+std::cout << "begin grad theta K " << std::endl;
         SparseMatrix<double> K = getK();
         SparseMatrix<double> dK = get_dK();
         VectorXd V = getV();
         VectorXd SV = getSV();
         
-        VectorXd params = ope->get_parameter();
-            double a = params(0);
-        double th = k2th(a);
+        VectorXd kappa = ope->get_parameter();
+        double th = k2th(kappa(0));
 
         double da  = exp(th);
         double d2a = exp(th);
@@ -72,6 +166,7 @@ public:
             }
         } else { 
             // 2. analytical gradient and numerical hessian
+std::cout << "begin analytical grad. in Matern " << std::endl;
             double tmp = (dK*W).cwiseProduct(SV.cwiseInverse()).dot(K * W + (h - V).cwiseProduct(mu));
             double grad = trace - tmp;
 
@@ -97,10 +192,11 @@ public:
         return VectorXd::Constant(1, ret);
     }
 
-    void set_K_parameter(VectorXd param) {
+    void set_theta_K(VectorXd theta) {
+std::cout << "begin set theta K " << std::endl;
         // change of variable
-        double k = th2k(param(0));
-        ope->set_parameter(VectorXd::Constant(1, k));
+        double kappa = th2k(theta(0));
+        ope->set_parameter(VectorXd::Constant(1, kappa));
 
         if (!numer_grad) compute_trace(); 
     }
@@ -121,3 +217,5 @@ public:
         );
     }
 };
+
+#endif

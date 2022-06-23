@@ -8,8 +8,8 @@ ngme(
   formula,
   data,
   family = "normal",
-  controls = control.ngme(),
-  debug = debug.ngme()
+  controls = ngme.control(),
+  debug = ngme.debug()
 )
 }
 \arguments{

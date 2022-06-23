@@ -7,10 +7,14 @@
 f(
   x = NULL,
   model = "ar1",
-  var = "nig",
-  control = control.f(),
+  control = ngme.control.f(),
   debug = FALSE,
-  A = NULL
+  A = NULL,
+  B.sigma = 1,
+  theta.sigma = 0,
+  B.mu = 1,
+  theta.mu = 0,
+  noise = ngme.noise()
 )
 }
 \arguments{
@@ -18,16 +22,16 @@ f(
 
 \item{model}{1. string: type of model, 2. ngme.spde object}
 
-\item{var}{1. string: type of variance component}
-
 \item{debug}{debug variables}
 
-\item{config}{control variables}
+\item{B.mu}{}
+
+\item{var}{1. string: type of variance component}
 }
 \value{
 a list latent_in for constructing latent model, e.g. A, h, C, G,
 which also has
-1. list ope_in for building operator,
+1. list operator_in for building operator,
 2. list var_in for variance component,
 3. list init_values of parameters
 }

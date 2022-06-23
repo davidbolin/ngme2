@@ -14,7 +14,7 @@
 #' @export
 #'
 #' @examples
-control.ngme <- function(burnin            = 100,
+ngme.control <- function(burnin            = 100,
                          iterations        = 100,
                          gibbs_sample      = 5,
                          stepsize          = 1,
@@ -66,13 +66,13 @@ control.ngme <- function(burnin            = 100,
 #' @export
 #'
 #' @examples
-control.f <- function(
+ngme.control.f <- function(
   opt_operator  = TRUE,
   opt_mu        = TRUE,
   opt_sigma     = TRUE,
   opt_var       = TRUE,
 
-  init_operator = 1, # for spde model, use spde(theta.int=...)
+  theta.K       = 1, # for spde model, use spde(theta.int=...)
 
   numer_grad    = FALSE,
   use_precond   = TRUE,
@@ -86,7 +86,7 @@ control.f <- function(
     opt_sigma     = opt_sigma,
     opt_var       = opt_var,
 
-    init_operator = init_operator,
+    theta.K       = theta.K,
 
     numer_grad    = numer_grad,
     use_precond   = use_precond,
@@ -113,19 +113,22 @@ control.f <- function(
 #' @export
 #'
 #' @examples
-debug.ngme <- function(
+ngme.debug <- function(
   debug     = TRUE,
   fixW      = FALSE,
   fixSV     = FALSE,
+  fixBeta   = FALSE,
   fixSigEps = FALSE,
-  sigEps    = NULL,
+
   trueW     = NULL,
-  trueSV    = NULL
+  trueSV    = NULL,
+  beta      = NULL,
+  sigEps    = NULL
 ) {
   if (fixW  && is.null(trueW))  stop("Please provide W")
   if (fixSV && is.null(trueSV)) stop("Please provide SV")
 
-  control  = list(
+  debug  = list(
     debug     = debug,
     fixW      = fixW,
     fixSV     = fixSV,
@@ -135,5 +138,5 @@ debug.ngme <- function(
     sigEps    = sigEps
   )
 
-  return (control)
+  return (debug)
 }

@@ -2,18 +2,28 @@ library(devtools)
 # load_all(reset = FALSE, recompile = FALSE)
 load_all()
 
-k2th <- function(k) {log((-1-k)/(-1+k))}
-th2k <- function(th) {-1 + (2*exp(th)) / (1+exp(th))}
+a2th <- function(k) {log((-1-k)/(-1+k))}
+th2a <- function(th) {-1 + (2*exp(th)) / (1+exp(th))}
+
+############  0. generating fix effects and control
 
 n_obs <- 1000
 sigma_eps = 0.5
-
 x1 = runif(n_obs)
 x2 = rexp(n_obs)
 beta <- c(-3, -1, 2)
 
-############  1.1 construct AR with nig noise
+control = ngme.control(burnin=30,
+                       iterations = 1,
+                       gibbs_sample = 5,
+                       stepsize = 1,
+                       kill_var = FALSE,
+                       threshold = 1e-4,
+                       opt_fix_effect = T)
+
+############  1. test AR with nig noise
 # parameter for ar1
+
 alpha1 <- 0.5
 mu1 = 2; delta = -mu1
 nu1 = 1
@@ -28,6 +38,49 @@ Y1 = trueW1 + rnorm(n_obs, mean=0, sd=sigma_eps)
 # fix effects
 X <- (model.matrix(Y1 ~ x1 + x2))  # design matrix
 Y1 = as.numeric(Y1 + X %*% beta)
+
+c(alpha1, mu1, sigma1, nu1); c(beta, sigma_eps)
+
+ngme_out = ngme(Y1 ~ x1 + x2 +
+                  f(1:length(Y1),
+                    model="ar1",
+                    noise=ngme.noise(type="nig", theta.noise=1),
+                    control=ngme.control.f(
+                      numer_grad       = FALSE,
+                      theta.K          = 0.9,
+                      opt_operator     = T,
+                      opt_mu           = T,
+                      opt_sigma        = T,
+                      opt_var          = F,
+                      use_precond      = TRUE
+                    ),
+                    theta.mu = mu1,
+                    theta.sigma = log(sigma1),
+                    debug=TRUE),
+                family="normal",
+                data=data.frame(Y1=(as.numeric(Y1)), x1=x1, x2=x2),
+                control=control,
+                debug=ngme.debug(
+                  debug = TRUE,
+                  fixSigEps = FALSE,
+                  sigEps = 0.5
+                ))
+# plot alpha
+  plot_out(ngme_out$trajectory, start=1, n=1, transform = th2a)
+# plot mu
+  plot_out(ngme_out$trajectory, start=2, n=1)
+# plot sigma
+  plot_out(ngme_out$trajectory, start=3, n=1, transform = exp)
+# plot var
+  plot_out(ngme_out$trajectory, start=4, n=1, transform = exp)
+# plot fix effects
+  plot_out(ngme_out$trajectory, start=5, n=3)
+# plot m err
+  plot_out(ngme_out$trajectory, start=8, n=1, transform = exp)
+# plot alpha
+
+plot_out(ngme_out$trajectory, start=1, n=1, transform = th2a)
+  ngme_out$estimates
 
 ############  1.2 construct AR with normal noise
 # parameter for ar1
@@ -60,31 +113,11 @@ Y1 = as.numeric(Y1 + X %*% beta)
 # args(control.f)
 # args(control.ngme)
 
-control = control.ngme(burnin=30, iterations = 1000,
-                       gibbs_sample = 5, stepsize = 1,
-                       kill_var = FALSE, threshold = 1e-4,
-                       opt_fix_effect = T)
-
 ##### ngme for 1 ar
 # nig
 # th2k(0.5)
 
-ngme_out = ngme(Y1 ~ x1 + x2 +
-                  f(1:length(Y1),
-                    model="ar1",
-                    noise=ngme.noise(type="nig", theta.noise=1),
-                    control=control.f(numer_grad       = FALSE,
-                                      init_operator    = 0.5,
-                                      opt_operator     = T,
-                                      opt_mu           = T,
-                                      opt_sigma        = T,
-                                      opt_var          = F),
-                    theta.mu = 1,
-                    theta.sigma = log(1),
-                    debug=T),
-                family="normal",
-                data=data.frame(Y1=(as.numeric(Y1)), x1=x1, x2=x2),
-                control=control)
+
 # normal
 # ngme_out = ngme(Y2 ~ x1 + x2 +
 #                   f(Y2, model="ar1", var="normal",
@@ -110,18 +143,7 @@ ngme_out = ngme(Y1 ~ x1 + x2 +
 # normal ar1: a=0.7 sigma=3
 
 
-# plot alpha
-  plot_out(ngme_out$trajectory, start=1, n=1, transform = th2k)
-# plot mu
-  plot_out(ngme_out$trajectory, start=2, n=1)
-# plot sigma
-  plot_out(ngme_out$trajectory, start=3, n=1, transform = exp)
-# plot var
-  plot_out(ngme_out$trajectory, start=4, n=1, transform = exp)
-# plot fix effects
-  plot_out(ngme_out$trajectory, start=5, n=3)
-# plot m err
-  plot_out(ngme_out$trajectory, start=8, n=1, transform = exp)
+
 
 # ngme_out
   ngme_out$estimates

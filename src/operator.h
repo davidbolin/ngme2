@@ -19,7 +19,7 @@ using Eigen::MatrixXd;
 
 class Operator {
 protected:
-    VectorXd parameter;
+    VectorXd parameter_K;
     int n_params; // how many parameters
     bool use_num_dK {false};
 
@@ -30,12 +30,11 @@ public:
 std::cout << "constructor of Operator" << std::endl;
         n_params = Rcpp::as<int> (ope_in["n_params"]);
         use_num_dK = Rcpp::as<bool> (ope_in["use_num_dK"]);
-std::cout << "finish constructor of Operator" << std::endl;
     };
 
-    int get_n_params() const {return parameter.size(); }
-    virtual VectorXd get_parameter() const {return parameter; } // kappa
-    virtual void set_parameter(VectorXd parameter) {this->parameter = parameter;}
+    int get_n_params() const {return parameter_K.size(); }
+    virtual VectorXd get_parameter() const {return parameter_K; } // kappa
+    virtual void set_parameter(VectorXd parameter_K) {this->parameter_K = parameter_K;}
 
     // getter for K, dK, d2K
     SparseMatrix<double, 0, int>& getK()    {return K;}
@@ -48,69 +47,18 @@ std::cout << "finish constructor of Operator" << std::endl;
 
     // param(pos) += eps;  getK(param);
     SparseMatrix<double, 0, int> getK(int pos, double eps) {
-        VectorXd tmp = parameter;
+        VectorXd tmp = parameter_K;
         tmp(pos) += eps;
         return getK(tmp);
     }
 
     SparseMatrix<double, 0, int> get_dK(int pos, double eps) {
-        VectorXd tmp = parameter;
+        VectorXd tmp = parameter_K;
         tmp(pos) += eps;
         return get_dK(tmp);
     }
     
 };
-
-// for 1. AR model 2. stationary Matern model
-class stationaryGC : public Operator {
-private:
-    // theta = parameter(0)
-    SparseMatrix<double, 0, int> G, C;
-
-public:
-    stationaryGC(Rcpp::List ope_in) 
-    :   Operator    (ope_in),
-        G           ( Rcpp::as< SparseMatrix<double,0,int> > (ope_in["G"]) ),
-        C           ( Rcpp::as< SparseMatrix<double,0,int> > (ope_in["C"]) )
-    {
-        // init parameter
-            parameter.resize(1);
-            parameter(0) = Rcpp::as<double> (ope_in["kappa"]);        
-        
-        K  = getK(parameter);
-        dK = get_dK(parameter);
-        d2K = 0 * C;
-    }
-
-    void set_parameter(VectorXd parameter) {
-        assert (parameter.size() == 1);
-        this->parameter = parameter;
-
-        K = getK(parameter);
-        if (use_num_dK) {
-            update_num_dK();
-        }
-    }
-
-    SparseMatrix<double> getK(VectorXd params) const {
-        assert (params.size()==1);
-        SparseMatrix<double> K = params(0) * C + G;
-        return K;
-    }
-
-    SparseMatrix<double> get_dK(VectorXd params) const {
-        return C;
-    }
-
-    // compute numerical dK
-    void update_num_dK() {
-        double kappa = parameter(0);
-        double eps = 0.01;
-        SparseMatrix<double> K_add_eps = (kappa + eps) * C + G;
-        dK = (K_add_eps - K) / eps;
-    }
-};
-
 
 // for 1. AR model 2. stationary Matern model
 class matern_ope : public Operator {
@@ -130,23 +78,23 @@ public:
         Cdiag = C.diagonal();
         
         // init parameter
-            parameter.resize(1);
-            parameter(0) = Rcpp::as<double> (ope_in["kappa"]);        
+            parameter_K.resize(1);
+            parameter_K(0) = Rcpp::as<double> (ope_in["kappa"]);        
         
         int n_dim = G.rows();
 
-        set_parameter(parameter);
-        K  = getK(parameter);
-        dK = get_dK(parameter);
+        set_parameter(parameter_K);
+        K  = getK(parameter_K);
+        dK = get_dK(parameter_K);
         d2K = 0 * C;
     }
     
-    void set_parameter(VectorXd parameter) {
-        assert (parameter.size() == 1);
-        this->parameter = parameter;
+    void set_parameter(VectorXd parameter_K) {
+        assert (parameter_K.size() == 1);
+        this->parameter_K = parameter_K;
 
-        K = getK(parameter);
-        dK = get_dK(parameter);
+        K = getK(parameter_K);
+        dK = get_dK(parameter_K);
 
         if (use_num_dK) {
             update_num_dK();
@@ -192,7 +140,7 @@ public:
 
     // compute numerical dK
     void update_num_dK() {
-        double kappa = parameter(0);
+        double kappa = parameter_K(0);
         double eps = 0.01;
         SparseMatrix<double> K_add_eps = (kappa + eps) * C + G;
         dK = (K_add_eps - K) / eps;
@@ -229,7 +177,7 @@ std::cout << "Finish constructor of nonGC" << std::endl;
 
     // here C is diagonal
     void set_parameter(VectorXd theta_kappa) {
-        this->parameter = theta_kappa;
+        this->parameter_K = theta_kappa;
         
         // update K
         K = getK(theta_kappa);

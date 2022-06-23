@@ -1,7 +1,6 @@
 /*
     latent class:
-        dim. of paramter: n_ope_params + 3
-    // goal: change mu, sigma -> multi-var case
+    basically, providing get, grad, set (theta_kappa, ...)
 */
 
 #ifndef NGME_LATANT_H
@@ -170,10 +169,12 @@ if (debug) std::cout << "finish constructor of latent" << std::endl;
     void           set_parameter(const VectorXd&);
     void           finishOpt(int i) {opt_flag[i] = 0; }
 
-    // Parameter: Operator
-    virtual VectorXd    get_K_parameter() const {return ope->get_parameter(); } // no change of variable
-    virtual VectorXd    grad_K_parameter() { return numerical_grad(); }
-    virtual void        set_K_parameter(VectorXd params) {ope->set_parameter(params); }
+    // Parameter: Operator (override this if do change of variable)
+    virtual VectorXd    get_theta_K() const {
+        return ope->get_parameter(); 
+    } 
+    virtual VectorXd    grad_theta_K() { return numerical_grad(); }
+    virtual void        set_theta_K(VectorXd params) {ope->set_parameter(params); }
 
 
     // used for ar
@@ -241,7 +242,7 @@ if (debug) std::cout << "Start latent get parameter"<< std::endl;
     int n_ope = ope->get_n_params();
     
     VectorXd parameter (n_params);
-        parameter.segment(0, n_ope)             = ope->get_parameter();
+        parameter.segment(0, n_ope)             = get_theta_K();
         parameter.segment(n_ope, n_mu)          = get_theta_mu();
         parameter.segment(n_ope+n_mu, n_sigma)  = get_theta_sigma();
         parameter(n_ope+n_mu+n_sigma)           = get_theta_var();
@@ -256,7 +257,7 @@ if (debug) std::cout << "Start latent gradient"<< std::endl;
     VectorXd grad (n_params);
 auto grad1 = std::chrono::steady_clock::now();
 
-    if (opt_flag[0]) grad.segment(0, n_ope)             = grad_K_parameter();     else grad.segment(0, n_ope) = VectorXd::Constant(n_ope, 0);
+    if (opt_flag[0]) grad.segment(0, n_ope)             = grad_theta_K();         else grad.segment(0, n_ope) = VectorXd::Constant(n_ope, 0);
     if (opt_flag[1]) grad.segment(n_ope, n_mu)          = grad_theta_mu();        else grad.segment(n_ope, n_mu) = VectorXd::Constant(n_mu, 0);
     if (opt_flag[2]) grad.segment(n_ope+n_mu, n_sigma)  = grad_theta_sigma();     else grad.segment(n_ope+n_mu, n_sigma) = VectorXd::Constant(n_sigma, 0);
     if (opt_flag[3]) grad(n_ope+n_mu+n_sigma)           = grad_theta_var();       else grad(n_ope+n_mu+n_sigma) = 0;
@@ -273,8 +274,7 @@ inline void Latent::set_parameter(const VectorXd& theta) {
 if (debug) std::cout << "Start latent set parameter"<< std::endl;   
     int n_ope = ope->get_n_params();
 
-    // if (opt_flag[0])  set_theta_kappa(theta(0)); 
-    if (opt_flag[0])  set_K_parameter   (theta.segment(0, n_ope));
+    if (opt_flag[0])  set_theta_K       (theta.segment(0, n_ope));
     if (opt_flag[1])  set_theta_mu      (theta.segment(n_ope, n_mu)); 
     if (opt_flag[2])  set_theta_sigma   (theta.segment(n_ope+n_mu, n_sigma)); 
     if (opt_flag[3])  set_theta_var     (theta(n_ope+n_mu+n_sigma)); 

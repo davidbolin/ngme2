@@ -21,7 +21,7 @@ f <- function(
   x = NULL,
   model  = "ar1",
   # var    = "nig",
-  control = control.f(),
+  control = ngme.control.f(),
   debug  = FALSE,
   A = NULL,
   B.sigma = 1, # non-stationary case -> into matrix n_mesh * n_sigma
@@ -121,7 +121,7 @@ f <- function(
       C <- as(C, "dgCMatrix");
 
     operator_in <- list(
-      kappa = control$init_operator,
+      alpha = control$theta.K,
       n_params=n_ope_params,
       C=C,
       G=G,

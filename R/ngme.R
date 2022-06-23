@@ -17,8 +17,8 @@
 ngme <- function(formula,
                  data,
                  family   = "normal",
-                 controls = control.ngme(),
-                 debug    = debug.ngme())
+                 controls = ngme.control(),
+                 debug    = ngme.debug())
 {
   time.start <- Sys.time()
 
@@ -87,8 +87,14 @@ ngme <- function(formula,
                         n_params         = n_params # how many param to opt. in total
                         )
 
-    init_values <- list(beta=lm.model$coeff,
-                        sigma_eps = sd(lm.model$residuals))
+    # 4. set initial values (beta, sigma_eps)
+    beta = lm.model$coeff
+      if (!is.null(debug$beta))   beta = debug$beta
+    sigma_eps = sd(lm.model$residuals)
+      if (!is.null(debug$sigEps)) sigma_eps = debug$sigEps
+
+    init_values <- list(beta      = beta,
+                        sigma_eps = sigma_eps)
 
     in_list = list(general_in = general_in,
                   latents_in  = latents_in,

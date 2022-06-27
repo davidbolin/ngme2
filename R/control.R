@@ -50,14 +50,10 @@ ngme.control <- function(burnin            = 100,
 
 #' Generate control specifications for f function
 #'
-#' @param opt_operator  whether to optimize operator parameters
-#' @param opt_mu        whether to optimize mu
-#' @param opt_sigma     whether to optimize sigma
-#' @param opt_var       whether to optimize var parameters
-#' @param init_operator initial value for operator parameters
-#' @param init_mu       initial value for mu
-#' @param init_sigma    initial value for sigma
-#' @param init_var      initial value for var parameters
+#' @param fix_operator  whether to fix operator parameters
+#' @param fix_mu        whether to fix mu
+#' @param fix_sigma     whether to fix sigma
+#' @param fix_noise     whether to fix noise parameters
 #' @param numer_grad    whether to use numerical gradient
 #' @param use_precond   whether to use preconditioner
 #' @param eps           eps for numerical gradient
@@ -67,10 +63,10 @@ ngme.control <- function(burnin            = 100,
 #'
 #' @examples
 ngme.control.f <- function(
-  opt_operator  = TRUE,
-  opt_mu        = TRUE,
-  opt_sigma     = TRUE,
-  opt_var       = TRUE,
+  fix_operator  = FALSE,
+  fix_mu        = FALSE,
+  fix_sigma     = FALSE,
+  fix_noise     = FALSE,
 
   theta.K       = 1, # for spde model, use spde(theta.int=...)
 
@@ -81,10 +77,10 @@ ngme.control.f <- function(
   ) {
 
   control = list(
-    opt_operator  = opt_operator,
-    opt_mu        = opt_mu,
-    opt_sigma     = opt_sigma,
-    opt_var       = opt_var,
+    fix_operator  = fix_operator,
+    fix_mu        = fix_mu,
+    fix_sigma     = fix_sigma,
+    fix_noise     = fix_noise,
 
     theta.K       = theta.K,
 

@@ -79,3 +79,5 @@ plot_out(ngme_out$trajectory, start=6, n=1, transform = exp)
 # # plot m err
 plot_out(ngme_out$trajectory, start=7, n=1, transform = exp)
 
+
+

@@ -73,8 +73,8 @@ public:
     BlockModel(
         Rcpp::List general_in,
         Rcpp::List latents_in,
+        Rcpp::List start_in,
         Rcpp::List control_list,
-        Rcpp::List init_values,
         Rcpp::List debug_list
     ) : 
     X             ( Rcpp::as<MatrixXd>   (general_in["X"]) ),
@@ -82,8 +82,8 @@ public:
     n_meshs       ( Rcpp::as<int>        (general_in["n_meshs"]) ),
     family        ( Rcpp::as<string>     (general_in["family"]) ),
     
-    beta          ( Rcpp::as<VectorXd>   (init_values["beta"]) ),
-    sigma_eps     ( Rcpp::as<double>     (init_values["sigma_eps"]) ), 
+    beta          ( Rcpp::as<VectorXd>   (start_in["fix.effects"]) ),
+    sigma_eps     ( Rcpp::as<double>     (start_in["mesurement.noise"]) ), 
     
     n_latent      ( latents_in.size()), 
     
@@ -312,18 +312,18 @@ if (debug) std::cout << "Finish sampling V" << std::endl;
         return -grads;
     }
 
-    // return estimates
-    Rcpp::List get_estimates() const {
+    // return output
+    Rcpp::List output() const {
         Rcpp::List latents_estimates;
         
         for (int i=0; i < n_latent; i++) {
-            latents_estimates.push_back((*latents[i]).get_estimates());
+            latents_estimates.push_back((*latents[i]).output());
         }
 
         return Rcpp::List::create(
-            Rcpp::Named("m_err")        = sigma_eps,
-            Rcpp::Named("f_eff")        = beta,
-            Rcpp::Named("latents_est")  = latents_estimates
+            Rcpp::Named("mesurement.noise")     = sigma_eps,
+            Rcpp::Named("fixed.effects")        = beta,
+            Rcpp::Named("latent.model")         = latents_estimates
         );
     }
 };

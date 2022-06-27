@@ -19,8 +19,8 @@ Rcpp::List estimate_cpp(Rcpp::List in_list) {
     
     // *****************   Read From Input   *****************  
     Rcpp::List general_in    = Rcpp::as<Rcpp::List> (in_list["general_in"]);
-    Rcpp::List init_values   = Rcpp::as<Rcpp::List> (in_list["init_values"]);
     Rcpp::List latents_list  = Rcpp::as<Rcpp::List> (in_list["latents_in"]);
+    Rcpp::List start_in      = Rcpp::as<Rcpp::List> (in_list["start_in"]);
     Rcpp::List control_list  = Rcpp::as<Rcpp::List> (in_list["control_in"]);
         const int iterations = control_list["iterations"];
     Rcpp::List debug_list  = Rcpp::as<Rcpp::List> (in_list["debug"]);
@@ -28,8 +28,8 @@ Rcpp::List estimate_cpp(Rcpp::List in_list) {
     BlockModel block (
         general_in, 
         latents_list, 
+        start_in, 
         control_list,
-        init_values, 
         debug_list);
 
     // *****************   Main Process - Optimization *****************  
@@ -43,8 +43,7 @@ std::cout << "Total time is (ms): " << since(timer).count() << std::endl;
     // *****************   Construct Output   ***************** 
     return Rcpp::List::create(
         Rcpp::Named("trajectory") = trajectory,
-        // final estimate from block model
-        Rcpp::Named("estimates") = block.get_estimates()
+        Rcpp::Named("output") = block.output()
     );
 }
 

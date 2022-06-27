@@ -7,14 +7,14 @@ th2a <- function(th) {-1 + (2*exp(th)) / (1+exp(th))}
 
 ############  0. generating fix effects and control
 
-n_obs <- 1000
+n_obs <- 2000
 sigma_eps = 0.5
 x1 = runif(n_obs)
 x2 = rexp(n_obs)
 beta <- c(-3, -1, 2)
 
 control = ngme.control(burnin=30,
-                       iterations = 1,
+                       iterations = 50,
                        gibbs_sample = 5,
                        stepsize = 1,
                        kill_var = FALSE,
@@ -39,19 +39,20 @@ Y1 = trueW1 + rnorm(n_obs, mean=0, sd=sigma_eps)
 X <- (model.matrix(Y1 ~ x1 + x2))  # design matrix
 Y1 = as.numeric(Y1 + X %*% beta)
 
-c(alpha1, mu1, sigma1, nu1); c(beta, sigma_eps)
-
 ngme_out = ngme(Y1 ~ x1 + x2 +
                   f(1:length(Y1),
                     model="ar1",
-                    noise=ngme.noise(type="nig", theta.noise=1),
+                    noise=ngme.noise(
+                      type="nig",
+                      theta.noise=1
+                    ),
                     control=ngme.control.f(
-                      numer_grad       = FALSE,
+                      numer_grad       = TRUE,
                       theta.K          = 0.9,
-                      opt_operator     = T,
-                      opt_mu           = T,
-                      opt_sigma        = T,
-                      opt_var          = F,
+                      fix_operator     = FALSE,
+                      fix_mu           = FALSE,
+                      fix_sigma        = FALSE,
+                      fix_noise        = TRUE,
                       use_precond      = TRUE
                     ),
                     theta.mu = mu1,
@@ -60,11 +61,20 @@ ngme_out = ngme(Y1 ~ x1 + x2 +
                 family="normal",
                 data=data.frame(Y1=(as.numeric(Y1)), x1=x1, x2=x2),
                 control=control,
+                start=ngme.start(),
                 debug=ngme.debug(
                   debug = TRUE,
                   fixSigEps = FALSE,
-                  sigEps = 0.5
+                  fixW = TRUE,
+                  trueW = trueW1
                 ))
+
+# result
+res0 <- c(alpha1, mu1, sigma1, nu1); names(res0) <- c("alpha", "mu", "log(sigma)", "nu"); res0
+res1 <- c(alpha1, mu1, log(sigma1), nu1); names(res1) <- c("alpha", "mu", "log(sigma)", "nu"); res1
+res2 <- c(beta, sigma_eps); res2
+str(ngme_out$output)
+
 # plot alpha
   plot_out(ngme_out$trajectory, start=1, n=1, transform = th2a)
 # plot mu
@@ -79,7 +89,7 @@ ngme_out = ngme(Y1 ~ x1 + x2 +
   plot_out(ngme_out$trajectory, start=8, n=1, transform = exp)
 # plot alpha
 plot_out(ngme_out$trajectory, start=1, n=1, transform = th2a)
-  ngme_out$estimates
+plot_out(ngme_out$trajectory, start=2, n=1)
 
 ############  1.2 construct AR with normal noise
 # parameter for ar1
@@ -141,11 +151,8 @@ plot_out(ngme_out$trajectory, start=1, n=1, transform = th2a)
 # nig ar1: a=0.5, mu=2, sigma=2, nu=1
 # normal ar1: a=0.7 sigma=3
 
-
-
-
 # ngme_out
-  ngme_out$estimates
+  ngme_out$output
   ngme_out$trajectory
 
 # plot(ngme_out, param = "fe", type = "traj")

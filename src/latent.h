@@ -26,8 +26,8 @@ protected:
     bool debug;
     int n_mesh, n_params, n_ope, n_var {1}; // n_params=n_ope + n_mu + n_sigma + n_var
 
-    // indicate optimize (K, mu, sigma, var)
-    int opt_flag[4] {1, 1, 1, 1};
+    // indicate fixing (K, mu, sigma, noise)  (1 means fix)
+    int fix_flag[4] {1, 1, 1, 1};
     
     bool use_precond {false}, numer_grad {false}, use_num_hess {true};
 
@@ -79,10 +79,10 @@ if (debug) std::cout << "constructor of latent" << std::endl;
             string var_type = Rcpp::as<string>     (latent_in["var_type"]);
         
         Rcpp::List control_f = Rcpp::as<Rcpp::List> (latent_in["control_f"]);
-            opt_flag[0]   = Rcpp::as<int>        (control_f["opt_operator"]);
-            opt_flag[1]   = Rcpp::as<int>        (control_f["opt_mu"]);
-            opt_flag[2]   = Rcpp::as<int>        (control_f["opt_sigma"]);
-            opt_flag[3]   = Rcpp::as<int>        (control_f["opt_var"]);
+            fix_flag[0]   = Rcpp::as<int>        (control_f["fix_operator"]);
+            fix_flag[1]   = Rcpp::as<int>        (control_f["fix_mu"]);
+            fix_flag[2]   = Rcpp::as<int>        (control_f["fix_sigma"]);
+            fix_flag[3]   = Rcpp::as<int>        (control_f["fix_noise"]);
 
             use_precond  = Rcpp::as<bool>        (control_f["use_precond"] );
             use_num_hess = Rcpp::as<bool>        (control_f["use_num_hess"]);
@@ -105,7 +105,7 @@ if (debug) std::cout << "constructor of latent" << std::endl;
         } else if (var_type == "normal") {
             var = new normal(var_in, n_mesh, h);
             // Not optimizing mu
-            opt_flag[1] = 0;  
+            fix_flag[1] = 0;  
         }
 if (debug) std::cout << "finish constructor of latent" << std::endl;
     }
@@ -157,7 +157,7 @@ if (debug) std::cout << "finish constructor of latent" << std::endl;
     const VectorXd get_parameter() const;
     const VectorXd get_grad();
     void           set_parameter(const VectorXd&);
-    void           finishOpt(int i) {opt_flag[i] = 0; }
+    void           finishOpt(int i) {fix_flag[i] = 0; }
 
     // Parameter: Operator (override this if do change of variable)
     virtual VectorXd    get_theta_K() const {
@@ -220,6 +220,13 @@ if (debug) std::cout << "finish constructor of latent" << std::endl;
 
     // Output
     virtual Rcpp::List get_estimates() const=0;
+    Rcpp::List output() const {
+        return Rcpp::List::create(
+            Rcpp::Named("W") = W,
+            Rcpp::Named("V") = getV(),
+            Rcpp::Named("estimates") = get_estimates()
+        );
+    }
 };
 
 
@@ -244,10 +251,10 @@ if (debug) std::cout << "Start latent gradient"<< std::endl;
     VectorXd grad (n_params);
 auto grad1 = std::chrono::steady_clock::now();
 
-    if (opt_flag[0]) grad.segment(0, n_ope)             = grad_theta_K();         else grad.segment(0, n_ope) = VectorXd::Constant(n_ope, 0);
-    if (opt_flag[1]) grad.segment(n_ope, n_mu)          = grad_theta_mu();        else grad.segment(n_ope, n_mu) = VectorXd::Constant(n_mu, 0);
-    if (opt_flag[2]) grad.segment(n_ope+n_mu, n_sigma)  = grad_theta_sigma();     else grad.segment(n_ope+n_mu, n_sigma) = VectorXd::Constant(n_sigma, 0);
-    if (opt_flag[3]) grad(n_ope+n_mu+n_sigma)           = grad_theta_var();       else grad(n_ope+n_mu+n_sigma) = 0;
+    if (!fix_flag[0]) grad.segment(0, n_ope)             = grad_theta_K();         else grad.segment(0, n_ope) = VectorXd::Constant(n_ope, 0);
+    if (!fix_flag[1]) grad.segment(n_ope, n_mu)          = grad_theta_mu();        else grad.segment(n_ope, n_mu) = VectorXd::Constant(n_mu, 0);
+    if (!fix_flag[2]) grad.segment(n_ope+n_mu, n_sigma)  = grad_theta_sigma();     else grad.segment(n_ope+n_mu, n_sigma) = VectorXd::Constant(n_sigma, 0);
+    if (!fix_flag[3]) grad(n_ope+n_mu+n_sigma)           = grad_theta_var();       else grad(n_ope+n_mu+n_sigma) = 0;
 
 // DEBUG: checking grads
 if (debug) {
@@ -261,10 +268,10 @@ inline void Latent::set_parameter(const VectorXd& theta) {
 if (debug) std::cout << "Start latent set parameter"<< std::endl;   
     int n_ope = ope->get_n_params();
 
-    if (opt_flag[0])  set_theta_K       (theta.segment(0, n_ope));
-    if (opt_flag[1])  set_theta_mu      (theta.segment(n_ope, n_mu)); 
-    if (opt_flag[2])  set_theta_sigma   (theta.segment(n_ope+n_mu, n_sigma)); 
-    if (opt_flag[3])  set_theta_var     (theta(n_ope+n_mu+n_sigma)); 
+    set_theta_K       (theta.segment(0, n_ope));
+    set_theta_mu      (theta.segment(n_ope, n_mu)); 
+    set_theta_sigma   (theta.segment(n_ope+n_mu, n_sigma)); 
+    set_theta_var     (theta(n_ope+n_mu+n_sigma)); 
 }
 
 #endif

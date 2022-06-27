@@ -1,3 +1,9 @@
+// grad_theta_mu
+// grad_theta_sigma
+// function_K
+// function_kappa
+// numerical_grad
+
 #include "latent.h"
 
 VectorXd Latent::grad_theta_mu() {
@@ -10,21 +16,21 @@ if (debug) std::cout << "Start mu gradient"<< std::endl;
     VectorXd prevV = getPrevV();
     VectorXd prev_inv_V = prevV.cwiseInverse();
     
-    if (n_mu == 1 && n_sigma == 1) {
-        // stationary case
-        double grad = pow(sigma(0),-2) * (V-h).cwiseProduct(inv_V).dot(K*W - mu(0) * (V-h));
-        double hess = -pow(sigma(0),-2) * (prevV-h).cwiseProduct(prev_inv_V).dot(prevV-h);
+    // if (n_mu == 1 && n_sigma == 1) {
+    //     // stationary case
+    //     double grad = pow(sigma(0),-2) * (V-h).cwiseProduct(inv_V).dot(K*W - mu(0) * (V-h));
+    //     double hess = -pow(sigma(0),-2) * (prevV-h).cwiseProduct(prev_inv_V).dot(prevV-h);
 
-        result(0) = grad / hess;
-    }
-    else {
+    //     result(0) = grad / hess;
+    // }
+    // else {
         VectorXd grad (n_mu);
         for (int l=0; l < n_mu; l++) {
             grad(l) = (V-h).cwiseProduct( B_mu.col(l).cwiseQuotient(getSV()) ).dot(K*W - mu.cwiseProduct(V-h));
         }
 
         result = - 1.0 / n_mesh * grad;
-    }
+    // }
 
 if (debug) {
 // std::cout << "grad of mu=" << grad <<std::endl;
@@ -155,5 +161,6 @@ std::cout << "start numerical gradient" <<std::endl;
             grad(i) = num_g / num_hess;
         }
     } 
-    return grad;
+    // return grad;
+    return grad * 10; // orginal step is too small
 }

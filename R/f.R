@@ -1,14 +1,15 @@
-#' f function
+#' f function for specifying a model
 #'
 #' @param x covariates
 #' @param model 1. string: type of model, 2. ngme.spde object
-#' @param var 1. string: type of variance component
+#' @param noise 1. string: type of model, 2. ngme.noise object
 #' @param debug debug variables
 #' @param control
 #' @param A
 #' @param B.sigma
 #' @param theta.sigma
 #' @param B.mu
+#' @param theta.mu
 #'
 #' @return a list latent_in for constructing latent model, e.g. A, h, C, G,
 #' which also has
@@ -20,40 +21,19 @@
 f <- function(
   x = NULL,
   model  = "ar1",
-  # var    = "nig",
+  noise = ngme.noise(),
   control = ngme.control.f(),
   debug  = FALSE,
   A = NULL,
   B.sigma = 1, # non-stationary case -> into matrix n_mesh * n_sigma
   theta.sigma = 0, # exp(0) = 1
   B.mu = 1,
-  theta.mu = 0,
-  noise = ngme.noise()
+  theta.mu = 0
 ) {
-  # # construct variance component
-  # build.var <- function(var) {
-  #   if (var=="nig") {
-  #     var_in = list(
-  #       # V_type = "ind_IG",
-  #       nu    = control$init_var,
-  #       n_params = 1
-  #     )
-  #   }
-  #   else if (var=="normal") {
-  #     var_in = list(
-  #       # V_type = "normal"
-  #       n_params = 1
-  #     )
-  #   }
-  #   else {
-  #     stop("unknown var name")
-  #   }
-  #   var_in
-  # }
 
-  # 1. construct operator (n_covar, n_ope, C, G, A, h)
-  ################ SPDE ##################
-  if (inherits(model, "ngme.matern")) {
+  ################## construct operator (n_covar, n_ope, C, G, A, h) ##################
+
+  if (inherits(model, "ngme.matern")) {  ######## 1. stationary Matern ########
     n = length(x)
     model.type = "matern"
     h = rep(1, n)
@@ -65,24 +45,7 @@ f <- function(
     # 2. ope
     operator_in <- model$operator_in
   }
-  else if (inherits(model, "ngme.spde")) {
-    # # construct latent_in
-    # latent_in <- list(
-    #   model_type  = model.type,
-    #   var_type    = var,
-    #   n_mesh      = n,        # !: make sure this is the second place
-    #   n_la_params = n_ope_params + 3,
-    #   A           = A,
-    #   h           = h,
-    #
-    #   # lists
-    #   la_model_in   = la_model_in,
-    #   operator_in   = operator_in,
-    #   var_in        = var_in,
-    #   control_f     = control,
-    #   debug         = debug
-    # )
-
+  else if (inherits(model, "ngme.spde")) { ######## 2. nonstationary Matern ########
     # 1. general
     n = length(x)
     model.type = "spde.matern"
@@ -95,8 +58,7 @@ f <- function(
 
     special_in <- list()
   }
-  ################ AR1 ##################
-  else if (model=="ar1") {
+  else if (model=="ar1") {     ################ 3. AR1 ##################
     n_ope_params = 1
 
     # 1. for general latent model
@@ -127,10 +89,8 @@ f <- function(
       G=G,
       use_num_dK=FALSE
     )
-
   }
-  ################ MATERN ##################
-  else if (model=="matern1d") {
+  else if (model=="matern1d") {  ################ 4. 1d Matern ##################
     model = "matern"
     n_params = 1
 
@@ -156,6 +116,13 @@ f <- function(
     stop("unknown model")
   }
 
+  ################## construct noise (e.g. nig noise) ##################
+  if (is.character(noise)) {
+    if (noise=="nig")    noise = ngme.noise(type="nig")
+    if (noise=="normal") noise = ngme.noise(type="normal")
+  }
+
+  ################## construct Mu and Sigma ##################
   # turn B.sigma and B.mu into matrix
   n_mu <- length(theta.mu)
   n_sigma <- length(theta.sigma)

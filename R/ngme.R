@@ -4,6 +4,8 @@
 #' @param family  distribution family
 #' @param data    a dataframe contains data
 #' @param controls control variables
+#' @param debug  debug option
+#' @param start  1. last fitting object 2. ngme.start()
 #'
 #' @return a list of outputs
 #' @export
@@ -18,7 +20,8 @@ ngme <- function(formula,
                  data,
                  family   = "normal",
                  controls = ngme.control(),
-                 debug    = ngme.debug())
+                 debug    = ngme.debug(),
+                 start    = ngme.start())
 {
   time.start <- Sys.time()
 
@@ -46,16 +49,12 @@ ngme <- function(formula,
   # 2. parse the formula
   fm = Formula::Formula(formula)
 
-  if (all(length(fm)==c(2,2))) {
-    # bivariate model
-    ########## todo
+  if (all(length(fm)==c(2,2))) { ######################### bivariate model
     lfm = formula(fm, lhs=1, rhs=1)
     rfm = formula(fm, lhs=2, rhs=2)
-
-    # todo
+    ########## to-do
   }
-  else if (all(length(fm)==c(1,1))) {
-    ####### univariate case
+  else if (all(length(fm)==c(1,1))) {  ########################## univariate case
     fm = formula(fm)
 
     # 1. extract f and eval  2. get the formula without f function
@@ -87,19 +86,14 @@ ngme <- function(formula,
                         n_params         = n_params # how many param to opt. in total
                         )
 
-    # 4. set initial values (beta, sigma_eps)
-    beta = lm.model$coeff
-      if (!is.null(debug$beta))   beta = debug$beta
-    sigma_eps = sd(lm.model$residuals)
-      if (!is.null(debug$sigEps)) sigma_eps = debug$sigEps
-
-    init_values <- list(beta      = beta,
-                        sigma_eps = sigma_eps)
+    # 4. set starting point / initial values (beta, sigma_eps, latents)
+    if (is.null(start$fix.effects))      start$fix.effects = lm.model$coeff
+    if (is.null(start$mesurement.noise)) start$mesurement.noise = sd(lm.model$residuals)
 
     in_list = list(general_in = general_in,
                   latents_in  = latents_in,
+                  start_in    = start,
                   control_in  = controls,
-                  init_values = init_values,
                   debug       = debug)
 
   } else {
@@ -109,7 +103,7 @@ ngme <- function(formula,
 # print
 if (debug$debug) print(str(in_list))
 
-  # estimate
+  ################# Run CPP ####################
   out = estimate_cpp(in_list)
 
   # construct output

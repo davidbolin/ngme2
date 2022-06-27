@@ -16,24 +16,27 @@ class nonstationaryGC : public Operator {
 private:
     int alpha; 
     VectorXd Cdiag; //, taus, kappas;
-    SparseMatrix<double, 0, int> G;
+    // SparseMatrix<double, 0, int> G;
+    SparseMatrix<double, 0, int> G, C;
     MatrixXd Bkappa;
 public:
     nonstationaryGC(Rcpp::List ope_in) 
-    :   Operator    ( ope_in)
+    :   Operator    ( ope_in),
+        G           ( Rcpp::as< SparseMatrix<double,0,int> > (ope_in["G"]) ),
+        C           ( Rcpp::as< SparseMatrix<double,0,int> > (ope_in["C"]) )
         // alpha       ( Rcpp::as<int> (ope_in["alpha"])),
-        // G           ( Rcpp::as< SparseMatrix<double,0,int> > (ope_in["G"]) )
         // Bkappa      ( Rcpp::as<MatrixXd> (ope_in["B.kappa"]) )
     {
+        // G = Rcpp::as< SparseMatrix<double,0,int> > (ope_in["G"]);
+        // SparseMatrix<double> C = Rcpp::as< SparseMatrix<double,0,int> > (ope_in["C"]);
+        
         alpha = Rcpp::as<int> (ope_in["alpha"]);
-        G = Rcpp::as< SparseMatrix<double,0,int> > (ope_in["G"]);
         Bkappa = Rcpp::as<MatrixXd> (ope_in["B.kappa"]);
-
-        VectorXd theta_kappa = ope_in["init_operator"];
-        SparseMatrix<double> C = Rcpp::as< SparseMatrix<double,0,int> > (ope_in["C"]);
+        VectorXd theta_kappa = ope_in["theta.kappa"];
+std::cout << "theta_kappa = " << theta_kappa << std::endl;
         Cdiag = C.diagonal();
-        set_parameter(theta_kappa);
 
+        set_parameter(theta_kappa);
 std::cout << "Finish constructor of nonGC" << std::endl;
     }
 

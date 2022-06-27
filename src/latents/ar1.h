@@ -104,7 +104,6 @@ public:
 
     // return length 1 vectorxd : grad_kappa * dkappa/dtheta 
     VectorXd grad_theta_K() {
-std::cout << "begin ar1 grad_theta_kappa" << std::endl;
 
         SparseMatrix<double> K = getK();
         SparseMatrix<double> dK = get_dK();
@@ -120,6 +119,7 @@ std::cout << "begin ar1 grad_theta_kappa" << std::endl;
 
         double ret = 0;
         if (numer_grad) {
+std::cout << "begin numerical gradient in ar1" << std::endl;
             // 1. numerical gradient
             if (!use_precond) {
                 // double grad = (function_K(eps) - function_K(0)) / eps;

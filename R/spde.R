@@ -71,7 +71,7 @@ ngme.spde.matern <- function(
       operator_in = list(
         alpha = alpha,
         B.kappa = B.kappa,
-        init_operator = theta.kappa,
+        theta.kappa = theta.kappa,
         n_params = length(theta.kappa),
         n = n,
         C = as(C, "dgCMatrix"),

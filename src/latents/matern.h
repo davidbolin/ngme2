@@ -150,6 +150,7 @@ std::cout << "begin grad theta K " << std::endl;
 
         double ret = 0;
         if (numer_grad) {
+std::cout << "begin numerical grad. in Matern " << std::endl;
             // 1. numerical gradient
             if (!use_precond) {
                 // double grad = (function_K(eps) - function_K(0)) / eps;
@@ -210,10 +211,10 @@ std::cout << "begin set theta K " << std::endl;
     
     Rcpp::List get_estimates() const {
         return Rcpp::List::create(
-            Rcpp::Named("kappa") = ope->get_parameter()(0),
-            Rcpp::Named("mu")    = theta_mu,
-            Rcpp::Named("sigma") = theta_sigma,
-            Rcpp::Named("var")   = var->get_var()
+            Rcpp::Named("kappa")        = ope->get_parameter()(0),
+            Rcpp::Named("theta.mu")     = theta_mu,
+            Rcpp::Named("theta.sigma")  = theta_sigma,
+            Rcpp::Named("var")          = var->get_var()
         );
     }
 };

@@ -16,12 +16,14 @@ Eigen::VectorXd rnorm_vec(int n, double mu, double sigma)
 
 // ---- other functions ------
 void BlockModel::setW(const VectorXd& W) {
+if (debug) std::cout << "******* Begin setting W in Block" << std::endl;        
   int pos = 0;
   for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
       int size = (*it)->getSize();
       (*it)->setW(W.segment(pos, size));
       pos += size;
   }
+if (debug) std::cout << "******* Finish setting W in Block" << std::endl;        
 }
 
 // sample W|VY 
@@ -29,9 +31,7 @@ void BlockModel::sampleW_VY()
 {
 if (debug) std::cout << "starting sampling W." << std::endl;
 
-  if (fixW) 
-    setW(trueW); 
-  else {
+  if (!fix_W) {
     VectorXd SV = getSV();
     VectorXd inv_SV = VectorXd::Constant(SV.size(), 1).cwiseQuotient(SV);
 
@@ -47,27 +47,27 @@ if (debug) std::cout << "starting sampling W." << std::endl;
     
     // sample W ~ N(QQ^-1*M, QQ^-1)
     VectorXd W = chol_QQ.rMVN(M, z);
-if (debug) std::cout << "Finish rMVN" << std::endl;        
 
     setW(W);
-  }  
+if (debug) std::cout << "Finish sampling W" << std::endl;        
+  }
 }
 
 // sample W|V
-void BlockModel::sampleW_V()
-{
-  // sample KW ~ N(mu*(V-h), diag(V))
-  VectorXd SV = getSV();
-  Eigen::VectorXd KW (n_meshs);
-  for (int i=0; i < n_meshs; i++) {
-    KW[i] = R::rnorm(0, sqrt(SV[i]));
-  }
-  KW = getMean() + KW;
+// void BlockModel::sampleW_V()
+// {
+//   // sample KW ~ N(mu*(V-h), diag(V))
+//   VectorXd SV = getSV();
+//   Eigen::VectorXd KW (n_meshs);
+//   for (int i=0; i < n_meshs; i++) {
+//     KW[i] = R::rnorm(0, sqrt(SV[i]));
+//   }
+//   KW = getMean() + KW;
 
-  LU_K.factorize(K);
-  VectorXd W = LU_K.solve(KW);
+//   LU_K.factorize(K);
+//   VectorXd W = LU_K.solve(KW);
 
-  setW(W);
-}
+//   setW(W);
+// }
 
 

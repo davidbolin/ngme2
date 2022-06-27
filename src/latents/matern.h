@@ -29,13 +29,8 @@ public:
         G           ( Rcpp::as< SparseMatrix<double,0,int> > (ope_in["G"]) ),
         C           ( Rcpp::as< SparseMatrix<double,0,int> > (ope_in["C"]) )
     {
-        // init parameter
         alpha = Rcpp::as<int> (ope_in["alpha"]);
         Cdiag = C.diagonal();
-        parameter_K.resize(1);
-        parameter_K(0) = Rcpp::as<double> (ope_in["kappa"]);        
-        
-        set_parameter(parameter_K);
     }
     
     // set kappa
@@ -106,10 +101,12 @@ public:
     Matern(Rcpp::List latent_in) 
     : Latent(latent_in)
     {
+        // Init operator object
         Rcpp::List operator_in = Rcpp::as<Rcpp::List> (latent_in["operator_in"]); // containing C and G
-
-        // Init operator for matern
         ope = new matern_ope(operator_in);
+            Rcpp::List start = Rcpp::as<Rcpp::List> (latent_in["start"]);
+            VectorXd parameter_K = Rcpp::as< VectorXd > (start["theta_K"]);
+            ope->set_parameter(parameter_K);     
         
         // Init K and Q
         SparseMatrix<double> K = getK();

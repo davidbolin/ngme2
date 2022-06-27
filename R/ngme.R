@@ -5,7 +5,7 @@
 #' @param data    a dataframe contains data
 #' @param controls control variables
 #' @param debug  debug option
-#' @param start  1. last fitting object 2. ngme.start()
+#' @param start  1. last fitting object 2. ngme.start() for block model
 #'
 #' @return a list of outputs
 #' @export
@@ -42,9 +42,6 @@ ngme <- function(formula,
   if (!is.null(debug$trueW)) {
     debug$fixW = TRUE
   }
-  if (!is.null(debug$trueSV)) {
-    debug$fixSV = TRUE
-  }
 
   # 2. parse the formula
   fm = Formula::Formula(formula)
@@ -78,16 +75,35 @@ ngme <- function(formula,
 
     # 3. prepare in_list for estimate
     lm.model = lm.fit(X, Y)
-    general_in <- list( Y                = Y,
-                        X                = X,
-                        family           = "normal",
-                        n_meshs          = n_meshs,
-                        n_la_params      = n_la_params,
-                        n_params         = n_params # how many param to opt. in total
-                        )
+    general_in <- list(
+      Y                = Y,
+      X                = X,
+      family           = "normal",
+      n_meshs          = n_meshs,
+      n_la_params      = n_la_params,
+      n_params         = n_params # how many param to opt. in total
+    )
 
-    # 4. set starting point / initial values (beta, sigma_eps, latents)
-    if (is.null(start$fix.effects))      start$fix.effects = lm.model$coeff
+####### 4. Set starting point / initial values (beta, sigma_eps, latents)
+    # use prevous ngme object
+    if (inherits(start, "ngme")) {
+      start <- start$output
+
+      # put the last estimates into latents_in
+      for (i in seq_along(latents_in)) {
+        estimates = start$latent.model[[i]]$estimates
+
+        latents_in[[i]]$start$theta_K = estimates[[1]]
+        latents_in[[i]]$start$theta_mu = estimates[["theta.mu"]]
+        latents_in[[i]]$start$theta_sigma = estimates[["theta.sigma"]]
+        latents_in[[i]]$start$theta_noise = estimates[["theta.noise"]]
+
+        latents_in[[i]]$start$V = start$latent.model[[i]][["V"]]
+      }
+    }
+
+    if (is.null(start$block.W) && isTRUE(controls$fixW)) stop("if fixing W, the initial W should be provided.")
+    if (is.null(start$fixed.effects)) start$fixed.effects = lm.model$coeff
     if (is.null(start$mesurement.noise)) start$mesurement.noise = sd(lm.model$residuals)
 
     in_list = list(general_in = general_in,
@@ -107,6 +123,8 @@ if (debug$debug) print(str(in_list))
   out = estimate_cpp(in_list)
 
   # construct output
+    out$input = in_list
+
     # fix_eff
     out$n_fe     = ncol(X)
 

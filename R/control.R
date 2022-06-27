@@ -57,6 +57,9 @@ ngme.control <- function(burnin            = 100,
 #' @param numer_grad    whether to use numerical gradient
 #' @param use_precond   whether to use preconditioner
 #' @param eps           eps for numerical gradient
+#' @param fix_V         to-do
+#' @param theta.K
+#' @param use_num_hess
 #'
 #' @return list of control variables
 #' @export
@@ -67,9 +70,9 @@ ngme.control.f <- function(
   fix_mu        = FALSE,
   fix_sigma     = FALSE,
   fix_noise     = FALSE,
+  fix_V         = FALSE,
 
   theta.K       = 1, # for spde model, use spde(theta.int=...)
-
   numer_grad    = FALSE,
   use_precond   = TRUE,
   use_num_hess  = TRUE,
@@ -97,13 +100,10 @@ ngme.control.f <- function(
 
 #' Generate debug option
 #'
-#' @param debug
-#' @param trueW
-#' @param trueSV
-#' @param fixW
-#' @param fixSV
-#' @param fixSigEps
-#' @param sigEps
+#' @param debug    debug mode
+#' @param fix_W    fix W
+#' @param fix_feff to-do
+#' @param fix_merr fix measurement noise
 #'
 #' @return
 #' @export
@@ -111,27 +111,16 @@ ngme.control.f <- function(
 #' @examples
 ngme.debug <- function(
   debug     = TRUE,
-  fixW      = FALSE,
-  fixSV     = FALSE,
-  fixBeta   = FALSE,
-  fixSigEps = FALSE,
-
-  trueW     = NULL,
-  trueSV    = NULL,
-  beta      = NULL,
-  sigEps    = NULL
+  fix_W     = FALSE,
+  fix_feff  = FALSE,
+  fix_merr  = FALSE
 ) {
-  if (fixW  && is.null(trueW))  stop("Please provide W")
-  if (fixSV && is.null(trueSV)) stop("Please provide SV")
 
   debug  = list(
     debug     = debug,
-    fixW      = fixW,
-    fixSV     = fixSV,
-    trueW     = trueW,
-    trueSV    = trueSV,
-    fixSigEps = fixSigEps,
-    sigEps    = sigEps
+    fix_W      = fix_W,
+    fix_feff   = fix_feff,
+    fix_merr   = fix_merr
   )
 
   return (debug)

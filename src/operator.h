@@ -1,6 +1,6 @@
 /*
     Operator class is for :
-        1. store K_parameter, 
+        1. store parameter_K (like alpha, kapap), 
         2. compute K, dK.
 */
 
@@ -33,7 +33,7 @@ std::cout << "constructor of Operator" << std::endl;
     };
 
     int get_n_params() const {return parameter_K.size(); }
-    virtual VectorXd get_parameter() const {return parameter_K; } // kappa
+    virtual VectorXd get_parameter() const {return parameter_K; }
     virtual void set_parameter(VectorXd parameter_K) {this->parameter_K = parameter_K;}
 
     // getter for K, dK, d2K

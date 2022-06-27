@@ -22,14 +22,10 @@ noise <- delta + mu*trueV + sigma * sqrt(trueV) * rnorm(n_mesh)
 kappa = 3
 Kappa <- diag(rep(kappa, mesh$n))
 
-# kappa <- drop(exp(B.kappa %*% theta.kappa)); max(kappa)
-
 fem <- inla.mesh.fem(mesh)
 C = fem$c0 ; G = fem$g1
 # # C = diag(rowSums(C))
 
-# Tau = diag(drop(exp(B.tau %*% c(1, theta))))
-# Kappa = diag(drop(exp(B.kappa %*% c(1, theta))))
 # K = (Kappa %*% C %*% Kappa + G)
 C.sqrt.inv <- as(diag(sqrt(1/diag(C))), "sparseMatrix")
 C.inv <- as(diag(1/diag(C)), "sparseMatrix")
@@ -43,8 +39,6 @@ if (alpha==2) {
 }
 
 # # W|V ~ N(solve(K, delta + mu*V), sigma^2*K^(-1)*diag(V)*K^(-1) )
-# trueW = solve(K_a, sigma * sqrt(trueV)) * rnorm(mesh$n) + solve(K_a, delta+mu*trueV)
-# trueW = drop(trueW)
 noise = -mu + mu * trueV + sigma * sqrt(trueV) * rnorm(mesh$n)
 trueW = drop(solve(K_a, noise))
 
@@ -73,14 +67,17 @@ formula <- Y ~ 0 + f(
   debug=TRUE,
   theta.mu=mu,
   theta.sigma=log(sigma),
+  noise = ngme.noise(
+    theta.noise=1.01
+  ),
   control=ngme.control.f(
-    use_num_hess     = FALSE,
-    opt_operator     = TRUE,
-    opt_mu           = FALSE,
-    opt_sigma        = FALSE,
-    opt_var          = FALSE,
     numer_grad       = FALSE,
-    use_precond      = FALSE
+    use_precond      = TRUE,
+
+    fix_operator     = FALSE,
+    fix_mu           = TRUE,
+    fix_sigma        = TRUE,
+    fix_noise        = TRUE,
   )
 )
 
@@ -94,9 +91,8 @@ ngme_out <- ngme(
     gibbs_sample = 5
   ),
   debug=ngme.debug(
-    debug = TRUE,
-    fixW = TRUE,
-    trueW = trueW
+    debug = TRUE
+    # fixW = TRUE
   )
 )
 

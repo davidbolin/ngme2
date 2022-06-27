@@ -24,6 +24,12 @@ public:
     const VectorXd& getV()     const {return V;}
     const VectorXd& getPrevV() const {return prevV;}
     
+    // only for starting point
+    void setV(const VectorXd& V) {
+        prevV = V;
+        this->V = V;
+    }
+    
     virtual void sample_V()=0;
     virtual void sample_cond_V(SparseMatrix<double>& K,
                                 VectorXd& W,
@@ -43,10 +49,10 @@ private:
 public:
     ind_IG(){}
     
-    ind_IG(Rcpp::List var_in, unsigned n, VectorXd h) 
+    ind_IG(double theta_noise, unsigned n, VectorXd h) 
     : nu(0)
     {   
-        nu = (Rcpp::as<double>) (var_in["theta.noise"]);
+        nu = theta_noise;
         this->n = n; 
         this->h = h;
 
@@ -100,11 +106,11 @@ public:
     };
 };
 
-// adding the case for normal
+// the case for normal noise
 class normal : public Var {
 public:
     normal() {}
-    normal(Rcpp::List var_in, unsigned n, VectorXd h) {
+    normal(unsigned n, VectorXd h) {
         this->n = n;
         this->h = h;
         

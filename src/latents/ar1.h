@@ -1,3 +1,7 @@
+// Notice here:
+// for R interface, theta_K is directly the parameter_K of the Opeartor object
+// for C interface, theta_K is f(parameter_K) such that it is unbounded
+
 // AR1 and its operator
 
 #ifndef NGME_AR1_H
@@ -30,12 +34,8 @@ public:
         C           ( Rcpp::as< SparseMatrix<double,0,int> > (ope_in["C"]) )
     {
         // init parameter
-            parameter_K.resize(1);
-            parameter_K(0) = Rcpp::as<double> (ope_in["alpha"]);
-
-        K  = getK(parameter_K);
-        dK = get_dK(parameter_K);
-        d2K = 0 * C;
+        // parameter_K.resize(1);
+        // parameter_K(0) = Rcpp::as<double> (ope_in["alpha"]);
     }
         
     void set_parameter(VectorXd alpha) {
@@ -43,6 +43,8 @@ public:
         this->parameter_K = alpha;
 
         K = getK(alpha);
+        dK = get_dK(parameter_K);
+        d2K = 0 * C;
         if (use_num_dK) {
             update_num_dK();
         }
@@ -79,7 +81,10 @@ public:
         
         // Init operator for ar1
         ope = new ar_operator(operator_in);
-        
+            Rcpp::List start = Rcpp::as<Rcpp::List> (latent_in["start"]);
+            VectorXd parameter_K = Rcpp::as< VectorXd > (start["theta_K"]);
+            ope->set_parameter(parameter_K);
+
         // Init K and Q
         SparseMatrix<double> K = getK();
         SparseMatrix<double> Q = K.transpose() * K;

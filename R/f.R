@@ -7,9 +7,12 @@
 #' @param control
 #' @param A
 #' @param B.sigma
-#' @param theta.sigma
 #' @param B.mu
+#' @param theta.sigma
 #' @param theta.mu
+#' @param theta.K
+#' @param theta.noise
+#' @param start.V
 #'
 #' @return a list latent_in for constructing latent model, e.g. A, h, C, G,
 #' which also has
@@ -26,91 +29,54 @@ f <- function(
   debug  = FALSE,
   A = NULL,
   B.sigma = 1, # non-stationary case -> into matrix n_mesh * n_sigma
-  theta.sigma = 0, # exp(0) = 1
   B.mu = 1,
-  theta.mu = 0
+  theta.sigma = 0, # exp(0) = 1
+  theta.mu = 0,
+  # for these two you can specified inside ngme.noise and ngme.model function
+  theta.K = NULL,
+  theta.noise = NULL,
+  start.V = NULL
 ) {
+  ################## construct operator (n_ope, C, G, A, h) ##################
+  if (is.character(model)) {  ######## string
+    if (model=="ar1") {
+      model.type = "ar1"
+      ar1_in = ngme.ar1(x)
+      A = ar1_in$A
+      n = ncol(A)
+      h = rep(1.0, n)
 
-  ################## construct operator (n_covar, n_ope, C, G, A, h) ##################
-
-  if (inherits(model, "ngme.matern")) {  ######## 1. stationary Matern ########
-    n = length(x)
-    model.type = "matern"
-    h = rep(1, n)
-
-    if (is.null(A)) stop("Provide A matrix")
-
-    special_in <- list()
-
-    # 2. ope
-    operator_in <- model$operator_in
+      operator_in = ar1_in$operator_in
+    } else {
+      stop("unknown model name")
+    }
   }
-  else if (inherits(model, "ngme.spde")) { ######## 2. nonstationary Matern ########
-    # 1. general
-    n = length(x)
-    model.type = "spde.matern"
-    h = rep(1, n)
-
-    if (is.null(A)) stop("Provide A matrix")
-
-    # 2. ope
-    operator_in <- model$operator_in
-
-    special_in <- list()
-  }
-  else if (model=="ar1") {     ################ 3. AR1 ##################
-    n_ope_params = 1
-
-    # 1. for general latent model
+  else if (inherits(model, "ngme.ar1")) {   ################ AR1 ##################
     model.type = "ar1"
-
-    # A <- as(Matrix::Matrix(diag(n)), "dgCMatrix");
-    A <- ngme.ts.make.A(x)
+    A = model$A
     n = ncol(A)
+    h = rep(1.0, n)
+    theta.K = model$alpha
 
-    # n = length(x) # length of covariates
-
-    h <- rep(1.0, n)
-
-    # for specific latent model
-    special_in <- list()
-
-    # 2. for operator K
-    G <- Matrix::Matrix(diag(n));
-      G <- as(G, "dgCMatrix");
-    C <- Matrix::Matrix(0, n, n)
-      C[seq(2, n*n, by=n+1)] <- -1
-      C <- as(C, "dgCMatrix");
-
-    operator_in <- list(
-      alpha = control$theta.K,
-      n_params=n_ope_params,
-      C=C,
-      G=G,
-      use_num_dK=FALSE
-    )
+    operator_in = model$operator_in
   }
-  else if (model=="matern1d") {  ################ 4. 1d Matern ##################
-    model = "matern"
-    n_params = 1
+  else if (inherits(model, "ngme.matern")) {  ########  stationary Matern ########
+    model.type = "matern"
+    if (is.null(A)) stop("Provide A matrix")
+    n = length(x)
+    h = rep(1, n)
+    theta.K = model$kappa
 
-    mesh <- INLA::inla.mesh.1d(x)
-    fem <- INLA::inla.mesh.1d.fem(mesh)
-    n <- mesh$n
+    operator_in <- model$operator_in
+  }
+  else if (inherits(model, "ngme.spde")) { ######## nonstationary Matern ########
+    model.type = "spde.matern"
+    n = length(x)
+    if (is.null(A)) stop("Provide A matrix")
+    h = rep(1, n)
+    theta.K = model$theta.kappa
 
-    G <- fem$g1
-    C <- fem$c1
-    A <- INLA::inla.spde.make.A(mesh, loc = x)
-    h <- rep(1.0, n)
-
-    operator_in  <- list(
-      n_params=n_params,
-      C=C,
-      G=G,
-      use_num_dK=FALSE
-    )
-
-    special_in <- list()
+    operator_in <- model$operator_in
   }
   else {
     stop("unknown model")
@@ -121,6 +87,7 @@ f <- function(
     if (noise=="nig")    noise = ngme.noise(type="nig")
     if (noise=="normal") noise = ngme.noise(type="normal")
   }
+  if (is.null(theta.noise) && !(is.null(noise$theta.noise))) theta.noise = noise$theta.noise
 
   ################## construct Mu and Sigma ##################
   # turn B.sigma and B.mu into matrix
@@ -141,21 +108,26 @@ f <- function(
     # mu and sigma
     B_mu        = B.mu,
     B_sigma     = B.sigma,
-    theta_mu    = theta.mu,
-    theta_sigma = theta.sigma,
     n_mu        = n_mu,
     n_sigma     = n_sigma,
 
     n_la_params = operator_in$n_params + noise$n_params + n_mu + n_sigma,
 
     # lists
-    special_in    = special_in, # for specific model input
+    start       = list(
+      theta_K     = theta.K,
+      theta_mu    = theta.mu,
+      theta_sigma = theta.sigma,
+      theta_noise = theta.noise,
+      V           = start.V
+    ),
     operator_in   = operator_in,
     var_in        = noise,
     control_f     = control,
     debug         = debug
-    )
+  )
 
   return (latent_in)
 }
 
+# what is a valid operator_in (for constructing K)

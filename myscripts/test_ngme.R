@@ -6,15 +6,15 @@ a2th <- function(k) {log((-1-k)/(-1+k))}
 th2a <- function(th) {-1 + (2*exp(th)) / (1+exp(th))}
 
 ############  0. generating fix effects and control
-
+set.seed(7)
 n_obs <- 2000
 sigma_eps = 0.5
 x1 = runif(n_obs)
 x2 = rexp(n_obs)
 beta <- c(-3, -1, 2)
 
-control = ngme.control(burnin=30,
-                       iterations = 50,
+control = ngme.control(burnin=50,
+                       iterations = 2,
                        gibbs_sample = 5,
                        stepsize = 1,
                        kill_var = FALSE,
@@ -41,33 +41,77 @@ Y1 = as.numeric(Y1 + X %*% beta)
 
 ngme_out = ngme(Y1 ~ x1 + x2 +
                   f(1:length(Y1),
-                    model="ar1",
+                    model=ngme.ar1(
+                      1:length(Y1),
+                      alpha=0.9,
+                      use_num_dK = FALSE
+                    ),
                     noise=ngme.noise(
                       type="nig",
                       theta.noise=1
                     ),
                     control=ngme.control.f(
                       numer_grad       = TRUE,
-                      theta.K          = 0.9,
                       fix_operator     = FALSE,
-                      fix_mu           = FALSE,
-                      fix_sigma        = FALSE,
+                      fix_mu           = TRUE,
+                      fix_sigma        = TRUE,
                       fix_noise        = TRUE,
                       use_precond      = TRUE
                     ),
+                    # theta.K = 0.5,
                     theta.mu = mu1,
                     theta.sigma = log(sigma1),
-                    debug=TRUE),
+                    theta.noise = 1.01,
+                    debug=TRUE
+                  ),
                 family="normal",
                 data=data.frame(Y1=(as.numeric(Y1)), x1=x1, x2=x2),
                 control=control,
-                start=ngme.start(),
+                start=ngme.start(
+                  W = trueW1
+                ),
                 debug=ngme.debug(
                   debug = TRUE,
-                  fixSigEps = FALSE,
-                  fixW = TRUE,
-                  trueW = trueW1
+                  fix_merr = FALSE,
+                  fix_W = TRUE
                 ))
+
+# starting from last fit
+ngme_out2 = ngme(Y1 ~ x1 + x2 +
+                  f(1:length(Y1),
+                    model=ngme.ar1(
+                      1:length(Y1),
+                      alpha=0.9,
+                      use_num_dK = FALSE
+                    ),
+                    noise=ngme.noise(
+                      type="nig",
+                      theta.noise=1
+                    ),
+                    control=ngme.control.f(
+                      numer_grad       = TRUE,
+                      fix_operator     = FALSE,
+                      fix_mu           = TRUE,
+                      fix_sigma        = TRUE,
+                      fix_noise        = TRUE,
+                      use_precond      = TRUE
+                    ),
+                    # theta.K = 0.5,
+                    # theta.mu = mu1,
+                    # theta.sigma = log(sigma1),
+                    # theta.noise = 1.01,
+                    debug=TRUE
+                  ),
+                family="normal",
+                data=data.frame(Y1=(as.numeric(Y1)), x1=x1, x2=x2),
+                control=control,
+                start=ngme_out,
+                debug=ngme.debug(
+                  debug = TRUE,
+                  fix_merr = FALSE,
+                  fix_W = TRUE
+                ))
+
 
 # result
 res0 <- c(alpha1, mu1, sigma1, nu1); names(res0) <- c("alpha", "mu", "log(sigma)", "nu"); res0
@@ -76,7 +120,7 @@ res2 <- c(beta, sigma_eps); res2
 str(ngme_out$output)
 
 # plot alpha
-  plot_out(ngme_out$trajectory, start=1, n=1, transform = th2a)
+  plot_out(ngme_out2$trajectory, start=1, n=1, transform = th2a)
 # plot mu
   plot_out(ngme_out$trajectory, start=2, n=1)
 # plot sigma

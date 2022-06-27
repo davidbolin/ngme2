@@ -20,26 +20,36 @@ ngme.ts.make.A <- function(loc) {
   as(A, "dgCMatrix")
 }
 
+#' NGME starting point for block model
+#'
+#' @param sigma.eps mesurement noise
+#' @param fixed.effects fixed effects
+#' @param W initial W for the block model
+#'
+#' @return
+#' @export
+#'
+#' @examples
 ngme.start <- function(
-  last.fit      = NULL,
-  sigma.eps     = 1,
   fixed.effects = NULL,
-  latent.model  = NULL
+  sigma.eps     = NULL,
+  W = NULL
 ) {
-  if (inherits(last.fit, "ngme")) {
-    start=NULL
-  } else if (!is.null(last.fit)) {
-    stop("last.fit should be an output of ngme object")
-  } else {
-    start=NULL
-  }
 
-  start
+  start = list(
+    fixed.effects     = fixed.effects,
+    mesurement.noise  = sigma.eps,
+    block.W           = W
+  )
+
+  return (start)
 }
+
 # example
 #   List of 3
 #  $ mesurement.noise: num 0.495
 #  $ fixed.effects   : num [1:3] -3.01 -1.03 2.02
+#  $ block.W   : num [1:3] -3.01 -1.03 2.02
 #  $ latent.model    :List of 1
 #   ..$ :List of 3
 #   .. ..$ W        : num [1:2000] 7.136 3.349 0.836 -1.486 20.241 ...

@@ -150,7 +150,7 @@ std::cout << "start numerical gradient" <<std::endl;
         double val_add_eps = function_K(params_add_eps);
         double num_g = (val_add_eps - val) / eps;
         
-        if (!use_num_hess) {
+        if (!use_precond) {
             grad(i) = - num_g / n_mesh;
             // grad(i) = - num_g;
         } else {

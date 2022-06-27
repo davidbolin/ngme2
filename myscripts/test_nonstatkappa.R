@@ -91,7 +91,7 @@ ngme_out <- ngme(
     iterations=100,
     gibbs_sample = 5
   )
-  # debug=ngme.debug(fixW = TRUE, trueW = trueW)
+  # debug=ngme.debug(fixW = TRUE)
 )
 # plot theta.kappa
 plot_out(ngme_out$trajectory, start=1, n=2)

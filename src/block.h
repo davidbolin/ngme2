@@ -53,7 +53,7 @@ protected:
     SparseMatrix<double> A, K, dK, d2K;
 
     // debug
-    bool debug, fixW, fixSV, fixSigEps;
+    bool debug, fix_W, fixSV, fix_merr;
     
     // optimize related
     VectorXd stepsizes, gradients;
@@ -65,7 +65,7 @@ protected:
     cholesky_solver chol_Q, chol_QQ;
     SparseLU<SparseMatrix<double> > LU_K;
 
-    VectorXd trueW, trueSV;
+    VectorXd fixedW;
     
 public:
     BlockModel() {}
@@ -82,7 +82,7 @@ public:
     n_meshs       ( Rcpp::as<int>        (general_in["n_meshs"]) ),
     family        ( Rcpp::as<string>     (general_in["family"]) ),
     
-    beta          ( Rcpp::as<VectorXd>   (start_in["fix.effects"]) ),
+    beta          ( Rcpp::as<VectorXd>   (start_in["fixed.effects"]) ),
     sigma_eps     ( Rcpp::as<double>     (start_in["mesurement.noise"]) ), 
     
     n_latent      ( latents_in.size()), 
@@ -106,17 +106,13 @@ public:
     d2K           ( n_meshs, n_meshs),
 
     debug         ( Rcpp::as<bool> (debug_list["debug"]) ),
-    fixW          ( Rcpp::as<bool> (debug_list["fixW"]) ),
-    fixSV         ( Rcpp::as<bool> (debug_list["fixSV"])),
-    fixSigEps     ( Rcpp::as<bool> (debug_list["fixSigEps"]))
+    fix_W         ( Rcpp::as<bool> (debug_list["fix_W"]) ),
+    fix_merr      ( Rcpp::as<bool> (debug_list["fix_merr"]))
     {        
 if (debug) std::cout << "Begin Block Constructor" << std::endl;        
         const int burnin = control_list["burnin"];
         const double stepsize = control_list["stepsize"];
-        
-        if (fixW)      trueW = Rcpp::as<VectorXd>   (debug_list["trueW"]);
-        if (fixSV)     trueSV = Rcpp::as<VectorXd>  (debug_list["trueSV"]);
-        
+
         // Init each latent model
         for (int i=0; i < n_latent; ++i) {
             Rcpp::List latent_in = Rcpp::as<Rcpp::List> (latents_in[i]);
@@ -133,6 +129,13 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
             }
         }
         
+        // Initialize W
+        if (start_in["block.W"] != R_NilValue) {
+            VectorXd block_W = Rcpp::as<VectorXd>   (start_in["block.W"]);
+            // set Both W and PrevW
+            setW(block_W); setW(block_W);
+        }
+
         /* Fixed effects */
         if (beta.size()==0) opt_fix_effect = false;
 
@@ -224,10 +227,6 @@ if (debug) std::cout << "Finish sampling V" << std::endl;
             pos += size;
         }
         
-        // debug
-        if (fixSV) {
-            SV = trueSV;
-        }
         return SV;
     }
 
@@ -278,7 +277,7 @@ if (debug) std::cout << "Finish sampling V" << std::endl;
             
             // g = - gTimesSigmaEps / (2 * n_obs);
 
-            if (fixSigEps)  g=0;
+            if (fix_merr)  g=0;
         }
 
         return g;
@@ -323,6 +322,7 @@ if (debug) std::cout << "Finish sampling V" << std::endl;
         return Rcpp::List::create(
             Rcpp::Named("mesurement.noise")     = sigma_eps,
             Rcpp::Named("fixed.effects")        = beta,
+            Rcpp::Named("block.W")              = getW(),
             Rcpp::Named("latent.model")         = latents_estimates
         );
     }

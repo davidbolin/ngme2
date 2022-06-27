@@ -38,40 +38,18 @@ ngme.spde.matern <- function(
       fem <- INLA::inla.mesh.fem(mesh, order = alpha)
       C <- fem$c0 # diag
       G <- fem$g1
-
-      # Q <- function(kappa, tau) {
-      #   ans <- kappa^(2 * alpha) * fem[["c0"]]
-      #   for (i in 2:(alpha + 1)) {
-      #     ans <- ans + choose(alpha, i - 1) * kappa^(2 * (alpha - i + 1)) * fem[[paste0("g", i - 1)]]
-      #   }
-      #   ans * tau
-      # }
-      # K <- function(kappa, tau) {
-      #   if (alpha %% 2 == 0) {
-      #     m <- alpha / 2
-      #     ans <- kappa^(2 * m) * fem[["c0"]]
-      #     for (i in 2:(m + 1)) {
-      #       ans <- ans + choose(alpha, i - 1) * kappa^(2 * (alpha - i + 1)) * fem[[paste0("g", i - 1)]]
-      #     }
-      #     c0_sqrt_inv <- fem[["c0"]]
-      #     c0_sqrt_inv@x <- 1 / sqrt(c0_sqrt_inv@x)
-      #     ans * tau * c0_sqrt_inv
-      #   } else {
-      #     return(chol(Q(kappa, tau)))
-      #   }
-      # }
     }
 
     n <- mesh$n
     spde.spec <- list(
       # general
       n_params = ncol(B.kappa),
+      theta.kappa = theta.kappa,
 
       # spde
       operator_in = list(
         alpha = alpha,
         B.kappa = B.kappa,
-        theta.kappa = theta.kappa,
         n_params = length(theta.kappa),
         n = n,
         C = as(C, "dgCMatrix"),
@@ -94,8 +72,7 @@ ngme.spde.matern <- function(
 #' @param mesh
 #' @param fem.mesh.matrices
 #' @param d
-#' @param B.kappa
-#' @param theta.kappa
+#' @param kappa
 #'
 #' @return
 #' @export
@@ -133,11 +110,11 @@ ngme.matern <- function(
     spde.spec <- list(
       # general
       n_params = 1,
+      kappa = kappa,
 
       # spde
       operator_in = list(
         alpha = alpha,
-        kappa = kappa,
         n_params = 1,
         n = n,
         C = as(C, "dgCMatrix"),

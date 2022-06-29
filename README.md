@@ -4,14 +4,17 @@
 ```r
 remotes::install_github("davidbolin/ngme2", ref = "devel")
 ```
-# todo
 
-* (To be done jointly): homepage, vignette + documentation
-
-* implement non-gaussian measurement noise
+# done
 * matern model
 * non-stationary matern
 * non-stationery nig noise (e.g. mu)
+
+# to-do
+
+* (To be done jointly): homepage, vignette + documentation
+
+* non-gaussian measurement noise
 * replicates of the process (in the f function)
 * handle temporal dependence 
 * random effects

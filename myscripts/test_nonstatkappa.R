@@ -23,8 +23,11 @@ noise <- delta + mu*trueV + sigma * sqrt(trueV) * rnorm(n_mesh)
 ##### define kappa
 theta.kappa <- c(-2, 5)
 B.kappa = cbind(1, -1 * (mesh$loc[,1] - 5) / 10)
+
 kappa <- drop(exp(B.kappa %*% theta.kappa)); range(kappa)
 Kappa <- diag(kappa)
+
+# plot(kappa)
 
 fem <- inla.mesh.fem(mesh)
 C = fem$c0 ; G = fem$g1
@@ -36,17 +39,16 @@ C = fem$c0 ; G = fem$g1
 
 C.sqrt.inv <- as(diag(sqrt(1/diag(C))), "sparseMatrix")
 if (alpha==2) {
-  K_a =  C.sqrt.inv %*% (Kappa %*% C %*% Kappa + G)
+  K_a = (Kappa %*% C %*% Kappa + G)
 } else if (alpha==4) {
-  K_a = C.sqrt.inv %*% (Kappa %*% C %*% Kappa + G) %*% C %*% (Kappa %*% C %*% Kappa + G)
+  K_a = (Kappa %*% C %*% Kappa + G) %*% C %*% (Kappa %*% C %*% Kappa + G)
 }
 
 # W|V ~ N(solve(K, delta + mu*V), sigma^2*K^(-1)*diag(V)*K^(-1) )
-
 trueW = solve(K_a, noise)
 trueW = drop(trueW)
 
-n.samples = 1000
+n.samples = 500
 loc = mesh$loc[sample(1:mesh$n, n.samples), c(1,2)]
 A = inla.spde.make.A(mesh=mesh, loc=loc)
 dim(A)
@@ -76,31 +78,68 @@ ngme_out <- ngme(
     theta.mu=mu,
     theta.sigma=log(sigma),
     control=ngme.control.f(
-      use_num_hess     = FALSE,
-      opt_operator     = TRUE,
-      opt_mu           = FALSE,
-      opt_sigma        = FALSE,
-      opt_var          = FALSE,
-      use_precond      = TRUE
+      # numer_grad       = FALSE,
+      use_precond      = TRUE,
+
+      fix_operator     = FALSE,
+      fix_mu           = FALSE,
+      fix_sigma        = FALSE,
+      fix_noise        = TRUE,
     )
   ),
   data=data.frame(Y=Y),
   family = "normal",
   control=ngme.control(
     burnin=100,
-    iterations=100,
+    iterations=200,
     gibbs_sample = 5
   )
   # debug=ngme.debug(fixW = TRUE)
 )
+
+ngme_out2 <- ngme(
+  formula = Y ~ 0 + f(
+    1:mesh$n,
+    model=spde,
+    A=A,
+    debug=TRUE,
+    theta.mu=mu,
+    theta.sigma=log(sigma),
+    control=ngme.control.f(
+      # numer_grad       = FALSE,
+      use_precond      = TRUE,
+
+      fix_operator     = FALSE,
+      fix_mu           = FALSE,
+      fix_sigma        = FALSE,
+      fix_noise        = FALSE,
+    )
+  ),
+  data=data.frame(Y=Y),
+  family = "normal",
+  control=ngme.control(
+    burnin=100,
+    iterations=50,
+    gibbs_sample = 5
+  ),
+  start = ngme_out,
+  debug=ngme.debug()
+)
+
+
+# results
+c(theta.kappa, mu, log(sigma), nu, sigma.e)
+ngme_out2$result
+
 # plot theta.kappa
-plot_out(ngme_out$trajectory, start=1, n=2)
-ngme_out$estimates
+plot_out(ngme_out2$trajectory, start=1, n=2)
+plot_out(ngme_out2$trajectory, start=3, n=1, ylab="mu")
+
+ngme_out2$output
+# plot mu
 
 #   # ngme.start(result from ngme object(lastW, lastV)),
 # # plot operator
-# # plot mu
-# plot_out(res$trajectory, start=4, n=1, ylab="mu")
 # # plot nu
 # plot_out(res$trajectory, start=6, n=1, transform = exp, ylab="nu")
 

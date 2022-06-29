@@ -2,19 +2,22 @@
 % Please edit documentation in R/f.R
 \name{f}
 \alias{f}
-\title{f function}
+\title{f function for specifying a model}
 \usage{
 f(
   x = NULL,
   model = "ar1",
+  noise = ngme.noise(),
   control = ngme.control.f(),
   debug = FALSE,
   A = NULL,
   B.sigma = 1,
-  theta.sigma = 0,
   B.mu = 1,
+  theta.sigma = 0,
   theta.mu = 0,
-  noise = ngme.noise()
+  theta.K = NULL,
+  theta.noise = NULL,
+  start.V = NULL
 )
 }
 \arguments{
@@ -22,11 +25,11 @@ f(
 
 \item{model}{1. string: type of model, 2. ngme.spde object}
 
+\item{noise}{1. string: type of model, 2. ngme.noise object}
+
 \item{debug}{debug variables}
 
-\item{B.mu}{}
-
-\item{var}{1. string: type of variance component}
+\item{start.V}{}
 }
 \value{
 a list latent_in for constructing latent model, e.g. A, h, C, G,
@@ -36,5 +39,5 @@ which also has
 3. list init_values of parameters
 }
 \description{
-f function
+f function for specifying a model
 }

@@ -16,7 +16,7 @@ ngme.ts.make.A <- function(loc) {
   for (i in 1:n_loc) {
     A[i, loc[i]-min(loc)+1] = 1
   }
-
+#Do an na.rm
   as(A, "dgCMatrix")
 }
 

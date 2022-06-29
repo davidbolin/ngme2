@@ -9,7 +9,8 @@ ngme(
   data,
   family = "normal",
   controls = ngme.control(),
-  debug = ngme.debug()
+  debug = ngme.debug(),
+  start = ngme.start()
 )
 }
 \arguments{
@@ -20,6 +21,10 @@ ngme(
 \item{family}{distribution family}
 
 \item{controls}{control variables}
+
+\item{debug}{debug option}
+
+\item{start}{1. last fitting object 2. ngme.start() for block model}
 }
 \value{
 a list of outputs

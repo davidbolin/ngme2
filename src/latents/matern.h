@@ -20,18 +20,17 @@ using std::pow;
 class matern_ope : public Operator {
 private:
     int alpha;
-    VectorXd Cdiag; //, taus, kappas;
     SparseMatrix<double, 0, int> G, C;
+    VectorXd Cdiag;
 
 public:
     matern_ope(Rcpp::List ope_in) 
     :   Operator    (ope_in),
+        alpha       ( Rcpp::as<int> (ope_in["alpha"])),
         G           ( Rcpp::as< SparseMatrix<double,0,int> > (ope_in["G"]) ),
-        C           ( Rcpp::as< SparseMatrix<double,0,int> > (ope_in["C"]) )
-    {
-        alpha = Rcpp::as<int> (ope_in["alpha"]);
-        Cdiag = C.diagonal();
-    }
+        C           ( Rcpp::as< SparseMatrix<double,0,int> > (ope_in["C"]) ),
+        Cdiag       ( C.diagonal() )
+    {}
     
     // set kappa
     void set_parameter(VectorXd kappa) {
@@ -61,10 +60,10 @@ public:
         
         if (alpha==2) {
             // K_a = T (G + KCK) C^(-1/2) -> Actually, K_a = C^{-1/2} (G+KCK), since Q = K^T K.
-            K_a = Cdiag.cwiseSqrt().cwiseInverse().asDiagonal() * (G + KCK);
+            K_a = (G + KCK);
         } else if (alpha==4) {      
             // K_a = T (G + KCK) C^(-1) (G+KCK) C^(-1/2) -> Actually, K_a = C^{-1/2} (G + KCK) C^(-1) (G+KCK), since Q = K^T K.
-            K_a = Cdiag.cwiseSqrt().cwiseInverse().asDiagonal() * (G + KCK) * 
+            K_a = (G + KCK) * 
                 Cdiag.cwiseInverse().asDiagonal() * (G + KCK);
         } else {
             throw("alpha not equal to 2 or 4 is not implemented");
@@ -79,9 +78,9 @@ public:
         SparseMatrix<double> dK (n_mesh, n_mesh);
         
         if (alpha==2) 
-            dK = 2*kappa*C.cwiseSqrt();
+            dK = 2*kappa*C;
         else if (alpha==4)
-            dK = 4*kappa*C.cwiseSqrt() * G + 4* pow(kappa, 3) * C.cwiseSqrt();
+            dK = 4*kappa*C * G + 4* pow(kappa, 3) * C;
         else 
             throw("alpha != 2 or 4");
         return dK;
@@ -101,21 +100,26 @@ public:
     Matern(Rcpp::List latent_in) 
     : Latent(latent_in)
     {
+std::cout << "begin Constructor of Matern " << std::endl;
+        symmetricK = true;
         // Init operator object
         Rcpp::List operator_in = Rcpp::as<Rcpp::List> (latent_in["operator_in"]); // containing C and G
         ope = new matern_ope(operator_in);
             Rcpp::List start = Rcpp::as<Rcpp::List> (latent_in["start"]);
             VectorXd parameter_K = Rcpp::as< VectorXd > (start["theta_K"]);
-            ope->set_parameter(parameter_K);     
+            ope->set_parameter(parameter_K);
         
         // Init K and Q
         SparseMatrix<double> K = getK();
         SparseMatrix<double> Q = K.transpose() * K;
         
-        solver_K.init(n_mesh, 0,0,0);
-        solver_K.analyze(K);
+std::cout << "before analyzing K " << std::endl;
+        chol_solver_K.init(n_mesh, 0,0,0);
+        chol_solver_K.analyze(K);
+std::cout << "before compute trace " << std::endl;
         compute_trace();
 
+std::cout << "before analyzing Q " << std::endl;
         // Init Q
         solver_Q.init(n_mesh, 0,0,0);
         solver_Q.analyze(Q);
@@ -211,7 +215,7 @@ std::cout << "begin set theta K " << std::endl;
             Rcpp::Named("kappa")        = ope->get_parameter()(0),
             Rcpp::Named("theta.mu")     = theta_mu,
             Rcpp::Named("theta.sigma")  = theta_sigma,
-            Rcpp::Named("var")          = var->get_var()
+            Rcpp::Named("theta.noise")  = var->get_var()
         );
     }
 };

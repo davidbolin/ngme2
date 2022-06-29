@@ -30,6 +30,7 @@ protected:
     int fix_flag[4] {1, 1, 1, 1};
     
     bool use_precond {false}, numer_grad {false};
+    bool symmetricK {false};
 
     // mu and sigma
     MatrixXd B_mu,  B_sigma;
@@ -48,81 +49,13 @@ protected:
     Var *var;
 
     // solver
-    lu_sparse_solver solver_K;
-    cholesky_solver  solver_Q; // Q = KT diag(1/SV) K
+    cholesky_solver chol_solver_K;
+    lu_sparse_solver lu_solver_K;
+
+    cholesky_solver solver_Q; // Q = KT diag(1/SV) K
 
 public:
-    Latent(Rcpp::List latent_in) 
-    : debug         (Rcpp::as< bool >        (latent_in["debug"])),
-      n_mesh        (Rcpp::as< int >         (latent_in["n_mesh"])),
-    
-      B_mu          (Rcpp::as< MatrixXd >    (latent_in["B_mu"])),
-      B_sigma       (Rcpp::as< MatrixXd >    (latent_in["B_sigma"])),
-      
-    //   theta_mu      (Rcpp::as< VectorXd >    (latent_in["theta_mu"])),
-    //   theta_sigma   (Rcpp::as< VectorXd >    (latent_in["theta_sigma"])),
-      
-    //   n_mu          (theta_mu.size()),
-    //   n_sigma       (theta_sigma.size()),
-      n_mu          (B_mu.cols()),
-      n_sigma       (B_sigma.cols()),
-
-
-      trace         (0),
-      trace_eps     (0),
-      eps           (0.001), 
-      
-      W             (n_mesh),
-      prevW         (n_mesh),
-      h             (Rcpp::as< VectorXd >                     (latent_in["h"])),
-      A             (Rcpp::as< SparseMatrix<double,0,int> >   (latent_in["A"]))
-    {
-if (debug) std::cout << "constructor of latent" << std::endl;
-        // general input
-            string var_type = Rcpp::as<string>     (latent_in["var_type"]);
-        
-        Rcpp::List control_f = Rcpp::as<Rcpp::List> (latent_in["control_f"]);
-            fix_flag[0]   = Rcpp::as<int>        (control_f["fix_operator"]);
-            fix_flag[1]   = Rcpp::as<int>        (control_f["fix_mu"]);
-            fix_flag[2]   = Rcpp::as<int>        (control_f["fix_sigma"]);
-            fix_flag[3]   = Rcpp::as<int>        (control_f["fix_noise"]);
-
-            use_precond  = Rcpp::as<bool>        (control_f["use_precond"] );
-            numer_grad   = Rcpp::as<bool>        (control_f["numer_grad"]) ;
-            eps          = Rcpp::as<double>      (control_f["eps"]) ;
-            
-        // starting values
-        Rcpp::List start = Rcpp::as<Rcpp::List> (latent_in["start"]);
-            theta_mu = Rcpp::as< VectorXd >    (start["theta_mu"]);
-                set_theta_mu(theta_mu);
-            theta_sigma = Rcpp::as< VectorXd >    (start["theta_sigma"]);
-                set_theta_sigma(theta_sigma);
-            
-        Rcpp::List ope_in = Rcpp::as<Rcpp::List> (latent_in["operator_in"]);
-            n_ope = ope_in["n_params"];
-            n_noise = 1;
-            n_params = n_ope + n_mu + n_sigma + n_noise;
-
-        
-        double theta_noise = Rcpp::as< double > (start["theta_noise"]);                
-        // construct noise
-        Rcpp::List var_in = Rcpp::as<Rcpp::List> (latent_in["var_in"]);
-        if (var_type == "nig") {
-            var = new ind_IG(theta_noise, n_mesh, h);
-        } else if (var_type == "normal") {
-            var = new normal(n_mesh, h);
-            // fix mu to be 0
-            fix_flag[1] = 1;
-        }
-        
-        // set V
-        if (start["V"] != R_NilValue) {
-            VectorXd V = Rcpp::as< VectorXd >    (start["V"]);
-            var->setV(V);
-        }
-
-if (debug) std::cout << "finish constructor of latent" << std::endl;
-    }
+    Latent(Rcpp::List);
     ~Latent() {}
 
     /*  1 Model itself   */
@@ -133,21 +66,11 @@ if (debug) std::cout << "finish constructor of latent" << std::endl;
     const VectorXd& getW()  const             {return W; }
     const VectorXd& getPrevW()  const         {return prevW; }
     void            setW(const VectorXd& W)   { 
-if (debug) std::cout << "**********W here is " << W << std::endl;
         prevW = this->W; 
         this->W = W; 
     }
 
-    VectorXd getMean() const { 
-        VectorXd mean;
-        if (n_mu==1) {
-            mean = mu(0) * (getV()-h);
-        }
-        else {
-            mean = mu.cwiseProduct(getV()-h);
-        }
-        return mean; 
-    }
+    VectorXd getMean() const { return mu.cwiseProduct(getV()-h); }
 
     /*  2 Variance component   */
     const VectorXd& getV()     const { return var->getV(); }
@@ -184,7 +107,6 @@ if (debug) std::cout << "**********W here is " << W << std::endl;
     virtual VectorXd    grad_theta_K() { return numerical_grad(); }
     virtual void        set_theta_K(VectorXd params) {ope->set_parameter(params); }
 
-
     // used for ar
     virtual double function_kappa(double eps);    
     
@@ -197,11 +119,16 @@ if (debug) std::cout << "**********W here is " << W << std::endl;
         SparseMatrix<double> K = ope->getK();
         SparseMatrix<double> dK = ope->get_dK();
 // compute trace
-        solver_K.computeKTK(K);
-
 // auto timer_trace = std::chrono::steady_clock::now();
+        
         SparseMatrix<double> M = dK;
-        trace = solver_K.trace(M);
+        if (!symmetricK) {
+            lu_solver_K.computeKTK(K);
+            trace = lu_solver_K.trace(M);
+        } else {
+            chol_solver_K.compute(K);
+            trace = chol_solver_K.trace(M);
+        }
 // std::cout << "time for the trace (ms): " << since(timer_trace).count() << std::endl;   
 
         // update trace_eps if using hessian
@@ -210,8 +137,13 @@ if (debug) std::cout << "**********W here is " << W << std::endl;
             SparseMatrix<double> dK = ope->get_dK(0, eps);
             SparseMatrix<double> M = dK;
 
-            solver_K.computeKTK(K);
-            trace_eps = solver_K.trace(M);
+            if (!symmetricK) {
+                lu_solver_K.computeKTK(K);
+                trace_eps = lu_solver_K.trace(M);
+            } else {
+                chol_solver_K.compute(K);
+                trace_eps = chol_solver_K.trace(M);
+            }
         }
     };
 
@@ -259,7 +191,6 @@ if (debug) std::cout << "Start latent get parameter"<< std::endl;
         parameter.segment(n_ope+n_mu, n_sigma)  = get_theta_sigma();
         parameter(n_ope+n_mu+n_sigma)           = get_theta_var();
     
-if (debug) std::cout << "Finish latent get parameter"<< std::endl;   
     return parameter;
 }
 

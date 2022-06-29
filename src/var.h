@@ -121,7 +121,7 @@ public:
     double get_var() const {return 0;} 
 
     // nothing to optimize
-    double get_theta_var() const   { return 0; }
+    double get_theta_var() const   { return 1; }
     void   set_theta_var(double theta) {}    
     double grad_theta_var() const {
         return 0;

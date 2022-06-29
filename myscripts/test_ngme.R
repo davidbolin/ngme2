@@ -7,14 +7,14 @@ th2a <- function(th) {-1 + (2*exp(th)) / (1+exp(th))}
 
 ############  0. generating fix effects and control
 set.seed(7)
-n_obs <- 2000
+n_obs <- 1000
 sigma_eps = 0.5
 x1 = runif(n_obs)
 x2 = rexp(n_obs)
 beta <- c(-3, -1, 2)
 
 control = ngme.control(burnin=50,
-                       iterations = 2,
+                       iterations = 200,
                        gibbs_sample = 5,
                        stepsize = 1,
                        kill_var = FALSE,
@@ -40,7 +40,8 @@ X <- (model.matrix(Y1 ~ x1 + x2))  # design matrix
 Y1 = as.numeric(Y1 + X %*% beta)
 
 ngme_out = ngme(Y1 ~ x1 + x2 +
-                  f(1:length(Y1),
+                  f(#1:length(Y1),
+                    index,
                     model=ngme.ar1(
                       1:length(Y1),
                       alpha=0.9,
@@ -51,37 +52,41 @@ ngme_out = ngme(Y1 ~ x1 + x2 +
                       theta.noise=1
                     ),
                     control=ngme.control.f(
-                      numer_grad       = TRUE,
+                      numer_grad       = FALSE,
+                      use_precond      = TRUE,
+
                       fix_operator     = FALSE,
-                      fix_mu           = TRUE,
-                      fix_sigma        = TRUE,
-                      fix_noise        = TRUE,
-                      use_precond      = TRUE
+                      fix_mu           = FALSE,
+                      fix_sigma        = FALSE,
+                      fix_noise        = FALSE
                     ),
-                    # theta.K = 0.5,
-                    theta.mu = mu1,
-                    theta.sigma = log(sigma1),
+                    theta.mu = mu1+2,
+                    theta.sigma = log(sigma1)+2,
                     theta.noise = 1.01,
                     debug=TRUE
                   ),
                 family="normal",
-                data=data.frame(Y1=(as.numeric(Y1)), x1=x1, x2=x2),
+                data=data.frame(
+                  Y1=(as.numeric(Y1)),
+                  x1=x1,
+                  x2=x2
+                ),
                 control=control,
                 start=ngme.start(
-                  W = trueW1
+                  # W = trueW1
                 ),
                 debug=ngme.debug(
                   debug = TRUE,
-                  fix_merr = FALSE,
-                  fix_W = TRUE
+                  fix_merr = FALSE
                 ))
 
-# starting from last fit
+ngme_out$result
+
+ # starting from last fit
 ngme_out2 = ngme(Y1 ~ x1 + x2 +
                   f(1:length(Y1),
                     model=ngme.ar1(
                       1:length(Y1),
-                      alpha=0.9,
                       use_num_dK = FALSE
                     ),
                     noise=ngme.noise(
@@ -89,17 +94,14 @@ ngme_out2 = ngme(Y1 ~ x1 + x2 +
                       theta.noise=1
                     ),
                     control=ngme.control.f(
-                      numer_grad       = TRUE,
+                      numer_grad       = FALSE,
+                      use_precond      = TRUE,
+
                       fix_operator     = FALSE,
-                      fix_mu           = TRUE,
-                      fix_sigma        = TRUE,
-                      fix_noise        = TRUE,
-                      use_precond      = TRUE
+                      fix_mu           = FALSE,
+                      fix_sigma        = FALSE,
+                      fix_noise        = FALSE
                     ),
-                    # theta.K = 0.5,
-                    # theta.mu = mu1,
-                    # theta.sigma = log(sigma1),
-                    # theta.noise = 1.01,
                     debug=TRUE
                   ),
                 family="normal",
@@ -107,9 +109,7 @@ ngme_out2 = ngme(Y1 ~ x1 + x2 +
                 control=control,
                 start=ngme_out,
                 debug=ngme.debug(
-                  debug = TRUE,
-                  fix_merr = FALSE,
-                  fix_W = TRUE
+                  debug = TRUE
                 ))
 
 
@@ -122,15 +122,15 @@ str(ngme_out$output)
 # plot alpha
   plot_out(ngme_out2$trajectory, start=1, n=1, transform = th2a)
 # plot mu
-  plot_out(ngme_out$trajectory, start=2, n=1)
+  plot_out(ngme_out2$trajectory, start=2, n=1)
 # plot sigma
-  plot_out(ngme_out$trajectory, start=3, n=1, transform = exp)
+  plot_out(ngme_out2$trajectory, start=3, n=1, transform = exp)
 # plot var
   plot_out(ngme_out$trajectory, start=4, n=1, transform = exp)
 # plot fix effects
   plot_out(ngme_out$trajectory, start=5, n=3)
 # plot m err
-  plot_out(ngme_out$trajectory, start=8, n=1, transform = exp)
+  plot_out(ngme_out2$trajectory, start=8, n=1, transform = exp)
 # plot alpha
 plot_out(ngme_out$trajectory, start=1, n=1, transform = th2a)
 plot_out(ngme_out$trajectory, start=2, n=1)
@@ -196,8 +196,8 @@ plot_out(ngme_out$trajectory, start=2, n=1)
 # normal ar1: a=0.7 sigma=3
 
 # ngme_out
-  ngme_out$output
-  ngme_out$trajectory
+  # ngme_out$output
+  # ngme_out$trajectory
 
 # plot(ngme_out, param = "fe", type = "traj")
 # plot(ngme_out, param = "me", type = "traj")

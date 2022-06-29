@@ -16,14 +16,12 @@ Eigen::VectorXd rnorm_vec(int n, double mu, double sigma)
 
 // ---- other functions ------
 void BlockModel::setW(const VectorXd& W) {
-if (debug) std::cout << "******* Begin setting W in Block" << std::endl;        
   int pos = 0;
   for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
       int size = (*it)->getSize();
       (*it)->setW(W.segment(pos, size));
       pos += size;
   }
-if (debug) std::cout << "******* Finish setting W in Block" << std::endl;        
 }
 
 // sample W|VY 

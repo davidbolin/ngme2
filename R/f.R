@@ -1,24 +1,24 @@
 #' f function for specifying a model
 #'
 #' @param x covariates
-#' @param model 1. string: type of model, 2. ngme.spde object
-#' @param noise 1. string: type of model, 2. ngme.noise object
-#' @param debug debug variables
-#' @param control
-#' @param A
-#' @param B.sigma
-#' @param B.mu
-#' @param theta.sigma
-#' @param theta.mu
-#' @param theta.K
-#' @param theta.noise
-#' @param start.V
+#' @param model     1. string: type of model, 2. ngme.spde object
+#' @param noise     1. string: type of model, 2. ngme.noise object
+#' @param control      control variables for f model
+#' @param A            A Matrix connecting observation and 
+#' @param B.sigma      Basis matrix for sigma
+#' @param B.mu         Basis matrix for mu
+#' @param theta.sigma  Starting value for theta.sigma
+#' @param theta.mu     Starting value for theta.sigma
+#' @param theta.K      Starting value for theta.sigma
+#' @param theta.noise  Starting value for theta.sigma
+#' @param start.V      Starting value for V
+#' @param debug        Debug variables
 #'
 #' @return a list latent_in for constructing latent model, e.g. A, h, C, G,
 #' which also has
 #' 1. list operator_in for building operator,
 #' 2. list var_in for variance component,
-#' 3. list init_values of parameters
+#' 3. list init_values of parameters   
 #'
 #' @export
 f <- function(
@@ -30,8 +30,8 @@ f <- function(
   A = NULL,
   B.sigma = 1, # non-stationary case -> into matrix n_mesh * n_sigma
   B.mu = 1,
-  theta.sigma = 0, # exp(0) = 1
   theta.mu = 0,
+  theta.sigma = 0, # exp(0) = 1
   # for these two you can specified inside ngme.noise and ngme.model function
   theta.K = NULL,
   theta.noise = NULL,
@@ -84,8 +84,8 @@ f <- function(
 
   ################## construct noise (e.g. nig noise) ##################
   if (is.character(noise)) {
-    if (noise=="nig")    noise = ngme.noise(type="nig")
-    if (noise=="normal") noise = ngme.noise(type="normal")
+    if (noise=="nig")                         noise = ngme.noise(type="nig")
+    if (noise=="normal" || noise=="gaussian") noise = ngme.noise(type="normal")
   }
   if (is.null(theta.noise) && !(is.null(noise$theta.noise))) theta.noise = noise$theta.noise
 

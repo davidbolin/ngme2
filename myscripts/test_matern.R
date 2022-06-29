@@ -8,7 +8,7 @@ mesh <- inla.mesh.2d(loc.domain = pl01, cutoff = 0.2,
                      max.edge = c(0.3, 1), offset = c(0.5, 1.5))
 plot(mesh)
 
-############################ Stationary Case ###################§###################
+############################ Stationary Case ######################################
 sigma = 1
 alpha = 2
 mu = 2;
@@ -31,9 +31,9 @@ C.sqrt.inv <- as(diag(sqrt(1/diag(C))), "sparseMatrix")
 C.inv <- as(diag(1/diag(C)), "sparseMatrix")
 
 if (alpha==2) {
-  K_a =  C.sqrt.inv %*% (Kappa %*% C %*% Kappa + G)
+  K_a = (Kappa %*% C %*% Kappa + G)
 } else if (alpha==4) {
-  K_a = C.sqrt.inv %*% (Kappa %*% C %*% Kappa + G) %*% C.inv %*% (Kappa %*% C %*% Kappa + G)
+  K_a = (Kappa %*% C %*% Kappa + G) %*% C.inv %*% (Kappa %*% C %*% Kappa + G)
 } else {
   stop("alpha = 2 or 4")
 }
@@ -60,7 +60,48 @@ matern <- ngme.matern(
   kappa=1
 )
 
-formula <- Y ~ 0 + f(
+formula1 <- Y ~ 0 + f(
+  1:mesh$n,
+  model=matern,
+  A=A,
+  debug=TRUE,
+  theta.mu=mu,
+  theta.sigma=log(sigma),
+  noise = "nig",
+  control=ngme.control.f(
+    numer_grad       = FALSE,
+    use_precond      = TRUE,
+
+    fix_operator     = FALSE,
+    fix_mu           = FALSE,
+    fix_sigma        = FALSE,
+    fix_noise        = FALSE
+  )
+)
+
+# NGME with Gaussian noise
+ngme_out1 <- ngme(
+  formula = formula1,
+  data=data.frame(Y=Y),
+  family = "normal",
+  control=ngme.control(
+    burnin=100,
+    iterations=200,
+    gibbs_sample = 5
+  ),
+  debug=ngme.debug(
+    debug = TRUE
+    # fix_W = TRUE
+  ),
+  start=ngme.start(
+    # W=trueW
+  )
+)
+
+ngme_out1$result
+
+# Change it into nig noise
+formula2 <- Y ~ 0 + f(
   1:mesh$n,
   model=matern,
   A=A,
@@ -71,46 +112,46 @@ formula <- Y ~ 0 + f(
     theta.noise=1.01
   ),
   control=ngme.control.f(
-    numer_grad       = FALSE,
+    numer_grad       = TRUE,
     use_precond      = TRUE,
 
     fix_operator     = FALSE,
-    fix_mu           = TRUE,
-    fix_sigma        = TRUE,
-    fix_noise        = TRUE,
+    fix_mu           = FALSE,
+    fix_sigma        = FALSE,
+    fix_noise        = TRUE
   )
 )
 
-ngme_out <- ngme(
-  formula = formula,
-  data=data.frame(Y=Y),
+ngme_out2 <- ngme(
+  formula = formula2,
+  data=data.frame(Y=Y
+                  ),
   family = "normal",
   control=ngme.control(
     burnin=100,
-    iterations=50,
+    iterations=5,
     gibbs_sample = 5
   ),
   debug=ngme.debug(
     debug = TRUE
-    # fixW = TRUE
-  )
+  ),
+  start=ngme_out1
 )
 
 # results
 c(kappa, mu, log(sigma), nu, sigma.e)
-ngme_out$estimates
-ngme_out$trajectory$grad_traj
+ngme_out2$result
 
 # plot mu
-plot_out(ngme_out$trajectory, start=2, n=1)
+plot_out(ngme_out1$trajectory, start=2, n=1)
 # plot sigma
-plot_out(ngme_out$trajectory, start=3, n=1, transform = identity)
+plot_out(ngme_out2$trajectory, start=3, n=1, transform = identity)
 # plot var
-plot_out(ngme_out$trajectory, start=4, n=1, transform = exp)
+plot_out(ngme_out2$trajectory, start=4, n=1, transform = exp)
 # plot m err
-plot_out(ngme_out$trajectory, start=5, n=1, transform = exp)
+plot_out(ngme_out2$trajectory, start=5, n=1, transform = exp)
 # plot kappa
-plot_out(ngme_out$trajectory, start=1, n=1, transform=exp)
+plot_out(ngme_out1$trajectory, start=1, n=1, transform=exp)
 
 ##################################  Non-stationary Case ######################################
 #

@@ -93,10 +93,15 @@ ngme <- function(formula,
       for (i in seq_along(latents_in)) {
         estimates = start$latent.model[[i]]$estimates
 
-        latents_in[[i]]$start$theta_K = estimates[[1]]
-        latents_in[[i]]$start$theta_mu = estimates[["theta.mu"]]
-        latents_in[[i]]$start$theta_sigma = estimates[["theta.sigma"]]
-        latents_in[[i]]$start$theta_noise = estimates[["theta.noise"]]
+        # If not specified, use previous fitting
+        # if (is.null(latents_in[[i]]$start$theta_K))     
+          latents_in[[i]]$start$theta_K = estimates[[1]]
+        # if (is.null(latents_in[[i]]$start$theta_mu))    
+          latents_in[[i]]$start$theta_mu = estimates[["theta.mu"]]
+        # if (is.null(latents_in[[i]]$start$theta_sigma)) 
+          latents_in[[i]]$start$theta_sigma = estimates[["theta.sigma"]]
+        # if (is.null(latents_in[[i]]$start$theta_noise)) 
+          latents_in[[i]]$start$theta_noise = estimates[["theta.noise"]]
 
         latents_in[[i]]$start$V = start$latent.model[[i]][["V"]]
       }
@@ -138,6 +143,14 @@ if (debug$debug) print(str(in_list))
     out$n_latent = length(latents_in)
     out$model.types = model.types
     out$var.types   = var.types
+
+    # generate output
+    out$result <- out$output
+    out$result$block.W <- NULL
+    for (i in seq_along(out$result$latent.model)) {
+      out$result$latent.model[[i]]$W <- NULL
+      out$result$latent.model[[i]]$V <- NULL
+    }
 
   class(out)   = "ngme"
 

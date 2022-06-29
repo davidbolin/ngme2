@@ -32,11 +32,7 @@ public:
     :   Operator    (ope_in),
         G           ( Rcpp::as< SparseMatrix<double,0,int> > (ope_in["G"]) ),
         C           ( Rcpp::as< SparseMatrix<double,0,int> > (ope_in["C"]) )
-    {
-        // init parameter
-        // parameter_K.resize(1);
-        // parameter_K(0) = Rcpp::as<double> (ope_in["alpha"]);
-    }
+    {}
         
     void set_parameter(VectorXd alpha) {
         assert (alpha.size() == 1);
@@ -89,8 +85,8 @@ public:
         SparseMatrix<double> K = getK();
         SparseMatrix<double> Q = K.transpose() * K;
         
-        solver_K.init(n_mesh, 0,0,0);
-        solver_K.analyze(K);
+        lu_solver_K.init(n_mesh, 0,0,0);
+        lu_solver_K.analyze(K);
         compute_trace();
 
         // Init Q

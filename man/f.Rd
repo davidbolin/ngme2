@@ -13,11 +13,12 @@ f(
   A = NULL,
   B.sigma = 1,
   B.mu = 1,
-  theta.sigma = 0,
   theta.mu = 0,
+  theta.sigma = 0,
   theta.K = NULL,
   theta.noise = NULL,
-  start.V = NULL
+  start.V = NULL,
+  replicates = NULL
 )
 }
 \arguments{
@@ -27,9 +28,25 @@ f(
 
 \item{noise}{1. string: type of model, 2. ngme.noise object}
 
-\item{debug}{debug variables}
+\item{control}{control variables for f model}
 
-\item{start.V}{}
+\item{debug}{Debug variables}
+
+\item{A}{A Matrix connecting observation and}
+
+\item{B.sigma}{Basis matrix for sigma}
+
+\item{B.mu}{Basis matrix for mu}
+
+\item{theta.mu}{Starting value for theta.sigma}
+
+\item{theta.sigma}{Starting value for theta.sigma}
+
+\item{theta.K}{Starting value for theta.sigma}
+
+\item{theta.noise}{Starting value for theta.sigma}
+
+\item{start.V}{Starting value for V}
 }
 \value{
 a list latent_in for constructing latent model, e.g. A, h, C, G,

@@ -21,13 +21,23 @@ ngme.interpret.formula <- function(gf,
   # order of f terms in labels
   spec.order = attr(tf, "specials")$f - 1
   for (i in spec.order) {
-    str = gsub("^f\\(", "ngme2::f(", terms[i])
+    if ( !grepl(re2 <- "data *=", terms[i])) {
+      # adding data=data if not specified
+      str = gsub("^f\\(", "ngme2::f(data=data,", terms[i])
+    } else if (grepl("data *= *NULL", terms[i])) {
+      # change data=NULL to data=data
+      str = gsub("^f\\(", "ngme2::f(", terms[i])
+      str = gsub("data *= *NULL", "data=data", str)
+    } else {
+      # keep data=sth.
+      str = gsub("^f\\(", "ngme2::f(", terms[i])
+    }
+print(paste("str= ", str))
     res = eval(parse(text = str), envir = data)
     latents_in[[length(latents_in) + 1]] = res
   }
 
   fixf = terms[-spec.order]
-
 
   # construct formula without f
     fm = as.character(attr(tf, "variables")[[2]])

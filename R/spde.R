@@ -15,6 +15,7 @@
 ngme.spde.matern <- function(
     alpha = 2,
     mesh = NULL,
+    replicates = NULL,
     fem.mesh.matrices = NULL,
     d = NULL,
     B.kappa = matrix(1, 1, 2),
@@ -38,6 +39,12 @@ ngme.spde.matern <- function(
       fem <- INLA::inla.mesh.fem(mesh, order = alpha)
       C <- fem$c0 # diag
       G <- fem$g1
+    }
+
+    nrep <- length(unique(replicates))
+    if(!is.null(nrep)){
+      C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), C)
+      G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), G)
     }
 
     n <- mesh$n
@@ -79,11 +86,12 @@ ngme.spde.matern <- function(
 #'
 #' @examples
 ngme.matern <- function(
-    alpha = 2,
     mesh = NULL,
+    replicates = NULL,
+    alpha = 2,
     fem.mesh.matrices = NULL,
     d = NULL,
-    kappa = 1, 
+    kappa = 1,
     use_num_dK = FALSE
 )
 {
@@ -104,6 +112,12 @@ ngme.matern <- function(
       fem <- INLA::inla.mesh.fem(mesh, order = alpha)
       C <- fem$c0 # diag
       G <- fem$g1
+    }
+
+    nrep <- length(unique(replicates))
+    if(!is.null(nrep)){
+      C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), C)
+      G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), G)
     }
 
     n <- mesh$n

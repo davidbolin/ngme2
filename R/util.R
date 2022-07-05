@@ -7,16 +7,31 @@
 #'
 #' @examples
 #' ngme.ts.make.A(c(11, 13, 12, 12))
-ngme.ts.make.A <- function(loc) {
+#'
+
+# ngme.ts.make.A <- function(loc) {
+#   n_loc = length(loc)
+#   n_range = max(loc)-min(loc)+1
+#   if (any((diff(sort(loc))) > 1)) stop("no gaps allowed")
+#
+#   A = matrix(0, nrow=n_loc, ncol=n_range)
+#   for (i in 1:n_loc) {
+#     A[i, loc[i]-min(loc)+1] = 1
+#   }
+# #Do an na.rm
+#   as(A, "dgCMatrix")
+# }
+
+
+
+ngme.ts.make.A <- function(loc, mesh) {
   n_loc = length(loc)
-  n_range = max(loc)-min(loc)+1
-  if (any((diff(sort(loc))) > 1)) stop("no gaps allowed")
+  n_range = max(mesh)-min(mesh)+1
 
   A = matrix(0, nrow=n_loc, ncol=n_range)
   for (i in 1:n_loc) {
-    A[i, loc[i]-min(loc)+1] = 1
+    A[i, loc[i]-min(mesh)+1] = 1
   }
-#Do an na.rm
   as(A, "dgCMatrix")
 }
 
@@ -59,4 +74,13 @@ ngme.start <- function(
 #   .. .. ..$ theta.mu   : num 1.83
 #   .. .. ..$ theta.sigma: num 1.13
 #   .. .. ..$ theta.noise: num 1
+
+
+# ngme.as.sparse() {
+#
+# }
+
+
+# ngme.simulate() {
+# }
 

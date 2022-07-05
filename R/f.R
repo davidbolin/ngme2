@@ -1,10 +1,11 @@
 #' f function for specifying a model
 #'
-#' @param x covariates
+#' @param ...
 #' @param model     1. string: type of model, 2. ngme.spde object
 #' @param noise     1. string: type of model, 2. ngme.noise object
+#' @param replicates   Representing the replicates (can also be specified in each ngme model)
 #' @param control      control variables for f model
-#' @param A            A Matrix connecting observation and 
+#' @param A            A Matrix connecting observation and
 #' @param B.sigma      Basis matrix for sigma
 #' @param B.mu         Basis matrix for mu
 #' @param theta.sigma  Starting value for theta.sigma
@@ -13,16 +14,17 @@
 #' @param theta.noise  Starting value for theta.sigma
 #' @param start.V      Starting value for V
 #' @param debug        Debug variables
+#' @param data      if not specified or NULL, inherit the data from ngme function
 #'
 #' @return a list latent_in for constructing latent model, e.g. A, h, C, G,
 #' which also has
 #' 1. list operator_in for building operator,
 #' 2. list var_in for variance component,
-#' 3. list init_values of parameters   
+#' 3. list init_values of parameters
 #'
 #' @export
 f <- function(
-  x = NULL,
+  ...,
   model  = "ar1",
   noise = ngme.noise(),
   control = ngme.control.f(),
@@ -33,15 +35,35 @@ f <- function(
   theta.mu = 0,
   theta.sigma = 0, # exp(0) = 1
   # for these two you can specified inside ngme.noise and ngme.model function
+  replicates=NULL,
   theta.K = NULL,
   theta.noise = NULL,
-  start.V = NULL
+  start.V = NULL,
+  data=NULL
 ) {
+  ddd <- match.call(expand.dots = FALSE)$...
+  if (length(ddd) > 1) {
+    stop(paste("To many variables included in f():", paste(unlist(ddd), collapse=" ")))
+  }
+  # ddd.char <- as.character(ddd[[1]])
+  # assign(ddd.char, data[,ddd.char])
+  # index <- (eval(parse(text=ddd.char), envir=data))
+
+  numerical.or.symbol <- ddd[[1]]
+  index <- eval(numerical.or.symbol, envir=data)
+
+  if(length(index)!= length(replicates)){
+    stop("The index and the replicates should have the same length!")
+  }
+
   ################## construct operator (n_ope, C, G, A, h) ##################
   if (is.character(model)) {  ######## string
     if (model=="ar1") {
       model.type = "ar1"
-      ar1_in = ngme.ar1(x)
+      ar1_in = ngme.ar1(
+        index=index,
+        replicates=replicates
+      )
       A = ar1_in$A
       n = ncol(A)
       h = rep(1.0, n)

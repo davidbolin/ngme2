@@ -7,23 +7,62 @@
 #   list of stuff
 
 ngme.ar1 <- function(
-  x,
+  index,
+  replicates,
   alpha=0.5,
-  use_num_dK = FALSE
+  use_num_dK = FALSE,
+  nrep=NULL
 ) {
   # construct A
-  A <- ngme.ts.make.A(x)
+  unique_rep = unique(replicates)
+  nrep = length(unique_rep)
 
-  x <- unique(x); n <- length(x)
+  if (!is.null(replicates)) {
+    rep_tmp <- unique_rep[1]
+    index.tmp <- index[replicates==rep_tmp]
+    A = ngme.ts.make.A(index.tmp, index)
+
+    if(nrep > 1){
+      for (j in 2:nrep){
+        index.tmp <- index[replicates==unique_rep[j]]
+        Atmp <- ngme.ts.make.A(index.tmp, index)
+        A <- Matrix::bdiag(A, Atmp)
+      }
+    }
+  }
+
+  x <- unique(index); n <- length(x)
 
   # construct G
     G <- Matrix::Matrix(diag(n));
-    G <- as(G, "dgCMatrix");
 
   # construct C
     C <- Matrix::Matrix(0, n, n)
     C[seq(2, n*n, by=n+1)] <- -1
-    C <- as(C, "dgCMatrix");
+
+    if(!is.null(nrep)){
+      C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), C)
+      G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), G)
+    }
+
+  # G <- as(G, "dgCMatrix");
+
+# convert C and G
+C <- as(C, "dgCMatrix");
+
+G = as(G, "dgTMatrix")
+idx <- which(G@i <= G@j)
+G = Matrix::sparseMatrix(i=G@i[idx], j = G@j[idx], x= G@x[idx],
+                         symmetric=TRUE, index1 = FALSE)
+G = as(G, "dgCMatrix")
+
+
+print("C = ")
+print(C)
+print("G = ")
+print(G)
+print("A = ")
+print(A)
 
   ar1_in <- list(
     A     = A,

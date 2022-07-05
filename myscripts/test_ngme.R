@@ -1,49 +1,62 @@
-library(devtools)
+library(devtools); load_all()
 # load_all(reset = FALSE, recompile = FALSE)
-load_all()
 
 a2th <- function(k) {log((-1-k)/(-1+k))}
 th2a <- function(th) {-1 + (2*exp(th)) / (1+exp(th))}
 
 ############  0. generating fix effects and control
 set.seed(7)
-n_obs <- 1000
-sigma_eps = 0.5
-x1 = runif(n_obs)
-x2 = rexp(n_obs)
-beta <- c(-3, -1, 2)
 
-control = ngme.control(burnin=50,
-                       iterations = 200,
+
+
+control = ngme.control(burnin=100,
+                       iterations = 500,
                        gibbs_sample = 5,
                        stepsize = 1,
                        kill_var = FALSE,
                        threshold = 1e-4,
                        opt_fix_effect = T)
 
+# fix effects
+# X <- (model.matrix(Y1 ~ x1 + x2))  # design matrix
+# Y1 = as.numeric(Y1 + X %*% beta)
+
 ############  1. test AR with nig noise
 # parameter for ar1
+# x1 = runif(n_obs)
+# x2 = rexp(n_obs)
+# beta <- c(-3, -1, 2)
 
-alpha1 <- 0.5
-mu1 = 2; delta = -mu1
-nu1 = 1
-sigma1 = 3
+n_obs <- 1000
+sigma_eps = 0.5
+alpha <- 0.5
+mu = 2; delta = -mu
+nu = 1
+sigma = 3
 
-trueV1 <- ngme2::rig(n_obs, nu1, nu1)
-noise1 <- delta + mu1*trueV1 + sigma1 * sqrt(trueV1) * rnorm(n_obs)
+n_obs1 <- 2*n_obs
+trueV1 <- ngme2::rig(n_obs1, nu, nu)
+noise1 <- delta + mu*trueV1 + sigma * sqrt(trueV1) * rnorm(n_obs1)
+trueW1 <- Reduce(function(x,y){y + alpha*x}, noise1, accumulate = T)
+Y1 = trueW1 + rnorm(n_obs1, mean=0, sd=sigma_eps)
 
-trueW1 <- Reduce(function(x,y){y + alpha1*x}, noise1, accumulate = T)
-Y1 = trueW1 + rnorm(n_obs, mean=0, sd=sigma_eps)
+trueV2 <- ngme2::rig(n_obs, nu, nu)
+noise2 <- delta + mu*trueV2 + sigma * sqrt(trueV1) * rnorm(n_obs)
+trueW2 <- Reduce(function(x,y){y + alpha*x}, noise2, accumulate = T)
+Y2 = trueW2 + rnorm(n_obs, mean=0, sd=sigma_eps)
 
-# fix effects
-X <- (model.matrix(Y1 ~ x1 + x2))  # design matrix
-Y1 = as.numeric(Y1 + X %*% beta)
+Y <- c(Y1, Y2)
 
-ngme_out = ngme(Y1 ~ x1 + x2 +
-                  f(#1:length(Y1),
-                    index,
+################################################################
+index <- c(1:n_obs1, 1:n_obs)
+replicates = c(rep(1, n_obs1), rep(2, n_obs))
+
+ngme_out = ngme(Y ~ 0 +
+                  f(index,
+                    replicates = replicates,
                     model=ngme.ar1(
-                      1:length(Y1),
+                      index,
+                      replicates = replicates,
                       alpha=0.9,
                       use_num_dK = FALSE
                     ),
@@ -60,20 +73,22 @@ ngme_out = ngme(Y1 ~ x1 + x2 +
                       fix_sigma        = FALSE,
                       fix_noise        = FALSE
                     ),
-                    theta.mu = mu1+2,
-                    theta.sigma = log(sigma1)+2,
+                    theta.mu = mu+2,
+                    theta.sigma = log(sigma)+2,
                     theta.noise = 1.01,
                     debug=TRUE
                   ),
                 family="normal",
                 data=data.frame(
-                  Y1=(as.numeric(Y1)),
-                  x1=x1,
-                  x2=x2
+                  index=index
+                  # ,
+                  # Y1=Y1,
+                  # x1=x1,
+                  # x2=x2
                 ),
                 control=control,
                 start=ngme.start(
-                  # W = trueW1
+                  # W = c(trueW1, trueW2)
                 ),
                 debug=ngme.debug(
                   debug = TRUE,
@@ -82,55 +97,24 @@ ngme_out = ngme(Y1 ~ x1 + x2 +
 
 ngme_out$result
 
- # starting from last fit
-ngme_out2 = ngme(Y1 ~ x1 + x2 +
-                  f(1:length(Y1),
-                    model=ngme.ar1(
-                      1:length(Y1),
-                      use_num_dK = FALSE
-                    ),
-                    noise=ngme.noise(
-                      type="nig",
-                      theta.noise=1
-                    ),
-                    control=ngme.control.f(
-                      numer_grad       = FALSE,
-                      use_precond      = TRUE,
-
-                      fix_operator     = FALSE,
-                      fix_mu           = FALSE,
-                      fix_sigma        = FALSE,
-                      fix_noise        = FALSE
-                    ),
-                    debug=TRUE
-                  ),
-                family="normal",
-                data=data.frame(Y1=(as.numeric(Y1)), x1=x1, x2=x2),
-                control=control,
-                start=ngme_out,
-                debug=ngme.debug(
-                  debug = TRUE
-                ))
-
-
 # result
-res0 <- c(alpha1, mu1, sigma1, nu1); names(res0) <- c("alpha", "mu", "log(sigma)", "nu"); res0
-res1 <- c(alpha1, mu1, log(sigma1), nu1); names(res1) <- c("alpha", "mu", "log(sigma)", "nu"); res1
+res0 <- c(alpha, mu, sigma, nu); names(res0) <- c("alpha", "mu", "log(sigma)", "nu"); res0
+res1 <- c(alpha, mu, log(sigma), nu); names(res1) <- c("alpha", "mu", "log(sigma)", "nu"); res1
 res2 <- c(beta, sigma_eps); res2
 str(ngme_out$output)
 
 # plot alpha
-  plot_out(ngme_out2$trajectory, start=1, n=1, transform = th2a)
+  plot_out(ngme_out$trajectory, start=1, n=1, transform = th2a)
 # plot mu
-  plot_out(ngme_out2$trajectory, start=2, n=1)
+  plot_out(ngme_out$trajectory, start=2, n=1)
 # plot sigma
-  plot_out(ngme_out2$trajectory, start=3, n=1, transform = exp)
+  plot_out(ngme_out$trajectory, start=3, n=1, transform = exp)
 # plot var
   plot_out(ngme_out$trajectory, start=4, n=1, transform = exp)
 # plot fix effects
-  plot_out(ngme_out$trajectory, start=5, n=3)
+  # plot_out(ngme_out$trajectory, start=5, n=3)
 # plot m err
-  plot_out(ngme_out2$trajectory, start=8, n=1, transform = exp)
+  plot_out(ngme_out$trajectory, start=5, n=1, transform = exp)
 # plot alpha
 plot_out(ngme_out$trajectory, start=1, n=1, transform = th2a)
 plot_out(ngme_out$trajectory, start=2, n=1)
@@ -204,5 +188,4 @@ plot_out(ngme_out$trajectory, start=2, n=1)
 # plot(ngme_out, param = "la", type = "traj", which=1)
 # plot(ngme_out, param = "la", type = "traj", which=2)
 # summary(ngme_out)
-
-
+ngme_out$result

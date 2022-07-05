@@ -15,7 +15,6 @@
 #'
 #' ngme(y ~ f(x, model="AR1", var="NIG"), family="normal", data=df)
 
-
 ngme <- function(formula,
                  data,
                  family   = "normal",
@@ -37,6 +36,10 @@ ngme <- function(formula,
   if (!is.data.frame(data) && !is.list(data)) {
     stop("\n\tArgument `data' must be a data.frame or a list.")
   }
+
+  # # store data into temp. file
+  # path <- file.path(tempdir(), "ngme_df.rda")
+  # save(data, file = path)
 
   # generate debug option
   if (!is.null(debug$trueW)) {
@@ -94,13 +97,13 @@ ngme <- function(formula,
         estimates = start$latent.model[[i]]$estimates
 
         # If not specified, use previous fitting
-        # if (is.null(latents_in[[i]]$start$theta_K))     
+        # if (is.null(latents_in[[i]]$start$theta_K))
           latents_in[[i]]$start$theta_K = estimates[[1]]
-        # if (is.null(latents_in[[i]]$start$theta_mu))    
+        # if (is.null(latents_in[[i]]$start$theta_mu))
           latents_in[[i]]$start$theta_mu = estimates[["theta.mu"]]
-        # if (is.null(latents_in[[i]]$start$theta_sigma)) 
+        # if (is.null(latents_in[[i]]$start$theta_sigma))
           latents_in[[i]]$start$theta_sigma = estimates[["theta.sigma"]]
-        # if (is.null(latents_in[[i]]$start$theta_noise)) 
+        # if (is.null(latents_in[[i]]$start$theta_noise))
           latents_in[[i]]$start$theta_noise = estimates[["theta.noise"]]
 
         latents_in[[i]]$start$V = start$latent.model[[i]][["V"]]

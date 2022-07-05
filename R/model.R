@@ -17,24 +17,13 @@ ngme.ar1 <- function(
   unique_rep = unique(replicates)
   nrep = length(unique_rep)
 
-  if (!is.null(replicates)) {
-    rep_tmp <- unique_rep[1]
-    index.tmp <- index[replicates==rep_tmp]
-    A = ngme.ts.make.A(index.tmp, index)
-
-    if(nrep > 1){
-      for (j in 2:nrep){
-        index.tmp <- index[replicates==unique_rep[j]]
-        Atmp <- ngme.ts.make.A(index.tmp, index)
-        A <- Matrix::bdiag(A, Atmp)
-      }
-    }
-  }
+    A <- ngme.ts.make.A(index, replicates)
 
   x <- unique(index); n <- length(x)
 
   # construct G
     G <- Matrix::Matrix(diag(n));
+    G <- as(G, "dgCMatrix")
 
   # construct C
     C <- Matrix::Matrix(0, n, n)

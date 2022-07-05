@@ -24,13 +24,18 @@
 
 
 
-ngme.ts.make.A <- function(loc, mesh) {
+ngme.ts.make.A <- function(loc, replicates) {
   n_loc = length(loc)
-  n_range = max(mesh)-min(mesh)+1
-
-  A = matrix(0, nrow=n_loc, ncol=n_range)
+  n_range = max(loc)-min(loc)+1
+  nrep = 1
+  if(!is.null(replicates)){
+    unique_rep = unique(replicates)
+    nrep = length(unique_rep)
+  }
+  A = matrix(0, nrow=n_loc, ncol=n_range * nrep)
   for (i in 1:n_loc) {
-    A[i, loc[i]-min(mesh)+1] = 1
+    ncol_rep <- which(unique_rep == replicates[i])
+    A[i, (ncol_rep-1)*n_range + loc[i]-min(loc)+1] = 1
   }
   as(A, "dgCMatrix")
 }

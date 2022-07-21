@@ -35,16 +35,22 @@ ngme.spde.matern <- function(
       fem <- INLA::inla.mesh.1d.fem(mesh)
       C <- fem$c1
       G <- fem$g1
+      C <- as(C, "dgTMatrix")
+      G <- as(G, "dgTMatrix")
     } else {
       fem <- INLA::inla.mesh.fem(mesh, order = alpha)
       C <- fem$c0 # diag
       G <- fem$g1
+      C <- as(C, "dgTMatrix")
+      G <- as(G, "dgTMatrix")
     }
 
     nrep <- length(unique(replicates))
     if(!is.null(nrep)){
       C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), C)
       G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), G)
+      C <- as(C, "dgTMatrix")
+      G <- as(G, "dgTMatrix")
     }
 
     n <- mesh$n

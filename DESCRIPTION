@@ -13,14 +13,12 @@ LazyData: true
 Imports: 
     Formula,
     Matrix,
-    lme4,
     Rcpp,
     rlang
 LinkingTo: 
     testthat,
     Rcpp,
-    RcppEigen,
-    lme4
+    RcppEigen
 Suggests: 
     knitr,
     rmarkdown,

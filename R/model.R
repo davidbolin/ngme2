@@ -1,5 +1,3 @@
-# usage: ngme.model.ar1(1:3, var="NIG)
-
 # parameter:
 #   x - numeric
 #   var - string
@@ -23,6 +21,7 @@ ngme.ar1 <- function(
 
   # construct G
     G <- Matrix::Matrix(diag(n));
+    G <- as(G, "dgTMatrix")
     G <- as(G, "dgCMatrix")
 
   # construct C
@@ -37,6 +36,7 @@ ngme.ar1 <- function(
   # G <- as(G, "dgCMatrix");
 
 # convert C and G
+C <- as(C, "dgTMatrix")
 C <- as(C, "dgCMatrix");
 
 G = as(G, "dgTMatrix")

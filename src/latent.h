@@ -147,39 +147,6 @@ public:
         }
     };
 
-    // compute trace for i-th component
-    void compute_trace_vector(int i) {
-        SparseMatrix<double> K = ope->getK();
-        SparseMatrix<double> dK = (ope->get_dK_vector())[i];
-// compute trace
-// auto timer_trace = std::chrono::steady_clock::now();
-        
-        SparseMatrix<double> M = dK;
-        if (!symmetricK) {
-            lu_solver_K.computeKTK(K);
-            trace = lu_solver_K.trace(M);
-        } else {
-            chol_solver_K.compute(K);
-            trace = chol_solver_K.trace(M);
-        }
-// std::cout << "time for the trace (ms): " << since(timer_trace).count() << std::endl;   
-
-        // update trace_eps if using hessian
-        if ((!numer_grad) && (use_precond)) {
-            SparseMatrix<double> K = ope->getK(0, eps);
-            SparseMatrix<double> dK = ope->get_dK(0, eps);
-            SparseMatrix<double> M = dK;
-
-            if (!symmetricK) {
-                lu_solver_K.computeKTK(K);
-                trace_eps = lu_solver_K.trace(M);
-            } else {
-                chol_solver_K.compute(K);
-                trace_eps = chol_solver_K.trace(M);
-            }
-        }
-    };
-
     // Parameter: mu
     VectorXd get_theta_mu() const {return theta_mu;} 
     void   set_theta_mu(VectorXd theta_mu)  {

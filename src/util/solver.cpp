@@ -356,7 +356,7 @@ void lu_sparse_solver::compute(SparseMatrix<double, 0, int> &K_in)
   }
 
   LU_K.factorize(K);
-  L_KKt.factorize(K.transpose() * K); // KTK
+  L_KKt.factorize(K.transpose() * K); // KKT
   KKtinv_computed = 0;
 }
 

@@ -8,6 +8,7 @@ th2a <- function(th) {-1 + (2*exp(th)) / (1+exp(th))}
 set.seed(7)
 
 
+
 control = ngme.control(burnin=100,
                        iterations = 500,
                        gibbs_sample = 5,

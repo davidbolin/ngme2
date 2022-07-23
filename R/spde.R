@@ -59,8 +59,8 @@ ngme.spde.matern <- function(
         B.kappa = B.kappa,
         n_params = length(theta.kappa),
         n = n,
-        C = as(C, "dgCMatrix"),
-        G = as(G, "dgCMatrix"),
+        C = ngme.as.sparse(C),
+        G = ngme.as.sparse(G),
         use_num_dK = FALSE
       )
     )
@@ -131,8 +131,8 @@ ngme.matern <- function(
         alpha = alpha,
         n_params = 1,
         n = n,
-        C = as(C, "dgCMatrix"),
-        G = as(G, "dgCMatrix"),
+        C = ngme.as.sparse(C),
+        G = ngme.as.sparse(G),
         use_num_dK = use_num_dK
       )
     )

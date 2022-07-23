@@ -17,13 +17,15 @@ ngme.ar1 <- function(
   unique_rep = unique(replicates)
   nrep = length(unique_rep)
 
-    A <- ngme.ts.make.A(index, replicates)
+  A <- ngme.ts.make.A(index, replicates)
 
-  x <- unique(index); n <- length(x)
+  # e.g. index = c(1:200, 1:100)
+  #      replicates = c(rep(1, 200), rep(2, 100))
+  #      n =200 in this case
+  n <- length(unique(index)) 
 
   # construct G
     G <- Matrix::Matrix(diag(n));
-    G <- as(G, "dgCMatrix")
 
   # construct C
     C <- Matrix::Matrix(0, n, n)
@@ -34,32 +36,13 @@ ngme.ar1 <- function(
       G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), G)
     }
 
-  # G <- as(G, "dgCMatrix");
-
-# convert C and G
-C <- as(C, "dgCMatrix");
-
-G = as(G, "dgTMatrix")
-idx <- which(G@i <= G@j)
-G = Matrix::sparseMatrix(i=G@i[idx], j = G@j[idx], x= G@x[idx],
-                         symmetric=TRUE, index1 = FALSE)
-G = as(G, "dgCMatrix")
-
-
-print("C = ")
-print(C)
-print("G = ")
-print(G)
-print("A = ")
-print(A)
-
   ar1_in <- list(
     A     = A,
     alpha = alpha,
     operator_in = list(
       n_params    = 1,
-      C           = C,
-      G           = G,
+      C           = ngme.as.sparse(C),
+      G           = ngme.as.sparse(G),
       use_num_dK  = use_num_dK
     )
   )

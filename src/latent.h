@@ -111,7 +111,8 @@ public:
     virtual double function_kappa(double eps);    
     
     // used for general case
-    virtual double function_K(VectorXd parameter);    
+    virtual double function_K(VectorXd parameter);   
+    virtual double function_K(SparseMatrix<double>& K);
     virtual VectorXd numerical_grad(); // given eps
 
     // only for stationary case

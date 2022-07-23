@@ -131,6 +131,8 @@ std::cout << "begin numerical gradient in ar1" << std::endl;
                 double f2 = function_kappa(0);
                 double f3 = function_kappa(+eps);
 
+                double f2 = function_K(ope->get_parameter());
+
                 double hess = (f1 + f3 - 2*f2) / pow(eps, 2);
                 double grad = (f3 - f2) / eps;
                 ret = (grad * da) / (hess * da * da + grad * d2a);

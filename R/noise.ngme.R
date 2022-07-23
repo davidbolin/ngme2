@@ -1,12 +1,14 @@
 #' ngme noise specification
 #'
-#' @param type
-#' @param theta.noise
+#' @param type        type of noise
+#' @param theta.noise parameter of noise
 #'
 #' @return
 #' @export
 #'
 #' @examples
+#' 
+
 ngme.noise <- function(
   type="nig",
   theta.noise=1

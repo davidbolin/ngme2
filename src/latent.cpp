@@ -189,6 +189,26 @@ double Latent::function_K(VectorXd parameter) {
     return l;
 }
 
+double Latent::function_K(SparseMatrix<double>& K) {
+    VectorXd V = getV();
+    VectorXd SV = getSV();
+
+    SparseMatrix<double> Q = K.transpose() * SV.cwiseInverse().asDiagonal() * K;
+    VectorXd tmp = K * W - mu.cwiseProduct(V-h);
+
+    double l;
+    if (!symmetricK) {
+        solver_Q.compute(Q);
+        l = 0.5 * solver_Q.logdet() 
+               - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
+    } else {
+        chol_solver_K.compute(K);
+        l = chol_solver_K.logdet()
+            - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
+    }
+    return l;
+}
+
 // only for stationary case, delete later
 // W|V ~ N(K^-1 mu(V-h), sigma^2 K-1 diag(V) K-T)
 double Latent::function_kappa(double eps) {
@@ -210,32 +230,56 @@ double Latent::function_kappa(double eps) {
     return l;
 }
 
-
 // numerical gradient for K parameters
 VectorXd Latent::numerical_grad() {
 std::cout << "start numerical gradient" <<std::endl;
     int n_ope = ope->get_n_params();
-    VectorXd params = ope->get_parameter();
-    double val = function_K(params);
+    double val = function_K(ope->getK());
 
     VectorXd grad (n_ope);
+    // iterate every parameter
     for (int i=0; i < n_ope; i++) {
-        VectorXd params_add_eps = params;
-            params_add_eps(i) += eps;
-        double val_add_eps = function_K(params_add_eps);
+        SparseMatrix<double> K_add_eps = ope->getK(i, eps);
+        double val_add_eps = function_K(K_add_eps);
         double num_g = (val_add_eps - val) / eps;
         
         if (!use_precond) {
             grad(i) = - num_g / n_mesh;
-            // grad(i) = - num_g;
         } else {
-            VectorXd params_minus_eps = params;
-                params_minus_eps(i) -= eps;
-            double val_minus_eps = function_K(params_minus_eps);
+            SparseMatrix<double> K_minus_eps = ope->getK(i, -eps);
+            double val_minus_eps = function_K(K_minus_eps);
             double num_hess = (val_minus_eps + val_add_eps - 2*val) / pow(eps, 2);
             grad(i) = num_g / num_hess;
         }
     } 
-    // return grad;
     return grad;
 }
+
+// // numerical gradient for K parameters
+// VectorXd Latent::numerical_grad() {
+// std::cout << "start numerical gradient" <<std::endl;
+//     int n_ope = ope->get_n_params();
+//     VectorXd params = ope->get_parameter();
+//     double val = function_K(params);
+
+//     VectorXd grad (n_ope);
+//     for (int i=0; i < n_ope; i++) {
+//         VectorXd params_add_eps = params;
+//             params_add_eps(i) += eps;
+//         double val_add_eps = function_K(params_add_eps);
+//         double num_g = (val_add_eps - val) / eps;
+        
+//         if (!use_precond) {
+//             grad(i) = - num_g / n_mesh;
+//             // grad(i) = - num_g;
+//         } else {
+//             VectorXd params_minus_eps = params;
+//                 params_minus_eps(i) -= eps;
+//             double val_minus_eps = function_K(params_minus_eps);
+//             double num_hess = (val_minus_eps + val_add_eps - 2*val) / pow(eps, 2);
+//             grad(i) = num_g / num_hess;
+//         }
+//     } 
+//     // return grad;
+//     return grad;
+// }

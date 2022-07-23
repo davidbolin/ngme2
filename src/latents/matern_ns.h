@@ -67,6 +67,39 @@ public:
 
     SparseMatrix<double> get_dK(VectorXd params) const {
         return G;        
+
+        // std::vector<SparseMatrix<double>> dK_a(Bkappa.cols());
+        // for (int i = 0; i < Bkappa.cols(); i++)
+        // {
+        //     VectorXd kappas = (Bkappa * parameter_K).array().exp();
+
+        //     int n_dim = G.rows();
+
+        //     // dKCK
+        //     SparseMatrix<double> CK(n_dim, n_dim);
+        //     CK = kappas.cwiseProduct(Cdiag).asDiagonal();
+
+        //     SparseMatrix<double> dKCK(n_dim, n_dim);
+        //     dKCK = kappas.cwiseProduct(Bkappa.col(i)) * CK + CK * kappas.cwiseProduct(Bkappa.col(i)); // kappas * (Bkappa * CK + CK * Bkappa).sparseView();
+
+        //     if (alpha == 2)
+        //     {
+        //         dK_a[i] = dKCK;
+        //     }
+        //     else if (alpha == 4)
+        //     {
+        //         SparseMatrix<double> KCK(n_dim, n_dim);
+        //         KCK = kappas.cwiseProduct(kappas).cwiseProduct(Cdiag).asDiagonal();
+        //         SparseMatrix<double> tmp = Cdiag.cwiseInverse().asDiagonal() * (G + KCK);
+        //         dK_a[i] = dKCK * tmp + tmp * dKCK;
+        //     }
+        //     else
+        //     {
+        //         throw("alpha not equal to 2 or 4 is not implemented");
+        //     }
+        // }
+
+        // return dK_a;
     }
 
 };

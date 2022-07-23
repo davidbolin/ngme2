@@ -22,8 +22,6 @@
 #   as(A, "dgCMatrix")
 # }
 
-
-
 ngme.ts.make.A <- function(loc, replicates) {
   n_loc = length(loc)
   n_range = max(loc)-min(loc)+1
@@ -65,27 +63,35 @@ ngme.start <- function(
   return (start)
 }
 
-# example
-#   List of 3
-#  $ mesurement.noise: num 0.495
-#  $ fixed.effects   : num [1:3] -3.01 -1.03 2.02
-#  $ block.W   : num [1:3] -3.01 -1.03 2.02
-#  $ latent.model    :List of 1
-#   ..$ :List of 3
-#   .. ..$ W        : num [1:2000] 7.136 3.349 0.836 -1.486 20.241 ...
-#   .. ..$ V        : num [1:2000] 1.948 0.705 1.318 0.382 4.53 ...
-#   .. ..$ estimates:List of 4
-#   .. .. ..$ alpha      : num 0.491
-#   .. .. ..$ theta.mu   : num 1.83
-#   .. .. ..$ theta.sigma: num 1.13
-#   .. .. ..$ theta.noise: num 1
 
-
-# ngme.as.sparse() {
-#
-# }
-
-
-# ngme.simulate() {
-# }
-
+#' Convert sparse matrix into dgCMatrix
+#'
+#' @param G sparse matrix
+#'
+#' @return
+#' @export
+#'
+#' @examples
+ngme.as.sparse <- function(G) {
+  
+  if (!inherits(G, "dgCMatrix")) {
+    tryCatch(
+      expr = {
+        G <- as(G, "dgCMatrix")
+      },
+      error = {
+        # first dgT, then convert to dgC
+        G = as(G, "dgTMatrix")
+        # idx <- which(G@i <= G@j)
+        # G = Matrix::sparseMatrix(
+        #   i = G@i[idx], 
+        #   j = G@j[idx], 
+        #   x= G@x[idx],
+        #   index1 = FALSE
+        # )
+        G = as(G, "dgCMatrix")
+      }
+    )
+  }
+  G
+}

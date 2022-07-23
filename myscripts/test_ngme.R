@@ -7,8 +7,6 @@ th2a <- function(th) {-1 + (2*exp(th)) / (1+exp(th))}
 ############  0. generating fix effects and control
 set.seed(7)
 
-
-
 control = ngme.control(burnin=100,
                        iterations = 500,
                        gibbs_sample = 5,
@@ -27,7 +25,7 @@ control = ngme.control(burnin=100,
 # x2 = rexp(n_obs)
 # beta <- c(-3, -1, 2)
 
-n_obs <- 1000
+n_obs <- 500
 sigma_eps = 0.5
 alpha <- 0.5
 mu = 2; delta = -mu
@@ -48,7 +46,7 @@ Y2 = trueW2 + rnorm(n_obs, mean=0, sd=sigma_eps)
 Y <- c(Y1, Y2)
 
 ################################################################
-index <- c(1:n_obs1, 1:n_obs)
+# index <- c(1:n_obs1, 1:n_obs)
 replicates = c(rep(1, n_obs1), rep(2, n_obs))
 
 ngme_out = ngme(Y ~ 0 +
@@ -80,11 +78,7 @@ ngme_out = ngme(Y ~ 0 +
                   ),
                 family="normal",
                 data=data.frame(
-                  index=index
-                  # ,
-                  # Y1=Y1,
-                  # x1=x1,
-                  # x2=x2
+                  index=c(1:n_obs1, 1:n_obs)
                 ),
                 control=control,
                 start=ngme.start(

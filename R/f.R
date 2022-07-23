@@ -52,6 +52,10 @@ f <- function(
   numerical.or.symbol <- ddd[[1]]
   index <- eval(numerical.or.symbol, envir=data)
 
+  # if replicates not specified
+  if (is.null(replicates)) 
+    replicates = rep(1, length(index))
+  
   if(length(index)!= length(replicates)){
     stop("The index and the replicates should have the same length!")
   }

@@ -91,8 +91,8 @@ public:
     /*  3 Operator component   */
     // for block use
     SparseMatrix<double, 0, int>& getK()    { return ope->getK(); }
-    SparseMatrix<double, 0, int>& get_dK()  { return ope->get_dK(); }
-    SparseMatrix<double, 0, int>& get_d2K() { return ope->get_d2K(); }
+    // SparseMatrix<double, 0, int>& get_dK()  { return ope->get_dK(); }
+    // SparseMatrix<double, 0, int>& get_d2K() { return ope->get_d2K(); }
 
     /* 4 for optimizer */
     const VectorXd get_parameter() const;
@@ -107,18 +107,18 @@ public:
     virtual VectorXd    grad_theta_K() { return numerical_grad(); }
     virtual void        set_theta_K(VectorXd params) {ope->set_parameter(params); }
 
-    // used for ar
+    // deprecated
     virtual double function_kappa(double eps);    
+    virtual double function_K(VectorXd parameter);   
     
     // used for general case
-    virtual double function_K(VectorXd parameter);   
-    virtual double function_K(SparseMatrix<double>& K);
+    virtual double function_K(SparseMatrix<double> K);
     virtual VectorXd numerical_grad(); // given eps
 
     // only for stationary case
     void compute_trace() {
         SparseMatrix<double> K = ope->getK();
-        SparseMatrix<double> dK = ope->get_dK();
+        SparseMatrix<double> dK = ope->get_dK(0);
 // compute trace
 // auto timer_trace = std::chrono::steady_clock::now();
         
@@ -135,7 +135,7 @@ public:
         // update trace_eps if using hessian
         if ((!numer_grad) && (use_precond)) {
             SparseMatrix<double> K = ope->getK(0, eps);
-            SparseMatrix<double> dK = ope->get_dK(0, eps);
+            SparseMatrix<double> dK = ope->get_dK(0, 0, eps);
             SparseMatrix<double> M = dK;
 
             if (!symmetricK) {

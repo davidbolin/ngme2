@@ -25,14 +25,14 @@ control = ngme.control(burnin=100,
 # x2 = rexp(n_obs)
 # beta <- c(-3, -1, 2)
 
-n_obs <- 500
+n_obs <- 1000
 sigma_eps = 0.5
 alpha <- 0.5
 mu = 2; delta = -mu
 nu = 1
 sigma = 3
 
-n_obs1 <- 2*n_obs
+n_obs1 <- n_obs
 trueV1 <- ngme2::rig(n_obs1, nu, nu)
 noise1 <- delta + mu*trueV1 + sigma * sqrt(trueV1) * rnorm(n_obs1)
 trueW1 <- Reduce(function(x,y){y + alpha*x}, noise1, accumulate = T)
@@ -63,7 +63,7 @@ ngme_out = ngme(Y ~ 0 +
                       theta.noise=1
                     ),
                     control=ngme.control.f(
-                      numer_grad       = FALSE,
+                      numer_grad       = TRUE,
                       use_precond      = TRUE,
 
                       fix_operator     = FALSE,

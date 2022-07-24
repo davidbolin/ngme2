@@ -38,7 +38,7 @@ public:
         this->parameter_K = kappa;
 
         K = getK(kappa);
-        dK = get_dK(kappa);
+        dK = get_dK(0, kappa);
 
         if (use_num_dK) {
             update_num_dK();
@@ -72,7 +72,9 @@ public:
         return K_a;
     }
 
-    SparseMatrix<double> get_dK(VectorXd parameter_K) const {
+    // stationary
+    SparseMatrix<double> get_dK(int index, VectorXd parameter_K) const {
+        assert(index==0);
         double kappa = parameter_K(0);        
         int n_mesh = G.rows();
         SparseMatrix<double> dK (n_mesh, n_mesh);
@@ -138,8 +140,8 @@ std::cout << "begin get theta K " << std::endl;
     // return length 1 vectorxd : grad_kappa * dkappa/dtheta 
     VectorXd grad_theta_K() {
 std::cout << "begin grad theta K " << std::endl;
-        SparseMatrix<double> K = getK();
-        SparseMatrix<double> dK = get_dK();
+        SparseMatrix<double> K = ope->getK();
+        SparseMatrix<double> dK = ope->get_dK(0);
         VectorXd V = getV();
         VectorXd SV = getSV();
         
@@ -151,21 +153,8 @@ std::cout << "begin grad theta K " << std::endl;
 
         double ret = 0;
         if (numer_grad) {
-std::cout << "begin numerical grad. in Matern " << std::endl;
             // 1. numerical gradient
-            if (!use_precond) {
-                // double grad = (function_K(eps) - function_K(0)) / eps;
-                double grad = (function_kappa(eps) - function_kappa(0)) / eps;
-                ret = - grad * da / n_mesh;
-            } else {
-                double f1 = function_kappa(-eps);
-                double f2 = function_kappa(0);
-                double f3 = function_kappa(+eps);
-
-                double hess = (f1 + f3 - 2*f2) / pow(eps, 2);
-                double grad = (f3 - f2) / eps;
-                ret = (grad * da) / (hess * da * da + grad * d2a);
-            }
+            ret = numerical_grad()(0);
         } else { 
             // 2. analytical gradient and numerical hessian
 std::cout << "begin analytical grad. in Matern " << std::endl;
@@ -178,7 +167,7 @@ std::cout << "begin analytical grad. in Matern " << std::endl;
                 VectorXd prevV = getPrevV();
                 // compute numerical hessian
                 SparseMatrix<double> K2 = ope->getK(0, eps);
-                SparseMatrix<double> dK2 = ope->get_dK(0, eps);
+                SparseMatrix<double> dK2 = ope->get_dK(0, 0, eps);
 
                 // grad(x+eps) - grad(x) / eps
                 VectorXd prevSV = getPrevSV();

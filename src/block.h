@@ -50,7 +50,7 @@ protected:
     bool opt_fix_effect, kill_var;
     double kill_power, threshold, termination;
 
-    SparseMatrix<double> A, K, dK, d2K;
+    SparseMatrix<double> A, K;      // not used: dK, d2K; 
 
     // debug
     bool debug, fix_W, fixSV, fix_merr;
@@ -102,8 +102,8 @@ public:
 
     A             ( n_obs, n_meshs), 
     K             ( n_meshs, n_meshs), 
-    dK            ( n_meshs, n_meshs),
-    d2K           ( n_meshs, n_meshs),
+    // dK            ( n_meshs, n_meshs),
+    // d2K           ( n_meshs, n_meshs),
 
     debug         ( Rcpp::as<bool> (debug_list["debug"]) ),
     fix_W         ( Rcpp::as<bool> (debug_list["fix_W"]) ),
@@ -198,8 +198,8 @@ if (debug) std::cout << "Finish sampling V" << std::endl;
         int n = 0;
         for (std::vector<Latent*>::iterator it = latents.begin(); it != latents.end(); it++) {
             setSparseBlock(&K,   n, n, (*it)->getK());      
-            setSparseBlock(&dK,  n, n, (*it)->get_dK());   
-            setSparseBlock(&d2K, n, n, (*it)->get_d2K()); 
+            // setSparseBlock(&dK,  n, n, (*it)->get_dK());   
+            // setSparseBlock(&d2K, n, n, (*it)->get_d2K()); 
             
             n += (*it)->getSize();
         }

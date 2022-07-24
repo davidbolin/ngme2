@@ -65,7 +65,7 @@ public:
         return K_a;
     }
 
-    SparseMatrix<double> get_dK(VectorXd params) const {
+    SparseMatrix<double> get_dK(int index, VectorXd params) const {
         return G;        
 
         // std::vector<SparseMatrix<double>> dK_a(Bkappa.cols());

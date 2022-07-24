@@ -38,12 +38,15 @@ std::cout << "constructor of Operator" << std::endl;
 
     // getter for K, dK, d2K
     SparseMatrix<double, 0, int>& getK()    {return K;}
-    SparseMatrix<double, 0, int>& get_dK()  {return dK;}
-    SparseMatrix<double, 0, int>& get_d2K() {return d2K;}
+    // SparseMatrix<double, 0, int>& get_d2K() {return d2K;}
 
     // get K/dK using different parameter
     virtual SparseMatrix<double, 0, int> getK(VectorXd) const=0;
-    virtual SparseMatrix<double, 0, int> get_dK(VectorXd) const=0;
+    // adding at Jul. 24 - get_dK wrt. paramter_K[i]
+    virtual SparseMatrix<double, 0, int> get_dK(int, VectorXd) const=0;
+    SparseMatrix<double, 0, int> get_dK(int index) const {
+        return get_dK(index, parameter_K);
+    }
 
     // param(pos) += eps;  getK(param);
     SparseMatrix<double, 0, int> getK(int pos, double eps) {
@@ -52,12 +55,13 @@ std::cout << "constructor of Operator" << std::endl;
         return getK(tmp);
     }
 
-    SparseMatrix<double, 0, int> get_dK(int pos, double eps) {
+    SparseMatrix<double, 0, int> get_dK(int index, int pos, double eps) {
         VectorXd tmp = parameter_K;
         tmp(pos) += eps;
-        return get_dK(tmp);
+        return get_dK(index, tmp);
     }
     
+
 };
 
 #endif

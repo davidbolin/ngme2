@@ -39,8 +39,9 @@ public:
         this->parameter_K = alpha;
 
         K = getK(alpha);
-        dK = get_dK(parameter_K);
+        dK = get_dK(0, parameter_K);
         d2K = 0 * C;
+
         if (use_num_dK) {
             update_num_dK();
         }
@@ -53,7 +54,8 @@ public:
         return K;
     }
 
-    SparseMatrix<double> get_dK(VectorXd alpha) const {
+    SparseMatrix<double> get_dK(int index, VectorXd alpha) const {
+        assert(index==0);
         return C;
     }
 
@@ -105,9 +107,8 @@ public:
 
     // return length 1 vectorxd : grad_kappa * dkappa/dtheta 
     VectorXd grad_theta_K() {
-
-        SparseMatrix<double> K = getK();
-        SparseMatrix<double> dK = get_dK();
+        SparseMatrix<double> K = ope->getK();
+        SparseMatrix<double> dK = ope->get_dK(0);
         VectorXd V = getV();
         VectorXd SV = getSV();
         
@@ -120,23 +121,8 @@ public:
 
         double ret = 0;
         if (numer_grad) {
-std::cout << "begin numerical gradient in ar1" << std::endl;
             // 1. numerical gradient
-            if (!use_precond) {
-                // double grad = (function_K(eps) - function_K(0)) / eps;
-                double grad = (function_kappa(eps) - function_kappa(0)) / eps;
-                ret = - grad * da / n_mesh;
-            } else {
-                double f1 = function_kappa(-eps);
-                double f2 = function_kappa(0);
-                double f3 = function_kappa(+eps);
-
-                double f2 = function_K(ope->get_parameter());
-
-                double hess = (f1 + f3 - 2*f2) / pow(eps, 2);
-                double grad = (f3 - f2) / eps;
-                ret = (grad * da) / (hess * da * da + grad * d2a);
-            }
+            ret = numerical_grad()(0);
         } else { 
             // 2. analytical gradient and numerical hessian
             double tmp = (dK*W).cwiseProduct(SV.cwiseInverse()).dot(K * W + (h - V).cwiseProduct(mu));
@@ -148,7 +134,7 @@ std::cout << "begin numerical gradient in ar1" << std::endl;
                 VectorXd prevV = getPrevV();
                 // compute numerical hessian
                 SparseMatrix<double> K2 = ope->getK(0, eps);
-                SparseMatrix<double> dK2 = ope->get_dK(0, eps);
+                SparseMatrix<double> dK2 = ope->get_dK(0, 0, eps);
 
                 // grad(x+eps) - grad(x) / eps
                 VectorXd prevSV = getPrevSV();

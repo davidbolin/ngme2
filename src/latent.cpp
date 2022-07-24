@@ -160,11 +160,7 @@ inline VectorXd Latent::grad_theta_sigma() {
     return result;
 }
 
-// function_K(params += ( 0,0,eps,0,0) )
-double Latent::function_K(VectorXd parameter) {
-    assert(parameter.size()==ope->get_n_params());
-    SparseMatrix<double> K = ope->getK(parameter);
-
+double Latent::function_K(SparseMatrix<double> K) {
     VectorXd V = getV();
     VectorXd SV = getSV();
 
@@ -181,15 +177,14 @@ double Latent::function_K(VectorXd parameter) {
         l = chol_solver_K.logdet()
             - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
     }
-
-
-// auto timer_computeg2 = std::chrono::steady_clock::now();
-// time_compute_g2 += since(timer_computeg2).count();
-
     return l;
 }
 
-double Latent::function_K(SparseMatrix<double>& K) {
+// function_K(params += ( 0,0,eps,0,0) )
+double Latent::function_K(VectorXd parameter) {
+    assert(parameter.size()==ope->get_n_params());
+    SparseMatrix<double> K = ope->getK(parameter);
+
     VectorXd V = getV();
     VectorXd SV = getSV();
 

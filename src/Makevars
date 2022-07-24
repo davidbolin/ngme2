@@ -1,8 +1,8 @@
 
 PKG_CPPFLAGS = -DDEBUG -Iinclude
-PKG_CXXFLAGS = -DDEBUG  -std=c++14
-R_XTRA_CPPFLAGS =  -I$(R_INCLUDE_DIR)
-
+PKG_CXXFLAGS = -DDEBUG  -std=c++14 -DMKL_LP64 -m64 -I/opt/intel/mkl/include
+R_XTRA_CPPFLAGS =  -I$(R_INCLUDE_DIR) 
+PKG_LIBS =  ${LAPACK_LIBS} ${BLAS_LIBS} ${FLIBS}  -L/opt/intel/mkl/lib/intel64 -Wl,--no-as-needed,-rpath,'/opt/intel/mkl/lib/intel64' -lmkl_intel_lp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl
 
 TESTS = test/test-opt.o  test/test-algebra.o
 UTILS = util/GIG.o  util/rgig.o  util/MatrixAlgebra.o util/solver.o

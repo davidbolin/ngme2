@@ -1,7 +1,7 @@
 #include <Rcpp.h>
 #include <RcppEigen.h>
 #include <chrono>
-#include "rgig.h"
+#include "include/rgig.h"
 
 Eigen::VectorXd rGIG_cpp(Eigen::VectorXd,
                        	 Eigen::VectorXd,

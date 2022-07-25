@@ -75,81 +75,40 @@ formula1 <- Y ~ 0 + f(
     fix_operator     = FALSE,
     fix_mu           = FALSE,
     fix_sigma        = FALSE,
-    fix_noise        = FALSE
+    fix_noise        = FALSE,
+    use_iter_solver  = TRUE
   )
 )
 
-# NGME with Gaussian noise
 ngme_out1 <- ngme(
   formula = formula1,
   data=data.frame(Y=Y),
   family = "normal",
   control=ngme.control(
     burnin=100,
-    iterations=200,
+    iterations=100,
     gibbs_sample = 5
   ),
   debug=ngme.debug(
     debug = TRUE
-    # fix_W = TRUE
   ),
   start=ngme.start(
     # W=trueW
   )
 )
 
-ngme_out1$result
-
-# Change it into nig noise
-formula2 <- Y ~ 0 + f(
-  1:mesh$n,
-  model=matern,
-  A=A,
-  debug=TRUE,
-  theta.mu=mu,
-  theta.sigma=log(sigma),
-  noise = ngme.noise(
-    theta.noise=1.01
-  ),
-  control=ngme.control.f(
-    numer_grad       = TRUE,
-    use_precond      = TRUE,
-
-    fix_operator     = FALSE,
-    fix_mu           = FALSE,
-    fix_sigma        = FALSE,
-    fix_noise        = TRUE
-  )
-)
-
-ngme_out2 <- ngme(
-  formula = formula2,
-  data=data.frame(Y=Y
-                  ),
-  family = "normal",
-  control=ngme.control(
-    burnin=100,
-    iterations=5,
-    gibbs_sample = 5
-  ),
-  debug=ngme.debug(
-    debug = TRUE
-  ),
-  start=ngme_out1
-)
-
 # results
 c(kappa, mu, log(sigma), nu, sigma.e)
-ngme_out2$result
+ngme_out1$result
 
 # plot mu
 plot_out(ngme_out1$trajectory, start=2, n=1)
 # plot sigma
-plot_out(ngme_out2$trajectory, start=3, n=1, transform = identity)
+plot_out(ngme_out1$trajectory, start=3, n=1, transform = identity)
 # plot var
-plot_out(ngme_out2$trajectory, start=4, n=1, transform = exp)
+plot_out(ngme_out1$trajectory, start=4, n=1, transform = exp)
 # plot m err
-plot_out(ngme_out2$trajectory, start=5, n=1, transform = exp)
+plot_out(ngme_out1$trajectory, start=5, n=1, transform = exp)
 # plot kappa
 plot_out(ngme_out1$trajectory, start=1, n=1, transform=exp)
 

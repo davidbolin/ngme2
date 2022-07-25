@@ -58,8 +58,9 @@ ngme.control <- function(burnin            = 100,
 #' @param use_precond   whether to use preconditioner
 #' @param eps           eps for numerical gradient
 #' @param fix_V         to-do
-#' @param theta.K
-#' @param use_num_hess
+#' @param theta.K       theta.K for parameter K
+#' @param use_num_hess  whether to use numerical hessian
+#' @param CG_soler      whether to use conjugate gradient solver
 #'
 #' @return list of control variables
 #' @export
@@ -76,7 +77,8 @@ ngme.control.f <- function(
   numer_grad    = FALSE,
   use_precond   = TRUE,
   use_num_hess  = TRUE,
-  eps           = 0.01
+  eps           = 0.01,
+  use_iter_solver = FALSE
   ) {
 
   control = list(
@@ -90,7 +92,8 @@ ngme.control.f <- function(
     numer_grad    = numer_grad,
     use_precond   = use_precond,
     use_num_hess  = use_num_hess,
-    eps           = eps
+    eps           = eps,
+    use_iter_solver = use_iter_solver
     )
 
   class(control) <- "control.f"

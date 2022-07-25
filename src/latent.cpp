@@ -38,6 +38,7 @@ if (debug) std::cout << "constructor of latent" << std::endl;
             use_precond  = Rcpp::as<bool>        (control_f["use_precond"] );
             numer_grad   = Rcpp::as<bool>        (control_f["numer_grad"]) ;
             eps          = Rcpp::as<double>      (control_f["eps"]) ;
+            use_iter_solver = Rcpp::as<bool>    (control_f["use_iter_solver"]);
             
         // starting values
         Rcpp::List start = Rcpp::as<Rcpp::List> (latent_in["start"]);
@@ -82,21 +83,12 @@ if (debug) std::cout << "Start mu gradient"<< std::endl;
     VectorXd prevV = getPrevV();
     VectorXd prev_inv_V = prevV.cwiseInverse();
     
-    // if (n_mu == 1 && n_sigma == 1) {
-    //     // stationary case
-    //     double grad = pow(sigma(0),-2) * (V-h).cwiseProduct(inv_V).dot(K*W - mu(0) * (V-h));
-    //     double hess = -pow(sigma(0),-2) * (prevV-h).cwiseProduct(prev_inv_V).dot(prevV-h);
+    VectorXd grad (n_mu);
+    for (int l=0; l < n_mu; l++) {
+        grad(l) = (V-h).cwiseProduct( B_mu.col(l).cwiseQuotient(getSV()) ).dot(K*W - mu.cwiseProduct(V-h));
+    }
 
-    //     result(0) = grad / hess;
-    // }
-    // else {
-        VectorXd grad (n_mu);
-        for (int l=0; l < n_mu; l++) {
-            grad(l) = (V-h).cwiseProduct( B_mu.col(l).cwiseQuotient(getSV()) ).dot(K*W - mu.cwiseProduct(V-h));
-        }
-
-        result = - 1.0 / n_mesh * grad;
-    // }
+    result = - 1.0 / n_mesh * grad;
 
 if (debug) {
 // std::cout << "grad of mu=" << grad <<std::endl;
@@ -206,24 +198,24 @@ double Latent::function_K(VectorXd parameter) {
 
 // only for stationary case, delete later
 // W|V ~ N(K^-1 mu(V-h), sigma^2 K-1 diag(V) K-T)
-double Latent::function_kappa(double eps) {
-    SparseMatrix<double> K = ope->getK(0, eps);
+// double Latent::function_kappa(double eps) {
+//     SparseMatrix<double> K = ope->getK(0, eps);
 
-    VectorXd V = getV();
-    VectorXd SV = getSV();
+//     VectorXd V = getV();
+//     VectorXd SV = getSV();
 
-    SparseMatrix<double> Q = K.transpose() * SV.cwiseInverse().asDiagonal() * K;
+//     SparseMatrix<double> Q = K.transpose() * SV.cwiseInverse().asDiagonal() * K;
     
-    solver_Q.compute(Q);
+//     solver_Q.compute(Q);
     
-    VectorXd tmp = K * W - mu.cwiseProduct(V-h);
+//     VectorXd tmp = K * W - mu.cwiseProduct(V-h);
 
-    double l = 0.5 * solver_Q.logdet() 
-               - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
-                // - 0.5 * (prevW-mean).transpose() * Q * (prevW-mean);
+//     double l = 0.5 * solver_Q.logdet() 
+//                - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
+//                 // - 0.5 * (prevW-mean).transpose() * Q * (prevW-mean);
 
-    return l;
-}
+//     return l;
+// }
 
 // numerical gradient for K parameters
 VectorXd Latent::numerical_grad() {

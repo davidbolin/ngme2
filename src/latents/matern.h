@@ -116,8 +116,14 @@ std::cout << "begin Constructor of Matern " << std::endl;
         SparseMatrix<double> Q = K.transpose() * K;
         
 std::cout << "before analyzing K " << std::endl;
-        chol_solver_K.init(n_mesh, 0,0,0);
-        chol_solver_K.analyze(K);
+        if (!use_iter_solver) {
+            chol_solver_K.init(n_mesh, 0,0,0);
+            chol_solver_K.analyze(K);
+        } else {
+            CG_solver_K.init(n_mesh, n_mesh, n_mesh, 0.5);
+            CG_solver_K.analyze(K);
+        }
+
 std::cout << "before compute trace " << std::endl;
         compute_trace();
 

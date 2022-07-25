@@ -6,6 +6,7 @@
 #ifndef NGME_LATANT_H
 #define NGME_LATANT_H
 
+#include<Eigen/IterativeLinearSolvers>
 #include <string>
 #include <iostream>
 #include <cmath>
@@ -51,6 +52,9 @@ protected:
     // solver
     cholesky_solver chol_solver_K;
     lu_sparse_solver lu_solver_K;
+
+    bool use_iter_solver {false};
+    iterative_solver CG_solver_K;
 
     cholesky_solver solver_Q; // Q = KT diag(1/SV) K
 
@@ -108,7 +112,7 @@ public:
     virtual void        set_theta_K(VectorXd params) {ope->set_parameter(params); }
 
     // deprecated
-    virtual double function_kappa(double eps);    
+    // virtual double function_kappa(double eps);    
     virtual double function_K(VectorXd parameter);   
     
     // used for general case
@@ -121,15 +125,29 @@ public:
         SparseMatrix<double> dK = ope->get_dK(0);
 // compute trace
 // auto timer_trace = std::chrono::steady_clock::now();
-        
+
         SparseMatrix<double> M = dK;
-        if (!symmetricK) {
-            lu_solver_K.computeKTK(K);
-            trace = lu_solver_K.trace(M);
+        if (!use_iter_solver) {
+            if (!symmetricK) {
+                lu_solver_K.computeKTK(K);
+                trace = lu_solver_K.trace(M);
+            } else {
+                chol_solver_K.compute(K);
+                trace = chol_solver_K.trace(M);
+            }
         } else {
-            chol_solver_K.compute(K);
-            trace = chol_solver_K.trace(M);
+            if (!symmetricK) {
+                // BiCG solver
+                throw("Not implemented yet");
+            } else {
+                SparseMatrix<double, RowMajor> KK = K;
+                CG_solver_K.compute(K);
+                trace = CG_solver_K.trace(M);
+            }
         }
+
+std::cout << "trace ====== " << trace << std::endl;
+
 // std::cout << "time for the trace (ms): " << since(timer_trace).count() << std::endl;   
 
         // update trace_eps if using hessian
@@ -138,6 +156,7 @@ public:
             SparseMatrix<double> dK = ope->get_dK(0, 0, eps);
             SparseMatrix<double> M = dK;
 
+        if (!use_iter_solver) {
             if (!symmetricK) {
                 lu_solver_K.computeKTK(K);
                 trace_eps = lu_solver_K.trace(M);
@@ -145,6 +164,15 @@ public:
                 chol_solver_K.compute(K);
                 trace_eps = chol_solver_K.trace(M);
             }
+        } else {
+            if (!symmetricK) {
+                // BiCG solver
+                throw("Not implemented yet");
+            } else {
+                CG_solver_K.compute(K);
+                trace_eps = CG_solver_K.trace(M);
+            }
+        }
         }
     };
 

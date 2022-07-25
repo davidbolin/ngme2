@@ -89,19 +89,19 @@ f <- function(
   else if (inherits(model, "ngme.matern")) {  ########  stationary Matern ########
     model.type = "matern"
     if (is.null(A)) stop("Provide A matrix")
-    n = length(x)
-    h = rep(1, n)
+    
+    n <- model$operator_in$n
+    h <- rep(1, n)
     theta.K = model$kappa
-
     operator_in <- model$operator_in
   }
   else if (inherits(model, "ngme.spde")) { ######## nonstationary Matern ########
     model.type = "spde.matern"
-    n = length(x)
     if (is.null(A)) stop("Provide A matrix")
-    h = rep(1, n)
+    
+    n <- model$operator_in$n
+    h <- rep(1, n)
     theta.K = model$theta.kappa
-
     operator_in <- model$operator_in
   }
   else {

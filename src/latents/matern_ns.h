@@ -77,7 +77,7 @@ public:
         CK = kappas.cwiseProduct(Cdiag).asDiagonal();
 
         SparseMatrix<double> dKCK(n_dim, n_dim);
-        dKCK = kappas.cwiseProduct(Bkappa.col(i)) * CK + CK * kappas.cwiseProduct(Bkappa.col(i)); // kappas * (Bkappa * CK + CK * Bkappa).sparseView();
+        dKCK = kappas.cwiseProduct(Bkappa.col(index)) * CK + CK * kappas.cwiseProduct(Bkappa.col(index)); // kappas * (Bkappa * CK + CK * Bkappa).sparseView();
 
         if (alpha == 2)
         {

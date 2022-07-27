@@ -48,7 +48,7 @@ private:
   int N;
   Eigen::MatrixXd U, QU, MQU, MU;
   bool QU_computed;
-  Eigen::ConjugateGradient<Eigen::SparseMatrix<double, 0, int>, 0, Eigen::IncompleteLUT<double> > R;
+  Eigen::ConjugateGradient<Eigen::SparseMatrix<double, 0, int>, Lower|Upper > R;
 
 public:
   ~iterative_solver(){};

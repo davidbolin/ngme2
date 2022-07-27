@@ -25,8 +25,8 @@ void iterative_solver::initFromList(int nin, const Rcpp::List &init_list)
   R.setMaxIterations(Rcpp::as<int>(init_list["trace.solver.max.iter"]));
   R.setTolerance(Rcpp::as<double>(init_list["trace.solver.tol"]));
 
-  R.preconditioner().setDroptol(Rcpp::as<double>(init_list["solver.drop.tol"]));
-  R.preconditioner().setFillfactor(Rcpp::as<double>(init_list["solver.fill.factor"]));
+  // R.preconditioner().setDroptol(Rcpp::as<double>(init_list["solver.drop.tol"]));
+  // R.preconditioner().setFillfactor(Rcpp::as<double>(init_list["solver.fill.factor"]));
 
   QU.setZero(n, N);
   U.setRandom(n, N);

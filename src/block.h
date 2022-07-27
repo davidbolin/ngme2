@@ -1,7 +1,7 @@
 /*
 BlockModel
 */
-#define EIGEN_USE_MKL_ALL 1
+#define EIGEN_USE_MKL_ALL
 
 #ifndef NGME_BLOCK_H
 #define NGME_BLOCK_H

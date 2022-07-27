@@ -76,9 +76,10 @@ formula1 <- Y ~ 0 + f(
     fix_mu           = FALSE,
     fix_sigma        = FALSE,
     fix_noise        = FALSE,
-    use_iter_solver  = TRUE
+    use_iter_solver  = FALSE
   )
 )
+
 
 ngme_out1 <- ngme(
   formula = formula1,
@@ -96,6 +97,7 @@ ngme_out1 <- ngme(
     # W=trueW
   )
 )
+
 
 # results
 c(kappa, mu, log(sigma), nu, sigma.e)

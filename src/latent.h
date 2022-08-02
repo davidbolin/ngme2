@@ -6,7 +6,7 @@
 #ifndef NGME_LATANT_H
 #define NGME_LATANT_H
 
-#include<Eigen/IterativeLinearSolvers>
+// #include<Eigen/IterativeLinearSolvers>
 #include <string>
 #include <iostream>
 #include <cmath>

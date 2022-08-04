@@ -78,7 +78,7 @@ ngme_out <- ngme(
     theta.mu=mu,
     theta.sigma=log(sigma),
     control=ngme.control.f(
-      # numer_grad       = FALSE,
+      numer_grad       = FALSE,
       use_precond      = TRUE,
 
       fix_operator     = FALSE,
@@ -90,52 +90,22 @@ ngme_out <- ngme(
   data=data.frame(Y=Y),
   family = "normal",
   control=ngme.control(
-    burnin=100,
+    burnin=50,
     iterations=200,
     gibbs_sample = 5
   )
   # debug=ngme.debug(fixW = TRUE)
 )
 
-ngme_out2 <- ngme(
-  formula = Y ~ 0 + f(
-    1:mesh$n,
-    model=spde,
-    A=A,
-    debug=TRUE,
-    theta.mu=mu,
-    theta.sigma=log(sigma),
-    control=ngme.control.f(
-      # numer_grad       = FALSE,
-      use_precond      = TRUE,
-
-      fix_operator     = FALSE,
-      fix_mu           = FALSE,
-      fix_sigma        = FALSE,
-      fix_noise        = FALSE,
-    )
-  ),
-  data=data.frame(Y=Y),
-  family = "normal",
-  control=ngme.control(
-    burnin=100,
-    iterations=50,
-    gibbs_sample = 5
-  ),
-  start = ngme_out,
-  debug=ngme.debug()
-)
-
-
 # results
-c(theta.kappa, mu, log(sigma), nu, sigma.e)
-ngme_out2$result
+ngme_out$result
+# c(theta.kappa, mu, log(sigma), nu, sigma.e)
 
 # plot theta.kappa
-plot_out(ngme_out2$trajectory, start=1, n=2)
-plot_out(ngme_out2$trajectory, start=3, n=1, ylab="mu")
+# plot_out(ngme_out2$trajectory, start=1, n=2)
+# plot_out(ngme_out2$trajectory, start=3, n=1, ylab="mu")
 
-ngme_out2$output
+# ngme_out2$output
 # plot mu
 
 #   # ngme.start(result from ngme object(lastW, lastV)),
@@ -144,7 +114,7 @@ ngme_out2$output
 # plot_out(res$trajectory, start=6, n=1, transform = exp, ylab="nu")
 
 # plot sigma.e
-plot_out(ngme_out$trajectory, start=6, n=1, transform = exp, ylab="sigma_eps")
+# plot_out(ngme_out$trajectory, start=6, n=1, transform = exp, ylab="sigma_eps")
 
 # # results
 # res$estimates

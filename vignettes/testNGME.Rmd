@@ -1,5 +1,5 @@
 ---
-title: "Untitled"
+title: "Introduction to NGME2 package"
 author: "Xiaotian Jin"
 date: "3/22/2022"
 output: html_document

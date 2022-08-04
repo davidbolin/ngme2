@@ -1,0 +1,178 @@
+---
+title: "Introduction to ngme2 Package"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Introduction to ngme2 Package}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+
+library(devtools)
+load_all()
+```
+
+## Introduction
+
+In this vignette we provide a brief introduction to the `ngme2` package.
+`ngme2` is an R package that contains functions for inference and prediction for Gaussian and non-Gaussian latent models. 
+The package has support for linear mixed effects models, spatial random field models, and multivariate random fields.
+
+## Modeling Framework
+
+The package `ngme2` provides methods for mixed effect models both for single response 
+variable case and multivariate response case (not yet). 
+
+1.For **single response** case, it has the following form:
+$$
+\begin{aligned}
+Y_{i} = {\bf X}^{\top} {\bf \beta} + \sum_j W_j({\bf t}) + \epsilon_{i}.
+\end{aligned}
+$$
+
+Here, 
+
+- $i = 1, \ldots, m$ (subject index), $j = 1, \ldots, n_i$ (replicate index), 
+- $Y_i$ is the response variable for at index $i$,
+- ${\bf X}$ is the matrix of fixed effects explanatory variables,
+- ${\bf \beta}$ is the matrix of fixed effects coefficients,
+- $W_j(t_j)$ is specified as a stochastic process,
+- $\epsilon_{i}$ is measurement error.
+
+Here is a simple template for using the core function `ngme` to model the single response:
+
+    ngme(
+      formula=Y ~ x1 + x2 + f(index, model="ar", noise="nig"),
+      data=data.frame(Y=Y, x1=x1, x2=x2, index=index),
+      family="normal"
+    )
+  
+Here, function `f` is for modeling the stochastic process W with Gaussian or non-Gaussian noise, 
+we will discuss this later.
+`family` stands for the distribution of the measurement noise.
+
+For **multivariate response** case, it has the following form:
+
+**to-do**
+
+Here is a another template for using the core function `ngme` to model the bivariate response:
+
+    ngme(
+      formula=Y1 | Y2 ~ x1 + x2 + f(index, model="ar", noise="nig") | f(time, model="matern"),
+      data=data.frame(Y=Y, x1=x1, x2=x2, index=index, time=time),
+      family="normal"
+    )
+
+## Non-Gaussian Model
+
+Here we assume the non-Gaussian process is a type-G Lévy process, 
+whose increments can be represented as location-scale mixtures:
+$$\gamma + \mu V + \sigma \sqrt{V}Z,$$
+where $\gamma, \mu, \sigma$ are parameters, $Z\sim N(0,1)$ and is independent of $V$, and $V$ is a positive infinitely divisible random variable.
+It results in the following form, where $K$ is the operator part:
+
+$$
+KW|V \sim N(\gamma + \mu V, \sigma^2 \, diag(V)),
+$$
+also, $\mu$ and $\sigma$ can be non-stationary.
+
+## The NIG model
+
+First, we say that a random variable $V$ follows an inverse Gaussian distribution with parameters 
+$\eta_1$ and $\eta_2$, denoted by $V\sim IG(\eta_1,\eta_2)$ if it has pdf given by
+
+$$\pi(v) = \frac{\sqrt{\eta_2}}{\sqrt{2\pi v^3}} \exp\left\{-\frac{\eta_1}{2}v - \frac{\eta_2}{2v} + \sqrt{\eta_1\eta_2}\right\},\quad \eta_1,\eta_2>0.$$
+
+We can generate samples of inverse Gaussian distributions with parameters $\eta_1$ and $\eta_2$ by generating samples from the [generalized inverse Gaussian distribution](https://en.wikipedia.org/wiki/Generalized_inverse_Gaussian_distribution) with parameters $p=-1/2$, $a=\eta_1$ and $b=\eta_2$. We can use the *rGIG* function to generate samples from the generalized inverse Gaussian distribution. 
+
+If $V\sim IG(\eta_1,\eta_2)$, then $X = \gamma +\mu V + \sigma \sqrt{V}Z$, with $Z\sim N(0,1)$, being independent of $V$, then $X$ follows a normal inverse Gaussian (NIG) distribution and has pdf
+$$\pi(x) = \frac{e^{\sqrt{\eta_1\eta_2}+\mu(x-\gamma)/\sigma^2}\sqrt{\eta_2\mu^2/\sigma^2+\eta_1\eta_2}}{\pi\sqrt{\eta_2\sigma^2+(x-\gamma)^2}} K_1\left(\sqrt{(\eta_2\sigma^2+(x-\gamma)^2)(\mu^2/\sigma^4+\eta_1/\sigma^2)}\right),$$
+where $K_1$ is a modified Bessel function of the third kind. In this form, the NIG density is overparameterized, and we therefore set $\eta_1=\eta_2=\eta$, which results in $E(V)=1$. Thus, one have the parameters, $\mu, \gamma$ and $\eta$.
+
+The NIG model thus assumes that the stochastic variance $V_i$ follows an inverse Gaussian with parameters $\eta$ and $\eta h_i^2$, where $h_i = \int_{\mathcal{D}} \varphi_i(\mathbf{s}) d\mathbf{s}.$
+
+Below, we see the plot of the densities of a NIG distribution for several choices of the parameters (we fix $\gamma=0$ and $\eta=1$):
+
+
+## A simple example - AR1 process with nig noise
+
+Now let's see an example of an AR1 process with nig noise. 
+
+$$
+W_i = \alpha W_{i-1} + \epsilon_i,
+$$
+Here, $\epsilon$ is the nig noise. And,
+$$
+K = 
+  \begin{bmatrix} 
+    \alpha \\
+    -1 &  \alpha \\
+    & \ddots & \ddots \\
+    & & -1 &  \alpha
+  \end{bmatrix}
+$$
+
+```{r}
+n_obs <- 1000
+sigma_eps <- 0.5
+alpha <- 0.5 
+mu = 2; delta = -mu
+sigma <- 3
+nu <- 1
+
+# First we generate V. V_i follows inverse Gaussian distribution
+trueV <- ngme2::rig(n_obs, nu, nu)
+
+# Then generate the nig noise
+noise <- delta + mu*trueV + sigma * sqrt(trueV) * rnorm(n_obs)
+trueW <- Reduce(function(x,y){y + alpha*x}, noise, accumulate = T)
+Y = trueW + rnorm(n_obs, mean=0, sd=sigma_eps)
+
+# Add some fixed effects
+x1 = runif(n_obs)
+x2 = rexp(n_obs)
+beta <- c(-3, -1, 2)
+X <- (model.matrix(Y ~ x1 + x2))  # design matrix
+Y = as.numeric(Y + X %*% beta)
+```
+
+Now let's fit the model using `ngme`. Here we can use `ngme.control` to modify the 
+control variables for the `ngme`. See `?ngme.control` for more details.
+
+```{r}
+# First we specify the controls using ngme.control
+control <- ngme.control(
+  burnin = 100,
+  iterations = 1000,
+  gibbs_sample = 5
+)
+
+# Fit the model with the AR1 model
+ngme_out <- ngme(
+  Y~x1+x2 + f(
+    1:n_obs, 
+    model="ar1", 
+    noise="nig",
+    theta.K=0.9  # starting point for the alpha (parameter of operator)
+  ),
+  data=data.frame(x1=x1, x2=x2, Y=Y),
+  control = control
+)
+```
+
+Finally, we can see the results:
+
+```{r}
+# # show the results
+ngme_out$result
+```
+
+The plots can be produced by `plot` function.
+
+

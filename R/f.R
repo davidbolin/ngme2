@@ -110,8 +110,10 @@ f <- function(
 
   ################## construct noise (e.g. nig noise) ##################
   if (is.character(noise)) {
-    if (noise=="nig")                         noise = ngme.noise(type="nig")
-    if (noise=="normal" || noise=="gaussian") noise = ngme.noise(type="normal")
+    if (noise=="nig")                         
+      noise <- ngme.noise(type = "nig")
+    else if (noise=="normal" || noise=="gaussian") 
+      noise <- ngme.noise(type = "normal")
   }
   if (is.null(theta.noise) && !(is.null(noise$theta.noise))) theta.noise = noise$theta.noise
 

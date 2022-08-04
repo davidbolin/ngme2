@@ -163,7 +163,6 @@ std::cout << "begin grad theta K " << std::endl;
             ret = numerical_grad()(0);
         } else { 
             // 2. analytical gradient and numerical hessian
-std::cout << "begin analytical grad. in Matern " << std::endl;
             double tmp = (dK*W).cwiseProduct(SV.cwiseInverse()).dot(K * W + (h - V).cwiseProduct(mu));
             double grad = trace - tmp;
 

@@ -67,7 +67,9 @@ public:
 
     // dK wrt. theta_K[index]
     SparseMatrix<double> get_dK(int index, VectorXd params) const {
+std::cout << "reach here dk1 " << std::endl;
         VectorXd kappas = (Bkappa * parameter_K).array().exp();
+std::cout << "reach here dk2 " << std::endl;
         
         int n_dim = G.rows();
         SparseMatrix<double> dK_a (n_dim, n_dim);
@@ -75,9 +77,11 @@ public:
         // dKCK
         SparseMatrix<double> CK(n_dim, n_dim);
         CK = kappas.cwiseProduct(Cdiag).asDiagonal();
+std::cout << "reach here dk3 " << std::endl;
 
         SparseMatrix<double> dKCK(n_dim, n_dim);
-        dKCK = kappas.cwiseProduct(Bkappa.col(index)) * CK + CK * kappas.cwiseProduct(Bkappa.col(index)); // kappas * (Bkappa * CK + CK * Bkappa).sparseView();
+        dKCK = kappas.cwiseProduct(Bkappa.col(index)).asDiagonal() * CK + CK * kappas.cwiseProduct(Bkappa.col(index)).asDiagonal(); // kappas * (Bkappa * CK + CK * Bkappa).sparseView();
+std::cout << "reach here dk4 " << std::endl;
 
         if (alpha == 2)
         {
@@ -94,6 +98,7 @@ public:
         {
             throw("alpha not equal to 2 or 4 is not implemented");
         }
+std::cout << "reach here dk5 " << std::endl;
 
         return dK_a;
     }
@@ -139,6 +144,59 @@ if (debug) std::cout << "finish constructor of matern ns" << std::endl;
             Rcpp::Named("theta.noise") = var->get_var()
         );
     }
+
+    VectorXd grad_theta_K() {
+std::cout << "begin grad theta K " << std::endl;
+        n_ope = ope->get_n_params();
+std::cout << "n_ope = " << n_ope << std::endl;
+
+        SparseMatrix<double> K = ope->getK();
+        // SparseMatrix<double> dK = ope->get_dK(0);        
+        // SparseMatrix<double> dK (n_mesh, n_mesh);
+        // for (int i=0; i < n_ope; i++) {
+        //     dK = dK + ope->get_dK(i);
+        // }
+
+        VectorXd V = getV();
+        VectorXd SV = getSV();
+        
+        VectorXd kappa = ope->get_parameter();
+
+        VectorXd grad;
+        if (numer_grad) {
+            // 1. numerical gradient
+            grad = numerical_grad();
+        } else { 
+            // 2. analytical gradient and numerical hessian
+            for (int i=0; i < n_ope; i++) {
+                // dK for each index
+                SparseMatrix<double> dK = ope->get_dK(i);
+                
+                VectorXd dkw = dK*W;
+std::cout << "size= " << dkw.size() << std::endl;
+
+                VectorXd tmp2 = K * W + (h - V).cwiseProduct(mu);
+std::cout << "reach here 1 " << std::endl;
+                double tmp = (dK*W).cwiseProduct(SV.cwiseInverse()).dot(tmp2);
+std::cout << "reach here 2 " << std::endl;
+
+                // compute trace
+                if (!symmetricK) {
+                    lu_solver_K.computeKTK(K);
+                    trace = lu_solver_K.trace(dK);
+                } else {
+                    chol_solver_K.compute(K);
+                    trace = chol_solver_K.trace(dK);
+                }
+
+                grad(i) = trace - tmp;
+            }
+        }
+
+std::cout << "grad= " << grad << std::endl;
+        return grad;
+    }
+
 };
 
 #endif

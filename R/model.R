@@ -1,17 +1,17 @@
-# usage: ngme.model.ar1(1:3, var="NIG)
-
-# parameter:
-#   x - numeric
-#   var - string
-# return:
-#   list of stuff
-
+#' Generating C, G and A given index and replicates
+#'
+#' @param index index for the process
+#' @param replicates replicates for the process
+#' @param alpha initial value for alpha
+#'
+#' @return
+#' @export
+#'
+#' @examples
 ngme.ar1 <- function(
   index,
   replicates,
-  alpha=0.5,
-  use_num_dK = FALSE,
-  nrep=NULL
+  alpha=0.5
 ) {
   # construct A
   unique_rep = unique(replicates)

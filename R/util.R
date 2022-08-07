@@ -6,7 +6,6 @@
 #' @export
 #'
 #' @examples
-#' ngme.ts.make.A(c(11, 13, 12, 12))
 #'
 
 # ngme.ts.make.A <- function(loc) {
@@ -38,6 +37,19 @@ ngme.ts.make.A <- function(loc, replicates) {
   as(A, "dgCMatrix")
 }
 
+# ngme.ts.make.A <- function(loc) {
+#   n_loc = length(loc)
+#   n_range = max(loc)-min(loc)+1
+#   if (any((diff(sort(loc))) > 1)) stop("no gaps allowed")
+#
+#   A = matrix(0, nrow=n_loc, ncol=n_range)
+#   for (i in 1:n_loc) {
+#     A[i, loc[i]-min(loc)+1] = 1
+#   }
+# #Do an na.rm
+#   as(A, "dgCMatrix")
+# }
+
 #' NGME starting point for block model
 #'
 #' @param sigma.eps mesurement noise
@@ -64,34 +76,78 @@ ngme.start <- function(
 }
 
 
-#' Convert sparse matrix into dgCMatrix
-#'
-#' @param G sparse matrix
+
+#' Convert sparse matrix into sparse dgCMatrix
 #'
 #' @return
 #' @export
 #'
 #' @examples
 ngme.as.sparse <- function(G) {
-  
-  if (!inherits(G, "dgCMatrix")) {
-    tryCatch(
-      expr = {
-        G <- as(G, "dgCMatrix")
-      },
-      error = {
-        # first dgT, then convert to dgC
-        G = as(G, "dgTMatrix")
-        # idx <- which(G@i <= G@j)
-        # G = Matrix::sparseMatrix(
-        #   i = G@i[idx], 
-        #   j = G@j[idx], 
-        #   x= G@x[idx],
-        #   index1 = FALSE
-        # )
-        G = as(G, "dgCMatrix")
-      }
-    )
-  }
-  G
+  tryCatch(
+    expr={
+      G <- as(G, "dgCMatrix")
+    },
+    error = function(e) {
+      G <- as(G, "dgTMatrix")
+      idx <- which(G@i <= G@j)
+      G = Matrix::sparseMatrix(i=G@i[idx], j = G@j[idx], x= G@x[idx],
+                               symmetric=FALSE, index1 = FALSE)
+      G = as(G, "dgCMatrix")
+    },
+    finally = {
+      G
+    }
+  )
 }
+
+#' Title
+#'
+#' @param name
+#' @param n.spde
+#' @param n.repl
+#' @param mesh
+#' @param dim
+#'
+#' @return
+#' @export
+#'
+#' @examples
+ngme.matern.make.index <- function(n.spde=NULL,
+                                   n.repl = 1,
+                                   mesh = NULL,
+                                   dim = NULL){
+
+  if(is.null(n.spde)&&is.null(mesh)){
+    stop("You should provide either n.spde or mesh!")
+  }
+
+  if(!is.null(mesh)){
+    n_mesh = mesh$n
+
+    if(mesh$manifold == "R1"){
+      dim = 1
+    } else if(mesh$manifold == "R2"){
+      dim = 2
+    } else{
+      stop("The domain must be flat manifolds of dimension 1 or 2, that is,
+         the domain must be a line or a plane.")
+    }
+
+  } else{
+    n_mesh = n.spde
+    if(is.null(dim)){
+      stop("You should provide the dimension d!")
+    }
+  }
+
+  out <- list()
+  out$index <- rep(1:n_mesh, times = n.repl)
+
+  out$replicates <- rep(1:n.repl, each = n_mesh)
+  return(out)
+}
+
+
+
+

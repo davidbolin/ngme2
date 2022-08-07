@@ -8,7 +8,7 @@ th2a <- function(th) {-1 + (2*exp(th)) / (1+exp(th))}
 set.seed(7)
 
 control = ngme.control(burnin=100,
-                       iterations = 500,
+                       iterations = 200,
                        gibbs_sample = 5,
                        stepsize = 1,
                        kill_var = FALSE,
@@ -25,7 +25,7 @@ control = ngme.control(burnin=100,
 # x2 = rexp(n_obs)
 # beta <- c(-3, -1, 2)
 
-n_obs <- 1000
+n_obs <- 500
 sigma_eps = 0.5
 alpha <- 0.5
 mu = 2; delta = -mu
@@ -39,25 +39,57 @@ trueW1 <- Reduce(function(x,y){y + alpha*x}, noise1, accumulate = T)
 Y1 = trueW1 + rnorm(n_obs1, mean=0, sd=sigma_eps)
 
 trueV2 <- ngme2::rig(n_obs, nu, nu)
-noise2 <- delta + mu*trueV2 + sigma * sqrt(trueV1) * rnorm(n_obs)
+noise2 <- delta + mu*trueV2 + sigma * sqrt(trueV2) * rnorm(n_obs)
 trueW2 <- Reduce(function(x,y){y + alpha*x}, noise2, accumulate = T)
 Y2 = trueW2 + rnorm(n_obs, mean=0, sd=sigma_eps)
-
 Y <- c(Y1, Y2)
 
 ################################################################
 # index <- c(1:n_obs1, 1:n_obs)
 replicates = c(rep(1, n_obs1), rep(2, n_obs))
 
+ngme_out = ngme(Y1 ~ 0 +
+                  f(1:n_obs1,
+                    replicates = NULL,
+                    model="ar1",
+                    noise=ngme.noise(
+                      type="nig",
+                      theta.noise=1
+                    ),
+                    control=ngme.control.f(
+                      numer_grad       = FALSE,
+                      use_precond      = TRUE,
+
+                      fix_operator     = FALSE,
+                      fix_mu           = FALSE,
+                      fix_sigma        = FALSE,
+                      fix_noise        = FALSE
+                    ),
+                    theta.K = 0.5,
+                    theta.mu = mu+1,
+                    theta.sigma = log(sigma)+1,
+                    theta.noise = 1.01,
+                    debug=TRUE
+                  ),
+                family="normal",
+                data=data.frame(
+                  # index=index
+                ),
+                control=control,
+                start=ngme.start(
+
+                ),
+                debug=ngme.debug(
+                  debug = TRUE,
+                  fix_merr = FALSE
+                ),
+                notrun=F)
+
+
 ngme_out = ngme(Y ~ 0 +
                   f(index,
                     replicates = replicates,
-                    model=ngme.ar1(
-                      index,
-                      replicates = replicates,
-                      alpha=0.9,
-                      use_num_dK = FALSE
-                    ),
+                    model="ar1",
                     noise=ngme.noise(
                       type="nig",
                       theta.noise=1
@@ -71,6 +103,7 @@ ngme_out = ngme(Y ~ 0 +
                       fix_sigma        = FALSE,
                       fix_noise        = FALSE
                     ),
+                    theta.K = 0.1,
                     theta.mu = mu+2,
                     theta.sigma = log(sigma)+2,
                     theta.noise = 1.01,
@@ -78,7 +111,11 @@ ngme_out = ngme(Y ~ 0 +
                   ),
                 family="normal",
                 data=data.frame(
-                  index=c(1:n_obs1, 1:n_obs)
+                  index=index
+                  # ,
+                  # Y1=Y1,
+                  # x1=x1,
+                  # x2=x2
                 ),
                 control=control,
                 start=ngme.start(
@@ -87,7 +124,8 @@ ngme_out = ngme(Y ~ 0 +
                 debug=ngme.debug(
                   debug = TRUE,
                   fix_merr = FALSE
-                ))
+                ),
+                notrun=TRUE)
 
 ngme_out$result
 

@@ -90,7 +90,7 @@ ngme.spde.matern <- function(
 #' @examples
 ngme.matern <- function(
     mesh = NULL,
-    replicates = NULL,
+    nrep = 1,
     alpha = 2,
     fem.mesh.matrices = NULL,
     d = NULL,
@@ -129,7 +129,6 @@ ngme.matern <- function(
       # general
       n_params = 1,
       kappa = kappa,
-
       # spde
       operator_in = list(
         alpha = alpha,

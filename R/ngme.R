@@ -20,7 +20,8 @@ ngme <- function(formula,
                  family   = "normal",
                  controls = ngme.control(),
                  debug    = ngme.debug(),
-                 start    = ngme.start())
+                 start    = ngme.start(),
+                 notrun = FALSE)
 {
   time.start <- Sys.time()
 
@@ -128,6 +129,11 @@ ngme <- function(formula,
 if (debug$debug) print(str(in_list))
 
   ################# Run CPP ####################
+
+  if (notrun) {
+    print(str(in_list))
+    stop()
+  }
   out = estimate_cpp(in_list)
 
   # construct output

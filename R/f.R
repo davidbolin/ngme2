@@ -39,38 +39,59 @@ f <- function(
   theta.K = NULL,
   theta.noise = NULL,
   start.V = NULL,
-  data=NULL
+  data = NULL
 ) {
+  ################## Index and Replicates ##################
+
+  # get the index from ddd
   ddd <- match.call(expand.dots = FALSE)$...
   if (length(ddd) > 1) {
     stop(paste("To many variables included in f():", paste(unlist(ddd), collapse=" ")))
   }
-  # ddd.char <- as.character(ddd[[1]])
-  # assign(ddd.char, data[,ddd.char])
-  # index <- (eval(parse(text=ddd.char), envir=data))
-
   numerical.or.symbol <- ddd[[1]]
   index <- eval(numerical.or.symbol, envir=data)
 
-  # if replicates not specified
-  if (is.null(replicates)) 
+  # get the replicates
+  if (is.null(replicates))
     replicates = rep(1, length(index))
-  
+  nrep <- length(unique(replicates))
+
+  # no need for re-order
+  # # re-order the values according to the replicates (to be block diagonal for C and G)
+  # df <- data.frame(original.order=1:length(index), replicates=replicates, index=index)
+  # df <- df[order(df$replicates), ]
+
   if(length(index)!= length(replicates)){
     stop("The index and the replicates should have the same length!")
   }
+
+  # if (model=="ar1") {
+
+  # }
+
+  ################## construct Mu and Sigma #################
+  # turn B.sigma and B.mu into matrix
+
+
 
   ################## construct operator (n_ope, C, G, A, h) ##################
   if (is.character(model)) {  ######## string
     if (model=="ar1") {
       model.type = "ar1"
+
       ar1_in = ngme.ar1(
         index=index,
         replicates=replicates
       )
       A = ar1_in$A
       n = ncol(A)
+
+      n_mu <- length(theta.mu)
+      n_sigma <- length(theta.sigma)
+
       h = rep(1.0, n)
+      B.mu <- matrix(B.mu, nrow=n, ncol=n_mu)
+      B.sigma <- matrix(B.sigma, nrow=n, ncol=n_sigma)
 
       operator_in = ar1_in$operator_in
     } else {
@@ -79,24 +100,60 @@ f <- function(
   }
   else if (inherits(model, "ngme.ar1")) {   ################ AR1 ##################
     model.type = "ar1"
+
     A = model$A
     n = ncol(A)
     h = rep(1.0, n)
     theta.K = model$alpha
 
+    n_mu <- length(theta.mu)
+    n_sigma <- length(theta.sigma)
+
+    B.mu <- matrix(B.mu, nrow=n, ncol=n_mu)
+    B.sigma <- matrix(B.sigma, nrow=n, ncol=n_sigma)
+
     operator_in = model$operator_in
   }
   else if (inherits(model, "ngme.matern")) {  ########  stationary Matern ########
+    # read in operator and modify
+    operator_in = model$operator_in
+
     model.type = "matern"
     if (is.null(A)) stop("Provide A matrix")
-    
-    n <- model$operator_in$n
-    h <- rep(1, n)
+
+    # compute nrep
+    nrep <- ncol(A)/nrow(operator_in$C)
+
+    if(!is.null(nrep)){
+      operator_in$C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), operator_in$C)
+      operator_in$G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), operator_in$G)
+    }
+
+    operator_in$C = ngme.as.sparse(operator_in$C)
+    operator_in$G = ngme.as.sparse(operator_in$G)
+
+    n = length(index)
+    h = rep(1, n)
     theta.K = model$kappa
-    operator_in <- model$operator_in
+
+    B.mu <- kronecker(matrix(1, ncol=1, nrow=nrep), B.mu)
+    B.sigma <- kronecker(matrix(1, ncol=1, nrow=nrep), B.sigma)
+    h <- rep(h, times=nrep)
   }
   else if (inherits(model, "ngme.spde")) { ######## nonstationary Matern ########
     model.type = "spde.matern"
+
+    # compute nrep
+    nrep <- ncol(A)/nrow(operator_in$C)
+
+    if(!is.null(nrep)){
+      operator_int$C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), operator_int$C)
+      operator_int$G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), operator_int$G)
+    }
+    C = ngme.as.sparse(C)
+    G = ngme.as.sparse(G)
+
+    n = length(x)
     if (is.null(A)) stop("Provide A matrix")
     
     n <- model$operator_in$n
@@ -117,15 +174,6 @@ f <- function(
   }
   if (is.null(theta.noise) && !(is.null(noise$theta.noise))) theta.noise = noise$theta.noise
 
-  ################## construct Mu and Sigma ##################
-  # turn B.sigma and B.mu into matrix
-  n_mu <- length(theta.mu)
-  n_sigma <- length(theta.sigma)
-
-  B.mu <- matrix(B.mu, nrow=n, ncol=n_mu)
-  B.sigma <- matrix(B.sigma, nrow=n, ncol=n_sigma)
-
-  # construct latent_in
   latent_in <- list(
     model_type  = model.type,
     var_type    = noise$type,

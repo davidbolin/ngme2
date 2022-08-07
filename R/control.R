@@ -23,7 +23,9 @@ ngme.control <- function(burnin            = 100,
                          kill_var           = FALSE,
                          kill_power         = 0.75,
                          threshold         = 1e-5,
-                         termination       = 1e-7
+                         termination       = 1e-7,
+
+                         window.size       = 1
                          ) {
 
   if ((kill_power <= 0.5) || (kill_power > 1)) {

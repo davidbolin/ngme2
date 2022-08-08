@@ -488,4 +488,8 @@ inline SparseMatrix<double> BlockModel::precond() const {
 }
 
 
+// adding new class 
+// class block gaussian
+
+
 #endif

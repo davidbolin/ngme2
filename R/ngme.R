@@ -49,7 +49,7 @@ ngme <- function(formula,
 
   # 2. parse the formula
   fm = Formula::Formula(formula)
-
+# Y1|Y2|Y3 ~ ..|..|..
   if (all(length(fm)==c(2,2))) { ######################### bivariate model
     lfm = formula(fm, lhs=1, rhs=1)
     rfm = formula(fm, lhs=2, rhs=2)

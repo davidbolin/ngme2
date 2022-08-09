@@ -56,7 +56,9 @@ int main(int argc, char const *argv[])
     // // cout << spm;
     // vv(0) += 10;
 
-    VectorXd v1 (3);
+
+    VectorXd v1 (1);
+    v1.resize(3);
     v1 << 1,2,3;
 
     // MatrixXd m1 (3, 3);
@@ -75,7 +77,8 @@ m << 1, 2, 3,
      7, 8, 9;
 
     // cout << m.col(0); // m(Eigen::all, 1) * 5;
-    cout << m.cols();
+    
+    cout << VectorXd::Zero(3);
 
     return 0;
 }

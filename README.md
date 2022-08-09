@@ -1,21 +1,26 @@
 # ngme
 
- The development version can be installed using the command
+The development version can be installed using the command
+
 ```r
 remotes::install_github("davidbolin/ngme2", ref = "devel")
 ```
 
-# done
+## done
+
 * matern model
 * non-stationary matern
 * non-stationery nig noise (e.g. mu)
 * replicates of the process (in the f function)
 
-# to-do
+## to-do
 
 * (To be done jointly): homepage, vignette + documentation
 
 * non-gaussian measurement noise + analytical non-stationary matern
+    family = "nig", parameter to be estimate : noise_mu, noise_sigma
+    1. hardcode every noise in block model
+    2. make sampleW -> sampleW(noise_type)
 * analyze the Argo dataset
 * handle temporal dependence
 * random effects

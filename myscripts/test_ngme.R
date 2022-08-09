@@ -8,7 +8,7 @@ th2a <- function(th) {-1 + (2*exp(th)) / (1+exp(th))}
 set.seed(7)
 
 control = ngme.control(burnin=100,
-                       iterations = 200,
+                       iterations = 50,
                        gibbs_sample = 5,
                        stepsize = 1,
                        kill_var = FALSE,
@@ -85,47 +85,6 @@ ngme_out = ngme(Y1 ~ 0 +
                 ),
                 notrun=F)
 
-
-ngme_out = ngme(Y ~ 0 +
-                  f(index,
-                    replicates = replicates,
-                    model="ar1",
-                    noise=ngme.noise(
-                      type="nig",
-                      theta.noise=1
-                    ),
-                    control=ngme.control.f(
-                      numer_grad       = TRUE,
-                      use_precond      = TRUE,
-
-                      fix_operator     = FALSE,
-                      fix_mu           = FALSE,
-                      fix_sigma        = FALSE,
-                      fix_noise        = FALSE
-                    ),
-                    theta.K = 0.1,
-                    theta.mu = mu+2,
-                    theta.sigma = log(sigma)+2,
-                    theta.noise = 1.01,
-                    debug=TRUE
-                  ),
-                family="normal",
-                data=data.frame(
-                  index=index
-                  # ,
-                  # Y1=Y1,
-                  # x1=x1,
-                  # x2=x2
-                ),
-                control=control,
-                start=ngme.start(
-                  # W = c(trueW1, trueW2)
-                ),
-                debug=ngme.debug(
-                  debug = TRUE,
-                  fix_merr = FALSE
-                ),
-                notrun=TRUE)
 
 ngme_out$result
 

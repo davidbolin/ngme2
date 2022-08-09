@@ -31,14 +31,15 @@ const int latent_para = 4;
 class BlockModel : public Model {
 protected:
 // n_meshs   = row(A1) + ... + row(An)
-// n_params = 4 * n_latent + 1
-    // general_in
+    // general
     MatrixXd X;
     VectorXd Y; 
     int n_meshs;
     string family;
     
-    VectorXd beta;
+    VectorXd beta, theta_merr;
+
+    // noise parameter
     double sigma_eps;
     
     int n_latent;
@@ -84,6 +85,7 @@ public:
     family        ( Rcpp::as<string>     (general_in["family"]) ),
     
     beta          ( Rcpp::as<VectorXd>   (start_in["fixed.effects"]) ),
+    // theta_merr    ( Rcpp::as<VectorXd>   (start_in["mesurement.noise"]) ), 
     sigma_eps     ( Rcpp::as<double>     (start_in["mesurement.noise"]) ), 
     
     n_latent      ( latents_in.size()), 
@@ -92,7 +94,6 @@ public:
     n_params      ( Rcpp::as<int>        (general_in["n_params"]) ),
     n_la_params   ( Rcpp::as<int>        (general_in["n_la_params"]) ),
     n_feff        ( beta.size()),
-    n_merr        ( 1 ),
     
     n_gibbs       ( Rcpp::as<int>     (control_list["gibbs_sample"]) ),
     opt_fix_effect( Rcpp::as<bool>    (control_list["opt_fix_effect"]) ),
@@ -148,9 +149,18 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
         }
         assemble();
 
-            VectorXd inv_SV = VectorXd::Constant(n_meshs, 1).cwiseQuotient(getSV());
-            SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
-            SparseMatrix<double> QQ = Q + pow(sigma_eps, -2) * A.transpose() * A;
+        VectorXd inv_SV = VectorXd::Constant(n_meshs, 1).cwiseQuotient(getSV());
+        SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
+
+        SparseMatrix<double> QQ;
+        /* Measurement error */
+        if (family=="normal") {
+            n_merr = 1;
+            QQ = Q + pow(sigma_eps, -2) * A.transpose() * A;
+        } else if (family=="nig") {
+            n_merr = 3;
+            // to-do
+        }
         
         chol_Q.analyze(Q);
         chol_QQ.analyze(QQ);
@@ -174,7 +184,6 @@ if (debug) std::cout << "End Block Constructor" << std::endl;
     }
 
     void sampleW_VY();
-    void sampleW_V();
 
     void sampleV_WY() {
 if (debug) std::cout << "Start sampling V" << std::endl;        
@@ -253,39 +262,56 @@ if (debug) std::cout << "Finish sampling V" << std::endl;
         return W;
     }
 
-    double get_theta_sigma_eps() const {
-        return log(sigma_eps);
-    }
-
-    // measurement error
-    double grad_theta_sigma_eps() const {
-        double g = 0;
+    VectorXd get_theta_merr() const {
+        VectorXd theta_merr = VectorXd::Zero(n_merr);
+        
         if (family=="normal") {
-            VectorXd tmp = Y - A * getW() - X * beta;
-            double norm2 =  tmp.dot(tmp);
-
-            VectorXd tmp2 = Y - A * getPrevW() - X * beta;
-            double prevnorm2 = tmp2.dot(tmp2);
-
-            // g = -(1.0 / sigma_eps) * n_obs + pow(sigma_eps, -3) * norm2;
-            double gTimesSigmaEps = -(1.0) * n_obs + pow(sigma_eps, -2) * norm2;
-            double prevgTimesSigmaEps = -(1.0) * n_obs + pow(sigma_eps, -2) * prevnorm2;
-            
-            double hess = -2.0 * n_obs * pow(sigma_eps, -2);
-            // double hess = 1.0 * n_obs * pow(sigma_eps, -2)  - 3 * pow(sigma_eps, -4) * norm2;
-
-            g = gTimesSigmaEps / (hess * pow(sigma_eps, 2) + prevgTimesSigmaEps); 
-            
-            // g = - gTimesSigmaEps / (2 * n_obs);
-
-            if (fix_merr)  g=0;
+            theta_merr(0) = log(sigma_eps);
+        } else if (family=="nig") {
+            // to-do
         }
 
-        return g;
+        return theta_merr;
     }
 
-    void set_theta_sgima_eps(double theta) {
-        sigma_eps = exp(theta);
+    VectorXd grad_theta_merr() const {
+        VectorXd grad = VectorXd::Zero(n_merr);
+        
+        if (!fix_merr) {
+            if (family=="normal") {
+                double g = 0;
+                VectorXd tmp = Y - A * getW() - X * beta;
+                double norm2 =  tmp.dot(tmp);
+
+                VectorXd tmp2 = Y - A * getPrevW() - X * beta;
+                double prevnorm2 = tmp2.dot(tmp2);
+
+                // g = -(1.0 / sigma_eps) * n_obs + pow(sigma_eps, -3) * norm2;
+                double gTimesSigmaEps = -(1.0) * n_obs + pow(sigma_eps, -2) * norm2;
+                double prevgTimesSigmaEps = -(1.0) * n_obs + pow(sigma_eps, -2) * prevnorm2;
+                
+                double hess = -2.0 * n_obs * pow(sigma_eps, -2);
+                // double hess = 1.0 * n_obs * pow(sigma_eps, -2)  - 3 * pow(sigma_eps, -4) * norm2;
+
+                g = gTimesSigmaEps / (hess * pow(sigma_eps, 2) + prevgTimesSigmaEps); 
+                
+                // g = - gTimesSigmaEps / (2 * n_obs);
+                grad(0) = g;
+            } 
+            else if (family=="nig") {
+                // to-do
+            }
+        }
+
+        return grad;
+    }
+
+    void set_theta_merr(VectorXd theta_merr) {
+        if (family=="normal") {
+            sigma_eps = exp(theta_merr(0));
+        } else if (family=="nig") {
+            // to-do
+        }
     }
 
     // fixed effects
@@ -321,7 +347,7 @@ if (debug) std::cout << "Finish sampling V" << std::endl;
         }
 
         return Rcpp::List::create(
-            Rcpp::Named("mesurement.noise")     = sigma_eps,
+            Rcpp::Named("mesurement.noise")     = get_theta_merr(),
             Rcpp::Named("fixed.effects")        = beta,
             Rcpp::Named("block.W")              = getW(),
             Rcpp::Named("latent.model")         = latents_estimates
@@ -333,106 +359,9 @@ if (debug) std::cout << "Finish sampling V" << std::endl;
 /* the way structuring the parameter 
     latents[1].get_parameter 
         ...
-    sigma_eps
     beta (fixed effects)
+    measurement noise
 */
-
-inline VectorXd BlockModel::get_parameter() const {
-if (debug) std::cout << "Start block get parameter"<< std::endl;   
-    VectorXd thetas (n_params);
-    int pos = 0;
-    for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
-        VectorXd theta = (*it)->get_parameter();
-        thetas.segment(pos, theta.size()) = theta;
-        pos += theta.size();
-    }
-    
-    // fixed effects
-    if (opt_fix_effect) {
-        thetas.segment(n_la_params, n_feff) = beta;
-    }
-    
-    // sigma_eps
-    thetas(n_params-1) = get_theta_sigma_eps();
-
-if (debug) std::cout << "Finish block get parameter"<< std::endl;   
-    return thetas;
-}
-
-inline VectorXd BlockModel::grad() {
-if (debug) std::cout << "Start block gradient"<< std::endl;   
-    VectorXd avg_gradient = VectorXd::Zero(n_params);
-    
-long long time_compute_g = 0;
-long long time_sample_w = 0;
-
-    for (int i=0; i < n_gibbs; i++) {
-        
-        // stack grad
-        VectorXd gradient = VectorXd::Zero(n_params);
-        
-auto timer_computeg = std::chrono::steady_clock::now();
-        // get grad for each latent
-        int pos = 0;
-        for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
-            int theta_len = (*it)->get_n_params();
-            gradient.segment(pos, theta_len) = (*it)->get_grad();
-            pos += theta_len;
-        }
-time_compute_g += since(timer_computeg).count();
-
-        // fixed effects
-        if (opt_fix_effect) {
-            gradient.segment(n_la_params, n_feff) = grad_beta();
-        }
-        
-        // sigma_eps 
-        gradient(n_params-1) = grad_theta_sigma_eps();
-
-        avg_gradient += gradient;
-
-        // gibbs sampling
-        sampleV_WY(); 
-auto timer_sampleW = std::chrono::steady_clock::now();
-        sampleW_VY();
-time_sample_w += since(timer_sampleW).count();
-    }
-
-if (debug) {
-std::cout << "avg time for compute grad (ms): " << time_compute_g / n_gibbs << std::endl;
-std::cout << "avg time for sampling W(ms): " << time_sample_w / n_gibbs << std::endl;
-}
-
-    avg_gradient = (1.0/n_gibbs) * avg_gradient;
-    gradients = avg_gradient;
-    
-    // EXAMINE the gradient to change the stepsize
-    if (kill_var) examine_gradient();
-
-if (debug) std::cout << "Finish block gradient"<< std::endl;   
-    return gradients;
-}
-
-inline void BlockModel::set_parameter(const VectorXd& Theta) {
-    int pos = 0;
-    for (std::vector<Latent*>::iterator it = latents.begin(); it != latents.end(); it++) {
-        int theta_len = (*it)->get_n_params();
-        VectorXd theta = Theta.segment(pos, theta_len);
-        (*it)->set_parameter(theta);
-        pos += theta_len;
-    }
-    // sigma_eps
-    set_theta_sgima_eps(Theta(n_params-1));
-    
-    // fixed effects
-    if (opt_fix_effect) {
-        beta = Theta.segment(n_la_params, n_feff);
-    }
-
-    assemble(); //update K,dK,d2K after
-// std::cout << "Theta=" << Theta <<std::endl;
-}
-
 
 // provide stepsize
 inline void BlockModel::examine_gradient() {

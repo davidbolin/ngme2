@@ -11,7 +11,8 @@
 ngme.ar1 <- function(
   index,
   replicates,
-  alpha=0.5
+  alpha=0.5,
+  use_num_dK=FALSE
 ) {
   # construct A
   unique_rep = unique(replicates)

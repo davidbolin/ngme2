@@ -24,7 +24,7 @@ Rcpp::List estimate_cpp(Rcpp::List in_list) {
     Rcpp::List control_list  = Rcpp::as<Rcpp::List> (in_list["control_in"]);
         const int iterations = control_list["iterations"];
     Rcpp::List debug_list  = Rcpp::as<Rcpp::List> (in_list["debug"]);
-    
+
     BlockModel block (
         general_in, 
         latents_list, 

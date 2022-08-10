@@ -38,9 +38,7 @@ protected:
     string family;
     
     VectorXd beta, theta_merr;
-
-    // noise parameter
-    double sigma_eps;
+        double sigma_eps;
     
     int n_latent;
     
@@ -85,8 +83,8 @@ public:
     family        ( Rcpp::as<string>     (general_in["family"]) ),
     
     beta          ( Rcpp::as<VectorXd>   (start_in["fixed.effects"]) ),
-    // theta_merr    ( Rcpp::as<VectorXd>   (start_in["mesurement.noise"]) ), 
-    sigma_eps     ( Rcpp::as<double>     (start_in["mesurement.noise"]) ), 
+    theta_merr    ( Rcpp::as<VectorXd>   (start_in["theta_merr"]) ), 
+    // sigma_eps     ( Rcpp::as<double>     (start_in["mesurement.noise"]) ), 
     
     n_latent      ( latents_in.size()), 
     
@@ -156,6 +154,7 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
         /* Measurement error */
         if (family=="normal") {
             n_merr = 1;
+            sigma_eps = theta_merr(0); // use sigma_eps instead of theta_merr
             QQ = Q + pow(sigma_eps, -2) * A.transpose() * A;
         } else if (family=="nig") {
             n_merr = 3;
@@ -172,6 +171,7 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
         indicate_threshold = VectorXd::Constant(n_params, 0);
 
         burn_in(burnin);
+        
 if (debug) std::cout << "End Block Constructor" << std::endl;        
     }
 
@@ -261,6 +261,8 @@ if (debug) std::cout << "Finish sampling V" << std::endl;
         }
         return W;
     }
+
+    // --------- Measurement error related ------------
 
     VectorXd get_theta_merr() const {
         VectorXd theta_merr = VectorXd::Zero(n_merr);

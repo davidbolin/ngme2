@@ -41,13 +41,6 @@ ngme.spde.matern <- function(
       G <- fem$g1
     }
 
-    if (is.null(replicates)) replicates <- rep(1, n)
-    nrep <- length(unique(replicates))
-    if(!is.null(nrep)){
-      C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), C)
-      G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), G)
-    }
-
     n <- mesh$n
     spde.spec <- list(
       # general
@@ -65,8 +58,6 @@ ngme.spde.matern <- function(
         use_num_dK = FALSE
       )
     )
-  } else {
-    stop("please supply mesh")
   }
 
   # create precision matrix
@@ -117,13 +108,6 @@ ngme.matern <- function(
       G <- fem$g1
     }
 
-    if (is.null(replicates)) replicates <- rep(1, n)
-    nrep <- length(unique(replicates))
-    if(!is.null(nrep)){
-      C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), C)
-      G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), G)
-    }
-
     n <- mesh$n
     spde.spec <- list(
       # general
@@ -134,8 +118,8 @@ ngme.matern <- function(
         alpha = alpha,
         n_params = 1,
         n = n,
-        C = ngme.as.sparse(C),
-        G = ngme.as.sparse(G),
+        C = C,
+        G = G,
         use_num_dK = use_num_dK
       )
     )

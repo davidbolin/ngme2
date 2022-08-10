@@ -18,9 +18,6 @@ remotes::install_github("davidbolin/ngme2", ref = "devel")
 * (To be done jointly): homepage, vignette + documentation
 
 * non-gaussian measurement noise + analytical non-stationary matern
-    family = "nig", parameter to be estimate : noise_mu, noise_sigma
-    1. hardcode every noise in block model
-    2. make sampleW -> sampleW(noise_type)
 * analyze the Argo dataset
 * handle temporal dependence
 * random effects
@@ -34,3 +31,19 @@ remotes::install_github("davidbolin/ngme2", ref = "devel")
 * sharing parameters between different models
 * rational approximation
 * write a book
+
+## doing now
+
+**non-gaussian measurement noise**
+family = "nig", parameter to be estimate : noise_mu, noise_sigma, noise_nu
+    1. hardcode every noise in block model or split into classes
+
+
+## bug found
+
+1. In printing grad. for the non-stationary mu.
+2. In ngme.start, change the name of the output to theta_merr.
+
+## meeting notes
+
+..

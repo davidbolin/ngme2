@@ -131,6 +131,8 @@ std::cout << "before analyzing Q " << std::endl;
         // Init Q
         solver_Q.init(n_mesh, 0,0,0);
         solver_Q.analyze(Q);
+
+std::cout << "finish Constructor of Matern " << std::endl;
     }
     
     // change of variable

@@ -6,6 +6,7 @@
 #' @param controls control variables
 #' @param debug  debug option
 #' @param start  1. last fitting object 2. ngme.start() for block model
+#' @param theta.family starting value for the measurement noise
 #'
 #' @return a list of outputs
 #' @export
@@ -17,15 +18,16 @@
 #'
 ngme <- function(formula,
                  data,
-                 family   = "normal",
-                 controls = ngme.control(),
-                 debug    = ngme.debug(),
-                 start    = ngme.start(),
-                 notrun = FALSE)
+                 family       = "normal",
+                 controls     = ngme.control(),
+                 debug        = ngme.debug(),
+                 start        = ngme.start(),
+                 seed         = NULL,
+                 theta.family = NULL)
 {
   time.start <- Sys.time()
 
-  # 1. check up
+  # -------------  CHECK INPUT ---------------
   if (is.null(formula)) {
     stop("Usage: ngme(formula, family, data, ...); see ?ngme\n")
   }
@@ -74,7 +76,14 @@ ngme <- function(formula,
     var.types   = unlist(lapply(latents_in, function(x) x["var.type"] ))
 
     n_feff = ncol(X);
-    n_merr = 1
+    if (family == "normal") {
+      n_merr = 1
+      if (is.null(theta.family)) theta.family <- 1
+    } else if (family == "nig") {
+      n_merr = 3
+      if (is.null(theta.family)) theta.family <- c(1, 0, 1)
+    }
+    start$theta_merr <- theta.family
     n_params = n_la_params + n_feff + n_merr
 
     # 3. prepare in_list for estimate
@@ -130,7 +139,7 @@ if (debug$debug) print(str(in_list))
 
   ################# Run CPP ####################
 
-  if (notrun) {
+  if (debug$not_run) {
     print(str(in_list))
     stop()
   }

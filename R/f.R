@@ -72,7 +72,8 @@ f <- function(
   ################## construct Mu and Sigma #################
   # turn B.sigma and B.mu into matrix
 
-
+  n_mu <- length(theta.mu)
+  n_sigma <- length(theta.sigma)
 
   ################## construct operator (n_ope, C, G, A, h) ##################
   if (is.character(model)) {  ######## string
@@ -85,9 +86,6 @@ f <- function(
       )
       A = ar1_in$A
       n = ncol(A)
-
-      n_mu <- length(theta.mu)
-      n_sigma <- length(theta.sigma)
 
       h = rep(1.0, n)
       B.mu <- matrix(B.mu, nrow=n, ncol=n_mu)
@@ -105,9 +103,6 @@ f <- function(
     n = ncol(A)
     h = rep(1.0, n)
     theta.K = model$alpha
-
-    n_mu <- length(theta.mu)
-    n_sigma <- length(theta.sigma)
 
     B.mu <- matrix(B.mu, nrow=n, ncol=n_mu)
     B.sigma <- matrix(B.sigma, nrow=n, ncol=n_sigma)
@@ -136,6 +131,9 @@ f <- function(
     h = rep(1, n)
     theta.K = model$kappa
 
+    B.mu <- matrix(B.mu, nrow=n, ncol=n_mu)
+    B.sigma <- matrix(B.sigma, nrow=n, ncol=n_sigma)
+
     B.mu <- kronecker(matrix(1, ncol=1, nrow=nrep), B.mu)
     B.sigma <- kronecker(matrix(1, ncol=1, nrow=nrep), B.sigma)
     h <- rep(h, times=nrep)
@@ -144,16 +142,17 @@ f <- function(
     model.type = "spde.matern"
 
     # compute nrep
+    operator_in <- model$operator_in
     nrep <- ncol(A)/nrow(operator_in$C)
 
     if(!is.null(nrep)){
-      operator_int$C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), operator_int$C)
-      operator_int$G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), operator_int$G)
+      operator_in$C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), operator_in$C)
+      operator_in$G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), operator_in$G)
     }
     C = ngme.as.sparse(C)
     G = ngme.as.sparse(G)
 
-    n = length(x)
+    n = length(index)
     if (is.null(A)) stop("Provide A matrix")
     
     n <- model$operator_in$n

@@ -79,7 +79,7 @@ public:
     /*  2 Variance component   */
     const VectorXd& getV()     const { return var->getV(); }
     const VectorXd& getPrevV() const { return var->getPrevV(); }
-    VectorXd getSV() const { 
+    VectorXd getSV() const {
         VectorXd V=getV(); 
         return (sigma.array().pow(2).matrix().cwiseProduct(V));
     }

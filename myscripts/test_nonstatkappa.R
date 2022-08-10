@@ -79,7 +79,7 @@ ngme_out <- ngme(
     theta.sigma=log(sigma),
     control=ngme.control.f(
       numer_grad       = FALSE,
-      use_precond      = TRUE,
+      use_precond      = FALSE,
 
       fix_operator     = FALSE,
       fix_mu           = FALSE,

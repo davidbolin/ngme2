@@ -109,6 +109,8 @@ ngme.control.f <- function(
 #' @param fix_W    fix W
 #' @param fix_feff to-do
 #' @param fix_merr fix measurement noise
+#' @param not_run  print input without running estimation
+
 #'
 #' @return
 #' @export
@@ -118,14 +120,16 @@ ngme.debug <- function(
   debug     = TRUE,
   fix_W     = FALSE,
   fix_feff  = FALSE,
-  fix_merr  = FALSE
+  fix_merr  = FALSE,
+  not_run   = FALSE
 ) {
 
   debug  = list(
     debug     = debug,
     fix_W      = fix_W,
     fix_feff   = fix_feff,
-    fix_merr   = fix_merr
+    fix_merr   = fix_merr,
+    not_run    = not_run
   )
 
   return (debug)

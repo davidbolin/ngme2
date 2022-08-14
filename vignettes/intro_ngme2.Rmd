@@ -15,7 +15,7 @@ knitr::opts_chunk$set(
 )
 
 library(devtools)
-load_all()
+# load_all()
 ```
 
 ## Introduction
@@ -59,8 +59,6 @@ we will discuss this later.
 
 For **multivariate response** case, it has the following form:
 
-**to-do**
-
 Here is a another template for using the core function `ngme` to model the bivariate response:
 
     ngme(
@@ -99,6 +97,33 @@ The NIG model thus assumes that the stochastic variance $V_i$ follows an inverse
 
 Below, we see the plot of the densities of a NIG distribution for several choices of the parameters (we fix $\gamma=0$ and $\eta=1$):
 
+## ngme structure
+
+### ngme function - estimation
+
+### ngme.noise - specify the noise
+
+`ngme.noise` has the following structure.
+
+```
+ngme.noise(
+  type,
+  theta_mu,
+  theta_sigma,
+  theta_V,
+  B_mu,
+  B_sigma
+)
+```
+It will construct the following noise structure:
+
+\[
+  - \mathbf{\mu} + \mathbf{\mu} V + \mathbf{\sigma} \sqrt{V} Z
+\]
+
+where $\mu = \bf B_{\mu} \bf \theta_{\mu}$, and $\sigma = \exp(\bf B_{\sigma} \bf \theta_{\sigma})$. 
+In this case, we can recover gaussian noise by setting **type="normal** and ignoring **theta_mu** and **theta_V**. 
+Or we can simply use helper function `ngme.noise.normal(sd=1)`
 
 ## A simple example - AR1 process with nig noise
 
@@ -119,27 +144,27 @@ K =
 $$
 
 ```{r}
-n_obs <- 1000
-sigma_eps <- 0.5
-alpha <- 0.5 
-mu = 2; delta = -mu
-sigma <- 3
-nu <- 1
+# n_obs <- 1000
+# sigma_eps <- 0.5
+# alpha <- 0.5 
+# mu = 2; delta = -mu
+# sigma <- 3
+# nu <- 1
 
-# First we generate V. V_i follows inverse Gaussian distribution
-trueV <- ngme2::rig(n_obs, nu, nu)
+# # First we generate V. V_i follows inverse Gaussian distribution
+# trueV <- ngme2::rig(n_obs, nu, nu)
 
-# Then generate the nig noise
-noise <- delta + mu*trueV + sigma * sqrt(trueV) * rnorm(n_obs)
-trueW <- Reduce(function(x,y){y + alpha*x}, noise, accumulate = T)
-Y = trueW + rnorm(n_obs, mean=0, sd=sigma_eps)
+# # Then generate the nig noise
+# noise <- delta + mu*trueV + sigma * sqrt(trueV) * rnorm(n_obs)
+# trueW <- Reduce(function(x,y){y + alpha*x}, noise, accumulate = T)
+# Y = trueW + rnorm(n_obs, mean=0, sd=sigma_eps)
 
-# Add some fixed effects
-x1 = runif(n_obs)
-x2 = rexp(n_obs)
-beta <- c(-3, -1, 2)
-X <- (model.matrix(Y ~ x1 + x2))  # design matrix
-Y = as.numeric(Y + X %*% beta)
+# # Add some fixed effects
+# x1 = runif(n_obs)
+# x2 = rexp(n_obs)
+# beta <- c(-3, -1, 2)
+# X <- (model.matrix(Y ~ x1 + x2))  # design matrix
+# Y = as.numeric(Y + X %*% beta)
 ```
 
 Now let's fit the model using `ngme`. Here we can use `ngme.control` to modify the 
@@ -147,30 +172,30 @@ control variables for the `ngme`. See `?ngme.control` for more details.
 
 ```{r}
 # First we specify the controls using ngme.control
-control <- ngme.control(
-  burnin = 100,
-  iterations = 1000,
-  gibbs_sample = 5
-)
+# control <- ngme.control(
+#   burnin = 100,
+#   iterations = 1000,
+#   gibbs_sample = 5
+# )
 
-# Fit the model with the AR1 model
-ngme_out <- ngme(
-  Y~x1+x2 + f(
-    1:n_obs, 
-    model="ar1", 
-    noise="nig",
-    theta.K=0.9  # starting point for the alpha (parameter of operator)
-  ),
-  data=data.frame(x1=x1, x2=x2, Y=Y),
-  control = control
-)
+# # Fit the model with the AR1 model
+# ngme_out <- ngme(
+#   Y~x1+x2 + f(
+#     1:n_obs, 
+#     model="ar1", 
+#     noise="nig",
+#     theta.K=0.9  # starting point for the alpha (parameter of operator)
+#   ),
+#   data=data.frame(x1=x1, x2=x2, Y=Y),
+#   control = control
+# )
 ```
 
 Finally, we can see the results:
 
 ```{r}
 # # show the results
-ngme_out$result
+# ngme_out$result
 ```
 
 The plots can be produced by `plot` function.

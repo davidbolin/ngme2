@@ -7,10 +7,11 @@
 ngme(
   formula,
   data,
-  family = "normal",
   controls = ngme.control(),
   debug = ngme.debug(),
-  start = ngme.start()
+  noise = ngme.noise(),
+  beta = NULL,
+  seed = NULL
 )
 }
 \arguments{
@@ -18,13 +19,17 @@ ngme(
 
 \item{data}{a dataframe contains data}
 
-\item{family}{distribution family}
-
 \item{controls}{control variables}
 
 \item{debug}{debug option}
 
+\item{seed}{set the seed for pesudo random number generator}
+
+\item{family}{distribution family}
+
 \item{start}{1. last fitting object 2. ngme.start() for block model}
+
+\item{theta.family}{starting value for the measurement noise}
 }
 \value{
 a list of outputs
@@ -36,4 +41,5 @@ Fit a non-guassian model
 ngme(formula = (y1 | y2 ~ x1 + x2 + f(x1, model="SPDE", var="nig") + f(W) | x3 + f(X|I, model="ar1", var="nig")),
 
 ngme(y ~ f(x, model="AR1", var="NIG"), family="normal", data=df)
+
 }

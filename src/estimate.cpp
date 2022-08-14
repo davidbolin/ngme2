@@ -2,7 +2,8 @@
 #include <RcppEigen.h>
 #include "optimizer.h"
 #include "block.h"
-#include "include/timer.h"
+#include "timer.h"
+// #include "rng.h"
 
 #include <iostream>
 #include <Eigen/Dense>
@@ -20,15 +21,18 @@ Rcpp::List estimate_cpp(Rcpp::List in_list) {
     // *****************   Read From Input   *****************  
     Rcpp::List general_in    = Rcpp::as<Rcpp::List> (in_list["general_in"]);
     Rcpp::List latents_list  = Rcpp::as<Rcpp::List> (in_list["latents_in"]);
-    Rcpp::List start_in      = Rcpp::as<Rcpp::List> (in_list["start_in"]);
+    Rcpp::List noise_in      = Rcpp::as<Rcpp::List> (in_list["noise_in"]);
     Rcpp::List control_list  = Rcpp::as<Rcpp::List> (in_list["control_in"]);
         const int iterations = control_list["iterations"];
-    Rcpp::List debug_list  = Rcpp::as<Rcpp::List> (in_list["debug"]);
+    Rcpp::List debug_list    = Rcpp::as<Rcpp::List> (in_list["debug"]);
+    
+    unsigned long seed       = Rcpp::as<unsigned long> (in_list["seed"]);
+    global_rng.seed(seed);
 
     BlockModel block (
         general_in, 
         latents_list, 
-        start_in, 
+        noise_in, 
         control_list,
         debug_list);
 

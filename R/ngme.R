@@ -6,6 +6,7 @@
 #' @param controls control variables
 #' @param debug  debug option
 #' @param start  1. last fitting object 2. ngme.start() for block model
+#' @param seed  set the seed for pesudo random number generator
 #' @param theta.family starting value for the measurement noise
 #'
 #' @return a list of outputs
@@ -18,12 +19,13 @@
 #'
 ngme <- function(formula,
                  data,
-                 family       = "normal",
-                 controls     = ngme.control(),
-                 debug        = ngme.debug(),
-                 start        = ngme.start(),
-                 seed         = NULL,
-                 theta.family = NULL)
+                 controls      = ngme.control(),
+                 debug         = ngme.debug(),
+                 noise         = ngme.noise(),
+                #  start         = ngme.start(),
+                 beta          = NULL,
+                 seed          = NULL
+                 )
 {
   time.start <- Sys.time()
 
@@ -44,6 +46,11 @@ ngme <- function(formula,
   # path <- file.path(tempdir(), "ngme_df.rda")
   # save(data, file = path)
 
+  stopifnot(class(noise) == "ngme.noise")
+  family <- noise$type
+
+  if (is.null(seed)) seed <- 1
+
   # generate debug option
   if (!is.null(debug$trueW)) {
     debug$fixW = TRUE
@@ -56,6 +63,8 @@ ngme <- function(formula,
     lfm = formula(fm, lhs=1, rhs=1)
     rfm = formula(fm, lhs=2, rhs=2)
     ########## to-do
+
+    # a list of B.theta.mu and B.theta.sigma and thetas...
   }
   else if (all(length(fm)==c(1,1))) {  ########################## univariate case
     fm = formula(fm)
@@ -69,6 +78,20 @@ ngme <- function(formula,
     Y = model.frame(plain.fm, data)[[1]]
     X = model.matrix(plain.fm, data) # design matrix
 
+    # adding noise
+    n_obs <- nrow(Y)
+    # n_mu <- length(theta.noise.mu)
+    # n_sigma <- length(theta.noise.sigma)
+    # B.theta.mu <- matrix(B.mu, nrow=n_obs, ncol=n_mu)
+    # B.theta.sigma <- matrix(B.sigma, nrow=n_obs, ncol=n_sigma)
+    
+    # noise_in <- list(
+    #   n_mu = n_mu,
+    #   n_sigma = n_sigma,
+    #   B.theta.mu = B.theta.mu,
+    #   B.theta.sigma = B.theta.sigma
+    # )
+
     ############### n_meshs is the dim of the block matrix
     n_meshs     = sum(unlist(lapply(latents_in, function(x) x["n_mesh"] )))
     n_la_params = sum(unlist(lapply(latents_in, function(x) x["n_la_params"] )))
@@ -78,20 +101,19 @@ ngme <- function(formula,
     n_feff = ncol(X);
     if (family == "normal") {
       n_merr = 1
-      if (is.null(theta.family)) theta.family <- 1
     } else if (family == "nig") {
-      n_merr = 3
-      if (is.null(theta.family)) theta.family <- c(1, 0, 1)
+      n_merr = noise$n_theta_mu + noise$n_theta_sigma + noise$n_theta_V
     }
-    start$theta_merr <- theta.family
-    n_params = n_la_params + n_feff + n_merr
 
     # 3. prepare in_list for estimate
     lm.model = lm.fit(X, Y)
+    if (is.null(beta)) beta = lm.model$coeff
+    n_params = n_la_params + n_feff + n_merr
+
     general_in <- list(
       Y                = Y,
       X                = X,
-      family           = "normal",
+      beta             = beta,
       n_meshs          = n_meshs,
       n_la_params      = n_la_params,
       n_params         = n_params # how many param to opt. in total
@@ -99,36 +121,37 @@ ngme <- function(formula,
 
 ####### 4. Set starting point / initial values (beta, sigma_eps, latents)
     # use prevous ngme object
-    if (inherits(start, "ngme")) {
-      start <- start$output
+    # if (inherits(start, "ngme")) {
+    #   start <- start$output
 
-      # put the last estimates into latents_in
-      for (i in seq_along(latents_in)) {
-        estimates = start$latent.model[[i]]$estimates
+    #   # put the last estimates into latents_in
+    #   for (i in seq_along(latents_in)) {
+    #     estimates = start$latent.model[[i]]$estimates
 
-        # If not specified, use previous fitting
-        # if (is.null(latents_in[[i]]$start$theta_K))
-          latents_in[[i]]$start$theta_K = estimates[[1]]
-        # if (is.null(latents_in[[i]]$start$theta_mu))
-          latents_in[[i]]$start$theta_mu = estimates[["theta.mu"]]
-        # if (is.null(latents_in[[i]]$start$theta_sigma))
-          latents_in[[i]]$start$theta_sigma = estimates[["theta.sigma"]]
-        # if (is.null(latents_in[[i]]$start$theta_noise))
-          latents_in[[i]]$start$theta_noise = estimates[["theta.noise"]]
+    #     # If not specified, use previous fitting
+    #     # if (is.null(latents_in[[i]]$start$theta_K))
+    #       latents_in[[i]]$start$theta_K = estimates[[1]]
+    #     # if (is.null(latents_in[[i]]$start$theta_mu))
+    #       latents_in[[i]]$start$theta_mu = estimates[["theta.mu"]]
+    #     # if (is.null(latents_in[[i]]$start$theta_sigma))
+    #       latents_in[[i]]$start$theta_sigma = estimates[["theta.sigma"]]
+    #     # if (is.null(latents_in[[i]]$start$theta_noise))
+    #       latents_in[[i]]$start$theta_noise = estimates[["theta.noise"]]
 
-        latents_in[[i]]$start$V = start$latent.model[[i]][["V"]]
-      }
-    }
+    #     latents_in[[i]]$start$V = start$latent.model[[i]][["V"]]
+    #   }
+    # }
 
-    if (is.null(start$block.W) && isTRUE(controls$fixW)) stop("if fixing W, the initial W should be provided.")
-    if (is.null(start$fixed.effects)) start$fixed.effects = lm.model$coeff
-    if (is.null(start$mesurement.noise)) start$mesurement.noise = sd(lm.model$residuals)
+    # if (is.null(start$block.W) && isTRUE(controls$fixW)) stop("if fixing W, the initial W should be provided.")
+    if (family=="normal" && is.null(noise$theta_sigma == 0))
+      noise$theta_sigma = sd(lm.model$residuals)
 
     in_list = list(general_in = general_in,
                   latents_in  = latents_in,
-                  start_in    = start,
+                  noise_in    = noise,
                   control_in  = controls,
-                  debug       = debug)
+                  debug       = debug,
+                  seed        = seed)
 
   } else {
     stop("unknown structure of formula")
@@ -145,7 +168,7 @@ if (debug$debug) print(str(in_list))
   }
   out = estimate_cpp(in_list)
 
-  # construct output
+  ################# Construct Output ####################
     out$input = in_list
 
     # fix_eff

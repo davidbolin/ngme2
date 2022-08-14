@@ -1,14 +1,11 @@
 library(devtools); load_all()
 # load_all(reset = FALSE, recompile = FALSE)
 
-a2th <- function(k) {log((-1-k)/(-1+k))}
-th2a <- function(th) {-1 + (2*exp(th)) / (1+exp(th))}
-
 ############  0. generating fix effects and control
 set.seed(7)
 
 control = ngme.control(burnin=100,
-                       iterations = 200,
+                       iterations = 50,
                        gibbs_sample = 5,
                        stepsize = 1,
                        kill_var = FALSE,
@@ -52,9 +49,12 @@ ngme_out = ngme(Y1 ~ 0 +
                   f(1:n_obs1,
                     replicates = NULL,
                     model="ar1",
+                    theta_K = 0.5,
                     noise=ngme.noise(
-                      type="nig",
-                      theta.noise=1
+                      type        = "nig",
+                      theta_V     = 1,
+                      theta_mu    = mu+1,
+                      theta_sigma = log(sigma)+1
                     ),
                     control=ngme.control.f(
                       numer_grad       = FALSE,
@@ -65,19 +65,14 @@ ngme_out = ngme(Y1 ~ 0 +
                       fix_sigma        = FALSE,
                       fix_noise        = FALSE
                     ),
-                    theta.K = 0.5,
-                    theta.mu = mu+1,
-                    theta.sigma = log(sigma)+1,
-                    theta.noise = 1.01,
                     debug=TRUE
                   ),
-                family="normal",
                 data=data.frame(
-                  # index=index
                 ),
                 control=control,
-                start=ngme.start(
-
+                noise = ngme.noise(
+                  type = "normal",
+                  theta_sigma = 1
                 ),
                 debug=ngme.debug(
                   debug = TRUE,

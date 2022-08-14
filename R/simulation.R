@@ -13,11 +13,17 @@
 #' @examples
 ngme.simulate <- function(
     model = model,
-    B.mu = NULL,
-    B.sigma = NULL,
-    theta.mu = NULL,
-    theta.sigma = NULL,
-    noise = NULL
+    noise = ngme.noise(),
+    n = 100
 ) {
+    # create nig noise
+    if (noise$type == "nig") {
+        stopifnot(noise$theta_sigma)
+    } else if (noise$type == "normal") {
+        stopifnot("non-stationary normal not yet" = noise$theta_sigma == 1)
+        rnorm(n) * exp(theta_sigma)
+    }
 
+    # create operator structure
+    
 }

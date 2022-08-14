@@ -75,6 +75,7 @@ public:
     AR(Rcpp::List latent_in) 
     : Latent(latent_in)
     {
+if (debug) std::cout << "Begin Constructor of AR1" << std::endl;        
         Rcpp::List operator_in = Rcpp::as<Rcpp::List> (latent_in["operator_in"]); // containing C and G
         
         // Init operator for ar1
@@ -94,6 +95,7 @@ public:
         // Init Q
         solver_Q.init(n_mesh, 0,0,0);
         solver_Q.analyze(Q);
+if (debug) std::cout << "End Constructor of AR1" << std::endl;        
     }
     
     // override get_the_K with change of variable

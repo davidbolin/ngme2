@@ -1,15 +1,128 @@
+#include "rng.h"
 #include "block.h"
+#include <random>
 #include <cmath>
 
 using std::pow;
 
+BlockModel::BlockModel(
+        Rcpp::List general_in,
+        Rcpp::List latents_in,
+        Rcpp::List noise_in,
+        Rcpp::List control_list,
+        Rcpp::List debug_list
+    ) : 
+    X             ( Rcpp::as<MatrixXd>   (general_in["X"]) ),
+    Y             ( Rcpp::as<VectorXd>   (general_in["Y"]) ), 
+    n_meshs       ( Rcpp::as<int>        (general_in["n_meshs"]) ),
+    
+    beta          ( Rcpp::as<VectorXd>   (general_in["beta"]) ),
+    
+    n_latent      ( latents_in.size()), 
+    
+    n_obs         ( Y.size()),
+    n_params      ( Rcpp::as<int>        (general_in["n_params"]) ),
+    n_la_params   ( Rcpp::as<int>        (general_in["n_la_params"]) ),
+    n_feff        ( beta.size()),
+    
+    n_gibbs       ( Rcpp::as<int>     (control_list["gibbs_sample"]) ),
+    opt_fix_effect( Rcpp::as<bool>    (control_list["opt_fix_effect"]) ),
+    kill_var      ( Rcpp::as<bool>    (control_list["kill_var"]) ),
+    kill_power    ( Rcpp::as<double>  (control_list["kill_power"]) ), 
+    threshold     ( Rcpp::as<double>  (control_list["threshold"]) ), 
+    termination   ( Rcpp::as<double>  (control_list["termination"]) ), 
+
+    A             ( n_obs, n_meshs), 
+    K             ( n_meshs, n_meshs), 
+    // dK            ( n_meshs, n_meshs),
+    // d2K           ( n_meshs, n_meshs),
+
+    debug         ( Rcpp::as<bool> (debug_list["debug"]) ),
+    fix_W         ( Rcpp::as<bool> (debug_list["fix_W"]) ),
+    fix_merr      ( Rcpp::as<bool> (debug_list["fix_merr"]))
+{        
+if (debug) std::cout << "Begin Block Constructor" << std::endl;  
+
+    const int burnin = control_list["burnin"];
+    const double stepsize = control_list["stepsize"];
+
+    // Init each latent model
+    for (int i=0; i < n_latent; ++i) {
+        Rcpp::List latent_in = Rcpp::as<Rcpp::List> (latents_in[i]);
+
+        // construct acoording to models
+        string type = latent_in["model_type"];
+        if (type == "ar1") {
+            latents.push_back(new AR(latent_in) );
+        } 
+        else if (type == "spde.matern") {
+            latents.push_back(new Matern_ns(latent_in));
+        } else if (type=="matern") {
+            latents.push_back(new Matern(latent_in));
+        }
+    }
+        
+    // Initialize W
+    // if (start_in["block.W"] != R_NilValue) {
+    //     VectorXd block_W = Rcpp::as<VectorXd>   (start_in["block.W"]);
+    //     // set Both W and PrevW
+    //     setW(block_W); setW(block_W);
+    // }
+
+    /* Fixed effects */
+    if (beta.size()==0) opt_fix_effect = false;
+
+    /* Init variables: h, A */
+    int n = 0;
+    for (std::vector<Latent*>::iterator it = latents.begin(); it != latents.end(); it++) {
+        setSparseBlock(&A,   0, n, (*it)->getA());            
+        n += (*it)->getSize();
+    }
+    assemble();
+
+    VectorXd inv_SV = VectorXd::Constant(n_meshs, 1).cwiseQuotient(getSV());
+    SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
+
+    SparseMatrix<double> QQ;
+    /* Measurement error */
+    family = Rcpp::as<string>  (noise_in["type"]);
+
+    if (family=="normal") {
+        n_merr = 1;
+        VectorXd theta_sigma = Rcpp::as<VectorXd>  (noise_in["theta_sigma"]);
+        sigma_eps = theta_sigma(0);
+        QQ = Q + pow(sigma_eps, -2) * A.transpose() * A;
+    } else if (family=="nig") {
+        n_merr = 3;
+        // to-do
+    }
+    
+    chol_Q.analyze(Q);
+    chol_QQ.analyze(QQ);
+    LU_K.analyzePattern(K);
+
+    // optimizer related
+    stepsizes = VectorXd::Constant(n_params, stepsize);
+    steps_to_threshold = VectorXd::Constant(n_params, 0);
+    indicate_threshold = VectorXd::Constant(n_params, 0);
+
+    // sample block_V
+
+    burn_in(burnin);
+        
+if (debug) std::cout << "End Block Constructor" << std::endl;        
+}
+
+
 // ---- helper function for sampleW ----
-Eigen::VectorXd rnorm_vec(int n, double mu, double sigma)
+Eigen::VectorXd rnorm_vec(int n, double mu, double sigma, unsigned long seed=0)
 {
+  std::normal_distribution<double> rnorm {0,1};
   Eigen::VectorXd out(n);
   for (int i = 0; i < n; i++)
   {
     out[i] = R::rnorm(mu, sigma);
+    // out[i] = rnorm(rng) * sigma * sigma + mu;
   }
   return (out);
 }
@@ -62,19 +175,24 @@ if (debug) std::cout << "Finish sampling W" << std::endl;
 // ---------------- get, set update gradient ------------------
 VectorXd BlockModel::get_parameter() const {
 if (debug) std::cout << "Start block get parameter"<< std::endl;   
+if (debug) std::cout << "n_params" << n_params << std::endl;   
     VectorXd thetas (n_params);
     int pos = 0;
     for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
         VectorXd theta = (*it)->get_parameter();
+if (debug) std::cout << "block para 3" << theta << std::endl;   
         thetas.segment(pos, theta.size()) = theta;
+if (debug) std::cout << "block para 2" << thetas << std::endl;   
         pos += theta.size();
     }
-    
+
+if (debug) std::cout << "block para 1" << thetas << std::endl;   
     // fixed effects
     if (opt_fix_effect) {
         thetas.segment(n_la_params, n_feff) = beta;
     }
     
+if (debug) std::cout << "block para 2" << thetas << std::endl;   
     // measurement error
     thetas.segment(n_la_params + n_feff, n_merr) = get_theta_merr();
     // thetas(n_params-1) = get_theta_sigma_eps();

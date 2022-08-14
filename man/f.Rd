@@ -5,25 +5,19 @@
 \title{f function for specifying a model}
 \usage{
 f(
-  x = NULL,
+  ...,
   model = "ar1",
   noise = ngme.noise(),
   control = ngme.control.f(),
   debug = FALSE,
   A = NULL,
-  B.sigma = 1,
-  B.mu = 1,
-  theta.mu = 0,
-  theta.sigma = 0,
-  theta.K = NULL,
-  theta.noise = NULL,
+  replicates = NULL,
+  theta_K = NULL,
   start.V = NULL,
-  replicates = NULL
+  data = NULL
 )
 }
 \arguments{
-\item{x}{covariates}
-
 \item{model}{1. string: type of model, 2. ngme.spde object}
 
 \item{noise}{1. string: type of model, 2. ngme.noise object}
@@ -34,19 +28,23 @@ f(
 
 \item{A}{A Matrix connecting observation and}
 
-\item{B.sigma}{Basis matrix for sigma}
+\item{replicates}{Representing the replicates (can also be specified in each ngme model)}
 
-\item{B.mu}{Basis matrix for mu}
+\item{theta_K}{Starting value for theta.sigma}
 
-\item{theta.mu}{Starting value for theta.sigma}
+\item{start.V}{Starting value for V}
+
+\item{data}{if not specified or NULL, inherit the data from ngme function}
+
+\item{B_sigma}{Basis matrix for sigma}
+
+\item{B_mu}{Basis matrix for mu}
 
 \item{theta.sigma}{Starting value for theta.sigma}
 
-\item{theta.K}{Starting value for theta.sigma}
+\item{theta.mu}{Starting value for theta.sigma}
 
 \item{theta.noise}{Starting value for theta.sigma}
-
-\item{start.V}{Starting value for V}
 }
 \value{
 a list latent_in for constructing latent model, e.g. A, h, C, G,

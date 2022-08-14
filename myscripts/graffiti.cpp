@@ -62,7 +62,7 @@ int main(int argc, char const *argv[])
     v1 << 1,2,3;
 
     // MatrixXd m1 (3, 3);
-    SparseMatrix<double> m1 (3, 3);
+    SparseMatrix<double> m1 = {3,3};
     m1 = v1.asDiagonal();
 
     VectorXd v2 (2);

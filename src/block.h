@@ -18,6 +18,7 @@ BlockModel
 #include "include/solver.h"
 #include "include/MatrixAlgebra.h"
 #include "model.h"
+#include "var.h"
 #include "latent.h"
 
 #include "latents/ar1.h"
@@ -68,112 +69,15 @@ protected:
     VectorXd fixedW;
     
 public:
-    BlockModel() {}
+    // BlockModel() {}
 
     BlockModel(
         Rcpp::List general_in,
         Rcpp::List latents_in,
-        Rcpp::List start_in,
+        Rcpp::List noise_in,
         Rcpp::List control_list,
         Rcpp::List debug_list
-    ) : 
-    X             ( Rcpp::as<MatrixXd>   (general_in["X"]) ),
-    Y             ( Rcpp::as<VectorXd>   (general_in["Y"]) ), 
-    n_meshs       ( Rcpp::as<int>        (general_in["n_meshs"]) ),
-    family        ( Rcpp::as<string>     (general_in["family"]) ),
-    
-    beta          ( Rcpp::as<VectorXd>   (start_in["fixed.effects"]) ),
-    theta_merr    ( Rcpp::as<VectorXd>   (start_in["theta_merr"]) ), 
-    // sigma_eps     ( Rcpp::as<double>     (start_in["mesurement.noise"]) ), 
-    
-    n_latent      ( latents_in.size()), 
-    
-    n_obs         ( Y.size()),
-    n_params      ( Rcpp::as<int>        (general_in["n_params"]) ),
-    n_la_params   ( Rcpp::as<int>        (general_in["n_la_params"]) ),
-    n_feff        ( beta.size()),
-    
-    n_gibbs       ( Rcpp::as<int>     (control_list["gibbs_sample"]) ),
-    opt_fix_effect( Rcpp::as<bool>    (control_list["opt_fix_effect"]) ),
-    kill_var      ( Rcpp::as<bool>    (control_list["kill_var"]) ),
-    kill_power    ( Rcpp::as<double>  (control_list["kill_power"]) ), 
-    threshold     ( Rcpp::as<double>  (control_list["threshold"]) ), 
-    termination   ( Rcpp::as<double>  (control_list["termination"]) ), 
-
-    A             ( n_obs, n_meshs), 
-    K             ( n_meshs, n_meshs), 
-    // dK            ( n_meshs, n_meshs),
-    // d2K           ( n_meshs, n_meshs),
-
-    debug         ( Rcpp::as<bool> (debug_list["debug"]) ),
-    fix_W         ( Rcpp::as<bool> (debug_list["fix_W"]) ),
-    fix_merr      ( Rcpp::as<bool> (debug_list["fix_merr"]))
-    {        
-if (debug) std::cout << "Begin Block Constructor" << std::endl;        
-        const int burnin = control_list["burnin"];
-        const double stepsize = control_list["stepsize"];
-
-        // Init each latent model
-        for (int i=0; i < n_latent; ++i) {
-            Rcpp::List latent_in = Rcpp::as<Rcpp::List> (latents_in[i]);
-
-            // construct acoording to models
-            string type = latent_in["model_type"];
-            if (type == "ar1") {
-                latents.push_back(new AR(latent_in) );
-            } 
-            else if (type == "spde.matern") {
-                latents.push_back(new Matern_ns(latent_in));
-            } else if (type=="matern") {
-                latents.push_back(new Matern(latent_in));
-            }
-        }
-        
-        // Initialize W
-        if (start_in["block.W"] != R_NilValue) {
-            VectorXd block_W = Rcpp::as<VectorXd>   (start_in["block.W"]);
-            // set Both W and PrevW
-            setW(block_W); setW(block_W);
-        }
-
-        /* Fixed effects */
-        if (beta.size()==0) opt_fix_effect = false;
-
-        /* Init variables: h, A */
-        int n = 0;
-        for (std::vector<Latent*>::iterator it = latents.begin(); it != latents.end(); it++) {
-            setSparseBlock(&A,   0, n, (*it)->getA());            
-            n += (*it)->getSize();
-        }
-        assemble();
-
-        VectorXd inv_SV = VectorXd::Constant(n_meshs, 1).cwiseQuotient(getSV());
-        SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
-
-        SparseMatrix<double> QQ;
-        /* Measurement error */
-        if (family=="normal") {
-            n_merr = 1;
-            sigma_eps = theta_merr(0); // use sigma_eps instead of theta_merr
-            QQ = Q + pow(sigma_eps, -2) * A.transpose() * A;
-        } else if (family=="nig") {
-            n_merr = 3;
-            // to-do
-        }
-        
-        chol_Q.analyze(Q);
-        chol_QQ.analyze(QQ);
-        LU_K.analyzePattern(K);
-
-        // optimizer related
-        stepsizes = VectorXd::Constant(n_params, stepsize);
-        steps_to_threshold = VectorXd::Constant(n_params, 0);
-        indicate_threshold = VectorXd::Constant(n_params, 0);
-
-        burn_in(burnin);
-        
-if (debug) std::cout << "End Block Constructor" << std::endl;        
-    }
+    );
 
     /* Gibbs Sampler */
     void burn_in(int iterations) {
@@ -202,6 +106,9 @@ if (debug) std::cout << "Finish sampling V" << std::endl;
     SparseMatrix<double> precond() const;
     
     void                 examine_gradient();
+
+    /* Noise */
+    void sampleV_XY();
 
     /* Aseemble */
     void assemble() {

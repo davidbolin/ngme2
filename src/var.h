@@ -49,10 +49,10 @@ private:
 public:
     ind_IG(){}
     
-    ind_IG(double theta_noise, unsigned n, VectorXd h) 
+    ind_IG(double theta_V, unsigned n, VectorXd h) 
     : nu(0)
     {   
-        nu = theta_noise;
+        nu = theta_V;
         this->n = n; 
         this->h = h;
 

@@ -6,11 +6,11 @@
 #' @param replicates   Representing the replicates (can also be specified in each ngme model)
 #' @param control      control variables for f model
 #' @param A            A Matrix connecting observation and
-#' @param B.sigma      Basis matrix for sigma
-#' @param B.mu         Basis matrix for mu
+#' @param B_sigma      Basis matrix for sigma
+#' @param B_mu         Basis matrix for mu
 #' @param theta.sigma  Starting value for theta.sigma
 #' @param theta.mu     Starting value for theta.sigma
-#' @param theta.K      Starting value for theta.sigma
+#' @param theta_K      Starting value for theta.sigma
 #' @param theta.noise  Starting value for theta.sigma
 #' @param start.V      Starting value for V
 #' @param debug        Debug variables
@@ -30,14 +30,8 @@ f <- function(
   control = ngme.control.f(),
   debug  = FALSE,
   A = NULL,
-  B.sigma = 1, # non-stationary case -> into matrix n_mesh * n_sigma
-  B.mu = 1,
-  theta.mu = 0,
-  theta.sigma = 0, # exp(0) = 1
-  # for these two you can specified inside ngme.noise and ngme.model function
   replicates=NULL,
-  theta.K = NULL,
-  theta.noise = NULL,
+  theta_K = NULL,
   start.V = NULL,
   data = NULL
 ) {
@@ -65,99 +59,72 @@ f <- function(
     stop("The index and the replicates should have the same length!")
   }
 
-  # if (model=="ar1") {
-
-  # }
-
-  ################## construct Mu and Sigma #################
-  # turn B.sigma and B.mu into matrix
-
-  n_mu <- length(theta.mu)
-  n_sigma <- length(theta.sigma)
-
   ################## construct operator (n_ope, C, G, A, h) ##################
+  nrep <- NULL
+  n_mesh <- NULL
+
   if (is.character(model)) {  ######## string
     if (model=="ar1") {
-      model.type = "ar1"
+      model_type = "ar1"
 
       ar1_in = ngme.ar1(
         index=index,
         replicates=replicates
       )
       A = ar1_in$A
-      n = ncol(A)
+      n_mesh <- ncol(A)
 
-      h = rep(1.0, n)
-      B.mu <- matrix(B.mu, nrow=n, ncol=n_mu)
-      B.sigma <- matrix(B.sigma, nrow=n, ncol=n_sigma)
-
+      h = rep(1.0, n_mesh)
       operator_in = ar1_in$operator_in
     } else {
       stop("unknown model name")
     }
   }
-  else if (inherits(model, "ngme.ar1")) {   ################ AR1 ##################
-    model.type = "ar1"
+  else if (inherits(model, "ngme.ar1")) {
+    model_type = "ar1"
 
-    A = model$A
-    n = ncol(A)
-    h = rep(1.0, n)
-    theta.K = model$alpha
-
-    B.mu <- matrix(B.mu, nrow=n, ncol=n_mu)
-    B.sigma <- matrix(B.sigma, nrow=n, ncol=n_sigma)
+    n_mesh = ncol(model$A)
+    h = rep(1.0, n_mesh)
+    theta_K = model$alpha
 
     operator_in = model$operator_in
   }
-  else if (inherits(model, "ngme.matern")) {  ########  stationary Matern ########
+  else if (inherits(model, "ngme.matern")) {  # stationary Matern
     # read in operator and modify
     operator_in = model$operator_in
 
-    model.type = "matern"
+    model_type = "matern"
     if (is.null(A)) stop("Provide A matrix")
 
-    # compute nrep
+    # replicates
     nrep <- ncol(A)/nrow(operator_in$C)
+    operator_in$C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), operator_in$C)
+    operator_in$G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), operator_in$G)
+    operator_in$C <- ngme.as.sparse(operator_in$C)
+    operator_in$G <- ngme.as.sparse(operator_in$G)
 
-    if(!is.null(nrep)){
-      operator_in$C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), operator_in$C)
-      operator_in$G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), operator_in$G)
-    }
+    n_mesh = length(index)
+    h = rep(1, n_mesh)
+    theta_K = model$kappa
 
-    operator_in$C = ngme.as.sparse(operator_in$C)
-    operator_in$G = ngme.as.sparse(operator_in$G)
-
-    n = length(index)
-    h = rep(1, n)
-    theta.K = model$kappa
-
-    B.mu <- matrix(B.mu, nrow=n, ncol=n_mu)
-    B.sigma <- matrix(B.sigma, nrow=n, ncol=n_sigma)
-
-    B.mu <- kronecker(matrix(1, ncol=1, nrow=nrep), B.mu)
-    B.sigma <- kronecker(matrix(1, ncol=1, nrow=nrep), B.sigma)
     h <- rep(h, times=nrep)
   }
-  else if (inherits(model, "ngme.spde")) { ######## nonstationary Matern ########
-    model.type = "spde.matern"
+  else if (inherits(model, "ngme.spde")) { # nonstationary Matern
+    model_type = "spde.matern"
 
     # compute nrep
     operator_in <- model$operator_in
     nrep <- ncol(A)/nrow(operator_in$C)
+    operator_in$C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), operator_in$C)
+    operator_in$G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), operator_in$G)
+    operator_in$C <- ngme.as.sparse(operator_in$C)
+    operator_in$G <- ngme.as.sparse(operator_in$G)
 
-    if(!is.null(nrep)){
-      operator_in$C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), operator_in$C)
-      operator_in$G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), operator_in$G)
-    }
-    C = ngme.as.sparse(C)
-    G = ngme.as.sparse(G)
-
-    n = length(index)
+    n_mesh = length(index)
     if (is.null(A)) stop("Provide A matrix")
-    
-    n <- model$operator_in$n
-    h <- rep(1, n)
-    theta.K = model$theta.kappa
+
+    h <- rep(1, n_mesh)
+    theta_K = model$theta_Kappa
     operator_in <- model$operator_in
   }
   else {
@@ -165,39 +132,43 @@ f <- function(
   }
 
   ################## construct noise (e.g. nig noise) ##################
-  if (is.character(noise)) {
-    if (noise=="nig")                         
-      noise <- ngme.noise(type = "nig")
-    else if (noise=="normal" || noise=="gaussian") 
-      noise <- ngme.noise(type = "normal")
-  }
-  if (is.null(theta.noise) && !(is.null(noise$theta.noise))) theta.noise = noise$theta.noise
+    # ?? check 
+    B_mu <- matrix(noise$B_mu, nrow = n_mesh, ncol = noise$n_theta_mu)
+    B_sigma <- matrix(noise$B_sigma, nrow = n_mesh, ncol = noise$n_theta_sigma)
+
+    # replicates
+    if (is.integer(nrep)) {
+      B_mu <- kronecker(matrix(1, ncol = 1, nrow = nrep), B_mu)
+      B_sigma <- kronecker(matrix(1, ncol = 1, nrow = nrep), B_sigma)
+    }
+  
+  # total params
+  n_la_params = operator_in$n_params + noise$n_theta_mu + noise$n_theta_sigma + noise$n_theta_V
 
   latent_in <- list(
-    model_type  = model.type,
-    var_type    = noise$type,
-    n_mesh      = n,        # !: make sure this is the second place
+    model_type  = model_type,
+    noise_type  = noise$type,
+    n_mesh      = n_mesh,        # !: make sure this is the second place
     A           = A,
     h           = h,
+    n_la_params = n_la_params,
 
     # mu and sigma
-    B_mu        = B.mu,
-    B_sigma     = B.sigma,
-    n_mu        = n_mu,
-    n_sigma     = n_sigma,
-
-    n_la_params = operator_in$n_params + noise$n_params + n_mu + n_sigma,
+    B_mu          = B_mu,
+    B_sigma       = B_sigma,
+    n_theta_mu    = noise$n_theta_mu,
+    n_theta_sigma = noise$n_theta_sigma,
 
     # lists
     start       = list(
-      theta_K     = theta.K,
-      theta_mu    = theta.mu,
-      theta_sigma = theta.sigma,
-      theta_noise = theta.noise,
+      theta_K     = theta_K,
+      theta_mu    = noise$theta.mu,
+      theta_sigma = noise$theta.sigma,
+      theta_V     = noise$theta_V,
       V           = start.V
     ),
     operator_in   = operator_in,
-    var_in        = noise,
+    noise_in      = update.ngme.noise(noise, n = n_mesh),
     control_f     = control,
     debug         = debug
   )

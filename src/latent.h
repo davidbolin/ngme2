@@ -25,7 +25,7 @@ using Eigen::VectorXd;
 class Latent {
 protected:
     bool debug;
-    int n_mesh, n_params, n_ope, n_noise {1}; // n_params=n_ope + n_mu + n_sigma + n_noise
+    int n_mesh, n_params, n_ope, n_noise {1}; // n_params=n_ope + n_theta_mu + n_theta_sigma + n_noise
 
     // indicate fixing (K, mu, sigma, noise)  (1 means fix)
     int fix_flag[4] {1, 1, 1, 1};
@@ -37,7 +37,7 @@ protected:
     MatrixXd B_mu,  B_sigma;
     VectorXd theta_mu, theta_sigma;
     
-    int n_mu, n_sigma;
+    int n_theta_mu, n_theta_sigma;
     VectorXd mu, sigma;
 
     // eps for numerical gradient.
@@ -216,10 +216,11 @@ if (debug) std::cout << "Start latent get parameter"<< std::endl;
     
     VectorXd parameter (n_params);
         parameter.segment(0, n_ope)             = get_theta_K();
-        parameter.segment(n_ope, n_mu)          = get_theta_mu();
-        parameter.segment(n_ope+n_mu, n_sigma)  = get_theta_sigma();
-        parameter(n_ope+n_mu+n_sigma)           = get_theta_var();
+        parameter.segment(n_ope, n_theta_mu)          = get_theta_mu();
+        parameter.segment(n_ope+n_theta_mu, n_theta_sigma)  = get_theta_sigma();
+        parameter(n_ope+n_theta_mu+n_theta_sigma)           = get_theta_var();
     
+if (debug) std::cout << "End latent get parameter"<< std::endl;   
     return parameter;
 }
 
@@ -230,9 +231,9 @@ if (debug) std::cout << "Start latent gradient"<< std::endl;
 auto grad1 = std::chrono::steady_clock::now();
 
     if (!fix_flag[0]) grad.segment(0, n_ope)             = grad_theta_K();         else grad.segment(0, n_ope) = VectorXd::Constant(n_ope, 0);
-    if (!fix_flag[1]) grad.segment(n_ope, n_mu)          = grad_theta_mu();        else grad.segment(n_ope, n_mu) = VectorXd::Constant(n_mu, 0);
-    if (!fix_flag[2]) grad.segment(n_ope+n_mu, n_sigma)  = grad_theta_sigma();     else grad.segment(n_ope+n_mu, n_sigma) = VectorXd::Constant(n_sigma, 0);
-    if (!fix_flag[3]) grad(n_ope+n_mu+n_sigma)           = grad_theta_var();       else grad(n_ope+n_mu+n_sigma) = 0;
+    if (!fix_flag[1]) grad.segment(n_ope, n_theta_mu)          = grad_theta_mu();        else grad.segment(n_ope, n_theta_mu) = VectorXd::Constant(n_theta_mu, 0);
+    if (!fix_flag[2]) grad.segment(n_ope+n_theta_mu, n_theta_sigma)  = grad_theta_sigma();     else grad.segment(n_ope+n_theta_mu, n_theta_sigma) = VectorXd::Constant(n_theta_sigma, 0);
+    if (!fix_flag[3]) grad(n_ope+n_theta_mu+n_theta_sigma)           = grad_theta_var();       else grad(n_ope+n_theta_mu+n_theta_sigma) = 0;
 
 // DEBUG: checking grads
 if (debug) {
@@ -247,9 +248,9 @@ if (debug) std::cout << "Start latent set parameter"<< std::endl;
     int n_ope = ope->get_n_params();
 
     set_theta_K       (theta.segment(0, n_ope));
-    set_theta_mu      (theta.segment(n_ope, n_mu)); 
-    set_theta_sigma   (theta.segment(n_ope+n_mu, n_sigma)); 
-    set_theta_var     (theta(n_ope+n_mu+n_sigma)); 
+    set_theta_mu      (theta.segment(n_ope, n_theta_mu)); 
+    set_theta_sigma   (theta.segment(n_ope+n_theta_mu, n_theta_sigma)); 
+    set_theta_var     (theta(n_ope+n_theta_mu+n_theta_sigma)); 
 }
 
 #endif

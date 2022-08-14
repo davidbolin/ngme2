@@ -9,12 +9,6 @@
 Latent::Latent(Rcpp::List latent_in) : 
       debug         (Rcpp::as< bool >        (latent_in["debug"])),
       n_mesh        (Rcpp::as< int >         (latent_in["n_mesh"])),
-    
-      B_mu          (Rcpp::as< MatrixXd >    (latent_in["B_mu"])),
-      B_sigma       (Rcpp::as< MatrixXd >    (latent_in["B_sigma"])),
-      
-      n_mu          (B_mu.cols()),
-      n_sigma       (B_sigma.cols()),
 
       trace         (0),
       trace_eps     (0),
@@ -25,9 +19,7 @@ Latent::Latent(Rcpp::List latent_in) :
       h             (Rcpp::as< VectorXd >                     (latent_in["h"])),
       A             (Rcpp::as< SparseMatrix<double,0,int> >   (latent_in["A"]))
     {
-if (debug) std::cout << "constructor of latent" << std::endl;
-        // general input
-            string var_type = Rcpp::as<string>     (latent_in["var_type"]);
+if (debug) std::cout << "Begin constructor of latent" << std::endl;
         
         Rcpp::List control_f = Rcpp::as<Rcpp::List> (latent_in["control_f"]);
             fix_flag[0]   = Rcpp::as<int>        (control_f["fix_operator"]);
@@ -40,42 +32,48 @@ if (debug) std::cout << "constructor of latent" << std::endl;
             eps          = Rcpp::as<double>      (control_f["eps"]) ;
             use_iter_solver = Rcpp::as<bool>    (control_f["use_iter_solver"]);
             
-        // starting values
-        Rcpp::List start = Rcpp::as<Rcpp::List> (latent_in["start"]);
-            theta_mu = Rcpp::as< VectorXd >    (start["theta_mu"]);
-                set_theta_mu(theta_mu);
-            theta_sigma = Rcpp::as< VectorXd >    (start["theta_sigma"]);
-                set_theta_sigma(theta_sigma);
-            
         Rcpp::List ope_in = Rcpp::as<Rcpp::List> (latent_in["operator_in"]);
             n_ope = ope_in["n_params"];
-            n_noise = 1;
-            n_params = n_ope + n_mu + n_sigma + n_noise;
 
+        string noise_type = Rcpp::as<string>     (latent_in["noise_type"]);
         
-        double theta_noise = Rcpp::as< double > (start["theta_noise"]);                
-        // construct noise
-        Rcpp::List var_in = Rcpp::as<Rcpp::List> (latent_in["var_in"]);
-        if (var_type == "nig") {
-            var = new ind_IG(theta_noise, n_mesh, h);
-        } else if (var_type == "normal") {
+        // construct from ngme.noise
+        Rcpp::List noise_in = Rcpp::as<Rcpp::List> (latent_in["noise_in"]);
+        
+            B_mu     = Rcpp::as< MatrixXd >    (noise_in["B_mu"]);
+            B_sigma  = Rcpp::as< MatrixXd >    (noise_in["B_sigma"]);
+            n_theta_mu    =   (B_mu.cols());
+            n_theta_sigma =   (B_sigma.cols());
+        
+            theta_mu = Rcpp::as< VectorXd >    (noise_in["theta_mu"]);
+            set_theta_mu(theta_mu);
+            theta_sigma = Rcpp::as< VectorXd >    (noise_in["theta_sigma"]);
+            set_theta_sigma(theta_sigma);
+
+        const int n_theta_V = 1;
+        n_params = n_ope + n_theta_mu + n_theta_sigma + n_theta_V;
+
+        double theta_V = Rcpp::as< double >      (noise_in["theta_V"]);
+        if (noise_type == "nig") {
+            var = new ind_IG(theta_V, n_mesh, h);
+        } else if (noise_type == "normal") {
             var = new normal(n_mesh, h);
             // fix mu to be 0
             fix_flag[1] = 1;
         }
         
         // set V
-        if (start["V"] != R_NilValue) {
-            VectorXd V = Rcpp::as< VectorXd >    (start["V"]);
-            var->setV(V);
-        }
+        // if (start["V"] != R_NilValue) {
+        //     VectorXd V = Rcpp::as< VectorXd >    (start["V"]);
+        //     var->setV(V);
+        // }
 
-if (debug) std::cout << "finish constructor of latent" << std::endl;
+if (debug) std::cout << "End constructor of latent" << std::endl;
 }
 
 VectorXd Latent::grad_theta_mu() {
 if (debug) std::cout << "Start mu gradient"<< std::endl;   
-    VectorXd result(n_mu);
+    VectorXd result(n_theta_mu);
 
     SparseMatrix<double> K = getK();
     VectorXd V = getV();
@@ -83,8 +81,8 @@ if (debug) std::cout << "Start mu gradient"<< std::endl;
     VectorXd prevV = getPrevV();
     VectorXd prev_inv_V = prevV.cwiseInverse();
     
-    VectorXd grad (n_mu);
-    for (int l=0; l < n_mu; l++) {
+    VectorXd grad (n_theta_mu);
+    for (int l=0; l < n_theta_mu; l++) {
         grad(l) = (V-h).cwiseProduct( B_mu.col(l).cwiseQuotient(getSV()) ).dot(K*W - mu.cwiseProduct(V-h));
     }
 
@@ -104,9 +102,9 @@ inline VectorXd Latent::grad_theta_sigma() {
     VectorXd V = getV();
     VectorXd prevV = getPrevV();
 
-    VectorXd result(n_sigma);
+    VectorXd result(n_theta_sigma);
 
-    if (n_sigma == 1) {
+    if (n_theta_sigma == 1) {
         // stationary case
         // double msq = (K*W - mu(0)*(V-h)).cwiseProduct(V.cwiseInverse()).dot(K*W - mu(0)*(V-h));
         if (debug) std::cout << "Using stationary sigma"<< std::endl;   
@@ -128,8 +126,8 @@ inline VectorXd Latent::grad_theta_sigma() {
         // double msq = (K*W - mu.cwiseProduct(V-h)).cwiseProduct(V.cwiseInverse()).dot(K*W - mu(0)*(V-h));
         // VectorXd vsq = (K*W - mu.cwiseProduct(V-h)).array().pow(2);
         VectorXd vsq = (K*W - mu.cwiseProduct(V-h)).array().pow(2).matrix().cwiseProduct(V.cwiseInverse());
-        VectorXd grad (n_sigma);
-        // for (int l=0; l < n_sigma; l++) {
+        VectorXd grad (n_theta_sigma);
+        // for (int l=0; l < n_theta_sigma; l++) {
         //     VectorXd tmp1 = vsq.cwiseProduct(sigma.array().pow(-2).matrix()) - VectorXd::Constant(n_mesh, 1);
         //     VectorXd tmp2 = B_sigma.col(l).cwiseProduct(tmp1);
         //     grad(l) = tmp2.sum();
@@ -140,7 +138,7 @@ inline VectorXd Latent::grad_theta_sigma() {
         grad = B_sigma.transpose() * tmp1;
 
         VectorXd prev_vsq = (K*prevW - mu.cwiseProduct(prevV-h)).array().pow(2).matrix().cwiseProduct(prevV.cwiseInverse());
-        MatrixXd hess (n_sigma, n_sigma);
+        MatrixXd hess (n_theta_sigma, n_theta_sigma);
         VectorXd tmp3 = -2*prev_vsq.cwiseProduct(sigma.array().pow(-2).matrix());
 
         hess = B_sigma.transpose() * tmp3.asDiagonal() * B_sigma;

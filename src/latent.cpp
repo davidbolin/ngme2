@@ -6,67 +6,70 @@
 
 #include "latent.h"
 
-Latent::Latent(Rcpp::List latent_in) : 
-      debug         (Rcpp::as< bool >        (latent_in["debug"])),
-      n_mesh        (Rcpp::as< int >         (latent_in["n_mesh"])),
+Latent::Latent(Rcpp::List latent_in, unsigned long seed) :
+    seed          (seed),
+    debug         (Rcpp::as< bool >        (latent_in["debug"])),
+    n_mesh        (Rcpp::as< int >         (latent_in["n_mesh"])),
 
-      trace         (0),
-      trace_eps     (0),
-      eps           (0.001), 
-      
-      W             (n_mesh),
-      prevW         (n_mesh),
-      h             (Rcpp::as< VectorXd >                     (latent_in["h"])),
-      A             (Rcpp::as< SparseMatrix<double,0,int> >   (latent_in["A"]))
-    {
+    trace         (0),
+    trace_eps     (0),
+    eps           (0.001), 
+    
+    W             (n_mesh),
+    prevW         (n_mesh),
+    h             (Rcpp::as< VectorXd >                     (latent_in["h"])),
+    A             (Rcpp::as< SparseMatrix<double,0,int> >   (latent_in["A"]))
+{
 if (debug) std::cout << "Begin constructor of latent" << std::endl;
-        
-        Rcpp::List control_f = Rcpp::as<Rcpp::List> (latent_in["control_f"]);
-            fix_flag[0]   = Rcpp::as<int>        (control_f["fix_operator"]);
-            fix_flag[1]   = Rcpp::as<int>        (control_f["fix_mu"]);
-            fix_flag[2]   = Rcpp::as<int>        (control_f["fix_sigma"]);
-            fix_flag[3]   = Rcpp::as<int>        (control_f["fix_noise"]);
+    
+    latent_rng.seed(seed);
 
-            use_precond  = Rcpp::as<bool>        (control_f["use_precond"] );
-            numer_grad   = Rcpp::as<bool>        (control_f["numer_grad"]) ;
-            eps          = Rcpp::as<double>      (control_f["eps"]) ;
-            use_iter_solver = Rcpp::as<bool>    (control_f["use_iter_solver"]);
-            
-        Rcpp::List ope_in = Rcpp::as<Rcpp::List> (latent_in["operator_in"]);
-            n_ope = ope_in["n_params"];
+    Rcpp::List control_f = Rcpp::as<Rcpp::List> (latent_in["control_f"]);
+        fix_flag[0]   = Rcpp::as<int>        (control_f["fix_operator"]);
+        fix_flag[1]   = Rcpp::as<int>        (control_f["fix_mu"]);
+        fix_flag[2]   = Rcpp::as<int>        (control_f["fix_sigma"]);
+        fix_flag[3]   = Rcpp::as<int>        (control_f["fix_noise"]);
 
-        string noise_type = Rcpp::as<string>     (latent_in["noise_type"]);
+        use_precond  = Rcpp::as<bool>        (control_f["use_precond"] );
+        numer_grad   = Rcpp::as<bool>        (control_f["numer_grad"]) ;
+        eps          = Rcpp::as<double>      (control_f["eps"]) ;
+        use_iter_solver = Rcpp::as<bool>    (control_f["use_iter_solver"]);
         
-        // construct from ngme.noise
-        Rcpp::List noise_in = Rcpp::as<Rcpp::List> (latent_in["noise_in"]);
-        
-            B_mu     = Rcpp::as< MatrixXd >    (noise_in["B_mu"]);
-            B_sigma  = Rcpp::as< MatrixXd >    (noise_in["B_sigma"]);
-            n_theta_mu    =   (B_mu.cols());
-            n_theta_sigma =   (B_sigma.cols());
-        
-            theta_mu = Rcpp::as< VectorXd >    (noise_in["theta_mu"]);
-            set_theta_mu(theta_mu);
-            theta_sigma = Rcpp::as< VectorXd >    (noise_in["theta_sigma"]);
-            set_theta_sigma(theta_sigma);
+    Rcpp::List ope_in = Rcpp::as<Rcpp::List> (latent_in["operator_in"]);
+        n_ope = ope_in["n_params"];
 
-        const int n_theta_V = 1;
-        n_params = n_ope + n_theta_mu + n_theta_sigma + n_theta_V;
+    string noise_type = Rcpp::as<string>     (latent_in["noise_type"]);
+    
+    // construct from ngme.noise
+    Rcpp::List noise_in = Rcpp::as<Rcpp::List> (latent_in["noise_in"]);
+    
+        B_mu     = Rcpp::as< MatrixXd >    (noise_in["B_mu"]);
+        B_sigma  = Rcpp::as< MatrixXd >    (noise_in["B_sigma"]);
+        n_theta_mu    =   (B_mu.cols());
+        n_theta_sigma =   (B_sigma.cols());
+    
+        theta_mu = Rcpp::as< VectorXd >    (noise_in["theta_mu"]);
+        set_theta_mu(theta_mu);
+        theta_sigma = Rcpp::as< VectorXd >    (noise_in["theta_sigma"]);
+        set_theta_sigma(theta_sigma);
 
-        double theta_V = Rcpp::as< double >      (noise_in["theta_V"]);
-        if (noise_type == "nig") {
-            var = new ind_IG(theta_V, n_mesh, h);
-        } else if (noise_type == "normal") {
-            var = new normal(n_mesh, h);
-            // fix mu to be 0
-            fix_flag[1] = 1;
-        }
-        
-        // set V
-        // if (start["V"] != R_NilValue) {
-        //     VectorXd V = Rcpp::as< VectorXd >    (start["V"]);
-        //     var->setV(V);
-        // }
+    const int n_theta_V = 1;
+    n_params = n_ope + n_theta_mu + n_theta_sigma + n_theta_V;
+
+    double theta_V = Rcpp::as< double >      (noise_in["theta_V"]);
+    if (noise_type == "nig") {
+        var = new ind_IG(theta_V, n_mesh, h, latent_rng());
+    } else if (noise_type == "normal") {
+        var = new normal(n_mesh, h);
+        // fix mu to be 0
+        fix_flag[1] = 1;
+    }
+    
+    // set V
+    // if (start["V"] != R_NilValue) {
+    //     VectorXd V = Rcpp::as< VectorXd >    (start["V"]);
+    //     var->setV(V);
+    // }
 
 if (debug) std::cout << "End constructor of latent" << std::endl;
 }

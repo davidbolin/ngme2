@@ -72,8 +72,8 @@ public:
 // get_K_params, grad_K_params, set_K_params, output
 class AR : public Latent {
 public:
-    AR(Rcpp::List latent_in) 
-    : Latent(latent_in)
+    AR(Rcpp::List latent_in, unsigned long seed) 
+    : Latent(latent_in, seed)
     {
 if (debug) std::cout << "Begin Constructor of AR1" << std::endl;        
         Rcpp::List operator_in = Rcpp::as<Rcpp::List> (latent_in["operator_in"]); // containing C and G

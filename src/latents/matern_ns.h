@@ -107,8 +107,8 @@ public:
 // get_K_params, grad_K_params, set_K_params, output
 class Matern_ns : public Latent {
 public:
-    Matern_ns(Rcpp::List latent_in) 
-    : Latent(latent_in)
+    Matern_ns(Rcpp::List latent_in, unsigned long seed) 
+    : Latent(latent_in, seed)
     {
 if (debug) std::cout << "constructor of matern ns" << std::endl;
         symmetricK = true;

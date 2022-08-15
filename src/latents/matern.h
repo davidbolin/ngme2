@@ -99,8 +99,8 @@ public:
 
 class Matern : public Latent {
 public:
-    Matern(Rcpp::List latent_in) 
-    : Latent(latent_in)
+    Matern(Rcpp::List latent_in, unsigned long seed) 
+    : Latent(latent_in, seed)
     {
 std::cout << "begin Constructor of Matern " << std::endl;
         symmetricK = true;

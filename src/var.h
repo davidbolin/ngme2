@@ -5,6 +5,7 @@
 #include <RcppEigen.h>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
+#include <random>
 #include <string>
 #include <cmath>
 #include "sample_rGIG.h"
@@ -15,11 +16,12 @@ using std::string;
 
 class Var {
 protected:
+    unsigned long seed;
     unsigned n;
     VectorXd V, prevV, h;
+    std::mt19937 var_rng;
 public: 
     Var() : V(n), prevV(n) {}
-    ~Var(){}
 
     const VectorXd& getV()     const {return V;}
     const VectorXd& getPrevV() const {return prevV;}
@@ -47,11 +49,13 @@ class ind_IG : public Var{
 private:
     double nu;
 public:
-    ind_IG(){}
+    ind_IG() {}
     
-    ind_IG(double theta_V, unsigned n, VectorXd h) 
+    ind_IG(double theta_V, unsigned n, VectorXd h, unsigned long seed) 
     : nu(0)
     {   
+        this->seed = seed;
+        var_rng.seed(seed);
         nu = theta_V;
         this->n = n; 
         this->h = h;
@@ -79,9 +83,11 @@ public:
     void sample_V() {
         prevV = V;
 
-        gig sampler;
-        for(int i = 0; i < n; i++)
-            V[i] = sampler.sample(-0.5, nu, nu);
+        // gig sampler;
+        // for(int i = 0; i < n; i++)
+        //     V[i] = sampler.sample(-0.5, nu, nu);
+        VectorXd nu_vec = VectorXd::Constant(n, nu);
+        V = rGIG_cpp(VectorXd::Constant(n, -0.5), nu_vec, nu_vec, var_rng());
     };
 
     // sample V given W
@@ -102,7 +108,7 @@ public:
     // non-stationary case
         VectorXd a_vec = VectorXd::Constant(n, nu).array() + mu.cwiseQuotient(sigma).array().pow(2); 
         VectorXd b_vec = VectorXd::Constant(n, nu).array() + sigma.array().pow(-2).cwiseProduct( (K*W + mu.cwiseProduct(h)).array().pow(2) ) ;
-        V = rGIG_cpp(p_vec, a_vec, b_vec);
+        V = rGIG_cpp(p_vec, a_vec, b_vec, var_rng());
     };
 };
 

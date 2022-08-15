@@ -6,19 +6,20 @@
 using std::pow;
 
 BlockModel::BlockModel(
-        Rcpp::List general_in,
-        Rcpp::List latents_in,
-        Rcpp::List noise_in,
-        Rcpp::List control_list,
-        Rcpp::List debug_list
-    ) : 
+    Rcpp::List general_in,
+    Rcpp::List latents_in,
+    Rcpp::List noise_in,
+    Rcpp::List control_list,
+    Rcpp::List debug_list
+) : 
+    seed          ( Rcpp::as<unsigned long> (general_in["seed"]) ),
     X             ( Rcpp::as<MatrixXd>   (general_in["X"]) ),
     Y             ( Rcpp::as<VectorXd>   (general_in["Y"]) ), 
     n_meshs       ( Rcpp::as<int>        (general_in["n_meshs"]) ),
     
     beta          ( Rcpp::as<VectorXd>   (general_in["beta"]) ),
     
-    n_latent      ( latents_in.size()), 
+    n_latent      ( latents_in.size()),  // how many latent model
     
     n_obs         ( Y.size()),
     n_params      ( Rcpp::as<int>        (general_in["n_params"]) ),
@@ -42,7 +43,7 @@ BlockModel::BlockModel(
     fix_merr      ( Rcpp::as<bool> (debug_list["fix_merr"]))
 {        
 if (debug) std::cout << "Begin Block Constructor" << std::endl;  
-
+    rng.seed(seed);
     const int burnin = control_list["burnin"];
     const double stepsize = control_list["stepsize"];
 
@@ -51,14 +52,15 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
         Rcpp::List latent_in = Rcpp::as<Rcpp::List> (latents_in[i]);
 
         // construct acoording to models
+        unsigned long latent_seed = rng();
         string type = latent_in["model_type"];
         if (type == "ar1") {
-            latents.push_back(new AR(latent_in) );
+            latents.push_back(new AR(latent_in, latent_seed) );
         } 
         else if (type == "spde.matern") {
-            latents.push_back(new Matern_ns(latent_in));
+            latents.push_back(new Matern_ns(latent_in, latent_seed));
         } else if (type=="matern") {
-            latents.push_back(new Matern(latent_in));
+            latents.push_back(new Matern(latent_in, latent_seed));
         }
     }
         
@@ -117,12 +119,13 @@ if (debug) std::cout << "End Block Constructor" << std::endl;
 // ---- helper function for sampleW ----
 Eigen::VectorXd rnorm_vec(int n, double mu, double sigma, unsigned long seed=0)
 {
+  std::mt19937 norm_rng(seed);
   std::normal_distribution<double> rnorm {0,1};
   Eigen::VectorXd out(n);
   for (int i = 0; i < n; i++)
   {
-    out[i] = R::rnorm(mu, sigma);
-    // out[i] = rnorm(rng) * sigma * sigma + mu;
+    // out[i] = R::rnorm(mu, sigma);
+    out[i] = rnorm(norm_rng) * sigma + mu;
   }
   return (out);
 }
@@ -156,8 +159,7 @@ if (debug) std::cout << "starting sampling W." << std::endl;
         pow(sigma_eps, -2) * A.transpose() * (Y - X * beta);
 
     VectorXd z (n_meshs); 
-    z = rnorm_vec(n_meshs, 0, 1);
-    
+    z = rnorm_vec(n_meshs, 0, 1, rng());
     // sample W ~ N(QQ^-1*M, QQ^-1)
     VectorXd W = chol_QQ.rMVN(M, z);
     setW(W);
@@ -171,7 +173,6 @@ if (debug) std::cout << "Finish sampling W" << std::endl;
 }
 
 
-
 // ---------------- get, set update gradient ------------------
 VectorXd BlockModel::get_parameter() const {
 if (debug) std::cout << "Start block get parameter"<< std::endl;   
@@ -180,22 +181,19 @@ if (debug) std::cout << "n_params" << n_params << std::endl;
     int pos = 0;
     for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
         VectorXd theta = (*it)->get_parameter();
-if (debug) std::cout << "block para 3" << theta << std::endl;   
         thetas.segment(pos, theta.size()) = theta;
-if (debug) std::cout << "block para 2" << thetas << std::endl;   
         pos += theta.size();
     }
 
-if (debug) std::cout << "block para 1" << thetas << std::endl;   
     // fixed effects
     if (opt_fix_effect) {
         thetas.segment(n_la_params, n_feff) = beta;
     }
     
-if (debug) std::cout << "block para 2" << thetas << std::endl;   
     // measurement error
     thetas.segment(n_la_params + n_feff, n_merr) = get_theta_merr();
     // thetas(n_params-1) = get_theta_sigma_eps();
+if (debug) std::cout << "Theta after merr" << thetas << std::endl;   
 
 if (debug) std::cout << "Finish block get parameter"<< std::endl;   
     return thetas;

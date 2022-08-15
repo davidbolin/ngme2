@@ -13,6 +13,7 @@
 #include <Rcpp.h>
 #include <RcppEigen.h>
 #include <Eigen/Dense>
+#include <random>
 
 #include "include/timer.h"
 #include "include/solver.h"
@@ -24,6 +25,7 @@ using Eigen::VectorXd;
 
 class Latent {
 protected:
+    unsigned long seed;
     bool debug;
     int n_mesh, n_params, n_ope, n_noise {1}; // n_params=n_ope + n_theta_mu + n_theta_sigma + n_noise
 
@@ -57,9 +59,10 @@ protected:
     iterative_solver CG_solver_K;
 
     cholesky_solver solver_Q; // Q = KT diag(1/SV) K
-
+    
+    std::mt19937 latent_rng;
 public:
-    Latent(Rcpp::List);
+    Latent(Rcpp::List, unsigned long seed);
     ~Latent() {}
 
     /*  1 Model itself   */

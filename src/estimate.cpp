@@ -3,7 +3,6 @@
 #include "optimizer.h"
 #include "block.h"
 #include "timer.h"
-// #include "rng.h"
 
 #include <iostream>
 #include <Eigen/Dense>
@@ -26,9 +25,6 @@ Rcpp::List estimate_cpp(Rcpp::List in_list) {
         const int iterations = control_list["iterations"];
     Rcpp::List debug_list    = Rcpp::as<Rcpp::List> (in_list["debug"]);
     
-    unsigned long seed       = Rcpp::as<unsigned long> (in_list["seed"]);
-    global_rng.seed(seed);
-
     BlockModel block (
         general_in, 
         latents_list, 

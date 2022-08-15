@@ -2,10 +2,11 @@ library(devtools); load_all()
 # load_all(reset = FALSE, recompile = FALSE)
 
 ############  0. generating fix effects and control
-set.seed(7)
+seed <- 8
+set.seed(seed)
 
-control = ngme.control(burnin=100,
-                       iterations = 50,
+control = ngme.control(burnin=50,
+                       iterations = 1,
                        gibbs_sample = 5,
                        stepsize = 1,
                        kill_var = FALSE,
@@ -30,12 +31,12 @@ nu = 1
 sigma = 3
 
 n_obs1 <- n_obs
-trueV1 <- ngme2::rig(n_obs1, nu, nu)
+trueV1 <- ngme2::rig(n_obs1, nu, nu, seed=seed)
 noise1 <- delta + mu*trueV1 + sigma * sqrt(trueV1) * rnorm(n_obs1)
 trueW1 <- Reduce(function(x,y){y + alpha*x}, noise1, accumulate = T)
 Y1 = trueW1 + rnorm(n_obs1, mean=0, sd=sigma_eps)
 
-trueV2 <- ngme2::rig(n_obs, nu, nu)
+trueV2 <- ngme2::rig(n_obs, nu, nu, seed=seed)
 noise2 <- delta + mu*trueV2 + sigma * sqrt(trueV2) * rnorm(n_obs)
 trueW2 <- Reduce(function(x,y){y + alpha*x}, noise2, accumulate = T)
 Y2 = trueW2 + rnorm(n_obs, mean=0, sd=sigma_eps)
@@ -44,6 +45,8 @@ Y <- c(Y1, Y2)
 ################################################################
 # index <- c(1:n_obs1, 1:n_obs)
 replicates = c(rep(1, n_obs1), rep(2, n_obs))
+
+print(Y1)
 
 ngme_out = ngme(Y1 ~ 0 +
                   f(1:n_obs1,
@@ -70,14 +73,13 @@ ngme_out = ngme(Y1 ~ 0 +
                 data=data.frame(
                 ),
                 control=control,
-                noise = ngme.noise(
-                  type = "normal",
-                  theta_sigma = 1
-                ),
+                noise = ngme.noise.normal(sd = 1),
                 debug=ngme.debug(
                   debug = TRUE,
                   fix_merr = FALSE
-                ))
+                ),
+                seed = 1
+              )
 
 
 ngme_out$result
@@ -87,6 +89,7 @@ res0 <- c(alpha, mu, sigma, nu); names(res0) <- c("alpha", "mu", "log(sigma)", "
 res1 <- c(alpha, mu, log(sigma), nu); names(res1) <- c("alpha", "mu", "log(sigma)", "nu"); res1
 res2 <- c(beta, sigma_eps); res2
 str(ngme_out$output)
+
 
 # plot alpha
   plot_out(ngme_out$trajectory, start=1, n=1, transform = th2a)

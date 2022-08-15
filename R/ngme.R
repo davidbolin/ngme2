@@ -22,13 +22,10 @@ ngme <- function(formula,
                  controls      = ngme.control(),
                  debug         = ngme.debug(),
                  noise         = ngme.noise(),
-                #  start         = ngme.start(),
                  beta          = NULL,
                  seed          = NULL
                  )
 {
-  time.start <- Sys.time()
-
   # -------------  CHECK INPUT ---------------
   if (is.null(formula)) {
     stop("Usage: ngme(formula, family, data, ...); see ?ngme\n")
@@ -49,7 +46,7 @@ ngme <- function(formula,
   stopifnot(class(noise) == "ngme.noise")
   family <- noise$type
 
-  if (is.null(seed)) seed <- 1
+  if (is.null(seed)) seed <- Sys.time()
 
   # generate debug option
   if (!is.null(debug$trueW)) {
@@ -57,6 +54,8 @@ ngme <- function(formula,
   }
 
   # 2. parse the formula
+  time.start <- Sys.time()
+
   fm = Formula::Formula(formula)
 # Y1|Y2|Y3 ~ ..|..|..
   if (all(length(fm)==c(2,2))) { ######################### bivariate model
@@ -78,20 +77,6 @@ ngme <- function(formula,
     Y = model.frame(plain.fm, data)[[1]]
     X = model.matrix(plain.fm, data) # design matrix
 
-    # adding noise
-    n_obs <- nrow(Y)
-    # n_mu <- length(theta.noise.mu)
-    # n_sigma <- length(theta.noise.sigma)
-    # B.theta.mu <- matrix(B.mu, nrow=n_obs, ncol=n_mu)
-    # B.theta.sigma <- matrix(B.sigma, nrow=n_obs, ncol=n_sigma)
-    
-    # noise_in <- list(
-    #   n_mu = n_mu,
-    #   n_sigma = n_sigma,
-    #   B.theta.mu = B.theta.mu,
-    #   B.theta.sigma = B.theta.sigma
-    # )
-
     ############### n_meshs is the dim of the block matrix
     n_meshs     = sum(unlist(lapply(latents_in, function(x) x["n_mesh"] )))
     n_la_params = sum(unlist(lapply(latents_in, function(x) x["n_la_params"] )))
@@ -111,6 +96,7 @@ ngme <- function(formula,
     n_params = n_la_params + n_feff + n_merr
 
     general_in <- list(
+      seed             = seed,
       Y                = Y,
       X                = X,
       beta             = beta,
@@ -161,7 +147,6 @@ ngme <- function(formula,
 if (debug$debug) print(str(in_list))
 
   ################# Run CPP ####################
-
   if (debug$not_run) {
     print(str(in_list))
     stop()

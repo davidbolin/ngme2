@@ -13,6 +13,7 @@ BlockModel
 #include <string>
 #include <vector>
 #include <iostream>
+#include <random>
 
 #include "include/timer.h"
 #include "include/solver.h"
@@ -33,11 +34,12 @@ class BlockModel : public Model {
 protected:
 // n_meshs   = row(A1) + ... + row(An)
     // general
+    unsigned long seed;
     MatrixXd X;
     VectorXd Y; 
     int n_meshs;
     string family;
-    
+
     VectorXd beta, theta_merr;
         double sigma_eps;
     
@@ -68,6 +70,7 @@ protected:
 
     VectorXd fixedW;
     
+    std::mt19937 rng;
 public:
     // BlockModel() {}
 
@@ -88,13 +91,10 @@ public:
     }
 
     void sampleW_VY();
-
     void sampleV_WY() {
-if (debug) std::cout << "Start sampling V" << std::endl;        
         for (unsigned i=0; i < n_latent; i++) {
             (*latents[i]).sample_cond_V();
         }
-if (debug) std::cout << "Finish sampling V" << std::endl;        
     }
     void setW(const VectorXd&);
     
@@ -132,6 +132,18 @@ if (debug) std::cout << "Finish sampling V" << std::endl;
             pos += size;
         }
         return mean;
+    }
+
+    VectorXd getV() const {
+        VectorXd V (n_meshs);
+        int pos = 0;
+        for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+            int size = (*it)->getSize();
+            V.segment(pos, size) = (*it)->getV();
+            pos += size;
+        }
+        
+        return V;
     }
 
     // return sigma * V
@@ -175,7 +187,7 @@ if (debug) std::cout << "Finish sampling V" << std::endl;
         VectorXd theta_merr = VectorXd::Zero(n_merr);
         
         if (family=="normal") {
-            theta_merr(0) = log(sigma_eps);
+            theta_merr(0) = sigma_eps;
         } else if (family=="nig") {
             // to-do
         }
@@ -217,7 +229,7 @@ if (debug) std::cout << "Finish sampling V" << std::endl;
 
     void set_theta_merr(VectorXd theta_merr) {
         if (family=="normal") {
-            sigma_eps = exp(theta_merr(0));
+            sigma_eps = theta_merr(0);
         } else if (family=="nig") {
             // to-do
         }

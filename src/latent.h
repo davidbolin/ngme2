@@ -92,7 +92,10 @@ public:
     }
 
     void sample_cond_V() {
-        var->sample_cond_V(ope->getK(), W, mu, sigma);
+        VectorXd tmp = (ope->getK() * W + mu.cwiseProduct(h));
+        VectorXd a_inc_vec = mu.cwiseQuotient(sigma).array().pow(2);
+        VectorXd b_inc_vec = tmp.cwiseQuotient(sigma).array().pow(2);
+        var->sample_cond_V(a_inc_vec, b_inc_vec);
     }
 
     /*  3 Operator component   */

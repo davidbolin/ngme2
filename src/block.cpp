@@ -17,7 +17,11 @@ BlockModel::BlockModel(
     n_meshs       ( Rcpp::as<int>        (general_in["n_meshs"]) ),
     
     beta          ( Rcpp::as<VectorXd>   (general_in["beta"]) ),
-    
+
+    B_mu          ( Rcpp::as<MatrixXd>   (noise_in["B_mu"]) ),
+    theta_mu      ( Rcpp::as<VectorXd>   (noise_in["theta_mu"]) ),
+    n_theta_mu    ( theta_mu.size()),
+
     B_sigma       ( Rcpp::as<MatrixXd>   (noise_in["B_sigma"]) ),
     theta_sigma   ( Rcpp::as<VectorXd>   (noise_in["theta_sigma"]) ),
     n_theta_sigma ( theta_sigma.size()),
@@ -25,7 +29,7 @@ BlockModel::BlockModel(
     n_latent      ( latents_in.size()),  // how many latent model
     
     n_obs         ( Y.size()),
-    n_params      ( Rcpp::as<int>        (general_in["n_params"]) ),
+    // n_params      ( Rcpp::as<int>        (general_in["n_params"]) ),
     n_la_params   ( Rcpp::as<int>        (general_in["n_la_params"]) ),
     n_feff        ( beta.size()),
     
@@ -92,19 +96,22 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
     
     /* Measurement noise */
     family = Rcpp::as<string>  (noise_in["type"]);
-
+    block_mu = B_mu * theta_mu;
     block_sigma = (B_sigma * theta_sigma).array().exp();
 
     if (family=="normal") {
         VectorXd theta_sigma = Rcpp::as<VectorXd>  (noise_in["theta_sigma"]);
         QQ = Q + A.transpose() * block_sigma.cwiseInverse().asDiagonal() * A;
+        n_merr = n_theta_sigma;
         // sigma_eps = theta_sigma(0);
         // QQ = Q + pow(sigma_eps, -2) * A.transpose() * A;
     } else if (family=="nig") {
-        n_theta_sigma = 3;
-        // to-do
+
+        n_merr = n_theta_sigma + n_theta_mu + 1;
     }
     
+    n_params = n_la_params + n_feff + n_merr;
+
     chol_Q.analyze(Q);
     chol_QQ.analyze(QQ);
     LU_K.analyzePattern(K);
@@ -114,7 +121,8 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
     steps_to_threshold = VectorXd::Constant(n_params, 0);
     indicate_threshold = VectorXd::Constant(n_params, 0);
 
-    burn_in(burnin + 2);
+    // burn in
+    burn_in(burnin + 5);
         
 if (debug) std::cout << "End Block Constructor" << std::endl;        
 }
@@ -208,13 +216,11 @@ if (debug) std::cout << "Finish block get parameter"<< std::endl;
 
 VectorXd BlockModel::grad() {
 if (debug) std::cout << "Start block gradient"<< std::endl;   
-    VectorXd avg_gradient = VectorXd::Zero(n_params);
-    
 long long time_compute_g = 0;
 long long time_sample_w = 0;
 
+    VectorXd avg_gradient = VectorXd::Zero(n_params);
     for (int i=0; i < n_gibbs; i++) {
-        
         // stack grad
         VectorXd gradient = VectorXd::Zero(n_params);
         
@@ -235,7 +241,7 @@ time_compute_g += since(timer_computeg).count();
         
         // measurement error 
         // gradient.segment(n_la_params + n_feff, n_theta_sigma) = grad_theta_merr();
-        gradient.segment(n_la_params + n_feff, n_theta_sigma) = grad_theta_sigma();
+        gradient.segment(n_la_params + n_feff, n_merr) = grad_theta_merr();
 
         avg_gradient += gradient;
 
@@ -313,6 +319,16 @@ VectorXd BlockModel::grad_theta_sigma() const {
             grad(i) = 0.5 * B_sigma.col(i).dot(VectorXd::Ones(n_obs) - Y_tilde_sq.cwiseQuotient(block_sigma));
         }
     }
+
+    return grad / n_obs;
+}
+
+VectorXd BlockModel::grad_theta_mu() const {
+    int n_theta = theta_mu.size();
+    VectorXd grad (n_theta);
+
+    VectorXd Y_tilde_sq = (Y - A * getW() - X * beta).array().pow(2);
+    // to-do
 
     return grad / n_obs;
 }

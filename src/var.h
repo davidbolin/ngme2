@@ -18,7 +18,7 @@ class Var {
 protected:
     unsigned long seed;
     unsigned n;
-    VectorXd V, prevV, h;
+    VectorXd V, prevV;
     std::mt19937 var_rng;
 public: 
     Var() : V(n), prevV(n) {}
@@ -33,10 +33,7 @@ public:
     }
     
     virtual void sample_V()=0;
-    virtual void sample_cond_V(SparseMatrix<double>& K,
-                                VectorXd& W,
-                                VectorXd& mu, 
-                                VectorXd& sigma)=0;
+    virtual void sample_cond_V(const VectorXd& a_inc_vec, const VectorXd& b_inc_vec)=0;
 
     virtual double get_var()               const=0;
     virtual double get_theta_var()         const=0;
@@ -51,14 +48,13 @@ private:
 public:
     ind_IG() {}
     
-    ind_IG(double theta_V, unsigned n, VectorXd h, unsigned long seed) 
+    ind_IG(double theta_V, unsigned n, unsigned long seed) 
     : nu(0)
     {   
         this->seed = seed;
         var_rng.seed(seed);
         nu = theta_V;
         this->n = n; 
-        this->h = h;
 
         V.resize(n); prevV.resize(n);
         sample_V(); sample_V(); // sample twice
@@ -90,39 +86,45 @@ public:
         V = rGIG_cpp(VectorXd::Constant(n, -0.5), nu_vec, nu_vec, var_rng());
     };
 
-    // sample V given W
-    // V|W, Y ~ GIG(p-0.5, a+mu, b+(K W + h mu)^2)
-    void sample_cond_V(SparseMatrix<double>& K,
-                       VectorXd& W,
-                       VectorXd& mu, 
-                       VectorXd& sigma
+    // sample cond. V
+    // V|W, Y ~ GIG(p-0.5, a + (mu/sigma)^2, b + ((KW + h mu) / sigma)^2) for process
+    // V|X, Y ~ GIG(p-0.5, a + (mu/sigma)^2, b + ((Y-Xb-AW) / sigma)^2) for block 
+    // V|X, Y ~ GIG(p-0.5, a + a_inc_vec, b + b_inc_vec) for general use
+    void sample_cond_V(const VectorXd& a_inc_vec, 
+                       const VectorXd& b_inc_vec
     ) {
         prevV = V;
-
         // VectorXd arg_2 = VectorXd::Constant(n, a) + Mu.cwiseProduct(Mu)/(sigma*sigma);   //+ eta * VectorXd::Ones(temporal.rows());
-        VectorXd p_vec = VectorXd::Constant(n, -1);
-    // stationary case (mu and sigma is a number)
         // VectorXd a_vec = VectorXd::Constant(n, nu+std::pow((mu / sigma), 2));   //+ eta * VectorXd::Ones(temporal.rows());
         // VectorXd b_vec = VectorXd::Constant(n, nu) + std::pow(sigma, -2) * (K*W + mu * h).cwiseProduct((K * W + mu * h));
+        // VectorXd b_vec = VectorXd::Constant(n, nu).array() + sigma.array().pow(-2).cwiseProduct( (K*W + mu.cwiseProduct(h)).array().pow(2) );
         
-    // non-stationary case
-        VectorXd a_vec = VectorXd::Constant(n, nu).array() + mu.cwiseQuotient(sigma).array().pow(2); 
-        VectorXd b_vec = VectorXd::Constant(n, nu).array() + sigma.array().pow(-2).cwiseProduct( (K*W + mu.cwiseProduct(h)).array().pow(2) ) ;
+        VectorXd p_vec = VectorXd::Constant(n, -1);
+        VectorXd a_vec = VectorXd::Constant(n, nu) + a_inc_vec; 
+        VectorXd b_vec = VectorXd::Constant(n, nu) + b_inc_vec;
         V = rGIG_cpp(p_vec, a_vec, b_vec, var_rng());
     };
 };
 
 // the case for normal noise
+// can i get rid of h here??
 class normal : public Var {
 public:
     normal() {}
-    normal(unsigned n, VectorXd h) {
+        normal(unsigned n) {
         this->n = n;
-        this->h = h;
         
         V.resize(n); prevV.resize(n);
         sample_V(); sample_V(); // sample twice
     }
+
+    // normal(unsigned n, VectorXd h) {
+    //     this->n = n;
+    //     this->h = h;
+        
+    //     V.resize(n); prevV.resize(n);
+    //     sample_V(); sample_V(); // sample twice
+    // }
 
     double get_var() const {return 0;} 
 
@@ -135,18 +137,16 @@ public:
 
     // return V=h
     void sample_V() {
-        prevV = h;
-        V = h;
+        prevV = VectorXd::Ones(n);
+        V = VectorXd::Ones(n);
     };
 
     // return V=h
-    void sample_cond_V(SparseMatrix<double>& K,
-                       VectorXd& W,
-                       VectorXd& mu, 
-                       VectorXd& sigma
-                       ) {
-        prevV = h;
-        V = h;
+    void sample_cond_V(const VectorXd& a_inc_vec, 
+                       const VectorXd& b_inc_vec
+    ) {
+        prevV = V;
+        V = VectorXd::Ones(n);
     };
 };
 

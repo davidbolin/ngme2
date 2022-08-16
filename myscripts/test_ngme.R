@@ -1,3 +1,6 @@
+a2th <- function(k) {log((-1-k)/(-1+k))}
+th2a <- function(th) {-1 + (2*exp(th)) / (1+exp(th))}
+
 library(devtools); load_all()
 # load_all(reset = FALSE, recompile = FALSE)
 
@@ -6,7 +9,7 @@ seed <- 8
 set.seed(seed)
 
 control = ngme.control(burnin = 100,
-                       iterations = 200,
+                       iterations = 1,
                        gibbs_sample = 5,
                        stepsize = 1,
                        kill_var = FALSE,
@@ -23,7 +26,7 @@ control = ngme.control(burnin = 100,
 # x2 = rexp(n_obs)
 # beta <- c(-3, -1, 2)
 
-n_obs <- 500
+n_obs <- 10
 alpha <- 0.5
 mu = 2; delta = -mu
 nu = 1
@@ -95,7 +98,7 @@ ngme_out$result
 res0 <- c(alpha, mu, sigma, nu); names(res0) <- c("alpha", "mu", "log(sigma)", "nu"); res0
 res1 <- c(alpha, mu, log(sigma), nu); names(res1) <- c("alpha", "mu", "log(sigma)", "nu"); res1
 res2 <- c(beta, sigma_eps); res2
-str(ngme_out$output)
+# str(ngme_out$output)
 
 
 # plot alpha

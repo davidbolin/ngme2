@@ -14,7 +14,6 @@ BlockModel
 #include <vector>
 #include <iostream>
 #include <random>
-
 #include "include/timer.h"
 #include "include/solver.h"
 #include "include/MatrixAlgebra.h"
@@ -41,17 +40,23 @@ protected:
     int n_meshs;
     string family;
 
-    VectorXd beta, theta_merr;
+    VectorXd beta;
         double sigma_eps;
-    
+
+    // Measurement noise
+    MatrixXd B_mu;
+    VectorXd block_mu, theta_mu;
+    int n_theta_mu;
+
     MatrixXd B_sigma;
     VectorXd block_sigma, theta_sigma;
     int n_theta_sigma;
 
-    int n_latent;
-    
-    int n_obs;
-    int n_params, n_la_params, n_feff, n_merr; 
+    Var *var;
+
+    int n_latent; // how mnay latent model
+    int n_obs; // how many observation
+    int n_params, n_la_params, n_feff, n_merr;  // number of total params, la params, ...
 
     // controls 
     int n_gibbs;
@@ -185,56 +190,68 @@ if (debug) std::cout << "Finish burn in period." << std::endl;
         return W;
     }
 
+    void sample_cond_block_V() {
+        if (family == "nig") {
+            VectorXd a_inc_vec = ;
+            VectorXd a_inc_vec = ;
+        }
+    }
+
     // --------- Measurement error related ------------
+    VectorXd grad_theta_mu() const;
     VectorXd grad_theta_sigma() const;
 
     VectorXd get_theta_merr() const {
-        VectorXd theta_merr = VectorXd::Zero(n_theta_sigma);
+        VectorXd theta_merr = VectorXd::Zero(n_merr);
         
         if (family=="normal") {
-            // theta_merr(0) = sigma_eps;
             theta_merr = theta_sigma;
         } else if (family=="nig") {
             // to-do
+            // stack theta_mu, theta_sigma, theta_V
         }
 
         return theta_merr;
     }
 
     VectorXd grad_theta_merr() const {
-        VectorXd grad = VectorXd::Zero(n_theta_sigma);
+        VectorXd grad = VectorXd::Zero(n_merr);
         
-        if (!fix_merr) {
-            if (family=="normal") {
-                double g = 0;
-                VectorXd tmp = Y - A * getW() - X * beta;
-                double norm2 =  tmp.dot(tmp);
+        if (fix_merr) return grad;
 
-                VectorXd tmp2 = Y - A * getPrevW() - X * beta;
-                double prevnorm2 = tmp2.dot(tmp2);
-
-                // g = -(1.0 / sigma_eps) * n_obs + pow(sigma_eps, -3) * norm2;
-                double gTimesSigmaEps = -(1.0) * n_obs + pow(sigma_eps, -2) * norm2;
-                double prevgTimesSigmaEps = -(1.0) * n_obs + pow(sigma_eps, -2) * prevnorm2;
-                
-                double hess = -2.0 * n_obs * pow(sigma_eps, -2);
-                // double hess = 1.0 * n_obs * pow(sigma_eps, -2)  - 3 * pow(sigma_eps, -4) * norm2;
-
-                g = gTimesSigmaEps / (hess * pow(sigma_eps, 2) + prevgTimesSigmaEps); 
-                
-                // g = - gTimesSigmaEps / (2 * n_obs);
-                grad(0) = g;
-            } 
-            else if (family=="nig") {
-                // to-do
-            }
+        if (family=="normal") {
+            grad = grad_theta_sigma();
+        } else if (family=="nig") {
+            // to-do
+            // stack theta_mu, theta_sigma, theta_V
         }
+
+        // if (family=="normal") {
+        //     double g = 0;
+        //     VectorXd tmp = Y - A * getW() - X * beta;
+        //     double norm2 =  tmp.dot(tmp);
+
+        //     VectorXd tmp2 = Y - A * getPrevW() - X * beta;
+        //     double prevnorm2 = tmp2.dot(tmp2);
+
+        //     // g = -(1.0 / sigma_eps) * n_obs + pow(sigma_eps, -3) * norm2;
+        //     double gTimesSigmaEps = -(1.0) * n_obs + pow(sigma_eps, -2) * norm2;
+        //     double prevgTimesSigmaEps = -(1.0) * n_obs + pow(sigma_eps, -2) * prevnorm2;
+            
+        //     double hess = -2.0 * n_obs * pow(sigma_eps, -2);
+        //     // double hess = 1.0 * n_obs * pow(sigma_eps, -2)  - 3 * pow(sigma_eps, -4) * norm2;
+
+        //     g = gTimesSigmaEps / (hess * pow(sigma_eps, 2) + prevgTimesSigmaEps); 
+            
+        //     // g = - gTimesSigmaEps / (2 * n_obs);
+        //     grad(0) = g;
+        // } 
+        
         return grad;
     }
 
     void set_theta_merr(VectorXd theta_merr) {
         if (family=="normal") {
-            // sigma_eps = theta_merr(0);
             theta_sigma = theta_merr;
         } else if (family=="nig") {
             // to-do

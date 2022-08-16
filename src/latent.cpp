@@ -58,9 +58,9 @@ if (debug) std::cout << "Begin constructor of latent" << std::endl;
 
     double theta_V = Rcpp::as< double >      (noise_in["theta_V"]);
     if (noise_type == "nig") {
-        var = new ind_IG(theta_V, n_mesh, h, latent_rng());
+        var = new ind_IG(theta_V, n_mesh, latent_rng());
     } else if (noise_type == "normal") {
-        var = new normal(n_mesh, h);
+        var = new normal(n_mesh);
         // fix mu to be 0
         fix_flag[1] = 1;
     }

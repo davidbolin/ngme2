@@ -236,10 +236,10 @@ if (debug) std::cout << "Start latent gradient"<< std::endl;
     VectorXd grad (n_params);
 auto grad1 = std::chrono::steady_clock::now();
 
-    if (!fix_flag[0]) grad.segment(0, n_ope)             = grad_theta_K();         else grad.segment(0, n_ope) = VectorXd::Constant(n_ope, 0);
-    if (!fix_flag[1]) grad.segment(n_ope, n_theta_mu)          = grad_theta_mu();        else grad.segment(n_ope, n_theta_mu) = VectorXd::Constant(n_theta_mu, 0);
-    if (!fix_flag[2]) grad.segment(n_ope+n_theta_mu, n_theta_sigma)  = grad_theta_sigma();     else grad.segment(n_ope+n_theta_mu, n_theta_sigma) = VectorXd::Constant(n_theta_sigma, 0);
-    if (!fix_flag[3]) grad(n_ope+n_theta_mu+n_theta_sigma)           = grad_theta_var();       else grad(n_ope+n_theta_mu+n_theta_sigma) = 0;
+    if (!fix_flag[0]) grad.segment(0, n_ope)                        = grad_theta_K();         else grad.segment(0, n_ope) = VectorXd::Constant(n_ope, 0);
+    if (!fix_flag[1]) grad.segment(n_ope, n_theta_mu)               = grad_theta_mu();        else grad.segment(n_ope, n_theta_mu) = VectorXd::Constant(n_theta_mu, 0);
+    if (!fix_flag[2]) grad.segment(n_ope+n_theta_mu, n_theta_sigma) = grad_theta_sigma();     else grad.segment(n_ope+n_theta_mu, n_theta_sigma) = VectorXd::Constant(n_theta_sigma, 0);
+    if (!fix_flag[3]) grad(n_ope+n_theta_mu+n_theta_sigma)          = grad_theta_var();       else grad(n_ope+n_theta_mu+n_theta_sigma) = 0;
 
 // DEBUG: checking grads
 if (debug) {

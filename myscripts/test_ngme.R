@@ -9,7 +9,7 @@ seed <- 8
 set.seed(seed)
 
 control = ngme.control(burnin = 100,
-                       iterations = 1,
+                       iterations = 500,
                        gibbs_sample = 5,
                        stepsize = 1,
                        kill_var = FALSE,
@@ -21,21 +21,17 @@ control = ngme.control(burnin = 100,
 # Y1 = as.numeric(Y1 + X %*% beta)
 
 ############  1. test AR with nig noise
-# parameter for ar1
-# x1 = runif(n_obs)
-# x2 = rexp(n_obs)
-# beta <- c(-3, -1, 2)
 
-n_obs <- 10
+n_obs <- 1000
 alpha <- 0.5
 mu = 2; delta = -mu
 nu = 1
 sigma = 3
 
 # non-stationary 
-B_merr <- cbind(1, (1:n_obs) / n_obs)
-theta_sigma_eps <- c(1.5, -1.2)
-(sigma_eps <- drop(exp(B_merr %*% theta_sigma_eps)))
+B_merr <- cbind(1, (1:n_obs) / n_obs); 
+theta_sigma_eps <- c(1, -1.2)
+(sigma_eps <- drop(exp(B_merr %*% theta_sigma_eps)) / 4)
 
 n_obs1 <- n_obs
 trueV1 <- ngme2::rig(n_obs1, nu, nu, seed=seed)
@@ -95,27 +91,27 @@ ngme_out = ngme(Y1 ~ 0 +
 ngme_out$result
 
 # result
-res0 <- c(alpha, mu, sigma, nu); names(res0) <- c("alpha", "mu", "log(sigma)", "nu"); res0
-res1 <- c(alpha, mu, log(sigma), nu); names(res1) <- c("alpha", "mu", "log(sigma)", "nu"); res1
-res2 <- c(beta, sigma_eps); res2
+# res0 <- c(alpha, mu, sigma, nu); names(res0) <- c("alpha", "mu", "log(sigma)", "nu"); res0
+# res1 <- c(alpha, mu, log(sigma), nu); names(res1) <- c("alpha", "mu", "log(sigma)", "nu"); res1
+# res2 <- c(beta, sigma_eps); res2
 # str(ngme_out$output)
 
 
 # plot alpha
-  plot_out(ngme_out$trajectory, start=1, n=1, transform = th2a)
-# plot mu
-  plot_out(ngme_out$trajectory, start=2, n=1)
-# plot sigma
-  plot_out(ngme_out$trajectory, start=3, n=1, transform = exp)
-# plot var
-  plot_out(ngme_out$trajectory, start=4, n=1, transform = exp)
-# plot fix effects
-  # plot_out(ngme_out$trajectory, start=5, n=3)
-# plot m err
-  plot_out(ngme_out$trajectory, start=5, n=1, transform = exp)
-# plot alpha
-plot_out(ngme_out$trajectory, start=1, n=1, transform = th2a)
-plot_out(ngme_out$trajectory, start=2, n=1)
+#   plot_out(ngme_out$trajectory, start=1, n=1, transform = th2a)
+# # plot mu
+#   plot_out(ngme_out$trajectory, start=2, n=1)
+# # plot sigma
+#   plot_out(ngme_out$trajectory, start=3, n=1, transform = exp)
+# # plot var
+#   plot_out(ngme_out$trajectory, start=4, n=1, transform = exp)
+# # plot fix effects
+#   # plot_out(ngme_out$trajectory, start=5, n=3)
+# # plot m err
+#   plot_out(ngme_out$trajectory, start=5, n=1, transform = exp)
+# # plot alpha
+# plot_out(ngme_out$trajectory, start=1, n=1, transform = th2a)
+# plot_out(ngme_out$trajectory, start=2, n=1)
 
 ############  1.2 construct AR with normal noise
 # parameter for ar1
@@ -186,4 +182,4 @@ plot_out(ngme_out$trajectory, start=2, n=1)
 # plot(ngme_out, param = "la", type = "traj", which=1)
 # plot(ngme_out, param = "la", type = "traj", which=2)
 # summary(ngme_out)
-ngme_out$result
+# ngme_out$result

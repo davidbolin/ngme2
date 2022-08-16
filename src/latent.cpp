@@ -107,22 +107,22 @@ inline VectorXd Latent::grad_theta_sigma() {
 
     VectorXd result(n_theta_sigma);
 
-    if (n_theta_sigma == 1) {
-        // stationary case
-        // double msq = (K*W - mu(0)*(V-h)).cwiseProduct(V.cwiseInverse()).dot(K*W - mu(0)*(V-h));
-        if (debug) std::cout << "Using stationary sigma"<< std::endl;   
-        double msq = (K*W - mu.cwiseProduct(V-h)).array().pow(2).matrix().dot(V.cwiseInverse());
-        double grad = - n_mesh / sigma(0) + pow(sigma(0), -3) * msq;
+    // if (n_theta_sigma == 1) {
+    //     // stationary case
+    //     // double msq = (K*W - mu(0)*(V-h)).cwiseProduct(V.cwiseInverse()).dot(K*W - mu(0)*(V-h));
+    //     if (debug) std::cout << "Using stationary sigma"<< std::endl;   
+    //     double msq = (K*W - mu.cwiseProduct(V-h)).array().pow(2).matrix().dot(V.cwiseInverse());
+    //     double grad = - n_mesh / sigma(0) + pow(sigma(0), -3) * msq;
 
-        // hessian using prevous V
-        // double msq2 = (K*prevW - mu(0)*(prevV-h)).cwiseProduct(prevV.cwiseInverse()).dot(K*prevW - mu(0)*(prevV-h));
-        double msq2 = (K*prevW - mu.cwiseProduct(prevV-h)).array().pow(2).matrix().dot(prevV.cwiseInverse());
-        double hess = n_mesh / pow(sigma(0), 2) - 3 * pow(sigma(0), -4) * msq2;
+    //     // hessian using prevous V
+    //     // double msq2 = (K*prevW - mu(0)*(prevV-h)).cwiseProduct(prevV.cwiseInverse()).dot(K*prevW - mu(0)*(prevV-h));
+    //     double msq2 = (K*prevW - mu.cwiseProduct(prevV-h)).array().pow(2).matrix().dot(prevV.cwiseInverse());
+    //     double hess = n_mesh / pow(sigma(0), 2) - 3 * pow(sigma(0), -4) * msq2;
         
-        // grad. wrt theta
-        result(0) =  grad / (hess * sigma(0) + grad);
-       // result(0) = -1.0 / n_mesh * grad * sigma(0);
-    } else {
+    //     // grad. wrt theta
+    //     result(0) =  grad / (hess * sigma(0) + grad);
+    //    // result(0) = -1.0 / n_mesh * grad * sigma(0);
+    // } else {
 
          if (debug) std::cout << "Using non-stationary sigma"<< std::endl;  
 
@@ -147,8 +147,9 @@ inline VectorXd Latent::grad_theta_sigma() {
         hess = B_sigma.transpose() * tmp3.asDiagonal() * B_sigma;
 
         result = - 1.0 / n_mesh * grad;
+
         // result = hess.llt().solve(grad);
-    }
+    // }
 
     return result;
 }

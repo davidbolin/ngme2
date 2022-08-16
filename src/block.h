@@ -45,11 +45,11 @@ protected:
 
     // Measurement noise
     MatrixXd B_mu;
-    VectorXd block_mu, theta_mu;
+    VectorXd noise_mu, theta_mu;
     int n_theta_mu;
 
     MatrixXd B_sigma;
-    VectorXd block_sigma, theta_sigma;
+    VectorXd noise_sigma, theta_sigma;
     int n_theta_sigma;
 
     Var *var;
@@ -58,7 +58,7 @@ protected:
     int n_obs; // how many observation
     int n_params, n_la_params, n_feff, n_merr;  // number of total params, la params, ...
 
-    // controls 
+    // controls
     int n_gibbs;
     bool opt_fix_effect, kill_var;
     double kill_power, threshold, termination;
@@ -67,6 +67,7 @@ protected:
 
     // debug
     bool debug, fix_W, fixSV, fix_merr;
+    bool fixblockV;
     
     // optimize related
     VectorXd stepsizes, gradients;
@@ -79,6 +80,7 @@ protected:
     SparseLU<SparseMatrix<double> > LU_K;
 
     VectorXd fixedW;
+    VectorXd residual;
     
     std::mt19937 rng;
 public:
@@ -95,6 +97,7 @@ public:
         for (int i=0; i < iterations; i++) {
             sampleW_VY();
             sampleV_WY();
+            sample_cond_block_V();
         }
 if (debug) std::cout << "Finish burn in period." << std::endl;
     }
@@ -115,9 +118,9 @@ if (debug) std::cout << "Finish burn in period." << std::endl;
     SparseMatrix<double> precond() const;
     
     void                 examine_gradient();
+    void                 sampleW_V();
 
-    /* Noise */
-    void sampleV_XY();
+    void update_residual();
 
     /* Aseemble */
     void assemble() {
@@ -192,38 +195,44 @@ if (debug) std::cout << "Finish burn in period." << std::endl;
 
     void sample_cond_block_V() {
         if (family == "nig") {
-            VectorXd a_inc_vec = ;
-            VectorXd a_inc_vec = ;
+            VectorXd a_inc_vec = noise_mu.cwiseQuotient(noise_sigma).array().pow(2);
+            VectorXd b_inc_vec = (residual + (-VectorXd::Ones(n_obs) + var->getV()).cwiseProduct(noise_mu)).cwiseQuotient(noise_sigma).array().pow(2);
+            var->sample_cond_V(a_inc_vec, b_inc_vec);
         }
     }
 
-    // --------- Measurement error related ------------
-    VectorXd grad_theta_mu() const;
-    VectorXd grad_theta_sigma() const;
+    // --------- Fixed effects ------------
+    VectorXd grad_beta();
+    
+    // --------- Measurement error ------------
+    VectorXd grad_theta_mu();
+    VectorXd grad_theta_sigma();
 
     VectorXd get_theta_merr() const {
         VectorXd theta_merr = VectorXd::Zero(n_merr);
         
         if (family=="normal") {
             theta_merr = theta_sigma;
-        } else if (family=="nig") {
-            // to-do
-            // stack theta_mu, theta_sigma, theta_V
+        } else {
+            theta_merr.segment(0, n_theta_mu) = theta_mu;
+            theta_merr.segment(n_theta_mu, n_theta_sigma) = theta_sigma;
+            theta_merr(n_theta_mu + n_theta_sigma) =  var->get_theta_var();
         }
 
         return theta_merr;
     }
 
-    VectorXd grad_theta_merr() const {
+    VectorXd grad_theta_merr() {
         VectorXd grad = VectorXd::Zero(n_merr);
         
         if (fix_merr) return grad;
 
         if (family=="normal") {
             grad = grad_theta_sigma();
-        } else if (family=="nig") {
-            // to-do
-            // stack theta_mu, theta_sigma, theta_V
+        } else {
+            grad.segment(0, n_theta_mu) = grad_theta_mu();
+            grad.segment(n_theta_mu, n_theta_sigma) = grad_theta_sigma();
+            grad(n_theta_mu + n_theta_sigma) = var->grad_theta_var();
         }
 
         // if (family=="normal") {
@@ -253,25 +262,18 @@ if (debug) std::cout << "Finish burn in period." << std::endl;
     void set_theta_merr(VectorXd theta_merr) {
         if (family=="normal") {
             theta_sigma = theta_merr;
-        } else if (family=="nig") {
-            // to-do
+        } else {
+            theta_mu = theta_merr.segment(0, n_theta_mu);
+            theta_sigma = theta_merr.segment(n_theta_mu, n_theta_sigma);
+            double theta_var = theta_merr(n_theta_mu + n_theta_sigma);
+            var->set_theta_var(theta_var);
         }
-    }
-
-    // fixed effects
-    VectorXd grad_beta() {
-        VectorXd inv_SV = VectorXd::Constant(n_meshs, 1).cwiseQuotient(getSV());
-        VectorXd grads = X.transpose() * (Y - X*beta - A*getW());
-
-        MatrixXd hess = X.transpose() * X;
-        grads = hess.ldlt().solve(grads);
-
-// std::cout << "grads of beta=" << -grads << std::endl;        
-        return -grads;
+        noise_sigma = (B_sigma * theta_sigma).array().exp();
+        noise_mu = (B_mu * theta_mu);
     }
 
     // return output
-    Rcpp::List output() const {
+    Rcpp::List output() {
         Rcpp::List latents_estimates;
         
         for (int i=0; i < n_latent; i++) {
@@ -320,13 +322,6 @@ inline void BlockModel::examine_gradient() {
         }
     }
 
-    // stop opt feff
-    // for (int i=0; i < beta.size(); i++) {
-    //     int index = latent_para * n_latent + i;
-    // }
-    // stop opt merr
-    // ...
-
 if (debug) {
     std::cout << "steps=" << steps_to_threshold <<std::endl;
     std::cout << "gradients=" << gradients <<std::endl;
@@ -339,7 +334,6 @@ inline VectorXd BlockModel::get_stepsizes() const {
     return stepsizes;
 }
 
-
 // Not Implemented
 inline SparseMatrix<double> BlockModel::precond() const {
     SparseMatrix<double> precond;
@@ -348,8 +342,11 @@ inline SparseMatrix<double> BlockModel::precond() const {
     return precond;
 }
 
-
-// adding new class 
-// class block gaussian
+// VectorXd BlockModel::grad_block() const {
+//     // beta
+//     // noise_mu
+//     // noise_sigma
+//     // noise_var
+// }
 
 #endif

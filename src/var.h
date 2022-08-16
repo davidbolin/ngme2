@@ -65,7 +65,6 @@ public:
     // optimizer related
     double get_theta_var() const   { return log(nu); }
     void   set_theta_var(double theta) { nu = exp(theta); }
-    
     double grad_theta_var() const {
         VectorXd tmp = VectorXd::Constant(n, 1+1/(2*nu)) - 0.5*V - VectorXd::Constant(n, 1).cwiseQuotient(2*V);
         double grad = tmp.mean();
@@ -111,7 +110,8 @@ public:
 class normal : public Var {
 public:
     normal() {}
-        normal(unsigned n) {
+    
+    normal(unsigned n) {
         this->n = n;
         
         V.resize(n); prevV.resize(n);

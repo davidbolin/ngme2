@@ -78,7 +78,7 @@ m << 1, 2, 3,
 
     // cout << m.col(0); // m(Eigen::all, 1) * 5;
     
-    cout << VectorXd::Zero(3);
+    cout << v1.asDiagonal().toDenseMatrix();
 
     return 0;
 }

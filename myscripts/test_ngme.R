@@ -5,8 +5,8 @@ library(devtools); load_all()
 seed <- 8
 set.seed(seed)
 
-control = ngme.control(burnin=50,
-                       iterations = 1,
+control = ngme.control(burnin = 100,
+                       iterations = 200,
                        gibbs_sample = 5,
                        stepsize = 1,
                        kill_var = FALSE,
@@ -24,23 +24,27 @@ control = ngme.control(burnin=50,
 # beta <- c(-3, -1, 2)
 
 n_obs <- 500
-sigma_eps = 0.5
 alpha <- 0.5
 mu = 2; delta = -mu
 nu = 1
 sigma = 3
 
+# non-stationary 
+B_merr <- cbind(1, (1:n_obs) / n_obs)
+theta_sigma_eps <- c(1.5, -1.2)
+(sigma_eps <- drop(exp(B_merr %*% theta_sigma_eps)))
+
 n_obs1 <- n_obs
 trueV1 <- ngme2::rig(n_obs1, nu, nu, seed=seed)
 noise1 <- delta + mu*trueV1 + sigma * sqrt(trueV1) * rnorm(n_obs1)
-trueW1 <- Reduce(function(x,y){y + alpha*x}, noise1, accumulate = T)
+trueW1 <- Reduce(function(x,y) {y + alpha*x}, noise1, accumulate = T)
 Y1 = trueW1 + rnorm(n_obs1, mean=0, sd=sigma_eps)
 
-trueV2 <- ngme2::rig(n_obs, nu, nu, seed=seed)
-noise2 <- delta + mu*trueV2 + sigma * sqrt(trueV2) * rnorm(n_obs)
-trueW2 <- Reduce(function(x,y){y + alpha*x}, noise2, accumulate = T)
-Y2 = trueW2 + rnorm(n_obs, mean=0, sd=sigma_eps)
-Y <- c(Y1, Y2)
+# trueV2 <- ngme2::rig(n_obs, nu, nu, seed=seed)
+# noise2 <- delta + mu*trueV2 + sigma * sqrt(trueV2) * rnorm(n_obs)
+# trueW2 <- Reduce(function(x,y){y + alpha*x}, noise2, accumulate = T)
+# Y2 = trueW2 + rnorm(n_obs, mean=0, sd=sigma_eps)
+# Y <- c(Y1, Y2)
 
 ################################################################
 # index <- c(1:n_obs1, 1:n_obs)
@@ -51,15 +55,15 @@ print(Y1)
 ngme_out = ngme(Y1 ~ 0 +
                   f(1:n_obs1,
                     replicates = NULL,
-                    model="ar1",
+                    model = "ar1",
                     theta_K = 0.5,
-                    noise=ngme.noise(
+                    noise = ngme.noise(
                       type        = "nig",
                       theta_V     = 1,
-                      theta_mu    = mu+1,
-                      theta_sigma = log(sigma)+1
+                      theta_mu    = mu + 1,
+                      theta_sigma = log(sigma) + 1
                     ),
-                    control=ngme.control.f(
+                    control = ngme.control.f(
                       numer_grad       = FALSE,
                       use_precond      = TRUE,
 
@@ -68,13 +72,16 @@ ngme_out = ngme(Y1 ~ 0 +
                       fix_sigma        = FALSE,
                       fix_noise        = FALSE
                     ),
-                    debug=TRUE
+                    debug = TRUE
                   ),
                 data=data.frame(
                 ),
                 control=control,
-                noise = ngme.noise.normal(sd = 1),
-                debug=ngme.debug(
+                noise = ngme.noise.normal(
+                  theta_sigma = c(0, 0),
+                  B_sigma = B_merr
+                ),
+                debug = ngme.debug(
                   debug = TRUE,
                   fix_merr = FALSE
                 ),

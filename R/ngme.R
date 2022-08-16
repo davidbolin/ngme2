@@ -85,7 +85,7 @@ ngme <- function(formula,
 
     n_feff = ncol(X);
     if (family == "normal") {
-      n_merr = 1
+      n_merr = noise$n_theta_sigma
     } else if (family == "nig") {
       n_merr = noise$n_theta_mu + noise$n_theta_sigma + noise$n_theta_V
     }
@@ -134,7 +134,7 @@ ngme <- function(formula,
 
     in_list = list(general_in = general_in,
                   latents_in  = latents_in,
-                  noise_in    = noise,
+                  noise_in    = update.ngme.noise(noise, n = length(Y)),
                   control_in  = controls,
                   debug       = debug,
                   seed        = seed)

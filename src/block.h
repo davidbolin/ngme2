@@ -27,6 +27,7 @@ BlockModel
 #include "latents/matern_ns.h"
 
 using Eigen::SparseMatrix;
+using Eigen::MatrixXd;
 
 const int latent_para = 4;
 
@@ -43,6 +44,10 @@ protected:
     VectorXd beta, theta_merr;
         double sigma_eps;
     
+    MatrixXd B_sigma;
+    VectorXd block_sigma, theta_sigma;
+    int n_theta_sigma;
+
     int n_latent;
     
     int n_obs;
@@ -72,8 +77,6 @@ protected:
     
     std::mt19937 rng;
 public:
-    // BlockModel() {}
-
     BlockModel(
         Rcpp::List general_in,
         Rcpp::List latents_in,
@@ -88,6 +91,7 @@ public:
             sampleW_VY();
             sampleV_WY();
         }
+if (debug) std::cout << "Finish burn in period." << std::endl;
     }
 
     void sampleW_VY();
@@ -182,12 +186,14 @@ public:
     }
 
     // --------- Measurement error related ------------
+    VectorXd grad_theta_sigma() const;
 
     VectorXd get_theta_merr() const {
-        VectorXd theta_merr = VectorXd::Zero(n_merr);
+        VectorXd theta_merr = VectorXd::Zero(n_theta_sigma);
         
         if (family=="normal") {
-            theta_merr(0) = sigma_eps;
+            // theta_merr(0) = sigma_eps;
+            theta_merr = theta_sigma;
         } else if (family=="nig") {
             // to-do
         }
@@ -196,7 +202,7 @@ public:
     }
 
     VectorXd grad_theta_merr() const {
-        VectorXd grad = VectorXd::Zero(n_merr);
+        VectorXd grad = VectorXd::Zero(n_theta_sigma);
         
         if (!fix_merr) {
             if (family=="normal") {
@@ -223,13 +229,13 @@ public:
                 // to-do
             }
         }
-
         return grad;
     }
 
     void set_theta_merr(VectorXd theta_merr) {
         if (family=="normal") {
-            sigma_eps = theta_merr(0);
+            // sigma_eps = theta_merr(0);
+            theta_sigma = theta_merr;
         } else if (family=="nig") {
             // to-do
         }
@@ -239,18 +245,6 @@ public:
     VectorXd grad_beta() {
         VectorXd inv_SV = VectorXd::Constant(n_meshs, 1).cwiseQuotient(getSV());
         VectorXd grads = X.transpose() * (Y - X*beta - A*getW());
-        
-        // SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
-        // SparseMatrix<double> QQ = Q + pow(sigma_eps, -2) * A.transpose() * A;
-
-        // LU_K.factorize(K);
-        // chol_Q.compute(Q);
-
-        // VectorXd mean = getMean(); // mean = mu*(V-h)
-        // VectorXd b = LU_K.solve(mean);
-        
-        // VectorXd b_tilde = QQ * chol_Q.solve(b) + pow(sigma_eps, -2) * A.transpose() * (Y-X*beta);
-        // VectorXd grads = X.transpose() * (Y - X*beta - A*b_tilde);
 
         MatrixXd hess = X.transpose() * X;
         grads = hess.ldlt().solve(grads);
@@ -340,6 +334,5 @@ inline SparseMatrix<double> BlockModel::precond() const {
 
 // adding new class 
 // class block gaussian
-
 
 #endif

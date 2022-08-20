@@ -6,6 +6,7 @@
 
 #include "latent.h"
 
+// Constructor
 Latent::Latent(Rcpp::List latent_in, unsigned long seed) :
     seed          (seed),
     debug         (Rcpp::as< bool >        (latent_in["debug"])),
@@ -22,17 +23,23 @@ Latent::Latent(Rcpp::List latent_in, unsigned long seed) :
 {
 if (debug) std::cout << "Begin constructor of latent" << std::endl;
     
+    // setting the seed
     latent_rng.seed(seed);
 
+    // read the control variable
     Rcpp::List control_f = Rcpp::as<Rcpp::List> (latent_in["control_f"]);
-        fix_flag[0]   = Rcpp::as<int>        (control_f["fix_operator"]);
-        fix_flag[1]   = Rcpp::as<int>        (control_f["fix_mu"]);
-        fix_flag[2]   = Rcpp::as<int>        (control_f["fix_sigma"]);
-        fix_flag[3]   = Rcpp::as<int>        (control_f["fix_noise"]);
+        fix_flag[0]   = Rcpp::as<bool>        (control_f["fix_operator"]);
+        fix_flag[1]   = Rcpp::as<bool>        (control_f["fix_mu"]);
+        fix_flag[2]   = Rcpp::as<bool>        (control_f["fix_sigma"]);
+        fix_flag[3]   = Rcpp::as<bool>        (control_f["fix_noise"]);
+        fix_flag[4]   = Rcpp::as<bool>        (control_f["fix_V"]);
+        fix_flag[5]   = Rcpp::as<bool>        (control_f["fix_W"]);
 
         use_precond  = Rcpp::as<bool>        (control_f["use_precond"] );
         numer_grad   = Rcpp::as<bool>        (control_f["numer_grad"]) ;
         eps          = Rcpp::as<double>      (control_f["eps"]) ;
+        
+        // not used
         use_iter_solver = Rcpp::as<bool>    (control_f["use_iter_solver"]);
         
     Rcpp::List ope_in = Rcpp::as<Rcpp::List> (latent_in["operator_in"]);
@@ -62,14 +69,20 @@ if (debug) std::cout << "Begin constructor of latent" << std::endl;
     } else if (noise_type == "normal") {
         var = new normal(n_mesh);
         // fix mu to be 0
-        fix_flag[1] = 1;
+        fix_flag[fix_mu] = 1;
     }
     
-    // set V
-    // if (start["V"] != R_NilValue) {
-    //     VectorXd V = Rcpp::as< VectorXd >    (start["V"]);
-    //     var->setV(V);
-    // }
+    // Init V and W
+    if (control_f["init_V"] != R_NilValue) {
+        VectorXd V = Rcpp::as< VectorXd >    (control_f["init_V"]);
+        var->setV(V);
+    }
+    if (control_f["init_W"] != R_NilValue) {
+        W = Rcpp::as< VectorXd >    (control_f["init_W"]);
+    }
+
+    // Fix estimation
+    if (fix_flag[fix_V]) var->fixV();
 
 if (debug) std::cout << "End constructor of latent" << std::endl;
 }
@@ -78,11 +91,11 @@ VectorXd Latent::grad_theta_mu() {
 if (debug) std::cout << "Start mu gradient"<< std::endl;   
     VectorXd result(n_theta_mu);
 
+    // VectorXd inv_V = V.cwiseInverse();
+    // VectorXd prevV = getPrevV();
+    // VectorXd prev_inv_V = prevV.cwiseInverse();
     SparseMatrix<double> K = getK();
     VectorXd V = getV();
-    VectorXd inv_V = V.cwiseInverse();
-    VectorXd prevV = getPrevV();
-    VectorXd prev_inv_V = prevV.cwiseInverse();
     
     VectorXd grad (n_theta_mu);
     for (int l=0; l < n_theta_mu; l++) {
@@ -124,8 +137,6 @@ inline VectorXd Latent::grad_theta_sigma() {
     //    // result(0) = -1.0 / n_mesh * grad * sigma(0);
     // } else {
 
-         if (debug) std::cout << "Using non-stationary sigma"<< std::endl;  
-
         // double msq = (K*W - mu.cwiseProduct(V-h)).cwiseProduct(V.cwiseInverse()).dot(K*W - mu(0)*(V-h));
         // VectorXd vsq = (K*W - mu.cwiseProduct(V-h)).array().pow(2);
         VectorXd vsq = (K*W - mu.cwiseProduct(V-h)).array().pow(2).matrix().cwiseProduct(V.cwiseInverse());
@@ -149,7 +160,6 @@ inline VectorXd Latent::grad_theta_sigma() {
         result = - 1.0 / n_mesh * grad;
 
         // result = hess.llt().solve(grad);
-    // }
 
     return result;
 }

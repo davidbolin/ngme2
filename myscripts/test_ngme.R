@@ -9,7 +9,7 @@ seed <- 8
 set.seed(seed)
 
 control = ngme.control(burnin = 100,
-                       iterations = 500,
+                       iterations = 5,
                        gibbs_sample = 5,
                        stepsize = 1,
                        kill_var = FALSE,
@@ -28,66 +28,88 @@ mu = 2; delta = -mu
 nu = 1
 sigma = 3
 
-# non-stationary 
-B_merr <- cbind(1, (1:n_obs) / n_obs); 
-theta_sigma_eps <- c(1, -1.2)
-(sigma_eps <- drop(exp(B_merr %*% theta_sigma_eps)) / 4)
+# non-stationary mesurement noise
+## sigma
+B_noise_sigma <- cbind(1, (1:n_obs) / n_obs);
+# theta_noise_sigma <- c(0, 0)
+theta_noise_sigma <- c(1, -2)
+(noise_sigma <- drop(exp(B_noise_sigma %*% theta_noise_sigma)))
+
+# B_noise_mu <- cbind(1, (1:n_obs) / n_obs);
+B_noise_mu <- (1:n_obs) / n_obs
+theta_noise_mu <- c(4)
+# theta_noise_mu <- c(0, 0)
+(noise_mu <- (B_noise_mu * theta_noise_mu))
+B_noise_mu <- matrix(B_noise_mu, ncol=1)
+
+noise_V <- rep(1, n_obs)
+noise_V <- ngme2::rig(n_obs, nu, nu, seed=seed)
+m_noise <- noise_mu * (-1 + noise_V) + noise_sigma * sqrt(noise_V) * rnorm(n_obs)
 
 n_obs1 <- n_obs
 trueV1 <- ngme2::rig(n_obs1, nu, nu, seed=seed)
 noise1 <- delta + mu*trueV1 + sigma * sqrt(trueV1) * rnorm(n_obs1)
 trueW1 <- Reduce(function(x,y) {y + alpha*x}, noise1, accumulate = T)
-Y1 = trueW1 + rnorm(n_obs1, mean=0, sd=sigma_eps)
 
-# trueV2 <- ngme2::rig(n_obs, nu, nu, seed=seed)
-# noise2 <- delta + mu*trueV2 + sigma * sqrt(trueV2) * rnorm(n_obs)
-# trueW2 <- Reduce(function(x,y){y + alpha*x}, noise2, accumulate = T)
-# Y2 = trueW2 + rnorm(n_obs, mean=0, sd=sigma_eps)
-# Y <- c(Y1, Y2)
+Y1 = trueW1 + m_noise
+
+# B_noise_mu
+# ngme.noise(
+#   type = "nig",
+#   theta_sigma = c(0, 0),
+#   B_sigma = B_noise_sigma
+#   , theta_mu = c(1),
+#   B_mu = B_noise_mu
+# )
 
 ################################################################
 # index <- c(1:n_obs1, 1:n_obs)
 replicates = c(rep(1, n_obs1), rep(2, n_obs))
-
 print(Y1)
 
-ngme_out = ngme(Y1 ~ 0 +
-                  f(1:n_obs1,
-                    replicates = NULL,
-                    model = "ar1",
-                    theta_K = 0.5,
-                    noise = ngme.noise(
-                      type        = "nig",
-                      theta_V     = 1,
-                      theta_mu    = mu + 1,
-                      theta_sigma = log(sigma) + 1
-                    ),
-                    control = ngme.control.f(
-                      numer_grad       = FALSE,
-                      use_precond      = TRUE,
+ngme_out = ngme(
+  Y1 ~ 0 +
+  f(1:n_obs1,
+    replicates = NULL,
+    model = "ar1",
+    theta_K = 0.5,
+    noise = ngme.noise(
+      type        = "nig",
+      theta_V     = 1,
+      theta_mu    = mu + 1,
+      theta_sigma = log(sigma) + 1
+    ),
+    control = ngme.control.f(
+      numer_grad       = FALSE,
+      use_precond      = TRUE,
+      fix_operator     = TRUE,
+      fix_mu           = TRUE,
+      fix_sigma        = TRUE,
+      fix_noise        = TRUE,
+      fix_V            = FALSE,
+      fix_W            = FALSE,
 
-                      fix_operator     = FALSE,
-                      fix_mu           = FALSE,
-                      fix_sigma        = FALSE,
-                      fix_noise        = FALSE
-                    ),
-                    debug = TRUE
-                  ),
-                data=data.frame(
-                ),
-                control=control,
-                noise = ngme.noise.normal(
-                  theta_sigma = c(0, 0),
-                  B_sigma = B_merr
-                ),
-                debug = ngme.debug(
-                  debug = TRUE,
-                  fix_merr = FALSE
-                ),
-                seed = 1
-              )
-
-
+      init_V           = NULL,
+      init_W           = NULL
+    ),
+    debug = FALSE
+  ),
+  data=data.frame(),
+  control=control,
+  noise = ngme.noise(
+    type = "nig",
+    # type = "normal",
+    theta_sigma = c(0, 0),
+    B_sigma = B_noise_sigma
+    , theta_mu = c(0),
+    B_mu = B_noise_mu
+  ),
+  debug = ngme.debug(
+    debug = TRUE,
+    fix_merr = FALSE
+  ),
+  seed = 1
+)
 ngme_out$result
 
 # result

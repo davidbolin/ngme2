@@ -24,7 +24,6 @@ ngme.noise <- function(
   if (type == "gaussian") type <- "normal"
   # check input
   # if (is.null(theta_sigma)) theta_sigma <- 0
-
   if (is.null(B_mu))    B_mu <- as.matrix(1)
   if (is.null(B_sigma)) B_sigma <- as.matrix(1)
 
@@ -39,10 +38,10 @@ ngme.noise <- function(
     stop("Please make sure ncol(B_sigma) == length(theta_sigma).")
 
   # make sure B_mu and B_sigma has same row
-  if (nrow(B_mu) == 1 && nrow(B_sigma != 1)) {
+  if (nrow(B_mu) == 1 && nrow(B_sigma) != 1) {
     n <- nrow(B_sigma)
     B_mu <- matrix(rep(B_mu, n), nrow = n, byrow = TRUE)
-  } else if (nrow(B_mu) != 1 && nrow(B_sigma == 1)) {
+  } else if (nrow(B_mu) != 1 && nrow(B_sigma) == 1) {
     n <- nrow(B_mu)
     B_sigma <- matrix(rep(B_sigma, n), nrow = n, byrow = TRUE)
   }
@@ -115,10 +114,10 @@ ngme.noise.normal <- function(
 update.ngme.noise <- function(noise, n = NULL) {
   stopifnot("n should be integer" = is.numeric(n))
   B_mu <- noise$B_mu
-  noise$B_mu <- matrix(data = rep(B_mu, n / nrow(B_mu)), nrow = n, byrow = TRUE)
+  noise$B_mu <- matrix(data = rep(B_mu, n / nrow(B_mu)), nrow = n)
 
   B_sigma <- noise$B_sigma
-  noise$B_sigma <- matrix(data = rep(B_sigma, n / nrow(B_sigma)), nrow = n, byrow = TRUE)
+  noise$B_sigma <- matrix(data = rep(B_sigma, n / nrow(B_sigma)), nrow = n)
 
   noise
 }

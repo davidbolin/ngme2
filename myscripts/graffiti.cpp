@@ -21,6 +21,9 @@ auto since(std::chrono::time_point<clock_t, duration_t> const& start)
     return std::chrono::duration_cast<result_t>(clock_t::now() - start);
 }
 
+enum class Opt_flag {ope, mu, sigma, var};
+enum class Fix_flag {ope, mu, sigma, var, V, W};
+
 class Base {
 protected:
     Vector2d vec {1,2};
@@ -78,8 +81,6 @@ m << 1, 2, 3,
 
     // cout << m.col(0); // m(Eigen::all, 1) * 5;
     
-    v2.segment(0, 0) = VectorXd::Zero(1);
-
     cout << v2;
 
     return 0;

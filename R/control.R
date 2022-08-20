@@ -69,12 +69,17 @@ ngme.control <- function(burnin            = 100,
 #'
 #' @examples
 ngme.control.f <- function(
+  # fix things
   fix_operator  = FALSE,
   fix_mu        = FALSE,
   fix_sigma     = FALSE,
   fix_noise     = FALSE,
   fix_V         = FALSE,
+  fix_W         = FALSE,
 
+  # initial things
+  init_V        = NULL,
+  init_W        = NULL,
   theta.K       = 1, # for spde model, use spde(theta.int=...)
   numer_grad    = FALSE,
   use_precond   = TRUE,
@@ -88,7 +93,12 @@ ngme.control.f <- function(
     fix_mu        = fix_mu,
     fix_sigma     = fix_sigma,
     fix_noise     = fix_noise,
+    fix_V         = fix_V,
+    fix_W         = fix_W,
 
+    # initial things
+    init_V        = init_V,
+    init_W        = init_W,
     theta.K       = theta.K,
 
     numer_grad    = numer_grad,
@@ -118,18 +128,18 @@ ngme.control.f <- function(
 #' @examples
 ngme.debug <- function(
   debug     = TRUE,
-  fix_W     = FALSE,
   fix_feff  = FALSE,
   fix_merr  = FALSE,
-  not_run   = FALSE
+  not_run   = FALSE,
+  trueW = NULL
 ) {
 
   debug  = list(
     debug     = debug,
-    fix_W      = fix_W,
     fix_feff   = fix_feff,
     fix_merr   = fix_merr,
-    not_run    = not_run
+    not_run    = not_run,
+    trueW = NULL
   )
 
   return (debug)

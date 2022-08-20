@@ -145,6 +145,10 @@ f <- function(
   # total params
   n_la_params = operator_in$n_params + noise$n_theta_mu + noise$n_theta_sigma + noise$n_theta_V
 
+  # check initial values
+  if (!is.null(control$init_V)) stopifnot(length(control$init_V) == n_mesh)
+  if (!is.null(control$init_W)) stopifnot(length(control$init_W) == n_mesh)
+
   latent_in <- list(
     model_type  = model_type,
     noise_type  = noise$type,

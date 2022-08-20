@@ -20,13 +20,17 @@ protected:
     unsigned n;
     VectorXd V, prevV;
     std::mt19937 var_rng;
+    bool fix_V {false};
 public: 
     Var() : V(n), prevV(n) {}
 
     const VectorXd& getV()     const {return V;}
     const VectorXd& getPrevV() const {return prevV;}
     
-    // only for starting point
+    void fixV() {
+        fix_V = true;
+    }
+
     void setV(const VectorXd& V) {
         prevV = V;
         this->V = V;
@@ -82,7 +86,7 @@ public:
         // for(int i = 0; i < n; i++)
         //     V[i] = sampler.sample(-0.5, nu, nu);
         VectorXd nu_vec = VectorXd::Constant(n, nu);
-        V = rGIG_cpp(VectorXd::Constant(n, -0.5), nu_vec, nu_vec, var_rng());
+        if (!fix_V) V = rGIG_cpp(VectorXd::Constant(n, -0.5), nu_vec, nu_vec, var_rng());
     };
 
     // sample cond. V
@@ -101,7 +105,7 @@ public:
         VectorXd p_vec = VectorXd::Constant(n, -1);
         VectorXd a_vec = VectorXd::Constant(n, nu) + a_inc_vec; 
         VectorXd b_vec = VectorXd::Constant(n, nu) + b_inc_vec;
-        V = rGIG_cpp(p_vec, a_vec, b_vec, var_rng());
+        if (!fix_V) V = rGIG_cpp(p_vec, a_vec, b_vec, var_rng());
     };
 };
 

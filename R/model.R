@@ -39,9 +39,9 @@ ngme.ar1 <- function(
 
   ar1_in <- list(
     A     = A,
-    alpha = alpha,
     operator_in = list(
       n_params    = 1,
+      theta_K     = alpha,
       C           = ngme.as.sparse(C),
       G           = ngme.as.sparse(G),
       use_num_dK  = use_num_dK
@@ -51,3 +51,15 @@ ngme.ar1 <- function(
   class(ar1_in) <- "ngme.ar1"
   return (ar1_in)
 }
+
+
+# ngme_model <- function() {
+#   out <- list(
+#     latents = list(),
+
+#   )
+
+#   out
+# }
+
+

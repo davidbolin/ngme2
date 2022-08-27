@@ -15,15 +15,16 @@
 
 ngme.noise <- function(
   type = "nig",
-  theta_V = 1,
   theta_mu = 0,
   theta_sigma = 0,
+  theta_V = 1,
   B_mu = NULL,
   B_sigma = NULL
 ) {
   if (type == "gaussian") type <- "normal"
   # check input
-  # if (is.null(theta_sigma)) theta_sigma <- 0
+  stopifnot("Unkown noise type. Please check ngme.noise.types()" =
+    type %in% ngme.noise.types())
   if (is.null(B_mu))    B_mu <- as.matrix(1)
   if (is.null(B_sigma)) B_sigma <- as.matrix(1)
 
@@ -37,21 +38,13 @@ ngme.noise <- function(
   if (ncol(B_sigma) != length(theta_sigma))
     stop("Please make sure ncol(B_sigma) == length(theta_sigma).")
 
-  # make sure B_mu and B_sigma has same row
+  # auto-complete (make sure nrow(B_sigma) == nrow(B_mu) for n=1 case)
   if (nrow(B_mu) == 1 && nrow(B_sigma) != 1) {
     n <- nrow(B_sigma)
     B_mu <- matrix(rep(B_mu, n), nrow = n, byrow = TRUE)
   } else if (nrow(B_mu) != 1 && nrow(B_sigma) == 1) {
     n <- nrow(B_mu)
     B_sigma <- matrix(rep(B_sigma, n), nrow = n, byrow = TRUE)
-  }
-
-  if (type == "nig") {
-
-  } else if (type %in% c("normal", "gaussian")) {
-
-  } else {
-    stop("Unknown noise type. Please check the mannual.")
   }
 
   structure(
@@ -106,6 +99,23 @@ ngme.noise.normal <- function(
   ngme.noise(
     type = "normal",
     theta_sigma = theta_sigma,
+    B_sigma = B_sigma
+  )
+}
+
+
+ngme.noise.nig <- function(
+  theta_mu = 0,
+  theta_sigma = 0,
+  theta_V = 1,
+  B_mu = matrix(1),
+  B_sigma = matrix(1)
+) {
+  ngme.noise(
+    theta_mu = theta_mu,
+    theta_sigma = theta_sigma,
+    theta_V = theta_V,
+    B_mu = B_mu,
     B_sigma = B_sigma
   )
 }

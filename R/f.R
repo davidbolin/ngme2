@@ -1,18 +1,13 @@
 #' f function for specifying a model
 #'
-#' @param ...
+#' @param ...    index
 #' @param model     1. string: type of model, 2. ngme.spde object
 #' @param noise     1. string: type of model, 2. ngme.noise object
 #' @param replicates   Representing the replicates (can also be specified in each ngme model)
 #' @param control      control variables for f model
 #' @param A            A Matrix connecting observation and
-#' @param B_sigma      Basis matrix for sigma
-#' @param B_mu         Basis matrix for mu
-#' @param theta.sigma  Starting value for theta.sigma
-#' @param theta.mu     Starting value for theta.sigma
 #' @param theta_K      Starting value for theta.sigma
-#' @param theta.noise  Starting value for theta.sigma
-#' @param start.V      Starting value for V
+#' @param start_V      Starting value for V
 #' @param debug        Debug variables
 #' @param data      if not specified or NULL, inherit the data from ngme function
 #'
@@ -32,7 +27,7 @@ f <- function(
   A = NULL,
   replicates=NULL,
   theta_K = NULL,
-  start.V = NULL,
+  start_V = NULL,
   data = NULL
 ) {
   ################## Index and Replicates ##################
@@ -43,7 +38,7 @@ f <- function(
     stop(paste("To many variables included in f():", paste(unlist(ddd), collapse=" ")))
   }
   numerical.or.symbol <- ddd[[1]]
-  index <- eval(numerical.or.symbol, envir=data)
+  index <- eval(numerical.or.symbol, envir = data)
 
   # get the replicates
   if (is.null(replicates))
@@ -55,26 +50,25 @@ f <- function(
   # df <- data.frame(original.order=1:length(index), replicates=replicates, index=index)
   # df <- df[order(df$replicates), ]
 
-  if(length(index)!= length(replicates)){
-    stop("The index and the replicates should have the same length!")
-  }
+  stopifnot("The index and the replicates should have the same length!"
+    = length(index) == length(replicates))
 
   ################## construct operator (n_ope, C, G, A, h) ##################
   nrep <- NULL
   n_mesh <- NULL
 
   if (is.character(model)) {  ######## string
-    if (model=="ar1") {
-      model_type = "ar1"
+    if (model == "ar1") {
+      model_type <- "ar1"
 
       ar1_in = ngme.ar1(
-        index=index,
-        replicates=replicates
+        index = index,
+        replicates = replicates
       )
-      A = ar1_in$A
+      A <- ar1_in$A
       n_mesh <- ncol(A)
 
-      h = rep(1.0, n_mesh)
+      h <- rep(1.0, n_mesh)
       operator_in = ar1_in$operator_in
     } else {
       stop("unknown model name")
@@ -132,7 +126,7 @@ f <- function(
   }
 
   ################## construct noise (e.g. nig noise) ##################
-    # ?? check 
+    # ?? check
     B_mu <- matrix(noise$B_mu, nrow = n_mesh, ncol = noise$n_theta_mu)
     B_sigma <- matrix(noise$B_sigma, nrow = n_mesh, ncol = noise$n_theta_sigma)
 
@@ -141,13 +135,16 @@ f <- function(
       B_mu <- kronecker(matrix(1, ncol = 1, nrow = nrep), B_mu)
       B_sigma <- kronecker(matrix(1, ncol = 1, nrow = nrep), B_sigma)
     }
-  
+
   # total params
   n_la_params = operator_in$n_params + noise$n_theta_mu + noise$n_theta_sigma + noise$n_theta_V
 
   # check initial values
   if (!is.null(control$init_V)) stopifnot(length(control$init_V) == n_mesh)
   if (!is.null(control$init_W)) stopifnot(length(control$init_W) == n_mesh)
+
+  # overwrites
+  if (!is.null(theta_K)) operator_in$theta_K <- theta_K
 
   latent_in <- list(
     model_type  = model_type,
@@ -164,19 +161,13 @@ f <- function(
     n_theta_sigma = noise$n_theta_sigma,
 
     # lists
-    start       = list(
-      theta_K     = theta_K,
-      theta_mu    = noise$theta.mu,
-      theta_sigma = noise$theta.sigma,
-      theta_V     = noise$theta_V,
-      V           = start.V
-    ),
-    operator_in   = operator_in,
-    noise_in      = update.ngme.noise(noise, n = n_mesh),
+    operator      = operator_in,
+    noise         = update.ngme.noise(noise, n = n_mesh),
     control_f     = control,
     debug         = debug
   )
 
+  class(latent_in) <- "latent"
   return (latent_in)
 }
 

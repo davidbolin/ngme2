@@ -9,8 +9,10 @@
 // Constructor
 Latent::Latent(Rcpp::List latent_in, unsigned long seed) :
     seed          (seed),
-    debug         (Rcpp::as< bool >        (latent_in["debug"])),
-    n_mesh        (Rcpp::as< int >         (latent_in["n_mesh"])),
+    model_type    (Rcpp::as<string>  (latent_in["model_type"])),
+    noise_type    (Rcpp::as<string>  (latent_in["noise_type"])),
+    debug         (Rcpp::as< bool >  (latent_in["debug"])),
+    n_mesh        (Rcpp::as< int >   (latent_in["n_mesh"])),
 
     trace         (0),
     trace_eps     (0),
@@ -28,12 +30,12 @@ if (debug) std::cout << "Begin constructor of latent" << std::endl;
 
     // read the control variable
     Rcpp::List control_f = Rcpp::as<Rcpp::List> (latent_in["control_f"]);
-        fix_flag[0]   = Rcpp::as<bool>        (control_f["fix_operator"]);
-        fix_flag[1]   = Rcpp::as<bool>        (control_f["fix_mu"]);
-        fix_flag[2]   = Rcpp::as<bool>        (control_f["fix_sigma"]);
-        fix_flag[3]   = Rcpp::as<bool>        (control_f["fix_noise"]);
-        fix_flag[4]   = Rcpp::as<bool>        (control_f["fix_V"]);
-        fix_flag[5]   = Rcpp::as<bool>        (control_f["fix_W"]);
+        fix_flag[latent_fix_ope]    = Rcpp::as<bool>        (control_f["fix_operator"]);
+        fix_flag[latent_fix_mu]     = Rcpp::as<bool>        (control_f["fix_mu"]);
+        fix_flag[latent_fix_sigma]  = Rcpp::as<bool>        (control_f["fix_sigma"]);
+        fix_flag[latent_fix_var]    = Rcpp::as<bool>        (control_f["fix_var"]);
+        fix_flag[latent_fix_V]      = Rcpp::as<bool>        (control_f["fix_V"]);
+        fix_flag[latent_fix_W]      = Rcpp::as<bool>        (control_f["fix_W"]);
 
         use_precond  = Rcpp::as<bool>        (control_f["use_precond"] );
         numer_grad   = Rcpp::as<bool>        (control_f["numer_grad"]) ;
@@ -42,13 +44,13 @@ if (debug) std::cout << "Begin constructor of latent" << std::endl;
         // not used
         use_iter_solver = Rcpp::as<bool>    (control_f["use_iter_solver"]);
         
-    Rcpp::List ope_in = Rcpp::as<Rcpp::List> (latent_in["operator_in"]);
+    Rcpp::List ope_in = Rcpp::as<Rcpp::List> (latent_in["operator"]);
         n_ope = ope_in["n_params"];
 
     string noise_type = Rcpp::as<string>     (latent_in["noise_type"]);
     
     // construct from ngme.noise
-    Rcpp::List noise_in = Rcpp::as<Rcpp::List> (latent_in["noise_in"]);
+    Rcpp::List noise_in = Rcpp::as<Rcpp::List> (latent_in["noise"]);
     
         B_mu     = Rcpp::as< MatrixXd >    (noise_in["B_mu"]);
         B_sigma  = Rcpp::as< MatrixXd >    (noise_in["B_sigma"]);
@@ -57,7 +59,7 @@ if (debug) std::cout << "Begin constructor of latent" << std::endl;
     
         theta_mu = Rcpp::as< VectorXd >    (noise_in["theta_mu"]);
         set_theta_mu(theta_mu);
-        theta_sigma = Rcpp::as< VectorXd >    (noise_in["theta_sigma"]);
+        theta_sigma = Rcpp::as< VectorXd > (noise_in["theta_sigma"]);
         set_theta_sigma(theta_sigma);
 
     const int n_theta_V = 1;
@@ -69,7 +71,7 @@ if (debug) std::cout << "Begin constructor of latent" << std::endl;
     } else if (noise_type == "normal") {
         var = new normal(n_mesh);
         // fix mu to be 0
-        fix_flag[fix_mu] = 1;
+        fix_flag[latent_fix_mu] = 1;
     }
     
     // Init V and W
@@ -82,7 +84,7 @@ if (debug) std::cout << "Begin constructor of latent" << std::endl;
     }
 
     // Fix estimation
-    if (fix_flag[fix_V]) var->fixV();
+    if (fix_flag[latent_fix_V]) var->fixV();
 
 if (debug) std::cout << "End constructor of latent" << std::endl;
 }
@@ -111,7 +113,6 @@ if (debug) {
     return result;
 }
 
-
 // return the gradient wrt. theta, theta=log(sigma)
 inline VectorXd Latent::grad_theta_sigma() {
     SparseMatrix<double> K = getK();
@@ -119,47 +120,29 @@ inline VectorXd Latent::grad_theta_sigma() {
     VectorXd prevV = getPrevV();
 
     VectorXd result(n_theta_sigma);
+    // double msq = (K*W - mu.cwiseProduct(V-h)).cwiseProduct(V.cwiseInverse()).dot(K*W - mu(0)*(V-h));
+    // VectorXd vsq = (K*W - mu.cwiseProduct(V-h)).array().pow(2);
+    VectorXd vsq = (K*W - mu.cwiseProduct(V-h)).array().pow(2).matrix().cwiseProduct(V.cwiseInverse());
+    VectorXd grad (n_theta_sigma);
+    // for (int l=0; l < n_theta_sigma; l++) {
+    //     VectorXd tmp1 = vsq.cwiseProduct(sigma.array().pow(-2).matrix()) - VectorXd::Constant(n_mesh, 1);
+    //     VectorXd tmp2 = B_sigma.col(l).cwiseProduct(tmp1);
+    //     grad(l) = tmp2.sum();
+    // }
 
-    // if (n_theta_sigma == 1) {
-    //     // stationary case
-    //     // double msq = (K*W - mu(0)*(V-h)).cwiseProduct(V.cwiseInverse()).dot(K*W - mu(0)*(V-h));
-    //     if (debug) std::cout << "Using stationary sigma"<< std::endl;   
-    //     double msq = (K*W - mu.cwiseProduct(V-h)).array().pow(2).matrix().dot(V.cwiseInverse());
-    //     double grad = - n_mesh / sigma(0) + pow(sigma(0), -3) * msq;
+    // vector manner
+    VectorXd tmp1 = vsq.cwiseProduct(sigma.array().pow(-2).matrix()) - VectorXd::Constant(n_mesh, 1);
+    grad = B_sigma.transpose() * tmp1;
 
-    //     // hessian using prevous V
-    //     // double msq2 = (K*prevW - mu(0)*(prevV-h)).cwiseProduct(prevV.cwiseInverse()).dot(K*prevW - mu(0)*(prevV-h));
-    //     double msq2 = (K*prevW - mu.cwiseProduct(prevV-h)).array().pow(2).matrix().dot(prevV.cwiseInverse());
-    //     double hess = n_mesh / pow(sigma(0), 2) - 3 * pow(sigma(0), -4) * msq2;
-        
-    //     // grad. wrt theta
-    //     result(0) =  grad / (hess * sigma(0) + grad);
-    //    // result(0) = -1.0 / n_mesh * grad * sigma(0);
-    // } else {
+    VectorXd prev_vsq = (K*prevW - mu.cwiseProduct(prevV-h)).array().pow(2).matrix().cwiseProduct(prevV.cwiseInverse());
+    MatrixXd hess (n_theta_sigma, n_theta_sigma);
+    VectorXd tmp3 = -2*prev_vsq.cwiseProduct(sigma.array().pow(-2).matrix());
 
-        // double msq = (K*W - mu.cwiseProduct(V-h)).cwiseProduct(V.cwiseInverse()).dot(K*W - mu(0)*(V-h));
-        // VectorXd vsq = (K*W - mu.cwiseProduct(V-h)).array().pow(2);
-        VectorXd vsq = (K*W - mu.cwiseProduct(V-h)).array().pow(2).matrix().cwiseProduct(V.cwiseInverse());
-        VectorXd grad (n_theta_sigma);
-        // for (int l=0; l < n_theta_sigma; l++) {
-        //     VectorXd tmp1 = vsq.cwiseProduct(sigma.array().pow(-2).matrix()) - VectorXd::Constant(n_mesh, 1);
-        //     VectorXd tmp2 = B_sigma.col(l).cwiseProduct(tmp1);
-        //     grad(l) = tmp2.sum();
-        // }
+    hess = B_sigma.transpose() * tmp3.asDiagonal() * B_sigma;
 
-        // vector manner
-        VectorXd tmp1 = vsq.cwiseProduct(sigma.array().pow(-2).matrix()) - VectorXd::Constant(n_mesh, 1);
-        grad = B_sigma.transpose() * tmp1;
+    result = - 1.0 / n_mesh * grad;
 
-        VectorXd prev_vsq = (K*prevW - mu.cwiseProduct(prevV-h)).array().pow(2).matrix().cwiseProduct(prevV.cwiseInverse());
-        MatrixXd hess (n_theta_sigma, n_theta_sigma);
-        VectorXd tmp3 = -2*prev_vsq.cwiseProduct(sigma.array().pow(-2).matrix());
-
-        hess = B_sigma.transpose() * tmp3.asDiagonal() * B_sigma;
-
-        result = - 1.0 / n_mesh * grad;
-
-        // result = hess.llt().solve(grad);
+    // result = hess.llt().solve(grad);
 
     return result;
 }

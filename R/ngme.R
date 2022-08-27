@@ -17,15 +17,15 @@
 #'
 #' ngme(y ~ f(x, model="AR1", var="NIG"), family="normal", data=df)
 #'
-ngme <- function(formula,
-                 data,
-                 controls      = ngme.control(),
-                 debug         = ngme.debug(),
-                 noise         = ngme.noise(),
-                 beta          = NULL,
-                 seed          = NULL
-                 )
-{
+ngme <- function(
+  formula,
+  data,
+  controls      = ngme.control(),
+  debug         = ngme.debug(),
+  noise         = ngme.noise(),
+  beta          = NULL,
+  seed          = NULL
+) {
   # -------------  CHECK INPUT ---------------
   if (is.null(formula)) {
     stop("Usage: ngme(formula, family, data, ...); see ?ngme\n")
@@ -178,9 +178,10 @@ if (debug$debug) print(str(in_list))
       out$result$latent.model[[i]]$V <- NULL
     }
 
-  class(out)   = "ngme"
+  class(out) <- "ngme"
 
-  print(paste("total time is", Sys.time()-time.start))
-  return (out)
+  print(paste("total time is", Sys.time() - time.start))
+  out
 }
+
 

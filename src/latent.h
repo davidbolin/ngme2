@@ -23,20 +23,21 @@
 using Eigen::SparseMatrix;
 using Eigen::VectorXd;
 
-// to-do : use enum 
-enum Opt_flag {opt_ope, opt_mu, opt_sigma, opt_var};
-enum Fix_flag {fix_ope, fix_mu, fix_sigma, fix_var, fix_V, fix_W};
-const int OPT_FLAG_SIZE = 4;
-const int FIX_FLAG_SIZE = 6;
+enum Latent_fix_flag {
+    latent_fix_ope, latent_fix_mu, latent_fix_sigma, 
+    latent_fix_var, latent_fix_V, latent_fix_W
+};
+const int LATENT_FIX_FLAG_SIZE = 6;
 
 class Latent {
 protected:
     unsigned long seed;
+    string model_type, noise_type;
     bool debug;
-    int n_mesh, n_params, n_ope, n_noise {1}; // n_params=n_ope + n_theta_mu + n_theta_sigma + n_noise
+    int n_mesh, n_params, n_ope, n_var {1}; // n_params=n_ope + n_theta_mu + n_theta_sigma + n_var
 
-    // indicate fixing (K, mu, sigma, noise)  (1 means fix)
-    bool fix_flag[FIX_FLAG_SIZE] {0};
+    // indicate fixing (K, mu, sigma, var)  (1 means fix)
+    bool fix_flag[LATENT_FIX_FLAG_SIZE] {0};
     
     bool use_precond {false}, numer_grad {false};
     bool symmetricK {false};
@@ -79,7 +80,7 @@ public:
     const VectorXd& getW()  const             {return W; }
     const VectorXd& getPrevW()  const         {return prevW; }
     void            setW(const VectorXd& W)   { 
-        if (!fix_flag[fix_W]) {
+        if (!fix_flag[latent_fix_W]) {
             prevW = this->W;
             this->W = W; 
         }
@@ -225,11 +226,16 @@ std::cout << "trace ====== " << trace << std::endl;
 
     // Output
     virtual Rcpp::List get_estimates() const=0;
+    
     Rcpp::List output() const {
         return Rcpp::List::create(
-            Rcpp::Named("W") = W,
+            Rcpp::Named("model_type")   = model_type,
+            Rcpp::Named("noise_type")   = noise_type,
+            Rcpp::Named("theta_mu")     = theta_mu,
+            Rcpp::Named("theta_sigma")  = theta_sigma,
+            Rcpp::Named("theta_V")      = var->get_theta_var(),
             Rcpp::Named("V") = getV(),
-            Rcpp::Named("estimates") = get_estimates()
+            Rcpp::Named("W") = W
         );
     }
 };
@@ -241,8 +247,8 @@ if (debug) std::cout << "Start latent get parameter"<< std::endl;
     int n_ope = ope->get_n_params();
     
     VectorXd parameter (n_params);
-        parameter.segment(0, n_ope)             = get_theta_K();
-        parameter.segment(n_ope, n_theta_mu)          = get_theta_mu();
+        parameter.segment(0, n_ope)                         = get_theta_K();
+        parameter.segment(n_ope, n_theta_mu)                = get_theta_mu();
         parameter.segment(n_ope+n_theta_mu, n_theta_sigma)  = get_theta_sigma();
         parameter(n_ope+n_theta_mu+n_theta_sigma)           = get_theta_var();
     
@@ -256,10 +262,10 @@ if (debug) std::cout << "Start latent gradient"<< std::endl;
     VectorXd grad (n_params);
 auto grad1 = std::chrono::steady_clock::now();
 
-    if (!fix_flag[fix_ope])     grad.segment(0, n_ope)                        = grad_theta_K();         else grad.segment(0, n_ope) = VectorXd::Constant(n_ope, 0);
-    if (!fix_flag[fix_mu])      grad.segment(n_ope, n_theta_mu)               = grad_theta_mu();        else grad.segment(n_ope, n_theta_mu) = VectorXd::Constant(n_theta_mu, 0);
-    if (!fix_flag[fix_sigma])   grad.segment(n_ope+n_theta_mu, n_theta_sigma) = grad_theta_sigma();     else grad.segment(n_ope+n_theta_mu, n_theta_sigma) = VectorXd::Constant(n_theta_sigma, 0);
-    if (!fix_flag[fix_var])     grad(n_ope+n_theta_mu+n_theta_sigma)          = grad_theta_var();       else grad(n_ope+n_theta_mu+n_theta_sigma) = 0;
+    if (!fix_flag[latent_fix_ope])     grad.segment(0, n_ope)                        = grad_theta_K();         else grad.segment(0, n_ope) = VectorXd::Constant(n_ope, 0);
+    if (!fix_flag[latent_fix_mu])      grad.segment(n_ope, n_theta_mu)               = grad_theta_mu();        else grad.segment(n_ope, n_theta_mu) = VectorXd::Constant(n_theta_mu, 0);
+    if (!fix_flag[latent_fix_sigma])   grad.segment(n_ope+n_theta_mu, n_theta_sigma) = grad_theta_sigma();     else grad.segment(n_ope+n_theta_mu, n_theta_sigma) = VectorXd::Constant(n_theta_sigma, 0);
+    if (!fix_flag[latent_fix_var])     grad(n_ope+n_theta_mu+n_theta_sigma)          = grad_theta_var();       else grad(n_ope+n_theta_mu+n_theta_sigma) = 0;
 
 // DEBUG: checking grads
 if (debug) {

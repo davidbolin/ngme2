@@ -2,25 +2,27 @@ a2th <- function(k) {log((-1-k)/(-1+k))}
 th2a <- function(th) {-1 + (2*exp(th)) / (1+exp(th))}
 
 library(devtools); load_all()
-# load_all(reset = FALSE, recompile = FALSE)
 
 ############  0. generating fix effects and control
 seed <- 8
 set.seed(seed)
 
-control = ngme.control(burnin = 100,
+control <- ngme.control(burnin = 100,
                        iterations = 5,
                        gibbs_sample = 5,
                        stepsize = 1,
                        kill_var = FALSE,
                        threshold = 1e-4,
-                       opt_fix_effect = T)
+                       opt_beta = T)
 
 # fix effects
 # X <- (model.matrix(Y1 ~ x1 + x2))  # design matrix
 # Y1 = as.numeric(Y1 + X %*% beta)
 
 ############  1. test AR with nig noise
+n_obs <- 3
+ar1 <- f(1:n_obs, model = "ar1", theta_K = 0.4)
+Y <- ngme.simulate(ar1) + rnorm(n_obs, sd = 2)
 
 n_obs <- 1000
 alpha <- 0.5
@@ -85,7 +87,7 @@ ngme_out = ngme(
       fix_operator     = TRUE,
       fix_mu           = TRUE,
       fix_sigma        = TRUE,
-      fix_noise        = TRUE,
+      fix_var          = TRUE,
       fix_V            = FALSE,
       fix_W            = FALSE,
 
@@ -105,12 +107,16 @@ ngme_out = ngme(
     B_mu = B_noise_mu
   ),
   debug = ngme.debug(
-    debug = TRUE,
-    fix_merr = FALSE
+    debug = TRUE
   ),
   seed = 1
 )
-ngme_out$result
+str(ngme_out$result)
+
+
+
+la <- f(1:10, model="ar1", noise=ngme.noise.nig())
+simulate.latent(la)
 
 # result
 # res0 <- c(alpha, mu, sigma, nu); names(res0) <- c("alpha", "mu", "log(sigma)", "nu"); res0

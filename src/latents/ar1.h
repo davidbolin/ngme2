@@ -76,12 +76,11 @@ public:
     : Latent(latent_in, seed)
     {
 if (debug) std::cout << "Begin Constructor of AR1" << std::endl;        
-        Rcpp::List operator_in = Rcpp::as<Rcpp::List> (latent_in["operator_in"]); // containing C and G
+        Rcpp::List operator_in = Rcpp::as<Rcpp::List> (latent_in["operator"]); // containing C and G
         
         // Init operator for ar1
         ope = new ar_operator(operator_in);
-            Rcpp::List start = Rcpp::as<Rcpp::List> (latent_in["start"]);
-            VectorXd parameter_K = Rcpp::as< VectorXd > (start["theta_K"]);
+            VectorXd parameter_K = Rcpp::as< VectorXd > (operator_in["theta_K"]);
             ope->set_parameter(parameter_K);
 
         // Init K and Q

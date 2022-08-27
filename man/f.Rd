@@ -13,11 +13,13 @@ f(
   A = NULL,
   replicates = NULL,
   theta_K = NULL,
-  start.V = NULL,
+  start_V = NULL,
   data = NULL
 )
 }
 \arguments{
+\item{...}{index}
+
 \item{model}{1. string: type of model, 2. ngme.spde object}
 
 \item{noise}{1. string: type of model, 2. ngme.noise object}
@@ -32,19 +34,9 @@ f(
 
 \item{theta_K}{Starting value for theta.sigma}
 
-\item{start.V}{Starting value for V}
+\item{start_V}{Starting value for V}
 
 \item{data}{if not specified or NULL, inherit the data from ngme function}
-
-\item{B_sigma}{Basis matrix for sigma}
-
-\item{B_mu}{Basis matrix for mu}
-
-\item{theta.sigma}{Starting value for theta.sigma}
-
-\item{theta.mu}{Starting value for theta.sigma}
-
-\item{theta.noise}{Starting value for theta.sigma}
 }
 \value{
 a list latent_in for constructing latent model, e.g. A, h, C, G,

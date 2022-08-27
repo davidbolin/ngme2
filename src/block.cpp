@@ -8,8 +8,8 @@ BlockModel::BlockModel(
     Rcpp::List general_in,
     Rcpp::List latents_in,
     Rcpp::List noise_in,
-    Rcpp::List control_list,
-    Rcpp::List debug_list
+    Rcpp::List control_in,
+    Rcpp::List debug_in
 ) : 
     seed          ( Rcpp::as<unsigned long> (general_in["seed"]) ),
     X             ( Rcpp::as<MatrixXd>   (general_in["X"]) ),
@@ -33,25 +33,24 @@ BlockModel::BlockModel(
     n_la_params   ( Rcpp::as<int>        (general_in["n_la_params"]) ),
     n_feff        ( beta.size()),
     
-    n_gibbs       ( Rcpp::as<int>     (control_list["gibbs_sample"]) ),
-    opt_fix_effect( Rcpp::as<bool>    (control_list["opt_fix_effect"]) ),
-    kill_var      ( Rcpp::as<bool>    (control_list["kill_var"]) ),
-    kill_power    ( Rcpp::as<double>  (control_list["kill_power"]) ), 
-    threshold     ( Rcpp::as<double>  (control_list["threshold"]) ), 
-    termination   ( Rcpp::as<double>  (control_list["termination"]) ), 
+    n_gibbs       ( Rcpp::as<int>     (control_in["gibbs_sample"]) ),
+    opt_beta      ( Rcpp::as<bool>    (control_in["opt_beta"]) ),
+    kill_var      ( Rcpp::as<bool>    (control_in["kill_var"]) ),
+    kill_power    ( Rcpp::as<double>  (control_in["kill_power"]) ), 
+    threshold     ( Rcpp::as<double>  (control_in["threshold"]) ), 
+    termination   ( Rcpp::as<double>  (control_in["termination"]) ), 
 
     A             ( n_obs, n_meshs), 
     K             ( n_meshs, n_meshs), 
     // dK            ( n_meshs, n_meshs),
     // d2K           ( n_meshs, n_meshs),
 
-    debug         ( Rcpp::as<bool> (debug_list["debug"]) ),
-    fix_merr      ( Rcpp::as<bool> (debug_list["fix_merr"]))
+    debug         ( Rcpp::as<bool> (debug_in["debug"]) )
 {        
 if (debug) std::cout << "Begin Block Constructor" << std::endl;  
     rng.seed(seed);
-    const int burnin = control_list["burnin"];
-    const double stepsize = control_list["stepsize"];
+    const int burnin = control_in["burnin"];
+    const double stepsize = control_in["stepsize"];
 
     // Init each latent model
     for (int i=0; i < n_latent; ++i) {
@@ -70,6 +69,13 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
         }
     }
 
+    // fix estimation
+    fix_flag[block_fix_beta]   = Rcpp::as<bool>        (control_in["fix_beta"]);
+    fix_flag[block_fix_mu]     = Rcpp::as<bool>        (control_in["fix_mu"]);
+    fix_flag[block_fix_sigma]  = Rcpp::as<bool>        (control_in["fix_sigma"]);
+    fix_flag[block_fix_var]    = Rcpp::as<bool>        (control_in["fix_var"]);
+    fix_flag[block_fix_V]      = Rcpp::as<bool>        (control_in["fix_V"]);
+
     // Initialize W
     // if (start_in["block.W"] != R_NilValue) {
     //     VectorXd block_W = Rcpp::as<VectorXd>   (start_in["block.W"]);
@@ -78,7 +84,7 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
     // }
 
     /* Fixed effects */
-    if (beta.size()==0) opt_fix_effect = false;
+    if (beta.size()==0) opt_beta = false;
 
     /* Init variables: h, A */
     int n = 0;
@@ -191,7 +197,7 @@ VectorXd BlockModel::get_parameter() const {
         pos += theta.size();
     }
 
-    if (opt_fix_effect) {
+    if (opt_beta) {
         thetas.segment(n_la_params, n_feff) = beta;
     }
     
@@ -223,7 +229,7 @@ auto timer_computeg = std::chrono::steady_clock::now();
 time_compute_g += since(timer_computeg).count();
 
         // fixed effects
-        if (opt_fix_effect) {
+        if (opt_beta) {
             gradient.segment(n_la_params, n_feff) = grad_beta();
         }
         
@@ -266,7 +272,7 @@ void BlockModel::set_parameter(const VectorXd& Theta) {
     }
 
     // fixed effects
-    if (opt_fix_effect) {
+    if (opt_beta) {
         beta = Theta.segment(n_la_params, n_feff);
     }
 
@@ -379,7 +385,6 @@ VectorXd BlockModel::get_theta_merr() const {
 
 VectorXd BlockModel::grad_theta_merr() {
     VectorXd grad = VectorXd::Zero(n_merr);
-    if (fix_merr) return grad;
 
     if (family=="normal") {
         grad = grad_theta_sigma();
@@ -407,49 +412,52 @@ void BlockModel::set_theta_merr(const VectorXd& theta_merr) {
 
 // generate output to R
 Rcpp::List BlockModel::output() const {
-    Rcpp::List latents_estimates;
-    
+    Rcpp::List latents_output;
     for (int i=0; i < n_latent; i++) {
-        latents_estimates.push_back((*latents[i]).output());
+        latents_output.push_back((*latents[i]).output());
     }
+
     return Rcpp::List::create(
-        Rcpp::Named("mesurement.noise")     = get_theta_merr(),
-        Rcpp::Named("fixed.effects")        = beta,
-        // Rcpp::Named("block.W")              = getW(),
-        // Rcpp::Named("block.V")              = var->getV(),
-        Rcpp::Named("latent.model")         = latents_estimates,
-        Rcpp::Named("eta")         = var->get_var()
+        Rcpp::Named("noise")     = Rcpp::List::create(
+            Rcpp::Named("noise_type")         = family,
+            Rcpp::Named("theta_mu")     = theta_mu,
+            Rcpp::Named("theta_sigma")  = theta_sigma,
+            Rcpp::Named("theta_V")      = var->get_theta_var(),
+            Rcpp::Named("V")            = var->getV()
+        ),
+        Rcpp::Named("fixed_effects")    = beta,
+        Rcpp::Named("latents")          = latents_output
     );
 }
 
 // provide stepsize
 inline void BlockModel::examine_gradient() {
     
-    // examine if the gradient under the threshold
-    for (int i=0; i < n_params; i++) {
-        if (abs(gradients(i)) < threshold) {
-            indicate_threshold(i) = 1;
-        }      // mark if under threshold
-        if (!indicate_threshold(i)) steps_to_threshold(i) = counting; // counting up
-    }
+//     // examine if the gradient under the threshold
+//     for (int i=0; i < n_params; i++) {
+//         if (abs(gradients(i)) < threshold) {
+//             indicate_threshold(i) = 1;
+//         }      // mark if under threshold
+//         if (!indicate_threshold(i)) steps_to_threshold(i) = counting; // counting up
+//     }
     
-    counting += 1;
-    stepsizes = (VectorXd::Constant(n_params, counting) - steps_to_threshold).cwiseInverse().array().pow(kill_power);
+//     counting += 1;
+//     stepsizes = (VectorXd::Constant(n_params, counting) - steps_to_threshold).cwiseInverse().array().pow(kill_power);
 
-    // finish opt fo latents
-    for (int i=0; i < n_latent; i++) {
-        for (int j=0; j < latent_para; j++) {
-            int index = latent_para*i + j;
+//     // finish opt fo latents
+//     for (int i=0; i < n_latent; i++) {
+//         for (int j=0; j < latent_para; j++) {
+//             int index = latent_para*i + j;
             
-            // if (counting - steps_to_threshold(index) > 100) 
-            if (abs(gradients(index)) < termination) 
-                latents[i]->finishOpt(j);
-        }
-    }
+//             // if (counting - steps_to_threshold(index) > 100) 
+//             if (abs(gradients(index)) < termination) 
+//                 latents[i]->finishOpt(j);
+//         }
+//     }
 
-if (debug) {
-    std::cout << "steps=" << steps_to_threshold <<std::endl;
-    std::cout << "gradients=" << gradients <<std::endl;
-    std::cout << "stepsizes=" << stepsizes <<std::endl;
-}
+// if (debug) {
+//     std::cout << "steps=" << steps_to_threshold <<std::endl;
+//     std::cout << "gradients=" << gradients <<std::endl;
+//     std::cout << "stepsizes=" << stepsizes <<std::endl;
+// }
 }

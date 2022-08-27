@@ -14,40 +14,56 @@
 #' @export
 #'
 #' @examples
-ngme.control <- function(burnin            = 100,
-                         iterations        = 100,
-                         gibbs_sample      = 5,
-                         stepsize          = 1,
-                         opt_fix_effect    = TRUE,
+ngme.control <- function(
+  burnin            = 100,
+  iterations        = 100,
+  gibbs_sample      = 5,
+  stepsize          = 1,
 
-                         kill_var           = FALSE,
-                         kill_power         = 0.75,
-                         threshold         = 1e-5,
-                         termination       = 1e-7,
+  opt_beta          = TRUE,
+  # fix estimation
+  fix_beta          = FALSE,
+  fix_mu            = FALSE,
+  fix_sigma         = FALSE,
+  fix_var           = FALSE,
+  fix_V             = FALSE,
+  init_V            = NULL,
 
-                         window.size       = 1
-                         ) {
+  kill_var          = FALSE,
+  kill_power        = 0.75,
+  threshold         = 1e-5,
+  termination       = 1e-7,
 
+  window.size       = 1
+) {
   if ((kill_power <= 0.5) || (kill_power > 1)) {
     stop("reduceVar should be in (0.5,1]")
   }
 
-  control = list( burnin            = burnin,
-                  iterations        = iterations,
-                  gibbs_sample      = gibbs_sample,
-                  stepsize          = stepsize,
-                  opt_fix_effect    = opt_fix_effect,
+  control <- list(
+    burnin            = burnin,
+    iterations        = iterations,
+    gibbs_sample      = gibbs_sample,
+    stepsize          = stepsize,
+    opt_beta          = opt_beta,
+    fix_beta          = fix_beta,
+    fix_mu            = fix_mu,
+    fix_sigma         = fix_sigma,
+    fix_var           = fix_var,
+    fix_V             = fix_V,
+    init_V            = init_V,
 
-                  # variance reduction
-                  kill_var          = kill_var,
-                  kill_power        = kill_power,
-                  threshold         = threshold,
-                  termination       = termination
-                )
+    kill_var          = FALSE,
+
+    # variance reduction
+    kill_var          = kill_var,
+    kill_power        = kill_power,
+    threshold         = threshold,
+    termination       = termination
+  )
 
   class(control) <- "control.ngme"
-
-  return (control)
+  control
 }
 
 #' Generate control specifications for f function
@@ -73,7 +89,7 @@ ngme.control.f <- function(
   fix_operator  = FALSE,
   fix_mu        = FALSE,
   fix_sigma     = FALSE,
-  fix_noise     = FALSE,
+  fix_var     = FALSE,
   fix_V         = FALSE,
   fix_W         = FALSE,
 
@@ -92,7 +108,7 @@ ngme.control.f <- function(
     fix_operator  = fix_operator,
     fix_mu        = fix_mu,
     fix_sigma     = fix_sigma,
-    fix_noise     = fix_noise,
+    fix_var       = fix_var,
     fix_V         = fix_V,
     fix_W         = fix_W,
 
@@ -128,18 +144,12 @@ ngme.control.f <- function(
 #' @examples
 ngme.debug <- function(
   debug     = TRUE,
-  fix_feff  = FALSE,
-  fix_merr  = FALSE,
-  not_run   = FALSE,
-  trueW = NULL
+  not_run   = FALSE
 ) {
 
   debug  = list(
     debug     = debug,
-    fix_feff   = fix_feff,
-    fix_merr   = fix_merr,
-    not_run    = not_run,
-    trueW = NULL
+    not_run    = not_run
   )
 
   return (debug)

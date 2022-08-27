@@ -6,13 +6,6 @@ The development version can be installed using the command
 remotes::install_github("davidbolin/ngme2", ref = "devel")
 ```
 
-## done
-
-* matern model
-* non-stationary matern
-* non-stationery nig noise (e.g. mu)
-* replicates of the process (in the f function)
-
 ## to-do
 
 * (To be done jointly): homepage, vignette + documentation
@@ -34,7 +27,7 @@ remotes::install_github("davidbolin/ngme2", ref = "devel")
 
 ## doing now
 
-**non-gaussian measurement noise**
+**Non-gaussian measurement noise**
 family = "nig", parameter to be estimate : noise_mu, noise_sigma, noise_nu
     1. hardcode every noise in block model or split into classes
 
@@ -44,6 +37,11 @@ family = "nig", parameter to be estimate : noise_mu, noise_sigma, noise_nu
 1. In printing grad. for the non-stationary mu.
 2. In ngme.start, change the name of the output to theta_merr.
 
-## meeting notes
+## Meeting notes
 
-..
+## done
+
+* Matern model
+* non-stationary Matern
+* non-stationery nig noise (e.g. mu)
+* replicates of the process (in the f function)

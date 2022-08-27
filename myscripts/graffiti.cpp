@@ -80,8 +80,9 @@ m << 1, 2, 3,
      7, 8, 9;
 
     // cout << m.col(0); // m(Eigen::all, 1) * 5;
-    
-    cout << v2;
+    VectorXd m9 (0);
+    v1.segment(0, 0) = m9;
+    cout << v1;
 
     return 0;
 }

@@ -10,7 +10,7 @@ BlockModel
 #include <Eigen/Sparse>
 
 #include <string>
-#include <vector>xx
+#include <vector>
 #include <iostream>
 #include <random>
 #include "include/timer.h"
@@ -27,9 +27,12 @@ BlockModel
 using Eigen::SparseMatrix;
 using Eigen::MatrixXd;
 
-const int latent_para = 4;
+const int BLOCK_FIX_FLAG_SIZE = 6;
 
-// enum Fix_flag {fix_beta, fix_mu, fix_sigma, fix_var, fix_V};
+enum Block_fix_flag {
+    block_fix_beta, block_fix_mu, block_fix_sigma, 
+    block_fix_var, block_fix_V
+};
 
 class BlockModel : public Model {
 protected:
@@ -57,9 +60,12 @@ protected:
     int n_obs; // how many observation
     int n_params, n_la_params, n_feff, n_merr;  // number of total params, la params, ...
 
+    // fix estimation
+    bool fix_flag[BLOCK_FIX_FLAG_SIZE] {0};
+
     // controls
     int n_gibbs;
-    bool opt_fix_effect, kill_var;
+    bool opt_beta, kill_var;
     double kill_power, threshold, termination;
 
     SparseMatrix<double> A, K;      // not used: dK, d2K; 
@@ -193,6 +199,8 @@ if (debug) std::cout << "Finish burn in period." << std::endl;
     }
 
     void sample_cond_block_V() {
+        if (fix_flag[block_fix_V]) return;
+
         if (family == "nig") {
             VectorXd residual = get_residual();
             VectorXd a_inc_vec = noise_mu.cwiseQuotient(noise_sigma).array().pow(2);

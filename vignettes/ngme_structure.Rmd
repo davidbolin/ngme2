@@ -1,0 +1,24 @@
+---
+title: Ngme2 Class Structure"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Ngme2 Class Structure}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+## Introduction
+
+In this vignette we provide a brief introduction to the structure `ngme2` package. 
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+
+library(devtools)
+```
+

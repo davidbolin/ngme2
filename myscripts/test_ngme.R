@@ -20,15 +20,19 @@ control <- ngme.control(burnin = 100,
 # Y1 = as.numeric(Y1 + X %*% beta)
 
 ############  1. test AR with nig noise
-n_obs <- 3
-ar1 <- f(1:n_obs, model = "ar1", theta_K = 0.4)
-Y <- ngme.simulate(ar1) + rnorm(n_obs, sd = 2)
-
+load_all()
 n_obs <- 1000
-alpha <- 0.5
-mu = 2; delta = -mu
-nu = 1
-sigma = 3
+ar1 <- f(1:n_obs, model = "ar1", theta_K = 0.4)
+Y <- ngme.simulate(
+  ar1,
+  noise = ngme.noise(
+    theta_mu = 2,
+    theta_sigma = 0,
+    theta_V = 2
+  ),
+  seed=NULL
+) + rnorm(n_obs, sd = 1.3)
+
 
 # non-stationary mesurement noise
 ## sigma
@@ -211,3 +215,17 @@ simulate.latent(la)
 # plot(ngme_out, param = "la", type = "traj", which=2)
 # summary(ngme_out)
 # ngme_out$result
+
+document()
+load_all()
+a <- list()
+class(a) <- "abc"
+ngme.simulate(a)
+t
+
+mean.abc <- function(x) {
+  print("11")
+}
+
+mean(a)
+

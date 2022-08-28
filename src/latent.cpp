@@ -191,27 +191,6 @@ double Latent::function_K(VectorXd parameter) {
     return l;
 }
 
-// only for stationary case, delete later
-// W|V ~ N(K^-1 mu(V-h), sigma^2 K-1 diag(V) K-T)
-// double Latent::function_kappa(double eps) {
-//     SparseMatrix<double> K = ope->getK(0, eps);
-
-//     VectorXd V = getV();
-//     VectorXd SV = getSV();
-
-//     SparseMatrix<double> Q = K.transpose() * SV.cwiseInverse().asDiagonal() * K;
-    
-//     solver_Q.compute(Q);
-    
-//     VectorXd tmp = K * W - mu.cwiseProduct(V-h);
-
-//     double l = 0.5 * solver_Q.logdet() 
-//                - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
-//                 // - 0.5 * (prevW-mean).transpose() * Q * (prevW-mean);
-
-//     return l;
-// }
-
 // numerical gradient for K parameters
 VectorXd Latent::numerical_grad() {
 std::cout << "start numerical gradient" <<std::endl;

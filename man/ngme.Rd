@@ -2,7 +2,7 @@
 % Please edit documentation in R/ngme.R
 \name{ngme}
 \alias{ngme}
-\title{Fit a non-guassian model}
+\title{Additive non-guassian model fitting}
 \usage{
 ngme(
   formula,
@@ -35,7 +35,7 @@ ngme(
 a list of outputs
 }
 \description{
-Fit a non-guassian model
+\code{ngme} function performs a analysis of non-gaussian additive models.
 }
 \examples{
 ngme(formula = (y1 | y2 ~ x1 + x2 + f(x1, model="SPDE", var="nig") + f(W) | x3 + f(X|I, model="ar1", var="nig")),

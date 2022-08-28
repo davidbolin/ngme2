@@ -79,7 +79,7 @@ ngme.start <- function(
 
 #' Convert sparse matrix into sparse dgCMatrix
 #'
-#' @return
+#' @return sparse dgCMatrix
 #' @export
 #'
 #' @examples
@@ -101,7 +101,7 @@ ngme.as.sparse <- function(G) {
   )
 }
 
-#' Title
+#' Make index for the matern model
 #'
 #' @param name
 #' @param n.spde

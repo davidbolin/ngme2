@@ -1,4 +1,7 @@
-#' Fit a non-guassian model
+#' Additive non-guassian model fitting
+#'
+#'  \code{ngme} function performs a analysis of non-gaussian additive models.
+#'
 #'
 #' @param formula formula
 #' @param family  distribution family
@@ -14,8 +17,6 @@
 #'
 #' @examples
 #' ngme(formula = (y1 | y2 ~ x1 + x2 + f(x1, model="SPDE", var="nig") + f(W) | x3 + f(X|I, model="ar1", var="nig")),
-#'
-#' ngme(y ~ f(x, model="AR1", var="NIG"), family="normal", data=df)
 #'
 ngme <- function(
   formula,

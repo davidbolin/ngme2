@@ -1,6 +1,10 @@
 /*
     latent class:
-    basically, providing get, grad, set (theta_kappa, ...)
+    basically, providing get, grad, set (theta_K, ...)
+        1. theta_K
+        2. theta_mu
+        3. theta_sigma
+        4. theta_V
 */
 
 #ifndef NGME_LATANT_H
@@ -146,7 +150,7 @@ public:
     virtual double function_K(SparseMatrix<double> K);
     virtual VectorXd numerical_grad(); // given eps
 
-    // only for stationary case
+    // update the trace value
     void compute_trace() {
         SparseMatrix<double> K = ope->getK();
         SparseMatrix<double> dK = ope->get_dK(0);
@@ -173,8 +177,7 @@ public:
             }
         }
 
-std::cout << "trace ====== " << trace << std::endl;
-
+// std::cout << "trace ====== " << trace << std::endl;
 // std::cout << "time for the trace (ms): " << since(timer_trace).count() << std::endl;   
 
         // update trace_eps if using hessian
@@ -234,12 +237,11 @@ std::cout << "trace ====== " << trace << std::endl;
             Rcpp::Named("theta_mu")     = theta_mu,
             Rcpp::Named("theta_sigma")  = theta_sigma,
             Rcpp::Named("theta_V")      = var->get_theta_var(),
-            Rcpp::Named("V") = getV(),
-            Rcpp::Named("W") = W
+            Rcpp::Named("V")            = getV(),
+            Rcpp::Named("W")            = W
         );
     }
 };
-
 
 /*    Optimizer related    */
 inline const VectorXd Latent::get_parameter() const {
@@ -260,8 +262,8 @@ inline const VectorXd Latent::get_grad() {
 if (debug) std::cout << "Start latent gradient"<< std::endl;   
     int n_ope = ope->get_n_params();
     VectorXd grad (n_params);
+    
 auto grad1 = std::chrono::steady_clock::now();
-
     if (!fix_flag[latent_fix_ope])     grad.segment(0, n_ope)                        = grad_theta_K();         else grad.segment(0, n_ope) = VectorXd::Constant(n_ope, 0);
     if (!fix_flag[latent_fix_mu])      grad.segment(n_ope, n_theta_mu)               = grad_theta_mu();        else grad.segment(n_ope, n_theta_mu) = VectorXd::Constant(n_theta_mu, 0);
     if (!fix_flag[latent_fix_sigma])   grad.segment(n_ope+n_theta_mu, n_theta_sigma) = grad_theta_sigma();     else grad.segment(n_ope+n_theta_mu, n_theta_sigma) = VectorXd::Constant(n_theta_sigma, 0);

@@ -1,15 +1,23 @@
-#' f function for specifying a model
+#' Specifying a latent model
+#'
+#' Function used for defining of smooth and spatial terms 
+#' within ngme model formulae. 
+#' The function does not evaluate anything - 
+#' it exists purely to help set up a model. 
+#' (see ngme.models.types for available models).
 #'
 #' @param ...    index
 #' @param model     1. string: type of model, 2. ngme.spde object
 #' @param noise     1. string: type of model, 2. ngme.noise object
-#' @param replicates   Representing the replicates (can also be specified in each ngme model)
+#' @param replicates   Representing the replicates 
+#'  (can also be specified in each ngme model)
 #' @param control      control variables for f model
 #' @param A            A Matrix connecting observation and
 #' @param theta_K      Starting value for theta.sigma
 #' @param start_V      Starting value for V
 #' @param debug        Debug variables
-#' @param data      if not specified or NULL, inherit the data from ngme function
+#' @param data      if not specified or NULL, then 
+#'  inherit the data from ngme function
 #'
 #' @return a list latent_in for constructing latent model, e.g. A, h, C, G,
 #' which also has

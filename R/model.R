@@ -1,10 +1,12 @@
+#' ngme model specification
+#' 
 #' Generating C, G and A given index and replicates
 #'
 #' @param index index for the process
 #' @param replicates replicates for the process
 #' @param alpha initial value for alpha
 #'
-#' @return
+#' @return a list of specification of model
 #' @export
 #'
 #' @examples
@@ -51,15 +53,3 @@ ngme.ar1 <- function(
   class(ar1_in) <- "ngme.ar1"
   return (ar1_in)
 }
-
-
-# ngme_model <- function() {
-#   out <- list(
-#     latents = list(),
-
-#   )
-
-#   out
-# }
-
-

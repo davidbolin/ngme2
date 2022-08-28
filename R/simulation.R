@@ -1,23 +1,57 @@
-#' simulate one latent model with noise
+#' Generic function for generating
+#' the realization of latent or noise
 #'
-#' @param model
-#' @param B.mu
-#' @param B.sigma
-#' @param theta.mu
-#' @param theta.sigma
-#' @param noise
+#' @param x ngme latent or noise object
+#' @param ...  extra argument
 #'
-#' @return
+#' @return a realization of latent or noise
 #' @export
 #'
 #' @examples
+#' n_obs <- 10
+#' ar1 <- f(1:n_obs, model = "ar1", theta_K = 0.4)
+#' ngme.simulate(
+#'   ar1,
+#'   noise = ngme.noise(
+#'     theta_mu = 2,
+#'     theta_sigma = 0,
+#'     theta_V = 2
+#'   ),
+#'   seed=NULL
+#' )
+#'
+ngme.simulate <- function(x, ...) {
+    UseMethod("ngme.simulate")
+}
+
+#' Simulate latent model with noise
+#'
+#' @param latent latent model
+#' @param noise noise object
+#' @param seed seed
+#'
+#' @return a realization of latent model
+#' @export
+#'
+#' @examples
+#' n_obs <- 10
+#' ar1 <- f(1:n_obs, model = "ar1", theta_K = 0.4)
+#' ngme.simulate(
+#'   ar1,
+#'   noise = ngme.noise(
+#'     theta_mu = 2,
+#'     theta_sigma = 0,
+#'     theta_V = 2
+#'   ),
+#'   seed=NULL
+#' )
 ngme.simulate.latent <- function(
-    latent = NULL,
+    latent,
     noise  = ngme.noise(),
-    seed   = 1
+    seed   = NULL
 ) {
     n <- latent$n_mesh
-    e <- ngme.simulate.noise(noise, n = n)
+    e <- ngme.simulate.noise(noise, n = n, seed = seed)
 
     # create operator structure
     if (latent$model_type == "ar1") {
@@ -30,18 +64,25 @@ ngme.simulate.latent <- function(
     W
 }
 
-ngme.simulate <- function() {
-    UseMethod("ngme.simulate")
-}
-
-#' simulate noise
+#' Simulate ngme noise
 #'
-#' @param model
+#' @param noise noise object
+#' @param n number of realization
+#' @param seed seed
 #'
-#' @return
+#' @return a realization of ngme noise
 #' @export
 #'
 #' @examples
+#' ngme.simulate(
+#'   noise = ngme.noise(
+#'     theta_mu = 2,
+#'     theta_sigma = 0,
+#'     theta_V = 2
+#'   ),
+#'   n = 10,
+#'   seed=NULL
+#' )
 ngme.simulate.noise <- function(noise, n, seed = NULL) {
     if (is.null(seed)) seed <- as.numeric(Sys.time())
 

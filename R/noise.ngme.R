@@ -1,17 +1,20 @@
 #' ngme noise specification
 #'
+#' Function for specifying ngme noise.
+#' Use ngme.noise.types() to check all the available types.
+#'
 #' @param type        type of noise, "nig", "normal"
-#' @param theta_V Starting value for theta.sigma
+#' @param theta_V      value for theta_V
 #' @param theta_mu     specify a non-stationary noise using theta_mu
 #' @param theta_sigma  specify a non-stationary noise using theta_sigma
 #' @param B_mu         Basis matrix for mu (if non-stationary)
 #' @param B_sigma      Basis matrix for sigma (if non-stationary)
 #'
-#' @return
+#' @return a list of specification of noise
 #' @export
 #'
 #' @examples
-#' 
+#'
 
 ngme.noise <- function(
   type = "nig",
@@ -60,13 +63,13 @@ ngme.noise <- function(
       n_theta_sigma = length(theta_sigma),
       n_theta_V     = 1
     ),
-    class = "ngme.noise"
+    class = "noise"
   )
 }
 
-#' create a normal noise
+#' Specify a normal noise
 #'
-#' @param sd  standard deviation for noise
+#' @param sd  standard deviation
 #' @param theta_sigma  specify a non-stationary noise using theta_sigma
 #' @param B_sigma      Basis matrix for sigma (if non-stationary)
 #'
@@ -104,6 +107,18 @@ ngme.noise.normal <- function(
 }
 
 
+#' Specify a nig noise (normal inverse Gaussian)
+#'
+#' @param theta_V      value of eta
+#' @param theta_mu     specify a non-stationary noise using theta_mu
+#' @param theta_sigma  specify a non-stationary noise using theta_sigma
+#' @param B_mu         Basis matrix for mu (if non-stationary)
+#' @param B_sigma      Basis matrix for sigma (if non-stationary)
+#'
+#' @return a list of specification for ngme
+#' @export
+#'
+#' @examples
 ngme.noise.nig <- function(
   theta_mu = 0,
   theta_sigma = 0,
@@ -120,7 +135,7 @@ ngme.noise.nig <- function(
   )
 }
 
-# update ngme.noise 
+# update ngme.noise
 update.ngme.noise <- function(noise, n = NULL) {
   stopifnot("n should be integer" = is.numeric(n))
   B_mu <- noise$B_mu

@@ -103,15 +103,20 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
         var = new normal(n_obs);
         VectorXd theta_sigma = Rcpp::as<VectorXd>  (noise_in["theta_sigma"]);
         n_merr = n_theta_sigma;
-        // sigma_eps = theta_sigma(0);
-        // QQ = Q + pow(sigma_eps, -2) * A.transpose() * A;
     } else if (family=="nig") {
         n_merr = n_theta_sigma + n_theta_mu + 1;
         double theta_V = Rcpp::as< double >      (noise_in["theta_V"]);
         var = new ind_IG(theta_V, n_obs, rng());
     }
     n_params = n_la_params + n_feff + n_merr;
-
+    
+    // fix V and init V
+    if (fix_flag[block_fix_V]) var->fixV();
+    if (noise_in["V"] != R_NilValue) {
+        VectorXd V = Rcpp::as< VectorXd >    (noise_in["V"]);
+        var->setV(V);
+    }
+    
     // Init solvers
     VectorXd inv_SV = VectorXd::Constant(n_meshs, 1).cwiseQuotient(getSV());
     SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;

@@ -75,8 +75,8 @@ if (debug) std::cout << "Begin constructor of latent" << std::endl;
     }
     
     // Init V and W
-    if (control_f["init_V"] != R_NilValue) {
-        VectorXd V = Rcpp::as< VectorXd >    (control_f["init_V"]);
+    if (noise_in["V"] != R_NilValue) {
+        VectorXd V = Rcpp::as< VectorXd >    (noise_in["V"]);
         var->setV(V);
     }
     if (control_f["init_W"] != R_NilValue) {

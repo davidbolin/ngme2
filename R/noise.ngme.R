@@ -5,6 +5,7 @@
 #'
 #' @param type        type of noise, "nig", "normal"
 #' @param theta_V      value for theta_V
+#' @param V           value for V
 #' @param theta_mu     specify a non-stationary noise using theta_mu
 #' @param theta_sigma  specify a non-stationary noise using theta_sigma
 #' @param B_mu         Basis matrix for mu (if non-stationary)
@@ -17,15 +18,16 @@
 #'
 
 ngme.noise <- function(
-  type = "nig",
-  theta_mu = 0,
+  type        = "nig",
+  theta_mu    = 0,
   theta_sigma = 0,
-  theta_V = 1,
-  B_mu = NULL,
-  B_sigma = NULL
+  theta_V     = 1,
+  B_mu        = NULL,
+  B_sigma     = NULL,
+  V           = NULL
 ) {
-  if (type == "gaussian") type <- "normal"
   # check input
+  if (type == "gaussian") type <- "normal"
   stopifnot("Unkown noise type. Please check ngme.noise.types()" =
     type %in% ngme.noise.types())
   if (is.null(B_mu))    B_mu <- as.matrix(1)
@@ -55,6 +57,7 @@ ngme.noise <- function(
       n_noise       = nrow(B_mu),
       type          = type,
       theta_V       = theta_V,
+      V             = V,
       theta_mu      = theta_mu,
       theta_sigma   = theta_sigma,
       B_mu          = B_mu,
@@ -123,6 +126,7 @@ ngme.noise.nig <- function(
   theta_mu = 0,
   theta_sigma = 0,
   theta_V = 1,
+  V = NULL,
   B_mu = matrix(1),
   B_sigma = matrix(1)
 ) {
@@ -130,6 +134,7 @@ ngme.noise.nig <- function(
     theta_mu = theta_mu,
     theta_sigma = theta_sigma,
     theta_V = theta_V,
+    V = V,
     B_mu = B_mu,
     B_sigma = B_sigma
   )

@@ -19,6 +19,7 @@ ngme.control <- function(
   iterations        = 100,
   gibbs_sample      = 5,
   stepsize          = 1,
+  estimation        = TRUE,
 
   opt_beta          = TRUE,
   # fix estimation
@@ -45,6 +46,7 @@ ngme.control <- function(
     iterations        = iterations,
     gibbs_sample      = gibbs_sample,
     stepsize          = stepsize,
+    estimation        = estimation,
     opt_beta          = opt_beta,
     fix_beta          = fix_beta,
     fix_mu            = fix_mu,
@@ -94,7 +96,6 @@ ngme.control.f <- function(
   fix_W         = FALSE,
 
   # initial things
-  init_V        = NULL,
   init_W        = NULL,
   theta.K       = 1, # for spde model, use spde(theta.int=...)
   numer_grad    = FALSE,
@@ -113,7 +114,6 @@ ngme.control.f <- function(
     fix_W         = fix_W,
 
     # initial things
-    init_V        = init_V,
     init_W        = init_W,
     theta.K       = theta.K,
 

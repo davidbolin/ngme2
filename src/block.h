@@ -199,8 +199,6 @@ if (debug) std::cout << "Finish burn in period." << std::endl;
     }
 
     void sample_cond_block_V() {
-        if (fix_flag[block_fix_V]) return;
-
         if (family == "nig") {
             VectorXd residual = get_residual();
             VectorXd a_inc_vec = noise_mu.cwiseQuotient(noise_sigma).array().pow(2);

@@ -44,7 +44,7 @@ ngme <- function(
   # path <- file.path(tempdir(), "ngme_df.rda")
   # save(data, file = path)
 
-  stopifnot(class(noise) == "ngme.noise")
+  stopifnot(class(noise) == "noise")
   family <- noise$type
 
   if (is.null(seed)) seed <- Sys.time()
@@ -130,15 +130,15 @@ ngme <- function(
     # }
 
     # if (is.null(start$block.W) && isTRUE(controls$fixW)) stop("if fixing W, the initial W should be provided.")
-    if (family=="normal" && is.null(noise$theta_sigma == 0))
+    if (family == "normal" && is.null(noise$theta_sigma == 0))
       noise$theta_sigma = sd(lm.model$residuals)
 
-    in_list = list(general_in = general_in,
-                  latents_in  = latents_in,
-                  noise_in    = update.ngme.noise(noise, n = length(Y)),
-                  control_in  = controls,
-                  debug       = debug,
-                  seed        = seed)
+    in_list <- list(general_in = general_in,
+                    latents_in  = latents_in,
+                    noise_in    = update.ngme.noise(noise, n = length(Y)),
+                    control_in  = controls,
+                    debug       = debug,
+                    seed        = seed)
 
   } else {
     stop("unknown structure of formula")
@@ -152,7 +152,7 @@ if (debug$debug) print(str(in_list))
     print(str(in_list))
     stop()
   }
-  out = estimate_cpp(in_list)
+  out <- estimate_cpp(in_list)
 
   ################# Construct Output ####################
     out$input = in_list

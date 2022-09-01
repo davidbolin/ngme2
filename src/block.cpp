@@ -168,6 +168,8 @@ void BlockModel::sampleW_VY()
 // if (debug) std::cout << "starting sampling W." << std::endl;
     VectorXd SV = getSV();
     VectorXd inv_SV = VectorXd::Constant(SV.size(), 1).cwiseQuotient(SV);
+    // VectorXd V = getV();
+    // VectorXd inv_V = VectorXd::Constant(V.size(), 1).cwiseQuotient(V);
 
     SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
     // SparseMatrix<double> QQ = Q + pow(sigma_eps, -2) * A.transpose() * A;
@@ -180,6 +182,7 @@ void BlockModel::sampleW_VY()
     //     pow(sigma_eps, -2) * A.transpose() * (Y - X * beta);
     VectorXd residual = get_residual();
     VectorXd M = K.transpose() * inv_SV.asDiagonal() * getMean() + 
+    // VectorXd M = K.transpose() * inv_V.asDiagonal() * getMean() + 
         A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V).asDiagonal() * (residual + A * getW());
     
     VectorXd z (n_meshs); 
@@ -258,6 +261,7 @@ std::cout << "avg time for sampling W(ms): " << time_sample_w / n_gibbs << std::
 
     avg_gradient = (1.0/n_gibbs) * avg_gradient;
     gradients = avg_gradient;
+std::cout << "gradient= " << gradients << std::endl;   
     
     // EXAMINE the gradient to change the stepsize
     if (kill_var) examine_gradient();
@@ -424,10 +428,10 @@ Rcpp::List BlockModel::output() const {
 
     return Rcpp::List::create(
         Rcpp::Named("noise")     = Rcpp::List::create(
-            Rcpp::Named("noise_type")         = family,
+            Rcpp::Named("noise_type")   = family,
             Rcpp::Named("theta_mu")     = theta_mu,
             Rcpp::Named("theta_sigma")  = theta_sigma,
-            Rcpp::Named("theta_V")      = var->get_theta_var(),
+            Rcpp::Named("theta_V")      = var->get_var(),
             Rcpp::Named("V")            = var->getV()
         ),
         Rcpp::Named("fixed_effects")    = beta,

@@ -230,17 +230,8 @@ public:
     // Output
     virtual Rcpp::List get_estimates() const=0;
     
-    Rcpp::List output() const {
-        return Rcpp::List::create(
-            Rcpp::Named("model_type")   = model_type,
-            Rcpp::Named("noise_type")   = noise_type,
-            Rcpp::Named("theta_mu")     = theta_mu,
-            Rcpp::Named("theta_sigma")  = theta_sigma,
-            Rcpp::Named("theta_V")      = var->get_theta_var(),
-            Rcpp::Named("V")            = getV(),
-            Rcpp::Named("W")            = W
-        );
-    }
+    // will be used as input
+    Rcpp::List output() const;
 };
 
 /*    Optimizer related    */
@@ -254,6 +245,7 @@ if (debug) std::cout << "Start latent get parameter"<< std::endl;
         parameter.segment(n_ope+n_theta_mu, n_theta_sigma)  = get_theta_sigma();
         parameter(n_ope+n_theta_mu+n_theta_sigma)           = get_theta_var();
     
+// if (debug) std::cout << "parameter= " << parameter << std::endl;   
 if (debug) std::cout << "End latent get parameter"<< std::endl;   
     return parameter;
 }
@@ -271,8 +263,8 @@ auto grad1 = std::chrono::steady_clock::now();
 
 // DEBUG: checking grads
 if (debug) {
+    // std::cout << "gradient= " << grad << std::endl;   
     std::cout << "gradient time " << since(grad1).count() << std::endl;   
-    std::cout << "gradient= " << grad << std::endl;   
 }
     return grad;
 }

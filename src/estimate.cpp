@@ -42,13 +42,13 @@ Rcpp::List estimate_cpp(Rcpp::List in_list) {
         // doing optimization
 auto timer = std::chrono::steady_clock::now();
         Optimizer opt;
-        Rcpp::List trajectory = opt.sgd(block, 0.1, iterations);
+        trajectory = opt.sgd(block, 0.1, iterations);
 std::cout << "Total time is (ms): " << since(timer).count() << std::endl;
     }
 
     return Rcpp::List::create(
-            Rcpp::Named("trajectory") = trajectory,
-            Rcpp::Named("output") = block.output()
+        Rcpp::Named("opt_trajectory") = trajectory,
+        Rcpp::Named("est_output") = block.output()
     );
 }
 

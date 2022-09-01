@@ -13,10 +13,10 @@
 #'  (can also be specified in each ngme model)
 #' @param control      control variables for f model
 #' @param A            A Matrix connecting observation and
-#' @param theta_K      Starting value for theta.sigma
-#' @param start_V      Starting value for V
+#' @param theta_K      Unbounded parameter for K
 #' @param debug        Debug variables
 #' @param data      if not specified or NULL, then 
+#' @param W          starting realization of the process
 #'  inherit the data from ngme function
 #'
 #' @return a list latent_in for constructing latent model, e.g. A, h, C, G,
@@ -28,18 +28,19 @@
 #' @export
 f <- function(
   ...,
+  replicates = NULL,
   model  = "ar1",
   noise = ngme.noise(),
+  data = NULL,
   control = ngme.control.f(),
   debug  = FALSE,
   A = NULL,
-  replicates=NULL,
   theta_K = NULL,
-  start_V = NULL,
-  data = NULL
+  W = NULL
 ) {
   ################## Index and Replicates ##################
 
+  if (is.null(W) && control$fix_W) stop("Provide initial W to use fix_W")
   # get the index from ddd
   ddd <- match.call(expand.dots = FALSE)$...
   if (length(ddd) > 1) {
@@ -147,8 +148,8 @@ f <- function(
   # total params
   n_la_params = operator_in$n_params + noise$n_theta_mu + noise$n_theta_sigma + noise$n_theta_V
 
-  # check initial values
-  if (!is.null(control$init_W)) stopifnot(length(control$init_W) == n_mesh)
+  # check initial value of W
+  if (!is.null(W)) stopifnot(length(W) == n_mesh)
 
   # overwrites
   if (!is.null(theta_K)) operator_in$theta_K <- theta_K
@@ -160,6 +161,7 @@ f <- function(
     A           = A,
     h           = h,
     n_la_params = n_la_params,
+    W           = W,
 
     # mu and sigma
     B_mu          = B_mu,

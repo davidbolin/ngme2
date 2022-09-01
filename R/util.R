@@ -75,8 +75,6 @@ ngme.start <- function(
   return (start)
 }
 
-
-
 #' Convert sparse matrix into sparse dgCMatrix
 #'
 #' @return sparse dgCMatrix
@@ -135,8 +133,8 @@ ngme.matern.make.index <- function(n.spde=NULL,
     }
 
   } else{
-    n_mesh = n.spde
-    if(is.null(dim)){
+    n_mesh <- n.spde
+    if(is.null(dim)) {
       stop("You should provide the dimension d!")
     }
   }
@@ -148,6 +146,44 @@ ngme.matern.make.index <- function(n.spde=NULL,
   return(out)
 }
 
+# compare numerical grad. and ana. grad.
+# compare_grad_ngme <- function(
+#   formula,
+#   data,
+#   controls      = ngme.control(),
+#   debug         = ngme.debug(),
+#   noise         = ngme.noise(),
+#   last_fit      = NULL,
+#   beta          = NULL,
+#   seed          = NULL
+# ) {
+#   control_ana <- 
+#   control_num <- 
+# }
 
+# draft
+# acceptNA <- function(Y) {
+#   Y_clean <- na.rm(Y)
+  
+#   # compute A matrix
+#   A <- makeA(loc = Y, mesh)
+#   A_clean <- makeA(loc = Y_clean, mesh)
+  
+#   ngme1 <- ngme(
+#     formula = Y_clean ~ f(A = A_clean),
+#     control = ngme.control(estimation = TRUE)
+#   )
 
+#   # Y has NA
+#   ngme2 <- ngme(
+#     formula = Y_clean ~ f(A = A),
+#     control = ngme.control(estimation = FALSE),
+#     last_fit = ngme1
+#   )
 
+#   ngme2$output$W
+# }
+
+# post.sampleW(ngme) {
+#   W
+# }

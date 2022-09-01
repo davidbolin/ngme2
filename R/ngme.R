@@ -4,15 +4,15 @@
 #'
 #'
 #' @param formula formula
-#' @param family  distribution family
 #' @param data    a dataframe contains data
 #' @param controls control variables
 #' @param debug  debug option
-#' @param start  1. last fitting object 2. ngme.start() for block model
+#' @param last_fit  1. ngme object from last fitting
+#' @param noise measurement noise specification
+#' @param beta starting value for fixed effects
 #' @param seed  set the seed for pesudo random number generator
-#' @param theta.family starting value for the measurement noise
 #'
-#' @return a list of outputs
+#' @return a list of outputs contains estimation of operator paramters, noise parameters
 #' @export
 #'
 #' @examples
@@ -24,12 +24,13 @@ ngme <- function(
   controls      = ngme.control(),
   debug         = ngme.debug(),
   noise         = ngme.noise(),
+  last_fit      = NULL,
   beta          = NULL,
   seed          = NULL
 ) {
   # -------------  CHECK INPUT ---------------
   if (is.null(formula)) {
-    stop("Usage: ngme(formula, family, data, ...); see ?ngme\n")
+    stop("Formula empty. See ?ngme\n")
   }
 
   if (is.null(data)) {
@@ -40,19 +41,10 @@ ngme <- function(
     stop("\n\tArgument `data' must be a data.frame or a list.")
   }
 
-  # # store data into temp. file
-  # path <- file.path(tempdir(), "ngme_df.rda")
-  # save(data, file = path)
-
   stopifnot(class(noise) == "noise")
   family <- noise$type
 
   if (is.null(seed)) seed <- Sys.time()
-
-  # generate debug option
-  if (!is.null(debug$trueW)) {
-    debug$fixW = TRUE
-  }
 
   # 2. parse the formula
   time.start <- Sys.time()
@@ -106,36 +98,41 @@ ngme <- function(
       n_params         = n_params # how many param to opt. in total
     )
 
-####### 4. Set starting point / initial values (beta, sigma_eps, latents)
-    # use prevous ngme object
-    # if (inherits(start, "ngme")) {
-    #   start <- start$output
+    noise <- update.ngme.noise(noise, n = length(Y))
 
-    #   # put the last estimates into latents_in
-    #   for (i in seq_along(latents_in)) {
-    #     estimates = start$latent.model[[i]]$estimates
-
-    #     # If not specified, use previous fitting
-    #     # if (is.null(latents_in[[i]]$start$theta_K))
-    #       latents_in[[i]]$start$theta_K = estimates[[1]]
-    #     # if (is.null(latents_in[[i]]$start$theta_mu))
-    #       latents_in[[i]]$start$theta_mu = estimates[["theta.mu"]]
-    #     # if (is.null(latents_in[[i]]$start$theta_sigma))
-    #       latents_in[[i]]$start$theta_sigma = estimates[["theta.sigma"]]
-    #     # if (is.null(latents_in[[i]]$start$theta_noise))
-    #       latents_in[[i]]$start$theta_noise = estimates[["theta.noise"]]
-
-    #     latents_in[[i]]$start$V = start$latent.model[[i]][["V"]]
-    #   }
-    # }
-
-    # if (is.null(start$block.W) && isTRUE(controls$fixW)) stop("if fixing W, the initial W should be provided.")
     if (family == "normal" && is.null(noise$theta_sigma == 0))
       noise$theta_sigma = sd(lm.model$residuals)
 
+  ####### Use Last_fit ngme object to update in_list
+    stopifnot("last_fit should be an ngme object"
+      = class(last_fit) == "ngme" || is.null(last_fit))
+
+    if (inherits(last_fit, "ngme")) {
+      output <- last_fit$est_output
+      # use last fit estimates
+
+      # block noise
+      noise$theta_mu    <- output$noise[["theta_mu"]]
+      noise$theta_sigma <- output$noise[["theta_sigma"]]
+      noise$theta_noise <- output$noise[["theta_V"]]
+      noise$V           <- output$noise[["V"]]
+
+      # latents
+      for (i in seq_along(latents_in)) {
+        last_fit_latent <- output$latent[[i]]
+        latents_in[[i]]$operator$theta_K  <- last_fit_latent[["theta_K"]]
+        latents_in[[i]]$W                 <- last_fit_latent[["W"]]
+
+        latents_in[[i]]$noise$theta_mu    <- last_fit_latent[["theta_mu"]]
+        latents_in[[i]]$noise$theta_sigma <- last_fit_latent[["theta_sigma"]]
+        latents_in[[i]]$noise$theta_noise <- last_fit_latent[["theta_V"]]
+        latents_in[[i]]$noise$V           <- last_fit_latent[["V"]]
+      }
+    }
+
     in_list <- list(general_in = general_in,
                     latents_in  = latents_in,
-                    noise_in    = update.ngme.noise(noise, n = length(Y)),
+                    noise_in    = noise,
                     control_in  = controls,
                     debug       = debug,
                     seed        = seed)
@@ -150,39 +147,30 @@ if (debug$debug) print(str(in_list))
   ################# Run CPP ####################
   if (debug$not_run) {
     print(str(in_list))
-    stop()
+    stop("Start estimation by setting not_run = FALSE")
   }
+
   out <- estimate_cpp(in_list)
 
-  ################# Construct Output ####################
-    out$input = in_list
+################# Construct Output ####################
+    # out$input <- in_list
 
-    # fix_eff
-    out$n_fe     = ncol(X)
+    # # fix_eff
+    # out$n_fe     = ncol(X)
 
-    # m_err
-    out$family = general_in$family
+    # # m_err
+    # out$family = general_in$family
 
-    # operator
-    out$n_la_params = unlist(lapply(latents_in, function(x) x["n_la_params"] ))
+    # # operator
+    # out$n_la_params = unlist(lapply(latents_in, function(x) x["n_la_params"] ))
 
-    # process
-    out$n_latent = length(latents_in)
-    out$model.types = model.types
-    out$var.types   = var.types
-
-    # generate output
-    out$result <- out$output
-    out$result$block.W <- NULL
-    for (i in seq_along(out$result$latent.model)) {
-      out$result$latent.model[[i]]$W <- NULL
-      out$result$latent.model[[i]]$V <- NULL
-    }
+    # # process
+    # out$n_latent = length(latents_in)
+    # out$model.types = model.types
+    # out$var.types   = var.types
 
   class(out) <- "ngme"
-
   print(paste("total time is", Sys.time() - time.start))
+
   out
 }
-
-

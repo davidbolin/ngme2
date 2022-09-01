@@ -32,6 +32,7 @@ std::cout << "constructor of Operator" << std::endl;
         use_num_dK = Rcpp::as<bool> (ope_in["use_num_dK"]);
     };
 
+    VectorXd get_parameter_K() const {return parameter_K; }
     int get_n_params() const {return parameter_K.size(); }
     virtual VectorXd get_parameter() const {return parameter_K; }
     virtual void set_parameter(VectorXd parameter_K) {this->parameter_K = parameter_K;}

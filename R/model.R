@@ -53,3 +53,7 @@ ngme.ar1 <- function(
   class(ar1_in) <- "ngme.ar1"
   return (ar1_in)
 }
+
+
+# ngme.matern <- function() {
+# }

@@ -31,9 +31,9 @@ public:
         fix_V = true;
     }
 
-    void setV(const VectorXd& V) {
+    void setV(const VectorXd& newV) {
         prevV = V;
-        this->V = V;
+        V = newV;
     }
     
     virtual void sample_V()=0;

@@ -4,7 +4,7 @@
 #' Use ngme.noise.types() to check all the available types.
 #'
 #' @param type        type of noise, "nig", "normal"
-#' @param theta_V      value for theta_V
+#' @param theta_V     value for theta_V, theta_V = eta > 0
 #' @param V           value for V
 #' @param theta_mu     specify a non-stationary noise using theta_mu
 #' @param theta_sigma  specify a non-stationary noise using theta_sigma
@@ -16,12 +16,11 @@
 #'
 #' @examples
 #'
-
 ngme.noise <- function(
   type        = "nig",
   theta_mu    = 0,
   theta_sigma = 0,
-  theta_V     = 1,
+  theta_V     = 1, 
   B_mu        = NULL,
   B_sigma     = NULL,
   V           = NULL
@@ -30,6 +29,9 @@ ngme.noise <- function(
   if (type == "gaussian") type <- "normal"
   stopifnot("Unkown noise type. Please check ngme.noise.types()" =
     type %in% ngme.noise.types())
+
+  stopifnot("theta_V is positive" = theta_V > 0)
+  
   if (is.null(B_mu))    B_mu <- as.matrix(1)
   if (is.null(B_sigma)) B_sigma <- as.matrix(1)
 

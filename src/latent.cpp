@@ -75,16 +75,16 @@ if (debug) std::cout << "Begin constructor of latent" << std::endl;
     }
     
     // Init V and W
+    if (fix_flag[latent_fix_V]) var->fixV();
     if (noise_in["V"] != R_NilValue) {
         VectorXd V = Rcpp::as< VectorXd >    (noise_in["V"]);
-        var->setV(V);
+        var->setV(V); var->setV(V); 
+// if (debug) std::cout << "I JUST SET V"<< std::endl;   
     }
-    if (control_f["init_W"] != R_NilValue) {
-        W = Rcpp::as< VectorXd >    (control_f["init_W"]);
+    if (latent_in["W"] != R_NilValue) {
+        W = Rcpp::as< VectorXd >    (latent_in["W"]);
+        prevW = W;
     }
-
-    // Fix estimation
-    if (fix_flag[latent_fix_V]) var->fixV();
 
 if (debug) std::cout << "End constructor of latent" << std::endl;
 }
@@ -215,6 +215,22 @@ std::cout << "start numerical gradient" <<std::endl;
     } 
     return grad;
 }
+
+Rcpp::List Latent::output() const {
+    Rcpp::List out = Rcpp::List::create(
+        Rcpp::Named("model_type")   = model_type,
+        Rcpp::Named("noise_type")   = noise_type,
+        Rcpp::Named("theta_K")      = ope->get_parameter_K(), // same parameterization as input
+        Rcpp::Named("theta_mu")     = theta_mu,
+        Rcpp::Named("theta_sigma")  = theta_sigma,
+        Rcpp::Named("theta_V")      = var->get_var(),  // gives eta > 0, not log(eta)
+        Rcpp::Named("V")            = getV(),
+        Rcpp::Named("W")            = W
+    );
+    // out.attr("class") = "noise";
+    return out;
+}
+
 
 // // numerical gradient for K parameters
 // VectorXd Latent::numerical_grad() {

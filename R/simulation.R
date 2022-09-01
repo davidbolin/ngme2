@@ -4,13 +4,13 @@
 #' @param x ngme latent or noise object
 #' @param ...  extra argument
 #'
-#' @return a realization of latent or noise
+#' @return a realization and a noise object
 #' @export
 #'
 #' @examples
 #' n_obs <- 10
 #' ar1 <- f(1:n_obs, model = "ar1", theta_K = 0.4)
-#' ngme.simulate(
+#' simulation <- ngme.simulate(
 #'   ar1,
 #'   noise = ngme.noise(
 #'     theta_mu = 2,
@@ -19,6 +19,7 @@
 #'   ),
 #'   seed=NULL
 #' )
+#' simulation$realization
 #'
 ngme.simulate <- function(x, ...) {
     UseMethod("ngme.simulate")
@@ -35,36 +36,37 @@ ngme.simulate <- function(x, ...) {
 #'
 #' @examples
 #' n_obs <- 10
-#' ar1 <- f(1:n_obs, model = "ar1", theta_K = 0.4)
 #' ngme.simulate(
-#'   ar1,
+#'   f(1:n_obs, model = "ar1", theta_K = 0.4),
 #'   noise = ngme.noise(
 #'     theta_mu = 2,
 #'     theta_sigma = 0,
 #'     theta_V = 2
 #'   ),
 #'   seed=NULL
-#' )
+#' )$realization
 ngme.simulate.latent <- function(
     latent,
-    noise  = ngme.noise(),
+    # noise  = ngme.noise(),
     seed   = NULL
 ) {
     n <- latent$n_mesh
-    simulation <- ngme.simulate.noise(noise, n = n, seed = seed)
-    realization <- simulation$realization
+    simu_noise <- ngme.simulate.noise(latent$noise, n = n, seed = seed)
+    real_noise <- simu_noise$realization
 
     # create operator structure
     if (latent$model_type == "ar1") {
         alpha <- latent$operator$theta_K
-        W <- Reduce(function(x, y) {y + alpha * x}, realization, accumulate = T)
+        W <- Reduce(function(x, y) {y + alpha * x}, real_noise, accumulate = T)
+    } else if (latent$model_type == "matern") {
+        
     } else {
         stop("not implement yet")
     }
 
     list(
         realization = W,
-        noise = simulation$noise
+        noise = simu_noise$noise
     )
 }
 
@@ -86,7 +88,7 @@ ngme.simulate.latent <- function(
 #'   ),
 #'   n = 10,
 #'   seed=NULL
-#' )
+#' )$realization
 ngme.simulate.noise <- function(noise, n, seed = NULL) {
     if (is.null(seed)) seed <- as.numeric(Sys.time())
 

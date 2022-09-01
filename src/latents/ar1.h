@@ -97,6 +97,7 @@ if (debug) std::cout << "Begin Constructor of AR1" << std::endl;
 if (debug) std::cout << "End Constructor of AR1" << std::endl;        
     }
     
+    // For optimizer
     // override get_the_K with change of variable
     VectorXd get_theta_K() const {
         VectorXd alpha = ope->get_parameter();

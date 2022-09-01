@@ -28,7 +28,6 @@ ngme.control <- function(
   fix_sigma         = FALSE,
   fix_var           = FALSE,
   fix_V             = FALSE,
-  init_V            = NULL,
 
   kill_var          = FALSE,
   kill_power        = 0.75,
@@ -53,7 +52,6 @@ ngme.control <- function(
     fix_sigma         = fix_sigma,
     fix_var           = fix_var,
     fix_V             = fix_V,
-    init_V            = init_V,
 
     kill_var          = FALSE,
 
@@ -96,7 +94,6 @@ ngme.control.f <- function(
   fix_W         = FALSE,
 
   # initial things
-  init_W        = NULL,
   theta.K       = 1, # for spde model, use spde(theta.int=...)
   numer_grad    = FALSE,
   use_precond   = TRUE,
@@ -114,7 +111,6 @@ ngme.control.f <- function(
     fix_W         = fix_W,
 
     # initial things
-    init_W        = init_W,
     theta.K       = theta.K,
 
     numer_grad    = numer_grad,
@@ -132,9 +128,6 @@ ngme.control.f <- function(
 #' Generate debug option
 #'
 #' @param debug    debug mode
-#' @param fix_W    fix W
-#' @param fix_feff to-do
-#' @param fix_merr fix measurement noise
 #' @param not_run  print input without running estimation
 
 #'

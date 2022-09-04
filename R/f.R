@@ -68,8 +68,9 @@ f <- function(
 
   if (is.character(model)) {  ######## string
     if (model == "ar1") {
+      stopifnot(is.null(theta_K) || (theta_K > 0 && theta_K < 1))
+      
       model_type <- "ar1"
-
       ar1_in = ngme.ar1(
         index = index,
         replicates = replicates

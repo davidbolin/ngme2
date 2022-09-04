@@ -31,10 +31,7 @@ if (debug) std::cout << "Begin constructor of latent" << std::endl;
     // read the control variable
     Rcpp::List control_f = Rcpp::as<Rcpp::List> (latent_in["control_f"]);
         fix_flag[latent_fix_ope]    = Rcpp::as<bool>        (control_f["fix_operator"]);
-        fix_flag[latent_fix_mu]     = Rcpp::as<bool>        (control_f["fix_mu"]);
-        fix_flag[latent_fix_sigma]  = Rcpp::as<bool>        (control_f["fix_sigma"]);
-        fix_flag[latent_fix_var]    = Rcpp::as<bool>        (control_f["fix_var"]);
-        fix_flag[latent_fix_V]      = Rcpp::as<bool>        (control_f["fix_V"]);
+
         fix_flag[latent_fix_W]      = Rcpp::as<bool>        (control_f["fix_W"]);
 
         use_precond  = Rcpp::as<bool>        (control_f["use_precond"] );
@@ -51,7 +48,11 @@ if (debug) std::cout << "Begin constructor of latent" << std::endl;
     
     // construct from ngme.noise
     Rcpp::List noise_in = Rcpp::as<Rcpp::List> (latent_in["noise"]);
-    
+        fix_flag[latent_fix_mu]     = Rcpp::as<bool>  (noise_in["fix_mu"]);
+        fix_flag[latent_fix_sigma]  = Rcpp::as<bool>  (noise_in["fix_sigma"]);
+        fix_flag[latent_fix_var]    = Rcpp::as<bool>  (noise_in["fix_var"]);
+        fix_flag[latent_fix_V]      = Rcpp::as<bool>  (noise_in["fix_V"]);
+        
         B_mu     = Rcpp::as< MatrixXd >    (noise_in["B_mu"]);
         B_sigma  = Rcpp::as< MatrixXd >    (noise_in["B_sigma"]);
         n_theta_mu    =   (B_mu.cols());

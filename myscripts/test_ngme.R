@@ -4,7 +4,7 @@ th2a <- function(th) {-1 + (2*exp(th)) / (1+exp(th))}
 library(devtools); load_all()
 
 ############  0. generating fix effects and control
-seed <- 50
+seed <- 51
 set.seed(seed)
 
 # fix effects
@@ -13,7 +13,7 @@ set.seed(seed)
 
 ############  1. test AR with nig noise
 n_obs <- 500
-ar_mu <- 2
+ar_mu <- 4
 ar_sigma <- 1.3
 ar_eta <- 0.8
 
@@ -29,7 +29,7 @@ ar1 <- ngme.simulate(
   seed = 123
 )
 
-noise_theta_mu    <- 4
+noise_theta_mu    <- -6
 noise_theta_sigma <- 2
 noise_theta_V     <- 1.7
 
@@ -37,7 +37,11 @@ nig_simulation <- ngme.simulate.noise(
   ngme.noise.nig(
     theta_mu = noise_theta_mu,
     theta_sigma = noise_theta_sigma,
-    theta_V = noise_theta_V
+    theta_V = noise_theta_V,
+
+    fix_sigma = TRUE,
+    fix_var = TRUE,
+    fix_V = TRUE
   ),
   n = n_obs
 )
@@ -55,10 +59,9 @@ Y <- ar1$realization + nig_simulation$realization
 
 ngme_control <- ngme.control(
   estimation = TRUE,
-  fix_V = TRUE,
 
   burnin = 200,
-  iterations = 10,
+  iterations = 500,
   gibbs_sample = 5,
   stepsize = 1,
   kill_var = FALSE,
@@ -66,7 +69,7 @@ ngme_control <- ngme.control(
   opt_beta = T
 )
 
-ngme_out2 <- ngme(
+ngme_out <- ngme(
   Y ~ 0 +
   f(1:n_obs,
     replicates = NULL,
@@ -76,17 +79,17 @@ ngme_out2 <- ngme(
       theta_mu = ar_mu,
       theta_sigma = ar_sigma,
       theta_V = ar_eta,
-      V = ar1$noise$V
+      V = ar1$noise$V,
+
+      fix_mu           = TRUE,
+      fix_sigma        = TRUE,
+      fix_var          = TRUE,
+      fix_V            = FALSE
     ),
     control = ngme.control.f(
       numer_grad       = FALSE,
       use_precond      = TRUE,
-
       fix_operator     = TRUE,
-      fix_mu           = TRUE,
-      fix_sigma        = TRUE,
-      fix_var          = TRUE,
-      fix_V            = FALSE,
       fix_W            = FALSE
     ),
     debug = TRUE
@@ -99,14 +102,14 @@ ngme_out2 <- ngme(
     not_run = F
   ),
   seed = 1
-  , last_fit = ngme_out
+  # , last_fit = ngme_out
 )
 
-str(ngme_out2$est_output)
+str(ngme_out$est_output)
 c(noise_theta_mu, noise_theta_sigma, noise_theta_V)
 
 # trace plot
-# plot_out(ngme_out$opt_trajectory, start = 5, n = 1)
+plot_out(ngme_out$opt_trajectory, start = 5, n = 3)
 
 
 # ngme_out2 <- ngme(
@@ -158,3 +161,6 @@ c(noise_theta_mu, noise_theta_sigma, noise_theta_V)
 # )
 
 # str(ngme_out2$output)
+
+
+# ?dnorm

@@ -187,3 +187,7 @@ ngme.matern.make.index <- function(n.spde=NULL,
 # post.sampleW(ngme) {
 #   W
 # }
+
+# plot_density <- function(ngme) {
+
+# }

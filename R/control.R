@@ -4,11 +4,14 @@
 #' @param iterations      optimizing terations
 #' @param gibbs_sample    number of gibbs sampels
 #' @param stepsize        stepsize
-#' @param opt_fix_effect  whether to optimize fix effects
 #' @param kill_var        whether to kill the variance
 #' @param kill_power      the power of variance killing (if kill the variance)
 #' @param threshold       till when start to kill the variance
 #' @param termination     till when stop optimizing
+#' @param estimation
+#' @param opt_beta
+#' @param fix_beta
+#' @param window.size
 #'
 #' @return list of control variables
 #' @export
@@ -22,12 +25,7 @@ ngme.control <- function(
   estimation        = TRUE,
 
   opt_beta          = TRUE,
-  # fix estimation
   fix_beta          = FALSE,
-  fix_mu            = FALSE,
-  fix_sigma         = FALSE,
-  fix_var           = FALSE,
-  fix_V             = FALSE,
 
   kill_var          = FALSE,
   kill_power        = 0.75,
@@ -48,10 +46,6 @@ ngme.control <- function(
     estimation        = estimation,
     opt_beta          = opt_beta,
     fix_beta          = fix_beta,
-    fix_mu            = fix_mu,
-    fix_sigma         = fix_sigma,
-    fix_var           = fix_var,
-    fix_V             = fix_V,
 
     kill_var          = FALSE,
 
@@ -69,16 +63,13 @@ ngme.control <- function(
 #' Generate control specifications for f function
 #'
 #' @param fix_operator  whether to fix operator parameters
-#' @param fix_mu        whether to fix mu
-#' @param fix_sigma     whether to fix sigma
-#' @param fix_noise     whether to fix noise parameters
 #' @param numer_grad    whether to use numerical gradient
 #' @param use_precond   whether to use preconditioner
 #' @param eps           eps for numerical gradient
-#' @param fix_V         to-do
 #' @param theta.K       theta.K for parameter K
+#' @param fix_W
+#' @param use_iter_solver
 #' @param use_num_hess  whether to use numerical hessian
-#' @param CG_soler      whether to use conjugate gradient solver
 #'
 #' @return list of control variables
 #' @export
@@ -87,10 +78,6 @@ ngme.control <- function(
 ngme.control.f <- function(
   # fix things
   fix_operator  = FALSE,
-  fix_mu        = FALSE,
-  fix_sigma     = FALSE,
-  fix_var     = FALSE,
-  fix_V         = FALSE,
   fix_W         = FALSE,
 
   # initial things
@@ -104,10 +91,6 @@ ngme.control.f <- function(
 
   control = list(
     fix_operator  = fix_operator,
-    fix_mu        = fix_mu,
-    fix_sigma     = fix_sigma,
-    fix_var       = fix_var,
-    fix_V         = fix_V,
     fix_W         = fix_W,
 
     # initial things

@@ -71,10 +71,6 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
 
     // fix estimation
     fix_flag[block_fix_beta]   = Rcpp::as<bool>        (control_in["fix_beta"]);
-    fix_flag[block_fix_mu]     = Rcpp::as<bool>        (control_in["fix_mu"]);
-    fix_flag[block_fix_sigma]  = Rcpp::as<bool>        (control_in["fix_sigma"]);
-    fix_flag[block_fix_var]    = Rcpp::as<bool>        (control_in["fix_var"]);
-    fix_flag[block_fix_V]      = Rcpp::as<bool>        (control_in["fix_V"]);
 
     // Initialize W
     // if (start_in["block.W"] != R_NilValue) {
@@ -95,6 +91,11 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
     assemble();
 
     /* Measurement noise */
+    fix_flag[block_fix_mu]     = Rcpp::as<bool> (noise_in["fix_mu"]);
+    fix_flag[block_fix_sigma]  = Rcpp::as<bool> (noise_in["fix_sigma"]);
+    fix_flag[block_fix_var]    = Rcpp::as<bool> (noise_in["fix_var"]);
+    fix_flag[block_fix_V]      = Rcpp::as<bool> (noise_in["fix_V"]);
+
     family = Rcpp::as<string>  (noise_in["type"]);
     noise_mu = B_mu * theta_mu;
     noise_sigma = (B_sigma * theta_sigma).array().exp();
@@ -396,11 +397,11 @@ VectorXd BlockModel::grad_theta_merr() {
     VectorXd grad = VectorXd::Zero(n_merr);
 
     if (family=="normal") {
-        grad = grad_theta_sigma();
+        if (!fix_flag[latent_fix_sigma])  grad = grad_theta_sigma();
     } else {
-        grad.segment(0, n_theta_mu) = grad_theta_mu();
-        grad.segment(n_theta_mu, n_theta_sigma) = grad_theta_sigma();
-        grad(n_theta_mu + n_theta_sigma) = var->grad_theta_var();
+        if (!fix_flag[latent_fix_mu])     grad.segment(0, n_theta_mu) = grad_theta_mu();
+        if (!fix_flag[latent_fix_sigma])  grad.segment(n_theta_mu, n_theta_sigma) = grad_theta_sigma();
+        if (!fix_flag[latent_fix_var])    grad(n_theta_mu + n_theta_sigma) = var->grad_theta_var();
     }
 
     return grad;

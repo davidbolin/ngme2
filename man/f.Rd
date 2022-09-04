@@ -6,23 +6,28 @@
 \usage{
 f(
   ...,
+  replicates = NULL,
   model = "ar1",
   noise = ngme.noise(),
+  data = NULL,
   control = ngme.control.f(),
   debug = FALSE,
   A = NULL,
-  replicates = NULL,
   theta_K = NULL,
-  start_V = NULL,
-  data = NULL
+  W = NULL
 )
 }
 \arguments{
 \item{...}{index}
 
+\item{replicates}{Representing the replicates 
+(can also be specified in each ngme model)}
+
 \item{model}{1. string: type of model, 2. ngme.spde object}
 
 \item{noise}{1. string: type of model, 2. ngme.noise object}
+
+\item{data}{if not specified or NULL, then}
 
 \item{control}{control variables for f model}
 
@@ -30,14 +35,9 @@ f(
 
 \item{A}{A Matrix connecting observation and}
 
-\item{replicates}{Representing the replicates 
-(can also be specified in each ngme model)}
+\item{theta_K}{Unbounded parameter for K}
 
-\item{theta_K}{Starting value for theta.sigma}
-
-\item{start_V}{Starting value for V}
-
-\item{data}{if not specified or NULL, then 
+\item{W}{starting realization of the process
 inherit the data from ngme function}
 }
 \value{

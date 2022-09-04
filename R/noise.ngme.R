@@ -10,6 +10,10 @@
 #' @param theta_sigma  specify a non-stationary noise using theta_sigma
 #' @param B_mu         Basis matrix for mu (if non-stationary)
 #' @param B_sigma      Basis matrix for sigma (if non-stationary)
+#' @param fix_mu
+#' @param fix_sigma
+#' @param fix_var
+#' @param fix_V
 #'
 #' @return a list of specification of noise
 #' @export
@@ -20,10 +24,14 @@ ngme.noise <- function(
   type        = "nig",
   theta_mu    = 0,
   theta_sigma = 0,
-  theta_V     = 1, 
+  theta_V     = 1,
   B_mu        = NULL,
   B_sigma     = NULL,
-  V           = NULL
+  V           = NULL,
+  fix_mu      = FALSE,
+  fix_sigma   = FALSE,
+  fix_var     = FALSE,
+  fix_V       = FALSE
 ) {
   # check input
   if (type == "gaussian") type <- "normal"
@@ -31,7 +39,7 @@ ngme.noise <- function(
     type %in% ngme.noise.types())
 
   stopifnot("theta_V is positive" = theta_V > 0)
-  
+
   if (is.null(B_mu))    B_mu <- as.matrix(1)
   if (is.null(B_sigma)) B_sigma <- as.matrix(1)
 
@@ -66,7 +74,11 @@ ngme.noise <- function(
       B_sigma       = B_sigma,
       n_theta_mu    = length(theta_mu),
       n_theta_sigma = length(theta_sigma),
-      n_theta_V     = 1
+      n_theta_V     = 1,
+      fix_mu        = fix_mu,
+      fix_sigma     = fix_sigma,
+      fix_var       = fix_var,
+      fix_V         = fix_V
     ),
     class = "noise"
   )
@@ -85,7 +97,8 @@ ngme.noise <- function(
 ngme.noise.normal <- function(
   sd = NULL,
   theta_sigma = NULL,
-  B_sigma = NULL
+  B_sigma = NULL,
+  ...
 ) {
   if (!is.null(sd) && !is.null(theta_sigma))
     stop("Please only use sd or theta_sigma as input")
@@ -107,7 +120,8 @@ ngme.noise.normal <- function(
   ngme.noise(
     type = "normal",
     theta_sigma = theta_sigma,
-    B_sigma = B_sigma
+    B_sigma = B_sigma,
+    ...
   )
 }
 
@@ -130,7 +144,8 @@ ngme.noise.nig <- function(
   theta_V = 1,
   V = NULL,
   B_mu = matrix(1),
-  B_sigma = matrix(1)
+  B_sigma = matrix(1),
+  ...
 ) {
   ngme.noise(
     theta_mu = theta_mu,
@@ -138,7 +153,8 @@ ngme.noise.nig <- function(
     theta_V = theta_V,
     V = V,
     B_mu = B_mu,
-    B_sigma = B_sigma
+    B_sigma = B_sigma,
+    ...
   )
 }
 

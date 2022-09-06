@@ -5,6 +5,7 @@
 #' @param index index for the process
 #' @param replicates replicates for the process
 #' @param alpha initial value for alpha
+#' @param range range for the mesh
 #'
 #' @return a list of specification of model
 #' @export
@@ -12,20 +13,21 @@
 #' @examples
 ngme.ar1 <- function(
   index,
-  replicates,
-  alpha=0.5,
-  use_num_dK=FALSE
+  replicates = NULL,
+  alpha = 0.5,
+  range = c(1, max(index)),
+  use_num_dK = FALSE
 ) {
-  # construct A
-  unique_rep = unique(replicates)
-  nrep = length(unique_rep)
+  if (is.null(replicates)) replicates <- rep(1, length(index))
 
-  A <- ngme.ts.make.A(index, replicates)
+  unique_rep <- unique(replicates)
+  nrep <- length(unique_rep)
 
   # e.g. index = c(1:200, 1:100)
   #      replicates = c(rep(1, 200), rep(2, 100))
   #      n =200 in this case
-  n <- length(unique(index)) 
+
+  n <- range[2] - range[1] + 1
 
   # construct G
     G <- Matrix::Matrix(diag(n));
@@ -34,13 +36,13 @@ ngme.ar1 <- function(
     C <- Matrix::Matrix(0, n, n)
     C[seq(2, n*n, by=n+1)] <- -1
 
-    if(!is.null(nrep)){
+    if(!is.null(nrep)) {
       C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), C)
       G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), G)
     }
-
+print(index)
   ar1_in <- list(
-    A     = A,
+    A           = ngme.ts.make.A(index, replicates = replicates, range = range),
     operator_in = list(
       n_params    = 1,
       theta_K     = alpha,

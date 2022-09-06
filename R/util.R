@@ -1,41 +1,38 @@
 #' Make observation matrix for time series
 #'
-#' @param loc integers (after sorting, no gaps > 1)
+#' @param loc   integers (after sorting, no gaps > 1)
+#' @param replicates indicating replicate measure at same location
+#' @param range range for the mesh
+#'  by default range=(min(loc), max(loc))
 #'
 #' @return A matrix (length(loc) * length(unique(loc)))
 #' @export
 #'
-#' @examples
+#' @examples ngme.ts.make.A(c(1, 2, 2), end = 5, replicates = c(1, 1, 2))
 #'
+ngme.ts.make.A <- function(loc, replicates = NULL, range = c(1, max(loc))) {
+  n_loc <- length(loc)
+  nrep <- 1
 
-# ngme.ts.make.A <- function(loc) {
-#   n_loc = length(loc)
-#   n_range = max(loc)-min(loc)+1
-#   if (any((diff(sort(loc))) > 1)) stop("no gaps allowed")
-#
-#   A = matrix(0, nrow=n_loc, ncol=n_range)
-#   for (i in 1:n_loc) {
-#     A[i, loc[i]-min(loc)+1] = 1
-#   }
-# #Do an na.rm
-#   as(A, "dgCMatrix")
-# }
+  start <- range[1]; end <- range[2]
+  n_range <- end - start + 1
 
-ngme.ts.make.A <- function(loc, replicates) {
-  n_loc = length(loc)
-  n_range = max(loc)-min(loc)+1
-  nrep = 1
-  if(!is.null(replicates)){
-    unique_rep = unique(replicates)
-    nrep = length(unique_rep)
+  if (is.null(replicates)) {
+    replicates <- rep(1, n_range)
   }
-  A = matrix(0, nrow=n_loc, ncol=n_range * nrep)
+
+  unique_rep <- unique(replicates)
+  nrep <- length(unique_rep)
+
+  A <- matrix(0, nrow = n_loc, ncol = n_range * nrep)
+
   for (i in 1:n_loc) {
     ncol_rep <- which(unique_rep == replicates[i])
-    A[i, (ncol_rep-1)*n_range + loc[i]-min(loc)+1] = 1
+    A[i, (ncol_rep - 1) * n_range + loc[i] - start + 1] <- 1
   }
   as(A, "dgCMatrix")
 }
+
 
 # ngme.ts.make.A <- function(loc) {
 #   n_loc = length(loc)

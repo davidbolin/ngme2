@@ -375,7 +375,6 @@ VectorXd BlockModel::grad_theta_sigma() {
     //     }
     // }
     grad = - grad / n_obs;
-std::cout << "grads of th_sigma =" << grad << std::endl;    
     return grad;
 }
 

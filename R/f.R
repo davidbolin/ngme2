@@ -177,7 +177,7 @@ f <- function(
     debug         = debug
   )
 
-  class(latent_in) <- "latent"
+  class(latent_in) <- "process"
   return (latent_in)
 }
 

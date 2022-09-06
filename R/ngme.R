@@ -2,7 +2,6 @@
 #'
 #'  \code{ngme} function performs a analysis of non-gaussian additive models.
 #'
-#'
 #' @param formula formula
 #' @param data    a dataframe contains data
 #' @param controls control variables
@@ -28,6 +27,7 @@ ngme <- function(
   beta          = NULL,
   seed          = NULL
 ) {
+  if (is.null(seed)) seed <- Sys.time()
   # -------------  CHECK INPUT ---------------
   if (is.null(formula)) {
     stop("Formula empty. See ?ngme\n")
@@ -44,8 +44,6 @@ ngme <- function(
   stopifnot(class(noise) == "noise")
   family <- noise$type
 
-  if (is.null(seed)) seed <- Sys.time()
-
   # 2. parse the formula
   time.start <- Sys.time()
 
@@ -59,7 +57,7 @@ ngme <- function(
     # a list of B.theta.mu and B.theta.sigma and thetas...
   }
   else if (all(length(fm)==c(1,1))) {  ########################## univariate case
-    fm = formula(fm)
+    fm <- formula(fm)
 
     # 1. extract f and eval  2. get the formula without f function
     res = ngme.interpret.formula(fm, data)
@@ -67,8 +65,8 @@ ngme <- function(
     plain.fm = res$plain.fm
 
     # eval part without f (fm = y ~ x1 + x2)
-    Y = model.frame(plain.fm, data)[[1]]
-    X = model.matrix(plain.fm, data) # design matrix
+    Y <- model.frame(plain.fm, data)[[1]]
+    X <- model.matrix(plain.fm, data) # design matrix
 
     ############### n_meshs is the dim of the block matrix
     n_meshs     = sum(unlist(lapply(latents_in, function(x) x["n_mesh"] )))
@@ -76,11 +74,11 @@ ngme <- function(
     model.types = unlist(lapply(latents_in, function(x) x["model_type"] ))
     var.types   = unlist(lapply(latents_in, function(x) x["var.type"] ))
 
-    n_feff = ncol(X);
+    n_feff <- ncol(X);
     if (family == "normal") {
-      n_merr = noise$n_theta_sigma
+      n_merr <- noise$n_theta_sigma
     } else if (family == "nig") {
-      n_merr = noise$n_theta_mu + noise$n_theta_sigma + noise$n_theta_V
+      n_merr <- noise$n_theta_mu + noise$n_theta_sigma + noise$n_theta_V
     }
 
     # 3. prepare in_list for estimate

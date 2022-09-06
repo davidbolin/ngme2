@@ -855,21 +855,16 @@ dnig <- function(x, delta, mu, nu, sigma, log=FALSE){
   }
 
   densnig <- sapply(1:n, function(i){
-    if(x[i] <= 0){
-      dens <- ifelse(log, -Inf,0)
-      return(dens)
-    } else{
-      c0 <- sqrt(nu_new[i]) * sqrt( mu_new[i]^2/sigma_new[i]^2 + nu_new[i]) / pi
-      l <- nu_new[i] + mu_new[i] * (x[i] - delta_new[i]) /sigma_new[i]^2
-      coeff <- sqrt( nu_new[i] * sigma_new[i]^2 + (x[i] - delta_new[i])^2)
-      l <- l + log(c0) -  log(coeff)
-      l <- l + log(besselK(coeff  * sqrt(mu_new[i]^2/sigma_new[i]^4
-                                         + nu_new[i]/sigma_new[i]^2),
-                           -1,TRUE)) -coeff  * sqrt(mu_new[i]^2/sigma_new[i]^4 +
-                                                      nu_new[i]/sigma_new[i]^2)
-      dens <- ifelse(log, l, exp(l))
-      return(dens)
-    }
+    c0 <- sqrt(nu_new[i]) * sqrt( mu_new[i]^2/sigma_new[i]^2 + nu_new[i]) / pi
+    l <- nu_new[i] + mu_new[i] * (x[i] - delta_new[i]) /sigma_new[i]^2
+    coeff <- sqrt( nu_new[i] * sigma_new[i]^2 + (x[i] - delta_new[i])^2)
+    l <- l + log(c0) -  log(coeff)
+    l <- l + log(besselK(coeff  * sqrt(mu_new[i]^2/sigma_new[i]^4
+                                        + nu_new[i]/sigma_new[i]^2),
+                          -1,TRUE)) -coeff  * sqrt(mu_new[i]^2/sigma_new[i]^4 +
+                                                    nu_new[i]/sigma_new[i]^2)
+    dens <- ifelse(log, l, exp(l))
+    return(dens)
   })
   return(densnig)
 }

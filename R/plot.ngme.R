@@ -123,3 +123,23 @@ plot_out <- function(
 
   par(mfrow = c(1, 1))
 }
+
+#' plot the density of noise (for stationary)
+#'
+#' @param noise
+#'
+#' @return plot
+#' @export
+#'
+#' @examples
+plot.noise <- function(noise, ...) {
+  mu <- noise$theta_mu
+  sigma <- exp(noise$theta_sigma)
+  nu <- noise$theta_V
+  stopifnot("only implemented for stationary mu" = length(mu) == 1)
+  stopifnot("only implemented for stationary sigma" = length(sigma) == 1)
+
+  xx <- seq(-10, 10, length = 400)
+  if (noise$type == "nig") dd <- dnig(xx, -mu, mu, nu, sigma)
+  plot(xx, dd, type = "l", ...)
+}

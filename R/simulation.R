@@ -9,17 +9,10 @@
 #'
 #' @examples
 #' n_obs <- 10
-#' ar1 <- f(1:n_obs, model = "ar1", theta_K = 0.4)
-#' simulation <- ngme.simulate(
-#'   ar1,
-#'   noise = ngme.noise(
-#'     theta_mu = 2,
-#'     theta_sigma = 0,
-#'     theta_V = 2
-#'   ),
-#'   seed=NULL
+#' ar1 <- ngme.simulate.process(
+#'    f(1:10, model = "ar1", theta_K = 0.5, noise = ngme.noise.nig()),
+#'    seed = 10
 #' )
-#' simulation$realization
 #'
 ngme.simulate <- function(x, ...) {
     UseMethod("ngme.simulate")
@@ -27,7 +20,7 @@ ngme.simulate <- function(x, ...) {
 
 #' Simulate latent process with noise
 #'
-#' @param latent latent model
+#' @param model latent process specified by f() function
 #' @param noise noise object
 #' @param seed seed
 #'
@@ -45,34 +38,33 @@ ngme.simulate <- function(x, ...) {
 #'   ),
 #'   seed=NULL
 #' )$realization
-ngme.simulate.latent <- function(
-    latent,
-    # noise  = ngme.noise(),
+ngme.simulate.process <- function(
+    model,
     seed   = NULL
 ) {
-    n <- latent$n_mesh
-    simu_noise <- ngme.simulate.noise(latent$noise, n = n, seed = seed)
-    real_noise <- simu_noise$realization
+    n <- model$n_mesh
+    noise_obj <- ngme.simulate.noise(model$noise, n = n, seed = seed)
+    noise_real <- noise_obj$realization
 
     # create operator structure
-    if (latent$model_type == "ar1") {
-        alpha <- latent$operator$theta_K
-        W <- Reduce(function(x, y) {y + alpha * x}, real_noise, accumulate = T)
-    } else if (latent$model_type == "matern") {
-        
+    if (model$model_type == "ar1") {
+        alpha <- model$operator$theta_K
+        W <- Reduce(function(x, y) {y + alpha * x}, noise_real, accumulate = T)
+    } else if (model$model_type == "matern") {
+        # to-do
     } else {
         stop("not implement yet")
     }
 
     list(
         realization = W,
-        noise = simu_noise$noise
+        noise = noise_obj$noise
     )
 }
 
 #' Simulate ngme noise
 #'
-#' @param noise noise object
+#' @param noise ngme noise object
 #' @param n number of realization
 #' @param seed seed
 #'

@@ -46,7 +46,7 @@ ngme.ar1 <- function(
       C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), C)
       G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), G)
     }
-print(replicates)
+
   ar1_in <- list(
     A       = ngme.ts.make.A(loc = index, replicates = replicates, range = range),
     A_pred  = ngme.ts.make.A(index_pred, replicates = replicates, range = range),

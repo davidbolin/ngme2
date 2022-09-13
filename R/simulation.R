@@ -43,23 +43,20 @@ ngme.simulate.process <- function(
     seed   = NULL
 ) {
     n <- model$n_mesh
-    noise_obj <- ngme.simulate.noise(model$noise, n = n, seed = seed)
-    noise_real <- noise_obj$realization
+    noise <- ngme.simulate.noise(model$noise, n = n, seed = seed)
 
     # create operator structure
     if (model$model_type == "ar1") {
         alpha <- model$operator$theta_K
-        W <- Reduce(function(x, y) {y + alpha * x}, noise_real, accumulate = T)
+        W <- Reduce(function(x, y) {y + alpha * x}, noise, accumulate = T)
     } else if (model$model_type == "matern") {
         # to-do
     } else {
         stop("not implement yet")
     }
 
-    list(
-        realization = W,
-        noise = noise_obj$noise
-    )
+    attr(W, "noise") <- attr(noise, "noise")
+    W
 }
 
 #' Simulate ngme noise
@@ -98,8 +95,6 @@ ngme.simulate.noise <- function(noise, n, seed = NULL) {
         e <- rnorm(n, sd = sigma)
     }
 
-    list(
-        realization = e,
-        noise = noise
-    )
+    attr(e, "noise") <- noise
+    e
 }

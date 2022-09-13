@@ -1,9 +1,9 @@
 ---
-title: "ngme2 prediction"
-date: "`r Sys.Date()`"
+title: "Doing prediction with ngme2"
+date: "2022-09-12"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Introduction to ngme2 Package}
+  %\VignetteIndexEntry{Doing prediction with ngme2}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -24,59 +24,82 @@ In this vignette we provide a brief introduction to the prediction function of `
 Doing prediction with `ngme` is easy. Just supply the response variable with **NA** 
 to indicate prediction location.
 
-## An intuive example
+## An intuive example - AR1 model
 
-Here we walk through a very simple example. Just to illustrate the process.
+Here we walk through a very simple example. It will help to illustrate the process.
+First we simulate some data.
 
-```{r}
-# library(ngme2)
+```{r simulation}
 load_all()
 
-# simulate some data with NA
-n_obs <- 6
-NA_index <- sample(1:n_obs, size=n_obs / 3)
-Y <- rexp(n_obs); 
-Y[NA_index] <-NA; Y
-X <- 1:n_obs
+n_obs <- 800
+W <- ngme.simulate(
+  f(1:n_obs, model = "ar1", 
+    noise = ngme.noise.nig(
+      theta_mu = 2,
+      theta_sigma = 0.5,
+      theta_V = 1.5
+    )
+  )
+)
 
-a <- model.frame(Y~1+X)
-a2 <- model.matrix(Y~0+X)
-str(a)
-str(a2)
-a
-a2
-?model.frame
-?terms
+# create observation, setting NA
+NA_index <- sample(1:n_obs, size=n_obs / 10)
+Y <- W + rnorm(n_obs, sd=0.2)
+Y[NA_index] <- NA
+
+x1 <- (1:n_obs) / n_obs
+feff <- 2 + 3 * x1
+Y <- Y + feff
 ```
 
+Next, we use `ngme` function to fit the model.
+
+```{r ngme_fit, results="hide"}
+# fit the model
+ngme_out <- ngme(
+  formula = Y ~ x1 + f(model="ar1", noise=ngme.noise.nig()),
+  data = list(Y=Y),
+  control = ngme.control(iteration = 200)
+)
+```
+
+Finally, we can extract the prediction from result using `$prediction`. 
+
+```{r}
+str(ngme_out$prediction)
+
+# Plot the results
+plot(W[NA_index] + feff[NA_index], type="l", 
+     main="prediction vs. true fields", ylab="value")  # true fields
+lines(ngme_out$prediction$response[NA_index], col="green") #predictions
+```
 
 ## Behind the scenes
 
-Basically, the idea is we estimate the parameter without the NA location. 
+Basically, the idea is we estimate the parameter without the **NA** location. 
 After that, we use the estimated result to do the prediction 
 (e.g. posterior mean is just $A_p w$, 
-where $A_p$ is the observation matrix linked from mesh to NA location, 
+where $A_p$ is the observation matrix linked from mesh to **NA** location, 
 $w$ is the last latent process we sampled).
 
 The first step in `ngme` is parsing the formula. 
-Let's test the `ngme.interpret.formula` function with previous tool data. 
-We can found entries `index_prd` and `index_est` standing for 
+Let's test the `parse_formula_NA` function with small tool data.
+We can found entries `index_NA` and `index_est` standing for 
 "index for prediction" and "index for estimation".
 
 ```{r}
-res <- ngme.interpret.formula(
-  Y ~ 0 + f(1:n_obs, model="ar1", noise=ngme.noise.nig()),
-  data = list(Y=Y)
-)
-
-res$index_prd
-res$index_est
+Y <- c(0.2, NA, 0.4, NA, 0.7); X <- rexp(5)
+ngme2::parse_formula_NA(Y~X, data=list(Y=Y, X=X))
 ```
 
-1. Estimation
+Next for each process model, we build the $A$ matrix linking from mesh to known data,
+and $A_p$ linking from mesh to **NA** data. After fitting with `ngme` function,
+we compute $A_p w$ for each model, the final prediction is 
+$\sum_{i} A_{pi} w_i + X_p \hat\beta$.
 
-```{r}
 
-```
+
+
 
 

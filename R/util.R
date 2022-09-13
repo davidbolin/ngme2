@@ -158,19 +158,26 @@ ngme.matern.make.index <- function(n.spde=NULL,
 parse_formula_NA <- function(formula, data) {
   stopifnot("Please provide a valid formula" = inherits(formula, "formula"))
 
-  # Y_full <- model.frame(formula, data, na.action = NULL)[[1]]
+  Y_full <- model.frame(formula, data, na.action = NULL)[[1]]
 
   mf <- model.frame(formula, data)
   Y_data <- mf[[1]]
   index_data  <- as.numeric(rownames(mf))
+  X_data      <- model.matrix((terms(formula)), data)
+  
+  # watch out! X_full can be 0*0 
   X_full      <- model.matrix(delete.response(terms(formula)), data)
-  X_data      <- X_full[index_data, , drop = FALSE]
   contain_NA  <- !is.null(attr(mf, "na.action"))
   
   # if there is NA in response variable
   if (!is.null(attr(mf, "na.action"))) {
     index_NA     <- as.numeric(attr(mf, "na.action"))
-    X_NA         <- X_full[index_NA, , drop = FALSE]
+    
+    # X_NA         <- X_full[index_NA, , drop = FALSE]
+    if (all(dim(X_full) == c(0, 0)))
+      X_NA      <- X_full
+    else 
+      X_NA      <- X_full[index_NA, , drop = FALSE]
   } else {
     index_NA <- X_NA <- NULL
   }

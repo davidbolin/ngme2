@@ -184,11 +184,10 @@ if (debug$debug) print(str(in_list))
       AW <- AW + drop(A_pred %*% W)
     }
 
-    # fixed effects
+    # fixed effects. watch out! Xb could be double(0)
     X_pred <- split_data$X_NA
     Xb <- drop(X_pred %*% out$est_output$fixed_effects)
-
-    ngme_response[split_data$index_NA] <- AW + Xb
+    ngme_response[split_data$index_NA] <- if (length(Xb) == 0) AW else AW + Xb
 
     out$prediction <- list(
       response    = ngme_response,

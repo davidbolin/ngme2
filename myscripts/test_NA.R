@@ -36,5 +36,5 @@ Filter(index, index %in% index_NA)
 
 # model.frame(Y~0, na.action=NULL)
 
-
-ngme.ar1(1:3)
+load_all()
+ngme.simulate(f(model = "ar1"))

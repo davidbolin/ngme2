@@ -50,7 +50,7 @@ ngme.ar1 <- function(
   ar1_in <- list(
     A       = ngme.ts.make.A(loc = index, replicates = replicates, range = range),
     A_pred  = ngme.ts.make.A(index_pred, replicates = replicates, range = range),
-    operator_in = list(
+    operator = list(
       n_params    = 1,
       theta_K     = alpha,
       C           = ngme.as.sparse(C),
@@ -63,4 +63,79 @@ ngme.ar1 <- function(
   ar1_in
 }
 
+
+#' Create a Matern SPDE model
+#'
+#' @param alpha
+#' @param mesh mesh argument
+#' @param fem.mesh.matrices specify the FEM matrices
+#' @param d indicating the dimension of mesh (together with fem.mesh.matrices)
+#' @param theta_kappa 
+#' @param B_kappa bases for kappa
+#'
+#' @return a list (n, C (diagonal), G, B.kappa) for constructing operator
+#' @export
+#'
+#' @examples
+ngme.matern <- function(
+  index = NULL,
+  alpha = 2,
+  mesh = NULL,
+  replicates = NULL,
+  fem.mesh.matrices = NULL,
+  d = NULL,
+  theta_kappa = 0,
+  B_kappa = NULL
+) {
+  if (is.null(mesh) && is.null(fem.mesh.matrices)) 
+    stop("At least specify mesh or matrices")
+
+  if (alpha - round(alpha) != 0) {
+    stop("alpha should be integer, now only 2 or 4")
+  }
+
+  stopifnot(alpha == 2 || alpha == 4)
+
+  if (is.null(B_kappa))
+    B_kappa <- matrix(1, nrow = mesh$n, ncol = length(theta_kappa))
+
+  # supply mesh
+  if (!is.null(mesh)) {
+    d <- get_inla_mesh_dimension(mesh)
+    if (d == 1) {
+      fem <- INLA::inla.mesh.1d.fem(mesh)
+      C <- fem$c1
+      G <- fem$g1
+    } else {
+      fem <- INLA::inla.mesh.fem(mesh, order = alpha)
+      C <- fem$c0  # diag
+      G <- fem$g1
+    }
+  } else {
+    C <- fem.mesh.matrices$C
+    G <- fem.mesh.matrices$G
+  }
+
+  spde <- list(
+    # general
+    # A?
+    n_params = length(theta_kappa),
+    # A = inla.spde.make.A()
+    # spde
+    operator = list(
+      theta_kappa = theta_kappa,
+      alpha = alpha,
+      B_kappa = B_kappa,
+      n_params = length(theta_kappa),
+      n_mesh = mesh$n,
+      C = ngme.as.sparse(C),
+      G = ngme.as.sparse(G),
+      use_num_dK = FALSE
+    )
+  )
+
+  # create precision matrix
+  class(spde) <- "ngme.matern"
+  spde
+}
 

@@ -18,15 +18,17 @@ ngme(
 \arguments{
 \item{formula}{formula}
 
-\item{data}{a dataframe contains data}
+\item{data}{a dataframe or a list providing data
+(Only response variable can contain NA value,
+ NA value in other columns will cause problem)}
 
-\item{controls}{control variables}
+\item{controls}{control variables, see ?ngme.control}
 
 \item{debug}{debug option}
 
 \item{noise}{measurement noise specification}
 
-\item{last_fit}{1. ngme object from last fitting}
+\item{last_fit}{can be ngme object from last fitting}
 
 \item{beta}{starting value for fixed effects}
 

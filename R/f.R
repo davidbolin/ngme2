@@ -17,12 +17,13 @@
 #' @param debug        Debug variables
 #' @param data      specifed or inherit from ngme formula
 #' @param W         starting value of the process
+#' @param A_pred    A Matrix connecting NA location and mesh
 #' @param ...       additional arguments
 #'  inherit the data from ngme function
 #'
 #' @return a list latent_in for constructing latent model, e.g. A, h, C, G,
 #' which also has
-#' 1. list operator_in for building operator,
+#' 1. list operator for building operator,
 #' 2. list var_in for variance component,
 #'
 #' @export
@@ -56,10 +57,10 @@ f <- function(
 
   # get index -> then make both A and A_pred matrix
   ngme_response <- data$ngme_response
+  index_data <- which(!is.na(ngme_response))
 
   # stopifnot("response is null" = !is.null(ngme_response))
   if (!is.null(ngme_response) && any(is.na(ngme_response))) {
-    index_data <- which(!is.na(ngme_response))
     index_NA   <- which(is.na(ngme_response))
     # ignore the NA position in the provided index
     index <- Filter(function(x) !(x %in% index_NA), index)
@@ -107,7 +108,7 @@ f <- function(
 
       n_mesh <- ncol(A)
       h <- rep(1.0, n_mesh)
-      operator_in <- ar1_in$operator_in
+      operator <- ar1_in$operator
 
     } else {
       stop("unknown model name")
@@ -120,45 +121,45 @@ f <- function(
     h = rep(1.0, n_mesh)
     theta_K = model$alpha
 
-    operator_in = model$operator_in
+    operator = model$operator
   }
   else if (inherits(model, "ngme.matern")) {  # stationary Matern
     # read in operator and modify
-    operator_in <- model$operator_in
-
+    operator <- model$operator
     model_type <- "matern"
-    if (is.null(A)) stop("Provide A matrix")
 
-    # replicates
-    nrep <- ncol(A) / nrow(operator_in$C)
-    operator_in$C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), operator_in$C)
-    operator_in$G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), operator_in$G)
-    operator_in$C <- ngme.as.sparse(operator_in$C)
-    operator_in$G <- ngme.as.sparse(operator_in$G)
+    nrep <- if (is.null(A)) 1 else ncol(A) / nrow(operator$C)
 
-    n_mesh <- length(index)
+    # watch out! structure not so good.
+    # nrep <- ncol(A) / nrow(operator$C)
+    # operator$C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), operator$C)
+    # operator$G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), operator$G)
+    # operator$C <- ngme.as.sparse(operator$C)
+    # operator$G <- ngme.as.sparse(operator$G)
+
+    n_mesh <- model$operator$n_mesh
     h <- rep(1, n_mesh)
-    theta_K <- model$kappa
+    theta_K <- model$operator$theta_kappa
 
     h <- rep(h, times = nrep)
   }
   else if (inherits(model, "ngme.spde")) { # nonstationary Matern
-    model_type = "spde.matern"
+    model_type <- "spde.matern"
 
     # compute nrep
-    operator_in <- model$operator_in
-    nrep <- ncol(A)/nrow(operator_in$C)
-    operator_in$C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), operator_in$C)
-    operator_in$G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), operator_in$G)
-    operator_in$C <- ngme.as.sparse(operator_in$C)
-    operator_in$G <- ngme.as.sparse(operator_in$G)
+    operator <- model$operator
+    nrep <- ncol(A)/nrow(operator$C)
+    operator$C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), operator$C)
+    operator$G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), operator$G)
+    operator$C <- ngme.as.sparse(operator$C)
+    operator$G <- ngme.as.sparse(operator$G)
 
     n_mesh = length(index)
     if (is.null(A)) stop("Provide A matrix")
 
     h <- rep(1, n_mesh)
     theta_K = model$theta_Kappa
-    operator_in <- model$operator_in
+    operator <- model$operator
   }
   else {
     stop("unknown model")
@@ -176,17 +177,17 @@ f <- function(
     }
 
   # total params
-  n_la_params = operator_in$n_params + noise$n_theta_mu + noise$n_theta_sigma + noise$n_theta_V
+  n_la_params = operator$n_params + noise$n_theta_mu + noise$n_theta_sigma + noise$n_theta_V
 
   # check initial value of W
   if (!is.null(W)) stopifnot(length(W) == n_mesh)
 
   # overwrites
-  if (!is.null(theta_K)) operator_in$theta_K <- theta_K
+  if (!is.null(theta_K)) operator$theta_K <- theta_K
 
   latent_in <- list(
     model_type  = model_type,
-    noise_type  = noise$type,
+    noise_type  = noise$noise_type,
     n_mesh      = n_mesh,        # !: make sure this is the second place
     A           = A,
     A_pred      = A_pred,
@@ -201,13 +202,12 @@ f <- function(
     n_theta_sigma = noise$n_theta_sigma,
 
     # lists
-    operator      = operator_in,
+    operator      = operator,
     noise         = update.ngme.noise(noise, n = n_mesh),
     control_f     = control,
     debug         = debug
   )
 
   class(latent_in) <- "process"
-  
   latent_in
 }

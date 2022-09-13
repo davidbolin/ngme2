@@ -195,48 +195,29 @@ parse_formula_NA <- function(formula, data) {
   )
 }
 
-# compare numerical grad. and ana. grad.
-# compare_grad_ngme <- function(
-#   formula,
-#   data,
-#   controls      = ngme.control(),
-#   debug         = ngme.debug(),
-#   noise         = ngme.noise(),
-#   last_fit      = NULL,
-#   beta          = NULL,
-#   seed          = NULL
-# ) {
-#   control_ana <- 
-#   control_num <- 
-# }
-
-# draft
-# acceptNA <- function(Y) {
-#   Y_clean <- na.rm(Y)
-  
-#   # compute A matrix
-#   A <- makeA(loc = Y, mesh)
-#   A_clean <- makeA(loc = Y_clean, mesh)
-  
-#   ngme1 <- ngme(
-#     formula = Y_clean ~ f(A = A_clean),
-#     control = ngme.control(estimation = TRUE)
-#   )
-
-#   # Y has NA
-#   ngme2 <- ngme(
-#     formula = Y_clean ~ f(A = A),
-#     control = ngme.control(estimation = FALSE),
-#     last_fit = ngme1
-#   )
-
-#   ngme2$output$W
-# }
 
 # post.sampleW(ngme) {
 #   W
 # }
 
-# plot_density <- function(ngme) {
 
-# }
+#' @name get_inla_mesh_dimension
+#' @title Get the dimension of an INLA mesh
+#' @description Get the dimension of an INLA mesh
+#' @param inla_mesh An INLA mesh
+#' @return The dimension of an INLA mesh.
+#' @noRd
+#'
+get_inla_mesh_dimension <- function(inla_mesh) {
+  cond1 <- inherits(inla_mesh, "inla.mesh.1d")
+  cond2 <- inherits(inla_mesh, "inla.mesh")
+  stopifnot(cond1 || cond2)
+  if (inla_mesh$manifold == "R1") {
+    d <- 1
+  } else if (inla_mesh$manifold == "R2") {
+    d <- 2
+  } else {
+    stop("The mesh should be from a flat manifold.")
+  }
+  return(d)
+}

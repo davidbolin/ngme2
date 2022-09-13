@@ -98,7 +98,7 @@ if (debug) std::cout << "After block assemble" << std::endl;
     fix_flag[block_fix_var]    = Rcpp::as<bool> (noise_in["fix_var"]);
     fix_flag[block_fix_V]      = Rcpp::as<bool> (noise_in["fix_V"]);
 
-    family = Rcpp::as<string>  (noise_in["type"]);
+    family = Rcpp::as<string>  (noise_in["noise_type"]);
     noise_mu = B_mu * theta_mu;
     noise_sigma = (B_sigma * theta_sigma).array().exp();
 

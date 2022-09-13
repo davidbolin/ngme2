@@ -1,23 +1,22 @@
+# Simple scripts for test ngme function
+# sth. wrong with nig measurement noise
+
+{ 
 a2th <- function(k) {log((-1-k)/(-1+k))}
 th2a <- function(th) {-1 + (2*exp(th)) / (1+exp(th))}
-
 library(devtools); load_all()
 
-############  0. generating fix effects and control
 seed <- 51
 set.seed(seed)
-
-# fix effects
-# X <- (model.matrix(Y1 ~ x1 + x2))  # design matrix
-# Y1 = as.numeric(Y1 + X %*% beta)
+}
 
 { ############  1. simulate AR with nig noise
-n_obs <- 20
+n_obs <- 500
 ar_mu <- 4
 ar_sigma <- 1.3
 ar_eta <- 0.8
 
-ar1 <- ngme.simulate(
+ar1_process <- ngme.simulate(
   f(1:n_obs,
     model = "ar1",
     noise = ngme.noise.nig(
@@ -33,7 +32,7 @@ noise_theta_mu    <- -6
 noise_theta_sigma <- 2
 noise_theta_V     <- 1.7
 
-nig_simulation <- ngme.simulate.noise(
+nig_noise <- ngme.simulate.noise(
   ngme.noise.nig(
     theta_mu = noise_theta_mu,
     theta_sigma = noise_theta_sigma,
@@ -41,28 +40,19 @@ nig_simulation <- ngme.simulate.noise(
 
     fix_sigma = TRUE,
     fix_var = TRUE,
-    fix_V = TRUE
+    fix_V = FALSE
   ),
   n = n_obs
 )
-# Y <- ar1$realization + nig_simulation$realization
-Y <- ar1$realization + rnorm(n = n_obs, sd = 1.2)
 
-# range(nig_simulation$realization)
-# str(ar1$noise)
-
-################################################################
-# index <- c(1:n_obs1, 1:n_obs)
-# replicates = c(rep(1, n_obs1), rep(2, n_obs)
-# print(Y)
+Y <- ar1_process + nig_noise
 }
-
 
 ngme_control <- ngme.control(
   estimation = TRUE,
 
   burnin = 200,
-  iterations = 1,
+  iterations = 500,
   gibbs_sample = 5,
   stepsize = 1,
   kill_var = FALSE,
@@ -72,16 +62,14 @@ ngme_control <- ngme.control(
 
 ngme_out <- ngme(
   Y ~ 0 +
-  f(1:n_obs,
-    replicates = NULL,
-    model = "ar1",
-    W = ar1$realization,
+  f(model = "ar1",
+    theta_K = 0.4,
+    W = ar1_process,
     noise = ngme.noise(
       theta_mu = ar_mu,
       theta_sigma = ar_sigma,
       theta_V = ar_eta,
-      V = ar1$noise$V,
-
+      V = attr(ar1_process, "noise")$V,
       fix_mu           = TRUE,
       fix_sigma        = TRUE,
       fix_var          = TRUE,
@@ -95,9 +83,9 @@ ngme_out <- ngme(
     ),
     debug = TRUE
   ),
-  data = data.frame(Y=Y),
+  data = data.frame(Y = Y),
   control = ngme_control,
-  noise = nig_simulation$noise,
+  noise = attr(nig_noise, "noise"),
   debug = ngme.debug(
     debug = TRUE,
     not_run = FALSE
@@ -107,8 +95,11 @@ ngme_out <- ngme(
 )
 
 str(ngme_out$est_output)
-c(noise_theta_mu, noise_theta_sigma, noise_theta_V)
+# c(noise_theta_mu, noise_theta_sigma, noise_theta_V)
 
-# trace plot
-plot_out(ngme_out$opt_trajectory, start = 5, n = 3)
+# trace plot of mu
+ngme.traceplot(ngme_out$opt_trajectory, start = 5, n = 1)
+
+plot(attr(nig_noise, "noise")) # measurement noise
+plot(create.ngme.noise(ngme_out$est_output$noise), add = TRUE, col="blue")
 

@@ -2,10 +2,10 @@
 % Please edit documentation in R/f.R
 \name{f}
 \alias{f}
-\title{Specifying a latent model}
+\title{Specifying a latent process model}
 \usage{
 f(
-  ...,
+  index = NULL,
   replicates = NULL,
   model = "ar1",
   noise = ngme.noise(),
@@ -13,43 +13,47 @@ f(
   control = ngme.control.f(),
   debug = FALSE,
   A = NULL,
+  A_pred = NULL,
   theta_K = NULL,
-  W = NULL
+  W = NULL,
+  index_pred = NULL,
+  ...
 )
 }
 \arguments{
-\item{...}{index}
+\item{index}{symbol or numerical value}
 
-\item{replicates}{Representing the replicates 
+\item{replicates}{Representing the replicates
 (can also be specified in each ngme model)}
 
 \item{model}{1. string: type of model, 2. ngme.spde object}
 
 \item{noise}{1. string: type of model, 2. ngme.noise object}
 
-\item{data}{if not specified or NULL, then}
+\item{data}{specifed or inherit from ngme formula}
 
 \item{control}{control variables for f model}
 
 \item{debug}{Debug variables}
 
-\item{A}{A Matrix connecting observation and}
+\item{A}{A Matrix connecting observation and mesh}
 
 \item{theta_K}{Unbounded parameter for K}
 
-\item{W}{starting realization of the process
+\item{W}{starting value of the process}
+
+\item{...}{additional arguments
 inherit the data from ngme function}
 }
 \value{
 a list latent_in for constructing latent model, e.g. A, h, C, G,
 which also has
-1. list operator_in for building operator,
+1. list operator for building operator,
 2. list var_in for variance component,
-3. list init_values of parameters
 }
 \description{
 Function used for defining of smooth and spatial terms 
-within ngme model formulae. 
+within ngme model formulae.
 The function does not evaluate anything - 
 it exists purely to help set up a model. 
 (see ngme.models.types for available models).

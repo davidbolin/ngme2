@@ -50,7 +50,19 @@ ngme.simulate.process <- function(
         alpha <- model$operator$theta_K
         W <- Reduce(function(x, y) {y + alpha * x}, noise, accumulate = T)
     } else if (model$model_type == "matern") {
-        # to-do
+        # K_a %*% W = noise
+        W <- with(model$operator, {
+            C.inv <- as(Matrix::diag(1 / Matrix::diag(C)), "sparseMatrix")
+            kappas <- drop(exp(B_kappa %*% theta_kappa))
+            Kappa <- diag(kappas)
+            # build K_a
+            if (alpha == 2) {
+                K_a <- (Kappa %*% C %*% Kappa + G)
+            } else if (alpha == 4) {
+                K_a <- (Kappa %*% C %*% Kappa + G) %*% C.inv %*% (Kappa %*% C %*% Kappa + G)
+            }
+            drop(solve(K_a, noise))
+        })
     } else {
         stop("not implement yet")
     }
@@ -83,14 +95,14 @@ ngme.simulate.noise <- function(noise, n, seed = NULL) {
 
     noise <- update.ngme.noise(noise, n = n)
     # create nig noise
-    if (noise$type == "nig") {
+    if (noise$noise_type == "nig") {
         mu <- drop(noise$B_mu %*% noise$theta_mu)
         sigma <- drop(exp(noise$B_sigma %*% noise$theta_sigma))
         eta <- noise$theta_V
         V <- ngme2::rig(n, eta, eta, seed = seed);
         noise$V <- V
         e <- mu * (-1 + V) + sigma * sqrt(V) * rnorm(n)
-    } else if (noise$type == "normal") {
+    } else if (noise$noise_type == "normal") {
         sigma <- drop(exp(noise$B_sigma %*% noise$theta_sigma))
         e <- rnorm(n, sd = sigma)
     }

@@ -44,7 +44,7 @@ ngme <- function(
   }
 
   stopifnot(class(noise) == "noise")
-  family <- noise$type
+  family <- noise$noise_type
 
   # 2. parse the formula
   time.start <- Sys.time()

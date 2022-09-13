@@ -3,7 +3,7 @@
 #' Function for specifying ngme noise.
 #' Use ngme.noise.types() to check all the available types.
 #'
-#' @param type        type of noise, "nig", "normal"
+#' @param noise_type        type of noise, "nig", "normal"
 #' @param theta_V     value for theta_V, theta_V = eta > 0
 #' @param V           value for V
 #' @param theta_mu     specify a non-stationary noise using theta_mu
@@ -21,7 +21,7 @@
 #' @examples
 #'
 ngme.noise <- function(
-  type        = "nig",
+  noise_type  = "nig",
   theta_mu    = 0,
   theta_sigma = 0,
   theta_V     = 1,
@@ -34,9 +34,9 @@ ngme.noise <- function(
   fix_V       = FALSE
 ) {
   # check input
-  if (type == "gaussian") type <- "normal"
+  if (noise_type == "gaussian") noise_type <- "normal"
   stopifnot("Unkown noise type. Please check ngme.noise.types()" =
-    type %in% ngme.noise.types())
+    noise_type %in% ngme.noise.types())
 
   stopifnot("theta_V is positive" = theta_V > 0)
 
@@ -65,7 +65,7 @@ ngme.noise <- function(
   structure(
     list(
       n_noise       = nrow(B_mu),
-      type          = type,
+      noise_type    = noise_type,
       theta_V       = theta_V,
       V             = V,
       theta_mu      = theta_mu,
@@ -118,7 +118,7 @@ ngme.noise.normal <- function(
   }
 
   ngme.noise(
-    type = "normal",
+    noise_type = "normal",
     theta_sigma = theta_sigma,
     B_sigma = B_sigma,
     ...
@@ -170,6 +170,20 @@ update.ngme.noise <- function(noise, n = NULL) {
   noise$n_noise <- n
 
   noise
+}
+
+#' Create ngme noise with a list
+#'
+#' @param x a list
+#'
+#' @return a list of specification for ngme
+#' @export
+#'
+#' @examples
+create.ngme.noise <- function(x) {
+  do.call(ngme.noise, x)
+  # ngme.noise(unlist(x))
+  # print(unlist(x))
 }
 
 # tests

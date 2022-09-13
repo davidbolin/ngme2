@@ -97,20 +97,22 @@ plot.ngme <- function(object, param="fe", type="traj", which=1) {
 
 #' Trace plot
 #'
-#' @param traj
+#' @param trajectory
 #' @param start
 #' @param n
+#' @param transform
+#' @param ylab
 #'
 #' @return
 #' @export
 #'
 #' @examples
-plot_out <- function(
+ngme.traceplot <- function(
   trajectory,
   start=1,
   n=1,
   transform=identity,
-  ylab="variable"
+  ...
 ) {
   # plot trajectory of out$trajectory[]
   if (n == 2) par(mfrow = c(2, 1))
@@ -118,7 +120,7 @@ plot_out <- function(
 
   for (i in start:(start + n - 1)) {
     y <-  unlist(lapply(trajectory$x_traj, function(x) { x[i] }))
-    plot(transform(y), type = "l", ylab = ylab)
+    plot(transform(y), type = "l", ...)
   }
 
   par(mfrow = c(1, 1))
@@ -132,7 +134,7 @@ plot_out <- function(
 #' @export
 #'
 #' @examples
-plot.noise <- function(noise, ...) {
+plot.noise <- function(noise, add = FALSE, ...) {
   mu <- noise$theta_mu
   sigma <- exp(noise$theta_sigma)
   nu <- noise$theta_V
@@ -140,6 +142,14 @@ plot.noise <- function(noise, ...) {
   stopifnot("only implemented for stationary sigma" = length(sigma) == 1)
 
   xx <- seq(-10, 10, length = 400)
-  if (noise$type == "nig") dd <- dnig(xx, -mu, mu, nu, sigma)
-  plot(xx, dd, type = "l", ...)
+  if (noise$noise_type == "nig") dd <- dnig(xx, -mu, mu, nu, sigma)
+  
+  how_to_plot <- if (add) lines else plot
+
+  how_to_plot(xx, dd, type = "l",
+    # main = expression(paste(noise$noise_type, "noise with ") + theta[mu]),
+    main = paste(noise$noise_type, "noise"),
+    xlab = "x", ylab = "y",
+    ...
+  )
 }

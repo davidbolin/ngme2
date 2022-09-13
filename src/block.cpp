@@ -90,6 +90,8 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
     }
     assemble();
 
+if (debug) std::cout << "After block assemble" << std::endl;        
+
     /* Measurement noise */
     fix_flag[block_fix_mu]     = Rcpp::as<bool> (noise_in["fix_mu"]);
     fix_flag[block_fix_sigma]  = Rcpp::as<bool> (noise_in["fix_sigma"]);
@@ -110,6 +112,8 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
         var = new ind_IG(theta_V, n_obs, rng());
     }
     n_params = n_la_params + n_feff + n_merr;
+
+if (debug) std::cout << "After block construct noise" << std::endl;        
     
     // fix V and init V
     if (fix_flag[block_fix_V]) var->fixV();

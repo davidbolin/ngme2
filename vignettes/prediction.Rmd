@@ -1,0 +1,82 @@
+---
+title: "ngme2 prediction"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Introduction to ngme2 Package}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+
+library(devtools)
+set.seed(7)
+```
+
+## Introduction
+
+In this vignette we provide a brief introduction to the prediction function of `ngme2` package.
+Doing prediction with `ngme` is easy. Just supply the response variable with **NA** 
+to indicate prediction location.
+
+## An intuive example
+
+Here we walk through a very simple example. Just to illustrate the process.
+
+```{r}
+# library(ngme2)
+load_all()
+
+# simulate some data with NA
+n_obs <- 6
+NA_index <- sample(1:n_obs, size=n_obs / 3)
+Y <- rexp(n_obs); 
+Y[NA_index] <-NA; Y
+X <- 1:n_obs
+
+a <- model.frame(Y~1+X)
+a2 <- model.matrix(Y~0+X)
+str(a)
+str(a2)
+a
+a2
+?model.frame
+?terms
+```
+
+
+## Behind the scenes
+
+Basically, the idea is we estimate the parameter without the NA location. 
+After that, we use the estimated result to do the prediction 
+(e.g. posterior mean is just $A_p w$, 
+where $A_p$ is the observation matrix linked from mesh to NA location, 
+$w$ is the last latent process we sampled).
+
+The first step in `ngme` is parsing the formula. 
+Let's test the `ngme.interpret.formula` function with previous tool data. 
+We can found entries `index_prd` and `index_est` standing for 
+"index for prediction" and "index for estimation".
+
+```{r}
+res <- ngme.interpret.formula(
+  Y ~ 0 + f(1:n_obs, model="ar1", noise=ngme.noise.nig()),
+  data = list(Y=Y)
+)
+
+res$index_prd
+res$index_est
+```
+
+1. Estimation
+
+```{r}
+
+```
+
+

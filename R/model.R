@@ -16,8 +16,14 @@ ngme.ar1 <- function(
   replicates = NULL,
   alpha = 0.5,
   range = c(1, max(index)),
-  use_num_dK = FALSE
+
+  index_pred = NULL,
+  use_num_dK = FALSE,
+  ...
 ) {
+  # overwirte the default
+  if (!is.null(list(...)$theta_K)) alpha <- list(...)$theta_K
+
   if (is.null(replicates)) replicates <- rep(1, length(index))
 
   unique_rep <- unique(replicates)
@@ -34,15 +40,16 @@ ngme.ar1 <- function(
 
   # construct C
     C <- Matrix::Matrix(0, n, n)
-    C[seq(2, n*n, by=n+1)] <- -1
+    C[seq(2, n*n, by = n+1)] <- -1
 
     if(!is.null(nrep)) {
       C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), C)
       G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), G)
     }
-print(index)
+print(replicates)
   ar1_in <- list(
-    A           = ngme.ts.make.A(index, replicates = replicates, range = range),
+    A       = ngme.ts.make.A(loc = index, replicates = replicates, range = range),
+    A_pred  = ngme.ts.make.A(index_pred, replicates = replicates, range = range),
     operator_in = list(
       n_params    = 1,
       theta_K     = alpha,
@@ -53,9 +60,7 @@ print(index)
   )
 
   class(ar1_in) <- "ngme.ar1"
-  return (ar1_in)
+  ar1_in
 }
 
 
-# ngme.matern <- function() {
-# }

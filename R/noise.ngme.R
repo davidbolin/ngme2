@@ -167,6 +167,8 @@ update.ngme.noise <- function(noise, n = NULL) {
   B_sigma <- noise$B_sigma
   noise$B_sigma <- matrix(data = rep(B_sigma, n / nrow(B_sigma)), nrow = n)
 
+  noise$n_noise <- n
+
   noise
 }
 

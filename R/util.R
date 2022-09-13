@@ -11,6 +11,8 @@
 #' @examples ngme.ts.make.A(c(1, 2, 2), end = 5, replicates = c(1, 1, 2))
 #'
 ngme.ts.make.A <- function(loc, replicates = NULL, range = c(1, max(loc))) {
+  if (is.null(loc)) return (NULL)
+
   n_loc <- length(loc)
   nrep <- 1
 
@@ -141,6 +143,49 @@ ngme.matern.make.index <- function(n.spde=NULL,
 
   out$replicates <- rep(1:n.repl, each = n_mesh)
   return(out)
+}
+
+
+#' Split the data according to NA in response variable
+#'
+#' @param formula
+#' @param data
+#'
+#' @return
+#' @export
+#'
+#' @examples
+parse_formula_NA <- function(formula, data) {
+  stopifnot("Please provide a valid formula" = inherits(formula, "formula"))
+
+  # Y_full <- model.frame(formula, data, na.action = NULL)[[1]]
+
+  mf <- model.frame(formula, data)
+  Y_data <- mf[[1]]
+  index_data  <- as.numeric(rownames(mf))
+  X_full      <- model.matrix(delete.response(terms(formula)), data)
+  X_data      <- X_full[index_data, , drop = FALSE]
+  contain_NA  <- !is.null(attr(mf, "na.action"))
+  
+  # if there is NA in response variable
+  if (!is.null(attr(mf, "na.action"))) {
+    index_NA     <- as.numeric(attr(mf, "na.action"))
+    X_NA         <- X_full[index_NA, , drop = FALSE]
+  } else {
+    index_NA <- X_NA <- NULL
+  }
+
+  list(
+    length      = length(Y_data),
+    Y_data      = Y_data,
+    X_data      = X_data,
+    index_data  = index_data,
+    contain_NA  = contain_NA,
+    index_NA    = index_NA,
+    X_NA        = X_NA
+
+    # Y_full      = Y_full # only for f to use
+  )
 }
 
 # compare numerical grad. and ana. grad.

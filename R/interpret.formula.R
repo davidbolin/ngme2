@@ -10,11 +10,19 @@
 #' @export
 #'
 #' @examples
-ngme.interpret.formula <- function(gf,
-                                   data,
-                                   debug=FALSE) {
+ngme.interpret.formula <- function(
+  gf,
+  data,
+  debug=FALSE
+) {
+  # eval the response variable to see NA
+  # Y <- eval(gf[[2]], envir = data)
+  # index_prd <- which(is.na(Y))
+  # index_est <- which(!is.na(Y))
 
+  # adding special mark
   tf <- terms.formula(gf, specials = c("f"))
+
   terms <- attr(tf, "term.labels")
   intercept <- attr(tf, "intercept")
 
@@ -33,21 +41,23 @@ ngme.interpret.formula <- function(gf,
       # keep data=sth.
       str <- gsub("^f\\(", "ngme2::f(", terms[i])
     }
-# print(paste("str= ", str))
+
+    # adding 1 term for furthur use in f
+    # data$ngme_response <- Y
     res <- eval(parse(text = str), envir = data)
     latents_in[[length(latents_in) + 1]] <- res
   }
-
   fixf <- terms[-spec_order]
 
-  # construct formula without f
-    fm <- as.character(attr(tf, "variables")[[2]])
-    fm <- paste(fm, "~", intercept, paste(c("", fixf), collapse = " + "))
-# paste(c("", "x1", "x2"), collapse = "+")
+  # construct plain formula without f
+  fm <- as.character(attr(tf, "variables")[[2]])
+  fm <- paste(fm, "~", intercept, paste(c("", fixf), collapse = " + "))
 
   list(
     latents_in = latents_in,
-    plain.fm = formula(fm),
-    predict = NULL
+    plain.fm = formula(fm)
+    # ,
+    # index_prd = index_prd,
+    # index_est = index_est
   )
 }

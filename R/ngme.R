@@ -3,10 +3,12 @@
 #'  \code{ngme} function performs a analysis of non-gaussian additive models.
 #'
 #' @param formula formula
-#' @param data    a dataframe contains data
-#' @param controls control variables
+#' @param data    a dataframe or a list providing data
+#'   (Only response variable can contain NA value,
+#'    NA value in other columns will cause problem)
+#' @param controls control variables, see ?ngme.control
 #' @param debug  debug option
-#' @param last_fit  1. ngme object from last fitting
+#' @param last_fit  can be ngme object from last fitting
 #' @param noise measurement noise specification
 #' @param beta starting value for fixed effects
 #' @param seed  set the seed for pesudo random number generator
@@ -47,7 +49,7 @@ ngme <- function(
   # 2. parse the formula
   time.start <- Sys.time()
 
-  fm = Formula::Formula(formula)
+  fm <- Formula::Formula(formula)
 # Y1|Y2|Y3 ~ ..|..|..
   if (all(length(fm)==c(2,2))) { ######################### bivariate model
     lfm = formula(fm, lhs=1, rhs=1)
@@ -59,14 +61,19 @@ ngme <- function(
   else if (all(length(fm)==c(1,1))) {  ########################## univariate case
     fm <- formula(fm)
 
-    # 1. extract f and eval  2. get the formula without f function
-    res = ngme.interpret.formula(fm, data)
-    latents_in = res$latents_in
-    plain.fm = res$plain.fm
+    ngme_response <- eval(terms(fm)[[2]], data)
+    data$ngme_response <- ngme_response # watch out! injection, for f to use
 
-    # eval part without f (fm = y ~ x1 + x2)
-    Y <- model.frame(plain.fm, data)[[1]]
-    X <- model.matrix(plain.fm, data) # design matrix
+    # 1. extract f and eval  2. get the formula without f function
+    res <- ngme.interpret.formula(fm, data)
+    latents_in <- res$latents_in
+    plain_fm <- res$plain.fm
+
+    # check if there is NA, and split data
+    split_data <- parse_formula_NA(plain_fm, data)
+      Y_data <- split_data$Y_data
+      X_data <- split_data$X_data
+      n_Y_data <- split_data$length
 
     ############### n_meshs is the dim of the block matrix
     n_meshs     = sum(unlist(lapply(latents_in, function(x) x["n_mesh"] )))
@@ -74,7 +81,7 @@ ngme <- function(
     model.types = unlist(lapply(latents_in, function(x) x["model_type"] ))
     var.types   = unlist(lapply(latents_in, function(x) x["var.type"] ))
 
-    n_feff <- ncol(X);
+    n_feff <- ncol(X_data);
     if (family == "normal") {
       n_merr <- noise$n_theta_sigma
     } else if (family == "nig") {
@@ -82,24 +89,24 @@ ngme <- function(
     }
 
     # 3. prepare in_list for estimate
-    lm.model = lm.fit(X, Y)
-    if (is.null(beta)) beta = lm.model$coeff
-    n_params = n_la_params + n_feff + n_merr
+    lm.model <- lm.fit(X_data, Y_data)
+    if (is.null(beta)) beta <- lm.model$coeff
+    n_params <- n_la_params + n_feff + n_merr
 
     general_in <- list(
       seed             = seed,
-      Y                = Y,
-      X                = X,
+      Y                = Y_data,
+      X                = X_data,
       beta             = beta,
       n_meshs          = n_meshs,
       n_la_params      = n_la_params,
       n_params         = n_params # how many param to opt. in total
     )
 
-    noise <- update.ngme.noise(noise, n = length(Y))
+    noise <- update.ngme.noise(noise, n = n_Y_data)
 
     if (family == "normal" && is.null(noise$theta_sigma == 0))
-      noise$theta_sigma = sd(lm.model$residuals)
+      noise$theta_sigma <- sd(lm.model$residuals)
 
   ####### Use Last_fit ngme object to update in_list
     stopifnot("last_fit should be an ngme object"
@@ -127,14 +134,15 @@ ngme <- function(
         latents_in[[i]]$noise$V           <- last_fit_latent[["V"]]
       }
     }
-
-    in_list <- list(general_in = general_in,
-                    latents_in  = latents_in,
-                    noise_in    = noise,
-                    control_in  = controls,
-                    debug       = debug,
-                    seed        = seed)
-
+    
+    in_list <- list(
+      general_in  = general_in,
+      latents_in  = latents_in,
+      noise_in    = noise,
+      control_in  = controls,
+      debug       = debug,
+      seed        = seed
+    )
   } else {
     stop("unknown structure of formula")
   }
@@ -144,8 +152,8 @@ if (debug$debug) print(str(in_list))
 
   ################# Run CPP ####################
   if (debug$not_run) {
-    print(str(in_list))
-    stop("Start estimation by setting not_run = FALSE")
+    print("Start estimation by setting not_run = FALSE")
+    return(in_list)
   }
 
   out <- estimate_cpp(in_list)
@@ -167,8 +175,29 @@ if (debug$debug) print(str(in_list))
     # out$model.types = model.types
     # out$var.types   = var.types
 
-  class(out) <- "ngme"
+  ##### doing prediction
+  if (split_data$contain_NA) {
+    AW <- 0
+    for (i in seq_along(latents_in)) {
+      A_pred <- latents_in[[i]]$A_pred
+      W <- out$est_output$latents[[i]]$W
+      AW <- AW + drop(A_pred %*% W)
+    }
+
+    # fixed effects
+    X_pred <- split_data$X_NA
+    Xb <- drop(X_pred %*% out$est_output$fixed_effects)
+
+    ngme_response[split_data$index_NA] <- AW + Xb
+
+    out$prediction <- list(
+      response    = ngme_response,
+      index_pred  = split_data$index_NA
+    )
+  }
+
   print(paste("total time is", Sys.time() - time.start))
 
+  class(out) <- "ngme"
   out
 }

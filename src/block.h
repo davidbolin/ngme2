@@ -30,7 +30,7 @@ using Eigen::MatrixXd;
 const int BLOCK_FIX_FLAG_SIZE = 6;
 
 enum Block_fix_flag {
-    block_fix_beta, block_fix_mu, block_fix_sigma, 
+    block_fix_beta, block_fix_mu, block_fix_sigma,
     block_fix_var, block_fix_V
 };
 
@@ -40,7 +40,7 @@ protected:
     // general
     unsigned long seed;
     MatrixXd X;
-    VectorXd Y; 
+    VectorXd Y;
     int n_meshs;
     string family;
 
@@ -68,12 +68,12 @@ protected:
     bool opt_beta, kill_var;
     double kill_power, threshold, termination;
 
-    SparseMatrix<double> A, K;      // not used: dK, d2K; 
+    SparseMatrix<double> A, K;      // not used: dK, d2K;
 
     // debug
     bool debug, fix_merr;
     bool fixblockV;
-    
+
     // optimize related
     VectorXd stepsizes, gradients;
     int counting {0};
@@ -98,28 +98,32 @@ public:
     /* Gibbs Sampler */
     void burn_in(int iterations) {
         for (int i=0; i < iterations; i++) {
+
             sampleW_VY();
             sampleV_WY();
+
             sample_cond_block_V();
         }
-if (debug) std::cout << "Finish burn in period." << std::endl;
+      if (debug) std::cout << "Finish burn in period." << std::endl;
     }
 
     void sampleW_VY();
     void sampleV_WY() {
+      if(n_latent >0){
         for (unsigned i=0; i < n_latent; i++) {
             (*latents[i]).sample_cond_V();
         }
+      }
     }
     void setW(const VectorXd&);
-    
+
     /* Optimizer related */
     VectorXd             get_parameter() const;
     VectorXd             get_stepsizes() const {return stepsizes;}
     void                 set_parameter(const VectorXd&);
     VectorXd             grad();
     SparseMatrix<double> precond() const;
-    
+
     void                 examine_gradient();
     void                 sampleW_V();
 
@@ -127,10 +131,10 @@ if (debug) std::cout << "Finish burn in period." << std::endl;
     void assemble() {
         int n = 0;
         for (std::vector<Latent*>::iterator it = latents.begin(); it != latents.end(); it++) {
-            setSparseBlock(&K,   n, n, (*it)->getK());      
-            // setSparseBlock(&dK,  n, n, (*it)->get_dK());   
-            // setSparseBlock(&d2K, n, n, (*it)->get_d2K()); 
-            
+            setSparseBlock(&K,   n, n, (*it)->getK());
+            // setSparseBlock(&dK,  n, n, (*it)->get_dK());
+            // setSparseBlock(&d2K, n, n, (*it)->get_d2K());
+
             n += (*it)->getSize();
         }
     }
@@ -155,7 +159,7 @@ if (debug) std::cout << "Finish burn in period." << std::endl;
             V.segment(pos, size) = (*it)->getV();
             pos += size;
         }
-        
+
         return V;
     }
 
@@ -168,7 +172,7 @@ if (debug) std::cout << "Finish burn in period." << std::endl;
             SV.segment(pos, size) = (*it)->getSV();
             pos += size;
         }
-        
+
         return SV;
     }
 
@@ -195,21 +199,25 @@ if (debug) std::cout << "Finish burn in period." << std::endl;
     }
 
     VectorXd get_residual() const {
+      if(n_latent>0){
         return Y - A * getW() - X * beta - (-VectorXd::Ones(n_obs) + var->getV()).cwiseProduct(noise_mu);
+      }else{
+        return Y  - X * beta - (-VectorXd::Ones(n_obs) + var->getV()).cwiseProduct(noise_mu);
+      }
     }
 
     void sample_cond_block_V() {
         if (family == "nig") {
             VectorXd residual = get_residual();
             VectorXd a_inc_vec = noise_mu.cwiseQuotient(noise_sigma).array().pow(2);
-            VectorXd b_inc_vec = (residual + (-VectorXd::Ones(n_obs) + var->getV()).cwiseProduct(noise_mu)).cwiseQuotient(noise_sigma).array().pow(2);
+            VectorXd b_inc_vec = (residual + var->getV().cwiseProduct(noise_mu)).cwiseQuotient(noise_sigma).array().pow(2);
             var->sample_cond_V(a_inc_vec, b_inc_vec);
         }
     }
 
     // --------- Fixed effects and Measurement error  ------------
     VectorXd grad_beta();
-    
+
     VectorXd get_theta_merr() const;
     VectorXd grad_theta_mu();
     VectorXd grad_theta_sigma();
@@ -221,8 +229,8 @@ if (debug) std::cout << "Finish burn in period." << std::endl;
 };
 
 // ---- inherited functions ------
-/* the way structuring the parameter 
-    latents[1].get_parameter 
+/* the way structuring the parameter
+    latents[1].get_parameter
         ...
     beta (fixed effects)
     measurement noise

@@ -85,6 +85,7 @@ ngme.matern <- function(
   fem.mesh.matrices = NULL,
   d = NULL,
   theta_kappa = 0,
+  A = NULL,        # watch out! Can also specify in f function, not used for now
   B_kappa = NULL
 ) {
   if (is.null(mesh) && is.null(fem.mesh.matrices)) 
@@ -116,9 +117,15 @@ ngme.matern <- function(
     G <- fem.mesh.matrices$G
   }
 
+  if (!is.null(A)) {
+    nrep <- ncol(A) / nrow(C)
+    C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), C)
+    G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), G)
+  }
+
   spde <- list(
     # general
-    # A?
+    A = A,
     n_params = length(theta_kappa),
     # A = inla.spde.make.A()
     # spde

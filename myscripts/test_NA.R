@@ -1,15 +1,32 @@
-######## test NA ########
-library(devtools); load_all()
+######## test NA with matern ########
+library(devtools); library(INLA); load_all()
 
-n_obs <- 5
-sim <- ngme.simulate(
-  f(1:n_obs, model = "ar1", noise = ngme.noise.nig())
-)
-Y <- sim$realization + rnorm(n_obs)
+{ # First we create mesh
+  pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
+  mesh <- inla.mesh.2d(
+    loc.domain = pl01, cutoff = 1,
+    max.edge = c(0.3, 1), offset = c(0.5, 1.5)
+  )
+  plot(mesh)
 
-index_NA <- sample(1:n_obs, 0.2 * n_obs)
-Y[index_NA] <- NA
-index_data <- which(!is.na(Y))
+  W <- ngme.simulate(
+    f(model = ngme.matern(mesh = mesh, theta_kappa = c(0.4, 1)),
+      noise = ngme.noise.nig()
+    )
+  )
+}
+
+# generate A and A_pred
+n_obs <- 100; index_obs <- sample(1:mesh$n, n_obs)
+loc_obs <- mesh$loc[index_obs, c(1, 2)]
+A <- inla.spde.make.A(mesh = mesh, loc = loc_obs)
+Y_obs <- drop(A %*% W + rnorm(n_obs, sd = 0.4))
+
+n_NA <- 30; index_NA <- sample(1:mesh$n, n_NA)
+loc_NA <- mesh$loc[index_obs, c(1, 2)]
+A_pred <- inla.spde.make.A(mesh = mesh, loc = loc_NA)
+
+Y <- c(Y_obs, rep(NA, n_NA))
 
 # finally
 ngme_out <- ngme(
@@ -17,6 +34,8 @@ ngme_out <- ngme(
     model = "ar1",
     theta_K = 0.4,
     noise = ngme.noise.nig(),
+    A = A,
+    A_pred = A_pred,
     debug = TRUE
   ),
   data = data.frame(Y = Y),
@@ -26,7 +45,6 @@ ngme_out <- ngme(
   ),
   debug = ngme.debug(not_run = F)
 )
-
 str(ngme_out)
 
 index <- c(1,2,3)

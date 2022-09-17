@@ -7,11 +7,11 @@ ngme.noise.types <- function() {
     c("normal", "nig")
 }
 
-#' show ngme mdoel types
+#' Show ngme mdoel types
 #'
-#' @return
+#' @return a list of available models
 #' @export
 #'
 ngme.model.types <- function() {
-    c("ar1", "matern", "matern_ns")
+    c("ar1", "matern", "matern_ns", "rw1", "rw2")
 }

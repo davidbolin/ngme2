@@ -28,8 +28,8 @@ using Eigen::SparseMatrix;
 using Eigen::VectorXd;
 
 enum Latent_fix_flag {
-    latent_fix_ope, latent_fix_mu, latent_fix_sigma, 
-    latent_fix_var, latent_fix_V, latent_fix_W
+    latent_fix_theta_K, latent_fix_theta_mu, latent_fix_theta_sigma, 
+    latent_fix_theta_V, latent_fix_V, latent_fix_W
 };
 const int LATENT_FIX_FLAG_SIZE = 6;
 
@@ -38,7 +38,7 @@ protected:
     unsigned long seed;
     string model_type, noise_type;
     bool debug;
-    int n_mesh, n_params, n_ope, n_var {1}; // n_params=n_ope + n_theta_mu + n_theta_sigma + n_var
+    int n_mesh, n_params, n_theta_K, n_var {1}; // n_params=n_theta_K + n_theta_mu + n_theta_sigma + n_var
 
     // indicate fixing (K, mu, sigma, var)  (1 means fix)
     bool fix_flag[LATENT_FIX_FLAG_SIZE] {0};
@@ -73,7 +73,7 @@ protected:
     
     std::mt19937 latent_rng;
 public:
-    Latent(Rcpp::List, unsigned long seed);
+    Latent(Rcpp::List&, unsigned long seed);
     ~Latent() {}
 
     /*  1 Model itself   */
@@ -237,13 +237,13 @@ public:
 /*    Optimizer related    */
 inline const VectorXd Latent::get_parameter() const {
 if (debug) std::cout << "Start latent get parameter"<< std::endl;   
-    int n_ope = ope->get_n_params();
+    int n_theta_K = ope->get_n_params();
     
     VectorXd parameter (n_params);
-        parameter.segment(0, n_ope)                         = get_theta_K();
-        parameter.segment(n_ope, n_theta_mu)                = get_theta_mu();
-        parameter.segment(n_ope+n_theta_mu, n_theta_sigma)  = get_theta_sigma();
-        parameter(n_ope+n_theta_mu+n_theta_sigma)           = get_theta_var();
+        parameter.segment(0, n_theta_K)                         = get_theta_K();
+        parameter.segment(n_theta_K, n_theta_mu)                = get_theta_mu();
+        parameter.segment(n_theta_K+n_theta_mu, n_theta_sigma)  = get_theta_sigma();
+        parameter(n_theta_K+n_theta_mu+n_theta_sigma)           = get_theta_var();
     
 // if (debug) std::cout << "parameter= " << parameter << std::endl;   
 if (debug) std::cout << "End latent get parameter"<< std::endl;   
@@ -252,14 +252,14 @@ if (debug) std::cout << "End latent get parameter"<< std::endl;
 
 inline const VectorXd Latent::get_grad() {
 if (debug) std::cout << "Start latent gradient"<< std::endl;   
-    int n_ope = ope->get_n_params();
+    int n_theta_K = ope->get_n_params();
     VectorXd grad (n_params);
     
 auto grad1 = std::chrono::steady_clock::now();
-    if (!fix_flag[latent_fix_ope])     grad.segment(0, n_ope)                        = grad_theta_K();         else grad.segment(0, n_ope) = VectorXd::Constant(n_ope, 0);
-    if (!fix_flag[latent_fix_mu])      grad.segment(n_ope, n_theta_mu)               = grad_theta_mu();        else grad.segment(n_ope, n_theta_mu) = VectorXd::Constant(n_theta_mu, 0);
-    if (!fix_flag[latent_fix_sigma])   grad.segment(n_ope+n_theta_mu, n_theta_sigma) = grad_theta_sigma();     else grad.segment(n_ope+n_theta_mu, n_theta_sigma) = VectorXd::Constant(n_theta_sigma, 0);
-    if (!fix_flag[latent_fix_var])     grad(n_ope+n_theta_mu+n_theta_sigma)          = grad_theta_var();       else grad(n_ope+n_theta_mu+n_theta_sigma) = 0;
+    if (!fix_flag[latent_fix_theta_K])     grad.segment(0, n_theta_K)                        = grad_theta_K();         else grad.segment(0, n_theta_K) = VectorXd::Constant(n_theta_K, 0);
+    if (!fix_flag[latent_fix_theta_mu])    grad.segment(n_theta_K, n_theta_mu)               = grad_theta_mu();        else grad.segment(n_theta_K, n_theta_mu) = VectorXd::Constant(n_theta_mu, 0);
+    if (!fix_flag[latent_fix_theta_sigma]) grad.segment(n_theta_K+n_theta_mu, n_theta_sigma) = grad_theta_sigma();     else grad.segment(n_theta_K+n_theta_mu, n_theta_sigma) = VectorXd::Constant(n_theta_sigma, 0);
+    if (!fix_flag[latent_fix_theta_V])     grad(n_theta_K+n_theta_mu+n_theta_sigma)          = grad_theta_var();       else grad(n_theta_K+n_theta_mu+n_theta_sigma) = 0;
 
 // DEBUG: checking grads
 if (debug) {
@@ -271,12 +271,12 @@ if (debug) {
 
 inline void Latent::set_parameter(const VectorXd& theta) {
 if (debug) std::cout << "Start latent set parameter"<< std::endl;   
-    int n_ope = ope->get_n_params();
+    int n_theta_K = ope->get_n_params();
 
-    set_theta_K       (theta.segment(0, n_ope));
-    set_theta_mu      (theta.segment(n_ope, n_theta_mu)); 
-    set_theta_sigma   (theta.segment(n_ope+n_theta_mu, n_theta_sigma)); 
-    set_theta_var     (theta(n_ope+n_theta_mu+n_theta_sigma)); 
+    set_theta_K       (theta.segment(0, n_theta_K));
+    set_theta_mu      (theta.segment(n_theta_K, n_theta_mu)); 
+    set_theta_sigma   (theta.segment(n_theta_K+n_theta_mu, n_theta_sigma)); 
+    set_theta_var     (theta(n_theta_K+n_theta_mu+n_theta_sigma)); 
 }
 
 #endif

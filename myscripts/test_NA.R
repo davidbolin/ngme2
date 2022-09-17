@@ -54,5 +54,3 @@ Filter(index, index %in% index_NA)
 
 # model.frame(Y~0, na.action=NULL)
 
-
-

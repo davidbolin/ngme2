@@ -1,4 +1,41 @@
-#' ngme model specification
+# function for specify ngme.model basic structure
+ngme.model <- function(
+  model,
+  n_mesh      = NULL,
+  theta_K     = NULL,
+  fix_theta_K = FALSE,
+  W           = NULL,
+  fix_W       = NULL,
+  A           = NULL,
+  A_pred      = NULL,
+  noise_type  = NULL,
+  noise       = list(),
+  control     = ngme.control.f(),
+  ...
+) {
+  stopifnot(is.character(model))
+
+  structure(
+    list(
+      model         = model,
+      n_mesh        = n_mesh,
+      theta_K       = theta_K,
+      n_theta_K     = length(theta_K),
+      A             = A,
+      A_pred        = A_pred,
+      fix_theta_K   = fix_theta_K,
+      noise_type    = noise_type,
+      noise         = noise,
+      W             = W,
+      fix_W         = fix_W,
+      control       = control,
+      ...
+    ),
+    class = "ngme_model"
+  )
+}
+
+#' ngme ar1 model specification
 #' 
 #' Generating C, G and A given index and replicates
 #'
@@ -23,7 +60,6 @@ ngme.ar1 <- function(
 ) {
   # overwirte the default
   if (!is.null(list(...)$theta_K)) alpha <- list(...)$theta_K
-
   if (is.null(replicates)) replicates <- rep(1, length(index))
 
   unique_rep <- unique(replicates)
@@ -47,22 +83,19 @@ ngme.ar1 <- function(
       G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), G)
     }
 
-  ar1_in <- list(
-    A       = ngme.ts.make.A(loc = index, replicates = replicates, range = range),
-    A_pred  = ngme.ts.make.A(index_pred, replicates = replicates, range = range),
-    operator = list(
-      n_params    = 1,
-      theta_K     = alpha,
-      C           = ngme.as.sparse(C),
-      G           = ngme.as.sparse(G),
-      use_num_dK  = use_num_dK
-    )
+  model <- ngme.model(
+    model       = "ar1",
+    theta_K     = alpha,
+    n_mesh      = n,
+    A           = ngme.ts.make.A(loc = index, replicates = replicates, range = range),
+    A_pred      = ngme.ts.make.A(index_pred, replicates = replicates, range = range),
+    h           = rep(1.0, n),
+    C = ngme.as.sparse(C),
+    G = ngme.as.sparse(G)
   )
 
-  class(ar1_in) <- "ngme.ar1"
-  ar1_in
+  model
 }
-
 
 #' Create a Matern SPDE model
 #'
@@ -127,8 +160,6 @@ ngme.matern <- function(
     # general
     A = A,
     n_params = length(theta_kappa),
-    # A = inla.spde.make.A()
-    # spde
     operator = list(
       theta_kappa = theta_kappa,
       alpha = alpha,
@@ -146,3 +177,18 @@ ngme.matern <- function(
   spde
 }
 
+# rw1, rw2
+# nodes = 100 (inla.group)
+
+# ?inla.spde.make.A
+# inla.spde.make.A(
+#   index
+#  replicates=)
+
+# ngme.rw1 <- function(
+#   index,
+#   replicates = NULL,
+
+# ) {
+
+# }

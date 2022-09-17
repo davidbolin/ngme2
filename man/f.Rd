@@ -8,7 +8,7 @@ f(
   index = NULL,
   replicates = NULL,
   model = "ar1",
-  noise = ngme.noise(),
+  noise = ngme.noise.normal(),
   data = NULL,
   control = ngme.control.f(),
   debug = FALSE,
@@ -37,6 +37,8 @@ f(
 \item{debug}{Debug variables}
 
 \item{A}{A Matrix connecting observation and mesh}
+
+\item{A_pred}{A Matrix connecting NA location and mesh}
 
 \item{theta_K}{Unbounded parameter for K}
 

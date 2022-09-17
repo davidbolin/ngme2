@@ -31,7 +31,7 @@ f <- function(
   index       = NULL,
   replicates  = NULL,
   model       = "ar1",
-  noise       = ngme.noise(),
+  noise       = ngme.noise.normal(),
   data        = NULL,
   control     = ngme.control.f(),
   debug       = FALSE,
@@ -39,9 +39,11 @@ f <- function(
   A_pred      = NULL,
   theta_K     = NULL,
   W           = NULL,
+  fix_W       = FALSE,
   index_pred  = NULL,
   ...
 ) {
+  arg_list <- as.list(environment(), list(...))
   ################## Index and Replicates ##################
 
   # deprecated
@@ -68,8 +70,6 @@ f <- function(
     # no need to predict
     A_pred <- index_NA <- NULL
   }
-
-  if (is.null(W) && control$fix_W) stop("Provide initial W to use fix_W")
   
   # # get the replicates
   # if (is.null(replicates))
@@ -92,24 +92,15 @@ f <- function(
 
       # provide the natural index
       if (is.null(index)) index <- index_data
-
-      ar1_in <- ngme.ar1(
+      ar1_arg_list <- list(
+        theta_K = theta_K,
         index = index,
         replicates = replicates,
-        theta_K = theta_K,
-        range = c(1, max(length(ngme_response), max(index))), # watch out! natural mesh  
+        range = c(1, max(length(ngme_response), max(index))), # watch out! using natural mesh  
         index_pred = index_NA
       )
-
-      # wrap the result
-      model_type <- "ar1"
-      A <- ar1_in$A
-      A_pred <- ar1_in$A_pred
-
-      n_mesh <- ncol(A)
-      h <- rep(1.0, n_mesh)
-      operator <- ar1_in$operator
-
+      # don't overwrite information with NULL
+      model_list <- do.call(ngme.ar1, ar1_arg_list)
     } else {
       stop("unknown model name")
     }
@@ -138,7 +129,8 @@ f <- function(
     # operator$G <- ngme.as.sparse(operator$G)
 
     n_mesh <- model$operator$n_mesh
-    h <- rep(1, n_mesh)
+    # h <- rep(1, n_mesh)
+    h <- diag(model$operator$C)
     theta_K <- model$operator$theta_kappa
 
     h <- rep(h, times = nrep)
@@ -164,50 +156,53 @@ f <- function(
   else {
     stop("unknown model")
   }
+  
+  if (is.null(W) && fix_W) stop("Provide initial W to use fix_W")
 
   ################## construct noise (e.g. nig noise) ##################
     # ?? check
-    B_mu <- matrix(noise$B_mu, nrow = n_mesh, ncol = noise$n_theta_mu)
-    B_sigma <- matrix(noise$B_sigma, nrow = n_mesh, ncol = noise$n_theta_sigma)
+    # B_mu <- matrix(noise$B_mu, nrow = n_mesh, ncol = noise$n_theta_mu)
+    # B_sigma <- matrix(noise$B_sigma, nrow = n_mesh, ncol = noise$n_theta_sigma)
 
-    # replicates
-    if (is.integer(nrep)) {
-      B_mu <- kronecker(matrix(1, ncol = 1, nrow = nrep), B_mu)
-      B_sigma <- kronecker(matrix(1, ncol = 1, nrow = nrep), B_sigma)
-    }
+    # # replicates
+    # if (is.integer(nrep)) {
+    #   B_mu <- kronecker(matrix(1, ncol = 1, nrow = nrep), B_mu)
+    #   B_sigma <- kronecker(matrix(1, ncol = 1, nrow = nrep), B_sigma)
+    # }
 
   # total params
-  n_la_params = operator$n_params + noise$n_theta_mu + noise$n_theta_sigma + noise$n_theta_V
+  n_la_params = model_list$n_theta_K + noise$n_theta_mu + noise$n_theta_sigma + noise$n_theta_V
 
   # check initial value of W
   if (!is.null(W)) stopifnot(length(W) == n_mesh)
+  # get the useful argument list
+  model_list <- modifyList(model_list, Filter(Negate(is.null), arg_list))
 
-  # overwrites
-  if (!is.null(theta_K)) operator$theta_K <- theta_K
+  # modify
+  model_list$noise <- with(model_list, update.ngme.noise(noise, n_mesh))
+  model_list$noise_type <- model_list$noise$noise_type
 
-  latent_in <- list(
-    model_type  = model_type,
-    noise_type  = noise$noise_type,
-    n_mesh      = n_mesh,        # !: make sure this is the second place
-    A           = A,
-    A_pred      = A_pred,
-    h           = h,
-    n_la_params = n_la_params,
-    W           = W,
+  # latent_in <- list(
+  #   model_type  = model_type,
+  #   n_mesh      = n_mesh,        # !: make sure this is the second place
+  #   A           = A,
+  #   A_pred      = A_pred,
+  #   h           = h,
+  #   n_la_params = n_la_params,
+  #   W           = W,
 
-    # mu and sigma
-    B_mu          = B_mu,
-    B_sigma       = B_sigma,
-    n_theta_mu    = noise$n_theta_mu,
-    n_theta_sigma = noise$n_theta_sigma,
+  #   # noise
+  #   noise_type  = noise$noise_type,
+  #   B_mu          = B_mu,
+  #   B_sigma       = B_sigma,
+  #   n_theta_mu    = noise$n_theta_mu,
+  #   n_theta_sigma = noise$n_theta_sigma,
 
-    # lists
-    operator      = operator,
-    noise         = update.ngme.noise(noise, n = n_mesh),
-    control_f     = control,
-    debug         = debug
-  )
+  #   # lists
+  #   noise         = update.ngme.noise(noise, n = n_mesh),
+  #   control_f     = control,
+  #   debug         = debug
+  # )
 
-  class(latent_in) <- "process"
-  latent_in
+  do.call(ngme.model, model_list)
 }

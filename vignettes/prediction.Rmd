@@ -51,6 +51,8 @@ Y[NA_index] <- NA
 x1 <- (1:n_obs) / n_obs
 feff <- 2 + 3 * x1
 Y <- Y + feff
+
+X <- cbind(1, x1)
 ```
 
 Next, we use `ngme` function to fit the model.
@@ -60,19 +62,38 @@ Next, we use `ngme` function to fit the model.
 ngme_out <- ngme(
   formula = Y ~ x1 + f(model="ar1", noise=ngme.noise.nig()),
   data = list(Y=Y),
-  control = ngme.control(iteration = 200)
+  control = ngme.control(
+    iteration = 200
+    # ,pred_iter = 100 -> 
+  )
 )
+
+# ngme.predict <- function(ngme_out, iteration=1000)
 ```
 
 Finally, we can extract the prediction from result using `$prediction`. 
 
 ```{r}
 str(ngme_out$prediction)
+```
 
-# Plot the results
+
+```{r}
+# Plot the results only for NA location
 plot(W[NA_index] + feff[NA_index], type="l", 
-     main="prediction vs. true fields", ylab="value")  # true fields
+     main="prediction vs. true fields at NA index", ylab="value")  # true fields
+
 lines(ngme_out$prediction$response[NA_index], col="green") #predictions
+
+# Plot the results for all location
+plot(W + feff, type="l", 
+     main="prediction vs. true fields at all index", ylab="value")  # true fields
+lines(ngme_out$est_output$latents[[1]]$W 
+     + drop(X %*% ngme_out$est_output$fixed_effects), col="red")
+# lines(ngme_out$prediction$response, col="red") #predictions
+points(Y)
+
+str(ngme_out)
 ```
 
 ## Behind the scenes
@@ -99,6 +120,9 @@ we compute $A_p w$ for each model, the final prediction is
 $\sum_{i} A_{pi} w_i + X_p \hat\beta$.
 
 
+```{r}
+plot(c(1,2,3), c(2,3,4))
+```
 
 
 

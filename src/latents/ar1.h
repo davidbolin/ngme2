@@ -28,11 +28,13 @@ private:
     SparseMatrix<double, 0, int> G, C;
 
 public:
-    ar_operator(Rcpp::List ope_in) 
-    :   Operator    (ope_in),
-        G           ( Rcpp::as< SparseMatrix<double,0,int> > (ope_in["G"]) ),
-        C           ( Rcpp::as< SparseMatrix<double,0,int> > (ope_in["C"]) )
-    {}
+    ar_operator(Rcpp::List& model_list) 
+    :   Operator    (model_list),
+        G           ( Rcpp::as< SparseMatrix<double,0,int> > (model_list["G"]) ),
+        C           ( Rcpp::as< SparseMatrix<double,0,int> > (model_list["C"]) )
+    {
+        K = getK(parameter_K);
+    }
         
     void set_parameter(VectorXd alpha) {
         assert (alpha.size() == 1);
@@ -72,16 +74,15 @@ public:
 // get_K_params, grad_K_params, set_K_params, output
 class AR : public Latent {
 public:
-    AR(Rcpp::List latent_in, unsigned long seed) 
-    : Latent(latent_in, seed)
+    AR(Rcpp::List& model_list, unsigned long seed) 
+    : Latent(model_list, seed)
     {
 if (debug) std::cout << "Begin Constructor of AR1" << std::endl;        
-        Rcpp::List operator_in = Rcpp::as<Rcpp::List> (latent_in["operator"]); // containing C and G
-        
         // Init operator for ar1
-        ope = new ar_operator(operator_in);
-            VectorXd parameter_K = Rcpp::as< VectorXd > (operator_in["theta_K"]);
-            ope->set_parameter(parameter_K);
+        ope = new ar_operator(model_list);
+
+        // VectorXd parameter_K = Rcpp::as<VectorXd> (model_list["theta_K"]); 
+        // ope->set_parameter(parameter_K);
 
         // Init K and Q
         SparseMatrix<double> K = getK();

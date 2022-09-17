@@ -25,14 +25,13 @@ protected:
 
     SparseMatrix<double, 0, int> K, dK, d2K;
 public:
-    Operator(Rcpp::List ope_in)
+    Operator(Rcpp::List& model_list)
+    : parameter_K (Rcpp::as<VectorXd> (model_list["theta_K"]))
     {
-std::cout << "constructor of Operator" << std::endl;
-        n_params = Rcpp::as<int> (ope_in["n_params"]);
-        use_num_dK = Rcpp::as<bool> (ope_in["use_num_dK"]);
+        n_params = parameter_K.size();
+        // use_num_dK = Rcpp::as<bool> (ope_in["use_num_dK"]);
     };
 
-    VectorXd get_parameter_K() const {return parameter_K; }
     int get_n_params() const {return parameter_K.size(); }
     virtual VectorXd get_parameter() const {return parameter_K; }
     virtual void set_parameter(VectorXd parameter_K) {this->parameter_K = parameter_K;}
@@ -43,6 +42,7 @@ std::cout << "constructor of Operator" << std::endl;
 
     // get K/dK using different parameter
     virtual SparseMatrix<double, 0, int> getK(VectorXd) const=0;
+    
     // adding at Jul. 24 - get_dK wrt. paramter_K[i]
     virtual SparseMatrix<double, 0, int> get_dK(int, VectorXd) const=0;
     SparseMatrix<double, 0, int> get_dK(int index) const {

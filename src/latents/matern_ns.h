@@ -24,12 +24,12 @@ private:
     MatrixXd Bkappa;
     VectorXd Cdiag;
 public:
-    nonstationaryGC(Rcpp::List ope_in) 
-    :   Operator    ( ope_in),
-        alpha       ( Rcpp::as<int> (ope_in["alpha"])),
-        G           ( Rcpp::as< SparseMatrix<double,0,int> > (ope_in["G"]) ),
-        C           ( Rcpp::as< SparseMatrix<double,0,int> > (ope_in["C"]) ),
-        Bkappa      ( Rcpp::as<MatrixXd> (ope_in["B.kappa"]) ),
+    nonstationaryGC(Rcpp::List& model_list) 
+    :   Operator    (model_list),
+        alpha       ( Rcpp::as<int> (model_list["alpha"])),
+        G           ( Rcpp::as< SparseMatrix<double,0,int> > (model_list["G"]) ),
+        C           ( Rcpp::as< SparseMatrix<double,0,int> > (model_list["C"]) ),
+        Bkappa      ( Rcpp::as<MatrixXd> (model_list["B.kappa"]) ),
         Cdiag       ( C.diagonal() )
     {}
 
@@ -105,94 +105,95 @@ public:
 };
 
 // get_K_params, grad_K_params, set_K_params, output
-class Matern_ns : public Latent {
-public:
-    Matern_ns(Rcpp::List latent_in, unsigned long seed) 
-    : Latent(latent_in, seed)
-    {
-if (debug) std::cout << "constructor of matern ns" << std::endl;
-        symmetricK = true;
-        Rcpp::List operator_in = Rcpp::as<Rcpp::List> (latent_in["operator_in"]); // containing C and G
-        ope = new nonstationaryGC(operator_in);
-            Rcpp::List start = Rcpp::as<Rcpp::List> (latent_in["start"]);
-            VectorXd parameter_K = Rcpp::as< VectorXd > (start["theta_K"]);
-            ope->set_parameter(parameter_K);
+// class Matern_ns : public Latent {
+// public:
+//     Matern_ns(Rcpp::List latent_in, unsigned long seed) 
+//     : Latent(latent_in, seed)
+//     {
+// if (debug) std::cout << "constructor of matern ns" << std::endl;
+//         symmetricK = true;
+//         Rcpp::List operator_in = Rcpp::as<Rcpp::List> (latent_in["operator_in"]); // containing C and G
+//         ope = new nonstationaryGC(operator_in);
+//             Rcpp::List start = Rcpp::as<Rcpp::List> (latent_in["start"]);
+//             VectorXd parameter_K = Rcpp::as< VectorXd > (start["theta_K"]);
+//             ope->set_parameter(parameter_K);
         
-        // Init K and Q
-        SparseMatrix<double> K = getK();
-        SparseMatrix<double> Q = K.transpose() * K;
+//         // Init K and Q
+//         SparseMatrix<double> K = getK();
+//         SparseMatrix<double> Q = K.transpose() * K;
         
-        chol_solver_K.init(n_mesh, 0,0,0);
-        chol_solver_K.analyze(K);
-        // compute_trace();
+//         chol_solver_K.init(n_mesh, 0,0,0);
+//         chol_solver_K.analyze(K);
+//         // compute_trace();
 
-        // Init Q
-        solver_Q.init(n_mesh, 0,0,0);
-        solver_Q.analyze(Q);
-if (debug) std::cout << "finish constructor of matern ns" << std::endl;
-    }
+//         // Init Q
+//         solver_Q.init(n_mesh, 0,0,0);
+//         solver_Q.analyze(Q);
+// if (debug) std::cout << "finish constructor of matern ns" << std::endl;
+//     }
     
-    // inherit get_K_parameter, grad_K_parameter, set_K_parameter
+//     // inherit get_K_parameter, grad_K_parameter, set_K_parameter
 
-    // generating output
-    Rcpp::List get_estimates() const {
-        return Rcpp::List::create(
-            Rcpp::Named("theta.kappa") = ope->get_parameter(),
-            Rcpp::Named("theta.mu")    = theta_mu,
-            Rcpp::Named("theta.sigma") = theta_sigma,
-            Rcpp::Named("theta.noise") = var->get_var()
-        );
-    }
+//     // generating output
+//     Rcpp::List get_estimates() const {
+//         return Rcpp::List::create(
+//             Rcpp::Named("theta.kappa") = ope->get_parameter(),
+//             Rcpp::Named("theta.mu")    = theta_mu,
+//             Rcpp::Named("theta.sigma") = theta_sigma,
+//             Rcpp::Named("theta.noise") = var->get_var()
+//         );
+//     }
 
-    VectorXd grad_theta_K() {
-std::cout << "begin grad theta K " << std::endl;
-        n_ope = ope->get_n_params();
+//     VectorXd grad_theta_K() {
+// std::cout << "begin grad theta K " << std::endl;
+//         n_theta_K = ope->get_n_params();
 
-        SparseMatrix<double> K = ope->getK();
-        // SparseMatrix<double> dK = ope->get_dK(0);        
-        // SparseMatrix<double> dK (n_mesh, n_mesh);
-        // for (int i=0; i < n_ope; i++) {
-        //     dK = dK + ope->get_dK(i);
-        // }
+//         SparseMatrix<double> K = ope->getK();
+//         // SparseMatrix<double> dK = ope->get_dK(0);        
+//         // SparseMatrix<double> dK (n_mesh, n_mesh);
+//         // for (int i=0; i < n_theta_K; i++) {
+//         //     dK = dK + ope->get_dK(i);
+//         // }
 
-        VectorXd V = getV();
-        VectorXd SV = getSV();
+//         VectorXd V = getV();
+//         VectorXd SV = getSV();
         
-        VectorXd kappa = ope->get_parameter();
+//         VectorXd kappa = ope->get_parameter();
 
-        VectorXd grad (n_ope);
-        if (numer_grad) {
-            // 1. numerical gradient
-            grad = numerical_grad();
-        } else { 
-            // 2. analytical gradient and numerical hessian
-            chol_solver_K.compute(K);
-            for (int i=0; i < n_ope; i++) {
-                // dK for each index
-                SparseMatrix<double> dK = ope->get_dK(i);
+//         VectorXd grad (n_theta_K);
+//         if (numer_grad) {
+//             // 1. numerical gradient
+//             grad = numerical_grad();
+//         } else { 
+//             // 2. analytical gradient and numerical hessian
+//             chol_solver_K.compute(K);
+//             for (int i=0; i < n_theta_K; i++) {
+//                 // dK for each index
+//                 SparseMatrix<double> dK = ope->get_dK(i);
                 
-                VectorXd tmp2 = K * W + (h - V).cwiseProduct(mu);
-                double tmp = (dK*W).cwiseProduct(SV.cwiseInverse()).dot(tmp2);
+//                 VectorXd tmp2 = K * W + (h - V).cwiseProduct(mu);
+//                 double tmp = (dK*W).cwiseProduct(SV.cwiseInverse()).dot(tmp2);
 
-                // compute trace
-                if (i > 0) {
-                    trace = chol_solver_K.trace(dK);
-                }
+//                 // compute trace
+//                 if (i > 0) {
+//                     trace = chol_solver_K.trace(dK);
+//                 }
 
-                grad(i) = (trace - tmp) / n_mesh;
-            }
-        }
+//                 grad(i) = (trace - tmp) / n_mesh;
+//             }
+//         }
 
-std::cout << "grad= " << grad << std::endl;
-        return grad;
-    }
+// std::cout << "grad= " << grad << std::endl;
+//         return grad;
+//     }
     
-    void set_theta_K(VectorXd theta) {
-std::cout << "begin set theta K " << std::endl;
-        ope->set_parameter(theta);
+//     void set_theta_K(VectorXd theta) {
+// std::cout << "begin set theta K " << std::endl;
+//         ope->set_parameter(theta);
 
-        if (!numer_grad) compute_trace(); 
-    }
-};
+//         if (!numer_grad) compute_trace(); 
+//     }
+// };
+
 
 #endif

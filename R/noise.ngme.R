@@ -3,16 +3,16 @@
 #' Function for specifying ngme noise.
 #' Use ngme.noise.types() to check all the available types.
 #'
-#' @param noise_type        type of noise, "nig", "normal"
+#' @param noise_type   type of noise, "nig", "normal"
 #' @param theta_V     value for theta_V, theta_V = eta > 0
 #' @param V           value for V
 #' @param theta_mu     specify a non-stationary noise using theta_mu
 #' @param theta_sigma  specify a non-stationary noise using theta_sigma
 #' @param B_mu         Basis matrix for mu (if non-stationary)
 #' @param B_sigma      Basis matrix for sigma (if non-stationary)
-#' @param fix_mu
-#' @param fix_sigma
-#' @param fix_var
+#' @param fix_theta_mu
+#' @param fix_theta_sigma
+#' @param fix_theta_V
 #' @param fix_V
 #'
 #' @return a list of specification of noise
@@ -21,17 +21,17 @@
 #' @examples
 #'
 ngme.noise <- function(
-  noise_type  = "nig",
-  theta_mu    = 0,
-  theta_sigma = 0,
-  theta_V     = 1,
-  B_mu        = NULL,
-  B_sigma     = NULL,
-  V           = NULL,
-  fix_mu      = FALSE,
-  fix_sigma   = FALSE,
-  fix_var     = FALSE,
-  fix_V       = FALSE
+  noise_type      = "nig",
+  theta_mu        = 0,
+  theta_sigma     = 0,
+  theta_V         = 1,
+  V               = NULL,
+  B_mu            = NULL,
+  B_sigma         = NULL,
+  fix_theta_mu    = FALSE,
+  fix_theta_sigma = FALSE,
+  fix_theta_V     = FALSE,
+  fix_V           = FALSE
 ) {
   # check input
   if (noise_type == "gaussian") noise_type <- "normal"
@@ -64,23 +64,23 @@ ngme.noise <- function(
 
   structure(
     list(
-      n_noise       = nrow(B_mu),
-      noise_type    = noise_type,
-      theta_V       = theta_V,
-      V             = V,
-      theta_mu      = theta_mu,
-      theta_sigma   = theta_sigma,
-      B_mu          = B_mu,
-      B_sigma       = B_sigma,
-      n_theta_mu    = length(theta_mu),
-      n_theta_sigma = length(theta_sigma),
-      n_theta_V     = 1,
-      fix_mu        = fix_mu,
-      fix_sigma     = fix_sigma,
-      fix_var       = fix_var,
-      fix_V         = fix_V
+      n_noise         = nrow(B_mu),
+      noise_type      = noise_type,
+      theta_V         = theta_V,
+      V               = V,
+      theta_mu        = theta_mu,
+      theta_sigma     = theta_sigma,
+      B_mu            = B_mu,
+      B_sigma         = B_sigma,
+      n_theta_mu      = length(theta_mu),
+      n_theta_sigma   = length(theta_sigma),
+      n_theta_V       = 1,
+      fix_theta_mu    = fix_theta_mu,
+      fix_theta_sigma = fix_theta_sigma,
+      fix_theta_V     = fix_theta_V,
+      fix_V           = fix_V
     ),
-    class = "noise"
+    class = "ngme_noise"
   )
 }
 
@@ -182,10 +182,4 @@ update.ngme.noise <- function(noise, n = NULL) {
 #' @examples
 create.ngme.noise <- function(x) {
   do.call(ngme.noise, x)
-  # ngme.noise(unlist(x))
-  # print(unlist(x))
 }
-
-# tests
-# noise <- ngme.noise(B_mu = matrix(rep(1,6), ncol=2), theta_mu = c(2, 2))
-# update.ngme.noise(noise, n = 3)

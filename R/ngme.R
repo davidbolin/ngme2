@@ -43,7 +43,7 @@ ngme <- function(
     stop("\n\tArgument `data' must be a data.frame or a list.")
   }
 
-  stopifnot(class(noise) == "noise")
+  stopifnot(class(noise) == "ngme_noise")
   family <- noise$noise_type
 
   # 2. parse the formula
@@ -65,7 +65,7 @@ ngme <- function(
     data$ngme_response <- ngme_response # watch out! injection, for f to use
 
     # 1. extract f and eval  2. get the formula without f function
-    res <- ngme.interpret.formula(fm, data)
+    res <- ngme.parse.formula(fm, data)
     latents_in <- res$latents_in
     plain_fm <- res$plain.fm
 
@@ -156,7 +156,9 @@ if (debug$debug) print(str(in_list))
     return(in_list)
   }
 
+  cat("Starting estimation... \n")
   out <- estimate_cpp(in_list)
+  cat("Estimation done! \n")
 
 ################# Construct Output ####################
     # out$input <- in_list
@@ -190,12 +192,12 @@ if (debug$debug) print(str(in_list))
     ngme_response[split_data$index_NA] <- if (length(Xb) == 0) AW else AW + Xb
 
     out$prediction <- list(
-      response    = ngme_response,
-      index_pred  = split_data$index_NA
+      linear_predictor  = ngme_response,
+      index_pred        = split_data$index_NA
     )
   }
 
-  print(paste("total time is", Sys.time() - time.start))
+  # cat(paste("total time is", Sys.time() - time.start, " \n"))
 
   class(out) <- "ngme"
   out

@@ -29,7 +29,7 @@ BlockModel::BlockModel(
     n_latent      ( latents_in.size()),  // how many latent model
 
     n_obs         ( Y.size()),
-    // n_params      ( Rcpp::as<int>        (general_in["n_params"]) ),
+    // n_params    `  ( Rcpp::as<int>        (general_in["n_params"]) ),
     n_la_params   ( Rcpp::as<int>        (general_in["n_la_params"]) ),
     n_feff        ( beta.size()),
 
@@ -58,14 +58,14 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
 
         // construct acoording to models
         unsigned long latent_seed = rng();
-        string type = latent_in["model_type"];
-        if (type == "ar1") {
+        string model_type = latent_in["model"];
+        if (model_type == "ar1") {
             latents.push_back(new AR(latent_in, latent_seed) );
         }
-        else if (type == "spde.matern") {
-            latents.push_back(new Matern_ns(latent_in, latent_seed));
-        } else if (type=="matern") {
-            latents.push_back(new Matern(latent_in, latent_seed));
+        else if (model_type == "spde.matern") {
+            // latents.push_back(new Matern_ns(latent_in, latent_seed));
+        } else if (model_type=="matern") {
+            // latents.push_back(new Matern(latent_in, latent_seed));
         }
     }
 
@@ -93,10 +93,10 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
 if (debug) std::cout << "After block assemble" << std::endl;
 
     /* Measurement noise */
-    fix_flag[block_fix_mu]     = Rcpp::as<bool> (noise_in["fix_mu"]);
-    fix_flag[block_fix_sigma]  = Rcpp::as<bool> (noise_in["fix_sigma"]);
-    fix_flag[block_fix_var]    = Rcpp::as<bool> (noise_in["fix_var"]);
-    fix_flag[block_fix_V]      = Rcpp::as<bool> (noise_in["fix_V"]);
+    fix_flag[block_fix_theta_mu]        = Rcpp::as<bool> (noise_in["fix_theta_mu"]);
+    fix_flag[block_fix_theta_sigma]     = Rcpp::as<bool> (noise_in["fix_theta_sigma"]);
+    fix_flag[block_fix_theta_V]         = Rcpp::as<bool> (noise_in["fix_theta_V"]);
+    fix_flag[block_fix_V]               = Rcpp::as<bool> (noise_in["fix_V"]);
 
     family = Rcpp::as<string>  (noise_in["noise_type"]);
     noise_mu = B_mu * theta_mu;
@@ -403,11 +403,11 @@ VectorXd BlockModel::grad_theta_merr() {
     VectorXd grad = VectorXd::Zero(n_merr);
 
     if (family=="normal") {
-        if (!fix_flag[latent_fix_sigma])  grad = grad_theta_sigma();
+        if (!fix_flag[block_fix_theta_sigma])  grad = grad_theta_sigma();
     } else {
-        if (!fix_flag[latent_fix_mu])     grad.segment(0, n_theta_mu) = grad_theta_mu();
-        if (!fix_flag[latent_fix_sigma])  grad.segment(n_theta_mu, n_theta_sigma) = grad_theta_sigma();
-        if (!fix_flag[latent_fix_var])    grad(n_theta_mu + n_theta_sigma) = var->grad_theta_var();
+        if (!fix_flag[block_fix_theta_mu])     grad.segment(0, n_theta_mu) = grad_theta_mu();
+        if (!fix_flag[block_fix_theta_sigma])  grad.segment(n_theta_mu, n_theta_sigma) = grad_theta_sigma();
+        if (!fix_flag[block_fix_theta_V])    grad(n_theta_mu + n_theta_sigma) = var->grad_theta_var();
     }
 
     return grad;

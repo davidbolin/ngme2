@@ -76,12 +76,6 @@ ngme.control <- function(
 #'
 #' @examples
 ngme.control.f <- function(
-  # fix things
-  fix_operator  = FALSE,
-  fix_W         = FALSE,
-
-  # initial things
-  theta.K       = 1, # for spde model, use spde(theta.int=...)
   numer_grad    = FALSE,
   use_precond   = TRUE,
   use_num_hess  = TRUE,
@@ -89,23 +83,16 @@ ngme.control.f <- function(
   use_iter_solver = FALSE
   ) {
 
-  control = list(
-    fix_operator  = fix_operator,
-    fix_W         = fix_W,
-
-    # initial things
-    theta.K       = theta.K,
-
+  control <- list(
     numer_grad    = numer_grad,
     use_precond   = use_precond,
     use_num_hess  = use_num_hess,
     eps           = eps,
     use_iter_solver = use_iter_solver
-    )
+  )
 
   class(control) <- "control.f"
-
-  return (control)
+  control
 }
 
 #' Generate debug option

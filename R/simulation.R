@@ -14,8 +14,8 @@
 #'    seed = 10
 #' )
 #'
-ngme.simulate <- function(x, ...) {
-    UseMethod("ngme.simulate")
+ngme_simulate <- function(x, ...) {
+    UseMethod("ngme_simulate")
 }
 
 #' Simulate latent process with noise
@@ -38,20 +38,20 @@ ngme.simulate <- function(x, ...) {
 #'   ),
 #'   seed=NULL
 #' )$realization
-ngme.simulate.process <- function(
+ngme_simulate.ngme_model <- function(
     model,
     seed   = NULL
 ) {
     n <- model$n_mesh
-    noise <- ngme.simulate.noise(model$noise, n = n, seed = seed)
+    noise <- ngme_simulate.ngme_noise(model$noise, n = n, seed = seed)
 
     # create operator structure
-    if (model$model_type == "ar1") {
-        alpha <- model$operator$theta_K
+    if (model$model == "ar1") {
+        alpha <- model$theta_K
         W <- Reduce(function(x, y) {y + alpha * x}, noise, accumulate = T)
-    } else if (model$model_type == "matern") {
+    } else if (model$model == "matern") {
         # K_a %*% W = noise
-        W <- with(model$operator, {
+        W <- with(model, {
             C.inv <- as(Matrix::diag(1 / Matrix::diag(C)), "sparseMatrix")
             kappas <- drop(exp(B_kappa %*% theta_kappa))
             Kappa <- diag(kappas)
@@ -90,7 +90,7 @@ ngme.simulate.process <- function(
 #'   n = 10,
 #'   seed=NULL
 #' )$realization
-ngme.simulate.noise <- function(noise, n, seed = NULL) {
+ngme_simulate.ngme_noise <- function(noise, n, seed = NULL) {
     if (is.null(seed)) seed <- as.numeric(Sys.time())
 
     noise <- update.ngme.noise(noise, n = n)

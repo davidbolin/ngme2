@@ -143,7 +143,7 @@ plot.noise <- function(noise, add = FALSE, ...) {
 
   xx <- seq(-10, 10, length = 400)
   if (noise$noise_type == "nig") dd <- dnig(xx, -mu, mu, nu, sigma)
-  
+
   how_to_plot <- if (add) lines else plot
 
   how_to_plot(xx, dd, type = "l",

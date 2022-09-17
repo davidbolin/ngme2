@@ -9,3 +9,5 @@ pkgdown::build_site(
     devel = TRUE,
     lazy = TRUE
 )
+
+usethis::use_pkgdown_github_pages()

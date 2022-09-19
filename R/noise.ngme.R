@@ -1,3 +1,6 @@
+# This file contains ngme noise specifications,
+# now it has 1. normal 2. nig types of noise.
+
 #' ngme noise specification
 #'
 #' Function for specifying ngme noise.
@@ -31,14 +34,15 @@ ngme.noise <- function(
   fix_theta_mu    = FALSE,
   fix_theta_sigma = FALSE,
   fix_theta_V     = FALSE,
-  fix_V           = FALSE
+  fix_V           = FALSE,
+  ...
 ) {
   # check input
   if (noise_type == "gaussian") noise_type <- "normal"
   stopifnot("Unkown noise type. Please check ngme.noise.types()" =
     noise_type %in% ngme.noise.types())
 
-  stopifnot("theta_V is positive" = theta_V > 0)
+  stopifnot("ngme_noise: theta_V should be positive" = theta_V > 0)
 
   if (is.null(B_mu))    B_mu <- as.matrix(1)
   if (is.null(B_sigma)) B_sigma <- as.matrix(1)
@@ -125,8 +129,9 @@ ngme.noise.normal <- function(
   )
 }
 
-
 #' Specify a nig noise (normal inverse Gaussian)
+#'
+#' The parameterization can be found in ...
 #'
 #' @param theta_V      value of eta
 #' @param theta_mu     specify a non-stationary noise using theta_mu
@@ -139,14 +144,29 @@ ngme.noise.normal <- function(
 #'
 #' @examples
 ngme.noise.nig <- function(
-  theta_mu = 0,
-  theta_sigma = 0,
-  theta_V = 1,
-  V = NULL,
-  B_mu = matrix(1),
-  B_sigma = matrix(1),
+  mu            = NULL,
+  sigma         = NULL,
+  nu            = NULL,
+  theta_mu      = NULL,
+  theta_sigma   = NULL,
+  theta_V       = NULL,
+  V             = NULL,
+  B_mu          = matrix(1),
+  B_sigma       = matrix(1),
   ...
 ) {
+  # if nothing, then fill with default
+  if (is.null(mu) && is.null(theta_mu)) theta_mu <- 0
+  if (is.null(sigma) && is.null(theta_sigma)) theta_sigma <- 0
+  if (is.null(nu) && is.null(theta_V)) theta_V <- 1
+
+  if (!is.null(sigma) && sigma <= 0) stop("ngme_nosie: sigma should be positive.")
+  if (!is.null(nu) && nu <= 0) stop("ngme_nosie: nu should be positive.")
+
+  if (!is.null(mu))     theta_mu <- mu
+  if (!is.null(sigma))  theta_sigma <- log(sigma)
+  if (!is.null(nu))     theta_V <- nu
+
   ngme.noise(
     theta_mu = theta_mu,
     theta_sigma = theta_sigma,
@@ -169,7 +189,8 @@ update.ngme.noise <- function(noise, n = NULL) {
 
   noise$n_noise <- n
 
-  noise
+  # noise
+  do.call(ngme.noise, noise)
 }
 
 #' Create ngme noise with a list
@@ -182,4 +203,68 @@ update.ngme.noise <- function(noise, n = NULL) {
 #' @examples
 create.ngme.noise <- function(x) {
   do.call(ngme.noise, x)
+}
+
+#' Print ngme noise
+#'
+#' @param noise noise object
+#' @param padding
+#'
+#' @return a list (noise specifications)
+#' @export
+print.ngme_noise <- function(noise, padding=0) {
+  pad_space <- paste(rep(" ", padding), collapse = "")
+  pad_add4_space <- paste(rep(" ", padding + 4), collapse = "")
+
+  if (is.null(noise)) {
+    cat(pad_space); cat("Noise type - "); cat("NULL"); cat("\n")
+  } else {
+    cat(pad_space); cat("Noise type - "); cat(noise$noise_type); cat("\n")
+
+    cat(pad_space); cat("Noise parameters: \n")
+    params <- with(noise, {
+      switch(noise_type,
+        "normal" = paste0(pad_add4_space, "sd = ",          ngme.format(exp(theta_sigma))),
+        "nig"    = paste0(pad_add4_space, "theta_mu = ",    ngme.format(theta_mu),
+                    "\n", pad_add4_space, "theta_sigma = ", ngme.format(theta_sigma),
+                    "\n", pad_add4_space, "nu = ",          ngme.format(theta_V)),
+        stop("unknown noise type")
+      )
+    })
+    cat(params)
+  }
+
+  invisible(noise)
+}
+
+#' plot the density of noise (for stationary)
+#'
+#' @param ngme_noise
+#'
+#' @return plot
+#' @export
+#'
+#' @examples
+plot.ngme_noise <- function(noise, add = FALSE, ...) {
+  mu <- noise$theta_mu
+  sigma <- exp(noise$theta_sigma)
+  nu <- noise$theta_V
+  stopifnot("only implemented for stationary mu" = length(mu) == 1)
+  stopifnot("only implemented for stationary sigma" = length(sigma) == 1)
+
+  xx <- seq(-10, 10, length = 400)
+  switch(noise$noise_type,
+    "nig"     = dd <- dnig(xx, -mu, mu, nu, sigma),
+    "normal"  = dd <- dnorm(xx, sd = sigma),
+    stop("Plot for this type is not implemented")
+  )
+
+  how_to_plot <- if (add) lines else plot
+
+  how_to_plot(xx, dd, type = "l",
+    # main = expression(paste(noise$noise_type, "noise with ") + theta[mu]),
+    main = paste(noise$noise_type, "noise density"),
+    xlab = "x", ylab = "y",
+    ...
+  )
 }

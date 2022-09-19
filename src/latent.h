@@ -21,7 +21,6 @@
 
 #include "include/timer.h"
 #include "include/solver.h"
-#include "operator.h"
 #include "var.h"
 
 using Eigen::SparseMatrix;
@@ -38,7 +37,13 @@ protected:
     unsigned long seed;
     string model_type, noise_type;
     bool debug;
-    int n_mesh, n_params, n_theta_K, n_var {1}; // n_params=n_theta_K + n_theta_mu + n_theta_sigma + n_var
+    int n_mesh, n_params, n_var {1}; // n_params=n_theta_K + n_theta_mu + n_theta_sigma + n_var
+
+    // operator K related 
+    VectorXd parameter_K; 
+    bool use_num_dK {false};
+    SparseMatrix<double, 0, int> K, dK, d2K;
+    int n_theta_K;
 
     // indicate fixing (K, mu, sigma, var)  (1 means fix)
     bool fix_flag[LATENT_FIX_FLAG_SIZE] {0};
@@ -59,7 +64,6 @@ protected:
     VectorXd W, prevW, h;
     SparseMatrix<double,0,int> A;
     
-    Operator *ope;
     Var *var;
 
     // solver
@@ -117,17 +121,37 @@ public:
     }
 
     void sample_cond_V() {
-        VectorXd tmp = (ope->getK() * W + mu.cwiseProduct(h));
+        VectorXd tmp = (K * W + mu.cwiseProduct(h));
         VectorXd a_inc_vec = mu.cwiseQuotient(sigma).array().pow(2);
         VectorXd b_inc_vec = tmp.cwiseQuotient(sigma).array().pow(2);
         var->sample_cond_V(a_inc_vec, b_inc_vec);
     }
 
     /*  3 Operator component   */
-    // for block use
-    SparseMatrix<double, 0, int>& getK()    { return ope->getK(); }
-    // SparseMatrix<double, 0, int>& get_dK()  { return ope->get_dK(); }
-    // SparseMatrix<double, 0, int>& get_d2K() { return ope->get_d2K(); }
+    SparseMatrix<double, 0, int>& getK()    { return K; }
+    
+    // get K/dK using different parameter
+    virtual SparseMatrix<double, 0, int> getK(VectorXd) const=0;
+    virtual SparseMatrix<double, 0, int> get_dK(int, VectorXd) const=0;
+
+    // variants of getK and get_dK
+    // get_dK wrt. paramter_K[i]
+    SparseMatrix<double, 0, int> get_dK_by_index(int index) const {
+        return get_dK(index, parameter_K);
+    }
+
+    // param(pos) += eps;  getK(param);
+    SparseMatrix<double, 0, int> getK_by_eps(int pos, double eps) {
+        VectorXd tmp = parameter_K;
+        tmp(pos) += eps;
+        return getK(tmp);
+    }
+
+    SparseMatrix<double, 0, int> get_dK_by_eps(int index, int pos, double eps) {
+        VectorXd tmp = parameter_K;
+        tmp(pos) += eps;
+        return get_dK(index, tmp);
+    }
 
     /* 4 for optimizer */
     const VectorXd get_parameter() const;
@@ -136,11 +160,11 @@ public:
     void           finishOpt(int i) {fix_flag[i] = 0; }
 
     // Parameter: Operator (override this if do change of variable)
-    virtual VectorXd    get_theta_K() const {
-        return ope->get_parameter(); 
-    } 
+    virtual VectorXd    get_unbound_theta_K() const {
+        return parameter_K;
+    }
     virtual VectorXd    grad_theta_K() { return numerical_grad(); }
-    virtual void        set_theta_K(VectorXd params) {ope->set_parameter(params); }
+    virtual void        set_unbound_theta_K(VectorXd parameter_K) {this->parameter_K = parameter_K;}
 
     // deprecated
     // virtual double function_kappa(double eps);    
@@ -152,8 +176,8 @@ public:
 
     // update the trace value
     void compute_trace() {
-        SparseMatrix<double> K = ope->getK();
-        SparseMatrix<double> dK = ope->get_dK(0);
+        SparseMatrix<double> K = getK();
+        SparseMatrix<double> dK = get_dK_by_index(0);
 // compute trace
 // auto timer_trace = std::chrono::steady_clock::now();
 
@@ -182,8 +206,8 @@ public:
 
         // update trace_eps if using hessian
         if ((!numer_grad) && (use_precond)) {
-            SparseMatrix<double> K = ope->getK(0, eps);
-            SparseMatrix<double> dK = ope->get_dK(0, 0, eps);
+            SparseMatrix<double> K = getK_by_eps(0, eps);
+            SparseMatrix<double> dK = get_dK_by_eps(0, 0, eps);
             SparseMatrix<double> M = dK;
 
         if (!use_iter_solver) {
@@ -237,10 +261,9 @@ public:
 /*    Optimizer related    */
 inline const VectorXd Latent::get_parameter() const {
 if (debug) std::cout << "Start latent get parameter"<< std::endl;   
-    int n_theta_K = ope->get_n_params();
     
     VectorXd parameter (n_params);
-        parameter.segment(0, n_theta_K)                         = get_theta_K();
+        parameter.segment(0, n_theta_K)                         = get_unbound_theta_K();
         parameter.segment(n_theta_K, n_theta_mu)                = get_theta_mu();
         parameter.segment(n_theta_K+n_theta_mu, n_theta_sigma)  = get_theta_sigma();
         parameter(n_theta_K+n_theta_mu+n_theta_sigma)           = get_theta_var();
@@ -252,7 +275,6 @@ if (debug) std::cout << "End latent get parameter"<< std::endl;
 
 inline const VectorXd Latent::get_grad() {
 if (debug) std::cout << "Start latent gradient"<< std::endl;   
-    int n_theta_K = ope->get_n_params();
     VectorXd grad (n_params);
     
 auto grad1 = std::chrono::steady_clock::now();
@@ -271,12 +293,10 @@ if (debug) {
 
 inline void Latent::set_parameter(const VectorXd& theta) {
 if (debug) std::cout << "Start latent set parameter"<< std::endl;   
-    int n_theta_K = ope->get_n_params();
-
-    set_theta_K       (theta.segment(0, n_theta_K));
-    set_theta_mu      (theta.segment(n_theta_K, n_theta_mu)); 
-    set_theta_sigma   (theta.segment(n_theta_K+n_theta_mu, n_theta_sigma)); 
-    set_theta_var     (theta(n_theta_K+n_theta_mu+n_theta_sigma)); 
+    set_unbound_theta_K (theta.segment(0, n_theta_K));
+    set_theta_mu        (theta.segment(n_theta_K, n_theta_mu)); 
+    set_theta_sigma     (theta.segment(n_theta_K+n_theta_mu, n_theta_sigma)); 
+    set_theta_var       (theta(n_theta_K+n_theta_mu+n_theta_sigma)); 
 }
 
 #endif

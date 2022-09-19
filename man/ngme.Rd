@@ -7,8 +7,7 @@
 ngme(
   formula,
   data,
-  controls = ngme.control(),
-  debug = ngme.debug(),
+  control = ngme.control(),
   noise = ngme.noise(),
   last_fit = NULL,
   beta = NULL,
@@ -22,9 +21,7 @@ ngme(
 (Only response variable can contain NA value,
  NA value in other columns will cause problem)}
 
-\item{controls}{control variables, see ?ngme.control}
-
-\item{debug}{debug option}
+\item{control}{control variables, see ?ngme.control}
 
 \item{noise}{measurement noise specification}
 

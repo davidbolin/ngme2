@@ -6,22 +6,21 @@ load_all()
 {
 a2th <- function(k) {log((-1-k)/(-1+k))}
 th2a <- function(th) {-1 + (2*exp(th)) / (1+exp(th))}
-library(devtools); load_all()
 
 seed <- 5
 set.seed(seed)
 }
 
 { ############  1. simulate AR with nig noise
-n_obs <- 10
+n_obs <- 520
 ar_mu <- 4
 ar_sigma <- 1.3
 ar_eta <- 0.8
 
-load_all()
 ar1_process <- ngme_simulate(
   f(1:n_obs,
     model = "ar1",
+    theta_K = 0.2,
     noise = ngme.noise.nig(
       theta_mu = ar_mu,
       theta_sigma = ar_sigma,
@@ -48,32 +47,24 @@ nig_noise <- ngme_simulate(
   n = n_obs
 )
 
-Y <- ar1_process + nig_noise
+# Y <- ar1_process + nig_noise
+Y <- ar1_process + rnorm(n_obs)
 }
-
-ngme_control <- ngme.control(
-  estimation = TRUE,
-
-  burnin = 200,
-  iterations = 10,
-  gibbs_sample = 5,
-  stepsize = 1,
-  kill_var = FALSE,
-  threshold = 1e-4
-)
 
 ngme_out <- ngme(
   Y ~ 0 +
   f(model = "ar1",
-    theta_K = 0.4,
+    theta_K = 0.7,
     W = as.numeric(ar1_process),
-    noise = ngme.noise(
+    fix_W = TRUE,
+    noise = ngme.noise.nig(
       theta_mu = ar_mu,
       theta_sigma = ar_sigma,
       theta_V = ar_eta,
       V = attr(ar1_process, "noise")$V,
-      fix_theta_mu      = TRUE,
-      fix_theta_sigma   = TRUE,
+
+      fix_theta_mu      = FALSE,
+      fix_theta_sigma   = FALSE,
       fix_theta_V       = TRUE,
       fix_V             = FALSE
     ),
@@ -84,51 +75,26 @@ ngme_out <- ngme(
     debug = TRUE
   ),
   data = data.frame(Y = Y),
-  control = ngme_control,
-  noise = attr(nig_noise, "noise"),
-  debug = ngme.debug(
-    debug = TRUE,
-    not_run = FALSE
+  control = ngme.control(
+    estimation = TRUE,
+
+    burnin = 200,
+    iterations = 200,
+    gibbs_sample = 5,
+    stepsize = 1,
+    kill_var = FALSE,
+    threshold = 1e-4
   ),
+  noise = ngme.noise.normal(fix_theta_sigma = FALSE),
+  # noise = attr(nig_noise, "noise"),
   seed = 2
   # , last_fit = ngme_out
 )
 
-str(ngme_out)
-
-# str(ngme_out$est_output)
+ngme_out
 # c(noise_theta_mu, noise_theta_sigma, noise_theta_V)
 
 # # trace plot of mu
-# ngme.traceplot(ngme_out$opt_trajectory, start = 5, n = 1)
-
-# plot(attr(nig_noise, "noise")) # measurement noise
-# plot(create.ngme.noise(ngme_out$est_output$noise), add = TRUE, col="blue")
-
-
-
-# ?modifyList
-# modifyList(list(a=1), list(a=NULL, b=2))
-# foo
-# foo <- list(a = 1, b = list(c = "a", d = FALSE))
-
-# foo
-# bar <- modifyList(foo, list(e = 2, b = list(d = TRUE)))
-# str(foo)
-# str(bar)
-
-
-# x <- list(a = 1, b = 2);
-# y <- list(b = NULL, c = 3)
-# modifyList(x, y)
-
-# ?match.arg
-
-# f0 <- function(a = 1, b = 2) {
-#   as.list(match.call())
-# }
-
-# f0(a=1, b=2)[-1]
-
-# list(a=1)
-# ?match.call()
+opt_trajectory <- attr(ngme_out, "opt_trajectory")
+ngme.traceplot(opt_trajectory, start = 1, n = 1, transform = th2a)
+# ngme.traceplot(opt_trajectory, start = 3, n = 1, transform = identity)

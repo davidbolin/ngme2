@@ -9,7 +9,7 @@ ngme.model <- function(
   A           = NULL,
   A_pred      = NULL,
   noise_type  = NULL,
-  noise       = list(),
+  noise       = NULL,
   control     = ngme.control.f(),
   ...
 ) {
@@ -35,8 +35,36 @@ ngme.model <- function(
   )
 }
 
+#' Print ngme model
+#'
+#' @param model
+#'
+#' @return a list (model specifications)
+#' @export
+print.ngme_model <- function(model, padding=0) {
+  pad_space <- paste(rep(" ", padding), collapse = "")
+  pad_add4_space <- paste(rep(" ", padding + 4), collapse = "")
+
+  cat(pad_space); cat("Ngme model: "); cat(model$model); cat("\n")
+
+  cat(pad_space); cat("Model parameters: \n")
+  params <- with(model, {
+    switch(model,
+      "ar1"     = paste0(pad_add4_space, "alpha = ",    ngme.format(theta_K)),
+      "unkown"  = paste0(pad_add4_space, "theta_K = ",  ngme.format(theta_K)),
+    )
+  })
+  cat(params);
+  cat("\n\n")
+
+  print.ngme_noise(model$noise, padding = padding)
+
+  invisible(model)
+}
+
+
 #' ngme ar1 model specification
-#' 
+#'
 #' Generating C, G and A given index and replicates
 #'
 #' @param index index for the process
@@ -103,7 +131,7 @@ ngme.ar1 <- function(
 #' @param mesh mesh argument
 #' @param fem.mesh.matrices specify the FEM matrices
 #' @param d indicating the dimension of mesh (together with fem.mesh.matrices)
-#' @param theta_kappa 
+#' @param theta_kappa
 #' @param B_kappa bases for kappa
 #'
 #' @return a list (n, C (diagonal), G, B.kappa) for constructing operator
@@ -121,7 +149,7 @@ ngme.matern <- function(
   A = NULL,        # watch out! Can also specify in f function, not used for now
   B_kappa = NULL
 ) {
-  if (is.null(mesh) && is.null(fem.mesh.matrices)) 
+  if (is.null(mesh) && is.null(fem.mesh.matrices))
     stop("At least specify mesh or matrices")
 
   if (alpha - round(alpha) != 0) {

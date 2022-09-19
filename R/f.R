@@ -1,9 +1,9 @@
 #' Specifying a latent process model
 #'
-#' Function used for defining of smooth and spatial terms 
+#' Function used for defining of smooth and spatial terms
 #' within ngme model formulae.
-#' The function does not evaluate anything - 
-#' it exists purely to help set up a model. 
+#' The function does not evaluate anything -
+#' it exists purely to help set up a model.
 #' (see ngme.models.types for available models).
 #'
 #' @param index    symbol or numerical value
@@ -70,7 +70,7 @@ f <- function(
     # no need to predict
     A_pred <- index_NA <- NULL
   }
-  
+
   # # get the replicates
   # if (is.null(replicates))
   #   replicates <- rep(1, length(index))
@@ -96,7 +96,7 @@ f <- function(
         theta_K = theta_K,
         index = index,
         replicates = replicates,
-        range = c(1, max(length(ngme_response), max(index))), # watch out! using natural mesh  
+        range = c(1, max(length(ngme_response), max(index))), # watch out! using natural mesh
         index_pred = index_NA
       )
       # don't overwrite information with NULL
@@ -156,7 +156,7 @@ f <- function(
   else {
     stop("unknown model")
   }
-  
+
   if (is.null(W) && fix_W) stop("Provide initial W to use fix_W")
 
   ################## construct noise (e.g. nig noise) ##################
@@ -171,16 +171,17 @@ f <- function(
     # }
 
   # total params
-  n_la_params = model_list$n_theta_K + noise$n_theta_mu + noise$n_theta_sigma + noise$n_theta_V
-
+  n_params = model_list$n_theta_K + noise$n_theta_mu + noise$n_theta_sigma + noise$n_theta_V
   # check initial value of W
   if (!is.null(W)) stopifnot(length(W) == n_mesh)
   # get the useful argument list
-  model_list <- modifyList(model_list, Filter(Negate(is.null), arg_list))
-
-  # modify
+# print(str(arg_list))
+# print(str(Filter(Negate(is.null), arg_list)))
+  model_list <- modifyList(model_list, Filter(Negate(is.null), arg_list)) # watch out! arg_list$noise$ = NULL; nested NULL
+  # modify model_list
   model_list$noise <- with(model_list, update.ngme.noise(noise, n_mesh))
   model_list$noise_type <- model_list$noise$noise_type
+  model_list$n_params <- n_params
 
   # latent_in <- list(
   #   model_type  = model_type,

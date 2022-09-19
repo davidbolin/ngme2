@@ -23,33 +23,49 @@ using std::pow;
         parameter_K(0) = alpha
         K = C * alpha + G
 */
-class ar_operator : public Operator {
+
+// get_K_params, grad_K_params, set_K_params, output
+class AR : public Latent {
 private:
     SparseMatrix<double, 0, int> G, C;
-
 public:
-    ar_operator(Rcpp::List& model_list) 
-    :   Operator    (model_list),
-        G           ( Rcpp::as< SparseMatrix<double,0,int> > (model_list["G"]) ),
-        C           ( Rcpp::as< SparseMatrix<double,0,int> > (model_list["C"]) )
+    AR(Rcpp::List& model_list, unsigned long seed)
+    : Latent(model_list, seed),
+      G           (Rcpp::as< SparseMatrix<double,0,int> > (model_list["G"])),
+      C           (Rcpp::as< SparseMatrix<double,0,int> > (model_list["C"]))
     {
+if (debug) std::cout << "Begin Constructor of AR1" << std::endl;
+        // Init operator for ar1
+        // ope = new ar_operator(model_list);
+
+        // VectorXd parameter_K = Rcpp::as<VectorXd> (model_list["theta_K"]);
+        // set_parameter(parameter_K);
+
+        // Init K and Q
+        // SparseMatrix<double> K = getK();
         K = getK(parameter_K);
+        SparseMatrix<double> Q = K.transpose() * K;
+
+        lu_solver_K.init(n_mesh, 0,0,0);
+        lu_solver_K.analyze(K);
+        compute_trace();
+
+        // Init Q
+        solver_Q.init(n_mesh, 0,0,0);
+        solver_Q.analyze(Q);
+if (debug) std::cout << "End Constructor of AR1" << std::endl;
     }
-        
-    void set_parameter(VectorXd alpha) {
+
+    // For optimizer
+    VectorXd get_unbounded_theta_K() const {
+        VectorXd alpha = parameter_K;
         assert (alpha.size() == 1);
-        this->parameter_K = alpha;
-
-        K = getK(alpha);
-        dK = get_dK(0, parameter_K);
-        d2K = 0 * C;
-
-        if (use_num_dK) {
-            update_num_dK();
-        }
+        // change of variable
+        double th = a2th(alpha(0));
+        return VectorXd::Constant(1, th);
     }
 
-    // export 
+    // wrt. parameter_K (bounded parameter)
     SparseMatrix<double> getK(VectorXd alpha) const {
         assert (alpha.size() == 1);
         SparseMatrix<double> K = alpha(0) * C + G;
@@ -68,55 +84,14 @@ public:
         SparseMatrix<double> K_add_eps = (alpha + eps) * C + G;
         dK = (K_add_eps - K) / eps;
     }
-};
 
-
-// get_K_params, grad_K_params, set_K_params, output
-class AR : public Latent {
-public:
-    AR(Rcpp::List& model_list, unsigned long seed) 
-    : Latent(model_list, seed)
-    {
-if (debug) std::cout << "Begin Constructor of AR1" << std::endl;        
-        // Init operator for ar1
-        ope = new ar_operator(model_list);
-
-        // VectorXd parameter_K = Rcpp::as<VectorXd> (model_list["theta_K"]); 
-        // ope->set_parameter(parameter_K);
-
-        // Init K and Q
-        SparseMatrix<double> K = getK();
-        SparseMatrix<double> Q = K.transpose() * K;
-        
-        lu_solver_K.init(n_mesh, 0,0,0);
-        lu_solver_K.analyze(K);
-        compute_trace();
-
-        // Init Q
-        solver_Q.init(n_mesh, 0,0,0);
-        solver_Q.analyze(Q);
-if (debug) std::cout << "End Constructor of AR1" << std::endl;        
-    }
-    
-    // For optimizer
-    // override get_the_K with change of variable
-    VectorXd get_theta_K() const {
-        VectorXd alpha = ope->get_parameter();
-        assert (alpha.size() == 1);
-        // change of variable
-        double th = a2th(alpha(0));
-        return VectorXd::Constant(1, th);
-    } 
-
-    // return length 1 vectorxd : grad_kappa * dkappa/dtheta 
+    // return length 1 vectorxd : grad_kappa * dkappa/dtheta
     VectorXd grad_theta_K() {
-        SparseMatrix<double> K = ope->getK();
-        SparseMatrix<double> dK = ope->get_dK(0);
+        SparseMatrix<double> dK = get_dK_by_index(0);
         VectorXd V = getV();
         VectorXd SV = getSV();
-        
-        VectorXd params = ope->get_parameter();
-            double a = params(0);
+
+        double a = parameter_K(0);
         double th = a2th(a);
 
         double da  = 2 * (exp(th) / pow(1+exp(th), 2));
@@ -126,7 +101,7 @@ if (debug) std::cout << "End Constructor of AR1" << std::endl;
         if (numer_grad) {
             // 1. numerical gradient
             ret = numerical_grad()(0);
-        } else { 
+        } else {
             // 2. analytical gradient and numerical hessian
             double tmp = (dK*W).cwiseProduct(SV.cwiseInverse()).dot(K * W + (h - V).cwiseProduct(mu));
             double grad = trace - tmp;
@@ -136,8 +111,8 @@ if (debug) std::cout << "End Constructor of AR1" << std::endl;
             } else {
                 VectorXd prevV = getPrevV();
                 // compute numerical hessian
-                SparseMatrix<double> K2 = ope->getK(0, eps);
-                SparseMatrix<double> dK2 = ope->get_dK(0, 0, eps);
+                SparseMatrix<double> K2 = getK_by_eps(0, eps);
+                SparseMatrix<double> dK2 = get_dK_by_eps(0, 0, eps);
 
                 // grad(x+eps) - grad(x) / eps
                 VectorXd prevSV = getPrevSV();
@@ -149,30 +124,37 @@ if (debug) std::cout << "End Constructor of AR1" << std::endl;
                 ret = (grad * da) / (hess * da * da + grad_eps * d2a);
             }
         }
-        
+
         return VectorXd::Constant(1, ret);
     }
 
-    void set_theta_K(VectorXd theta) {
+    void set_unbound_theta_K(VectorXd theta) {
         // change of variable
         double alpha = th2a(theta(0));
-        ope->set_parameter(VectorXd::Constant(1, alpha));
+        parameter_K = VectorXd::Constant(1, alpha);
+        K = getK(parameter_K);
+        dK = get_dK(0, parameter_K);
+        d2K = 0 * C;
 
-        if (!numer_grad) compute_trace(); 
+        if (use_num_dK) {
+            update_num_dK();
+        }
+
+        if (!numer_grad) compute_trace();
     }
 
     double th2a(double th) const {
         return (-1 + 2*exp(th) / (1+exp(th)));
     }
-    
+
     double a2th(double k) const {
         return (log((-1-k)/(-1+k)));
     }
-    
+
     // generating output
     Rcpp::List get_estimates() const {
         return Rcpp::List::create(
-            Rcpp::Named("alpha")        = ope->get_parameter()(0),
+            Rcpp::Named("alpha")        = parameter_K(0),
             Rcpp::Named("theta.mu")     = theta_mu,
             Rcpp::Named("theta.sigma")  = theta_sigma,
             Rcpp::Named("theta.noise")  = var->get_var()

@@ -14,41 +14,42 @@ using Eigen::MatrixXd;
 
 using namespace Rcpp;
 
+
 // [[Rcpp::export]]
-Rcpp::List estimate_cpp(Rcpp::List in_list) {
-    // *****************   Read From Input   *****************  
-    Rcpp::List general_list  = Rcpp::as<Rcpp::List> (in_list["general_in"]);
-    Rcpp::List latents_list  = Rcpp::as<Rcpp::List> (in_list["latents_in"]);
-    Rcpp::List noise_list    = Rcpp::as<Rcpp::List> (in_list["noise_in"]);
-    Rcpp::List control_list  = Rcpp::as<Rcpp::List> (in_list["control_in"]);
-        const int iterations = control_list["iterations"];
-    Rcpp::List debug_list    = Rcpp::as<Rcpp::List> (in_list["debug"]);
-    
-    BlockModel block (
-        general_list, 
-        latents_list, 
-        noise_list, 
-        control_list,
-        debug_list
-    );
+Rcpp::List estimate_cpp(Rcpp::List& ngme_block) {
+
+    BlockModel block (ngme_block);
+    Rcpp::List control_in = ngme_block["control"];
+    const int iterations = (control_in["iterations"]);
 
     Rcpp::List trajectory = R_NilValue;
-    bool estimation = Rcpp::as<bool>    (control_list["estimation"]);
-    if (!estimation) { 
-        // no optimization, only gibbs sampling
-        int steps  = Rcpp::as<int> (control_list["burnin"]) + Rcpp::as<int> (control_list["iterations"]);
-        block.burn_in(steps);
-    } else {    
-        // doing optimization
+
+    // doing optimization
 auto timer = std::chrono::steady_clock::now();
-        Optimizer opt;
-        trajectory = opt.sgd(block, 0.1, iterations);
+    Optimizer opt;
+    trajectory = opt.sgd(block, 0.1, iterations);
 std::cout << "Total time is (ms): " << since(timer).count() << std::endl;
-    }
 
     return Rcpp::List::create(
         Rcpp::Named("opt_trajectory") = trajectory,
-        Rcpp::Named("est_output") = block.output()
+        Rcpp::Named("estimation") = block.output()
     );
 }
 
+// [[Rcpp::export]]
+Rcpp::List& sampling_cpp(Rcpp::List& ngme_block) {
+    BlockModel block (ngme_block);
+    Rcpp::List control_in = ngme_block["control"];
+    const int iterations = (control_in["iterations"]);
+
+    block.burn_in(iterations);
+
+    // to-do: writing sampling into ngme_block
+    return ngme_block;
+}
+
+// void update_estimation(Rcpp::List& ngme_block, const BlockModel& block);
+// void update_estimation(Rcpp::List& ngme_block, const BlockModel& block) {
+//     // design the input of R
+//     // ngme_block["V"] <- ...
+// }

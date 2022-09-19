@@ -144,19 +144,19 @@ parse_formula_NA <- function(formula, data) {
   Y_data <- mf[[1]]
   index_data  <- as.numeric(rownames(mf))
   X_data      <- model.matrix((terms(formula)), data)
-  
-  # watch out! X_full can be 0*0 
+
+  # watch out! X_full can be 0*0
   X_full      <- model.matrix(delete.response(terms(formula)), data)
   contain_NA  <- !is.null(attr(mf, "na.action"))
-  
+
   # if there is NA in response variable
   if (!is.null(attr(mf, "na.action"))) {
     index_NA     <- as.numeric(attr(mf, "na.action"))
-    
+
     # X_NA         <- X_full[index_NA, , drop = FALSE]
     if (all(dim(X_full) == c(0, 0)))
       X_NA      <- X_full
-    else 
+    else
       X_NA      <- X_full[index_NA, , drop = FALSE]
   } else {
     index_NA <- X_NA <- NULL
@@ -264,4 +264,8 @@ ngme.parse.formula <- function(
     # index_prd = index_prd,
     # index_est = index_est
   )
+}
+
+ngme.format <- function(x) {
+  format(x, digits = 3)
 }

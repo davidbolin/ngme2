@@ -16,6 +16,7 @@ f(
   A_pred = NULL,
   theta_K = NULL,
   W = NULL,
+  fix_W = FALSE,
   index_pred = NULL,
   ...
 )
@@ -54,9 +55,9 @@ which also has
 2. list var_in for variance component,
 }
 \description{
-Function used for defining of smooth and spatial terms 
+Function used for defining of smooth and spatial terms
 within ngme model formulae.
-The function does not evaluate anything - 
-it exists purely to help set up a model. 
+The function does not evaluate anything -
+it exists purely to help set up a model.
 (see ngme.models.types for available models).
 }

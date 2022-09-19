@@ -28,37 +28,33 @@ class Base {
 protected:
     Vector2d vec {1,2};
 public:
+    Base(int) {
+        method1(1);
+    }
     Vector2d& getVec() {return vec;}
+    virtual void method1(int) = 0;
+
+    // virtual void method1(int) {
+    //     cout << "base" << endl;
+    // }
+};
+
+class Derived : public Base {
+public:
+    Derived(int a)
+    : Base(a) {
+
+    }
+    void method1(int) {
+        cout << "derivd" << endl;
+    };
+    void method1(int, int) {};
+    void method2(int) {};
 };
 
 int main(int argc, char const *argv[])
 {
-    // Vector3d v (1,2,3);
-    // VectorXd v2; v2.resize(v.size()+1);
-    // v2 << 0, v;
-
-    Base b;
-// auto start = std::chrono::steady_clock::now();
-
-// //     Matrix2f v (4,1,2,3);
-//     Vector2d k (3,2);
-// // v.segment(2, 2) = k;
-//     double sigma_eps = 2.0;
-//     unsigned n_obs = 100;
-// //  g = -1.0 * n_obs / sigma_eps + pow(sigma_eps, -3) * tmp.dot(tmp);
-//     double tmp = 100;
-    // v = v.array().pow(3);
-    // cout<< b.getVec()(1) << endl ;
-    // Vector4d v (1,2,3,4);
-    // Vector4d vv (1,2,3,4);
-    // // v = v.array().log();
-    // MatrixXd spm = v.asDiagonal();
-    // spm.sparseView();
-    // const int i = v.size();
-    // // Eigen::DiagonalMatrix<double, i> D (1,2,3,4);
-    // // cout << spm;
-    // vv(0) += 10;
-
+    Derived d(1);
 
     VectorXd v1 (1);
     v1.resize(3);
@@ -70,7 +66,7 @@ int main(int argc, char const *argv[])
 
     VectorXd v2 (2);
     v2 << 1,2;
-    
+
     // v1.resize(2);
     v1 = v2;
 
@@ -82,7 +78,8 @@ m << 1, 2, 3,
     // cout << m.col(0); // m(Eigen::all, 1) * 5;
     VectorXd m9 (0);
     v1.segment(0, 0) = m9;
-    cout << v1;
+
+    // cout << v1;
 
     return 0;
 }
@@ -101,6 +98,4 @@ m << 1, 2, 3,
 //   dest = R.permutationPinv() * dest;
 //   return dest;
 // }
-
-
 

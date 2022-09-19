@@ -1,16 +1,12 @@
 ---
-title: Ngme2 Class Structure"
+title: Ngme2 Model Structure
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Ngme2 Class Structure}
+  %\VignetteIndexEntry{Ngme2 Model Structure}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
-
-## Introduction
-
-In this vignette we provide a brief introduction to the structure `ngme2` package. 
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
@@ -18,6 +14,80 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 
-library(devtools)
 ```
 
+## Introduction
+
+In this vignette we provide a brief introduction to the structure `ngme2` package.
+We believe it can be helpful for understanding the structure and logic of ngme2 package.
+
+## 1. Noise object
+
+In `ngme2`, a noise object can be created and specified using `ngme.noise` function.
+The noise object can be used both for the process and for the measurement noise.
+
+```{r noise}
+# library(ngme2)
+library(devtools); load_all()
+
+# We can specify the noise by use different function and
+# using different parameter.
+norm_noise <- ngme.noise.normal(sd = 3)
+nig_noise <- ngme.noise.nig(mu = 1, sigma = 2, nu = 3)
+```
+
+Explore more using `str` and `plot` function.
+
+```{r}
+# short information
+nig_noise
+
+# structure
+str(nig_noise)
+
+```
+
+Here the "B_" object is for specifing non-stationary noise.
+"fix_" is for fixing the parameter during the estimation.
+These parts can also be supplied to the noise object.
+See `?ngme.noise`.
+
+```{r}
+# We can also plot the noise to see the density
+# (only for stationary noise)
+plot(nig_noise)
+```
+
+## 2. Model object
+
+The model contains two parts, one is the operator (K) structure, the other is noise.
+Here we take a simple example - ar1 model with nig noise.
+We can also check the structure with `str`.
+
+```{r}
+ar1 <- f(index = 1:4, model = "ar1", noise = nig_noise)
+str(ar1)
+```
+
+## 3. ngme object
+
+The most general object is the `ngme` object.
+It contains three parts:
+
+1. a list of model objects,
+2. fixed effects
+3. measurement noise object.
+
+We can use the `ngme` function (with estimation = FALSE) to construct it.
+
+```{r}
+ngme_model <- ngme(
+  formula = y ~ x,
+  data = list(y = c(1, 2, 3), x = c(1, 2, 3)),
+  controls = ngme.control(
+    estimation = FALSE
+  )
+)
+
+str(ngme_model)
+```

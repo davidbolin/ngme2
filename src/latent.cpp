@@ -9,51 +9,52 @@
 // Constructor
 Latent::Latent(Rcpp::List& model_list, unsigned long seed) :
     seed          (seed),
-    model_type    (Rcpp::as<string>  (model_list["model"])),
-    noise_type    (Rcpp::as<string>  (model_list["noise_type"])),
-    debug         (Rcpp::as< bool >  (model_list["debug"])),
-    n_mesh        (Rcpp::as< int >   (model_list["n_mesh"])),
+    model_type    (Rcpp::as<string>     (model_list["model"])),
+    noise_type    (Rcpp::as<string>     (model_list["noise_type"])),
+    debug         (Rcpp::as<bool>       (model_list["debug"])),
+    n_mesh        (Rcpp::as<int>        (model_list["n_mesh"])),
+    parameter_K   (Rcpp::as<VectorXd>   (model_list["theta_K"])),
+    n_theta_K     (Rcpp::as<int>        (model_list["n_theta_K"])),
 
     trace         (0),
     trace_eps     (0),
-    eps           (0.001), 
-    
+    eps           (0.001),
+
     W             (n_mesh),
     prevW         (n_mesh),
     h             (Rcpp::as< VectorXd >                     (model_list["h"])),
     A             (Rcpp::as< SparseMatrix<double,0,int> >   (model_list["A"]))
 {
 if (debug) std::cout << "Begin constructor of latent" << std::endl;
-    
+
     // setting the seed
     latent_rng.seed(seed);
 
     // read from ngme.model
-    n_theta_K = Rcpp::as<int>    (model_list["n_theta_K"]);
     fix_flag[latent_fix_theta_K] = Rcpp::as<bool>    (model_list["fix_theta_K"]);
     fix_flag[latent_fix_W]       = Rcpp::as<bool>    (model_list["fix_W"]);
-    
+
     // read the control variable
     Rcpp::List control_f = Rcpp::as<Rcpp::List> (model_list["control"]);
         use_precond     = Rcpp::as<bool>        (control_f["use_precond"] );
         numer_grad      = Rcpp::as<bool>        (control_f["numer_grad"]) ;
         eps             = Rcpp::as<double>      (control_f["eps"]) ;
-        use_iter_solver = Rcpp::as<bool>    (control_f["use_iter_solver"]);
+        use_iter_solver = Rcpp::as<bool>        (control_f["use_iter_solver"]);
 
     string noise_type = Rcpp::as<string>     (model_list["noise_type"]);
-    
+
     // construct from ngme.noise
     Rcpp::List noise_in = Rcpp::as<Rcpp::List> (model_list["noise"]);
         fix_flag[latent_fix_theta_mu]     = Rcpp::as<bool>  (noise_in["fix_theta_mu"]);
         fix_flag[latent_fix_theta_sigma]  = Rcpp::as<bool>  (noise_in["fix_theta_sigma"]);
         fix_flag[latent_fix_theta_V]      = Rcpp::as<bool>  (noise_in["fix_theta_V"]);
         fix_flag[latent_fix_V]            = Rcpp::as<bool>  (noise_in["fix_V"]);
-        
+
         B_mu     = Rcpp::as< MatrixXd >    (noise_in["B_mu"]);
         B_sigma  = Rcpp::as< MatrixXd >    (noise_in["B_sigma"]);
         n_theta_mu    =   (B_mu.cols());
         n_theta_sigma =   (B_sigma.cols());
-    
+
         theta_mu = Rcpp::as< VectorXd >    (noise_in["theta_mu"]);
         set_theta_mu(theta_mu);
         theta_sigma = Rcpp::as< VectorXd > (noise_in["theta_sigma"]);
@@ -69,13 +70,13 @@ if (debug) std::cout << "Begin constructor of latent" << std::endl;
         var = new normal(n_mesh);
         fix_flag[latent_fix_theta_mu] = 1;
     }
-    
+
     // Init V and W
     if (fix_flag[latent_fix_V]) var->fixV();
     if (noise_in["V"] != R_NilValue) {
         VectorXd V = Rcpp::as< VectorXd >    (noise_in["V"]);
-        var->setV(V); var->setV(V); 
-// if (debug) std::cout << "I JUST SET V"<< std::endl;   
+        var->setV(V); var->setV(V);
+// if (debug) std::cout << "I JUST SET V"<< std::endl;
     }
     if (model_list["W"] != R_NilValue) {
         W = Rcpp::as< VectorXd >    (model_list["W"]);
@@ -86,15 +87,14 @@ if (debug) std::cout << "End constructor of latent" << std::endl;
 }
 
 VectorXd Latent::grad_theta_mu() {
-if (debug) std::cout << "Start mu gradient"<< std::endl;   
+if (debug) std::cout << "Start mu gradient"<< std::endl;
     VectorXd result(n_theta_mu);
 
     // VectorXd inv_V = V.cwiseInverse();
     // VectorXd prevV = getPrevV();
     // VectorXd prev_inv_V = prevV.cwiseInverse();
-    SparseMatrix<double> K = getK();
     VectorXd V = getV();
-    
+
     VectorXd grad (n_theta_mu);
     for (int l=0; l < n_theta_mu; l++) {
         grad(l) = (V-h).cwiseProduct( B_mu.col(l).cwiseQuotient(getSV()) ).dot(K*W - mu.cwiseProduct(V-h));
@@ -111,7 +111,6 @@ if (debug) {
 
 // return the gradient wrt. theta, theta=log(sigma)
 inline VectorXd Latent::grad_theta_sigma() {
-    SparseMatrix<double> K = getK();
     VectorXd V = getV();
     VectorXd prevV = getPrevV();
 
@@ -153,7 +152,7 @@ double Latent::function_K(SparseMatrix<double> K) {
     double l;
     if (!symmetricK) {
         solver_Q.compute(Q);
-        l = 0.5 * solver_Q.logdet() 
+        l = 0.5 * solver_Q.logdet()
                - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
     } else {
         chol_solver_K.compute(K);
@@ -164,9 +163,8 @@ double Latent::function_K(SparseMatrix<double> K) {
 }
 
 // function_K(params += ( 0,0,eps,0,0) )
-double Latent::function_K(VectorXd parameter) {
-    assert(parameter.size()==ope->get_n_params());
-    SparseMatrix<double> K = ope->getK(parameter);
+double Latent::function_K(VectorXd parameter_K) {
+    SparseMatrix<double> K = getK(parameter_K);
 
     VectorXd V = getV();
     VectorXd SV = getSV();
@@ -177,7 +175,7 @@ double Latent::function_K(VectorXd parameter) {
     double l;
     if (!symmetricK) {
         solver_Q.compute(Q);
-        l = 0.5 * solver_Q.logdet() 
+        l = 0.5 * solver_Q.logdet()
                - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
     } else {
         chol_solver_K.compute(K);
@@ -190,25 +188,24 @@ double Latent::function_K(VectorXd parameter) {
 // numerical gradient for K parameters
 VectorXd Latent::numerical_grad() {
 std::cout << "start numerical gradient" <<std::endl;
-    int n_theta_K = ope->get_n_params();
-    double val = function_K(ope->getK());
+    double val = function_K(K);
 
     VectorXd grad (n_theta_K);
     // iterate every parameter
     for (int i=0; i < n_theta_K; i++) {
-        SparseMatrix<double> K_add_eps = ope->getK(i, eps);
+        SparseMatrix<double> K_add_eps = getK_by_eps(i, eps);
         double val_add_eps = function_K(K_add_eps);
         double num_g = (val_add_eps - val) / eps;
-        
+
         if (!use_precond) {
             grad(i) = - num_g / n_mesh;
         } else {
-            SparseMatrix<double> K_minus_eps = ope->getK(i, -eps);
+            SparseMatrix<double> K_minus_eps = getK_by_eps(i, -eps);
             double val_minus_eps = function_K(K_minus_eps);
             double num_hess = (val_minus_eps + val_add_eps - 2*val) / pow(eps, 2);
             grad(i) = num_g / num_hess;
         }
-    } 
+    }
     return grad;
 }
 
@@ -216,7 +213,7 @@ Rcpp::List Latent::output() const {
     Rcpp::List out = Rcpp::List::create(
         Rcpp::Named("model")        = model_type,
         Rcpp::Named("noise_type")   = noise_type,
-        Rcpp::Named("theta_K")      = ope->get_parameter(), // same parameterization as input
+        Rcpp::Named("theta_K")      = parameter_K, // same parameterization as input
         Rcpp::Named("theta_mu")     = theta_mu,
         Rcpp::Named("theta_sigma")  = theta_sigma,
         Rcpp::Named("theta_V")      = var->get_var(),  // gives eta > 0, not log(eta)
@@ -231,8 +228,8 @@ Rcpp::List Latent::output() const {
 // // numerical gradient for K parameters
 // VectorXd Latent::numerical_grad() {
 // std::cout << "start numerical gradient" <<std::endl;
-//     int n_theta_K = ope->get_n_params();
-//     VectorXd params = ope->get_parameter();
+//     int n_theta_K =   get_n_params();
+//     VectorXd params = get_parameter();
 //     double val = function_K(params);
 
 //     VectorXd grad (n_theta_K);
@@ -241,7 +238,7 @@ Rcpp::List Latent::output() const {
 //             params_add_eps(i) += eps;
 //         double val_add_eps = function_K(params_add_eps);
 //         double num_g = (val_add_eps - val) / eps;
-        
+
 //         if (!use_precond) {
 //             grad(i) = - num_g / n_mesh;
 //             // grad(i) = - num_g;
@@ -252,7 +249,7 @@ Rcpp::List Latent::output() const {
 //             double num_hess = (val_minus_eps + val_add_eps - 2*val) / pow(eps, 2);
 //             grad(i) = num_g / num_hess;
 //         }
-//     } 
+//     }
 //     // return grad;
 //     return grad;
 // }

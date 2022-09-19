@@ -30,7 +30,7 @@ using Eigen::MatrixXd;
 const int BLOCK_FIX_FLAG_SIZE = 6;
 
 enum Block_fix_flag {
-    block_fix_beta, block_fix_theta_mu, block_fix_theta_sigma, block_fix_theta_V, 
+    block_fix_beta, block_fix_theta_mu, block_fix_theta_sigma, block_fix_theta_V,
     block_fix_V
 };
 
@@ -65,13 +65,13 @@ protected:
 
     // controls
     int n_gibbs;
-    bool opt_beta, kill_var;
+    bool debug,opt_beta, kill_var;
     double kill_power, threshold, termination;
 
     SparseMatrix<double> A, K;      // not used: dK, d2K;
 
     // debug
-    bool debug, fix_merr;
+    bool fix_merr;
     bool fixblockV;
 
     // optimize related
@@ -87,13 +87,7 @@ protected:
     VectorXd fixedW;
     std::mt19937 rng;
 public:
-    BlockModel(
-        Rcpp::List general_in,
-        Rcpp::List latents_in,
-        Rcpp::List noise_in,
-        Rcpp::List control_list,
-        Rcpp::List debug_list
-    );
+    BlockModel(Rcpp::List& block_model);
 
     /* Gibbs Sampler */
     void burn_in(int iterations) {
@@ -243,12 +237,5 @@ inline SparseMatrix<double> BlockModel::precond() const {
     throw;
     return precond;
 }
-
-// VectorXd BlockModel::grad_block() const {
-//     // beta
-//     // noise_mu
-//     // noise_sigma
-//     // noise_var
-// }
 
 #endif

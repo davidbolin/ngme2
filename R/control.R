@@ -8,7 +8,7 @@
 #' @param kill_power      the power of variance killing (if kill the variance)
 #' @param threshold       till when start to kill the variance
 #' @param termination     till when stop optimizing
-#' @param estimation
+#' @param estimation      do estimation or not
 #' @param opt_beta
 #' @param fix_beta
 #' @param window.size
@@ -23,6 +23,7 @@ ngme.control <- function(
   gibbs_sample      = 5,
   stepsize          = 1,
   estimation        = TRUE,
+  debug             = FALSE,
 
   opt_beta          = TRUE,
   fix_beta          = FALSE,
@@ -44,10 +45,10 @@ ngme.control <- function(
     gibbs_sample      = gibbs_sample,
     stepsize          = stepsize,
     estimation        = estimation,
+    debug             = debug,
+
     opt_beta          = opt_beta,
     fix_beta          = fix_beta,
-
-    kill_var          = FALSE,
 
     # variance reduction
     kill_var          = kill_var,
@@ -56,7 +57,7 @@ ngme.control <- function(
     termination       = termination
   )
 
-  class(control) <- "control.ngme"
+  class(control) <- "ngme_control"
   control
 }
 
@@ -91,29 +92,6 @@ ngme.control.f <- function(
     use_iter_solver = use_iter_solver
   )
 
-  class(control) <- "control.f"
+  class(control) <- "ngme_control_f"
   control
-}
-
-#' Generate debug option
-#'
-#' @param debug    debug mode
-#' @param not_run  print input without running estimation
-
-#'
-#' @return
-#' @export
-#'
-#' @examples
-ngme.debug <- function(
-  debug     = TRUE,
-  not_run   = FALSE
-) {
-
-  debug  = list(
-    debug     = debug,
-    not_run    = not_run
-  )
-
-  return (debug)
 }

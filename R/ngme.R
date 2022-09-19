@@ -6,8 +6,7 @@
 #' @param data    a dataframe or a list providing data
 #'   (Only response variable can contain NA value,
 #'    NA value in other columns will cause problem)
-#' @param controls control variables, see ?ngme.control
-#' @param debug  debug option
+#' @param control control variables, see ?ngme.control
 #' @param last_fit  can be ngme object from last fitting
 #' @param noise measurement noise specification
 #' @param beta starting value for fixed effects
@@ -22,8 +21,7 @@
 ngme <- function(
   formula,
   data,
-  controls      = ngme.control(),
-  debug         = ngme.debug(),
+  control       = ngme.control(),
   noise         = ngme.noise(),
   last_fit      = NULL,
   beta          = NULL,
@@ -76,10 +74,10 @@ ngme <- function(
       n_Y_data <- split_data$length
 
     ############### n_meshs is the dim of the block matrix
-    n_meshs     = sum(unlist(lapply(latents_in, function(x) x["n_mesh"] )))
-    n_la_params = sum(unlist(lapply(latents_in, function(x) x["n_la_params"] )))
-    model.types = unlist(lapply(latents_in, function(x) x["model_type"] ))
-    var.types   = unlist(lapply(latents_in, function(x) x["var.type"] ))
+    n_meshs     = sum(unlist(lapply(latents_in, function(x) x["n_mesh"])))
+    n_la_params = sum(unlist(lapply(latents_in, function(x) x["n_params"])))
+    model.types = unlist(lapply(latents_in, function(x) x["model_type"]))
+    var.types   = unlist(lapply(latents_in, function(x) x["var.type"]))
 
     n_feff <- ncol(X_data);
     if (family == "normal") {
@@ -88,96 +86,82 @@ ngme <- function(
       n_merr <- noise$n_theta_mu + noise$n_theta_sigma + noise$n_theta_V
     }
 
-    # 3. prepare in_list for estimate
+    # 3. prepare Rcpp_list for estimate
     lm.model <- lm.fit(X_data, Y_data)
     if (is.null(beta)) beta <- lm.model$coeff
     n_params <- n_la_params + n_feff + n_merr
-
-    general_in <- list(
-      seed             = seed,
-      Y                = Y_data,
-      X                = X_data,
-      beta             = beta,
-      n_meshs          = n_meshs,
-      n_la_params      = n_la_params,
-      n_params         = n_params # how many param to opt. in total
-    )
 
     noise <- update.ngme.noise(noise, n = n_Y_data)
 
     if (family == "normal" && is.null(noise$theta_sigma == 0))
       noise$theta_sigma <- sd(lm.model$residuals)
 
-  ####### Use Last_fit ngme object to update in_list
-    stopifnot("last_fit should be an ngme object"
-      = class(last_fit) == "ngme" || is.null(last_fit))
-
-    if (inherits(last_fit, "ngme")) {
-      output <- last_fit$est_output
-      # use last fit estimates
-
-      # block noise
-      noise$theta_mu    <- output$noise[["theta_mu"]]
-      noise$theta_sigma <- output$noise[["theta_sigma"]]
-      noise$theta_noise <- output$noise[["theta_V"]]
-      noise$V           <- output$noise[["V"]]
-
-      # latents
-      for (i in seq_along(latents_in)) {
-        last_fit_latent <- output$latent[[i]]
-        latents_in[[i]]$operator$theta_K  <- last_fit_latent[["theta_K"]]
-        latents_in[[i]]$W                 <- last_fit_latent[["W"]]
-
-        latents_in[[i]]$noise$theta_mu    <- last_fit_latent[["theta_mu"]]
-        latents_in[[i]]$noise$theta_sigma <- last_fit_latent[["theta_sigma"]]
-        latents_in[[i]]$noise$theta_noise <- last_fit_latent[["theta_V"]]
-        latents_in[[i]]$noise$V           <- last_fit_latent[["V"]]
-      }
-    }
-    
-    in_list <- list(
-      general_in  = general_in,
-      latents_in  = latents_in,
-      noise_in    = noise,
-      control_in  = controls,
-      debug       = debug,
-      seed        = seed
+    ngme_block <- ngme.block_model(
+      Y                 = Y_data,
+      X                 = X_data,
+      beta              = beta,
+      n_meshs           = n_meshs,
+      n_la_params       = n_la_params,
+      n_params          = n_params, # how many param to opt. in total
+      latents           = latents_in,
+      noise             = noise,
+      seed              = seed,
+      control           = control
     )
+
+  ####### Use Last_fit ngme object to update Rcpp_list
+    # stopifnot("last_fit should be an ngme object"
+    #   = class(last_fit) == "ngme" || is.null(last_fit))
+
+    # if (inherits(last_fit, "ngme")) {
+    #   output <- last_fit$est_output
+    #   # use last fit estimates
+
+    #   # block noise
+    #   noise$theta_mu    <- output$noise[["theta_mu"]]
+    #   noise$theta_sigma <- output$noise[["theta_sigma"]]
+    #   noise$theta_noise <- output$noise[["theta_V"]]
+    #   noise$V           <- output$noise[["V"]]
+
+    #   # latents
+    #   for (i in seq_along(latents_in)) {
+    #     last_fit_latent <- output$latent[[i]]
+    #     latents_in[[i]]$operator$theta_K  <- last_fit_latent[["theta_K"]]
+    #     latents_in[[i]]$W                 <- last_fit_latent[["W"]]
+
+    #     latents_in[[i]]$noise$theta_mu    <- last_fit_latent[["theta_mu"]]
+    #     latents_in[[i]]$noise$theta_sigma <- last_fit_latent[["theta_sigma"]]
+    #     latents_in[[i]]$noise$theta_noise <- last_fit_latent[["theta_V"]]
+    #     latents_in[[i]]$noise$V           <- last_fit_latent[["V"]]
+    #   }
+    # }
+
   } else {
     stop("unknown structure of formula")
   }
 
-# print
-if (debug$debug) print(str(in_list))
-
   ################# Run CPP ####################
-  if (debug$not_run) {
-    print("Start estimation by setting not_run = FALSE")
-    return(in_list)
+  if (!control$estimation) {
+    print("Start estimation by setting estimation = TRUE")
+    return(ngme_block)
   }
 
   cat("Starting estimation... \n")
-  out <- estimate_cpp(in_list)
+  out <- estimate_cpp(ngme_block)
   cat("Estimation done! \n")
 
-################# Construct Output ####################
-    # out$input <- in_list
+  # update the ngme_block using estimation.
+  estimation <- out$estimation
+    # 1. update fixed effects
+    ngme_block$beta <- estimation$beta
+    # 2. updates noise
+    ngme_block$noise <- update_noise_with_est(ngme_block$noise, estimation$noise)
+    # 3. update latents
+    ngme_block$latents <- update_latents_with_est(ngme_block$latents, estimation$latents)
 
-    # # fix_eff
-    # out$n_fe     = ncol(X)
+  attr(ngme_block, "opt_trajectory") <- out$opt_trajectory
 
-    # # m_err
-    # out$family = general_in$family
-
-    # # operator
-    # out$n_la_params = unlist(lapply(latents_in, function(x) x["n_la_params"] ))
-
-    # # process
-    # out$n_latent = length(latents_in)
-    # out$model.types = model.types
-    # out$var.types   = var.types
-
-  ##### doing prediction
+  ################# doing prediction ####################
   if (split_data$contain_NA) {
     AW <- 0
     for (i in seq_along(latents_in)) {
@@ -198,7 +182,78 @@ if (debug$debug) print(str(in_list))
   }
 
   # cat(paste("total time is", Sys.time() - time.start, " \n"))
+  ngme_block
+}
 
-  class(out) <- "ngme"
-  out
+
+# helper function
+update_noise_with_est <- function(noise, noise_out) {
+  if (noise_out$noise_type == "nig") {
+    noise$theta_mu    <- noise_out$theta_mu
+    noise$theta_sigma <- noise_out$theta_sigma
+    noise$theta_V     <- noise_out$theta_V
+    noise$V           <- noise_out$V
+  } else if (noise_out$noise_type == "normal") {
+    noise$theta_sigma <- noise_out$theta_sigma
+  }
+
+  noise
+}
+
+update_latents_with_est <- function(latents, latents_out) {
+  for (i in seq_along(latents_out)) {
+    latents[[i]]$theta_K  <- latents_out[[i]]$theta_K
+    latents[[i]]$W        <- latents_out[[i]]$W
+
+    latents[[i]]$noise    <- update_noise_with_est(latents[[i]]$noise, latents_out[[i]])
+  }
+
+  latents
+}
+
+
+# the general block model
+ngme.block_model <- function(
+  Y       = NULL,
+  X       = NULL,
+  beta    = NULL,
+  latents = list(),
+  noise   = list(),
+  control = list(),
+  ...
+) {
+  structure(
+    list(
+      Y                 = Y,
+      X                 = X,
+      beta              = beta,
+      latents           = latents,
+      noise             = noise,
+      control           = control,
+      ...
+    ),
+    class = "ngme"
+  )
+}
+
+#' Print ngme object
+#'
+#' @param ngme ngme object
+#'
+#' @return a list (noise specifications)
+#' @export
+print.ngme <- function(ngme) {
+  cat("*** Ngme object ***\n\n");
+
+  cat("Fixed effects: \n");
+  cat(paste("   ",  cat(format(ngme$beta)))); cat("\n")
+
+  cat("Measurement noise: \n");
+  print.ngme_noise(ngme$noise, padding = 2); cat("\n\n")
+
+  cat("Latent models: \n");
+  for (i in seq_along(ngme$latents)) {
+    cat("[["); cat(i); cat("]]\n")
+    print.ngme_model(ngme$latents[[i]], padding = 2)
+  }
 }

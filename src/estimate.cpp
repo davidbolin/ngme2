@@ -37,15 +37,10 @@ std::cout << "Total time is (ms): " << since(timer).count() << std::endl;
 }
 
 // [[Rcpp::export]]
-Rcpp::List& sampling_cpp(Rcpp::List& ngme_block) {
+Rcpp::List sampling_cpp(Rcpp::List& ngme_block, int iterations) {
     BlockModel block (ngme_block);
-    Rcpp::List control_in = ngme_block["control"];
-    const int iterations = (control_in["iterations"]);
 
-    block.burn_in(iterations);
-
-    // to-do: writing sampling into ngme_block
-    return ngme_block;
+    return block.sampling(iterations);
 }
 
 // void update_estimation(Rcpp::List& ngme_block, const BlockModel& block);

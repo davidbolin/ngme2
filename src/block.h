@@ -92,10 +92,8 @@ public:
     /* Gibbs Sampler */
     void burn_in(int iterations) {
         for (int i=0; i < iterations; i++) {
-
             sampleW_VY();
             sampleV_WY();
-
             sample_cond_block_V();
         }
       if (debug) std::cout << "Finish burn in period." << std::endl;
@@ -219,6 +217,9 @@ public:
     VectorXd grad_theta_sigma();
     VectorXd grad_theta_merr();
     void set_theta_merr(const VectorXd& theta_merr);
+
+    // get length of W,V of iterations
+    Rcpp::List sampling(int iterations);
 
     // return output
     Rcpp::List output() const;

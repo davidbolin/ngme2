@@ -91,6 +91,7 @@ f <- function(
     if (model == "ar1") {
       stopifnot("Please specify the init value for ar1 using theta_K=."
         = is.null(theta_K) || (theta_K > 0 && theta_K < 1))
+    if (is.null(theta_K)) theta_K <- 0.5 # setting default value 0.5 for ar1
 
       # provide the natural index
       if (is.null(index)) index <- index_data

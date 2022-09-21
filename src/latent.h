@@ -256,7 +256,6 @@ public:
     // Output
     virtual Rcpp::List get_estimates() const=0;
 
-    // will be used as input
     Rcpp::List output() const;
 };
 

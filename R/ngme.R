@@ -155,7 +155,7 @@ if (debug) print(str(ngme_block))
   out <- estimate_cpp(ngme_block)
   cat("Estimation done! \n")
 
-  # update the ngme_block using estimation.
+  # update the ngme_block using estimation result.
   estimation <- out$estimation
     # 1. update fixed effects
     ngme_block$beta <- estimation$beta
@@ -168,20 +168,28 @@ if (debug) print(str(ngme_block))
 
   ################# doing prediction ####################
   if (split_data$contain_NA) {
-    AW <- 0
+    # form a linear predictor
+    linear_predictor <- double(length(ngme_response))
+
+    AW_pred <- 0; AW_data <- 0
     for (i in seq_along(latents_in)) {
-      A_pred <- latents_in[[i]]$A_pred
-      W <- out$est_output$latents[[i]]$W
-      AW <- AW + drop(A_pred %*% W)
+      W <- ngme_block$latents[[i]]$W
+      AW_pred <- AW_pred + drop(latents_in[[i]]$A_pred %*% W)
+      AW_data <- AW_data + drop(latents_in[[i]]$A %*% W)
     }
 
     # fixed effects. watch out! Xb could be double(0)
-    X_pred <- split_data$X_NA
-    Xb <- drop(X_pred %*% out$est_output$fixed_effects)
-    ngme_response[split_data$index_NA] <- if (length(Xb) == 0) AW else AW + Xb
+    X_pred <- split_data$X_NA;
+    Xb_pred <- drop(X_pred %*% ngme_block$beta)
+    Xb_data <- drop(X_data %*% ngme_block$beta)
 
-    out$prediction <- list(
-      linear_predictor  = ngme_response,
+    # ngme_response[split_data$index_NA] <- if (length(Xb_pred) == 0) AW_pred else AW_pred + Xb_pred
+    #
+    linear_predictor[split_data$index_NA]   <- if (length(Xb_pred) == 0) AW_pred else AW_pred + Xb_pred
+    linear_predictor[split_data$index_data] <- if (length(Xb_data) == 0) AW_data else AW_data + Xb_data
+
+    attr(ngme_block, "prediction") <- list(
+      linear_predictor  = linear_predictor,
       index_pred        = split_data$index_NA
     )
   }
@@ -191,7 +199,7 @@ if (debug) print(str(ngme_block))
 }
 
 
-# helper function
+# helper function - update noise with est. values
 update_noise_with_est <- function(noise, noise_out) {
   if (noise_out$noise_type == "nig") {
     noise$theta_mu    <- noise_out$theta_mu
@@ -205,6 +213,7 @@ update_noise_with_est <- function(noise, noise_out) {
   noise
 }
 
+# helper function - update latent process with est. values
 update_latents_with_est <- function(latents, latents_out) {
   for (i in seq_along(latents_out)) {
     latents[[i]]$theta_K  <- latents_out[[i]]$theta_K

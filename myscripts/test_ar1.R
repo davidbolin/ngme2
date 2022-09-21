@@ -55,7 +55,7 @@ ngme_out <- ngme(
   f(model = "ar1",
     theta_K = 0.7,
     W = as.numeric(ar1_process),
-    fix_W = TRUE,
+    fix_W = FALSE,
     noise = ngme.noise.nig(
       theta_mu = ar_mu,
       theta_sigma = ar_sigma,
@@ -78,7 +78,7 @@ ngme_out <- ngme(
     estimation = TRUE,
 
     burnin = 200,
-    iterations = 200,
+    iterations = 100,
     gibbs_sample = 5,
     stepsize = 1,
     kill_var = FALSE,
@@ -100,3 +100,7 @@ opt_trajectory <- attr(ngme_out, "opt_trajectory")
 
 ngme.traceplot(ngme, start = 1, n = 1, transform = th2a)
 # ngme.traceplot(opt_trajectory, start = 3, n = 1, transform = identity)
+
+load_all()
+str(ngme_out)
+str(sampling_cpp(ngme_out, 10))

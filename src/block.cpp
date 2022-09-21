@@ -334,7 +334,7 @@ VectorXd BlockModel::grad_beta() {
     VectorXd grads = X.transpose() * noise_inv_SV.asDiagonal() * residual;
     MatrixXd hess = X.transpose() * noise_inv_SV.asDiagonal() * X;
     grads = hess.ldlt().solve(grads);
-  Rcpp::Rcout << "(beta) grads = " << grads << "\n";
+//   Rcpp::Rcout << "(beta) grads = " << grads << "\n";
 // std::cout << "grads of beta=" << -grads << std::endl;
     return -grads;
 }
@@ -446,6 +446,29 @@ Rcpp::List BlockModel::output() const {
         ),
         Rcpp::Named("beta")    = beta,
         Rcpp::Named("latents")          = latents_output
+    );
+}
+
+Rcpp::List BlockModel::sampling(int iterations) {
+    std::vector<VectorXd> Ws;
+    std::vector<VectorXd> Vs;
+    std::vector<VectorXd> Block_Vs;
+
+    burn_in(5);
+
+    for (int i=0; i < iterations; i++) {
+        sampleW_VY();
+        sampleV_WY();
+        sample_cond_block_V();
+        Ws.push_back(getW());
+        Vs.push_back(getV());
+        Block_Vs.push_back(var->getV());
+    }
+
+    return Rcpp::List::create(
+        Rcpp::Named("Ws") = Ws,
+        Rcpp::Named("Vs") = Vs,
+        Rcpp::Named("Block_Vs") = Block_Vs
     );
 }
 

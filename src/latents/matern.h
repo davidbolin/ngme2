@@ -38,16 +38,16 @@ std::cout << "begin Constructor of Matern " << std::endl;
         SparseMatrix<double> Q = K.transpose() * K;
 
         if (!use_iter_solver) {
-            chol_solver_K.init(n_mesh, 0,0,0);
+            chol_solver_K.init(W_size, 0,0,0);
             chol_solver_K.analyze(K);
         } else {
-            CG_solver_K.init(n_mesh, n_mesh, n_mesh, 0.5);
+            CG_solver_K.init(W_size, W_size, W_size, 0.5);
             CG_solver_K.analyze(K);
         }
 
         compute_trace();
 
-        solver_Q.init(n_mesh, 0,0,0);
+        solver_Q.init(W_size, 0,0,0);
         solver_Q.analyze(Q);
 
 std::cout << "finish Constructor of Matern " << std::endl;
@@ -55,15 +55,15 @@ std::cout << "finish Constructor of Matern " << std::endl;
 
     SparseMatrix<double> getK(VectorXd parameter_K) const {
         double kappa = parameter_K(0);
-        int n_mesh = G.rows();
+        int W_size = G.rows();
 
-        SparseMatrix<double> K_a (n_mesh, n_mesh);
+        SparseMatrix<double> K_a (W_size, W_size);
             // VectorXd k2C = (kappa * kappa * Cdiag);
             // SparseMatrix<double> KCK = k2C.asDiagonal();
         SparseMatrix<double> KCK = kappa * kappa * C;
 
-        // VectorXd kappas = VectorXd::Constant(n_mesh, parameter_K(0));
-        // SparseMatrix<double> KCK (n_mesh, n_mesh);
+        // VectorXd kappas = VectorXd::Constant(W_size, parameter_K(0));
+        // SparseMatrix<double> KCK (W_size, W_size);
         //     KCK = kappas.cwiseProduct(kappas).cwiseProduct(Cdiag).asDiagonal();
 
         if (alpha==2) {
@@ -84,8 +84,8 @@ std::cout << "finish Constructor of Matern " << std::endl;
     SparseMatrix<double> get_dK(int index, VectorXd parameter_K) const {
         assert(index==0);
         double kappa = parameter_K(0);
-        int n_mesh = G.rows();
-        SparseMatrix<double> dK (n_mesh, n_mesh);
+        int W_size = G.rows();
+        SparseMatrix<double> dK (W_size, W_size);
 
         if (alpha==2)
             dK = 2*kappa*C;
@@ -113,7 +113,6 @@ std::cout << "finish Constructor of Matern " << std::endl;
 
     // return length 1 vectorxd : grad_kappa * dkappa/dtheta
     VectorXd grad_theta_K() {
-std::cout << "begin grad theta K " << std::endl;
         SparseMatrix<double> dK = get_dK_by_index(0);
         VectorXd V = getV();
         VectorXd SV = getSV();
@@ -134,7 +133,7 @@ std::cout << "begin grad theta K " << std::endl;
             double grad = trace - tmp;
 
             if (!use_precond) {
-                ret = - grad * da / n_mesh;
+                ret = - grad * da / W_size;
             } else {
                 VectorXd prevV = getPrevV();
                 // compute numerical hessian
@@ -185,7 +184,6 @@ std::cout << "begin grad theta K " << std::endl;
             Rcpp::Named("theta.noise")  = var->get_var()
         );
     }
-
 };
 
 #endif
@@ -223,8 +221,8 @@ std::cout << "begin grad theta K " << std::endl;
 //     SparseMatrix<double> get_dK(int index, VectorXd parameter_K) const {
 //         assert(index==0);
 //         double kappa = parameter_K(0);
-//         int n_mesh = G.rows();
-//         SparseMatrix<double> dK (n_mesh, n_mesh);
+//         int W_size = G.rows();
+//         SparseMatrix<double> dK (W_size, W_size);
 
 //         if (alpha==2)
 //             dK = 2*kappa*C;

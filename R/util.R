@@ -251,7 +251,8 @@ ngme.parse.formula <- function(
     res <- eval(parse(text = str), envir = data)
     latents_in[[length(latents_in) + 1]] <- res
   }
-  fixf <- terms[-spec_order]
+  # watch out! terms[-double(0)] -> character(0)
+  fixf <- if (length(spec_order) == 0) terms else terms[-spec_order]
 
   # construct plain formula without f
   fm <- as.character(attr(tf, "variables")[[2]])
@@ -266,6 +267,9 @@ ngme.parse.formula <- function(
   )
 }
 
+# better return as string?
 ngme.format <- function(x) {
-  format(x, digits = 3)
+  x <- format(x, digits = 3)
+  if (length(x) > 1) x <- paste0(x, collapse = ", ")
+  x
 }

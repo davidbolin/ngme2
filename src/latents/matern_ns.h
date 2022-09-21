@@ -31,7 +31,7 @@ public:
       G           (Rcpp::as< SparseMatrix<double,0,int> > (model_list["G"])),
       C           (Rcpp::as< SparseMatrix<double,0,int> > (model_list["C"])),
       alpha       (Rcpp::as<int> (model_list["alpha"])),
-      Bkappa      (Rcpp::as<MatrixXd> (model_list["B.kappa"])),
+      Bkappa      (Rcpp::as<MatrixXd> (model_list["B_kappa"])),
       Cdiag       (C.diagonal())
     {
 if (debug) std::cout << "constructor of matern ns" << std::endl;
@@ -41,12 +41,12 @@ if (debug) std::cout << "constructor of matern ns" << std::endl;
         K = getK(parameter_K);
         SparseMatrix<double> Q = K.transpose() * K;
 
-        chol_solver_K.init(n_mesh, 0,0,0);
+        chol_solver_K.init(W_size, 0,0,0);
         chol_solver_K.analyze(K);
         // compute_trace();
 
         // Init Q
-        solver_Q.init(n_mesh, 0,0,0);
+        solver_Q.init(W_size, 0,0,0);
         solver_Q.analyze(Q);
 if (debug) std::cout << "finish constructor of matern ns" << std::endl;
     }
@@ -115,7 +115,6 @@ if (debug) std::cout << "finish constructor of matern ns" << std::endl;
     }
 
     VectorXd grad_theta_K() {
-std::cout << "matern_ns : begin grad theta K " << std::endl;
         VectorXd V = getV();
         VectorXd SV = getSV();
 
@@ -138,17 +137,14 @@ std::cout << "matern_ns : begin grad theta K " << std::endl;
                     trace = chol_solver_K.trace(dK);
                 }
 
-                grad(i) = (trace - tmp) / n_mesh;
+                grad(i) = (trace - tmp) / W_size;
             }
         }
 
-std::cout << "matern_ns : grad= " << grad << std::endl;
         return grad;
     }
 
     void set_unbound_theta_K(VectorXd theta_K) {
-std::cout << "matern_ns : begin set theta K " << std::endl;
-
         parameter_K = theta_K;
         K = getK(parameter_K);
         if (!numer_grad) compute_trace();

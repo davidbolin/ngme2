@@ -7,18 +7,21 @@ using std::pow;
 BlockModel::BlockModel(
     Rcpp::List& block_model
 ) :
-    seed          (Rcpp::as<unsigned long> (block_model["seed"]) ),
-    X             (Rcpp::as<MatrixXd>      (block_model["X"]) ),
-    Y             (Rcpp::as<VectorXd>      (block_model["Y"]) ),
-    n_meshs       (Rcpp::as<int>           (block_model["n_meshs"]) ),
-    beta          (Rcpp::as<VectorXd>      (block_model["beta"]) ),
+    seed          (Rcpp::as<unsigned long> (block_model["seed"])),
+    X             (Rcpp::as<MatrixXd>      (block_model["X"])),
+    Y             (Rcpp::as<VectorXd>      (block_model["Y"])),
+    W_sizes       (Rcpp::as<int>           (block_model["W_sizes"])),
+    V_sizes       (Rcpp::as<int>           (block_model["V_sizes"])),
+    beta          (Rcpp::as<VectorXd>      (block_model["beta"])),
     n_obs         (Y.size()),
-    n_la_params   (Rcpp::as<int>           (block_model["n_la_params"]) ),
+    n_la_params   (Rcpp::as<int>           (block_model["n_la_params"])),
     n_feff        (beta.size()),
-    A             (n_obs, n_meshs),
-    K             (n_meshs, n_meshs)
-    // dK            ( n_meshs, n_meshs),
-    // d2K           ( n_meshs, n_meshs),
+
+    debug         (Rcpp::as<bool>          (block_model["debug"])),
+    A             (n_obs, W_sizes),
+    K             (V_sizes, W_sizes)
+    // dK            (V_sizes, W_sizes)
+    // d2K           (V_sizes, W_sizes)
 
 {
     rng.seed(seed);
@@ -26,7 +29,6 @@ BlockModel::BlockModel(
     Rcpp::List control_in = block_model["control"];
         const int burnin = control_in["burnin"];
         const double stepsize = control_in["stepsize"];
-        debug       =  Rcpp::as<bool>   (control_in["debug"]);
         n_gibbs     =  Rcpp::as<int>    (control_in["gibbs_sample"]);
         opt_beta    =  Rcpp::as<bool>   (control_in["opt_beta"]);
         kill_var    =  Rcpp::as<bool>   (control_in["kill_var"]);
@@ -45,17 +47,24 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
     n_latent = latents_in.size(); // how many latent model
     for (int i=0; i < n_latent; ++i) {
         Rcpp::List latent_in = Rcpp::as<Rcpp::List> (latents_in[i]);
+        int n_theta_K = Rcpp::as<int> (latent_in["n_theta_K"]);
 
         // construct acoording to models
         unsigned long latent_seed = rng();
         string model_type = latent_in["model"];
         if (model_type == "ar1") {
-            latents.push_back(new AR(latent_in, latent_seed) );
+            latents.push_back(new AR(latent_in, latent_seed));
         }
-        else if (model_type == "spde.matern") {
-            // latents.push_back(new Matern_ns(latent_in, latent_seed));
-        } else if (model_type=="matern") {
-            // latents.push_back(new Matern(latent_in, latent_seed));
+        else if (model_type == "rw1") {
+            latents.push_back(new AR(latent_in, latent_seed));
+            // latents.push_back(new Fixed_K(latent_in, latent_seed));
+        }
+        else if (model_type == "matern" && n_theta_K > 1) {
+            latents.push_back(new Matern_ns(latent_in, latent_seed));
+        } else if (model_type=="matern" && n_theta_K == 1) {
+            latents.push_back(new Matern(latent_in, latent_seed));
+        } else {
+            std::cout << "Unknown model." << std::endl;
         }
     }
 
@@ -63,7 +72,7 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
     int n = 0;
     for (std::vector<Latent*>::iterator it = latents.begin(); it != latents.end(); it++) {
         setSparseBlock(&A,   0, n, (*it)->getA());
-        n += (*it)->getSize();
+        n += (*it)->get_W_size();
     }
     assemble();
 
@@ -110,7 +119,7 @@ if (debug) std::cout << "After block construct noise" << std::endl;
 
     // 6. Init solvers
     if(n_latent >0){
-      VectorXd inv_SV = VectorXd::Constant(n_meshs, 1).cwiseQuotient(getSV());
+      VectorXd inv_SV = VectorXd::Constant(V_sizes, 1).cwiseQuotient(getSV());
       SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
       SparseMatrix<double> QQ = Q + A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(var->getV()).asDiagonal() * A;
       chol_Q.analyze(Q);
@@ -150,7 +159,7 @@ Eigen::VectorXd rnorm_vec(int n, double mu, double sigma, unsigned long seed=0)
 void BlockModel::setW(const VectorXd& W) {
   int pos = 0;
   for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
-      int size = (*it)->getSize();
+      int size = (*it)->get_W_size();
       (*it)->setW(W.segment(pos, size));
       pos += size;
   }
@@ -159,8 +168,7 @@ void BlockModel::setW(const VectorXd& W) {
 // sample W|VY
 void BlockModel::sampleW_VY()
 {
-  if(n_latent==0)
-    return;
+  if (n_latent==0) return;
 // if (debug) std::cout << "starting sampling W." << std::endl;
     VectorXd SV = getSV();
     VectorXd inv_SV = VectorXd::Constant(SV.size(), 1).cwiseQuotient(SV);
@@ -181,8 +189,8 @@ void BlockModel::sampleW_VY()
     // VectorXd M = K.transpose() * inv_V.asDiagonal() * getMean() +
         A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V).asDiagonal() * (residual + A * getW());
 
-    VectorXd z (n_meshs);
-    z = rnorm_vec(n_meshs, 0, 1, rng());
+    VectorXd z (W_sizes);
+    z = rnorm_vec(W_sizes, 0, 1, rng());
     // sample W ~ N(QQ^-1*M, QQ^-1)
     VectorXd W = chol_QQ.rMVN(M, z);
     setW(W);
@@ -292,20 +300,27 @@ void BlockModel::set_parameter(const VectorXd& Theta) {
 // sample W|V
 void BlockModel::sampleW_V()
 {
-  if(n_latent==0)
-    return;
+  if(n_latent==0) return;
   std::normal_distribution<double> rnorm {0,1};
+
   // sample KW ~ N(mu*(V-h), diag(V))
   VectorXd SV = getSV();
-  Eigen::VectorXd KW (n_meshs);
-  for (int i=0; i < n_meshs; i++) {
+  Eigen::VectorXd KW (V_sizes);
+  for (int i=0; i < V_sizes; i++) {
     // KW[i] = R::rnorm(0, sqrt(SV[i]));
     KW[i] = rnorm(rng) * sqrt(SV[i]);
   }
   KW = getMean() + KW;
 
-  LU_K.factorize(K);
-  VectorXd W = LU_K.solve(KW);
+  VectorXd W (W_sizes);
+  if (V_sizes == W_sizes) {
+    LU_K.factorize(K);
+    W = LU_K.solve(KW);
+  } else {
+    SparseMatrix<double> Q = K.transpose() * K;
+    chol_Q.compute(Q);
+    W = chol_Q.solve(K.transpose() * KW);
+  }
 
   setW(W);
 }

@@ -11,7 +11,6 @@
 #include "../include/solver.h"
 #include "../latent.h"
 #include "../var.h"
-#include "../operator.h"
 #include <cmath>
 
 using std::exp;
@@ -24,6 +23,7 @@ using std::pow;
         K = C * alpha + G
 */
 
+// W_size = V_size
 // get_K_params, grad_K_params, set_K_params, output
 class AR : public Latent {
 private:
@@ -46,12 +46,15 @@ if (debug) std::cout << "Begin Constructor of AR1" << std::endl;
         K = getK(parameter_K);
         SparseMatrix<double> Q = K.transpose() * K;
 
-        lu_solver_K.init(n_mesh, 0,0,0);
-        lu_solver_K.analyze(K);
-        compute_trace();
+        // watch out!
+        if (W_size == V_size) {
+            lu_solver_K.init(W_size, 0,0,0);
+            lu_solver_K.analyze(K);
+            compute_trace();
+        }
 
         // Init Q
-        solver_Q.init(n_mesh, 0,0,0);
+        solver_Q.init(W_size, 0,0,0);
         solver_Q.analyze(Q);
 if (debug) std::cout << "End Constructor of AR1" << std::endl;
     }
@@ -107,7 +110,7 @@ if (debug) std::cout << "End Constructor of AR1" << std::endl;
             double grad = trace - tmp;
 
             if (!use_precond) {
-                ret = - grad * da / n_mesh;
+                ret = - grad * da / W_size;
             } else {
                 VectorXd prevV = getPrevV();
                 // compute numerical hessian
@@ -140,7 +143,7 @@ if (debug) std::cout << "End Constructor of AR1" << std::endl;
             update_num_dK();
         }
 
-        if (!numer_grad) compute_trace();
+        if (!numer_grad && (W_size == V_size)) compute_trace();
     }
 
     double th2a(double th) const {

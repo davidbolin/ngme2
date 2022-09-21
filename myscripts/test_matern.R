@@ -2,19 +2,15 @@
 library(devtools)
 library(INLA)
 load_all()
-pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
 
-?inla.mesh.2d
+pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
 mesh <- inla.mesh.2d(
   loc.domain = pl01, cutoff = 1,
   max.edge = c(0.3, 1), offset = c(0.5, 1.5)
 )
-
-plot(mesh)
+# plot(mesh)
 
 ############################ Stationary Case ######################################
-str(ngme.station.matern(mesh = mesh))
-
 sigma <- 1
 alpha <- 2
 mu <- 2;
@@ -230,21 +226,15 @@ plot_out(ngme_out1$trajectory, start=1, n=1, transform=exp)
 # ngme_out$estimates
 #
 
-
-
-
-
 ####### new script
 ####### predict NA location for matern model
 library(devtools); library(INLA); load_all()
-
 { # First we create mesh
   pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
   mesh <- inla.mesh.2d(
     loc.domain = pl01, cutoff = 1,
     max.edge = c(0.3, 1), offset = c(0.5, 1.5)
   )
-  plot(mesh)
 
   W <- ngme.simulate(
     f(model = ngme.matern(mesh = mesh, theta_kappa = c(0.4, 1)),
@@ -258,12 +248,8 @@ n_obs <- 100; index_obs <- sample(1:mesh$n, n_obs)
 loc_obs <- mesh$loc[index_obs, c(1, 2)]
 A <- inla.spde.make.A(mesh = mesh, loc = loc_obs)
 
-n_NA <- 30; index_NA <- sample(1:mesh$n, n_NA)
-loc_NA <- mesh$loc[index_obs, c(1, 2)]
-A_pred <- inla.spde.make.A(mesh = mesh, loc = loc_NA)
-
-
-Y <- drop(A %*% W + sigma.e * rnorm(n_samples))
+sigma.e <- 0.7
+Y <- drop(A %*% W + sigma.e * rnorm(n_obs))
 
 ngme_out <- ngme(
   Y ~ 0 + f(model = ngme.matern(mesh = mesh, theta_kappa = c(0.4, 1)),
@@ -274,3 +260,23 @@ ngme_out <- ngme(
   control = ngme.control(iterations = 10)
 )
 
+
+# try to predict some NA
+n_NA <- 30; index_NA <- sample(1:mesh$n, n_NA)
+loc_NA <- mesh$loc[index_obs, c(1, 2)]
+A_pred <- inla.spde.make.A(mesh = mesh, loc = loc_NA)
+
+library(devtools); library(INLA); load_all()
+{ # First we create mesh
+  pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
+  mesh <- inla.mesh.2d(
+    loc.domain = pl01, cutoff = 1,
+    max.edge = c(0.3, 1), offset = c(0.5, 1.5)
+  )
+
+  W <- ngme.simulate(
+    f(model = ngme.matern(mesh = mesh, theta_kappa = 1.5),
+      noise = ngme.noise.nig()
+    )
+  )
+}

@@ -14,6 +14,7 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 
+library(devtools); load_all()
 ```
 
 ## Introduction
@@ -27,9 +28,6 @@ In `ngme2`, a noise object can be created and specified using `ngme.noise` funct
 The noise object can be used both for the process and for the measurement noise.
 
 ```{r noise}
-# library(ngme2)
-library(devtools); load_all()
-
 # We can specify the noise by use different function and
 # using different parameter.
 norm_noise <- ngme.noise.normal(sd = 3)
@@ -81,13 +79,19 @@ It contains three parts:
 We can use the `ngme` function (with estimation = FALSE) to construct it.
 
 ```{r}
+# generate some random data
+n <- 20; x1 <- rexp(n); x2 <- rnorm(n); y <- x1 + x2 + 3 + rnorm(n, sd = 0.3)
+
 ngme_model <- ngme(
-  formula = y ~ x,
-  data = list(y = c(1, 2, 3), x = c(1, 2, 3)),
-  controls = ngme.control(
+  formula = y ~ x1 + x2 + f(1:n, model = "ar1"),
+  data = list(y = y, x1 = x1, x2 = x2),
+  control = ngme.control(
     estimation = FALSE
   )
 )
 
+ngme_model
+
+# still, we can check the internal structure using str()
 str(ngme_model)
 ```

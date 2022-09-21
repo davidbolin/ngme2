@@ -23,7 +23,6 @@ ngme.control <- function(
   gibbs_sample      = 5,
   stepsize          = 1,
   estimation        = TRUE,
-  debug             = FALSE,
 
   opt_beta          = TRUE,
   fix_beta          = FALSE,
@@ -45,7 +44,6 @@ ngme.control <- function(
     gibbs_sample      = gibbs_sample,
     stepsize          = stepsize,
     estimation        = estimation,
-    debug             = debug,
 
     opt_beta          = opt_beta,
     fix_beta          = fix_beta,

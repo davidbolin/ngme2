@@ -1,16 +1,17 @@
 # function for specify ngme.model basic structure
 ngme.model <- function(
   model,
-  n_mesh      = NULL,
+  W_size      = NULL,
   theta_K     = NULL,
   fix_theta_K = FALSE,
   W           = NULL,
-  fix_W       = NULL,
+  fix_W       = FALSE,
   A           = NULL,
   A_pred      = NULL,
   noise_type  = NULL,
   noise       = NULL,
   control     = ngme.control.f(),
+  V_size      = NULL,
   ...
 ) {
   stopifnot(is.character(model))
@@ -18,16 +19,17 @@ ngme.model <- function(
   structure(
     list(
       model         = model,
-      n_mesh        = n_mesh,
+      W_size        = W_size,
       theta_K       = theta_K,
       n_theta_K     = length(theta_K),
       A             = A,
       A_pred        = A_pred,
-      fix_theta_K   = fix_theta_K,
       noise_type    = noise_type,
       noise         = noise,
       W             = W,
       fix_W         = fix_W,
+      fix_theta_K   = fix_theta_K,
+      V_size        = V_size,
       control       = control,
       ...
     ),
@@ -51,6 +53,8 @@ print.ngme_model <- function(model, padding=0) {
   params <- with(model, {
     switch(model,
       "ar1"     = paste0(pad_add4_space, "alpha = ",    ngme.format(theta_K)),
+      "matern"  = paste0(pad_add4_space, "theta_K = ",  ngme.format(theta_K)),
+      "rw1"     = paste0(pad_add4_space, "No parameter needed."),
       "unkown"  = paste0(pad_add4_space, "theta_K = ",  ngme.format(theta_K)),
     )
   })
@@ -87,6 +91,7 @@ ngme.ar1 <- function(
   ...
 ) {
   # overwirte the default
+  # watch out! avoid situation like ngme.ar1(alpha = 0.3, ...$theta_K=0.4)
   if (!is.null(list(...)$theta_K)) alpha <- list(...)$theta_K
   if (is.null(replicates)) replicates <- rep(1, length(index))
 
@@ -114,12 +119,14 @@ ngme.ar1 <- function(
   model <- ngme.model(
     model       = "ar1",
     theta_K     = alpha,
-    n_mesh      = n,
+    W_size      = n,
+    V_size      = n,
     A           = ngme.ts.make.A(loc = index, replicates = replicates, range = range),
     A_pred      = ngme.ts.make.A(index_pred, replicates = replicates, range = range),
     h           = rep(1.0, n),
-    C = ngme.as.sparse(C),
-    G = ngme.as.sparse(G)
+    C           = ngme.as.sparse(C),
+    G           = ngme.as.sparse(G),
+    ...
   )
 
   model
@@ -141,13 +148,14 @@ ngme.ar1 <- function(
 ngme.matern <- function(
   index = NULL,
   alpha = 2,
+  theta_kappa = 0,
   mesh = NULL,
   replicates = NULL,
   fem.mesh.matrices = NULL,
   d = NULL,
-  theta_kappa = 0,
   A = NULL,        # watch out! Can also specify in f function, not used for now
-  B_kappa = NULL
+  B_kappa = NULL,
+  ...
 ) {
   if (is.null(mesh) && is.null(fem.mesh.matrices))
     stop("At least specify mesh or matrices")
@@ -177,32 +185,30 @@ ngme.matern <- function(
     C <- fem.mesh.matrices$C
     G <- fem.mesh.matrices$G
   }
+  # h <- diag(C)
+  h <- rep(1, mesh$n)
 
   if (!is.null(A)) {
     nrep <- ncol(A) / nrow(C)
     C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), C)
     G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), G)
+    h <- rep(h, times = nrep)
   }
 
-  spde <- list(
-    # general
-    A = A,
-    n_params = length(theta_kappa),
-    operator = list(
-      theta_kappa = theta_kappa,
-      alpha = alpha,
-      B_kappa = B_kappa,
-      n_params = length(theta_kappa),
-      n_mesh = mesh$n,
-      C = ngme.as.sparse(C),
-      G = ngme.as.sparse(G),
-      use_num_dK = FALSE
-    )
+  model <- ngme.model(
+    model       = "matern",
+    A           = A,
+    W_size      = mesh$n,
+    V_size      = nrow(C),
+    theta_K     = theta_kappa,
+    alpha       = alpha,
+    B_kappa     = B_kappa,
+    C           = ngme.as.sparse(C),
+    G           = ngme.as.sparse(G),
+    h           = h,
+    ...
   )
-
-  # create precision matrix
-  class(spde) <- "ngme.matern"
-  spde
+  model
 }
 
 # rw1, rw2
@@ -213,10 +219,51 @@ ngme.matern <- function(
 #   index
 #  replicates=)
 
-# ngme.rw1 <- function(
-#   index,
-#   replicates = NULL,
+#' ngme model - random walk of order 1
+#'
+#' Generating C, G and A given index and replicates
+#' size of C and G is (n-1) * n, size of V is n-1
+#'
+#' @param index index for the process
+#' @param replicates replicates for the process
+#'
+#' @return a list
+#' @export
+#'
+#' @examples
+ngme.rw1 <- function(
+  index,
+  replicates = NULL,
+  ...
+) {
+  # create mesh using index
+  sorted_index <- sort(index, index.return = TRUE)
+  h <- diff(sorted_index$x)
+  # permutation matrix, same as A <- diag(length(index))[sorted_index$ix, ]
+  A <- Matrix::sparseMatrix(seq_along(index), sorted_index$ix, x = 1)
 
-# ) {
+  n <- length(index) - 1
+  # construct G
+    G <- Matrix::Matrix(diag(n));
+    G <- cbind(G, rep(0, n))
 
-# }
+  # construct C
+    C <- Matrix::Matrix(0, n, n)
+    C[seq(n+1, n*n, by = n+1)] <- -1
+    C <- cbind(C, c(rep(0, n-1), -1))
+
+  model <- ngme.model(
+    model       = "rw1",
+    theta_K     = 1,
+    fix_theta_K = TRUE,
+    W_size      = n + 1,
+    V_size      = n,
+    A           = A,
+    # A_pred      = ngme.ts.make.A(index_pred, replicates = replicates, range = range),
+    h           = h,
+    C           = ngme.as.sparse(C),
+    G           = ngme.as.sparse(G),
+    ...
+  )
+  model
+}

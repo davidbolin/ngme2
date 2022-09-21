@@ -108,13 +108,15 @@ plot.ngme <- function(object, param="fe", type="traj", which=1) {
 #'
 #' @examples
 ngme.traceplot <- function(
-  trajectory,
+  ngme,
   start=1,
   n=1,
   transform=identity,
   ...
 ) {
   # plot trajectory of out$trajectory[]
+  trajectory <- attr(ngme, "opt_trajectory")
+
   if (n == 2) par(mfrow = c(2, 1))
   if (n == 3 || n == 4) par(mfrow = c(2, 2))
 

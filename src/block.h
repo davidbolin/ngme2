@@ -36,12 +36,12 @@ enum Block_fix_flag {
 
 class BlockModel : public Model {
 protected:
-// n_meshs = row(A1) + ... + row(An)
+// W_sizes = row(A1) + ... + row(An)
     // general
     unsigned long seed;
     MatrixXd X;
     VectorXd Y;
-    int n_meshs;
+    int W_sizes, V_sizes; //V_sizes = sum(nrow(K_i))
     string family;
 
     // Fixed effects and Measurement noise
@@ -123,22 +123,24 @@ public:
 
     /* Aseemble */
     void assemble() {
-        int n = 0;
+        int nrow = 0;
+        int ncol = 0;
         for (std::vector<Latent*>::iterator it = latents.begin(); it != latents.end(); it++) {
-            setSparseBlock(&K,   n, n, (*it)->getK());
+            setSparseBlock(&K,   nrow, ncol, (*it)->getK());
             // setSparseBlock(&dK,  n, n, (*it)->get_dK());
             // setSparseBlock(&d2K, n, n, (*it)->get_d2K());
 
-            n += (*it)->getSize();
+            nrow += (*it)->get_V_size();
+            ncol += (*it)->get_W_size();
         }
     }
 
     // return mean = mu*(V-h)
     VectorXd getMean() const {
-        VectorXd mean (n_meshs);
+        VectorXd mean (V_sizes);
         int pos = 0;
         for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
-            int size = (*it)->getSize();
+            int size = (*it)->get_V_size();
             mean.segment(pos, size) = (*it)->getMean();
             pos += size;
         }
@@ -146,10 +148,10 @@ public:
     }
 
     VectorXd getV() const {
-        VectorXd V (n_meshs);
+        VectorXd V (V_sizes);
         int pos = 0;
         for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
-            int size = (*it)->getSize();
+            int size = (*it)->get_V_size();
             V.segment(pos, size) = (*it)->getV();
             pos += size;
         }
@@ -159,10 +161,10 @@ public:
 
     // return sigma * V
     VectorXd getSV() const {
-        VectorXd SV (n_meshs);
+        VectorXd SV (V_sizes);
         int pos = 0;
         for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
-            int size = (*it)->getSize();
+            int size = (*it)->get_V_size();
             SV.segment(pos, size) = (*it)->getSV();
             pos += size;
         }
@@ -171,10 +173,10 @@ public:
     }
 
     VectorXd getW() const {
-        VectorXd W (n_meshs);
+        VectorXd W (W_sizes);
         int pos = 0;
         for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
-            int size = (*it)->getSize();
+            int size = (*it)->get_W_size();
             W.segment(pos, size) = (*it)->getW();
             pos += size;
         }
@@ -182,10 +184,10 @@ public:
     }
 
     VectorXd getPrevW() const {
-        VectorXd W (n_meshs);
+        VectorXd W (W_sizes);
         int pos = 0;
         for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
-            int size = (*it)->getSize();
+            int size = (*it)->get_W_size();
             W.segment(pos, size) = (*it)->getPrevW();
             pos += size;
         }

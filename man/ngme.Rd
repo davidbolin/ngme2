@@ -8,7 +8,7 @@ ngme(
   formula,
   data,
   control = ngme.control(),
-  noise = ngme.noise(),
+  noise = ngme.noise.normal(),
   last_fit = NULL,
   beta = NULL,
   seed = NULL

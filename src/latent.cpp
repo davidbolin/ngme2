@@ -6,13 +6,14 @@
 
 #include "latent.h"
 
-// Constructor
+// K is V_size * W_size matrix
 Latent::Latent(Rcpp::List& model_list, unsigned long seed) :
     seed          (seed),
     model_type    (Rcpp::as<string>     (model_list["model"])),
     noise_type    (Rcpp::as<string>     (model_list["noise_type"])),
     debug         (Rcpp::as<bool>       (model_list["debug"])),
-    n_mesh        (Rcpp::as<int>        (model_list["n_mesh"])),
+    W_size        (Rcpp::as<int>        (model_list["W_size"])),
+    V_size        (Rcpp::as<int>        (model_list["V_size"])),
     parameter_K   (Rcpp::as<VectorXd>   (model_list["theta_K"])),
     n_theta_K     (Rcpp::as<int>        (model_list["n_theta_K"])),
 
@@ -20,9 +21,9 @@ Latent::Latent(Rcpp::List& model_list, unsigned long seed) :
     trace_eps     (0),
     eps           (0.001),
 
-    W             (n_mesh),
-    prevW         (n_mesh),
-    h             (Rcpp::as< VectorXd >                     (model_list["h"])),
+    W             (W_size),
+    prevW         (W_size),
+    h             (Rcpp::as< VectorXd >                     (model_list["h"])), //same length as V_size
     A             (Rcpp::as< SparseMatrix<double,0,int> >   (model_list["A"]))
 {
 if (debug) std::cout << "Begin constructor of latent" << std::endl;
@@ -65,9 +66,9 @@ if (debug) std::cout << "Begin constructor of latent" << std::endl;
 
     double theta_V = Rcpp::as< double >      (noise_in["theta_V"]);
     if (noise_type == "nig") {
-        var = new ind_IG(theta_V, n_mesh, latent_rng());
+        var = new ind_IG(theta_V, V_size, latent_rng());
     } else if (noise_type == "normal") {
-        var = new normal(n_mesh);
+        var = new normal(V_size);
         fix_flag[latent_fix_theta_mu] = 1;
     }
 
@@ -87,7 +88,7 @@ if (debug) std::cout << "End constructor of latent" << std::endl;
 }
 
 VectorXd Latent::grad_theta_mu() {
-if (debug) std::cout << "Start mu gradient"<< std::endl;
+// if (debug) std::cout << "Start mu gradient"<< std::endl;
     VectorXd result(n_theta_mu);
 
     // VectorXd inv_V = V.cwiseInverse();
@@ -100,12 +101,12 @@ if (debug) std::cout << "Start mu gradient"<< std::endl;
         grad(l) = (V-h).cwiseProduct( B_mu.col(l).cwiseQuotient(getSV()) ).dot(K*W - mu.cwiseProduct(V-h));
     }
 
-    result = - 1.0 / n_mesh * grad;
+    result = - 1.0 / V_size * grad;
 
-if (debug) {
+// if (debug) {
 // std::cout << "grad of mu=" << grad <<std::endl;
 // std::cout << "hess of mu=" << hess <<std::endl;
-}
+// }
     return result;
 }
 
@@ -120,13 +121,13 @@ inline VectorXd Latent::grad_theta_sigma() {
     VectorXd vsq = (K*W - mu.cwiseProduct(V-h)).array().pow(2).matrix().cwiseProduct(V.cwiseInverse());
     VectorXd grad (n_theta_sigma);
     // for (int l=0; l < n_theta_sigma; l++) {
-    //     VectorXd tmp1 = vsq.cwiseProduct(sigma.array().pow(-2).matrix()) - VectorXd::Constant(n_mesh, 1);
+    //     VectorXd tmp1 = vsq.cwiseProduct(sigma.array().pow(-2).matrix()) - VectorXd::Constant(V_size, 1);
     //     VectorXd tmp2 = B_sigma.col(l).cwiseProduct(tmp1);
     //     grad(l) = tmp2.sum();
     // }
 
     // vector manner
-    VectorXd tmp1 = vsq.cwiseProduct(sigma.array().pow(-2).matrix()) - VectorXd::Constant(n_mesh, 1);
+    VectorXd tmp1 = vsq.cwiseProduct(sigma.array().pow(-2).matrix()) - VectorXd::Constant(V_size, 1);
     grad = B_sigma.transpose() * tmp1;
 
     VectorXd prev_vsq = (K*prevW - mu.cwiseProduct(prevV-h)).array().pow(2).matrix().cwiseProduct(prevV.cwiseInverse());
@@ -135,7 +136,7 @@ inline VectorXd Latent::grad_theta_sigma() {
 
     hess = B_sigma.transpose() * tmp3.asDiagonal() * B_sigma;
 
-    result = - 1.0 / n_mesh * grad;
+    result = - 1.0 / V_size * grad;
 
     // result = hess.llt().solve(grad);
 
@@ -198,7 +199,7 @@ std::cout << "start numerical gradient" <<std::endl;
         double num_g = (val_add_eps - val) / eps;
 
         if (!use_precond) {
-            grad(i) = - num_g / n_mesh;
+            grad(i) = - num_g / W_size;
         } else {
             SparseMatrix<double> K_minus_eps = getK_by_eps(i, -eps);
             double val_minus_eps = function_K(K_minus_eps);
@@ -240,7 +241,7 @@ Rcpp::List Latent::output() const {
 //         double num_g = (val_add_eps - val) / eps;
 
 //         if (!use_precond) {
-//             grad(i) = - num_g / n_mesh;
+//             grad(i) = - num_g / W_size;
 //             // grad(i) = - num_g;
 //         } else {
 //             VectorXd params_minus_eps = params;

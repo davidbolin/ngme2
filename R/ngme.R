@@ -22,10 +22,11 @@ ngme <- function(
   formula,
   data,
   control       = ngme.control(),
-  noise         = ngme.noise(),
+  noise         = ngme.noise.normal(),
   last_fit      = NULL,
   beta          = NULL,
-  seed          = NULL
+  seed          = NULL,
+  debug         = FALSE
 ) {
   if (is.null(seed)) seed <- Sys.time()
   # -------------  CHECK INPUT ---------------
@@ -73,8 +74,9 @@ ngme <- function(
       X_data <- split_data$X_data
       n_Y_data <- split_data$length
 
-    ############### n_meshs is the dim of the block matrix
-    n_meshs     = sum(unlist(lapply(latents_in, function(x) x["n_mesh"])))
+    ############### W_sizes is the dim of the block matrix
+    W_sizes     = sum(unlist(lapply(latents_in, function(x) x["W_size"])))   #W_sizes = sum(ncol_K)
+    V_sizes     = sum(unlist(lapply(latents_in, function(x) x["V_size"])))   #W_sizes = sum(nrow_K)
     n_la_params = sum(unlist(lapply(latents_in, function(x) x["n_params"])))
     model.types = unlist(lapply(latents_in, function(x) x["model_type"]))
     var.types   = unlist(lapply(latents_in, function(x) x["var.type"]))
@@ -100,12 +102,14 @@ ngme <- function(
       Y                 = Y_data,
       X                 = X_data,
       beta              = beta,
-      n_meshs           = n_meshs,
+      W_sizes           = W_sizes,
+      V_sizes           = V_sizes,
       n_la_params       = n_la_params,
       n_params          = n_params, # how many param to opt. in total
       latents           = latents_in,
       noise             = noise,
       seed              = seed,
+      debug             = debug,
       control           = control
     )
 
@@ -146,6 +150,7 @@ ngme <- function(
     return(ngme_block)
   }
 
+if (debug) print(str(ngme_block))
   cat("Starting estimation... \n")
   out <- estimate_cpp(ngme_block)
   cat("Estimation done! \n")
@@ -214,12 +219,12 @@ update_latents_with_est <- function(latents, latents_out) {
 
 # the general block model
 ngme.block_model <- function(
-  Y       = NULL,
-  X       = NULL,
-  beta    = NULL,
-  latents = list(),
-  noise   = list(),
-  control = list(),
+  Y           = NULL,
+  X           = NULL,
+  beta        = NULL,
+  latents     = list(),
+  noise       = list(),
+  control     = list(),
   ...
 ) {
   structure(
@@ -246,7 +251,7 @@ print.ngme <- function(ngme) {
   cat("*** Ngme object ***\n\n");
 
   cat("Fixed effects: \n");
-  cat(paste("   ",  cat(format(ngme$beta)))); cat("\n")
+  cat(paste("   ",  cat(ngme.format(ngme$beta)))); cat("\n\n")
 
   cat("Measurement noise: \n");
   print.ngme_noise(ngme$noise, padding = 2); cat("\n\n")

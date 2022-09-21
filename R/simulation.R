@@ -14,8 +14,8 @@
 #'    seed = 10
 #' )
 #'
-ngme_simulate <- function(x, ...) {
-    UseMethod("ngme_simulate")
+ngme.simulate <- function(x, ...) {
+    UseMethod("ngme.simulate")
 }
 
 #' Simulate latent process with noise
@@ -38,22 +38,23 @@ ngme_simulate <- function(x, ...) {
 #'   ),
 #'   seed=NULL
 #' )$realization
-ngme_simulate.ngme_model <- function(
+ngme.simulate.ngme_model <- function(
     model,
     seed   = NULL
 ) {
-    n <- model$n_mesh
-    noise <- ngme_simulate.ngme_noise(model$noise, n = n, seed = seed)
+    n <- model$W_size
+    sim_noise <- ngme.simulate.ngme_noise(model$noise, n = n, seed = seed)
 
     # create operator structure
     if (model$model == "ar1") {
         alpha <- model$theta_K
-        W <- Reduce(function(x, y) {y + alpha * x}, noise, accumulate = T)
+        # for loop
+        W <- Reduce(function(x, y) {y + alpha * x}, sim_noise, accumulate = T)
     } else if (model$model == "matern") {
         # K_a %*% W = noise
         W <- with(model, {
             C.inv <- as(Matrix::diag(1 / Matrix::diag(C)), "sparseMatrix")
-            kappas <- drop(exp(B_kappa %*% theta_kappa))
+            kappas <- drop(exp(B_kappa %*% theta_K))
             Kappa <- diag(kappas)
             # build K_a
             if (alpha == 2) {
@@ -61,13 +62,14 @@ ngme_simulate.ngme_model <- function(
             } else if (alpha == 4) {
                 K_a <- (Kappa %*% C %*% Kappa + G) %*% C.inv %*% (Kappa %*% C %*% Kappa + G)
             }
-            drop(solve(K_a, noise))
+            drop(solve(K_a, sim_noise))
         })
     } else {
         stop("not implement yet")
     }
 
-    attr(W, "noise") <- attr(noise, "noise")
+    # attach noise attributes
+    attr(W, "noise") <- attr(sim_noise, "noise")
     W
 }
 
@@ -90,7 +92,7 @@ ngme_simulate.ngme_model <- function(
 #'   n = 10,
 #'   seed=NULL
 #' )$realization
-ngme_simulate.ngme_noise <- function(noise, n, seed = NULL) {
+ngme.simulate.ngme_noise <- function(noise, n, seed = NULL) {
     if (is.null(seed)) seed <- as.numeric(Sys.time())
 
     noise <- update.ngme.noise(noise, n = n)

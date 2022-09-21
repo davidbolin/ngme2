@@ -1,8 +1,7 @@
 # Simple scripts for test ngme function
 # sth. wrong with nig measurement noise
 # library(ngme2)
-library(devtools)
-load_all()
+library(devtools); load_all()
 {
 a2th <- function(k) {log((-1-k)/(-1+k))}
 th2a <- function(th) {-1 + (2*exp(th)) / (1+exp(th))}
@@ -17,7 +16,7 @@ ar_mu <- 4
 ar_sigma <- 1.3
 ar_eta <- 0.8
 
-ar1_process <- ngme_simulate(
+ar1_process <- ngme.simulate(
   f(1:n_obs,
     model = "ar1",
     theta_K = 0.2,
@@ -34,7 +33,7 @@ noise_theta_mu    <- -6
 noise_theta_sigma <- 2
 noise_theta_V     <- 1.7
 
-nig_noise <- ngme_simulate(
+nig_noise <- ngme.simulate(
   ngme.noise.nig(
     theta_mu = noise_theta_mu,
     theta_sigma = noise_theta_sigma,
@@ -85,7 +84,9 @@ ngme_out <- ngme(
     kill_var = FALSE,
     threshold = 1e-4
   ),
-  noise = ngme.noise.normal(fix_theta_sigma = FALSE),
+  noise = ngme.noise.normal(
+    fix_theta_sigma = FALSE
+  ),
   # noise = attr(nig_noise, "noise"),
   seed = 2
   # , last_fit = ngme_out
@@ -96,5 +97,6 @@ ngme_out
 
 # # trace plot of mu
 opt_trajectory <- attr(ngme_out, "opt_trajectory")
-ngme.traceplot(opt_trajectory, start = 1, n = 1, transform = th2a)
+
+ngme.traceplot(ngme, start = 1, n = 1, transform = th2a)
 # ngme.traceplot(opt_trajectory, start = 3, n = 1, transform = identity)

@@ -39,7 +39,8 @@ f <- function(
   A_pred      = NULL,
   theta_K     = NULL,
   W           = NULL,
-  fix_W       = FALSE,
+  fix_W       = NULL,
+  fix_theta_K = NULL,
   index_pred  = NULL,
   ...
 ) {
@@ -84,85 +85,71 @@ f <- function(
 
   ################## Construct operator (n_ope, C, G, A, h) ##################
   nrep <- NULL
-  n_mesh <- NULL
+  W_size <- NULL
 
   if (is.character(model)) {  ######## string
     if (model == "ar1") {
-      stopifnot(is.null(theta_K) || (theta_K > 0 && theta_K < 1))
+      stopifnot("Please specify the init value for ar1 using theta_K=."
+        = is.null(theta_K) || (theta_K > 0 && theta_K < 1))
 
       # provide the natural index
       if (is.null(index)) index <- index_data
-      ar1_arg_list <- list(
-        theta_K = theta_K,
+
+      model_list <- do.call(ngme.ar1, list(
+        alpha = theta_K,  # watch out! Do not pass using theta_K = theta_K!
         index = index,
         replicates = replicates,
         range = c(1, max(length(ngme_response), max(index))), # watch out! using natural mesh
         index_pred = index_NA
-      )
-      # don't overwrite information with NULL
-      model_list <- do.call(ngme.ar1, ar1_arg_list)
-    } else {
-      stop("unknown model name")
-    }
+      ))
+    } else if (model == "rw1") {
+      model_list <- do.call(ngme.rw1, list(
+        index = index,
+        replicates = replicates
+      ))
+    } else stop("unknown model name")
   }
-  else if (inherits(model, "ngme.ar1")) {
-    model_type <- "ar1"
-
-    n_mesh = ncol(model$A)
-    h = rep(1.0, n_mesh)
-    theta_K = model$alpha
-
-    operator = model$operator
+  else if (inherits(model, "ngme_model")) {  # stationary Matern
+    model_list <- model
+    arg_list$model <- NULL # watch out! otherwise overwrite again.
   }
-  else if (inherits(model, "ngme.matern")) {  # stationary Matern
-    # read in operator and modify
-    operator <- model$operator
-    model_type <- "matern"
-
-    nrep <- if (is.null(A)) 1 else ncol(A) / nrow(operator$C)
-
     # watch out! structure not so good.
     # nrep <- ncol(A) / nrow(operator$C)
     # operator$C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), operator$C)
     # operator$G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), operator$G)
     # operator$C <- ngme.as.sparse(operator$C)
     # operator$G <- ngme.as.sparse(operator$G)
+    # W_size <- model$operator$W_size
+    # # h <- rep(1, W_size)
+    # h <- diag(model$operator$C)
+    # theta_K <- model$operator$theta_kappa
+    # h <- rep(h, times = nrep)
 
-    n_mesh <- model$operator$n_mesh
-    # h <- rep(1, n_mesh)
-    h <- diag(model$operator$C)
-    theta_K <- model$operator$theta_kappa
+    # model_type <- "spde.matern"
 
-    h <- rep(h, times = nrep)
-  }
-  else if (inherits(model, "ngme.spde")) { # nonstationary Matern
-    model_type <- "spde.matern"
+    # if (is.null(A)) stop("Provide A matrix")
+    # # compute nrep
+    # nrep <- ncol(A)/nrow(operator$C)
+    # operator$C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), operator$C)
+    # operator$G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), operator$G)
+    # operator$C <- ngme.as.sparse(operator$C)
+    # operator$G <- ngme.as.sparse(operator$G)
 
-    # compute nrep
-    operator <- model$operator
-    nrep <- ncol(A)/nrow(operator$C)
-    operator$C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), operator$C)
-    operator$G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), operator$G)
-    operator$C <- ngme.as.sparse(operator$C)
-    operator$G <- ngme.as.sparse(operator$G)
+    # W_size = length(index)
 
-    n_mesh = length(index)
-    if (is.null(A)) stop("Provide A matrix")
-
-    h <- rep(1, n_mesh)
-    theta_K = model$theta_Kappa
-    operator <- model$operator
-  }
+    # h <- rep(1, W_size)
+    # theta_K = model$theta_Kappa
+    # operator <- model$operator
   else {
     stop("unknown model")
   }
 
-  if (is.null(W) && fix_W) stop("Provide initial W to use fix_W")
+  if (is.null(W) && !is.null(fix_W)) stop("Provide initial W to use fix_W")
 
   ################## construct noise (e.g. nig noise) ##################
     # ?? check
-    # B_mu <- matrix(noise$B_mu, nrow = n_mesh, ncol = noise$n_theta_mu)
-    # B_sigma <- matrix(noise$B_sigma, nrow = n_mesh, ncol = noise$n_theta_sigma)
+    # B_mu <- matrix(noise$B_mu, nrow = W_size, ncol = noise$n_theta_mu)
+    # B_sigma <- matrix(noise$B_sigma, nrow = W_size, ncol = noise$n_theta_sigma)
 
     # # replicates
     # if (is.integer(nrep)) {
@@ -173,37 +160,15 @@ f <- function(
   # total params
   n_params = model_list$n_theta_K + noise$n_theta_mu + noise$n_theta_sigma + noise$n_theta_V
   # check initial value of W
-  if (!is.null(W)) stopifnot(length(W) == n_mesh)
+  if (!is.null(W)) stopifnot(length(W) == W_size)
   # get the useful argument list
 # print(str(arg_list))
 # print(str(Filter(Negate(is.null), arg_list)))
   model_list <- modifyList(model_list, Filter(Negate(is.null), arg_list)) # watch out! arg_list$noise$ = NULL; nested NULL
   # modify model_list
-  model_list$noise <- with(model_list, update.ngme.noise(noise, n_mesh))
+  model_list$noise <- with(model_list, update.ngme.noise(noise, V_size))
   model_list$noise_type <- model_list$noise$noise_type
   model_list$n_params <- n_params
-
-  # latent_in <- list(
-  #   model_type  = model_type,
-  #   n_mesh      = n_mesh,        # !: make sure this is the second place
-  #   A           = A,
-  #   A_pred      = A_pred,
-  #   h           = h,
-  #   n_la_params = n_la_params,
-  #   W           = W,
-
-  #   # noise
-  #   noise_type  = noise$noise_type,
-  #   B_mu          = B_mu,
-  #   B_sigma       = B_sigma,
-  #   n_theta_mu    = noise$n_theta_mu,
-  #   n_theta_sigma = noise$n_theta_sigma,
-
-  #   # lists
-  #   noise         = update.ngme.noise(noise, n = n_mesh),
-  #   control_f     = control,
-  #   debug         = debug
-  # )
 
   do.call(ngme.model, model_list)
 }

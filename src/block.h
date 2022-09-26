@@ -107,6 +107,13 @@ public:
         }
       }
     }
+    void sample_V() {
+      if(n_latent >0){
+        for (unsigned i=0; i < n_latent; i++) {
+            (*latents[i]).sample_V();
+        }
+      }
+    }
     void setW(const VectorXd&);
 
     /* Optimizer related */
@@ -219,7 +226,7 @@ public:
     void set_theta_merr(const VectorXd& theta_merr);
 
     // get length of W,V of iterations
-    Rcpp::List sampling(int iterations);
+    Rcpp::List sampling(int iterations, bool posterior);
 
     // return output
     Rcpp::List output() const;

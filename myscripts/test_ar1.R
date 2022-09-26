@@ -46,8 +46,8 @@ nig_noise <- ngme.simulate(
   n = n_obs
 )
 
-# Y <- ar1_process + nig_noise
-Y <- ar1_process + rnorm(n_obs)
+Y <- ar1_process + nig_noise
+# Y <- ar1_process + rnorm(n_obs)
 }
 
 ngme_out <- ngme(
@@ -64,7 +64,7 @@ ngme_out <- ngme(
 
       fix_theta_mu      = FALSE,
       fix_theta_sigma   = FALSE,
-      fix_theta_V       = TRUE,
+      fix_theta_V       = FALSE,
       fix_V             = FALSE
     ),
     control = ngme.control.f(
@@ -84,10 +84,10 @@ ngme_out <- ngme(
     kill_var = FALSE,
     threshold = 1e-4
   ),
-  noise = ngme.noise.normal(
-    fix_theta_sigma = FALSE
-  ),
-  # noise = attr(nig_noise, "noise"),
+  # noise = ngme.noise.normal(
+  #   fix_theta_sigma = FALSE
+  # ),
+  noise = attr(nig_noise, "noise"),
   seed = 2
   # , last_fit = ngme_out
 )
@@ -101,6 +101,12 @@ opt_trajectory <- attr(ngme_out, "opt_trajectory")
 ngme.traceplot(ngme, start = 1, n = 1, transform = th2a)
 # ngme.traceplot(opt_trajectory, start = 3, n = 1, transform = identity)
 
-load_all()
-str(ngme_out)
+
+
+# posterior sampling
 str(sampling_cpp(ngme_out, 10))
+
+# ngme.sampling(ngme, posterior)
+
+# f(X|I, model="nig", data=list(X=...,I=...))
+

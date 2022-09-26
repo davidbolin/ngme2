@@ -449,7 +449,8 @@ Rcpp::List BlockModel::output() const {
     );
 }
 
-Rcpp::List BlockModel::sampling(int iterations) {
+// posterior
+Rcpp::List BlockModel::sampling(int iterations, bool posterior) {
     std::vector<VectorXd> Ws;
     std::vector<VectorXd> Vs;
     std::vector<VectorXd> Block_Vs;
@@ -457,9 +458,17 @@ Rcpp::List BlockModel::sampling(int iterations) {
     burn_in(5);
 
     for (int i=0; i < iterations; i++) {
-        sampleW_VY();
-        sampleV_WY();
-        sample_cond_block_V();
+        if (posterior) {
+            sampleV_WY();
+            sampleW_VY();
+            sample_cond_block_V();
+        } else {
+            sample_V();
+            sampleW_V();
+            var->sample_V();
+            // construct the Y in R
+        }
+
         Ws.push_back(getW());
         Vs.push_back(getV());
         Block_Vs.push_back(var->getV());

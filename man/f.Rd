@@ -16,8 +16,8 @@ f(
   A_pred = NULL,
   theta_K = NULL,
   W = NULL,
-  fix_W = FALSE,
-  fix_theta_K = FALSE,
+  fix_W = NULL,
+  fix_theta_K = NULL,
   index_pred = NULL,
   ...
 )

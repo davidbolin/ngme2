@@ -120,6 +120,9 @@ public:
         return (sigma.array().pow(2).matrix().cwiseProduct(prevV));
     }
 
+    void sample_V() {
+        var->sample_V();
+    }
     void sample_cond_V() {
         VectorXd tmp = (K * W + mu.cwiseProduct(h));
         VectorXd a_inc_vec = mu.cwiseQuotient(sigma).array().pow(2);

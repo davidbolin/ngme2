@@ -6,6 +6,7 @@
 #' @author David Bolin <davidbolin@gmail.com>
 #' @import Rcpp
 #' @importFrom Rcpp evalCpp
+#' @importFrom stats simulate
 #' @useDynLib ngme2
 #' @name ngme2
 NULL

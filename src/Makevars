@@ -1,12 +1,14 @@
+# CXX = clang++
+CC = /usr/bin/clang
 PKG_CPPFLAGS = -DDEBUG -Iinclude
-PKG_CXXFLAGS = -DDEBUG -std=c++14 -DMKL_LP64 -m64 -I/opt/intel/mkl/include -pedantic
-R_XTRA_CPPFLAGS =  -I$(R_INCLUDE_DIR) 
+PKG_CXXFLAGS = -DDEBUG -std=c++14 -DMKL_LP64 -m64 -I/opt/intel/mkl/include -pedantic -fopenmp -lgomp
+R_XTRA_CPPFLAGS =  -I$(R_INCLUDE_DIR)
 # PKG_LIBS =  ${LAPACK_LIBS} ${BLAS_LIBS} ${FLIBS}  -L/opt/intel/mkl/lib/intel64 -Wl,--no-as-needed,-rpath,'/opt/intel/mkl/lib/intel64' -lmkl_intel_lp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl
 
-TESTS = test/test-opt.o  test/test-algebra.o
+# TESTS = test/test-opt.o  test/test-algebra.o test-runner.o
 UTILS = util/GIG.o  util/rgig.o  util/MatrixAlgebra.o util/solver.o
 
-OBJECTS = RcppExports.o sample_rGIG.o estimate.o test-runner.o optimizer.o block.o latent.o \
+OBJECTS = RcppExports.o sample_rGIG.o estimate.o optimizer.o block.o latent.o \
    $(UTILS) $(TESTS)
 
 # Make the shared object

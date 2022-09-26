@@ -14,7 +14,7 @@ using Eigen::MatrixXd;
 
 using namespace Rcpp;
 
-
+// [[Rcpp::plugins(openmp)]]
 // [[Rcpp::export]]
 Rcpp::List estimate_cpp(Rcpp::List& ngme_block) {
 
@@ -37,10 +37,10 @@ std::cout << "Total time is (ms): " << since(timer).count() << std::endl;
 }
 
 // [[Rcpp::export]]
-Rcpp::List sampling_cpp(Rcpp::List& ngme_block, int iterations) {
+Rcpp::List sampling_cpp(Rcpp::List& ngme_block, int iterations, bool posterior) {
     BlockModel block (ngme_block);
 
-    return block.sampling(iterations);
+    return block.sampling(iterations, posterior);
 }
 
 // void update_estimation(Rcpp::List& ngme_block, const BlockModel& block);

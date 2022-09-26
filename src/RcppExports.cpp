@@ -23,14 +23,15 @@ BEGIN_RCPP
 END_RCPP
 }
 // sampling_cpp
-Rcpp::List sampling_cpp(Rcpp::List& ngme_block, int iterations);
-RcppExport SEXP _ngme2_sampling_cpp(SEXP ngme_blockSEXP, SEXP iterationsSEXP) {
+Rcpp::List sampling_cpp(Rcpp::List& ngme_block, int iterations, bool posterior);
+RcppExport SEXP _ngme2_sampling_cpp(SEXP ngme_blockSEXP, SEXP iterationsSEXP, SEXP posteriorSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< Rcpp::List& >::type ngme_block(ngme_blockSEXP);
     Rcpp::traits::input_parameter< int >::type iterations(iterationsSEXP);
-    rcpp_result_gen = Rcpp::wrap(sampling_cpp(ngme_block, iterations));
+    Rcpp::traits::input_parameter< bool >::type posterior(posteriorSEXP);
+    rcpp_result_gen = Rcpp::wrap(sampling_cpp(ngme_block, iterations, posterior));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -49,13 +50,10 @@ BEGIN_RCPP
 END_RCPP
 }
 
-RcppExport SEXP run_testthat_tests(SEXP);
-
 static const R_CallMethodDef CallEntries[] = {
     {"_ngme2_estimate_cpp", (DL_FUNC) &_ngme2_estimate_cpp, 1},
-    {"_ngme2_sampling_cpp", (DL_FUNC) &_ngme2_sampling_cpp, 2},
+    {"_ngme2_sampling_cpp", (DL_FUNC) &_ngme2_sampling_cpp, 3},
     {"_ngme2_rGIG_cpp", (DL_FUNC) &_ngme2_rGIG_cpp, 4},
-    {"run_testthat_tests", (DL_FUNC) &run_testthat_tests, 1},
     {NULL, NULL, 0}
 };
 

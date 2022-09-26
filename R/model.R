@@ -42,7 +42,7 @@ ngme.model <- function(
 #' @param model
 #'
 #' @return a list (model specifications)
-#' @export
+#' @expo`rt
 print.ngme_model <- function(model, padding=0) {
   pad_space <- paste(rep(" ", padding), collapse = "")
   pad_add4_space <- paste(rep(" ", padding + 4), collapse = "")
@@ -226,7 +226,8 @@ ngme.matern <- function(
 #'
 #' @param index index for the process
 #' @param replicates replicates for the process
-#'
+#' @param mesh inla.1d.mesh
+#' @param n_points or num of points, evenly spaced mesh
 #' @return a list
 #' @export
 #'
@@ -234,6 +235,10 @@ ngme.matern <- function(
 ngme.rw1 <- function(
   index,
   replicates = NULL,
+  circular = FALSE,
+  mesh = NULL,
+  n_points = NULL,
+  # extra A matrix
   ...
 ) {
   # create mesh using index

@@ -1,23 +1,3 @@
-#' Generic function for generating
-#' the realization of latent or noise
-#'
-#' @param x ngme latent or noise object
-#' @param ...  extra argument
-#'
-#' @return a realization and a noise object
-#' @export
-#'
-#' @examples
-#' n_obs <- 10
-#' ar1 <- ngme.simulate.process(
-#'    f(1:10, model = "ar1", theta_K = 0.5, noise = ngme.noise.nig()),
-#'    seed = 10
-#' )
-#'
-ngme.simulate <- function(x, ...) {
-    UseMethod("ngme.simulate")
-}
-
 #' Simulate latent process with noise
 #'
 #' @param model latent process specified by f() function
@@ -38,12 +18,15 @@ ngme.simulate <- function(x, ...) {
 #'   ),
 #'   seed=NULL
 #' )$realization
-ngme.simulate.ngme_model <- function(
-    model,
-    seed   = NULL
+simulate.ngme_model <- function(
+    object,
+    nsim   = 1,
+    seed   = NULL,
+    ...
 ) {
+    model <- object
     n <- model$W_size
-    sim_noise <- ngme.simulate.ngme_noise(model$noise, n = n, seed = seed)
+    sim_noise <- simulate.ngme_noise(model$noise, nsim = n, seed = seed)
 
     # create operator structure
     if (model$model == "ar1") {
@@ -92,7 +75,14 @@ ngme.simulate.ngme_model <- function(
 #'   n = 10,
 #'   seed=NULL
 #' )$realization
-ngme.simulate.ngme_noise <- function(noise, n, seed = NULL) {
+simulate.ngme_noise <- function(
+    object,
+    nsim   = 1,
+    seed   = NULL,
+    ...
+) {
+    noise <- object; n <- nsim
+
     if (is.null(seed)) seed <- as.numeric(Sys.time())
 
     noise <- update.ngme.noise(noise, n = n)

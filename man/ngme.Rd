@@ -11,7 +11,8 @@ ngme(
   noise = ngme.noise.normal(),
   last_fit = NULL,
   beta = NULL,
-  seed = NULL
+  seed = NULL,
+  debug = FALSE
 )
 }
 \arguments{

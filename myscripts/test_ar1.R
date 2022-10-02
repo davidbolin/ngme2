@@ -16,7 +16,7 @@ ar_mu <- 4
 ar_sigma <- 1.3
 ar_eta <- 0.8
 
-ar1_process <- ngme.simulate(
+ar1_process <- simulate(
   f(1:n_obs,
     model = "ar1",
     theta_K = 0.2,
@@ -33,7 +33,7 @@ noise_theta_mu    <- -6
 noise_theta_sigma <- 2
 noise_theta_V     <- 1.7
 
-nig_noise <- ngme.simulate(
+nig_noise <- simulate(
   ngme.noise.nig(
     theta_mu = noise_theta_mu,
     theta_sigma = noise_theta_sigma,
@@ -43,10 +43,11 @@ nig_noise <- ngme.simulate(
     fix_theta_V     = FALSE,
     fix_V           = FALSE
   ),
-  n = n_obs
+  nsim = n_obs
 )
 
 Y <- ar1_process + nig_noise
+Y
 # Y <- ar1_process + rnorm(n_obs)
 }
 
@@ -78,7 +79,7 @@ ngme_out <- ngme(
     estimation = TRUE,
 
     burnin = 200,
-    iterations = 100,
+    iterations = 10,
     gibbs_sample = 5,
     stepsize = 1,
     kill_var = FALSE,

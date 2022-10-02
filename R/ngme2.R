@@ -7,6 +7,6 @@
 #' @import Rcpp
 #' @importFrom Rcpp evalCpp
 #' @importFrom stats simulate
-#' @useDynLib ngme2
+#' @useDynLib ngme2, .registration = TRUE
 #' @name ngme2
 NULL

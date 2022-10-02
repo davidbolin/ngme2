@@ -20,10 +20,6 @@ BlockModel
 #include "var.h"
 #include "latent.h"
 
-#include "latents/ar1.h"
-#include "latents/matern.h"
-#include "latents/matern_ns.h"
-
 using Eigen::SparseMatrix;
 using Eigen::MatrixXd;
 
@@ -87,7 +83,7 @@ protected:
     VectorXd fixedW;
     std::mt19937 rng;
 public:
-    BlockModel(Rcpp::List& block_model);
+    BlockModel(Rcpp::List block_model);
 
     /* Gibbs Sampler */
     void burn_in(int iterations) {

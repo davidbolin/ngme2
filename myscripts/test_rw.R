@@ -24,3 +24,6 @@ out <- ngme(
   )
 )
 out
+
+
+load_all()

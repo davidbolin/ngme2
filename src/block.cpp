@@ -5,7 +5,7 @@
 using std::pow;
 
 BlockModel::BlockModel(
-    Rcpp::List& block_model
+    Rcpp::List block_model
 ) :
     seed          (Rcpp::as<unsigned long> (block_model["seed"])),
     X             (Rcpp::as<MatrixXd>      (block_model["X"])),

@@ -16,13 +16,18 @@
 #include <cmath>
 #include <Rcpp.h>
 #include <RcppEigen.h>
+#include <Eigen/SparseLU>
 #include <Eigen/Dense>
 #include <random>
+#include <cmath>
 
 #include "include/timer.h"
 #include "include/solver.h"
 #include "var.h"
 
+using std::exp;
+using std::log;
+using std::pow;
 using Eigen::SparseMatrix;
 using Eigen::VectorXd;
 
@@ -95,18 +100,6 @@ public:
     }
 
     VectorXd getMean() const { return mu.cwiseProduct(getV()-h); }
-
-    // VectorXd getMeanKX() {
-    //     VectorXd res (W_size);
-    //     if (!symmetricK) {
-    //         lu_solver_K.compute(K);
-    //         res = lu_solver_K.solve(getMean());
-    //     } else {
-    //         chol_solver_K.compute(K);
-    //         res = chol_solver_K.solve(getMean());
-    //     }
-    //     return A * res;
-    // }
 
     /*  2 Variance component   */
     const VectorXd& getV()     const { return var->getV(); }
@@ -302,5 +295,80 @@ if (debug) std::cout << "Start latent set parameter"<< std::endl;
     set_theta_sigma     (theta.segment(n_theta_K+n_theta_mu, n_theta_sigma));
     set_theta_var       (theta(n_theta_K+n_theta_mu+n_theta_sigma));
 }
+
+// subclasses
+class AR : public Latent {
+private:
+    SparseMatrix<double, 0, int> G, C;
+public:
+    AR(Rcpp::List& model_list, unsigned long seed);
+    SparseMatrix<double> getK(VectorXd alpha) const;
+    SparseMatrix<double> get_dK(int index, VectorXd alpha) const;
+    VectorXd grad_theta_K();
+    VectorXd get_unbound_theta_K() const;
+    void set_unbound_theta_K(VectorXd theta);
+    void update_num_dK();
+
+    double th2a(double th) const {return (-1 + 2*exp(th) / (1+exp(th)));}
+    double a2th(double k) const {return (log((-1-k)/(-1+k)));}
+    Rcpp::List get_estimates() const {
+        return Rcpp::List::create(
+            Rcpp::Named("alpha")        = parameter_K(0),
+            Rcpp::Named("theta.mu")     = theta_mu,
+            Rcpp::Named("theta.sigma")  = theta_sigma,
+            Rcpp::Named("theta.noise")  = var->get_var()
+        );
+    }
+};
+
+
+class Matern : public Latent {
+private:
+    SparseMatrix<double, 0, int> G, C;
+    int alpha;
+    VectorXd Cdiag;
+public:
+    Matern(Rcpp::List& model_list, unsigned long seed);
+    SparseMatrix<double> getK(VectorXd alpha) const;
+    SparseMatrix<double> get_dK(int index, VectorXd alpha) const;
+    VectorXd grad_theta_K();
+    VectorXd get_unbound_theta_K() const;
+    void set_unbound_theta_K(VectorXd theta);
+    void update_num_dK();
+
+    double th2k(double th) const {return exp(th);}
+    double k2th(double k) const {return log(k);}
+    Rcpp::List get_estimates() const {
+        return Rcpp::List::create(
+            Rcpp::Named("kappa")        = parameter_K(0),
+            Rcpp::Named("theta.mu")     = theta_mu,
+            Rcpp::Named("theta.sigma")  = theta_sigma,
+            Rcpp::Named("theta.noise")  = var->get_var()
+        );
+    }
+};
+
+class Matern_ns : public Latent {
+private:
+    SparseMatrix<double, 0, int> G, C;
+    int alpha;
+    MatrixXd Bkappa;
+    VectorXd Cdiag;
+public:
+    Matern_ns(Rcpp::List& model_list, unsigned long seed);
+    SparseMatrix<double> getK(VectorXd alpha) const;
+    SparseMatrix<double> get_dK(int index, VectorXd alpha) const;
+    VectorXd grad_theta_K();
+    void set_unbound_theta_K(VectorXd theta);
+
+    Rcpp::List get_estimates() const {
+        return Rcpp::List::create(
+            Rcpp::Named("theta.kappa") = parameter_K,
+            Rcpp::Named("theta.mu")    = theta_mu,
+            Rcpp::Named("theta.sigma") = theta_sigma,
+            Rcpp::Named("theta.noise") = var->get_var()
+        );
+    }
+};
 
 #endif

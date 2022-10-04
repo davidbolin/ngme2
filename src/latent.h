@@ -13,6 +13,7 @@
 // #include<Eigen/IterativeLinearSolvers>
 #include <string>
 #include <iostream>
+#include <vector>
 #include <cmath>
 #include <Rcpp.h>
 #include <RcppEigen.h>
@@ -69,7 +70,8 @@ protected:
     VectorXd W, prevW, h;
     SparseMatrix<double,0,int> A;
 
-    Var *var;
+    std::unique_ptr<Var> var;
+    // Var *var;
 
     // solver
     cholesky_solver chol_solver_K;
@@ -80,9 +82,15 @@ protected:
     cholesky_solver solver_Q; // Q = KT diag(1/SV) K
 
     std::mt19937 latent_rng;
+
+    // record trajectory
+    std::vector<VectorXd> theta_K_traj;
+    std::vector<VectorXd> theta_mu_traj;
+    std::vector<VectorXd> theta_sigma_traj;
+    std::vector<double>   theta_V_traj;
 public:
     Latent(Rcpp::List&, unsigned long seed);
-    ~Latent() {}
+    virtual ~Latent() {}
 
     /*  1 Model itself   */
     int get_W_size() const                  {return W_size; }
@@ -244,14 +252,10 @@ public:
     }
     virtual VectorXd grad_theta_sigma();
 
-    // Parameter: var
-    virtual double get_theta_var() const   { return var->get_theta_var(); }
     virtual void   set_theta_var(double v) { var->set_theta_var(v); }
-    virtual double grad_theta_var()        { return var->grad_theta_var(); }
 
     // Output
-    virtual Rcpp::List get_estimates() const=0;
-
+    // virtual Rcpp::List get_estimates() const=0;
     Rcpp::List output() const;
 };
 
@@ -263,7 +267,7 @@ if (debug) std::cout << "Start latent get parameter"<< std::endl;
         parameter.segment(0, n_theta_K)                         = get_unbound_theta_K();
         parameter.segment(n_theta_K, n_theta_mu)                = get_theta_mu();
         parameter.segment(n_theta_K+n_theta_mu, n_theta_sigma)  = get_theta_sigma();
-        parameter(n_theta_K+n_theta_mu+n_theta_sigma)           = get_theta_var();
+        parameter(n_theta_K+n_theta_mu+n_theta_sigma)           = var->get_unbound_theta_V();
 
 // if (debug) std::cout << "parameter= " << parameter << std::endl;
 if (debug) std::cout << "End latent get parameter"<< std::endl;
@@ -278,7 +282,7 @@ auto grad1 = std::chrono::steady_clock::now();
     if (!fix_flag[latent_fix_theta_K])     grad.segment(0, n_theta_K)                        = grad_theta_K();         else grad.segment(0, n_theta_K) = VectorXd::Constant(n_theta_K, 0);
     if (!fix_flag[latent_fix_theta_mu])    grad.segment(n_theta_K, n_theta_mu)               = grad_theta_mu();        else grad.segment(n_theta_K, n_theta_mu) = VectorXd::Constant(n_theta_mu, 0);
     if (!fix_flag[latent_fix_theta_sigma]) grad.segment(n_theta_K+n_theta_mu, n_theta_sigma) = grad_theta_sigma();     else grad.segment(n_theta_K+n_theta_mu, n_theta_sigma) = VectorXd::Constant(n_theta_sigma, 0);
-    if (!fix_flag[latent_fix_theta_V])     grad(n_theta_K+n_theta_mu+n_theta_sigma)          = grad_theta_var();       else grad(n_theta_K+n_theta_mu+n_theta_sigma) = 0;
+    if (!fix_flag[latent_fix_theta_V])     grad(n_theta_K+n_theta_mu+n_theta_sigma)          = var->grad_theta_var();  else grad(n_theta_K+n_theta_mu+n_theta_sigma) = 0;
 
 // DEBUG: checking grads
 if (debug) {
@@ -293,7 +297,12 @@ if (debug) std::cout << "Start latent set parameter"<< std::endl;
     set_unbound_theta_K (theta.segment(0, n_theta_K));
     set_theta_mu        (theta.segment(n_theta_K, n_theta_mu));
     set_theta_sigma     (theta.segment(n_theta_K+n_theta_mu, n_theta_sigma));
-    set_theta_var       (theta(n_theta_K+n_theta_mu+n_theta_sigma));
+    var->set_theta_var  (theta(n_theta_K+n_theta_mu+n_theta_sigma));
+
+    theta_K_traj.push_back(parameter_K);
+    theta_mu_traj.push_back(theta_mu);
+    theta_sigma_traj.push_back(theta_sigma);
+    theta_V_traj.push_back(var->get_theta_V());
 }
 
 // subclasses
@@ -311,14 +320,14 @@ public:
 
     double th2a(double th) const {return (-1 + 2*exp(th) / (1+exp(th)));}
     double a2th(double k) const {return (log((-1-k)/(-1+k)));}
-    Rcpp::List get_estimates() const {
-        return Rcpp::List::create(
-            Rcpp::Named("alpha")        = parameter_K(0),
-            Rcpp::Named("theta.mu")     = theta_mu,
-            Rcpp::Named("theta.sigma")  = theta_sigma,
-            Rcpp::Named("theta.noise")  = var->get_var()
-        );
-    }
+    // Rcpp::List get_estimates() const {
+    //     return Rcpp::List::create(
+    //         Rcpp::Named("alpha")        = parameter_K(0),
+    //         Rcpp::Named("theta.mu")     = theta_mu,
+    //         Rcpp::Named("theta.sigma")  = theta_sigma,
+    //         Rcpp::Named("theta.noise")  = var->get_theta_V()
+    //     );
+    // }
 };
 
 
@@ -338,14 +347,14 @@ public:
 
     double th2k(double th) const {return exp(th);}
     double k2th(double k) const {return log(k);}
-    Rcpp::List get_estimates() const {
-        return Rcpp::List::create(
-            Rcpp::Named("kappa")        = parameter_K(0),
-            Rcpp::Named("theta.mu")     = theta_mu,
-            Rcpp::Named("theta.sigma")  = theta_sigma,
-            Rcpp::Named("theta.noise")  = var->get_var()
-        );
-    }
+    // Rcpp::List get_estimates() const {
+    //     return Rcpp::List::create(
+    //         Rcpp::Named("kappa")        = parameter_K(0),
+    //         Rcpp::Named("theta.mu")     = theta_mu,
+    //         Rcpp::Named("theta.sigma")  = theta_sigma,
+    //         Rcpp::Named("theta.noise")  = var->get_theta_V()
+    //     );
+    // }
 };
 
 class Matern_ns : public Latent {
@@ -361,14 +370,14 @@ public:
     VectorXd grad_theta_K();
     void set_unbound_theta_K(VectorXd theta);
 
-    Rcpp::List get_estimates() const {
-        return Rcpp::List::create(
-            Rcpp::Named("theta.kappa") = parameter_K,
-            Rcpp::Named("theta.mu")    = theta_mu,
-            Rcpp::Named("theta.sigma") = theta_sigma,
-            Rcpp::Named("theta.noise") = var->get_var()
-        );
-    }
+    // Rcpp::List get_estimates() const {
+    //     return Rcpp::List::create(
+    //         Rcpp::Named("theta.kappa") = parameter_K,
+    //         Rcpp::Named("theta.mu")    = theta_mu,
+    //         Rcpp::Named("theta.sigma") = theta_sigma,
+    //         Rcpp::Named("theta.noise") = var->get_theta_V()
+    //     );
+    // }
 };
 
 #endif

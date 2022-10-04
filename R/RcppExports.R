@@ -2,14 +2,14 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 estimate_cpp <- function(ngme_block) {
-    .Call('_ngme2_estimate_cpp', PACKAGE = 'ngme2', ngme_block)
+    .Call(`_ngme2_estimate_cpp`, ngme_block)
 }
 
 sampling_cpp <- function(ngme_block, iterations, posterior) {
-    .Call('_ngme2_sampling_cpp', PACKAGE = 'ngme2', ngme_block, iterations, posterior)
+    .Call(`_ngme2_sampling_cpp`, ngme_block, iterations, posterior)
 }
 
 rGIG_cpp <- function(p, a, b, seed) {
-    .Call('_ngme2_rGIG_cpp', PACKAGE = 'ngme2', p, a, b, seed)
+    .Call(`_ngme2_rGIG_cpp`, p, a, b, seed)
 }
 

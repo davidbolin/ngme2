@@ -12,12 +12,12 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // estimate_cpp
-Rcpp::List estimate_cpp(Rcpp::List& ngme_block);
+Rcpp::List estimate_cpp(Rcpp::List ngme_block);
 RcppExport SEXP _ngme2_estimate_cpp(SEXP ngme_blockSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::List& >::type ngme_block(ngme_blockSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type ngme_block(ngme_blockSEXP);
     rcpp_result_gen = Rcpp::wrap(estimate_cpp(ngme_block));
     return rcpp_result_gen;
 END_RCPP

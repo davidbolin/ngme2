@@ -46,9 +46,6 @@ plot.ngme <- function(object, param="fe", type="traj", which=1) {
     return()
   }
 
-  # ope
-  # if (param==)
-
   # latent model
   if (param=="la") {
     if ((type=="traj") || (type==1)) {
@@ -107,7 +104,7 @@ plot.ngme <- function(object, param="fe", type="traj", which=1) {
 #' @export
 #'
 #' @examples
-ngme.traceplot <- function(
+traceplot2 <- function(
   ngme,
   start=1,
   n=1,
@@ -115,7 +112,7 @@ ngme.traceplot <- function(
   ...
 ) {
   # plot trajectory of out$trajectory[]
-  trajectory <- attr(ngme, "opt_trajectory")
+  trajectory <- attr(ngme, "trajectory")
 
   if (n == 2) par(mfrow = c(2, 1))
   if (n == 3 || n == 4) par(mfrow = c(2, 2))
@@ -127,4 +124,57 @@ ngme.traceplot <- function(
 
   par(mfrow = c(1, 1))
 }
+
+#' Trace plot of the estimation
+#'
+#' @param trajectory
+#' @param start
+#' @param n
+#' @param transform
+#' @param ylab
+#'
+#' @return
+#' @export
+#'
+#' @examples
+traceplot <- function(
+  ngme,
+  ...
+) {
+  # plot beta
+  if (length(ngme[[1]]$beta) > 0) {
+
+  }
+
+  # plot measure noise mu
+  for (i in seq_along(ngme)) {
+    plot.or.lines <- if (i == 1) plot else lines
+    if (ngme[[i]]$noise$noise_type == "nig") {
+      traj <- attr(ngme[[i]], "trajectory")
+      mu_traj <- unlist(traj$theta_mu_traj)
+      plot.or.lines(seq_along(mu_traj), mu_traj, type = "l")
+      # sigma_traj <- unlist(traj$theta_sigma_traj)
+      # plot.or.lines(seq_along(sigma_traj), sigma_traj, type = "l")
+
+      # plot.or.lines(seq_along(mu_traj), traj$theta_V_traj, type = "l")
+    }
+  }
+
+  # plot models
+  # for (i in seq_along(ngme)) {
+  #   object <- ngme[[i]]
+  #   block_traj <- attr(object, "trajectory")
+
+  #   # plot beta
+  #   if (length(object$noise) > 0) {
+
+  #   }
+
+
+  # }
+
+  par(mfrow = c(1, 1))
+  invisible(ngme)
+}
+
 

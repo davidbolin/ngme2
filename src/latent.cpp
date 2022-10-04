@@ -66,9 +66,9 @@ if (debug) std::cout << "Begin constructor of latent" << std::endl;
 
     double theta_V = Rcpp::as< double >      (noise_in["theta_V"]);
     if (noise_type == "nig") {
-        var = new ind_IG(theta_V, V_size, latent_rng());
+        var.reset(new ind_IG(theta_V, V_size, latent_rng()));
     } else if (noise_type == "normal") {
-        var = new normal(V_size);
+        var.reset(new normal(V_size));
         fix_flag[latent_fix_theta_mu] = 1;
     }
 
@@ -217,11 +217,17 @@ Rcpp::List Latent::output() const {
         Rcpp::Named("theta_K")      = parameter_K, // same parameterization as input
         Rcpp::Named("theta_mu")     = theta_mu,
         Rcpp::Named("theta_sigma")  = theta_sigma,
-        Rcpp::Named("theta_V")      = var->get_var(),  // gives eta > 0, not log(eta)
+        Rcpp::Named("theta_V")      = var->get_theta_V(),  // gives eta > 0, not log(eta)
         Rcpp::Named("V")            = getV(),
         Rcpp::Named("W")            = W
     );
-    // out.attr("class") = "noise";
+    Rcpp::List trajecotry = Rcpp::List::create(
+        Rcpp::Named("theta_K_traj")            = theta_K_traj,
+        Rcpp::Named("theta_mu_traj")           = theta_mu_traj,
+        Rcpp::Named("theta_sigma_traj")        = theta_sigma_traj,
+        Rcpp::Named("theta_V_traj")            = theta_V_traj
+    );
+    out.attr("trajectory") = trajecotry;
     return out;
 }
 

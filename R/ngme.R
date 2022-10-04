@@ -156,15 +156,15 @@ if (debug) print(str(ngme_block))
   cat("Estimation done! \n")
 
   # update the ngme_block using estimation result.
-  estimation <- out$estimation
-    # 1. update fixed effects
-    ngme_block$beta <- estimation$beta
-    # 2. updates noise
-    ngme_block$noise <- update_noise_with_est(ngme_block$noise, estimation$noise)
-    # 3. update latents
-    ngme_block$latents <- update_latents_with_est(ngme_block$latents, estimation$latents)
+  # estimation <- out$estimation
+  #   # 1. update fixed effects
+  #   ngme_block$beta <- estimation$beta
+  #   # 2. updates noise
+  #   ngme_block$noise <- update_noise_with_est(ngme_block$noise, estimation$noise)
+  #   # 3. update latents
+  #   ngme_block$latents <- update_latents_with_est(ngme_block$latents, estimation$latents)
 
-  attr(ngme_block, "opt_trajectory") <- out$opt_trajectory
+  # attr(ngme_block, "opt_trajectory") <- out$opt_trajectory
 
   ################# doing prediction ####################
   if (split_data$contain_NA) {
@@ -195,7 +195,8 @@ if (debug) print(str(ngme_block))
   }
 
   # cat(paste("total time is", Sys.time() - time.start, " \n"))
-  ngme_block
+  # ngme_block
+  out
 }
 
 
@@ -218,7 +219,6 @@ update_latents_with_est <- function(latents, latents_out) {
   for (i in seq_along(latents_out)) {
     latents[[i]]$theta_K  <- latents_out[[i]]$theta_K
     latents[[i]]$W        <- latents_out[[i]]$W
-
     latents[[i]]$noise    <- update_noise_with_est(latents[[i]]$noise, latents_out[[i]])
   }
 

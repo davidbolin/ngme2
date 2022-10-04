@@ -11,7 +11,7 @@ set.seed(seed)
 }
 
 { ############  1. simulate AR with nig noise
-n_obs <- 520
+n_obs <- 100
 ar_mu <- 4
 ar_sigma <- 1.3
 ar_eta <- 0.8
@@ -77,7 +77,7 @@ ngme_out <- ngme(
   data = data.frame(Y = Y),
   control = ngme.control(
     estimation = TRUE,
-
+    n_parallel_chain = 2,
     burnin = 200,
     iterations = 10,
     gibbs_sample = 5,
@@ -89,25 +89,26 @@ ngme_out <- ngme(
   #   fix_theta_sigma = FALSE
   # ),
   noise = attr(nig_noise, "noise"),
-  seed = 2
+  seed = 2,
   # , last_fit = ngme_out
+  debug = TRUE
 )
-
-ngme_out
+load_all()
+# ngme_out
+str(ngme_out)
 # c(noise_theta_mu, noise_theta_sigma, noise_theta_V)
 
 # # trace plot of mu
-opt_trajectory <- attr(ngme_out, "opt_trajectory")
+# opt_trajectory <- attr(ngme_out, "opt_trajectory")
 
-ngme.traceplot(ngme, start = 1, n = 1, transform = th2a)
+# traceplot(ngme_out[[1]], start = 1, n = 1)
+# traceplot(ngme_out)
 # ngme.traceplot(opt_trajectory, start = 3, n = 1, transform = identity)
 
 
 
 # posterior sampling
-str(sampling_cpp(ngme_out, 10))
+# str(sampling_cpp(ngme_out, 10))
 
 # ngme.sampling(ngme, posterior)
-
 # f(X|I, model="nig", data=list(X=...,I=...))
-

@@ -13,6 +13,7 @@ BlockModel
 #include <vector>
 #include <iostream>
 #include <random>
+#include <memory>
 #include "include/timer.h"
 #include "include/solver.h"
 #include "include/MatrixAlgebra.h"
@@ -50,7 +51,8 @@ protected:
     VectorXd noise_sigma, theta_sigma;
     int n_theta_sigma;
 
-    Var *var;
+    // Var *var;
+    std::unique_ptr<Var> var;
 
     int n_latent; // how mnay latent model
     int n_obs; // how many observation
@@ -76,14 +78,21 @@ protected:
     VectorXd indicate_threshold, steps_to_threshold;
 
     // No initializer
-    std::vector<Latent*> latents;
+    std::vector<std::unique_ptr<Latent>> latents;
     cholesky_solver chol_Q, chol_QQ;
     SparseLU<SparseMatrix<double> > LU_K;
 
     VectorXd fixedW;
     std::mt19937 rng;
+
+    // record trajectory
+    std::vector<VectorXd> beta_traj;
+    std::vector<VectorXd> theta_mu_traj;
+    std::vector<VectorXd> theta_sigma_traj;
+    std::vector<double>   theta_V_traj;
 public:
-    BlockModel(Rcpp::List block_model);
+    BlockModel(Rcpp::List block_model, unsigned long seed);
+    virtual ~BlockModel() {}
 
     /* Gibbs Sampler */
     void burn_in(int iterations) {
@@ -126,7 +135,7 @@ public:
     void assemble() {
         int nrow = 0;
         int ncol = 0;
-        for (std::vector<Latent*>::iterator it = latents.begin(); it != latents.end(); it++) {
+        for (std::vector<std::unique_ptr<Latent>>::iterator it = latents.begin(); it != latents.end(); it++) {
             setSparseBlock(&K,   nrow, ncol, (*it)->getK());
             // setSparseBlock(&dK,  n, n, (*it)->get_dK());
             // setSparseBlock(&d2K, n, n, (*it)->get_d2K());
@@ -140,7 +149,7 @@ public:
     VectorXd getMean() const {
         VectorXd mean (V_sizes);
         int pos = 0;
-        for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+        for (std::vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
             int size = (*it)->get_V_size();
             mean.segment(pos, size) = (*it)->getMean();
             pos += size;
@@ -151,7 +160,7 @@ public:
     VectorXd getV() const {
         VectorXd V (V_sizes);
         int pos = 0;
-        for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+        for (std::vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
             int size = (*it)->get_V_size();
             V.segment(pos, size) = (*it)->getV();
             pos += size;
@@ -164,7 +173,7 @@ public:
     VectorXd getSV() const {
         VectorXd SV (V_sizes);
         int pos = 0;
-        for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+        for (std::vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
             int size = (*it)->get_V_size();
             SV.segment(pos, size) = (*it)->getSV();
             pos += size;
@@ -176,7 +185,7 @@ public:
     VectorXd getW() const {
         VectorXd W (W_sizes);
         int pos = 0;
-        for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+        for (std::vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
             int size = (*it)->get_W_size();
             W.segment(pos, size) = (*it)->getW();
             pos += size;
@@ -187,7 +196,7 @@ public:
     VectorXd getPrevW() const {
         VectorXd W (W_sizes);
         int pos = 0;
-        for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+        for (std::vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
             int size = (*it)->get_W_size();
             W.segment(pos, size) = (*it)->getPrevW();
             pos += size;

@@ -23,6 +23,7 @@ protected:
     bool fix_V {false};
 public:
     Var() : V(n), prevV(n) {}
+    virtual ~Var() {}
 
     const VectorXd& getV()     const {return V;}
     const VectorXd& getPrevV() const {return prevV;}
@@ -39,9 +40,9 @@ public:
     virtual void sample_V()=0;
     virtual void sample_cond_V(const VectorXd& a_inc_vec, const VectorXd& b_inc_vec)=0;
 
-    virtual double get_var()               const=0;
-    virtual double get_theta_var()         const=0;
-    virtual double grad_theta_var()        const=0;
+    virtual double get_theta_V()                const=0;
+    virtual double get_unbound_theta_V()    const=0;
+    virtual double grad_theta_var()         const=0;
     virtual void   set_theta_var(double)=0;
 };
 
@@ -64,10 +65,10 @@ public:
         sample_V(); sample_V(); // sample twice
     }
 
-    double get_var() const {return nu;}
+    double get_theta_V() const {return nu;}
 
     // optimizer related
-    double get_theta_var() const   { return log(nu); }
+    double get_unbound_theta_V() const   { return log(nu); }
     void   set_theta_var(double theta) { nu = exp(theta); }
     double grad_theta_var() const {
         VectorXd tmp = VectorXd::Constant(n, 1+1/(2*nu)) - 0.5*V - VectorXd::Constant(n, 1).cwiseQuotient(2*V);
@@ -130,10 +131,10 @@ public:
     //     sample_V(); sample_V(); // sample twice
     // }
 
-    double get_var() const {return 0;}
+    double get_theta_V() const {return 0;}
 
     // nothing to optimize
-    double get_theta_var() const   { return 1; }
+    double get_unbound_theta_V() const   { return 1; }
     void   set_theta_var(double theta) {}
     double grad_theta_var() const {
         return 0;

@@ -1,12 +1,13 @@
 #include "include/timer.h"
 #include "optimizer.h"
 
-Rcpp::List Optimizer::sgd( Model& model,
-                double stepsize, 
-                double eps,
-                bool precondioner,
-                int iterations) {
-
+Rcpp::List Optimizer::sgd(
+    Model& model,
+    double stepsize,
+    double eps,
+    bool precondioner,
+    int iterations
+) {
     vector<VectorXd> x_traj;
     vector<VectorXd> grad_traj;
 
@@ -20,7 +21,7 @@ Rcpp::List Optimizer::sgd( Model& model,
         count += 1;
 // auto timer_grad = std::chrono::steady_clock::now();
         VectorXd grad = model.grad();
-// std::cout << "get gradient (ms): " << since(timer_grad).count() << std::endl;    
+// std::cout << "get gradient (ms): " << since(timer_grad).count() << std::endl;
 
         if (precondioner) {
             MatrixXd cond = model.precond();
@@ -49,9 +50,9 @@ Rcpp::List Optimizer::sgd( Model& model,
 
 
 Rcpp::List Optimizer::sgd( Model& model,
-                double eps,
-                int iterations) {
-
+    double eps,
+    int iterations
+) {
     vector<VectorXd> x_traj;
     vector<VectorXd> grad_traj;
 
@@ -65,7 +66,7 @@ Rcpp::List Optimizer::sgd( Model& model,
         count += 1;
 // auto timer_grad = std::chrono::steady_clock::now();
         VectorXd grad = model.grad();
-// std::cout << "get gradient (ms): " << since(timer_grad).count() << std::endl;    
+// std::cout << "get gradient (ms): " << since(timer_grad).count() << std::endl;
 
         VectorXd stepsizes = model.get_stepsizes();
         x = x - grad.cwiseProduct(stepsizes);
@@ -81,7 +82,9 @@ Rcpp::List Optimizer::sgd( Model& model,
             terminate = true;
 
     }
-    return Rcpp::List::create(Rcpp::Named("grad_traj") = grad_traj,
-                              Rcpp::Named("x_traj") = x_traj);
+    return Rcpp::List::create(
+        Rcpp::Named("grad_traj") = grad_traj,
+        Rcpp::Named("x_traj") = x_traj
+    );
 }
 

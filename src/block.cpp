@@ -5,9 +5,9 @@
 using std::pow;
 
 BlockModel::BlockModel(
-    Rcpp::List block_model
+    Rcpp::List block_model,
+    unsigned long seed
 ) :
-    seed          (Rcpp::as<unsigned long> (block_model["seed"])),
     X             (Rcpp::as<MatrixXd>      (block_model["X"])),
     Y             (Rcpp::as<VectorXd>      (block_model["Y"])),
     W_sizes       (Rcpp::as<int>           (block_model["W_sizes"])),
@@ -53,16 +53,19 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
         unsigned long latent_seed = rng();
         string model_type = latent_in["model"];
         if (model_type == "ar1") {
-            latents.push_back(new AR(latent_in, latent_seed));
+            // latents.push_back(new AR(latent_in, latent_seed));
+            latents.push_back(std::make_unique<Latent>(AR(latent_in, latent_seed)));
         }
         else if (model_type == "rw1") {
-            latents.push_back(new AR(latent_in, latent_seed));
-            // latents.push_back(new Fixed_K(latent_in, latent_seed));
+            // latents.push_back(new AR(latent_in, latent_seed));
+            latents.push_back(std::make_unique<Latent>(AR(latent_in, latent_seed)));
         }
         else if (model_type == "matern" && n_theta_K > 1) {
-            latents.push_back(new Matern_ns(latent_in, latent_seed));
+            // latents.push_back(new Matern_ns(latent_in, latent_seed));
+            latents.push_back(std::make_unique<Latent>(Matern_ns(latent_in, latent_seed)));
         } else if (model_type=="matern" && n_theta_K == 1) {
-            latents.push_back(new Matern(latent_in, latent_seed));
+            // latents.push_back(new Matern(latent_in, latent_seed));
+            latents.push_back(std::make_unique<Latent>(Matern(latent_in, latent_seed)));
         } else {
             std::cout << "Unknown model." << std::endl;
         }
@@ -70,7 +73,7 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
 
     /* Init variables: h, A */
     int n = 0;
-    for (std::vector<Latent*>::iterator it = latents.begin(); it != latents.end(); it++) {
+    for (std::vector<std::unique_ptr<Latent>>::iterator it = latents.begin(); it != latents.end(); it++) {
         setSparseBlock(&A,   0, n, (*it)->getA());
         n += (*it)->get_W_size();
     }
@@ -98,13 +101,13 @@ if (debug) std::cout << "After block assemble" << std::endl;
     noise_sigma = (B_sigma * theta_sigma).array().exp();
 
     if (family=="normal") {
-        var = new normal(n_obs);
+        var.reset(new normal(n_obs));
         VectorXd theta_sigma = Rcpp::as<VectorXd>  (noise_in["theta_sigma"]);
         n_merr = n_theta_sigma;
     } else if (family=="nig") {
         n_merr = n_theta_sigma + n_theta_mu + 1;
         double theta_V = Rcpp::as< double >      (noise_in["theta_V"]);
-        var = new ind_IG(theta_V, n_obs, rng());
+        var.reset(new ind_IG(theta_V, n_obs, rng()));
     }
     n_params = n_la_params + n_feff + n_merr;
 
@@ -158,9 +161,9 @@ Eigen::VectorXd rnorm_vec(int n, double mu, double sigma, unsigned long seed=0)
 // ---- other functions ------
 void BlockModel::setW(const VectorXd& W) {
   int pos = 0;
-  for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
-      int size = (*it)->get_W_size();
-      (*it)->setW(W.segment(pos, size));
+  for (std::vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+    int size = (*it)->get_W_size();
+  (*it)->setW(W.segment(pos, size));
       pos += size;
   }
 }
@@ -204,14 +207,14 @@ VectorXd BlockModel::get_parameter() const {
 if (debug) std::cout << "Start block get parameter"<< std::endl;
     VectorXd thetas (n_params);
     int pos = 0;
-    for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
-        VectorXd theta = (*it)->get_parameter();
-        thetas.segment(pos, theta.size()) = theta;
-        pos += theta.size();
+    for (std::vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+      VectorXd theta = (*it)->get_parameter();
+      thetas.segment(pos, theta.size()) = theta;
+      pos += theta.size();
     }
 
     if (opt_beta) {
-        thetas.segment(n_la_params, n_feff) = beta;
+      thetas.segment(n_la_params, n_feff) = beta;
     }
 
     thetas.segment(n_la_params + n_feff, n_merr) = get_theta_merr();
@@ -234,7 +237,7 @@ long long time_sample_w = 0;
 auto timer_computeg = std::chrono::steady_clock::now();
         // get grad for each latent
         int pos = 0;
-        for (std::vector<Latent*>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+        for (std::vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
             int theta_len = (*it)->get_n_params();
             gradient.segment(pos, theta_len) = (*it)->get_grad();
             pos += theta_len;
@@ -277,21 +280,25 @@ if (debug) std::cout << "Finish block gradient"<< std::endl;
 
 void BlockModel::set_parameter(const VectorXd& Theta) {
     int pos = 0;
-    for (std::vector<Latent*>::iterator it = latents.begin(); it != latents.end(); it++) {
-        int theta_len = (*it)->get_n_params();
-        VectorXd theta = Theta.segment(pos, theta_len);
-        (*it)->set_parameter(theta);
-        pos += theta_len;
+    for (std::vector<std::unique_ptr<Latent>>::iterator it = latents.begin(); it != latents.end(); it++) {
+      int theta_len = (*it)->get_n_params();
+      VectorXd theta = Theta.segment(pos, theta_len);
+      (*it)->set_parameter(theta);
+      pos += theta_len;
     }
 
     // fixed effects
     if (opt_beta) {
-        beta = Theta.segment(n_la_params, n_feff);
+      beta = Theta.segment(n_la_params, n_feff);
     }
 
     // measurement noise
     set_theta_merr(Theta.segment(n_la_params + n_feff, n_merr));
-    // set_theta_sgima_eps(Theta(n_params-1));
+
+    beta_traj.push_back(beta);
+    theta_mu_traj.push_back(theta_mu);
+    theta_sigma_traj.push_back(theta_sigma);
+    theta_V_traj.push_back(var->get_theta_V());
 
     assemble(); //update K,dK,d2K after
 // std::cout << "Theta=" << Theta <<std::endl;
@@ -396,7 +403,7 @@ VectorXd BlockModel::get_theta_merr() const {
     } else {
         theta_merr.segment(0, n_theta_mu) = theta_mu;
         theta_merr.segment(n_theta_mu, n_theta_sigma) = theta_sigma;
-        theta_merr(n_theta_mu + n_theta_sigma) =  var->get_theta_var();
+        theta_merr(n_theta_mu + n_theta_sigma) =  var->get_unbound_theta_V();
     }
 
     return theta_merr;
@@ -436,17 +443,25 @@ Rcpp::List BlockModel::output() const {
         latents_output.push_back((*latents[i]).output());
     }
 
-    return Rcpp::List::create(
+     Rcpp::List out = Rcpp::List::create(
         Rcpp::Named("noise")     = Rcpp::List::create(
             Rcpp::Named("noise_type")   = family,
             Rcpp::Named("theta_mu")     = theta_mu,
             Rcpp::Named("theta_sigma")  = theta_sigma,
-            Rcpp::Named("theta_V")      = var->get_var(),
+            Rcpp::Named("theta_V")      = var->get_theta_V(),
             Rcpp::Named("V")            = var->getV()
         ),
-        Rcpp::Named("beta")    = beta,
+        Rcpp::Named("beta")             = beta,
         Rcpp::Named("latents")          = latents_output
     );
+
+    out.attr("trajectory") = Rcpp::List::create(
+        Rcpp::Named("beta_traj")        = beta_traj,
+        Rcpp::Named("theta_mu_traj")    = theta_mu_traj,
+        Rcpp::Named("theta_sigma_traj") = theta_sigma_traj,
+        Rcpp::Named("theta_V_traj")     = theta_V_traj
+    );
+    return out;
 }
 
 // posterior

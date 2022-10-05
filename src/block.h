@@ -35,7 +35,8 @@ class BlockModel : public Model {
 protected:
 // W_sizes = row(A1) + ... + row(An)
     // general
-    unsigned long seed;
+    std::mt19937 rng;
+
     MatrixXd X;
     VectorXd Y;
     int W_sizes, V_sizes; //V_sizes = sum(nrow(K_i))
@@ -51,8 +52,6 @@ protected:
     VectorXd noise_sigma, theta_sigma;
     int n_theta_sigma;
 
-    // Var *var;
-    std::unique_ptr<Var> var;
 
     int n_latent; // how mnay latent model
     int n_obs; // how many observation
@@ -67,6 +66,9 @@ protected:
     double kill_power, threshold, termination;
 
     SparseMatrix<double> A, K;      // not used: dK, d2K;
+
+    // std::unique_ptr<Var> var;
+    Var var;
 
     // debug
     bool fix_merr;
@@ -83,7 +85,6 @@ protected:
     SparseLU<SparseMatrix<double> > LU_K;
 
     VectorXd fixedW;
-    std::mt19937 rng;
 
     // record trajectory
     std::vector<VectorXd> beta_traj;
@@ -91,6 +92,7 @@ protected:
     std::vector<VectorXd> theta_sigma_traj;
     std::vector<double>   theta_V_traj;
 public:
+    // BlockModel() {}
     BlockModel(Rcpp::List block_model, unsigned long seed);
     virtual ~BlockModel() {}
 
@@ -206,9 +208,9 @@ public:
 
     VectorXd get_residual() const {
       if(n_latent>0){
-        return Y - A * getW() - X * beta - (-VectorXd::Ones(n_obs) + var->getV()).cwiseProduct(noise_mu);
+        return Y - A * getW() - X * beta - (-VectorXd::Ones(n_obs) + var.getV()).cwiseProduct(noise_mu);
       }else{
-        return Y  - X * beta - (-VectorXd::Ones(n_obs) + var->getV()).cwiseProduct(noise_mu);
+        return Y  - X * beta - (-VectorXd::Ones(n_obs) + var.getV()).cwiseProduct(noise_mu);
       }
     }
 
@@ -216,8 +218,8 @@ public:
         if (family == "nig") {
             VectorXd residual = get_residual();
             VectorXd a_inc_vec = noise_mu.cwiseQuotient(noise_sigma).array().pow(2);
-            VectorXd b_inc_vec = (residual + var->getV().cwiseProduct(noise_mu)).cwiseQuotient(noise_sigma).array().pow(2);
-            var->sample_cond_V(a_inc_vec, b_inc_vec);
+            VectorXd b_inc_vec = (residual + var.getV().cwiseProduct(noise_mu)).cwiseQuotient(noise_sigma).array().pow(2);
+            var.sample_cond_V(a_inc_vec, b_inc_vec);
         }
     }
 

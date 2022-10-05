@@ -79,7 +79,7 @@ ngme_out <- ngme(
     estimation = TRUE,
     n_parallel_chain = 2,
     burnin = 200,
-    iterations = 10,
+    iterations = 100,
     gibbs_sample = 5,
     stepsize = 1,
     kill_var = FALSE,
@@ -93,9 +93,7 @@ ngme_out <- ngme(
   # , last_fit = ngme_out
   debug = TRUE
 )
-load_all()
 # ngme_out
-str(ngme_out)
 # c(noise_theta_mu, noise_theta_sigma, noise_theta_V)
 
 # # trace plot of mu

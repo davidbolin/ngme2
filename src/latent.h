@@ -40,7 +40,7 @@ const int LATENT_FIX_FLAG_SIZE = 6;
 
 class Latent {
 protected:
-    unsigned long seed;
+    std::mt19937 latent_rng;
     string model_type, noise_type;
     bool debug;
     int W_size, V_size, n_params, n_var {1}; // n_params=n_theta_K + n_theta_mu + n_theta_sigma + n_var
@@ -70,7 +70,7 @@ protected:
     VectorXd W, prevW, h;
     SparseMatrix<double,0,int> A;
 
-    std::unique_ptr<Var> var;
+    Var var;
     // Var *var;
 
     // solver
@@ -80,8 +80,6 @@ protected:
     iterative_solver CG_solver_K;
 
     cholesky_solver solver_Q; // Q = KT diag(1/SV) K
-
-    std::mt19937 latent_rng;
 
     // record trajectory
     std::vector<VectorXd> theta_K_traj;
@@ -110,8 +108,8 @@ public:
     VectorXd getMean() const { return mu.cwiseProduct(getV()-h); }
 
     /*  2 Variance component   */
-    const VectorXd& getV()     const { return var->getV(); }
-    const VectorXd& getPrevV() const { return var->getPrevV(); }
+    const VectorXd& getV()     const { return var.getV(); }
+    const VectorXd& getPrevV() const { return var.getPrevV(); }
     VectorXd getSV() const {
         VectorXd V=getV();
         return (sigma.array().pow(2).matrix().cwiseProduct(V));
@@ -122,13 +120,13 @@ public:
     }
 
     void sample_V() {
-        var->sample_V();
+        var.sample_V();
     }
     void sample_cond_V() {
         VectorXd tmp = (K * W + mu.cwiseProduct(h));
         VectorXd a_inc_vec = mu.cwiseQuotient(sigma).array().pow(2);
         VectorXd b_inc_vec = tmp.cwiseQuotient(sigma).array().pow(2);
-        var->sample_cond_V(a_inc_vec, b_inc_vec);
+        var.sample_cond_V(a_inc_vec, b_inc_vec);
     }
 
     /*  3 Operator component   */
@@ -252,7 +250,7 @@ public:
     }
     virtual VectorXd grad_theta_sigma();
 
-    virtual void   set_theta_var(double v) { var->set_theta_var(v); }
+    virtual void   set_theta_var(double v) { var.set_theta_var(v); }
 
     // Output
     // virtual Rcpp::List get_estimates() const=0;
@@ -267,7 +265,7 @@ if (debug) std::cout << "Start latent get parameter"<< std::endl;
         parameter.segment(0, n_theta_K)                         = get_unbound_theta_K();
         parameter.segment(n_theta_K, n_theta_mu)                = get_theta_mu();
         parameter.segment(n_theta_K+n_theta_mu, n_theta_sigma)  = get_theta_sigma();
-        parameter(n_theta_K+n_theta_mu+n_theta_sigma)           = var->get_unbound_theta_V();
+        parameter(n_theta_K+n_theta_mu+n_theta_sigma)           = var.get_unbound_theta_V();
 
 // if (debug) std::cout << "parameter= " << parameter << std::endl;
 if (debug) std::cout << "End latent get parameter"<< std::endl;
@@ -282,7 +280,7 @@ auto grad1 = std::chrono::steady_clock::now();
     if (!fix_flag[latent_fix_theta_K])     grad.segment(0, n_theta_K)                        = grad_theta_K();         else grad.segment(0, n_theta_K) = VectorXd::Constant(n_theta_K, 0);
     if (!fix_flag[latent_fix_theta_mu])    grad.segment(n_theta_K, n_theta_mu)               = grad_theta_mu();        else grad.segment(n_theta_K, n_theta_mu) = VectorXd::Constant(n_theta_mu, 0);
     if (!fix_flag[latent_fix_theta_sigma]) grad.segment(n_theta_K+n_theta_mu, n_theta_sigma) = grad_theta_sigma();     else grad.segment(n_theta_K+n_theta_mu, n_theta_sigma) = VectorXd::Constant(n_theta_sigma, 0);
-    if (!fix_flag[latent_fix_theta_V])     grad(n_theta_K+n_theta_mu+n_theta_sigma)          = var->grad_theta_var();  else grad(n_theta_K+n_theta_mu+n_theta_sigma) = 0;
+    if (!fix_flag[latent_fix_theta_V])     grad(n_theta_K+n_theta_mu+n_theta_sigma)          = var.grad_theta_var();  else grad(n_theta_K+n_theta_mu+n_theta_sigma) = 0;
 
 // DEBUG: checking grads
 if (debug) {
@@ -297,12 +295,12 @@ if (debug) std::cout << "Start latent set parameter"<< std::endl;
     set_unbound_theta_K (theta.segment(0, n_theta_K));
     set_theta_mu        (theta.segment(n_theta_K, n_theta_mu));
     set_theta_sigma     (theta.segment(n_theta_K+n_theta_mu, n_theta_sigma));
-    var->set_theta_var  (theta(n_theta_K+n_theta_mu+n_theta_sigma));
+    var.set_theta_var  (theta(n_theta_K+n_theta_mu+n_theta_sigma));
 
     theta_K_traj.push_back(parameter_K);
     theta_mu_traj.push_back(theta_mu);
     theta_sigma_traj.push_back(theta_sigma);
-    theta_V_traj.push_back(var->get_theta_V());
+    theta_V_traj.push_back(var.get_theta_V());
 }
 
 // subclasses
@@ -325,7 +323,7 @@ public:
     //         Rcpp::Named("alpha")        = parameter_K(0),
     //         Rcpp::Named("theta.mu")     = theta_mu,
     //         Rcpp::Named("theta.sigma")  = theta_sigma,
-    //         Rcpp::Named("theta.noise")  = var->get_theta_V()
+    //         Rcpp::Named("theta.noise")  = var.get_theta_V()
     //     );
     // }
 };
@@ -352,7 +350,7 @@ public:
     //         Rcpp::Named("kappa")        = parameter_K(0),
     //         Rcpp::Named("theta.mu")     = theta_mu,
     //         Rcpp::Named("theta.sigma")  = theta_sigma,
-    //         Rcpp::Named("theta.noise")  = var->get_theta_V()
+    //         Rcpp::Named("theta.noise")  = var.get_theta_V()
     //     );
     // }
 };
@@ -375,7 +373,7 @@ public:
     //         Rcpp::Named("theta.kappa") = parameter_K,
     //         Rcpp::Named("theta.mu")    = theta_mu,
     //         Rcpp::Named("theta.sigma") = theta_sigma,
-    //         Rcpp::Named("theta.noise") = var->get_theta_V()
+    //         Rcpp::Named("theta.noise") = var.get_theta_V()
     //     );
     // }
 };

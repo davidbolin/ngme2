@@ -5,140 +5,130 @@
 using std::pow;
 
 BlockModel::BlockModel(
-    Rcpp::List block_model,
-    unsigned long seed
+  Rcpp::List block_model,
+  unsigned long seed
 ) :
-    X             (Rcpp::as<MatrixXd>      (block_model["X"])),
-    Y             (Rcpp::as<VectorXd>      (block_model["Y"])),
-    W_sizes       (Rcpp::as<int>           (block_model["W_sizes"])),
-    V_sizes       (Rcpp::as<int>           (block_model["V_sizes"])),
-    beta          (Rcpp::as<VectorXd>      (block_model["beta"])),
-    n_obs         (Y.size()),
-    n_la_params   (Rcpp::as<int>           (block_model["n_la_params"])),
-    n_feff        (beta.size()),
+  rng           (seed),
+  X             (Rcpp::as<MatrixXd>      (block_model["X"])),
+  Y             (Rcpp::as<VectorXd>      (block_model["Y"])),
+  W_sizes       (Rcpp::as<int>           (block_model["W_sizes"])),
+  V_sizes       (Rcpp::as<int>           (block_model["V_sizes"])),
+  beta          (Rcpp::as<VectorXd>      (block_model["beta"])),
+  n_obs         (Y.size()),
+  n_la_params   (Rcpp::as<int>           (block_model["n_la_params"])),
+  n_feff        (beta.size()),
 
-    debug         (Rcpp::as<bool>          (block_model["debug"])),
-    A             (n_obs, W_sizes),
-    K             (V_sizes, W_sizes)
-    // dK            (V_sizes, W_sizes)
-    // d2K           (V_sizes, W_sizes)
+  debug         (Rcpp::as<bool>          (block_model["debug"])),
+  A             (n_obs, W_sizes),
+  K             (V_sizes, W_sizes),
 
+  var           (Var(Rcpp::as<Rcpp::List> (block_model["noise"]), rng()))
+  // dK            (V_sizes, W_sizes)
+  // d2K           (V_sizes, W_sizes)
 {
-    rng.seed(seed);
-    // 1. Init controls
-    Rcpp::List control_in = block_model["control"];
-        const int burnin = control_in["burnin"];
-        const double stepsize = control_in["stepsize"];
-        n_gibbs     =  Rcpp::as<int>    (control_in["gibbs_sample"]);
-        opt_beta    =  Rcpp::as<bool>   (control_in["opt_beta"]);
-        kill_var    =  Rcpp::as<bool>   (control_in["kill_var"]);
-        kill_power  =  Rcpp::as<double> (control_in["kill_power"]);
-        threshold   =  Rcpp::as<double> (control_in["threshold"]);
-        termination =  Rcpp::as<double> (control_in["termination"]);
+  // 1. Init controls
+  Rcpp::List control_in = block_model["control"];
+    const int burnin = control_in["burnin"];
+    const double stepsize = control_in["stepsize"];
+    n_gibbs     =  Rcpp::as<int>    (control_in["gibbs_sample"]);
+    opt_beta    =  Rcpp::as<bool>   (control_in["opt_beta"]);
+    kill_var    =  Rcpp::as<bool>   (control_in["kill_var"]);
+    kill_power  =  Rcpp::as<double> (control_in["kill_power"]);
+    threshold   =  Rcpp::as<double> (control_in["threshold"]);
+    termination =  Rcpp::as<double> (control_in["termination"]);
 
 if (debug) std::cout << "Begin Block Constructor" << std::endl;
 
-    // 2. Init Fixed effects
-    fix_flag[block_fix_beta]   = Rcpp::as<bool>        (control_in["fix_beta"]);
-    if (beta.size()==0) opt_beta = false;
+  // 2. Init Fixed effects
+  fix_flag[block_fix_beta]   = Rcpp::as<bool>        (control_in["fix_beta"]);
+  if (beta.size()==0) opt_beta = false;
 
-    // 3. Init latent models
-    Rcpp::List latents_in = block_model["latents"];
-    n_latent = latents_in.size(); // how many latent model
-    for (int i=0; i < n_latent; ++i) {
-        Rcpp::List latent_in = Rcpp::as<Rcpp::List> (latents_in[i]);
-        int n_theta_K = Rcpp::as<int> (latent_in["n_theta_K"]);
+  // 3. Init latent models
+  Rcpp::List latents_in = block_model["latents"];
+  n_latent = latents_in.size(); // how many latent model
+  for (int i=0; i < n_latent; ++i) {
+    Rcpp::List latent_in = Rcpp::as<Rcpp::List> (latents_in[i]);
+    int n_theta_K = Rcpp::as<int> (latent_in["n_theta_K"]);
 
-        // construct acoording to models
-        unsigned long latent_seed = rng();
-        string model_type = latent_in["model"];
-        if (model_type == "ar1") {
-            // latents.push_back(new AR(latent_in, latent_seed));
-            latents.push_back(std::make_unique<Latent>(AR(latent_in, latent_seed)));
-        }
-        else if (model_type == "rw1") {
-            // latents.push_back(new AR(latent_in, latent_seed));
-            latents.push_back(std::make_unique<Latent>(AR(latent_in, latent_seed)));
-        }
-        else if (model_type == "matern" && n_theta_K > 1) {
-            // latents.push_back(new Matern_ns(latent_in, latent_seed));
-            latents.push_back(std::make_unique<Latent>(Matern_ns(latent_in, latent_seed)));
-        } else if (model_type=="matern" && n_theta_K == 1) {
-            // latents.push_back(new Matern(latent_in, latent_seed));
-            latents.push_back(std::make_unique<Latent>(Matern(latent_in, latent_seed)));
-        } else {
-            std::cout << "Unknown model." << std::endl;
-        }
+    // construct acoording to models
+    unsigned long latent_seed = rng();
+    string model_type = latent_in["model"];
+    if (model_type == "ar1") {
+      latents.push_back(std::make_unique<AR>(latent_in, latent_seed));
     }
-
-    /* Init variables: h, A */
-    int n = 0;
-    for (std::vector<std::unique_ptr<Latent>>::iterator it = latents.begin(); it != latents.end(); it++) {
-        setSparseBlock(&A,   0, n, (*it)->getA());
-        n += (*it)->get_W_size();
+    else if (model_type == "rw1") {
+      latents.push_back(std::make_unique<AR>(latent_in, latent_seed));
     }
-    assemble();
+    else if (model_type == "matern" && n_theta_K > 1) {
+      latents.push_back(std::make_unique<Matern_ns>(latent_in, latent_seed));
+    } else if (model_type=="matern" && n_theta_K == 1) {
+      latents.push_back(std::make_unique<Matern>(latent_in, latent_seed));
+    } else {
+      std::cout << "Unknown model." << std::endl;
+    }
+  }
+
+  /* Init variables: h, A */
+  int n = 0;
+  for (std::vector<std::unique_ptr<Latent>>::iterator it = latents.begin(); it != latents.end(); it++) {
+    setSparseBlock(&A,   0, n, (*it)->getA());
+    n += (*it)->get_W_size();
+  }
+  assemble();
 
 if (debug) std::cout << "After block assemble" << std::endl;
 
-    // 4. Init measurement noise
-    Rcpp::List noise_in   = block_model["noise"];
+  // 4. Init measurement noise
+  Rcpp::List noise_in   = block_model["noise"];
 
-    B_mu          = (Rcpp::as<MatrixXd>      (noise_in["B_mu"])),
-    theta_mu      = (Rcpp::as<VectorXd>      (noise_in["theta_mu"])),
-    n_theta_mu    = (theta_mu.size()),
-    B_sigma       = (Rcpp::as<MatrixXd>      (noise_in["B_sigma"])),
-    theta_sigma   = (Rcpp::as<VectorXd>      (noise_in["theta_sigma"])),
-    n_theta_sigma = (theta_sigma.size()),
+  B_mu          = (Rcpp::as<MatrixXd>      (noise_in["B_mu"])),
+  theta_mu      = (Rcpp::as<VectorXd>      (noise_in["theta_mu"])),
+  n_theta_mu    = (theta_mu.size()),
+  B_sigma       = (Rcpp::as<MatrixXd>      (noise_in["B_sigma"])),
+  theta_sigma   = (Rcpp::as<VectorXd>      (noise_in["theta_sigma"])),
+  n_theta_sigma = (theta_sigma.size()),
 
-    fix_flag[block_fix_theta_mu]        = Rcpp::as<bool> (noise_in["fix_theta_mu"]);
-    fix_flag[block_fix_theta_sigma]     = Rcpp::as<bool> (noise_in["fix_theta_sigma"]);
-    fix_flag[block_fix_theta_V]         = Rcpp::as<bool> (noise_in["fix_theta_V"]);
-    fix_flag[block_fix_V]               = Rcpp::as<bool> (noise_in["fix_V"]);
+  fix_flag[block_fix_theta_mu]        = Rcpp::as<bool> (noise_in["fix_theta_mu"]);
+  fix_flag[block_fix_theta_sigma]     = Rcpp::as<bool> (noise_in["fix_theta_sigma"]);
+  fix_flag[block_fix_theta_V]         = Rcpp::as<bool> (noise_in["fix_theta_V"]);
+  fix_flag[block_fix_V]               = Rcpp::as<bool> (noise_in["fix_V"]);
 
-    family = Rcpp::as<string>  (noise_in["noise_type"]);
-    noise_mu = B_mu * theta_mu;
-    noise_sigma = (B_sigma * theta_sigma).array().exp();
+  family = Rcpp::as<string>  (noise_in["noise_type"]);
+  noise_mu = B_mu * theta_mu;
+  noise_sigma = (B_sigma * theta_sigma).array().exp();
 
-    if (family=="normal") {
-        var.reset(new normal(n_obs));
-        VectorXd theta_sigma = Rcpp::as<VectorXd>  (noise_in["theta_sigma"]);
-        n_merr = n_theta_sigma;
-    } else if (family=="nig") {
-        n_merr = n_theta_sigma + n_theta_mu + 1;
-        double theta_V = Rcpp::as< double >      (noise_in["theta_V"]);
-        var.reset(new ind_IG(theta_V, n_obs, rng()));
-    }
-    n_params = n_la_params + n_feff + n_merr;
+  if (family=="normal") {
+    VectorXd theta_sigma = Rcpp::as<VectorXd>  (noise_in["theta_sigma"]);
+    n_merr = n_theta_sigma;
+  } else if (family=="nig") {
+    n_merr = n_theta_sigma + n_theta_mu + 1;
+  }
+  n_params = n_la_params + n_feff + n_merr;
 
 if (debug) std::cout << "After block construct noise" << std::endl;
 
-    // 5. Fix V and init V
-    if (fix_flag[block_fix_V]) var->fixV();
-    if (noise_in["V"] != R_NilValue) {
-        VectorXd V = Rcpp::as< VectorXd >    (noise_in["V"]);
-        var->setV(V);
-    }
+  // 5. Fix V and init V
+  if (fix_flag[block_fix_V]) var.fixV();
 
-    // 6. Init solvers
-    if(n_latent >0){
-      VectorXd inv_SV = VectorXd::Constant(V_sizes, 1).cwiseQuotient(getSV());
-      SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
-      SparseMatrix<double> QQ = Q + A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(var->getV()).asDiagonal() * A;
-      chol_Q.analyze(Q);
-      chol_QQ.analyze(QQ);
-      LU_K.analyzePattern(K);
-    }
+  // 6. Init solvers
+  if(n_latent > 0){
+    VectorXd inv_SV = VectorXd::Constant(V_sizes, 1).cwiseQuotient(getSV());
+    SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
+    SparseMatrix<double> QQ = Q + A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(var.getV()).asDiagonal() * A;
+    chol_Q.analyze(Q);
+    chol_QQ.analyze(QQ);
+    LU_K.analyzePattern(K);
+  }
 
-    // 7. optimizer related
-    stepsizes = VectorXd::Constant(n_params, stepsize);
-    steps_to_threshold = VectorXd::Constant(n_params, 0);
-    indicate_threshold = VectorXd::Constant(n_params, 0);
+  // 7. optimizer related
+  stepsizes = VectorXd::Constant(n_params, stepsize);
+  steps_to_threshold = VectorXd::Constant(n_params, 0);
+  indicate_threshold = VectorXd::Constant(n_params, 0);
 
-    // 8. Do the burn-in
-    if(n_latent >0)
-      sampleW_V();
-    burn_in(burnin + 5);
+  // 8. Do the burn-in
+  if(n_latent >0)
+    sampleW_V();
+  burn_in(burnin + 5);
 
 if (debug) std::cout << "End Block Constructor" << std::endl;
 }
@@ -181,7 +171,7 @@ void BlockModel::sampleW_VY()
     SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
     // SparseMatrix<double> QQ = Q + pow(sigma_eps, -2) * A.transpose() * A;
     // SparseMatrix<double> QQ = Q + A.transpose() * noise_sigma.cwiseInverse().asDiagonal() * A;
-    VectorXd noise_V = var->getV();
+    VectorXd noise_V = var.getV();
     SparseMatrix<double> QQ = Q + A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V).asDiagonal() * A;
     chol_QQ.compute(QQ);
 
@@ -298,7 +288,7 @@ void BlockModel::set_parameter(const VectorXd& Theta) {
     beta_traj.push_back(beta);
     theta_mu_traj.push_back(theta_mu);
     theta_sigma_traj.push_back(theta_sigma);
-    theta_V_traj.push_back(var->get_theta_V());
+    theta_V_traj.push_back(var.get_theta_V());
 
     assemble(); //update K,dK,d2K after
 // std::cout << "Theta=" << Theta <<std::endl;
@@ -334,7 +324,7 @@ void BlockModel::sampleW_V()
 
 // --------- Fiexed effects and Measurement Error ---------------
 VectorXd BlockModel::grad_beta() {
-    VectorXd noise_V = var->getV();
+    VectorXd noise_V = var.getV();
     VectorXd noise_inv_SV = noise_V.cwiseProduct(noise_sigma.array().pow(-2).matrix());
 
     VectorXd residual = get_residual();
@@ -354,7 +344,7 @@ VectorXd BlockModel::grad_theta_mu() {
     // MatrixXd hess = noise_X.transpose() * noise_inv_SV.asDiagonal() * noise_X;
     // grad = hess.ldlt().solve(grad);
 
-    VectorXd noise_V = var->getV();
+    VectorXd noise_V = var.getV();
     VectorXd noise_SV = noise_V.cwiseProduct(noise_sigma.array().pow(2).matrix());
 
     VectorXd residual = get_residual();
@@ -372,7 +362,7 @@ VectorXd BlockModel::grad_theta_mu() {
 VectorXd BlockModel::grad_theta_sigma() {
     VectorXd grad = VectorXd::Zero(n_theta_sigma);
 // std::cout << "noise_sigma =" << noise_sigma << std::endl;
-    VectorXd noise_V = var->getV();
+    VectorXd noise_V = var.getV();
     VectorXd noise_SV = noise_sigma.array().pow(2).matrix().cwiseProduct(noise_V);
     // grad = B_sigma.transpose() * (-0.5 * VectorXd::Ones(n_obs) + residual.array().pow(2).matrix().cwiseQuotient(noise_SV));
 
@@ -403,7 +393,7 @@ VectorXd BlockModel::get_theta_merr() const {
     } else {
         theta_merr.segment(0, n_theta_mu) = theta_mu;
         theta_merr.segment(n_theta_mu, n_theta_sigma) = theta_sigma;
-        theta_merr(n_theta_mu + n_theta_sigma) =  var->get_unbound_theta_V();
+        theta_merr(n_theta_mu + n_theta_sigma) =  var.get_unbound_theta_V();
     }
 
     return theta_merr;
@@ -417,7 +407,7 @@ VectorXd BlockModel::grad_theta_merr() {
     } else {
         if (!fix_flag[block_fix_theta_mu])     grad.segment(0, n_theta_mu) = grad_theta_mu();
         if (!fix_flag[block_fix_theta_sigma])  grad.segment(n_theta_mu, n_theta_sigma) = grad_theta_sigma();
-        if (!fix_flag[block_fix_theta_V])    grad(n_theta_mu + n_theta_sigma) = var->grad_theta_var();
+        if (!fix_flag[block_fix_theta_V])    grad(n_theta_mu + n_theta_sigma) = var.grad_theta_var();
     }
 
     return grad;
@@ -430,7 +420,7 @@ void BlockModel::set_theta_merr(const VectorXd& theta_merr) {
         theta_mu = theta_merr.segment(0, n_theta_mu);
         theta_sigma = theta_merr.segment(n_theta_mu, n_theta_sigma);
         // double theta_var = theta_merr(n_theta_mu + n_theta_sigma);
-        var->set_theta_var(theta_merr(n_theta_mu + n_theta_sigma));
+        var.set_theta_var(theta_merr(n_theta_mu + n_theta_sigma));
     }
     noise_sigma = (B_sigma * theta_sigma).array().exp();
     noise_mu = (B_mu * theta_mu);
@@ -448,8 +438,8 @@ Rcpp::List BlockModel::output() const {
             Rcpp::Named("noise_type")   = family,
             Rcpp::Named("theta_mu")     = theta_mu,
             Rcpp::Named("theta_sigma")  = theta_sigma,
-            Rcpp::Named("theta_V")      = var->get_theta_V(),
-            Rcpp::Named("V")            = var->getV()
+            Rcpp::Named("theta_V")      = var.get_theta_V(),
+            Rcpp::Named("V")            = var.getV()
         ),
         Rcpp::Named("beta")             = beta,
         Rcpp::Named("latents")          = latents_output
@@ -480,13 +470,13 @@ Rcpp::List BlockModel::sampling(int iterations, bool posterior) {
         } else {
             sample_V();
             sampleW_V();
-            var->sample_V();
+            var.sample_V();
             // construct the Y in R
         }
 
         Ws.push_back(getW());
         Vs.push_back(getV());
-        Block_Vs.push_back(var->getV());
+        Block_Vs.push_back(var.getV());
     }
 
     return Rcpp::List::create(

@@ -8,7 +8,7 @@
 
 // K is V_size * W_size matrix
 Latent::Latent(Rcpp::List& model_list, unsigned long seed) :
-    seed          (seed),
+    latent_rng    (seed),
     model_type    (Rcpp::as<string>     (model_list["model"])),
     noise_type    (Rcpp::as<string>     (model_list["noise_type"])),
     debug         (Rcpp::as<bool>       (model_list["debug"])),
@@ -24,12 +24,14 @@ Latent::Latent(Rcpp::List& model_list, unsigned long seed) :
     W             (W_size),
     prevW         (W_size),
     h             (Rcpp::as< VectorXd >                     (model_list["h"])), //same length as V_size
-    A             (Rcpp::as< SparseMatrix<double,0,int> >   (model_list["A"]))
+    A             (Rcpp::as< SparseMatrix<double,0,int> >   (model_list["A"])),
+
+    var           (Var(Rcpp::as<Rcpp::List> (model_list["noise"]), latent_rng()))
 {
 if (debug) std::cout << "Begin constructor of latent" << std::endl;
 
     // setting the seed
-    latent_rng.seed(seed);
+    // latent_rng.seed(seed);
 
     // read from ngme.model
     fix_flag[latent_fix_theta_K] = Rcpp::as<bool>    (model_list["fix_theta_K"]);
@@ -64,24 +66,15 @@ if (debug) std::cout << "Begin constructor of latent" << std::endl;
     const int n_theta_V = 1;
     n_params = n_theta_K + n_theta_mu + n_theta_sigma + n_theta_V;
 
-    double theta_V = Rcpp::as< double >      (noise_in["theta_V"]);
-    if (noise_type == "nig") {
-        var.reset(new ind_IG(theta_V, V_size, latent_rng()));
-    } else if (noise_type == "normal") {
-        var.reset(new normal(V_size));
-        fix_flag[latent_fix_theta_mu] = 1;
-    }
-
-    // Init V and W
-    if (fix_flag[latent_fix_V]) var->fixV();
-    if (noise_in["V"] != R_NilValue) {
-        VectorXd V = Rcpp::as< VectorXd >    (noise_in["V"]);
-        var->setV(V); var->setV(V);
-// if (debug) std::cout << "I JUST SET V"<< std::endl;
-    }
     if (model_list["W"] != R_NilValue) {
         W = Rcpp::as< VectorXd >    (model_list["W"]);
         prevW = W;
+    }
+
+    // About noise
+    if (fix_flag[latent_fix_V]) var.fixV();
+    if (var.get_noise_type() == "normal") {
+        fix_flag[latent_fix_theta_mu] = 1; // no mu need
     }
 
 if (debug) std::cout << "End constructor of latent" << std::endl;
@@ -217,7 +210,7 @@ Rcpp::List Latent::output() const {
         Rcpp::Named("theta_K")      = parameter_K, // same parameterization as input
         Rcpp::Named("theta_mu")     = theta_mu,
         Rcpp::Named("theta_sigma")  = theta_sigma,
-        Rcpp::Named("theta_V")      = var->get_theta_V(),  // gives eta > 0, not log(eta)
+        Rcpp::Named("theta_V")      = var.get_theta_V(),  // gives eta > 0, not log(eta)
         Rcpp::Named("V")            = getV(),
         Rcpp::Named("W")            = W
     );

@@ -273,3 +273,36 @@ ngme.format <- function(x) {
   if (length(x) > 1) x <- paste0(x, collapse = ", ")
   x
 }
+
+# taking mean over a list of nested lists
+mean_list <- function(lls) {
+  # helpers
+  nest_list_add <- function(l1, l2) {
+    for (i in seq_along(l2)) {
+      if (is.numeric(l2[[i]])) {
+        l1[[i]] <- l1[[i]] + l2[[i]]
+      }
+      if (is.list(l2[[i]])) {
+        l1[[i]] <- nest_list_add(l1[[i]], l2[[i]])
+      }
+    }
+    l1
+  }
+
+  nest_list_divide <- function(l, n) {
+    for (i in seq_along(l)) {
+      if (is.numeric(l[[i]])) l[[i]] <- l[[i]] / n
+      if (is.list(l[[i]]))    l[[i]] <- nest_list_divide(l[[i]], n)
+    }
+    l
+  }
+
+  l <- Reduce(nest_list_add, lls[-1], init = lls[[1]])
+  nest_list_divide(l, length(lls))
+}
+# test this
+# ls <- list(
+#   list(a=1, b=2, t="nig", ll=list(a=1,b=2, w="ab")),
+#   list(a=3, b=5, t="nig", ll=list(a=1,b=6, w="ab")),
+#   list(a=5, b=5, t="nig", ll=list(a=4,b=2, w="ab"))
+# )

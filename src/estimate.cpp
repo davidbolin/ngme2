@@ -46,14 +46,24 @@ auto timer = std::chrono::steady_clock::now();
         blocks.push_back(std::make_unique<BlockModel>(ngme_block, rng()));
     }
 
-    #pragma omp parallel for schedule(static)
-    {
+    // n = 10 stops
+    bool converge = false;
+    int n = 10;
+    int steps = 0;
+    while (steps < iterations && !converge) {
+        #pragma omp parallel for schedule(static)
         for (i=0; i < n_chains; i++) {
             Optimizer opt;
-            opt.sgd(*(blocks[i]), 0.1, iterations);
+            opt.sgd(*(blocks[i]), 0.1, iterations / n);
         }
-    }
 
+        steps += iterations / n;
+        std::cout << "steps = " << steps << std::endl;
+
+        // check outputs
+        // if () converge = true;
+    }
+    // generate outputs
     for (i=0; i < n_chains; i++) {
         outputs.push_back(blocks[i]->output());
     }

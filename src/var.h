@@ -24,7 +24,7 @@ private:
     VectorXd V, prevV;
     bool fix_V {false};
 public:
-    Var(Rcpp::List noise_list, unsigned long seed) :
+    Var(const Rcpp::List& noise_list, unsigned long seed) :
         var_rng       (seed),
         noise_type    (Rcpp::as<string>  (noise_list["noise_type"])),
         nu            (Rcpp::as<double>  (noise_list["theta_V"])),
@@ -99,6 +99,8 @@ public:
         return grad;
     }
 };
+
+#endif
 
 // a=b=nu
 // class ind_IG : public Var{
@@ -208,5 +210,3 @@ public:
 //         V = VectorXd::Ones(n);
 //     };
 // };
-
-#endif

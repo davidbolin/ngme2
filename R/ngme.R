@@ -152,19 +152,14 @@ ngme <- function(
 
 if (debug) print(str(ngme_block))
   cat("Starting estimation... \n")
-  out <- estimate_cpp(ngme_block)
+  outputs <- estimate_cpp(ngme_block)
   cat("Estimation done! \n")
 
-  # update the ngme_block using estimation result.
-  # estimation <- out$estimation
-  #   # 1. update fixed effects
-  #   ngme_block$beta <- estimation$beta
-  #   # 2. updates noise
-  #   ngme_block$noise <- update_noise_with_est(ngme_block$noise, estimation$noise)
-  #   # 3. update latents
-  #   ngme_block$latents <- update_latents_with_est(ngme_block$latents, estimation$latents)
 
-  # attr(ngme_block, "opt_trajectory") <- out$opt_trajectory
+  # 1. update with estimates
+  ngme_block <- update_ests(ngme_block, mean_list(outputs))
+  # 2. get trajs
+  attr(ngme_block, "trajectory") <- get_trajs(outputs)
 
   ################# doing prediction ####################
   if (split_data$contain_NA) {
@@ -195,36 +190,44 @@ if (debug) print(str(ngme_block))
   }
 
   # cat(paste("total time is", Sys.time() - time.start, " \n"))
-  # ngme_block
-  out
+  ngme_block
 }
 
+clean_outputs <- function() {
+  trajs <- list()
+  # deal with multiple chain data
+  for (i in seq_along(outputs)) { # what if 2d?
+    # flat the lists
+    beta_traj        <- unlist(attr(outputs[[i]], "trajectory")$beta)
+    theta_mu_traj    <- unlist(attr(outputs[[i]], "trajectory")$theta_mu_traj)
+    theta_sigma_traj <- unlist(attr(outputs[[i]], "trajectory")$theta_sigma_traj)
+    theta_V_traj     <- attr(outputs[[i]], "trajectory")$theta_V_traj
+    attr(outputs[[i]], "trajectory") <- NULL
 
-# helper function - update noise with est. values
-update_noise_with_est <- function(noise, noise_out) {
-  if (noise_out$noise_type == "nig") {
-    noise$theta_mu    <- noise_out$theta_mu
-    noise$theta_sigma <- noise_out$theta_sigma
-    noise$theta_V     <- noise_out$theta_V
-    noise$V           <- noise_out$V
-  } else if (noise_out$noise_type == "normal") {
-    noise$theta_sigma <- noise_out$theta_sigma
+    trajs_lat <- list()
+    for (j in seq_along(outputs[[i]]$latents)) {
+      la_K_traj     <- unlist(attr(outputs[[i]]$latents[[j]], "trajectory")$theta_K)
+      la_mu_traj    <- unlist(attr(outputs[[i]]$latents[[j]], "trajectory")$theta_mu_traj)
+      la_sigma_traj <- unlist(attr(outputs[[i]]$latents[[j]], "trajectory")$theta_sigma_traj)
+      la_V_traj     <- attr(outputs[[i]]$latents[[j]], "trajectory")$theta_V_traj
+      trajs_lat[[j]] <- list(
+        theta_K       = la_K_traj,
+        theta_mu      = la_mu_traj,
+        theta_sigma   = la_sigma_traj,
+        theta_V       = la_V_traj
+      )
+      attr(outputs[[i]]$latents[[j]], "trajectory") <- NULL
+    }
+
+    trajs[[i]] <- list(
+      beta = beta_traj,
+      theta_mu = theta_mu_traj,
+      theta_sigma = theta_sigma_traj,
+      theta_V = theta_V_traj,
+      trajs_lat = trajs_lat
+    )
   }
-
-  noise
 }
-
-# helper function - update latent process with est. values
-update_latents_with_est <- function(latents, latents_out) {
-  for (i in seq_along(latents_out)) {
-    latents[[i]]$theta_K  <- latents_out[[i]]$theta_K
-    latents[[i]]$W        <- latents_out[[i]]$W
-    latents[[i]]$noise    <- update_noise_with_est(latents[[i]]$noise, latents_out[[i]])
-  }
-
-  latents
-}
-
 
 # the general block model
 ngme.block_model <- function(
@@ -271,3 +274,50 @@ print.ngme <- function(ngme) {
     print.ngme_model(ngme$latents[[i]], padding = 2)
   }
 }
+
+# get trajs from a list of estimates
+get_trajs <- function(outputs) {
+  ret <- list()
+  for (i in seq_along(outputs)) {
+    ret[[i]] <- list()
+    ret[[i]]$block_traj <- attr(outputs[[i]], "trajectory")
+    for (j in seq_along(outputs[[i]]$latents)) {
+      ret[[i]]$latents[[j]] <- list()
+      ret[[i]]$latents[[j]] <- attr(outputs[[i]]$latents[[j]], "trajectory")
+    }
+  }
+  ret
+}
+
+# update the model using the mean of chains
+update_ests <- function(ngme_block, est_output) {
+  # helper function - update noise with est. values
+  update_noise_with_est <- function(noise, noise_out) {
+    if (noise_out$noise_type == "nig") {
+      noise$theta_mu    <- noise_out$theta_mu
+      noise$theta_sigma <- noise_out$theta_sigma
+      noise$theta_V     <- noise_out$theta_V
+      noise$V           <- noise_out$V
+    } else if (noise_out$noise_type == "normal") {
+      noise$theta_sigma <- noise_out$theta_sigma
+    }
+    noise
+  }
+
+  # helper function - update latent process with est. values
+  update_latents_with_est <- function(latents, latents_out) {
+    for (i in seq_along(latents_out)) {
+      latents[[i]]$theta_K  <- latents_out[[i]]$theta_K
+      latents[[i]]$W        <- latents_out[[i]]$W
+      latents[[i]]$noise    <- update_noise_with_est(latents[[i]]$noise, latents_out[[i]])
+    }
+    latents
+  }
+
+  ngme_block$beta <- est_output$beta
+  ngme_block$noise <- update_noise_with_est(ngme_block$noise, est_output$noise)
+  ngme_block$latents <- update_latents_with_est(ngme_block$latents, est_output$latents)
+
+  ngme_block
+}
+

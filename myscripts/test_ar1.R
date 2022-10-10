@@ -11,7 +11,7 @@ set.seed(seed)
 }
 
 { ############  1. simulate AR with nig noise
-n_obs <- 100
+n_obs <- 10
 ar_mu <- 4
 ar_sigma <- 1.3
 ar_eta <- 0.8
@@ -77,7 +77,7 @@ ngme_out <- ngme(
   data = data.frame(Y = Y),
   control = ngme.control(
     estimation = TRUE,
-    n_parallel_chain = 2,
+    n_parallel_chain = 1,
     burnin = 200,
     iterations = 100,
     gibbs_sample = 5,
@@ -93,7 +93,27 @@ ngme_out <- ngme(
   # , last_fit = ngme_out
   debug = TRUE
 )
-# ngme_out
+
+str(ngme_out)
+
+plot_chains(ngme_out, parameter = "theta_mu", f_index = 0)
+plot_chains(ngme_out, parameter = "theta_V", f_index = 0)
+plot_chains(ngme_out, parameter = "theta_mu", f_index = 1)
+plot_chains(ngme_out, parameter = "theta_K", f_index = 1)
+
+ngme_out
+str(ngme_out)
+
+# trajs <- ngme_out
+
+# trajs
+# outputs <- ngme_out$outputs
+# outputs[[1]]$latents[[1]]
+# attr(outputs[[1]], "trajectory")
+# attr(outputs[[1]]$latent[[1]], "trajectory")
+
+# str(ngme_out[[1]] + ngme_out[[2]])
+# ngme_out[[1]]
 # c(noise_theta_mu, noise_theta_sigma, noise_theta_V)
 
 # # trace plot of mu
@@ -110,3 +130,42 @@ ngme_out <- ngme(
 
 # ngme.sampling(ngme, posterior)
 # f(X|I, model="nig", data=list(X=...,I=...))
+
+# str(ngme_out)
+
+# outputs <- ngme_out
+# outputs[[1]]
+
+# str(outputs[[1]])
+
+# unlist(attr(outputs[[1]], "trajectory")$beta)
+# unlist(attr(outputs[[1]], "trajectory")$theta_mu)
+# unlist(attr(outputs[[1]], "trajectory")$theta_sigma)
+# unlist(attr(outputs[[1]], "trajectory")$theta_V_traj)
+
+# outputs[[1]]$beta
+
+
+# lll <- list()
+# lll[[1]] = list(a = 1, b=3)
+# lll[[2]] = list(a = 4, b=5)
+# length(lll)
+# unlist((Map(function(i) {lll[[i]]$a}, 1:2)))
+
+
+# beta <- mean(unlist((Map(function(i) {outputs[[i]]$beta}, 1:2))))
+# theta_mu <- mean(unlist((Map(function(i) {outputs[[i]]$theta_mu}, 1:2))))
+
+# outputs[]
+# theta_mu <- mean(unlist((Map(function(i) {outputs[[i]]$noise$theta_mu}, 1:2))))
+
+# (outputs[[1]]$noise)
+# (outputs[[1]]$latents)
+
+
+# for (l in lll) {
+#   for (j in )
+# }
+
+# outputs
+#

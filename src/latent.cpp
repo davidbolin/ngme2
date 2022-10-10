@@ -26,7 +26,9 @@ Latent::Latent(Rcpp::List& model_list, unsigned long seed) :
     h             (Rcpp::as< VectorXd >                     (model_list["h"])), //same length as V_size
     A             (Rcpp::as< SparseMatrix<double,0,int> >   (model_list["A"])),
 
-    var           (Var(Rcpp::as<Rcpp::List> (model_list["noise"]), latent_rng()))
+    var           (Var(Rcpp::as<Rcpp::List> (model_list["noise"]), latent_rng())),
+
+    theta_K_traj  (parameter_K.size())
 {
 if (debug) std::cout << "Begin constructor of latent" << std::endl;
 
@@ -57,6 +59,9 @@ if (debug) std::cout << "Begin constructor of latent" << std::endl;
         B_sigma  = Rcpp::as< MatrixXd >    (noise_in["B_sigma"]);
         n_theta_mu    =   (B_mu.cols());
         n_theta_sigma =   (B_sigma.cols());
+
+        theta_mu_traj.resize(n_theta_mu);
+        theta_sigma_traj.resize(n_theta_sigma);
 
         theta_mu = Rcpp::as< VectorXd >    (noise_in["theta_mu"]);
         set_theta_mu(theta_mu);
@@ -215,10 +220,10 @@ Rcpp::List Latent::output() const {
         Rcpp::Named("W")            = W
     );
     Rcpp::List trajecotry = Rcpp::List::create(
-        Rcpp::Named("theta_K_traj")            = theta_K_traj,
-        Rcpp::Named("theta_mu_traj")           = theta_mu_traj,
-        Rcpp::Named("theta_sigma_traj")        = theta_sigma_traj,
-        Rcpp::Named("theta_V_traj")            = theta_V_traj
+        Rcpp::Named("theta_K")            = theta_K_traj,
+        Rcpp::Named("theta_mu")           = theta_mu_traj,
+        Rcpp::Named("theta_sigma")        = theta_sigma_traj,
+        Rcpp::Named("theta_V")            = theta_V_traj
     );
     out.attr("trajectory") = trajecotry;
     return out;

@@ -31,6 +31,7 @@ using std::log;
 using std::pow;
 using Eigen::SparseMatrix;
 using Eigen::VectorXd;
+using std::vector;
 
 enum Latent_fix_flag {
     latent_fix_theta_K, latent_fix_theta_mu, latent_fix_theta_sigma,
@@ -82,10 +83,10 @@ protected:
     cholesky_solver solver_Q; // Q = KT diag(1/SV) K
 
     // record trajectory
-    std::vector<VectorXd> theta_K_traj;
-    std::vector<VectorXd> theta_mu_traj;
-    std::vector<VectorXd> theta_sigma_traj;
-    std::vector<double>   theta_V_traj;
+    vector<vector<double>> theta_K_traj;
+    vector<vector<double>> theta_mu_traj;
+    vector<vector<double>> theta_sigma_traj;
+    vector<double>   theta_V_traj;
 public:
     Latent(Rcpp::List&, unsigned long seed);
     virtual ~Latent() {}
@@ -297,9 +298,13 @@ if (debug) std::cout << "Start latent set parameter"<< std::endl;
     set_theta_sigma     (theta.segment(n_theta_K+n_theta_mu, n_theta_sigma));
     var.set_theta_var  (theta(n_theta_K+n_theta_mu+n_theta_sigma));
 
-    theta_K_traj.push_back(parameter_K);
-    theta_mu_traj.push_back(theta_mu);
-    theta_sigma_traj.push_back(theta_sigma);
+    // record
+    for (int i=0; i < parameter_K.size(); i++)
+        theta_K_traj[i].push_back(parameter_K(i));
+    for (int i=0; i < theta_mu.size(); i++)
+        theta_mu_traj[i].push_back(theta_mu(i));
+    for (int i=0; i < theta_sigma.size(); i++)
+      theta_sigma_traj[i].push_back(theta_sigma(i));
     theta_V_traj.push_back(var.get_theta_V());
 }
 

@@ -23,6 +23,7 @@ BlockModel
 
 using Eigen::SparseMatrix;
 using Eigen::MatrixXd;
+using std::vector;
 
 const int BLOCK_FIX_FLAG_SIZE = 6;
 
@@ -87,13 +88,13 @@ protected:
     VectorXd fixedW;
 
     // record trajectory
-    std::vector<VectorXd> beta_traj;
-    std::vector<VectorXd> theta_mu_traj;
-    std::vector<VectorXd> theta_sigma_traj;
-    std::vector<double>   theta_V_traj;
+    vector<vector<double>> beta_traj;
+    vector<vector<double>> theta_mu_traj;
+    vector<vector<double>> theta_sigma_traj;
+    vector<double>   theta_V_traj;
 public:
     // BlockModel() {}
-    BlockModel(Rcpp::List block_model, unsigned long seed);
+    BlockModel(Rcpp::List& block_model, unsigned long seed);
     virtual ~BlockModel() {}
 
     /* Gibbs Sampler */

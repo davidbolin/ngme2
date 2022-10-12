@@ -24,6 +24,9 @@ ngme.control <- function(
   stepsize          = 1,
   estimation        = TRUE,
   n_parallel_chain  = 2,
+  stop_points       = 10,
+  exchange_VW       = FALSE,
+  last_to_check     = 3,
 
   opt_beta          = TRUE,
   fix_beta          = FALSE,
@@ -46,6 +49,9 @@ ngme.control <- function(
     stepsize          = stepsize,
     estimation        = estimation,
     n_parallel_chain  = n_parallel_chain,
+    stop_points       = stop_points,
+    exchange_VW       = exchange_VW,
+    last_to_check     = last_to_check, # how many on regression check
 
     opt_beta          = opt_beta,
     fix_beta          = fix_beta,

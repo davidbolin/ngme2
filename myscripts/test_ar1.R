@@ -1,7 +1,8 @@
 # Simple scripts for test ngme function
 # sth. wrong with nig measurement noise
 # library(ngme2)
-library(devtools); load_all()
+library(devtools);
+load_all()
 {
 a2th <- function(k) {log((-1-k)/(-1+k))}
 th2a <- function(th) {-1 + (2*exp(th)) / (1+exp(th))}
@@ -11,7 +12,7 @@ set.seed(seed)
 }
 
 { ############  1. simulate AR with nig noise
-n_obs <- 10
+n_obs <- 300
 ar_mu <- 4
 ar_sigma <- 1.3
 ar_eta <- 0.8
@@ -72,14 +73,15 @@ ngme_out <- ngme(
       numer_grad       = FALSE,
       use_precond      = TRUE
     ),
-    debug = TRUE
+    debug = FALSE
   ),
   data = data.frame(Y = Y),
   control = ngme.control(
     estimation = TRUE,
-    n_parallel_chain = 1,
+    n_parallel_chain = 2,
+    stop_points = 2,
     burnin = 200,
-    iterations = 100,
+    iterations = 1000,
     gibbs_sample = 5,
     stepsize = 1,
     kill_var = FALSE,
@@ -91,18 +93,18 @@ ngme_out <- ngme(
   noise = attr(nig_noise, "noise"),
   seed = 2,
   # , last_fit = ngme_out
-  debug = TRUE
+  debug = FALSE
 )
 
-str(ngme_out)
+ngme_out
+# str(ngme_out)
 
 plot_chains(ngme_out, parameter = "theta_mu", f_index = 0)
 plot_chains(ngme_out, parameter = "theta_V", f_index = 0)
 plot_chains(ngme_out, parameter = "theta_mu", f_index = 1)
 plot_chains(ngme_out, parameter = "theta_K", f_index = 1)
 
-ngme_out
-str(ngme_out)
+# str(ngme_out)
 
 # trajs <- ngme_out
 

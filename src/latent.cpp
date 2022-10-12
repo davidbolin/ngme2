@@ -7,7 +7,7 @@
 #include "latent.h"
 
 // K is V_size * W_size matrix
-Latent::Latent(Rcpp::List& model_list, unsigned long seed) :
+Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
     latent_rng    (seed),
     model_type    (Rcpp::as<string>     (model_list["model"])),
     noise_type    (Rcpp::as<string>     (model_list["noise_type"])),

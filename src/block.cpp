@@ -5,7 +5,7 @@
 using std::pow;
 
 BlockModel::BlockModel(
-  Rcpp::List& block_model,
+  const Rcpp::List& block_model,
   unsigned long seed
 ) :
   rng               (seed),
@@ -157,8 +157,26 @@ void BlockModel::setW(const VectorXd& W) {
   int pos = 0;
   for (std::vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
     int size = (*it)->get_W_size();
-  (*it)->setW(W.segment(pos, size));
-      pos += size;
+    (*it)->setW(W.segment(pos, size));
+    pos += size;
+  }
+}
+
+void BlockModel::setPrevW(const VectorXd& W) {
+  int pos = 0;
+  for (std::vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+    int size = (*it)->get_W_size();
+    (*it)->setPrevW(W.segment(pos, size));
+    pos += size;
+  }
+}
+
+void BlockModel::setPrevV(const VectorXd& V) {
+  int pos = 0;
+  for (std::vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+    int size = (*it)->get_V_size();
+    (*it)->setPrevV(V.segment(pos, size));
+    pos += size;
   }
 }
 

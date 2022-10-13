@@ -85,8 +85,6 @@ protected:
     cholesky_solver chol_Q, chol_QQ;
     SparseLU<SparseMatrix<double> > LU_K;
 
-    VectorXd fixedW;
-
     // record trajectory
     vector<vector<double>> beta_traj;
     vector<vector<double>> theta_mu_traj;
@@ -109,14 +107,14 @@ public:
 
     void sampleW_VY();
     void sampleV_WY() {
-      if(n_latent >0){
+      if(n_latent > 0){
         for (unsigned i=0; i < n_latent; i++) {
             (*latents[i]).sample_cond_V();
         }
       }
     }
     void sample_V() {
-      if(n_latent >0){
+      if(n_latent > 0){
         for (unsigned i=0; i < n_latent; i++) {
             (*latents[i]).sample_V();
         }

@@ -74,7 +74,6 @@ ngme.control <- function(
 #' @param use_precond   whether to use preconditioner
 #' @param eps           eps for numerical gradient
 #' @param theta.K       theta.K for parameter K
-#' @param fix_W
 #' @param use_iter_solver
 #' @param use_num_hess  whether to use numerical hessian
 #'

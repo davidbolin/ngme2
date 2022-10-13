@@ -102,7 +102,6 @@ if (debug) std::cout << "After block assemble" << std::endl;
   noise_sigma = (B_sigma * theta_sigma).array().exp();
 
   if (family=="normal") {
-    VectorXd theta_sigma = Rcpp::as<VectorXd>  (noise_in["theta_sigma"]);
     n_merr = n_theta_sigma;
   } else if (family=="nig") {
     n_merr = n_theta_sigma + n_theta_mu + 1;
@@ -185,36 +184,36 @@ void BlockModel::setPrevV(const VectorXd& V) {
 // sample W|VY
 void BlockModel::sampleW_VY()
 {
-  if (n_latent==0) return;
 // if (debug) std::cout << "starting sampling W." << std::endl;
-    VectorXd SV = getSV();
-    VectorXd inv_SV = VectorXd::Constant(SV.size(), 1).cwiseQuotient(SV);
-    // VectorXd V = getV();
-    // VectorXd inv_V = VectorXd::Constant(V.size(), 1).cwiseQuotient(V);
+  if (n_latent==0) return;
 
-    SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
-    // SparseMatrix<double> QQ = Q + pow(sigma_eps, -2) * A.transpose() * A;
-    // SparseMatrix<double> QQ = Q + A.transpose() * noise_sigma.cwiseInverse().asDiagonal() * A;
-    VectorXd noise_V = var.getV();
-    SparseMatrix<double> QQ = Q + A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V).asDiagonal() * A;
-    chol_QQ.compute(QQ);
+  VectorXd SV = getSV();
+  VectorXd inv_SV = VectorXd::Constant(SV.size(), 1).cwiseQuotient(SV);
+  // VectorXd V = getV();
+  // VectorXd inv_V = VectorXd::Constant(V.size(), 1).cwiseQuotient(V);
 
-    // VectorXd M = K.transpose() * inv_SV.asDiagonal() * getMean() +
-    //     pow(sigma_eps, -2) * A.transpose() * (Y - X * beta);
-    VectorXd residual = get_residual();
-    VectorXd M = K.transpose() * inv_SV.asDiagonal() * getMean() +
-    // VectorXd M = K.transpose() * inv_V.asDiagonal() * getMean() +
-        A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V).asDiagonal() * (residual + A * getW());
+  SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
+  // SparseMatrix<double> QQ = Q + pow(sigma_eps, -2) * A.transpose() * A;
+  // SparseMatrix<double> QQ = Q + A.transpose() * noise_sigma.cwiseInverse().asDiagonal() * A;
+  VectorXd noise_V = var.getV();
+  SparseMatrix<double> QQ = Q + A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V).asDiagonal() * A;
+  chol_QQ.compute(QQ);
 
-    VectorXd z (W_sizes);
-    z = rnorm_vec(W_sizes, 0, 1, rng());
-    // sample W ~ N(QQ^-1*M, QQ^-1)
-    VectorXd W = chol_QQ.rMVN(M, z);
-    setW(W);
+  // VectorXd M = K.transpose() * inv_SV.asDiagonal() * getMean() +
+  //     pow(sigma_eps, -2) * A.transpose() * (Y - X * beta);
+  VectorXd residual = get_residual();
+  VectorXd M = K.transpose() * inv_SV.asDiagonal() * getMean() +
+  // VectorXd M = K.transpose() * inv_V.asDiagonal() * getMean() +
+      A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V).asDiagonal() * (residual + A * getW());
+
+  VectorXd z (W_sizes);
+  z = rnorm_vec(W_sizes, 0, 1, rng());
+  // sample W ~ N(QQ^-1*M, QQ^-1)
+  VectorXd W = chol_QQ.rMVN(M, z);
+  setW(W);
 
 // if (debug) std::cout << "Finish sampling W" << std::endl;
 }
-
 
 // ---------------- get, set update gradient ------------------
 VectorXd BlockModel::get_parameter() const {
@@ -391,7 +390,6 @@ VectorXd BlockModel::grad_theta_mu() {
 
 VectorXd BlockModel::grad_theta_sigma() {
   VectorXd grad = VectorXd::Zero(n_theta_sigma);
-// std::cout << "noise_sigma =" << noise_sigma << std::endl;
   VectorXd noise_V = var.getV();
   VectorXd noise_SV = noise_sigma.array().pow(2).matrix().cwiseProduct(noise_V);
   // grad = B_sigma.transpose() * (-0.5 * VectorXd::Ones(n_obs) + residual.array().pow(2).matrix().cwiseQuotient(noise_SV));

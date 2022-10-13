@@ -145,7 +145,7 @@ f <- function(
     stop("unknown model")
   }
 
-  if (is.null(W) && !is.null(fix_W)) stop("Provide initial W to use fix_W")
+  # if (is.null(W) && !is.null(fix_W)) stop("Provide initial W to use fix_W")
 
   ################## construct noise (e.g. nig noise) ##################
     # ?? check

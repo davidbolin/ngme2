@@ -41,7 +41,7 @@ auto timer = std::chrono::steady_clock::now();
 #ifdef _OPENMP
     // Rcout << "run parallel n_chains chains"
     int n_chains = (control_in["n_parallel_chain"]);
-    int n = (control_in["stop_points"]);
+    int n_batch = (control_in["stop_points"]);
     omp_set_num_threads(n_chains);
 
     std::vector<std::unique_ptr<BlockModel>> blocks;
@@ -50,25 +50,25 @@ auto timer = std::chrono::steady_clock::now();
         blocks.push_back(std::make_unique<BlockModel>(ngme_block, rng()));
     }
 
-    std::vector<VectorXd> grads (n_chains);
+    std::vector<VectorXd> params (n_chains);
 
     bool converge = false;
     int steps = 0;
+    int batch_steps = (iterations > n_batch) ? (iterations / n_batch) : 1;
 
     while (steps < iterations && !converge) {
         #pragma omp parallel for schedule(static)
         for (i=0; i < n_chains; i++) {
             Optimizer opt;
-            VectorXd grad = opt.sgd(*(blocks[i]), 0.1, iterations / n);
+            VectorXd param = opt.sgd(*(blocks[i]), 0.1, batch_steps);
             #pragma omp critical
-            grads[i] = grad;
+            params[i] = param;
 
         }
         // if (omp_get_num_thread==0) {
-
         // // check
         // }
-        steps += iterations / n;
+        steps += batch_steps;
 
         // set hessian by setting prevV and prevW (round robin)
         if (n_chains > 1) {
@@ -79,8 +79,8 @@ auto timer = std::chrono::steady_clock::now();
             }
             blocks[n_chains - 1]->set_prev_VW(tmp);
 
-            // check grads for convergence (t-test)
-            converge = check_conv(grads);
+            // check params for convergence (t-test)
+            converge = check_conv(params);
         }
     }
     // generate outputs
@@ -120,18 +120,23 @@ Rcpp::List sampling_cpp(const Rcpp::List& ngme_block, int iterations, bool poste
 //     // ngme_block["V"] <- ...
 // }
 
-bool check_conv(const std::vector<VectorXd>& grads) {
+
+bool check_conv(const std::vector<VectorXd>& params) {
     bool conv = true;
-    int n_chains = grads.size();
-    int n = grads[1].size();
+    int n_chains = params.size();
+    int n = params[1].size();
 
     Rcpp::NumericVector v (n_chains);
+
+    // 1. check sd of every parameter < threshold
+
+    // 2. check the slope of every para < threshold
 
     // save the mean and sd at every break point
     // check sd < eps
     for (int j=0; j < n; j++) {
         for (int i=0; i < n_chains; i++) {
-            v[i] = grads[i][j];
+            v[i] = params[i][j];
         }
         double t = (double) Rcpp::mean(v) / (double) Rcpp::sd(v);
 
@@ -144,7 +149,7 @@ bool check_conv(const std::vector<VectorXd>& grads) {
     }
 
     // for (int i=0; i<n_chains; i++) {
-    //     std::cout << "grads[i] = " << grads[i] << std::endl;
+    //     std::cout << "params[i] = " << params[i] << std::endl;
     // }
     return false;
 }

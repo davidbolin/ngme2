@@ -28,9 +28,7 @@ std::cout << "begin Constructor of Matern " << std::endl;
         CG_solver_K.init(W_size, W_size, W_size, 0.5);
         CG_solver_K.analyze(K);
     }
-
     compute_trace();
-
     solver_Q.init(W_size, 0,0,0);
     solver_Q.analyze(Q);
 
@@ -116,25 +114,32 @@ VectorXd Matern::grad_theta_K() {
         double tmp = (dK*W).cwiseProduct(SV.cwiseInverse()).dot(K * W + (h - V).cwiseProduct(mu));
         double grad = trace - tmp;
 
+    // sth wrong with hessian?
+    // if (debug) std::cout << "tmp =" << tmp << std::endl;
+    // if (debug) std::cout << "trace =" << trace << std::endl;
+
         if (!use_precond) {
             ret = - grad * da / W_size;
         } else {
-            VectorXd prevV = getPrevV();
             // compute numerical hessian
             SparseMatrix<double> K2 = getK_by_eps(0, eps);
             SparseMatrix<double> dK2 = get_dK_by_eps(0, 0, eps);
 
             // grad(x+eps) - grad(x) / eps
+            VectorXd prevV = getPrevV();
             VectorXd prevSV = getPrevSV();
             double grad2_eps = trace_eps - (dK2*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K2 * prevW +  (h - prevV).cwiseProduct(mu));
             double grad_eps  = trace - (dK*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K * prevW +  (h - prevV).cwiseProduct(mu));
 
             double hess = (grad2_eps - grad_eps) / eps;
+    // if (debug) std::cout << "hess =" << hess << std::endl;
 
-            ret = (grad * da) / (hess * da * da + grad_eps * d2a);
+            // ret = (grad * da) / (hess * da * da + grad_eps * d2a); reduced to
+            ret = grad / (hess * da + grad_eps);
         }
     }
 
+    // if (debug) std::cout << "ret =" << ret << std::endl;
     return VectorXd::Constant(1, ret);
 }
 
@@ -145,6 +150,7 @@ void Matern::set_unbound_theta_K(VectorXd theta) {
     parameter_K = VectorXd::Constant(1, kappa);
     K = getK(parameter_K);
     dK = get_dK(0, parameter_K);
+
     if (use_num_dK) {
         update_num_dK();
     }

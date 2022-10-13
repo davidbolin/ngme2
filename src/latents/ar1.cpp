@@ -93,20 +93,27 @@ VectorXd AR::grad_theta_K() {
         double tmp = (dK*W).cwiseProduct(SV.cwiseInverse()).dot(K * W + (h - V).cwiseProduct(mu));
         double grad = trace - tmp;
 
+    // if (debug) std::cout << "tmp =" << tmp << std::endl;
+    // if (debug) std::cout << "trace =" << trace << std::endl;
+        // result : trace ~= 0
+        //          tmp ~= 20-70
+
         if (!use_precond) {
             ret = - grad * da / W_size;
         } else {
-            VectorXd prevV = getPrevV();
             // compute numerical hessian
             SparseMatrix<double> K2 = getK_by_eps(0, eps);
             SparseMatrix<double> dK2 = get_dK_by_eps(0, 0, eps);
 
             // grad(x+eps) - grad(x) / eps
+            VectorXd prevV = getPrevV();
             VectorXd prevSV = getPrevSV();
             double grad2_eps = trace_eps - (dK2*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K2 * prevW + (h - prevV).cwiseProduct(mu));
             double grad_eps  = trace - (dK*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K * prevW + (h - prevV).cwiseProduct(mu));
 
             double hess = (grad2_eps - grad_eps) / eps;
+        // result : hessian around 2000
+    // if (debug) std::cout << "hess =" << hess << std::endl;
 
             ret = (grad * da) / (hess * da * da + grad_eps * d2a);
         }

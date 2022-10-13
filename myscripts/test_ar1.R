@@ -52,6 +52,7 @@ Y
 # Y <- ar1_process + rnorm(n_obs)
 }
 
+load_all()
 ngme_out <- ngme(
   Y ~ 0 +
   f(model = "ar1",
@@ -71,17 +72,17 @@ ngme_out <- ngme(
     ),
     control = ngme.control.f(
       numer_grad       = FALSE,
-      use_precond      = TRUE
+      use_precond      = FALSE
     ),
-    debug = FALSE
+    debug = TRUE
   ),
   data = data.frame(Y = Y),
   control = ngme.control(
     estimation = TRUE,
     n_parallel_chain = 2,
-    stop_points = 2,
+    stop_points = 20,
     burnin = 200,
-    iterations = 1000,
+    iterations = 2,
     gibbs_sample = 5,
     stepsize = 1,
     kill_var = FALSE,
@@ -93,7 +94,7 @@ ngme_out <- ngme(
   noise = attr(nig_noise, "noise"),
   seed = 2,
   # , last_fit = ngme_out
-  debug = FALSE
+  debug = TRUE
 )
 
 ngme_out
@@ -171,3 +172,24 @@ plot_chains(ngme_out, parameter = "theta_K", f_index = 1)
 
 # outputs
 #
+
+# convergence check code
+
+n_param <- 4
+N <- N_chain <- 2
+
+m = matrix(rnorm(8), nrow=N_chain, ncol=n_param)
+sigma2 <- matrix(abs(rnorm(8)), nrow=N_chain, ncol=n_param)
+
+n.points <- 3
+sigma2[(N-n.points+1):N,i]
+
+for(i in 1:n.test){
+  std.satisfied <- sqrt(sigma2[N,i])/abs(m[N,1]) < std.lim
+  Sigma <- diag(sigma2[(N-n.points+1):N,i])
+  Q <- solve(t(B)%*%solve(Sigma,B))
+  beta <- Q%*%(t(B)%*%solve(Sigma,m[(N-n.points+1):N,i]))
+  slope.satisfied <- abs(beta[2])-2*sqrt(Q[2,2])<trend.lim*abs(beta[1]) #no significant trend
+  output[i] = std.satisfied&slope.satisfied
+}
+

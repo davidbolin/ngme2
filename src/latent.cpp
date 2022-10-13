@@ -74,7 +74,7 @@ if (debug) std::cout << "Begin constructor of latent" << std::endl;
     if (model_list["W"] != R_NilValue) {
         W = Rcpp::as< VectorXd >    (model_list["W"]);
         prevW = W;
-    }
+    } // else W is inited by block sampleW
 
     // About noise
     if (fix_flag[latent_fix_V]) var.fixV();

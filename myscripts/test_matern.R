@@ -16,8 +16,7 @@ alpha <- 2
 mu <- 2;
 delta <- -mu
 nu <- 1
-
-ngme.matern.stationary(mesh = mesh)
+ngme.matern(mesh = mesh)
 
 kappa = 3
 Kappa <- diag(rep(kappa, mesh$n))
@@ -236,8 +235,8 @@ library(devtools); library(INLA); load_all()
     max.edge = c(0.3, 1), offset = c(0.5, 1.5)
   )
 
-  W <- ngme.simulate(
-    f(model = ngme.matern(mesh = mesh, theta_kappa = c(0.4, 1)),
+  W <- simulate(
+    f(model = ngme.matern(mesh = mesh, theta_kappa = 1.1),
       noise = ngme.noise.nig()
     )
   )
@@ -251,15 +250,34 @@ A <- inla.spde.make.A(mesh = mesh, loc = loc_obs)
 sigma.e <- 0.7
 Y <- drop(A %*% W + sigma.e * rnorm(n_obs))
 
+load_all()
 ngme_out <- ngme(
-  Y ~ 0 + f(model = ngme.matern(mesh = mesh, theta_kappa = c(0.4, 1)),
-    noise = ngme.noise.nig(),
-    A = A
+  Y ~ 0 + f(
+    model = ngme.matern(mesh = mesh, theta_kappa = 0.4),
+    fix_theta_K = FALSE,
+    noise = ngme.noise.nig(
+      fix_theta_mu    = F,
+      fix_theta_sigma = F,
+      fix_theta_V     = TRUE
+    ),
+    A = A,
+    debug = TRUE,
+    control = ngme.control.f(
+      numer_grad = F,
+      use_precond = F
+    )
   ),
   data = list(Y = Y),
-  control = ngme.control(iterations = 10)
+  noise = ngme.noise.normal(),
+  control = ngme.control(
+    iterations = 500,
+    estimation = TRUE,
+    n_parallel_chain = 2
+  ),
+  debug = TRUE
 )
-
+ngme_out
+str(ngme_out)
 
 # try to predict some NA
 n_NA <- 30; index_NA <- sample(1:mesh$n, n_NA)

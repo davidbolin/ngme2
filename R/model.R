@@ -211,6 +211,91 @@ ngme.matern <- function(
   model
 }
 
+#' Create a Matern SPDE 2D model
+#'
+#' @param alpha alpha parameter for the first field
+#' @param alpha2 alpha parameter for the second field
+#' @param mesh mesh argument
+#' @param fem.mesh.matrices specify the FEM matrices
+#' @param d indicating the dimension of mesh (together with fem.mesh.matrices)
+#' @param theta_kappa
+#' @param B_kappa bases for kappa
+#'
+#' @return a list (n, C (diagonal), G, B.kappa) for constructing operator
+#' @export
+#'
+#' @examples
+ngme.matern2D <- function(
+  index = NULL,
+  alpha = 2,
+  alpha2 = 2,
+  theta_kappa = 0,
+  mesh = NULL,
+  replicates = NULL,
+  fem.mesh.matrices = NULL,
+  d = NULL,
+  A = NULL,        # watch out! Can also specify in f function, not used for now
+  B_kappa = NULL,
+  ...
+) {
+  if (is.null(mesh) && is.null(fem.mesh.matrices))
+    stop("At least specify mesh or matrices")
+
+  if (alpha - round(alpha) != 0 | alpha2 - round(alpha2) != 0 ) {
+  stop("alpha should be integer, now only 2 or 4")
+}
+
+stopifnot((alpha == 2 || alpha == 4) & (alpha2 == 2 || alpha2 == 4) )
+
+  if (is.null(B_kappa))
+    B_kappa <- matrix(1, nrow = mesh$n, ncol = length(theta_kappa))
+
+  # supply mesh
+  if (!is.null(mesh)) {
+    d <- get_inla_mesh_dimension(mesh)
+    if (d == 1) {
+      fem <- INLA::inla.mesh.1d.fem(mesh)
+      C <- fem$c1
+      G <- fem$g1
+      #TODO if created here, ensure block diagonal structure 
+    } else {
+      fem <- INLA::inla.mesh.fem(mesh, order = alpha)
+      C <- fem$c0  # diag
+      G <- fem$g1
+      #TODO if created here, ensure block diagonal structure
+    }
+  } else {
+    #TODO if supplied, already must have block diagonal structure
+    C <- fem.mesh.matrices$C
+    G <- fem.mesh.matrices$G
+  }
+  # h <- diag(C)
+  h <- rep(1, mesh$n)
+#TODO change mesh here for bivariate case
+  if (!is.null(A)) {
+    nrep <- ncol(A) / nrow(C)
+    C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), C)
+    G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), G)
+    h <- rep(h, times = nrep)
+  }
+
+  model <- ngme.model(
+    model       = "matern2D",
+    A           = A,
+    W_size      = mesh$n,
+    V_size      = nrow(C),
+    theta_K     = theta_kappa,
+    alpha       = c(alpha, alpha2),
+    B_kappa     = B_kappa,
+    C           = ngme.as.sparse(C),
+    G           = ngme.as.sparse(G),
+    h           = h,
+    ...
+  )
+  model
+}
+
+
 # rw1, rw2
 # nodes = 100 (inla.group)
 

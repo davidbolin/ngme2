@@ -2,16 +2,17 @@ library(devtools); library(INLA); load_all()
 { # First we create mesh
   pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
   mesh <- inla.mesh.2d(
-    loc.domain = pl01, cutoff = 1,
-    max.edge = c(0.3, 1), offset = c(0.5, 1.5)
+    loc.domain = pl01, cutoff = 0.3,
+    max.edge = c(0.2, 0.7), offset = c(0.5, 1.5)
   )
 
   W <- simulate(
-    f(model = ngme.matern(mesh = mesh, theta_kappa = 1.1),
+    f(model = ngme.matern(mesh = mesh, kappa = 1),
       noise = ngme.noise.nig()
     )
   )
 }
+
 
 # generate A and A_pred
 n_obs <- 10; index_obs <- sample(1:mesh$n, n_obs)
@@ -73,7 +74,6 @@ ngme_out <- ngme(fm,
 )
 ngme_out
 str(ngme_out)
-
 plot_chains(ngme_out, parameter = "theta_sigma", f_index = 0)
 
 # matern model
@@ -81,3 +81,10 @@ plot_chains(ngme_out, parameter = "theta_K",     f_index = 1)
 plot_chains(ngme_out, parameter = "theta_mu",    f_index = 1)
 plot_chains(ngme_out, parameter = "theta_sigma", f_index = 1)
 plot_chains(ngme_out, parameter = "theta_V",     f_index = 1)
+
+plot(ngme.noise.nig(
+      theta_mu = 0,
+      theta_sigma = 0,
+      theta_V = 1
+    ), add = FALSE)
+plot(ngme_out$latents[[1]]$noise, col = "red", add=TRUE)

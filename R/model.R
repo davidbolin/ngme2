@@ -237,7 +237,8 @@ ngme.matern <- function(
 ngme.matern2D <- function(
   index = NULL,
   alpha = c(2, 2),
-  theta_kappa = 0,
+  kappa = c(1, 1),
+  theta_kappa = NULL,
   mesh = NULL,
   replicates = NULL,
   fem.mesh.matrices = NULL,
@@ -254,9 +255,15 @@ ngme.matern2D <- function(
 }
   if (alpha[1] != alpha[2] ) {
   stop("Alpha for each field is not implemented, please provide common alpha for both fields")
-} 
+}
 
 stopifnot((alpha[1] == 2 || alpha[1] == 4) & (alpha[2] == 2 || alpha[2] == 4) )
+
+# use kappa as parameterization
+  stopifnot("Don't overwrite kappa with NULL." = !is.null(kappa))
+  stopifnot("kappa is only for stationary case." = length(kappa) == 2)
+  stopifnot("kappa is greater than 0." = (kappa[1] > 0 & kappa[2] > 0))
+  if (is.null(theta_kappa)) theta_kappa <- log(kappa)
 
   if (is.null(B_kappa))
     B_kappa <- matrix(1, nrow = mesh$n, ncol = length(theta_kappa))
@@ -269,7 +276,7 @@ stopifnot((alpha[1] == 2 || alpha[1] == 4) & (alpha[2] == 2 || alpha[2] == 4) )
       C <- fem$c1
       G <- fem$g1 
     } else {
-      fem <- INLA::inla.mesh.fem(mesh, order = alpha(1)) #assume both process have common alpha
+      fem <- INLA::inla.mesh.fem(mesh, order = alpha[1]) #assume both process have common alpha
       C <- fem$c0  # diag
       G <- fem$g1
       #TODO if created here, ensure block diagonal structure
@@ -294,7 +301,7 @@ stopifnot((alpha[1] == 2 || alpha[1] == 4) & (alpha[2] == 2 || alpha[2] == 4) )
     model       = "matern2D",
     A           = A, #constructed outside of ngme2
     W_size      = mesh$n,
-    V_size      = nrow(C), 
+    V_size      = nrow(C),
     theta_K     = theta_kappa,
     alpha       = c(alpha[1], alpha[2]),
     B_kappa     = B_kappa,

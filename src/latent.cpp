@@ -7,7 +7,7 @@
 #include "latent.h"
 
 // K is V_size * W_size matrix
-Latent::Latent(Rcpp::List& model_list, unsigned long seed) :
+Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
     latent_rng    (seed),
     model_type    (Rcpp::as<string>     (model_list["model"])),
     noise_type    (Rcpp::as<string>     (model_list["noise_type"])),
@@ -37,7 +37,6 @@ if (debug) std::cout << "Begin constructor of latent" << std::endl;
 
     // read from ngme.model
     fix_flag[latent_fix_theta_K] = Rcpp::as<bool>    (model_list["fix_theta_K"]);
-    fix_flag[latent_fix_W]       = Rcpp::as<bool>    (model_list["fix_W"]);
 
     // read the control variable
     Rcpp::List control_f = Rcpp::as<Rcpp::List> (model_list["control"]);
@@ -52,8 +51,6 @@ if (debug) std::cout << "Begin constructor of latent" << std::endl;
     Rcpp::List noise_in = Rcpp::as<Rcpp::List> (model_list["noise"]);
         fix_flag[latent_fix_theta_mu]     = Rcpp::as<bool>  (noise_in["fix_theta_mu"]);
         fix_flag[latent_fix_theta_sigma]  = Rcpp::as<bool>  (noise_in["fix_theta_sigma"]);
-        fix_flag[latent_fix_theta_V]      = Rcpp::as<bool>  (noise_in["fix_theta_V"]);
-        fix_flag[latent_fix_V]            = Rcpp::as<bool>  (noise_in["fix_V"]);
 
         B_mu     = Rcpp::as< MatrixXd >    (noise_in["B_mu"]);
         B_sigma  = Rcpp::as< MatrixXd >    (noise_in["B_sigma"]);
@@ -74,10 +71,11 @@ if (debug) std::cout << "Begin constructor of latent" << std::endl;
     if (model_list["W"] != R_NilValue) {
         W = Rcpp::as< VectorXd >    (model_list["W"]);
         prevW = W;
-    }
+        fix_flag[latent_fix_W] = Rcpp::as<bool> (model_list["fix_W"]); // fixW
+    }// else W is inited by block sampleW
 
     // About noise
-    if (fix_flag[latent_fix_V]) var.fixV();
+    // if (fix_flag[latent_fix_V]) var.fixV();
     if (var.get_noise_type() == "normal") {
         fix_flag[latent_fix_theta_mu] = 1; // no mu need
     }
@@ -87,25 +85,21 @@ if (debug) std::cout << "End constructor of latent" << std::endl;
 
 VectorXd Latent::grad_theta_mu() {
 // if (debug) std::cout << "Start mu gradient"<< std::endl;
-    VectorXd result(n_theta_mu);
-
     // VectorXd inv_V = V.cwiseInverse();
     // VectorXd prevV = getPrevV();
     // VectorXd prev_inv_V = prevV.cwiseInverse();
-    VectorXd V = getV();
 
+    VectorXd V = getV();
     VectorXd grad (n_theta_mu);
     for (int l=0; l < n_theta_mu; l++) {
-        grad(l) = (V-h).cwiseProduct( B_mu.col(l).cwiseQuotient(getSV()) ).dot(K*W - mu.cwiseProduct(V-h));
+        grad(l) = (V-h).cwiseProduct(B_mu.col(l).cwiseQuotient(getSV())).dot(K*W - mu.cwiseProduct(V-h));
     }
-
-    result = - 1.0 / V_size * grad;
+    return - 1.0 / V_size * grad;
 
 // if (debug) {
 // std::cout << "grad of mu=" << grad <<std::endl;
 // std::cout << "hess of mu=" << hess <<std::endl;
 // }
-    return result;
 }
 
 // return the gradient wrt. theta, theta=log(sigma)
@@ -133,15 +127,12 @@ inline VectorXd Latent::grad_theta_sigma() {
     VectorXd tmp3 = -2*prev_vsq.cwiseProduct(sigma.array().pow(-2).matrix());
 
     hess = B_sigma.transpose() * tmp3.asDiagonal() * B_sigma;
-
     result = - 1.0 / V_size * grad;
-
     // result = hess.llt().solve(grad);
-
     return result;
 }
 
-double Latent::function_K(SparseMatrix<double> K) {
+double Latent::function_K(SparseMatrix<double>& K) {
     VectorXd V = getV();
     VectorXd SV = getSV();
 
@@ -162,7 +153,7 @@ double Latent::function_K(SparseMatrix<double> K) {
 }
 
 // function_K(params += ( 0,0,eps,0,0) )
-double Latent::function_K(VectorXd parameter_K) {
+double Latent::function_K(VectorXd& parameter_K) {
     SparseMatrix<double> K = getK(parameter_K);
 
     VectorXd V = getV();

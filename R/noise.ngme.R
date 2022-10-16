@@ -233,7 +233,7 @@ print.ngme_noise <- function(noise, padding=0) {
     })
     cat(params)
   }
-
+  cat("\n")
   invisible(noise)
 }
 

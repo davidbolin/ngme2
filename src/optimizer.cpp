@@ -1,5 +1,12 @@
+#include <vector>
+#include <Eigen/Dense>
+
 #include "include/timer.h"
 #include "optimizer.h"
+
+using std::vector;
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
 
 Rcpp::List Optimizer::sgd(
     Model& model,
@@ -49,31 +56,33 @@ Rcpp::List Optimizer::sgd(
 }
 
 
-Rcpp::List Optimizer::sgd( Model& model,
+// return the parameter after sgd
+VectorXd Optimizer::sgd(
+    Model& model,
     double eps,
     int iterations
 ) {
-    vector<VectorXd> x_traj;
-    vector<VectorXd> grad_traj;
+    // vector<VectorXd> x_traj;
+    // vector<VectorXd> grad_traj;
 
     int count = 0;
     VectorXd x = model.get_parameter();
+    VectorXd grad;
 
     bool terminate = false;
-
     while (!terminate)
     {
         count += 1;
 // auto timer_grad = std::chrono::steady_clock::now();
-        VectorXd grad = model.grad();
+        grad = model.grad();
 // std::cout << "get gradient (ms): " << since(timer_grad).count() << std::endl;
 
         VectorXd stepsizes = model.get_stepsizes();
         x = x - grad.cwiseProduct(stepsizes);
 
         // record x and grad
-        x_traj.push_back(x);
-        grad_traj.push_back(grad);
+        // x_traj.push_back(x);
+        // grad_traj.push_back(grad);
 
         model.set_parameter(x);
 
@@ -82,9 +91,7 @@ Rcpp::List Optimizer::sgd( Model& model,
             terminate = true;
 
     }
-    return Rcpp::List::create(
-        Rcpp::Named("grad_traj") = grad_traj,
-        Rcpp::Named("x_traj") = x_traj
-    );
+
+    return x;
 }
 

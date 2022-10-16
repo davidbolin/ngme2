@@ -1,3 +1,5 @@
+// theta_V = nu
+
 #ifndef NGME_VAR_H
 #define NGME_VAR_H
 
@@ -22,7 +24,7 @@ private:
 
     unsigned n;
     VectorXd V, prevV;
-    bool fix_V {false};
+    bool fix_V, fix_theta_V;
 public:
     Var(const Rcpp::List& noise_list, unsigned long seed) :
         var_rng       (seed),
@@ -30,13 +32,22 @@ public:
         nu            (Rcpp::as<double>  (noise_list["theta_V"])),
         n             (Rcpp::as<int>     (noise_list["n_noise"])),
         V             (n),
-        prevV         (n)
+        prevV         (n),
+        fix_V         (Rcpp::as<bool>    (noise_list["fix_V"])),
+        fix_theta_V   (Rcpp::as<bool>    (noise_list["fix_theta_V"]))
     {
-        if (noise_list["V"] != R_NilValue) {
-            V = Rcpp::as< VectorXd > (noise_list["V"]);
-            prevV = V;
-        } else {
-            sample_V(); sample_V();
+        if (noise_type == "normal") {
+            V = VectorXd::Ones(n);
+            prevV = VectorXd::Ones(n);
+            fix_V = true;
+        } else if (noise_type == "nig") {
+            if (noise_list["V"] != R_NilValue) {
+                V = Rcpp::as< VectorXd > (noise_list["V"]);
+                prevV = V;
+            } else {
+                sample_V();
+                sample_V();
+            }
         }
     }
     ~Var() {}
@@ -45,12 +56,7 @@ public:
     const VectorXd& getV()     const {return V;}
     const VectorXd& getPrevV() const {return prevV;}
 
-    void fixV() {fix_V = true;}
-
-    void setV(const VectorXd& newV) {
-        prevV = V;
-        V = newV;
-    }
+    void setPrevV(const VectorXd& V) { if (!fix_V) prevV = V; }
 
     void sample_V() {
         if (noise_type == "nig") {
@@ -88,6 +94,8 @@ public:
     }
 
     double grad_theta_var() const {
+        if (fix_theta_V) return 0;
+
         double grad = 0;
         if (noise_type == "nig") {
             VectorXd tmp = VectorXd::Constant(n, 1+1/(2*nu)) - 0.5*V - VectorXd::Constant(n, 1).cwiseQuotient(2*V);

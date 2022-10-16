@@ -12,23 +12,23 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // estimate_cpp
-Rcpp::List estimate_cpp(Rcpp::List ngme_block);
+Rcpp::List estimate_cpp(const Rcpp::List& ngme_block);
 RcppExport SEXP _ngme2_estimate_cpp(SEXP ngme_blockSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::List >::type ngme_block(ngme_blockSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type ngme_block(ngme_blockSEXP);
     rcpp_result_gen = Rcpp::wrap(estimate_cpp(ngme_block));
     return rcpp_result_gen;
 END_RCPP
 }
 // sampling_cpp
-Rcpp::List sampling_cpp(Rcpp::List& ngme_block, int iterations, bool posterior);
+Rcpp::List sampling_cpp(const Rcpp::List& ngme_block, int iterations, bool posterior);
 RcppExport SEXP _ngme2_sampling_cpp(SEXP ngme_blockSEXP, SEXP iterationsSEXP, SEXP posteriorSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::List& >::type ngme_block(ngme_blockSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type ngme_block(ngme_blockSEXP);
     Rcpp::traits::input_parameter< int >::type iterations(iterationsSEXP);
     Rcpp::traits::input_parameter< bool >::type posterior(posteriorSEXP);
     rcpp_result_gen = Rcpp::wrap(sampling_cpp(ngme_block, iterations, posterior));

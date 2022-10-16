@@ -24,6 +24,9 @@ ngme.control <- function(
   stepsize          = 1,
   estimation        = TRUE,
   n_parallel_chain  = 2,
+  stop_points       = 10,
+  exchange_VW       = FALSE,
+  n_slope_check     = 3,
 
   opt_beta          = TRUE,
   fix_beta          = FALSE,
@@ -46,6 +49,9 @@ ngme.control <- function(
     stepsize          = stepsize,
     estimation        = estimation,
     n_parallel_chain  = n_parallel_chain,
+    stop_points       = stop_points,
+    exchange_VW       = exchange_VW,
+    n_slope_check     = n_slope_check, # how many on regression check
 
     opt_beta          = opt_beta,
     fix_beta          = fix_beta,
@@ -68,7 +74,6 @@ ngme.control <- function(
 #' @param use_precond   whether to use preconditioner
 #' @param eps           eps for numerical gradient
 #' @param theta.K       theta.K for parameter K
-#' @param fix_W
 #' @param use_iter_solver
 #' @param use_num_hess  whether to use numerical hessian
 #'
@@ -78,7 +83,7 @@ ngme.control <- function(
 #' @examples
 ngme.control.f <- function(
   numer_grad    = FALSE,
-  use_precond   = TRUE,
+  use_precond   = FALSE,
   use_num_hess  = TRUE,
   eps           = 0.01,
   use_iter_solver = FALSE

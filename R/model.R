@@ -244,6 +244,9 @@ ngme.matern2D <- function(
   if (alpha[1] - round(alpha[1]) != 0 | alpha[2] - round(alpha[2]) != 0 ) {
   stop("alpha should be integer, now only 2 or 4")
 }
+  if (alpha[1] != alpha[2] ) {
+  stop("Alpha for each field is not implemented, please provide common alpha for both fields")
+} 
 
 stopifnot((alpha[1] == 2 || alpha[1] == 4) & (alpha[2] == 2 || alpha[2] == 4) )
 
@@ -277,6 +280,7 @@ stopifnot((alpha[1] == 2 || alpha[1] == 4) & (alpha[2] == 2 || alpha[2] == 4) )
     G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), G)
     h <- rep(h, times = nrep)
   }
+
 
   model <- ngme.model(
     model       = "matern2D",

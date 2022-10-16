@@ -54,27 +54,29 @@ ngme <- function(
   # strucutre-wise the bivaraite model: list of lists
     lfm = formula(fm, lhs = 1, rhs = 1)
     rfm = formula(fm, lhs = 2, rhs = 2)
-
+  
     ########## extract data for each field
-    ngme_response1 <- eval(terms(lfm)[[2]], data$Y1)
-    ngme_response2 <- eval(terms(rfm)[[2]], data$Y2)
+    ngme_response1 <- eval(terms(lfm)[[2]], as.data.frame(data[[1]]))
+    ngme_response2 <- eval(terms(rfm)[[2]], as.data.frame(data[[2]]))
     data$ngme_response <- c(ngme_response1, ngme_response2) ##use list instead?
-
+    data$ngme_response1 <- ngme_response1
+    data$ngme_response2 <- ngme_response2
     # # 1. extract f and eval  2. get the formula without f function
     #for 1st field
-    res1 <- ngme.parse.formula(lfm, data$Y1)
+    res1 <- ngme.parse.formula(lfm, as.data.frame(data[[1]]))
     #for 2nd field
-    res2 <- ngme.parse.formula(rfm, data$Y2)
+    res2 <- ngme.parse.formula(rfm, as.data.frame(data[[2]]))
 
     latents_in <- list(res1$latents_in, res2$latents_in) #latent model = SPDE2D
     plain_fm <- list(res1$plain.fm, res2$plain.fm)
-   
+    print(str(latents_in))
+    print("End of Latents")
     # check if there is NA, and split data
-    split_data <- parse_formula_NA(plain_fm[[1]], data[[1]])
+    split_data <- parse_formula_NA(plain_fm[[1]], as.data.frame(data[[1]]))
       Y_data <- split_data$Y_data
       X_data <- split_data$X_data
       n_Y_data <- split_data$length
-    split_data2 <- parse_formula_NA(plain_fm[[2]], data[[2]])
+    split_data2 <- parse_formula_NA(plain_fm[[2]], as.data.frame(data[[2]]))
       Y_data2 <- split_data2$Y_data
       X_data2 <- split_data2$X_data
       n_Y_data2 <- split_data2$length

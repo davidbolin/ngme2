@@ -34,7 +34,7 @@ if (debug) std::cout << "finish constructor of matern ns" << std::endl;
 
 // inherit get_K_parameter, grad_K_parameter, set_K_parameter
 
-SparseMatrix<double> Matern_ns::getK(VectorXd theta_kappa) const {
+SparseMatrix<double> Matern_ns::getK(const VectorXd& theta_kappa) const {
     VectorXd kappas = (Bkappa * theta_kappa).array().exp();
 
     int n_dim = G.rows();

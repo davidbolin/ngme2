@@ -227,8 +227,7 @@ ngme.matern <- function(
 #' @examples
 ngme.matern2D <- function(
   index = NULL,
-  alpha = 2,
-  alpha2 = 2,
+  alpha = c(2, 2),
   theta_kappa = 0,
   mesh = NULL,
   replicates = NULL,
@@ -241,11 +240,11 @@ ngme.matern2D <- function(
   if (is.null(mesh) && is.null(fem.mesh.matrices))
     stop("At least specify mesh or matrices")
 
-  if (alpha - round(alpha) != 0 | alpha2 - round(alpha2) != 0 ) {
+  if (alpha(1) - round(alpha(1)) != 0 | alpha(2) - round(alpha(2)) != 0 ) {
   stop("alpha should be integer, now only 2 or 4")
 }
 
-stopifnot((alpha == 2 || alpha == 4) & (alpha2 == 2 || alpha2 == 4) )
+stopifnot((alpha(1) == 2 || alpha(1) == 4) & (alpha(2) == 2 || alpha(2) == 4) )
 
   if (is.null(B_kappa))
     B_kappa <- matrix(1, nrow = mesh$n, ncol = length(theta_kappa))
@@ -256,10 +255,9 @@ stopifnot((alpha == 2 || alpha == 4) & (alpha2 == 2 || alpha2 == 4) )
     if (d == 1) {
       fem <- INLA::inla.mesh.1d.fem(mesh)
       C <- fem$c1
-      G <- fem$g1
-      #TODO if created here, ensure block diagonal structure 
+      G <- fem$g1 
     } else {
-      fem <- INLA::inla.mesh.fem(mesh, order = alpha)
+      fem <- INLA::inla.mesh.fem(mesh, order = alpha(1)) #assume both process have common alpha
       C <- fem$c0  # diag
       G <- fem$g1
       #TODO if created here, ensure block diagonal structure

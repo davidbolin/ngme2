@@ -383,4 +383,25 @@ public:
     // }
 };
 
+class Matern2D : public Latent {
+private:
+    SparseMatrix<double, 0, int> G, C;
+    int alpha;
+    VectorXd Cdiag;
+    //TODO add 2nd fields variables
+public:
+    Matern2D(Rcpp::List& model_list, unsigned long seed);
+    //TODO add 2nd fields variables
+    SparseMatrix<double> getK(VectorXd alpha) const;
+    SparseMatrix<double> get_dK(int index, VectorXd alpha) const;
+    VectorXd grad_theta_K();
+    VectorXd get_unbound_theta_K() const;
+    void set_unbound_theta_K(VectorXd theta);
+    void update_num_dK();
+
+    double th2k(double th) const {return exp(th);}
+    double k2th(double k) const {return log(k);}
+
+};
+
 #endif

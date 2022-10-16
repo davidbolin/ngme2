@@ -1,4 +1,4 @@
-#' Additive non-guassian model fitting
+#' Additive non-gaussian model fitting
 #'
 #'  \code{ngme} function performs a analysis of non-gaussian additive models.
 #'
@@ -49,11 +49,73 @@ ngme <- function(
   time.start <- Sys.time()
 
   fm <- Formula::Formula(formula)
-# Y1|Y2|Y3 ~ ..|..|..
+# formula = (y1 | y2 ~ x1 + f(x1, model="SPDE2D", var="nig") | x2 + f(X2, model="SPDE2D", var="nig"))
   if (all(length(fm)==c(2,2))) { ######################### bivariate model
-    lfm = formula(fm, lhs=1, rhs=1)
-    rfm = formula(fm, lhs=2, rhs=2)
-    ########## to-do
+  # strucutre-wise the bivaraite model: list of lists
+    lfm = formula(fm, lhs = 1, rhs = 1)
+    rfm = formula(fm, lhs = 2, rhs = 2)
+
+    ########## extract data for each field
+    ngme_response1 <- eval(terms(lfm)[[2]], data$Y1)
+    ngme_response2 <- eval(terms(rfm)[[2]], data$Y2)
+    data$ngme_response <- c(ngme_response1, ngme_response2) ##use list instead?
+
+    # # 1. extract f and eval  2. get the formula without f function
+    #for 1st field
+    res1 <- ngme.parse.formula(lfm, data$Y1)
+    #for 2nd field
+    res2 <- ngme.parse.formula(rfm, data$Y2)
+
+    latents_in <- list(res1$latents_in, res2$latents_in) #latent model = SPDE2D
+    plain_fm <- list(res1$plain.fm, res2$plain.fm)
+   
+    # check if there is NA, and split data
+    split_data <- parse_formula_NA(plain_fm[[1]], data[[1]])
+      Y_data <- split_data$Y_data
+      X_data <- split_data$X_data
+      n_Y_data <- split_data$length
+    split_data2 <- parse_formula_NA(plain_fm[[2]], data[[2]])
+      Y_data2 <- split_data2$Y_data
+      X_data2 <- split_data2$X_data
+      n_Y_data2 <- split_data2$length
+
+    ############### W_sizes is the dim of the block matrix
+    W_sizes     = sum(unlist(lapply(latents_in, function(x) x["W_size"])))   #W_sizes = sum(ncol_K)
+    V_sizes     = sum(unlist(lapply(latents_in, function(x) x["V_size"])))   #W_sizes = sum(nrow_K)
+    n_la_params = sum(unlist(lapply(latents_in, function(x) x["n_params"])))
+    model.types = unlist(lapply(latents_in, function(x) x["model_type"]))
+    var.types   = unlist(lapply(latents_in, function(x) x["var.type"]))
+    
+    n_feff <- ncol(X_data);
+    if (family == "normal") {
+      n_merr <- noise$n_theta_sigma
+    } else if (family == "nig") {
+      n_merr <- noise$n_theta_mu + noise$n_theta_sigma + noise$n_theta_V
+    }
+ # 3. prepare Rcpp_list for estimate
+    lm.model <- lm.fit(X_data, Y_data)
+    if (is.null(beta)) beta <- lm.model$coeff
+    n_params <- n_la_params + n_feff + n_merr
+
+    noise <- update.ngme.noise(noise, n = n_Y_data)
+
+    if (family == "normal" && is.null(noise$theta_sigma == 0))
+      noise$theta_sigma <- sd(lm.model$residuals)
+
+    ngme_block <- ngme.block_model(
+      Y                 = Y_data,
+      X                 = X_data,
+      beta              = beta,
+      W_sizes           = W_sizes,
+      V_sizes           = V_sizes,
+      n_la_params       = n_la_params,
+      n_params          = n_params, # how many param to opt. in total
+      latents           = latents_in,
+      noise             = noise,
+      seed              = seed,
+      debug             = debug,
+      control           = control
+    )
 
     # a list of B.theta.mu and B.theta.sigma and thetas...
   }

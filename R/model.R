@@ -138,6 +138,7 @@ ngme.ar1 <- function(
 #' @param mesh mesh argument
 #' @param fem.mesh.matrices specify the FEM matrices
 #' @param d indicating the dimension of mesh (together with fem.mesh.matrices)
+#' @param kappa # parameterization for k^2 C + G, only for stationary
 #' @param theta_kappa
 #' @param B_kappa bases for kappa
 #'
@@ -148,7 +149,8 @@ ngme.ar1 <- function(
 ngme.matern <- function(
   index = NULL,
   alpha = 2,
-  theta_kappa = 0,
+  kappa = 1,
+  theta_kappa = NULL,
   mesh = NULL,
   replicates = NULL,
   fem.mesh.matrices = NULL,
@@ -165,6 +167,12 @@ ngme.matern <- function(
   }
 
   stopifnot(alpha == 2 || alpha == 4)
+
+  # use kappa as parameterization
+  stopifnot("Don't overwrite kappa with NULL." = !is.null(kappa))
+  stopifnot("kappa is only for stationary case." = length(kappa) == 1)
+  stopifnot("kappa is greater than 0." = kappa > 0)
+  if (is.null(theta_kappa)) theta_kappa <- log(kappa)
 
   if (is.null(B_kappa))
     B_kappa <- matrix(1, nrow = mesh$n, ncol = length(theta_kappa))

@@ -17,6 +17,7 @@ Matern::Matern(Rcpp::List& model_list, unsigned long seed)
 std::cout << "begin Constructor of Matern " << std::endl;
     symmetricK = true;
 
+    parameter_K(0) = exp(parameter_K(0)); //watch out! in parameterization of kappa, not theta_kappa
     // Init K and Q
     K = getK(parameter_K);
     SparseMatrix<double> Q = K.transpose() * K;
@@ -89,7 +90,7 @@ void Matern::update_num_dK() {
 VectorXd Matern::get_unbound_theta_K() const {
     assert (parameter_K.size() == 1);
 
-    double th = k2th(parameter_K(0));
+    double th = log(parameter_K(0));
     return VectorXd::Constant(1, th);
 }
 
@@ -99,11 +100,9 @@ VectorXd Matern::grad_theta_K() {
     VectorXd V = getV();
     VectorXd SV = getSV();
 
-    VectorXd kappa = parameter_K;
-    double th = k2th(kappa(0));
-
-    double da  = exp(th);
-    double d2a = exp(th);
+    double th = log(parameter_K(0));
+    double da  = parameter_K(0);
+    double d2a = parameter_K(0);
 
     double ret = 0;
     if (numer_grad) {
@@ -144,7 +143,7 @@ VectorXd Matern::grad_theta_K() {
 }
 
 void Matern::set_unbound_theta_K(VectorXd theta) {
-    double kappa = th2k(theta(0));
+    double kappa = exp(theta(0));
 
     // update theta_K, K and dK
     parameter_K = VectorXd::Constant(1, kappa);

@@ -26,7 +26,7 @@ Y2 <- drop(A %*% W + sigma.e * rnorm(n_obs))
 #bivaraite formula
 #formula = (y1 | y2 ~ x1 + f(x1, model="SPDE2D", var="nig") | x2 + f(X2, model="SPDE2D", var="nig"))
 fm <- Y1 | Y2 ~ 0 + f(
-    model = ngme.matern2D(mesh = mesh, theta_kappa = 0.4, alpha = c(2,2)),
+    model = ngme.matern2D(mesh = mesh, theta_kappa = 0.4, alpha = c(2, 2)),
     fix_theta_K = FALSE,
     # W = as.numeric(W),
     # fix_W = TRUE,
@@ -43,7 +43,7 @@ fm <- Y1 | Y2 ~ 0 + f(
       use_precond = F
     )
   ) | 0 + f(
-    model = ngme.matern(mesh = mesh, theta_kappa = 0.4),
+    model = ngme.matern2D(mesh = mesh, theta_kappa = 0.4, alpha = c(2, 2)),
     fix_theta_K = FALSE,
     # W = as.numeric(W),
     # fix_W = TRUE,
@@ -61,7 +61,7 @@ fm <- Y1 | Y2 ~ 0 + f(
     )
   )
 
-load_all()
+
 ngme_out <- ngme(fm,
   data = list(Y1 = Y1, Y2 = Y2),
   noise = ngme.noise.normal(),
@@ -73,18 +73,18 @@ ngme_out <- ngme(fm,
   debug = TRUE
 )
 ngme_out
-str(ngme_out)
-plot_chains(ngme_out, parameter = "theta_sigma", f_index = 0)
+# str(ngme_out)
+# plot_chains(ngme_out, parameter = "theta_sigma", f_index = 0)
 
-# matern model
-plot_chains(ngme_out, parameter = "theta_K",     f_index = 1)
-plot_chains(ngme_out, parameter = "theta_mu",    f_index = 1)
-plot_chains(ngme_out, parameter = "theta_sigma", f_index = 1)
-plot_chains(ngme_out, parameter = "theta_V",     f_index = 1)
+# # matern model
+# plot_chains(ngme_out, parameter = "theta_K",     f_index = 1)
+# plot_chains(ngme_out, parameter = "theta_mu",    f_index = 1)
+# plot_chains(ngme_out, parameter = "theta_sigma", f_index = 1)
+# plot_chains(ngme_out, parameter = "theta_V",     f_index = 1)
 
-plot(ngme.noise.nig(
-      theta_mu = 0,
-      theta_sigma = 0,
-      theta_V = 1
-    ), add = FALSE)
-plot(ngme_out$latents[[1]]$noise, col = "red", add=TRUE)
+# plot(ngme.noise.nig(
+#       theta_mu = 0,
+#       theta_sigma = 0,
+#       theta_V = 1
+#     ), add = FALSE)
+# plot(ngme_out$latents[[1]]$noise, col = "red", add=TRUE)

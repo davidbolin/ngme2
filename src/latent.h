@@ -35,9 +35,9 @@ using std::vector;
 
 enum Latent_fix_flag {
     latent_fix_theta_K, latent_fix_theta_mu, latent_fix_theta_sigma,
-    latent_fix_theta_V, latent_fix_V, latent_fix_W
+    latent_fix_W
 };
-const int LATENT_FIX_FLAG_SIZE = 6;
+const int LATENT_FIX_FLAG_SIZE = 4;
 
 class Latent {
 protected:
@@ -52,7 +52,6 @@ protected:
     SparseMatrix<double, 0, int> K, dK, d2K;
     int n_theta_K;
 
-    // indicate fixing (K, mu, sigma, var)  (1 means fix)
     bool fix_flag[LATENT_FIX_FLAG_SIZE] {0};
 
     bool use_precond {false}, numer_grad {false};
@@ -72,7 +71,6 @@ protected:
     SparseMatrix<double,0,int> A;
 
     Var var;
-    // Var *var;
 
     // solver
     cholesky_solver chol_solver_K;
@@ -100,8 +98,7 @@ public:
     const VectorXd& getW()  const           {return W; }
     void            setW(const VectorXd& newW) {
         if (!fix_flag[latent_fix_W]) {
-            prevW = W;
-            W = newW;
+            prevW = W; W = newW;
         }
     }
     const VectorXd& getPrevW()  const       {return prevW; }
@@ -126,6 +123,7 @@ public:
     void sample_V() {
         var.sample_V();
     }
+
     void sample_cond_V() {
         VectorXd tmp = (K * W + mu.cwiseProduct(h));
         VectorXd a_inc_vec = mu.cwiseQuotient(sigma).array().pow(2);
@@ -137,7 +135,7 @@ public:
     SparseMatrix<double, 0, int>& getK()    { return K; }
 
     // get K/dK using different parameter
-    virtual SparseMatrix<double, 0, int> getK(VectorXd) const=0;
+    virtual SparseMatrix<double, 0, int> getK(const VectorXd&) const=0;
     virtual SparseMatrix<double, 0, int> get_dK(int, VectorXd) const=0;
 
     // variants of getK and get_dK
@@ -174,10 +172,10 @@ public:
 
     // deprecated
     // virtual double function_kappa(double eps);
-    virtual double function_K(VectorXd parameter);
+    virtual double function_K(VectorXd& parameter);
 
     // used for general case
-    virtual double function_K(SparseMatrix<double> K);
+    virtual double function_K(SparseMatrix<double>& K);
     virtual VectorXd numerical_grad(); // given eps
 
     // update the trace value
@@ -284,7 +282,7 @@ auto grad1 = std::chrono::steady_clock::now();
     if (!fix_flag[latent_fix_theta_K])     grad.segment(0, n_theta_K)                        = grad_theta_K();         else grad.segment(0, n_theta_K) = VectorXd::Constant(n_theta_K, 0);
     if (!fix_flag[latent_fix_theta_mu])    grad.segment(n_theta_K, n_theta_mu)               = grad_theta_mu();        else grad.segment(n_theta_K, n_theta_mu) = VectorXd::Constant(n_theta_mu, 0);
     if (!fix_flag[latent_fix_theta_sigma]) grad.segment(n_theta_K+n_theta_mu, n_theta_sigma) = grad_theta_sigma();     else grad.segment(n_theta_K+n_theta_mu, n_theta_sigma) = VectorXd::Constant(n_theta_sigma, 0);
-    if (!fix_flag[latent_fix_theta_V])     grad(n_theta_K+n_theta_mu+n_theta_sigma)          = var.grad_theta_var();  else grad(n_theta_K+n_theta_mu+n_theta_sigma) = 0;
+    grad(n_theta_K+n_theta_mu+n_theta_sigma)  = var.grad_theta_var();
 
 // DEBUG: checking grads
 if (debug) {
@@ -317,7 +315,7 @@ private:
     SparseMatrix<double, 0, int> G, C;
 public:
     AR(Rcpp::List& model_list, unsigned long seed);
-    SparseMatrix<double> getK(VectorXd alpha) const;
+    SparseMatrix<double> getK(const VectorXd& alpha) const;
     SparseMatrix<double> get_dK(int index, VectorXd alpha) const;
     VectorXd grad_theta_K();
     VectorXd get_unbound_theta_K() const;
@@ -344,7 +342,7 @@ private:
     VectorXd Cdiag;
 public:
     Matern(Rcpp::List& model_list, unsigned long seed);
-    SparseMatrix<double> getK(VectorXd alpha) const;
+    SparseMatrix<double> getK(const VectorXd& alpha) const;
     SparseMatrix<double> get_dK(int index, VectorXd alpha) const;
     VectorXd grad_theta_K();
     VectorXd get_unbound_theta_K() const;
@@ -371,7 +369,7 @@ private:
     VectorXd Cdiag;
 public:
     Matern_ns(Rcpp::List& model_list, unsigned long seed);
-    SparseMatrix<double> getK(VectorXd alpha) const;
+    SparseMatrix<double> getK(const VectorXd& alpha) const;
     SparseMatrix<double> get_dK(int index, VectorXd alpha) const;
     VectorXd grad_theta_K();
     void set_unbound_theta_K(VectorXd theta);

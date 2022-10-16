@@ -53,7 +53,7 @@ VectorXd AR::get_unbound_theta_K() const {
 }
 
 // wrt. parameter_K (bounded parameter)
-SparseMatrix<double> AR::getK(VectorXd alpha) const {
+SparseMatrix<double> AR::getK(const VectorXd& alpha) const {
     assert (alpha.size() == 1);
     SparseMatrix<double> K = alpha(0) * C + G;
     return K;

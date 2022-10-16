@@ -35,7 +35,7 @@ std::cout << "begin Constructor of Matern " << std::endl;
 std::cout << "finish Constructor of Matern " << std::endl;
 }
 
-SparseMatrix<double> Matern::getK(VectorXd parameter_K) const {
+SparseMatrix<double> Matern::getK(const VectorXd& parameter_K) const {
     double kappa = parameter_K(0);
     int W_size = G.rows();
 

@@ -28,8 +28,7 @@ using std::vector;
 const int BLOCK_FIX_FLAG_SIZE = 6;
 
 enum Block_fix_flag {
-    block_fix_beta, block_fix_theta_mu, block_fix_theta_sigma, block_fix_theta_V,
-    block_fix_V
+    block_fix_beta, block_fix_theta_mu, block_fix_theta_sigma
 };
 
 class BlockModel : public Model {

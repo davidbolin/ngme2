@@ -94,8 +94,6 @@ if (debug) std::cout << "After block assemble" << std::endl;
 
   fix_flag[block_fix_theta_mu]        = Rcpp::as<bool> (noise_in["fix_theta_mu"]);
   fix_flag[block_fix_theta_sigma]     = Rcpp::as<bool> (noise_in["fix_theta_sigma"]);
-  fix_flag[block_fix_theta_V]         = Rcpp::as<bool> (noise_in["fix_theta_V"]);
-  fix_flag[block_fix_V]               = Rcpp::as<bool> (noise_in["fix_V"]);
 
   family = Rcpp::as<string>  (noise_in["noise_type"]);
   noise_mu = B_mu * theta_mu;
@@ -111,7 +109,7 @@ if (debug) std::cout << "After block assemble" << std::endl;
 if (debug) std::cout << "After block construct noise" << std::endl;
 
   // 5. Fix V and init V
-  if (fix_flag[block_fix_V]) var.fixV();
+  // if (fix_flag[block_fix_V]) var.fixV();
 
   // 6. Init solvers
   if(n_latent > 0){
@@ -435,7 +433,7 @@ VectorXd BlockModel::grad_theta_merr() {
   } else {
     if (!fix_flag[block_fix_theta_mu])     grad.segment(0, n_theta_mu) = grad_theta_mu();
     if (!fix_flag[block_fix_theta_sigma])  grad.segment(n_theta_mu, n_theta_sigma) = grad_theta_sigma();
-    if (!fix_flag[block_fix_theta_V])    grad(n_theta_mu + n_theta_sigma) = var.grad_theta_var();
+    grad(n_theta_mu + n_theta_sigma) = var.grad_theta_var();
   }
 
   return grad;
@@ -447,7 +445,6 @@ void BlockModel::set_theta_merr(const VectorXd& theta_merr) {
   } else {
     theta_mu = theta_merr.segment(0, n_theta_mu);
     theta_sigma = theta_merr.segment(n_theta_mu, n_theta_sigma);
-    // double theta_var = theta_merr(n_theta_mu + n_theta_sigma);
     var.set_theta_var(theta_merr(n_theta_mu + n_theta_sigma));
   }
   noise_sigma = (B_sigma * theta_sigma).array().exp();

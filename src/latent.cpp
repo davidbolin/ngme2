@@ -177,7 +177,6 @@ double Latent::function_K(VectorXd& parameter_K) {
 
 // numerical gradient for K parameters
 VectorXd Latent::numerical_grad() {
-std::cout << "start numerical gradient" <<std::endl;
     double val = function_K(K);
 
     VectorXd grad (n_theta_K);

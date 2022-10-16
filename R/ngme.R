@@ -35,7 +35,7 @@ ngme <- function(
   }
 
   if (is.null(data)) {
-    stop("Missing data.frame/list `data'. Leaving `data' empty might lead to\n\t\tuncontrolled behaviour, therefore is it required.")
+    stop("Missing data.frame/list `data'. Leaving `data' empty might lead to\n\t\tuncontrolled behaviour, therefore it is required.")
   }
 
   if (!is.data.frame(data) && !is.list(data)) {
@@ -69,8 +69,7 @@ ngme <- function(
 
     latents_in <- list(res1$latents_in, res2$latents_in) #latent model = SPDE2D
     plain_fm <- list(res1$plain.fm, res2$plain.fm)
-    print(str(latents_in))
-    print("End of Latents")
+
     # check if there is NA, and split data
     split_data <- parse_formula_NA(plain_fm[[1]], as.data.frame(data[[1]]))
       Y_data <- split_data$Y_data
@@ -81,13 +80,16 @@ ngme <- function(
       X_data2 <- split_data2$X_data
       n_Y_data2 <- split_data2$length
 
+#TODO check the correct sizing needed for bivariate model
     ############### W_sizes is the dim of the block matrix
-    W_sizes     = sum(unlist(lapply(latents_in, function(x) x["W_size"])))   #W_sizes = sum(ncol_K)
-    V_sizes     = sum(unlist(lapply(latents_in, function(x) x["V_size"])))   #W_sizes = sum(nrow_K)
-    n_la_params = sum(unlist(lapply(latents_in, function(x) x["n_params"])))
-    model.types = unlist(lapply(latents_in, function(x) x["model_type"]))
-    var.types   = unlist(lapply(latents_in, function(x) x["var.type"]))
-    
+    W_sizes     = sum(unlist(lapply(latents_in[[1]], function(x) x["W_size"])))   #W_sizes = sum(ncol_K)
+    V_sizes     = sum(unlist(lapply(latents_in[[1]], function(x) x["V_size"])))   #W_sizes = sum(nrow_K)
+    n_la_params = sum(unlist(lapply(latents_in[[1]], function(x) x["n_params"])))
+    model.types = unlist(lapply(latents_in[[1]], function(x) x["model_type"]))
+    var.types   = unlist(lapply(latents_in[[1]], function(x) x["var.type"]))
+    print(W_sizes)
+    print(V_sizes)
+
     n_feff <- ncol(X_data);
     if (family == "normal") {
       n_merr <- noise$n_theta_sigma

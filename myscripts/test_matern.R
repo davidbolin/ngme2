@@ -1,5 +1,6 @@
 ####### test for kappa
 library(devtools)
+devtools::document(setwd("/Users/saduakd/ngme2/ngme2"))
 library(INLA)
 load_all()
 
@@ -13,11 +14,11 @@ mesh <- inla.mesh.2d(
 ############################ Stationary Case ######################################
 sigma <- 1
 alpha <- 2
-mu <- 2;
+mu <- 2
 delta <- -mu
 nu <- 1
-
-ngme.matern.stationary(mesh = mesh)
+n_mesh <- mesh$n #number of observations
+#ngme.matern.stationary(mesh = mesh)
 
 kappa = 3
 Kappa <- diag(rep(kappa, mesh$n))
@@ -127,6 +128,26 @@ ngme_out1 <- ngme(
   )
 )
 
+# ngme_out1 <- ngme(
+#   formula = formula1,
+#   data=data.frame(
+#     Y=Y
+#   ),
+#   control = ngme.control(
+#     estimation = TRUE,
+#     n_parallel_chain = 1,
+#     burnin = 200,
+#     iterations = 100,
+#     gibbs_sample = 5,
+#     stepsize = 1,
+#     kill_var = FALSE,
+#     threshold = 1e-4
+#   ),
+#   debug = TRUE,
+#   noise = ngme.noise.normal(
+#     fix_theta_sigma = FALSE
+#   )
+# )
 
 # results
 c(kappa, mu, log(sigma), nu, sigma.e)

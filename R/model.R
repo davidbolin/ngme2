@@ -54,6 +54,7 @@ print.ngme_model <- function(model, padding=0) {
     switch(model,
       "ar1"     = paste0(pad_add4_space, "alpha = ",    ngme.format(theta_K)),
       "matern"  = paste0(pad_add4_space, "theta_K = ",  ngme.format(theta_K)),
+      "matern2D" = paste0(pad_add4_space, "theta_K = ",  ngme.format(theta_K)),
       "rw1"     = paste0(pad_add4_space, "No parameter needed."),
       "unkown"  = paste0(pad_add4_space, "theta_K = ",  ngme.format(theta_K)),
     )
@@ -240,11 +241,11 @@ ngme.matern2D <- function(
   if (is.null(mesh) && is.null(fem.mesh.matrices))
     stop("At least specify mesh or matrices")
 
-  if (alpha(1) - round(alpha(1)) != 0 | alpha(2) - round(alpha(2)) != 0 ) {
+  if (alpha[1] - round(alpha[1]) != 0 | alpha[2] - round(alpha[2]) != 0 ) {
   stop("alpha should be integer, now only 2 or 4")
 }
 
-stopifnot((alpha(1) == 2 || alpha(1) == 4) & (alpha(2) == 2 || alpha(2) == 4) )
+stopifnot((alpha[1] == 2 || alpha[1] == 4) & (alpha[2] == 2 || alpha[2] == 4) )
 
   if (is.null(B_kappa))
     B_kappa <- matrix(1, nrow = mesh$n, ncol = length(theta_kappa))
@@ -269,7 +270,7 @@ stopifnot((alpha(1) == 2 || alpha(1) == 4) & (alpha(2) == 2 || alpha(2) == 4) )
   }
   # h <- diag(C)
   h <- rep(1, mesh$n)
-#TODO change mesh here for bivariate case
+#TODO change mesh here for bivariate case with replicates
   if (!is.null(A)) {
     nrep <- ncol(A) / nrow(C)
     C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), C)
@@ -279,11 +280,11 @@ stopifnot((alpha(1) == 2 || alpha(1) == 4) & (alpha(2) == 2 || alpha(2) == 4) )
 
   model <- ngme.model(
     model       = "matern2D",
-    A           = A,
+    A           = A, #constructed outside of ngme2
     W_size      = mesh$n,
-    V_size      = nrow(C),
+    V_size      = nrow(C), 
     theta_K     = theta_kappa,
-    alpha       = c(alpha, alpha2),
+    alpha       = c(alpha[1], alpha[2]),
     B_kappa     = B_kappa,
     C           = ngme.as.sparse(C),
     G           = ngme.as.sparse(G),

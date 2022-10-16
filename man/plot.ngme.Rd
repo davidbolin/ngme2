@@ -15,9 +15,6 @@
 
 \item{which}{0 for fix effects and eps, 1 for 1st latent model, etc}
 }
-\value{
-
-}
 \description{
 ngme plot
 }

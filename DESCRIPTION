@@ -30,7 +30,7 @@ Suggests:
     testthat (>= 3.0.0),
     xml2
 VignetteBuilder: knitr
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.1
 Config/testthat/edition: 3
 URL: https://davidbolin.github.io/ngme2/
 Config/testthat/parallel: true

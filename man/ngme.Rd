@@ -2,7 +2,7 @@
 % Please edit documentation in R/ngme.R
 \name{ngme}
 \alias{ngme}
-\title{Additive non-guassian model fitting}
+\title{Additive non-gaussian model fitting}
 \usage{
 ngme(
   formula,

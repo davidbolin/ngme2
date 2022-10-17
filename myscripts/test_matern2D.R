@@ -6,8 +6,13 @@ library(devtools); library(INLA); load_all()
     max.edge = c(0.2, 0.7), offset = c(0.5, 1.5)
   )
 
-  W <- simulate(
+  W1 <- simulate(
     f(model = ngme.matern(mesh = mesh, kappa = 1),
+      noise = ngme.noise.nig()
+    )
+  )
+  W2 <- simulate(
+    f(model = ngme.matern(mesh = mesh, kappa = 4),
       noise = ngme.noise.nig()
     )
   )
@@ -19,18 +24,16 @@ n_obs <- 10; index_obs <- sample(1:mesh$n, n_obs)
 loc_obs <- mesh$loc[index_obs, c(1, 2)]
 A <- inla.spde.make.A(mesh = mesh, loc = loc_obs)
 
-sigma.e <- 0.7
-Y1 <- drop(A %*% W + sigma.e * rnorm(n_obs))
-Y2 <- drop(A %*% W + sigma.e * rnorm(n_obs))
+sigma.e1 <- 0.7
+sigma.e2 <- 0.3
+Y1 <- drop(A %*% W1 + sigma.e1 * rnorm(n_obs))
+Y2 <- drop(A %*% W2 + sigma.e2 * rnorm(n_obs))
 
 #bivaraite formula
 #formula = (y1 | y2 ~ x1 + f(x1, model="SPDE2D", var="nig") | x2 + f(X2, model="SPDE2D", var="nig"))
 fm <- Y1 | Y2 ~ 0 + f(
-    model = ngme.matern2D(mesh = mesh, theta_kappa = 0.4, alpha = c(2, 2)),
+    model = ngme.matern2D(mesh = mesh, kappa = c(0.5, 0.5), alpha = c(2, 2)),
     fix_theta_K = FALSE,
-    # W = as.numeric(W),
-    # fix_W = TRUE,
-
     noise = ngme.noise.nig(
       fix_theta_mu    = F,
       fix_theta_sigma = F,
@@ -43,7 +46,7 @@ fm <- Y1 | Y2 ~ 0 + f(
       use_precond = F
     )
   ) | 0 + f(
-    model = ngme.matern2D(mesh = mesh, theta_kappa = 0.4, alpha = c(2, 2)),
+    model = ngme.matern2D(mesh = mesh, kappa = c(0.5, 0.5), alpha = c(2, 2)),
     fix_theta_K = FALSE,
     # W = as.numeric(W),
     # fix_W = TRUE,

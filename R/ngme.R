@@ -9,7 +9,7 @@
 #' @param control control variables, see ?ngme.control
 #' @param last_fit  can be ngme object from last fitting
 #' @param noise measurement noise specification
-#' @param beta starting value for fixed effects
+#' @param beta starting value for fixed effects; a vector for matern2D model
 #' @param seed  set the seed for pesudo random number generator
 #'
 #' @return a list of outputs contains estimation of operator paramters, noise parameters
@@ -87,9 +87,9 @@ ngme <- function(
     n_la_params = sum(unlist(lapply(latents_in[[1]], function(x) x["n_params"])))
     model.types = unlist(lapply(latents_in[[1]], function(x) x["model_type"]))
     var.types   = unlist(lapply(latents_in[[1]], function(x) x["var.type"]))
-    print(W_sizes)
-    print(V_sizes)
-
+    # print(W_sizes)
+    # print(V_sizes)
+#TODO check the correct sizing
     n_feff <- ncol(X_data);
     if (family == "normal") {
       n_merr <- noise$n_theta_sigma
@@ -98,17 +98,20 @@ ngme <- function(
     }
  # 3. prepare Rcpp_list for estimate
     lm.model <- lm.fit(X_data, Y_data)
-    if (is.null(beta)) beta <- lm.model$coeff
+    lm.model2 <- lm.fit(X_data2, Y_data2)
+    if (is.null(beta[1])) beta[1] <- lm.model$coeff
+    if (is.null(beta[2])) beta[2] <- lm.model2$coeff
+#TODO check the correct sizing
     n_params <- n_la_params + n_feff + n_merr
 
     noise <- update.ngme.noise(noise, n = n_Y_data)
-
-    if (family == "normal" && is.null(noise$theta_sigma == 0))
-      noise$theta_sigma <- sd(lm.model$residuals)
+#TODO change the logical statement to check the both components of vector theta_sigma
+    if (family == "normal" && is.null(noise$theta_sigma == 0)) #TODO what exactly it checks - being 0 or being NULL
+      noise$theta_sigma <- c(sd(lm.model$residuals), sd(lm.model2$residuals))
 
     ngme_block <- ngme.block_model(
-      Y                 = Y_data,
-      X                 = X_data,
+      Y                 = list(Y_data, Y_data2),
+      X                 = list(X_data, X_data2),
       beta              = beta,
       W_sizes           = W_sizes,
       V_sizes           = V_sizes,

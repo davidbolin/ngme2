@@ -23,8 +23,9 @@ Y <- drop(A %*% W + sigma.e * rnorm(n_obs))
 
 load_all()
 ngme_out <- ngme(
+  seed = 1,
   Y ~ 0 + f(
-    model = ngme.matern(mesh = mesh, kappa = 0.5),
+    model = ngme.matern(mesh = mesh, kappa = 3),
     fix_theta_K = FALSE,
     # W = as.numeric(W),
     # fix_W = TRUE,
@@ -32,6 +33,8 @@ ngme_out <- ngme(
       fix_theta_mu    = F,
       fix_theta_sigma = F,
       fix_theta_V     = F
+      # V = attr(W, "noise")$V,
+      # fix_V = T
     ),
     A = A,
     debug = TRUE,
@@ -44,12 +47,15 @@ ngme_out <- ngme(
   noise = ngme.noise.normal(),
   control = ngme.control(
     estimation = T,
-    iterations = 100,
-    n_parallel_chain = 2
+    iterations = 300,
+    stop_points = 1,
+    n_parallel_chain = 4
   ),
   debug = TRUE
 )
+
 ngme_out
+attr(ngme_out, "trajectory")[[1]]$latents[[1]]
 str(ngme_out)
 
 plot_chains(ngme_out, parameter = "theta_sigma", f_index = 0)

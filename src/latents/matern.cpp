@@ -29,6 +29,7 @@ std::cout << "begin Constructor of Matern " << std::endl;
         CG_solver_K.init(W_size, W_size, W_size, 0.5);
         CG_solver_K.analyze(K);
     }
+
     compute_trace();
     solver_Q.init(W_size, 0,0,0);
     solver_Q.analyze(Q);
@@ -64,16 +65,16 @@ SparseMatrix<double> Matern::getK(const VectorXd& parameter_K) const {
 }
 
 // stationary
-SparseMatrix<double> Matern::get_dK(int index, VectorXd parameter_K) const {
+SparseMatrix<double> Matern::get_dK(int index, const VectorXd& parameter_K) const {
     assert(index==0);
     double kappa = parameter_K(0);
     int W_size = G.rows();
     SparseMatrix<double> dK (W_size, W_size);
 
     if (alpha==2)
-        dK = 2*kappa*C;
+        dK = 2.0*kappa*C;
     else if (alpha==4)
-        dK = 4*kappa*C * G + 4* pow(kappa, 3) * C;
+        dK = 4.0*kappa*C * G + 4.0* pow(kappa, 3) * C;
     else
         throw("alpha != 2 or 4");
     return dK;
@@ -127,13 +128,21 @@ VectorXd Matern::grad_theta_K() {
             // grad(x+eps) - grad(x) / eps
             VectorXd prevV = getPrevV();
             VectorXd prevSV = getPrevSV();
-            double grad2_eps = trace_eps - (dK2*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K2 * prevW +  (h - prevV).cwiseProduct(mu));
-            double grad_eps  = trace - (dK*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K * prevW +  (h - prevV).cwiseProduct(mu));
-
+            double grad2_eps = trace_eps - (dK2*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K2 * prevW + (h - prevV).cwiseProduct(mu));
+            double grad_eps  = trace - (dK*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K * prevW + (h - prevV).cwiseProduct(mu));
             double hess = (grad2_eps - grad_eps) / eps;
-    // if (debug) std::cout << "hess =" << hess << std::endl;
 
+    // if (debug) std::cout << "prevW =" << prevW << std::endl;
+    // if (debug) std::cout << "prevvV =" << prevV << std::endl;
+    // if (debug) std::cout << "prevSV =" << prevSV << std::endl;
+    // if (debug) std::cout << "trace_eps =" << trace_eps << std::endl;
+    // if (debug) std::cout << "grad2_eps =" << trace << std::endl;
+    // if (debug) std::cout << "grad_eps =" << trace_eps << std::endl;
+    // if (debug) std::cout << "grad =" << grad << std::endl;
+    // if (debug) std::cout << "(hess * da + grad_eps) =" << (hess * da + grad_eps) << std::endl;
+    // if (debug) std::cout << "hess =" << hess << std::endl;
             // ret = (grad * da) / (hess * da * da + grad_eps * d2a); reduced to
+
             ret = grad / (hess * da + grad_eps);
         }
     }
@@ -143,10 +152,11 @@ VectorXd Matern::grad_theta_K() {
 }
 
 void Matern::set_unbound_theta_K(VectorXd theta) {
-    double kappa = exp(theta(0));
-
+if (debug) std::cout << "**************para_K 1 =" << parameter_K << std::endl;
     // update theta_K, K and dK
+    double kappa = exp(theta(0));
     parameter_K = VectorXd::Constant(1, kappa);
+if (debug) std::cout << "**************para_K 2 =" << parameter_K << std::endl;
     K = getK(parameter_K);
     dK = get_dK(0, parameter_K);
 

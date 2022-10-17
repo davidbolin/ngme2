@@ -59,7 +59,7 @@ SparseMatrix<double> Matern_ns::getK(const VectorXd& theta_kappa) const {
 }
 
 // dK wrt. theta_K[index]
-SparseMatrix<double> Matern_ns::get_dK(int index, VectorXd params) const {
+SparseMatrix<double> Matern_ns::get_dK(int index, const VectorXd& params) const {
     VectorXd kappas = (Bkappa * parameter_K).array().exp();
 
     int n_dim = G.rows();

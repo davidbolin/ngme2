@@ -59,7 +59,7 @@ SparseMatrix<double> AR::getK(const VectorXd& alpha) const {
     return K;
 }
 
-SparseMatrix<double> AR::get_dK(int index, VectorXd alpha) const {
+SparseMatrix<double> AR::get_dK(int index, const VectorXd& alpha) const {
     assert(index==0);
     return C;
 }
@@ -110,6 +110,8 @@ VectorXd AR::grad_theta_K() {
             VectorXd prevSV = getPrevSV();
             double grad2_eps = trace_eps - (dK2*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K2 * prevW + (h - prevV).cwiseProduct(mu));
             double grad_eps  = trace - (dK*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K * prevW + (h - prevV).cwiseProduct(mu));
+    if (debug) std::cout << "grad2_eps =" << grad2_eps << std::endl;
+    if (debug) std::cout << "grad_eps =" << grad_eps << std::endl;
 
             double hess = (grad2_eps - grad_eps) / eps;
         // result : hessian around 2000

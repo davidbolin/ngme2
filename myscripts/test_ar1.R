@@ -64,13 +64,13 @@ ngme_out <- ngme(
     ),
     control = ngme.control.f(
       numer_grad       = FALSE,
-      use_precond      = FALSE
+      use_precond      = TRUE
     ),
     debug = TRUE
   ),
   data = data.frame(Y = Y),
   control = ngme.control(
-    estimation = T,
+    estimation = TRUE,
     n_parallel_chain = 4,
     stop_points = 2,
     burnin = 200,

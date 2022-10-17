@@ -30,7 +30,8 @@ Rcpp::List estimate_cpp(const Rcpp::List& ngme_block) {
     std::mt19937 rng (seed);
 
     Rcpp::List control_in = ngme_block["control"];
-    const int iterations = (control_in["iterations"]);
+    const int iterations = control_in["iterations"];
+    const int burnin = control_in["burnin"];
 
     Rcpp::List trajectory = R_NilValue;
     Rcpp::List output = R_NilValue;
@@ -44,14 +45,19 @@ auto timer = std::chrono::steady_clock::now();
     int n_batch = (control_in["stop_points"]);
     omp_set_num_threads(n_chains);
 
+    // init each model
     std::vector<std::unique_ptr<BlockModel>> blocks;
     int i = 0;
     for (i=0; i < n_chains; i++) {
         blocks.push_back(std::make_unique<BlockModel>(ngme_block, rng()));
     }
 
-    std::vector<VectorXd> params (n_chains);
+    // burn in period
+    #pragma omp parallel for schedule(static)
+    for (i=0; i < n_chains; i++)
+        (*(blocks[i]))->burnin(burnin);
 
+    std::vector<VectorXd> params (n_chains);
     bool converge = false;
     int steps = 0;
     int batch_steps = (iterations > n_batch) ? (iterations / n_batch) : 1;
@@ -63,15 +69,10 @@ auto timer = std::chrono::steady_clock::now();
             VectorXd param = opt.sgd(*(blocks[i]), 0.1, batch_steps);
             #pragma omp critical
             params[i] = param;
-
         }
-        // if (omp_get_num_thread==0) {
-        // // check
-        // }
         steps += batch_steps;
-
-        // set hessian by setting prevV and prevW (round robin)
         if (n_chains > 1) {
+            // 1. set hessian by setting prevV and prevW (round robin)
             vector<VectorXd> tmp = blocks[0]->get_VW();
             for (int i = 0; i < n_chains - 1; i++) {
                 vector<VectorXd> VW = blocks[i+1]->get_VW();
@@ -79,10 +80,11 @@ auto timer = std::chrono::steady_clock::now();
             }
             blocks[n_chains - 1]->set_prev_VW(tmp);
 
-            // check params for convergence (t-test)
+            // 2. convergence check
             converge = check_conv(params);
         }
     }
+
     // generate outputs
     for (i=0; i < n_chains; i++) {
         outputs.push_back(blocks[i]->output());

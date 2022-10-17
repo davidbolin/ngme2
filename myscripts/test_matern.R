@@ -47,7 +47,7 @@ ngme_out <- ngme(
   noise = ngme.noise.normal(),
   control = ngme.control(
     estimation = T,
-    iterations = 300,
+    iterations = 500,
     stop_points = 1,
     n_parallel_chain = 4
   ),

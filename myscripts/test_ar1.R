@@ -73,7 +73,7 @@ ngme_out <- ngme(
     estimation = TRUE,
     n_parallel_chain = 4,
     stop_points = 2,
-    burnin = 200,
+    burnin = 800,
     iterations = 500,
     gibbs_sample = 5,
     stepsize = 1,

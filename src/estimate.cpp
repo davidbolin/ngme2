@@ -55,7 +55,7 @@ auto timer = std::chrono::steady_clock::now();
     // burn in period
     #pragma omp parallel for schedule(static)
     for (i=0; i < n_chains; i++)
-        (*(blocks[i]))->burnin(burnin);
+        (blocks[i])->burn_in(burnin+3);
 
     std::vector<VectorXd> params (n_chains);
     bool converge = false;

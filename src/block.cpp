@@ -131,7 +131,6 @@ if (debug) std::cout << "After block construct noise" << std::endl;
     sampleW_V();
     sampleW_V();
   }
-  burn_in(burnin + 5);
 
 if (debug) std::cout << "End Block Constructor" << std::endl;
 }

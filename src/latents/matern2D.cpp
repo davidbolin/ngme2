@@ -3,40 +3,105 @@
         alpha is the smoothness parameter
         parameter_K(0) = kappa
         parameter_K(1) = kappa2
-        K = kappa^2 * C + G
-        K2 = kappa2^2 * C2 + G2
+        K1 = kappa^2 * C + G
+        K2 = kappa2^2 * C + G
+        K = (D_2 *kron* I_n) * diag(c_1*K1,c_2*K2), where D_2 is dependence matrix
 */
 
+/*
+MATLAB version in multiK.m
+    K0 = sparse(size(K2,1),size(K2,2));
+    L = [c(1)*K1 K0; K0 c(2)*K2];
+    K = kron(D,speye(size(K2,1)))*L;
+    Ci = [Ci K0; K0 Ci];
+*/
 #include "../latent.h"
-
+//model_list = latent_in
 Matern2D::Matern2D(Rcpp::List& model_list, unsigned long seed)
 : Latent(model_list, seed),
     G           (Rcpp::as< SparseMatrix<double,0,int> > (model_list["G"])),
     C           (Rcpp::as< SparseMatrix<double,0,int> > (model_list["C"])),
-    alpha       (Rcpp::as<int> (model_list["alpha"])),
+    alpha       (Rcpp::as<int> (model_list["alpha"])),//assuming common alpha
     Cdiag       (C.diagonal())
+    //TODO create new parameters in the latent model_list output
+    theta       (Rcpp::as<double>(model_list["theta"])),
+    rho         (Rcpp::as<double>(model_list["rho"])),
+    c1          (Rcpp::as<double>(model_list["c1"])),
+    c2          (Rcpp::as<double>(model_list["c2"])),
+    typeG       (Rcpp::as<int>(model_list["typeG"]))//4 types for NIG SPDE model bivariate
 {
 std::cout << "begin Constructor of Matern " << std::endl;
-    symmetricK = true;
+    symmetricK = true;//TODO what does it control?
+    parameter_K(0) = exp(parameter_K(0)); //exp(log(kappa1))
+    parameter_K(1) = exp(parameter_K(1)); //exp(log(kappa2))
+    theta_sigma(0) = exp(theta_sigma(0)); //exp(log(sigma1))
+    theta_sigma(1) = exp(theta_sigma(1)); //exp(log(sigma2))
 
-    // Init K and Q
-    K1 = getK(parameter_K(0));
-    K2 = getK(parameter_K(1));
-    //TODO setSparseBlock(&K1,0,0,&K2) create common K matrix 
+//setting rho and theta parameters accroding to the NIG model
+    if(typeG == -1){
+        rho = 0;
+        theta = 0;
+    }else if (typeG == 1)
+    {
+        rho = rho;
+        theta = 0;
+    }else if (typeG == 2)
+    {
+        rho = rho;
+        theta = atan(rho);   
+    }else { //typeG ==0, the most general case
+        rho = rho;
+        theta = theta;   
+    }
+    
+    // Init K1 and K2
+    K1 = c1 * getK(parameter_K(0));//= c1 * (kappa1^2 * C + G)
+    K2 = c2 * getK(parameter_K(1));
+    
+    //initialize K to [G G;G G]
+    SparseMatrix<double,0,int> K;
+    //TODO is W_size = d??
+
+    d = 2*G.rows();
+    K.resize(d,d);
+    setSparseBlock(&K,0,0, G);
+    setSparseBlock(&K,d/2,d/2, G);
+    setSparseBlock(&K,0,d/2, G);
+    setSparseBlock(&K,d/2,0, G);
+
+    // Init D dependence matrix 
+    MatrixXd D(2,2);
+    D(0,0) = cos(theta) + rho*sin(theta);
+    D(0,1) = -sin(theta)*pow(1+pow(rho,2),0.5);
+    D(1,0) = sin(theta) - rho*cos(theta);
+    D(1,1) = cos(theta)*pow(1+pow(rho,2),0.5);
+
+    SparseMatrix<double,0,int> B;
+
+    //Set K from parameters by filling the four blocks:
+    B = D(0,0)*K1;
+    setSparseBlock_update(&K,0,0, B);
+    B = D(1,1)*K2;
+    setSparseBlock_update(&K,d/2,d/2, B);
+    B = D(0,1)*K2;
+    setSparseBlock_update(&K,0,d/2, B);
+    B = D(1,0)*K1;
+    setSparseBlock_update(&K,d/2,0, B);
+    
     SparseMatrix<double> Q = K.transpose() * K;
-    //TODO check what code below does
+    //TODO check if d= W_size?
     if (!use_iter_solver) {
-        chol_solver_K.init(W_size, 0,0,0);
+        chol_solver_K.init(d, 0,0,0);
         chol_solver_K.analyze(K);
     } else {
-        CG_solver_K.init(W_size, W_size, W_size, 0.5);
+        CG_solver_K.init(d,d,d, 0.5);//TODO why 0.5?
         CG_solver_K.analyze(K);
     }
 
+    //Qsolver will only operate on blocks
     compute_trace();
-
-    solver_Q.init(W_size, 0,0,0);
-    solver_Q.analyze(Q);
+    solver_Q.init(d, 0,0,0);
+    solver_Q.analyze(Q); 
 
 std::cout << "finish Constructor of Matern " << std::endl;
 }

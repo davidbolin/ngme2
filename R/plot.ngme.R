@@ -58,7 +58,47 @@ traceplot <- function(
   library(ggplot2)
   ggplot() +
     geom_line(data = df, aes(x = Var1, y = transform(value), group = Var2)) +
-    geom_line(aes(x = 1:iters, y = apply(data, MARGIN=1, mean)), col="red") +
+    geom_line(aes(x = 1:iters, y = transform(apply(data, MARGIN=1, mean))), col="red") +
     xlab("iterations") +
-    ylab("value") + guides()
+    ylab("value") + guides() + labs(title = paste("Traceplot of", parameter))
+}
+#' plot the density of noise (for stationary)
+#'
+#' @param noise1 ngme_noise
+#' @param noise2 ngme_noise (for comparison)
+#'
+#' @return plot
+#' @export
+#'
+#' @examples
+plot.ngme_noise <- function(noise, noise2 = NULL, ...) {
+  mu <- noise$theta_mu
+  sigma <- exp(noise$theta_sigma)
+  nu <- noise$theta_V
+  stopifnot("only implemented for stationary mu" = length(mu) == 1)
+  stopifnot("only implemented for stationary sigma" = length(sigma) == 1)
+
+  xx <- seq(-15, 15, length = 400)
+  switch(noise$noise_type,
+    "nig"     = dd <- dnig(xx, -mu, mu, nu, sigma),
+    "normal"  = dd <- dnorm(xx, sd = sigma),
+    stop("Plot for this type is not implemented")
+  )
+
+  gg <- ggplot2::ggplot() +
+    ggplot2::geom_line(aes(x = xx, y = dd))
+
+  if (!is.null(noise2)) {
+    mu <- noise2$theta_mu
+    sigma <- exp(noise2$theta_sigma)
+    nu <- noise2$theta_V
+    switch(noise2$noise_type,
+      "nig"     = dd2 <- dnig(xx, -mu, mu, nu, sigma),
+      "normal"  = dd2 <- dnorm(xx, sd = sigma),
+      stop("Plot for this type is not implemented")
+    )
+    gg <- gg + ggplot2::geom_line(aes(x = xx, y = dd2), col = "red")
+  }
+
+  gg + ggplot2::labs(title = "Density Plot")
 }

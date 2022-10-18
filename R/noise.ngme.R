@@ -236,35 +236,3 @@ print.ngme_noise <- function(noise, padding=0) {
   cat("\n")
   invisible(noise)
 }
-
-#' plot the density of noise (for stationary)
-#'
-#' @param ngme_noise
-#'
-#' @return plot
-#' @export
-#'
-#' @examples
-plot.ngme_noise <- function(noise, add = FALSE, ...) {
-  mu <- noise$theta_mu
-  sigma <- exp(noise$theta_sigma)
-  nu <- noise$theta_V
-  stopifnot("only implemented for stationary mu" = length(mu) == 1)
-  stopifnot("only implemented for stationary sigma" = length(sigma) == 1)
-
-  xx <- seq(-10, 10, length = 400)
-  switch(noise$noise_type,
-    "nig"     = dd <- dnig(xx, -mu, mu, nu, sigma),
-    "normal"  = dd <- dnorm(xx, sd = sigma),
-    stop("Plot for this type is not implemented")
-  )
-
-  how_to_plot <- if (add) lines else plot
-
-  how_to_plot(xx, dd, type = "l",
-    # main = expression(paste(noise$noise_type, "noise with ") + theta[mu]),
-    main = paste(noise$noise_type, "noise density"),
-    xlab = "x", ylab = "y",
-    ...
-  )
-}

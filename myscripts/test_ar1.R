@@ -96,7 +96,7 @@ str(ngme_out)
 # noise
 traceplot(ngme_out, parameter = "theta_mu", f_index = 0)
 traceplot(ngme_out, parameter = "theta_V", f_index = 0)
-traceplot(ngme_out, parameter = "theta_sigma", f_index = 0)
+traceplot(ngme_out, parameter = "theta_sigma", f_index = 0, transform = exp)
 
 # ar1 model
 traceplot(ngme_out, parameter = "theta_K",     f_index = 1)
@@ -110,5 +110,6 @@ plot(ngme.noise.nig(
       theta_mu = ar_mu,
       theta_sigma = ar_sigma,
       theta_V = ar_eta
-    ), add = FALSE)
-plot(ngme_out$latents[[1]]$noise, col = "red", add=TRUE)
+    ),
+    ngme_out$latents[[1]]$noise
+)

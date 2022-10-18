@@ -55,8 +55,8 @@ std::cout << "begin Constructor of Matern " << std::endl;
     }
     
     // Init K1 and K2
-    K1 = c1 * getK(parameter_K(0));//= c1 * (kappa1^2 * C + G)
-    K2 = c2 * getK(parameter_K(1));
+    K1 = getK(parameter_K(0));//= kappa1^2 * C + G
+    K2 = getK(parameter_K(1));
     
     //initialize K to [G G;G G]
     SparseMatrix<double,0,int> K;
@@ -77,7 +77,8 @@ std::cout << "begin Constructor of Matern " << std::endl;
     D(1,1) = cos(theta)*pow(1+pow(rho,2),0.5);
 
     SparseMatrix<double,0,int> B;
-
+    K1 = c1 * K1;//= c1 * (kappa1^2 * C + G)
+    K2 = c2 * K2;
     //Set K from parameters by filling the four blocks:
     B = D(0,0)*K1;
     setSparseBlock_update(&K,0,0, B);
@@ -106,7 +107,7 @@ std::cout << "begin Constructor of Matern " << std::endl;
 std::cout << "finish Constructor of Matern " << std::endl;
 }
 
-SparseMatrix<double> Matern::getK(VectorXd parameter_K) const {
+SparseMatrix<double> Matern2D::getK(VectorXd parameter_K) const {
     double kappa = parameter_K(0);
 
     int W_size = G.rows(); //TODO what is size of G, where does it come from?
@@ -135,18 +136,42 @@ SparseMatrix<double> Matern::getK(VectorXd parameter_K) const {
 }
 
 // stationary
-SparseMatrix<double> Matern::get_dK(int index, VectorXd parameter_K) const {
-    assert(index==0);
-    double kappa = parameter_K(0);
-    int W_size = G.rows();
-    SparseMatrix<double> dK (W_size, W_size);
+SparseMatrix<double> Matern2D::get_dK(int index, VectorXd parameter_K) const {
+//index, i, indicates the parameter_K[i]
+//for dK wrt kappa1 index = 1; for kappa2 index =2;
+    double kappa1 = parameter_K(0);
+    double kappa2 = parameter_K(1);
+    int W_size =  G.rows();
+    SparseMatrix<double> dK1, dK2 (W_size, W_size);
+    SparseMatrix<double> dK (2*W_size, 2*W_size);
 
     if (alpha==2)
-        dK = 2*kappa*C;
+        dK1 = 2*pow(kappa1,2)*C;
+        dK2 = 2*pow(kappa2,2)*C;
     else if (alpha==4)
-        dK = 4*kappa*C * G + 4* pow(kappa, 3) * C;
+        dK1 = 4*pow(kappa1,2) * G + 4* pow(kappa1, 4) * C;
+        dK2 = 4*pow(kappa2,2) * G + 4* pow(kappa2, 4) * C;
     else
         throw("alpha != 2 or 4");
+    
+    if (index == 1)
+    {  
+        double dc1 = -(alpha - 1)*c1;
+        dK
+    } else
+    { //dL wrt kappa2
+        double dc2 = -(alpha - 1)*c2;
+        dK
+    }
+    //TODO can i initialize with zeros? without the matrix G
+    B = D(0,0)*K1;
+    setSparseBlock_update(&K,0,0, B);
+    B = D(1,1)*K2;
+    setSparseBlock_update(&K,d/2,d/2, B);
+    B = D(0,1)*K2;
+    setSparseBlock_update(&K,0,d/2, B);
+    B = D(1,0)*K1;
+    setSparseBlock_update(&K,d/2,0, B);
     return dK;
 }
 

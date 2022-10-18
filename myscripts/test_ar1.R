@@ -45,7 +45,7 @@ Y <- ar1_process + nig_noise
 # use normal noise
   Y <- ar1_process + rnorm(n_obs)
 }
-
+load_all()
 ngme_out <- ngme(
   Y ~ 0 +
   f(model = "ar1",
@@ -57,34 +57,37 @@ ngme_out <- ngme(
       theta_sigma = ar_sigma,
       theta_V = ar_eta,
       V = attr(ar1_process, "noise")$V,
-      fix_V             = TRUE,
+      fix_V             = F,
       fix_theta_mu      = FALSE,
-      fix_theta_sigma   = TRUE,
-      fix_theta_V       = TRUE
+      fix_theta_sigma   = F,
+      fix_theta_V       = F
     ),
     control = ngme.control.f(
       numer_grad       = FALSE,
       use_precond      = TRUE
     ),
-    debug = TRUE
+    debug = F
   ),
   data = data.frame(Y = Y),
   control = ngme.control(
     estimation = TRUE,
     n_parallel_chain = 4,
-    stop_points = 2,
-    burnin = 800,
-    iterations = 500,
+    stop_points = 5,
+    burnin = 10,
+    iterations = 100,
     gibbs_sample = 5,
     stepsize = 1,
     kill_var = FALSE,
-    threshold = 1e-4
+    threshold = 1e-4,
+
+    std_lim = 0.1,
+    trend_lim = 0.1
   ),
   noise = ngme.noise.normal(),
   # noise = attr(nig_noise, "noise"),
   seed = 2,
   # , last_fit = ngme_out
-  debug = TRUE
+  debug = F
 )
 
 ngme_out

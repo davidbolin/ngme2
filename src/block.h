@@ -124,6 +124,7 @@ public:
     void setPrevV(const VectorXd&);
 
     /* Optimizer related */
+    int                  get_n_params() const {return n_params;}
     VectorXd             get_parameter() const;
     VectorXd             get_stepsizes() const {return stepsizes;}
     void                 set_parameter(const VectorXd&);

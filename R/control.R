@@ -27,6 +27,8 @@ ngme.control <- function(
   stop_points       = 10,
   exchange_VW       = FALSE,
   n_slope_check     = 3,
+  std_lim           = 0.1,
+  trend_lim         = 0.1,
 
   opt_beta          = TRUE,
   fix_beta          = FALSE,
@@ -52,6 +54,8 @@ ngme.control <- function(
     stop_points       = stop_points,
     exchange_VW       = exchange_VW,
     n_slope_check     = n_slope_check, # how many on regression check
+    std_lim           = std_lim,
+    trend_lim         = trend_lim,
 
     opt_beta          = opt_beta,
     fix_beta          = fix_beta,

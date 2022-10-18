@@ -21,7 +21,7 @@ using Eigen::MatrixXd;
 
 using namespace Rcpp;
 
-bool check_conv(const std::vector<VectorXd>&);
+bool check_conv(const MatrixXd&, const MatrixXd&, int, int, double, double);
 
 // [[Rcpp::plugins(openmp)]]
 // [[Rcpp::export]]
@@ -41,6 +41,10 @@ auto timer = std::chrono::steady_clock::now();
     Rcpp::List outputs;
 #ifdef _OPENMP
     // Rcout << "run parallel n_chains chains"
+    int n_slope_check = (control_in["n_slope_check"]);
+    double std_lim = (control_in["std_lim"]);
+    double trend_lim = (control_in["trend_lim"]);
+
     int n_chains = (control_in["n_parallel_chain"]);
     int n_batch = (control_in["stop_points"]);
     omp_set_num_threads(n_chains);
@@ -57,20 +61,32 @@ auto timer = std::chrono::steady_clock::now();
     for (i=0; i < n_chains; i++)
         (blocks[i])->burn_in(burnin+3);
 
-    std::vector<VectorXd> params (n_chains);
+    int n_params = blocks[0]->get_n_params();
+    MatrixXd means (n_batch, n_params);
+    MatrixXd vars (n_batch, n_params);
+
     bool converge = false;
     int steps = 0;
     int batch_steps = (iterations > n_batch) ? (iterations / n_batch) : 1;
 
+    int curr_batch = 0;
     while (steps < iterations && !converge) {
+        MatrixXd mat (n_chains, n_params);
         #pragma omp parallel for schedule(static)
         for (i=0; i < n_chains; i++) {
             Optimizer opt;
             VectorXd param = opt.sgd(*(blocks[i]), 0.1, batch_steps);
+
             #pragma omp critical
-            params[i] = param;
+            mat.row(i) = param;
         }
         steps += batch_steps;
+
+        // compute mean and variance
+        means.row(curr_batch) = mat.colwise().mean();
+        for (int k=0; k < n_params; k++)
+            vars(curr_batch, k) = (mat.col(k).array() - means(curr_batch, k)).square().sum() / (n_chains - 1);
+
         if (n_chains > 1) {
             // 1. set hessian by setting prevV and prevW (round robin)
             vector<VectorXd> tmp = blocks[0]->get_VW();
@@ -81,14 +97,20 @@ auto timer = std::chrono::steady_clock::now();
             blocks[n_chains - 1]->set_prev_VW(tmp);
 
             // 2. convergence check
-            converge = check_conv(params);
+            if (n_slope_check <= curr_batch + 1)
+                converge = check_conv(means, vars, curr_batch, n_slope_check, std_lim, trend_lim);
         }
+        curr_batch++;
     }
 
     // generate outputs
     for (i=0; i < n_chains; i++) {
         outputs.push_back(blocks[i]->output());
     }
+    if (converge)
+        Rcpp::Rcout << "Reach convergence in " << steps << " iterations." << std::endl;
+    else
+        Rcpp::Rcout << "Not sure about the convergence." << std::endl;
 
 #else
     BlockModel block (ngme_block, rng());
@@ -100,10 +122,6 @@ auto timer = std::chrono::steady_clock::now();
 
 std::cout << "Total time is (ms): " << since(timer).count() << std::endl;
 
-    // return Rcpp::List::create(
-    //     Rcpp::Named("opt_trajectory") = trajectory,
-    //     Rcpp::Named("estimation") = output
-    // );
     return outputs;
 }
 
@@ -116,44 +134,45 @@ Rcpp::List sampling_cpp(const Rcpp::List& ngme_block, int iterations, bool poste
     return block.sampling(iterations, posterior);
 }
 
-// void update_estimation(Rcpp::List& ngme_block, const BlockModel& block);
-// void update_estimation(Rcpp::List& ngme_block, const BlockModel& block) {
-//     // design the input of R
-//     // ngme_block["V"] <- ...
-// }
-
-
-bool check_conv(const std::vector<VectorXd>& params) {
+/*
+    For checking convergence of parallel chains
+    data is n_iters () * n_params (how many params in total)
+*/
+bool check_conv(
+    const MatrixXd& means,
+    const MatrixXd& vars,
+    int curr_batch,
+    int n_slope_check,
+    double std_lim,
+    double trend_lim
+) {
     bool conv = true;
-    int n_chains = params.size();
-    int n = params[1].size();
+    int n_params = means.cols();
 
-    Rcpp::NumericVector v (n_chains);
-
-    // 1. check sd of every parameter < threshold
+    // 1. check coef. of var. of every parameter < std_lim
+    for (int i=0; i < n_params && conv; i++)
+        if (sqrt(vars(curr_batch, i)) / abs(means(curr_batch, i)) > std_lim)
+            conv = false;
 
     // 2. check the slope of every para < threshold
+    MatrixXd B (n_slope_check, 2);
+        B.col(0) = VectorXd::Ones(n_slope_check);
+        for (int i=0; i < n_slope_check; i++)
+            B(i, 1) = i;
+    for (int i = 0; i < n_params && conv; i++) {
+        // VectorXd mean = means.col(i)(Eigen::seq(curr_batch - n_slope_check + 1, curr_batch)); // Eigen 3.4 Eigen::seq
+        VectorXd mean      = means.block(curr_batch - n_slope_check + 1, i, n_slope_check, 1);  // Eigen block API
+        VectorXd Sigma_inv = vars.block(curr_batch - n_slope_check + 1, i, n_slope_check, 1).cwiseInverse();
+        MatrixXd Q = B.transpose() * Sigma_inv.asDiagonal() * B;
+        Vector2d beta = Q.llt().solve(B.transpose() * Sigma_inv.asDiagonal() * mean);
+        if (abs(beta(1)) - 2 * sqrt(Q(1, 1)) > trend_lim * abs(beta(0)))
+            conv = false;
 
-    // save the mean and sd at every break point
-    // check sd < eps
-    for (int j=0; j < n; j++) {
-        for (int i=0; i < n_chains; i++) {
-            v[i] = params[i][j];
-        }
-        double t = (double) Rcpp::mean(v) / (double) Rcpp::sd(v);
-
-        // p-value: 2 * min{cdf(x) , 1 - cdf(x)}
-        double cdf = R::pt(t, n_chains-1, 1, 0);
-        double p_val = (cdf < 1-cdf) ? 2*cdf : 2*(1-cdf);
-
-        if (p_val < 0.05) conv = false;
-        std::cout << "p_val = " << p_val << std::endl;
+// std::cout << "mean here = " << mean << std::endl;
+// std::cout << "Q here = " << Q << std::endl;
+// std::cout << "beta here = " << Q << std::endl;
     }
-
-    // for (int i=0; i<n_chains; i++) {
-    //     std::cout << "params[i] = " << params[i] << std::endl;
-    // }
-    return false;
+    return conv;
 }
 
 // std.lim, trend.lim

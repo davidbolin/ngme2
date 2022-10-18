@@ -4,16 +4,10 @@
 \alias{plot.ngme}
 \title{ngme plot}
 \usage{
-\method{plot}{ngme}(object, param = "fe", type = "traj", which = 1)
+\method{plot}{ngme}(object)
 }
 \arguments{
-\item{object}{ngme object after model fitting}
-
-\item{param}{fe : fix effect;  me : measurement error; p : process}
-
-\item{type}{1 : "traj" or 2 : "grad"}
-
-\item{which}{0 for fix effects and eps, 1 for 1st latent model, etc}
+\item{object}{ngme object}
 }
 \value{
 

@@ -94,15 +94,15 @@ ngme_out
 str(ngme_out)
 
 # noise
-plot_chains(ngme_out, parameter = "theta_mu", f_index = 0)
-plot_chains(ngme_out, parameter = "theta_V", f_index = 0)
-plot_chains(ngme_out, parameter = "theta_sigma", f_index = 0)
+traceplot(ngme_out, parameter = "theta_mu", f_index = 0)
+traceplot(ngme_out, parameter = "theta_V", f_index = 0)
+traceplot(ngme_out, parameter = "theta_sigma", f_index = 0)
 
 # ar1 model
-plot_chains(ngme_out, parameter = "theta_K",     f_index = 1)
-plot_chains(ngme_out, parameter = "theta_mu",    f_index = 1)
-plot_chains(ngme_out, parameter = "theta_sigma", f_index = 1)
-plot_chains(ngme_out, parameter = "theta_V",     f_index = 1)
+traceplot(ngme_out, parameter = "theta_K",     f_index = 1)
+traceplot(ngme_out, parameter = "theta_mu",    f_index = 1)
+traceplot(ngme_out, parameter = "theta_sigma", f_index = 1)
+traceplot(ngme_out, parameter = "theta_V",     f_index = 1)
 
 # compare ar model
 # plot(ngme_out$latents[[1]]$noise, col = "red")

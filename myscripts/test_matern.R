@@ -58,13 +58,13 @@ ngme_out
 attr(ngme_out, "trajectory")[[1]]$latents[[1]]
 str(ngme_out)
 
-plot_chains(ngme_out, parameter = "theta_sigma", f_index = 0)
+traceplot(ngme_out, parameter = "theta_sigma", f_index = 0)
 
 # matern model
-plot_chains(ngme_out, parameter = "theta_K",     f_index = 1)
-plot_chains(ngme_out, parameter = "theta_mu",    f_index = 1)
-plot_chains(ngme_out, parameter = "theta_sigma", f_index = 1)
-plot_chains(ngme_out, parameter = "theta_V",     f_index = 1)
+traceplot(ngme_out, parameter = "theta_K",     f_index = 1)
+traceplot(ngme_out, parameter = "theta_mu",    f_index = 1)
+traceplot(ngme_out, parameter = "theta_sigma", f_index = 1)
+traceplot(ngme_out, parameter = "theta_V",     f_index = 1)
 
 plot(ngme.noise.nig(
       theta_mu = 0,

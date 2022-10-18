@@ -110,8 +110,8 @@ ngme <- function(
       noise$theta_sigma <- c(sd(lm.model$residuals), sd(lm.model2$residuals))
 
     ngme_block <- ngme.block_model(
-      Y                 = list(Y_data, Y_data2),
-      X                 = list(X_data, X_data2),
+      Y                 = c(Y_data, Y_data2), # list(Y_data, Y_data2),
+      X                 = X_data, # list(X_data, X_data2),
       beta              = beta,
       W_sizes           = W_sizes,
       V_sizes           = V_sizes,
@@ -121,7 +121,9 @@ ngme <- function(
       noise             = noise,
       seed              = seed,
       debug             = debug,
-      control           = control
+      control           = control,
+      Y2                = Y_data2,
+      X2                = X_data2
     )
 
     # a list of B.theta.mu and B.theta.sigma and thetas...

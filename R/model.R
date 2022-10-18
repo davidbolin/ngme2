@@ -268,7 +268,7 @@ stopifnot((alpha[1] == 2 || alpha[1] == 4) & (alpha[2] == 2 || alpha[2] == 4) )
   if (is.null(B_kappa))
     B_kappa <- matrix(1, nrow = mesh$n, ncol = length(theta_kappa))
 
-  # supply mesh
+  # supply common mesh
   if (!is.null(mesh)) {
     d <- get_inla_mesh_dimension(mesh)
     if (d == 1) {
@@ -279,17 +279,17 @@ stopifnot((alpha[1] == 2 || alpha[1] == 4) & (alpha[2] == 2 || alpha[2] == 4) )
       fem <- INLA::inla.mesh.fem(mesh, order = alpha[1]) #assume both process have common alpha
       C <- fem$c0  # diag
       G <- fem$g1
-      #TODO if created here, ensure block diagonal structure
+      #TODO if created here, ensure block structure
     }
   } else {
-    #TODO if supplied, already must have block diagonal structure
+    #TODO if supplied, already must have block structure
     C <- fem.mesh.matrices$C
     G <- fem.mesh.matrices$G
   }
   # h <- diag(C)
   h <- rep(1, mesh$n)
 #TODO change mesh here for bivariate case with replicates
-  if (!is.null(A)) {
+  if (!is.null(A)) { #dim(A) = nrep*nobs X nrep*nmesh - A(block diagonal if with replicates)
     nrep <- ncol(A) / nrow(C)
     C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), C)
     G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), G)

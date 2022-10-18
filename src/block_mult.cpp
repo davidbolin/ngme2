@@ -1,18 +1,16 @@
-#include "block_mult.h"
+#include "block.h"
 #include <random>
 #include <cmath>
 
 using std::pow;
 
-BlockMultModel::BlockMultModel(
-  Rcpp::List& block_model,
+BlockModel::BlockModel(
+  const Rcpp::List& block_model,
   unsigned long seed
 ) :
- // TO-DO change the strucutre according to input in lists
   rng               (seed),
   X                 (Rcpp::as<MatrixXd>      (block_model["X"])),
   Y                 (Rcpp::as<VectorXd>      (block_model["Y"])),
-  Y2                (Rcpp::as<VectorXd>      (block_model["Y2"])),
   W_sizes           (Rcpp::as<int>           (block_model["W_sizes"])),
   V_sizes           (Rcpp::as<int>           (block_model["V_sizes"])),
   beta              (Rcpp::as<VectorXd>      (block_model["beta"])),
@@ -24,13 +22,14 @@ BlockMultModel::BlockMultModel(
   A                 (n_obs, W_sizes),
   K                 (V_sizes, W_sizes),
   var               (Var(Rcpp::as<Rcpp::List> (block_model["noise"]), rng())),
-  var2              (Var(Rcpp::as<Rcpp::List> (block_model["noise2"]), rng())),
-  beta_traj         (beta.size())
+
+  beta_traj         (beta.size()),
   // dK            (V_sizes, W_sizes)
+  Y2                 (Rcpp::as<VectorXd>      (block_model["Y2"])),
+  X2                 (Rcpp::as<MatrixXd>      (block_model["X2"]))
   // d2K           (V_sizes, W_sizes)
 {
   // 1. Init controls
-  //common for both fields
   Rcpp::List control_in = block_model["control"];
     const int burnin = control_in["burnin"];
     const double stepsize = control_in["stepsize"];
@@ -44,26 +43,21 @@ BlockMultModel::BlockMultModel(
 if (debug) std::cout << "Begin Block Constructor" << std::endl;
 
   // 2. Init Fixed effects
- // TO-DO should there be beta2?
   fix_flag[block_fix_beta]   = Rcpp::as<bool>        (control_in["fix_beta"]);
   if (beta.size()==0) opt_beta = false;
 
   // 3. Init latent models
-  // each field can have several additive fields
   Rcpp::List latents_in = block_model["latents"];
-  Rcpp::List latents_in2 = block_model["latents2"];
   n_latent = latents_in.size(); // how many latent model
-  n_latent2 = latents_in2.size(); // how many latent model
   for (int i=0; i < n_latent; ++i) {
     Rcpp::List latent_in = Rcpp::as<Rcpp::List> (latents_in[i]);
     int n_theta_K = Rcpp::as<int> (latent_in["n_theta_K"]);
-    int n_theta_K2 = Rcpp::as<int> (latent_in["n_theta_K2"]);
-    // construct according to models
+
+    // construct acoording to models
     unsigned long latent_seed = rng();
-    // 1st Field 
     string model_type = latent_in["model"];
     if (model_type == "ar1") {
-      latents.push_back(std::make_unique<AR>(latent_in, latent_seed)); // TO-DO make a separate list latent_in1
+      latents.push_back(std::make_unique<AR>(latent_in, latent_seed));
     }
     else if (model_type == "rw1") {
       latents.push_back(std::make_unique<AR>(latent_in, latent_seed));
@@ -72,29 +66,14 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
       latents.push_back(std::make_unique<Matern_ns>(latent_in, latent_seed));
     } else if (model_type=="matern" && n_theta_K == 1) {
       latents.push_back(std::make_unique<Matern>(latent_in, latent_seed));
-    } else {
-      std::cout << "Unknown model." << std::endl;
-    }
-  }
-    //2nd Field
-   string model_type2 = latent_in["model2"];
-    if (model_type2 == "ar1") {
-      latents.push_back(std::make_unique<AR>(latent_in, latent_seed));
-    }
-    else if (model_type2 == "rw1") {
-      latents.push_back(std::make_unique<AR>(latent_in, latent_seed));
-    }
-    else if (model_type2 == "matern" && n_theta_K2 > 1) {
-      latents.push_back(std::make_unique<Matern_ns>(latent_in, latent_seed));
-    } else if (model_type2=="matern" && n_theta_K2 == 1) {
-      latents.push_back(std::make_unique<Matern>(latent_in, latent_seed));
-    } else {
+    } else if (model_type=="matern2D" && n_theta_K == 1) {
+      latents.push_back(std::make_unique<Matern2D>(latent_in, latent_seed));
+    }else {
       std::cout << "Unknown model." << std::endl;
     }
   }
 
   /* Init variables: h, A */
-  // TO-DO create A1,A2 and h1, h2 seperate for each field
   int n = 0;
   for (std::vector<std::unique_ptr<Latent>>::iterator it = latents.begin(); it != latents.end(); it++) {
     setSparseBlock(&A,   0, n, (*it)->getA());
@@ -112,7 +91,14 @@ if (debug) std::cout << "After block assemble" << std::endl;
   n_theta_mu    = (theta_mu.size()),
   B_sigma       = (Rcpp::as<MatrixXd>      (noise_in["B_sigma"])),
   theta_sigma   = (Rcpp::as<VectorXd>      (noise_in["theta_sigma"])),
-  n_theta_sigma = (theta_sigma.size()),
+  n_theta_sigma = (theta_sigma.size());
+  
+  //TODO add extra paramters for estimaion of rho(corr. btw processes) &rho_eps(noise corr.)
+  string model_type = latent_in["model"];
+  if (model_type=="matern2D"){
+    theta_rho     = (Rcpp::as<VectorXd>      (noise_in["theta_rho"])),
+    theta_rho_eps = (Rcpp::as<VectorXd>      (noise_in["theta_rho_eps"])),
+  }
 
   theta_mu_traj.resize(n_theta_mu);
   theta_sigma_traj.resize(n_theta_sigma);
@@ -125,50 +111,22 @@ if (debug) std::cout << "After block assemble" << std::endl;
   noise_sigma = (B_sigma * theta_sigma).array().exp();
 
   if (family=="normal") {
-    VectorXd theta_sigma = Rcpp::as<VectorXd>  (noise_in["theta_sigma"]);
     n_merr = n_theta_sigma;
   } else if (family=="nig") {
     n_merr = n_theta_sigma + n_theta_mu + 1;
   }
   n_params = n_la_params + n_feff + n_merr;
 
-   // TO-DO Measurement noise for 2nd field
-  Rcpp::List noise_in2   = block_model["noise2"];
-  B_mu2          = (Rcpp::as<MatrixXd>      (noise_in2["B_mu"])),
-  theta_mu2     = (Rcpp::as<VectorXd>      (noise_in2["theta_mu"])),
-  n_theta_mu2    = (theta_mu2.size()),
-  B_sigma2       = (Rcpp::as<MatrixXd>      (noise_in2["B_sigma"])),
-  theta_sigma2   = (Rcpp::as<VectorXd>      (noise_in2["theta_sigma"])),
-  n_theta_sigma2 = (theta_sigma2.size()),
-
-  theta_mu_traj2.resize(n_theta_mu2);
-  theta_sigma_traj2.resize(n_theta_sigma2);
-
-  fix_flag[block_fix_theta_mu2]        = Rcpp::as<bool> (noise_in2["fix_theta_mu"]);
-  fix_flag[block_fix_theta_sigma2]     = Rcpp::as<bool> (noise_in2["fix_theta_sigma"]);
-  fix_flag[block_fix_theta_V2]         = Rcpp::as<bool> (noise_in2["fix_theta_V"]);
-  fix_flag[block_fix_V2]               = Rcpp::as<bool> (noise_in2["fix_V"]);
-
-  family = Rcpp::as<string>  (noise_in2["noise_type"]);
-  noise_mu2 = B_mu2 * theta_mu2;
-  noise_sigma2 = (B_sigma2 * theta_sigma2).array().exp();
-
-  if (family=="normal") {
-    VectorXd theta_sigma2 = Rcpp::as<VectorXd>  (noise_in2["theta_sigma"]);
-    n_merr2 = n_theta_sigma2;
-  } else if (family=="nig") {
-    n_merr2 = n_theta_sigma2 + n_theta_mu2 + 1;
-  }
-  n_params2 = n_la_params2 + n_feff2 + n_merr2;
-
 if (debug) std::cout << "After block construct noise" << std::endl;
 
   // 5. Fix V and init V
-  //if (fix_flag[block_fix_V]) var.fixV();
-  //if (fix_flag[block_fix_V2]) var2.fixV();
+  // if (fix_flag[block_fix_V]) var.fixV();
 
   // 6. Init solvers
-  if(n_latent > 0){
+  string model_type = latent_in["model"];
+  if (model_type!="matern2D")
+  {
+    if(n_latent > 0){
     VectorXd inv_SV = VectorXd::Constant(V_sizes, 1).cwiseQuotient(getSV());
     SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
     SparseMatrix<double> QQ = Q + A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(var.getV()).asDiagonal() * A;
@@ -176,7 +134,9 @@ if (debug) std::cout << "After block construct noise" << std::endl;
     chol_QQ.analyze(QQ);
     LU_K.analyzePattern(K);
   }
-   if(n_latent > 0){
+  }else
+  {
+    if(n_latent > 0){
     VectorXd inv_SV = VectorXd::Constant(V_sizes, 1).cwiseQuotient(getSV());
     SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
     SparseMatrix<double> QQ = Q + A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(var.getV()).asDiagonal() * A;
@@ -184,6 +144,17 @@ if (debug) std::cout << "After block construct noise" << std::endl;
     chol_QQ.analyze(QQ);
     LU_K.analyzePattern(K);
   }
+  
+  
+
+  // if(n_latent > 0){
+  //   VectorXd inv_SV = VectorXd::Constant(V_sizes, 1).cwiseQuotient(getSV());
+  //   SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
+  //   SparseMatrix<double> QQ = Q + A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(var.getV()).asDiagonal() * A;
+  //   chol_Q.analyze(Q);
+  //   chol_QQ.analyze(QQ);
+  //   LU_K.analyzePattern(K);
+  // }
 
   // 7. optimizer related
   stepsizes = VectorXd::Constant(n_params, stepsize);
@@ -191,8 +162,10 @@ if (debug) std::cout << "After block construct noise" << std::endl;
   indicate_threshold = VectorXd::Constant(n_params, 0);
 
   // 8. Do the burn-in
-  if(n_latent >0)
+  if(n_latent > 0) {
     sampleW_V();
+    sampleW_V();
+  }
   burn_in(burnin + 5);
 
 if (debug) std::cout << "End Block Constructor" << std::endl;
@@ -218,44 +191,62 @@ void BlockModel::setW(const VectorXd& W) {
   int pos = 0;
   for (std::vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
     int size = (*it)->get_W_size();
-  (*it)->setW(W.segment(pos, size));
-      pos += size;
+    (*it)->setW(W.segment(pos, size));
+    pos += size;
+  }
+}
+
+void BlockModel::setPrevW(const VectorXd& W) {
+  int pos = 0;
+  for (std::vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+    int size = (*it)->get_W_size();
+    (*it)->setPrevW(W.segment(pos, size));
+    pos += size;
+  }
+}
+
+void BlockModel::setPrevV(const VectorXd& V) {
+  int pos = 0;
+  for (std::vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+    int size = (*it)->get_V_size();
+    (*it)->setPrevV(V.segment(pos, size));
+    pos += size;
   }
 }
 
 // sample W|VY
 void BlockModel::sampleW_VY()
 {
-  if (n_latent==0) return;
 // if (debug) std::cout << "starting sampling W." << std::endl;
-    VectorXd SV = getSV();
-    VectorXd inv_SV = VectorXd::Constant(SV.size(), 1).cwiseQuotient(SV);
-    // VectorXd V = getV();
-    // VectorXd inv_V = VectorXd::Constant(V.size(), 1).cwiseQuotient(V);
+  if (n_latent==0) return;
 
-    SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
-    // SparseMatrix<double> QQ = Q + pow(sigma_eps, -2) * A.transpose() * A;
-    // SparseMatrix<double> QQ = Q + A.transpose() * noise_sigma.cwiseInverse().asDiagonal() * A;
-    VectorXd noise_V = var.getV();
-    SparseMatrix<double> QQ = Q + A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V).asDiagonal() * A;
-    chol_QQ.compute(QQ);
+  VectorXd SV = getSV();
+  VectorXd inv_SV = VectorXd::Constant(SV.size(), 1).cwiseQuotient(SV);
+  // VectorXd V = getV();
+  // VectorXd inv_V = VectorXd::Constant(V.size(), 1).cwiseQuotient(V);
 
-    // VectorXd M = K.transpose() * inv_SV.asDiagonal() * getMean() +
-    //     pow(sigma_eps, -2) * A.transpose() * (Y - X * beta);
-    VectorXd residual = get_residual();
-    VectorXd M = K.transpose() * inv_SV.asDiagonal() * getMean() +
-    // VectorXd M = K.transpose() * inv_V.asDiagonal() * getMean() +
-        A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V).asDiagonal() * (residual + A * getW());
+  SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
+  // SparseMatrix<double> QQ = Q + pow(sigma_eps, -2) * A.transpose() * A;
+  // SparseMatrix<double> QQ = Q + A.transpose() * noise_sigma.cwiseInverse().asDiagonal() * A;
+  VectorXd noise_V = var.getV();
+  SparseMatrix<double> QQ = Q + A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V).asDiagonal() * A;
+  chol_QQ.compute(QQ);
 
-    VectorXd z (W_sizes);
-    z = rnorm_vec(W_sizes, 0, 1, rng());
-    // sample W ~ N(QQ^-1*M, QQ^-1)
-    VectorXd W = chol_QQ.rMVN(M, z);
-    setW(W);
+  // VectorXd M = K.transpose() * inv_SV.asDiagonal() * getMean() +
+  //     pow(sigma_eps, -2) * A.transpose() * (Y - X * beta);
+  VectorXd residual = get_residual();
+  VectorXd M = K.transpose() * inv_SV.asDiagonal() * getMean() +
+  // VectorXd M = K.transpose() * inv_V.asDiagonal() * getMean() +
+      A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V).asDiagonal() * (residual + A * getW());
+
+  VectorXd z (W_sizes);
+  z = rnorm_vec(W_sizes, 0, 1, rng());
+  // sample W ~ N(QQ^-1*M, QQ^-1)
+  VectorXd W = chol_QQ.rMVN(M, z);
+  setW(W);
 
 // if (debug) std::cout << "Finish sampling W" << std::endl;
 }
-
 
 // ---------------- get, set update gradient ------------------
 VectorXd BlockModel::get_parameter() const {
@@ -327,6 +318,7 @@ std::cout << "avg time for sampling W(ms): " << time_sample_w / n_gibbs << std::
   // EXAMINE the gradient to change the stepsize
   if (kill_var) examine_gradient();
 
+if (debug) std::cout << "gradients = " << gradients << std::endl;
 if (debug) std::cout << "Finish block gradient"<< std::endl;
   return gradients;
 }
@@ -431,7 +423,6 @@ VectorXd BlockModel::grad_theta_mu() {
 
 VectorXd BlockModel::grad_theta_sigma() {
   VectorXd grad = VectorXd::Zero(n_theta_sigma);
-// std::cout << "noise_sigma =" << noise_sigma << std::endl;
   VectorXd noise_V = var.getV();
   VectorXd noise_SV = noise_sigma.array().pow(2).matrix().cwiseProduct(noise_V);
   // grad = B_sigma.transpose() * (-0.5 * VectorXd::Ones(n_obs) + residual.array().pow(2).matrix().cwiseQuotient(noise_SV));

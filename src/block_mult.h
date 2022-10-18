@@ -53,7 +53,7 @@ protected:
     int n_theta_sigma;
 
 
-    int n_latent; // how mnay latent model
+    int n_latent; // how many latent model
     int n_obs; // how many observation
     int n_params, n_la_params, n_feff, n_merr;  // number of total params, la params, ...
 

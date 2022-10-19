@@ -1,0 +1,110 @@
+/*
+MATLAB version in multiK.m
+    K0 = sparse(size(K2,1),size(K2,2));
+    c = sqrt(gamma(alpha-1)./gamma(alpha))./(kappa.^(alpha-1).*(4*pi)^(1/2).*sigma);
+    L = [c(1)*K1 K0; K0 c(2)*K2];
+    K = kron(D,speye(size(K2,1)))*L;
+    Ci = [Ci K0; K0 Ci];
+    // gradients
+    dL = dc(1)*K1 + c(1)*dK1;
+    dK = kron(D,speye(n))*[dL K0;K0 K0];
+*/
+
+// c = sqrt(gamma(alpha-1)./gamma(alpha))./(kappa.^(nu).*(4*pi)^(1/2).*sigma);
+// dc = -nu.*c;
+ // Init K1 and K2
+ K1 = c1 * getK(parameter_K(0));//= c1 * (kappa1^2 * C + G)
+ K2 = c2 * getK(parameter_K(1));
+ 
+ //initialize dK to [G G;G G]
+ SparseMatrix<double,0,int> dK;
+ d = 2*G.rows();
+ dK.resize(d,d);
+ setSparseBlock(&dK,0,0, G);
+ setSparseBlock(&dK,d/2,d/2, G);
+ setSparseBlock(&dK,0,d/2, G);
+ setSparseBlock(&dK,d/2,0, G);
+
+
+ SparseMatrix<double,0,int> B;
+
+ //Set dK from parameters by filling the four blocks:
+ B = D(0,0)*K1;
+ setSparseBlock_update(&K,0,0, B);
+ B = D(1,1)*K2;
+ setSparseBlock_update(&K,d/2,d/2, B);
+ B = D(0,1)*K2;
+ setSparseBlock_update(&K,0,d/2, B);
+ B = D(1,0)*K1;
+ setSparseBlock_update(&K,d/2,0, B);
+
+//////////
+    // Set kappa1 derivative and trace
+    B = (-tau1*pow(kappa1,-2))*G[i];
+    B+= tau1*C[i];
+    double kappa1_trace_i, kappa2_trace_i;
+    //set kappa traces
+    (*Qsolver[i]).compute(K1);
+    kappa1_trace_i = (*Qsolver[i]).trace(B);
+    kappa1_trace[i] = kappa1_trace_i;
+    
+    B = D(0,0)*B;
+    setSparseBlock_update(&dkappa1Q[i],0,0, B);
+
+    B = (-D(1,0)*tau1*pow(kappa1,-2))*G[i];
+    B+=D(1,0)*tau1*C[i];
+    setSparseBlock_update(&dkappa1Q[i],d[i]/2,0, B);
+    
+    //set kappa2 derivative and trace
+    B = (-tau2*pow(kappa2,-2))*G[i];
+    B+= tau2*C[i];
+    
+    (*Qsolver[i]).compute(K2);
+    kappa2_trace_i = (*Qsolver[i]).trace(B);
+    kappa2_trace[i] = kappa2_trace_i;
+    
+    B = D(1,1)*B;
+    setSparseBlock_update(&dkappa2Q[i],d[i]/2,d[i]/2, B);
+    
+    B = (-D(0,1)*tau2*pow(kappa2,-2))*G[i];
+    B+=D(0,1)*tau2*C[i];
+    setSparseBlock_update(&dkappa2Q[i],0,d[i]/2, B);
+    
+    //set kappa1 second derivative
+    B=(2*D(0,0)*tau1*pow(kappa1,-3))*G[i];
+    setSparseBlock_update(&d2kappa1Q[i],0,0, B);
+    B=(2*D(1,0)*tau1*pow(kappa1,-3))*G[i];
+    setSparseBlock_update(&d2kappa1Q[i],d[i]/2,0, B);
+    
+    //set kappa2 second derivative
+    B=(2*D(1,1)*tau2*pow(kappa2,-3))*G[i];
+    setSparseBlock_update(&d2kappa2Q[i],d[i]/2,d[i]/2, B);
+    B=(2*D(0,1)*tau2*pow(kappa2,-3))*G[i];
+    setSparseBlock_update(&d2kappa2Q[i],0,d[i]/2, B);
+////////
+    //Numerical approx of trace2 for kappa1 and kappa2
+    SparseMatrix<double,0,int> Qeps, dQeps;
+    double eps = 0.0001;
+    double kappa_eps = kappa1 + eps;
+    double trje;
+    
+    Qeps = (tau1/kappa_eps)*G[i];
+    Qeps+=tau1*kappa_eps*C[i];
+    (*Qepssolver[i]).compute(Qeps);
+
+    dQeps=(-tau1*pow(kappa_eps,-2))*G[i];
+    dQeps+=tau1*C[i];
+    
+    trje = (*Qepssolver[i]).trace(dQeps);
+    kappa1_trace2[i] = (trje - kappa1_trace_i)/eps;
+    
+    kappa_eps = kappa2 + eps;
+    
+    Qeps=(tau2/kappa_eps)*G[i];
+    Qeps+=tau2*kappa_eps*C[i];
+    (*Qepssolver[i]).compute(Qeps);
+    
+    dQeps=(-tau2*pow(kappa_eps,-2))*G[i];
+    dQeps+=tau2*C[i];
+    trje = (*Qepssolver[i]).trace(dQeps);
+    kappa2_trace2[i] = (trje - kappa2_trace_i)/eps;

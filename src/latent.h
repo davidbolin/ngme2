@@ -389,7 +389,7 @@ private:
     SparseMatrix<double, 0, int> G, C;
     int alpha;
     VectorXd Cdiag;
-    //TODO add 2nd fields variables
+    double theta, rho, c1, c2, typeG;
 public:
     Matern2D(Rcpp::List& model_list, unsigned long seed);
     //TODO add 2nd fields variables

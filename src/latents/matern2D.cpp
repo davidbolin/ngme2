@@ -14,7 +14,11 @@ MATLAB version in multiK.m
     L = [c(1)*K1 K0; K0 c(2)*K2];
     K = kron(D,speye(size(K2,1)))*L;
     Ci = [Ci K0; K0 Ci];
+TODO:
+    1. Update_num_dK - make for general K?
+    2. 
 */
+
 #include "../latent.h"
 //model_list = latent_in
 Matern2D::Matern2D(Rcpp::List& model_list, unsigned long seed)
@@ -26,7 +30,7 @@ Matern2D::Matern2D(Rcpp::List& model_list, unsigned long seed)
     //TODO create new parameters in the latent model_list output
     theta       (Rcpp::as<double>(model_list["theta"])),
     rho         (Rcpp::as<double>(model_list["rho"])),
-    c1          (Rcpp::as<double>(model_list["c1"])),
+    c1          (Rcpp::as<double>(model_list["c1"])),//supply or compute here?
     c2          (Rcpp::as<double>(model_list["c2"])),
     typeG       (Rcpp::as<int>(model_list["typeG"]))//4 types for NIG SPDE model bivariate
 {
@@ -144,7 +148,8 @@ SparseMatrix<double> Matern2D::get_dK(int index, VectorXd parameter_K) const {
     int W_size =  G.rows();
     SparseMatrix<double> dK1, dK2 (W_size, W_size);
     SparseMatrix<double> dK (2*W_size, 2*W_size);
-
+    K1 = getK(parameter_K(0));
+    K2 = getK(parameter_K(1));
     if (alpha==2)
         dK1 = 2*pow(kappa1,2)*C;
         dK2 = 2*pow(kappa2,2)*C;
@@ -157,25 +162,27 @@ SparseMatrix<double> Matern2D::get_dK(int index, VectorXd parameter_K) const {
     if (index == 1)
     {  
         double dc1 = -(alpha - 1)*c1;
-        dK
-    } else
+            //TODO can I initialize with zeros? without the matrix G
+        B = dc1*K1 + c1*dK1;
+        setSparseBlock_update(&dK,0,0, B);
+        // B = 0*dK1;
+        // setSparseBlock_update(&dK,d/2,d/2, B);
+        // B = 0*dK1;
+        // setSparseBlock_update(&dK,0,d/2, B);
+        // B = 0*dK1;
+        // setSparseBlock_update(&dK,d/2,0, B);
+    } else if (index == 2)
     { //dL wrt kappa2
         double dc2 = -(alpha - 1)*c2;
-        dK
+        B = dc2*K2 + c2*dK2;
+        setSparseBlock_update(&dK,d/2,d/2, B);
     }
-    //TODO can i initialize with zeros? without the matrix G
-    B = D(0,0)*K1;
-    setSparseBlock_update(&K,0,0, B);
-    B = D(1,1)*K2;
-    setSparseBlock_update(&K,d/2,d/2, B);
-    B = D(0,1)*K2;
-    setSparseBlock_update(&K,0,d/2, B);
-    B = D(1,0)*K1;
-    setSparseBlock_update(&K,d/2,0, B);
+
     return dK;
 }
 
 // compute numerical dK
+//TODO change to get update for larger K matrix?
 void Matern::update_num_dK() {
     double kappa = parameter_K(0);
     double eps = 0.01;
@@ -205,7 +212,7 @@ VectorXd Matern::grad_theta_K() {
     double ret = 0;
     if (numer_grad) {
         // 1. numerical gradient
-        ret = numerical_grad()(0);
+        ret = numerical_grad()(0);//TODO as defined in latent.cpp
     } else {
         // 2. analytical gradient and numerical hessian
         double tmp = (dK*W).cwiseProduct(SV.cwiseInverse()).dot(K * W + (h - V).cwiseProduct(mu));

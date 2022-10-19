@@ -11,15 +11,15 @@ set.seed(seed)
 }
 
 { ############  1. simulate AR with nig noise
-n_obs <- 10
-ar_mu <- 4
-ar_sigma <- 1.3
-ar_eta <- 0.8
+n_obs <- 500
+ar_mu <- 2
+ar_sigma <- 1.2
+ar_eta <- 2
 
 ar1_process <- simulate(
   f(1:n_obs,
     model = "ar1",
-    theta_K = 0.2,
+    theta_K = 0.4,
     noise = ngme.noise.nig(
       theta_mu = ar_mu,
       theta_sigma = ar_sigma,
@@ -46,9 +46,9 @@ nig_noise <- simulate(
   nsim = n_obs
 )
 
-Y <- ar1_process + nig_noise
-Y
-# Y <- ar1_process + rnorm(n_obs)
+# Y <- ar1_process + nig_noise
+# Y
+Y <- ar1_process + rnorm(n_obs)
 }
 
 ngme_out <- ngme(
@@ -62,7 +62,6 @@ ngme_out <- ngme(
       theta_sigma = ar_sigma,
       theta_V = ar_eta,
       V = attr(ar1_process, "noise")$V,
-
       fix_theta_mu      = FALSE,
       fix_theta_sigma   = FALSE,
       fix_theta_V       = FALSE,
@@ -77,29 +76,33 @@ ngme_out <- ngme(
   data = data.frame(Y = Y),
   control = ngme.control(
     estimation = TRUE,
-    n_parallel_chain = 1,
+    n_parallel_chain = 4,
     burnin = 200,
-    iterations = 100,
+    iterations = 500,
     gibbs_sample = 5,
     stepsize = 1,
     kill_var = FALSE,
     threshold = 1e-4
   ),
-  # noise = ngme.noise.normal(
-  #   fix_theta_sigma = FALSE
-  # ),
-  noise = attr(nig_noise, "noise"),
-  seed = 2,
+  noise = ngme.noise.normal(
+    fix_theta_sigma = FALSE
+  ),
+  # noise = attr(nig_noise, "noise"),
+  seed = 4,
   # , last_fit = ngme_out
   debug = TRUE
 )
 
+ngme_out
 str(ngme_out)
-
+# m noise
 plot_chains(ngme_out, parameter = "theta_mu", f_index = 0)
+plot_chains(ngme_out, parameter = "theta_sigma", f_index = 0)
 plot_chains(ngme_out, parameter = "theta_V", f_index = 0)
-plot_chains(ngme_out, parameter = "theta_mu", f_index = 1)
+
 plot_chains(ngme_out, parameter = "theta_K", f_index = 1)
+plot_chains(ngme_out, parameter = "theta_mu", f_index = 1)
+plot_chains(ngme_out, parameter = "theta_V", f_index = 1)
 
 ngme_out
 str(ngme_out)

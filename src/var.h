@@ -32,11 +32,18 @@ public:
         V             (n),
         prevV         (n)
     {
-        if (noise_list["V"] != R_NilValue) {
-            V = Rcpp::as< VectorXd > (noise_list["V"]);
-            prevV = V;
-        } else {
-            sample_V(); sample_V();
+        if (noise_type == "normal") {
+             V = VectorXd::Ones(n);
+             prevV = VectorXd::Ones(n);
+             fix_V = true;
+         } else if (noise_type == "nig") {
+             if (noise_list["V"] != R_NilValue) {
+                 V = Rcpp::as< VectorXd > (noise_list["V"]);
+                 prevV = V;
+             } else {
+                 sample_V();
+                 sample_V();
+            }
         }
     }
     ~Var() {}

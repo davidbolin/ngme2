@@ -16,7 +16,7 @@ MATLAB version in multiK.m
     Ci = [Ci K0; K0 Ci];
 TODO:
     1. Update_num_dK - make for general K?
-    2. 
+    2. grad_theta_K()
 */
 
 #include "../latent.h"
@@ -183,14 +183,14 @@ SparseMatrix<double> Matern2D::get_dK(int index, VectorXd parameter_K) const {
 
 // compute numerical dK
 //TODO change to get update for larger K matrix?
-void Matern::update_num_dK() {
+void Matern2D::update_num_dK() {
     double kappa = parameter_K(0);
     double eps = 0.01;
     SparseMatrix<double> K_add_eps = pow(kappa + eps, 2) * C + G;
     dK = (K_add_eps - K) / eps;
 }
 
-VectorXd Matern::get_unbound_theta_K() const {
+VectorXd Matern2D::get_unbound_theta_K() const {
     assert (parameter_K.size() == 1);
 
     double th = k2th(parameter_K(0));
@@ -198,7 +198,7 @@ VectorXd Matern::get_unbound_theta_K() const {
 }
 
 // return length 1 vectorxd : grad_kappa * dkappa/dtheta
-VectorXd Matern::grad_theta_K() {
+VectorXd Matern2D::grad_theta_K() {
     SparseMatrix<double> dK = get_dK_by_index(0);
     VectorXd V = getV();
     VectorXd SV = getSV();
@@ -240,7 +240,7 @@ VectorXd Matern::grad_theta_K() {
     return VectorXd::Constant(1, ret);
 }
 
-void Matern::set_unbound_theta_K(VectorXd theta) {
+void Matern2D::set_unbound_theta_K(VectorXd theta) {
     double kappa = th2k(theta(0));
 
     // update theta_K, K and dK

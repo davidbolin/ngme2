@@ -1,7 +1,8 @@
 # Simple scripts for test ngme function
 # sth. wrong with nig measurement noise
 # library(ngme2)
-library(devtools); load_all()
+library(devtools);
+load_all()
 {
 a2th <- function(k) {log((-1-k)/(-1+k))}
 th2a <- function(th) {-1 + (2*exp(th)) / (1+exp(th))}
@@ -71,7 +72,7 @@ ngme_out <- ngme(
       numer_grad       = FALSE,
       use_precond      = TRUE
     ),
-    debug = TRUE
+    debug = FALSE
   ),
   data = data.frame(Y = Y),
   control = ngme.control(
@@ -90,7 +91,7 @@ ngme_out <- ngme(
   # noise = attr(nig_noise, "noise"),
   seed = 4,
   # , last_fit = ngme_out
-  debug = TRUE
+  debug = FALSE
 )
 
 ngme_out
@@ -104,8 +105,7 @@ plot_chains(ngme_out, parameter = "theta_K", f_index = 1)
 plot_chains(ngme_out, parameter = "theta_mu", f_index = 1)
 plot_chains(ngme_out, parameter = "theta_V", f_index = 1)
 
-ngme_out
-str(ngme_out)
+# str(ngme_out)
 
 # trajs <- ngme_out
 

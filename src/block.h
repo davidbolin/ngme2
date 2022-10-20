@@ -94,7 +94,7 @@ protected:
     vector<double>   theta_V_traj;
 public:
     // BlockModel() {}
-    BlockModel(Rcpp::List& block_model, unsigned long seed);
+    BlockModel(const Rcpp::List& block_model, unsigned long seed);
     virtual ~BlockModel() {}
 
     /* Gibbs Sampler */
@@ -123,6 +123,8 @@ public:
       }
     }
     void setW(const VectorXd&);
+    void setPrevW(const VectorXd&);
+    void setPrevV(const VectorXd&);
 
     /* Optimizer related */
     VectorXd             get_parameter() const;
@@ -166,6 +168,18 @@ public:
         for (std::vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
             int size = (*it)->get_V_size();
             V.segment(pos, size) = (*it)->getV();
+            pos += size;
+        }
+
+        return V;
+    }
+
+    VectorXd getPrevV() const {
+        VectorXd V (V_sizes);
+        int pos = 0;
+        for (std::vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+            int size = (*it)->get_V_size();
+            V.segment(pos, size) = (*it)->getPrevV();
             pos += size;
         }
 
@@ -222,6 +236,21 @@ public:
             VectorXd b_inc_vec = (residual + var.getV().cwiseProduct(noise_mu)).cwiseQuotient(noise_sigma).array().pow(2);
             var.sample_cond_V(a_inc_vec, b_inc_vec);
         }
+    }
+
+    // for updating hessian
+    vector<VectorXd> get_VW() const {
+        vector<VectorXd> ret (3);
+        ret[0] = var.getV();
+        ret[1] = getV();
+        ret[2] = getW();
+        return ret;
+    }
+
+    void set_prev_VW(const vector<VectorXd>& VW) {
+        var.setPrevV(VW[0]);
+        setPrevV(VW[1]);
+        setPrevW(VW[2]);
     }
 
     // --------- Fixed effects and Measurement error  ------------

@@ -88,7 +88,7 @@ protected:
     vector<vector<double>> theta_sigma_traj;
     vector<double>   theta_V_traj;
 public:
-    Latent(Rcpp::List&, unsigned long seed);
+    Latent(const Rcpp::List&, unsigned long seed);
     virtual ~Latent() {}
 
     /*  1 Model itself   */
@@ -105,12 +105,15 @@ public:
             this->W = W;
         }
     }
+    void setPrevW(const VectorXd& W) { prevW = W; }
 
     VectorXd getMean() const { return mu.cwiseProduct(getV()-h); }
 
     /*  2 Variance component   */
     const VectorXd& getV()     const { return var.getV(); }
     const VectorXd& getPrevV() const { return var.getPrevV(); }
+    void setPrevV(const VectorXd& V) { var.setPrevV(V); }
+
     VectorXd getSV() const {
         VectorXd V=getV();
         return (sigma.array().pow(2).matrix().cwiseProduct(V));

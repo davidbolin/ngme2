@@ -51,13 +51,13 @@ public:
     string get_noise_type() const {return noise_type;}
     const VectorXd& getV()     const {return V;}
     const VectorXd& getPrevV() const {return prevV;}
-
-    void fixV() {fix_V = true;}
-
+    void setPrevV(const VectorXd& V) { prevV = V; }
     void setV(const VectorXd& newV) {
         prevV = V;
         V = newV;
     }
+
+    void fixV() {fix_V = true;}
 
     void sample_V() {
         if (noise_type == "nig") {

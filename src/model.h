@@ -3,7 +3,6 @@
 
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
-#include <vector>
 using Eigen::SparseMatrix;
 using Eigen::VectorXd;
 using Eigen::Triplet;
@@ -28,9 +27,9 @@ private:
     Eigen::VectorXd x;
     Eigen::SparseMatrix<double> H;
 public:
-    SomeFun()            
-    : x(2), H(2, 2) { 
-        x << 0, 0; 
+    SomeFun()
+    : x(2), H(2, 2) {
+        x << 0, 0;
 
         // set H
         std::vector<T> tripletList;

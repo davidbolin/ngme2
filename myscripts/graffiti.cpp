@@ -55,12 +55,13 @@ public:
 int main(int argc, char const *argv[])
 {
 
-    VectorXd v1 (1);
-    v1.resize(3);
-    v1 << 1,2,3;
+    VectorXd v1 {3};
+    vector<VectorXd> vecs {2};
+    vecs[1] = v1;
+    vecs[2] = v1;
+    vecs[3] = v1;
 
-    cout << v1[1] << endl;
-
+    cout << vecs[3];
     // MatrixXd m1 (3, 3);
 //     SparseMatrix<double> m1 = {3,3};
 //     m1 = v1.asDiagonal();

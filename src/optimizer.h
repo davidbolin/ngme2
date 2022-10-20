@@ -2,6 +2,7 @@
 #define NGME_OPT_H
 
 #include <Rcpp.h>
+#include <RcppEigen.h>
 #include <Eigen/Dense>
 #include "model.h"
 

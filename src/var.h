@@ -98,10 +98,16 @@ public:
 
         double grad = 0;
         if (noise_type == "nig") {
-            VectorXd tmp = VectorXd::Constant(n, 1+1/(2*nu)) - 0.5*V - VectorXd::Constant(n, 1).cwiseQuotient(2*V);
+            VectorXd tmp = VectorXd::Constant(n, 1+1/(2*nu))
+                - 0.5*V - VectorXd::Constant(n, 1).cwiseQuotient(2*V);
             grad = tmp.mean();
+            VectorXd tmp2 = VectorXd::Constant(n, 1+1/(2*nu))
+                - 0.5*prevV - VectorXd::Constant(n, 1).cwiseQuotient(2*prevV);
+            double grad2 = tmp2.mean();
+
             double hess = -0.5 * pow(nu, -2);
-            grad = grad / (hess * nu + grad);
+            // grad = grad / (hess * nu + grad2);
+            grad = grad / (hess * nu);
         }
 
         return grad;

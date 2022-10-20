@@ -26,7 +26,7 @@ ngme.control <- function(
   n_parallel_chain  = 2,
   stop_points       = 10,
   exchange_VW       = FALSE,
-  last_to_check     = 3,
+  n_slope_check     = 3,
 
   opt_beta          = TRUE,
   fix_beta          = FALSE,
@@ -51,7 +51,7 @@ ngme.control <- function(
     n_parallel_chain  = n_parallel_chain,
     stop_points       = stop_points,
     exchange_VW       = exchange_VW,
-    last_to_check     = last_to_check, # how many on regression check
+    n_slope_check     = n_slope_check, # how many on regression check
 
     opt_beta          = opt_beta,
     fix_beta          = fix_beta,
@@ -84,7 +84,7 @@ ngme.control <- function(
 #' @examples
 ngme.control.f <- function(
   numer_grad    = FALSE,
-  use_precond   = TRUE,
+  use_precond   = FALSE,
   use_num_hess  = TRUE,
   eps           = 0.01,
   use_iter_solver = FALSE

@@ -130,8 +130,10 @@ if (debug) std::cout << "After block construct noise" << std::endl;
   indicate_threshold = VectorXd::Constant(n_params, 0);
 
   // 8. Do the burn-in
-  if(n_latent >0)
+  if(n_latent > 0) {
     sampleW_V();
+    sampleW_V();
+  }
   burn_in(burnin + 5);
 
 if (debug) std::cout << "End Block Constructor" << std::endl;
@@ -284,6 +286,7 @@ std::cout << "avg time for sampling W(ms): " << time_sample_w / n_gibbs << std::
   // EXAMINE the gradient to change the stepsize
   if (kill_var) examine_gradient();
 
+if (debug) std::cout << "gradients = " << gradients << std::endl;
 if (debug) std::cout << "Finish block gradient"<< std::endl;
   return gradients;
 }

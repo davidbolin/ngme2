@@ -56,7 +56,7 @@ Rcpp::List Optimizer::sgd(
 }
 
 
-// return the last gradient
+// return the parameter after sgd
 VectorXd Optimizer::sgd(
     Model& model,
     double eps,
@@ -92,10 +92,6 @@ VectorXd Optimizer::sgd(
 
     }
 
-    // return Rcpp::List::create(
-    //     Rcpp::Named("grad_traj") = grad_traj,
-    //     Rcpp::Named("x_traj") = x_traj
-    // );
-    return grad;
+    return x;
 }
 

@@ -98,13 +98,13 @@ public:
     SparseMatrix<double, 0, int>& getA()    {return A; }
 
     const VectorXd& getW()  const           {return W; }
-    const VectorXd& getPrevW()  const       {return prevW; }
-    void            setW(const VectorXd& W) {
+    void            setW(const VectorXd& newW) {
         if (!fix_flag[latent_fix_W]) {
-            prevW = this->W;
-            this->W = W;
+            prevW = W;
+            W = newW;
         }
     }
+    const VectorXd& getPrevW()  const       {return prevW; }
     void setPrevW(const VectorXd& W) { prevW = W; }
 
     VectorXd getMean() const { return mu.cwiseProduct(getV()-h); }
@@ -115,11 +115,11 @@ public:
     void setPrevV(const VectorXd& V) { var.setPrevV(V); }
 
     VectorXd getSV() const {
-        VectorXd V=getV();
+        VectorXd V = getV();
         return (sigma.array().pow(2).matrix().cwiseProduct(V));
     }
     VectorXd getPrevSV() const {
-        VectorXd prevV=getPrevV();
+        VectorXd prevV = getPrevV();
         return (sigma.array().pow(2).matrix().cwiseProduct(prevV));
     }
 
@@ -263,7 +263,7 @@ public:
 
 /*    Optimizer related    */
 inline const VectorXd Latent::get_parameter() const {
-if (debug) std::cout << "Start latent get parameter"<< std::endl;
+// if (debug) std::cout << "Start latent get parameter"<< std::endl;
 
     VectorXd parameter (n_params);
         parameter.segment(0, n_theta_K)                         = get_unbound_theta_K();
@@ -272,12 +272,12 @@ if (debug) std::cout << "Start latent get parameter"<< std::endl;
         parameter(n_theta_K+n_theta_mu+n_theta_sigma)           = var.get_unbound_theta_V();
 
 // if (debug) std::cout << "parameter= " << parameter << std::endl;
-if (debug) std::cout << "End latent get parameter"<< std::endl;
+// if (debug) std::cout << "End latent get parameter"<< std::endl;
     return parameter;
 }
 
 inline const VectorXd Latent::get_grad() {
-if (debug) std::cout << "Start latent gradient"<< std::endl;
+// if (debug) std::cout << "Start latent gradient"<< std::endl;
     VectorXd grad (n_params);
 
 auto grad1 = std::chrono::steady_clock::now();
@@ -289,13 +289,13 @@ auto grad1 = std::chrono::steady_clock::now();
 // DEBUG: checking grads
 if (debug) {
     // std::cout << "gradient= " << grad << std::endl;
-    std::cout << "gradient time " << since(grad1).count() << std::endl;
+    // std::cout << "one latent gradient time " << since(grad1).count() << std::endl;
 }
     return grad;
 }
 
 inline void Latent::set_parameter(const VectorXd& theta) {
-if (debug) std::cout << "Start latent set parameter"<< std::endl;
+// if (debug) std::cout << "Start latent set parameter"<< std::endl;
     set_unbound_theta_K (theta.segment(0, n_theta_K));
     set_theta_mu        (theta.segment(n_theta_K, n_theta_mu));
     set_theta_sigma     (theta.segment(n_theta_K+n_theta_mu, n_theta_sigma));

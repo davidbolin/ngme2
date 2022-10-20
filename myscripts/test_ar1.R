@@ -1,8 +1,7 @@
 # Simple scripts for test ngme function
 # sth. wrong with nig measurement noise
 # library(ngme2)
-library(devtools);
-load_all()
+library(devtools);load_all()
 {
 a2th <- function(k) {log((-1-k)/(-1+k))}
 th2a <- function(th) {-1 + (2*exp(th)) / (1+exp(th))}
@@ -62,7 +61,7 @@ ngme_out <- ngme(
       theta_mu = ar_mu,
       theta_sigma = ar_sigma,
       theta_V = ar_eta,
-      V = attr(ar1_process, "noise")$V,
+      # V = attr(ar1_process, "noise")$V,
       fix_theta_mu      = FALSE,
       fix_theta_sigma   = FALSE,
       fix_theta_V       = FALSE,
@@ -79,7 +78,7 @@ ngme_out <- ngme(
     estimation = TRUE,
     n_parallel_chain = 4,
     burnin = 200,
-    iterations = 500,
+    iterations = 2000,
     gibbs_sample = 5,
     stepsize = 1,
     kill_var = FALSE,

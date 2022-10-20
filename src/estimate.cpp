@@ -72,9 +72,9 @@ auto timer = std::chrono::steady_clock::now();
 
         // set hessian by setting prevV and prevW (round robin)
         if (n_chains > 1) {
-            vector<VectorXd> tmp = blocks[0]->get_VW();
+            std::vector<VectorXd> tmp = blocks[0]->get_VW();
             for (int i = 0; i < n_chains - 1; i++) {
-                vector<VectorXd> VW = blocks[i+1]->get_VW();
+                std::vector<VectorXd> VW = blocks[i+1]->get_VW();
                 blocks[i]->set_prev_VW(VW);
             }
             blocks[n_chains - 1]->set_prev_VW(tmp);

@@ -136,7 +136,7 @@ public:
 
     // get K/dK using different parameter
     virtual SparseMatrix<double, 0, int> getK(const VectorXd&) const=0;
-    virtual SparseMatrix<double, 0, int> get_dK(int, VectorXd) const=0;
+    virtual SparseMatrix<double, 0, int> get_dK(int, const VectorXd&) const=0;
 
     // variants of getK and get_dK
     // get_dK wrt. paramter_K[i]
@@ -182,7 +182,6 @@ public:
     void compute_trace() {
         if (W_size != V_size) return;
 
-        SparseMatrix<double> K = getK();
         SparseMatrix<double> dK = get_dK_by_index(0);
 // compute trace
 // auto timer_trace = std::chrono::steady_clock::now();
@@ -196,16 +195,17 @@ public:
                 chol_solver_K.compute(K);
                 trace = chol_solver_K.trace(M);
             }
-        } else {
-            if (!symmetricK) {
-                // BiCG solver
-                throw("Not implemented yet");
-            } else {
-                SparseMatrix<double, RowMajor> KK = K;
-                CG_solver_K.compute(K);
-                trace = CG_solver_K.trace(M);
-            }
         }
+        // else {
+        //     if (!symmetricK) {
+        //         // BiCG solver
+        //         throw("Not implemented yet");
+        //     } else {
+        //         SparseMatrix<double, RowMajor> KK = K;
+        //         CG_solver_K.compute(K);
+        //         trace = CG_solver_K.trace(M);
+        //     }
+        // }
 
 // std::cout << "trace ====== " << trace << std::endl;
 // std::cout << "time for the trace (ms): " << since(timer_trace).count() << std::endl;
@@ -224,15 +224,16 @@ public:
                     chol_solver_K.compute(K);
                     trace_eps = chol_solver_K.trace(M);
                 }
-            } else {
-                if (!symmetricK) {
-                    // BiCG solver
-                    throw("Not implemented yet");
-                } else {
-                    CG_solver_K.compute(K);
-                    trace_eps = CG_solver_K.trace(M);
-                }
             }
+            // else {
+            //     if (!symmetricK) {
+            //         // BiCG solver
+            //         throw("Not implemented yet");
+            //     } else {
+            //         CG_solver_K.compute(K);
+            //         trace_eps = CG_solver_K.trace(M);
+            //     }
+            // }
         }
     };
 
@@ -316,7 +317,7 @@ private:
 public:
     AR(Rcpp::List& model_list, unsigned long seed);
     SparseMatrix<double> getK(const VectorXd& alpha) const;
-    SparseMatrix<double> get_dK(int index, VectorXd alpha) const;
+    SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
     VectorXd grad_theta_K();
     VectorXd get_unbound_theta_K() const;
     void set_unbound_theta_K(VectorXd theta);
@@ -343,7 +344,7 @@ private:
 public:
     Matern(Rcpp::List& model_list, unsigned long seed);
     SparseMatrix<double> getK(const VectorXd& alpha) const;
-    SparseMatrix<double> get_dK(int index, VectorXd alpha) const;
+    SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
     VectorXd grad_theta_K();
     VectorXd get_unbound_theta_K() const;
     void set_unbound_theta_K(VectorXd theta);
@@ -370,7 +371,7 @@ private:
 public:
     Matern_ns(Rcpp::List& model_list, unsigned long seed);
     SparseMatrix<double> getK(const VectorXd& alpha) const;
-    SparseMatrix<double> get_dK(int index, VectorXd alpha) const;
+    SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
     VectorXd grad_theta_K();
     void set_unbound_theta_K(VectorXd theta);
 

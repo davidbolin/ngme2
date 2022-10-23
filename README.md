@@ -17,7 +17,6 @@ remotes::install_github("davidbolin/ngme2", ref = "devel")
 * parallel chains
 * hessian from all other chains
 * convergence checks
-* multivariate matern model
 * multivariate measurement noise
 * prior for the parameters
 * confidence intervals for the parameters
@@ -27,10 +26,11 @@ remotes::install_github("davidbolin/ngme2", ref = "devel")
 
 ## doing now
 
-**Non-gaussian measurement noise**
+* **Non-gaussian measurement noise**
 family = "nig", parameter to be estimate : noise_mu, noise_sigma, noise_nu
     1. hardcode every noise in block model or split into classes
 
+* Multivariate matern model - stationary bivariate case
 
 ## bug found
 

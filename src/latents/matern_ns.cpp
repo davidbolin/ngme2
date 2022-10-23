@@ -19,7 +19,7 @@ if (debug) std::cout << "constructor of matern ns" << std::endl;
     symmetricK = true;
 
     // Init K and Q
-    K = getK(parameter_K);
+    K = getK(theta_K);
     SparseMatrix<double> Q = K.transpose() * K;
 
     chol_solver_K.init(W_size, 0,0,0);
@@ -36,6 +36,7 @@ if (debug) std::cout << "finish constructor of matern ns" << std::endl;
 
 SparseMatrix<double> Matern_ns::getK(const VectorXd& theta_kappa) const {
     VectorXd kappas = (Bkappa * theta_kappa).array().exp();
+    std::cout <<  "theta_kappa here = " << theta_kappa << std::endl;
 
     int n_dim = G.rows();
     SparseMatrix<double> K_a (n_dim, n_dim);
@@ -60,7 +61,7 @@ SparseMatrix<double> Matern_ns::getK(const VectorXd& theta_kappa) const {
 
 // dK wrt. theta_K[index]
 SparseMatrix<double> Matern_ns::get_dK(int index, const VectorXd& params) const {
-    VectorXd kappas = (Bkappa * parameter_K).array().exp();
+    VectorXd kappas = (Bkappa * theta_K).array().exp();
 
     int n_dim = G.rows();
     SparseMatrix<double> dK_a (n_dim, n_dim);
@@ -125,10 +126,10 @@ VectorXd Matern_ns::grad_theta_K() {
     return grad;
 }
 
-void Matern_ns::set_unbound_theta_K(VectorXd theta_K) {
-    parameter_K = theta_K;
-    K = getK(parameter_K);
-    if (!numer_grad) compute_trace();
+void Matern_ns::update_each_iter() {
+    K = getK(theta_K);
+    if (!numer_grad)
+      compute_trace();
 }
 
 // class nonstationaryGC : public Operator {

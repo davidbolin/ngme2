@@ -17,9 +17,8 @@ Matern::Matern(Rcpp::List& model_list, unsigned long seed)
 std::cout << "begin Constructor of Matern " << std::endl;
     symmetricK = true;
 
-    parameter_K(0) = exp(parameter_K(0)); //watch out! in parameterization of kappa, not theta_kappa
     // Init K and Q
-    K = getK(parameter_K);
+    K = getK(theta_K);
     SparseMatrix<double> Q = K.transpose() * K;
 
     if (!use_iter_solver) {
@@ -37,8 +36,8 @@ std::cout << "begin Constructor of Matern " << std::endl;
 std::cout << "finish Constructor of Matern " << std::endl;
 }
 
-SparseMatrix<double> Matern::getK(const VectorXd& parameter_K) const {
-    double kappa = parameter_K(0);
+SparseMatrix<double> Matern::getK(const VectorXd& theta_K) const {
+    double kappa = th2k(theta_K(0));
     int W_size = G.rows();
 
     SparseMatrix<double> K_a (W_size, W_size);
@@ -46,7 +45,7 @@ SparseMatrix<double> Matern::getK(const VectorXd& parameter_K) const {
         // SparseMatrix<double> KCK = k2C.asDiagonal();
     SparseMatrix<double> KCK = kappa * kappa * C;
 
-    // VectorXd kappas = VectorXd::Constant(W_size, parameter_K(0));
+    // VectorXd kappas = VectorXd::Constant(W_size, theta_K(0));
     // SparseMatrix<double> KCK (W_size, W_size);
     //     KCK = kappas.cwiseProduct(kappas).cwiseProduct(Cdiag).asDiagonal();
 
@@ -65,9 +64,9 @@ SparseMatrix<double> Matern::getK(const VectorXd& parameter_K) const {
 }
 
 // stationary
-SparseMatrix<double> Matern::get_dK(int index, const VectorXd& parameter_K) const {
+SparseMatrix<double> Matern::get_dK(int index, const VectorXd& theta_K) const {
     assert(index==0);
-    double kappa = parameter_K(0);
+    double kappa = th2k(theta_K(0));
     int W_size = G.rows();
     SparseMatrix<double> dK (W_size, W_size);
 
@@ -82,17 +81,10 @@ SparseMatrix<double> Matern::get_dK(int index, const VectorXd& parameter_K) cons
 
 // compute numerical dK
 void Matern::update_num_dK() {
-    double kappa = parameter_K(0);
     double eps = 0.01;
+    double kappa = th2k(theta_K(0));
     SparseMatrix<double> K_add_eps = pow(kappa + eps, 2) * C + G;
     dK = (K_add_eps - K) / eps;
-}
-
-VectorXd Matern::get_unbound_theta_K() const {
-    assert (parameter_K.size() == 1);
-
-    double th = log(parameter_K(0));
-    return VectorXd::Constant(1, th);
 }
 
 // return length 1 vectorxd : grad_kappa * dkappa/dtheta
@@ -101,9 +93,9 @@ VectorXd Matern::grad_theta_K() {
     VectorXd V = getV();
     VectorXd SV = getSV();
 
-    double th = log(parameter_K(0));
-    double da  = parameter_K(0);
-    double d2a = parameter_K(0);
+    double th = theta_K(0);
+    double da  = th2k(theta_K(0));
+    double d2a = th2k(theta_K(0));
 
     double ret = 0;
     if (numer_grad) {
@@ -135,7 +127,8 @@ VectorXd Matern::grad_theta_K() {
     // if (debug) std::cout << "prevW =" << prevW << std::endl;
     // if (debug) std::cout << "prevvV =" << prevV << std::endl;
     // if (debug) std::cout << "prevSV =" << prevSV << std::endl;
-    // if (debug) std::cout << "trace_eps =" << trace_eps << std::endl;
+    if (debug) std::cout << "trace_eps =" << trace_eps << std::endl;
+    if (debug) std::cout << "trace =" << trace << std::endl;
     // if (debug) std::cout << "grad2_eps =" << trace << std::endl;
     // if (debug) std::cout << "grad_eps =" << trace_eps << std::endl;
     // if (debug) std::cout << "grad =" << grad << std::endl;
@@ -151,22 +144,18 @@ VectorXd Matern::grad_theta_K() {
     return VectorXd::Constant(1, ret);
 }
 
-void Matern::set_unbound_theta_K(VectorXd theta) {
-if (debug) std::cout << "**************para_K 1 =" << parameter_K << std::endl;
-    // update theta_K, K and dK
-    double kappa = exp(theta(0));
-    parameter_K = VectorXd::Constant(1, kappa);
-if (debug) std::cout << "**************para_K 2 =" << parameter_K << std::endl;
-    K = getK(parameter_K);
-    dK = get_dK(0, parameter_K);
+void Matern::update_each_iter() {
+    K = getK(theta_K);
+    dK = get_dK(0, theta_K);
+    d2K = 0 * C;
 
     if (use_num_dK) {
         update_num_dK();
     }
 
-    if (!numer_grad) compute_trace();
+    if (!numer_grad)
+        compute_trace();
 }
-
 
 // class matern_ope : public Operator {
 // private:

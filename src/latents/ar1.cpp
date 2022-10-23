@@ -19,15 +19,9 @@ AR::AR(Rcpp::List& model_list, unsigned long seed)
     C           (Rcpp::as< SparseMatrix<double,0,int> > (model_list["C"]))
 {
 if (debug) std::cout << "Begin Constructor of AR1" << std::endl;
-    // Init operator for ar1
-    // ope = new ar_operator(model_list);
-
-    // VectorXd parameter_K = Rcpp::as<VectorXd> (model_list["theta_K"]);
-    // set_parameter(parameter_K);
 
     // Init K and Q
-    // SparseMatrix<double> K = getK();
-    K = getK(parameter_K);
+    K = getK(theta_K);
     SparseMatrix<double> Q = K.transpose() * K;
 
     // watch out!
@@ -43,19 +37,11 @@ if (debug) std::cout << "Begin Constructor of AR1" << std::endl;
 if (debug) std::cout << "End Constructor of AR1" << std::endl;
 }
 
-// For optimizer
-VectorXd AR::get_unbound_theta_K() const {
-    VectorXd alpha = parameter_K;
-    assert (alpha.size() == 1);
-    // change of variable
-    double th = a2th(alpha(0));
-    return VectorXd::Constant(1, th);
-}
-
 // wrt. parameter_K (bounded parameter)
-SparseMatrix<double> AR::getK(const VectorXd& alpha) const {
-    assert (alpha.size() == 1);
-    SparseMatrix<double> K = alpha(0) * C + G;
+SparseMatrix<double> AR::getK(const VectorXd& theta_K) const {
+    assert (theta_K.size() == 1);
+    double alpha = th2a(theta_K(0));
+    SparseMatrix<double> K = alpha * C + G;
     return K;
 }
 
@@ -66,9 +52,8 @@ SparseMatrix<double> AR::get_dK(int index, const VectorXd& alpha) const {
 
 // compute numerical dK
 void AR::update_num_dK() {
-    double alpha = parameter_K(0);
-    double eps = 0.01;
-    SparseMatrix<double> K_add_eps = (alpha + eps) * C + G;
+    double alpha = th2a(theta_K(0) + eps);
+    SparseMatrix<double> K_add_eps = alpha * C + G;
     dK = (K_add_eps - K) / eps;
 }
 
@@ -78,7 +63,7 @@ VectorXd AR::grad_theta_K() {
     VectorXd V = getV();
     VectorXd SV = getSV();
 
-    double a = parameter_K(0);
+    double a = th2a(theta_K(0));
     double th = a2th(a);
 
     double da  = 2 * (exp(th) / pow(1+exp(th), 2));
@@ -92,49 +77,53 @@ VectorXd AR::grad_theta_K() {
         // 2. analytical gradient and numerical hessian
         double tmp = (dK*W).cwiseProduct(SV.cwiseInverse()).dot(K * W + (h - V).cwiseProduct(mu));
         double grad = trace - tmp;
+        ret = - grad * da / W_size;
 
     // if (debug) std::cout << "tmp =" << tmp << std::endl;
     // if (debug) std::cout << "trace =" << trace << std::endl;
         // result : trace ~= 0
         //          tmp ~= 20-70
 
-        if (!use_precond) {
-            ret = - grad * da / W_size;
-        } else {
-            // compute numerical hessian
-            SparseMatrix<double> K2 = getK_by_eps(0, eps);
-            SparseMatrix<double> dK2 = get_dK_by_eps(0, 0, eps);
+//         if (!use_precond) {
+//             ret = - grad * da / W_size;
+//         } else {
+//             // compute numerical hessian
+//             SparseMatrix<double> K2 = getK_by_eps(0, eps);
+//             SparseMatrix<double> dK2 = get_dK_by_eps(0, 0, eps);
 
-            // grad(x+eps) - grad(x) / eps
-            VectorXd prevV = getPrevV();
-            VectorXd prevSV = getPrevSV();
-            double grad2_eps = trace_eps - (dK2*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K2 * prevW + (h - prevV).cwiseProduct(mu));
-            double grad_eps  = trace - (dK*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K * prevW + (h - prevV).cwiseProduct(mu));
-    if (debug) std::cout << "grad2_eps =" << grad2_eps << std::endl;
-    if (debug) std::cout << "grad_eps =" << grad_eps << std::endl;
+//             // grad(x+eps) - grad(x) / eps
+//             VectorXd prevV = getPrevV();
+//             VectorXd prevSV = getPrevSV();
+//             double grad2_eps = trace_eps - (dK2*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K2 * prevW + (h - prevV).cwiseProduct(mu));
+//             double grad_eps  = trace -(dK2*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K2 * prevW + (h - prevV).cwiseProduct(mu));
+// // std::cout << "trace_eps =" << trace_eps << std::endl;
+// // std::cout << "trace =" << trace << std::endl;
+// // std::cout << "grad2_eps =" << grad2_eps << std::endl;
+// // std::cout << "grad_eps =" << grad_eps << std::endl;
+// // std::cout << "tmp =" << (dK2*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K2 * prevW + (h - prevV).cwiseProduct(mu)) << std::endl;
+// // std::cout << "tmp2 =" << (dK2*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K2 * prevW + (h - prevV).cwiseProduct(mu)) << std::endl;
 
-            double hess = (grad2_eps - grad_eps) / eps;
-        // result : hessian around 2000
-    // if (debug) std::cout << "hess =" << hess << std::endl;
+//             double hess = (grad2_eps - grad_eps) / eps;
+// std::cout << "hess =" << hess << std::endl;
+//         // result : hessian around 2000
+//     // if (debug) std::cout << "hess =" << hess << std::endl;
 
-            ret = (grad * da) / (hess * da * da + grad_eps * d2a);
-        }
+//             ret = (grad * da) / (hess * da * da + grad_eps * d2a);
+//         }
     }
 
     return VectorXd::Constant(1, ret);
 }
 
-void AR::set_unbound_theta_K(VectorXd theta) {
-    // change of variable
-    double alpha = th2a(theta(0));
-    parameter_K = VectorXd::Constant(1, alpha);
-    K = getK(parameter_K);
-    dK = get_dK(0, parameter_K);
+void AR::update_each_iter() {
+    K = getK(theta_K);
+    dK = get_dK(0, theta_K);
     d2K = 0 * C;
 
     if (use_num_dK) {
         update_num_dK();
     }
 
-    if (!numer_grad && (W_size == V_size)) compute_trace();
+    if (!numer_grad && (W_size == V_size))
+        compute_trace();
 }

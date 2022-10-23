@@ -40,14 +40,14 @@ ngme_out <- ngme(
     debug = TRUE,
     control = ngme.control.f(
       numer_grad = F,
-      use_precond = F
+      use_precond = T
     )
   ),
   data = list(Y = Y),
   noise = ngme.noise.normal(),
   control = ngme.control(
     estimation = T,
-    iterations = 500,
+    iterations = 100,
     stop_points = 1,
     n_parallel_chain = 4
   ),
@@ -61,7 +61,7 @@ str(ngme_out)
 traceplot(ngme_out, parameter = "theta_sigma", f_index = 0)
 
 # matern model
-traceplot(ngme_out, parameter = "theta_K",     f_index = 1)
+traceplot(ngme_out, parameter = "theta_K",     f_index = 1, transform = exp)
 traceplot(ngme_out, parameter = "theta_mu",    f_index = 1)
 traceplot(ngme_out, parameter = "theta_sigma", f_index = 1)
 traceplot(ngme_out, parameter = "theta_V",     f_index = 1)

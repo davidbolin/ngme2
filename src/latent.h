@@ -1,7 +1,7 @@
 /*
     latent class:
     basically, providing get, grad, set (theta_K, ...)
-        1. theta_K is unbounded, while parameter_K is bounded
+        1. theta_K is unbounded
         2. theta_mu
         3. theta_sigma
         4. theta_V
@@ -50,7 +50,8 @@ protected:
     int W_size, V_size, n_params, n_var {1}; // n_params=n_theta_K + n_theta_mu + n_theta_sigma + n_var
 
     // operator K related
-    VectorXd parameter_K;
+    VectorXd theta_K;
+
     bool use_num_dK {false};
     SparseMatrix<double, 0, int> K, dK, d2K;
     int n_theta_K;
@@ -61,7 +62,7 @@ protected:
     bool symmetricK {false};
 
     // mu and sigma
-    MatrixXd B_mu,  B_sigma;
+    MatrixXd B_mu, B_sigma;
     VectorXd theta_mu, theta_sigma;
     VectorXd mu, sigma;
     int n_theta_mu, n_theta_sigma;
@@ -90,6 +91,11 @@ protected:
 public:
     Latent(const Rcpp::List&, unsigned long seed);
     virtual ~Latent() {}
+
+    // change of variable
+    virtual VectorXd bound_to_unbound_K(const VectorXd&) const {return theta_K;}
+    virtual VectorXd unbound_to_bound_K(const VectorXd&) const {return theta_K;}
+    virtual void update_each_iter()=0;
 
     /*  1 Model itself   */
     int get_W_size() const                  {return W_size; }
@@ -143,19 +149,19 @@ public:
     // variants of getK and get_dK
     // get_dK wrt. paramter_K[i]
     SparseMatrix<double, 0, int> get_dK_by_index(int index) const {
-        return get_dK(index, parameter_K);
+        return get_dK(index, theta_K);
     }
 
     // param(pos) += eps;  getK(param);
     SparseMatrix<double, 0, int> getK_by_eps(int pos, double eps) {
-        VectorXd tmp = parameter_K;
-        tmp(pos) += eps;
+        VectorXd tmp = theta_K;
+        tmp(pos) = tmp(pos) + eps;
         return getK(tmp);
     }
 
     SparseMatrix<double, 0, int> get_dK_by_eps(int index, int pos, double eps) {
-        VectorXd tmp = parameter_K;
-        tmp(pos) += eps;
+        VectorXd tmp = theta_K;
+        tmp(pos) = tmp(pos) + eps;
         return get_dK(index, tmp);
     }
 
@@ -165,12 +171,6 @@ public:
     void           set_parameter(const VectorXd&);
     void           finishOpt(int i) {fix_flag[i] = 0; }
 
-    // Parameter: Operator (override this if do change of variable)
-    virtual VectorXd    get_unbound_theta_K() const {
-        return parameter_K;
-    }
-    virtual VectorXd    grad_theta_K() { return numerical_grad(); }
-    virtual void        set_unbound_theta_K(VectorXd parameter_K) {this->parameter_K = parameter_K;}
 
     // deprecated
     // virtual double function_kappa(double eps);
@@ -184,20 +184,23 @@ public:
     void compute_trace() {
         if (W_size != V_size) return;
 
-        SparseMatrix<double> dK = get_dK_by_index(0);
 // compute trace
 // auto timer_trace = std::chrono::steady_clock::now();
 
-        SparseMatrix<double> M = dK;
+        SparseMatrix<double> K = getK(theta_K);
+        SparseMatrix<double> dK = get_dK_by_index(0);
         if (!use_iter_solver) {
             if (!symmetricK) {
                 lu_solver_K.computeKTK(K);
-                trace = lu_solver_K.trace(M);
+                trace = lu_solver_K.trace(dK);
             } else {
                 chol_solver_K.compute(K);
-                trace = chol_solver_K.trace(M);
+                trace = chol_solver_K.trace(dK);
             }
         }
+// std::cout << "eps K  in 1= " << K << std::endl;
+// std::cout << "eps dK in 1= " << dK << std::endl;
+// std::cout << "trace  in 1= " << trace << std::endl;
         // else {
         //     if (!symmetricK) {
         //         // BiCG solver
@@ -227,6 +230,9 @@ public:
                     trace_eps = chol_solver_K.trace(M);
                 }
             }
+// std::cout << "eps K  in 2 = " << K << std::endl;
+// std::cout << "eps dK in 2 = " << dK << std::endl;
+// std::cout << "trace_eps in 2 = " << trace_eps << std::endl;
             // else {
             //     if (!symmetricK) {
             //         // BiCG solver
@@ -239,20 +245,8 @@ public:
         }
     };
 
-    // Parameter: mu
-    VectorXd get_theta_mu() const {return theta_mu;}
-    void   set_theta_mu(VectorXd theta_mu)  {
-        this->theta_mu = theta_mu;
-        mu = (B_mu * theta_mu);
-    }
+    virtual VectorXd grad_theta_K() { return numerical_grad(); }
     virtual VectorXd grad_theta_mu();
-
-    // Parameter: sigma
-    virtual VectorXd get_theta_sigma() const { return theta_sigma; }
-    virtual void set_theta_sigma(VectorXd theta_sigma) {
-        this->theta_sigma = theta_sigma;
-        sigma = (B_sigma * theta_sigma).array().exp();
-    }
     virtual VectorXd grad_theta_sigma();
 
     virtual void   set_theta_var(double v) { var.set_theta_var(v); }
@@ -262,8 +256,8 @@ public:
     Rcpp::List output() const;
 
     void record_traj() {
-        for (int i=0; i < parameter_K.size(); i++)
-            theta_K_traj[i].push_back(parameter_K(i));
+        for (int i=0; i < theta_K.size(); i++)
+            theta_K_traj[i].push_back(theta_K(i));
         for (int i=0; i < theta_mu.size(); i++)
             theta_mu_traj[i].push_back(theta_mu(i));
         for (int i=0; i < theta_sigma.size(); i++)
@@ -277,9 +271,9 @@ inline const VectorXd Latent::get_parameter() const {
 // if (debug) std::cout << "Start latent get parameter"<< std::endl;
 
     VectorXd parameter (n_params);
-        parameter.segment(0, n_theta_K)                         = get_unbound_theta_K();
-        parameter.segment(n_theta_K, n_theta_mu)                = get_theta_mu();
-        parameter.segment(n_theta_K+n_theta_mu, n_theta_sigma)  = get_theta_sigma();
+        parameter.segment(0, n_theta_K)                         = theta_K;
+        parameter.segment(n_theta_K, n_theta_mu)                = theta_mu;
+        parameter.segment(n_theta_K+n_theta_mu, n_theta_sigma)  = theta_sigma;
         parameter(n_theta_K+n_theta_mu+n_theta_sigma)           = var.get_unbound_theta_V();
 
 // if (debug) std::cout << "parameter= " << parameter << std::endl;
@@ -307,10 +301,15 @@ if (debug) {
 
 inline void Latent::set_parameter(const VectorXd& theta) {
 // if (debug) std::cout << "Start latent set parameter"<< std::endl;
-    set_unbound_theta_K (theta.segment(0, n_theta_K));
-    set_theta_mu        (theta.segment(n_theta_K, n_theta_mu));
-    set_theta_sigma     (theta.segment(n_theta_K+n_theta_mu, n_theta_sigma));
+    theta_K  = theta.segment(0, n_theta_K);
+    theta_mu = theta.segment(n_theta_K, n_theta_mu);
+    theta_sigma = theta.segment(n_theta_K+n_theta_mu, n_theta_sigma);
     var.set_theta_var   (theta(n_theta_K+n_theta_mu+n_theta_sigma));
+
+    // update
+    mu = (B_mu * theta_mu);
+    sigma = (B_sigma * theta_sigma).array().exp();
+    update_each_iter();
 
     // record
     record_traj();
@@ -322,18 +321,28 @@ private:
     SparseMatrix<double, 0, int> G, C;
 public:
     AR(Rcpp::List& model_list, unsigned long seed);
+
     SparseMatrix<double> getK(const VectorXd& alpha) const;
     SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
     VectorXd grad_theta_K();
-    VectorXd get_unbound_theta_K() const;
-    void set_unbound_theta_K(VectorXd theta);
+    void update_each_iter();
     void update_num_dK();
-
     double th2a(double th) const {return (-1 + 2*exp(th) / (1+exp(th)));}
     double a2th(double k) const {return (log((-1-k)/(-1+k)));}
+
+    VectorXd unbound_to_bound_K(const VectorXd& theta_K) const {
+        VectorXd alpha (1);
+        alpha(0) = th2a(theta_K(0));
+        return alpha;
+    }
+    VectorXd bound_to_unbound_K(const VectorXd& alpha) const {
+        VectorXd theta_K (1);
+        theta_K(0) = a2th(alpha(0));
+        return theta_K;
+    }
     // Rcpp::List get_estimates() const {
     //     return Rcpp::List::create(
-    //         Rcpp::Named("alpha")        = parameter_K(0),
+    //         Rcpp::Named("alpha")        = theta_K(0),
     //         Rcpp::Named("theta.mu")     = theta_mu,
     //         Rcpp::Named("theta.sigma")  = theta_sigma,
     //         Rcpp::Named("theta.noise")  = var.get_theta_V()
@@ -352,15 +361,24 @@ public:
     SparseMatrix<double> getK(const VectorXd& alpha) const;
     SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
     VectorXd grad_theta_K();
-    VectorXd get_unbound_theta_K() const;
-    void set_unbound_theta_K(VectorXd theta);
+    void update_each_iter();
     void update_num_dK();
-
     double th2k(double th) const {return exp(th);}
     double k2th(double k) const {return log(k);}
+
+    VectorXd unbound_to_bound_K(const VectorXd& theta_K) const {
+        VectorXd kappa (1);
+        kappa(0) = th2k(theta_K(0));
+        return kappa;
+    }
+    VectorXd bound_to_unbound_K(const VectorXd& kappa) const {
+        VectorXd theta_K (1);
+        theta_K(0) = k2th(kappa(0));
+        return theta_K;
+    }
     // Rcpp::List get_estimates() const {
     //     return Rcpp::List::create(
-    //         Rcpp::Named("kappa")        = parameter_K(0),
+    //         Rcpp::Named("kappa")        = theta_K(0),
     //         Rcpp::Named("theta.mu")     = theta_mu,
     //         Rcpp::Named("theta.sigma")  = theta_sigma,
     //         Rcpp::Named("theta.noise")  = var.get_theta_V()
@@ -379,11 +397,11 @@ public:
     SparseMatrix<double> getK(const VectorXd& alpha) const;
     SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
     VectorXd grad_theta_K();
-    void set_unbound_theta_K(VectorXd theta);
+    void update_each_iter();
 
     // Rcpp::List get_estimates() const {
     //     return Rcpp::List::create(
-    //         Rcpp::Named("theta.kappa") = parameter_K,
+    //         Rcpp::Named("theta.kappa") = theta_K,
     //         Rcpp::Named("theta.mu")    = theta_mu,
     //         Rcpp::Named("theta.sigma") = theta_sigma,
     //         Rcpp::Named("theta.noise") = var.get_theta_V()

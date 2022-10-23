@@ -14,12 +14,12 @@ Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
     debug         (Rcpp::as<bool>       (model_list["debug"])),
     W_size        (Rcpp::as<int>        (model_list["W_size"])),
     V_size        (Rcpp::as<int>        (model_list["V_size"])),
-    parameter_K   (Rcpp::as<VectorXd>   (model_list["theta_K"])),
+    theta_K       (Rcpp::as<VectorXd>   (model_list["theta_K"])),
     n_theta_K     (Rcpp::as<int>        (model_list["n_theta_K"])),
 
     trace         (0),
     trace_eps     (0),
-    eps           (0.001),
+    eps           (0.01),
 
     W             (W_size),
     prevW         (W_size),
@@ -28,7 +28,7 @@ Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
 
     var           (Var(Rcpp::as<Rcpp::List> (model_list["noise"]), latent_rng())),
 
-    theta_K_traj  (parameter_K.size())
+    theta_K_traj  (theta_K.size())
 {
 if (debug) std::cout << "Begin constructor of latent" << std::endl;
 
@@ -59,8 +59,8 @@ if (debug) std::cout << "Begin constructor of latent" << std::endl;
 
         theta_mu = Rcpp::as< VectorXd >    (noise_in["theta_mu"]);
         theta_sigma = Rcpp::as< VectorXd > (noise_in["theta_sigma"]);
-        set_theta_mu(theta_mu);
-        set_theta_sigma(theta_sigma);
+        mu = (B_mu * theta_mu);
+        sigma = (B_sigma * theta_sigma).array().exp();
 
     const int n_theta_V = 1;
     n_params = n_theta_K + n_theta_mu + n_theta_sigma + n_theta_V;
@@ -95,7 +95,8 @@ VectorXd Latent::grad_theta_mu() {
     for (int l=0; l < n_theta_mu; l++) {
         grad(l) = (V-h).cwiseProduct(B_mu.col(l).cwiseQuotient(getSV())).dot(K*W - mu.cwiseProduct(V-h));
     }
-    return - 1.0 / V_size * grad;
+    return - grad / V_size;
+    // return - grad;
 
 // if (debug) {
 // std::cout << "grad of mu=" << grad <<std::endl;
@@ -154,32 +155,15 @@ double Latent::function_K(SparseMatrix<double>& K) {
 }
 
 // function_K(params += ( 0,0,eps,0,0) )
-double Latent::function_K(VectorXd& parameter_K) {
-    SparseMatrix<double> K = getK(parameter_K);
+double Latent::function_K(VectorXd& theta_K) {
+    SparseMatrix<double> K = getK(theta_K);
 
-    VectorXd V = getV();
-    VectorXd SV = getSV();
-
-    SparseMatrix<double> Q = K.transpose() * SV.cwiseInverse().asDiagonal() * K;
-    VectorXd tmp = K * W - mu.cwiseProduct(V-h);
-
-    double l;
-    if (!symmetricK) {
-        solver_Q.compute(Q);
-        l = 0.5 * solver_Q.logdet()
-               - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
-    } else {
-        chol_solver_K.compute(K);
-        l = chol_solver_K.logdet()
-            - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
-    }
-    return l;
+    return function_K(K);
 }
 
 // numerical gradient for K parameters
 VectorXd Latent::numerical_grad() {
     double val = function_K(K);
-
     VectorXd grad (n_theta_K);
     // iterate every parameter
     for (int i=0; i < n_theta_K; i++) {
@@ -203,7 +187,7 @@ Rcpp::List Latent::output() const {
     Rcpp::List out = Rcpp::List::create(
         Rcpp::Named("model")        = model_type,
         Rcpp::Named("noise_type")   = noise_type,
-        Rcpp::Named("theta_K")      = parameter_K, // same parameterization as input
+        Rcpp::Named("theta_K")      = theta_K, // same parameterization as input
         Rcpp::Named("theta_mu")     = theta_mu,
         Rcpp::Named("theta_sigma")  = theta_sigma,
         Rcpp::Named("theta_V")      = var.get_theta_V(),  // gives eta > 0, not log(eta)

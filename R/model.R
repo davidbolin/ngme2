@@ -183,7 +183,7 @@ ngme.matern <- function(
     d <- get_inla_mesh_dimension(mesh)
     if (d == 1) {
       fem <- INLA::inla.mesh.1d.fem(mesh)
-      C <- fem$c1
+      C <- fem$c0
       G <- fem$g1
     } else {
       fem <- INLA::inla.mesh.fem(mesh, order = alpha)
@@ -271,9 +271,10 @@ stopifnot((alpha[1] == 2 || alpha[1] == 4) & (alpha[2] == 2 || alpha[2] == 4) )
   # supply common mesh
   if (!is.null(mesh)) {
     d <- get_inla_mesh_dimension(mesh)
+    # h <- rep(1, mesh$n) # This is wrong for the Matern
     if (d == 1) {
       fem <- INLA::inla.mesh.1d.fem(mesh)
-      C <- fem$c1
+      C <- fem$c0
       G <- fem$g1 
     } else {
       fem <- INLA::inla.mesh.fem(mesh, order = alpha[1]) #assume both process have common alpha
@@ -286,13 +287,12 @@ stopifnot((alpha[1] == 2 || alpha[1] == 4) & (alpha[2] == 2 || alpha[2] == 4) )
     C <- fem.mesh.matrices$C
     G <- fem.mesh.matrices$G
   }
-  # h <- diag(C)
-  h <- rep(1, mesh$n)
 #TODO change mesh here for bivariate case with replicates
   if (!is.null(A)) { #dim(A) = nrep*nobs X nrep*nmesh - A(block diagonal if with replicates)
     nrep <- ncol(A) / nrow(C)
     C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), C)
     G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), G)
+    h <- diag(C)
     h <- rep(h, times = nrep)
   }
 

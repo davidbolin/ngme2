@@ -148,6 +148,7 @@ SparseMatrix<double> Matern2D::get_dK(int index, VectorXd parameter_K) const {
     int W_size =  G.rows();
     SparseMatrix<double> dK1, dK2 (W_size, W_size);
     SparseMatrix<double> dK (2*W_size, 2*W_size);
+    //dK.setZero();
     K1 = getK(parameter_K(0));
     K2 = getK(parameter_K(1));
     if (alpha==2)

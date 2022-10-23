@@ -42,7 +42,7 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
 
   // 2. Init Fixed effects
   fix_flag[block_fix_beta]   = Rcpp::as<bool>        (control_in["fix_beta"]);
-  if (beta.size()==0) opt_beta = false;
+  if (beta.size() == 0) opt_beta = false;
 
   // 3. Init latent models
   Rcpp::List latents_in = block_model["latents"];
@@ -85,12 +85,10 @@ if (debug) std::cout << "After block assemble" << std::endl;
   B_mu          = (Rcpp::as<MatrixXd>      (noise_in["B_mu"])),
   theta_mu      = (Rcpp::as<VectorXd>      (noise_in["theta_mu"])),
   n_theta_mu    = (theta_mu.size()),
+
   B_sigma       = (Rcpp::as<MatrixXd>      (noise_in["B_sigma"])),
   theta_sigma   = (Rcpp::as<VectorXd>      (noise_in["theta_sigma"])),
   n_theta_sigma = (theta_sigma.size()),
-
-  theta_mu_traj.resize(n_theta_mu);
-  theta_sigma_traj.resize(n_theta_sigma);
 
   fix_flag[block_fix_theta_mu]        = Rcpp::as<bool> (noise_in["fix_theta_mu"]);
   fix_flag[block_fix_theta_sigma]     = Rcpp::as<bool> (noise_in["fix_theta_sigma"]);
@@ -131,6 +129,11 @@ if (debug) std::cout << "After block construct noise" << std::endl;
     sampleW_V();
     sampleW_V();
   }
+
+  // record
+  theta_mu_traj.resize(n_theta_mu);
+  theta_sigma_traj.resize(n_theta_sigma);
+  record_traj();
 
 if (debug) std::cout << "End Block Constructor" << std::endl;
 }
@@ -308,14 +311,7 @@ void BlockModel::set_parameter(const VectorXd& Theta) {
 
     // measurement noise
   set_theta_merr(Theta.segment(n_la_params + n_feff, n_merr));
-
-  for (int i=0; i < theta_mu.size(); i++) {
-    theta_mu_traj[i].push_back(theta_mu(i));
-  }
-  for (int i=0; i < theta_sigma.size(); i++) {
-    theta_sigma_traj[i].push_back(theta_sigma(i));
-  }
-  theta_V_traj.push_back(var.get_theta_V());
+  record_traj();
 
   assemble(); //update K,dK,d2K after
 }
@@ -446,8 +442,10 @@ void BlockModel::set_theta_merr(const VectorXd& theta_merr) {
     theta_sigma = theta_merr.segment(n_theta_mu, n_theta_sigma);
     var.set_theta_var(theta_merr(n_theta_mu + n_theta_sigma));
   }
-  noise_sigma = (B_sigma * theta_sigma).array().exp();
+
+  // update mu, sigma
   noise_mu = (B_mu * theta_mu);
+  noise_sigma = (B_sigma * theta_sigma).array().exp();
 }
 
 // generate output to R

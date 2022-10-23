@@ -57,12 +57,9 @@ if (debug) std::cout << "Begin constructor of latent" << std::endl;
         n_theta_mu    =   (B_mu.cols());
         n_theta_sigma =   (B_sigma.cols());
 
-        theta_mu_traj.resize(n_theta_mu);
-        theta_sigma_traj.resize(n_theta_sigma);
-
         theta_mu = Rcpp::as< VectorXd >    (noise_in["theta_mu"]);
-        set_theta_mu(theta_mu);
         theta_sigma = Rcpp::as< VectorXd > (noise_in["theta_sigma"]);
+        set_theta_mu(theta_mu);
         set_theta_sigma(theta_sigma);
 
     const int n_theta_V = 1;
@@ -79,6 +76,10 @@ if (debug) std::cout << "Begin constructor of latent" << std::endl;
     if (var.get_noise_type() == "normal") {
         fix_flag[latent_fix_theta_mu] = 1; // no mu need
     }
+
+    theta_mu_traj.resize(n_theta_mu);
+    theta_sigma_traj.resize(n_theta_sigma);
+    record_traj();
 
 if (debug) std::cout << "End constructor of latent" << std::endl;
 }

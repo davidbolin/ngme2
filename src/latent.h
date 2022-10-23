@@ -1,7 +1,7 @@
 /*
     latent class:
     basically, providing get, grad, set (theta_K, ...)
-        1. theta_K
+        1. theta_K is unbounded, while parameter_K is bounded
         2. theta_mu
         3. theta_sigma
         4. theta_V
@@ -30,12 +30,15 @@ using std::exp;
 using std::log;
 using std::pow;
 using Eigen::SparseMatrix;
+using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using std::vector;
 
 enum Latent_fix_flag {
-    latent_fix_theta_K, latent_fix_theta_mu, latent_fix_theta_sigma,
-    latent_fix_W
+    latent_fix_theta_K,
+    latent_fix_W,
+    latent_fix_theta_mu,
+    latent_fix_theta_sigma
 };
 const int LATENT_FIX_FLAG_SIZE = 4;
 
@@ -60,9 +63,8 @@ protected:
     // mu and sigma
     MatrixXd B_mu,  B_sigma;
     VectorXd theta_mu, theta_sigma;
-
-    int n_theta_mu, n_theta_sigma;
     VectorXd mu, sigma;
+    int n_theta_mu, n_theta_sigma;
 
     // eps for numerical gradient.
     double trace, trace_eps, eps;
@@ -258,6 +260,16 @@ public:
     // Output
     // virtual Rcpp::List get_estimates() const=0;
     Rcpp::List output() const;
+
+    void record_traj() {
+        for (int i=0; i < parameter_K.size(); i++)
+            theta_K_traj[i].push_back(parameter_K(i));
+        for (int i=0; i < theta_mu.size(); i++)
+            theta_mu_traj[i].push_back(theta_mu(i));
+        for (int i=0; i < theta_sigma.size(); i++)
+            theta_sigma_traj[i].push_back(theta_sigma(i));
+        theta_V_traj.push_back(var.get_theta_V());
+    }
 };
 
 /*    Optimizer related    */
@@ -279,7 +291,7 @@ inline const VectorXd Latent::get_grad() {
 // if (debug) std::cout << "Start latent gradient"<< std::endl;
     VectorXd grad (n_params);
 
-auto grad1 = std::chrono::steady_clock::now();
+// auto grad1 = std::chrono::steady_clock::now();
     if (!fix_flag[latent_fix_theta_K])     grad.segment(0, n_theta_K)                        = grad_theta_K();         else grad.segment(0, n_theta_K) = VectorXd::Constant(n_theta_K, 0);
     if (!fix_flag[latent_fix_theta_mu])    grad.segment(n_theta_K, n_theta_mu)               = grad_theta_mu();        else grad.segment(n_theta_K, n_theta_mu) = VectorXd::Constant(n_theta_mu, 0);
     if (!fix_flag[latent_fix_theta_sigma]) grad.segment(n_theta_K+n_theta_mu, n_theta_sigma) = grad_theta_sigma();     else grad.segment(n_theta_K+n_theta_mu, n_theta_sigma) = VectorXd::Constant(n_theta_sigma, 0);
@@ -298,16 +310,10 @@ inline void Latent::set_parameter(const VectorXd& theta) {
     set_unbound_theta_K (theta.segment(0, n_theta_K));
     set_theta_mu        (theta.segment(n_theta_K, n_theta_mu));
     set_theta_sigma     (theta.segment(n_theta_K+n_theta_mu, n_theta_sigma));
-    var.set_theta_var  (theta(n_theta_K+n_theta_mu+n_theta_sigma));
+    var.set_theta_var   (theta(n_theta_K+n_theta_mu+n_theta_sigma));
 
     // record
-    for (int i=0; i < parameter_K.size(); i++)
-        theta_K_traj[i].push_back(parameter_K(i));
-    for (int i=0; i < theta_mu.size(); i++)
-        theta_mu_traj[i].push_back(theta_mu(i));
-    for (int i=0; i < theta_sigma.size(); i++)
-      theta_sigma_traj[i].push_back(theta_sigma(i));
-    theta_V_traj.push_back(var.get_theta_V());
+    record_traj();
 }
 
 // subclasses

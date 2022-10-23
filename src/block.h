@@ -25,7 +25,7 @@ using Eigen::SparseMatrix;
 using Eigen::MatrixXd;
 using std::vector;
 
-const int BLOCK_FIX_FLAG_SIZE = 6;
+const int BLOCK_FIX_FLAG_SIZE = 3;
 
 enum Block_fix_flag {
     block_fix_beta, block_fix_theta_mu, block_fix_theta_sigma
@@ -52,9 +52,8 @@ protected:
     VectorXd noise_sigma, theta_sigma;
     int n_theta_sigma;
 
-
     int n_latent; // how mnay latent model
-    int n_obs; // how many observation
+    int n_obs;  // how many observation
     int n_params, n_la_params, n_feff, n_merr;  // number of total params, la params, ...
 
     // fix estimation
@@ -67,20 +66,15 @@ protected:
 
     SparseMatrix<double> A, K;      // not used: dK, d2K;
 
-    // std::unique_ptr<Var> var;
+    std::vector<std::unique_ptr<Latent>> latents;
     Var var;
-
-    // debug
-    bool fix_merr;
-    bool fixblockV;
 
     // optimize related
     VectorXd stepsizes, gradients;
     int counting {0};
     VectorXd indicate_threshold, steps_to_threshold;
 
-    // No initializer
-    std::vector<std::unique_ptr<Latent>> latents;
+    // solvers
     cholesky_solver chol_Q, chol_QQ;
     SparseLU<SparseMatrix<double> > LU_K;
 
@@ -133,6 +127,17 @@ public:
 
     void                 examine_gradient();
     void                 sampleW_V();
+
+    // record traj. for mu sigma eta
+    void record_traj() {
+        for (int i=0; i < theta_mu.size(); i++) {
+            theta_mu_traj[i].push_back(theta_mu(i));
+        }
+        for (int i=0; i < theta_sigma.size(); i++) {
+            theta_sigma_traj[i].push_back(theta_sigma(i));
+        }
+        theta_V_traj.push_back(var.get_theta_V());
+    }
 
     /* Aseemble */
     void assemble() {

@@ -11,7 +11,7 @@
 { ############  1. simulate AR with nig noise
   n_obs <- 500
   ar_mu <- 2
-  ar_sigma <- 2
+  ar_sigma <- -2
   ar_eta <- 2
 
   ar1_process <- simulate(
@@ -40,10 +40,10 @@
     nsim = n_obs
   )
 
-  Y <- ar1_process + nig_noise
+  # Y <- ar1_process + nig_noise
 
   # use normal noise
-    # Y <- ar1_process + rnorm(n_obs)
+    Y <- ar1_process + rnorm(n_obs)
 }
 
 ngme_out <- ngme(
@@ -56,7 +56,8 @@ ngme_out <- ngme(
       theta_mu = ar_mu,
       theta_sigma = ar_sigma,
       theta_V = ar_eta,
-      # V = attr(ar1_process, "noise")$V,
+      V = attr(ar1_process, "noise")$V,
+      fix_V = TRUE,
       fix_theta_mu      = FALSE,
       fix_theta_sigma   = F,
       fix_theta_V       = F
@@ -73,7 +74,7 @@ ngme_out <- ngme(
     n_parallel_chain = 4,
     stop_points = 5,
     burnin = 200,
-    iterations = 10000,
+    iterations = 200,
     gibbs_sample = 5,
     stepsize = 1,
     kill_var = FALSE,
@@ -82,8 +83,8 @@ ngme_out <- ngme(
     std_lim = 0.1,
     trend_lim = 0.1
   ),
-  # noise = ngme.noise.normal(),
-  noise = attr(nig_noise, "noise"),
+  noise = ngme.noise.normal(),
+  # noise = attr(nig_noise, "noise"),
   seed = 2,
   # , last_fit = ngme_out
   debug = F

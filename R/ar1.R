@@ -27,10 +27,9 @@ model_ar1 <- function(
   index_pred  = NULL,
   use_num_dK  = FALSE,
   data        = NULL,
-  noise       = NULL,
+  noise       = noise_normal(),
   ...
 ) {
-# print(as.list(match.call())[-1])
   # capture symbol in index
   index <- eval(substitute(index), envir = data)
 
@@ -62,7 +61,7 @@ model_ar1 <- function(
   # remove duplicate symbol in ... (e.g. theta_K)
   args <- within(list(...), {
     model       = "ar1"
-    theta_K     = if (is.null(theta_K)) ar1_a2th(alpha) else ar1_a2th(theta_K)
+    theta_K     = if (exists("theta_K")) ar1_a2th(theta_K) else ar1_a2th(alpha)
     W_size      = n
     V_size      = n
     A           = ngme_ts_make_A(loc = index, replicates = replicates, range = range)
@@ -89,15 +88,18 @@ model_ar1 <- function(
 #' @export
 #'
 #' @examples
+#' r1 <- model_rw1(1:7, circular = T); r1$C + r1$G
+#' r2 <- model_rw1(1:7); r2$C + r2$G
 model_rw1 <- function(
   index,
   replicates = NULL,
   circular = FALSE,
   n_points = NULL,
-  noise = NULL,
+  noise = noise_normal(),
   # extra A matrix
   ...
 ) {
+  stopifnot(length(index) > 2)
   # create mesh using index
   sorted_index <- sort(index, index.return = TRUE)
   h <- diff(sorted_index$x)
@@ -105,14 +107,21 @@ model_rw1 <- function(
   A <- Matrix::sparseMatrix(seq_along(index), sorted_index$ix, x = 1)
 
   n <- length(index) - 1
-  # construct G
-    G <- Matrix::Matrix(diag(n));
-    G <- cbind(G, rep(0, n))
+  if (!circular) {
+    # construct G
+      G <- Matrix::Matrix(diag(n));
+      G <- cbind(G, rep(0, n))
 
-  # construct C
+    # construct C
+      C <- Matrix::Matrix(0, n, n)
+      C[seq(n+1, n*n, by = n+1)] <- -1
+      C <- cbind(C, c(rep(0, n-1), -1))
+  } else {
+    G <- Matrix::Matrix(diag(n))
     C <- Matrix::Matrix(0, n, n)
-    C[seq(n+1, n*n, by = n+1)] <- -1
-    C <- cbind(C, c(rep(0, n-1), -1))
+      C[seq(n+1, n*n, by = n+1)] <- -1
+      C[n, 1] <- -1
+  }
 
   # update noise with length n
   if (noise$n_noise == 1) noise <- update_noise(noise, n = n)
@@ -121,7 +130,7 @@ model_rw1 <- function(
     model       = "rw1"
     theta_K     = 1
     fix_theta_K = TRUE
-    W_size      = n + 1
+    W_size      = ncol(C) # n + 1
     V_size      = n
     A           = A
     # A_pred      = ngme.ts.make.A(index_pred, replicates = replicates, range = range),
@@ -134,6 +143,8 @@ model_rw1 <- function(
   do.call(ngme_model, args)
 }
 
+##### duplicate of rw1 except C and G
+
 #' ngme model - random walk of order 2
 #'
 #' Generating C, G and A given index and replicates
@@ -142,41 +153,53 @@ model_rw1 <- function(
 #' @param index index for the process
 #' @param replicates replicates for the process
 #' @param mesh inla.1d.mesh
+#' @param n_points or num of points, evenly spaced mesh
 #' @return a list
 #' @export
 #'
 #' @examples
+#' r2 <- model_rw2(1:7, circular = T); r2$C + r2$G
+#' r3 <- model_rw2(1:7); r3$C + r3$G
 model_rw2 <- function(
   index,
   replicates = NULL,
+  circular = FALSE,
   n_points = NULL,
+  noise = noise_normal(),
   # extra A matrix
   ...
 ) {
+  stopifnot(length(index) > 3)
   # create mesh using index
   sorted_index <- sort(index, index.return = TRUE)
   h <- diff(sorted_index$x)
   # permutation matrix, same as A <- diag(length(index))[sorted_index$ix, ]
   A <- Matrix::sparseMatrix(seq_along(index), sorted_index$ix, x = 1)
 
-  n <- length(index) - 1
-  # construct G
+  n <- length(index) - 2
+  if (!circular) { # n * n+2
+    C <- Matrix::Matrix(0, n, n+2)
     G <- Matrix::Matrix(diag(n));
-    G <- cbind(G, rep(0, n))
-
-  # construct C
+    G <- cbind(G, rep(0, n), rep(0, n))
+    G[seq(n+1, n*(n+2), by = n+1)] <- -2
+    G[seq(2*n+1, n*(n+2), by = n+1)] <- 1
+  } else {
     C <- Matrix::Matrix(0, n, n)
-    C[seq(n+1, n*n, by = n+1)] <- -1
-    C <- cbind(C, c(rep(0, n-1), -1))
+    G <- Matrix::Matrix(diag(n));
+    G[seq(n+1, n*n, by = n+1)] <- -2
+    G[seq(2*n+1, n*n, by = n+1)] <- 1
+    G[n] <- -2
+    G[c(n-1, 2*n)] <- 1
+  }
 
   # update noise with length n
   if (noise$n_noise == 1) noise <- update_noise(noise, n = n)
 
   args <- within(list(...), {
-    model       = "rw2"
+    model       = "rw1"
     theta_K     = 1
     fix_theta_K = TRUE
-    W_size      = n + 1
+    W_size      = ncol(C) # n + 1
     V_size      = n
     A           = A
     # A_pred      = ngme.ts.make.A(index_pred, replicates = replicates, range = range),

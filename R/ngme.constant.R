@@ -12,5 +12,5 @@ ngme_noise_types <- function() {
 #' @return a list of available models
 #' @export
 ngme_model_types <- function() {
-    c("ar1", "matern", "matern_ns", "rw1", "rw2")
+    c("ar1", "matern", "rw1", "rw2")
 }

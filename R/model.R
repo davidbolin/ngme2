@@ -222,10 +222,10 @@ ngme.matern <- function(
 
 #' Create a Matern SPDE 2D model
 #'
-#' @param alpha alpha parameter for the first field
-#' @param alpha2 alpha parameter for the second field
-#' @param mesh mesh argument
-#' @param fem.mesh.matrices specify the FEM matrices
+#' @param alpha a vector of alpha parameters such that c(alpha1, alpha2)
+#' @param mesh common mesh argument for both fields
+#' @param fem.mesh.matrices specify the FEM matrices.
+#'                          Provide C and G matrices for one field only
 #' @param d indicating the dimension of mesh (together with fem.mesh.matrices)
 #' @param theta_kappa
 #' @param B_kappa bases for kappa
@@ -240,7 +240,7 @@ ngme.matern2D <- function(
   kappa = c(1, 1),
   theta_kappa = NULL,
   mesh = NULL,
-  replicates = NULL,
+  replicates = 1,
   fem.mesh.matrices = NULL,
   d = NULL,
   A = NULL,        # watch out! Can also specify in f function, not used for now
@@ -250,14 +250,14 @@ ngme.matern2D <- function(
   if (is.null(mesh) && is.null(fem.mesh.matrices))
     stop("At least specify mesh or matrices")
 
-  if (alpha[1] - round(alpha[1]) != 0 | alpha[2] - round(alpha[2]) != 0 ) {
+  if (((alpha[1] - round(alpha[1])) != 0) | ((alpha[2] - round(alpha[2])) != 0)){
   stop("alpha should be integer, now only 2 or 4")
 }
   if (alpha[1] != alpha[2] ) {
   stop("Alpha for each field is not implemented, please provide common alpha for both fields")
 }
 
-stopifnot((alpha[1] == 2 || alpha[1] == 4) & (alpha[2] == 2 || alpha[2] == 4) )
+stopifnot((alpha[1] == 2 || alpha[1] == 4) & (alpha[2] == 2 || alpha[2] == 4))
 
 # use kappa as parameterization
   stopifnot("Don't overwrite kappa with NULL." = !is.null(kappa))
@@ -268,31 +268,56 @@ stopifnot((alpha[1] == 2 || alpha[1] == 4) & (alpha[2] == 2 || alpha[2] == 4) )
   if (is.null(B_kappa))
     B_kappa <- matrix(1, nrow = mesh$n, ncol = length(theta_kappa))
 
+  nrep = length(replicates)
   # supply common mesh
-  if (!is.null(mesh)) {
+  if ((!is.null(mesh)) & (length(replicates) == 1)) {
     d <- get_inla_mesh_dimension(mesh)
     # h <- rep(1, mesh$n) # This is wrong for the Matern
     if (d == 1) {
       fem <- INLA::inla.mesh.1d.fem(mesh)
       C <- fem$c0
       G <- fem$g1 
+      C_biv <- Matrix::bdiag(C, C)
+      G_biv <- Matrix::bdiag(G, G)
     } else {
       fem <- INLA::inla.mesh.fem(mesh, order = alpha[1]) #assume both process have common alpha
       C <- fem$c0  # diag
       G <- fem$g1
-      #TODO if created here, ensure block structure
+      C_biv <- Matrix::bdiag(C, C)
+      G_biv <- Matrix::bdiag(G, G)
     }
-  } else {
-    #TODO if supplied, already must have block structure
+  } else if ((!is.null(mesh)) & (length(replicates) != 1)) {
+     d <- get_inla_mesh_dimension(mesh)
+     if (d == 1) {
+      fem <- INLA::inla.mesh.1d.fem(mesh)
+      C <- fem$c0  
+      G <- fem$g1
+      C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), C)
+      G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), G)
+      C_biv <- Matrix::bdiag(C, C)
+      G_biv <- Matrix::bdiag(G, G)
+    } else {
+      #assume both process have common alpha
+      fem <- INLA::inla.mesh.fem(mesh, order = alpha[1]) 
+      C <- fem$c0  # diag
+      G <- fem$g1
+      C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), C)
+      G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), G)
+      C_biv <- Matrix::bdiag(C, C)
+      G_biv <- Matrix::bdiag(G, G)
+    }
+  }
+  else { #TODO #if mesh supplied then fem.mesh.matrices are also assumed to be supplied
     C <- fem.mesh.matrices$C
     G <- fem.mesh.matrices$G
+    C_biv <- Matrix::bdiag(C, C)
+    G_biv <- Matrix::bdiag(G, G)
   }
-#TODO change mesh here for bivariate case with replicates
   if (!is.null(A)) { #dim(A) = nrep*nobs X nrep*nmesh - A(block diagonal if with replicates)
-    nrep <- ncol(A) / nrow(C)
-    C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), C)
-    G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), G)
-    h <- diag(C)
+    nrep <- ncol(A) / nrow(C) #dim(C) = nmesh X nmesh
+    C_biv <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), C)
+    G_biv <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), G)
+    h <- diag(C_biv)
     h <- rep(h, times = nrep)
   }
 
@@ -300,13 +325,13 @@ stopifnot((alpha[1] == 2 || alpha[1] == 4) & (alpha[2] == 2 || alpha[2] == 4) )
   model <- ngme.model(
     model       = "matern2D",
     A           = A, #constructed outside of ngme2
-    W_size      = mesh$n,
-    V_size      = nrow(C),
+    W_size      = 2 * nrep * mesh$n,
+    V_size      = nrow(C_biv),
     theta_K     = theta_kappa,
     alpha       = c(alpha[1], alpha[2]),
     B_kappa     = B_kappa,
-    C           = ngme.as.sparse(C),
-    G           = ngme.as.sparse(G),
+    C           = ngme.as.sparse(C_biv),
+    G           = ngme.as.sparse(G_biv),
     h           = h,
     ...
   )

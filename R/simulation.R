@@ -9,7 +9,7 @@
 #'
 #' @examples
 #' n_obs <- 10
-#' ngme.simulate(
+#' simulate(
 #'   f(1:n_obs, model = "ar1", theta_K = 0.4),
 #'   noise = ngme.noise(
 #'     theta_mu = 2,
@@ -17,7 +17,7 @@
 #'     theta_V = 2
 #'   ),
 #'   seed=NULL
-#' )$realization
+#' )
 simulate.ngme_model <- function(
     object,
     nsim   = 1,
@@ -30,7 +30,7 @@ simulate.ngme_model <- function(
 
     # create operator structure
     if (model$model == "ar1") {
-        alpha <- model$theta_K
+        alpha <- ar1_th2a(model$theta_K)
         # for loop
         W <- Reduce(function(x, y) {y + alpha * x}, sim_noise, accumulate = T)
     } else if (model$model == "matern") {
@@ -66,7 +66,7 @@ simulate.ngme_model <- function(
 #' @export
 #'
 #' @examples
-#' ngme.simulate(
+#' simulate(
 #'   noise = ngme.noise(
 #'     theta_mu = 2,
 #'     theta_sigma = 0,
@@ -74,7 +74,7 @@ simulate.ngme_model <- function(
 #'   ),
 #'   n = 10,
 #'   seed=NULL
-#' )$realization
+#' )
 simulate.ngme_noise <- function(
     object,
     nsim   = 1,
@@ -85,7 +85,7 @@ simulate.ngme_noise <- function(
 
     if (is.null(seed)) seed <- as.numeric(Sys.time())
 
-    noise <- update.ngme.noise(noise, n = n)
+    noise <- update_noise(noise, n = n)
     # create nig noise
     if (noise$noise_type == "nig") {
         mu <- drop(noise$B_mu %*% noise$theta_mu)

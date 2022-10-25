@@ -3,23 +3,22 @@ Type: Package
 Title: Latent Mixed Effects Models With Flexible Distributions
 Version: 0.1.0
 Author: c(
-    person("David", "Bolin", email = "davidbolin@gmail.com", role = c("aut", "cre")), 
+    person("David", "Bolin", email = "davidbolin@gmail.com", role = c("aut", "cre")),
     person("Jonas", "Wallin", email = "jonas.wallin81@gmail.com", role = c("aut")))
 Maintainer: David Bolin <davidbolin@gmail.com>
-Description: Inference and prediction for mixed effects models with flexible non-Gaussian and Gaussian distributions. 
+Description: Inference and prediction for mixed effects models with flexible non-Gaussian and Gaussian distributions.
 License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true
-Imports: 
+Imports:
     Formula,
     Matrix,
     Rcpp,
-    rlang
-LinkingTo: 
+LinkingTo:
     testthat,
     Rcpp,
     RcppEigen,
-Suggests: 
+Suggests:
     knitr,
     rmarkdown,
     INLA,
@@ -30,7 +29,7 @@ Suggests:
     testthat (>= 3.0.0),
     xml2
 VignetteBuilder: knitr
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.0
 Config/testthat/edition: 3
 URL: https://davidbolin.github.io/ngme2/
 Config/testthat/parallel: true

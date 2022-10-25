@@ -1,7 +1,3 @@
-# toc
-# ngme.ts.make.A
-# ngme.parse.formula
-
 #' Make observation matrix for time series
 #'
 #' @param loc   integers (after sorting, no gaps > 1)
@@ -14,7 +10,7 @@
 #'
 #' @examples ngme.ts.make.A(c(1, 2, 2), end = 5, replicates = c(1, 1, 2))
 #'
-ngme.ts.make.A <- function(loc, replicates = NULL, range = c(1, max(loc))) {
+ngme_ts_make_A <- function(loc, replicates = NULL, range = c(1, max(loc))) {
   if (is.null(loc)) return (NULL)
 
   n_loc <- length(loc)
@@ -58,9 +54,7 @@ ngme.ts.make.A <- function(loc, replicates = NULL, range = c(1, max(loc))) {
 #'
 #' @return sparse dgCMatrix
 #' @export
-#'
-#' @examples
-ngme.as.sparse <- function(G) {
+ngme_as_sparse <- function(G) {
   tryCatch(
     expr={
       G <- as(G, "dgCMatrix")
@@ -214,7 +208,7 @@ get_inla_mesh_dimension <- function(inla_mesh) {
 #' @export
 #'
 #' @examples
-ngme.parse.formula <- function(
+ngme_parse_formula <- function(
   gf,
   data,
   debug=FALSE
@@ -267,11 +261,33 @@ ngme.parse.formula <- function(
   )
 }
 
-# better return as string?
-ngme.format <- function(x) {
-  x <- format(x, digits = 3)
-  if (length(x) > 1) x <- paste0(x, collapse = ", ")
-  x
+ngme_format <- function(param, val, model = NULL) {
+  stationary <- (length(val) == 1)
+  dne <- (length(val) == 0)
+
+  if (is.null(model)) { # noise
+    if (stationary)
+      val <- if (param == "sigma") format(exp(val), digits = 3) else format(val, digits = 3)
+    else
+      val <-  paste0(format(val, digits = 3), collapse = ", ")
+
+    switch(param,
+      "sigma" = if (stationary) paste0("sigma = ", val)
+                else paste0("theta_sigma = ", val),
+      "mu"    = if (stationary) paste0("mu = ", val)
+                else paste0("theta_mu = ", val),
+      "nu"    = paste0("nu = ", val),
+      "beta"  = if (dne) "No fixed effects" else paste0("beta = ", val)
+    )
+  } else { # model
+    switch(model,
+      "ar1"     = paste0("alpha = ", format(ar1_th2a(val), digits = 3)),
+      "matern"  = if (stationary)
+          paste0("kappa = ", format(exp(val), digits = 3))
+        else
+          paste0("theta_kappa = ", paste0(format(val, digits = 3), collapse = ", "))
+    )
+  }
 }
 
 # taking mean over a list of nested lists
@@ -306,3 +322,16 @@ mean_list <- function(lls) {
 #   list(a=3, b=5, t="nig", ll=list(a=1,b=6, w="ab")),
 #   list(a=5, b=5, t="nig", ll=list(a=4,b=2, w="ab"))
 # )
+
+
+# helper functions
+
+# ar1 alpha (0~1) to theta_K
+ar1_a2th <- function(a) {
+  log((-1 - a) / (-1 + a))
+}
+
+# theta_K to ar1 alpha (0~1)
+ar1_th2a <- function(th) {
+ -1 + (2 * exp(th)) / (1 + exp(th))
+}

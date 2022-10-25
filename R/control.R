@@ -17,19 +17,22 @@
 #' @export
 #'
 #' @examples
-ngme.control <- function(
+ngme_control <- function(
   burnin            = 100,
   iterations        = 100,
   gibbs_sample      = 5,
   stepsize          = 1,
   estimation        = TRUE,
+
+  # parallel options
   n_parallel_chain  = 2,
   stop_points       = 10,
   exchange_VW       = FALSE,
   n_slope_check     = 3,
-  std_lim           = 0.1,
+  std_lim           = 0.2,
   trend_lim         = 0.1,
 
+  # opt options
   opt_beta          = TRUE,
   fix_beta          = FALSE,
 
@@ -43,6 +46,8 @@ ngme.control <- function(
   if ((kill_power <= 0.5) || (kill_power > 1)) {
     stop("reduceVar should be in (0.5,1]")
   }
+
+  if (stop_points > iterations) stop_points <- iterations
 
   control <- list(
     burnin            = burnin,
@@ -85,7 +90,7 @@ ngme.control <- function(
 #' @export
 #'
 #' @examples
-ngme.control.f <- function(
+ngme_control_f <- function(
   numer_grad    = FALSE,
   use_precond   = FALSE,
   use_num_hess  = TRUE,

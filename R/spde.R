@@ -55,8 +55,8 @@
 #         B.kappa = B.kappa,
 #         n_params = length(theta.kappa),
 #         n = n,
-#         C = ngme.as.sparse(C),
-#         G = ngme.as.sparse(G),
+#         C = ngme_as_sparse(C),
+#         G = ngme_as_sparse(G),
 #         use_num_dK = FALSE
 #       )
 #     )

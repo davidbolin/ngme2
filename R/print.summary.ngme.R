@@ -6,10 +6,7 @@
 #' @export
 #'
 #' @examples
-#' 
-#' 
-
-
+#'
 print.summary.ngme <- function(object, ...) {
 
 #   cat("Call:\n")

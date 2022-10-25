@@ -1,30 +1,29 @@
-# This file contains ngme noise specifications,
-# now it has 1. normal 2. nig types of noise.
+# This file contains ngme noise specifications (NIG and Normal)
 
 #' ngme noise specification
 #'
 #' Function for specifying ngme noise.
-#' Use ngme.noise.types() to check all the available types.
+#' Please use noise_type for simpler specification.
+#' Use ngme_noise_types() to check all the available types.
 #'
-#' @param noise_type   type of noise, "nig", "normal"
-#' @param theta_V     value for theta_V, theta_V = eta > 0
-#' @param V           value for V
-#' @param theta_mu     specify a non-stationary noise using theta_mu
-#' @param theta_sigma  specify a non-stationary noise using theta_sigma
-#' @param B_mu         Basis matrix for mu (if non-stationary)
-#' @param B_sigma      Basis matrix for sigma (if non-stationary)
-#' @param fix_theta_mu
-#' @param fix_theta_sigma
-#' @param fix_theta_V
-#' @param fix_V
+#' @param noise_type    type of noise, "nig", "normal"
+#' @param n             number of noise
+#' @param V             value for V
+#' @param B_mu          Basis matrix for mu (if non-stationary)
+#' @param theta_mu      specify a non-stationary noise using theta_mu
+#' @param B_sigma       Basis matrix for sigma (if non-stationary)
+#' @param theta_sigma   specify a non-stationary noise using theta_sigma
+#' @param theta_V       value for theta_V, theta_V = eta > 0
+#' @param fix_theta_mu    fix the parameter of theta_mu
+#' @param fix_theta_sigma  fix the parameter of theta_sigma
+#' @param fix_theta_V   fix the parameter of theta_V
+#' @param fix_V         fix the sampling of V
 #'
 #' @return a list of specification of noise
 #' @export
 #'
-#' @examples
-#'
-ngme.noise <- function(
-  noise_type      = "nig",
+ngme_noise <- function(
+  noise_type,
   theta_mu        = 0,
   theta_sigma     = 0,
   theta_V         = 1,
@@ -38,9 +37,8 @@ ngme.noise <- function(
   ...
 ) {
   # check input
-  if (noise_type == "gaussian") noise_type <- "normal"
-  stopifnot("Unkown noise type. Please check ngme.noise.types()" =
-    noise_type %in% ngme.noise.types())
+  stopifnot("Unkown noise type. Please check ngme_noise_types()" =
+    noise_type %in% ngme_noise_types())
 
   stopifnot("ngme_noise: theta_V should be positive" = theta_V > 0)
 
@@ -82,7 +80,11 @@ ngme.noise <- function(
       fix_theta_mu    = fix_theta_mu,
       fix_theta_sigma = fix_theta_sigma,
       fix_theta_V     = fix_theta_V,
-      fix_V           = fix_V
+      fix_V           = fix_V,
+      n_params        = switch(noise_type,
+        "normal" = length(theta_sigma),
+        "nig"    = length(c(theta_mu, theta_sigma, 1))
+      ) # parameter to estimate
     ),
     class = "ngme_noise"
   )
@@ -90,7 +92,7 @@ ngme.noise <- function(
 
 #' Specify a normal noise
 #'
-#' @param sd  standard deviation
+#' @param sd            standard deviation
 #' @param theta_sigma  specify a non-stationary noise using theta_sigma
 #' @param B_sigma      Basis matrix for sigma (if non-stationary)
 #'
@@ -98,10 +100,11 @@ ngme.noise <- function(
 #' @export
 #'
 #' @examples
-ngme.noise.normal <- function(
+noise_normal <- function(
   sd = NULL,
   theta_sigma = NULL,
-  B_sigma = NULL,
+  B_sigma = matrix(1, 1, 1),
+  n = nrow(B_sigma),
   ...
 ) {
   if (!is.null(sd) && !is.null(theta_sigma))
@@ -121,10 +124,14 @@ ngme.noise.normal <- function(
     theta_sigma <- log(sd)
   }
 
-  ngme.noise(
+  stopifnot("Make sure ncol of B_sigma = length of theta_signa"
+    = ncol(B_sigma) == length(theta_sigma))
+
+  ngme_noise(
     noise_type = "normal",
     theta_sigma = theta_sigma,
     B_sigma = B_sigma,
+    n = n,
     ...
   )
 }
@@ -143,7 +150,7 @@ ngme.noise.normal <- function(
 #' @export
 #'
 #' @examples
-ngme.noise.nig <- function(
+noise_nig <- function(
   mu            = NULL,
   sigma         = NULL,
   nu            = NULL,
@@ -156,6 +163,7 @@ ngme.noise.nig <- function(
   ...
 ) {
   # if nothing, then fill with default
+  stopifnot("Please use theta_mu for non-stationary mu." = length(mu) < 2)
   if (is.null(mu) && is.null(theta_mu)) theta_mu <- 0
   if (is.null(sigma) && is.null(theta_sigma)) theta_sigma <- 0
   if (is.null(nu) && is.null(theta_V)) theta_V <- 1
@@ -167,7 +175,8 @@ ngme.noise.nig <- function(
   if (!is.null(sigma))  theta_sigma <- log(sigma)
   if (!is.null(nu))     theta_V <- nu
 
-  ngme.noise(
+  ngme_noise(
+    noise_type = "nig",
     theta_mu = theta_mu,
     theta_sigma = theta_sigma,
     theta_V = theta_V,
@@ -178,8 +187,8 @@ ngme.noise.nig <- function(
   )
 }
 
-# update ngme.noise
-update.ngme.noise <- function(noise, n = NULL) {
+# update noise
+update_noise <- function(noise, n = NULL) {
   stopifnot("n should be integer" = is.numeric(n))
   B_mu <- noise$B_mu
   noise$B_mu <- matrix(data = rep(B_mu, n / nrow(B_mu)), nrow = n)
@@ -190,7 +199,7 @@ update.ngme.noise <- function(noise, n = NULL) {
   noise$n_noise <- n
 
   # noise
-  do.call(ngme.noise, noise)
+  do.call(ngme_noise, noise)
 }
 
 #' Create ngme noise with a list
@@ -201,8 +210,8 @@ update.ngme.noise <- function(noise, n = NULL) {
 #' @export
 #'
 #' @examples
-create.ngme.noise <- function(x) {
-  do.call(ngme.noise, x)
+create_noise <- function(x) {
+  do.call(ngme_noise, x)
 }
 
 #' Print ngme noise
@@ -224,10 +233,10 @@ print.ngme_noise <- function(noise, padding=0) {
     cat(pad_space); cat("Noise parameters: \n")
     params <- with(noise, {
       switch(noise_type,
-        "normal" = paste0(pad_add4_space, "sd = ",          ngme.format(exp(theta_sigma))),
-        "nig"    = paste0(pad_add4_space, "theta_mu = ",    ngme.format(theta_mu),
-                    "\n", pad_add4_space, "theta_sigma = ", ngme.format(theta_sigma),
-                    "\n", pad_add4_space, "nu = ",          ngme.format(theta_V)),
+        "normal" = paste0(pad_add4_space, ngme_format("sigma", theta_sigma)),
+        "nig"    = paste0(pad_add4_space, ngme_format("mu", theta_mu),
+                    "\n", pad_add4_space, ngme_format("sigma", theta_sigma),
+                    "\n", pad_add4_space, ngme_format("nu", theta_V)),
         stop("unknown noise type")
       )
     })

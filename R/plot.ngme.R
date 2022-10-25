@@ -25,7 +25,6 @@ plot.ngme <- function(object) {
 #' @export
 #'
 #' @examples
-#' traceplot(ngme, parameter = "theta_mu", f_index = 1)
 traceplot <- function(
   ngme_out,
   parameter,

@@ -46,7 +46,7 @@ formula1 <- Y ~ 0 + f(
   theta.mu = 0,
   theta.sigma = 0,
   noise = "nig",
-  control = ngme.control.f(
+  control = ngme_control_f(
     numer_grad       = FALSE,
     use_precond      = TRUE,
 
@@ -91,7 +91,7 @@ formula2 <- Y ~ 0 + f(
   theta.mu = c(0.5, 0.4),
   theta.sigma = 0,
   noise = "nig",
-  control = ngme.control.f(
+  control = ngme_control_f(
     numer_grad       = FALSE,
     use_precond      = TRUE,
 

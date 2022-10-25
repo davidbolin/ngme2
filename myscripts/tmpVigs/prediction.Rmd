@@ -33,7 +33,7 @@ First we simulate some data.
 n_obs <- 800
 W <- ngme.simulate(
   f(1:n_obs, model = "ar1",
-    noise = ngme.noise.nig(
+    noise = noise_nig(
       theta_mu = 2,
       theta_sigma = 0.5,
       theta_V = 1.5
@@ -59,7 +59,7 @@ Next, we use `ngme` function to fit the model.
 ```{r ngme_fit, results="hide"}
 # fit the model
 ngme_out <- ngme(
-  formula = Y ~ x1 + f(model="ar1", noise=ngme.noise.nig()),
+  formula = Y ~ x1 + f(model="ar1", noise=noise_nig()),
   data = list(Y=Y),
   control = ngme.control(
     iteration = 200

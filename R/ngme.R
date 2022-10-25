@@ -16,13 +16,12 @@
 #' @export
 #'
 #' @examples
-#' ngme(formula = (y1 | y2 ~ x1 + x2 + f(x1, model="SPDE", var="nig") + f(W) | x3 + f(X|I, model="ar1", var="nig")),
 #'
 ngme <- function(
   formula,
   data,
   control       = ngme.control(),
-  noise         = ngme.noise.normal(),
+  noise         = noise_normal(),
   last_fit      = NULL,
   beta          = NULL,
   seed          = NULL,
@@ -64,7 +63,7 @@ ngme <- function(
     data$ngme_response <- ngme_response # watch out! injection, for f to use
 
     # 1. extract f and eval  2. get the formula without f function
-    res <- ngme.parse.formula(fm, data)
+    res <- ngme_parse_formula(fm, data)
     latents_in <- res$latents_in
     plain_fm <- res$plain.fm
 
@@ -93,7 +92,7 @@ ngme <- function(
     if (is.null(beta)) beta <- lm.model$coeff
     n_params <- n_la_params + n_feff + n_merr
 
-    noise <- update.ngme.noise(noise, n = n_Y_data)
+    noise <- update_noise(noise, n = n_Y_data)
 
     if (family == "normal" && is.null(noise$theta_sigma == 0))
       noise$theta_sigma <- sd(lm.model$residuals)
@@ -229,30 +228,6 @@ clean_outputs <- function() {
   }
 }
 
-# the general block model
-ngme.block_model <- function(
-  Y           = NULL,
-  X           = NULL,
-  beta        = NULL,
-  latents     = list(),
-  noise       = list(),
-  control     = list(),
-  ...
-) {
-  structure(
-    list(
-      Y                 = Y,
-      X                 = X,
-      beta              = beta,
-      latents           = latents,
-      noise             = noise,
-      control           = control,
-      ...
-    ),
-    class = "ngme"
-  )
-}
-
 #' Print ngme object
 #'
 #' @param ngme ngme object
@@ -263,7 +238,8 @@ print.ngme <- function(ngme) {
   cat("*** Ngme object ***\n\n");
 
   cat("Fixed effects: \n");
-  cat(paste("   ",  cat(ngme.format(ngme$beta)))); cat("\n\n")
+  cat(paste("  ", ngme_format("beta", ngme$beta)));
+  cat("\n\n")
 
   cat("Measurement noise: \n");
   print.ngme_noise(ngme$noise, padding = 2); cat("\n\n")

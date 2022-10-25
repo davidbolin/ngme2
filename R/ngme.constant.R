@@ -3,7 +3,7 @@
 #' @return
 #' @export
 #'
-ngme.noise.types <- function() {
+ngme_noise_types <- function() {
     c("normal", "nig")
 }
 
@@ -11,7 +11,6 @@ ngme.noise.types <- function() {
 #'
 #' @return a list of available models
 #' @export
-#'
-ngme.model.types <- function() {
+ngme_model_types <- function() {
     c("ar1", "matern", "matern_ns", "rw1", "rw2")
 }

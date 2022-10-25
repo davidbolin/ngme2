@@ -7,8 +7,6 @@
 #'
 #' @examples
 #'
-#'
-
 summary.ngme <- function(object) {
     ret <- object
 

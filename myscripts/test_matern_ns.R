@@ -12,7 +12,7 @@ library(devtools); library(INLA); load_all()
       mesh = mesh,
       B_kappa = B_kappa,
       theta_kappa = c(1.1, 0.7)),
-      noise = ngme.noise.nig()
+      noise = noise_nig()
     )
   )
 }
@@ -36,7 +36,7 @@ ngme_out <- ngme(
     fix_theta_K = FALSE,
     # W = as.numeric(W),
     # fix_W = TRUE,
-    noise = ngme.noise.nig(
+    noise = noise_nig(
       fix_theta_mu    = F,
       fix_theta_sigma = F,
       fix_theta_V     = F
@@ -49,7 +49,7 @@ ngme_out <- ngme(
     )
   ),
   data = list(Y = Y),
-  noise = ngme.noise.normal(),
+  noise = noise_normal(),
   control = ngme.control(
     estimation = T,
     iterations = 100,
@@ -69,7 +69,7 @@ traceplot(ngme_out, parameter = "theta_mu",    f_index = 1)
 traceplot(ngme_out, parameter = "theta_sigma", f_index = 1)
 traceplot(ngme_out, parameter = "theta_V",     f_index = 1)
 
-plot(ngme.noise.nig(
+plot(noise_nig(
       theta_mu = 0,
       theta_sigma = 0,
       theta_V = 1

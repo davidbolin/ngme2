@@ -30,8 +30,8 @@ The noise object can be used both for the process and for the measurement noise.
 ```{r noise}
 # We can specify the noise by use different function and
 # using different parameter.
-norm_noise <- ngme.noise.normal(sd = 3)
-nig_noise <- ngme.noise.nig(mu = 1, sigma = 2, nu = 3)
+norm_noise <- noise_normal(sd = 3)
+nig_noise <- noise_nig(mu = 1, sigma = 2, nu = 3)
 ```
 
 Explore more using `str` and `plot` function.

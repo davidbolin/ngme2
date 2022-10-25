@@ -124,7 +124,7 @@ It will construct the following noise structure:
 
 where $\mu = \bf B_{\mu} \bf \theta_{\mu}$, and $\sigma = \exp(\bf B_{\sigma} \bf \theta_{\sigma})$.
 In this case, we can recover gaussian noise by setting **type="normal** and ignoring **theta_mu** and **theta_V**.
-Or we can simply use helper function `ngme.noise.normal(sd=1)`
+Or we can simply use helper function `noise_normal(sd=1)`
 
 ## A simple example - AR1 process with nig noise
 

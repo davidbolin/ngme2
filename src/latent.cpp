@@ -45,8 +45,6 @@ if (debug) std::cout << "Begin constructor of latent" << std::endl;
         eps             = Rcpp::as<double>      (control_f["eps"]) ;
         use_iter_solver = Rcpp::as<bool>        (control_f["use_iter_solver"]);
 
-    string noise_type = Rcpp::as<string>     (model_list["noise_type"]);
-
     // construct from ngme.noise
     Rcpp::List noise_in = Rcpp::as<Rcpp::List> (model_list["noise"]);
         fix_flag[latent_fix_theta_mu]     = Rcpp::as<bool>  (noise_in["fix_theta_mu"]);
@@ -87,17 +85,20 @@ if (debug) std::cout << "End constructor of latent" << std::endl;
 VectorXd Latent::grad_theta_mu() {
 // if (debug) std::cout << "Start mu gradient"<< std::endl;
     // VectorXd inv_V = V.cwiseInverse();
-    // VectorXd prevV = getPrevV();
     // VectorXd prev_inv_V = prevV.cwiseInverse();
 
+    VectorXd prevV = getPrevV();
     VectorXd V = getV();
     VectorXd grad (n_theta_mu);
     for (int l=0; l < n_theta_mu; l++) {
         grad(l) = (V-h).cwiseProduct(B_mu.col(l).cwiseQuotient(getSV())).dot(K*W - mu.cwiseProduct(V-h));
     }
-    return - grad / V_size;
-    // return - grad;
+    double hess = -(prevV-h).cwiseQuotient(getPrevSV()).dot(prevV-h);
 
+    // return - grad / V_size;
+    return grad / hess;
+
+    // return - grad;
 // if (debug) {
 // std::cout << "grad of mu=" << grad <<std::endl;
 // std::cout << "hess of mu=" << hess <<std::endl;

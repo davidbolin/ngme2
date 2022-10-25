@@ -62,17 +62,10 @@ VectorXd Optimizer::sgd(
     double eps,
     int iterations
 ) {
-    // vector<VectorXd> x_traj;
-    // vector<VectorXd> grad_traj;
-
-    int count = 0;
     VectorXd x = model.get_parameter();
     VectorXd grad;
 
-    bool terminate = false;
-    while (!terminate)
-    {
-        count += 1;
+    for (int i = 0; i < iterations; i++) {
 // auto timer_grad = std::chrono::steady_clock::now();
         grad = model.grad();
 // std::cout << "get gradient (ms): " << since(timer_grad).count() << std::endl;
@@ -80,16 +73,7 @@ VectorXd Optimizer::sgd(
         VectorXd stepsizes = model.get_stepsizes();
         x = x - grad.cwiseProduct(stepsizes);
 
-        // record x and grad
-        // x_traj.push_back(x);
-        // grad_traj.push_back(grad);
-
         model.set_parameter(x);
-
-        // to-do: criteria of eps
-        if ((grad.norm() <= pow(10, -6)) || (count > iterations))
-            terminate = true;
-
     }
 
     return x;

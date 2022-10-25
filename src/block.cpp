@@ -16,16 +16,19 @@ BlockModel::BlockModel(
   beta              (Rcpp::as<VectorXd>      (block_model["beta"])),
   n_obs             (Y.size()),
   n_la_params       (Rcpp::as<int>           (block_model["n_la_params"])),
+  n_params          (Rcpp::as<int>           (block_model["n_params"])),
   n_feff            (beta.size()),
+  n_merr            (Rcpp::as<int>           (block_model["n_merr"])),
 
   debug             (Rcpp::as<bool>          (block_model["debug"])),
   A                 (n_obs, W_sizes),
   K                 (V_sizes, W_sizes),
   var               (Var(Rcpp::as<Rcpp::List> (block_model["noise"]), rng())),
 
-  beta_traj         (beta.size())
+  beta_traj         (beta.size()),
   // dK            (V_sizes, W_sizes)
   // d2K           (V_sizes, W_sizes)
+  par_string        (Rcpp::as<string>     (block_model["par_string"]))
 {
   // 1. Init controls
   Rcpp::List control_in = block_model["control"];
@@ -96,13 +99,6 @@ if (debug) std::cout << "After block assemble" << std::endl;
   family = Rcpp::as<string>  (noise_in["noise_type"]);
   noise_mu = B_mu * theta_mu;
   noise_sigma = (B_sigma * theta_sigma).array().exp();
-
-  if (family=="normal") {
-    n_merr = n_theta_sigma;
-  } else if (family=="nig") {
-    n_merr = n_theta_sigma + n_theta_mu + 1;
-  }
-  n_params = n_la_params + n_feff + n_merr;
 
 if (debug) std::cout << "After block construct noise" << std::endl;
 
@@ -303,10 +299,6 @@ void BlockModel::set_parameter(const VectorXd& Theta) {
   // fixed effects
   if (opt_beta) {
     beta = Theta.segment(n_la_params, n_feff);
-
-    for (int i=0; i < beta.size(); i++) {
-      beta_traj[i].push_back(beta(i));
-    }
   }
 
     // measurement noise

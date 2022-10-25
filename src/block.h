@@ -83,6 +83,8 @@ protected:
     vector<vector<double>> theta_mu_traj;
     vector<vector<double>> theta_sigma_traj;
     vector<double>   theta_V_traj;
+
+    std::string par_string;
 public:
     // BlockModel() {}
     BlockModel(const Rcpp::List& block_model, unsigned long seed);
@@ -130,6 +132,9 @@ public:
 
     // record traj. for mu sigma eta
     void record_traj() {
+        for (int i=0; i < beta.size(); i++) {
+            beta_traj[i].push_back(beta(i));
+        }
         for (int i=0; i < theta_mu.size(); i++) {
             theta_mu_traj[i].push_back(theta_mu(i));
         }
@@ -267,9 +272,8 @@ public:
 
     // get length of W,V of iterations
     Rcpp::List sampling(int iterations, bool posterior);
-
-    // return output
     Rcpp::List output() const;
+    std::string get_par_string() const {return par_string;}
 };
 
 // ---- inherited functions ------

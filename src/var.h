@@ -39,6 +39,7 @@ public:
         if (noise_type == "normal") {
             V = VectorXd::Ones(n);
             prevV = VectorXd::Ones(n);
+            fix_theta_V = true;
             fix_V = true;
         } else if (noise_type == "nig") {
             if (noise_list["V"] != R_NilValue) {

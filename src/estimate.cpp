@@ -21,7 +21,7 @@ using Eigen::MatrixXd;
 
 using namespace Rcpp;
 
-bool check_conv(const MatrixXd&, const MatrixXd&, int, int, double, double);
+bool check_conv(const MatrixXd&, const MatrixXd&, int, int, double, double, std::string);
 
 // [[Rcpp::plugins(openmp)]]
 // [[Rcpp::export]]
@@ -30,6 +30,7 @@ Rcpp::List estimate_cpp(const Rcpp::List& ngme_block) {
     std::mt19937 rng (seed);
 
     Rcpp::List control_in = ngme_block["control"];
+    const bool exchange_VW = control_in["exchange_VW"];
     const int iterations = control_in["iterations"];
     const int burnin = control_in["burnin"];
 
@@ -55,6 +56,7 @@ auto timer = std::chrono::steady_clock::now();
     for (i=0; i < n_chains; i++) {
         blocks.push_back(std::make_unique<BlockModel>(ngme_block, rng()));
     }
+    std::string par_string = blocks[0]->get_par_string();
 
     // burn in period
     #pragma omp parallel for schedule(static)
@@ -67,7 +69,7 @@ auto timer = std::chrono::steady_clock::now();
 
     bool converge = false;
     int steps = 0;
-    int batch_steps = (iterations > n_batch) ? (iterations / n_batch) : 1;
+    int batch_steps = (iterations / n_batch);
 
     int curr_batch = 0;
     while (steps < iterations && !converge) {
@@ -88,16 +90,19 @@ auto timer = std::chrono::steady_clock::now();
             vars(curr_batch, k) = (mat.col(k).array() - means(curr_batch, k)).square().sum() / (n_chains - 1);
 
         if (n_chains > 1) {
-            std::vector<VectorXd> tmp = blocks[0]->get_VW();
-            for (int i = 0; i < n_chains - 1; i++) {
-                std::vector<VectorXd> VW = blocks[i+1]->get_VW();
-                blocks[i]->set_prev_VW(VW);
+            // exchange VW
+            if (exchange_VW) {
+                std::vector<VectorXd> tmp = blocks[0]->get_VW();
+                for (int i = 0; i < n_chains - 1; i++) {
+                    std::vector<VectorXd> VW = blocks[i+1]->get_VW();
+                    blocks[i]->set_prev_VW(VW);
+                }
+                blocks[n_chains - 1]->set_prev_VW(tmp);
             }
-            blocks[n_chains - 1]->set_prev_VW(tmp);
 
             // 2. convergence check
             if (n_slope_check <= curr_batch + 1)
-                converge = check_conv(means, vars, curr_batch, n_slope_check, std_lim, trend_lim);
+                converge = check_conv(means, vars, curr_batch, n_slope_check, std_lim, trend_lim, par_string);
         }
         curr_batch++;
     }
@@ -143,34 +148,50 @@ bool check_conv(
     int curr_batch,
     int n_slope_check,
     double std_lim,
-    double trend_lim
+    double trend_lim,
+    std::string par_string
 ) {
     bool conv = true;
     int n_params = means.cols();
 
+    std::string std_line    = "  < std_lim:  ";
+    std::string trend_line  = " < trend_lim: ";
+
     // 1. check coef. of var. of every parameter < std_lim
-    for (int i=0; i < n_params && conv; i++)
-        if (sqrt(vars(curr_batch, i)) / abs(means(curr_batch, i)) > std_lim)
+    for (int i=0; i < n_params; i++)
+        if (sqrt(vars(curr_batch, i)) / (abs(means(curr_batch, i)) + pow(10,-5)) > std_lim) {
             conv = false;
+            std_line += "   false"; // of length 8
+        } else {
+            std_line += "    true";
+        }
 
     // 2. check the slope of every para < threshold
     MatrixXd B (n_slope_check, 2);
         B.col(0) = VectorXd::Ones(n_slope_check);
         for (int i=0; i < n_slope_check; i++)
             B(i, 1) = i;
-    for (int i = 0; i < n_params && conv; i++) {
+    for (int i = 0; i < n_params; i++) {
         // VectorXd mean = means.col(i)(Eigen::seq(curr_batch - n_slope_check + 1, curr_batch)); // Eigen 3.4 Eigen::seq
         VectorXd mean      = means.block(curr_batch - n_slope_check + 1, i, n_slope_check, 1);  // Eigen block API
         VectorXd Sigma_inv = vars.block(curr_batch - n_slope_check + 1, i, n_slope_check, 1).cwiseInverse();
         MatrixXd Q = B.transpose() * Sigma_inv.asDiagonal() * B;
         Vector2d beta = Q.llt().solve(B.transpose() * Sigma_inv.asDiagonal() * mean);
-        if (abs(beta(1)) - 2 * sqrt(Q(1, 1)) > trend_lim * abs(beta(0)))
+        if (abs(beta(1)) - 2 * sqrt(Q(1, 1)) > trend_lim * abs(beta(0))) {
             conv = false;
-
+            trend_line += "   false";
+        } else {
+            trend_line += "    true";
+        }
 // std::cout << "mean here = " << mean << std::endl;
 // std::cout << "Q here = " << Q << std::endl;
 // std::cout << "beta here = " << Q << std::endl;
     }
+
+    Rcpp::Rcout << "stop " << curr_batch+1 << ": \n"
+        << par_string << "\n"
+        << std_line << "\n"
+        << trend_line << "\n\n";
     return conv;
 }
 

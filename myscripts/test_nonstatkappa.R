@@ -77,7 +77,7 @@ ngme_out <- ngme(
     debug=TRUE,
     theta.mu=mu,
     theta.sigma=log(sigma),
-    control=ngme.control.f(
+    control=ngme_control_f(
       numer_grad       = FALSE,
       use_precond      = FALSE,
 
@@ -89,7 +89,7 @@ ngme_out <- ngme(
   ),
   data=data.frame(Y=Y),
   family = "normal",
-  control=ngme.control(
+  control=ngme_control(
     burnin=50,
     iterations=200,
     gibbs_sample = 5

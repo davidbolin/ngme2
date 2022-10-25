@@ -9,9 +9,6 @@
 \arguments{
 \item{object}{ngme object}
 }
-\value{
-
-}
 \description{
 ngme plot
 }

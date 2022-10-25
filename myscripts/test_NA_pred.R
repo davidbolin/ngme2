@@ -4,16 +4,6 @@ library(devtools); library(INLA); load_all()
 # test ar1
 
 
-
-
-
-
-
-
-
-
-
-
 test_matern <- function() {
   { # First we create mesh
     pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
@@ -25,7 +15,7 @@ test_matern <- function() {
 
     W <- ngme.simulate(
       f(model = ngme.matern(mesh = mesh, theta_kappa = c(0.4, 1)),
-        noise = ngme.noise.nig()
+        noise = noise_nig()
       )
     )
   }
@@ -47,13 +37,13 @@ test_matern <- function() {
     formula = Y ~ 0 + f(
       model = "ar1",
       theta_K = 0.4,
-      noise = ngme.noise.nig(),
+      noise = noise_nig(),
       A = A,
       A_pred = A_pred,
       debug = TRUE
     ),
     data = data.frame(Y = Y),
-    noise = ngme.noise.normal(),
+    noise = noise_normal(),
     control = ngme.control(
       iteration = 2
     ),

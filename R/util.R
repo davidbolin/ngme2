@@ -161,7 +161,7 @@ parse_formula_NA <- function(formula, data) {
   } else {
     index_NA <- X_NA <- NULL
   }
-
+  
   list(
     length      = length(Y_data),
     Y_data      = Y_data,
@@ -226,7 +226,6 @@ ngme.parse.formula <- function(
 
   # adding special mark
   tf <- terms.formula(gf, specials = c("f"))
-
   terms <- attr(tf, "term.labels")
   intercept <- attr(tf, "intercept")
 
@@ -246,7 +245,7 @@ ngme.parse.formula <- function(
       str <- gsub("^f\\(", "ngme2::f(", terms[i])
     }
 
-    # adding 1 term for furthur use in f
+    # adding 1 term for further use in f
     # data$ngme_response <- Y
     res <- eval(parse(text = str), envir = data)
     latents_in[[length(latents_in) + 1]] <- res

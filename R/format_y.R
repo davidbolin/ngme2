@@ -24,20 +24,22 @@ format_y <- function(Y1, Y2) {
     if (nrep1 != nrep2) {
         stop("Replicates for two fields differ\n")
     }
-    nrep <- matrix(NA, nrep1)
+    nrep <- lengths(Y1, use.names = FALSE)
     Y1_full <- NULL
     Y2_full <- NULL
     Y <- NULL
+    Y1_full = unlist(Y1, use.names = FALSE)
+    Y2_full = unlist(Y2, use.names = FALSE)
 
-    for (i in 1:nrep1) {
-        Y1_full <- c(Y1_full, Y1[[i]])
-        Y2_full <- c(Y2_full, Y2[[i]])
-        Y <- c(Y, Y1[[i]], Y2[[i]])
-        nrep[i] <- length(Y1[[i]])
-    }
+    # for (i in 1:nrep1) {
+    #     Y1_full <- c(Y1_full, Y1[[i]])
+    #     Y2_full <- c(Y2_full, Y2[[i]])
+    #     Y <- c(Y, Y1[[i]], Y2[[i]])
+    #     nrep[i] <- length(Y1[[i]])
+    # }
 
 #returns a stacked vector Y = [Y11^T, Y21^T, ..., Y1nrep^T, Y2nrep^T]
 #where Y11 is a vector of observations for first replicate at locations of replicate 1 # nolint
 # NOTE Y is not stacked by observations: Y = [Y11(s1),Y21(s1),Y11(s2),Y21(s2)...]^T # nolint
-    return(list(Y, nrep))
+    return(list(Y1 = Y1_full, Y2 = Y2_full, nrep = nrep, use.names = FALSE))
 }

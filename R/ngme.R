@@ -50,47 +50,54 @@ ngme <- function(
 
   fm <- Formula::Formula(formula)
 # formula = (y1 | y2 ~ x1 + f(x1, model="SPDE2D", var="nig") | x2 + f(X2, model="SPDE2D", var="nig"))
-  if (all(length(fm)==c(2,2))) { ######################### bivariate model
-  # strucutre-wise the bivaraite model: list of lists
-    lfm = formula(fm, lhs = 1, rhs = 1)
-    rfm = formula(fm, lhs = 2, rhs = 2)
-  
-    ########## extract data for each field
-    ngme_response1 <- eval(terms(lfm)[[2]], as.data.frame(data[[1]]))
-    ngme_response2 <- eval(terms(rfm)[[2]], as.data.frame(data[[2]]))
-    data$ngme_response <- c(ngme_response1, ngme_response2) ##use list instead?
-    data$ngme_response1 <- ngme_response1
-    data$ngme_response2 <- ngme_response2
-    # # 1. extract f and eval  2. get the formula without f function
-    #for 1st field
-    res1 <- ngme.parse.formula(lfm, as.data.frame(data[[1]]))
-    #for 2nd field
-    res2 <- ngme.parse.formula(rfm, as.data.frame(data[[2]]))
+  if (all(length(fm) == c(2, 2))) { ######################### bivariate model
+    lfm <- formula(fm, lhs = 1, rhs = 1)
+    rfm <- formula(fm, lhs = 2, rhs = 2)
+    Y_data_nrep = format_y(data[[1]], data[[2]])
+    data <- list(Y1 = Y_data_nrep$Y1, Y2 = Y_data_nrep$Y2 )
 
-    latents_in <- list(res1$latents_in, res2$latents_in) #latent model = SPDE2D
-    plain_fm <- list(res1$plain.fm, res2$plain.fm)
+    ########## extract data for each field and
+    ngme_response1 <- eval(terms(lfm)[[2]], as.data.frame(Y_data_nrep$Y1))
+    ngme_response2 <- eval(terms(rfm)[[2]], as.data.frame(Y_data_nrep$Y2))
+
+    #data$ngme_response <- c(ngme_response1, ngme_response2) ##use list instead?
+
+    # # 1. extract f and eval  2. get the formula without f function
+    # parsing done in model.R
+    res1 <- ngme.parse.formula(lfm, as.data.frame(data$Y1))
+    res2 <- ngme.parse.formula(rfm, as.data.frame(data$Y2))
+    
+    latents_in <- res1$latents_in
+    plain_fm <- list(res1$plain.fm, res2$plain.fm) #res1$plain.fm = $ plain.fm  :Class 'formula'  language Y1 ~ 0
+
+    ## Additional parameters for the 2d model
+    latents_in[[1]]['noise_type2'] <- res2$latents_in[[1]]['noise_type'] #noise type for 2nd field, can be different from 1st
+    latents_in[[1]]['noise2'] <- res2$latents_in[[1]]['noise'] #noise specification for the 2nd fields # nolint
+    latents_in[[1]][['data']][2] <- unlist(lapply(res2$latents_in, function(x) x["data"]), use.names = FALSE) #data vector for 2nd field # nolint
+    latents_in[[1]]$nrep <- Y_data_nrep$nrep #number of repeated measurements coomon for both fields
+    colnames(latents_in[[1]][['data']]) <- c("Y1", "Y2") #change names of latents_in[[1]]['data']
 
     # check if there is NA, and split data
-    split_data <- parse_formula_NA(plain_fm[[1]], as.data.frame(data[[1]]))
+  
+    split_data <- parse_formula_NA(plain_fm[[1]], data)
       Y_data <- split_data$Y_data
       X_data <- split_data$X_data
       n_Y_data <- split_data$length
-    split_data2 <- parse_formula_NA(plain_fm[[2]], as.data.frame(data[[2]]))
+
+    split_data2 <- parse_formula_NA(plain_fm[[2]], data)
       Y_data2 <- split_data2$Y_data
       X_data2 <- split_data2$X_data
       n_Y_data2 <- split_data2$length
 
-#TODO check the correct sizing needed for bivariate model
     ############### W_sizes is the dim of the block matrix
-    W_sizes     = sum(unlist(lapply(latents_in[[1]], function(x) x["W_size"])))   #W_sizes = sum(ncol_K)
-    V_sizes     = sum(unlist(lapply(latents_in[[1]], function(x) x["V_size"])))   #W_sizes = sum(nrow_K)
-    n_la_params = sum(unlist(lapply(latents_in[[1]], function(x) x["n_params"])))
-    model.types = unlist(lapply(latents_in[[1]], function(x) x["model_type"]))
-    var.types   = unlist(lapply(latents_in[[1]], function(x) x["var.type"]))
-    # print(W_sizes)
-    # print(V_sizes)
-#TODO check the correct sizing
-    n_feff <- ncol(X_data);
+    W_sizes     = 2 * nrep * sum(unlist(lapply(latents_in, function(x) x["W_size"])))   #W_sizes = sum(ncol_K)
+    V_sizes     = 2 * nrep * sum(unlist(lapply(latents_in, function(x) x["V_size"])))   #W_sizes = sum(nrow_K)
+    n_la_params = sum(unlist(lapply(latents_in, function(x) x["n_params"])))
+    model.types = unlist(lapply(latents_in, function(x) x["model_type"]))
+    var.types   = unlist(lapply(latents_in, function(x) x["var.type"]))
+
+    n_feff <- ncol(X_data)
+    n_feff2 <- ncol(X_data2)
     if (family == "normal") {
       n_merr <- noise$n_theta_sigma
     } else if (family == "nig") {
@@ -102,16 +109,16 @@ ngme <- function(
     if (is.null(beta[1])) beta[1] <- lm.model$coeff
     if (is.null(beta[2])) beta[2] <- lm.model2$coeff
 #TODO check the correct sizing
-    n_params <- n_la_params + n_feff + n_merr
-
-    noise <- update.ngme.noise(noise, n = n_Y_data)
+    n_params <- n_la_params + (n_feff + n_feff2) + 2 * n_merr
+#TODO latents_in[[1]]['n_params'] = 5, but the line above is 7!! push to be same?
+    noise <- update.ngme.noise(noise, n = (n_Y_data + n_Y_data2))
 #TODO change the logical statement to check the both components of vector theta_sigma
     if (family == "normal" && is.null(noise$theta_sigma == 0)) #TODO what exactly it checks - being 0 or being NULL
-      noise$theta_sigma <- c(sd(lm.model$residuals), sd(lm.model2$residuals))
+    noise$theta_sigma <- c(sd(lm.model$residuals), sd(lm.model2$residuals))
 
     ngme_block <- ngme.block_model(
       Y                 = c(Y_data, Y_data2), # list(Y_data, Y_data2),
-      X                 = X_data, # list(X_data, X_data2),
+      X                 = c(X_data, X_data2), # list(X_data, X_data2),
       beta              = beta,
       W_sizes           = W_sizes,
       V_sizes           = V_sizes,
@@ -121,11 +128,9 @@ ngme <- function(
       noise             = noise,
       seed              = seed,
       debug             = debug,
-      control           = control,
-      Y2                = Y_data2,
-      X2                = X_data2
+      control           = control
     )
-
+    print('Bivariate model read successfully')
     # a list of B.theta.mu and B.theta.sigma and thetas...
   }
   else if (all(length(fm)==c(1,1))) {  ########################## univariate case

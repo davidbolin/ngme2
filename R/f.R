@@ -47,7 +47,7 @@ f <- function(
   # whatever user inputs except model (NULL, default is ignored)
   f_args <- as.list(match.call())[-1]
   # combine args and apply ngme sub_models
-  if (length(substitute(model)) == 1) { # model=strings
+  if (is.character(model)) {
     args <- within(f_args, rm(model))
     f_model <- switch(model,
       "ar1" = {
@@ -57,12 +57,10 @@ f <- function(
         do.call(model_rw1, args)
       }
     )
-  } else { # using model_sub function()
-    model_name <- as.character(substitute(model)[[1]])
-    model_args <- as.list(substitute(model))[-1]
+  } else {
+    # model is evaluated with submodel func.
     args <- within(f_args, rm(model))
-
-    f_model <- do.call(model_name, c(model_args, args))
+    f_model <- modifyList(model, args)
   }
 
   # get index -> then make both A and A_pred matrix

@@ -108,7 +108,7 @@ ngme_out <- ngme(
     std_lim = 0.1,
     trend_lim = 0.1
   ),
-  noise = noise_normal(),
+  family = noise_normal(),
   # noise = attr(nig_noise, "noise"),
   seed = 10,
   # , last_fit = ngme_out

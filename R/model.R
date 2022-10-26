@@ -129,4 +129,3 @@ print.ngme_model <- function(model, padding=0) {
 # inla.spde.make.A(
 #   index
 #  replicates=)
-

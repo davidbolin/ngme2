@@ -25,7 +25,7 @@ load_all()
 ngme_out <- ngme(
   seed = 1,
   Y ~ 0 + f(
-    model = ngme.matern(mesh = mesh, kappa = 3),
+    model = model_matern(mesh = mesh, kappa = 3),
     fix_theta_K = FALSE,
     # W = as.numeric(W),
     # fix_W = TRUE,
@@ -45,7 +45,7 @@ ngme_out <- ngme(
   ),
   data = list(Y = Y),
   noise = noise_normal(),
-  control = ngme.control(
+  control = ngme_control(
     estimation = T,
     iterations = 100,
     stop_points = 1,

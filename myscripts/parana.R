@@ -71,18 +71,18 @@ out <- ngme(
       noise = noise_normal()
     )),
   data = data,
-  noise = noise_nig(),
+  family = noise_nig(),
   control = ngme_control(
     estimation = T,
-    iterations = 15000,
+    iterations = 10,
     n_slope_check = 4,
     stop_points = 100,
     n_parallel_chain = 8
   ),
-  debug = FALSE
+  debug = T
 )
 
-out
+str(out)
 
 
 # plots
@@ -118,7 +118,3 @@ traceplot(out, parameter = "beta", f_index = 0, param_index = 1)
 traceplot(out, parameter = "theta_mu", f_index = 0)
 traceplot(out, parameter = "theta_sigma", f_index = 0, transform = exp)
 traceplot(out, parameter = "theta_V", f_index = 0)
-
-str(out)
-
-str(out)

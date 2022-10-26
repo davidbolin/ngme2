@@ -13,10 +13,10 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
-
-# library(devtools)
-# load_all()
-library(ngme2)
+set.seed(10)
+library(devtools)
+load_all()
+# library(ngme2)
 ```
 
 ## Introduction
@@ -33,7 +33,7 @@ variable case and multivariate response case (not yet).
 1.For **single response** case, it has the following form:
 $$
 \begin{aligned}
-Y_{i} = {\bf X}^{\top} {\bf \beta} + \sum_j W_j({\bf t}) + \epsilon_{i}.
+Y_{i} = {\bf X}^{\top} {\bf \beta} + \sum_j {\bf A}_j W_j({\bf t}) + \epsilon_{i}.
 \end{aligned}
 $$
 
@@ -43,6 +43,7 @@ Here,
 - $Y_i$ is the response variable for at index $i$,
 - ${\bf X}$ is the matrix of fixed effects explanatory variables,
 - ${\bf \beta}$ is the matrix of fixed effects coefficients,
+- ${\bf A}_j$ is the observation matrix for each process,
 - $W_j(t_j)$ is specified as a stochastic process,
 - $\epsilon_{i}$ is measurement error.
 
@@ -51,12 +52,12 @@ Here is a simple template for using the core function `ngme` to model the single
     ngme(
       formula=Y ~ x1 + x2 + f(index, model="ar", noise="nig"),
       data=data.frame(Y=Y, x1=x1, x2=x2, index=index),
-      family="normal"
+      noise = noise_normal()
     )
 
 Here, function `f` is for modeling the stochastic process W with Gaussian or non-Gaussian noise,
 we will discuss this later.
-`family` stands for the distribution of the measurement noise.
+`noise` stands for the measurement noise distribution. In this case, the model will have a Gaussian likelihood.
 
 For **multivariate response** case, it has the following form:
 
@@ -81,7 +82,9 @@ KW|V \sim N(\gamma + \mu V, \sigma^2 \, diag(V)),
 $$
 also, $\mu$ and $\sigma$ can be non-stationary.
 
-## The NIG model
+In Ngme2, we focus mainly on the normal inverse Gaussian (NIG) model.
+
+### The NIG model
 
 First, we say that a random variable $V$ follows an inverse Gaussian distribution with parameters
 $\eta_1$ and $\eta_2$, denoted by $V\sim IG(\eta_1,\eta_2)$ if it has pdf given by
@@ -98,22 +101,23 @@ The NIG model thus assumes that the stochastic variance $V_i$ follows an inverse
 
 Below, we see the plot of the densities of a NIG distribution for several choices of the parameters (we fix $\gamma=0$ and $\eta=1$):
 
-## ngme structure
+## Ngme Model Structure - 3-Layer structure
 
-### ngme function - estimation
+### 1. ngme_noise - first building block
 
-### ngme.noise - specify the noise
+Noise is the most fundamental structure for building noise. For now we support 2 noises.
+One is normal noise, the other is NIG noise.
 
-`ngme.noise` has the following structure.
+The R class `ngme_noise` has the following interface:
 
 ```
-ngme.noise(
-  type,
-  theta_mu,
-  theta_sigma,
-  theta_V,
-  B_mu,
-  B_sigma
+ngme_noise(
+  type,           # the type of noise
+  theta_mu,       # mu parameter
+  theta_sigma,    # sigma parameter
+  theta_V,        # nu parameter
+  B_mu,           # basis matrix for non-stationary mu
+  B_sigma         # basis matrix for non-stationary sigma
 )
 ```
 It will construct the following noise structure:
@@ -125,6 +129,51 @@ It will construct the following noise structure:
 where $\mu = \bf B_{\mu} \bf \theta_{\mu}$, and $\sigma = \exp(\bf B_{\sigma} \bf \theta_{\sigma})$.
 In this case, we can recover gaussian noise by setting **type="normal** and ignoring **theta_mu** and **theta_V**.
 Or we can simply use helper function `noise_normal(sd=1)`
+
+### 2. ngme_model - process equiped with some noise
+
+The middle layer is the stochastic process, in R interface, it is represented as a `f` function.
+The process can be specified by different noise structure.
+
+Some examples of using `f` function to specify `ngme_model`:
+
+```{r}
+f(index = 1:10, model = "rw1", noise = noise_normal())
+f(index = 1:10, model = "ar1", noise = noise_nig(), theta_K = 0.5)
+```
+
+### 3. ngme_block - the most upper model collects different
+
+The `ngme_block` is the highest level which collects different `ngme_model`, fixed effects, and measurement noise.
+
+It can be specified as following:
+
+```{r}
+ngme(
+  formula = Y ~ x1 + f(
+    index = x2,
+    model = "ar1",
+    noise = noise_nig(),
+    theta_K = 0.5
+  ) + f(
+    model = model_rw1(1:5, circular = TRUE),
+    noise = noise_normal(),
+  ),
+  noise = noise_normal(sd = 0.5),
+  data = data.frame(Y = 1:5, x1 = 2:6, x2 = 3:7),
+  control = ngme_control(
+    estimation = FALSE
+  )
+)
+```
+
+Here we can see the `ngme_block` has three parts:
+
+1. Fixed effects (intercept and x1)
+2. Measurement noise (normal noise)
+3. Latent models (contains 2 models, ar1 and rw1)
+
+We can turn the `estimation = TRUE` to start estimating the model.
 
 ## A simple example - AR1 process with nig noise
 
@@ -145,60 +194,71 @@ K =
 $$
 
 ```{r}
-# n_obs <- 1000
-# sigma_eps <- 0.5
-# alpha <- 0.5
-# mu = 2; delta = -mu
-# sigma <- 3
-# nu <- 1
+n_obs <- 500
+sigma_eps <- 0.5
+alpha <- 0.5
+mu = 2; delta = -mu
+sigma <- 3
+nu <- 1
 
-# # First we generate V. V_i follows inverse Gaussian distribution
-# trueV <- ngme2::rig(n_obs, nu, nu)
+# First we generate V. V_i follows inverse Gaussian distribution
+trueV <- ngme2::rig(n_obs, nu, nu)
 
-# # Then generate the nig noise
-# noise <- delta + mu*trueV + sigma * sqrt(trueV) * rnorm(n_obs)
-# trueW <- Reduce(function(x,y){y + alpha*x}, noise, accumulate = T)
-# Y = trueW + rnorm(n_obs, mean=0, sd=sigma_eps)
+# Then generate the nig noise
+noise <- delta + mu*trueV + sigma * sqrt(trueV) * rnorm(n_obs)
+trueW <- Reduce(function(x,y){y + alpha*x}, noise, accumulate = T)
+Y = trueW + rnorm(n_obs, mean=0, sd=sigma_eps)
 
-# # Add some fixed effects
-# x1 = runif(n_obs)
-# x2 = rexp(n_obs)
-# beta <- c(-3, -1, 2)
-# X <- (model.matrix(Y ~ x1 + x2))  # design matrix
-# Y = as.numeric(Y + X %*% beta)
+# Add some fixed effects
+x1 = runif(n_obs)
+x2 = rexp(n_obs)
+beta <- c(-3, -1, 2)
+X <- (model.matrix(Y ~ x1 + x2))  # design matrix
+Y = as.numeric(Y + X %*% beta)
 ```
 
 Now let's fit the model using `ngme`. Here we can use `ngme.control` to modify the
 control variables for the `ngme`. See `?ngme.control` for more details.
 
 ```{r}
-# First we specify the controls using ngme.control
-# control <- ngme.control(
-#   burnin = 100,
-#   iterations = 1000,
-#   gibbs_sample = 5
-# )
-
 # # Fit the model with the AR1 model
-# ngme_out <- ngme(
-#   Y~x1+x2 + f(
-#     1:n_obs,
-#     model="ar1",
-#     noise="nig",
-#     theta.K=0.9  # starting point for the alpha (parameter of operator)
-#   ),
-#   data=data.frame(x1=x1, x2=x2, Y=Y),
-#   control = control
-# )
+ngme_out <- ngme(
+  Y ~ x1 + x2 + f(
+    1:n_obs,
+    model = "ar1",
+    noise = noise_nig(),
+    theta_K = 0.9  # starting point for the alpha (parameter of K)
+  ),
+  data=data.frame(x1=x1, x2=x2, Y=Y),
+  control = ngme_control(
+    burnin = 100,
+    iterations = 500,
+    gibbs_sample = 5,
+    n_parallel_chain = 2,
+    stop_points = 10
+  ),
+  seed = 3
+)
 ```
 
-Finally, we can see the results:
+Next we can read the result directly from the object.
 
 ```{r}
-# # show the results
-# ngme_out$result
+ngme_out
+```
+
+As we can see, the model converges in 350 iterations.
+The estimation results are close to the real parameter.
+
+We can also use the `traceplot` function to see the estimation traceplot.
+```{r}
+traceplot(ngme_out, "theta_K", f_index = 1, transform = ar1_th2a)
 ```
 
 The plots can be produced by `plot` function.
 
 
+## Parana dataset
+
+
+<!-- to be add -->

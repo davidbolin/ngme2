@@ -7,9 +7,9 @@
 #'   (Only response variable can contain NA value,
 #'    NA value in other columns will cause problem)
 #' @param control control variables, see ?ngme.control
-#' @param last_fit  can be ngme object from last fitting
 #' @param noise measurement noise specification
 #' @param beta starting value for fixed effects
+#' @param start  starting ngme object (usually object from last fitting)
 #' @param seed  set the seed for pesudo random number generator
 #'
 #' @return a list of outputs contains estimation of operator paramters, noise parameters
@@ -22,9 +22,9 @@ ngme <- function(
   data,
   control       = ngme.control(),
   noise         = noise_normal(),
-  last_fit      = NULL,
   beta          = NULL,
   seed          = NULL,
+  start         = NULL,
   debug         = FALSE
 ) {
   if (is.null(seed)) seed <- Sys.time()
@@ -113,31 +113,30 @@ ngme <- function(
     )
 
   ####### Use Last_fit ngme object to update Rcpp_list
-    # stopifnot("last_fit should be an ngme object"
-    #   = class(last_fit) == "ngme" || is.null(last_fit))
+    stopifnot("start should be an ngme object"
+      = inherits(start, "ngme") || is.null(start))
 
-    # if (inherits(last_fit, "ngme")) {
-    #   output <- last_fit$est_output
-    #   # use last fit estimates
+    if (inherits(start, "ngme")) {
+      ngme_block <- within(ngme_block, {
+        beta <- start$beta
 
-    #   # block noise
-    #   noise$theta_mu    <- output$noise[["theta_mu"]]
-    #   noise$theta_sigma <- output$noise[["theta_sigma"]]
-    #   noise$theta_noise <- output$noise[["theta_V"]]
-    #   noise$V           <- output$noise[["V"]]
+        noise$theta_mu    <- start$noise$theta_mu
+        noise$theta_sigma <- start$noise$theta_sigma
+        noise$theta_V     <- start$noise$theta_V
+        noise$V           <- start$noise$V
 
-    #   # latents
-    #   for (i in seq_along(latents_in)) {
-    #     last_fit_latent <- output$latent[[i]]
-    #     latents_in[[i]]$operator$theta_K  <- last_fit_latent[["theta_K"]]
-    #     latents_in[[i]]$W                 <- last_fit_latent[["W"]]
+        # latents
+        for (i in seq_along(latents_in)) {
+          latents_in[[i]]$theta_K           <- start$latents[[i]][["theta_K"]]
+          latents_in[[i]]$W                 <- start$latents[[i]][["W"]]
 
-    #     latents_in[[i]]$noise$theta_mu    <- last_fit_latent[["theta_mu"]]
-    #     latents_in[[i]]$noise$theta_sigma <- last_fit_latent[["theta_sigma"]]
-    #     latents_in[[i]]$noise$theta_noise <- last_fit_latent[["theta_V"]]
-    #     latents_in[[i]]$noise$V           <- last_fit_latent[["V"]]
-    #   }
-    # }
+          latents_in[[i]]$noise$theta_mu    <- start$latents[[i]][["theta_mu"]]
+          latents_in[[i]]$noise$theta_sigma <- start$latents[[i]][["theta_sigma"]]
+          latents_in[[i]]$noise$theta_V     <- start$latents[[i]][["theta_V"]]
+          latents_in[[i]]$noise$V           <- start$latents[[i]][["V"]]
+        }
+      })
+    }
 
   } else {
     stop("unknown structure of formula")

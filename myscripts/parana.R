@@ -1,15 +1,14 @@
 library(INLA)
 library(devtools)
 
-
 load_all()
 
 data(PRprec)
 data(PRborder)
 
-dim(PRprec)
-dim(PRborder)
-PRprec[1:6, 1:8]
+# dim(PRprec)
+# dim(PRborder)
+# PRprec[1:6, 1:8]
 
 prdomain <- inla.nonconvex.hull(as.matrix(PRprec[, 1:2]),
   convex = -0.03, concave = -0.05,
@@ -74,7 +73,7 @@ out <- ngme(
   noise = noise_nig(),
   control = ngme_control(
     estimation = T,
-    iterations = 15000,
+    iterations = 1000,
     n_slope_check = 4,
     stop_points = 100,
     n_parallel_chain = 8

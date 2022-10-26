@@ -114,9 +114,6 @@ ngme_out <- ngme(
   # , last_fit = ngme_out
   debug = T
 )
-+
-# ngme_out
-# str(ngme_out)
 
 # noise
 traceplot(ngme_out, parameter = "theta_mu", f_index = 0)
@@ -163,11 +160,18 @@ fun(unlist(ll))
 ll <- list(a=1,b=2,w=NULL)
 
 ll
+class(ll) <- "sth"
 within(ll, {
   if (is.null(w)) k = 54
 })
+
+
 load_all()
 
 rw1 <- model_rw1(1:3, noise=noise_normal())
 
 rw1$C + rw1$G
+
+?within
+
+with

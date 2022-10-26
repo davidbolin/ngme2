@@ -36,7 +36,7 @@ ngme.block_model <- function(
       par_string        = par_string,
       ...
     ),
-    class = "ngme"
+    class = c("ngme", "list")
   )
 }
 

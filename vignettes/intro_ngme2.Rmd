@@ -22,8 +22,15 @@ load_all()
 ## Introduction
 
 In this vignette we provide a brief introduction to the `ngme2` package.
-`ngme2` is an R package that contains functions for inference and prediction for Gaussian and non-Gaussian latent models.
-The package has support for linear mixed effects models, spatial random field models, and multivariate random fields.
+
+Ngme2 is the updated version of Ngme, a package for estimating latent non-Gaussian models.
+It follows a **3-layer structure** (the block model, latent process models, and noises) for specifying the whole model.
+The latent process defines different operator structure, and the block model collects them with the fixed effects and measurement noise.
+It supports models like spatial Matern model with non-Gaussian noise.
+It enables features like replicates at same locations, and multiple parallel chains estimation.
+Comparing to the previous version, it allows for nonstaionarity for skewness of the noise, and also measurement noise.
+It is flexible and extendable for adding further models.
+In the end, we present an application of estimating Precipitation data in Paraná with Ngme2.
 
 ## Modeling Framework
 

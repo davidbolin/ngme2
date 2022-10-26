@@ -7,7 +7,8 @@
 #'   (Only response variable can contain NA value,
 #'    NA value in other columns will cause problem)
 #' @param control control variables, see ?ngme.control
-#' @param noise measurement noise specification
+#' @param last_fit  can be ngme object from last fitting
+#' @param family likelihood type, same as measurement noise specification
 #' @param beta starting value for fixed effects
 #' @param start  starting ngme object (usually object from last fitting)
 #' @param seed  set the seed for pesudo random number generator
@@ -20,13 +21,16 @@
 ngme <- function(
   formula,
   data,
-  control       = ngme.control(),
-  noise         = noise_normal(),
+  control       = ngme_control(),
+  family        = noise_normal(),
+  last_fit      = NULL,
   beta          = NULL,
   seed          = NULL,
   start         = NULL,
   debug         = FALSE
 ) {
+  noise <- family # alias for family
+
   if (is.null(seed)) seed <- Sys.time()
   # -------------  CHECK INPUT ---------------
   if (is.null(formula)) {
@@ -42,7 +46,7 @@ ngme <- function(
   }
 
   stopifnot(class(noise) == "ngme_noise")
-  family <- noise$noise_type
+  family_type <- noise$noise_type
 
   # 2. parse the formula
   time.start <- Sys.time()
@@ -81,9 +85,9 @@ ngme <- function(
     var.types   = unlist(lapply(latents_in, function(x) x["var.type"]))
 
     n_feff <- ncol(X_data);
-    if (family == "normal") {
+    if (family_type == "normal") {
       n_merr <- noise$n_theta_sigma
-    } else if (family == "nig") {
+    } else if (family_type == "nig") {
       n_merr <- noise$n_theta_mu + noise$n_theta_sigma + noise$n_theta_V
     }
 
@@ -94,7 +98,7 @@ ngme <- function(
 
     noise <- update_noise(noise, n = n_Y_data)
 
-    if (family == "normal" && is.null(noise$theta_sigma == 0))
+    if (family_type == "normal" && is.null(noise$theta_sigma == 0))
       noise$theta_sigma <- sd(lm.model$residuals)
 
     ngme_block <- ngme.block_model(

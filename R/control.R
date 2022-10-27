@@ -31,11 +31,13 @@ ngme_control <- function(
   n_slope_check     = 3,
   std_lim           = 0.2,
   trend_lim         = 0.1,
+  # print_conv_info   = TRUE,
 
   # opt options
   opt_beta          = TRUE,
   fix_beta          = FALSE,
 
+  max_relative_step = 0.1,
   kill_var          = FALSE,
   kill_power        = 0.75,
   threshold         = 1e-5,
@@ -66,6 +68,7 @@ ngme_control <- function(
     fix_beta          = fix_beta,
 
     # variance reduction
+    max_relative_step = max_relative_step,
     kill_var          = kill_var,
     kill_power        = kill_power,
     threshold         = threshold,

@@ -7,9 +7,9 @@
 }
 
 { ############  1. simulate AR with nig noise
-  n_obs <- 500
+  n_obs <- 1000
   ar_mu <- 4
-  ar_sigma <- 0
+  ar_sigma <- 1
   ar_eta <- 1
 
   ar1_process <- simulate(
@@ -18,7 +18,7 @@
       theta_K = 0.9,
       noise = noise_nig(
         mu = ar_mu,
-        theta_sigma = ar_sigma,
+        sigma = ar_sigma,
         nu = ar_eta
       )
     ),
@@ -43,7 +43,6 @@
   # use normal noise
     Y <- ar1_process + rnorm(n_obs)
 }
-load_all()
 # f(1:n_obs,
 #   model = "ar1",
 #   theta_K = 0.9,
@@ -67,7 +66,7 @@ load_all()
 # trueW1 <- Reduce(function(x,y){y + alpha1*x}, noise1, accumulate = T)
 # Y = trueW1 + rnorm(n_obs, mean=0, sd = 0.5)
 # }
-
+load_all()
 ngme_out <- ngme(
   Y ~ 0 +
   f(1:n_obs,
@@ -79,7 +78,7 @@ ngme_out <- ngme(
     noise = noise_nig(
       theta_mu = 1.1,
       theta_sigma = 0.1,
-      theta_V = 2,
+      # theta_V = 2,
       # V = attr(ar1_process, "noise")$V,
       # fix_V = TRUE,
       fix_theta_mu      = F,
@@ -99,7 +98,7 @@ ngme_out <- ngme(
     n_parallel_chain = 4,
     stop_points = 50,
     burnin = 200,
-    iterations = 100,
+    iterations = 1,
     gibbs_sample = 5,
     stepsize = 1,
     kill_var = FALSE,
@@ -114,16 +113,17 @@ ngme_out <- ngme(
   # , last_fit = ngme_out
   debug = T
 )
+ngme_out
 
 # noise
 traceplot(ngme_out, parameter = "theta_mu", f_index = 0)
-traceplot(ngme_out, parameter = "theta_sigma", f_index = 0, transform = exp)
+traceplot(ngme_out, parameter = "theta_sigma", f_index = 0)
 traceplot(ngme_out, parameter = "theta_V", f_index = 0)
 
 # ar1 model
-traceplot(ngme_out, parameter = "theta_K",     f_index = 1, transform = th2a)
+traceplot(ngme_out, parameter = "theta_K",     f_index = 1)
 traceplot(ngme_out, parameter = "theta_mu",    f_index = 1)
-traceplot(ngme_out, parameter = "theta_sigma", f_index = 1, transform = exp)
+traceplot(ngme_out, parameter = "theta_sigma", f_index = 1)
 traceplot(ngme_out, parameter = "theta_V",     f_index = 1)
 
 # compare ar model
@@ -173,5 +173,3 @@ rw1 <- model_rw1(1:3, noise=noise_normal())
 rw1$C + rw1$G
 
 ?within
-
-with

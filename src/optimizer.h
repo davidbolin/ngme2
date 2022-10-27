@@ -21,7 +21,8 @@ public:
      Eigen::VectorXd sgd(
             Model& model,
             double eps,
-            int iterations);
+            int iterations,
+            double max_relative_step);
 };
 
 #endif

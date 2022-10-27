@@ -33,6 +33,7 @@ Rcpp::List estimate_cpp(const Rcpp::List& ngme_block) {
     const bool exchange_VW = control_in["exchange_VW"];
     const int iterations = control_in["iterations"];
     const int burnin = control_in["burnin"];
+    const double max_relative_step = control_in["max_relative_step"];
 
     Rcpp::List trajectory = R_NilValue;
     Rcpp::List output = R_NilValue;
@@ -77,7 +78,7 @@ auto timer = std::chrono::steady_clock::now();
         #pragma omp parallel for schedule(static)
         for (i=0; i < n_chains; i++) {
             Optimizer opt;
-            VectorXd param = opt.sgd(*(blocks[i]), 0.1, batch_steps);
+            VectorXd param = opt.sgd(*(blocks[i]), 0.1, batch_steps, max_relative_step);
 
             #pragma omp critical
             mat.row(i) = param;
@@ -119,7 +120,7 @@ auto timer = std::chrono::steady_clock::now();
 #else
     BlockModel block (ngme_block, rng());
     Optimizer opt;
-    trajectory = opt.sgd(block, 0.1, iterations);
+    trajectory = opt.sgd(block, 0.1, iterations, max_relative_step);
     Rcpp::List ngme = block.output();
     outputs.push_back(block.output());
 #endif

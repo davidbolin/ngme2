@@ -56,11 +56,13 @@ Rcpp::List Optimizer::sgd(
 }
 
 
+// x <- x - model.stepsize() * model.grad()
 // return the parameter after sgd
 VectorXd Optimizer::sgd(
     Model& model,
     double eps,
-    int iterations
+    int iterations,
+    double max_relative_step
 ) {
     VectorXd x = model.get_parameter();
     VectorXd grad;
@@ -70,8 +72,16 @@ VectorXd Optimizer::sgd(
         grad = model.grad();
 // std::cout << "get gradient (ms): " << since(timer_grad).count() << std::endl;
 
-        VectorXd stepsizes = model.get_stepsizes();
-        x = x - grad.cwiseProduct(stepsizes);
+        // VectorXd stepsizes = model.get_stepsizes();
+        // x = x - grad.cwiseProduct(stepsizes);
+        // restrict one_step by |one_step(i)| / |x(i)| < rela_step
+        VectorXd one_step = grad.cwiseProduct(model.get_stepsizes());
+        VectorXd ratio = one_step.cwiseAbs().cwiseQuotient(x.cwiseAbs());
+        for (int j = 0; j < ratio.size() && ratio(j) > max_relative_step; j++) {
+            double sign = one_step(j) / abs(one_step(j));
+            one_step(j) = sign * max_relative_step * x(j);
+        }
+        x = x - one_step;
 
         model.set_parameter(x);
     }
@@ -79,3 +89,15 @@ VectorXd Optimizer::sgd(
     return x;
 }
 
+
+        // VectorXd one_step = grad.cwiseProduct(model.get_stepsizes());
+
+        // // restrict one_step by |one_step(i)| / |x(i)| < rela_step
+        // // VectorXd ratio = one_step.cwiseAbs().cwiseQuotient(x.cwiseAbs());
+        // // for (int j = 0; j < ratio.size() && ratio(j) > max_relative_step; j++) {
+        // //     double sign = one_step(j) / abs(one_step(j));
+        // //     one_step(j) = sign * max_relative_step * x(j);
+        // // }
+
+        // x = x - one_step;
+        // model.set_parameter(x);

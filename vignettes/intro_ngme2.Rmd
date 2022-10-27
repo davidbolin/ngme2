@@ -1,7 +1,8 @@
 ---
 title: "Introduction to ngme2 Package"
 date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
+output: posterdown::posterdown_html
+# output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Introduction to ngme2 Package}
   %\VignetteEngine{knitr::rmarkdown}
@@ -144,7 +145,7 @@ The process can be specified by different noise structure.
 
 Some examples of using `f` function to specify `ngme_model`:
 
-```{r}
+```{r ngme_model}
 f(index = 1:10, model = "rw1", noise = noise_normal())
 f(index = 1:10, model = "ar1", noise = noise_nig(), theta_K = 0.5)
 ```
@@ -155,7 +156,7 @@ The `ngme_block` is the highest level which collects different `ngme_model`, fix
 
 It can be specified as following:
 
-```{r}
+```{r ngme_block}
 ngme(
   formula = Y ~ x1 + f(
     index = x2,
@@ -166,7 +167,7 @@ ngme(
     model = model_rw1(1:5, circular = TRUE),
     noise = noise_normal(),
   ),
-  noise = noise_normal(sd = 0.5),
+  family = noise_normal(sd = 0.5),
   data = data.frame(Y = 1:5, x1 = 2:6, x2 = 3:7),
   control = ngme_control(
     estimation = FALSE

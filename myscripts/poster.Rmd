@@ -1,0 +1,217 @@
+---
+title: Ngme2 - A new Flexible R Package for Latent non-Gaussian Model
+titlebox_borderwidth: "0.5cm"
+author:
+  - name: Xiaotian Jin
+    affil: 1
+affiliation:
+  - num: 1
+    address: Department of Statistics, KAUST
+column_numbers: 4
+logoright_name: https&#58;//raw.githubusercontent.com/vpnsctl/posterdown/master/images/group_logo2.png
+logoleft_name: https&#58;//raw.githubusercontent.com/vpnsctl/posterdown/master/images/stat_logo.png
+output:
+  posterdown::posterdown_html:
+    self_contained: false
+# bibliography: "packages.bib"
+poster_height:	"28.5in"
+poster_width:	"55.0in"
+primary_colour: "#EDE3FF"
+secondary_colour: "#EDE3FF"
+titlebox_bordercol: "#AF9FC9"
+title_textcol: "black"
+author_textcol: "black"
+affiliation_textcol: "black"
+code_colour: #666
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+set.seed(10)
+library(devtools)
+load_all()
+```
+
+# 1 Introduction
+
+`ngme2` is the updated version of `ngme` (https://github.com/davidbolin/ngme), a package for estimating latent non-Gaussian models.
+It follows a **3-layer structure** in design (the general block model, latent process models, and noises) for specifying the whole statistical model.
+The latent process defines different operator structure, and the block model collects them with the fixed effects and measurement noise.
+
+### 1.1 Features
+
+1. Support spatial models like Matern model with non-Gaussian noise.
+2. Support replicates at same locations.
+3. Support multiple parallel chains estimation.
+4. Support prediction at unknown locations.
+5. Comparing to the previous version, it allows for nonstaionarity for skewness of the noise, and also measurement noise.
+
+# 2 Modeling Framework
+
+The package `ngme2` provides methods for mixed effect models in the following form:
+
+$$
+\begin{aligned}
+Y_{i} = {\bf X}^{\top} {\bf \beta} + \sum_j {\bf A}_j W_j({\bf t}) + \epsilon_{i}.
+\end{aligned}
+$$
+
+Here,
+
+- $i = 1, \ldots, m$ (subject index), $j = 1, \ldots, n_i$ (replicate index),
+- $Y_i$ is the response variable for at index $i$,
+- ${\bf X}$ is the matrix of fixed effects explanatory variables,
+- ${\bf \beta}$ is the matrix of fixed effects coefficients,
+- ${\bf A}_j$ is the observation matrix for each process,
+- $W_j(t_j)$ is specified as a stochastic process,
+- $\epsilon_{i}$ is measurement error.
+
+Here, the process $W$ follows ${\bf K} W = z$,
+where $z$ is either Gaussian or non-Gaussian noise.
+${\bf K}$ is the operator matrix.
+
+### 2.1 Non-Gaussian Model
+
+Here we assume the non-Gaussian process is a type-G Lévy process,
+whose increments can be represented as location-scale mixtures:
+$$\gamma + \mu V + \sigma \sqrt{V}Z,$$
+where $\gamma, \mu, \sigma$ are parameters, $Z\sim N(0,1)$ and is independent of $V$, and $V$ is a positive infinitely divisible random variable.
+It results in the following form, where $K$ is the operator part:
+
+$$
+KW|V \sim N(\gamma + \mu V, \sigma^2 \, diag(V)),
+$$
+also, notice that $\mu$ and $\sigma$ can be non-stationary.
+
+In `ngme2`, we focus mainly on the normal inverse Gaussian (NIG) model.
+In this case, $V$ follows Inverse Gaussian distribution with parameter $\nu$ (IG($\nu$, $\nu$)).
+
+# 3 Ngme Model Structure - 3-Layer structure
+
+### 3.1 ngme_noise - first building block
+
+The noise is the most fundamental structure in `ngme2`. For now we support 2 noises.
+One is normal noise, the other is the NIG noise.
+
+The R class `ngme_noise` has the following interface:
+
+```
+noise_normal(sd = 1)
+noise_nig(mu = 1, sigma = 2, nu = 1)
+noise_nig(B_mu, theta_mu = c(1, 2),
+  B_sigma, sigma = c(1,2), nu = 1)
+```
+They are stationary and non-stationary NIG noise,
+where $\mu = \bf B_{\mu} \bf \theta_{\mu}$, and $\sigma = \exp(\bf B_{\sigma} \bf \theta_{\sigma})$.
+
+### 3.2 ngme_model - process equiped with some noise
+
+The middle layer is the stochastic process, in R interface, it is represented as a `f` function.
+The process can be specified by different noise structure.
+
+Some examples of using `f` function to specify `ngme_model`:
+
+```
+f(index = 1:10, model = "ar1",
+  noise = noise_nig(), theta_K = 0.5)
+```
+
+### 3.3 ngme_block - the most upper model collects different
+
+The `ngme_block` is the highest level structure with 3 components:
+
+1. Fixed effects (intercept and x1)
+2. Measurement noise (normal noise)
+3. Latent models (contains 2 models, ar1 and rw1)
+
+It can be specified as following:
+
+```
+ngme(
+  formula = Y ~ x1 + f(x2,
+    model = "ar1",
+    noise = noise_nig()
+  ) + f(
+    model = model_rw1(1:5, circular = TRUE),
+    noise = noise_normal(),
+  ),
+  family = noise_normal(),
+  data = data.frame(Y = 1:5, x1 = 2:6, x2 = 3:7),
+  control = ngme_control(estimation = FALSE)
+)
+```
+
+
+We can turn the `estimation = TRUE` to start estimating the model.
+
+# 4 Application - Estimation of Paraná data
+
+The rainfall data from Paraná (Brazil) is collected by the National Water Agency in Brazil (Agencia Nacional de Águas, ANA, in Portuguese).
+ANA collects data from many locations over Brazil, and all these data are freely available from the ANA website (http://www3.ana.gov.br/portal/ANA).
+
+We will briefly illustrate the command we use, and the result of the estimation.
+
+```{r read_parana include = FALSE}
+library(INLA)
+data(PRprec)
+data(PRborder)
+
+prdomain <- inla.nonconvex.hull(as.matrix(PRprec[, 1:2]),
+  convex = -0.03, concave = -0.05,
+  resolution = c(100, 100))
+
+Y1 <- rowMeans(PRprec[, 12 + 1:31]) # 2 + Octobor
+Y2 <- apply(PRprec[, 12 + 1:31], 1, max) # 2 + Octobor
+
+ind <- !is.na(Y1)
+Y1 <- Y1[ind]
+Y2 <- Y2[ind]
+coords <- as.matrix(PRprec[ind, 1:2])
+
+A <- inla.spde.make.A(mesh = prmesh, loc = coords)
+
+mesh.index <- inla.spde.make.index(
+  name = "field",
+  mesh = prmesh,
+  n.spde = prmesh$n
+)
+
+data <- data.frame(
+  Y_mean  = Y1,
+  Y_max   = Y2,
+  long    = coords[, 1],
+  lat     = coords[, 2]
+)
+
+out <- ngme(
+  formula = Y_mean ~ 1 +
+    f(inla.group(seaDist), model = "rw1", noise=noise_normal()) +
+    f(index = mesh.index$field, model = model_matern(
+      A = A,
+      mesh = prmesh,
+      noise = noise_nig()
+    )), # +
+    # f(index = mesh.index$field, model = model_matern(
+    #   A = A,
+    #   mesh = prmesh,
+    #   noise = noise_normal()
+    # )),
+  data = data,
+  family = noise_nig(),
+  control = ngme_control(
+    estimation = T,
+    iterations = 1000,
+    n_slope_check = 4,
+    stop_points = 100,
+    n_parallel_chain = 8
+  )
+)
+out
+```
+
+```{r}
+traceplot(out, parameter = "theta_K",     f_index = 2, transform = exp)
+```

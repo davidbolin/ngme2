@@ -15,7 +15,7 @@ prdomain <- inla.nonconvex.hull(as.matrix(PRprec[, 1:2]),
   resolution = c(100, 100))
 
 coords <- as.matrix(PRprec[, 1:2])
-
+?data
 dim(PRprec)
 
 #
@@ -58,31 +58,29 @@ data <- data.frame(
 load_all()
 out <- ngme(
   formula = Y_mean ~ 1 +
-    f(inla.group(seaDist), model="rw1", noise=noise_normal()) +
+    f(inla.group(seaDist), model = "rw1", noise=noise_normal()) +
     f(index = mesh.index$field, model = model_matern(
       A = A,
       mesh = prmesh,
       noise = noise_nig()
-    )) +
-    f(index = mesh.index$field, model = model_matern(
-      A = A,
-      mesh = prmesh,
-      noise = noise_normal()
-    )),
+    )), # +
+    # f(index = mesh.index$field, model = model_matern(
+    #   A = A,
+    #   mesh = prmesh,
+    #   noise = noise_normal()
+    # )),
   data = data,
   family = noise_nig(),
   control = ngme_control(
     estimation = T,
-    iterations = 10,
+    iterations = 1000,
     n_slope_check = 4,
     stop_points = 100,
     n_parallel_chain = 8
-  ),
-  debug = T
+  )
 )
-
+out
 str(out)
-
 
 # plots
 # beta
@@ -92,22 +90,22 @@ str(out)
 
 
 # 1st model
-traceplot(out, parameter = "theta_K",     f_index = 1, transform = exp)
+traceplot(out, parameter = "theta_K",     f_index = 1)
 traceplot(out, parameter = "theta_mu",    f_index = 1)
-traceplot(out, parameter = "theta_sigma", f_index = 1, transform = exp)
-traceplot(out, parameter = "theta_V",     f_index = 1, transform = log)
+traceplot(out, parameter = "theta_sigma", f_index = 1)
+traceplot(out, parameter = "theta_V",     f_index = 1)
 
 # 2nd model
-traceplot(out, parameter = "theta_K",     f_index = 2, transform = exp)
+traceplot(out, parameter = "theta_K",     f_index = 2)
 traceplot(out, parameter = "theta_mu",    f_index = 2)
-traceplot(out, parameter = "theta_sigma", f_index = 2, transform = exp)
-traceplot(out, parameter = "theta_V",     f_index = 2, transform = log)
+traceplot(out, parameter = "theta_sigma", f_index = 2)
+traceplot(out, parameter = "theta_V",     f_index = 2)
 
 # 3rd model
-traceplot(out, parameter = "theta_K",     f_index = 3, transform = exp)
+traceplot(out, parameter = "theta_K",     f_index = 3)
 traceplot(out, parameter = "theta_mu",    f_index = 3)
-traceplot(out, parameter = "theta_sigma", f_index = 3, transform = exp)
-traceplot(out, parameter = "theta_V",     f_index = 3, transform = log)
+traceplot(out, parameter = "theta_sigma", f_index = 3)
+traceplot(out, parameter = "theta_V",     f_index = 3)
 
 
 # fixed effects
@@ -115,5 +113,5 @@ traceplot(out, parameter = "beta", f_index = 0, param_index = 1)
 
 # measurement noise
 traceplot(out, parameter = "theta_mu", f_index = 0)
-traceplot(out, parameter = "theta_sigma", f_index = 0, transform = exp)
+traceplot(out, parameter = "theta_sigma", f_index = 0)
 traceplot(out, parameter = "theta_V", f_index = 0)

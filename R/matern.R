@@ -25,7 +25,7 @@ model_matern <- function(
   fem.mesh.matrices = NULL,
   d           = NULL,
   A           = NULL,
-  noise       = NULL,
+  # noise       = NULL,
   ...
 ) {
   if (is.null(mesh) && is.null(fem.mesh.matrices))
@@ -72,7 +72,7 @@ model_matern <- function(
     h <- rep(h, times = nrep)
   }
 
-  if (noise$n_noise == 1) noise <- update_noise(noise, n = mesh$n)
+  # if (noise$n_noise == 1) noise <- update_noise(noise, n = mesh$n)
 
   model <- ngme_model(
     model       = "matern",
@@ -85,7 +85,7 @@ model_matern <- function(
     C           = ngme_as_sparse(C),
     G           = ngme_as_sparse(G),
     h           = h,
-    noise       = noise,
+    # noise       = noise,
     ...
   )
   model

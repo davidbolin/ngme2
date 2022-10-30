@@ -66,7 +66,7 @@ ngme_noise <- function(
 
   structure(
     list(
-      n_noise         = nrow(B_mu),
+      n_noise         = nrow(B_mu),  # this is same as V_size
       noise_type      = noise_type,
       theta_V         = theta_V,
       V               = V,

@@ -89,23 +89,23 @@ ngme_out <- ngme(
       numer_grad       = F,
       use_precond      = T
     ),
-    debug = T
+    debug = F
   ),
   data = data.frame(Y = Y),
   control = ngme_control(
     estimation = T,
-    exchange_VW = FALSE,
-    n_parallel_chain = 4,
+    exchange_VW = TRUE,
+    n_parallel_chain = 8,
     stop_points = 50,
     burnin = 200,
-    iterations = 1,
+    iterations = 500,
     gibbs_sample = 5,
     stepsize = 1,
     kill_var = FALSE,
     threshold = 1e-4,
 
-    std_lim = 0.1,
-    trend_lim = 0.1
+    std_lim = 0.001,
+    trend_lim = 0.001
   ),
   family = noise_normal(),
   # noise = attr(nig_noise, "noise"),
@@ -173,3 +173,34 @@ rw1 <- model_rw1(1:3, noise=noise_normal())
 rw1$C + rw1$G
 
 ?within
+
+library(devtools)
+library(rlang)
+load_all()
+f(
+    model = model_rw1(1:5, circular = TRUE),
+    noise = noise_normal(sd = 1.5),
+    theta_K = 0.7
+  )
+
+load_all()
+
+f3 <- function(a = noise_nig()) {
+  list(match.call())
+}
+f3()
+
+list(environment())
+
+a <- 3
+f4 <- function(b = 3, d = NULL, e = noise_nig()) {
+  as.list(match.call()[-1])
+}
+f4(b = 4, e = noise_normal())
+
+f(1:3, model = "ar1", noise=noise_nig(sd=1.1))
+
+
+ll <- list(a = NULL, b = 3)
+?which()
+load_all()

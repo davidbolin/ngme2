@@ -73,6 +73,7 @@ protected:
     VectorXd stepsizes, gradients;
     int counting {0};
     VectorXd indicate_threshold, steps_to_threshold;
+    int curr_iter; // how many times set is called.
 
     // solvers
     cholesky_solver chol_Q, chol_QQ;
@@ -85,6 +86,7 @@ protected:
     vector<double>   theta_V_traj;
 
     std::string par_string;
+
 public:
     // BlockModel() {}
     BlockModel(const Rcpp::List& block_model, unsigned long seed);
@@ -127,6 +129,7 @@ public:
     VectorXd             grad();
     SparseMatrix<double> precond() const;
 
+    int                  get_curr_iter() const {return curr_iter;}
     void                 examine_gradient();
     void                 sampleW_V();
 

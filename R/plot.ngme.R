@@ -64,8 +64,8 @@ traceplot <- function(
       )
   }
 
+  model_type <- if (f_index > 0) ngme$latents[[f_index]]$model else "unknown"
   # handle transformation of data.
-  model_type <- ngme$latents[[f_index]]$model
   if ((model_type == "matern" && parameter == "theta_K") ||
       (parameter == "theta_sigma"))
     transform <- exp

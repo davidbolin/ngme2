@@ -51,7 +51,7 @@ ngme_model <- function(
   fix_W       = FALSE,
   A           = NULL,
   A_pred      = NULL,
-  noise       = NULL,
+  noise       = noise_normal(),
   control     = ngme_control_f(),
   V_size      = NULL,
   debug       = FALSE,

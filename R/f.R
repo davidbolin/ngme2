@@ -41,11 +41,14 @@ f <- function(
   fix_W       = NULL,
   fix_theta_K = NULL,
   index_pred  = NULL,
-  debug       = FALSE,
+  debug       = NULL,
   ...
 ) {
   # whatever user inputs except model (NULL, default is ignored)
-  f_args <- as.list(match.call())[-1]
+    # f_args <- as.list(match.call())[-1]
+  # remove NULL in arguments
+  f_args <- Filter(Negate(is.null),  as.list(environment()))
+
   # combine args and apply ngme sub_models
   if (is.character(model)) {
     args <- within(f_args, rm(model))
@@ -59,8 +62,10 @@ f <- function(
     )
   } else {
     # model is evaluated with submodel func.
-    args <- within(f_args, rm(model))
-    f_model <- modifyList(model, args)
+    f_args <- within(f_args, rm(model))
+    # use f_args to update the model
+    f_model <- do.call(ngme_model, modifyList(model, f_args))
+  # print(str(f_model))
   }
 
   # get index -> then make both A and A_pred matrix
@@ -113,5 +118,8 @@ f <- function(
 #   model_list$n_params <- n_params
 
 #   do.call(ngme_model, model_list)
+
+  # update n noise
+  f_model$noise <- update_noise(f_model$noise, n = f_model$V_size)
   f_model
 }

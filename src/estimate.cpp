@@ -21,7 +21,7 @@ using Eigen::MatrixXd;
 
 using namespace Rcpp;
 
-bool check_conv(const MatrixXd&, const MatrixXd&, int, int, double, double, std::string);
+bool check_conv(const MatrixXd&, const MatrixXd&, int, int, double, double, std::string, bool);
 
 // [[Rcpp::plugins(openmp)]]
 // [[Rcpp::export]]
@@ -49,6 +49,7 @@ auto timer = std::chrono::steady_clock::now();
 
     int n_chains = (control_in["n_parallel_chain"]);
     int n_batch = (control_in["stop_points"]);
+    double print_check_info = (control_in["print_check_info"]);
     omp_set_num_threads(n_chains);
 
     // init each model
@@ -103,7 +104,7 @@ auto timer = std::chrono::steady_clock::now();
 
             // 2. convergence check
             if (n_slope_check <= curr_batch + 1)
-                converge = check_conv(means, vars, curr_batch, n_slope_check, std_lim, trend_lim, par_string);
+                converge = check_conv(means, vars, curr_batch, n_slope_check, std_lim, trend_lim, par_string, print_check_info);
         }
         curr_batch++;
     }
@@ -150,7 +151,8 @@ bool check_conv(
     int n_slope_check,
     double std_lim,
     double trend_lim,
-    std::string par_string
+    std::string par_string,
+    bool print_check_info
 ) {
     bool conv = true;
     int n_params = means.cols();
@@ -189,7 +191,7 @@ bool check_conv(
 // std::cout << "beta here = " << Q << std::endl;
     }
 
-    Rcpp::Rcout << "stop " << curr_batch+1 << ": \n"
+    if (print_check_info) Rcpp::Rcout << "stop " << curr_batch+1 << ": \n"
         << par_string << "\n"
         << std_line << "\n"
         << trend_line << "\n\n";

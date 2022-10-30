@@ -14,6 +14,7 @@ public:
     virtual void                 set_parameter(const VectorXd&)=0;
     virtual VectorXd             grad()=0;
     virtual SparseMatrix<double> precond() const=0;
+    virtual int                  get_curr_iter() const {return 0;}
 };
 
 

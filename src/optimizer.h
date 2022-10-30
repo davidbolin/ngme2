@@ -9,7 +9,6 @@
 class Optimizer
 {
 private:
-    int iterations;
 public:
     Rcpp::List sgd(Model& model,
                 double stepsize,

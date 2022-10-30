@@ -27,15 +27,15 @@ ngme_control <- function(
   # parallel options
   n_parallel_chain  = 2,
   stop_points       = 10,
-  exchange_VW       = FALSE,
+  exchange_VW       = TRUE,
   n_slope_check     = 3,
-  std_lim           = 0.2,
-  trend_lim         = 0.1,
-  # print_conv_info   = TRUE,
+  std_lim           = 0.1,
+  trend_lim         = 0.05,
 
   # opt options
   opt_beta          = TRUE,
   fix_beta          = FALSE,
+  print_check_info  = TRUE,
 
   max_relative_step = 0.1,
   kill_var          = FALSE,
@@ -66,6 +66,7 @@ ngme_control <- function(
 
     opt_beta          = opt_beta,
     fix_beta          = fix_beta,
+    print_check_info  = print_check_info,
 
     # variance reduction
     max_relative_step = max_relative_step,

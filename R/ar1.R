@@ -92,10 +92,10 @@ model_ar1 <- function(
 #' r2 <- model_rw1(1:7); r2$C + r2$G
 model_rw1 <- function(
   index,
-  replicates = NULL,
-  circular = FALSE,
-  n_points = NULL,
-  noise = noise_normal(),
+  replicates  = NULL,
+  circular    = FALSE,
+  n_points    = NULL,
+  noise       = NULL,
   # extra A matrix
   ...
 ) {
@@ -124,7 +124,7 @@ model_rw1 <- function(
   }
 
   # update noise with length n
-  if (noise$n_noise == 1) noise <- update_noise(noise, n = n)
+  # if (noise$n_noise == 1) noise <- update_noise(noise, n = n)
 
   args <- within(list(...), {
     model       = "rw1"
@@ -137,7 +137,7 @@ model_rw1 <- function(
     h           = h
     C           = ngme_as_sparse(C)
     G           = ngme_as_sparse(G)
-    noise       = noise
+    # noise       = noise
   })
 
   do.call(ngme_model, args)

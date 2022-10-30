@@ -107,8 +107,10 @@ public:
             double grad2 = tmp2.mean();
 
             double hess = -0.5 * pow(nu, -2);
-            // grad = grad / (hess * nu + grad2);
-            grad = grad / (hess * nu);
+
+            // version 1
+            grad = grad / (hess * nu + grad2);
+            // grad = grad / (hess * nu);
         }
 
         return grad;

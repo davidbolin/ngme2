@@ -25,6 +25,7 @@ BlockModel::BlockModel(
   K                 (V_sizes, W_sizes),
   var               (Var(Rcpp::as<Rcpp::List> (block_model["noise"]), rng())),
 
+  curr_iter         (0),
   beta_traj         (beta.size()),
   // dK            (V_sizes, W_sizes)
   // d2K           (V_sizes, W_sizes)
@@ -306,6 +307,7 @@ void BlockModel::set_parameter(const VectorXd& Theta) {
   record_traj();
 
   assemble(); //update K,dK,d2K after
+  curr_iter++;
 }
 
 // sample W|V
@@ -503,27 +505,27 @@ Rcpp::List BlockModel::sampling(int iterations, bool posterior) {
 // provide stepsize
 inline void BlockModel::examine_gradient() {
 
-//     // examine if the gradient under the threshold
-//     for (int i=0; i < n_params; i++) {
-//         if (abs(gradients(i)) < threshold) {
-//             indicate_threshold(i) = 1;
-//         }      // mark if under threshold
-//         if (!indicate_threshold(i)) steps_to_threshold(i) = counting; // counting up
-//     }
+    // examine if the gradient under the threshold
+    // for (int i=0; i < n_params; i++) {
+    //     if (abs(gradients(i)) < threshold) {
+    //         indicate_threshold(i) = 1;
+    //     }      // mark if under threshold
+    //     if (!indicate_threshold(i)) steps_to_threshold(i) = counting; // counting up
+    // }
 
-//     counting += 1;
-//     stepsizes = (VectorXd::Constant(n_params, counting) - steps_to_threshold).cwiseInverse().array().pow(kill_power);
+    // counting += 1;
+    // stepsizes = (VectorXd::Constant(n_params, counting) - steps_to_threshold).cwiseInverse().array().pow(kill_power);
 
-//     // finish opt fo latents
-//     for (int i=0; i < n_latent; i++) {
-//         for (int j=0; j < latent_para; j++) {
-//             int index = latent_para*i + j;
+    // // finish opt fo latents
+    // for (int i=0; i < n_latent; i++) {
+    //     for (int j=0; j < latent_para; j++) {
+    //         int index = latent_para*i + j;
 
-//             // if (counting - steps_to_threshold(index) > 100)
-//             if (abs(gradients(index)) < termination)
-//                 latents[i]->finishOpt(j);
-//         }
-//     }
+    //         // if (counting - steps_to_threshold(index) > 100)
+    //         if (abs(gradients(index)) < termination)
+    //             latents[i]->finishOpt(j);
+    //     }
+    // }
 
 // if (debug) {
 //     std::cout << "steps=" << steps_to_threshold <<std::endl;

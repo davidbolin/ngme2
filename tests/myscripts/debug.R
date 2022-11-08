@@ -1,18 +1,6 @@
-f <- function(a) g(a)
-g <- function(b) h(b)
-h <- function(c) i(c)
-i <- function(d) {
-  if (!is.numeric(d)) {
-    stop("`d` must be numeric", call. = FALSE)
-  }
-  d + 10
-}
-f(b=1)
+library(devtools)
+usethis::use_pkgdown()
 
-g <- function(b) {
-  browser()
-  h(b)
-}
-f(10)
+pkgdown::build_site(devel = TRUE)
 
-use_test("f")
+# build website

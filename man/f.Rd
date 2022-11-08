@@ -19,11 +19,12 @@ f(
   fix_theta_K = NULL,
   index_pred = NULL,
   debug = NULL,
+  index_NA = NULL,
   ...
 )
 }
 \arguments{
-\item{index}{symbol or numerical value}
+\item{index}{symbol or numerical value: index or covariates to build index}
 
 \item{model}{1. string: type of model, 2. ngme.spde object}
 
@@ -44,10 +45,12 @@ f(
 
 \item{W}{starting value of the process}
 
-\item{debug}{Debug mode
-inherit the data from ngme function}
+\item{debug}{Debug mode}
 
-\item{...}{additional arguments}
+\item{index_NA}{Logical vector, same as is.na(response var.)}
+
+\item{...}{additional arguments
+inherit the data from ngme function}
 }
 \value{
 a list latent_in for constructing latent model, e.g. A, h, C, G,

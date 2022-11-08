@@ -1,6 +1,6 @@
 # new models should have
 # model_name <- function(
-# index, replicates, index_pred, noise, data
+# index, replicates, index_NA, noise, data
 # )
 
 # ar1 and rw1
@@ -11,6 +11,7 @@
 #'
 #' @param index index for the process
 #' @param replicates replicates for the process
+#' @param index_NA Logical vector, same as is.na(response var.)
 #' @param alpha initial value for alpha
 #' @param range range for the mesh
 #'
@@ -26,7 +27,7 @@
 model_ar1 <- function(
   index,   # time index
   replicates  = NULL,
-  index_pred  = NULL,
+  index_NA    = NULL,
   data        = NULL,
   noise       = noise_normal(),
 
@@ -37,10 +38,7 @@ model_ar1 <- function(
 ) {
   # capture symbol in index
   index <- eval(substitute(index), envir = data, enclos = parent.frame())
-
-  # index <- index - index_pred
-  if (!is.null(index_pred))
-    index <- index[-index_pred]
+  if (is.null(index_NA)) index_NA <- rep(FALSE, length(index))
 
   if (is.null(replicates)) replicates <- rep(1, length(index))
 
@@ -73,13 +71,12 @@ model_ar1 <- function(
     theta_K     = if (exists("theta_K")) ar1_a2th(theta_K) else ar1_a2th(alpha)
     W_size      = n
     V_size      = n
-    A           = ngme_ts_make_A(loc = index, replicates = replicates, range = range)
-    A_pred      = ngme_ts_make_A(index_pred, replicates = replicates, range = range)
+    A           = ngme_ts_make_A(loc = index[!index_NA], replicates = replicates, range = range)
+    A_pred      = ngme_ts_make_A(loc = index[index_NA], replicates = replicates, range = range)
     h           = rep(1.0, n)
     C           = ngme_as_sparse(C)
     G           = ngme_as_sparse(G)
     noise       = noise
-    index_pred  = index_pred
   })
 
   do.call(ngme_model, args)
@@ -90,7 +87,8 @@ model_ar1 <- function(
 #' Generating C, G and A given index and replicates
 #' size of C and G is (n-1) * n, size of V is n-1
 #'
-#' @param index index for the process
+#' @param index numerical vector, index for the process
+#' @param order 1 or 2, order of random walk model
 #' @param replicates replicates for the process
 #' @param mesh inla.1d.mesh
 #' @param n_points or num of points, evenly spaced mesh
@@ -100,112 +98,76 @@ model_ar1 <- function(
 #' @examples
 #' r1 <- model_rw1(1:7, circular = TRUE); r1$C + r1$G
 #' r2 <- model_rw1(1:7); r2$C + r2$G
-model_rw1 <- function(
+model_rw<- function(
   index,
+  order       = 1,
   replicates  = NULL,
   data        = NULL,
   circular    = FALSE,
   n_points    = NULL,
-  noise       = NULL,
-  index_pred  = NULL,
+  index_NA    = NULL,
+  noise       = noise_normal(),
   # extra A matrix
   ...
 ) {
+  stopifnot(order == 1 || order == 2)
+# capture symbol in index
+  index <- eval(substitute(index), envir = data, enclos = parent.frame())
+  if (is.null(index_NA)) index_NA <- rep(FALSE, length(index))
 
-  stopifnot(length(index) > 2)
+  stopifnot("length of index at least > 3" = length(index) > 3)
   # create mesh using index
   sorted_index <- sort(index, index.return = TRUE)
   h <- diff(sorted_index$x)
   # permutation matrix, same as A <- diag(length(index))[sorted_index$ix, ]
-  A <- Matrix::sparseMatrix(seq_along(index), sorted_index$ix, x = 1)
 
-  n <- length(index) - 1
-  if (!circular) {
-    # construct G
+  # create A in one way
+  # A <- Matrix::sparseMatrix(seq_along(index)[!index_NA], sorted_index$ix, x = 1)
+  # if (any(index_NA))
+  #   A_pred <- Matrix::sparseMatrix(seq_along(index)[index_NA], sorted_index$ix, x = 1)
+  # else
+  #   A_pred <- NULL
+
+  # create A in INLA way
+  mesh <- INLA::inla.mesh.1d(loc = index)
+  p_matrix <- as(mesh$idx$loc, "pMatrix") # bug! p_matrix
+# browser()
+  A <- INLA::inla.spde.make.A(mesh = mesh, loc = index[!index_NA]) %*% p_matrix
+  A_pred <- if (!any(index_NA)) NULL else
+   INLA::inla.spde.make.A(mesh = mesh, loc = index[index_NA]) %*% p_matrix
+
+  if (order == 1) {
+    n <- length(index) - 1
+    if (!circular) {
       G <- Matrix::Matrix(diag(n));
       G <- cbind(G, rep(0, n))
-
-    # construct C
       C <- Matrix::Matrix(0, n, n)
       C[seq(n+1, n*n, by = n+1)] <- -1
       C <- cbind(C, c(rep(0, n-1), -1))
-  } else {
-    G <- Matrix::Matrix(diag(n))
-    C <- Matrix::Matrix(0, n, n)
+    } else {
+      G <- Matrix::Matrix(diag(n))
+      C <- Matrix::Matrix(0, n, n)
       C[seq(n+1, n*n, by = n+1)] <- -1
       C[n, 1] <- -1
-  }
-
-  # update noise with length n
-  # if (noise$n_noise == 1) noise <- update_noise(noise, n = n)
-
-  args <- within(list(...), {
-    model       = "rw1"
-    theta_K     = 1
-    fix_theta_K = TRUE
-    W_size      = ncol(C) # n + 1
-    V_size      = n
-    A           = A
-    # A_pred      = ngme.ts.make.A(index_pred, replicates = replicates, range = range),
-    h           = h
-    C           = ngme_as_sparse(C)
-    G           = ngme_as_sparse(G)
-    index_pred  = index_pred
-    # noise       = noise
-  })
-
-  do.call(ngme_model, args)
-}
-
-##### duplicate of rw1 except C and G
-
-#' ngme model - random walk of order 2
-#'
-#' Generating C, G and A given index and replicates
-#' size of C and G is (n-1) * n, size of V is n-1
-#'
-#' @param index index for the process
-#' @param replicates replicates for the process
-#' @param mesh inla.1d.mesh
-#' @param n_points or num of points, evenly spaced mesh
-#' @return a list
-#' @export
-#'
-#' @examples
-#' m1 <- model_rw2(1:7, circular = TRUE); m1$C + m1$G
-#' m2 <- model_rw2(1:7); m2$C + m2$G
-model_rw2 <- function(
-  index,
-  replicates = NULL,
-  data       = NULL,
-  circular   = FALSE,
-  n_points   = NULL,
-  noise      = noise_normal(),
-  index_pred = NULL,
-  # extra A matrix
-  ...
-) {
-  stopifnot(length(index) > 3)
-  # create mesh using index
-  sorted_index <- sort(index, index.return = TRUE)
-  h <- diff(sorted_index$x)
-  # permutation matrix, same as A <- diag(length(index))[sorted_index$ix, ]
-  A <- Matrix::sparseMatrix(seq_along(index), sorted_index$ix, x = 1)
-
-  n <- length(index) - 2
-  if (!circular) { # n * n+2
-    C <- Matrix::Matrix(0, n, n+2)
-    G <- Matrix::Matrix(diag(n));
-    G <- cbind(G, rep(0, n), rep(0, n))
-    G[seq(n+1, n*(n+2), by = n+1)] <- -2
-    G[seq(2*n+1, n*(n+2), by = n+1)] <- 1
-  } else {
-    C <- Matrix::Matrix(0, n, n)
-    G <- Matrix::Matrix(diag(n));
-    G[seq(n+1, n*n, by = n+1)] <- -2
-    G[seq(2*n+1, n*n, by = n+1)] <- 1
-    G[n] <- -2
-    G[c(n-1, 2*n)] <- 1
+    }
+  } else if (order == 2) {
+    n <- length(index) - 2
+    if (!circular) { # n * n+2
+      stopifnot(n >= 2)
+      C <- Matrix::Matrix(0, n, n+2)
+      G <- Matrix::Matrix(diag(n));
+      G <- cbind(G, rep(0, n), rep(0, n))
+      G[seq(n+1, n*(n+2), by = n+1)] <- -2
+      G[seq(2*n+1, n*(n+2), by = n+1)] <- 1
+    } else {
+      stopifnot(n >= 3)
+      C <- Matrix::Matrix(0, n, n)
+      G <- Matrix::Matrix(diag(n));
+      G[seq(n+1, n*n, by = n+1)] <- -2
+      G[seq(2*n+1, n*n, by = n+1)] <- 1
+      G[n] <- -2
+      G[c(n-1, 2*n)] <- 1
+    }
   }
 
   # update noise with length n
@@ -218,12 +180,11 @@ model_rw2 <- function(
     W_size      = ncol(C) # n + 1
     V_size      = n
     A           = A
-    # A_pred      = ngme.ts.make.A(index_pred, replicates = replicates, range = range),
+    A_pred      = A_pred
     h           = h
     C           = ngme_as_sparse(C)
     G           = ngme_as_sparse(G)
     noise       = noise
-    index_pred  = index_pred
   })
 
   do.call(ngme_model, args)

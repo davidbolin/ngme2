@@ -335,46 +335,9 @@ Y <- rowMeans(PRprec[, 12 + 1:31]) # 2 + Octobor
 ind <- !is.na(Y) # non-NA index
 Y <- Y[ind]
 coords <- as.matrix(PRprec[ind, 1:2])
-
-A <- inla.spde.make.A(mesh = prmesh, loc = coords)
 seaDist <- apply(spDists(coords, PRborder[1034:1078, ],
   longlat = TRUE
 ), 1, min)
-
-mesh.index <- inla.spde.make.index(
-  name = "field",
-  mesh = prmesh,
-  n.spde = prmesh$n
-)
-
-data <- data.frame(
-  Y_mean  = Y,
-  long    = coords[, 1],
-  lat     = coords[, 2]
-)
-
-out <- ngme(
-  formula = Y_mean ~ 1 +
-    f(inla.group(seaDist), model = "rw1", noise=noise_normal()) +
-    f(index = mesh.index$field,
-      model = model_matern(A = A, mesh = prmesh),
-      noise = noise_nig()
-    ),
-  data = data,
-  family = noise_nig(),
-  control = ngme_control(
-    estimation = T,
-    # iterations = 4000,
-    iterations = 20,
-    n_slope_check = 4,
-    stop_points = 10,
-    std_lim = 0.1,
-    n_parallel_chain = 8,
-    print_check_info = FALSE
-  ),
-  seed = 416
-)
-out
 ```
 
 Plot the data:
@@ -395,6 +358,54 @@ ggplot() +
     1034:1078,
     2
   ]), colour = "red")
+```
+
+```{r}
+# leave 0.1 Y as prediction area
+n <- length(Y)
+ind_pred <- sample(1:n, size = 0.1 * n)
+
+Y_pred <- Y[ind_pred]
+Y[ind_pred] <- NA
+
+A       <- inla.spde.make.A(mesh = prmesh, loc = coords[-ind_pred, ])
+A_pred  <- inla.spde.make.A(mesh = prmesh, loc = coords[ind_pred, ])
+
+mesh.index <- inla.spde.make.index(
+  name = "field",
+  mesh = prmesh,
+  n.spde = prmesh$n
+)
+
+data <- data.frame(
+  Y_mean  = Y,
+  long    = coords[, 1],
+  lat     = coords[, 2]
+)
+
+out <- ngme(
+  formula = Y_mean ~ 1 +
+    f(inla.group(seaDist), model = "rw1", noise=noise_normal()) +
+    f(index = mesh.index$field,
+      model = model_matern(A = A, mesh = prmesh, A_pred = A_pred),
+      noise = noise_nig()
+    ),
+  data = data,
+  family = noise_nig(),
+  control = ngme_control(
+    estimation = T,
+    # iterations = 4000,
+    iterations = 20,
+    n_slope_check = 4,
+    stop_points = 10,
+    std_lim = 0.1,
+    n_parallel_chain = 8,
+    print_check_info = FALSE
+  ),
+  seed = 416
+)
+
+out
 ```
 
 Model estimation:

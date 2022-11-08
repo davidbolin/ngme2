@@ -5,8 +5,8 @@
 #' The function is a wrapper function for specific submodels.
 #' (see ngme_models_types() for available models).
 #'
+#' @param index    symbol or numerical value: index or covariates to build index
 #' @param model     1. string: type of model, 2. ngme.spde object
-#' @param index    symbol or numerical value
 #' @param replicates   Representing the replicates
 #' @param noise     1. string: type of model, 2. ngme.noise object
 #'  (can also be specified in each ngme model)
@@ -16,8 +16,9 @@
 #' @param data      specifed or inherit from ngme formula
 #' @param W         starting value of the process
 #' @param A_pred    A Matrix connecting NA location and mesh
-#' @param ...       additional arguments
+#' @param index_NA  Logical vector, same as is.na(response var.)
 #' @param debug        Debug mode
+#' @param ...       additional arguments
 #'  inherit the data from ngme function
 #'
 #' @return a list latent_in for constructing latent model, e.g. A, h, C, G,
@@ -42,13 +43,13 @@ f <- function(
   fix_theta_K = NULL,
   index_pred  = NULL,
   debug       = NULL,
+  index_NA    = NULL, #indicate prediction location
   ...
 ) {
   index <- eval(substitute(index), envir = data, enclos = parent.frame())
-
-  # deal with NA, injected in ngme function
-  if (any(is.na(data$ngme_response)))
-    index_pred <- which(is.na(data$ngme_response)) # will be read in f_args, then be used in ngme_model
+  # deal with NA, from ngme function
+  if (is.null(index_NA) && !is.null(data$index_NA)) index_NA <- data$index_NA
+  if (is.null(index_NA)) index_NA <- rep(FALSE, length(index))
 
   # remove NULL in arguments
   f_args <- Filter(Negate(is.null),  as.list(environment()))
@@ -61,7 +62,12 @@ f <- function(
         do.call(model_ar1, args)
       },
       "rw1" = {
-        do.call(model_rw1, args)
+        args$order = 1
+        do.call(model_rw, args)
+      },
+      "rw2" = {
+        args$order = 2
+        do.call(model_rw, args)
       }
     )
   } else {

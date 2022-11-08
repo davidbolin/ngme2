@@ -9,6 +9,9 @@
 #' @param B_kappa   bases for kappa
 #' @param d         indicating the dimension of mesh (together with fem.mesh.matrices)
 #' @param fem.mesh.matrices specify the FEM matrices
+#' @param noise     1. string: type of model, 2. ngme.noise object
+#' @param A         A Matrix connecting observation and mesh
+#' @param A_pred    A Matrix connecting NA location and mesh
 #'
 #' @return a list (n, C (diagonal), G, B.kappa) for constructing operator
 #' @export
@@ -22,10 +25,15 @@ model_matern <- function(
   mesh        = NULL,
   fem.mesh.matrices = NULL,
   d           = NULL,
+  # index_NA    = NULL,
   A           = NULL,
-  # noise       = NULL,
+  A_pred      = NULL,
+  noise       = noise_normal(),
   ...
 ) {
+  # index <- eval(substitute(index), envir = data, enclos = parent.frame())
+  # if (is.null(index_NA)) index_NA <- rep(FALSE, length(index)) # not used
+
   if (is.null(mesh) && is.null(fem.mesh.matrices))
     stop("At least specify mesh or matrices")
 
@@ -43,6 +51,8 @@ model_matern <- function(
 
   if (is.null(B_kappa))
     B_kappa <- matrix(1, nrow = mesh$n, ncol = length(theta_kappa))
+
+  if (is.null(A)) A <- INLA::inla.spde.make.A(mesh=mesh, loc=loc)
 
   # supply mesh
   if (!is.null(mesh)) {
@@ -75,6 +85,7 @@ model_matern <- function(
   model <- ngme_model(
     model       = "matern",
     A           = A,
+    A_pred      = A_pred,
     W_size      = mesh$n,
     V_size      = nrow(C),
     theta_K     = theta_kappa,
@@ -83,7 +94,7 @@ model_matern <- function(
     C           = ngme_as_sparse(C),
     G           = ngme_as_sparse(G),
     h           = h,
-    # noise       = noise,
+    noise       = noise,
     ...
   )
   model

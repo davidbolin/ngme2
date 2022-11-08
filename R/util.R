@@ -77,54 +77,6 @@ ngme_as_sparse <- function(G) {
   )
 }
 
-#' Split the data according to NA in response variable
-#'
-#' @param formula formula
-#' @param data data
-#'
-#' @return a list
-#' @export
-parse_formula_NA <- function(formula, data) {
-  stopifnot("Please provide a valid formula" = inherits(formula, "formula"))
-
-  Y_full <- model.frame(formula, data, na.action = NULL)[[1]]
-
-  mf <- model.frame(formula, data)
-  Y_data <- mf[[1]]
-  index_data  <- as.numeric(rownames(mf))
-  X_data      <- model.matrix((terms(formula)), data)
-
-  # watch out! X_full can be 0*0
-  X_full      <- model.matrix(delete.response(terms(formula)), data)
-  contain_NA  <- !is.null(attr(mf, "na.action"))
-
-  # if there is NA in response variable
-  if (!is.null(attr(mf, "na.action"))) {
-    index_NA     <- as.numeric(attr(mf, "na.action"))
-
-    # X_pred         <- X_full[index_NA, , drop = FALSE]
-    if (all(dim(X_full) == c(0, 0)))
-      X_pred      <- X_full
-    else
-      X_pred      <- X_full[index_NA, , drop = FALSE]
-  } else {
-    index_NA <- X_pred <- NULL
-  }
-
-  list(
-    length      = length(Y_data),
-    Y_data      = Y_data,
-    X_data      = X_data,
-    index_data  = index_data,
-    contain_NA  = contain_NA,
-    index_NA    = index_NA,
-    X_pred      = X_pred
-
-    # Y_full      = Y_full # only for f to use
-  )
-}
-
-
 # post.sampleW(ngme) {
 #   W
 # }

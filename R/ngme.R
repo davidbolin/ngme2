@@ -87,18 +87,20 @@ ngme <- function(
 
     # eval the response variable in data environment
     ngme_response <- eval(stats::terms(fm)[[2]], envir = data, enclos = parent.frame())
-    data$ngme_response <- ngme_response # watch out! injection, for f to see
+    index_NA <- is.na(ngme_response)
+    data$index_NA <- index_NA # watch out! injection, for f to see
 
     # 1. extract f and eval  2. get the formula without f function
     res <- ngme_parse_formula(fm, data)
     latents_in <- res$latents_in
     plain_fm <- res$plain_fm
 
-    # check if there is NA, and split data
-    split_data <- parse_formula_NA(plain_fm, data)
-      Y_data <- split_data$Y_data
-      X_data <- split_data$X_data
-      n_Y_data <- split_data$length
+    # get Y and X
+    Y_data    <- ngme_response[!index_NA]
+    n_Y_data  <- length(Y_data)
+    X_full    <- model.matrix(delete.response(terms(plain_fm)), data)
+    X_data    <- X_full[!index_NA, , drop = FALSE]
+
     ############### W_sizes is the dim of the block matrix
     W_sizes     = sum(unlist(lapply(latents_in, function(x) x["W_size"])))   #W_sizes = sum(ncol_K)
     V_sizes     = sum(unlist(lapply(latents_in, function(x) x["V_size"])))   #W_sizes = sum(nrow_K)
@@ -179,31 +181,24 @@ if (debug) print(str(ngme_block))
     # 2. get trajs
     attr(ngme_block, "trajectory") <- get_trajs(outputs)
 
-  ################# doing prediction ####################
-    if (split_data$contain_NA) {
+  ################# Prediction ####################
+    if (any(data$index_NA)) {
       # form a linear predictor
-      linear_predictor <- double(length(ngme_response))
+      lp <- double(length(ngme_response))
 
       AW_pred <- 0; AW_data <- 0
       for (i in seq_along(latents_in)) {
         W <- ngme_block$latents[[i]]$W
-        AW_pred <- AW_pred + drop(latents_in[[i]]$A_pred %*% W)
-        AW_data <- AW_data + drop(latents_in[[i]]$A %*% W)
+        lp[index_NA]  <- lp[index_NA] + drop(latents_in[[i]]$A_pred %*% W)
+        lp[!index_NA] <- lp[!index_NA] + drop(latents_in[[i]]$A %*% W)
       }
 
-      # fixed effects. watch out! Xb could be double(0)
-      X_pred <- split_data$X_pred;
-      Xb_pred <- drop(X_pred %*% ngme_block$beta)
-      Xb_data <- drop(X_data %*% ngme_block$beta)
-
-      # ngme_response[split_data$indeX_pred] <- if (length(Xb_pred) == 0) AW_pred else AW_pred + Xb_pred
-      #
-      linear_predictor[split_data$indeX_pred]   <- if (length(Xb_pred) == 0) AW_pred else AW_pred + Xb_pred
-      linear_predictor[split_data$index_data] <- if (length(Xb_data) == 0) AW_data else AW_data + Xb_data
+      # fixed effects. watch out! beta could be double(0)
+      if (length(ngme_block$beta) != 0) lp <- lp + drop(X_full %*% ngme_block$beta)
 
       attr(ngme_block, "prediction") <- list(
-        linear_predictor  = linear_predictor,
-        index_pred        = split_data$indeX_pred
+        lp        = lp,
+        index_NA  = index_NA
       )
     }
   }

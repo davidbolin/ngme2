@@ -55,6 +55,7 @@ ngme_model <- function(
   control     = ngme_control_f(),
   V_size      = NULL,
   debug       = FALSE,
+  index_pred  = NULL,
   ...
 ) {
   stopifnot(is.character(model))

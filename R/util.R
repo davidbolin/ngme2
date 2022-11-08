@@ -8,9 +8,14 @@
 #' @return A matrix (length(loc) * length(unique(loc)))
 #' @export
 #'
-#' @examples ngme.ts.make.A(c(1, 2, 2), end = 5, replicates = c(1, 1, 2))
-#'
-ngme_ts_make_A <- function(loc, replicates = NULL, range = c(1, max(loc))) {
+#' @examples
+#' ngme_ts_make_A(c(1, 2, 2), replicates = c(1, 1, 2))
+#' ngme_ts_make_A(c(1, 2, 2), range = c(1, 5))
+ngme_ts_make_A <- function(
+  loc,
+  replicates = NULL,
+  range = c(1, max(loc))
+) {
   if (is.null(loc)) return (NULL)
 
   n_loc <- length(loc)
@@ -72,63 +77,13 @@ ngme_as_sparse <- function(G) {
   )
 }
 
-#' Make index for the matern model
-#'
-#' @param name
-#' @param n.spde
-#' @param n.repl
-#' @param mesh
-#' @param dim
-#'
-#' @return
-#' @export
-#'
-#' @examples
-ngme.matern.make.index <- function(n.spde=NULL,
-                                   n.repl = 1,
-                                   mesh = NULL,
-                                   dim = NULL){
-
-  if(is.null(n.spde)&&is.null(mesh)){
-    stop("You should provide either n.spde or mesh!")
-  }
-
-  if(!is.null(mesh)){
-    n_mesh = mesh$n
-
-    if(mesh$manifold == "R1"){
-      dim = 1
-    } else if(mesh$manifold == "R2"){
-      dim = 2
-    } else{
-      stop("The domain must be flat manifolds of dimension 1 or 2, that is,
-         the domain must be a line or a plane.")
-    }
-
-  } else{
-    n_mesh <- n.spde
-    if(is.null(dim)) {
-      stop("You should provide the dimension d!")
-    }
-  }
-
-  out <- list()
-  out$index <- rep(1:n_mesh, times = n.repl)
-
-  out$replicates <- rep(1:n.repl, each = n_mesh)
-  return(out)
-}
-
-
 #' Split the data according to NA in response variable
 #'
-#' @param formula
-#' @param data
+#' @param formula formula
+#' @param data data
 #'
-#' @return
+#' @return a list
 #' @export
-#'
-#' @examples
 parse_formula_NA <- function(formula, data) {
   stopifnot("Please provide a valid formula" = inherits(formula, "formula"))
 
@@ -147,13 +102,13 @@ parse_formula_NA <- function(formula, data) {
   if (!is.null(attr(mf, "na.action"))) {
     index_NA     <- as.numeric(attr(mf, "na.action"))
 
-    # X_NA         <- X_full[index_NA, , drop = FALSE]
+    # X_pred         <- X_full[index_NA, , drop = FALSE]
     if (all(dim(X_full) == c(0, 0)))
-      X_NA      <- X_full
+      X_pred      <- X_full
     else
-      X_NA      <- X_full[index_NA, , drop = FALSE]
+      X_pred      <- X_full[index_NA, , drop = FALSE]
   } else {
-    index_NA <- X_NA <- NULL
+    index_NA <- X_pred <- NULL
   }
 
   list(
@@ -163,7 +118,7 @@ parse_formula_NA <- function(formula, data) {
     index_data  = index_data,
     contain_NA  = contain_NA,
     index_NA    = index_NA,
-    X_NA        = X_NA
+    X_pred      = X_pred
 
     # Y_full      = Y_full # only for f to use
   )
@@ -206,8 +161,6 @@ get_inla_mesh_dimension <- function(inla_mesh) {
 #'  1. plain formula without f function
 #'  2. latents_in - from each f function
 #' @export
-#'
-#' @examples
 ngme_parse_formula <- function(
   gf,
   data,
@@ -242,7 +195,7 @@ ngme_parse_formula <- function(
 
     # adding 1 term for furthur use in f
     # data$ngme_response <- Y
-    res <- eval(parse(text = str), envir = data)
+    res <- eval(parse(text = str), envir = data, enclos = parent.frame())
     latents_in[[length(latents_in) + 1]] <- res
   }
   # watch out! terms[-double(0)] -> character(0)
@@ -254,7 +207,7 @@ ngme_parse_formula <- function(
 
   list(
     latents_in = latents_in,
-    plain.fm = formula(fm)
+    plain_fm = formula(fm)
     # ,
     # index_prd = index_prd,
     # index_est = index_est
@@ -290,7 +243,20 @@ ngme_format <- function(param, val, model = NULL) {
   }
 }
 
-# taking mean over a list of nested lists
+#' taking mean over a list of nested lists
+#'
+#' @param lls a list
+#'
+#' @return a list of nested lists
+#' @export
+#'
+#' @examples
+#' ls <- list(
+#'   list(a=1, b=2, t="nig", ll=list(a=1,b=2, w="ab")),
+#'   list(a=3, b=5, t="nig", ll=list(a=1,b=6, w="ab")),
+#'   list(a=5, b=5, t="nig", ll=list(a=4,b=2, w="ab"))
+#' )
+#' mean_list(ls)
 mean_list <- function(lls) {
   # helpers
   nest_list_add <- function(l1, l2) {
@@ -316,16 +282,8 @@ mean_list <- function(lls) {
   l <- Reduce(nest_list_add, lls[-1], init = lls[[1]])
   nest_list_divide(l, length(lls))
 }
-# test this
-# ls <- list(
-#   list(a=1, b=2, t="nig", ll=list(a=1,b=2, w="ab")),
-#   list(a=3, b=5, t="nig", ll=list(a=1,b=6, w="ab")),
-#   list(a=5, b=5, t="nig", ll=list(a=4,b=2, w="ab"))
-# )
-
 
 # helper functions
-
 # ar1 alpha (0~1) to theta_K
 ar1_a2th <- function(a) {
   log((-1 - a) / (-1 + a))
@@ -335,3 +293,52 @@ ar1_a2th <- function(a) {
 ar1_th2a <- function(th) {
  -1 + (2 * exp(th)) / (1 + exp(th))
 }
+
+
+# #' Make index for the matern model
+# #'
+# #' @param name
+# #' @param n.spde
+# #' @param n.repl
+# #' @param mesh
+# #' @param dim
+# #'
+# #' @return
+# #' @export
+# #'
+# #' @examples
+# ngme.matern.make.index <- function(
+#   n.spde=NULL,
+#   n.repl = 1,
+#   mesh = NULL,
+#   dim = NULL
+# ){
+#   if(is.null(n.spde)&&is.null(mesh)){
+#     stop("You should provide either n.spde or mesh!")
+#   }
+
+#   if(!is.null(mesh)){
+#     n_mesh = mesh$n
+
+#     if(mesh$manifold == "R1"){
+#       dim = 1
+#     } else if(mesh$manifold == "R2"){
+#       dim = 2
+#     } else{
+#       stop("The domain must be flat manifolds of dimension 1 or 2, that is,
+#          the domain must be a line or a plane.")
+#     }
+
+#   } else{
+#     n_mesh <- n.spde
+#     if(is.null(dim)) {
+#       stop("You should provide the dimension d!")
+#     }
+#   }
+
+#   out <- list()
+#   out$index <- rep(1:n_mesh, times = n.repl)
+
+#   out$replicates <- rep(1:n.repl, each = n_mesh)
+#   return(out)
+# }

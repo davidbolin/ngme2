@@ -1,0 +1,22 @@
+---
+title: "Ngme2 Models"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Ngme2 Models}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+# library(ngme2)
+library(devtools); load_all()
+```
+
+In this vignette, we will introduce a few available models in **ngme2**.
+
+## AR1
+

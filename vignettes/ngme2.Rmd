@@ -116,7 +116,7 @@ Below, we see the plot of the densities of a NIG distribution for several choice
 
 ### 4 Parameter Estimation
 
-1. Ngme2 does maximum likelihood estimation (using MCEM algorithm) through preconditioned stochastic gradient descent.
+1. Ngme2 does maximum likelihood estimation through preconditioned stochastic gradient descent.
 2. Multiple chains are run in parallel for better convergence checks.
 
 ## Ngme Model Structure - 3-Layer structure
@@ -364,7 +364,8 @@ out <- ngme(
   family = noise_nig(),
   control = ngme_control(
     estimation = T,
-    iterations = 4000,
+    # iterations = 4000,
+    iterations = 20,
     n_slope_check = 4,
     stop_points = 10,
     std_lim = 0.1,
@@ -396,7 +397,7 @@ ggplot() +
   ]), colour = "red")
 ```
 
-Model stimation:
+Model estimation:
 
 ```{r est-result, echo=FALSE}
 res1 <- data.frame(
@@ -420,3 +421,5 @@ pl <- lapply(c("kappa", "mu", "sigma", "nu"), function(.x)
   traceplot(out, parameter = .x, f_index = 2));
 marrangeGrob(pl, nrow=2, ncol=2)
 ```
+
+Doing posterior prediction with ngme2.

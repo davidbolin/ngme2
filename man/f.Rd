@@ -5,13 +5,12 @@
 \title{Specifying a latent process model (wrapper function for each model)}
 \usage{
 f(
-  model = "ar1",
   index = NULL,
+  model = "ar1",
   replicates = NULL,
   noise = noise_normal(),
   control = ngme_control_f(),
   data = NULL,
-  debug = FALSE,
   A = NULL,
   A_pred = NULL,
   theta_K = NULL,
@@ -19,13 +18,14 @@ f(
   fix_W = NULL,
   fix_theta_K = NULL,
   index_pred = NULL,
+  debug = NULL,
   ...
 )
 }
 \arguments{
-\item{model}{1. string: type of model, 2. ngme.spde object}
-
 \item{index}{symbol or numerical value}
+
+\item{model}{1. string: type of model, 2. ngme.spde object}
 
 \item{replicates}{Representing the replicates}
 
@@ -36,8 +36,6 @@ f(
 
 \item{data}{specifed or inherit from ngme formula}
 
-\item{debug}{Debug variables}
-
 \item{A}{A Matrix connecting observation and mesh}
 
 \item{A_pred}{A Matrix connecting NA location and mesh}
@@ -46,19 +44,21 @@ f(
 
 \item{W}{starting value of the process}
 
-\item{...}{additional arguments
+\item{debug}{Debug mode
 inherit the data from ngme function}
+
+\item{...}{additional arguments}
 }
 \value{
 a list latent_in for constructing latent model, e.g. A, h, C, G,
 which also has
-1. list operator for building operator,
-2. list var_in for variance component,
+1. Information about K matrix
+2. Information about noise
+3. Control variables
 }
 \description{
 Function used for defining of smooth and spatial terms
 within ngme model formulae.
-The function does not evaluate anything -
-it exists purely to help set up a model.
-(see ngme_models_types for available models).
+The function is a wrapper function for specific submodels.
+(see ngme_models_types() for available models).
 }

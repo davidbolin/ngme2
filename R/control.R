@@ -9,14 +9,12 @@
 #' @param threshold       till when start to kill the variance
 #' @param termination     till when stop optimizing
 #' @param estimation      do estimation or not
-#' @param opt_beta
-#' @param fix_beta
-#' @param window.size
+#' @param opt_beta        logical, optimize fixed effect
+#' @param fix_beta        logical, fix fixed effect
+#' @param window_size     numerical, length of window for final estimates
 #'
 #' @return list of control variables
 #' @export
-#'
-#' @examples
 ngme_control <- function(
   burnin            = 100,
   iterations        = 100,
@@ -43,7 +41,7 @@ ngme_control <- function(
   threshold         = 1e-5,
   termination       = 1e-7,
 
-  window.size       = 1
+  window_size       = 1
 ) {
   if ((kill_power <= 0.5) || (kill_power > 1)) {
     stop("reduceVar should be in (0.5,1]")
@@ -87,19 +85,16 @@ ngme_control <- function(
 #' @param use_precond   whether to use preconditioner
 #' @param eps           eps for numerical gradient
 #' @param theta.K       theta.K for parameter K
-#' @param use_iter_solver
 #' @param use_num_hess  whether to use numerical hessian
 #'
 #' @return list of control variables
 #' @export
-#'
-#' @examples
 ngme_control_f <- function(
   numer_grad    = FALSE,
   use_precond   = FALSE,
   use_num_hess  = TRUE,
-  eps           = 0.01,
-  use_iter_solver = FALSE
+  eps           = 0.01
+  # use_iter_solver = FALSE
   ) {
 
   control <- list(
@@ -107,7 +102,7 @@ ngme_control_f <- function(
     use_precond   = use_precond,
     use_num_hess  = use_num_hess,
     eps           = eps,
-    use_iter_solver = use_iter_solver
+    use_iter_solver = FALSE
   )
 
   class(control) <- "ngme_control_f"

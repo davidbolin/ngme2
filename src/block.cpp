@@ -76,7 +76,7 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
   /* Init variables: h, A */
   int n = 0;
   for (std::vector<std::unique_ptr<Latent>>::iterator it = latents.begin(); it != latents.end(); it++) {
-    setSparseBlock(&A,   0, n, (*it)->getA());
+    setSparseBlock(&A, 0, n, (*it)->getA());
     n += (*it)->get_W_size();
   }
   assemble();

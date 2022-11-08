@@ -161,7 +161,7 @@ library(grid)
 library(gridExtra)
 pl <- lapply(c("kappa", "mu", "sigma", "nu"), function(.x)
   traceplot(out_4k, parameter = .x, f_index = 2));
-marrangeGrob(pl, nrow=2, ncol=2)
+marrangeGrob(pl, nrow = 2, ncol = 2)
 
 xxx <- seq(1, 100, length=100)
 plot(xxx, xxx^0.95)
@@ -172,3 +172,36 @@ plot(xxx, xxx^0.95)
 
 1 ** 0.1
 ??knitr
+
+
+out <- ngme(
+  formula = Y_mean ~ 1 +
+    f(inla.group(seaDist), model = "rw1", noise=noise_normal()) +
+    f(index = mesh.index$field,
+      model = model_matern(A = A, mesh = prmesh),
+      noise = noise_nig()
+    ),
+  data = data,
+  family = noise_nig(),
+  control = ngme_control(
+    estimation = T,
+    iterations = 2000,
+    n_slope_check = 4,
+    stop_points = 20,
+    n_parallel_chain = 8
+  ),
+  seed = 5
+)
+
+predict(
+  ngme = out,
+  formula = ~ 1 +
+    f(inla.group(seaDist_pred), model = "rw1", noise = noise_normal()) +
+    f(index = mesh.index$field,
+      model = model_matern(A_pred = A_pred, mesh = prmesh),
+      noise = noise_nig()
+    ),
+  data = list(seaDist_pred = seaDist_pred, A_pred = A_pred)
+)
+
+?inla.spde.make.A()

@@ -8,7 +8,7 @@
 #'    NA value in other columns will cause problem)
 #' @param control control variables, see ?ngme.control
 #' @param last_fit  can be ngme object from last fitting
-#' @param family likelihood type, same as measurement noise specification
+#' @param family likelihood type, same as measurement noise specification, 1. string 2. ngme noise obejct
 #' @param beta starting value for fixed effects
 #' @param start  starting ngme object (usually object from last fitting)
 #' @param seed  set the seed for pesudo random number generator
@@ -17,19 +17,41 @@
 #' @export
 #'
 #' @examples
-#'
+#' ngme(
+#'  formula = Y ~ x1 + f(
+#'    index = x2,
+#'    model = "ar1",
+#'    noise = noise_nig(),
+#'    theta_K = 0.5
+#'  ) + f(
+#'    model = model_rw1(1:5, circular = TRUE),
+#'    noise = noise_normal(),
+#'  ),
+#'  family = noise_normal(sd = 0.5),
+#'  data = data.frame(Y = 1:5, x1 = 2:6, x2 = 3:7),
+#'  control = ngme_control(
+#'    estimation = FALSE
+#'  )
+#')
 ngme <- function(
   formula,
   data,
   control       = ngme_control(),
-  family        = noise_normal(),
+  family        = "normal",
   last_fit      = NULL,
   beta          = NULL,
   seed          = NULL,
   start         = NULL,
   debug         = FALSE
 ) {
-  noise <- family # alias for family
+  if (is.character(family))
+    noise <- switch(family,
+      "normal" = noise_normal(),
+      "nig"    = noise_nig(),
+      stop("Unknown family!")
+    )
+  else
+    noise <- family # ngme noise object
 
   if (is.null(seed)) seed <- Sys.time()
   # -------------  CHECK INPUT ---------------
@@ -63,26 +85,24 @@ ngme <- function(
   else if (all(length(fm)==c(1,1))) {  ########################## univariate case
     fm <- formula(fm)
 
-    ngme_response <- eval(terms(fm)[[2]], data)
-    data$ngme_response <- ngme_response # watch out! injection, for f to use
+    # eval the response variable in data environment
+    ngme_response <- eval(stats::terms(fm)[[2]], envir = data, enclos = parent.frame())
+    data$ngme_response <- ngme_response # watch out! injection, for f to see
 
     # 1. extract f and eval  2. get the formula without f function
     res <- ngme_parse_formula(fm, data)
     latents_in <- res$latents_in
-    plain_fm <- res$plain.fm
+    plain_fm <- res$plain_fm
 
     # check if there is NA, and split data
     split_data <- parse_formula_NA(plain_fm, data)
       Y_data <- split_data$Y_data
       X_data <- split_data$X_data
       n_Y_data <- split_data$length
-
     ############### W_sizes is the dim of the block matrix
     W_sizes     = sum(unlist(lapply(latents_in, function(x) x["W_size"])))   #W_sizes = sum(ncol_K)
     V_sizes     = sum(unlist(lapply(latents_in, function(x) x["V_size"])))   #W_sizes = sum(nrow_K)
     n_la_params = sum(unlist(lapply(latents_in, function(x) x["n_params"])))
-    model.types = unlist(lapply(latents_in, function(x) x["model_type"]))
-    var.types   = unlist(lapply(latents_in, function(x) x["var.type"]))
 
     n_feff <- ncol(X_data);
     if (family_type == "normal") {
@@ -92,7 +112,7 @@ ngme <- function(
     }
 
     # 3. prepare Rcpp_list for estimate
-    lm.model <- lm.fit(X_data, Y_data)
+    lm.model <- stats::lm.fit(X_data, Y_data)
     if (is.null(beta)) beta <- lm.model$coeff
     n_params <- n_la_params + n_feff + n_merr
 
@@ -146,89 +166,49 @@ ngme <- function(
     stop("unknown structure of formula")
   }
 
-  ################# Run CPP ####################
-  if (!control$estimation) {
-    print("Start estimation by setting estimation = TRUE")
-    return(ngme_block)
-  }
-
 if (debug) print(str(ngme_block))
-  cat("Starting estimation... \n")
-  outputs <- estimate_cpp(ngme_block)
-  cat("Estimation done! \n")
 
+  ################# Run CPP ####################
+  if (control$estimation) {
+    cat("Starting estimation... \n")
+    outputs <- estimate_cpp(ngme_block)
+    cat("Estimation done! \n")
 
-  # 1. update with estimates
-  ngme_block <- update_ests(ngme_block, mean_list(outputs))
-  # 2. get trajs
-  attr(ngme_block, "trajectory") <- get_trajs(outputs)
+    # 1. update with estimates
+    ngme_block <- update_ests(ngme_block, mean_list(outputs))
+    # 2. get trajs
+    attr(ngme_block, "trajectory") <- get_trajs(outputs)
 
   ################# doing prediction ####################
-  if (split_data$contain_NA) {
-    # form a linear predictor
-    linear_predictor <- double(length(ngme_response))
+    if (split_data$contain_NA) {
+      # form a linear predictor
+      linear_predictor <- double(length(ngme_response))
 
-    AW_pred <- 0; AW_data <- 0
-    for (i in seq_along(latents_in)) {
-      W <- ngme_block$latents[[i]]$W
-      AW_pred <- AW_pred + drop(latents_in[[i]]$A_pred %*% W)
-      AW_data <- AW_data + drop(latents_in[[i]]$A %*% W)
+      AW_pred <- 0; AW_data <- 0
+      for (i in seq_along(latents_in)) {
+        W <- ngme_block$latents[[i]]$W
+        AW_pred <- AW_pred + drop(latents_in[[i]]$A_pred %*% W)
+        AW_data <- AW_data + drop(latents_in[[i]]$A %*% W)
+      }
+
+      # fixed effects. watch out! Xb could be double(0)
+      X_pred <- split_data$X_pred;
+      Xb_pred <- drop(X_pred %*% ngme_block$beta)
+      Xb_data <- drop(X_data %*% ngme_block$beta)
+
+      # ngme_response[split_data$indeX_pred] <- if (length(Xb_pred) == 0) AW_pred else AW_pred + Xb_pred
+      #
+      linear_predictor[split_data$indeX_pred]   <- if (length(Xb_pred) == 0) AW_pred else AW_pred + Xb_pred
+      linear_predictor[split_data$index_data] <- if (length(Xb_data) == 0) AW_data else AW_data + Xb_data
+
+      attr(ngme_block, "prediction") <- list(
+        linear_predictor  = linear_predictor,
+        index_pred        = split_data$indeX_pred
+      )
     }
-
-    # fixed effects. watch out! Xb could be double(0)
-    X_pred <- split_data$X_NA;
-    Xb_pred <- drop(X_pred %*% ngme_block$beta)
-    Xb_data <- drop(X_data %*% ngme_block$beta)
-
-    # ngme_response[split_data$index_NA] <- if (length(Xb_pred) == 0) AW_pred else AW_pred + Xb_pred
-    #
-    linear_predictor[split_data$index_NA]   <- if (length(Xb_pred) == 0) AW_pred else AW_pred + Xb_pred
-    linear_predictor[split_data$index_data] <- if (length(Xb_data) == 0) AW_data else AW_data + Xb_data
-
-    attr(ngme_block, "prediction") <- list(
-      linear_predictor  = linear_predictor,
-      index_pred        = split_data$index_NA
-    )
   }
-
   # cat(paste("total time is", Sys.time() - time.start, " \n"))
   ngme_block
-}
-
-clean_outputs <- function() {
-  trajs <- list()
-  # deal with multiple chain data
-  for (i in seq_along(outputs)) { # what if 2d?
-    # flat the lists
-    beta_traj        <- unlist(attr(outputs[[i]], "trajectory")$beta)
-    theta_mu_traj    <- unlist(attr(outputs[[i]], "trajectory")$theta_mu_traj)
-    theta_sigma_traj <- unlist(attr(outputs[[i]], "trajectory")$theta_sigma_traj)
-    theta_V_traj     <- attr(outputs[[i]], "trajectory")$theta_V_traj
-    attr(outputs[[i]], "trajectory") <- NULL
-
-    trajs_lat <- list()
-    for (j in seq_along(outputs[[i]]$latents)) {
-      la_K_traj     <- unlist(attr(outputs[[i]]$latents[[j]], "trajectory")$theta_K)
-      la_mu_traj    <- unlist(attr(outputs[[i]]$latents[[j]], "trajectory")$theta_mu_traj)
-      la_sigma_traj <- unlist(attr(outputs[[i]]$latents[[j]], "trajectory")$theta_sigma_traj)
-      la_V_traj     <- attr(outputs[[i]]$latents[[j]], "trajectory")$theta_V_traj
-      trajs_lat[[j]] <- list(
-        theta_K       = la_K_traj,
-        theta_mu      = la_mu_traj,
-        theta_sigma   = la_sigma_traj,
-        theta_V       = la_V_traj
-      )
-      attr(outputs[[i]]$latents[[j]], "trajectory") <- NULL
-    }
-
-    trajs[[i]] <- list(
-      beta = beta_traj,
-      theta_mu = theta_mu_traj,
-      theta_sigma = theta_sigma_traj,
-      theta_V = theta_V_traj,
-      trajs_lat = trajs_lat
-    )
-  }
 }
 
 #' Print ngme object
@@ -254,6 +234,7 @@ print.ngme <- function(ngme) {
   }
 }
 
+# helper function
 # get trajs from a list of estimates
 get_trajs <- function(outputs) {
   ret <- list()
@@ -268,6 +249,7 @@ get_trajs <- function(outputs) {
   ret
 }
 
+# helper function
 # update the model using the mean of chains
 update_ests <- function(ngme_block, est_output) {
   # helper function - update noise with est. values

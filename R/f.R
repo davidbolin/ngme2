@@ -28,8 +28,8 @@
 #'
 #' @export
 f <- function(
-  model       = "ar1",
   index       = NULL,
+  model       = "ar1",
   replicates  = NULL,
   noise       = noise_normal(),
   control     = ngme_control_f(),
@@ -44,8 +44,12 @@ f <- function(
   debug       = NULL,
   ...
 ) {
-  # whatever user inputs except model (NULL, default is ignored)
-    # f_args <- as.list(match.call())[-1]
+  index <- eval(substitute(index), envir = data, enclos = parent.frame())
+
+  # deal with NA, injected in ngme function
+  if (any(is.na(data$ngme_response)))
+    index_pred <- which(is.na(data$ngme_response)) # will be read in f_args, then be used in ngme_model
+
   # remove NULL in arguments
   f_args <- Filter(Negate(is.null),  as.list(environment()))
 
@@ -64,7 +68,7 @@ f <- function(
     # model is evaluated with submodel func.
     f_args <- within(f_args, rm(model))
     # use f_args to update the model
-    f_model <- do.call(ngme_model, modifyList(model, f_args))
+    f_model <- do.call(ngme_model, utils::modifyList(model, f_args))
   # print(str(f_model))
   }
 

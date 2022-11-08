@@ -1,3 +1,8 @@
+# new models should have
+# model_name <- function(
+# index, replicates, index_pred, noise, data
+# )
+
 # ar1 and rw1
 
 #' ngme ar1 model specification
@@ -16,22 +21,26 @@
 #' @export
 #'
 #' @examples
-#' ar1(index = c(1:3, 1:3), replicates = c(1,1,1,2,2,2))
+#' model_ar1(index = c(1:3, 1:3), replicates = c(1,1,1,2,2,2))
 #' f(index = xx, model = "ar1", data=list(xx = c(2,4,5)), noise=noise_nig())
 model_ar1 <- function(
-  index,
+  index,   # time index
   replicates  = NULL,
-  alpha       = 0.5,
-  range       = c(1, max(index)),
-
   index_pred  = NULL,
-  use_num_dK  = FALSE,
   data        = NULL,
   noise       = noise_normal(),
+
+  alpha       = 0.5,
+  range       = c(1, max(index)),
+  use_num_dK  = FALSE,
   ...
 ) {
   # capture symbol in index
-  index <- eval(substitute(index), envir = data)
+  index <- eval(substitute(index), envir = data, enclos = parent.frame())
+
+  # index <- index - index_pred
+  if (!is.null(index_pred))
+    index <- index[-index_pred]
 
   if (is.null(replicates)) replicates <- rep(1, length(index))
 
@@ -70,6 +79,7 @@ model_ar1 <- function(
     C           = ngme_as_sparse(C)
     G           = ngme_as_sparse(G)
     noise       = noise
+    index_pred  = index_pred
   })
 
   do.call(ngme_model, args)
@@ -88,17 +98,20 @@ model_ar1 <- function(
 #' @export
 #'
 #' @examples
-#' r1 <- model_rw1(1:7, circular = T); r1$C + r1$G
+#' r1 <- model_rw1(1:7, circular = TRUE); r1$C + r1$G
 #' r2 <- model_rw1(1:7); r2$C + r2$G
 model_rw1 <- function(
   index,
   replicates  = NULL,
+  data        = NULL,
   circular    = FALSE,
   n_points    = NULL,
   noise       = NULL,
+  index_pred  = NULL,
   # extra A matrix
   ...
 ) {
+
   stopifnot(length(index) > 2)
   # create mesh using index
   sorted_index <- sort(index, index.return = TRUE)
@@ -137,6 +150,7 @@ model_rw1 <- function(
     h           = h
     C           = ngme_as_sparse(C)
     G           = ngme_as_sparse(G)
+    index_pred  = index_pred
     # noise       = noise
   })
 
@@ -158,14 +172,16 @@ model_rw1 <- function(
 #' @export
 #'
 #' @examples
-#' r2 <- model_rw2(1:7, circular = T); r2$C + r2$G
-#' r3 <- model_rw2(1:7); r3$C + r3$G
+#' m1 <- model_rw2(1:7, circular = TRUE); m1$C + m1$G
+#' m2 <- model_rw2(1:7); m2$C + m2$G
 model_rw2 <- function(
   index,
   replicates = NULL,
-  circular = FALSE,
-  n_points = NULL,
-  noise = noise_normal(),
+  data       = NULL,
+  circular   = FALSE,
+  n_points   = NULL,
+  noise      = noise_normal(),
+  index_pred = NULL,
   # extra A matrix
   ...
 ) {
@@ -207,6 +223,7 @@ model_rw2 <- function(
     C           = ngme_as_sparse(C)
     G           = ngme_as_sparse(G)
     noise       = noise
+    index_pred  = index_pred
   })
 
   do.call(ngme_model, args)

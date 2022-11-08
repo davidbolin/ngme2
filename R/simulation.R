@@ -1,23 +1,16 @@
 #' Simulate latent process with noise
 #'
 #' @param model latent process specified by f() function
-#' @param noise noise object
 #' @param seed seed
 #'
 #' @return a realization of latent model
 #' @export
 #'
 #' @examples
-#' n_obs <- 10
-#' simulate(
-#'   f(1:n_obs, model = "ar1", theta_K = 0.4),
-#'   noise = ngme.noise(
-#'     theta_mu = 2,
-#'     theta_sigma = 0,
-#'     theta_V = 2
-#'   ),
-#'   seed=NULL
-#' )
+#' B_sigma <- matrix(1:10 / 10, nrow=10)
+#' simulate(noise_nig(n = 10, B_sigma =  B_sigma))
+#' simulate(noise_normal(theta_sigma = 1.5, B_sigma = B_sigma))
+#' simulate(f(1:10, model = "ar1", theta_K = 0.4, noise = noise_nig()))
 simulate.ngme_model <- function(
     object,
     nsim   = 1,
@@ -66,26 +59,17 @@ simulate.ngme_model <- function(
 #' @export
 #'
 #' @examples
-#' simulate(
-#'   noise = ngme.noise(
-#'     theta_mu = 2,
-#'     theta_sigma = 0,
-#'     theta_V = 2
-#'   ),
-#'   n = 10,
-#'   seed=NULL
-#' )
+#' simulate(noise_normal(sd = 5, n = 10))
 simulate.ngme_noise <- function(
     object,
-    nsim   = 1,
     seed   = NULL,
     ...
 ) {
-    noise <- object; n <- nsim
+    noise <- object
 
     if (is.null(seed)) seed <- as.numeric(Sys.time())
 
-    noise <- update_noise(noise, n = n)
+    n <- noise$n_noise
     # create nig noise
     if (noise$noise_type == "nig") {
         mu <- drop(noise$B_mu %*% noise$theta_mu)

@@ -1,16 +1,14 @@
-#' ngme plot
-#'
-#' @param object  ngme object
-#'
-#' @return
-#' @export
-#'
-#' @examples
-
-plot.ngme <- function(object) {
-  # wrapper
-  # not implement yet
-}
+# #' ngme plot
+# #'
+# #' @param object  ngme object
+# #'
+# #' @return
+# #' @export
+# #'
+# plot.ngme <- function(object) {
+#   # wrapper
+#   # not implement yet
+# }
 
 
 #' Trace plot of ngme fitting
@@ -21,10 +19,8 @@ plot.ngme <- function(object) {
 #' @param param_index paramter index if non-stationary
 #' @param transform any transformation
 #'
-#' @return
+#' @return the traceplot
 #' @export
-#'
-#' @examples
 traceplot <- function(
   ngme,
   parameter,
@@ -82,6 +78,7 @@ traceplot <- function(
     xlab("iterations") +
     ylab("value") + guides() + labs(title = paste("Traceplot of", parameter))
 }
+
 #' plot the density of noise (for stationary)
 #'
 #' @param noise1 ngme_noise
@@ -91,6 +88,7 @@ traceplot <- function(
 #' @export
 #'
 #' @examples
+#' plot(noise_nig(mu=1, sigma=2, nu=1))
 plot.ngme_noise <- function(noise, noise2 = NULL, ...) {
   mu <- noise$theta_mu
   sigma <- exp(noise$theta_sigma)
@@ -106,7 +104,7 @@ plot.ngme_noise <- function(noise, noise2 = NULL, ...) {
   )
 
   gg <- ggplot2::ggplot() +
-    ggplot2::geom_line(aes(x = xx, y = dd))
+    ggplot2::geom_line(ggplot2::aes(x = xx, y = dd))
 
   if (!is.null(noise2)) {
     mu <- noise2$theta_mu
@@ -117,7 +115,7 @@ plot.ngme_noise <- function(noise, noise2 = NULL, ...) {
       "normal"  = dd2 <- dnorm(xx, sd = sigma),
       stop("Plot for this type is not implemented")
     )
-    gg <- gg + ggplot2::geom_line(aes(x = xx, y = dd2), col = "red")
+    gg <- gg + ggplot2::geom_line(ggplot2::aes(x = xx, y = dd2), col = "red")
   }
 
   gg + ggplot2::labs(title = "Density Plot")

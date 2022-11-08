@@ -7,7 +7,7 @@
 #' Use ngme_noise_types() to check all the available types.
 #'
 #' @param noise_type    type of noise, "nig", "normal"
-#' @param n             number of noise
+#' @param n_noise       number of noise (= nrow(B_mu) = nrow(B_sigma))
 #' @param V             value for V
 #' @param B_mu          Basis matrix for mu (if non-stationary)
 #' @param theta_mu      specify a non-stationary noise using theta_mu
@@ -27,6 +27,7 @@ ngme_noise <- function(
   theta_mu        = 0,
   theta_sigma     = 0,
   theta_V         = 1,
+  n               = 1,
   V               = NULL,
   B_mu            = NULL,
   B_sigma         = NULL,
@@ -39,34 +40,39 @@ ngme_noise <- function(
   # check input
   stopifnot("Unkown noise type. Please check ngme_noise_types()" =
     noise_type %in% ngme_noise_types())
-
   stopifnot("ngme_noise: theta_V should be positive" = theta_V > 0)
 
-  if (is.null(B_mu))    B_mu <- as.matrix(1)
-  if (is.null(B_sigma)) B_sigma <- as.matrix(1)
+  # check B_mu and B_sigma
+  if (!is.null(B_mu))
+    stopifnot("Make sure n == nrow(B_mu)"
+      = n == 1 || nrow(B_mu) == 1 || n == nrow(B_mu))
+  else
+    B_mu <- as.matrix(1)
+  if (!is.null(B_sigma))
+    stopifnot("Make sure n == nrow(B_sigma)"
+      = n == 1 || nrow(B_sigma) == 1 || n == nrow(B_sigma))
+  else
+    B_sigma <- as.matrix(1)
+  if (n == 1) n <- max(nrow(B_mu), nrow(B_sigma)) # change default
 
   if (!is.matrix(B_mu))
     stop("Please input B_mu as a matrix to use non-stationary mu")
   if (!is.matrix(B_sigma))
     stop("Please input B_sigma as a matrix to use non-stationary sigma")
-
   if (ncol(B_mu) != length(theta_mu))
     stop("Please make sure ncol(B_mu) == length(theta_mu).")
   if (ncol(B_sigma) != length(theta_sigma))
     stop("Please make sure ncol(B_sigma) == length(theta_sigma).")
 
   # auto-complete (make sure nrow(B_sigma) == nrow(B_mu) for n=1 case)
-  if (nrow(B_mu) == 1 && nrow(B_sigma) != 1) {
-    n <- nrow(B_sigma)
+  if (nrow(B_mu) == 1 && nrow(B_sigma) != 1)
     B_mu <- matrix(rep(B_mu, n), nrow = n, byrow = TRUE)
-  } else if (nrow(B_mu) != 1 && nrow(B_sigma) == 1) {
-    n <- nrow(B_mu)
+  else if (nrow(B_mu) != 1 && nrow(B_sigma) == 1)
     B_sigma <- matrix(rep(B_sigma, n), nrow = n, byrow = TRUE)
-  }
 
   structure(
     list(
-      n_noise         = nrow(B_mu),  # this is same as V_size
+      n_noise         = n,  # this is same as V_size
       noise_type      = noise_type,
       theta_V         = theta_V,
       V               = V,
@@ -96,10 +102,11 @@ ngme_noise <- function(
 #' @param theta_sigma  specify a non-stationary noise using theta_sigma
 #' @param B_sigma      Basis matrix for sigma (if non-stationary)
 #'
-#' @return
+#' @return ngme_noise object
 #' @export
 #'
 #' @examples
+#' noise_normal(n = 10, sd = 2)
 noise_normal <- function(
   sd = NULL,
   theta_sigma = NULL,
@@ -146,10 +153,11 @@ noise_normal <- function(
 #' @param B_mu         Basis matrix for mu (if non-stationary)
 #' @param B_sigma      Basis matrix for sigma (if non-stationary)
 #'
-#' @return a list of specification for ngme
+#' @return ngme_noise object
 #' @export
 #'
 #' @examples
+#' noise_nig(mu = 1, sigma = 2, nu = 1, n=10)
 noise_nig <- function(
   mu            = NULL,
   sigma         = NULL,
@@ -157,6 +165,7 @@ noise_nig <- function(
   theta_mu      = NULL,
   theta_sigma   = NULL,
   theta_V       = NULL,
+  n             = 1,
   V             = NULL,
   B_mu          = matrix(1),
   B_sigma       = matrix(1),
@@ -183,6 +192,7 @@ noise_nig <- function(
     V = V,
     B_mu = B_mu,
     B_sigma = B_sigma,
+    n = n,
     ...
   )
 }
@@ -203,13 +213,9 @@ update_noise <- function(noise, n = NULL) {
 }
 
 #' Create ngme noise with a list
-#'
 #' @param x a list
 #'
 #' @return a list of specification for ngme
-#' @export
-#'
-#' @examples
 create_noise <- function(x) {
   do.call(ngme_noise, x)
 }

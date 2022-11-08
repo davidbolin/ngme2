@@ -7,11 +7,12 @@
 ngme(
   formula,
   data,
-  control = ngme.control(),
-  noise = noise_normal(),
+  control = ngme_control(),
+  family = "normal",
   last_fit = NULL,
   beta = NULL,
   seed = NULL,
+  start = NULL,
   debug = FALSE
 )
 }
@@ -24,17 +25,37 @@ ngme(
 
 \item{control}{control variables, see ?ngme.control}
 
-\item{noise}{measurement noise specification}
+\item{family}{likelihood type, same as measurement noise specification, 1. string 2. ngme noise obejct}
 
 \item{last_fit}{can be ngme object from last fitting}
 
 \item{beta}{starting value for fixed effects}
 
 \item{seed}{set the seed for pesudo random number generator}
+
+\item{start}{starting ngme object (usually object from last fitting)}
 }
 \value{
 a list of outputs contains estimation of operator paramters, noise parameters
 }
 \description{
 \code{ngme} function performs a analysis of non-gaussian additive models.
+}
+\examples{
+ngme(
+ formula = Y ~ x1 + f(
+   index = x2,
+   model = "ar1",
+   noise = noise_nig(),
+   theta_K = 0.5
+ ) + f(
+   model = model_rw1(1:5, circular = TRUE),
+   noise = noise_normal(),
+ ),
+ family = noise_normal(sd = 0.5),
+ data = data.frame(Y = 1:5, x1 = 2:6, x2 = 3:7),
+ control = ngme_control(
+   estimation = FALSE
+ )
+)
 }

@@ -2,18 +2,16 @@
 
 #' Create a Matern SPDE model
 #'
-#' @param alpha
-#' @param mesh mesh argument
+#' @param alpha     2 or 4, SPDE smoothness parameter
+#' @param mesh      mesh argument
+#' @param kappa     parameterization for kappa^2 C + G, only for stationary
+#' @param theta_kappa parameterization for non-stationary
+#' @param B_kappa   bases for kappa
+#' @param d         indicating the dimension of mesh (together with fem.mesh.matrices)
 #' @param fem.mesh.matrices specify the FEM matrices
-#' @param d indicating the dimension of mesh (together with fem.mesh.matrices)
-#' @param kappa # parameterization for k^2 C + G, only for stationary
-#' @param theta_kappa
-#' @param B_kappa bases for kappa
 #'
 #' @return a list (n, C (diagonal), G, B.kappa) for constructing operator
 #' @export
-#'
-#' @examples
 model_matern <- function(
   index       = NULL,
   replicates  = NULL,

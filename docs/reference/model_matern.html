@@ -63,6 +63,8 @@
 <span>  fem.mesh.matrices <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  d <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  A <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  A_pred <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  noise <span class="op">=</span> <span class="fu"><a href="noise_normal.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -95,6 +97,18 @@
 
 <dt>d</dt>
 <dd><p>indicating the dimension of mesh (together with fem.mesh.matrices)</p></dd>
+
+
+<dt>A</dt>
+<dd><p>A Matrix connecting observation and mesh</p></dd>
+
+
+<dt>A_pred</dt>
+<dd><p>A Matrix connecting NA location and mesh</p></dd>
+
+
+<dt>noise</dt>
+<dd><p>1. string: type of model, 2. ngme.noise object</p></dd>
 
 </dl></div>
     <div class="section level2">

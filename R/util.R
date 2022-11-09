@@ -16,7 +16,7 @@ ngme_ts_make_A <- function(
   replicates = NULL,
   range = c(1, max(loc))
 ) {
-  if (is.null(loc)) return (NULL)
+  if (is.null(loc) || length(loc) == 0) return (NULL)
 
   n_loc <- length(loc)
   nrep <- 1

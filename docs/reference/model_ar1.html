@@ -55,7 +55,7 @@
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">model_ar1</span><span class="op">(</span></span>
 <span>  <span class="va">index</span>,</span>
 <span>  replicates <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  index_pred <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  index_NA <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  data <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  noise <span class="op">=</span> <span class="fu"><a href="noise_normal.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  alpha <span class="op">=</span> <span class="fl">0.5</span>,</span>
@@ -73,6 +73,10 @@
 
 <dt>replicates</dt>
 <dd><p>replicates for the process</p></dd>
+
+
+<dt>index_NA</dt>
+<dd><p>Logical vector, same as is.na(response var.)</p></dd>
 
 
 <dt>data</dt>

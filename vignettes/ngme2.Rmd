@@ -192,7 +192,7 @@ ngme(
     noise = noise_nig(),
     theta_K = 0.5
   ) + f(
-    model = model_rw1(1:5, circular = TRUE),
+    model = model_rw(1:5, order=1, circular = TRUE),
     noise = noise_normal(),
   ),
   family = noise_normal(sd = 0.5),
@@ -210,6 +210,62 @@ It gives the `ngme` object, which has three parts:
 3. Latent models (contains 2 models, ar1 and rw1)
 
 We can turn the `estimation = TRUE` to start estimating the model.
+
+## The SPDE approach with Gaussian noise
+
+It is well-known (Whittle, 1963) that a Gaussian process $u(\mathbf{s})$ with Matérn covariance function solves the stochastic partial differential equation (SPDE)
+\begin{equation}\label{spde}
+(\kappa^2 -\Delta)^\beta u = \mathcal{W}\quad \hbox{in } \mathcal{D},
+\end{equation}
+where $\Delta = \sum_{i=1}^d \frac{\partial^2}{\partial_{x_i^2}}$ is the Laplacian operator, $\mathcal{W}$ is the Gaussian spatial white noise on $\mathcal{D}=\mathbb{R}^d$, and $4\beta = 2\nu + d$.
+
+Inspired by this relation between Gaussian processes with Matérn covariance functions and solutions of the above SPDE,
+[Lindgren et al. (2011)](https://rss.onlinelibrary.wiley.com/doi/full/10.1111/j.1467-9868.2011.00777.x)
+constructed computationally efficient Gaussian Markov random field approximations of $u(\mathbf{s})$, where the domain $\mathcal{D}\subsetneq \mathbb{R}^d$ is bounded and $2\beta\in\mathbb{N}$.
+
+The motivation for handling non-Gaussian noise comes from the fact that many features cannot not be handled by Gaussian noise. Some of these reasons are:
+
+* Skewness;
+* Heavier tails;
+* Jumps in the sample paths;
+* Asymmetries in the sample paths.
+
+### Non-Gaussian Matérn fields
+
+The idea is to replace the Gaussian white noise $\mathcal{W}$ in the SPDE by a non-Gaussian white noise $\dot{\mathcal{M}}$:
+$$(\kappa^2 - \Delta)^\beta u = \dot{\mathcal{M}}.$$
+The solution $u$ will have Matérn covariance function, but their marginal distributions will be non-Gaussian.
+
+We want to apply the same idea to the non-Gaussian case, i.e., we want to consider the SPDE on a bounded domain $\mathcal{D}\subset\mathbb{R}^d$ and apply the finite element method.
+
+Notice that the left-hand side of the equation did not change. Therefore, we should only take care of the right-hand side.
+
+We will consider the same setup. More precisely, we consider $V_n = {\rm span}\{\varphi_1,\ldots,\varphi_n\}$, where $\varphi_i(\mathbf{s}), i=1,\ldots, n$ are piecewise linear basis functions obtained from a triangulation of $\mathcal{D}$ and we approximate the solution $u$ by $u_n$, where $u_n$ is written in terms of the basis functions as
+$$u_n(\mathbf{s}) = \sum_{i=1}^n w_i \varphi_i(\mathbf{s}).$$
+In the right-hand side we obtain a random vector
+$$\mathbf{f} = (\dot{\mathcal{M}}(\varphi_1),\ldots, \dot{\mathcal{M}}(\varphi_n)),$$
+where the functional $\dot{\mathcal{M}}$ is given by
+$$\dot{\mathcal{M}}(\varphi_j) = \int_{\mathcal{D}} \varphi_j(\mathbf{s}) d\mathcal{M}(\mathbf{s}).$$
+By considering $\mathcal{M}$ to be a type-G Lévy process, we obtain that $\mathbf{f}$ has a joint distribution that is easy to handle.
+
+We say that a Lévy process is of type G if its increments can be represented as location-scale mixtures:
+$$\gamma + \mu V + \sigma \sqrt{V}Z,$$
+where $\gamma, \mu$ are parameters, $Z\sim N(0,1)$ and is independent of $V$, and $V$ is a positive infinitely divisible random variable.
+
+Therefore, given a vector $\mathbf{V} = (V_1,\ldots,V_n)$ of independent stochastic variances (in our case, positive infinitely divisible random variables), we obtain that
+$$\mathbf{f}|\mathbf{V} \sim N(\gamma + \mu\mathbf{V}, \sigma^2{\rm diag}(\mathbf{V})).$$
+So, if we consider, for instance, the non-fractional and non-Gaussian SPDE
+$$(\kappa^2 - \Delta) u = \dot{\mathcal{M}},$$
+we obtain that the FEM weights $\mathbf{w} = (w_1,\ldots,w_n)$ satisfy
+$$\mathbf{w}|\mathbf{V} \sim N(\mathbf{K}^{-1}(\gamma+\mu\mathbf{V}), \sigma^2\mathbf{K}^{-1}{\rm diag}(\mathbf{V})\mathbf{K}^{-1}),$$
+where $\mathbf{K} = \kappa^2\mathbf{C}+\mathbf{G}$ is the discretization of the differential operator.
+
+### Computational advantages of the SPDE approach
+
+For spatial problems, the computational cost usually scales as $\mathcal{O}(n^{3/2})$, where $n$ is the number of basis functions. This should be compared to the $\mathcal{O}(N^3)$ of the Gaussian random field approach.
+
+This implies in accurate approximations which drastically reduces the computational cost for sampling and inference.
+
 
 ## A simple example - AR1 process with nig noise
 
@@ -333,7 +389,7 @@ prmesh <- inla.mesh.2d(boundary = prdomain, max.edge = c(0.45, 1), cutoff = 0.2)
 Y <- rowMeans(PRprec[, 12 + 1:31]) # 2 + Octobor
 
 ind <- !is.na(Y) # non-NA index
-Y <- Y[ind]
+Y <- Y_mean <- Y[ind]
 coords <- as.matrix(PRprec[ind, 1:2])
 seaDist <- apply(spDists(coords, PRborder[1034:1078, ],
   longlat = TRUE
@@ -377,24 +433,23 @@ mesh.index <- inla.spde.make.index(
   n.spde = prmesh$n
 )
 
-data <- data.frame(
-  Y_mean  = Y,
-  long    = coords[, 1],
-  lat     = coords[, 2]
+matern_spde <- model_matern(
+  loc = coords,
+  mesh = prmesh,
+  index_NA = is.na(Y)
 )
-
+load_all()
 out <- ngme(
-  formula = Y_mean ~ 1 +
-    f(inla.group(seaDist), model = "rw1", noise=noise_normal()) +
-    f(index = mesh.index$field,
-      model = model_matern(A = A, mesh = prmesh, A_pred = A_pred),
-      noise = noise_nig()
-    ),
-  data = data,
+  formula = Y ~ 1 +
+    # f(inla.group(seaDist), model = "rw1", noise=noise_normal()) +
+    f(model = matern_spde, noise = noise_nig()) +
+    f(model = matern_spde, noise = noise_normal()),
+  data = list(
+    Y = Y
+  ),
   family = noise_nig(),
   control = ngme_control(
     estimation = T,
-    # iterations = 4000,
     iterations = 20,
     n_slope_check = 4,
     stop_points = 10,
@@ -406,6 +461,23 @@ out <- ngme(
 )
 
 out
+# Comparing our prediction
+lp <- attr(out, "prediction")$lp
+mean(abs(lp - Y_mean))  #MAE
+```
+
+```{r plot-prediction}
+ggplot() +
+geom_point(aes(
+  x = coords[, 1], y = coords[, 2],
+  colour =  Y_mean - lp
+), size = 2, alpha = 1) +
+scale_color_gradientn(colours = tim.colors(100)) +
+geom_path(aes(x = PRborder[, 1], y = PRborder[, 2])) +
+geom_path(aes(x = PRborder[1034:1078, 1], y = PRborder[
+  1034:1078,
+  2
+]), colour = "red")
 ```
 
 Model estimation:
@@ -432,5 +504,3 @@ pl <- lapply(c("kappa", "mu", "sigma", "nu"), function(.x)
   traceplot(out, parameter = .x, f_index = 2));
 marrangeGrob(pl, nrow=2, ncol=2)
 ```
-
-Doing posterior prediction with ngme2.

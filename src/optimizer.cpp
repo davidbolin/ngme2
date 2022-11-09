@@ -62,7 +62,8 @@ VectorXd Optimizer::sgd(
     Model& model,
     double eps,
     int iterations,
-    double max_relative_step // comparing to x itself
+    double max_relative_step, // comparing to x itself
+    double max_absolute_step
 ) {
     // update later
     int var_reduce_iter = 5000;
@@ -82,7 +83,6 @@ VectorXd Optimizer::sgd(
         VectorXd one_step = grad.cwiseProduct(model.get_stepsizes());
 
         VectorXd rela_max_step =  max_relative_step * x.cwiseAbs();
-        double abs_max_step = 0.5;
         for (int j = 0; j < one_step.size(); j++) {
             double sign = one_step(j) > 0 ? 1.0 : -1.0;
 
@@ -92,8 +92,8 @@ VectorXd Optimizer::sgd(
             }
 
             // take limit on absolute step
-            if (abs(one_step(j)) > abs_max_step) {
-                one_step(j) = sign * abs_max_step;
+            if (abs(one_step(j)) > max_absolute_step) {
+                one_step(j) = sign * max_absolute_step;
             }
         }
 

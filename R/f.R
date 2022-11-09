@@ -73,6 +73,8 @@ f <- function(
   } else {
     # model is evaluated with submodel func.
     f_args <- within(f_args, rm(model))
+    # watch out! if user inputs noise, then use user's
+    if (is.null(as.list(match.call())$noise)) f_args$noise <- NULL
     # use f_args to update the model
     f_model <- do.call(ngme_model, utils::modifyList(model, f_args))
   # print(str(f_model))

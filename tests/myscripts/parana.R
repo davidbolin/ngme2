@@ -45,8 +45,7 @@
 # leave the set for prediction
 n <- length(Y)
 ind_pred <- sample(1:n, size = 0.1 * n)
-A <- inla.spde.make.A(mesh = prmesh, loc = coords[-ind_pred, ])
-A_pred <- inla.spde.make.A(mesh = prmesh, loc = coords[ind_pred, ])
+
 Y_pred <- Y[ind_pred]; Y[ind_pred] <- NA
 
 mesh.index <- inla.spde.make.index(
@@ -54,6 +53,15 @@ mesh.index <- inla.spde.make.index(
   mesh = prmesh,
   n.spde = prmesh$n
 )
+
+matern_spde <- model_matern(
+  loc = coords,
+  mesh = prmesh,
+  index_NA = is.na(Y)
+)
+# handle A internally
+# A <- inla.spde.make.A(mesh = prmesh, loc = coords[-ind_pred, ])
+# A_pred <- inla.spde.make.A(mesh = prmesh, loc = coords[ind_pred, ])
 
 # plot(prmesh)
 # points(coords)
@@ -63,8 +71,11 @@ out <- ngme(
     # f(inla.group(seaDist), model = "rw1", noise = noise_normal()) +
     # f(seaDist, model = "rw1", noise = noise_normal()) +
     # f(seaDist, model = "ar1", noise = noise_normal()) +
-    f(index = mesh.index$field,
-      model = model_matern(A = A, A_pred = A_pred, mesh = prmesh, noise = noise_nig())
+    f(model = matern_spde,
+      noise = noise_nig()
+    ) +
+    f(model = matern_spde,
+      noise = noise_normal()
     ),
   data =  data.frame(
     Y  = Y,
@@ -84,7 +95,22 @@ out <- ngme(
 
 # Comparing our prediction
 mean(Y_mean)
-mean(abs(attr(out, "prediction")$lp - Y_mean))
+lp <- attr(out, "prediction")$lp
+mean(abs(lp - Y_mean))  #MAE
+
+{ # plot data
+  ggplot() +
+  geom_point(aes(
+    x = coords[, 1], y = coords[, 2],
+    colour =  Y_mean - lp
+  ), size = 2, alpha = 1) +
+  scale_color_gradientn(colours = tim.colors(100)) +
+  geom_path(aes(x = PRborder[, 1], y = PRborder[, 2])) +
+  geom_path(aes(x = PRborder[1034:1078, 1], y = PRborder[
+    1034:1078,
+    2
+  ]), colour = "red")
+}
 
 out
 str(out)
@@ -94,13 +120,20 @@ str(out)
 # traceplot(out, parameter = "beta",    f_index = 0, param_index = 1)
 # traceplot(out, parameter = "beta",    f_index = 0, param_index = 2)
 
+# fixed effects
+traceplot(out, parameter = "beta", f_index = 0, param_index = 1)
 
+# measurement noise
+traceplot(out, parameter = "theta_mu", f_index = 0)
+traceplot(out, parameter = "theta_sigma", f_index = 0)
+traceplot(out, parameter = "theta_V", f_index = 0)
 
 # 1st model
 traceplot(out, parameter = "theta_K",     f_index = 1)
 traceplot(out, parameter = "theta_mu",    f_index = 1)
 traceplot(out, parameter = "theta_sigma", f_index = 1)
 traceplot(out, parameter = "theta_V",     f_index = 1)
+plot(out$latents[[1]]$noise)
 
 # 2nd model
 traceplot(out, parameter = "theta_K",     f_index = 2)
@@ -113,15 +146,6 @@ traceplot(out, parameter = "theta_K",     f_index = 3)
 traceplot(out, parameter = "theta_mu",    f_index = 3)
 traceplot(out, parameter = "theta_sigma", f_index = 3)
 traceplot(out, parameter = "theta_V",     f_index = 3)
-
-
-# fixed effects
-traceplot(out, parameter = "beta", f_index = 0, param_index = 1)
-
-# measurement noise
-traceplot(out, parameter = "theta_mu", f_index = 0)
-traceplot(out, parameter = "theta_sigma", f_index = 0)
-traceplot(out, parameter = "theta_V", f_index = 0)
 
 
 # plot(1:3, 1:3)
@@ -226,4 +250,5 @@ traceplot(out, parameter = "theta_V", f_index = 0)
 #   data = data.frame(YY=YY, XX=XX),
 #   control = ngme_control(estimation = FALSE)
 # )
+
 

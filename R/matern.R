@@ -2,8 +2,10 @@
 
 #' Create a Matern SPDE model
 #'
+#' @param loc       numeric vector or matrix of column 2,location to make index
 #' @param alpha     2 or 4, SPDE smoothness parameter
 #' @param mesh      mesh argument
+#' @param index_NA Logical vector, same as is.na(response var.)
 #' @param kappa     parameterization for kappa^2 C + G, only for stationary
 #' @param theta_kappa parameterization for non-stationary
 #' @param B_kappa   bases for kappa
@@ -16,7 +18,7 @@
 #' @return a list (n, C (diagonal), G, B.kappa) for constructing operator
 #' @export
 model_matern <- function(
-  index       = NULL,
+  loc         = NULL,
   replicates  = NULL,
   alpha       = 2,
   kappa       = 1,
@@ -25,14 +27,23 @@ model_matern <- function(
   mesh        = NULL,
   fem.mesh.matrices = NULL,
   d           = NULL,
-  # index_NA    = NULL,
+  index_NA    = NULL,
   A           = NULL,
   A_pred      = NULL,
   noise       = noise_normal(),
   ...
 ) {
-  # index <- eval(substitute(index), envir = data, enclos = parent.frame())
-  # if (is.null(index_NA)) index_NA <- rep(FALSE, length(index)) # not used
+  # loc <- eval(substitute(loc), envir = data, enclos = parent.frame())
+  if (is.null(index_NA)) index_NA <- rep(FALSE, length(loc)) # not used
+
+  # deal with coords
+  if (is.matrix(loc) && ncol(loc) == 2) {
+    if (is.null(A))      A <- INLA::inla.spde.make.A(mesh = mesh, loc = loc[!index_NA, ,drop = FALSE])
+    if (is.null(A_pred)) A_pred <- INLA::inla.spde.make.A(mesh = mesh, loc = loc[index_NA, ,drop = FALSE])
+  } else { # 1d case
+    if (is.null(A))      A <- INLA::inla.spde.make.A(mesh = mesh, loc = loc[!index_NA])
+    if (is.null(A_pred)) A_pred <- INLA::inla.spde.make.A(mesh = mesh, loc = loc[index_NA])
+  }
 
   if (is.null(mesh) && is.null(fem.mesh.matrices))
     stop("At least specify mesh or matrices")
@@ -51,8 +62,6 @@ model_matern <- function(
 
   if (is.null(B_kappa))
     B_kappa <- matrix(1, nrow = mesh$n, ncol = length(theta_kappa))
-
-  if (is.null(A)) A <- INLA::inla.spde.make.A(mesh=mesh, loc=loc)
 
   # supply mesh
   if (!is.null(mesh)) {

@@ -21,7 +21,8 @@ public:
             Model& model,
             double eps,
             int iterations,
-            double max_relative_step);
+            double max_relative_step,
+            double max_absolute_step);
 };
 
 #endif

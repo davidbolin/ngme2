@@ -76,6 +76,7 @@ The function is a wrapper function for specific submodels.
 <span>  fix_theta_K <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  index_pred <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  debug <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  index_NA <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -83,7 +84,7 @@ The function is a wrapper function for specific submodels.
     <div class="section level2">
     <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
     <dl><dt>index</dt>
-<dd><p>symbol or numerical value</p></dd>
+<dd><p>symbol or numerical value: index or covariates to build index</p></dd>
 
 
 <dt>model</dt>
@@ -124,12 +125,16 @@ The function is a wrapper function for specific submodels.
 
 
 <dt>debug</dt>
-<dd><p>Debug mode
-inherit the data from ngme function</p></dd>
+<dd><p>Debug mode</p></dd>
+
+
+<dt>index_NA</dt>
+<dd><p>Logical vector, same as is.na(response var.)</p></dd>
 
 
 <dt>...</dt>
-<dd><p>additional arguments</p></dd>
+<dd><p>additional arguments
+inherit the data from ngme function</p></dd>
 
 </dl></div>
     <div class="section level2">

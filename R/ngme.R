@@ -98,7 +98,8 @@ ngme <- function(
     # get Y and X
     Y_data    <- ngme_response[!index_NA]
     n_Y_data  <- length(Y_data)
-    X_full    <- model.matrix(delete.response(terms(plain_fm)), data)
+    X_full    <- model.matrix(delete.response(terms(plain_fm)), as.data.frame(data))
+    # if (length(X_full) == 0) X_full <- model.matrix(terms(plain_fm), data) # Y ~ 1 case
     X_data    <- X_full[!index_NA, , drop = FALSE]
 
     ############### W_sizes is the dim of the block matrix
@@ -183,6 +184,9 @@ if (debug) print(str(ngme_block))
 
   ################# Prediction ####################
     if (any(data$index_NA)) {
+      # posterior sampling
+      # ngme_block <- sampling_cpp(ngme_block, 100, TRUE)
+
       # form a linear predictor
       lp <- double(length(ngme_response))
 

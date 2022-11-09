@@ -117,7 +117,7 @@
 <span class="r-in"><span>   noise <span class="op">=</span> <span class="fu"><a href="noise_nig.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>   theta_K <span class="op">=</span> <span class="fl">0.5</span></span></span>
 <span class="r-in"><span> <span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="f.html">f</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>   model <span class="op">=</span> <span class="fu"><a href="model_rw1.html">model_rw1</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, circular <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>   model <span class="op">=</span> <span class="fu">model_rw1</span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, circular <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>   noise <span class="op">=</span> <span class="fu"><a href="noise_normal.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span> <span class="op">)</span>,</span></span>
 <span class="r-in"><span> family <span class="op">=</span> <span class="fu"><a href="noise_normal.html">noise_normal</a></span><span class="op">(</span>sd <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span>,</span></span>
@@ -126,36 +126,7 @@
 <span class="r-in"><span>   estimation <span class="op">=</span> <span class="cn">FALSE</span></span></span>
 <span class="r-in"><span> <span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> *** Ngme object ***</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Fixed effects: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    beta = -1,  1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Measurement noise: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Noise type - normal</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Noise parameters: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       sigma = 0.5</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Latent models: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [[1]]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Ngme model: ar1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Model parameters: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       alpha = 0.5</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Noise type - nig</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Noise parameters: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       mu = 0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       sigma = 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       nu = 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [[2]]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Ngme model: rw1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Model parameters: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       No parameter needed.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Noise type - normal</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Noise parameters: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       sigma = 1</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in model_rw1(1:5, circular = TRUE):</span> could not find function "model_rw1"</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>

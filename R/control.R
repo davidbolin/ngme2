@@ -36,6 +36,7 @@ ngme_control <- function(
   print_check_info  = TRUE,
 
   max_relative_step = 0.1,
+  max_absolute_step = 0.5,
   kill_var          = FALSE,
   kill_power        = 0.75,
   threshold         = 1e-5,
@@ -68,6 +69,7 @@ ngme_control <- function(
 
     # variance reduction
     max_relative_step = max_relative_step,
+    max_absolute_step = max_absolute_step,
     kill_var          = kill_var,
     kill_power        = kill_power,
     threshold         = threshold,

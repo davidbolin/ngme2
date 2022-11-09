@@ -116,16 +116,18 @@ if (debug) std::cout << "After block construct noise" << std::endl;
     LU_K.analyzePattern(K);
   }
 
+if (debug) std::cout << "After init solver" << std::endl;
+
   // 7. optimizer related
   stepsizes = VectorXd::Constant(n_params, stepsize);
   steps_to_threshold = VectorXd::Constant(n_params, 0);
   indicate_threshold = VectorXd::Constant(n_params, 0);
 
-  // 8. Do the burn-in
   if(n_latent > 0) {
     sampleW_V();
     sampleW_V();
   }
+if (debug) std::cout << "After Sample W" << std::endl;
 
   // record
   theta_mu_traj.resize(n_theta_mu);

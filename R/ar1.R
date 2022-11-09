@@ -3,7 +3,7 @@
 # index, replicates, index_NA, noise, data
 # )
 
-# ar1 and rw1
+# ar1 and rw
 
 #' ngme ar1 model specification
 #'
@@ -117,8 +117,8 @@ model_rw<- function(
 
   stopifnot("length of index at least > 3" = length(index) > 3)
   # create mesh using index
-  sorted_index <- sort(index, index.return = TRUE)
-  h <- diff(sorted_index$x)
+  # sorted_index <- sort(index, index.return = TRUE)
+  # h <- diff(sorted_index$x)
   # permutation matrix, same as A <- diag(length(index))[sorted_index$ix, ]
 
   # create A in one way
@@ -130,14 +130,17 @@ model_rw<- function(
 
   # create A in INLA way
   mesh <- INLA::inla.mesh.1d(loc = index)
-  p_matrix <- as(mesh$idx$loc, "pMatrix") # bug! p_matrix
+  # p_matrix <- as(mesh$idx$loc, "pMatrix") # bug! p_matrix
 # browser()
-  A <- INLA::inla.spde.make.A(mesh = mesh, loc = index[!index_NA]) %*% p_matrix
+  A <- INLA::inla.spde.make.A(mesh = mesh, loc = index[!index_NA])
   A_pred <- if (!any(index_NA)) NULL else
-   INLA::inla.spde.make.A(mesh = mesh, loc = index[index_NA]) %*% p_matrix
+   INLA::inla.spde.make.A(mesh = mesh, loc = index[index_NA])
+  h <- diff(mesh$loc)
 
+  n <- mesh$n
   if (order == 1) {
-    n <- length(index) - 1
+    # k is of size n-1 * n
+    n <- n - 1
     if (!circular) {
       G <- Matrix::Matrix(diag(n));
       G <- cbind(G, rep(0, n))
@@ -151,7 +154,7 @@ model_rw<- function(
       C[n, 1] <- -1
     }
   } else if (order == 2) {
-    n <- length(index) - 2
+    n <- n - 2
     if (!circular) { # n * n+2
       stopifnot(n >= 2)
       C <- Matrix::Matrix(0, n, n+2)
@@ -177,7 +180,7 @@ model_rw<- function(
     model       = "rw1"
     theta_K     = 1
     fix_theta_K = TRUE
-    W_size      = ncol(C) # n + 1
+    W_size      = ncol(C) # mesh$n
     V_size      = n
     A           = A
     A_pred      = A_pred

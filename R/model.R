@@ -59,10 +59,11 @@ ngme_model <- function(
 ) {
   stopifnot(is.character(model))
 
-  # generate string
+  # generate string (8 digits)
   K_str     <- switch(model,
     ar1     = "   alpha",
-    matern  = paste0(" kappa_", seq_along(theta_K))
+    matern  = paste0(" kappa_", seq_along(theta_K)),
+    rw1     = paste0(" ignored")
   )
   mu_str    <- paste0("    mu_", seq_along(noise$theta_mu))
   sigma_str <- paste0(" sigma_", seq_along(noise$theta_sigma))

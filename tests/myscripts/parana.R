@@ -68,14 +68,14 @@ matern_spde <- model_matern(
 load_all()
 out <- ngme(
   formula = Y ~ 1 +
-    # f(inla.group(seaDist), model = "rw1", noise = noise_normal()) +
+    f(seaDist, model = "rw1", noise = noise_normal(), debug = TRUE) +
     # f(seaDist, model = "rw1", noise = noise_normal()) +
     # f(seaDist, model = "ar1", noise = noise_normal()) +
+    # f(model = matern_spde,
+    #   noise = noise_nig()
+    # ) +
     f(model = matern_spde,
       noise = noise_nig()
-    ) +
-    f(model = matern_spde,
-      noise = noise_normal()
     ),
   data =  data.frame(
     Y  = Y,
@@ -85,14 +85,18 @@ out <- ngme(
   ),
   family = noise_nig(),
   control = ngme_control(
-    estimation = TRUE,
+    stepsize = 0.5,
+    estimation = T,
     iterations = 1000,
     n_slope_check = 4,
     stop_points = 20,
     n_parallel_chain = 8
-  )
+  ),
+  debug = TRUE
+  # , start = out
 )
-
+out
+str(out)
 # Comparing our prediction
 mean(Y_mean)
 lp <- attr(out, "prediction")$lp
@@ -250,5 +254,3 @@ traceplot(out, parameter = "theta_V",     f_index = 3)
 #   data = data.frame(YY=YY, XX=XX),
 #   control = ngme_control(estimation = FALSE)
 # )
-
-

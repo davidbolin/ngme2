@@ -29,10 +29,10 @@ nig_noise <- simulate(
     n = n_obs
   )
 )
-
 # Y <- ar1_process + nig_noise
 Y <- ar1_process + rnorm(n_obs)
 
+load_all()
   ngme_out <- ngme(
     Y ~ 0 +
     f(1:n_obs,
@@ -62,7 +62,7 @@ Y <- ar1_process + rnorm(n_obs)
       n_parallel_chain = 8,
       stop_points = 50,
       burnin = 200,
-      iterations = 300,
+      iterations = 100,
       gibbs_sample = 5,
       stepsize = 1,
       kill_var = FALSE,
@@ -74,18 +74,47 @@ Y <- ar1_process + rnorm(n_obs)
     seed = 10,
     debug = TRUE
   )
-  ngme_out
+  str(ngme_out$latents[[1]]$noise)
+  str(ngme_out$latents[[1]]$W)
+
+load_all()
+  ngme_out2 <- ngme(
+    Y ~ 0 +
+    f(1:n_obs,
+      model = "ar1",
+      noise = noise_nig(),
+      control = ngme_control_f(
+        numer_grad       = F,
+        use_precond      = T
+      ),
+      debug = T
+    ),
+    data = data.frame(Y = Y),
+    family = noise_nig(),
+    start = ngme_out,
+    control = ngme_control(
+      estimation = FALSE
+    )
+  )
+str(ngme_out$noise)
+  str(ngme_out$latents[[1]]$noise)
+
+  str(ngme_out2$latents[[1]]$W)
+  ngme_out2$noise$V <- NULL
+
+  lll <- list(a = NULL , b = 2); lll
+  lll$a <- NULL  ; lll
   # plot
   # noise
-    traceplot(ngme_out, parameter = "theta_mu", f_index = 0)
-    traceplot(ngme_out, parameter = "theta_sigma", f_index = 0)
-    traceplot(ngme_out, parameter = "theta_V", f_index = 0)
+  traceplot(ngme_out, parameter = "theta_mu", f_index = 0)
+  traceplot(ngme_out, parameter = "theta_sigma", f_index = 0)
+  traceplot(ngme_out, parameter = "theta_V", f_index = 0)
 
   # ar1 model
-    traceplot(ngme_out, parameter = "theta_K",     f_index = 1)
-    traceplot(ngme_out, parameter = "theta_mu",    f_index = 1)
-    traceplot(ngme_out, parameter = "theta_sigma", f_index = 1)
-    traceplot(ngme_out, parameter = "theta_V",     f_index = 1)
+  traceplot(ngme_out, parameter = "theta_K",     f_index = 1)
+  traceplot(ngme_out, parameter = "theta_mu",    f_index = 1)
+  traceplot(ngme_out, parameter = "theta_sigma", f_index = 1)
+  traceplot(ngme_out, parameter = "theta_V",     f_index = 1)
 
   # compare nig noise
   plot(noise_nig(

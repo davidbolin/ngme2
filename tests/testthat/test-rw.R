@@ -1,12 +1,16 @@
 test_that("the order of W same as order of index?", {
   devtools::load_all()
-  XX    <- c(1.1, 3.1, 2.2, 4.5)
+  XX    <- c(1.1, 3.1, 2.2, 2.2, 4.5, 5)
+  index_NA <- c(FALSE, FALSE, FALSE, FALSE, FALSE, TRUE)
   myloc <- c(3.2, 1.2)
 
   mesh1 <- inla.mesh.1d(XX); mesh1
-  rw1 <- f(XX, model = "rw1", index_NA = c(F, F, F, T))
-  rw1$A
-  rw1$A_pred
+
+  rw <- model_rw(XX, order=1, index_NA = index_NA)
+  rw$C + rw$G
+  rw$A; rw$A_pred
+
+  str(rw)
 
   # use INLA make A? the order is bad
   A <- inla.spde.make.A(mesh=mesh1, loc = myloc); A

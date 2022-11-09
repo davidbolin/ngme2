@@ -198,18 +198,29 @@ noise_nig <- function(
 }
 
 # update noise
-update_noise <- function(noise, n = NULL) {
-  stopifnot("n should be integer" = is.numeric(n))
-  B_mu <- noise$B_mu
-  noise$B_mu <- matrix(data = rep(B_mu, n / nrow(B_mu)), nrow = n)
+update_noise <- function(noise, n = NULL, new_noise = NULL) {
+  if (!is.null(n)) {
+    stopifnot("n should be integer" = is.numeric(n))
+    B_mu <- noise$B_mu
+    noise$B_mu <- matrix(data = rep(B_mu, n / nrow(B_mu)), nrow = n)
 
-  B_sigma <- noise$B_sigma
-  noise$B_sigma <- matrix(data = rep(B_sigma, n / nrow(B_sigma)), nrow = n)
+    B_sigma <- noise$B_sigma
+    noise$B_sigma <- matrix(data = rep(B_sigma, n / nrow(B_sigma)), nrow = n)
+    noise$n_noise <- n
 
-  noise$n_noise <- n
-
-  # noise
-  do.call(ngme_noise, noise)
+    noise <- do.call(ngme_noise, noise)
+  } else if (!is.null(new_noise)) {
+    # update with another noise
+    if (noise$noise_type == "nig") {
+      noise$theta_mu    <- new_noise$theta_mu
+      noise$theta_sigma <- new_noise$theta_sigma
+      noise$theta_V     <- new_noise$theta_V
+      noise$V           <- new_noise$V
+    } else if (noise$noise_type == "normal") {
+      noise$theta_sigma <- new_noise$theta_sigma
+    }
+  }
+  noise
 }
 
 #' Create ngme noise with a list

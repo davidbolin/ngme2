@@ -6,7 +6,9 @@
 #' @author David Bolin <davidbolin@gmail.com>
 #' @import Rcpp
 #' @importFrom Rcpp evalCpp
-#' @importFrom stats simulate
+#' @importFrom stats simulate delete.response dnorm formula model.matrix rnorm sd terms terms.formula
+#' @importFrom methods as
+#' @importFrom utils str
 #' @useDynLib ngme2, .registration = TRUE
 #' @name ngme2
 NULL

@@ -14,7 +14,6 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 set.seed(10)
-library(devtools); load_all()
 # library(ngme2)
 ```
 
@@ -132,6 +131,8 @@ The R class `ngme_noise` has the following interface:
 
 
 ```{r}
+library(ngme2)
+
 noise_normal(sd = 1)                 # normal noise
 noise_nig(mu = 1, sigma = 2, nu = 1) # nig noise
 noise_nig(            # non-stationary nig noise
@@ -438,7 +439,7 @@ matern_spde <- model_matern(
   mesh = prmesh,
   index_NA = is.na(Y)
 )
-load_all()
+
 out <- ngme(
   formula = Y ~ 1 +
     # f(inla.group(seaDist), model = "rw1", noise=noise_normal()) +

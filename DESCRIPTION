@@ -31,7 +31,8 @@ Suggests:
     fields,
     grid,
     testthat (>= 3.0.0),
-    xml2
+    xml2,
+    reshape2
 VignetteBuilder: knitr
 RoxygenNote: 7.2.2
 Config/testthat/edition: 3

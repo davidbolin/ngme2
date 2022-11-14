@@ -71,12 +71,11 @@ traceplot <- function(
   # Plot function
   # Var1 and Var2 comes from melt
   df <- reshape2::melt(data)
-  library(ggplot2)
-  ggplot() +
-    geom_line(data = df, aes(x = Var1, y = transform(value), group = Var2)) +
-    geom_line(aes(x = 1:iters, y = transform(apply(data, MARGIN=1, mean))), col="red") +
-    xlab("iterations") +
-    ylab("value") + guides() + labs(title = paste("Traceplot of", parameter))
+   ggplot2::ggplot() +
+    ggplot2::geom_line(data = df, aes(x = Var1, y = transform(value), group = Var2)) +
+    ggplot2::geom_line(aes(x = 1:iters, y = transform(apply(data, MARGIN=1, mean))), col="red") +
+    ggplot2::xlab("iterations") +
+    ggplot2::ylab("value") + ggplot2::guides() + ggplot2::labs(title = paste("Traceplot of", parameter))
 }
 
 #' plot the density of noise (for stationary)

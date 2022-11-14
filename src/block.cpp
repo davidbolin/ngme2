@@ -42,7 +42,7 @@ BlockModel::BlockModel(
     threshold   =  Rcpp::as<double> (control_in["threshold"]);
     termination =  Rcpp::as<double> (control_in["termination"]);
 
-if (debug) std::cout << "Begin Block Constructor" << std::endl;
+if (debug) Rcpp::Rcout << "Begin Block Constructor" << std::endl;
 
   // 2. Init Fixed effects
   fix_flag[block_fix_beta]   = Rcpp::as<bool>        (control_in["fix_beta"]);
@@ -69,7 +69,7 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
     } else if (model_type=="matern" && n_theta_K == 1) {
       latents.push_back(std::make_unique<Matern>(latent_in, latent_seed));
     } else {
-      std::cout << "Unknown model." << std::endl;
+      Rcpp::Rcout << "Unknown model." << std::endl;
     }
   }
 
@@ -81,7 +81,7 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
   }
   assemble();
 
-if (debug) std::cout << "After block assemble" << std::endl;
+if (debug) Rcpp::Rcout << "After block assemble" << std::endl;
 
   // 4. Init measurement noise
   Rcpp::List noise_in   = block_model["noise"];
@@ -101,7 +101,7 @@ if (debug) std::cout << "After block assemble" << std::endl;
   noise_mu = B_mu * theta_mu;
   noise_sigma = (B_sigma * theta_sigma).array().exp();
 
-if (debug) std::cout << "After block construct noise" << std::endl;
+if (debug) Rcpp::Rcout << "After block construct noise" << std::endl;
 
   // 5. Fix V and init V
   // if (fix_flag[block_fix_V]) var.fixV();
@@ -116,7 +116,7 @@ if (debug) std::cout << "After block construct noise" << std::endl;
     LU_K.analyzePattern(K);
   }
 
-if (debug) std::cout << "After init solver" << std::endl;
+if (debug) Rcpp::Rcout << "After init solver" << std::endl;
 
   // 7. optimizer related
   stepsizes = VectorXd::Constant(n_params, stepsize);
@@ -127,14 +127,14 @@ if (debug) std::cout << "After init solver" << std::endl;
     sampleW_V();
     sampleW_V();
   }
-if (debug) std::cout << "After Sample W" << std::endl;
+if (debug) Rcpp::Rcout << "After Sample W" << std::endl;
 
   // record
   theta_mu_traj.resize(n_theta_mu);
   theta_sigma_traj.resize(n_theta_sigma);
   record_traj();
 
-if (debug) std::cout << "End Block Constructor" << std::endl;
+if (debug) Rcpp::Rcout << "End Block Constructor" << std::endl;
 }
 
 
@@ -183,7 +183,7 @@ void BlockModel::setPrevV(const VectorXd& V) {
 // sample W|VY
 void BlockModel::sampleW_VY()
 {
-// if (debug) std::cout << "starting sampling W." << std::endl;
+// if (debug) Rcpp::Rcout << "starting sampling W." << std::endl;
   if (n_latent==0) return;
 
   VectorXd SV = getSV();
@@ -211,12 +211,12 @@ void BlockModel::sampleW_VY()
   VectorXd W = chol_QQ.rMVN(M, z);
   setW(W);
 
-// if (debug) std::cout << "Finish sampling W" << std::endl;
+// if (debug) Rcpp::Rcout << "Finish sampling W" << std::endl;
 }
 
 // ---------------- get, set update gradient ------------------
 VectorXd BlockModel::get_parameter() const {
-if (debug) std::cout << "Start block get parameter"<< std::endl;
+if (debug) Rcpp::Rcout << "Start block get parameter"<< std::endl;
     VectorXd thetas (n_params);
     int pos = 0;
     for (std::vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
@@ -231,13 +231,13 @@ if (debug) std::cout << "Start block get parameter"<< std::endl;
 
     thetas.segment(n_la_params + n_feff, n_merr) = get_theta_merr();
 
-if (debug) std::cout << "Finish block get parameter"<< std::endl;
+if (debug) Rcpp::Rcout << "Finish block get parameter"<< std::endl;
     return thetas;
 }
 
 
 VectorXd BlockModel::grad() {
-if (debug) std::cout << "Start block gradient"<< std::endl;
+if (debug) Rcpp::Rcout << "Start block gradient"<< std::endl;
 long long time_compute_g = 0;
 long long time_sample_w = 0;
 
@@ -275,8 +275,8 @@ time_sample_w += since(timer_sampleW).count();
   }
 
 if (debug) {
-std::cout << "avg time for compute grad (ms): " << time_compute_g / n_gibbs << std::endl;
-std::cout << "avg time for sampling W(ms): " << time_sample_w / n_gibbs << std::endl;
+Rcpp::Rcout << "avg time for compute grad (ms): " << time_compute_g / n_gibbs << std::endl;
+Rcpp::Rcout << "avg time for sampling W(ms): " << time_sample_w / n_gibbs << std::endl;
 }
 
   avg_gradient = (1.0/n_gibbs) * avg_gradient;
@@ -284,8 +284,8 @@ std::cout << "avg time for sampling W(ms): " << time_sample_w / n_gibbs << std::
   // EXAMINE the gradient to change the stepsize
   if (kill_var) examine_gradient();
 
-if (debug) std::cout << "gradients = " << gradients << std::endl;
-if (debug) std::cout << "Finish block gradient"<< std::endl;
+if (debug) Rcpp::Rcout << "gradients = " << gradients << std::endl;
+if (debug) Rcpp::Rcout << "Finish block gradient"<< std::endl;
   return gradients;
 }
 
@@ -350,7 +350,7 @@ VectorXd BlockModel::grad_beta() {
   MatrixXd hess = X.transpose() * noise_inv_SV.asDiagonal() * X;
   grads = hess.ldlt().solve(grads);
 //   Rcpp::Rcout << "(beta) grads = " << grads << "\n";
-// std::cout << "grads of beta=" << -grads << std::endl;
+// Rcpp::Rcout << "grads of beta=" << -grads << std::endl;
     return -grads;
 }
 
@@ -530,8 +530,8 @@ inline void BlockModel::examine_gradient() {
     // }
 
 // if (debug) {
-//     std::cout << "steps=" << steps_to_threshold <<std::endl;
-//     std::cout << "gradients=" << gradients <<std::endl;
-//     std::cout << "stepsizes=" << stepsizes <<std::endl;
+//     Rcpp::Rcout << "steps=" << steps_to_threshold <<std::endl;
+//     Rcpp::Rcout << "gradients=" << gradients <<std::endl;
+//     Rcpp::Rcout << "stepsizes=" << stepsizes <<std::endl;
 // }
 }

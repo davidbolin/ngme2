@@ -127,7 +127,7 @@ auto timer = std::chrono::steady_clock::now();
     outputs.push_back(block.output());
 #endif
 
-std::cout << "Total time is (ms): " << since(timer).count() << std::endl;
+Rcpp::Rcout << "Total time is (ms): " << since(timer).count() << std::endl;
 
     return outputs;
 }
@@ -187,9 +187,9 @@ bool check_conv(
         } else {
             trend_line += "    true";
         }
-// std::cout << "mean here = " << mean << std::endl;
-// std::cout << "Q here = " << Q << std::endl;
-// std::cout << "beta here = " << Q << std::endl;
+// Rcpp::Rcout << "mean here = " << mean << std::endl;
+// Rcpp::Rcout << "Q here = " << Q << std::endl;
+// Rcpp::Rcout << "beta here = " << Q << std::endl;
     }
 
     if (print_check_info) Rcpp::Rcout << "stop " << curr_batch+1 << ": \n"

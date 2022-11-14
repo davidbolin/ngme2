@@ -198,9 +198,9 @@ public:
                 trace = chol_solver_K.trace(dK);
             }
         }
-// std::cout << "eps K  in 1= " << K << std::endl;
-// std::cout << "eps dK in 1= " << dK << std::endl;
-// std::cout << "trace  in 1= " << trace << std::endl;
+// Rcpp::Rcout << "eps K  in 1= " << K << std::endl;
+// Rcpp::Rcout << "eps dK in 1= " << dK << std::endl;
+// Rcpp::Rcout << "trace  in 1= " << trace << std::endl;
         // else {
         //     if (!symmetricK) {
         //         // BiCG solver
@@ -212,8 +212,8 @@ public:
         //     }
         // }
 
-// std::cout << "trace ====== " << trace << std::endl;
-// std::cout << "time for the trace (ms): " << since(timer_trace).count() << std::endl;
+// Rcpp::Rcout << "trace ====== " << trace << std::endl;
+// Rcpp::Rcout << "time for the trace (ms): " << since(timer_trace).count() << std::endl;
 
         // update trace_eps if using hessian
         if ((!numer_grad) && (use_precond)) {
@@ -230,9 +230,9 @@ public:
                     trace_eps = chol_solver_K.trace(M);
                 }
             }
-// std::cout << "eps K  in 2 = " << K << std::endl;
-// std::cout << "eps dK in 2 = " << dK << std::endl;
-// std::cout << "trace_eps in 2 = " << trace_eps << std::endl;
+// Rcpp::Rcout << "eps K  in 2 = " << K << std::endl;
+// Rcpp::Rcout << "eps dK in 2 = " << dK << std::endl;
+// Rcpp::Rcout << "trace_eps in 2 = " << trace_eps << std::endl;
             // else {
             //     if (!symmetricK) {
             //         // BiCG solver
@@ -268,7 +268,7 @@ public:
 
 /*    Optimizer related    */
 inline const VectorXd Latent::get_parameter() const {
-// if (debug) std::cout << "Start latent get parameter"<< std::endl;
+// if (debug) Rcpp::Rcout << "Start latent get parameter"<< std::endl;
 
     VectorXd parameter (n_params);
         parameter.segment(0, n_theta_K)                         = theta_K;
@@ -276,13 +276,13 @@ inline const VectorXd Latent::get_parameter() const {
         parameter.segment(n_theta_K+n_theta_mu, n_theta_sigma)  = theta_sigma;
         parameter(n_theta_K+n_theta_mu+n_theta_sigma)           = var.get_unbound_theta_V();
 
-// if (debug) std::cout << "parameter= " << parameter << std::endl;
-// if (debug) std::cout << "End latent get parameter"<< std::endl;
+// if (debug) Rcpp::Rcout << "parameter= " << parameter << std::endl;
+// if (debug) Rcpp::Rcout << "End latent get parameter"<< std::endl;
     return parameter;
 }
 
 inline const VectorXd Latent::get_grad() {
-// if (debug) std::cout << "Start latent gradient"<< std::endl;
+// if (debug) Rcpp::Rcout << "Start latent gradient"<< std::endl;
     VectorXd grad (n_params);
 
 // auto grad1 = std::chrono::steady_clock::now();
@@ -293,14 +293,14 @@ inline const VectorXd Latent::get_grad() {
 
 // DEBUG: checking grads
 if (debug) {
-    // std::cout << "gradient= " << grad << std::endl;
-    // std::cout << "one latent gradient time " << since(grad1).count() << std::endl;
+    // Rcpp::Rcout << "gradient= " << grad << std::endl;
+    // Rcpp::Rcout << "one latent gradient time " << since(grad1).count() << std::endl;
 }
     return grad;
 }
 
 inline void Latent::set_parameter(const VectorXd& theta) {
-// if (debug) std::cout << "Start latent set parameter"<< std::endl;
+// if (debug) Rcpp::Rcout << "Start latent set parameter"<< std::endl;
     theta_K  = theta.segment(0, n_theta_K);
     theta_mu = theta.segment(n_theta_K, n_theta_mu);
     theta_sigma = theta.segment(n_theta_K+n_theta_mu, n_theta_sigma);

@@ -59,21 +59,17 @@ matern_spde <- model_matern(
   mesh = prmesh,
   index_NA = is.na(Y)
 )
-# handle A internally
-# A <- inla.spde.make.A(mesh = prmesh, loc = coords[-ind_pred, ])
-# A_pred <- inla.spde.make.A(mesh = prmesh, loc = coords[ind_pred, ])
-
 # plot(prmesh)
 # points(coords)
+
 load_all()
 out <- ngme(
   formula = Y ~ 1 +
-    f(seaDist, model = "rw1", noise = noise_normal(), debug = TRUE) +
-    # f(seaDist, model = "rw1", noise = noise_normal()) +
+    f(seaDist, model = "rw1", noise = noise_normal()) +
     # f(seaDist, model = "ar1", noise = noise_normal()) +
-    # f(model = matern_spde,
-    #   noise = noise_nig()
-    # ) +
+    f(model = matern_spde,
+      noise = noise_normal()
+    ) +
     f(model = matern_spde,
       noise = noise_nig()
     ),
@@ -132,14 +128,14 @@ traceplot(out, parameter = "theta_mu", f_index = 0)
 traceplot(out, parameter = "theta_sigma", f_index = 0)
 traceplot(out, parameter = "theta_V", f_index = 0)
 
-# 1st model
+# 1st model rw
 traceplot(out, parameter = "theta_K",     f_index = 1)
 traceplot(out, parameter = "theta_mu",    f_index = 1)
 traceplot(out, parameter = "theta_sigma", f_index = 1)
 traceplot(out, parameter = "theta_V",     f_index = 1)
 plot(out$latents[[1]]$noise)
 
-# 2nd model
+# 2nd model matern normal
 traceplot(out, parameter = "theta_K",     f_index = 2)
 traceplot(out, parameter = "theta_mu",    f_index = 2)
 traceplot(out, parameter = "theta_sigma", f_index = 2)

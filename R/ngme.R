@@ -24,7 +24,7 @@
 #'    noise = noise_nig(),
 #'    theta_K = 0.5
 #'  ) + f(
-#'    model = model_rw1(1:5, circular = TRUE),
+#'    model = model_rw(1:5, order=1, circular = TRUE),
 #'    noise = noise_normal(),
 #'  ),
 #'  family = noise_normal(sd = 0.5),
@@ -213,11 +213,12 @@ if (debug) print(str(ngme_block))
 
 #' Print ngme object
 #'
-#' @param ngme ngme object
+#' @param x ngme object
 #'
 #' @return a list (noise specifications)
 #' @export
-print.ngme <- function(ngme) {
+print.ngme <- function(x) {
+  ngme <- x
   cat("*** Ngme object ***\n\n");
 
   cat("Fixed effects: \n");

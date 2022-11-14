@@ -21,6 +21,7 @@
 #'
 #' @return the traceplot
 #' @export
+#' @importFrom ggplot2 ggplot aes geom_line xlab ylab guides labs
 traceplot <- function(
   ngme,
   parameter,
@@ -71,7 +72,6 @@ traceplot <- function(
   # Plot function
   # Var1 and Var2 comes from melt
   df <- reshape2::melt(data)
-  library(ggplot2)
   ggplot() +
     geom_line(data = df, aes(x = Var1, y = transform(value), group = Var2)) +
     geom_line(aes(x = 1:iters, y = transform(apply(data, MARGIN=1, mean))), col="red") +
@@ -89,7 +89,8 @@ traceplot <- function(
 #'
 #' @examples
 #' plot(noise_nig(mu=1, sigma=2, nu=1))
-plot.ngme_noise <- function(noise, noise2 = NULL, ...) {
+plot.ngme_noise <- function(x, y = NULL, ...) {
+  noise <- x; noise2 <- y
   mu <- noise$theta_mu
   sigma <- exp(noise$theta_sigma)
   nu <- noise$theta_V

@@ -17,6 +17,9 @@
 #' @param W         starting value of the process
 #' @param A_pred    A Matrix connecting NA location and mesh
 #' @param index_NA  Logical vector, same as is.na(response var.)
+#' @param fix_W  stop sampling for W
+#' @param fix_theta_K fix the estimation for theta_K.
+#' @param index_pred index for prediction
 #' @param debug        Debug mode
 #' @param ...       additional arguments
 #'  inherit the data from ngme function

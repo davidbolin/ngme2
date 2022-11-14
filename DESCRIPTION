@@ -4,6 +4,7 @@ Title: Latent Mixed Effects Models With Flexible Distributions
 Version: 0.1.0
 Author: c(
     person("David", "Bolin", email = "davidbolin@gmail.com", role = c("aut", "cre")),
+    person("Xiaotian", "Jin", email = "jin.xiaotian.kim@gmail.com", role = c("aut")),
     person("Jonas", "Wallin", email = "jonas.wallin81@gmail.com", role = c("aut")))
 Maintainer: David Bolin <davidbolin@gmail.com>
 Description: Inference and prediction for mixed effects models with flexible non-Gaussian and Gaussian distributions.
@@ -14,6 +15,8 @@ Imports:
     Formula,
     Matrix,
     Rcpp,
+    reshape2,
+    ggplot2,
 LinkingTo:
     testthat,
     Rcpp,
@@ -22,7 +25,6 @@ Suggests:
     knitr,
     rmarkdown,
     INLA,
-    ggplot2,
     dplyr,
     plyr,
     MASS,

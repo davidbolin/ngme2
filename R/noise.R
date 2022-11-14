@@ -238,7 +238,8 @@ create_noise <- function(x) {
 #'
 #' @return a list (noise specifications)
 #' @export
-print.ngme_noise <- function(noise, padding=0) {
+print.ngme_noise <- function(x, padding = 0, ...) {
+  noise <- x
   pad_space <- paste(rep(" ", padding), collapse = "")
   pad_add4_space <- paste(rep(" ", padding + 4), collapse = "")
 

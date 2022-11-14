@@ -96,8 +96,8 @@ model_ar1 <- function(
 #' @export
 #'
 #' @examples
-#' r1 <- model_rw1(1:7, circular = TRUE); r1$C + r1$G
-#' r2 <- model_rw1(1:7); r2$C + r2$G
+#' r1 <- model_rw(1:7, order = 1, circular = TRUE); r1$C + r1$G
+#' r2 <- model_rw(1:7, order = 1); r2$C + r2$G
 model_rw<- function(
   index,
   order       = 1,

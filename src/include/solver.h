@@ -21,7 +21,7 @@ public:
   virtual void initFromList(int, Rcpp::List const &) = 0;
   virtual inline void analyze(Eigen::SparseMatrix<double, 0, int> &) = 0;
   virtual void compute(Eigen::SparseMatrix<double, 0, int> &) = 0;
-  virtual void compute(Eigen::MatrixXd &) { std::cout << "compute not implimented for MatrixXd\n"; };
+  virtual void compute(Eigen::MatrixXd &) { Rcpp::Rcout << "compute not implimented for MatrixXd\n"; };
   virtual inline Eigen::VectorXd solve(Eigen::VectorXd &v, Eigen::VectorXd &) = 0;
   virtual double trace(Eigen::MatrixXd &) = 0;
   virtual double trace(Eigen::SparseMatrix<double, 0, int> &) = 0;
@@ -37,7 +37,7 @@ public:
   virtual SparseMatrix<double, 0, int> return_Qinv()
   {
     SparseMatrix<double, 0, int> a;
-    std::cout << "return_Qinv not implimented for MatrixXd\n";
+    Rcpp::Rcout << "return_Qinv not implimented for MatrixXd\n";
     return a;
   }
 };
@@ -62,7 +62,7 @@ public:
   double trace2(SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &);
   Eigen::VectorXd rMVN(Eigen::VectorXd &mu, Eigen::VectorXd &z)
   {
-    std::cout << "rMVN not implimented\n";
+    Rcpp::Rcout << "rMVN not implimented\n";
     Eigen::VectorXd X;
     return X;
   }
@@ -123,7 +123,7 @@ public:
   double logdet();
   Eigen::VectorXd rMVN(Eigen::VectorXd &, Eigen::VectorXd &)
   {
-    std::cout << "lu_solver:rMVN not implimented\n";
+    Rcpp::Rcout << "lu_solver:rMVN not implimented\n";
     throw;
   };
 };
@@ -154,7 +154,7 @@ public:
   double logdet();
   Eigen::VectorXd rMVN(Eigen::VectorXd &, Eigen::VectorXd &)
   {
-    std::cout << "lu_sparse_solver:rMVN not implimented\n";
+    Rcpp::Rcout << "lu_sparse_solver:rMVN not implimented\n";
     throw;
   };
 };

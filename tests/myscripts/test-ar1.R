@@ -124,3 +124,5 @@ str(ngme_out$noise)
       ),
       ngme_out$latents[[1]]$noise
   )
+
+devtools::check()

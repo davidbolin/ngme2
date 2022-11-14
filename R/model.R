@@ -99,7 +99,8 @@ ngme_model <- function(
 #'
 #' @return a list (model specifications)
 #' @export
-print.ngme_model <- function(model, padding=0) {
+print.ngme_model <- function(x, padding=0, ...) {
+  model <- x
   pad_space <- paste(rep(" ", padding), collapse = "")
   pad_add4_space <- paste(rep(" ", padding + 4), collapse = "")
 

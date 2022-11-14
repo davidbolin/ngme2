@@ -99,7 +99,7 @@ public:
             sampleV_WY();
             sample_cond_block_V();
         }
-      if (debug) std::cout << "Finish burn in period." << std::endl;
+      if (debug) Rcpp::Rcout << "Finish burn in period." << std::endl;
     }
 
     void sampleW_VY();
@@ -290,7 +290,7 @@ public:
 // Not Implemented
 inline SparseMatrix<double> BlockModel::precond() const {
     SparseMatrix<double> precond;
-    std::cout << "Not implemented \n";
+    Rcpp::Rcout << "Not implemented \n";
     throw;
     return precond;
 }

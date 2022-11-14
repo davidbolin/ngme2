@@ -45,6 +45,12 @@ f(
 
 \item{W}{starting value of the process}
 
+\item{fix_W}{stop sampling for W}
+
+\item{fix_theta_K}{fix the estimation for theta_K.}
+
+\item{index_pred}{index for prediction}
+
 \item{debug}{Debug mode}
 
 \item{index_NA}{Logical vector, same as is.na(response var.)}

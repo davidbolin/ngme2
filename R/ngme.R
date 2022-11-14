@@ -24,7 +24,7 @@
 #'    noise = noise_nig(),
 #'    theta_K = 0.5
 #'  ) + f(
-#'    model = model_rw1(1:5, circular = TRUE),
+#'    model = model_rw(1:5, circular = TRUE),
 #'    noise = noise_normal(),
 #'  ),
 #'  family = noise_normal(sd = 0.5),

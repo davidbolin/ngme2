@@ -379,6 +379,7 @@ We will briefly illustrate the command we use, and the result of the estimation.
 ```{r read-parana}
 library(INLA)
 library(splancs)
+library(lattice)
 data(PRprec)
 data(PRborder)
 

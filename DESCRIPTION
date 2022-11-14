@@ -33,6 +33,8 @@ Suggests:
     testthat (>= 3.0.0),
     xml2,
     splancs,
+    rgdal,
+    lattice,
     reshape2
 VignetteBuilder: knitr
 RoxygenNote: 7.2.2

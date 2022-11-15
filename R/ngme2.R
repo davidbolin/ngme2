@@ -8,8 +8,9 @@
 #' @importFrom Rcpp evalCpp
 #' @importFrom stats simulate delete.response dnorm formula model.matrix rnorm sd terms terms.formula
 #' @importFrom methods as
-#' @importFrom rlang .data
 #' @importFrom utils str
+#' @importFrom ggplot2 ggplot aes geom_line xlab ylab guides labs
+#' @importFrom rlang .data
 #' @useDynLib ngme2, .registration = TRUE
 #' @name ngme2
 NULL

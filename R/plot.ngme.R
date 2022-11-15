@@ -21,8 +21,6 @@
 #'
 #' @return the traceplot
 #' @export
-#' @importFrom ggplot2 ggplot aes geom_line xlab ylab guides labs
-#' @importFrom rlang .data
 #'
 traceplot <- function(
   ngme,

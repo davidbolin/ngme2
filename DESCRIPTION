@@ -15,10 +15,9 @@ Imports:
     Formula,
     Matrix,
     Rcpp,
-    reshape2,
-    ggplot2,
     methods,
-    rlang
+    rlang,
+    ggplot2
 LinkingTo:
     testthat,
     Rcpp,

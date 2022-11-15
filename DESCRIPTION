@@ -42,3 +42,5 @@ VignetteBuilder: knitr
 RoxygenNote: 7.2.2
 Config/testthat/edition: 3
 URL: https://davidbolin.github.io/ngme2/
+Depends: 
+    R (>= 2.10)

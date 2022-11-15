@@ -130,7 +130,7 @@ For now we support two noises, one is **normal** noise, the other is the **NIG**
 The R class `ngme_noise` has the following interface:
 
 
-```{r}
+```{r noise}
 library(ngme2)
 
 noise_normal(sd = 1)                 # normal noise
@@ -173,7 +173,7 @@ The process can be specified by different noise structure.
 
 Some examples of using `f` function to specify `ngme_model`:
 
-```{r}
+```{r f_model}
 f(index = 1:10, model = "ar1",
   noise = noise_nig(), theta_K = 0.5)
 ```
@@ -290,7 +290,7 @@ K =
   \end{bmatrix}
 $$
 
-```{r}
+```{r simulate_ar1}
 n_obs <- 500
 sigma_eps <- 0.5
 alpha <- 0.5
@@ -317,7 +317,7 @@ Y = as.numeric(Y + X %*% beta)
 Now let's fit the model using `ngme`. Here we can use `ngme_control` to modify the
 control variables for the `ngme`. See `?ngme_control` for more optioins.
 
-```{r}
+```{r fit_ar1}
 # # Fit the model with the AR1 model
 ngme_out <- ngme(
   Y ~ x1 + x2 + f(
@@ -342,7 +342,7 @@ ngme_out <- ngme(
 
 Next we can read the result directly from the object.
 
-```{r}
+```{r out}
 ngme_out
 ```
 
@@ -369,7 +369,7 @@ plot(
 ```
 
 
-## Parana dataset
+## Paraná dataset
 
 The rainfall data from Paraná (Brazil) is collected by the National Water Agency in Brazil (Agencia Nacional de Águas, ANA, in Portuguese).
 ANA collects data from many locations over Brazil, and all these data are freely available from the ANA website (http://www3.ana.gov.br/portal/ANA).
@@ -401,7 +401,7 @@ seaDist <- apply(spDists(coords, PRborder[1034:1078, ],
 
 Plot the data:
 
-```{r message=FALSE,fig.width=6,fig.height=6,fig.align='center', echo=FALSE, fig.cap="Mean of the rainfall in Octobor 2012 in Paraná"}
+```{r plot_data, message=FALSE,fig.width=6,fig.height=6,fig.align='center', echo=FALSE, fig.cap="Mean of the rainfall in Octobor 2012 in Paraná"}
 library(fields)
 library(ggplot2)
 library(grid)
@@ -419,16 +419,13 @@ ggplot() +
   ]), colour = "red")
 ```
 
-```{r}
+```{r fit_parana}
 # leave 0.1 Y as prediction area
 n <- length(Y)
 ind_pred <- sample(1:n, size = 0.1 * n)
 
 Y_pred <- Y[ind_pred]
 Y[ind_pred] <- NA
-
-A       <- inla.spde.make.A(mesh = prmesh, loc = coords[-ind_pred, ])
-A_pred  <- inla.spde.make.A(mesh = prmesh, loc = coords[ind_pred, ])
 
 mesh.index <- inla.spde.make.index(
   name = "field",
@@ -444,7 +441,7 @@ matern_spde <- model_matern(
 
 out <- ngme(
   formula = Y ~ 1 +
-    # f(inla.group(seaDist), model = "rw1", noise=noise_normal()) +
+    f(inla.group(seaDist), model = "rw1", noise = noise_normal()) +
     f(model = matern_spde, noise = noise_nig()) +
     f(model = matern_spde, noise = noise_normal()),
   data = list(
@@ -453,12 +450,12 @@ out <- ngme(
   family = noise_nig(),
   control = ngme_control(
     estimation = T,
-    iterations = 20,
+    iterations = 1000,
     n_slope_check = 4,
     stop_points = 10,
     std_lim = 0.1,
     n_parallel_chain = 8,
-    print_check_info = FALSE
+    print_check_info = TRUE
   ),
   seed = 416
 )
@@ -466,7 +463,8 @@ out <- ngme(
 out
 # Comparing our prediction
 lp <- attr(out, "prediction")$lp
-mean(abs(lp - Y_mean))  #MAE
+# Compute mean absolute error (MAE)
+mean(abs(lp - Y_mean))
 ```
 
 ```{r plot-prediction}

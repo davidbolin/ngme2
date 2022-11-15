@@ -36,13 +36,14 @@ model_matern <- function(
   ...
 ) {
   # loc <- eval(substitute(loc), envir = data, enclos = parent.frame())
-  if (is.null(index_NA)) index_NA <- rep(FALSE, length(loc)) # not used
 
   # deal with coords
   if (is.matrix(loc) && ncol(loc) == 2) {
+    if (is.null(index_NA)) index_NA <- rep(FALSE, nrow(loc))
     if (is.null(A))      A <- INLA::inla.spde.make.A(mesh = mesh, loc = loc[!index_NA, ,drop = FALSE])
     if (is.null(A_pred)) A_pred <- INLA::inla.spde.make.A(mesh = mesh, loc = loc[index_NA, ,drop = FALSE])
   } else { # 1d case
+    if (is.null(index_NA)) index_NA <- rep(FALSE, length(loc))
     if (is.null(A))      A <- INLA::inla.spde.make.A(mesh = mesh, loc = loc[!index_NA])
     if (is.null(A_pred)) A_pred <- INLA::inla.spde.make.A(mesh = mesh, loc = loc[index_NA])
   }

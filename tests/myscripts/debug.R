@@ -31,3 +31,8 @@ print.summary.lm
 ?print.lm
 ??ngme
 
+?use_import_from()
+library(devtools)
+use_import_from("rlang", ".data")
+
+use_vignette("Argo_flat_data")

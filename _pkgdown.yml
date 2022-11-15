@@ -19,14 +19,10 @@ navbar:
     articles:
       text: Vignettes
       menu:
-      - text: R-INLA implementation of the rational SPDE approach
-        href: articles/rspde_inla.html
-      - text: inlabru implementation of the rational SPDE approach
-        href: articles/rspde_inlabru.html
-      - text: Rational approximation with the rSPDE package
-        href: articles/rspde_cov.html
-      - text: Operator-based rational approximation
-        href: articles/rspde_base.html
+      - text: Ngme2 Models
+        href: articles/ngme_models.html
+      - text: Installation and configuration
+        href: articles/Installation_and_configuration.html
     twitter:
       icon: fa-twitter
       href: https://twitter.com/jdavidbolin
@@ -37,69 +33,52 @@ home:
   - text: Our research group
     href: http://stochproc.kaust.edu.sa/
 
-
 reference:
   - title: ngme2 package
     contents:
-    -ngme2
+    - ngme2
   - title: ngme2 models
     contents:
-    - rspde.matern
-    - matern.operators
-    - spde.matern.operators
-    - fractional.operators
-  - title: Log-likelihood
+    - ngme
+  - title: Latent Models
     contents:
-    - rSPDE.matern.loglike
-    - rSPDE.loglike
-    - matern.loglike
-    - spde.matern.loglike
-    - rSPDE.construct.matern.loglike
-  - title: Computation of precision matrices
+    - ngme_model_types
+    - model_ar1
+    - model_matern
+    - model_rw
+  - title: Noise types
     contents:
-    - rspde.matern.precision
-    - rspde.matern.precision.integer
-  - title: Methods for rSPDE and CBrSPDE objects
+    - ngme_noise_types 
+    - noise_nig 
+    - noise_normal
+  - title: Data visualization
     contents:
-    - predict.rSPDEobj
-    - simulate.rSPDEobj
-    - summary.rSPDEobj
-    - update.rSPDEobj
-    - predict.CBrSPDEobj
-    - simulate.CBrSPDEobj
-    - summary.CBrSPDEobj
-    - update.CBrSPDEobj
-    - precision.CBrSPDEobj
-  - title: Functions and methods for R-INLA rSPDE objects
+    - plot.ngme_noise
+    - traceplot
+  - title: Simulating of models
     contents:
-    - rspde.make.A
-    - rspde.make.index
-    - rspde.mesh.project
-    - rspde.precision
-    - rspde.result
-    - plot.rspde.result
-    - summary.rspde.result
-    - gg_df
-  - title: Functions and methods for rSPDE interface for inlabru
-    contents:
-    - bru_mapper.inla_rspde
-  - title: Finite element-related functions
-    contents:
-    - rSPDE.A1d
-    - rSPDE.fem1d
+    - simulate.ngme_model
+    - simulate.ngme_noise
   - title: Auxiliary functions
     contents:
-    - get.inital.values.rSPDE
-    - require.nowarnings
-    - matern.covariance
-    - folded.matern.covariance.1d
-    - folded.matern.covariance.2d
-    - rspde.matern.precision.opt
-    - rspde.matern.precision.integer.opt
-    - rational.order<-
-    - rational.type<-
-    - rational.order
-    - rational.type
-  - title: Operator operations
+    - f
+    - create_noise
+    - mean_list
+    - ngme_as_sparse
+    - ngme_control
+    - ngme_control_f
+    - ngme_noise
+    - ngme_parse_formula
+    - ngme_ts_make_A
+    - print.ngme 
+    - print.ngme_model
+    - print.ngme_noise
+  - title: Distributions
     contents:
-    - operator.operations
+    - ig
+    - nig
+    - igam
+    - gig
+  - title: Datasets
+    contents:
+    - argo_float

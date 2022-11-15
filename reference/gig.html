@@ -42,6 +42,12 @@ random generation for the generalised inverse-Gaussian distribution
         <input type="search" class="form-control me-sm-2" aria-label="Toggle navigation" name="search-input" data-search-index="../search.json" id="search-input" placeholder="Search for" autocomplete="off"></form>
 
       <ul class="navbar-nav"><li class="nav-item">
+  <a class="external-link nav-link" href="https://github.com/davidbolin/ngme2" aria-label="Github">
+    <span class="fa fa-github"></span>
+     
+  </a>
+</li>
+<li class="nav-item">
   <a class="external-link nav-link" href="https://twitter.com/jdavidbolin" aria-label="Twitter">
     <span class="fa fa-twitter"></span>
      
@@ -148,21 +154,23 @@ New York–Berlin: Springer-Verlag. <a href="https://doi.org/10.1007/978-1-4612-
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">rgig</span><span class="op">(</span><span class="fl">100</span>, p <span class="op">=</span> <span class="fl">1</span>, a <span class="op">=</span> <span class="fl">1</span>, b <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   [1] 1.0158293 0.1792828 3.3220169 1.0249237 3.3245646 8.3461489 3.1715542</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   [8] 1.1730993 4.4236857 5.1274657 7.8520861 2.8703523 4.7406235 2.6078787</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [15] 2.9579823 0.7240041 4.6020478 1.7375326 2.9949921 2.2702698 0.6271633</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [22] 2.5708816 2.3124126 2.4841857 2.7617561 0.3508521 1.9499829 1.7185853</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [29] 2.1538177 3.1766257 1.7578319 4.2483085 2.2411205 4.7604510 2.1593328</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [36] 4.7175504 0.7867970 9.2657634 7.2884010 0.5240867 3.2686410 8.3496558</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [43] 1.5118673 5.3179339 2.5260361 2.7943157 2.2848606 2.0274330 1.2631777</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [50] 0.5675271 0.6367959 5.3566219 5.6013956 5.0772224 3.7152684 3.6734970</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [57] 2.0296841 0.9970273 2.1737163 0.7893349 3.0920019 0.8203030 0.4850674</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [64] 3.6898476 1.1277560 0.8862547 3.5994708 3.3602283 1.3354358 1.9648001</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [71] 1.1884436 2.6358753 1.1087239 1.1015592 3.1324225 9.9579402 6.3009397</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [78] 1.2606379 1.9094530 0.5381401 0.7031207 3.2906706 2.7519240 3.0981911</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [85] 6.2471830 5.4965167 1.7707691 1.3695949 0.5590128 1.5281892 6.5821995</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [92] 0.3597366 3.0502809 1.6902233 8.8846132 2.4553810 2.7254194 4.0485994</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [99] 1.4992988 0.8946995</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   [1]  1.4276884  2.4052870  1.8706530  2.8824215  2.8988477  6.2907525</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   [7]  1.7140946  1.8335973  0.9591576  5.4493112  2.7818586  6.2437283</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [13]  5.8719516  1.1313466  2.9103805  4.6705729  0.6273167  3.7215605</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [19]  3.9579333  2.4390365  0.8509802  4.1846867  2.2712178  2.2866041</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [25]  1.8864594  2.6476883  3.0765229  2.6118378  0.8317424  1.3881043</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [31]  1.0470207  5.7655246  4.2531510  2.5833055  1.9022501  0.5049390</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [37]  0.8907609  3.4120145  1.5285790  8.1398551  1.8624949  3.1988949</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [43]  3.7009098  0.8282474  3.1456827  0.6842890  1.0505034 11.4000079</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [49]  1.1916939  6.2746590  1.4426717  4.0052594  4.8725644  2.1146193</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [55]  5.2972489  3.4295551  3.5502742  3.3741567  0.5416842  0.1937721</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [61]  0.9737318  4.2813281  2.9929102  5.5765132  1.2949184  2.2247682</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [67]  9.7740488  0.6827323 10.0300124  1.2985511  8.6880914  1.4329001</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [73]  1.6845776  6.2291444  9.5273039  0.8319661  1.9829028  8.8487197</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [79]  2.8500942  1.1836983  2.6818869  2.1758516  6.0413409  1.1082286</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [85]  2.8445530  1.9164128  1.1598683  1.2138036  0.7659822  6.1103493</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [91]  3.5978231  0.4768146  1.4596364  4.9729517  1.0430458  3.3576905</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [97]  1.7007053  2.5947646  0.7569396  4.9304984</span>
 <span class="r-in"><span><span class="fu">pgig</span><span class="op">(</span><span class="fl">0.4</span>, p <span class="op">=</span> <span class="fl">1</span>, a <span class="op">=</span> <span class="fl">1</span>, b <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.02956016</span>
 <span class="r-in"><span><span class="fu">qgig</span><span class="op">(</span><span class="fl">0.8</span>, p <span class="op">=</span> <span class="fl">1</span>, a <span class="op">=</span> <span class="fl">1</span>, b <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
@@ -178,7 +186,7 @@ New York–Berlin: Springer-Verlag. <a href="https://doi.org/10.1007/978-1-4612-
 
 
     <footer><div class="pkgdown-footer-left">
-  <p></p><p>Developed by David Bolin.</p>
+  <p></p><p>Developed by David Bolin, Xiaotian Jin, Alexandre Simas, Jonas Wallin.</p>
 </div>
 
 <div class="pkgdown-footer-right">

@@ -38,6 +38,12 @@
         <input type="search" class="form-control me-sm-2" aria-label="Toggle navigation" name="search-input" data-search-index="../search.json" id="search-input" placeholder="Search for" autocomplete="off"></form>
 
       <ul class="navbar-nav"><li class="nav-item">
+  <a class="external-link nav-link" href="https://github.com/davidbolin/ngme2" aria-label="Github">
+    <span class="fa fa-github"></span>
+     
+  </a>
+</li>
+<li class="nav-item">
   <a class="external-link nav-link" href="https://twitter.com/jdavidbolin" aria-label="Twitter">
     <span class="fa fa-twitter"></span>
      
@@ -94,8 +100,8 @@
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">B_sigma</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span> <span class="op">/</span> <span class="fl">10</span>, nrow<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="fu"><a href="noise_nig.html">noise_nig</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">10</span>, B_sigma <span class="op">=</span>  <span class="va">B_sigma</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [1] -0.47134717  0.41616759 -2.24037074  0.54555204  1.55801595 -2.27653745</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [7]  0.03691396 -0.43067938 -0.07639631  1.77538987</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [1]  0.4017842  0.9604084  1.3976883  1.1829640  0.7352577 -0.8481602</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [7] -0.6979839  1.9321212  0.8133945  0.2193638</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"noise")</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Noise type - nig</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Noise parameters: </span>
@@ -103,15 +109,15 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span>     sigma = 1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     nu = 1</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="fu"><a href="noise_normal.html">noise_normal</a></span><span class="op">(</span>theta_sigma <span class="op">=</span> <span class="fl">1.5</span>, B_sigma <span class="op">=</span> <span class="va">B_sigma</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [1] -1.37054135 -0.33509480 -0.93027045  0.63274999 -0.79386299  1.74796754</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [7]  0.09055596  1.97281974 -4.07561030 -3.56718057</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [1] -0.906298  1.996804  1.679300  0.466826  2.552181  2.617774  5.492899</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [8]  3.579275 -3.043191 -3.672422</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"noise")</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Noise type - normal</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Noise parameters: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     sigma = 4.48</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="fu"><a href="f.html">f</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span>, model <span class="op">=</span> <span class="st">"ar1"</span>, theta_K <span class="op">=</span> <span class="fl">0.4</span>, noise <span class="op">=</span> <span class="fu"><a href="noise_nig.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [1] -0.1764355  0.5716391  0.5871423 -2.4705154 -3.2366572 -2.3110962</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [7] -0.6105095  0.6896104  0.8315281  0.9843390</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [1] -0.3510694 -1.1430842 -1.4618240 -1.3758553 -0.1627477 -0.1566484</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [7]  0.4287825  0.5058091 -0.4053098  0.3135500</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"noise")</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Noise type - nig</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Noise parameters: </span>
@@ -125,7 +131,7 @@
 
 
     <footer><div class="pkgdown-footer-left">
-  <p></p><p>Developed by David Bolin.</p>
+  <p></p><p>Developed by David Bolin, Xiaotian Jin, Alexandre Simas, Jonas Wallin.</p>
 </div>
 
 <div class="pkgdown-footer-right">

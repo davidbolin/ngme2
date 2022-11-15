@@ -59,6 +59,12 @@
 
       <ul class="navbar-nav">
 <li class="nav-item">
+  <a class="external-link nav-link" href="https://github.com/davidbolin/ngme2" aria-label="Github">
+    <span class="fa fa-github"></span>
+     
+  </a>
+</li>
+<li class="nav-item">
   <a class="external-link nav-link" href="https://twitter.com/jdavidbolin" aria-label="Twitter">
     <span class="fa fa-twitter"></span>
      
@@ -517,7 +523,7 @@ K =
 <span>  seed <span class="op">=</span> <span class="fl">3</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; Starting estimation... </span></span>
-<span><span class="co">#&gt; Total time is (ms): 3965</span></span>
+<span><span class="co">#&gt; Total time is (ms): 5369</span></span>
 <span><span class="co">#&gt; Estimation done!</span></span></code></pre></div>
 <p>Next we can read the result directly from the object.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
@@ -666,21 +672,21 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <span><span class="co">#&gt; finish Constructor of Matern </span></span>
 <span><span class="co">#&gt; begin Constructor of Matern </span></span>
 <span><span class="co">#&gt; finish Constructor of Matern </span></span>
-<span><span class="co">#&gt; Total time is (ms): 33850</span></span>
+<span><span class="co">#&gt; Total time is (ms): 36421</span></span>
 <span><span class="co">#&gt; Estimation done!</span></span>
 <span></span>
 <span><span class="va">out</span></span>
 <span><span class="co">#&gt; *** Ngme object ***</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
-<span><span class="co">#&gt;    beta = 9.2</span></span>
+<span><span class="co">#&gt;    beta = 8.75</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type - nig</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = 0.462</span></span>
-<span><span class="co">#&gt;       sigma = 2.07</span></span>
-<span><span class="co">#&gt;       nu = 2.04</span></span>
+<span><span class="co">#&gt;       mu = NaN</span></span>
+<span><span class="co">#&gt;       sigma = NaN</span></span>
+<span><span class="co">#&gt;       nu = NaN</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Latent models: </span></span>
@@ -691,30 +697,30 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Noise type - normal</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.24</span></span>
+<span><span class="co">#&gt;       sigma = NaN</span></span>
 <span><span class="co">#&gt; [[2]]</span></span>
 <span><span class="co">#&gt;   Ngme model: matern</span></span>
 <span><span class="co">#&gt;   Model parameters: </span></span>
-<span><span class="co">#&gt;       kappa = 3.75</span></span>
+<span><span class="co">#&gt;       kappa = NaN</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Noise type - nig</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = 3.55</span></span>
-<span><span class="co">#&gt;       sigma = 9.1</span></span>
-<span><span class="co">#&gt;       nu = 0.171</span></span>
+<span><span class="co">#&gt;       mu = NaN</span></span>
+<span><span class="co">#&gt;       sigma = NaN</span></span>
+<span><span class="co">#&gt;       nu = NaN</span></span>
 <span><span class="co">#&gt; [[3]]</span></span>
 <span><span class="co">#&gt;   Ngme model: matern</span></span>
 <span><span class="co">#&gt;   Model parameters: </span></span>
-<span><span class="co">#&gt;       kappa = 4.27</span></span>
+<span><span class="co">#&gt;       kappa = NaN</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Noise type - normal</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.567</span></span>
+<span><span class="co">#&gt;       sigma = NaN</span></span>
 <span><span class="co"># Comparing our prediction</span></span>
 <span><span class="va">lp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">out</span>, <span class="st">"prediction"</span><span class="op">)</span><span class="op">$</span><span class="va">lp</span></span>
 <span><span class="co"># Compute mean absolute error (MAE)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">lp</span> <span class="op">-</span> <span class="va">Y_mean</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 1.577088</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] NaN</span></span></code></pre></div>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span></span>
@@ -754,19 +760,27 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <th align="left">ma_nu</th>
 </tr></thead>
 <tbody><tr class="odd">
-<td align="left">9.2</td>
-<td align="left">0.462</td>
-<td align="left">2.07</td>
-<td align="left">2.04</td>
-<td align="left">-1.43</td>
-<td align="left">3.75</td>
-<td align="left">3.55</td>
-<td align="left">9.1</td>
-<td align="left">0.171</td>
+<td align="left">8.75</td>
+<td align="left">NaN</td>
+<td align="left">NaN</td>
+<td align="left">NaN</td>
+<td align="left">NaN</td>
+<td align="left">NaN</td>
+<td align="left">NaN</td>
+<td align="left">NaN</td>
+<td align="left">NaN</td>
 </tr></tbody>
 </table>
 <p>Result of the optimization trajectory of parameters for the Matern
 model:</p>
+<pre><code><span><span class="co">#&gt; Warning: Removed 999 rows containing missing values (`geom_line()`).</span></span>
+<span><span class="co">#&gt; Removed 999 rows containing missing values (`geom_line()`).</span></span>
+<span><span class="co">#&gt; Removed 999 rows containing missing values (`geom_line()`).</span></span>
+<span><span class="co">#&gt; Removed 999 rows containing missing values (`geom_line()`).</span></span>
+<span><span class="co">#&gt; Removed 999 rows containing missing values (`geom_line()`).</span></span>
+<span><span class="co">#&gt; Removed 999 rows containing missing values (`geom_line()`).</span></span>
+<span><span class="co">#&gt; Removed 999 rows containing missing values (`geom_line()`).</span></span>
+<span><span class="co">#&gt; Removed 999 rows containing missing values (`geom_line()`).</span></span></code></pre>
 <div class="figure" style="text-align: center">
 <img src="ngme2_files/figure-html/unnamed-chunk-1-1.png" alt="Traceplot of Matern parameters" width="768"><p class="caption">
 Traceplot of Matern parameters
@@ -781,7 +795,7 @@ Traceplot of Matern parameters
 
     <footer><div class="pkgdown-footer-left">
   <p></p>
-<p>Developed by David Bolin.</p>
+<p>Developed by David Bolin, Xiaotian Jin, Alexandre Simas, Jonas Wallin.</p>
 </div>
 
 <div class="pkgdown-footer-right">

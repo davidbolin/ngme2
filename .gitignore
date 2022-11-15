@@ -40,7 +40,6 @@ vignettes/*.pdf
 *.o
 *.so
 src/test/.DS_Store
-man/
 .DS_Store
 *.json
 myscripts/Rplots.pdf

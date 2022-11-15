@@ -67,7 +67,7 @@ VectorXd AR::grad_theta_K() {
     double th = a2th(a);
 
     double da  = 2 * (exp(th) / pow(1+exp(th), 2));
-    double d2a = 2 * (exp(th) * (-1+exp(th)) / pow(1+exp(th), 3));
+    // double d2a = 2 * (exp(th) * (-1+exp(th)) / pow(1+exp(th), 3));
 
     double ret = 0;
     if (numer_grad) {

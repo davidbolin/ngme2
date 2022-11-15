@@ -93,9 +93,9 @@ VectorXd Matern::grad_theta_K() {
     VectorXd V = getV();
     VectorXd SV = getSV();
 
-    double th = theta_K(0);
+    // double th = theta_K(0);
     double da  = th2k(theta_K(0));
-    double d2a = th2k(theta_K(0));
+    // double d2a = th2k(theta_K(0));
 
     double ret = 0;
     if (numer_grad) {

@@ -15,8 +15,8 @@ BlockModel::BlockModel(
   V_sizes           (Rcpp::as<int>           (block_model["V_sizes"])),
   beta              (Rcpp::as<VectorXd>      (block_model["beta"])),
   n_obs             (Y.size()),
-  n_la_params       (Rcpp::as<int>           (block_model["n_la_params"])),
   n_params          (Rcpp::as<int>           (block_model["n_params"])),
+  n_la_params       (Rcpp::as<int>           (block_model["n_la_params"])),
   n_feff            (beta.size()),
   n_merr            (Rcpp::as<int>           (block_model["n_merr"])),
 
@@ -33,7 +33,7 @@ BlockModel::BlockModel(
 {
   // 1. Init controls
   Rcpp::List control_in = block_model["control"];
-    const int burnin = control_in["burnin"];
+    // const int burnin = control_in["burnin"];
     const double stepsize = control_in["stepsize"];
     n_gibbs     =  Rcpp::as<int>    (control_in["gibbs_sample"]);
     opt_beta    =  Rcpp::as<bool>   (control_in["opt_beta"]);

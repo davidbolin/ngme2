@@ -30,9 +30,7 @@ Rcpp::List estimate_cpp(const Rcpp::List& ngme_block) {
     std::mt19937 rng (seed);
 
     Rcpp::List control_in = ngme_block["control"];
-    const bool exchange_VW = control_in["exchange_VW"];
     const int iterations = control_in["iterations"];
-    const int burnin = control_in["burnin"];
     const double max_relative_step = control_in["max_relative_step"];
     const double max_absolute_step = control_in["max_absolute_step"];
 
@@ -43,6 +41,8 @@ auto timer = std::chrono::steady_clock::now();
 
     Rcpp::List outputs;
 #ifdef _OPENMP
+    const int burnin = control_in["burnin"];
+    const bool exchange_VW = control_in["exchange_VW"];
     // Rcout << "run parallel n_chains chains"
     int n_slope_check = (control_in["n_slope_check"]);
     double std_lim = (control_in["std_lim"]);

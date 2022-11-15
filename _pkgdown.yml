@@ -23,6 +23,10 @@ navbar:
         href: articles/ngme_models.html
       - text: Installation and configuration
         href: articles/Installation_and_configuration.html
+    github:
+      icon: fa-github
+      href: https://github.com/davidbolin/ngme2
+      aria-label: Github
     twitter:
       icon: fa-twitter
       href: https://twitter.com/jdavidbolin
@@ -30,6 +34,10 @@ navbar:
 
 home:
   links:
+  - text: Browse source code
+    href: https://github.com/davidbolin/ngme2
+  - text: Report a bug
+    href: https://github.com/davidbolin/ngme2/issues
   - text: Our research group
     href: http://stochproc.kaust.edu.sa/
 

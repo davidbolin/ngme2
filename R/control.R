@@ -4,13 +4,25 @@
 #' @param iterations      optimizing terations
 #' @param gibbs_sample    number of gibbs sampels
 #' @param stepsize        stepsize
-#' @param kill_var        whether to kill the variance
-#' @param kill_power      the power of variance killing (if kill the variance)
-#' @param threshold       till when start to kill the variance
-#' @param termination     till when stop optimizing
-#' @param estimation      do estimation or not
+#' @param estimation      estimating the parameters
+#'
+#' @param n_parallel_chain number of parallel chains
+#' @param stop_points     number of stop points for convergence check
+#' @param exchange_VW     exchange last V and W in each chian
+#' @param n_slope_check   number of stop points for regression
+#' @param std_lim         maximum allowed standard deviation
+#' @param trend_lim       maximum allowed slope
+#' @param print_check_info print the convergence information
+#'
 #' @param opt_beta        logical, optimize fixed effect
 #' @param fix_beta        logical, fix fixed effect
+#'
+#' @param max_relative_step   max relative step allowed in 1 iteration
+#' @param max_absolute_step   max absolute step allowed in 1 iteration
+#'
+#' @param reduce_var      logical, reduce variace
+#' @param reduce_power    numerical the power of reduce level
+#' @param threshold       till when start to reduce the variance
 #' @param window_size     numerical, length of window for final estimates
 #'
 #' @return list of control variables
@@ -29,22 +41,22 @@ ngme_control <- function(
   n_slope_check     = 3,
   std_lim           = 0.1,
   trend_lim         = 0.05,
+  print_check_info  = TRUE,
 
   # opt options
   opt_beta          = TRUE,
   fix_beta          = FALSE,
-  print_check_info  = TRUE,
 
   max_relative_step = 0.1,
   max_absolute_step = 0.5,
-  kill_var          = FALSE,
-  kill_power        = 0.75,
-  threshold         = 1e-5,
-  termination       = 1e-7,
 
+  # reduce variance after conv. check
+  reduce_var        = FALSE,
+  reduce_power      = 0.75,
+  threshold         = 1e-5,
   window_size       = 1
 ) {
-  if ((kill_power <= 0.5) || (kill_power > 1)) {
+  if ((reduce_power <= 0.5) || (reduce_power > 1)) {
     stop("reduceVar should be in (0.5,1]")
   }
 
@@ -70,10 +82,10 @@ ngme_control <- function(
     # variance reduction
     max_relative_step = max_relative_step,
     max_absolute_step = max_absolute_step,
-    kill_var          = kill_var,
-    kill_power        = kill_power,
+    reduce_var        = reduce_var,
+    reduce_power      = reduce_power,
     threshold         = threshold,
-    termination       = termination
+    window_size       = window_size
   )
 
   class(control) <- "ngme_control"
@@ -82,12 +94,10 @@ ngme_control <- function(
 
 #' Generate control specifications for f function
 #'
-#' @param fix_operator  whether to fix operator parameters
 #' @param numer_grad    whether to use numerical gradient
 #' @param use_precond   whether to use preconditioner
-#' @param eps           eps for numerical gradient
-#' @param theta.K       theta.K for parameter K
 #' @param use_num_hess  whether to use numerical hessian
+#' @param eps           eps for numerical gradient
 #'
 #' @return list of control variables
 #' @export

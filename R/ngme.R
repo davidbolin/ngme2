@@ -12,6 +12,7 @@
 #' @param beta starting value for fixed effects
 #' @param start  starting ngme object (usually object from last fitting)
 #' @param seed  set the seed for pesudo random number generator
+#' @param debug  toggle debug mode
 #'
 #' @return a list of outputs contains estimation of operator paramters, noise parameters
 #' @export
@@ -91,7 +92,7 @@ ngme <- function(
     data$index_NA <- index_NA # watch out! injection, for f to see
 
     # 1. extract f and eval  2. get the formula without f function
-    res <- ngme_parse_formula(fm, data)
+    res <-ngme_parse_formula(fm, data)
     latents_in <- res$latents_in
     plain_fm <- res$plain_fm
 
@@ -214,10 +215,11 @@ if (debug) print(str(ngme_block))
 #' Print ngme object
 #'
 #' @param x ngme object
+#' @param ... ignored
 #'
 #' @return a list (noise specifications)
 #' @export
-print.ngme <- function(x) {
+print.ngme <- function(x, ...) {
   ngme <- x
   cat("*** Ngme object ***\n\n");
 

@@ -243,91 +243,90 @@ VectorXd vech(MatrixXd &M)
 
 void read_SparseMatrix(SparseMatrix<double, 0, int> &M, string path, string name)
 {
+	// FILE *pFile;
+	// pFile = fopen((path + name + "i.bin").c_str(), "rb");
+	// if (pFile == NULL)
+	// {
+	// 	fputs("File error", stderr);
+	// 	exit(1);
+	// }
 
-	FILE *pFile;
-	pFile = fopen((path + name + "i.bin").c_str(), "rb");
-	if (pFile == NULL)
-	{
-		fputs("File error", stderr);
-		exit(1);
-	}
+	// int n, m, ni;
+	// if (1 != fread(&n, sizeof(int), 1, pFile))
+	// {
+	// 	fputs("Read error\n", stderr);
+	// 	exit(1);
+	// }
+	// if (1 != fread(&m, sizeof(int), 1, pFile))
+	// {
+	// 	fputs("Read error\n", stderr);
+	// 	exit(1);
+	// }
 
-	int n, m, ni;
-	if (1 != fread(&n, sizeof(int), 1, pFile))
-	{
-		fputs("Read error\n", stderr);
-		exit(1);
-	}
-	if (1 != fread(&m, sizeof(int), 1, pFile))
-	{
-		fputs("Read error\n", stderr);
-		exit(1);
-	}
-
-	if (1 != fread(&ni, sizeof(int), 1, pFile))
-	{
-		fputs("Read error\n", stderr);
-		exit(1);
-	}
-	M.resize(n, m);
-	MatrixXi ij;
-	ij.setZero(ni, 2);
-	if (ni * 2 != fread(ij.data(), sizeof(int), ni * 2, pFile))
-	{
-		fputs("Read error\n", stderr);
-		exit(1);
-	}
-	fclose(pFile);
-	VectorXd v;
-	v.setZero(ni);
-	pFile = fopen((path + name + "v.bin").c_str(), "rb");
-	if (pFile == NULL)
-	{
-		fputs("File error", stderr);
-		exit(1);
-	}
-	if (ni != fread(v.data(), sizeof(double), ni, pFile))
-	{
-		fputs("Read error\n", stderr);
-		exit(1);
-	}
-	fclose(pFile);
-	vector<T> coef;
-	for (int i = 0; i < ni; i++)
-	{
-		coef.push_back(T(ij(i, 0), ij(i, 1), v(i)));
-	}
-	M.setFromTriplets(coef.begin(), coef.end());
+	// if (1 != fread(&ni, sizeof(int), 1, pFile))
+	// {
+	// 	fputs("Read error\n", stderr);
+	// 	exit(1);
+	// }
+	// M.resize(n, m);
+	// MatrixXi ij;
+	// ij.setZero(ni, 2);
+	// if (ni * 2 != fread(ij.data(), sizeof(int), ni * 2, pFile))
+	// {
+	// 	fputs("Read error\n", stderr);
+	// 	exit(1);
+	// }
+	// fclose(pFile);
+	// VectorXd v;
+	// v.setZero(ni);
+	// pFile = fopen((path + name + "v.bin").c_str(), "rb");
+	// if (pFile == NULL)
+	// {
+	// 	fputs("File error", stderr);
+	// 	exit(1);
+	// }
+	// if (ni != fread(v.data(), sizeof(double), ni, pFile))
+	// {
+	// 	fputs("Read error\n", stderr);
+	// 	exit(1);
+	// }
+	// fclose(pFile);
+	// vector<T> coef;
+	// for (int i = 0; i < ni; i++)
+	// {
+	// 	coef.push_back(T(ij(i, 0), ij(i, 1), v(i)));
+	// }
+	// M.setFromTriplets(coef.begin(), coef.end());
 }
 
 void read_MatrixXd(MatrixXd &M, string path, string name)
 {
-	FILE *pFile;
-	pFile = fopen((path + name + ".bin").c_str(), "rb");
-	if (pFile == NULL)
-	{
-		fputs("File error", stderr);
-		exit(1);
-	}
+	// FILE *pFile;
+	// pFile = fopen((path + name + ".bin").c_str(), "rb");
+	// if (pFile == NULL)
+	// {
+	// 	fputs("File error", stderr);
+	// 	exit(1);
+	// }
 
-	int n, d;
-	if (1 != fread(&n, sizeof(int), 1, pFile))
-	{
-		fputs("Read error\n", stderr);
-		exit(1);
-	}
-	if (1 != fread(&d, sizeof(int), 1, pFile))
-	{
-		fputs("Read error\n", stderr);
-		exit(1);
-	}
-	M.setZero(n, d);
-	if (n * d != fread(M.data(), sizeof(double), n * d, pFile))
-	{
-		fputs("Read error\n", stderr);
-		exit(1);
-	}
-	fclose(pFile);
+	// int n, d;
+	// if (1 != fread(&n, sizeof(int), 1, pFile))
+	// {
+	// 	fputs("Read error\n", stderr);
+	// 	exit(1);
+	// }
+	// if (1 != fread(&d, sizeof(int), 1, pFile))
+	// {
+	// 	fputs("Read error\n", stderr);
+	// 	exit(1);
+	// }
+	// M.setZero(n, d);
+	// if (n * d != fread(M.data(), sizeof(double), n * d, pFile))
+	// {
+	// 	fputs("Read error\n", stderr);
+	// 	exit(1);
+	// }
+	// fclose(pFile);
 }
 
 // ?

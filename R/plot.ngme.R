@@ -22,6 +22,8 @@
 #' @return the traceplot
 #' @export
 #' @importFrom ggplot2 ggplot aes geom_line xlab ylab guides labs
+#' @importFrom rlang .data
+#'
 traceplot <- function(
   ngme,
   parameter,
@@ -73,7 +75,7 @@ traceplot <- function(
   # Var1 and Var2 comes from melt
   df <- reshape2::melt(data)
   ggplot() +
-    geom_line(data = df, aes(x = Var1, y = transform(value), group = Var2)) +
+    geom_line(data = df, aes(x = .data$Var1, y = transform(.data$value), group = .data$Var2)) +
     geom_line(aes(x = 1:iters, y = transform(apply(data, MARGIN=1, mean))), col="red") +
     xlab("iterations") +
     ylab("value") + guides() + labs(title = paste("Traceplot of", parameter))
@@ -81,8 +83,9 @@ traceplot <- function(
 
 #' plot the density of noise (for stationary)
 #'
-#' @param noise1 ngme_noise
-#' @param noise2 ngme_noise (for comparison)
+#' @param x ngme_noise
+#' @param y another ngme_noise
+#' @param ... ...
 #'
 #' @return plot
 #' @export

@@ -3,6 +3,7 @@
 #' Create a Matern SPDE model
 #'
 #' @param loc       numeric vector or matrix of column 2,location to make index
+#' @param replicates replicates for the process
 #' @param alpha     2 or 4, SPDE smoothness parameter
 #' @param mesh      mesh argument
 #' @param index_NA Logical vector, same as is.na(response var.)
@@ -14,6 +15,7 @@
 #' @param noise     1. string: type of model, 2. ngme.noise object
 #' @param A         A Matrix connecting observation and mesh
 #' @param A_pred    A Matrix connecting NA location and mesh
+#' @param ... extra arguments in f()
 #'
 #' @return a list (n, C (diagonal), G, B.kappa) for constructing operator
 #' @export

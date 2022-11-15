@@ -17,6 +17,7 @@
 #'
 #' @param noise noise, can be specified in f()
 #' @param data data, can be specified in f(), ngme()
+#' @param ... extra arguments in f()
 #'
 #' @return a list of specification of model
 #' @export
@@ -33,7 +34,6 @@ model_ar1 <- function(
 
   alpha       = 0.5,
   range       = c(1, max(index)),
-  use_num_dK  = FALSE,
   ...
 ) {
   # capture symbol in index
@@ -90,8 +90,13 @@ model_ar1 <- function(
 #' @param index numerical vector, index for the process
 #' @param order 1 or 2, order of random walk model
 #' @param replicates replicates for the process
-#' @param mesh inla.1d.mesh
-#' @param n_points or num of points, evenly spaced mesh
+#' @param data      specifed or inherit from ngme formula
+#' @param circular  whether the mesh is circular, i.e. the first one is connected to the last
+#' @param index_NA  Logical vector, same as is.na(response variable)
+#' @param noise     1. string: type of model, 2. ngme.noise object
+#'  (can also be specified in each ngme model)
+#' @param ...       additional arguments
+#'
 #' @return a list
 #' @export
 #'
@@ -104,7 +109,6 @@ model_rw<- function(
   replicates  = NULL,
   data        = NULL,
   circular    = FALSE,
-  n_points    = NULL,
   index_NA    = NULL,
   noise       = noise_normal(),
   # extra A matrix

@@ -1,7 +1,9 @@
 #' Simulate latent process with noise
 #'
-#' @param model latent process specified by f() function
+#' @param object  ngme model specified by f() function
+#' @param nsim ignored
 #' @param seed seed
+#' @param ... ignored
 #'
 #' @return a realization of latent model
 #' @export
@@ -51,9 +53,10 @@ simulate.ngme_model <- function(
 
 #' Simulate ngme noise
 #'
-#' @param noise ngme noise object
-#' @param n number of realization
+#' @param object ngme noise object
+#' @param nsim ignored
 #' @param seed seed
+#' @param ... ignored
 #'
 #' @return a realization of ngme noise
 #' @export
@@ -62,6 +65,7 @@ simulate.ngme_model <- function(
 #' simulate(noise_normal(sd = 5, n = 10))
 simulate.ngme_noise <- function(
     object,
+    nsim   = 1,
     seed   = NULL,
     ...
 ) {

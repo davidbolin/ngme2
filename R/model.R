@@ -95,11 +95,13 @@ ngme_model <- function(
 
 #' Print ngme model
 #'
-#' @param model
+#' @param x ngme model object
+#' @param padding number of white space padding in front
+#' @param ... ...
 #'
 #' @return a list (model specifications)
 #' @export
-print.ngme_model <- function(x, padding=0, ...) {
+print.ngme_model <- function(x, padding = 0, ...) {
   model <- x
   pad_space <- paste(rep(" ", padding), collapse = "")
   pad_add4_space <- paste(rep(" ", padding + 4), collapse = "")

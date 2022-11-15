@@ -34,6 +34,8 @@ ngme(
 \item{seed}{set the seed for pesudo random number generator}
 
 \item{start}{starting ngme object (usually object from last fitting)}
+
+\item{debug}{toggle debug mode}
 }
 \value{
 a list of outputs contains estimation of operator paramters, noise parameters

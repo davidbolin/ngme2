@@ -7,17 +7,18 @@
 #' Use ngme_noise_types() to check all the available types.
 #'
 #' @param noise_type    type of noise, "nig", "normal"
-#' @param n_noise       number of noise (= nrow(B_mu) = nrow(B_sigma))
+#' @param n             number of noise (= nrow(B_mu) = nrow(B_sigma))
 #' @param V             value for V
 #' @param B_mu          Basis matrix for mu (if non-stationary)
 #' @param theta_mu      specify a non-stationary noise using theta_mu
 #' @param B_sigma       Basis matrix for sigma (if non-stationary)
 #' @param theta_sigma   specify a non-stationary noise using theta_sigma
-#' @param theta_V       value for theta_V, theta_V = eta > 0
+#' @param theta_V       value for theta_V, theta_V = nu > 0
 #' @param fix_theta_mu    fix the parameter of theta_mu
 #' @param fix_theta_sigma  fix the parameter of theta_sigma
 #' @param fix_theta_V   fix the parameter of theta_V
 #' @param fix_V         fix the sampling of V
+#' @param ...       additional arguments
 #'
 #' @return a list of specification of noise
 #' @export
@@ -101,6 +102,8 @@ ngme_noise <- function(
 #' @param sd            standard deviation
 #' @param theta_sigma  specify a non-stationary noise using theta_sigma
 #' @param B_sigma      Basis matrix for sigma (if non-stationary)
+#' @param n             number of noise (= nrow(B_mu) = nrow(B_sigma))
+#' @param ...       additional arguments
 #'
 #' @return ngme_noise object
 #' @export
@@ -147,11 +150,16 @@ noise_normal <- function(
 #'
 #' The parameterization can be found in ...
 #'
-#' @param theta_V      value of eta
+#' @param mu      mu parameter (stationary)
+#' @param sigma   sigma parameter (stationary)
+#' @param nu      nu
+#' @param V             value for V
+#' @param n             number of noise (= nrow(B_mu) = nrow(B_sigma))
 #' @param theta_mu     specify a non-stationary noise using theta_mu
 #' @param theta_sigma  specify a non-stationary noise using theta_sigma
 #' @param B_mu         Basis matrix for mu (if non-stationary)
 #' @param B_sigma      Basis matrix for sigma (if non-stationary)
+#' @param ...       additional arguments
 #'
 #' @return ngme_noise object
 #' @export
@@ -162,11 +170,10 @@ noise_nig <- function(
   mu            = NULL,
   sigma         = NULL,
   nu            = NULL,
-  theta_mu      = NULL,
-  theta_sigma   = NULL,
-  theta_V       = NULL,
   n             = 1,
   V             = NULL,
+  theta_mu      = NULL,
+  theta_sigma   = NULL,
   B_mu          = matrix(1),
   B_sigma       = matrix(1),
   ...
@@ -175,14 +182,13 @@ noise_nig <- function(
   stopifnot("Please use theta_mu for non-stationary mu." = length(mu) < 2)
   if (is.null(mu) && is.null(theta_mu)) theta_mu <- 0
   if (is.null(sigma) && is.null(theta_sigma)) theta_sigma <- 0
-  if (is.null(nu) && is.null(theta_V)) theta_V <- 1
+  if (is.null(nu)) theta_V <- 1 else theta_V <- nu
 
-  if (!is.null(sigma) && sigma <= 0) stop("ngme_nosie: sigma should be positive.")
   if (!is.null(nu) && nu <= 0) stop("ngme_nosie: nu should be positive.")
+  if (!is.null(sigma) && sigma <= 0) stop("ngme_nosie: sigma should be positive.")
 
   if (!is.null(mu))     theta_mu <- mu
   if (!is.null(sigma))  theta_sigma <- log(sigma)
-  if (!is.null(nu))     theta_V <- nu
 
   ngme_noise(
     noise_type = "nig",
@@ -233,8 +239,9 @@ create_noise <- function(x) {
 
 #' Print ngme noise
 #'
-#' @param noise noise object
-#' @param padding
+#' @param x noise object
+#' @param padding number of white space padding in front
+#' @param ... ...
 #'
 #' @return a list (noise specifications)
 #' @export

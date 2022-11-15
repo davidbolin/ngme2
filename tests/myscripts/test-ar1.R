@@ -65,7 +65,6 @@ load_all()
       iterations = 100,
       gibbs_sample = 5,
       stepsize = 1,
-      kill_var = FALSE,
       threshold = 1e-4,
 
       std_lim = 0.001,

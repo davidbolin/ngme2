@@ -61,8 +61,8 @@ protected:
 
     // controls
     int n_gibbs;
-    bool debug,opt_beta, kill_var;
-    double kill_power, threshold, termination;
+    bool debug,opt_beta, reduce_var;
+    double reduce_power, threshold;
 
     SparseMatrix<double> A, K;      // not used: dK, d2K;
 

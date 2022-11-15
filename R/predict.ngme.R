@@ -31,27 +31,27 @@
 # }
 
 
-#' prediction of ngme given X_pred and A_pred
-#'
-#' @param ngme ngme object
-#' @param X_pred a matrix for covariate at unknown location
-#' @param A_pred a list of observation matrix for each process
-#'
-#' @return linear prediction at unknown locations
-#' @export
-#'
-predict.ngme <- function(
-  ngme,
-  X_pred,
-  A_pred,
-  sampling_iteration = 300
-) {
-  # posterior sampling
-  ngme <- post_sampling(ngme, sampling_iteration)
+# #' prediction of ngme given X_pred and A_pred
+# #'
+# #' @param ngme ngme object
+# #' @param X_pred a matrix for covariate at unknown location
+# #' @param A_pred a list of observation matrix for each process
+# #'
+# #' @return linear prediction at unknown locations
+# #' @export
+# #'
+# predict.ngme <- function(
+#   ngme,
+#   X_pred,
+#   A_pred,
+#   sampling_iteration = 300
+# ) {
+#   # posterior sampling
+#   ngme <- post_sampling(ngme, sampling_iteration)
 
-  linear_predictor <- X_pred %*% ngme$beta
-    for (latent in ngme$latents)
-      linear_predictor <- linear_predictor + A_pred[i] %*% latent$W
+#   linear_predictor <- X_pred %*% ngme$beta
+#     for (latent in ngme$latents)
+#       linear_predictor <- linear_predictor + A_pred[i] %*% latent$W
 
-  linear_predictor
-}
+#   linear_predictor
+# }

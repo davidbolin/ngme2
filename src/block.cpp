@@ -37,10 +37,9 @@ BlockModel::BlockModel(
     const double stepsize = control_in["stepsize"];
     n_gibbs     =  Rcpp::as<int>    (control_in["gibbs_sample"]);
     opt_beta    =  Rcpp::as<bool>   (control_in["opt_beta"]);
-    kill_var    =  Rcpp::as<bool>   (control_in["kill_var"]);
-    kill_power  =  Rcpp::as<double> (control_in["kill_power"]);
+    reduce_var    =  Rcpp::as<bool>   (control_in["reduce_var"]);
+    reduce_power  =  Rcpp::as<double> (control_in["reduce_power"]);
     threshold   =  Rcpp::as<double> (control_in["threshold"]);
-    termination =  Rcpp::as<double> (control_in["termination"]);
 
 if (debug) Rcpp::Rcout << "Begin Block Constructor" << std::endl;
 
@@ -282,7 +281,7 @@ Rcpp::Rcout << "avg time for sampling W(ms): " << time_sample_w / n_gibbs << std
   avg_gradient = (1.0/n_gibbs) * avg_gradient;
   gradients = avg_gradient;
   // EXAMINE the gradient to change the stepsize
-  if (kill_var) examine_gradient();
+  if (reduce_var) examine_gradient();
 
 if (debug) Rcpp::Rcout << "gradients = " << gradients << std::endl;
 if (debug) Rcpp::Rcout << "Finish block gradient"<< std::endl;
@@ -516,7 +515,7 @@ inline void BlockModel::examine_gradient() {
     // }
 
     // counting += 1;
-    // stepsizes = (VectorXd::Constant(n_params, counting) - steps_to_threshold).cwiseInverse().array().pow(kill_power);
+    // stepsizes = (VectorXd::Constant(n_params, counting) - steps_to_threshold).cwiseInverse().array().pow(reduce_power);
 
     // // finish opt fo latents
     // for (int i=0; i < n_latent; i++) {

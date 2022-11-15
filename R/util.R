@@ -56,6 +56,7 @@ ngme_ts_make_A <- function(
 
 
 #' Convert sparse matrix into sparse dgCMatrix
+#' @param G matrix
 #'
 #' @return sparse dgCMatrix
 #' @export
@@ -107,16 +108,13 @@ get_inla_mesh_dimension <- function(inla_mesh) {
 #'
 #' @param gf formula
 #' @param data data.frame
-#' @param debug
 #'
 #' @return
 #'  1. plain formula without f function
 #'  2. latents_in - from each f function
-#' @export
 ngme_parse_formula <- function(
   gf,
-  data,
-  debug=FALSE
+  data
 ) {
   # eval the response variable to see NA
   # Y <- eval(gf[[2]], envir = data)

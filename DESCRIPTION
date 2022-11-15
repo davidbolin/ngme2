@@ -17,7 +17,8 @@ Imports:
     Rcpp,
     reshape2,
     ggplot2,
-    methods
+    methods,
+    rlang
 LinkingTo:
     testthat,
     Rcpp,

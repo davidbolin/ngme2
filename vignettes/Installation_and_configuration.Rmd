@@ -1,0 +1,143 @@
+---
+title: "Installation_and_configuration"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Installation_and_configuration}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+The default C++ compiler in OS X has does not support OpenMP.
+
+```
+➜ clang -fopenmp hello.cpp
+clang: error: unsupported option '-fopenmp'
+```
+
+In order to make use of OpenMP to enable multi-threading in OS X, we need to
+use compilers which supports OpneMP.
+
+### 1. Install a OpenMP supported clang as default C/C++ compiler.
+
+That's why we need to install another compiler which supports OpenMP.
+Here I use `homebrew` for installing llvm clang compiler using the following scripts.
+(Check here [homebrew](https://brew.sh) or you can just run the following command to install `homebrew`.)
+
+```
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+
+If successful, you should be able to see the following prompt.
+
+```
+➜ brew install llvm
+
+...
+To use the bundled libc++ please add the following LDFLAGS:
+  LDFLAGS="-L/usr/local/opt/llvm/lib/c++ -Wl,-rpath,/usr/local/opt/llvm/lib/c++"
+
+llvm is keg-only, which means it was not symlinked into /usr/local,
+because macOS already provides this software and installing another version in
+parallel can cause all kinds of trouble.
+
+If you need to have llvm first in your PATH, run:
+  echo 'export PATH="/usr/local/opt/llvm/bin:$PATH"' >> ~/.zshrc
+
+For compilers to find llvm you may need to set:
+  export LDFLAGS="-L/usr/local/opt/llvm/lib"
+  export CPPFLAGS="-I/usr/local/opt/llvm/include"
+```
+
+To make the llvm clang default compiler, we need to update the **PATH** variable,
+and then reopen the terminal to make it work:
+
+```
+➜ echo 'export PATH="/usr/local/opt/llvm/bin:$PATH"' >> ~/.zshrc
+```
+
+Now we should be able to use the llvm clang with OpenMP support.
+Let's test it:
+
+
+```
+➜ clang -fopenmp hello.cpp
+```
+
+In my case, the llvm **lib** and **include** folder are already added
+into the default clang search path. (You can check the search path by run commands like
+`clang hello.cpp -v`, otherwise you may need to include mannually by `-L` and `-I`,
+you can also export it as system variable as suggested, then use makefile to compile).
+
+### 2. Configure the R environment to make use of the new compiler.
+
+Next if we want to use OpenMP in our R code (maybe exported it as R function using
+Rcpp package), we should make sure R to call our new compiler, not the original one.
+To do this, we can mannually set the `Makeconf` file (makefile configuration for R) in
+$R_HOME/etc/Makeconf.
+
+Here you can check the R_HOME address using `R.home()` in R termnial.
+
+```{r}
+R.home()
+```
+
+In my case, the R called compiler is still the default clang, so I explicitly replace it.
+Replace the configuration lines with following (where llvm clang is installed):
+
+```
+CC = /usr/local/opt/llvm/bin/clang
+CXX = /usr/local/opt/llvm/bin/clang++
+CXX11 = $(CXX)
+CXX14 = $(CXX)
+CXX17 = $(CXX)
+CXX20 = $(CXX)
+```
+
+Now we should be able to export an OpenMP function in R using Rcpp.
+
+### 3. Configure the R package environment.
+
+If you are developing a R package using Rcpp, then you still need to make more efforts in
+the R package environment.
+
+1. Set OpenMP flags in R Makeconf
+
+Do not directly setting `-fopenmp` flag in Makevar file, it would be not portable to the system
+with no OpenMP support. It's better to include it in the R Makeconf file. You can find the
+following two flags in Makeconf file.
+
+```
+SHLIB_OPENMP_CFLAGS = -fopenmp
+SHLIB_OPENMP_CXXFLAGS = -fopenmp
+```
+
+2. Set package flags in package Makevar
+
+Next we can include this flag in the Makevar as following:
+
+```
+PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS)
+PKG_LIBS = $(SHLIB_OPENMP_CXXFLAGS)
+```
+
+3. Set symbols in package Namespace
+
+One important thing next is to indicate you `useDynLib(yourPackage)` in the
+Namespace. You can either do it by yourself, or do it using `devtools` package for you.
+
+Edit the NAMESPACE file to create R objects for the registered symbols:
+
+```
+useDynLib(yourPackage, .registration = TRUE)
+```
+
+Or add `#' @useDynLib yourPackage, .registration = TRUE` it into `yourPackage.R` file, then run
+
+
+```
+devtools::document()
+```
+
+Then you should be able to see the update in your NAMESPACE file.
+
+Now you can have the OpenMP facility in your C++ code!

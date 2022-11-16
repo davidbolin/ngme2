@@ -1,8 +1,8 @@
 ---
-title: "Argo_flat_data"
+title: "Argo_float_data"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Argo_flat_data}
+  %\VignetteIndexEntry{Argo_float_data}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -12,73 +12,87 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
-library(ngme2)
 ```
 
-Read argo_float data
+Load the libraries and read argo_float data:
 
 ```{r read-data}
+library(ngme2)
+library(INLA)
+library(ggplot2)
+library(viridis)
 data(argo_float)
 head(argo_float)
 ```
 
 ```{r create-mesh}
-# max.edge    = 1
-# bound.outer = 5
-# loc = unique(cbind(argo_float$lon, argo_float$lat))
-# # nrow(loc) == nrow(dat) no replicates
+max.edge    <- 1
+bound.outer <- 5
+loc = unique(cbind(argo_float$lon, argo_float$lat))
+# nrow(loc) == nrow(dat) no replicates
 
-# mesh = inla.mesh.2d(loc=loc,
-#                     # the inner edge and outer edge
-#                     max.edge = c(1,5) * max.edge,
-#                     # offset extension distance inner and outer extenstion
-#                     offset = c(max.edge, bound.outer)
-# )
-# plot(mesh); mesh$n
-# points(loc, col = "red")
+mesh = inla.mesh.2d(loc=loc,
+                    # the inner edge and outer edge
+                    max.edge = c(1,5),
+                    cutoff = 0.3,
+                    # offset extension distance inner and outer extenstion
+                    offset = c(max.edge, bound.outer)
+)
+plot(mesh); mesh$n
+points(loc, col = "red")
 
-# fem_mesh = inla.mesh.fem(mesh)
-# Ce <- fem_mesh$c1 #<phi_i, phi_j>
-# C <- fem_mesh$c0 #approximation of Ce
-# G <- fem_mesh$g1
-# A <- inla.spde.make.A(mesh, loc) #dim(A) = data loc * vertices
+fem_mesh = inla.mesh.fem(mesh)
+Ce <- fem_mesh$c1 #<phi_i, phi_j>
+C <- fem_mesh$c0 #approximation of Ce
+G <- fem_mesh$g1
+A <- inla.spde.make.A(mesh, loc) #dim(A) = data loc * vertices
+```
+
+```{r plot-temperature}
+ggplot(data=argo_float) +
+  geom_point(aes(
+    x = loc[, 1], y = loc[, 2],
+    colour = temp
+  ), size = 2, alpha = 1) +
+  scale_color_gradientn(colours = viridis(100))
+
+ggplot(data=argo_float) +
+  geom_point(aes(
+    x = loc[, 1], y = loc[, 2],
+    colour = sal
+  ), size = 2, alpha = 1) +
+  scale_color_gradientn(colours = viridis(100))
+
 ```
 
 ```{r}
-# load_all()
-# spde <- model_matern(
-#   loc = loc,
-#   mesh = mesh
-# )
+spde <- model_matern(
+  loc = loc,
+  mesh = mesh
+)
 
-# out <- ngme(
-#   formula = temp ~ sal + f(model = spde, noise = noise_nig()),
-#   family = "nig",
-#   data = argo_float,
-#   seed = 7,
-#   control = ngme_control(
-#     n_parallel_chain = 4,
-#     iterations = 100
-#   )
-# )
+out <- ngme(
+  formula = temp ~ sal + f(model = spde, noise = noise_nig()),
+  family = "nig",
+  data = argo_float,
+  seed = 7,
+  control = ngme_control(
+    n_parallel_chain = 4,
+    iterations = 20
+  )
+)
+out
 
-# traceplot(out, f_index = 0, parameter = "sigma")
-# traceplot(out, f_index = 0, parameter = "mu")
-# traceplot(out, f_index = 0, parameter = "nu")
+plot(out$noise)
+# beta merr
+traceplot(out, f_index = 0, param = "beta")
+traceplot(out, f_index = 0, param = "sigma")
+traceplot(out, f_index = 0, param = "mu")
+traceplot(out, f_index = 0, param = "nu")
+
+# spde model
+traceplot(out, f_index = 1, param = "mu")
+traceplot(out, f_index = 1, param = "sigma")
+traceplot(out, f_index = 1, param = "nu")
 ```
 
-```{r}
-# out <- ngme(
-#   formula = temp ~ sal + f(model = spde, noise = noise_nig()),
-#   family = "normal",
-#   data = argo_float,
-#   seed = 7,
-#   control = ngme_control(
-#     n_parallel_chain = 4,
-#     iterations = 100
-#   )
-# )
-
-# out
-# traceplot(out, f_index = 1, parameter = "mu")
-```

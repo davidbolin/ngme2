@@ -401,17 +401,18 @@ seaDist <- apply(spDists(coords, PRborder[1034:1078, ],
 
 Plot the data:
 
-```{r plot_data, message=FALSE,fig.width=6,fig.height=6,fig.align='center', echo=FALSE, fig.cap="Mean of the rainfall in Octobor 2012 in Paraná"}
+```{r plot-data, message=FALSE,fig.width=6,fig.height=6,fig.align='center', echo=FALSE, fig.cap="Mean of the rainfall in Octobor 2012 in Paraná"}
 library(fields)
 library(ggplot2)
 library(grid)
 library(gridExtra)
+library(viridis)
 ggplot() +
   geom_point(aes(
     x = coords[, 1], y = coords[, 2],
     colour = Y
   ), size = 2, alpha = 1) +
-  scale_color_gradientn(colours = tim.colors(100)) +
+  scale_color_gradientn(colours = viridis(100)) +
   geom_path(aes(x = PRborder[, 1], y = PRborder[, 2])) +
   geom_path(aes(x = PRborder[1034:1078, 1], y = PRborder[
     1034:1078,
@@ -419,24 +420,18 @@ ggplot() +
   ]), colour = "red")
 ```
 
-```{r fit_parana}
+```{r fit-parana}
+library(ngme2)
 # leave 0.1 Y as prediction area
-n <- length(Y)
-ind_pred <- sample(1:n, size = 0.1 * n)
 
-Y_pred <- Y[ind_pred]
-Y[ind_pred] <- NA
-
-mesh.index <- inla.spde.make.index(
-  name = "field",
-  mesh = prmesh,
-  n.spde = prmesh$n
-)
+# n <- length(Y)
+# ind_pred <- sample(1:n, size = 0.1 * n)
+# Y_pred <- Y[ind_pred]
+# Y[ind_pred] <- NA
 
 matern_spde <- model_matern(
   loc = coords,
-  mesh = prmesh,
-  index_NA = is.na(Y)
+  mesh = prmesh
 )
 
 out <- ngme(
@@ -454,31 +449,110 @@ out <- ngme(
     n_slope_check = 4,
     stop_points = 10,
     std_lim = 0.1,
-    n_parallel_chain = 8,
+    n_parallel_chain = 4,
     print_check_info = TRUE
   ),
   seed = 416
 )
 
 out
-# Comparing our prediction
-lp <- attr(out, "prediction")$lp
-# Compute mean absolute error (MAE)
-mean(abs(lp - Y_mean))
+
+# traceplots
+## merr, beta
+traceplot(out, f_index = 0, param = "sigma")
+traceplot(out, f_index = 0, param = "beta")
+
+## rw
+traceplot(out, f_index = 1, param = "mu")
+traceplot(out, f_index = 1, param = "sigma")
+traceplot(out, f_index = 1, param = "nu")
+
+## spde
+traceplot(out, f_index = 2, param = "kappa")
+traceplot(out, f_index = 2, param = "mu")
+traceplot(out, f_index = 2, param = "sigma")
+traceplot(out, f_index = 2, param = "nu")
+
+devtools::load_all()
+## spde
+traceplot(out, f_index = 3, param = "kappa")
+traceplot(out, f_index = 3, param = "sigma")
 ```
 
-```{r plot-prediction}
+### Prediction
+
+```{r}
+nxy <- c(150, 100)
+projgrid <- rSPDE::rspde.mesh.projector(prmesh,
+  xlim = range(PRborder[, 1]),
+  ylim = range(PRborder[, 2]), dims = nxy
+)
+
+xy.in <- inout(projgrid$lattice$loc, cbind(PRborder[, 1], PRborder[, 2]))
+
+coord.prd <- projgrid$lattice$loc[xy.in, ]
+plot(coord.prd, type = "p", cex = 0.1)
+lines(PRborder)
+points(coords[, 1], coords[, 2], pch = 19, cex = 0.5, col = "red")
+
+seaDist.prd <- apply(spDists(coord.prd,
+  PRborder[1034:1078, ],
+  longlat = TRUE
+), 1, min)
+
+# construct data
+n_prd <- nrow(coord.prd)
+Y2 <- c(Y, rep(NA, n_prd))
+seaDist2 <- c(seaDist, seaDist.prd)
+
+matern_spde <- model_matern(
+  loc = rbind(coords, coord.prd),
+  mesh = prmesh,
+  index_NA = is.na(Y2)
+)
+
+load_all()
+out2 <- ngme(
+  formula = Y ~ 1 +
+    f(inla.group(seaDist), model = "rw1", noise = noise_normal()) +
+    f(model = matern_spde, noise = noise_nig()) +
+    f(model = matern_spde, noise = noise_normal()),
+  data = list(
+    Y = Y2,
+    seaDist = seaDist2
+  ),
+  family = noise_nig(),
+  control = ngme_control(
+    estimation = F,
+    iterations = 1000,
+    n_slope_check = 4,
+    stop_points = 10,
+    std_lim = 0.1,
+    n_parallel_chain = 8,
+    print_check_info = TRUE
+  ),
+  seed = 416,
+  start = out
+)
+out2
+
+# Plot prediction
+lp <- attr(out2, "prediction")$lp
 ggplot() +
-geom_point(aes(
-  x = coords[, 1], y = coords[, 2],
-  colour =  Y_mean - lp
-), size = 2, alpha = 1) +
-scale_color_gradientn(colours = tim.colors(100)) +
-geom_path(aes(x = PRborder[, 1], y = PRborder[, 2])) +
-geom_path(aes(x = PRborder[1034:1078, 1], y = PRborder[
-  1034:1078,
-  2
-]), colour = "red")
+  geom_point(aes(
+    x = coord.prd[, 1], y = coord.prd[, 2],
+    colour = lp[is.na(Y2)]
+  ), size = 2, alpha = 1) +
+  geom_point(aes(
+    x = coords[, 1], y = coords[, 2],
+    colour = Y_mean
+  ), size = 2, alpha = 1) +
+  scale_color_gradientn(colours = tim.colors(100)) +
+  geom_path(aes(x = PRborder[, 1], y = PRborder[, 2])) +
+  geom_path(aes(x = PRborder[1034:1078, 1], y = PRborder[
+    1034:1078,
+    2
+  ]), colour = "red")
 ```
 
 Model estimation:

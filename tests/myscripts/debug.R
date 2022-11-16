@@ -36,3 +36,22 @@ library(devtools)
 use_import_from("rlang", ".data")
 
 use_vignette("Argo_flat_data")
+
+library(grid)
+grid.arrange(rectGrob(), rectGrob())
+## Not run:
+library(ggplot2)
+pl <- lapply(1:3, function(.x) qplot(1:10, rnorm(10), main=paste("plot", .x)))
+ml <- marrangeGrob(pl, nrow=2, ncol=2)
+length(pl)
+## non-interactive use, multipage pdf
+ggsave("multipage.pdf", ml)
+## interactive use; open new devices
+ml
+
+str(out$noise)
+?switch
+pl
+c(list(a=1, b=2), list(a=2))
+
+str(out$latents[[1]][["theta_mu"]])

@@ -14,7 +14,7 @@
 #' Trace plot of ngme fitting
 #'
 #' @param ngme ngme object
-#' @param parameter parameter name
+#' @param param parameter name
 #' @param f_index index of the process, 0 stands for fixed effects or measurement noise
 #' @param param_index paramter index if non-stationary
 #' @param transform any transformation
@@ -24,59 +24,81 @@
 #'
 traceplot <- function(
   ngme,
-  parameter,
+  param,
   f_index = 0,
   param_index = 1,
   transform = identity
 ) {
+  parameter <- param
   stopifnot("parameter is a string" = is.character(parameter))
 
-  # change alias
-  if (parameter %in% c("kappa", "alpha", "theta_kappa"))
-    parameter <- "theta_K"
-  else if (parameter %in% c("mu"))
-    parameter <- "theta_mu"
-  else if (parameter %in% c("sigma"))
-    parameter <- "theta_sigma"
-  else if (parameter %in% c("nu"))
-    parameter <- "theta_V"
-
-  stopifnot("Not a ngme object with trajectoroy." = !is.null(attr(ngme, "trajectory")))
-  traj <- attr(ngme, "trajectory")
-  iters <- length(traj[[1]]$block_traj[["theta_sigma"]][[1]])
-
-  data <- matrix(nrow = iters, ncol = length(traj))
-
-  for (i in seq_along(traj)) {
-    if (f_index == 0) # block model
-      data[, i] <- switch(parameter,
-        theta_V = traj[[i]]$block_traj[[parameter]],
-        traj[[i]]$block_traj[[parameter]][[param_index]]
+  if (parameter == "all") {
+    if (!requireNamespace("gridExtra", quietly = TRUE))
+      stop(
+        "Package \"gridExtra\" must be installed to use parameter = all.",
+        call. = FALSE
       )
-    else
-      # latent model
-      data[, i] <- switch(parameter,
-        theta_V = traj[[i]]$latents[[f_index]][[parameter]],
-        traj[[i]]$latents[[f_index]][[parameter]][[param_index]]
-      )
-  }
+    # if (f_index == 0) {
+    #   switch(ngme$noise$noise_type,
+    #     "normal" = traceplot(ngme, parameter = "sigma", f_index = 0),
+    #     "nig" = gridExtra::marrangeGrob(
+    #       lapply(c("mu", "sigma", "nu"))
+    #     )
+    #   )
+    # }
+  } else {
+    # change alias
+    if (parameter %in% c("kappa", "alpha", "theta_kappa"))
+      parameter <- "theta_K"
+    else if (parameter %in% c("mu"))
+      parameter <- "theta_mu"
+    else if (parameter %in% c("sigma"))
+      parameter <- "theta_sigma"
+    else if (parameter %in% c("nu"))
+      parameter <- "theta_V"
 
-  model_type <- if (f_index > 0) ngme$latents[[f_index]]$model else "unknown"
-  # handle transformation of data.
-  if ((model_type == "matern" && parameter == "theta_K") ||
-      (parameter == "theta_sigma"))
-    transform <- exp
-  if (model_type == "ar1" && parameter == "theta_K")
-    transform <- ar1_th2a
+    stopifnot("Not a ngme object with trajectoroy." = !is.null(attr(ngme, "trajectory")))
+    traj <- attr(ngme, "trajectory")
+    iters <- length(traj[[1]]$block_traj[["theta_sigma"]][[1]])
 
-  # Plot function
-  # Var1 and Var2 comes from melt
-  df <- reshape2::melt(data)
-  ggplot() +
-    geom_line(data = df, aes(x = .data$Var1, y = transform(.data$value), group = .data$Var2)) +
-    geom_line(aes(x = 1:iters, y = transform(apply(data, MARGIN=1, mean))), col="red") +
-    xlab("iterations") +
-    ylab("value") + guides() + labs(title = paste("Traceplot of", parameter))
+    data <- matrix(nrow = iters, ncol = length(traj))
+
+    for (i in seq_along(traj)) {
+      if (f_index == 0) # block model
+        data[, i] <- switch(parameter,
+          theta_V = traj[[i]]$block_traj[[parameter]],
+          traj[[i]]$block_traj[[parameter]][[param_index]]
+        )
+      else
+        # latent model
+        data[, i] <- switch(parameter,
+          theta_V = traj[[i]]$latents[[f_index]][[parameter]],
+          traj[[i]]$latents[[f_index]][[parameter]][[param_index]]
+        )
+    }
+
+    model_type <- if (f_index > 0) ngme$latents[[f_index]]$model else "unknown"
+    # handle transformation of data.
+    if ((model_type == "matern" && parameter == "theta_K") ||
+        (parameter == "theta_sigma"))
+      transform <- exp
+    if (model_type == "ar1" && parameter == "theta_K")
+      transform <- ar1_th2a
+
+    # Plot function
+    # Var1 and Var2 comes from melt
+    df <- reshape2::melt(data)
+    ggplot() +
+      geom_line(data = df, aes(x = .data$Var1, y = transform(.data$value), group = .data$Var2)) +
+      geom_line(aes(x = 1:iters, y = transform(apply(data, MARGIN=1, mean))), col="red") +
+      xlab("iterations") +
+      ylab("value") + guides() +
+      labs(title = paste("Traceplot of", switch(parameter,
+        theta_mu = "mu",
+        theta_sigma = "sigma",
+        theta_V = "nu"
+      )))
+    }
 }
 
 #' plot the density of noise (for stationary)

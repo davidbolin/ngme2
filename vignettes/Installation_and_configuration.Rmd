@@ -7,6 +7,14 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
+Currently, the develop version can be installed using the command.
+
+```
+remotes::install_github("davidbolin/ngme2", ref = "devel")
+```
+
+## Mac OS X
+
 The default C++ compiler in OS X has does not support OpenMP.
 
 ```
@@ -141,3 +149,8 @@ devtools::document()
 Then you should be able to see the update in your NAMESPACE file.
 
 Now you can have the OpenMP facility in your C++ code!
+
+
+## Windows and Linux
+
+...

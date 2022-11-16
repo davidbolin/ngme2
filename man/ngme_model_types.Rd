@@ -2,7 +2,7 @@
 % Please edit documentation in R/ngme.constant.R
 \name{ngme_model_types}
 \alias{ngme_model_types}
-\title{Show ngme model types}
+\title{Show ngme mdoel types}
 \usage{
 ngme_model_types()
 }

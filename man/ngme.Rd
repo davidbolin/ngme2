@@ -9,7 +9,6 @@ ngme(
   data,
   control = ngme_control(),
   family = "normal",
-  last_fit = NULL,
   beta = NULL,
   seed = NULL,
   start = NULL,
@@ -26,8 +25,6 @@ ngme(
 \item{control}{control variables, see ?ngme.control}
 
 \item{family}{likelihood type, same as measurement noise specification, 1. string 2. ngme noise obejct}
-
-\item{last_fit}{can be ngme object from last fitting}
 
 \item{beta}{starting value for fixed effects}
 

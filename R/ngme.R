@@ -7,7 +7,6 @@
 #'   (Only response variable can contain NA value,
 #'    NA value in other columns will cause problem)
 #' @param control control variables, see ?ngme.control
-#' @param last_fit  can be ngme object from last fitting
 #' @param family likelihood type, same as measurement noise specification, 1. string 2. ngme noise obejct
 #' @param beta starting value for fixed effects
 #' @param start  starting ngme object (usually object from last fitting)
@@ -39,7 +38,6 @@ ngme <- function(
   data,
   control       = ngme_control(),
   family        = "normal",
-  last_fit      = NULL,
   beta          = NULL,
   seed          = NULL,
   start         = NULL,
@@ -183,31 +181,31 @@ if (debug) print(str(ngme_block))
     }
     # 2. get trajs
     attr(ngme_block, "trajectory") <- get_trajs(outputs)
-
-  ################# Prediction ####################
-    if (any(data$index_NA)) {
-      # posterior sampling
-      # ngme_block <- sampling_cpp(ngme_block, 100, TRUE)
-
-      # form a linear predictor
-      lp <- double(length(ngme_response))
-
-      AW_pred <- 0; AW_data <- 0
-      for (i in seq_along(latents_in)) {
-        W <- ngme_block$latents[[i]]$W
-        lp[index_NA]  <- lp[index_NA] + drop(latents_in[[i]]$A_pred %*% W)
-        lp[!index_NA] <- lp[!index_NA] + drop(latents_in[[i]]$A %*% W)
-      }
-
-      # fixed effects. watch out! beta could be double(0)
-      if (length(ngme_block$beta) != 0) lp <- lp + drop(X_full %*% ngme_block$beta)
-
-      attr(ngme_block, "prediction") <- list(
-        lp        = lp,
-        index_NA  = index_NA
-      )
-    }
   }
+  ################# Prediction ####################
+  if (any(data$index_NA)) {
+    # posterior sampling
+    # ngme_block <- sampling_cpp(ngme_block, 100, TRUE)
+
+    # form a linear predictor
+    lp <- double(length(ngme_response))
+
+    AW_pred <- 0; AW_data <- 0
+    for (i in seq_along(latents_in)) {
+      W <- ngme_block$latents[[i]]$W
+      lp[index_NA]  <- lp[index_NA] + drop(latents_in[[i]]$A_pred %*% W)
+      lp[!index_NA] <- lp[!index_NA] + drop(latents_in[[i]]$A %*% W)
+    }
+
+    # fixed effects. watch out! beta could be double(0)
+    if (length(ngme_block$beta) != 0) lp <- lp + drop(X_full %*% ngme_block$beta)
+
+    attr(ngme_block, "prediction") <- list(
+      lp        = lp,
+      index_NA  = index_NA
+    )
+  }
+
   # cat(paste("total time is", Sys.time() - time.start, " \n"))
   ngme_block
 }

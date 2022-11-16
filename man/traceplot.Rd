@@ -4,12 +4,12 @@
 \alias{traceplot}
 \title{Trace plot of ngme fitting}
 \usage{
-traceplot(ngme, parameter, f_index = 0, param_index = 1, transform = identity)
+traceplot(ngme, param, f_index = 0, param_index = 1, transform = identity)
 }
 \arguments{
 \item{ngme}{ngme object}
 
-\item{parameter}{parameter name}
+\item{param}{parameter name}
 
 \item{f_index}{index of the process, 0 stands for fixed effects or measurement noise}
 

@@ -118,7 +118,7 @@ Below, we see the plot of the densities of a NIG distribution for several choice
 1. Ngme2 does maximum likelihood estimation through preconditioned stochastic gradient descent.
 2. Multiple chains are run in parallel for better convergence checks.
 
-## Ngme Model Structure - 3-Layer structure
+## Ngme Model Structure
 
 ### Specify noise with `ngme_noise` object
 
@@ -178,24 +178,43 @@ f(index = 1:10, model = "ar1",
   noise = noise_nig(), theta_K = 0.5)
 ```
 
-### Specify latent  model with formula in `ngme`
+### Specifying latent models with formula in `ngme`
 
 The latent model can be specified additively as a **formula** argument in `ngme` function
 together with **fixed effects**.
 
-It can be specified as following:
+We use R formula to specify the latent model.
+We can specify the model using `f` within the formula.
 
-```{r ngme_block}
-ngme(
-  formula = Y ~ x1 + f(
+For example, the following formula
+
+```{r}
+formula <- Y ~ x1 + f(
     index = x2,
     model = "ar1",
     noise = noise_nig(),
     theta_K = 0.5
   ) + f(
     model = model_rw(1:5, order=1, circular = TRUE),
-    noise = noise_normal(),
-  ),
+    noise = noise_normal()
+  )
+```
+
+corresponds to the model
+
+$$
+Y = \beta_0 + \beta_1 x_1 + W_1(x_2) + W_2(x_3) + \epsilon,
+$$
+where $W_1$ is an AR(1) process, $W_2$ is a random walk 1 process.
+$x_2$ is random effects.. .
+By default, we have intercept.
+The distribution of the measurement error $\epsilon$ is given in the `ngme` function.
+
+The entire model can be fitted, along with the specification of the distribution of the measurement error through the `ngme` function:
+
+```{r ngme_block}
+ngme(
+  formula = formula,
   family = noise_normal(sd = 0.5),
   data = data.frame(Y = 1:5, x1 = 2:6, x2 = 3:7),
   control = ngme_control(
@@ -215,7 +234,7 @@ We can turn the `estimation = TRUE` to start estimating the model.
 ## The SPDE approach with Gaussian noise
 
 It is well-known (Whittle, 1963) that a Gaussian process $u(\mathbf{s})$ with Matérn covariance function solves the stochastic partial differential equation (SPDE)
-\begin{equation}\label{spde}
+\begin{equation}\lael{spde}
 (\kappa^2 -\Delta)^\beta u = \mathcal{W}\quad \hbox{in } \mathcal{D},
 \end{equation}
 where $\Delta = \sum_{i=1}^d \frac{\partial^2}{\partial_{x_i^2}}$ is the Laplacian operator, $\mathcal{W}$ is the Gaussian spatial white noise on $\mathcal{D}=\mathbb{R}^d$, and $4\beta = 2\nu + d$.

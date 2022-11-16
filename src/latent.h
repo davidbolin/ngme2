@@ -79,7 +79,7 @@ protected:
     cholesky_solver chol_solver_K;
     lu_sparse_solver lu_solver_K;
     bool use_iter_solver {false};
-    iterative_solver CG_solver_K;
+    // iterative_solver CG_solver_K;
 
     cholesky_solver solver_Q; // Q = KT diag(1/SV) K
 

@@ -213,7 +213,7 @@ MatrixXd veci(VectorXd &v, int n, int m)
 {
 	if (v.size() != n * m)
 	{
-		cout << "Wrong dimensions in reshape: " << v.size() << " (" << n << "," << m << ")" << endl;
+		Rcpp::Rcout << "Wrong dimensions in reshape: " << v.size() << " (" << n << "," << m << ")" << endl;
 	}
 	MatrixXd M;
 	M.setZero(n, m);

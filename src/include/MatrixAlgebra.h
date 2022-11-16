@@ -48,14 +48,14 @@ void add_submatrix(MatrixXd& M, const MatrixXd& Msub, const VectorXi& ind);
 
 //set Ysub = Y(ind)
 void get_subvector(const VectorXd&, const VectorXi&, VectorXd&);
-  
+
 // Set M(ind,r) = v
 void set_subcol(MatrixXd&, const int, const VectorXi&, const VectorXd&);
-  
-  
+
+
 MatrixXi duplicatematrix(int);
 
-// 
+//
 VectorXd vec(const MatrixXd&);
 VectorXd vech(MatrixXd&);
 MatrixXd veci(VectorXd&,int,int);
@@ -94,8 +94,8 @@ Eigen::MatrixXd NormalouterKron(const Eigen::MatrixXd & ,
 // Computing the expectation of
 // xx' \otimes xx' when [x,y] ~  N([mu_1, \mu_2], [Sigma_1, \Sigma_{12}, \Sigma_{21}, \Sigma_2])
 Eigen::MatrixXd Normalxxty(const Eigen::MatrixXd & ,
-						   const Eigen::MatrixXd & ,	
-						   const Eigen::VectorXd & ,	
+						   const Eigen::MatrixXd & ,
+						   const Eigen::VectorXd & ,
 						   const Eigen::VectorXd & );
 //
 // computing the hessian of multivariate normal (not elementwise)

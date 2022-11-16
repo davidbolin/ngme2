@@ -42,31 +42,31 @@ public:
   }
 };
 
-class iterative_solver : public virtual solver
-{
-private:
-  int N;
-  Eigen::MatrixXd U, QU, MQU, MU;
-  bool QU_computed;
-  Eigen::ConjugateGradient<Eigen::SparseMatrix<double, 0, int>, Lower|Upper > R;
+// class iterative_solver : public virtual solver
+// {
+// private:
+//   int N;
+//   Eigen::MatrixXd U, QU, MQU, MU;
+//   bool QU_computed;
+//   Eigen::ConjugateGradient<Eigen::SparseMatrix<double, 0, int>, Lower|Upper > R;
 
-public:
-  ~iterative_solver(){};
-  void init(int, int, int, double);
-  void initFromList(int, Rcpp::List const &);
-  inline void analyze(Eigen::SparseMatrix<double, 0, int> &M) { R.analyzePattern(M); }
-  void compute(Eigen::SparseMatrix<double, 0, int> &);
-  inline Eigen::VectorXd solve(Eigen::VectorXd &v, Eigen::VectorXd &x) { return R.solveWithGuess(v, x); }
-  double trace(Eigen::MatrixXd &);
-  double trace(Eigen::SparseMatrix<double, 0, int> &);
-  double trace2(SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &);
-  Eigen::VectorXd rMVN(Eigen::VectorXd &mu, Eigen::VectorXd &z)
-  {
-    Rcpp::Rcout << "rMVN not implimented\n";
-    Eigen::VectorXd X;
-    return X;
-  }
-};
+// public:
+//   ~iterative_solver(){};
+//   void init(int, int, int, double);
+//   void initFromList(int, Rcpp::List const &);
+//   inline void analyze(Eigen::SparseMatrix<double, 0, int> &M) { R.analyzePattern(M); }
+//   void compute(Eigen::SparseMatrix<double, 0, int> &);
+//   inline Eigen::VectorXd solve(Eigen::VectorXd &v, Eigen::VectorXd &x) { return R.solveWithGuess(v, x); }
+//   double trace(Eigen::MatrixXd &);
+//   double trace(Eigen::SparseMatrix<double, 0, int> &);
+//   double trace2(SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &);
+//   Eigen::VectorXd rMVN(Eigen::VectorXd &mu, Eigen::VectorXd &z)
+//   {
+//     Rcpp::Rcout << "rMVN not implimented\n";
+//     Eigen::VectorXd X;
+//     return X;
+//   }
+// };
 
 
 class cholesky_solver : public virtual solver

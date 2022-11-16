@@ -21,13 +21,13 @@ Rcpp::Rcout << "begin Constructor of Matern " << std::endl;
     K = getK(theta_K);
     SparseMatrix<double> Q = K.transpose() * K;
 
-    if (!use_iter_solver) {
+    // if (!use_iter_solver) {
         chol_solver_K.init(W_size, 0,0,0);
         chol_solver_K.analyze(K);
-    } else {
-        CG_solver_K.init(W_size, W_size, W_size, 0.5);
-        CG_solver_K.analyze(K);
-    }
+    // } else {
+    //     CG_solver_K.init(W_size, W_size, W_size, 0.5);
+    //     CG_solver_K.analyze(K);
+    // }
 
     compute_trace();
     solver_Q.init(W_size, 0,0,0);

@@ -63,6 +63,7 @@ ggplot(data=argo_float) +
   ), size = 2, alpha = 1) +
   scale_color_gradientn(colours = viridis(100))
 
+plot(out$noise)
 ```
 
 ```{r}

@@ -9,7 +9,7 @@
 <title>Installation and configuration • ngme2</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.1.3/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.1.3/bootstrap.bundle.min.js"></script><link href="../deps/Roboto_Slab-0.4.2/font.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.1.3/bootstrap.bundle.min.js"></script><link href="../deps/Roboto_Slab-0.4.3/font.css" rel="stylesheet">
 <!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
 <!-- bootstrap-toc --><script src="https://cdn.rawgit.com/afeld/bootstrap-toc/v1.0.1/dist/bootstrap-toc.min.js"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- search --><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Installation and configuration">
@@ -91,7 +91,14 @@
 
     
     
-<p>The default C++ compiler in OS X has does not support OpenMP.</p>
+<p>Currently, the develop version can be installed using the
+command.</p>
+<pre><code><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"davidbolin/ngme2"</span>, ref <span class="op">=</span> <span class="st">"devel"</span><span class="op">)</span></span></code></pre>
+<div class="section level2">
+<h2 id="mac-os-x">Mac OS X<a class="anchor" aria-label="anchor" href="#mac-os-x"></a>
+</h2>
+<p>For Mac OS X system, the default C++ compiler in OS X has does not
+support OpenMP.</p>
 <pre><code>➜ clang -fopenmp hello.cpp
 clang: error: unsupported option '-fopenmp'</code></pre>
 <p>In order to make use of OpenMP to enable multi-threading in OS X, we
@@ -145,7 +152,7 @@ compiler, not the original one. To do this, we can mannually set the
 $R_HOME/etc/Makeconf.</p>
 <p>Here you can check the R_HOME address using <code><a href="https://rdrr.io/r/base/Rhome.html" class="external-link">R.home()</a></code> in
 R termnial.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Rhome.html" class="external-link">R.home</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## [1] "/Library/Frameworks/R.framework/Resources"</span></span></code></pre>
 <p>In my case, the R called compiler is still the default clang, so I
@@ -156,45 +163,12 @@ CXX = /usr/local/opt/llvm/bin/clang++
 CXX11 = $(CXX)
 CXX14 = $(CXX)
 CXX17 = $(CXX)
-CXX20 = $(CXX)</code></pre>
-<p>Now we should be able to export an OpenMP function in R using
-Rcpp.</p>
+CXX20 = $(CXX)
+SHLIB_OPENMP_CFLAGS = -fopenmp
+SHLIB_OPENMP_CXXFLAGS = -fopenmp</code></pre>
+<p>Now you should be able to use OpenMP facility (multiple chain
+estimation) in <code>ngme2</code>.</p>
 </div>
-<div class="section level3">
-<h3 id="configure-the-r-package-environment-">3. Configure the R package environment.<a class="anchor" aria-label="anchor" href="#configure-the-r-package-environment-"></a>
-</h3>
-<p>If you are developing a R package using Rcpp, then you still need to
-make more efforts in the R package environment.</p>
-<ol style="list-style-type: decimal">
-<li>Set OpenMP flags in R Makeconf</li>
-</ol>
-<p>Do not directly setting <code>-fopenmp</code> flag in Makevar file,
-it would be not portable to the system with no OpenMP support. It’s
-better to include it in the R Makeconf file. You can find the following
-two flags in Makeconf file.</p>
-<pre><code><span><span class="va">SHLIB_OPENMP_CFLAGS</span> <span class="op">=</span> <span class="op">-</span><span class="va">fopenmp</span></span>
-<span><span class="va">SHLIB_OPENMP_CXXFLAGS</span> <span class="op">=</span> <span class="op">-</span><span class="va">fopenmp</span></span></code></pre>
-<ol start="2" style="list-style-type: decimal">
-<li>Set package flags in package Makevar</li>
-</ol>
-<p>Next we can include this flag in the Makevar as following:</p>
-<pre><code>PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS)
-PKG_LIBS = $(SHLIB_OPENMP_CXXFLAGS)</code></pre>
-<ol start="3" style="list-style-type: decimal">
-<li>Set symbols in package Namespace</li>
-</ol>
-<p>One important thing next is to indicate you
-<code>useDynLib(yourPackage)</code> in the Namespace. You can either do
-it by yourself, or do it using <code>devtools</code> package for
-you.</p>
-<p>Edit the NAMESPACE file to create R objects for the registered
-symbols:</p>
-<pre><code><span><span class="fu">useDynLib</span><span class="op">(</span><span class="va">yourPackage</span>, .registration <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre>
-<p>Or add <code>#' @useDynLib yourPackage, .registration = TRUE</code>
-it into <code>yourPackage.R</code> file, then run</p>
-<pre><code><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">document</span><span class="op">(</span><span class="op">)</span></span></code></pre>
-<p>Then you should be able to see the update in your NAMESPACE file.</p>
-<p>Now you can have the OpenMP facility in your C++ code!</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
     </nav></aside>

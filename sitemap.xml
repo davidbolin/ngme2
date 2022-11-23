@@ -4,7 +4,13 @@
     <loc>https://davidbolin.github.io/ngme2/404.html</loc>
   </url>
   <url>
+    <loc>https://davidbolin.github.io/ngme2/articles/Argo_float_data.html</loc>
+  </url>
+  <url>
     <loc>https://davidbolin.github.io/ngme2/articles/Installation_and_configuration.html</loc>
+  </url>
+  <url>
+    <loc>https://davidbolin.github.io/ngme2/articles/SPDE-approach.html</loc>
   </url>
   <url>
     <loc>https://davidbolin.github.io/ngme2/articles/index.html</loc>
@@ -89,12 +95,6 @@
   </url>
   <url>
     <loc>https://davidbolin.github.io/ngme2/reference/nig.html</loc>
-  </url>
-  <url>
-    <loc>https://davidbolin.github.io/ngme2/reference/noise_nig.html</loc>
-  </url>
-  <url>
-    <loc>https://davidbolin.github.io/ngme2/reference/noise_normal.html</loc>
   </url>
   <url>
     <loc>https://davidbolin.github.io/ngme2/reference/plot.ngme_noise.html</loc>

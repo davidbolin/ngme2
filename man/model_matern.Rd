@@ -22,7 +22,8 @@ model_matern(
 )
 }
 \arguments{
-\item{loc}{numeric vector or matrix of column 2,location to make index}
+\item{loc}{numeric vector (1d) or matrix of column 2 (2d),
+location to make index}
 
 \item{replicates}{replicates for the process}
 

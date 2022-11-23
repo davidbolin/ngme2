@@ -35,7 +35,6 @@ print.summary.lm
 library(devtools)
 use_import_from("rlang", ".data")
 
-use_vignette("Argo_flat_data")
 
 library(grid)
 grid.arrange(rectGrob(), rectGrob())
@@ -55,3 +54,14 @@ pl
 c(list(a=1, b=2), list(a=2))
 
 str(out$latents[[1]][["theta_mu"]])
+
+library(devtools)
+use_vignette("SPDE-approach")
+
+devtools::load_all()
+m = model_rw(c(1.1, 2.2, 3.5, 5.6), order=1); m$C + m$G
+
+m = model_ar1(c(1, 2, 3, 10), order=1, noise=noise_nig()); m$C + m$G
+
+str(m)
+check()

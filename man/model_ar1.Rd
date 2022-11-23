@@ -2,10 +2,10 @@
 % Please edit documentation in R/ar1.R
 \name{model_ar1}
 \alias{model_ar1}
-\title{ngme ar1 model specification}
+\title{ngme AR(1) model specification}
 \usage{
 model_ar1(
-  index,
+  x,
   replicates = NULL,
   index_NA = NULL,
   data = NULL,
@@ -16,7 +16,7 @@ model_ar1(
 )
 }
 \arguments{
-\item{index}{index for the process}
+\item{x}{integer vector, time index for the AR(1) process}
 
 \item{replicates}{replicates for the process}
 
@@ -39,6 +39,6 @@ a list of specification of model
 Generating C, G and A given index and replicates
 }
 \examples{
-model_ar1(index = c(1:3, 1:3), replicates = c(1,1,1,2,2,2))
-f(index = xx, model = "ar1", data=list(xx = c(2,4,5)), noise=noise_nig())
+model_ar1(c(1:3, 1:3), replicates = c(1,1,1,2,2,2))
+f(xx, model = "ar1", data=list(xx = c(2,4,5)), noise=noise_nig())
 }

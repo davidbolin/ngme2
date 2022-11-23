@@ -5,7 +5,7 @@
 \title{ngme model - random walk of order 1}
 \usage{
 model_rw(
-  index,
+  x,
   order = 1,
   replicates = NULL,
   data = NULL,
@@ -16,7 +16,7 @@ model_rw(
 )
 }
 \arguments{
-\item{index}{numerical vector, index for the process}
+\item{x}{numerical vector, covariates to build index for the process}
 
 \item{order}{1 or 2, order of random walk model}
 

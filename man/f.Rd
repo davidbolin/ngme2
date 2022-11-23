@@ -5,7 +5,7 @@
 \title{Specifying a latent process model (wrapper function for each model)}
 \usage{
 f(
-  index = NULL,
+  x = NULL,
   model = "ar1",
   replicates = NULL,
   noise = noise_normal(),
@@ -24,7 +24,7 @@ f(
 )
 }
 \arguments{
-\item{index}{symbol or numerical value: index or covariates to build index}
+\item{x}{symbol or numerical value: index or covariates to build index}
 
 \item{model}{1. string: type of model, 2. ngme.spde object}
 

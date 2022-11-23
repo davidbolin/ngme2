@@ -1,6 +1,16 @@
-#' Generate control specifications for ngme
+#' Generate control specifications for \code{ngme()} function.
 #'
-#' @param burnin          burn-in iterations
+#' These are configurations for \code{ngme} estimation and
+#' optimization process.
+#'
+#' @details
+#'  To enable convergence check, we need multiple chains running.
+#'  We compare the trend of the estimated parameter of length
+#'  \code{n_slope_check} (linear regression) with \code{trend_lim}.
+#'  We compare the standard devation of estimated parameters (in different chains)
+#'  with std_lim.
+#'
+#' @param burnin          burn-in periods
 #' @param iterations      optimizing terations
 #' @param gibbs_sample    number of gibbs sampels
 #' @param stepsize        stepsize
@@ -92,12 +102,12 @@ ngme_control <- function(
   control
 }
 
-#' Generate control specifications for f function
+#' Generate control specifications for \code{f} function
 #'
 #' @param numer_grad    whether to use numerical gradient
 #' @param use_precond   whether to use preconditioner
 #' @param use_num_hess  whether to use numerical hessian
-#' @param eps           eps for numerical gradient
+#' @param eps           eps for computing numerical gradient
 #'
 #' @return list of control variables
 #' @export

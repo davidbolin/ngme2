@@ -14,7 +14,6 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 set.seed(10)
-# library(ngme2)
 ```
 
 ## Introduction
@@ -94,24 +93,8 @@ KW|V \sim N(\gamma + \mu V, \sigma^2 \, diag(V)),
 $$
 also, $\mu$ and $\sigma$ can be non-stationary.
 
-In Ngme2, we focus mainly on the normal inverse Gaussian (NIG) model.
-
-#### The NIG model
-
-First, we say that a random variable $V$ follows an inverse Gaussian distribution with parameters
-$\eta_1$ and $\eta_2$, denoted by $V\sim IG(\eta_1,\eta_2)$ if it has pdf given by
-
-$$\pi(v) = \frac{\sqrt{\eta_2}}{\sqrt{2\pi v^3}} \exp\left\{-\frac{\eta_1}{2}v - \frac{\eta_2}{2v} + \sqrt{\eta_1\eta_2}\right\},\quad \eta_1,\eta_2>0.$$
-
-We can generate samples of inverse Gaussian distributions with parameters $\eta_1$ and $\eta_2$ by generating samples from the [generalized inverse Gaussian distribution](https://en.wikipedia.org/wiki/Generalized_inverse_Gaussian_distribution) with parameters $p=-1/2$, $a=\eta_1$ and $b=\eta_2$. We can use the *rGIG* function to generate samples from the generalized inverse Gaussian distribution.
-
-If $V\sim IG(\eta_1,\eta_2)$, then $X = \gamma +\mu V + \sigma \sqrt{V}Z$, with $Z\sim N(0,1)$, being independent of $V$, then $X$ follows a normal inverse Gaussian (NIG) distribution and has pdf
-$$\pi(x) = \frac{e^{\sqrt{\eta_1\eta_2}+\mu(x-\gamma)/\sigma^2}\sqrt{\eta_2\mu^2/\sigma^2+\eta_1\eta_2}}{\pi\sqrt{\eta_2\sigma^2+(x-\gamma)^2}} K_1\left(\sqrt{(\eta_2\sigma^2+(x-\gamma)^2)(\mu^2/\sigma^4+\eta_1/\sigma^2)}\right),$$
-where $K_1$ is a modified Bessel function of the third kind. In this form, the NIG density is overparameterized, and we therefore set $\eta_1=\eta_2=\eta$, which results in $E(V)=1$. Thus, one have the parameters, $\mu, \gamma$ and $\eta$.
-
-The NIG model thus assumes that the stochastic variance $V_i$ follows an inverse Gaussian with parameters $\eta$ and $\eta h_i^2$, where $h_i = \int_{\mathcal{D}} \varphi_i(\mathbf{s}) d\mathbf{s}.$
-
-Below, we see the plot of the densities of a NIG distribution for several choices of the parameters (we fix $\gamma=0$ and $\eta=1$):
+In `ngme2`, we focus mainly on the normal inverse Gaussian (NIG) model.
+See `?nig` for more details.
 
 ### 4 Parameter Estimation
 
@@ -129,11 +112,10 @@ For now we support two noises, one is **normal** noise, the other is the **NIG**
 
 The R class `ngme_noise` has the following interface:
 
-
 ```{r noise}
 library(ngme2)
 
-noise_normal(sd = 1)                 # normal noise
+noise_normal(sigma = 1)                 # normal noise
 noise_nig(mu = 1, sigma = 2, nu = 1) # nig noise
 noise_nig(            # non-stationary nig noise
   B_mu=matrix(c(1:10), ncol=2),
@@ -169,14 +151,18 @@ Or we can simply use helper function `noise_normal(sd=1)`
 ### Specify stochastic process with `f` function
 
 The middle layer is the stochastic process, in R interface, it is represented as a `f` function.
-The process can be specified by different noise structure.
+The process can be specified by different noise structure. See `?ngme_model_types()` for more
+details.
 
 Some examples of using `f` function to specify `ngme_model`:
 
 ```{r f_model}
-f(index = 1:10, model = "ar1",
+ngme2::f(1:10, model = "ar1",
   noise = noise_nig(), theta_K = 0.5)
 ```
+
+One useful model would be the SPDE model with Gaussian or non-Gaussian noise, see the vignette
+\code{vignette("SPDE-approach", package = "ngme2")} for details.
 
 ### Specifying latent models with formula in `ngme`
 
@@ -190,7 +176,7 @@ For example, the following formula
 
 ```{r}
 formula <- Y ~ x1 + f(
-    index = x2,
+    x2,
     model = "ar1",
     noise = noise_nig(),
     theta_K = 0.5
@@ -215,7 +201,7 @@ The entire model can be fitted, along with the specification of the distribution
 ```{r ngme_block}
 ngme(
   formula = formula,
-  family = noise_normal(sd = 0.5),
+  family = noise_normal(sigma = 0.5),
   data = data.frame(Y = 1:5, x1 = 2:6, x2 = 3:7),
   control = ngme_control(
     estimation = FALSE
@@ -230,62 +216,6 @@ It gives the `ngme` object, which has three parts:
 3. Latent models (contains 2 models, ar1 and rw1)
 
 We can turn the `estimation = TRUE` to start estimating the model.
-
-## The SPDE approach with Gaussian noise
-
-It is well-known (Whittle, 1963) that a Gaussian process $u(\mathbf{s})$ with Matérn covariance function solves the stochastic partial differential equation (SPDE)
-\begin{equation}\lael{spde}
-(\kappa^2 -\Delta)^\beta u = \mathcal{W}\quad \hbox{in } \mathcal{D},
-\end{equation}
-where $\Delta = \sum_{i=1}^d \frac{\partial^2}{\partial_{x_i^2}}$ is the Laplacian operator, $\mathcal{W}$ is the Gaussian spatial white noise on $\mathcal{D}=\mathbb{R}^d$, and $4\beta = 2\nu + d$.
-
-Inspired by this relation between Gaussian processes with Matérn covariance functions and solutions of the above SPDE,
-[Lindgren et al. (2011)](https://rss.onlinelibrary.wiley.com/doi/full/10.1111/j.1467-9868.2011.00777.x)
-constructed computationally efficient Gaussian Markov random field approximations of $u(\mathbf{s})$, where the domain $\mathcal{D}\subsetneq \mathbb{R}^d$ is bounded and $2\beta\in\mathbb{N}$.
-
-The motivation for handling non-Gaussian noise comes from the fact that many features cannot not be handled by Gaussian noise. Some of these reasons are:
-
-* Skewness;
-* Heavier tails;
-* Jumps in the sample paths;
-* Asymmetries in the sample paths.
-
-### Non-Gaussian Matérn fields
-
-The idea is to replace the Gaussian white noise $\mathcal{W}$ in the SPDE by a non-Gaussian white noise $\dot{\mathcal{M}}$:
-$$(\kappa^2 - \Delta)^\beta u = \dot{\mathcal{M}}.$$
-The solution $u$ will have Matérn covariance function, but their marginal distributions will be non-Gaussian.
-
-We want to apply the same idea to the non-Gaussian case, i.e., we want to consider the SPDE on a bounded domain $\mathcal{D}\subset\mathbb{R}^d$ and apply the finite element method.
-
-Notice that the left-hand side of the equation did not change. Therefore, we should only take care of the right-hand side.
-
-We will consider the same setup. More precisely, we consider $V_n = {\rm span}\{\varphi_1,\ldots,\varphi_n\}$, where $\varphi_i(\mathbf{s}), i=1,\ldots, n$ are piecewise linear basis functions obtained from a triangulation of $\mathcal{D}$ and we approximate the solution $u$ by $u_n$, where $u_n$ is written in terms of the basis functions as
-$$u_n(\mathbf{s}) = \sum_{i=1}^n w_i \varphi_i(\mathbf{s}).$$
-In the right-hand side we obtain a random vector
-$$\mathbf{f} = (\dot{\mathcal{M}}(\varphi_1),\ldots, \dot{\mathcal{M}}(\varphi_n)),$$
-where the functional $\dot{\mathcal{M}}$ is given by
-$$\dot{\mathcal{M}}(\varphi_j) = \int_{\mathcal{D}} \varphi_j(\mathbf{s}) d\mathcal{M}(\mathbf{s}).$$
-By considering $\mathcal{M}$ to be a type-G Lévy process, we obtain that $\mathbf{f}$ has a joint distribution that is easy to handle.
-
-We say that a Lévy process is of type G if its increments can be represented as location-scale mixtures:
-$$\gamma + \mu V + \sigma \sqrt{V}Z,$$
-where $\gamma, \mu$ are parameters, $Z\sim N(0,1)$ and is independent of $V$, and $V$ is a positive infinitely divisible random variable.
-
-Therefore, given a vector $\mathbf{V} = (V_1,\ldots,V_n)$ of independent stochastic variances (in our case, positive infinitely divisible random variables), we obtain that
-$$\mathbf{f}|\mathbf{V} \sim N(\gamma + \mu\mathbf{V}, \sigma^2{\rm diag}(\mathbf{V})).$$
-So, if we consider, for instance, the non-fractional and non-Gaussian SPDE
-$$(\kappa^2 - \Delta) u = \dot{\mathcal{M}},$$
-we obtain that the FEM weights $\mathbf{w} = (w_1,\ldots,w_n)$ satisfy
-$$\mathbf{w}|\mathbf{V} \sim N(\mathbf{K}^{-1}(\gamma+\mu\mathbf{V}), \sigma^2\mathbf{K}^{-1}{\rm diag}(\mathbf{V})\mathbf{K}^{-1}),$$
-where $\mathbf{K} = \kappa^2\mathbf{C}+\mathbf{G}$ is the discretization of the differential operator.
-
-### Computational advantages of the SPDE approach
-
-For spatial problems, the computational cost usually scales as $\mathcal{O}(n^{3/2})$, where $n$ is the number of basis functions. This should be compared to the $\mathcal{O}(N^3)$ of the Gaussian random field approach.
-
-This implies in accurate approximations which drastically reduces the computational cost for sampling and inference.
-
 
 ## A simple example - AR1 process with nig noise
 
@@ -374,7 +304,7 @@ library(ggplot2)
 library(grid)
 library(gridExtra)
 pl <- lapply(c("alpha", "mu", "sigma", "nu"), function(.x)
-  traceplot(ngme_out, parameter = .x, f_index = 1));
+  traceplot(ngme_out, param = .x, f_index = 1));
 marrangeGrob(pl, nrow=2, ncol=2)
 ```
 
@@ -387,8 +317,17 @@ plot(
 )
 ```
 
-
 ## Paraná dataset
+
+```{r load-packages}
+library(INLA)
+library(splancs)
+library(lattice)
+library(ggplot2)
+library(grid)
+library(gridExtra)
+library(viridis)
+```
 
 The rainfall data from Paraná (Brazil) is collected by the National Water Agency in Brazil (Agencia Nacional de Águas, ANA, in Portuguese).
 ANA collects data from many locations over Brazil, and all these data are freely available from the ANA website (http://www3.ana.gov.br/portal/ANA).
@@ -396,9 +335,7 @@ ANA collects data from many locations over Brazil, and all these data are freely
 We will briefly illustrate the command we use, and the result of the estimation.
 
 ```{r read-parana}
-library(INLA)
-library(splancs)
-library(lattice)
+
 data(PRprec)
 data(PRborder)
 
@@ -421,11 +358,7 @@ seaDist <- apply(spDists(coords, PRborder[1034:1078, ],
 Plot the data:
 
 ```{r plot-data, message=FALSE,fig.width=6,fig.height=6,fig.align='center', echo=FALSE, fig.cap="Mean of the rainfall in Octobor 2012 in Paraná"}
-library(fields)
-library(ggplot2)
-library(grid)
-library(gridExtra)
-library(viridis)
+
 ggplot() +
   geom_point(aes(
     x = coords[, 1], y = coords[, 2],
@@ -442,7 +375,6 @@ ggplot() +
 ```{r fit-parana}
 library(ngme2)
 # leave 0.1 Y as prediction area
-
 # n <- length(Y)
 # ind_pred <- sample(1:n, size = 0.1 * n)
 # Y_pred <- Y[ind_pred]
@@ -455,7 +387,7 @@ matern_spde <- model_matern(
 
 out <- ngme(
   formula = Y ~ 1 +
-    f(inla.group(seaDist), model = "rw1", noise = noise_normal()) +
+    f(x = inla.group(seaDist), model = "rw1", noise = noise_normal()) +
     f(model = matern_spde, noise = noise_nig()) +
     f(model = matern_spde, noise = noise_normal()),
   data = list(
@@ -471,7 +403,7 @@ out <- ngme(
     n_parallel_chain = 4,
     print_check_info = TRUE
   ),
-  seed = 416
+  seed = 16
 )
 
 out
@@ -492,7 +424,6 @@ traceplot(out, f_index = 2, param = "mu")
 traceplot(out, f_index = 2, param = "sigma")
 traceplot(out, f_index = 2, param = "nu")
 
-devtools::load_all()
 ## spde
 traceplot(out, f_index = 3, param = "kappa")
 traceplot(out, f_index = 3, param = "sigma")
@@ -530,7 +461,6 @@ matern_spde <- model_matern(
   index_NA = is.na(Y2)
 )
 
-load_all()
 out2 <- ngme(
   formula = Y ~ 1 +
     f(inla.group(seaDist), model = "rw1", noise = noise_normal()) +
@@ -566,7 +496,7 @@ ggplot() +
     x = coords[, 1], y = coords[, 2],
     colour = Y_mean
   ), size = 2, alpha = 1) +
-  scale_color_gradientn(colours = tim.colors(100)) +
+  scale_color_gradientn(colours = viridis(100)) +
   geom_path(aes(x = PRborder[, 1], y = PRborder[, 2])) +
   geom_path(aes(x = PRborder[1034:1078, 1], y = PRborder[
     1034:1078,
@@ -583,10 +513,10 @@ res1 <- data.frame(
   noise_sigma  = format(exp(out$noise$theta_sigma), digits=3),
   noise_nu     = format(out$noise$theta_V, digits=3),
   rw_sigma     = format(out$latents[[1]]$noise$theta_sigma, digits=3),
-  ma_kappa  = format(exp(out$latents[[2]]$theta_K), digits=3),
-  ma_mu     = format(out$latents[[2]]$noise$theta_mu, digits=3),
-  ma_sigma  = format(exp(out$latents[[2]]$noise$theta_sigma), digits=3),
-  ma_nu     = format(out$latents[[2]]$noise$theta_V, digits=3)
+  ma_kappa     = format(exp(out$latents[[2]]$theta_K), digits=3),
+  ma_mu        = format(out$latents[[2]]$noise$theta_mu, digits=3),
+  ma_sigma     = format(exp(out$latents[[2]]$noise$theta_sigma), digits=3),
+  ma_nu        = format(out$latents[[2]]$noise$theta_V, digits=3)
 )
 knitr::kable(res1, caption = "Estimations for the model")
 ```
@@ -595,6 +525,6 @@ Result of the optimization trajectory of parameters for the Matern model:
 
 ```{r fig.width=8,fig.height=8,fig.align='center', echo=FALSE, fig.cap="Traceplot of Matern parameters"}
 pl <- lapply(c("kappa", "mu", "sigma", "nu"), function(.x)
-  traceplot(out, parameter = .x, f_index = 2));
+  traceplot(out, param = .x, f_index = 2));
 marrangeGrob(pl, nrow=2, ncol=2)
 ```

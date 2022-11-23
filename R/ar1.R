@@ -5,11 +5,11 @@
 
 # ar1 and rw
 
-#' ngme ar1 model specification
+#' ngme AR(1) model specification
 #'
 #' Generating C, G and A given index and replicates
 #'
-#' @param index index for the process
+#' @param x integer vector, time index for the AR(1) process
 #' @param replicates replicates for the process
 #' @param index_NA Logical vector, same as is.na(response var.)
 #' @param alpha initial value for alpha
@@ -23,10 +23,10 @@
 #' @export
 #'
 #' @examples
-#' model_ar1(index = c(1:3, 1:3), replicates = c(1,1,1,2,2,2))
-#' f(index = xx, model = "ar1", data=list(xx = c(2,4,5)), noise=noise_nig())
+#' model_ar1(c(1:3, 1:3), replicates = c(1,1,1,2,2,2))
+#' f(xx, model = "ar1", data=list(xx = c(2,4,5)), noise=noise_nig())
 model_ar1 <- function(
-  index,   # time index
+  x,   # time index
   replicates  = NULL,
   index_NA    = NULL,
   data        = NULL,
@@ -37,7 +37,7 @@ model_ar1 <- function(
   ...
 ) {
   # capture symbol in index
-  index <- eval(substitute(index), envir = data, enclos = parent.frame())
+  index <- eval(substitute(x), envir = data, enclos = parent.frame())
   if (is.null(index_NA)) index_NA <- rep(FALSE, length(index))
 
   if (is.null(replicates)) replicates <- rep(1, length(index))
@@ -87,8 +87,8 @@ model_ar1 <- function(
 #' Generating C, G and A given index and replicates
 #' size of C and G is (n-1) * n, size of V is n-1
 #'
-#' @param index numerical vector, index for the process
-#' @param order 1 or 2, order of random walk model
+#' @param x         numerical vector, covariates to build index for the process
+#' @param order     1 or 2, order of random walk model
 #' @param replicates replicates for the process
 #' @param data      specifed or inherit from ngme formula
 #' @param circular  whether the mesh is circular, i.e. the first one is connected to the last
@@ -103,8 +103,8 @@ model_ar1 <- function(
 #' @examples
 #' r1 <- model_rw(1:7, order = 1, circular = TRUE); r1$C + r1$G
 #' r2 <- model_rw(1:7, order = 1); r2$C + r2$G
-model_rw<- function(
-  index,
+model_rw <- function(
+  x,
   order       = 1,
   replicates  = NULL,
   data        = NULL,
@@ -116,10 +116,10 @@ model_rw<- function(
 ) {
   stopifnot(order == 1 || order == 2)
 # capture symbol in index
-  index <- eval(substitute(index), envir = data, enclos = parent.frame())
-  if (is.null(index_NA)) index_NA <- rep(FALSE, length(index))
+  x <- eval(substitute(x), envir = data, enclos = parent.frame())
+  if (is.null(index_NA)) index_NA <- rep(FALSE, length(x))
 
-  stopifnot("length of index at least > 3" = length(index) > 3)
+  stopifnot("length of index at least > 3" = length(x) > 3)
   # create mesh using index
   # sorted_index <- sort(index, index.return = TRUE)
   # h <- diff(sorted_index$x)
@@ -133,12 +133,12 @@ model_rw<- function(
   #   A_pred <- NULL
 
   # create A in INLA way
-  mesh <- INLA::inla.mesh.1d(loc = index)
+  mesh <- INLA::inla.mesh.1d(loc = x)
   # p_matrix <- as(mesh$idx$loc, "pMatrix") # bug! p_matrix
 # browser()
-  A <- INLA::inla.spde.make.A(mesh = mesh, loc = index[!index_NA])
+  A <- INLA::inla.spde.make.A(mesh = mesh, loc = x[!index_NA])
   A_pred <- if (!any(index_NA)) NULL else
-   INLA::inla.spde.make.A(mesh = mesh, loc = index[index_NA])
+   INLA::inla.spde.make.A(mesh = mesh, loc = x[index_NA])
   h <- diff(mesh$loc)
 
   n <- mesh$n

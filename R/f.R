@@ -5,7 +5,7 @@
 #' The function is a wrapper function for specific submodels.
 #' (see ngme_models_types() for available models).
 #'
-#' @param index    symbol or numerical value: index or covariates to build index
+#' @param x    symbol or numerical value: index or covariates to build index
 #' @param model     1. string: type of model, 2. ngme.spde object
 #' @param replicates   Representing the replicates
 #' @param noise     1. string: type of model, 2. ngme.noise object
@@ -32,7 +32,7 @@
 #'
 #' @export
 f <- function(
-  index       = NULL,
+  x           = NULL,
   model       = "ar1",
   replicates  = NULL,
   noise       = noise_normal(),
@@ -49,7 +49,9 @@ f <- function(
   index_NA    = NULL, #indicate prediction location
   ...
 ) {
-  index <- eval(substitute(index), envir = data, enclos = parent.frame())
+  x <- eval(substitute(x), envir = data, enclos = parent.frame())
+  index <- x
+
   # deal with NA, from ngme function
   if (is.null(index_NA) && !is.null(data$index_NA)) index_NA <- data$index_NA
   if (is.null(index_NA)) index_NA <- rep(FALSE, length(index))

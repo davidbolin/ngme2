@@ -1,252 +1,191 @@
-{ # read data
-  set.seed(10)
-  library(fields)
-  library(ggplot2)
-  library(grid)
-  library(gridExtra)
-  library(INLA)
-  library(devtools); load_all()
+## Paraná dataset
 
-  data(PRprec)
-  data(PRborder)
-  coords <- as.matrix(PRprec[, 1:2])
+library(INLA)
+library(splancs)
+library(lattice)
+library(ggplot2)
+library(grid)
+library(gridExtra)
+library(viridis)
 
-  Y <- rowMeans(PRprec[, 12 + 1:31]) # 2 + Octobor
-  # Y2 <- apply(PRprec[, 12 + 1:31], 1, max) # 2 + Octobor
-  # remove NA
-  ind <- !is.na(Y)
-  coords <- as.matrix(PRprec[ind, 1:2])
-  Y <- Y_mean <- Y[ind]
 
-  # Covariates
-  alt <- PRprec$Altitude[ind]
-  seaDist <- apply(spDists(coords, PRborder[1034:1078, ],
-    longlat = TRUE
-  ), 1, min)
 
-  prdomain <- inla.nonconvex.hull(coords, -0.03, -0.05, resolution = c(100, 100))
-  prmesh <- inla.mesh.2d(boundary = prdomain, max.edge = c(0.45, 1), cutoff = 0.2)
-}
+data(PRprec)
+data(PRborder)
 
-{ # plot data
-  ggplot() +
+# Create INLA mesh
+coords <- as.matrix(PRprec[, 1:2])
+prdomain <- inla.nonconvex.hull(coords, -0.03, -0.05, resolution = c(100, 100))
+prmesh <- inla.mesh.2d(boundary = prdomain, max.edge = c(0.45, 1), cutoff = 0.2)
+
+# monthly mean at each location
+Y <- rowMeans(PRprec[, 12 + 1:31]) # 2 + Octobor
+
+ind <- !is.na(Y) # non-NA index
+Y <- Y_mean <- Y[ind]
+coords <- as.matrix(PRprec[ind, 1:2])
+seaDist <- apply(spDists(coords, PRborder[1034:1078, ],
+  longlat = TRUE
+), 1, min)
+
+ggplot() +
   geom_point(aes(
     x = coords[, 1], y = coords[, 2],
     colour = Y
   ), size = 2, alpha = 1) +
-  scale_color_gradientn(colours = tim.colors(100)) +
+  scale_color_gradientn(colours = viridis(100)) +
   geom_path(aes(x = PRborder[, 1], y = PRborder[, 2])) +
   geom_path(aes(x = PRborder[1034:1078, 1], y = PRborder[
     1034:1078,
     2
-  ]), colour = "red")
-}
+  ]))
 
-# leave the set for prediction
-n <- length(Y)
-ind_pred <- sample(1:n, size = 0.1 * n)
+library(ngme2)
+# leave 0.1 Y as prediction area
 
-Y_pred <- Y[ind_pred]; Y[ind_pred] <- NA
-
-mesh.index <- inla.spde.make.index(
-  name = "field",
-  mesh = prmesh,
-  n.spde = prmesh$n
-)
+# n <- length(Y)
+# ind_pred <- sample(1:n, size = 0.1 * n)
+# Y_pred <- Y[ind_pred]
+# Y[ind_pred] <- NA
 
 matern_spde <- model_matern(
   loc = coords,
-  mesh = prmesh,
-  index_NA = is.na(Y)
+  mesh = prmesh
 )
-# plot(prmesh)
-# points(coords)
 
-load_all()
 out <- ngme(
   formula = Y ~ 1 +
-    f(seaDist, model = "rw1", noise = noise_normal()) +
-    # f(seaDist, model = "ar1", noise = noise_normal()) +
-    f(model = matern_spde,
-      noise = noise_normal()
-    ) +
-    f(model = matern_spde,
-      noise = noise_nig()
-    ),
-  data =  data.frame(
-    Y  = Y,
-    # Y_max   = Y2,
-    long    = coords[, 1],
-    lat     = coords[, 2]
+    f(inla.group(seaDist), model = "rw1", noise = noise_normal()) +
+    f(model = matern_spde, noise = noise_nig()) +
+    f(model = matern_spde, noise = noise_normal()),
+  data = list(
+    Y = Y
   ),
   family = noise_nig(),
   control = ngme_control(
-    stepsize = 0.5,
     estimation = T,
     iterations = 1000,
     n_slope_check = 4,
-    stop_points = 20,
-    n_parallel_chain = 8
+    stop_points = 10,
+    std_lim = 0.1,
+    n_parallel_chain = 4,
+    print_check_info = TRUE
   ),
-  debug = TRUE
-  # , start = out
+  seed = 416
 )
-out
-str(out)
-# Comparing our prediction
-mean(Y_mean)
-lp <- attr(out, "prediction")$lp
-mean(abs(lp - Y_mean))  #MAE
 
-{ # plot data
-  ggplot() +
+out
+
+# traceplots
+## merr, beta
+traceplot(out, f_index = 0, param = "sigma")
+traceplot(out, f_index = 0, param = "beta")
+
+## rw
+traceplot(out, f_index = 1, param = "mu")
+traceplot(out, f_index = 1, param = "sigma")
+traceplot(out, f_index = 1, param = "nu")
+
+## spde
+traceplot(out, f_index = 2, param = "kappa")
+traceplot(out, f_index = 2, param = "mu")
+traceplot(out, f_index = 2, param = "sigma")
+traceplot(out, f_index = 2, param = "nu")
+
+## spde
+traceplot(out, f_index = 3, param = "kappa")
+traceplot(out, f_index = 3, param = "sigma")
+
+### Prediction
+
+nxy <- c(150, 100)
+projgrid <- rSPDE::rspde.mesh.projector(prmesh,
+  xlim = range(PRborder[, 1]),
+  ylim = range(PRborder[, 2]), dims = nxy
+)
+
+xy.in <- inout(projgrid$lattice$loc, cbind(PRborder[, 1], PRborder[, 2]))
+
+coord.prd <- projgrid$lattice$loc[xy.in, ]
+plot(coord.prd, type = "p", cex = 0.1)
+lines(PRborder)
+points(coords[, 1], coords[, 2], pch = 19, cex = 0.5, col = "red")
+
+seaDist.prd <- apply(spDists(coord.prd,
+  PRborder[1034:1078, ],
+  longlat = TRUE
+), 1, min)
+
+# construct data
+n_prd <- nrow(coord.prd)
+Y2 <- c(Y, rep(NA, n_prd))
+seaDist2 <- c(seaDist, seaDist.prd)
+
+matern_spde <- model_matern(
+  loc = rbind(coords, coord.prd),
+  mesh = prmesh,
+  index_NA = is.na(Y2)
+)
+
+out2 <- ngme(
+  formula = Y ~ 1 +
+    f(inla.group(seaDist), model = "rw1", noise = noise_normal()) +
+    f(model = matern_spde, noise = noise_nig()) +
+    f(model = matern_spde, noise = noise_normal()),
+  data = list(
+    Y = Y2,
+    seaDist = seaDist2
+  ),
+  family = noise_nig(),
+  control = ngme_control(
+    estimation = F,
+    iterations = 1000,
+    n_slope_check = 4,
+    stop_points = 10,
+    std_lim = 0.1,
+    n_parallel_chain = 8,
+    print_check_info = TRUE
+  ),
+  seed = 416,
+  start = out
+)
+out2
+
+# Plot prediction
+lp <- attr(out2, "prediction")$lp
+ggplot() +
+  geom_point(aes(
+    x = coord.prd[, 1], y = coord.prd[, 2],
+    colour = lp[is.na(Y2)]
+  ), size = 2, alpha = 1) +
   geom_point(aes(
     x = coords[, 1], y = coords[, 2],
-    colour =  Y_mean - lp
+    colour = Y_mean
   ), size = 2, alpha = 1) +
-  scale_color_gradientn(colours = tim.colors(100)) +
+  scale_color_gradientn(colours = viridis(100)) +
   geom_path(aes(x = PRborder[, 1], y = PRborder[, 2])) +
   geom_path(aes(x = PRborder[1034:1078, 1], y = PRborder[
     1034:1078,
     2
   ]), colour = "red")
-}
-
-out
-str(out)
-
-# plots
-# beta
-# traceplot(out, parameter = "beta",    f_index = 0, param_index = 1)
-# traceplot(out, parameter = "beta",    f_index = 0, param_index = 2)
-
-# fixed effects
-traceplot(out, parameter = "beta", f_index = 0, param_index = 1)
-
-# measurement noise
-traceplot(out, parameter = "theta_mu", f_index = 0)
-traceplot(out, parameter = "theta_sigma", f_index = 0)
-traceplot(out, parameter = "theta_V", f_index = 0)
-
-# 1st model rw
-traceplot(out, parameter = "theta_K",     f_index = 1)
-traceplot(out, parameter = "theta_mu",    f_index = 1)
-traceplot(out, parameter = "theta_sigma", f_index = 1)
-traceplot(out, parameter = "theta_V",     f_index = 1)
-plot(out$latents[[1]]$noise)
-
-# 2nd model matern normal
-traceplot(out, parameter = "theta_K",     f_index = 2)
-traceplot(out, parameter = "theta_mu",    f_index = 2)
-traceplot(out, parameter = "theta_sigma", f_index = 2)
-traceplot(out, parameter = "theta_V",     f_index = 2)
-
-# 3rd model
-traceplot(out, parameter = "theta_K",     f_index = 3)
-traceplot(out, parameter = "theta_mu",    f_index = 3)
-traceplot(out, parameter = "theta_sigma", f_index = 3)
-traceplot(out, parameter = "theta_V",     f_index = 3)
 
 
-# plot(1:3, 1:3)
-# library(grid)
-# library(gridExtra)
-# grid.arrange(rectGrob(), rectGrob())
-# ## Not run:
-# library(ggplot2)
-# pl <- lapply(1:11, function(.x) qplot(1:10, rnorm(10), main=paste("plot", .x)))
-# ml <- marrangeGrob(pl, nrow=2, ncol=2)
-# ml
-# ## non-interactive use, multipage pdf
-# ggsave("multipage.pdf", ml)
-# ## interactive use; open new devices
-# ml
+# Model estimation:
+res1 <- data.frame(
+  intercept    = format(out$beta, digits=3),
+  noise_mu     = format(out$noise$theta_mu, digits=3),
+  noise_sigma  = format(exp(out$noise$theta_sigma), digits=3),
+  noise_nu     = format(out$noise$theta_V, digits=3),
+  rw_sigma     = format(out$latents[[1]]$noise$theta_sigma, digits=3),
+  ma_kappa     = format(exp(out$latents[[2]]$theta_K), digits=3),
+  ma_mu        = format(out$latents[[2]]$noise$theta_mu, digits=3),
+  ma_sigma     = format(exp(out$latents[[2]]$noise$theta_sigma), digits=3),
+  ma_nu        = format(out$latents[[2]]$noise$theta_V, digits=3)
+)
+knitr::kable(res1, caption = "Estimations for the model")
 
-# library(pagedown)
-# chrome_print("http://127.0.0.1:3000/myscripts/poster.html",
-#   format="pdf")
+# Result of the optimization trajectory of parameters for the Matern model:
 
-# #  -------
-# load_all()
-# out_4k <- ngme(
-#   formula = Y_mean ~ 1 +
-#     f(inla.group(seaDist), model = "rw1", noise=noise_normal()) +
-#     f(index = mesh.index$field,
-#       model = model_matern(A = A, mesh = prmesh),
-#       noise = noise_nig()
-#     ),
-#   data = data,
-#   family = noise_nig(),
-#   control = ngme_control(
-#     estimation = T,
-#     iterations = 2000,
-#     n_slope_check = 4,
-#     stop_points = 20,
-#     n_parallel_chain = 8
-#   ),
-#   seed = 5,
-#   start = out_2k
-# )
-
-# library(grid)
-# library(gridExtra)
-# pl <- lapply(c("kappa", "mu", "sigma", "nu"), function(.x)
-#   traceplot(out_4k, parameter = .x, f_index = 2));
-# marrangeGrob(pl, nrow = 2, ncol = 2)
-
-# xxx <- seq(1, 100, length=100)
-# plot(xxx, xxx^0.95)
-
-
-# (1 / (1:10)) ** 0.01
-
-
-# 1 ** 0.1
-# ??knitr
-
-
-# out <- ngme(
-#   formula = Y_mean ~ 1 +
-#     f(inla.group(seaDist), model = "rw1", noise=noise_normal()) +
-#     f(index = mesh.index$field,
-#       model = model_matern(A = A, mesh = prmesh),
-#       noise = noise_nig()
-#     ),
-#   data = data,
-#   family = noise_nig(),
-#   control = ngme_control(
-#     estimation = T,
-#     iterations = 2000,
-#     n_slope_check = 4,
-#     stop_points = 20,
-#     n_parallel_chain = 8
-#   ),
-#   seed = 5
-# )
-
-# predict(
-#   ngme = out,
-#   formula = ~ 1 +
-#     # f(inla.group(seaDist_pred), model = "rw1", noise = noise_normal()) +
-#     f(seaDist_pred, model = "rw1", noise = noise_normal()) +
-#     f(index = mesh.index$field,
-#       model = model_matern(A_pred = A_pred, mesh = prmesh),
-#       noise = noise_nig()
-#     ),
-#   data = list(seaDist_pred = seaDist_pred, A_pred = A_pred)
-# )
-
-# ?inla.spde.make.A()
-
-# load_all()
-# YY <- c(1.2, 2.3, 4.3, NA)
-
-# XX <- c(1.1, 3.1, 2.2, 4.5)
-# mesh1 <- inla.mesh.1d(XX); mesh1
-# inla.spde.make.A(mesh=mesh1, loc=c(1.7)) %*% mesh1$loc
-
-# ngme(
-#   YY ~ f(XX, model = "rw1"),
-#   data = data.frame(YY=YY, XX=XX),
-#   control = ngme_control(estimation = FALSE)
-# )
+pl <- lapply(c("kappa", "mu", "sigma", "nu"), function(.x)
+  traceplot(out, param = .x, f_index = 2));
+marrangeGrob(pl, nrow=2, ncol=2)

@@ -12,10 +12,131 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
-library(ngme2)
+set.seed(11)
 ```
 
 In this vignette, we will introduce a few available models in **ngme2**.
 
-## AR1
+## AR(1) model
 
+An autoregressive (AR) model specifies that the output variable depends linearly on its own previous values and on a stochastic term.
+The simplest AR model is an AR(1) model, which is given by:
+
+\begin{align}
+X_1 &= \epsilon_1, \\
+X_i &= \alpha X_{i-1} + \epsilon_i, \; i = 2, \dots , n,
+\end{align}
+where, $\epsilon_1, ..,\epsilon_n$ is either i.i.d. **NIG** or **Gaussian** noise.
+
+It is easy to verify that
+$$ K{\bf X} = \boldsymbol\epsilon,$$
+where
+${\bf X} = (X_1, \dots, X_n)$,  ${\boldsymbol \epsilon} = (\epsilon_1, \dots, \epsilon_n)$, and
+$$
+K =
+  \begin{bmatrix}
+    \alpha \\
+    -1 &  \alpha \\
+    & \ddots & \ddots \\
+    & & -1 &  \alpha
+  \end{bmatrix}.
+$$
+
+The `ngme2` usage for specify a AR(1) model is the following:
+
+```{r ar1}
+library(ngme2)
+year <- c(2021, 2022, 2024, 2025)
+model_ar1(year)
+```
+
+Notice that for AR model, we only accept integer values as index,
+otherwise it is hard to interpret. See \code{?model_ar1} for details.
+
+## Random walk model
+
+A random walk is a random process that describes a path that consists of a succession of random steps.
+
+The random walk process of order 1 is given by
+$$
+X_{i} - X_{i-1} = \epsilon_i, \; i = 2, \dots , n,
+$$
+where, $\epsilon_1, ..,\epsilon_n$ is either i.i.d. **NIG** or **Gaussian** noise.
+
+It is easy to verify that
+$$ K{\bf X} = \boldsymbol\epsilon,$$
+where
+${\bf X} = (X_1, \dots, X_n)$, ${\boldsymbol \epsilon} = (\epsilon_1, \dots, \epsilon_n)$, and the operator matrix
+
+$$
+K =
+  \begin{bmatrix}
+    1 & -1 \\
+      & 1 & -1 \\
+      & & \ddots & \ddots \\
+      & & & 1 & -1
+  \end{bmatrix}.
+$$
+Notice here $K$ is a constant matrix ((n-1) $\times$ n).
+
+Similarily, the random walk process of order 2 is given by
+$$
+(X_{i} - X_{i-1}) - (X_{i-1} - X_{i-2}) = \epsilon_i, \; i = 2, \dots , n,
+$$
+and the operator matrix
+$$
+K =
+  \begin{bmatrix}
+    1 & -2 & 1 \\
+      & 1 & -2 & 1 \\
+      & & \ddots & \ddots & \ddots \\
+      & & & 1 & -2 & 1
+  \end{bmatrix}.
+$$
+
+The `ngme2` usage for specify a random walk model is:
+
+```{r rw}
+x <- rexp(10)
+model_rw(x, order = 1)
+model_rw(x, order = 2, circular = TRUE) # the first and last is connected
+```
+
+## SPDE Matérn model
+
+Several popular Gaussian random field models can be represented as solutions to stochastic partial differential equations (SPDEs) of the form
+$$
+L^\beta (\tau u) = \mathcal{W}.
+$$
+Here $\mathcal{W}$ is a Gaussian white noise, $L$ is a second-order differential operator, the fractional power $\beta > 0$ determines the smoothness of u. See [An explicit link between Gaussian fields and Gaussian Markov random fields: the stochastic partial differential equation approach](https://rss.onlinelibrary.wiley.com/doi/full/10.1111/j.1467-9868.2011.00777.x) for further details.
+
+This package aims to address the non-Gaussian extension to the SPDE approach model by replacing the driven noise $\mathcal{W}$ to be a non-Gaussian noise $\mathcal{M}$.
+More specificly, a type-G Lévy process.
+
+The increment of a type-G Lévy process can be represented as
+$$
+\gamma + \mu V + \sigma \sqrt{V}Z,
+$$
+where $\gamma, \mu$ are parameters, $Z\sim N(0,1)$ and is independent of $V$, and $V$ is a positive infinitely divisible random variable.
+
+One example is the normal inverse Gaussian (NIG) noise. (See `vignette("SPDE-approach", package = "ngme2")` for more details)
+
+The `ngme2` usage for specify a spde Matérn model is (a spatial 2d example):
+
+```{r}
+library(INLA)
+data(argo_float)
+dim(argo_float)
+head(argo_float)
+loc <- argo_float[, 1:2]
+
+# generate a INLA 2d mesh using INLA
+mesh <- inla.mesh.2d(loc = loc,
+                    max.edge = c(1, 5),
+                    cutoff = 0.4,
+                    offset = c(1,5))
+plot(mesh)
+
+# tell the model the location and the mesh to work with
+model_matern(loc = loc, mesh = mesh)
+```

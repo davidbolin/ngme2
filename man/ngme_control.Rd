@@ -2,7 +2,7 @@
 % Please edit documentation in R/control.R
 \name{ngme_control}
 \alias{ngme_control}
-\title{Generate control specifications for ngme}
+\title{Generate control specifications for \code{ngme()} function.}
 \usage{
 ngme_control(
   burnin = 100,
@@ -28,7 +28,7 @@ ngme_control(
 )
 }
 \arguments{
-\item{burnin}{burn-in iterations}
+\item{burnin}{burn-in periods}
 
 \item{iterations}{optimizing terations}
 
@@ -72,5 +72,13 @@ ngme_control(
 list of control variables
 }
 \description{
-Generate control specifications for ngme
+These are configurations for \code{ngme} estimation and
+optimization process.
+}
+\details{
+To enable convergence check, we need multiple chains running.
+ We compare the trend of the estimated parameter of length
+ \code{n_slope_check} (linear regression) with \code{trend_lim}.
+ We compare the standard devation of estimated parameters (in different chains)
+ with std_lim.
 }

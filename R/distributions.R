@@ -37,7 +37,7 @@
 #' @seealso
 #' \code{\link{dnig}}, \code{\link{dig}}, \code{\link{digam}}
 #' @examples
-#' rgig(100, p = 1, a = 1, b = 1)
+#' rgig(20, p = 1, a = 1, b = 1)
 #' pgig(0.4, p = 1, a = 1, b = 1)
 #' qgig(0.8, p = 1, a = 1, b = 1)
 #' plot(function(x){dgig(x, p = 1, a = 1, b = 1)}, main =
@@ -73,7 +73,7 @@ dgig <- function(x, p, a ,b, log=FALSE){
     } else if(length(b) == 1){
       b <- rep(b, length(a))
     } else{
-      stop("a and b are vectors of different lengths")      
+      stop("a and b are vectors of different lengths")
     }
   }
   if (min(a) < 0)
@@ -153,7 +153,7 @@ rgig <- function (n, p, a, b, seed = 0)
     } else if(length(b) == 1){
       b <- rep(b, length(a))
     } else{
-      stop("a and b are vectors of different lengths")      
+      stop("a and b are vectors of different lengths")
     }
   }
   if (min(a) < 0)
@@ -218,7 +218,7 @@ pgig <- function(q, p, a, b, lower.tail = TRUE, log.p = FALSE){
     } else if(length(b) == 1){
       b <- rep(b, length(a))
     } else{
-      stop("a and b are vectors of different lengths")      
+      stop("a and b are vectors of different lengths")
     }
   }
   if (min(a) < 0)
@@ -301,7 +301,7 @@ qgig <- function(prob, p, a, b, lower.tail = TRUE, log.p = FALSE){
     } else if(length(b) == 1){
       b <- rep(b, length(a))
     } else{
-      stop("a and b are vectors of different lengths")      
+      stop("a and b are vectors of different lengths")
     }
   }
   if (min(a) < 0)
@@ -396,7 +396,7 @@ qgig <- function(prob, p, a, b, lower.tail = TRUE, log.p = FALSE){
 #'
 #' @references
 #' Tweedie, M. C. K. (1957a). "Statistical Properties of Inverse Gaussian Distributions I". Annals of Mathematical Statistics. 28 (2): 362–377. \doi{10.1214/aoms/1177706964}
-#' 
+#'
 #' Tweedie, M. C. K. (1957b). "Statistical Properties of Inverse Gaussian Distributions II". Annals of Mathematical Statistics. 28 (3): 696–705. \doi{10.1214/aoms/1177706881}
 #'
 #' @seealso
@@ -753,11 +753,11 @@ qigam <- function(p, a, b, lower.tail = TRUE, log.p = FALSE){
 #'
 #' @references
 #'  Barndorff-Nielsen, O. (1977) Exponentially decreasing distributions for the logarithm of particle size. Proceedings of the Royal Society of London.
-#'  
+#'
 #'  Series A, Mathematical and Physical Sciences. The Royal Society. 353, 401–409. \doi{10.1098/rspa.1977.0041}
-#'  
+#'
 #'  Barndorff-Nielsen, O. (1978) Hyperbolic Distributions and Distributions on Hyperbolae, Scandinavian Journal of Statistics. 5, 151–157.
-#'  
+#'
 #'  Barndorff-Nielsen, O. (1997) Normal Inverse Gaussian Distributions and Stochastic Volatility Modelling, Scandinavian Journal of Statistics. 24, 1-13. \doi{10.1111/1467-9469.00045}
 #'
 #' @seealso
@@ -790,7 +790,7 @@ dnig <- function(x, delta, mu, nu, sigma, log=FALSE){
     } else if(length(mu)==1){
       mu <- rep(mu, length(delta))
     } else{
-      stop("delta and mu are vectors of different lenghts")  
+      stop("delta and mu are vectors of different lenghts")
     }
   }
   if (length(mu) != length(nu)){
@@ -803,7 +803,7 @@ dnig <- function(x, delta, mu, nu, sigma, log=FALSE){
       }
       } else{
       stop("mu and nu are vectors of different lengths")
-    } 
+    }
   }
   if (length(nu) != length(sigma)){
     if(length(sigma)==1){
@@ -891,7 +891,7 @@ rnig <- function (n, delta, mu, nu, sigma, seed = 0)
     } else if(length(mu)==1){
       mu <- rep(mu, length(delta))
     } else{
-      stop("delta and mu are vectors of different lenghts")  
+      stop("delta and mu are vectors of different lenghts")
     }
   }
   if (length(mu) != length(nu)){
@@ -904,7 +904,7 @@ rnig <- function (n, delta, mu, nu, sigma, seed = 0)
       }
     } else{
       stop("mu and nu are vectors of different lengths")
-    } 
+    }
   }
   if (length(nu) != length(sigma)){
     if(length(sigma)==1){
@@ -979,7 +979,7 @@ pnig <- function(q, delta, mu, nu, sigma, lower.tail = TRUE, log.p = FALSE){
     } else if(length(mu)==1){
       mu <- rep(mu, length(delta))
     } else{
-      stop("delta and mu are vectors of different lenghts")  
+      stop("delta and mu are vectors of different lenghts")
     }
   }
   if (length(mu) != length(nu)){
@@ -992,7 +992,7 @@ pnig <- function(q, delta, mu, nu, sigma, lower.tail = TRUE, log.p = FALSE){
       }
     } else{
       stop("mu and nu are vectors of different lengths")
-    } 
+    }
   }
   if (length(nu) != length(sigma)){
     if(length(sigma)==1){
@@ -1084,7 +1084,7 @@ qnig <- function(p, delta, mu, nu, sigma, lower.tail = TRUE, log.p = FALSE){
     } else if(length(mu)==1){
       mu <- rep(mu, length(delta))
     } else{
-      stop("delta and mu are vectors of different lenghts")  
+      stop("delta and mu are vectors of different lenghts")
     }
   }
   if (length(mu) != length(nu)){
@@ -1097,7 +1097,7 @@ qnig <- function(p, delta, mu, nu, sigma, lower.tail = TRUE, log.p = FALSE){
       }
     } else{
       stop("mu and nu are vectors of different lengths")
-    } 
+    }
   }
   if (length(nu) != length(sigma)){
     if(length(sigma)==1){

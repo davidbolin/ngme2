@@ -2,38 +2,65 @@
 % Please edit documentation in R/noise.R
 \name{ngme_noise}
 \alias{ngme_noise}
+\alias{noise_nig}
+\alias{noise_normal}
 \title{ngme noise specification}
 \usage{
 ngme_noise(
   noise_type,
-  theta_mu = 0,
-  theta_sigma = 0,
-  theta_V = 1,
+  mu = 0,
+  sigma = 1,
+  nu = 1,
   n = 1,
-  V = NULL,
+  theta_mu = NULL,
   B_mu = NULL,
+  theta_sigma = NULL,
   B_sigma = NULL,
   fix_theta_mu = FALSE,
   fix_theta_sigma = FALSE,
   fix_theta_V = FALSE,
+  V = NULL,
   fix_V = FALSE,
+  ...
+)
+
+noise_normal(
+  sigma = NULL,
+  theta_sigma = NULL,
+  B_sigma = matrix(1, 1, 1),
+  n = nrow(B_sigma),
+  ...
+)
+
+noise_nig(
+  mu = NULL,
+  sigma = NULL,
+  nu = NULL,
+  n = 1,
+  V = NULL,
+  theta_mu = NULL,
+  theta_sigma = NULL,
+  B_mu = matrix(1),
+  B_sigma = matrix(1),
   ...
 )
 }
 \arguments{
 \item{noise_type}{type of noise, "nig", "normal"}
 
-\item{theta_mu}{specify a non-stationary noise using theta_mu}
+\item{mu}{specify the NIG noise parameter mu, see \code{?nig}}
 
-\item{theta_sigma}{specify a non-stationary noise using theta_sigma}
+\item{sigma}{specify the noise parameter sigma, see \code{?nig}}
 
-\item{theta_V}{value for theta_V, theta_V = nu > 0}
+\item{nu}{specify the NIG noise parameter nu (nu>0), see \code{?nig}}
 
 \item{n}{number of noise (= nrow(B_mu) = nrow(B_sigma))}
 
-\item{V}{value for V}
+\item{theta_mu}{specify a non-stationary noise using theta_mu}
 
 \item{B_mu}{Basis matrix for mu (if non-stationary)}
+
+\item{theta_sigma}{specify a non-stationary noise using theta_sigma}
 
 \item{B_sigma}{Basis matrix for sigma (if non-stationary)}
 
@@ -42,6 +69,8 @@ ngme_noise(
 \item{fix_theta_sigma}{fix the parameter of theta_sigma}
 
 \item{fix_theta_V}{fix the parameter of theta_V}
+
+\item{V}{start value for V}
 
 \item{fix_V}{fix the sampling of V}
 
@@ -52,6 +81,16 @@ a list of specification of noise
 }
 \description{
 Function for specifying ngme noise.
-Please use noise_type for simpler specification.
-Use ngme_noise_types() to check all the available types.
+Please use \code{noise_nig} and \code{noise_normal} for simpler usage.
+Use \code{ngme_noise_types()} to check all the available types.
+}
+\details{
+The parameterization is given in \code{?nig}. Moreover,
+for specifying non-stationary mu and sigma,
+\deqn{\mu = B_{\mu} \theta_{\mu},} and
+\deqn{\sigma = \exp (B_{\sigma} \theta_{\sigma}),}
+}
+\examples{
+noise_normal(n = 10, sigma = 2)
+noise_nig(mu = 1, sigma = 2, nu = 1, n=10)
 }

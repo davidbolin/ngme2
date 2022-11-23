@@ -57,7 +57,7 @@ by
  See Jørgensen (1982) for further details.
 }
 \examples{
-rgig(100, p = 1, a = 1, b = 1)
+rgig(20, p = 1, a = 1, b = 1)
 pgig(0.4, p = 1, a = 1, b = 1)
 qgig(0.8, p = 1, a = 1, b = 1)
 plot(function(x){dgig(x, p = 1, a = 1, b = 1)}, main =

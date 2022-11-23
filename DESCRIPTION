@@ -30,7 +30,6 @@ Suggests:
     plyr,
     MASS,
     gridExtra,
-    fields,
     grid,
     testthat (>= 3.0.0),
     xml2,
@@ -38,7 +37,8 @@ Suggests:
     rgdal,
     lattice,
     reshape2,
-    viridis
+    viridis,
+    rSPDE
 VignetteBuilder: knitr
 RoxygenNote: 7.2.2
 Config/testthat/edition: 3

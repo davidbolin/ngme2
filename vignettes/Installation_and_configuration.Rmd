@@ -15,7 +15,7 @@ remotes::install_github("davidbolin/ngme2", ref = "devel")
 
 ## Mac OS X
 
-The default C++ compiler in OS X has does not support OpenMP.
+For Mac OS X system, the default C++ compiler in OS X has does not support OpenMP.
 
 ```
 ➜ clang -fopenmp hello.cpp
@@ -99,58 +99,8 @@ CXX11 = $(CXX)
 CXX14 = $(CXX)
 CXX17 = $(CXX)
 CXX20 = $(CXX)
-```
-
-Now we should be able to export an OpenMP function in R using Rcpp.
-
-### 3. Configure the R package environment.
-
-If you are developing a R package using Rcpp, then you still need to make more efforts in
-the R package environment.
-
-1. Set OpenMP flags in R Makeconf
-
-Do not directly setting `-fopenmp` flag in Makevar file, it would be not portable to the system
-with no OpenMP support. It's better to include it in the R Makeconf file. You can find the
-following two flags in Makeconf file.
-
-```
 SHLIB_OPENMP_CFLAGS = -fopenmp
 SHLIB_OPENMP_CXXFLAGS = -fopenmp
 ```
 
-2. Set package flags in package Makevar
-
-Next we can include this flag in the Makevar as following:
-
-```
-PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS)
-PKG_LIBS = $(SHLIB_OPENMP_CXXFLAGS)
-```
-
-3. Set symbols in package Namespace
-
-One important thing next is to indicate you `useDynLib(yourPackage)` in the
-Namespace. You can either do it by yourself, or do it using `devtools` package for you.
-
-Edit the NAMESPACE file to create R objects for the registered symbols:
-
-```
-useDynLib(yourPackage, .registration = TRUE)
-```
-
-Or add `#' @useDynLib yourPackage, .registration = TRUE` it into `yourPackage.R` file, then run
-
-
-```
-devtools::document()
-```
-
-Then you should be able to see the update in your NAMESPACE file.
-
-Now you can have the OpenMP facility in your C++ code!
-
-
-## Windows and Linux
-
-...
+Now you should be able to use OpenMP facility (multiple chain estimation) in `ngme2`.

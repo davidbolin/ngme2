@@ -72,11 +72,11 @@ xlim = c(0,10))
 }
 \references{
 Barndorff-Nielsen, O. (1977) Exponentially decreasing distributions for the logarithm of particle size. Proceedings of the Royal Society of London.
- 
+
  Series A, Mathematical and Physical Sciences. The Royal Society. 353, 401–409. \doi{10.1098/rspa.1977.0041}
- 
+
  Barndorff-Nielsen, O. (1978) Hyperbolic Distributions and Distributions on Hyperbolae, Scandinavian Journal of Statistics. 5, 151–157.
- 
+
  Barndorff-Nielsen, O. (1997) Normal Inverse Gaussian Distributions and Stochastic Volatility Modelling, Scandinavian Journal of Statistics. 24, 1-13. \doi{10.1111/1467-9469.00045}
 }
 \seealso{

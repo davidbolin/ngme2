@@ -2,7 +2,8 @@
 
 #' Create a Matern SPDE model
 #'
-#' @param loc       numeric vector or matrix of column 2,location to make index
+#' @param loc       numeric vector (1d) or matrix of column 2 (2d),
+#'     location to make index
 #' @param replicates replicates for the process
 #' @param alpha     2 or 4, SPDE smoothness parameter
 #' @param mesh      mesh argument
@@ -38,7 +39,8 @@ model_matern <- function(
   # loc <- eval(substitute(loc), envir = data, enclos = parent.frame())
 
   # deal with coords
-  if (is.matrix(loc) && ncol(loc) == 2) {
+  if ((is.data.frame(loc) || is.matrix(loc)) && ncol(loc) == 2) {
+    loc <- as.matrix(loc)
     if (is.null(index_NA)) index_NA <- rep(FALSE, nrow(loc))
     if (is.null(A))      A <- INLA::inla.spde.make.A(mesh = mesh, loc = loc[!index_NA, ,drop = FALSE])
     if (is.null(A_pred)) A_pred <- INLA::inla.spde.make.A(mesh = mesh, loc = loc[index_NA, ,drop = FALSE])

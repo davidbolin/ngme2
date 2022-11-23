@@ -2,7 +2,7 @@
 % Please edit documentation in R/ngme.R
 \name{ngme}
 \alias{ngme}
-\title{Additive non-guassian model fitting}
+\title{Fit an additice linear mixed effect model}
 \usage{
 ngme(
   formula,
@@ -19,10 +19,10 @@ ngme(
 \item{formula}{formula}
 
 \item{data}{a dataframe or a list providing data
-(Only response variable can contain NA value,
- NA value in other columns will cause problem)}
+(Only response variable can contain \code{NA} value,
+ \code{NA} value in other columns will cause problem)}
 
-\item{control}{control variables, see ?ngme.control}
+\item{control}{control variables, see \code{?ngme.control}}
 
 \item{family}{likelihood type, same as measurement noise specification, 1. string 2. ngme noise obejct}
 
@@ -38,12 +38,18 @@ ngme(
 a list of outputs contains estimation of operator paramters, noise parameters
 }
 \description{
-\code{ngme} function performs a analysis of non-gaussian additive models.
+\code{ngme} function performs an analysis of non-gaussian additive models.
+ It does the maximum likelihood estimation via stochastic gradient descent.
+ The prediction of unknown location can be performed by leaving the response
+ variable to be \code{NA}. The likelihood is specified by \code{family}.
+The model estimation control can be setted in \code{control} using
+ \code{ngme_control()} function, see \code{?ngme_control} for details.
+See \code{ngme_model_types()} for available models.
 }
 \examples{
 ngme(
  formula = Y ~ x1 + f(
-   index = x2,
+   x2,
    model = "ar1",
    noise = noise_nig(),
    theta_K = 0.5

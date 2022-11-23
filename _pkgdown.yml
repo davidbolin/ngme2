@@ -34,22 +34,24 @@ home:
     href: http://stochproc.kaust.edu.sa/
 
 reference:
-  - title: ngme2 package
+  - title: ngme2 pacakge description
     contents:
     - ngme2
-  - title: ngme2 models
+  - title: Fit the linear mixed effects model
     contents:
     - ngme
-  - title: Latent Models
+  - title: Latent models
     contents:
     - ngme_model_types
+    - f
     - model_ar1
     - model_matern
     - model_rw
-  - title: Noise types
+  - title: ngme2 noises
     contents:
-    - ngme_noise_types 
-    - noise_nig 
+    - ngme_noise
+    - ngme_noise_types
+    - noise_nig
     - noise_normal
   - title: Data visualization
     contents:
@@ -61,16 +63,14 @@ reference:
     - simulate.ngme_noise
   - title: Auxiliary functions
     contents:
-    - f
     - create_noise
     - mean_list
     - ngme_as_sparse
     - ngme_control
     - ngme_control_f
-    - ngme_noise
     - ngme_parse_formula
     - ngme_ts_make_A
-    - print.ngme 
+    - print.ngme
     - print.ngme_model
     - print.ngme_noise
   - title: Distributions

@@ -1,12 +1,17 @@
-#' Additive non-guassian model fitting
+#' Fit an additice linear mixed effect model
 #'
-#'  \code{ngme} function performs a analysis of non-gaussian additive models.
-#'
+#'  \code{ngme} function performs an analysis of non-gaussian additive models.
+#'  It does the maximum likelihood estimation via stochastic gradient descent.
+#'  The prediction of unknown location can be performed by leaving the response
+#'  variable to be \code{NA}. The likelihood is specified by \code{family}.
+#' The model estimation control can be setted in \code{control} using
+#'  \code{ngme_control()} function, see \code{?ngme_control} for details.
+#' See \code{ngme_model_types()} for available models.
 #' @param formula formula
 #' @param data    a dataframe or a list providing data
-#'   (Only response variable can contain NA value,
-#'    NA value in other columns will cause problem)
-#' @param control control variables, see ?ngme.control
+#'   (Only response variable can contain \code{NA} value,
+#'    \code{NA} value in other columns will cause problem)
+#' @param control control variables, see \code{?ngme.control}
 #' @param family likelihood type, same as measurement noise specification, 1. string 2. ngme noise obejct
 #' @param beta starting value for fixed effects
 #' @param start  starting ngme object (usually object from last fitting)
@@ -19,7 +24,7 @@
 #' @examples
 #' ngme(
 #'  formula = Y ~ x1 + f(
-#'    index = x2,
+#'    x2,
 #'    model = "ar1",
 #'    noise = noise_nig(),
 #'    theta_K = 0.5

@@ -124,12 +124,3 @@ print.ngme_model <- function(x, padding = 0, ...) {
 
   invisible(model)
 }
-
-
-# rw1, rw2
-# nodes = 100 (inla.group)
-
-# ?inla.spde.make.A
-# inla.spde.make.A(
-#   index
-#  replicates=)

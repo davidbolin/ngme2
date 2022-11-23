@@ -2,7 +2,7 @@
 % Please edit documentation in R/control.R
 \name{ngme_control_f}
 \alias{ngme_control_f}
-\title{Generate control specifications for f function}
+\title{Generate control specifications for \code{f} function}
 \usage{
 ngme_control_f(
   numer_grad = FALSE,
@@ -18,11 +18,11 @@ ngme_control_f(
 
 \item{use_num_hess}{whether to use numerical hessian}
 
-\item{eps}{eps for numerical gradient}
+\item{eps}{eps for computing numerical gradient}
 }
 \value{
 list of control variables
 }
 \description{
-Generate control specifications for f function
+Generate control specifications for \code{f} function
 }

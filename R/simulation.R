@@ -42,6 +42,10 @@ simulate.ngme_model <- function(
             }
             drop(solve(K_a, sim_noise))
         })
+    } else if (model$model %in% c("rw1", "rw2")) {
+        # The K is non-squared
+        # W <- drop(solve(model$K, sim_noise))
+        stop("RW not support simulation yet.")
     } else {
         stop("not implement yet")
     }
@@ -78,13 +82,13 @@ simulate.ngme_noise <- function(
     if (noise$noise_type == "nig") {
         mu <- drop(noise$B_mu %*% noise$theta_mu)
         sigma <- drop(exp(noise$B_sigma %*% noise$theta_sigma))
-        eta <- noise$theta_V
-        V <- ngme2::rig(n, eta, eta, seed = seed);
+        nu <- noise$theta_V
+        V <- ngme2::rig(n, nu, nu * (noise$h)^2, seed = seed);
         noise$V <- V
         e <- mu * (-1 + V) + sigma * sqrt(V) * rnorm(n)
     } else if (noise$noise_type == "normal") {
         sigma <- drop(exp(noise$B_sigma %*% noise$theta_sigma))
-        e <- rnorm(n, sd = sigma)
+        e <- rnorm(n, sd = sigma * noise$h)
     }
 
     attr(e, "noise") <- noise

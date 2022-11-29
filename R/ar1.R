@@ -31,15 +31,15 @@ model_ar1 <- function(
   index_NA    = NULL,
   data        = NULL,
   noise       = noise_normal(),
-
   alpha       = 0.5,
-  range       = c(1, max(index)),
   ...
 ) {
   # capture symbol in index
   index <- eval(substitute(x), envir = data, enclos = parent.frame())
-  if (is.null(index_NA)) index_NA <- rep(FALSE, length(index))
+  stopifnot("The index should be integers." = all(index == round(index)))
+  range <- c(min(index), max(index))
 
+  if (is.null(index_NA)) index_NA <- rep(FALSE, length(index))
   if (is.null(replicates)) replicates <- rep(1, length(index))
 
   unique_rep <- unique(replicates)
@@ -73,9 +73,10 @@ model_ar1 <- function(
     V_size      = n
     A           = ngme_ts_make_A(loc = index[!index_NA], replicates = replicates, range = range)
     A_pred      = ngme_ts_make_A(loc = index[index_NA], replicates = replicates, range = range)
-    h           = rep(1.0, n)
+    h           = noise$h
     C           = ngme_as_sparse(C)
     G           = ngme_as_sparse(G)
+    K           = alpha * C + G
     noise       = noise
   })
 
@@ -139,7 +140,8 @@ model_rw <- function(
   A <- INLA::inla.spde.make.A(mesh = mesh, loc = x[!index_NA])
   A_pred <- if (!any(index_NA)) NULL else
    INLA::inla.spde.make.A(mesh = mesh, loc = x[index_NA])
-  h <- diff(mesh$loc)
+
+  noise$h <- diff(mesh$loc)
 
   n <- mesh$n
   if (order == 1) {
@@ -175,23 +177,25 @@ model_rw <- function(
       G[n] <- -2
       G[c(n-1, 2*n)] <- 1
     }
+    noise$h <- noise$h[-1]
   }
 
   # update noise with length n
   if (noise$n_noise == 1) noise <- update_noise(noise, n = n)
 
   args <- within(list(...), {
-    model       = "rw1"
+    model       = if (order == 1) "rw1" else "rw2"
     theta_K     = 1
     fix_theta_K = TRUE
     W_size      = ncol(C) # mesh$n
     V_size      = n
     A           = A
     A_pred      = A_pred
-    h           = h
     C           = ngme_as_sparse(C)
     G           = ngme_as_sparse(G)
+    K           = C + G
     noise       = noise
+    h           = noise$h
   })
 
   do.call(ngme_model, args)

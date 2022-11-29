@@ -258,6 +258,11 @@ will not be independent. However, under very general assumptions, the Gibbs samp
 provides samples satisfying the law of large numbers for functionals of the sample.
 Therefore, one can use these samples to compute means and variances.
 
+### Simulation
+
+simulation on matern field.
+
+
 ### Estimation
 
 In ngme2, we use maximum likelihood estimation via preconditioned stochastic gradient descent.

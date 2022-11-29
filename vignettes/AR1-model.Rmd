@@ -1,0 +1,115 @@
+---
+title: "Ngme2 AR(1) model"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Ngme2 AR(1) model}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+In this vignette, we will introduce the autoregressive model in `ngme2`.
+
+## Description
+
+An **autoregressive model of order 1 (AR(1))** specifies that the output variable depends linearly on its own previous values and on a stochastic term.
+The simplest AR model is an AR(1) model, which is given by:
+
+\begin{align}
+X_1 &= \epsilon_1, \\
+X_i &= \alpha X_{i-1} + \epsilon_i, \; i = 2, \dots , n,
+\end{align}
+where $|\alpha| < 1$, $\epsilon_1, ..,\epsilon_n$ is either i.i.d. **NIG** or **Gaussian** noise.
+
+It is easy to verify that
+$$ K{\bf X} = \boldsymbol\epsilon,$$
+where
+${\bf X} = (X_1, \dots, X_n)$,  ${\boldsymbol \epsilon} = (\epsilon_1, \dots, \epsilon_n)$, and
+$$
+K =
+  \begin{bmatrix}
+    1 \\
+    -\alpha &  1 \\
+    & \ddots & \ddots \\
+    & & -\alpha &  1
+  \end{bmatrix}.
+$$
+
+## Usage
+
+AR(1) process is defined on the integer mesh (can have gap), for example:
+
+```{r ar-usage}
+# library(ngme2)
+devtools::load_all()
+set.seed(18)
+
+model_ar1(3:5, noise = noise_normal())$K
+# length is 5 - 3 + 1
+
+model_ar1(c(2011, 2012, 2015, 2016), noise = noise_nig())$K
+# length is 2016 - 2011 + 1 = 6
+
+# specify mesh with replicates
+model_ar1(c(1:5, 1:5), replicates = c(rep(1, 5), rep(2, 5)))$K
+
+# index with double is not supported
+# not run:
+# model_ar1(rnorm(10))
+```
+
+## Simulation
+
+Doing simulation with `ngme2` is simple. Just pass the corresponding model into `simulate` function.
+
+```{r ar-simulation}
+n_obs <- 500
+day <- 1:n_obs
+Y <- simulate(model_ar1(day, alpha = 0.5, noise = noise_nig()))
+
+# check the acf to see the correlation
+acf(Y)
+```
+
+## Estimation
+
+In this part we will show how to estiamte the AR model using `ngme` function.
+Here we can use `ngme_control` to modify the control variables for the `ngme`.
+See `?ngme_control` for more optioins.
+
+```{r ar-estimation}
+x1 = runif(n_obs)
+x2 = rexp(n_obs)
+beta <- c(-3, -1, 2)
+X <- (model.matrix(Y ~ x1 + x2))  # design matrix
+Y <- as.numeric(Y + X %*% beta) # add some fixed effects
+
+# Fit the model with the AR1 model
+ngme_out <- ngme(
+  Y ~ x1 + x2 + f(
+    1:n_obs,
+    model = "ar1",
+    noise = noise_nig(),
+    theta_K = 0.9  # starting point for the alpha (parameter of K)
+  ),
+  data = data.frame(x1=x1, x2=x2, Y=Y),
+  control = ngme_control(
+    burnin = 100,
+    iterations = 1000,
+    std_lim = 0.5,
+    gibbs_sample = 5,
+    n_parallel_chain = 4,
+    stop_points = 10,
+    print_check_info = TRUE
+  ),
+  seed = 3
+)
+
+ngme_out
+```

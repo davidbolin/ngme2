@@ -21,6 +21,7 @@ private:
 
     string noise_type; // normal or nig
     double nu;
+    VectorXd h;
 
     unsigned n;
     VectorXd V, prevV;
@@ -30,6 +31,7 @@ public:
         var_rng       (seed),
         noise_type    (Rcpp::as<string>  (noise_list["noise_type"])),
         nu            (Rcpp::as<double>  (noise_list["theta_V"])),
+        h             (Rcpp::as<VectorXd>  (noise_list["h"])),
         n             (Rcpp::as<int>     (noise_list["n_noise"])),
         V             (n),
         prevV         (n),
@@ -63,7 +65,7 @@ public:
         if (noise_type == "nig") {
             prevV = V;
             VectorXd nu_vec = VectorXd::Constant(n, nu);
-            if (!fix_V) V = rGIG_cpp(VectorXd::Constant(n, -0.5), nu_vec, nu_vec, var_rng());
+            if (!fix_V) V = rGIG_cpp(VectorXd::Constant(n, -0.5), nu_vec, nu_vec.cwiseProduct(h.cwiseProduct(h)), var_rng());
         }
         // else doing nothing
     }
@@ -74,7 +76,7 @@ public:
             VectorXd p_vec = VectorXd::Constant(n, -1);
             VectorXd a_vec = VectorXd::Constant(n, nu) + a_inc_vec;
             VectorXd b_vec = VectorXd::Constant(n, nu) + b_inc_vec;
-            if (!fix_V) V = rGIG_cpp(p_vec, a_vec, b_vec, var_rng());
+            if (!fix_V) V = rGIG_cpp(p_vec, a_vec, b_vec.cwiseProduct(h.cwiseProduct(h)), var_rng());
         }
         // else doing nothing
     }

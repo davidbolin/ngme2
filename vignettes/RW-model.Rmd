@@ -1,0 +1,131 @@
+---
+title: "Ngme2 Random walk model"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Ngme2 Random walk model}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+In this vignette, we will briefly introduce the random walk model in `ngme2`.
+
+## Description
+
+In `ngme2`, we currently support random walk model of the first-order and the second order.
+
+Remeber in `ngme2`, all the models has the same form:
+$$K \mathbf{W} = \boldsymbol{\epsilon},$$
+where $K$ is the operator matrix, $\epsilon$ is the random noise (maybe non-Gaussian),
+$\mathbf{W}$ is the random vector we want to model.
+
+### The first-order random walk (RW(1))
+
+The **first-order random walk** is constructed assuming independent increments given data
+$\mathbf{x}$ (use as location, sorted) of length $n$:
+
+1. When $\epsilon$ follows the NIG distribution:
+$$
+\begin{align}
+\Delta w_i &= -\mu + \mu V_i + \sigma \sqrt{V_i} Z , \; n=1, \dots, n-1 \\
+V_i &\sim IG(\nu, \nu (\Delta x_i)^2), \\
+Z_i &\sim N(0, 1),
+\end{align}
+$$
+
+2. When $\epsilon$ follows the normal distribution:
+$$
+\begin{align}
+\Delta w_i &= \epsilon_i , \; n=1, \dots, n-1 \\
+\epsilon_i &\sim N(0, \sigma^2 \Delta x_i), \\
+\end{align}
+$$
+
+where $\Delta w_i := w_{i+1} - w_{i}$, $\Delta x_i := x_{i+1} - x_{i}$.
+
+The operator matrix $K$ of dimension $(n-1 \times n)$ is
+
+$$
+K =
+  \begin{bmatrix}
+    1 & -1 \\
+      & 1 & -1 \\
+      & & \ddots & \ddots \\
+      & & & 1 & -1
+  \end{bmatrix}.
+$$
+
+We also provide the special case of **circular random walk**, which the 1st element and n-th element is connected.
+In the **circular** RW(1) case, the operator matrix $K$ of dimension $(n-1 \times n-1)$ is
+
+$$
+K =
+  \begin{bmatrix}
+    1 & -1 \\
+      & \ddots & \ddots \\
+      &  & 1 & -1 \\
+       -1 & & & 1
+  \end{bmatrix}.
+$$
+
+### The second-order random walk (RW(2))
+
+Similarily, the **second-order random walk** is constructed assuming the second order difference is independent:
+
+1. When $\epsilon$ follows the NIG distribution:
+$$
+\begin{align}
+\Delta^2 w_i &= -\mu + \mu V_i + \sigma \sqrt{V_i} Z , \; n=1, \dots, n-2 \\
+V_i &\sim IG(\nu, \nu (\Delta x_i)^2), \\
+Z_i &\sim N(0, 1),
+\end{align}
+$$
+
+2. When $\epsilon$ follows the normal distribution:
+$$
+\begin{align}
+\Delta^2 w_i &= \epsilon_i , \; n=1, \dots, n-2 \\
+\epsilon_i &\sim N(0, \sigma^2 \Delta x_i), \\
+\end{align}
+$$
+
+where $\Delta^2 w_i := w_{i+2} - 2w_{i+1} - w_{i}$, $\Delta x_i := x_{i+1} - x_{i}$.
+
+The operator matrix $K$ of dimension $(n-2 \times n)$ is
+
+$$
+K =
+  \begin{bmatrix}
+    1 & -2 & 1 \\
+      & 1 & -2 & 1 \\
+      & & \ddots & \ddots & \ddots \\
+      & & & 1 & -2 & 1
+  \end{bmatrix}.
+$$
+
+In the **circular** RW(2) case, the operator matrix $K$ of dimension $(n-2 \times n-2)$ is
+
+$$
+K =
+  \begin{bmatrix}
+    1 & -2 & 1 \\
+      & 1 & -2 & 1 \\
+      & & \ddots & \ddots & \ddots \\
+      1 & & & 1 & -2 \\
+      -2 & 1 & & & 1
+  \end{bmatrix}.
+$$
+
+
+## Simulation of the random walk model
+
+Doing simulation with `ngme2` is simple. Just pass the corresponding model into `simulate` function.
+
+```{r}
+```

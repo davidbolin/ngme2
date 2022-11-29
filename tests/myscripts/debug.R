@@ -56,7 +56,7 @@ c(list(a=1, b=2), list(a=2))
 str(out$latents[[1]][["theta_mu"]])
 
 library(devtools)
-use_vignette("SPDE-approach")
+use_vignette("model-estimation")
 
 devtools::load_all()
 m = model_rw(c(1.1, 2.2, 3.5, 5.6), order=1); m$C + m$G
@@ -65,3 +65,11 @@ m = model_ar1(c(1, 2, 3, 10), order=1, noise=noise_nig()); m$C + m$G
 
 str(m)
 check()
+
+
+# sim rw1 model
+devtools::load_all()
+x <- sort(rexp(10))
+model_rw(x)$noise$n_noise
+
+solve(matrix(rexp(6), nrow=2), b=c(1,2))

@@ -1,0 +1,19 @@
+---
+title: "Model estimation"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Model estimation}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(ngme2)
+```

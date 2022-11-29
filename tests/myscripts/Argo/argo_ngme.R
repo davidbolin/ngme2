@@ -1,6 +1,5 @@
 library(INLA)
 dat <- read.table('tests/myscripts/Argo/ocean_data.txt',header=TRUE)
-use_data(dat)
 
 max.edge    = 1
 bound.outer = 5

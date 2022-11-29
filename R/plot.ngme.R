@@ -94,9 +94,11 @@ traceplot <- function(
       xlab("iterations") +
       ylab("value") + guides() +
       labs(title = paste("Traceplot of", switch(parameter,
+        theta_K = "theta_K",
         theta_mu = "mu",
         theta_sigma = "sigma",
-        theta_V = "nu"
+        theta_V = "nu",
+        beta = "beta"
       )))
     }
 }

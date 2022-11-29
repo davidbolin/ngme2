@@ -123,9 +123,35 @@ K =
 $$
 
 
-## Simulation of the random walk model
+## Usage
 
-Doing simulation with `ngme2` is simple. Just pass the corresponding model into `simulate` function.
+Use the `model_rw` or `f(model = "rw1")` or `f(model = "rw2")` (in formula) to specify a random walk model.
+
+```{r ar-usage}
+library(ngme2)
+set.seed(16)
+
+m1 <- model_rw(rexp(5), order = 1, noise = noise_normal())
+# check the operator matrix
+m1$K
+
+m2 <- model_rw(rnorm(10), order = 2, circular = TRUE, noise = noise_nig(mu=5, sigma=1.5))
+m2$K
+```
+
 
 ```{r}
+# replicates
+m3 <- model_rw(c(1.1, 2.2, 2.2, 3.3, 4.4), replicates = c(1, 1, 2, 1, 1))
+m3$K
+m3$A
+#  [1,] 1 . . . . . . .
+#  [2,] . 1 . . . . . .
+#  [3,] . . . . . 1 . .
+#  [4,] . . 1 . . . . .
+#  [5,] . . . 1 . . . .
+
+library(INLA)
+mesh = inla.mesh.1d(loc=c(1.1, 2.2, 2.2, 3.3, 4.4))
+inla.mesh.1d.A(mesh=mesh, loc=c(1,2,1))
 ```

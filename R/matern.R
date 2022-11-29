@@ -38,6 +38,12 @@ model_matern <- function(
 ) {
   # loc <- eval(substitute(loc), envir = data, enclos = parent.frame())
 
+  if (is.null(mesh) && is.null(fem.mesh.matrices))
+    stop("At least specify mesh or matrices")
+
+  if (is.vector(mesh)) # mesh is 1d vector
+    mesh <- INLA::inla.mesh.1d(loc = mesh)
+
   # deal with coords
   if ((is.data.frame(loc) || is.matrix(loc)) && ncol(loc) == 2) {
     loc <- as.matrix(loc)
@@ -47,11 +53,9 @@ model_matern <- function(
   } else { # 1d case
     if (is.null(index_NA)) index_NA <- rep(FALSE, length(loc))
     if (is.null(A))      A <- INLA::inla.spde.make.A(mesh = mesh, loc = loc[!index_NA])
-    if (is.null(A_pred)) A_pred <- INLA::inla.spde.make.A(mesh = mesh, loc = loc[index_NA])
+    if (is.null(A_pred) && any(index_NA)) A_pred <- INLA::inla.spde.make.A(mesh = mesh, loc = loc[index_NA])
   }
 
-  if (is.null(mesh) && is.null(fem.mesh.matrices))
-    stop("At least specify mesh or matrices")
 
   if (alpha - round(alpha) != 0) {
     stop("alpha should be integer, now only 2 or 4")
@@ -75,17 +79,19 @@ model_matern <- function(
       fem <- INLA::inla.mesh.1d.fem(mesh)
       C <- fem$c1
       G <- fem$g1
+    # browser()
+      h <- diag(fem$c0)
     } else {
       fem <- INLA::inla.mesh.fem(mesh, order = alpha)
       C <- fem$c0  # diag
       G <- fem$g1
+      h <- diag(fem$c0)
     }
   } else {
     C <- fem.mesh.matrices$C
     G <- fem.mesh.matrices$G
   }
   # h <- diag(C)
-  h <- rep(1, mesh$n)
 
   if (!is.null(A)) {
     nrep <- ncol(A) / nrow(C)
@@ -94,7 +100,8 @@ model_matern <- function(
     h <- rep(h, times = nrep)
   }
 
-  # if (noise$n_noise == 1) noise <- update_noise(noise, n = mesh$n)
+  if (noise$n_noise == 1) noise <- update_noise(noise, n = mesh$n)
+  # kappas <- drop(exp(theta_kappa %*% B_kappa))
 
   model <- ngme_model(
     model       = "matern",
@@ -107,6 +114,7 @@ model_matern <- function(
     B_kappa     = B_kappa,
     C           = ngme_as_sparse(C),
     G           = ngme_as_sparse(G),
+    # K           = kappas * kappas * C + G
     h           = h,
     noise       = noise,
     ...

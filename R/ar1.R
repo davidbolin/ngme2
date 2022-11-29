@@ -40,8 +40,8 @@ model_ar1 <- function(
   range <- c(min(index), max(index))
 
   if (is.null(index_NA)) index_NA <- rep(FALSE, length(index))
-  if (is.null(replicates)) replicates <- rep(1, length(index))
 
+  if (is.null(replicates)) replicates <- rep(1, length(index))
   unique_rep <- unique(replicates)
   nrep <- length(unique_rep)
 
@@ -120,6 +120,10 @@ model_rw <- function(
   x <- eval(substitute(x), envir = data, enclos = parent.frame())
   if (is.null(index_NA)) index_NA <- rep(FALSE, length(x))
 
+  if (is.null(replicates)) replicates <- rep(1, length(x))
+  unique_rep <- unique(replicates)
+  nrep <- length(unique_rep)
+
   stopifnot("length of index at least > 3" = length(x) > 3)
   # create mesh using index
   # sorted_index <- sort(index, index.return = TRUE)
@@ -136,7 +140,7 @@ model_rw <- function(
   # create A in INLA way
   mesh <- INLA::inla.mesh.1d(loc = x)
   # p_matrix <- as(mesh$idx$loc, "pMatrix") # bug! p_matrix
-# browser()
+
   A <- INLA::inla.spde.make.A(mesh = mesh, loc = x[!index_NA])
   A_pred <- if (!any(index_NA)) NULL else
    INLA::inla.spde.make.A(mesh = mesh, loc = x[index_NA])
@@ -178,6 +182,12 @@ model_rw <- function(
       G[c(n-1, 2*n)] <- 1
     }
     noise$h <- noise$h[-1]
+  }
+
+  if(!is.null(nrep)) {
+    C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), C)
+    G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), G)
+    A <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), A)
   }
 
   # update noise with length n

@@ -117,7 +117,7 @@ auto timer = std::chrono::steady_clock::now();
     if (converge)
         Rcpp::Rcout << "Reach convergence in " << steps << " iterations." << std::endl;
     else
-        Rcpp::Rcout << "Not sure about the convergence." << std::endl;
+        Rcpp::Rcout << "Estimation ends." << std::endl;
 
 #else // No parallel chain
     BlockModel block (ngme_block, rng());

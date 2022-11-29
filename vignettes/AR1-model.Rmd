@@ -43,22 +43,25 @@ $$
 
 ## Usage
 
-AR(1) process is defined on the integer mesh (can have gap), for example:
+Use the `model_ar1` or `f(model="ar1")` (in formula) to specify a AR(1) model.
+Notice that AR(1) process is only well defined in the integer mesh (it can have gaps), see the following examples:
 
 ```{r ar-usage}
-# library(ngme2)
-devtools::load_all()
-set.seed(18)
+library(ngme2)
+set.seed(16)
 
-model_ar1(3:5, noise = noise_normal())$K
+m1 <- model_ar1(3:5, noise = noise_normal())
+# check the operator matrix
+m1$K
 # length is 5 - 3 + 1
 
-model_ar1(c(2011, 2012, 2015, 2016), noise = noise_nig())$K
+m2 <- model_ar1(c(2011, 2012, 2015, 2016), noise = noise_nig(mu=5, sigma=1.5))
+m2$K
 # length is 2016 - 2011 + 1 = 6
 
 # specify mesh with replicates
-model_ar1(c(1:5, 1:5), replicates = c(rep(1, 5), rep(2, 5)))$K
-
+m3 <- model_ar1(c(1:5, 1:5), replicates = c(rep(1, 5), rep(2, 5)))
+m3$K
 # index with double is not supported
 # not run:
 # model_ar1(rnorm(10))
@@ -66,12 +69,15 @@ model_ar1(c(1:5, 1:5), replicates = c(rep(1, 5), rep(2, 5)))$K
 
 ## Simulation
 
-Doing simulation with `ngme2` is simple. Just pass the corresponding model into `simulate` function.
+simulate AR(1) model with `ngme2` is simple. Just pass the corresponding model into `simulate` function.
 
-```{r ar-simulation}
+```{r ar-simulation, fig.align="center"}
 n_obs <- 500
 day <- 1:n_obs
-Y <- simulate(model_ar1(day, alpha = 0.5, noise = noise_nig()))
+Y <- simulate(
+  model_ar1(day, alpha = 0.5, noise = noise_nig(mu = 2, sigma = 2)),
+  seed = 16
+)
 
 # check the acf to see the correlation
 acf(Y)
@@ -83,12 +89,13 @@ In this part we will show how to estiamte the AR model using `ngme` function.
 Here we can use `ngme_control` to modify the control variables for the `ngme`.
 See `?ngme_control` for more optioins.
 
-```{r ar-estimation}
+```{r ar-estimation, fig.align="center", cache=TRUE}
 x1 = runif(n_obs)
 x2 = rexp(n_obs)
 beta <- c(-3, -1, 2)
 X <- (model.matrix(Y ~ x1 + x2))  # design matrix
 Y <- as.numeric(Y + X %*% beta) # add some fixed effects
+Y <- Y + rnorm(n_obs, sd = 1) # add measurement noise
 
 # Fit the model with the AR1 model
 ngme_out <- ngme(
@@ -101,15 +108,27 @@ ngme_out <- ngme(
   data = data.frame(x1=x1, x2=x2, Y=Y),
   control = ngme_control(
     burnin = 100,
-    iterations = 1000,
-    std_lim = 0.5,
+    iterations = 2000,
+    std_lim = 0.6,
     gibbs_sample = 5,
     n_parallel_chain = 4,
     stop_points = 10,
-    print_check_info = TRUE
+    print_check_info = FALSE
   ),
   seed = 3
 )
 
 ngme_out
+
+# traceplot of the measurement noise sigma
+traceplot(ngme_out, param = "sigma", f_index = 0)
+
+# traceplots of the AR(1) model
+traceplot(ngme_out, param = "alpha", f_index = 1)
+traceplot(ngme_out, param = "mu", f_index = 1)
+traceplot(ngme_out, param = "sigma", f_index = 1)
+
+# comparing the density of the noise estimated and the noise simulated
+plot(ngme_out$latents[[1]]$noise,
+  noise_nig(mu = 2, sigma = 1.5))
 ```

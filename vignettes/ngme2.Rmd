@@ -101,6 +101,8 @@ See `?nig` for more details.
 1. Ngme2 does maximum likelihood estimation through preconditioned stochastic gradient descent.
 2. Multiple chains are run in parallel for better convergence checks.
 
+<!-- See `vignette()` for more details. -->
+
 ## Ngme Model Structure
 
 ### Specify noise with `ngme_noise` object
@@ -372,7 +374,7 @@ ggplot() +
   ]), colour = "red")
 ```
 
-```{r fit-parana}
+```{r fit-parana, cache=TRUE}
 library(ngme2)
 # leave 0.1 Y as prediction area
 # n <- length(Y)
@@ -431,7 +433,7 @@ traceplot(out, f_index = 3, param = "sigma")
 
 ### Prediction
 
-```{r}
+```{r predict, cache=TRUE}
 nxy <- c(150, 100)
 projgrid <- rSPDE::rspde.mesh.projector(prmesh,
   xlim = range(PRborder[, 1]),

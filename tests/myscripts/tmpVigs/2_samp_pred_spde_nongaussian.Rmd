@@ -256,7 +256,8 @@ eta = 0.5
 mu = 1
 sigma = 1
 
-V = ngme2::rig(n, a = eta, b = h_nig_1d^2*eta, sample.int(10^6, 1))
+V = ngme2::rig(n, a = eta, b = h_nig_1d^2*eta, seed=10)
+V
 temp = rnorm(n, mean = (-h_nig_1d + V)*mu, sd = sigma^2*sqrt(V))
 W = solve(K, temp)
 plot(loc_nig_1d, W, type="l")

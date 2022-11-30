@@ -25,6 +25,9 @@ simulate.ngme_model <- function(
 
     # create operator structure
     if (model$model == "ar1") {
+        # assume W_0 = 0
+        # W_1 = a*W_0 + noise
+        # do the loop
         alpha <- ar1_th2a(model$theta_K)
         # for loop
         W <- Reduce(function(x, y) {y + alpha * x}, sim_noise, accumulate = T)
@@ -42,10 +45,15 @@ simulate.ngme_model <- function(
             }
             drop(solve(K_a, sim_noise))
         })
-    } else if (model$model %in% c("rw1", "rw2")) {
-        # The K is non-squared
-        # W <- drop(solve(model$K, sim_noise))
-        stop("RW not support simulation yet.")
+    } else if (model$model == "rw1") {
+        # assume W_0 = 0
+        # W_n = W_0 + cumsum(simnoise)
+        W <- cumsum(sim_noise)
+    } else if (model$model == "rw2") {
+        # assume W_0 = 0, W_1 = 0
+        W <- cumsum(cumsum(sim_noise))
+        # starting value W_0, W_1
+        # W_{n+1} <- W_0 + n * (W_1 - W_0) + cumsum(cumsum(sim_noise))
     } else {
         stop("not implement yet")
     }
@@ -83,9 +91,9 @@ simulate.ngme_noise <- function(
         mu <- drop(noise$B_mu %*% noise$theta_mu)
         sigma <- drop(exp(noise$B_sigma %*% noise$theta_sigma))
         nu <- noise$theta_V
-        V <- ngme2::rig(n, nu, nu * (noise$h)^2, seed = seed);
+        V <- ngme2::rig(n, nu, nu * (noise$h)^2, seed = seed)
         noise$V <- V
-        e <- mu * (-1 + V) + sigma * sqrt(V) * rnorm(n)
+        e <- mu * (V - noise$h) + sigma * sqrt(V) * rnorm(n)
     } else if (noise$noise_type == "normal") {
         sigma <- drop(exp(noise$B_sigma %*% noise$theta_sigma))
         e <- rnorm(n, sd = sigma * noise$h)

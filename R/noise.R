@@ -25,6 +25,7 @@
 #' @param fix_theta_mu    fix the parameter of theta_mu
 #' @param fix_theta_sigma  fix the parameter of theta_sigma
 #' @param fix_theta_V   fix the parameter of theta_V
+#' @param  h        numerical vector (> 0), mesh width
 #' @param fix_V         fix the sampling of V
 #' @param ...       additional arguments
 #'
@@ -44,10 +45,14 @@ ngme_noise <- function(
   fix_theta_sigma = FALSE,
   fix_theta_V     = FALSE,
   V               = NULL,
+  h               = NULL,
   fix_V           = FALSE,
   ...
 ) {
-  theta_V <- nu
+  if ("theta_V" %in% names(list(...)))
+    theta_V <- list(...)$theta_V
+  else
+    theta_V <- nu
   if (is.null(theta_mu)) theta_mu <- mu
   if (is.null(theta_sigma)) theta_sigma <- log(sigma)
 
@@ -87,7 +92,7 @@ ngme_noise <- function(
   structure(
     list(
       n_noise         = n,  # this is same as V_size
-      h               = rep(1, n),
+      h               = if (is.null(h)) rep(1, n) else h,
       noise_type      = noise_type,
       theta_V         = theta_V,
       V               = V,
@@ -173,7 +178,7 @@ noise_nig <- function(
   stopifnot("Please use theta_mu for non-stationary mu." = length(mu) < 2)
   if (is.null(mu) && is.null(theta_mu)) theta_mu <- 0
   if (is.null(sigma) && is.null(theta_sigma)) theta_sigma <- 0
-  if (is.null(nu)) theta_V <- 1 else theta_V <- nu
+  if (is.null(nu)) nu <- 1
 
   if (!is.null(nu) && nu <= 0) stop("ngme_nosie: nu should be positive.")
   if (!is.null(sigma) && sigma <= 0) stop("ngme_nosie: sigma should be positive.")
@@ -185,7 +190,7 @@ noise_nig <- function(
     noise_type = "nig",
     theta_mu = theta_mu,
     theta_sigma = theta_sigma,
-    theta_V = theta_V,
+    nu = nu,
     V = V,
     B_mu = B_mu,
     B_sigma = B_sigma,
@@ -205,6 +210,7 @@ update_noise <- function(noise, n = NULL, new_noise = NULL) {
     noise$B_sigma <- matrix(data = rep(B_sigma, n / nrow(B_sigma)), nrow = n)
     noise$n_noise <- n
 
+    if (length(noise$h) == 1) noise$h <- rep(1, n)
     noise <- do.call(ngme_noise, noise)
   } else if (!is.null(new_noise)) {
     # update with another noise

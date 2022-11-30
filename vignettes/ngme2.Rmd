@@ -268,7 +268,7 @@ Y = as.numeric(Y + X %*% beta)
 Now let's fit the model using `ngme`. Here we can use `ngme_control` to modify the
 control variables for the `ngme`. See `?ngme_control` for more optioins.
 
-```{r fit_ar1}
+```{r fit_ar1, cache=TRUE}
 # # Fit the model with the AR1 model
 ngme_out <- ngme(
   Y ~ x1 + x2 + f(
@@ -337,7 +337,6 @@ ANA collects data from many locations over Brazil, and all these data are freely
 We will briefly illustrate the command we use, and the result of the estimation.
 
 ```{r read-parana}
-
 data(PRprec)
 data(PRborder)
 
@@ -360,7 +359,6 @@ seaDist <- apply(spDists(coords, PRborder[1034:1078, ],
 Plot the data:
 
 ```{r plot-data, message=FALSE,fig.width=6,fig.height=6,fig.align='center', echo=FALSE, fig.cap="Mean of the rainfall in Octobor 2012 in Paraná"}
-
 ggplot() +
   geom_point(aes(
     x = coords[, 1], y = coords[, 2],
@@ -375,7 +373,6 @@ ggplot() +
 ```
 
 ```{r fit-parana, cache=TRUE}
-library(ngme2)
 # leave 0.1 Y as prediction area
 # n <- length(Y)
 # ind_pred <- sample(1:n, size = 0.1 * n)
@@ -389,7 +386,7 @@ matern_spde <- model_matern(
 
 out <- ngme(
   formula = Y ~ 1 +
-    f(x = inla.group(seaDist), model = "rw1", noise = noise_normal()) +
+    f(inla.group(seaDist), model = "rw1", circular=T, noise = noise_normal()) +
     f(model = matern_spde, noise = noise_nig()) +
     f(model = matern_spde, noise = noise_normal()),
   data = list(
@@ -403,11 +400,10 @@ out <- ngme(
     stop_points = 10,
     std_lim = 0.1,
     n_parallel_chain = 4,
-    print_check_info = TRUE
+    print_check_info = FALSE
   ),
   seed = 16
 )
-
 out
 
 # traceplots

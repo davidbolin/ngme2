@@ -28,8 +28,6 @@ model_ar1(
 \item{alpha}{initial value for alpha}
 
 \item{...}{extra arguments in f()}
-
-\item{range}{range for the mesh}
 }
 \value{
 a list of specification of model

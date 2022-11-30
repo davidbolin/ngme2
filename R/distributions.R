@@ -184,7 +184,6 @@ rgig <- function (n, p, a, b, seed = 0)
     a_new <- a
     b_new <- b
   }
-
   return(rGIG_cpp(p_new, a_new, b_new, seed))
 }
 

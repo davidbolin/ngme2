@@ -13,7 +13,6 @@
 #' @param replicates replicates for the process
 #' @param index_NA Logical vector, same as is.na(response var.)
 #' @param alpha initial value for alpha
-#' @param range range for the mesh
 #'
 #' @param noise noise, can be specified in f()
 #' @param data data, can be specified in f(), ngme()
@@ -174,8 +173,8 @@ model_rw <- function(
       G[seq(2*n+1, n*(n+2), by = n+1)] <- 1
     } else {
       stopifnot(n >= 3)
-      C <- Matrix::Matrix(0, n, n)
-      G <- Matrix::Matrix(diag(n));
+      C <- Matrix::Matrix(diag(n))
+      G <- Matrix::Matrix(0, n, n)
       G[seq(n+1, n*n, by = n+1)] <- -2
       G[seq(2*n+1, n*n, by = n+1)] <- 1
       G[n] <- -2
@@ -199,7 +198,7 @@ model_rw <- function(
     fix_theta_K = TRUE
     W_size      = ncol(C) # mesh$n
     V_size      = n
-    A           = A
+    A           = ngme_as_sparse(A)
     A_pred      = A_pred
     C           = ngme_as_sparse(C)
     G           = ngme_as_sparse(G)

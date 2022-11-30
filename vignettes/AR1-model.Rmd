@@ -69,7 +69,7 @@ m3$K
 
 ## Simulation
 
-simulate AR(1) model with `ngme2` is simple. Just pass the corresponding model into `simulate` function.
+Simulating an AR(1) model with `ngme2` is simple. Just pass the corresponding model into `simulate` function.
 
 ```{r ar-simulation, fig.align="center"}
 n_obs <- 500

@@ -55,10 +55,13 @@ ngme_model <- function(
   control     = ngme_control_f(),
   V_size      = NULL,
   debug       = FALSE,
+  par_string  = NULL,
+  n_theta_K   = length(theta_K),
+  h           = NULL,
+  n_params    = NULL,
   ...
 ) {
   stopifnot(is.character(model))
-
   # generate string (8 digits)
   K_str     <- switch(model,
     ar1     = "   alpha",
@@ -68,6 +71,13 @@ ngme_model <- function(
   mu_str    <- paste0("    mu_", seq_along(noise$theta_mu))
   sigma_str <- paste0(" sigma_", seq_along(noise$theta_sigma))
   nu_str    <- "    nu_1"
+
+  # Notice noise$h should be same as h
+  if (is.null(h)) h <- noise$h else noise$h <- h
+  if (is.null(par_string))
+    par_string <- do.call(paste0, as.list(c(K_str, mu_str, sigma_str, nu_str)))
+  if (is.null(n_params))
+    n_params <- length(theta_K) + with(noise, n_theta_mu + n_theta_sigma + n_theta_V)
 
   structure(
     list(
@@ -84,9 +94,10 @@ ngme_model <- function(
       fix_theta_K   = fix_theta_K,
       V_size        = V_size,
       control       = control,
-      n_params      = length(theta_K) + with(noise, n_theta_mu + n_theta_sigma + n_theta_V),
+      n_params      = n_params,
       debug         = debug,
-      par_string    = do.call(paste0, as.list(c(K_str, mu_str, sigma_str, nu_str))),
+      par_string    = par_string,
+      h             = h,
       ...
     ),
     class = "ngme_model"

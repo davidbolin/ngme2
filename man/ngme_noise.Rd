@@ -20,6 +20,7 @@ ngme_noise(
   fix_theta_sigma = FALSE,
   fix_theta_V = FALSE,
   V = NULL,
+  h = NULL,
   fix_V = FALSE,
   ...
 )
@@ -71,6 +72,8 @@ noise_nig(
 \item{fix_theta_V}{fix the parameter of theta_V}
 
 \item{V}{start value for V}
+
+\item{h}{numerical vector (> 0), mesh width}
 
 \item{fix_V}{fix the sampling of V}
 

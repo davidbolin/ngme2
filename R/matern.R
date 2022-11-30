@@ -79,19 +79,19 @@ model_matern <- function(
       fem <- INLA::inla.mesh.1d.fem(mesh)
       C <- fem$c1
       G <- fem$g1
-    # browser()
-      h <- diag(fem$c0)
+      h <- Matrix::diag(fem$c0)
+      # h <- rowsum(fem$c0)
     } else {
       fem <- INLA::inla.mesh.fem(mesh, order = alpha)
       C <- fem$c0  # diag
       G <- fem$g1
-      h <- diag(fem$c0)
+      h <- Matrix::diag(fem$c0)
     }
   } else {
     C <- fem.mesh.matrices$C
     G <- fem.mesh.matrices$G
+    h <- Matrix::diag(fem.mesh.matrices$c0)
   }
-  # h <- diag(C)
 
   if (!is.null(A)) {
     nrep <- ncol(A) / nrow(C)
@@ -101,6 +101,7 @@ model_matern <- function(
   }
 
   if (noise$n_noise == 1) noise <- update_noise(noise, n = mesh$n)
+  noise$h <- h
   # kappas <- drop(exp(theta_kappa %*% B_kappa))
 
   model <- ngme_model(

@@ -1,8 +1,8 @@
 ---
-title: "Gibbs sampling, model predictoin and estimation"
+title: "Model prediction and estimation"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Gibbs sampling and model predictoin}
+  %\VignetteIndexEntry{Model prediction and estimation}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -220,9 +220,9 @@ from such a process we refer the reader to [Sampling from processes given by sol
 vignette. We will also be using the notation from that vignette.
 
 Notice that we will, then, be assuming $V_i$ to follow an inverse Gaussian
-distribution with parameters $\eta$ and $\eta h_i^2$.
+distribution with parameters $\nu$ and $\nu h_i^2$.
 
-We will take $\kappa=1$, $\sigma_\varepsilon=1$, $\sigma=1$, $\mu = 1$, $\mathcal{D}=[0,1]$ and $\eta=0.5$. We will also assume that we
+We will take $\kappa=1$, $\sigma_\varepsilon=1$, $\sigma=1$, $\mu = 1$, $\mathcal{D}=[0,1]$ and $\nu=0.5$. We will also assume that we
 have 10 observations
 $$Y_i = X(t_i) + \varepsilon_i,\quad i=1,\ldots,10,$$
 where $t_1,\ldots,t_{10}\in [0,1]$. Notice that $\varepsilon_i \sim N(0,1)$.
@@ -237,12 +237,14 @@ library(INLA)
 library(ngme2)
 library(ggplot2)
 library(tidyr)
-
 set.seed(123)
-# devtools::load_all()
 
 loc_1d <- 0:9/9
 mesh_1d <- inla.mesh.1d(loc_1d)
+
+# inla.mesh.fem
+# inla.mesh.1d.fem(mesh_1d)$c1 + inla.mesh.1d.fem(mesh_1d)$g1
+# attr(simulate(noise_nig(n=10, 1,1,0.5), seed=10), "noise")$h
 
 # specify the model we use
 mu <- 1; sigma <- 1; nu <- 0.5
@@ -252,8 +254,11 @@ spde_1d <- model_matern(
   mesh = mesh_1d,
   noise = noise_nig(mu=mu, sigma=sigma, nu=nu)
 )
+spde_1d$noise$h
+K <- spde_1d$C + spde_1d$G
 
-W <- simulate(spde_1d, seed = 2)
+
+W <- simulate(spde_1d, seed = 10)
 plot(loc_1d, W, type = "l")
 str(W)
 
@@ -293,12 +298,13 @@ We will build 2 chains with different starting values and no burn-in samples.
 ```{r}
 # First step - Starting values for V
 # Considering a sample of inv-Gaussian as starting values for both chains
-V_1 <- matrix(ngme2::rig(10, eta, eta*h_nig_1d^2, seed = 1), nrow = 1)
-V_2 <- matrix(ngme2::rig(10, eta, eta*h_nig_1d^2, seed = 2), nrow = 1)
+h_nig_1d <- spde_1d$h
+V_1 <- matrix(ngme2::rig(10, nu, nu*h_nig_1d^2, seed = 1), nrow = 1)
+V_2 <- matrix(ngme2::rig(10, nu, nu*h_nig_1d^2, seed = 2), nrow = 1)
 ```
 
-Recall that $V_j \sim IG(\eta, h_j^2 \cdot \eta), j=1,\ldots,10$, $\mu=1$ and $\sigma=1$, so that
-$$V_j|\mathbf{w},\mathbf{Y} \sim GIG(-1,\eta + 1, \eta\cdot h_j^2 + (\mathbf{K}\mathbf{w}+\mathbf{h})_j^2)$$
+Recall that $V_j \sim IG(\nu, h_j^2 \cdot \nu), j=1,\ldots,10$, $\mu=1$ and $\sigma=1$, so that
+$$V_j|\mathbf{w},\mathbf{Y} \sim GIG(-1,\nu + 1, \nu\cdot h_j^2 + (\mathbf{K}\mathbf{w}+\mathbf{h})_j^2)$$
 and
 $$\mathbf{w} | \mathbf{V}, \mathbf{Y} \sim N\big( (\mathbf{K}{\rm diag}(\mathbf{V})^{-1}\mathbf{K} + \mathbf{A}^\top\mathbf{A})^{-1}(\mathbf{K}{\rm diag}(\mathbf{V})^{-1}(\mathbf{V}-\mathbf{h})+\mathbf{A}^\top \mathbf{Y}), (\mathbf{K}{\rm diag}(\mathbf{V})^{-1}\mathbf{K} + \mathbf{A}^\top\mathbf{A})^{-1}\big).$$
 
@@ -318,7 +324,6 @@ m_W_2 <- matrix(0, nrow=1, ncol=10)
 Asq <- t(A_matrix)%*%A_matrix / sigma_eps^2
 
 # Recall that mu = 1 and sigma = 1
-
 # Gibbs sampling
 for(i in 1:N_sim){
   Q_1 <- K%*%diag(1/V_1[i,])%*%K/sigma^2
@@ -335,18 +340,14 @@ for(i in 1:N_sim){
 
   W_1 <- rbind(W_1, m_W_1[i+1,] + t(solve(Chol_1, rnorm(10))))
   W_2 <- rbind(W_2, m_W_2[i+1,] + t(solve(Chol_2, rnorm(10))))
-  V_1 <- rbind(V_1,
-               ngme2::rgig(10,
-                           -1,10,
-                           eta + (mu/sigma)^2,
-                           eta*h_nig_1d^2 +
-                           as.vector((K%*%W_1[i+1,] +h_nig_1d)^2)/sigma^2))
-
+  V_1 <- rbind(V_1, ngme2::rgig(10,
+                           -1,
+                           nu + (mu/sigma)^2,
+                           nu*h_nig_1d^2 + as.vector((K%*%W_1[i+1,] +h_nig_1d)^2)/sigma^2))
   V_2 <- rbind(V_2, ngme2::rgig(10,
                                 -1,
-                                eta + (mu/sigma)^2,
-                                eta*h_nig_1d^2 +
-                                as.vector((K%*%W_2[i+1,] +h_nig_1d)^2)/sigma^2))
+                                nu + (mu/sigma)^2,
+                                nu*h_nig_1d^2 + as.vector((K%*%W_2[i+1,] +h_nig_1d)^2)/sigma^2))
 }
 ```
 
@@ -462,7 +463,7 @@ $t^\ast = 5/9$. We will compute MC and Rao-Blackwellization for the predictions.
 ```{r, fig.width=7, fig.height=5}
 # Computing A matrix at t^\ast
 
-A_pred <- inla.spde.make.A(mesh_loc_nig_1d, loc = 5/9)
+A_pred <- inla.spde.make.A(mesh_1d, loc = 5/9)
 
 # MC_estimate:
 

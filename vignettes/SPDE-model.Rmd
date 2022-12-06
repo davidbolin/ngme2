@@ -271,7 +271,6 @@ out <- ngme(
   ),
   debug = TRUE
 )
-
 out
 ```
 

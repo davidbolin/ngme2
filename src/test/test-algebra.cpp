@@ -28,13 +28,13 @@ context("Test generating MVN") {
     // m1.coeffRef(3,2) = 6.;
     m1.coeffRef(3,3) = 7.;
     m1.makeCompressed();
-  
-    VectorXd mu (4); 
+
+    VectorXd mu (4);
     mu << 1,1,1,1;
 
-    Rcpp::Rcout << m1;
+    std::cout << m1;
     solver.analyze(m1);
-    Rcpp::Rcout << solver.rMVN(mu, mu);
+    std::cout << solver.rMVN(mu, mu);
   }
 }
 

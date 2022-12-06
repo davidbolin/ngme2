@@ -15,7 +15,7 @@ Matern_ns::Matern_ns(Rcpp::List& model_list, unsigned long seed)
     Bkappa      (Rcpp::as<MatrixXd> (model_list["B_kappa"])),
     Cdiag       (C.diagonal())
 {
-if (debug) Rcpp::Rcout << "constructor of matern ns" << std::endl;
+if (debug) std::cout << "constructor of matern ns" << std::endl;
     symmetricK = true;
 
     // Init K and Q
@@ -29,14 +29,14 @@ if (debug) Rcpp::Rcout << "constructor of matern ns" << std::endl;
     // Init Q
     solver_Q.init(W_size, 0,0,0);
     solver_Q.analyze(Q);
-if (debug) Rcpp::Rcout << "finish constructor of matern ns" << std::endl;
+if (debug) std::cout << "finish constructor of matern ns" << std::endl;
 }
 
 // inherit get_K_parameter, grad_K_parameter, set_K_parameter
 
 SparseMatrix<double> Matern_ns::getK(const VectorXd& theta_kappa) const {
     VectorXd kappas = (Bkappa * theta_kappa).array().exp();
-    Rcpp::Rcout <<  "theta_kappa here = " << theta_kappa << std::endl;
+    std::cout <<  "theta_kappa here = " << theta_kappa << std::endl;
 
     int n_dim = G.rows();
     SparseMatrix<double> K_a (n_dim, n_dim);

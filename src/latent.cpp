@@ -30,7 +30,7 @@ Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
 
     theta_K_traj  (theta_K.size())
 {
-if (debug) Rcpp::Rcout << "Begin constructor of latent" << std::endl;
+if (debug) std::cout << "Begin constructor of latent" << std::endl;
 
     // setting the seed
     // latent_rng.seed(seed);
@@ -79,11 +79,11 @@ if (debug) Rcpp::Rcout << "Begin constructor of latent" << std::endl;
     theta_sigma_traj.resize(n_theta_sigma);
     record_traj();
 
-if (debug) Rcpp::Rcout << "End constructor of latent" << std::endl;
+if (debug) std::cout << "End constructor of latent" << std::endl;
 }
 
 VectorXd Latent::grad_theta_mu() {
-// if (debug) Rcpp::Rcout << "Start mu gradient"<< std::endl;
+// if (debug) std::cout << "Start mu gradient"<< std::endl;
     // VectorXd inv_V = V.cwiseInverse();
     // VectorXd prev_inv_V = prevV.cwiseInverse();
 
@@ -100,8 +100,8 @@ VectorXd Latent::grad_theta_mu() {
 
     // return - grad;
 // if (debug) {
-// Rcpp::Rcout << "grad of mu=" << grad <<std::endl;
-// Rcpp::Rcout << "hess of mu=" << hess <<std::endl;
+// std::cout << "grad of mu=" << grad <<std::endl;
+// std::cout << "hess of mu=" << hess <<std::endl;
 // }
 }
 
@@ -208,7 +208,7 @@ Rcpp::List Latent::output() const {
 
 // // numerical gradient for K parameters
 // VectorXd Latent::numerical_grad() {
-// Rcpp::Rcout << "start numerical gradient" <<std::endl;
+// std::cout << "start numerical gradient" <<std::endl;
 //     int n_theta_K =   get_n_params();
 //     VectorXd params = get_parameter();
 //     double val = function_K(params);

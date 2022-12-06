@@ -28,7 +28,7 @@ Rcpp::List Optimizer::sgd(
         count += 1;
 // auto timer_grad = std::chrono::steady_clock::now();
         VectorXd grad = model.grad();
-// Rcpp::Rcout << "get gradient (ms): " << since(timer_grad).count() << std::endl;
+// std::cout << "get gradient (ms): " << since(timer_grad).count() << std::endl;
 
         if (precondioner) {
             MatrixXd cond = model.precond();
@@ -75,7 +75,7 @@ VectorXd Optimizer::sgd(
     for (int i = 0; i < iterations; i++) {
 // auto timer_grad = std::chrono::steady_clock::now();
         grad = model.grad();
-// Rcpp::Rcout << "get gradient (ms): " << since(timer_grad).count() << std::endl;
+// std::cout << "get gradient (ms): " << since(timer_grad).count() << std::endl;
 
         // VectorXd stepsizes = model.get_stepsizes();
         // x = x - grad.cwiseProduct(stepsizes);

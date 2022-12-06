@@ -18,7 +18,7 @@ AR::AR(Rcpp::List& model_list, unsigned long seed)
     G           (Rcpp::as< SparseMatrix<double,0,int> > (model_list["G"])),
     C           (Rcpp::as< SparseMatrix<double,0,int> > (model_list["C"]))
 {
-if (debug) Rcpp::Rcout << "Begin Constructor of AR1" << std::endl;
+if (debug) std::cout << "Begin Constructor of AR1" << std::endl;
 
     // Init K and Q
     K = getK(theta_K);
@@ -34,7 +34,7 @@ if (debug) Rcpp::Rcout << "Begin Constructor of AR1" << std::endl;
     // Init Q
     solver_Q.init(W_size, 0,0,0);
     solver_Q.analyze(Q);
-if (debug) Rcpp::Rcout << "End Constructor of AR1" << std::endl;
+if (debug) std::cout << "End Constructor of AR1" << std::endl;
 }
 
 // wrt. parameter_K (bounded parameter)
@@ -79,8 +79,8 @@ VectorXd AR::grad_theta_K() {
         double grad = trace - tmp;
         ret = - grad * da / W_size;
 
-    // if (debug) Rcpp::Rcout << "tmp =" << tmp << std::endl;
-    // if (debug) Rcpp::Rcout << "trace =" << trace << std::endl;
+    // if (debug) std::cout << "tmp =" << tmp << std::endl;
+    // if (debug) std::cout << "trace =" << trace << std::endl;
         // result : trace ~= 0
         //          tmp ~= 20-70
 
@@ -96,17 +96,17 @@ VectorXd AR::grad_theta_K() {
 //             VectorXd prevSV = getPrevSV();
 //             double grad2_eps = trace_eps - (dK2*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K2 * prevW + (h - prevV).cwiseProduct(mu));
 //             double grad_eps  = trace -(dK2*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K2 * prevW + (h - prevV).cwiseProduct(mu));
-// // Rcpp::Rcout << "trace_eps =" << trace_eps << std::endl;
-// // Rcpp::Rcout << "trace =" << trace << std::endl;
-// // Rcpp::Rcout << "grad2_eps =" << grad2_eps << std::endl;
-// // Rcpp::Rcout << "grad_eps =" << grad_eps << std::endl;
-// // Rcpp::Rcout << "tmp =" << (dK2*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K2 * prevW + (h - prevV).cwiseProduct(mu)) << std::endl;
-// // Rcpp::Rcout << "tmp2 =" << (dK2*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K2 * prevW + (h - prevV).cwiseProduct(mu)) << std::endl;
+// // std::cout << "trace_eps =" << trace_eps << std::endl;
+// // std::cout << "trace =" << trace << std::endl;
+// // std::cout << "grad2_eps =" << grad2_eps << std::endl;
+// // std::cout << "grad_eps =" << grad_eps << std::endl;
+// // std::cout << "tmp =" << (dK2*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K2 * prevW + (h - prevV).cwiseProduct(mu)) << std::endl;
+// // std::cout << "tmp2 =" << (dK2*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K2 * prevW + (h - prevV).cwiseProduct(mu)) << std::endl;
 
 //             double hess = (grad2_eps - grad_eps) / eps;
-// Rcpp::Rcout << "hess =" << hess << std::endl;
+// std::cout << "hess =" << hess << std::endl;
 //         // result : hessian around 2000
-//     // if (debug) Rcpp::Rcout << "hess =" << hess << std::endl;
+//     // if (debug) std::cout << "hess =" << hess << std::endl;
 
 //             ret = (grad * da) / (hess * da * da + grad_eps * d2a);
 //         }

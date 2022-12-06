@@ -64,13 +64,14 @@ out <- ngme(
   family = noise_nig(),
   control = ngme_control(
     estimation = T,
-    iterations = 1000,
+    iterations = 10,
     n_slope_check = 4,
     stop_points = 10,
     std_lim = 0.1,
     n_parallel_chain = 4,
     print_check_info = TRUE
   ),
+  debug=TRUE,
   seed = 416
 )
 

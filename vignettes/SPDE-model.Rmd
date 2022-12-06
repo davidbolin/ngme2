@@ -201,9 +201,8 @@ head(argo_float)
 
 max.edge    <- 1
 bound.outer <- 5
-loc_2d = unique(cbind(argo_float$lon, argo_float$lat))
+loc_2d <- unique(cbind(argo_float$lon, argo_float$lat))
 # nrow(loc) == nrow(dat) no replicates
-loc_2d
 argo_mesh <- inla.mesh.2d(loc = loc_2d,
                     # the inner edge and outer edge
                     max.edge = c(1,5),
@@ -212,8 +211,6 @@ argo_mesh <- inla.mesh.2d(loc = loc_2d,
                     offset = c(max.edge, bound.outer)
 )
 plot(argo_mesh)
-str(argo_mesh)
-str(inla.mesh.fem(argo_mesh)$c0)
 ```
 
 Specifying a 2d Matérn model is also very simple:
@@ -259,21 +256,22 @@ ggplot(data=argo_float) +
 Next, we specfiy a model formula, and then fit the model.
 
 ```{r ngme-estimation, cache=TRUE}
-formula <- temp ~ sal + f(model = argo_spde, noise = noise_nig())
+formula <- temp ~ sal + f(model = argo_spde, noise = noise_normal(), debug = TRUE)
 
 out <- ngme(
   formula = formula,
-  family = "normal",
+  family = "nig",
   data = argo_float,
   seed = 7,
   control = ngme_control(
+    estimation = TRUE,
     n_parallel_chain = 4,
     iterations = 100,
-    print_check_info = FALSE
-  )
+    print_check_info = TRUE
+  ),
+  debug = TRUE
 )
 
-# check the result
 out
 ```
 

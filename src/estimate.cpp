@@ -62,10 +62,9 @@ auto timer = std::chrono::steady_clock::now();
     std::string par_string = blocks[0]->get_par_string();
 
     // burn in period
-    #pragma omp parallel for schedule(static)
-    for (i=0; i < n_chains; i++)
-        (blocks[i])->burn_in(burnin+3);
-
+    // #pragma omp parallel for schedule(static)
+    // for (i=0; i < n_chains; i++)
+        // (blocks[i])->burn_in(burnin+3);
     int n_params = blocks[0]->get_n_params();
     MatrixXd means (n_batch, n_params);
     MatrixXd vars (n_batch, n_params);
@@ -92,21 +91,21 @@ auto timer = std::chrono::steady_clock::now();
         for (int k=0; k < n_params; k++)
             vars(curr_batch, k) = (mat.col(k).array() - means(curr_batch, k)).square().sum() / (n_chains - 1);
 
-        if (n_chains > 1) {
-            // exchange VW
-            if (exchange_VW) {
-                std::vector<VectorXd> tmp = blocks[0]->get_VW();
-                for (int i = 0; i < n_chains - 1; i++) {
-                    std::vector<VectorXd> VW = blocks[i+1]->get_VW();
-                    blocks[i]->set_prev_VW(VW);
-                }
-                blocks[n_chains - 1]->set_prev_VW(tmp);
-            }
+        // if (n_chains > 1) {
+        //     // exchange VW
+        //     if (exchange_VW) {
+        //         std::vector<VectorXd> tmp = blocks[0]->get_VW();
+        //         for (int i = 0; i < n_chains - 1; i++) {
+        //             std::vector<VectorXd> VW = blocks[i+1]->get_VW();
+        //             blocks[i]->set_prev_VW(VW);
+        //         }
+        //         blocks[n_chains - 1]->set_prev_VW(tmp);
+        //     }
 
-            // 2. convergence check
-            if (n_slope_check <= curr_batch + 1)
-                converge = check_conv(means, vars, curr_batch, n_slope_check, std_lim, trend_lim, par_string, print_check_info);
-        }
+        //     // 2. convergence check
+        //     if (n_slope_check <= curr_batch + 1)
+        //         converge = check_conv(means, vars, curr_batch, n_slope_check, std_lim, trend_lim, par_string, print_check_info);
+        // }
         curr_batch++;
     }
 
@@ -115,9 +114,9 @@ auto timer = std::chrono::steady_clock::now();
         outputs.push_back(blocks[i]->output());
     }
     if (converge)
-        Rcpp::Rcout << "Reach convergence in " << steps << " iterations." << std::endl;
+        std::cout << "Reach convergence in " << steps << " iterations." << std::endl;
     else
-        Rcpp::Rcout << "Estimation ends." << std::endl;
+        std::cout << "Estimation ends." << std::endl;
 
 #else // No parallel chain
     BlockModel block (ngme_block, rng());
@@ -127,7 +126,7 @@ auto timer = std::chrono::steady_clock::now();
     outputs.push_back(block.output());
 #endif
 
-Rcpp::Rcout << "Total time is (ms): " << since(timer).count() << std::endl;
+std::cout << "Total time is (ms): " << since(timer).count() << std::endl;
 
     return outputs;
 }
@@ -187,12 +186,12 @@ bool check_conv(
         } else {
             trend_line += "    true";
         }
-// Rcpp::Rcout << "mean here = " << mean << std::endl;
-// Rcpp::Rcout << "Q here = " << Q << std::endl;
-// Rcpp::Rcout << "beta here = " << Q << std::endl;
+// std::cout << "mean here = " << mean << std::endl;
+// std::cout << "Q here = " << Q << std::endl;
+// std::cout << "beta here = " << Q << std::endl;
     }
 
-    if (print_check_info) Rcpp::Rcout << "stop " << curr_batch+1 << ": \n"
+    if (print_check_info) std::cout << "stop " << curr_batch+1 << ": \n"
         << par_string << "\n"
         << std_line << "\n"
         << trend_line << "\n\n";

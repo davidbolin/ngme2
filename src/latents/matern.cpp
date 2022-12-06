@@ -14,7 +14,7 @@ Matern::Matern(Rcpp::List& model_list, unsigned long seed)
     alpha       (Rcpp::as<int> (model_list["alpha"])),
     Cdiag       (C.diagonal())
 {
-Rcpp::Rcout << "begin Constructor of Matern " << std::endl;
+// std::cout << "begin Constructor of Matern " << std::endl;
     symmetricK = true;
 
     // Init K and Q
@@ -33,7 +33,7 @@ Rcpp::Rcout << "begin Constructor of Matern " << std::endl;
     solver_Q.init(W_size, 0,0,0);
     solver_Q.analyze(Q);
 
-Rcpp::Rcout << "finish Constructor of Matern " << std::endl;
+// std::cout << "finish Constructor of Matern " << std::endl;
 }
 
 SparseMatrix<double> Matern::getK(const VectorXd& theta_K) const {
@@ -107,8 +107,8 @@ VectorXd Matern::grad_theta_K() {
         double grad = trace - tmp;
 
     // sth wrong with hessian?
-    // if (debug) Rcpp::Rcout << "tmp =" << tmp << std::endl;
-    // if (debug) Rcpp::Rcout << "trace =" << trace << std::endl;
+    // if (debug) std::cout << "tmp =" << tmp << std::endl;
+    // if (debug) std::cout << "trace =" << trace << std::endl;
 
         if (!use_precond) {
             ret = - grad * da / W_size;
@@ -124,23 +124,23 @@ VectorXd Matern::grad_theta_K() {
             double grad_eps  = trace - (dK*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K * prevW + (h - prevV).cwiseProduct(mu));
             double hess = (grad2_eps - grad_eps) / eps;
 
-    // if (debug) Rcpp::Rcout << "prevW =" << prevW << std::endl;
-    // if (debug) Rcpp::Rcout << "prevvV =" << prevV << std::endl;
-    // if (debug) Rcpp::Rcout << "prevSV =" << prevSV << std::endl;
-    if (debug) Rcpp::Rcout << "trace_eps =" << trace_eps << std::endl;
-    if (debug) Rcpp::Rcout << "trace =" << trace << std::endl;
-    // if (debug) Rcpp::Rcout << "grad2_eps =" << trace << std::endl;
-    // if (debug) Rcpp::Rcout << "grad_eps =" << trace_eps << std::endl;
-    // if (debug) Rcpp::Rcout << "grad =" << grad << std::endl;
-    // if (debug) Rcpp::Rcout << "(hess * da + grad_eps) =" << (hess * da + grad_eps) << std::endl;
-    // if (debug) Rcpp::Rcout << "hess =" << hess << std::endl;
+    // if (debug) std::cout << "prevW =" << prevW << std::endl;
+    // if (debug) std::cout << "prevvV =" << prevV << std::endl;
+    // if (debug) std::cout << "prevSV =" << prevSV << std::endl;
+    // if (debug) std::cout << "trace_eps =" << trace_eps << std::endl;
+    // if (debug) std::cout << "trace =" << trace << std::endl;
+    // if (debug) std::cout << "grad2_eps =" << trace << std::endl;
+    // if (debug) std::cout << "grad_eps =" << trace_eps << std::endl;
+    // if (debug) std::cout << "grad =" << grad << std::endl;
+    // if (debug) std::cout << "(hess * da + grad_eps) =" << (hess * da + grad_eps) << std::endl;
+    // if (debug) std::cout << "hess =" << hess << std::endl;
             // ret = (grad * da) / (hess * da * da + grad_eps * d2a); reduced to
 
             ret = grad / (hess * da + grad_eps);
         }
     }
 
-    // if (debug) Rcpp::Rcout << "ret =" << ret << std::endl;
+    // if (debug) std::cout << "ret =" << ret << std::endl;
     return VectorXd::Constant(1, ret);
 }
 

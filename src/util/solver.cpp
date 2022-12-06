@@ -16,7 +16,7 @@ using namespace Eigen;
 // {
 //   if (nin <= 0)
 //   {
-//     Rcpp::Rcout << "iterative_solver::initFromList nin must be greater then >0\n";
+//     std::cout << "iterative_solver::initFromList nin must be greater then >0\n";
 //     throw("error");
 //   }
 //   n = nin;
@@ -213,7 +213,7 @@ double cholesky_solver::trace(SparseMatrix<double, 0, int> &M)
 double cholesky_solver::trace2(SparseMatrix<double, 0, int> &M1, SparseMatrix<double, 0, int> &M2)
 {
   /*
-  Rcpp::Rcout << "trace2 is not working for cholesky!" << std::endl;
+  std::cout << "trace2 is not working for cholesky!" << std::endl;
   if(Qi_computed == 0){
     SparseMatrix<double,0,int> R_Q = R.matrixL();
     Qi = Qinv(R_Q);
@@ -318,7 +318,7 @@ double lu_solver::trace(Eigen::SparseMatrix<double, 0, int> &M)
 
 double lu_solver::trace2(SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &g)
 {
-  Rcpp::Rcout << "lu_solver::trace2 not implemented\n";
+  std::cout << "lu_solver::trace2 not implemented\n";
   throw;
 }
 
@@ -353,8 +353,8 @@ void lu_sparse_solver::compute(SparseMatrix<double, 0, int> &K_in)
 
   if (K.rows() != n)
   {
-    Rcpp::Rcout << "incorrect matrix size: n= " << n;
-    Rcpp::Rcout << ", K = " << K.rows() << " * " << K.cols() << std::endl;
+    std::cout << "incorrect matrix size: n= " << n;
+    std::cout << ", K = " << K.rows() << " * " << K.cols() << std::endl;
   }
 
   LU_K.factorize(K);
@@ -372,8 +372,8 @@ void lu_sparse_solver::computeKTK(SparseMatrix<double, 0, int> &K_in)
 
   if (K.rows() != n)
   {
-    Rcpp::Rcout << "incorrect matrix size: n= " << n;
-    Rcpp::Rcout << ", K = " << K.rows() << " * " << K.cols() << std::endl;
+    std::cout << "incorrect matrix size: n= " << n;
+    std::cout << ", K = " << K.rows() << " * " << K.cols() << std::endl;
   }
 
   L_KKt.factorize(K.transpose() * K); // KTK
@@ -384,14 +384,14 @@ void lu_sparse_solver::computeKTK(SparseMatrix<double, 0, int> &K_in)
 double lu_sparse_solver::trace(MatrixXd &M)
 {
 
-  Rcpp::Rcout << "lu_sparse_solver::trace for dense matrix M not implimented\n";
+  std::cout << "lu_sparse_solver::trace for dense matrix M not implimented\n";
   throw;
   return 0;
 }
 
 double lu_sparse_solver::trace0(SparseMatrix<double, 0, int> &M)
 {
-  Rcpp::Rcout << "lu_sparse_solver0 not implemented";
+  std::cout << "lu_sparse_solver0 not implemented";
   throw;
   return 0;
 }
@@ -412,7 +412,7 @@ double lu_sparse_solver::trace(SparseMatrix<double, 0, int> &M)
 
 double lu_sparse_solver::trace2(SparseMatrix<double, 0, int> &M1, SparseMatrix<double, 0, int> &M2)
 {
-  Rcpp::Rcout << "lu_sparse_solver::trace2 not implimented\n";
+  std::cout << "lu_sparse_solver::trace2 not implimented\n";
   throw;
   return 0;
 }

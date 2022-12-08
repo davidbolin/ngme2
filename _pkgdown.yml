@@ -19,10 +19,16 @@ navbar:
     articles:
       text: Vignettes
       menu:
-      - text: Ngme2 Models
-        href: articles/ngme_models.html
       - text: Installation and configuration
         href: articles/Installation_and_configuration.html
+      - text: AR(1) model
+        href: articles/AR1-model.html
+      - text: Random walk model
+        href: articles/RW-model.html
+      - text: SPDE Matern model
+        href: articles/SPDE-model.html
+      - text: Model prediction and estimation
+        href: articles/pred_and_est.html
     github:
       icon: fa-github
       href: https://github.com/davidbolin/ngme2

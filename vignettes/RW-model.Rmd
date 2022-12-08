@@ -1,8 +1,8 @@
 ---
-title: "Ngme2 Random walk model"
+title: "Ngme2 random walk model"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Ngme2 Random walk model}
+  %\VignetteIndexEntry{Ngme2 random walk model}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

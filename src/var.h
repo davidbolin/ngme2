@@ -43,7 +43,7 @@ public:
             prevV = VectorXd::Ones(n);
             fix_theta_V = true;
             fix_V = true;
-        } else if (noise_type == "nig") {
+        } else { // nig or gal
             if (noise_list["V"] != R_NilValue) {
                 V = Rcpp::as< VectorXd > (noise_list["V"]);
                 prevV = V;
@@ -66,6 +66,11 @@ public:
             prevV = V;
             VectorXd nu_vec = VectorXd::Constant(n, nu);
             if (!fix_V) V = rGIG_cpp(VectorXd::Constant(n, -0.5), nu_vec, nu_vec.cwiseProduct(h.cwiseProduct(h)), var_rng());
+        } else if (noise_type == "gal") {
+            prevV = V;
+            VectorXd nu_vec = VectorXd::Constant(n, nu);
+            VectorXd zero_vec = VectorXd::Constant(n, 1e-14);
+            if (!fix_V) V = rGIG_cpp(h * nu, 2 * nu_vec, zero_vec, var_rng());
         }
         // else doing nothing
     }
@@ -77,6 +82,13 @@ public:
             VectorXd a_vec = VectorXd::Constant(n, nu) + a_inc_vec;
             VectorXd b_vec = VectorXd::Constant(n, nu) + b_inc_vec;
             if (!fix_V) V = rGIG_cpp(p_vec, a_vec, b_vec.cwiseProduct(h.cwiseProduct(h)), var_rng());
+        } else if (noise_type == "gal") {
+            // here a_inc_vec is given as (mu/sigma)^2 (latent.h)
+            prevV = V;
+            VectorXd p_vec = h * nu - VectorXd::Constant(n, 0.5);
+            VectorXd a_vec = VectorXd::Constant(n, 2 * nu) + a_inc_vec;
+            VectorXd zero_vec = VectorXd::Constant(n, 1e-14);
+            if (!fix_V) V = rGIG_cpp(p_vec, a_vec, zero_vec, var_rng());
         }
         // else doing nothing
     }
@@ -86,13 +98,13 @@ public:
     }
 
     double get_unbound_theta_V() const {
-        if (noise_type == "nig")
-            return log(nu);
-        else
+        if (noise_type == "normal")
             return 0;
+        else
+            return log(nu);
     }
     void   set_theta_var(double theta) {
-        if (noise_type == "nig") nu = exp(theta);
+        if (noise_type != "normal") nu = exp(theta);
         // else doing nothing
     }
 
@@ -113,6 +125,21 @@ public:
             // version 1
             grad = grad / (hess * nu + grad2);
             // grad = grad / (hess * nu);
+        } else if (noise_type == "gal") {
+            // from ngme code (lamdba = nu)
+            double loglambda = log(nu);
+            double dlambda = 0;
+            for(int i=0; i < h.size(); i++) {
+                double h_lambda = exp(loglambda) * h[i];
+                //digamma(0.1) = digamma(1.1) - 1/0.1;
+                if(h_lambda > 1){
+                    dlambda -=  h_lambda * R::digamma(h_lambda);
+                } else {
+                    dlambda -=  h_lambda * R::digamma(h_lambda + 1) - 1.;
+                }
+            dlambda += h_lambda *  log(V(i) ) ;
+           }
+           grad = dlambda / h.size();
         }
 
         return grad;

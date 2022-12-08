@@ -25,7 +25,7 @@
 #' @param fix_theta_mu    fix the parameter of theta_mu
 #' @param fix_theta_sigma  fix the parameter of theta_sigma
 #' @param fix_theta_V   fix the parameter of theta_V
-#' @param  h        numerical vector (> 0), mesh width
+#' @param h        numerical vector (> 0), mesh width
 #' @param fix_V         fix the sampling of V
 #' @param ...       additional arguments
 #'
@@ -214,13 +214,13 @@ update_noise <- function(noise, n = NULL, new_noise = NULL) {
     noise <- do.call(ngme_noise, noise)
   } else if (!is.null(new_noise)) {
     # update with another noise
-    if (noise$noise_type == "nig") {
+    if (noise$noise_type == "normal") {
+      noise$theta_sigma <- new_noise$theta_sigma
+    } else {
       noise$theta_mu    <- new_noise$theta_mu
       noise$theta_sigma <- new_noise$theta_sigma
       noise$theta_V     <- new_noise$theta_V
       noise$V           <- new_noise$V
-    } else if (noise$noise_type == "normal") {
-      noise$theta_sigma <- new_noise$theta_sigma
     }
   }
   noise
@@ -259,6 +259,9 @@ print.ngme_noise <- function(x, padding = 0, ...) {
         "nig"    = paste0(pad_add4_space, ngme_format("mu", theta_mu),
                     "\n", pad_add4_space, ngme_format("sigma", theta_sigma),
                     "\n", pad_add4_space, ngme_format("nu", theta_V)),
+        "gal"    = paste0(pad_add4_space, ngme_format("mu", theta_mu),
+                    "\n", pad_add4_space, ngme_format("sigma", theta_sigma),
+                    "\n", pad_add4_space, ngme_format("nu", theta_V)),
         stop("unknown noise type")
       )
     })
@@ -266,4 +269,43 @@ print.ngme_noise <- function(x, padding = 0, ...) {
   }
   cat("\n")
   invisible(noise)
+}
+
+#' @rdname ngme_noise
+#' @export
+noise_gal <- function(
+  mu            = NULL,
+  sigma         = NULL,
+  nu            = NULL,
+  n             = 1,
+  V             = NULL,
+  theta_mu      = NULL,
+  theta_sigma   = NULL,
+  B_mu          = matrix(1),
+  B_sigma       = matrix(1),
+  ...
+) {
+  # if nothing, then fill with default
+  stopifnot("Please use theta_mu for non-stationary mu." = length(mu) < 2)
+  if (is.null(mu) && is.null(theta_mu)) theta_mu <- 0
+  if (is.null(sigma) && is.null(theta_sigma)) theta_sigma <- 0
+  if (is.null(nu)) nu <- 1
+
+  if (!is.null(nu) && nu <= 0) stop("ngme_nosie: nu should be positive.")
+  if (!is.null(sigma) && sigma <= 0) stop("ngme_nosie: sigma should be positive.")
+
+  if (!is.null(mu))     theta_mu <- mu
+  if (!is.null(sigma))  theta_sigma <- log(sigma)
+
+  ngme_noise(
+    noise_type = "gal",
+    theta_mu = theta_mu,
+    theta_sigma = theta_sigma,
+    nu = nu,
+    V = V,
+    B_mu = B_mu,
+    B_sigma = B_sigma,
+    n = n,
+    ...
+  )
 }

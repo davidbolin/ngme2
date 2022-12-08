@@ -717,7 +717,7 @@ qigam <- function(p, a, b, lower.tail = TRUE, log.p = FALSE){
 
 #############################################################################################
 #' @name nig
-#' @title  The Normal Inverse-Gaussian (GIG) Distribution
+#' @title  The Normal Inverse-Gaussian (NIG) Distribution
 #' @aliases dnig rnig pnig qnig
 #' @description Density, distribution function, quantile function and
 #' random generation for the normal inverse-Gaussian distribution
@@ -954,7 +954,7 @@ rnig <- function (n, delta, mu, nu, sigma, seed = 0)
   }
 
   V = as.vector(rig(n, nu, nu, seed = seed))
-  return(delta_new + mu_new*V + sigma_new^2*sqrt(V)*stats::rnorm(n))
+  return(delta_new + mu_new*V + sigma_new*sqrt(V)*stats::rnorm(n))
 }
 
 #' @rdname nig

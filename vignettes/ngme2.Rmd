@@ -399,7 +399,7 @@ out <- ngme(
     stop_points = 10,
     std_lim = 0.1,
     n_parallel_chain = 4,
-    print_check_info = TRUE
+    print_check_info = FALSE
   ),
   seed = 16
 )
@@ -420,6 +420,21 @@ traceplot(out, f_index = 1, param = "sigma")
 ## spde model
 traceplot(out, f_index = 2, param = "kappa")
 traceplot(out, f_index = 2, param = "sigma")
+```
+
+Parameter estimation results:
+
+```{r est-result, echo=FALSE}
+res1 <- data.frame(
+  intercept    = format(out$beta, digits=3),
+  noise_mu     = format(out$noise$theta_mu, digits=3),
+  noise_sigma  = format(exp(out$noise$theta_sigma), digits=3),
+  noise_nu     = format(out$noise$theta_V, digits=3),
+  rw_sigma     = format(out$latents[[1]]$noise$theta_sigma, digits=3),
+  ma_kappa     = format(exp(out$latents[[2]]$theta_K), digits=3),
+  ma_sigma     = format(exp(out$latents[[2]]$noise$theta_sigma), digits=3)
+)
+knitr::kable(res1, caption = "Estimations for the model")
 ```
 
 ### Prediction
@@ -479,7 +494,7 @@ out2 <- ngme(
 )
 out2
 
-# Plot prediction
+# Now we plot prediction
 lp <- attr(out2, "prediction")$lp
 ggplot() +
   geom_point(aes(
@@ -498,25 +513,5 @@ ggplot() +
   ]), colour = "red")
 ```
 
-Model estimation:
 
-```{r est-result, echo=FALSE}
-res1 <- data.frame(
-  intercept    = format(out$beta, digits=3),
-  noise_mu     = format(out$noise$theta_mu, digits=3),
-  noise_sigma  = format(exp(out$noise$theta_sigma), digits=3),
-  noise_nu     = format(out$noise$theta_V, digits=3),
-  rw_sigma     = format(out$latents[[1]]$noise$theta_sigma, digits=3),
-  ma_kappa     = format(exp(out$latents[[2]]$theta_K), digits=3),
-  ma_sigma     = format(exp(out$latents[[2]]$noise$theta_sigma), digits=3),
-)
-knitr::kable(res1, caption = "Estimations for the model")
-```
 
-Result of the optimization trajectory of parameters for the Matern model:
-
-```{r fig.width=8,fig.height=8,fig.align='center', echo=FALSE, fig.cap="Traceplot of Matern parameters"}
-pl <- lapply(c("kappa", "sigma"), function(.x)
-  traceplot(out, param = .x, f_index = 2));
-marrangeGrob(pl, nrow=2, ncol=1)
-```

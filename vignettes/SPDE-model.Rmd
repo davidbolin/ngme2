@@ -269,7 +269,7 @@ out <- ngme(
     iterations = 100,
     print_check_info = TRUE
   ),
-  debug = TRUE
+  debug = FALSE
 )
 out
 ```

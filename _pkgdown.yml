@@ -71,7 +71,7 @@ reference:
     contents:
     - plot.ngme_noise
     - traceplot
-  - title: Simulating of models
+  - title: Simulation functions
     contents:
     - simulate.ngme_model
     - simulate.ngme_noise

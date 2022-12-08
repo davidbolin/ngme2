@@ -115,7 +115,7 @@ For now we support two noises, one is **normal** noise, the other is the **NIG**
 The R class `ngme_noise` has the following interface:
 
 ```{r noise}
-# library(ngme2)
+library(ngme2)
 
 noise_normal(sigma = 1)                 # normal noise
 noise_nig(mu = 1, sigma = 2, nu = 1) # nig noise

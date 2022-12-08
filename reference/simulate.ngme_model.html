@@ -103,8 +103,8 @@
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">B_sigma</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span> <span class="op">/</span> <span class="fl">10</span>, nrow<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="fu"><a href="ngme_noise.html">noise_nig</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">10</span>, B_sigma <span class="op">=</span> <span class="va">B_sigma</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [1] -0.4710900 -3.3792417  0.2319548  0.4372922  0.2099886  0.5556737</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [7] -1.2738467 -0.4973774 -0.3902098 -1.0701446</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [1] -1.0291205 -0.2835979  1.1868493  0.6359754 -0.2903711  1.9862222</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [7]  0.9917029 -0.2139815  1.0031620 -0.3230916</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"noise")</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Noise type - nig</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Noise parameters: </span>
@@ -112,15 +112,15 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span>     sigma = 1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     nu = 1</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="fu"><a href="ngme_noise.html">noise_normal</a></span><span class="op">(</span>theta_sigma <span class="op">=</span> <span class="fl">1.5</span>, B_sigma <span class="op">=</span> <span class="va">B_sigma</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [1]  1.722582 -1.877526 -2.292670 -1.148087 -5.527864 -5.422335 -3.737250</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [8] -3.487239 -0.853273  1.514044</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [1]  1.0229416  0.1437914  0.6908974  3.0483210  2.2397349  1.8978099</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [7]  0.1379397 -4.9035879 -0.9928136  0.1261323</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"noise")</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Noise type - normal</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Noise parameters: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     sigma = 4.48</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="fu"><a href="f.html">f</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span>, model <span class="op">=</span> <span class="st">"ar1"</span>, theta_K <span class="op">=</span> <span class="fl">0.4</span>, noise <span class="op">=</span> <span class="fu"><a href="ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [1]  0.16228989  1.52196487  1.21430973  0.83958726 -0.38908300  1.56579470</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [7] -1.58447626 -0.77315208 -0.08623833 -0.55732808</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [1] -1.2017270  0.5160551 -1.2279988 -0.4933779  0.2770029  0.2219173</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [7] -0.6949403 -0.7810001  0.6063479  1.3934960</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"noise")</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Noise type - nig</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Noise parameters: </span>

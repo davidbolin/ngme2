@@ -2,12 +2,13 @@ pandoc: 2.19.2
 pkgdown: 2.0.6
 pkgdown_sha: ~
 articles:
-  Argo_float_data: Argo_float_data.html
+  AR1-model: AR1-model.html
   Installation_and_configuration: Installation_and_configuration.html
-  SPDE-approach: SPDE-approach.html
+  RW-model: RW-model.html
+  SPDE-model: SPDE-model.html
   ngme2: ngme2.html
-  ngme_models: ngme_models.html
-last_built: 2022-11-23T08:38Z
+  pred_and_est: pred_and_est.html
+last_built: 2022-12-08T11:33Z
 urls:
   reference: https://davidbolin.github.io/ngme2/reference
   article: https://davidbolin.github.io/ngme2/articles

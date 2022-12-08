@@ -4,13 +4,16 @@
     <loc>https://davidbolin.github.io/ngme2/404.html</loc>
   </url>
   <url>
-    <loc>https://davidbolin.github.io/ngme2/articles/Argo_float_data.html</loc>
+    <loc>https://davidbolin.github.io/ngme2/articles/AR1-model.html</loc>
   </url>
   <url>
     <loc>https://davidbolin.github.io/ngme2/articles/Installation_and_configuration.html</loc>
   </url>
   <url>
-    <loc>https://davidbolin.github.io/ngme2/articles/SPDE-approach.html</loc>
+    <loc>https://davidbolin.github.io/ngme2/articles/RW-model.html</loc>
+  </url>
+  <url>
+    <loc>https://davidbolin.github.io/ngme2/articles/SPDE-model.html</loc>
   </url>
   <url>
     <loc>https://davidbolin.github.io/ngme2/articles/index.html</loc>
@@ -19,7 +22,7 @@
     <loc>https://davidbolin.github.io/ngme2/articles/ngme2.html</loc>
   </url>
   <url>
-    <loc>https://davidbolin.github.io/ngme2/articles/ngme_models.html</loc>
+    <loc>https://davidbolin.github.io/ngme2/articles/pred_and_est.html</loc>
   </url>
   <url>
     <loc>https://davidbolin.github.io/ngme2/authors.html</loc>

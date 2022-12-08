@@ -115,7 +115,7 @@ For now we support two noises, one is **normal** noise, the other is the **NIG**
 The R class `ngme_noise` has the following interface:
 
 ```{r noise}
-library(ngme2)
+# library(ngme2)
 
 noise_normal(sigma = 1)                 # normal noise
 noise_nig(mu = 1, sigma = 2, nu = 1) # nig noise
@@ -387,7 +387,6 @@ matern_spde <- model_matern(
 out <- ngme(
   formula = Y ~ 1 +
     f(inla.group(seaDist), model = "rw1", circular=T, noise = noise_normal()) +
-    f(model = matern_spde, noise = noise_nig()) +
     f(model = matern_spde, noise = noise_normal()),
   data = list(
     Y = Y
@@ -400,31 +399,27 @@ out <- ngme(
     stop_points = 10,
     std_lim = 0.1,
     n_parallel_chain = 4,
-    print_check_info = FALSE
+    print_check_info = TRUE
   ),
   seed = 16
 )
 out
 
 # traceplots
-## merr, beta
-traceplot(out, f_index = 0, param = "sigma")
+
+## fixed effects
 traceplot(out, f_index = 0, param = "beta")
+## measurement noise
+traceplot(out, f_index = 0, param = "mu")
+traceplot(out, f_index = 0, param = "sigma")
+traceplot(out, f_index = 0, param = "nu")
 
 ## rw
-traceplot(out, f_index = 1, param = "mu")
 traceplot(out, f_index = 1, param = "sigma")
-traceplot(out, f_index = 1, param = "nu")
 
-## spde
+## spde model
 traceplot(out, f_index = 2, param = "kappa")
-traceplot(out, f_index = 2, param = "mu")
 traceplot(out, f_index = 2, param = "sigma")
-traceplot(out, f_index = 2, param = "nu")
-
-## spde
-traceplot(out, f_index = 3, param = "kappa")
-traceplot(out, f_index = 3, param = "sigma")
 ```
 
 ### Prediction
@@ -459,10 +454,11 @@ matern_spde <- model_matern(
   index_NA = is.na(Y2)
 )
 
+# use previous estimation results by setting start=out
 out2 <- ngme(
   formula = Y ~ 1 +
     f(inla.group(seaDist), model = "rw1", noise = noise_normal()) +
-    f(model = matern_spde, noise = noise_nig()) +
+    # f(model = matern_spde, noise = noise_nig()) +
     f(model = matern_spde, noise = noise_normal()),
   data = list(
     Y = Y2,
@@ -512,9 +508,7 @@ res1 <- data.frame(
   noise_nu     = format(out$noise$theta_V, digits=3),
   rw_sigma     = format(out$latents[[1]]$noise$theta_sigma, digits=3),
   ma_kappa     = format(exp(out$latents[[2]]$theta_K), digits=3),
-  ma_mu        = format(out$latents[[2]]$noise$theta_mu, digits=3),
   ma_sigma     = format(exp(out$latents[[2]]$noise$theta_sigma), digits=3),
-  ma_nu        = format(out$latents[[2]]$noise$theta_V, digits=3)
 )
 knitr::kable(res1, caption = "Estimations for the model")
 ```
@@ -522,7 +516,7 @@ knitr::kable(res1, caption = "Estimations for the model")
 Result of the optimization trajectory of parameters for the Matern model:
 
 ```{r fig.width=8,fig.height=8,fig.align='center', echo=FALSE, fig.cap="Traceplot of Matern parameters"}
-pl <- lapply(c("kappa", "mu", "sigma", "nu"), function(.x)
+pl <- lapply(c("kappa", "sigma"), function(.x)
   traceplot(out, param = .x, f_index = 2));
-marrangeGrob(pl, nrow=2, ncol=2)
+marrangeGrob(pl, nrow=2, ncol=1)
 ```

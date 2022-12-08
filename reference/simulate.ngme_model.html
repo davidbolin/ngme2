@@ -27,8 +27,11 @@
 <li class="nav-item dropdown">
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-vignettes">Vignettes</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-vignettes">
-    <a class="dropdown-item" href="../articles/ngme_models.html">Ngme2 Models</a>
     <a class="dropdown-item" href="../articles/Installation_and_configuration.html">Installation and configuration</a>
+    <a class="dropdown-item" href="../articles/AR1-model.html">AR(1) model</a>
+    <a class="dropdown-item" href="../articles/RW-model.html">Random walk model</a>
+    <a class="dropdown-item" href="../articles/SPDE-model.html">SPDE Matern model</a>
+    <a class="dropdown-item" href="../articles/pred_and_est.html">Model prediction and estimation</a>
   </div>
 </li>
 <li class="nav-item">
@@ -100,8 +103,8 @@
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">B_sigma</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span> <span class="op">/</span> <span class="fl">10</span>, nrow<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="fu"><a href="ngme_noise.html">noise_nig</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">10</span>, B_sigma <span class="op">=</span> <span class="va">B_sigma</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [1]  0.03259191 -0.99800316  0.04169996 -0.25810676 -0.46610675  0.05376815</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [7]  0.95462858 -0.24449304 -0.22276227 -0.20147714</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [1] -0.4710900 -3.3792417  0.2319548  0.4372922  0.2099886  0.5556737</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [7] -1.2738467 -0.4973774 -0.3902098 -1.0701446</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"noise")</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Noise type - nig</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Noise parameters: </span>
@@ -109,15 +112,15 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span>     sigma = 1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     nu = 1</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="fu"><a href="ngme_noise.html">noise_normal</a></span><span class="op">(</span>theta_sigma <span class="op">=</span> <span class="fl">1.5</span>, B_sigma <span class="op">=</span> <span class="va">B_sigma</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [1]  2.54436572  0.78987728  0.08239295  2.03119294 -0.96973561  2.45874825</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [7]  3.26245630  2.91860378 -5.93521905 -4.52758033</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [1]  1.722582 -1.877526 -2.292670 -1.148087 -5.527864 -5.422335 -3.737250</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [8] -3.487239 -0.853273  1.514044</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"noise")</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Noise type - normal</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Noise parameters: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     sigma = 4.48</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="fu"><a href="f.html">f</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span>, model <span class="op">=</span> <span class="st">"ar1"</span>, theta_K <span class="op">=</span> <span class="fl">0.4</span>, noise <span class="op">=</span> <span class="fu"><a href="ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [1] -0.10319597 -2.06806073 -0.97164151  0.38114127 -0.04101825  0.64550043</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [7]  0.11331540  0.28893534  0.23204306  0.65340145</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [1]  0.16228989  1.52196487  1.21430973  0.83958726 -0.38908300  1.56579470</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [7] -1.58447626 -0.77315208 -0.08623833 -0.55732808</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"noise")</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Noise type - nig</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Noise parameters: </span>

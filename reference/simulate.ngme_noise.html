@@ -27,8 +27,11 @@
 <li class="nav-item dropdown">
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-vignettes">Vignettes</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-vignettes">
-    <a class="dropdown-item" href="../articles/ngme_models.html">Ngme2 Models</a>
     <a class="dropdown-item" href="../articles/Installation_and_configuration.html">Installation and configuration</a>
+    <a class="dropdown-item" href="../articles/AR1-model.html">AR(1) model</a>
+    <a class="dropdown-item" href="../articles/RW-model.html">Random walk model</a>
+    <a class="dropdown-item" href="../articles/SPDE-model.html">SPDE Matern model</a>
+    <a class="dropdown-item" href="../articles/pred_and_est.html">Model prediction and estimation</a>
   </div>
 </li>
 <li class="nav-item">
@@ -99,8 +102,8 @@
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="fu"><a href="ngme_noise.html">noise_normal</a></span><span class="op">(</span>sd <span class="op">=</span> <span class="fl">5</span>, n <span class="op">=</span> <span class="fl">10</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [1] -0.194184247  0.890381655  0.032119280  0.399500313 -0.034151290</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [6]  0.006526032 -0.912569623  0.867619569 -0.115540072 -0.838801894</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [1] -1.5375818 -1.0224325  0.2548463  1.0216023 -0.4043739 -0.4979479</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [7] -0.1291943  1.6756441  0.8780970  0.4963207</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"noise")</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Noise type - normal</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Noise parameters: </span>

@@ -59,10 +59,10 @@ ngme_out <- ngme(
   control = ngme_control(
     estimation = T,
     exchange_VW = TRUE,
-    n_parallel_chain = 1,
+    n_parallel_chain = 4,
     stop_points = 50,
     burnin = 10,
-    iterations = 100,
+    iterations = 2000,
     gibbs_sample = 5,
     stepsize = 1,
     threshold = 1e-4,

@@ -83,12 +83,19 @@ public:
             VectorXd b_vec = VectorXd::Constant(n, nu) + b_inc_vec;
             if (!fix_V) V = rGIG_cpp(p_vec, a_vec, b_vec.cwiseProduct(h.cwiseProduct(h)), var_rng());
         } else if (noise_type == "gal") {
-            // here a_inc_vec is given as (mu/sigma)^2 (latent.h)
             prevV = V;
-            VectorXd p_vec = h * nu - VectorXd::Constant(n, 0.5);
+            VectorXd p_vec = (nu * h) - VectorXd::Constant(n, 0.5);
             VectorXd a_vec = VectorXd::Constant(n, 2 * nu) + a_inc_vec;
-            VectorXd zero_vec = VectorXd::Constant(n, 1e-14);
-            if (!fix_V) V = rGIG_cpp(p_vec, a_vec, zero_vec, var_rng());
+            VectorXd b_vec = b_inc_vec;
+            if (!fix_V) V = rGIG_cpp(p_vec, a_vec, b_vec.cwiseProduct(h.cwiseProduct(h)), var_rng());
+            // here a_inc_vec is given as (mu/sigma)^2 (latent.h)
+            // sampling from GIG(hv-0.5, 2nu + a_inc_vec, 0)
+
+            // if (fix_V) return;
+            // prevV = V;
+            // for (int i=0; i < n; i++) {
+            //     V(i) = R::rgamma(h(i)*nu - 0.5, 1 / (nu + a_inc_vec(i)/2));
+            // }
         }
         // else doing nothing
     }

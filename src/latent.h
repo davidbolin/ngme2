@@ -293,7 +293,7 @@ inline const VectorXd Latent::get_grad() {
 
 // DEBUG: checking grads
 if (debug) {
-    // std::cout << "gradient= " << grad << std::endl;
+    std::cout << "gradient= " << grad << std::endl;
     // std::cout << "one latent gradient time " << since(grad1).count() << std::endl;
 }
     return grad;

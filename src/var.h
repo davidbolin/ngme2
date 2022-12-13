@@ -103,7 +103,7 @@ public:
         else
             return log(nu);
     }
-    void   set_theta_var(double theta) {
+    void set_theta_var(double theta) {
         if (noise_type != "normal") nu = exp(theta);
         // else doing nothing
     }
@@ -129,28 +129,22 @@ public:
             // hess of log nu
             double hess = nu * grad_nu2 + nu * nu * hess_nu;
 
-            grad = grad / hess; // use hessian
-
-            // version 1
-            // grad = grad / (hess_nu * nu + grad2);
-            // grad = grad / (hess_nu * nu);
+            // grad = -grad;        // not use hessian
+            grad = grad / hess;     // use hessian
         } else if (noise_type == "gal") {
-            // from ngme code (lamdba = nu)
-            double loglambda = log(nu);
-            double dlambda = 0;
-            for(int i=0; i < h.size(); i++) {
-                double h_lambda = exp(loglambda) * h[i];
+            for(int i=0; i < n; i++) {
+                double nu_hi = nu * h[i];
                 //digamma(0.1) = digamma(1.1) - 1/0.1;
-                if(h_lambda > 1){
-                    dlambda -=  h_lambda * R::digamma(h_lambda);
+                if(nu_hi > 1){
+                    grad -=  nu_hi * R::digamma(nu_hi);
                 } else {
-                    dlambda -=  h_lambda * R::digamma(h_lambda + 1) - 1.;
+                    grad -=  nu_hi * R::digamma(nu_hi + 1) - 1.;
                 }
-            dlambda += h_lambda *  log(V(i) ) ;
+            grad += nu_hi * (1 - log(1/nu) + log(V(i))) - nu * V(i);
+// std::cout << "grad in var = " << grad << std::endl;
            }
-           grad = dlambda / h.size();
+           grad = - grad / n;
         }
-
         return grad;
     }
 };

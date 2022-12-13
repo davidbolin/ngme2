@@ -174,3 +174,51 @@ for (iter in 1:niter) {
 }
 length(accept_x) / niter
 plot(density(accept_x))
+
+# test distribution function
+# Gamma(x; shape=h*nu, rate=nu)
+# h, x known, maximize nu
+h <- 1
+
+grad_nu <- function(nu, x=data, h=1) {
+  g <- h - x - h*log(1/nu) + h*log(x) - h*digamma(h*nu)
+  mean(g)
+}
+
+data <- rgamma(100, shape=1.98, rate=1.98)
+log_post <- function(nu) {
+  sum(dgamma(data, shape=nu, rate=nu, log=TRUE))
+}
+
+optim(par=1, fn=function(nu) {
+  -log_post(nu)
+}, method="Brent", lower=0.01, upper=100)
+
+grad_nu(x=data, h=1, nu=2.62)
+
+
+
+#### test ig distribution
+
+grad_nu_ig <- function(x, nu, h=1) {
+  mean(0.5*(2*h + 1/nu - h^2/x - x))
+}
+
+h = 1; nu=1.2
+igs <- rig(10000, nu, nu*h^2)
+
+log_post_ig<- function(nu) {
+  sum(dig(igs, a=nu, b=nu*h^2, log=TRUE))
+}
+
+optim(par=1, fn=function(nu) {
+  -log_post_ig(nu)
+}, method="Brent", lower=0.01, upper=100)
+
+grad_nu_ig(igs, 1.2)
+
+library(numDeriv)
+
+grad(log_post, 1.98)
+
+grad_nu(1)

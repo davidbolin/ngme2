@@ -1,14 +1,14 @@
 devtools::load_all()
 
-n_obs <- 500
+n_obs <- 1000
 ar_mu <- 4
 ar_sigma <- 1
 ar_nu <- 2.3
 ar1_process <- simulate(
   f(1:n_obs,
     model = "ar1",
-    theta_K = 0.9,
-    noise = noise_nig(
+    theta_K = 0.8,
+    noise = noise_gal(
       mu = ar_mu,
       sigma = ar_sigma,
       nu = ar_nu
@@ -29,25 +29,24 @@ nig_noise <- simulate(
     n = n_obs
   )
 )
+
 # Y <- ar1_process + nig_noise
 Y <- ar1_process + rnorm(n_obs)
 
-load_all()
-
+devtools::load_all()
 ngme_out <- ngme(
   Y ~ 0 +
   f(1:n_obs,
     model = "ar1",
-    theta_K = 0.2,
+    theta_K = 0.7,
     # fix_theta_K = TRUE,
     # W = as.numeric(ar1_process),
     # fix_W = TRUE,
-    noise = noise_nig(
+    noise = noise_gal(
       mu = 1.1,
       sigma = 1,
-      fix_theta_mu      = F,
-      fix_theta_sigma   = F,
-      fix_theta_V       = F
+      # V = attr(ar1_process, "noise")$V,
+      # fix_V = TRUE
     ),
     control = ngme_control_f(
       numer_grad       = F,
@@ -60,10 +59,10 @@ ngme_out <- ngme(
   control = ngme_control(
     estimation = T,
     exchange_VW = TRUE,
-    n_parallel_chain = 8,
+    n_parallel_chain = 1,
     stop_points = 50,
-    burnin = 100,
-    iterations = 500,
+    burnin = 10,
+    iterations = 100,
     gibbs_sample = 5,
     stepsize = 1,
     threshold = 1e-4,
@@ -76,7 +75,11 @@ ngme_out <- ngme(
 )
 
 ngme_out
+traceplot(ngme_out, f_index = 1, param="alpha")
+traceplot(ngme_out, f_index = 1, param="mu")
+traceplot(ngme_out, f_index = 1, param="sigma")
 traceplot(ngme_out, f_index = 1, param="nu")
+
 
 str(ngme_out$latents[[1]]$noise)
 str(ngme_out$latents[[1]]$W)

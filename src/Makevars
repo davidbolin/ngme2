@@ -20,3 +20,10 @@ clean:
    $(UTILS) $(TESTS) $(LATENTS)
 
 .PHONY: clean
+
+#  ------- test new one ----
+
+# PKG_CPPFLAGS = -DDEBUG -Iinclude
+# PKG_CXXFLAGS = -DDEBUG $(SHLIB_OPENMP_CXXFLAGS)
+# PKG_LIBS = $(SHLIB_OPENMP_CXXFLAGS)
+# R_XTRA_CPPFLAGS =  -I$(R_INCLUDE_DIR)

@@ -61,7 +61,11 @@ int main(int argc, char const *argv[])
     vecs[2] = v1;
     vecs[3] = v1;
 
-    cout << vecs[3];
+    VectorXd v3 {2};
+    v3(0) = 1;
+    v3(1) = 2;
+
+    cout << v3 * 2;
     // MatrixXd m1 (3, 3);
 //     SparseMatrix<double> m1 = {3,3};
 //     m1 = v1.asDiagonal();

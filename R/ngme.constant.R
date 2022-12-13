@@ -3,7 +3,7 @@
 #' @return available types for noise
 #' @export
 ngme_noise_types <- function() {
-    c("normal", "nig")
+    c("normal", "nig", "gal")
 }
 
 #' Show ngme mdoel types

@@ -43,7 +43,7 @@ public:
             prevV = VectorXd::Ones(n);
             fix_theta_V = true;
             fix_V = true;
-        } else if (noise_type == "nig") {
+        } else { // nig or gal
             if (noise_list["V"] != R_NilValue) {
                 V = Rcpp::as< VectorXd > (noise_list["V"]);
                 prevV = V;
@@ -66,6 +66,11 @@ public:
             prevV = V;
             VectorXd nu_vec = VectorXd::Constant(n, nu);
             if (!fix_V) V = rGIG_cpp(VectorXd::Constant(n, -0.5), nu_vec, nu_vec.cwiseProduct(h.cwiseProduct(h)), var_rng());
+        } else if (noise_type == "gal") {
+            prevV = V;
+            VectorXd nu_vec = VectorXd::Constant(n, nu);
+            VectorXd zero_vec = VectorXd::Constant(n, 1e-14);
+            if (!fix_V) V = rGIG_cpp(h * nu, 2 * nu_vec, zero_vec, var_rng());
         }
         // else doing nothing
     }
@@ -77,6 +82,13 @@ public:
             VectorXd a_vec = VectorXd::Constant(n, nu) + a_inc_vec;
             VectorXd b_vec = VectorXd::Constant(n, nu) + b_inc_vec;
             if (!fix_V) V = rGIG_cpp(p_vec, a_vec, b_vec.cwiseProduct(h.cwiseProduct(h)), var_rng());
+        } else if (noise_type == "gal") {
+            // here a_inc_vec is given as (mu/sigma)^2 (latent.h)
+            prevV = V;
+            VectorXd p_vec = h * nu - VectorXd::Constant(n, 0.5);
+            VectorXd a_vec = VectorXd::Constant(n, 2 * nu) + a_inc_vec;
+            VectorXd zero_vec = VectorXd::Constant(n, 1e-14);
+            if (!fix_V) V = rGIG_cpp(p_vec, a_vec, zero_vec, var_rng());
         }
         // else doing nothing
     }
@@ -86,33 +98,57 @@ public:
     }
 
     double get_unbound_theta_V() const {
-        if (noise_type == "nig")
-            return log(nu);
-        else
+        if (noise_type == "normal")
             return 0;
+        else
+            return log(nu);
     }
     void   set_theta_var(double theta) {
-        if (noise_type == "nig") nu = exp(theta);
+        if (noise_type != "normal") nu = exp(theta);
         // else doing nothing
     }
 
     double grad_theta_var() const {
         if (fix_theta_V) return 0;
 
+        // grad of log nu
         double grad = 0;
         if (noise_type == "nig") {
-            VectorXd tmp = VectorXd::Constant(n, 1+1/(2*nu))
-                - 0.5*V - VectorXd::Constant(n, 1).cwiseQuotient(2*V);
-            grad = tmp.mean();
-            VectorXd tmp2 = VectorXd::Constant(n, 1+1/(2*nu))
-                - 0.5*prevV - VectorXd::Constant(n, 1).cwiseQuotient(2*prevV);
-            double grad2 = tmp2.mean();
+            // df/dnu = 0.5 (2h + 1/nu - h^2/V - V)
+            // df/d(log nu) = df/dnu * nu
+            VectorXd tmp = 0.5 * (2*h + VectorXd::Constant(n, 1/nu)
+                - h.cwiseProduct(h).cwiseQuotient(V) - V);
+            double grad_nu = tmp.mean() * nu;
 
-            double hess = -0.5 * pow(nu, -2);
+            VectorXd tmp2 = 0.5 * (2*h + VectorXd::Constant(n, 1/nu)
+                - h.cwiseProduct(h).cwiseQuotient(prevV) - prevV);
+            double grad_nu2 = tmp2.mean();
+
+            grad = grad_nu * nu;
+            double hess_nu = -0.5 * pow(nu, -2);
+            // hess of log nu
+            double hess = nu * grad_nu2 + nu * nu * hess_nu;
+
+            grad = grad / hess; // use hessian
 
             // version 1
-            grad = grad / (hess * nu + grad2);
-            // grad = grad / (hess * nu);
+            // grad = grad / (hess_nu * nu + grad2);
+            // grad = grad / (hess_nu * nu);
+        } else if (noise_type == "gal") {
+            // from ngme code (lamdba = nu)
+            double loglambda = log(nu);
+            double dlambda = 0;
+            for(int i=0; i < h.size(); i++) {
+                double h_lambda = exp(loglambda) * h[i];
+                //digamma(0.1) = digamma(1.1) - 1/0.1;
+                if(h_lambda > 1){
+                    dlambda -=  h_lambda * R::digamma(h_lambda);
+                } else {
+                    dlambda -=  h_lambda * R::digamma(h_lambda + 1) - 1.;
+                }
+            dlambda += h_lambda *  log(V(i) ) ;
+           }
+           grad = dlambda / h.size();
         }
 
         return grad;

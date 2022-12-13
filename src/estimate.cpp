@@ -2,7 +2,7 @@
 #include <RcppEigen.h>
 #include "optimizer.h"
 #include "block.h"
-#include "timer.h"
+#include "include/timer.h"
 
 #ifdef _OPENMP
     #include<omp.h>

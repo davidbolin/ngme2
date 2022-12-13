@@ -97,8 +97,14 @@ simulate.ngme_noise <- function(
     } else if (noise$noise_type == "normal") {
         sigma <- drop(exp(noise$B_sigma %*% noise$theta_sigma))
         e <- rnorm(n, sd = sigma * noise$h)
+    } else if (noise$noise_type == "gal") {
+        mu <- drop(noise$B_mu %*% noise$theta_mu)
+        sigma <- drop(exp(noise$B_sigma %*% noise$theta_sigma))
+        nu <- noise$theta_V
+        V <- rgamma(n, shape = noise$h * nu, rate = nu)
+        noise$V <- V
+        e <- mu * (V - noise$h) + sigma * sqrt(V) * rnorm(n)
     }
-
     attr(e, "noise") <- noise
     e
 }

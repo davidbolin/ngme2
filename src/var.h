@@ -111,20 +111,29 @@ public:
     double grad_theta_var() const {
         if (fix_theta_V) return 0;
 
+        // grad of log nu
         double grad = 0;
         if (noise_type == "nig") {
-            VectorXd tmp = VectorXd::Constant(n, 1+1/(2*nu))
-                - 0.5*V - VectorXd::Constant(n, 1).cwiseQuotient(2*V);
-            grad = tmp.mean();
-            VectorXd tmp2 = VectorXd::Constant(n, 1+1/(2*nu))
-                - 0.5*prevV - VectorXd::Constant(n, 1).cwiseQuotient(2*prevV);
-            double grad2 = tmp2.mean();
+            // df/dnu = 0.5 (2h + 1/nu - h^2/V - V)
+            // df/d(log nu) = df/dnu * nu
+            VectorXd tmp = 0.5 * (2*h + VectorXd::Constant(n, 1/nu)
+                - h.cwiseProduct(h).cwiseQuotient(V) - V);
+            double grad_nu = tmp.mean() * nu;
 
-            double hess = -0.5 * pow(nu, -2);
+            VectorXd tmp2 = 0.5 * (2*h + VectorXd::Constant(n, 1/nu)
+                - h.cwiseProduct(h).cwiseQuotient(prevV) - prevV);
+            double grad_nu2 = tmp2.mean();
+
+            grad = grad_nu * nu;
+            double hess_nu = -0.5 * pow(nu, -2);
+            // hess of log nu
+            double hess = nu * grad_nu2 + nu * nu * hess_nu;
+
+            grad = grad / hess; // use hessian
 
             // version 1
-            grad = grad / (hess * nu + grad2);
-            // grad = grad / (hess * nu);
+            // grad = grad / (hess_nu * nu + grad2);
+            // grad = grad / (hess_nu * nu);
         } else if (noise_type == "gal") {
             // from ngme code (lamdba = nu)
             double loglambda = log(nu);

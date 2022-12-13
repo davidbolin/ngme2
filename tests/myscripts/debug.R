@@ -154,3 +154,23 @@ res <- ngme(
 )
 res
 ?rgamma
+
+
+
+
+xx <- seq(-5,5,0.01)
+plot(xx, 2*dnorm(xx, 0, 2), type="l")
+lines(density(rnorm(100000, 0, 1)), col="red")
+
+# rejection sampling
+niter <- 100000
+accept_x <- 0
+for (iter in 1:niter) {
+  x <- rnorm(1, 0, 2)
+  alpha <- dnorm(x, 0, 1) /  (2*dnorm(x, 0, 2))
+  if (runif(1) < alpha) {
+    accept_x <- c(accept_x, x)
+  }
+}
+length(accept_x) / niter
+plot(density(accept_x))

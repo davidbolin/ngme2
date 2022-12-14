@@ -87,7 +87,7 @@
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="" class="logo" alt=""><h1>Ngme2 - A new Flexible R Package for Latent non-Gaussian Models</h1>
             
-            <h4 data-toc-skip class="date">2022-12-08</h4>
+            <h4 data-toc-skip class="date">2022-12-14</h4>
       
       
       <div class="d-none name"><code>ngme2.Rmd</code></div>
@@ -442,12 +442,12 @@ K =
 <span><span class="co">#&gt; *** Ngme object ***</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
-<span><span class="co">#&gt;    beta = -2.91, -1.44,  1.99</span></span>
+<span><span class="co">#&gt;    beta = -2.92, -1.43,  1.99</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type - normal</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.788</span></span>
+<span><span class="co">#&gt;       sigma = 0.789</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Latent models: </span></span>
@@ -460,7 +460,7 @@ K =
 <span><span class="co">#&gt;   Noise parameters: </span></span>
 <span><span class="co">#&gt;       mu = 1.86</span></span>
 <span><span class="co">#&gt;       sigma = 2.82</span></span>
-<span><span class="co">#&gt;       nu = 0.831</span></span></code></pre></div>
+<span><span class="co">#&gt;       nu = 0.829</span></span></code></pre></div>
 <p>As we can see, the model converges in 350 iterations. The estimation
 results are close to the real parameter.</p>
 <p>We can also use the <code>traceplot</code> function to see the
@@ -495,7 +495,7 @@ true NIG noise:</p>
 <span><span class="co">#&gt; Loading required package: foreach</span></span>
 <span><span class="co">#&gt; Loading required package: parallel</span></span>
 <span><span class="co">#&gt; Loading required package: sp</span></span>
-<span><span class="co">#&gt; This is INLA_22.12.03 built 2022-12-03 09:18:24 UTC.</span></span>
+<span><span class="co">#&gt; This is INLA_22.12.14 built 2022-12-13 20:50:21 UTC.</span></span>
 <span><span class="co">#&gt;  - See www.r-inla.org/contact-us for how to get help.</span></span>
 <span><span class="co">#&gt;  - To enable PARDISO sparse library; see inla.pardiso()</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -581,14 +581,14 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <span><span class="co">#&gt; *** Ngme object ***</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
-<span><span class="co">#&gt;    beta = 9.14</span></span>
+<span><span class="co">#&gt;    beta = 8.81</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type - nig</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = 0.344</span></span>
+<span><span class="co">#&gt;       mu = 0.369</span></span>
 <span><span class="co">#&gt;       sigma = 2.04</span></span>
-<span><span class="co">#&gt;       nu = 1.69</span></span>
+<span><span class="co">#&gt;       nu = 1.64</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Latent models: </span></span>
@@ -599,15 +599,15 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Noise type - normal</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.263</span></span>
+<span><span class="co">#&gt;       sigma = 0.23</span></span>
 <span><span class="co">#&gt; [[2]]</span></span>
 <span><span class="co">#&gt;   Ngme model: matern</span></span>
 <span><span class="co">#&gt;   Model parameters: </span></span>
-<span><span class="co">#&gt;       kappa = 4.19</span></span>
+<span><span class="co">#&gt;       kappa = 4.17</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Noise type - normal</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 9.46</span></span>
+<span><span class="co">#&gt;       sigma = 9.56</span></span>
 <span></span>
 <span><span class="co"># traceplots</span></span>
 <span></span>
@@ -659,13 +659,13 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <th align="left">ma_sigma</th>
 </tr></thead>
 <tbody><tr class="odd">
-<td align="left">9.14</td>
-<td align="left">0.344</td>
+<td align="left">8.81</td>
+<td align="left">0.369</td>
 <td align="left">2.04</td>
-<td align="left">1.69</td>
-<td align="left">-1.34</td>
-<td align="left">4.19</td>
-<td align="left">9.46</td>
+<td align="left">1.64</td>
+<td align="left">-1.47</td>
+<td align="left">4.17</td>
+<td align="left">9.56</td>
 </tr></tbody>
 </table>
 <div class="section level3">
@@ -730,14 +730,14 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <span><span class="co">#&gt; *** Ngme object ***</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
-<span><span class="co">#&gt;    beta = 9.14</span></span>
+<span><span class="co">#&gt;    beta = 8.81</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type - nig</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = 0.344</span></span>
+<span><span class="co">#&gt;       mu = 0.369</span></span>
 <span><span class="co">#&gt;       sigma = 2.04</span></span>
-<span><span class="co">#&gt;       nu = 1.69</span></span>
+<span><span class="co">#&gt;       nu = 1.64</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Latent models: </span></span>
@@ -748,15 +748,15 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Noise type - normal</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.263</span></span>
+<span><span class="co">#&gt;       sigma = 0.23</span></span>
 <span><span class="co">#&gt; [[2]]</span></span>
 <span><span class="co">#&gt;   Ngme model: matern</span></span>
 <span><span class="co">#&gt;   Model parameters: </span></span>
-<span><span class="co">#&gt;       kappa = 4.19</span></span>
+<span><span class="co">#&gt;       kappa = 4.17</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Noise type - normal</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 9.46</span></span>
+<span><span class="co">#&gt;       sigma = 9.56</span></span>
 <span></span>
 <span><span class="co"># Now we plot prediction</span></span>
 <span><span class="va">lp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">out2</span>, <span class="st">"prediction"</span><span class="op">)</span><span class="op">$</span><span class="va">lp</span></span>

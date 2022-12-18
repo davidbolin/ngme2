@@ -729,6 +729,7 @@ qigam <- function(p, a, b, lower.tail = TRUE, log.p = FALSE){
 #' @param mu    A numeric value for the shift parameter.
 #' @param nu    A numeric value for the shape parameter.
 #' @param sigma A numeric value for the scaling parameter.
+#' @param h     A numeric value for the additional parameter, see details.
 #' @param log,log.p logical; if \code{TRUE}, probabilities/densities \eqn{p} are
 #' returned as \eqn{log(p)}.
 #' @param lower.tail logical; if \code{TRUE}, probabilities are \eqn{P[X\leq x]},
@@ -743,12 +744,16 @@ qigam <- function(p, a, b, lower.tail = TRUE, log.p = FALSE){
 #' The length of the result is determined by \code{n} for rnig.
 #' @details The normal inverse-Gaussian distribution has density given
 #' by
-#'  \deqn{f(x; p, a, b) =
+#'  \deqn{f(x; \delta, \mu, \sigma, \nu) =
 #'  \frac{e^{\nu+\mu(x-\delta)/\sigma^2}\sqrt{\nu\mu^2/\sigma^2+\nu^2}}{\pi\sqrt{\nu\sigma^2+(x-\delta)^2}}
 #'  K_1(\sqrt{(\nu\sigma^2+(x-\delta)^2)(\mu^2/\sigma^4+\nu/\sigma^2)}),}
 #'  where \eqn{K_p} is modified Bessel function of the second kind of order \eqn{p},
 #'  \eqn{x>0}, \eqn{\nu>0} and \eqn{\mu,\delta, \sigma\in\mathbb{R}}.
 #'  See Barndorff-Nielsen (1977, 1978 and 1997) for further details.
+#'
+#' The additional parameter h is used when \deqn{V\sim IG(\nu,\nu h^{2})}.
+#' By the infinite divisibility, \deqn{\frac{1}{h} V \sim IG(\nu h, \nu h)}.
+#' Then \deqn{\delta+\mu V + \sigma \sqrt{V} Z} has the distribution of \deqn{NIG(\delta=-\mu h,\mu= \mu h, \sigma=\sigma \sqrt{h}, \nu=\nu h)}.
 #'
 #' @references
 #'  Barndorff-Nielsen, O. (1977) Exponentially decreasing distributions for the logarithm of particle size. Proceedings of the Royal Society of London.

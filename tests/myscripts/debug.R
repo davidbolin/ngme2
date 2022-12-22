@@ -222,3 +222,20 @@ library(numDeriv)
 grad(log_post, 1.98)
 
 grad_nu(1)
+
+
+# testing noise_normal_nig in R
+load_all()
+eps <- noise_normal_nig(
+  sigma_normal = 2,
+  mu = 1,
+  nu = 0.5,
+  sigma_nig = 1.3
+)
+eps
+str(eps)
+
+str(f(1:10, model="ar1", noise=noise_gal()))
+str(f(1:10, model="ar1", noise=eps))
+
+# testing noise_normal_nig in C

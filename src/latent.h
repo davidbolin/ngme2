@@ -61,11 +61,14 @@ protected:
     bool use_precond {false}, numer_grad {false};
     bool symmetricK {false};
 
-    // mu and sigma
-    MatrixXd B_mu, B_sigma;
-    VectorXd theta_mu, theta_sigma;
-    VectorXd mu, sigma;
-    int n_theta_mu, n_theta_sigma;
+    // mu and sigma, and sigma_normal (special case when using nig_normal case)
+    MatrixXd B_mu, B_sigma, B_sigma_normal;
+    VectorXd theta_mu, theta_sigma, theta_sigma_normal;
+
+    // mu = Bmu * theta_mu
+    // sigma = exp(Bsigma * theta_sigma)
+    VectorXd mu, sigma, sigma_normal;
+    int n_theta_mu, n_theta_sigma, n_theta_sigma_normal;
 
     // eps for numerical gradient.
     double trace, trace_eps, eps;
@@ -87,6 +90,7 @@ protected:
     vector<vector<double>> theta_K_traj;
     vector<vector<double>> theta_mu_traj;
     vector<vector<double>> theta_sigma_traj;
+    vector<vector<double>> theta_sigma_normal_traj;
     vector<double>   theta_V_traj;
 public:
     Latent(const Rcpp::List&, unsigned long seed);
@@ -248,6 +252,7 @@ public:
     virtual VectorXd grad_theta_K() { return numerical_grad(); }
     virtual VectorXd grad_theta_mu();
     virtual VectorXd grad_theta_sigma();
+    virtual VectorXd grad_theta_sigma_normal(); // grad of sig. only for normal noise
 
     virtual void   set_theta_var(double v) { var.set_theta_var(v); }
 
@@ -275,8 +280,10 @@ inline const VectorXd Latent::get_parameter() const {
         parameter.segment(n_theta_K, n_theta_mu)                = theta_mu;
         parameter.segment(n_theta_K+n_theta_mu, n_theta_sigma)  = theta_sigma;
         parameter(n_theta_K+n_theta_mu+n_theta_sigma)           = var.get_unbound_theta_V();
+        if (noise_type == "normal_nig")
+            parameter.segment(n_theta_K+n_theta_mu+n_theta_sigma+1, n_theta_sigma_normal) = theta_sigma_normal;
 
-// if (debug) std::cout << "parameter= " << parameter << std::endl;
+if (debug) std::cout << "parameter= " << parameter << std::endl;
 // if (debug) std::cout << "End latent get parameter"<< std::endl;
     return parameter;
 }
@@ -290,6 +297,8 @@ inline const VectorXd Latent::get_grad() {
     if (!fix_flag[latent_fix_theta_mu])    grad.segment(n_theta_K, n_theta_mu)               = grad_theta_mu();        else grad.segment(n_theta_K, n_theta_mu) = VectorXd::Constant(n_theta_mu, 0);
     if (!fix_flag[latent_fix_theta_sigma]) grad.segment(n_theta_K+n_theta_mu, n_theta_sigma) = grad_theta_sigma();     else grad.segment(n_theta_K+n_theta_mu, n_theta_sigma) = VectorXd::Constant(n_theta_sigma, 0);
     grad(n_theta_K+n_theta_mu+n_theta_sigma)  = var.grad_theta_var();
+    if (noise_type == "normal_nig")
+        grad.segment(n_theta_K+n_theta_mu+n_theta_sigma+1, n_theta_sigma_normal) = grad_theta_sigma_normal();
 
 // DEBUG: checking grads
 if (debug) {
@@ -305,6 +314,10 @@ inline void Latent::set_parameter(const VectorXd& theta) {
     theta_mu = theta.segment(n_theta_K, n_theta_mu);
     theta_sigma = theta.segment(n_theta_K+n_theta_mu, n_theta_sigma);
     var.set_theta_var   (theta(n_theta_K+n_theta_mu+n_theta_sigma));
+    if (noise_type == "normal_nig") {
+        theta_sigma_normal = theta.segment(n_theta_K+n_theta_mu+n_theta_sigma+1, n_theta_sigma_normal);
+        sigma_normal = (B_sigma_normal * theta_sigma_normal).array().exp();
+    }
 
     // update
     mu = (B_mu * theta_mu);

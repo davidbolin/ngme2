@@ -170,13 +170,18 @@ ngme_format <- function(param, val, model = NULL) {
 
   if (is.null(model)) { # noise
     if (stationary)
-      val <- if (param == "sigma") format(exp(val), digits = 3) else format(val, digits = 3)
+      val <- if (grepl("sigma", param, fixed=TRUE))
+        format(exp(val), digits = 3) else format(val, digits = 3)
     else
       val <-  paste0(format(val, digits = 3), collapse = ", ")
 
     switch(param,
       "sigma" = if (stationary) paste0("sigma = ", val)
                 else paste0("theta_sigma = ", val),
+      "sigma_nig" = if (stationary) paste0("sigma_nig = ", val)
+                else paste0("theta_sigma_nig = ", val),
+      "sigma_normal" = if (stationary) paste0("sigma_normal = ", val)
+                else paste0("theta_sigma_normal = ", val),
       "mu"    = if (stationary) paste0("mu = ", val)
                 else paste0("theta_mu = ", val),
       "nu"    = paste0("nu = ", val),

@@ -215,7 +215,7 @@ void BlockModel::sampleW_VY()
 
 // ---------------- get, set update gradient ------------------
 VectorXd BlockModel::get_parameter() const {
-// if (debug) std::cout << "Start block get parameter"<< std::endl;
+if (debug) std::cout << "Start block get parameter"<< std::endl;
     VectorXd thetas (n_params);
     int pos = 0;
     for (std::vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
@@ -230,7 +230,7 @@ VectorXd BlockModel::get_parameter() const {
 
     thetas.segment(n_la_params + n_feff, n_merr) = get_theta_merr();
 
-// if (debug) std::cout << "Finish block get parameter"<< std::endl;
+if (debug) std::cout << "Finish block get parameter"<< std::endl;
     return thetas;
 }
 

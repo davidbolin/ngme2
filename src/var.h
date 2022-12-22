@@ -62,27 +62,25 @@ public:
     void setPrevV(const VectorXd& V) { if (!fix_V) prevV = V; }
 
     void sample_V() {
-        if (noise_type == "nig") {
-            prevV = V;
-            VectorXd nu_vec = VectorXd::Constant(n, nu);
-            if (!fix_V) V = rGIG_cpp(VectorXd::Constant(n, -0.5), nu_vec, nu_vec.cwiseProduct(h.cwiseProduct(h)), var_rng());
-        } else if (noise_type == "gal") {
+        if (noise_type == "normal") return;
+
+        if (noise_type == "gal") {
             prevV = V;
             VectorXd nu_vec = VectorXd::Constant(n, nu);
             VectorXd zero_vec = VectorXd::Constant(n, 1e-14);
             if (!fix_V) V = rGIG_cpp(h * nu, 2 * nu_vec, zero_vec, var_rng());
+        } else {  // nig and normal+nig
+            prevV = V;
+            VectorXd nu_vec = VectorXd::Constant(n, nu);
+            if (!fix_V) V = rGIG_cpp(VectorXd::Constant(n, -0.5), nu_vec, nu_vec.cwiseProduct(h.cwiseProduct(h)), var_rng());
+
         }
-        // else doing nothing
     }
 
     void sample_cond_V(const VectorXd& a_inc_vec, const VectorXd& b_inc_vec) {
-        if (noise_type == "nig") {
-            prevV = V;
-            VectorXd p_vec = VectorXd::Constant(n, -1);
-            VectorXd a_vec = VectorXd::Constant(n, nu) + a_inc_vec;
-            VectorXd b_vec = VectorXd::Constant(n, nu) + b_inc_vec;
-            if (!fix_V) V = rGIG_cpp(p_vec, a_vec, b_vec.cwiseProduct(h.cwiseProduct(h)), var_rng());
-        } else if (noise_type == "gal") {
+        if (noise_type == "normal") return;
+
+        if (noise_type == "gal") {
             prevV = V;
             VectorXd p_vec = (nu * h) - VectorXd::Constant(n, 0.5);
             VectorXd a_vec = VectorXd::Constant(n, 2 * nu) + a_inc_vec;
@@ -96,8 +94,13 @@ public:
             // for (int i=0; i < n; i++) {
             //     V(i) = R::rgamma(h(i)*nu - 0.5, 1 / (nu + a_inc_vec(i)/2));
             // }
+        } else { // nig and normal+nig
+            prevV = V;
+            VectorXd p_vec = VectorXd::Constant(n, -1);
+            VectorXd a_vec = VectorXd::Constant(n, nu) + a_inc_vec;
+            VectorXd b_vec = VectorXd::Constant(n, nu) + b_inc_vec;
+            if (!fix_V) V = rGIG_cpp(p_vec, a_vec, b_vec.cwiseProduct(h.cwiseProduct(h)), var_rng());
         }
-        // else doing nothing
     }
 
     double get_theta_V() const {
@@ -116,11 +119,24 @@ public:
     }
 
     double grad_theta_var() const {
-        if (fix_theta_V) return 0;
+        if (fix_theta_V || noise_type == "normal") return 0;
 
         // grad of log nu
         double grad = 0;
-        if (noise_type == "nig") {
+        if (noise_type == "gal") {
+            for(int i=0; i < n; i++) {
+                double nu_hi = nu * h[i];
+                //digamma(0.1) = digamma(1.1) - 1/0.1;
+                if(nu_hi > 1){
+                    grad -=  nu_hi * R::digamma(nu_hi);
+                } else {
+                    grad -=  nu_hi * R::digamma(nu_hi + 1) - 1.;
+                }
+            grad += nu_hi * (1 - log(1/nu) + log(V(i))) - nu * V(i);
+// std::cout << "grad in var = " << grad << std::endl;
+           }
+           grad = - grad / n;
+        } else { // type == nig or normal+nig
             // df/dnu = 0.5 (2h + 1/nu - h^2/V - V)
             // df/d(log nu) = df/dnu * nu
             VectorXd tmp = 0.5 * (2*h + VectorXd::Constant(n, 1/nu)
@@ -138,20 +154,8 @@ public:
 
             // grad = -grad;        // not use hessian
             grad = grad / hess;     // use hessian
-        } else if (noise_type == "gal") {
-            for(int i=0; i < n; i++) {
-                double nu_hi = nu * h[i];
-                //digamma(0.1) = digamma(1.1) - 1/0.1;
-                if(nu_hi > 1){
-                    grad -=  nu_hi * R::digamma(nu_hi);
-                } else {
-                    grad -=  nu_hi * R::digamma(nu_hi + 1) - 1.;
-                }
-            grad += nu_hi * (1 - log(1/nu) + log(V(i))) - nu * V(i);
-// std::cout << "grad in var = " << grad << std::endl;
-           }
-           grad = - grad / n;
         }
+
         return grad;
     }
 };

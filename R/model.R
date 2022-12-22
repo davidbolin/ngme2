@@ -77,7 +77,7 @@ ngme_model <- function(
   if (is.null(par_string))
     par_string <- do.call(paste0, as.list(c(K_str, mu_str, sigma_str, nu_str)))
   if (is.null(n_params))
-    n_params <- length(theta_K) + with(noise, n_theta_mu + n_theta_sigma + n_theta_V)
+    n_params <- length(theta_K) + with(noise, n_params)  # n_theta_mu + n_theta_sigma + n_theta_V)
 
   structure(
     list(

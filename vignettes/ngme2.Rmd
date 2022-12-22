@@ -386,7 +386,7 @@ matern_spde <- model_matern(
 
 out <- ngme(
   formula = Y ~ 1 +
-    f(inla.group(seaDist), model = "rw1", circular=T, noise = noise_normal()) +
+    f(inla.group(seaDist), model = "rw1", noise = noise_normal()) +
     f(model = matern_spde, noise = noise_normal()),
   data = list(
     Y = Y

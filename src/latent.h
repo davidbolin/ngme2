@@ -274,14 +274,20 @@ public:
 /*    Optimizer related    */
 inline const VectorXd Latent::get_parameter() const {
 // if (debug) std::cout << "Start latent get parameter"<< std::endl;
-
     VectorXd parameter (n_params);
+
+    if (noise_type == "normal") {
+        parameter.segment(0, n_theta_K)              = theta_K;
+        parameter.segment(n_theta_K, n_theta_sigma)  = theta_sigma;
+    } else {
+    // nig, gal, and nig+normal
         parameter.segment(0, n_theta_K)                         = theta_K;
         parameter.segment(n_theta_K, n_theta_mu)                = theta_mu;
         parameter.segment(n_theta_K+n_theta_mu, n_theta_sigma)  = theta_sigma;
         parameter(n_theta_K+n_theta_mu+n_theta_sigma)           = var.get_unbound_theta_V();
-        if (noise_type == "normal_nig")
-            parameter.segment(n_theta_K+n_theta_mu+n_theta_sigma+1, n_theta_sigma_normal) = theta_sigma_normal;
+    if (noise_type == "normal_nig")
+        parameter.segment(n_theta_K+n_theta_mu+n_theta_sigma+1, n_theta_sigma_normal) = theta_sigma_normal;
+    }
 
 if (debug) std::cout << "parameter= " << parameter << std::endl;
 // if (debug) std::cout << "End latent get parameter"<< std::endl;
@@ -290,15 +296,20 @@ if (debug) std::cout << "parameter= " << parameter << std::endl;
 
 inline const VectorXd Latent::get_grad() {
 // if (debug) std::cout << "Start latent gradient"<< std::endl;
+// auto grad1 = std::chrono::steady_clock::now();
     VectorXd grad (n_params);
 
-// auto grad1 = std::chrono::steady_clock::now();
-    if (!fix_flag[latent_fix_theta_K])     grad.segment(0, n_theta_K)                        = grad_theta_K();         else grad.segment(0, n_theta_K) = VectorXd::Constant(n_theta_K, 0);
-    if (!fix_flag[latent_fix_theta_mu])    grad.segment(n_theta_K, n_theta_mu)               = grad_theta_mu();        else grad.segment(n_theta_K, n_theta_mu) = VectorXd::Constant(n_theta_mu, 0);
-    if (!fix_flag[latent_fix_theta_sigma]) grad.segment(n_theta_K+n_theta_mu, n_theta_sigma) = grad_theta_sigma();     else grad.segment(n_theta_K+n_theta_mu, n_theta_sigma) = VectorXd::Constant(n_theta_sigma, 0);
-    grad(n_theta_K+n_theta_mu+n_theta_sigma)  = var.grad_theta_var();
-    if (noise_type == "normal_nig")
-        grad.segment(n_theta_K+n_theta_mu+n_theta_sigma+1, n_theta_sigma_normal) = grad_theta_sigma_normal();
+    if (noise_type == "normal") {
+        if (!fix_flag[latent_fix_theta_K])     grad.segment(0, n_theta_K)                        = grad_theta_K();         else grad.segment(0, n_theta_K) = VectorXd::Constant(n_theta_K, 0);
+        if (!fix_flag[latent_fix_theta_sigma]) grad.segment(n_theta_K, n_theta_sigma) = grad_theta_sigma();     else grad.segment(n_theta_K, n_theta_sigma) = VectorXd::Constant(n_theta_sigma, 0);
+    } else {
+        if (!fix_flag[latent_fix_theta_K])     grad.segment(0, n_theta_K)                        = grad_theta_K();         else grad.segment(0, n_theta_K) = VectorXd::Constant(n_theta_K, 0);
+        if (!fix_flag[latent_fix_theta_mu])    grad.segment(n_theta_K, n_theta_mu)               = grad_theta_mu();        else grad.segment(n_theta_K, n_theta_mu) = VectorXd::Constant(n_theta_mu, 0);
+        if (!fix_flag[latent_fix_theta_sigma]) grad.segment(n_theta_K+n_theta_mu, n_theta_sigma) = grad_theta_sigma();     else grad.segment(n_theta_K+n_theta_mu, n_theta_sigma) = VectorXd::Constant(n_theta_sigma, 0);
+        grad(n_theta_K+n_theta_mu+n_theta_sigma)  = var.grad_theta_var();
+        if (noise_type == "normal_nig")
+            grad.segment(n_theta_K+n_theta_mu+n_theta_sigma+1, n_theta_sigma_normal) = grad_theta_sigma_normal();
+    }
 
 // DEBUG: checking grads
 if (debug) {
@@ -310,20 +321,27 @@ if (debug) {
 
 inline void Latent::set_parameter(const VectorXd& theta) {
 // if (debug) std::cout << "Start latent set parameter"<< std::endl;
-    theta_K  = theta.segment(0, n_theta_K);
-    theta_mu = theta.segment(n_theta_K, n_theta_mu);
-    theta_sigma = theta.segment(n_theta_K+n_theta_mu, n_theta_sigma);
-    var.set_theta_var   (theta(n_theta_K+n_theta_mu+n_theta_sigma));
-    if (noise_type == "normal_nig") {
-        theta_sigma_normal = theta.segment(n_theta_K+n_theta_mu+n_theta_sigma+1, n_theta_sigma_normal);
-        sigma_normal = (B_sigma_normal * theta_sigma_normal).array().exp();
+    if (noise_type == "normal") {
+        theta_K  = theta.segment(0, n_theta_K);
+        theta_sigma = theta.segment(n_theta_K, n_theta_sigma);
+        sigma = (B_sigma * theta_sigma).array().exp();
+    } else {
+        // nig, gal and normal+nig
+        theta_K  = theta.segment(0, n_theta_K);
+        theta_mu = theta.segment(n_theta_K, n_theta_mu);
+        theta_sigma = theta.segment(n_theta_K+n_theta_mu, n_theta_sigma);
+        var.set_theta_var   (theta(n_theta_K+n_theta_mu+n_theta_sigma));
+
+        // update
+        mu = (B_mu * theta_mu);
+        sigma = (B_sigma * theta_sigma).array().exp();
+        if (noise_type == "normal_nig") {
+            theta_sigma_normal = theta.segment(n_theta_K+n_theta_mu+n_theta_sigma+1, n_theta_sigma_normal);
+            sigma_normal = (B_sigma_normal * theta_sigma_normal).array().exp();
+        }
     }
 
-    // update
-    mu = (B_mu * theta_mu);
-    sigma = (B_sigma * theta_sigma).array().exp();
     update_each_iter();
-
     // record
     record_traj();
 }

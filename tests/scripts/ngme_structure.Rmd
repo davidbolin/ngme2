@@ -1,0 +1,20 @@
+---
+title: "ngme2 data structure"
+author: Xiaotian Jin
+---
+
+This Rmd file is for illustration of ngme2 data structures.
+
+### 0. Intro
+
+So, KW = noise. KW|V ~ N()
+
+### 1. noise
+
+1. Noise is type-G: $\delta + \mu V + \sigma \sqrt{V} Z$
+2.
+
+```{r}
+load_all()
+noise_nig()
+```

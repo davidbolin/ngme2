@@ -164,6 +164,7 @@ ngme_parse_formula <- function(
   )
 }
 
+# format output
 ngme_format <- function(param, val, model = NULL) {
   stationary <- (length(val) == 1)
   dne <- (length(val) == 0)

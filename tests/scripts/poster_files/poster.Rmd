@@ -1,0 +1,274 @@
+---
+title: Ngme2 - A new Flexible R Package for Latent non-Gaussian Models
+titlebox_borderwidth: "0.5cm"
+author:
+  - name: Xiaotian Jin
+    affil: 1
+  - name: Alexandre B. Sima
+    affil: 1
+  - name: David Bolin
+    affil: 1
+affiliation:
+  - num: 1
+    address: Department of Statistics, KAUST
+column_numbers: 4
+logoright_name: https&#58;//raw.githubusercontent.com/vpnsctl/posterdown/master/images/group_logo2.png
+logoleft_name: https&#58;//raw.githubusercontent.com/vpnsctl/posterdown/master/images/stat_logo.png
+output:
+  posterdown::posterdown_html:
+    self_contained: false
+# bibliography: "packages.bib"
+poster_height:	"28.5in"
+poster_width:	"55.0in"
+primary_colour: "#EDE3FF"
+secondary_colour: "#EDE3FF"
+titlebox_bordercol: "#AF9FC9"
+title_textcol: "black"
+author_textcol: "black"
+affiliation_textcol: "black"
+code_colour: #666
+body_textsize: "40px"
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+set.seed(10)
+library(devtools)
+load_all()
+```
+
+# Introduction
+
+`ngme2` is the updated version of `ngme` (https://github.com/davidbolin/ngme), a package for estimating latent non-Gaussian models.
+It follows a **3-layer structure** in design (the general block model, latent process models, and noises) for specifying the whole statistical model.
+The latent process defines different operator structure, and the block model collects them together with the fixed effects and measurement noise.
+
+## **1 Features**
+
+1. Support spatial models like **Matern** model with non-Gaussian noise.
+2. Support models for temporal data like **AR1** and **random walk** of order 1 and 2.
+3. Support replicates at same locations.
+4. Support prediction at unknown locations.
+5. Comparing to the previous version, it now supports multiple stochastic processes in the latent model.
+
+## **2 Model Framework**
+
+The package `ngme2` provides methods for mixed effect models in the following form:
+
+$$
+\begin{aligned}
+Y = {\bf X}^{\top} {\bf \beta} + \sum_j {\bf A}_j W_j({\bf t}) + \epsilon.
+\end{aligned}
+$$
+
+- $Y$ is the response variable,
+- ${\bf X}$ is the matrix of fixed effects explanatory variables,
+- ${\bf \beta}$ is the matrix of fixed effects coefficients,
+- ${\bf A}_j$ is the observation matrix for each process,
+- $W_j(t_j)$ is specified as a stochastic process,
+- $\epsilon$ is measurement error.
+
+Here, the process $W$ follows ${\bf K} W = z$,
+where $z$ is either Gaussian or non-Gaussian noise.
+${\bf K}$ is the operator matrix.
+
+## **3 Non-Gaussian Model**
+
+Here we assume the non-Gaussian process is a type-G Lévy process,
+whose increments can be represented as location-scale mixtures:
+$$\gamma + \mu V + \sigma \sqrt{V}Z,$$
+where $\gamma, \mu, \sigma$ are parameters, $Z\sim N(0,1)$ and is independent of $V$, and $V$ is a positive infinitely divisible random variable.
+It has the following results:
+
+$$
+KW|V \sim N(\gamma + \mu V, \sigma^2 \, diag(V)),
+$$
+where $K$ is the operator matrix following. Notice that $\mu$ and $\sigma$ can be non-stationary.
+
+In `ngme2`, we currently focus mainly on the normal inverse Gaussian (NIG) model.
+In this case, $V$ follows Inverse Gaussian distribution with parameter $\nu$ (IG($\nu$, $\nu$)).
+
+## **4 Parameter Estimation**
+
+1. Ngme2 does maximum likelihood estimation (using MCEM algorithm) through preconditioned stochastic gradient descent.
+2. Multiple chains are run in parallel for better convergence checks.
+
+# Use Ngme Model - A hierachical structure
+
+### Specify noise with `ngme_noise` object
+
+The `ngme_noise` object is the most fundamental structure in `ngme2`.
+The object is used to specify the driving noise of the stochastic process and the measurement noise.
+
+For now we support two noises, one is **normal** noise, the other is the **NIG** noise.
+
+The R class `ngme_noise` has the following interface:
+
+```
+noise_normal(sd = 1)                 # normal noise
+noise_nig(mu = 1, sigma = 2, nu = 1) # nig noise
+noise_nig(B_mu, theta_mu = c(1, 2),  # nig noise
+  B_sigma, sigma = c(1,2), nu = 1)
+```
+The 3rd example is the non-stationary NIG noise,
+where $\mu = \bf B_{\mu} \bf \theta_{\mu}$, and $\sigma = \exp(\bf B_{\sigma} \bf \theta_{\sigma})$.
+
+### Specify stochastic process with `f` function
+
+The middle layer is the stochastic process, in R interface, it is represented as a `f` function.
+The process can be specified by different noise structure.
+
+Some examples of using `f` function to specify `ngme_model`:
+
+```
+f(index = 1:10, model = "ar1",
+  noise = noise_nig(), theta_K = 0.5)
+```
+
+### Specify latent  model with formula in `ngme`
+
+The latent model can be specified additively as a **formula** argument in `ngme` function
+together with **fixed effects**.
+
+# Application - Estimation of Paraná data
+
+The rainfall data from Paraná (Brazil) is collected by the National Water Agency in Brazil (Agencia Nacional de Águas, ANA, in Portuguese).
+ANA collects data from many locations over Brazil, and all these data are freely available from the ANA website (http://www3.ana.gov.br/portal/ANA).
+
+We will briefly illustrate the command we use, and the result of the estimation. The data is shown:
+
+```{r include = FALSE}
+library(INLA)
+data(PRprec)
+data(PRborder)
+
+coords <- as.matrix(PRprec[, 1:2])
+prdomain <- inla.nonconvex.hull(coords, -0.03, -0.05, resolution = c(100, 100))
+prmesh <- inla.mesh.2d(boundary = prdomain, max.edge = c(0.45, 1), cutoff = 0.2)
+
+Y1 <- rowMeans(PRprec[, 12 + 1:31]) # 2 + Octobor
+Y2 <- apply(PRprec[, 12 + 1:31], 1, max) # 2 + Octobor
+
+ind <- !is.na(Y1)
+Y1 <- Y1[ind]
+Y2 <- Y2[ind]
+coords <- as.matrix(PRprec[ind, 1:2])
+
+A <- inla.spde.make.A(mesh = prmesh, loc = coords)
+seaDist <- apply(spDists(coords, PRborder[1034:1078, ],
+  longlat = TRUE
+), 1, min)
+
+mesh.index <- inla.spde.make.index(
+  name = "field",
+  mesh = prmesh,
+  n.spde = prmesh$n
+)
+
+data <- data.frame(
+  Y_mean  = Y1,
+  Y_max   = Y2,
+  long    = coords[, 1],
+  lat     = coords[, 2]
+)
+out <- ngme(
+  formula = Y_mean ~ 1 +
+    f(inla.group(seaDist), model = "rw1", noise=noise_normal()) +
+    f(index = mesh.index$field,
+      model = model_matern(A = A, mesh = prmesh),
+      noise = noise_nig()
+    ),
+  data = data,
+  family = noise_nig(),
+  control = ngme_control(
+    estimation = T,
+    iterations = 4000,
+    n_slope_check = 4,
+    stop_points = 10,
+    n_parallel_chain = 8
+  ),
+  seed = 416
+)
+out
+library(ggplot2)
+library(grid)
+library(gridExtra)
+grid.arrange(rectGrob(), rectGrob())
+```
+
+```{r message=FALSE,fig.width=6,fig.height=6,fig.align='center', echo=FALSE, fig.cap="Mean of the rainfall in Octobor 2012 in Paraná"}
+library(fields);
+ggplot() +
+  geom_point(aes(
+    x = coords[, 1], y = coords[, 2],
+    colour = Y1
+  ), size = 2, alpha = 1) +
+  scale_colour_gradientn(colours = tim.colors(100)) +
+  geom_path(aes(x = PRborder[, 1], y = PRborder[, 2])) +
+  geom_path(aes(x = PRborder[1034:1078, 1], y = PRborder[
+    1034:1078,
+    2
+  ]), colour = "red");
+```
+
+This is the `ngme2` command for fitting the model
+(rw1 is random walk 1) in R:
+
+(Scan the QR code to see the full vigenette and code:)
+<br/>
+<br/>
+<br/>
+
+```
+ngme(
+  formula = Y_mean ~ 1 +
+    f(inla.group(seaDist), model = "rw1",
+      noise=noise_normal()) +
+    f(index = mesh.index$field,
+      model = model_matern(A = A, mesh = prmesh),
+      noise = noise_nig()),
+  data = data,
+  family = noise_nig(),
+  control = ngme_control(
+    iterations = 4000,
+    stop_points = 100,
+    n_parallel_chain = 8
+))
+```
+Results of the estimation:
+
+```{r echo=FALSE}
+res1 <- data.frame(
+  rw_sigma     = format(out$latents[[1]]$noise$theta_sigma, digits=3),
+  ma_kappa  = format(exp(out$latents[[2]]$theta_K), digits=3),
+  ma_mu     = format(out$latents[[2]]$noise$theta_mu, digits=3),
+  ma_sigma  = format(exp(out$latents[[2]]$noise$theta_sigma), digits=3),
+  ma_nu     = format(out$latents[[2]]$noise$theta_V, digits=3)
+)
+knitr::kable(res1, caption = "Estimation for the process")
+# res <- c(out$beta, rw1_sigma, matern_kappa, matern_mu, matern_sigma, matern_nu)
+# names(res) <- c("beta", "rw1_sigma", "matern_kappa",
+#   "matern_mu", "matern_sigma", "matern_nu")
+```
+
+```{r echo=FALSE}
+res2 <- data.frame(
+  intercept    = format(out$beta, digits=3),
+  noise_mu     = format(out$noise$theta_mu, digits=3),
+  noise_sigma  = format(exp(out$noise$theta_sigma), digits=3),
+  noise_nu     = format(out$noise$theta_V, digits=3)
+)
+knitr::kable(res2, caption = "Estimation for fixed effects
+  and measurement noise")
+```
+
+Result of the optimization trajectory of parameters for the Matern model:
+
+```{r fig.width=8,fig.height=8,fig.align='center', echo=FALSE, fig.cap="Traceplot of Matern parameters"}
+pl <- lapply(c("kappa", "mu", "sigma", "nu"), function(.x)
+  traceplot(out, parameter = .x, f_index = 2));
+marrangeGrob(pl, nrow=2, ncol=2)
+```

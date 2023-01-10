@@ -267,6 +267,9 @@ public:
             theta_mu_traj[i].push_back(theta_mu(i));
         for (int i=0; i < theta_sigma.size(); i++)
             theta_sigma_traj[i].push_back(theta_sigma(i));
+        if (noise_type=="normal_nig")
+            for (int i=0; i < theta_sigma_normal.size(); i++)
+                theta_sigma_normal_traj[i].push_back(theta_sigma_normal(i));
         theta_V_traj.push_back(var.get_theta_V());
     }
 };

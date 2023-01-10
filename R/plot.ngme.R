@@ -52,6 +52,8 @@ traceplot <- function(
       parameter <- "theta_K"
     else if (parameter %in% c("mu"))
       parameter <- "theta_mu"
+    else if (parameter %in% c("sigma_normal"))
+      parameter <- "theta_sigma_normal"
     else if (parameter %in% c("sigma"))
       parameter <- "theta_sigma"
     else if (parameter %in% c("nu"))

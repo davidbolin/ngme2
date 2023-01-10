@@ -58,7 +58,7 @@ matern_spde <- model_matern(
 )
 ```
 
-# case 1. SPDE nig noise + normal measurement noise
+## case 1. RW1 + SPDE NIG noise + normal measurement noise
 
 ```{r case1, cache=TRUE}
 nig_m_normal <- ngme(
@@ -85,7 +85,7 @@ nig_m_normal <- ngme(
 nig_m_normal
 ```
 
-# case 2. SPDE nig noise + NIG measurement noise
+## case 2. RW1 + SPDE NIG noise + NIG measurement noise
 
 ```{r case2, cache=TRUE}
 nig_m_nig <- ngme(
@@ -112,7 +112,7 @@ nig_m_nig <- ngme(
 nig_m_nig
 ```
 
-# case 3. SPDE nig + normal noise + normal measurement noise
+## case 3. RW1 + SPDE normal_NIG noise + normal measurement noise
 
 ```{r case3, cache=TRUE}
 normalnig_m_normal <- ngme(
@@ -125,7 +125,7 @@ normalnig_m_normal <- ngme(
   family = noise_normal(),
   control = ngme_control(
     estimation = T,
-    iterations = 10,
+    iterations = 1000,
     n_slope_check = 4,
     stop_points = 10,
     std_lim = 0.1,
@@ -133,20 +133,49 @@ normalnig_m_normal <- ngme(
     print_check_info = FALSE
   ),
   debug = FALSE,
-  seed = 16
+  seed = 1000
 )
 
 normalnig_m_normal
+# traceplot(normalnig_m_normal, "sigma_normal", f_index = 2)
+# traceplot(normalnig_m_normal, "sigma", f_index = 2)
 ```
 
-# case 4. SPDE nig noise + SPDE normal noise + normal measurement noise
+## case 4. RW1 + SPDE normal_NIG noise + NIG measurement noise
 
 ```{r case4, cache=TRUE}
+normalnig_m_nig <- ngme(
+  formula = Y ~ 1 +
+    f(inla.group(seaDist), model = "rw1", noise = noise_normal()) +
+    f(model = matern_spde, noise = noise_normal_nig()),
+  data = list(
+    Y = Y
+  ),
+  family = noise_nig(),
+  control = ngme_control(
+    estimation = T,
+    iterations = 1000,
+    n_slope_check = 4,
+    stop_points = 10,
+    std_lim = 0.1,
+    n_parallel_chain = 1,
+    print_check_info = FALSE
+  ),
+  debug = FALSE,
+  seed = 1000
+)
+
+normalnig_m_nig
+```
+
+## case 5. RW1 + SPDE NIG noise + SPDE normal noise + normal measurement noise
+
+```{r case5, cache=TRUE}
 nig_normal_m_normal <- ngme(
   formula = Y ~ 1 +
     f(inla.group(seaDist), model = "rw1", noise = noise_normal()) +
-    f(model = matern_spde, noise = noise_normal()) +
-    f(model = matern_spde, noise = noise_nig()),
+    f(model = matern_spde, noise = noise_nig()) +
+    f(model = matern_spde, noise = noise_normal()),
   data = list(
     Y = Y
   ),
@@ -165,4 +194,66 @@ nig_normal_m_normal <- ngme(
 )
 
 nig_normal_m_normal
+```
+
+## case 6. RW1 + SPDE NIG noise + SPDE normal noise + NIG measurement noise
+
+```{r case6, cache=TRUE}
+nig_normal_m_nig <- ngme(
+  formula = Y ~ 1 +
+    f(inla.group(seaDist), model = "rw1", noise = noise_normal()) +
+    f(model = matern_spde, noise = noise_nig()) +
+    f(model = matern_spde, noise = noise_normal()),
+  data = list(
+    Y = Y
+  ),
+  family = noise_nig(),
+  control = ngme_control(
+    estimation = T,
+    iterations = 1000,
+    n_slope_check = 4,
+    stop_points = 10,
+    std_lim = 0.1,
+    n_parallel_chain = 1,
+    print_check_info = FALSE
+  ),
+  debug = FALSE,
+  seed = 16
+)
+
+nig_normal_m_nig
+```
+
+
+## Results
+
+Comparing the result of diffrerent fitting.
+
+```{r}
+# compare case 3456
+all_cases <- list(
+  normalnig_m_normal,
+  normalnig_m_nig,
+  nig_normal_m_normal,
+  nig_normal_m_nig)
+
+tog_cases <- list(normalnig_m_normal,normalnig_m_nig)
+sep_cases <- list(nig_normal_m_normal, nig_normal_m_nig)
+
+rw_sigma <- sapply(all_cases, function(x) x$latents[[1]]$noise$theta_sigma)
+nig_kappa <- sapply(all_cases, function(x) x$latents[[2]]$theta_K)
+nig_mu <- sapply(all_cases, function(x) x$latents[[2]]$noise$theta_mu)
+nig_sigma <- sapply(all_cases, function(x) x$latents[[2]]$noise$theta_sigma)
+nig_nu <- sapply(all_cases, function(x) x$latents[[2]]$noise$theta_V)
+
+normal_kappa <- c(NA, NA, sapply(sep_cases, function(x) x$latents[[3]]$theta_K))
+normal_sigma <- c(
+  sapply(tog_cases, function(x) x$latents[[2]]$noise$theta_sigma_normal),
+  sapply(sep_cases, function(x) x$latents[[3]]$noise$theta_sigma)
+)
+
+tt <- data.frame(rw_sigma, nig_kappa, nig_mu, nig_sigma, nig_nu, normal_kappa, normal_sigma)
+rownames(tt) <- c("nornig + normal", "nornig + nig", "normal+nig + nomral", "normal+nig + nig")
+format(tt, digits=3)
+
 ```

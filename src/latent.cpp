@@ -83,6 +83,7 @@ if (debug) std::cout << "Begin constructor of latent" << std::endl;
 
     theta_mu_traj.resize(n_theta_mu);
     theta_sigma_traj.resize(n_theta_sigma);
+    if (noise_type=="normal_nig") theta_sigma_normal_traj.resize(n_theta_sigma_normal);
     record_traj();
 
 if (debug) std::cout << "End constructor of latent" << std::endl;
@@ -148,7 +149,7 @@ inline VectorXd Latent::grad_theta_sigma_normal() {
     VectorXd tmp1 = tmp.cwiseProduct(sigma_normal.array().pow(-2).matrix()) - VectorXd::Constant(V_size, 1);
     grad = B_sigma_normal.transpose() * tmp1;
 
-    return 1.0 / V_size * grad;
+    return - 1.0 / V_size * grad;
 }
 
 double Latent::function_K(SparseMatrix<double>& K) {
@@ -207,6 +208,7 @@ Rcpp::List Latent::output() const {
         Rcpp::Named("theta_K")      = theta_K, // same parameterization as input
         Rcpp::Named("theta_mu")     = theta_mu,
         Rcpp::Named("theta_sigma")  = theta_sigma,
+        Rcpp::Named("theta_sigma_normal")  = theta_sigma_normal,
         Rcpp::Named("theta_V")      = var.get_theta_V(),  // gives eta > 0, not log(eta)
         Rcpp::Named("V")            = getV(),
         Rcpp::Named("W")            = W
@@ -215,6 +217,7 @@ Rcpp::List Latent::output() const {
         Rcpp::Named("theta_K")            = theta_K_traj,
         Rcpp::Named("theta_mu")           = theta_mu_traj,
         Rcpp::Named("theta_sigma")        = theta_sigma_traj,
+        Rcpp::Named("theta_sigma_normal")        = theta_sigma_normal_traj,
         Rcpp::Named("theta_V")            = theta_V_traj
     );
     out.attr("trajectory") = trajecotry;

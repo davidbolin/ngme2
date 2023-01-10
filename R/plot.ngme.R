@@ -99,9 +99,10 @@ traceplot <- function(
         theta_K = "theta_K",
         theta_mu = "mu",
         theta_sigma = "sigma",
+        theta_sigma_normal = "sigma_normal",
         theta_V = "nu",
         beta = "beta"
-      )))
+      ), param_index))
     }
 }
 
@@ -147,4 +148,70 @@ plot.ngme_noise <- function(x, y = NULL, ...) {
   }
 
   gg + ggplot2::labs(title = "Density Plot")
+}
+
+#' Trace plot of ngme fitting
+#'
+#' @param ngme ngme object
+#' @param param string, fe for fixed effects, mn for measurement noise, and number i of i-th latent model
+#'
+#' @return the traceplot
+#' @export
+#'
+traceplot2 <- function(
+  ngme,
+  param = "beta"
+) {
+  if (param %in% c("fe", "beta")) {
+    n <- length(ngme$beta)
+    ps <- lapply(1:n, function(x) traceplot(ngme, f_index=0, param="beta", param_index = x))
+  } else if (param %in% c("mn", "noise")) {
+    ps <- switch(ngme$noise$noise_type,
+      "normal" = {n_sigma <- length(ngme$noise$theta_sigma); lapply(1:n_sigma, function(x) traceplot(ngme, f_index=0, param="sigma", param_index = x))},
+      { # default case
+        n_mu <- length(ngme$noise$theta_mu);
+        n_sigma <- length(ngme$noise$theta_sigma);
+        c(
+          lapply(1:n_mu, function(x) traceplot(ngme, f_index=0, param="mu", param_index = x)),
+          lapply(1:n_sigma, function(x) traceplot(ngme, f_index=0, param="sigma", param_index = x)),
+          list(traceplot(ngme, f_index=0, param="nu", param_index = 1))
+        )
+      }
+    )
+  } else if (is.numeric(param)) {
+    f_idx <- param;
+    n_K <- length(ngme$latents[[f_idx]]$theta_K);
+    n_mu <- length(ngme$latents[[f_idx]]$noise$theta_mu);
+    n_sigma <- length(ngme$latents[[f_idx]]$noise$theta_sigma);
+
+    ps <- switch(ngme$latents[[f_idx]]$noise_type,
+      "normal" = {
+        c(
+          lapply(1:n_K, function(x) traceplot(ngme, f_index=f_idx, param="kappa", param_index = x)),
+          lapply(1:n_sigma, function(x) traceplot(ngme, f_index=f_idx, param="sigma", param_index = x))
+        )
+      },
+      "normal_nig" = {
+        n_sig_normal <- length(ngme$latents[[f_idx]]$noise$theta_sigma_normal);
+        c(
+          lapply(1:n_K, function(x) traceplot(ngme, f_index=f_idx, param="kappa", param_index = x)),
+          lapply(1:n_mu, function(x) traceplot(ngme, f_index=f_idx, param="mu", param_index = x)),
+          lapply(1:n_sigma, function(x) traceplot(ngme, f_index=f_idx, param="sigma", param_index = x)),
+          list(traceplot(ngme, f_index=f_idx, param="nu", param_index = 1)),
+          lapply(1:n_sig_normal, function(x) traceplot(ngme, f_index=f_idx, param="sigma_normal", param_index = x))
+        )
+      },
+      { # default case
+        c(
+          lapply(1:n_K, function(x) traceplot(ngme, f_index=f_idx, param="kappa", param_index = x)),
+          lapply(1:n_mu, function(x) traceplot(ngme, f_index=f_idx, param="mu", param_index = x)),
+          lapply(1:n_sigma, function(x) traceplot(ngme, f_index=f_idx, param="sigma", param_index = x)),
+          list(traceplot(ngme, f_index=f_idx, param="nu", param_index = 1))
+        )
+      }
+    )
+  } else stop("unknown param")
+
+  if (length(ps) > 1) ps["ncol"]=2
+  do.call(grid.arrange, ps)
 }

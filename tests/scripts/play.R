@@ -6,13 +6,13 @@
 
 # # build website
 
+inla2
 
-# library(INLA)
-# mesh1 <- inla.mesh.1d(rnorm(100))
+# library(ngme)
+# mesh1 <- inla2.mesh.1d(rnorm(100))
 # mesh1
 
-# inla.spde.make.A(mesh=mesh1, loc = 4)
-
+# inla2.spde.make.A(mesh=mesh1, loc = 4)
 # t.data.frame
 # predict.glm
 
@@ -239,3 +239,28 @@ str(f(1:10, model="ar1", noise=noise_gal()))
 str(f(1:10, model="ar1", noise=eps))
 
 # testing noise_normal_nig in C
+
+
+str(nig_normal_m_nig)
+nig_normal_m_nig$beta
+
+attr(nig_normal_m_nig, "trajectory")[[1]]$block_traj
+
+nig_normal_m_nig$n_merr
+
+library(gridExtra)
+library(grid)
+library(ggplot2)
+library(lattice)
+p <- qplot(1,1)
+p2 <- xyplot(1~1)
+r <- rectGrob(gp=gpar(fill="grey90"))
+t <- textGrob("text")
+grid.arrange(t, p, p2, r, ncol=2)
+
+gs <- lapply(1:9, function(ii)
+  grobTree(rectGrob(gp=gpar(fill=ii, alpha=0.5)), textGrob(ii)))
+grid.arrange(grobs=gs, ncol=4,
+               top="top label", bottom="bottom\nlabel",
+               left="left label", right="right label")
+grid.rect(gp=gpar(fill=NA))

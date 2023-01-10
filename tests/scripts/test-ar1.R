@@ -30,8 +30,12 @@ nig_noise <- simulate(
   )
 )
 
+beta <- c(-3, 1, 2)
+x1 <- rnorm(n_obs)
+x2 <- rexp(n_obs)
+
 # Y <- ar1_process + nig_noise
-Y <- ar1_process + rnorm(n_obs)
+Y <- ar1_process + rnorm(n_obs) + beta[1] + x1 * beta[2] + x2 * beta[3]
 
 # devtools::load_all()
 # ngme_out <- ngme(
@@ -138,8 +142,10 @@ Y <- ar1_process + rnorm(n_obs)
 
 
 # test_ar1 with normal_nig noise
+x3 <- rexp(100)
+x4 <- rexp(100)
 ngme_out <- ngme(
-  Y ~ 0 +
+  Y ~ x1 + x2 + x3 + x4 +
   f(1:n_obs,
     model = "ar1",
     theta_K = 0.7,
@@ -164,7 +170,7 @@ ngme_out <- ngme(
     debug = T
   ),
   data = data.frame(Y = Y),
-  family = "normal",
+  family = "nig",
   control = ngme_control(
     estimation = T,
     exchange_VW = TRUE,
@@ -182,3 +188,22 @@ ngme_out <- ngme(
   seed = 10,
   debug = TRUE
 )
+
+p1 <- traceplot(ngme_out, f_index = 0, param = "beta", param_index = 1)
+p2 <- traceplot(ngme_out, f_index = 0, param = "beta", param_index = 2)
+p3 <- traceplot(ngme_out, f_index = 0, param = "beta", param_index = 3)
+grid.arrange(p1, p2, p3, ncol=2)
+
+load_all()
+traceplot2(ngme_out)
+traceplot2(ngme_out, param=1)
+
+ngme_out$latents[[1]]$noise$theta_sigma_normal
+ngme_out$beta
+
+lapply(1:3, function(x) traceplot(ngme_out, f_index=0, param="beta", param_index = x))
+
+
+ngme_out$latents[[1]]
+
+ngme_out$latents[[1]]$theta_K

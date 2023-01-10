@@ -1,3 +1,5 @@
+# Files test matern SPDE model
+
 library(devtools)
 library(INLA)
 load_all(reset = FALSE, recompile = FALSE)

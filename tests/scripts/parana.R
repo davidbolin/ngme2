@@ -47,7 +47,9 @@ matern_spde <- model_matern(
   mesh = prmesh
 )
 
-out <- ngme(
+
+# case 1. spde nig noise
+out_nig_nig <- ngme(
   formula = Y ~ 1 +
     f(inla.group(seaDist), model = "rw1", noise = noise_normal()) +
     f(model = matern_spde, noise = noise_nig()),
@@ -57,7 +59,7 @@ out <- ngme(
   family = noise_nig(),
   control = ngme_control(
     estimation = T,
-    iterations = 10,
+    iterations = 1000,
     n_slope_check = 4,
     stop_points = 10,
     std_lim = 0.1,
@@ -67,3 +69,5 @@ out <- ngme(
   debug = TRUE,
   seed = 16
 )
+
+out

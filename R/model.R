@@ -122,8 +122,8 @@ print.ngme_model <- function(x, padding = 0, ...) {
     switch(model,
       "ar1"     = paste0(pad_add4_space, ngme_format("K", theta_K, "ar1")),
       "matern"  = paste0(pad_add4_space, ngme_format("K", theta_K, "matern")),
-      "rw1"     = paste0(pad_add4_space, "No parameter needed."),
-      "unkown"  = paste0(pad_add4_space, "No parameter needed."),
+      "rw1"     = paste0(pad_add4_space, "No parameter."),
+      "unkown"  = paste0(pad_add4_space, "No parameter."),
     )
   })
   cat(params);

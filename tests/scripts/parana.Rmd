@@ -75,7 +75,7 @@ nig_m_normal <- ngme(
     n_slope_check = 4,
     stop_points = 10,
     std_lim = 0.1,
-    n_parallel_chain = 1,
+    n_parallel_chain = 4,
     print_check_info = FALSE
   ),
   debug = FALSE,
@@ -102,7 +102,7 @@ nig_m_nig <- ngme(
     n_slope_check = 4,
     stop_points = 10,
     std_lim = 0.1,
-    n_parallel_chain = 1,
+    n_parallel_chain = 4,
     print_check_info = FALSE
   ),
   debug = FALSE,
@@ -129,7 +129,7 @@ normalnig_m_normal <- ngme(
     n_slope_check = 4,
     stop_points = 10,
     std_lim = 0.1,
-    n_parallel_chain = 1,
+    n_parallel_chain = 4,
     print_check_info = FALSE
   ),
   debug = FALSE,
@@ -137,6 +137,8 @@ normalnig_m_normal <- ngme(
 )
 
 normalnig_m_normal
+traceplot2(normalnig_m_normal, param=2)
+
 # traceplot(normalnig_m_normal, "sigma_normal", f_index = 2)
 # traceplot(normalnig_m_normal, "sigma", f_index = 2)
 ```
@@ -158,7 +160,7 @@ normalnig_m_nig <- ngme(
     n_slope_check = 4,
     stop_points = 10,
     std_lim = 0.1,
-    n_parallel_chain = 1,
+    n_parallel_chain = 4,
     print_check_info = FALSE
   ),
   debug = FALSE,
@@ -166,6 +168,7 @@ normalnig_m_nig <- ngme(
 )
 
 normalnig_m_nig
+traceplot2(normalnig_m_nig, param=2)
 ```
 
 ## case 5. RW1 + SPDE NIG noise + SPDE normal noise + normal measurement noise
@@ -186,7 +189,7 @@ nig_normal_m_normal <- ngme(
     n_slope_check = 4,
     stop_points = 10,
     std_lim = 0.1,
-    n_parallel_chain = 1,
+    n_parallel_chain = 4,
     print_check_info = FALSE
   ),
   debug = FALSE,
@@ -194,6 +197,8 @@ nig_normal_m_normal <- ngme(
 )
 
 nig_normal_m_normal
+traceplot2(nig_normal_m_normal, param=2)
+traceplot2(nig_normal_m_normal, param=3)
 ```
 
 ## case 6. RW1 + SPDE NIG noise + SPDE normal noise + NIG measurement noise
@@ -214,7 +219,7 @@ nig_normal_m_nig <- ngme(
     n_slope_check = 4,
     stop_points = 10,
     std_lim = 0.1,
-    n_parallel_chain = 1,
+    n_parallel_chain = 4,
     print_check_info = FALSE
   ),
   debug = FALSE,
@@ -222,6 +227,8 @@ nig_normal_m_nig <- ngme(
 )
 
 nig_normal_m_nig
+traceplot2(nig_normal_m_nig, param=2)
+traceplot2(nig_normal_m_nig, param=3)
 ```
 
 
@@ -256,4 +263,17 @@ tt <- data.frame(rw_sigma, nig_kappa, nig_mu, nig_sigma, nig_nu, normal_kappa, n
 rownames(tt) <- c("nornig + normal", "nornig + nig", "normal+nig + nomral", "normal+nig + nig")
 format(tt, digits=3)
 
+```
+
+Some plots:
+
+```{r}
+# traceplot2(normalnig_m_normal, param = 2)
+# traceplot2(normalnig_m_nig, param = 2)
+
+# traceplot2(nig_normal_m_normal, param = 2)
+# traceplot2(nig_normal_m_normal, param = 3)
+
+# traceplot2(nig_normal_m_nig, param = 2)
+# traceplot2(nig_normal_m_nig, param = 3)
 ```

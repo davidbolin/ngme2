@@ -4,6 +4,7 @@ n_obs <- 100
 ar_mu <- 4
 ar_sigma <- 1
 ar_nu <- 2.3
+
 ar1_process <- simulate(
   f(1:n_obs,
     model = "ar1",

@@ -56,7 +56,12 @@ plot(new_loc_1d, Y, type="h"); abline(0, 0)
 ```
 
 
+NIG distribution
 
+```{r}
+par(mfrow=c(1,1))
+plot(dnig(1, delta=-2, mu=2, nu=1, sigma=1))
+```
 
 
 

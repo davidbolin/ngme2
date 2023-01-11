@@ -24,7 +24,7 @@
 #' @param B_sigma       Basis matrix for sigma (if non-stationary)
 #' @param fix_theta_mu    fix the parameter of theta_mu
 #' @param fix_theta_sigma  fix the parameter of theta_sigma
-#' @param fix_theta_V   fix the parameter of theta_V
+#' @param fix_nu   fix the parameter of nu
 #' @param h        numerical vector (> 0), mesh width
 #' @param fix_V         fix the sampling of V
 #' @param ...       additional arguments
@@ -43,24 +43,24 @@ ngme_noise <- function(
   B_sigma_normal  = NULL,
   fix_theta_mu    = FALSE,
   fix_theta_sigma = FALSE,
-  fix_theta_V     = FALSE,
+  fix_nu     = FALSE,
   V               = NULL,
   h               = NULL,
   fix_V           = FALSE,
   theta_sigma_normal = NULL,
   ...
 ) {
-  if ("theta_V" %in% names(list(...)))
-    theta_V <- list(...)$theta_V
+  if ("nu" %in% names(list(...)))
+    nu <- list(...)$nu
   else
-    theta_V <- nu
+    nu <- nu
   if (is.null(theta_mu)) theta_mu <- mu
   if (is.null(theta_sigma)) theta_sigma <- log(sigma)
 
   # check input
   stopifnot("Unkown noise type. Please check ngme_noise_types()" =
     noise_type %in% ngme_noise_types())
-  stopifnot("ngme_noise: theta_V should be positive" = theta_V > 0)
+  stopifnot("ngme_noise: nu should be positive" = nu > 0)
 
   # check B_mu and B_sigma
   if (!is.null(B_mu))
@@ -95,7 +95,7 @@ ngme_noise <- function(
       n_noise         = n,  # this is same as V_size
       h               = if (is.null(h)) rep(1, n) else h,
       noise_type      = noise_type,
-      theta_V         = theta_V,
+      nu         = nu,
       V               = V,
       theta_mu        = theta_mu,
       theta_sigma     = theta_sigma,
@@ -106,10 +106,10 @@ ngme_noise <- function(
       n_theta_mu      = length(theta_mu),
       n_theta_sigma   = length(theta_sigma),
       n_theta_sigma_normal   = length(theta_sigma_normal),
-      n_theta_V       = 1,
+      n_nu       = 1,
       fix_theta_mu    = fix_theta_mu,
       fix_theta_sigma = fix_theta_sigma,
-      fix_theta_V     = fix_theta_V,
+      fix_nu     = fix_nu,
       fix_V           = fix_V,
       n_params        = switch(noise_type,
         "normal"     = length(theta_sigma),
@@ -233,12 +233,12 @@ update_noise <- function(noise, n = NULL, new_noise = NULL) {
       noise$theta_mu    <- new_noise$theta_mu
       noise$theta_sigma <- new_noise$theta_sigma
       noise$theta_sigma_normal <- new_noise$theta_sigma_normal
-      noise$theta_V     <- new_noise$theta_V
+      noise$nu     <- new_noise$nu
       noise$V           <- new_noise$V
     } else { # nig and gal
       noise$theta_mu    <- new_noise$theta_mu
       noise$theta_sigma <- new_noise$theta_sigma
-      noise$theta_V     <- new_noise$theta_V
+      noise$nu     <- new_noise$nu
       noise$V           <- new_noise$V
     }
   }
@@ -277,13 +277,13 @@ print.ngme_noise <- function(x, padding = 0, ...) {
         "normal" = paste0(pad_add4_space, ngme_format("sigma", theta_sigma)),
         "nig"    = paste0(pad_add4_space, ngme_format("mu", theta_mu),
                     "\n", pad_add4_space, ngme_format("sigma", theta_sigma),
-                    "\n", pad_add4_space, ngme_format("nu", theta_V)),
+                    "\n", pad_add4_space, ngme_format("nu", nu)),
         "gal"    = paste0(pad_add4_space, ngme_format("mu", theta_mu),
                     "\n", pad_add4_space, ngme_format("sigma", theta_sigma),
-                    "\n", pad_add4_space, ngme_format("nu", theta_V)),
+                    "\n", pad_add4_space, ngme_format("nu", nu)),
         "normal_nig" = paste0(pad_add4_space, ngme_format("mu", theta_mu),
                     "\n", pad_add4_space, ngme_format("sigma_nig", theta_sigma),
-                    "\n", pad_add4_space, ngme_format("nu", theta_V),
+                    "\n", pad_add4_space, ngme_format("nu", nu),
                     "\n", pad_add4_space, ngme_format("sigma_normal", theta_sigma_normal)),
         stop("unknown noise type")
       )

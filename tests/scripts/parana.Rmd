@@ -251,7 +251,7 @@ rw_sigma <- sapply(all_cases, function(x) x$latents[[1]]$noise$theta_sigma)
 nig_kappa <- sapply(all_cases, function(x) x$latents[[2]]$theta_K)
 nig_mu <- sapply(all_cases, function(x) x$latents[[2]]$noise$theta_mu)
 nig_sigma <- sapply(all_cases, function(x) x$latents[[2]]$noise$theta_sigma)
-nig_nu <- sapply(all_cases, function(x) x$latents[[2]]$noise$theta_V)
+nig_nu <- sapply(all_cases, function(x) x$latents[[2]]$noise$nu)
 
 normal_kappa <- c(NA, NA, sapply(sep_cases, function(x) x$latents[[3]]$theta_K))
 normal_sigma <- c(

@@ -409,7 +409,7 @@ VectorXd BlockModel::get_theta_merr() const {
   } else {
       theta_merr.segment(0, n_theta_mu) = theta_mu;
       theta_merr.segment(n_theta_mu, n_theta_sigma) = theta_sigma;
-      theta_merr(n_theta_mu + n_theta_sigma) =  var.get_unbound_theta_V();
+      theta_merr(n_theta_mu + n_theta_sigma) =  var.get_unbound_nu();
   }
 
   return theta_merr;
@@ -423,7 +423,7 @@ VectorXd BlockModel::grad_theta_merr() {
   } else {
     if (!fix_flag[block_fix_theta_mu])     grad.segment(0, n_theta_mu) = grad_theta_mu();
     if (!fix_flag[block_fix_theta_sigma])  grad.segment(n_theta_mu, n_theta_sigma) = grad_theta_sigma();
-    grad(n_theta_mu + n_theta_sigma) = var.grad_theta_var();
+    grad(n_theta_mu + n_theta_sigma) = var.grad_nuar();
   }
 
   return grad;
@@ -435,7 +435,7 @@ void BlockModel::set_theta_merr(const VectorXd& theta_merr) {
   } else {
     theta_mu = theta_merr.segment(0, n_theta_mu);
     theta_sigma = theta_merr.segment(n_theta_mu, n_theta_sigma);
-    var.set_theta_var(theta_merr(n_theta_mu + n_theta_sigma));
+    var.set_nuar(theta_merr(n_theta_mu + n_theta_sigma));
   }
 
   // update mu, sigma
@@ -455,7 +455,7 @@ Rcpp::List BlockModel::output() const {
       Rcpp::Named("noise_type")   = family,
       Rcpp::Named("theta_mu")     = theta_mu,
       Rcpp::Named("theta_sigma")  = theta_sigma,
-      Rcpp::Named("theta_V")      = var.get_theta_V(),
+      Rcpp::Named("nu")      = var.get_nu(),
       Rcpp::Named("V")            = var.getV()
     ),
     Rcpp::Named("beta")             = beta,
@@ -466,7 +466,7 @@ Rcpp::List BlockModel::output() const {
     Rcpp::Named("beta")        = beta_traj,
     Rcpp::Named("theta_mu")    = theta_mu_traj,
     Rcpp::Named("theta_sigma") = theta_sigma_traj,
-    Rcpp::Named("theta_V")     = theta_V_traj
+    Rcpp::Named("nu")     = nu_traj
   );
   return out;
 }

@@ -39,7 +39,7 @@ ngme_out <- ngme(
     noise = noise_nig(
       fix_theta_mu    = F,
       fix_theta_sigma = F,
-      fix_theta_V     = F
+      fix_nu     = F
     ),
     A = A,
     debug = TRUE,
@@ -67,11 +67,11 @@ traceplot(ngme_out, parameter = "theta_K",     f_index = 1, param_index = 1)
 traceplot(ngme_out, parameter = "theta_K",     f_index = 1, param_index = 2)
 traceplot(ngme_out, parameter = "theta_mu",    f_index = 1)
 traceplot(ngme_out, parameter = "theta_sigma", f_index = 1)
-traceplot(ngme_out, parameter = "theta_V",     f_index = 1)
+traceplot(ngme_out, parameter = "nu",     f_index = 1)
 
 plot(noise_nig(
       theta_mu = 0,
       theta_sigma = 0,
-      theta_V = 1
+      nu = 1
     ), add = FALSE)
 plot(ngme_out$latents[[1]]$noise, col = "red", add=TRUE)

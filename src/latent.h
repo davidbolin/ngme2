@@ -4,7 +4,7 @@
         1. theta_K is unbounded
         2. theta_mu
         3. theta_sigma
-        4. theta_V
+        4. nu
 */
 
 #ifndef NGME_LATANT_H
@@ -91,7 +91,7 @@ protected:
     vector<vector<double>> theta_mu_traj;
     vector<vector<double>> theta_sigma_traj;
     vector<vector<double>> theta_sigma_normal_traj;
-    vector<double>   theta_V_traj;
+    vector<double>   nu_traj;
 public:
     Latent(const Rcpp::List&, unsigned long seed);
     virtual ~Latent() {}
@@ -254,7 +254,7 @@ public:
     virtual VectorXd grad_theta_sigma();
     virtual VectorXd grad_theta_sigma_normal(); // grad of sig. only for normal noise
 
-    virtual void   set_theta_var(double v) { var.set_theta_var(v); }
+    virtual void   set_nuar(double v) { var.set_nuar(v); }
 
     // Output
     // virtual Rcpp::List get_estimates() const=0;
@@ -270,7 +270,7 @@ public:
         if (noise_type=="normal_nig")
             for (int i=0; i < theta_sigma_normal.size(); i++)
                 theta_sigma_normal_traj[i].push_back(theta_sigma_normal(i));
-        theta_V_traj.push_back(var.get_theta_V());
+        nu_traj.push_back(var.get_nu());
     }
 };
 
@@ -287,7 +287,7 @@ inline const VectorXd Latent::get_parameter() const {
         parameter.segment(0, n_theta_K)                         = theta_K;
         parameter.segment(n_theta_K, n_theta_mu)                = theta_mu;
         parameter.segment(n_theta_K+n_theta_mu, n_theta_sigma)  = theta_sigma;
-        parameter(n_theta_K+n_theta_mu+n_theta_sigma)           = var.get_unbound_theta_V();
+        parameter(n_theta_K+n_theta_mu+n_theta_sigma)           = var.get_unbound_nu();
     if (noise_type == "normal_nig")
         parameter.segment(n_theta_K+n_theta_mu+n_theta_sigma+1, n_theta_sigma_normal) = theta_sigma_normal;
     }
@@ -309,7 +309,7 @@ inline const VectorXd Latent::get_grad() {
         if (!fix_flag[latent_fix_theta_K])     grad.segment(0, n_theta_K)                        = grad_theta_K();         else grad.segment(0, n_theta_K) = VectorXd::Constant(n_theta_K, 0);
         if (!fix_flag[latent_fix_theta_mu])    grad.segment(n_theta_K, n_theta_mu)               = grad_theta_mu();        else grad.segment(n_theta_K, n_theta_mu) = VectorXd::Constant(n_theta_mu, 0);
         if (!fix_flag[latent_fix_theta_sigma]) grad.segment(n_theta_K+n_theta_mu, n_theta_sigma) = grad_theta_sigma();     else grad.segment(n_theta_K+n_theta_mu, n_theta_sigma) = VectorXd::Constant(n_theta_sigma, 0);
-        grad(n_theta_K+n_theta_mu+n_theta_sigma)  = var.grad_theta_var();
+        grad(n_theta_K+n_theta_mu+n_theta_sigma)  = var.grad_nuar();
         if (noise_type == "normal_nig")
             grad.segment(n_theta_K+n_theta_mu+n_theta_sigma+1, n_theta_sigma_normal) = grad_theta_sigma_normal();
     }
@@ -333,7 +333,7 @@ inline void Latent::set_parameter(const VectorXd& theta) {
         theta_K  = theta.segment(0, n_theta_K);
         theta_mu = theta.segment(n_theta_K, n_theta_mu);
         theta_sigma = theta.segment(n_theta_K+n_theta_mu, n_theta_sigma);
-        var.set_theta_var   (theta(n_theta_K+n_theta_mu+n_theta_sigma));
+        var.set_nuar   (theta(n_theta_K+n_theta_mu+n_theta_sigma));
 
         // update
         mu = (B_mu * theta_mu);
@@ -379,7 +379,7 @@ public:
     //         Rcpp::Named("alpha")        = theta_K(0),
     //         Rcpp::Named("theta.mu")     = theta_mu,
     //         Rcpp::Named("theta.sigma")  = theta_sigma,
-    //         Rcpp::Named("theta.noise")  = var.get_theta_V()
+    //         Rcpp::Named("theta.noise")  = var.get_nu()
     //     );
     // }
 };
@@ -415,7 +415,7 @@ public:
     //         Rcpp::Named("kappa")        = theta_K(0),
     //         Rcpp::Named("theta.mu")     = theta_mu,
     //         Rcpp::Named("theta.sigma")  = theta_sigma,
-    //         Rcpp::Named("theta.noise")  = var.get_theta_V()
+    //         Rcpp::Named("theta.noise")  = var.get_nu()
     //     );
     // }
 };
@@ -438,7 +438,7 @@ public:
     //         Rcpp::Named("theta.kappa") = theta_K,
     //         Rcpp::Named("theta.mu")    = theta_mu,
     //         Rcpp::Named("theta.sigma") = theta_sigma,
-    //         Rcpp::Named("theta.noise") = var.get_theta_V()
+    //         Rcpp::Named("theta.noise") = var.get_nu()
     //     );
     // }
 };

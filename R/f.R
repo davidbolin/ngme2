@@ -126,7 +126,7 @@ f <- function(
     # }
 
   # total params
-  # n_params = model_list$n_theta_K + noise$n_theta_mu + noise$n_theta_sigma + noise$n_theta_V
+  # n_params = model_list$n_theta_K + noise$n_theta_mu + noise$n_theta_sigma + noise$n_nu
   # check initial value of W
 #   if (!is.null(W)) stopifnot(length(W) == W_size)
 #   # get the useful argument list

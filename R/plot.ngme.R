@@ -57,7 +57,7 @@ traceplot <- function(
     else if (parameter %in% c("sigma"))
       parameter <- "theta_sigma"
     else if (parameter %in% c("nu"))
-      parameter <- "theta_V"
+      parameter <- "nu"
 
     stopifnot("Not a ngme object with trajectoroy." = !is.null(attr(ngme, "trajectory")))
     traj <- attr(ngme, "trajectory")
@@ -68,13 +68,13 @@ traceplot <- function(
     for (i in seq_along(traj)) {
       if (f_index == 0) # block model
         data[, i] <- switch(parameter,
-          theta_V = traj[[i]]$block_traj[[parameter]],
+          nu = traj[[i]]$block_traj[[parameter]],
           traj[[i]]$block_traj[[parameter]][[param_index]]
         )
       else
         # latent model
         data[, i] <- switch(parameter,
-          theta_V = traj[[i]]$latents[[f_index]][[parameter]],
+          nu = traj[[i]]$latents[[f_index]][[parameter]],
           traj[[i]]$latents[[f_index]][[parameter]][[param_index]]
         )
     }
@@ -100,7 +100,7 @@ traceplot <- function(
         theta_mu = "mu",
         theta_sigma = "sigma",
         theta_sigma_normal = "sigma_normal",
-        theta_V = "nu",
+        nu = "nu",
         beta = "beta"
       ), param_index))
     }
@@ -121,7 +121,7 @@ plot.ngme_noise <- function(x, y = NULL, ...) {
   noise <- x; noise2 <- y
   mu <- noise$theta_mu
   sigma <- exp(noise$theta_sigma)
-  nu <- noise$theta_V
+  nu <- noise$nu
   stopifnot("only implemented for stationary mu" = length(mu) == 1)
   stopifnot("only implemented for stationary sigma" = length(sigma) == 1)
 
@@ -138,7 +138,7 @@ plot.ngme_noise <- function(x, y = NULL, ...) {
   if (!is.null(noise2)) {
     mu <- noise2$theta_mu
     sigma <- exp(noise2$theta_sigma)
-    nu <- noise2$theta_V
+    nu <- noise2$nu
     switch(noise2$noise_type,
       "nig"     = dd2 <- dnig(xx, -mu, mu, nu, sigma),
       "normal"  = dd2 <- dnorm(xx, sd = sigma),
@@ -153,15 +153,16 @@ plot.ngme_noise <- function(x, y = NULL, ...) {
 #' Trace plot of ngme fitting
 #'
 #' @param ngme ngme object
-#' @param param string, fe for fixed effects, mn for measurement noise, and number i of i-th latent model
+#' @param name string, fe for fixed effects, mn for measurement noise, and number i of i-th latent model
 #'
 #' @return the traceplot
 #' @export
 #'
 traceplot2 <- function(
   ngme,
-  param = "beta"
+  name = "beta"
 ) {
+  param <- name
   if (param %in% c("fe", "beta")) {
     n <- length(ngme$beta)
     ps <- lapply(1:n, function(x) traceplot(ngme, f_index=0, param="beta", param_index = x))
@@ -213,5 +214,5 @@ traceplot2 <- function(
   } else stop("unknown param")
 
   if (length(ps) > 1) ps["ncol"]=2
-  do.call(grid.arrange, ps)
+  do.call(gridExtra::grid.arrange, ps)
 }

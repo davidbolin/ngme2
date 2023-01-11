@@ -67,7 +67,7 @@ if (debug) std::cout << "Begin constructor of latent" << std::endl;
         sigma = (B_sigma * theta_sigma).array().exp();
         if (noise_type=="normal_nig") sigma_normal = (B_sigma_normal * theta_sigma_normal).array().exp();
 
-    const int n_theta_V = 1;
+    const int n_nu = 1;
 
     if (model_list["W"] != R_NilValue) {
         W = Rcpp::as< VectorXd >    (model_list["W"]);
@@ -209,7 +209,7 @@ Rcpp::List Latent::output() const {
         Rcpp::Named("theta_mu")     = theta_mu,
         Rcpp::Named("theta_sigma")  = theta_sigma,
         Rcpp::Named("theta_sigma_normal")  = theta_sigma_normal,
-        Rcpp::Named("theta_V")      = var.get_theta_V(),  // gives eta > 0, not log(eta)
+        Rcpp::Named("nu")      = var.get_nu(),  // gives eta > 0, not log(eta)
         Rcpp::Named("V")            = getV(),
         Rcpp::Named("W")            = W
     );
@@ -218,7 +218,7 @@ Rcpp::List Latent::output() const {
         Rcpp::Named("theta_mu")           = theta_mu_traj,
         Rcpp::Named("theta_sigma")        = theta_sigma_traj,
         Rcpp::Named("theta_sigma_normal")        = theta_sigma_normal_traj,
-        Rcpp::Named("theta_V")            = theta_V_traj
+        Rcpp::Named("nu")            = nu_traj
     );
     out.attr("trajectory") = trajecotry;
     return out;

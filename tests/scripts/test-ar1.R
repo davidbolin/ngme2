@@ -20,13 +20,13 @@ ar1_process <- simulate(
 
 noise_theta_mu    <- -6
 noise_theta_sigma <- 2
-noise_theta_V     <- 1.7
+noise_nu     <- 1.7
 
 nig_noise <- simulate(
   noise_nig(
     theta_mu = noise_theta_mu,
     theta_sigma = noise_theta_sigma,
-    theta_V = noise_theta_V,
+    nu = noise_nu,
     n = n_obs
   )
 )
@@ -122,13 +122,13 @@ Y <- ar1_process + rnorm(n_obs) + beta[1] + x1 * beta[2] + x2 * beta[3]
 #   # noise
 #   traceplot(ngme_out, parameter = "theta_mu", f_index = 0)
 #   traceplot(ngme_out, parameter = "theta_sigma", f_index = 0)
-#   traceplot(ngme_out, parameter = "theta_V", f_index = 0)
+#   traceplot(ngme_out, parameter = "nu", f_index = 0)
 
 #   # ar1 model
 #   traceplot(ngme_out, parameter = "theta_K",     f_index = 1)
 #   traceplot(ngme_out, parameter = "theta_mu",    f_index = 1)
 #   traceplot(ngme_out, parameter = "theta_sigma", f_index = 1)
-#   traceplot(ngme_out, parameter = "theta_V",     f_index = 1)
+#   traceplot(ngme_out, parameter = "nu",     f_index = 1)
 
 #   # compare nig noise
 #   plot(noise_nig(

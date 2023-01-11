@@ -36,7 +36,7 @@ W <- ngme.simulate(
     noise = noise_nig(
       theta_mu = 2,
       theta_sigma = 0.5,
-      theta_V = 1.5
+      nu = 1.5
     )
   )
 )

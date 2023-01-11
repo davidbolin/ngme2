@@ -300,14 +300,6 @@ ar1_th2a <- function(th) {
 # }
 
 
-# predict <- function(ngme, locs, type=c("fe", "lp", "filed1", "cv"),
-#   cv_type=c
-#   ("loo", "k-fold")) {
-
-# # compute MAE, MSE, CRPS, sCRPS
-# }
-
-# f(idx, )
 
 
-plot(noise_nig(mu=0, sigma=5, nu=0.01))
+

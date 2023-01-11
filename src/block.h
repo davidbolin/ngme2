@@ -83,7 +83,7 @@ protected:
     vector<vector<double>> beta_traj;
     vector<vector<double>> theta_mu_traj;
     vector<vector<double>> theta_sigma_traj;
-    vector<double>   theta_V_traj;
+    vector<double>   nu_traj;
 
     std::string par_string;
 
@@ -144,7 +144,7 @@ public:
         for (int i=0; i < theta_sigma.size(); i++) {
             theta_sigma_traj[i].push_back(theta_sigma(i));
         }
-        theta_V_traj.push_back(var.get_theta_V());
+        nu_traj.push_back(var.get_nu());
     }
 
     /* Aseemble */

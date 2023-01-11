@@ -115,7 +115,7 @@ ngme <- function(
     if (family_type == "normal") {
       n_merr <- noise$n_theta_sigma
     } else if (family_type == "nig") {
-      n_merr <- noise$n_theta_mu + noise$n_theta_sigma + noise$n_theta_V
+      n_merr <- noise$n_theta_mu + noise$n_theta_sigma + noise$n_nu
     }
 
     # 3. prepare Rcpp_list for estimate

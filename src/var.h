@@ -1,4 +1,4 @@
-// theta_V = nu
+// nu = nu
 
 #ifndef NGME_VAR_H
 #define NGME_VAR_H
@@ -25,23 +25,23 @@ private:
 
     unsigned n;
     VectorXd V, prevV;
-    bool fix_V, fix_theta_V;
+    bool fix_V, fix_nu;
 public:
     Var(const Rcpp::List& noise_list, unsigned long seed) :
         var_rng       (seed),
         noise_type    (Rcpp::as<string>  (noise_list["noise_type"])),
-        nu            (Rcpp::as<double>  (noise_list["theta_V"])),
+        nu            (Rcpp::as<double>  (noise_list["nu"])),
         h             (Rcpp::as<VectorXd>  (noise_list["h"])),
         n             (Rcpp::as<int>     (noise_list["n_noise"])),
         V             (n),
         prevV         (n),
         fix_V         (Rcpp::as<bool>    (noise_list["fix_V"])),
-        fix_theta_V   (Rcpp::as<bool>    (noise_list["fix_theta_V"]))
+        fix_nu   (Rcpp::as<bool>    (noise_list["fix_nu"]))
     {
         if (noise_type == "normal") {
             V = VectorXd::Ones(n);
             prevV = VectorXd::Ones(n);
-            fix_theta_V = true;
+            fix_nu = true;
             fix_V = true;
         } else { // nig or gal
             if (noise_list["V"] != R_NilValue) {
@@ -103,23 +103,23 @@ public:
         }
     }
 
-    double get_theta_V() const {
+    double get_nu() const {
         return nu;
     }
 
-    double get_unbound_theta_V() const {
+    double get_unbound_nu() const {
         if (noise_type == "normal")
             return 0;
         else
             return log(nu);
     }
-    void set_theta_var(double theta) {
+    void set_nuar(double theta) {
         if (noise_type != "normal") nu = exp(theta);
         // else doing nothing
     }
 
-    double grad_theta_var() const {
-        if (fix_theta_V || noise_type == "normal") return 0;
+    double grad_nuar() const {
+        if (fix_nu || noise_type == "normal") return 0;
 
         // grad of log nu
         double grad = 0;
@@ -169,24 +169,24 @@ public:
 // public:
 //     ind_IG() {}
 
-//     ind_IG(double theta_V, unsigned n, unsigned long seed)
+//     ind_IG(double nu, unsigned n, unsigned long seed)
 //     : nu(0)
 //     {
 //         this->seed = seed;
 //         var_rng.seed(seed);
-//         nu = theta_V;
+//         nu = nu;
 //         this->n = n;
 
 //         V.resize(n); prevV.resize(n);
 //         sample_V(); sample_V(); // sample twice
 //     }
 
-//     double get_theta_V() const {return nu;}
+//     double get_nu() const {return nu;}
 
 //     // optimizer related
-//     double get_unbound_theta_V() const   { return log(nu); }
-//     void   set_theta_var(double theta) { nu = exp(theta); }
-//     double grad_theta_var() const {
+//     double get_unbound_nu() const   { return log(nu); }
+//     void   set_nuar(double theta) { nu = exp(theta); }
+//     double grad_nuar() const {
 //         VectorXd tmp = VectorXd::Constant(n, 1+1/(2*nu)) - 0.5*V - VectorXd::Constant(n, 1).cwiseQuotient(2*V);
 //         double grad = tmp.mean();
 //         double hess = -0.5 * pow(nu, -2);
@@ -247,12 +247,12 @@ public:
 //     //     sample_V(); sample_V(); // sample twice
 //     // }
 
-//     double get_theta_V() const {return 0;}
+//     double get_nu() const {return 0;}
 
 //     // nothing to optimize
-//     double get_unbound_theta_V() const   { return 1; }
-//     void   set_theta_var(double theta) {}
-//     double grad_theta_var() const {
+//     double get_unbound_nu() const   { return 1; }
+//     void   set_nuar(double theta) {}
+//     double grad_nuar() const {
 //         return 0;
 //     }
 

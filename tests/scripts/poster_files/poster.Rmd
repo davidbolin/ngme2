@@ -246,7 +246,7 @@ res1 <- data.frame(
   ma_kappa  = format(exp(out$latents[[2]]$theta_K), digits=3),
   ma_mu     = format(out$latents[[2]]$noise$theta_mu, digits=3),
   ma_sigma  = format(exp(out$latents[[2]]$noise$theta_sigma), digits=3),
-  ma_nu     = format(out$latents[[2]]$noise$theta_V, digits=3)
+  ma_nu     = format(out$latents[[2]]$noise$nu, digits=3)
 )
 knitr::kable(res1, caption = "Estimation for the process")
 # res <- c(out$beta, rw1_sigma, matern_kappa, matern_mu, matern_sigma, matern_nu)
@@ -259,7 +259,7 @@ res2 <- data.frame(
   intercept    = format(out$beta, digits=3),
   noise_mu     = format(out$noise$theta_mu, digits=3),
   noise_sigma  = format(exp(out$noise$theta_sigma), digits=3),
-  noise_nu     = format(out$noise$theta_V, digits=3)
+  noise_nu     = format(out$noise$nu, digits=3)
 )
 knitr::kable(res2, caption = "Estimation for fixed effects
   and measurement noise")

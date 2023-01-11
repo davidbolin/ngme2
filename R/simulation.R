@@ -92,7 +92,7 @@ simulate.ngme_noise <- function(
     if (noise$noise_type == "nig") {
         mu <- drop(noise$B_mu %*% noise$theta_mu)
         sigma <- drop(exp(noise$B_sigma %*% noise$theta_sigma))
-        nu <- noise$theta_V
+        nu <- noise$nu
         V <- ngme2::rig(n, nu, nu * (noise$h)^2, seed = seed)
         noise$V <- V
         e <- mu * (V - noise$h) + sigma * sqrt(V) * rnorm(n)
@@ -102,7 +102,7 @@ simulate.ngme_noise <- function(
     } else if (noise$noise_type == "gal") {
         mu <- drop(noise$B_mu %*% noise$theta_mu)
         sigma <- drop(exp(noise$B_sigma %*% noise$theta_sigma))
-        nu <- noise$theta_V
+        nu <- noise$nu
         V <- rgamma(n, shape = noise$h * nu, rate = nu)
         noise$V <- V
         e <- mu * (V - noise$h) + sigma * sqrt(V) * rnorm(n)

@@ -135,7 +135,7 @@ ngme_noise(
   type,           # the type of noise
   theta_mu,       # mu parameter
   theta_sigma,    # sigma parameter
-  theta_V,        # nu parameter
+  nu,        # nu parameter
   B_mu,           # basis matrix for non-stationary mu
   B_sigma         # basis matrix for non-stationary sigma
 )
@@ -147,7 +147,7 @@ It will construct the following noise structure:
 \]
 
 where $\mu = \bf B_{\mu} \bf \theta_{\mu}$, and $\sigma = \exp(\bf B_{\sigma} \bf \theta_{\sigma})$.
-In this case, we can recover gaussian noise by setting **type="normal** and ignoring **theta_mu** and **theta_V**.
+In this case, we can recover gaussian noise by setting **type="normal** and ignoring **theta_mu** and **nu**.
 Or we can simply use helper function `noise_normal(sd=1)`
 
 ### Specify stochastic process with `f` function
@@ -429,7 +429,7 @@ res1 <- data.frame(
   intercept    = format(out$beta, digits=3),
   noise_mu     = format(out$noise$theta_mu, digits=3),
   noise_sigma  = format(exp(out$noise$theta_sigma), digits=3),
-  noise_nu     = format(out$noise$theta_V, digits=3),
+  noise_nu     = format(out$noise$nu, digits=3),
   rw_sigma     = format(out$latents[[1]]$noise$theta_sigma, digits=3),
   ma_kappa     = format(exp(out$latents[[2]]$theta_K), digits=3),
   ma_sigma     = format(exp(out$latents[[2]]$noise$theta_sigma), digits=3)

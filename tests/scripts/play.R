@@ -264,3 +264,30 @@ grid.arrange(grobs=gs, ncol=4,
                top="top label", bottom="bottom\nlabel",
                left="left label", right="right label")
 grid.rect(gp=gpar(fill=NA))
+
+
+# test env nest?
+library(rlang)
+
+ff <- function() {
+  a1 <- 1;
+  f2 <- function() {
+    a2 <- 2;
+    # env_print()
+    f3 <- function() {
+      a3 <- 3;
+      print("in f3:")
+      env_print()
+      print(eval(expr(a1), envir=NULL, enclos=parent.frame()))
+    }
+
+    print("in f2")
+    env_print()
+    f3()
+  }
+  f2()
+  # env_print()
+}
+ff()
+
+?eval

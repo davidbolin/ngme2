@@ -8,11 +8,10 @@
 # f(idx, )
 
 # prediction function for ngme block model
-predict.ngme_model <- function(
-  ngme,
-  locs = NULL,
-  type = "fe"
-) {
+# predict.block_model <- function(
+#   ngme,
+#   locs = NULL,
+#   type = "fe"
+# ) {
 
-}
-
+# }

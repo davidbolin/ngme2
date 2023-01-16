@@ -11,6 +11,7 @@
 #' @param noise     1. string: type of model, 2. ngme.noise object
 #'  (can also be specified in each ngme model)
 #' @param control      control variables for f model
+#' @param name      name of the field, for later use
 #' @param A            A Matrix connecting observation and mesh
 #' @param theta_K      Unbounded parameter for K
 #' @param data      specifed or inherit from ngme formula
@@ -37,6 +38,7 @@ f <- function(
   replicates  = NULL,
   noise       = noise_normal(),
   control     = ngme_control_f(),
+  name        = NULL,
   data        = NULL,
   A           = NULL,
   A_pred      = NULL,

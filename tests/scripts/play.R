@@ -156,8 +156,6 @@ res
 ?rgamma
 
 
-
-
 xx <- seq(-5,5,0.01)
 plot(xx, 2*dnorm(xx, 0, 2), type="l")
 lines(density(rnorm(100000, 0, 1)), col="red")
@@ -291,3 +289,6 @@ ff <- function() {
 ff()
 
 ?eval
+
+# inlabru example
+

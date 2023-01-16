@@ -146,7 +146,11 @@ ngme_parse_formula <- function(
     # adding 1 term for furthur use in f
     # data$ngme_response <- Y
     res <- eval(parse(text = str), envir = data, enclos = parent.frame())
-    latents_in[[length(latents_in) + 1]] <- res
+
+    # default name
+    if (res$name == "field") res$name <- paste0("field", length(latents_in) + 1)
+    # latents_in[[length(latents_in) + 1]] <- res
+    latents_in[[res$name]] <- res
   }
   # watch out! terms[-double(0)] -> character(0)
   fixf <- if (length(spec_order) == 0) terms else terms[-spec_order]

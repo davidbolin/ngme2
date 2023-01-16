@@ -98,6 +98,7 @@ ngme <- function(
     res <-ngme_parse_formula(fm, data)
     latents_in <- res$latents_in
     plain_fm <- res$plain_fm
+    # names(latents_in) <- sapply(latents_in, function(x) {x$name})
 
     # get Y and X
     Y_data    <- ngme_response[!index_NA]
@@ -128,7 +129,7 @@ ngme <- function(
     if (family_type == "normal" && is.null(noise$theta_sigma == 0))
       noise$theta_sigma <- sd(lm.model$residuals)
 
-    ngme_block <- ngme.block_model(
+    ngme_block <- ngme_block(
       Y                 = Y_data,
       X                 = X_data,
       beta              = beta,
@@ -187,6 +188,7 @@ if (debug) print(str(ngme_block))
     # 2. get trajs
     attr(ngme_block, "trajectory") <- get_trajs(outputs)
   }
+
   ################# Prediction ####################
   if (any(data$index_NA)) {
     # posterior sampling
@@ -203,9 +205,11 @@ if (debug) print(str(ngme_block))
     }
 
     # fixed effects. watch out! beta could be double(0)
-    if (length(ngme_block$beta) != 0) lp <- lp + drop(X_full %*% ngme_block$beta)
+    fe <- if (length(ngme_block$beta) == 0) 0 else drop(X_full %*% ngme_block$beta)
+    lp <- lp + fe
 
     attr(ngme_block, "prediction") <- list(
+      fe        = fe,
       lp        = lp,
       index_NA  = index_NA
     )
@@ -214,6 +218,49 @@ if (debug) print(str(ngme_block))
   # cat(paste("total time is", Sys.time() - time.start, " \n"))
   ngme_block
 }
+
+# create the general block model
+ngme_block <- function(
+  Y           = NULL,
+  X           = NULL,
+  beta        = NULL,
+  noise       = noise_normal(),
+  latents     = list(),
+  control     = list(),
+  debug       = FALSE,
+  ...
+) {
+
+  latents_string <- rep(" ", 14) # padding of 14 spaces
+  for (latent in latents)
+    latents_string <- c(latents_string, latent$par_string)
+  beta_str  <- if (length(beta) > 0) paste0("  beta_", seq_along(beta)) else ""
+  m_mu_str    <- paste0("    mu_", seq_along(noise$theta_mu))
+  m_sigma_str <- paste0(" sigma_", seq_along(noise$theta_sigma))
+  m_nu_str    <- "    nu_1"
+  merr_str <- switch(noise$noise_type,
+    normal  = m_sigma_str,
+    nig     = c(m_mu_str, m_sigma_str, m_nu_str)
+  )
+  par_string <- do.call(paste0, as.list(c(latents_string, beta_str, merr_str)))
+
+  structure(
+    list(
+      Y                 = Y,
+      X                 = X,
+      beta              = beta,
+      latents           = latents,
+      noise             = noise,
+      control           = control,
+      n_merr            = noise$n_params,
+      debug             = debug,
+      par_string        = par_string,
+      ...
+    ),
+    class = c("ngme", "list")
+  )
+}
+
 
 #' Print ngme object
 #'
@@ -235,7 +282,9 @@ print.ngme <- function(x, ...) {
 
   cat("Latent models: \n");
   for (i in seq_along(ngme$latents)) {
-    cat("[["); cat(i); cat("]]\n")
+    # cat("[["); cat(i); cat("]]")
+    # cat("\""); cat(names(ngme$latents)[[i]]); cat("\"\n")
+    cat("$"); cat(names(ngme$latents)[[i]]); cat("\n")
     print.ngme_model(ngme$latents[[i]], padding = 2)
   }
 }

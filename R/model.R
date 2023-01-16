@@ -1,44 +1,3 @@
-# the general block model
-ngme.block_model <- function(
-  Y           = NULL,
-  X           = NULL,
-  beta        = NULL,
-  noise       = noise_normal(),
-  latents     = list(),
-  control     = list(),
-  debug       = FALSE,
-  ...
-) {
-
-  latents_string <- rep(" ", 14) # padding of 14 spaces
-  for (latent in latents)
-    latents_string <- c(latents_string, latent$par_string)
-  beta_str  <- if (length(beta) > 0) paste0("  beta_", seq_along(beta)) else ""
-  m_mu_str    <- paste0("    mu_", seq_along(noise$theta_mu))
-  m_sigma_str <- paste0(" sigma_", seq_along(noise$theta_sigma))
-  m_nu_str    <- "    nu_1"
-  merr_str <- switch(noise$noise_type,
-    normal  = m_sigma_str,
-    nig     = c(m_mu_str, m_sigma_str, m_nu_str)
-  )
-  par_string <- do.call(paste0, as.list(c(latents_string, beta_str, merr_str)))
-
-  structure(
-    list(
-      Y                 = Y,
-      X                 = X,
-      beta              = beta,
-      latents           = latents,
-      noise             = noise,
-      control           = control,
-      n_merr            = noise$n_params,
-      debug             = debug,
-      par_string        = par_string,
-      ...
-    ),
-    class = c("ngme", "list")
-  )
-}
 
 # function for specify ngme.model basic structure
 # keep same with cpp latent structure
@@ -59,6 +18,7 @@ ngme_model <- function(
   n_theta_K   = length(theta_K),
   h           = NULL,
   n_params    = NULL,
+  name        = "field",
   ...
 ) {
   stopifnot(is.character(model))
@@ -96,6 +56,7 @@ ngme_model <- function(
       debug         = debug,
       par_string    = par_string,
       h             = h,
+      name          = name,
       ...
     ),
     class = "ngme_model"

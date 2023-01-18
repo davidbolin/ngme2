@@ -409,7 +409,7 @@ VectorXd BlockModel::get_theta_merr() const {
   } else {
       theta_merr.segment(0, n_theta_mu) = theta_mu;
       theta_merr.segment(n_theta_mu, n_theta_sigma) = theta_sigma;
-      theta_merr(n_theta_mu + n_theta_sigma) =  var.get_unbound_nu();
+      theta_merr(n_theta_mu + n_theta_sigma) =  var.get_log_nu();
   }
 
   return theta_merr;
@@ -423,7 +423,7 @@ VectorXd BlockModel::grad_theta_merr() {
   } else {
     if (!fix_flag[block_fix_theta_mu])     grad.segment(0, n_theta_mu) = grad_theta_mu();
     if (!fix_flag[block_fix_theta_sigma])  grad.segment(n_theta_mu, n_theta_sigma) = grad_theta_sigma();
-    grad(n_theta_mu + n_theta_sigma) = var.grad_nuar();
+    grad(n_theta_mu + n_theta_sigma) = var.grad_log_nu();
   }
 
   return grad;
@@ -435,7 +435,7 @@ void BlockModel::set_theta_merr(const VectorXd& theta_merr) {
   } else {
     theta_mu = theta_merr.segment(0, n_theta_mu);
     theta_sigma = theta_merr.segment(n_theta_mu, n_theta_sigma);
-    var.set_nuar(theta_merr(n_theta_mu + n_theta_sigma));
+    var.set_log_nu(theta_merr(n_theta_mu + n_theta_sigma));
   }
 
   // update mu, sigma

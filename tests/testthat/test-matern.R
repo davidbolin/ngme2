@@ -1,77 +1,66 @@
-library(devtools); library(INLA); load_all()
-{ # First we create mesh
+# test spatial Matern model
+test_that("test estimation of Matern", {
+  # load_all()
+  library(INLA)
   pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
   mesh <- inla.mesh.2d(
     loc.domain = pl01, cutoff = 0.3,
     max.edge = c(0.2, 0.7), offset = c(0.5, 1.5)
   )
 
-  W <- simulate(
-    f(model = model_matern(mesh = mesh, kappa = 1),
-      noise = noise_nig()
+  # # generate A and A_pred
+  # n_obs <- 500; index_obs <- sample(1:mesh$n, n_obs)
+  # loc_obs <- mesh$loc[index_obs, c(1, 2)]
+  # A <- inla.spde.make.A(mesh = mesh, loc = loc_obs)
+  # sigma.e <- 0.7
+  # Y <- drop(A %*% W + sigma.e * rnorm(n_obs))
+
+  true_model <- model_matern(
+    mesh=mesh,
+    kappa=2,
+    noise = noise_nig(mu=1, sigma=1.5, nu=0.8)
+  )
+
+  # plot(mesh)
+  W <<- simulate(true_model)
+
+  n_obs <<- mesh$n
+  Y <- W + rnorm(n_obs, sd=0.5)
+
+  # make bubble plot
+  sp_obj <- as.data.frame(mesh$loc); sp_obj[, 3] <- W
+  names(sp_obj) <- c("s1", "s2", "y")
+  coordinates(sp_obj) <- ~ s1 + s2
+  bubble(sp_obj, zcol=3)
+  range(mesh$loc[, 1]); range(mesh$loc[, 2])
+
+  spde1 <<- model_matern(mesh=mesh, noise=noise_nig())
+  out <- ngme(
+    Y ~ 0 + f(
+      model=spde1,
+      name="spde",
+      noise=noise_nig(
+        # fix_V = TRUE,
+        # V = attr(W, "noise")$V
+      ),
+      fix_W = TRUE,
+      W = W
+    ),
+    data = list(Y = Y),
+    contro = ngme_control(
+      iterations = 100,
+      estimation = TRUE,
+      n_parallel_chain = 4
     )
   )
-}
+  out
 
-# generate A and A_pred
-n_obs <- 500; index_obs <- sample(1:mesh$n, n_obs)
-loc_obs <- mesh$loc[index_obs, c(1, 2)]
-A <- inla.spde.make.A(mesh = mesh, loc = loc_obs)
+  # fix V gives right answer.
+  # sampling V has some problem
 
-sigma.e <- 0.7
-Y <- drop(A %*% W + sigma.e * rnorm(n_obs))
+  traceplot2(out, name="spde")
+})
 
-load_all()
-ngme_out <- ngme(
-  seed = 1,
-  Y ~ 0 + f(
-    model = model_matern(mesh = mesh, kappa = 3),
-    fix_theta_K = FALSE,
-    # W = as.numeric(W),
-    # fix_W = TRUE,
-    noise = noise_nig(
-      fix_theta_mu    = F,
-      fix_theta_sigma = F,
-      fix_nu     = F
-      # V = attr(W, "noise")$V,
-      # fix_V = T
-    ),
-    A = A,
-    debug = TRUE,
-    control = ngme_control_f(
-      numer_grad = F,
-      use_precond = T
-    )
-  ),
-  data = list(Y = Y),
-  noise = noise_normal(),
-  control = ngme_control(
-    estimation = T,
-    iterations = 100,
-    stop_points = 1,
-    n_parallel_chain = 4
-  ),
-  debug = TRUE
-)
-
-ngme_out
-attr(ngme_out, "trajectory")[[1]]$latents[[1]]
-str(ngme_out)
-
-traceplot(ngme_out, parameter = "theta_sigma", f_index = 0)
-
-# matern model
-traceplot(ngme_out, parameter = "theta_K",     f_index = 1, transform = exp)
-traceplot(ngme_out, parameter = "theta_mu",    f_index = 1)
-traceplot(ngme_out, parameter = "theta_sigma", f_index = 1)
-traceplot(ngme_out, parameter = "nu",     f_index = 1)
-
-plot(noise_nig(
-      theta_mu = 0,
-      theta_sigma = 0,
-      nu = 1
-    ), add = FALSE)
-plot(ngme_out$latents[[1]]$noise, col = "red", add=TRUE)
 
 # ####### test for kappa
 # library(devtools); library(INLA);load_all()

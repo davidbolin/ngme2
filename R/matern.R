@@ -115,6 +115,8 @@ model_matern <- function(
     B_kappa     = B_kappa,
     C           = ngme_as_sparse(C),
     G           = ngme_as_sparse(G),
+    # C           = asdgCMatrix_(C),
+    # G           = asdgCMatrix_(G),
     # K           = kappas * kappas * C + G
     h           = h,
     noise       = noise,

@@ -107,18 +107,18 @@ public:
         return nu;
     }
 
-    double get_unbound_nu() const {
+    double get_log_nu() const {
         if (noise_type == "normal")
             return 0;
         else
             return log(nu);
     }
-    void set_nuar(double theta) {
+    void set_log_nu(double theta) {
         if (noise_type != "normal") nu = exp(theta);
         // else doing nothing
     }
 
-    double grad_nuar() const {
+    double grad_log_nu() const {
         if (fix_nu || noise_type == "normal") return 0;
 
         // grad of log nu
@@ -184,9 +184,9 @@ public:
 //     double get_nu() const {return nu;}
 
 //     // optimizer related
-//     double get_unbound_nu() const   { return log(nu); }
-//     void   set_nuar(double theta) { nu = exp(theta); }
-//     double grad_nuar() const {
+//     double get_log_nu() const   { return log(nu); }
+//     void   set_log_nu(double theta) { nu = exp(theta); }
+//     double grad_log_nu() const {
 //         VectorXd tmp = VectorXd::Constant(n, 1+1/(2*nu)) - 0.5*V - VectorXd::Constant(n, 1).cwiseQuotient(2*V);
 //         double grad = tmp.mean();
 //         double hess = -0.5 * pow(nu, -2);
@@ -250,9 +250,9 @@ public:
 //     double get_nu() const {return 0;}
 
 //     // nothing to optimize
-//     double get_unbound_nu() const   { return 1; }
-//     void   set_nuar(double theta) {}
-//     double grad_nuar() const {
+//     double get_log_nu() const   { return 1; }
+//     void   set_log_nu(double theta) {}
+//     double grad_log_nu() const {
 //         return 0;
 //     }
 

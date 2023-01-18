@@ -37,7 +37,8 @@ ngme_ts_make_A <- function(
     ncol_rep <- which(unique_rep == replicates[i])
     A[i, (ncol_rep - 1) * n_range + loc[i] - start + 1] <- 1
   }
-  as(A, "dgCMatrix")
+  # as(A, "dgCMatrix")
+  as(as(A, "dMatrix"), "generalMatrix")
 }
 
 
@@ -63,14 +64,16 @@ ngme_ts_make_A <- function(
 ngme_as_sparse <- function(G) {
   tryCatch(
     expr={
-      G <- as(G, "dgCMatrix")
+      G = as(as(G, "CsparseMatrix"), "generalMatrix")
+      # G <- as(as(G, "dMatrix"), "generalMatrix")
     },
     error = function(e) {
       G <- as(G, "dgTMatrix")
       idx <- which(G@i <= G@j)
       G = Matrix::sparseMatrix(i=G@i[idx], j = G@j[idx], x= G@x[idx],
                                symmetric=FALSE, index1 = FALSE)
-      G = as(G, "dgCMatrix")
+      G = as(as(G, "CsparseMatrix"), "generalMatrix")
+      # G <- as(as(G, "dMatrix"), "generalMatrix")
     },
     finally = {
       G
@@ -304,6 +307,45 @@ ar1_th2a <- function(th) {
 # }
 
 
+crps <- function(ngme, N=100) {
+  # Y = X beta + A1 W1 + A2 W2 + eps
+  # W1_N <- cbind(W1_1, W1_2, .., W1_N)
+  # W2_N <- cbind(W2_1, W2_2, .., W2_N)
+  # eps_N <- cbind(simulate(ngme$noise), .., N)
 
+  # Y_N (n * N)
+
+  # N is how many samples of Y
+  for (i in 1:N) {
+    # sample y by fe, W, noise
+    # sample W
+    # 1. from one chain
+    W_M <- sampling_cpp(ngme, M)
+    Y[[i]] <- A_1 %*% W_M[, -i] + simulate(ngme$noise)
+
+    W2_M <- sampling_cpp(ngme, M)
+    Y2[[i]] <- A_1 %*% W_M[, -i] + simulate(ngme$noise)
+
+    # 2. from N chains, get the last W
+
+  }
+
+  # Y: N * n_obs
+
+  for (i in 1:n_obs) {
+    # estimate E(| Y_i - y_i |) . y_i is observation
+    E1[[i]] <- mean(abs(Y[, i] - y_data[i]))
+    # estimate E(| Y_i - y_i |) . y_i is observation
+    E2[[i]] <- mean(abs(Y[, i] - Y2[, i]))
+
+    E3[[i]] <- mean((Y[, i] - y_data[i])^2)
+  }
+
+  # compute MSE, MAE, CRPS, sCRPS
+  MAE <- mean(E1)
+  MSE <- mean(E3)
+  CRPS <- mean(0.5 * E2 - E1)
+  sCRPS <- mean(-E2 / E1 - 0.5 * log(E2))
+}
 
 

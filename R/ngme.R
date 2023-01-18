@@ -190,7 +190,7 @@ if (debug) print(str(ngme_block))
   }
 
   ################# Prediction ####################
-  if (any(data$index_NA)) {
+  if (any(data$index_NA) && control$estimation) {
     # posterior sampling
     # ngme_block <- sampling_cpp(ngme_block, 100, TRUE)
 

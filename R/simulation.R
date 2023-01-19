@@ -49,6 +49,8 @@ simulate.ngme_model <- function(
         # assume W_0 = 0
         # W_n = W_0 + cumsum(simnoise)
         W <- cumsum(sim_noise)
+
+        W <- c(0, W) # watch out! compensate
         # h <- sim_noise
     # browser()
     } else if (model$model == "rw2") {

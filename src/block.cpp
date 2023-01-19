@@ -72,15 +72,17 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
     }
   }
 
+if (debug) std::cout << "before set block A" << std::endl;
   /* Init variables: h, A */
   int n = 0;
   for (std::vector<std::unique_ptr<Latent>>::iterator it = latents.begin(); it != latents.end(); it++) {
     setSparseBlock(&A, 0, n, (*it)->getA());
     n += (*it)->get_W_size();
   }
-  assemble();
+if (debug) std::cout << "After set block A" << std::endl;
 
-if (debug) std::cout << "After block assemble" << std::endl;
+  assemble();
+if (debug) std::cout << "After set block K" << std::endl;
 
   // 4. Init measurement noise
   Rcpp::List noise_in   = block_model["noise"];

@@ -16,9 +16,11 @@ test_that("test estimation of Matern", {
   # Y <- drop(A %*% W + sigma.e * rnorm(n_obs))
 
   true_model <- model_matern(
-    mesh=mesh,
-    kappa=2,
-    noise = noise_nig(mu=1, sigma=1.5, nu=0.8)
+    mesh = mesh,
+    kappa = 3,
+    noise = noise_nig(
+      mu=3, sigma=1.5, nu=2
+    )
   )
 
   # plot(mesh)
@@ -43,22 +45,27 @@ test_that("test estimation of Matern", {
         # fix_V = TRUE,
         # V = attr(W, "noise")$V
       ),
-      fix_W = TRUE,
-      W = W
+      # fix_W = TRUE, W = W,
+      debug = TRUE
     ),
     data = list(Y = Y),
     contro = ngme_control(
+      estimation = T,
       iterations = 100,
-      estimation = TRUE,
       n_parallel_chain = 4
-    )
+    ),
+    debug = TRUE
   )
   out
 
+  traceplot2(out, "spde")
+
+  plot(attr(W, "noise"), out$latents[[1]]$noise)
+
+  out$latents[[1]]$noise$h
+
   # fix V gives right answer.
   # sampling V has some problem
-
-  traceplot2(out, name="spde")
 })
 
 

@@ -145,17 +145,17 @@ model_rw <- function(
    INLA::inla.spde.make.A(mesh = mesh, loc = x[index_NA])
 
   noise$h <- diff(mesh$loc)
-
+# browser()
   n <- mesh$n
   if (order == 1) {
     # k is of size n-1 * n
     n <- n - 1
     if (!circular) {
-      G <- Matrix::Matrix(diag(n));
+      G <- -Matrix::Matrix(diag(n));
       G <- cbind(G, rep(0, n))
       C <- Matrix::Matrix(0, n, n)
-      C[seq(n+1, n*n, by = n+1)] <- -1
-      C <- cbind(C, c(rep(0, n-1), -1))
+      C[seq(n+1, n*n, by = n+1)] <- 1
+      C <- cbind(C, c(rep(0, n-1), 1))
     } else {
       G <- Matrix::Matrix(diag(n))
       C <- Matrix::Matrix(0, n, n)

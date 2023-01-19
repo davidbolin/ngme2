@@ -58,10 +58,10 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
     unsigned long latent_seed = rng();
     string model_type = latent_in["model"];
     if (model_type == "ar1") {
-      latents.push_back(std::make_unique<AR>(latent_in, latent_seed));
+      latents.push_back(std::make_unique<AR>(latent_in, latent_seed, false));
     }
     else if (model_type == "rw1") {
-      latents.push_back(std::make_unique<AR>(latent_in, latent_seed));
+      latents.push_back(std::make_unique<AR>(latent_in, latent_seed, true));
     }
     else if (model_type == "matern" && n_theta_K > 1) {
       latents.push_back(std::make_unique<Matern_ns>(latent_in, latent_seed));
@@ -109,7 +109,7 @@ if (debug) std::cout << "After block construct noise" << std::endl;
 
   // 6. Init solvers
   if(n_latent > 0){
-    VectorXd inv_SV = VectorXd::Constant(V_sizes, 1).cwiseQuotient(getSV());
+    VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
     SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
     SparseMatrix<double> QQ = Q + A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(var.getV()).asDiagonal() * A;
     chol_Q.analyze(Q);
@@ -188,7 +188,7 @@ void BlockModel::sampleW_VY()
   if (n_latent==0) return;
 
   VectorXd SV = getSV();
-  VectorXd inv_SV = VectorXd::Constant(SV.size(), 1).cwiseQuotient(SV);
+  VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(SV);
   // VectorXd V = getV();
   // VectorXd inv_V = VectorXd::Constant(V.size(), 1).cwiseQuotient(V);
 
@@ -386,7 +386,7 @@ VectorXd BlockModel::grad_theta_sigma() {
 
   VectorXd residual = get_residual();
   VectorXd vsq = (residual).array().pow(2).matrix().cwiseProduct(noise_V.cwiseInverse());
-  VectorXd tmp1 = vsq.cwiseProduct(noise_sigma.array().pow(-2).matrix()) - VectorXd::Constant(n_obs, 1);
+  VectorXd tmp1 = vsq.cwiseProduct(noise_sigma.array().pow(-2).matrix()) - VectorXd::Ones(n_obs);
   grad = B_sigma.transpose() * tmp1;
 
   // grad = - 0.5* B_sigma.transpose() * VectorXd::Ones(n_obs)

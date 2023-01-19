@@ -353,8 +353,9 @@ inline void Latent::set_parameter(const VectorXd& theta) {
 class AR : public Latent {
 private:
     SparseMatrix<double, 0, int> G, C;
+    bool is_rw; // if this is actually a rw model
 public:
-    AR(Rcpp::List& model_list, unsigned long seed);
+    AR(Rcpp::List& model_list, unsigned long seed, bool is_rw);
 
     SparseMatrix<double> getK(const VectorXd& alpha) const;
     SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;

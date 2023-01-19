@@ -99,16 +99,18 @@ VectorXd Latent::grad_theta_mu() {
     VectorXd grad (n_theta_mu);
     for (int l=0; l < n_theta_mu; l++) {
         grad(l) = (V-h).cwiseProduct(B_mu.col(l).cwiseQuotient(getSV())).dot(K*W - mu.cwiseProduct(V-h));
+// if (debug) std::cout << "KW" << K*W << std::endl;
+// if (debug) std::cout << "V-h" << prevV-h << std::endl;
+// if (debug) std::cout << "SV = " << getSV() << std::endl;
     }
-    double hess = -(prevV-h).cwiseQuotient(getPrevSV()).dot(prevV-h);
 
-    // return - grad / V_size;
-    // return - grad;
 // if (debug) {
 // std::cout << "grad of mu=" << grad <<std::endl;
 // std::cout << "hess of mu=" << hess <<std::endl;
 // }
-    return grad / hess;
+    return - grad / V_size;
+    // double hess = -(prevV-h).cwiseQuotient(getPrevSV()).dot(prevV-h);
+    // return grad / hess;
 }
 
 // return the gradient wrt. theta, theta=log(sigma)
@@ -119,11 +121,11 @@ inline VectorXd Latent::grad_theta_sigma() {
     // tmp = (KW - mu(V-h))^2 / V
     VectorXd tmp = (K*W - mu.cwiseProduct(V-h)).array().pow(2).matrix().cwiseProduct(V.cwiseInverse());
     // grad = Bi(tmp * sigma ^ -2 - 1)
-    VectorXd tmp1 = tmp.cwiseProduct(sigma.array().pow(-2).matrix()) - VectorXd::Constant(V_size, 1);
+    VectorXd tmp1 = tmp.cwiseProduct(sigma.array().pow(-2).matrix()) - VectorXd::Ones(V_size);
     grad = B_sigma.transpose() * tmp1;
 
     // for (int l=0; l < n_theta_sigma; l++) {
-    //     VectorXd tmp1 = tmp.cwiseProduct(sigma.array().pow(-2).matrix()) - VectorXd::Constant(V_size, 1);
+    //     VectorXd tmp1 = tmp.cwiseProduct(sigma.array().pow(-2).matrix()) - VectorXd::Ones(V_size);
     //     VectorXd tmp2 = B_sigma.col(l).cwiseProduct(tmp1);
     //     grad(l) = tmp2.sum();
     // }
@@ -140,13 +142,13 @@ inline VectorXd Latent::grad_theta_sigma() {
 }
 
 inline VectorXd Latent::grad_theta_sigma_normal() {
-    VectorXd V = VectorXd::Constant(V_size, 1);
+    VectorXd V = VectorXd::Ones(V_size);
     VectorXd grad (n_theta_sigma_normal);
 
     // tmp = (KW - mu(V-h))^2 / V
     VectorXd tmp = (K*W).array().pow(2).matrix().cwiseProduct(V.cwiseInverse());
     // grad = Bi(tmp * sigma_normal ^ -2 - 1)
-    VectorXd tmp1 = tmp.cwiseProduct(sigma_normal.array().pow(-2).matrix()) - VectorXd::Constant(V_size, 1);
+    VectorXd tmp1 = tmp.cwiseProduct(sigma_normal.array().pow(-2).matrix()) - VectorXd::Ones(V_size);
     grad = B_sigma_normal.transpose() * tmp1;
 
     return - 1.0 / V_size * grad;

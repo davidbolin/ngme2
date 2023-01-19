@@ -1,9 +1,9 @@
 # test rw related model
 
 test_that("simulation of rw", {
-# load_all()
-  n_obs <<- 500
-  mu <- -3; sigma <- 2.3; nu <- 2; sigma_eps <- 0.8
+load_all()
+  n_obs <<- 20
+  mu <- -3; sigma <- 2; nu <- 2; sigma_eps <- 0.8
   # h <- rexp(n_obs)
   h <- rep(1, n_obs)
   loc <- c(0, cumsum(h))
@@ -11,12 +11,15 @@ test_that("simulation of rw", {
   V <- rig(n_obs, a=nu, b=nu*h^2)
   dW <- -mu + mu * V + sigma * sqrt(V) * rnorm(n_obs) # type-G noise
   W <- c(0, cumsum(dW))
-
   Y <- W + rnorm(n=length(W), sd=sigma_eps)
 
   # check model specification
-  K <- model_rw(loc, order=1)$K
-  expect_true(all(as.numeric(K %*% W) - dW < 1e-5))
+  my_rw <- model_rw(loc, order=1)
+  expect_true(all(my_rw$K == my_rw$C + my_rw$G))
+  expect_true(all(as.numeric(my_rw$K %*% W) - dW < 1e-5))
+  expect_true(all(my_rw$nosie$h - h < 1e-5))
+
+  # my_rw$A
 
   # first we test the gradient of mu
   out <- ngme(
@@ -24,8 +27,8 @@ test_that("simulation of rw", {
       model="rw1",
       name="rw1",
       noise=noise_nig(
-        fix_nu = TRUE, nu = 2,
-        fix_theta_sigma = TRUE, sigma = sigma,
+        # fix_nu = TRUE, nu = 2,
+        # fix_theta_sigma = TRUE, sigma = sigma,
         fix_V = TRUE, V = V
       ),
       fix_W = TRUE, W = W,
@@ -34,14 +37,15 @@ test_that("simulation of rw", {
     data = list(Y = Y),
     contro = ngme_control(
       estimation = T,
-      iterations = 100,
-      n_parallel_chain = 4
+      iterations = 500,
+      n_parallel_chain = 1
     ),
     debug = TRUE
   )
   out
-# out$latents[[1]]$noise
   traceplot2(out, 1)
+  plot(out$latents[[1]]$noise,
+    noise_nig(mu=mu, sigma=sigma, nu=nu))
 
 with(out, {
   expect_true(all(latents[[1]]$noise$V - V < 1e-5))
@@ -49,8 +53,6 @@ with(out, {
   expect_true(all(latents[[1]]$W - W < 1e-5))
 })
 
-  plot(out$latents[[1]]$noise,
-    noise_nig(mu=mu, sigma=sigma, nu=nu))
 
 expect_true(all(as.numeric(out$latents[[1]]$K %*% W) - dW < 1e-5))
 expect_true(all(diff(loc) - out$latents[[1]]$h < 1e-5))
@@ -134,7 +136,9 @@ test_that("test estimation of basic ar with normal measurement noise", {
   alpha <- 0.75
   mu <- -3; sigma <- 2.3; nu <- 2; sigma_eps <- 0.8
   ar1 <- model_ar1(1:n_obs, alpha=alpha, noise=noise_nig(mu=mu, sigma=sigma, nu=nu))
-  # ar1$K
+
+  expect_true(all(ar1$K == alpha * ar1$C + ar1$G))
+
 # ar1$noise$h <- rexp(n_obs)
 
   W <- simulate(ar1)

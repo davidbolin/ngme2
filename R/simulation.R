@@ -31,6 +31,7 @@ simulate.ngme_model <- function(
         alpha <- ar1_th2a(model$theta_K)
         # for loop
         W <- Reduce(function(x, y) {y + alpha * x}, sim_noise, accumulate = T)
+# browser()
     } else if (model$model == "matern") {
         # K_a %*% W = noise
         W <- with(model, {

@@ -60,6 +60,8 @@ f <- function(
 
   # remove NULL in arguments
   f_args <- Filter(Negate(is.null),  as.list(environment()))
+  # add arguments in ...
+  f_args <- c(f_args, list(...))
 
   # combine args and apply ngme sub_models
   if (is.character(model)) {

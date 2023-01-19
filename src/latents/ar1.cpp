@@ -13,10 +13,11 @@
 // W_size = V_size
 // get_K_params, grad_K_params, set_K_params, output
 
-AR::AR(Rcpp::List& model_list, unsigned long seed)
+AR::AR(Rcpp::List& model_list, unsigned long seed, bool is_rw)
 : Latent(model_list, seed),
     G           (Rcpp::as< SparseMatrix<double,0,int> > (model_list["G"])),
-    C           (Rcpp::as< SparseMatrix<double,0,int> > (model_list["C"]))
+    C           (Rcpp::as< SparseMatrix<double,0,int> > (model_list["C"])),
+    is_rw       (is_rw)
 {
 if (debug) std::cout << "Begin Constructor of AR1" << std::endl;
 
@@ -39,6 +40,8 @@ if (debug) std::cout << "End Constructor of AR1" << std::endl;
 
 // wrt. parameter_K (bounded parameter)
 SparseMatrix<double> AR::getK(const VectorXd& theta_K) const {
+    if (is_rw) return C + G;
+
     assert (theta_K.size() == 1);
     double alpha = th2a(theta_K(0));
     SparseMatrix<double> K = alpha * C + G;

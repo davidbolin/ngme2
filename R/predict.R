@@ -81,7 +81,62 @@ predict <- function(
 }
 
 cv <- function(ngme) {
-
   # cv
   # compute MAE, MSE, CRPS, sCRPS
+}
+
+# compute a list of criterions
+# loc = all
+# k-fold location at unknown
+model_validation <- function(ngme, N=100, loc=NULL, test_at_loc=NULL) {
+  # sampling Y by, Y = X beta + (block_A %*% block_W) + eps
+
+  # AW_N[[1]] is concat(A1 W1, A2 W2, ..)
+
+  # option 1. AW comes from 1 chain
+  # turn into df of dim: n_obs * N
+  AW_N <- sampling_cpp(ngme, n = N, posterior = TRUE)[["AW"]]
+  AW_N <- as.data.frame(AW_N)
+  names(AW_N) <- 1:N
+
+  AW2_N <- sampling_cpp(ngme, n = N, posterior = TRUE)[["AW"]]
+  AW2_N <- as.data.frame(AW2_N)
+  names(AW_N) <- 1:N
+
+  # option 2. AW comes from N chains
+  # to-do
+
+  fe <- with(ngme, as.numeric(X %*% beta))
+  fe_N <- matrix(rep(fe, N), ncol=N, byrow=F)
+
+  mn_N <- sapply(1:N, function(x) simulate(ngme$noise))
+  mn2_N <- sapply(1:N, function(x) simulate(ngme$noise))
+
+  mu_N <- fe_N + AW_N
+  Y_N <- fe_N + AW_N + mn_N
+  Y2_N <- fe_N + AW2_N + mn2_N
+
+  # Now Y is of dim n_obs * N
+  y_data <- ngme$Y; n_obs <- length(y_data)
+  E3 <- E2 <- E1 <- double(length(y_data))
+  for (i in 1:n_obs) {
+    # turn row of df into numeric vector.
+    yi <- as.numeric(Y_N[i, ])
+    yi2 <- as.numeric(Y2_N[i, ])
+
+    # estimate E(| Y_i - y_data |). y_data is observation
+    E1[[i]] <- mean(abs(yi - y_data[i]))
+    # estimate E(| Y_i - y_data |)
+    E2[[i]] <- mean(abs(yi - yi2))
+    # estimate E(| Y_i - y_data |^2)
+    E3[[i]] <- mean((yi - y_data[i])^2)
+  }
+
+  # compute MSE, MAE, CRPS, sCRPS
+  list(
+    MAE = mean(E1),
+    MSE = mean(E3),
+    CRPS = mean(0.5 * E2 - E1),
+    sCRPS = mean(-E2 / E1 - 0.5 * log(E2))
+  )
 }

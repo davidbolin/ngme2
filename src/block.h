@@ -274,7 +274,7 @@ public:
     void set_theta_merr(const VectorXd& theta_merr);
 
     // get length of W,V of iterations
-    Rcpp::List sampling(int iterations, bool posterior);
+    Rcpp::List sampling(int n, bool posterior);
     Rcpp::List output() const;
     std::string get_par_string() const {return par_string;}
 };

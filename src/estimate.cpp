@@ -132,12 +132,12 @@ std::cout << "Total time is (ms): " << since(timer).count() << std::endl;
 }
 
 // [[Rcpp::export]]
-Rcpp::List sampling_cpp(const Rcpp::List& ngme_block, int iterations, bool posterior) {
+Rcpp::List sampling_cpp(const Rcpp::List& ngme_block, int n, bool posterior) {
     unsigned long seed = Rcpp::as<unsigned long> (ngme_block["seed"]);
     std::mt19937 rng (seed);
     BlockModel block (ngme_block, rng());
 
-    return block.sampling(iterations, posterior);
+    return block.sampling(n, posterior);
 }
 
 /*

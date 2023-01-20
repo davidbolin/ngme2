@@ -236,6 +236,7 @@ Eigen::VectorXd cholesky_solver::rMVN(Eigen::VectorXd &mu, Eigen::VectorXd &z)
   RP = R.permutationP();
   Eigen::VectorXd dest = R.permutationP() * mu;
   dest = R.matrixL().solve(dest);
+  // here dest is the mean?
   dest = R.matrixU().solve(dest + z);
   dest = R.permutationPinv() * dest;
   return dest;

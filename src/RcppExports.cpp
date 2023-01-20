@@ -23,15 +23,15 @@ BEGIN_RCPP
 END_RCPP
 }
 // sampling_cpp
-Rcpp::List sampling_cpp(const Rcpp::List& ngme_block, int iterations, bool posterior);
-RcppExport SEXP _ngme2_sampling_cpp(SEXP ngme_blockSEXP, SEXP iterationsSEXP, SEXP posteriorSEXP) {
+Rcpp::List sampling_cpp(const Rcpp::List& ngme_block, int n, bool posterior);
+RcppExport SEXP _ngme2_sampling_cpp(SEXP ngme_blockSEXP, SEXP nSEXP, SEXP posteriorSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::List& >::type ngme_block(ngme_blockSEXP);
-    Rcpp::traits::input_parameter< int >::type iterations(iterationsSEXP);
+    Rcpp::traits::input_parameter< int >::type n(nSEXP);
     Rcpp::traits::input_parameter< bool >::type posterior(posteriorSEXP);
-    rcpp_result_gen = Rcpp::wrap(sampling_cpp(ngme_block, iterations, posterior));
+    rcpp_result_gen = Rcpp::wrap(sampling_cpp(ngme_block, n, posterior));
     return rcpp_result_gen;
 END_RCPP
 }

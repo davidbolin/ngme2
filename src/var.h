@@ -85,7 +85,7 @@ public:
             VectorXd p_vec = (nu * h) - VectorXd::Constant(n, 0.5);
             VectorXd a_vec = VectorXd::Constant(n, 2 * nu) + a_inc_vec;
             VectorXd b_vec = b_inc_vec;
-            if (!fix_V) V = rGIG_cpp(p_vec, a_vec, b_vec.cwiseProduct(h.cwiseProduct(h)), var_rng());
+            if (!fix_V) V = rGIG_cpp(p_vec, a_vec, b_vec, var_rng());
             // here a_inc_vec is given as (mu/sigma)^2 (latent.h)
             // sampling from GIG(hv-0.5, 2nu + a_inc_vec, 0)
 
@@ -98,8 +98,8 @@ public:
             prevV = V;
             VectorXd p_vec = VectorXd::Constant(n, -1);
             VectorXd a_vec = VectorXd::Constant(n, nu) + a_inc_vec;
-            VectorXd b_vec = VectorXd::Constant(n, nu) + b_inc_vec;
-            if (!fix_V) V = rGIG_cpp(p_vec, a_vec, b_vec.cwiseProduct(h.cwiseProduct(h)), var_rng());
+            VectorXd b_vec = VectorXd::Constant(n, nu).cwiseProduct(h).cwiseProduct(h) + b_inc_vec;
+            if (!fix_V) V = rGIG_cpp(p_vec, a_vec, b_vec, var_rng());
         }
     }
 

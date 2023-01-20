@@ -134,7 +134,7 @@ ngme_parse_formula <- function(
   # order of f terms in labels
   spec_order <- attr(tf, "specials")$f - 1
   for (i in spec_order) {
-    if (!grepl(re2 <- "data *=", terms[i])) {
+    if (!grepl("data *=", terms[i])) {
       # adding data=data if not specified
       str <- gsub("^f\\(", "ngme2::f(data=data,", terms[i])
     } else if (grepl("data *= *NULL", terms[i])) {
@@ -305,47 +305,5 @@ ar1_th2a <- function(th) {
 #   out$replicates <- rep(1:n.repl, each = n_mesh)
 #   return(out)
 # }
-
-
-crps <- function(ngme, N=100) {
-  # Y = X beta + A1 W1 + A2 W2 + eps
-  # W1_N <- cbind(W1_1, W1_2, .., W1_N)
-  # W2_N <- cbind(W2_1, W2_2, .., W2_N)
-  # eps_N <- cbind(simulate(ngme$noise), .., N)
-
-  # Y_N (n * N)
-
-  # N is how many samples of Y
-  for (i in 1:N) {
-    # sample y by fe, W, noise
-    # sample W
-    # 1. from one chain
-    W_M <- sampling_cpp(ngme, M)
-    Y[[i]] <- A_1 %*% W_M[, -i] + simulate(ngme$noise)
-
-    W2_M <- sampling_cpp(ngme, M)
-    Y2[[i]] <- A_1 %*% W_M[, -i] + simulate(ngme$noise)
-
-    # 2. from N chains, get the last W
-
-  }
-
-  # Y: N * n_obs
-
-  for (i in 1:n_obs) {
-    # estimate E(| Y_i - y_i |) . y_i is observation
-    E1[[i]] <- mean(abs(Y[, i] - y_data[i]))
-    # estimate E(| Y_i - y_i |) . y_i is observation
-    E2[[i]] <- mean(abs(Y[, i] - Y2[, i]))
-
-    E3[[i]] <- mean((Y[, i] - y_data[i])^2)
-  }
-
-  # compute MSE, MAE, CRPS, sCRPS
-  MAE <- mean(E1)
-  MSE <- mean(E3)
-  CRPS <- mean(0.5 * E2 - E1)
-  sCRPS <- mean(-E2 / E1 - 0.5 * log(E2))
-}
 
 

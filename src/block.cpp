@@ -474,14 +474,15 @@ Rcpp::List BlockModel::output() const {
 }
 
 // posterior
-Rcpp::List BlockModel::sampling(int iterations, bool posterior) {
-  std::vector<VectorXd> Ws;
-  std::vector<VectorXd> Vs;
-  std::vector<VectorXd> Block_Vs;
+Rcpp::List BlockModel::sampling(int n, bool posterior) {
+  std::vector<VectorXd> AWs; // blockA * blockW
+  std::vector<VectorXd> Ws; // blockW
+  std::vector<VectorXd> Vs; // blockV
+  std::vector<VectorXd> mn_Vs; // measurement nosie V
 
   burn_in(5);
 
-  for (int i=0; i < iterations; i++) {
+  for (int i=0; i < n; i++) {
     if (posterior) {
       sampleV_WY();
       sampleW_VY();
@@ -493,15 +494,18 @@ Rcpp::List BlockModel::sampling(int iterations, bool posterior) {
       // construct the Y in R
     }
 
-    Ws.push_back(getW());
-    Vs.push_back(getV());
-    Block_Vs.push_back(var.getV());
+    AWs.push_back(A * getW());
+    // Ws.push_back(getW());
+    // Vs.push_back(getV());
+    // mn_Vs.push_back(var.getV());
   }
 
   return Rcpp::List::create(
-    Rcpp::Named("Ws") = Ws,
-    Rcpp::Named("Vs") = Vs,
-    Rcpp::Named("Block_Vs") = Block_Vs
+    Rcpp::Named("AW") = AWs
+    // ,
+    // Rcpp::Named("W") = Ws,
+    // Rcpp::Named("V") = Vs,
+    // Rcpp::Named("noise_V") = mn_Vs
   );
 }
 

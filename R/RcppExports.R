@@ -5,8 +5,8 @@ estimate_cpp <- function(ngme_block) {
     .Call(`_ngme2_estimate_cpp`, ngme_block)
 }
 
-sampling_cpp <- function(ngme_block, iterations, posterior) {
-    .Call(`_ngme2_sampling_cpp`, ngme_block, iterations, posterior)
+sampling_cpp <- function(ngme_block, n, posterior) {
+    .Call(`_ngme2_sampling_cpp`, ngme_block, n, posterior)
 }
 
 rGIG_cpp <- function(p, a, b, seed) {

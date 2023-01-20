@@ -1,0 +1,47 @@
+---
+title: "Ngme2 - A Flexible R Package for Latent non-Gaussian Models"
+author: "Xiaotian Jin"
+date: "`r Sys.Date()`"
+output:
+  ioslides_presentation:
+    logo: files/stat_logo.png
+---
+
+```{r, echo=FALSE, message=FALSE}
+library(devtools)
+library(INLA)
+# load_all()
+stat_logo <- "files/stat_logo.png"
+group_logo <- "files/group_logo2.png"
+```
+
+## Introduction
+<IMG style="position:absolute;bottom:2.5%;left:12%;width:33px;"SRC="`r group_logo`">
+
+### What is ngme2?
+
+`ngme2` is the updated version of `ngme` (https://github.com/davidbolin/ngme).
+
+`ngme2` is an R package that contains functions for **inference and prediction** for **Gaussian and non-Gaussian** latent models.
+
+The package has support for linear mixed effects models, spatial random field models, and multivariate random fields...
+
+It is an ongoing work with **David Bolin**, **Alexandre B. Simas**, and **Jonas Wallin**.
+
+
+## Features
+
+1. Support spatial models like Matern model with non-Gaussian noise.
+2. Support models for temporal data like **AR1** and **random walk** of order 1 and 2.
+3. Support replicates at same locations.
+4. Support prediction at unknown locations.
+5. Model corss-validation.
+6. Comparing to the previous version, it now supports multiple stochastic processes in the latent model.
+
+## Model Framework
+
+## Data analysis example
+
+## Future work
+
+## References

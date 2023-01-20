@@ -2,14 +2,16 @@
 
 test_that("simulation of rw", {
 load_all()
-  n_obs <<- 20
+  n_obs <<- 500
   mu <- -3; sigma <- 2; nu <- 2; sigma_eps <- 0.8
-  # h <- rexp(n_obs)
-  h <- rep(1, n_obs)
+  h <- rexp(n_obs)
+  # h <- rep(1, n_obs)
   loc <- c(0, cumsum(h))
 
   V <- rig(n_obs, a=nu, b=nu*h^2)
-  dW <- -mu + mu * V + sigma * sqrt(V) * rnorm(n_obs) # type-G noise
+  # V <- h
+  dW <- -mu*h + mu * V + sigma * sqrt(V) * rnorm(n_obs) # type-G noise
+
   W <- c(0, cumsum(dW))
   Y <- W + rnorm(n=length(W), sd=sigma_eps)
 
@@ -29,16 +31,16 @@ load_all()
       noise=noise_nig(
         # fix_nu = TRUE, nu = 2,
         # fix_theta_sigma = TRUE, sigma = sigma,
-        fix_V = TRUE, V = V
+        # fix_V = TRUE, V = V
       ),
-      fix_W = TRUE, W = W,
+      # fix_W = TRUE, W = W,
       debug = TRUE
     ),
     data = list(Y = Y),
     contro = ngme_control(
       estimation = T,
-      iterations = 500,
-      n_parallel_chain = 1
+      iterations = 5000,
+      n_parallel_chain = 4
     ),
     debug = TRUE
   )

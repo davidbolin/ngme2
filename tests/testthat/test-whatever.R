@@ -51,7 +51,7 @@ test_that("predict traceplot", {
 # temp tests
 # KW is sim_noise, and fix V gives perfect estimation of mu
 test_that("delete that", {
-load_all()
+# load_all()
   n_obs <<- 100
   alpha <- 0.3; mu = -3; sigma=2; nu=2; sigma_eps <- 0.5
   my_ar <- model_ar1(1:n_obs, alpha=alpha, noise=noise_nig(mu=mu, sigma=sigma, nu=nu))
@@ -99,4 +99,22 @@ with(out, {
 expect_true(all(as.numeric(out$latents[[1]]$K %*% W) - dW < 1e-5))
 expect_true(all(diff(loc) - out$latents[[1]]$h < 1e-5))
 expect_true(out$latents[[1]]$noise$nu > 0.1)
+})
+
+# tests on posterior sampling
+test_that("test posterior sampling and model_validation()", {
+# load_all()
+  n_obs <<- 20
+  alpha <- 0.3; mu = -3; sigma=2; nu=2; sigma_eps <- 0.5
+  my_ar <- model_ar1(1:n_obs, alpha=alpha, noise=noise_nig(mu=mu, sigma=sigma, nu=nu))
+  W <- simulate(my_ar)
+  Y <- W + rnorm(n=length(W), sd=sigma_eps)
+
+  out <- ngme(Y ~ 0 + f(model=my_ar), data=list(Y=Y))
+  # traceplot2(out, "field1")
+
+  expect_no_error(samples <- sampling_cpp(out, 10, posterior = TRUE))
+  # samples[["AW"]]
+
+  model_validation(out, N=100)
 })

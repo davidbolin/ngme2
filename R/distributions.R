@@ -753,7 +753,7 @@ qigam <- function(p, a, b, lower.tail = TRUE, log.p = FALSE){
 #'
 #' The additional parameter h is used when \deqn{V\sim IG(\nu,\nu h^{2})}.
 #' By the infinite divisibility, \deqn{\frac{1}{h} V \sim IG(\nu h, \nu h)}.
-#' Then \deqn{\delta+\mu V + \sigma \sqrt{V} Z} has the distribution of \deqn{NIG(\delta=-\mu h,\mu= \mu h, \sigma=\sigma \sqrt{h}, \nu=\nu h)}.
+#' Then \deqn{\delta+\mu V + \sigma \sqrt{V} Z} has the distribution of \deqn{NIG(\delta=-\mu h,\mu= \mu h, \sigma=\sigma \sqrt{h}, \nu=\nu h).}
 #'
 #' @references
 #'  Barndorff-Nielsen, O. (1977) Exponentially decreasing distributions for the logarithm of particle size. Proceedings of the Royal Society of London.
@@ -775,7 +775,13 @@ qigam <- function(p, a, b, lower.tail = TRUE, log.p = FALSE){
 #' xlim = c(0,10))
 #' @rdname nig
 #' @export
-dnig <- function(x, delta, mu, nu, sigma, log=FALSE){
+dnig <- function(x, delta, mu, nu, sigma, h=NULL, log=FALSE){
+  if (is.numeric(h)) {
+    delta = h * delta
+    mu = mu * h
+    sigma = sigma * sqrt(h)
+    nu = nu * h
+  }
   if(missing(delta)){
     stop('argument "delta" missing, with no default')
   }
@@ -875,8 +881,14 @@ dnig <- function(x, delta, mu, nu, sigma, log=FALSE){
 
 #' @rdname nig
 #' @export
-rnig <- function (n, delta, mu, nu, sigma, seed = 0)
+rnig <- function (n, delta, mu, nu, sigma, h=NULL, seed = 0)
 {
+  if (is.numeric(h)) {
+    delta = h * delta
+    mu = mu * h
+    sigma = sigma * sqrt(h)
+    nu = nu * h
+  }
   if(missing(delta)){
     stop('argument "delta" missing, with no default')
   }
@@ -964,7 +976,14 @@ rnig <- function (n, delta, mu, nu, sigma, seed = 0)
 
 #' @rdname nig
 #' @export
-pnig <- function(q, delta, mu, nu, sigma, lower.tail = TRUE, log.p = FALSE){
+pnig <- function(q, delta, mu, nu, sigma, h=NULL, lower.tail = TRUE, log.p = FALSE){
+  if (is.numeric(h)) {
+    delta = h * delta
+    mu = mu * h
+    sigma = sigma * sqrt(h)
+    nu = nu * h
+  }
+
   if(missing(delta)){
     stop('argument "delta" missing, with no default')
   }
@@ -1069,7 +1088,13 @@ pnig <- function(q, delta, mu, nu, sigma, lower.tail = TRUE, log.p = FALSE){
 
 #' @rdname nig
 #' @export
-qnig <- function(p, delta, mu, nu, sigma, lower.tail = TRUE, log.p = FALSE){
+qnig <- function(p, delta, mu, nu, sigma, h=NULL, lower.tail = TRUE, log.p = FALSE){
+  if (is.numeric(h)) {
+    delta = h * delta
+    mu = mu * h
+    sigma = sigma * sqrt(h)
+    nu = nu * h
+  }
   if(missing(delta)){
     stop('argument "delta" missing, with no default')
   }

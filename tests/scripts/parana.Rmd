@@ -9,7 +9,6 @@ Illustruation of fitting parana data using ngme2.
 
 ```{r message=FALSE}
 # NGME2 test on parana data / similar in ngme2.Rmd
-
 library(INLA)
 library(splancs)
 library(lattice)
@@ -58,6 +57,15 @@ matern_spde <- model_matern(
 )
 ```
 
+Ok first check with my model_rw
+```{r}
+rw <- f(inla.group(seaDist), model = "rw1", noise = noise_normal())
+
+f(inla.group(seaDist), model = "rw1", noise = noise_normal())$h
+rw$h
+str(rw)
+```
+
 ## case 1. RW1 + SPDE NIG noise + normal measurement noise
 
 ```{r case1, cache=TRUE}
@@ -83,6 +91,8 @@ nig_m_normal <- ngme(
 )
 
 nig_m_normal
+traceplot(nig_m_normal, "field2")
+plot(nig_m_normal$latents[[1]]$noise, xlim=c(-200, 200))
 ```
 
 ## case 2. RW1 + SPDE NIG noise + NIG measurement noise
@@ -137,10 +147,9 @@ normalnig_m_normal <- ngme(
 )
 
 normalnig_m_normal
-traceplot2(normalnig_m_normal, param=2)
-
-# traceplot(normalnig_m_normal, "sigma_normal", f_index = 2)
-# traceplot(normalnig_m_normal, "sigma", f_index = 2)
+traceplot(normalnig_m_normal, "field2")
+# traceplot2(normalnig_m_normal, "sigma_normal", f_index = 2)
+# traceplot2(normalnig_m_normal, "sigma", f_index = 2)
 ```
 
 ## case 4. RW1 + SPDE normal_NIG noise + NIG measurement noise
@@ -166,9 +175,11 @@ normalnig_m_nig <- ngme(
   debug = FALSE,
   seed = 1000
 )
-
-normalnig_m_nig
-traceplot2(normalnig_m_nig, param=2)
+normalnig_m_nig$latents[["field2"]]
+traceplot(normalnig_m_nig, "field1")
+traceplot(normalnig_m_nig, "field2")
+range(Y)
+plot(normalnig_m_nig$latents[["field2"]]$noise, xlim=c(-100, 100))
 ```
 
 ## case 5. RW1 + SPDE NIG noise + SPDE normal noise + normal measurement noise
@@ -197,8 +208,8 @@ nig_normal_m_normal <- ngme(
 )
 
 nig_normal_m_normal
-traceplot2(nig_normal_m_normal, param=2)
-traceplot2(nig_normal_m_normal, param=3)
+traceplot(nig_normal_m_normal, 2)
+traceplot(nig_normal_m_normal, 3)
 ```
 
 ## case 6. RW1 + SPDE NIG noise + SPDE normal noise + NIG measurement noise
@@ -227,8 +238,8 @@ nig_normal_m_nig <- ngme(
 )
 
 nig_normal_m_nig
-traceplot2(nig_normal_m_nig, param=2)
-traceplot2(nig_normal_m_nig, param=3)
+traceplot(nig_normal_m_nig, param=2)
+traceplot(nig_normal_m_nig, param=3)
 ```
 
 
@@ -268,12 +279,69 @@ format(tt, digits=3)
 Some plots:
 
 ```{r}
-# traceplot2(normalnig_m_normal, param = 2)
-# traceplot2(normalnig_m_nig, param = 2)
+# traceplot(normalnig_m_normal, param = 2)
+# traceplot(normalnig_m_nig, param = 2)
 
-# traceplot2(nig_normal_m_normal, param = 2)
-# traceplot2(nig_normal_m_normal, param = 3)
+# traceplot(nig_normal_m_normal, param = 2)
+# traceplot(nig_normal_m_normal, param = 3)
 
-# traceplot2(nig_normal_m_nig, param = 2)
-# traceplot2(nig_normal_m_nig, param = 3)
+# traceplot(nig_normal_m_nig, param = 2)
+# traceplot(nig_normal_m_nig, param = 3)
+```
+
+## Now let's do prediction!
+
+```{r}
+seaDist.prd <- apply(spDists(coord.prd,
+  PRborder[1034:1078, ],
+  longlat = TRUE
+), 1, min)
+coord.prd.df$seaDist <- seaDist.prd
+
+
+```
+
+```{r}
+model_pred <- nig_normal_m_normal
+
+nxy <- c(150, 100)
+projgrid <- inla.mesh.projector(
+  prmesh,
+  xlim = range(PRborder[, 1]),
+  ylim = range(PRborder[, 2]),
+  dims = nxy
+)
+
+xy.in <- inout(projgrid$lattice$loc, cbind(PRborder[, 1], PRborder[, 2]))
+
+coord.prd <- projgrid$lattice$loc[xy.in, ]
+plot(coord.prd, type = "p", cex = 0.1)
+lines(PRborder)
+points(coords[, 1], coords[, 2], pch = 19, cex = 0.5, col = "red")
+
+coord.prd.df <- data.frame(x1 = coord.prd[,1],
+                            x2 = coord.prd[,2])
+coordinates(coord.prd.df) <- c("x1", "x2")
+
+seaDist.prd <- apply(spDists(coord.prd,
+  PRborder[1034:1078, ],
+  longlat = TRUE
+), 1, min)
+coord.prd.df$seaDist <- seaDist.prd
+
+preds <- predict(model_pred, data = NULL, loc = list(
+  rw_loc = seaDist.prd,
+  spde_loc = coord.prd.df,
+  spde_loc = coord.prd.df
+))
+
+pred_df <- data.frame(
+  x1 = coord.prd[, 1],
+  x2 = coord.prd[, 2],
+  preds = preds
+)
+
+ggplot(pred_df, aes(x = x1, y = x2, fill = preds)) +
+  geom_raster() +
+  scale_fill_viridis()
 ```

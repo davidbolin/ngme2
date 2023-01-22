@@ -48,6 +48,13 @@ ngme <- function(
   start         = NULL,
   debug         = FALSE
 ) {
+  # model fitting information
+  fitting <- list(
+    formula = formula,
+    data = data,
+    family = family
+  )
+
   if (is.character(family))
     noise <- switch(family,
       "normal" = noise_normal(),
@@ -92,10 +99,8 @@ ngme <- function(
     # eval the response variable in data environment
     ngme_response <- eval(stats::terms(fm)[[2]], envir = data, enclos = parent.frame())
     index_NA <- is.na(ngme_response)
-    data$index_NA <- index_NA # watch out! injection, for f to see
-
     # 1. extract f and eval  2. get the formula without f function
-    res <-ngme_parse_formula(fm, data)
+    res <- ngme_parse_formula(fm, data, index_NA)
     latents_in <- res$latents_in
     plain_fm <- res$plain_fm
     # names(latents_in) <- sapply(latents_in, function(x) {x$name})
@@ -141,8 +146,11 @@ ngme <- function(
       noise             = noise,
       seed              = seed,
       debug             = debug,
-      control           = control
+      control           = control,
+      X_pred  = if (any(index_NA)) X_full[index_NA, , drop = FALSE] else NULL
     )
+
+  attr(ngme_block, "fitting") <- fitting
 
   ####### Use Last_fit ngme object to update Rcpp_list
     stopifnot("start should be an ngme object"
@@ -303,3 +311,38 @@ get_trajs <- function(outputs) {
   }
   ret
 }
+
+
+# helper function to make modify ngme model
+# make the Y[idx] into NA, and estimate it or not
+modify_ngme_with_idx_NA <- function(
+  ngme,
+  idx_NA,
+  estimation = FALSE
+) {
+  fitting <- attr(ngme, "fitting")
+
+  dat <- fitting$data
+  formula <- fitting$formula
+  family <- fitting$family
+
+  # make response variable[idx_NA] = NA
+  dat[[formula[[2]]]][idx_NA] <- NA
+
+  control <- ngme$control
+  control$estimation = estimation
+
+  # refit the model
+  ngme(
+    formula = formula,
+    data = dat,
+    control = control,
+    # keep others same
+    family = family,
+    beta = ngme$beta,
+    seed = ngme$seed,
+    debug = ngme$debug,
+    start = ngme # use previous estimation!!!
+  )
+}
+

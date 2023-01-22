@@ -14,11 +14,14 @@ ngme_model <- function(
   control     = ngme_control_f(),
   V_size      = NULL,
   debug       = FALSE,
-  par_string  = NULL,
   n_theta_K   = length(theta_K),
   h           = NULL,
   n_params    = NULL,
   name        = "field",
+  mesh        = NULL,
+  par_string  = NULL,
+  map         = NULL,  # map is the covariates
+  n_map       = NULL,
   ...
 ) {
   stopifnot(is.character(model))
@@ -57,6 +60,9 @@ ngme_model <- function(
       par_string    = par_string,
       h             = h,
       name          = name,
+      mesh          = mesh,
+      map           = map,
+      n_map         = n_map,
       ...
     ),
     class = "ngme_model"
@@ -91,6 +97,5 @@ print.ngme_model <- function(x, padding = 0, ...) {
   cat("\n\n")
 
   print.ngme_noise(model$noise, padding = padding)
-
   invisible(model)
 }

@@ -11,7 +11,7 @@
 #' @return the traceplot
 #' @export
 #'
-traceplot <- function(
+traceplot2 <- function(
   ngme,
   name = 0,
   param,
@@ -23,7 +23,7 @@ traceplot <- function(
     f_idx <- 0
   else
     f_idx <- if (is.numeric(name)) name else which(names(ngme$latents) == name)
-  stopifnot("Unknown name argument, see ?traceplot" = length(f_idx) == 1)
+  stopifnot("Unknown name argument, see ?traceplot2" = length(f_idx) == 1)
 
   parameter <- param
   stopifnot("parameter is a string" = is.character(parameter))
@@ -108,7 +108,9 @@ plot.ngme_noise <- function(x, y = NULL, ...) {
   stopifnot("only implemented for stationary mu" = length(mu) == 1)
   stopifnot("only implemented for stationary sigma" = length(sigma) == 1)
 
-  xx <- seq(-15, 15, length = 400)
+  xlim <- if (!is.null(list(...)$xlim)) list(...)$xlim else c(-10, 10)
+
+  xx <- seq(xlim[[1]], xlim[[2]], length = 400)
   switch(noise$noise_type,
     "nig"     = dd <- dnig(xx, -mu, mu, nu, sigma),
     "normal"  = dd <- dnorm(xx, sd = sigma),
@@ -143,29 +145,29 @@ plot.ngme_noise <- function(x, y = NULL, ...) {
 #' @return the traceplot
 #' @export
 #'
-traceplot2 <- function(
+traceplot <- function(
   ngme,
   name = "beta"
 ) {
   if (!requireNamespace("gridExtra", quietly = TRUE))
     stop(
-      "Package \"gridExtra\" must be installed to use traceplot2.",
+      "Package \"gridExtra\" must be installed to use traceplot.",
       call. = FALSE
     )
 
   if (name %in% c("fe", "beta")) {
     n <- length(ngme$beta)
-    ps <- lapply(1:n, function(x) traceplot(ngme, name=0, param="beta", param_index = x))
+    ps <- lapply(1:n, function(x) traceplot2(ngme, name=0, param="beta", param_index = x))
   } else if (name %in% c("mn", "noise")) {
     ps <- switch(ngme$noise$noise_type,
-      "normal" = {n_sigma <- length(ngme$noise$theta_sigma); lapply(1:n_sigma, function(x) traceplot(ngme, name=0, param="sigma", param_index = x))},
+      "normal" = {n_sigma <- length(ngme$noise$theta_sigma); lapply(1:n_sigma, function(x) traceplot2(ngme, name=0, param="sigma", param_index = x))},
       { # default case
         n_mu <- length(ngme$noise$theta_mu);
         n_sigma <- length(ngme$noise$theta_sigma);
         c(
-          lapply(1:n_mu, function(x) traceplot(ngme, name=0, param="mu", param_index = x)),
-          lapply(1:n_sigma, function(x) traceplot(ngme, name=0, param="sigma", param_index = x)),
-          list(traceplot(ngme, name=0, param="nu", param_index = 1))
+          lapply(1:n_mu, function(x) traceplot2(ngme, name=0, param="mu", param_index = x)),
+          lapply(1:n_sigma, function(x) traceplot2(ngme, name=0, param="sigma", param_index = x)),
+          list(traceplot2(ngme, name=0, param="nu", param_index = 1))
         )
       }
     )
@@ -180,26 +182,26 @@ traceplot2 <- function(
     ps <- switch(ngme$latents[[f_idx]]$noise_type,
       "normal" = {
         c(
-          lapply(1:n_K, function(x) traceplot(ngme, name=f_idx, param="kappa", param_index = x)),
-          lapply(1:n_sigma, function(x) traceplot(ngme, name=f_idx, param="sigma", param_index = x))
+          lapply(1:n_K, function(x) traceplot2(ngme, name=f_idx, param="kappa", param_index = x)),
+          lapply(1:n_sigma, function(x) traceplot2(ngme, name=f_idx, param="sigma", param_index = x))
         )
       },
       "normal_nig" = {
         n_sig_normal <- length(ngme$latents[[f_idx]]$noise$theta_sigma_normal);
         c(
-          lapply(1:n_K, function(x) traceplot(ngme, name=f_idx, param="kappa", param_index = x)),
-          lapply(1:n_mu, function(x) traceplot(ngme, name=f_idx, param="mu", param_index = x)),
-          lapply(1:n_sigma, function(x) traceplot(ngme, name=f_idx, param="sigma", param_index = x)),
-          list(traceplot(ngme, name=f_idx, param="nu", param_index = 1)),
-          lapply(1:n_sig_normal, function(x) traceplot(ngme, name=f_idx, param="sigma_normal", param_index = x))
+          lapply(1:n_K, function(x) traceplot2(ngme, name=f_idx, param="kappa", param_index = x)),
+          lapply(1:n_mu, function(x) traceplot2(ngme, name=f_idx, param="mu", param_index = x)),
+          lapply(1:n_sigma, function(x) traceplot2(ngme, name=f_idx, param="sigma", param_index = x)),
+          list(traceplot2(ngme, name=f_idx, param="nu", param_index = 1)),
+          lapply(1:n_sig_normal, function(x) traceplot2(ngme, name=f_idx, param="sigma_normal", param_index = x))
         )
       },
       { # default case
         c(
-          lapply(1:n_K, function(x) traceplot(ngme, name=f_idx, param="kappa", param_index = x)),
-          lapply(1:n_mu, function(x) traceplot(ngme, name=f_idx, param="mu", param_index = x)),
-          lapply(1:n_sigma, function(x) traceplot(ngme, name=f_idx, param="sigma", param_index = x)),
-          list(traceplot(ngme, name=f_idx, param="nu", param_index = 1))
+          lapply(1:n_K, function(x) traceplot2(ngme, name=f_idx, param="kappa", param_index = x)),
+          lapply(1:n_mu, function(x) traceplot2(ngme, name=f_idx, param="mu", param_index = x)),
+          lapply(1:n_sigma, function(x) traceplot2(ngme, name=f_idx, param="sigma", param_index = x)),
+          list(traceplot2(ngme, name=f_idx, param="nu", param_index = 1))
         )
       }
     )

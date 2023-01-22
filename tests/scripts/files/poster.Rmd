@@ -269,6 +269,6 @@ Result of the optimization trajectory of parameters for the Matern model:
 
 ```{r fig.width=8,fig.height=8,fig.align='center', echo=FALSE, fig.cap="Traceplot of Matern parameters"}
 pl <- lapply(c("kappa", "mu", "sigma", "nu"), function(.x)
-  traceplot(out, parameter = .x, f_index = 2));
+  traceplot2(out, parameter = .x, f_index = 2));
 marrangeGrob(pl, nrow=2, ncol=2)
 ```

@@ -43,8 +43,8 @@ test_that("predict traceplot", {
   )
   out
 
-  expect_no_error(traceplot2(out, name = "field1"))
-  expect_no_error(traceplot2(out, name = "f2"))
+  expect_no_error(traceplot(out, name = "field1"))
+  expect_no_error(traceplot(out, name = "f2"))
 })
 
 
@@ -85,7 +85,7 @@ test_that("delete that", {
     debug = TRUE
   )
   out
-  traceplot2(out, 1)
+  traceplot(out, 1)
 # out$latents[[1]]$noise
   plot(out$latents[[1]]$noise,
     noise_nig(mu=mu, sigma=sigma, nu=nu))
@@ -111,10 +111,46 @@ test_that("test posterior sampling and model_validation()", {
   Y <- W + rnorm(n=length(W), sd=sigma_eps)
 
   out <- ngme(Y ~ 0 + f(model=my_ar), data=list(Y=Y))
-  # traceplot2(out, "field1")
+  # traceplot(out, "field1")
 
   expect_no_error(samples <- sampling_cpp(out, 10, posterior = TRUE))
   # samples[["AW"]]
 
   model_validation(out, N=100)
+})
+
+
+test_that("modify_ngme_with_idx_NA", {
+  # load_all()
+  X2 = c(3,4,5,9,2)
+  spde1 <- model_matern(mesh = 1:10, loc=X2)
+  mm <- ngme(
+    YY ~ 1 + X1 + f(X2, model="rw1") + f(model=spde1),
+    data = list(
+      YY=c(0,2,3,4,5),
+      X1=c(3,4,5,6,7),
+      X2=X2
+    ),
+    control=ngme_control(iterations = 1)
+  )
+  mm
+  new_model <- modify_ngme_with_idx_NA(mm, idx_NA = 3)
+  str(new_model$noise)
+  # new_model$latents[[2]]$A_pred
+
+  # out$latents[[1]]$A_pred
+  expect_true(length(out$Y) == 4)
+  # out$latents[[1]]
+  sampling_cpp(out, n=10, posterior=TRUE)
+
+  As <- sapply(seq_along(mm$latents), function(i) mm$latents[[i]]$A)
+  Reduce(cbind, As)
+  str(mm)
+})
+
+
+test_that("strange AR(1)", {
+  ar <- model_ar1(x=c(1,3,5))
+  dim(ar$K)
+  dim(ar$A)
 })

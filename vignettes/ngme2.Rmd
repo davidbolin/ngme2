@@ -307,7 +307,7 @@ library(ggplot2)
 library(grid)
 library(gridExtra)
 pl <- lapply(c("alpha", "mu", "sigma", "nu"), function(.x)
-  traceplot(ngme_out, param = .x, f_index = 1));
+  traceplot2(ngme_out, param = .x, f_index = 1));
 marrangeGrob(pl, nrow=2, ncol=2)
 ```
 
@@ -409,18 +409,18 @@ out
 # traceplots
 
 ## fixed effects
-traceplot(out, f_index = 0, param = "beta")
+traceplot2(out, f_index = 0, param = "beta")
 ## measurement noise
-traceplot(out, f_index = 0, param = "mu")
-traceplot(out, f_index = 0, param = "sigma")
-traceplot(out, f_index = 0, param = "nu")
+traceplot2(out, f_index = 0, param = "mu")
+traceplot2(out, f_index = 0, param = "sigma")
+traceplot2(out, f_index = 0, param = "nu")
 
 ## rw
-traceplot(out, f_index = 1, param = "sigma")
+traceplot2(out, f_index = 1, param = "sigma")
 
 ## spde model
-traceplot(out, f_index = 2, param = "kappa")
-traceplot(out, f_index = 2, param = "sigma")
+traceplot2(out, f_index = 2, param = "kappa")
+traceplot2(out, f_index = 2, param = "sigma")
 ```
 
 Parameter estimation results:

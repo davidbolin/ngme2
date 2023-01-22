@@ -77,6 +77,8 @@ model_ar1 <- function(
     G           = ngme_as_sparse(G)
     K           = alpha * C + G
     noise       = noise
+    map         = x
+    n_map       = length(x)
   })
 
   do.call(ngme_model, args)
@@ -205,6 +207,9 @@ model_rw <- function(
     K           = C + G
     noise       = noise
     h           = noise$h
+    mesh        = mesh
+    map         = x
+    n_map       = length(x)
   })
 
   do.call(ngme_model, args)

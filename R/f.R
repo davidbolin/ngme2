@@ -54,8 +54,10 @@ f <- function(
   x <- eval(substitute(x), envir = data, enclos = parent.frame())
   index <- x
 
+  # if (!is.null(index_NA) && length(index_NA) != length(index))
+  #   stop("index_NA length seems wrong.")
+
   # deal with NA, from ngme function
-  if (is.null(index_NA) && !is.null(data$index_NA)) index_NA <- data$index_NA
   if (is.null(index_NA)) index_NA <- rep(FALSE, length(index))
 
   # remove NULL in arguments
@@ -90,6 +92,14 @@ f <- function(
     }
     # use f_args to update the model
     f_model <- do.call(ngme_model, utils::modifyList(model, f_args))
+    if (!is.null(f_model$index_NA)) {
+      tmp <- with(f_model, {
+        ngme_make_A(mesh, map, n_map, idx_NA = index_NA)
+      })
+      f_model$A <- tmp$A
+      f_model$A_pred <- tmp$A_pred
+    }
+
   # print(str(f_model))
   }
 

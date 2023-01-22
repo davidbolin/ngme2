@@ -117,7 +117,8 @@ get_inla_mesh_dimension <- function(inla_mesh) {
 #'  2. latents_in - from each f function
 ngme_parse_formula <- function(
   gf,
-  data
+  data,
+  index_NA
 ) {
   # eval the response variable to see NA
   # Y <- eval(gf[[2]], envir = data)
@@ -146,6 +147,8 @@ ngme_parse_formula <- function(
       str <- gsub("^f\\(", "ngme2::f(", terms[i])
     }
 
+    # add information of index_NA
+    str <- gsub("ngme2::f\\(", "ngme2::f(index_NA=index_NA,", str)
     # adding 1 term for furthur use in f
     # data$ngme_response <- Y
     res <- eval(parse(text = str), envir = data, enclos = parent.frame())
@@ -306,4 +309,33 @@ ar1_th2a <- function(th) {
 #   return(out)
 # }
 
+# helper function to modify ngme_model's A and A_pred function
+# using idx_NA
+ngme_make_A <- function(
+  mesh,
+  map,
+  n_map,
+  idx_NA
+) {
+  # make it logical vector
+  if (is.null(idx_NA))    idx_NA <- rep(FALSE, n_map)
+  if (is.numeric(idx_NA)) idx_NA <- 1:n_map %in% idx_NA
 
+  # make A and A_pred according to mesh
+  A_pred <- NULL
+  if (inherits(mesh, "inla.mesh.1d")) {
+    A <- INLA::inla.spde.make.A(mesh = mesh, loc = map[!idx_NA])
+    if (any(idx_NA)) A_pred <- INLA::inla.spde.make.A(mesh = mesh, loc = map[idx_NA])
+  } else if (inherits(mesh, "inla.mesh")) {
+    # 2d location
+    A <- INLA::inla.spde.make.A(mesh = mesh, loc = map[!idx_NA, ,drop = FALSE])
+    if (any(idx_NA)) A_pred <- INLA::inla.spde.make.A(mesh = mesh, loc = map[idx_NA, ,drop = FALSE])
+  } else {
+    stop("this mesh not implement yet!!!")
+  }
+
+  list(
+    A = A,
+    A_pred = A_pred
+  )
+}

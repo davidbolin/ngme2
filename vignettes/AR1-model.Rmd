@@ -121,12 +121,12 @@ ngme_out <- ngme(
 ngme_out
 
 # traceplot of the measurement noise sigma
-traceplot(ngme_out, param = "sigma", f_index = 0)
+traceplot2(ngme_out, param = "sigma", f_index = 0)
 
 # traceplots of the AR(1) model
-traceplot(ngme_out, param = "alpha", f_index = 1)
-traceplot(ngme_out, param = "mu", f_index = 1)
-traceplot(ngme_out, param = "sigma", f_index = 1)
+traceplot2(ngme_out, param = "alpha", f_index = 1)
+traceplot2(ngme_out, param = "mu", f_index = 1)
+traceplot2(ngme_out, param = "sigma", f_index = 1)
 
 # comparing the density of the noise estimated and the noise simulated
 plot(ngme_out$latents[[1]]$noise,

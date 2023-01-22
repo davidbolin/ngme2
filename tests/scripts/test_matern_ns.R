@@ -60,14 +60,14 @@ ngme_out <- ngme(
 ngme_out
 str(ngme_out)
 
-traceplot(ngme_out, parameter = "theta_sigma", f_index = 0)
+traceplot2(ngme_out, parameter = "theta_sigma", f_index = 0)
 
 # matern model
-traceplot(ngme_out, parameter = "theta_K",     f_index = 1, param_index = 1)
-traceplot(ngme_out, parameter = "theta_K",     f_index = 1, param_index = 2)
-traceplot(ngme_out, parameter = "theta_mu",    f_index = 1)
-traceplot(ngme_out, parameter = "theta_sigma", f_index = 1)
-traceplot(ngme_out, parameter = "nu",     f_index = 1)
+traceplot2(ngme_out, parameter = "theta_K",     f_index = 1, param_index = 1)
+traceplot2(ngme_out, parameter = "theta_K",     f_index = 1, param_index = 2)
+traceplot2(ngme_out, parameter = "theta_mu",    f_index = 1)
+traceplot2(ngme_out, parameter = "theta_sigma", f_index = 1)
+traceplot2(ngme_out, parameter = "nu",     f_index = 1)
 
 plot(noise_nig(
       theta_mu = 0,

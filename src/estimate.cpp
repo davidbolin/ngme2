@@ -109,6 +109,13 @@ auto timer = std::chrono::steady_clock::now();
         curr_batch++;
     }
 
+// After estimation
+// ****** posterior sampling (sampling each chain..)
+    // #pragma omp parallel for schedule(static)
+    // for (i=0; i < n_chains; i++) {
+    //     blocks[i]->sampling(100, true);
+    // }
+
     // generate outputs
     for (i=0; i < n_chains; i++) {
         outputs.push_back(blocks[i]->output());
@@ -122,6 +129,8 @@ auto timer = std::chrono::steady_clock::now();
     BlockModel block (ngme_block, rng());
     Optimizer opt;
     trajectory = opt.sgd(block, 0.1, iterations, max_relative_step, max_absolute_step);
+    // estimation done, posterior sampling
+    // block.sampling(10, true);
     Rcpp::List ngme = block.output();
     outputs.push_back(block.output());
 #endif

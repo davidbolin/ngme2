@@ -22,7 +22,7 @@ test_that("test basic mn", {
     ))
   out
 
-  # traceplot2(out, "mn")
+  # traceplot(out, "mn")
   expect_true(out$noise$theta_sigma - log(2) < 1)
   expect_true(out$noise$theta_mu - (-3) < 1)
   expect_true(out$noise$nu - nu < 1.5)

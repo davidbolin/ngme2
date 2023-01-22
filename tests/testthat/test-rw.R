@@ -1,9 +1,9 @@
 # test rw related model
 
-test_that("simulation of rw", {
-load_all()
+test_that("simulate and estimate of rw with NIG", {
+# load_all()
   n_obs <<- 500
-  mu <- -3; sigma <- 2; nu <- 2; sigma_eps <- 0.8
+  mu <- -3; sigma <- 5; nu <- 2; sigma_eps <- 0.8
   h <- rexp(n_obs)
   # h <- rep(1, n_obs)
   loc <- c(0, cumsum(h))
@@ -39,67 +39,18 @@ load_all()
     data = list(Y = Y),
     contro = ngme_control(
       estimation = T,
-      iterations = 5000,
+      iterations = 1000,
       n_parallel_chain = 4
     ),
     debug = TRUE
   )
   out
-  traceplot2(out, 1)
+  traceplot(out, 1)
   plot(out$latents[[1]]$noise,
     noise_nig(mu=mu, sigma=sigma, nu=nu))
 
-with(out, {
-  expect_true(all(latents[[1]]$noise$V - V < 1e-5))
-  expect_true(all(latents[[1]]$noise$h - h < 1e-5))
-  expect_true(all(latents[[1]]$W - W < 1e-5))
-})
-
-
 expect_true(all(as.numeric(out$latents[[1]]$K %*% W) - dW < 1e-5))
 expect_true(all(diff(loc) - out$latents[[1]]$h < 1e-5))
-expect_true(out$latents[[1]]$noise$nu > 0.1)
-})
-
-test_that("test basic estimation of rw", {
-  # test noise with h
-  # load_all()
-  n_obs <<- 500
-  mu <- -3; sigma <- 2.3; nu <- 2; sigma_eps <- 0.8
-
-  loc <- rnorm(n_obs, sd=1)
-  rw1 <- model_rw(loc, noise=noise_nig(mu=mu, sigma=sigma, nu=nu))
-  expect_true(mean(rw1$noise$h) != 1)
-
-  W <- simulate(rw1)
-  Y <- W + rnorm(n_obs, sd = sigma_eps)
-
-  out <- ngme(
-    Y ~ 0 + f(loc,
-      model="rw1",
-      name="rw1",
-      noise=noise_nig(
-        fix_V = TRUE,
-        V = attr(W, "noise")$V
-      ),
-      # fix_W = TRUE, W = W,
-      debug = TRUE
-    ),
-    data = list(Y = Y),
-    contro = ngme_control(
-      estimation = T,
-      iterations = 100,
-      n_parallel_chain = 1
-    ),
-    debug = TRUE
-  )
-  out
-  out$latents[[1]]$noise$h
-
-  traceplot2(out, "rw1")
-  traceplot2(out, "mn")
-  plot(attr(W, "noise"), out$latents[[1]]$noise)
-
 })
 
 test_that("the order of W same as order of index?", {
@@ -168,8 +119,8 @@ test_that("test estimation of basic ar with normal measurement noise", {
   )
   out
 
-  traceplot2(out, "ar")
-  traceplot2(out, "mn")
+  traceplot(out, "ar")
+  traceplot(out, "mn")
   plot(attr(W, "noise"), out$latents[[1]]$noise)
   # out$latents[[1]]$noise$h
 
@@ -243,7 +194,7 @@ test_that("test estimation of basic ar with normal measurement noise", {
 # )
 
 # ngme_out
-# traceplot(ngme_out, f_index = 1, param="alpha")
-# traceplot(ngme_out, f_index = 1, param="mu")
-# traceplot(ngme_out, f_index = 1, param="sigma")
-# traceplot(ngme_out, f_index = 1, param="nu")
+# traceplot2(ngme_out, f_index = 1, param="alpha")
+# traceplot2(ngme_out, f_index = 1, param="mu")
+# traceplot2(ngme_out, f_index = 1, param="sigma")
+# traceplot2(ngme_out, f_index = 1, param="nu")

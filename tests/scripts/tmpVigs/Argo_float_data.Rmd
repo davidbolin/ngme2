@@ -96,14 +96,14 @@ out
 ```{r}
 plot(out$noise)
 # beta merr
-traceplot(out, f_index = 0, param = "beta")
-traceplot(out, f_index = 0, param = "sigma")
-traceplot(out, f_index = 0, param = "mu")
-traceplot(out, f_index = 0, param = "nu")
+traceplot2(out, f_index = 0, param = "beta")
+traceplot2(out, f_index = 0, param = "sigma")
+traceplot2(out, f_index = 0, param = "mu")
+traceplot2(out, f_index = 0, param = "nu")
 
 # spde model
-traceplot(out, f_index = 1, param = "mu")
-traceplot(out, f_index = 1, param = "sigma")
-traceplot(out, f_index = 1, param = "nu")
+traceplot2(out, f_index = 1, param = "mu")
+traceplot2(out, f_index = 1, param = "sigma")
+traceplot2(out, f_index = 1, param = "nu")
 ```
 

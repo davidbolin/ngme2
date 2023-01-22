@@ -73,7 +73,7 @@ simulate.ngme_model <- function(
 #' @param object ngme noise object
 #' @param nsim ignored
 #' @param seed seed
-#' @param ... ignored
+#' @param ... can take n_noise = 3 (for measurement noise)
 #'
 #' @return a realization of ngme noise
 #' @export
@@ -90,8 +90,22 @@ simulate.ngme_noise <- function(
 
     if (is.null(seed)) seed <- as.numeric(Sys.time())
 
-    n <- noise$n_noise
+    if (!is.null(list(...)$n_noise)) {
+        # only for simulate measurement noise
+        # means noise h = 1
+        n <- list(...)$n_noise
+        new_mn <- ngme_noise(
+            noise_type = noise$noise_type,
+            theta_mu = noise$theta_mu,
+            theta_sigma = noise$theta_sigma,
+            nu = noise$nu,
+            n = n
+        )
+        return(simulate.ngme_noise(new_mn))
+    }
+
     # create nig noise
+    n <- noise$n_noise
     if (noise$noise_type == "nig") {
         mu <- drop(noise$B_mu %*% noise$theta_mu)
         sigma <- drop(exp(noise$B_sigma %*% noise$theta_sigma))

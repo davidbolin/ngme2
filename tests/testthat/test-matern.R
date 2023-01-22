@@ -1,5 +1,8 @@
 # test spatial Matern model
-test_that("test estimation of Matern", {
+
+# 1. test estimation of matern model
+# 2. test predict(out, loc=new_loc)
+test_that("test Matern", {
   # load_all()
   library(INLA)
   pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
@@ -36,7 +39,8 @@ test_that("test estimation of Matern", {
   bubble(sp_obj, zcol=3)
   range(mesh$loc[, 1]); range(mesh$loc[, 2])
 
-  spde1 <<- model_matern(mesh=mesh, noise=noise_nig())
+  # spde1 <<- model_matern(mesh=mesh, noise=noise_nig())
+  Y2 <- Y; Y2[1:100] <- NA
   out <- ngme(
     Y ~ 0 + f(
       model=spde1,
@@ -48,8 +52,8 @@ test_that("test estimation of Matern", {
       # fix_W = TRUE, W = W,
       debug = TRUE
     ),
-    data = list(Y = Y),
-    contro = ngme_control(
+    data = list(Y = Y2),
+    control = ngme_control(
       estimation = T,
       iterations = 100,
       n_parallel_chain = 4
@@ -57,15 +61,29 @@ test_that("test estimation of Matern", {
     debug = TRUE
   )
   out
+  new_m <- modify_ngme_with_idx_NA(out, 1:100)
+  new_m$latents[[1]]$A_pred
+  out$latents[[1]]$mesh
 
-  traceplot2(out, "spde")
+  traceplot(out, "spde")
+  plot(attr(W, "noise"), out2$latents[[1]]$noise)
 
-  plot(attr(W, "noise"), out$latents[[1]]$noise)
+  load_all()
+  out <- ngme(
+    Y~1 + f(1:5, model="rw1"),
+    data = list(Y=c(1:4, NA))
+  )
 
   out$latents[[1]]$noise$h
 
-  # fix V gives right answer.
-  # sampling V has some problem
+  # Now let's do some prediction
+  coo <- matrix(c(new_xs, new_ys), ncol=2)
+  predict(out, loc=coo)
+
+  plot(mesh)
+  new_xs <- c(3, 5, 7)
+  new_ys <- c(3, 5, 3)
+  points(x=new_xs, y = new_ys, type = "p", col="red", pch=16, cex=2)
 })
 
 

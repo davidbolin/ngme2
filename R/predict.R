@@ -1,13 +1,8 @@
-# f(idx, )
-
-# prediction function for ngme block model
-# predict.block_model <- function(
-#   ngme,
-#   locs = NULL,
-#   type = "fe"
-# ) {
-
-# }
+# This file contains function related to model predict function
+#
+# predict(ngme) has 2 parts:
+#   1. Make A_pred for each f at new_loc
+#   2. compute X_pred beta + sum(A_pred W)
 
 
 # predict for the latent model
@@ -29,95 +24,155 @@ predict.ngme_model <- function(
 #' Predict function of ngme2
 #' predict using ngme after estimation
 #'
-#' @param ngme a ngme object
-#' @param data a data.frame of covariates
-#' @param locs the predicted locations
-#' @param type character, c("fe", "lp", "field1", "cv")
-#' @param cv_type cross-validation, c("loo", "k-fold")
+#' @param object a ngme object
+#' @param data a data.frame of covariates (used for fixed effects)
+#' @param loc a list of the locations to make the prediction
+#'  corresponding to each latent model
+#'  vector or matrix (n * 2) for spatial coords
+#' @param type what type of prediction, c("fe", "lp", "field1", "cv")
+#' @param cv_type cross-validation, c("loo", "k-fold", "")
 #'
 #' @return a list of outputs contains estimation of operator paramters, noise parameters
 #' @export
 #'
-predict <- function(
-  ngme,
+predict.ngme <- function(
+  object,
   data = NULL,
-  locs = NULL,
-  type = NULL,
-  cv_type = NULL
+  loc = NULL,
+  type = "lp",
+  cv_type = NULL,
+  ...
 ) {
-  # names <- c("fe", "field1", "field2")
+  ngme <- object
+  # maybe not necessary...
+  # 0. length of output (loc 2d, loc 1d, )
+  # if (!is.null(loc) && (is.matrix(loc) || is.data.frame(loc)))
+  #   n_pred <- nrow(loc)
+  # else if (!is.null(loc))
+  #   n_pred <- length(loc)
+  # else
+  #   stop("not implement for loc=NULL yet")
+
+  # 1. If provide loc, make A_pred for each model
+  if (!is.null(loc)) {
+    # make sure it's list
+    if (!is.list(loc)) loc <- list(loc)
+
+    # 1. Make A_pred at new loc for each latent model!!!
+    for (i in seq_along(ngme$latents)) {
+      mesh <- ngme$latents[[i]]$mesh
+      if (!is.null(mesh) &&
+          inherits(mesh, c("inla.mesh", "inla.mesh.1d"))) {
+        # model using INLA mesh
+        ngme$latents[[i]]$A_pred <- INLA::inla.spde.make.A(
+          mesh = mesh,
+          loc = loc[[i]]
+        )
+      } else if (!is.null(mesh)) {
+        # time series model using
+        # watch out! to-do
+        ngme$latents[[i]]$A_pred <- ngme_ts_make_A(loc=loc[[i]])
+      } else {
+        stop("mesh is null, don't know how to make A")
+      }
+    }
+  }
+
+  # 2. Every latent has A_pred, now let's predict by Xbeta + AW
+  # preds <- double(n_pred)
+  preds <- 0
+
   names <- if (type == "lp") c("fe", names(ngme$latents)) else type
+  # names <- c("fe", "field1", "field2")
 
   # ngme after estimation, has W, beta
   for (i in seq_along(names)) {
     name <- names[[i]]
-    preds <- double(length(names))
 
     if (name == "fe") {
-      # X_pred?
-      if (is.null(ngme$X_pred)) {
-        X_pred <- as.matrix(data) # from formula
-      } else {
-        X_pred <- ngme$X_pred
+      # compute fe
+      if (length(ngme$beta) > 0) {
+        # make X_pred
+        if (!is.null(data)) {
+          X_pred <- as.matrix(data) # from formula
+        } else {
+          X_pred <- ngme$X_pred
+        }
+        # Add intercept if has
+        # If only has intercept, then X is of dim 1*1, which is fine
+        # (if we have further AW)
+        if ((is.null(X_pred) && length(ngme$beta) == 1) ||
+            (ncol(X_pred) == 1 + length(ngme$beta)))
+          X_pred <- cbind(1, X_pred)
+
+        preds <- preds + as.numeric(X_pred %*% ngme$beta)
       }
-      preds[[i]] <- drop(X_pred %*% ngme$beta)
-    } else if (type %in% names(ngme$latents)) {
-      model <- ngme$latents[[type]]
+    } else if (name %in% names(ngme$latents)) {
+      model <- ngme$latents[[name]]
       # A_pred?
       if (is.null(model$A_pred))
         stop("A_pred not available")
       else
         A_pred <- model$A_pred
 
-      preds[[i]] <- drop(A_pred %*% model$W)
+    # browser()
+      preds <- preds + as.numeric(A_pred %*% model$W)
     }
   }
-
   # lp case is just fe + A1 * W1 + A2 * W2
-
-  # cv
-  # compute MAE, MSE, CRPS, sCRPS
-  sum(preds)
+  stopifnot(length(preds) > 1)
+  preds
 }
 
-cv <- function(ngme) {
-  # cv
-  # compute MAE, MSE, CRPS, sCRPS
-}
+# helper function to compute MSE, MAE, ..
+compute_indices <- function(ngme, test_idx, N = 100) {
+  stopifnot("idx wrong" = all(test_idx %in% seq_along(ngme$Y)))
 
-# compute a list of criterions
-# loc = all
-# k-fold location at unknown
-model_validation <- function(ngme, N=100, loc=NULL, test_at_loc=NULL) {
-  # sampling Y by, Y = X beta + (block_A %*% block_W) + eps
-
-  # AW_N[[1]] is concat(A1 W1, A2 W2, ..)
+  # 1. Make A1_pred, An_pred
+  # A_pred_blcok  %*% block_W[[1 .. N]]
+  # Y_N_pred <- AW_N_pred[1..N] + X_pred %*% beta + eps_N_pred
+  # compute criterion (Y_N_pred, Y_data)
 
   # option 1. AW comes from 1 chain
-  # turn into df of dim: n_obs * N
-  AW_N <- sampling_cpp(ngme, n = N, posterior = TRUE)[["AW"]]
-  AW_N <- as.data.frame(AW_N)
-  names(AW_N) <- 1:N
-
-  AW2_N <- sampling_cpp(ngme, n = N, posterior = TRUE)[["AW"]]
-  AW2_N <- as.data.frame(AW2_N)
-  names(AW_N) <- 1:N
-
+  #   turn into df of dim: n_obs * N
   # option 2. AW comes from N chains
-  # to-do
+  #   to-do
+  y_data <- ngme$Y[test_idx]
+  n_obs <- length(y_data)
 
-  fe <- with(ngme, as.numeric(X %*% beta))
+  new_model <- modify_ngme_with_idx_NA(ngme, idx_NA = test_idx)
+
+  # A_pred_blcok <- [A1_pred .. An_pred]
+  # extract A and cbind!
+  A_pred_block <- Reduce(cbind, x = sapply(
+    seq_along(new_model$latents),
+    function(i) new_model$latents[[i]]$A_pred
+  ))
+  Ws_block <- sampling_cpp(ngme, n=N, posterior=TRUE)[["W"]]
+  W2s_block <- sampling_cpp(ngme, n=N, posterior=TRUE)[["W"]]
+  AW_N <- Reduce(cbind, sapply(Ws_block, function(W) A_pred_block %*% W))
+  # AW_N <- as.data.frame(AW_N)
+  # names(AW_N) <- 1:N
+
+  AW2_N <- Reduce(cbind, sapply(W2s_block, function(W) A_pred_block %*% W))
+
+  # sampling Y by, Y = X beta + (block_A %*% block_W) + eps
+  # AW_N[[1]] is concat(A1 W1, A2 W2, ..)
+
+  fe <- with(new_model, as.numeric(X_pred %*% beta))
   fe_N <- matrix(rep(fe, N), ncol=N, byrow=F)
 
-  mn_N <- sapply(1:N, function(x) simulate(ngme$noise))
-  mn2_N <- sapply(1:N, function(x) simulate(ngme$noise))
+  mn_N <- sapply(1:N, function(x)
+    simulate(new_model$noise, n_noise = length(y_data)))
+  mn2_N <- sapply(1:N, function(x)
+    simulate(new_model$noise, n_noise = length(y_data)))
+# browser()
 
   mu_N <- fe_N + AW_N
   Y_N <- fe_N + AW_N + mn_N
   Y2_N <- fe_N + AW2_N + mn2_N
 
   # Now Y is of dim n_obs * N
-  y_data <- ngme$Y; n_obs <- length(y_data)
   E3 <- E2 <- E1 <- double(length(y_data))
   for (i in 1:n_obs) {
     # turn row of df into numeric vector.
@@ -139,4 +194,34 @@ model_validation <- function(ngme, N=100, loc=NULL, test_at_loc=NULL) {
     CRPS = mean(0.5 * E2 - E1),
     sCRPS = mean(-E2 / E1 - 0.5 * log(E2))
   )
+}
+
+# type in c("k-fold", "loo", "lpo")
+cross_validation <- function(
+  ngme,
+  type = "k-fold",
+  k = 5,
+  percent = 50,
+  N = 10,
+  seed = 1
+) {
+  stopifnot(type %in% c("k-fold", "loo", "lpo"))
+
+  if (type == "k-fold") {
+    # split idx into k
+    idx <- seq_along(ngme$Y)
+    folds <- cut(sample(idx), breaks = k, label=FALSE)
+
+    crs <- NULL
+    for (i in 1:k) {
+      idx_test <- which(folds == i, arr.ind = TRUE)
+      # compute criterion
+      crs[[i]] <- compute_indices(ngme, idx_test, N=N)
+    }
+  } else {
+    stop("This CV not implement yet!")
+  }
+
+  crs
+  mean_list(crs)
 }

@@ -108,9 +108,9 @@ VectorXd Latent::grad_theta_mu() {
 // std::cout << "grad of mu=" << grad <<std::endl;
 // std::cout << "hess of mu=" << hess <<std::endl;
 // }
-    return - grad / V_size;
-    // double hess = -(prevV-h).cwiseQuotient(getPrevSV()).dot(prevV-h);
-    // return grad / hess;
+    // return - grad / V_size;
+    double hess = -(prevV-h).cwiseQuotient(getPrevSV()).dot(prevV-h);
+    return grad / hess;
 }
 
 // return the gradient wrt. theta, theta=log(sigma)

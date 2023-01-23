@@ -4,44 +4,466 @@ author: "Xiaotian Jin"
 date: "`r Sys.Date()`"
 output:
   ioslides_presentation:
-    logo: files/stat_logo.png
+    logo: files/group_logo2.png
 ---
 
 ```{r, echo=FALSE, message=FALSE}
 library(devtools)
 library(INLA)
-# load_all()
+set.seed(50)
+load_all()
 stat_logo <- "files/stat_logo.png"
 group_logo <- "files/group_logo2.png"
 ```
 
 ## Introduction
-<IMG style="position:absolute;bottom:2.5%;left:12%;width:33px;"SRC="`r group_logo`">
+<IMG style="position:absolute;bottom:3.5%;left:12%;width:33px;"SRC="`r stat_logo`">
 
-### What is ngme2?
-
-`ngme2` is the updated version of `ngme` (https://github.com/davidbolin/ngme).
+`ngme2` is the updated version of R package `ngme` (https://github.com/davidbolin/ngme).
 
 `ngme2` is an R package that contains functions for **inference and prediction** for **Gaussian and non-Gaussian** latent models.
 
-The package has support for linear mixed effects models, spatial random field models, and multivariate random fields...
+The package has support for linear mixed effects models, spatial random field models...
 
 It is an ongoing work with **David Bolin**, **Alexandre B. Simas**, and **Jonas Wallin**.
 
+Installation:
+
+`remotes::install_github("davidbolin/ngme2", ref = "devel")`
+
+## Model Framework
+<IMG style="position:absolute;bottom:3.5%;left:12%;width:33px;"SRC="`r stat_logo`">
+
+The package `ngme2` provides methods for mixed effect models:
+
+$$
+\begin{aligned}
+Y = {\bf X}^{\top} {\bf \beta} + \sum_j {\bf A}_j W_j({\bf t}) + \epsilon.
+\end{aligned}
+$$
+
+- $Y$ is the response variable,
+- ${\bf X}$ is the matrix of fixed effects explanatory variables,
+- ${\bf \beta}$ is the matrix of fixed effects coefficients,
+- ${\bf A}_j$ is the observation matrix for each process,
+- $W_j(t)$ is specified as a stochastic process,
+- $\epsilon$ is measurement error.
 
 ## Features
+<IMG style="position:absolute;bottom:3.5%;left:12%;width:33px;"SRC="`r stat_logo`">
 
 1. Support spatial models like Matern model with non-Gaussian noise.
 2. Support models for temporal data like **AR1** and **random walk** of order 1 and 2.
 3. Support replicates at same locations.
-4. Support prediction at unknown locations.
-5. Model corss-validation.
+4. Support non-Gaussian measurement noise.
+5. Support prediction at unknown locations.
 6. Comparing to the previous version, it now supports multiple stochastic processes in the latent model.
 
-## Model Framework
+## Non-Gaussian Model {.smaller}
+<IMG style="position:absolute;bottom:3.5%;left:12%;width:33px;"SRC="`r stat_logo`">
 
-## Data analysis example
+In order to model departures from Gaussian behaviour we will consider the following
+extension due to [Bolin (2014)]:
+$$(\kappa^2 - \Delta)^\beta X(\mathbf{s}) = \dot{\mathcal{M}}(\mathbf{s}),\quad \mathbf{s}\in\mathcal{D},$$
+where $\dot{\mathcal{M}}$ is a type-G Lévy process. Its increments can be represented as location-scale mixtures:
+$$\gamma + \mu V + \sigma \sqrt{V}Z,$$
+where $\gamma, \mu, \sigma$ are parameters, $Z\sim N(0,1)$ and is independent of $V$, and $V$ is a positive infinitely divisible random variable.
+It results in the following form, where $K$ is the operator part:
+
+$$
+KW|V \sim N(\gamma + \mu V, \sigma^2 \, diag(V)),
+$$
+also, $\mu$ and $\sigma$ can be non-stationary.
+
+## Parameter Estimation
+<IMG style="position:absolute;bottom:3.5%;left:12%;width:33px;"SRC="`r stat_logo`">
+
+- Ngme2 does maximum likelihood estimation through preconditioned stochastic gradient descent.
+
+The gradient can be approximated by:
+
+$$\nabla_{\boldsymbol{\theta}} L({\boldsymbol{\theta}}; \mathbf{Y}) = E_{\mathbf{V},\mathbf{w}}[\nabla_{\boldsymbol{\theta}} L({\boldsymbol{\theta}}; \mathbf{Y}, \mathbf{V}, \mathbf{w})|\mathbf{Y}].$$
+<!-- $$\nabla_{\boldsymbol{\theta}} L({\boldsymbol{\theta}}; \mathbf{Y}, \mathbf{V}) = E_\mathbf{w}[\nabla_{\boldsymbol{\theta}} L({\boldsymbol{\theta}}; \mathbf{Y}, \mathbf{V}, \mathbf{w})|\mathbf{Y},\mathbf{V}].$$ -->
+
+- Multiple chains are run in parallel for better convergence checks.
+
+## R interface
+<IMG style="position:absolute;bottom:3.5%;left:12%;width:33px;"SRC="`r stat_logo`">
+
+### 1. ngme_noise
+
+```{r noise, results="hide"}
+ # generalized asymmetric Laplace (GAL) noise
+noise_gal(mu = 1, sigma = 2, nu = 1)
+
+# non-stationary nig noise
+noise_nig(
+  B_mu = cbind(1, 1:5),
+  theta_mu = c(1, 2),
+  B_sigma = cbind(1, 2:6),
+  theta_sigma = c(1,2),
+  nu = 1)
+```
+
+The 2nd example is the non-stationary NIG noise,
+where $\mu = \bf B_{\mu} \bf \theta_{\mu}$, and $\sigma = \exp(\bf B_{\sigma} \bf \theta_{\sigma})$.
+
+---
+
+### 2. Specifying latent models with formula
+<IMG style="position:absolute;bottom:3.5%;left:12%;width:33px;"SRC="`r stat_logo`">
+
+We can have multiple latent model simultaneously:
+
+```{r formula}
+formula <- Y ~ x1 + f(
+    x2,
+    model = "ar1",
+    noise = noise_gal(mu = 1, sigma = 2, nu = 1),
+    alpha = 0.5
+  ) + f(
+    model = model_rw(1:5, order=1, circular = TRUE),
+    noise = noise_normal()
+  )
+```
+
+---
+
+### 3. Estimation using ngme2
+<IMG style="position:absolute;bottom:3.5%;left:12%;width:33px;"SRC="`r stat_logo`">
+
+```{r ngme, results=FALSE}
+ngme(
+  formula = formula,
+  family = noise_normal(sigma = 0.5), # or just "normal"
+  data = data.frame(Y = 1:5, x1 = 2:6, x2 = 3:7),
+  control = ngme_control(
+    estimation = FALSE,
+    burnin = 100,
+    iterations = 1000,
+    n_parallel_chain = 4
+  )
+)
+```
+
+## The AR(1) Example {.smaller}
+<IMG style="position:absolute;bottom:3.5%;left:12%;width:33px;"SRC="`r stat_logo`">
+
+An **autoregressive model of order 1 (AR(1))** specifies that the output variable depends linearly on its own previous values and on a stochastic term.
+The simplest AR model is an AR(1) model, which is given by:
+$$
+\begin{align}
+X_1 &= \epsilon_1, \;\;\;\; X_i = \alpha X_{i-1} + \epsilon_i, \; i = 2, \dots , n,
+\end{align}
+$$
+
+where $|\alpha| < 1$, $\epsilon_1, ..,\epsilon_n$ can be **Gaussian**, **NIG**, and **GAL** noise.
+
+It is easy to verify that
+$$ K{\bf X} = \boldsymbol\epsilon,$$
+where
+${\bf X} = (X_1, \dots, X_n)$,  ${\boldsymbol \epsilon} = (\epsilon_1, \dots, \epsilon_n)$, and
+$$
+K =
+  \begin{bmatrix}
+    1 \\
+    -\alpha &  1 \\
+    & \ddots & \ddots \\
+    & & -\alpha &  1
+  \end{bmatrix}.
+$$
+
+## The AR(1) Example - Simulation
+<IMG style="position:absolute;bottom:3.5%;left:12%;width:33px;"SRC="`r stat_logo`">
+
+```{r simulate_ar1}
+n_obs <- 500
+sigma_eps <- 0.5
+alpha <- 0.5; mu = -2; delta = -mu; sigma <- 3; nu <- 1
+
+# First we generate the NIG noise
+trueV <- ngme2::rig(n_obs, nu, nu, seed = 10)
+noise <- delta + mu*trueV + sigma * sqrt(trueV) * rnorm(n_obs)
+
+trueW <- Reduce(function(x,y){y + alpha*x}, noise, accumulate = T)
+Y = trueW + rnorm(n_obs, mean=0, sd=sigma_eps)
+
+# Add some fixed effects
+x1 = runif(n_obs); x2 = rexp(n_obs)
+beta <- c(-3, -1, 2)
+X <- (model.matrix(Y ~ x1 + x2))  # design matrix
+Y = as.numeric(Y + X %*% beta)
+```
+
+## The AR(1) Example - Estimation
+<IMG style="position:absolute;bottom:3.5%;left:12%;width:33px;"SRC="`r stat_logo`">
+
+```{r est_ar1, results=FALSE, cache=TRUE}
+ngme_fit <- ngme(
+  Y ~ x1 + x2 + f(1:n_obs,
+    name = "ar1",
+    model = "ar1",
+    noise = noise_nig(),
+    theta_K = 0.9  # starting point for AR parameter
+  ),
+  data = data.frame(x1=x1, x2=x2, Y=Y),
+  control = ngme_control(
+    burnin = 100,
+    iterations = 1000,
+    gibbs_sample = 5,
+    n_parallel_chain = 4,
+    print_check_info = FALSE
+  ),
+  seed = 3
+)
+```
+
+---
+
+### Use `traceplot()` to see the trajectory of estimation
+<IMG style="position:absolute;bottom:3.5%;left:12%;width:33px;"SRC="`r stat_logo`">
+
+```{r plot_ar1}
+traceplot(ngme_fit, "ar1")
+```
+
+## Real data analysis
+<IMG style="position:absolute;bottom:3.5%;left:12%;width:33px;"SRC="`r stat_logo`">
+
+The rainfall data from Paraná (Brazil) is collected by the National Water Agency in Brazil (Agencia Nacional de Águas, ANA, in Portuguese).
+
+```{r read-parana, echo=FALSE, message=FALSE}
+library(splancs)
+library(lattice)
+library(ggplot2)
+library(grid)
+library(gridExtra)
+library(viridis)
+
+# read data
+data(PRprec)
+data(PRborder)
+
+coords <- as.matrix(PRprec[, 1:2])
+prdomain <- inla.nonconvex.hull(coords, -0.03, -0.05, resolution = c(100, 100))
+prmesh <- inla.mesh.2d(boundary = prdomain, max.edge = c(0.2, 0.4), cutoff = 0.12)
+# plot(prmesh)
+# print(prmesh$n)
+
+# monthly mean at each location
+Y <- rowMeans(PRprec[, 12 + 1:31]) # 2 + Octobor
+
+ind <- !is.na(Y) # non-NA index
+Y <- Y_mean <- Y[ind]
+coords <- as.matrix(PRprec[ind, 1:2])
+seaDist <- apply(spDists(coords, PRborder[1034:1078, ],
+  longlat = TRUE
+), 1, min)
+
+ggplot() +
+  geom_point(aes(
+    x = coords[, 1], y = coords[, 2],
+    colour = Y
+  ), size = 2, alpha = 1) +
+  scale_color_gradientn(colours = viridis(100)) +
+  geom_path(aes(x = PRborder[, 1], y = PRborder[, 2])) +
+  geom_path(aes(x = PRborder[1034:1078, 1], y = PRborder[
+    1034:1078,
+    2
+  ]), colour = "red")
+```
+
+---
+
+### Compare different models
+<IMG style="position:absolute;bottom:3.5%;left:12%;width:33px;"SRC="`r stat_logo`">
+
+```{r mod1}
+matern_spde <- model_matern(loc = coords, mesh = prmesh)
+fm0 <- Y ~ 1 +
+  f(inla.group(seaDist), model = "rw1", noise = noise_normal()) +
+  f(model = matern_spde, noise = noise_normal())
+fm1 <- Y ~ 1 +
+  f(inla.group(seaDist), model = "rw1", noise = noise_normal()) +
+  f(model = matern_spde, noise = noise_nig())
+fm2 <- Y ~ 1 +
+  f(inla.group(seaDist), model = "rw1", noise = noise_normal()) +
+  f(model = matern_spde, noise = noise_normal()) +
+  f(model = matern_spde, noise = noise_nig())
+fm3 <- Y ~ 1 +
+  f(inla.group(seaDist), model = "rw1", noise = noise_normal()) +
+  f(model = matern_spde, noise = noise_normal_nig())
+```
+
+
+<IMG style="position:absolute;bottom:3.5%;left:12%;width:33px;"SRC="`r stat_logo`">
+
+```{r fit0, cache=TRUE, results=FALSE, eval=TRUE, message=FALSE, echo=FALSE}
+ngme_fit0 <- ngme(
+  formula = fm0,
+  data = list(Y = Y, seaDist=seaDist),
+  family = noise_normal(),
+  control = ngme_control(
+    iterations = 2000,
+    stop_points = 10,
+    n_parallel_chain = 4,
+    print_check_info = FALSE
+  ),
+  seed = 16
+)
+cv0 <- cross_validation(ngme_fit0, type="k-fold", k=5)
+```
+
+
+```{r, fit1, cache=TRUE, eval=TRUE, message=FALSE, echo=FALSE, results=FALSE}
+ngme_fit1 <- ngme(
+  formula = fm1,
+  data = list(Y = Y, seaDist=seaDist),
+  family = noise_normal(),
+  control = ngme_control(
+    iterations = 2000,
+    stop_points = 10,
+    n_parallel_chain = 4,
+    print_check_info = FALSE
+  ),
+  seed = 16
+)
+
+cv1 <- cross_validation(ngme_fit1, type="k-fold", k=5)
+```
+
+
+```{r, fit2, cache=TRUE, results=FALSE, eval=TRUE, message=FALSE, echo=FALSE}
+ngme_fit2 <- ngme(
+  formula = fm2,
+  data = list(Y = Y, seaDist=seaDist),
+  family = noise_normal(),
+  control = ngme_control(
+    iterations = 2000,
+    stop_points = 10,
+    n_parallel_chain = 4,
+    print_check_info = FALSE
+  ),
+  seed = 16
+)
+
+cv2 <- cross_validation(ngme_fit2, type="k-fold", k=5)
+```
+
+```{r fit3, cache=TRUE, results=FALSE, eval=TRUE, message=FALSE, echo=FALSE}
+ngme_fit3 <- ngme(
+  formula = fm3,
+  data = list(Y = Y, seaDist=seaDist),
+  family = noise_normal(),
+  control = ngme_control(
+    iterations = 2000,
+    stop_points = 10,
+    n_parallel_chain = 4,
+    print_check_info = FALSE
+  ),
+  seed = 16
+)
+cv3 <- cross_validation(ngme_fit3, type="k-fold", k=5)
+```
+
+
+## Model validation {.smaller}
+<IMG style="position:absolute;bottom:3.5%;left:12%;width:33px;"SRC="`r stat_logo`">
+
+Cross validation usage:
+
+```{r model_val, eval=FALSE}
+cross_validation(ngme_fit, type="k-fold", k=5)
+```
+
+Results of cross validation (2000 iterations for each model):
+
+```{r validation}
+df <- as.data.frame(rbind(cv0, cv1, cv2, cv3))
+rownames(df) <- c("normal","NIG",
+  "normal+NIG(diff k)",
+  "normal+NIG(same k)"
+)
+format(df, digits=3)
+```
+
+## Prediction
+<IMG style="position:absolute;bottom:3.5%;left:12%;width:33px;"SRC="`r stat_logo`">
+
+Prediction using RW1 + SPDE_NIG + SPDE_normal model using
+`predict(ngme_fit, loc=new_loc)`:
+
+```{r prediction, echo=FALSE, eval=TRUE}
+nxy <- c(150, 100) * 2
+projgrid <- inla.mesh.projector(
+  prmesh,
+  xlim = range(PRborder[, 1]),
+  ylim = range(PRborder[, 2]),
+  dims = nxy
+)
+
+xy.in <- inout(projgrid$lattice$loc, cbind(PRborder[, 1], PRborder[, 2]))
+coord.prd <- projgrid$lattice$loc[xy.in, ]
+# dim(coord.prd)
+# plot(coord.prd, type = "p", cex = 0.1)
+# lines(PRborder)
+# points(coords[, 1], coords[, 2], pch = 19, cex = 0.5, col = "red")
+
+coord.prd.df <- data.frame(x1 = coord.prd[,1],
+                          x2 = coord.prd[,2])
+coordinates(coord.prd.df) <- c("x1", "x2")
+
+# compute the distance to the shore
+seaDist.prd <- apply(spDists(coord.prd,
+  PRborder[1034:1078, ],
+  longlat = TRUE
+), 1, min)
+coord.prd.df$seaDist <- seaDist.prd
+
+preds <- predict(ngme_fit2, loc = list(
+  rw_loc = seaDist.prd,
+  spde_loc = coord.prd.df,
+  spde_loc = coord.prd.df
+))
+pred_df <- data.frame(
+  x1 = coord.prd[, 1],
+  x2 = coord.prd[, 2],
+  preds = preds
+)
+ggplot(pred_df, aes(x = x1, y = x2, fill = preds)) +
+  geom_raster() +
+  scale_fill_viridis()
+```
+
 
 ## Future work
+<IMG style="position:absolute;bottom:3.5%;left:12%;width:33px;"SRC="`r stat_logo`">
 
-## References
+- Support specifying priors
+- Multivariate model
+- Random effects
+- Confidence intervals for estimators
+- Rational approximations
+
+## Main references
+<IMG style="position:absolute;bottom:3.5%;left:12%;width:33px;"SRC="`r stat_logo`">
+
+Bolin, D. (2014). Spatial Matérn Fields Driven by Non-Gaussian Noise: Non-Gaussian spatial Matérn fields. Scandinavian Journal of Statistics, 41(3), 557–579. https://doi.org/10.1111/sjos.12046
+
+Asar, Ö., Bolin, D., Diggle, P. J., & Wallin, J. (2020). Linear mixed effects models for non‐Gaussian continuous repeated measurement data. Journal of the Royal Statistical Society: Series C (Applied Statistics), 69(5), 1015–1065. https://doi.org/10.1111/rssc.12405
+
+## Further more
+<IMG style="position:absolute;bottom:3.5%;left:12%;width:33px;"SRC="`r stat_logo`">
+
+Group homepage: https://cemse.kaust.edu.sa/stochproc
+
+Package homepage: https://davidbolin.github.io/ngme2
+
+Github repository: https://github.com/davidbolin/ngme2
+
+
+## Thank you! {data-background=files/group_photo.jpg data-background-size=contain position=top}
+
+<br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br>
+
+Stochastic Processes and Applied Statistics @ KAUST

@@ -1,25 +1,5 @@
 # This file contains function related to model predict function
-#
-# predict(ngme) has 2 parts:
-#   1. Make A_pred for each f at new_loc
-#   2. compute X_pred beta + sum(A_pred W)
 
-
-# predict for the latent model
-predict.ngme_model <- function(
-  object,
-  ...
-) {
-  model <- object
-  if (is.null(model$A_pred))
-    stop("Make sure model has A_pred field!")
-  if (is.null(model$W))
-    stop("Make sure model has W field!")
-
-  with(model,{
-    A_pred %*% W
-  })
-}
 
 #' Predict function of ngme2
 #' predict using ngme after estimation
@@ -196,13 +176,23 @@ compute_indices <- function(ngme, test_idx, N = 100) {
   )
 }
 
-# type in c("k-fold", "loo", "lpo")
+#' Compute the cross-validation for the ngme model
+#'
+#' @param ngme a ngme object
+#' @param type character, cv type, in c("k-fold", "loo", "lpo")
+#' @param k integer, if using "k-fold" cv
+#' @param percent from 1 to 100, if using leave percent off cv ("lpo")
+#' @param N integer, number of samplings (the higher, the better)
+#' @param seed random seed
+#'
+#' @return a list of MSE, MAE, CRPS, sCRPS
+#' @export
 cross_validation <- function(
   ngme,
   type = "k-fold",
   k = 5,
   percent = 50,
-  N = 10,
+  N = 100,
   seed = 1
 ) {
   stopifnot(type %in% c("k-fold", "loo", "lpo"))

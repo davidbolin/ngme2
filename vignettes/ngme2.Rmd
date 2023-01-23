@@ -20,7 +20,7 @@ set.seed(10)
 
 In this vignette we provide a brief introduction to the `ngme2` package.
 
-`ngme2` is the updated version of `ngme` (https://github.com/davidbolin/ngme), a package for estimating latent non-Gaussian models.
+`ngme2` is the updated version of R Package `ngme` (https://github.com/davidbolin/ngme), a package for estimating latent non-Gaussian models.
 It follows a **3-layer structure** in design (the general block model, latent process models, and noises) for specifying the whole statistical model.
 The latent process defines different operator structure, and the block model collects them together with the fixed effects and measurement noise.
 

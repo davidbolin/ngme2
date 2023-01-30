@@ -27,6 +27,12 @@
 #' @param fix_nu   fix the parameter of nu
 #' @param h        numerical vector (> 0), mesh width
 #' @param fix_V         fix the sampling of V
+#' @param theta_sigma_normal for normal nosie with nig noise sharing same parameter
+#' @param B_sigma_normal    for normal nosie with nig noise sharing same parameter
+#' @param sigma_normal  for normal nosie with nig noise sharing same parameter
+#' @param theta_sigma_nig similar to theta_sigma_normal
+#' @param B_sigma_nig     similar to B_sigma_nig
+#' @param sigma_nig     similar to sigma_normal
 #' @param ...       additional arguments
 #'
 #' @return a list of specification of noise

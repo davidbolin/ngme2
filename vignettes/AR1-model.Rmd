@@ -59,8 +59,8 @@ m2 <- model_ar1(c(2011, 2012, 2015, 2016), noise = noise_nig(mu=5, sigma=1.5))
 m2$K
 # length is 2016 - 2011 + 1 = 6
 
-# specify mesh with replicates
-m3 <- model_ar1(c(1:5, 1:5), replicates = c(rep(1, 5), rep(2, 5)))
+# specify mesh with replicate
+m3 <- model_ar1(c(1:5, 1:5), replicate = c(rep(1, 5), rep(2, 5)))
 m3$K
 # index with double is not supported
 # not run:

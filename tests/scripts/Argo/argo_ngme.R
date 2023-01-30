@@ -4,7 +4,7 @@ dat <- read.table('tests/myscripts/Argo/ocean_data.txt',header=TRUE)
 max.edge    = 1
 bound.outer = 5
 locY = unique(cbind(dat$lon, dat$lat))
-# nrow(locY) == nrow(dat) no replicates
+# nrow(locY) == nrow(dat) no replicate
 
 mesh = inla.mesh.2d(loc=locY,
                     # the inner edge and outer edge

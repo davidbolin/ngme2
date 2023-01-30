@@ -1,16 +1,16 @@
 # new models should have
 # model_name <- function(
-# index, replicates, index_NA, noise, data
+# index, replicate, index_NA, noise, data
 # )
 
 # ar1 and rw
 
 #' ngme AR(1) model specification
 #'
-#' Generating C, G and A given index and replicates
+#' Generating C, G and A given index and replicate
 #'
 #' @param x integer vector, time index for the AR(1) process
-#' @param replicates replicates for the process
+#' @param replicate replicate for the process
 #' @param index_NA Logical vector, same as is.na(response var.)
 #' @param alpha initial value for alpha
 #'
@@ -22,11 +22,11 @@
 #' @export
 #'
 #' @examples
-#' model_ar1(c(1:3, 1:3), replicates = c(1,1,1,2,2,2))
+#' model_ar1(c(1:3, 1:3), replicate = c(1,1,1,2,2,2))
 #' f(xx, model = "ar1", data=list(xx = c(2,4,5)), noise=noise_nig())
 model_ar1 <- function(
   x,   # time index
-  replicates  = NULL,
+  replicate  = NULL,
   index_NA    = NULL,
   data        = NULL,
   noise       = noise_normal(),
@@ -36,42 +36,54 @@ model_ar1 <- function(
   # capture symbol in index
   index <- eval(substitute(x), envir = data, enclos = parent.frame())
   stopifnot("The index should be integers." = all(index == round(index)))
-  range <- c(min(index), max(index))
 
   if (is.null(index_NA)) index_NA <- rep(FALSE, length(index))
-
-  if (is.null(replicates)) replicates <- rep(1, length(index))
-  unique_rep <- unique(replicates)
-  nrep <- length(unique_rep)
+  if (is.null(replicate)) replicate <- rep(1, length(index))
 
   # e.g. index = c(1:200, 1:100)
-  #      replicates = c(rep(1, 200), rep(2, 100))
+  #      replicate = c(rep(1, 200), rep(2, 100))
   #      n =200 in this case
-  n <- range[2] - range[1] + 1
+
+  mesh <- INLA::inla.mesh.1d(x)
+  n <- mesh$n
 
   # construct G
-    G <- Matrix::Matrix(diag(n));
+  G <- Matrix::Matrix(diag(n));
 
   # construct C
-    C <- Matrix::Matrix(0, n, n)
-    C[seq(2, n*n, by = n+1)] <- -1
-
-    if(!is.null(nrep)) {
-      C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), C)
-      G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), G)
-    }
+  C <- Matrix::Matrix(0, n, n)
+  C[seq(2, n*n, by = n+1)] <- -1
 
   # update noise with length n
   if (noise$n_noise == 1) noise <- update_noise(noise, n = n)
 
+  # make A and A_pred
+  tmp <- ngme_make_A(
+    mesh = mesh,
+    map = x,
+    n_map = length(x),
+    idx_NA = index_NA,
+    replicate = replicate
+  )
+  A <- tmp$A; A_pred <- tmp$A_pred
+
+  if (is.null(A)) stop("A is NULL")
+  nrep <- ncol(A) / ncol(C)
+  C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), C)
+  G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), G)
+  noise$h <- rep(noise$h, times = nrep)
+
   # remove duplicate symbol in ... (e.g. theta_K)
   args <- within(list(...), {
+    mesh        = mesh
     model       = "ar1"
     theta_K     = if (exists("theta_K")) ar1_a2th(theta_K) else ar1_a2th(alpha)
     W_size      = n
     V_size      = n
-    A           = ngme_ts_make_A(loc = index[!index_NA], replicates = replicates, range = range)
-    A_pred      = ngme_ts_make_A(loc = index[index_NA], replicates = replicates, range = range)
+    A           = A
+    A_pred      = A_pred
+    # A           = ngme_ts_make_A(loc = index[!index_NA], replicate = replicate, range = range)
+    # A_pred      = ngme_ts_make_A(loc = index[index_NA], replicate = replicate, range = range)
     h           = noise$h
     C           = ngme_as_sparse(C)
     G           = ngme_as_sparse(G)
@@ -86,12 +98,12 @@ model_ar1 <- function(
 
 #' ngme model - random walk of order 1
 #'
-#' Generating C, G and A given index and replicates
+#' Generating C, G and A given index and replicate
 #' size of C and G is (n-1) * n, size of V is n-1
 #'
 #' @param x         numerical vector, covariates to build index for the process
 #' @param order     1 or 2, order of random walk model
-#' @param replicates replicates for the process
+#' @param replicate replicate for the process
 #' @param data      specifed or inherit from ngme formula
 #' @param circular  whether the mesh is circular, i.e. the first one is connected to the last
 #' @param index_NA  Logical vector, same as is.na(response variable)
@@ -108,7 +120,7 @@ model_ar1 <- function(
 model_rw <- function(
   x,
   order       = 1,
-  replicates  = NULL,
+  replicate  = NULL,
   data        = NULL,
   circular    = FALSE,
   index_NA    = NULL,
@@ -121,9 +133,7 @@ model_rw <- function(
   x <- eval(substitute(x), envir = data, enclos = parent.frame())
   if (is.null(index_NA)) index_NA <- rep(FALSE, length(x))
 
-  if (is.null(replicates)) replicates <- rep(1, length(x))
-  unique_rep <- unique(replicates)
-  nrep <- length(unique_rep)
+  if (is.null(replicate)) replicate <- rep(1, length(x))
 
   stopifnot("length of index at least > 3" = length(x) > 3)
   # create mesh using index
@@ -140,14 +150,19 @@ model_rw <- function(
 
   # create A in INLA way
   mesh <- INLA::inla.mesh.1d(loc = x)
+  noise$h <- diff(mesh$loc)
+
   # p_matrix <- as(mesh$idx$loc, "pMatrix") # bug! p_matrix
 
-  A <- INLA::inla.spde.make.A(mesh = mesh, loc = x[!index_NA])
-  A_pred <- if (!any(index_NA)) NULL else
-   INLA::inla.spde.make.A(mesh = mesh, loc = x[index_NA])
+  tmp <- ngme_make_A(
+    mesh = mesh,
+    map = x,
+    n_map = length(x),
+    idx_NA = index_NA,
+    replicate = replicate
+  )
+  A <- tmp$A; A_pred <- tmp$A_pred
 
-  noise$h <- diff(mesh$loc)
-# browser()
   n <- mesh$n
   if (order == 1) {
     # k is of size n-1 * n
@@ -185,11 +200,11 @@ model_rw <- function(
     noise$h <- noise$h[-1]
   }
 
-  if(!is.null(nrep)) {
-    C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), C)
-    G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), G)
-    A <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), A)
-  }
+  if (is.null(A)) stop("A is NULL")
+  nrep <- ncol(A) / ncol(C)
+  C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), C)
+  G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), G)
+  noise$h <- rep(noise$h, times = nrep)
 
   # update noise with length n
   if (noise$n_noise == 1) noise <- update_noise(noise, n = n)

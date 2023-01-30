@@ -147,6 +147,7 @@ dgal <- function(x, delta, mu, nu, sigma, log=FALSE){
 }
 
 #' @rdname gal
+#' @importFrom stats rgamma
 #' @export
 rgal <- function (n, delta, mu, nu, sigma, seed = 0)
 {
@@ -231,7 +232,7 @@ rgal <- function (n, delta, mu, nu, sigma, seed = 0)
     sigma_new = sigma
   }
 
-  V = as.vector(rgamma(n, nu_new, nu_new))
+  V = as.vector(stats::rgamma(n, nu_new, nu_new))
   return(delta_new + mu_new*V + sigma_new^2*sqrt(V)*stats::rnorm(n))
 }
 
@@ -461,5 +462,5 @@ qgal <- function(p, delta, mu, nu, sigma, lower.tail = TRUE, log.p = FALSE){
   p_vec = nu_new - 0.5
   a_vec = 2 * nu_new + (mu_new / sigma_new)^2
 
-  qgig(q, p_vec, a_vec, b = 1e-14, lower.tail, log.p)
+  qgig(p, p_vec, a_vec, b = 1e-14, lower.tail, log.p)
 }

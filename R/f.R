@@ -7,7 +7,7 @@
 #'
 #' @param x    symbol or numerical value: index or covariates to build index
 #' @param model     1. string: type of model, 2. ngme.spde object
-#' @param replicates   Representing the replicates
+#' @param replicate   Representing the replicate
 #' @param noise     1. string: type of model, 2. ngme.noise object
 #'  (can also be specified in each ngme model)
 #' @param control      control variables for f model
@@ -35,7 +35,7 @@
 f <- function(
   x           = NULL,
   model       = "ar1",
-  replicates  = NULL,
+  replicate  = NULL,
   noise       = noise_normal(),
   control     = ngme_control_f(),
   name        = NULL,
@@ -94,7 +94,13 @@ f <- function(
     f_model <- do.call(ngme_model, utils::modifyList(model, f_args))
     if (!is.null(f_model$index_NA)) {
       tmp <- with(f_model, {
-        ngme_make_A(mesh, map, n_map, idx_NA = index_NA)
+        ngme_make_A(
+          mesh = mesh,
+          map = map,
+          n_map = n_map,
+          idx_NA = index_NA,
+          replicate = replicate
+        )
       })
       f_model$A <- tmp$A
       f_model$A_pred <- tmp$A_pred
@@ -117,15 +123,15 @@ f <- function(
   #   A_pred <- index_NA <- NULL
   # }
 
-  # # get the replicates
-  # if (is.null(replicates))
-  #   replicates <- rep(1, length(index))
-  # nrep <- length(unique(replicates))
+  # # get the replicate
+  # if (is.null(replicate))
+  #   replicate <- rep(1, length(index))
+  # nrep <- length(unique(replicate))
 
   # no need for re-order
-  # # re-order the values according to the replicates (to be block diagonal for C and G)
-  # df <- data.frame(original.order=1:length(index), replicates=replicates, index=index)
-  # df <- df[order(df$replicates), ]
+  # # re-order the values according to the replicate (to be block diagonal for C and G)
+  # df <- data.frame(original.order=1:length(index), replicate=replicate, index=index)
+  # df <- df[order(df$replicate), ]
 
 
   ################## construct noise (e.g. nig noise) ##################
@@ -133,7 +139,7 @@ f <- function(
     # B_mu <- matrix(noise$B_mu, nrow = W_size, ncol = noise$n_theta_mu)
     # B_sigma <- matrix(noise$B_sigma, nrow = W_size, ncol = noise$n_theta_sigma)
 
-    # # replicates
+    # # replicate
     # if (is.integer(nrep)) {
     #   B_mu <- kronecker(matrix(1, ncol = 1, nrow = nrep), B_mu)
     #   B_sigma <- kronecker(matrix(1, ncol = 1, nrow = nrep), B_sigma)

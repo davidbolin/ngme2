@@ -111,8 +111,8 @@ inla2
 
 
 # # to-do
-# # replicates
-# m3 <- model_rw(c(1.1, 2.2, 2.2, 3.3, 4.4), replicates = c(1, 1, 2, 1, 1))
+# # replicate
+# m3 <- model_rw(c(1.1, 2.2, 2.2, 3.3, 4.4), replicate = c(1, 1, 2, 1, 1))
 # m3$K
 # m3$A
 # #  [1,] 1 . . . . . . .
@@ -289,6 +289,4 @@ ff <- function() {
 ff()
 
 ?eval
-
-# inlabru example
-
+rgal()

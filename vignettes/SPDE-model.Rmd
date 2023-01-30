@@ -202,7 +202,7 @@ head(argo_float)
 max.edge    <- 1
 bound.outer <- 5
 loc_2d <- unique(cbind(argo_float$lon, argo_float$lat))
-# nrow(loc) == nrow(dat) no replicates
+# nrow(loc) == nrow(dat) no replicate
 argo_mesh <- inla.mesh.2d(loc = loc_2d,
                     # the inner edge and outer edge
                     max.edge = c(1,5),

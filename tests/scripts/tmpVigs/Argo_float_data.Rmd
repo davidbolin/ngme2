@@ -34,7 +34,7 @@ First we create using the mesh using INLA.
 max.edge    <- 1
 bound.outer <- 5
 loc = unique(cbind(argo_float$lon, argo_float$lat))
-# nrow(loc) == nrow(dat) no replicates
+# nrow(loc) == nrow(dat) no replicate
 
 mesh <- inla.mesh.2d(loc=loc,
                     # the inner edge and outer edge

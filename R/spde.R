@@ -17,7 +17,7 @@
 # ngme.nonstation.matern <- function(
 #     alpha = 2,
 #     mesh = NULL,
-#     replicates = NULL,
+#     replicate = NULL,
 #     fem.mesh.matrices = NULL,
 #     d = NULL,
 #     B.kappa = matrix(1, 1, 2),

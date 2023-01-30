@@ -5,7 +5,7 @@
 #' @param loc       numeric vector (1d) or matrix of column 2 (2d),
 #'     location to make index
 #'     keep aligned with Y if make prediction with index_NA!!!
-#' @param replicates replicates for the process
+#' @param replicate replicate for the process
 #' @param alpha     2 or 4, SPDE smoothness parameter
 #' @param mesh      mesh argument
 #' @param index_NA Logical vector, same as is.na(response var.)
@@ -20,7 +20,7 @@
 #' @export
 model_matern <- function(
   loc         = NULL,
-  replicates  = NULL,
+  replicate  = NULL,
   alpha       = 2,
   kappa       = 1,
   theta_kappa = NULL,
@@ -85,7 +85,13 @@ stopifnot("loc is NULL" = !is.null(loc))
   #   h <- Matrix::diag(fem.mesh.matrices$c0)
   # }
 
-  tmp <- ngme_make_A(mesh = mesh, map = loc, n_map = n_loc, idx_NA = index_NA)
+  tmp <- ngme_make_A(
+    mesh = mesh,
+    map = loc,
+    n_map = n_loc,
+    idx_NA = index_NA,
+    replicate = replicate
+  )
   A <- tmp$A; A_pred <- tmp$A_pred
 
   if (!is.null(A)) {
@@ -110,8 +116,6 @@ stopifnot("loc is NULL" = !is.null(loc))
     B_kappa     = B_kappa,
     C           = ngme_as_sparse(C),
     G           = ngme_as_sparse(G),
-    # C           = asdgCMatrix_(C),
-    # G           = asdgCMatrix_(G),
     # K           = kappas * kappas * C + G
     h           = h,
     noise       = noise,

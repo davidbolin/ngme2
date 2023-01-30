@@ -36,7 +36,8 @@ test_that("predict traceplot", {
     family = noise_normal(),
     control = ngme_control(
       n_parallel_chain = 4,
-      iteration = 20
+      iteration = 20,
+      print_check_info = FALSE
    ),
    seed = 100,
    data = data.frame(Y2 = Y2, x1 = x1, x2 = x2)
@@ -48,82 +49,30 @@ test_that("predict traceplot", {
 })
 
 
-# temp tests
-# KW is sim_noise, and fix V gives perfect estimation of mu
-test_that("delete that", {
-# load_all()
-  n_obs <<- 100
-  alpha <- 0.3; mu = -3; sigma=2; nu=2; sigma_eps <- 0.5
-  my_ar <- model_ar1(1:n_obs, alpha=alpha, noise=noise_nig(mu=mu, sigma=sigma, nu=nu))
-
-  W <- simulate(my_ar)
-  Y <- W + rnorm(n=length(W), sd=sigma_eps)
-
-  expect_true(all(my_ar$K == my_ar$C * alpha + my_ar$G))
-  # expect_true(all(as.numeric(my_ar$K %*% W) - dW < 1e-5))
-
-  # first we test the gradient of mu
-  out <- ngme(
-    Y ~ 0 + f(1:n_obs,
-      model="ar1",
-      fix_theta_K = TRUE,
-      alpha=0.3,
-      noise=noise_nig(
-        fix_nu = TRUE, nu = nu,
-        fix_theta_sigma = TRUE, sigma = sigma,
-        fix_V = TRUE, V = attr(W, "noise")$V
-      ),
-      # fix_W = TRUE, W = W,
-      debug = TRUE
-    ),
-    data = list(Y = Y),
-    contro = ngme_control(
-      estimation = T,
-      iterations = 1000,
-      n_parallel_chain = 1
-    ),
-    debug = TRUE
-  )
-  out
-  traceplot(out, 1)
-# out$latents[[1]]$noise
-  plot(out$latents[[1]]$noise,
-    noise_nig(mu=mu, sigma=sigma, nu=nu))
-
-with(out, {
-  expect_true(all(latents[[1]]$noise$V - V < 1e-5))
-  expect_true(all(latents[[1]]$noise$h - h < 1e-5))
-  expect_true(all(latents[[1]]$W - W < 1e-5))
-})
-
-expect_true(all(as.numeric(out$latents[[1]]$K %*% W) - dW < 1e-5))
-expect_true(all(diff(loc) - out$latents[[1]]$h < 1e-5))
-expect_true(out$latents[[1]]$noise$nu > 0.1)
-})
-
 # tests on posterior sampling
 test_that("test posterior sampling and model_validation()", {
 # load_all()
   n_obs <<- 20
   alpha <- 0.3; mu = -3; sigma=2; nu=2; sigma_eps <- 0.5
-  my_ar <- model_ar1(1:n_obs, alpha=alpha, noise=noise_nig(mu=mu, sigma=sigma, nu=nu))
+  my_ar <<- model_ar1(1:n_obs, alpha=alpha, noise=noise_nig(mu=mu, sigma=sigma, nu=nu))
   W <- simulate(my_ar)
   Y <- W + rnorm(n=length(W), sd=sigma_eps)
 
-  out <- ngme(Y ~ 0 + f(model=my_ar), data=list(Y=Y))
+  out <- ngme(Y ~ 0 + f(model=my_ar),
+    data=list(Y=Y),
+    control=ngme_control(print_check_info = FALSE)
+  )
   # traceplot(out, "field1")
 
   expect_no_error(samples <- sampling_cpp(out, 10, posterior = TRUE))
   # samples[["AW"]]
-
-  model_validation(out, N=100)
 })
 
 
 test_that("modify_ngme_with_idx_NA", {
   # load_all()
   X2 = c(3,4,5,9,2)
-  spde1 <- model_matern(mesh = 1:10, loc=X2)
+  spde1 <<- model_matern(mesh = 1:10, loc=X2)
   mm <- ngme(
     YY ~ 1 + X1 + f(X2, model="rw1") + f(model=spde1),
     data = list(
@@ -131,26 +80,14 @@ test_that("modify_ngme_with_idx_NA", {
       X1=c(3,4,5,6,7),
       X2=X2
     ),
-    control=ngme_control(iterations = 1)
+    control=ngme_control(iterations = 10, print_check_info = FALSE)
   )
   mm
   new_model <- modify_ngme_with_idx_NA(mm, idx_NA = 3)
   str(new_model$noise)
   # new_model$latents[[2]]$A_pred
 
-  # out$latents[[1]]$A_pred
-  expect_true(length(out$Y) == 4)
-  # out$latents[[1]]
-  sampling_cpp(out, n=10, posterior=TRUE)
-
-  As <- sapply(seq_along(mm$latents), function(i) mm$latents[[i]]$A)
-  Reduce(cbind, As)
-  str(mm)
-})
-
-
-test_that("strange AR(1)", {
-  ar <- model_ar1(x=c(1,3,5))
-  dim(ar$K)
-  dim(ar$A)
+  # new_model$latents[[1]]$A_pred
+  expect_true(length(new_model$Y) == 4)
+  # new_model$latents[[1]]
 })

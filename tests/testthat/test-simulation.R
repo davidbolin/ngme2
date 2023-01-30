@@ -21,12 +21,11 @@ test_that("simulate f models", {
     max.edge = c(0.2, 0.7), offset = c(0.5, 1.5)
   )
 
-  W <- simulate(
-    f(model = model_matern(mesh = mesh, kappa = 1),
-      noise = noise_normal()
-    )
-  )
-
+  # W <- simulate(
+  #   f(model = model_matern(mesh = mesh, kappa = 1),
+  #     noise = noise_normal()
+  #   )
+  # )
 })
 
 

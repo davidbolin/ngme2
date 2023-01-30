@@ -28,7 +28,7 @@ The latent process defines different operator structure, and the block model col
 
 1. Support spatial models like Matern model with non-Gaussian noise.
 2. Support models for temporal data like **AR1** and **random walk** of order 1 and 2.
-3. Support replicates at same locations.
+3. Support replicate at same locations.
 4. Support prediction at unknown locations.
 5. Model corss-validation.
 6. Comparing to the previous version, it now supports multiple stochastic processes in the latent model.

@@ -1,46 +1,3 @@
-#' Make observation matrix for time series
-#'
-#' @param loc   integers (after sorting, no gaps > 1)
-#' @param replicates indicating replicate measure at same location
-#' @param range range for the mesh
-#'  by default range=(min(loc), max(loc))
-#'
-#' @return A matrix (length(loc) * length(unique(loc)))
-#' @export
-#'
-#' @examples
-#' ngme_ts_make_A(c(1, 2, 2), replicates = c(1, 1, 2))
-#' ngme_ts_make_A(c(1, 2, 2), range = c(1, 5))
-ngme_ts_make_A <- function(
-  loc,
-  replicates = NULL,
-  range = c(1, max(loc))
-) {
-  if (is.null(loc) || length(loc) == 0) return (NULL)
-
-  n_loc <- length(loc)
-  nrep <- 1
-
-  start <- range[1]; end <- range[2]
-  n_range <- end - start + 1
-
-  if (is.null(replicates)) {
-    replicates <- rep(1, n_range)
-  }
-
-  unique_rep <- unique(replicates)
-  nrep <- length(unique_rep)
-
-  A <- matrix(0, nrow = n_loc, ncol = n_range * nrep)
-
-  for (i in 1:n_loc) {
-    ncol_rep <- which(unique_rep == replicates[i])
-    A[i, (ncol_rep - 1) * n_range + loc[i] - start + 1] <- 1
-  }
-  # as(A, "dgCMatrix")
-  as(as(A, "dMatrix"), "generalMatrix")
-}
-
 
 # ngme.ts.make.A <- function(loc) {
 #   n_loc = length(loc)
@@ -111,6 +68,7 @@ get_inla_mesh_dimension <- function(inla_mesh) {
 #'
 #' @param gf formula
 #' @param data data.frame
+#' @param index_NA index of unknown
 #'
 #' @return
 #'  1. plain formula without f function
@@ -305,7 +263,7 @@ ar1_th2a <- function(th) {
 #   out <- list()
 #   out$index <- rep(1:n_mesh, times = n.repl)
 
-#   out$replicates <- rep(1:n.repl, each = n_mesh)
+#   out$replicate <- rep(1:n.repl, each = n_mesh)
 #   return(out)
 # }
 
@@ -315,7 +273,8 @@ ngme_make_A <- function(
   mesh,
   map,
   n_map,
-  idx_NA
+  idx_NA,
+  replicate
 ) {
   # make it logical vector
   if (is.null(idx_NA))    idx_NA <- rep(FALSE, n_map)
@@ -323,13 +282,15 @@ ngme_make_A <- function(
 
   # make A and A_pred according to mesh
   A_pred <- NULL
+  if (is.numeric(mesh) && is.null(dim(mesh)))
+    mesh <- INLA::inla.mesh.1d(mesh)
   if (inherits(mesh, "inla.mesh.1d")) {
-    A <- INLA::inla.spde.make.A(mesh = mesh, loc = map[!idx_NA])
-    if (any(idx_NA)) A_pred <- INLA::inla.spde.make.A(mesh = mesh, loc = map[idx_NA])
+    A <- INLA::inla.spde.make.A(mesh = mesh, loc = map[!idx_NA], repl=replicate[!idx_NA])
+    if (any(idx_NA)) A_pred <- INLA::inla.spde.make.A(mesh = mesh, loc = map[idx_NA], repl=replicate[idx_NA])
   } else if (inherits(mesh, "inla.mesh")) {
     # 2d location
-    A <- INLA::inla.spde.make.A(mesh = mesh, loc = map[!idx_NA, ,drop = FALSE])
-    if (any(idx_NA)) A_pred <- INLA::inla.spde.make.A(mesh = mesh, loc = map[idx_NA, ,drop = FALSE])
+    A <- INLA::inla.spde.make.A(mesh = mesh, loc = map[!idx_NA, ,drop = FALSE], repl=replicate[!idx_NA])
+    if (any(idx_NA)) A_pred <- INLA::inla.spde.make.A(mesh = mesh, loc = map[idx_NA, ,drop = FALSE], repl=replicate[idx_NA])
   } else {
     stop("this mesh not implement yet!!!")
   }
@@ -338,4 +299,47 @@ ngme_make_A <- function(
     A = A,
     A_pred = A_pred
   )
+}
+
+#' Make observation matrix for time series
+#'
+#' @param loc   integers (after sorting, no gaps > 1)
+#' @param replicate indicating replicate measure at same location
+#' @param range range for the mesh
+#'  by default range=(min(loc), max(loc))
+#'
+#' @return A matrix (length(loc) * length(unique(loc)))
+#' @export
+#'
+#' @examples
+#' ngme_ts_make_A(c(1, 2, 2), replicate = c(1, 1, 2))
+#' ngme_ts_make_A(c(1, 2, 2), range = c(1, 5))
+ngme_ts_make_A <- function(
+  loc,
+  replicate = NULL,
+  range = c(1, max(loc))
+) {
+  if (is.null(loc) || length(loc) == 0) return (NULL)
+
+  n_loc <- length(loc)
+  nrep <- 1
+
+  start <- range[1]; end <- range[2]
+  n_range <- end - start + 1
+
+  if (is.null(replicate)) {
+    replicate <- rep(1, n_range)
+  }
+
+  unique_rep <- unique(replicate)
+  nrep <- length(unique_rep)
+
+  A <- matrix(0, nrow = n_loc, ncol = n_range * nrep)
+
+  for (i in 1:n_loc) {
+    ncol_rep <- which(unique_rep == replicate[i])
+    A[i, (ncol_rep - 1) * n_range + loc[i] - start + 1] <- 1
+  }
+  # as(A, "dgCMatrix")
+  as(as(A, "dMatrix"), "generalMatrix")
 }

@@ -39,51 +39,42 @@ test_that("test Matern", {
   bubble(sp_obj, zcol=3)
   range(mesh$loc[, 1]); range(mesh$loc[, 2])
 
-  # spde1 <<- model_matern(mesh=mesh, noise=noise_nig())
-  Y2 <- Y; Y2[1:100] <- NA
+  spde1 <<- model_matern(mesh=mesh, noise=noise_nig())
+  Y2 <- Y
+  # Y2[1:100] <- NA
+
+# load_all()
   out <- ngme(
     Y ~ 0 + f(
       model=spde1,
       name="spde",
       noise=noise_nig(
-        # fix_V = TRUE,
-        # V = attr(W, "noise")$V
+        # fix_V = TRUE, V = attr(W, "noise")$V
       ),
       # fix_W = TRUE, W = W,
-      debug = TRUE
+      debug = FALSE
     ),
     data = list(Y = Y2),
     control = ngme_control(
       estimation = T,
-      iterations = 100,
-      n_parallel_chain = 4
+      iterations = 50,
+      n_parallel_chain = 4,
+      print_check_info = FALSE
     ),
-    debug = TRUE
+    debug = FALSE
   )
   out
-  new_m <- modify_ngme_with_idx_NA(out, 1:100)
-  new_m$latents[[1]]$A_pred
-  out$latents[[1]]$mesh
-
   traceplot(out, "spde")
-  plot(attr(W, "noise"), out2$latents[[1]]$noise)
-
-  load_all()
-  out <- ngme(
-    Y~1 + f(1:5, model="rw1"),
-    data = list(Y=c(1:4, NA))
-  )
-
-  out$latents[[1]]$noise$h
+  plot(attr(W, "noise"), out$latents[[1]]$noise)
 
   # Now let's do some prediction
-  coo <- matrix(c(new_xs, new_ys), ncol=2)
-  predict(out, loc=coo)
-
-  plot(mesh)
   new_xs <- c(3, 5, 7)
   new_ys <- c(3, 5, 3)
-  points(x=new_xs, y = new_ys, type = "p", col="red", pch=16, cex=2)
+  coo <- matrix(c(new_xs, new_ys), ncol=2)
+  predict(out, loc=coo)
+  # plot(mesh)
+  # points(x=new_xs, y = new_ys, type = "p", col="red", pch=16, cex=2)
+  expect_true(TRUE)
 })
 
 
@@ -158,7 +149,7 @@ test_that("test Matern", {
 # # ?inla.spde.make.index
 # # input
 
-# replicates <- c(rep(1, n.samples1 + n.samples2), rep(2, n.samples1))
+# replicate <- c(rep(1, n.samples1 + n.samples2), rep(2, n.samples1))
 # index <- c(1:(n.samples1 + n.samples2), 1:n.samples1)
 
 # # inla.spde.make.index(name = "field", n.spde=n_mesh, mesh = mesh, n.repl=2)

@@ -11,6 +11,7 @@
 #'  vector or matrix (n * 2) for spatial coords
 #' @param type what type of prediction, c("fe", "lp", "field1", "cv")
 #' @param cv_type cross-validation, c("loo", "k-fold", "")
+#' @param ... extra args
 #'
 #' @return a list of outputs contains estimation of operator paramters, noise parameters
 #' @export

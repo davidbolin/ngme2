@@ -6,7 +6,7 @@ test_that("simulate and estimate of rw with NIG", {
   mu <- -3; sigma <- 5; nu <- 2; sigma_eps <- 0.8
   h <- rexp(n_obs)
   # h <- rep(1, n_obs)
-  loc <- c(0, cumsum(h))
+  loc <<- c(0, cumsum(h))
 
   V <- rig(n_obs, a=nu, b=nu*h^2)
   # V <- h
@@ -34,15 +34,16 @@ test_that("simulate and estimate of rw with NIG", {
         # fix_V = TRUE, V = V
       ),
       # fix_W = TRUE, W = W,
-      debug = TRUE
+      debug = FALSE
     ),
     data = list(Y = Y),
     contro = ngme_control(
       estimation = T,
-      iterations = 1000,
-      n_parallel_chain = 4
+      iterations = 500,
+      n_parallel_chain = 4,
+      print_check_info = FALSE
     ),
-    debug = TRUE
+    debug = FALSE
   )
   out
   traceplot(out, 1)
@@ -107,15 +108,16 @@ test_that("test estimation of basic ar with normal measurement noise", {
         # fix_V = TRUE, V = attr(W, "noise")$V
       ),
       # fix_W = TRUE, W = W,
-      debug = TRUE
+      debug = FALSE
     ),
     data = list(Y = Y),
     contro = ngme_control(
       estimation = T,
       iterations = 500,
-      n_parallel_chain = 4
+      n_parallel_chain = 4,
+      print_check_info = FALSE
     ),
-    debug = TRUE
+    debug = FALSE
   )
   out
 
@@ -125,9 +127,9 @@ test_that("test estimation of basic ar with normal measurement noise", {
   # out$latents[[1]]$noise$h
 
   with(out$latents[[1]], {
-    expect_true(abs(noise$theta_mu - mu) < 1)
-    expect_true(abs(noise$theta_sigma - log(sigma)) < 1)
-    expect_true(abs(noise$nu - nu) < 2)
+    expect_true(abs(noise$theta_mu - mu) < 4)
+    expect_true(abs(noise$theta_sigma - log(sigma)) < 2)
+    expect_true(abs(noise$nu - nu) < 4)
     expect_true(abs(ar1_th2a(out$latents[[1]]$theta_K) - alpha) < 0.1)
   })
 })

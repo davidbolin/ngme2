@@ -91,3 +91,22 @@ test_that("modify_ngme_with_idx_NA", {
   expect_true(length(new_model$Y) == 4)
   # new_model$latents[[1]]
 })
+
+test_that("test lpo CV", {
+  load_all()
+  n_obs <<- 100
+  ar_mod <- f(1:n_obs, model="ar1", noise=noise_nig())
+  yy <- simulate(ar_mod) + rnorm(n_obs, sd=0.5)
+  ng_100 <- ngme(
+    yy~0+f(1:n_obs, model="ar1", noise=noise_nig()),
+    data = list(yy=yy),
+    control = ngme_control(iterations = 100)
+  )
+  ng_1000 <- ngme(
+    yy~0+f(1:n_obs, model="ar1", noise=noise_nig()),
+    data = list(yy=yy),
+    control = ngme_control(iterations = 1000)
+  )
+  cross_validation(ng_100, type="lpo", times=10)
+  cross_validation(ng_1000, type="lpo", times=10)
+})

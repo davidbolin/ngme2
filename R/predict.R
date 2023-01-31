@@ -181,10 +181,12 @@ compute_indices <- function(ngme, test_idx, N = 100) {
 #'
 #' @param ngme a ngme object
 #' @param type character, cv type, in c("k-fold", "loo", "lpo")
+#'  loo is leave-one-out, and lpo is leave-percent-out
 #' @param k integer, if using "k-fold" cv
 #' @param percent from 1 to 100, if using leave percent off cv ("lpo")
 #' @param N integer, number of samplings (the higher, the better)
 #' @param seed random seed
+#' @param times run how many times (only for lpo type)
 #'
 #' @return a list of MSE, MAE, CRPS, sCRPS
 #' @export
@@ -192,27 +194,36 @@ cross_validation <- function(
   ngme,
   type = "k-fold",
   k = 5,
-  percent = 50,
   N = 100,
-  seed = 1
+  seed = 1,
+  percent = 50,
+  times = 10
 ) {
   stopifnot(type %in% c("k-fold", "loo", "lpo"))
 
+  crs <- NULL
   if (type == "k-fold") {
     # split idx into k
     idx <- seq_along(ngme$Y)
-    folds <- cut(sample(idx), breaks = k, label=FALSE)
+    folds <- cut(sample(idx), breaks = k, label = FALSE)
 
-    crs <- NULL
     for (i in 1:k) {
       idx_test <- which(folds == i, arr.ind = TRUE)
       # compute criterion
+      crs[[i]] <- compute_indices(ngme, idx_test, N=N)
+    }
+  } else if (type == "loo") {
+    # k-fold with k=length
+    return(cross_validation(ngme, "k-fold", k = length(ngme$Y), seed=seed))
+  } else if (type == "lpo") {
+    n_Y <- length(ngme$Y)
+    for (i in 1:times) {
+      idx_test <- sample(1:n_Y, size=(percent/100)*n_Y)
       crs[[i]] <- compute_indices(ngme, idx_test, N=N)
     }
   } else {
     stop("This CV not implement yet!")
   }
 
-  crs
   mean_list(crs)
 }

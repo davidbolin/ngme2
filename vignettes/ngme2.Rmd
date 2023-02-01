@@ -274,6 +274,7 @@ control variables for the `ngme`. See `?ngme_control` for more optioins.
 ngme_out <- ngme(
   Y ~ x1 + x2 + f(
     1:n_obs,
+    name = "my_ar",
     model = "ar1",
     noise = noise_nig(),
     theta_K = 0.9  # starting point for the alpha (parameter of K)
@@ -306,9 +307,7 @@ We can also use the `traceplot` function to see the estimation traceplot.
 library(ggplot2)
 library(grid)
 library(gridExtra)
-pl <- lapply(c("alpha", "mu", "sigma", "nu"), function(.x)
-  traceplot2(ngme_out, param = .x, f_index = 1));
-marrangeGrob(pl, nrow=2, ncol=2)
+traceplot(ngme_out, "fe")
 ```
 
 We can also do a density comparison with the estimated noise and the true NIG noise:
@@ -387,8 +386,8 @@ matern_spde <- model_matern(
 
 out <- ngme(
   formula = Y ~ 1 +
-    f(inla.group(seaDist), model = "rw1", noise = noise_normal()) +
-    f(model = matern_spde, noise = noise_normal()),
+    f(inla.group(seaDist), name="rw", model = "rw1", noise = noise_normal()) +
+    f(model = matern_spde, name="spde", noise = noise_normal()),
   data = list(
     Y = Y
   ),
@@ -409,18 +408,13 @@ out
 # traceplots
 
 ## fixed effects
-traceplot2(out, f_index = 0, param = "beta")
-## measurement noise
-traceplot2(out, f_index = 0, param = "mu")
-traceplot2(out, f_index = 0, param = "sigma")
-traceplot2(out, f_index = 0, param = "nu")
+traceplot(out, "fe")
 
-## rw
-traceplot2(out, f_index = 1, param = "sigma")
+## measurement noise
+traceplot(out, "mn")
 
 ## spde model
-traceplot2(out, f_index = 2, param = "kappa")
-traceplot2(out, f_index = 2, param = "sigma")
+traceplot(out, "spde")
 ```
 
 Parameter estimation results:
@@ -459,48 +453,13 @@ seaDist.prd <- apply(spDists(coord.prd,
   longlat = TRUE
 ), 1, min)
 
-# construct data
-n_prd <- nrow(coord.prd)
-Y2 <- c(Y, rep(NA, n_prd))
-seaDist2 <- c(seaDist, seaDist.prd)
+# doing prediction by giving the predict location
+lp <- predict(out, loc=list(seaDist.prd, coord.prd))
 
-matern_spde <- model_matern(
-  loc = rbind(coords, coord.prd),
-  mesh = prmesh,
-  index_NA = is.na(Y2)
-)
-
-# use previous estimation results by setting start=out
-out2 <- ngme(
-  formula = Y ~ 1 +
-    f(inla.group(seaDist), model = "rw1", noise = noise_normal()) +
-    f(model = matern_spde, noise = noise_nig()) +
-    f(model = matern_spde, noise = noise_normal()),
-  data = list(
-    Y = Y2,
-    seaDist = seaDist2
-  ),
-  family = noise_nig(),
-  control = ngme_control(
-    estimation = F,
-    iterations = 1000,
-    n_slope_check = 4,
-    stop_points = 10,
-    std_lim = 0.1,
-    n_parallel_chain = 8,
-    print_check_info = TRUE
-  ),
-  seed = 416,
-  start = out
-)
-out2
-
-# Now we plot prediction
-lp <- attr(out2, "prediction")$lp
 ggplot() +
   geom_point(aes(
     x = coord.prd[, 1], y = coord.prd[, 2],
-    colour = lp[is.na(Y2)]
+    colour = lp
   ), size = 2, alpha = 1) +
   geom_point(aes(
     x = coords[, 1], y = coords[, 2],
@@ -514,5 +473,10 @@ ggplot() +
   ]), colour = "red")
 ```
 
+### Cross-validation
 
+We can further validate our model by using cross-validation method.
 
+```{r}
+cross_validation(out, type="k-fold", k=10, print=TRUE)
+```

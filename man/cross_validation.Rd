@@ -4,20 +4,38 @@
 \alias{cross_validation}
 \title{Compute the cross-validation for the ngme model}
 \usage{
-cross_validation(ngme, type = "k-fold", k = 5, percent = 50, N = 100, seed = 1)
+cross_validation(
+  ngme,
+  type = "k-fold",
+  k = 5,
+  N = 100,
+  seed = 1,
+  percent = 50,
+  times = 10,
+  group = NULL,
+  print = FALSE
+)
 }
 \arguments{
 \item{ngme}{a ngme object}
 
-\item{type}{character, cv type, in c("k-fold", "loo", "lpo")}
+\item{type}{character, cv type, in c("k-fold", "loo", "lpo")
+loo is leave-one-out, and lpo is leave-percent-out}
 
 \item{k}{integer, if using "k-fold" cv}
-
-\item{percent}{from 1 to 100, if using leave percent off cv ("lpo")}
 
 \item{N}{integer, number of samplings (the higher, the better)}
 
 \item{seed}{random seed}
+
+\item{percent}{from 1 to 100, if using leave percent off cv ("lpo")}
+
+\item{times}{run how many times (only for lpo type)}
+
+\item{group}{group of indices of test set
+Can be the result of last CV function, or a list of indices}
+
+\item{print}{print information along the process}
 }
 \value{
 a list of MSE, MAE, CRPS, sCRPS

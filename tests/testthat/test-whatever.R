@@ -93,7 +93,7 @@ test_that("modify_ngme_with_idx_NA", {
 })
 
 test_that("test lpo CV", {
-  load_all()
+  # load_all()
   n_obs <<- 100
   ar_mod <- f(1:n_obs, model="ar1", noise=noise_nig())
   yy <- simulate(ar_mod) + rnorm(n_obs, sd=0.5)

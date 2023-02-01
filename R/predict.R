@@ -187,6 +187,9 @@ compute_indices <- function(ngme, test_idx, N = 100) {
 #' @param N integer, number of samplings (the higher, the better)
 #' @param seed random seed
 #' @param times run how many times (only for lpo type)
+#' @param group group of indices of test set
+#'  Can be the result of last CV function, or a list of indices
+#' @param print print information along the process
 #'
 #' @return a list of MSE, MAE, CRPS, sCRPS
 #' @export
@@ -198,37 +201,49 @@ cross_validation <- function(
   seed = 1,
   percent = 50,
   times = 10,
-  group = NULL # group is the result of CV or a list of idx
+  group = NULL,
+  print = FALSE
 ) {
   stopifnot(type %in% c("k-fold", "loo", "lpo"))
 
-  crs <- NULL
-  if (type == "k-fold") {
-    # split idx into k
-    idx <- seq_along(ngme$Y)
-    folds <- cut(sample(idx), breaks = k, label = FALSE)
-
-    for (i in 1:k) {
-      idx_test <- which(folds == i, arr.ind = TRUE)
-      # compute criterion
-      crs[[i]] <- compute_indices(ngme, idx_test, N=N)
-    }
-  } else if (type == "loo") {
-    # k-fold with k=length
-    return(cross_validation(ngme, "k-fold", k = length(ngme$Y), seed=seed))
-  } else if (type == "lpo") {
-    n_Y <- length(ngme$Y)
-    folds <- list()
-    for (i in 1:times) {
-      idx_test <- sample(1:n_Y, size=(percent/100)*n_Y)
-      crs[[i]] <- compute_indices(ngme, idx_test, N=N)
-      folds[[i]] <- idx_test
+  # cut the group if not
+  if (is.null(group)) {
+    if (type == "k-fold") {
+      # split idx into k
+      idx <- seq_along(ngme$Y)
+      folds <- cut(sample(idx), breaks = k, label = FALSE)
+      group <- lapply(1:10, function(x) {which(folds == x, arr.ind = TRUE)})
+    } else if (type == "loo") {
+      return(cross_validation(ngme, "k-fold", k = length(ngme$Y), seed=seed))
+    } else if (type == "lpo") {
+      n_Y <- length(ngme$Y)
+      for (i in 1:times) {
+        group[[i]] <- sample(1:n_Y, size = (percent/100) * n_Y)
+      }
+    } else {
+      stop("This cross-validation is not implemented!")
     }
   } else {
-    stop("This CV not implement yet!")
+    if (!is.null(attr(ngme, "group")))
+      group <- attr(ngme, "group")
+    else if (!is.list(group))
+      stop("Unkownn group")
   }
 
+  # compute for each group
+  crs <- NULL
+  for (i in seq_along(group)) {
+    crs[[i]] <- compute_indices(ngme, group[[i]], N=N)
+if (print) {
+  cat(paste("In group", i, ": \n"))
+  print(as.data.frame(crs[[i]]))
+  cat("\n")
+}
+  }
+
+cat("The average of indices computed: \n")
   ret <- mean_list(crs)
-  attr(ret, "group") <- folds
-  ret
+  print(as.data.frame(ret))
+  attr(ret, "group") <- group
+  invisible(ret)
 }

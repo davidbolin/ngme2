@@ -1,7 +1,7 @@
 # test rw related model
 
 test_that("simulate and estimate of rw with NIG", {
-load_all()
+# load_all()
   n_obs <<- 500
   mu <- -3; sigma <- 5; nu <- 2; sigma_eps <- 0.8
   h <- rexp(n_obs)
@@ -111,7 +111,7 @@ test_that("test estimation of basic ar with normal measurement noise", {
     data = list(Y = Y),
     contro = ngme_control(
       estimation = T,
-      iterations = 500,
+      iterations = 1000,
       n_parallel_chain = 4,
       print_check_info = FALSE
     ),

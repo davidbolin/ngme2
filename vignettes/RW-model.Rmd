@@ -54,10 +54,10 @@ The operator matrix $K$ of dimension $(n-1 \times n)$ is
 $$
 K =
   \begin{bmatrix}
-    1 & -1 \\
-      & 1 & -1 \\
+    -1 & 1 \\
+      & -1 & 1 \\
       & & \ddots & \ddots \\
-      & & & 1 & -1
+      & & & -1 & 1
   \end{bmatrix}.
 $$
 
@@ -67,10 +67,10 @@ In the **circular** RW(1) case, the operator matrix $K$ of dimension $(n-1 \time
 $$
 K =
   \begin{bmatrix}
-    1 & -1 \\
+    -1 & 1 \\
       & \ddots & \ddots \\
-      &  & 1 & -1 \\
-       -1 & & & 1
+      &  & -1 & 1 \\
+       1 & & & -1
   \end{bmatrix}.
 $$
 

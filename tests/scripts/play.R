@@ -290,3 +290,9 @@ ff()
 
 ?eval
 rgal()
+
+
+idx <- 1:100
+folds <- cut(sample(idx), breaks=10, label=FALSE)
+folds
+

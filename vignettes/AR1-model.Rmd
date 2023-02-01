@@ -101,6 +101,7 @@ Y <- Y + rnorm(n_obs, sd = 1) # add measurement noise
 ngme_out <- ngme(
   Y ~ x1 + x2 + f(
     1:n_obs,
+    name = "my_ar",
     model = "ar1",
     noise = noise_nig(),
     theta_K = 0.9  # starting point for the alpha (parameter of K)
@@ -120,15 +121,13 @@ ngme_out <- ngme(
 
 ngme_out
 
-# traceplot of the measurement noise sigma
-traceplot2(ngme_out, param = "sigma", f_index = 0)
+# traceplot of fixed effects
+traceplot(ngme_out, "fe")
 
-# traceplots of the AR(1) model
-traceplot2(ngme_out, param = "alpha", f_index = 1)
-traceplot2(ngme_out, param = "mu", f_index = 1)
-traceplot2(ngme_out, param = "sigma", f_index = 1)
+# traceplot of ar1 model
+traceplot(ngme_out, "my_ar")
 
 # comparing the density of the noise estimated and the noise simulated
 plot(ngme_out$latents[[1]]$noise,
-  noise_nig(mu = 2, sigma = 1.5))
+  noise_nig(mu = 2, sigma = 2))
 ```

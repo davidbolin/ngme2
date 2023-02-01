@@ -128,12 +128,13 @@ $$
 Use the `model_rw` or `f(model = "rw1")` or `f(model = "rw2")` (in formula) to specify a random walk model.
 
 ```{r rw-usage}
-# library(ngme2)
-# m1 <- model_rw(rexp(5), order = 1, noise = noise_normal())
-# m1$K
+library(ngme2)
+set.seed(16)
+m1 <- model_rw(rexp(5), order = 1, noise = noise_normal())
+m1$K
 
-# m2 <- model_rw(rnorm(10), order = 2, circular = TRUE)
-# m2$K
+m2 <- model_rw(rnorm(10), order = 2, circular = TRUE)
+m2$K
 ```
 
 ## Simulation

@@ -68,7 +68,8 @@ model_ar1 <- function(
   A <- tmp$A; A_pred <- tmp$A_pred
 
   if (is.null(A)) stop("A is NULL")
-  nrep <- ncol(A) / ncol(C)
+  nrep <- ncol(A) / nrow(C)
+  stopifnot(nrep == as.integer(nrep))
   C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), C)
   G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), G)
   noise$h <- rep(noise$h, times = nrep)
@@ -201,7 +202,8 @@ model_rw <- function(
   }
 
   if (is.null(A)) stop("A is NULL")
-  nrep <- ncol(A) / ncol(C)
+  nrep <- ncol(A) / nrow(C)
+  stopifnot(nrep == as.integer(nrep))
   C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), C)
   G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), G)
   noise$h <- rep(noise$h, times = nrep)

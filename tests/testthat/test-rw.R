@@ -1,7 +1,7 @@
 # test rw related model
 
 test_that("simulate and estimate of rw with NIG", {
-# load_all()
+load_all()
   n_obs <<- 500
   mu <- -3; sigma <- 5; nu <- 2; sigma_eps <- 0.8
   h <- rexp(n_obs)
@@ -20,8 +20,6 @@ test_that("simulate and estimate of rw with NIG", {
   expect_true(all(my_rw$K == my_rw$C + my_rw$G))
   expect_true(all(as.numeric(my_rw$K %*% W) - dW < 1e-5))
   expect_true(all(my_rw$nosie$h - h < 1e-5))
-
-  # my_rw$A
 
   # first we test the gradient of mu
   out <- ngme(

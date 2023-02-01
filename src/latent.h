@@ -274,15 +274,14 @@ public:
     }
 
     // stop estimate theta_K if converged
-    void check_converge(vector<bool>& converge) {
-        vector<bool> K_converge (converge.begin(), converge.begin() + n_theta_K);
-        // if all K_converge fix
-        bool all_converge = true;
-        for (int i=0; i<n_theta_K; i++)
-            if (!K_converge[i]) all_converge = false;
-
-        if (all_converge) fix_flag[latent_fix_theta_K] = 1;
-    }
+    // void check_converge(vector<bool>& converge) {
+    //     vector<bool> K_converge (converge.begin(), converge.begin() + n_theta_K);
+    //     // if all K_converge fix
+    //     bool all_converge = true;
+    //     for (int i=0; i<n_theta_K; i++)
+    //         if (!K_converge[i]) all_converge = false;
+    //     if (all_converge) fix_flag[latent_fix_theta_K] = 1;
+    // }
 };
 
 /*    Optimizer related    */

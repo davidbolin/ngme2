@@ -197,7 +197,8 @@ cross_validation <- function(
   N = 100,
   seed = 1,
   percent = 50,
-  times = 10
+  times = 10,
+  group = NULL # group is the result of CV or a list of idx
 ) {
   stopifnot(type %in% c("k-fold", "loo", "lpo"))
 
@@ -217,13 +218,17 @@ cross_validation <- function(
     return(cross_validation(ngme, "k-fold", k = length(ngme$Y), seed=seed))
   } else if (type == "lpo") {
     n_Y <- length(ngme$Y)
+    folds <- list()
     for (i in 1:times) {
       idx_test <- sample(1:n_Y, size=(percent/100)*n_Y)
       crs[[i]] <- compute_indices(ngme, idx_test, N=N)
+      folds[[i]] <- idx_test
     }
   } else {
     stop("This CV not implement yet!")
   }
 
-  mean_list(crs)
+  ret <- mean_list(crs)
+  attr(ret, "group") <- folds
+  ret
 }

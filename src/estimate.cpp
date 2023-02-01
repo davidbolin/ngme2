@@ -51,6 +51,8 @@ auto timer = std::chrono::steady_clock::now();
     int n_chains = (control_in["n_parallel_chain"]);
     int n_batch = (control_in["stop_points"]);
     double print_check_info = (control_in["print_check_info"]);
+
+    const bool auto_stop = (control_in["auto_stop"]);
     omp_set_num_threads(n_chains);
 
     // init each model
@@ -109,9 +111,10 @@ auto timer = std::chrono::steady_clock::now();
             all_converge = std::find(begin(converge), end(converge), false) == end(converge);
 
             // 3. if some parameter converge, stop compute gradient, or slow down the gradient.
-            for (int i=0; i < n_chains; i++) {
-                blocks[i]->check_converge(converge);
-            }
+            if (auto_stop)
+                for (int i=0; i < n_chains; i++) {
+                    blocks[i]->check_converge(converge);
+                }
         }
         curr_batch++;
     }

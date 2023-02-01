@@ -107,7 +107,7 @@ public:
         return nu;
     }
 
-    void fix_nu() {fix_nu = true;}
+    void set_nu_fixed() {fix_nu = true;}
 
     double get_log_nu() const {
         if (noise_type == "normal")

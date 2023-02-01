@@ -34,6 +34,7 @@
 #' @param reduce_power    numerical the power of reduce level
 #' @param threshold       till when start to reduce the variance
 #' @param window_size     numerical, length of window for final estimates
+#' @param auto_stop  keep parameter fixed if it converged
 #'
 #' @return list of control variables
 #' @export
@@ -64,7 +65,9 @@ ngme_control <- function(
   reduce_var        = FALSE,
   reduce_power      = 0.75,
   threshold         = 1e-5,
-  window_size       = 1
+  window_size       = 1,
+
+  auto_stop         = TRUE
 ) {
   if ((reduce_power <= 0.5) || (reduce_power > 1)) {
     stop("reduceVar should be in (0.5,1]")
@@ -95,7 +98,9 @@ ngme_control <- function(
     reduce_var        = reduce_var,
     reduce_power      = reduce_power,
     threshold         = threshold,
-    window_size       = window_size
+    window_size       = window_size,
+
+    auto_stop         = auto_stop
   )
 
   class(control) <- "ngme_control"

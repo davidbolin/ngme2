@@ -21,7 +21,7 @@ using Eigen::MatrixXd;
 
 using namespace Rcpp;
 
-bool check_conv(const MatrixXd&, const MatrixXd&, int, int, double, double, std::string, bool);
+std::vector<bool> check_conv(const MatrixXd&, const MatrixXd&, int, int, double, double, std::string, bool);
 
 // [[Rcpp::plugins(openmp)]]
 // [[Rcpp::export]]
@@ -69,12 +69,13 @@ auto timer = std::chrono::steady_clock::now();
     MatrixXd means (n_batch, n_params);
     MatrixXd vars (n_batch, n_params);
 
-    bool converge = false;
+    std::vector<bool> converge (n_params, false);
+    bool all_converge = false;
     int steps = 0;
     int batch_steps = (iterations / n_batch);
 
     int curr_batch = 0;
-    while (steps < iterations && !converge) {
+    while (steps < iterations && !all_converge) {
         MatrixXd mat (n_chains, n_params);
         #pragma omp parallel for schedule(static)
         for (i=0; i < n_chains; i++) {
@@ -105,6 +106,13 @@ auto timer = std::chrono::steady_clock::now();
             // 2. convergence check
             if (n_slope_check <= curr_batch + 1)
                 converge = check_conv(means, vars, curr_batch, n_slope_check, std_lim, trend_lim, par_string, print_check_info);
+            all_converge = std::find(begin(converge), end(converge), false) == end(converge);
+
+            // 3. if some parameter converge, stop compute gradient, or slow down the gradient.
+            // if (auto_stop)
+            //     for (int i=0; i < n_chains; i++) {
+            //         blocks[i]->check_converge(converge);
+            //     }
         }
         curr_batch++;
     }
@@ -120,7 +128,7 @@ auto timer = std::chrono::steady_clock::now();
     for (i=0; i < n_chains; i++) {
         outputs.push_back(blocks[i]->output());
     }
-    if (converge)
+    if (all_converge)
         std::cout << "Reach convergence in " << steps << " iterations." << std::endl;
     else
         std::cout << "Estimation ends." << std::endl;
@@ -153,7 +161,7 @@ Rcpp::List sampling_cpp(const Rcpp::List& ngme_block, int n, bool posterior) {
     For checking convergence of parallel chains
     data is n_iters () * n_params (how many params in total)
 */
-bool check_conv(
+std::vector<bool> check_conv(
     const MatrixXd& means,
     const MatrixXd& vars,
     int curr_batch,
@@ -163,8 +171,8 @@ bool check_conv(
     std::string par_string,
     bool print_check_info
 ) {
-    bool conv = true;
     int n_params = means.cols();
+    std::vector<bool> conv (n_params, true);
 
     std::string std_line    = "  < std_lim:  ";
     std::string trend_line  = " < trend_lim: ";
@@ -172,7 +180,7 @@ bool check_conv(
     // 1. check coef. of var. of every parameter < std_lim
     for (int i=0; i < n_params; i++)
         if (sqrt(vars(curr_batch, i)) / (abs(means(curr_batch, i)) + pow(10,-5)) > std_lim) {
-            conv = false;
+            conv[i] = false;
             std_line += "   false"; // of length 8
         } else {
             std_line += "    true";
@@ -190,7 +198,7 @@ bool check_conv(
         MatrixXd Q = B.transpose() * Sigma_inv.asDiagonal() * B;
         Vector2d beta = Q.llt().solve(B.transpose() * Sigma_inv.asDiagonal() * mean);
         if (abs(beta(1)) - 2 * sqrt(Q(1, 1)) > trend_lim * abs(beta(0))) {
-            conv = false;
+            conv[i] = false;
             trend_line += "   false";
         } else {
             trend_line += "    true";

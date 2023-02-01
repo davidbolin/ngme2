@@ -36,7 +36,7 @@ public:
         V             (n),
         prevV         (n),
         fix_V         (Rcpp::as<bool>    (noise_list["fix_V"])),
-        fix_nu   (Rcpp::as<bool>    (noise_list["fix_nu"]))
+        fix_nu        (Rcpp::as<bool>    (noise_list["fix_nu"]))
     {
         if (noise_type == "normal") {
             V = VectorXd::Ones(n);

@@ -68,6 +68,13 @@ int main(int argc, char const *argv[])
     v3(1) = 2;
 
     cout << v3 * 2;
+
+    vector<bool> v (10, true);
+    bool all_true = false;
+    if (std::find(begin(v), end(v), false) == end(v))
+        all_true = true;
+
+    cout << all_true << endl;
     // MatrixXd m1 (3, 3);
 //     SparseMatrix<double> m1 = {3,3};
 //     m1 = v1.asDiagonal();

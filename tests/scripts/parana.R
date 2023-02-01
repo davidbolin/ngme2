@@ -101,6 +101,7 @@ out_nig_nig <- ngme(
   debug = TRUE,
   seed = 16
 )
+traceplot(out_nig_nig, "spde1")
 # model CV
 cross_validation(out_nig_nig, k = 5, N = 100)
 # traceplot(out_nig_nig, name="rw")

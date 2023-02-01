@@ -509,6 +509,18 @@ Rcpp::List BlockModel::sampling(int n, bool posterior) {
   );
 }
 
+// fix parameter if converge
+// void BlockModel::check_converge(vector<bool>& converge) {
+//   int pos = 0;
+//   for (std::vector<std::unique_ptr<Latent>>::iterator it = latents.begin(); it != latents.end(); it++) {
+//     int theta_len = (*it)->get_n_params();
+//     vector<bool> sub_converge (converge.begin(), converge.begin() + theta_len);
+//     (*it)->check_converge(sub_converge);
+//     pos += theta_len;
+//   }
+// }
+
+
 // provide stepsize
 inline void BlockModel::examine_gradient() {
 

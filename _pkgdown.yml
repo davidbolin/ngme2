@@ -67,10 +67,15 @@ reference:
     - ngme_noise_types
     - noise_nig
     - noise_normal
+  - title: Prediction and Cross validation
+    contents:
+    - predict.ngme
+    - cross_validation
   - title: Data visualization
     contents:
     - plot.ngme_noise
     - traceplot
+    - traceplot2
   - title: Simulation functions
     contents:
     - simulate.ngme_model
@@ -93,6 +98,7 @@ reference:
     - nig
     - igam
     - gig
+    - gal
   - title: Datasets
     contents:
     - argo_float

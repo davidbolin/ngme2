@@ -92,6 +92,8 @@ public:
     BlockModel(const Rcpp::List& block_model, unsigned long seed);
     virtual ~BlockModel() {}
 
+    void check_converge(vector<bool>&);
+
     /* Gibbs Sampler */
     void burn_in(int iterations) {
         for (int i=0; i < iterations; i++) {

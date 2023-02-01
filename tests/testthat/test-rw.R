@@ -41,7 +41,7 @@ test_that("simulate and estimate of rw with NIG", {
       estimation = T,
       iterations = 500,
       n_parallel_chain = 4,
-      print_check_info = FALSE
+      print_check_info = TRUE
     ),
     debug = FALSE
   )

@@ -1,5 +1,5 @@
 pandoc: 2.19.2
-pkgdown: 2.0.6
+pkgdown: 2.0.7
 pkgdown_sha: ~
 articles:
   AR1-model: AR1-model.html
@@ -8,7 +8,7 @@ articles:
   SPDE-model: SPDE-model.html
   ngme2: ngme2.html
   pred_and_est: pred_and_est.html
-last_built: 2022-12-14T06:26Z
+last_built: 2023-02-03T12:27Z
 urls:
   reference: https://davidbolin.github.io/ngme2/reference
   article: https://davidbolin.github.io/ngme2/articles

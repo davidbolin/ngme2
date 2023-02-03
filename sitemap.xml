@@ -40,7 +40,13 @@
     <loc>https://davidbolin.github.io/ngme2/reference/create_noise.html</loc>
   </url>
   <url>
+    <loc>https://davidbolin.github.io/ngme2/reference/cross_validation.html</loc>
+  </url>
+  <url>
     <loc>https://davidbolin.github.io/ngme2/reference/f.html</loc>
+  </url>
+  <url>
+    <loc>https://davidbolin.github.io/ngme2/reference/gal.html</loc>
   </url>
   <url>
     <loc>https://davidbolin.github.io/ngme2/reference/gig.html</loc>
@@ -103,6 +109,9 @@
     <loc>https://davidbolin.github.io/ngme2/reference/plot.ngme_noise.html</loc>
   </url>
   <url>
+    <loc>https://davidbolin.github.io/ngme2/reference/predict.ngme.html</loc>
+  </url>
+  <url>
     <loc>https://davidbolin.github.io/ngme2/reference/print.ngme.html</loc>
   </url>
   <url>
@@ -119,5 +128,8 @@
   </url>
   <url>
     <loc>https://davidbolin.github.io/ngme2/reference/traceplot.html</loc>
+  </url>
+  <url>
+    <loc>https://davidbolin.github.io/ngme2/reference/traceplot2.html</loc>
   </url>
 </urlset>

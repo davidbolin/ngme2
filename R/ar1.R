@@ -26,7 +26,7 @@
 #' f(xx, model = "ar1", data=list(xx = c(2,4,5)), noise=noise_nig())
 model_ar1 <- function(
   x,   # time index
-  replicate  = NULL,
+  replicate   = NULL,
   index_NA    = NULL,
   data        = NULL,
   noise       = noise_normal(),
@@ -68,7 +68,7 @@ model_ar1 <- function(
   A <- tmp$A; A_pred <- tmp$A_pred
 
   if (is.null(A)) stop("A is NULL")
-  nrep <- ncol(A) / nrow(C)
+  nrep <- ncol(A) / ncol(C)
   stopifnot(nrep == as.integer(nrep))
   C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), C)
   G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), G)
@@ -107,6 +107,7 @@ model_ar1 <- function(
 #' @param replicate replicate for the process
 #' @param data      specifed or inherit from ngme formula
 #' @param circular  whether the mesh is circular, i.e. the first one is connected to the last
+#'   if it is circular, we will treat the 1st location and the last location same.
 #' @param index_NA  Logical vector, same as is.na(response variable)
 #' @param noise     1. string: type of model, 2. ngme.noise object
 #'  (can also be specified in each ngme model)
@@ -132,9 +133,6 @@ model_rw <- function(
   stopifnot(order == 1 || order == 2)
 # capture symbol in index
   x <- eval(substitute(x), envir = data, enclos = parent.frame())
-  if (is.null(index_NA)) index_NA <- rep(FALSE, length(x))
-
-  if (is.null(replicate)) replicate <- rep(1, length(x))
 
   stopifnot("length of index at least > 3" = length(x) > 3)
   # create mesh using index
@@ -149,74 +147,80 @@ model_rw <- function(
   # else
   #   A_pred <- NULL
 
-  # create A in INLA way
-  mesh <- INLA::inla.mesh.1d(loc = x)
+  # K is of size (n-1) * n
+  # then mesh is of size (n-1)
+  # lose 1 location (first) for non-circular rw1 case
+
+  if (!circular) {
+    # regular mesh
+    if (order == 1) {
+      mesh <- INLA::inla.mesh.1d(loc = unique(x)[-1])
+      n_mesh <- mesh$n
+      G <- -Matrix::Matrix(diag(n_mesh));
+      G <- cbind(G, rep(0, n_mesh))
+      C <- Matrix::Matrix(0, n_mesh, n_mesh)
+      C[seq(n_mesh+1, n_mesh*n_mesh, by = n_mesh+1)] <- 1
+      C <- cbind(C, c(rep(0, n_mesh-1), 1))
+    } else if (order == 2) {
+      mesh <- INLA::inla.mesh.1d(loc = unique(x)[-c(1,2)])
+      n_mesh <- mesh$n
+      stopifnot(n_mesh >= 2)
+      C <- Matrix::Matrix(0, n_mesh, n_mesh+2)
+      G <- Matrix::Matrix(diag(n_mesh));
+      G <- cbind(G, rep(0, n_mesh), rep(0, n_mesh))
+      G[seq(n_mesh+1, n_mesh*(n_mesh+2), by = n_mesh+1)] <- -2
+      G[seq(2*n_mesh+1, n_mesh*(n_mesh+2), by = n_mesh+1)] <- 1
+    }
+  } else {
+    # circular mesh (remove last element)
+      stopifnot(length(x) >= 4)
+    mesh <- INLA::inla.mesh.1d(loc = x)
+    n_mesh <- mesh$n
+    if (order == 1) {
+      G <- Matrix::Matrix(diag(n_mesh))
+      C <- Matrix::Matrix(0, n_mesh, n_mesh)
+      C[seq(n_mesh+1, n_mesh*n_mesh, by = n_mesh+1)] <- -1
+      C[n_mesh, 1] <- -1
+    } else if (order == 2) {
+      C <- Matrix::Matrix(diag(n_mesh))
+      G <- Matrix::Matrix(0, n_mesh, n_mesh)
+      G[seq(n_mesh+1, n_mesh*n_mesh, by = n_mesh+1)] <- -2
+      G[seq(2*n_mesh+1, n_mesh*n_mesh, by = n_mesh+1)] <- 1
+      G[n_mesh] <- -2
+      G[c(n_mesh-1, 2*n_mesh)] <- 1
+    }
+  }
   noise$h <- diff(mesh$loc)
+  noise$h <- c(noise$h, mean(noise$h))
 
-  # p_matrix <- as(mesh$idx$loc, "pMatrix") # bug! p_matrix
+  if (is.null(index_NA)) index_NA <- rep(FALSE, length(x))
+  if (is.null(replicate)) replicate <- rep(1, length(x))
 
+  mesh_W <- INLA::inla.mesh.1d(loc=x)
   tmp <- ngme_make_A(
-    mesh = mesh,
+    mesh = mesh_W,
     map = x,
     n_map = length(x),
     idx_NA = index_NA,
     replicate = replicate
   )
   A <- tmp$A; A_pred <- tmp$A_pred
-
-  n <- mesh$n
-  if (order == 1) {
-    # k is of size n-1 * n
-    n <- n - 1
-    if (!circular) {
-      G <- -Matrix::Matrix(diag(n));
-      G <- cbind(G, rep(0, n))
-      C <- Matrix::Matrix(0, n, n)
-      C[seq(n+1, n*n, by = n+1)] <- 1
-      C <- cbind(C, c(rep(0, n-1), 1))
-    } else {
-      G <- Matrix::Matrix(diag(n))
-      C <- Matrix::Matrix(0, n, n)
-      C[seq(n+1, n*n, by = n+1)] <- -1
-      C[n, 1] <- -1
-    }
-  } else if (order == 2) {
-    n <- n - 2
-    if (!circular) { # n * n+2
-      stopifnot(n >= 2)
-      C <- Matrix::Matrix(0, n, n+2)
-      G <- Matrix::Matrix(diag(n));
-      G <- cbind(G, rep(0, n), rep(0, n))
-      G[seq(n+1, n*(n+2), by = n+1)] <- -2
-      G[seq(2*n+1, n*(n+2), by = n+1)] <- 1
-    } else {
-      stopifnot(n >= 3)
-      C <- Matrix::Matrix(diag(n))
-      G <- Matrix::Matrix(0, n, n)
-      G[seq(n+1, n*n, by = n+1)] <- -2
-      G[seq(2*n+1, n*n, by = n+1)] <- 1
-      G[n] <- -2
-      G[c(n-1, 2*n)] <- 1
-    }
-    noise$h <- noise$h[-1]
-  }
-
   if (is.null(A)) stop("A is NULL")
-  nrep <- ncol(A) / nrow(C)
+  nrep <- ncol(A) / ncol(C)
   stopifnot(nrep == as.integer(nrep))
   C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), C)
   G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), G)
   noise$h <- rep(noise$h, times = nrep)
 
   # update noise with length n
-  if (noise$n_noise == 1) noise <- update_noise(noise, n = n)
+  if (noise$n_noise == 1) noise <- update_noise(noise, n = n_mesh)
 
   args <- within(list(...), {
     model       = if (order == 1) "rw1" else "rw2"
     theta_K     = 1
     fix_theta_K = TRUE
     W_size      = ncol(C) # mesh$n
-    V_size      = n
+    V_size      = n_mesh
     A           = ngme_as_sparse(A)
     A_pred      = A_pred
     C           = ngme_as_sparse(C)
@@ -224,7 +228,7 @@ model_rw <- function(
     K           = C + G
     noise       = noise
     h           = noise$h
-    mesh        = mesh
+    mesh        = mesh_W
     map         = x
     n_map       = length(x)
   })

@@ -1,69 +1,43 @@
-# This file is used for Rscript
-load_all()
+  load_all()
+  n_obs <<- 500
+  mu <- -3; sigma <- 5; nu <- 2; sigma_eps <- 0.8
+  h <- rexp(n_obs)
+  # h <- rep(1, n_obs)
+  loc <<- c(0, cumsum(h))
 
-library(INLA)
-library(splancs)
-library(lattice)
-library(ggplot2)
-library(grid)
-library(gridExtra)
-library(viridis)
-load_all()
+  V <- rig(n_obs, a=nu, b=nu*h^2)
+  # V <- h
+  dW <- -mu*h + mu * V + sigma * sqrt(V) * rnorm(n_obs) # type-G noise
 
-# read data
-data(PRprec)
-data(PRborder)
+  W <- c(0, cumsum(dW))
+  Y <- W + rnorm(n=length(W), sd=sigma_eps)
 
-############################### Create INLA mesh
-coords <- as.matrix(PRprec[, 1:2])
-prdomain <- inla.nonconvex.hull(coords, -0.03, -0.05, resolution = c(100, 100))
-prmesh <- inla.mesh.2d(boundary = prdomain, max.edge = c(0.45, 1), cutoff = 0.2)
+  # check model specification
+  my_rw <- model_rw(loc, order=1)
+  expect_true(all(my_rw$K == my_rw$C + my_rw$G))
+  expect_true(all(as.numeric(my_rw$K %*% W) - dW < 1e-5))
+  expect_true(all(my_rw$nosie$h - h < 1e-5))
 
-# monthly mean at each location
-Y <- rowMeans(PRprec[, 12 + 1:31]) # 2 + Octobor
-
-ind <- !is.na(Y) # non-NA index
-Y <- Y_mean <- Y[ind]
-coords <- as.matrix(PRprec[ind, 1:2])
-seaDist <- apply(spDists(coords, PRborder[1034:1078, ],
-  longlat = TRUE
-), 1, min)
-
-ggplot() +
-  geom_point(aes(
-    x = coords[, 1], y = coords[, 2],
-    colour = Y
-  ), size = 2, alpha = 1) +
-  scale_color_gradientn(colours = viridis(100)) +
-  geom_path(aes(x = PRborder[, 1], y = PRborder[, 2])) +
-  geom_path(aes(x = PRborder[1034:1078, 1], y = PRborder[
-    1034:1078,
-    2
-  ]), colour = "red")
-
-############################### fit the matern model
-matern_spde <- model_matern(
-  loc = coords,
-  mesh = prmesh
-)
-out_nig_norm_norm <- ngme(
-  formula = Y ~ 1 +
-    f(inla.group(seaDist), model = "rw1", noise = noise_normal(), name="rw") +
-    f(model = matern_spde, noise = noise_nig(), name = "spde1"),
-    f(model = matern_spde, noise = noise_normal(), name = "spde2"),
-  data = list(
-    Y = Y
-  ),
-  family = noise_normal(),
-  control = ngme_control(
-    estimation = T,
-    iterations = 1000,
-    n_slope_check = 4,
-    stop_points = 10,
-    std_lim = 0.1,
-    n_parallel_chain = 4,
-    print_check_info = FALSE
-  ),
-  debug = TRUE,
-  seed = 16
-)
+  # first we test the gradient of mu
+  out <- ngme(
+    Y ~ 0 + f(loc,
+      model="rw1",
+      name="rw1",
+      noise=noise_nig(
+        # fix_nu = TRUE, nu = 2,
+        # fix_theta_sigma = TRUE, sigma = sigma,
+        # fix_V = TRUE, V = V
+      ),
+      # fix_W = TRUE, W = W,
+      debug = FALSE
+    ),
+    data = list(Y = Y),
+    contro = ngme_control(
+      estimation = T,
+      iterations = 500,
+      n_parallel_chain = 4,
+      print_check_info = TRUE
+    ),
+    debug = TRUE
+  )
+  out

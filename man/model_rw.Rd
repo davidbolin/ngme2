@@ -24,7 +24,8 @@ model_rw(
 
 \item{data}{specifed or inherit from ngme formula}
 
-\item{circular}{whether the mesh is circular, i.e. the first one is connected to the last}
+\item{circular}{whether the mesh is circular, i.e. the first one is connected to the last
+if it is circular, we will treat the 1st location and the last location same.}
 
 \item{index_NA}{Logical vector, same as is.na(response variable)}
 

@@ -95,7 +95,7 @@ stopifnot("loc is NULL" = !is.null(loc))
   A <- tmp$A; A_pred <- tmp$A_pred
 
   if (!is.null(A)) {
-    nrep <- ncol(A) / nrow(C)
+    nrep <- ncol(A) / ncol(C)
     C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), C)
     G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), G)
     h <- rep(h, times = nrep)
@@ -110,7 +110,7 @@ stopifnot("loc is NULL" = !is.null(loc))
     A           = A,
     A_pred      = A_pred,
     W_size      = mesh$n,
-    V_size      = nrow(C),
+    V_size      = ncol(C),
     theta_K     = theta_kappa,
     alpha       = alpha,
     B_kappa     = B_kappa,

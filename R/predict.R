@@ -6,11 +6,10 @@
 #'
 #' @param object a ngme object
 #' @param data a data.frame of covariates (used for fixed effects)
-#' @param loc a list of the locations to make the prediction
-#'  corresponding to each latent model
+#' @param loc a named list (or dataframe) of the locations to make the prediction
+#'  names(loc) corresponding to the name each latent model
 #'  vector or matrix (n * 2) for spatial coords
-#' @param type what type of prediction, c("fe", "lp", "field1", "cv")
-#' @param cv_type cross-validation, c("loo", "k-fold", "")
+#' @param type what type of prediction, c("fe", "lp", "field1")
 #' @param ... extra args
 #'
 #' @return a list of outputs contains estimation of operator paramters, noise parameters
@@ -21,7 +20,6 @@ predict.ngme <- function(
   data = NULL,
   loc = NULL,
   type = "lp",
-  cv_type = NULL,
   ...
 ) {
   ngme <- object
@@ -40,6 +38,16 @@ predict.ngme <- function(
     if (!is.list(loc)) loc <- list(loc)
 
     # 1. Make A_pred at new loc for each latent model!!!
+    if (!is.null(names(loc))) {
+      names <- names(loc)
+      stopifnot(length(names) == length(ngme$latents))
+      tmp_loc <- loc
+      for (i in seq_along(names)) {
+        stopifnot(!is.null(tmp_loc[[names[[i]]]]))
+        loc[[i]] <- tmp_loc[[names[[i]]]]
+      }
+    }
+
     for (i in seq_along(ngme$latents)) {
       mesh <- ngme$latents[[i]]$mesh
       if (!is.null(mesh) &&

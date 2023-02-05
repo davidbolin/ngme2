@@ -37,7 +37,9 @@ ngme_model <- function(
 
   # Notice noise$h should be same as h
   if (is.null(h)) h <- noise$h else noise$h <- h
-  if (is.null(par_string))
+  if ((noise$noise_type == "normal"))
+    par_string <- do.call(paste0, as.list(c(K_str, sigma_str)))
+  else
     par_string <- do.call(paste0, as.list(c(K_str, mu_str, sigma_str, nu_str)))
 
   structure(

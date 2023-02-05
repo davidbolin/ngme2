@@ -58,6 +58,7 @@ ngme <- function(
   if (is.character(family))
     noise <- switch(family,
       "normal" = noise_normal(),
+      "gaussian" = noise_normal(),
       "nig"    = noise_nig(),
       stop("Unknown family!")
     )

@@ -236,16 +236,16 @@ update_noise <- function(noise, n = NULL, new_noise = NULL) {
     if (noise$noise_type == "normal") {
       noise$theta_sigma <- new_noise$theta_sigma
     } else if (noise$noise_type == "normal_nig") {
-      noise$theta_mu    <- new_noise$theta_mu
-      noise$theta_sigma <- new_noise$theta_sigma
+      noise$theta_mu           <- new_noise$theta_mu
+      noise$theta_sigma        <- new_noise$theta_sigma
       noise$theta_sigma_normal <- new_noise$theta_sigma_normal
-      noise$nu     <- new_noise$nu
-      noise$V           <- new_noise$V
+      noise$nu                 <- new_noise$nu
+      if (!is.null(new_noise$V)) noise$V <- new_noise$V
     } else { # nig and gal
-      noise$theta_mu    <- new_noise$theta_mu
-      noise$theta_sigma <- new_noise$theta_sigma
-      noise$nu     <- new_noise$nu
-      noise$V           <- new_noise$V
+      noise$theta_mu           <- new_noise$theta_mu
+      noise$theta_sigma        <- new_noise$theta_sigma
+      noise$nu                 <- new_noise$nu
+      if (!is.null(new_noise$V)) noise$V <- new_noise$V
     }
   }
   noise

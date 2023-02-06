@@ -78,13 +78,17 @@ predict.ngme <- function(
       if (!is.null(mesh) &&
           inherits(mesh, c("inla.mesh", "inla.mesh.1d"))) {
         # model using INLA mesh
+        # watch out! reuse replicate!
+        nrep <- length(unique(ngme$latents[[i]]$replicate))
         ngme$latents[[i]]$A_pred <- INLA::inla.spde.make.A(
           mesh = mesh,
-          loc = loc[[i]]
+          loc = rep(loc[[i]], nrep),
+          repl = rep(1:nrep, each = length(loc[[i]]))
         )
       } else if (!is.null(mesh)) {
         # time series model using
         # watch out! to-do
+message("Use ngme_ts_make_A...")
         ngme$latents[[i]]$A_pred <- ngme_ts_make_A(loc=loc[[i]])
       } else {
         stop("mesh is null, don't know how to make A")

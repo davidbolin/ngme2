@@ -44,8 +44,10 @@ model_ar1 <- function(
   #      replicate = c(rep(1, 200), rep(2, 100))
   #      n =200 in this case
 
-  mesh <- INLA::inla.mesh.1d(x)
+  mesh <- INLA::inla.mesh.1d(index)
   n <- mesh$n
+
+stopifnot(length(index) == length(replicate))
 
   # construct G
   G <- Matrix::Matrix(diag(n));
@@ -79,8 +81,8 @@ model_ar1 <- function(
     mesh        = mesh
     model       = "ar1"
     theta_K     = if (exists("theta_K")) ar1_a2th(theta_K) else ar1_a2th(alpha)
-    W_size      = n
-    V_size      = n
+    W_size      = length(index)
+    V_size      = length(index)
     A           = A
     A_pred      = A_pred
     # A           = ngme_ts_make_A(loc = index[!index_NA], replicate = replicate, range = range)
@@ -92,6 +94,7 @@ model_ar1 <- function(
     noise       = noise
     map         = x
     n_map       = length(x)
+    replicate   = replicate
   })
 
   do.call(ngme_model, args)
@@ -220,7 +223,7 @@ model_rw <- function(
     theta_K     = 1
     fix_theta_K = TRUE
     W_size      = ncol(C) # mesh$n
-    V_size      = n_mesh
+    V_size      = n_mesh * nrep
     A           = ngme_as_sparse(A)
     A_pred      = A_pred
     C           = ngme_as_sparse(C)
@@ -231,6 +234,7 @@ model_rw <- function(
     mesh        = mesh_W
     map         = x
     n_map       = length(x)
+    replicate   = replicate
   })
 
   do.call(ngme_model, args)

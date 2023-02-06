@@ -22,6 +22,7 @@ ngme_model <- function(
   par_string  = NULL,
   map         = NULL,  # map is the covariates
   n_map       = NULL,
+  replicate   = NULL,
   ...
 ) {
   stopifnot(is.character(model))
@@ -65,6 +66,7 @@ ngme_model <- function(
       mesh          = mesh,
       map           = map,
       n_map         = n_map,
+      replicate     = replicate,
       ...
     ),
     class = "ngme_model"

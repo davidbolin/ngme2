@@ -20,7 +20,7 @@
 #' @export
 model_matern <- function(
   loc         = NULL,
-  replicate  = NULL,
+  replicate   = NULL,
   alpha       = 2,
   kappa       = 1,
   theta_kappa = NULL,
@@ -109,7 +109,7 @@ stopifnot("loc is NULL" = !is.null(loc))
     model       = "matern",
     A           = A,
     A_pred      = A_pred,
-    W_size      = mesh$n,
+    W_size      = nrow(C),
     V_size      = ncol(C),
     theta_K     = theta_kappa,
     alpha       = alpha,
@@ -122,6 +122,7 @@ stopifnot("loc is NULL" = !is.null(loc))
     mesh        = mesh,
     map         = loc,
     n_map       = n_loc,
+    replicate   = replicate,
     ...
   )
   model

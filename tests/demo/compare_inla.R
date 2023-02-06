@@ -1,3 +1,5 @@
+# Doing comparison with INLA and ngme2
+# using dataset mcycle
 # in this script, mainly show how to fit the model in INLA, and ngme2
 set.seed(17)
 library(MASS)
@@ -120,3 +122,36 @@ prd_ngme <- predict(result_ngme2, loc = list(spde=locs))
 with(mcycle, {plot(times, accel)})
 lines(locs, prd_inla)
 lines(locs, prd_ngme, col=2)
+
+
+############################### doing replicates
+n_obs <- 300
+ar <- model_ar1(1:n_obs, alpha=0.7,
+  name = "ar",
+  noise=noise_nig(
+  mu = -3, sigma = 2, nu = 2
+))
+
+y1 <- simulate(ar)
+y2 <- simulate(ar)
+
+y <- c(y1, y2) + rnorm(2*n_obs, sd=1)
+
+idx <- rep(1:n_obs, 2)
+repl <- rep(1:2, each=n_obs)
+
+load_all()
+out <- ngme(
+  y ~ f(idx, replicate = repl, noise=noise_nig()),
+  data = list(y=y),
+  family = "gaussian",
+  control=ngme_control(
+    estimation = FALSE,
+    iterations = 1000
+  ),
+  debug = TRUE
+)
+
+
+library(INLA)
+inla.spde.make.A(loc=c(1,2,3,1,2,3), mesh=inla.mesh.1d(c(1,2,3)), repl=c(1,1,1,2,2,2))

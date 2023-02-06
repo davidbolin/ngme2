@@ -296,3 +296,39 @@ idx <- 1:100
 folds <- cut(sample(idx), breaks=10, label=FALSE)
 folds
 
+ll <- list(a = c(1,2,3), b = c(2,3,4), c = c(0, 99, 88))
+ll
+as.data.frame(ll)
+apply(as.data.frame(ll), 1, median)
+
+?sapply
+tll <- t(as.data.frame(ll))
+
+dim(tll)
+class(tll)
+sapply(tll, median)
+
+
+ll
+
+# Load the Hmisc library
+library(Hmisc)
+
+# Generate a sample data set
+x <- rnorm(100, mean = 50, sd = 10)
+
+# Calculate the empirical mode
+empirical_mode(x)
+
+quantile(x, 0.5)
+
+points(tabulate(x))
+
+x <- rnorm(100)
+
+quantile(x, probs=c(0.25, 0.75))
+
+hist(x)
+?hist
+hist(x)
+

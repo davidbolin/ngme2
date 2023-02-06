@@ -343,3 +343,10 @@ ngme_ts_make_A <- function(
   # as(A, "dgCMatrix")
   as(as(A, "dMatrix"), "generalMatrix")
 }
+
+# compute the mode of data
+emprical_mode <- function(x, breaks = max(20, length(x) / 20)) {
+  h <- hist(x, breaks=breaks, plot=FALSE)
+  idx <- which.max(h$counts)
+  h$mids[idx]
+}

@@ -1,6 +1,5 @@
 # This file contains function related to model predict function
 
-
 #' Predict function of ngme2
 #' predict using ngme after estimation
 #'
@@ -10,7 +9,9 @@
 #'  names(loc) corresponding to the name each latent model
 #'  vector or matrix (n * 2) for spatial coords
 #' @param type what type of prediction, c("fe", "lp", "field1")
-#' @param ... extra args
+#' @param estimator what type of estimator, c("mean", "median", "mode", "quantile")
+#' @param sampling_size size of posterior sampling
+#' @param ... extra argument from 0 to 1 if using "quantile"
 #'
 #' @return a list of outputs contains estimation of operator paramters, noise parameters
 #' @export
@@ -20,6 +21,9 @@ predict.ngme <- function(
   data = NULL,
   loc = NULL,
   type = "lp",
+  estimator = "mean",
+  sampling_size = 100,
+  q = NULL,
   ...
 ) {
   ngme <- object
@@ -31,6 +35,27 @@ predict.ngme <- function(
   #   n_pred <- length(loc)
   # else
   #   stop("not implement for loc=NULL yet")
+  stopifnot(sampling_size > 0)
+  samples_W <- sampling_cpp(ngme, n=sampling_size, posterior=TRUE)[["W"]]
+  post_W <- switch(estimator,
+    "mean"     = mean_list(samples_W),
+    "median"   = apply(as.data.frame(samples_W), 1, median),
+    "mode"     = apply(as.data.frame(samples_W), 1, emprical_mode),
+    "quantile" = {
+      stopifnot("please provide quantile argument q between 0 to 1"
+        = !is.null(q) && length(q) == 1 && q > 0 && q < 1)
+      apply(as.data.frame(samples_W), 1, function(x) {quantile(x, q)})
+    },
+    stop("No such estimator available")
+  )
+
+  # update post W (notice here W is concated)
+  j <- 1
+  for (i in seq_along(ngme$latents)) {
+    sz <- ngme$latents[[i]]$W_size
+    ngme$latents[[i]]$W <- post_W[j:(j + sz - 1)]
+    j <- j + sz
+  }
 
   # 1. If provide loc, make A_pred for each model
   if (!is.null(loc)) {

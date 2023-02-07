@@ -249,7 +249,7 @@ cross_validation <- function(
       # split idx into k
       idx <- seq_along(ngme$Y)
       folds <- cut(sample(idx), breaks = k, label = FALSE)
-      group <- lapply(1:10, function(x) {which(folds == x, arr.ind = TRUE)})
+      group <- lapply(1:k, function(x) {which(folds == x, arr.ind = TRUE)})
     } else if (type == "loo") {
       return(cross_validation(ngme, "k-fold", k = length(ngme$Y), seed=seed))
     } else if (type == "lpo") {

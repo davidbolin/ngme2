@@ -41,7 +41,7 @@ with(mcycle, {plot(times, accel)})
 lines(mesh$loc, result_inla$summary.random$time[, "mean"], col=2)
 
 ############################## using ngme2
-load_all()
+library(ngme2)
 spde_ngme <- model_matern(mesh = mesh, loc = mcycle$times)
 result_ngme <- ngme(
   accel ~ 0 + f(model = spde_ngme, name="myspde"),
@@ -64,10 +64,10 @@ postW_median <- predict(result_ngme, loc=list(myspde = mesh$loc), estimator="med
 postW_q25 <- predict(result_ngme, loc=list(myspde = mesh$loc), estimator="quantile", q=0.25)
 postW_q75 <- predict(result_ngme, loc=list(myspde = mesh$loc), estimator="quantile", q=0.75)
 
-lines(mesh$loc, postW_median, col=3, lwd=2)
+lines(mesh$loc, postW, col=3, lwd=2)
+lines(mesh$loc, postW_median, col=7, lwd=2)
 lines(mesh$loc, postW_q25, col=4, lwd=2)
 lines(mesh$loc, postW_q75, col=5, lwd=2)
-lines(mesh$loc, postW, col=3, lwd=2)
 lines(mesh$loc, postW_mode, col=6, lwd=2)
 
 # refit the model using nig noise
@@ -83,6 +83,7 @@ result_ngme2 <- ngme(
 )
 result_ngme2
 traceplot(result_ngme2, "myspde")
+plot(result_ngme2$latents[["myspde"]]$noise)
 
 ############################# model prediction using inla / ngme2
 rg <- range(mcycle$times)
@@ -103,6 +104,7 @@ stk.prd <- inla.stack(
   tag = "pred"
 )
 stk <- inla.stack(stk.dat, stk.prd)
+# str(stk)
 
 # doing prediction
 result_inla_prd <- inla(
@@ -113,45 +115,13 @@ result_inla_prd <- inla(
 )
 # summary(result_inla_prd)
 
-str(stk)
 prd_idx <- inla.stack.index(stk, "pred")$data
 prd_inla <- result_inla_prd$summary.fitted.values[prd_idx, 1] # mean
 
 # predict with ngme
-prd_ngme <- predict(result_ngme2, loc = list(spde=locs))
+prd_ngme <- predict(result_ngme2, loc = list(myspde=locs))
+
 with(mcycle, {plot(times, accel)})
 lines(locs, prd_inla)
 lines(locs, prd_ngme, col=2)
 
-
-############################### doing replicates
-n_obs <- 300
-ar <- model_ar1(1:n_obs, alpha=0.7,
-  name = "ar",
-  noise=noise_nig(
-  mu = -3, sigma = 2, nu = 2
-))
-
-y1 <- simulate(ar)
-y2 <- simulate(ar)
-
-y <- c(y1, y2) + rnorm(2*n_obs, sd=1)
-
-idx <- rep(1:n_obs, 2)
-repl <- rep(1:2, each=n_obs)
-
-load_all()
-out <- ngme(
-  y ~ f(idx, replicate = repl, noise=noise_nig()),
-  data = list(y=y),
-  family = "gaussian",
-  control=ngme_control(
-    estimation = FALSE,
-    iterations = 1000
-  ),
-  debug = TRUE
-)
-
-
-library(INLA)
-inla.spde.make.A(loc=c(1,2,3,1,2,3), mesh=inla.mesh.1d(c(1,2,3)), repl=c(1,1,1,2,2,2))

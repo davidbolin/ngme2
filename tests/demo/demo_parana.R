@@ -1,6 +1,4 @@
 # This script is used for fitting different matern models using Parana data
-# full version as in ngme2.Rmd
-
 ############################### Create INLA mesh
 {
 library(INLA)
@@ -10,18 +8,17 @@ library(ggplot2)
 library(grid)
 library(gridExtra)
 library(viridis)
-load_all()
 
 # read data
 data(PRprec)
 data(PRborder)
 
-head(PRprec)
 str(PRprec)
 str(PRborder)
 
 # maps
 plot(PRborder[, 1], PRborder[, 2], type="l")
+# plot the seashore
 lines(PRborder[1034:1078, 1], PRborder[1034:1078, 2], col=2, lwd=2)
 
 # create mesh
@@ -34,9 +31,12 @@ plot(prmesh)
 # monthly mean at each location
 colnames(PRprec)
 Y <- rowMeans(PRprec[, 3 + 1:31]) # January
+any(is.na(Y))
 
 ind <- !is.na(Y) # non-NA index
-Y <- Y_mean <- Y[ind]
+sum(ind)
+Y <- Y[ind]
+
 coords <- as.matrix(PRprec[ind, 1:2])
 seaDist <- apply(spDists(coords, PRborder[1034:1078, ],
   longlat = TRUE
@@ -57,19 +57,20 @@ ggplot() +
 ############################### Matern model and predict location
 {
 # matern model
+library(ngme2)
 matern_spde <- model_matern(
   loc = coords,
   mesh = prmesh
 )
 
 # make prediction at locations
-nxy <- c(300, 200)
 projgrid <- inla.mesh.projector(
   prmesh,
   xlim = range(PRborder[, 1]),
   ylim = range(PRborder[, 2]),
-  dims = nxy
+  dims = c(300, 200)
 )
+
 # get the points inside the boundary idx
 xy.in <- inout(projgrid$lattice$loc, cbind(PRborder[, 1], PRborder[, 2]))
 coord.prd <- projgrid$lattice$loc[xy.in, ]
@@ -90,9 +91,11 @@ seaDist.prd <- apply(spDists(coord.prd,
   longlat = TRUE
 ), 1, min)
 coord.prd.df$seaDist <- seaDist.prd
+str(coord.prd.df)
+head(coord.prd.df)
 }
 
-{
+
 ################ case 1. spde_nig + normal measurement nosie
 {
 out_nig_norm <- ngme(
@@ -118,16 +121,13 @@ out_nig_norm <- ngme(
 traceplot(out_nig_norm, name="rw")
 traceplot(out_nig_norm, name="spde1")
 
-load_all()
 { # make prediction
+str(coord.prd.df@coords)
 preds <- predict(out_nig_norm, loc = list(
   rw = seaDist.prd,
   spde1 = coord.prd.df@coords
 ))
 
-str(seaDist.prd)
-str(coord.prd.df@coords)
-
 pred_df <- data.frame(
   x1 = coord.prd[, 1],
   x2 = coord.prd[, 2],
@@ -139,41 +139,40 @@ ggplot(pred_df, aes(x = x1, y = x2, fill = preds)) +
 }
 }
 
-plot(prmesh)
-
-################ case 2. spde_nig + nig measurement nosie
-load_all()
-out_nig_nig <- ngme(
+################ case 2. spde_nig + spde_normal + normal measurement nosie
+{
+out_nig_norm_norm <- ngme(
   formula = Y ~ 1 +
     f(inla.group(seaDist), model = "rw1", noise = noise_normal(), name="rw") +
-    f(model = matern_spde, noise = noise_nig(), name="spde1"),
+    f(model = matern_spde, noise = noise_nig(), name="spde1") +
+    f(model = matern_spde, noise = noise_normal(), name="spde2"),
   data = list(
     Y = Y
   ),
-  family = noise_nig(),
+  family = noise_normal(),
   control = ngme_control(
     estimation = T,
-    iterations = 100,
+    iterations = 1000,
     n_slope_check = 4,
     stop_points = 10,
     std_lim = 0.1,
     n_parallel_chain = 4,
-    print_check_info = FALSE
+    print_check_info = TRUE
   ),
-  debug = FALSE,
+  # debug = TRUE,
   seed = 16
 )
-out_nig_nig
-traceplot(out_nig_nig, "spde1")
-# model CV
-cross_validation(out_nig_nig, k = 5, N = 100)
-# traceplot(out_nig_nig, name="rw")
-# traceplot(out_nig_nig, name="spde1")
+traceplot(out_nig_norm_norm, name="rw")
+traceplot(out_nig_norm_norm, name="spde1")
+
 { # make prediction
-preds <- predict(out_nig_nig, loc = list(
-  rw_loc = seaDist.prd,
-  spde_loc = coord.prd.df
+str(coord.prd.df@coords)
+preds <- predict(out_nig_norm_norm, loc = list(
+  rw = seaDist.prd,
+  spde1 = coord.prd.df@coords,
+  spde2 = coord.prd.df@coords
 ))
+
 pred_df <- data.frame(
   x1 = coord.prd[, 1],
   x2 = coord.prd[, 2],
@@ -185,9 +184,9 @@ ggplot(pred_df, aes(x = x1, y = x2, fill = preds)) +
 }
 }
 
-################ case 3. spde_normal + spde_nig (share same parameter) + normal measurement nosie
+################ case 3. spde_nig + spde_normal + normal measurement nosie
 {
-out_nignorm_norm <- ngme(
+out_normnig_norm <- ngme(
   formula = Y ~ 1 +
     f(inla.group(seaDist), model = "rw1", noise = noise_normal(), name="rw") +
     f(model = matern_spde, noise = noise_normal_nig(), name="spde1"),
@@ -202,18 +201,21 @@ out_nignorm_norm <- ngme(
     stop_points = 10,
     std_lim = 0.1,
     n_parallel_chain = 4,
-    print_check_info = FALSE
+    print_check_info = TRUE
   ),
   # debug = TRUE,
   seed = 16
 )
-# traceplot(out_nignorm_norm, name="rw")
-# traceplot(out_nignorm_norm, name="spde1")
+traceplot(out_normnig_norm, name="rw")
+traceplot(out_normnig_norm, name="spde1")
+
 { # make prediction
-preds <- predict(out_nignorm_norm, loc = list(
-  rw_loc = seaDist.prd,
-  spde_loc = coord.prd.df
+str(coord.prd.df@coords)
+preds <- predict(out_normnig_norm, loc = list(
+  rw = seaDist.prd,
+  spde1 = coord.prd.df@coords
 ))
+
 pred_df <- data.frame(
   x1 = coord.prd[, 1],
   x2 = coord.prd[, 2],
@@ -225,47 +227,5 @@ ggplot(pred_df, aes(x = x1, y = x2, fill = preds)) +
 }
 }
 
-
-################ case 4. spde_normal + spde_nig (diff kappa parameter) + normal measurement nosie
-{
-out_nig_norm_norm <- ngme(
-  formula = Y ~ 1 +
-    f(inla.group(seaDist), model = "rw1", noise = noise_normal(), name="rw") +
-    f(model = matern_spde, noise = noise_nig(), name = "spde1") +
-    f(model = matern_spde, noise = noise_normal(), name = "spde2"),
-  data = list(
-    Y = Y
-  ),
-  family = noise_normal(),
-  control = ngme_control(
-    estimation = T,
-    iterations = 1000,
-    n_slope_check = 4,
-    stop_points = 10,
-    std_lim = 0.1,
-    n_parallel_chain = 4,
-    print_check_info = FALSE
-  ),
-  debug = TRUE,
-  seed = 16
-)
-
-out_nig_norm_norm
-# traceplot(out_nig_norm_norm, name="rw")
-# traceplot(out_nig_norm_norm, name="spde1")
-{ # make prediction
-preds <- predict(out_nig_norm_norm, loc = list(
-  rw_loc = seaDist.prd,
-  spde_loc = coord.prd.df,
-  spde_loc = coord.prd.df
-))
-pred_df <- data.frame(
-  x1 = coord.prd[, 1],
-  x2 = coord.prd[, 2],
-  preds = preds
-)
-ggplot(pred_df, aes(x = x1, y = x2, fill = preds)) +
-  geom_raster() +
-  scale_fill_viridis()
-}
-}
+# cross validation
+cross_validation(out_normnig_norm, k=5, N=500)

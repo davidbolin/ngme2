@@ -332,3 +332,9 @@ hist(x)
 ?hist
 hist(x)
 
+df <- cbind(c(1,2,3), c(1,2,3))
+df
+
+
+
+sapply(as.data.frame(df),rep.int,times=2)

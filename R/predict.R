@@ -80,11 +80,21 @@ predict.ngme <- function(
         # model using INLA mesh
         # watch out! reuse replicate!
         nrep <- length(unique(ngme$latents[[i]]$replicate))
-        ngme$latents[[i]]$A_pred <- INLA::inla.spde.make.A(
-          mesh = mesh,
-          loc = rep(loc[[i]], nrep),
+        if (nrep == 0) nrep <- 1 # NULL case
+        if (inherits(mesh, "inla.mesh")) {
+          # browser()
+          repl = rep(1:nrep, each = nrow(loc[[i]]))
+          locs = sapply(as.data.frame(loc[[i]]), rep.int, times=nrep)
+        } else {
           repl = rep(1:nrep, each = length(loc[[i]]))
-        )
+          locs = rep(loc[[i]], nrep)
+        }
+
+        ngme$latents[[i]]$A_pred <- INLA::inla.spde.make.A(
+            mesh = mesh,
+            loc = locs,
+            repl = repl
+          )
       } else if (!is.null(mesh)) {
         # time series model using
         # watch out! to-do

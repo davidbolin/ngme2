@@ -70,7 +70,6 @@ projgrid <- inla.mesh.projector(
   ylim = range(PRborder[, 2]),
   dims = c(300, 200)
 )
-
 # get the points inside the boundary idx
 xy.in <- inout(projgrid$lattice$loc, cbind(PRborder[, 1], PRborder[, 2]))
 coord.prd <- projgrid$lattice$loc[xy.in, ]
@@ -79,6 +78,7 @@ plot(coord.prd, type = "p", cex = 0.1)
 lines(PRborder)
 points(coords[, 1], coords[, 2], pch = 19, cex = 0.5, col = "red")
 
+dim(coord.prd)
 coord.prd.df <- data.frame(
   x1 = coord.prd[,1],
   x2 = coord.prd[,2]
@@ -118,11 +118,12 @@ out_nig_norm <- ngme(
   # debug = TRUE,
   seed = 16
 )
+out_nig_norm
 traceplot(out_nig_norm, name="rw")
 traceplot(out_nig_norm, name="spde1")
 
 { # make prediction
-str(coord.prd.df@coords)
+head(coord.prd.df@coords)
 preds <- predict(out_nig_norm, loc = list(
   rw = seaDist.prd,
   spde1 = coord.prd.df@coords
@@ -157,17 +158,18 @@ out_nig_norm_norm <- ngme(
     stop_points = 10,
     std_lim = 0.1,
     n_parallel_chain = 4,
-    print_check_info = TRUE
+    print_check_info = TRUE,
+    stepsize = 0.5,
   ),
   # debug = TRUE,
   seed = 16
 )
-traceplot(out_nig_norm_norm, name="rw")
-traceplot(out_nig_norm_norm, name="spde1")
+traceplot(out_nig_norm_norm_2, name="rw")
+traceplot(out_nig_norm_norm_2, name="spde1")
 
 { # make prediction
 str(coord.prd.df@coords)
-preds <- predict(out_nig_norm_norm, loc = list(
+preds <- predict(out_nig_norm_norm_2, loc = list(
   rw = seaDist.prd,
   spde1 = coord.prd.df@coords,
   spde2 = coord.prd.df@coords
@@ -228,4 +230,6 @@ ggplot(pred_df, aes(x = x1, y = x2, fill = preds)) +
 }
 
 # cross validation
-cross_validation(out_normnig_norm, k=5, N=500)
+cross_validation(out_nig_norm, k=5, N=500, print = TRUE)
+cross_validation(out_nig_norm_norm, k=5, N=500, print = TRUE)
+cross_validation(out_normnig_norm, k=5, N=500, print = TRUE)

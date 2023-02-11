@@ -217,9 +217,11 @@ update_noise <- function(noise, n = NULL, new_noise = NULL) {
   if (!is.null(n)) {
     stopifnot("n should be integer" = is.numeric(n))
     B_mu <- noise$B_mu
+stopifnot("n / nrow(B_mu) not integer" = abs(n/nrow(B_mu) - round(n/nrow(B_mu))) < 1e-4)
     noise$B_mu <- matrix(data = rep(B_mu, n / nrow(B_mu)), nrow = n)
 
     B_sigma <- noise$B_sigma
+stopifnot("n / nrow(B_sigma) not integer" = abs(n/nrow(B_sigma) - round(n/nrow(B_sigma))) < 1e-4)
     noise$B_sigma <- matrix(data = rep(B_sigma, n / nrow(B_sigma)), nrow = n)
 
     if (noise$noise_type == "normal_nig") {

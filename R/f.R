@@ -35,7 +35,7 @@
 f <- function(
   x           = NULL,
   model       = "ar1",
-  replicate  = NULL,
+  replicate   = NULL,
   noise       = noise_normal(),
   control     = ngme_control_f(),
   name        = NULL,
@@ -56,7 +56,6 @@ f <- function(
 
   # if (!is.null(index_NA) && length(index_NA) != length(index))
   #   stop("index_NA length seems wrong.")
-
   # deal with NA, from ngme function
   if (is.null(index_NA)) index_NA <- rep(FALSE, length(index))
 

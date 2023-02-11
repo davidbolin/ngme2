@@ -25,9 +25,10 @@ result_inla <- inla(
   control.predictor = list(A = A),
   control.compute = list(config=TRUE)
 )
-
+summary(result_inla)
 spde_res <- inla.spde.result(result_inla, "time", spde)
-
+summary(spde_res)
+sqrt(1 / 0.002)
 # estimation results
 summary(result_inla)
 plot(spde_res$marginals.kappa$kappa.1,
@@ -35,16 +36,17 @@ plot(spde_res$marginals.kappa$kappa.1,
 mean(spde_res$marginals.kappa$kappa.1[, 1])
 
 plot(spde_res$marginals.tau$tau.1, type="l", main="tau")
-1 / mean(spde_res$marginals.tau$tau.1[, 1])
-
+mean(spde_res$marginals.tau$tau.1[, 1])
+names(spde_res)
+exp(spde_res$summary.log.kappa)
+exp(spde_res$summary.log.tau)
 with(mcycle, {plot(times, accel)})
 lines(mesh$loc, result_inla$summary.random$time[, "mean"], col=2)
-
 ############################## using ngme2
 library(ngme2)
-spde_ngme <- model_matern(mesh = mesh, loc = mcycle$times)
+spde_ngme <- model_matern(alpha=2, mesh = mesh, loc = mcycle$times)
 result_ngme <- ngme(
-  accel ~ 0 + f(model = spde_ngme, name="myspde"),
+  accel ~ -1 + f(model = spde_ngme, name="myspde"),
   data = mcycle,
   family = "normal",
   control = ngme_control(
@@ -59,7 +61,7 @@ with(mcycle, {plot(times, accel)})
 lines(mesh$loc, result_ngme$latents[["myspde"]]$W, lwd=2)
 lines(mesh$loc, result_inla$summary.random$time[, "mean"], col=2, lwd=2)
 postW <- predict(result_ngme, loc=list(myspde = mesh$loc))
-postW_mode <- predict(result_ngme, loc=list(myspde = mesh$loc), estimator="mode")
+postW_mode <- predict(result_ngme, N=1000, loc=list(myspde = mesh$loc), estimator="mode")
 postW_median <- predict(result_ngme, loc=list(myspde = mesh$loc), estimator="median")
 postW_q25 <- predict(result_ngme, loc=list(myspde = mesh$loc), estimator="quantile", q=0.25)
 postW_q75 <- predict(result_ngme, loc=list(myspde = mesh$loc), estimator="quantile", q=0.75)
@@ -87,7 +89,9 @@ plot(result_ngme2$latents[["myspde"]]$noise)
 
 ############################# model prediction using inla / ngme2
 rg <- range(mcycle$times)
+rg
 locs <- seq(from=rg[1], to=rg[2], length = 100)
+locs
 
 # predict with INLA
 stk.dat <- inla.stack(

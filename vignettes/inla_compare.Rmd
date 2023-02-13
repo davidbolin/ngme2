@@ -1,0 +1,159 @@
+---
+title: "Comparing Ngme2 with R-INLA"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Comparing Ngme2 with R-INLA}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Description
+
+R-INLA (https://www.r-inla.org) is a package in R that do approximate Bayesian inference for Latent Gaussian Models. Ngme2 follows similar structure but we allow non-Gaussian latent models (Latent non-Gaussian Models). In this vignette, we will introduce the basic usage of Ngme2 package and compare it with R-INLA.
+
+## Load data and create mesh
+
+In this example, we will use the mcycle data, which is a data set of motorcycle acceleration times. The data set is available in the MASS package.
+
+```{r suppressMessages=TRUE, message=FALSE}
+set.seed(16)
+library(MASS)
+library(INLA)
+library(ngme2)
+data(mcycle)
+str(mcycle)
+with(mcycle, {plot(times, accel)})
+```
+
+Next we will create the mesh, in order to use the SPDE model. The mesh is created by the function `inla.mesh.1d`. The first argument is the location of the mesh points. The second argument is the maximum edge length.
+
+```{r}
+mesh <- inla.mesh.1d(mcycle$times, max.edge=c(1, 10))
+mesh$n
+```
+
+## Compare results in INLA and Ngme2
+
+### Fit the model with INLA
+
+```{r}
+# fit use INLA
+spde <- inla.spde2.matern(mesh, alpha=2)
+A <- inla.spde.make.A(mesh, loc=mcycle$times)
+ind <- inla.spde.make.index("time", spde$n.spde)
+data <- list(accel = mcycle$accel, time = ind$time)
+result_inla <- inla(
+  accel ~ -1 + f(time, model=spde),
+  data = data,
+  control.predictor = list(A = A),
+  control.compute = list(config=TRUE)
+)
+```
+
+Let's check the estimation of SPDE model parameters
+
+```{r}
+spde_res <- inla.spde.result(result_inla, "time", spde)
+
+# posterior mode of kappa
+post_mode_kappa <- with(spde_res$marginals.kappa,
+  kappa.1[which.max(kappa.1[, 2]), 1])
+
+plot(spde_res$marginals.kappa$kappa.1,
+  type="l", main="kappa")
+abline(v=post_mode_kappa, col=2)
+post_mode_kappa
+
+# posterior mode of tau
+post_mode_tau <- with(spde_res$marginals.tau,
+  tau.1[which.max(tau.1[, 2]), 1])
+plot(spde_res$marginals.tau$tau.1, type="l", main="tau")
+abline(v=post_mode_tau, col=2)
+1 / post_mode_tau # for comparison with Ngme2 (same as sigma parameter in Ngme2)
+```
+
+### Fit 1d SPDE model with Ngme2
+
+Next we do similar thing with Ngme2.
+
+```{r}
+spde_ngme <- model_matern(alpha=2, mesh = mesh, loc = mcycle$times)
+result_ngme <- ngme(
+  accel ~ -1 + f(model = spde_ngme, name="myspde"),
+  data = mcycle,
+  family = "normal",
+  control = ngme_control(
+    iterations = 1000
+  )
+)
+result_ngme
+```
+
+Here, we can directly read the estimation of kappa and sigma (1/tau) as shown in the result.
+
+### Compare the results
+
+```{r}
+with(mcycle, {plot(times, accel)})
+lines(mesh$loc, result_inla$summary.random$time[, "mean"], col=2, lwd=2)
+postW <- predict(result_ngme, loc=list(myspde = mesh$loc))
+lines(mesh$loc, postW, col=3, lwd=2)
+title("Posterior mean with Ngme2 and INLA")
+# One can add some quantile band to the plot using Ngme2
+postW_q25 <- predict(result_ngme, loc=list(myspde = mesh$loc), estimator="quantile", q=0.25)
+postW_q75 <- predict(result_ngme, loc=list(myspde = mesh$loc), estimator="quantile", q=0.75)
+lines(mesh$loc, postW_q25, col=4, lwd=2, lty=2)
+lines(mesh$loc, postW_q75, col=5, lwd=2, lty=2)
+legend("bottomright", legend=c("INLA", "Ngme2", "Ngme2 25%", "Ngme2 75%"), col=c(2, 3, 4, 5), lwd=2, lty=c(1, 1, 2, 2))
+```
+
+## Extend model to non-Gaussian case
+
+The Ngme2 package allows us to fit non-Gaussian latent models. We can easily extend the model to non-Gaussian case by changing the `noise` argument, and we can start from previous result using `start` argument.
+
+```{r}
+# refit the model using nig noise
+result_ngme2 <- ngme(
+  accel ~ 0 + f(model = spde_ngme, name="myspde", noise=noise_nig()),
+  data = mcycle,
+  family = "normal",
+  control = ngme_control(
+    n_parallel_chain = 4,
+    iterations = 2000
+  ),
+  start = result_ngme
+)
+result_ngme2
+traceplot(result_ngme2, "myspde")
+plot(result_ngme2$latents[["myspde"]]$noise)
+```
+
+## Doing prediction with Ngme2
+
+Doing prediction at unknown location in INLA would require much more effort, we will skip it (since it's not the main focus). While in Ngme2, it can be done in just one line of code.
+
+First we need to create a new mesh for prediction.
+
+```{r}
+rg <- range(mcycle$times)
+rg
+locs <- seq(from=rg[1], to=rg[2], length = 100)
+```
+
+Next, we call the `predict` function with `loc` argument provided with a list of new locations (for each latent model).
+
+```{r}
+# similar to the posterior mean in previous section
+prd_ngme <- predict(result_ngme2, loc = list(myspde=locs))
+
+with(mcycle, {plot(times, accel)})
+lines(locs, prd_ngme, col=2)
+title("Prediction at unknown locations")
+```

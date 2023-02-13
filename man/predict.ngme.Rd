@@ -5,22 +5,33 @@
 \title{Predict function of ngme2
 predict using ngme after estimation}
 \usage{
-\method{predict}{ngme}(object, data = NULL, loc = NULL, type = "lp", cv_type = NULL, ...)
+\method{predict}{ngme}(
+  object,
+  data = NULL,
+  loc = NULL,
+  type = "lp",
+  estimator = "mean",
+  sampling_size = 100,
+  q = NULL,
+  ...
+)
 }
 \arguments{
 \item{object}{a ngme object}
 
 \item{data}{a data.frame of covariates (used for fixed effects)}
 
-\item{loc}{a list of the locations to make the prediction
-corresponding to each latent model
+\item{loc}{a named list (or dataframe) of the locations to make the prediction
+names(loc) corresponding to the name each latent model
 vector or matrix (n * 2) for spatial coords}
 
-\item{type}{what type of prediction, c("fe", "lp", "field1", "cv")}
+\item{type}{what type of prediction, c("fe", "lp", "field1")}
 
-\item{cv_type}{cross-validation, c("loo", "k-fold", "")}
+\item{estimator}{what type of estimator, c("mean", "median", "mode", "quantile")}
 
-\item{...}{extra args}
+\item{sampling_size}{size of posterior sampling}
+
+\item{...}{extra argument from 0 to 1 if using "quantile"}
 }
 \value{
 a list of outputs contains estimation of operator paramters, noise parameters

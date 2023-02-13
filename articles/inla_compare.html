@@ -42,10 +42,11 @@
 <li class="nav-item">
   <a class="nav-link" href="../reference/index.html">Functions</a>
 </li>
-<li class="nav-item dropdown">
+<li class="active nav-item dropdown">
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-vignettes">Vignettes</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-vignettes">
     <a class="dropdown-item" href="../articles/Installation_and_configuration.html">Installation and configuration</a>
+    <a class="dropdown-item" href="../articles/inla_compare.html">Comparison with R-INLA</a>
     <a class="dropdown-item" href="../articles/AR1-model.html">AR(1) model</a>
     <a class="dropdown-item" href="../articles/RW-model.html">Random walk model</a>
     <a class="dropdown-item" href="../articles/SPDE-model.html">SPDE Matern model</a>
@@ -201,18 +202,18 @@ maximum edge length.</p>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type - normal</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 23.7</span></span>
+<span><span class="co">#&gt;       sigma = 23.3</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Latent models: </span></span>
 <span><span class="co">#&gt; $myspde</span></span>
 <span><span class="co">#&gt;   Ngme model: matern</span></span>
 <span><span class="co">#&gt;   Model parameters: </span></span>
-<span><span class="co">#&gt;       kappa = 0.206</span></span>
+<span><span class="co">#&gt;       kappa = 0.239</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Noise type - normal</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 6.33</span></span></code></pre></div>
+<span><span class="co">#&gt;       sigma = 7.71</span></span></code></pre></div>
 <p>Here, we can directly read the estimation of kappa and sigma (1/tau)
 as shown in the result.</p>
 </div>
@@ -264,20 +265,20 @@ easily extend the model to non-Gaussian case by changing the
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type - normal</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 21.6</span></span>
+<span><span class="co">#&gt;       sigma = 24.1</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Latent models: </span></span>
 <span><span class="co">#&gt; $myspde</span></span>
 <span><span class="co">#&gt;   Ngme model: matern</span></span>
 <span><span class="co">#&gt;   Model parameters: </span></span>
-<span><span class="co">#&gt;       kappa = 0.314</span></span>
+<span><span class="co">#&gt;       kappa = 0.282</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Noise type - nig</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -5.65</span></span>
-<span><span class="co">#&gt;       sigma = 7.58</span></span>
-<span><span class="co">#&gt;       nu = 0.506</span></span>
+<span><span class="co">#&gt;       mu = -2.13</span></span>
+<span><span class="co">#&gt;       sigma = 12.9</span></span>
+<span><span class="co">#&gt;       nu = 0.198</span></span>
 <span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">result_ngme2</span>, <span class="st">"myspde"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="inla_compare_files/figure-html/unnamed-chunk-8-1.png" width="700"></p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">

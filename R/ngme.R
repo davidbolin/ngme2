@@ -175,7 +175,15 @@ ngme <- function(
     stop("unknown structure of formula")
   }
 
-if (debug) print(str(ngme_block))
+if (debug) {print(str(ngme_block))}
+
+# check dim. before run cpp
+for (latent in ngme_block$latents) {
+  stopifnot("nrow(K) should be equal to length of noise, please check idx, replicate argument" =
+    nrow(latent$K) == latent$V_size)
+  stopifnot("ncol(K) should be equal to length of mesh, please check idx, replicate argument" =
+    ncol(latent$K) == latent$W_size)
+}
 
   ################# Run CPP ####################
   if (control$estimation) {

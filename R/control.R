@@ -15,6 +15,7 @@
 #' @param gibbs_sample    number of gibbs sampels
 #' @param stepsize        stepsize
 #' @param estimation      estimating the parameters
+#' @param post_samples_size number of posterior samples
 #'
 #' @param n_parallel_chain number of parallel chains
 #' @param stop_points     number of stop points for convergence check
@@ -43,6 +44,7 @@ ngme_control <- function(
   gibbs_sample      = 5,
   stepsize          = 1,
   estimation        = TRUE,
+  post_samples_size = 1000,
 
   # parallel options
   n_parallel_chain  = 2,
@@ -78,6 +80,8 @@ ngme_control <- function(
     gibbs_sample      = gibbs_sample,
     stepsize          = stepsize,
     estimation        = estimation,
+    post_samples_size = post_samples_size,
+
     n_parallel_chain  = n_parallel_chain,
     stop_points       = stop_points,
     exchange_VW       = exchange_VW,

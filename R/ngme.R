@@ -206,6 +206,18 @@ for (latent in ngme_block$latents) {
     attr(ngme_block, "trajectory") <- get_trajs(outputs)
   }
 
+  # return the mean of samples of W of posterior
+  cat("Starting posterior sampling... \nNote: Use ngme$latents[[model_name]]$W  to access the posterior mean of process \n")
+  mean_post_W <- mean_list(
+    sampling_cpp(ngme_block, control$post_samples_size, TRUE)[["W"]]
+  )
+  idx <- 1
+  for (i in seq_along(ngme_block$latents)) {
+    ngme_block$latents[[i]]$W <- mean_post_W[idx : (ngme_block$latents[[i]]$W_size + idx - 1)]
+    idx <- idx + ngme_block$latents[[i]]$W_size
+  }
+  cat("Posterior sampling done! \n")
+
   ################# Prediction ####################
   if (any(data$index_NA) && control$estimation) {
     # posterior sampling

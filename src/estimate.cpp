@@ -143,7 +143,7 @@ auto timer = std::chrono::steady_clock::now();
     outputs.push_back(block.output());
 #endif
 
-std::cout << "Total time is (ms): " << since(timer).count() << std::endl;
+std::cout << "Total time is (s): " << since(timer).count() / 1000 << std::endl;
 
     return outputs;
 }

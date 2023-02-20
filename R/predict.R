@@ -21,11 +21,29 @@ predict.ngme <- function(
   data = NULL,
   loc = NULL,
   type = "lp",
-  estimator = "mean",
+  # estimator = "mean",
+  estimator = c("mean", "sd", "5quantile", "95quantile", "median", "mode"),
   sampling_size = 100,
   q = NULL,
   ...
 ) {
+  # recursively call predict.ngme if estimator is a list
+  if (length(estimator) > 1) {
+    res <- (lapply(estimator, function(x) {
+      predict.ngme(
+        object,
+        data = data,
+        loc = loc,
+        type = type,
+        estimator = x,
+        sampling_size = sampling_size,
+        q = q,
+        ...
+      )
+    }))
+    names(res) <- estimator
+    return (res)
+  }
   ngme <- object
   # maybe not necessary...
   # 0. length of output (loc 2d, loc 1d, )
@@ -38,10 +56,13 @@ predict.ngme <- function(
   stopifnot(sampling_size > 0)
   samples_W <- sampling_cpp(ngme, n=sampling_size, posterior=TRUE)[["W"]]
   post_W <- switch(estimator,
-    "mean"     = mean_list(samples_W),
-    "median"   = apply(as.data.frame(samples_W), 1, median),
-    "mode"     = apply(as.data.frame(samples_W), 1, emprical_mode),
-    "quantile" = {
+    "mean"      = mean_list(samples_W),
+    "median"    = apply(as.data.frame(samples_W), 1, median),
+    "sd"        = apply(as.data.frame(samples_W), 1, sd),
+    "mode"      = apply(as.data.frame(samples_W), 1, emprical_mode),
+    "5quantile" = apply(as.data.frame(samples_W), 1, function(x) {quantile(x, 0.05)}),
+    "95quantile" = apply(as.data.frame(samples_W), 1, function(x) {quantile(x, 0.95)}),
+    "quantile"  = {
       stopifnot("please provide quantile argument q between 0 to 1"
         = !is.null(q) && length(q) == 1 && q > 0 && q < 1)
       apply(as.data.frame(samples_W), 1, function(x) {quantile(x, q)})

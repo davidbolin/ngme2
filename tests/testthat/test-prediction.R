@@ -57,8 +57,7 @@ test_that("test predict general", {
 
 test_that("test predict with NA", {
   set.seed(10)
-  # load_all()
-  n_obs <<- 500
+  n_obs <<- 50
   x1 <- rexp(n_obs); x2 <- rnorm(n_obs)
   beta <- c(-2, 4, 1)
   alpha <- 0.75

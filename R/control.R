@@ -40,11 +40,11 @@
 #' @export
 ngme_control <- function(
   burnin            = 100,
-  iterations        = 100,
+  iterations        = 500,
   gibbs_sample      = 5,
   stepsize          = 1,
   estimation        = TRUE,
-  post_samples_size = 1000,
+  post_samples_size = 100,
 
   # parallel options
   n_parallel_chain  = 2,

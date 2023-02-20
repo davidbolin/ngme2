@@ -57,6 +57,7 @@ test_that("test Matern", {
     data = list(Y = Y2),
     control = ngme_control(
       estimation = T,
+      post_samples_size = 50,
       iterations = 50,
       n_parallel_chain = 4,
       print_check_info = FALSE

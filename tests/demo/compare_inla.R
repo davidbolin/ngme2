@@ -60,17 +60,14 @@ traceplot(result_ngme, "mn")
 with(mcycle, {plot(times, accel)})
 lines(mesh$loc, result_ngme$latents[["myspde"]]$W, lwd=2)
 lines(mesh$loc, result_inla$summary.random$time[, "mean"], col=2, lwd=2)
-postW <- predict(result_ngme, loc=list(myspde = mesh$loc))
-postW_mode <- predict(result_ngme, N=1000, loc=list(myspde = mesh$loc), estimator="mode")
-postW_median <- predict(result_ngme, loc=list(myspde = mesh$loc), estimator="median")
-postW_q25 <- predict(result_ngme, loc=list(myspde = mesh$loc), estimator="quantile", q=0.25)
-postW_q75 <- predict(result_ngme, loc=list(myspde = mesh$loc), estimator="quantile", q=0.75)
+pred_W <- predict(result_ngme, loc=list(myspde = mesh$loc))
+# by default we compute, a bunch of statistics for the given location
+str(pred_W)
 
-lines(mesh$loc, postW, col=3, lwd=2)
-lines(mesh$loc, postW_median, col=7, lwd=2)
-lines(mesh$loc, postW_q25, col=4, lwd=2)
-lines(mesh$loc, postW_q75, col=5, lwd=2)
-lines(mesh$loc, postW_mode, col=6, lwd=2)
+with(mcycle, {plot(times, accel)})
+lines(mesh$loc, pred_W[["median"]], col=3, lwd=2)
+lines(mesh$loc, pred_W[["5quantile"]], col=5, lwd=2)
+lines(mesh$loc, pred_W[["95quantile"]], col=4, lwd=2)
 
 # refit the model using nig noise
 result_ngme2 <- ngme(
@@ -123,9 +120,8 @@ prd_idx <- inla.stack.index(stk, "pred")$data
 prd_inla <- result_inla_prd$summary.fitted.values[prd_idx, 1] # mean
 
 # predict with ngme
-prd_ngme <- predict(result_ngme2, loc = list(myspde=locs))
+prd_ngme <- predict(result_ngme2, loc = list(myspde=locs))[["mean"]]
 
 with(mcycle, {plot(times, accel)})
 lines(locs, prd_inla)
 lines(locs, prd_ngme, col=2)
-

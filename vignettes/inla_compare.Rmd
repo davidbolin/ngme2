@@ -103,15 +103,16 @@ Here, we can directly read the estimation of kappa and sigma (1/tau) as shown in
 ```{r}
 with(mcycle, {plot(times, accel)})
 lines(mesh$loc, result_inla$summary.random$time[, "mean"], col=2, lwd=2)
-postW <- predict(result_ngme, loc=list(myspde = mesh$loc))
-lines(mesh$loc, postW, col=3, lwd=2)
+pred_W <- predict(result_ngme, loc=list(myspde = mesh$loc))
+# by dafult, predict() returns a bunch of statistics at the given location
+str(pred_W)
+lines(mesh$loc, pred_W[["mean"]], col=3, lwd=2)
 title("Posterior mean with Ngme2 and INLA")
 # One can add some quantile band to the plot using Ngme2
-postW_q25 <- predict(result_ngme, loc=list(myspde = mesh$loc), estimator="quantile", q=0.25)
-postW_q75 <- predict(result_ngme, loc=list(myspde = mesh$loc), estimator="quantile", q=0.75)
-lines(mesh$loc, postW_q25, col=4, lwd=2, lty=2)
-lines(mesh$loc, postW_q75, col=5, lwd=2, lty=2)
-legend("bottomright", legend=c("INLA", "Ngme2", "Ngme2 25%", "Ngme2 75%"), col=c(2, 3, 4, 5), lwd=2, lty=c(1, 1, 2, 2))
+lines(mesh$loc, pred_W[["5quantile"]], col=4, lwd=2, lty=2)
+lines(mesh$loc, pred_W[["95quantile"]], col=5, lwd=2, lty=2)
+legend("topright", legend=c("INLA", "Ngme2", "Ngme2 5% quantile", "Ngme2 95% quantile"),
+  col=c(2, 3, 4, 5), lty=c(1, 1, 2, 2), lwd=c(2, 2, 2, 2))
 ```
 
 ## Extend model to non-Gaussian case
@@ -151,7 +152,7 @@ Next, we call the `predict` function with `loc` argument provided with a list of
 
 ```{r}
 # similar to the posterior mean in previous section
-prd_ngme <- predict(result_ngme2, loc = list(myspde=locs))
+prd_ngme <- predict(result_ngme2, loc = list(myspde=locs))[["mean"]]
 
 with(mcycle, {plot(times, accel)})
 lines(locs, prd_ngme, col=2)

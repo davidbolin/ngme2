@@ -192,7 +192,10 @@ maximum edge length.</p>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; Starting estimation... </span></span>
-<span><span class="co">#&gt; Estimation done!</span></span>
+<span><span class="co">#&gt; Estimation done! </span></span>
+<span><span class="co">#&gt; Starting posterior sampling... </span></span>
+<span><span class="co">#&gt; Note: Use ngme$latents[[model_name]]$W  to access the posterior mean of process </span></span>
+<span><span class="co">#&gt; Posterior sampling done!</span></span>
 <span><span class="va">result_ngme</span></span>
 <span><span class="co">#&gt; *** Ngme object ***</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -209,7 +212,7 @@ maximum edge length.</p>
 <span><span class="co">#&gt; $myspde</span></span>
 <span><span class="co">#&gt;   Ngme model: matern</span></span>
 <span><span class="co">#&gt;   Model parameters: </span></span>
-<span><span class="co">#&gt;       kappa = 0.239</span></span>
+<span><span class="co">#&gt;       kappa = 0.246</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Noise type - normal</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
@@ -223,15 +226,23 @@ as shown in the result.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="va">mcycle</span>, <span class="op">{</span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">times</span>, <span class="va">accel</span><span class="op">)</span><span class="op">}</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines</a></span><span class="op">(</span><span class="va">mesh</span><span class="op">$</span><span class="va">loc</span>, <span class="va">result_inla</span><span class="op">$</span><span class="va">summary.random</span><span class="op">$</span><span class="va">time</span><span class="op">[</span>, <span class="st">"mean"</span><span class="op">]</span>, col<span class="op">=</span><span class="fl">2</span>, lwd<span class="op">=</span><span class="fl">2</span><span class="op">)</span></span>
-<span><span class="va">postW</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">result_ngme</span>, loc<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>myspde <span class="op">=</span> <span class="va">mesh</span><span class="op">$</span><span class="va">loc</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines</a></span><span class="op">(</span><span class="va">mesh</span><span class="op">$</span><span class="va">loc</span>, <span class="va">postW</span>, col<span class="op">=</span><span class="fl">3</span>, lwd<span class="op">=</span><span class="fl">2</span><span class="op">)</span></span>
+<span><span class="va">pred_W</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">result_ngme</span>, loc<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>myspde <span class="op">=</span> <span class="va">mesh</span><span class="op">$</span><span class="va">loc</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co"># by dafult, predict() returns a bunch of statistics at the given location</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">pred_W</span><span class="op">)</span></span>
+<span><span class="co">#&gt; List of 6</span></span>
+<span><span class="co">#&gt;  $ mean      : num [1:94] -1.04 -1.06 -1.32 -1.37 -1.21 ...</span></span>
+<span><span class="co">#&gt;  $ sd        : num [1:94] 11.04 10.4 8.96 8.55 8.54 ...</span></span>
+<span><span class="co">#&gt;  $ 5quantile : num [1:94] -20 -16.9 -15.6 -13.9 -14.1 ...</span></span>
+<span><span class="co">#&gt;  $ 95quantile: num [1:94] 16 16.1 11.8 11.9 11.9 ...</span></span>
+<span><span class="co">#&gt;  $ median    : num [1:94] -0.207 -0.89 -0.632 -1.579 -0.843 ...</span></span>
+<span><span class="co">#&gt;  $ mode      : num [1:94] -15 5 3 -3 -1 -3 -5 -9 -3 -3 ...</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines</a></span><span class="op">(</span><span class="va">mesh</span><span class="op">$</span><span class="va">loc</span>, <span class="va">pred_W</span><span class="op">[[</span><span class="st">"mean"</span><span class="op">]</span><span class="op">]</span>, col<span class="op">=</span><span class="fl">3</span>, lwd<span class="op">=</span><span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/title.html" class="external-link">title</a></span><span class="op">(</span><span class="st">"Posterior mean with Ngme2 and INLA"</span><span class="op">)</span></span>
 <span><span class="co"># One can add some quantile band to the plot using Ngme2</span></span>
-<span><span class="va">postW_q25</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">result_ngme</span>, loc<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>myspde <span class="op">=</span> <span class="va">mesh</span><span class="op">$</span><span class="va">loc</span><span class="op">)</span>, estimator<span class="op">=</span><span class="st">"quantile"</span>, q<span class="op">=</span><span class="fl">0.25</span><span class="op">)</span></span>
-<span><span class="va">postW_q75</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">result_ngme</span>, loc<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>myspde <span class="op">=</span> <span class="va">mesh</span><span class="op">$</span><span class="va">loc</span><span class="op">)</span>, estimator<span class="op">=</span><span class="st">"quantile"</span>, q<span class="op">=</span><span class="fl">0.75</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines</a></span><span class="op">(</span><span class="va">mesh</span><span class="op">$</span><span class="va">loc</span>, <span class="va">postW_q25</span>, col<span class="op">=</span><span class="fl">4</span>, lwd<span class="op">=</span><span class="fl">2</span>, lty<span class="op">=</span><span class="fl">2</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines</a></span><span class="op">(</span><span class="va">mesh</span><span class="op">$</span><span class="va">loc</span>, <span class="va">postW_q75</span>, col<span class="op">=</span><span class="fl">5</span>, lwd<span class="op">=</span><span class="fl">2</span>, lty<span class="op">=</span><span class="fl">2</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/legend.html" class="external-link">legend</a></span><span class="op">(</span><span class="st">"bottomright"</span>, legend<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"INLA"</span>, <span class="st">"Ngme2"</span>, <span class="st">"Ngme2 25%"</span>, <span class="st">"Ngme2 75%"</span><span class="op">)</span>, col<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">4</span>, <span class="fl">5</span><span class="op">)</span>, lwd<span class="op">=</span><span class="fl">2</span>, lty<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines</a></span><span class="op">(</span><span class="va">mesh</span><span class="op">$</span><span class="va">loc</span>, <span class="va">pred_W</span><span class="op">[[</span><span class="st">"5quantile"</span><span class="op">]</span><span class="op">]</span>, col<span class="op">=</span><span class="fl">4</span>, lwd<span class="op">=</span><span class="fl">2</span>, lty<span class="op">=</span><span class="fl">2</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines</a></span><span class="op">(</span><span class="va">mesh</span><span class="op">$</span><span class="va">loc</span>, <span class="va">pred_W</span><span class="op">[[</span><span class="st">"95quantile"</span><span class="op">]</span><span class="op">]</span>, col<span class="op">=</span><span class="fl">5</span>, lwd<span class="op">=</span><span class="fl">2</span>, lty<span class="op">=</span><span class="fl">2</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/legend.html" class="external-link">legend</a></span><span class="op">(</span><span class="st">"topright"</span>, legend<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"INLA"</span>, <span class="st">"Ngme2"</span>, <span class="st">"Ngme2 5% quantile"</span>, <span class="st">"Ngme2 95% quantile"</span><span class="op">)</span>,</span>
+<span>  col<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">4</span>, <span class="fl">5</span><span class="op">)</span>, lty<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span>, lwd<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">2</span>, <span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="inla_compare_files/figure-html/unnamed-chunk-7-1.png" width="700"></p>
 </div>
 </div>
@@ -255,7 +266,10 @@ easily extend the model to non-Gaussian case by changing the
 <span>  start <span class="op">=</span> <span class="va">result_ngme</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; Starting estimation... </span></span>
-<span><span class="co">#&gt; Estimation done!</span></span>
+<span><span class="co">#&gt; Estimation done! </span></span>
+<span><span class="co">#&gt; Starting posterior sampling... </span></span>
+<span><span class="co">#&gt; Note: Use ngme$latents[[model_name]]$W  to access the posterior mean of process </span></span>
+<span><span class="co">#&gt; Posterior sampling done!</span></span>
 <span><span class="va">result_ngme2</span></span>
 <span><span class="co">#&gt; *** Ngme object ***</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -265,20 +279,20 @@ easily extend the model to non-Gaussian case by changing the
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type - normal</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 24.1</span></span>
+<span><span class="co">#&gt;       sigma = 22.6</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Latent models: </span></span>
 <span><span class="co">#&gt; $myspde</span></span>
 <span><span class="co">#&gt;   Ngme model: matern</span></span>
 <span><span class="co">#&gt;   Model parameters: </span></span>
-<span><span class="co">#&gt;       kappa = 0.282</span></span>
+<span><span class="co">#&gt;       kappa = 0.294</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Noise type - nig</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -2.13</span></span>
-<span><span class="co">#&gt;       sigma = 12.9</span></span>
-<span><span class="co">#&gt;       nu = 0.198</span></span>
+<span><span class="co">#&gt;       mu = -2.54</span></span>
+<span><span class="co">#&gt;       sigma = 8.32</span></span>
+<span><span class="co">#&gt;       nu = 0.178</span></span>
 <span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">result_ngme2</span>, <span class="st">"myspde"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="inla_compare_files/figure-html/unnamed-chunk-8-1.png" width="700"></p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
@@ -302,7 +316,7 @@ argument provided with a list of new locations (for each latent
 model).</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># similar to the posterior mean in previous section</span></span>
-<span><span class="va">prd_ngme</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">result_ngme2</span>, loc <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>myspde<span class="op">=</span><span class="va">locs</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">prd_ngme</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">result_ngme2</span>, loc <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>myspde<span class="op">=</span><span class="va">locs</span><span class="op">)</span><span class="op">)</span><span class="op">[[</span><span class="st">"mean"</span><span class="op">]</span><span class="op">]</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="va">mcycle</span>, <span class="op">{</span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">times</span>, <span class="va">accel</span><span class="op">)</span><span class="op">}</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines</a></span><span class="op">(</span><span class="va">locs</span>, <span class="va">prd_ngme</span>, col<span class="op">=</span><span class="fl">2</span><span class="op">)</span></span>

@@ -111,7 +111,7 @@ title("Posterior mean with Ngme2 and INLA")
 # One can add some quantile band to the plot using Ngme2
 lines(mesh$loc, pred_W[["5quantile"]], col=4, lwd=2, lty=2)
 lines(mesh$loc, pred_W[["95quantile"]], col=5, lwd=2, lty=2)
-legend("topright", legend=c("INLA", "Ngme2", "Ngme2 5% quantile", "Ngme2 95% quantile"),
+legend("bottomright", legend=c("INLA", "Ngme2", "Ngme2 5% quantile", "Ngme2 95% quantile"),
   col=c(2, 3, 4, 5), lty=c(1, 1, 2, 2), lwd=c(2, 2, 2, 2))
 ```
 

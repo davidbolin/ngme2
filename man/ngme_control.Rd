@@ -6,10 +6,11 @@
 \usage{
 ngme_control(
   burnin = 100,
-  iterations = 100,
+  iterations = 500,
   gibbs_sample = 5,
   stepsize = 1,
   estimation = TRUE,
+  post_samples_size = 100,
   n_parallel_chain = 2,
   stop_points = 10,
   exchange_VW = TRUE,
@@ -37,6 +38,8 @@ ngme_control(
 \item{stepsize}{stepsize}
 
 \item{estimation}{estimating the parameters}
+
+\item{post_samples_size}{number of posterior samples}
 
 \item{n_parallel_chain}{number of parallel chains}
 

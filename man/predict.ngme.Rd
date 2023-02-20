@@ -10,7 +10,7 @@ predict using ngme after estimation}
   data = NULL,
   loc = NULL,
   type = "lp",
-  estimator = "mean",
+  estimator = c("mean", "sd", "5quantile", "95quantile", "median", "mode"),
   sampling_size = 100,
   q = NULL,
   ...

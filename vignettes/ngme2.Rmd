@@ -454,7 +454,7 @@ seaDist.prd <- apply(spDists(coord.prd,
 ), 1, min)
 
 # doing prediction by giving the predict location
-lp <- predict(out, loc=list(seaDist.prd, coord.prd))
+lp <- predict(out, loc=list(seaDist.prd, coord.prd))[["mean"]]
 
 ggplot() +
   geom_point(aes(

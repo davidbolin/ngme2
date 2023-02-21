@@ -27,6 +27,7 @@ private:
     VectorXd V, prevV;
     bool fix_V, fix_nu;
 public:
+    Var() {}
     Var(const Rcpp::List& noise_list, unsigned long seed) :
         var_rng       (seed),
         noise_type    (Rcpp::as<string>  (noise_list["noise_type"])),

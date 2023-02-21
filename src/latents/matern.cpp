@@ -102,6 +102,8 @@ VectorXd Matern::grad_theta_K() {
         // 1. numerical gradient
         ret = numerical_grad()(0);
     } else {
+    // to-do
+    VectorXd W = VectorXd::Zero(W_size);
         // 2. analytical gradient and numerical hessian
         double tmp = (dK*W).cwiseProduct(SV.cwiseInverse()).dot(K * W + (h - V).cwiseProduct(mu));
         double grad = trace - tmp;
@@ -118,8 +120,12 @@ VectorXd Matern::grad_theta_K() {
             SparseMatrix<double> dK2 = get_dK_by_eps(0, 0, eps);
 
             // grad(x+eps) - grad(x) / eps
-            VectorXd prevV = getPrevV();
-            VectorXd prevSV = getPrevSV();
+            VectorXd prevV = vars[0].getPrevV();
+            VectorXd prevSV = sigma.array().pow(2).matrix().cwiseProduct(prevV);
+
+    // to-do
+    VectorXd prevW = VectorXd::Zero(W_size);
+
             double grad2_eps = trace_eps - (dK2*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K2 * prevW + (h - prevV).cwiseProduct(mu));
             double grad_eps  = trace - (dK*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K * prevW + (h - prevV).cwiseProduct(mu));
             double hess = (grad2_eps - grad_eps) / eps;

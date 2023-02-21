@@ -47,14 +47,15 @@ protected:
     std::mt19937 latent_rng;
     string model_type, noise_type;
     bool debug;
-    int W_size, V_size, n_params, n_var {1}; // n_params=n_theta_K + n_theta_mu + n_theta_sigma + n_var
+    int n_rep, W_size, V_size, n_params, n_var {1}; // n_params=n_theta_K + n_theta_mu + n_theta_sigma + n_var
 
     // operator K related
     VectorXd theta_K;
+    int n_theta_K;
 
     bool use_num_dK {false};
     SparseMatrix<double, 0, int> K, dK, d2K;
-    int n_theta_K;
+    SparseMatrix<double, 0, int> K_rep;
 
     bool fix_flag[LATENT_FIX_FLAG_SIZE] {0};
 
@@ -73,10 +74,14 @@ protected:
     // eps for numerical gradient.
     double trace, trace_eps, eps;
 
-    VectorXd W, prevW, h;
+    // VectorXd W, prevW, h;
+    VectorXd h;
     SparseMatrix<double,0,int> A;
 
-    Var var;
+    vector<VectorXd> Ws, prevWs;
+    vector<Var> vars;
+
+    // Var var;
 
     // solver
     cholesky_solver chol_solver_K;
@@ -102,49 +107,126 @@ public:
     virtual void update_each_iter()=0;
 
     /*  1 Model itself   */
-    int get_W_size() const                  {return W_size; }
-    int get_V_size() const                  {return V_size; }
+    int get_W_size() const                  {return n_rep * W_size; }
+    int get_V_size() const                  {return n_rep * V_size; }
     int get_n_params() const                {return n_params; }
     SparseMatrix<double, 0, int>& getA()    {return A; }
 
-    const VectorXd& getW()  const           {return W; }
-    void            setW(const VectorXd& newW) {
+    // concat W of different replicate
+    const VectorXd getW() const {
+        VectorXd W(n_rep * W_size);
+        for (int i=0; i < n_rep; i++) {
+            W.segment(i*W_size, W_size) = Ws[i];
+        }
+        return W;
+    }
+
+    const VectorXd getPrevW()  const {
+        VectorXd W(n_rep * W_size);
+        for (int i=0; i < n_rep; i++) {
+            W.segment(i*W_size, W_size) = prevWs[i];
+        }
+        return W;
+    }
+
+    // newW is of size n_rep * W_size
+    void setW(const VectorXd& newW) {
         if (!fix_flag[latent_fix_W]) {
-            prevW = W; W = newW;
+            // prevW = W; W = newW;
+            for (int i=0; i < n_rep; i++) {
+                prevWs[i] = Ws[i];
+                Ws[i] = newW.segment(i*W_size, W_size);
+            }
         }
     }
-    const VectorXd& getPrevW()  const       {return prevW; }
-    void setPrevW(const VectorXd& W) { prevW = W; }
 
-    VectorXd getMean() const { return mu.cwiseProduct(getV()-h); }
+    void setPrevW(const VectorXd& W) {
+        for (int i=0; i < n_rep; i++) {
+            prevWs[i] = W.segment(i*W_size, W_size);
+        }
+    }
+
+    // return of dim V_size
+    // const VectorXd getVMean() const {
+    //     VectorXd meanV(V_size);
+    //     for (int i=0; i < n_rep; i++) {
+    //         meanV += vars[i].getV();
+    //     }
+    //     return meanV / n_rep;
+    // }
+
+    // used in block model
+    VectorXd getMean() const {
+        VectorXd Mean (n_rep * V_size);
+        for (int i=0; i < n_rep; i++) {
+            VectorXd V = vars[i].getV();
+            Mean.segment(i*V_size, V_size) = mu.cwiseProduct(V - h);
+        }
+        return Mean;
+    }
 
     /*  2 Variance component   */
-    const VectorXd& getV()     const { return var.getV(); }
-    const VectorXd& getPrevV() const { return var.getPrevV(); }
-    void setPrevV(const VectorXd& V) { var.setPrevV(V); }
+    const VectorXd getV() const {
+        VectorXd V(V_size * n_rep);
+        for (int i=0; i < n_rep; i++) {
+            V.segment(i*V_size, V_size) = vars[i].getV();
+        }
+        return V;
+    }
+    const VectorXd getPrevV() const {
+        VectorXd V(V_size * n_rep);
+        for (int i=0; i < n_rep; i++) {
+            V.segment(i*V_size, V_size) = vars[i].getPrevV();
+        }
+        return V;
+    }
+    const VectorXd getSV() const {
+        VectorXd SV(V_size * n_rep);
+        for (int i=0; i < n_rep; i++) {
+            SV.segment(i*V_size, V_size) = sigma.array().pow(2).matrix().cwiseProduct(vars[i].getV());
+        }
+        return SV;
+    }
+    void setPrevV(const VectorXd& V) {
+        for (int i=0; i < n_rep; i++) {
+            vars[i].setPrevV(V.segment(i*V_size, V_size));
+        }
+    }
 
-    VectorXd getSV() const {
-        VectorXd V = getV();
-        return (sigma.array().pow(2).matrix().cwiseProduct(V));
-    }
-    VectorXd getPrevSV() const {
-        VectorXd prevV = getPrevV();
-        return (sigma.array().pow(2).matrix().cwiseProduct(prevV));
-    }
+    // VectorXd getSV() const {
+    //     VectorXd V = getV();
+    //     return (sigma.array().pow(2).matrix().cwiseProduct(V));
+    // }
+    // VectorXd getPrevSV() const {
+    //     VectorXd prevV = getPrevV();
+    //     return (sigma.array().pow(2).matrix().cwiseProduct(prevV));
+    // }
 
     void sample_V() {
-        var.sample_V();
+        for (int i=0; i < n_rep; i++) {
+            vars[i].sample_V();
+        }
     }
 
     void sample_cond_V() {
-        VectorXd tmp = (K * W + mu.cwiseProduct(h));
         VectorXd a_inc_vec = mu.cwiseQuotient(sigma).array().pow(2);
-        VectorXd b_inc_vec = tmp.cwiseQuotient(sigma).array().pow(2);
-        var.sample_cond_V(a_inc_vec, b_inc_vec);
+        for (int i=0; i < n_rep; i++) {
+            VectorXd W = Ws[i];
+            VectorXd tmp = (K * W + mu.cwiseProduct(h));
+            VectorXd b_inc_vec = tmp.cwiseQuotient(sigma).array().pow(2);
+            vars[i].sample_cond_V(a_inc_vec, b_inc_vec);
+        }
     }
 
     /*  3 Operator component   */
-    SparseMatrix<double, 0, int>& getK()    { return K; }
+    SparseMatrix<double, 0, int>& getK()  {
+        // SparseMatrix<double, 0, int> K_rep (n_rep * V_size, n_rep * W_size);
+        // for (int i=0; i < n_rep; i++) {
+        //     setSparseBlock(&K_rep, i*V_size, i*W_size, K);
+        // }
+        // return K_rep;
+        return K_rep;
+    }
 
     // get K/dK using different parameter
     virtual SparseMatrix<double, 0, int> getK(const VectorXd&) const=0;
@@ -254,7 +336,12 @@ public:
     virtual VectorXd grad_theta_sigma();
     virtual VectorXd grad_theta_sigma_normal(); // grad of sig. only for normal noise
 
-    virtual void   set_log_nu(double v) { var.set_log_nu(v); }
+    double grad_theta_nu() {
+        double grad = 0;
+        for (int i=0; i < n_rep; i++)
+            grad += vars[i].grad_log_nu();
+        return grad;
+    }
 
     // Output
     // virtual Rcpp::List get_estimates() const=0;
@@ -270,7 +357,7 @@ public:
         if (noise_type=="normal_nig")
             for (int i=0; i < theta_sigma_normal.size(); i++)
                 theta_sigma_normal_traj[i].push_back(theta_sigma_normal(i));
-        nu_traj.push_back(var.get_nu());
+        nu_traj.push_back(vars[0].get_nu());
     }
 
     // stop estimate theta_K if converged
@@ -297,7 +384,7 @@ inline const VectorXd Latent::get_parameter() const {
         parameter.segment(0, n_theta_K)                         = theta_K;
         parameter.segment(n_theta_K, n_theta_mu)                = theta_mu;
         parameter.segment(n_theta_K+n_theta_mu, n_theta_sigma)  = theta_sigma;
-        parameter(n_theta_K+n_theta_mu+n_theta_sigma)           = var.get_log_nu();
+        parameter(n_theta_K+n_theta_mu+n_theta_sigma)           = vars[0].get_log_nu();
     if (noise_type == "normal_nig")
         parameter.segment(n_theta_K+n_theta_mu+n_theta_sigma+1, n_theta_sigma_normal) = theta_sigma_normal;
     }
@@ -308,18 +395,25 @@ if (debug) std::cout << "parameter= " << parameter << std::endl;
 }
 
 inline const VectorXd Latent::get_grad() {
-// if (debug) std::cout << "Start latent gradient"<< std::endl;
+if (debug) std::cout << "Start latent gradient"<< std::endl;
 // auto grad1 = std::chrono::steady_clock::now();
-    VectorXd grad (n_params);
+    VectorXd grad = VectorXd::Zero(n_params);
 
     if (noise_type == "normal") {
-        if (!fix_flag[latent_fix_theta_K])     grad.segment(0, n_theta_K)                        = grad_theta_K();         else grad.segment(0, n_theta_K) = VectorXd::Constant(n_theta_K, 0);
-        if (!fix_flag[latent_fix_theta_sigma]) grad.segment(n_theta_K, n_theta_sigma) = grad_theta_sigma();     else grad.segment(n_theta_K, n_theta_sigma) = VectorXd::Constant(n_theta_sigma, 0);
+        if (!fix_flag[latent_fix_theta_K])
+            grad.segment(0, n_theta_K) = grad_theta_K();
+if (debug) std::cout << "after K"<< std::endl;
+        if (!fix_flag[latent_fix_theta_sigma])
+            grad.segment(n_theta_K, n_theta_sigma) = grad_theta_sigma();
     } else {
-        if (!fix_flag[latent_fix_theta_K])     grad.segment(0, n_theta_K)                        = grad_theta_K();         else grad.segment(0, n_theta_K) = VectorXd::Constant(n_theta_K, 0);
-        if (!fix_flag[latent_fix_theta_mu])    grad.segment(n_theta_K, n_theta_mu)               = grad_theta_mu();        else grad.segment(n_theta_K, n_theta_mu) = VectorXd::Constant(n_theta_mu, 0);
-        if (!fix_flag[latent_fix_theta_sigma]) grad.segment(n_theta_K+n_theta_mu, n_theta_sigma) = grad_theta_sigma();     else grad.segment(n_theta_K+n_theta_mu, n_theta_sigma) = VectorXd::Constant(n_theta_sigma, 0);
-        grad(n_theta_K+n_theta_mu+n_theta_sigma)  = var.grad_log_nu();
+        if (!fix_flag[latent_fix_theta_K])
+            grad.segment(0, n_theta_K) = grad_theta_K();
+        if (!fix_flag[latent_fix_theta_mu])
+            grad.segment(n_theta_K, n_theta_mu) = grad_theta_mu();
+        if (!fix_flag[latent_fix_theta_sigma])
+            grad.segment(n_theta_K+n_theta_mu, n_theta_sigma) = grad_theta_sigma();
+        grad(n_theta_K+n_theta_mu+n_theta_sigma)  = grad_theta_nu();
+
         if (noise_type == "normal_nig")
             grad.segment(n_theta_K+n_theta_mu+n_theta_sigma+1, n_theta_sigma_normal) = grad_theta_sigma_normal();
     }
@@ -329,6 +423,7 @@ if (debug) {
     std::cout << "gradient= " << grad << std::endl;
     // std::cout << "one latent gradient time " << since(grad1).count() << std::endl;
 }
+if (debug) std::cout << "finish latent gradient"<< std::endl;
     return grad;
 }
 
@@ -343,7 +438,8 @@ inline void Latent::set_parameter(const VectorXd& theta) {
         theta_K  = theta.segment(0, n_theta_K);
         theta_mu = theta.segment(n_theta_K, n_theta_mu);
         theta_sigma = theta.segment(n_theta_K+n_theta_mu, n_theta_sigma);
-        var.set_log_nu   (theta(n_theta_K+n_theta_mu+n_theta_sigma));
+        double log_nu = (theta(n_theta_K+n_theta_mu+n_theta_sigma));
+        for (int i=0; i < n_rep; i++) vars[i].set_log_nu(log_nu); // for each replicate
 
         // update
         mu = (B_mu * theta_mu);

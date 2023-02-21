@@ -7,6 +7,7 @@ ngme_model <- function(
   theta_K     = NULL,
   fix_theta_K = FALSE,
   W           = NULL,
+  Ws          = NULL, # a list of W for each replicate
   fix_W       = FALSE,
   A           = NULL,
   A_pred      = NULL,
@@ -23,6 +24,7 @@ ngme_model <- function(
   map         = NULL,  # map is the covariates
   n_map       = NULL,
   replicate   = NULL,
+  n_rep       = 1,
   ...
 ) {
   stopifnot(is.character(model))
@@ -42,6 +44,9 @@ ngme_model <- function(
     par_string <- do.call(paste0, as.list(c(K_str, sigma_str)))
   else
     par_string <- do.call(paste0, as.list(c(K_str, mu_str, sigma_str, nu_str)))
+
+  stopifnot("replicate is NULL" = !is.null(replicate))
+  replicate <- as.integer(replicate)
 
   structure(
     list(
@@ -67,6 +72,7 @@ ngme_model <- function(
       map           = map,
       n_map         = n_map,
       replicate     = replicate,
+      n_rep         = n_rep,
       ...
     ),
     class = "ngme_model"

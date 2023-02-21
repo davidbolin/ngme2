@@ -23,6 +23,9 @@ if (debug) std::cout << "Begin Constructor of AR1" << std::endl;
 
     // Init K and Q
     K = getK(theta_K);
+    for (int i=0; i < n_rep; i++)
+        setSparseBlock(&K_rep, i*V_size, i*V_size, K);
+
     SparseMatrix<double> Q = K.transpose() * K;
 
     // watch out!
@@ -63,24 +66,29 @@ void AR::update_num_dK() {
 // return length 1 vectorxd : grad_kappa * dkappa/dtheta
 VectorXd AR::grad_theta_K() {
     SparseMatrix<double> dK = get_dK_by_index(0);
-    VectorXd V = getV();
-    VectorXd SV = getSV();
 
     double a = th2a(theta_K(0));
     double th = a2th(a);
-
     double da  = 2 * (exp(th) / pow(1+exp(th), 2));
     // double d2a = 2 * (exp(th) * (-1+exp(th)) / pow(1+exp(th), 3));
 
     double ret = 0;
-    if (numer_grad) {
-        // 1. numerical gradient
-        ret = numerical_grad()(0);
-    } else {
-        // 2. analytical gradient and numerical hessian
-        double tmp = (dK*W).cwiseProduct(SV.cwiseInverse()).dot(K * W + (h - V).cwiseProduct(mu));
-        double grad = trace - tmp;
-        ret = - grad * da / W_size;
+    for (int i=0; i < n_rep; i++) {
+        VectorXd W = Ws[i];
+        VectorXd V = vars[i].getV();
+        VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
+
+        if (numer_grad) {
+            // 1. numerical gradient
+            ret += numerical_grad()(0);
+        } else {
+            // 2. analytical gradient and numerical hessian
+            double tmp = (dK*W).cwiseProduct(SV.cwiseInverse()).dot(K * W + (h - V).cwiseProduct(mu));
+            double grad = trace - tmp;
+            ret += - grad * da / W_size;
+        }
+    }
+    return VectorXd::Constant(1, ret);
 
     // if (debug) std::cout << "tmp =" << tmp << std::endl;
     // if (debug) std::cout << "trace =" << trace << std::endl;
@@ -113,15 +121,15 @@ VectorXd AR::grad_theta_K() {
 
 //             ret = (grad * da) / (hess * da * da + grad_eps * d2a);
 //         }
-    }
-
-    return VectorXd::Constant(1, ret);
 }
 
 void AR::update_each_iter() {
     K = getK(theta_K);
     dK = get_dK(0, theta_K);
     d2K = 0 * C;
+
+    for (int i=0; i < n_rep; i++)
+        setSparseBlock(&K_rep, i*V_size, i*V_size, K);
 
     if (use_num_dK) {
         update_num_dK();

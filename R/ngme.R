@@ -114,8 +114,8 @@ ngme <- function(
     X_data    <- X_full[!index_NA, , drop = FALSE]
 
     ############### W_sizes is the dim of the block matrix
-    W_sizes     = sum(unlist(lapply(latents_in, function(x) x["W_size"])))   #W_sizes = sum(ncol_K)
-    V_sizes     = sum(unlist(lapply(latents_in, function(x) x["V_size"])))   #W_sizes = sum(nrow_K)
+    W_sizes     = sum(unlist(lapply(latents_in, function(x) x[["n_rep"]] * x[["W_size"]])))   #W_sizes = sum(ncol_K)
+    V_sizes     = sum(unlist(lapply(latents_in, function(x) x[["n_rep"]] * x[["V_size"]])))   #W_sizes = sum(nrow_K)
     n_la_params = sum(unlist(lapply(latents_in, function(x) x["n_params"])))
 
     n_feff <- ncol(X_data);
@@ -183,6 +183,7 @@ for (latent in ngme_block$latents) {
     nrow(latent$K) == latent$V_size)
   stopifnot("ncol(K) should be equal to length of mesh, please check idx, replicate argument" =
     ncol(latent$K) == latent$W_size)
+  # check given V > 0
 }
 
   ################# Run CPP ####################

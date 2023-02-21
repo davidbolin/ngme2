@@ -79,7 +79,6 @@ if (debug) std::cout << "before set block A" << std::endl;
     setSparseBlock(&A, 0, n, (*it)->getA());
     n += (*it)->get_W_size();
   }
-if (debug) std::cout << "After set block A" << std::endl;
 
   assemble();
 if (debug) std::cout << "After set block K" << std::endl;
@@ -108,7 +107,7 @@ if (debug) std::cout << "After block construct noise" << std::endl;
   // if (fix_flag[block_fix_V]) var.fixV();
 
   // 6. Init solvers
-  if(n_latent > 0){
+  if(n_latent > 0) {
     VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
     SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
     SparseMatrix<double> QQ = Q + A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(var.getV()).asDiagonal() * A;

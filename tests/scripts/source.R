@@ -1,57 +1,91 @@
-install_github("ArgoCanada/argoFloats", ref="develop")
+  # library(INLA)
+  # load_all()
+  # n1 <<- 5
+  # n2 <<- 10
+  # z1 = arima.sim(n1, model = list(ar = 0.5), sd = 0.5)
+  # z2 = arima.sim(n2, model = list(ar = 0.5), sd = 0.5)
 
-library(oce)
-library(ocedata)
-library(argoFloats)
-data(index)
-str(index)
-plot(index, bathymetry=TRUE)
-install.packages("ncdf4")
+  # idx <- c(1:n1, 1:n2); idx
+  # rep <- c(rep(1, n1), rep(2, n2)); rep
+
+  # # 1. create mesh using largest idx
+  # mesh = inla.mesh.1d(loc = 1:10)
+  # inla.spde.make.A(loc = idx, mesh=mesh, repl=rep)
+
+  # out <- ngme(
+  #   z ~ f(idx, model="ar1", replicate=rep, noise=noise_normal()),
+  #   data = list(z = c(z1, z2)),
+  #   control = ngme_control(
+  #     iterations = 20
+  #   )
+  # )
+
+  # m1 <- model_ar1(idx, replicate=rep)
+  # str(m1)
+  # # W_size is 15 or 20??
 
 
+  # # out
+  # # traceplot(out, "field1")
+  # prds <- predict(out, loc=list(field1 = c(2,4,5)))
+  # expect_equal(length(prds), 6)
 
+  # out2 <- ngme(
+  #   z ~ f(c(1:n ,1:n), model="rw1", replicate=rep(1:2,each=n), noise=noise_normal()),
+  #   data = list(z = c(z1, z2)),
+  #   control = ngme_control(
+  #     estimation = TRUE,
+  #     iterations = 20
+  #   )
+  # )
+  # prds2 <- predict(out2, loc=list(field1 = c(2,4,5)))
+  # expect_equal(length(prds2), 6)
 
-ai <- getIndex("core")
+load_all()
+####### test nrep = 1
+# n1 <- 20
+# idx <<- 1:n1
+# z1 <- arima.sim(n1, model = list(ar = 0.5), sd = 0.5)
+# ar <- model_ar1(idx)
 
-lonPoly <- c(-76.5, -76.0, -75.5)
-latPoly <- c(25.5, 26.5, 25.5)
-aiPoly <- subset(ai, polygon=list(longitude=lonPoly, latitude=latPoly))
+# ar$V_size
+# ar$W_size
+# ar$n_rep
+# dim(ar$A)
+# dim(ar$C)
 
-plot(aiPoly, bathymetry=FALSE)
-from <- as.POSIXct("2020-09-23", tz="UTC")
-to <- as.POSIXct("2020-10-25", tz="UTC")
+# load_all()
+# ngme(
+#   z ~ f(idx, model="ar1", noise=noise_normal(), debug=TRUE),
+#   data = list(z = z1),
+#   control = ngme_control(
+#     iterations = 20,
+#     n_parallel_chain = 1
+#   ),
+#   debug = TRUE
+# )
 
-index2 = subset(aiPoly, time = list(from=from, to=to))
+######## test nrep=2
+load_all()
+n1 <- 5; n2 <- 10
+idx <<- c(1:n1, 1:n2)
+z1 <- arima.sim(n1, model = list(ar = 0.5), sd = 0.5)
+z2 <- arima.sim(n2, model = list(ar = 0.5), sd = 0.5)
+ar <- model_ar1(idx, replicate = c(rep(1, n1), rep(2, n2)))
+ar$noise$n_noise
 
-plot(index2, bathymetry=FALSE,  asp=1/cos(mean(range(unlist(index2[["latitude"]]), na.rm=TRUE))*pi/180),  mgp=getOption("oceMgp")
+# ar$V_size
+# ar$n_rep
+
+out <- ngme(
+  z ~ f(idx, model="ar1", replicate = c(rep(1, n1), rep(2, n2)), noise=noise_nig(), debug=TRUE),
+  data = list(z = c(z1, z2)),
+  control = ngme_control(
+    estimation = TRUE,
+    iterations = 20,
+    n_parallel_chain = 1
+  ),
+  debug = TRUE
 )
 
-#
-lonlim <- c(-70, -64,-10)
-latlim <-c(40,35,35)
-index1 <- subset(ai, section=list(longitude=lonlim, latitude=latlim, width=100))
-#subset by time
-from <- as.POSIXct("2020-09-23", tz="UTC")
-to <- as.POSIXct("2020-10-25", tz="UTC")
-index2 <- subset(index1, time=list(from=from, to=to))
-plot(index2, bathymetry=FALSE,  asp=1/cos(mean(range(unlist(index2[["latitude"]]), na.rm=TRUE))*pi/180),  mgp=getOption("oceMgp")
-)
-points(lonlim, latlim, pch=21, col="black", bg="red", type="o")
-plot(section, which="map", col="tan")
-par(oldpar)
-
-prof2 <- getProfiles(index2)
-
-argos <- readProfiles(prof2)
-?applyQC
-
-a <- c(1i, 1); b <- c(-1i, 1)
-
-T <- cbind(c(2,3), c(-3, 2))
-T %*% c(1,2)
-
-eigen(T)
-
-
-
-
+str(out$latent$field1$noise)

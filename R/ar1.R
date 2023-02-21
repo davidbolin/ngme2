@@ -36,18 +36,18 @@ model_ar1 <- function(
   # capture symbol in index
   index <- eval(substitute(x), envir = data, enclos = parent.frame())
   stopifnot("The index should be integers." = all(index == round(index)))
-
-  if (is.null(index_NA)) index_NA <- rep(FALSE, length(index))
   if (is.null(replicate)) replicate <- rep(1, length(index))
+  if (is.null(index_NA)) index_NA <- rep(FALSE, length(index))
 
-  # e.g. index = c(1:200, 1:100)
-  #      replicate = c(rep(1, 200), rep(2, 100))
-  #      n =200 in this case
+  stopifnot("Make sure length(idx)==length(replicate)" = length(index) == length(replicate))
 
-  mesh <- INLA::inla.mesh.1d(index)
+  # e.g. index      = 1 2 3 1 2 3 4
+  #      replicate  = 1 1 1 2 2 2 2
+
+# browser()
+  mesh <- INLA::inla.mesh.1d(unique(index))
   n <- mesh$n
-
-stopifnot(length(index) == length(replicate))
+  nrep <- length(unique(replicate))
 
   # construct G
   G <- Matrix::Matrix(diag(n));
@@ -62,39 +62,33 @@ stopifnot(length(index) == length(replicate))
   # make A and A_pred
   tmp <- ngme_make_A(
     mesh = mesh,
-    map = x,
-    n_map = length(x),
+    map = index,
+    n_map = length(index),
     idx_NA = index_NA,
     replicate = replicate
   )
   A <- tmp$A; A_pred <- tmp$A_pred
 
-  if (is.null(A)) stop("A is NULL")
-  nrep <- ncol(A) / ncol(C)
-  stopifnot(nrep == as.integer(nrep))
-  C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), C)
-  G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), G)
-  noise$h <- rep(noise$h, times = nrep)
+  stopifnot(nrep == ncol(A) / ncol(C))
 
   # remove duplicate symbol in ... (e.g. theta_K)
   args <- within(list(...), {
     mesh        = mesh
     model       = "ar1"
     theta_K     = if (exists("theta_K")) ar1_a2th(theta_K) else ar1_a2th(alpha)
-    W_size      = length(index)
-    V_size      = length(index)
+    W_size      = n
+    V_size      = n
     A           = A
     A_pred      = A_pred
-    # A           = ngme_ts_make_A(loc = index[!index_NA], replicate = replicate, range = range)
-    # A_pred      = ngme_ts_make_A(loc = index[index_NA], replicate = replicate, range = range)
     h           = noise$h
     C           = ngme_as_sparse(C)
     G           = ngme_as_sparse(G)
     K           = alpha * C + G
     noise       = noise
-    map         = x
-    n_map       = length(x)
+    map         = index
+    n_map       = length(index)
     replicate   = replicate
+    n_rep       = nrep
   })
 
   do.call(ngme_model, args)

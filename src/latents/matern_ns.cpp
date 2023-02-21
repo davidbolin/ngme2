@@ -105,6 +105,8 @@ VectorXd Matern_ns::grad_theta_K() {
         // 1. numerical gradient
         grad = numerical_grad();
     } else {
+    // to-do
+    VectorXd W = VectorXd::Zero(W_size);
         // 2. analytical gradient and numerical hessian
         chol_solver_K.compute(K);
         for (int i=0; i < n_theta_K; i++) {

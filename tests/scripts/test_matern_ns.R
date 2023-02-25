@@ -28,7 +28,7 @@ Y <- drop(A %*% W + sigma.e * rnorm(n_obs))
 load_all()
 ngme_out <- ngme(
   Y ~ 0 + f(
-    model = ngme.matern(
+    model = model_matern(
       mesh = mesh,
       theta_kappa = c(0.5, 0.5),
       B_kappa = B_kappa
@@ -36,21 +36,12 @@ ngme_out <- ngme(
     fix_theta_K = FALSE,
     # W = as.numeric(W),
     # fix_W = TRUE,
-    noise = noise_nig(
-      fix_theta_mu    = F,
-      fix_theta_sigma = F,
-      fix_nu     = F
-    ),
-    A = A,
+    noise = noise_nig(),
     debug = TRUE,
-    control = ngme.control.f(
-      numer_grad = T,
-      use_precond = F
-    )
   ),
   data = list(Y = Y),
-  noise = noise_normal(),
-  control = ngme.control(
+  family = noise_normal(),
+  control = ngme_control(
     estimation = T,
     iterations = 100,
     n_parallel_chain = 1
@@ -58,6 +49,7 @@ ngme_out <- ngme(
   debug = TRUE
 )
 ngme_out
+
 str(ngme_out)
 
 traceplot2(ngme_out, parameter = "theta_sigma", f_index = 0)

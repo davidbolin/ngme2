@@ -98,22 +98,21 @@ predict.ngme <- function(
       if (!is.null(mesh) &&
           inherits(mesh, c("inla.mesh", "inla.mesh.1d"))) {
         # model using INLA mesh
-        # watch out! reuse replicate!
-        nrep <- length(unique(ngme$latents[[i]]$replicate))
-        if (nrep == 0) nrep <- 1 # NULL case
+          # watch out! reuse replicate!
+          # nrep <- length(unique(ngme$latents[[i]]$replicate))
+        nrep <- 1
         if (inherits(mesh, "inla.mesh")) {
-          # browser()
-          repl = rep(1:nrep, each = nrow(loc[[i]]))
+          # repl = rep(1:nrep, each = nrow(loc[[i]]))
           locs = sapply(as.data.frame(loc[[i]]), rep.int, times=nrep)
         } else {
-          repl = rep(1:nrep, each = length(loc[[i]]))
+          # repl = rep(1:nrep, each = length(loc[[i]]))
           locs = rep(loc[[i]], nrep)
         }
 
         ngme$latents[[i]]$A_pred <- INLA::inla.spde.make.A(
             mesh = mesh,
-            loc = locs,
-            repl = repl
+            loc = locs
+            # repl = repl
           )
       } else if (!is.null(mesh)) {
         # time series model using
@@ -163,7 +162,6 @@ message("Use ngme_ts_make_A...")
       else
         A_pred <- model$A_pred
 
-    # browser()
       preds <- preds + as.numeric(A_pred %*% model$W)
     }
   }
@@ -214,7 +212,6 @@ compute_indices <- function(ngme, test_idx, N = 100) {
     simulate(new_model$noise, n_noise = length(y_data)))
   mn2_N <- sapply(1:N, function(x)
     simulate(new_model$noise, n_noise = length(y_data)))
-# browser()
 
   mu_N <- fe_N + AW_N
   Y_N <- fe_N + AW_N + mn_N

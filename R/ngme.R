@@ -208,6 +208,7 @@ for (latent in ngme_block$latents) {
 
     # return the mean of samples of W of posterior
     cat("Starting posterior sampling... \nNote: Use ngme$latents[[model_name]]$W  to access the posterior mean of process \n")
+    ngme_block$control$init_sample_W <- FALSE
     mean_post_W <- mean_list(
       sampling_cpp(ngme_block, control$post_samples_size, TRUE)[["W"]]
     )

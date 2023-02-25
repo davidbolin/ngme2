@@ -77,7 +77,7 @@ protected:
 
     // solvers
     cholesky_solver chol_Q, chol_QQ;
-    SparseLU<SparseMatrix<double> > LU_K;
+    SparseLU<SparseMatrix<double>> LU_K;
 
     // record trajectory
     vector<vector<double>> beta_traj;

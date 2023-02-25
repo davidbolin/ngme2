@@ -83,6 +83,12 @@ f <- function(
   } else {
     # model is evaluated with submodel func.
     f_args <- within(f_args, rm(model))
+
+    # check args: only allow noise, and control_f, name
+    if (c("replicate") %in% names(f_args)) {
+      stop("Please use replicate in the sepcific model function instead of f(). \n  e.g. model_matern(..., replicate=...).")
+    }
+
     # watch out! if update the noise in f(noise=...)
     if (is.null(as.list(match.call())$noise)) {
       f_args$noise <- NULL

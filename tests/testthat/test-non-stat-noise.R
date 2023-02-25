@@ -19,9 +19,14 @@ test_that("test non-stat mu", {
     family = "normal",
     data = list(Y=Y),
     control = ngme_control(
-      iterations = 2000
+      iterations = 1000,
+      print_check_info = FALSE
     )
   )
   res
   traceplot(res, "ar")
+
+  # mu result close to theta_mu
+  expect_true(abs(res$latents[[1]]$noise$theta_mu[1] - (-4)) < 5)
+  expect_true(abs(res$latents[[1]]$noise$theta_mu[2] - (-2)) < 5)
 })

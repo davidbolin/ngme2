@@ -19,7 +19,7 @@
 #' @return a list (n, C (diagonal), G, B.kappa) for constructing operator
 #' @export
 model_matern <- function(
-  loc         = NULL,
+  loc,
   replicate   = NULL,
   alpha       = 2,
   kappa       = 1,
@@ -34,18 +34,20 @@ model_matern <- function(
   noise       = noise_normal(),
   ...
 ) {
+  # if (is.null(loc)) {
+  #   if (inherits(mesh, "inla.mesh.1d")) loc <- mesh$loc
+  #   if (inherits(mesh, "inla.mesh")) loc <- as.matrix(mesh$loc[, 1:2])
+  # }
+
   if (is.numeric(mesh)) # mesh is 1d vector
     mesh <- INLA::inla.mesh.1d(loc = mesh)
 
-  if (is.null(loc)) {
-    if (inherits(mesh, "inla.mesh.1d")) loc <- mesh$loc
-    if (inherits(mesh, "inla.mesh")) loc <- as.matrix(mesh$loc[, 1:2])
-  }
-stopifnot("loc is NULL" = !is.null(loc))
   n_loc <- if(is.null(dim(loc))) length(loc) else nrow(loc)
   # loc <- eval(substitute(loc), envir = data, enclos = parent.frame())
 
   if (is.null(mesh)) stop("Please provide mesh!")
+
+  if (is.null(replicate)) replicate <- rep(1, n_loc)
 
   # deal with coords
   if (alpha - round(alpha) != 0) {
@@ -60,8 +62,10 @@ stopifnot("loc is NULL" = !is.null(loc))
   stopifnot("kappa is greater than 0." = kappa > 0)
   if (is.null(theta_kappa)) theta_kappa <- log(kappa)
 
-  if (is.null(B_kappa))
-    B_kappa <- matrix(1, nrow = mesh$n, ncol = length(theta_kappa))
+  if (is.null(B_kappa) && length(theta_kappa) == 1)
+    B_kappa <- matrix(1, nrow = mesh$n, ncol = 1)
+  else if (is.null(B_kappa) && length(theta_kappa) > 1)
+    stop("Please provide B_kappa for non-stationary case.")
 
   # supply mesh
   if (!is.null(mesh)) {
@@ -79,11 +83,6 @@ stopifnot("loc is NULL" = !is.null(loc))
       h <- Matrix::diag(fem$c0)
     }
   }
-  # else {
-  #   C <- fem.mesh.matrices$C
-  #   G <- fem.mesh.matrices$G
-  #   h <- Matrix::diag(fem.mesh.matrices$c0)
-  # }
 
   tmp <- ngme_make_A(
     mesh = mesh,
@@ -94,12 +93,7 @@ stopifnot("loc is NULL" = !is.null(loc))
   )
   A <- tmp$A; A_pred <- tmp$A_pred
 
-  if (!is.null(A)) {
-    nrep <- ncol(A) / ncol(C)
-    C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), C)
-    G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), G)
-    h <- rep(h, times = nrep)
-  }
+  nrep <- ncol(A) / ncol(C)
 
   if (noise$n_noise == 1) noise <- update_noise(noise, n = mesh$n)
   noise$h <- h
@@ -123,6 +117,7 @@ stopifnot("loc is NULL" = !is.null(loc))
     map         = loc,
     n_map       = n_loc,
     replicate   = replicate,
+    n_rep       = nrep,
     ...
   )
   model

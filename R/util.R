@@ -286,19 +286,16 @@ ngme_make_A <- function(
     mesh <- INLA::inla.mesh.1d(mesh)
   if (inherits(mesh, "inla.mesh.1d")) {
     A <- INLA::inla.spde.make.A(mesh = mesh, loc = map[!idx_NA], repl=replicate[!idx_NA])
-    if (any(idx_NA)) A_pred <- INLA::inla.spde.make.A(mesh = mesh, loc = map[idx_NA], repl=replicate[idx_NA])
+    if (any(idx_NA)) A_pred <- INLA::inla.spde.make.A(mesh = mesh, loc = map[idx_NA])
   } else if (inherits(mesh, "inla.mesh")) {
     # 2d location
     A <- INLA::inla.spde.make.A(mesh = mesh, loc = map[!idx_NA, ,drop = FALSE], repl=replicate[!idx_NA])
-    if (any(idx_NA)) A_pred <- INLA::inla.spde.make.A(mesh = mesh, loc = map[idx_NA, ,drop = FALSE], repl=replicate[idx_NA])
+    if (any(idx_NA)) A_pred <- INLA::inla.spde.make.A(mesh = mesh, loc = map[idx_NA, ,drop = FALSE])
   } else {
     stop("this mesh not implement yet!!!")
   }
 
-  list(
-    A = A,
-    A_pred = A_pred
-  )
+  list(A = A, A_pred = A_pred)
 }
 
 #' Make observation matrix for time series

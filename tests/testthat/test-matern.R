@@ -8,9 +8,9 @@ test_that("test Matern", {
   pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
   mesh <- inla.mesh.2d(
     loc.domain = pl01, cutoff = 0.3,
-    max.edge = c(0.2, 0.7), offset = c(0.5, 1.5)
+    max.n = 100
   )
-
+  # mesh$n
   # # generate A and A_pred
   # n_obs <- 500; index_obs <- sample(1:mesh$n, n_obs)
   # loc_obs <- mesh$loc[index_obs, c(1, 2)]
@@ -60,9 +60,9 @@ test_that("test Matern", {
       post_samples_size = 50,
       iterations = 50,
       n_parallel_chain = 4,
-      print_check_info = FALSE
+      print_check_info = F
     ),
-    debug = FALSE
+    debug = F
   )
   out
   traceplot(out, "spde")
@@ -75,6 +75,60 @@ test_that("test Matern", {
   predict(out, loc=coo)
   # plot(mesh)
   # points(x=new_xs, y = new_ys, type = "p", col="red", pch=16, cex=2)
+  expect_true(TRUE)
+})
+
+# test more
+test_that("test matern ns", {
+  # library(devtools); library(INLA); load_all()
+  { # First we create mesh
+    pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
+    mesh <- inla.mesh.2d(
+      loc.domain = pl01,
+      max.edge = c(1)
+    )
+    B_kappa <- matrix(c(rep(1, mesh$n), rexp(mesh$n)), ncol = 2)
+    W <- simulate(
+      f(model = model_matern(
+        mesh = mesh,
+        B_kappa = B_kappa,
+        theta_kappa = c(1.1, 0.7)),
+        noise = noise_nig()
+      )
+    )
+  }
+  # plot(mesh)
+
+  n_obs <- 100; index_obs <- sample(1:mesh$n, n_obs)
+  loc_obs <- mesh$loc[index_obs, c(1, 2)]
+  A <- inla.spde.make.A(mesh = mesh, loc = loc_obs)
+  sigma.e <- 0.7
+  Y <- drop(A %*% W + sigma.e * rnorm(n_obs))
+
+  ngme_out <- ngme(
+    Y ~ 0 + f(
+      model = model_matern(
+        loc = loc_obs,
+        mesh = mesh,
+        theta_kappa = c(0.5, 0.5),
+        B_kappa = B_kappa
+      ),
+      fix_theta_K = FALSE,
+      # W = as.numeric(W),
+      # fix_W = TRUE,
+      noise = noise_nig(),
+      debug = F,
+    ),
+    data = list(Y = Y),
+    family = noise_normal(),
+    control = ngme_control(
+      estimation = T,
+      iterations = 100,
+      n_parallel_chain = 1
+    ),
+    debug = FALSE
+  )
+  ngme_out
   expect_true(TRUE)
 })
 

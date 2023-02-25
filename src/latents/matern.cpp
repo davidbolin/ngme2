@@ -19,6 +19,9 @@ Matern::Matern(Rcpp::List& model_list, unsigned long seed)
 
     // Init K and Q
     K = getK(theta_K);
+    for (int i=0; i < n_rep; i++)
+        setSparseBlock(&K_rep, i*V_size, i*W_size, K);
+
     SparseMatrix<double> Q = K.transpose() * K;
 
     // if (!use_iter_solver) {
@@ -89,28 +92,23 @@ void Matern::update_num_dK() {
 
 // return length 1 vectorxd : grad_kappa * dkappa/dtheta
 VectorXd Matern::grad_theta_K() {
-    SparseMatrix<double> dK = get_dK_by_index(0);
-    VectorXd V = getV();
-    VectorXd SV = getSV();
+    if (numer_grad) return numerical_grad();
 
+    SparseMatrix<double> dK = get_dK_by_index(0);
+    double ret = 0;
     // double th = theta_K(0);
     double da  = th2k(theta_K(0));
     // double d2a = th2k(theta_K(0));
 
-    double ret = 0;
-    if (numer_grad) {
-        // 1. numerical gradient
-        ret = numerical_grad()(0);
-    } else {
-    // to-do
-    VectorXd W = VectorXd::Zero(W_size);
-        // 2. analytical gradient and numerical hessian
+    for (int i = 0; i < n_rep; i++) {
+        VectorXd W = Ws[i];
+        VectorXd prevW = prevWs[i];
+        VectorXd V = vars[i].getV();
+        VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
+
+        // analytical gradient and numerical hessian
         double tmp = (dK*W).cwiseProduct(SV.cwiseInverse()).dot(K * W + (h - V).cwiseProduct(mu));
         double grad = trace - tmp;
-
-    // sth wrong with hessian?
-    // if (debug) std::cout << "tmp =" << tmp << std::endl;
-    // if (debug) std::cout << "trace =" << trace << std::endl;
 
         if (!use_precond) {
             ret = - grad * da / W_size;
@@ -123,37 +121,25 @@ VectorXd Matern::grad_theta_K() {
             VectorXd prevV = vars[0].getPrevV();
             VectorXd prevSV = sigma.array().pow(2).matrix().cwiseProduct(prevV);
 
-    // to-do
-    VectorXd prevW = VectorXd::Zero(W_size);
-
             double grad2_eps = trace_eps - (dK2*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K2 * prevW + (h - prevV).cwiseProduct(mu));
             double grad_eps  = trace - (dK*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K * prevW + (h - prevV).cwiseProduct(mu));
             double hess = (grad2_eps - grad_eps) / eps;
 
     // if (debug) std::cout << "prevW =" << prevW << std::endl;
-    // if (debug) std::cout << "prevvV =" << prevV << std::endl;
-    // if (debug) std::cout << "prevSV =" << prevSV << std::endl;
-    // if (debug) std::cout << "trace_eps =" << trace_eps << std::endl;
-    // if (debug) std::cout << "trace =" << trace << std::endl;
-    // if (debug) std::cout << "grad2_eps =" << trace << std::endl;
-    // if (debug) std::cout << "grad_eps =" << trace_eps << std::endl;
-    // if (debug) std::cout << "grad =" << grad << std::endl;
-    // if (debug) std::cout << "(hess * da + grad_eps) =" << (hess * da + grad_eps) << std::endl;
-    // if (debug) std::cout << "hess =" << hess << std::endl;
-            // ret = (grad * da) / (hess * da * da + grad_eps * d2a); reduced to
-
-            ret = grad / (hess * da + grad_eps);
+            ret += grad / (hess * da + grad_eps);
         }
     }
 
-    // if (debug) std::cout << "ret =" << ret << std::endl;
-    return VectorXd::Constant(1, ret);
+    return VectorXd::Constant(1, ret / n_rep);
 }
 
 void Matern::update_each_iter() {
     K = getK(theta_K);
     dK = get_dK(0, theta_K);
     d2K = 0 * C;
+
+    for (int i=0; i < n_rep; i++)
+        setSparseBlock(&K_rep, i*V_size, i*V_size, K);
 
     if (use_num_dK) {
         update_num_dK();

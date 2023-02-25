@@ -54,8 +54,8 @@ protected:
     int n_theta_K;
 
     bool use_num_dK {false};
-    SparseMatrix<double, 0, int> K, dK, d2K;
-    SparseMatrix<double, 0, int> K_rep;
+    SparseMatrix<double, 0, int> K, dK, d2K; // size = V_size * W_size
+    SparseMatrix<double, 0, int> K_rep;  // n_rep of size of K (for sampling W)
 
     bool fix_flag[LATENT_FIX_FLAG_SIZE] {0};
 
@@ -220,11 +220,6 @@ public:
 
     /*  3 Operator component   */
     SparseMatrix<double, 0, int>& getK()  {
-        // SparseMatrix<double, 0, int> K_rep (n_rep * V_size, n_rep * W_size);
-        // for (int i=0; i < n_rep; i++) {
-        //     setSparseBlock(&K_rep, i*V_size, i*W_size, K);
-        // }
-        // return K_rep;
         return K_rep;
     }
 

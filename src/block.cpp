@@ -40,6 +40,7 @@ BlockModel::BlockModel(
     reduce_var    =  Rcpp::as<bool>   (control_in["reduce_var"]);
     reduce_power  =  Rcpp::as<double> (control_in["reduce_power"]);
     threshold   =  Rcpp::as<double> (control_in["threshold"]);
+    bool init_sample_W = Rcpp::as<bool> (control_in["init_sample_W"]);
 
 if (debug) std::cout << "Begin Block Constructor" << std::endl;
 
@@ -79,6 +80,7 @@ if (debug) std::cout << "before set block A" << std::endl;
     setSparseBlock(&A, 0, n, (*it)->getA());
     n += (*it)->get_W_size();
   }
+if (debug) std::cout << "after set block A" << std::endl;
 
   assemble();
 if (debug) std::cout << "After set block K" << std::endl;
@@ -123,11 +125,11 @@ if (debug) std::cout << "After init solver" << std::endl;
   steps_to_threshold = VectorXd::Constant(n_params, 0);
   indicate_threshold = VectorXd::Constant(n_params, 0);
 
-  if(n_latent > 0) {
+  if (n_latent > 0 && init_sample_W) {
     sampleW_V();
     sampleW_V();
   }
-if (debug) std::cout << "After Sample W" << std::endl;
+if (debug) std::cout << "After Sample W|V" << std::endl;
 
   // record
   theta_mu_traj.resize(n_theta_mu);
@@ -315,6 +317,7 @@ void BlockModel::set_parameter(const VectorXd& Theta) {
 // sample W|V
 void BlockModel::sampleW_V()
 {
+// if (debug) std::cout << "starting sampling W." << std::endl;
   if(n_latent==0) return;
   std::normal_distribution<double> rnorm {0,1};
 
@@ -366,7 +369,7 @@ VectorXd BlockModel::grad_theta_mu() {
   VectorXd noise_SV = noise_V.cwiseProduct(noise_sigma.array().pow(2).matrix());
 
   VectorXd residual = get_residual();
-  VectorXd grad (n_theta_mu);
+  VectorXd grad = VectorXd::Zero(n_theta_mu);
   for (int l=0; l < n_theta_mu; l++) {
 
       // LU_K.factorize(getK());

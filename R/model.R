@@ -24,9 +24,11 @@ ngme_model <- function(
   map         = NULL,  # map is the covariates
   n_map       = NULL,
   replicate   = NULL,
-  n_rep       = 1,
+  n_rep       = NULL,
   ...
 ) {
+  if (is.null(n_rep)) stop("n_rep is NULL")
+
   stopifnot(is.character(model))
   # generate string (8 digits)
   K_str     <- switch(model,

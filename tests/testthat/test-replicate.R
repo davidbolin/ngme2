@@ -3,13 +3,15 @@
 # share the same hyperparamter
 test_that("test replicate on 1d data", {
   # load_all()
-  rw <- model_rw(c(1:4, 3:4), replicate = c(rep(1,4), rep(2, 2)))
-  expect_true(dim(rw$C)[[2]] == dim(rw$A)[[2]])
-  expect_true(dim(rw$C)[[1]] == length(rw$h))
+  rw <- model_rw(1:5, replicate = c(1,1,1, 2,2))
+  expect_true(ncol(rw$C) * 2 == ncol(rw$A))
 
-  ar1 <- model_ar1(c(1:4, 1:2), replicate = c(rep(1,4), rep(2, 2)))
-  expect_true(dim(ar1$C)[[2]] == dim(ar1$A)[[2]])
-  expect_true(dim(ar1$C)[[1]] == length(ar1$h))
+  ar1 <- model_ar1(1:5, replicate = c(1,1,1, 2,2))
+  expect_true(ncol(ar1$C) * 2 == ncol(ar1$A))
+
+  matern <- model_matern(1:5, replicate = c(1,1,1, 2,2), mesh=1:10)
+  expect_error(f(model=matern, replicate = c(1,1,1, 2,2)))
+  expect_true(ncol(matern$C) * 2 == ncol(matern$A))
 })
 
 test_that("test replicate on 2d data", {
@@ -26,27 +28,39 @@ test_that("test replicate on 2d data", {
 # dim(ma$C)
 # ma$noise$h
 
-  expect_true(dim(ma$C)[[2]] == dim(ma$A)[[2]])
-  expect_true(dim(ma$C)[[1]] == length(ma$h))
+  expect_true(ncol(ma$C) * 2 == ncol(ma$A))
 })
 
 test_that("test estimation on AR(1) and RW process", {
-  n <<- 100
+  # load_all()
+  n <<- 500
   z1 = arima.sim(n, model = list(ar = 0.5), sd = 0.5)
   z2 = arima.sim(n, model = list(ar = 0.5), sd = 0.5)
-  # acf(z2)
 
-  out <- ngme(
-    z ~ f(c(1:n ,1:n), model="ar1", replicate=rep(1:2,each=n), noise=noise_normal()),
-    data = list(z = c(z1, z2)),
+  out1 <- ngme(
+    z ~ f(1:n, model="ar1", noise=noise_normal(),
+        control = ngme_control_f(numer_grad = TRUE)
+      ),
+    data = list(z = c(z1)),
     control = ngme_control(
-      iterations = 20
+      iterations = 500,
+      n_parallel_chain = 1
     )
   )
-  # out
+  out1
+  traceplot(out1, "field1")
+
+  out <- ngme(
+    z ~ f(c(1:n ,1:n), model="ar1", replicate=rep(1:2,each=n), noise=noise_normal(),
+        control = ngme_control_f(numer_grad = TRUE)),
+    data = list(z = c(z1, z2)),
+    control = ngme_control(
+      iterations = 20,
+      n_parallel_chain = 1
+    )
+  )
+  out
   # traceplot(out, "field1")
-  prds <- predict(out, loc=list(field1 = c(2,4,5)))
-  expect_equal(length(prds), 6)
 
   out2 <- ngme(
     z ~ f(c(1:n ,1:n), model="rw1", replicate=rep(1:2,each=n), noise=noise_normal()),
@@ -57,6 +71,6 @@ test_that("test estimation on AR(1) and RW process", {
     )
   )
   prds2 <- predict(out2, loc=list(field1 = c(2,4,5)))
-  expect_equal(length(prds2), 6)
+  expect_equal(length(prds2), 3)
 })
 

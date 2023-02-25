@@ -1,4 +1,4 @@
-# test measurement noise
+# unit test measurement noise
 
 test_that("test basic mn", {
   # load_all()

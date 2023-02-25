@@ -16,6 +16,7 @@
 #' @param stepsize        stepsize
 #' @param estimation      estimating the parameters
 #' @param post_samples_size number of posterior samples
+#' @param init_sample_W  sample W|V at the beginning of each chain
 #'
 #' @param n_parallel_chain number of parallel chains
 #' @param stop_points     number of stop points for convergence check
@@ -45,6 +46,7 @@ ngme_control <- function(
   stepsize          = 1,
   estimation        = TRUE,
   post_samples_size = 100,
+  init_sample_W     = TRUE,
 
   # parallel options
   n_parallel_chain  = 2,
@@ -59,8 +61,8 @@ ngme_control <- function(
   opt_beta          = TRUE,
   fix_beta          = FALSE,
 
-  max_relative_step = 0.1,
-  max_absolute_step = 0.5,
+  max_relative_step = 2,
+  max_absolute_step = 5,
 
   # reduce variance after conv. check
   reduce_var        = FALSE,
@@ -81,6 +83,7 @@ ngme_control <- function(
     stepsize          = stepsize,
     estimation        = estimation,
     post_samples_size = post_samples_size,
+    init_sample_W     = init_sample_W,
 
     n_parallel_chain  = n_parallel_chain,
     stop_points       = stop_points,

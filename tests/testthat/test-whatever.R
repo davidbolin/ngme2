@@ -109,4 +109,6 @@ test_that("test lpo CV", {
   )
   cross_validation(ng_100, type="lpo", times=10)
   cross_validation(ng_1000, type="lpo", times=10)
+
+  expect_true(TRUE)
 })

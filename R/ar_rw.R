@@ -130,8 +130,11 @@ model_rw <- function(
   stopifnot(order == 1 || order == 2)
 # capture symbol in index
   x <- eval(substitute(x), envir = data, enclos = parent.frame())
-
   stopifnot("length of index at least > 3" = length(x) > 3)
+  if (is.null(replicate)) replicate <- rep(1, length(x))
+  if (is.null(index_NA)) index_NA <- rep(FALSE, length(x))
+  stopifnot("Make sure length(x)==length(replicate)" = length(x) == length(replicate))
+
   # create mesh using index
   # sorted_index <- sort(index, index.return = TRUE)
   # h <- diff(sorted_index$x)
@@ -202,12 +205,9 @@ model_rw <- function(
     replicate = replicate
   )
   A <- tmp$A; A_pred <- tmp$A_pred
-  if (is.null(A)) stop("A is NULL")
+
   nrep <- ncol(A) / ncol(C)
   stopifnot(nrep == as.integer(nrep))
-  C <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), C)
-  G <- Matrix::kronecker(Matrix::Diagonal(nrep, 1), G)
-  noise$h <- rep(noise$h, times = nrep)
 
   # update noise with length n
   if (noise$n_noise == 1) noise <- update_noise(noise, n = n_mesh)
@@ -217,7 +217,7 @@ model_rw <- function(
     theta_K     = 1
     fix_theta_K = TRUE
     W_size      = ncol(C) # mesh$n
-    V_size      = n_mesh * nrep
+    V_size      = n_mesh
     A           = ngme_as_sparse(A)
     A_pred      = A_pred
     C           = ngme_as_sparse(C)
@@ -229,6 +229,7 @@ model_rw <- function(
     map         = x
     n_map       = length(x)
     replicate   = replicate
+    n_rep       = nrep
   })
 
   do.call(ngme_model, args)

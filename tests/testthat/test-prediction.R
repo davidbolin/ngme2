@@ -107,8 +107,4 @@ test_that("test predict with NA", {
   expect_true(abs(out$latents[[1]]$noise$theta_mu - mu) < 2)
   expect_true(abs(out$latents[[1]]$noise$theta_sigma - log(sigma)) < 2)
   expect_true(abs(out$latents[[1]]$noise$nu - nu) < 5)
-
-  # str(out)
-  # Next is prediction
-  # predict(out, locs)
 })

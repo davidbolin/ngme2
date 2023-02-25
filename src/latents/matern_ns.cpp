@@ -15,11 +15,14 @@ Matern_ns::Matern_ns(Rcpp::List& model_list, unsigned long seed)
     Bkappa      (Rcpp::as<MatrixXd> (model_list["B_kappa"])),
     Cdiag       (C.diagonal())
 {
-if (debug) std::cout << "constructor of matern ns" << std::endl;
+// if (debug) std::cout << "constructor of matern ns" << std::endl;
     symmetricK = true;
 
     // Init K and Q
     K = getK(theta_K);
+    for (int i=0; i < n_rep; i++)
+        setSparseBlock(&K_rep, i*V_size, i*W_size, K);
+
     SparseMatrix<double> Q = K.transpose() * K;
 
     chol_solver_K.init(W_size, 0,0,0);
@@ -29,14 +32,14 @@ if (debug) std::cout << "constructor of matern ns" << std::endl;
     // Init Q
     solver_Q.init(W_size, 0,0,0);
     solver_Q.analyze(Q);
-if (debug) std::cout << "finish constructor of matern ns" << std::endl;
+// if (debug) std::cout << "finish constructor of matern ns" << std::endl;
 }
 
 // inherit get_K_parameter, grad_K_parameter, set_K_parameter
 
 SparseMatrix<double> Matern_ns::getK(const VectorXd& theta_kappa) const {
     VectorXd kappas = (Bkappa * theta_kappa).array().exp();
-    std::cout <<  "theta_kappa here = " << theta_kappa << std::endl;
+    // std::cout <<  "theta_kappa here = " << theta_kappa << std::endl;
 
     int n_dim = G.rows();
     SparseMatrix<double> K_a (n_dim, n_dim);
@@ -76,60 +79,58 @@ SparseMatrix<double> Matern_ns::get_dK(int index, const VectorXd& params) const 
         VectorXd kappas2 = kappas.cwiseProduct(kappas);
         dKCK = 2*kappas2.cwiseProduct(Cdiag).cwiseProduct(Bkappa.col(index)).asDiagonal();
 
-
-    if (alpha == 2)
-    {
+    if (alpha == 2) {
         dK_a = dKCK;
     }
-    else if (alpha == 4)
-    {
+    else if (alpha == 4) {
         SparseMatrix<double> KCK(n_dim, n_dim);
         KCK = kappas.cwiseProduct(kappas).cwiseProduct(Cdiag).asDiagonal();
         SparseMatrix<double> tmp = Cdiag.cwiseInverse().asDiagonal() * (G + KCK);
         dK_a = dKCK * tmp + tmp * dKCK;
     }
-    else
-    {
+    else {
         throw("alpha not equal to 2 or 4 is not implemented");
     }
 
     return dK_a;
 }
 
+// to-do: analytical gradient for non-stationary matern
 VectorXd Matern_ns::grad_theta_K() {
-    VectorXd V = getV();
-    VectorXd SV = getSV();
+    return numerical_grad();
 
-    VectorXd grad (n_theta_K);
-    if (numer_grad) {
-        // 1. numerical gradient
-        grad = numerical_grad();
-    } else {
-    // to-do
-    VectorXd W = VectorXd::Zero(W_size);
-        // 2. analytical gradient and numerical hessian
-        chol_solver_K.compute(K);
-        for (int i=0; i < n_theta_K; i++) {
-            // dK for each index
-            SparseMatrix<double> dK = get_dK_by_index(i);
+    // if (numer_grad) return numerical_grad();
+    // VectorXd grad = VectorXd::Zero(n_theta_K);
+    // for (int i=0; i < n_rep ; i++) {
+    //     VectorXd W = Ws[i];
+    //     VectorXd V = vars[i].getV();
+    //     VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
 
-            VectorXd tmp2 = K * W + (h - V).cwiseProduct(mu);
-            double tmp = (dK*W).cwiseProduct(SV.cwiseInverse()).dot(tmp2);
+    //     // analytical gradient and numerical hessian
+    //     chol_solver_K.compute(K);
+    //     for (int i=0; i < n_theta_K; i++) {
+    //         // dK for each index
+    //         SparseMatrix<double> dK = get_dK_by_index(i);
 
-            // compute trace
-            if (i > 0) {
-                trace = chol_solver_K.trace(dK);
-            }
+    //         VectorXd tmp2 = K * W + (h - V).cwiseProduct(mu);
+    //         double tmp = (dK*W).cwiseProduct(SV.cwiseInverse()).dot(tmp2);
 
-            grad(i) = (trace - tmp) / W_size;
-        }
-    }
+    //         // compute trace
+    //         if (i > 0) {
+    //             trace = chol_solver_K.trace(dK);
+    //         }
 
-    return grad;
+    //         grad(i) += (trace - tmp) / W_size;
+    //     }
+    // }
+    // return grad / n_rep;
 }
 
 void Matern_ns::update_each_iter() {
     K = getK(theta_K);
+    for (int i=0; i < n_rep; i++)
+        setSparseBlock(&K_rep, i*V_size, i*V_size, K);
+
     if (!numer_grad)
       compute_trace();
 }

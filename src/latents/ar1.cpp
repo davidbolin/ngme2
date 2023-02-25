@@ -65,6 +65,8 @@ void AR::update_num_dK() {
 
 // return length 1 vectorxd : grad_kappa * dkappa/dtheta
 VectorXd AR::grad_theta_K() {
+    if (numer_grad) return numerical_grad();
+
     SparseMatrix<double> dK = get_dK_by_index(0);
 
     double a = th2a(theta_K(0));
@@ -78,49 +80,17 @@ VectorXd AR::grad_theta_K() {
         VectorXd V = vars[i].getV();
         VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
 
-        if (numer_grad) {
-            // 1. numerical gradient
-            ret += numerical_grad()(0);
-        } else {
-            // 2. analytical gradient and numerical hessian
-            double tmp = (dK*W).cwiseProduct(SV.cwiseInverse()).dot(K * W + (h - V).cwiseProduct(mu));
-            double grad = trace - tmp;
-            ret += - grad * da / W_size;
-        }
+        // analytical gradient and numerical hessian
+        double tmp = (dK*W).cwiseProduct(SV.cwiseInverse()).dot(K * W + (h - V).cwiseProduct(mu));
+        double grad = trace - tmp;
+        ret += - grad * da / W_size;
     }
-    return VectorXd::Constant(1, ret);
 
+    return VectorXd::Constant(1, ret);
     // if (debug) std::cout << "tmp =" << tmp << std::endl;
     // if (debug) std::cout << "trace =" << trace << std::endl;
         // result : trace ~= 0
         //          tmp ~= 20-70
-
-//         if (!use_precond) {
-//             ret = - grad * da / W_size;
-//         } else {
-//             // compute numerical hessian
-//             SparseMatrix<double> K2 = getK_by_eps(0, eps);
-//             SparseMatrix<double> dK2 = get_dK_by_eps(0, 0, eps);
-
-//             // grad(x+eps) - grad(x) / eps
-//             VectorXd prevV = getPrevV();
-//             VectorXd prevSV = getPrevSV();
-//             double grad2_eps = trace_eps - (dK2*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K2 * prevW + (h - prevV).cwiseProduct(mu));
-//             double grad_eps  = trace -(dK2*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K2 * prevW + (h - prevV).cwiseProduct(mu));
-// // std::cout << "trace_eps =" << trace_eps << std::endl;
-// // std::cout << "trace =" << trace << std::endl;
-// // std::cout << "grad2_eps =" << grad2_eps << std::endl;
-// // std::cout << "grad_eps =" << grad_eps << std::endl;
-// // std::cout << "tmp =" << (dK2*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K2 * prevW + (h - prevV).cwiseProduct(mu)) << std::endl;
-// // std::cout << "tmp2 =" << (dK2*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K2 * prevW + (h - prevV).cwiseProduct(mu)) << std::endl;
-
-//             double hess = (grad2_eps - grad_eps) / eps;
-// std::cout << "hess =" << hess << std::endl;
-//         // result : hessian around 2000
-//     // if (debug) std::cout << "hess =" << hess << std::endl;
-
-//             ret = (grad * da) / (hess * da * da + grad_eps * d2a);
-//         }
 }
 
 void AR::update_each_iter() {

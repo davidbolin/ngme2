@@ -1,7 +1,6 @@
 // grad_theta_mu
 // grad_theta_sigma
 // function_K
-// function_kappa
 // numerical_grad
 
 #include "latent.h"
@@ -109,9 +108,7 @@ if (debug) std::cout << "End constructor of latent" << std::endl;
 
 VectorXd Latent::grad_theta_mu() {
 // if (debug) std::cout << "Start mu gradient"<< std::endl;
-    // VectorXd inv_V = V.cwiseInverse();
-    // VectorXd prev_inv_V = prevV.cwiseInverse();
-    VectorXd grad (n_theta_mu);
+    VectorXd grad = VectorXd::Zero(n_theta_mu);
     double hess = 0;
 
     for (int i=0; i < n_rep; i++) {
@@ -127,7 +124,7 @@ VectorXd Latent::grad_theta_mu() {
         }
     }
     hess /= n_rep;
-    return grad / hess;
+    return grad / (hess * n_rep);
 
 // if (debug) std::cout << "KW" << K*W << std::endl;
 // if (debug) std::cout << "V-h" << prevV-h << std::endl;
@@ -142,37 +139,34 @@ VectorXd Latent::grad_theta_mu() {
 
 // return the gradient wrt. theta, theta=log(sigma)
 inline VectorXd Latent::grad_theta_sigma() {
-    VectorXd grad (n_theta_sigma);
-    VectorXd tmp2 (V_size);
+    VectorXd grad = VectorXd::Zero(n_theta_sigma);
+    VectorXd tmp2 = VectorXd::Zero(V_size);
 
     for (int i=0; i < n_rep; i++) {
         VectorXd W = Ws[i];
         VectorXd V = vars[i].getV();
-        VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
         VectorXd prevV = vars[i].getPrevV();
+        VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
         VectorXd prevSV = sigma.array().pow(2).matrix().cwiseProduct(prevV);
 
         // tmp = (KW - mu(V-h))^2 / V
         VectorXd tmp = (K*W - mu.cwiseProduct(V-h)).array().pow(2).matrix().cwiseProduct(V.cwiseInverse());
-std::cout << "here = " <<std::endl;
         VectorXd tmp1 = tmp.cwiseProduct(sigma.array().pow(-2).matrix()) - VectorXd::Ones(V_size);
 
         tmp2 += tmp1;
-    }
-
-std::cout << "here = " <<std::endl;
-    // grad = Bi(tmp * sigma ^ -2 - 1)
-    grad = B_sigma.transpose() * tmp2;
-    return - 1.0 / V_size * grad;
-
 // std::cout << "W size = " << W.size() <<std::endl;
 // std::cout << "V size = " << V.size() <<std::endl;
-// std::cout << "K size = " << K.size() <<std::endl;
 // std::cout << "mu size = " << mu.size() <<std::endl;
 // std::cout << "sigma size = " << sigma.size() <<std::endl;
 // std::cout << "h size = " << h.size() <<std::endl;
 // std::cout << "V_size = " << V_size <<std::endl;
 // std::cout << "W_size = " << W_size <<std::endl;
+    }
+
+    // grad = Bi(tmp * sigma ^ -2 - 1)
+    grad = B_sigma.transpose() * (tmp2 / n_rep);
+
+    return - 1.0 / V_size * grad;
 
     // for (int l=0; l < n_theta_sigma; l++) {
     //     VectorXd tmp1 = tmp.cwiseProduct(sigma.array().pow(-2).matrix()) - VectorXd::Ones(V_size);
@@ -192,7 +186,7 @@ std::cout << "here = " <<std::endl;
 
 inline VectorXd Latent::grad_theta_sigma_normal() {
     VectorXd V = VectorXd::Ones(V_size);
-    VectorXd grad (n_theta_sigma_normal);
+    VectorXd grad = VectorXd::Zero(n_theta_sigma_normal);
 
     // tmp = (KW - mu(V-h))^2 / V
     for (int i=0; i < n_rep; i++) {
@@ -205,26 +199,27 @@ inline VectorXd Latent::grad_theta_sigma_normal() {
     return - 1.0 / V_size * grad;
 }
 
-// to-do later!!
 double Latent::function_K(SparseMatrix<double>& K) {
-VectorXd W = VectorXd::Ones(W_size);
-    VectorXd V = getV();
-    VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
+    double l = 0;
+    for (int i = 0; i < n_rep; i++) {
+        VectorXd W = Ws[i];
+        VectorXd V = vars[i].getV();
+        VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
 
-    SparseMatrix<double> Q = K.transpose() * SV.cwiseInverse().asDiagonal() * K;
-    VectorXd tmp = K * W - mu.cwiseProduct(V-h);
+        SparseMatrix<double> Q = K.transpose() * SV.cwiseInverse().asDiagonal() * K;
+        VectorXd tmp = K * W - mu.cwiseProduct(V-h);
 
-    double l;
-    if (!symmetricK) {
-        solver_Q.compute(Q);
-        l = 0.5 * solver_Q.logdet()
-               - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
-    } else {
-        chol_solver_K.compute(K);
-        l = chol_solver_K.logdet()
-            - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
+        if (!symmetricK) {
+            solver_Q.compute(Q);
+            l += 0.5 * solver_Q.logdet()
+                - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
+        } else {
+            chol_solver_K.compute(K);
+            l += chol_solver_K.logdet()
+                - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
+        }
     }
-    return l;
+    return l / n_rep;
 }
 
 // function_K(params += ( 0,0,eps,0,0) )
@@ -236,8 +231,9 @@ double Latent::function_K(VectorXd& theta_K) {
 
 // numerical gradient for K parameters
 VectorXd Latent::numerical_grad() {
+    VectorXd grad = VectorXd::Zero(n_theta_K);
+
     double val = function_K(K);
-    VectorXd grad (n_theta_K);
     // iterate every parameter
     for (int i=0; i < n_theta_K; i++) {
         SparseMatrix<double> K_add_eps = getK_by_eps(i, eps);
@@ -253,6 +249,7 @@ VectorXd Latent::numerical_grad() {
             grad(i) = num_g / num_hess;
         }
     }
+
     return grad;
 }
 

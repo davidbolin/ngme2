@@ -11,6 +11,7 @@ ngme_control(
   stepsize = 1,
   estimation = TRUE,
   post_samples_size = 100,
+  init_sample_W = TRUE,
   n_parallel_chain = 2,
   stop_points = 10,
   exchange_VW = TRUE,
@@ -20,8 +21,8 @@ ngme_control(
   print_check_info = TRUE,
   opt_beta = TRUE,
   fix_beta = FALSE,
-  max_relative_step = 0.1,
-  max_absolute_step = 0.5,
+  max_relative_step = 2,
+  max_absolute_step = 5,
   reduce_var = FALSE,
   reduce_power = 0.75,
   threshold = 1e-05,
@@ -40,6 +41,8 @@ ngme_control(
 \item{estimation}{estimating the parameters}
 
 \item{post_samples_size}{number of posterior samples}
+
+\item{init_sample_W}{sample W|V at the beginning of each chain}
 
 \item{n_parallel_chain}{number of parallel chains}
 

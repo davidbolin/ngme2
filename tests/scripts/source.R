@@ -13,3 +13,6 @@
     ),
     debug = TRUE
   )
+
+
+check()

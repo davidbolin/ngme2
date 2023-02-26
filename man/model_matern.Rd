@@ -5,7 +5,7 @@
 \title{Create a Matern SPDE model}
 \usage{
 model_matern(
-  loc = NULL,
+  loc,
   replicate = NULL,
   alpha = 2,
   kappa = 1,

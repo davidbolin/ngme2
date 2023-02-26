@@ -205,18 +205,18 @@ maximum edge length.</p>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type - normal</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 23</span></span>
+<span><span class="co">#&gt;       sigma = 21.9</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Latent models: </span></span>
 <span><span class="co">#&gt; $myspde</span></span>
 <span><span class="co">#&gt;   Ngme model: matern</span></span>
 <span><span class="co">#&gt;   Model parameters: </span></span>
-<span><span class="co">#&gt;       kappa = 0.232</span></span>
+<span><span class="co">#&gt;       kappa = 0.218</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Noise type - normal</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 6.99</span></span></code></pre></div>
+<span><span class="co">#&gt;       sigma = 6.28</span></span></code></pre></div>
 <p>Here, we can directly read the estimation of kappa and sigma (1/tau)
 as shown in the result.</p>
 </div>
@@ -230,12 +230,12 @@ as shown in the result.</p>
 <span><span class="co"># by dafult, predict() returns a bunch of statistics at the given location</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">pred_W</span><span class="op">)</span></span>
 <span><span class="co">#&gt; List of 6</span></span>
-<span><span class="co">#&gt;  $ mean      : num [1:94] -2.59 -2.56 -2.38 -2.2 -2.42 ...</span></span>
-<span><span class="co">#&gt;  $ sd        : num [1:94] 11.14 10.68 9.47 9.19 8.73 ...</span></span>
-<span><span class="co">#&gt;  $ 5quantile : num [1:94] -20.9 -20.5 -18.7 -16.9 -15.8 ...</span></span>
-<span><span class="co">#&gt;  $ 95quantile: num [1:94] 14.6 13.4 12.6 12 11 ...</span></span>
-<span><span class="co">#&gt;  $ median    : num [1:94] -3.57 -2.74 -2.47 -1.68 -2.42 ...</span></span>
-<span><span class="co">#&gt;  $ mode      : num [1:94] 3 -11 7 3 -3 -1 -1 1 -1 -3 ...</span></span>
+<span><span class="co">#&gt;  $ mean      : num [1:94] 0.815 0.712 0.307 -0.2 -0.711 ...</span></span>
+<span><span class="co">#&gt;  $ sd        : num [1:94] 10.36 9.99 8.7 8.34 8.1 ...</span></span>
+<span><span class="co">#&gt;  $ 5quantile : num [1:94] -16.5 -15.4 -12 -12.9 -14.8 ...</span></span>
+<span><span class="co">#&gt;  $ 95quantile: num [1:94] 18.1 16.4 14.1 12.5 11.2 ...</span></span>
+<span><span class="co">#&gt;  $ median    : num [1:94] 0.2935 0.1088 -0.5341 -0.7873 0.0457 ...</span></span>
+<span><span class="co">#&gt;  $ mode      : num [1:94] 1 -5 5 7 1 -7 -11 -9 -7 -5 ...</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines</a></span><span class="op">(</span><span class="va">mesh</span><span class="op">$</span><span class="va">loc</span>, <span class="va">pred_W</span><span class="op">[[</span><span class="st">"mean"</span><span class="op">]</span><span class="op">]</span>, col<span class="op">=</span><span class="fl">3</span>, lwd<span class="op">=</span><span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/title.html" class="external-link">title</a></span><span class="op">(</span><span class="st">"Posterior mean with Ngme2 and INLA"</span><span class="op">)</span></span>
 <span><span class="co"># One can add some quantile band to the plot using Ngme2</span></span>
@@ -279,20 +279,20 @@ easily extend the model to non-Gaussian case by changing the
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type - normal</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 22.1</span></span>
+<span><span class="co">#&gt;       sigma = 22.8</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Latent models: </span></span>
 <span><span class="co">#&gt; $myspde</span></span>
 <span><span class="co">#&gt;   Ngme model: matern</span></span>
 <span><span class="co">#&gt;   Model parameters: </span></span>
-<span><span class="co">#&gt;       kappa = 0.269</span></span>
+<span><span class="co">#&gt;       kappa = 0.221</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Noise type - nig</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -1.2</span></span>
-<span><span class="co">#&gt;       sigma = 11.3</span></span>
-<span><span class="co">#&gt;       nu = 0.0838</span></span>
+<span><span class="co">#&gt;       mu = -2.56</span></span>
+<span><span class="co">#&gt;       sigma = 8.88</span></span>
+<span><span class="co">#&gt;       nu = 0.31</span></span>
 <span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">result_ngme2</span>, <span class="st">"myspde"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="inla_compare_files/figure-html/unnamed-chunk-8-1.png" width="700"></p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">

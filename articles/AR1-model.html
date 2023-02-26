@@ -158,18 +158,13 @@ examples:</p>
 <span><span class="co"># specify mesh with replicate</span></span>
 <span><span class="va">m3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/model_ar1.html">model_ar1</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">)</span>, replicate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">5</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">5</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">m3</span><span class="op">$</span><span class="va">K</span></span>
-<span><span class="co">#&gt; 10 x 10 sparse Matrix of class "dgCMatrix"</span></span>
-<span><span class="co">#&gt;                                                  </span></span>
-<span><span class="co">#&gt;  [1,]  1.0  .    .    .   .  .    .    .    .   .</span></span>
-<span><span class="co">#&gt;  [2,] -0.5  1.0  .    .   .  .    .    .    .   .</span></span>
-<span><span class="co">#&gt;  [3,]  .   -0.5  1.0  .   .  .    .    .    .   .</span></span>
-<span><span class="co">#&gt;  [4,]  .    .   -0.5  1.0 .  .    .    .    .   .</span></span>
-<span><span class="co">#&gt;  [5,]  .    .    .   -0.5 1  .    .    .    .   .</span></span>
-<span><span class="co">#&gt;  [6,]  .    .    .    .   .  1.0  .    .    .   .</span></span>
-<span><span class="co">#&gt;  [7,]  .    .    .    .   . -0.5  1.0  .    .   .</span></span>
-<span><span class="co">#&gt;  [8,]  .    .    .    .   .  .   -0.5  1.0  .   .</span></span>
-<span><span class="co">#&gt;  [9,]  .    .    .    .   .  .    .   -0.5  1.0 .</span></span>
-<span><span class="co">#&gt; [10,]  .    .    .    .   .  .    .    .   -0.5 1</span></span>
+<span><span class="co">#&gt; 5 x 5 sparse Matrix of class "dgCMatrix"</span></span>
+<span><span class="co">#&gt;                           </span></span>
+<span><span class="co">#&gt; [1,]  1.0  .    .    .   .</span></span>
+<span><span class="co">#&gt; [2,] -0.5  1.0  .    .   .</span></span>
+<span><span class="co">#&gt; [3,]  .   -0.5  1.0  .   .</span></span>
+<span><span class="co">#&gt; [4,]  .    .   -0.5  1.0 .</span></span>
+<span><span class="co">#&gt; [5,]  .    .    .   -0.5 1</span></span>
 <span><span class="co"># index with double is not supported</span></span>
 <span><span class="co"># not run:</span></span>
 <span><span class="co"># model_ar1(rnorm(10))</span></span></code></pre></div>
@@ -237,25 +232,25 @@ modify the control variables for the <code>ngme</code>. See
 <span><span class="co">#&gt; *** Ngme object ***</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
-<span><span class="co">#&gt;    beta = -2.70, -1.12,  1.88</span></span>
+<span><span class="co">#&gt;    beta = -2.717, -0.971,  1.838</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type - normal</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 1.08</span></span>
+<span><span class="co">#&gt;       sigma = 1.11</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Latent models: </span></span>
 <span><span class="co">#&gt; $my_ar</span></span>
 <span><span class="co">#&gt;   Ngme model: ar1</span></span>
 <span><span class="co">#&gt;   Model parameters: </span></span>
-<span><span class="co">#&gt;       alpha = 0.531</span></span>
+<span><span class="co">#&gt;       alpha = 0.528</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Noise type - nig</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = 3.29</span></span>
-<span><span class="co">#&gt;       sigma = 0.868</span></span>
-<span><span class="co">#&gt;       nu = 2.05</span></span>
+<span><span class="co">#&gt;       mu = 3.02</span></span>
+<span><span class="co">#&gt;       sigma = 0.983</span></span>
+<span><span class="co">#&gt;       nu = 1.79</span></span>
 <span></span>
 <span><span class="co"># traceplot of fixed effects</span></span>
 <span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">ngme_out</span>, <span class="st">"fe"</span><span class="op">)</span></span></code></pre></div>

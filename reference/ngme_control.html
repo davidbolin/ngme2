@@ -81,6 +81,7 @@ optimization process.</p>
 <span>  stepsize <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  estimation <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  post_samples_size <span class="op">=</span> <span class="fl">100</span>,</span>
+<span>  init_sample_W <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  n_parallel_chain <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  stop_points <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>  exchange_VW <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -90,8 +91,8 @@ optimization process.</p>
 <span>  print_check_info <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  opt_beta <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  fix_beta <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  max_relative_step <span class="op">=</span> <span class="fl">0.1</span>,</span>
-<span>  max_absolute_step <span class="op">=</span> <span class="fl">0.5</span>,</span>
+<span>  max_relative_step <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  max_absolute_step <span class="op">=</span> <span class="fl">5</span>,</span>
 <span>  reduce_var <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  reduce_power <span class="op">=</span> <span class="fl">0.75</span>,</span>
 <span>  threshold <span class="op">=</span> <span class="fl">1e-05</span>,</span>
@@ -123,6 +124,10 @@ optimization process.</p>
 
 <dt>post_samples_size</dt>
 <dd><p>number of posterior samples</p></dd>
+
+
+<dt>init_sample_W</dt>
+<dd><p>sample W|V at the beginning of each chain</p></dd>
 
 
 <dt>n_parallel_chain</dt>

@@ -190,7 +190,7 @@ for (latent in ngme_block$latents) {
   if (control$estimation) {
     cat("Starting estimation... \n")
     outputs <- estimate_cpp(ngme_block)
-    cat("Estimation done! \n")
+    cat("\n")
 
   ################# Update the estimates ####################
     est_output <- mean_list(outputs)

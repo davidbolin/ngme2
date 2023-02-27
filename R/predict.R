@@ -53,6 +53,7 @@ predict.ngme <- function(
   # else
   #   stop("not implement for loc=NULL yet")
   stopifnot(sampling_size > 0)
+# why 4 times?
   samples_W <- sampling_cpp(ngme, n=sampling_size, posterior=TRUE)[["W"]]
   post_W <- switch(estimator,
     "mean"      = mean_list(samples_W),

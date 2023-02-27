@@ -331,11 +331,12 @@ public:
     virtual VectorXd grad_theta_sigma();
     virtual VectorXd grad_theta_sigma_normal(); // grad of sig. only for normal noise
 
+    // mean of grad for each var
     double grad_theta_nu() {
         double grad = 0;
         for (int i=0; i < n_rep; i++)
             grad += vars[i].grad_log_nu();
-        return grad;
+        return grad / n_rep;
     }
 
     // Output
@@ -445,7 +446,9 @@ inline void Latent::set_parameter(const VectorXd& theta) {
         }
     }
 
+    // update K, K_rep, ...
     update_each_iter();
+
     // record
     record_traj();
 }

@@ -157,6 +157,9 @@ public:
             grad = grad / hess;     // use hessian
         }
 
+        // if (abs(grad) > 2) { // bad V
+            // return 0;
+        // } else
         return grad;
     }
 };

@@ -327,6 +327,14 @@ public:
     };
 
     virtual VectorXd grad_theta_K() { return numerical_grad(); }
+    // virtual VectorXd grad_theta_K(
+    //     SparseMatrix<double>& K,
+    //     SparseMatrix<double>& dK,
+    //     VectorXd& h,
+    //     VectorXd& W,
+    //     VectorXd& V
+    // ) = 0;
+
     virtual VectorXd grad_theta_mu();
     virtual VectorXd grad_theta_sigma();
     virtual VectorXd grad_theta_sigma_normal(); // grad of sig. only for normal noise
@@ -479,14 +487,6 @@ public:
         theta_K(0) = a2th(alpha(0));
         return theta_K;
     }
-    // Rcpp::List get_estimates() const {
-    //     return Rcpp::List::create(
-    //         Rcpp::Named("alpha")        = theta_K(0),
-    //         Rcpp::Named("theta.mu")     = theta_mu,
-    //         Rcpp::Named("theta.sigma")  = theta_sigma,
-    //         Rcpp::Named("theta.noise")  = var.get_nu()
-    //     );
-    // }
 };
 
 
@@ -515,14 +515,6 @@ public:
         theta_K(0) = k2th(kappa(0));
         return theta_K;
     }
-    // Rcpp::List get_estimates() const {
-    //     return Rcpp::List::create(
-    //         Rcpp::Named("kappa")        = theta_K(0),
-    //         Rcpp::Named("theta.mu")     = theta_mu,
-    //         Rcpp::Named("theta.sigma")  = theta_sigma,
-    //         Rcpp::Named("theta.noise")  = var.get_nu()
-    //     );
-    // }
 };
 
 class Matern_ns : public Latent {
@@ -537,15 +529,17 @@ public:
     SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
     VectorXd grad_theta_K();
     void update_each_iter();
+};
 
-    // Rcpp::List get_estimates() const {
-    //     return Rcpp::List::create(
-    //         Rcpp::Named("theta.kappa") = theta_K,
-    //         Rcpp::Named("theta.mu")    = theta_mu,
-    //         Rcpp::Named("theta.sigma") = theta_sigma,
-    //         Rcpp::Named("theta.noise") = var.get_nu()
-    //     );
-    // }
+class Tensor_prod : public Latent {
+private:
+  std::unique_ptr<Latent> left, right;
+public:
+  Tensor_prod(const Rcpp::List& model_list, unsigned long seed);
+  SparseMatrix<double> getK(const VectorXd& alpha) const;
+  SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
+  VectorXd grad_theta_K();
+  void update_each_iter();
 };
 
 // for initialize Latent models
@@ -554,7 +548,9 @@ public:
   static std::unique_ptr<Latent> create(const std::string& model_type, const Rcpp::List& latent_in, int latent_seed) {
     int n_theta_K = Rcpp::as<int> (latent_in["n_theta_K"]);
 
-    if (model_type == "ar1") {
+    if (latent_in["group"] != R_NilValue) {
+      return std::make_unique<Tensor_prod>(latent_in, latent_seed);
+    } else if (model_type == "ar1") {
       return std::make_unique<AR>(latent_in, latent_seed, false);
     } else if (model_type == "rw1") {
       return std::make_unique<AR>(latent_in, latent_seed, true);

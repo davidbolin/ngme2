@@ -152,13 +152,13 @@ model_rw <- function(
     # regular mesh
     if (order == 1) {
       mesh <- INLA::inla.mesh.1d(loc = unique(x)[-1])
-      n_mesh <- mesh$n
+      n <- mesh$n
       C <- Matrix::sparseMatrix(i = 1:(n-1), j=2:n, x=1, dims=c(n-1,n))
       G <- Matrix::sparseMatrix(i = 1:(n-1), j=1:(n-1), x=-1, dims=c(n-1,n))
     } else if (order == 2) {
       mesh <- INLA::inla.mesh.1d(loc = unique(x)[-c(1,2)])
-      n_mesh <- mesh$n
-      stopifnot(n_mesh >= 2)
+      n <- mesh$n
+      stopifnot(n >= 2)
       C <- Matrix::sparseMatrix(i = 1:(n-2), j=2:(n-1), x=-2, dims=c(n-2,n))
       G <- Matrix::sparseMatrix(i = rep(1:(n-2),2), j=c(1:(n-2), 3:n), x=1, dims=c(n-2,n))
     }
@@ -166,7 +166,7 @@ model_rw <- function(
     # circular mesh (remove last element)
       stopifnot(length(x) >= 4)
     mesh <- INLA::inla.mesh.1d(loc = x)
-    n_mesh <- mesh$n
+    n <- mesh$n
     if (order == 1) {
       C <- Matrix::Diagonal(n)
       G <- Matrix::sparseMatrix(i = 1:n, j=c(2:n, 1), x=-1, dims=c(n,n))
@@ -195,14 +195,14 @@ model_rw <- function(
   stopifnot(nrep == as.integer(nrep))
 
   # update noise with length n
-  if (noise$n_noise == 1) noise <- update_noise(noise, n = n_mesh)
+  if (noise$n_noise == 1) noise <- update_noise(noise, n = n)
 
   args <- within(list(...), {
     model       = if (order == 1) "rw1" else "rw2"
     theta_K     = 1
     fix_theta_K = TRUE
     W_size      = ncol(C) # mesh$n
-    V_size      = n_mesh
+    V_size      = n
     A           = ngme_as_sparse(A)
     A_pred      = A_pred
     C           = ngme_as_sparse(C)

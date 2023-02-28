@@ -88,7 +88,7 @@
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="" class="logo" alt=""><h1>Ngme2 - A new Flexible R Package for Latent non-Gaussian Models</h1>
             
-            <h4 data-toc-skip class="date">2023-02-26</h4>
+            <h4 data-toc-skip class="date">2023-02-28</h4>
       
       
       <div class="d-none name"><code>ngme2.Rmd</code></div>
@@ -438,7 +438,7 @@ K =
 <span>  seed <span class="op">=</span> <span class="fl">3</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; Starting estimation... </span></span>
-<span><span class="co">#&gt; Estimation done! </span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Starting posterior sampling... </span></span>
 <span><span class="co">#&gt; Note: Use ngme$latents[[model_name]]$W  to access the posterior mean of process </span></span>
 <span><span class="co">#&gt; Posterior sampling done!</span></span></code></pre></div>
@@ -499,7 +499,7 @@ true NIG noise:</p>
 <span><span class="co">#&gt; Loading required package: foreach</span></span>
 <span><span class="co">#&gt; Loading required package: parallel</span></span>
 <span><span class="co">#&gt; Loading required package: sp</span></span>
-<span><span class="co">#&gt; This is INLA_23.02.22 built 2023-02-22 12:04:19 UTC.</span></span>
+<span><span class="co">#&gt; This is INLA_23.02.27 built 2023-02-27 05:22:45 UTC.</span></span>
 <span><span class="co">#&gt;  - See www.r-inla.org/contact-us for how to get help.</span></span>
 <span><span class="co">#&gt;  - To enable PARDISO sparse library; see inla.pardiso()</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -580,7 +580,7 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <span>  seed <span class="op">=</span> <span class="fl">16</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; Starting estimation... </span></span>
-<span><span class="co">#&gt; Estimation done! </span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Starting posterior sampling... </span></span>
 <span><span class="co">#&gt; Note: Use ngme$latents[[model_name]]$W  to access the posterior mean of process </span></span>
 <span><span class="co">#&gt; Posterior sampling done!</span></span>
@@ -714,48 +714,48 @@ method.</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/cross_validation.html">cross_validation</a></span><span class="op">(</span><span class="va">out</span>, type<span class="op">=</span><span class="st">"k-fold"</span>, k<span class="op">=</span><span class="fl">10</span>, print<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; In group 1 : </span></span>
-<span><span class="co">#&gt;        MAE     MSE     CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.204037 8.32587 -1.14598 -1.359654</span></span>
+<span><span class="co">#&gt;        MAE     MSE      CRPS     sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.271807 8.67093 -1.169531 -1.393974</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In group 2 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE      CRPS    sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.091381 7.373489 -1.133524 -1.29879</span></span>
+<span><span class="co">#&gt; 1 2.223848 8.347319 -1.149276 -1.38448</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In group 3 : </span></span>
-<span><span class="co">#&gt;     MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.253 8.546224 -1.108275 -1.513952</span></span>
+<span><span class="co">#&gt;       MAE      MSE      CRPS     sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.16607 7.731896 -1.125255 -1.393613</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In group 4 : </span></span>
-<span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.185186 8.147715 -1.075771 -1.472734</span></span>
+<span><span class="co">#&gt;       MAE      MSE      CRPS     sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.25408 9.071268 -1.119544 -1.419826</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In group 5 : </span></span>
-<span><span class="co">#&gt;        MAE      MSE     CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.127539 8.064066 -1.12642 -1.321095</span></span>
+<span><span class="co">#&gt;       MAE      MSE      CRPS     sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.07404 7.788734 -1.107292 -1.287075</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In group 6 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.201351 8.235541 -1.108264 -1.418178</span></span>
+<span><span class="co">#&gt; 1 2.273744 8.656611 -1.150206 -1.428123</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In group 7 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.262111 8.180661 -1.210947 -1.333974</span></span>
+<span><span class="co">#&gt; 1 2.261335 8.455221 -1.183858 -1.356535</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In group 8 : </span></span>
-<span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.288687 8.716536 -1.260139 -1.318114</span></span>
+<span><span class="co">#&gt;       MAE      MSE      CRPS     sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.26628 8.625335 -1.221396 -1.341019</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In group 9 : </span></span>
-<span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.270319 8.510162 -1.157075 -1.388861</span></span>
+<span><span class="co">#&gt;        MAE     MSE      CRPS     sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.157345 7.61519 -1.155007 -1.314155</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In group 10 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.174502 7.825498 -1.048488 -1.451078</span></span>
+<span><span class="co">#&gt; 1 2.134284 7.524847 -1.058839 -1.395054</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; The average of indices computed: </span></span>
-<span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.205811 8.192576 -1.137488 -1.387643</span></span></code></pre></div>
+<span><span class="co">#&gt;        MAE      MSE     CRPS     sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.208283 8.248735 -1.14402 -1.371385</span></span></code></pre></div>
 </div>
 </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>

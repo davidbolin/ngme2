@@ -7,7 +7,7 @@
 
 #include "../latent.h"
 
-Matern::Matern(Rcpp::List& model_list, unsigned long seed)
+Matern::Matern(const Rcpp::List& model_list, unsigned long seed)
 : Latent(model_list, seed),
     G           (Rcpp::as< SparseMatrix<double,0,int> > (model_list["G"])),
     C           (Rcpp::as< SparseMatrix<double,0,int> > (model_list["C"])),

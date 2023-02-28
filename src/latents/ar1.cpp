@@ -13,7 +13,7 @@
 // W_size = V_size
 // get_K_params, grad_K_params, set_K_params, output
 
-AR::AR(Rcpp::List& model_list, unsigned long seed, bool is_rw)
+AR::AR(const Rcpp::List& model_list, unsigned long seed, bool is_rw)
 : Latent(model_list, seed),
     G           (Rcpp::as< SparseMatrix<double,0,int> > (model_list["G"])),
     C           (Rcpp::as< SparseMatrix<double,0,int> > (model_list["C"])),

@@ -459,7 +459,7 @@ private:
     SparseMatrix<double, 0, int> G, C;
     bool is_rw; // if this is actually a rw model
 public:
-    AR(Rcpp::List& model_list, unsigned long seed, bool is_rw);
+    AR(const Rcpp::List& model_list, unsigned long seed, bool is_rw);
 
     SparseMatrix<double> getK(const VectorXd& alpha) const;
     SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
@@ -496,7 +496,7 @@ private:
     int alpha;
     VectorXd Cdiag;
 public:
-    Matern(Rcpp::List& model_list, unsigned long seed);
+    Matern(const Rcpp::List& model_list, unsigned long seed);
     SparseMatrix<double> getK(const VectorXd& alpha) const;
     SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
     VectorXd grad_theta_K();
@@ -532,7 +532,7 @@ private:
     MatrixXd Bkappa;
     VectorXd Cdiag;
 public:
-    Matern_ns(Rcpp::List& model_list, unsigned long seed);
+    Matern_ns(const Rcpp::List& model_list, unsigned long seed);
     SparseMatrix<double> getK(const VectorXd& alpha) const;
     SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
     VectorXd grad_theta_K();
@@ -546,6 +546,26 @@ public:
     //         Rcpp::Named("theta.noise") = var.get_nu()
     //     );
     // }
+};
+
+// for initialize Latent models
+class LatentFactory {
+public:
+  static std::unique_ptr<Latent> create(const std::string& model_type, const Rcpp::List& latent_in, int latent_seed) {
+    int n_theta_K = Rcpp::as<int> (latent_in["n_theta_K"]);
+
+    if (model_type == "ar1") {
+      return std::make_unique<AR>(latent_in, latent_seed, false);
+    } else if (model_type == "rw1") {
+      return std::make_unique<AR>(latent_in, latent_seed, true);
+    } else if (model_type == "matern" && n_theta_K > 1) {
+      return std::make_unique<Matern_ns>(latent_in, latent_seed);
+    } else if (model_type == "matern" && n_theta_K == 1) {
+      return std::make_unique<Matern>(latent_in, latent_seed);
+    } else {
+      throw std::runtime_error("Unknown model.");
+    }
+  }
 };
 
 #endif

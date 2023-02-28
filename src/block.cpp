@@ -52,25 +52,11 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
   Rcpp::List latents_in = block_model["latents"];
   n_latent = latents_in.size(); // how many latent model
   for (int i=0; i < n_latent; ++i) {
-    Rcpp::List latent_in = Rcpp::as<Rcpp::List> (latents_in[i]);
-    int n_theta_K = Rcpp::as<int> (latent_in["n_theta_K"]);
-
     // construct acoording to models
-    unsigned long latent_seed = rng();
+    Rcpp::List latent_in = Rcpp::as<Rcpp::List> (latents_in[i]);
     string model_type = latent_in["model"];
-    if (model_type == "ar1") {
-      latents.push_back(std::make_unique<AR>(latent_in, latent_seed, false));
-    }
-    else if (model_type == "rw1") {
-      latents.push_back(std::make_unique<AR>(latent_in, latent_seed, true));
-    }
-    else if (model_type == "matern" && n_theta_K > 1) {
-      latents.push_back(std::make_unique<Matern_ns>(latent_in, latent_seed));
-    } else if (model_type=="matern" && n_theta_K == 1) {
-      latents.push_back(std::make_unique<Matern>(latent_in, latent_seed));
-    } else {
-      std::cout << "Unknown model." << std::endl;
-    }
+    unsigned long latent_seed = rng();
+    latents.push_back(LatentFactory::create(model_type, latent_in, latent_seed));
   }
 
 if (debug) std::cout << "before set block A" << std::endl;

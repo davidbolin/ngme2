@@ -50,11 +50,8 @@ model_ar1 <- function(
   nrep <- length(unique(replicate))
 
   # construct G
-  G <- Matrix::Matrix(diag(n));
-
-  # construct C
-  C <- Matrix::Matrix(0, n, n)
-  C[seq(2, n*n, by = n+1)] <- -1
+  G <- Matrix::Diagonal(n);
+  C <- Matrix::sparseMatrix(j=1:(n-1), i=2:n, x=-1, dims=c(n,n))
 
   # update noise with length n
   if (noise$n_noise == 1) noise <- update_noise(noise, n = n)
@@ -156,20 +153,14 @@ model_rw <- function(
     if (order == 1) {
       mesh <- INLA::inla.mesh.1d(loc = unique(x)[-1])
       n_mesh <- mesh$n
-      G <- -Matrix::Matrix(diag(n_mesh));
-      G <- cbind(G, rep(0, n_mesh))
-      C <- Matrix::Matrix(0, n_mesh, n_mesh)
-      C[seq(n_mesh+1, n_mesh*n_mesh, by = n_mesh+1)] <- 1
-      C <- cbind(C, c(rep(0, n_mesh-1), 1))
+      C <- Matrix::sparseMatrix(i = 1:(n-1), j=2:n, x=1, dims=c(n-1,n))
+      G <- Matrix::sparseMatrix(i = 1:(n-1), j=1:(n-1), x=-1, dims=c(n-1,n))
     } else if (order == 2) {
       mesh <- INLA::inla.mesh.1d(loc = unique(x)[-c(1,2)])
       n_mesh <- mesh$n
       stopifnot(n_mesh >= 2)
-      C <- Matrix::Matrix(0, n_mesh, n_mesh+2)
-      G <- Matrix::Matrix(diag(n_mesh));
-      G <- cbind(G, rep(0, n_mesh), rep(0, n_mesh))
-      G[seq(n_mesh+1, n_mesh*(n_mesh+2), by = n_mesh+1)] <- -2
-      G[seq(2*n_mesh+1, n_mesh*(n_mesh+2), by = n_mesh+1)] <- 1
+      C <- Matrix::sparseMatrix(i = 1:(n-2), j=2:(n-1), x=-2, dims=c(n-2,n))
+      G <- Matrix::sparseMatrix(i = rep(1:(n-2),2), j=c(1:(n-2), 3:n), x=1, dims=c(n-2,n))
     }
   } else {
     # circular mesh (remove last element)
@@ -177,17 +168,11 @@ model_rw <- function(
     mesh <- INLA::inla.mesh.1d(loc = x)
     n_mesh <- mesh$n
     if (order == 1) {
-      G <- Matrix::Matrix(diag(n_mesh))
-      C <- Matrix::Matrix(0, n_mesh, n_mesh)
-      C[seq(n_mesh+1, n_mesh*n_mesh, by = n_mesh+1)] <- -1
-      C[n_mesh, 1] <- -1
+      C <- Matrix::Diagonal(n)
+      G <- Matrix::sparseMatrix(i = 1:n, j=c(2:n, 1), x=-1, dims=c(n,n))
     } else if (order == 2) {
-      C <- Matrix::Matrix(diag(n_mesh))
-      G <- Matrix::Matrix(0, n_mesh, n_mesh)
-      G[seq(n_mesh+1, n_mesh*n_mesh, by = n_mesh+1)] <- -2
-      G[seq(2*n_mesh+1, n_mesh*n_mesh, by = n_mesh+1)] <- 1
-      G[n_mesh] <- -2
-      G[c(n_mesh-1, 2*n_mesh)] <- 1
+      C <- Matrix::sparseMatrix(i = 1:n, j=c(2:n,1), x=-2, dims=c(n,n))
+      G <- Matrix::sparseMatrix(i = rep(1:n,2), j=c(1:n, 3:n, 1, 2), x=1, dims=c(n,n))
     }
   }
   noise$h <- diff(mesh$loc)

@@ -270,7 +270,7 @@ public:
 
         SparseMatrix<double> K = getK(theta_K);
         SparseMatrix<double> dK = get_dK_by_index(0);
-        if (!use_iter_solver) {
+        if (!numer_grad) {
             if (!symmetricK) {
                 lu_solver_K.computeKTK(K);
                 trace = lu_solver_K.trace(dK);
@@ -302,18 +302,14 @@ public:
             SparseMatrix<double> dK = get_dK_by_eps(0, 0, eps);
             SparseMatrix<double> M = dK;
 
-            if (!use_iter_solver) {
-                if (!symmetricK) {
-                    lu_solver_K.computeKTK(K);
-                    trace_eps = lu_solver_K.trace(M);
-                } else {
-                    chol_solver_K.compute(K);
-                    trace_eps = chol_solver_K.trace(M);
-                }
+            if (!symmetricK) {
+                lu_solver_K.computeKTK(K);
+                trace_eps = lu_solver_K.trace(M);
+            } else {
+                chol_solver_K.compute(K);
+                trace_eps = chol_solver_K.trace(M);
             }
-// std::cout << "eps K  in 2 = " << K << std::endl;
-// std::cout << "eps dK in 2 = " << dK << std::endl;
-// std::cout << "trace_eps in 2 = " << trace_eps << std::endl;
+
             // else {
             //     if (!symmetricK) {
             //         // BiCG solver

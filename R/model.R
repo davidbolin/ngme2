@@ -25,6 +25,7 @@ ngme_model <- function(
   n_map       = NULL,
   replicate   = NULL,
   n_rep       = NULL,
+  group       = NULL,
   ...
 ) {
   if (is.null(n_rep)) stop("n_rep is NULL")
@@ -75,6 +76,7 @@ ngme_model <- function(
       n_map         = n_map,
       replicate     = replicate,
       n_rep         = n_rep,
+      group         = group,
       ...
     ),
     class = "ngme_model"
@@ -99,10 +101,16 @@ print.ngme_model <- function(x, padding = 0, ...) {
   cat(pad_space); cat("Model parameters: \n")
   params <- with(model, {
     switch(model,
-      "ar1"     = paste0(pad_add4_space, ngme_format("K", theta_K, "ar1")),
-      "matern"  = paste0(pad_add4_space, ngme_format("K", theta_K, "matern")),
-      "rw1"     = paste0(pad_add4_space, "No parameter."),
-      "unkown"  = paste0(pad_add4_space, "No parameter."),
+      "ar1"         = paste0(pad_add4_space, ngme_format("K", theta_K, "ar1")),
+      "matern"      = paste0(pad_add4_space, ngme_format("K", theta_K, "matern")),
+      "rw1"         = paste0(pad_add4_space, "No parameter."),
+      "unkown"      = paste0(pad_add4_space, "No parameter."),
+      "tensor_prod" = paste0(pad_add4_space, "group - ", group$model, ": ",
+        ngme_format("K", group$theta_K, group$model), "\n",
+        pad_add4_space, "model - ", model_right$model, ": ",
+        ngme_format("K", model_right$theta_K, model_right$model)
+      ),
+      paste0(pad_add4_space, "Not implemented yet!")
     )
   })
   cat(params);

@@ -21,6 +21,7 @@
 #include <Eigen/Dense>
 #include <random>
 #include <cmath>
+#include <memory>
 
 #include "include/timer.h"
 #include "include/solver.h"
@@ -47,6 +48,7 @@ protected:
     std::mt19937 latent_rng;
     string model_type, noise_type;
     bool debug;
+
     int n_rep, W_size, V_size, n_params, n_var {1}; // n_params=n_theta_K + n_theta_mu + n_theta_sigma + n_var
 
     // operator K related
@@ -97,6 +99,9 @@ protected:
     vector<vector<double>> theta_sigma_traj;
     vector<vector<double>> theta_sigma_normal_traj;
     vector<double>   nu_traj;
+
+    // only for tensor product model
+    Latent *left, *right;
 public:
     Latent(const Rcpp::List&, unsigned long seed);
     virtual ~Latent() {}
@@ -110,6 +115,9 @@ public:
     int get_W_size() const                  {return n_rep * W_size; }
     int get_V_size() const                  {return n_rep * V_size; }
     int get_n_params() const                {return n_params; }
+    int get_n_theta_K() const               {return n_theta_K; }
+    void set_theta_K(const VectorXd& theta) {theta_K = theta; }
+
     SparseMatrix<double, 0, int>& getA()    {return A; }
 
     // concat W of different replicate
@@ -327,13 +335,18 @@ public:
     };
 
     virtual VectorXd grad_theta_K() { return numerical_grad(); }
-    // virtual VectorXd grad_theta_K(
-    //     SparseMatrix<double>& K,
-    //     SparseMatrix<double>& dK,
-    //     VectorXd& h,
-    //     VectorXd& W,
-    //     VectorXd& V
-    // ) = 0;
+    virtual VectorXd grad_theta_K(
+        SparseMatrix<double>& K,
+        SparseMatrix<double>& dK,
+        vector<VectorXd>& Ws,
+        vector<VectorXd>& prevWs,
+        vector<Var>& vars,
+        const VectorXd& mu,
+        const VectorXd& sigma,
+        const VectorXd& h,
+        double trace,
+        int W_size
+    ) = 0;
 
     virtual VectorXd grad_theta_mu();
     virtual VectorXd grad_theta_sigma();
@@ -487,6 +500,19 @@ public:
         theta_K(0) = a2th(alpha(0));
         return theta_K;
     }
+
+    VectorXd grad_theta_K(
+        SparseMatrix<double>& K,
+        SparseMatrix<double>& dK,
+        vector<VectorXd>& Ws,
+        vector<VectorXd>& prevWs,
+        vector<Var>& vars,
+        const VectorXd& mu,
+        const VectorXd& sigma,
+        const VectorXd& h,
+        double trace,
+        int W_size
+    );
 };
 
 
@@ -515,6 +541,19 @@ public:
         theta_K(0) = k2th(kappa(0));
         return theta_K;
     }
+
+    VectorXd grad_theta_K(
+        SparseMatrix<double>& K,
+        SparseMatrix<double>& dK,
+        vector<VectorXd>& Ws,
+        vector<VectorXd>& prevWs,
+        vector<Var>& vars,
+        const VectorXd& mu,
+        const VectorXd& sigma,
+        const VectorXd& h,
+        double trace,
+        int W_size
+    );
 };
 
 class Matern_ns : public Latent {
@@ -529,26 +568,54 @@ public:
     SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
     VectorXd grad_theta_K();
     void update_each_iter();
+
+    VectorXd grad_theta_K(
+        SparseMatrix<double>& K,
+        SparseMatrix<double>& dK,
+        vector<VectorXd>& Ws,
+        vector<VectorXd>& prevWs,
+        vector<Var>& vars,
+        const VectorXd& mu,
+        const VectorXd& sigma,
+        const VectorXd& h,
+        double trace,
+        int W_size
+    ) {throw std::runtime_error("Matern_ns::grad_theta_K not implemented");}
 };
 
 class Tensor_prod : public Latent {
 private:
   std::unique_ptr<Latent> left, right;
+  SparseMatrix<double, 0, int> dK2; // dK for left, and dK2 for right
 public:
   Tensor_prod(const Rcpp::List& model_list, unsigned long seed);
   SparseMatrix<double> getK(const VectorXd& alpha) const;
   SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
   VectorXd grad_theta_K();
   void update_each_iter();
+
+  VectorXd grad_theta_K(
+    SparseMatrix<double>& K,
+    SparseMatrix<double>& dK,
+    vector<VectorXd>& Ws,
+    vector<VectorXd>& prevWs,
+    vector<Var>& vars,
+    const VectorXd& mu,
+    const VectorXd& sigma,
+    const VectorXd& h,
+    double trace,
+    int W_size
+  ) {throw std::runtime_error("Tensor_prod::grad_theta_K not implemented");}
 };
 
 // for initialize Latent models
 class LatentFactory {
 public:
-  static std::unique_ptr<Latent> create(const std::string& model_type, const Rcpp::List& latent_in, int latent_seed) {
+  static std::unique_ptr<Latent> create(const Rcpp::List& latent_in, int latent_seed) {
     int n_theta_K = Rcpp::as<int> (latent_in["n_theta_K"]);
+    string model_type = Rcpp::as<string> (latent_in["model"]);
 
-    if (latent_in["group"] != R_NilValue) {
+    if (model_type == "tensor_prod") {
       return std::make_unique<Tensor_prod>(latent_in, latent_seed);
     } else if (model_type == "ar1") {
       return std::make_unique<AR>(latent_in, latent_seed, false);

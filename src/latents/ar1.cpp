@@ -47,6 +47,7 @@ SparseMatrix<double> AR::getK(const VectorXd& theta_K) const {
 
     assert (theta_K.size() == 1);
     double alpha = th2a(theta_K(0));
+// std::cout << "alpha in get K = " << alpha << std::endl;
     SparseMatrix<double> K = alpha * C + G;
     return K;
 }
@@ -107,4 +108,35 @@ void AR::update_each_iter() {
 
     if (!numer_grad && (W_size == V_size))
         compute_trace();
+}
+
+// return length 1 vectorxd : grad_kappa * dkappa/dtheta
+VectorXd AR::grad_theta_K(
+    SparseMatrix<double>& K,
+    SparseMatrix<double>& dK,
+    vector<VectorXd>& Ws,
+    vector<VectorXd>& prevWs,
+    vector<Var>& vars,
+    const VectorXd& mu,
+    const VectorXd& sigma,
+    const VectorXd& h,
+    double trace,
+    int W_size
+) {
+    // if (numer_grad) return numerical_grad();
+
+    double a = th2a(theta_K(0));
+    double th = a2th(a);
+    double da  = 2 * (exp(th) / pow(1+exp(th), 2));
+    double ret = 0;
+    for (int i=0; i < n_rep; i++) {
+        VectorXd W = Ws[i];
+        VectorXd V = vars[i].getV();
+        VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
+        double tmp = (dK*W).cwiseProduct(SV.cwiseInverse()).dot(K * W + (h - V).cwiseProduct(mu));
+        double grad = trace - tmp;
+        ret += - grad * da / W_size;
+    }
+
+    return VectorXd::Constant(1, ret);
 }

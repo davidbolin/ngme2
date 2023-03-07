@@ -219,3 +219,7 @@ model_rw <- function(
 
   do.call(ngme_model, args)
 }
+
+# shorthand
+ar1 <- function(...) {model_ar1(...)}
+rw <- function(...) {model_rw(...)}

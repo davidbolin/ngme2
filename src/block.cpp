@@ -54,9 +54,8 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
   for (int i=0; i < n_latent; ++i) {
     // construct acoording to models
     Rcpp::List latent_in = Rcpp::as<Rcpp::List> (latents_in[i]);
-    string model_type = latent_in["model"];
     unsigned long latent_seed = rng();
-    latents.push_back(LatentFactory::create(model_type, latent_in, latent_seed));
+    latents.push_back(LatentFactory::create(latent_in, latent_seed));
   }
 
 if (debug) std::cout << "before set block A" << std::endl;
@@ -104,12 +103,12 @@ if (debug) std::cout << "After block construct noise" << std::endl;
     LU_K.analyzePattern(K);
   }
 
-if (debug) std::cout << "After init solver" << std::endl;
-
   // 7. optimizer related
   stepsizes = VectorXd::Constant(n_params, stepsize);
   steps_to_threshold = VectorXd::Constant(n_params, 0);
   indicate_threshold = VectorXd::Constant(n_params, 0);
+
+if (debug) std::cout << "After init solver && before sampleW_V" << std::endl;
 
   if (n_latent > 0 && init_sample_W) {
     sampleW_V();
@@ -174,6 +173,7 @@ void BlockModel::sampleW_VY()
 // if (debug) std::cout << "starting sampling W." << std::endl;
   if (n_latent==0) return;
 
+// if (debug) std::cout << "K = " << K << std::endl;
   VectorXd SV = getSV();
   VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(SV);
   // VectorXd V = getV();
@@ -316,6 +316,7 @@ void BlockModel::sampleW_V()
   }
   KW = getMean() + KW;
 
+// if (debug) std::cout << K << std::endl;
   VectorXd W (W_sizes);
   if (V_sizes == W_sizes) {
     LU_K.factorize(K);

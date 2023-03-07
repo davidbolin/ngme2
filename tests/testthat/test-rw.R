@@ -44,7 +44,7 @@ test_that("simulate and estimate of rw with NIG", {
       n_parallel_chain = 4,
       print_check_info = TRUE
     ),
-    debug = TRUE
+    debug = FALSE
   )
   out
   traceplot(out, 1)
@@ -100,6 +100,7 @@ test_that("test estimation of basic ar with normal measurement noise", {
 
   W <- simulate(ar1)
   Y <- W + rnorm(n_obs, sd = sigma_eps)
+plot(Y, type="l")
 
   out <- ngme(
     Y ~ 0 + f(1:n_obs,
@@ -111,6 +112,9 @@ test_that("test estimation of basic ar with normal measurement noise", {
         # fix_V = TRUE, V = attr(W, "noise")$V
       ),
       # fix_W = TRUE, W = W,
+      control=ngme_control_f(
+        numer_grad = T
+      ),
       debug = FALSE
     ),
     data = list(Y = Y),
@@ -123,6 +127,10 @@ test_that("test estimation of basic ar with normal measurement noise", {
     debug = FALSE
   )
   out
+
+  plot(simulate(out$latents[["ar"]]), type="l")
+  plot(Y, type="l")
+  prds <- predict(out, loc=list(ar=501:600))$mean
 
   traceplot(out, "ar")
   traceplot(out, "mn")

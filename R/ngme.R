@@ -105,7 +105,6 @@ ngme <- function(
     latents_in <- res$latents_in
     plain_fm <- res$plain_fm
     # names(latents_in) <- sapply(latents_in, function(x) {x$name})
-
     # get Y and X
     Y_data    <- ngme_response[!index_NA]
     n_Y_data  <- length(Y_data)
@@ -179,12 +178,17 @@ if (debug) {print(str(ngme_block))}
 
 # check dim. before run cpp
 for (latent in ngme_block$latents) {
-  stopifnot("nrow(K) should be equal to length of noise, please check idx, replicate argument" =
-    nrow(latent$K) == latent$V_size)
-  stopifnot("ncol(K) should be equal to length of mesh, please check idx, replicate argument" =
-    ncol(latent$K) == latent$W_size)
-  # check given V > 0
+  if (latent$model != "tensor_prod") {
+    stopifnot("nrow(K) should be equal to length of noise, please check idx, replicate argument" =
+      nrow(latent$K) == latent$V_size)
+    stopifnot("ncol(K) should be equal to length of mesh, please check idx, replicate argument" =
+      ncol(latent$K) == latent$W_size)
+    # check given V > 0
+  }
 }
+
+# check all f has the same replicate
+# otherwise change replicate to group="iid"
 
   ################# Run CPP ####################
   if (control$estimation) {
@@ -202,6 +206,12 @@ for (latent in ngme_block$latents) {
       ngme_block$latents[[i]]$noise    <- update_noise(
         ngme_block$latents[[i]]$noise, new_noise = est_output$latents[[i]]
       )
+      if (ngme_block$latents[[i]]$model == "tensor_prod") {
+        n1 <- ngme_block$latents[[i]]$group$n_theta_K
+        n2 <- ngme_block$latents[[i]]$model_right$n_theta_K
+        ngme_block$latents[[i]]$group$theta_K <- ngme_block$latents[[i]]$theta_K[1:n1]
+        ngme_block$latents[[i]]$model_right$theta_K <- ngme_block$latents[[i]]$theta_K[(n1+1):(n1+n2)]
+      }
     }
     # 2. get trajs
     attr(ngme_block, "trajectory") <- get_trajs(outputs)

@@ -97,7 +97,7 @@ model_matern <- function(
 
   if (noise$n_noise == 1) noise <- update_noise(noise, n = mesh$n)
   noise$h <- h
-  # kappas <- drop(exp(theta_kappa %*% B_kappa))
+  kappas <- drop(exp(B_kappa %*% theta_kappa))
 
   model <- ngme_model(
     model       = "matern",
@@ -110,7 +110,7 @@ model_matern <- function(
     B_kappa     = B_kappa,
     C           = ngme_as_sparse(C),
     G           = ngme_as_sparse(G),
-    # K           = kappas * kappas * C + G
+    K           = ngme_as_sparse(diag(kappas^2) %*% C + G),
     h           = h,
     noise       = noise,
     mesh        = mesh,
@@ -118,6 +118,7 @@ model_matern <- function(
     n_map       = n_loc,
     replicate   = replicate,
     n_rep       = nrep,
+    # group       = NULL,
     ...
   )
   model

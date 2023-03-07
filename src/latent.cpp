@@ -11,8 +11,8 @@ Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
     model_type    (Rcpp::as<string>     (model_list["model"])),
     noise_type    (Rcpp::as<string>     (model_list["noise_type"])),
     debug         (Rcpp::as<bool>       (model_list["debug"])),
-    n_rep         (Rcpp::as<int>        (model_list["n_rep"])),
 
+    n_rep         (Rcpp::as<int>        (model_list["n_rep"])),
     W_size        (Rcpp::as<int>        (model_list["W_size"])),
     V_size        (Rcpp::as<int>        (model_list["V_size"])),
     n_params      (Rcpp::as<int>        (model_list["n_params"])),
@@ -20,6 +20,7 @@ Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
     n_theta_K     (Rcpp::as<int>        (model_list["n_theta_K"])),
 
     K            (V_size, W_size),
+    dK           (V_size, W_size),
     K_rep        (n_rep * V_size, n_rep * W_size),
 
     trace         (0),
@@ -36,7 +37,10 @@ Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
     vars          (n_rep),
     // var           (Var(Rcpp::as<Rcpp::List> (model_list["noise"]), latent_rng())),
 
-    theta_K_traj  (theta_K.size())
+    theta_K_traj  (theta_K.size()),
+
+    left (nullptr),
+    right (nullptr)
 {
 if (debug) std::cout << "Begin constructor of latent" << std::endl;
 
@@ -206,10 +210,10 @@ double Latent::function_K(SparseMatrix<double>& K) {
         VectorXd V = vars[i].getV();
         VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
 
-        SparseMatrix<double> Q = K.transpose() * SV.cwiseInverse().asDiagonal() * K;
         VectorXd tmp = K * W - mu.cwiseProduct(V-h);
 
         if (!symmetricK) {
+            SparseMatrix<double> Q = K.transpose() * SV.cwiseInverse().asDiagonal() * K;
             solver_Q.compute(Q);
             l += 0.5 * solver_Q.logdet()
                 - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
@@ -231,6 +235,7 @@ double Latent::function_K(VectorXd& theta_K) {
 
 // numerical gradient for K parameters
 VectorXd Latent::numerical_grad() {
+    SparseMatrix<double> K = getK(theta_K);
     VectorXd grad = VectorXd::Zero(n_theta_K);
 
     double val = function_K(K);

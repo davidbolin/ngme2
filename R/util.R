@@ -347,3 +347,20 @@ emprical_mode <- function(x, breaks = max(20, length(x) / 20)) {
   idx <- which.max(h$counts)
   h$mids[idx]
 }
+
+# build <- function(A1, A2) {
+# }
+
+# t, (x, y)
+
+# f(mesh = list(mesh1, mesh2), replicate=112233) + f(ar1 )
+
+
+# given a list of replicate
+group_rep <- function(repls) {
+  for (repl in repls) {
+
+  }
+
+
+}

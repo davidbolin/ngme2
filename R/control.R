@@ -61,8 +61,8 @@ ngme_control <- function(
   opt_beta          = TRUE,
   fix_beta          = FALSE,
 
-  max_relative_step = 2,
-  max_absolute_step = 5,
+  max_relative_step = 0.2,
+  max_absolute_step = 1,
 
   # reduce variance after conv. check
   reduce_var        = FALSE,

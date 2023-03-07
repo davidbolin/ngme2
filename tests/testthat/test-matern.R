@@ -3,12 +3,12 @@
 # 1. test estimation of matern model
 # 2. test predict(out, loc=new_loc)
 test_that("test Matern", {
-  # load_all()
+  load_all()
   library(INLA)
   pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
   mesh <- inla.mesh.2d(
     loc.domain = pl01, cutoff = 0.3,
-    max.n = 100
+    max.edge = c(2,10)
   )
   # mesh$n
   # # generate A and A_pred
@@ -17,17 +17,21 @@ test_that("test Matern", {
   # A <- inla.spde.make.A(mesh = mesh, loc = loc_obs)
   # sigma.e <- 0.7
   # Y <- drop(A %*% W + sigma.e * rnorm(n_obs))
-
+  loc <- cbind(runif(300, 0, 10), runif(300, 0, 5))
   true_model <- model_matern(
+    loc = loc,
     mesh = mesh,
     kappa = 3,
     noise = noise_nig(
       mu=3, sigma=1.5, nu=2
     )
   )
-
   # plot(mesh)
-  W <<- simulate(true_model)
+  # W <<- simulate(true_model)
+  eps <<- simulate(noise_nig(
+      mu=3, sigma=1.5, nu=2, n = mesh$n
+    ))
+  W <- drop(solve(true_model$K, eps))
 
   n_obs <<- mesh$n
   Y <- W + rnorm(n_obs, sd=0.5)
@@ -39,7 +43,9 @@ test_that("test Matern", {
   bubble(sp_obj, zcol=3)
   range(mesh$loc[, 1]); range(mesh$loc[, 2])
 
-  spde1 <<- model_matern(mesh=mesh, noise=noise_nig())
+  spde1 <<- model_matern(
+    loc = loc,
+    mesh=mesh, noise=noise_nig())
   Y2 <- Y
   # Y2[1:100] <- NA
 
@@ -51,6 +57,7 @@ test_that("test Matern", {
       noise=noise_nig(
         # fix_V = TRUE, V = attr(W, "noise")$V
       ),
+      control = ngme_control_f(numer_grad = T),
       # fix_W = TRUE, W = W,
       debug = FALSE
     ),

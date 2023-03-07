@@ -38,7 +38,7 @@ test_that("simulate and estimate of rw with NIG", {
       debug = FALSE
     ),
     data = list(Y = Y),
-    contro = ngme_control(
+    control = ngme_control(
       estimation = T,
       iterations = 500,
       n_parallel_chain = 4,
@@ -106,6 +106,7 @@ plot(Y, type="l")
     Y ~ 0 + f(1:n_obs,
       model="ar1",
       name="ar",
+      alpha = -0.5,
       noise=noise_nig(
         # fix_nu = T, nu = 2,
         # h = ar1$noise$h,

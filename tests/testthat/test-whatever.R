@@ -112,3 +112,17 @@ test_that("test lpo CV", {
 
   expect_true(TRUE)
 })
+
+
+test_that("merge_reps works", {
+  repls <- c("1 1 2 2 2 3 4 5 5",
+             "1 2 3 1 5 6 4 1 2",
+             "1 1 1 1 1 2 2 3 3",
+             "1 1 1 1 1 2 2 1 1")
+  repls <- lapply(repls, function(x) as.numeric(strsplit(x, " ")[[1]]))
+  repls
+
+  # equal to 1 1 1 1 1 2 2 1 1
+  expect_true(all(merge_repls(repls)
+    == as.numeric(strsplit("1 1 1 1 1 2 2 1 1", " ")[[1]])))
+})

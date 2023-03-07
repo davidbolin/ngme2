@@ -70,6 +70,7 @@ VectorXd Optimizer::sgd(
     double reduce_power = 0.2; // 0-1, the bigger, the stronger
 
     VectorXd x = model.get_parameter();
+
     VectorXd grad;
 
     for (int i = 0; i < iterations; i++) {
@@ -102,6 +103,8 @@ VectorXd Optimizer::sgd(
         double tmp = r > 0 ? (1.0/r) : 1.0;
 
         x = x - pow(tmp, reduce_power) * one_step;
+std::cout << "iteration = : " << i << std::endl;
+std::cout << "parameter = : " << x << std::endl;
 
         model.set_parameter(x);
     }

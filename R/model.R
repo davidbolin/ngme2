@@ -12,7 +12,7 @@ ngme_model <- function(
   A           = NULL,
   A_pred      = NULL,
   noise       = noise_normal(),
-  control     = ngme_control_f(),
+  control     = control_f(),
   V_size      = NULL,
   debug       = FALSE,
   n_theta_K   = length(theta_K),

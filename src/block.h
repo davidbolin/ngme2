@@ -61,7 +61,7 @@ protected:
 
     // controls
     int n_gibbs;
-    bool debug,opt_beta, reduce_var;
+    bool debug, reduce_var;
     double reduce_power, threshold;
 
     SparseMatrix<double> A, K;      // not used: dK, d2K;
@@ -86,7 +86,6 @@ protected:
     vector<double>   nu_traj;
 
     std::string par_string;
-
 public:
     // BlockModel() {}
     BlockModel(const Rcpp::List& block_model, unsigned long seed);
@@ -123,11 +122,13 @@ public:
 
     /* Optimizer related */
     int                  get_n_params() const {return n_params;}
-    VectorXd             get_parameter() const;
-    VectorXd             get_stepsizes() const {return stepsizes;}
-    void                 set_parameter(const VectorXd&);
-    VectorXd             grad();
-    SparseMatrix<double> precond() const;
+    VectorXd             get_parameter() const override;
+    VectorXd             get_stepsizes() const override {return stepsizes;}
+    void                 set_parameter(const VectorXd&) override;
+    VectorXd             precond_grad() override;
+
+    MatrixXd             precond() const override;
+    VectorXd             grad() override {return precond_grad();}
 
     int                  get_curr_iter() const {return curr_iter;}
     void                 examine_gradient();
@@ -288,8 +289,8 @@ public:
 */
 
 // Not Implemented
-inline SparseMatrix<double> BlockModel::precond() const {
-    SparseMatrix<double> precond;
+inline MatrixXd BlockModel::precond() const {
+    MatrixXd precond;
     std::cout << "Not implemented \n";
     throw;
     return precond;

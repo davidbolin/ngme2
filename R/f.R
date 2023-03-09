@@ -38,7 +38,7 @@ f <- function(
   model       = "ar1",
   replicate   = NULL,
   noise       = noise_normal(),
-  control     = ngme_control_f(),
+  control     = control_f(),
   name        = NULL,
   data        = NULL,
   group       = NULL,

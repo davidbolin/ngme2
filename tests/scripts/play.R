@@ -145,8 +145,8 @@ res <- ngme(
     debug=TRUE),
   family = "normal",
   data = list(y = yy),
-  control = ngme_control(
-    gibbs_sample = 5,
+  control = control_opt(
+    n_gibbs_samples = 5,
     iterations = 500,
     n_parallel_chain = 1
   ),

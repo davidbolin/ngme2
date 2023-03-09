@@ -25,14 +25,13 @@ std::vector<bool> check_conv(const MatrixXd&, const MatrixXd&, int, int, double,
 
 // [[Rcpp::plugins(openmp)]]
 // [[Rcpp::export]]
-Rcpp::List estimate_cpp(const Rcpp::List& ngme_block) {
-    unsigned long seed = Rcpp::as<unsigned long> (ngme_block["seed"]);
+Rcpp::List estimate_cpp(const Rcpp::List& ngme_block, const Rcpp::List& control_opt) {
+    unsigned long seed = Rcpp::as<unsigned long> (control_opt["seed"]);
     std::mt19937 rng (seed);
 
-    Rcpp::List control_in = ngme_block["control"];
-    const int iterations = control_in["iterations"];
-    const double max_relative_step = control_in["max_relative_step"];
-    const double max_absolute_step = control_in["max_absolute_step"];
+    const int iterations = control_opt["iterations"];
+    const double max_relative_step = control_opt["max_relative_step"];
+    const double max_absolute_step = control_opt["max_absolute_step"];
 
     Rcpp::List trajectory = R_NilValue;
     Rcpp::List output = R_NilValue;
@@ -41,16 +40,15 @@ auto timer = std::chrono::steady_clock::now();
 
     Rcpp::List outputs;
 #ifdef _OPENMP
-    const int burnin = control_in["burnin"];
-    const bool exchange_VW = control_in["exchange_VW"];
-    // Rcout << "run parallel n_chains chains"
-    int n_slope_check = (control_in["n_slope_check"]);
-    double std_lim = (control_in["std_lim"]);
-    double trend_lim = (control_in["trend_lim"]);
+    const int burnin = control_opt["burnin"];
+    const bool exchange_VW = control_opt["exchange_VW"];
+    int n_slope_check = (control_opt["n_slope_check"]);
+    double std_lim = (control_opt["std_lim"]);
+    double trend_lim = (control_opt["trend_lim"]);
 
-    int n_chains = (control_in["n_parallel_chain"]);
-    int n_batch = (control_in["stop_points"]);
-    double print_check_info = (control_in["print_check_info"]);
+    int n_chains = (control_opt["n_parallel_chain"]);
+    int n_batch = (control_opt["stop_points"]);
+    double print_check_info = (control_opt["print_check_info"]);
     omp_set_num_threads(n_chains);
 
     // init each model
@@ -75,12 +73,20 @@ auto timer = std::chrono::steady_clock::now();
     int batch_steps = (iterations / n_batch);
 
     int curr_batch = 0;
+
+    // Not thread-safe using Rcpp::List to init optimizer
+    // so better init first
+    vector<Optimizer> opt_vec;
+    for (int i = 0; i < n_chains; i++)
+        opt_vec.push_back(Optimizer(control_opt));
+
     while (steps < iterations && !all_converge) {
         MatrixXd mat (n_chains, n_params);
         #pragma omp parallel for schedule(static)
         for (i=0; i < n_chains; i++) {
-            Optimizer opt;
-            VectorXd param = opt.sgd(*(blocks[i]), 0.1, batch_steps, max_relative_step, max_absolute_step);
+            // Optimizer opt (control_opt);
+            // VectorXd param = opt.sgd(*(blocks[i]), 0.1, batch_steps, max_relative_step, max_absolute_step);
+            VectorXd param = opt_vec[i].sgd(*(blocks[i]), 0.1, batch_steps, max_relative_step, max_absolute_step);
 
             #pragma omp critical
             mat.row(i) = param;
@@ -135,7 +141,7 @@ auto timer = std::chrono::steady_clock::now();
 
 #else // No parallel chain
     BlockModel block (ngme_block, rng());
-    Optimizer opt;
+    Optimizer opt (control_opt);
     trajectory = opt.sgd(block, 0.1, iterations, max_relative_step, max_absolute_step);
     // estimation done, posterior sampling
     // block.sampling(10, true);
@@ -149,8 +155,7 @@ std::cout << "Total time is (s): " << since(timer).count() / 1000 << std::endl;
 }
 
 // [[Rcpp::export]]
-Rcpp::List sampling_cpp(const Rcpp::List& ngme_block, int n, bool posterior) {
-    unsigned long seed = Rcpp::as<unsigned long> (ngme_block["seed"]);
+Rcpp::List sampling_cpp(const Rcpp::List& ngme_block, int n, bool posterior, unsigned long seed) {
     std::mt19937 rng (seed);
     BlockModel block (ngme_block, rng());
 

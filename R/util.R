@@ -38,10 +38,6 @@ ngme_as_sparse <- function(G) {
   )
 }
 
-# post.sampleW(ngme) {
-#   W
-# }
-
 
 #' @name get_inla_mesh_dimension
 #' @title Get the dimension of an INLA mesh
@@ -78,11 +74,6 @@ ngme_parse_formula <- function(
   data,
   index_NA
 ) {
-  # eval the response variable to see NA
-  # Y <- eval(gf[[2]], envir = data)
-  # index_prd <- which(is.na(Y))
-  # index_est <- which(!is.na(Y))
-
   # adding special mark
   tf <- terms.formula(gf, specials = c("f"))
 
@@ -126,9 +117,6 @@ ngme_parse_formula <- function(
   list(
     latents_in = latents_in,
     plain_fm = formula(fm)
-    # ,
-    # index_prd = index_prd,
-    # index_est = index_est
   )
 }
 
@@ -314,7 +302,7 @@ ngme_make_A <- function(
 ngme_ts_make_A <- function(
   loc,
   replicate = NULL,
-  range = c(1, max(loc))
+  range = c(min(loc), max(loc))
 ) {
   if (is.null(loc) || length(loc) == 0) return (NULL)
 
@@ -386,3 +374,52 @@ merge_repls <- function(repls) {
 
   Reduce(function(x, y) merge_repl(x, y), repls)
 }
+
+# split block by repl
+split_block <- function(block, repl) {
+  # split Y, X
+  Ys <- split(block$Y, repl)
+  Xs <- split_matrix(block$X, repl)
+
+  # split latents A
+  As <- lapply(block$latents, function(latent) {
+    split_matrix(latent$A, repl)
+  })
+
+  latentss <- list()
+  for (i in unique(repl)) {
+    latentss[[i]] <- block$latents
+    for (lat in seq_along(block$latents)) {
+      latentss[[i]][[lat]]$A <- As[[lat]][[i]]
+    }
+  }
+  # browser()
+
+  blocks <- list()
+  # build new blocks
+  for (i in unique(repl)) {
+    blocks[[i]] <- ngme_block(
+      Y                 = Ys[[i]],
+      X                 = Xs[[i]],
+      latents           = latentss[[i]],
+      beta              = block$beta,
+      W_sizes           = block$W_sizes,
+      V_sizes           = block$V_sizes,
+      n_la_params       = block$n_la_params,
+      n_params          = block$n_params,
+      noise             = block$noise,
+      seed              = block$seed,
+      debug             = block$debug,
+      control           = block$control
+    )
+  }
+  blocks
+}
+
+split_matrix <- function(mat, repl) {
+  split_mat <- lapply(split(mat, repl, drop = FALSE),
+    matrix, ncol = ncol(mat))
+  split_mat
+}
+
+build_mesh <- function() {}

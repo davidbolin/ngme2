@@ -6,7 +6,7 @@ test_that("test names", {
     Y ~ f(x=1:10, name="f1", model="ar1") +
       f(x=1:10, name="f2", model="ar1"),
     data = data.frame(Y = rnorm(10)),
-    control = ngme_control(estimation = FALSE)
+    control = control_opt(estimation = FALSE)
   )
 
   expect_equal(names(bm$latents), c("f1", "f2"))
@@ -34,7 +34,7 @@ test_that("predict traceplot", {
       + f(1:n_obs, model="ar1", noise = noise_nig())
       + f(1:n_obs, model="ar1", noise = noise_normal(), name="f2"),
     family = noise_normal(),
-    control = ngme_control(
+    control = control_opt(
       n_parallel_chain = 4,
       iteration = 20,
       print_check_info = FALSE
@@ -60,11 +60,11 @@ test_that("test posterior sampling and model_validation()", {
 
   out <- ngme(Y ~ 0 + f(model=my_ar),
     data=list(Y=Y),
-    control=ngme_control(print_check_info = FALSE)
+    control=control_opt(print_check_info = FALSE)
   )
   # traceplot(out, "field1")
 
-  expect_no_error(samples <- sampling_cpp(out, 10, posterior = TRUE))
+  expect_no_error(samples <- sampling_cpp(out, 10, posterior = TRUE, seed=seed))
   # samples[["AW"]]
 })
 
@@ -80,7 +80,7 @@ test_that("modify_ngme_with_idx_NA", {
       X1=c(3,4,5,6,7),
       X2=X2
     ),
-    control=ngme_control(iterations = 10, print_check_info = FALSE)
+    control=control_opt(iterations = 10, print_check_info = FALSE)
   )
   mm
   new_model <- modify_ngme_with_idx_NA(mm, idx_NA = 3)
@@ -100,12 +100,12 @@ test_that("test lpo CV", {
   ng_100 <- ngme(
     yy~0+f(1:n_obs, model="ar1", noise=noise_nig()),
     data = list(yy=yy),
-    control = ngme_control(iterations = 100)
+    control = control_opt(iterations = 100)
   )
   ng_1000 <- ngme(
     yy~0+f(1:n_obs, model="ar1", noise=noise_nig()),
     data = list(yy=yy),
-    control = ngme_control(iterations = 1000)
+    control = control_opt(iterations = 1000)
   )
   cross_validation(ng_100, type="lpo", times=10)
   cross_validation(ng_1000, type="lpo", times=10)

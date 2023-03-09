@@ -7,10 +7,10 @@
 ngme(
   formula,
   data,
-  control = ngme_control(),
   family = "normal",
   beta = NULL,
-  seed = NULL,
+  control_opt = NULL,
+  control_ngme = NULL,
   start = NULL,
   debug = FALSE
 )
@@ -22,13 +22,13 @@ ngme(
 (Only response variable can contain \code{NA} value,
  \code{NA} value in other columns will cause problem)}
 
-\item{control}{control variables, see \code{?ngme.control}}
-
 \item{family}{likelihood type, same as measurement noise specification, 1. string 2. ngme noise obejct}
 
 \item{beta}{starting value for fixed effects}
 
-\item{seed}{set the seed for pesudo random number generator}
+\item{control_opt}{control for optimizer. by default it is \code{control_opt()}. See \code{?control_opt} for details.}
+
+\item{control_ngme}{control for ngme model. by default it is \code{control_ngme()}. See \code{?control_ngme} for details.}
 
 \item{start}{starting ngme object (usually object from last fitting)}
 
@@ -43,7 +43,7 @@ a list of outputs contains estimation of operator paramters, noise parameters
  The prediction of unknown location can be performed by leaving the response
  variable to be \code{NA}. The likelihood is specified by \code{family}.
 The model estimation control can be setted in \code{control} using
- \code{ngme_control()} function, see \code{?ngme_control} for details.
+ \code{control_opt()} function, see \code{?control_opt} for details.
 See \code{ngme_model_types()} for available models.
 }
 \examples{
@@ -59,7 +59,7 @@ ngme(
  ),
  family = noise_normal(sd = 0.5),
  data = data.frame(Y = 1:5, x1 = 2:6, x2 = 3:7),
- control = ngme_control(
+ control_opt = control_opt(
    estimation = FALSE
  )
 )

@@ -57,12 +57,12 @@ test_that("test Matern", {
       noise=noise_nig(
         # fix_V = TRUE, V = attr(W, "noise")$V
       ),
-      control = ngme_control_f(numer_grad = T),
+      control = control_f(numer_grad = T),
       # fix_W = TRUE, W = W,
       debug = FALSE
     ),
     data = list(Y = Y2),
-    control = ngme_control(
+    control = control_opt(
       estimation = T,
       post_samples_size = 50,
       iterations = 50,
@@ -128,7 +128,7 @@ test_that("test matern ns", {
     ),
     data = list(Y = Y),
     family = noise_normal(),
-    control = ngme_control(
+    control = control_opt(
       estimation = T,
       iterations = 100,
       n_parallel_chain = 1
@@ -234,7 +234,7 @@ test_that("test matern ns", {
 #   theta.mu=mu,
 #   theta.sigma=log(sigma),
 #   noise = "nig",
-#   control=ngme_control_f(
+#   control=control_f(
 #     numer_grad       = FALSE,
 #     use_precond      = TRUE,
 
@@ -256,7 +256,7 @@ test_that("test matern ns", {
 #   control=ngme.control(
 #     burnin=100,
 #     iterations=100,
-#     gibbs_sample = 5
+#     n_gibbs_samples = 5
 #   ),
 #   debug=ngme.debug(
 #     debug = TRUE
@@ -339,7 +339,7 @@ test_that("test matern ns", {
 #   control=control.ngme(
 #     burnin=100,
 #     iterations=100,
-#     gibbs_sample = 5
+#     n_gibbs_samples = 5
 #   ),
 #   debug=debug.ngme(fixW = FALSE)
 # )

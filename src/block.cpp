@@ -32,21 +32,20 @@ BlockModel::BlockModel(
   par_string        (Rcpp::as<string>     (block_model["par_string"]))
 {
   // 1. Init controls
-  Rcpp::List control_in = block_model["control"];
-    // const int burnin = control_in["burnin"];
-    const double stepsize = control_in["stepsize"];
-    n_gibbs     =  Rcpp::as<int>    (control_in["gibbs_sample"]);
-    opt_beta    =  Rcpp::as<bool>   (control_in["opt_beta"]);
-    reduce_var    =  Rcpp::as<bool>   (control_in["reduce_var"]);
-    reduce_power  =  Rcpp::as<double> (control_in["reduce_power"]);
-    threshold   =  Rcpp::as<double> (control_in["threshold"]);
-    bool init_sample_W = Rcpp::as<bool> (control_in["init_sample_W"]);
+  Rcpp::List control_ngme = block_model["control_ngme"];
+    // const int burnin = control_ngme["burnin"];
+    const double stepsize = control_ngme["stepsize"];
+    bool init_sample_W = Rcpp::as<bool> (control_ngme["init_sample_W"]);
+    n_gibbs     =  Rcpp::as<int>    (control_ngme["n_gibbs_samples"]);
+    // reduce_var    =  Rcpp::as<bool>   (control_ngme["reduce_var"]);
+    // reduce_power  =  Rcpp::as<double> (control_ngme["reduce_power"]);
+    // threshold   =  Rcpp::as<double> (control_ngme["threshold"]);
 
 if (debug) std::cout << "Begin Block Constructor" << std::endl;
 
   // 2. Init Fixed effects
-  fix_flag[block_fix_beta]   = Rcpp::as<bool>        (control_in["fix_beta"]);
-  if (beta.size() == 0) opt_beta = false;
+  fix_flag[block_fix_beta]   = Rcpp::as<bool>        (control_ngme["fix_beta"]);
+  if (beta.size() == 0) fix_flag[block_fix_beta]  = true;
 
   // 3. Init latent models
   Rcpp::List latents_in = block_model["latents"];
@@ -213,7 +212,7 @@ if (debug) std::cout << "Start block get parameter"<< std::endl;
       pos += theta.size();
     }
 
-    if (opt_beta) {
+    if (!fix_flag[block_fix_beta] ) {
       thetas.segment(n_la_params, n_feff) = beta;
     }
 
@@ -223,8 +222,8 @@ if (debug) std::cout << "Finish block get parameter"<< std::endl;
     return thetas;
 }
 
-
-VectorXd BlockModel::grad() {
+// avg over gibbs samples
+VectorXd BlockModel::precond_grad() {
 if (debug) std::cout << "Start block gradient"<< std::endl;
 long long time_compute_g = 0;
 long long time_sample_w = 0;
@@ -245,7 +244,7 @@ auto timer_computeg = std::chrono::steady_clock::now();
 time_compute_g += since(timer_computeg).count();
 
     // fixed effects
-    if (opt_beta) {
+    if (!fix_flag[block_fix_beta]) {
       gradient.segment(n_la_params, n_feff) = grad_beta();
     }
 
@@ -288,7 +287,7 @@ void BlockModel::set_parameter(const VectorXd& Theta) {
   }
 
   // fixed effects
-  if (opt_beta) {
+  if (!fix_flag[block_fix_beta]) {
     beta = Theta.segment(n_la_params, n_feff);
   }
 

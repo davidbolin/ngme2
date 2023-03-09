@@ -123,3 +123,5 @@ model_matern <- function(
   )
   model
 }
+
+matern <- function(...) {model_matern(...)}

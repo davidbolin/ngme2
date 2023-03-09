@@ -5,17 +5,17 @@
 #'  The prediction of unknown location can be performed by leaving the response
 #'  variable to be \code{NA}. The likelihood is specified by \code{family}.
 #' The model estimation control can be setted in \code{control} using
-#'  \code{ngme_control()} function, see \code{?ngme_control} for details.
+#'  \code{control_opt()} function, see \code{?control_opt} for details.
 #' See \code{ngme_model_types()} for available models.
 #' @param formula formula
 #' @param data    a dataframe or a list providing data
 #'   (Only response variable can contain \code{NA} value,
 #'    \code{NA} value in other columns will cause problem)
-#' @param control control variables, see \code{?ngme.control}
+#' @param control_opt  control for optimizer. by default it is \code{control_opt()}. See \code{?control_opt} for details.
+#' @param control_ngme control for ngme model. by default it is \code{control_ngme()}. See \code{?control_ngme} for details.
 #' @param family likelihood type, same as measurement noise specification, 1. string 2. ngme noise obejct
 #' @param beta starting value for fixed effects
 #' @param start  starting ngme object (usually object from last fitting)
-#' @param seed  set the seed for pesudo random number generator
 #' @param debug  toggle debug mode
 #'
 #' @return a list of outputs contains estimation of operator paramters, noise parameters
@@ -34,20 +34,26 @@
 #'  ),
 #'  family = noise_normal(sd = 0.5),
 #'  data = data.frame(Y = 1:5, x1 = 2:6, x2 = 3:7),
-#'  control = ngme_control(
+#'  control_opt = control_opt(
 #'    estimation = FALSE
 #'  )
 #')
 ngme <- function(
   formula,
   data,
-  control       = ngme_control(),
   family        = "normal",
   beta          = NULL,
-  seed          = NULL,
+  control_opt   = NULL,
+  control_ngme  = NULL,
   start         = NULL,
   debug         = FALSE
 ) {
+  # checks
+  if (is.null(control_ngme)) control_ngme <- control_ngme()
+  if (is.null(control_opt))  control_opt <- control_opt()
+  stopifnot(inherits(control_ngme, "control_ngme"))
+  stopifnot(inherits(control_opt, "control_opt"))
+
   # model fitting information
   fitting <- list(
     formula = formula,
@@ -65,7 +71,6 @@ ngme <- function(
   else
     noise <- family # ngme noise object
 
-  if (is.null(seed)) seed <- Sys.time()
   # -------------  CHECK INPUT ---------------
   if (is.null(formula)) {
     stop("Formula empty. See ?ngme\n")
@@ -144,11 +149,11 @@ ngme <- function(
       n_params          = n_params, # how many param to opt. in total
       latents           = latents_in,
       noise             = noise,
-      seed              = seed,
       debug             = debug,
-      control           = control,
-      X_pred  = if (any(index_NA)) X_full[index_NA, , drop = FALSE] else NULL
+      control_ngme      = control_ngme
     )
+
+  # split ngme block by replicates
 
   attr(ngme_block, "fitting") <- fitting
 
@@ -191,9 +196,9 @@ for (latent in ngme_block$latents) {
 # otherwise change replicate to group="iid"
 
   ################# Run CPP ####################
-  if (control$estimation) {
+  if (control_opt$estimation) {
     cat("Starting estimation... \n")
-    outputs <- estimate_cpp(ngme_block)
+    outputs <- estimate_cpp(ngme_block, control_opt)
     cat("\n")
 
   ################# Update the estimates ####################
@@ -218,9 +223,9 @@ for (latent in ngme_block$latents) {
 
     # return the mean of samples of W of posterior
     cat("Starting posterior sampling... \nNote: Use ngme$latents[[model_name]]$W  to access the posterior mean of process \n")
-    ngme_block$control$init_sample_W <- FALSE
+    ngme_block$control_ngme$init_sample_W <- FALSE
     mean_post_W <- mean_list(
-      sampling_cpp(ngme_block, control$post_samples_size, TRUE)[["W"]]
+      sampling_cpp(ngme_block, control_ngme$post_samples_size, TRUE, control_opt$seed)[["W"]]
     )
     idx <- 1
     for (i in seq_along(ngme_block$latents)) {
@@ -231,7 +236,7 @@ for (latent in ngme_block$latents) {
   }
 
   ################# Prediction ####################
-  if (any(data$index_NA) && control$estimation) {
+  if (any(data$index_NA) && control_opt$estimation) {
     # posterior sampling
     # ngme_block <- sampling_cpp(ngme_block, 100, TRUE)
 
@@ -262,13 +267,13 @@ for (latent in ngme_block$latents) {
 
 # create the general block model
 ngme_block <- function(
-  Y           = NULL,
-  X           = NULL,
-  beta        = NULL,
-  noise       = noise_normal(),
-  latents     = list(),
-  control     = list(),
-  debug       = FALSE,
+  Y            = NULL,
+  X            = NULL,
+  beta         = NULL,
+  noise        = noise_normal(),
+  latents      = list(),
+  control_ngme = list(),
+  debug        = FALSE,
   ...
 ) {
 
@@ -292,7 +297,7 @@ ngme_block <- function(
       beta              = beta,
       latents           = latents,
       noise             = noise,
-      control           = control,
+      control_ngme      = control_ngme,
       n_merr            = noise$n_params,
       debug             = debug,
       par_string        = par_string,
@@ -373,7 +378,6 @@ modify_ngme_with_idx_NA <- function(
     # keep others same
     family = family,
     beta = ngme$beta,
-    seed = ngme$seed,
     debug = ngme$debug,
     start = ngme # use previous estimation!!!
   )

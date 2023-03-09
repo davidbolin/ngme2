@@ -45,7 +45,7 @@ model_ar1 <- function(
   #      replicate  = 1 1 1 2 2 2 2
 
 # browser()
-  mesh <- INLA::inla.mesh.1d(unique(index))
+  mesh <- INLA::inla.mesh.1d(min(index):max(index))
   n <- mesh$n
   nrep <- length(unique(replicate))
 

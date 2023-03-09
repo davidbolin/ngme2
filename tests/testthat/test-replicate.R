@@ -39,10 +39,10 @@ test_that("test estimation on AR(1) and RW process", {
 
   out1 <- ngme(
     z ~ f(1:n, model="ar1", noise=noise_normal(),
-        control = ngme_control_f(numer_grad = TRUE)
+        control = control_f(numer_grad = TRUE)
       ),
     data = list(z = c(z1)),
-    control = ngme_control(
+    control = control_opt(
       iterations = 500,
       n_parallel_chain = 1
     )
@@ -52,9 +52,9 @@ test_that("test estimation on AR(1) and RW process", {
 
   out <- ngme(
     z ~ f(c(1:n ,1:n), model="ar1", replicate=rep(1:2,each=n), noise=noise_normal(),
-        control = ngme_control_f(numer_grad = TRUE)),
+        control = control_f(numer_grad = TRUE)),
     data = list(z = c(z1, z2)),
-    control = ngme_control(
+    control = control_opt(
       iterations = 20,
       n_parallel_chain = 1
     )
@@ -65,7 +65,7 @@ test_that("test estimation on AR(1) and RW process", {
   out2 <- ngme(
     z ~ f(c(1:n ,1:n), model="rw1", replicate=rep(1:2,each=n), noise=noise_normal()),
     data = list(z = c(z1, z2)),
-    control = ngme_control(
+    control = control_opt(
       estimation = TRUE,
       iterations = 20
     )

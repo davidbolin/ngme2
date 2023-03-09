@@ -206,7 +206,7 @@ ngme(
   formula = formula,
   family = noise_normal(sigma = 0.5),
   data = data.frame(Y = 1:5, x1 = 2:6, x2 = 3:7),
-  control = ngme_control(
+  control = control_opt(
     estimation = FALSE
   )
 )
@@ -266,8 +266,8 @@ X <- (model.matrix(Y ~ x1 + x2))  # design matrix
 Y = as.numeric(Y + X %*% beta)
 ```
 
-Now let's fit the model using `ngme`. Here we can use `ngme_control` to modify the
-control variables for the `ngme`. See `?ngme_control` for more optioins.
+Now let's fit the model using `ngme`. Here we can use `control_opt` to modify the
+control variables for the `ngme`. See `?control_opt` for more optioins.
 
 ```{r fit_ar1, cache=TRUE}
 # # Fit the model with the AR1 model
@@ -280,11 +280,11 @@ ngme_out <- ngme(
     theta_K = 0.9  # starting point for the alpha (parameter of K)
   ),
   data=data.frame(x1=x1, x2=x2, Y=Y),
-  control = ngme_control(
+  control = control_opt(
     burnin = 100,
     iterations = 1000,
     std_lim = 0.4,
-    gibbs_sample = 5,
+    n_gibbs_samples = 5,
     n_parallel_chain = 4,
     stop_points = 10,
     print_check_info = FALSE
@@ -392,7 +392,7 @@ out <- ngme(
     Y = Y
   ),
   family = noise_nig(),
-  control = ngme_control(
+  control = control_opt(
     estimation = T,
     iterations = 1000,
     n_slope_check = 4,

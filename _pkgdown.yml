@@ -87,8 +87,8 @@ reference:
     - create_noise
     - mean_list
     - ngme_as_sparse
-    - ngme_control
-    - ngme_control_f
+    - control_opt
+    - control_f
     - ngme_parse_formula
     - ngme_ts_make_A
     - print.ngme

@@ -12,26 +12,28 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // estimate_cpp
-Rcpp::List estimate_cpp(const Rcpp::List& ngme_block);
-RcppExport SEXP _ngme2_estimate_cpp(SEXP ngme_blockSEXP) {
+Rcpp::List estimate_cpp(const Rcpp::List& ngme_block, const Rcpp::List& control_opt);
+RcppExport SEXP _ngme2_estimate_cpp(SEXP ngme_blockSEXP, SEXP control_optSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::List& >::type ngme_block(ngme_blockSEXP);
-    rcpp_result_gen = Rcpp::wrap(estimate_cpp(ngme_block));
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type control_opt(control_optSEXP);
+    rcpp_result_gen = Rcpp::wrap(estimate_cpp(ngme_block, control_opt));
     return rcpp_result_gen;
 END_RCPP
 }
 // sampling_cpp
-Rcpp::List sampling_cpp(const Rcpp::List& ngme_block, int n, bool posterior);
-RcppExport SEXP _ngme2_sampling_cpp(SEXP ngme_blockSEXP, SEXP nSEXP, SEXP posteriorSEXP) {
+Rcpp::List sampling_cpp(const Rcpp::List& ngme_block, int n, bool posterior, unsigned long seed);
+RcppExport SEXP _ngme2_sampling_cpp(SEXP ngme_blockSEXP, SEXP nSEXP, SEXP posteriorSEXP, SEXP seedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::List& >::type ngme_block(ngme_blockSEXP);
     Rcpp::traits::input_parameter< int >::type n(nSEXP);
     Rcpp::traits::input_parameter< bool >::type posterior(posteriorSEXP);
-    rcpp_result_gen = Rcpp::wrap(sampling_cpp(ngme_block, n, posterior));
+    Rcpp::traits::input_parameter< unsigned long >::type seed(seedSEXP);
+    rcpp_result_gen = Rcpp::wrap(sampling_cpp(ngme_block, n, posterior, seed));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -51,8 +53,8 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_ngme2_estimate_cpp", (DL_FUNC) &_ngme2_estimate_cpp, 1},
-    {"_ngme2_sampling_cpp", (DL_FUNC) &_ngme2_sampling_cpp, 3},
+    {"_ngme2_estimate_cpp", (DL_FUNC) &_ngme2_estimate_cpp, 2},
+    {"_ngme2_sampling_cpp", (DL_FUNC) &_ngme2_sampling_cpp, 4},
     {"_ngme2_rGIG_cpp", (DL_FUNC) &_ngme2_rGIG_cpp, 4},
     {NULL, NULL, 0}
 };

@@ -183,7 +183,7 @@ out <- ngme(
     ),
   data = data,
   family = noise_nig(),
-  control = ngme_control(
+  control = control_opt(
     estimation = T,
     iterations = 4000,
     n_slope_check = 4,
@@ -232,7 +232,7 @@ ngme(
       noise = noise_nig()),
   data = data,
   family = noise_nig(),
-  control = ngme_control(
+  control = control_opt(
     iterations = 4000,
     stop_points = 100,
     n_parallel_chain = 8

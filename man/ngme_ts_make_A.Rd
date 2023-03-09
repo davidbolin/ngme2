@@ -4,7 +4,7 @@
 \alias{ngme_ts_make_A}
 \title{Make observation matrix for time series}
 \usage{
-ngme_ts_make_A(loc, replicate = NULL, range = c(1, max(loc)))
+ngme_ts_make_A(loc, replicate = NULL, range = c(min(loc), max(loc)))
 }
 \arguments{
 \item{loc}{integers (after sorting, no gaps > 1)}

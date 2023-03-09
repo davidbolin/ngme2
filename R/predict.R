@@ -11,6 +11,7 @@
 #' @param type what type of prediction, c("fe", "lp", "field1")
 #' @param estimator what type of estimator, c("mean", "median", "mode", "quantile")
 #' @param sampling_size size of posterior sampling
+#' @param seed random seed
 #' @param ... extra argument from 0 to 1 if using "quantile"
 #'
 #' @return a list of outputs contains estimation of operator paramters, noise parameters
@@ -24,6 +25,7 @@ predict.ngme <- function(
   estimator = c("mean", "sd", "5quantile", "95quantile", "median", "mode"),
   sampling_size = 100,
   q = NULL,
+  seed = Sys.time(),
   ...
 ) {
   # recursively call predict.ngme if estimator is a list
@@ -54,7 +56,7 @@ predict.ngme <- function(
   #   stop("not implement for loc=NULL yet")
   stopifnot(sampling_size > 0)
 # why 4 times?
-  samples_W <- sampling_cpp(ngme, n=sampling_size, posterior=TRUE)[["W"]]
+  samples_W <- sampling_cpp(ngme, n=sampling_size, posterior=TRUE, seed=seed)[["W"]]
   post_W <- switch(estimator,
     "mean"      = mean_list(samples_W),
     "median"    = apply(as.data.frame(samples_W), 1, median),
@@ -172,7 +174,7 @@ message("Use ngme_ts_make_A...")
 }
 
 # helper function to compute MSE, MAE, ..
-compute_indices <- function(ngme, test_idx, N = 100) {
+compute_indices <- function(ngme, test_idx, N = 100, seed=Sys.time()) {
   stopifnot("idx wrong" = all(test_idx %in% seq_along(ngme$Y)))
 
   # 1. Make A1_pred, An_pred
@@ -195,8 +197,8 @@ compute_indices <- function(ngme, test_idx, N = 100) {
     seq_along(new_model$latents),
     function(i) new_model$latents[[i]]$A_pred
   ))
-  Ws_block <- sampling_cpp(ngme, n=N, posterior=TRUE)[["W"]]
-  W2s_block <- sampling_cpp(ngme, n=N, posterior=TRUE)[["W"]]
+  Ws_block <- sampling_cpp(ngme, n=N, posterior=TRUE, seed=seed)[["W"]]
+  W2s_block <- sampling_cpp(ngme, n=N, posterior=TRUE, seed=seed)[["W"]]
   AW_N <- Reduce(cbind, sapply(Ws_block, function(W) A_pred_block %*% W))
   # AW_N <- as.data.frame(AW_N)
   # names(AW_N) <- 1:N
@@ -263,11 +265,11 @@ cross_validation <- function(
   type = "k-fold",
   k = 5,
   N = 100,
-  seed = 1,
   percent = 50,
   times = 10,
   group = NULL,
-  print = FALSE
+  print = FALSE,
+  seed = Sys.time()
 ) {
   stopifnot(type %in% c("k-fold", "loo", "lpo"))
 
@@ -298,7 +300,7 @@ cross_validation <- function(
   # compute for each group
   crs <- NULL
   for (i in seq_along(group)) {
-    crs[[i]] <- compute_indices(ngme, group[[i]], N=N)
+    crs[[i]] <- compute_indices(ngme, group[[i]], N=N, seed=seed)
 if (print) {
   cat(paste("In group", i, ": \n"))
   print(as.data.frame(crs[[i]]))

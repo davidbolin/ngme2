@@ -22,7 +22,7 @@ test_that("test predict general", {
       # fix_V = TRUE, V = attr(W, "noise")$V
     )),
     family = noise_normal(),
-    control = ngme_control(
+    control = control_opt(
       n_parallel_chain = 4,
       estimation = T,
       iteration = 1000,
@@ -77,7 +77,7 @@ test_that("test predict with NA", {
       # fix_V = TRUE, V = attr(W, "noise")$V
     )),
     family = noise_normal(),
-    control = ngme_control(
+    control = control_opt(
       n_parallel_chain = 4,
       estimation = T,
       iteration = 500,

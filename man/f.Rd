@@ -9,9 +9,10 @@ f(
   model = "ar1",
   replicate = NULL,
   noise = noise_normal(),
-  control = ngme_control_f(),
+  control = control_f(),
   name = NULL,
   data = NULL,
+  group = NULL,
   A = NULL,
   A_pred = NULL,
   theta_K = NULL,
@@ -39,6 +40,8 @@ f(
 \item{name}{name of the field, for later use}
 
 \item{data}{specifed or inherit from ngme formula}
+
+\item{group}{model as the group (see vignette for space-temporal model)}
 
 \item{A}{A Matrix connecting observation and mesh}
 

@@ -45,17 +45,17 @@
 # out <- ngme(
 #   Y ~ 0 + f(
 #     model=matern, group=arr, noise=noise_nig(),
-#     debug=TRUE, control=ngme_control_f(
+#     debug=TRUE, control=control_f(
 #       numer_grad = T, use_precond = F, eps=0.01),
 #     fix_W = TRUE, W = W,
 #     fix_V = TRUE, V = attr(eps, "noise")$V
 #   ),
 #   data = list(Y=Y),
 #   family = "normal",
-#   control = ngme_control(
+#   control = control_opt(
 #     iterations = 100,
 #     n_parallel_chain = 4,
-#     gibbs_sample = 5,
+#     n_gibbs_samples = 5,
 #     estimation = T,
 #     max_relative_step = 1,
 #     max_absolute_step = 2
@@ -177,17 +177,17 @@ ar_r$theta_K <- ar_l$theta_K <- 0
 out <- ngme(
   Y ~ 0 + f(
     model=ar_r, group=ar_l, noise=noise_nig(),
-    debug=TRUE, control=ngme_control_f(
+    debug=TRUE, control=control_f(
       numer_grad = T, use_precond = T, eps=0.01),
     # fix_W = TRUE, W = W,
     # fix_V = TRUE, V = attr(eps, "noise")$V
   ),
   data = list(Y=Y),
   family = "normal",
-  control = ngme_control(
+  control = control_opt(
     iterations = 100,
     n_parallel_chain = 4,
-    gibbs_sample = 5,
+    n_gibbs_samples = 5,
     estimation = T,
     max_relative_step = 1,
     max_absolute_step = 2,

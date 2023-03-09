@@ -3344,7 +3344,7 @@ noise_nig(
   formula = formula,
   family = noise_normal(sigma = 0.5), # or just &quot;normal&quot;
   data = data.frame(Y = 1:5, x1 = 2:6, x2 = 3:7),
-  control = ngme_control(
+  control = control_opt(
     estimation = FALSE,
     burnin = 100,
     iterations = 1000,
@@ -3407,10 +3407,10 @@ Y = as.numeric(Y + X %*% beta)</pre>
     theta_K = 0.9  # starting point for AR parameter
   ),
   data = data.frame(x1=x1, x2=x2, Y=Y),
-  control = ngme_control(
+  control = control_opt(
     burnin = 100,
     iterations = 1000,
-    gibbs_sample = 5,
+    n_gibbs_samples = 5,
     n_parallel_chain = 4,
     print_check_info = FALSE
   ),

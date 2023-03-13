@@ -281,14 +281,14 @@ Rcpp::List Latent::output() const {
         Rcpp::Named("W")            = meanW
     );
 
-    Rcpp::List trajecotry = Rcpp::List::create(
-        Rcpp::Named("theta_K")            = theta_K_traj,
-        Rcpp::Named("theta_mu")           = theta_mu_traj,
-        Rcpp::Named("theta_sigma")        = theta_sigma_traj,
-        Rcpp::Named("theta_sigma_normal")        = theta_sigma_normal_traj,
-        Rcpp::Named("nu")            = nu_traj
-    );
-    out.attr("trajectory") = trajecotry;
+    // Rcpp::List trajecotry = Rcpp::List::create(
+    //     Rcpp::Named("theta_K")            = theta_K_traj,
+    //     Rcpp::Named("theta_mu")           = theta_mu_traj,
+    //     Rcpp::Named("theta_sigma")        = theta_sigma_traj,
+    //     Rcpp::Named("theta_sigma_normal")        = theta_sigma_normal_traj,
+    //     Rcpp::Named("nu")            = nu_traj
+    // );
+    // out.attr("trajectory") = trajecotry;
     return out;
 }
 

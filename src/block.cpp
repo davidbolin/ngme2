@@ -20,7 +20,7 @@ BlockModel::BlockModel(
   n_feff            (beta.size()),
   n_merr            (Rcpp::as<int>           (block_model["n_merr"])),
 
-  debug             (Rcpp::as<bool>          (block_model["debug"])),
+  debug             (false),
   A                 (n_obs, W_sizes),
   K                 (V_sizes, W_sizes),
   var               (Var(Rcpp::as<Rcpp::List> (block_model["noise"]), rng())),
@@ -37,6 +37,7 @@ BlockModel::BlockModel(
     const double stepsize = control_ngme["stepsize"];
     bool init_sample_W = Rcpp::as<bool> (control_ngme["init_sample_W"]);
     n_gibbs     =  Rcpp::as<int>    (control_ngme["n_gibbs_samples"]);
+    debug       = Rcpp::as<bool>   (control_ngme["debug"]);
     // reduce_var    =  Rcpp::as<bool>   (control_ngme["reduce_var"]);
     // reduce_power  =  Rcpp::as<double> (control_ngme["reduce_power"]);
     // threshold   =  Rcpp::as<double> (control_ngme["threshold"]);
@@ -452,12 +453,12 @@ Rcpp::List BlockModel::output() const {
     Rcpp::Named("latents")          = latents_output
   );
 
-  out.attr("trajectory") = Rcpp::List::create(
-    Rcpp::Named("beta")        = beta_traj,
-    Rcpp::Named("theta_mu")    = theta_mu_traj,
-    Rcpp::Named("theta_sigma") = theta_sigma_traj,
-    Rcpp::Named("nu")     = nu_traj
-  );
+  // out.attr("trajectory") = Rcpp::List::create(
+  //   Rcpp::Named("beta")        = beta_traj,
+  //   Rcpp::Named("theta_mu")    = theta_mu_traj,
+  //   Rcpp::Named("theta_sigma") = theta_sigma_traj,
+  //   Rcpp::Named("nu")     = nu_traj
+  // );
   return out;
 }
 

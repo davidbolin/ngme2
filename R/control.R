@@ -145,7 +145,8 @@ control_ngme <- function(
   n_gibbs_samples = 5,
   fix_beta = FALSE,
   post_samples_size = 100,
-  beta = NULL
+  beta = NULL,
+  debug = FALSE
 ) {
   control <- list(
     init_sample_W = init_sample_W,
@@ -153,7 +154,8 @@ control_ngme <- function(
     fix_beta = fix_beta,
     beta = beta,
     post_samples_size = post_samples_size,
-    stepsize = 1
+    stepsize = 1,
+    debug = debug
   )
 
   class(control) <- "control_ngme"

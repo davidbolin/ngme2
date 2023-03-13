@@ -74,6 +74,7 @@ VectorXd Optimizer::sgd(
     VectorXd grad;
 
     for (int i = 0; i < iterations; i++) {
+        trajs.push_back(x);
 // auto timer_grad = std::chrono::steady_clock::now();
         grad = model.precond_grad();
 // std::cout << "get gradient (ms): " << since(timer_grad).count() << std::endl;

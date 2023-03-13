@@ -7,7 +7,6 @@ ngme_model <- function(
   theta_K     = NULL,
   fix_theta_K = FALSE,
   W           = NULL,
-  Ws          = NULL, # a list of W for each replicate
   fix_W       = FALSE,
   A           = NULL,
   A_pred      = NULL,
@@ -28,7 +27,8 @@ ngme_model <- function(
   group       = NULL,
   ...
 ) {
-  if (is.null(n_rep)) stop("n_rep is NULL")
+  n_rep <- if (is.null(n_rep) && !is.null(replicate))
+    length(unique(replicate)) else 1
 
   stopifnot(is.character(model))
   # generate string (8 digits)
@@ -49,6 +49,8 @@ ngme_model <- function(
     par_string <- do.call(paste0, as.list(c(K_str, mu_str, sigma_str, nu_str)))
 
   stopifnot("replicate is NULL" = !is.null(replicate))
+  stopifnot("make sure length of replicate == length of index" =
+   length(replicate) == length(map))
   replicate <- as.integer(replicate)
 
   structure(

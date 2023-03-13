@@ -8,7 +8,6 @@ ngme(
   formula,
   data,
   family = "normal",
-  beta = NULL,
   control_opt = NULL,
   control_ngme = NULL,
   start = NULL,
@@ -23,8 +22,6 @@ ngme(
  \code{NA} value in other columns will cause problem)}
 
 \item{family}{likelihood type, same as measurement noise specification, 1. string 2. ngme noise obejct}
-
-\item{beta}{starting value for fixed effects}
 
 \item{control_opt}{control for optimizer. by default it is \code{control_opt()}. See \code{?control_opt} for details.}
 

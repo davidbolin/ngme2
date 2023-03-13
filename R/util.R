@@ -62,61 +62,117 @@ get_inla_mesh_dimension <- function(inla_mesh) {
 
 #' Parse the formula for ngme function
 #'
-#' @param gf formula
+#' @param fm Formula
 #' @param data data.frame
-#' @param index_NA index of unknown
+#' @param control_ngme control_ngme
+#' @param noise noise
 #'
-#' @return
-#'  1. plain formula without f function
-#'  2. latents_in - from each f function
+#' @return a list (replicate) of ngme_block models
 ngme_parse_formula <- function(
-  gf,
+  fm,
   data,
-  index_NA
+  control_ngme,
+  noise
 ) {
-  # adding special mark
-  tf <- terms.formula(gf, specials = c("f"))
+  Fm <- Formula::Formula(fm)
+  if (all(length(Fm)==c(2,2))) {
+    lfm = formula(fm, lhs=1, rhs=1)
+    rfm = formula(fm, lhs=2, rhs=2)
+    stop("Bivariate model is not supported yet")
+  } else if (all(length(Fm)==c(1,1))) {
+    # adding special mark
+    tf <- terms.formula(fm, specials = c("f"))
+    terms <- attr(tf, "term.labels")
+    intercept <- attr(tf, "intercept")
 
-  terms <- attr(tf, "term.labels")
-  intercept <- attr(tf, "intercept")
+    # order of f terms in labels
+    spec_order <- attr(tf, "specials")$f - 1
 
-  latents_in <- list()
-  # order of f terms in labels
-  spec_order <- attr(tf, "specials")$f - 1
-  for (i in spec_order) {
-    if (!grepl("data *=", terms[i])) {
-      # adding data=data if not specified
-      str <- gsub("^f\\(", "ngme2::f(data=data,", terms[i])
-    } else if (grepl("data *= *NULL", terms[i])) {
-      # change data=NULL to data=data
-      str <- gsub("^f\\(", "ngme2::f(", terms[i])
-      str <- gsub("data *= *NULL", "data=data", str)
-    } else {
-      # keep data=sth.
-      str <- gsub("^f\\(", "ngme2::f(", terms[i])
+    # construct plain formula without f
+    # watch out! terms[-double(0)] -> character(0)
+    fixf <- if (length(spec_order) == 0) terms else terms[-spec_order]
+    response <- as.character(attr(tf, "variables")[[2]])
+    plain_fm_str <- paste(response, "~", intercept, paste(c("", fixf), collapse = " + "))
+    plain_fm <- formula(plain_fm_str)
+
+    # eval the data
+    ngme_response <- eval(stats::terms(fm)[[2]], envir = data, enclos = parent.frame())
+    stopifnot("Have NA in your response variable" = all(!is.na(ngme_response)))
+    X_full    <- model.matrix(delete.response(terms(plain_fm)), as.data.frame(data))
+
+    ########## parse latents terms
+    latents_in <- list()
+    for (i in spec_order) {
+      if (!grepl("data *=", terms[i])) {
+        # adding data=data if not specified
+        str <- gsub("^f\\(", "ngme2::f(data=data,", terms[i])
+      } else if (grepl("data *= *NULL", terms[i])) {
+        # change data=NULL to data=data
+        str <- gsub("^f\\(", "ngme2::f(", terms[i])
+        str <- gsub("data *= *NULL", "data=data", str)
+      } else {
+        # keep data=sth.
+        str <- gsub("^f\\(", "ngme2::f(", terms[i])
+      }
+
+      # add information of index_NA
+      # adding 1 term for furthur use in f
+      # str <- gsub("ngme2::f\\(", "ngme2::f(index_NA=index_NA,", str)
+      res <- eval(parse(text = str), envir = data, enclos = list2env(
+        as.list(parent.frame(2)), envir = parent.frame())
+      )
+
+      # default name
+      if (res$name == "field") res$name <- paste0("field", length(latents_in) + 1)
+      # latents_in[[length(latents_in) + 1]] <- res
+      latents_in[[res$name]] <- res
     }
 
-    # add information of index_NA
-    str <- gsub("ngme2::f\\(", "ngme2::f(index_NA=index_NA,", str)
-    # adding 1 term for furthur use in f
-    # data$ngme_response <- Y
-    res <- eval(parse(text = str), envir = data, enclos = parent.frame())
+    # splits f_eff, latent according to replicates
+    repls <- if (length(latents_in) > 0)
+        lapply(latents_in, function(x) x$replicate)
+      else
+        list(rep(1, length(ngme_response)))
 
-    # default name
-    if (res$name == "field") res$name <- paste0("field", length(latents_in) + 1)
-    # latents_in[[length(latents_in) + 1]] <- res
-    latents_in[[res$name]] <- res
+    repl <- merge_repls(repls)
+    uni_repl <- unique(repl)
+
+    blocks_rep <- list() # of length n_repl
+    for (i in seq_along(uni_repl)) {
+      idx <- repl == uni_repl[[i]]
+      # data
+      Y <- ngme_response[idx]
+      X <- X_full[idx, , drop = FALSE]
+      # for each latent model
+      latents_rep <- list()
+      for (latent in latents_in) {
+        latents_rep[[latent$name]] <- sub_fmodel(latent, idx)
+      }
+      # give initial value
+      lm.model <- stats::lm.fit(X, Y)
+      if (is.null(control_ngme$beta)) control_ngme$beta <- lm.model$coeff
+      if (noise$family_type == "normal" && is.null(noise$theta_sigma == 0))
+        noise$theta_sigma <- log(sd(lm.model$residuals))
+
+      noise <- update_noise(noise, n = length(Y))
+
+      blocks_rep[[i]] <- ngme_block(
+        Y = Y,
+        X = X,
+        noise = noise,
+        latents = latents_rep,
+        replicate = uni_repl[[i]],
+        control_ngme = control_ngme
+      )
+    }
   }
-  # watch out! terms[-double(0)] -> character(0)
-  fixf <- if (length(spec_order) == 0) terms else terms[-spec_order]
-
-  # construct plain formula without f
-  fm <- as.character(attr(tf, "variables")[[2]])
-  fm <- paste(fm, "~", intercept, paste(c("", fixf), collapse = " + "))
+  # debug
+  # browser()
+# blocks_rep[[2]]$latents[[1]]$noise$theta_sigma
 
   list(
-    latents_in = latents_in,
-    plain_fm = formula(fm)
+    replicate   = repls,
+    blocks_rep  = blocks_rep
   )
 }
 
@@ -422,4 +478,36 @@ split_matrix <- function(mat, repl) {
   split_mat
 }
 
+# help to build a list of mesh for different replicates
 build_mesh <- function() {}
+
+# model is of class ngme_model
+sub_fmodel <- function(model, idx) {
+  # change map, replicate, A for now
+  sub_model <- model
+
+  sub_model$map       <- sub_locs(model$map, idx)
+  sub_model$n_map     <- length(sub_model$map)
+  sub_model$replicate <- model$replicate[idx]
+  sub_model$A         <- model$A[idx, , drop = FALSE]
+
+  # now let's update f model now with new replicate (update A)
+  # if (length(unique(replicate)) == 1)
+
+  # if provide a list of mesh
+  if (!inherits(model$mesh, c("inla.mesh.1d", "inla.mesh.2d"))) {
+    stopifnot("not implemented yet for a list of mesh")
+  }
+
+  sub_model
+}
+
+
+# helper function to unfiy way of accessing 1d and 2d index
+sub_locs <- function(locs, idx) {
+  if (inherits(locs, c("data.frame", "matrix"))) {
+    locs[idx, , drop = FALSE]
+  } else {
+    locs[idx]
+  }
+}

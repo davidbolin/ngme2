@@ -18,6 +18,9 @@ private:
     double stepsize;
     bool precondioner;
     int iterations;
+
+    // keep trajs
+    std::vector<VectorXd> trajs;
 public:
     Optimizer(const Rcpp::List& control_opt)
         : verbose(control_opt["verbose"])
@@ -44,6 +47,8 @@ public:
             int iterations,
             double max_relative_step,
             double max_absolute_step);
+
+    std::vector<VectorXd> get_trajs() const { return trajs; }
 };
 
 #endif

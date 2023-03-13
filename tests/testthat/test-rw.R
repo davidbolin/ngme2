@@ -101,10 +101,10 @@ test_that("test estimation of basic ar with normal measurement noise", {
 
   W <- simulate(ar1)
   Y <- W + rnorm(n_obs, sd = sigma_eps)
-plot(Y, type="l")
+# plot(Y, type="l")
 # load_all()
   out <- ngme(
-    Y ~ 0 + f(1:n_obs,
+    Y ~ 0 + f(time,
       model="ar1",
       name="ar",
       alpha = -0.5,
@@ -113,13 +113,12 @@ plot(Y, type="l")
         # h = ar1$noise$h,
         # fix_V = TRUE, V = attr(W, "noise")$V
       ),
-      # fix_W = TRUE, W = W,
       control=control_f(
         numer_grad = T
       ),
       debug = FALSE
     ),
-    data = list(Y = Y),
+    data = list(Y = Y, time=1:n_obs),
     control_opt = control_opt(
       estimation = T,
       iterations = 100,

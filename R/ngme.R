@@ -82,7 +82,6 @@ ngme <- function(
   # parse the formula get a list of ngme_block
   parse_ngme <- ngme_parse_formula(formula, data, control_ngme, noise)
   list_ngmes <- parse_ngme$blocks_rep
-  attr(list_ngmes, "n_rep") <- length(list_ngmes)
 
   attr(list_ngmes, "fitting") <- fitting
 
@@ -128,8 +127,7 @@ if (debug) {print(str(list_ngmes[[1]]))}
     cat("Starting estimation... \n")
     outputs <- estimate_cpp(list_ngmes, control_opt)
     cat("\n")
-    attr(outputs, "opt_traj") <- transform_traj(attr(outputs, "opt_traj"))
-  # transfrom the output trajectory
+
   ################# Update the estimates ####################
     est_output <- mean_list(outputs)
     for (i in seq_along(list_ngmes))
@@ -152,6 +150,26 @@ if (debug) {print(str(list_ngmes[[1]]))}
       list_ngmes[[i]] <- ngme_block
     }
     cat("Posterior sampling done! \n")
+
+    # transform trajectory
+    traj_df_chains <- transform_traj(attr(outputs, "opt_traj"))
+    # dispatch trajs to each latent and block
+      idx <- 0;
+      for (i in seq_along(list_ngmes[[1]]$latents)) {
+        n_params <- list_ngmes[[1]]$latents[[i]]$n_params
+        lat_traj_chains = list()
+        for (j in seq_along(list_ngmes))
+          lat_traj_chains[[j]] <- traj_df_chains[[j]][idx + 1:n_params, ]
+
+        attr(list_ngmes[[1]]$latents[[i]], "lat_traj") <- lat_traj_chains
+        idx <- idx + n_params
+      }
+      # mn and beta
+      block_traj <- list()
+      for (j in seq_along(list_ngmes))
+        block_traj[[j]] <- traj_df_chains[[j]][(idx + 1):list_ngmes[[1]]$n_params, ]
+      attr(list_ngmes[[1]], "block_traj") <- block_traj
+      attr(outputs, "opt_traj") <- NULL
   }
 
   # cat(paste("total time is", Sys.time() - time.start, " \n"))

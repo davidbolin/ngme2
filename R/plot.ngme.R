@@ -210,3 +210,63 @@ traceplot <- function(
   if (length(ps) > 1) ps["ncol"]=2
   do.call(gridExtra::grid.arrange, ps)
 }
+
+#'   c("fe", "beta") is fixed effects,
+#'   c("mn", "noise") is measurement nosie
+
+# transfer
+# [[1]]
+# a 1 2 3
+# [[2]]
+# a 2 3 4
+
+
+# if null name, just beta and m noise
+traceplot3 <- function(ngme, name=NULL, ...) {
+  stopifnot(inherits(ngme, "ngme_fit"))
+  ngme <- ngme[[1]]
+  ps <- list()
+
+  if (name %in% names(ngme$latents)) {
+    traj <- attr(ngme$latents[[name]], "lat_traj")
+    # get titles
+    ts <- with(ngme$latents[[name]], {
+      switch(noise$noise_type,
+        "normal"     = list(
+          c("theta_K", "theta_sigma"),
+          c(n_theta_K, noise$n_theta_sigma)
+        ),
+        "normal_nig" = list(
+          c("theta_K", "theta_mu", "theta_sigma", "theta_sigma_normal", "nu"),
+          c(n_theta_K, noise$n_theta_mu,
+          noise$n_theta_sigma, noise$n_theta_sigma_normal, 1)
+        ),
+        list(
+          c("theta_K", "theta_mu", "theta_sigma", "nu"),
+          c(n_theta_K, noise$n_theta_mu, noise$n_theta_sigma, 1)
+        )
+      )
+    })
+    names <- c()
+    for (i in seq_along(ts[[1]]))
+      names <- c(names, paste(ts[[1]][[i]], seq_len(ts[[2]][[i]])))
+
+    # make plot
+    for (idx in seq_len(nrow(traj[[1]]))) {
+      df <- sapply(traj, function(x) x[idx, ])
+      # wierd stuff here
+      df <- apply(df, c(1,2), as.numeric)
+      df <- as.data.frame(df)
+      mean_traj <- rowMeans(df)
+      df$x <- seq_len(nrow(df))
+      df_long <- tidyr::gather(df, key = "key", value = "value", -x)
+      ps[[idx]] <- ggplot() +
+        geom_line(data = df_long, aes(x=x, y=value, group=key)) +
+        geom_line(data = data.frame(x=seq_len(nrow(df)), y=mean_traj), aes(x=x,y=y), col="red") +
+        labs(title = names[idx])
+    }
+  }
+
+  if (length(ps) > 1) ps["ncol"]=2
+  do.call(gridExtra::grid.arrange, ps)
+}

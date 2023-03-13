@@ -154,12 +154,12 @@ ngme_parse_formula <- function(
       if (noise$family_type == "normal" && is.null(noise$theta_sigma == 0))
         noise$theta_sigma <- log(sd(lm.model$residuals))
 
-      noise <- update_noise(noise, n = length(Y))
+      noise_new <- update_noise(noise, n = length(Y))
 
       blocks_rep[[i]] <- ngme_block(
         Y = Y,
         X = X,
-        noise = noise,
+        noise = noise_new,
         latents = latents_rep,
         replicate = uni_repl[[i]],
         control_ngme = control_ngme

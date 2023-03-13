@@ -158,7 +158,7 @@ if (debug) {print(str(list_ngmes[[1]]))}
       for (i in seq_along(list_ngmes[[1]]$latents)) {
         n_params <- list_ngmes[[1]]$latents[[i]]$n_params
         lat_traj_chains = list()
-        for (j in seq_along(list_ngmes))
+        for (j in seq_along(traj_df_chains))
           lat_traj_chains[[j]] <- traj_df_chains[[j]][idx + 1:n_params, ]
 
         attr(list_ngmes[[1]]$latents[[i]], "lat_traj") <- lat_traj_chains

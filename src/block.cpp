@@ -213,11 +213,11 @@ if (debug) std::cout << "Start block get parameter"<< std::endl;
       pos += theta.size();
     }
 
-    if (!fix_flag[block_fix_beta] ) {
-      thetas.segment(n_la_params, n_feff) = beta;
-    }
+    thetas.segment(n_la_params, n_merr) = get_theta_merr();
 
-    thetas.segment(n_la_params + n_feff, n_merr) = get_theta_merr();
+    if (!fix_flag[block_fix_beta] ) {
+      thetas.segment(n_la_params + n_merr, n_feff) = beta;
+    }
 
 if (debug) std::cout << "Finish block get parameter"<< std::endl;
     return thetas;
@@ -244,13 +244,13 @@ auto timer_computeg = std::chrono::steady_clock::now();
     }
 time_compute_g += since(timer_computeg).count();
 
+    // gradient.segment(n_la_params + n_feff, n_theta_sigma) = grad_theta_merr();
+    gradient.segment(n_la_params, n_merr) = grad_theta_merr();
+
     // fixed effects
     if (!fix_flag[block_fix_beta]) {
-      gradient.segment(n_la_params, n_feff) = grad_beta();
+      gradient.segment(n_la_params + n_merr, n_feff) = grad_beta();
     }
-
-    // gradient.segment(n_la_params + n_feff, n_theta_sigma) = grad_theta_merr();
-    gradient.segment(n_la_params + n_feff, n_merr) = grad_theta_merr();
 
     avg_gradient += gradient;
 
@@ -287,14 +287,13 @@ void BlockModel::set_parameter(const VectorXd& Theta) {
     pos += theta_len;
   }
 
+  // measurement noise
+  set_theta_merr(Theta.segment(n_la_params, n_merr));
+
   // fixed effects
   if (!fix_flag[block_fix_beta]) {
-    beta = Theta.segment(n_la_params, n_feff);
+    beta = Theta.segment(n_la_params + n_merr, n_feff);
   }
-
-    // measurement noise
-  set_theta_merr(Theta.segment(n_la_params + n_feff, n_merr));
-  record_traj();
 
   assemble(); //update K,dK,d2K after
   curr_iter++;

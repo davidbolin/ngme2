@@ -101,6 +101,7 @@ public:
       if (debug) std::cout << "Finish burn in period." << std::endl;
     }
 
+    int get_n_obs() const {return n_obs;}
     void sampleW_VY();
     void sampleV_WY() {
       if(n_latent > 0){

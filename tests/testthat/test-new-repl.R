@@ -83,3 +83,56 @@ inla(
 
 # Y     1    2   3
 # Year  201 202 203
+
+test_that("basic ar1 case with different length", {
+  n_obs1  <- 500
+  n_obs2 <- 100
+  alpha <- 0.75
+  mu <- -3; sigma <- 2.3; nu <- 2; sigma_eps <- 0.8
+  ar_1 <- model_ar1(1:n_obs1, alpha=alpha, noise=noise_nig(mu=mu, sigma=sigma, nu=nu))
+  ar_2 <- model_ar1(1:n_obs2, alpha=alpha, noise=noise_nig(mu=mu, sigma=sigma, nu=nu))
+
+  W1 <- simulate(ar_1)
+  W2 <- simulate(ar_2)
+  Y <- c(W1, W2) + rnorm(n_obs1 + n_obs2, sd = sigma_eps)
+  beta <- c(3,1,-1)
+  x1 <- rnorm(n_obs1 + n_obs2)
+  x2 <- rexp(n_obs1 + n_obs2)
+  Y <- beta[1] + beta[2] * x1 + beta[3] * x2 + Y
+  # Y <- beta[1] + Y
+
+  load_all()
+  out <- ngme(
+    Y ~ x1 + x2 + f(time,
+      model="ar1",
+      name="ar",
+      alpha = -0.5,
+      replicate = c(rep(1, n_obs1), rep(2, n_obs2)),
+      noise=noise_nig(),
+      control=control_f(
+        numer_grad = T
+      ),
+      debug = FALSE
+    ),
+    data = list(Y = Y, time=c(1:n_obs1, 1:n_obs2), x1=x1, x2=x2),
+    control_opt = control_opt(
+      estimation = T,
+      iterations = 500,
+      n_parallel_chain = 2,
+      print_check_info = FALSE,
+      verbose = F
+    ),
+    debug = FALSE
+  )
+  out
+
+  traceplot(out)
+  traceplot(out, "ar")
+  plot(simulate(out[[1]]$latents[["ar"]]), type="l")
+  plot(Y, type="l")
+  prds <- predict(out, loc=list(ar=501:600))$mean
+
+  traceplot(out, "ar")
+  traceplot(out, "mn")
+  plot(attr(W1, "noise"), out[[1]]$latents[[1]]$noise)
+})

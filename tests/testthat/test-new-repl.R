@@ -117,7 +117,7 @@ test_that("basic ar1 case with different length", {
     data = list(Y = Y, time=c(1:n_obs1, 1:n_obs2), x1=x1, x2=x2),
     control_opt = control_opt(
       estimation = T,
-      iterations = 500,
+      iterations = 50,
       n_parallel_chain = 2,
       print_check_info = FALSE,
       verbose = F
@@ -125,7 +125,8 @@ test_that("basic ar1 case with different length", {
     debug = FALSE
   )
   out
-
+  load_all()
+cross_validation(out)
   traceplot(out)
   traceplot(out, "ar")
   plot(simulate(out[[1]]$latents[["ar"]]), type="l")
@@ -135,4 +136,13 @@ test_that("basic ar1 case with different length", {
   traceplot(out, "ar")
   traceplot(out, "mn")
   plot(attr(W1, "noise"), out[[1]]$latents[[1]]$noise)
+
+  # test on predict function
+  predict(out,
+    loc = list(c(1,2,3,4)),
+    data = list(cbind(1, rnorm(4), rexp(4)))
+  )
+
+  cross_validation(out)
+
 })

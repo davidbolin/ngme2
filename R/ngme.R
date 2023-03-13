@@ -121,7 +121,6 @@ if (debug) {print(str(list_ngmes[[1]]))}
 
 # check all f has the same replicate
 # otherwise change replicate to group="iid"
-
   ################# Run CPP ####################
   if (control_opt$estimation) {
     cat("Starting estimation... \n")
@@ -143,9 +142,9 @@ if (debug) {print(str(list_ngmes[[1]]))}
       )
 
       idx <- 1
-      for (i in seq_along(ngme_block$latents)) {
-        ngme_block$latents[[i]]$W <- mean_post_W[idx : (ngme_block$latents[[i]]$W_size + idx - 1)]
-        idx <- idx + ngme_block$latents[[i]]$W_size
+      for (j in seq_along(ngme_block$latents)) {
+        ngme_block$latents[[j]]$W <- mean_post_W[idx : (ngme_block$latents[[j]]$W_size + idx - 1)]
+        idx <- idx + ngme_block$latents[[j]]$W_size
       }
       list_ngmes[[i]] <- ngme_block
     }
@@ -271,38 +270,6 @@ get_trajs <- function(outputs) {
   ret
 }
 
-
-# helper function to make modify ngme model
-# make the Y[idx] into NA, and estimate it or not
-modify_ngme_with_idx_NA <- function(
-  ngme,
-  idx_NA,
-  estimation = FALSE
-) {
-  fitting <- attr(ngme, "fitting")
-
-  dat <- fitting$data
-  formula <- fitting$formula
-  family <- fitting$family
-
-  # make response variable[idx_NA] = NA
-  dat[[formula[[2]]]][idx_NA] <- NA
-
-  control <- ngme$control
-  control$estimation = estimation
-
-  # refit the model
-  ngme(
-    formula = formula,
-    data = dat,
-    control = control,
-    # keep others same
-    family = family,
-    beta = ngme$beta,
-    debug = ngme$debug,
-    start = ngme # use previous estimation!!!
-  )
-}
 
 
 # helper function to tranform the trajectory

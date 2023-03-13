@@ -18,6 +18,7 @@
 using Eigen::SparseMatrix;
 using Eigen::VectorXd;
 using Eigen::MatrixXd;
+using std::vector;
 
 using namespace Rcpp;
 
@@ -99,28 +100,28 @@ auto timer = std::chrono::steady_clock::now();
         for (int k=0; k < n_params; k++)
             vars(curr_batch, k) = (mat.col(k).array() - means(curr_batch, k)).square().sum() / (n_chains - 1);
 
-        // if (n_chains > 1) {
-        //     // exchange VW
-        //     if (exchange_VW) {
-        //         std::vector<VectorXd> tmp = block_reps[0]->get_VW();
-        //         for (int i = 0; i < n_chains - 1; i++) {
-        //             std::vector<VectorXd> VW = block_reps[i+1]->get_VW();
-        //             block_reps[i]->set_prev_VW(VW);
-        //         }
-        //         block_reps[n_chains - 1]->set_prev_VW(tmp);
-        //     }
+        if (n_chains > 1) {
+            // exchange VW
+            if (exchange_VW) {
+                vector<vector<VectorXd>> tmp = block_reps[0]->get_VW();
+                for (int i = 0; i < n_chains - 1; i++) {
+                    vector<vector<VectorXd>> VW = block_reps[i+1]->get_VW();
+                    block_reps[i]->set_prev_VW(VW);
+                }
+                block_reps[n_chains - 1]->set_prev_VW(tmp);
+            }
 
-        //     // 2. convergence check
-        //     if (n_slope_check <= curr_batch + 1)
-        //         converge = check_conv(means, vars, curr_batch, n_slope_check, std_lim, trend_lim, par_string, print_check_info);
-        //     all_converge = std::find(begin(converge), end(converge), false) == end(converge);
+            // 2. convergence check
+            if (n_slope_check <= curr_batch + 1)
+                converge = check_conv(means, vars, curr_batch, n_slope_check, std_lim, trend_lim, par_string, print_check_info);
+            all_converge = std::find(begin(converge), end(converge), false) == end(converge);
 
-        //     // 3. if some parameter converge, stop compute gradient, or slow down the gradient.
-        //     // if (auto_stop)
-        //     //     for (int i=0; i < n_chains; i++) {
-        //     //         block_reps[i]->check_converge(converge);
-        //     //     }
-        // }
+            // 3. if some parameter converge, stop compute gradient, or slow down the gradient.
+            // if (auto_stop)
+            //     for (int i=0; i < n_chains; i++) {
+            //         block_reps[i]->check_converge(converge);
+            //     }
+        }
 
         curr_batch++;
     }

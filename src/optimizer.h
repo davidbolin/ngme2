@@ -17,13 +17,14 @@ private:
     double eps;
     double stepsize;
     bool precondioner;
-    int iterations;
+    int curr_iter;
 
     // keep trajs
     std::vector<VectorXd> trajs;
 public:
     Optimizer(const Rcpp::List& control_opt)
-        : verbose(control_opt["verbose"])
+        : verbose(control_opt["verbose"]),
+        curr_iter(0)
         // max_iter(control_opt["max_iter"]),
         // max_relative_step(control_opt["max_relative_step"]),
         // max_absolute_step(control_opt["max_absolute_step"]),

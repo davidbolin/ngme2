@@ -106,11 +106,12 @@ VectorXd Optimizer::sgd(
         x = x - pow(tmp, reduce_power) * one_step;
 
 if (verbose) {
-std::cout << "iteration = : " << i << std::endl;
+std::cout << "iteration = : " << curr_iter << std::endl;
 std::cout << "parameter = : " << x << std::endl;
 }
 
         model.set_parameter(x);
+        curr_iter += 1;
     }
 
     return x;

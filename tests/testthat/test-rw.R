@@ -121,20 +121,20 @@ test_that("test estimation of basic ar with normal measurement noise", {
     data = list(Y = Y, time=1:n_obs),
     control_opt = control_opt(
       estimation = T,
-      iterations = 100,
+      iterations = 500,
       n_parallel_chain = 5,
       print_check_info = FALSE,
-      verbose = F
+      verbose = T
     ),
     debug = FALSE
   )
   out
+  traceplot(out, "ar")
 
   plot(simulate(out$latents[["ar"]]), type="l")
   plot(Y, type="l")
   prds <- predict(out, loc=list(ar=501:600))$mean
 
-  traceplot(out, "ar")
   traceplot(out, "mn")
   plot(attr(W, "noise"), out$latents[[1]]$noise)
   # out$latents[[1]]$noise$h

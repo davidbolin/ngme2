@@ -332,7 +332,6 @@ check_dim <- function(list_ngmes) {
         }
         # ncol(A) = W_size
         if (ncol(latent$A) != latent$W_size * latent$n_rep) {
-    browser()
           stop("The number of columns of A is not equal to the W_size of the latent model")
         }
       }

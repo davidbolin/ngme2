@@ -38,10 +38,6 @@ ngme_as_sparse <- function(G) {
   )
 }
 
-# post.sampleW(ngme) {
-#   W
-# }
-
 
 #' @name get_inla_mesh_dimension
 #' @title Get the dimension of an INLA mesh
@@ -66,69 +62,114 @@ get_inla_mesh_dimension <- function(inla_mesh) {
 
 #' Parse the formula for ngme function
 #'
-#' @param gf formula
+#' @param fm Formula
 #' @param data data.frame
-#' @param index_NA index of unknown
+#' @param control_ngme control_ngme
+#' @param noise noise
 #'
-#' @return
-#'  1. plain formula without f function
-#'  2. latents_in - from each f function
+#' @return a list (replicate) of ngme_block models
 ngme_parse_formula <- function(
-  gf,
+  fm,
   data,
-  index_NA
+  control_ngme,
+  noise
 ) {
-  # eval the response variable to see NA
-  # Y <- eval(gf[[2]], envir = data)
-  # index_prd <- which(is.na(Y))
-  # index_est <- which(!is.na(Y))
+  Fm <- Formula::Formula(fm)
+  if (all(length(Fm)==c(2,2))) {
+    lfm = formula(fm, lhs=1, rhs=1)
+    rfm = formula(fm, lhs=2, rhs=2)
+    stop("Bivariate model is not supported yet")
+  } else if (all(length(Fm)==c(1,1))) {
+    # adding special mark
+    tf <- terms.formula(fm, specials = c("f"))
+    terms <- attr(tf, "term.labels")
+    intercept <- attr(tf, "intercept")
 
-  # adding special mark
-  tf <- terms.formula(gf, specials = c("f"))
+    # order of f terms in labels
+    spec_order <- attr(tf, "specials")$f - 1
 
-  terms <- attr(tf, "term.labels")
-  intercept <- attr(tf, "intercept")
+    # construct plain formula without f
+    # watch out! terms[-double(0)] -> character(0)
+    fixf <- if (length(spec_order) == 0) terms else terms[-spec_order]
+    response <- as.character(attr(tf, "variables")[[2]])
+    plain_fm_str <- paste(response, "~", intercept, paste(c("", fixf), collapse = " + "))
+    plain_fm <- formula(plain_fm_str)
 
-  latents_in <- list()
-  # order of f terms in labels
-  spec_order <- attr(tf, "specials")$f - 1
-  for (i in spec_order) {
-    if (!grepl("data *=", terms[i])) {
-      # adding data=data if not specified
-      str <- gsub("^f\\(", "ngme2::f(data=data,", terms[i])
-    } else if (grepl("data *= *NULL", terms[i])) {
-      # change data=NULL to data=data
-      str <- gsub("^f\\(", "ngme2::f(", terms[i])
-      str <- gsub("data *= *NULL", "data=data", str)
-    } else {
-      # keep data=sth.
-      str <- gsub("^f\\(", "ngme2::f(", terms[i])
+    # eval the data
+    ngme_response <- eval(stats::terms(fm)[[2]], envir = data, enclos = parent.frame())
+    stopifnot("Have NA in your response variable" = all(!is.na(ngme_response)))
+    X_full    <- model.matrix(delete.response(terms(plain_fm)), as.data.frame(data))
+
+    ########## parse latents terms
+    enclos_env <- list2env(as.list(parent.frame(2)), envir = parent.frame())
+    pre_model <- list()
+    for (i in spec_order) {
+      if (!grepl("data *=", terms[i])) {
+        # adding data=data if not specified
+        str <- gsub("^f\\(", "ngme2::f(data=data,", terms[i])
+      } else if (grepl("data *= *NULL", terms[i])) {
+        # change data=NULL to data=data
+        str <- gsub("^f\\(", "ngme2::f(", terms[i])
+        str <- gsub("data *= *NULL", "data=data", str)
+      } else {
+        # keep data=sth.
+        str <- gsub("^f\\(", "ngme2::f(", terms[i])
+      }
+
+      # add information of index_NA
+      # adding 1 term for furthur use in f
+      # str <- gsub("ngme2::f\\(", "ngme2::f(index_NA=index_NA,", str)
+      res <- eval(parse(text = str), envir = data, enclos = enclos_env)
+
+      # give default name
+      if (res$name == "field") res$name <- paste0("field", length(pre_model) + 1)
+      pre_model[[res$name]] <- res
     }
+    # splits f_eff, latent according to replicates
+    repls <- if (length(pre_model) > 0)
+        lapply(pre_model, function(x) x$replicate)
+      else
+        list(rep(1, length(ngme_response)))
 
-    # add information of index_NA
-    str <- gsub("ngme2::f\\(", "ngme2::f(index_NA=index_NA,", str)
-    # adding 1 term for furthur use in f
-    # data$ngme_response <- Y
-    res <- eval(parse(text = str), envir = data, enclos = parent.frame())
+    repl <- merge_repls(repls)
+    uni_repl <- unique(repl)
+    blocks_rep <- list() # of length n_repl
+    for (i in seq_along(uni_repl)) {
+      idx <- repl == uni_repl[[i]]
+      # data
+      Y <- ngme_response[idx]
+      X <- X_full[idx, , drop = FALSE]
 
-    # default name
-    if (res$name == "field") res$name <- paste0("field", length(latents_in) + 1)
-    # latents_in[[length(latents_in) + 1]] <- res
-    latents_in[[res$name]] <- res
+      # re-evaluate each f model using idx
+      latents_rep <- list()
+      for (latent in pre_model) {
+        latent$map <- sub_locs(latent$map, idx)
+        latent$replicate <- latent$replicate[idx]
+        latent$eval = TRUE
+        latents_rep[[latent$name]] <- eval(latent, envir = data, enclos = enclos_env)
+      }
+      # give initial value
+      lm.model <- stats::lm.fit(X, Y)
+      if (is.null(control_ngme$beta)) control_ngme$beta <- lm.model$coeff
+      if (noise$family_type == "normal" && is.null(noise$theta_sigma == 0))
+        noise$theta_sigma <- log(sd(lm.model$residuals))
+
+      noise_new <- update_noise(noise, n = length(Y))
+
+      blocks_rep[[i]] <- ngme_block(
+        Y = Y,
+        X = X,
+        noise = noise_new,
+        latents = latents_rep,
+        replicate = uni_repl[[i]],
+        control_ngme = control_ngme
+      )
+    }
   }
-  # watch out! terms[-double(0)] -> character(0)
-  fixf <- if (length(spec_order) == 0) terms else terms[-spec_order]
-
-  # construct plain formula without f
-  fm <- as.character(attr(tf, "variables")[[2]])
-  fm <- paste(fm, "~", intercept, paste(c("", fixf), collapse = " + "))
 
   list(
-    latents_in = latents_in,
-    plain_fm = formula(fm)
-    # ,
-    # index_prd = index_prd,
-    # index_est = index_est
+    replicate   = repls,
+    blocks_rep  = blocks_rep
   )
 }
 
@@ -181,7 +222,11 @@ ngme_format <- function(param, val, model = NULL) {
 #'   list(a=5, b=5, t="nig", ll=list(a=4,b=2, w="ab"))
 #' )
 #' mean_list(ls)
-mean_list <- function(lls) {
+mean_list <- function(lls, weights=NULL) {
+  n <- length(lls)
+  weights <- if (is.null(weights)) rep(1 / n, n)
+    else weights / sum(weights)
+
   # helpers
   nest_list_add <- function(l1, l2) {
     for (i in seq_along(l2)) {
@@ -194,17 +239,20 @@ mean_list <- function(lls) {
     }
     l1
   }
-
-  nest_list_divide <- function(l, n) {
+  nest_list_mult <- function(l, n) {
     for (i in seq_along(l)) {
-      if (is.numeric(l[[i]])) l[[i]] <- l[[i]] / n
-      if (is.list(l[[i]]))    l[[i]] <- nest_list_divide(l[[i]], n)
+      if (is.numeric(l[[i]])) l[[i]] <- l[[i]] * n
+      if (is.list(l[[i]]))    l[[i]] <- nest_list_mult(l[[i]], n)
     }
     l
   }
 
-  l <- Reduce(nest_list_add, lls[-1], init = lls[[1]])
-  nest_list_divide(l, length(lls))
+  ret <- nest_list_mult(lls[[1]], 0)
+  for (i in seq_along(lls)) {
+    tmp <- nest_list_mult(lls[[i]], weights[[i]])
+    ret <- nest_list_add(ret, tmp)
+  }
+  ret
 }
 
 # helper functions
@@ -314,7 +362,7 @@ ngme_make_A <- function(
 ngme_ts_make_A <- function(
   loc,
   replicate = NULL,
-  range = c(1, max(loc))
+  range = c(min(loc), max(loc))
 ) {
   if (is.null(loc) || length(loc) == 0) return (NULL)
 
@@ -357,10 +405,100 @@ emprical_mode <- function(x, breaks = max(20, length(x) / 20)) {
 
 
 # given a list of replicate
-group_rep <- function(repls) {
-  for (repl in repls) {
-
+merge_repls <- function(repls) {
+  # merge the list of data frames
+  # input: list of numerics
+  # output: merged list
+  # assert of equal length
+  stopifnot(length(unique(as.numeric(lapply(repls, length)))) == 1)
+  # helper function of merge 2 repls
+  merge_repl <- function(repl, group) {
+    halas <- FALSE
+    while (!halas) {
+      unique_group <- unique(group)
+      halas <- TRUE
+      if (length(unique_group) == 1) return (group)
+      for (i in 1:(length(unique_group)-1)) {
+        for (j in (i+1):length(unique_group)) {
+          if (length(intersect(repl[group == unique_group[i]], repl[group == unique_group[j]])) > 0) {
+            group[group == unique_group[j]] <- unique_group[i]
+            halas <- FALSE
+          }
+          if (!halas) break
+        }
+        if (!halas) break
+      }
+    }
+    group
   }
 
+  Reduce(function(x, y) merge_repl(x, y), repls)
+}
 
+# split block by repl
+split_block <- function(block, repl) {
+  # split Y, X
+  Ys <- split(block$Y, repl)
+  Xs <- split_matrix(block$X, repl)
+
+  # split latents A
+  As <- lapply(block$latents, function(latent) {
+    split_matrix(latent$A, repl)
+  })
+
+  latentss <- list()
+  for (i in unique(repl)) {
+    latentss[[i]] <- block$latents
+    for (lat in seq_along(block$latents)) {
+      latentss[[i]][[lat]]$A <- As[[lat]][[i]]
+    }
+  }
+  # browser()
+
+  blocks <- list()
+  # build new blocks
+  for (i in unique(repl)) {
+    blocks[[i]] <- ngme_block(
+      Y                 = Ys[[i]],
+      X                 = Xs[[i]],
+      latents           = latentss[[i]],
+      beta              = block$beta,
+      W_sizes           = block$W_sizes,
+      V_sizes           = block$V_sizes,
+      n_la_params       = block$n_la_params,
+      n_params          = block$n_params,
+      noise             = block$noise,
+      seed              = block$seed,
+      debug             = block$debug,
+      control           = block$control
+    )
+  }
+  blocks
+}
+
+split_matrix <- function(mat, repl) {
+  split_mat <- lapply(split(mat, repl, drop = FALSE),
+    matrix, ncol = ncol(mat))
+  split_mat
+}
+
+# help to build a list of mesh for different replicates
+build_mesh <- function() {}
+
+
+# helper function to unfiy way of accessing 1d and 2d index
+sub_locs <- function(locs, idx) {
+  if (inherits(locs, c("data.frame", "matrix"))) {
+    locs[idx, , drop = FALSE]
+  } else {
+    locs[idx]
+  }
+}
+
+length_map <- function(map) {
+  if (inherits(map, c("data.frame", "matrix"))) {
+    nrow(map)
+  } else {
+    length(map)
+  }
 }

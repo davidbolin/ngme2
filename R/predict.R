@@ -4,13 +4,14 @@
 #' predict using ngme after estimation
 #'
 #' @param object a ngme object
-#' @param data a data.frame of covariates (used for fixed effects)
+#' @param data a data.frame or matrix of covariates (used for fixed effects)
 #' @param loc a named list (or dataframe) of the locations to make the prediction
 #'  names(loc) corresponding to the name each latent model
 #'  vector or matrix (n * 2) for spatial coords
 #' @param type what type of prediction, c("fe", "lp", "field1")
 #' @param estimator what type of estimator, c("mean", "median", "mode", "quantile")
 #' @param sampling_size size of posterior sampling
+#' @param seed random seed
 #' @param ... extra argument from 0 to 1 if using "quantile"
 #'
 #' @return a list of outputs contains estimation of operator paramters, noise parameters
@@ -24,6 +25,7 @@ predict.ngme <- function(
   estimator = c("mean", "sd", "5quantile", "95quantile", "median", "mode"),
   sampling_size = 100,
   q = NULL,
+  seed = Sys.time(),
   ...
 ) {
   # recursively call predict.ngme if estimator is a list
@@ -54,7 +56,7 @@ predict.ngme <- function(
   #   stop("not implement for loc=NULL yet")
   stopifnot(sampling_size > 0)
 # why 4 times?
-  samples_W <- sampling_cpp(ngme, n=sampling_size, posterior=TRUE)[["W"]]
+  samples_W <- sampling_cpp(ngme, n=sampling_size, posterior=TRUE, seed=seed)[["W"]]
   post_W <- switch(estimator,
     "mean"      = mean_list(samples_W),
     "median"    = apply(as.data.frame(samples_W), 1, median),
@@ -172,7 +174,7 @@ message("Use ngme_ts_make_A...")
 }
 
 # helper function to compute MSE, MAE, ..
-compute_indices <- function(ngme, test_idx, N = 100) {
+compute_indices <- function(ngme, test_idx, N = 100, seed=Sys.time()) {
   stopifnot("idx wrong" = all(test_idx %in% seq_along(ngme$Y)))
 
   # 1. Make A1_pred, An_pred
@@ -187,16 +189,19 @@ compute_indices <- function(ngme, test_idx, N = 100) {
   y_data <- ngme$Y[test_idx]
   n_obs <- length(y_data)
 
-  new_model <- modify_ngme_with_idx_NA(ngme, idx_NA = test_idx)
+  A_preds <- list()
+  for (i in seq_along(ngme$latents)) {
+    A_preds[[i]] <- INLA::inla.spde.make.A(
+      mesh = ngme$latents[[i]]$mesh,
+      loc = sub_locs(ngme$latents[[i]]$map, test_idx)
+    )
+  }
 
   # A_pred_blcok <- [A1_pred .. An_pred]
   # extract A and cbind!
-  A_pred_block <- Reduce(cbind, x = sapply(
-    seq_along(new_model$latents),
-    function(i) new_model$latents[[i]]$A_pred
-  ))
-  Ws_block <- sampling_cpp(ngme, n=N, posterior=TRUE)[["W"]]
-  W2s_block <- sampling_cpp(ngme, n=N, posterior=TRUE)[["W"]]
+  A_pred_block <- Reduce(cbind, x = A_preds)
+  Ws_block <- sampling_cpp(ngme, n=N, posterior=TRUE, seed=seed)[["W"]]
+  W2s_block <- sampling_cpp(ngme, n=N, posterior=TRUE, seed=seed)[["W"]]
   AW_N <- Reduce(cbind, sapply(Ws_block, function(W) A_pred_block %*% W))
   # AW_N <- as.data.frame(AW_N)
   # names(AW_N) <- 1:N
@@ -206,13 +211,13 @@ compute_indices <- function(ngme, test_idx, N = 100) {
   # sampling Y by, Y = X beta + (block_A %*% block_W) + eps
   # AW_N[[1]] is concat(A1 W1, A2 W2, ..)
 
-  fe <- with(new_model, as.numeric(X_pred %*% beta))
+  fe <- with(ngme, as.numeric(X[test_idx, ] %*% beta))
   fe_N <- matrix(rep(fe, N), ncol=N, byrow=F)
 
   mn_N <- sapply(1:N, function(x)
-    simulate(new_model$noise, n_noise = length(y_data)))
+    simulate(ngme$noise, n_noise = length(y_data)))
   mn2_N <- sapply(1:N, function(x)
-    simulate(new_model$noise, n_noise = length(y_data)))
+    simulate(ngme$noise, n_noise = length(y_data)))
 
   mu_N <- fe_N + AW_N
   Y_N <- fe_N + AW_N + mn_N
@@ -263,14 +268,15 @@ cross_validation <- function(
   type = "k-fold",
   k = 5,
   N = 100,
-  seed = 1,
   percent = 50,
   times = 10,
   group = NULL,
-  print = FALSE
+  print = FALSE,
+  seed = Sys.time()
 ) {
   stopifnot(type %in% c("k-fold", "loo", "lpo"))
 
+if (inherits(ngme, "ngme")) {
   # cut the group if not
   if (is.null(group)) {
     if (type == "k-fold") {
@@ -298,17 +304,84 @@ cross_validation <- function(
   # compute for each group
   crs <- NULL
   for (i in seq_along(group)) {
-    crs[[i]] <- compute_indices(ngme, group[[i]], N=N)
+    crs[[i]] <- compute_indices(ngme, group[[i]], N=N, seed=seed)
 if (print) {
   cat(paste("In group", i, ": \n"))
   print(as.data.frame(crs[[i]]))
   cat("\n")
 }
   }
-
 cat("The average of indices computed: \n")
   ret <- mean_list(crs)
+} else if (inherits(ngme, "ngme_fit")) {
+  # take average mean of each block
+  weights <- sapply(ngme, function(x) length(x$Y))
+  weights <- weights / sum(weights)
+  ret <- list()
+  for (i in seq_along(ngme)) {
+    ret[[i]] <- cross_validation(ngme[[i]], type=type, k=k, N=N, percent=percent,
+    times=times, group=group, print=print, seed=seed)
+  }
+  ret <- mean_list(ret, weights=weights)
+cat("\n")
+cat("The final result averaged over replicates: \n")
+} else stop("Unkown object")
   print(as.data.frame(ret))
   attr(ret, "group") <- group
-  invisible(ret)
+  return(invisible(ret))
 }
+
+######################################## for replicates
+
+#' Predict function of ngme2
+#' predict using ngme after estimation
+#' same as predict.ngme(ngme[[i]], data[[i]], loc[[i]]) i in which.rep
+#'
+#' @param object a ngme_fit object
+#' @param which.rep which replicate to use for prediction, can be a vector like c(1,2)
+#' @param data a data.frame of covariates (used for fixed effects)
+#' @param loc a named list (or dataframe) of the locations to make the prediction
+#'  names(loc) corresponding to the name each latent model
+#'  vector or matrix (n * 2) for spatial coords
+#' @param type what type of prediction, c("fe", "lp", "field1")
+#' @param estimator what type of estimator, c("mean", "median", "mode", "quantile")
+#' @param sampling_size size of posterior sampling
+#' @param seed random seed
+#' @param ... extra argument from 0 to 1 if using "quantile"
+#'
+#' @return a list of outputs contains estimation of operator paramters, noise parameters
+#' @export
+#'
+predict.ngme_fit <- function(
+  object,
+  which.rep = 1,
+  data = list(NULL),
+  loc = list(NULL),
+  type = "lp",
+  estimator = c("mean", "sd", "5quantile", "95quantile", "median", "mode"),
+  sampling_size = 100,
+  q = NULL,
+  seed = Sys.time(),
+  ...
+) {
+  stopifnot(inherits(object, "ngme_fit"))
+  stopifnot("Please provide data and loc as list(...), make sure length(which.rep) == length(data) == length(loc)" = length(which.rep) == length(data) && length(which.rep) == length(loc))
+
+  res <- list()
+  for (i in seq_along(which.rep)) {
+    res[[i]] <- predict.ngme(
+      object[[i]],
+      data = data[[i]],
+      loc = loc[[i]],
+      type = type,
+      estimator = estimator,
+      sampling_size = sampling_size,
+      q = q,
+      seed = seed,
+      ...
+    )
+  }
+  res
+}
+
+

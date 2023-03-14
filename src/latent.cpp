@@ -37,8 +37,6 @@ Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
     vars          (n_rep),
     // var           (Var(Rcpp::as<Rcpp::List> (model_list["noise"]), latent_rng())),
 
-    theta_K_traj  (theta_K.size()),
-
     left (nullptr),
     right (nullptr)
 {
@@ -101,11 +99,6 @@ if (debug) std::cout << "Begin constructor of latent" << std::endl;
     if (vars[0].get_noise_type() == "normal") {
         fix_flag[latent_fix_theta_mu] = 1; // no mu need
     }
-
-    theta_mu_traj.resize(n_theta_mu);
-    theta_sigma_traj.resize(n_theta_sigma);
-    if (noise_type=="normal_nig") theta_sigma_normal_traj.resize(n_theta_sigma_normal);
-    record_traj();
 
 if (debug) std::cout << "End constructor of latent" << std::endl;
 }
@@ -281,14 +274,6 @@ Rcpp::List Latent::output() const {
         Rcpp::Named("W")            = meanW
     );
 
-    Rcpp::List trajecotry = Rcpp::List::create(
-        Rcpp::Named("theta_K")            = theta_K_traj,
-        Rcpp::Named("theta_mu")           = theta_mu_traj,
-        Rcpp::Named("theta_sigma")        = theta_sigma_traj,
-        Rcpp::Named("theta_sigma_normal")        = theta_sigma_normal_traj,
-        Rcpp::Named("nu")            = nu_traj
-    );
-    out.attr("trajectory") = trajecotry;
     return out;
 }
 

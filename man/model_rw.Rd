@@ -5,7 +5,7 @@
 \title{ngme model - random walk of order 1}
 \usage{
 model_rw(
-  x,
+  map,
   order = 1,
   replicate = NULL,
   data = NULL,
@@ -16,8 +16,6 @@ model_rw(
 )
 }
 \arguments{
-\item{x}{numerical vector, covariates to build index for the process}
-
 \item{order}{1 or 2, order of random walk model}
 
 \item{replicate}{replicate for the process}
@@ -33,6 +31,8 @@ if it is circular, we will treat the 1st location and the last location same.}
 (can also be specified in each ngme model)}
 
 \item{...}{additional arguments}
+
+\item{x}{numerical vector, covariates to build index for the process}
 }
 \value{
 a list

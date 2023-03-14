@@ -2,7 +2,7 @@
 
 #' Create a Matern SPDE model
 #'
-#' @param loc       numeric vector (1d) or matrix of column 2 (2d),
+#' @param map       numeric vector (1d) or matrix of column 2 (2d),
 #'     location to make index
 #'     keep aligned with Y if make prediction with index_NA!!!
 #' @param replicate replicate for the process
@@ -19,7 +19,7 @@
 #' @return a list (n, C (diagonal), G, B.kappa) for constructing operator
 #' @export
 model_matern <- function(
-  loc,
+  map,
   replicate   = NULL,
   alpha       = 2,
   kappa       = 1,
@@ -38,6 +38,7 @@ model_matern <- function(
   #   if (inherits(mesh, "inla.mesh.1d")) loc <- mesh$loc
   #   if (inherits(mesh, "inla.mesh")) loc <- as.matrix(mesh$loc[, 1:2])
   # }
+  loc <- map
 
   if (is.numeric(mesh)) # mesh is 1d vector
     mesh <- INLA::inla.mesh.1d(loc = mesh)
@@ -123,3 +124,5 @@ model_matern <- function(
   )
   model
 }
+
+matern <- function(...) {model_matern(...)}

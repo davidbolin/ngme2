@@ -2,20 +2,23 @@
 % Please edit documentation in R/plot.ngme.R
 \name{traceplot}
 \alias{traceplot}
-\title{Trace plot of ngme fitting}
+\title{c("fe", "beta") is fixed effects,
+  c("mn", "noise") is measurement nosie
+Trace plot of ngme fitting}
 \usage{
-traceplot(ngme, name = "beta")
+traceplot(ngme, name = "general", ...)
 }
 \arguments{
 \item{ngme}{ngme object}
 
-\item{name}{name or index of the process,
-c("fe", "beta") is fixed effects,
-c("mn", "noise") is measurement nosie}
+\item{name}{name of latent models, otherwise plot fixed effects and measurement noise
+should be in names(ngme$latents) or other}
 }
 \value{
 the traceplot
 }
 \description{
+c("fe", "beta") is fixed effects,
+  c("mn", "noise") is measurement nosie
 Trace plot of ngme fitting
 }

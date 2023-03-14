@@ -8,33 +8,23 @@ test_that("test Matern", {
   pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
   mesh <- inla.mesh.2d(
     loc.domain = pl01, cutoff = 0.3,
-    max.edge = c(2,10)
+    max.edge = c(0.5,10)
   )
-  # mesh$n
-  # # generate A and A_pred
-  # n_obs <- 500; index_obs <- sample(1:mesh$n, n_obs)
-  # loc_obs <- mesh$loc[index_obs, c(1, 2)]
-  # A <- inla.spde.make.A(mesh = mesh, loc = loc_obs)
-  # sigma.e <- 0.7
-  # Y <- drop(A %*% W + sigma.e * rnorm(n_obs))
+# mesh$n
+# plot(mesh)
   loc <- cbind(runif(300, 0, 10), runif(300, 0, 5))
-  true_model <- model_matern(
-    loc = loc,
-    mesh = mesh,
-    kappa = 3,
-    noise = noise_nig(
-      mu=3, sigma=1.5, nu=2
-    )
-  )
-  # plot(mesh)
-  # W <<- simulate(true_model)
+
   eps <<- simulate(noise_nig(
-      mu=3, sigma=1.5, nu=2, n = mesh$n
-    ))
+    mu=-2, sigma=1.5, nu=1, n = mesh$n
+  ))
+  true_model <- model_matern(
+    kappa = 3, mesh = mesh, map = loc
+  )
   W <- drop(solve(true_model$K, eps))
 
-  n_obs <<- mesh$n
-  Y <- W + rnorm(n_obs, sd=0.5)
+  n_obs <<- 300
+  A <- inla.spde.make.A(loc=loc, mesh=mesh)
+  Y <- drop(A %*% W) + rnorm(n_obs, sd=0.5)
 
   # make bubble plot
   sp_obj <- as.data.frame(mesh$loc); sp_obj[, 3] <- W
@@ -43,37 +33,31 @@ test_that("test Matern", {
   bubble(sp_obj, zcol=3)
   range(mesh$loc[, 1]); range(mesh$loc[, 2])
 
-  spde1 <<- model_matern(
-    loc = loc,
-    mesh=mesh, noise=noise_nig())
-  Y2 <- Y
-  # Y2[1:100] <- NA
-
-# load_all()
+load_all()
   out <- ngme(
-    Y ~ 0 + f(
-      model=spde1,
+    Y ~ 0 + f(loc,
+      model="matern",
       name="spde",
-      noise=noise_nig(
-        # fix_V = TRUE, V = attr(W, "noise")$V
-      ),
-      control = ngme_control_f(numer_grad = T),
+      mesh = mesh,
+      noise=noise_nig(),
+      control = control_f(numer_grad = T),
       # fix_W = TRUE, W = W,
       debug = FALSE
     ),
-    data = list(Y = Y2),
-    control = ngme_control(
+    data = list(Y = Y),
+    control_opt = control_opt(
       estimation = T,
-      post_samples_size = 50,
-      iterations = 50,
+      iterations = 3000,
       n_parallel_chain = 4,
-      print_check_info = F
+      print_check_info = T,
+      verbose = T
     ),
-    debug = F
+    debug = T
   )
   out
   traceplot(out, "spde")
-  plot(attr(W, "noise"), out$latents[[1]]$noise)
+  plot(noise_nig(mu=-2,sigma=1.5,nu=1),
+    out[[1]]$latents[[1]]$noise)
 
   # Now let's do some prediction
   new_xs <- c(3, 5, 7)
@@ -128,7 +112,7 @@ test_that("test matern ns", {
     ),
     data = list(Y = Y),
     family = noise_normal(),
-    control = ngme_control(
+    control = control_opt(
       estimation = T,
       iterations = 100,
       n_parallel_chain = 1
@@ -234,7 +218,7 @@ test_that("test matern ns", {
 #   theta.mu=mu,
 #   theta.sigma=log(sigma),
 #   noise = "nig",
-#   control=ngme_control_f(
+#   control=control_f(
 #     numer_grad       = FALSE,
 #     use_precond      = TRUE,
 
@@ -256,7 +240,7 @@ test_that("test matern ns", {
 #   control=ngme.control(
 #     burnin=100,
 #     iterations=100,
-#     gibbs_sample = 5
+#     n_gibbs_samples = 5
 #   ),
 #   debug=ngme.debug(
 #     debug = TRUE
@@ -339,7 +323,7 @@ test_that("test matern ns", {
 #   control=control.ngme(
 #     burnin=100,
 #     iterations=100,
-#     gibbs_sample = 5
+#     n_gibbs_samples = 5
 #   ),
 #   debug=debug.ngme(fixW = FALSE)
 # )

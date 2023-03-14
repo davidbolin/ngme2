@@ -9,11 +9,11 @@ cross_validation(
   type = "k-fold",
   k = 5,
   N = 100,
-  seed = 1,
   percent = 50,
   times = 10,
   group = NULL,
-  print = FALSE
+  print = FALSE,
+  seed = Sys.time()
 )
 }
 \arguments{
@@ -26,8 +26,6 @@ loo is leave-one-out, and lpo is leave-percent-out}
 
 \item{N}{integer, number of samplings (the higher, the better)}
 
-\item{seed}{random seed}
-
 \item{percent}{from 1 to 100, if using leave percent off cv ("lpo")}
 
 \item{times}{run how many times (only for lpo type)}
@@ -36,6 +34,8 @@ loo is leave-one-out, and lpo is leave-percent-out}
 Can be the result of last CV function, or a list of indices}
 
 \item{print}{print information along the process}
+
+\item{seed}{random seed}
 }
 \value{
 a list of MSE, MAE, CRPS, sCRPS

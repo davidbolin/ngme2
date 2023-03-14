@@ -9,7 +9,7 @@
 #'
 #' Generating C, G and A given index and replicate
 #'
-#' @param x integer vector, time index for the AR(1) process
+#' @param map integer vector, time index for the AR(1) process
 #' @param replicate replicate for the process
 #' @param index_NA Logical vector, same as is.na(response var.)
 #' @param alpha initial value for alpha
@@ -25,7 +25,7 @@
 #' model_ar1(c(1:3, 1:3), replicate = c(1,1,1,2,2,2))
 #' f(xx, model = "ar1", data=list(xx = c(2,4,5)), noise=noise_nig())
 model_ar1 <- function(
-  x,   # time index
+  map,   # time index
   replicate   = NULL,
   index_NA    = NULL,
   data        = NULL,
@@ -34,20 +34,22 @@ model_ar1 <- function(
   ...
 ) {
   # capture symbol in index
-  index <- eval(substitute(x), envir = data, enclos = parent.frame())
+  index <- eval(substitute(map), envir = data, enclos = parent.frame())
   stopifnot("The index should be integers." = all(index == round(index)))
   if (is.null(replicate)) replicate <- rep(1, length(index))
   if (is.null(index_NA)) index_NA <- rep(FALSE, length(index))
 
   stopifnot("Make sure length(idx)==length(replicate)" = length(index) == length(replicate))
 
+  replicate <- if (!is.null(list(...)$replicate)) list(...)$replicate
+    else rep(1, length(map))
+
   # e.g. index      = 1 2 3 1 2 3 4
   #      replicate  = 1 1 1 2 2 2 2
-
-# browser()
-  mesh <- INLA::inla.mesh.1d(unique(index))
+  mesh <- INLA::inla.mesh.1d(min(index):max(index))
   n <- mesh$n
   nrep <- length(unique(replicate))
+  nrep <- 1
 
   # construct G
   G <- Matrix::Diagonal(n);
@@ -55,7 +57,6 @@ model_ar1 <- function(
 
   # update noise with length n
   if (noise$n_noise == 1) noise <- update_noise(noise, n = n)
-
   # make A and A_pred
   tmp <- ngme_make_A(
     mesh = mesh,
@@ -85,9 +86,9 @@ model_ar1 <- function(
     map         = index
     n_map       = length(index)
     replicate   = replicate
+    replicate   = replicate
     n_rep       = nrep
   })
-
   do.call(ngme_model, args)
 }
 
@@ -114,7 +115,7 @@ model_ar1 <- function(
 #' r1 <- model_rw(1:7, order = 1, circular = TRUE); r1$C + r1$G
 #' r2 <- model_rw(1:7, order = 1); r2$C + r2$G
 model_rw <- function(
-  x,
+  map,
   order       = 1,
   replicate  = NULL,
   data        = NULL,
@@ -126,8 +127,8 @@ model_rw <- function(
 ) {
   stopifnot(order == 1 || order == 2)
 # capture symbol in index
-  x <- eval(substitute(x), envir = data, enclos = parent.frame())
-  stopifnot("length of index at least > 3" = length(x) > 3)
+  x <- eval(substitute(map), envir = data, enclos = parent.frame())
+  stopifnot("length of index at least >= 3" = length(x) >= 3)
   if (is.null(replicate)) replicate <- rep(1, length(x))
   if (is.null(index_NA)) index_NA <- rep(FALSE, length(x))
   stopifnot("Make sure length(x)==length(replicate)" = length(x) == length(replicate))

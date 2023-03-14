@@ -203,3 +203,8 @@ plot(out$latents[[1]]$noise,
  noise_nig(mu=-2, sigma=1, nu=1))
 
 
+
+ar <- model_ar1(map=c(1:3, 1:3), f_replicate=rep(c(1,2), each=3))
+
+newar <- f(model=ar, replicate = rep(1, 6))
+newar$G

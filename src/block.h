@@ -79,12 +79,6 @@ protected:
     cholesky_solver chol_Q, chol_QQ;
     SparseLU<SparseMatrix<double>> LU_K;
 
-    // record trajectory
-    vector<vector<double>> beta_traj;
-    vector<vector<double>> theta_mu_traj;
-    vector<vector<double>> theta_sigma_traj;
-    vector<double>   nu_traj;
-
     std::string par_string;
 public:
     // BlockModel() {}
@@ -134,20 +128,6 @@ public:
     int                  get_curr_iter() const {return curr_iter;}
     void                 examine_gradient();
     void                 sampleW_V();
-
-    // record traj. for mu sigma eta
-    void record_traj() {
-        for (int i=0; i < beta.size(); i++) {
-            beta_traj[i].push_back(beta(i));
-        }
-        for (int i=0; i < theta_mu.size(); i++) {
-            theta_mu_traj[i].push_back(theta_mu(i));
-        }
-        for (int i=0; i < theta_sigma.size(); i++) {
-            theta_sigma_traj[i].push_back(theta_sigma(i));
-        }
-        nu_traj.push_back(var.get_nu());
-    }
 
     /* Aseemble */
     void assemble() {

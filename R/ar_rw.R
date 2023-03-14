@@ -46,7 +46,6 @@ model_ar1 <- function(
 
   # e.g. index      = 1 2 3 1 2 3 4
   #      replicate  = 1 1 1 2 2 2 2
-
   mesh <- INLA::inla.mesh.1d(min(index):max(index))
   n <- mesh$n
   nrep <- length(unique(f_replicate))
@@ -58,7 +57,6 @@ model_ar1 <- function(
 
   # update noise with length n
   if (noise$n_noise == 1) noise <- update_noise(noise, n = n)
-
   # make A and A_pred
   tmp <- ngme_make_A(
     mesh = mesh,
@@ -91,7 +89,6 @@ model_ar1 <- function(
     f_replicate = f_replicate
     n_rep       = nrep
   })
-
   do.call(ngme_model, args)
 }
 

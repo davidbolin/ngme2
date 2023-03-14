@@ -93,13 +93,6 @@ protected:
 
     cholesky_solver solver_Q; // Q = KT diag(1/SV) K
 
-    // record trajectory
-    vector<vector<double>> theta_K_traj;
-    vector<vector<double>> theta_mu_traj;
-    vector<vector<double>> theta_sigma_traj;
-    vector<vector<double>> theta_sigma_normal_traj;
-    vector<double>   nu_traj;
-
     // only for tensor product model
     Latent *left, *right;
 public:
@@ -364,19 +357,6 @@ public:
     // virtual Rcpp::List get_estimates() const=0;
     Rcpp::List output() const;
 
-    void record_traj() {
-        for (int i=0; i < theta_K.size(); i++)
-            theta_K_traj[i].push_back(theta_K(i));
-        for (int i=0; i < theta_mu.size(); i++)
-            theta_mu_traj[i].push_back(theta_mu(i));
-        for (int i=0; i < theta_sigma.size(); i++)
-            theta_sigma_traj[i].push_back(theta_sigma(i));
-        if (noise_type=="normal_nig")
-            for (int i=0; i < theta_sigma_normal.size(); i++)
-                theta_sigma_normal_traj[i].push_back(theta_sigma_normal(i));
-        nu_traj.push_back(vars[0].get_nu());
-    }
-
     // stop estimate theta_K if converged
     // void check_converge(vector<bool>& converge) {
     //     vector<bool> K_converge (converge.begin(), converge.begin() + n_theta_K);
@@ -469,9 +449,6 @@ inline void Latent::set_parameter(const VectorXd& theta) {
 
     // update K, K_rep, ...
     update_each_iter();
-
-    // record
-    record_traj();
 }
 
 // subclasses

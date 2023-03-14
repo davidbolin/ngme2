@@ -26,7 +26,6 @@ BlockModel::BlockModel(
   var               (Var(Rcpp::as<Rcpp::List> (block_model["noise"]), rng())),
 
   curr_iter         (0),
-  beta_traj         (beta.size()),
   // dK            (V_sizes, W_sizes)
   // d2K           (V_sizes, W_sizes)
   par_string        (Rcpp::as<string>     (block_model["par_string"]))
@@ -114,12 +113,6 @@ if (debug) std::cout << "After init solver && before sampleW_V" << std::endl;
     sampleW_V();
     sampleW_V();
   }
-if (debug) std::cout << "After Sample W|V" << std::endl;
-
-  // record
-  theta_mu_traj.resize(n_theta_mu);
-  theta_sigma_traj.resize(n_theta_sigma);
-  record_traj();
 
 if (debug) std::cout << "End Block Constructor" << std::endl;
 }
@@ -452,12 +445,6 @@ Rcpp::List BlockModel::output() const {
     Rcpp::Named("latents")          = latents_output
   );
 
-  // out.attr("trajectory") = Rcpp::List::create(
-  //   Rcpp::Named("beta")        = beta_traj,
-  //   Rcpp::Named("theta_mu")    = theta_mu_traj,
-  //   Rcpp::Named("theta_sigma") = theta_sigma_traj,
-  //   Rcpp::Named("nu")     = nu_traj
-  // );
   return out;
 }
 

@@ -108,20 +108,11 @@ ngme <- function(
 
 if (debug) {print(str(list_ngmes[[1]]))}
 
-# check dim. before run cpp
-# for (latent in ngme_block$latents) {
-#   if (latent$model != "tensor_prod") {
-#     stopifnot("nrow(K) should be equal to length of noise, please check idx, replicate argument" =
-#       nrow(latent$K) == latent$V_size)
-#     stopifnot("ncol(K) should be equal to length of mesh, please check idx, replicate argument" =
-#       ncol(latent$K) == latent$W_size)
-#     # check given V > 0
-#   }
-# }
 
 # check all f has the same replicate
 # otherwise change replicate to group="iid"
   ################# Run CPP ####################
+  check_dim(list_ngmes)
   if (control_opt$estimation) {
     cat("Starting estimation... \n")
     outputs <- estimate_cpp(list_ngmes, control_opt)
@@ -313,3 +304,49 @@ print.ngme_fit <- function(x, ...) {
   cat("\n");
   cat("Number of replicates is ", length(x), "\n");
 }
+
+
+######
+check_dim <- function(list_ngmes) {
+  for (ngme in list_ngmes) {
+    if (ncol(ngme$X) != length(ngme$beta)) {
+      stop("The number of columns of X is not equal to the length of beta")
+    }
+    for (latent in ngme$latents) {
+      if (latent$model == "tensor_prod") {
+        if (latent$group$W_size != latent$model_right$W_size) {
+          stop("The W_size of the left and right models are not equal")
+        }
+        if (latent$group$V_size != latent$model_right$V_size) {
+          stop("The V_size of the left and right models are not equal")
+        }
+      } else {
+        if (latent$W_size != ncol(latent$K)) {
+          stop("The W_size of the latent model is not equal to the number of columns of K")
+        }
+        if (latent$V_size != nrow(latent$K)) {
+          stop("The V_size of the latent model is not equal to the number of rows of K")
+        }
+        if (latent$V_size != latent$noise$n_noise) {
+          stop("The V_size of the latent model is not equal to the length of noise")
+        }
+        # ncol(A) = W_size
+        if (ncol(latent$A) != latent$W_size * latent$n_rep) {
+    browser()
+          stop("The number of columns of A is not equal to the W_size of the latent model")
+        }
+      }
+    }
+  }
+}
+
+# check dim. before run cpp
+# for (latent in ngme_block$latents) {
+#   if (latent$model != "tensor_prod") {
+#     stopifnot("nrow(K) should be equal to length of noise, please check idx, replicate argument" =
+#       nrow(latent$K) == latent$V_size)
+#     stopifnot("ncol(K) should be equal to length of mesh, please check idx, replicate argument" =
+#       ncol(latent$K) == latent$W_size)
+#     # check given V > 0
+#   }
+# }

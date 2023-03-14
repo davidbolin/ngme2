@@ -101,7 +101,8 @@ ngme_parse_formula <- function(
     X_full    <- model.matrix(delete.response(terms(plain_fm)), as.data.frame(data))
 
     ########## parse latents terms
-    latents_in <- list()
+    enclos_env <- list2env(as.list(parent.frame(2)), envir = parent.frame())
+    pre_model <- list()
     for (i in spec_order) {
       if (!grepl("data *=", terms[i])) {
         # adding data=data if not specified
@@ -118,35 +119,34 @@ ngme_parse_formula <- function(
       # add information of index_NA
       # adding 1 term for furthur use in f
       # str <- gsub("ngme2::f\\(", "ngme2::f(index_NA=index_NA,", str)
-      res <- eval(parse(text = str), envir = data, enclos = list2env(
-        as.list(parent.frame(2)), envir = parent.frame())
-      )
+      res <- eval(parse(text = str), envir = data, enclos = enclos_env)
 
-      # default name
-      if (res$name == "field") res$name <- paste0("field", length(latents_in) + 1)
-      # latents_in[[length(latents_in) + 1]] <- res
-      latents_in[[res$name]] <- res
+      # give default name
+      if (res$name == "field") res$name <- paste0("field", length(pre_model) + 1)
+      pre_model[[res$name]] <- res
     }
-
     # splits f_eff, latent according to replicates
-    repls <- if (length(latents_in) > 0)
-        lapply(latents_in, function(x) x$replicate)
+    repls <- if (length(pre_model) > 0)
+        lapply(pre_model, function(x) x$replicate)
       else
         list(rep(1, length(ngme_response)))
 
     repl <- merge_repls(repls)
     uni_repl <- unique(repl)
-
     blocks_rep <- list() # of length n_repl
     for (i in seq_along(uni_repl)) {
       idx <- repl == uni_repl[[i]]
       # data
       Y <- ngme_response[idx]
       X <- X_full[idx, , drop = FALSE]
-      # for each latent model
+
+      # re-evaluate each f model using idx
       latents_rep <- list()
-      for (latent in latents_in) {
-        latents_rep[[latent$name]] <- sub_fmodel(latent, idx)
+      for (latent in pre_model) {
+        latent$map <- sub_locs(latent$map, idx)
+        latent$replicate <- latent$replicate[idx]
+        latent$eval = TRUE
+        latents_rep[[latent$name]] <- eval(latent, envir = data, enclos = enclos_env)
       }
       # give initial value
       lm.model <- stats::lm.fit(X, Y)
@@ -166,9 +166,6 @@ ngme_parse_formula <- function(
       )
     }
   }
-  # debug
-  # browser()
-# blocks_rep[[2]]$latents[[1]]$noise$theta_sigma
 
   list(
     replicate   = repls,
@@ -488,27 +485,6 @@ split_matrix <- function(mat, repl) {
 # help to build a list of mesh for different replicates
 build_mesh <- function() {}
 
-# model is of class ngme_model
-sub_fmodel <- function(model, idx) {
-  # change map, replicate, A for now
-  sub_model <- model
-
-  sub_model$map       <- sub_locs(model$map, idx)
-  sub_model$n_map     <- length(sub_model$map)
-  sub_model$replicate <- model$replicate[idx]
-  sub_model$A         <- model$A[idx, , drop = FALSE]
-
-  # now let's update f model now with new replicate (update A)
-  # if (length(unique(replicate)) == 1)
-
-  # if provide a list of mesh
-  if (!inherits(model$mesh, c("inla.mesh.1d", "inla.mesh.2d"))) {
-    stopifnot("not implemented yet for a list of mesh")
-  }
-
-  sub_model
-}
-
 
 # helper function to unfiy way of accessing 1d and 2d index
 sub_locs <- function(locs, idx) {
@@ -516,5 +492,13 @@ sub_locs <- function(locs, idx) {
     locs[idx, , drop = FALSE]
   } else {
     locs[idx]
+  }
+}
+
+length_map <- function(map) {
+  if (inherits(map, c("data.frame", "matrix"))) {
+    nrow(map)
+  } else {
+    length(map)
   }
 }

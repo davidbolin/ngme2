@@ -27,8 +27,7 @@ ngme_model <- function(
   group       = NULL,
   ...
 ) {
-  n_rep <- if (is.null(n_rep) && !is.null(replicate))
-    length(unique(replicate)) else 1
+  if (is.null(n_rep)) n_rep <- length(unique(replicate))
 
   stopifnot(is.character(model))
   # generate string (8 digits)

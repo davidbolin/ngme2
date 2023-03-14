@@ -23,7 +23,6 @@
 #' @param fix_theta_K fix the estimation for theta_K.
 #' @param index_pred index for prediction
 #' @param debug        Debug mode
-#' @param f_replicate  replicate for f model
 #' @param ...       additional arguments
 #'  inherit the data from ngme function
 #'
@@ -52,10 +51,23 @@ f <- function(
   index_pred  = NULL,
   debug       = NULL,
   index_NA    = NULL, #indicate prediction location
-  f_replicate = NULL,
+  eval        = FALSE,
   ...
 ) {
   map <- eval(substitute(map), envir = data, enclos = parent.frame())
+  replicate <- if (is.null(replicate)) rep(1, length_map(map))
+    else as.integer(as.factor(replicate))
+
+  if (is.null(name)) name <- "field"
+
+  # pre-model
+  if (!eval) {
+    args <- match.call()
+    args$name <- name
+    args$map <- map
+    args$replicate <- replicate
+    return (args)
+  }
 
   # if (!is.null(index_NA) && length(index_NA) != length(index))
   #   stop("index_NA length seems wrong.")
@@ -84,6 +96,7 @@ f <- function(
       }
     )
   } else {
+warning("Please use f(model = '...'), which is better")
     stopifnot("please check model specification" =
       inherits(model, "ngme_model"))
     # model is evaluated with submodel func.
@@ -108,7 +121,7 @@ if (is.null(f_model$noise$V)) f_model$noise["V"] <- list(NULL)
           map = map,
           n_map = n_map,
           idx_NA = index_NA,
-          replicate = f_replicate
+          replicate = replicate
         )
       })
       f_model$A <- tmp$A

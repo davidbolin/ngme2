@@ -1,42 +1,28 @@
 
+# test the interface in R
 test_that("R interface of replicate", {
-  # load_all()
   library(INLA)
 
-  f(model=ar1(1:3))
-  ar <- ar1(1:5)
-  sub_fmodel(ar, 1:3)$map
-
-  n_obs <<- 6; Y <- rnorm(n_obs)
-
-  matern1d <- model_matern(map = sample(1:10, size=6), mesh = inla.mesh.1d(loc=1:10))
-
-  arr <- model_ar1(1:n_obs)
-
-  repl1 <- c(1,1,2,2,2,2); repl2 <- c(1,1,2,2,2,2)
-  formula <- Y ~ f(model=arr, replicate = repl1) +
-    f(model=matern1d, replicate = repl2)
-
-  m1 <- ngme(
-    Y ~ f(model=arr, replicate = repl1) + f(model=matern1d, replicate = repl2),
-    data = list(Y=Y),
+  # test
+  y <- 11:17
+  x <- 21:27
+  repl <- c(1,1,1,2,2,2,2)
+  loc = cbind(rnorm(7), rnorm(7))
+  mesh2d = inla.mesh.2d(loc=loc, max.n=20)
+####### ar + rw + matern2d
+  ngme(
+    y ~ 0 + x + f(1:7, model="ar1", replicate=c(1,1,1,2,2,2,2)) +
+      f(2:8, model="rw1", replicate=repl) +
+      f(loc, model="matern", mesh=mesh2d, replicate=repl),
+    data = data.frame(
+      y=y, x=x, repl=repl, loc = loc
+    ),
     control_opt = control_opt(
-      estimation = F
+      estimation = F,
+      iterations = 10
     )
   )
-  m1
-
-  # latent:
-  matern1d$A
-  A1s <- split(ar1$A, repl)
-  A2s <- split(matern1d$A, repl)
-
-  # block: divide Y, X,
-  Ys <- split(Y, repl); Ys
-  # Xs <- split(X, repl), Xs
-  # W_szs, V_szs
-
-  m_noise <- m_noises
+  expect_true(TRUE)
 })
 
 test_that("test create ngme block", {

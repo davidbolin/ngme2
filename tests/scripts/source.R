@@ -208,3 +208,36 @@ ar <- model_ar1(map=c(1:3, 1:3), f_replicate=rep(c(1,2), each=3))
 
 newar <- f(model=ar, replicate = rep(1, 6))
 newar$G
+
+load_all()
+repl=c(1,1,1,2,2,2)
+ff <- f(c(1:3, 1:3), replicate=repl)
+ff$eval = TRUE
+ff$replicate
+eval(ff)
+
+latent$noise$n_noise
+
+# test
+y <- 11:17
+x <- 21:27
+repl <- c(1,1,1,2,2,2,2)
+load_all()
+ngme(
+  y ~ x + f(1:7, model="ar1", replicate=c(1,1,1,2,2,2,2)) +
+    f(2:8, model="rw1", replicate=repl),
+  data = data.frame(
+    y=y, x=x, repl=repl
+  )
+)
+
+blocks_rep[[1]]$latents[[1]]$n_map
+
+latent
+pre_model$field1$replicate
+
+
+model_rw(1:4, order=1, replicate=c(1,1,1,1))$A
+
+inla.spde.make.A(loc=c(1,2,3,4), mesh=inla.mesh.1d(loc=c(1,2,3,4)),
+repl=c(2,2,2,2))

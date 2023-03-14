@@ -41,14 +41,14 @@ model_ar1 <- function(
 
   stopifnot("Make sure length(idx)==length(replicate)" = length(index) == length(replicate))
 
-  f_replicate <- if (!is.null(list(...)$f_replicate)) list(...)$f_replicate
+  replicate <- if (!is.null(list(...)$replicate)) list(...)$replicate
     else rep(1, length(map))
 
   # e.g. index      = 1 2 3 1 2 3 4
   #      replicate  = 1 1 1 2 2 2 2
   mesh <- INLA::inla.mesh.1d(min(index):max(index))
   n <- mesh$n
-  nrep <- length(unique(f_replicate))
+  nrep <- length(unique(replicate))
   nrep <- 1
 
   # construct G
@@ -63,7 +63,7 @@ model_ar1 <- function(
     map = index,
     n_map = length(index),
     idx_NA = index_NA,
-    replicate = f_replicate
+    replicate = replicate
   )
   A <- tmp$A; A_pred <- tmp$A_pred
 
@@ -86,7 +86,7 @@ model_ar1 <- function(
     map         = index
     n_map       = length(index)
     replicate   = replicate
-    f_replicate = f_replicate
+    replicate   = replicate
     n_rep       = nrep
   })
   do.call(ngme_model, args)
@@ -128,7 +128,7 @@ model_rw <- function(
   stopifnot(order == 1 || order == 2)
 # capture symbol in index
   x <- eval(substitute(map), envir = data, enclos = parent.frame())
-  stopifnot("length of index at least > 3" = length(x) > 3)
+  stopifnot("length of index at least >= 3" = length(x) >= 3)
   if (is.null(replicate)) replicate <- rep(1, length(x))
   if (is.null(index_NA)) index_NA <- rep(FALSE, length(x))
   stopifnot("Make sure length(x)==length(replicate)" = length(x) == length(replicate))

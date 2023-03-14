@@ -72,7 +72,7 @@ f <- function(
   # if (!is.null(index_NA) && length(index_NA) != length(index))
   #   stop("index_NA length seems wrong.")
   # deal with NA, from ngme function
-  if (is.null(index_NA)) index_NA <- rep(FALSE, length(map))
+  if (is.null(index_NA)) index_NA <- rep(FALSE, length_map(map))
 
   # remove NULL in arguments
   f_args <- Filter(Negate(is.null),  as.list(environment()))
@@ -93,6 +93,9 @@ f <- function(
       "rw2" = {
         args$order = 2
         do.call(model_rw, args)
+      },
+      "matern" = {
+        do.call(model_matern, args)
       }
     )
   } else {

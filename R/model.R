@@ -49,7 +49,7 @@ ngme_model <- function(
 
   stopifnot("replicate is NULL" = !is.null(replicate))
   stopifnot("make sure length of replicate == length of index" =
-   length(replicate) == length(map))
+   length(replicate) == length_map(map))
   replicate <- as.integer(replicate)
 
   structure(

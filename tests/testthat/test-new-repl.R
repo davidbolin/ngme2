@@ -2,72 +2,49 @@
 # test the interface in R
 test_that("R interface of replicate", {
   library(INLA)
-
+  load_all()
   # test
   y <- 11:17
   x <- 21:27
   repl <- c(1,1,1,2,2,2,2)
   loc = cbind(rnorm(7), rnorm(7))
   mesh2d = inla.mesh.2d(loc=loc, max.n=20)
-####### ar + rw + matern2d
-  ngme(
+####### case 1. ar + rw + matern2d
+  load_all()
+  out <- ngme(
     y ~ 0 + x + f(1:7, model="ar1", replicate=c(1,1,1,2,2,2,2)) +
       f(2:8, model="rw1", replicate=repl) +
-      f(loc, model="matern", mesh=mesh2d, replicate=repl),
+      f(loc, model="matern", mesh=mesh2d),
     data = data.frame(
       y=y, x=x, repl=repl, loc = loc
     ),
     control_opt = control_opt(
-      estimation = F,
+      estimation = T,
       iterations = 10
     )
   )
+  out
+
+####### case 2. ar + rw + matern2d with f_replicate
+rep1 <- c(1,1,2,2,3,3,3)
+rep2 <- c(1,1,1,1,2,2,2)
+rep3 <- c(1,1,3,4,2,2,2)
+merge_repls(list(rep1, rep2, rep3))
+  out2 <- ngme(
+    y ~ 0 + x + f(1:7, model="ar1",       replicate=rep1) +
+      f(2:8, model="rw1",                 replicate=rep2) +
+      f(loc, model="matern", mesh=mesh2d, replicate=rep3),
+    data = data.frame(
+      y=y, x=x, repl=repl, loc = loc
+    ),
+    control_opt = control_opt(
+      estimation = T,
+      iterations = 10
+    )
+  )
+  out2
   expect_true(TRUE)
 })
-
-test_that("test create ngme block", {
-  { # compute m1
-  library(INLA)
-  # load_all()
-    n_obs <<- 6; Y <- rnorm(n_obs)
-    matern1d <- model_matern(loc = sample(1:10, size=6), mesh = inla.mesh.1d(loc=1:10))
-    arr <- model_ar1(1:n_obs)
-
-    repl1 <- c(1,1,2,2,2,2);
-    repl2 <- c(1,1,2,2,2,2)
-    formula <- Y ~ f(model=arr, replicate = repl1) +
-      f(model=matern1d, replicate = repl2)
-
-    repl <- merge_repls(list(repl1, repl2))
-
-    m1 <- ngme(
-      Y ~ x + f(model=arr) + f(model=matern1d),
-      data = list(Y=Y, x=1:n_obs),
-      control_opt = control_opt(estimation = F)
-    )
-  }
-
-  load_all()
-  out <- ngme(
-    Y ~ x + f(model=arr, replicate = repl1) + f(model=matern1d, replicate = repl2),
-    data = list(Y=Y, x=1:n_obs),
-    control_opt = control_opt(estimation = F)
-  )
-  out$latents[[1]]$replicate
-
-})
-
-# test_that("test create ngme replicate")
-y <- rnorm(100)
-
-inla(
-  y~ 1 + x,
-  data = list(y=y, x=1:10)
-)
-
-
-# Y     1    2   3
-# Year  201 202 203
 
 test_that("basic ar1 case with different length", {
   # load_all()

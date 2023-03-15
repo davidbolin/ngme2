@@ -90,6 +90,7 @@ test_that("the order of W same as order of index?", {
 
 ############################## AR1 case
 test_that("test estimation of basic ar with normal measurement noise", {
+  load_all()
   n_obs <<- 500
   alpha <- 0.75
   mu <- -3; sigma <- 2.3; nu <- 2; sigma_eps <- 0.8
@@ -102,9 +103,9 @@ test_that("test estimation of basic ar with normal measurement noise", {
   W <- simulate(ar1)
   Y <- W + rnorm(n_obs, sd = sigma_eps)
 # plot(Y, type="l")
-# load_all()
+load_all()
   out <- ngme(
-    Y ~ 0 + f(time,
+    Y ~ 0 + f(1:n_obs,
       model="ar1",
       name="ar",
       alpha = -0.5,
@@ -113,12 +114,10 @@ test_that("test estimation of basic ar with normal measurement noise", {
         # h = ar1$noise$h,
         # fix_V = TRUE, V = attr(W, "noise")$V
       ),
-      control=control_f(
-        numer_grad = T
-      ),
+      control=control_f(numer_grad = F),
       debug = FALSE
     ),
-    data = list(Y = Y, time=1:n_obs),
+    data = data.frame(Y = Y),
     control_opt = control_opt(
       estimation = T,
       iterations = 500,
@@ -129,6 +128,8 @@ test_that("test estimation of basic ar with normal measurement noise", {
     debug = FALSE
   )
   out
+  out[[1]]$latents[[1]]$control
+  plot(attr(W, "noise"), out[[1]]$latents[[1]]$noise)
   traceplot(out, "ar")
 
   plot(simulate(out$latents[["ar"]]), type="l")
@@ -136,7 +137,6 @@ test_that("test estimation of basic ar with normal measurement noise", {
   prds <- predict(out, loc=list(ar=501:600))$mean
 
   traceplot(out, "mn")
-  plot(attr(W, "noise"), out$latents[[1]]$noise)
   # out$latents[[1]]$noise$h
 
   with(out$latents[[1]], {

@@ -106,8 +106,9 @@ void AR::update_each_iter() {
         update_num_dK();
     }
 
-    if (!numer_grad && (W_size == V_size))
-        compute_trace();
+    // trace == 0 for ar case
+    // if (!numer_grad && (W_size == V_size))
+        // compute_trace();
 }
 
 // return length 1 vectorxd : grad_kappa * dkappa/dtheta

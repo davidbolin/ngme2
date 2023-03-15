@@ -15,16 +15,15 @@ test_that("test Matern", {
   n_obs <- 500
   loc <- cbind(runif(n_obs, 0, 10), runif(n_obs, 0, 5))
 
-  eps <<- simulate(noise_nig(
-    mu=-2, sigma=1.5, nu=1, n = mesh$n
-  ))
   true_model <- model_matern(
-    kappa = 3, mesh = mesh, map = loc
+    kappa = 3, mesh = mesh, map = loc, noise = noise_nig(
+      mu=-2, sigma=1.5, nu=1, n = mesh$n
+    )
   )
-  W <- drop(solve(true_model$K, eps))
+  W <- simulate(true_model)
 
   A <- inla.spde.make.A(loc=loc, mesh=mesh)
-  Y <- drop(A %*% W) + rnorm(n_obs, sd=0.5)
+  Y <- as.numeric(A %*% W) + rnorm(n_obs, sd=0.5)
 
   # make bubble plot
   # sp_obj <- as.data.frame(mesh$loc); sp_obj[, 3] <- W
@@ -33,6 +32,7 @@ test_that("test Matern", {
   # bubble(sp_obj, zcol=3)
   # range(mesh$loc[, 1]); range(mesh$loc[, 2])
 
+# Matern case
 load_all()
   out <- ngme(
     Y ~ 0 + f(loc,
@@ -40,21 +40,25 @@ load_all()
       name="spde",
       mesh = mesh,
       noise=noise_nig(),
-      control = control_f(numer_grad = T),
-      # fix_W = TRUE, W = W,
-      debug = FALSE
+      control = control_f(numer_grad = F),
+      # fix_theta_K = T, theta_kappa = log(3),
+      # fix_W = TRUE,
+      # W = W,
+      debug = F
     ),
     data = data.frame(Y = Y),
     control_opt = control_opt(
       estimation = T,
-      iterations = 200,
+      iterations = 500,
       n_parallel_chain = 4,
       print_check_info = T,
       verbose = T
     ),
-    debug = T
+    debug = F
   )
+  # out[[1]]$latents[[1]]$noise$h == out[[1]]$latents[[1]]$h
   out
+  traceplot(out)
   traceplot(out, "spde")
   plot(noise_nig(mu=-2,sigma=1.5,nu=1),
     out[[1]]$latents[[1]]$noise)

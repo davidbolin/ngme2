@@ -110,6 +110,7 @@ VectorXd Latent::grad_theta_mu() {
 
     for (int i=0; i < n_rep; i++) {
         VectorXd W = Ws[i];
+// if (debug) std::cout << "Kw = "<< K * W << std::endl;
         VectorXd V = vars[i].getV();
         VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
         VectorXd prevV = vars[i].getPrevV();
@@ -249,7 +250,7 @@ VectorXd Latent::numerical_grad() {
             grad(i) = num_g / num_hess;
         }
     }
-
+// std::cout << "grad = " << grad << std::endl;
     return grad;
 }
 

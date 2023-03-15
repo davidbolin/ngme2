@@ -244,3 +244,13 @@ repl=c(2,2,2,2))
 
 load_all()
 iid(1:3)$W_size
+
+# length(attr(out[[1]], "block_traj"))
+
+
+K <- ar1(1:5, alpha=0.3)$K
+K
+C <- ar1(1:5, alpha=0.3)$C
+C
+
+C %*% solve(K)

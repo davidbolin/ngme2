@@ -585,6 +585,30 @@ public:
   ) {throw std::runtime_error("Tensor_prod::grad_theta_K not implemented");}
 };
 
+class Iid : public Latent {
+private:
+    SparseMatrix<double, 0, int> I;
+public:
+  Iid(const Rcpp::List& model_list, unsigned long seed);
+  SparseMatrix<double> getK(const VectorXd& alpha) const;
+  SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
+  VectorXd grad_theta_K();
+  void update_each_iter();
+
+  VectorXd grad_theta_K(
+    SparseMatrix<double>& K,
+    SparseMatrix<double>& dK,
+    vector<VectorXd>& Ws,
+    vector<VectorXd>& prevWs,
+    vector<Var>& vars,
+    const VectorXd& mu,
+    const VectorXd& sigma,
+    const VectorXd& h,
+    double trace,
+    int W_size
+  ) {return VectorXd::Zero(1);}
+};
+
 // for initialize Latent models
 class LatentFactory {
 public:
@@ -592,7 +616,7 @@ public:
     int n_theta_K = Rcpp::as<int> (latent_in["n_theta_K"]);
     string model_type = Rcpp::as<string> (latent_in["model"]);
 
-    if (model_type == "tensor_prod") {
+    if (model_type == "tp") {
       return std::make_unique<Tensor_prod>(latent_in, latent_seed);
     } else if (model_type == "ar1") {
       return std::make_unique<AR>(latent_in, latent_seed, false);
@@ -602,6 +626,8 @@ public:
       return std::make_unique<Matern_ns>(latent_in, latent_seed);
     } else if (model_type == "matern" && n_theta_K == 1) {
       return std::make_unique<Matern>(latent_in, latent_seed);
+    } else if (model_type == "iid") {
+      return std::make_unique<Iid>(latent_in, latent_seed);
     } else {
       throw std::runtime_error("Unknown model.");
     }

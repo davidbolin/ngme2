@@ -241,3 +241,6 @@ model_rw(1:4, order=1, replicate=c(1,1,1,1))$A
 
 inla.spde.make.A(loc=c(1,2,3,4), mesh=inla.mesh.1d(loc=c(1,2,3,4)),
 repl=c(2,2,2,2))
+
+load_all()
+iid(1:3)$W_size

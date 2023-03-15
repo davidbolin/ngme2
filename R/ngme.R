@@ -50,8 +50,8 @@ ngme <- function(
   if (is.null(data)) {
     stop("Missing data.frame/list `data'. Leaving `data' empty might lead to\n\t\tuncontrolled behaviour, therefore is it required.")
   }
-  if (!is.data.frame(data) && !is.list(data)) {
-    stop("\n\tArgument `data' must be a data.frame or a list.")
+  if (!is.data.frame(data)) {
+    stop("\n\tArgument `data' must be a data.frame.")
   }
 
   if (is.null(control_ngme)) control_ngme <- control_ngme()
@@ -288,11 +288,11 @@ update_ngme_est <- function(
     ngme_block$latents[[i]]$noise    <- update_noise(
       ngme_block$latents[[i]]$noise, new_noise = est_output$latents[[i]]
     )
-    if (ngme_block$latents[[i]]$model == "tensor_prod") {
-      n1 <- ngme_block$latents[[i]]$group$n_theta_K
-      n2 <- ngme_block$latents[[i]]$model_right$n_theta_K
-      ngme_block$latents[[i]]$group$theta_K <- ngme_block$latents[[i]]$theta_K[1:n1]
-      ngme_block$latents[[i]]$model_right$theta_K <- ngme_block$latents[[i]]$theta_K[(n1+1):(n1+n2)]
+    if (ngme_block$latents[[i]]$model == "tp") {
+      n1 <- ngme_block$latents[[i]]$left$n_theta_K
+      n2 <- ngme_block$latents[[i]]$right$n_theta_K
+      ngme_block$latents[[i]]$left$theta_K <- ngme_block$latents[[i]]$theta_K[1:n1]
+      ngme_block$latents[[i]]$right$theta_K <- ngme_block$latents[[i]]$theta_K[(n1+1):(n1+n2)]
     }
   }
   ngme_block
@@ -313,18 +313,10 @@ check_dim <- function(list_ngmes) {
       stop("The number of columns of X is not equal to the length of beta")
     }
     for (latent in ngme$latents) {
-      if (latent$model == "tensor_prod") {
-        if (latent$group$W_size != latent$model_right$W_size) {
-          stop("The W_size of the left and right models are not equal")
+        if (latent$model != "tp" && latent$W_size != ncol(latent$C)) {
+         stop("The W_size of the latent model is not equal to the number of columns of K")
         }
-        if (latent$group$V_size != latent$model_right$V_size) {
-          stop("The V_size of the left and right models are not equal")
-        }
-      } else {
-        if (latent$W_size != ncol(latent$K)) {
-          stop("The W_size of the latent model is not equal to the number of columns of K")
-        }
-        if (latent$V_size != nrow(latent$K)) {
+        if (latent$model != "tp" && latent$V_size != nrow(latent$C)) {
           stop("The V_size of the latent model is not equal to the number of rows of K")
         }
         if (latent$V_size != latent$noise$n_noise) {
@@ -334,7 +326,9 @@ check_dim <- function(list_ngmes) {
         if (ncol(latent$A) != latent$W_size * latent$n_rep) {
           stop("The number of columns of A is not equal to the W_size of the latent model")
         }
-      }
+        if (!all(latent$h == latent$noise$h) || length(latent$h) != latent$V_size) {
+          stop("The h of the latent model is not equal to the h of the noise")
+        }
     }
   }
 }

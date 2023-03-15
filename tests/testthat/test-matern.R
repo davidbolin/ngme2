@@ -7,12 +7,13 @@ test_that("test Matern", {
   library(INLA)
   pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
   mesh <- inla.mesh.2d(
-    loc.domain = pl01, cutoff = 0.3,
+    loc.domain = pl01, cutoff = 0.2,
     max.edge = c(0.5,10)
   )
 # mesh$n
 # plot(mesh)
-  loc <- cbind(runif(300, 0, 10), runif(300, 0, 5))
+  n_obs <- 500
+  loc <- cbind(runif(n_obs, 0, 10), runif(n_obs, 0, 5))
 
   eps <<- simulate(noise_nig(
     mu=-2, sigma=1.5, nu=1, n = mesh$n
@@ -22,16 +23,15 @@ test_that("test Matern", {
   )
   W <- drop(solve(true_model$K, eps))
 
-  n_obs <<- 300
   A <- inla.spde.make.A(loc=loc, mesh=mesh)
   Y <- drop(A %*% W) + rnorm(n_obs, sd=0.5)
 
   # make bubble plot
-  sp_obj <- as.data.frame(mesh$loc); sp_obj[, 3] <- W
-  names(sp_obj) <- c("s1", "s2", "y")
-  coordinates(sp_obj) <- ~ s1 + s2
-  bubble(sp_obj, zcol=3)
-  range(mesh$loc[, 1]); range(mesh$loc[, 2])
+  # sp_obj <- as.data.frame(mesh$loc); sp_obj[, 3] <- W
+  # names(sp_obj) <- c("s1", "s2", "y")
+  # coordinates(sp_obj) <- ~ s1 + s2
+  # bubble(sp_obj, zcol=3)
+  # range(mesh$loc[, 1]); range(mesh$loc[, 2])
 
 load_all()
   out <- ngme(
@@ -44,10 +44,10 @@ load_all()
       # fix_W = TRUE, W = W,
       debug = FALSE
     ),
-    data = list(Y = Y),
+    data = data.frame(Y = Y),
     control_opt = control_opt(
       estimation = T,
-      iterations = 3000,
+      iterations = 200,
       n_parallel_chain = 4,
       print_check_info = T,
       verbose = T

@@ -141,6 +141,7 @@ inline VectorXd Latent::grad_theta_sigma() {
 
     for (int i=0; i < n_rep; i++) {
         VectorXd W = Ws[i];
+    // std::cout << "W = " << W << std::endl;
         VectorXd V = vars[i].getV();
         VectorXd prevV = vars[i].getPrevV();
         VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
@@ -229,6 +230,7 @@ double Latent::function_K(VectorXd& theta_K) {
 // numerical gradient for K parameters
 VectorXd Latent::numerical_grad() {
     SparseMatrix<double> K = getK(theta_K);
+// std::cout << "K = " << K << std::endl;
     VectorXd grad = VectorXd::Zero(n_theta_K);
 
     double val = function_K(K);

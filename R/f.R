@@ -34,8 +34,8 @@
 #'
 #' @export
 f <- function(
+  model,
   map         = NULL,
-  model       = "ar1",
   replicate   = NULL,
   noise       = noise_normal(),
   control     = control_f(),
@@ -54,7 +54,11 @@ f <- function(
   eval        = FALSE,
   ...
 ) {
+  stopifnot("Please specify model as character" = is.character(model))
+
   map <- eval(substitute(map), envir = data, enclos = parent.frame())
+  if (model == "tp") map <- 1:(list(...)$left$n_map * list(...)$right$n_map)
+
   replicate <- if (is.null(replicate)) rep(1, length_map(map))
     else as.integer(as.factor(replicate))
 
@@ -96,6 +100,12 @@ f <- function(
       },
       "matern" = {
         do.call(model_matern, args)
+      },
+      "tp" = {
+        do.call(model_tp, args)
+      },
+      "iid" = {
+        do.call(model_iid, args)
       }
     )
   } else {
@@ -132,42 +142,119 @@ if (is.null(f_model$noise$V)) f_model$noise["V"] <- list(NULL)
     }
   }
 
-  # tensor product
-  if (!is.null(group) && inherits(group, "ngme_model")) {
-    f_model$model_right <- f_model
-
-    f_model$model <- "tensor_prod"
-    f_model$W_size <- f_model$W_size * group$W_size
-    f_model$V_size <- f_model$V_size * group$V_size
-    f_model$n_theta_K <- f_model$n_theta_K + group$n_theta_K
-    f_model$n_params <- f_model$n_params + group$n_theta_K
-    f_model$theta_K <- c(group$theta_K, f_model$theta_K)
-
-    f_model$h <- f_model$noise$h <- group$noise$h %x% f_model$noise$h
-
-    stopifnot(group$model %in% c("rw1", "rw2", "ar1", "iid"))
-
-    if (is.null(ncol(f_model$map))) {
-      idx_r <- rep(f_model$map, group$n_map)
-    } else {
-      idx_r <- matrix(ncol=2, nrow=group$n_map * f_model$n_map)
-      idx_r[, 1] <- rep(f_model$map[, 1], group$n_map)
-      idx_r[, 2] <- rep(f_model$map[, 2], group$n_map)
-    }
-    idx_l <- rep(group$map, each=f_model$n_map)
-
-    f_model$A <- INLA::inla.spde.make.A(
-      mesh = f_model$mesh,
-      loc = idx_r,
-      group = idx_l
-      # group.mesh?
-      # index?
-    )
-    f_model$group$noise$init_V <- FALSE
-    f_model$model_right$noise$init_V <- FALSE
-  }
-
   # update n noise
   f_model$noise <- update_noise(f_model$noise, n = f_model$V_size)
   f_model
 }
+
+model_tp <- function(
+  map = NULL,
+  replicate  = NULL,
+  data        = NULL,
+  index_NA    = NULL,
+  noise       = noise_normal(),
+  left        = NULL,
+  right       = NULL,
+  control   = control_f(),
+  ...
+) {
+  stopifnot(inherits(left, "ngme_model"), inherits(right, "ngme_model"))
+  n_map <-  length_map(left$map) * length_map(right$map)
+  if (is.null(map)) map <- 1:n_map
+  # if (is.null(replicate))
+    replicate <- rep(1, n_map)
+
+  stopifnot(left$model %in% c("rw1", "rw2", "ar1", "iid"))
+  f_model <- ngme_model(
+    model = "tp",
+    map = map,
+    n_map = n_map,
+    replicate = replicate,
+    data = data,
+    index_NA = index_NA,
+    noise = noise,
+    left = left,
+    right = right,
+    control = control,
+    W_size = left$W_size * right$W_size,
+    V_size = left$V_size * right$V_size,
+    n_theta_K = left$n_theta_K + right$n_theta_K,
+    n_params = left$n_params + right$n_params,
+    theta_K = c(left$theta_K, right$theta_K),
+    A = left$A %x% right$A,
+    ...
+  )
+
+# init noise
+  f_model$left$noise$init_V <- FALSE
+  f_model$right$noise$init_V <- FALSE
+  f_model$noise <- update_noise(noise, n = f_model$V_size)
+  f_model$h <- f_model$noise$h
+
+  f_model
+}
+
+#' ngme iid model specification
+#'
+#' @param map integer vector, time index for the AR(1) process
+#' @param replicate replicate for the process
+#' @param index_NA Logical vector, same as is.na(response var.)
+#' @param alpha initial value for alpha
+#'
+#' @param noise noise, can be specified in f()
+#' @param data data, can be specified in f(), ngme()
+#' @param ... extra arguments in f()
+#'
+#' @return a list of specification of model
+#' @export
+model_iid <- iid <- function(
+  map = NULL,
+  replicate  = NULL,
+  data        = NULL,
+  index_NA    = NULL,
+  noise       = noise_normal(),
+  control   = control_f(),
+  ...
+) {
+  # capture symbol in index
+  map <- eval(substitute(map), envir = data, enclos = parent.frame())
+  n_map <- length_map(map)
+  stopifnot("The map should be integers." = all(map == round(map)))
+  if (is.null(replicate)) replicate <- rep(1, length_map(map))
+  if (is.null(index_NA)) index_NA <- rep(FALSE, length_map(map))
+
+  stopifnot("Make sure length(idx)==length(replicate)" = length(map) == length(replicate))
+
+  replicate <- if (!is.null(list(...)$replicate)) list(...)$replicate
+    else rep(1, length(map))
+
+  mesh <- inla.mesh.1d(loc=map)
+  tmp <- ngme_make_A(
+    mesh = mesh,
+    map = map,
+    n_map = n_map,
+    idx_NA = index_NA,
+    replicate = replicate
+  )
+  A <- tmp$A; A_pred <- tmp$A_pred
+
+  args <- within(list(...), {
+    mesh        = mesh
+    map         = map
+    n_map       = n_map
+    model       = "iid"
+    theta_K     = 0
+    W_size      = n_map
+    V_size      = n_map
+    A           = A
+    A_pred      = A_pred
+    h           = rep(1, n_map)
+    K           = ngme_as_sparse(Matrix::Diagonal(n_map))
+    noise       = noise
+    replicate   = replicate
+    n_rep       = length(unique(replicate))
+    control     = control
+  })
+  do.call(ngme_model, args)
+}
+

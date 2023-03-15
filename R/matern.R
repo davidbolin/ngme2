@@ -18,7 +18,7 @@
 #'
 #' @return a list (n, C (diagonal), G, B.kappa) for constructing operator
 #' @export
-model_matern <- function(
+model_matern <- matern <- function(
   map,
   replicate   = NULL,
   alpha       = 2,
@@ -124,5 +124,3 @@ model_matern <- function(
   )
   model
 }
-
-matern <- function(...) {model_matern(...)}

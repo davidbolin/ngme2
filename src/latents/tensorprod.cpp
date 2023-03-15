@@ -16,10 +16,10 @@ Tensor_prod::Tensor_prod(const Rcpp::List& model_list, unsigned long seed)
   std::cout << "start init" << std::endl;
 
   unsigned long latent_seed = latent_rng();
-  Rcpp::List group = model_list["group"];
+  Rcpp::List group = model_list["left"];
   left = LatentFactory::create(group, latent_seed);
   std::cout << "create left" << std::endl;
-  Rcpp::List model_right = model_list["model_right"];
+  Rcpp::List model_right = model_list["right"];
   right = LatentFactory::create(model_right, latent_seed);
   std::cout << "create right" << std::endl;
 
@@ -93,14 +93,16 @@ SparseMatrix<double> Tensor_prod::getK(const VectorXd& theta_K) const {
 SparseMatrix<double> Tensor_prod::get_dK(int index, const VectorXd& alpha) const {
   int n1 = left->get_n_theta_K();
   int n2 = right->get_n_theta_K();
+  VectorXd theta_K_l = theta_K.segment(0, n1);
+  VectorXd theta_K_r = theta_K.segment(n1, n2);
 
   if (index < n1) {
-    SparseMatrix<double> dk_l = left->get_dK_by_index(index);
-    SparseMatrix<double> K_r = right->getK();
+    SparseMatrix<double> dk_l = left->get_dK(index, theta_K_l);
+    SparseMatrix<double> K_r = right->getK(theta_K_r);
     return kronecker(dk_l, K_r);
   } else {
-    SparseMatrix<double> dk_r = right->get_dK_by_index(index - n1);
-    SparseMatrix<double> K_l = left->getK();
+    SparseMatrix<double> dk_r = right->get_dK(index - n1, theta_K_r);
+    SparseMatrix<double> K_l = left->getK(theta_K_l);
     return kronecker(K_l, dk_r);
   }
 }
@@ -110,17 +112,17 @@ void Tensor_prod::update_each_iter() {
   int n1 = left->get_n_theta_K();
   int n2 = right->get_n_theta_K();
   // setK for left and right
-  left->set_theta_K(theta_K.segment(0, n1));
-  right->set_theta_K(theta_K.segment(n1, n2));
 // std::cout << "Theta K = " << theta_K << std::endl;
+  // wrong here
+  // left->set_theta_K(theta_K.segment(0, n1));
+  // right->set_theta_K(theta_K.segment(n1, n2));
 
-  SparseMatrix<double> K1 = left->getK();
-  SparseMatrix<double> K2 = right->getK();
+  SparseMatrix<double> K1 = left->getK(theta_K.segment(0, n1));
+  SparseMatrix<double> K2 = right->getK(theta_K.segment(n1, n2));
   K = kronecker(K1, K2);
   for (int i=0; i < n_rep; i++)
     setSparseBlock(&K_rep, i*V_size, i*W_size, K);
 
-  std::cout << "Finish update" << std::endl;
   // SparseMatrix<double> Q = K.transpose() * K;
 
   // dKtx_t = dKt_t %x% Kx
@@ -131,3 +133,14 @@ void Tensor_prod::update_each_iter() {
   // dK2 = kronecker(K1, right->get_dK(0));
 }
 
+
+Iid::Iid(const Rcpp::List& model_list, unsigned long seed)
+  : Latent(model_list, seed),
+    I(Rcpp::as< SparseMatrix<double,0,int> > (model_list["K"])) {
+    K = I;
+}
+
+SparseMatrix<double> Iid::getK(const VectorXd& alpha) const {return I;};
+SparseMatrix<double> Iid::get_dK(int index, const VectorXd& alpha) const {return 0*I;};
+VectorXd Iid::grad_theta_K() {return VectorXd::Zero(1);};
+void Iid::update_each_iter() {};

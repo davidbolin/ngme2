@@ -106,10 +106,10 @@ print.ngme_model <- function(x, padding = 0, ...) {
       "matern"      = paste0(pad_add4_space, ngme_format("K", theta_K, "matern")),
       "rw1"         = paste0(pad_add4_space, "No parameter."),
       "unkown"      = paste0(pad_add4_space, "No parameter."),
-      "tensor_prod" = paste0(pad_add4_space, "group - ", group$model, ": ",
-        ngme_format("K", group$theta_K, group$model), "\n",
-        pad_add4_space, "model - ", model_right$model, ": ",
-        ngme_format("K", model_right$theta_K, model_right$model)
+      "tp" = paste0(pad_add4_space, "left - ", left$model, ": ",
+        ngme_format("K", left$theta_K, left$model), "\n",
+        pad_add4_space, "right - ", right$model, ": ",
+        ngme_format("K", right$theta_K, right$model)
       ),
       paste0(pad_add4_space, "Not implemented yet!")
     )

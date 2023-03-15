@@ -14,7 +14,7 @@
 // get_K_params, grad_K_params, set_K_params, output
 
 AR::AR(const Rcpp::List& model_list, unsigned long seed, bool is_rw)
-: Latent(model_list, seed),
+    : Latent(model_list, seed),
     G           (Rcpp::as< SparseMatrix<double,0,int> > (model_list["G"])),
     C           (Rcpp::as< SparseMatrix<double,0,int> > (model_list["C"])),
     is_rw       (is_rw)

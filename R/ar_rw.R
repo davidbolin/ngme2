@@ -24,7 +24,7 @@
 #' @examples
 #' model_ar1(c(1:3, 1:3), replicate = c(1,1,1,2,2,2))
 #' f(xx, model = "ar1", data=list(xx = c(2,4,5)), noise=noise_nig())
-model_ar1 <- function(
+model_ar1 <- ar1 <- function(
   map,   # time index
   replicate   = NULL,
   index_NA    = NULL,
@@ -114,7 +114,7 @@ model_ar1 <- function(
 #' @examples
 #' r1 <- model_rw(1:7, order = 1, circular = TRUE); r1$C + r1$G
 #' r2 <- model_rw(1:7, order = 1); r2$C + r2$G
-model_rw <- function(
+model_rw <- rw <- function(
   map,
   order       = 1,
   replicate  = NULL,
@@ -220,7 +220,3 @@ model_rw <- function(
 
   do.call(ngme_model, args)
 }
-
-# shorthand
-ar1 <- function(...) {model_ar1(...)}
-rw <- function(...) {model_rw(...)}

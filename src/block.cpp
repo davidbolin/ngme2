@@ -265,7 +265,7 @@ std::cout << "avg time for sampling W(ms): " << time_sample_w / n_gibbs << std::
   // EXAMINE the gradient to change the stepsize
   if (reduce_var) examine_gradient();
 
-// if (debug) std::cout << "gradients = " << gradients << std::endl;
+if (debug) std::cout << "gradients = " << gradients << std::endl;
 if (debug) std::cout << "Finish block gradient"<< std::endl;
   return gradients;
 }

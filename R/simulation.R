@@ -60,7 +60,7 @@ simulate.ngme_model <- function(
         # starting value W_0, W_1
         # W_{n+1} <- W_0 + n * (W_1 - W_0) + cumsum(cumsum(sim_noise))
     } else {
-        stop("not implement yet")
+        stop("simulation for this class not implement yet")
     }
 
     # attach noise attributes

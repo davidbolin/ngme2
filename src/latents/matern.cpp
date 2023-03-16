@@ -133,6 +133,55 @@ VectorXd Matern::grad_theta_K() {
     return VectorXd::Constant(1, ret / n_rep);
 }
 
+VectorXd Matern::grad_theta_K(
+    SparseMatrix<double>& K,
+    SparseMatrix<double>& dK,
+    vector<VectorXd>& Ws,
+    vector<VectorXd>& prevWs,
+    vector<Var>& vars,
+    const VectorXd& mu,
+    const VectorXd& sigma,
+    const VectorXd& h,
+    double trace,
+    int W_size
+) {
+    double ret = 0;
+    // double th = theta_K(0);
+    double da  = th2k(theta_K(0));
+    // double d2a = th2k(theta_K(0));
+
+    for (int i = 0; i < n_rep; i++) {
+        VectorXd W = Ws[i];
+        VectorXd prevW = prevWs[i];
+        VectorXd V = vars[i].getV();
+        VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
+
+        // analytical gradient and numerical hessian
+        double tmp = (dK*W).cwiseProduct(SV.cwiseInverse()).dot(K * W + (h - V).cwiseProduct(mu));
+        double grad = trace - tmp;
+
+        if (!use_precond) {
+            ret = - grad * da / W_size;
+        } else {
+            // compute numerical hessian
+            SparseMatrix<double> K2 = getK_by_eps(0, eps);
+            SparseMatrix<double> dK2 = get_dK_by_eps(0, 0, eps);
+
+            // grad(x+eps) - grad(x) / eps
+            VectorXd prevV = vars[0].getPrevV();
+            VectorXd prevSV = sigma.array().pow(2).matrix().cwiseProduct(prevV);
+
+            double grad2_eps = trace_eps - (dK2*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K2 * prevW + (h - prevV).cwiseProduct(mu));
+            double grad_eps  = trace - (dK*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K * prevW + (h - prevV).cwiseProduct(mu));
+            double hess = (grad2_eps - grad_eps) / eps;
+
+            ret += grad / (hess * da + grad_eps);
+        }
+    }
+
+    return VectorXd::Constant(1, ret / n_rep);
+}
+
 void Matern::update_each_iter() {
     K = getK(theta_K);
     dK = get_dK(0, theta_K);

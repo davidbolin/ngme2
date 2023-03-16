@@ -12,7 +12,7 @@ test_that("test basic mn", {
   out <- ngme(
     y ~ x,
     data=list(x=x,y=y),
-    control=ngme_control(
+    control=control_opt(
       print_check_info = FALSE
     )
   )
@@ -23,7 +23,7 @@ test_that("test basic mn", {
     rnig(n_obs, delta = 3, mu = -3, nu = 2, sigma = 2, seed=10)
 
   out <- ngme(y ~ x, data=list(x=x,y=y), family = noise_nig(),
-    control = ngme_control(
+    control = control_opt(
       iterations = 1000,
       n_slope_check = 100,
       print_check_info = FALSE

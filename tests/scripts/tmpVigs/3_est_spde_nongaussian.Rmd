@@ -686,7 +686,7 @@ Let us now create a function that performs Gibbs sampling for a parameter $\kapp
 ```{r}
 Asq <- t(A_matrix)%*%A_matrix/sigma_eps^2
 
-gibbs_sample <- function(kappa_sq, N_sim, V_init, W_init){
+n_gibbs_samples <- function(kappa_sq, N_sim, V_init, W_init){
   V <- V_init
 
   W <- W_init
@@ -758,7 +758,7 @@ V_init <- matrix(ngme2::rig(n_mesh, eta, eta*h_nig_1d^2), nrow=1)
 W_init <- matrix(0, nrow=1, ncol=n_mesh)
 
 #Burn in for the first one
-list_VW <- gibbs_sample(kappa_est, 300, V_init, W_init)
+list_VW <- n_gibbs_samples(kappa_est, 300, V_init, W_init)
 
 V_init <- matrix(list_VW[["V"]][gibbs_nsim,],nrow=1)
 W_init <- matrix(list_VW[["W"]][gibbs_nsim,],nrow=1)
@@ -766,7 +766,7 @@ W_init <- matrix(list_VW[["W"]][gibbs_nsim,],nrow=1)
 while(tol > epsilon){
   temp <- kappa_est
 
-  list_VW <- gibbs_sample(kappa_est, gibbs_nsim, V_init, W_init)
+  list_VW <- n_gibbs_samples(kappa_est, gibbs_nsim, V_init, W_init)
   V_matrix <- list_VW[["V"]]
   W_matrix <- list_VW[["W"]]
 
@@ -817,7 +817,7 @@ V_init <- matrix(ngme2::rig(n_mesh, eta, eta*h_nig_1d^2), nrow=1)
 W_init <- matrix(0, nrow=1, ncol=n_mesh)
 
 #Burn in for the first one
-list_VW <- gibbs_sample(kappa_est, 300, V_init, W_init)
+list_VW <- n_gibbs_samples(kappa_est, 300, V_init, W_init)
 
 V_init <- matrix(list_VW[["V"]][gibbs_nsim,],nrow=1)
 W_init <- matrix(list_VW[["W"]][gibbs_nsim,],nrow=1)
@@ -825,7 +825,7 @@ W_init <- matrix(list_VW[["W"]][gibbs_nsim,],nrow=1)
 while(tol > epsilon){
   temp <- kappa_est
 
-  list_VW <- gibbs_sample(kappa_est, gibbs_nsim, V_init, W_init)
+  list_VW <- n_gibbs_samples(kappa_est, gibbs_nsim, V_init, W_init)
   V_matrix <- list_VW[["V"]]
   W_matrix <- list_VW[["W"]]
 
@@ -894,7 +894,7 @@ V_init <- matrix(ngme2::rig(n_mesh, eta, eta*h_nig_1d^2), nrow=1)
 W_init <- matrix(0, nrow=1, ncol=n_mesh)
 
 #Burn in for the first one
-list_VW <- gibbs_sample(kappa_est, 300, V_init, W_init)
+list_VW <- n_gibbs_samples(kappa_est, 300, V_init, W_init)
 
 V_init <- matrix(list_VW[["V"]][gibbs_nsim,],nrow=1)
 W_init <- matrix(list_VW[["W"]][gibbs_nsim,],nrow=1)
@@ -902,7 +902,7 @@ W_init <- matrix(list_VW[["W"]][gibbs_nsim,],nrow=1)
 while(tol > epsilon){
   temp <- kappa_est
 
-  list_VW <- gibbs_sample(kappa_est, gibbs_nsim, V_init, W_init)
+  list_VW <- n_gibbs_samples(kappa_est, gibbs_nsim, V_init, W_init)
   V_matrix <- list_VW[["V"]]
   W_matrix <- list_VW[["W"]]
 
@@ -951,7 +951,7 @@ V_init <- matrix(ngme2::rig(n_mesh, eta, eta*h_nig_1d^2), nrow=1)
 W_init <- matrix(0, nrow=1, ncol=n_mesh)
 
 #Burn in for the first one
-list_VW <- gibbs_sample(kappa_est, 300, V_init, W_init)
+list_VW <- n_gibbs_samples(kappa_est, 300, V_init, W_init)
 
 V_init <- matrix(list_VW[["V"]][gibbs_nsim,],nrow=1)
 W_init <- matrix(list_VW[["W"]][gibbs_nsim,],nrow=1)
@@ -959,7 +959,7 @@ W_init <- matrix(list_VW[["W"]][gibbs_nsim,],nrow=1)
 while(tol > epsilon){
   temp <- kappa_est
 
-  list_VW <- gibbs_sample(kappa_est, gibbs_nsim, V_init, W_init)
+  list_VW <- n_gibbs_samples(kappa_est, gibbs_nsim, V_init, W_init)
   V_matrix <- list_VW[["V"]]
   W_matrix <- list_VW[["W"]]
 
@@ -1087,7 +1087,7 @@ V_init <- matrix(ngme2::rig(n_mesh, eta, eta*h_nig_1d^2), nrow=1)
 W_init <- matrix(0, nrow=1, ncol=n_mesh)
 
 #Burn in for the first one
-list_VW <- gibbs_sample(kappa_est, 300, V_init, W_init)
+list_VW <- n_gibbs_samples(kappa_est, 300, V_init, W_init)
 
 V_init <- matrix(list_VW[["V"]][gibbs_nsim,],nrow=1)
 W_init <- matrix(list_VW[["W"]][gibbs_nsim,],nrow=1)
@@ -1098,7 +1098,7 @@ switch_hessian <- FALSE
 while(tol > epsilon){
   temp <- kappa_est
 
-  list_VW <- gibbs_sample(kappa_est, gibbs_nsim, V_init, W_init)
+  list_VW <- n_gibbs_samples(kappa_est, gibbs_nsim, V_init, W_init)
   V_matrix <- list_VW[["V"]]
   W_matrix <- list_VW[["W"]]
 

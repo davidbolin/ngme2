@@ -2,7 +2,7 @@
 
 #' Create a Matern SPDE model
 #'
-#' @param loc       numeric vector (1d) or matrix of column 2 (2d),
+#' @param map       numeric vector (1d) or matrix of column 2 (2d),
 #'     location to make index
 #'     keep aligned with Y if make prediction with index_NA!!!
 #' @param replicate replicate for the process
@@ -18,8 +18,8 @@
 #'
 #' @return a list (n, C (diagonal), G, B.kappa) for constructing operator
 #' @export
-model_matern <- function(
-  loc,
+model_matern <- matern <- function(
+  map,
   replicate   = NULL,
   alpha       = 2,
   kappa       = 1,
@@ -38,6 +38,7 @@ model_matern <- function(
   #   if (inherits(mesh, "inla.mesh.1d")) loc <- mesh$loc
   #   if (inherits(mesh, "inla.mesh")) loc <- as.matrix(mesh$loc[, 1:2])
   # }
+  loc <- map
 
   if (is.numeric(mesh)) # mesh is 1d vector
     mesh <- INLA::inla.mesh.1d(loc = mesh)
@@ -97,7 +98,7 @@ model_matern <- function(
 
   if (noise$n_noise == 1) noise <- update_noise(noise, n = mesh$n)
   noise$h <- h
-  # kappas <- drop(exp(theta_kappa %*% B_kappa))
+  kappas <- drop(exp(B_kappa %*% theta_kappa))
 
   model <- ngme_model(
     model       = "matern",
@@ -110,7 +111,7 @@ model_matern <- function(
     B_kappa     = B_kappa,
     C           = ngme_as_sparse(C),
     G           = ngme_as_sparse(G),
-    # K           = kappas * kappas * C + G
+    K           = ngme_as_sparse(diag(kappas^2) %*% C + G),
     h           = h,
     noise       = noise,
     mesh        = mesh,
@@ -118,6 +119,7 @@ model_matern <- function(
     n_map       = n_loc,
     replicate   = replicate,
     n_rep       = nrep,
+    # group       = NULL,
     ...
   )
   model

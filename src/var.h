@@ -25,7 +25,7 @@ private:
 
     unsigned n;
     VectorXd V, prevV;
-    bool fix_V, fix_nu;
+    bool fix_V, fix_nu, init_V;
 public:
     Var() {}
     Var(const Rcpp::List& noise_list, unsigned long seed) :
@@ -37,18 +37,22 @@ public:
         V             (n),
         prevV         (n),
         fix_V         (Rcpp::as<bool>    (noise_list["fix_V"])),
-        fix_nu        (Rcpp::as<bool>    (noise_list["fix_nu"]))
+        fix_nu        (Rcpp::as<bool>    (noise_list["fix_nu"])),
+        init_V        (Rcpp::as<bool>    (noise_list["init_V"]))
     {
-        if (noise_type == "normal") {
+// std::cout << "n = " << n << std::endl;
+        if (noise_type == "normal" || !init_V) {
             V = VectorXd::Ones(n);
             prevV = VectorXd::Ones(n);
             fix_nu = true;
             fix_V = true;
         } else { // nig or gal
-            if (noise_list["V"] != R_NilValue) {
+            if (!Rf_isNull(noise_list["V"])) {
+// std::cout << "init V with 1" << std::endl;
                 V = Rcpp::as< VectorXd > (noise_list["V"]);
                 prevV = V;
             } else {
+// std::cout << "sample V " << std::endl;
                 sample_V();
                 sample_V();
             }

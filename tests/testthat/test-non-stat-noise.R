@@ -18,7 +18,7 @@ test_that("test non-stat mu", {
     )),
     family = "normal",
     data = list(Y=Y),
-    control = ngme_control(
+    control = control_opt(
       iterations = 1000,
       print_check_info = FALSE
     )

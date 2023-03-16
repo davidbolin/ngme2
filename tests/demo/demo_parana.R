@@ -106,7 +106,7 @@ out_nig_norm <- ngme(
     Y = Y
   ),
   family = noise_normal(),
-  control = ngme_control(
+  control = control_opt(
     estimation = T,
     iterations = 1000,
     n_slope_check = 4,
@@ -151,7 +151,7 @@ out_nig_norm_norm <- ngme(
     Y = Y
   ),
   family = noise_normal(),
-  control = ngme_control(
+  control = control_opt(
     estimation = T,
     iterations = 1000,
     n_slope_check = 4,
@@ -196,7 +196,7 @@ out_normnig_norm <- ngme(
     Y = Y
   ),
   family = noise_normal(),
-  control = ngme_control(
+  control = control_opt(
     estimation = T,
     iterations = 1000,
     n_slope_check = 4,

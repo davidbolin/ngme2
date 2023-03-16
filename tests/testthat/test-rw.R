@@ -1,7 +1,7 @@
 # test rw related model
 
 test_that("simulate and estimate of rw with NIG", {
-# load_all()
+load_all()
   n_obs <<- 500
   mu <- -3; sigma <- 5; nu <- 2; sigma_eps <- 0.8
   h <- rexp(n_obs)
@@ -38,13 +38,14 @@ test_that("simulate and estimate of rw with NIG", {
       debug = FALSE
     ),
     data = list(Y = Y),
-    contro = ngme_control(
+    control_opt = control_opt(
       estimation = T,
-      iterations = 500,
+      iterations = 100,
       n_parallel_chain = 4,
-      print_check_info = TRUE
+      print_check_info = TRUE,
+      verbose = T
     ),
-    debug = TRUE
+    debug = FALSE
   )
   out
   traceplot(out, 1)
@@ -89,6 +90,7 @@ test_that("the order of W same as order of index?", {
 
 ############################## AR1 case
 test_that("test estimation of basic ar with normal measurement noise", {
+  load_all()
   n_obs <<- 500
   alpha <- 0.75
   mu <- -3; sigma <- 2.3; nu <- 2; sigma_eps <- 0.8
@@ -100,33 +102,41 @@ test_that("test estimation of basic ar with normal measurement noise", {
 
   W <- simulate(ar1)
   Y <- W + rnorm(n_obs, sd = sigma_eps)
-
+# plot(Y, type="l")
+load_all()
   out <- ngme(
     Y ~ 0 + f(1:n_obs,
       model="ar1",
       name="ar",
+      alpha = -0.5,
       noise=noise_nig(
         # fix_nu = T, nu = 2,
         # h = ar1$noise$h,
         # fix_V = TRUE, V = attr(W, "noise")$V
       ),
-      # fix_W = TRUE, W = W,
+      control=control_f(numer_grad = F),
       debug = FALSE
     ),
-    data = list(Y = Y),
-    contro = ngme_control(
+    data = data.frame(Y = Y),
+    control_opt = control_opt(
       estimation = T,
-      iterations = 1000,
-      n_parallel_chain = 4,
-      print_check_info = FALSE
+      iterations = 500,
+      n_parallel_chain = 5,
+      print_check_info = FALSE,
+      verbose = T
     ),
     debug = FALSE
   )
   out
-
+  out[[1]]$latents[[1]]$control
+  plot(attr(W, "noise"), out[[1]]$latents[[1]]$noise)
   traceplot(out, "ar")
+
+  plot(simulate(out$latents[["ar"]]), type="l")
+  plot(Y, type="l")
+  prds <- predict(out, loc=list(ar=501:600))$mean
+
   traceplot(out, "mn")
-  plot(attr(W, "noise"), out$latents[[1]]$noise)
   # out$latents[[1]]$noise$h
 
   with(out$latents[[1]], {

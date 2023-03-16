@@ -84,7 +84,7 @@ out <- ngme(
   family = "nig",
   data = argo_float,
   seed = 7,
-  control = ngme_control(
+  control = control_opt(
     n_parallel_chain = 4,
     iterations = 20
   )

@@ -4,18 +4,19 @@
 \alias{ngme_parse_formula}
 \title{Parse the formula for ngme function}
 \usage{
-ngme_parse_formula(gf, data, index_NA)
+ngme_parse_formula(fm, data, control_ngme, noise)
 }
 \arguments{
-\item{gf}{formula}
+\item{fm}{Formula}
 
 \item{data}{data.frame}
 
-\item{index_NA}{index of unknown}
+\item{control_ngme}{control_ngme}
+
+\item{noise}{noise}
 }
 \value{
-1. plain formula without f function
- 2. latents_in - from each f function
+a list (replicate) of ngme_block models
 }
 \description{
 Parse the formula for ngme function

@@ -5,7 +5,7 @@
 \title{ngme AR(1) model specification}
 \usage{
 model_ar1(
-  x,
+  map,
   replicate = NULL,
   index_NA = NULL,
   data = NULL,
@@ -15,7 +15,7 @@ model_ar1(
 )
 }
 \arguments{
-\item{x}{integer vector, time index for the AR(1) process}
+\item{map}{integer vector, time index for the AR(1) process}
 
 \item{replicate}{replicate for the process}
 

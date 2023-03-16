@@ -7,12 +7,11 @@ ngme_model <- function(
   theta_K     = NULL,
   fix_theta_K = FALSE,
   W           = NULL,
-  Ws          = NULL, # a list of W for each replicate
   fix_W       = FALSE,
   A           = NULL,
   A_pred      = NULL,
   noise       = noise_normal(),
-  control     = ngme_control_f(),
+  control     = control_f(),
   V_size      = NULL,
   debug       = FALSE,
   n_theta_K   = length(theta_K),
@@ -25,9 +24,10 @@ ngme_model <- function(
   n_map       = NULL,
   replicate   = NULL,
   n_rep       = NULL,
+  group       = NULL,
   ...
 ) {
-  if (is.null(n_rep)) stop("n_rep is NULL")
+  if (is.null(n_rep)) n_rep <- length(unique(replicate))
 
   stopifnot(is.character(model))
   # generate string (8 digits)
@@ -48,6 +48,8 @@ ngme_model <- function(
     par_string <- do.call(paste0, as.list(c(K_str, mu_str, sigma_str, nu_str)))
 
   stopifnot("replicate is NULL" = !is.null(replicate))
+  stopifnot("make sure length of replicate == length of index" =
+   length(replicate) == length_map(map))
   replicate <- as.integer(replicate)
 
   structure(
@@ -75,6 +77,7 @@ ngme_model <- function(
       n_map         = n_map,
       replicate     = replicate,
       n_rep         = n_rep,
+      group         = group,
       ...
     ),
     class = "ngme_model"
@@ -99,10 +102,16 @@ print.ngme_model <- function(x, padding = 0, ...) {
   cat(pad_space); cat("Model parameters: \n")
   params <- with(model, {
     switch(model,
-      "ar1"     = paste0(pad_add4_space, ngme_format("K", theta_K, "ar1")),
-      "matern"  = paste0(pad_add4_space, ngme_format("K", theta_K, "matern")),
-      "rw1"     = paste0(pad_add4_space, "No parameter."),
-      "unkown"  = paste0(pad_add4_space, "No parameter."),
+      "ar1"         = paste0(pad_add4_space, ngme_format("K", theta_K, "ar1")),
+      "matern"      = paste0(pad_add4_space, ngme_format("K", theta_K, "matern")),
+      "rw1"         = paste0(pad_add4_space, "No parameter."),
+      "unkown"      = paste0(pad_add4_space, "No parameter."),
+      "tp" = paste0(pad_add4_space, "left - ", left$model, ": ",
+        ngme_format("K", left$theta_K, left$model), "\n",
+        pad_add4_space, "right - ", right$model, ": ",
+        ngme_format("K", right$theta_K, right$model)
+      ),
+      paste0(pad_add4_space, "Not implemented yet!")
     )
   })
   cat(params);

@@ -62,7 +62,7 @@ out1 <- ngme(
   zinc ~ 1 # + f(dist.m, model="rw1", noise=noise_normal(), name="rw")
     + f(model=spde, name="spde", noise=noise_nig()),
   data = meuse@data,
-  control = ngme_control(
+  control = control_opt(
     iterations = 100,
     n_parallel_chain = 4,
     print_check_info = TRUE

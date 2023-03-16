@@ -49,7 +49,7 @@ result_ngme <- ngme(
   accel ~ -1 + f(model = spde_ngme, name="myspde"),
   data = mcycle,
   family = "normal",
-  control = ngme_control(
+  control = control_opt(
     iterations = 1000
   )
 )
@@ -74,7 +74,7 @@ result_ngme2 <- ngme(
   accel ~ 0 + f(model = spde_ngme, name="myspde", noise=noise_nig()),
   data = mcycle,
   family = "normal",
-  control = ngme_control(
+  control = control_opt(
     n_parallel_chain = 4,
     iterations = 2000
   ),

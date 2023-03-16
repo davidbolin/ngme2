@@ -41,7 +41,7 @@ ngme_out <- ngme(
   ),
   data = list(Y = Y),
   family = noise_normal(),
-  control = ngme_control(
+  control = control_opt(
     estimation = T,
     iterations = 100,
     n_parallel_chain = 1

@@ -20,7 +20,7 @@ predict using ngme after estimation}
 \arguments{
 \item{object}{a ngme object}
 
-\item{data}{a data.frame of covariates (used for fixed effects)}
+\item{data}{a data.frame or matrix of covariates (used for fixed effects)}
 
 \item{loc}{a named list (or dataframe) of the locations to make the prediction
 names(loc) corresponding to the name each latent model

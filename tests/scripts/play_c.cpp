@@ -4,6 +4,7 @@
 
 using namespace std;
 
+enum Color { red, green, blue };
 
 int main(int argc, char const *argv[])
 {
@@ -14,5 +15,5 @@ int main(int argc, char const *argv[])
     if (std::find(begin(v), end(v), false) == end(v))
         all_true = true;
 
-    cout << all_true << endl;
+    cout << green << endl;
 }

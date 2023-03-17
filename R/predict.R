@@ -211,7 +211,7 @@ compute_indices <- function(ngme, test_idx, N = 100, seed=Sys.time()) {
   # sampling Y by, Y = X beta + (block_A %*% block_W) + eps
   # AW_N[[1]] is concat(A1 W1, A2 W2, ..)
 
-  fe <- with(ngme, as.numeric(X[test_idx, ] %*% beta))
+  fe <- with(ngme, as.numeric(X[test_idx, ,drop=FALSE] %*% beta))
   fe_N <- matrix(rep(fe, N), ncol=N, byrow=F)
 
   mn_N <- sapply(1:N, function(x)
@@ -354,8 +354,8 @@ cat("The final result averaged over replicates: \n")
 #'
 predict.ngme_fit <- function(
   object,
-  which.rep = 1,
-  data = list(NULL),
+  which.rep = seq_along(object),
+  data = NULL,
   loc = list(NULL),
   type = "lp",
   estimator = c("mean", "sd", "5quantile", "95quantile", "median", "mode"),
@@ -365,13 +365,18 @@ predict.ngme_fit <- function(
   ...
 ) {
   stopifnot(inherits(object, "ngme_fit"))
-  stopifnot("Please provide data and loc as list(...), make sure length(which.rep) == length(data) == length(loc)" = length(which.rep) == length(data) && length(which.rep) == length(loc))
+
+  if (!is.null(data)) stopifnot("Please provide data as list(...), make sure length(which.rep) == length(data)"
+    = length(which.rep) == length(data))
+
+ stopifnot("Please provide data and loc as list(...), make sure length(which.rep) == length(loc)"
+  =length(which.rep) == length(loc))
 
   res <- list()
-  for (i in seq_along(which.rep)) {
+  for (i in which.rep) {
     res[[i]] <- predict.ngme(
       object[[i]],
-      data = data[[i]],
+      data = if (!is.null(data)) data[[i]] else NULL,
       loc = loc[[i]],
       type = type,
       estimator = estimator,

@@ -3,13 +3,14 @@
 \name{predict.ngme_fit}
 \alias{predict.ngme_fit}
 \title{Predict function of ngme2
-predict using ngme after estimation}
+predict using ngme after estimation
+same as predict.ngme(ngme[[i]], data[[i]], loc[[i]]) i in which.rep}
 \usage{
 \method{predict}{ngme_fit}(
   object,
-  which.rep = 1,
+  which.rep = seq_along(object),
   data = NULL,
-  loc = NULL,
+  loc = list(NULL),
   type = "lp",
   estimator = c("mean", "sd", "5quantile", "95quantile", "median", "mode"),
   sampling_size = 100,
@@ -45,4 +46,5 @@ a list of outputs contains estimation of operator paramters, noise parameters
 \description{
 Predict function of ngme2
 predict using ngme after estimation
+same as predict.ngme(ngme[[i]], data[[i]], loc[[i]]) i in which.rep
 }

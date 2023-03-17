@@ -229,7 +229,7 @@ traceplot <- function(ngme, name="general", ...) {
 
   # make plot
   for (idx in seq_len(nrow(traj[[1]]))) {
-    df <- sapply(traj, function(x) x[idx, ])
+    df <- sapply(traj, function(x) x[idx, ,drop=F])
     # wierd stuff here
     df <- apply(df, c(1,2), as.numeric)
     df <- as.data.frame(df)

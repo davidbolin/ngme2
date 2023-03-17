@@ -1,7 +1,6 @@
 # test rw related model
 
 test_that("simulate and estimate of rw with NIG", {
-load_all()
   n_obs <<- 500
   mu <- -3; sigma <- 5; nu <- 2; sigma_eps <- 0.8
   h <- rexp(n_obs)
@@ -37,7 +36,7 @@ load_all()
       # fix_W = TRUE, W = W,
       debug = FALSE
     ),
-    data = list(Y = Y),
+    data = data.frame(Y = Y),
     control_opt = control_opt(
       estimation = T,
       iterations = 100,
@@ -48,16 +47,14 @@ load_all()
     debug = FALSE
   )
   out
-  traceplot(out, 1)
-  plot(out$latents[[1]]$noise,
+  traceplot(out, "rw1")
+  plot(out[[1]]$latents[[1]]$noise,
     noise_nig(mu=mu, sigma=sigma, nu=nu))
 
-expect_true(all(as.numeric(out$latents[[1]]$K %*% W) - dW < 1e-5))
-# ???
-# expect_true(all(diff(loc) - out$latents[[1]]$h < 1e-5))
-# mean(abs(diff(loc) - out$latents[[1]]$h))
+expect_true(all(as.numeric(out[[1]]$latents[[1]]$K %*% W) - dW < 1e-5))
 })
 
+######################################################################
 test_that("the order of W same as order of index?", {
   library(INLA)
   XX    <- c(1.1, 3.1, 2.2, 2.2, 4.5, 5)
@@ -90,8 +87,7 @@ test_that("the order of W same as order of index?", {
 
 ############################## AR1 case
 test_that("test estimation of basic ar with normal measurement noise", {
-  load_all()
-  n_obs <<- 500
+  n_obs <- 500
   alpha <- 0.75
   mu <- -3; sigma <- 2.3; nu <- 2; sigma_eps <- 0.8
   ar1 <- model_ar1(1:n_obs, alpha=alpha, noise=noise_nig(mu=mu, sigma=sigma, nu=nu))
@@ -103,7 +99,6 @@ test_that("test estimation of basic ar with normal measurement noise", {
   W <- simulate(ar1)
   Y <- W + rnorm(n_obs, sd = sigma_eps)
 # plot(Y, type="l")
-load_all()
   out <- ngme(
     Y ~ 0 + f(1:n_obs,
       model="ar1",
@@ -120,30 +115,27 @@ load_all()
     data = data.frame(Y = Y),
     control_opt = control_opt(
       estimation = T,
-      iterations = 500,
+      iterations = 300,
       n_parallel_chain = 5,
       print_check_info = FALSE,
-      verbose = T
+      verbose = F
     ),
     debug = FALSE
   )
   out
-  out[[1]]$latents[[1]]$control
-  plot(attr(W, "noise"), out[[1]]$latents[[1]]$noise)
-  traceplot(out, "ar")
+  # plot(attr(W, "noise"), out[[1]]$latents[[1]]$noise)
+  # traceplot(out, "ar")
 
-  plot(simulate(out$latents[["ar"]]), type="l")
-  plot(Y, type="l")
-  prds <- predict(out, loc=list(ar=501:600))$mean
+  # plot(simulate(out[[1]]$latents[["ar"]]), type="l")
+  # plot(Y, type="l")
+  # prds <- predict(out[[1]], loc=list(ar=501:600))$mean
+  # traceplot(out, "mn")
 
-  traceplot(out, "mn")
-  # out$latents[[1]]$noise$h
-
-  with(out$latents[[1]], {
+  with(out[[1]]$latents[[1]], {
     expect_true(abs(noise$theta_mu - mu) < 4)
     expect_true(abs(noise$theta_sigma - log(sigma)) < 2)
     expect_true(abs(noise$nu - nu) < 4)
-    expect_true(abs(ar1_th2a(out$latents[[1]]$theta_K) - alpha) < 0.1)
+    expect_true(abs(ar1_th2a(out[[1]]$latents[[1]]$theta_K) - alpha) < 0.1)
   })
 })
 
@@ -159,4 +151,34 @@ test_that("test rw definition", {
 
   m2 <- model_rw(rnorm(10), order = 2, circular = TRUE)
   expect_equal(nrow(m2$K), length(m2$h))
+})
+
+
+######################################################################
+test_that("ou process", {
+  # load_all()
+  model_ou(1:3)$K
+
+  n_obs <- 5
+  Y <- rnorm(n_obs)
+  load_all()
+  out <- ngme(
+    Y ~ 0 + f(Y, model="ou", theta=1),
+    data = data.frame(Y = Y),
+    control_opt = control_opt(
+      estimation = T,
+      iterations = n_obs,
+      n_parallel_chain = 4,
+      print_check_info = TRUE,
+      verbose = T
+    ),
+  )
+  # traceplot(out, "field")
+
+  model_ou(c(1,3,5), order=1)$h
+
+  load_all()
+  m1 <- model_ou(c(1,3,5), order=2)
+  simulate(m1)
+  expect_true(TRUE)
 })

@@ -97,7 +97,7 @@ model_ar1 <- ar1 <- function(
 #' Generating C, G and A given index and replicate
 #' size of C and G is (n-1) * n, size of V is n-1
 #'
-#' @param x         numerical vector, covariates to build index for the process
+#' @param map        numerical vector, covariates to build index for the process
 #' @param order     1 or 2, order of random walk model
 #' @param replicate replicate for the process
 #' @param data      specifed or inherit from ngme formula
@@ -199,9 +199,95 @@ model_rw <- rw <- function(
   if (noise$n_noise == 1) noise <- update_noise(noise, n = mesh$n)
 
   args <- within(list(...), {
-    model       = if (order == 1) "rw1" else "rw2"
+    model       = "rw" # if (order == 1) "rw1" else "rw2"
     theta_K     = 1
     fix_theta_K = TRUE
+    W_size      = ncol(C) # mesh$n
+    V_size      = mesh$n
+    A           = ngme_as_sparse(A)
+    A_pred      = A_pred
+    C           = ngme_as_sparse(C)
+    G           = ngme_as_sparse(G)
+    K           = C + G
+    noise       = noise
+    h           = noise$h
+    mesh        = mesh_W
+    map         = x
+    n_map       = length(x)
+    replicate   = replicate
+    n_rep       = nrep
+    rw_order    = order
+  })
+
+  do.call(ngme_model, args)
+}
+
+
+#' ngme model - Ornstein–Uhlenbeck process
+#'
+#' @param map         numerical vector, covariates to build index for the process
+#' @param replicate replicate for the process
+#' @param data      specifed or inherit from ngme formula
+#'   if it is circular, we will treat the 1st location and the last location same.
+#' @param index_NA  Logical vector, same as is.na(response variable)
+#' @param noise     1. string: type of model, 2. ngme.noise object
+#'  (can also be specified in each ngme model)
+#' @param theta     theta parameter
+#' @param ...       additional arguments
+#'
+#' @return a list
+#' @export
+#'
+#' @examples
+#' r2 <- model_ou(1:7, theta_K = 2); r2$K
+model_ou <- ou <- function(
+  map,
+  theta       = 1,
+  replicate   = NULL,
+  data        = NULL,
+  index_NA    = NULL,
+  noise       = noise_normal(),
+  # extra A matrix
+  ...
+) {
+# capture symbol in index
+  x <- eval(substitute(map), envir = data, enclos = parent.frame())
+  stopifnot("length of index at least >= 3" = length(x) >= 3)
+  if (is.null(replicate)) replicate <- rep(1, length(x))
+  if (is.null(index_NA)) index_NA <- rep(FALSE, length(x))
+  stopifnot("Make sure length(x)==length(replicate)" = length(x) == length(replicate))
+  stopifnot(theta > 0)
+
+  mesh <- INLA::inla.mesh.1d(loc = unique(x)[-1])
+  n <- mesh$n + 1
+  C <- Matrix::sparseMatrix(i = 1:(n-1), j=2:n, x=(theta+1), dims=c(n-1,n))
+  G <- Matrix::sparseMatrix(i = 1:(n-1), j=1:(n-1), x=-1, dims=c(n-1,n))
+
+  noise$h <- diff(mesh$loc)
+  noise$h <- c(noise$h, mean(noise$h))
+
+  if (is.null(index_NA)) index_NA <- rep(FALSE, length(x))
+  if (is.null(replicate)) replicate <- rep(1, length(x))
+
+  mesh_W <- INLA::inla.mesh.1d(loc=x)
+  tmp <- ngme_make_A(
+    mesh = mesh_W,
+    map = x,
+    n_map = length(x),
+    idx_NA = index_NA,
+    replicate = replicate
+  )
+  A <- tmp$A; A_pred <- tmp$A_pred
+
+  nrep <- ncol(A) / ncol(C)
+  stopifnot(nrep == as.integer(nrep))
+
+  # update noise with length n
+  if (noise$n_noise == 1) noise <- update_noise(noise, n = mesh$n)
+
+  args <- within(list(...), {
+    model       = "ou"
+    theta_K     = log(theta)
     W_size      = ncol(C) # mesh$n
     V_size      = mesh$n
     A           = ngme_as_sparse(A)

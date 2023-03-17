@@ -13,11 +13,11 @@
 // W_size = V_size
 // get_K_params, grad_K_params, set_K_params, output
 
-AR::AR(const Rcpp::List& model_list, unsigned long seed, bool is_rw)
+AR::AR(const Rcpp::List& model_list, unsigned long seed, Type type)
     : Latent(model_list, seed),
     G           (Rcpp::as< SparseMatrix<double,0,int> > (model_list["G"])),
     C           (Rcpp::as< SparseMatrix<double,0,int> > (model_list["C"])),
-    is_rw       (is_rw)
+    type        (type)
 {
 if (debug) std::cout << "Begin Constructor of AR1" << std::endl;
 
@@ -43,12 +43,17 @@ if (debug) std::cout << "End Constructor of AR1" << std::endl;
 
 // wrt. parameter_K (bounded parameter)
 SparseMatrix<double> AR::getK(const VectorXd& theta_K) const {
-    if (is_rw) return C + G;
+    if (type==Type::rw) return C + G;
 
     assert (theta_K.size() == 1);
-    double alpha = th2a(theta_K(0));
-// std::cout << "alpha in get K = " << alpha << std::endl;
-    SparseMatrix<double> K = alpha * C + G;
+    double theta;
+    if (type==Type::ar)
+        theta = th2a(theta_K(0));
+    else if (type==Type::ou)
+        theta = exp(theta_K(0));
+
+// std::cout << "theta in get K = " << theta << std::endl;
+    SparseMatrix<double> K = theta * C + G;
     return K;
 }
 
@@ -66,7 +71,7 @@ void AR::update_num_dK() {
 
 // return length 1 vectorxd : grad_kappa * dkappa/dtheta
 VectorXd AR::grad_theta_K() {
-    if (numer_grad) return numerical_grad();
+    if (numer_grad || type == Type::ou) return numerical_grad();
 
     SparseMatrix<double> dK = get_dK_by_index(0);
 

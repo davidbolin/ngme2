@@ -5,8 +5,8 @@
 \title{Specifying a latent process model (wrapper function for each model)}
 \usage{
 f(
+  model,
   map = NULL,
-  model = "ar1",
   replicate = NULL,
   noise = noise_normal(),
   control = control_f(),
@@ -22,14 +22,14 @@ f(
   index_pred = NULL,
   debug = NULL,
   index_NA = NULL,
-  f_replicate = NULL,
+  eval = FALSE,
   ...
 )
 }
 \arguments{
-\item{map}{symbol or numerical value: index or covariates to build index}
-
 \item{model}{1. string: type of model, 2. ngme.spde object}
+
+\item{map}{symbol or numerical value: index or covariates to build index}
 
 \item{replicate}{Representing the replicate}
 
@@ -61,8 +61,6 @@ f(
 \item{debug}{Debug mode}
 
 \item{index_NA}{Logical vector, same as is.na(response var.)}
-
-\item{f_replicate}{replicate for f model}
 
 \item{...}{additional arguments
 inherit the data from ngme function}

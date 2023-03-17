@@ -156,7 +156,7 @@ if (debug) {print(str(list_ngmes[[1]]))}
       }
       # mn and beta
       block_traj <- list()
-      for (j in seq_along(list_ngmes))
+      for (j in seq_along(traj_df_chains))
         block_traj[[j]] <- traj_df_chains[[j]][(idx + 1):list_ngmes[[1]]$n_params, ]
       attr(list_ngmes[[1]], "block_traj") <- block_traj
       attr(outputs, "opt_traj") <- NULL
@@ -260,8 +260,6 @@ get_trajs <- function(outputs) {
   }
   ret
 }
-
-
 
 # helper function to tranform the trajectory
 # input: a list (n_chain) of all parameters

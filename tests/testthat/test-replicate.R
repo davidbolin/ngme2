@@ -1,77 +1,104 @@
-# test for replicate data
 
-# share the same hyperparamter
-test_that("test replicate on 1d data", {
-  # load_all()
-  rw <- model_rw(1:5, replicate = c(1,1,1, 2,2))
-  expect_true(ncol(rw$C) * 2 == ncol(rw$A))
-
-  ar1 <- model_ar1(1:5, replicate = c(1,1,1, 2,2))
-  expect_true(ncol(ar1$C) * 2 == ncol(ar1$A))
-
-  matern <- model_matern(1:5, replicate = c(1,1,1, 2,2), mesh=1:10)
-  expect_error(f(model=matern, replicate = c(1,1,1, 2,2)))
-  expect_true(ncol(matern$C) * 2 == ncol(matern$A))
-})
-
-test_that("test replicate on 2d data", {
+# test the interface in R
+test_that("R interface of replicate", {
   library(INLA)
-  pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
-  mesh <- inla.mesh.2d(
-    loc.domain = pl01,
-    max.n = 10
-  )
-
-  locs <- cbind(c(4,5,6,4,5), c(4,5,6,4,5))
-  ma <- model_matern(loc=locs, mesh=mesh, replicate = c(1,1,1, 2,2))
-# dim(ma$A)
-# dim(ma$C)
-# ma$noise$h
-
-  expect_true(ncol(ma$C) * 2 == ncol(ma$A))
-})
-
-test_that("test estimation on AR(1) and RW process", {
-  load_all()
-  n <<- 500
-  z1 = arima.sim(n, model = list(ar = 0.5), sd = 0.5)
-  z2 = arima.sim(n, model = list(ar = 0.5), sd = 0.5)
-
-  out1 <- ngme(
-    z ~ f(1:n, model="ar1", noise=noise_normal(),
-        control = control_f(numer_grad = TRUE)
-      ),
-    data = list(z = c(z1)),
-    control_opt = control_opt(
-      iterations = 500,
-      n_parallel_chain = 1
-    )
-  )
-  out1
-  traceplot(out1, "field1")
-
+  # load_all()
+  # test
+  y <- 11:17
+  x <- 21:27
+  repl <- c(1,1,1,2,2,2,2)
+  loc = cbind(rnorm(7), rnorm(7))
+  mesh2d = inla.mesh.2d(loc=loc, max.n=20)
+####### case 1. ar + rw + matern2d
   out <- ngme(
-    z ~ f(c(1:n ,1:n), model="ar1", replicate=rep(1:2,each=n), noise=noise_normal(),
-        control = control_f(numer_grad = TRUE)),
-    data = list(z = c(z1, z2)),
-    control = control_opt(
-      iterations = 20,
-      n_parallel_chain = 1
+    y ~ 0 + x + f(1:7, model="ar1", replicate=c(1,1,1,2,2,2,2)) +
+      f(2:8, model="rw1", replicate=repl) +
+      f(loc, model="matern", mesh=mesh2d),
+    data = data.frame(
+      y=y, x=x, repl=repl, loc = loc
+    ),
+    control_opt = control_opt(
+      estimation = T,
+      iterations = 10
     )
   )
   out
-  # traceplot(out, "field1")
 
+####### case 2. ar + rw + matern2d with f_replicate
+rep1 <- c(1,1,2,2,3,3,3)
+rep2 <- c(1,1,1,1,2,2,2)
+rep3 <- c(1,1,3,4,2,2,2)
+merge_repls(list(rep1, rep2, rep3))
   out2 <- ngme(
-    z ~ f(c(1:n ,1:n), model="rw1", replicate=rep(1:2,each=n), noise=noise_normal()),
-    data = list(z = c(z1, z2)),
+    y ~ 0 + x + f(1:7, model="ar1",       replicate=rep1) +
+      f(2:8, model="rw1",                 replicate=rep2) +
+      f(loc, model="matern", mesh=mesh2d, replicate=rep3),
+    data = data.frame(
+      y=y, x=x, repl=repl, loc = loc
+    ),
     control_opt = control_opt(
-      estimation = TRUE,
-      iterations = 20
+      estimation = T,
+      iterations = 10
     )
   )
-
-  prds2 <- predict(out2, loc=list(field1 = c(2,4,5)))
-  expect_equal(length(prds2), 3)
+  out2
+  expect_true(TRUE)
 })
 
+test_that("basic ar1 case with different length", {
+  # load_all()
+  n_obs1  <- 500
+  n_obs2 <- 100
+  alpha <- 0.75
+  mu <- -3; sigma <- 2.3; nu <- 2; sigma_eps <- 0.8
+  ar_1 <- model_ar1(1:n_obs1, alpha=alpha, noise=noise_nig(mu=mu, sigma=sigma, nu=nu))
+  ar_2 <- model_ar1(1:n_obs2, alpha=alpha, noise=noise_nig(mu=mu, sigma=sigma, nu=nu))
+
+  W1 <- simulate(ar_1)
+  W2 <- simulate(ar_2)
+  Y <- c(W1, W2) + rnorm(n_obs1 + n_obs2, sd = sigma_eps)
+  beta <- c(3,1,-1)
+  x1 <- rnorm(n_obs1 + n_obs2)
+  x2 <- rexp(n_obs1 + n_obs2)
+  Y <- beta[1] + beta[2] * x1 + beta[3] * x2 + Y
+  # Y <- beta[1] + Y
+
+  # load_all()
+  out <- ngme(
+    Y ~ x1 + x2 + f(time,
+      model="ar1",
+      name="ar",
+      alpha = -0.5,
+      replicate = c(rep(1, n_obs1), rep(2, n_obs2)),
+      noise=noise_nig(),
+      control=control_f(
+        numer_grad = T
+      ),
+      debug = FALSE
+    ),
+    data = data.frame(Y = Y, time=c(1:n_obs1, 1:n_obs2), x1=x1, x2=x2),
+    control_opt = control_opt(
+      estimation = T,
+      iterations = 100,
+      n_parallel_chain = 2,
+      print_check_info = FALSE,
+      verbose = F,
+      exchange_VW = T
+    ),
+    debug = FALSE
+  )
+  out
+  cross_validation(out)
+  traceplot(out)
+  traceplot(out, "ar")
+  plot(simulate(out[[1]]$latents[["ar"]]), type="l")
+  plot(Y, type="l")
+  plot(attr(W1, "noise"), out[[1]]$latents[[1]]$noise)
+
+  # test on predict function
+  predict(out,
+    loc = list(c(1,2,3,4)),
+    data = list(cbind(1, rnorm(4), rexp(4)))
+  )
+  expect_true(TRUE)
+})

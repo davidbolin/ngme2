@@ -151,8 +151,7 @@ ngme_parse_formula <- function(
       # give initial value
       lm.model <- stats::lm.fit(X, Y)
       if (is.null(control_ngme$beta)) control_ngme$beta <- lm.model$coeff
-      if (noise$family_type == "normal" && is.null(noise$theta_sigma == 0))
-        noise$theta_sigma <- log(sd(lm.model$residuals))
+      if (is.null(noise$theta_sigma)) noise$theta_sigma <- log(sd(lm.model$residuals))
 
       noise_new <- update_noise(noise, n = length(Y))
 
@@ -203,7 +202,8 @@ ngme_format <- function(param, val, model = NULL) {
       "matern"  = if (stationary)
           paste0("kappa = ", format(exp(val), digits = 3))
         else
-          paste0("theta_kappa = ", paste0(format(val, digits = 3), collapse = ", "))
+          paste0("theta_kappa = ", paste0(format(val, digits = 3), collapse = ", ")),
+      "ou"     = paste0("theta = ", format(exp(val), digits = 3))
     )
   }
 }
@@ -453,7 +453,6 @@ split_block <- function(block, repl) {
       latentss[[i]][[lat]]$A <- As[[lat]][[i]]
     }
   }
-  # browser()
 
   blocks <- list()
   # build new blocks

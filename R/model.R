@@ -97,14 +97,18 @@ print.ngme_model <- function(x, padding = 0, ...) {
   pad_space <- paste(rep(" ", padding), collapse = "")
   pad_add4_space <- paste(rep(" ", padding + 4), collapse = "")
 
-  cat(pad_space); cat("Ngme model: "); cat(model$model); cat("\n")
+  model_string <- model$model
+    if (model_string == "rw" && model$rw_order==1) model_string <- "rw1"
+    if (model_string == "rw" && model$rw_order==2) model_string <- "rw2"
+  cat(pad_space); cat("Ngme model: "); cat(model_string); cat("\n")
 
   cat(pad_space); cat("Model parameters: \n")
   params <- with(model, {
     switch(model,
       "ar1"         = paste0(pad_add4_space, ngme_format("K", theta_K, "ar1")),
+      "ou"          = paste0(pad_add4_space, ngme_format("K", theta_K, "ou")),
       "matern"      = paste0(pad_add4_space, ngme_format("K", theta_K, "matern")),
-      "rw1"         = paste0(pad_add4_space, "No parameter."),
+      "rw"          = paste0(pad_add4_space, "No parameter."),
       "unkown"      = paste0(pad_add4_space, "No parameter."),
       "tp" = paste0(pad_add4_space, "left - ", left$model, ": ",
         ngme_format("K", left$theta_K, left$model), "\n",

@@ -448,12 +448,13 @@ inline void Latent::set_parameter(const VectorXd& theta) {
 }
 
 // subclasses
+enum Type {ar, rw, ou};
 class AR : public Latent {
 private:
     SparseMatrix<double, 0, int> G, C;
-    bool is_rw; // if this is actually a rw model
+    Type type;
 public:
-    AR(const Rcpp::List& model_list, unsigned long seed, bool is_rw);
+    AR(const Rcpp::List& model_list, unsigned long seed, Type type);
 
     SparseMatrix<double> getK(const VectorXd& alpha) const;
     SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
@@ -615,9 +616,11 @@ public:
     if (model_type == "tp") {
       return std::make_unique<Tensor_prod>(latent_in, latent_seed);
     } else if (model_type == "ar1") {
-      return std::make_unique<AR>(latent_in, latent_seed, false);
-    } else if (model_type == "rw1") {
-      return std::make_unique<AR>(latent_in, latent_seed, true);
+      return std::make_unique<AR>(latent_in, latent_seed, Type::ar);
+    } else if (model_type == "rw") {
+      return std::make_unique<AR>(latent_in, latent_seed, Type::rw);
+    } else if (model_type == "ou") {
+      return std::make_unique<AR>(latent_in, latent_seed, Type::ou);
     } else if (model_type == "matern" && n_theta_K > 1) {
       return std::make_unique<Matern_ns>(latent_in, latent_seed);
     } else if (model_type == "matern" && n_theta_K == 1) {

@@ -90,13 +90,11 @@ f <- function(
       "ar1" = {
         do.call(model_ar1, args)
       },
-      "rw1" = {
-        args$order = 1
+      "rw" = {
         do.call(model_rw, args)
       },
-      "rw2" = {
-        args$order = 2
-        do.call(model_rw, args)
+      "ou" = {
+        do.call(model_ou, args)
       },
       "matern" = {
         do.call(model_matern, args)

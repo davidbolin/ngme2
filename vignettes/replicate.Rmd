@@ -1,0 +1,289 @@
+---
+title: "Ngme2 replicates feature"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Ngme2 replicates feature}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.align = "center",
+  fig.width=7, #not sure about width and height
+  fig.height=7
+)
+```
+
+In this vignette we will introduce the feature of replicates, which allows to include multiple realizations of the
+stochastic processes that can be included in the different models offered in `ngme2`.
+
+## Description
+
+Consider a stochastic process $\mathbf{W}$ indexed by an index set $\mathbf{I}$, the idea is to allow the inclusion of replicates of the process
+in the model.
+
+For example, if one wants to include k realizations of an autoregressive process of order 1 with $n$ observations in the model one can do so
+in the following way
+
+\begin{align}
+X^{(j)}_1 &= \epsilon^{(j)}_1\\
+X^{(j)}_i &= \alpha X^{(j)}_{i-1} + \epsilon^{(j)}_i, i = 2, \ \cdots,\ n
+\end{align}
+
+where $X^{(j)}_i$ denotes the $i \text{-}th$ observation of $j \text{-}th$ realization of the process for $i = 1, \ \cdots,\ n$ and $j = 1, \ \cdots,\ k$, with
+$|\alpha| < 1$ and $\epsilon^{(j)}_1, \ \cdots \ , \epsilon^{(j)}_{n}$ is either i.i.d. **NIG** or **Gaussian** noise.
+
+## Usage
+
+### AR(1) model
+
+The following example will show how to use the replicates feature for an AR(1) model, to see more in detail the AR(1) model (include cross-reference).
+
+Suppose one has a response variable with $2n$ observations
+
+```{r}
+library(ngme2)
+library(ggplot2)
+
+# creating ar1 process
+n <- 500
+myar <- model_ar1(1:n, alpha = .75, noise = noise_nig())
+
+W1 <- simulate(myar, seed = 314) # simulating one realization of the process
+W2 <- simulate(myar, seed = 159) # simulating another realization of the process
+
+# Creating the response variable from the process and adding measurement noise
+Y <- -3 + c(W1, W2) + rnorm(2 * n, sd = .2)
+```
+
+
+```{r echo = F}
+df <- data.frame(Y, idx = 1:(2 * n), group = rep(1:2, each = n)) # creating the data frame to fit the model later
+
+ggplot(df, aes(idx, Y)) +
+  geom_path(aes(color = as.factor(group))) +
+  labs(
+    x = "t", title = "Realization of the process",
+    subtitle = "(side by side)",
+    color = "Realization"
+  ) +
+  scale_fill_manual(aesthetics = "color", values = c("black", "red")) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = .5))
+```
+
+Note that if both processes are considered as a single one instead of two realizations of the same process, then the first observation of the second realization is assumed to be
+dependent on the last one of the first process, which might no be desirable in some cases.
+
+```{r echo = F}
+ggplot(df[1:n, ], aes(idx, Y)) +
+  geom_path(aes(linetype = "1", color = "1")) +
+  geom_path(
+    data = cbind.data.frame(idx = df[1:n, "idx"], Y = df[-(1:n), c("Y")]),
+    mapping = aes(idx, Y, linetype = "2", color = "2")
+  ) +
+  labs(
+    x = "t", title = "Same process viewed as replicates",
+    linetype = "Realization", colour = "Realization"
+  ) +
+  scale_color_manual(values = c("black", "red")) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = .5))
+```
+
+This can be seen in the $\mathbf{K}$ matrix of the model (all the models in the have the same form $K \mathbf{W} = \mathbf{\
+epsilon}$), for instance, consider the following little example
+to illustrate the last statement.
+
+```{r}
+no.replicates <- model_ar1(1:6, alpha = .5, noise = noise_normal())
+
+replicates <- model_ar1(rep(1:3, 2),
+  alpha = .5,
+  noise = noise_normal(), replicate = rep(1:2, each = 3)
+)
+
+# K matrix from the model without replicates
+replicates$K
+# K matrix from the model with replicates
+no.replicates$K
+```
+
+It is clear how the link between the last observation of the first process dissapears by looking at the $\mathbf{K}_{4, 3}$ entry of the matrix $\mathbf{K}$.
+
+With that being said, one can fit the model using the `ngme` function as shown below.
+
+```{r}
+# fitting the model
+mod.replicates <- ngme(
+  formula = Y ~ f(
+    c(1:n, 1:n),
+    replicate = group,
+    model = "ar1",
+    noise = noise_nig(),
+    seed = 7
+  ),
+  data = df
+)
+
+mod.replicates
+```
+
+### SPDE Matern model
+
+The following data is taken from the swamp of Cienaga Grande in Santa Marta, Colombia. There is a total of 114 locations where some properties of the
+swamp were measured. Those measurements were taken twice, however there is no information available about their chronological order so this data cannot
+be treated as spatiotemporal, despite that, the multiple measurements can be treated as replicates.
+
+In this particular case the temperature is the feature that will be modeled.
+
+```{r}
+load_all()
+# library(ngme2)
+library(ggplot2)
+
+# reading the data and the boundary of Cienaga Grande
+data(cienaga)
+data(cienaga.border)
+# scale the coords
+cienaga.border[, 1] <- (cienaga.border[, 1] - mean(cienaga$East)) / sd(cienaga$East)
+cienaga.border[, 2] <- (cienaga.border[, 2] - mean(cienaga$North)) / sd(cienaga$North)
+cienaga <- within(cienaga, {
+  East_scale <- (East - mean(East)) / sd(East)
+  North_scale <- (North - mean(North)) / sd(North)
+})
+
+# creating label for the measurement group
+cienaga$measurement <- rep(1:2, each = (n <- nrow(cienaga) / 2))
+```
+
+```{r echo=F}
+ggpubr::ggarrange(
+  cienaga[cienaga$measurement == 1, ] |>
+    ggplot(aes(East_scale, North_scale)) +
+    geom_point(aes(color = temp)) +
+    geom_path(data = cienaga.border, aes(East, North)) +
+    labs(
+      color = "Temperature [°C]",
+      title = "Temperature in Cienaga Grande",
+      subtitle = "First measurement"
+    ) +
+    theme_minimal() +
+    theme(
+      plot.title = element_text(hjust = .5),
+      plot.subtitle = element_text(hjust = .5)
+    ) +
+    viridis::scale_color_viridis(),
+  cienaga[cienaga$measurement == 2, ] |>
+    ggplot(aes(East_scale, North_scale)) +
+    geom_point(aes(color = temp)) +
+    geom_path(data = cienaga.border, aes(East, North)) +
+    labs(
+      color = "Temperature [°C]",
+      title = "Temperature in Cienaga Grande",
+      subtitle = "Second measurement"
+    ) +
+    theme_minimal() +
+    theme(
+      plot.title = element_text(hjust = .5),
+      plot.subtitle = element_text(hjust = .5)
+    ) +
+    viridis::scale_color_viridis(),
+  ncol = 2, nrow = 1
+)
+```
+
+Now we briefly show how to fit the model and how to predict for locations where the feature is unknown.
+
+```{r}
+# creating the mesh
+mesh <- INLA::inla.mesh.2d(
+  loc.domain = cienaga.border,
+  max.edge = c(0.4, 1),
+  max.n = 500
+)
+mesh$n
+```
+
+```{r echo=F}
+plot(mesh)
+lines(cienaga.border, col = "blue", lwd = 2)
+points(cienaga[, c("East_scale", "North_scale")], pch = 20, col = "red", cex = 2)
+
+# cienaga
+cienaga$temp <- scale(cienaga$temp)
+```
+
+```{r}
+# fitting the model
+fit <- ngme(
+  formula = temp ~ 1 +
+    f(as.matrix(cienaga[, 1:2]),model = "matern", mesh=mesh,
+      name = "spde", noise = noise_nig(), replicate=measurement),
+  data = cienaga,
+  control_opt = control_opt(
+    estimation = T,
+    iterations = 500,
+    n_slope_check = 10,
+    n_parallel_chain = 4,
+    print_check_info = T
+  ),
+  debug = F,
+)
+fit
+traceplot(fit, "spde")
+```
+
+With the fitted model, one can do predictions as follows.
+
+```{r}
+nxy <- c(300, 200)
+projgrid <- rSPDE::rspde.mesh.projector(
+  mesh = mesh,
+  xlim = range(cienaga.border[, 1]), ylim = range(cienaga.border[, 2]),
+  dims = nxy
+)
+
+xy.in <- splancs::inout(projgrid$lattice$loc, as.matrix(cienaga.border[, 1:2]))
+coord.prd <- projgrid$lattice$loc[xy.in, ]
+locs_rep <- list(list(coord.prd), list(coord.prd))
+lp <- predict(fit, loc = locs_rep) # making the predictions
+
+preds1 <- lp[[1]][["mean"]] # getting the mean of the predictions
+preds2 <- lp[[2]][["mean"]]
+```
+
+Observe the following
+
+```{r}
+xy.n <- sum(xy.in) # points inside the cienaga border
+
+xy.n
+length(preds) # total predictions made
+```
+
+the amount of predictions is twice the amount of points used to get those predictions, this is because
+there are two measurements per location, in order to get a single value for prediction we will take the average.
+
+
+```{r echo=F}
+ggplot() +
+  geom_point(aes(coord.prd[, 1], coord.prd[, 2], color = preds1)) +
+  geom_point(aes(coord.prd[, 1], coord.prd[, 2], color = preds2)) +
+  # geom_point(data = cienaga, mapping = aes(East_scale, North_scale), size = 2) +
+  geom_path(aes(cienaga.border[, 1], cienaga.border[, 2])) +
+  viridis::scale_color_viridis() +
+  theme_minimal() +
+  labs(
+    x = "East", y = "North",
+    title = "Temperature predictions in Cienaga Grande",
+    color = "Temperature"
+  ) +
+  theme(
+    plot.title = element_text(hjust = .5),
+    plot.subtitle = element_text(hjust = .5)
+  )
+```

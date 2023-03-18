@@ -147,7 +147,7 @@ if (is.null(f_model$noise$V)) f_model$noise["V"] <- list(NULL)
 
 #' ngme tensor-product model specification
 #'
-#' Given 2 models (left and right), build a tensor-product model based on K = K_left \otimes K_right (Kronecker product)
+#' Given 2 models (left and right), build a tensor-product model based on K = K_left x K_right (here x is Kronecker product)
 #'
 #' @param left ngme_model
 #' @param right ngme_model
@@ -163,10 +163,6 @@ if (is.null(f_model$noise$V)) f_model$noise["V"] <- list(NULL)
 #'
 #' @return a list of specification of model
 #' @export
-#'
-#' @examples
-#' model_ar1(c(1:3, 1:3), replicate = c(1,1,1,2,2,2))
-#' f(xx, model = "ar1", data=list(xx = c(2,4,5)), noise=noise_nig())
 model_tp <- function(
   left        = NULL,
   right       = NULL,

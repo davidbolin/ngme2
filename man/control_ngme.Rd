@@ -23,6 +23,8 @@ control_ngme(
 \item{post_samples_size}{number of posterior samples}
 
 \item{beta}{fixed effect value}
+
+\item{debug}{debug mode}
 }
 \value{
 a list of control variables for block model

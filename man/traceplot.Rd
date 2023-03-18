@@ -6,7 +6,7 @@
   c("mn", "noise") is measurement nosie
 Trace plot of ngme fitting}
 \usage{
-traceplot(ngme, name = "general", ...)
+traceplot(ngme, name = "general")
 }
 \arguments{
 \item{ngme}{ngme object}

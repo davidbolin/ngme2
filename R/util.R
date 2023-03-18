@@ -203,7 +203,7 @@ ngme_format <- function(param, val, model = NULL) {
           paste0("kappa = ", format(exp(val), digits = 3))
         else
           paste0("theta_kappa = ", paste0(format(val, digits = 3), collapse = ", ")),
-      "ou"     = paste0("theta = ", format(exp(val), digits = 3))
+      "ou"      = paste0("theta_K = ", paste0(format(val, digits = 3), collapse = ", ")),
     )
   }
 }
@@ -211,6 +211,7 @@ ngme_format <- function(param, val, model = NULL) {
 #' taking mean over a list of nested lists
 #'
 #' @param lls a list
+#' @param weights weights of each list
 #'
 #' @return a list of nested lists
 #' @export

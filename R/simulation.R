@@ -12,7 +12,7 @@
 #' B_sigma <- matrix(1:10 / 10, nrow=10)
 #' simulate(noise_nig(n = 10, B_sigma = B_sigma))
 #' simulate(noise_normal(theta_sigma = 1.5, B_sigma = B_sigma))
-#' simulate(f(1:10, model = "ar1", theta_K = 0.4, noise = noise_nig()))
+#' simulate(model_ar1(1:10, theta_K = 0.4, noise = noise_nig()))
 simulate.ngme_model <- function(
     object,
     nsim   = 1,

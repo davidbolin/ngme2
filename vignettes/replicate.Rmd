@@ -121,10 +121,9 @@ With that being said, one can fit the model using the `ngme` function as shown b
 mod.replicates <- ngme(
   formula = Y ~ f(
     c(1:n, 1:n),
-    replicate = group,
     model = "ar1",
-    noise = noise_nig(),
-    seed = 7
+    replicate = group,
+    noise = noise_nig()
   ),
   data = df
 )

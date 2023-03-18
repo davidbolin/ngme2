@@ -34,8 +34,6 @@ model_tp(
 \item{control}{control for the model}
 
 \item{...}{extra arguments in f()}
-
-\item{alpha}{initial value for alpha}
 }
 \value{
 a list of specification of model

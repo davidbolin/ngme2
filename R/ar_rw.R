@@ -233,7 +233,7 @@ model_rw <- rw <- function(
 #' @param noise     1. string: type of model, 2. ngme.noise object
 #'  (can also be specified in each ngme model)
 #' @param B_theta_K   Basis matrix for theta, by default it is a matrix of 1
-#' @param theta_K     theta parameter, will be exp(B_theta %*% theta)
+#' @param theta_K     theta parameter, will be exp(B_theta * theta)
 #' @param ...       additional arguments
 #'
 #' @return a list
@@ -241,6 +241,7 @@ model_rw <- rw <- function(
 #'
 #' @examples
 #' r2 <- model_ou(1:7, theta_K = 2); r2$K
+#'
 model_ou <- ou <- function(
   map,
   B_theta_K   = NULL,

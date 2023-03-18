@@ -23,9 +23,6 @@
 #' @param trend_lim       maximum allowed slope
 #' @param print_check_info print the convergence information
 #'
-#' @param opt_beta        logical, optimize fixed effect
-#' @param fix_beta        logical, fix fixed effect
-#'
 #' @param max_relative_step   max relative step allowed in 1 iteration
 #' @param max_absolute_step   max absolute step allowed in 1 iteration
 #'
@@ -34,6 +31,7 @@
 #' @param threshold       till when start to reduce the variance
 #' @param window_size     numerical, length of window for final estimates
 #'
+#' @param verbose print estimation
 #' @return list of control variables
 #' @export
 control_opt <- function(
@@ -138,6 +136,7 @@ control_f <- function(
 #' @param fix_beta       logical, fix fixed effect
 #' @param post_samples_size number of posterior samples
 #' @param beta           fixed effect value
+#' @param debug          debug mode
 #' @return a list of control variables for block model
 #' @export
 control_ngme <- function(

@@ -23,6 +23,7 @@
 #' @param fix_theta_K fix the estimation for theta_K.
 #' @param index_pred index for prediction
 #' @param debug        Debug mode
+#' @param eval      evaluate the model
 #' @param ...       additional arguments
 #'  inherit the data from ngme function
 #'
@@ -85,6 +86,8 @@ f <- function(
 
   # combine args and apply ngme sub_models
   if (is.character(model)) {
+    stopifnot("Please use models in ngme_model_types()"
+      = model %in% ngme_model_types())
     args <- within(f_args, rm(model))
     f_model <- switch(model,
       "ar1" = {
@@ -154,7 +157,6 @@ if (is.null(f_model$noise$V)) f_model$noise["V"] <- list(NULL)
 #' @param map can be ignored, pass through left and right
 #' @param replicate replicate for the process
 #' @param index_NA Logical vector, same as is.na(response var.)
-#' @param alpha initial value for alpha
 #'
 #' @param noise noise, can be specified in f()
 #' @param data data, can be specified in f(), ngme()
@@ -215,11 +217,10 @@ model_tp <- function(
 #' @param map integer vector, time index for the AR(1) process
 #' @param replicate replicate for the process
 #' @param index_NA Logical vector, same as is.na(response var.)
-#' @param alpha initial value for alpha
 #'
 #' @param noise noise, can be specified in f()
 #' @param data data, can be specified in f(), ngme()
-#' @param  control controls using control_f(),
+#' @param control controls using control_f(),
 #' @param ... extra arguments in f()
 #'
 #' @return a list of specification of model
@@ -245,7 +246,7 @@ model_iid <- iid <- function(
   replicate <- if (!is.null(list(...)$replicate)) list(...)$replicate
     else rep(1, length(map))
 
-  mesh <- inla.mesh.1d(loc=map)
+  mesh <- INLA::inla.mesh.1d(loc=map)
   tmp <- ngme_make_A(
     mesh = mesh,
     map = map,

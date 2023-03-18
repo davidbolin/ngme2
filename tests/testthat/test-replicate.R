@@ -12,7 +12,7 @@ test_that("R interface of replicate", {
 ####### case 1. ar + rw + matern2d
   out <- ngme(
     y ~ 0 + x + f(1:7, model="ar1", replicate=c(1,1,1,2,2,2,2)) +
-      f(2:8, model="rw1", replicate=repl) +
+      f(2:8, model="rw", order=1, replicate=repl) +
       f(loc, model="matern", mesh=mesh2d),
     data = data.frame(
       y=y, x=x, repl=repl, loc = loc
@@ -31,7 +31,7 @@ rep3 <- c(1,1,3,4,2,2,2)
 merge_repls(list(rep1, rep2, rep3))
   out2 <- ngme(
     y ~ 0 + x + f(1:7, model="ar1",       replicate=rep1) +
-      f(2:8, model="rw1",                 replicate=rep2) +
+      f(2:8, model="rw", order=1,                 replicate=rep2) +
       f(loc, model="matern", mesh=mesh2d, replicate=rep3),
     data = data.frame(
       y=y, x=x, repl=repl, loc = loc

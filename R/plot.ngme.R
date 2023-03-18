@@ -175,7 +175,7 @@
 #' @return the traceplot
 #' @export
 #'
-traceplot <- function(ngme, name="general", ...) {
+traceplot <- function(ngme, name="general") {
   stopifnot(inherits(ngme, "ngme_fit"))
   stopifnot(!is.null(name))
   ngme <- ngme[[1]]

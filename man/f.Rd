@@ -62,6 +62,8 @@ f(
 
 \item{index_NA}{Logical vector, same as is.na(response var.)}
 
+\item{eval}{evaluate the model}
+
 \item{...}{additional arguments
 inherit the data from ngme function}
 }

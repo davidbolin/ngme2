@@ -28,8 +28,6 @@ model_iid(
 \item{control}{controls using control_f(),}
 
 \item{...}{extra arguments in f()}
-
-\item{alpha}{initial value for alpha}
 }
 \value{
 a list of specification of model

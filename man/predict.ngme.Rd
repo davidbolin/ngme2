@@ -32,6 +32,8 @@ vector or matrix (n * 2) for spatial coords}
 
 \item{sampling_size}{size of posterior sampling}
 
+\item{q}{quantile if using "quantile"}
+
 \item{seed}{random seed}
 
 \item{...}{extra argument from 0 to 1 if using "quantile"}

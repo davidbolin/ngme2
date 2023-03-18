@@ -12,6 +12,7 @@
 #' @param estimator what type of estimator, c("mean", "median", "mode", "quantile")
 #' @param sampling_size size of posterior sampling
 #' @param seed random seed
+#' @param q quantile if using "quantile"
 #' @param ... extra argument from 0 to 1 if using "quantile"
 #'
 #' @return a list of outputs contains estimation of operator paramters, noise parameters
@@ -347,6 +348,7 @@ cat("The final result averaged over replicates: \n")
 #' @param estimator what type of estimator, c("mean", "median", "mode", "quantile")
 #' @param sampling_size size of posterior sampling
 #' @param seed random seed
+#' @param q quantile if using "quantile"
 #' @param ... extra argument from 0 to 1 if using "quantile"
 #'
 #' @return a list of outputs contains estimation of operator paramters, noise parameters

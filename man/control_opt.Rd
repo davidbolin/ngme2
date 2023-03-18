@@ -63,9 +63,7 @@ control_opt(
 
 \item{window_size}{numerical, length of window for final estimates}
 
-\item{opt_beta}{logical, optimize fixed effect}
-
-\item{fix_beta}{logical, fix fixed effect}
+\item{verbose}{print estimation}
 }
 \value{
 list of control variables

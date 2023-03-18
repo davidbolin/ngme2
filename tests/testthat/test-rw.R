@@ -26,8 +26,8 @@ test_that("simulate and estimate of rw with NIG", {
   # first we test the gradient of mu
   out <- ngme(
     Y ~ 0 + f(loc,
-      model="rw1",
-      name="rw1",
+      model="rw",
+      name="rw",
       noise=noise_nig(
         # fix_nu = TRUE, nu = 2,
         # fix_theta_sigma = TRUE, sigma = sigma,
@@ -42,7 +42,7 @@ test_that("simulate and estimate of rw with NIG", {
       iterations = 100,
       n_parallel_chain = 4,
       print_check_info = TRUE,
-      verbose = T
+      verbose = F
     ),
     debug = FALSE
   )

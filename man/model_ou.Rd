@@ -20,7 +20,7 @@ model_ou(
 
 \item{B_theta_K}{Basis matrix for theta, by default it is a matrix of 1}
 
-\item{theta_K}{theta parameter, will be exp(B_theta %*% theta)}
+\item{theta_K}{theta parameter, will be exp(B_theta * theta)}
 
 \item{replicate}{replicate for the process}
 
@@ -42,4 +42,5 @@ ngme model - Ornstein–Uhlenbeck process
 }
 \examples{
 r2 <- model_ou(1:7, theta_K = 2); r2$K
+
 }

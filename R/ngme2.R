@@ -11,6 +11,8 @@
 #' @importFrom utils str
 #' @importFrom ggplot2 ggplot aes geom_line xlab ylab guides labs
 #' @importFrom rlang .data
+#' @importFrom graphics hist
+#' @importFrom stats median quantile
 #' @useDynLib ngme2, .registration = TRUE
 #' @name ngme2
 NULL

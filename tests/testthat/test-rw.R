@@ -155,15 +155,19 @@ test_that("test rw definition", {
 
 
 ######################################################################
-test_that("ou process", {
+test_that("test ou process", {
   # load_all()
-  model_ou(1:3)$K
+  model_ou(1:5)$h
+# M1 <- cbind(c(1,2), c(2,3))
+# M1 %*% diag(c(2,3))
 
+  simulate(model_ou(1:5))
   n_obs <- 5
   Y <- rnorm(n_obs)
-  load_all()
+  B_theta_K <- cbind(1, 1:5)
+  B_theta_K
   out <- ngme(
-    Y ~ 0 + f(Y, model="ou", theta=1),
+    Y ~ 0 + f(Y, model="ou", theta=1, theta_K = c(0.5, 0.5), B_theta_K = B_theta_K),
     data = data.frame(Y = Y),
     control_opt = control_opt(
       estimation = T,
@@ -173,11 +177,11 @@ test_that("ou process", {
       verbose = T
     ),
   )
+  out[[1]]$latents[[1]]$theta_K
   # traceplot(out, "field")
 
   model_ou(c(1,3,5), order=1)$h
 
-  load_all()
   m1 <- model_ou(c(1,3,5), order=2)
   simulate(m1)
   expect_true(TRUE)

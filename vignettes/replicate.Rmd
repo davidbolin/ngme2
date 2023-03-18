@@ -141,7 +141,6 @@ be treated as spatiotemporal, despite that, the multiple measurements can be tre
 In this particular case the temperature is the feature that will be modeled.
 
 ```{r}
-load_all()
 # library(ngme2)
 library(ggplot2)
 
@@ -229,7 +228,7 @@ fit <- ngme(
     iterations = 500,
     n_slope_check = 10,
     n_parallel_chain = 4,
-    print_check_info = T
+    print_check_info = F
   ),
   debug = F,
 )
@@ -252,27 +251,15 @@ coord.prd <- projgrid$lattice$loc[xy.in, ]
 locs_rep <- list(list(coord.prd), list(coord.prd))
 lp <- predict(fit, loc = locs_rep) # making the predictions
 
-preds1 <- lp[[1]][["mean"]] # getting the mean of the predictions
+# getting the mean of the predictions for each replicate
+preds1 <- lp[[1]][["mean"]]
 preds2 <- lp[[2]][["mean"]]
+preds_mean <- 0.5 * (preds1 + preds2)
 ```
-
-Observe the following
-
-```{r}
-xy.n <- sum(xy.in) # points inside the cienaga border
-
-xy.n
-length(preds) # total predictions made
-```
-
-the amount of predictions is twice the amount of points used to get those predictions, this is because
-there are two measurements per location, in order to get a single value for prediction we will take the average.
-
 
 ```{r echo=F}
 ggplot() +
-  geom_point(aes(coord.prd[, 1], coord.prd[, 2], color = preds1)) +
-  geom_point(aes(coord.prd[, 1], coord.prd[, 2], color = preds2)) +
+  geom_point(aes(coord.prd[, 1], coord.prd[, 2], color = preds_mean)) +
   # geom_point(data = cienaga, mapping = aes(East_scale, North_scale), size = 2) +
   geom_path(aes(cienaga.border[, 1], cienaga.border[, 2])) +
   viridis::scale_color_viridis() +

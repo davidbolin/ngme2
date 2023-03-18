@@ -94,7 +94,7 @@ test_that("test matern ns", {
       B_kappa = B_kappa,
       theta_kappa = c(1.1, 2)),
       noise = noise_nig())
-  Y <- drop(A %*% W) + sigma.e * rnorm(n_obs)
+  Y <- as.numeric(A %*% W) + sigma.e * rnorm(n_obs)
   points(loc_obs[,1], loc_obs[,2], col="red", pch=16, cex=2)
   }
 
@@ -128,7 +128,6 @@ test_that("test matern ns", {
 ##################################################
 test_that("test 1d matern with numerical g", {
   library(INLA)
-  load_all()
   n_mesh <<- 800
   mesh <- inla.mesh.1d(1:n_mesh)
   n_obs <<- 500
@@ -143,7 +142,7 @@ test_that("test 1d matern with numerical g", {
   eps <- simulate.ngme_noise(real_noise)
   K <- 4 * spde1d$C + spde1d$G
   W <- as.numeric(solve(K, eps))
-  Y <- drop(spde1d$A %*% W) + rnorm(n_obs, sd=0.5)
+  Y <- as.numeric(spde1d$A %*% W) + rnorm(n_obs, sd=0.5)
 # plot(Y, type="l")
 
   out <- ngme(

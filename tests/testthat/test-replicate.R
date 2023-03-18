@@ -46,7 +46,6 @@ merge_repls(list(rep1, rep2, rep3))
 })
 
 test_that("basic ar1 case with different length", {
-  # load_all()
   n_obs1  <- 500
   n_obs2 <- 100
   alpha <- 0.75
@@ -63,7 +62,6 @@ test_that("basic ar1 case with different length", {
   Y <- beta[1] + beta[2] * x1 + beta[3] * x2 + Y
   # Y <- beta[1] + Y
 
-  # load_all()
   out <- ngme(
     Y ~ x1 + x2 + f(time,
       model="ar1",
@@ -97,8 +95,8 @@ test_that("basic ar1 case with different length", {
 
   # test on predict function
   predict(out,
-    loc = list(c(1,2,3,4)),
-    data = list(cbind(1, rnorm(4), rexp(4)))
+    loc = list(list(c(1,2,3,4)), list(c(1,2,3,4))),
+    data = list(cbind(1, rnorm(4), rexp(4)), cbind(1, rnorm(4), rexp(4)))
   )
   expect_true(TRUE)
 })

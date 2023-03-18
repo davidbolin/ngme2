@@ -108,7 +108,7 @@ model_matern <- matern <- function(
     V_size      = ncol(C),
     theta_K     = theta_kappa,
     alpha       = alpha,
-    B_kappa     = B_kappa,
+    B_K         = B_kappa,
     C           = ngme_as_sparse(C),
     G           = ngme_as_sparse(G),
     K           = ngme_as_sparse(diag(kappas^2) %*% C + G),

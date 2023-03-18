@@ -232,7 +232,8 @@ model_rw <- rw <- function(
 #' @param index_NA  Logical vector, same as is.na(response variable)
 #' @param noise     1. string: type of model, 2. ngme.noise object
 #'  (can also be specified in each ngme model)
-#' @param theta     theta parameter
+#' @param B_theta   Basis matrix for theta, by default it is a matrix of 1
+#' @param theta     theta parameter, will be exp(B_theta %*% theta)
 #' @param ...       additional arguments
 #'
 #' @return a list
@@ -242,7 +243,8 @@ model_rw <- rw <- function(
 #' r2 <- model_ou(1:7, theta_K = 2); r2$K
 model_ou <- ou <- function(
   map,
-  theta       = 1,
+  B_theta_K   = NULL,
+  theta_K     = 0,
   replicate   = NULL,
   data        = NULL,
   index_NA    = NULL,
@@ -256,22 +258,27 @@ model_ou <- ou <- function(
   if (is.null(replicate)) replicate <- rep(1, length(x))
   if (is.null(index_NA)) index_NA <- rep(FALSE, length(x))
   stopifnot("Make sure length(x)==length(replicate)" = length(x) == length(replicate))
-  stopifnot(theta > 0)
 
-  mesh <- INLA::inla.mesh.1d(loc = unique(x)[-1])
-  n <- mesh$n + 1
-  C <- Matrix::sparseMatrix(i = 1:(n-1), j=2:n, x=(theta+1), dims=c(n-1,n))
-  G <- Matrix::sparseMatrix(i = 1:(n-1), j=1:(n-1), x=-1, dims=c(n-1,n))
+  if (is.null(B_theta_K)) B_theta_K <- matrix(1, nrow = length(x), ncol = 1)
+  stopifnot("B_theta is a matrix" = is.matrix(B_theta_K))
+  stopifnot("ncol(B_theta_K) == length(theta_K)"
+    = ncol(B_theta_K) == length(theta_K))
 
-  noise$h <- diff(mesh$loc)
-  noise$h <- c(noise$h, mean(noise$h))
+  mesh <- INLA::inla.mesh.1d(loc=x)
 
-  if (is.null(index_NA)) index_NA <- rep(FALSE, length(x))
-  if (is.null(replicate)) replicate <- rep(1, length(x))
+  # h <- diff(x) ?
+  h <- diff(mesh$loc)
+  noise$h <- h <- c(h, mean(h))
+  n <- length(h)
+  G <- Matrix::bandSparse(n=n,m=n,k=c(-1,0),diagonals=cbind(-rep(1,n), rep(1,n)))
+  C <- Ce <- Matrix::bandSparse(n=n,m=n,k=c(-1,0),diagonals=cbind(0.5*c(h[-1],0), 0.5*h))
+  Ci = Matrix::sparseMatrix(i=1:n,j=1:n,x=1/h,dims = c(n,n))
 
-  mesh_W <- INLA::inla.mesh.1d(loc=x)
+  if (is.null(index_NA)) index_NA <- rep(FALSE, n)
+  if (is.null(replicate)) replicate <- rep(1, n)
+
   tmp <- ngme_make_A(
-    mesh = mesh_W,
+    mesh = mesh,
     map = x,
     n_map = length(x),
     idx_NA = index_NA,
@@ -283,11 +290,12 @@ model_ou <- ou <- function(
   stopifnot(nrep == as.integer(nrep))
 
   # update noise with length n
-  if (noise$n_noise == 1) noise <- update_noise(noise, n = mesh$n)
+  if (noise$n_noise == 1) noise <- update_noise(noise, n = n)
 
   args <- within(list(...), {
     model       = "ou"
-    theta_K     = log(theta)
+    B_K         = B_theta_K
+    theta_K     = theta_K
     W_size      = ncol(C) # mesh$n
     V_size      = mesh$n
     A           = ngme_as_sparse(A)
@@ -297,7 +305,7 @@ model_ou <- ou <- function(
     K           = C + G
     noise       = noise
     h           = noise$h
-    mesh        = mesh_W
+    mesh        = mesh
     map         = x
     n_map       = length(x)
     replicate   = replicate

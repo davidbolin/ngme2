@@ -6,7 +6,8 @@
 \usage{
 model_ou(
   map,
-  theta = 1,
+  B_theta_K = NULL,
+  theta_K = 0,
   replicate = NULL,
   data = NULL,
   index_NA = NULL,
@@ -16,8 +17,6 @@ model_ou(
 }
 \arguments{
 \item{map}{numerical vector, covariates to build index for the process}
-
-\item{theta}{theta parameter}
 
 \item{replicate}{replicate for the process}
 
@@ -30,6 +29,10 @@ if it is circular, we will treat the 1st location and the last location same.}
 (can also be specified in each ngme model)}
 
 \item{...}{additional arguments}
+
+\item{B_theta}{Basis matrix for theta, by default it is a matrix of 1}
+
+\item{theta}{theta parameter, will be exp(B_theta %*% theta)}
 }
 \value{
 a list

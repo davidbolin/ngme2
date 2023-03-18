@@ -35,7 +35,7 @@ simulate.ngme_model <- function(
         # K_a %*% W = noise
         W <- with(model, {
             C.inv <- as(Matrix::diag(1 / Matrix::diag(C)), "sparseMatrix")
-            kappas <- drop(exp(B_kappa %*% theta_K))
+            kappas <- drop(exp(B_K %*% theta_K))
             Kappa <- diag(kappas)
             # build K_a
             if (alpha == 2) {
@@ -59,8 +59,7 @@ simulate.ngme_model <- function(
         # W_{n+1} <- W_0 + n * (W_1 - W_0) + cumsum(cumsum(sim_noise))
     } else if (model$model == "ou") {
         # assume W_0 = 0
-        W <- as.numeric(solve(model$K[,2:n], sim_noise))
-        W <- c(0, W)
+        W <- as.numeric(solve(model$K, sim_noise))
     } else {
         stop("simulation for this class not implement yet")
     }

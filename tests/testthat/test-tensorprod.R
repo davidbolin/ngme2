@@ -24,7 +24,6 @@ out[[1]]$latents[[1]]$right
 test_that("ar x 2d case", {
   set.seed(16)
   library(INLA)
-  load_all()
 
 ##############################  simulation
   mesh2d <- inla.mesh.2d(
@@ -52,7 +51,7 @@ test_that("ar x 2d case", {
   A <- arr$A %x% matern$A
   dim(A)
 
-  AW <- drop(A %*% W)
+  AW <- as.numeric(A %*% W)
   n_obs <- length(AW)
   Y <- AW + rnorm(n_obs, sd=0.5)
 
@@ -61,7 +60,6 @@ test_that("ar x 2d case", {
   tp <- f(model="tp", right=matern, left=arr, eval=T); tp
   expect_true(all(tp$A == A))
 ##############################  estimation
-load_all()
 # str(f(model=matern, group=ar, noise=noise_nig())$model_right$noise)
   out <- ngme(
     Y ~ 0 + f(model="tp",
@@ -89,7 +87,6 @@ load_all()
 
 test_that("iid x ar case", {
 set.seed(16); library(INLA);
-load_all()
   n_obs <- 200
   Y1 <- simulate(ar1(1:n_obs, alpha=0.7, noise=noise_normal(n=n_obs)))
   Y2 <- simulate(ar1(1:n_obs, alpha=0.7, noise=noise_normal(n=n_obs)))
@@ -119,7 +116,6 @@ load_all()
 
 test_that("ar x ar case", {
 set.seed(16); library(INLA);
-load_all()
 
   nl <- 5
   Kl <- ar1(1:nl, alpha=0.3)$K

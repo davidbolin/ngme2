@@ -12,13 +12,13 @@ test_that("test non-stat mu", {
   Y <- W + rnorm(n_obs, sd = 0.8)
 
   res <- ngme(
-    Y ~ 0 + f(1:n_obs, name="ar", noise=noise_nig(
+    Y ~ 0 + f(1:n_obs, model="ar1", name="ar", noise=noise_nig(
       theta_mu = c(0, 0),
       B_mu = cbind(1, mu_cov)
     )),
     family = "normal",
-    data = list(Y=Y),
-    control = control_opt(
+    data = data.frame(Y=Y),
+    control_opt = control_opt(
       iterations = 1000,
       print_check_info = FALSE
     )
@@ -27,6 +27,6 @@ test_that("test non-stat mu", {
   traceplot(res, "ar")
 
   # mu result close to theta_mu
-  expect_true(abs(res$latents[[1]]$noise$theta_mu[1] - (-4)) < 5)
-  expect_true(abs(res$latents[[1]]$noise$theta_mu[2] - (-2)) < 5)
+  expect_true(abs(res[[1]]$latents[[1]]$noise$theta_mu[1] - (-4)) < 5)
+  expect_true(abs(res[[1]]$latents[[1]]$noise$theta_mu[2] - (-2)) < 5)
 })

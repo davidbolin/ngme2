@@ -7,32 +7,39 @@
 */
 #include "../latent.h"
 
-Matern_ns::Matern_ns(const Rcpp::List& model_list, unsigned long seed)
+Matern_ns::Matern_ns(const Rcpp::List& model_list, unsigned long seed, Type type)
 : Latent(model_list, seed),
     G           (Rcpp::as< SparseMatrix<double,0,int> > (model_list["G"])),
     C           (Rcpp::as< SparseMatrix<double,0,int> > (model_list["C"])),
-    alpha       (Rcpp::as<int> (model_list["alpha"])),
-    Bkappa      (Rcpp::as<MatrixXd> (model_list["B_kappa"])),
-    Cdiag       (C.diagonal())
+    alpha       (2),
+    Bkappa      (Rcpp::as<MatrixXd> (model_list["B_K"])),
+    Cdiag       (C.diagonal()),
+    type        (type)
 {
-// if (debug) std::cout << "constructor of matern ns" << std::endl;
-    symmetricK = true;
-
-    // Init K and Q
+//  std::cout << "constructor of matern ns" << std::endl;
+    // Init K
     K = getK(theta_K);
     for (int i=0; i < n_rep; i++)
         setSparseBlock(&K_rep, i*V_size, i*W_size, K);
 
-    SparseMatrix<double> Q = K.transpose() * K;
-
-    chol_solver_K.init(W_size, 0,0,0);
-    chol_solver_K.analyze(K);
-    // compute_trace();
+    if (type==Type::matern_ns) {
+        alpha = Rcpp::as<int> (model_list["alpha"]);
+        symmetricK = true;
+        chol_solver_K.init(W_size, 0,0,0);
+        chol_solver_K.analyze(K);
+        // compute_trace();
+    } else {
+        symmetricK = false;
+        lu_solver_K.init(W_size, 0,0,0);
+        lu_solver_K.analyze(K);
+        // compute_trace();
+    }
 
     // Init Q
+    SparseMatrix<double> Q = K.transpose() * K;
     solver_Q.init(W_size, 0,0,0);
     solver_Q.analyze(Q);
-// if (debug) std::cout << "finish constructor of matern ns" << std::endl;
+//  std::cout << "finish constructor of matern ns" << std::endl;
 }
 
 // inherit get_K_parameter, grad_K_parameter, set_K_parameter
@@ -43,20 +50,23 @@ SparseMatrix<double> Matern_ns::getK(const VectorXd& theta_kappa) const {
 
     int n_dim = G.rows();
     SparseMatrix<double> K_a (n_dim, n_dim);
-    SparseMatrix<double> KCK (n_dim, n_dim);
-        KCK = kappas.cwiseProduct(kappas).cwiseProduct(Cdiag).asDiagonal();
-
-    if (alpha==2) {
-        // K_a = T (G + KCK) C^(-1/2)
-        // Actually, K_a = C^{-1/2} (G+KCK), since Q = K^T K.
-        K_a = (G + KCK);
-    } else if (alpha==4) {
-        // K_a = T (G + KCK) C^(-1) (G+KCK) C^(-1/2)
-        // Actually, K_a = C^{-1/2} (G + KCK) C^(-1) (G+KCK), since Q = K^T K.
-        K_a = (G + KCK) * Cdiag.cwiseInverse().asDiagonal() *
-        (G + KCK);
-    } else {
-        throw("alpha not equal to 2 or 4 is not implemented");
+    if (type == Type::matern_ns) {
+        SparseMatrix<double> KCK (n_dim, n_dim);
+            KCK = kappas.cwiseProduct(kappas).cwiseProduct(Cdiag).asDiagonal();
+        if (alpha==2) {
+            // K_a = T (G + KCK) C^(-1/2)
+            // Actually, K_a = C^{-1/2} (G+KCK), since Q = K^T K.
+            K_a = (G + KCK);
+        } else if (alpha==4) {
+            // K_a = T (G + KCK) C^(-1) (G+KCK) C^(-1/2)
+            // Actually, K_a = C^{-1/2} (G + KCK) C^(-1) (G+KCK), since Q = K^T K.
+            K_a = (G + KCK) * Cdiag.cwiseInverse().asDiagonal() *
+            (G + KCK);
+        } else {
+            throw("alpha not equal to 2 or 4 is not implemented");
+        }
+    } else if (type == Type::ou) {
+        K_a = kappas.asDiagonal() * C + G;
     }
 
     return K_a;
@@ -131,8 +141,8 @@ void Matern_ns::update_each_iter() {
     for (int i=0; i < n_rep; i++)
         setSparseBlock(&K_rep, i*V_size, i*V_size, K);
 
-    if (!numer_grad)
-      compute_trace();
+    // if (!numer_grad)
+    //   compute_trace();
 }
 
 // class nonstationaryGC : public Operator {

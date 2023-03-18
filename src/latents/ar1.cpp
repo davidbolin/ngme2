@@ -32,7 +32,8 @@ if (debug) std::cout << "Begin Constructor of AR1" << std::endl;
     if (W_size == V_size) {
         lu_solver_K.init(W_size, 0,0,0);
         lu_solver_K.analyze(K);
-        compute_trace();
+        // trace == 0
+        // compute_trace();
     }
 
     // Init Q
@@ -49,8 +50,6 @@ SparseMatrix<double> AR::getK(const VectorXd& theta_K) const {
     double theta;
     if (type==Type::ar)
         theta = th2a(theta_K(0));
-    else if (type==Type::ou)
-        theta = exp(theta_K(0));
 
 // std::cout << "theta in get K = " << theta << std::endl;
     SparseMatrix<double> K = theta * C + G;
@@ -71,7 +70,7 @@ void AR::update_num_dK() {
 
 // return length 1 vectorxd : grad_kappa * dkappa/dtheta
 VectorXd AR::grad_theta_K() {
-    if (numer_grad || type == Type::ou) return numerical_grad();
+    if (numer_grad) return numerical_grad();
 
     SparseMatrix<double> dK = get_dK_by_index(0);
 

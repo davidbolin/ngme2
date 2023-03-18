@@ -18,6 +18,10 @@ model_ou(
 \arguments{
 \item{map}{numerical vector, covariates to build index for the process}
 
+\item{B_theta_K}{Basis matrix for theta, by default it is a matrix of 1}
+
+\item{theta_K}{theta parameter, will be exp(B_theta %*% theta)}
+
 \item{replicate}{replicate for the process}
 
 \item{data}{specifed or inherit from ngme formula
@@ -29,10 +33,6 @@ if it is circular, we will treat the 1st location and the last location same.}
 (can also be specified in each ngme model)}
 
 \item{...}{additional arguments}
-
-\item{B_theta}{Basis matrix for theta, by default it is a matrix of 1}
-
-\item{theta}{theta parameter, will be exp(B_theta %*% theta)}
 }
 \value{
 a list

@@ -145,14 +145,36 @@ if (is.null(f_model$noise$V)) f_model$noise["V"] <- list(NULL)
   f_model
 }
 
+#' ngme tensor-product model specification
+#'
+#' Given 2 models (left and right), build a tensor-product model based on K = K_left \otimes K_right (Kronecker product)
+#'
+#' @param left ngme_model
+#' @param right ngme_model
+#' @param map can be ignored, pass through left and right
+#' @param replicate replicate for the process
+#' @param index_NA Logical vector, same as is.na(response var.)
+#' @param alpha initial value for alpha
+#'
+#' @param noise noise, can be specified in f()
+#' @param data data, can be specified in f(), ngme()
+#' @param control control for the model
+#' @param ... extra arguments in f()
+#'
+#' @return a list of specification of model
+#' @export
+#'
+#' @examples
+#' model_ar1(c(1:3, 1:3), replicate = c(1,1,1,2,2,2))
+#' f(xx, model = "ar1", data=list(xx = c(2,4,5)), noise=noise_nig())
 model_tp <- function(
-  map = NULL,
-  replicate  = NULL,
+  left        = NULL,
+  right       = NULL,
+  map         = NULL,
+  replicate   = NULL,
   data        = NULL,
   index_NA    = NULL,
   noise       = noise_normal(),
-  left        = NULL,
-  right       = NULL,
   control   = control_f(),
   ...
 ) {
@@ -201,6 +223,7 @@ model_tp <- function(
 #'
 #' @param noise noise, can be specified in f()
 #' @param data data, can be specified in f(), ngme()
+#' @param  control controls using control_f(),
 #' @param ... extra arguments in f()
 #'
 #' @return a list of specification of model
@@ -211,7 +234,7 @@ model_iid <- iid <- function(
   data        = NULL,
   index_NA    = NULL,
   noise       = noise_normal(),
-  control   = control_f(),
+  control     = control_f(),
   ...
 ) {
   # capture symbol in index

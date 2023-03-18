@@ -225,15 +225,15 @@ model_rw <- rw <- function(
 
 #' ngme model - Ornstein–Uhlenbeck process
 #'
-#' @param map         numerical vector, covariates to build index for the process
+#' @param map     numerical vector, covariates to build index for the process
 #' @param replicate replicate for the process
 #' @param data      specifed or inherit from ngme formula
 #'   if it is circular, we will treat the 1st location and the last location same.
 #' @param index_NA  Logical vector, same as is.na(response variable)
 #' @param noise     1. string: type of model, 2. ngme.noise object
 #'  (can also be specified in each ngme model)
-#' @param B_theta   Basis matrix for theta, by default it is a matrix of 1
-#' @param theta     theta parameter, will be exp(B_theta %*% theta)
+#' @param B_theta_K   Basis matrix for theta, by default it is a matrix of 1
+#' @param theta_K     theta parameter, will be exp(B_theta %*% theta)
 #' @param ...       additional arguments
 #'
 #' @return a list
@@ -292,6 +292,7 @@ model_ou <- ou <- function(
   # update noise with length n
   if (noise$n_noise == 1) noise <- update_noise(noise, n = n)
 
+kappas <- exp(as.numeric(B_theta_K %*% theta_K))
   args <- within(list(...), {
     model       = "ou"
     B_K         = B_theta_K
@@ -302,7 +303,7 @@ model_ou <- ou <- function(
     A_pred      = A_pred
     C           = ngme_as_sparse(C)
     G           = ngme_as_sparse(G)
-    K           = C + G
+    K           = Matrix::Diagonal(x=kappas) * C + G
     noise       = noise
     h           = noise$h
     mesh        = mesh

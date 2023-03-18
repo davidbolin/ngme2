@@ -29,6 +29,8 @@ navbar:
         href: articles/RW-model.html
       - text: SPDE Matern model
         href: articles/SPDE-model.html
+      - text: Ngme replicate feature
+        href: articles/replicate.html
       - text: Model prediction and estimation
         href: articles/pred_and_est.html
     github:
@@ -63,6 +65,9 @@ reference:
     - model_ar1
     - model_matern
     - model_rw
+    - model_ou
+    - model_tp
+    - model_iid
   - title: ngme2 noises
     contents:
     - ngme_noise
@@ -77,7 +82,6 @@ reference:
     contents:
     - plot.ngme_noise
     - traceplot
-    - traceplot2
   - title: Simulation functions
     contents:
     - simulate.ngme_model

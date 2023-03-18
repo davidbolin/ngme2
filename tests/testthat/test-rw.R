@@ -157,7 +157,8 @@ test_that("test rw definition", {
 ######################################################################
 test_that("test ou process", {
   # load_all()
-  model_ou(1:5)$h
+  # ?Diagonal
+  # model_ou(1:5)$K
 # M1 <- cbind(c(1,2), c(2,3))
 # M1 %*% diag(c(2,3))
 

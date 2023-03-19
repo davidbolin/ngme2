@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">ngme2</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,6 +32,7 @@
     <a class="dropdown-item" href="../articles/AR1-model.html">AR(1) model</a>
     <a class="dropdown-item" href="../articles/RW-model.html">Random walk model</a>
     <a class="dropdown-item" href="../articles/SPDE-model.html">SPDE Matern model</a>
+    <a class="dropdown-item" href="../articles/replicate.html">Ngme replicate feature</a>
     <a class="dropdown-item" href="../articles/pred_and_est.html">Model prediction and estimation</a>
   </div>
 </li>
@@ -131,6 +132,21 @@
           <code><a href="model_rw.html">model_rw()</a></code> 
         </dt>
         <dd>ngme model - random walk of order 1</dd>
+      </dl><dl><dt>
+          
+          <code><a href="model_ou.html">model_ou()</a></code> 
+        </dt>
+        <dd>ngme model - Ornstein–Uhlenbeck process</dd>
+      </dl><dl><dt>
+          
+          <code><a href="model_tp.html">model_tp()</a></code> 
+        </dt>
+        <dd>ngme tensor-product model specification</dd>
+      </dl><dl><dt>
+          
+          <code><a href="model_iid.html">model_iid()</a></code> 
+        </dt>
+        <dd>ngme iid model specification</dd>
       </dl></div><div class="section level2">
       <h2 id="ngme-noises">ngme2 noises<a class="anchor" aria-label="anchor" href="#ngme-noises"></a></h2>
       
@@ -171,6 +187,13 @@
 predict using ngme after estimation</dd>
       </dl><dl><dt>
           
+          <code><a href="predict.ngme_fit.html">predict(<i>&lt;ngme_fit&gt;</i>)</a></code> 
+        </dt>
+        <dd>Predict function of ngme2
+predict using ngme after estimation
+same as predict.ngme(ngme[[i]], data[[i]], loc[[i]]) i in which.rep</dd>
+      </dl><dl><dt>
+          
           <code><a href="cross_validation.html">cross_validation()</a></code> 
         </dt>
         <dd>Compute the cross-validation for the ngme model</dd>
@@ -194,12 +217,9 @@ predict using ngme after estimation</dd>
           
           <code><a href="traceplot.html">traceplot()</a></code> 
         </dt>
-        <dd>Trace plot of ngme fitting</dd>
-      </dl><dl><dt>
-          
-          <code><a href="traceplot2.html">traceplot2()</a></code> 
-        </dt>
-        <dd>Trace plot of ngme fitting</dd>
+        <dd>c("fe", "beta") is fixed effects,
+  c("mn", "noise") is measurement nosie
+Trace plot of ngme fitting</dd>
       </dl></div><div class="section level2">
       <h2 id="simulation-functions">Simulation functions<a class="anchor" aria-label="anchor" href="#simulation-functions"></a></h2>
       
@@ -249,12 +269,17 @@ predict using ngme after estimation</dd>
         <dd>Convert sparse matrix into sparse dgCMatrix</dd>
       </dl><dl><dt>
           
-          <code><a href="ngme_control.html">ngme_control()</a></code> 
+          <code><a href="control_opt.html">control_opt()</a></code> 
         </dt>
         <dd>Generate control specifications for <code><a href="../reference/ngme.html">ngme()</a></code> function.</dd>
       </dl><dl><dt>
           
-          <code><a href="ngme_control_f.html">ngme_control_f()</a></code> 
+          <code><a href="control_ngme.html">control_ngme()</a></code> 
+        </dt>
+        <dd>Generate control specifications for the ngme general model</dd>
+      </dl><dl><dt>
+          
+          <code><a href="control_f.html">control_f()</a></code> 
         </dt>
         <dd>Generate control specifications for <code>f</code> function</dd>
       </dl><dl><dt>
@@ -334,6 +359,11 @@ predict using ngme after estimation</dd>
           <code><a href="argo_float.html">argo_float</a></code> 
         </dt>
         <dd>Argo float dataset</dd>
+      </dl><dl><dt>
+          
+          <code><a href="cienaga.html">cienaga</a></code> 
+        </dt>
+        <dd>The swamp of Cienaga Grande in Santa Marta, Colombia</dd>
       </dl></div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
     </nav></aside></div>

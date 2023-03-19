@@ -14,7 +14,7 @@ random generation for the generalized asymmetric Laplace distribution
     
     <a class="navbar-brand me-2" href="../index.html">ngme2</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -36,6 +36,7 @@ random generation for the generalized asymmetric Laplace distribution
     <a class="dropdown-item" href="../articles/AR1-model.html">AR(1) model</a>
     <a class="dropdown-item" href="../articles/RW-model.html">Random walk model</a>
     <a class="dropdown-item" href="../articles/SPDE-model.html">SPDE Matern model</a>
+    <a class="dropdown-item" href="../articles/replicate.html">Ngme replicate feature</a>
     <a class="dropdown-item" href="../articles/pred_and_est.html">Model prediction and estimation</a>
   </div>
 </li>
@@ -173,26 +174,23 @@ $$</p>
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">rgal</span><span class="op">(</span><span class="fl">100</span>, delta <span class="op">=</span> <span class="fl">0</span>, mu <span class="op">=</span> <span class="fl">5</span>, sigma <span class="op">=</span> <span class="fl">1</span>, nu <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   [1]  3.856009879 11.068176119  9.241993262  0.025477241  3.383380714</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   [6]  7.483342022  5.749486075  1.609070396  8.149376901 12.388451176</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [11]  8.787704423  5.084682581  2.933897967  1.980245602  4.097749555</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [16]  0.155984393 11.424881885  2.495258611  4.417565295  7.627824520</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [21]  5.698747804 11.616265462  5.200256860  7.403458532  6.001758569</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [26]  8.121477212 10.640186676  0.871321492 11.940888438  1.195280132</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [31]  0.558841878 10.925198576  1.331926387  7.008669356  1.980453233</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [36]  1.513747881  3.995526853  5.030189615  6.873353345  3.408693157</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [41]  1.313572518  7.143063481  0.625576598  5.671628887  2.554796267</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [46] 27.619428310  4.334175786  6.355610102  0.561806360  4.231240825</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [51] 13.165487398  1.917307744  1.131514106  3.202652510  4.382992063</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [56]  2.064193962 10.333823036  0.698467244  6.766397719  1.759156051</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [61] 12.229284645  1.538168302 -0.459393492  0.002736353  1.133891539</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [66]  0.437128553  7.388050764  1.172528379  3.170887311  3.659988162</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [71]  2.516387346  1.112266492  0.044797153  7.303699041  0.524611886</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [76]  0.745135650  2.835662800  1.567255895  8.155175448 10.366076273</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [81]  2.987901148 11.716111315  0.197114428  0.572949736  2.450660603</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [86]  0.060661005  4.308165805  1.363557402  0.570861424  0.118321586</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [91]  3.649569054  0.689701854  0.739505363  4.301010972  1.388820419</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [96]  2.572412148  3.913452567  0.523027891  5.916917449  9.012355418</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   [1]  0.86258471  4.68230132  3.06827408  2.21392993  0.99825244  4.23306074</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   [7]  6.06095748  4.58456740  5.14538117  1.77440405  2.76021067 11.64955537</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [13]  1.45327148 13.88253737 12.41685891 -0.05531749  3.36413117  0.54046255</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [19]  6.41293901  0.53351692  4.48705823  5.63960203  5.48204006  2.31724446</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [25]  0.79352089 13.63141935  1.12103752  2.61822383  3.75507946  5.48181306</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [31]  8.59051925  4.70403043 18.03936454  1.16766104  8.39681714  0.66844001</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [37]  9.58831575  0.38847854  1.46893537  3.20968472  3.15838540  3.87244853</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [43]  5.29002266  7.26167648  1.14730230  0.40913344 -0.11109027  0.57794684</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [49]  0.32880224  0.62367844  2.06919646  0.08547390  5.59747297  3.07429749</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [55]  5.48513633  4.63746452  2.59900353 10.20015151  8.98595245  0.67044755</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [61]  3.35451515  5.51659931  5.09624501  0.34181384  7.44173299  1.14414096</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [67]  1.90533962 11.64064917  6.29314400  2.88832928  5.45846407  0.24645364</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [73]  2.65427671 -0.03979381  5.79225647  1.34343454  0.43945856  4.40255260</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [79]  0.67344036  3.37836111  4.81385595  1.13984992  3.00462595  0.40427598</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [85] 15.13722628  8.74145945 12.54281257 19.52828878  5.78016926  8.85846471</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [91]  0.80461793 40.46551142  5.16461553  8.58546113  7.11724914  6.35107912</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [97]  4.24407830  1.49926158  1.98793222  0.30169608</span>
 <span class="r-in"><span><span class="fu">pgal</span><span class="op">(</span><span class="fl">0.4</span>, delta <span class="op">=</span> <span class="fl">0</span>, mu <span class="op">=</span> <span class="fl">5</span>, sigma <span class="op">=</span> <span class="fl">1</span>, nu <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.9989855</span>
 <span class="r-in"><span><span class="fu">qgal</span><span class="op">(</span><span class="fl">0.8</span>, delta <span class="op">=</span> <span class="fl">0</span>, mu <span class="op">=</span> <span class="fl">5</span>, sigma <span class="op">=</span> <span class="fl">1</span>, nu <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>

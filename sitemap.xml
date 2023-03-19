@@ -28,6 +28,9 @@
     <loc>https://davidbolin.github.io/ngme2/articles/pred_and_est.html</loc>
   </url>
   <url>
+    <loc>https://davidbolin.github.io/ngme2/articles/replicate.html</loc>
+  </url>
+  <url>
     <loc>https://davidbolin.github.io/ngme2/authors.html</loc>
   </url>
   <url>
@@ -38,6 +41,18 @@
   </url>
   <url>
     <loc>https://davidbolin.github.io/ngme2/reference/argo_float.html</loc>
+  </url>
+  <url>
+    <loc>https://davidbolin.github.io/ngme2/reference/cienaga.html</loc>
+  </url>
+  <url>
+    <loc>https://davidbolin.github.io/ngme2/reference/control_f.html</loc>
+  </url>
+  <url>
+    <loc>https://davidbolin.github.io/ngme2/reference/control_ngme.html</loc>
+  </url>
+  <url>
+    <loc>https://davidbolin.github.io/ngme2/reference/control_opt.html</loc>
   </url>
   <url>
     <loc>https://davidbolin.github.io/ngme2/reference/create_noise.html</loc>
@@ -70,10 +85,19 @@
     <loc>https://davidbolin.github.io/ngme2/reference/model_ar1.html</loc>
   </url>
   <url>
+    <loc>https://davidbolin.github.io/ngme2/reference/model_iid.html</loc>
+  </url>
+  <url>
     <loc>https://davidbolin.github.io/ngme2/reference/model_matern.html</loc>
   </url>
   <url>
+    <loc>https://davidbolin.github.io/ngme2/reference/model_ou.html</loc>
+  </url>
+  <url>
     <loc>https://davidbolin.github.io/ngme2/reference/model_rw.html</loc>
+  </url>
+  <url>
+    <loc>https://davidbolin.github.io/ngme2/reference/model_tp.html</loc>
   </url>
   <url>
     <loc>https://davidbolin.github.io/ngme2/reference/ngme.html</loc>
@@ -83,12 +107,6 @@
   </url>
   <url>
     <loc>https://davidbolin.github.io/ngme2/reference/ngme_as_sparse.html</loc>
-  </url>
-  <url>
-    <loc>https://davidbolin.github.io/ngme2/reference/ngme_control.html</loc>
-  </url>
-  <url>
-    <loc>https://davidbolin.github.io/ngme2/reference/ngme_control_f.html</loc>
   </url>
   <url>
     <loc>https://davidbolin.github.io/ngme2/reference/ngme_model_types.html</loc>
@@ -115,6 +133,9 @@
     <loc>https://davidbolin.github.io/ngme2/reference/predict.ngme.html</loc>
   </url>
   <url>
+    <loc>https://davidbolin.github.io/ngme2/reference/predict.ngme_fit.html</loc>
+  </url>
+  <url>
     <loc>https://davidbolin.github.io/ngme2/reference/print.ngme.html</loc>
   </url>
   <url>
@@ -131,8 +152,5 @@
   </url>
   <url>
     <loc>https://davidbolin.github.io/ngme2/reference/traceplot.html</loc>
-  </url>
-  <url>
-    <loc>https://davidbolin.github.io/ngme2/reference/traceplot2.html</loc>
   </url>
 </urlset>

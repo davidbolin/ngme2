@@ -27,7 +27,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">ngme2</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -50,6 +50,7 @@
     <a class="dropdown-item" href="../articles/AR1-model.html">AR(1) model</a>
     <a class="dropdown-item" href="../articles/RW-model.html">Random walk model</a>
     <a class="dropdown-item" href="../articles/SPDE-model.html">SPDE Matern model</a>
+    <a class="dropdown-item" href="../articles/replicate.html">Ngme replicate feature</a>
     <a class="dropdown-item" href="../articles/pred_and_est.html">Model prediction and estimation</a>
   </div>
 </li>
@@ -147,12 +148,14 @@ examples:</p>
 <span></span>
 <span><span class="va">m2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/model_ar1.html">model_ar1</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2011</span>, <span class="fl">2012</span>, <span class="fl">2015</span>, <span class="fl">2016</span><span class="op">)</span>, noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span>mu<span class="op">=</span><span class="fl">5</span>, sigma<span class="op">=</span><span class="fl">1.5</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">m2</span><span class="op">$</span><span class="va">K</span></span>
-<span><span class="co">#&gt; 4 x 4 sparse Matrix of class "dgCMatrix"</span></span>
-<span><span class="co">#&gt;                      </span></span>
-<span><span class="co">#&gt; [1,]  1.0  .    .   .</span></span>
-<span><span class="co">#&gt; [2,] -0.5  1.0  .   .</span></span>
-<span><span class="co">#&gt; [3,]  .   -0.5  1.0 .</span></span>
-<span><span class="co">#&gt; [4,]  .    .   -0.5 1</span></span>
+<span><span class="co">#&gt; 6 x 6 sparse Matrix of class "dgCMatrix"</span></span>
+<span><span class="co">#&gt;                                </span></span>
+<span><span class="co">#&gt; [1,]  1.0  .    .    .    .   .</span></span>
+<span><span class="co">#&gt; [2,] -0.5  1.0  .    .    .   .</span></span>
+<span><span class="co">#&gt; [3,]  .   -0.5  1.0  .    .   .</span></span>
+<span><span class="co">#&gt; [4,]  .    .   -0.5  1.0  .   .</span></span>
+<span><span class="co">#&gt; [5,]  .    .    .   -0.5  1.0 .</span></span>
+<span><span class="co">#&gt; [6,]  .    .    .    .   -0.5 1</span></span>
 <span><span class="co"># length is 2016 - 2011 + 1 = 6</span></span>
 <span></span>
 <span><span class="co"># specify mesh with replicate</span></span>
@@ -190,9 +193,9 @@ pass the corresponding model into <code>simulate</code> function.</p>
 <h2 id="estimation">Estimation<a class="anchor" aria-label="anchor" href="#estimation"></a>
 </h2>
 <p>In this part we will show how to estiamte the AR model using
-<code>ngme</code> function. Here we can use <code>ngme_control</code> to
+<code>ngme</code> function. Here we can use <code>control_opt</code> to
 modify the control variables for the <code>ngme</code>. See
-<code><a href="../reference/ngme_control.html">?ngme_control</a></code> for more optioins.</p>
+<code><a href="../reference/control_opt.html">?control_opt</a></code> for more optioins.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">x1</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n_obs</span><span class="op">)</span></span>
 <span><span class="va">x2</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Exponential.html" class="external-link">rexp</a></span><span class="op">(</span><span class="va">n_obs</span><span class="op">)</span></span>
@@ -211,49 +214,49 @@ modify the control variables for the <code>ngme</code>. See
 <span>    theta_K <span class="op">=</span> <span class="fl">0.9</span>  <span class="co"># starting point for the alpha (parameter of K)</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x1<span class="op">=</span><span class="va">x1</span>, x2<span class="op">=</span><span class="va">x2</span>, Y<span class="op">=</span><span class="va">Y</span><span class="op">)</span>,</span>
-<span>  control <span class="op">=</span> <span class="fu"><a href="../reference/ngme_control.html">ngme_control</a></span><span class="op">(</span></span>
+<span>  control_opt <span class="op">=</span> <span class="fu"><a href="../reference/control_opt.html">control_opt</a></span><span class="op">(</span></span>
 <span>    burnin <span class="op">=</span> <span class="fl">100</span>,</span>
 <span>    iterations <span class="op">=</span> <span class="fl">2000</span>,</span>
 <span>    std_lim <span class="op">=</span> <span class="fl">0.6</span>,</span>
-<span>    gibbs_sample <span class="op">=</span> <span class="fl">5</span>,</span>
 <span>    n_parallel_chain <span class="op">=</span> <span class="fl">4</span>,</span>
 <span>    stop_points <span class="op">=</span> <span class="fl">10</span>,</span>
-<span>    print_check_info <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span>  <span class="op">)</span>,</span>
-<span>  seed <span class="op">=</span> <span class="fl">3</span></span>
+<span>    print_check_info <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>    seed <span class="op">=</span> <span class="fl">3</span></span>
+<span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; Starting estimation... </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Starting posterior sampling... </span></span>
 <span><span class="co">#&gt; Note: Use ngme$latents[[model_name]]$W  to access the posterior mean of process </span></span>
 <span><span class="co">#&gt; Posterior sampling done!</span></span>
-<span></span>
 <span><span class="va">ngme_out</span></span>
 <span><span class="co">#&gt; *** Ngme object ***</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
-<span><span class="co">#&gt;    beta = -2.717, -0.971,  1.838</span></span>
+<span><span class="co">#&gt;    beta = -2.63, -1.11,  1.82</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type - normal</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 1.11</span></span>
+<span><span class="co">#&gt;       sigma = 1.04</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Latent models: </span></span>
 <span><span class="co">#&gt; $my_ar</span></span>
 <span><span class="co">#&gt;   Ngme model: ar1</span></span>
 <span><span class="co">#&gt;   Model parameters: </span></span>
-<span><span class="co">#&gt;       alpha = 0.528</span></span>
+<span><span class="co">#&gt;       alpha = 0.531</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Noise type - nig</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = 3.02</span></span>
-<span><span class="co">#&gt;       sigma = 0.983</span></span>
-<span><span class="co">#&gt;       nu = 1.79</span></span>
+<span><span class="co">#&gt;       mu = 3.26</span></span>
+<span><span class="co">#&gt;       sigma = 0.97</span></span>
+<span><span class="co">#&gt;       nu = 2.16</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Number of replicates is  1</span></span>
 <span></span>
-<span><span class="co"># traceplot of fixed effects</span></span>
-<span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">ngme_out</span>, <span class="st">"fe"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># traceplot of fixed effects and measurementn noise</span></span>
+<span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">ngme_out</span><span class="op">)</span></span></code></pre></div>
 <p><img src="AR1-model_files/figure-html/ar-estimation-1.png" width="700" style="display: block; margin: auto;"></p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
@@ -263,7 +266,7 @@ modify the control variables for the <code>ngme</code>. See
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="co"># comparing the density of the noise estimated and the noise simulated</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">ngme_out</span><span class="op">$</span><span class="va">latents</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">noise</span>,</span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">ngme_out</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">latents</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">noise</span>,</span>
 <span>  <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span>mu <span class="op">=</span> <span class="fl">2</span>, sigma <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="AR1-model_files/figure-html/ar-estimation-3.png" width="700" style="display: block; margin: auto;"></p>
 </div>

@@ -27,7 +27,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">ngme2</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -50,6 +50,7 @@
     <a class="dropdown-item" href="../articles/AR1-model.html">AR(1) model</a>
     <a class="dropdown-item" href="../articles/RW-model.html">Random walk model</a>
     <a class="dropdown-item" href="../articles/SPDE-model.html">SPDE Matern model</a>
+    <a class="dropdown-item" href="../articles/replicate.html">Ngme replicate feature</a>
     <a class="dropdown-item" href="../articles/pred_and_est.html">Model prediction and estimation</a>
   </div>
 </li>
@@ -313,7 +314,7 @@ d\mathbf{s}.\)</span></p>
 <span><span class="co">#&gt; Loading required package: foreach</span></span>
 <span><span class="co">#&gt; Loading required package: parallel</span></span>
 <span><span class="co">#&gt; Loading required package: sp</span></span>
-<span><span class="co">#&gt; This is INLA_23.02.27 built 2023-02-27 05:22:45 UTC.</span></span>
+<span><span class="co">#&gt; This is INLA_23.03.17 built 2023-03-17 13:18:24 UTC.</span></span>
 <span><span class="co">#&gt;  - See www.r-inla.org/contact-us for how to get help.</span></span>
 <span><span class="co">#&gt;  - To enable PARDISO sparse library; see inla.pardiso()</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://davidbolin.github.io/ngme2/">ngme2</a></span><span class="op">)</span></span>
@@ -355,7 +356,7 @@ examples (both 1d and 2d cases):</p>
 <code class="sourceCode R"><span><span class="co"># 1d example</span></span>
 <span><span class="va">loc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1.1</span>, <span class="fl">2.2</span>, <span class="fl">3.5</span>, <span class="fl">4.7</span><span class="op">)</span></span>
 <span><span class="va">mesh_1d</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/INLA/man/inla.mesh.1d.html" class="external-link">inla.mesh.1d</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">)</span></span>
-<span><span class="va">m1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/model_matern.html">model_matern</a></span><span class="op">(</span>loc <span class="op">=</span> <span class="va">loc</span>, mesh <span class="op">=</span> <span class="va">mesh_1d</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">m1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/model_matern.html">model_matern</a></span><span class="op">(</span>map <span class="op">=</span> <span class="va">loc</span>, mesh <span class="op">=</span> <span class="va">mesh_1d</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># 2d example</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">argo_float</span><span class="op">)</span></span>
@@ -385,7 +386,7 @@ examples (both 1d and 2d cases):</p>
 <p>Specifying a 2d Matérn model is also very simple:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">argo_spde</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/model_matern.html">model_matern</a></span><span class="op">(</span></span>
-<span>  loc <span class="op">=</span> <span class="va">loc_2d</span>,</span>
+<span>  map <span class="op">=</span> <span class="va">loc_2d</span>,</span>
 <span>  mesh <span class="op">=</span> <span class="va">argo_mesh</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
@@ -434,17 +435,17 @@ First we explore the how the data look like:</p>
 <p><img src="SPDE-model_files/figure-html/plot-data-2.png" width="700" style="display: block; margin: auto;"></p>
 <p>Next, we specfiy a model formula, and then fit the model.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">formula</span> <span class="op">&lt;-</span> <span class="va">temp</span> <span class="op">~</span> <span class="va">sal</span> <span class="op">+</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span>model <span class="op">=</span> <span class="va">argo_spde</span>, noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span>, debug <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">formula</span> <span class="op">&lt;-</span> <span class="va">temp</span> <span class="op">~</span> <span class="va">sal</span> <span class="op">+</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="va">loc_2d</span>, model <span class="op">=</span> <span class="st">"matern"</span>, mesh<span class="op">=</span><span class="va">argo_mesh</span>, noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span>, debug <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
 <span>  formula <span class="op">=</span> <span class="va">formula</span>,</span>
 <span>  family <span class="op">=</span> <span class="st">"nig"</span>,</span>
 <span>  data <span class="op">=</span> <span class="va">argo_float</span>,</span>
-<span>  seed <span class="op">=</span> <span class="fl">7</span>,</span>
-<span>  control <span class="op">=</span> <span class="fu"><a href="../reference/ngme_control.html">ngme_control</a></span><span class="op">(</span></span>
+<span>  control_opt <span class="op">=</span> <span class="fu"><a href="../reference/control_opt.html">control_opt</a></span><span class="op">(</span></span>
 <span>    estimation <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>    n_parallel_chain <span class="op">=</span> <span class="fl">4</span>,</span>
 <span>    iterations <span class="op">=</span> <span class="fl">100</span>,</span>
+<span>    seed <span class="op">=</span> <span class="fl">7</span>,</span>
 <span>    print_check_info <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  debug <span class="op">=</span> <span class="cn">FALSE</span></span>
@@ -458,25 +459,27 @@ First we explore the how the data look like:</p>
 <span><span class="co">#&gt; *** Ngme object ***</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
-<span><span class="co">#&gt;    beta = -10.95,   7.19</span></span>
+<span><span class="co">#&gt;    beta = 1.25, 7.58</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type - nig</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -1.34</span></span>
-<span><span class="co">#&gt;       sigma = 3.06</span></span>
-<span><span class="co">#&gt;       nu = 0.0532</span></span>
+<span><span class="co">#&gt;       mu = 0.0304</span></span>
+<span><span class="co">#&gt;       sigma = 2.51</span></span>
+<span><span class="co">#&gt;       nu = 0.067</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Latent models: </span></span>
 <span><span class="co">#&gt; $field1</span></span>
 <span><span class="co">#&gt;   Ngme model: matern</span></span>
 <span><span class="co">#&gt;   Model parameters: </span></span>
-<span><span class="co">#&gt;       kappa = 0.113</span></span>
+<span><span class="co">#&gt;       theta_kappa = -0.678</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Noise type - normal</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.991</span></span></code></pre></div>
+<span><span class="co">#&gt;       sigma = 0.821</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="prediction">Prediction<a class="anchor" aria-label="anchor" href="#prediction"></a>

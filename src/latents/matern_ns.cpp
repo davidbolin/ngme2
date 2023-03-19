@@ -79,37 +79,41 @@ SparseMatrix<double> Matern_ns::get_dK(int index, const VectorXd& params) const 
     int n_dim = G.rows();
     SparseMatrix<double> dK_a (n_dim, n_dim);
 
-    // dKCK
-    SparseMatrix<double> CK(n_dim, n_dim);
-    // CK = kappas.cwiseProduct(Cdiag).asDiagonal();
+    if (type == Type::matern_ns) {
+        // dKCK
+        SparseMatrix<double> CK(n_dim, n_dim);
+        // CK = kappas.cwiseProduct(Cdiag).asDiagonal();
 
-    SparseMatrix<double> dKCK(n_dim, n_dim);
-    //  dKCK = 2*kappas.cwiseProduct(Bkappa.col(index)).asDiagonal() * CK;
-    // kappas * (Bkappa * CK + CK * Bkappa).sparseView();
-        VectorXd kappas2 = kappas.cwiseProduct(kappas);
-        dKCK = 2*kappas2.cwiseProduct(Cdiag).cwiseProduct(Bkappa.col(index)).asDiagonal();
-
-    if (alpha == 2) {
-        dK_a = dKCK;
-    }
-    else if (alpha == 4) {
-        SparseMatrix<double> KCK(n_dim, n_dim);
-        KCK = kappas.cwiseProduct(kappas).cwiseProduct(Cdiag).asDiagonal();
-        SparseMatrix<double> tmp = Cdiag.cwiseInverse().asDiagonal() * (G + KCK);
-        dK_a = dKCK * tmp + tmp * dKCK;
-    }
-    else {
-        throw("alpha not equal to 2 or 4 is not implemented");
+        SparseMatrix<double> dKCK(n_dim, n_dim);
+        //  dKCK = 2*kappas.cwiseProduct(Bkappa.col(index)).asDiagonal() * CK;
+        // kappas * (Bkappa * CK + CK * Bkappa).sparseView();
+            VectorXd kappas2 = kappas.cwiseProduct(kappas);
+            dKCK = 2*kappas2.cwiseProduct(Cdiag).cwiseProduct(Bkappa.col(index)).asDiagonal();
+        if (alpha == 2) {
+            dK_a = dKCK;
+        }
+        else if (alpha == 4) {
+            SparseMatrix<double> KCK(n_dim, n_dim);
+            KCK = kappas.cwiseProduct(kappas).cwiseProduct(Cdiag).asDiagonal();
+            SparseMatrix<double> tmp = Cdiag.cwiseInverse().asDiagonal() * (G + KCK);
+            dK_a = dKCK * tmp + tmp * dKCK;
+        }
+        else {
+            throw("alpha not equal to 2 or 4 is not implemented");
+        }
+    } else {
+        // check
+        dK_a = kappas.cwiseProduct(Bkappa.col(index)).asDiagonal() * C;
     }
 
     return dK_a;
 }
 
-// to-do: analytical gradient for non-stationary matern
+// analytical gradient for non-stationary matern
 VectorXd Matern_ns::grad_theta_K() {
-    return numerical_grad();
+    // if (numer_grad || type==Type::ou)
+        return numerical_grad();
 
-    // if (numer_grad) return numerical_grad();
     // VectorXd grad = VectorXd::Zero(n_theta_K);
     // for (int i=0; i < n_rep ; i++) {
     //     VectorXd W = Ws[i];

@@ -26,8 +26,6 @@ if (debug) std::cout << "Begin Constructor of AR1" << std::endl;
     for (int i=0; i < n_rep; i++)
         setSparseBlock(&K_rep, i*V_size, i*V_size, K);
 
-    SparseMatrix<double> Q = K.transpose() * K;
-
     // watch out!
     if (W_size == V_size) {
         lu_solver_K.init(W_size, 0,0,0);
@@ -37,6 +35,7 @@ if (debug) std::cout << "Begin Constructor of AR1" << std::endl;
     }
 
     // Init Q
+    SparseMatrix<double> Q = K.transpose() * K;
     solver_Q.init(W_size, 0,0,0);
     solver_Q.analyze(Q);
 if (debug) std::cout << "End Constructor of AR1" << std::endl;

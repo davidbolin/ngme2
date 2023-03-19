@@ -14,7 +14,7 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 
-library(devtools); load_all()
+library(devtools);
 set.seed(7)
 ```
 

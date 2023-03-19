@@ -159,39 +159,35 @@ cienaga$measurement <- rep(1:2, each = (n <- nrow(cienaga) / 2))
 ```
 
 ```{r echo=F}
-ggpubr::ggarrange(
-  cienaga[cienaga$measurement == 1, ] |>
-    ggplot(aes(East_scale, North_scale)) +
-    geom_point(aes(color = temp)) +
-    geom_path(data = cienaga.border, aes(East, North)) +
-    labs(
-      color = "Temperature [°C]",
-      title = "Temperature in Cienaga Grande",
-      subtitle = "First measurement"
-    ) +
-    theme_minimal() +
-    theme(
-      plot.title = element_text(hjust = .5),
-      plot.subtitle = element_text(hjust = .5)
-    ) +
-    viridis::scale_color_viridis(),
-  cienaga[cienaga$measurement == 2, ] |>
-    ggplot(aes(East_scale, North_scale)) +
-    geom_point(aes(color = temp)) +
-    geom_path(data = cienaga.border, aes(East, North)) +
-    labs(
-      color = "Temperature [°C]",
-      title = "Temperature in Cienaga Grande",
-      subtitle = "Second measurement"
-    ) +
-    theme_minimal() +
-    theme(
-      plot.title = element_text(hjust = .5),
-      plot.subtitle = element_text(hjust = .5)
-    ) +
-    viridis::scale_color_viridis(),
-  ncol = 2, nrow = 1
-)
+ggplot(data = cienaga[cienaga$measurement == 1, ]) +
+  geom_point(aes(East_scale, North_scale,color = temp)) +
+  geom_path(data = cienaga.border, aes(East, North)) +
+  labs(
+    color = "Temperature [°C]",
+    title = "Temperature in Cienaga Grande",
+    subtitle = "First measurement"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = .5),
+    plot.subtitle = element_text(hjust = .5)
+  ) +
+  viridis::scale_color_viridis()
+
+ggplot(data = cienaga[cienaga$measurement == 1, ]) +
+  geom_point(aes(East_scale, North_scale,color = temp)) +
+  geom_path(data = cienaga.border, aes(East, North)) +
+  labs(
+    color = "Temperature [°C]",
+    title = "Temperature in Cienaga Grande",
+    subtitle = "second measurement"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = .5),
+    plot.subtitle = element_text(hjust = .5)
+  ) +
+  viridis::scale_color_viridis()
 ```
 
 Now we briefly show how to fit the model and how to predict for locations where the feature is unknown.

@@ -16,11 +16,12 @@ test_that("test Matern", {
   loc <- cbind(runif(n_obs, 0, 10), runif(n_obs, 0, 5))
 
   true_model <- model_matern(
-    kappa = 3, mesh = mesh, map = loc, noise = noise_nig(
+    theta_kappa = log(3), mesh = mesh, map = loc, noise = noise_nig(
       mu=-2, sigma=1.5, nu=1, n = mesh$n
     )
   )
   W <- simulate(true_model)
+  mean(attr(W, "noise")$h)
 
   A <- inla.spde.make.A(loc=loc, mesh=mesh)
   Y <- as.numeric(A %*% W) + rnorm(n_obs, sd=0.5)
@@ -39,7 +40,7 @@ test_that("test Matern", {
       name="spde",
       mesh = mesh,
       noise=noise_nig(),
-      control = control_f(numer_grad = F),
+      control = control_f(numer_grad = T),
       # fix_theta_K = T, theta_kappa = log(3),
       # fix_W = TRUE,
       # W = W,
@@ -48,7 +49,7 @@ test_that("test Matern", {
     data = data.frame(Y = Y),
     control_opt = control_opt(
       estimation = T,
-      iterations = 100,
+      iterations = 30,
       n_parallel_chain = 4,
       print_check_info = F,
       verbose = F
@@ -76,27 +77,52 @@ test_that("test Matern", {
 test_that("test matern ns", {
   # library(devtools); library(INLA); load_all()
   { # First we create mesh
+    library(INLA)
     pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
     mesh <- inla.mesh.2d(
       loc.domain = pl01,
       max.edge = 0.5
     )
-    plot(mesh)
+    # plot(mesh)
 
   n_obs <- 500; index_obs <- sample(1:mesh$n, n_obs)
   loc_obs <- mesh$loc[index_obs, c(1, 2)]
   A <- inla.spde.make.A(mesh = mesh, loc = loc_obs)
-  sigma.e <- 0.7
+  sigma.e <- 0.01
 
-  B_kappa <- matrix(c(rep(1, mesh$n), rexp(mesh$n)), ncol = 2)
+  B_kappa <- matrix(c(rep(1, mesh$n), sin(1:mesh$n / 20)), ncol = 2)
+  theta_kappa <- c(1.5, 2.5)
   W <- simulate(model_matern(loc_obs,
       mesh = mesh,
       B_kappa = B_kappa,
-      theta_kappa = c(1.1, 2)),
-      noise = noise_nig())
+      theta_kappa = theta_kappa,
+      # theta_kappa = 2,
+      noise = noise_nig(mu=-3, sigma = 2, nu = 1.5)))
+  # mean(attr(W, "noise")$h)
   Y <- as.numeric(A %*% W) + sigma.e * rnorm(n_obs)
-  points(loc_obs[,1], loc_obs[,2], col="red", pch=16, cex=2)
+  # points(loc_obs[,1], loc_obs[,2], col="red", pch=16, cex=2)
   }
+
+  # plot(B_kappa %*% theta_kappa)
+
+  #  { # 1d matern case
+  #   sigma.e = 0.01
+  #   loc_obs <- 1:500
+  #   B_kappa <- matrix(c(rep(1, 500), sin(1:500 / 20)), ncol = 2)
+  #   mesh = inla.mesh.1d(loc=1:500)
+  #   W <- simulate(
+  #       model_matern(loc_obs,
+  #       mesh = inla.mesh.1d(loc=loc_obs),
+  #       theta_kappa = 2,
+  #       # B_kappa = B_kappa,
+  #       # theta_kappa = c(1.1, 2),
+  #       noise = noise_nig(mu=-5, sigma = 2, nu = 1.5)))
+  #   A <- inla.spde.make.A(loc=loc_obs, mesh = inla.mesh.1d(loc=1:500))
+  #   Y <- as.numeric(A %*% W) + sigma.e * rnorm(n_obs)
+  # }
+  plot(Y, col="red"); abline(h=0)
+
+  trueV = attr(W,"noise")$V
 
   ngme_out <- ngme(
     Y ~ 0 + f(loc_obs,
@@ -104,23 +130,35 @@ test_that("test matern ns", {
       mesh = mesh,
       theta_kappa = c(0.5, 0.5),
       B_kappa = B_kappa,
-      fix_theta_K = FALSE,
-      W = as.numeric(W),
-      fix_W = TRUE,
-      noise = noise_nig(),
+      # theta_kappa = 2,
+      # fix_theta_K = T,
+      # W = as.numeric(W), fix_W = TRUE,
+      noise = noise_nig(
+        # V = trueV, fix_V = TRUE
+        # fix_nu = T, fix_theta_sigma=T, fix_theta_mu=T
+      ),
+      control = control_f(numer_grad = T),
       debug = F,
     ),
     data = data.frame(Y = Y),
     family = noise_normal(),
     control_opt = control_opt(
       estimation = T,
-      iterations = 100,
+      iterations = 20,
       n_parallel_chain = 4
+      # max_relative_step = 5,
+      # max_absolute_step = 10
     ),
     debug = FALSE
   )
   ngme_out
   traceplot(ngme_out, "field1")
+  ngme_out[[1]]$latents[[1]]$theta_K
+  plot(B_kappa %*% theta_kappa, type="l")
+  points(B_kappa %*% ngme_out[[1]]$latents[[1]]$theta_K)
+
+# compare noise
+  plot(ngme_out[[1]]$latents[[1]]$noise,  noise_nig(mu=-3, sigma = 2, nu = 1.5))
 
   expect_true(TRUE)
 })

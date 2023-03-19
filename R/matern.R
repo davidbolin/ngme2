@@ -9,7 +9,6 @@
 #' @param alpha     2 or 4, SPDE smoothness parameter
 #' @param mesh      mesh argument
 #' @param index_NA Logical vector, same as is.na(response var.)
-#' @param kappa     parameterization for kappa^2 C + G, only for stationary
 #' @param theta_kappa parameterization for non-stationary
 #' @param B_kappa   bases for kappa
 #' @param d         indicating the dimension of mesh (together with fem.mesh.matrices)
@@ -22,8 +21,7 @@ model_matern <- matern <- function(
   map,
   replicate   = NULL,
   alpha       = 2,
-  kappa       = 1,
-  theta_kappa = NULL,
+  theta_kappa = 0,
   B_kappa     = NULL,
   mesh        = NULL,
   # fem.mesh.matrices = NULL,
@@ -56,12 +54,6 @@ model_matern <- matern <- function(
   }
 
   stopifnot(alpha == 2 || alpha == 4)
-
-  # use kappa as parameterization
-  stopifnot("Don't overwrite kappa with NULL." = !is.null(kappa))
-  stopifnot("kappa is only for stationary case." = length(kappa) == 1)
-  stopifnot("kappa is greater than 0." = kappa > 0)
-  if (is.null(theta_kappa)) theta_kappa <- log(kappa)
 
   if (is.null(B_kappa) && length(theta_kappa) == 1)
     B_kappa <- matrix(1, nrow = mesh$n, ncol = 1)
@@ -111,7 +103,7 @@ model_matern <- matern <- function(
     B_K         = B_kappa,
     C           = ngme_as_sparse(C),
     G           = ngme_as_sparse(G),
-    K           = ngme_as_sparse(diag(kappas^2) %*% C + G),
+    K           = ngme_as_sparse(diag(kappas) %*% C %*% diag(kappas)  + G),
     h           = h,
     noise       = noise,
     mesh        = mesh,

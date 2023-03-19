@@ -35,7 +35,7 @@ simulate.ngme_model <- function(
         # K_a %*% W = noise
         W <- with(model, {
             C.inv <- as(Matrix::diag(1 / Matrix::diag(C)), "sparseMatrix")
-            kappas <- drop(exp(B_K %*% theta_K))
+            kappas <- as.numeric(exp(B_K %*% theta_K))
             Kappa <- diag(kappas)
             # build K_a
             if (alpha == 2) {
@@ -43,7 +43,7 @@ simulate.ngme_model <- function(
             } else if (alpha == 4) {
                 K_a <- (Kappa %*% C %*% Kappa + G) %*% C.inv %*% (Kappa %*% C %*% Kappa + G)
             }
-            drop(solve(K_a, sim_noise))
+            as.numeric(solve(K_a, sim_noise))
         })
     } else if (model$model == "rw" && model$rw_order == 1) {
         # assume W_0 = 0
@@ -111,7 +111,7 @@ simulate.ngme_noise <- function(
         mu <- drop(noise$B_mu %*% noise$theta_mu)
         sigma <- drop(exp(noise$B_sigma %*% noise$theta_sigma))
         nu <- noise$nu
-        V <- ngme2::rig(n, nu, nu * (noise$h)^2, seed = seed)
+        V <- ngme2::rig(n, a=nu, b=nu*(noise$h)^2, seed = seed)
         noise$V <- V
         e <- mu * (V - noise$h) + sigma * sqrt(V) * rnorm(n)
     } else if (noise$noise_type == "normal") {

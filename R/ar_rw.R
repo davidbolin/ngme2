@@ -304,7 +304,7 @@ kappas <- exp(as.numeric(B_theta_K %*% theta_K))
     A_pred      = A_pred
     C           = ngme_as_sparse(C)
     G           = ngme_as_sparse(G)
-    K           = Matrix::Diagonal(x=kappas) * C + G
+    K           = Matrix::Diagonal(x=kappas) %*% C + G
     noise       = noise
     h           = noise$h
     mesh        = mesh

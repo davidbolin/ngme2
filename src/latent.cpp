@@ -206,7 +206,6 @@ double Latent::function_K(SparseMatrix<double>& K) {
         VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
 
         VectorXd tmp = K * W - mu.cwiseProduct(V-h);
-
         if (!symmetricK) {
             SparseMatrix<double> Q = K.transpose() * SV.cwiseInverse().asDiagonal() * K;
             solver_Q.compute(Q);
@@ -240,15 +239,18 @@ VectorXd Latent::numerical_grad() {
         SparseMatrix<double> K_add_eps = getK_by_eps(i, eps);
         double val_add_eps = function_K(K_add_eps);
         double num_g = (val_add_eps - val) / eps;
+        // SparseMatrix<double> K_minus_eps = getK_by_eps(i, -eps);
+        // double val_minus_eps = function_K(K_minus_eps);
+        // double num_g = (-val_minus_eps + val) / eps;
 
-        if (!use_precond) {
+        // if (!use_precond) {
             grad(i) = - num_g / W_size;
-        } else {
-            SparseMatrix<double> K_minus_eps = getK_by_eps(i, -eps);
-            double val_minus_eps = function_K(K_minus_eps);
-            double num_hess = (val_minus_eps + val_add_eps - 2*val) / pow(eps, 2);
-            grad(i) = num_g / num_hess;
-        }
+        // } else {
+        //     SparseMatrix<double> K_minus_eps = getK_by_eps(i, -eps);
+        //     double val_minus_eps = function_K(K_minus_eps);
+        //     double num_hess = (val_minus_eps + val_add_eps - 2*val) / pow(eps, 2);
+        //     grad(i) = num_g / num_hess;
+        // }
     }
 // std::cout << "grad = " << grad << std::endl;
     return grad;

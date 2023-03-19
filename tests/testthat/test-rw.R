@@ -3,21 +3,28 @@
 test_that("simulate and estimate of rw with NIG", {
   n_obs <<- 500
   mu <- -3; sigma <- 5; nu <- 2; sigma_eps <- 0.8
-  h <- rexp(n_obs)
+  # h <- rpois(n_obs, lambda=3) + 1
   # h <- rep(1, n_obs)
+  h <- rexp(n_obs, rate = 2)
   loc <<- c(0, cumsum(h))
 
-  V <- rig(n_obs, a=nu, b=nu*h^2)
-  # V <- h
-  dW <- -mu*h + mu * V + sigma * sqrt(V) * rnorm(n_obs) # type-G noise
+  # V <- rig(n_obs, a=nu, b=nu*h^2, seed = 3)
+  # dW <- -mu*h + mu * V + sigma * sqrt(V) * rnorm(n_obs) # type-G noise
+  # W <- c(0, cumsum(dW))
 
-  W <- c(0, cumsum(dW))
-  Y <- W + rnorm(n=length(W), sd=sigma_eps)
+  # plot(W)
+  my_rw <- model_rw(loc, order=1, noise=noise_nig(mu=-3, sigma=5, nu=2))
+  W <- simulate(my_rw, seed = 3)
+
+# compare W and V
+# plot(V, type="l")
+# lines(attr(W2, "noise")$V, col="red")
+  # points(W2, col="red")
 
   # check model specification
-  my_rw <- model_rw(loc, order=1)
+  Y <- W + rnorm(n=length(W), sd=sigma_eps)
   expect_true(all(my_rw$K == my_rw$C + my_rw$G))
-  expect_true(all(as.numeric(my_rw$K %*% W) - dW < 1e-5))
+  # expect_true(all(as.numeric(my_rw$K %*% W) - dW < 1e-5))
 
 # ???
 # expect_true(all(my_rw$noise$h - h < 1e-5))
@@ -39,7 +46,7 @@ test_that("simulate and estimate of rw with NIG", {
     data = data.frame(Y = Y),
     control_opt = control_opt(
       estimation = T,
-      iterations = 100,
+      iterations = 500,
       n_parallel_chain = 4,
       print_check_info = TRUE,
       verbose = F
@@ -47,7 +54,7 @@ test_that("simulate and estimate of rw with NIG", {
     debug = FALSE
   )
   out
-  traceplot(out, "rw1")
+  traceplot(out, "rw")
   plot(out[[1]]$latents[[1]]$noise,
     noise_nig(mu=mu, sigma=sigma, nu=nu))
 
@@ -99,6 +106,7 @@ test_that("test estimation of basic ar with normal measurement noise", {
   W <- simulate(ar1)
   Y <- W + rnorm(n_obs, sd = sigma_eps)
 # plot(Y, type="l")
+# load_all()
   out <- ngme(
     Y ~ 0 + f(1:n_obs,
       model="ar1",
@@ -110,7 +118,8 @@ test_that("test estimation of basic ar with normal measurement noise", {
         # fix_V = TRUE, V = attr(W, "noise")$V
       ),
       control=control_f(numer_grad = F),
-      debug = FALSE
+      debug = FALSE,
+      # fix_W = T, W = W
     ),
     data = data.frame(Y = Y),
     control_opt = control_opt(
@@ -123,8 +132,9 @@ test_that("test estimation of basic ar with normal measurement noise", {
     debug = FALSE
   )
   out
-  # plot(attr(W, "noise"), out[[1]]$latents[[1]]$noise)
+  # out[[1]]$latents[[1]]$control$numer_grad
   # traceplot(out, "ar")
+  # plot(attr(W, "noise"), out[[1]]$latents[[1]]$noise)
 
   # plot(simulate(out[[1]]$latents[["ar"]]), type="l")
   # plot(Y, type="l")

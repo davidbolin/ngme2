@@ -101,7 +101,7 @@ ngme_parse_formula <- function(
     X_full    <- model.matrix(delete.response(terms(plain_fm)), as.data.frame(data))
 
     ########## parse latents terms
-    enclos_env <- list2env(as.list(parent.frame(2)), envir = parent.frame())
+    enclos_env <- list2env(as.list(parent.frame()), envir = parent.frame(2))
     pre_model <- list()
     for (i in spec_order) {
       if (!grepl("data *=", terms[i])) {
@@ -199,10 +199,7 @@ ngme_format <- function(param, val, model = NULL) {
   } else { # model
     switch(model,
       "ar1"     = paste0("alpha = ", format(ar1_th2a(val), digits = 3)),
-      "matern"  = if (stationary)
-          paste0("kappa = ", format(exp(val), digits = 3))
-        else
-          paste0("theta_kappa = ", paste0(format(val, digits = 3), collapse = ", ")),
+      "matern"  = paste0("theta_kappa = ", paste0(format(val, digits = 3), collapse = ", ")),
       "ou"      = paste0("theta_K = ", paste0(format(val, digits = 3), collapse = ", ")),
     )
   }

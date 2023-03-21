@@ -13,15 +13,13 @@
 // tensor product for the C G class
 Tensor_prod::Tensor_prod(const Rcpp::List& model_list, unsigned long seed)
   : Latent(model_list, seed) {
-  std::cout << "start init" << std::endl;
+  // std::cout << "start init" << std::endl;
 
   unsigned long latent_seed = latent_rng();
   Rcpp::List group = model_list["left"];
   left = LatentFactory::create(group, latent_seed);
-  std::cout << "create left" << std::endl;
   Rcpp::List model_right = model_list["right"];
   right = LatentFactory::create(model_right, latent_seed);
-  std::cout << "create right" << std::endl;
 
   K = getK(theta_K);
   for (int i=0; i < n_rep; i++)
@@ -37,12 +35,11 @@ Tensor_prod::Tensor_prod(const Rcpp::List& model_list, unsigned long seed)
   solver_Q.init(W_size, 0,0,0);
   solver_Q.analyze(Q);
 
-  std::cout << "Finish init" << std::endl;
+  // std::cout << "Finish init" << std::endl;
 }
 
 VectorXd Tensor_prod::grad_theta_K() {
-  if (numer_grad)
-    return numerical_grad();
+  if (numer_grad) return numerical_grad();
 
   VectorXd grad = VectorXd::Zero(n_theta_K);
   int n1 = left->get_n_theta_K();

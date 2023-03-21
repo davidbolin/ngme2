@@ -388,3 +388,8 @@ noise_normal_nig <- function(
     ...
   )
 }
+
+# measurement nosie with correlation
+noise_corr_nig <- function() {
+
+}

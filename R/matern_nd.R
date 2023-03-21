@@ -4,9 +4,9 @@
 
 #' Create a Matern2D SPDE model
 #'
-#' @param loc list of length 2, each element is numeric vector (1d) or matrix of column 2 (2d)
+#' @param map list of length 2 or 3, each element is numeric vector (1d) or matrix of column 2 (2d)
 #' @param replicate replicate for the process
-#' @param alpha     2 or 4, SPDE smoothness parameter
+#' @param alpha     2 or 4, SPDE smoothness paramete
 #' @param mesh      mesh argument
 #' @param index_NA Logical vector, same as is.na(response var.)
 #' @param kappa     parameterization for kappa^2 C + G, only for stationary
@@ -18,8 +18,8 @@
 #'
 #' @return a list (n, C (diagonal), G, B.kappa) for constructing operator
 #' @export
-model_matern2d <- function(
-  loc = list(NULL, NULL),
+model_matern_nd <- function(
+  map = list(NULL, NULL),
   names = list("matern1", "matern2"),
   mesh = list(NULL, NULL),
   theta_kappa = list(NULL, NULL),
@@ -33,14 +33,20 @@ model_matern2d <- function(
   ...
 ) {
   # check input
+  n_dim <- length(map[[1]])
   stopifnot(
-    length(loc) == 2,
-    length(mesh) == 2,
-    length(theta_kappa) == 2,
-    length(kappa) == 2,
-    length(names) == 2
+    length(mesh) == n_dim,
+    length(names) == n_dim,
+    length(theta_kappa) == n_dim,
+    length(kappa) == n_dim
   )
+  stopifnot(n_dim == 2 || n_dim == 3)
 
+  if (n_dim == 2) {
+    Q  <- matrix(c(1, 0, 0, 1), 2, 2)
+    Dl <- matrix(c(1, 0, 0, 1), 2, 2)
+    D  <- Q %*% Dl
+  }
   # check loc / mesh dimension
   # to-do
 

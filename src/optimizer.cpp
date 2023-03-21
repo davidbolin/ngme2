@@ -100,7 +100,7 @@ VectorXd Optimizer::sgd(
         }
 
         // variance reduction
-        int r = model.get_curr_iter() - var_reduce_iter;
+        int r = curr_iter - var_reduce_iter;
         double tmp = r > 0 ? (1.0/r) : 1.0;
 
         x = x - pow(tmp, reduce_power) * one_step;

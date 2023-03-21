@@ -125,7 +125,6 @@ public:
     MatrixXd             precond() const override;
     VectorXd             grad() override {return precond_grad();}
 
-    int                  get_curr_iter() const {return curr_iter;}
     void                 examine_gradient();
     void                 sampleW_V();
 

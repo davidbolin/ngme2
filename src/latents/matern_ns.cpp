@@ -9,12 +9,12 @@
 
 Matern_ns::Matern_ns(const Rcpp::List& model_list, unsigned long seed, Type type)
 : Latent(model_list, seed),
+    type        (type),
     G           (Rcpp::as< SparseMatrix<double,0,int> > (model_list["G"])),
     C           (Rcpp::as< SparseMatrix<double,0,int> > (model_list["C"])),
     alpha       (2),
     Bkappa      (Rcpp::as<MatrixXd> (model_list["B_K"])),
-    Cdiag       (C.diagonal()),
-    type        (type)
+    Cdiag       (C.diagonal())
 {
 //  std::cout << "constructor of matern ns" << std::endl;
     // Init K

@@ -33,6 +33,7 @@ Rcpp::List estimate_cpp(const Rcpp::List& list_ngmes, const Rcpp::List& control_
     const int iterations = control_opt["iterations"];
     const double max_relative_step = control_opt["max_relative_step"];
     const double max_absolute_step = control_opt["max_absolute_step"];
+    const int sampling_strategy = control_opt["sampling_strategy"];
 
     Rcpp::List output = R_NilValue;
 
@@ -57,7 +58,7 @@ auto timer = std::chrono::steady_clock::now();
     std::vector<std::unique_ptr<Block_reps>> block_reps;
     int i = 0;
     for (i=0; i < n_chains; i++) {
-        block_reps.push_back(std::make_unique<Block_reps>(list_ngmes, rng()));
+        block_reps.push_back(std::make_unique<Block_reps>(list_ngmes, rng(), sampling_strategy));
     }
     std::string par_string = block_reps[0]->get_par_string();
 
@@ -144,7 +145,7 @@ auto timer = std::chrono::steady_clock::now();
         std::cout << "Estimation ends." << std::endl;
 
 #else // No parallel chain
-    Block_reps block_reps (list_ngmes, rng());
+    Block_reps block_reps (list_ngmes, rng(), sampling_strategy);
     Optimizer opt (control_opt);
     opt.sgd(block_reps, 0.1, iterations, max_relative_step, max_absolute_step);
     // estimation done, posterior sampling

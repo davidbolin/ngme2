@@ -60,8 +60,11 @@ control_opt <- function(
   window_size       = 1,
 
   # opt print
-  verbose          = FALSE
+  verbose           = FALSE,
+  sampling_strategy = "importance_sampling"
 ) {
+  strategy_list <- c("weighted_average", "importance_sampling")
+
   if ((reduce_power <= 0.5) || (reduce_power > 1)) {
     stop("reduceVar should be in (0.5,1]")
   }
@@ -92,7 +95,8 @@ control_opt <- function(
     threshold         = threshold,
     window_size       = window_size,
 
-    verbose          = verbose
+    verbose           = verbose,
+    sampling_strategy = which(strategy_list == sampling_strategy)
   )
 
   class(control) <- "control_opt"
@@ -141,6 +145,7 @@ control_f <- function(
 #' @export
 control_ngme <- function(
   init_sample_W = TRUE,
+  burnin = 100,
   n_gibbs_samples = 5,
   fix_beta = FALSE,
   post_samples_size = 100,
@@ -148,6 +153,7 @@ control_ngme <- function(
   debug = FALSE
 ) {
   control <- list(
+    burnin = burnin,
     init_sample_W = init_sample_W,
     n_gibbs_samples = n_gibbs_samples,
     fix_beta = fix_beta,

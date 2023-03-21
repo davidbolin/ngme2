@@ -1,4 +1,7 @@
+// Implementation for block model and block_rep
+
 #include "block.h"
+#include "block_reps.h"
 #include <random>
 #include <cmath>
 
@@ -32,7 +35,7 @@ BlockModel::BlockModel(
 {
   // 1. Init controls
   Rcpp::List control_ngme = block_model["control_ngme"];
-    // const int burnin = control_ngme["burnin"];
+    const int burnin = control_ngme["burnin"];
     const double stepsize = control_ngme["stepsize"];
     bool init_sample_W = Rcpp::as<bool> (control_ngme["init_sample_W"]);
     n_gibbs     =  Rcpp::as<int>    (control_ngme["n_gibbs_samples"]);
@@ -113,6 +116,7 @@ if (debug) std::cout << "After init solver && before sampleW_V" << std::endl;
     sampleW_V();
     sampleW_V();
   }
+  burn_in(burnin);
 
 if (debug) std::cout << "End Block Constructor" << std::endl;
 }
@@ -527,3 +531,25 @@ inline void BlockModel::examine_gradient() {
 //     std::cout << "stepsizes=" << stepsizes <<std::endl;
 // }
 }
+
+
+//  ##############################
+VectorXd Block_reps::precond_grad() {
+    VectorXd g = VectorXd::Zero(n_params);
+    // weighted averge over all replicates
+    if (sampling_strategy == 1) {
+      for (int i=0; i < n_blocks; i++) {
+        g += n_obs[i] * blocks[i]->grad() / sum_n_obs;
+      }
+// std::cout << "using weighted average" << std::endl;
+    } else if (sampling_strategy == 2) {
+      // importance sampling (IS) for each replicate
+      int idx = importance_sampler(gen);
+      g = blocks[idx]->precond_grad() / n_obs[idx];
+// std::cout << "using is, idx = " << idx << std::endl;
+    } else {
+      Rcpp::stop("Unknown sampling strategy!");
+    }
+
+    return g;
+  }

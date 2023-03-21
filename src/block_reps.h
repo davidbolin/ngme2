@@ -20,11 +20,16 @@ private:
   int n_params;
   vector<int> n_obs;
   double sum_n_obs;
+
+  int sampling_strategy;
+  std::mt19937 gen;
+  std::discrete_distribution<int> importance_sampler;
 public:
-  Block_reps(
-    const Rcpp::List& list_ngmes,
-    unsigned long seed
-  ) : n_blocks(list_ngmes.size()) {
+  Block_reps(const Rcpp::List& list_ngmes, unsigned long seed, int sampling_strategy) :
+    n_blocks(list_ngmes.size()),
+    sampling_strategy(sampling_strategy),
+    gen(seed)
+  {
     for (int i=0; i < n_blocks; i++) {
       Rcpp::List block_model = Rcpp::as<Rcpp::List> (list_ngmes[i]);
       blocks.push_back(std::make_unique<BlockModel>(block_model, seed));
@@ -32,6 +37,9 @@ public:
     }
     sum_n_obs = std::accumulate(n_obs.begin(), n_obs.end(), 0.0);
     n_params = blocks[0]->get_n_params();
+
+    // Init the random number generator
+    importance_sampler = std::discrete_distribution<int>(n_obs.begin(), n_obs.end());
   }
 
   VectorXd get_parameter() const {
@@ -64,14 +72,8 @@ public:
     return g;
   }
 
-  // later
-  VectorXd precond_grad() {
-    VectorXd g = VectorXd::Zero(n_params);
-    for (int i=0; i < n_blocks; i++) {
-      g += n_obs[i] * blocks[i]->grad() / sum_n_obs;
-    }
-    return g;
-  }
+  // add subsampling for some blocks (SGD-IS sample only 1 replicate each time, according to the weights)
+  VectorXd precond_grad();
 
   std::string get_par_string() const {
     return blocks[0]->get_par_string();

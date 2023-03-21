@@ -67,7 +67,6 @@ if (debug) std::cout << "before set block A" << std::endl;
     setSparseBlock(&A, 0, n, (*it)->getA());
     n += (*it)->get_W_size();
   }
-if (debug) std::cout << "after set block A" << std::endl;
 
   assemble();
 if (debug) std::cout << "After set block K" << std::endl;

@@ -81,8 +81,6 @@ if (debug) std::cout << "Begin constructor of latent" << std::endl;
         sigma = (B_sigma * theta_sigma).array().exp();
         if (noise_type=="normal_nig") sigma_normal = (B_sigma_normal * theta_sigma_normal).array().exp();
 
-    const int n_nu = 1;
-
     // init W
     for (int i=0; i < n_rep; i++) {
         if (model_list["W"] != R_NilValue) {

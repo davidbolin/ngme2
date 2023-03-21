@@ -113,7 +113,6 @@ ngme_noise <- function(
       n_theta_mu      = length(theta_mu),
       n_theta_sigma   = length(theta_sigma),
       n_theta_sigma_normal   = length(theta_sigma_normal),
-      n_nu            = 1,
       fix_theta_mu    = fix_theta_mu,
       fix_theta_sigma = fix_theta_sigma,
       fix_nu          = fix_nu,

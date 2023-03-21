@@ -32,6 +32,9 @@
 #' @param window_size     numerical, length of window for final estimates
 #'
 #' @param verbose print estimation
+#' @param strategy_list subsampling of replicates of model, c("all", "is")
+#' "all" means using all replicates in each iteration,
+#' "ws" means weighted sampling (each iteration use 1 replicate to compute the gradient, the sample probability is proption to its number of observations)
 #' @return list of control variables
 #' @export
 control_opt <- function(
@@ -61,9 +64,10 @@ control_opt <- function(
 
   # opt print
   verbose           = FALSE,
-  sampling_strategy = "importance_sampling"
+  sampling_strategy = "ws"
 ) {
-  strategy_list <- c("weighted_average", "importance_sampling")
+  strategy_list <- c("all", "ws")
+  stopifnot(sampling_strategy %in% strategy_list)
 
   if ((reduce_power <= 0.5) || (reduce_power > 1)) {
     stop("reduceVar should be in (0.5,1]")

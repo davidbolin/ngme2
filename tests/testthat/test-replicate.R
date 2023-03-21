@@ -100,3 +100,33 @@ test_that("basic ar1 case with different length", {
   )
   expect_true(TRUE)
 })
+
+# compare subsampling
+test_that("subsampling vs sample all", {
+  n_reps <- 10; n_each <- 50; n_obs <- n_reps * n_each
+  myar1 <- ar1(1:n_each, alpha=-0.5, noise = noise_nig(mu = -3, sigma=2, nu=1))
+  W <- double(); reps <- double()
+  for (i in seq_len(n_reps)) {
+    W    <- c(W, simulate(myar1))
+    reps <- c(reps, rep(i, n_each))
+  }
+  Y <- W + rnorm(n_obs, sd=0.5)
+
+  # load_all()
+  out <- ngme(
+    Y ~ 0 + f(1:n_obs, model="ar1", replicate=reps, noise=noise_nig()),
+    family = "normal",
+    data = data.frame(Y = Y),
+    control_opt = control_opt(
+      seed = 1,
+      iterations = 100,
+      n_parallel_chain = 4,
+      sampling_strategy = "all"
+    )
+  )
+  out
+# is : time = 2
+# all : time = 9
+
+  traceplot(out, "field1")
+})

@@ -137,7 +137,7 @@ ngme(
   formula = formula,
   family = noise_normal(sigma = 0.5), # or just "normal"
   data = data.frame(Y = 1:5, x1 = 2:6, x2 = 3:7),
-  control = ngme_control(
+  control = control_opt(
     estimation = FALSE,
     burnin = 100,
     iterations = 1000,
@@ -207,10 +207,10 @@ ngme_fit <- ngme(
     theta_K = 0.9  # starting point for AR parameter
   ),
   data = data.frame(x1=x1, x2=x2, Y=Y),
-  control = ngme_control(
+  control = control_opt(
     burnin = 100,
     iterations = 1000,
-    gibbs_sample = 5,
+    n_gibbs_samples = 5,
     n_parallel_chain = 4,
     print_check_info = FALSE
   ),
@@ -303,7 +303,7 @@ ngme_fit0 <- ngme(
   formula = fm0,
   data = list(Y = Y, seaDist=seaDist),
   family = noise_normal(),
-  control = ngme_control(
+  control = control_opt(
     iterations = 2000,
     stop_points = 10,
     n_parallel_chain = 4,
@@ -320,7 +320,7 @@ ngme_fit1 <- ngme(
   formula = fm1,
   data = list(Y = Y, seaDist=seaDist),
   family = noise_normal(),
-  control = ngme_control(
+  control = control_opt(
     iterations = 2000,
     stop_points = 10,
     n_parallel_chain = 4,
@@ -338,7 +338,7 @@ ngme_fit2 <- ngme(
   formula = fm2,
   data = list(Y = Y, seaDist=seaDist),
   family = noise_normal(),
-  control = ngme_control(
+  control = control_opt(
     iterations = 2000,
     stop_points = 10,
     n_parallel_chain = 4,
@@ -355,7 +355,7 @@ ngme_fit3 <- ngme(
   formula = fm3,
   data = list(Y = Y, seaDist=seaDist),
   family = noise_normal(),
-  control = ngme_control(
+  control = control_opt(
     iterations = 2000,
     stop_points = 10,
     n_parallel_chain = 4,

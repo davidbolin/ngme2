@@ -5,7 +5,7 @@
 \title{Create a Matern SPDE model}
 \usage{
 model_matern(
-  loc = NULL,
+  map,
   replicate = NULL,
   alpha = 2,
   kappa = 1,
@@ -19,7 +19,7 @@ model_matern(
 )
 }
 \arguments{
-\item{loc}{numeric vector (1d) or matrix of column 2 (2d),
+\item{map}{numeric vector (1d) or matrix of column 2 (2d),
 location to make index
 keep aligned with Y if make prediction with index_NA!!!}
 

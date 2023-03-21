@@ -13,13 +13,14 @@ predict using ngme after estimation}
   estimator = c("mean", "sd", "5quantile", "95quantile", "median", "mode"),
   sampling_size = 100,
   q = NULL,
+  seed = Sys.time(),
   ...
 )
 }
 \arguments{
 \item{object}{a ngme object}
 
-\item{data}{a data.frame of covariates (used for fixed effects)}
+\item{data}{a data.frame or matrix of covariates (used for fixed effects)}
 
 \item{loc}{a named list (or dataframe) of the locations to make the prediction
 names(loc) corresponding to the name each latent model
@@ -30,6 +31,10 @@ vector or matrix (n * 2) for spatial coords}
 \item{estimator}{what type of estimator, c("mean", "median", "mode", "quantile")}
 
 \item{sampling_size}{size of posterior sampling}
+
+\item{q}{quantile if using "quantile"}
+
+\item{seed}{random seed}
 
 \item{...}{extra argument from 0 to 1 if using "quantile"}
 }

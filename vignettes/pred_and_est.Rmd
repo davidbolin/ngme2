@@ -249,8 +249,8 @@ mesh_1d <- inla.mesh.1d(loc_1d)
 # specify the model we use
 mu <- 1; sigma <- 1; nu <- 0.5
 spde_1d <- model_matern(
+  loc_1d,
   kappa = 1,
-  loc = loc_1d,
   mesh = mesh_1d,
   noise = noise_nig(mu=mu, sigma=sigma, nu=nu)
 )

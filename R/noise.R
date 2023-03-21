@@ -49,8 +49,9 @@ ngme_noise <- function(
   B_sigma_normal  = NULL,
   fix_theta_mu    = FALSE,
   fix_theta_sigma = FALSE,
-  fix_nu     = FALSE,
+  fix_nu          = FALSE,
   V               = NULL,
+  # Vs              = NULL,
   h               = NULL,
   fix_V           = FALSE,
   theta_sigma_normal = NULL,
@@ -101,7 +102,7 @@ ngme_noise <- function(
       n_noise         = n,  # this is same as V_size
       h               = if (is.null(h)) rep(1, n) else h,
       noise_type      = noise_type,
-      nu         = nu,
+      nu              = nu,
       V               = V,
       theta_mu        = theta_mu,
       theta_sigma     = theta_sigma,
@@ -112,17 +113,18 @@ ngme_noise <- function(
       n_theta_mu      = length(theta_mu),
       n_theta_sigma   = length(theta_sigma),
       n_theta_sigma_normal   = length(theta_sigma_normal),
-      n_nu       = 1,
+      n_nu            = 1,
       fix_theta_mu    = fix_theta_mu,
       fix_theta_sigma = fix_theta_sigma,
-      fix_nu     = fix_nu,
+      fix_nu          = fix_nu,
       fix_V           = fix_V,
       n_params        = switch(noise_type,
         "normal"     = length(theta_sigma),
         "nig"        = length(c(theta_mu, theta_sigma, 1)),
         "gal"        = length(c(theta_mu, theta_sigma, 1)),
         "normal_nig" = length(c(theta_mu, theta_sigma, 1, theta_sigma_normal))
-      ) # parameter to estimate
+      ), # parameter to estimate
+      init_V          = TRUE
     ),
     class = "ngme_noise"
   )

@@ -4,10 +4,12 @@
 \alias{mean_list}
 \title{taking mean over a list of nested lists}
 \usage{
-mean_list(lls)
+mean_list(lls, weights = NULL)
 }
 \arguments{
 \item{lls}{a list}
+
+\item{weights}{weights of each list}
 }
 \value{
 a list of nested lists

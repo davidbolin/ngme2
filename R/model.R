@@ -11,7 +11,7 @@ ngme_model <- function(
   A           = NULL,
   A_pred      = NULL,
   noise       = noise_normal(),
-  control     = ngme_control_f(),
+  control     = control_f(),
   V_size      = NULL,
   debug       = FALSE,
   n_theta_K   = length(theta_K),
@@ -23,8 +23,12 @@ ngme_model <- function(
   map         = NULL,  # map is the covariates
   n_map       = NULL,
   replicate   = NULL,
+  n_rep       = NULL,
+  group       = NULL,
   ...
 ) {
+  if (is.null(n_rep)) n_rep <- length(unique(replicate))
+
   stopifnot(is.character(model))
   # generate string (8 digits)
   K_str     <- switch(model,
@@ -42,6 +46,11 @@ ngme_model <- function(
     par_string <- do.call(paste0, as.list(c(K_str, sigma_str)))
   else
     par_string <- do.call(paste0, as.list(c(K_str, mu_str, sigma_str, nu_str)))
+
+  stopifnot("replicate is NULL" = !is.null(replicate))
+  stopifnot("make sure length of replicate == length of index" =
+   length(replicate) == length_map(map))
+  replicate <- as.integer(replicate)
 
   structure(
     list(
@@ -67,6 +76,8 @@ ngme_model <- function(
       map           = map,
       n_map         = n_map,
       replicate     = replicate,
+      n_rep         = n_rep,
+      group         = group,
       ...
     ),
     class = "ngme_model"
@@ -86,15 +97,25 @@ print.ngme_model <- function(x, padding = 0, ...) {
   pad_space <- paste(rep(" ", padding), collapse = "")
   pad_add4_space <- paste(rep(" ", padding + 4), collapse = "")
 
-  cat(pad_space); cat("Ngme model: "); cat(model$model); cat("\n")
+  model_string <- model$model
+    if (model_string == "rw" && model$rw_order==1) model_string <- "rw1"
+    if (model_string == "rw" && model$rw_order==2) model_string <- "rw2"
+  cat(pad_space); cat("Ngme model: "); cat(model_string); cat("\n")
 
   cat(pad_space); cat("Model parameters: \n")
   params <- with(model, {
     switch(model,
-      "ar1"     = paste0(pad_add4_space, ngme_format("K", theta_K, "ar1")),
-      "matern"  = paste0(pad_add4_space, ngme_format("K", theta_K, "matern")),
-      "rw1"     = paste0(pad_add4_space, "No parameter."),
-      "unkown"  = paste0(pad_add4_space, "No parameter."),
+      "ar1"         = paste0(pad_add4_space, ngme_format("K", theta_K, "ar1")),
+      "ou"          = paste0(pad_add4_space, ngme_format("K", theta_K, "ou")),
+      "matern"      = paste0(pad_add4_space, ngme_format("K", theta_K, "matern")),
+      "rw"          = paste0(pad_add4_space, "No parameter."),
+      "unkown"      = paste0(pad_add4_space, "No parameter."),
+      "tp" = paste0(pad_add4_space, "left - ", left$model, ": ",
+        ngme_format("K", left$theta_K, left$model), "\n",
+        pad_add4_space, "right - ", right$model, ": ",
+        ngme_format("K", right$theta_K, right$model)
+      ),
+      paste0(pad_add4_space, "Not implemented yet!")
     )
   })
   cat(params);

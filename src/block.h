@@ -61,7 +61,7 @@ protected:
 
     // controls
     int n_gibbs;
-    bool debug,opt_beta, reduce_var;
+    bool debug, reduce_var;
     double reduce_power, threshold;
 
     SparseMatrix<double> A, K;      // not used: dK, d2K;
@@ -77,16 +77,9 @@ protected:
 
     // solvers
     cholesky_solver chol_Q, chol_QQ;
-    SparseLU<SparseMatrix<double> > LU_K;
-
-    // record trajectory
-    vector<vector<double>> beta_traj;
-    vector<vector<double>> theta_mu_traj;
-    vector<vector<double>> theta_sigma_traj;
-    vector<double>   nu_traj;
+    SparseLU<SparseMatrix<double>> LU_K;
 
     std::string par_string;
-
 public:
     // BlockModel() {}
     BlockModel(const Rcpp::List& block_model, unsigned long seed);
@@ -102,6 +95,7 @@ public:
       if (debug) std::cout << "Finish burn in period." << std::endl;
     }
 
+    int get_n_obs() const {return n_obs;}
     void sampleW_VY();
     void sampleV_WY() {
       if(n_latent > 0){
@@ -123,29 +117,17 @@ public:
 
     /* Optimizer related */
     int                  get_n_params() const {return n_params;}
-    VectorXd             get_parameter() const;
-    VectorXd             get_stepsizes() const {return stepsizes;}
-    void                 set_parameter(const VectorXd&);
-    VectorXd             grad();
-    SparseMatrix<double> precond() const;
+    VectorXd             get_parameter() const override;
+    VectorXd             get_stepsizes() const override {return stepsizes;}
+    void                 set_parameter(const VectorXd&) override;
+    VectorXd             precond_grad() override;
+
+    MatrixXd             precond() const override;
+    VectorXd             grad() override {return precond_grad();}
 
     int                  get_curr_iter() const {return curr_iter;}
     void                 examine_gradient();
     void                 sampleW_V();
-
-    // record traj. for mu sigma eta
-    void record_traj() {
-        for (int i=0; i < beta.size(); i++) {
-            beta_traj[i].push_back(beta(i));
-        }
-        for (int i=0; i < theta_mu.size(); i++) {
-            theta_mu_traj[i].push_back(theta_mu(i));
-        }
-        for (int i=0; i < theta_sigma.size(); i++) {
-            theta_sigma_traj[i].push_back(theta_sigma(i));
-        }
-        nu_traj.push_back(var.get_nu());
-    }
 
     /* Aseemble */
     void assemble() {
@@ -288,8 +270,8 @@ public:
 */
 
 // Not Implemented
-inline SparseMatrix<double> BlockModel::precond() const {
-    SparseMatrix<double> precond;
+inline MatrixXd BlockModel::precond() const {
+    MatrixXd precond;
     std::cout << "Not implemented \n";
     throw;
     return precond;

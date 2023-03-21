@@ -9,13 +9,11 @@
 #'  \code{n_slope_check} (linear regression) with \code{trend_lim}.
 #'  We compare the standard devation of estimated parameters (in different chains)
 #'  with std_lim.
-#'
+#' @param seed  set the seed for pesudo random number generator
 #' @param burnin          burn-in periods
 #' @param iterations      optimizing terations
-#' @param gibbs_sample    number of gibbs sampels
 #' @param stepsize        stepsize
 #' @param estimation      estimating the parameters
-#' @param post_samples_size number of posterior samples
 #'
 #' @param n_parallel_chain number of parallel chains
 #' @param stop_points     number of stop points for convergence check
@@ -25,9 +23,6 @@
 #' @param trend_lim       maximum allowed slope
 #' @param print_check_info print the convergence information
 #'
-#' @param opt_beta        logical, optimize fixed effect
-#' @param fix_beta        logical, fix fixed effect
-#'
 #' @param max_relative_step   max relative step allowed in 1 iteration
 #' @param max_absolute_step   max absolute step allowed in 1 iteration
 #'
@@ -36,15 +31,15 @@
 #' @param threshold       till when start to reduce the variance
 #' @param window_size     numerical, length of window for final estimates
 #'
+#' @param verbose print estimation
 #' @return list of control variables
 #' @export
-ngme_control <- function(
+control_opt <- function(
+  seed              = Sys.time(),
   burnin            = 100,
   iterations        = 500,
-  gibbs_sample      = 5,
   stepsize          = 1,
   estimation        = TRUE,
-  post_samples_size = 100,
 
   # parallel options
   n_parallel_chain  = 2,
@@ -55,18 +50,17 @@ ngme_control <- function(
   trend_lim         = 0.05,
   print_check_info  = TRUE,
 
-  # opt options
-  opt_beta          = TRUE,
-  fix_beta          = FALSE,
-
-  max_relative_step = 0.1,
-  max_absolute_step = 0.5,
+  max_relative_step = 0.2,
+  max_absolute_step = 1,
 
   # reduce variance after conv. check
   reduce_var        = FALSE,
   reduce_power      = 0.75,
   threshold         = 1e-5,
-  window_size       = 1
+  window_size       = 1,
+
+  # opt print
+  verbose          = FALSE
 ) {
   if ((reduce_power <= 0.5) || (reduce_power > 1)) {
     stop("reduceVar should be in (0.5,1]")
@@ -75,12 +69,11 @@ ngme_control <- function(
   if (stop_points > iterations) stop_points <- iterations
 
   control <- list(
+    seed              = seed,
     burnin            = burnin,
     iterations        = iterations,
-    gibbs_sample      = gibbs_sample,
     stepsize          = stepsize,
     estimation        = estimation,
-    post_samples_size = post_samples_size,
 
     n_parallel_chain  = n_parallel_chain,
     stop_points       = stop_points,
@@ -89,8 +82,6 @@ ngme_control <- function(
     std_lim           = std_lim,
     trend_lim         = trend_lim,
 
-    opt_beta          = opt_beta,
-    fix_beta          = fix_beta,
     print_check_info  = print_check_info,
 
     # variance reduction
@@ -99,10 +90,12 @@ ngme_control <- function(
     reduce_var        = reduce_var,
     reduce_power      = reduce_power,
     threshold         = threshold,
-    window_size       = window_size
+    window_size       = window_size,
+
+    verbose          = verbose
   )
 
-  class(control) <- "ngme_control"
+  class(control) <- "control_opt"
   control
 }
 
@@ -115,11 +108,11 @@ ngme_control <- function(
 #'
 #' @return list of control variables
 #' @export
-ngme_control_f <- function(
+control_f <- function(
   numer_grad    = FALSE,
   use_precond   = FALSE,
   use_num_hess  = TRUE,
-  eps           = 0.01
+  eps           = 0.005
   # use_iter_solver = FALSE
   ) {
 
@@ -131,6 +124,39 @@ ngme_control_f <- function(
     use_iter_solver = FALSE
   )
 
-  class(control) <- "ngme_control_f"
+  class(control) <- "control_f"
+  control
+}
+
+
+#' Generate control specifications for the ngme general model
+#'
+#' @param init_sample_W  sample W|V at the beginning of each chain
+#' @param n_gibbs_samples    number of gibbs sampels
+#' @param fix_beta       logical, fix fixed effect
+#' @param post_samples_size number of posterior samples
+#' @param beta           fixed effect value
+#' @param debug          debug mode
+#' @return a list of control variables for block model
+#' @export
+control_ngme <- function(
+  init_sample_W = TRUE,
+  n_gibbs_samples = 5,
+  fix_beta = FALSE,
+  post_samples_size = 100,
+  beta = NULL,
+  debug = FALSE
+) {
+  control <- list(
+    init_sample_W = init_sample_W,
+    n_gibbs_samples = n_gibbs_samples,
+    fix_beta = fix_beta,
+    beta = beta,
+    post_samples_size = post_samples_size,
+    stepsize = 1,
+    debug = debug
+  )
+
+  class(control) <- "control_ngme"
   control
 }

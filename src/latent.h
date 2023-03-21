@@ -21,6 +21,7 @@
 #include <Eigen/Dense>
 #include <random>
 #include <cmath>
+#include <memory>
 
 #include "include/timer.h"
 #include "include/solver.h"
@@ -47,14 +48,16 @@ protected:
     std::mt19937 latent_rng;
     string model_type, noise_type;
     bool debug;
-    int W_size, V_size, n_params, n_var {1}; // n_params=n_theta_K + n_theta_mu + n_theta_sigma + n_var
+
+    int n_rep, W_size, V_size, n_params, n_var {1}; // n_params=n_theta_K + n_theta_mu + n_theta_sigma + n_var
 
     // operator K related
     VectorXd theta_K;
+    int n_theta_K;
 
     bool use_num_dK {false};
-    SparseMatrix<double, 0, int> K, dK, d2K;
-    int n_theta_K;
+    SparseMatrix<double, 0, int> K, dK, d2K; // size = V_size * W_size
+    SparseMatrix<double, 0, int> K_rep;  // n_rep of size of K (for sampling W)
 
     bool fix_flag[LATENT_FIX_FLAG_SIZE] {0};
 
@@ -73,10 +76,14 @@ protected:
     // eps for numerical gradient.
     double trace, trace_eps, eps;
 
-    VectorXd W, prevW, h;
+    // VectorXd W, prevW, h;
+    VectorXd h;
     SparseMatrix<double,0,int> A;
 
-    Var var;
+    vector<VectorXd> Ws, prevWs;
+    vector<Var> vars;
+
+    // Var var;
 
     // solver
     cholesky_solver chol_solver_K;
@@ -86,12 +93,8 @@ protected:
 
     cholesky_solver solver_Q; // Q = KT diag(1/SV) K
 
-    // record trajectory
-    vector<vector<double>> theta_K_traj;
-    vector<vector<double>> theta_mu_traj;
-    vector<vector<double>> theta_sigma_traj;
-    vector<vector<double>> theta_sigma_normal_traj;
-    vector<double>   nu_traj;
+    // only for tensor product model
+    Latent *left, *right;
 public:
     Latent(const Rcpp::List&, unsigned long seed);
     virtual ~Latent() {}
@@ -102,49 +105,124 @@ public:
     virtual void update_each_iter()=0;
 
     /*  1 Model itself   */
-    int get_W_size() const                  {return W_size; }
-    int get_V_size() const                  {return V_size; }
+    int get_W_size() const                  {return n_rep * W_size; }
+    int get_V_size() const                  {return n_rep * V_size; }
     int get_n_params() const                {return n_params; }
+    int get_n_theta_K() const               {return n_theta_K; }
+    void set_theta_K(const VectorXd& theta) {theta_K = theta; }
+
     SparseMatrix<double, 0, int>& getA()    {return A; }
 
-    const VectorXd& getW()  const           {return W; }
-    void            setW(const VectorXd& newW) {
+    // concat W of different replicate
+    const VectorXd getW() const {
+        VectorXd W(n_rep * W_size);
+        for (int i=0; i < n_rep; i++) {
+            W.segment(i*W_size, W_size) = Ws[i];
+        }
+        return W;
+    }
+
+    const VectorXd getPrevW()  const {
+        VectorXd W(n_rep * W_size);
+        for (int i=0; i < n_rep; i++) {
+            W.segment(i*W_size, W_size) = prevWs[i];
+        }
+        return W;
+    }
+
+    // newW is of size n_rep * W_size
+    void setW(const VectorXd& newW) {
         if (!fix_flag[latent_fix_W]) {
-            prevW = W; W = newW;
+            // prevW = W; W = newW;
+            for (int i=0; i < n_rep; i++) {
+                prevWs[i] = Ws[i];
+                Ws[i] = newW.segment(i*W_size, W_size);
+            }
         }
     }
-    const VectorXd& getPrevW()  const       {return prevW; }
-    void setPrevW(const VectorXd& W) { prevW = W; }
 
-    VectorXd getMean() const { return mu.cwiseProduct(getV()-h); }
+    void setPrevW(const VectorXd& W) {
+        for (int i=0; i < n_rep; i++) {
+            prevWs[i] = W.segment(i*W_size, W_size);
+        }
+    }
+
+    // return of dim V_size
+    // const VectorXd getVMean() const {
+    //     VectorXd meanV(V_size);
+    //     for (int i=0; i < n_rep; i++) {
+    //         meanV += vars[i].getV();
+    //     }
+    //     return meanV / n_rep;
+    // }
+
+    // used in block model
+    VectorXd getMean() const {
+        VectorXd Mean (n_rep * V_size);
+        for (int i=0; i < n_rep; i++) {
+            VectorXd V = vars[i].getV();
+            Mean.segment(i*V_size, V_size) = mu.cwiseProduct(V - h);
+        }
+        return Mean;
+    }
 
     /*  2 Variance component   */
-    const VectorXd& getV()     const { return var.getV(); }
-    const VectorXd& getPrevV() const { return var.getPrevV(); }
-    void setPrevV(const VectorXd& V) { var.setPrevV(V); }
+    const VectorXd getV() const {
+        VectorXd V(V_size * n_rep);
+        for (int i=0; i < n_rep; i++) {
+            V.segment(i*V_size, V_size) = vars[i].getV();
+        }
+        return V;
+    }
+    const VectorXd getPrevV() const {
+        VectorXd V(V_size * n_rep);
+        for (int i=0; i < n_rep; i++) {
+            V.segment(i*V_size, V_size) = vars[i].getPrevV();
+        }
+        return V;
+    }
+    const VectorXd getSV() const {
+        VectorXd SV(V_size * n_rep);
+        for (int i=0; i < n_rep; i++) {
+            SV.segment(i*V_size, V_size) = sigma.array().pow(2).matrix().cwiseProduct(vars[i].getV());
+        }
+        return SV;
+    }
+    void setPrevV(const VectorXd& V) {
+        for (int i=0; i < n_rep; i++) {
+            vars[i].setPrevV(V.segment(i*V_size, V_size));
+        }
+    }
 
-    VectorXd getSV() const {
-        VectorXd V = getV();
-        return (sigma.array().pow(2).matrix().cwiseProduct(V));
-    }
-    VectorXd getPrevSV() const {
-        VectorXd prevV = getPrevV();
-        return (sigma.array().pow(2).matrix().cwiseProduct(prevV));
-    }
+    // VectorXd getSV() const {
+    //     VectorXd V = getV();
+    //     return (sigma.array().pow(2).matrix().cwiseProduct(V));
+    // }
+    // VectorXd getPrevSV() const {
+    //     VectorXd prevV = getPrevV();
+    //     return (sigma.array().pow(2).matrix().cwiseProduct(prevV));
+    // }
 
     void sample_V() {
-        var.sample_V();
+        for (int i=0; i < n_rep; i++) {
+            vars[i].sample_V();
+        }
     }
 
     void sample_cond_V() {
-        VectorXd tmp = (K * W + mu.cwiseProduct(h));
         VectorXd a_inc_vec = mu.cwiseQuotient(sigma).array().pow(2);
-        VectorXd b_inc_vec = tmp.cwiseQuotient(sigma).array().pow(2);
-        var.sample_cond_V(a_inc_vec, b_inc_vec);
+        for (int i=0; i < n_rep; i++) {
+            VectorXd W = Ws[i];
+            VectorXd tmp = (K * W + mu.cwiseProduct(h));
+            VectorXd b_inc_vec = tmp.cwiseQuotient(sigma).array().pow(2);
+            vars[i].sample_cond_V(a_inc_vec, b_inc_vec);
+        }
     }
 
     /*  3 Operator component   */
-    SparseMatrix<double, 0, int>& getK()    { return K; }
+    SparseMatrix<double, 0, int>& getK()  {
+        return K_rep;
+    }
 
     // get K/dK using different parameter
     virtual SparseMatrix<double, 0, int> getK(const VectorXd&) const=0;
@@ -193,7 +271,7 @@ public:
 
         SparseMatrix<double> K = getK(theta_K);
         SparseMatrix<double> dK = get_dK_by_index(0);
-        if (!use_iter_solver) {
+        if (!numer_grad) {
             if (!symmetricK) {
                 lu_solver_K.computeKTK(K);
                 trace = lu_solver_K.trace(dK);
@@ -225,18 +303,14 @@ public:
             SparseMatrix<double> dK = get_dK_by_eps(0, 0, eps);
             SparseMatrix<double> M = dK;
 
-            if (!use_iter_solver) {
-                if (!symmetricK) {
-                    lu_solver_K.computeKTK(K);
-                    trace_eps = lu_solver_K.trace(M);
-                } else {
-                    chol_solver_K.compute(K);
-                    trace_eps = chol_solver_K.trace(M);
-                }
+            if (!symmetricK) {
+                lu_solver_K.computeKTK(K);
+                trace_eps = lu_solver_K.trace(M);
+            } else {
+                chol_solver_K.compute(K);
+                trace_eps = chol_solver_K.trace(M);
             }
-// std::cout << "eps K  in 2 = " << K << std::endl;
-// std::cout << "eps dK in 2 = " << dK << std::endl;
-// std::cout << "trace_eps in 2 = " << trace_eps << std::endl;
+
             // else {
             //     if (!symmetricK) {
             //         // BiCG solver
@@ -250,28 +324,34 @@ public:
     };
 
     virtual VectorXd grad_theta_K() { return numerical_grad(); }
+    virtual VectorXd grad_theta_K(
+        SparseMatrix<double>& K,
+        SparseMatrix<double>& dK,
+        vector<VectorXd>& Ws,
+        vector<VectorXd>& prevWs,
+        vector<Var>& vars,
+        const VectorXd& mu,
+        const VectorXd& sigma,
+        const VectorXd& h,
+        double trace,
+        int W_size
+    ) = 0;
+
     virtual VectorXd grad_theta_mu();
     virtual VectorXd grad_theta_sigma();
     virtual VectorXd grad_theta_sigma_normal(); // grad of sig. only for normal noise
 
-    virtual void   set_log_nu(double v) { var.set_log_nu(v); }
+    // mean of grad for each var
+    double grad_theta_nu() {
+        double grad = 0;
+        for (int i=0; i < n_rep; i++)
+            grad += vars[i].grad_log_nu();
+        return grad / n_rep;
+    }
 
     // Output
     // virtual Rcpp::List get_estimates() const=0;
     Rcpp::List output() const;
-
-    void record_traj() {
-        for (int i=0; i < theta_K.size(); i++)
-            theta_K_traj[i].push_back(theta_K(i));
-        for (int i=0; i < theta_mu.size(); i++)
-            theta_mu_traj[i].push_back(theta_mu(i));
-        for (int i=0; i < theta_sigma.size(); i++)
-            theta_sigma_traj[i].push_back(theta_sigma(i));
-        if (noise_type=="normal_nig")
-            for (int i=0; i < theta_sigma_normal.size(); i++)
-                theta_sigma_normal_traj[i].push_back(theta_sigma_normal(i));
-        nu_traj.push_back(var.get_nu());
-    }
 
     // stop estimate theta_K if converged
     // void check_converge(vector<bool>& converge) {
@@ -297,7 +377,7 @@ inline const VectorXd Latent::get_parameter() const {
         parameter.segment(0, n_theta_K)                         = theta_K;
         parameter.segment(n_theta_K, n_theta_mu)                = theta_mu;
         parameter.segment(n_theta_K+n_theta_mu, n_theta_sigma)  = theta_sigma;
-        parameter(n_theta_K+n_theta_mu+n_theta_sigma)           = var.get_log_nu();
+        parameter(n_theta_K+n_theta_mu+n_theta_sigma)           = vars[0].get_log_nu();
     if (noise_type == "normal_nig")
         parameter.segment(n_theta_K+n_theta_mu+n_theta_sigma+1, n_theta_sigma_normal) = theta_sigma_normal;
     }
@@ -308,18 +388,25 @@ if (debug) std::cout << "parameter= " << parameter << std::endl;
 }
 
 inline const VectorXd Latent::get_grad() {
-// if (debug) std::cout << "Start latent gradient"<< std::endl;
+if (debug) std::cout << "Start latent gradient"<< std::endl;
 // auto grad1 = std::chrono::steady_clock::now();
-    VectorXd grad (n_params);
+    VectorXd grad = VectorXd::Zero(n_params);
 
     if (noise_type == "normal") {
-        if (!fix_flag[latent_fix_theta_K])     grad.segment(0, n_theta_K)                        = grad_theta_K();         else grad.segment(0, n_theta_K) = VectorXd::Constant(n_theta_K, 0);
-        if (!fix_flag[latent_fix_theta_sigma]) grad.segment(n_theta_K, n_theta_sigma) = grad_theta_sigma();     else grad.segment(n_theta_K, n_theta_sigma) = VectorXd::Constant(n_theta_sigma, 0);
+        if (!fix_flag[latent_fix_theta_K])
+            grad.segment(0, n_theta_K) = grad_theta_K();
+if (debug) std::cout << "after K"<< std::endl;
+        if (!fix_flag[latent_fix_theta_sigma])
+            grad.segment(n_theta_K, n_theta_sigma) = grad_theta_sigma();
     } else {
-        if (!fix_flag[latent_fix_theta_K])     grad.segment(0, n_theta_K)                        = grad_theta_K();         else grad.segment(0, n_theta_K) = VectorXd::Constant(n_theta_K, 0);
-        if (!fix_flag[latent_fix_theta_mu])    grad.segment(n_theta_K, n_theta_mu)               = grad_theta_mu();        else grad.segment(n_theta_K, n_theta_mu) = VectorXd::Constant(n_theta_mu, 0);
-        if (!fix_flag[latent_fix_theta_sigma]) grad.segment(n_theta_K+n_theta_mu, n_theta_sigma) = grad_theta_sigma();     else grad.segment(n_theta_K+n_theta_mu, n_theta_sigma) = VectorXd::Constant(n_theta_sigma, 0);
-        grad(n_theta_K+n_theta_mu+n_theta_sigma)  = var.grad_log_nu();
+        if (!fix_flag[latent_fix_theta_K])
+            grad.segment(0, n_theta_K) = grad_theta_K();
+        if (!fix_flag[latent_fix_theta_mu])
+            grad.segment(n_theta_K, n_theta_mu) = grad_theta_mu();
+        if (!fix_flag[latent_fix_theta_sigma])
+            grad.segment(n_theta_K+n_theta_mu, n_theta_sigma) = grad_theta_sigma();
+        grad(n_theta_K+n_theta_mu+n_theta_sigma)  = grad_theta_nu();
+
         if (noise_type == "normal_nig")
             grad.segment(n_theta_K+n_theta_mu+n_theta_sigma+1, n_theta_sigma_normal) = grad_theta_sigma_normal();
     }
@@ -329,6 +416,7 @@ if (debug) {
     std::cout << "gradient= " << grad << std::endl;
     // std::cout << "one latent gradient time " << since(grad1).count() << std::endl;
 }
+if (debug) std::cout << "finish latent gradient"<< std::endl;
     return grad;
 }
 
@@ -343,7 +431,8 @@ inline void Latent::set_parameter(const VectorXd& theta) {
         theta_K  = theta.segment(0, n_theta_K);
         theta_mu = theta.segment(n_theta_K, n_theta_mu);
         theta_sigma = theta.segment(n_theta_K+n_theta_mu, n_theta_sigma);
-        var.set_log_nu   (theta(n_theta_K+n_theta_mu+n_theta_sigma));
+        double log_nu = (theta(n_theta_K+n_theta_mu+n_theta_sigma));
+        for (int i=0; i < n_rep; i++) vars[i].set_log_nu(log_nu); // for each replicate
 
         // update
         mu = (B_mu * theta_mu);
@@ -354,18 +443,19 @@ inline void Latent::set_parameter(const VectorXd& theta) {
         }
     }
 
+    // update K, K_rep, ...
     update_each_iter();
-    // record
-    record_traj();
 }
 
 // subclasses
+enum Type {ar, rw, ou, matern_ns};
 class AR : public Latent {
 private:
     SparseMatrix<double, 0, int> G, C;
-    bool is_rw; // if this is actually a rw model
+    Type type;
+    MatrixXd B_K;
 public:
-    AR(Rcpp::List& model_list, unsigned long seed, bool is_rw);
+    AR(const Rcpp::List& model_list, unsigned long seed, Type type);
 
     SparseMatrix<double> getK(const VectorXd& alpha) const;
     SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
@@ -385,14 +475,19 @@ public:
         theta_K(0) = a2th(alpha(0));
         return theta_K;
     }
-    // Rcpp::List get_estimates() const {
-    //     return Rcpp::List::create(
-    //         Rcpp::Named("alpha")        = theta_K(0),
-    //         Rcpp::Named("theta.mu")     = theta_mu,
-    //         Rcpp::Named("theta.sigma")  = theta_sigma,
-    //         Rcpp::Named("theta.noise")  = var.get_nu()
-    //     );
-    // }
+
+    VectorXd grad_theta_K(
+        SparseMatrix<double>& K,
+        SparseMatrix<double>& dK,
+        vector<VectorXd>& Ws,
+        vector<VectorXd>& prevWs,
+        vector<Var>& vars,
+        const VectorXd& mu,
+        const VectorXd& sigma,
+        const VectorXd& h,
+        double trace,
+        int W_size
+    );
 };
 
 
@@ -402,7 +497,7 @@ private:
     int alpha;
     VectorXd Cdiag;
 public:
-    Matern(Rcpp::List& model_list, unsigned long seed);
+    Matern(const Rcpp::List& model_list, unsigned long seed);
     SparseMatrix<double> getK(const VectorXd& alpha) const;
     SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
     VectorXd grad_theta_K();
@@ -421,37 +516,123 @@ public:
         theta_K(0) = k2th(kappa(0));
         return theta_K;
     }
-    // Rcpp::List get_estimates() const {
-    //     return Rcpp::List::create(
-    //         Rcpp::Named("kappa")        = theta_K(0),
-    //         Rcpp::Named("theta.mu")     = theta_mu,
-    //         Rcpp::Named("theta.sigma")  = theta_sigma,
-    //         Rcpp::Named("theta.noise")  = var.get_nu()
-    //     );
-    // }
+
+    VectorXd grad_theta_K(
+        SparseMatrix<double>& K,
+        SparseMatrix<double>& dK,
+        vector<VectorXd>& Ws,
+        vector<VectorXd>& prevWs,
+        vector<Var>& vars,
+        const VectorXd& mu,
+        const VectorXd& sigma,
+        const VectorXd& h,
+        double trace,
+        int W_size
+    );
 };
 
 class Matern_ns : public Latent {
 private:
+    Type type;
     SparseMatrix<double, 0, int> G, C;
     int alpha;
     MatrixXd Bkappa;
     VectorXd Cdiag;
 public:
-    Matern_ns(Rcpp::List& model_list, unsigned long seed);
+    Matern_ns(const Rcpp::List& model_list, unsigned long seed, Type type);
     SparseMatrix<double> getK(const VectorXd& alpha) const;
     SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
     VectorXd grad_theta_K();
     void update_each_iter();
 
-    // Rcpp::List get_estimates() const {
-    //     return Rcpp::List::create(
-    //         Rcpp::Named("theta.kappa") = theta_K,
-    //         Rcpp::Named("theta.mu")    = theta_mu,
-    //         Rcpp::Named("theta.sigma") = theta_sigma,
-    //         Rcpp::Named("theta.noise") = var.get_nu()
-    //     );
-    // }
+    VectorXd grad_theta_K(
+        SparseMatrix<double>& K,
+        SparseMatrix<double>& dK,
+        vector<VectorXd>& Ws,
+        vector<VectorXd>& prevWs,
+        vector<Var>& vars,
+        const VectorXd& mu,
+        const VectorXd& sigma,
+        const VectorXd& h,
+        double trace,
+        int W_size
+    ) {throw std::runtime_error("Matern_ns::grad_theta_K not implemented");}
+};
+
+class Tensor_prod : public Latent {
+private:
+  std::unique_ptr<Latent> left, right;
+  SparseMatrix<double, 0, int> dK2; // dK for left, and dK2 for right
+public:
+  Tensor_prod(const Rcpp::List& model_list, unsigned long seed);
+  SparseMatrix<double> getK(const VectorXd& alpha) const;
+  SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
+  VectorXd grad_theta_K();
+  void update_each_iter();
+
+  VectorXd grad_theta_K(
+    SparseMatrix<double>& K,
+    SparseMatrix<double>& dK,
+    vector<VectorXd>& Ws,
+    vector<VectorXd>& prevWs,
+    vector<Var>& vars,
+    const VectorXd& mu,
+    const VectorXd& sigma,
+    const VectorXd& h,
+    double trace,
+    int W_size
+  ) {throw std::runtime_error("Tensor_prod::grad_theta_K not implemented");}
+};
+
+class Iid : public Latent {
+private:
+    SparseMatrix<double, 0, int> I;
+public:
+  Iid(const Rcpp::List& model_list, unsigned long seed);
+  SparseMatrix<double> getK(const VectorXd& alpha) const;
+  SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
+  VectorXd grad_theta_K();
+  void update_each_iter();
+
+  VectorXd grad_theta_K(
+    SparseMatrix<double>& K,
+    SparseMatrix<double>& dK,
+    vector<VectorXd>& Ws,
+    vector<VectorXd>& prevWs,
+    vector<Var>& vars,
+    const VectorXd& mu,
+    const VectorXd& sigma,
+    const VectorXd& h,
+    double trace,
+    int W_size
+  ) {return VectorXd::Zero(1);}
+};
+
+// for initialize Latent models
+class LatentFactory {
+public:
+  static std::unique_ptr<Latent> create(const Rcpp::List& latent_in, int latent_seed) {
+    int n_theta_K = Rcpp::as<int> (latent_in["n_theta_K"]);
+    string model_type = Rcpp::as<string> (latent_in["model"]);
+
+    if (model_type == "tp") {
+      return std::make_unique<Tensor_prod>(latent_in, latent_seed);
+    } else if (model_type == "ar1") {
+      return std::make_unique<AR>(latent_in, latent_seed, Type::ar);
+    } else if (model_type == "rw") {
+      return std::make_unique<AR>(latent_in, latent_seed, Type::rw);
+    } else if (model_type == "ou") {
+      return std::make_unique<Matern_ns>(latent_in, latent_seed, Type::ou);
+    } else if (model_type == "matern" && n_theta_K > 1) {
+      return std::make_unique<Matern_ns>(latent_in, latent_seed, Type::matern_ns);
+    } else if (model_type == "matern" && n_theta_K == 1) {
+      return std::make_unique<Matern>(latent_in, latent_seed);
+    } else if (model_type == "iid") {
+      return std::make_unique<Iid>(latent_in, latent_seed);
+    } else {
+      throw std::runtime_error("Unknown model.");
+    }
+  }
 };
 
 #endif

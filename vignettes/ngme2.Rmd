@@ -183,8 +183,10 @@ formula <- Y ~ x1 + f(
     model = "ar1",
     noise = noise_nig(),
     theta_K = 0.5
-  ) + f(
-    model = model_rw(1:5, order=1, circular = TRUE),
+  ) + f(1:5,
+    model = "rw",
+    order = 1,
+    circular = T,
     noise = noise_normal()
   )
 ```
@@ -206,7 +208,7 @@ ngme(
   formula = formula,
   family = noise_normal(sigma = 0.5),
   data = data.frame(Y = 1:5, x1 = 2:6, x2 = 3:7),
-  control = ngme_control(
+  control_opt = control_opt(
     estimation = FALSE
   )
 )
@@ -254,8 +256,8 @@ nu <- 1
 trueV <- ngme2::rig(n_obs, nu, nu, seed = 10)
 
 # Then generate the nig noise
-noise <- delta + mu*trueV + sigma * sqrt(trueV) * rnorm(n_obs)
-trueW <- Reduce(function(x,y){y + alpha*x}, noise, accumulate = T)
+mynoise <- delta + mu*trueV + sigma * sqrt(trueV) * rnorm(n_obs)
+trueW <- Reduce(function(x,y){y + alpha*x}, mynoise, accumulate = T)
 Y = trueW + rnorm(n_obs, mean=0, sd=sigma_eps)
 
 # Add some fixed effects
@@ -266,8 +268,8 @@ X <- (model.matrix(Y ~ x1 + x2))  # design matrix
 Y = as.numeric(Y + X %*% beta)
 ```
 
-Now let's fit the model using `ngme`. Here we can use `ngme_control` to modify the
-control variables for the `ngme`. See `?ngme_control` for more optioins.
+Now let's fit the model using `ngme`. Here we can use `control_opt` to modify the
+control variables for the `ngme`. See `?control_opt` for more optioins.
 
 ```{r fit_ar1, cache=TRUE}
 # # Fit the model with the AR1 model
@@ -280,16 +282,16 @@ ngme_out <- ngme(
     theta_K = 0.9  # starting point for the alpha (parameter of K)
   ),
   data=data.frame(x1=x1, x2=x2, Y=Y),
-  control = ngme_control(
+  control_opt = control_opt(
     burnin = 100,
     iterations = 1000,
     std_lim = 0.4,
-    gibbs_sample = 5,
     n_parallel_chain = 4,
     stop_points = 10,
-    print_check_info = FALSE
-  ),
-  seed = 3
+    print_check_info = FALSE,
+    seed = 3
+    # verbose = T
+  )
 )
 ```
 
@@ -307,14 +309,15 @@ We can also use the `traceplot` function to see the estimation traceplot.
 library(ggplot2)
 library(grid)
 library(gridExtra)
-traceplot(ngme_out, "fe")
+traceplot(ngme_out)
 ```
 
 We can also do a density comparison with the estimated noise and the true NIG noise:
 
 ```{r compare-density}
+# ngme_out[[1]] means for the 1st replicate
 plot(
-  ngme_out$latents[[1]]$noise,
+  ngme_out[[1]]$latents[[1]]$noise,
   noise_nig(mu = mu, sigma = sigma, nu = nu)
 )
 ```
@@ -379,39 +382,28 @@ ggplot() +
 # Y_pred <- Y[ind_pred]
 # Y[ind_pred] <- NA
 
-matern_spde <- model_matern(
-  loc = coords,
-  mesh = prmesh
-)
-
 out <- ngme(
   formula = Y ~ 1 +
-    f(inla.group(seaDist), name="rw", model = "rw1", noise = noise_normal()) +
-    f(model = matern_spde, name="spde", noise = noise_normal()),
-  data = list(
-    Y = Y
-  ),
-  family = noise_nig(),
-  control = ngme_control(
+    f(inla.group(seaDist), name="rw", model = "rw", noise = noise_normal()) +
+    f(coords, model = "matern", mesh = prmesh, name="spde", noise = noise_normal()),
+  data = data.frame(Y = Y),
+  family = "nig",
+  control_opt = control_opt(
     estimation = T,
     iterations = 1000,
     n_slope_check = 4,
     stop_points = 10,
     std_lim = 0.1,
     n_parallel_chain = 4,
-    print_check_info = FALSE
-  ),
-  seed = 16
+    print_check_info = FALSE,
+    seed = 16
+  )
 )
 out
 
 # traceplots
-
-## fixed effects
-traceplot(out, "fe")
-
-## measurement noise
-traceplot(out, "mn")
+## fixed effects and measurement error
+traceplot(out)
 
 ## spde model
 traceplot(out, "spde")
@@ -421,13 +413,13 @@ Parameter estimation results:
 
 ```{r est-result, echo=FALSE}
 res1 <- data.frame(
-  intercept    = format(out$beta, digits=3),
-  noise_mu     = format(out$noise$theta_mu, digits=3),
-  noise_sigma  = format(exp(out$noise$theta_sigma), digits=3),
-  noise_nu     = format(out$noise$nu, digits=3),
-  rw_sigma     = format(out$latents[[1]]$noise$theta_sigma, digits=3),
-  ma_kappa     = format(exp(out$latents[[2]]$theta_K), digits=3),
-  ma_sigma     = format(exp(out$latents[[2]]$noise$theta_sigma), digits=3)
+  intercept    = format(out[[1]]$beta, digits=3),
+  noise_mu     = format(out[[1]]$noise$theta_mu, digits=3),
+  noise_sigma  = format(exp(out[[1]]$noise$theta_sigma), digits=3),
+  noise_nu     = format(out[[1]]$noise$nu, digits=3),
+  rw_sigma     = format(out[[1]]$latents[[1]]$noise$theta_sigma, digits=3),
+  ma_kappa     = format(exp(out[[1]]$latents[[2]]$theta_K), digits=3),
+  ma_sigma     = format(exp(out[[1]]$latents[[2]]$noise$theta_sigma), digits=3)
 )
 knitr::kable(res1, caption = "Estimations for the model")
 ```
@@ -454,8 +446,11 @@ seaDist.prd <- apply(spDists(coord.prd,
 ), 1, min)
 
 # doing prediction by giving the predict location
-lp <- predict(out, loc=list(seaDist.prd, coord.prd))[["mean"]]
-
+# first list is for 1st replicate (we only have 1 replicate)
+# second list is for different latent models (we have 2)
+pds <- predict(out, loc=list(list(seaDist.prd, coord.prd)))
+# [[1]] means for the 1st replicate (we only have 1), mean stands for the mean estimator
+lp <- pds[[1]]$mean
 ggplot() +
   geom_point(aes(
     x = coord.prd[, 1], y = coord.prd[, 2],

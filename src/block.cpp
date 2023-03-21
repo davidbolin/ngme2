@@ -20,56 +20,41 @@ BlockModel::BlockModel(
   n_feff            (beta.size()),
   n_merr            (Rcpp::as<int>           (block_model["n_merr"])),
 
-  debug             (Rcpp::as<bool>          (block_model["debug"])),
+  debug             (false),
   A                 (n_obs, W_sizes),
   K                 (V_sizes, W_sizes),
   var               (Var(Rcpp::as<Rcpp::List> (block_model["noise"]), rng())),
 
   curr_iter         (0),
-  beta_traj         (beta.size()),
   // dK            (V_sizes, W_sizes)
   // d2K           (V_sizes, W_sizes)
   par_string        (Rcpp::as<string>     (block_model["par_string"]))
 {
   // 1. Init controls
-  Rcpp::List control_in = block_model["control"];
-    // const int burnin = control_in["burnin"];
-    const double stepsize = control_in["stepsize"];
-    n_gibbs     =  Rcpp::as<int>    (control_in["gibbs_sample"]);
-    opt_beta    =  Rcpp::as<bool>   (control_in["opt_beta"]);
-    reduce_var    =  Rcpp::as<bool>   (control_in["reduce_var"]);
-    reduce_power  =  Rcpp::as<double> (control_in["reduce_power"]);
-    threshold   =  Rcpp::as<double> (control_in["threshold"]);
+  Rcpp::List control_ngme = block_model["control_ngme"];
+    // const int burnin = control_ngme["burnin"];
+    const double stepsize = control_ngme["stepsize"];
+    bool init_sample_W = Rcpp::as<bool> (control_ngme["init_sample_W"]);
+    n_gibbs     =  Rcpp::as<int>    (control_ngme["n_gibbs_samples"]);
+    debug       = Rcpp::as<bool>   (control_ngme["debug"]);
+    // reduce_var    =  Rcpp::as<bool>   (control_ngme["reduce_var"]);
+    // reduce_power  =  Rcpp::as<double> (control_ngme["reduce_power"]);
+    // threshold   =  Rcpp::as<double> (control_ngme["threshold"]);
 
 if (debug) std::cout << "Begin Block Constructor" << std::endl;
 
   // 2. Init Fixed effects
-  fix_flag[block_fix_beta]   = Rcpp::as<bool>        (control_in["fix_beta"]);
-  if (beta.size() == 0) opt_beta = false;
+  fix_flag[block_fix_beta]   = Rcpp::as<bool>        (control_ngme["fix_beta"]);
+  if (beta.size() == 0) fix_flag[block_fix_beta]  = true;
 
   // 3. Init latent models
   Rcpp::List latents_in = block_model["latents"];
   n_latent = latents_in.size(); // how many latent model
   for (int i=0; i < n_latent; ++i) {
-    Rcpp::List latent_in = Rcpp::as<Rcpp::List> (latents_in[i]);
-    int n_theta_K = Rcpp::as<int> (latent_in["n_theta_K"]);
-
     // construct acoording to models
+    Rcpp::List latent_in = Rcpp::as<Rcpp::List> (latents_in[i]);
     unsigned long latent_seed = rng();
-    string model_type = latent_in["model"];
-    if (model_type == "ar1") {
-      latents.push_back(std::make_unique<AR>(latent_in, latent_seed, false));
-    }
-    else if (model_type == "rw1") {
-      latents.push_back(std::make_unique<AR>(latent_in, latent_seed, true));
-    }
-    else if (model_type == "matern" && n_theta_K > 1) {
-      latents.push_back(std::make_unique<Matern_ns>(latent_in, latent_seed));
-    } else if (model_type=="matern" && n_theta_K == 1) {
-      latents.push_back(std::make_unique<Matern>(latent_in, latent_seed));
-    } else {
-      std::cout << "Unknown model." << std::endl;
-    }
+    latents.push_back(LatentFactory::create(latent_in, latent_seed));
   }
 
 if (debug) std::cout << "before set block A" << std::endl;
@@ -79,7 +64,7 @@ if (debug) std::cout << "before set block A" << std::endl;
     setSparseBlock(&A, 0, n, (*it)->getA());
     n += (*it)->get_W_size();
   }
-if (debug) std::cout << "After set block A" << std::endl;
+if (debug) std::cout << "after set block A" << std::endl;
 
   assemble();
 if (debug) std::cout << "After set block K" << std::endl;
@@ -108,7 +93,7 @@ if (debug) std::cout << "After block construct noise" << std::endl;
   // if (fix_flag[block_fix_V]) var.fixV();
 
   // 6. Init solvers
-  if(n_latent > 0){
+  if(n_latent > 0) {
     VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
     SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
     SparseMatrix<double> QQ = Q + A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(var.getV()).asDiagonal() * A;
@@ -117,23 +102,17 @@ if (debug) std::cout << "After block construct noise" << std::endl;
     LU_K.analyzePattern(K);
   }
 
-if (debug) std::cout << "After init solver" << std::endl;
-
   // 7. optimizer related
   stepsizes = VectorXd::Constant(n_params, stepsize);
   steps_to_threshold = VectorXd::Constant(n_params, 0);
   indicate_threshold = VectorXd::Constant(n_params, 0);
 
-  if(n_latent > 0) {
+if (debug) std::cout << "After init solver && before sampleW_V" << std::endl;
+
+  if (n_latent > 0 && init_sample_W) {
     sampleW_V();
     sampleW_V();
   }
-if (debug) std::cout << "After Sample W" << std::endl;
-
-  // record
-  theta_mu_traj.resize(n_theta_mu);
-  theta_sigma_traj.resize(n_theta_sigma);
-  record_traj();
 
 if (debug) std::cout << "End Block Constructor" << std::endl;
 }
@@ -187,6 +166,7 @@ void BlockModel::sampleW_VY()
 // if (debug) std::cout << "starting sampling W." << std::endl;
   if (n_latent==0) return;
 
+// if (debug) std::cout << "K = " << K << std::endl;
   VectorXd SV = getSV();
   VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(SV);
   // VectorXd V = getV();
@@ -226,18 +206,18 @@ if (debug) std::cout << "Start block get parameter"<< std::endl;
       pos += theta.size();
     }
 
-    if (opt_beta) {
-      thetas.segment(n_la_params, n_feff) = beta;
-    }
+    thetas.segment(n_la_params, n_merr) = get_theta_merr();
 
-    thetas.segment(n_la_params + n_feff, n_merr) = get_theta_merr();
+    if (!fix_flag[block_fix_beta] ) {
+      thetas.segment(n_la_params + n_merr, n_feff) = beta;
+    }
 
 if (debug) std::cout << "Finish block get parameter"<< std::endl;
     return thetas;
 }
 
-
-VectorXd BlockModel::grad() {
+// avg over gibbs samples
+VectorXd BlockModel::precond_grad() {
 if (debug) std::cout << "Start block gradient"<< std::endl;
 long long time_compute_g = 0;
 long long time_sample_w = 0;
@@ -257,13 +237,13 @@ auto timer_computeg = std::chrono::steady_clock::now();
     }
 time_compute_g += since(timer_computeg).count();
 
-    // fixed effects
-    if (opt_beta) {
-      gradient.segment(n_la_params, n_feff) = grad_beta();
-    }
-
     // gradient.segment(n_la_params + n_feff, n_theta_sigma) = grad_theta_merr();
-    gradient.segment(n_la_params + n_feff, n_merr) = grad_theta_merr();
+    gradient.segment(n_la_params, n_merr) = grad_theta_merr();
+
+    // fixed effects
+    if (!fix_flag[block_fix_beta]) {
+      gradient.segment(n_la_params + n_merr, n_feff) = grad_beta();
+    }
 
     avg_gradient += gradient;
 
@@ -300,14 +280,13 @@ void BlockModel::set_parameter(const VectorXd& Theta) {
     pos += theta_len;
   }
 
-  // fixed effects
-  if (opt_beta) {
-    beta = Theta.segment(n_la_params, n_feff);
-  }
+  // measurement noise
+  set_theta_merr(Theta.segment(n_la_params, n_merr));
 
-    // measurement noise
-  set_theta_merr(Theta.segment(n_la_params + n_feff, n_merr));
-  record_traj();
+  // fixed effects
+  if (!fix_flag[block_fix_beta]) {
+    beta = Theta.segment(n_la_params + n_merr, n_feff);
+  }
 
   assemble(); //update K,dK,d2K after
   curr_iter++;
@@ -316,6 +295,7 @@ void BlockModel::set_parameter(const VectorXd& Theta) {
 // sample W|V
 void BlockModel::sampleW_V()
 {
+// if (debug) std::cout << "starting sampling W." << std::endl;
   if(n_latent==0) return;
   std::normal_distribution<double> rnorm {0,1};
 
@@ -328,6 +308,7 @@ void BlockModel::sampleW_V()
   }
   KW = getMean() + KW;
 
+// if (debug) std::cout << K << std::endl;
   VectorXd W (W_sizes);
   if (V_sizes == W_sizes) {
     LU_K.factorize(K);
@@ -367,7 +348,7 @@ VectorXd BlockModel::grad_theta_mu() {
   VectorXd noise_SV = noise_V.cwiseProduct(noise_sigma.array().pow(2).matrix());
 
   VectorXd residual = get_residual();
-  VectorXd grad (n_theta_mu);
+  VectorXd grad = VectorXd::Zero(n_theta_mu);
   for (int l=0; l < n_theta_mu; l++) {
 
       // LU_K.factorize(getK());
@@ -464,12 +445,6 @@ Rcpp::List BlockModel::output() const {
     Rcpp::Named("latents")          = latents_output
   );
 
-  out.attr("trajectory") = Rcpp::List::create(
-    Rcpp::Named("beta")        = beta_traj,
-    Rcpp::Named("theta_mu")    = theta_mu_traj,
-    Rcpp::Named("theta_sigma") = theta_sigma_traj,
-    Rcpp::Named("nu")     = nu_traj
-  );
   return out;
 }
 

@@ -5,7 +5,7 @@
 #' The function is a wrapper function for specific submodels.
 #' (see ngme_models_types() for available models).
 #'
-#' @param x    symbol or numerical value: index or covariates to build index
+#' @param map    symbol or numerical value: index or covariates to build index
 #' @param model     1. string: type of model, 2. ngme.spde object
 #' @param replicate   Representing the replicate
 #' @param noise     1. string: type of model, 2. ngme.noise object
@@ -15,6 +15,7 @@
 #' @param A            A Matrix connecting observation and mesh
 #' @param theta_K      Unbounded parameter for K
 #' @param data      specifed or inherit from ngme formula
+#' @param group    model as the group (see vignette for space-temporal model)
 #' @param W         starting value of the process
 #' @param A_pred    A Matrix connecting NA location and mesh
 #' @param index_NA  Logical vector, same as is.na(response var.)
@@ -22,6 +23,7 @@
 #' @param fix_theta_K fix the estimation for theta_K.
 #' @param index_pred index for prediction
 #' @param debug        Debug mode
+#' @param eval      evaluate the model
 #' @param ...       additional arguments
 #'  inherit the data from ngme function
 #'
@@ -33,13 +35,14 @@
 #'
 #' @export
 f <- function(
-  x           = NULL,
-  model       = "ar1",
+  model,
+  map         = NULL,
   replicate   = NULL,
   noise       = noise_normal(),
-  control     = ngme_control_f(),
+  control     = control_f(),
   name        = NULL,
   data        = NULL,
+  group       = NULL,
   A           = NULL,
   A_pred      = NULL,
   theta_K     = NULL,
@@ -49,15 +52,32 @@ f <- function(
   index_pred  = NULL,
   debug       = NULL,
   index_NA    = NULL, #indicate prediction location
+  eval        = FALSE,
   ...
 ) {
-  x <- eval(substitute(x), envir = data, enclos = parent.frame())
-  index <- x
+  stopifnot("Please specify model as character" = is.character(model))
+
+  map <- eval(substitute(map), envir = data, enclos = parent.frame())
+  if (model == "tp") map <- 1:(list(...)$left$n_map * list(...)$right$n_map)
+
+  replicate <- if (is.null(replicate)) rep(1, length_map(map))
+    else as.integer(as.factor(replicate))
+
+  if (is.null(name)) name <- "field"
+
+  # pre-model
+  if (!eval) {
+    args <- match.call()
+    args$name <- name
+    args$map <- map
+    args$replicate <- replicate
+    return (args)
+  }
 
   # if (!is.null(index_NA) && length(index_NA) != length(index))
   #   stop("index_NA length seems wrong.")
   # deal with NA, from ngme function
-  if (is.null(index_NA)) index_NA <- rep(FALSE, length(index))
+  if (is.null(index_NA)) index_NA <- rep(FALSE, length_map(map))
 
   # remove NULL in arguments
   f_args <- Filter(Negate(is.null),  as.list(environment()))
@@ -66,23 +86,36 @@ f <- function(
 
   # combine args and apply ngme sub_models
   if (is.character(model)) {
+    stopifnot("Please use models in ngme_model_types()"
+      = model %in% ngme_model_types())
     args <- within(f_args, rm(model))
     f_model <- switch(model,
       "ar1" = {
         do.call(model_ar1, args)
       },
-      "rw1" = {
-        args$order = 1
+      "rw" = {
         do.call(model_rw, args)
       },
-      "rw2" = {
-        args$order = 2
-        do.call(model_rw, args)
+      "ou" = {
+        do.call(model_ou, args)
+      },
+      "matern" = {
+        do.call(model_matern, args)
+      },
+      "tp" = {
+        do.call(model_tp, args)
+      },
+      "iid" = {
+        do.call(model_iid, args)
       }
     )
   } else {
+warning("Please use f(model = '...'), which is better")
+    stopifnot("please check model specification" =
+      inherits(model, "ngme_model"))
     # model is evaluated with submodel func.
     f_args <- within(f_args, rm(model))
+
     # watch out! if update the noise in f(noise=...)
     if (is.null(as.list(match.call())$noise)) {
       f_args$noise <- NULL
@@ -91,7 +124,11 @@ f <- function(
     }
     # use f_args to update the model
     f_model <- do.call(ngme_model, utils::modifyList(model, f_args))
-    if (!is.null(f_model$index_NA)) {
+# make V explicitly (prevent no entry called V)
+if (is.null(f_model$noise$V)) f_model$noise["V"] <- list(NULL)
+
+    # update A and A_pred
+    if (!is.null(map) && !is.null(f_model$index_NA)) {
       tmp <- with(f_model, {
         ngme_make_A(
           mesh = mesh,
@@ -104,62 +141,138 @@ f <- function(
       f_model$A <- tmp$A
       f_model$A_pred <- tmp$A_pred
     }
-
-  # print(str(f_model))
   }
-
-  # get index -> then make both A and A_pred matrix
-  # ngme_response <- data$ngme_response
-  # index_data <- which(!is.na(ngme_response))
-
-  # # stopifnot("response is null" = !is.null(ngme_response))
-  # if (!is.null(ngme_response) && any(is.na(ngme_response))) {
-  #   index_NA   <- which(is.na(ngme_response))
-  #   # ignore the NA position in the provided index
-  #   index <- Filter(function(x) !(x %in% index_NA), index)
-  # } else {
-  #   # no need to predict
-  #   A_pred <- index_NA <- NULL
-  # }
-
-  # # get the replicate
-  # if (is.null(replicate))
-  #   replicate <- rep(1, length(index))
-  # nrep <- length(unique(replicate))
-
-  # no need for re-order
-  # # re-order the values according to the replicate (to be block diagonal for C and G)
-  # df <- data.frame(original.order=1:length(index), replicate=replicate, index=index)
-  # df <- df[order(df$replicate), ]
-
-
-  ################## construct noise (e.g. nig noise) ##################
-    # ?? check
-    # B_mu <- matrix(noise$B_mu, nrow = W_size, ncol = noise$n_theta_mu)
-    # B_sigma <- matrix(noise$B_sigma, nrow = W_size, ncol = noise$n_theta_sigma)
-
-    # # replicate
-    # if (is.integer(nrep)) {
-    #   B_mu <- kronecker(matrix(1, ncol = 1, nrow = nrep), B_mu)
-    #   B_sigma <- kronecker(matrix(1, ncol = 1, nrow = nrep), B_sigma)
-    # }
-
-  # total params
-  # n_params = model_list$n_theta_K + noise$n_theta_mu + noise$n_theta_sigma + noise$n_nu
-  # check initial value of W
-#   if (!is.null(W)) stopifnot(length(W) == W_size)
-#   # get the useful argument list
-# # print(str(arg_list))
-# # print(str(Filter(Negate(is.null), arg_list)))
-#   model_list <- modifyList(model_list, Filter(Negate(is.null), arg_list)) # watch out! arg_list$noise$ = NULL; nested NULL
-#   # modify model_list
-#   model_list$noise <- with(model_list, update_noise(noise, V_size))
-#   model_list$noise_type <- model_list$noise$noise_type
-#   model_list$n_params <- n_params
-
-#   do.call(ngme_model, model_list)
 
   # update n noise
   f_model$noise <- update_noise(f_model$noise, n = f_model$V_size)
   f_model
 }
+
+#' ngme tensor-product model specification
+#'
+#' Given 2 models (left and right), build a tensor-product model based on K = K_left x K_right (here x is Kronecker product)
+#'
+#' @param left ngme_model
+#' @param right ngme_model
+#' @param map can be ignored, pass through left and right
+#' @param replicate replicate for the process
+#' @param index_NA Logical vector, same as is.na(response var.)
+#'
+#' @param noise noise, can be specified in f()
+#' @param data data, can be specified in f(), ngme()
+#' @param control control for the model
+#' @param ... extra arguments in f()
+#'
+#' @return a list of specification of model
+#' @export
+model_tp <- function(
+  left        = NULL,
+  right       = NULL,
+  map         = NULL,
+  replicate   = NULL,
+  data        = NULL,
+  index_NA    = NULL,
+  noise       = noise_normal(),
+  control   = control_f(),
+  ...
+) {
+  stopifnot(inherits(left, "ngme_model"), inherits(right, "ngme_model"))
+  n_map <-  length_map(left$map) * length_map(right$map)
+  if (is.null(map)) map <- 1:n_map
+  # if (is.null(replicate))
+    replicate <- rep(1, n_map)
+
+  stopifnot(left$model %in% c("rw1", "rw2", "ar1", "iid"))
+  f_model <- ngme_model(
+    model = "tp",
+    map = map,
+    n_map = n_map,
+    replicate = replicate,
+    data = data,
+    index_NA = index_NA,
+    noise = noise,
+    left = left,
+    right = right,
+    control = control,
+    W_size = left$W_size * right$W_size,
+    V_size = left$V_size * right$V_size,
+    n_theta_K = left$n_theta_K + right$n_theta_K,
+    n_params = left$n_params + right$n_params,
+    theta_K = c(left$theta_K, right$theta_K),
+    A = left$A %x% right$A,
+    ...
+  )
+
+# init noise
+  f_model$left$noise$init_V <- FALSE
+  f_model$right$noise$init_V <- FALSE
+  f_model$noise <- update_noise(noise, n = f_model$V_size)
+  f_model$h <- f_model$noise$h
+
+  f_model
+}
+
+#' ngme iid model specification
+#'
+#' @param map integer vector, time index for the AR(1) process
+#' @param replicate replicate for the process
+#' @param index_NA Logical vector, same as is.na(response var.)
+#'
+#' @param noise noise, can be specified in f()
+#' @param data data, can be specified in f(), ngme()
+#' @param control controls using control_f(),
+#' @param ... extra arguments in f()
+#'
+#' @return a list of specification of model
+#' @export
+model_iid <- iid <- function(
+  map = NULL,
+  replicate  = NULL,
+  data        = NULL,
+  index_NA    = NULL,
+  noise       = noise_normal(),
+  control     = control_f(),
+  ...
+) {
+  # capture symbol in index
+  map <- eval(substitute(map), envir = data, enclos = parent.frame())
+  n_map <- length_map(map)
+  stopifnot("The map should be integers." = all(map == round(map)))
+  if (is.null(replicate)) replicate <- rep(1, length_map(map))
+  if (is.null(index_NA)) index_NA <- rep(FALSE, length_map(map))
+
+  stopifnot("Make sure length(idx)==length(replicate)" = length(map) == length(replicate))
+
+  replicate <- if (!is.null(list(...)$replicate)) list(...)$replicate
+    else rep(1, length(map))
+
+  mesh <- INLA::inla.mesh.1d(loc=map)
+  tmp <- ngme_make_A(
+    mesh = mesh,
+    map = map,
+    n_map = n_map,
+    idx_NA = index_NA,
+    replicate = replicate
+  )
+  A <- tmp$A; A_pred <- tmp$A_pred
+
+  args <- within(list(...), {
+    mesh        = mesh
+    map         = map
+    n_map       = n_map
+    model       = "iid"
+    theta_K     = 0
+    W_size      = n_map
+    V_size      = n_map
+    A           = A
+    A_pred      = A_pred
+    h           = rep(1, n_map)
+    K           = ngme_as_sparse(Matrix::Diagonal(n_map))
+    noise       = noise
+    replicate   = replicate
+    n_rep       = length(unique(replicate))
+    control     = control
+  })
+  do.call(ngme_model, args)
+}
+

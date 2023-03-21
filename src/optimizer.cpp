@@ -70,11 +70,13 @@ VectorXd Optimizer::sgd(
     double reduce_power = 0.2; // 0-1, the bigger, the stronger
 
     VectorXd x = model.get_parameter();
+
     VectorXd grad;
 
     for (int i = 0; i < iterations; i++) {
+        trajs.push_back(x);
 // auto timer_grad = std::chrono::steady_clock::now();
-        grad = model.grad();
+        grad = model.precond_grad();
 // std::cout << "get gradient (ms): " << since(timer_grad).count() << std::endl;
 
         // VectorXd stepsizes = model.get_stepsizes();
@@ -103,7 +105,13 @@ VectorXd Optimizer::sgd(
 
         x = x - pow(tmp, reduce_power) * one_step;
 
+if (verbose) {
+std::cout << "iteration = : " << curr_iter << std::endl;
+std::cout << "parameter = : " << x << std::endl;
+}
+
         model.set_parameter(x);
+        curr_iter += 1;
     }
 
     return x;

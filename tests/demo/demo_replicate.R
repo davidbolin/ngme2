@@ -44,7 +44,7 @@ res_ngme2 <- ngme(
   y ~ -1 + f(idx, model="ar1", replicate = repl, noise=noise_nig()),
   family="gaussian",
   data = list(y=Y, idx=idx, repl=repl),
-  control = ngme_control(
+  control = control_opt(
     iterations = 1000
   )
 )

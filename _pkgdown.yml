@@ -29,6 +29,8 @@ navbar:
         href: articles/RW-model.html
       - text: SPDE Matern model
         href: articles/SPDE-model.html
+      - text: Ngme replicate feature
+        href: articles/replicate.html
       - text: Model prediction and estimation
         href: articles/pred_and_est.html
     github:
@@ -63,6 +65,9 @@ reference:
     - model_ar1
     - model_matern
     - model_rw
+    - model_ou
+    - model_tp
+    - model_iid
   - title: ngme2 noises
     contents:
     - ngme_noise
@@ -72,12 +77,12 @@ reference:
   - title: Prediction and Cross validation
     contents:
     - predict.ngme
+    - predict.ngme_fit
     - cross_validation
   - title: Data visualization
     contents:
     - plot.ngme_noise
     - traceplot
-    - traceplot2
   - title: Simulation functions
     contents:
     - simulate.ngme_model
@@ -87,8 +92,9 @@ reference:
     - create_noise
     - mean_list
     - ngme_as_sparse
-    - ngme_control
-    - ngme_control_f
+    - control_opt
+    - control_ngme
+    - control_f
     - ngme_parse_formula
     - ngme_ts_make_A
     - print.ngme
@@ -104,3 +110,4 @@ reference:
   - title: Datasets
     contents:
     - argo_float
+    - cienaga

@@ -86,8 +86,8 @@ acf(Y)
 ## Estimation
 
 In this part we will show how to estiamte the AR model using `ngme` function.
-Here we can use `ngme_control` to modify the control variables for the `ngme`.
-See `?ngme_control` for more optioins.
+Here we can use `control_opt` to modify the control variables for the `ngme`.
+See `?control_opt` for more optioins.
 
 ```{r ar-estimation, fig.align="center", cache=TRUE}
 x1 = runif(n_obs)
@@ -107,27 +107,25 @@ ngme_out <- ngme(
     theta_K = 0.9  # starting point for the alpha (parameter of K)
   ),
   data = data.frame(x1=x1, x2=x2, Y=Y),
-  control = ngme_control(
+  control_opt = control_opt(
     burnin = 100,
     iterations = 2000,
     std_lim = 0.6,
-    gibbs_sample = 5,
     n_parallel_chain = 4,
     stop_points = 10,
-    print_check_info = FALSE
-  ),
-  seed = 3
+    print_check_info = FALSE,
+    seed = 3
+  )
 )
-
 ngme_out
 
-# traceplot of fixed effects
-traceplot(ngme_out, "fe")
+# traceplot of fixed effects and measurementn noise
+traceplot(ngme_out)
 
 # traceplot of ar1 model
 traceplot(ngme_out, "my_ar")
 
 # comparing the density of the noise estimated and the noise simulated
-plot(ngme_out$latents[[1]]$noise,
+plot(ngme_out[[1]]$latents[[1]]$noise,
   noise_nig(mu = 2, sigma = 2))
 ```

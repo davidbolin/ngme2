@@ -5,13 +5,14 @@
 \title{Specifying a latent process model (wrapper function for each model)}
 \usage{
 f(
-  x = NULL,
-  model = "ar1",
+  model,
+  map = NULL,
   replicate = NULL,
   noise = noise_normal(),
-  control = ngme_control_f(),
+  control = control_f(),
   name = NULL,
   data = NULL,
+  group = NULL,
   A = NULL,
   A_pred = NULL,
   theta_K = NULL,
@@ -21,13 +22,14 @@ f(
   index_pred = NULL,
   debug = NULL,
   index_NA = NULL,
+  eval = FALSE,
   ...
 )
 }
 \arguments{
-\item{x}{symbol or numerical value: index or covariates to build index}
-
 \item{model}{1. string: type of model, 2. ngme.spde object}
+
+\item{map}{symbol or numerical value: index or covariates to build index}
 
 \item{replicate}{Representing the replicate}
 
@@ -39,6 +41,8 @@ f(
 \item{name}{name of the field, for later use}
 
 \item{data}{specifed or inherit from ngme formula}
+
+\item{group}{model as the group (see vignette for space-temporal model)}
 
 \item{A}{A Matrix connecting observation and mesh}
 
@@ -57,6 +61,8 @@ f(
 \item{debug}{Debug mode}
 
 \item{index_NA}{Logical vector, same as is.na(response var.)}
+
+\item{eval}{evaluate the model}
 
 \item{...}{additional arguments
 inherit the data from ngme function}

@@ -79,7 +79,7 @@ res0 <- ngme(
   formula = m0,
   data = list(y = argo_al$temp_10,
     lat = scale(argo_al@coords[, 2])),
-  control = ngme_control(
+  control = control_opt(
     iterations = 1000,
     stepsize = 0.5,
     n_parallel_chain = 4
@@ -104,7 +104,7 @@ mod_sal <- ngme(
   data = list(
     sal = argo_al$psal_10
   ),
-  control = ngme_control(
+  control = control_opt(
     iterations = 1000,
     n_parallel_chain = 4
   )
@@ -125,7 +125,7 @@ m1 <- y ~ 1 + f(model=myspde, noise=noise_nig(
 mod_temp <- ngme(
   formula = m1,
   data = list(y = argo_al$temp_10),
-  control = ngme_control(
+  control = control_opt(
     iterations = 1000,
     n_parallel_chain = 4
   ),
@@ -150,7 +150,7 @@ m1 <- y ~ 1 + f(model=myspde, noise=noise_nig(
 mod_temp <- ngme(
   formula = m1,
   data = list(y = argo_al$temp_10),
-  control = ngme_control(
+  control = control_opt(
     iterations = 1000,
     n_parallel_chain = 4,
     max_relative_step = 20,

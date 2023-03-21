@@ -12,7 +12,7 @@
 #' B_sigma <- matrix(1:10 / 10, nrow=10)
 #' simulate(noise_nig(n = 10, B_sigma = B_sigma))
 #' simulate(noise_normal(theta_sigma = 1.5, B_sigma = B_sigma))
-#' simulate(f(1:10, model = "ar1", theta_K = 0.4, noise = noise_nig()))
+#' simulate(model_ar1(1:10, theta_K = 0.4, noise = noise_nig()))
 simulate.ngme_model <- function(
     object,
     nsim   = 1,
@@ -31,12 +31,11 @@ simulate.ngme_model <- function(
         alpha <- ar1_th2a(model$theta_K)
         # for loop
         W <- Reduce(function(x, y) {y + alpha * x}, sim_noise, accumulate = T)
-# browser()
     } else if (model$model == "matern") {
         # K_a %*% W = noise
         W <- with(model, {
             C.inv <- as(Matrix::diag(1 / Matrix::diag(C)), "sparseMatrix")
-            kappas <- drop(exp(B_kappa %*% theta_K))
+            kappas <- as.numeric(exp(B_K %*% theta_K))
             Kappa <- diag(kappas)
             # build K_a
             if (alpha == 2) {
@@ -44,23 +43,25 @@ simulate.ngme_model <- function(
             } else if (alpha == 4) {
                 K_a <- (Kappa %*% C %*% Kappa + G) %*% C.inv %*% (Kappa %*% C %*% Kappa + G)
             }
-            drop(solve(K_a, sim_noise))
+            as.numeric(solve(K_a, sim_noise))
         })
-    } else if (model$model == "rw1") {
+    } else if (model$model == "rw" && model$rw_order == 1) {
         # assume W_0 = 0
         # W_n = W_0 + cumsum(simnoise)
         W <- cumsum(sim_noise)
 
         W <- c(0, W) # watch out! compensate
         # h <- sim_noise
-    # browser()
-    } else if (model$model == "rw2") {
+    } else if (model$model == "rw" && model$rw_order == 2) {
         # assume W_0 = 0, W_1 = 0
         W <- cumsum(cumsum(sim_noise))
         # starting value W_0, W_1
         # W_{n+1} <- W_0 + n * (W_1 - W_0) + cumsum(cumsum(sim_noise))
+    } else if (model$model == "ou") {
+        # assume W_0 = 0
+        W <- as.numeric(solve(model$K, sim_noise))
     } else {
-        stop("not implement yet")
+        stop("simulation for this class not implement yet")
     }
 
     # attach noise attributes
@@ -110,7 +111,7 @@ simulate.ngme_noise <- function(
         mu <- drop(noise$B_mu %*% noise$theta_mu)
         sigma <- drop(exp(noise$B_sigma %*% noise$theta_sigma))
         nu <- noise$nu
-        V <- ngme2::rig(n, nu, nu * (noise$h)^2, seed = seed)
+        V <- ngme2::rig(n, a=nu, b=nu*(noise$h)^2, seed = seed)
         noise$V <- V
         e <- mu * (V - noise$h) + sigma * sqrt(V) * rnorm(n)
     } else if (noise$noise_type == "normal") {

@@ -56,7 +56,6 @@ test_that("ar x 2d case", {
   Y <- AW + rnorm(n_obs, sd=0.5)
 
   # f(model=matern(mesh), group=ar1(1:3))
-
   tp <- f(model="tp", right=matern, left=arr, eval=T); tp
   expect_true(all(tp$A == A))
 ##############################  estimation

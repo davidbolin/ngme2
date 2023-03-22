@@ -54,25 +54,55 @@ VectorXd Tensor_prod::grad_theta_K() {
   SparseMatrix<double> dK  = kronecker(dKl, K2);
   SparseMatrix<double> dK2 = kronecker(K1, dKr);
 
-  // compute trace manually
-    double trace, trace2;
-    if (!symmetricK) {
+  // // compute trace manually
+  //   double trace, trace2;
+  //   if (!symmetricK) {
+  //       lu_solver_K.computeKTK(K);
+  //       trace = lu_solver_K.trace(dK);
+  //       trace2 = lu_solver_K.trace(dK2);
+  //   } else {
+  //       chol_solver_K.compute(K);
+  //       trace = chol_solver_K.trace(dK);
+  //       trace2 = chol_solver_K.trace(dK2);
+  //   }
+
+  // grad.segment(0, n1) = left->grad_theta_K(
+  //   K, dK, Ws, prevWs, vars, mu, sigma, h, trace, W_size
+  // );
+
+  // grad.segment(n1, n2) = right->grad_theta_K(
+  //   K, dK2, Ws, prevWs, vars, mu, sigma, h, trace2, W_size
+  // );
+
+  for (int i = 0; i < n_rep; i++) {
+    VectorXd W = Ws[i];
+    VectorXd prevW = prevWs[i];
+    VectorXd V = vars[i].getV();
+    VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
+
+    for (int j = 0; j < n1 + n2; j++) {
+      SparseMatrix<double> dK;
+      if (j < n1) {
+        SparseMatrix<double> dKl = left->get_dK_by_index(j);
+        dK = kronecker(dKl, K2);
+      } else {
+        SparseMatrix<double> dKr = right->get_dK_by_index(j - n1);
+        dK = kronecker(K1, dKr);
+      }
+      // compute trace
+      double trace = 0;
+      if (!symmetricK) {
         lu_solver_K.computeKTK(K);
         trace = lu_solver_K.trace(dK);
-        trace2 = lu_solver_K.trace(dK2);
-    } else {
+      } else {
         chol_solver_K.compute(K);
         trace = chol_solver_K.trace(dK);
-        trace2 = chol_solver_K.trace(dK2);
+      }
+      // compute rhs
+      double tmp = (dK*W).cwiseProduct(SV.cwiseInverse()).dot(K * W + (h - V).cwiseProduct(mu));
+      grad(j) += trace - tmp;
     }
-
-  grad.segment(0, n1) = left->grad_theta_K(
-    K, dK, Ws, prevWs, vars, mu, sigma, h, trace, W_size
-  );
-
-  grad.segment(n1, n2) = right->grad_theta_K(
-    K, dK2, Ws, prevWs, vars, mu, sigma, h, trace2, W_size
-  );
+  }
 
   return grad;
 }
@@ -130,6 +160,10 @@ void Tensor_prod::update_each_iter() {
   // dK2 = kronecker(K1, right->get_dK(0));
 }
 
+// further, latent.get_trace(index) should be implemented
+
+
+// ------ iid model -----
 
 Iid::Iid(const Rcpp::List& model_list, unsigned long seed)
   : Latent(model_list, seed),

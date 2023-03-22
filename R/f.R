@@ -199,7 +199,7 @@ model_tp <- function(
     n_theta_K = left$n_theta_K + right$n_theta_K,
     n_params = left$n_params + right$n_params,
     theta_K = c(left$theta_K, right$theta_K),
-    A = left$A %x% right$A,
+    A = ngme_as_sparse(left$A %x% right$A),
     ...
   )
 

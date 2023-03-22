@@ -121,7 +121,7 @@ test_that("subsampling vs sample all", {
       seed = 1,
       iterations = 100,
       n_parallel_chain = 4,
-      sampling_strategy = "all"
+      sampling_strategy = "ws"
     )
   )
   out

@@ -21,15 +21,14 @@
 model_matern_nd <- function(
   map = list(NULL, NULL),
   names = list("matern1", "matern2"),
-  mesh = list(NULL, NULL),
   theta_kappa = list(NULL, NULL),
   kappa = list(1, 1),
   rho = 0.5, theta = 1,
-
+  mesh = NULL,
   alpha = 2,
   replicate = NULL,
   index_NA = NULL,
-  noise = noise_normal(),
+  noise = list(noise_normal(),noise_normal()),
   ...
 ) {
   # check input
@@ -78,3 +77,7 @@ model_matern_nd <- function(
   )
   model
 }
+
+# Y <- c(1:5, 1:5)
+# group <- c(rep(1, 5), rep(2, 5))
+# Y ~ Fixeff(~1+x, group=1) + matern_nd(..., group=group)

@@ -8,8 +8,7 @@ model_matern(
   map,
   replicate = NULL,
   alpha = 2,
-  kappa = 1,
-  theta_kappa = NULL,
+  theta_kappa = 0,
   B_kappa = NULL,
   mesh = NULL,
   d = NULL,
@@ -26,8 +25,6 @@ keep aligned with Y if make prediction with index_NA!!!}
 \item{replicate}{replicate for the process}
 
 \item{alpha}{2 or 4, SPDE smoothness parameter}
-
-\item{kappa}{parameterization for kappa^2 C + G, only for stationary}
 
 \item{theta_kappa}{parameterization for non-stationary}
 

@@ -343,7 +343,7 @@ split_block <- function(block, repl) {
   blocks <- list()
   # build new blocks
   for (i in unique(repl)) {
-    blocks[[i]] <- ngme_block(
+    blocks[[i]] <- ngme_replicate(
       Y                 = Ys[[i]],
       X                 = Xs[[i]],
       latents           = latentss[[i]],

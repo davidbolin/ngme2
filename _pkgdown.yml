@@ -77,7 +77,7 @@ reference:
   - title: Prediction and Cross validation
     contents:
     - predict.ngme
-    - predict.ngme_fit
+    - predict.ngme_replicate
     - cross_validation
   - title: Data visualization
     contents:

@@ -6,6 +6,7 @@
 \usage{
 control_ngme(
   init_sample_W = TRUE,
+  burnin = 100,
   n_gibbs_samples = 5,
   fix_beta = FALSE,
   post_samples_size = 100,

@@ -2,7 +2,7 @@
 % Please edit documentation in R/ngme.R
 \name{ngme}
 \alias{ngme}
-\title{Fit an additice linear mixed effect model}
+\title{Fit an additive linear mixed effect model over replicates}
 \usage{
 ngme(
   formula,
@@ -10,6 +10,7 @@ ngme(
   family = "normal",
   control_opt = NULL,
   control_ngme = NULL,
+  group = NULL,
   start = NULL,
   debug = FALSE
 )
@@ -27,12 +28,14 @@ ngme(
 
 \item{control_ngme}{control for ngme model. by default it is \code{control_ngme()}. See \code{?control_ngme} for details.}
 
+\item{group}{group for multiple response variables.}
+
 \item{start}{starting ngme object (usually object from last fitting)}
 
 \item{debug}{toggle debug mode}
 }
 \value{
-a list of outputs contains estimation of operator paramters, noise parameters
+random effects (for different replicate) + models(fixed effects, measuremnt noise, and latent process)
 }
 \description{
 \code{ngme} function performs an analysis of non-gaussian additive models.

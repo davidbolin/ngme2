@@ -23,7 +23,8 @@ control_opt(
   reduce_power = 0.75,
   threshold = 1e-05,
   window_size = 1,
-  verbose = FALSE
+  verbose = FALSE,
+  sampling_strategy = "ws"
 )
 }
 \arguments{
@@ -64,6 +65,10 @@ control_opt(
 \item{window_size}{numerical, length of window for final estimates}
 
 \item{verbose}{print estimation}
+
+\item{strategy_list}{subsampling of replicates of model, c("all", "is")
+"all" means using all replicates in each iteration,
+"ws" means weighted sampling (each iteration use 1 replicate to compute the gradient, the sample probability is proption to its number of observations)}
 }
 \value{
 list of control variables

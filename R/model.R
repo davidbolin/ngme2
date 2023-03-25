@@ -124,3 +124,4 @@ print.ngme_model <- function(x, padding = 0, ...) {
   print.ngme_noise(model$noise, padding = padding)
   invisible(model)
 }
+

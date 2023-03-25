@@ -12,28 +12,28 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // estimate_cpp
-Rcpp::List estimate_cpp(const Rcpp::List& list_ngmes, const Rcpp::List& control_opt);
-RcppExport SEXP _ngme2_estimate_cpp(SEXP list_ngmesSEXP, SEXP control_optSEXP) {
+Rcpp::List estimate_cpp(const Rcpp::List& list_replicates, const Rcpp::List& control_opt);
+RcppExport SEXP _ngme2_estimate_cpp(SEXP list_replicatesSEXP, SEXP control_optSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::List& >::type list_ngmes(list_ngmesSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type list_replicates(list_replicatesSEXP);
     Rcpp::traits::input_parameter< const Rcpp::List& >::type control_opt(control_optSEXP);
-    rcpp_result_gen = Rcpp::wrap(estimate_cpp(list_ngmes, control_opt));
+    rcpp_result_gen = Rcpp::wrap(estimate_cpp(list_replicates, control_opt));
     return rcpp_result_gen;
 END_RCPP
 }
 // sampling_cpp
-Rcpp::List sampling_cpp(const Rcpp::List& ngme_block, int n, bool posterior, unsigned long seed);
-RcppExport SEXP _ngme2_sampling_cpp(SEXP ngme_blockSEXP, SEXP nSEXP, SEXP posteriorSEXP, SEXP seedSEXP) {
+Rcpp::List sampling_cpp(const Rcpp::List& ngme_replicate, int n, bool posterior, unsigned long seed);
+RcppExport SEXP _ngme2_sampling_cpp(SEXP ngme_replicateSEXP, SEXP nSEXP, SEXP posteriorSEXP, SEXP seedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::List& >::type ngme_block(ngme_blockSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type ngme_replicate(ngme_replicateSEXP);
     Rcpp::traits::input_parameter< int >::type n(nSEXP);
     Rcpp::traits::input_parameter< bool >::type posterior(posteriorSEXP);
     Rcpp::traits::input_parameter< unsigned long >::type seed(seedSEXP);
-    rcpp_result_gen = Rcpp::wrap(sampling_cpp(ngme_block, n, posterior, seed));
+    rcpp_result_gen = Rcpp::wrap(sampling_cpp(ngme_replicate, n, posterior, seed));
     return rcpp_result_gen;
 END_RCPP
 }

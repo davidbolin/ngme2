@@ -1,5 +1,5 @@
-#ifndef BLOCK_REPS_H
-#define BLOCK_REPS_H
+#ifndef NGME_RANDEFF_H
+#define NGME_RANDEFF_H
 
 #include <Rcpp.h>
 #include <vector>
@@ -11,10 +11,25 @@
 #include "block.h"
 
 using std::vector;
+enum Rand_eff_type {normal, nig};
 
-// replicates of block models
-class Block_reps : public Model {
+// Structure for random effects
+class Randeff {
+  private:
+    Rand_eff_type family;
+    VectorXd parameter;
+    int n_params;
+  public:
+    Randeff(const Rcpp::List& list_ngmes, unsigned long seed);
+    const VectorXd& get_parameter() const {return parameter;}
+    void set_parameter(VectorXd& parameter) {this->parameter = parameter;}
+    VectorXd grad();
+};
+
+// Ngme = a list of model over replicates
+class Ngme : public Model {
 private:
+  // for each replicate
   vector<std::unique_ptr<BlockModel>> blocks;
   int n_blocks;
   int n_params;
@@ -23,9 +38,12 @@ private:
 
   int sampling_strategy;
   std::mt19937 gen;
-  std::discrete_distribution<int> importance_sampler;
+  std::discrete_distribution<int> weighted_sampler;
+
+  // random effects
+  vector<int> sample_indices;
 public:
-  Block_reps(const Rcpp::List& list_ngmes, unsigned long seed, int sampling_strategy) :
+  Ngme(const Rcpp::List& list_ngmes, unsigned long seed, int sampling_strategy) :
     n_blocks(list_ngmes.size()),
     sampling_strategy(sampling_strategy),
     gen(seed)
@@ -39,7 +57,7 @@ public:
     n_params = blocks[0]->get_n_params();
 
     // Init the random number generator
-    importance_sampler = std::discrete_distribution<int>(n_obs.begin(), n_obs.end());
+    weighted_sampler = std::discrete_distribution<int>(n_obs.begin(), n_obs.end());
   }
 
   VectorXd get_parameter() const {

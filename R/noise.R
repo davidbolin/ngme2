@@ -133,7 +133,7 @@ ngme_noise <- function(
 #' @export
 #' @examples
 #' noise_normal(n = 10, sigma = 2)
-noise_normal <- function(
+noise_normal <- normal <- function(
   sigma = NULL,
   theta_sigma = NULL,
   B_sigma = matrix(1, 1, 1),
@@ -175,7 +175,7 @@ noise_normal <- function(
 #' @export
 #' @examples
 #' noise_nig(mu = 1, sigma = 2, nu = 1, n=10)
-noise_nig <- function(
+noise_nig <- nig <- function(
   mu            = NULL,
   sigma         = NULL,
   nu            = NULL,
@@ -305,7 +305,7 @@ print.ngme_noise <- function(x, padding = 0, ...) {
 
 #' @rdname ngme_noise
 #' @export
-noise_gal <- function(
+noise_gal <- gal <- function(
   mu            = NULL,
   sigma         = NULL,
   nu            = NULL,
@@ -344,7 +344,7 @@ noise_gal <- function(
 
 #' @rdname ngme_noise
 #' @export
-noise_normal_nig <- function(
+noise_normal_nig <- normal_nig <- function(
   sigma_normal  = NULL,
   mu            = NULL,
   sigma_nig     = NULL,
@@ -391,5 +391,5 @@ noise_normal_nig <- function(
 
 # measurement nosie with correlation
 noise_corr_nig <- function() {
-
+  list()
 }

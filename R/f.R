@@ -55,6 +55,12 @@ f <- function(
   eval        = FALSE,
   ...
 ) {
+  # reff
+  if (inherits(model, "formula")) {
+    # f(~x) random effects for each replicate
+    return(randeff(formula=model,data=data))
+  }
+
   stopifnot("Please specify model as character" = is.character(model))
 
   map <- eval(substitute(map), envir = data, enclos = parent.frame())

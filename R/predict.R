@@ -18,7 +18,7 @@
 #' @return a list of outputs contains estimation of operator paramters, noise parameters
 #' @export
 #'
-predict.ngme <- function(
+predict.ngme_replicate <- function(
   object,
   data = NULL,
   loc = NULL,
@@ -29,10 +29,10 @@ predict.ngme <- function(
   seed = Sys.time(),
   ...
 ) {
-  # recursively call predict.ngme if estimator is a list
+  # recursively call predict.ngme_replicate if estimator is a list
   if (length(estimator) > 1) {
     res <- (lapply(estimator, function(x) {
-      predict.ngme(
+      predict.ngme_replicate(
         object,
         data = data,
         loc = loc,
@@ -314,7 +314,7 @@ if (print) {
   }
 cat("The average of indices computed: \n")
   ret <- mean_list(crs)
-} else if (inherits(ngme, "ngme_fit")) {
+} else if (inherits(ngme, "ngme")) {
   # take average mean of each block
   weights <- sapply(ngme, function(x) length(x$Y))
   weights <- weights / sum(weights)
@@ -336,9 +336,9 @@ cat("The final result averaged over replicates: \n")
 
 #' Predict function of ngme2
 #' predict using ngme after estimation
-#' same as predict.ngme(ngme[[i]], data[[i]], loc[[i]]) i in which.rep
+#' same as predict.ngme_replicate(ngme[[i]], data[[i]], loc[[i]]) i in which.rep
 #'
-#' @param object a ngme_fit object
+#' @param object a ngme object
 #' @param which.rep which replicate to use for prediction, can be a vector like c(1,2)
 #' @param data a data.frame of covariates (used for fixed effects)
 #' @param loc a named list (or dataframe) of the locations to make the prediction
@@ -354,7 +354,7 @@ cat("The final result averaged over replicates: \n")
 #' @return a list of outputs contains estimation of operator paramters, noise parameters
 #' @export
 #'
-predict.ngme_fit <- function(
+predict.ngme <- function(
   object,
   which.rep = seq_along(object),
   data = NULL,
@@ -366,7 +366,7 @@ predict.ngme_fit <- function(
   seed = Sys.time(),
   ...
 ) {
-  stopifnot(inherits(object, "ngme_fit"))
+  stopifnot(inherits(object, "ngme"))
 
   if (!is.null(data)) stopifnot("Please provide data as list(...), make sure length(which.rep) == length(data)"
     = length(which.rep) == length(data))
@@ -376,7 +376,7 @@ predict.ngme_fit <- function(
 
   res <- list()
   for (i in which.rep) {
-    res[[i]] <- predict.ngme(
+    res[[i]] <- predict.ngme_replicate(
       object[[i]],
       data = if (!is.null(data)) data[[i]] else NULL,
       loc = loc[[i]],

@@ -1,7 +1,7 @@
 #include <Rcpp.h>
 #include <RcppEigen.h>
 #include "optimizer.h"
-#include "block_reps.h"
+#include "ngme.h"
 #include "include/timer.h"
 
 #ifdef _OPENMP
@@ -26,7 +26,7 @@ std::vector<bool> check_conv(const MatrixXd&, const MatrixXd&, int, int, double,
 
 // [[Rcpp::plugins(openmp)]]
 // [[Rcpp::export]]
-Rcpp::List estimate_cpp(const Rcpp::List& list_ngmes, const Rcpp::List& control_opt) {
+Rcpp::List estimate_cpp(const Rcpp::List& list_replicates, const Rcpp::List& control_opt) {
     unsigned long seed = Rcpp::as<unsigned long> (control_opt["seed"]);
     std::mt19937 rng (seed);
 
@@ -55,18 +55,18 @@ auto timer = std::chrono::steady_clock::now();
     omp_set_num_threads(n_chains);
 
     // init each model
-    std::vector<std::unique_ptr<Block_reps>> block_reps;
+    std::vector<std::unique_ptr<Ngme>> ngmes;
     int i = 0;
     for (i=0; i < n_chains; i++) {
-        block_reps.push_back(std::make_unique<Block_reps>(list_ngmes, rng(), sampling_strategy));
+        ngmes.push_back(std::make_unique<Ngme>(list_replicates, rng(), sampling_strategy));
     }
-    std::string par_string = block_reps[0]->get_par_string();
+    std::string par_string = ngmes[0]->get_par_string();
 
     // burn in period
     // #pragma omp parallel for schedule(static)
     // for (i=0; i < n_chains; i++)
-        // (block_reps[i])->burn_in(burnin+3);
-    int n_params = block_reps[0]->get_n_params();
+        // (ngmes[i])->burn_in(burnin+3);
+    int n_params = ngmes[0]->get_n_params();
     MatrixXd means (n_batch, n_params);
     MatrixXd vars (n_batch, n_params);
 
@@ -89,7 +89,7 @@ auto timer = std::chrono::steady_clock::now();
         for (i=0; i < n_chains; i++) {
             // Optimizer opt (control_opt);
             // VectorXd param = opt.sgd(*(blocks[i]), 0.1, batch_steps, max_relative_step, max_absolute_step);
-            VectorXd param = opt_vec[i].sgd(*(block_reps[i]), 0.1, batch_steps, max_relative_step, max_absolute_step);
+            VectorXd param = opt_vec[i].sgd(*(ngmes[i]), 0.1, batch_steps, max_relative_step, max_absolute_step);
 
             #pragma omp critical
             mat.row(i) = param;
@@ -104,12 +104,12 @@ auto timer = std::chrono::steady_clock::now();
         if (n_chains > 1) {
             // exchange VW
             if (exchange_VW) {
-                vector<vector<VectorXd>> tmp = block_reps[0]->get_VW();
+                vector<vector<VectorXd>> tmp = ngmes[0]->get_VW();
                 for (int i = 0; i < n_chains - 1; i++) {
-                    vector<vector<VectorXd>> VW = block_reps[i+1]->get_VW();
-                    block_reps[i]->set_prev_VW(VW);
+                    vector<vector<VectorXd>> VW = ngmes[i+1]->get_VW();
+                    ngmes[i]->set_prev_VW(VW);
                 }
-                block_reps[n_chains - 1]->set_prev_VW(tmp);
+                ngmes[n_chains - 1]->set_prev_VW(tmp);
             }
 
             // 2. convergence check
@@ -120,7 +120,7 @@ auto timer = std::chrono::steady_clock::now();
             // 3. if some parameter converge, stop compute gradient, or slow down the gradient.
             // if (auto_stop)
             //     for (int i=0; i < n_chains; i++) {
-            //         block_reps[i]->check_converge(converge);
+            //         ngmes[i]->check_converge(converge);
             //     }
         }
 
@@ -131,12 +131,12 @@ auto timer = std::chrono::steady_clock::now();
 // ****** posterior sampling (sampling each chain..)
     // #pragma omp parallel for schedule(static)
     // for (i=0; i < n_chains; i++) {
-    //     block_reps[i]->sampling(100, true);
+    //     ngmes[i]->sampling(100, true);
     // }
 
     // generate outputs
     for (i=0; i < n_chains; i++) {
-        outputs.push_back(block_reps[i]->output());
+        outputs.push_back(ngmes[i]->output());
         trajs_chains.push_back(opt_vec[i].get_trajs());
     }
     if (all_converge)
@@ -145,12 +145,12 @@ auto timer = std::chrono::steady_clock::now();
         std::cout << "Estimation ends." << std::endl;
 
 #else // No parallel chain
-    Block_reps block_reps (list_ngmes, rng(), sampling_strategy);
+    Ngme ngme (list_replicates, rng(), sampling_strategy);
     Optimizer opt (control_opt);
-    opt.sgd(block_reps, 0.1, iterations, max_relative_step, max_absolute_step);
+    opt.sgd(ngme, 0.1, iterations, max_relative_step, max_absolute_step);
     // estimation done, posterior sampling
-    // block_reps.sampling(10, true);
-    outputs.push_back(block_reps.output());
+    // ngme.sampling(10, true);
+    outputs.push_back(ngme.output());
     trajs_chains.push_back(opt.get_trajs());
 #endif
 
@@ -161,9 +161,9 @@ std::cout << "Total time of the estimation is (s): " << since(timer).count() / 1
 }
 
 // [[Rcpp::export]]
-Rcpp::List sampling_cpp(const Rcpp::List& ngme_block, int n, bool posterior, unsigned long seed) {
+Rcpp::List sampling_cpp(const Rcpp::List& ngme_replicate, int n, bool posterior, unsigned long seed) {
     std::mt19937 rng (seed);
-    BlockModel block (ngme_block, rng());
+    BlockModel block (ngme_replicate, rng());
 
     return block.sampling(n, posterior);
 }

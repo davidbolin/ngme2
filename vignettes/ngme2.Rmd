@@ -309,7 +309,7 @@ We can also use the `traceplot` function to see the estimation traceplot.
 library(ggplot2)
 library(grid)
 library(gridExtra)
-traceplot(ngme_out)
+traceplot(ngme_out, "my_ar")
 ```
 
 We can also do a density comparison with the estimated noise and the true NIG noise:

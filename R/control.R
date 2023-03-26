@@ -64,7 +64,7 @@ control_opt <- function(
 
   # opt print
   verbose           = FALSE,
-  sampling_strategy = "ws"
+  sampling_strategy = "all"
 ) {
   strategy_list <- c("all", "ws")
   stopifnot(sampling_strategy %in% strategy_list)

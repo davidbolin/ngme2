@@ -4,16 +4,16 @@
 VectorXd Ngme::precond_grad() {
     VectorXd g = VectorXd::Zero(n_params);
     // weighted averge over all replicates
-    if (sampling_strategy == 1) {
-      for (int i=0; i < n_blocks; i++) {
-        g += n_obs[i] * blocks[i]->grad() / sum_n_obs;
+    if (sampling_strategy == Strategy::all) {
+      for (int i=0; i < n_repl; i++) {
+        g +=  (num_each_repl[i] / sum_num_each_repl) * blocks[i]->precond_grad();
+// std::cout << "sum_num_each_repl = " << sum_num_each_repl << std::endl;
       }
 // std::cout << "using weighted average" << std::endl;
-    } else if (sampling_strategy == 2) {
+    } else if (sampling_strategy == Strategy::ws) {
       // importance sampling (IS) for each replicate
       int idx = weighted_sampler(gen);
-      g = blocks[idx]->precond_grad() / n_obs[idx];
-// std::cout << "using is, idx = " << idx << std::endl;
+      g =  (num_each_repl[idx] / sum_num_each_repl) * blocks[idx]->precond_grad();
     } else {
       Rcpp::stop("Unknown sampling strategy!");
     }

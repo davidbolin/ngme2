@@ -100,7 +100,7 @@ control_opt <- function(
     window_size       = window_size,
 
     verbose           = verbose,
-    sampling_strategy = which(strategy_list == sampling_strategy)
+    sampling_strategy = which(strategy_list == sampling_strategy) - 1 # start from 0
   )
 
   class(control) <- "control_opt"

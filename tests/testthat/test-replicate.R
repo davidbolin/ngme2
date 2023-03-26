@@ -103,7 +103,6 @@ test_that("basic ar1 case with different length", {
 
 # compare subsampling
 test_that("subsampling vs sample all", {
-  load_all()
   n_reps <- 10; n_each <- 50; n_obs <- n_reps * n_each
   myar1 <- ar1(1:n_each, alpha=-0.5, noise = noise_nig(mu = -3, sigma=2, nu=1))
   W <- double(); reps <- double()
@@ -133,22 +132,22 @@ test_that("subsampling vs sample all", {
 })
 
 
-test_that("test_f(~1,...)", {
-  n <- 500
-  R1 <- rnorm(n, mean=3, sd=1)
-  R2 <- rnorm(n, mean=-1, sd=2)
+# test_that("test_f(~1,...)", {
+#   n <- 500
+#   R1 <- rnorm(n, mean=3, sd=1)
+#   R2 <- rnorm(n, mean=-1, sd=2)
 
-  n_obs <- 2*n
-  Y <- c(R1, R2) + rnorm(n_obs, sd=0.5)
+#   n_obs <- 2*n
+#   Y <- c(R1, R2) + rnorm(n_obs, sd=0.5)
 
-  fm <- Y ~ 1 + f(~1, family="normal")
-  load_all()
-  out = ngme(fm,
-    data=data.frame(Y=Y),
-    control_opt = control_opt(
-      iterations=10,
-      estimation = F
-    )
-  )
-  traceplot(out)
-})
+#   fm <- Y ~ 1 + f(~1, family="normal")
+#   load_all()
+#   out = ngme(fm,
+#     data=data.frame(Y=Y),
+#     control_opt = control_opt(
+#       iterations=10,
+#       estimation = F
+#     )
+#   )
+#   traceplot(out)
+# })

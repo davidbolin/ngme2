@@ -277,7 +277,7 @@ cross_validation <- function(
 ) {
   stopifnot(type %in% c("k-fold", "loo", "lpo"))
 
-if (inherits(ngme, "ngme")) {
+if (inherits(ngme, "ngme_replicate")) {
   # cut the group if not
   if (is.null(group)) {
     if (type == "k-fold") {

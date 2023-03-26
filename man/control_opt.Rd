@@ -24,7 +24,7 @@ control_opt(
   threshold = 1e-05,
   window_size = 1,
   verbose = FALSE,
-  sampling_strategy = "ws"
+  sampling_strategy = "all"
 )
 }
 \arguments{

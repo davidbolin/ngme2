@@ -1,5 +1,5 @@
 /*
-BlockModel
+BlockModel - for ngme each replicate
 */
 #ifndef NGME_BLOCK_H
 #define NGME_BLOCK_H
@@ -25,8 +25,28 @@ using Eigen::SparseMatrix;
 using Eigen::MatrixXd;
 using std::vector;
 
-const int BLOCK_FIX_FLAG_SIZE = 3;
+// ---- Structure for random effects ----
+// U|V ~ N(0, Sigma)
+class Randeff {
+  private:
+    std::mt19937 randeff_rng;
+    string family;
 
+    MatrixXd B_reff, Sigma, vech_to_vec;
+    int n_reff, n_params;
+    Var var;
+  public:
+    Randeff(const Rcpp::List& R_randeff, unsigned long seed);
+    VectorXd get_parameter() {return vech(Sigma);}
+    void set_parameter(VectorXd& vech) {
+      VectorXd v = vech_to_vec * vech;
+      Sigma = veci(v, n_params, n_params);
+    }
+    VectorXd precond_grad();
+};
+
+
+const int BLOCK_FIX_FLAG_SIZE = 3;
 enum Block_fix_flag {
     block_fix_beta, block_fix_theta_mu, block_fix_theta_sigma
 };
@@ -48,6 +68,9 @@ protected:
     VectorXd noise_mu, theta_mu;
     int n_theta_mu;
 
+    // Random effects
+    vector<std::unique_ptr<Randeff>> randeffs;
+
     MatrixXd B_sigma;
     VectorXd noise_sigma, theta_sigma;
     int n_theta_sigma;
@@ -66,7 +89,7 @@ protected:
 
     SparseMatrix<double> A, K;      // not used: dK, d2K;
 
-    std::vector<std::unique_ptr<Latent>> latents;
+    vector<std::unique_ptr<Latent>> latents;
     Var var;
 
     // optimize related
@@ -132,7 +155,7 @@ public:
     void assemble() {
         int nrow = 0;
         int ncol = 0;
-        for (std::vector<std::unique_ptr<Latent>>::iterator it = latents.begin(); it != latents.end(); it++) {
+        for (vector<std::unique_ptr<Latent>>::iterator it = latents.begin(); it != latents.end(); it++) {
             setSparseBlock(&K,   nrow, ncol, (*it)->getK());
             // setSparseBlock(&dK,  n, n, (*it)->get_dK());
             // setSparseBlock(&d2K, n, n, (*it)->get_d2K());
@@ -146,7 +169,7 @@ public:
     VectorXd getMean() const {
         VectorXd mean (V_sizes);
         int pos = 0;
-        for (std::vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+        for (vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
             int size = (*it)->get_V_size();
             mean.segment(pos, size) = (*it)->getMean();
             pos += size;
@@ -157,7 +180,7 @@ public:
     VectorXd getV() const {
         VectorXd V (V_sizes);
         int pos = 0;
-        for (std::vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+        for (vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
             int size = (*it)->get_V_size();
             V.segment(pos, size) = (*it)->getV();
             pos += size;
@@ -169,7 +192,7 @@ public:
     VectorXd getPrevV() const {
         VectorXd V (V_sizes);
         int pos = 0;
-        for (std::vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+        for (vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
             int size = (*it)->get_V_size();
             V.segment(pos, size) = (*it)->getPrevV();
             pos += size;
@@ -182,7 +205,7 @@ public:
     VectorXd getSV() const {
         VectorXd SV (V_sizes);
         int pos = 0;
-        for (std::vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+        for (vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
             int size = (*it)->get_V_size();
             SV.segment(pos, size) = (*it)->getSV();
             pos += size;
@@ -194,7 +217,7 @@ public:
     VectorXd getW() const {
         VectorXd W (W_sizes);
         int pos = 0;
-        for (std::vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+        for (vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
             int size = (*it)->get_W_size();
             W.segment(pos, size) = (*it)->getW();
             pos += size;
@@ -205,7 +228,7 @@ public:
     VectorXd getPrevW() const {
         VectorXd W (W_sizes);
         int pos = 0;
-        for (std::vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+        for (vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
             int size = (*it)->get_W_size();
             W.segment(pos, size) = (*it)->getPrevW();
             pos += size;
@@ -214,9 +237,9 @@ public:
     }
 
     VectorXd get_residual() const {
-      if(n_latent>0){
+      if (n_latent > 0){
         return Y - A * getW() - X * beta - (-VectorXd::Ones(n_obs) + var.getV()).cwiseProduct(noise_mu);
-      }else{
+      } else {
         return Y  - X * beta - (-VectorXd::Ones(n_obs) + var.getV()).cwiseProduct(noise_mu);
       }
     }
@@ -275,5 +298,6 @@ inline MatrixXd BlockModel::precond() const {
     throw;
     return precond;
 }
+
 
 #endif

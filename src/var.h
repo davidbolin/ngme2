@@ -30,15 +30,15 @@ public:
     Var() {}
     Var(const Rcpp::List& noise_list, unsigned long seed) :
         var_rng       (seed),
-        noise_type    (Rcpp::as<string>  (noise_list["noise_type"])),
-        nu            (Rcpp::as<double>  (noise_list["nu"])),
-        h             (Rcpp::as<VectorXd>  (noise_list["h"])),
-        n             (Rcpp::as<int>     (noise_list["n_noise"])),
+        noise_type    (Rcpp::as<string>   (noise_list["noise_type"])),
+        nu            (Rcpp::as<double>   (noise_list["nu"])),
+        h             (Rcpp::as<VectorXd> (noise_list["h"])),
+        n             (Rcpp::as<int>      (noise_list["n_noise"])),
         V             (n),
         prevV         (n),
-        fix_V         (Rcpp::as<bool>    (noise_list["fix_V"])),
-        fix_nu        (Rcpp::as<bool>    (noise_list["fix_nu"])),
-        init_V        (Rcpp::as<bool>    (noise_list["init_V"]))
+        fix_V         (Rcpp::as<bool>     (noise_list["fix_V"])),
+        fix_nu        (Rcpp::as<bool>     (noise_list["fix_nu"])),
+        init_V        (Rcpp::as<bool>     (noise_list["init_V"]))
     {
 // std::cout << "n = " << n << std::endl;
         if (noise_type == "normal" || !init_V) {

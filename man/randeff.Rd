@@ -4,7 +4,7 @@
 \alias{randeff}
 \title{Build random effect structure}
 \usage{
-randeff(formula, data, family)
+randeff(formula, data, effect_type, name)
 }
 \arguments{
 \item{formula}{formula}

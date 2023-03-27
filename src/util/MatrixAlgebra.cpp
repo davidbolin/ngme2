@@ -180,9 +180,10 @@ void add_submatrix(MatrixXd &M, const MatrixXd &Msub, const VectorXi &ind)
 	}
 }
 
-MatrixXi duplicatematrix(int n)
+// transform vech(M) to vec(M)
+MatrixXd duplicatematrix(int n)
 {
-	MatrixXi D;
+	MatrixXd D;
 	D.setZero(n * n, n * (n - 1) / 2 + n);
 	int k = n;
 	int l = n;
@@ -213,7 +214,7 @@ MatrixXd veci(VectorXd &v, int n, int m)
 {
 	if (v.size() != n * m)
 	{
-		std::cout << "Wrong dimensions in reshape: " << v.size() << " (" << n << "," << m << ")" << endl;
+		std::cout << "Wrong dimensions in reshape: " << v.size() << " (" << n << "," << m << ")" << std::endl;
 	}
 	MatrixXd M;
 	M.setZero(n, m);

@@ -6,6 +6,26 @@
 
 using std::pow;
 
+// -------------- random effects implementation ----------------
+Randeff::Randeff(const Rcpp::List& R_randeff, unsigned long seed) :
+  randeff_rng      (seed),
+  family           (Rcpp::as<string>        (R_randeff["family"])),
+  B_reff           (Rcpp::as<MatrixXd>      (R_randeff["B_reff"])),
+  Sigma            (Rcpp::as<MatrixXd>      (R_randeff["Sigma"])),
+  n_reff           (B_reff.cols()),
+  vech_to_vec      (duplicatematrix(n_reff)),
+  n_params         (n_reff * (n_reff + 1) / 2),
+  var              (Var(Rcpp::as<Rcpp::List> (R_randeff["mix_var"]), randeff_rng()))
+{
+
+}
+
+VectorXd Randeff::precond_grad() {
+  VectorXd g = VectorXd::Zero(n_params);
+  return g;
+}
+
+// -------------- Block Model class ----------------
 BlockModel::BlockModel(
   const Rcpp::List& block_model,
   unsigned long seed
@@ -49,7 +69,16 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
   fix_flag[block_fix_beta]   = Rcpp::as<bool>        (control_ngme["fix_beta"]);
   if (beta.size() == 0) fix_flag[block_fix_beta]  = true;
 
-  // 3. Init latent models
+  // 3. Init random effects
+  Rcpp::List randeffs_in = block_model["randeffs"];
+  for (int i=0; i < randeffs_in.size(); ++i) {
+    // construct acoording to models
+    Rcpp::List randeff_in = Rcpp::as<Rcpp::List> (randeffs_in[i]);
+    unsigned long randeff_seed = rng();
+    randeffs.push_back(std::make_unique<Randeff> (randeff_in, randeff_seed));
+  }
+
+  // 4. Init latent models
   Rcpp::List latents_in = block_model["latents"];
   n_latent = latents_in.size(); // how many latent model
   for (int i=0; i < n_latent; ++i) {
@@ -70,7 +99,7 @@ if (debug) std::cout << "before set block A" << std::endl;
   assemble();
 if (debug) std::cout << "After set block K" << std::endl;
 
-  // 4. Init measurement noise
+  // 5. Init measurement noise
   Rcpp::List noise_in   = block_model["noise"];
 
   B_mu          = (Rcpp::as<MatrixXd>      (noise_in["B_mu"])),
@@ -90,10 +119,10 @@ if (debug) std::cout << "After set block K" << std::endl;
 
 if (debug) std::cout << "After block construct noise" << std::endl;
 
-  // 5. Fix V and init V
+  // 6. Fix V and init V
   // if (fix_flag[block_fix_V]) var.fixV();
 
-  // 6. Init solvers
+  // 7. Init solvers
   if(n_latent > 0) {
     VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
     SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
@@ -103,7 +132,7 @@ if (debug) std::cout << "After block construct noise" << std::endl;
     LU_K.analyzePattern(K);
   }
 
-  // 7. optimizer related
+  // 8. optimizer related
   stepsizes = VectorXd::Constant(n_params, stepsize);
   steps_to_threshold = VectorXd::Constant(n_params, 0);
   indicate_threshold = VectorXd::Constant(n_params, 0);
@@ -257,21 +286,20 @@ time_sample_w += since(timer_sampleW).count();
     sample_cond_block_V();
   }
 
-if (debug) {
-std::cout << "avg time for compute grad (ms): " << time_compute_g / n_gibbs << std::endl;
-std::cout << "avg time for sampling W(ms): " << time_sample_w / n_gibbs << std::endl;
-}
-
   avg_gradient = (1.0/n_gibbs) * avg_gradient;
   gradients = avg_gradient;
   // EXAMINE the gradient to change the stepsize
   if (reduce_var) examine_gradient();
 
-if (debug) std::cout << "gradients = " << gradients << std::endl;
-if (debug) std::cout << "Finish block gradient"<< std::endl;
-  return gradients;
+if (debug) {
+  std::cout << "avg time for compute grad (ms): " << time_compute_g / n_gibbs << std::endl;
+  std::cout << "avg time for sampling W(ms): " << time_sample_w / n_gibbs << std::endl;
+  std::cout << "gradients = " << gradients << std::endl;
+  std::cout << "Finish block gradient"<< std::endl;
 }
 
+  return gradients;
+}
 
 void BlockModel::set_parameter(const VectorXd& Theta) {
   int pos = 0;

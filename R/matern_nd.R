@@ -78,6 +78,3 @@ model_matern_nd <- function(
   model
 }
 
-# Y <- c(1:5, 1:5)
-# group <- c(rep(1, 5), rep(2, 5))
-# Y ~ Fixeff(~1+x, group=1) + matern_nd(..., group=group)

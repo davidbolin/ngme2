@@ -3,6 +3,7 @@ ngme_replicate <- function(
   Y            = NULL,
   X            = NULL,
   noise        = noise_normal(),
+  randeffs     = list(),
   latents      = list(),
   control_ngme = list(),
   ...
@@ -10,8 +11,11 @@ ngme_replicate <- function(
   # compute W_sizes and V_sizes
   W_sizes     = sum(unlist(lapply(latents, function(x) x[["n_rep"]] * x[["W_size"]])))   #W_sizes = sum(ncol_K)
   V_sizes     = sum(unlist(lapply(latents, function(x) x[["n_rep"]] * x[["V_size"]])))   #W_sizes = sum(nrow_K)
+
+  n_re_params = sum(unlist(lapply(randeffs, function(x) x["n_params"])))
   n_la_params = sum(unlist(lapply(latents, function(x) x["n_params"])))
   n_feff <- ncol(X);
+
   n_params <- n_la_params + n_feff + noise$n_params
 
   latents_string <- rep(" ", 14) # padding of 14 spaces
@@ -32,6 +36,7 @@ ngme_replicate <- function(
       Y                 = Y,
       X                 = X,
       beta              = control_ngme$beta,
+      randeffs          = randeffs,
       latents           = latents,
       noise             = noise,
       control_ngme      = control_ngme,
@@ -40,6 +45,7 @@ ngme_replicate <- function(
       V_sizes           = V_sizes,
       n_merr            = noise$n_params,
       n_params          = n_params,
+      n_re_params       = n_re_params,
       n_la_params       = n_la_params,
       ...
     ),
@@ -62,14 +68,20 @@ print.ngme_replicate <- function(x, ...) {
   cat(paste("  ", ngme_format("beta", ngme$beta)));
   cat("\n\n")
 
-  cat("Measurement noise: \n");
-  print.ngme_noise(ngme$noise, padding = 2); cat("\n\n")
+  cat("Random effects: \n");
+  for (i in seq_along(ngme$randeffs)) {
+    cat("$"); cat(names(ngme$randeffs)[[i]]); cat("\n")
+    print(ngme$randeffs[[i]], padding = 2)
+  }
 
   cat("Latent models: \n");
   for (i in seq_along(ngme$latents)) {
     # cat("[["); cat(i); cat("]]")
     # cat("\""); cat(names(ngme$latents)[[i]]); cat("\"\n")
     cat("$"); cat(names(ngme$latents)[[i]]); cat("\n")
-    print.ngme_model(ngme$latents[[i]], padding = 2)
+    print(ngme$latents[[i]], padding = 2)
   }
+
+  cat("Measurement noise: \n");
+  print(ngme$noise, padding = 2); cat("\n\n")
 }

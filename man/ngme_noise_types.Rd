@@ -2,7 +2,7 @@
 % Please edit documentation in R/ngme.constant.R
 \name{ngme_noise_types}
 \alias{ngme_noise_types}
-\title{show ngme noise types}
+\title{Show ngme noise types}
 \usage{
 ngme_noise_types()
 }
@@ -10,5 +10,5 @@ ngme_noise_types()
 available types for noise
 }
 \description{
-show ngme noise types
+Show ngme noise types
 }

@@ -6,20 +6,55 @@
 #' @param family distribution of random effect
 #' @return a list of random effect structure
 #' @export
-randeff <- function(formula, data, family) {
-  mat <- model.matrix(formula, data)
+randeff <- function(formula, data, effect_type, name) {
+  stopifnot(effect_type %in% ngme_randeff_types())
 
-  # num. of covariance matrix
-  parameter <- rep(0, ncol(mat)^2)
+  # Design Matrix and Covariance matrix
+  B_reff <- model.matrix(formula, data)
+  n_reff <- ncol(B_reff)
+
+  Sigma  <- diag(n_reff)
+  n_params <- sum(1:n_reff)
 
   # how to build covariance
   structure(
     list(
-      family = family,
-      mat = mat,
-      parameter = parameter,
-      n_params = length(parameter)
+      formula     = formula,
+      effect_type = effect_type,
+      B_reff      = B_reff,
+      Sigma       = Sigma,
+      n_params    = n_params,
+      name        = name,
+      mix_var     = if (effect_type == "normal") noise_normal() else noise_nig()
     ),
     class = "randeff"
   )
+}
+
+#' Print ngme random effect
+#'
+#' @param x random effect object
+#' @param padding number of white space padding in front
+#' @param ... ...
+#'
+#' @return radom effect model
+#' @export
+print.randeff <- function(x, padding = 0, ...) {
+  reff <- x
+  pad_space <- paste(rep(" ", padding), collapse = "")
+  pad_add4_space <- paste(rep(" ", padding + 4), collapse = "")
+
+  if (is.null(reff)) {
+    cat(pad_space); cat("Effect type - "); cat("NULL"); cat("\n")
+  } else {
+    cat(pad_space); cat("Effect type - "); cat(reff$effect_type); cat("\n")
+
+    cat(pad_space); cat("Effect formula: ");
+    cat(paste(as.character(reff$formula))); cat("\n")
+
+    cat(pad_space); cat("Effect covariance: \n")
+    cat(pad_space); print(reff$Sigma)
+  }
+  cat("\n")
+  invisible(reff)
 }

@@ -387,3 +387,25 @@ length_map <- function(map) {
     length(map)
   }
 }
+
+# vectorize a matrix
+
+veci <- function(v, n, m) {
+  if (length(v) != n * m) {
+    cat("Wrong dimensions in reshape:", length(v), "(", n, ",", m, ")\n")
+  }
+  M <- matrix(0, nrow = n, ncol = m)
+  count <- 1
+  for (i in 1:m) {
+    M[, i] <- v[count:(count+n-1)]
+    count <- count + n
+  }
+  return(M)
+}
+
+# M <- matrix(c(1,2,3,2,4,5,3,5,6), 3, 3); M
+vech <- function (A) {
+  if (is.matrix(A)) A[lower.tri(A, diag = TRUE)] else stop("argument 'A' must be a matrix")
+}
+
+

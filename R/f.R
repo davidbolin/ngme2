@@ -12,6 +12,7 @@
 #'  (can also be specified in each ngme model)
 #' @param control      control variables for f model
 #' @param name      name of the field, for later use
+#' @param effect_type  if it is a random effect, see ngme_randeff_types()
 #' @param A            A Matrix connecting observation and mesh
 #' @param theta_K      Unbounded parameter for K
 #' @param data      specifed or inherit from ngme formula
@@ -41,6 +42,7 @@ f <- function(
   noise       = noise_normal(),
   control     = control_f(),
   name        = NULL,
+  effect_type = NULL,
   data        = NULL,
   group       = NULL,
   A           = NULL,
@@ -55,21 +57,19 @@ f <- function(
   eval        = FALSE,
   ...
 ) {
-  # reff
-  if (inherits(model, "formula")) {
-    # f(~x) random effects for each replicate
-    return(randeff(formula=model,data=data))
-  }
-
-  stopifnot("Please specify model as character" = is.character(model))
-
+  stopifnot("Please specify model as character (latent process) or formula (random effect)"
+    = is.character(model) || inherits(model, "formula"))
   map <- eval(substitute(map), envir = data, enclos = parent.frame())
+
   if (model == "tp") map <- 1:(list(...)$left$n_map * list(...)$right$n_map)
+  # random effect, add trivial map
+  if (inherits(model, "formula")) map <- seq_len(nrow(data))
 
   replicate <- if (is.null(replicate)) rep(1, length_map(map))
     else as.integer(as.factor(replicate))
 
-  if (is.null(name)) name <- "field"
+  if (is.null(name) && inherits(model, "formula")) name <- "effect"
+  if (is.null(name) && !inherits(model, "formula")) name <- "field"
 
   # pre-model
   if (!eval) {
@@ -78,6 +78,13 @@ f <- function(
     args$map <- map
     args$replicate <- replicate
     return (args)
+  }
+
+  # reff
+  if (inherits(model, "formula")) {
+    stopifnot("Please specify effect_type for random effects" = !is.null(effect_type))
+    # f(~x) random effects for each replicate
+    return(randeff(formula = model, data = data, effect_type = effect_type, name=name))
   }
 
   # if (!is.null(index_NA) && length(index_NA) != length(index))

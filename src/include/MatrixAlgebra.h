@@ -53,7 +53,8 @@ void get_subvector(const VectorXd&, const VectorXi&, VectorXd&);
 void set_subcol(MatrixXd&, const int, const VectorXi&, const VectorXd&);
 
 
-MatrixXi duplicatematrix(int);
+// transform vech(M) to vec(M)
+MatrixXd duplicatematrix(int);
 
 //
 VectorXd vec(const MatrixXd&);

@@ -11,6 +11,7 @@ f(
   noise = noise_normal(),
   control = control_f(),
   name = NULL,
+  effect_type = NULL,
   data = NULL,
   group = NULL,
   A = NULL,
@@ -39,6 +40,8 @@ f(
 \item{control}{control variables for f model}
 
 \item{name}{name of the field, for later use}
+
+\item{effect_type}{if it is a random effect, see ngme_randeff_types()}
 
 \item{data}{specifed or inherit from ngme formula}
 

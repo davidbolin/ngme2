@@ -6,7 +6,7 @@
 predict using ngme after estimation
 same as predict.ngme_replicate(ngme[[i]], data[[i]], loc[[i]]) i in which.rep}
 \usage{
-\method{predict}{ngme}(
+predict.ngme(
   object,
   which.rep = seq_along(object),
   data = NULL,

@@ -271,99 +271,96 @@ ngme_parse_formula <- function(
   control_ngme,
   noise
 ) {
-  Fm <- Formula::Formula(fm)
   enclos_env <- list2env(as.list(parent.frame()), envir = parent.frame(2))
-  if ((length(Fm)[[1]] > 1)) {
-    # LHS more than 1 variable
-    # now assume bivariate model
-    y1 <- eval(formula(Fm, lhs=1)[[2]], envir=data, enclos=enclos_env)
-    y2 <- eval(formula(Fm, lhs=2)[[2]], envir=data, enclos=enclos_env)
 
-    stop("Bivariate model is not supported yet")
-  } else {
-    # adding special mark
-    tf <- terms.formula(fm, specials = c("f"))
-    terms <- attr(tf, "term.labels")
-    intercept <- attr(tf, "intercept")
+  tf <- terms.formula(fm, specials = c("f"))
+  terms <- attr(tf, "term.labels")
+  intercept <- attr(tf, "intercept")
 
-    # order of f terms in labels
-    spec_order <- attr(tf, "specials")$f - 1
+  # order of f terms in labels
+  spec_order <- attr(tf, "specials")$f - 1
 
-    # construct plain formula without f
-    # watch out! terms[-double(0)] -> character(0)
-    fixf <- if (length(spec_order) == 0) terms else terms[-spec_order]
-    response <- as.character(attr(tf, "variables")[[2]])
-    plain_fm_str <- paste(response, "~", intercept, paste(c("", fixf), collapse = " + "))
-    plain_fm <- formula(plain_fm_str)
+  # construct plain formula without f
+  # watch out! terms[-double(0)] -> character(0)
+  fixf <- if (length(spec_order) == 0) terms else terms[-spec_order]
+  response <- as.character(attr(tf, "variables")[[2]])
+  plain_fm_str <- paste(response, "~", intercept, paste(c("", fixf), collapse = " + "))
+  plain_fm <- formula(plain_fm_str)
 
-    # eval the data
-    ngme_response <- eval(stats::terms(fm)[[2]], envir = data, enclos = enclos_env)
-    stopifnot("Have NA in your response variable" = all(!is.na(ngme_response)))
-    X_full    <- model.matrix(delete.response(terms(plain_fm)), as.data.frame(data))
+  # eval the data
+  ngme_response <- eval(stats::terms(fm)[[2]], envir = data, enclos = enclos_env)
+  stopifnot("Have NA in your response variable" = all(!is.na(ngme_response)))
+  X_full    <- model.matrix(delete.response(terms(plain_fm)), as.data.frame(data))
 
-    ########## parse latents terms
-    pre_model <- list()
-    for (i in spec_order) {
-      if (!grepl("data *=", terms[i])) {
-        # adding data=data if not specified
-        str <- gsub("^f\\(", "ngme2::f(data=data,", terms[i])
-      } else if (grepl("data *= *NULL", terms[i])) {
-        # change data=NULL to data=data
-        str <- gsub("^f\\(", "ngme2::f(", terms[i])
-        str <- gsub("data *= *NULL", "data=data", str)
-      } else {
-        # keep data=sth.
-        str <- gsub("^f\\(", "ngme2::f(", terms[i])
-      }
-
-      # add information of index_NA
-      # adding 1 term for furthur use in f
-      # str <- gsub("ngme2::f\\(", "ngme2::f(index_NA=index_NA,", str)
-      res <- eval(parse(text = str), envir = data, enclos = enclos_env)
-
-      # give default name
-      if (res$name == "field") res$name <- paste0("field", length(pre_model) + 1)
-      pre_model[[res$name]] <- res
+  ########## parse latents terms
+  pre_model <- list(); idx_effect = 1; idx_field = 1;
+  for (i in spec_order) {
+    if (!grepl("data *=", terms[i])) {
+      # adding data=data if not specified
+      str <- gsub("^f\\(", "ngme2::f(data=data,", terms[i])
+    } else if (grepl("data *= *NULL", terms[i])) {
+      # change data=NULL to data=data
+      str <- gsub("^f\\(", "ngme2::f(", terms[i])
+      str <- gsub("data *= *NULL", "data=data", str)
+    } else {
+      # keep data=sth.
+      str <- gsub("^f\\(", "ngme2::f(", terms[i])
     }
-    # splits f_eff, latent according to replicates
-    repls <- if (length(pre_model) > 0)
-        lapply(pre_model, function(x) x$replicate)
+
+    # add information of index_NA
+    # adding 1 term for furthur use in f
+    # str <- gsub("ngme2::f\\(", "ngme2::f(index_NA=index_NA,", str)
+    res <- eval(parse(text = str), envir = enclos_env)
+
+    # give default name
+    if (res$name == "field") {res$name <- paste0("field", idx_field); idx_field <- idx_field + 1}
+    if (res$name == "effect") {res$name <- paste0("effect", idx_effect); idx_effect <- idx_effect + 1}
+    pre_model[[res$name]] <- res
+  }
+  # splits f_eff, latent according to replicates
+  repls <- if (length(pre_model) > 0)
+      lapply(pre_model, function(x) x$replicate)
+    else
+      list(rep(1, length(ngme_response)))
+
+  repl <- merge_repls(repls)
+  uni_repl <- unique(repl)
+  blocks_rep <- list() # of length n_repl
+  for (i in seq_along(uni_repl)) {
+    idx <- repl == uni_repl[[i]]
+    # data
+    Y <- ngme_response[idx]
+    X <- X_full[idx, , drop = FALSE]
+
+    # re-evaluate each f model using idx
+    latents_rep <- list(); randeffs_rep <- list()
+    for (tmp in pre_model) {
+      tmp$map <- sub_locs(tmp$map, idx)
+      tmp$replicate <- tmp$replicate[idx]
+      tmp$eval = TRUE
+      model_eval <- eval(tmp, envir = data, enclos = enclos_env)
+      if (inherits(model_eval, "randeff"))
+        randeffs_rep[[model_eval$name]] <- model_eval
       else
-        list(rep(1, length(ngme_response)))
-
-    repl <- merge_repls(repls)
-    uni_repl <- unique(repl)
-    blocks_rep <- list() # of length n_repl
-    for (i in seq_along(uni_repl)) {
-      idx <- repl == uni_repl[[i]]
-      # data
-      Y <- ngme_response[idx]
-      X <- X_full[idx, , drop = FALSE]
-
-      # re-evaluate each f model using idx
-      latents_rep <- list()
-      for (latent in pre_model) {
-        latent$map <- sub_locs(latent$map, idx)
-        latent$replicate <- latent$replicate[idx]
-        latent$eval = TRUE
-        latents_rep[[latent$name]] <- eval(latent, envir = data, enclos = enclos_env)
-      }
-      # give initial value
-      lm.model <- stats::lm.fit(X, Y)
-      if (is.null(control_ngme$beta)) control_ngme$beta <- lm.model$coeff
-      if (is.null(noise$theta_sigma)) noise$theta_sigma <- log(sd(lm.model$residuals))
-
-      noise_new <- update_noise(noise, n = length(Y))
-
-      blocks_rep[[i]] <- ngme_replicate(
-        Y = Y,
-        X = X,
-        noise = noise_new,
-        latents = latents_rep,
-        replicate = uni_repl[[i]],
-        control_ngme = control_ngme
-      )
+        latents_rep[[model_eval$name]] <- model_eval
     }
+
+    # give initial value
+    lm.model <- stats::lm.fit(X, Y)
+    if (is.null(control_ngme$beta)) control_ngme$beta <- lm.model$coeff
+    if (is.null(noise$theta_sigma)) noise$theta_sigma <- log(sd(lm.model$residuals))
+
+    noise_new <- update_noise(noise, n = length(Y))
+
+    blocks_rep[[i]] <- ngme_replicate(
+      Y = Y,
+      X = X,
+      noise = noise_new,
+      latents = latents_rep,
+      randeffs = randeffs_rep,
+      replicate = uni_repl[[i]],
+      control_ngme = control_ngme
+    )
   }
 
   list(

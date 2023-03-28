@@ -16,7 +16,7 @@ ngme_replicate <- function(
   n_la_params = sum(unlist(lapply(latents, function(x) x["n_params"])))
   n_feff <- ncol(X);
 
-  n_params <- n_la_params + n_feff + noise$n_params
+  n_params <- n_re_params + n_feff + n_la_params + noise$n_params
 
   latents_string <- rep(" ", 14) # padding of 14 spaces
   for (latent in latents)
@@ -69,10 +69,14 @@ print.ngme_replicate <- function(x, ...) {
   cat("\n\n")
 
   cat("Random effects: \n");
-  for (i in seq_along(ngme$randeffs)) {
-    cat("$"); cat(names(ngme$randeffs)[[i]]); cat("\n")
-    print(ngme$randeffs[[i]], padding = 2)
-  }
+  if (length(ngme$randeffs) > 0)
+    for (i in seq_along(ngme$randeffs)) {
+      cat("$"); cat(names(ngme$randeffs)[[i]]); cat("\n")
+      print(ngme$randeffs[[i]], padding = 2)
+    }
+  else
+    cat("   No random effects \n")
+  cat("\n")
 
   cat("Latent models: \n");
   for (i in seq_along(ngme$latents)) {
@@ -81,6 +85,7 @@ print.ngme_replicate <- function(x, ...) {
     cat("$"); cat(names(ngme$latents)[[i]]); cat("\n")
     print(ngme$latents[[i]], padding = 2)
   }
+  cat("\n")
 
   cat("Measurement noise: \n");
   print(ngme$noise, padding = 2); cat("\n\n")

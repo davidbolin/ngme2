@@ -9,21 +9,49 @@ using std::pow;
 // -------------- random effects implementation ----------------
 Randeff::Randeff(const Rcpp::List& R_randeff, unsigned long seed) :
   randeff_rng      (seed),
-  family           (Rcpp::as<string>        (R_randeff["family"])),
+  effect_type      (Rcpp::as<string>        (R_randeff["effect_type"])),
   B_reff           (Rcpp::as<MatrixXd>      (R_randeff["B_reff"])),
   Sigma            (Rcpp::as<MatrixXd>      (R_randeff["Sigma"])),
   n_reff           (B_reff.cols()),
-  vech_to_vec      (duplicatematrix(n_reff)),
-  n_params         (n_reff * (n_reff + 1) / 2),
-  var              (Var(Rcpp::as<Rcpp::List> (R_randeff["mix_var"]), randeff_rng()))
-{
-
-}
+  n_cov_params     (n_reff * (n_reff + 1) / 2),
+  n_params         (n_cov_params + n_reff + 1), // mu, Sigma_vech, nu
+  U                (n_reff),
+  mu               (VectorXd::Zero(n_reff)),
+  Dd               (duplicatematrix(n_reff)),
+  var              (Rcpp::as<Rcpp::List> (R_randeff["mix_var"]), randeff_rng())
+{}
 
 VectorXd Randeff::precond_grad() {
   VectorXd g = VectorXd::Zero(n_params);
+  MatrixXd invSigma = Sigma.inverse();
+
+  // gradient of mu (of length n_reff)
+  VectorXd V = var.getV();
+  VectorXd g_mu = ((-1 + V(0)) / V(0)) * (invSigma * U);
+
+  // gradient of Sigma_vech (of length n_cov_params)
+  MatrixXd iSkroniS = kroneckerProduct(invSigma, invSigma);
+  VectorXd UUt = vec(U * U.transpose());
+  VectorXd dSigma_vech = 0.5 * Dd.transpose() * iSkroniS  * (UUt - vec(Sigma));
+
+  g << g_mu, dSigma_vech, var.grad_log_nu();
   return g;
 }
+
+VectorXd Randeff::get_parameter() {
+  VectorXd p = VectorXd::Zero(n_params);
+  p << mu, vech(Sigma), var.get_nu();
+  return p;
+}
+
+void Randeff::set_parameter(const VectorXd& p) {
+  mu = p.head(n_reff);
+  VectorXd vech = p.segment(n_reff, n_cov_params);
+  VectorXd v = Dd * vech;
+  Sigma = veci(v, n_reff, n_reff);
+  var.set_log_nu(p.tail(1)(0));
+}
+
 
 // -------------- Block Model class ----------------
 BlockModel::BlockModel(
@@ -39,6 +67,7 @@ BlockModel::BlockModel(
   n_obs             (Y.size()),
   n_params          (Rcpp::as<int>           (block_model["n_params"])),
   n_la_params       (Rcpp::as<int>           (block_model["n_la_params"])),
+  n_re_params       (Rcpp::as<int>           (block_model["n_re_params"])),
   n_feff            (beta.size()),
   n_merr            (Rcpp::as<int>           (block_model["n_merr"])),
 
@@ -227,9 +256,9 @@ void BlockModel::sampleW_VY()
 }
 
 // ---------------- get, set update gradient ------------------
-VectorXd BlockModel::get_parameter() const {
-if (debug) std::cout << "Start block get parameter"<< std::endl;
-    VectorXd thetas (n_params);
+VectorXd BlockModel::get_parameter_no_reff() const {
+if (debug) std::cout << "Start get_parameter_no_reff"<< std::endl;
+    VectorXd thetas (n_params - n_re_params);
     int pos = 0;
     for (std::vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
       VectorXd theta = (*it)->get_parameter();
@@ -243,20 +272,20 @@ if (debug) std::cout << "Start block get parameter"<< std::endl;
       thetas.segment(n_la_params + n_merr, n_feff) = beta;
     }
 
-if (debug) std::cout << "Finish block get parameter"<< std::endl;
+if (debug) std::cout << "Finish get_parameter_no_reff"<< std::endl;
     return thetas;
 }
 
 // avg over gibbs samples
-VectorXd BlockModel::precond_grad() {
-if (debug) std::cout << "Start block gradient"<< std::endl;
+VectorXd BlockModel::precond_grad_no_reff() {
+if (debug) std::cout << "Start block gradient no reff"<< std::endl;
 long long time_compute_g = 0;
 long long time_sample_w = 0;
 
-  VectorXd avg_gradient = VectorXd::Zero(n_params);
+  VectorXd avg_gradient = VectorXd::Zero(n_params - n_re_params);
   for (int i=0; i < n_gibbs; i++) {
     // stack grad
-    VectorXd gradient = VectorXd::Zero(n_params);
+    VectorXd gradient = VectorXd::Zero(n_params - n_re_params);
 
 auto timer_computeg = std::chrono::steady_clock::now();
     // get grad for each latent
@@ -301,7 +330,7 @@ if (debug) {
   return gradients;
 }
 
-void BlockModel::set_parameter(const VectorXd& Theta) {
+void BlockModel::set_parameter_no_reff(const VectorXd& Theta) {
   int pos = 0;
   for (std::vector<std::unique_ptr<Latent>>::iterator it = latents.begin(); it != latents.end(); it++) {
     int theta_len = (*it)->get_n_params();
@@ -558,4 +587,33 @@ inline void BlockModel::examine_gradient() {
 // }
 }
 
+VectorXd BlockModel::get_parameter_reff() const {
+if (debug) std::cout << "get_parameter_reff" << std::endl;
+  VectorXd theta = VectorXd::Zero(n_re_params);
+  int idx = 0;
+  for (int i = 0; i < randeffs.size(); i++) {
+    theta.segment(idx, randeffs[i]->get_n_params()) = randeffs[i]->get_parameter();
+    idx += randeffs[i]->get_n_params();
+  }
+  return theta;
+}
 
+VectorXd BlockModel::precond_grad_reff() {
+if (debug) std::cout << "precond_grad_reff" << std::endl;
+  VectorXd g = VectorXd::Zero(n_re_params);
+  int idx = 0;
+  for (int i = 0; i < randeffs.size(); i++) {
+      g.segment(idx, randeffs[i]->get_n_params()) = randeffs[i]->precond_grad();
+      idx += randeffs[i]->get_n_params();
+  }
+  return g;
+}
+
+void BlockModel::set_parameter_reff(const VectorXd& theta) {
+if (debug) std::cout << "set_parameter_reff" << std::endl;
+  int idx = 0;
+  for (int i = 0; i < randeffs.size(); i++) {
+    randeffs[i]->set_parameter(theta.segment(idx, randeffs[i]->get_n_params()));
+    idx += randeffs[i]->get_n_params();
+  }
+}

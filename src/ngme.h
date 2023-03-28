@@ -15,13 +15,16 @@ using std::vector;
 
 enum Strategy {all, ws};
 
-// Ngme = a list of model over replicates
+// Ngme = a list of repliacte models. Each replicate model is a BlockModel
+// parameters(Ngme) = parameters(Ngme_replicate_no_reff) (share the same parameter over replicate)
+//    + parameters(Ngme_replicate_reff) (for each replicate)
+// n_params = replicate.n_params + n_re_params * (n_repl - 1)
 class Ngme : public Model {
 private:
   // for each replicate
   vector<std::unique_ptr<BlockModel>> ngme_repls;
-  int n_repl;
-  int n_params;
+  int n_repl, n_params, n_re_params;
+
   vector<int> num_each_repl;
   double sum_num_each_repl;
 
@@ -29,41 +32,20 @@ private:
   std::mt19937 gen;
   std::discrete_distribution<int> weighted_sampler;
 
+  bool debug;
 public:
   Ngme(const Rcpp::List& list_ngmes, unsigned long seed, int sampling_strategy);
 
-  VectorXd get_parameter() const {
-    return ngme_repls[0]->get_parameter();
+  VectorXd get_parameter() const override;
+  void set_parameter(const VectorXd& p) override;
+  VectorXd get_stepsizes() const override {
+    return VectorXd::Ones(n_params);
   }
 
-  VectorXd get_stepsizes() const {
-    return ngme_repls[0]->get_stepsizes();
-  }
-
-  void set_parameter(const VectorXd& x) {
-    for (int i=0; i < n_repl; i++) {
-      ngme_repls[i]->set_parameter(x);
-    }
-  }
-
-  MatrixXd precond() const {
-    MatrixXd precond = MatrixXd::Zero(n_params, n_params);
-    for (int i=0; i < n_repl; i++) {
-      precond += ngme_repls[i]->precond();
-    }
-    return precond;
-  }
-
-  VectorXd grad() {
-    VectorXd g = VectorXd::Zero(n_params);
-    for (int i=0; i < n_repl; i++) {
-      g += ngme_repls[i]->grad();
-    }
-    return g;
-  }
-
+  MatrixXd precond() const override;
+  VectorXd grad() override;
   // add subsampling for some ngme_repls (SGD-IS sample only 1 replicate each time, according to the weights)
-  VectorXd precond_grad();
+  VectorXd precond_grad() override;
 
   std::string get_par_string() const {
     return ngme_repls[0]->get_par_string();

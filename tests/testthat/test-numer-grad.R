@@ -61,13 +61,13 @@ test_that("numerical gradient works", {
     control_ngme =control_ngme(n_gibbs_samples = 5)
   )
   # traceplot(out, "ou")
-  out[[1]]$latent[[1]]$theta_K
+  out$replicates[[1]]$latent[[1]]$theta_K
 
-  plot(exp(B_K %*% out[[1]]$latent$ou$theta_K),main="estimation of K")
+  plot(exp(B_K %*% out$replicates[[1]]$latent$ou$theta_K),main="estimation of K")
   lines(exp(B_K %*% theta_k),main="true K", col="red")
 
   # compare noise
-  plot(out[[1]]$latent[[1]]$noise, noise_nig())
+  plot(out$replicates[[1]]$latent[[1]]$noise, noise_nig())
 
   expect_true(TRUE)
 })

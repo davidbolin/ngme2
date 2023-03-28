@@ -110,6 +110,7 @@ std::cout << "iteration = : " << curr_iter << std::endl;
 std::cout << "parameter = : " << x << std::endl;
 }
 
+// std::cout << "before set p" << std::endl;
         model.set_parameter(x);
         curr_iter += 1;
     }

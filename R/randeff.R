@@ -14,18 +14,20 @@ randeff <- function(formula, data, effect_type, name) {
   n_reff <- ncol(B_reff)
 
   Sigma  <- diag(n_reff)
-  n_params <- sum(1:n_reff)
+  n_cov_params <- sum(1:n_reff)
 
-  # how to build covariance
+  mix_var <- if (effect_type == "normal") noise_normal() else noise_nig()
+
   structure(
     list(
-      formula     = formula,
-      effect_type = effect_type,
-      B_reff      = B_reff,
-      Sigma       = Sigma,
-      n_params    = n_params,
-      name        = name,
-      mix_var     = if (effect_type == "normal") noise_normal() else noise_nig()
+      formula      = formula,
+      effect_type  = effect_type,
+      B_reff       = B_reff,
+      Sigma        = Sigma,
+      n_cov_params = n_cov_params,
+      n_params     = n_cov_params + n_reff + 1,
+      name         = name,
+      mix_var      = mix_var
     ),
     class = "randeff"
   )

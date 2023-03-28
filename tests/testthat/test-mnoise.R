@@ -17,7 +17,7 @@ test_that("test basic mn", {
     )
   )
   out
-  expect_true(out[[1]]$noise$theta_sigma - log(1.5) < 1)
+  expect_true(out$replicates[[1]]$noise$theta_sigma - log(1.5) < 1)
 
   # 2. nig case
   y <- beta[[1]] + x * beta[[2]] +
@@ -32,9 +32,9 @@ test_that("test basic mn", {
   out
 
   # traceplot(out, "mn")
-  expect_true(out[[1]]$noise$theta_sigma - log(2) < 1)
-  expect_true(out[[1]]$noise$theta_mu - (-3) < 1)
-  expect_true(out[[1]]$noise$nu - 2 < 2)
+  expect_true(out$replicates[[1]]$noise$theta_sigma - log(2) < 1)
+  expect_true(out$replicates[[1]]$noise$theta_mu - (-3) < 1)
+  expect_true(out$replicates[[1]]$noise$nu - 2 < 2)
 
   # very close!!
   # plot(noise_nig(mu=-3, nu=2, sigma=2), out$noise)

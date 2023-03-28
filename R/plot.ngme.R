@@ -178,7 +178,7 @@
 traceplot <- function(ngme, name="general") {
   stopifnot(inherits(ngme, "ngme"))
   stopifnot(!is.null(name))
-  ngme <- ngme[[1]]
+  ngme <- ngme$replicates[[1]]
   ps <- list()
 
   if (name %in% names(ngme$latents)) {

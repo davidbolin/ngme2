@@ -55,10 +55,10 @@ test_that("simulate and estimate of rw with NIG", {
   )
   out
   traceplot(out, "rw")
-  plot(out[[1]]$latents[[1]]$noise,
+  plot(out$replicates[[1]]$latents[[1]]$noise,
     noise_nig(mu=mu, sigma=sigma, nu=nu))
 
-expect_true(all(as.numeric(out[[1]]$latents[[1]]$K %*% W) - dW < 1e-5))
+expect_true(all(as.numeric(out$replicates[[1]]$latents[[1]]$K %*% W) - dW < 1e-5))
 })
 
 ######################################################################
@@ -124,28 +124,29 @@ test_that("test estimation of basic ar with normal measurement noise", {
     data = data.frame(Y = Y),
     control_opt = control_opt(
       estimation = T,
-      iterations = 300,
+      iterations = 100,
       n_parallel_chain = 5,
       print_check_info = FALSE,
       verbose = F
     ),
     debug = FALSE
   )
-  out
-  # out[[1]]$latents[[1]]$control$numer_grad
+  # out
+  # out$replicates[[1]]$latents[[1]]$control$numer_grad
+  # load_all()
   # traceplot(out, "ar")
-  # plot(attr(W, "noise"), out[[1]]$latents[[1]]$noise)
+  # plot(attr(W, "noise"), out$replicates[[1]]$latents[[1]]$noise)
 
-  # plot(simulate(out[[1]]$latents[["ar"]]), type="l")
+  # plot(simulate(out$replicates[[1]]$latents[["ar"]]), type="l")
   # plot(Y, type="l")
-  # prds <- predict(out[[1]], loc=list(ar=501:600))$mean
+  # prds <- predict(out$replicates[[1]], loc=list(ar=501:600))$mean
   # traceplot(out, "mn")
 
-  with(out[[1]]$latents[[1]], {
+  with(out$replicates[[1]]$latents[[1]], {
     expect_true(abs(noise$theta_mu - mu) < 4)
     expect_true(abs(noise$theta_sigma - log(sigma)) < 2)
     expect_true(abs(noise$nu - nu) < 4)
-    expect_true(abs(ar1_th2a(out[[1]]$latents[[1]]$theta_K) - alpha) < 0.1)
+    expect_true(abs(ar1_th2a(out$replicates[[1]]$latents[[1]]$theta_K) - alpha) < 0.1)
   })
 })
 
@@ -188,7 +189,7 @@ test_that("test ou process", {
       verbose = T
     ),
   )
-  out[[1]]$latents[[1]]$theta_K
+  out$replicates[[1]]$latents[[1]]$theta_K
   # traceplot(out, "field")
 
   model_ou(c(1,3,5), order=1)$h

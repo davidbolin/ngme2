@@ -17,7 +17,7 @@ library(INLA)
       estimation = F
     )
   )
-out[[1]]$latents[[1]]$right
+out$replicates[[1]]$latents[[1]]$right
   # f(i_space, model = spde, group = i_time, control.group = list(model="ar1"))
 })
 
@@ -158,7 +158,7 @@ tp <- f(model="tp", right=ar1(1:nr, alpha=0.7), left=ar1(1:nl, alpha=0.3), eval=
     ),
     debug = F
   )
-  out[[1]]
+  out$replicates[[1]]
 
   traceplot(out, "field1")
 })

@@ -30,19 +30,20 @@ using std::vector;
 class Randeff {
   private:
     std::mt19937 randeff_rng;
-    string family;
+    string effect_type;
 
-    MatrixXd B_reff, Sigma, vech_to_vec;
-    int n_reff, n_params;
+    MatrixXd B_reff, Sigma;
+    int n_reff, n_cov_params, n_params; // n_params = n_cov_params + 1
+    VectorXd U, mu;
+    MatrixXd Dd; // duplicated Matrix Dd * vech = vec
     Var var;
   public:
     Randeff(const Rcpp::List& R_randeff, unsigned long seed);
-    VectorXd get_parameter() {return vech(Sigma);}
-    void set_parameter(VectorXd& vech) {
-      VectorXd v = vech_to_vec * vech;
-      Sigma = veci(v, n_params, n_params);
-    }
+    int get_n_params() const {return n_params;}
+
+    VectorXd get_parameter();
     VectorXd precond_grad();
+    void set_parameter(const VectorXd& p);
 };
 
 
@@ -51,7 +52,7 @@ enum Block_fix_flag {
     block_fix_beta, block_fix_theta_mu, block_fix_theta_sigma
 };
 
-class BlockModel : public Model {
+class BlockModel {
 protected:
 // W_sizes = row(A1) + ... + row(An)
     // general
@@ -77,7 +78,7 @@ protected:
 
     int n_latent; // how mnay latent model
     int n_obs;  // how many observation
-    int n_params, n_la_params, n_feff, n_merr;  // number of total params, la params, ...
+    int n_params, n_la_params, n_re_params, n_feff, n_merr;  // number of total params, la params, ...
 
     // fix estimation
     bool fix_flag[BLOCK_FIX_FLAG_SIZE] {0};
@@ -140,13 +141,16 @@ public:
 
     /* Optimizer related */
     int                  get_n_params() const {return n_params;}
-    VectorXd             get_parameter() const override;
-    VectorXd             get_stepsizes() const override {return stepsizes;}
-    void                 set_parameter(const VectorXd&) override;
-    VectorXd             precond_grad() override;
 
-    MatrixXd             precond() const override;
-    VectorXd             grad() override {return precond_grad();}
+    VectorXd             get_parameter_no_reff() const;
+    VectorXd             get_parameter_reff() const;
+    void                 set_parameter_no_reff(const VectorXd&);
+    void                 set_parameter_reff(const VectorXd&);
+    VectorXd             precond_grad_no_reff();
+    VectorXd             precond_grad_reff();
+
+    MatrixXd             precond() const;
+    // VectorXd             grad() {return precond_grad();}
 
     void                 examine_gradient();
     void                 sampleW_V();
@@ -267,6 +271,7 @@ public:
         setPrevV(VW[1]);
         setPrevW(VW[2]);
     }
+
 
     // --------- Fixed effects and Measurement error  ------------
     VectorXd grad_beta();

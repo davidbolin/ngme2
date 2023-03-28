@@ -84,10 +84,8 @@ ngme <- function(
   stopifnot(class(noise) == "ngme_noise")
 
   # parse the formula get a list of ngme_replicate
-  parse_ngme <- ngme_parse_formula(formula, data, control_ngme, noise)
-  list_replicates <- parse_ngme$blocks_rep
-
-  attr(list_replicates, "fitting") <- fitting
+  ngme_model <- ngme_parse_formula(formula, data, control_ngme, noise)
+  attr(ngme_model, "fitting") <- fitting
 
   ####### Use Last_fit ngme object to update Rcpp_list
   stopifnot("start should be an ngme object"
@@ -95,8 +93,8 @@ ngme <- function(
 
   # update with start (list of ngmes)
   if (inherits(start, "ngme")) {
-    for (i in seq_along(list_replicates)) {
-      list_replicates[[i]] <- within(list_replicates[[i]], {
+    for (i in seq_along(ngme_model$replicates)) {
+      ngme_model$replicates[[i]] <- within(ngme_model$replicates[[i]], {
         beta <- start[[i]]$beta
         noise <- update_noise(noise, new_noise = start[[i]]$noise)
         for (i in seq_along(start[[i]]$latents)) {
@@ -109,67 +107,61 @@ ngme <- function(
       })
     }
   }
-
-if (debug) {print(str(list_replicates[[1]]))}
+if (debug) {print(str(ngme_model$replicates[[1]]))}
 
 # check all f has the same replicate
 # otherwise change replicate to group="iid"
   ################# Run CPP ####################
-  check_dim(list_replicates)
+  check_dim(ngme_model)
   if (control_opt$estimation) {
     cat("Starting estimation... \n")
-    outputs <- estimate_cpp(list_replicates, control_opt)
+    outputs <- estimate_cpp(ngme_model, control_opt)
     cat("\n")
 
   ################# Update the estimates ####################
     est_output <- mean_list(outputs)
-    for (i in seq_along(list_replicates))
-      list_replicates[[i]] <- update_ngme_est(list_replicates[[i]], est_output[[i]])
+    for (i in seq_along(ngme_model$replicates))
+      ngme_model$replicates[[i]] <- update_ngme_est(ngme_model$replicates[[i]], est_output[[i]])
 
     # return the mean of samples of W of posterior
-    cat("Starting posterior sampling... \nNote: Use ngme$latents[[model_name]]$W  to access the posterior mean of process \n")
-    for (i in seq_along(list_replicates)) {
-      ngme_replicate <- list_replicates[[i]]
-      ngme_replicate$control_ngme$init_sample_W <- FALSE
-      mean_post_W <- mean_list(
-        sampling_cpp(ngme_replicate, control_ngme$post_samples_size, TRUE, control_opt$seed)[["W"]]
-      )
+    # cat("Starting posterior sampling... \nNote: Use ngme$latents[[model_name]]$W  to access the posterior mean of process \n")
+    # for (i in seq_along(ngme_model$replicates)) {
+    #   ngme_replicate <- ngme_model$replicates[[i]]
+    #   ngme_replicate$control_ngme$init_sample_W <- FALSE
+    #   mean_post_W <- mean_list(
+    #     sampling_cpp(ngme_replicate, control_ngme$post_samples_size, TRUE, control_opt$seed)[["W"]]
+    #   )
 
-      idx <- 1
-      for (j in seq_along(ngme_replicate$latents)) {
-        ngme_replicate$latents[[j]]$W <- mean_post_W[idx : (ngme_replicate$latents[[j]]$W_size + idx - 1)]
-        idx <- idx + ngme_replicate$latents[[j]]$W_size
-      }
-      list_replicates[[i]] <- ngme_replicate
-    }
+    #   idx <- 1
+    #   for (j in seq_along(ngme_replicate$latents)) {
+    #     ngme_replicate$latents[[j]]$W <- mean_post_W[idx : (ngme_replicate$latents[[j]]$W_size + idx - 1)]
+    #     idx <- idx + ngme_replicate$latents[[j]]$W_size
+    #   }
+    #   ngme_model$replicates[[i]] <- ngme_replicate
+    # }
     cat("Posterior sampling done! \n")
 
     # transform trajectory
     traj_df_chains <- transform_traj(attr(outputs, "opt_traj"))
     # dispatch trajs to each latent and block
       idx <- 0;
-      for (i in seq_along(list_replicates[[1]]$latents)) {
-        n_params <- list_replicates[[1]]$latents[[i]]$n_params
+      for (i in seq_along(ngme_model$replicates[[1]]$latents)) {
+        n_params <- ngme_model$replicates[[1]]$latents[[i]]$n_params
         lat_traj_chains = list()
         for (j in seq_along(traj_df_chains))
           lat_traj_chains[[j]] <- traj_df_chains[[j]][idx + 1:n_params, ]
 
-        attr(list_replicates[[1]]$latents[[i]], "lat_traj") <- lat_traj_chains
+        attr(ngme_model$replicates[[1]]$latents[[i]], "lat_traj") <- lat_traj_chains
         idx <- idx + n_params
       }
       # mn and beta
       block_traj <- list()
       for (j in seq_along(traj_df_chains))
-        block_traj[[j]] <- traj_df_chains[[j]][(idx + 1):list_replicates[[1]]$n_params, ]
-      attr(list_replicates[[1]], "block_traj") <- block_traj
+        block_traj[[j]] <- traj_df_chains[[j]][(idx + 1):ngme_model$replicates[[1]]$n_params, ]
+      attr(ngme_model$replicates[[1]], "block_traj") <- block_traj
       attr(outputs, "opt_traj") <- NULL
   }
-
-  # cat(paste("total time is", Sys.time() - time.start, " \n"))
-  attr(list_replicates, "control_opt") <- control_opt
-
-  class(list_replicates) <- "ngme"
-  list_replicates
+  ngme_model
 }
 
 # helper function
@@ -224,15 +216,14 @@ update_ngme_est <- function(
 
 #' @export
 print.ngme <- function(x, ...) {
-  print(x[[1]])
+  print(x$replicates[[1]])
   cat("\n");
-  cat("Number of replicates is ", length(x), "\n");
+  cat("Number of replicates is ", x$n_repls, "\n");
 }
 
-
 ######
-check_dim <- function(list_replicates) {
-  for (ngme in list_replicates) {
+check_dim <- function(ngme_model) {
+  for (ngme in ngme_model$replicates) {
     if (ncol(ngme$X) != length(ngme$beta)) {
       stop("The number of columns of X is not equal to the length of beta")
     }
@@ -363,8 +354,19 @@ ngme_parse_formula <- function(
     )
   }
 
-  list(
-    replicate   = repls,
-    blocks_rep  = blocks_rep
+  n_repls  <- length(blocks_rep)
+  n_params <- blocks_rep[[1]]$n_params +
+    (n_repls - 1) * blocks_rep[[1]]$n_re_params
+
+  structure(
+    list(
+      replicates   = blocks_rep,
+      n_repls      = n_repls,
+      n_params     = n_params,
+      n_re_params  = blocks_rep[[1]]$n_re_params,
+      repls_ngme   = repls,
+      control_ngme = control_ngme
+    ),
+    class = "ngme"
   )
 }

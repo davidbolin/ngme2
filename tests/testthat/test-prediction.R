@@ -28,14 +28,14 @@ test_that("test predict general", {
   out
   traceplot(out)
   traceplot(out, "field1")
-  plot(out[[1]]$latents[[1]]$noise, attr(W, "noise"))
+  plot(out$replicates[[1]]$latents[[1]]$noise, attr(W, "noise"))
 
   # compare results
-  expect_true(sum(abs(out[[1]]$beta - beta)) < 2)
-  expect_true(abs(out[[1]]$noise$theta_sigma - log(sigma_eps)) < 1)
-  expect_true(abs(out[[1]]$latents[[1]]$noise$theta_mu - mu) < 1)
-  expect_true(abs(out[[1]]$latents[[1]]$noise$theta_sigma - log(sigma)) < 1)
-  expect_true(abs(out[[1]]$latents[[1]]$noise$nu - nu) < 5)
+  expect_true(sum(abs(out$replicates[[1]]$beta - beta)) < 2)
+  expect_true(abs(out$replicates[[1]]$noise$theta_sigma - log(sigma_eps)) < 1)
+  expect_true(abs(out$replicates[[1]]$latents[[1]]$noise$theta_mu - mu) < 1)
+  expect_true(abs(out$replicates[[1]]$latents[[1]]$noise$theta_sigma - log(sigma)) < 1)
+  expect_true(abs(out$replicates[[1]]$latents[[1]]$noise$nu - nu) < 5)
 })
 
 
@@ -53,7 +53,7 @@ test_that("test posterior sampling and model_validation()", {
   )
   # traceplot(out, "field1")
 
-  expect_no_error(samples <- sampling_cpp(out[[1]], 10, posterior = TRUE, seed=10))
+  expect_no_error(samples <- sampling_cpp(out$replicates[[1]], 10, posterior = TRUE, seed=10))
 })
 
 

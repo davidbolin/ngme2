@@ -12,14 +12,14 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // estimate_cpp
-Rcpp::List estimate_cpp(const Rcpp::List& list_replicates, const Rcpp::List& control_opt);
-RcppExport SEXP _ngme2_estimate_cpp(SEXP list_replicatesSEXP, SEXP control_optSEXP) {
+Rcpp::List estimate_cpp(const Rcpp::List& R_ngme, const Rcpp::List& control_opt);
+RcppExport SEXP _ngme2_estimate_cpp(SEXP R_ngmeSEXP, SEXP control_optSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::List& >::type list_replicates(list_replicatesSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type R_ngme(R_ngmeSEXP);
     Rcpp::traits::input_parameter< const Rcpp::List& >::type control_opt(control_optSEXP);
-    rcpp_result_gen = Rcpp::wrap(estimate_cpp(list_replicates, control_opt));
+    rcpp_result_gen = Rcpp::wrap(estimate_cpp(R_ngme, control_opt));
     return rcpp_result_gen;
 END_RCPP
 }

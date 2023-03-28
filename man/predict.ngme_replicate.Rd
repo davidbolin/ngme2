@@ -5,7 +5,7 @@
 \title{Predict function of ngme2
 predict using ngme after estimation}
 \usage{
-predict.ngme_replicate(
+\method{predict}{ngme_replicate}(
   object,
   data = NULL,
   loc = NULL,

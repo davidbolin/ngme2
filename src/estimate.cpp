@@ -26,7 +26,7 @@ std::vector<bool> check_conv(const MatrixXd&, const MatrixXd&, int, int, double,
 
 // [[Rcpp::plugins(openmp)]]
 // [[Rcpp::export]]
-Rcpp::List estimate_cpp(const Rcpp::List& list_replicates, const Rcpp::List& control_opt) {
+Rcpp::List estimate_cpp(const Rcpp::List& R_ngme, const Rcpp::List& control_opt) {
     unsigned long seed = Rcpp::as<unsigned long> (control_opt["seed"]);
     std::mt19937 rng (seed);
 
@@ -58,7 +58,7 @@ auto timer = std::chrono::steady_clock::now();
     std::vector<std::unique_ptr<Ngme>> ngmes;
     int i = 0;
     for (i=0; i < n_chains; i++) {
-        ngmes.push_back(std::make_unique<Ngme>(list_replicates, rng(), sampling_strategy));
+        ngmes.push_back(std::make_unique<Ngme>(R_ngme, rng(), sampling_strategy));
     }
     std::string par_string = ngmes[0]->get_par_string();
 
@@ -145,7 +145,7 @@ auto timer = std::chrono::steady_clock::now();
         std::cout << "Estimation ends." << std::endl;
 
 #else // No parallel chain
-    Ngme ngme (list_replicates, rng(), sampling_strategy);
+    Ngme ngme (R_ngme, rng(), sampling_strategy);
     Optimizer opt (control_opt);
     opt.sgd(ngme, 0.1, iterations, max_relative_step, max_absolute_step);
     // estimation done, posterior sampling

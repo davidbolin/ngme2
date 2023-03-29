@@ -24,10 +24,12 @@ load_all()
     fm2,
     data = data.frame(Y=1:6, x=c(1,2,3,1,2,3), repl=c(1,1,1,2,2,2)),
     control_opt = control_opt(
-      estimation = T,
+      estimation = F,
       iterations = 10
     )
   )
+
+out$replicates[[1]]$B_reffs
 
 out$replicates[[1]]$randeff
 out$replicates[[1]]$randeff[[1]]$n_params
@@ -38,3 +40,4 @@ out$replicates[[1]]$n_la_params
   out
 })
 
+cbind(randeffs[[1]]$B_reff, randeffs[[2]]$B_reff)

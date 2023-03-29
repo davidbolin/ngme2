@@ -12,6 +12,7 @@ Randeff::Randeff(const Rcpp::List& R_randeff, unsigned long seed) :
   effect_type      (Rcpp::as<string>        (R_randeff["effect_type"])),
   B_reff           (Rcpp::as<MatrixXd>      (R_randeff["B_reff"])),
   Sigma            (Rcpp::as<MatrixXd>      (R_randeff["Sigma"])),
+  invSigma         (Sigma.inverse()),
   n_reff           (B_reff.cols()),
   n_cov_params     (n_reff * (n_reff + 1) / 2),
   n_params         (n_cov_params + n_reff + 1), // mu, Sigma_vech, nu
@@ -23,7 +24,6 @@ Randeff::Randeff(const Rcpp::List& R_randeff, unsigned long seed) :
 
 VectorXd Randeff::precond_grad() {
   VectorXd g = VectorXd::Zero(n_params);
-  MatrixXd invSigma = Sigma.inverse();
 
   // gradient of mu (of length n_reff)
   VectorXd V = var.getV();
@@ -49,7 +49,10 @@ void Randeff::set_parameter(const VectorXd& p) {
   VectorXd vech = p.segment(n_reff, n_cov_params);
   VectorXd v = Dd * vech;
   Sigma = veci(v, n_reff, n_reff);
+  invSigma = Sigma.inverse();
   var.set_log_nu(p.tail(1)(0));
+
+  // sample U|V ~ N(0, 1/V * Sigma^-1)
 }
 
 
@@ -70,10 +73,13 @@ BlockModel::BlockModel(
   n_re_params       (Rcpp::as<int>           (block_model["n_re_params"])),
   n_feff            (beta.size()),
   n_merr            (Rcpp::as<int>           (block_model["n_merr"])),
+  n_reffs           (Rcpp::as<int>           (block_model["n_reffs"])),
 
   debug             (false),
   A                 (n_obs, W_sizes),
   K                 (V_sizes, W_sizes),
+  B_reffs           (Rcpp::as<MatrixXd>     (block_model["B_reffs"])),
+  G                 (n_obs, n_reffs + W_sizes),
   var               (Var(Rcpp::as<Rcpp::List> (block_model["noise"]), rng())),
 
   curr_iter         (0),
@@ -118,12 +124,25 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
   }
 
 if (debug) std::cout << "before set block A" << std::endl;
-  /* Init variables: h, A */
+  /* Init A */
   int n = 0;
   for (std::vector<std::unique_ptr<Latent>>::iterator it = latents.begin(); it != latents.end(); it++) {
     setSparseBlock(&A, 0, n, (*it)->getA());
     n += (*it)->get_W_size();
   }
+  /* Init G = horizontal concat B_reffs and A */
+  std::cout << "B_reffs = " << B_reffs << std::endl;
+  std::cout << "A = " << A << std::endl;
+  // cout G sizes
+  std::cout << "G size = " << G.rows() << " x " << G.cols() << std::endl;
+  std::cout << "B_reffs size = " << B_reffs.rows() << " x " << B_reffs.cols() << std::endl;
+  std::cout << "A size = " << A.rows() << " x " << A.cols() << std::endl;
+
+  SparseMatrix<double> B = B_reffs.sparseView();
+  setSparseBlock(&G, 0, 0, B);
+  setSparseBlock(&G, 0, n_reffs, A);
+
+std::cout << "G block = " << G << std::endl;
 
   assemble();
 if (debug) std::cout << "After set block K" << std::endl;
@@ -220,11 +239,13 @@ void BlockModel::setPrevV(const VectorXd& V) {
   }
 }
 
-// sample W|VY
+// sample (U,W)|VY
 void BlockModel::sampleW_VY()
 {
 // if (debug) std::cout << "starting sampling W." << std::endl;
   if (n_latent==0) return;
+
+  // randeffs
 
 // if (debug) std::cout << "K = " << K << std::endl;
   VectorXd SV = getSV();

@@ -329,6 +329,7 @@ ngme_parse_formula <- function(
       tmp$map <- sub_locs(tmp$map, idx)
       tmp$replicate <- tmp$replicate[idx]
       tmp$eval = TRUE
+      tmp$data <- data[idx, , drop = FALSE]
       model_eval <- eval(tmp, envir = data, enclos = enclos_env)
       if (inherits(model_eval, "randeff"))
         randeffs_rep[[model_eval$name]] <- model_eval

@@ -32,7 +32,7 @@ class Randeff {
     std::mt19937 randeff_rng;
     string effect_type;
 
-    MatrixXd B_reff, Sigma;
+    MatrixXd B_reff, Sigma, invSigma;
     int n_reff, n_cov_params, n_params; // n_params = n_cov_params + 1
     VectorXd U, mu;
     MatrixXd Dd; // duplicated Matrix Dd * vech = vec
@@ -40,6 +40,11 @@ class Randeff {
   public:
     Randeff(const Rcpp::List& R_randeff, unsigned long seed);
     int get_n_params() const {return n_params;}
+    int get_n_reff() const {return n_reff;}
+    MatrixXd& get_B_reff() {return B_reff;}
+    const VectorXd& get_U() const {return U;}
+    void set_U(const VectorXd& U_) {U = U_;}
+    VectorXd getMean() const {double V = var.getV()(0); return (V-1)*mu;}
 
     VectorXd get_parameter();
     VectorXd precond_grad();
@@ -78,7 +83,7 @@ protected:
 
     int n_latent; // how mnay latent model
     int n_obs;  // how many observation
-    int n_params, n_la_params, n_re_params, n_feff, n_merr;  // number of total params, la params, ...
+    int n_params, n_la_params, n_re_params, n_feff, n_merr, n_reffs;  // number of total params, la params, ...
 
     // fix estimation
     bool fix_flag[BLOCK_FIX_FLAG_SIZE] {0};
@@ -88,7 +93,8 @@ protected:
     bool debug, reduce_var;
     double reduce_power, threshold;
 
-    SparseMatrix<double> A, K;      // not used: dK, d2K;
+    SparseMatrix<double> A, K, G;      // not used: dK, d2K; G = [B_reff A]
+    MatrixXd B_reffs;
 
     vector<std::unique_ptr<Latent>> latents;
     Var var;
@@ -163,10 +169,21 @@ public:
             setSparseBlock(&K,   nrow, ncol, (*it)->getK());
             // setSparseBlock(&dK,  n, n, (*it)->get_dK());
             // setSparseBlock(&d2K, n, n, (*it)->get_d2K());
-
             nrow += (*it)->get_V_size();
             ncol += (*it)->get_W_size();
         }
+    }
+
+    // return mean = mu*(V-h)
+    VectorXd getMean_reff() const {
+        VectorXd mean (n_reffs);
+        int pos = 0;
+        for (vector<std::unique_ptr<Randeff>>::const_iterator it = randeffs.begin(); it != randeffs.end(); it++) {
+            int size = (*it)->get_n_reff();
+            mean.segment(pos, size) = (*it)->getMean();
+            pos += size;
+        }
+        return mean;
     }
 
     // return mean = mu*(V-h)

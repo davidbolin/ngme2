@@ -23,6 +23,7 @@ randeff <- function(formula, data, effect_type, name) {
       formula      = formula,
       effect_type  = effect_type,
       B_reff       = B_reff,
+      n_reff       = n_reff,
       Sigma        = Sigma,
       n_cov_params = n_cov_params,
       n_params     = n_cov_params + n_reff + 1,

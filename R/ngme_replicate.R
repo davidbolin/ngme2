@@ -12,6 +12,9 @@ ngme_replicate <- function(
   W_sizes     = sum(unlist(lapply(latents, function(x) x[["n_rep"]] * x[["W_size"]])))   #W_sizes = sum(ncol_K)
   V_sizes     = sum(unlist(lapply(latents, function(x) x[["n_rep"]] * x[["V_size"]])))   #W_sizes = sum(nrow_K)
 
+  n_reffs = sum(unlist(lapply(randeffs, function(x) x["n_reff"])))
+  B_reffs = do.call(cbind, lapply(randeffs, function(x) x[["B_reff"]]))
+
   n_re_params = sum(unlist(lapply(randeffs, function(x) x["n_params"])))
   n_la_params = sum(unlist(lapply(latents, function(x) x["n_params"])))
   n_feff <- ncol(X);
@@ -43,6 +46,8 @@ ngme_replicate <- function(
       par_string        = par_string,
       W_sizes           = W_sizes,
       V_sizes           = V_sizes,
+      n_reffs           = n_reffs,
+      B_reffs           = B_reffs,
       n_merr            = noise$n_params,
       n_params          = n_params,
       n_re_params       = n_re_params,

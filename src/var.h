@@ -78,7 +78,6 @@ public:
             prevV = V;
             VectorXd nu_vec = VectorXd::Constant(n, nu);
             if (!fix_V) V = rGIG_cpp(VectorXd::Constant(n, -0.5), nu_vec, nu_vec.cwiseProduct(h.cwiseProduct(h)), var_rng());
-
         }
     }
 

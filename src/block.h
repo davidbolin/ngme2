@@ -42,9 +42,19 @@ class Randeff {
     int get_n_params() const {return n_params;}
     int get_n_reff() const {return n_reff;}
     MatrixXd& get_B_reff() {return B_reff;}
-    const VectorXd& get_U() const {return U;}
-    void set_U(const VectorXd& U_) {U = U_;}
-    VectorXd getMean() const {double V = var.getV()(0); return (V-1)*mu;}
+    const VectorXd& getU() const {return U;}
+    void setU(const VectorXd& U_) {U = U_;}
+    SparseMatrix<double> get_invV_Sigma() const {
+        double V = var.getV()(0);
+V = 1;
+        return (1/V * invSigma).sparseView();
+    }
+
+    VectorXd getM() const {
+        double V = var.getV()(0);
+V = 1;
+        return V*(V-1) * Sigma * mu;
+    }
 
     VectorXd get_parameter();
     VectorXd precond_grad();
@@ -93,7 +103,7 @@ protected:
     bool debug, reduce_var;
     double reduce_power, threshold;
 
-    SparseMatrix<double> A, K, G;      // not used: dK, d2K; G = [B_reff A]
+    SparseMatrix<double> A, K, invV_Sigma, G, Q, QQ;      // not used: dK, d2K; G = [B_reff A]
     MatrixXd B_reffs;
 
     vector<std::unique_ptr<Latent>> latents;
@@ -120,7 +130,7 @@ public:
         for (int i=0; i < iterations; i++) {
             sampleW_VY();
             sampleV_WY();
-            sample_cond_block_V();
+            sample_cond_block_V()   ;
         }
       if (debug) std::cout << "Finish burn in period." << std::endl;
     }
@@ -141,6 +151,7 @@ public:
         }
       }
     }
+    void setU(const VectorXd&);
     void setW(const VectorXd&);
     void setPrevW(const VectorXd&);
     void setPrevV(const VectorXd&);
@@ -172,15 +183,33 @@ public:
             nrow += (*it)->get_V_size();
             ncol += (*it)->get_W_size();
         }
+
+        int n = 0;
+        // set Sigma from randeffs
+        for (vector<std::unique_ptr<Randeff>>::iterator it = randeffs.begin(); it != randeffs.end(); it++) {
+            SparseMatrix<double> tmp = (*it)->get_invV_Sigma();
+            setSparseBlock(&invV_Sigma, n, n, tmp);
+            n += (*it)->get_n_reff();
+        }
+
+        // build Q
+        VectorXd SV = getSV();
+        VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(SV);
+        VectorXd noise_V = var.getV();
+        SparseMatrix<double> Q_latent = K.transpose() * inv_SV.asDiagonal() * K;
+        Q.setZero();
+        setSparseBlock(&Q, 0, 0, invV_Sigma);
+        setSparseBlock(&Q, n_reffs, n_reffs, Q_latent);
+        QQ = Q + G.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V).asDiagonal() * G;
     }
 
-    // return mean = mu*(V-h)
-    VectorXd getMean_reff() const {
+    // return mean = mu*(V-1)
+    VectorXd getM_reff() const {
         VectorXd mean (n_reffs);
         int pos = 0;
         for (vector<std::unique_ptr<Randeff>>::const_iterator it = randeffs.begin(); it != randeffs.end(); it++) {
             int size = (*it)->get_n_reff();
-            mean.segment(pos, size) = (*it)->getMean();
+            mean.segment(pos, size) = (*it)->getM();
             pos += size;
         }
         return mean;
@@ -235,6 +264,17 @@ public:
         return SV;
     }
 
+    VectorXd getU() const {
+        VectorXd U (n_reffs);
+        int pos = 0;
+        for (vector<std::unique_ptr<Randeff>>::const_iterator it = randeffs.begin(); it != randeffs.end(); it++) {
+            int size = (*it)->get_n_reff();
+            U.segment(pos, size) = (*it)->getU();
+            pos += size;
+        }
+        return U;
+    }
+
     VectorXd getW() const {
         VectorXd W (W_sizes);
         int pos = 0;
@@ -258,8 +298,8 @@ public:
     }
 
     VectorXd get_residual() const {
-      if (n_latent > 0){
-        return Y - A * getW() - X * beta - (-VectorXd::Ones(n_obs) + var.getV()).cwiseProduct(noise_mu);
+      if (n_latent > 0 || n_reffs > 0) {
+        return Y - A * getW() - B_reffs * getU() - X * beta - (-VectorXd::Ones(n_obs) + var.getV()).cwiseProduct(noise_mu);
       } else {
         return Y  - X * beta - (-VectorXd::Ones(n_obs) + var.getV()).cwiseProduct(noise_mu);
       }

@@ -15,8 +15,8 @@ test_that("the R interface", {
           f(x, model="ar1", group=group)
 
   # 2 random effects + 1 latent models (replicate = 2)
-  fm2 <- Y ~ f(~1, effect_type="normal", replicate = repl) +
-          f(~0+x, effect_type="normal", replicate = repl) +
+  fm2 <- Y ~ f(~1+x, effect_type="normal", replicate = repl) +
+          # f(~0+x, effect_type="normal", replicate = repl) +
           f(x, model="ar1", group=group, replicate = repl)
 
 load_all()
@@ -28,8 +28,8 @@ load_all()
       iterations = 10
     )
   )
+out$replicates[[1]]$randeff[[1]]$B_reff
 
-out$replicates[[1]]$B_reffs
 
 out$replicates[[1]]$randeff
 out$replicates[[1]]$randeff[[1]]$n_params

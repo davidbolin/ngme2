@@ -16,7 +16,7 @@ Randeff::Randeff(const Rcpp::List& R_randeff, unsigned long seed) :
   n_reff           (B_reff.cols()),
   n_cov_params     (n_reff * (n_reff + 1) / 2),
   n_params         (n_cov_params + n_reff + 1), // mu, Sigma_vech, nu
-  U                (n_reff),
+  U                (VectorXd::Zero(n_reff)),
   mu               (VectorXd::Zero(n_reff)),
   Dd               (duplicatematrix(n_reff)),
   var              (Rcpp::as<Rcpp::List> (R_randeff["mix_var"]), randeff_rng())
@@ -78,8 +78,11 @@ BlockModel::BlockModel(
   debug             (false),
   A                 (n_obs, W_sizes),
   K                 (V_sizes, W_sizes),
-  B_reffs           (Rcpp::as<MatrixXd>     (block_model["B_reffs"])),
+  invV_Sigma        (n_reffs, n_reffs),
+  B_reffs           (n_obs, n_reffs),
   G                 (n_obs, n_reffs + W_sizes),
+  Q                 (n_reffs + W_sizes, n_reffs + W_sizes),
+  QQ                (n_reffs + W_sizes, n_reffs + W_sizes),
   var               (Var(Rcpp::as<Rcpp::List> (block_model["noise"]), rng())),
 
   curr_iter         (0),
@@ -105,6 +108,7 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
   if (beta.size() == 0) fix_flag[block_fix_beta]  = true;
 
   // 3. Init random effects
+  if (n_reffs > 0) B_reffs = Rcpp::as<MatrixXd> (block_model["B_reffs"]);
   Rcpp::List randeffs_in = block_model["randeffs"];
   for (int i=0; i < randeffs_in.size(); ++i) {
     // construct acoording to models
@@ -130,22 +134,20 @@ if (debug) std::cout << "before set block A" << std::endl;
     setSparseBlock(&A, 0, n, (*it)->getA());
     n += (*it)->get_W_size();
   }
-  /* Init G = horizontal concat B_reffs and A */
-  std::cout << "B_reffs = " << B_reffs << std::endl;
-  std::cout << "A = " << A << std::endl;
+  // std::cout << "B_reffs = " << B_reffs << std::endl;
+  // std::cout << "A = " << A << std::endl;
   // cout G sizes
-  std::cout << "G size = " << G.rows() << " x " << G.cols() << std::endl;
-  std::cout << "B_reffs size = " << B_reffs.rows() << " x " << B_reffs.cols() << std::endl;
-  std::cout << "A size = " << A.rows() << " x " << A.cols() << std::endl;
+  // std::cout << "G size = " << G.rows() << " x " << G.cols() << std::endl;
+  // std::cout << "B_reffs size = " << B_reffs.rows() << " x " << B_reffs.cols() << std::endl;
+  // std::cout << "A size = " << A.rows() << " x " << A.cols() << std::endl;
 
+  /* Init G = horizontal concat B_reffs and A */
   SparseMatrix<double> B = B_reffs.sparseView();
   setSparseBlock(&G, 0, 0, B);
   setSparseBlock(&G, 0, n_reffs, A);
+// std::cout << "G block = " << G << std::endl;
 
-std::cout << "G block = " << G << std::endl;
-
-  assemble();
-if (debug) std::cout << "After set block K" << std::endl;
+// if (debug) std::cout << "After set block K" << std::endl;
 
   // 5. Init measurement noise
   Rcpp::List noise_in   = block_model["noise"];
@@ -171,10 +173,8 @@ if (debug) std::cout << "After block construct noise" << std::endl;
   // if (fix_flag[block_fix_V]) var.fixV();
 
   // 7. Init solvers
-  if(n_latent > 0) {
-    VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
-    SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
-    SparseMatrix<double> QQ = Q + A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(var.getV()).asDiagonal() * A;
+  assemble();
+  if(n_reffs + W_sizes > 0) {
     chol_Q.analyze(Q);
     chol_QQ.analyze(QQ);
     LU_K.analyzePattern(K);
@@ -191,13 +191,12 @@ if (debug) std::cout << "After init solver && before sampleW_V" << std::endl;
     sampleW_V();
     sampleW_V();
   }
+if (debug) std::cout << "Finish SampleW|V" << std::endl;
   burn_in(burnin);
 
 if (debug) std::cout << "End Block Constructor" << std::endl;
 }
 
-
-// ---- helper function for sampleW ----
 Eigen::VectorXd rnorm_vec(int n, double mu, double sigma, unsigned long seed=0)
 {
   std::mt19937 norm_rng(seed);
@@ -211,7 +210,15 @@ Eigen::VectorXd rnorm_vec(int n, double mu, double sigma, unsigned long seed=0)
   return (out);
 }
 
-// ---- other functions ------
+void BlockModel::setU(const VectorXd& U) {
+  int pos = 0;
+  for (std::vector<std::unique_ptr<Randeff>>::const_iterator it = randeffs.begin(); it != randeffs.end(); it++) {
+    int size = (*it)->get_n_reff();
+    (*it)->setU(U.segment(pos, size));
+    pos += size;
+  }
+}
+
 void BlockModel::setW(const VectorXd& W) {
   int pos = 0;
   for (std::vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
@@ -250,30 +257,31 @@ void BlockModel::sampleW_VY()
 // if (debug) std::cout << "K = " << K << std::endl;
   VectorXd SV = getSV();
   VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(SV);
-  // VectorXd V = getV();
-  // VectorXd inv_V = VectorXd::Constant(V.size(), 1).cwiseQuotient(V);
-
-  SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
-  // SparseMatrix<double> QQ = Q + pow(sigma_eps, -2) * A.transpose() * A;
-  // SparseMatrix<double> QQ = Q + A.transpose() * noise_sigma.cwiseInverse().asDiagonal() * A;
   VectorXd noise_V = var.getV();
-  SparseMatrix<double> QQ = Q + A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V).asDiagonal() * A;
-  chol_QQ.compute(QQ);
 
-  // VectorXd M = K.transpose() * inv_SV.asDiagonal() * getMean() +
-  //     pow(sigma_eps, -2) * A.transpose() * (Y - X * beta);
+
   VectorXd residual = get_residual();
-  VectorXd M = K.transpose() * inv_SV.asDiagonal() * getMean() +
-  // VectorXd M = K.transpose() * inv_V.asDiagonal() * getMean() +
-      A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V).asDiagonal() * (residual + A * getW());
+  VectorXd M_latent = K.transpose() * inv_SV.asDiagonal() * getMean();
+  // concat Solve(Q, b) for effects and process
+  VectorXd M (n_reffs + W_sizes);
+  M << getM_reff(),  M_latent;
 
-  VectorXd z (W_sizes);
-  z = rnorm_vec(W_sizes, 0, 1, rng());
-  // sample W ~ N(QQ^-1*M, QQ^-1)
-  VectorXd W = chol_QQ.rMVN(M, z);
-  setW(W);
+  M += G.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V).asDiagonal() * (residual + A * getW() + B_reffs * getU());
 
-// if (debug) std::cout << "Finish sampling W" << std::endl;
+if (debug) std::cout << "Finish M" << std::endl;
+  VectorXd z (n_reffs + W_sizes);
+  z = rnorm_vec(n_reffs + W_sizes, 0, 1, rng());
+if (debug) std::cout << "Finish z" << std::endl;
+
+  // sample UW ~ N(QQ^-1*M, QQ^-1)
+  chol_QQ.compute(QQ);
+  VectorXd UW = chol_QQ.rMVN(M, z);
+if (debug) std::cout << "Finish UW" << std::endl;
+  setU(UW.head(n_reffs));
+if (debug) std::cout << "Finish U" << std::endl;
+  setW(UW.tail(W_sizes));
+
+if (debug) std::cout << "Finish sampling W" << std::endl;
 }
 
 // ---------------- get, set update gradient ------------------

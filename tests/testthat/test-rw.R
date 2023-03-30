@@ -106,7 +106,7 @@ test_that("test estimation of basic ar with normal measurement noise", {
   W <- simulate(ar1)
   Y <- W + rnorm(n_obs, sd = sigma_eps)
 # plot(Y, type="l")
-# load_all()
+load_all()
   out <- ngme(
     Y ~ 0 + f(1:n_obs,
       model="ar1",
@@ -124,14 +124,16 @@ test_that("test estimation of basic ar with normal measurement noise", {
     data = data.frame(Y = Y),
     control_opt = control_opt(
       estimation = T,
-      iterations = 100,
+      iterations = 10,
       n_parallel_chain = 5,
       print_check_info = FALSE,
       verbose = F
     ),
-    debug = FALSE
+    debug = T
   )
-  # out
+  out
+
+  out$replicates[[1]]$n_reffs
   # out$replicates[[1]]$latents[[1]]$control$numer_grad
   # load_all()
   # traceplot(out, "ar")

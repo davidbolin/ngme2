@@ -47,9 +47,9 @@ VectorXd Ngme::precond_grad() {
     g_reff.segment(i * n_re_params, n_re_params) = ngme_repls[i]->precond_grad_reff();
   }
 
-if (debug) std::cout << "g in precond_grad() in ngme class = " << g << std::endl;
   // concat g_except_reff and g_reff
   g << g_except_reff, g_reff;
+if (debug) std::cout << "g in precond_grad() in ngme class = " << g << std::endl;
   return g;
 }
 

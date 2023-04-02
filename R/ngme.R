@@ -228,10 +228,10 @@ check_dim <- function(ngme_model) {
       stop("The number of columns of X is not equal to the length of beta")
     }
     for (latent in ngme$latents) {
-        if (latent$model != "tp" && latent$W_size != ncol(latent$C)) {
+        if (!latent$model %in% c("tp", "re") && latent$W_size != ncol(latent$C)) {
          stop("The W_size of the latent model is not equal to the number of columns of K")
         }
-        if (latent$model != "tp" && latent$V_size != nrow(latent$C)) {
+        if (!latent$model %in% c("tp", "re") && latent$V_size != nrow(latent$C)) {
           stop("The V_size of the latent model is not equal to the number of rows of K")
         }
         if (latent$V_size != latent$noise$n_noise) {
@@ -324,17 +324,14 @@ ngme_parse_formula <- function(
     X <- X_full[idx, , drop = FALSE]
 
     # re-evaluate each f model using idx
-    latents_rep <- list(); randeffs_rep <- list()
+    latents_rep <- list();
     for (tmp in pre_model) {
       tmp$map <- sub_locs(tmp$map, idx)
       tmp$replicate <- tmp$replicate[idx]
       tmp$eval = TRUE
       tmp$data <- data[idx, , drop = FALSE]
       model_eval <- eval(tmp, envir = data, enclos = enclos_env)
-      if (inherits(model_eval, "randeff"))
-        randeffs_rep[[model_eval$name]] <- model_eval
-      else
-        latents_rep[[model_eval$name]] <- model_eval
+      latents_rep[[model_eval$name]] <- model_eval
     }
 
     # give initial value
@@ -349,22 +346,19 @@ ngme_parse_formula <- function(
       X = X,
       noise = noise_new,
       latents = latents_rep,
-      randeffs = randeffs_rep,
       replicate = uni_repl[[i]],
       control_ngme = control_ngme
     )
   }
 
   n_repls  <- length(blocks_rep)
-  n_params <- blocks_rep[[1]]$n_params +
-    (n_repls - 1) * blocks_rep[[1]]$n_re_params
+  n_params <- blocks_rep[[1]]$n_params
 
   structure(
     list(
       replicates   = blocks_rep,
       n_repls      = n_repls,
       n_params     = n_params,
-      n_re_params  = blocks_rep[[1]]$n_re_params,
       repls_ngme   = repls,
       control_ngme = control_ngme
     ),

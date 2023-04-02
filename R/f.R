@@ -36,8 +36,8 @@
 #'
 #' @export
 f <- function(
-  model,
   map         = NULL,
+  model,
   replicate   = NULL,
   noise       = noise_normal(),
   control     = control_f(),
@@ -57,26 +57,26 @@ f <- function(
   eval        = FALSE,
   ...
 ) {
-  stopifnot("Please specify model as character (latent process) or formula (random effect)"
-    = is.character(model) || inherits(model, "formula"))
   map <- eval(substitute(map), envir = data, enclos = parent.frame())
-
+  if (inherits(map, "formula")) { # random effect
+    name <- "effect"
+    model <- "re"
+    map <- model.matrix(map, data)
+  }
+  if (is.null(name)) name <- "field"
   if (model == "tp") map <- 1:(list(...)$left$n_map * list(...)$right$n_map)
-  # random effect, add trivial map
-  if (inherits(model, "formula")) map <- seq_len(nrow(data))
+  stopifnot("Please specify model as character" = is.character(model))
 
   replicate <- eval(substitute(replicate), envir = data, enclos = parent.frame())
   replicate <- if (is.null(replicate)) rep(1, length_map(map))
     else as.integer(as.factor(replicate))
-
-  if (is.null(name) && inherits(model, "formula")) name <- "effect"
-  if (is.null(name) && !inherits(model, "formula")) name <- "field"
 
   # pre-model
   if (!eval) {
     args <- match.call()
     args$name <- name
     args$map <- map
+    args$model <- model
     args$replicate <- replicate
     return (args)
   }
@@ -121,6 +121,9 @@ f <- function(
       },
       "iid" = {
         do.call(model_iid, args)
+      },
+      "re" = {
+        do.call(randeff, args)
       }
     )
   } else {

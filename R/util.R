@@ -404,8 +404,16 @@ veci <- function(v, n, m) {
 }
 
 # M <- matrix(c(1,2,3,2,4,5,3,5,6), 3, 3); M
-vech <- function (A) {
-  if (is.matrix(A)) A[lower.tri(A, diag = TRUE)] else stop("argument 'A' must be a matrix")
+vech <- function (M) {
+  stopifnot(nrow(M) == ncol(M))
+  n = nrow(M)
+  V <- double(n * (n - 1) / 2 + n)
+	V[1:n] = diag(M)
+
+  k = n+1
+  for (i in seq_len(n-1)) {
+    V[k : (k + n-i-1)] <- tail(M[, i], n - i)
+    k = k + n - i
+  }
+  return(V)
 }
-
-

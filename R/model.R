@@ -51,6 +51,7 @@ ngme_model <- function(
   stopifnot("make sure length of replicate == length of index" =
    length(replicate) == length_map(map))
   replicate <- as.integer(replicate)
+  if (is.null(n_params)) n_params <- length(theta_K) + with(noise, n_params)
 
   structure(
     list(
@@ -67,7 +68,7 @@ ngme_model <- function(
       fix_theta_K   = fix_theta_K,
       V_size        = V_size,
       control       = control,
-      n_params      = length(theta_K) + with(noise, n_params),
+      n_params      = n_params,
       debug         = debug,
       par_string    = par_string,
       h             = h,

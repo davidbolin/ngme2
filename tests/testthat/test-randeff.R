@@ -4,8 +4,10 @@
 
 # test on random effects
 test_that("the R interface", {
-  f(~1+x, data=data.frame(x=c(1,2,3)), effect_type="normal", eval=T)
-
+  load_all()
+  f(1:10, model="ar1")
+  m = f(~1+x, data=data.frame(x=c(1,2,3)), effect_type="normal", eval=T)
+  str(m)
   # 1 random effect + 1 latent model
   fm0 <- Y ~ f(~1+x, effect_type="normal") +
           f(x, model="ar1")
@@ -21,13 +23,14 @@ test_that("the R interface", {
 
 load_all()
   out <- ngme(
-    fm2,
+    fm0,
     data = data.frame(Y=1:6, x=c(1,2,3,1,2,3), repl=c(1,1,1,2,2,2)),
     control_opt = control_opt(
       estimation = F,
       iterations = 10
     )
   )
+
 out$replicates[[1]]$randeff[[1]]$B_reff
 
 

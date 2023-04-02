@@ -11,7 +11,7 @@ ngme_noise_types <- function() {
 #' @return available types for models
 #' @export
 ngme_model_types <- function() {
-    c("ar1", "matern", "rw", "ou", "tp", "iid")
+    c("ar1", "matern", "rw", "ou", "tp", "iid", "re")
 }
 
 #' Show ngme random effects types

@@ -81,12 +81,12 @@ public:
         }
     }
 
-    void sample_cond_V(const VectorXd& a_inc_vec, const VectorXd& b_inc_vec) {
+    void sample_cond_V(const VectorXd& a_inc_vec, const VectorXd& b_inc_vec, int dim = 1) {
         if (noise_type == "normal") return;
 
         if (noise_type == "gal") {
             prevV = V;
-            VectorXd p_vec = (nu * h) - VectorXd::Constant(n, 0.5);
+            VectorXd p_vec = (nu * h) - VectorXd::Constant(n, 0.5 * dim);
             VectorXd a_vec = VectorXd::Constant(n, 2 * nu) + a_inc_vec;
             VectorXd b_vec = b_inc_vec;
             if (!fix_V) V = rGIG_cpp(p_vec, a_vec, b_vec, var_rng());
@@ -100,7 +100,7 @@ public:
             // }
         } else { // nig and normal+nig
             prevV = V;
-            VectorXd p_vec = VectorXd::Constant(n, -1);
+            VectorXd p_vec = VectorXd::Constant(n, -0.5 - 0.5 * dim);
             VectorXd a_vec = VectorXd::Constant(n, nu) + a_inc_vec;
             VectorXd b_vec = VectorXd::Constant(n, nu).cwiseProduct(h).cwiseProduct(h) + b_inc_vec;
             if (!fix_V) V = rGIG_cpp(p_vec, a_vec, b_vec, var_rng());

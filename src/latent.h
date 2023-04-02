@@ -209,7 +209,7 @@ public:
         }
     }
 
-    void sample_cond_V() {
+    virtual void sample_cond_V() {
         VectorXd a_inc_vec = mu.cwiseQuotient(sigma).array().pow(2);
         for (int i=0; i < n_rep; i++) {
             VectorXd W = Ws[i];
@@ -324,19 +324,6 @@ public:
     };
 
     virtual VectorXd grad_theta_K() { return numerical_grad(); }
-    virtual VectorXd grad_theta_K(
-        SparseMatrix<double>& K,
-        SparseMatrix<double>& dK,
-        vector<VectorXd>& Ws,
-        vector<VectorXd>& prevWs,
-        vector<Var>& vars,
-        const VectorXd& mu,
-        const VectorXd& sigma,
-        const VectorXd& h,
-        double trace,
-        int W_size
-    ) = 0;
-
     virtual VectorXd grad_theta_mu();
     virtual VectorXd grad_theta_sigma();
     virtual VectorXd grad_theta_sigma_normal(); // grad of sig. only for normal noise
@@ -475,19 +462,6 @@ public:
         theta_K(0) = a2th(alpha(0));
         return theta_K;
     }
-
-    VectorXd grad_theta_K(
-        SparseMatrix<double>& K,
-        SparseMatrix<double>& dK,
-        vector<VectorXd>& Ws,
-        vector<VectorXd>& prevWs,
-        vector<Var>& vars,
-        const VectorXd& mu,
-        const VectorXd& sigma,
-        const VectorXd& h,
-        double trace,
-        int W_size
-    );
 };
 
 
@@ -516,19 +490,6 @@ public:
         theta_K(0) = k2th(kappa(0));
         return theta_K;
     }
-
-    VectorXd grad_theta_K(
-        SparseMatrix<double>& K,
-        SparseMatrix<double>& dK,
-        vector<VectorXd>& Ws,
-        vector<VectorXd>& prevWs,
-        vector<Var>& vars,
-        const VectorXd& mu,
-        const VectorXd& sigma,
-        const VectorXd& h,
-        double trace,
-        int W_size
-    );
 };
 
 class Matern_ns : public Latent {
@@ -544,19 +505,6 @@ public:
     SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
     VectorXd grad_theta_K();
     void update_each_iter();
-
-    VectorXd grad_theta_K(
-        SparseMatrix<double>& K,
-        SparseMatrix<double>& dK,
-        vector<VectorXd>& Ws,
-        vector<VectorXd>& prevWs,
-        vector<Var>& vars,
-        const VectorXd& mu,
-        const VectorXd& sigma,
-        const VectorXd& h,
-        double trace,
-        int W_size
-    ) {throw std::runtime_error("Matern_ns::grad_theta_K not implemented");}
 };
 
 class Tensor_prod : public Latent {
@@ -569,19 +517,6 @@ public:
   SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
   VectorXd grad_theta_K();
   void update_each_iter();
-
-  VectorXd grad_theta_K(
-    SparseMatrix<double>& K,
-    SparseMatrix<double>& dK,
-    vector<VectorXd>& Ws,
-    vector<VectorXd>& prevWs,
-    vector<Var>& vars,
-    const VectorXd& mu,
-    const VectorXd& sigma,
-    const VectorXd& h,
-    double trace,
-    int W_size
-  ) {throw std::runtime_error("Tensor_prod::grad_theta_K not implemented");}
 };
 
 class Iid : public Latent {
@@ -593,19 +528,21 @@ public:
   SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
   VectorXd grad_theta_K();
   void update_each_iter();
+};
 
-  VectorXd grad_theta_K(
-    SparseMatrix<double>& K,
-    SparseMatrix<double>& dK,
-    vector<VectorXd>& Ws,
-    vector<VectorXd>& prevWs,
-    vector<Var>& vars,
-    const VectorXd& mu,
-    const VectorXd& sigma,
-    const VectorXd& h,
-    double trace,
-    int W_size
-  ) {return VectorXd::Zero(1);}
+// ---- Structure for random effects ----
+// U|V ~ N(0, Sigma)
+class Randeff : public Latent{
+  private:
+    std::mt19937 randeff_rng;
+    MatrixXd Sigma, Dd; // duplicated Matrix Dd * vech = vec
+  public:
+    Randeff(const Rcpp::List& R_randeff, unsigned long seed);
+    SparseMatrix<double> getK(const VectorXd& theta_K) const;
+    SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
+    VectorXd grad_theta_K();
+    void update_each_iter();
+    void sample_cond_V() override;
 };
 
 // for initialize Latent models
@@ -629,6 +566,8 @@ public:
       return std::make_unique<Matern>(latent_in, latent_seed);
     } else if (model_type == "iid") {
       return std::make_unique<Iid>(latent_in, latent_seed);
+    } else if (model_type == "re") {
+      return std::make_unique<Randeff>(latent_in, latent_seed);
     } else {
       throw std::runtime_error("Unknown model.");
     }

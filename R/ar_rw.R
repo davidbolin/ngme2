@@ -86,7 +86,6 @@ model_ar1 <- ar1 <- function(
     map         = index
     n_map       = length(index)
     replicate   = replicate
-    replicate   = replicate
     n_rep       = nrep
   })
   do.call(ngme_model, args)

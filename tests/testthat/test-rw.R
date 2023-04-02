@@ -94,7 +94,7 @@ test_that("the order of W same as order of index?", {
 
 ############################## AR1 case
 test_that("test estimation of basic ar with normal measurement noise", {
-  n_obs <- 500
+  n_obs <- 1000
   alpha <- 0.75
   mu <- -3; sigma <- 2.3; nu <- 2; sigma_eps <- 0.8
   ar1 <- model_ar1(1:n_obs, alpha=alpha, noise=noise_nig(mu=mu, sigma=sigma, nu=nu))
@@ -106,7 +106,7 @@ test_that("test estimation of basic ar with normal measurement noise", {
   W <- simulate(ar1)
   Y <- W + rnorm(n_obs, sd = sigma_eps)
 # plot(Y, type="l")
-load_all()
+# load_all()
   out <- ngme(
     Y ~ 0 + f(1:n_obs,
       model="ar1",
@@ -124,12 +124,12 @@ load_all()
     data = data.frame(Y = Y),
     control_opt = control_opt(
       estimation = T,
-      iterations = 10,
+      iterations = 500,
       n_parallel_chain = 5,
       print_check_info = FALSE,
       verbose = F
     ),
-    debug = T
+    debug = F
   )
   out
 

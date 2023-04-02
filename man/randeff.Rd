@@ -4,12 +4,12 @@
 \alias{randeff}
 \title{Build random effect structure}
 \usage{
-randeff(formula, data, effect_type, name)
+randeff(map, data, effect_type, name, ...)
 }
 \arguments{
-\item{formula}{formula}
-
 \item{data}{data}
+
+\item{formula}{formula}
 
 \item{family}{distribution of random effect}
 }

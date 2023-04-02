@@ -16,14 +16,14 @@ using std::vector;
 enum Strategy {all, ws};
 
 // Ngme = a list of repliacte models. Each replicate model is a BlockModel
-// parameters(Ngme) = parameters(Ngme_replicate_no_reff) (share the same parameter over replicate)
+// parameters(Ngme) = parameters(Ngme_replicate) (share the same parameter over replicate)
 //    + parameters(Ngme_replicate_reff) (for each replicate)
 // n_params = replicate.n_params + n_re_params * (n_repl - 1)
 class Ngme : public Model {
 private:
   // for each replicate
   vector<std::unique_ptr<BlockModel>> ngme_repls;
-  int n_repl, n_params, n_re_params;
+  int n_repl, n_params;
 
   vector<int> num_each_repl;
   double sum_num_each_repl;

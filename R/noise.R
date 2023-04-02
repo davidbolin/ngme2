@@ -123,7 +123,8 @@ ngme_noise <- function(
         "gal"        = length(c(theta_mu, theta_sigma, 1)),
         "normal_nig" = length(c(theta_mu, theta_sigma, 1, theta_sigma_normal))
       ), # parameter to estimate
-      init_V          = TRUE
+      init_V          = TRUE,
+      single_V        = FALSE # only contain single V (for re)
     ),
     class = "ngme_noise"
   )

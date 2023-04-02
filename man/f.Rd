@@ -5,8 +5,8 @@
 \title{Specifying a latent process model (wrapper function for each model)}
 \usage{
 f(
-  model,
   map = NULL,
+  model,
   replicate = NULL,
   noise = noise_normal(),
   control = control_f(),
@@ -28,9 +28,9 @@ f(
 )
 }
 \arguments{
-\item{model}{1. string: type of model, 2. ngme.spde object}
-
 \item{map}{symbol or numerical value: index or covariates to build index}
+
+\item{model}{1. string: type of model, 2. ngme.spde object}
 
 \item{replicate}{Representing the replicate}
 

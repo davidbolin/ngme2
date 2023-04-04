@@ -274,7 +274,8 @@ ngme_parse_formula <- function(
   # construct plain formula without f
   # watch out! terms[-double(0)] -> character(0)
   fixf <- if (length(spec_order) == 0) terms else terms[-spec_order]
-  response <- as.character(attr(tf, "variables")[[2]])
+
+  response <- deparse(attr(tf, "variables")[[2]])
   plain_fm_str <- paste(response, "~", intercept, paste(c("", fixf), collapse = " + "))
   plain_fm <- formula(plain_fm_str)
 

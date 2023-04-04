@@ -37,7 +37,7 @@
 #' @export
 f <- function(
   map         = NULL,
-  model,
+  model       = NULL,
   replicate   = NULL,
   noise       = noise_normal(),
   control     = control_f(),
@@ -63,6 +63,9 @@ f <- function(
     model <- "re"
     map <- model.matrix(map, data)
   }
+  stopifnot("Please provide model from ngme_model_types():"
+    = !is.null(model))
+
   if (is.null(name)) name <- "field"
   if (model == "tp") map <- 1:(list(...)$left$n_map * list(...)$right$n_map)
   stopifnot("Please specify model as character" = is.character(model))

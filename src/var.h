@@ -25,7 +25,7 @@ private:
 
     unsigned n;
     VectorXd V, prevV;
-    bool fix_V, fix_nu, init_V;
+    bool fix_V, fix_nu, init_V, single_V;
 public:
     Var() {}
     Var(const Rcpp::List& noise_list, unsigned long seed) :
@@ -38,7 +38,8 @@ public:
         prevV         (n),
         fix_V         (Rcpp::as<bool>     (noise_list["fix_V"])),
         fix_nu        (Rcpp::as<bool>     (noise_list["fix_nu"])),
-        init_V        (Rcpp::as<bool>     (noise_list["init_V"]))
+        init_V        (Rcpp::as<bool>     (noise_list["init_V"])),
+        single_V      (Rcpp::as<bool>     (noise_list["single_V"]))
     {
 // std::cout << "n = " << n << std::endl;
         if (noise_type == "normal" || !init_V) {
@@ -79,6 +80,32 @@ public:
             VectorXd nu_vec = VectorXd::Constant(n, nu);
             if (!fix_V) V = rGIG_cpp(VectorXd::Constant(n, -0.5), nu_vec, nu_vec.cwiseProduct(h.cwiseProduct(h)), var_rng());
         }
+    }
+
+    // called only by random effects, only one single V
+    void sample_cond_V(double a_inc, double b_inc, int dim = 1) {
+        double single_V;
+        if (noise_type == "normal") return;
+
+        if (noise_type == "gal") {
+            prevV = V;
+            double p = nu - 0.5 * dim;
+            double a = 2*nu + a_inc;
+            double b = b_inc;
+            if (!fix_V) single_V = rGIG_cpp(p, a, b, var_rng());
+        } else { // nig and normal+nig
+            prevV = V;
+            double p = -0.5 - 0.5*dim;
+            double a = nu + a_inc;
+            double b = nu + b_inc;
+if (a <= 0 || b <= 0) {
+std::cout << "p, a, b = " << p << ", " << a << ", " << b << std::endl;
+throw;
+}
+            if (!fix_V) single_V = rGIG_cpp(p, a, b, var_rng());
+        }
+
+        V = VectorXd::Constant(n, single_V);
     }
 
     void sample_cond_V(const VectorXd& a_inc_vec, const VectorXd& b_inc_vec, int dim = 1) {

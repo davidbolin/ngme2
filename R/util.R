@@ -61,7 +61,7 @@ get_inla_mesh_dimension <- function(inla_mesh) {
 }
 
 # format output
-ngme_format <- function(param, val, model = NULL) {
+ngme_format <- function(param, val, model = NULL, ...) {
   stationary <- (length(val) == 1)
   dne <- (length(val) == 0)
 
@@ -89,6 +89,9 @@ ngme_format <- function(param, val, model = NULL) {
       "ar1"     = paste0("alpha = ", format(ar1_th2a(val), digits = 3)),
       "matern"  = paste0("theta_kappa = ", paste0(format(val, digits = 3), collapse = ", ")),
       "ou"      = paste0("theta_K = ", paste0(format(val, digits = 3), collapse = ", ")),
+      "re"      = {
+        invisible(print(vech_to_mat(val, list(...)[[1]])))
+      }
     )
   }
 }
@@ -417,3 +420,13 @@ vech <- function (M) {
   }
   return(V)
 }
+
+vech_to_mat <- function(vech, n) {
+  stopifnot(n*(n-1)/2 + n == length(vech))
+  mat <- matrix(0, nrow = n, ncol = n)
+  mat[lower.tri(mat)] <- tail(vech, length(vech) - n)
+  mat <- mat + t(mat)
+  diag(mat) <- vech[1:n]
+  mat
+}
+

@@ -167,7 +167,7 @@ void BlockModel::setPrevV(const VectorXd& V) {
 // sample (U,W)|VY
 void BlockModel::sampleW_VY()
 {
-// if (debug) std::cout << "starting sampling W." << std::endl;
+if (debug) std::cout << "starting sampling W." << std::endl;
   if (n_latent==0) return;
 
   VectorXd SV = getSV();
@@ -192,7 +192,7 @@ void BlockModel::sampleW_VY()
   VectorXd W = chol_QQ.rMVN(M, z);
   setW(W);
 
-// if (debug) std::cout << "Finish sampling W" << std::endl;
+if (debug) std::cout << "Finish sampling W" << std::endl;
 }
 
 // ---------------- get, set update gradient ------------------

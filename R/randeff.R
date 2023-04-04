@@ -34,7 +34,7 @@ randeff <- function(map, data, effect_type, name, ...) {
     Sigma        = Sigma
     theta_K      = vech(Sigma)
     n_cov_params = n_cov_params
-    n_params     = n_cov_params + 1 + 1 #n_reff + 1 #sigma mu nu
+    # n_params     = n_cov_params + 1 + 1 #n_reff + 1 #sigma mu nu
     name         = name
   })
   do.call(ngme_model, args)

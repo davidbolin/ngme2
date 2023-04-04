@@ -43,4 +43,26 @@ out$replicates[[1]]$n_la_params
   out
 })
 
-cbind(randeffs[[1]]$B_reff, randeffs[[2]]$B_reff)
+test_that("test estimation", {
+  # U ~ N(0, 2)
+  # pure random effects model
+  library(lme4)
+  sleepstudy
+  ggplot(sleepstudy, aes(x=Days, y=Reaction)) +
+    geom_point() +
+    facet_wrap(~Subject, scales="free_y") +
+    geom_smooth(method="lm", se=FALSE)
+
+  lmer(Reaction ~ Days + (Days|Subject), data=sleepstudy)
+
+  load_all()
+  ngme(
+    Reaction ~ f(~Days, effect_type="normal"),
+      # f(Days, model="ar1", group=Subject),
+    data=sleepstudy,
+    control_opt = control_opt(
+      estimation = T,
+      iterations = 10
+    )
+  )
+})

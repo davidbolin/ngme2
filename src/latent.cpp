@@ -280,6 +280,88 @@ Rcpp::List Latent::output() const {
     return out;
 }
 
+const VectorXd Latent::get_parameter() const {
+// if (debug) std::cout << "Start latent get parameter"<< std::endl;
+    VectorXd parameter (n_params);
+
+    if (noise_type == "normal") {
+        parameter.segment(0, n_theta_K)              = theta_K;
+        parameter.segment(n_theta_K, n_theta_sigma)  = theta_sigma;
+    } else {
+    // nig, gal, and nig+normal
+        parameter.segment(0, n_theta_K)                         = theta_K;
+        parameter.segment(n_theta_K, n_theta_mu)                = theta_mu;
+        parameter.segment(n_theta_K+n_theta_mu, n_theta_sigma)  = theta_sigma;
+        parameter(n_theta_K+n_theta_mu+n_theta_sigma)           = vars[0].get_log_nu();
+    if (noise_type == "normal_nig")
+        parameter.segment(n_theta_K+n_theta_mu+n_theta_sigma+1, n_theta_sigma_normal) = theta_sigma_normal;
+    }
+
+if (debug) std::cout << "parameter= " << parameter << std::endl;
+// if (debug) std::cout << "End latent get parameter"<< std::endl;
+    return parameter;
+}
+
+const VectorXd Latent::get_grad() {
+if (debug) std::cout << "Start latent gradient"<< std::endl;
+// auto grad1 = std::chrono::steady_clock::now();
+    VectorXd grad = VectorXd::Zero(n_params);
+
+    if (noise_type == "normal") {
+        if (!fix_flag[latent_fix_theta_K])
+            grad.segment(0, n_theta_K) = grad_theta_K();
+if (debug) std::cout << "after K"<< std::endl;
+        if (!fix_flag[latent_fix_theta_sigma])
+            grad.segment(n_theta_K, n_theta_sigma) = grad_theta_sigma();
+    } else {
+        if (!fix_flag[latent_fix_theta_K])
+            grad.segment(0, n_theta_K) = grad_theta_K();
+        if (!fix_flag[latent_fix_theta_mu])
+            grad.segment(n_theta_K, n_theta_mu) = grad_theta_mu();
+        if (!fix_flag[latent_fix_theta_sigma])
+            grad.segment(n_theta_K+n_theta_mu, n_theta_sigma) = grad_theta_sigma();
+        grad(n_theta_K+n_theta_mu+n_theta_sigma)  = grad_theta_nu();
+
+        if (noise_type == "normal_nig")
+            grad.segment(n_theta_K+n_theta_mu+n_theta_sigma+1, n_theta_sigma_normal) = grad_theta_sigma_normal();
+    }
+
+// DEBUG: checking grads
+if (debug) {
+    std::cout << "gradient= " << grad << std::endl;
+    // std::cout << "one latent gradient time " << since(grad1).count() << std::endl;
+}
+if (debug) std::cout << "finish latent gradient"<< std::endl;
+    return grad;
+}
+
+void Latent::set_parameter(const VectorXd& theta) {
+if (debug) std::cout << "Start latent set parameter"<< std::endl;
+    if (noise_type == "normal") {
+        theta_K  = theta.segment(0, n_theta_K);
+        theta_sigma = theta.segment(n_theta_K, n_theta_sigma);
+        sigma = (B_sigma * theta_sigma).array().exp();
+    } else {
+        // nig, gal and normal+nig
+        theta_K  = theta.segment(0, n_theta_K);
+        theta_mu = theta.segment(n_theta_K, n_theta_mu);
+        theta_sigma = theta.segment(n_theta_K+n_theta_mu, n_theta_sigma);
+        double log_nu = (theta(n_theta_K+n_theta_mu+n_theta_sigma));
+        for (int i=0; i < n_rep; i++) vars[i].set_log_nu(log_nu); // for each replicate
+
+        // update
+        mu = (B_mu * theta_mu);
+        sigma = (B_sigma * theta_sigma).array().exp();
+        if (noise_type == "normal_nig") {
+            theta_sigma_normal = theta.segment(n_theta_K+n_theta_mu+n_theta_sigma+1, n_theta_sigma_normal);
+            sigma_normal = (B_sigma_normal * theta_sigma_normal).array().exp();
+        }
+    }
+
+if (debug) std::cout << "finish latent set parameter"<< std::endl;
+    // update K, K_rep, ...
+    update_each_iter();
+}
 
 // // numerical gradient for K parameters
 // VectorXd Latent::numerical_grad() {

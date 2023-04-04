@@ -108,6 +108,8 @@ print.ngme_model <- function(x, padding = 0, ...) {
     switch(model,
       "ar1"         = paste0(pad_add4_space, ngme_format("K", theta_K, "ar1")),
       "ou"          = paste0(pad_add4_space, ngme_format("K", theta_K, "ou")),
+      "re"          = {cat(paste0("  Covariance Matrix = \n"));
+                       ngme_format("K", theta_K, "re", x$W_size); NULL},
       "matern"      = paste0(pad_add4_space, ngme_format("K", theta_K, "matern")),
       "rw"          = paste0(pad_add4_space, "No parameter."),
       "unkown"      = paste0(pad_add4_space, "No parameter."),

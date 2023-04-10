@@ -6,8 +6,9 @@
 test_that("the R interface", {
   load_all()
   f(1:10, model="ar1")
-  m = f(~1+x, data=data.frame(x=c(1,2,3)), effect_type="normal", eval=T)
-  str(m)
+  m = f(~1+x, data=data.frame(x=c(1,2,3)), theta_K = c(2,1,1),
+     effect_type="normal", eval=T)
+  m
   # 1 random effect + 1 latent model
   fm0 <- Y ~ f(~1+x, effect_type="normal") +
           f(x, model="ar1")
@@ -26,8 +27,8 @@ load_all()
     fm0,
     data = data.frame(Y=1:6, x=c(1,2,3,1,2,3), repl=c(1,1,1,2,2,2)),
     control_opt = control_opt(
-      estimation = F,
-      iterations = 10
+      estimation = T,
+      iterations = 5
     )
   )
 
@@ -43,8 +44,78 @@ out$replicates[[1]]$n_la_params
   out
 })
 
-test_that("test estimation", {
-  # U ~ N(0, 2)
+test_that("test on 1d random effects", {
+  # 1d rand eff
+  group <- 50
+  u <- rnorm(group, 0, 5)
+  each_obs <- 10
+  repl <- rep(1:group, each=each_obs)
+  Z <- rnorm(group*each_obs, 0, 1)
+  # simulate Y
+  Y <- double(group*each_obs)
+  for (i in 1:group) {
+    Y[((i-1)*each_obs+1):(i*each_obs)] <-
+      1 + Z[((i-1)*each_obs+1):(i*each_obs)]*u[i] +
+        rnorm(each_obs)
+  }
+  library(lme4)
+  lmer(Y ~ 0 + (0+Z|repl), data=data.frame(Y=Y, Z=Z, repl=repl))
+
+  load_all()
+  out <- ngme(
+    Y ~ 0 + f(~0+Z, effect_type="normal", replicate=repl),
+    data = data.frame(Y=Y, Z=Z, repl=repl),
+    control_opt = control_opt(
+      estimation = T,
+      iterations = 500,
+      n_parallel_chain = 1
+    )
+  )
+  out
+  traceplot(out, "effect1")
+
+  # 2d rand eff with corr
+  Sigma <- matrix(c(20, 5, 5, 10), 2, 2)
+  group <- 50
+  U <- MASS::mvrnorm(group, mu=c(0,0), Sigma=Sigma)
+  each_obs <- 20
+  repl <- rep(1:group, each=each_obs)
+  z1 <- rnorm(group * each_obs, 0, 1)
+  AA <- cbind(1, z1); t(AA) %*% AA
+  x1 <- rexp(group * each_obs)
+  # simulate Y
+  Y <- double(group * each_obs)
+  for (i in 1:group) {
+    group_idx <- ((i-1)*each_obs+1):(i*each_obs)
+    Y[group_idx] <-
+      2 + x1[group_idx] +  # fixed effects
+      U[i, 1] + z1[group_idx] * U[i, 2] + # random effects
+      rnorm(each_obs)
+  }
+  # fit with lme4
+  lmer(Y ~ 1 + x1 + (z1 | repl),
+    data=data.frame(Y=Y, x1=x1, z1=z1, repl=repl))
+
+  # fit with ngme
+  load_all()
+  out <- ngme(
+    Y ~ 1 + x1 + f(~1 + z1, effect_type="normal", replicate=repl,
+               control=control_f(numer_grad = F)),
+    data=data.frame(Y=Y, x1=x1, z1=z1, repl=repl),
+    control_opt = control_opt(
+      estimation = T,
+      iterations = 100,
+      n_parallel_chain = 1,
+      stepsize = 1
+    )
+  )
+  out
+  traceplot(out, "effect1")
+  traceplot(out)
+})
+
+test_that("test estimation vs lmer", {
+
   # pure random effects model
   library(lme4)
   sleepstudy
@@ -64,5 +135,51 @@ test_that("test estimation", {
       estimation = T,
       iterations = 10
     )
+  )
+})
+
+test_that("test simulation", {
+  Sigma <- matrix(c(20, 5, 5, 10), 2, 2)
+  # simulate U ~ N(0, Sigma)
+  U <- MASS::mvrnorm(100, mu=c(0,0), Sigma=Sigma)
+  var(U[, 1])
+  var(U[, 2])
+  cov(U[, 1], U[, 2])
+
+  # simulate Y = U + e
+  replicate = 1:100
+  x1 <- rnorm(100)
+  x2 <- rexp(100)
+  Y <- x1 * U[, 1] + x2 * U[, 2] + rnorm(100)
+
+
+  # test
+  Sigma
+  category <- 100;
+  each = 20
+
+  U <- MASS::mvrnorm(category, mu=c(0,0), Sigma=Sigma)
+
+  Z <- cbind(rep(1, category * each), rexp(category * each))
+  Y <- double(category * each)
+  for (i in 1:category) {
+    Y[((i-1)*each+1) : (i*each)] <-
+      Z[((i-1)*each+1) : (i*each), 1] * U[i, 1] +
+      Z[((i-1)*each+1) : (i*each), 2] * U[i, 2] +
+      rnorm(each)
+  }
+  replicate = rep(1:category, each=each)
+  library(lme4)
+  lmer(Y ~ 0 + (0+Z|replicate), data=data.frame(Y=Y, Z=Z, replicate=replicate))
+
+  ngme(Y ~ f(
+    ~0 + z1 + z2, effect_type="normal",
+    replicate = replicate, W = U, fix_W = T),
+       data=data.frame(Y=Y, z1=Z[, 1], z2=Z[, 2], replicate=replicate),
+       control_opt = control_opt(
+         estimation = T,
+         iterations = 10,
+         sampling_strategy = "all"
+       )
   )
 })

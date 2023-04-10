@@ -120,7 +120,7 @@ control_f <- function(
   numer_grad    = FALSE,
   use_precond   = FALSE,
   use_num_hess  = TRUE,
-  eps           = 0.005
+  eps           = 0.001
   # use_iter_solver = FALSE
   ) {
 

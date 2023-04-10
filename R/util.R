@@ -90,7 +90,7 @@ ngme_format <- function(param, val, model = NULL, ...) {
       "matern"  = paste0("theta_kappa = ", paste0(format(val, digits = 3), collapse = ", ")),
       "ou"      = paste0("theta_K = ", paste0(format(val, digits = 3), collapse = ", ")),
       "re"      = {
-        invisible(print(vech_to_mat(val, list(...)[[1]])))
+        invisible(print(vecK_to_Sigma(val, list(...)[[1]])))
       }
     )
   }
@@ -430,3 +430,10 @@ vech_to_mat <- function(vech, n) {
   mat
 }
 
+vecK_to_Sigma <- function(theta_K, n) {
+  tmp <- theta_K; tmp[1:n] <- exp(theta_K[1:n])
+  K <- vech_to_mat(tmp, n)
+  Kinv = solve(K)
+  Sigma = Kinv %*% t(Kinv)
+  Sigma
+}

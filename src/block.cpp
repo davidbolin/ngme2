@@ -167,7 +167,7 @@ void BlockModel::setPrevV(const VectorXd& V) {
 // sample (U,W)|VY
 void BlockModel::sampleW_VY()
 {
-if (debug) std::cout << "starting sampling W." << std::endl;
+// if (debug) std::cout << "starting sampling W." << std::endl;
   if (n_latent==0) return;
 
   VectorXd SV = getSV();
@@ -176,14 +176,16 @@ if (debug) std::cout << "starting sampling W." << std::endl;
 
   // init Q and QQ
   Q = K.transpose() * inv_SV.asDiagonal() * K;
+// std::cout << "Q = " << Q << std::endl;
   QQ = Q + A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V).asDiagonal() * A;
-
+// std::cout << "QQ = " << QQ << std::endl;
   VectorXd residual = get_residual();
   VectorXd M = K.transpose() * inv_SV.asDiagonal() * getMean();
   // concat Solve(Q, b) for effects and process
 
   M += A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V).asDiagonal() * (residual + A * getW());
 
+// std::cout << "M = " << M << std::endl;
   VectorXd z (W_sizes);
   z = rnorm_vec(W_sizes, 0, 1, rng());
 
@@ -218,7 +220,7 @@ if (debug) std::cout << "Finish get_parameter"<< std::endl;
 
 // avg over gibbs samples
 VectorXd BlockModel::precond_grad() {
-if (debug) std::cout << "Start block gradient no reff"<< std::endl;
+if (debug) std::cout << "Start block gradient"<< std::endl;
 long long time_compute_g = 0;
 long long time_sample_w = 0;
 
@@ -239,7 +241,6 @@ time_compute_g += since(timer_computeg).count();
 
     // gradient.segment(n_la_params + n_feff, n_theta_sigma) = grad_theta_merr();
     gradient.segment(n_la_params, n_merr) = grad_theta_merr();
-
     // fixed effects
     if (!fix_flag[block_fix_beta]) {
       gradient.segment(n_la_params + n_merr, n_feff) = grad_beta();
@@ -300,23 +301,24 @@ void BlockModel::sampleW_V()
 
   // sample KW ~ N(mu*(V-h), diag(V))
   VectorXd SV = getSV();
-  Eigen::VectorXd KW (V_sizes);
+  Eigen::VectorXd KW = VectorXd::Zero(V_sizes);
   for (int i=0; i < V_sizes; i++) {
     // KW[i] = R::rnorm(0, sqrt(SV[i]));
     KW[i] = rnorm(rng) * sqrt(SV[i]);
   }
   KW = getMean() + KW;
 
-  VectorXd W (W_sizes);
+  VectorXd W = VectorXd::Zero(W_sizes);
   if (V_sizes == W_sizes) {
     LU_K.factorize(K);
     W = LU_K.solve(KW);
   } else {
-    SparseMatrix<double> Q = K.transpose() * K;
-    chol_Q.compute(Q);
-    W = chol_Q.solve(K.transpose() * KW);
+    // SparseMatrix<double> Q = K.transpose() * K;
+    // chol_Q.compute(Q);
+    // W = chol_Q.solve(K.transpose() * KW);
+    // W = K.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(KW);
   }
-
+// std::cout << "WWWW = " << W << std::endl;
   setW(W);
 }
 

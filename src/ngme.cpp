@@ -30,6 +30,7 @@ VectorXd Ngme::precond_grad() {
   // weighted averge over all replicates
   if (sampling_strategy == Strategy::all) {
     for (int i=0; i < n_repl; i++) {
+// std::cout << "W repl i " << i << " =" << ngme_repls[i]->getW() << std::endl;
       g +=  (num_each_repl[i] / sum_num_each_repl) * ngme_repls[i]->precond_grad();
     }
   } else if (sampling_strategy == Strategy::ws) {

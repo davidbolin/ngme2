@@ -6,16 +6,17 @@
 #' @param family distribution of random effect
 #' @return a list of random effect structure
 #' @export
-randeff <- function(map, data, effect_type, name, ...) {
+randeff <- function(map, data, effect_type, name, theta_K=NULL, ...) {
   stopifnot("Please specify random effect type, using effect_type=...,
     check ngme_randeff_types()" = effect_type %in% ngme_randeff_types())
 
   # Design Matrix and Covariance matrix
   B_reff <- map
   n_reff <- ncol(B_reff)
-
-  Sigma  <- diag(n_reff)
   n_cov_params <- sum(1:n_reff)
+  if (is.null(theta_K)) theta_K <- rep(0, n_cov_params)
+  stopifnot(length(theta_K) == n_cov_params)
+
   mix_var <- if (effect_type == "normal") noise_normal() else noise_nig()
   mix_var <- update_noise(mix_var, n=n_reff)
   mix_var$single_V = TRUE
@@ -31,8 +32,7 @@ randeff <- function(map, data, effect_type, name, ...) {
     noise        = mix_var
     W_size       = n_reff
     V_size       = n_reff
-    Sigma        = Sigma
-    theta_K      = vech(Sigma)
+    theta_K      = theta_K
     n_cov_params = n_cov_params
     # n_params     = n_cov_params + 1 + 1 #n_reff + 1 #sigma mu nu
     name         = name

@@ -335,8 +335,8 @@ ngme_parse_formula <- function(
       latents_rep[[model_eval$name]] <- model_eval
     }
 
-    # give initial value
-    lm.model <- stats::lm.fit(X, Y)
+    # give initial value (whole dataset)
+    lm.model <- stats::lm.fit(X_full, ngme_response)
     if (is.null(control_ngme$beta)) control_ngme$beta <- lm.model$coeff
     if (is.null(noise$theta_sigma)) noise$theta_sigma <- log(sd(lm.model$residuals))
 

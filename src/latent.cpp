@@ -227,8 +227,8 @@ double Latent::function_K(VectorXd& theta_K) {
 
 // numerical gradient for K parameters
 VectorXd Latent::numerical_grad() {
+// std::cout << "numerical_grad" << std::endl;
     SparseMatrix<double> K = getK(theta_K);
-// std::cout << "K = " << K << std::endl;
     VectorXd grad = VectorXd::Zero(n_theta_K);
 
     double val = function_K(K);
@@ -240,7 +240,6 @@ VectorXd Latent::numerical_grad() {
         // SparseMatrix<double> K_minus_eps = getK_by_eps(i, -eps);
         // double val_minus_eps = function_K(K_minus_eps);
         // double num_g = (-val_minus_eps + val) / eps;
-
         // if (!use_precond) {
             grad(i) = - num_g / W_size;
         // } else {
@@ -250,7 +249,7 @@ VectorXd Latent::numerical_grad() {
         //     grad(i) = num_g / num_hess;
         // }
     }
-// std::cout << "grad = " << grad << std::endl;
+// std::cout << " numer grad = " << grad << std::endl;
     return grad;
 }
 
@@ -297,7 +296,7 @@ const VectorXd Latent::get_parameter() const {
         parameter.segment(n_theta_K+n_theta_mu+n_theta_sigma+1, n_theta_sigma_normal) = theta_sigma_normal;
     }
 
-if (debug) std::cout << "parameter= " << parameter << std::endl;
+// if (debug) std::cout << "parameter= " << parameter << std::endl;
 // if (debug) std::cout << "End latent get parameter"<< std::endl;
     return parameter;
 }
@@ -310,7 +309,6 @@ if (debug) std::cout << "Start latent gradient"<< std::endl;
     if (noise_type == "normal") {
         if (!fix_flag[latent_fix_theta_K])
             grad.segment(0, n_theta_K) = grad_theta_K();
-if (debug) std::cout << "after K"<< std::endl;
         if (!fix_flag[latent_fix_theta_sigma])
             grad.segment(n_theta_K, n_theta_sigma) = grad_theta_sigma();
     } else {
@@ -328,15 +326,15 @@ if (debug) std::cout << "after K"<< std::endl;
 
 // DEBUG: checking grads
 if (debug) {
-    std::cout << "gradient= " << grad << std::endl;
+    // std::cout << "gradient= " << grad << std::endl;
     // std::cout << "one latent gradient time " << since(grad1).count() << std::endl;
 }
-if (debug) std::cout << "finish latent gradient"<< std::endl;
+// if (debug) std::cout << "finish latent gradient"<< std::endl;
     return grad;
 }
 
 void Latent::set_parameter(const VectorXd& theta) {
-if (debug) std::cout << "Start latent set parameter"<< std::endl;
+// if (debug) std::cout << "Start latent set parameter"<< std::endl;
     if (noise_type == "normal") {
         theta_K  = theta.segment(0, n_theta_K);
         theta_sigma = theta.segment(n_theta_K, n_theta_sigma);
@@ -358,7 +356,7 @@ if (debug) std::cout << "Start latent set parameter"<< std::endl;
         }
     }
 
-if (debug) std::cout << "finish latent set parameter"<< std::endl;
+// if (debug) std::cout << "finish latent set parameter"<< std::endl;
     // update K, K_rep, ...
     update_each_iter();
 }

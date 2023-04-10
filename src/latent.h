@@ -453,10 +453,10 @@ public:
 class Randeff : public Latent{
   private:
     std::mt19937 randeff_rng;
-    MatrixXd Sigma, Dd; // duplicated Matrix Dd * vech = vec
   public:
     Randeff(const Rcpp::List& R_randeff, unsigned long seed);
     SparseMatrix<double> getK(const VectorXd& theta_K) const;
+    MatrixXd get_dK_dense(int index, const VectorXd& alpha) const;
     SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
     VectorXd grad_theta_K();
     void update_each_iter();

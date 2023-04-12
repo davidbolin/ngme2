@@ -74,44 +74,6 @@ test_that("test on 1d random effects", {
   out
   traceplot(out, "effect1")
 
-  # 2d rand eff with corr
-  Sigma <- matrix(c(20, 5, 5, 10), 2, 2)
-  group <- 50
-  U <- MASS::mvrnorm(group, mu=c(0,0), Sigma=Sigma)
-  each_obs <- 20
-  repl <- rep(1:group, each=each_obs)
-  z1 <- rnorm(group * each_obs, 0, 1)
-  AA <- cbind(1, z1); t(AA) %*% AA
-  x1 <- rexp(group * each_obs)
-  # simulate Y
-  Y <- double(group * each_obs)
-  for (i in 1:group) {
-    group_idx <- ((i-1)*each_obs+1):(i*each_obs)
-    Y[group_idx] <-
-      2 + x1[group_idx] +  # fixed effects
-      U[i, 1] + z1[group_idx] * U[i, 2] + # random effects
-      rnorm(each_obs)
-  }
-  # fit with lme4
-  lmer(Y ~ 1 + x1 + (z1 | repl),
-    data=data.frame(Y=Y, x1=x1, z1=z1, repl=repl))
-
-  # fit with ngme
-  load_all()
-  out <- ngme(
-    Y ~ 1 + x1 + f(~1 + z1, effect_type="normal", replicate=repl,
-               control=control_f(numer_grad = F)),
-    data=data.frame(Y=Y, x1=x1, z1=z1, repl=repl),
-    control_opt = control_opt(
-      estimation = T,
-      iterations = 100,
-      n_parallel_chain = 1,
-      stepsize = 1
-    )
-  )
-  out
-  traceplot(out, "effect1")
-  traceplot(out)
 })
 
 test_that("test estimation vs lmer", {

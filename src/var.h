@@ -68,69 +68,72 @@ public:
     void setPrevV(const VectorXd& V) { if (!fix_V) prevV = V; }
 
     void sample_V() {
+        if (fix_V) return;
+
         if (noise_type == "normal") return;
 
         if (noise_type == "gal") {
             prevV = V;
             VectorXd nu_vec = VectorXd::Constant(n, nu);
             VectorXd zero_vec = VectorXd::Constant(n, 1e-14);
-            if (!fix_V) V = rGIG_cpp(h * nu, 2 * nu_vec, zero_vec, var_rng());
+            V = rGIG_cpp(h * nu, 2 * nu_vec, zero_vec, var_rng());
         } else {  // nig and normal+nig
             prevV = V;
             VectorXd nu_vec = VectorXd::Constant(n, nu);
-            if (!fix_V) V = rGIG_cpp(VectorXd::Constant(n, -0.5), nu_vec, nu_vec.cwiseProduct(h.cwiseProduct(h)), var_rng());
+            V = rGIG_cpp(VectorXd::Constant(n, -0.5), nu_vec, nu_vec.cwiseProduct(h.cwiseProduct(h)), var_rng());
         }
     }
 
     // called only by random effects, only one single V
-    void sample_cond_V(double a_inc, double b_inc, int dim = 1) {
-        double single_V;
+//     void sample_cond_V(double a_inc, double b_inc, int dim = 1) {
+//         if (fix_V) return;
+//         double single_V;
+//         if (noise_type == "normal") return;
+
+//         if (noise_type == "gal") {
+//             prevV = V;
+//             double p = nu - 0.5 * dim;
+//             double a = 2*nu + a_inc;
+//             double b = b_inc;
+//             single_V = rGIG_cpp(p, a, b, var_rng());
+//         } else { // nig and normal+nig
+//             prevV = V;
+//             double p = -0.5 - 0.5*dim;
+//             double a = nu + a_inc;
+//             double b = nu + b_inc;
+// if (a <= 0 || b <= 0) {
+// std::cout << "p, a, b = " << p << ", " << a << ", " << b << std::endl;
+// throw;
+// }
+//             single_V = rGIG_cpp(p, a, b, var_rng());
+//         }
+
+//         V = VectorXd::Constant(n, single_V);
+//     }
+
+    void sample_cond_V(const VectorXd& a_inc_vec, const VectorXd& b_inc_vec, int dim = 1, bool same = false) {
+        if (fix_V) return;
         if (noise_type == "normal") return;
 
+        VectorXd p_vec(n), a_vec(n), b_vec(n);
         if (noise_type == "gal") {
             prevV = V;
-            double p = nu - 0.5 * dim;
-            double a = 2*nu + a_inc;
-            double b = b_inc;
-            if (!fix_V) single_V = rGIG_cpp(p, a, b, var_rng());
+            p_vec = (nu * h) - VectorXd::Constant(n, 0.5 * dim);
+            a_vec = VectorXd::Constant(n, 2 * nu) + a_inc_vec;
+            b_vec = b_inc_vec;
         } else { // nig and normal+nig
             prevV = V;
-            double p = -0.5 - 0.5*dim;
-            double a = nu + a_inc;
-            double b = nu + b_inc;
-if (a <= 0 || b <= 0) {
-std::cout << "p, a, b = " << p << ", " << a << ", " << b << std::endl;
-throw;
-}
-            if (!fix_V) single_V = rGIG_cpp(p, a, b, var_rng());
+            p_vec = VectorXd::Constant(n, -0.5 - 0.5 * dim);
+            a_vec = VectorXd::Constant(n, nu) + a_inc_vec;
+            b_vec = VectorXd::Constant(n, nu).cwiseProduct(h).cwiseProduct(h) + b_inc_vec;
         }
 
-        V = VectorXd::Constant(n, single_V);
-    }
-
-    void sample_cond_V(const VectorXd& a_inc_vec, const VectorXd& b_inc_vec, int dim = 1) {
-        if (noise_type == "normal") return;
-
-        if (noise_type == "gal") {
-            prevV = V;
-            VectorXd p_vec = (nu * h) - VectorXd::Constant(n, 0.5 * dim);
-            VectorXd a_vec = VectorXd::Constant(n, 2 * nu) + a_inc_vec;
-            VectorXd b_vec = b_inc_vec;
-            if (!fix_V) V = rGIG_cpp(p_vec, a_vec, b_vec, var_rng());
-            // here a_inc_vec is given as (mu/sigma)^2 (latent.h)
-            // sampling from GIG(hv-0.5, 2nu + a_inc_vec, 0)
-
-            // if (fix_V) return;
-            // prevV = V;
-            // for (int i=0; i < n; i++) {
-            //     V(i) = R::rgamma(h(i)*nu - 0.5, 1 / (nu + a_inc_vec(i)/2));
-            // }
-        } else { // nig and normal+nig
-            prevV = V;
-            VectorXd p_vec = VectorXd::Constant(n, -0.5 - 0.5 * dim);
-            VectorXd a_vec = VectorXd::Constant(n, nu) + a_inc_vec;
-            VectorXd b_vec = VectorXd::Constant(n, nu).cwiseProduct(h).cwiseProduct(h) + b_inc_vec;
-            if (!fix_V) V = rGIG_cpp(p_vec, a_vec, b_vec, var_rng());
+        // update V
+        if (same) {
+            double singleV = rGIG_cpp(p_vec(0), a_vec(0), b_vec(0), var_rng());
+            V = VectorXd::Constant(n, singleV);
+        } else {
+            V = rGIG_cpp(p_vec, a_vec, b_vec, var_rng());
         }
     }
 

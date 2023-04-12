@@ -102,7 +102,7 @@ if (debug) std::cout << "End constructor of latent" << std::endl;
 }
 
 VectorXd Latent::grad_theta_mu() {
-// if (debug) std::cout << "Start mu gradient"<< std::endl;
+// if (debug) std::cout << "sigma = " << sigma << std::endl;
     VectorXd grad = VectorXd::Zero(n_theta_mu);
     double hess = 0;
 
@@ -120,7 +120,9 @@ VectorXd Latent::grad_theta_mu() {
         }
     }
     hess /= n_rep;
-    return grad / (hess * n_rep);
+
+    // not use hessian
+    return -grad / (W_size * n_rep);
 
 // if (debug) std::cout << "KW" << K*W << std::endl;
 // if (debug) std::cout << "V-h" << prevV-h << std::endl;
@@ -204,15 +206,20 @@ double Latent::function_K(SparseMatrix<double>& K) {
         VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
 
         VectorXd tmp = K * W - mu.cwiseProduct(V-h);
-        if (!symmetricK) {
-            SparseMatrix<double> Q = K.transpose() * SV.cwiseInverse().asDiagonal() * K;
-            solver_Q.compute(Q);
-            l += 0.5 * solver_Q.logdet()
-                - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
+        if (K.rows() < 5) {
+            MatrixXd Kd = K.toDense();
+            l += log(Kd.diagonal().prod()) - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
         } else {
-            chol_solver_K.compute(K);
-            l += chol_solver_K.logdet()
-                - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
+            if (!symmetricK) {
+                SparseMatrix<double> Q = K.transpose() * SV.cwiseInverse().asDiagonal() * K;
+                solver_Q.compute(Q);
+                l += 0.5 * solver_Q.logdet()
+                    - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
+            } else {
+                chol_solver_K.compute(K);
+                l += chol_solver_K.logdet()
+                    - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
+            }
         }
     }
     return l / n_rep;

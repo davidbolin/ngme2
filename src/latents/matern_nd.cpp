@@ -1,54 +1,75 @@
 #include "../latent.h"
 
-class Matern_nd : public Latent {
-private:
-    SparseMatrix<double, 0, int> G, C;
-    int alpha;
-    VectorXd Cdiag;
-public:
-    Matern_nd(const Rcpp::List& model_list, unsigned long seed);
-    SparseMatrix<double> getK(const VectorXd& alpha) const;
-    SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
-    VectorXd grad_theta_K();
-    void update_each_iter();
-    void update_num_dK();
-    double th2k(double th) const {return exp(th);}
-    double k2th(double k) const {return log(k);}
+Matern_2d::Matern_2d(const Rcpp::List& model_list, unsigned long seed)
+  : Latent(model_list, seed),
+    G           (Rcpp::as< SparseMatrix<double,0,int> > (model_list["G"])),
+    C           (Rcpp::as< SparseMatrix<double,0,int> > (model_list["C"])),
+    alpha       (2),
+    Cdiag       (C.diagonal())
+  {
 
-    VectorXd unbound_to_bound_K(const VectorXd& theta_K) const {
-        VectorXd kappa (1);
-        kappa(0) = th2k(theta_K(0));
-        return kappa;
-    }
-    VectorXd bound_to_unbound_K(const VectorXd& kappa) const {
-        VectorXd theta_K (1);
-        theta_K(0) = k2th(kappa(0));
-        return theta_K;
-    }
+    // update Drho
 
-    VectorXd grad_theta_K(
-        SparseMatrix<double>& K,
-        SparseMatrix<double>& dK,
-        vector<VectorXd>& Ws,
-        vector<VectorXd>& prevWs,
-        vector<Var>& vars,
-        const VectorXd& mu,
-        const VectorXd& sigma,
-        const VectorXd& h,
-        double trace,
-        int W_size
-    );
-};
-
-Matern_nd::Matern_nd(const Rcpp::List& model_list, unsigned long seed)
-  : Latent(model_list, seed) {
-  alpha = model_list["alpha"];
+    // update Dtheta
 }
 
-SparseMatrix<double> Matern_nd::getK(const VectorXd& alpha) const {
-  // build Q
-  SparseMatrix<double> Q;
-  // build Dl
-  SparseMatrix<double> Dl;
+SparseMatrix<double> Matern_2d::getK(const VectorXd& alpha) const {
+  Matrix2d D;
+  double theta = theta_K(0);
+  double rho = theta_K(1);
+  double kappa1 = theta_K(2);
+  double kappa2 = theta_K(3);
+
+  D(0,0) = cos(theta) + rho*sin(theta);
+  D(0,1) = -sin(theta)*pow(1+pow(rho,2),0.5);
+  D(1,0) = sin(theta) - rho*cos(theta);
+  D(1,1) = cos(theta)*pow(1+pow(rho,2),0.5);
+
+  MatrixXd Drho(2,2);
+  Drho(0,0) = sin(theta);
+  Drho(0,1) = -sin(theta)*rho*pow(1+pow(rho,2),-0.5);
+  Drho(1,0) = -cos(theta);
+  Drho(1,1) = cos(theta)*rho*pow(1+pow(rho,2),-0.5);
+
+  MatrixXd Drho2(2,2);
+  Drho2(0,0) = 0;
+  Drho2(0,1) = -sin(theta)*pow(1+pow(rho,2),-0.5);
+  Drho2(0,1)+= sin(theta)*pow(rho,2)*pow(1+pow(rho,2),-1.5);
+  Drho2(1,0) = 0;
+  Drho2(1,1) = cos(theta)*pow(1+pow(rho,2),-0.5);
+  Drho2(1,1) -= cos(theta)*pow(rho,2)*pow(1+pow(rho,2),-1.5);
+
+  int estimate_theta = 1;
+  MatrixXd Dtheta(2,2);
+  MatrixXd Dtheta2(2,2);
+  if(estimate_theta == 1){
+    Dtheta(0,0) = -sin(theta) + rho*cos(theta);
+    Dtheta(0,1) = -cos(theta)*pow(1+pow(rho,2),0.5);
+    Dtheta(1,0) = cos(theta) + rho*sin(theta);
+    Dtheta(1,1) = -sin(theta)*pow(1+pow(rho,2),0.5);
+
+    Dtheta2(0,0) = -cos(theta) - rho*sin(theta);
+    Dtheta2(0,1) = sin(theta)*pow(1+pow(rho,2),0.5);
+    Dtheta2(1,0) = -sin(theta) + rho*cos(theta);
+    Dtheta2(1,1) = -cos(theta)*pow(1+pow(rho,2),0.5);
+  }
+
+  SparseMatrix<double,0,int> B,K1,K2;
+  // alpha=2 case
+  K1 = G + kappa1*kappa1*C;
+  K2 = G + kappa2*kappa2*C;
+}
+SparseMatrix<double> Matern_2d::get_dK(int index, const VectorXd& alpha) const {
+
+
+}
+
+VectorXd Matern_2d::grad_theta_K() {
+  VectorXd grad_theta_K = VectorXd::Zero(4);
+
+  return grad_theta_K;
+}
+
+void Matern_2d::update_each_iter() {
 
 }

@@ -6,7 +6,7 @@ R_XTRA_CPPFLAGS =  -I$(R_INCLUDE_DIR)
 
 # TESTS = test/test-algebra.o  test/test-opt.o
 UTILS = util/GIG.o  util/rgig.o  util/MatrixAlgebra.o util/solver.o
-LATENTS = latents/ar1.o latents/matern.o latents/matern_ns.o latents/tensorprod.o latents/randeff.o
+LATENTS = latents/ar1.o latents/matern.o latents/matern_ns.o latents/tensorprod.o latents/randeff.o latents/matern_nd.o
 
 OBJECTS = RcppExports.o sample_rGIG.o estimate.o optimizer.o block.o latent.o ngme.o \
    $(UTILS) $(TESTS) $(LATENTS)

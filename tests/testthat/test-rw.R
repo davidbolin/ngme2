@@ -104,11 +104,12 @@ test_that("test estimation of basic ar with normal measurement noise", {
 # ar1$noise$h <- rexp(n_obs)
 
   W <- simulate(ar1)
-  Y <- W + rnorm(n_obs, sd = sigma_eps)
+  x1 = rnorm(n_obs);
+  Y <- W + rnorm(n_obs, sd = sigma_eps) - 3 + x1 * 2
 # plot(Y, type="l")
 # load_all()
   out <- ngme(
-    Y ~ 0 + f(1:n_obs,
+    Y ~ 1 + x1 + f(1:n_obs,
       model="ar1",
       name="ar",
       alpha = -0.5,
@@ -121,7 +122,10 @@ test_that("test estimation of basic ar with normal measurement noise", {
       debug = FALSE,
       # fix_W = T, W = W
     ),
-    data = data.frame(Y = Y),
+    data = data.frame(Y = Y, x1=x1),
+    control_ngme = control_ngme(
+      beta = c(0, 0)
+    ),
     control_opt = control_opt(
       estimation = T,
       iterations = 500,
@@ -133,10 +137,10 @@ test_that("test estimation of basic ar with normal measurement noise", {
   )
   out
 
-  out$replicates[[1]]$n_reffs
+  traceplot(out, "ar")
+  traceplot(out)
   # out$replicates[[1]]$latents[[1]]$control$numer_grad
   # load_all()
-  # traceplot(out, "ar")
   # plot(attr(W, "noise"), out$replicates[[1]]$latents[[1]]$noise)
 
   # plot(simulate(out$replicates[[1]]$latents[["ar"]]), type="l")

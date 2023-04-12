@@ -81,14 +81,8 @@ f <- function(
     args$map <- map
     args$model <- model
     args$replicate <- replicate
+    args$n_repl <- length(unique(replicate))
     return (args)
-  }
-
-  # reff
-  if (inherits(model, "formula")) {
-    stopifnot("Please specify effect_type for random effects" = !is.null(effect_type))
-    # f(~x) random effects for each replicate
-    return(randeff(formula = model, data = data, effect_type = effect_type, name=name))
   }
 
   # if (!is.null(index_NA) && length(index_NA) != length(index))

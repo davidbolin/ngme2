@@ -249,7 +249,7 @@ public:
 
     /* 4 for optimizer */
     const VectorXd get_parameter() const;
-    const VectorXd get_grad();
+    virtual const VectorXd get_grad();
     void           set_parameter(const VectorXd&);
     void           finishOpt(int i) {fix_flag[i] = 0; }
 
@@ -453,6 +453,7 @@ public:
 class Randeff : public Latent{
   private:
     std::mt19937 randeff_rng;
+    int n_repl;
   public:
     Randeff(const Rcpp::List& R_randeff, unsigned long seed);
     SparseMatrix<double> getK(const VectorXd& theta_K) const;
@@ -461,6 +462,20 @@ class Randeff : public Latent{
     VectorXd grad_theta_K();
     void update_each_iter();
     void sample_cond_V() override;
+};
+
+class Matern_2d : public Latent {
+private:
+    SparseMatrix<double, 0, int> G, C;
+    Eigen::Matrix2d D;
+    int alpha;
+    VectorXd Cdiag;
+public:
+    Matern_2d(const Rcpp::List& model_list, unsigned long seed);
+    SparseMatrix<double> getK(const VectorXd& alpha) const;
+    SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
+    VectorXd grad_theta_K();
+    void update_each_iter();
 };
 
 // for initialize Latent models

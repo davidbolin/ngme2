@@ -55,7 +55,7 @@ protected:
 
     int n_latent; // how mnay latent model
     int n_obs;  // how many observation
-    int n_params, n_la_params, n_feff, n_merr;  // number of total params, la params, ...
+    int n_params, n_la_params, n_feff, n_merr, n_repl;  // number of total params, la params, ...
 
     // fix estimation
     bool fix_flag[BLOCK_FIX_FLAG_SIZE] {0};

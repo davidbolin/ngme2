@@ -22,6 +22,8 @@ BlockModel::BlockModel(
   n_la_params       (Rcpp::as<int>           (block_model["n_la_params"])),
   n_feff            (beta.size()),
   n_merr            (Rcpp::as<int>           (block_model["n_merr"])),
+  // number of total replicates(blocks)
+  n_repl            (Rcpp::as<int>           (block_model["n_repl"])),
 
   debug             (false),
   A                 (n_obs, W_sizes),
@@ -243,7 +245,7 @@ time_compute_g += since(timer_computeg).count();
     gradient.segment(n_la_params, n_merr) = grad_theta_merr();
     // fixed effects
     if (!fix_flag[block_fix_beta]) {
-      gradient.segment(n_la_params + n_merr, n_feff) = grad_beta();
+      gradient.segment(n_la_params + n_merr, n_feff) = (1.0/n_repl) * grad_beta();
     }
 
     avg_gradient += gradient;
@@ -327,11 +329,11 @@ VectorXd BlockModel::grad_beta() {
   VectorXd noise_V = var.getV();
   VectorXd noise_inv_SV = noise_V.cwiseProduct(noise_sigma.array().pow(-2).matrix());
 
-  VectorXd residual = get_residual();
-  VectorXd grads = X.transpose() * noise_inv_SV.asDiagonal() * residual;
+  VectorXd residual = get_residual(); // + X * beta;
+  VectorXd grads = X.transpose() * noise_inv_SV.asDiagonal() * residual.cwiseQuotient(noise_sigma);
   MatrixXd hess = X.transpose() * noise_inv_SV.asDiagonal() * X;
+  // grads = grads / A.rows();
   grads = hess.ldlt().solve(grads);
-//   std::cout << "(beta) grads = " << grads << "\n";
 // std::cout << "grads of beta=" << -grads << std::endl;
     return -grads;
 }

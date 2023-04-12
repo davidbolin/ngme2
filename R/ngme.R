@@ -262,7 +262,8 @@ ngme_parse_formula <- function(
   control_ngme,
   noise
 ) {
-  enclos_env <- list2env(as.list(parent.frame()), envir = parent.frame(2))
+  enclos_env <- list2env(as.list(parent.frame()), parent = parent.frame(2))
+  global_env_first <- list2env(as.list(parent.frame(2)), parent = parent.frame())
 
   tf <- terms.formula(fm, specials = c("f"))
   terms <- attr(tf, "term.labels")
@@ -300,9 +301,10 @@ ngme_parse_formula <- function(
     }
 
     # add information of index_NA
-    # adding 1 term for furthur use in f
     # str <- gsub("ngme2::f\\(", "ngme2::f(index_NA=index_NA,", str)
-    res <- eval(parse(text = str), envir = enclos_env)
+
+    # eval f model, may use global variable
+    res <- eval(parse(text = str), envir = global_env_first)
 
     # give default name
     if (res$name == "field") {res$name <- paste0("field", idx_field); idx_field <- idx_field + 1}
@@ -331,7 +333,14 @@ ngme_parse_formula <- function(
       tmp$replicate <- tmp$replicate[idx]
       tmp$eval = TRUE
       tmp$data <- data[idx, , drop = FALSE]
-      model_eval <- eval(tmp, envir = data, enclos = enclos_env)
+      model_eval <- eval(tmp, envir = data, enclos = global_env_first)
+      if (!is.null(model_eval$W) && model_eval$model == "re") {
+        W_idx <- with(model_eval, (W_size*(i-1)+1):(W_size*i))
+        model_eval$W <- model_eval$W[W_idx]
+      }
+      if (!is.null(model_eval$noise$V) && model_eval$model == "re") {
+        model_eval$noise$V <- with(model_eval, rep(noise$V[i], W_size))
+      }
       latents_rep[[model_eval$name]] <- model_eval
     }
 
@@ -348,7 +357,8 @@ ngme_parse_formula <- function(
       noise = noise_new,
       latents = latents_rep,
       replicate = uni_repl[[i]],
-      control_ngme = control_ngme
+      control_ngme = control_ngme,
+      n_repl = length(uni_repl)
     )
   }
 

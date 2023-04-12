@@ -12,13 +12,12 @@
 #' @param kappa     parameterization for kappa^2 C + G, only for stationary
 #' @param theta_kappa parameterization for non-stationary
 #' @param B_kappa   bases for kappa
-#' @param d         indicating the dimension of mesh (together with fem.mesh.matrices)
 #' @param noise     1. string: type of model, 2. ngme.noise object
 #' @param ... extra arguments in f()
 #'
 #' @return a list (n, C (diagonal), G, B.kappa) for constructing operator
 #' @export
-model_matern_nd <- function(
+model_matern_nd <- matern_nd <- function(
   map = list(NULL, NULL),
   names = list("matern1", "matern2"),
   theta_kappa = list(NULL, NULL),
@@ -29,15 +28,22 @@ model_matern_nd <- function(
   replicate = NULL,
   index_NA = NULL,
   noise = list(noise_normal(),noise_normal()),
+  group = c(1, 2),
   ...
 ) {
   # check input
-  n_dim <- length(map[[1]])
+  n_dim <- length(map)
+  if (is.null(mesh)) stop("mesh is required for matern_nd")
+  if (length(mesh) == 1)
+    mesh <- if (n_dim == 2) list(mesh, mesh) else list(mesh, mesh, mesh)
+  print(n_dim)
+  print(length(names))
   stopifnot(
-    length(mesh) == n_dim,
     length(names) == n_dim,
     length(theta_kappa) == n_dim,
-    length(kappa) == n_dim
+    length(kappa) == n_dim,
+    length(noise) == n_dim,
+    length(group) == n_dim
   )
   stopifnot(n_dim == 2 || n_dim == 3)
 

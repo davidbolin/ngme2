@@ -73,16 +73,6 @@ print.ngme_replicate <- function(x, ...) {
   cat(paste("  ", ngme_format("beta", ngme$beta)));
   cat("\n\n")
 
-  cat("Random effects: \n");
-  if (length(ngme$randeffs) > 0)
-    for (i in seq_along(ngme$randeffs)) {
-      cat("$"); cat(names(ngme$randeffs)[[i]]); cat("\n")
-      print(ngme$randeffs[[i]], padding = 2)
-    }
-  else
-    cat("   No random effects \n")
-  cat("\n")
-
   cat("Latent models: \n");
   for (i in seq_along(ngme$latents)) {
     # cat("[["); cat(i); cat("]]")

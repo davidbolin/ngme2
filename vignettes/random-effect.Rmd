@@ -1,0 +1,296 @@
+---
+title: "Random effects model in Ngme2"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Random effects model in Ngme2}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Introduction
+
+(* to-write: what is random effect model*)
+
+In Ngme2, we can specify the random effect models. The syntax is similar to the latent models, using `f()` function.
+
+```{r setup}
+library(ngme2)
+load_all()
+```
+
+## R interface
+
+The R interface is similar to the latent process model.
+
+```{r}
+# repl indicates the replicate number (where the random effect is from)
+# (each replicate has 1 instance of random effect)
+repl <- c(1, 1, 2, 2, 3, 3, 3)
+
+# random effect model accepts formula argument, as the design matrix
+f(~1 + x, model = "re", replicate=repl, effect_type = "normal",
+  # ignore the last part, not needed when using f() in ngme function
+  data = data.frame(x = 1:7), eval=TRUE)
+```
+
+## Simulation
+
+The random effect model is commonly used when we have observations from different groups (or replciates).
+
+In the following example, we have 1000 observations from 50 groups. The random effect is from a bivariate normal distribution with correlation.
+
+```{r simulation}
+Sigma <- matrix(c(10, 5, 5, 30), 2, 2)
+group <- 100
+U <- MASS::mvrnorm(group, mu=c(0,0), Sigma=Sigma)
+each_obs <- 20
+repl <- rep(1:group, each=each_obs)
+z1 <- rnorm(group * each_obs, 0, 1)
+AA <- cbind(1, z1); t(AA) %*% AA
+x1 <- rexp(group * each_obs)
+x2 <- rep(1, (group * each_obs))
+# simulate Y
+Y <- double(group * each_obs)
+for (i in 1:group) {
+  group_idx <- ((i-1)*each_obs+1):(i*each_obs)
+  Y[group_idx] <-
+    x2[group_idx] * 3 - 2 * x1[group_idx] +  # fixed effects
+    U[i, 1] + z1[group_idx] * U[i, 2] + # random effects
+    rnorm(each_obs)
+}
+```
+
+```{r lme4}
+# fit with lme4
+library(lme4)
+lmer(Y ~ 0 + x2+ x1 + (z1 | repl),
+  data=data.frame(Y=Y, x1=x1, z1=z1, repl=repl))
+
+load_all()
+out <- ngme(
+  formula = Y ~ 0 + x2 + x1 +
+    f(~1+z1, model="re", effect_type="normal", replicate=repl, control=control_f(numer_grad = F)),
+  data=data.frame(x1=x1, z1=z1, repl=repl),
+  control_ngme = control_ngme(
+    # beta = c(0, 0)
+  ),
+  control_opt = control_opt(
+    estimation = T,
+    iterations = 100,
+    n_parallel_chain = 4,
+    std_lim = 0.01,
+    stepsize = 1
+  )
+)
+out
+traceplot(out, "effect1")
+out$replicates[[1]]$n_repl
+
+str(out$replicates[[1]])
+Ws <- matrix(0, nrow=100, ncol=2)
+for (j in 1:100) {
+  Ws[j, ] <- out$replicates[[j]]$latent[[1]]$W
+}
+
+print(Ws)
+colMeans(Ws)
+colMeans(Ws) - out$replicates[[1]]$beta
+out$replicates[[1]]$beta
+traceplot(out)
+```
+
+## Non-Gaussian case
+
+The random effect model can be used for non-Gaussian case as well.
+
+```{r}
+# simulate Y
+load_all()
+group <- 500; mu = -5; nu = 1;
+Sigma <- matrix(c(4), 1, 1)
+V <- rig(group, nu, nu)
+
+U <- double(group)
+mean <- mu * (V-1)
+for (i in 1:group) {
+  U[i] = MASS::mvrnorm(1, mu=mean[[i]], Sigma = V[[i]] * Sigma)
+}
+mean(U)
+var(U)
+
+# another way to simulate
+each_obs <- 10
+repl <- rep(1:group, each=each_obs)
+z1 <- rnorm(group * each_obs, 0, 1)
+AA <- cbind(1, z1); t(AA) %*% AA
+x1 <- rexp(group * each_obs)
+# simulate Y
+Y <- double(group * each_obs)
+for (i in 1:group) {
+  group_idx <- ((i-1)*each_obs+1):(i*each_obs)
+  Y[group_idx] <-
+    0 + x1[group_idx] +  # fixed effects
+    U[i]*z1[group_idx] + # random effects
+    rnorm(each_obs)
+}
+
+load_all()
+out <- ngme(
+  formula = Y ~ 1 + x1 +
+    f(~0+z1, model="re", effect_type=noise_nig(
+      # nu = 1, fix_nu = T,
+      # V = V, fix_V = T
+    ),
+    # W = U, fix_W = TRUE,
+    # fix_theta_K = T,
+    replicate=repl),
+  data=data.frame(Y=Y, x1=x1, z1=z1, repl=repl),
+  control_ngme = control_ngme(
+    n_gibbs_samples = 5
+    # beta = c(0, 0)
+  ),
+  control_opt = control_opt(
+    estimation = T,
+    iterations = 500,
+    n_parallel_chain = 4,
+    stepsize = 1
+  )
+)
+str(out$replicates[[1]]$latent[[1]])
+traceplot(out, "effect1")
+traceplot(out)
+out
+```
+
+(*correlated nig noise*)
+
+```{r}
+# simulate random effects
+group <- 500; mu = -5; nu = 1;
+Sigma <- matrix(c(20, 5, 5, 10), 2, 2)
+V <- rig(group, nu, nu)
+K = t(chol(solve(Sigma))); K
+
+U <- matrix(group * 2, nrow=group, ncol=2)
+mean <- mu * (V-1)
+for (i in 1:group) {
+  U[i, ] = MASS::mvrnorm(1, mu=rep(mean[[i]],2), Sigma = V[[i]] * Sigma)
+}
+colMeans(U)
+cov(U)
+
+# -----
+# simulate random effects
+group <- 500;mu = -5; nu = 2;sigma=1
+Sigma <- matrix(c(20, 5, 5, 10), 2, 2)
+K = t(chol(solve(Sigma))); K
+theta_K = c(log(diag(K)), K[2,1])
+# K <- diag(2) ;
+
+V <- rig(group, nu, nu)
+U <- matrix(group * 2, nrow=group, ncol=2)
+
+for (i in 1:group) {
+  eps <- (-mu + mu*V[i]) * rep(1, 2) + sigma * sqrt(V[i]) * rnorm(2)
+  U[i, ] <- as.numeric(solve(K, eps))
+}
+
+colMeans(U)
+cov(U)
+
+# simulate Y
+each_obs <- 10
+repl <- rep(1:group, each=each_obs)
+z1 <- rnorm(group * each_obs, 0, 1)
+AA <- cbind(1, z1); t(AA) %*% AA
+x1 <- rexp(group * each_obs)
+# simulate Y
+Y <- double(group * each_obs)
+for (i in 1:group) {
+  group_idx <- ((i-1)*each_obs+1):(i*each_obs)
+  Y[group_idx] <-
+    0 + x1[group_idx] +  # fixed effects
+    U[i, 1] + z1[group_idx] * U[i, 2] + # random effects
+    rnorm(each_obs)
+}
+
+library(ngme)
+ngme::ngme(
+  fixed = Y ~ 0 + x1,
+  random = ~ z1 | repl,
+  data=data.frame(Y=Y, x1=x1, z1=z1, repl=repl),
+  reffects = "NIG",
+  error = "Normal"
+)
+
+# ngme2
+load_all()
+out_corr_nig <- ngme2::ngme(
+  formula = Y ~ 0 + x1 +
+    f(~1+z1, model="re", effect_type=noise_nig(
+      # nu=1, fix_nu=T,
+      # V=V, fix_V = TRUE,
+      # fix_theta_mu = TRUE, mu = -5,
+      control=control_f(numer_grad = F)
+    ),
+    # fix_theta_K = T, theta_K = theta_K,
+    # W = t(U), fix_W = T,
+    replicate=repl, debug=F),
+  data=data.frame(Y=Y, x1=x1, z1=z1, repl=repl),
+  control_ngme = control_ngme(
+    # beta = c(0, 0)
+    n_gibbs_samples = 5
+  ),
+  control_opt = control_opt(
+    estimation = T,
+    iterations = 50,
+    n_parallel_chain = 6,
+    stepsize = 0.1,
+    verbose = T
+  )
+)
+traceplot(out_corr_nig, "effect1")
+out_corr_nig
+
+traceplot(out_corr_nig)
+load_all()
+V
+out_corr_nig$replicate[[100]]$latent[[1]]$noise$V
+
+str(out_corr_nig$replicate[[1]]$latent[[1]]$noise)
+out_corr_nig
+```
+
+<!-- Question regarding fixed effect -->
+
+```{r}
+# convergence of fixed effects
+# simulate Y = 4 x + 1 + e
+x1 <- rnorm(100); x2 <- rnorm(100)
+y <- 5 + 4*x1 -3*x2 + rnorm(100)
+
+load_all()
+out = ngme(
+  y ~ 1+x1 + x2,
+  data = data.frame(y=y, x1=x1, x2=x2),
+  control_ngme = control_ngme(
+    beta = c(0,0, 0)
+  ),
+  control_opt = control_opt(
+    estimation = T,
+    iterations = 1000,
+    n_parallel_chain = 4,
+    stepsize = 1,
+    trend_lim = 0.0001
+  )
+)
+out
+traceplot(out)
+```

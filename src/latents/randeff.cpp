@@ -77,7 +77,7 @@ VectorXd Randeff::grad_theta_K() {
     MatrixXd K = getK(theta_K).toDense();
     if (numer_grad) {
         VectorXd numer_grad = numerical_grad();
-        numer_grad.tail(n_theta_K - W_size) *= 1.0/n_repl;
+        numer_grad.tail(n_theta_K - W_size) *= 1.0/sqrt(n_repl);
         return numer_grad;
     } else {
         // analytical gradient
@@ -91,9 +91,10 @@ VectorXd Randeff::grad_theta_K() {
                 if (j < W_size) {
                     grad(j) = K.llt().solve(dK).diagonal().sum() -
                         W.transpose() * dK.transpose() * tmp;
+                    grad(j) = 1.0/sqrt(n_repl) * grad(j);
                 } else {
                     // how to choose the step size?
-                    grad(j) = -1.0/n_repl * W.transpose() * dK.transpose() * tmp;
+                    grad(j) = -1.0/sqrt(n_repl) * W.transpose() * dK.transpose() * tmp;
                 }
             }
         }
@@ -114,17 +115,14 @@ void Randeff::update_each_iter() {
 }
 
 void Randeff::sample_cond_V() {
-return Latent::sample_cond_V();
-//     VectorXd a_inc_vec = mu.cwiseQuotient(sigma).array().pow(2);
-//     for (int i=0; i < n_rep; i++) {
-//         VectorXd W = Ws[i];
-//         VectorXd tmp = (K * W + mu.cwiseProduct(h));
-// std::cout << "h = " << h << std::endl;
-//         VectorXd b_inc_vec = tmp.cwiseQuotient(sigma).array().pow(2);
-//         vars[i].sample_cond_V(a_inc_vec, b_inc_vec, W_size, true);
-// std::cout << "b_inc_vec = " << b_inc_vec << std::endl;
-//     }
-// std::cout << "a_inc_vec = " << a_inc_vec << std::endl;
+// return Latent::sample_cond_V();
+    VectorXd a_inc_vec = mu.cwiseQuotient(sigma).array().pow(2);
+    for (int i=0; i < n_rep; i++) {
+        VectorXd W = Ws[i];
+        VectorXd tmp = (K * W + mu.cwiseProduct(h));
+        VectorXd b_inc_vec = tmp.cwiseQuotient(sigma).array().pow(2);
+        vars[i].sample_cond_V(a_inc_vec, b_inc_vec, W_size, true);
+    }
 }
 
 // const VectorXd Randeff::get_grad() {

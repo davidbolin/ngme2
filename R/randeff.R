@@ -34,6 +34,7 @@ randeff <- function(
   mix_var <- update_noise(mix_var, n=n_reff)
   mix_var$single_V = TRUE
   mix_var$fix_theta_sigma = TRUE
+  mix_var$hessian = FALSE
   # mix_var$B_mu <- matrix(rep(1, length(B_reff), ncol=n_reff))
   # mix_var$theta_mu <- rep(0, n_reff)
 

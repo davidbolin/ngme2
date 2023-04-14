@@ -55,6 +55,7 @@ ngme_noise <- function(
   h               = NULL,
   fix_V           = FALSE,
   theta_sigma_normal = NULL,
+  hessian         = TRUE,
   ...
 ) {
   if ("nu" %in% names(list(...)))
@@ -124,7 +125,8 @@ ngme_noise <- function(
         "normal_nig" = length(c(theta_mu, theta_sigma, 1, theta_sigma_normal))
       ), # parameter to estimate
       init_V          = TRUE,
-      single_V        = FALSE # only contain single V (for re)
+      single_V        = FALSE, # only contain single V (for re)
+      hessian         = hessian
     ),
     class = "ngme_noise"
   )

@@ -1,8 +1,8 @@
-# define the interface for Matern2d latent model
+# define the interface for a bivariate latent model
 
 # y1 | y2 ~ f(model="matern2d", ..)
 
-#' Create a Matern2D SPDE model
+#' Create a bivariate SPDE model
 #'
 #' @param map list of length 2 or 3, each element is numeric vector (1d) or matrix of column 2 (2d)
 #' @param replicate replicate for the process

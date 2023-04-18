@@ -90,6 +90,7 @@ model_matern <- matern <- function(
 
   if (noise$n_noise == 1) noise <- update_noise(noise, n = mesh$n)
   noise$h <- h
+  if (is.null(noise$V)) noise$V <- h
   kappas <- drop(exp(B_kappa %*% theta_kappa))
 
   model <- ngme_model(

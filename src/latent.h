@@ -56,7 +56,11 @@ protected:
     int n_theta_K;
 
     bool use_num_dK {false};
-    SparseMatrix<double, 0, int> K, dK, d2K; // size = V_size * W_size
+    SparseMatrix<double, 0, int> K; // size = V_size * W_size
+    vector<SparseMatrix<double, 0, int>> dK;
+    vector<double> trace;
+    bool zero_trace;
+
     SparseMatrix<double, 0, int> K_rep;  // n_rep of size of K (for sampling W)
 
     bool fix_flag[LATENT_FIX_FLAG_SIZE] {0};
@@ -73,8 +77,8 @@ protected:
     VectorXd mu, sigma, sigma_normal;
     int n_theta_mu, n_theta_sigma, n_theta_sigma_normal;
 
-    // eps for numerical gradient.
-    double trace, trace_eps, eps;
+    // for numerical gradient.
+    double eps;
 
     // VectorXd W, prevW, h;
     VectorXd h;
@@ -83,8 +87,6 @@ protected:
     vector<VectorXd> Ws, prevWs;
     vector<Var> vars;
 
-    // Var var;
-
     // solver
     cholesky_solver chol_solver_K;
     lu_sparse_solver lu_solver_K;
@@ -92,17 +94,11 @@ protected:
     // iterative_solver CG_solver_K;
 
     cholesky_solver solver_Q; // Q = KT diag(1/SV) K
-
-    // only for tensor product model
-    Latent *left, *right;
 public:
     Latent(const Rcpp::List&, unsigned long seed);
     virtual ~Latent() {}
 
-    // change of variable
-    virtual VectorXd bound_to_unbound_K(const VectorXd&) const {return theta_K;}
-    virtual VectorXd unbound_to_bound_K(const VectorXd&) const {return theta_K;}
-    virtual void update_each_iter()=0;
+    virtual void update_each_iter();
 
     /*  1 Model itself   */
     int get_W_size() const                  {return n_rep * W_size; }
@@ -162,6 +158,7 @@ public:
         for (int i=0; i < n_rep; i++) {
             VectorXd V = vars[i].getV();
             Mean.segment(i*V_size, V_size) = mu.cwiseProduct(V - h);
+            // V-h or V-1
         }
         return Mean;
     }
@@ -253,77 +250,11 @@ public:
     void           set_parameter(const VectorXd&);
     void           finishOpt(int i) {fix_flag[i] = 0; }
 
-
-    // deprecated
-    // virtual double function_kappa(double eps);
-    virtual double function_K(VectorXd& parameter);
-
     // used for general case
+    virtual double function_K(VectorXd& parameter);
     virtual double function_K(SparseMatrix<double>& K);
-    virtual VectorXd numerical_grad(); // given eps
 
-    // update the trace value
-    void compute_trace() {
-        if (W_size != V_size) return;
-
-// compute trace
-// auto timer_trace = std::chrono::steady_clock::now();
-
-        SparseMatrix<double> K = getK(theta_K);
-        SparseMatrix<double> dK = get_dK_by_index(0);
-        if (!numer_grad) {
-            if (!symmetricK) {
-                lu_solver_K.computeKTK(K);
-                trace = lu_solver_K.trace(dK);
-            } else {
-                chol_solver_K.compute(K);
-                trace = chol_solver_K.trace(dK);
-            }
-        }
-// std::cout << "eps K  in 1= " << K << std::endl;
-// std::cout << "eps dK in 1= " << dK << std::endl;
-// std::cout << "trace  in 1= " << trace << std::endl;
-        // else {
-        //     if (!symmetricK) {
-        //         // BiCG solver
-        //         throw("Not implemented yet");
-        //     } else {
-        //         SparseMatrix<double, RowMajor> KK = K;
-        //         CG_solver_K.compute(K);
-        //         trace = CG_solver_K.trace(M);
-        //     }
-        // }
-
-// std::cout << "trace ====== " << trace << std::endl;
-// std::cout << "time for the trace (ms): " << since(timer_trace).count() << std::endl;
-
-        // update trace_eps if using hessian
-        if ((!numer_grad) && (use_precond)) {
-            SparseMatrix<double> K = getK_by_eps(0, eps);
-            SparseMatrix<double> dK = get_dK_by_eps(0, 0, eps);
-            SparseMatrix<double> M = dK;
-
-            if (!symmetricK) {
-                lu_solver_K.computeKTK(K);
-                trace_eps = lu_solver_K.trace(M);
-            } else {
-                chol_solver_K.compute(K);
-                trace_eps = chol_solver_K.trace(M);
-            }
-
-            // else {
-            //     if (!symmetricK) {
-            //         // BiCG solver
-            //         throw("Not implemented yet");
-            //     } else {
-            //         CG_solver_K.compute(K);
-            //         trace_eps = CG_solver_K.trace(M);
-            //     }
-            // }
-        }
-    };
-
-    virtual VectorXd grad_theta_K() { return numerical_grad(); }
+    virtual VectorXd grad_theta_K();
     virtual VectorXd grad_theta_mu();
     virtual VectorXd grad_theta_sigma();
     virtual VectorXd grad_theta_sigma_normal(); // grad of sig. only for normal noise
@@ -336,19 +267,7 @@ public:
         return grad / n_rep;
     }
 
-    // Output
-    // virtual Rcpp::List get_estimates() const=0;
     Rcpp::List output() const;
-
-    // stop estimate theta_K if converged
-    // void check_converge(vector<bool>& converge) {
-    //     vector<bool> K_converge (converge.begin(), converge.begin() + n_theta_K);
-    //     // if all K_converge fix
-    //     bool all_converge = true;
-    //     for (int i=0; i<n_theta_K; i++)
-    //         if (!K_converge[i]) all_converge = false;
-    //     if (all_converge) fix_flag[latent_fix_theta_K] = 1;
-    // }
 };
 
 
@@ -361,27 +280,12 @@ private:
     MatrixXd B_K;
 public:
     AR(const Rcpp::List& model_list, unsigned long seed, Type type);
+    SparseMatrix<double> getK(const VectorXd& alpha) const override;
+    SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const override;
 
-    SparseMatrix<double> getK(const VectorXd& alpha) const;
-    SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
-    VectorXd grad_theta_K();
-    void update_each_iter();
-    void update_num_dK();
     double th2a(double th) const {return (-1 + 2*exp(th) / (1+exp(th)));}
     double a2th(double k) const {return (log((-1-k)/(-1+k)));}
-
-    VectorXd unbound_to_bound_K(const VectorXd& theta_K) const {
-        VectorXd alpha (1);
-        alpha(0) = th2a(theta_K(0));
-        return alpha;
-    }
-    VectorXd bound_to_unbound_K(const VectorXd& alpha) const {
-        VectorXd theta_K (1);
-        theta_K(0) = a2th(alpha(0));
-        return theta_K;
-    }
 };
-
 
 class Matern : public Latent {
 private:
@@ -392,22 +296,6 @@ public:
     Matern(const Rcpp::List& model_list, unsigned long seed);
     SparseMatrix<double> getK(const VectorXd& alpha) const;
     SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
-    VectorXd grad_theta_K();
-    void update_each_iter();
-    void update_num_dK();
-    double th2k(double th) const {return exp(th);}
-    double k2th(double k) const {return log(k);}
-
-    VectorXd unbound_to_bound_K(const VectorXd& theta_K) const {
-        VectorXd kappa (1);
-        kappa(0) = th2k(theta_K(0));
-        return kappa;
-    }
-    VectorXd bound_to_unbound_K(const VectorXd& kappa) const {
-        VectorXd theta_K (1);
-        theta_K(0) = k2th(kappa(0));
-        return theta_K;
-    }
 };
 
 class Matern_ns : public Latent {
@@ -421,8 +309,6 @@ public:
     Matern_ns(const Rcpp::List& model_list, unsigned long seed, Type type);
     SparseMatrix<double> getK(const VectorXd& alpha) const;
     SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
-    VectorXd grad_theta_K();
-    void update_each_iter();
 };
 
 class Tensor_prod : public Latent {
@@ -434,7 +320,6 @@ public:
   SparseMatrix<double> getK(const VectorXd& alpha) const;
   SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
   VectorXd grad_theta_K();
-  void update_each_iter();
 };
 
 class Iid : public Latent {
@@ -460,22 +345,25 @@ class Randeff : public Latent{
     MatrixXd get_dK_dense(int index, const VectorXd& alpha) const;
     SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
     VectorXd grad_theta_K();
-    void update_each_iter();
     void sample_cond_V() override;
 };
 
-class Matern_2d : public Latent {
+// Bivar
+class Bivar : public Latent {
 private:
-    SparseMatrix<double, 0, int> G, C;
+    std::unique_ptr<Latent> m1, m2;
     Eigen::Matrix2d D;
-    int alpha;
-    VectorXd Cdiag;
+    int n; // dim of K1 and K2 (same)
 public:
-    Matern_2d(const Rcpp::List& model_list, unsigned long seed);
+    Bivar(const Rcpp::List& model_list, unsigned long seed);
     SparseMatrix<double> getK(const VectorXd& alpha) const;
     SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
-    VectorXd grad_theta_K();
-    void update_each_iter();
+
+    Matrix2d getD(double, double) const;
+    Matrix2d get_dD_theta(double, double) const;
+    Matrix2d get_dD_rho(double, double) const;
+    Matrix2d get_dD2_theta(double, double) const;
+    Matrix2d get_dD2_rho(double, double) const;
 };
 
 // for initialize Latent models

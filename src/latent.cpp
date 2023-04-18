@@ -1,7 +1,6 @@
 // grad_theta_mu
 // grad_theta_sigma
 // function_K
-// numerical_grad
 
 #include "latent.h"
 
@@ -20,12 +19,12 @@ Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
     n_theta_K     (Rcpp::as<int>        (model_list["n_theta_K"])),
 
     K            (V_size, W_size),
-    dK           (V_size, W_size),
+    dK           (n_theta_K),
     K_rep        (n_rep * V_size, n_rep * W_size),
 
-    trace         (0),
-    trace_eps     (0),
-    eps           (0.01),
+    trace         (n_theta_K, 0.0),
+    zero_trace    (Rcpp::as<bool>       (model_list["zero_trace"])),
+    eps           (0.001),
 
     // W             (W_size),
     // prevW         (W_size),
@@ -34,11 +33,8 @@ Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
 
     Ws            (n_rep),
     prevWs        (n_rep),
-    vars          (n_rep),
+    vars          (n_rep)
     // var           (Var(Rcpp::as<Rcpp::List> (model_list["noise"]), latent_rng())),
-
-    left (nullptr),
-    right (nullptr)
 {
 if (debug) std::cout << "Begin constructor of latent" << std::endl;
 
@@ -77,10 +73,6 @@ if (debug) std::cout << "Begin constructor of latent" << std::endl;
         theta_sigma = Rcpp::as< VectorXd > (noise_in["theta_sigma"]);
         if (noise_type=="normal_nig") theta_sigma_normal = Rcpp::as< VectorXd > (noise_in["theta_sigma_normal"]);
 
-        mu = (B_mu * theta_mu);
-        sigma = (B_sigma * theta_sigma).array().exp();
-        if (noise_type=="normal_nig") sigma_normal = (B_sigma_normal * theta_sigma_normal).array().exp();
-
     // init W
     for (int i=0; i < n_rep; i++) {
         if (model_list["W"] != R_NilValue) {
@@ -102,7 +94,6 @@ if (debug) std::cout << "End constructor of latent" << std::endl;
 }
 
 VectorXd Latent::grad_theta_mu() {
-// if (debug) std::cout << "sigma = " << sigma << std::endl;
     VectorXd grad = VectorXd::Zero(n_theta_mu);
     double hess = 0;
 
@@ -122,7 +113,10 @@ VectorXd Latent::grad_theta_mu() {
     hess /= n_rep;
 
     // not use hessian
-    return -grad / (W_size * n_rep);
+    // if (V_size < 10)
+        return - grad / (sqrt(W_size) * n_rep);
+    // else
+        // return grad / (hess * n_rep);
 
 // if (debug) std::cout << "KW" << K*W << std::endl;
 // if (debug) std::cout << "V-h" << prevV-h << std::endl;
@@ -153,13 +147,6 @@ inline VectorXd Latent::grad_theta_sigma() {
         VectorXd tmp1 = tmp.cwiseProduct(sigma.array().pow(-2).matrix()) - VectorXd::Ones(V_size);
 
         tmp2 += tmp1;
-// std::cout << "W size = " << W.size() <<std::endl;
-// std::cout << "V size = " << V.size() <<std::endl;
-// std::cout << "mu size = " << mu.size() <<std::endl;
-// std::cout << "sigma size = " << sigma.size() <<std::endl;
-// std::cout << "h size = " << h.size() <<std::endl;
-// std::cout << "V_size = " << V_size <<std::endl;
-// std::cout << "W_size = " << W_size <<std::endl;
     }
 
     // grad = Bi(tmp * sigma ^ -2 - 1)
@@ -232,31 +219,31 @@ double Latent::function_K(VectorXd& theta_K) {
     return function_K(K);
 }
 
-// numerical gradient for K parameters
-VectorXd Latent::numerical_grad() {
-// std::cout << "numerical_grad" << std::endl;
+VectorXd Latent::grad_theta_K() {
     SparseMatrix<double> K = getK(theta_K);
     VectorXd grad = VectorXd::Zero(n_theta_K);
-
-    double val = function_K(K);
-    // iterate every parameter
-    for (int i=0; i < n_theta_K; i++) {
-        SparseMatrix<double> K_add_eps = getK_by_eps(i, eps);
-        double val_add_eps = function_K(K_add_eps);
-        double num_g = (val_add_eps - val) / eps;
-        // SparseMatrix<double> K_minus_eps = getK_by_eps(i, -eps);
-        // double val_minus_eps = function_K(K_minus_eps);
-        // double num_g = (-val_minus_eps + val) / eps;
-        // if (!use_precond) {
+    if (numer_grad) {
+        double val = function_K(K);
+        for (int i=0; i < n_theta_K; i++) {
+            SparseMatrix<double> K_add_eps = getK_by_eps(i, eps);
+            double val_add_eps = function_K(K_add_eps);
+            double num_g = (val_add_eps - val) / eps;
             grad(i) = - num_g / W_size;
-        // } else {
-        //     SparseMatrix<double> K_minus_eps = getK_by_eps(i, -eps);
-        //     double val_minus_eps = function_K(K_minus_eps);
-        //     double num_hess = (val_minus_eps + val_add_eps - 2*val) / pow(eps, 2);
-        //     grad(i) = num_g / num_hess;
-        // }
+        }
+    } else {
+        for (int i=0; i < n_rep; i++) {
+            VectorXd W = Ws[i];
+            VectorXd V = vars[i].getV();
+            VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
+
+            VectorXd tmp = K * W - mu.cwiseProduct(V-h);
+            for (int j=0; j < n_theta_K; j++) {
+                grad(i) = trace[j] - (dK[j] * W).cwiseProduct(SV.cwiseInverse()).dot(tmp);
+                grad(i) = - grad(i) / W_size;
+            }
+        }
     }
-// std::cout << " numer grad = " << grad << std::endl;
+
     return grad;
 }
 
@@ -354,45 +341,51 @@ void Latent::set_parameter(const VectorXd& theta) {
         double log_nu = (theta(n_theta_K+n_theta_mu+n_theta_sigma));
         for (int i=0; i < n_rep; i++) vars[i].set_log_nu(log_nu); // for each replicate
 
-        // update
-        mu = (B_mu * theta_mu);
-        sigma = (B_sigma * theta_sigma).array().exp();
         if (noise_type == "normal_nig") {
             theta_sigma_normal = theta.segment(n_theta_K+n_theta_mu+n_theta_sigma+1, n_theta_sigma_normal);
-            sigma_normal = (B_sigma_normal * theta_sigma_normal).array().exp();
         }
-    }
 
-// if (debug) std::cout << "finish latent set parameter"<< std::endl;
-    // update K, K_rep, ...
-    update_each_iter();
+        update_each_iter();
+    }
 }
 
-// // numerical gradient for K parameters
-// VectorXd Latent::numerical_grad() {
-// std::cout << "start numerical gradient" <<std::endl;
-//     int n_theta_K =   get_n_params();
-//     VectorXd params = get_parameter();
-//     double val = function_K(params);
+void Latent::update_each_iter() {
+        mu = (B_mu * theta_mu);
+        sigma = (B_sigma * theta_sigma).array().exp();
+        if (noise_type=="normal_nig") sigma_normal = (B_sigma_normal * theta_sigma_normal).array().exp();
 
-//     VectorXd grad (n_theta_K);
-//     for (int i=0; i < n_theta_K; i++) {
-//         VectorXd params_add_eps = params;
-//             params_add_eps(i) += eps;
-//         double val_add_eps = function_K(params_add_eps);
-//         double num_g = (val_add_eps - val) / eps;
+        // update on K, dK, trace, bigK for sampling...
+        K = getK(theta_K);
+        if (!numer_grad && W_size == V_size) {
+            for (int i=0; i < n_theta_K; i++) {
+                dK[i] = get_dK(i, theta_K);
+            }
 
-//         if (!use_precond) {
-//             grad(i) = - num_g / W_size;
-//             // grad(i) = - num_g;
-//         } else {
-//             VectorXd params_minus_eps = params;
-//                 params_minus_eps(i) -= eps;
-//             double val_minus_eps = function_K(params_minus_eps);
-//             double num_hess = (val_minus_eps + val_add_eps - 2*val) / pow(eps, 2);
-//             grad(i) = num_g / num_hess;
-//         }
-//     }
-//     // return grad;
-//     return grad;
-// }
+            if (!zero_trace) {
+                for (int i=0; i < n_theta_K; i++) {
+                    if (!symmetricK) {
+                        lu_solver_K.computeKTK(K);
+                        trace[i] = lu_solver_K.trace(dK[i]);
+                    } else {
+                        chol_solver_K.compute(K);
+                        trace[i] = chol_solver_K.trace(dK[i]);
+            std::cout << "trace = " << trace[i] << std::endl;
+                    }
+                    // update trace_eps if using hessian
+                    // if (use_precond) {
+                    //     SparseMatrix<double> dK_eps = get_dK_by_eps(i, 0, eps);
+                    //     if (!symmetricK) {
+                    //         lu_solver_K.computeKTK(K);
+                    //         trace[i] = lu_solver_K.trace(dK[i]);
+                    //     } else {
+                    //         chol_solver_K.compute(K);
+                    //         trace[i] = chol_solver_K.trace(dK[i]);
+                    //     }
+                    // }
+                }
+            }
+        }
+
+        for (int i=0; i < n_rep; i++)
+            setSparseBlock(&K_rep, i*V_size, i*V_size, K);
+    }

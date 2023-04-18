@@ -96,7 +96,7 @@ test_that("the order of W same as order of index?", {
 test_that("test estimation of basic ar with normal measurement noise", {
   n_obs <- 1000
   alpha <- 0.75
-  mu <- -3; sigma <- 2.3; nu <- 2; sigma_eps <- 0.8
+  mu <- 4; sigma <- 5; nu <- 2; sigma_eps <- 0.8
   ar1 <- model_ar1(1:n_obs, alpha=alpha, noise=noise_nig(mu=mu, sigma=sigma, nu=nu))
 
   expect_true(all(ar1$K == alpha * ar1$C + ar1$G))
@@ -104,10 +104,12 @@ test_that("test estimation of basic ar with normal measurement noise", {
 # ar1$noise$h <- rexp(n_obs)
 
   W <- simulate(ar1)
+  mean(W)
   x1 = rnorm(n_obs);
   Y <- W + rnorm(n_obs, sd = sigma_eps) - 3 + x1 * 2
+
 # plot(Y, type="l")
-# load_all()
+load_all()
   out <- ngme(
     Y ~ 1 + x1 + f(1:n_obs,
       model="ar1",
@@ -120,23 +122,22 @@ test_that("test estimation of basic ar with normal measurement noise", {
       ),
       control=control_f(numer_grad = F),
       debug = FALSE,
-      # fix_W = T, W = W
+      fix_W = T, W = W
     ),
     data = data.frame(Y = Y, x1=x1),
     control_ngme = control_ngme(
-      beta = c(0, 0)
+      # beta = c(0, 0)
     ),
     control_opt = control_opt(
       estimation = T,
-      iterations = 500,
-      n_parallel_chain = 5,
+      iterations = 1000,
+      n_parallel_chain = 1,
       print_check_info = FALSE,
       verbose = F
     ),
-    debug = F
+    debug = T
   )
   out
-
   traceplot(out, "ar")
   traceplot(out)
   # out$replicates[[1]]$latents[[1]]$control$numer_grad
@@ -146,7 +147,6 @@ test_that("test estimation of basic ar with normal measurement noise", {
   # plot(simulate(out$replicates[[1]]$latents[["ar"]]), type="l")
   # plot(Y, type="l")
   # prds <- predict(out$replicates[[1]], loc=list(ar=501:600))$mean
-  # traceplot(out, "mn")
 
   with(out$replicates[[1]]$latents[[1]], {
     expect_true(abs(noise$theta_mu - mu) < 4)

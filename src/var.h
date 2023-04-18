@@ -34,8 +34,8 @@ public:
         nu            (Rcpp::as<double>   (noise_list["nu"])),
         h             (Rcpp::as<VectorXd> (noise_list["h"])),
         n             (Rcpp::as<int>      (noise_list["n_noise"])),
-        V             (n),
-        prevV         (n),
+        V             (h),
+        prevV         (h),
         fix_V         (Rcpp::as<bool>     (noise_list["fix_V"])),
         fix_nu        (Rcpp::as<bool>     (noise_list["fix_nu"])),
         init_V        (Rcpp::as<bool>     (noise_list["init_V"])),
@@ -44,8 +44,6 @@ public:
     {
 // std::cout << "n = " << n << std::endl;
         if (noise_type == "normal" || !init_V) {
-            V = VectorXd::Ones(n);
-            prevV = VectorXd::Ones(n);
             fix_nu = true;
             fix_V = true;
         } else { // nig or gal

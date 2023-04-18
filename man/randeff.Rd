@@ -4,7 +4,7 @@
 \alias{randeff}
 \title{Build random effect structure}
 \usage{
-randeff(map, data, effect_type, name, ...)
+randeff(map, data, effect_type, name, theta_K = NULL, n_repl = NULL, ...)
 }
 \arguments{
 \item{data}{data}

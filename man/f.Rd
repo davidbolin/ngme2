@@ -6,7 +6,7 @@
 \usage{
 f(
   map = NULL,
-  model,
+  model = NULL,
   replicate = NULL,
   noise = noise_normal(),
   control = control_f(),

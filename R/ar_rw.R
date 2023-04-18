@@ -1,8 +1,3 @@
-# new models should have
-# model_name <- function(
-# index, replicate, index_NA, noise, data
-# )
-
 # ar1 and rw
 
 #' ngme AR(1) model specification
@@ -87,6 +82,7 @@ model_ar1 <- ar1 <- function(
     n_map       = length(index)
     replicate   = replicate
     n_rep       = nrep
+    zero_trace  = TRUE
   })
   do.call(ngme_model, args)
 }
@@ -131,22 +127,6 @@ model_rw <- rw <- function(
   if (is.null(replicate)) replicate <- rep(1, length(x))
   if (is.null(index_NA)) index_NA <- rep(FALSE, length(x))
   stopifnot("Make sure length(x)==length(replicate)" = length(x) == length(replicate))
-
-  # create mesh using index
-  # sorted_index <- sort(index, index.return = TRUE)
-  # h <- diff(sorted_index$x)
-  # permutation matrix, same as A <- diag(length(index))[sorted_index$ix, ]
-
-  # create A in one way
-  # A <- Matrix::sparseMatrix(seq_along(index)[!index_NA], sorted_index$ix, x = 1)
-  # if (any(index_NA))
-  #   A_pred <- Matrix::sparseMatrix(seq_along(index)[index_NA], sorted_index$ix, x = 1)
-  # else
-  #   A_pred <- NULL
-
-  # K is of size (n-1) * n
-  # then mesh is of size (n-1)
-  # lose 1 location (first) for non-circular rw1 case
 
   if (!circular) {
     # regular mesh

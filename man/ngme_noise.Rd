@@ -26,6 +26,7 @@ ngme_noise(
   h = NULL,
   fix_V = FALSE,
   theta_sigma_normal = NULL,
+  hessian = TRUE,
   ...
 )
 

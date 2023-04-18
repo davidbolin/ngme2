@@ -1,14 +1,22 @@
-test_that("Matern2d formula works", {
+test_that("model2d formula works", {
   # test on Matern 2d
+  load_all()
   Y1 <- rnorm(5); Y2 <- rnorm(5)
   Y <- cbind(Y1, Y2); group <- rep(1:2, each=5)
 
   load_all()
-  mod <- matern_nd(
-    map = list(1:5, 1:5),
-    names = list("sal", "temp"),
-    mesh = INLA::inla.mesh.1d(1:10),
+  mod <- bv(m1 = ar1(1:3), m2 = ar1(1:3))
+
+  f(model=bv(
+      m1=ar1(1:3),
+      m2=ar2(1:3),
+      rho = 0.5, theta = 0.5
+    ),
+    map = NULL, mesh = NULL,
+    noise = nig()
   )
+
+f(1:3, model="ar1")
 
 # ngme2
   fm <- Y ~ 0 + f(~1, "fe", group=2) + f(~x1, "re", group=1) + f(
@@ -32,4 +40,14 @@ test_that("Matern2d formula works", {
     group = c(rep(1,5), rep(1,5))
   )
 
+})
+
+test_that("Test on mutlivariate model", {
+  library(INLA)
+  mesh <- inla.mesh.1d(1:10)
+  model_2d(
+    a = matern(mesh=mesh),
+    b = matern(mesh=mesh),
+
+  )
 })

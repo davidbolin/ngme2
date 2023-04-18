@@ -187,7 +187,7 @@ model_tp <- function(
   data        = NULL,
   index_NA    = NULL,
   noise       = noise_normal(),
-  control   = control_f(),
+  control     = control_f(),
   ...
 ) {
   stopifnot(inherits(left, "ngme_model"), inherits(right, "ngme_model"))

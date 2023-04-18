@@ -25,6 +25,7 @@ ngme_model <- function(
   replicate   = NULL,
   n_rep       = NULL,
   group       = NULL,
+  zero_trace  = FALSE,
   ...
 ) {
   if (is.null(n_rep)) n_rep <- length(unique(replicate))
@@ -79,6 +80,7 @@ ngme_model <- function(
       replicate     = replicate,
       n_rep         = n_rep,
       group         = group,
+      zero_trace    = zero_trace,
       ...
     ),
     class = "ngme_model"

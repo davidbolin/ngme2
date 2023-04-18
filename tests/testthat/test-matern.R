@@ -40,7 +40,7 @@ test_that("test Matern", {
       name="spde",
       mesh = mesh,
       noise=noise_nig(),
-      control = control_f(numer_grad = T),
+      control = control_f(numer_grad = F),
       # fix_theta_K = T, theta_kappa = log(3),
       # fix_W = TRUE,
       # W = W,
@@ -49,7 +49,7 @@ test_that("test Matern", {
     data = data.frame(Y = Y),
     control_opt = control_opt(
       estimation = T,
-      iterations = 30,
+      iterations = 1500,
       n_parallel_chain = 4,
       print_check_info = F,
       verbose = F

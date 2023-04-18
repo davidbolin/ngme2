@@ -35,13 +35,18 @@ simulate.ngme_model <- function(
         # K_a %*% W = noise
         W <- with(model, {
             C.inv <- as(Matrix::diag(1 / Matrix::diag(C)), "sparseMatrix")
-            kappas <- as.numeric(exp(B_K %*% theta_K))
-            Kappa <- diag(kappas)
-            # build K_a
-            if (alpha == 2) {
-                K_a <- (Kappa %*% C %*% Kappa + G)
-            } else if (alpha == 4) {
-                K_a <- (Kappa %*% C %*% Kappa + G) %*% C.inv %*% (Kappa %*% C %*% Kappa + G)
+            if (ncol(B_K) > 1) {
+                kappas <- as.numeric(exp(B_K %*% theta_K))
+                Kappa <- diag(kappas)
+                # build K_a
+                if (alpha == 2) {
+                    K_a <- (Kappa %*% C %*% Kappa + G)
+                } else if (alpha == 4) {
+                    K_a <- (Kappa %*% C %*% Kappa + G) %*% C.inv %*% (Kappa %*% C %*% Kappa + G)
+                }
+            } else {
+                kappa <- exp(theta_K)
+                K_a <- if (alpha == 2) kappa^2 * C + G else kappa^4 * C + G
             }
             as.numeric(solve(K_a, sim_noise))
         })
@@ -116,7 +121,7 @@ simulate.ngme_noise <- function(
         e <- mu * (V - noise$h) + sigma * sqrt(V) * rnorm(n)
     } else if (noise$noise_type == "normal") {
         sigma <- drop(exp(noise$B_sigma %*% noise$theta_sigma))
-        e <- rnorm(n, sd = sigma * noise$h)
+        e <- rnorm(n, sd = sigma * sqrt(noise$h))
     } else if (noise$noise_type == "gal") {
         mu <- drop(noise$B_mu %*% noise$theta_mu)
         sigma <- drop(exp(noise$B_sigma %*% noise$theta_sigma))

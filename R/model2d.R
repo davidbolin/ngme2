@@ -1,7 +1,5 @@
 # define the interface for a bivariate latent model
 
-# y1 | y2 ~ f(model="matern2d", ..)
-
 #' Create a bivariate SPDE model
 #'
 #' @param map list of length 2 or 3, each element is numeric vector (1d) or matrix of column 2 (2d)
@@ -17,52 +15,20 @@
 #'
 #' @return a list (n, C (diagonal), G, B.kappa) for constructing operator
 #' @export
-model_matern_nd <- matern_nd <- function(
-  map = list(NULL, NULL),
-  names = list("matern1", "matern2"),
-  theta_kappa = list(NULL, NULL),
-  kappa = list(1, 1),
+bv <- function(
+  m1, m2,
   rho = 0.5, theta = 1,
-  mesh = NULL,
-  alpha = 2,
-  replicate = NULL,
-  index_NA = NULL,
-  noise = list(noise_normal(),noise_normal()),
   group = c(1, 2),
   ...
 ) {
-  # check input
-  n_dim <- length(map)
-  if (is.null(mesh)) stop("mesh is required for matern_nd")
-  if (length(mesh) == 1)
-    mesh <- if (n_dim == 2) list(mesh, mesh) else list(mesh, mesh, mesh)
-  print(n_dim)
-  print(length(names))
   stopifnot(
-    length(names) == n_dim,
-    length(theta_kappa) == n_dim,
-    length(kappa) == n_dim,
-    length(noise) == n_dim,
-    length(group) == n_dim
+    inherits(m1, "ngme_model"),
+    inherits(m2, "ngme_model"),
+    length_map(m1$map) == length_map(m2$map)
   )
-  stopifnot(n_dim == 2 || n_dim == 3)
-
-  if (n_dim == 2) {
-    Q  <- matrix(c(1, 0, 0, 1), 2, 2)
-    Dl <- matrix(c(1, 0, 0, 1), 2, 2)
-    D  <- Q %*% Dl
-  }
-  # check loc / mesh dimension
-  # to-do
-
-  # build C and G
-  # to-do
-
-  # build A
-  # to-do
 
   model <- ngme_model(
-    model       = "matern",
+    model       = "bv",
     A           = A,
     A_pred      = A_pred,
     W_size      = nrow(C),
@@ -72,12 +38,13 @@ model_matern_nd <- matern_nd <- function(
     B_kappa     = B_kappa,
     C           = ngme_as_sparse(C),
     G           = ngme_as_sparse(G),
-    # K           = kappas * kappas * C + G
+    rho         = rho,
+    theta       = theta,
     h           = h,
     noise       = noise,
     mesh        = mesh,
-    map         = loc,
-    n_map       = n_loc,
+    map         = c(m1$map, m2$map),
+    n_map       = m1$n_map * 2,
     replicate   = replicate,
     ...
   )

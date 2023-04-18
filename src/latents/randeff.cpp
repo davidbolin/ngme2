@@ -75,44 +75,29 @@ SparseMatrix<double> Randeff::get_dK(int index, const VectorXd& alpha) const {
 VectorXd Randeff::grad_theta_K() {
     VectorXd grad = VectorXd::Zero(n_theta_K);
     MatrixXd K = getK(theta_K).toDense();
-    if (numer_grad) {
-        VectorXd numer_grad = numerical_grad();
-        numer_grad.tail(n_theta_K - W_size) *= 1.0/sqrt(n_repl);
-        return numer_grad;
-    } else {
-        // analytical gradient
-        for (int i=0; i < n_rep; i++) {
-            double V = vars[i].getV()(0);
-            VectorXd W = Ws[i];
-            VectorXd tmp = 1/V * (K*W + (1-V)*mu);
-            for (int j=0; j < n_theta_K; j++) {
-                MatrixXd dK = get_dK_dense(j, theta_K);
+
+    for (int i=0; i < n_rep; i++) {
+        double V = vars[i].getV()(0);
+        VectorXd W = Ws[i];
+        VectorXd tmp = 1/V * (K*W + (1-V)*mu);
+        for (int j=0; j < n_theta_K; j++) {
+            MatrixXd dK = get_dK_dense(j, theta_K);
 // std::cout << "dK \n" << dK << std::endl;
-                if (j < W_size) {
-                    grad(j) = K.llt().solve(dK).diagonal().sum() -
-                        W.transpose() * dK.transpose() * tmp;
-                    grad(j) = 1.0/sqrt(n_repl) * grad(j);
-                } else {
-                    // how to choose the step size?
-                    grad(j) = -1.0/sqrt(n_repl) * W.transpose() * dK.transpose() * tmp;
-                }
+            if (j < W_size) {
+                grad(j) = K.llt().solve(dK).diagonal().sum() -
+                    W.transpose() * dK.transpose() * tmp;
+                grad(j) = 1.0/sqrt(n_repl) * grad(j);
+            } else {
+                // how to choose the step size?
+                grad(j) = -1.0/sqrt(n_repl) * W.transpose() * dK.transpose() * tmp;
             }
         }
-        grad = - grad / W_size;
     }
+    grad = - grad / W_size;
 // std::cout << "grad_theta_K = " << grad << std::endl;
     return grad;
 }
 
-// called after set parameter
-void Randeff::update_each_iter() {
-    K = getK(theta_K);
-    // sigma = VectorXd::Ones(W_size).cwiseQuotient(theta_K.head(W_size).array().exp().matrix());
-    // dK = get_dK(0, theta_K);
-    for (int i=0; i < n_rep; i++)
-        setSparseBlock(&K_rep, i*V_size, i*V_size, K);
-// std::cout << "finish update_each_iter in randeff" << std::endl;
-}
 
 void Randeff::sample_cond_V() {
 // return Latent::sample_cond_V();

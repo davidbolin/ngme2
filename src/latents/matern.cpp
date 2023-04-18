@@ -16,31 +16,21 @@ Matern::Matern(const Rcpp::List& model_list, unsigned long seed)
 {
 // std::cout << "begin Constructor of Matern " << std::endl;
     symmetricK = true;
-
     // Init K and Q
     K = getK(theta_K);
-    for (int i=0; i < n_rep; i++)
-        setSparseBlock(&K_rep, i*V_size, i*W_size, K);
+    chol_solver_K.init(W_size, 0,0,0);
+    chol_solver_K.analyze(K);
 
     SparseMatrix<double> Q = K.transpose() * K;
-
-    // if (!use_iter_solver) {
-        chol_solver_K.init(W_size, 0,0,0);
-        chol_solver_K.analyze(K);
-    // } else {
-    //     CG_solver_K.init(W_size, W_size, W_size, 0.5);
-    //     CG_solver_K.analyze(K);
-    // }
-
-    compute_trace();
     solver_Q.init(W_size, 0,0,0);
     solver_Q.analyze(Q);
 
-// std::cout << "finish Constructor of Matern " << std::endl;
+    update_each_iter();
+std::cout << "finish Constructor of Matern " << std::endl;
 }
 
 SparseMatrix<double> Matern::getK(const VectorXd& theta_K) const {
-    double kappa = th2k(theta_K(0));
+    double kappa = exp(theta_K(0));
     int W_size = G.rows();
 
     SparseMatrix<double> K_a (W_size, W_size);
@@ -69,7 +59,7 @@ SparseMatrix<double> Matern::getK(const VectorXd& theta_K) const {
 // stationary
 SparseMatrix<double> Matern::get_dK(int index, const VectorXd& theta_K) const {
     assert(index==0);
-    double kappa = th2k(theta_K(0));
+    double kappa = exp(theta_K(0));
     int W_size = G.rows();
     SparseMatrix<double> dK (W_size, W_size);
 
@@ -79,125 +69,116 @@ SparseMatrix<double> Matern::get_dK(int index, const VectorXd& theta_K) const {
         dK = 4.0*kappa*C * G + 4.0* pow(kappa, 3) * C;
     else
         throw("alpha != 2 or 4");
-    return dK;
+
+    // dkappa / dtheta = kappa
+    return kappa * dK;
 }
 
-// compute numerical dK
-void Matern::update_num_dK() {
-    double eps = 0.01;
-    double kappa = th2k(theta_K(0));
-    SparseMatrix<double> K_add_eps = pow(kappa + eps, 2) * C + G;
-    dK = (K_add_eps - K) / eps;
-}
+// ---------------------------- Matern_ns ----------------------------
 
-// return length 1 vectorxd : grad_kappa * dkappa/dtheta
-VectorXd Matern::grad_theta_K() {
-    if (numer_grad) return numerical_grad();
-
-    SparseMatrix<double> dK = get_dK_by_index(0);
-    double ret = 0;
-    // double th = theta_K(0);
-    double da  = th2k(theta_K(0));
-    // double d2a = th2k(theta_K(0));
-
-    for (int i = 0; i < n_rep; i++) {
-        VectorXd W = Ws[i];
-        VectorXd prevW = prevWs[i];
-        VectorXd V = vars[i].getV();
-        VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
-
-        // analytical gradient and numerical hessian
-        double tmp = (dK*W).cwiseProduct(SV.cwiseInverse()).dot(K * W + (h - V).cwiseProduct(mu));
-        double grad = trace - tmp;
-
-        if (!use_precond) {
-            ret = - grad * da / W_size;
-        } else {
-            // compute numerical hessian
-            SparseMatrix<double> K2 = getK_by_eps(0, eps);
-            SparseMatrix<double> dK2 = get_dK_by_eps(0, 0, eps);
-
-            // grad(x+eps) - grad(x) / eps
-            VectorXd prevV = vars[0].getPrevV();
-            VectorXd prevSV = sigma.array().pow(2).matrix().cwiseProduct(prevV);
-
-            double grad2_eps = trace_eps - (dK2*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K2 * prevW + (h - prevV).cwiseProduct(mu));
-            double grad_eps  = trace - (dK*prevW).cwiseProduct(prevSV.cwiseInverse()).dot(K * prevW + (h - prevV).cwiseProduct(mu));
-            double hess = (grad2_eps - grad_eps) / eps;
-
-    // if (debug) std::cout << "prevW =" << prevW << std::endl;
-            ret += grad / (hess * da + grad_eps);
-        }
-    }
-
-    return VectorXd::Constant(1, ret / n_rep);
-}
-
-void Matern::update_each_iter() {
+/*
+    Matern model with non-stationary kappa:
+        alpha is the smoothness parameter
+        parameter_K(0) = theta.kappa
+        kappas =  exp(Bkappa * theta.kappa)
+        K = kappa^2 * C + G
+*/
+Matern_ns::Matern_ns(const Rcpp::List& model_list, unsigned long seed, Type type)
+: Latent(model_list, seed),
+    type        (type),
+    G           (Rcpp::as< SparseMatrix<double,0,int> > (model_list["G"])),
+    C           (Rcpp::as< SparseMatrix<double,0,int> > (model_list["C"])),
+    alpha       (2),
+    Bkappa      (Rcpp::as<MatrixXd> (model_list["B_K"])),
+    Cdiag       (C.diagonal())
+{
+//  std::cout << "constructor of matern ns" << std::endl;
     K = getK(theta_K);
-    dK = get_dK(0, theta_K);
-    d2K = 0 * C;
 
-    for (int i=0; i < n_rep; i++)
-        setSparseBlock(&K_rep, i*V_size, i*V_size, K);
-
-    if (use_num_dK) {
-        update_num_dK();
+    if (type==Type::matern_ns) {
+        alpha = Rcpp::as<int> (model_list["alpha"]);
+        symmetricK = true;
+        chol_solver_K.init(W_size, 0,0,0);
+        chol_solver_K.analyze(K);
+    } else {
+        symmetricK = false;
+        lu_solver_K.init(W_size, 0,0,0);
+        lu_solver_K.analyze(K);
     }
 
-    if (!numer_grad)
-        compute_trace();
+    // Init Q
+    SparseMatrix<double> Q = K.transpose() * K;
+    solver_Q.init(W_size, 0,0,0);
+    solver_Q.analyze(Q);
+
+    update_each_iter();
+//  std::cout << "finish constructor of matern ns" << std::endl;
 }
 
-// class matern_ope : public Operator {
-// private:
-//     int alpha;
-//     SparseMatrix<double, 0, int> G, C;
-//     VectorXd Cdiag;
+// inherit get_K_parameter, grad_K_parameter, set_K_parameter
 
-// public:
-//     matern_ope(Rcpp::List& model_list)
-//     :   Operator    (model_list),
-//         alpha       ( Rcpp::as<int> (model_list["alpha"])),
-//         G           ( Rcpp::as< SparseMatrix<double,0,int> > (model_list["G"]) ),
-//         C           ( Rcpp::as< SparseMatrix<double,0,int> > (model_list["C"]) ),
-//         Cdiag       ( C.diagonal() )
-//     {}
+SparseMatrix<double> Matern_ns::getK(const VectorXd& theta_kappa) const {
+    VectorXd kappas = (Bkappa * theta_kappa).array().exp();
+    // std::cout <<  "theta_kappa here = " << theta_kappa << std::endl;
 
-//     // set kappa
-//     void set_parameter(VectorXd kappa) {
-//         assert (kappa.size() == 1);
-//         this->parameter_K = kappa;
+    int n_dim = G.rows();
+    SparseMatrix<double> K_a (n_dim, n_dim);
+    if (type == Type::matern_ns) {
+        SparseMatrix<double> KCK (n_dim, n_dim);
+            KCK = kappas.cwiseProduct(kappas).cwiseProduct(Cdiag).asDiagonal();
+        if (alpha==2) {
+            // K_a = T (G + KCK) C^(-1/2)
+            // Actually, K_a = C^{-1/2} (G+KCK), since Q = K^T K.
+            K_a = (G + KCK);
+        } else if (alpha==4) {
+            // K_a = T (G + KCK) C^(-1) (G+KCK) C^(-1/2)
+            // Actually, K_a = C^{-1/2} (G + KCK) C^(-1) (G+KCK), since Q = K^T K.
+            K_a = (G + KCK) * Cdiag.cwiseInverse().asDiagonal() *
+            (G + KCK);
+        } else {
+            throw("alpha not equal to 2 or 4 is not implemented");
+        }
+    } else if (type == Type::ou) {
+        K_a = kappas.asDiagonal() * C + G;
+    }
 
-//         K = getK(kappa);
-//         dK = get_dK(0, kappa);
+    return K_a;
+}
 
-//         if (use_num_dK) {
-//             update_num_dK();
-//         }
-//     }
+// dK wrt. theta_K[index]
+SparseMatrix<double> Matern_ns::get_dK(int index, const VectorXd& params) const {
+    VectorXd kappas = (Bkappa * theta_K).array().exp();
 
-//     // stationary
-//     SparseMatrix<double> get_dK(int index, VectorXd parameter_K) const {
-//         assert(index==0);
-//         double kappa = parameter_K(0);
-//         int W_size = G.rows();
-//         SparseMatrix<double> dK (W_size, W_size);
+    int n_dim = G.rows();
+    SparseMatrix<double> dK_a (n_dim, n_dim);
 
-//         if (alpha==2)
-//             dK = 2*kappa*C;
-//         else if (alpha==4)
-//             dK = 4*kappa*C * G + 4* pow(kappa, 3) * C;
-//         else
-//             throw("alpha != 2 or 4");
-//         return dK;
-//     }
+    if (type == Type::matern_ns) {
+        // dKCK
+        SparseMatrix<double> CK(n_dim, n_dim);
+        // CK = kappas.cwiseProduct(Cdiag).asDiagonal();
 
-//     // compute numerical dK
-//     void update_num_dK() {
-//         double kappa = parameter_K(0);
-//         double eps = 0.01;
-//         SparseMatrix<double> K_add_eps = pow(kappa + eps, 2) * C + G;
-//         dK = (K_add_eps - K) / eps;
-//     }
-// };
+        SparseMatrix<double> dKCK(n_dim, n_dim);
+        //  dKCK = 2*kappas.cwiseProduct(Bkappa.col(index)).asDiagonal() * CK;
+        // kappas * (Bkappa * CK + CK * Bkappa).sparseView();
+            VectorXd kappas2 = kappas.cwiseProduct(kappas);
+            dKCK = 2*kappas2.cwiseProduct(Cdiag).cwiseProduct(Bkappa.col(index)).asDiagonal();
+        if (alpha == 2) {
+            dK_a = dKCK;
+        }
+        else if (alpha == 4) {
+            SparseMatrix<double> KCK(n_dim, n_dim);
+            KCK = kappas.cwiseProduct(kappas).cwiseProduct(Cdiag).asDiagonal();
+            SparseMatrix<double> tmp = Cdiag.cwiseInverse().asDiagonal() * (G + KCK);
+            dK_a = dKCK * tmp + tmp * dKCK;
+        }
+        else {
+            throw("alpha not equal to 2 or 4 is not implemented");
+        }
+    } else {
+        // check
+        dK_a = kappas.cwiseProduct(Bkappa.col(index)).asDiagonal() * C;
+    }
+
+    // to-do
+    return dK_a;
+}

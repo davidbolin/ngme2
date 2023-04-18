@@ -196,7 +196,7 @@ void BlockModel::sampleW_VY()
   VectorXd W = chol_QQ.rMVN(M, z);
   setW(W);
 
-if (debug) std::cout << "Finish sampling W" << std::endl;
+// if (debug) std::cout << "Finish sampling W" << std::endl;
 }
 
 // ---------------- get, set update gradient ------------------

@@ -8,7 +8,7 @@ control_f(
   numer_grad = FALSE,
   use_precond = FALSE,
   use_num_hess = TRUE,
-  eps = 0.005
+  eps = 0.001
 )
 }
 \arguments{

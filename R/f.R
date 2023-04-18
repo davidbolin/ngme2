@@ -68,6 +68,8 @@ f <- function(
 
   if (is.null(name)) name <- "field"
   if (model == "tp") map <- 1:(list(...)$left$n_map * list(...)$right$n_map)
+  if (model == "bv") replicate <- rep(1, list(...)$m1$n_map * 2)
+
   stopifnot("Please specify model as character" = is.character(model))
 
   replicate <- eval(substitute(replicate), envir = data, enclos = parent.frame())
@@ -115,6 +117,9 @@ f <- function(
       },
       "tp" = {
         do.call(model_tp, args)
+      },
+      "bv" = {
+        do.call(model_bv, args)
       },
       "iid" = {
         do.call(model_iid, args)

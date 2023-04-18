@@ -1,22 +1,37 @@
-test_that("model2d formula works", {
+test_that("test bv R interface", {
   # test on Matern 2d
   load_all()
   Y1 <- rnorm(5); Y2 <- rnorm(5)
   Y <- cbind(Y1, Y2); group <- rep(1:2, each=5)
 
-  load_all()
-  mod <- bv(m1 = ar1(1:3), m2 = ar1(1:3))
-
-  f(model=bv(
-      m1=ar1(1:3),
-      m2=ar2(1:3),
-      rho = 0.5, theta = 0.5
-    ),
-    map = NULL, mesh = NULL,
-    noise = nig()
+  mod <- bv(
+    m1 = ar1(1:3),
+    m2 = ar1(1:3)
   )
 
-f(1:3, model="ar1")
+  f(model="bv",
+    m1=ar1(1:3),
+    m2=ar1(1:3),
+    map = NULL, mesh = NULL,
+    noise = nig(),
+    eval=T
+  )
+
+  load_all()
+ngme(
+  Y ~ 0 + f (model="bv",
+    m1=ar1(1:3),
+    m2=ar1(1:3),
+    replicate = rep(1, 6),
+    noise=nig()
+  ),
+  data = data.frame(Y = c(1:6)),
+  control_opt = control_opt(
+    iterations = 1,
+    n_parallel_chain = 1,
+    estimation = T
+  )
+)
 
 # ngme2
   fm <- Y ~ 0 + f(~1, "fe", group=2) + f(~x1, "re", group=1) + f(

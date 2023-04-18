@@ -441,7 +441,7 @@ vecK_to_Sigma <- function(theta_K, n) {
 build_D <- function(theta, rho) {
   d11 <- cos(theta) + rho * sin(theta)
   d12 <- -sin(theta) * (sqrt(1+rho^2))
-  d21 <- sin(theta) + rho * cos(theta)
+  d21 <- sin(theta) - rho * cos(theta)
   d22 <- cos(theta) * (sqrt(1+rho^2))
-  matrix(c(d11, d12, d21, d22), nrow = 2, ncol = 2)
+  matrix(c(d11, d21, d12, d22), nrow = 2, ncol = 2)
 }

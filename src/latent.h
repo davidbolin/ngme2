@@ -44,6 +44,8 @@ enum Latent_fix_flag {
 const int LATENT_FIX_FLAG_SIZE = 4;
 
 class Latent {
+public:
+    bool symmetricK {false};
 protected:
     std::mt19937 latent_rng;
     string model_type, noise_type;
@@ -66,7 +68,6 @@ protected:
     bool fix_flag[LATENT_FIX_FLAG_SIZE] {0};
 
     bool use_precond {false}, numer_grad {false};
-    bool symmetricK {false};
 
     // mu and sigma, and sigma_normal (special case when using nig_normal case)
     MatrixXd B_mu, B_sigma, B_sigma_normal;
@@ -313,13 +314,12 @@ public:
 
 class Tensor_prod : public Latent {
 private:
+  int n_theta_l, n_theta_r, V_size_l, V_size_r, W_size_l, W_size_r;
   std::unique_ptr<Latent> left, right;
-  SparseMatrix<double, 0, int> dK2; // dK for left, and dK2 for right
 public:
   Tensor_prod(const Rcpp::List& model_list, unsigned long seed);
   SparseMatrix<double> getK(const VectorXd& alpha) const;
   SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
-  VectorXd grad_theta_K();
 };
 
 class Iid : public Latent {
@@ -329,8 +329,6 @@ public:
   Iid(const Rcpp::List& model_list, unsigned long seed);
   SparseMatrix<double> getK(const VectorXd& alpha) const;
   SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
-  VectorXd grad_theta_K();
-  void update_each_iter();
 };
 
 // ---- Structure for random effects ----
@@ -352,7 +350,6 @@ class Randeff : public Latent{
 class Bivar : public Latent {
 private:
     std::unique_ptr<Latent> m1, m2;
-    Eigen::Matrix2d D;
     int n; // dim of K1 and K2 (same)
 public:
     Bivar(const Rcpp::List& model_list, unsigned long seed);
@@ -389,6 +386,8 @@ public:
       return std::make_unique<Iid>(latent_in, latent_seed);
     } else if (model_type == "re") {
       return std::make_unique<Randeff>(latent_in, latent_seed);
+    } else if (model_type == "bv") {
+      return std::make_unique<Bivar>(latent_in, latent_seed);
     } else {
       throw std::runtime_error("Unknown model.");
     }

@@ -1,0 +1,107 @@
+---
+title: "Bivariate model"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Bivariate model}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Description
+
+In this vignette, we will introduce the bivariate model which supports two response variable.
+
+```{r setup}
+library(INLA)
+load_all()
+```
+
+## Usage
+
+The R interface for the bivariate model is similar to the univariate model. The only difference is that the `f` function takes two extra arguments `m1` and `m2` for the two response variables.
+
+`m1` and `m2` takes other models such as `ar1` or `matern` to specify the covariance structure of the two response variables.
+
+*Example 1*
+
+The next simple example is a 2d bivariate matern model in the 1d space.
+
+```{r}
+load_all()
+mesh1d <- inla.mesh.1d(1:10)
+f(
+  model="bv",
+  m1=matern(1:5, mesh=mesh1d),
+  m2=matern(1:5, mesh=mesh1d),
+  # noise inside better or outside?
+  noise=noise_normal(),
+  eval=T
+)
+```
+
+*Example 2* - models sharing the same parameter?
+
+```{r}
+mesh1d <- inla.mesh.1d(1:10)
+f(
+  model="bv",
+  share_param = T,
+  m1=matern(1:5, mesh=mesh1d),
+  m2=matern(1:5, mesh=mesh1d),
+  # noise inside better or outside?
+  noise=noise_normal()
+)
+```
+
+## Simulation
+
+(add to the simulation)
+
+```{r}
+n_obs <- 200
+noise <- noise_nig(mu=-3, sigma=2, nu=1, n=n_obs * 2)
+
+K1 <- ar1(1:n_obs, alpha=0.5, noise=noise)$K
+K2 <- ar1(1:n_obs, alpha=0.5, noise=noise)$K
+D <- build_D(theta=1, rho=1) %x% Matrix::Diagonal(n_obs)
+K <- D %*% bdiag(K1, K2); K
+eps <- simulate(noise)
+
+W <- as.numeric(solve(K, eps))
+
+# Estimation
+Y <- W + rnorm(2*n_obs, sd=1.5)
+
+load_all()
+out <- ngme(
+  Y ~ 0 + f(
+    model="bv",
+    # share_param=T,
+    m1=ar1(1:n_obs, alpha=0.5),
+    m2=ar1(1:n_obs,alpha=0.5),
+    noise=noise_nig()
+  ),
+  data = data.frame(Y = Y),
+  control_opt = control_opt(
+    estimation = T,
+    n_parallel_chain = 1,
+    iterations = 300,
+    verbose = T
+  ),
+  debug=F
+)
+
+out
+traceplot(out, "field1")
+out$replicates[[1]]$latents[[1]]$n_theta_K
+```
+
+
+

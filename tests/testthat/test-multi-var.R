@@ -20,20 +20,21 @@ test_that("test bv R interface", {
   )
 
   load_all()
-Y1 Y2
-group = factor()
+# Y1 Y2
+# group = factor()
 
 f(~x+y, model="matern")
 coordinates()
 
 ngme(
-  Y ~ 0 + f(1:5, model="ar1", name="temp") +
+  Y ~ 0 + f(1:5, model="ar1", group="temp") +
    f (model="bv",
     m1=ar1(loc1),
     m2=ar1(loc2),
     replicate = rep(1, 6),
     noise=nig()
   ),
+  noise = noise_nig(correlated = TRUE),
   data = list(Y = c(Y1,Y2), group=group, loc1=.., loc2=..),
   control_opt = control_opt(
     iterations = 1,

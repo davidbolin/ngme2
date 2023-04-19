@@ -179,6 +179,5 @@ SparseMatrix<double> Matern_ns::get_dK(int index, const VectorXd& params) const 
         dK_a = kappas.cwiseProduct(Bkappa.col(index)).asDiagonal() * C;
     }
 
-    // to-do
     return dK_a;
 }

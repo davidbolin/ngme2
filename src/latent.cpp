@@ -238,8 +238,8 @@ VectorXd Latent::grad_theta_K() {
 
             VectorXd tmp = K * W - mu.cwiseProduct(V-h);
             for (int j=0; j < n_theta_K; j++) {
-                grad(i) = trace[j] - (dK[j] * W).cwiseProduct(SV.cwiseInverse()).dot(tmp);
-                grad(i) = - grad(i) / W_size;
+                grad(j) = trace[j] - (dK[j] * W).cwiseProduct(SV.cwiseInverse()).dot(tmp);
+                grad(j) = - grad(j) / W_size;
             }
         }
     }
@@ -296,7 +296,7 @@ const VectorXd Latent::get_parameter() const {
 }
 
 const VectorXd Latent::get_grad() {
-if (debug) std::cout << "Start latent gradient"<< std::endl;
+// if (debug) std::cout << "Start latent gradient"<< std::endl;
 // auto grad1 = std::chrono::steady_clock::now();
     VectorXd grad = VectorXd::Zero(n_params);
 
@@ -359,8 +359,8 @@ void Latent::update_each_iter() {
         if (!numer_grad && W_size == V_size) {
             for (int i=0; i < n_theta_K; i++) {
                 dK[i] = get_dK(i, theta_K);
+// std::cout << dK[i] << std::endl;
             }
-
             if (!zero_trace) {
                 for (int i=0; i < n_theta_K; i++) {
                     if (!symmetricK) {
@@ -369,8 +369,8 @@ void Latent::update_each_iter() {
                     } else {
                         chol_solver_K.compute(K);
                         trace[i] = chol_solver_K.trace(dK[i]);
-            std::cout << "trace = " << trace[i] << std::endl;
                     }
+        // std::cout << "trace = " << trace[i] << std::endl;
                     // update trace_eps if using hessian
                     // if (use_precond) {
                     //     SparseMatrix<double> dK_eps = get_dK_by_eps(i, 0, eps);

@@ -96,7 +96,7 @@ test_that("the order of W same as order of index?", {
 test_that("test estimation of basic ar with normal measurement noise", {
   n_obs <- 1000
   alpha <- 0.75
-  mu <- 4; sigma <- 5; nu <- 2; sigma_eps <- 0.8
+  mu <- 4; sigma <- 5; nu <- 0.2; sigma_eps <- 0.8
   ar1 <- model_ar1(1:n_obs, alpha=alpha, noise=noise_nig(mu=mu, sigma=sigma, nu=nu))
 
   expect_true(all(ar1$K == alpha * ar1$C + ar1$G))
@@ -122,7 +122,7 @@ load_all()
       ),
       control=control_f(numer_grad = F),
       debug = FALSE,
-      fix_W = T, W = W
+      # fix_W = T, W = W
     ),
     data = data.frame(Y = Y, x1=x1),
     control_ngme = control_ngme(
@@ -133,7 +133,7 @@ load_all()
       iterations = 1000,
       n_parallel_chain = 1,
       print_check_info = FALSE,
-      verbose = F
+      verbose = F,
     ),
     debug = T
   )

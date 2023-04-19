@@ -120,6 +120,13 @@ print.ngme_model <- function(x, padding = 0, ...) {
         pad_add4_space, "right - ", right$model, ": ",
         ngme_format("K", right$theta_K, right$model)
       ),
+      "bv" = paste0(pad_add4_space, "first - ", m1$model, ": ",
+        ngme_format("K", m1$theta_K, m1$model), "\n",
+        pad_add4_space, "second - ", m2$model, ": ",
+        ngme_format("K", m2$theta_K, m2$model), "\n",
+        "theta : ", theta_K[1], "\n",
+        "rho : ", theta_K[2]
+      ),
       paste0(pad_add4_space, "Not implemented yet!")
     )
   })

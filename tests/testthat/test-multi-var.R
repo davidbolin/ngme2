@@ -2,7 +2,9 @@ test_that("test bv R interface", {
   # test on Matern 2d
   load_all()
   Y1 <- rnorm(5); Y2 <- rnorm(5)
-  Y <- cbind(Y1, Y2); group <- rep(1:2, each=5)
+  Y <- cbind(Y1, Y2);
+
+  group <- rep(1:2, each=5)
 
   mod <- bv(
     m1 = ar1(1:3),
@@ -18,14 +20,21 @@ test_that("test bv R interface", {
   )
 
   load_all()
+Y1 Y2
+group = factor()
+
+f(~x+y, model="matern")
+coordinates()
+
 ngme(
-  Y ~ 0 + f (model="bv",
-    m1=ar1(1:3),
-    m2=ar1(1:3),
+  Y ~ 0 + f(1:5, model="ar1", name="temp") +
+   f (model="bv",
+    m1=ar1(loc1),
+    m2=ar1(loc2),
     replicate = rep(1, 6),
     noise=nig()
   ),
-  data = data.frame(Y = c(1:6)),
+  data = list(Y = c(Y1,Y2), group=group, loc1=.., loc2=..),
   control_opt = control_opt(
     iterations = 1,
     n_parallel_chain = 1,

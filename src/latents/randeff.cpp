@@ -18,15 +18,15 @@ if (debug) std::cout << "Begin Constructor of Randeff1" << std::endl;
 
     // Init K and Q
     K = getK(theta_K);
-// if (debug) std::cout << "Begin Constructor of Randeff2" << std::endl;
     for (int i=0; i < n_rep; i++)
         setSparseBlock(&K_rep, i*V_size, i*V_size, K);
-// if (debug) std::cout << "K = " << K << std::endl;
 
     // Init Q
     SparseMatrix<double> Q = K.transpose() * K;
     solver_Q.init(W_size, 0,0,0);
     solver_Q.analyze(Q);
+
+    update_each_iter();
 if (debug) std::cout << "End Constructor of Randeff1" << std::endl;
 }
 
@@ -117,3 +117,15 @@ void Randeff::sample_cond_V() {
 // // std::cout << "grad = " << grad << std::endl;
 //     return grad;
 // }
+
+void Randeff::update_each_iter() {
+        mu = (B_mu * theta_mu);
+        sigma = (B_sigma * theta_sigma).array().exp();
+        if (noise_type=="normal_nig") sigma_normal = (B_sigma_normal * theta_sigma_normal).array().exp();
+
+        // update on K, dK, trace, bigK for sampling...
+        K = getK(theta_K);
+
+        for (int i=0; i < n_rep; i++)
+            setSparseBlock(&K_rep, i*V_size, i*V_size, K);
+    }

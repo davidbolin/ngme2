@@ -344,6 +344,7 @@ class Randeff : public Latent{
     SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
     VectorXd grad_theta_K();
     void sample_cond_V() override;
+    void update_each_iter();
 };
 
 // Bivar
@@ -351,6 +352,7 @@ class Bivar : public Latent {
 private:
     std::unique_ptr<Latent> m1, m2;
     int n; // dim of K1 and K2 (same)
+    bool share_param;
 public:
     Bivar(const Rcpp::List& model_list, unsigned long seed);
     SparseMatrix<double> getK(const VectorXd& alpha) const;

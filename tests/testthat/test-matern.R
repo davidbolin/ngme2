@@ -16,11 +16,13 @@ test_that("test Matern", {
   loc <- cbind(runif(n_obs, 0, 10), runif(n_obs, 0, 5))
 
   true_model <- model_matern(
-    theta_kappa = log(3), mesh = mesh, map = loc, noise = noise_nig(
+    theta_kappa = log(3), mesh = mesh, map = loc,
+    noise = noise_nig(
       mu=-2, sigma=1.5, nu=1, n = mesh$n
     )
   )
   W <- simulate(true_model)
+  mean(W)
   mean(attr(W, "noise")$h)
 
   A <- inla.spde.make.A(loc=loc, mesh=mesh)
@@ -34,32 +36,36 @@ test_that("test Matern", {
   # range(mesh$loc[, 1]); range(mesh$loc[, 2])
 
 # Matern case
+  load_all()
   out <- ngme(
     Y ~ 0 + f(loc,
       model="matern",
       name="spde",
       mesh = mesh,
-      noise=noise_nig(),
-      control = control_f(numer_grad = F),
+      noise=noise_nig(
+        # fix_nu = T, nu=1
+      ),
+      control = control_f(numer_grad = T),
       # fix_theta_K = T, theta_kappa = log(3),
-      # fix_W = TRUE,
-      # W = W,
-      debug = F
+      fix_W = TRUE,
+      W = W,
+      debug = T
     ),
     data = data.frame(Y = Y),
     control_opt = control_opt(
       estimation = T,
-      iterations = 1500,
+      iterations = 1,
       n_parallel_chain = 4,
       print_check_info = F,
-      verbose = F
+      verbose = F,
+      std_lim = 0.001
     ),
     debug = F
   )
   # out$replicates[[1]]$latents[[1]]$noise$h == out$replicates[[1]]$latents[[1]]$h
   out
-  traceplot(out)
   traceplot(out, "spde")
+  traceplot(out)
   plot(noise_nig(mu=-2,sigma=1.5,nu=1),
     out$replicates[[1]]$latents[[1]]$noise)
 
@@ -137,14 +143,14 @@ test_that("test matern ns", {
         # V = trueV, fix_V = TRUE
         # fix_nu = T, fix_theta_sigma=T, fix_theta_mu=T
       ),
-      control = control_f(numer_grad = T),
+      control = control_f(numer_grad = F),
       debug = F,
     ),
     data = data.frame(Y = Y),
     family = noise_normal(),
     control_opt = control_opt(
       estimation = T,
-      iterations = 20,
+      iterations = 100,
       n_parallel_chain = 4
       # max_relative_step = 5,
       # max_absolute_step = 10

@@ -204,37 +204,6 @@ ar1_th2a <- function(th) {
 #   return(out)
 # }
 
-# helper function to modify ngme_model's A and A_pred function
-# using idx_NA
-ngme_make_A <- function(
-  mesh,
-  map,
-  n_map,
-  idx_NA,
-  replicate
-) {
-  # make it logical vector
-  if (is.null(idx_NA))    idx_NA <- rep(FALSE, n_map)
-  if (is.numeric(idx_NA)) idx_NA <- 1:n_map %in% idx_NA
-
-  # make A and A_pred according to mesh
-  A_pred <- NULL
-  if (is.numeric(mesh) && is.null(dim(mesh)))
-    mesh <- INLA::inla.mesh.1d(mesh)
-  if (inherits(mesh, "inla.mesh.1d")) {
-    A <- INLA::inla.spde.make.A(mesh = mesh, loc = map[!idx_NA], repl=replicate[!idx_NA])
-    if (any(idx_NA)) A_pred <- INLA::inla.spde.make.A(mesh = mesh, loc = map[idx_NA])
-  } else if (inherits(mesh, "inla.mesh")) {
-    # 2d location
-    A <- INLA::inla.spde.make.A(mesh = mesh, loc = map[!idx_NA, ,drop = FALSE], repl=replicate[!idx_NA])
-    if (any(idx_NA)) A_pred <- INLA::inla.spde.make.A(mesh = mesh, loc = map[idx_NA, ,drop = FALSE])
-  } else {
-    stop("this mesh not implement yet!!!")
-  }
-
-  list(A = A, A_pred = A_pred)
-}
-
 #' Make observation matrix for time series
 #'
 #' @param loc   integers (after sorting, no gaps > 1)
@@ -371,8 +340,19 @@ split_matrix <- function(mat, repl) {
 }
 
 # help to build a list of mesh for different replicates
-build_mesh <- function() {}
+build_mesh <- function(
+  model,
+  map,
+  ...
+) {
+  if (model == "ar1") {
+    mesh <- INLA::inla.mesh.1d(min(map):max(map))
+  } else {
+    stop("Please provide mesh")
+  }
 
+  mesh
+}
 
 # helper function to unfiy way of accessing 1d and 2d index
 sub_locs <- function(locs, idx) {
@@ -380,6 +360,14 @@ sub_locs <- function(locs, idx) {
     locs[idx, , drop = FALSE]
   } else {
     locs[idx]
+  }
+}
+
+dim_map <- function(map) {
+  if (inherits(map, c("data.frame", "matrix"))) {
+    2
+  } else {
+    1
   }
 }
 

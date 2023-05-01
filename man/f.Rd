@@ -7,22 +7,18 @@
 f(
   map = NULL,
   model = NULL,
-  replicate = NULL,
   noise = noise_normal(),
+  replicate = NULL,
+  mesh = NULL,
   control = control_f(),
   name = NULL,
-  effect_type = NULL,
   data = NULL,
   group = NULL,
-  A = NULL,
-  A_pred = NULL,
   theta_K = NULL,
   W = NULL,
   fix_W = NULL,
   fix_theta_K = NULL,
-  index_pred = NULL,
   debug = NULL,
-  index_NA = NULL,
   eval = FALSE,
   ...
 )
@@ -32,24 +28,18 @@ f(
 
 \item{model}{1. string: type of model, 2. ngme.spde object}
 
-\item{replicate}{Representing the replicate}
-
 \item{noise}{1. string: type of model, 2. ngme.noise object
 (can also be specified in each ngme model)}
+
+\item{replicate}{Representing the replicate}
 
 \item{control}{control variables for f model}
 
 \item{name}{name of the field, for later use}
 
-\item{effect_type}{if it is a random effect, see ngme_randeff_types()}
-
 \item{data}{specifed or inherit from ngme formula}
 
 \item{group}{model as the group (see vignette for space-temporal model)}
-
-\item{A}{A Matrix connecting observation and mesh}
-
-\item{A_pred}{A Matrix connecting NA location and mesh}
 
 \item{theta_K}{Unbounded parameter for K}
 
@@ -59,16 +49,22 @@ f(
 
 \item{fix_theta_K}{fix the estimation for theta_K.}
 
-\item{index_pred}{index for prediction}
-
 \item{debug}{Debug mode}
-
-\item{index_NA}{Logical vector, same as is.na(response var.)}
 
 \item{eval}{evaluate the model}
 
 \item{...}{additional arguments
 inherit the data from ngme function}
+
+\item{effect_type}{if it is a random effect, see ngme_randeff_types()}
+
+\item{A}{A Matrix connecting observation and mesh}
+
+\item{A_pred}{A Matrix connecting NA location and mesh}
+
+\item{index_NA}{Logical vector, same as is.na(response var.)}
+
+\item{index_pred}{index for prediction}
 }
 \value{
 a list latent_in for constructing latent model, e.g. A, h, C, G,

@@ -1,8 +1,16 @@
 
 # test the interface in R
 test_that("R interface of replicate", {
+
+  # replicate in f model
+  f(map=c(1:3, 1:3), model="ar1", replicate=c(1,1,1,2,2,2), eval=T)$A
+
+  mesh1d <- inla.mesh.1d(loc=1:5)
+
+  inla.spde.make.A(mesh = mesh1d, loc = c(1,3,3), repl=c(1,1,2))
+
   library(INLA)
-  # load_all()
+  load_all()
   # test
   y <- 11:17
   x <- 21:27

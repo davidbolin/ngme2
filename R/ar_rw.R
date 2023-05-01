@@ -19,7 +19,7 @@
 #' @examples
 #' model_ar1(c(1:3, 1:3), replicate = c(1,1,1,2,2,2))
 #' f(xx, model = "ar1", data=list(xx = c(2,4,5)), noise=noise_nig())
-model_ar1 <- ar1 <- function(
+model_ar1 <- function(
   map,   # time index
   replicate   = NULL,
   index_NA    = NULL,

@@ -38,22 +38,18 @@
 f <- function(
   map         = NULL,
   model       = NULL,
-  replicate   = NULL,
   noise       = noise_normal(),
+  replicate   = NULL,
+  mesh        = NULL,
   control     = control_f(),
   name        = NULL,
-  effect_type = NULL,
   data        = NULL,
   group       = NULL,
-  A           = NULL,
-  A_pred      = NULL,
   theta_K     = NULL,
   W           = NULL,
-  fix_W       = NULL,
-  fix_theta_K = NULL,
-  index_pred  = NULL,
-  debug       = NULL,
-  index_NA    = NULL, #indicate prediction location
+  debug       = FALSE,
+  fix_W       = FALSE,
+  fix_theta_K = FALSE,
   eval        = FALSE,
   ...
 ) {
@@ -87,84 +83,50 @@ f <- function(
     return (args)
   }
 
-  # if (!is.null(index_NA) && length(index_NA) != length(index))
-  #   stop("index_NA length seems wrong.")
-  # deal with NA, from ngme function
-  if (is.null(index_NA)) index_NA <- rep(FALSE, length_map(map))
-
   # remove NULL in arguments
   f_args <- Filter(Negate(is.null),  as.list(environment()))
   # add arguments in ...
   f_args <- c(f_args, list(...))
 
-  # combine args and apply ngme sub_models
-  if (is.character(model)) {
-    stopifnot("Please use models in ngme_model_types()"
-      = model %in% ngme_model_types())
-    args <- within(f_args, rm(model))
-    f_model <- switch(model,
-      "ar1" = {
-        do.call(model_ar1, args)
-      },
-      "rw" = {
-        do.call(model_rw, args)
-      },
-      "ou" = {
-        do.call(model_ou, args)
-      },
-      "matern" = {
-        do.call(model_matern, args)
-      },
-      "tp" = {
-        do.call(model_tp, args)
-      },
-      "bv" = {
-        do.call(model_bv, args)
-      },
-      "iid" = {
-        do.call(model_iid, args)
-      },
-      "re" = {
-        do.call(randeff, args)
-      }
-    )
-  } else {
-warning("Please use f(model = '...'), which is better")
-    stopifnot("please check model specification" =
-      inherits(model, "ngme_model"))
-    # model is evaluated with submodel func.
-    f_args <- within(f_args, rm(model))
-
-    # watch out! if update the noise in f(noise=...)
-    if (is.null(as.list(match.call())$noise)) {
-      f_args$noise <- NULL
-    } else {
-      model$noise_type <- NULL
-    }
-    # use f_args to update the model
-    f_model <- do.call(ngme_model, utils::modifyList(model, f_args))
-# make V explicitly (prevent no entry called V)
-if (is.null(f_model$noise$V)) f_model$noise["V"] <- list(NULL)
-
-    # update A and A_pred
-    if (!is.null(map) && !is.null(f_model$index_NA)) {
-      tmp <- with(f_model, {
-        ngme_make_A(
-          mesh = mesh,
-          map = map,
-          n_map = n_map,
-          idx_NA = index_NA,
-          replicate = replicate
-        )
-      })
-      f_model$A <- tmp$A
-      f_model$A_pred <- tmp$A_pred
-    }
+  # 0. build mesh if not specified
+  if (is.null(mesh)) {
+    f_args$mesh <- do.call(build_mesh, f_args)
   }
 
-  # update n noise
-  f_model$noise <- update_noise(f_model$noise, n = f_model$V_size)
-  f_model
+  # 1. build operator
+  n <- mesh$n; nrep <- length(unique(replicate))
+  operator <- switch(model,
+    ar1 = do.call(ar1, f_args),
+    matern = do.call(matern, f_args),
+    iid = list(K = Matrix::Diagonal(n * nrep), h = rep(1, n * nrep)),
+    stop("Unknown models")
+  )
+  A <- INLA::inla.spde.make.A(mesh = f_args$mesh, loc = map)
+
+  # 2. build noise given operator
+  # if (model == "bv")
+  #   noise <- list(
+  #     update_noise(noise, ope = operator$first),
+  #     update_noise(noise, ope = operator$second)
+  #   )
+  # else
+  noise <- update_noise(noise, ope = operator)
+
+  ngme_model(
+    model     = model,
+    operator  = operator,
+    noise     = noise,
+    W_size    = ncol(operator$K),
+    V_size    = nrow(operator$K),
+    theta_K   = operator$theta_K,
+    A         = A,
+    control   = control,
+    map       = map,
+    n_map     = length_map(map),
+    replicate = replicate,
+    W         = W,
+    fix_W     = fix_W
+  )
 }
 
 #' ngme tensor-product model specification
@@ -245,8 +207,8 @@ model_tp <- function(
 #' @return a list of specification of model
 #' @export
 model_iid <- iid <- function(
-  map = NULL,
-  replicate  = NULL,
+  map         = NULL,
+  replicate   = NULL,
   data        = NULL,
   index_NA    = NULL,
   noise       = noise_normal(),
@@ -280,7 +242,7 @@ model_iid <- iid <- function(
     map         = map
     n_map       = n_map
     model       = "iid"
-    theta_K     = 0
+    theta_K     = theta_K
     W_size      = n_map
     V_size      = n_map
     A           = A

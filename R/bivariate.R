@@ -15,7 +15,7 @@
 #'
 #' @return a list (n, C (diagonal), G, B.kappa) for constructing operator
 #' @export
-model_bv <- bv <- function(
+model_bv <- function(
   m1, m2,
   theta = 1, rho = 1,
   group = c(1, 2),

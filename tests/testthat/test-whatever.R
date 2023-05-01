@@ -38,8 +38,6 @@ test_that("test names", {
 #   # new_model$latents[[1]]
 # })
 
-
-
 test_that("merge_reps works", {
   repls <- c("1 1 2 2 2 3 4 5 5",
              "1 2 3 1 5 6 4 1 2",
@@ -51,4 +49,32 @@ test_that("merge_reps works", {
   # equal to 1 1 1 1 1 2 2 1 1
   expect_true(all(merge_repls(repls)
     == as.numeric(strsplit("1 1 1 1 1 2 2 1 1", " ")[[1]])))
+})
+
+
+test_that("new operator", {
+  build_operator(
+    model = "ar1",
+    mesh = inla.mesh.1d(1:5),
+    map = c(1:5, 1:3),
+    replicate = c(rep(1, 5), rep(2, 3)),
+    alpha = -0.7
+  )
+
+  load_all()
+  a = f(model="ar1", map=c(1:5, 1:3), replicate=c(rep(1, 5), rep(2,3)), alpha=-0.7, eval=T)
+str(a)
+
+bv(first=ar1(1:3), second=ar1(1:3))
+
+ar1(1:3)
+  kronecker(diag(2), C)
+  inla.spde.make.A(loc=c(4,5,6), mesh = inla.mesh.1d(4:6))
+
+  # R interface: a few examples
+  f(model="bv", first = ar1(1:3), second = ar1(1:3),
+    noise = c("normal", "nig"),
+    eval=T)
+
+
 })

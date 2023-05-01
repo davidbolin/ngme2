@@ -5,27 +5,15 @@
         K = kappa^2 * C + G
 */
 
-#include "../latent.h"
+#include "../operator.h"
 
-Matern::Matern(const Rcpp::List& model_list, unsigned long seed)
-: Latent(model_list, seed),
-    G           (Rcpp::as< SparseMatrix<double,0,int> > (model_list["G"])),
-    C           (Rcpp::as< SparseMatrix<double,0,int> > (model_list["C"])),
-    alpha       (Rcpp::as<int> (model_list["alpha"])),
+Matern::Matern(const Rcpp::List& operator_list):
+    Operator(operator_list),
+    G           (Rcpp::as< SparseMatrix<double,0,int> > (operator_list["G"])),
+    C           (Rcpp::as< SparseMatrix<double,0,int> > (operator_list["C"])),
+    alpha       (Rcpp::as<int> (operator_list["alpha"])),
     Cdiag       (C.diagonal())
 {
-// std::cout << "begin Constructor of Matern " << std::endl;
-    symmetricK = true;
-    // Init K and Q
-    K = getK(theta_K);
-    chol_solver_K.init(W_size, 0,0,0);
-    chol_solver_K.analyze(K);
-
-    SparseMatrix<double> Q = K.transpose() * K;
-    solver_Q.init(W_size, 0,0,0);
-    solver_Q.analyze(Q);
-
-    update_each_iter();
 std::cout << "finish Constructor of Matern " << std::endl;
 }
 
@@ -83,40 +71,19 @@ SparseMatrix<double> Matern::get_dK(int index, const VectorXd& theta_K) const {
         kappas =  exp(Bkappa * theta.kappa)
         K = kappa^2 * C + G
 */
-Matern_ns::Matern_ns(const Rcpp::List& model_list, unsigned long seed, Type type)
-: Latent(model_list, seed),
+Matern_ns::Matern_ns(const Rcpp::List& operator_list, Type type):
+    Operator(operator_list),
     type        (type),
-    G           (Rcpp::as< SparseMatrix<double,0,int> > (model_list["G"])),
-    C           (Rcpp::as< SparseMatrix<double,0,int> > (model_list["C"])),
+    G           (Rcpp::as< SparseMatrix<double,0,int> > (operator_list["G"])),
+    C           (Rcpp::as< SparseMatrix<double,0,int> > (operator_list["C"])),
     alpha       (2),
-    Bkappa      (Rcpp::as<MatrixXd> (model_list["B_K"])),
+    Bkappa      (Rcpp::as<MatrixXd> (operator_list["B_K"])),
     Cdiag       (C.diagonal())
 {
 //  std::cout << "constructor of matern ns" << std::endl;
-    K = getK(theta_K);
-
-    if (type==Type::matern_ns) {
-        alpha = Rcpp::as<int> (model_list["alpha"]);
-        symmetricK = true;
-        chol_solver_K.init(W_size, 0,0,0);
-        chol_solver_K.analyze(K);
-    } else {
-        symmetricK = false;
-        lu_solver_K.init(W_size, 0,0,0);
-        lu_solver_K.analyze(K);
-    }
-
-    // Init Q
-    SparseMatrix<double> Q = K.transpose() * K;
-    solver_Q.init(W_size, 0,0,0);
-    solver_Q.analyze(Q);
-
-    update_each_iter();
-//  std::cout << "finish constructor of matern ns" << std::endl;
 }
 
 // inherit get_K_parameter, grad_K_parameter, set_K_parameter
-
 SparseMatrix<double> Matern_ns::getK(const VectorXd& theta_kappa) const {
     VectorXd kappas = (Bkappa * theta_kappa).array().exp();
     // std::cout <<  "theta_kappa here = " << theta_kappa << std::endl;
@@ -146,7 +113,7 @@ SparseMatrix<double> Matern_ns::getK(const VectorXd& theta_kappa) const {
 }
 
 // dK wrt. theta_K[index]
-SparseMatrix<double> Matern_ns::get_dK(int index, const VectorXd& params) const {
+SparseMatrix<double> Matern_ns::get_dK(int index, const VectorXd& theta_K) const {
     VectorXd kappas = (Bkappa * theta_K).array().exp();
 
     int n_dim = G.rows();

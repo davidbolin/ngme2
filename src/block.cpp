@@ -61,7 +61,7 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
     // construct acoording to models
     Rcpp::List latent_in = Rcpp::as<Rcpp::List> (latents_in[i]);
     unsigned long latent_seed = rng();
-    latents.push_back(LatentFactory::create(latent_in, latent_seed));
+    latents.push_back(std::make_unique<Latent>(latent_in, latent_seed));
   }
 
 if (debug) std::cout << "before set block A" << std::endl;
@@ -99,7 +99,7 @@ if (debug) std::cout << "After block construct noise" << std::endl;
 
   // 7. Init solvers
   assemble();
-  if(n_latent > 0) {
+  if (n_latent > 0) {
     VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
     SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
     SparseMatrix<double> QQ = Q + A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(var.getV()).asDiagonal() * A;
@@ -320,7 +320,6 @@ void BlockModel::sampleW_V()
     // W = chol_Q.solve(K.transpose() * KW);
     // W = K.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(KW);
   }
-// std::cout << "WWWW = " << W << std::endl;
   setW(W);
 }
 

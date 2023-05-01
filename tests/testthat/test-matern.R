@@ -12,13 +12,13 @@ test_that("test Matern", {
   )
 # mesh$n
 # plot(mesh)
-  n_obs <- 500
+  n_obs <- 800
   loc <- cbind(runif(n_obs, 0, 10), runif(n_obs, 0, 5))
 
   true_model <- model_matern(
     theta_kappa = log(3), mesh = mesh, map = loc,
     noise = noise_nig(
-      mu=-2, sigma=1.5, nu=1, n = mesh$n
+      mu=-4, sigma=1.5, nu=1, n = mesh$n
     )
   )
   W <- simulate(true_model)
@@ -45,20 +45,19 @@ test_that("test Matern", {
       noise=noise_nig(
         # fix_nu = T, nu=1
       ),
-      control = control_f(numer_grad = T),
+      control = control_f(numer_grad = F),
       # fix_theta_K = T, theta_kappa = log(3),
-      fix_W = TRUE,
-      W = W,
+      # fix_W = TRUE, W = W,
       debug = T
     ),
     data = data.frame(Y = Y),
     control_opt = control_opt(
       estimation = T,
-      iterations = 1,
+      iterations = 500,
       n_parallel_chain = 4,
       print_check_info = F,
-      verbose = F,
-      std_lim = 0.001
+      verbose = T,
+      std_lim = 0.01
     ),
     debug = F
   )
@@ -66,7 +65,7 @@ test_that("test Matern", {
   out
   traceplot(out, "spde")
   traceplot(out)
-  plot(noise_nig(mu=-2,sigma=1.5,nu=1),
+  plot(noise_nig(mu=-4,sigma=1.5,nu=1),
     out$replicates[[1]]$latents[[1]]$noise)
 
   # Now let's do some prediction

@@ -3,6 +3,7 @@
 // function_K
 
 #include "latent.h"
+#include "operator.h"
 
 // K is V_size * W_size matrix
 Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
@@ -10,25 +11,25 @@ Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
     model_type    (Rcpp::as<string>     (model_list["model"])),
     noise_type    (Rcpp::as<string>     (model_list["noise_type"])),
     debug         (Rcpp::as<bool>       (model_list["debug"])),
+    ope           (OperatorFactory::create(Rcpp::as<Rcpp::List> (model_list["operator"]))),
+    theta_K       (Rcpp::as<VectorXd>  (model_list["theta_K"])),
+    n_theta_K     (theta_K.size()),
+    symmetricK    (ope->is_symmetric()),
 
-    n_rep         (Rcpp::as<int>        (model_list["n_rep"])),
+    n_rep         (1),
     W_size        (Rcpp::as<int>        (model_list["W_size"])),
     V_size        (Rcpp::as<int>        (model_list["V_size"])),
     n_params      (Rcpp::as<int>        (model_list["n_params"])),
-    theta_K       (Rcpp::as<VectorXd>   (model_list["theta_K"])),
-    n_theta_K     (Rcpp::as<int>        (model_list["n_theta_K"])),
 
     K            (V_size, W_size),
     dK           (n_theta_K),
-    K_rep        (n_rep * V_size, n_rep * W_size),
 
     trace         (n_theta_K, 0.0),
-    zero_trace    (Rcpp::as<bool>       (model_list["zero_trace"])),
     eps           (0.001),
 
     // W             (W_size),
     // prevW         (W_size),
-    h             (Rcpp::as< VectorXd >                     (model_list["h"])), //same length as V_size
+    h             (ope->get_h()),
     A             (Rcpp::as< SparseMatrix<double,0,int> >   (model_list["A"])),
 
     Ws            (n_rep),
@@ -36,25 +37,19 @@ Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
     vars          (n_rep)
     // var           (Var(Rcpp::as<Rcpp::List> (model_list["noise"]), latent_rng())),
 {
-if (debug) std::cout << "Begin constructor of latent" << std::endl;
+    debug = true;
+std::cout << "Begin constructor of latent" << std::endl;
 
     // init Vs : create V for each replicate
     for (int i=0; i < n_rep; i++) {
         vars[i] = Var(Rcpp::as<Rcpp::List> (model_list["noise"]), latent_rng());
     }
 
-    // setting the seed
-    // latent_rng.seed(seed);
-
-    // read from ngme.model
-    fix_flag[latent_fix_theta_K] = Rcpp::as<bool>    (model_list["fix_theta_K"]);
-
     // read the control variable
     Rcpp::List control_f = Rcpp::as<Rcpp::List> (model_list["control"]);
         use_precond     = Rcpp::as<bool>        (control_f["use_precond"] );
         numer_grad      = Rcpp::as<bool>        (control_f["numer_grad"]) ;
         eps             = Rcpp::as<double>      (control_f["eps"]) ;
-        use_iter_solver = Rcpp::as<bool>        (control_f["use_iter_solver"]);
 
     // construct from ngme.noise
     Rcpp::List noise_in = Rcpp::as<Rcpp::List> (model_list["noise"]);
@@ -90,6 +85,22 @@ if (debug) std::cout << "Begin constructor of latent" << std::endl;
         fix_flag[latent_fix_theta_mu] = 1; // no mu need
     }
 
+    // init K and Q
+    K = ope->getK(theta_K);
+
+    if (!symmetricK) {
+        lu_solver_K.init(W_size, 0,0,0);
+        lu_solver_K.analyze(K);
+    } else {
+        chol_solver_K.init(W_size,0,0,0);
+        chol_solver_K.analyze(K);
+    }
+
+    SparseMatrix<double> Q = K.transpose() * K;
+    solver_Q.init(W_size, 0,0,0);
+    solver_Q.analyze(Q);
+
+    update_each_iter();
 if (debug) std::cout << "End constructor of latent" << std::endl;
 }
 
@@ -212,27 +223,25 @@ double Latent::function_K(SparseMatrix<double>& K) {
     return l / n_rep;
 }
 
-// function_K(params += ( 0,0,eps,0,0) )
-double Latent::function_K(VectorXd& theta_K) {
-    SparseMatrix<double> K = getK(theta_K);
-
-    return function_K(K);
-}
-
 VectorXd Latent::grad_theta_K() {
-    SparseMatrix<double> K = getK(theta_K);
     VectorXd grad = VectorXd::Zero(n_theta_K);
     if (numer_grad) {
         double val = function_K(K);
         for (int i=0; i < n_theta_K; i++) {
-            SparseMatrix<double> K_add_eps = getK_by_eps(i, eps);
+            VectorXd tmp = theta_K;
+            tmp(i) += eps;
+            SparseMatrix<double> K_add_eps = ope->getK(tmp);
             double val_add_eps = function_K(K_add_eps);
+// std::cout << " theta_ K  =" << theta_K << std::endl;
+// std::cout << " K = " << K << std::endl;
+// std::cout << "Kadd eps = " << K_add_eps << std::endl;
             double num_g = (val_add_eps - val) / eps;
             grad(i) = - num_g / W_size;
         }
     } else {
         for (int i=0; i < n_rep; i++) {
             VectorXd W = Ws[i];
+// std::cout << " W = " << W << std::endl;
             VectorXd V = vars[i].getV();
             VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
 
@@ -330,12 +339,12 @@ if (debug) {
 void Latent::set_parameter(const VectorXd& theta) {
 // if (debug) std::cout << "Start latent set parameter"<< std::endl;
     if (noise_type == "normal") {
-        theta_K  = theta.segment(0, n_theta_K);
+        theta_K = theta.segment(0, n_theta_K);
         theta_sigma = theta.segment(n_theta_K, n_theta_sigma);
         sigma = (B_sigma * theta_sigma).array().exp();
     } else {
         // nig, gal and normal+nig
-        theta_K  = theta.segment(0, n_theta_K);
+        theta_K = theta.segment(0, n_theta_K);
         theta_mu = theta.segment(n_theta_K, n_theta_mu);
         theta_sigma = theta.segment(n_theta_K+n_theta_mu, n_theta_sigma);
         double log_nu = (theta(n_theta_K+n_theta_mu+n_theta_sigma));
@@ -355,11 +364,10 @@ void Latent::update_each_iter() {
         if (noise_type=="normal_nig") sigma_normal = (B_sigma_normal * theta_sigma_normal).array().exp();
 
         // update on K, dK, trace, bigK for sampling...
-        K = getK(theta_K);
+        K = ope->getK(theta_K);
         if (!numer_grad && W_size == V_size) {
             for (int i=0; i < n_theta_K; i++) {
-                dK[i] = get_dK(i, theta_K);
-// std::cout << dK[i] << std::endl;
+                dK[i] = ope->get_dK(i, theta_K);
             }
             if (!zero_trace) {
                 for (int i=0; i < n_theta_K; i++) {
@@ -385,7 +393,4 @@ void Latent::update_each_iter() {
                 }
             }
         }
-
-        for (int i=0; i < n_rep; i++)
-            setSparseBlock(&K_rep, i*V_size, i*V_size, K);
     }

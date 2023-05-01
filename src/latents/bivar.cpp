@@ -1,31 +1,17 @@
-#include "../latent.h"
+#include "../operator.h"
 #include "MatrixAlgebra.h"
 
 // ------- bivariate model -------
-Bivar::Bivar(const Rcpp::List& model_list, unsigned long seed)
-  : Latent(model_list, seed) {
+Bivar::Bivar(const Rcpp::List& operator_list):
+  Operator(operator_list)
+{
+  Rcpp::List l1 = operator_list["first"];
+  m1 = OperatorFactory::create(l1);
 
-  Rcpp::List l1 = model_list["m1"];
-  m1 = LatentFactory::create(l1, latent_rng());
-  Rcpp::List l2 = model_list["m2"];
-  m2 = LatentFactory::create(l2, latent_rng());
-  n = m1->get_W_size();
-  share_param = Rcpp::as<bool> (model_list["share_param"]);
+  Rcpp::List l2 = operator_list["second"];
+  m2 = OperatorFactory::create(l2);
 
-  K = getK(theta_K);
-  for (int i=0; i < n_rep; i++)
-    setSparseBlock(&K_rep, i*V_size, i*W_size, K);
-
-  SparseMatrix<double> Q = K.transpose() * K;
-  if (W_size == V_size) {
-    lu_solver_K.init(W_size, 0,0,0);
-    lu_solver_K.analyze(K);
-  }
-
-  // Init QV
-  solver_Q.init(W_size, 0,0,0);
-  solver_Q.analyze(Q);
-  update_each_iter();
+  share_param = Rcpp::as<bool> (operator_list["share_param"]);
 
   std::cout << "Finish init bivariate" << std::endl;
 }

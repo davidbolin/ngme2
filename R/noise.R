@@ -216,7 +216,7 @@ noise_nig <- nig <- function(
 }
 
 # update noise
-update_noise <- function(noise, n = NULL, new_noise = NULL) {
+update_noise <- function(noise, n = NULL, new_noise = NULL, operator = NULL) {
   # update with length n
   if (!is.null(n)) {
     stopifnot("n should be integer" = is.numeric(n))
@@ -232,7 +232,6 @@ stopifnot("n / nrow(B_sigma) not integer" = abs(n/nrow(B_sigma) - round(n/nrow(B
       B_sigma_normal <- noise$B_sigma_normal
       noise$B_sigma_normal <- matrix(data = rep(B_sigma_normal, n / nrow(B_sigma_normal)), nrow = n)
     }
-
     noise$n_noise <- n
     if (length(noise$h) == 1) noise$h <- rep(1, n)
     noise <- do.call(ngme_noise, noise)
@@ -253,7 +252,11 @@ stopifnot("n / nrow(B_sigma) not integer" = abs(n/nrow(B_sigma) - round(n/nrow(B
       noise$nu                 <- new_noise$nu
       if (!is.null(new_noise$V)) noise$V <- new_noise$V
     }
+  } else if (!is.null(operator)) {
+    noise$V <- noise$h <- operator$h
+    noise <- update_noise(noise, n = length(noise$h))
   }
+
   noise
 }
 

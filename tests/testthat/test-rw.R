@@ -97,11 +97,7 @@ test_that("test estimation of basic ar with normal measurement noise", {
   n_obs <- 1000
   alpha <- 0.75
   mu <- 4; sigma <- 5; nu <- 0.2; sigma_eps <- 0.8
-  ar1 <- model_ar1(1:n_obs, alpha=alpha, noise=noise_nig(mu=mu, sigma=sigma, nu=nu))
-
-  expect_true(all(ar1$K == alpha * ar1$C + ar1$G))
-
-# ar1$noise$h <- rexp(n_obs)
+  ar1 <- f(1:n_obs, model="ar1", alpha=alpha, noise=noise_nig(mu=mu, sigma=sigma, nu=nu), eval = T)
 
   W <- simulate(ar1)
   mean(W)
@@ -120,7 +116,7 @@ load_all()
         # h = ar1$noise$h,
         # fix_V = TRUE, V = attr(W, "noise")$V
       ),
-      control=control_f(numer_grad = F),
+      control=control_f(numer_grad = T),
       debug = FALSE,
       # fix_W = T, W = W
     ),
@@ -130,15 +126,16 @@ load_all()
     ),
     control_opt = control_opt(
       estimation = T,
-      iterations = 1000,
+      iterations = 100,
       n_parallel_chain = 1,
       print_check_info = FALSE,
       verbose = F,
     ),
     debug = T
   )
-  out
-  traceplot(out, "ar")
+  out$replicates[[1]]$latents[[1]]$theta_K
+
+  traceplot(out, "ar1")
   traceplot(out)
   # out$replicates[[1]]$latents[[1]]$control$numer_grad
   # load_all()

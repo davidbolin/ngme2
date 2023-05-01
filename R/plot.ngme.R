@@ -188,16 +188,16 @@ traceplot <- function(ngme, name="general") {
       switch(noise$noise_type,
         "normal"     = list(
           c("theta_K", "theta_sigma"),
-          c(n_theta_K, noise$n_theta_sigma)
+          c(operator$n_theta_K, noise$n_theta_sigma)
         ),
         "normal_nig" = list(
           c("theta_K", "theta_mu", "theta_sigma", "theta_sigma_normal", "log(nu)"),
-          c(n_theta_K, noise$n_theta_mu,
+          c(operator$n_theta_K, noise$n_theta_mu,
           noise$n_theta_sigma, noise$n_theta_sigma_normal, 1)
         ),
         list(
           c("theta_K", "theta_mu", "theta_sigma", "log(nu)"),
-          c(n_theta_K, noise$n_theta_mu, noise$n_theta_sigma, 1)
+          c(operator$n_theta_K, noise$n_theta_mu, noise$n_theta_sigma, 1)
         )
       )
     })

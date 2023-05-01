@@ -1,3 +1,4 @@
+
 ######################### models #########################
 
 #' Create a Matern SPDE model
@@ -17,7 +18,7 @@
 #'
 #' @return a list (n, C (diagonal), G, B.kappa) for constructing operator
 #' @export
-model_matern <- matern <- function(
+model_matern <- function(
   map,
   replicate   = NULL,
   alpha       = 2,

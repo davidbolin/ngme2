@@ -199,7 +199,7 @@ update_ngme_est <- function(
   ngme_replicate$beta <- est_output$beta
   ngme_replicate$noise <- update_noise(ngme_replicate$noise, new_noise = est_output$noise)
   for (i in seq_along(ngme_replicate$latents)) {
-    ngme_replicate$latents[[i]]$theta_K  <- est_output$latents[[i]]$theta_K
+    ngme_replicate$latents[[i]]$operator$theta_K  <- est_output$latents[[i]]$theta_K
     ngme_replicate$latents[[i]]$W        <- est_output$latents[[i]]$W
     ngme_replicate$latents[[i]]$noise    <- update_noise(
       ngme_replicate$latents[[i]]$noise, new_noise = est_output$latents[[i]]
@@ -234,12 +234,6 @@ check_dim <- function(ngme_model) {
       stop("The number of columns of X is not equal to the length of beta")
     }
     for (latent in ngme$latents) {
-        if (!latent$model %in% c("tp", "re", "bv") && latent$W_size != ncol(latent$C)) {
-         stop("The W_size of the latent model is not equal to the number of columns of K")
-        }
-        if (!latent$model %in% c("tp", "re", "bv") && latent$V_size != nrow(latent$C)) {
-          stop("The V_size of the latent model is not equal to the number of rows of K")
-        }
         if (latent$V_size != latent$noise$n_noise) {
           stop("The V_size of the latent model is not equal to the length of noise")
         }
@@ -247,9 +241,11 @@ check_dim <- function(ngme_model) {
         if (ncol(latent$A) != latent$W_size * latent$n_rep) {
           stop("The number of columns of A is not equal to the W_size of the latent model")
         }
-        if (!all(latent$h == latent$noise$h) || length(latent$h) != latent$V_size) {
+        if (!all(latent$operator$h == latent$noise$h)) {
           stop("The h of the latent model is not equal to the h of the noise")
         }
+
+        stopifnot(nrow(latent$noise$B_sigma) == latent$noise$n_noise)
     }
   }
 }

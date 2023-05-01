@@ -1,7 +1,7 @@
 // Notice here:
 // for R interface, theta_K is directly the parameter_K of the Opeartor object
 // for C interface, theta_K is f(parameter_K) such that it is unbounded
-#include "../latent.h"
+#include "../operator.h"
 
 /*
     Random effect model:
@@ -10,24 +10,11 @@
 
 // W_size = V_size
 // get_K_params, grad_K_params, set_K_params, output
-Randeff::Randeff(const Rcpp::List& model_list, unsigned long seed)
-    : Latent(model_list, seed),
-    n_repl(model_list["n_repl"])
+Randeff::Randeff(const Rcpp::List& operator_list):
+    Operator(operator_list),
+    n_repl(operator_list["n_repl"])
 {
-if (debug) std::cout << "Begin Constructor of Randeff1" << std::endl;
-
-    // Init K and Q
-    K = getK(theta_K);
-    for (int i=0; i < n_rep; i++)
-        setSparseBlock(&K_rep, i*V_size, i*V_size, K);
-
-    // Init Q
-    SparseMatrix<double> Q = K.transpose() * K;
-    solver_Q.init(W_size, 0,0,0);
-    solver_Q.analyze(Q);
-
-    update_each_iter();
-if (debug) std::cout << "End Constructor of Randeff1" << std::endl;
+std::cout << "End Constructor of Randeff1" << std::endl;
 }
 
 //     VectorXd getM() const {
@@ -71,61 +58,61 @@ SparseMatrix<double> Randeff::get_dK(int index, const VectorXd& alpha) const {
     return get_dK_dense(index, alpha).sparseView();
 }
 
-// handle specially, always return 0, but update Sigma
-VectorXd Randeff::grad_theta_K() {
-    VectorXd grad = VectorXd::Zero(n_theta_K);
-    MatrixXd K = getK(theta_K).toDense();
+// // handle specially, always return 0, but update Sigma
+// VectorXd Randeff::grad_theta_K() {
+//     VectorXd grad = VectorXd::Zero(n_theta_K);
+//     MatrixXd K = getK(theta_K).toDense();
 
-    for (int i=0; i < n_rep; i++) {
-        double V = vars[i].getV()(0);
-        VectorXd W = Ws[i];
-        VectorXd tmp = 1/V * (K*W + (1-V)*mu);
-        for (int j=0; j < n_theta_K; j++) {
-            MatrixXd dK = get_dK_dense(j, theta_K);
-// std::cout << "dK \n" << dK << std::endl;
-            if (j < W_size) {
-                grad(j) = K.llt().solve(dK).diagonal().sum() -
-                    W.transpose() * dK.transpose() * tmp;
-                grad(j) = 1.0/sqrt(n_repl) * grad(j);
-            } else {
-                // how to choose the step size?
-                grad(j) = -1.0/sqrt(n_repl) * W.transpose() * dK.transpose() * tmp;
-            }
-        }
-    }
-    grad = - grad / W_size;
-// std::cout << "grad_theta_K = " << grad << std::endl;
-    return grad;
-}
+//     for (int i=0; i < n_rep; i++) {
+//         double V = vars[i].getV()(0);
+//         VectorXd W = Ws[i];
+//         VectorXd tmp = 1/V * (K*W + (1-V)*mu);
+//         for (int j=0; j < n_theta_K; j++) {
+//             MatrixXd dK = get_dK_dense(j, theta_K);
+// // std::cout << "dK \n" << dK << std::endl;
+//             if (j < W_size) {
+//                 grad(j) = K.llt().solve(dK).diagonal().sum() -
+//                     W.transpose() * dK.transpose() * tmp;
+//                 grad(j) = 1.0/sqrt(n_repl) * grad(j);
+//             } else {
+//                 // how to choose the step size?
+//                 grad(j) = -1.0/sqrt(n_repl) * W.transpose() * dK.transpose() * tmp;
+//             }
+//         }
+//     }
+//     grad = - grad / W_size;
+// // std::cout << "grad_theta_K = " << grad << std::endl;
+//     return grad;
+// }
 
 
-void Randeff::sample_cond_V() {
-// return Latent::sample_cond_V();
-    VectorXd a_inc_vec = mu.cwiseQuotient(sigma).array().pow(2);
-    for (int i=0; i < n_rep; i++) {
-        VectorXd W = Ws[i];
-        VectorXd tmp = (K * W + mu.cwiseProduct(h));
-        VectorXd b_inc_vec = tmp.cwiseQuotient(sigma).array().pow(2);
-        vars[i].sample_cond_V(a_inc_vec, b_inc_vec, W_size, true);
-    }
-}
+// void Randeff::sample_cond_V() {
+// // return Operator::sample_cond_V();
+//     VectorXd a_inc_vec = mu.cwiseQuotient(sigma).array().pow(2);
+//     for (int i=0; i < n_rep; i++) {
+//         VectorXd W = Ws[i];
+//         VectorXd tmp = (K * W + mu.cwiseProduct(h));
+//         VectorXd b_inc_vec = tmp.cwiseQuotient(sigma).array().pow(2);
+//         vars[i].sample_cond_V(a_inc_vec, b_inc_vec, W_size, true);
+//     }
+// }
 
 // const VectorXd Randeff::get_grad() {
-//     VectorXd grad = Latent::get_grad();
+//     VectorXd grad = Operator::get_grad();
 // // std::cout << "V = " << vars[0].getV() << std::endl;
 // // std::cout << "mu = " << mu << std::endl;
 // // std::cout << "grad = " << grad << std::endl;
 //     return grad;
 // }
 
-void Randeff::update_each_iter() {
-        mu = (B_mu * theta_mu);
-        sigma = (B_sigma * theta_sigma).array().exp();
-        if (noise_type=="normal_nig") sigma_normal = (B_sigma_normal * theta_sigma_normal).array().exp();
+// void Randeff::update_each_iter() {
+//         mu = (B_mu * theta_mu);
+//         sigma = (B_sigma * theta_sigma).array().exp();
+//         if (noise_type=="normal_nig") sigma_normal = (B_sigma_normal * theta_sigma_normal).array().exp();
 
-        // update on K, dK, trace, bigK for sampling...
-        K = getK(theta_K);
+//         // update on K, dK, trace, bigK for sampling...
+//         K = getK(theta_K);
 
-        for (int i=0; i < n_rep; i++)
-            setSparseBlock(&K_rep, i*V_size, i*V_size, K);
-    }
+//         for (int i=0; i < n_rep; i++)
+//             setSparseBlock(&K_rep, i*V_size, i*V_size, K);
+//     }

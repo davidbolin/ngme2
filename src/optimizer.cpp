@@ -84,6 +84,7 @@ VectorXd Optimizer::sgd(
         // restrict one_step by |one_step(i)| / |x(i)| < rela_step
         VectorXd one_step = grad.cwiseProduct(model.get_stepsizes());
 if (verbose) {
+    std::cout << "one step = " << one_step << std::endl;
 }
         VectorXd rela_max_step =  max_relative_step * x.cwiseAbs();
         for (int j = 0; j < one_step.size(); j++) {

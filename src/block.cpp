@@ -166,13 +166,12 @@ void BlockModel::setPrevV(const VectorXd& V) {
   }
 }
 
-// sample (U,W)|VY
+// sample W|VY
 void BlockModel::sampleW_VY()
 {
 // if (debug) std::cout << "starting sampling W." << std::endl;
   if (n_latent==0) return;
 
-std::cout << "V mean here = " << getV().mean() << std::endl;
   VectorXd SV = getSV();
   VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(SV);
   VectorXd noise_V = var.getV();

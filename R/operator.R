@@ -161,7 +161,7 @@ ar1 <- function(
     K = alpha * C + G,
     h = h,
     A = INLA::inla.spde.make.A(mesh = mesh, loc = map),
-    symmetric = TRUE
+    symmetric = FALSE
   )
 }
 

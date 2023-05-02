@@ -36,6 +36,6 @@ SparseMatrix<double> AR::getK(const VectorXd& theta_K) const {
 SparseMatrix<double> AR::get_dK(int index, const VectorXd& theta_K) const {
     assert(index==0);
     double th = theta_K(0);
-    double da  = 2 * (exp(th) / pow(1+exp(th), 2));
+    double da = 2 * (exp(th) / pow(1+exp(th), 2));
     return da * C;
 }

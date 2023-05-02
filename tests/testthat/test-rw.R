@@ -97,7 +97,7 @@ test_that("test estimation of basic ar with normal measurement noise", {
   n_obs <- 1000
   alpha <- 0.75
   mu <- 4; sigma <- 5; nu <- 0.2; sigma_eps <- 0.8
-  ar1 <- f(1:n_obs, model="ar1", alpha=alpha, noise=noise_nig(mu=mu, sigma=sigma, nu=nu), eval = T)
+  ar1 <- f(1:n_obs, model="ar1", theta_K = ar1_a2th(0.8), noise=noise_nig(mu=mu, sigma=sigma, nu=nu), eval = T)
 
   W <- simulate(ar1)
   mean(W)
@@ -135,11 +135,11 @@ load_all()
   )
   out$replicates[[1]]$latents[[1]]$theta_K
 
-  traceplot(out, "ar1")
+  traceplot(out, "field")
   traceplot(out)
+  # plot(attr(W, "noise"), out$replicates[[1]]$latents[[1]]$noise)
   # out$replicates[[1]]$latents[[1]]$control$numer_grad
   # load_all()
-  # plot(attr(W, "noise"), out$replicates[[1]]$latents[[1]]$noise)
 
   # plot(simulate(out$replicates[[1]]$latents[["ar"]]), type="l")
   # plot(Y, type="l")

@@ -87,17 +87,6 @@ std::cout << "Begin constructor of latent" << std::endl;
     if (noise_type == "normal") {
         fix_flag[latent_fix_theta_mu] = 1; // no mu need
         fix_flag[latent_fix_nu] = 1;
-    } else {
-        int n = V_size;
-        if (noise_type == "gal")  {
-            p_vec = h * nu;
-            a_vec = VectorXd::Constant(n, nu * 2);
-            b_vec = VectorXd::Constant(n, 1e-14);
-        } else { // nig or normal_nig
-            p_vec = VectorXd::Constant(n, -0.5);
-            a_vec = VectorXd::Constant(n, nu);
-            b_vec = a_vec.cwiseProduct(h.cwiseProduct(h));
-        }
     }
 
     // init K and Q
@@ -193,12 +182,12 @@ inline VectorXd Latent::grad_theta_sigma_normal() {
     return - 1.0 / V_size * grad;
 }
 
+// pi(W|V)
 double Latent::function_K(SparseMatrix<double>& K) {
     double l = 0;
     VectorXd SV = getSV();
 
     VectorXd tmp = K * W - mu.cwiseProduct(V-h);
-// std::cout << "tmp = " << tmp << std::endl;
     if (K.rows() < 5) {
         MatrixXd Kd = K.toDense();
         l = log(Kd.diagonal().prod()) - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
@@ -212,13 +201,13 @@ double Latent::function_K(SparseMatrix<double>& K) {
             l = chol_solver_K.logdet() - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
         }
     }
-    return l;
+    // normalize
+// std::cout << " l = " << l / W_size << std::endl;
+    return l / W_size;
 }
 
 VectorXd Latent::grad_theta_K() {
-    K = ope->getK(theta_K);
     VectorXd grad = VectorXd::Zero(n_theta_K);
-std::cout << " V mean = " << V.mean() << std::endl;
     if (numer_grad) {
         double val = function_K(K);
         for (int i=0; i < n_theta_K; i++) {
@@ -226,9 +215,9 @@ std::cout << " V mean = " << V.mean() << std::endl;
             tmp(i) += eps;
             SparseMatrix<double> K_add_eps = ope->getK(tmp);
             double val_add_eps = function_K(K_add_eps);
-            double num_g = (val_add_eps - val) / eps;
-std::cout << "num_g = " << num_g << std::endl;
-            grad(i) = - num_g / W_size;
+            grad(i) = - (val_add_eps - val) / eps;
+
+// std::cout << "num_g = " << grad(i)  << std::endl;
         }
     } else {
         VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
@@ -280,8 +269,6 @@ const VectorXd Latent::get_parameter() const {
 }
 
 const VectorXd Latent::get_grad() {
-// if (debug) std::cout << "Start latent gradient"<< std::endl;
-// auto grad1 = std::chrono::steady_clock::now();
     VectorXd grad = VectorXd::Zero(n_params);
 
     if (noise_type == "normal") {
@@ -328,15 +315,26 @@ void Latent::set_parameter(const VectorXd& theta) {
         if (noise_type == "normal_nig") {
             theta_sigma_normal = theta.segment(n_theta_K+n_theta_mu+n_theta_sigma+1, n_theta_sigma_normal);
         }
-
-        update_each_iter();
     }
+    update_each_iter();
 }
 
 void Latent::update_each_iter() {
-    mu = (B_mu * theta_mu);
+    int n = V_size;
+    if (noise_type == "gal")  {
+        p_vec = h * nu;
+        a_vec = VectorXd::Constant(n, nu * 2);
+        b_vec = VectorXd::Constant(n, 1e-14);
+    } else { // nig or normal_nig
+        p_vec = VectorXd::Constant(n, -0.5);
+        a_vec = VectorXd::Constant(n, nu);
+        b_vec = a_vec.cwiseProduct(h.cwiseProduct(h));
+    }
+
+    mu = B_mu * theta_mu;
     sigma = (B_sigma * theta_sigma).array().exp();
-    if (noise_type=="normal_nig") sigma_normal = (B_sigma_normal * theta_sigma_normal).array().exp();
+    if (noise_type=="normal_nig")
+        sigma_normal = (B_sigma_normal * theta_sigma_normal).array().exp();
 
     // update on K, dK, trace, bigK for sampling...
     K = ope->getK(theta_K);

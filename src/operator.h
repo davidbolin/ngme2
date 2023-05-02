@@ -47,6 +47,7 @@ public:
     int get_n_theta_K() const {return n_theta_K;}
     const VectorXd& get_h() const {return h;}
     bool is_symmetric() const {return symmetric;}
+    bool is_zero_trace() const {return zero_trace;}
 
     virtual SparseMatrix<double, 0, int> getK(const VectorXd&) const = 0;
     virtual SparseMatrix<double, 0, int> get_dK(int index, const VectorXd&) const = 0;

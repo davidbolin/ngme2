@@ -253,7 +253,8 @@ stopifnot("n / nrow(B_sigma) not integer" = abs(n/nrow(B_sigma) - round(n/nrow(B
       if (!is.null(new_noise$V)) noise$V <- new_noise$V
     }
   } else if (!is.null(operator)) {
-    noise$V <- noise$h <- operator$h
+    noise$h <- operator$h
+    if (is.null(noise$V)) noise$V <- noise$h
     noise <- update_noise(noise, n = length(noise$h))
   }
 

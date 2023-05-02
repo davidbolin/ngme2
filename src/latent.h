@@ -39,32 +39,32 @@ using std::vector;
 enum Latent_fix_flag {
     latent_fix_theta_K,
     latent_fix_W,
+    latent_fix_V,
     latent_fix_theta_mu,
+    latent_fix_nu,
     latent_fix_theta_sigma
 };
-const int LATENT_FIX_FLAG_SIZE = 4;
+const int LATENT_FIX_FLAG_SIZE = 5;
 
 class Latent {
 protected:
     std::mt19937 latent_rng;
     string model_type, noise_type;
     bool debug;
+    int W_size, V_size, n_params, n_var {1}; // n_params=n_theta_K + n_theta_mu + n_theta_sigma + n_var
+
+    // operator
     std::unique_ptr<Operator> ope;
-
-    VectorXd theta_K;
+    VectorXd h, theta_K;
     int n_theta_K;
-    bool symmetricK;
+    bool symmetricK, zero_trace, use_num_dK {false};
 
-    int n_rep, W_size, V_size, n_params, n_var {1}; // n_params=n_theta_K + n_theta_mu + n_theta_sigma + n_var
-
-    bool use_num_dK {false};
     SparseMatrix<double, 0, int> K; // size = V_size * W_size
     vector<SparseMatrix<double, 0, int>> dK;
     vector<double> trace;
-    bool zero_trace;
+    double eps;
 
     bool fix_flag[LATENT_FIX_FLAG_SIZE] {0};
-
     bool use_precond {false}, numer_grad {false};
 
     // mu and sigma, and sigma_normal (special case when using nig_normal case)
@@ -77,14 +77,12 @@ protected:
     int n_theta_mu, n_theta_sigma, n_theta_sigma_normal;
 
     // for numerical gradient.
-    double eps;
-
-    // VectorXd W, prevW, h;
-    VectorXd h;
+    VectorXd W, prevW, V, prevV;
     SparseMatrix<double,0,int> A;
 
-    vector<VectorXd> Ws, prevWs;
-    vector<Var> vars;
+    // Var var;
+    VectorXd p_vec, a_vec, b_vec;
+    double nu;
 
     // solver
     cholesky_solver chol_solver_K;
@@ -97,138 +95,58 @@ public:
     void update_each_iter();
 
     /*  1 Model itself   */
-    int get_W_size() const             {return n_rep * W_size; }
-    int get_V_size() const             {return n_rep * V_size; }
+    int get_W_size() const             {return W_size; }
+    int get_V_size() const             {return V_size; }
     int get_n_params() const           {return n_params; }
     int get_n_theta_K() const          {return n_theta_K; }
     const VectorXd& get_theta_K() const {return theta_K; }
 
     SparseMatrix<double, 0, int>& getA()  {return A;}
 
-    // concat W of different replicate
-    const VectorXd getW() const {
-        VectorXd W(n_rep * W_size);
-        for (int i=0; i < n_rep; i++) {
-            W.segment(i*W_size, W_size) = Ws[i];
-        }
+    const VectorXd& getW() const {
         return W;
     }
 
-    const VectorXd getPrevW()  const {
-        VectorXd W(n_rep * W_size);
-        for (int i=0; i < n_rep; i++) {
-            W.segment(i*W_size, W_size) = prevWs[i];
-        }
-        return W;
+    const VectorXd& getPrevW()  const {
+        return prevW;
     }
 
-    // newW is of size n_rep * W_size
     void setW(const VectorXd& newW) {
         if (!fix_flag[latent_fix_W]) {
-            // prevW = W; W = newW;
-            for (int i=0; i < n_rep; i++) {
-                prevWs[i] = Ws[i];
-                Ws[i] = newW.segment(i*W_size, W_size);
-            }
+            prevW = W; W = newW;
         }
     }
 
     void setPrevW(const VectorXd& W) {
-        for (int i=0; i < n_rep; i++) {
-            prevWs[i] = W.segment(i*W_size, W_size);
-        }
+        prevW = W;
     }
-
-    // return of dim V_size
-    // const VectorXd getVMean() const {
-    //     VectorXd meanV(V_size);
-    //     for (int i=0; i < n_rep; i++) {
-    //         meanV += vars[i].getV();
-    //     }
-    //     return meanV / n_rep;
-    // }
 
     // used in block model
     VectorXd getMean() const {
-        VectorXd Mean (n_rep * V_size);
-        for (int i=0; i < n_rep; i++) {
-            VectorXd V = vars[i].getV();
-            Mean.segment(i*V_size, V_size) = mu.cwiseProduct(V - h);
-            // V-h or V-1
-        }
-        return Mean;
+        return mu.cwiseProduct(V - h);
     }
 
     /*  2 Variance component   */
-    const VectorXd getV() const {
-        VectorXd V(V_size * n_rep);
-        for (int i=0; i < n_rep; i++) {
-            V.segment(i*V_size, V_size) = vars[i].getV();
-        }
+    const VectorXd& getV() const {
         return V;
     }
-    const VectorXd getPrevV() const {
-        VectorXd V(V_size * n_rep);
-        for (int i=0; i < n_rep; i++) {
-            V.segment(i*V_size, V_size) = vars[i].getPrevV();
-        }
-        return V;
+    const VectorXd& getPrevV() const {
+        return prevV;
     }
     const VectorXd getSV() const {
-        VectorXd SV(V_size * n_rep);
-        for (int i=0; i < n_rep; i++) {
-            SV.segment(i*V_size, V_size) = sigma.array().pow(2).matrix().cwiseProduct(vars[i].getV());
-        }
-        return SV;
+        return sigma.array().pow(2).matrix().cwiseProduct(V);
     }
     void setPrevV(const VectorXd& V) {
-        for (int i=0; i < n_rep; i++) {
-            vars[i].setPrevV(V.segment(i*V_size, V_size));
-        }
+        prevV = V;
     }
 
-    // VectorXd getSV() const {
-    //     VectorXd V = getV();
-    //     return (sigma.array().pow(2).matrix().cwiseProduct(V));
-    // }
-    // VectorXd getPrevSV() const {
-    //     VectorXd prevV = getPrevV();
-    //     return (sigma.array().pow(2).matrix().cwiseProduct(prevV));
-    // }
-
-    void sample_V() {
-        for (int i=0; i < n_rep; i++) {
-            vars[i].sample_V();
-        }
-    }
-
-    void sample_cond_V() {
-        VectorXd a_inc_vec = mu.cwiseQuotient(sigma).array().pow(2);
-        for (int i=0; i < n_rep; i++) {
-            VectorXd W = Ws[i];
-            VectorXd tmp = (K * W + mu.cwiseProduct(h));
-            VectorXd b_inc_vec = tmp.cwiseQuotient(sigma).array().pow(2);
-            vars[i].sample_cond_V(a_inc_vec, b_inc_vec);
-        }
-    }
+    void sample_V();
+    void sample_cond_V();
 
     /*  3 Operator component   */
     SparseMatrix<double, 0, int>& getK()  {
         return K;
     }
-
-    // param(pos) += eps;  getK(param);
-    // SparseMatrix<double, 0, int> getK_by_eps(int pos, double eps) {
-    //     VectorXd tmp = get_theta_K();
-    //     tmp(pos) = tmp(pos) + eps;
-    //     return ope->getK(tmp);
-    // }
-
-    // SparseMatrix<double, 0, int> get_dK_by_eps(int index, int pos, double eps) {
-    //     VectorXd tmp = get_theta_K();
-    //     tmp(pos) = tmp(pos) + eps;
-    //     return get_dK(index, tmp);
-    // }
 
     /* 4 for optimizer */
     const VectorXd get_parameter() const;
@@ -244,14 +162,7 @@ public:
     VectorXd grad_theta_mu();
     VectorXd grad_theta_sigma();
     VectorXd grad_theta_sigma_normal(); // grad of sig. only for normal noise
-
-    // mean of grad for each var
-    double grad_theta_nu() {
-        double grad = 0;
-        for (int i=0; i < n_rep; i++)
-            grad += vars[i].grad_log_nu();
-        return grad / n_rep;
-    }
+    double grad_theta_nu();
 
     Rcpp::List output() const;
 };

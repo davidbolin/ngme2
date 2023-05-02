@@ -172,6 +172,7 @@ void BlockModel::sampleW_VY()
 // if (debug) std::cout << "starting sampling W." << std::endl;
   if (n_latent==0) return;
 
+std::cout << "V mean here = " << getV().mean() << std::endl;
   VectorXd SV = getSV();
   VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(SV);
   VectorXd noise_V = var.getV();
@@ -225,13 +226,13 @@ VectorXd BlockModel::precond_grad() {
 if (debug) std::cout << "Start block gradient"<< std::endl;
 long long time_compute_g = 0;
 long long time_sample_w = 0;
+auto timer_computeg = std::chrono::steady_clock::now();
 
   VectorXd avg_gradient = VectorXd::Zero(n_params);
   for (int i=0; i < n_gibbs; i++) {
     // stack grad
     VectorXd gradient = VectorXd::Zero(n_params);
 
-auto timer_computeg = std::chrono::steady_clock::now();
     // get grad for each latent
     int pos = 0;
     for (std::vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
@@ -250,12 +251,12 @@ time_compute_g += since(timer_computeg).count();
 
     avg_gradient += gradient;
 
+auto timer_sampleW = std::chrono::steady_clock::now();
     // gibbs sampling
     sampleV_WY();
-auto timer_sampleW = std::chrono::steady_clock::now();
     sampleW_VY();
-time_sample_w += since(timer_sampleW).count();
     sample_cond_block_V();
+time_sample_w += since(timer_sampleW).count();
   }
 
   avg_gradient = (1.0/n_gibbs) * avg_gradient;

@@ -40,7 +40,7 @@ public:
         fix_nu        (Rcpp::as<bool>     (noise_list["fix_nu"])),
         init_V        (Rcpp::as<bool>     (noise_list["init_V"])),
         single_V      (Rcpp::as<bool>     (noise_list["single_V"])),
-        hessian   (Rcpp::as<bool>     (noise_list["hessian"]))
+        hessian       (Rcpp::as<bool>     (noise_list["hessian"]))
     {
 // std::cout << "n = " << n << std::endl;
         if (noise_type == "normal" || !init_V) {

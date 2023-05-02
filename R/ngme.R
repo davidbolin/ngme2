@@ -199,7 +199,7 @@ update_ngme_est <- function(
   ngme_replicate$beta <- est_output$beta
   ngme_replicate$noise <- update_noise(ngme_replicate$noise, new_noise = est_output$noise)
   for (i in seq_along(ngme_replicate$latents)) {
-    ngme_replicate$latents[[i]]$operator$theta_K  <- est_output$latents[[i]]$theta_K
+    ngme_replicate$latents[[i]]$operator$theta_K  <- ngme_replicate$latents[[i]]$theta_K <- est_output$latents[[i]]$theta_K
     ngme_replicate$latents[[i]]$W        <- est_output$latents[[i]]$W
     ngme_replicate$latents[[i]]$noise    <- update_noise(
       ngme_replicate$latents[[i]]$noise, new_noise = est_output$latents[[i]]

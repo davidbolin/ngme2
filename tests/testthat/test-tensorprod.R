@@ -1,23 +1,22 @@
 # test tensor product R structure
 test_that("R structure", {
 library(INLA)
-  nl <- 2
-  Kl <- ar1(1:nl, alpha=0.3)$K
-  Al <- ar1(1:nl, alpha=0.3)$A
-
-  nr <- 3
-  Kr <- ar1(1:nr, alpha=0.7)$K
-  Ar <- ar1(1:nr, alpha=0.7)$A
-
+  load_all()
+  tp(first=ar1(1:3), second=ar1(1:3))
 
   out <- ngme(
-    y ~ f(1:6, model="tp", left = ar1(1:2), right = ar1(1:3)),
+    y ~ f(1:6, name="tp", model="tp", first=ar1(1:2), second=ar1(1:3)),
     data = data.frame(y=1:6),
     control_opt = control_opt(
-      estimation = F
+      estimation = T,
+      iterations = 1
     )
   )
-out$replicates[[1]]$latents[[1]]$right
+out
+  str(out$replicates[[1]]$latents[[1]]$operator)
+  str(out$replicates[[1]]$latents[[1]]$operator$first)
+
+
   # f(i_space, model = spde, group = i_time, control.group = list(model="ar1"))
 })
 

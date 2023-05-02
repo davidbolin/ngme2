@@ -49,7 +49,7 @@ std::cout << "Begin constructor of latent" << std::endl;
         numer_grad      = Rcpp::as<bool>        (control_f["numer_grad"]) ;
         eps             = Rcpp::as<double>      (control_f["eps"]) ;
 
-    // construct from ngme.noise
+    // construct from ngme_noise
     Rcpp::List noise_in = Rcpp::as<Rcpp::List> (model_list["noise"]);
         fix_flag[latent_fix_theta_mu]     = Rcpp::as<bool>  (noise_in["fix_theta_mu"]);
         fix_flag[latent_fix_theta_sigma]  = Rcpp::as<bool>  (noise_in["fix_theta_sigma"]);

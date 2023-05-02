@@ -6,85 +6,47 @@
 #'
 #' @param map integer vector, time index for the AR(1) process
 #' @param replicate replicate for the process
-#' @param index_NA Logical vector, same as is.na(response var.)
-#' @param alpha initial value for alpha
+#' @param theta_K initial value for theta_K, if want to specify, can use e.g. ar1_a2th(0.5)
 #'
-#' @param noise noise, can be specified in f()
-#' @param data data, can be specified in f(), ngme()
-#' @param ... extra arguments in f()
+#' @param ... extra arguments
 #'
-#' @return a list of specification of model
+#' @return ngme_operator object
 #' @export
 #'
 #' @examples
-#' model_ar1(c(1:3, 1:3), replicate = c(1,1,1,2,2,2))
-#' f(xx, model = "ar1", data=list(xx = c(2,4,5)), noise=noise_nig())
-model_ar1 <- function(
-  map,   # time index
-  replicate   = NULL,
-  index_NA    = NULL,
-  data        = NULL,
-  noise       = noise_normal(),
-  alpha       = 0.5,
+#' ar1(c(1:3, 1:3), replicate = c(1,1,1,2,2,2))
+ar1 <- function(
+  map,
+  replicate = rep(1, length_map(map)),
+  mesh      = INLA::inla.mesh.1d(loc = min(map):max(map)),
+  theta_K   = 0,
   ...
 ) {
-  # capture symbol in index
-  index <- eval(substitute(map), envir = data, enclos = parent.frame())
-  stopifnot("The index should be integers." = all(index == round(index)))
-  if (is.null(replicate)) replicate <- rep(1, length(index))
-  if (is.null(index_NA)) index_NA <- rep(FALSE, length(index))
+  n <- mesh$n; nrep <- length(unique(replicate))
+  stopifnot("The index should be integers." = all(map == round(map)))
 
-  stopifnot("Make sure length(idx)==length(replicate)" = length(index) == length(replicate))
-
-  replicate <- if (!is.null(list(...)$replicate)) list(...)$replicate
-    else rep(1, length(map))
-
-  # e.g. index      = 1 2 3 1 2 3 4
-  #      replicate  = 1 1 1 2 2 2 2
-  mesh <- INLA::inla.mesh.1d(min(index):max(index))
-  n <- mesh$n
-  nrep <- length(unique(replicate))
-  nrep <- 1
-
-  # construct G
+  h <- c(diff(mesh$loc), 1)
   G <- Matrix::Diagonal(n);
   C <- Matrix::sparseMatrix(j=1:(n-1), i=2:n, x=-1, dims=c(n,n))
+  stopifnot("The mesh should be 1d and has gap 1." = all(h == 1))
 
-  # update noise with length n
-  if (noise$n_noise == 1) noise <- update_noise(noise, n = n)
-  # make A and A_pred
-  tmp <- ngme_make_A(
-    mesh = mesh,
-    map = index,
-    n_map = length(index),
-    idx_NA = index_NA,
-    replicate = replicate
+  G <- Matrix::kronecker(diag(nrep), G)
+  C <- Matrix::kronecker(diag(nrep), C)
+
+  stopifnot("The length of theta_K should be 1." = length(theta_K) == 1)
+  alpha <- ar1_th2a(theta_K)
+
+  ngme_operator(
+    model = "ar1",
+    theta_K = theta_K,
+    C = ngme_as_sparse(C),
+    G = ngme_as_sparse(G),
+    K = alpha * C + G,
+    h = h,
+    A = INLA::inla.spde.make.A(mesh = mesh, loc = map),
+    symmetric = FALSE,
+    zero_trace = TRUE
   )
-  A <- tmp$A; A_pred <- tmp$A_pred
-
-  stopifnot(nrep == ncol(A) / ncol(C))
-
-  # remove duplicate symbol in ... (e.g. theta_K)
-  args <- within(list(...), {
-    mesh        = mesh
-    model       = "ar1"
-    theta_K     = if (exists("theta_K")) ar1_a2th(theta_K) else ar1_a2th(alpha)
-    W_size      = n
-    V_size      = n
-    A           = A
-    A_pred      = A_pred
-    h           = noise$h
-    C           = ngme_as_sparse(C)
-    G           = ngme_as_sparse(G)
-    K           = alpha * C + G
-    noise       = noise
-    map         = index
-    n_map       = length(index)
-    replicate   = replicate
-    n_rep       = nrep
-    zero_trace  = TRUE
-  })
-  do.call(ngme_model, args)
 }
 
 #' ngme model - random walk of order 1

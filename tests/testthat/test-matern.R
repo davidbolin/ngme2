@@ -15,12 +15,14 @@ test_that("test Matern", {
   n_obs <- 800
   loc <- cbind(runif(n_obs, 0, 10), runif(n_obs, 0, 5))
 
-  true_model <- model_matern(
-    theta_kappa = log(3), mesh = mesh, map = loc,
+  true_model <- f(model="matern",
+    theta_K = log(3), mesh = mesh, map = loc,
     noise = noise_nig(
       mu=-4, sigma=1.5, nu=1, n = mesh$n
-    )
+    ),
+    eval=T
   )
+
   W <- simulate(true_model)
   mean(W)
   mean(attr(W, "noise")$h)
@@ -36,7 +38,6 @@ test_that("test Matern", {
   # range(mesh$loc[, 1]); range(mesh$loc[, 2])
 
 # Matern case
-  load_all()
   out <- ngme(
     Y ~ 0 + f(loc,
       model="matern",
@@ -45,7 +46,7 @@ test_that("test Matern", {
       noise=noise_nig(
         # fix_nu = T, nu=1
       ),
-      control = control_f(numer_grad = F),
+      control = control_f(numer_grad = T),
       # fix_theta_K = T, theta_kappa = log(3),
       # fix_W = TRUE, W = W,
       debug = T

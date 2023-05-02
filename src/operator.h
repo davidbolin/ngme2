@@ -96,8 +96,8 @@ public:
 
 class Tensor_prod : public Operator {
 private:
-  int n_theta_l, n_theta_r, V_size_l, V_size_r, W_size_l, W_size_r;
-  std::unique_ptr<Operator> left, right;
+  std::unique_ptr<Operator> first, second;
+  int n_theta_1, n_theta_2;
 public:
   Tensor_prod(const Rcpp::List&);
 

@@ -16,9 +16,9 @@ f(
   group = NULL,
   theta_K = NULL,
   W = NULL,
-  fix_W = NULL,
-  fix_theta_K = NULL,
-  debug = NULL,
+  debug = FALSE,
+  fix_W = FALSE,
+  fix_theta_K = FALSE,
   eval = FALSE,
   ...
 )
@@ -45,11 +45,11 @@ f(
 
 \item{W}{starting value of the process}
 
+\item{debug}{Debug mode}
+
 \item{fix_W}{stop sampling for W}
 
 \item{fix_theta_K}{fix the estimation for theta_K.}
-
-\item{debug}{Debug mode}
 
 \item{eval}{evaluate the model}
 

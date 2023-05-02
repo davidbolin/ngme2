@@ -347,6 +347,9 @@ build_mesh <- function(
 ) {
   if (model == "ar1") {
     mesh <- INLA::inla.mesh.1d(min(map):max(map))
+  } else if (model == "tp") {
+    # check later
+    mesh = NULL
   } else {
     stop("Please provide mesh")
   }

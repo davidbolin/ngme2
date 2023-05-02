@@ -39,6 +39,8 @@ print.ngme_operator <- function(x, padding = 0, ...) {
 
   model_name <- switch(operator$model,
     ar1 = "AR(1)",
+    matern = "Matern",
+    tp  = "Tensor product",
     "Unknown"
   )
 
@@ -46,10 +48,14 @@ print.ngme_operator <- function(x, padding = 0, ...) {
   cat(pad_space, model_name, sep="")
 
   parameter <- with(operator, switch(model,
-    ar1 = {paste0("alpha = ", format(ar1_th2a(theta_K), digits=3), "\n")},
+    ar1 = cat(pad_add4_space, "alpha = ", format(ar1_th2a(theta_K), digits=3), "\n", sep=""),
+    matern = cat(pad_add4_space, "theta_K = ", format(theta_K, digits=3), "\n", sep=""),
+    tp = {
+      print(operator$first,  padding = padding + 4)
+      print(operator$second, padding = padding + 4)
+    },
     "Unknown"
   ))
-  cat(pad_add4_space, parameter, sep="")
 
   # model_string <- model$model
   #   if (model_string == "rw" && model$rw_order==1) model_string <- "rw1"
@@ -86,83 +92,6 @@ print.ngme_operator <- function(x, padding = 0, ...) {
 
   # print.ngme_noise(model$noise, padding = padding)
   invisible(operator)
-}
-
-matern <- function(
-  map,
-  mesh,
-  replicate = rep(1, length_map(map)),
-  alpha = 2,
-  theta_kappa = 0,
-  B_kappa = NULL
-) {
-  # build C, G, K, A
-  n <- mesh$n; nrep <- length(unique(replicate))
-
-  stopifnot(alpha == 2 || alpha == 4)
-
-  if (is.null(B_kappa) && length(theta_kappa) == 1)
-    B_kappa <- matrix(1, nrow = mesh$n, ncol = 1)
-  else if (is.null(B_kappa) && length(theta_kappa) > 1)
-    stop("Please provide B_kappa for non-stationary case.")
-
-  d <- get_inla_mesh_dimension(mesh)
-  if (d == 1) {
-    fem <- INLA::inla.mesh.1d.fem(mesh)
-    C <- fem$c1
-    G <- fem$g1
-    h <- Matrix::diag(fem$c0)
-    # h <- rowsum(fem$c0)
-  } else {
-    fem <- INLA::inla.mesh.fem(mesh, order = alpha)
-    C <- fem$c0  # diag
-    G <- fem$g1
-    h <- Matrix::diag(fem$c0)
-  }
-
-  kappas <- as.numeric(B_kappa %*% theta_kappa)
-  K <- if (alpha == 2) diag(kappas) %*% C %*% diag(kappas)  + G
-    else diag(kappas) %*% C %*% diag(kappas) %*% C %*% diag(kappas) + G
-  ngme_operator(
-    model = "matern",
-    C = ngme_as_sparse(C),
-    G = ngme_as_sparse(G),
-    K = ngme_as_sparse(K),
-    h = h,
-    A = INLA::inla.spde.make.A(mesh = mesh, loc = map)
-  )
-}
-
-ar1 <- function(
-  map,
-  mesh      = INLA::inla.mesh.1d(loc = min(map):max(map)),
-  replicate = rep(1, length_map(map)),
-  theta_K   = 0,
-  ...
-) {
-  n <- mesh$n; nrep <- length(unique(replicate))
-  stopifnot("The index should be integers." = all(map == round(map)))
-
-  h <- c(diff(mesh$loc), 1)
-  G <- Matrix::Diagonal(n);
-  C <- Matrix::sparseMatrix(j=1:(n-1), i=2:n, x=-1, dims=c(n,n))
-  stopifnot("The mesh should be 1d and has gap 1." = all(h == 1))
-
-  G <- Matrix::kronecker(diag(nrep), G)
-  C <- Matrix::kronecker(diag(nrep), C)
-
-  stopifnot("The length of theta_K should be 1." = length(theta_K) == 1)
-  alpha <- ar1_th2a(theta_K)
-  ngme_operator(
-    model = "ar1",
-    theta_K = theta_K,
-    C = ngme_as_sparse(C),
-    G = ngme_as_sparse(G),
-    K = alpha * C + G,
-    h = h,
-    A = INLA::inla.spde.make.A(mesh = mesh, loc = map),
-    symmetric = FALSE
-  )
 }
 
 bv <- function(

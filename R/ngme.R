@@ -204,12 +204,15 @@ update_ngme_est <- function(
     ngme_replicate$latents[[i]]$noise    <- update_noise(
       ngme_replicate$latents[[i]]$noise, new_noise = est_output$latents[[i]]
     )
+
+    # tedious special case
     if (ngme_replicate$latents[[i]]$model == "tp") {
-      n1 <- ngme_replicate$latents[[i]]$left$n_theta_K
-      n2 <- ngme_replicate$latents[[i]]$right$n_theta_K
-      ngme_replicate$latents[[i]]$left$theta_K <- ngme_replicate$latents[[i]]$theta_K[1:n1]
-      ngme_replicate$latents[[i]]$right$theta_K <- ngme_replicate$latents[[i]]$theta_K[(n1+1):(n1+n2)]
+      n1 <- ngme_replicate$latents[[i]]$operator$first$n_theta_K
+      n2 <- ngme_replicate$latents[[i]]$operator$second$n_theta_K
+      ngme_replicate$latents[[i]]$operator$first$theta_K <- ngme_replicate$latents[[i]]$theta_K[1:n1]
+      ngme_replicate$latents[[i]]$operator$second$theta_K <- ngme_replicate$latents[[i]]$theta_K[(n1+1):(n1+n2)]
     }
+
     if (ngme_replicate$latents[[i]]$model == "bv") {
       n1 <- ngme_replicate$latents[[i]]$m1$n_theta_K
       n2 <- ngme_replicate$latents[[i]]$m2$n_theta_K

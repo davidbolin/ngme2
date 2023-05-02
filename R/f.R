@@ -63,8 +63,6 @@ f <- function(
     = !is.null(model))
 
   if (is.null(name)) name <- "field"
-  if (model == "tp") map <- 1:(list(...)$left$n_map * list(...)$right$n_map)
-  if (model == "bv") replicate <- rep(1, list(...)$m1$n_map * 2)
 
   stopifnot("Please specify model as character" = is.character(model))
 
@@ -96,12 +94,16 @@ f <- function(
   # 1. build operator
   n <- mesh$n; nrep <- length(unique(replicate))
   operator <- switch(model,
+    tp = do.call(tp, f_args),
     ar1 = do.call(ar1, f_args),
     matern = do.call(matern, f_args),
     iid = list(K = Matrix::Diagonal(n * nrep), h = rep(1, n * nrep)),
     stop("Unknown models")
   )
-  A <- INLA::inla.spde.make.A(mesh = f_args$mesh, loc = map)
+
+  A <- if (is.null(operator$A))
+    INLA::inla.spde.make.A(mesh = f_args$mesh, loc = map)
+    else operator$A
 
   # 2. build noise given operator
   # if (model == "bv")
@@ -125,73 +127,12 @@ f <- function(
     n_map     = length_map(map),
     replicate = replicate,
     W         = W,
-    fix_W     = fix_W
+    fix_W     = fix_W,
+    name      = name
   )
 }
 
-#' ngme tensor-product model specification
-#'
-#' Given 2 models (left and right), build a tensor-product model based on K = K_left x K_right (here x is Kronecker product)
-#'
-#' @param left ngme_model
-#' @param right ngme_model
-#' @param map can be ignored, pass through left and right
-#' @param replicate replicate for the process
-#' @param index_NA Logical vector, same as is.na(response var.)
-#'
-#' @param noise noise, can be specified in f()
-#' @param data data, can be specified in f(), ngme()
-#' @param control control for the model
-#' @param ... extra arguments in f()
-#'
-#' @return a list of specification of model
-#' @export
-model_tp <- function(
-  left        = NULL,
-  right       = NULL,
-  map         = NULL,
-  replicate   = NULL,
-  data        = NULL,
-  index_NA    = NULL,
-  noise       = noise_normal(),
-  control     = control_f(),
-  ...
-) {
-  stopifnot(inherits(left, "ngme_model"), inherits(right, "ngme_model"))
-  n_map <-  length_map(left$map) * length_map(right$map)
-  if (is.null(map)) map <- 1:n_map
-  # if (is.null(replicate))
-    replicate <- rep(1, n_map)
 
-  stopifnot(left$model %in% c("rw1", "rw2", "ar1", "iid"))
-  f_model <- ngme_model(
-    model = "tp",
-    map = map,
-    n_map = n_map,
-    replicate = replicate,
-    data = data,
-    index_NA = index_NA,
-    noise = noise,
-    left = left,
-    right = right,
-    control = control,
-    W_size = left$W_size * right$W_size,
-    V_size = left$V_size * right$V_size,
-    n_theta_K = left$n_theta_K + right$n_theta_K,
-    n_params = left$n_params + right$n_params,
-    theta_K = c(left$theta_K, right$theta_K),
-    A = ngme_as_sparse(left$A %x% right$A),
-    ...
-  )
-
-# init noise
-  f_model$left$noise$init_V <- FALSE
-  f_model$right$noise$init_V <- FALSE
-  f_model$noise <- update_noise(noise, n = f_model$V_size)
-  f_model$h <- f_model$noise$h
-
-  f_model
-}
 
 #' ngme iid model specification
 #'

@@ -1,3 +1,45 @@
+#' ngme tensor-product model specification
+#'
+#' Given 2 operator (first and second), build a tensor-product operator based on K = K_first x K_second (here x is Kronecker product)
+#'
+#' @param map can be ignored, pass through first and second
+#' @param first ngme_model
+#' @param second ngme_model
+#' @param replicate replicate for the process
+#' @param ... extra arguments in f()
+#'
+#' @return a list of specification of model
+#' @export
+tp <- function(
+  first       = NULL,
+  second      = NULL,
+  map         = NULL,
+  replicate   = NULL,
+  theta_K     = NULL,
+  ...
+) {
+  stopifnot(
+    inherits(first, "ngme_operator"),
+    inherits(second, "ngme_operator")
+  )
+  if (is.null(theta_K)) theta_K <- c(first$theta_K, second$theta_K)
+  stopifnot(length(theta_K) == first$n_theta_K + second$n_theta_K)
+
+  ngme_operator(
+    model = "tp",
+    first = first,
+    second = second,
+    theta_K = theta_K,
+    K = first$K %x% second$K,
+    A = first$A %x% second$A,
+    h = first$h %x% second$h,
+    symmetric = first$symmetric & second$symmetric,
+    # check here
+    zero_trace = first$zero_trace | second$zero_trace
+  )
+}
+
+
 # define the interface for a bivariate latent model
 
 #' Create a bivariate SPDE model

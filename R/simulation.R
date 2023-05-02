@@ -33,7 +33,7 @@ simulate.ngme_model <- function(
         W <- Reduce(function(x, y) {y + alpha * x}, sim_noise, accumulate = T)
     } else if (model$model == "matern") {
         # K_a %*% W = noise
-        W <- with(model, {
+        W <- with(model$operator, {
             C.inv <- as(Matrix::diag(1 / Matrix::diag(C)), "sparseMatrix")
             if (ncol(B_K) > 1) {
                 kappas <- as.numeric(exp(B_K %*% theta_K))

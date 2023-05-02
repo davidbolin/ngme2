@@ -1,5 +1,52 @@
+matern <- function(
+  map,
+  mesh,
+  replicate = rep(1, length_map(map)),
+  alpha = 2,
+  theta_K = 0,
+  B_K = NULL,
+  ...
+) {
+  # build C, G, K, A
+  n <- mesh$n; nrep <- length(unique(replicate))
+  stopifnot(alpha == 2 || alpha == 4)
 
-######################### models #########################
+  if (is.null(B_K) && length(theta_K) == 1)
+    B_K <- matrix(1, nrow = mesh$n, ncol = 1)
+  else if (is.null(B_K) && length(theta_K) > 1)
+    stop("Please provide B_K for non-stationary case.")
+
+  d <- get_inla_mesh_dimension(mesh)
+  if (d == 1) {
+    fem <- INLA::inla.mesh.1d.fem(mesh)
+    C <- fem$c1
+    G <- fem$g1
+    h <- Matrix::diag(fem$c0)
+  } else {
+    fem <- INLA::inla.mesh.fem(mesh, order = alpha)
+    C <- fem$c0  # diag
+    G <- fem$g1
+    h <- Matrix::diag(fem$c0)
+  }
+
+  kappas <- as.numeric(B_K %*% theta_K)
+  K <- if (alpha == 2) diag(kappas) %*% C %*% diag(kappas)  + G
+    else diag(kappas) %*% C %*% diag(kappas) %*% C %*% diag(kappas) + G
+  ngme_operator(
+    alpha = alpha,
+    model = "matern",
+    theta_K = theta_K,
+    B_K = B_K,
+    C = ngme_as_sparse(C),
+    G = ngme_as_sparse(G),
+    K = ngme_as_sparse(K),
+    h = h,
+    A = INLA::inla.spde.make.A(mesh = mesh, loc = map),
+    symmetric = TRUE,
+    zero_trace = FALSE
+  )
+}
+
 
 #' Create a Matern SPDE model
 #'

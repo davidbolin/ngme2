@@ -214,10 +214,10 @@ update_ngme_est <- function(
     }
 
     if (ngme_replicate$latents[[i]]$model == "bv") {
-      n1 <- ngme_replicate$latents[[i]]$m1$n_theta_K
-      n2 <- ngme_replicate$latents[[i]]$m2$n_theta_K
-      ngme_replicate$latents[[i]]$m1$theta_K <- ngme_replicate$latents[[i]]$theta_K[3:(n1+2)]
-      ngme_replicate$latents[[i]]$m2$theta_K <- ngme_replicate$latents[[i]]$theta_K[(n1+3):(2+n1+n2)]
+      n1 <- ngme_replicate$latents[[i]]$operator$first$n_theta_K
+      n2 <- ngme_replicate$latents[[i]]$operator$second$n_theta_K
+      ngme_replicate$latents[[i]]$operator$first$theta_K <- ngme_replicate$latents[[i]]$theta_K[3:(n1+2)]
+      ngme_replicate$latents[[i]]$operator$second$theta_K <- ngme_replicate$latents[[i]]$theta_K[(n1+3):(2+n1+n2)]
     }
   }
   ngme_replicate

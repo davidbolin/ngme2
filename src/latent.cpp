@@ -207,6 +207,7 @@ double Latent::function_K(SparseMatrix<double>& K) {
 }
 
 VectorXd Latent::grad_theta_K() {
+// std::cout << "K = " << K << std::endl;
     VectorXd grad = VectorXd::Zero(n_theta_K);
     if (numer_grad) {
         double val = function_K(K);
@@ -216,7 +217,6 @@ VectorXd Latent::grad_theta_K() {
             SparseMatrix<double> K_add_eps = ope->getK(tmp);
             double val_add_eps = function_K(K_add_eps);
             grad(i) = - (val_add_eps - val) / eps;
-
 // std::cout << "num_g = " << grad(i)  << std::endl;
         }
     } else {
@@ -290,8 +290,8 @@ const VectorXd Latent::get_grad() {
     }
 
 // DEBUG: checking grads
-    std::cout << "gradient= " << grad << std::endl;
 if (debug) {
+    // std::cout << "gradient= " << grad << std::endl;
     // std::cout << "one latent gradient time " << since(grad1).count() << std::endl;
 }
 // if (debug) std::cout << "finish latent gradient"<< std::endl;

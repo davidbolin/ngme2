@@ -14,9 +14,7 @@ Tensor_prod::Tensor_prod(const Rcpp::List& operator_list):
   second (OperatorFactory::create(operator_list["second"])),
   n_theta_1 (first->get_n_theta_K()),
   n_theta_2 (second->get_n_theta_K())
-{
-  std::cout << "start init" << std::endl;
-}
+{}
 
 SparseMatrix<double> Tensor_prod::getK(const VectorXd& theta_K) const {
   SparseMatrix<double> K1 = first->getK(theta_K.segment(0, n_theta_1));

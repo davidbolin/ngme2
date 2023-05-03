@@ -3,28 +3,24 @@
 
 // ------- bivariate model -------
 Bivar::Bivar(const Rcpp::List& operator_list):
-  Operator(operator_list)
-{
-  Rcpp::List l1 = operator_list["first"];
-  m1 = OperatorFactory::create(l1);
-
-  Rcpp::List l2 = operator_list["second"];
-  m2 = OperatorFactory::create(l2);
-
-  share_param = Rcpp::as<bool> (operator_list["share_param"]);
-
-  std::cout << "Finish init bivariate" << std::endl;
-}
+  Operator(operator_list),
+  first (OperatorFactory::create(operator_list["first"])),
+  second (OperatorFactory::create(operator_list["second"])),
+  n_theta_1 (first->get_n_theta_K()),
+  n_theta_2 (second->get_n_theta_K()),
+  n (h.size() / 2),
+  share_param (Rcpp::as<bool> (operator_list["share_param"]))
+{}
 
 SparseMatrix<double> Bivar::getK(const VectorXd& theta_K) const {
   double theta = theta_K(0);
   double rho = theta_K(1);
-  VectorXd theta_K1 = theta_K.segment(2, m1->get_n_theta_K());
-  VectorXd theta_K2 = theta_K.segment(2+m1->get_n_theta_K(), m2->get_n_theta_K());
+  VectorXd theta_K1 = theta_K.segment(2, n_theta_1);
+  VectorXd theta_K2 = theta_K.segment(2 + n_theta_1, n_theta_2);
 
   Matrix2d D = getD(theta, rho);
-  SparseMatrix<double> K1 = m1->getK(theta_K1);
-  SparseMatrix<double> K2 = m2->getK(theta_K2);
+  SparseMatrix<double> K1 = first->getK(theta_K1);
+  SparseMatrix<double> K2 = second->getK(theta_K2);
 
   SparseMatrix<double> K (2*n, 2*n);
   SparseMatrix<double> K00 = VectorXd::Constant(n, D(0,0)).asDiagonal() * K1;
@@ -43,14 +39,14 @@ SparseMatrix<double> Bivar::getK(const VectorXd& theta_K) const {
 SparseMatrix<double> Bivar::get_dK(int index, const VectorXd& theta_K) const {
   double theta = theta_K(0);
   double rho = theta_K(1);
-  VectorXd theta_K1 = theta_K.segment(2, m1->get_n_theta_K());
-  VectorXd theta_K2 = theta_K.segment(2+m1->get_n_theta_K(), m2->get_n_theta_K());
+  VectorXd theta_K1 = theta_K.segment(2, n_theta_1);
+  VectorXd theta_K2 = theta_K.segment(2 + n_theta_1, n_theta_2);
 
   SparseMatrix<double> dK (2*n, 2*n);
   if (index == 0 || index == 1) {
     // d_theta K = Dtheta * K
-    SparseMatrix<double> K1 = m1->getK(theta_K1);
-    SparseMatrix<double> K2 = m2->getK(theta_K2);
+    SparseMatrix<double> K1 = first->getK(theta_K1);
+    SparseMatrix<double> K2 = second->getK(theta_K2);
     Matrix2d dD;
     if (index == 0)
       dD = get_dD_theta(theta, rho);
@@ -66,10 +62,10 @@ SparseMatrix<double> Bivar::get_dK(int index, const VectorXd& theta_K) const {
     setSparseBlock(&dK, 0, n, dK01);
     setSparseBlock(&dK, n, 0, dK10);
     setSparseBlock(&dK, n, n, dK11);
-  } else if (!share_param && index < 2 + m1->get_n_theta_K()) {
+  } else if (!share_param && index < 2 + n_theta_1) {
     dK.setZero();
     Matrix2d D = getD(theta, rho);
-    SparseMatrix<double> dK1 = m1->get_dK(index-2, theta_K1);
+    SparseMatrix<double> dK1 = first->get_dK(index-2, theta_K1);
     SparseMatrix<double> dK00 = VectorXd::Constant(n, D(0,0)).asDiagonal() * dK1;
     SparseMatrix<double> dK10 = VectorXd::Constant(n, D(1,0)).asDiagonal() * dK1;
     setSparseBlock(&dK, 0, 0, dK00);
@@ -77,7 +73,7 @@ SparseMatrix<double> Bivar::get_dK(int index, const VectorXd& theta_K) const {
   } else if (!share_param) {
     dK.setZero();
     Matrix2d D = getD(theta, rho);
-    SparseMatrix<double> dK2 = m2->get_dK(index-2-m1->get_n_theta_K(), theta_K2);
+    SparseMatrix<double> dK2 = second->get_dK(index-2-n_theta_1, theta_K2);
     SparseMatrix<double> dK01 = VectorXd::Constant(n, D(0,1)).asDiagonal() * dK2;
     SparseMatrix<double> dK11 = VectorXd::Constant(n, D(1,1)).asDiagonal() * dK2;
     setSparseBlock(&dK, 0, n, dK01);
@@ -85,10 +81,10 @@ SparseMatrix<double> Bivar::get_dK(int index, const VectorXd& theta_K) const {
   } else {
     // share param case
     Matrix2d D = getD(theta, rho);
-    SparseMatrix<double> dK1 = m1->get_dK(index-2, theta_K1);
+    SparseMatrix<double> dK1 = first->get_dK(index-2, theta_K1);
     SparseMatrix<double> dK00 = VectorXd::Constant(n, D(0,0)).asDiagonal() * dK1;
     SparseMatrix<double> dK10 = VectorXd::Constant(n, D(1,0)).asDiagonal() * dK1;
-    SparseMatrix<double> dK2 = m2->get_dK(index-2, theta_K2);
+    SparseMatrix<double> dK2 = second->get_dK(index-2, theta_K2);
     SparseMatrix<double> dK01 = VectorXd::Constant(n, D(0,1)).asDiagonal() * dK2;
     SparseMatrix<double> dK11 = VectorXd::Constant(n, D(1,1)).asDiagonal() * dK2;
 

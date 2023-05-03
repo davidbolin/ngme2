@@ -62,11 +62,9 @@ simulate.ngme_model <- function(
         W <- cumsum(cumsum(sim_noise))
         # starting value W_0, W_1
         # W_{n+1} <- W_0 + n * (W_1 - W_0) + cumsum(cumsum(sim_noise))
-    } else if (model$model == "ou") {
-        # assume W_0 = 0
-        W <- as.numeric(solve(model$K, sim_noise))
     } else {
-        stop("simulation for this class not implement yet")
+        # general case
+        W <- as.numeric(solve(model$operator$K, sim_noise))
     }
 
     # attach noise attributes

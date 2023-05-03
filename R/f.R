@@ -66,6 +66,12 @@ f <- function(
 
   stopifnot("Please specify model as character" = is.character(model))
 
+  if (model=="tp")
+    map <- 1:(with(list(...), nrow(first$A) * nrow(second$A)))
+
+  if (model=="bv")
+    map <- 1:(with(list(...), nrow(first$A) + nrow(second$A)))
+
   replicate <- eval(substitute(replicate), envir = data, enclos = parent.frame())
   replicate <- if (is.null(replicate)) rep(1, length_map(map))
     else as.integer(as.factor(replicate))
@@ -95,6 +101,7 @@ f <- function(
   n <- mesh$n; nrep <- length(unique(replicate))
   operator <- switch(model,
     tp = do.call(tp, f_args),
+    bv = do.call(bv, f_args),
     ar1 = do.call(ar1, f_args),
     matern = do.call(matern, f_args),
     iid = list(K = Matrix::Diagonal(n * nrep), h = rep(1, n * nrep)),

@@ -133,10 +133,10 @@ load_all()
     ),
     debug = T
   )
+  out
   out$replicates[[1]]$latents[[1]]$theta_K
-
-  traceplot(out, "field")
-  traceplot(out)
+  # traceplot(out, "ar")
+  # traceplot(out)
   # plot(attr(W, "noise"), out$replicates[[1]]$latents[[1]]$noise)
   # out$replicates[[1]]$latents[[1]]$control$numer_grad
   # load_all()

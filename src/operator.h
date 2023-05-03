@@ -105,6 +105,26 @@ public:
   SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
 };
 
+// Bivar
+class Bivar : public Operator {
+private:
+    std::unique_ptr<Operator> first, second;
+    int n_theta_1, n_theta_2;
+    int n; // dim of K1 and K2 (same)
+    bool share_param;
+public:
+    Bivar(const Rcpp::List&);
+
+    SparseMatrix<double> getK(const VectorXd& alpha) const;
+    SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
+
+    Matrix2d getD(double, double) const;
+    Matrix2d get_dD_theta(double, double) const;
+    Matrix2d get_dD_rho(double, double) const;
+    Matrix2d get_dD2_theta(double, double) const;
+    Matrix2d get_dD2_rho(double, double) const;
+};
+
 class Iid : public Operator {
 private:
     SparseMatrix<double, 0, int> I;
@@ -131,25 +151,6 @@ class Randeff : public Operator{
     // VectorXd grad_theta_K();
     // void sample_cond_V() override;
     // void update_each_iter();
-};
-
-// Bivar
-class Bivar : public Operator {
-private:
-    std::unique_ptr<Operator> m1, m2;
-    int n; // dim of K1 and K2 (same)
-    bool share_param;
-public:
-    Bivar(const Rcpp::List&);
-
-    SparseMatrix<double> getK(const VectorXd& alpha) const;
-    SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
-
-    Matrix2d getD(double, double) const;
-    Matrix2d get_dD_theta(double, double) const;
-    Matrix2d get_dD_rho(double, double) const;
-    Matrix2d get_dD2_theta(double, double) const;
-    Matrix2d get_dD2_rho(double, double) const;
 };
 
 // for initialize Latent models

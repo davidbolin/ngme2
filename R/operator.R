@@ -41,6 +41,7 @@ print.ngme_operator <- function(x, padding = 0, ...) {
     ar1 = "AR(1)",
     matern = "Matern",
     tp  = "Tensor product",
+    bv  = "Bivariate model",
     "Unknown"
   )
 
@@ -51,6 +52,12 @@ print.ngme_operator <- function(x, padding = 0, ...) {
     ar1 = cat(pad_add4_space, "alpha = ", format(ar1_th2a(theta_K), digits=3), "\n", sep=""),
     matern = cat(pad_add4_space, "theta_K = ", format(theta_K, digits=3), "\n", sep=""),
     tp = {
+      print(operator$first,  padding = padding + 4)
+      print(operator$second, padding = padding + 4)
+    },
+    bv = {
+      cat(pad_add4_space, "rho   = ", format(theta_K[1], digits=3), "\n", sep="")
+      cat(pad_add4_space, "zeta = ", format(theta_K[2], digits=3), "\n", sep="")
       print(operator$first,  padding = padding + 4)
       print(operator$second, padding = padding + 4)
     },
@@ -92,31 +99,6 @@ print.ngme_operator <- function(x, padding = 0, ...) {
 
   # print.ngme_noise(model$noise, padding = padding)
   invisible(operator)
-}
-
-bv <- function(
-  first,
-  second,
-  theta=1, rho=1,
-  share_parameter=FALSE
-) {
-  stopifnot(
-    inherits(first, "ngme_operator"),
-    inherits(second, "ngme_operator"),
-    all(dim(first$K) == dim(second$K))
-  )
-
-  D <- build_D(theta, rho)
-  bigD <- kronecker(D, Matrix::Diagonal(nrow(first$K))); bigD
-
-  ngme_operator(
-    model = "bv",
-    K = bigD %*% Matrix::bdiag(first$K, second$K),
-    h = c(first$h, second$h),
-    A = Matrix::bdiag(first$A, second$A),
-    first = first,
-    second = second
-  )
 }
 
 # build_noise <- function(

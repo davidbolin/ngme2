@@ -29,9 +29,17 @@ matern <- function(
     h <- Matrix::diag(fem$c0)
   }
 
-  kappas <- as.numeric(B_K %*% theta_K)
-  K <- if (alpha == 2) diag(kappas) %*% C %*% diag(kappas)  + G
+  kappas <- as.numeric(exp(B_K %*% theta_K))
+  if (length(theta_K) == 1) {
+    # stationary
+    K <- kappas[1]**alpha * C + G
+  }
+  else {
+    # non-stationary
+    K <- if (alpha == 2) diag(kappas) %*% C %*% diag(kappas)  + G
     else diag(kappas) %*% C %*% diag(kappas) %*% C %*% diag(kappas) + G
+  }
+
   ngme_operator(
     alpha = alpha,
     model = "matern",

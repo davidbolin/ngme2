@@ -55,13 +55,13 @@ tp <- function(
 bv <- function(
   first,
   second,
-  rho = 0, zeta = 0,
+  zeta = 0, rho = 0,
   map = NULL,
   replicate = NULL,
   share_param = FALSE,
   ...
 ) {
-  theta_K <- c(rho, zeta, first$theta_K, second$theta_K)
+  theta_K <- c(zeta, rho, first$theta_K, second$theta_K)
   stopifnot(
     inherits(first, "ngme_operator"),
     inherits(second, "ngme_operator"),
@@ -74,7 +74,7 @@ bv <- function(
   second$theta_K <- theta_K[(3 + first$n_theta_K):length(theta_K)]
 
   D <- build_D(theta_K[1], theta_K[2])
-  bigD <- kronecker(D, Matrix::Diagonal(nrow(first$K))); bigD
+  bigD <- kronecker(D, Matrix::Diagonal(nrow(first$K)))
 
   ngme_operator(
     model       = "bv",

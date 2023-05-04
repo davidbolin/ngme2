@@ -1,11 +1,6 @@
 # test rw related model
 
 test_that("simulate and estimate of rw with NIG", {
-  rw1(1:5, cyclic = T)$h
-  load_all()
-  rw2(1:5)$h
-  rw2(1:5, cyclic = T)$h
-
   n_obs <<- 500
   mu <- -3; sigma <- 5; nu <- 2; sigma_eps <- 0.8
   # h <- rpois(n_obs, lambda=3) + 1

@@ -43,6 +43,9 @@ print.ngme_operator <- function(x, padding = 0, ...) {
     tp  = "Tensor product (with 2 sub-models)",
     bv  = "Bivariate model (with 2 sub-models)",
     iid = "IID model",
+    rw1 = "Random walk (order 1)",
+    rw2 = "Random walk (order 2)",
+    ou  = "Ornstein-Uhlenbeck",
     "Unknown"
   )
 
@@ -51,7 +54,6 @@ print.ngme_operator <- function(x, padding = 0, ...) {
 
   parameter <- with(operator, switch(model,
     ar1 = cat(pad_add4_space, "alpha = ", format(ar1_th2a(theta_K), digits=3), "\n", sep=""),
-    iid = cat(pad_add4_space, "No parameter.", "\n", sep=""),
     matern = cat(pad_add4_space, "theta_K = ", format(theta_K, digits=3), "\n", sep=""),
     tp = {
       print(operator$first,  padding = padding + 4)
@@ -63,7 +65,7 @@ print.ngme_operator <- function(x, padding = 0, ...) {
       print(operator$first,  padding = padding + 4)
       print(operator$second, padding = padding + 4)
     },
-    "Unknown"
+    cat(pad_add4_space, "No parameter.", "\n", sep="")
   ))
 
   # model_string <- model$model

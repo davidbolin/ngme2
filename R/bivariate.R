@@ -2,19 +2,16 @@
 #'
 #' Given 2 operator (first and second), build a tensor-product operator based on K = K_first x K_second (here x is Kronecker product)
 #'
-#' @param map can be ignored, pass through first and second
 #' @param first ngme_model
 #' @param second ngme_model
-#' @param replicate replicate for the process
 #' @param ... extra arguments in f()
+# ' @param map pass through first and second
 #'
 #' @return a list of specification of model
 #' @export
 tp <- function(
   first,
   second,
-  map         = NULL,
-  replicate   = NULL,
   ...
 ) {
   stopifnot(
@@ -44,9 +41,9 @@ tp <- function(
 #' Given 2 operator (first and second), build a correlated bivaraite operator based on K = D %*% diag(K_first, K_second)
 #'
 #' @param map can be ignored, pass through first and second
+#' @param replicate replicate passed to both first and second
 #' @param first ngme_model
 #' @param second ngme_model
-#' @param replicate replicate for the process
 #' @param ... extra arguments in f()
 #'
 #' @return a list of specification of model
@@ -60,6 +57,17 @@ bv <- function(
   share_param = FALSE,
   ...
 ) {
+  # inject replicate to sub models
+  if (!is.null(replicate)) {
+    first_call <- match.call()$first
+    first_call$replicate <- replicate
+    first <- eval(first_call, envir = parent.frame())
+
+    second_call <- match.call()$second
+    second_call$replicate <- replicate
+    second <- eval(second_call, envir = parent.frame())
+  }
+
   theta_K <- c(zeta, rho, first$theta_K, second$theta_K)
   stopifnot(
     inherits(first, "ngme_operator"),

@@ -51,6 +51,8 @@ ar1 <- function(
   theta_K   = 0,
   ...
 ) {
+  stopifnot("length of map and replicate should be the same." = length(map) == length(replicate))
+
   n <- mesh$n; nrep <- length(unique(replicate))
   stopifnot("The index should be integers." = all(map == round(map)))
 
@@ -59,8 +61,10 @@ ar1 <- function(
   C <- Matrix::sparseMatrix(j=1:(n-1), i=2:n, x=-1, dims=c(n,n))
   stopifnot("The mesh should be 1d and has gap 1." = all(h == 1))
 
+  # for replicate
   G <- Matrix::kronecker(diag(nrep), G)
   C <- Matrix::kronecker(diag(nrep), C)
+  h <- rep(h, nrep)
 
   stopifnot("The length of theta_K should be 1." = length(theta_K) == 1)
   alpha <- ar1_th2a(theta_K)
@@ -72,7 +76,7 @@ ar1 <- function(
     G = ngme_as_sparse(G),
     K = alpha * C + G,
     h = h,
-    A = INLA::inla.spde.make.A(mesh = mesh, loc = map),
+    A = INLA::inla.spde.make.A(mesh = mesh, loc = map, repl=replicate),
     symmetric = FALSE,
     zero_trace = TRUE
   )
@@ -101,30 +105,37 @@ rw1 <- function(
   mesh      = INLA::inla.mesh.1d(loc = map),
   ...
 ) {
+  stopifnot("length of map and replicate should be the same." = length(map) == length(replicate))
+
   x <- map
   n <- mesh$n; nrep <- length(unique(replicate))
 
-  h <- diff(mesh$loc)
+  h <- diff(mesh$loc);
+  n <- mesh$n
   if (!cyclic) {
     mesh <- INLA::inla.mesh.1d(loc = unique(x))
-    n <- mesh$n
-    C <- Matrix::sparseMatrix(i = 1:(n-1), j=2:n, x=1, dims=c(n-1,n))
-    G <- Matrix::sparseMatrix(i = 1:(n-1), j=1:(n-1), x=-1, dims=c(n-1,n))
+    C <- Matrix::sparseMatrix(i = 1:n, j=1:n, x=1, dims=c(n,n))
+    G <- Matrix::sparseMatrix(i = 2:n, j=1:(n-1), x=-1, dims=c(n,n))
+    h <- c(0.01, h) # assume first point fixed to 0
   } else {
     stopifnot(length(x) >= 4)
     mesh <- INLA::inla.mesh.1d(loc = x)
-    n <- mesh$n
     C <- Matrix::Diagonal(n)
     G <- Matrix::sparseMatrix(i = 1:n, j=c(2:n, 1), x=-1, dims=c(n,n))
     h <- c(h, mean(h))
   }
+
+  # for replicate
+  G <- Matrix::kronecker(diag(nrep), G)
+  C <- Matrix::kronecker(diag(nrep), C)
+  h <- rep(h, nrep)
 
   ngme_operator(
     model = "rw1",
     theta_K = double(0),
     K = ngme_as_sparse(C + G),
     h = h,
-    A = INLA::inla.spde.make.A(mesh = mesh, loc = map),
+    A = INLA::inla.spde.make.A(mesh = mesh, loc = map, repl=replicate),
     symmetric = FALSE,
     zero_trace = FALSE
   )
@@ -153,27 +164,34 @@ rw2 <- function(
   mesh      = INLA::inla.mesh.1d(loc = map),
   ...
 ) {
+  stopifnot("length of map and replicate should be the same." = length(map) == length(replicate))
+
   x <- map
   n <- mesh$n; nrep <- length(unique(replicate))
+  stopifnot("mesh too small" = n >= 3)
 
   h <- diff(mesh$loc)
   if (!cyclic) {
-    stopifnot(n >= 2)
-    C <- Matrix::sparseMatrix(i = 1:(n-2), j=2:(n-1), x=-2, dims=c(n-2,n))
-    G <- Matrix::sparseMatrix(i = rep(1:(n-2),2), j=c(1:(n-2), 3:n), x=1, dims=c(n-2,n))
-    h <- tail(h, -1)
+    C <- Matrix::sparseMatrix(i = 3:n, j=2:(n-1), x=-2, dims=c(n,n))
+    G <- Matrix::sparseMatrix(i = c(1:n, 3:n), j=c(1:n, 1:(n-2)), x=1, dims=c(n,n))
+    h <- c(0.01, h)
   } else {
     C <- Matrix::sparseMatrix(i = 1:n, j=c(2:n,1), x=-2, dims=c(n,n))
     G <- Matrix::sparseMatrix(i = rep(1:n,2), j=c(1:n, 3:n, 1, 2), x=1, dims=c(n,n))
     h <- c(h, mean(h))
   }
 
+  # for replicate
+  G <- Matrix::kronecker(diag(nrep), G)
+  C <- Matrix::kronecker(diag(nrep), C)
+  h <- rep(h, nrep)
+
   ngme_operator(
-    model = "rw1",
+    model = "rw2",
     theta_K = double(0),
     K = ngme_as_sparse(C + G),
     h = h,
-    A = INLA::inla.spde.make.A(mesh = mesh, loc = map),
+    A = INLA::inla.spde.make.A(mesh = mesh, loc = map, repl=replicate),
     symmetric = FALSE,
     zero_trace = FALSE
   )
@@ -198,9 +216,11 @@ ou <- function(
   B_K       = NULL,
   ...
 ) {
+  stopifnot("length of map and replicate should be the same." = length(map) == length(replicate))
+
   h <- diff(mesh$loc); h <- c(h, mean(h))
 
-  if (is.null(B_K)) B_K <- matrix(1, nrow = length(x), ncol = 1)
+  if (is.null(B_K)) B_K <- matrix(1, nrow = length_map(map), ncol = 1)
   stopifnot("B_theta is a matrix" = is.matrix(B_K))
   stopifnot("ncol(B_K) == length(theta_K)"
     = ncol(B_K) == length(theta_K))
@@ -209,6 +229,11 @@ ou <- function(
   G <- Matrix::bandSparse(n=n,m=n,k=c(-1,0),diagonals=cbind(-rep(1,n), rep(1,n)))
   C <- Ce <- Matrix::bandSparse(n=n,m=n,k=c(-1,0),diagonals=cbind(0.5*c(h[-1],0), 0.5*h))
   Ci = Matrix::sparseMatrix(i=1:n,j=1:n,x=1/h,dims = c(n,n))
+
+  # for replicate
+  G <- Matrix::kronecker(diag(nrep), G)
+  C <- Matrix::kronecker(diag(nrep), C)
+  h <- rep(h, nrep)
 
   kappas <- exp(as.numeric(B_K %*% theta_K))
   K <- Matrix::Diagonal(x=kappas) %*% C + G
@@ -221,7 +246,7 @@ ou <- function(
     G           = ngme_as_sparse(G),
     K           = ngme_as_sparse(K),
     h           = h,
-    A           = INLA::inla.spde.make.A(mesh = mesh, loc = map),
+    A           = INLA::inla.spde.make.A(mesh = mesh, loc = map, repl=replicate),
     symmetric   = FALSE,
     zero_trace  = TRUE
   )

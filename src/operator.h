@@ -29,7 +29,7 @@ using std::vector;
 
 
 // subclasses
-enum Type {ar, rw, ou, matern_ns};
+enum Type {ar, ou, matern_ns};
 
 class Operator {
 protected:
@@ -59,7 +59,7 @@ private:
     Type type;
     MatrixXd B_K;
 public:
-    AR(const Rcpp::List&, Type type);
+    AR(const Rcpp::List&);
 
     SparseMatrix<double> getK(const VectorXd& alpha) const;
     SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
@@ -166,16 +166,14 @@ public:
     if (model_type == "tp") {
       return std::make_unique<Tensor_prod>(operator_in);
     } else if (model_type == "ar1") {
-      return std::make_unique<AR>(operator_in, Type::ar);
-    } else if (model_type == "rw") {
-      return std::make_unique<AR>(operator_in, Type::rw);
+      return std::make_unique<AR>(operator_in);
     } else if (model_type == "ou") {
       return std::make_unique<Matern_ns>(operator_in, Type::ou);
     } else if (model_type == "matern" && n_theta_K > 1) {
       return std::make_unique<Matern_ns>(operator_in, Type::matern_ns);
     } else if (model_type == "matern" && n_theta_K == 1) {
       return std::make_unique<Matern>(operator_in);
-    } else if (model_type == "iid") {
+    } else if (model_type == "iid" || model_type == "rw1" || model_type == "rw2") {
       return std::make_unique<Iid>(operator_in);
     } else if (model_type == "re") {
       return std::make_unique<Randeff>(operator_in);

@@ -3,23 +3,18 @@ ngme_replicate <- function(
   Y            = NULL,
   X            = NULL,
   noise        = noise_normal(),
-  randeffs     = list(),
   latents      = list(),
   control_ngme = list(),
   ...
 ) {
   # compute W_sizes and V_sizes
-  W_sizes     = sum(unlist(lapply(latents, function(x) x[["n_rep"]] * x[["W_size"]])))   #W_sizes = sum(ncol_K)
-  V_sizes     = sum(unlist(lapply(latents, function(x) x[["n_rep"]] * x[["V_size"]])))   #W_sizes = sum(nrow_K)
+  W_sizes     = sum(unlist(lapply(latents, function(x) x[["W_size"]])))   #W_sizes = sum(ncol_K)
+  V_sizes     = sum(unlist(lapply(latents, function(x) x[["V_size"]])))   #W_sizes = sum(nrow_K)
 
-  n_reffs = sum(unlist(lapply(randeffs, function(x) x["n_reff"])))
-  B_reffs = do.call(cbind, lapply(randeffs, function(x) x[["B_reff"]]))
-
-  n_re_params = sum(unlist(lapply(randeffs, function(x) x["n_params"])))
   n_la_params = sum(unlist(lapply(latents, function(x) x["n_params"])))
   n_feff <- ncol(X);
 
-  n_params <- n_re_params + n_feff + n_la_params + noise$n_params
+  n_params <- n_feff + n_la_params + noise$n_params
 
   latents_string <- rep(" ", 14) # padding of 14 spaces
   for (latent in latents)
@@ -39,18 +34,14 @@ ngme_replicate <- function(
       Y                 = Y,
       X                 = X,
       beta              = control_ngme$beta,
-      randeffs          = randeffs,
       latents           = latents,
       noise             = noise,
       control_ngme      = control_ngme,
       par_string        = par_string,
       W_sizes           = W_sizes,
       V_sizes           = V_sizes,
-      n_reffs           = n_reffs,
-      B_reffs           = B_reffs,
       n_merr            = noise$n_params,
       n_params          = n_params,
-      n_re_params       = n_re_params,
       n_la_params       = n_la_params,
       ...
     ),

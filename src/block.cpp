@@ -310,6 +310,7 @@ void BlockModel::sampleW_V()
   }
   KW = getMean() + KW;
 
+// std::cout << "K = " << K << std::endl;
   VectorXd W = VectorXd::Zero(W_sizes);
   if (V_sizes == W_sizes) {
     LU_K.factorize(K);

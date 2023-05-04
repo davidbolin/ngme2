@@ -93,9 +93,9 @@ f <- function(
   f_args <- c(f_args, list(...))
 
   # 0. build mesh if not specified
-  if (is.null(mesh)) {
-    f_args$mesh <- do.call(build_mesh, f_args)
-  }
+  # if (is.null(mesh)) {
+  #   f_args$mesh <- do.call(build_mesh, f_args)
+  # }
 
   # 1. build operator
   n <- mesh$n; nrep <- length(unique(replicate))
@@ -103,6 +103,9 @@ f <- function(
     tp = do.call(tp, f_args),
     bv = do.call(bv, f_args),
     ar1 = do.call(ar1, f_args),
+    rw1 = do.call(rw1, f_args),
+    rw2 = do.call(rw2, f_args),
+    ou = do.call(ou, f_args),
     matern = do.call(matern, f_args),
     iid = do.call(iid, f_args),
     stop("Unknown models")

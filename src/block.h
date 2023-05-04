@@ -93,7 +93,6 @@ public:
             sampleV_WY();
             sample_cond_block_V()   ;
         }
-      if (debug) std::cout << "Finish burn in period." << std::endl;
     }
 
     int get_n_obs() const {return n_obs;}

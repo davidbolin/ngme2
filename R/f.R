@@ -104,7 +104,7 @@ f <- function(
     bv = do.call(bv, f_args),
     ar1 = do.call(ar1, f_args),
     matern = do.call(matern, f_args),
-    iid = list(K = Matrix::Diagonal(n * nrep), h = rep(1, n * nrep)),
+    iid = do.call(iid, f_args),
     stop("Unknown models")
   )
 
@@ -154,7 +154,7 @@ f <- function(
 #'
 #' @return a list of specification of model
 #' @export
-model_iid <- iid <- function(
+model_iid <- function(
   map         = NULL,
   replicate   = NULL,
   data        = NULL,

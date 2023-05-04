@@ -1,3 +1,18 @@
+#' ngme Matern SPDE model specification
+#'
+#' Generating C, G and A given index and replicate
+#'
+#' @param map integer vector, time index for the AR(1) process
+#' @param mesh mesh for build the SPDE model
+#' @param replicate replicate for the process
+#' @param alpha 2 or 4, SPDE smoothness parameter
+#' @param theta_K initial value for theta_K, kappa = exp(B_K %*% theta_K)
+#' @param B_K bases for theta_K
+#'
+#' @param ... extra arguments
+#'
+#' @return ngme_operator object
+#' @export
 matern <- function(
   map,
   mesh,

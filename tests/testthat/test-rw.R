@@ -1,6 +1,11 @@
 # test rw related model
 
 test_that("simulate and estimate of rw with NIG", {
+  rw1(1:5, cyclic = T)$h
+  load_all()
+  rw2(1:5)$h
+  rw2(1:5, cyclic = T)$h
+
   n_obs <<- 500
   mu <- -3; sigma <- 5; nu <- 2; sigma_eps <- 0.8
   # h <- rpois(n_obs, lambda=3) + 1
@@ -46,12 +51,12 @@ test_that("simulate and estimate of rw with NIG", {
     data = data.frame(Y = Y),
     control_opt = control_opt(
       estimation = T,
-      iterations = 500,
+      iterations = 1,
       n_parallel_chain = 4,
       print_check_info = TRUE,
       verbose = F
     ),
-    debug = FALSE
+    debug = TRUE
   )
   out
   traceplot(out, "rw")
@@ -94,7 +99,7 @@ test_that("the order of W same as order of index?", {
 
 ############################## AR1 case
 test_that("test estimation of basic ar with normal measurement noise", {
-  n_obs <- 1000
+  n_obs <- 2400
   alpha <- 0.75
   mu <- 4; sigma <- 5; nu <- 0.2; sigma_eps <- 0.8
   ar1 <- f(1:n_obs, model="ar1", theta_K = ar1_a2th(0.8), noise=noise_nig(mu=mu, sigma=sigma, nu=nu), eval = T)
@@ -122,12 +127,12 @@ load_all()
     ),
     data = data.frame(Y = Y, x1=x1),
     control_ngme = control_ngme(
-      # beta = c(0, 0)
+      # n_gibbs_samples = 5
     ),
     control_opt = control_opt(
       estimation = T,
       iterations = 100,
-      n_parallel_chain = 1,
+      n_parallel_chain = 4,
       print_check_info = FALSE,
       verbose = F,
     ),

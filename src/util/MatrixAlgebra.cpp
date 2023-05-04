@@ -710,3 +710,31 @@ Eigen::MatrixXd HessianSigma(const Eigen::MatrixXd &Z,
 
 	return (Kdd * Res);
 }
+
+SparseMatrix<double, 0, int> kroneckerEigen(SparseMatrix<double, 0, int> &A, SparseMatrix<double, 0, int> &B)
+{
+	int Br = B.rows();
+	int Bc = B.cols();
+	int Ar = A.rows();
+	int Ac = A.cols();
+
+	SparseMatrix<double, 0, int> AB;
+	AB.resize(Ar * Br, Ac * Bc);
+
+	for (int k = 0; k < A.outerSize(); ++k)
+	{
+		for (int l = 0; l < B.outerSize(); ++l)
+		{
+			for (SparseMatrix<double, 0, int>::InnerIterator itA(A, k); itA; ++itA)
+			{
+				for (SparseMatrix<double, 0, int>::InnerIterator itB(B, l); itB; ++itB)
+				{
+					int i = itA.row() * Br + itB.row();
+					int j = itA.col() * Bc + itB.col();
+					AB.insert(i, j) = itA.value() * itB.value();
+				}
+			}
+		}
+	}
+	return AB;
+}

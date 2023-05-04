@@ -5,7 +5,7 @@
 #include <iostream>
 #include <string.h>
 #include <Eigen/Dense>
-// #include <unsupported/Eigen/KroneckerProduct>
+#include <unsupported/Eigen/KroneckerProduct>
 #include <Eigen/SparseCore>
 #ifdef _OPENMP
 	#include<omp.h>
@@ -107,5 +107,7 @@ Eigen::MatrixXd HessianSigma(const Eigen::MatrixXd & ,
 						   const Eigen::MatrixXd & ,
 						   const Eigen::MatrixXd & ,
 						   const int );
+
+SparseMatrix<double,0,int> kroneckerEigen(SparseMatrix<double,0,int>&,SparseMatrix<double,0,int>&);
 
 #endif /* defined(__MatrixAlgebra__MatrixAlgebra__) */

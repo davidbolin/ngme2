@@ -4,7 +4,7 @@
 \alias{tp}
 \title{ngme tensor-product model specification}
 \usage{
-tp(first, second, map = NULL, replicate = NULL, theta_K = NULL, ...)
+tp(first, second, map = NULL, replicate = NULL, ...)
 }
 \arguments{
 \item{first}{ngme_model}

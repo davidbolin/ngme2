@@ -7,8 +7,8 @@
 bv(
   first,
   second,
-  rho = 0,
   zeta = 0,
+  rho = 0,
   map = NULL,
   replicate = NULL,
   share_param = FALSE,

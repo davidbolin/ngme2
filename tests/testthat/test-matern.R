@@ -12,6 +12,7 @@ test_that("test Matern", {
   )
 # mesh$n
 # plot(mesh)
+load_all()
   n_obs <- 800
   loc <- cbind(runif(n_obs, 0, 10), runif(n_obs, 0, 5))
 

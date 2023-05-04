@@ -25,27 +25,28 @@ test_that("ar x 2d case", {
   set.seed(16)
   library(INLA)
 
-# sth wrong
 ##############################  simulation
   mesh2d <- inla.mesh.2d(
     loc.domain = cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5),
-    max.edge = c(3, 10)
+    max.edge = c(1.2, 10)
   )
   mesh2d$n
-  n1 <- 5
-  n2 <- 100
+  n1 <- 8
+  n2 <- 300
   loc <- cbind(runif(n2, 0, 10), runif(n2, 0, 5))
 
 load_all()
+library(ngme2)
   tensor_model <- f(model="tp",
     first = ar1(1:n1, theta_K = ar1_a2th(0.7)),
-    second = matern(map=loc, mesh=mesh2d, theta_K = 2),
+    second = matern(map=loc, mesh=mesh2d, theta_K = 1),
     noise = noise_nig(mu=-3, sigma=2, nu=1),
     eval = T
   )
+
   expect_true(all(tensor_model$noise$h == tensor_model$operator$h))
   expect_true(all(tensor_model$operator$K ==
-     ar1(1:n1, theta_K = ar1_a2th(0.7))$K %x% matern(map=loc, mesh=mesh2d, theta_K = 2)$K))
+     ar1(1:n1, theta_K = ar1_a2th(0.7))$K %x% matern(map=loc, mesh=mesh2d, theta_K = 1)$K))
   W <- simulate(tensor_model)
 
   AW <- as.numeric(tensor_model$A %*% W)
@@ -56,21 +57,28 @@ load_all()
 ##############################  estimation
   load_all()
   out <- ngme(
-    Y ~ 0 + f(
+    Y ~ 0 +
+    f(
       model="tp", name="tp",
-      first = ar1(1:n1),
+      first = iid(1:n1),
+      # first = ar1(1:n1),
       second = matern(map=loc, mesh=mesh2d),
-      control = control_f(numer_grad = F),
+      control = control_f(numer_grad = T),
       noise = noise_nig(
         # mu=-3, sigma=2, nu=1,
         # fix_V = T, V = attr(W, "noise")$V
       ),
-      fix_W = TRUE, W=W
+      # fix_W = TRUE, W=W
     ),
+    # f(
+    #   loc, model="matern", replicate=rep(1:8, each=length_map(loc)),
+    #   control = control_f(numer_grad = T),
+    #   noise = noise_nig()
+    # ),
     data = data.frame(Y=Y),
     family = "normal",
     control_opt = control_opt(
-      iterations = 100,
+      iterations = 1,
       n_parallel_chain = 1,
       estimation = T,
       verbose = T,
@@ -120,8 +128,8 @@ set.seed(16); library(INLA);
 test_that("ar x ar case", {
   set.seed(16)
 load_all()
-  n1 <- 10
-  n2 <- 50
+  n1 <- 8
+  n2 <- 300
   tensor_model <- f(model="tp",
     first = ar1(1:n1, theta_K = ar1_a2th(0.7)),
     second = ar1(1:n2, theta_K = ar1_a2th(-0.2)),
@@ -151,13 +159,13 @@ load_all()
       # fix_W = TRUE, W=W
     ),
     control_ngme = control_ngme(
-      n_gibbs_samples = 5
+      # n_gibbs_samples = 5
     ),
     data = data.frame(Y=Y),
     family = "normal",
     control_opt = control_opt(
       iterations = 100,
-      n_parallel_chain = 1,
+      n_parallel_chain = 4,
       estimation = T,
       verbose = T,
       stepsize = 1,

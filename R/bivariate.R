@@ -15,14 +15,13 @@ tp <- function(
   second,
   map         = NULL,
   replicate   = NULL,
-  theta_K     = NULL,
   ...
 ) {
   stopifnot(
     inherits(first, "ngme_operator"),
     inherits(second, "ngme_operator")
   )
-  if (is.null(theta_K)) theta_K <- c(first$theta_K, second$theta_K)
+  theta_K <- c(first$theta_K, second$theta_K)
   stopifnot(length(theta_K) == first$n_theta_K + second$n_theta_K)
 
   ngme_operator(

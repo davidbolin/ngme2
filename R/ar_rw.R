@@ -1,10 +1,39 @@
-# ar1 and rw
+# iid, ar, rw model
+
+#' ngme iid model specification
+#'
+#' @param map integer vector, time index for the AR(1) process
+#' @param replicate replicate for the process
+#'
+#' @param ... extra arguments
+#'
+#' @return ngme_operator object
+#' @export
+#'
+iid <- function(
+  map,
+  replicate = rep(1, length_map(map)),
+  ...
+) {
+  K <- ngme_as_sparse(Matrix::Diagonal(length(map)))
+
+  ngme_operator(
+    model = "iid",
+    theta_K = double(0),
+    K = K,
+    h = rep(1, length(map)),
+    A = K,
+    symmetric = TRUE,
+    zero_trace = FALSE
+  )
+}
 
 #' ngme AR(1) model specification
 #'
 #' Generating C, G and A given index and replicate
 #'
 #' @param map integer vector, time index for the AR(1) process
+#' @param mesh mesh for build the model
 #' @param replicate replicate for the process
 #' @param theta_K initial value for theta_K, if want to specify, can use e.g. ar1_a2th(0.5)
 #'
@@ -49,211 +78,151 @@ ar1 <- function(
   )
 }
 
-#' ngme model - random walk of order 1
+#' ngme random walk model of order 1
 #'
-#' Generating C, G and A given index and replicate
-#' size of C and G is (n-1) * n, size of V is n-1
+#' generate K matrix of size (n-1) x n (non-cyclic case), where n is size of map
 #'
 #' @param map        numerical vector, covariates to build index for the process
-#' @param order     1 or 2, order of random walk model
 #' @param replicate replicate for the process
-#' @param data      specifed or inherit from ngme formula
-#' @param circular  whether the mesh is circular, i.e. the first one is connected to the last
-#'   if it is circular, we will treat the 1st location and the last location same.
-#' @param index_NA  Logical vector, same as is.na(response variable)
-#' @param noise     1. string: type of model, 2. ngme.noise object
-#'  (can also be specified in each ngme model)
+#' @param cyclic  whether the mesh is circular, i.e. the first one is connected to the last
+#'   if it is circular, we will treat the 1st location and the last location as neigbour, with distance of average distance.
+#' @param mesh      mesh for the process, if not specified, will use inla.mesh.1d(loc = map)
 #' @param ...       additional arguments
 #'
 #' @return a list
 #' @export
 #'
 #' @examples
-#' r1 <- model_rw(1:7, order = 1, circular = TRUE); r1$C + r1$G
-#' r2 <- model_rw(1:7, order = 1); r2$C + r2$G
-model_rw <- rw <- function(
+#' r1 <- rw1(1:7, cyclic = TRUE); r1$K
+rw1 <- function(
   map,
-  order       = 1,
-  replicate  = NULL,
-  data        = NULL,
-  circular    = FALSE,
-  index_NA    = NULL,
-  noise       = noise_normal(),
-  # extra A matrix
+  replicate = rep(1, length_map(map)),
+  cyclic    = FALSE,
+  mesh      = INLA::inla.mesh.1d(loc = map),
   ...
 ) {
-  stopifnot(order == 1 || order == 2)
-# capture symbol in index
-  x <- eval(substitute(map), envir = data, enclos = parent.frame())
-  stopifnot("length of index at least >= 3" = length(x) >= 3)
-  if (is.null(replicate)) replicate <- rep(1, length(x))
-  if (is.null(index_NA)) index_NA <- rep(FALSE, length(x))
-  stopifnot("Make sure length(x)==length(replicate)" = length(x) == length(replicate))
+  x <- map
+  n <- mesh$n; nrep <- length(unique(replicate))
 
-  if (!circular) {
-    # regular mesh
-    if (order == 1) {
-      mesh <- INLA::inla.mesh.1d(loc = unique(x)[-1])
-      n <- mesh$n + 1
-      C <- Matrix::sparseMatrix(i = 1:(n-1), j=2:n, x=1, dims=c(n-1,n))
-      G <- Matrix::sparseMatrix(i = 1:(n-1), j=1:(n-1), x=-1, dims=c(n-1,n))
-    } else if (order == 2) {
-      mesh <- INLA::inla.mesh.1d(loc = unique(x)[-c(1,2)])
-      n <- mesh$n + 2
-      stopifnot(n >= 2)
-      C <- Matrix::sparseMatrix(i = 1:(n-2), j=2:(n-1), x=-2, dims=c(n-2,n))
-      G <- Matrix::sparseMatrix(i = rep(1:(n-2),2), j=c(1:(n-2), 3:n), x=1, dims=c(n-2,n))
-    }
+  h <- diff(mesh$loc)
+  if (!cyclic) {
+    mesh <- INLA::inla.mesh.1d(loc = unique(x))
+    n <- mesh$n
+    C <- Matrix::sparseMatrix(i = 1:(n-1), j=2:n, x=1, dims=c(n-1,n))
+    G <- Matrix::sparseMatrix(i = 1:(n-1), j=1:(n-1), x=-1, dims=c(n-1,n))
   } else {
-    # circular mesh (remove last element)
-      stopifnot(length(x) >= 4)
+    stopifnot(length(x) >= 4)
     mesh <- INLA::inla.mesh.1d(loc = x)
     n <- mesh$n
-    if (order == 1) {
-      C <- Matrix::Diagonal(n)
-      G <- Matrix::sparseMatrix(i = 1:n, j=c(2:n, 1), x=-1, dims=c(n,n))
-    } else if (order == 2) {
-      C <- Matrix::sparseMatrix(i = 1:n, j=c(2:n,1), x=-2, dims=c(n,n))
-      G <- Matrix::sparseMatrix(i = rep(1:n,2), j=c(1:n, 3:n, 1, 2), x=1, dims=c(n,n))
-    }
+    C <- Matrix::Diagonal(n)
+    G <- Matrix::sparseMatrix(i = 1:n, j=c(2:n, 1), x=-1, dims=c(n,n))
+    h <- c(h, mean(h))
   }
-  noise$h <- diff(mesh$loc)
-  noise$h <- c(noise$h, mean(noise$h))
 
-  if (is.null(index_NA)) index_NA <- rep(FALSE, length(x))
-  if (is.null(replicate)) replicate <- rep(1, length(x))
-
-  mesh_W <- INLA::inla.mesh.1d(loc=x)
-  tmp <- ngme_make_A(
-    mesh = mesh_W,
-    map = x,
-    n_map = length(x),
-    idx_NA = index_NA,
-    replicate = replicate
+  ngme_operator(
+    model = "rw1",
+    theta_K = double(0),
+    K = ngme_as_sparse(C + G),
+    h = h,
+    A = INLA::inla.spde.make.A(mesh = mesh, loc = map),
+    symmetric = FALSE,
+    zero_trace = FALSE
   )
-  A <- tmp$A; A_pred <- tmp$A_pred
-
-  nrep <- ncol(A) / ncol(C)
-  stopifnot(nrep == as.integer(nrep))
-
-  # update noise with length n
-  if (noise$n_noise == 1) noise <- update_noise(noise, n = mesh$n)
-
-  args <- within(list(...), {
-    model       = "rw" # if (order == 1) "rw1" else "rw2"
-    theta_K     = 1
-    fix_theta_K = TRUE
-    W_size      = ncol(C) # mesh$n
-    V_size      = mesh$n
-    A           = ngme_as_sparse(A)
-    A_pred      = A_pred
-    C           = ngme_as_sparse(C)
-    G           = ngme_as_sparse(G)
-    K           = C + G
-    noise       = noise
-    h           = noise$h
-    mesh        = mesh_W
-    map         = x
-    n_map       = length(x)
-    replicate   = replicate
-    n_rep       = nrep
-    rw_order    = order
-  })
-
-  do.call(ngme_model, args)
 }
 
-
-#' ngme model - Ornstein–Uhlenbeck process
+#' ngme random walk model of order 2
 #'
-#' @param map     numerical vector, covariates to build index for the process
+#' generate K matrix of size (n-2) x n (non-cyclic case), where n is size of map
+#'
+#' @param map        numerical vector, covariates to build index for the process
 #' @param replicate replicate for the process
-#' @param data      specifed or inherit from ngme formula
-#'   if it is circular, we will treat the 1st location and the last location same.
-#' @param index_NA  Logical vector, same as is.na(response variable)
-#' @param noise     1. string: type of model, 2. ngme.noise object
-#'  (can also be specified in each ngme model)
-#' @param B_theta_K   Basis matrix for theta, by default it is a matrix of 1
-#' @param theta_K     theta parameter, will be exp(B_theta * theta)
+#' @param cyclic  whether the mesh is circular, i.e. the first one is connected to the last
+#'   if it is circular, we will treat the 1st location and the last location as neigbour, with distance of average distance.
+#' @param mesh      mesh for the process, if not specified, will use inla.mesh.1d(loc = map)
 #' @param ...       additional arguments
 #'
 #' @return a list
 #' @export
 #'
 #' @examples
-#' r2 <- model_ou(1:7, theta_K = 2); r2$K
-#'
-model_ou <- ou <- function(
+#' r2 <- rw2(1:7); r2$K
+rw2 <- function(
   map,
-  B_theta_K   = NULL,
-  theta_K     = 0,
-  replicate   = NULL,
-  data        = NULL,
-  index_NA    = NULL,
-  noise       = noise_normal(),
-  # extra A matrix
+  replicate = rep(1, length_map(map)),
+  cyclic    = FALSE,
+  mesh      = INLA::inla.mesh.1d(loc = map),
   ...
 ) {
-# capture symbol in index
-  x <- eval(substitute(map), envir = data, enclos = parent.frame())
-  stopifnot("length of index at least >= 3" = length(x) >= 3)
-  if (is.null(replicate)) replicate <- rep(1, length(x))
-  if (is.null(index_NA)) index_NA <- rep(FALSE, length(x))
-  stopifnot("Make sure length(x)==length(replicate)" = length(x) == length(replicate))
+  x <- map
+  n <- mesh$n; nrep <- length(unique(replicate))
 
-  if (is.null(B_theta_K)) B_theta_K <- matrix(1, nrow = length(x), ncol = 1)
-  stopifnot("B_theta is a matrix" = is.matrix(B_theta_K))
-  stopifnot("ncol(B_theta_K) == length(theta_K)"
-    = ncol(B_theta_K) == length(theta_K))
-
-  mesh <- INLA::inla.mesh.1d(loc=x)
-
-  # h <- diff(x) ?
   h <- diff(mesh$loc)
-  noise$h <- h <- c(h, mean(h))
+  if (!cyclic) {
+    stopifnot(n >= 2)
+    C <- Matrix::sparseMatrix(i = 1:(n-2), j=2:(n-1), x=-2, dims=c(n-2,n))
+    G <- Matrix::sparseMatrix(i = rep(1:(n-2),2), j=c(1:(n-2), 3:n), x=1, dims=c(n-2,n))
+    h <- tail(h, -1)
+  } else {
+    C <- Matrix::sparseMatrix(i = 1:n, j=c(2:n,1), x=-2, dims=c(n,n))
+    G <- Matrix::sparseMatrix(i = rep(1:n,2), j=c(1:n, 3:n, 1, 2), x=1, dims=c(n,n))
+    h <- c(h, mean(h))
+  }
+
+  ngme_operator(
+    model = "rw1",
+    theta_K = double(0),
+    K = ngme_as_sparse(C + G),
+    h = h,
+    A = INLA::inla.spde.make.A(mesh = mesh, loc = map),
+    symmetric = FALSE,
+    zero_trace = FALSE
+  )
+}
+
+#' ngme Ornstein–Uhlenbeck process specification
+#'
+#' @param map integer vector, time index for the AR(1) process
+#' @param replicate replicate for the process
+#' @param mesh mesh for build the model
+#' @param theta_K initial value for theta_K, kappa = exp(B_K %*% theta_K)
+#' @param B_K bases for theta_K
+#' @param ... extra arguments
+#'
+#' @return ngme_operator object
+#' @export
+ou <- function(
+  map,
+  replicate = rep(1, length_map(map)),
+  mesh      = INLA::inla.mesh.1d(loc=map),
+  theta_K   = 0,
+  B_K       = NULL,
+  ...
+) {
+  h <- diff(mesh$loc); h <- c(h, mean(h))
+
+  if (is.null(B_K)) B_K <- matrix(1, nrow = length(x), ncol = 1)
+  stopifnot("B_theta is a matrix" = is.matrix(B_K))
+  stopifnot("ncol(B_K) == length(theta_K)"
+    = ncol(B_K) == length(theta_K))
+
   n <- length(h)
   G <- Matrix::bandSparse(n=n,m=n,k=c(-1,0),diagonals=cbind(-rep(1,n), rep(1,n)))
   C <- Ce <- Matrix::bandSparse(n=n,m=n,k=c(-1,0),diagonals=cbind(0.5*c(h[-1],0), 0.5*h))
   Ci = Matrix::sparseMatrix(i=1:n,j=1:n,x=1/h,dims = c(n,n))
 
-  if (is.null(index_NA)) index_NA <- rep(FALSE, n)
-  if (is.null(replicate)) replicate <- rep(1, n)
+  kappas <- exp(as.numeric(B_K %*% theta_K))
+  K <- Matrix::Diagonal(x=kappas) %*% C + G
 
-  tmp <- ngme_make_A(
-    mesh = mesh,
-    map = x,
-    n_map = length(x),
-    idx_NA = index_NA,
-    replicate = replicate
+  ngme_operator(
+    model       = "ou",
+    B_K         = B_K,
+    theta_K     = theta_K,
+    C           = ngme_as_sparse(C),
+    G           = ngme_as_sparse(G),
+    K           = ngme_as_sparse(K),
+    h           = h,
+    A           = INLA::inla.spde.make.A(mesh = mesh, loc = map),
+    symmetric   = FALSE,
+    zero_trace  = TRUE
   )
-  A <- tmp$A; A_pred <- tmp$A_pred
-
-  nrep <- ncol(A) / ncol(C)
-  stopifnot(nrep == as.integer(nrep))
-
-  # update noise with length n
-  if (noise$n_noise == 1) noise <- update_noise(noise, n = n)
-
-kappas <- exp(as.numeric(B_theta_K %*% theta_K))
-  args <- within(list(...), {
-    model       = "ou"
-    B_K         = B_theta_K
-    theta_K     = theta_K
-    W_size      = ncol(C) # mesh$n
-    V_size      = mesh$n
-    A           = ngme_as_sparse(A)
-    A_pred      = A_pred
-    C           = ngme_as_sparse(C)
-    G           = ngme_as_sparse(G)
-    K           = Matrix::Diagonal(x=kappas) %*% C + G
-    noise       = noise
-    h           = noise$h
-    mesh        = mesh
-    map         = x
-    n_map       = length(x)
-    replicate   = replicate
-    n_rep       = nrep
-  })
-
-  do.call(ngme_model, args)
 }

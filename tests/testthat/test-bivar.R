@@ -35,7 +35,7 @@ test_that("test bv(ar1, ar1) with 1 noise", {
       # group=group, loc1=.., loc2=..
     ),
     control_ngme = control_ngme(
-      n_gibbs_samples = 10
+      n_gibbs_samples = 5
     ),
     control_opt = control_opt(
       iterations = 100,
@@ -65,6 +65,7 @@ load_all()
   true_model <- f(model="bv",
     first  = matern(loc1, mesh=mesh, theta_K = log(1)),
     second = matern(loc2, mesh=mesh, theta_K = log(3)),
+    # replicate = ...,
     zeta = 1, rho = 0.5,
     noise = noise_nig(mu=-3, sigma=2, nu=1),
     eval=T
@@ -78,7 +79,9 @@ load_all()
 
   load_all()
   out <- ngme(
-    Y ~ 0 + f (model="bv", name="bv",
+    Y ~ 0 +
+    # f(x, model="rw1", group=1) +
+    f(model="bv", name="bv",
       first =  matern(loc1, mesh=mesh),
       second = matern(loc2, mesh=mesh),
       zeta = 0.8,
@@ -86,7 +89,11 @@ load_all()
       control = control_f(numer_grad = F)
     ),
     # noise = noise_nig(correlated = TRUE),
-    data = data.frame(Y = Y),
+    data = data.frame(
+      Y = Y
+      # x =
+    ),
+    # group=c(111,222),
     control_ngme = control_ngme(
       n_gibbs_samples = 5
     ),
@@ -103,3 +110,13 @@ load_all()
   out$replicates[[1]]$latents[[1]]$operator$theta_K
 
 })
+
+
+# f(x, "rw", group=1) on Y1
+# f(x, "rw") on Y1 and Y2
+# f(x, "rw", replicate=group) on Y1 and Y2 (share parameter)
+# f(x, "rw", group=1) + f(x, "rw", group=2)
+# on Y1 and Y2, indpendent process
+
+# f(x, subset=c(T,T,F)) of length Y
+# f(x, subset=c(1,2)) if group provide

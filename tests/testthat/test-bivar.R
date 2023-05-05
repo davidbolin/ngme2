@@ -111,7 +111,30 @@ load_all()
 
 })
 
+test_that("Comparing different structures", {
+  Y1 <- rnorm(3); Y2 <- rnorm(3)
+  x1 <- rnorm(3); x2 <- rnorm(3)
+  group_num = factor(rep(c(1,2), each=3))
+  group_str = factor(rep(c("sal", "temp"), each=3))
 
+  1 %in% levels(group_num)
+  "sal" %in% levels(group_str)
+
+# 1. sal, temp ~ f(x, "rw1", group = sal) + bv(ar1, ar1)
+  load_all()
+  m1 <- ngme(
+    Y ~ f(x, model = "rw1", group = "sal") +
+    f(model="bv", first=ar1(1:3), second=ar1(1:3)),
+    data = data.frame(Y = c(Y1, Y2), x = c(x1, x2)),
+    group = rep(c("sal", "temp"), each = 3),
+    control_opt = control_opt(
+      estimation = T,
+      iterations = 1
+    )
+  )
+
+  m1$replicates[[1]]$latents[[1]]$A
+})
 # f(x, "rw", group=1) on Y1
 # f(x, "rw") on Y1 and Y2
 # f(x, "rw", replicate=group) on Y1 and Y2 (share parameter)

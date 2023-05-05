@@ -68,40 +68,6 @@ print.ngme_operator <- function(x, padding = 0, ...) {
     cat(pad_add4_space, "No parameter.", "\n", sep="")
   ))
 
-  # model_string <- model$model
-  #   if (model_string == "rw" && model$rw_order==1) model_string <- "rw1"
-  #   if (model_string == "rw" && model$rw_order==2) model_string <- "rw2"
-  # cat(pad_space); cat("Ngme model: "); cat(model_string); cat("\n")
-
-  # cat(pad_space); cat("Model parameters: \n")
-  # params <- with(model, {
-  #   switch(model,
-  #     "ar1"         = paste0(pad_add4_space, ngme_format("K", theta_K, "ar1")),
-  #     "ou"          = paste0(pad_add4_space, ngme_format("K", theta_K, "ou")),
-  #     "re"          = {cat(paste0("  Covariance Matrix = \n"));
-  #                      ngme_format("K", theta_K, "re", x$W_size); NULL},
-  #     "matern"      = paste0(pad_add4_space, ngme_format("K", theta_K, "matern")),
-  #     "rw"          = paste0(pad_add4_space, "No parameter."),
-  #     "unkown"      = paste0(pad_add4_space, "No parameter."),
-  #     "tp" = paste0(pad_add4_space, "left - ", left$model, ": ",
-  #       ngme_format("K", left$theta_K, left$model), "\n",
-  #       pad_add4_space, "right - ", right$model, ": ",
-  #       ngme_format("K", right$theta_K, right$model)
-  #     ),
-  #     "bv" = paste0(pad_add4_space, "first - ", m1$model, ": ",
-  #       ngme_format("K", m1$theta_K, m1$model), "\n",
-  #       pad_add4_space, "second - ", m2$model, ": ",
-  #       ngme_format("K", m2$theta_K, m2$model), "\n",
-  #       "theta : ", theta_K[1], "\n",
-  #       "rho : ", theta_K[2]
-  #     ),
-  #     paste0(pad_add4_space, "Not implemented yet!")
-  #   )
-  # })
-  # cat(params);
-  # cat("\n\n")
-
-  # print.ngme_noise(model$noise, padding = padding)
   invisible(operator)
 }
 

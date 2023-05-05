@@ -13,7 +13,7 @@
 #'    \code{NA} value in other columns will cause problem)
 #' @param control_opt  control for optimizer. by default it is \code{control_opt()}. See \code{?control_opt} for details.
 #' @param control_ngme control for ngme model. by default it is \code{control_ngme()}. See \code{?control_ngme} for details.
-#' @param group group for multiple response variables.
+#' @param group group factor, used for multivariate model
 #' @param family likelihood type, same as measurement noise specification, 1. string 2. ngme noise obejct
 #' @param start  starting ngme object (usually object from last fitting)
 #' @param debug  toggle debug mode
@@ -66,6 +66,8 @@ ngme <- function(
     all(diff(sapply(data, length)) == 0)
   )
 
+  if (!is.null(group)) group <- as.factor(group)
+
   # model fitting information
   fitting <- list(
     formula = formula,
@@ -84,7 +86,7 @@ ngme <- function(
   stopifnot(class(noise) == "ngme_noise")
 
   # parse the formula get a list of ngme_replicate
-  ngme_model <- ngme_parse_formula(formula, data, control_ngme, noise)
+  ngme_model <- ngme_parse_formula(formula, data, group, control_ngme, noise)
   attr(ngme_model, "fitting") <- fitting
 
   ####### Use Last_fit ngme object to update Rcpp_list
@@ -264,6 +266,7 @@ check_dim <- function(ngme_model) {
 ngme_parse_formula <- function(
   fm,
   data,
+  group,
   control_ngme,
   noise
 ) {
@@ -309,7 +312,15 @@ ngme_parse_formula <- function(
     # str <- gsub("ngme2::f\\(", "ngme2::f(index_NA=index_NA,", str)
 
     # eval f model, may use global variable
-    res <- eval(parse(text = str), envir = global_env_first)
+    lang <- str2lang(str)
+    if (!is.null(lang$group)) {
+      # set subset to be the group
+      stopifnot("Please make sure group argument of f() belongs to group provided in ngme()"
+        = lang$group %in% levels(group))
+      lang$subset <- group == lang$group
+    }
+
+    res <- eval(lang, envir = global_env_first)
 
     # give default name
     if (res$name == "field") {res$name <- paste0("field", idx_field); idx_field <- idx_field + 1}

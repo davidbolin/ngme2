@@ -10,21 +10,18 @@
 #' @param replicate   Representing the replicate
 #' @param noise     1. string: type of model, 2. ngme.noise object
 #'  (can also be specified in each ngme model)
+#' @param mesh      mesh for the model
 #' @param control      control variables for f model
 #' @param name      name of the field, for later use
-#' @param effect_type  if it is a random effect, see ngme_randeff_types()
-#' @param A            A Matrix connecting observation and mesh
 #' @param theta_K      Unbounded parameter for K
 #' @param data      specifed or inherit from ngme formula
 #' @param group    model as the group (see vignette for space-temporal model)
 #' @param W         starting value of the process
-#' @param A_pred    A Matrix connecting NA location and mesh
-#' @param index_NA  Logical vector, same as is.na(response var.)
 #' @param fix_W  stop sampling for W
 #' @param fix_theta_K fix the estimation for theta_K.
-#' @param index_pred index for prediction
 #' @param debug        Debug mode
 #' @param eval      evaluate the model
+#' @param subset    subset of the model
 #' @param ...       additional arguments
 #'  inherit the data from ngme function
 #'
@@ -50,6 +47,7 @@ f <- function(
   debug       = FALSE,
   fix_W       = FALSE,
   fix_theta_K = FALSE,
+  subset      = rep(TRUE, length_map(map)),
   eval        = FALSE,
   ...
 ) {
@@ -114,6 +112,9 @@ f <- function(
   A <- if (is.null(operator$A))
     INLA::inla.spde.make.A(mesh = f_args$mesh, loc = map)
     else operator$A
+
+  # subset the A matrix
+  if (!all(subset)) A[!subset, ] <- 0
 
   # 2. build noise given operator
   # if (model == "bv")

@@ -100,7 +100,7 @@ out <- ngme(
 
 out
 traceplot(out, "field1")
-out$replicates[[1]]$latents[[1]]$n_theta_K
+out$replicates[[1]]$models[[1]]$n_theta_K
 ```
 
 

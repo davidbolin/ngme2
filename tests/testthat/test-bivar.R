@@ -46,8 +46,8 @@ test_that("test bv(ar1, ar1) with 1 noise", {
   )
   out
   traceplot(out, "bv")
-  out$replicates[[1]]$latents[[1]]$theta_K
-  out$replicates[[1]]$latents[[1]]$operator$theta_K
+  out$replicates[[1]]$models[[1]]$theta_K
+  out$replicates[[1]]$models[[1]]$operator$theta_K
 })
 
 test_that("test on bv(matern, matern)", {
@@ -106,8 +106,8 @@ load_all()
   )
   out
   traceplot(out, "bv")
-  out$replicates[[1]]$latents[[1]]$theta_K
-  out$replicates[[1]]$latents[[1]]$operator$theta_K
+  out$replicates[[1]]$models[[1]]$theta_K
+  out$replicates[[1]]$models[[1]]$operator$theta_K
 
 })
 
@@ -121,19 +121,47 @@ test_that("Comparing different structures", {
   "sal" %in% levels(group_str)
 
 # 1. sal, temp ~ f(x, "rw1", group = sal) + bv(ar1, ar1)
-  load_all()
   m1 <- ngme(
     Y ~ f(x, model = "rw1", group = "sal") +
     f(model="bv", first=ar1(1:3), second=ar1(1:3)),
     data = data.frame(Y = c(Y1, Y2), x = c(x1, x2)),
     group = rep(c("sal", "temp"), each = 3),
     control_opt = control_opt(
-      estimation = T,
+      estimation = F,
       iterations = 1
     )
   )
+  m1$replicates[[1]]$models[[1]]$A
 
-  m1$replicates[[1]]$latents[[1]]$A
+  # 2. sal, temp ~ f(x, "rw1", group = c("sal", "temp")) + bv(ar1, ar1)
+  m2 <- ngme(
+    Y ~ f(x, model = "rw1") +
+    f(model="bv", first=ar1(1:3), second=ar1(1:3)),
+    data = data.frame(Y = c(Y1, Y2), x = c(x1, x2)),
+    group = rep(c("sal", "temp"), each = 3),
+    control_opt = control_opt(
+      estimation = F,
+      iterations = 1
+    )
+  )
+  m2$replicates[[1]]$models[[1]]$A
+
+  # 3. sal, temp ~ f(x, "rw1", group = 1) + f(x, "rw1", group = 2) + bv(ar1, ar1)
+  # individual process
+  m3 <- ngme(
+    Y ~ f(x, model = "rw1", group="sal") + f(x, model = "rw1", group="temp") +
+    f(model="bv", first=ar1(1:3), second=ar1(1:3)),
+    data = data.frame(Y = c(Y1, Y2), x = c(x1, x2)),
+    group = rep(c("sal", "temp"), each = 3),
+    control_opt = control_opt(
+      estimation = F,
+      iterations = 1
+    )
+  )
+  m3$replicates[[1]]$models[["field1"]]$A
+  m3$replicates[[1]]$models[["field2"]]$A
+
+  # for fixed effect
 })
 # f(x, "rw", group=1) on Y1
 # f(x, "rw") on Y1 and Y2

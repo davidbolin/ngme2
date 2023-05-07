@@ -130,7 +130,7 @@ result_ngme2 <- ngme(
 )
 result_ngme2
 traceplot(result_ngme2, "myspde")
-plot(result_ngme2[[1]]$latents[["myspde"]]$noise)
+plot(result_ngme2[[1]]$models[["myspde"]]$noise)
 ```
 
 ## Doing prediction with Ngme2

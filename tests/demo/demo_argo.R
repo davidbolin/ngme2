@@ -92,7 +92,7 @@ traceplot(res0, "mn")
 traceplot(res0, "beta")
 traceplot(res0, "spde")
 
-w <- res0$latents[["field1"]]$W
+w <- res0$models[["field1"]]$W
 length(w)
 plot(w)
 

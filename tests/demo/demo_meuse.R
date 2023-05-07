@@ -70,7 +70,7 @@ out1 <- ngme(
   debug=TRUE
 )
 
-out1$latents[[1]]$h
+out1$models[[1]]$h
 
 traceplot(out1, "rw")
 traceplot(out1, "rw")

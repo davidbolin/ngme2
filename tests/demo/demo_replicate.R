@@ -51,4 +51,4 @@ res_ngme2 <- ngme(
 res_ngme2
 
 plot(myar$noise,
-  res_ngme2$latents[["field1"]]$noise)
+  res_ngme2$models[["field1"]]$noise)

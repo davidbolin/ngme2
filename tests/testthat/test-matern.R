@@ -63,12 +63,12 @@ load_all()
     ),
     debug = F
   )
-  # out$replicates[[1]]$latents[[1]]$noise$h == out$replicates[[1]]$latents[[1]]$h
+  # out$replicates[[1]]$models[[1]]$noise$h == out$replicates[[1]]$models[[1]]$h
   out
   traceplot(out, "spde")
   traceplot(out)
   plot(noise_nig(mu=-4,sigma=1.5,nu=1),
-    out$replicates[[1]]$latents[[1]]$noise)
+    out$replicates[[1]]$models[[1]]$noise)
 
   # Now let's do some prediction
   new_xs <- c(3, 5, 7)
@@ -160,12 +160,12 @@ test_that("test matern ns", {
   )
   ngme_out
   traceplot(ngme_out, "field1")
-  ngme_out$replicates[[1]]$latents[[1]]$theta_K
+  ngme_out$replicates[[1]]$models[[1]]$theta_K
   plot(B_kappa %*% theta_kappa, type="l")
-  points(B_kappa %*% ngme_out$replicates[[1]]$latents[[1]]$theta_K)
+  points(B_kappa %*% ngme_out$replicates[[1]]$models[[1]]$theta_K)
 
 # compare noise
-  plot(ngme_out$replicates[[1]]$latents[[1]]$noise,  noise_nig(mu=-3, sigma = 2, nu = 1.5))
+  plot(ngme_out$replicates[[1]]$models[[1]]$noise,  noise_nig(mu=-3, sigma = 2, nu = 1.5))
 
   expect_true(TRUE)
 })
@@ -203,7 +203,7 @@ test_that("test 1d matern with numerical g", {
   )
   out
 # traceplot(out, "field1")
-# plot(out$replicates[[1]]$latents[[1]]$noise, real_noise)
+# plot(out$replicates[[1]]$models[[1]]$noise, real_noise)
 
   expect_true(TRUE)
 })

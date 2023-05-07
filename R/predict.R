@@ -75,9 +75,9 @@ predict.ngme_replicate <- function(
 
   # update post W (notice here W is concated)
   j <- 1
-  for (i in seq_along(ngme$latents)) {
-    sz <- ngme$latents[[i]]$W_size
-    ngme$latents[[i]]$W <- post_W[j:(j + sz - 1)]
+  for (i in seq_along(ngme$models)) {
+    sz <- ngme$models[[i]]$W_size
+    ngme$models[[i]]$W <- post_W[j:(j + sz - 1)]
     j <- j + sz
   }
 
@@ -89,7 +89,7 @@ predict.ngme_replicate <- function(
     # 1. Make A_pred at new loc for each latent model!!!
     if (!is.null(names(loc))) {
       names <- names(loc)
-      stopifnot(length(names) == length(ngme$latents))
+      stopifnot(length(names) == length(ngme$models))
       tmp_loc <- loc
       for (i in seq_along(names)) {
         stopifnot(!is.null(tmp_loc[[names[[i]]]]))
@@ -97,13 +97,13 @@ predict.ngme_replicate <- function(
       }
     }
 
-    for (i in seq_along(ngme$latents)) {
-      mesh <- ngme$latents[[i]]$mesh
+    for (i in seq_along(ngme$models)) {
+      mesh <- ngme$models[[i]]$mesh
       if (!is.null(mesh) &&
           inherits(mesh, c("inla.mesh", "inla.mesh.1d"))) {
         # model using INLA mesh
           # watch out! reuse replicate!
-          # nrep <- length(unique(ngme$latents[[i]]$replicate))
+          # nrep <- length(unique(ngme$models[[i]]$replicate))
         nrep <- 1
         if (inherits(mesh, "inla.mesh")) {
           # repl = rep(1:nrep, each = nrow(loc[[i]]))
@@ -113,7 +113,7 @@ predict.ngme_replicate <- function(
           locs = rep(loc[[i]], nrep)
         }
 
-        ngme$latents[[i]]$A_pred <- INLA::inla.spde.make.A(
+        ngme$models[[i]]$A_pred <- INLA::inla.spde.make.A(
             mesh = mesh,
             loc = locs
             # repl = repl
@@ -122,7 +122,7 @@ predict.ngme_replicate <- function(
         # time series model using
         # watch out! to-do
 message("Use ngme_ts_make_A...")
-        ngme$latents[[i]]$A_pred <- ngme_ts_make_A(loc=loc[[i]])
+        ngme$models[[i]]$A_pred <- ngme_ts_make_A(loc=loc[[i]])
       } else {
         stop("mesh is null, don't know how to make A")
       }
@@ -133,7 +133,7 @@ message("Use ngme_ts_make_A...")
   # preds <- double(n_pred)
   preds <- 0
 
-  names <- if (type == "lp") c("fe", names(ngme$latents)) else type
+  names <- if (type == "lp") c("fe", names(ngme$models)) else type
   # names <- c("fe", "field1", "field2")
 
   # ngme after estimation, has W, beta
@@ -158,8 +158,8 @@ message("Use ngme_ts_make_A...")
 
         preds <- preds + as.numeric(X_pred %*% ngme$beta)
       }
-    } else if (name %in% names(ngme$latents)) {
-      model <- ngme$latents[[name]]
+    } else if (name %in% names(ngme$models)) {
+      model <- ngme$models[[name]]
       # A_pred?
       if (is.null(model$A_pred))
         stop("A_pred not available")
@@ -191,10 +191,10 @@ compute_indices <- function(ngme, test_idx, N = 100, seed=Sys.time()) {
   n_obs <- length(y_data)
 
   A_preds <- list()
-  for (i in seq_along(ngme$latents)) {
+  for (i in seq_along(ngme$models)) {
     A_preds[[i]] <- INLA::inla.spde.make.A(
-      mesh = ngme$latents[[i]]$mesh,
-      loc = sub_locs(ngme$latents[[i]]$map, test_idx)
+      mesh = ngme$models[[i]]$mesh,
+      loc = sub_locs(ngme$models[[i]]$map, test_idx)
     )
   }
 

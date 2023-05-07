@@ -3,22 +3,22 @@ ngme_replicate <- function(
   Y            = NULL,
   X            = NULL,
   noise        = noise_normal(),
-  latents      = list(),
+  models      = list(),
   control_ngme = list(),
   ...
 ) {
   # compute W_sizes and V_sizes
-  W_sizes     = sum(unlist(lapply(latents, function(x) x[["W_size"]])))   #W_sizes = sum(ncol_K)
-  V_sizes     = sum(unlist(lapply(latents, function(x) x[["V_size"]])))   #W_sizes = sum(nrow_K)
+  W_sizes     = sum(unlist(lapply(models, function(x) x[["W_size"]])))   #W_sizes = sum(ncol_K)
+  V_sizes     = sum(unlist(lapply(models, function(x) x[["V_size"]])))   #W_sizes = sum(nrow_K)
 
-  n_la_params = sum(unlist(lapply(latents, function(x) x["n_params"])))
+  n_la_params = sum(unlist(lapply(models, function(x) x["n_params"])))
   n_feff <- ncol(X);
 
   n_params <- n_feff + n_la_params + noise$n_params
 
-  latents_string <- rep(" ", 14) # padding of 14 spaces
-  for (latent in latents)
-    latents_string <- c(latents_string, latent$par_string)
+  models_string <- rep(" ", 14) # padding of 14 spaces
+  for (latent in models)
+    models_string <- c(models_string, latent$par_string)
   beta_str  <- if (ncol(X) > 0) paste0("  beta_", seq_along(beta)) else ""
   m_mu_str    <- paste0("    mu_", seq_along(noise$theta_mu))
   m_sigma_str <- paste0(" sigma_", seq_along(noise$theta_sigma))
@@ -27,14 +27,14 @@ ngme_replicate <- function(
     normal  = m_sigma_str,
     nig     = c(m_mu_str, m_sigma_str, m_nu_str)
   )
-  par_string <- do.call(paste0, as.list(c(latents_string, beta_str, merr_str)))
+  par_string <- do.call(paste0, as.list(c(models_string, beta_str, merr_str)))
 
   structure(
     list(
       Y                 = Y,
       X                 = X,
       beta              = control_ngme$beta,
-      latents           = latents,
+      models           = models,
       noise             = noise,
       control_ngme      = control_ngme,
       par_string        = par_string,
@@ -65,11 +65,11 @@ print.ngme_replicate <- function(x, ...) {
   cat("\n\n")
 
   cat("Latent models: \n");
-  for (i in seq_along(ngme$latents)) {
+  for (i in seq_along(ngme$models)) {
     # cat("[["); cat(i); cat("]]")
-    # cat("\""); cat(names(ngme$latents)[[i]]); cat("\"\n")
-    cat("$"); cat(names(ngme$latents)[[i]]); cat("\n")
-    print(ngme$latents[[i]], padding = 2)
+    # cat("\""); cat(names(ngme$models)[[i]]); cat("\"\n")
+    cat("$"); cat(names(ngme$models)[[i]]); cat("\n")
+    print(ngme$models[[i]], padding = 2)
   }
   cat("\n")
 

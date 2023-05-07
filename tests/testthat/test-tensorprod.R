@@ -14,8 +14,8 @@ library(INLA)
     )
   )
 out
-  str(out$replicates[[1]]$latents[[1]]$operator)
-  str(out$replicates[[1]]$latents[[1]]$operator$first)
+  str(out$replicates[[1]]$models[[1]]$operator)
+  str(out$replicates[[1]]$models[[1]]$operator$first)
 
 
   # f(i_space, model = spde, group = i_time, control.group = list(model="ar1"))
@@ -30,6 +30,7 @@ test_that("ar x 2d case", {
     loc.domain = cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5),
     max.edge = c(1.2, 10)
   )
+  plot(mesh2d)
   mesh2d$n
   n1 <- 8
   n2 <- 300
@@ -56,14 +57,19 @@ library(ngme2)
 
 ##############################  estimation
   load_all()
+
+  Y <- c(Y1, Y2, )
+
+  # loc is a list
   out <- ngme(
     Y ~ 0 +
     f(
-      model="tp", name="tp",
+      model="tp",
+      name="tp",
       first = iid(1:n1),
       # first = ar1(1:n1),
       second = matern(map=loc, mesh=mesh2d),
-      control = control_f(numer_grad = T),
+      # control = control_f(numer_grad = T),
       noise = noise_nig(
         # mu=-3, sigma=2, nu=1,
         # fix_V = T, V = attr(W, "noise")$V
@@ -89,7 +95,7 @@ library(ngme2)
     debug = FALSE
   )
   out
-  out$replicates[[1]]$latents[[1]]$operator
+  out$replicates[[1]]$models[[1]]$operator
   traceplot(out, "tp")
   traceplot(out)
 })

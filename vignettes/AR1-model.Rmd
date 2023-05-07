@@ -126,6 +126,6 @@ traceplot(ngme_out)
 traceplot(ngme_out, "my_ar")
 
 # comparing the density of the noise estimated and the noise simulated
-plot(ngme_out$replicates[[1]]$latents[[1]]$noise,
+plot(ngme_out$replicates[[1]]$models[[1]]$noise,
   noise_nig(mu = 2, sigma = 2))
 ```

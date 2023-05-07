@@ -11,10 +11,10 @@
 #   linear_predictor <- double(ngme$W_sizes)
 
 #   AW_pred <- 0; AW_data <- 0
-#   for (i in seq_along(latents_in)) {
-#     W <- ngme$latents[[i]]$W
-#     AW_pred <- AW_pred + drop(latents_in[[i]]$A_pred %*% W)
-#     AW_data <- AW_data + drop(latents_in[[i]]$A %*% W)
+#   for (i in seq_along(models_in)) {
+#     W <- ngme$models[[i]]$W
+#     AW_pred <- AW_pred + drop(models_in[[i]]$A_pred %*% W)
+#     AW_data <- AW_data + drop(models_in[[i]]$A %*% W)
 #   }
 
 #   # fixed effects. watch out! Xb could be double(0)
@@ -50,7 +50,7 @@
 #   ngme <- post_sampling(ngme, sampling_iteration)
 
 #   linear_predictor <- X_pred %*% ngme$beta
-#     for (latent in ngme$latents)
+#     for (latent in ngme$models)
 #       linear_predictor <- linear_predictor + A_pred[i] %*% latent$W
 
 #   linear_predictor

@@ -1,5 +1,17 @@
 # implementation of random effect structure
 
+randeff <- re <- function(
+  map,
+  replciate = rep(1, length_map(map)),
+  theta_K = NULL
+) {
+
+  ngme_operator(
+    model="re",
+
+  )
+}
+
 #' Build random effect structure
 #' @param formula formula
 #' @param data data

@@ -55,10 +55,10 @@ test_that("simulate and estimate of rw with NIG", {
   )
   out
   traceplot(out, "rw")
-  plot(out$replicates[[1]]$latents[[1]]$noise,
+  plot(out$replicates[[1]]$models[[1]]$noise,
     noise_nig(mu=mu, sigma=sigma, nu=nu))
 
-expect_true(all(as.numeric(out$replicates[[1]]$latents[[1]]$K %*% W) - dW < 1e-5))
+expect_true(all(as.numeric(out$replicates[[1]]$models[[1]]$K %*% W) - dW < 1e-5))
 })
 
 ######################################################################
@@ -134,22 +134,22 @@ load_all()
     debug = T
   )
   out
-  out$replicates[[1]]$latents[[1]]$theta_K
+  out$replicates[[1]]$models[[1]]$theta_K
   # traceplot(out, "ar")
   # traceplot(out)
-  # plot(attr(W, "noise"), out$replicates[[1]]$latents[[1]]$noise)
-  # out$replicates[[1]]$latents[[1]]$control$numer_grad
+  # plot(attr(W, "noise"), out$replicates[[1]]$models[[1]]$noise)
+  # out$replicates[[1]]$models[[1]]$control$numer_grad
   # load_all()
 
-  # plot(simulate(out$replicates[[1]]$latents[["ar"]]), type="l")
+  # plot(simulate(out$replicates[[1]]$models[["ar"]]), type="l")
   # plot(Y, type="l")
   # prds <- predict(out$replicates[[1]], loc=list(ar=501:600))$mean
 
-  with(out$replicates[[1]]$latents[[1]], {
+  with(out$replicates[[1]]$models[[1]], {
     expect_true(abs(noise$theta_mu - mu) < 4)
     expect_true(abs(noise$theta_sigma - log(sigma)) < 2)
     expect_true(abs(noise$nu - nu) < 4)
-    expect_true(abs(ar1_th2a(out$replicates[[1]]$latents[[1]]$theta_K) - alpha) < 0.1)
+    expect_true(abs(ar1_th2a(out$replicates[[1]]$models[[1]]$theta_K) - alpha) < 0.1)
   })
 })
 
@@ -192,7 +192,7 @@ test_that("test ou process", {
       verbose = T
     ),
   )
-  out$replicates[[1]]$latents[[1]]$theta_K
+  out$replicates[[1]]$models[[1]]$theta_K
   # traceplot(out, "field")
 
   model_ou(c(1,3,5), order=1)$h

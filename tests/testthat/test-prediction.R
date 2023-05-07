@@ -28,14 +28,14 @@ test_that("test predict general", {
   out
   traceplot(out)
   traceplot(out, "field1")
-  plot(out$replicates[[1]]$latents[[1]]$noise, attr(W, "noise"))
+  plot(out$replicates[[1]]$models[[1]]$noise, attr(W, "noise"))
 
   # compare results
   expect_true(sum(abs(out$replicates[[1]]$beta - beta)) < 2)
   expect_true(abs(out$replicates[[1]]$noise$theta_sigma - log(sigma_eps)) < 1)
-  expect_true(abs(out$replicates[[1]]$latents[[1]]$noise$theta_mu - mu) < 1)
-  expect_true(abs(out$replicates[[1]]$latents[[1]]$noise$theta_sigma - log(sigma)) < 1)
-  expect_true(abs(out$replicates[[1]]$latents[[1]]$noise$nu - nu) < 5)
+  expect_true(abs(out$replicates[[1]]$models[[1]]$noise$theta_mu - mu) < 1)
+  expect_true(abs(out$replicates[[1]]$models[[1]]$noise$theta_sigma - log(sigma)) < 1)
+  expect_true(abs(out$replicates[[1]]$models[[1]]$noise$nu - nu) < 5)
 })
 
 

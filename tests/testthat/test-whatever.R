@@ -9,7 +9,7 @@ test_that("test names", {
     control_opt = control_opt(estimation = FALSE)
   )
 
-  expect_equal(names(bm[[1]]$latents), c("f1", "f2"))
+  expect_equal(names(bm[[1]]$models), c("f1", "f2"))
 })
 
 # tests on posterior sampling
@@ -31,11 +31,11 @@ test_that("test names", {
 #   mm
 #   new_model <- modify_ngme_with_idx_NA(mm, idx_NA = 3)
 #   str(new_model$noise)
-#   # new_model$latents[[2]]$A_pred
+#   # new_model$models[[2]]$A_pred
 
-#   # new_model$latents[[1]]$A_pred
+#   # new_model$models[[1]]$A_pred
 #   expect_true(length(new_model$Y) == 4)
-#   # new_model$latents[[1]]
+#   # new_model$models[[1]]
 # })
 
 test_that("merge_reps works", {

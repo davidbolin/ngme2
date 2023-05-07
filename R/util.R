@@ -299,16 +299,16 @@ split_block <- function(block, repl) {
   Ys <- split(block$Y, repl)
   Xs <- split_matrix(block$X, repl)
 
-  # split latents A
-  As <- lapply(block$latents, function(latent) {
+  # split models A
+  As <- lapply(block$models, function(latent) {
     split_matrix(latent$A, repl)
   })
 
-  latentss <- list()
+  modelss <- list()
   for (i in unique(repl)) {
-    latentss[[i]] <- block$latents
-    for (lat in seq_along(block$latents)) {
-      latentss[[i]][[lat]]$A <- As[[lat]][[i]]
+    modelss[[i]] <- block$models
+    for (lat in seq_along(block$models)) {
+      modelss[[i]][[lat]]$A <- As[[lat]][[i]]
     }
   }
 
@@ -318,7 +318,7 @@ split_block <- function(block, repl) {
     blocks[[i]] <- ngme_replicate(
       Y                 = Ys[[i]],
       X                 = Xs[[i]],
-      latents           = latentss[[i]],
+      models           = modelss[[i]],
       beta              = block$beta,
       W_sizes           = block$W_sizes,
       V_sizes           = block$V_sizes,

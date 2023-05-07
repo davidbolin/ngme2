@@ -22,7 +22,7 @@
 #   if (name == 0 || name %in% c("fe", "beta", "mn", "noise"))
 #     f_idx <- 0
 #   else
-#     f_idx <- if (is.numeric(name)) name else which(names(ngme$latents) == name)
+#     f_idx <- if (is.numeric(name)) name else which(names(ngme$models) == name)
 #   stopifnot("Unknown name argument, see ?traceplot2" = length(f_idx) == 1)
 
 #   parameter <- param
@@ -54,13 +54,13 @@
 #         traj[[i]]$block_traj[[parameter]][[param_index]]
 #       )
 #     else {
-#       model_type <- ngme$latents[[f_idx]]$model
+#       model_type <- ngme$models[[f_idx]]$model
 #       # latent model
-#       if (is.null(ngme$latents[[f_idx]]))
+#       if (is.null(ngme$models[[f_idx]]))
 #         stop("Unknown name argument, please check!")
 #       data[, i] <- switch(parameter,
-#         nu = traj[[i]]$latents[[f_idx]][[parameter]],
-#         traj[[i]]$latents[[f_idx]][[parameter]][[param_index]]
+#         nu = traj[[i]]$models[[f_idx]][[parameter]],
+#         traj[[i]]$models[[f_idx]][[parameter]][[param_index]]
 #       )
 #     }
 #   }
@@ -117,14 +117,14 @@
 #       }
 #     )
 #   } else {
-#     f_idx <- if (is.numeric(name)) name else which(names(ngme$latents) == name)
+#     f_idx <- if (is.numeric(name)) name else which(names(ngme$models) == name)
 #     stopifnot(length(f_idx) == 1)
 
-#     n_K <- length(ngme$latents[[f_idx]]$theta_K);
-#     n_mu <- length(ngme$latents[[f_idx]]$noise$theta_mu);
-#     n_sigma <- length(ngme$latents[[f_idx]]$noise$theta_sigma);
+#     n_K <- length(ngme$models[[f_idx]]$theta_K);
+#     n_mu <- length(ngme$models[[f_idx]]$noise$theta_mu);
+#     n_sigma <- length(ngme$models[[f_idx]]$noise$theta_sigma);
 
-#     ps <- switch(ngme$latents[[f_idx]]$noise_type,
+#     ps <- switch(ngme$models[[f_idx]]$noise_type,
 #       "normal" = {
 #         c(
 #           lapply(1:n_K, function(x) traceplot2(ngme, name=f_idx, param="kappa", param_index = x)),
@@ -132,7 +132,7 @@
 #         )
 #       },
 #       "normal_nig" = {
-#         n_sig_normal <- length(ngme$latents[[f_idx]]$noise$theta_sigma_normal);
+#         n_sig_normal <- length(ngme$models[[f_idx]]$noise$theta_sigma_normal);
 #         c(
 #           lapply(1:n_K, function(x) traceplot2(ngme, name=f_idx, param="kappa", param_index = x)),
 #           lapply(1:n_mu, function(x) traceplot2(ngme, name=f_idx, param="mu", param_index = x)),
@@ -170,7 +170,7 @@
 #'
 #' @param ngme ngme object
 #' @param name name of latent models, otherwise plot fixed effects and measurement noise
-#' should be in names(ngme$latents) or other
+#' should be in names(ngme$models) or other
 #'
 #' @return the traceplot
 #' @export
@@ -181,10 +181,10 @@ traceplot <- function(ngme, name="general") {
   ngme <- ngme$replicates[[1]]
   ps <- list()
 
-  if (name %in% names(ngme$latents)) {
-    traj <- attr(ngme$latents[[name]], "lat_traj")
+  if (name %in% names(ngme$models)) {
+    traj <- attr(ngme$models[[name]], "lat_traj")
     # get titles
-    ts <- with(ngme$latents[[name]], {
+    ts <- with(ngme$models[[name]], {
       switch(noise$noise_type,
         "normal"     = list(
           c("theta_K", "theta_sigma"),

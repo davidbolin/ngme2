@@ -58,7 +58,7 @@ traceplot(result_ngme, "myspde")
 traceplot(result_ngme, "mn")
 
 with(mcycle, {plot(times, accel)})
-lines(mesh$loc, result_ngme$latents[["myspde"]]$W, lwd=2)
+lines(mesh$loc, result_ngme$models[["myspde"]]$W, lwd=2)
 lines(mesh$loc, result_inla$summary.random$time[, "mean"], col=2, lwd=2)
 pred_W <- predict(result_ngme, loc=list(myspde = mesh$loc))
 # by default we compute, a bunch of statistics for the given location
@@ -82,7 +82,7 @@ result_ngme2 <- ngme(
 )
 result_ngme2
 traceplot(result_ngme2, "myspde")
-plot(result_ngme2$latents[["myspde"]]$noise)
+plot(result_ngme2$models[["myspde"]]$noise)
 
 ############################# model prediction using inla / ngme2
 rg <- range(mcycle$times)

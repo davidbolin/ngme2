@@ -318,7 +318,7 @@ We can also do a density comparison with the estimated noise and the true NIG no
 ```{r compare-density}
 # ngme_out$replicates[[1]] means for the 1st replicate
 plot(
-  ngme_out$replicates[[1]]$latents[[1]]$noise,
+  ngme_out$replicates[[1]]$models[[1]]$noise,
   noise_nig(mu = mu, sigma = sigma, nu = nu)
 )
 ```
@@ -418,9 +418,9 @@ res1 <- data.frame(
   noise_mu     = format(out$replicates[[1]]$noise$theta_mu, digits=3),
   noise_sigma  = format(exp(out$replicates[[1]]$noise$theta_sigma), digits=3),
   noise_nu     = format(out$replicates[[1]]$noise$nu, digits=3),
-  rw_sigma     = format(out$replicates[[1]]$latents[[1]]$noise$theta_sigma, digits=3),
-  ma_kappa     = format(exp(out$replicates[[1]]$latents[[2]]$theta_K), digits=3),
-  ma_sigma     = format(exp(out$replicates[[1]]$latents[[2]]$noise$theta_sigma), digits=3)
+  rw_sigma     = format(out$replicates[[1]]$models[[1]]$noise$theta_sigma, digits=3),
+  ma_kappa     = format(exp(out$replicates[[1]]$models[[2]]$theta_K), digits=3),
+  ma_sigma     = format(exp(out$replicates[[1]]$models[[2]]$noise$theta_sigma), digits=3)
 )
 knitr::kable(res1, caption = "Estimations for the model")
 ```

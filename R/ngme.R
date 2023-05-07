@@ -99,11 +99,11 @@ ngme <- function(
       ngme_model$replicates[[i]] <- within(ngme_model$replicates[[i]], {
         beta <- start[[i]]$beta
         noise <- update_noise(noise, new_noise = start[[i]]$noise)
-        for (i in seq_along(start[[i]]$latents)) {
-          latents[[i]]$theta_K  <- start[[i]]$latents[[i]]$theta_K
-          latents[[i]]$W        <- start[[i]]$latents[[i]]$W
-          latents[[i]]$noise    <- update_noise(
-            latents[[i]]$noise, new_noise = start[[i]]$latents[[i]]$noise
+        for (i in seq_along(start[[i]]$models)) {
+          models[[i]]$theta_K  <- start[[i]]$models[[i]]$theta_K
+          models[[i]]$W        <- start[[i]]$models[[i]]$W
+          models[[i]]$noise    <- update_noise(
+            models[[i]]$noise, new_noise = start[[i]]$models[[i]]$noise
           )
         }
       })
@@ -126,7 +126,7 @@ if (debug) {print(str(ngme_model$replicates[[1]]))}
       ngme_model$replicates[[i]] <- update_ngme_est(ngme_model$replicates[[i]], est_output[[i]])
 
     # return the mean of samples of W of posterior
-    # cat("Starting posterior sampling... \nNote: Use ngme$latents[[model_name]]$W  to access the posterior mean of process \n")
+    # cat("Starting posterior sampling... \nNote: Use ngme$models[[model_name]]$W  to access the posterior mean of process \n")
     # for (i in seq_along(ngme_model$replicates)) {
     #   ngme_replicate <- ngme_model$replicates[[i]]
     #   ngme_replicate$control_ngme$init_sample_W <- FALSE
@@ -135,9 +135,9 @@ if (debug) {print(str(ngme_model$replicates[[1]]))}
     #   )
 
     #   idx <- 1
-    #   for (j in seq_along(ngme_replicate$latents)) {
-    #     ngme_replicate$latents[[j]]$W <- mean_post_W[idx : (ngme_replicate$latents[[j]]$W_size + idx - 1)]
-    #     idx <- idx + ngme_replicate$latents[[j]]$W_size
+    #   for (j in seq_along(ngme_replicate$models)) {
+    #     ngme_replicate$models[[j]]$W <- mean_post_W[idx : (ngme_replicate$models[[j]]$W_size + idx - 1)]
+    #     idx <- idx + ngme_replicate$models[[j]]$W_size
     #   }
     #   ngme_model$replicates[[i]] <- ngme_replicate
     # }
@@ -147,13 +147,13 @@ if (debug) {print(str(ngme_model$replicates[[1]]))}
     traj_df_chains <- transform_traj(attr(outputs, "opt_traj"))
     # dispatch trajs to each latent and block
       idx <- 0;
-      for (i in seq_along(ngme_model$replicates[[1]]$latents)) {
-        n_params <- ngme_model$replicates[[1]]$latents[[i]]$n_params
+      for (i in seq_along(ngme_model$replicates[[1]]$models)) {
+        n_params <- ngme_model$replicates[[1]]$models[[i]]$n_params
         lat_traj_chains = list()
         for (j in seq_along(traj_df_chains))
           lat_traj_chains[[j]] <- traj_df_chains[[j]][idx + 1:n_params, ]
 
-        attr(ngme_model$replicates[[1]]$latents[[i]], "lat_traj") <- lat_traj_chains
+        attr(ngme_model$replicates[[1]]$models[[i]], "lat_traj") <- lat_traj_chains
         idx <- idx + n_params
       }
       # mn and beta
@@ -173,9 +173,9 @@ get_trajs <- function(outputs) {
   for (i in seq_along(outputs)) {
     ret[[i]] <- list()
     ret[[i]]$block_traj <- attr(outputs[[i]], "trajectory")
-    for (j in seq_along(outputs[[i]]$latents)) {
-      ret[[i]]$latents[[j]] <- list()
-      ret[[i]]$latents[[j]] <- attr(outputs[[i]]$latents[[j]], "trajectory")
+    for (j in seq_along(outputs[[i]]$models)) {
+      ret[[i]]$models[[j]] <- list()
+      ret[[i]]$models[[j]] <- attr(outputs[[i]]$models[[j]], "trajectory")
     }
   }
   ret
@@ -200,26 +200,26 @@ update_ngme_est <- function(
 ) {
   ngme_replicate$beta <- est_output$beta
   ngme_replicate$noise <- update_noise(ngme_replicate$noise, new_noise = est_output$noise)
-  for (i in seq_along(ngme_replicate$latents)) {
-    ngme_replicate$latents[[i]]$operator$theta_K  <- ngme_replicate$latents[[i]]$theta_K <- est_output$latents[[i]]$theta_K
-    ngme_replicate$latents[[i]]$W        <- est_output$latents[[i]]$W
-    ngme_replicate$latents[[i]]$noise    <- update_noise(
-      ngme_replicate$latents[[i]]$noise, new_noise = est_output$latents[[i]]
+  for (i in seq_along(ngme_replicate$models)) {
+    ngme_replicate$models[[i]]$operator$theta_K  <- ngme_replicate$models[[i]]$theta_K <- est_output$models[[i]]$theta_K
+    ngme_replicate$models[[i]]$W        <- est_output$models[[i]]$W
+    ngme_replicate$models[[i]]$noise    <- update_noise(
+      ngme_replicate$models[[i]]$noise, new_noise = est_output$models[[i]]
     )
 
     # tedious special case
-    if (ngme_replicate$latents[[i]]$model == "tp") {
-      n1 <- ngme_replicate$latents[[i]]$operator$first$n_theta_K
-      n2 <- ngme_replicate$latents[[i]]$operator$second$n_theta_K
-      ngme_replicate$latents[[i]]$operator$first$theta_K <- ngme_replicate$latents[[i]]$theta_K[1:n1]
-      ngme_replicate$latents[[i]]$operator$second$theta_K <- ngme_replicate$latents[[i]]$theta_K[(n1+1):(n1+n2)]
+    if (ngme_replicate$models[[i]]$model == "tp") {
+      n1 <- ngme_replicate$models[[i]]$operator$first$n_theta_K
+      n2 <- ngme_replicate$models[[i]]$operator$second$n_theta_K
+      ngme_replicate$models[[i]]$operator$first$theta_K <- ngme_replicate$models[[i]]$theta_K[1:n1]
+      ngme_replicate$models[[i]]$operator$second$theta_K <- ngme_replicate$models[[i]]$theta_K[(n1+1):(n1+n2)]
     }
 
-    if (ngme_replicate$latents[[i]]$model == "bv") {
-      n1 <- ngme_replicate$latents[[i]]$operator$first$n_theta_K
-      n2 <- ngme_replicate$latents[[i]]$operator$second$n_theta_K
-      ngme_replicate$latents[[i]]$operator$first$theta_K <- ngme_replicate$latents[[i]]$theta_K[3:(n1+2)]
-      ngme_replicate$latents[[i]]$operator$second$theta_K <- ngme_replicate$latents[[i]]$theta_K[(n1+3):(2+n1+n2)]
+    if (ngme_replicate$models[[i]]$model == "bv") {
+      n1 <- ngme_replicate$models[[i]]$operator$first$n_theta_K
+      n2 <- ngme_replicate$models[[i]]$operator$second$n_theta_K
+      ngme_replicate$models[[i]]$operator$first$theta_K <- ngme_replicate$models[[i]]$theta_K[3:(n1+2)]
+      ngme_replicate$models[[i]]$operator$second$theta_K <- ngme_replicate$models[[i]]$theta_K[(n1+3):(2+n1+n2)]
     }
   }
   ngme_replicate
@@ -238,7 +238,7 @@ check_dim <- function(ngme_model) {
     if (ncol(ngme$X) != length(ngme$beta)) {
       stop("The number of columns of X is not equal to the length of beta")
     }
-    for (latent in ngme$latents) {
+    for (latent in ngme$models) {
         if (latent$V_size != latent$noise$n_noise) {
           stop("The V_size of the latent model is not equal to the length of noise")
         }
@@ -293,7 +293,7 @@ ngme_parse_formula <- function(
   stopifnot("Have NA in your response variable" = all(!is.na(ngme_response)))
   X_full    <- model.matrix(delete.response(terms(plain_fm)), as.data.frame(data))
 
-  ########## parse latents terms
+  ########## parse models terms
   pre_model <- list(); idx_effect = 1; idx_field = 1;
   for (i in spec_order) {
     if (!grepl("data *=", terms[i])) {
@@ -343,7 +343,7 @@ ngme_parse_formula <- function(
     X <- X_full[idx, , drop = FALSE]
 
     # re-evaluate each f model using idx
-    latents_rep <- list();
+    models_rep <- list();
     for (tmp in pre_model) {
       tmp$map <- sub_locs(tmp$map, idx)
       tmp$replicate <- tmp$replicate[idx]
@@ -357,7 +357,7 @@ ngme_parse_formula <- function(
       if (!is.null(model_eval$noise$V) && model_eval$model == "re") {
         model_eval$noise$V <- with(model_eval, rep(noise$V[i], W_size))
       }
-      latents_rep[[model_eval$name]] <- model_eval
+      models_rep[[model_eval$name]] <- model_eval
     }
 
     # give initial value (whole dataset)
@@ -371,7 +371,7 @@ ngme_parse_formula <- function(
       Y = Y,
       X = X,
       noise = noise_new,
-      latents = latents_rep,
+      models = models_rep,
       replicate = uni_repl[[i]],
       control_ngme = control_ngme,
       n_repl = length(uni_repl)

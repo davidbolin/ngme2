@@ -55,7 +55,7 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
   if (beta.size() == 0) fix_flag[block_fix_beta]  = true;
 
   // 4. Init latent models
-  Rcpp::List latents_in = block_model["latents"];
+  Rcpp::List latents_in = block_model["models"];
   n_latent = latents_in.size(); // how many latent model
   for (int i=0; i < n_latent; ++i) {
     // construct acoording to models
@@ -444,7 +444,7 @@ Rcpp::List BlockModel::output() const {
       Rcpp::Named("V")            = var.getV()
     ),
     Rcpp::Named("beta")             = beta,
-    Rcpp::Named("latents")          = latents_output
+    Rcpp::Named("models")          = latents_output
   );
 
   return out;

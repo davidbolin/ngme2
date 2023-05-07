@@ -22,7 +22,7 @@ matern <- function(
   B_K = NULL,
   ...
 ) {
-  stopifnot("length of map and replicate should be the same." = length(map) == length(replicate))
+  stopifnot("length of map and replicate should be the same." = length_map(map) == length(replicate))
 
   # build C, G, K, A
   n <- mesh$n; nrep <- length(unique(replicate))

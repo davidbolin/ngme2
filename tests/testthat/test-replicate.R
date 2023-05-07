@@ -97,9 +97,9 @@ test_that("basic ar1 case with different length", {
   cross_validation(out)
   traceplot(out)
   traceplot(out, "ar")
-  plot(simulate(out$replicates[[1]]$latents[["ar"]]), type="l")
+  plot(simulate(out$replicates[[1]]$models[["ar"]]), type="l")
   plot(Y, type="l")
-  plot(attr(W1, "noise"), out$replicates[[1]]$latents[[1]]$noise)
+  plot(attr(W1, "noise"), out$replicates[[1]]$models[[1]]$noise)
 
   # test on predict function
   predict(out,

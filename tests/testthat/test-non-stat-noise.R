@@ -27,6 +27,6 @@ test_that("test non-stat mu", {
   traceplot(res, "ar")
 
   # mu result close to theta_mu
-  expect_true(abs(res[[1]]$latents[[1]]$noise$theta_mu[1] - (-4)) < 5)
-  expect_true(abs(res[[1]]$latents[[1]]$noise$theta_mu[2] - (-2)) < 5)
+  expect_true(abs(res[[1]]$models[[1]]$noise$theta_mu[1] - (-4)) < 5)
+  expect_true(abs(res[[1]]$models[[1]]$noise$theta_mu[2] - (-2)) < 5)
 })

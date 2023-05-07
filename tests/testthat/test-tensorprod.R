@@ -57,9 +57,6 @@ library(ngme2)
 
 ##############################  estimation
   load_all()
-
-  Y <- c(Y1, Y2, )
-
   # loc is a list
   out <- ngme(
     Y ~ 0 +
@@ -70,10 +67,7 @@ library(ngme2)
       # first = ar1(1:n1),
       second = matern(map=loc, mesh=mesh2d),
       # control = control_f(numer_grad = T),
-      noise = noise_nig(
-        # mu=-3, sigma=2, nu=1,
-        # fix_V = T, V = attr(W, "noise")$V
-      ),
+      noise = noise_nig(),
       # fix_W = TRUE, W=W
     ),
     # f(

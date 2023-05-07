@@ -64,10 +64,9 @@ f <- function(
 
   stopifnot("Please specify model as character" = is.character(model))
 
-  if (model=="tp")
-    map <- 1:(with(list(...), nrow(first$A) * nrow(second$A)))
+  if (model=="tp") map <- 1:(with(list(...), nrow(first$A)))
 
-  if (model=="bv")
+  if (model=="bv" && is.null(map))
     map <- 1:(with(list(...), nrow(first$A) + nrow(second$A)))
 
   replicate <- eval(substitute(replicate), envir = data, enclos = parent.frame())

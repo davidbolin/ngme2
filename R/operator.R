@@ -1,4 +1,6 @@
 ngme_operator <- function(
+  map,
+  mesh,
   model,
   K,
   h,
@@ -10,6 +12,8 @@ ngme_operator <- function(
 
   structure(
     list(
+      map = map,
+      mesh = mesh,
       model = model,
       K = K,
       h = h,

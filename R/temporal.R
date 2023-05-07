@@ -18,6 +18,8 @@ iid <- function(
   K <- ngme_as_sparse(Matrix::Diagonal(length(map)))
 
   ngme_operator(
+    map = map,
+    mesh = NULL,
     model = "iid",
     theta_K = double(0),
     K = K,
@@ -46,15 +48,20 @@ iid <- function(
 #' ar1(c(1:3, 1:3), replicate = c(1,1,1,2,2,2))
 ar1 <- function(
   map,
+  mesh      = map,
   replicate = rep(1, length_map(map)),
-  mesh      = INLA::inla.mesh.1d(loc = min(map):max(map)),
   theta_K   = 0,
   ...
 ) {
+  if (is.numeric(mesh)) {
+    stopifnot("The index of mesh should be integers."
+      = all(mesh == round(mesh)))
+    mesh <- INLA::inla.mesh.1d(loc = min(mesh):max(mesh))
+  }
+
   stopifnot("length of map and replicate should be the same." = length(map) == length(replicate))
 
   n <- mesh$n; nrep <- length(unique(replicate))
-  stopifnot("The index should be integers." = all(map == round(map)))
 
   h <- c(diff(mesh$loc), 1)
   G <- Matrix::Diagonal(n);
@@ -62,21 +69,27 @@ ar1 <- function(
   stopifnot("The mesh should be 1d and has gap 1." = all(h == 1))
 
   # for replicate
-  G <- Matrix::kronecker(diag(nrep), G)
-  C <- Matrix::kronecker(diag(nrep), C)
-  h <- rep(h, nrep)
+  if (nrep > 1) {
+    G <- Matrix::kronecker(diag(nrep), G)
+    C <- Matrix::kronecker(diag(nrep), C)
+    h <- rep(h, nrep)
+  }
 
   stopifnot("The length of theta_K should be 1." = length(theta_K) == 1)
   alpha <- ar1_th2a(theta_K)
 
+  A <- if (!is.null(map)) INLA::inla.spde.make.A(mesh = mesh, loc = map, repl=replicate) else NULL
+
   ngme_operator(
+    map = map,
+    mesh = mesh,
     model = "ar1",
     theta_K = theta_K,
     C = ngme_as_sparse(C),
     G = ngme_as_sparse(G),
     K = alpha * C + G,
     h = h,
-    A = INLA::inla.spde.make.A(mesh = mesh, loc = map, repl=replicate),
+    A = A,
     symmetric = FALSE,
     zero_trace = TRUE
   )
@@ -100,11 +113,17 @@ ar1 <- function(
 #' r1 <- rw1(1:7, cyclic = TRUE); r1$K
 rw1 <- function(
   map,
+  mesh      = map,
   replicate = rep(1, length_map(map)),
   cyclic    = FALSE,
-  mesh      = INLA::inla.mesh.1d(loc = map),
   ...
 ) {
+  if (is.numeric(mesh)) {
+    stopifnot("The index of mesh should be integers."
+      = all(mesh == round(mesh)))
+    mesh <- INLA::inla.mesh.1d(loc = min(mesh):max(mesh))
+  }
+
   stopifnot("length of map and replicate should be the same." = length(map) == length(replicate))
 
   x <- map
@@ -131,6 +150,8 @@ rw1 <- function(
   h <- rep(h, nrep)
 
   ngme_operator(
+    map = map,
+    mesh = mesh,
     model = "rw1",
     theta_K = double(0),
     K = ngme_as_sparse(C + G),
@@ -159,11 +180,16 @@ rw1 <- function(
 #' r2 <- rw2(1:7); r2$K
 rw2 <- function(
   map,
+  mesh      = map,
   replicate = rep(1, length_map(map)),
   cyclic    = FALSE,
-  mesh      = INLA::inla.mesh.1d(loc = map),
   ...
 ) {
+  if (is.numeric(mesh)) {
+    stopifnot("The index of mesh should be integers."
+      = all(mesh == round(mesh)))
+    mesh <- INLA::inla.mesh.1d(loc = min(mesh):max(mesh))
+  }
   stopifnot("length of map and replicate should be the same." = length(map) == length(replicate))
 
   x <- map
@@ -187,6 +213,8 @@ rw2 <- function(
   h <- rep(h, nrep)
 
   ngme_operator(
+    map = map,
+    mesh = mesh,
     model = "rw2",
     theta_K = double(0),
     K = ngme_as_sparse(C + G),
@@ -211,11 +239,16 @@ rw2 <- function(
 ou <- function(
   map,
   replicate = rep(1, length_map(map)),
-  mesh      = INLA::inla.mesh.1d(loc=map),
+  mesh      = map,
   theta_K   = 0,
   B_K       = NULL,
   ...
 ) {
+  if (is.numeric(mesh)) {
+    stopifnot("The index of mesh should be integers."
+      = all(mesh == round(mesh)))
+    mesh <- INLA::inla.mesh.1d(loc = min(mesh):max(mesh))
+  }
   stopifnot("length of map and replicate should be the same." = length(map) == length(replicate))
 
   h <- diff(mesh$loc); h <- c(h, mean(h))
@@ -239,6 +272,8 @@ ou <- function(
   K <- Matrix::Diagonal(x=kappas) %*% C + G
 
   ngme_operator(
+    map = map,
+    mesh = mesh,
     model       = "ou",
     B_K         = B_K,
     theta_K     = theta_K,

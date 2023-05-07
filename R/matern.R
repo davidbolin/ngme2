@@ -22,11 +22,9 @@ matern <- function(
   B_K = NULL,
   ...
 ) {
-  stopifnot("length of map and replicate should be the same." = length_map(map) == length(replicate))
-
-  # build C, G, K, A
-  n <- mesh$n; nrep <- length(unique(replicate))
   stopifnot(alpha == 2 || alpha == 4)
+
+  n <- mesh$n; nrep <- length(unique(replicate))
 
   if (is.null(B_K) && length(theta_K) == 1)
     B_K <- matrix(1, nrow = mesh$n, ncol = 1)
@@ -47,22 +45,27 @@ matern <- function(
   }
 
   # for replicate
-  G <- Matrix::kronecker(diag(nrep), G)
-  C <- Matrix::kronecker(diag(nrep), C)
-  h <- rep(h, nrep)
+  if (nrep > 1) {
+    G <- Matrix::kronecker(diag(nrep), G)
+    C <- Matrix::kronecker(diag(nrep), C)
+    h <- rep(h, nrep)
+  }
 
   kappas <- as.numeric(exp(B_K %*% theta_K))
   if (length(theta_K) == 1) {
     # stationary
     K <- kappas[1]**alpha * C + G
-  }
-  else {
+  } else {
     # non-stationary
     K <- if (alpha == 2) diag(kappas) %*% C %*% diag(kappas)  + G
     else diag(kappas) %*% C %*% diag(kappas) %*% C %*% diag(kappas) + G
   }
 
+  A <- if (!is.null(map)) INLA::inla.spde.make.A(mesh = mesh, loc = map, repl=replicate) else NULL
+
   ngme_operator(
+    map = map,
+    mesh = mesh,
     alpha = alpha,
     model = "matern",
     theta_K = theta_K,
@@ -71,7 +74,7 @@ matern <- function(
     G = ngme_as_sparse(G),
     K = ngme_as_sparse(K),
     h = h,
-    A = INLA::inla.spde.make.A(mesh = mesh, loc = map, repl=replicate),
+    A = A,
     symmetric = TRUE,
     zero_trace = FALSE
   )

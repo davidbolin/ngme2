@@ -2,8 +2,8 @@
 #'
 #' Given 2 operator (first and second), build a tensor-product operator based on K = K_first x K_second (here x is Kronecker product)
 #'
-#' @param first ngme_model
-#' @param second ngme_model
+#' @param first left side of kronecker model (usually a temporal or iid model)
+#' @param second right side of kronecker model (ususally a spatial model)
 #' @param ... extra arguments in f()
 # ' @param map pass through first and second
 #'
@@ -21,14 +21,23 @@ tp <- function(
   theta_K <- c(first$theta_K, second$theta_K)
   stopifnot(length(theta_K) == first$n_theta_K + second$n_theta_K)
 
+  stopifnot("the length of map of 2 submodel should be equal (complete)"
+    = length_map(first$map) == length_map(second$map))
+
+  map <- second$map
+  group <- as.integer(as.factor(first$map))
+  A <- INLA::inla.spde.make.A(loc=map, mesh=second$mesh, repl=group)
+
   ngme_operator(
+    map = map,  # placeholder
+    mesh = NULL,
     model = "tp",
     first = first,
     second = second,
     theta_K = theta_K,
     K = first$K %x% second$K,
-    A = first$A %x% second$A,
     h = first$h %x% second$h,
+    A = A,
     symmetric = first$symmetric & second$symmetric,
     # check here
     zero_trace = first$zero_trace & second$zero_trace

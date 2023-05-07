@@ -95,7 +95,6 @@ Y <- AW + rnorm(n_obs, sd=0.5)
 
 ##############################  estimation
 # str(f(model=matern, group=ar, noise=noise_nig())$model_second$noise)
-load_all()
 out <- ngme(
   Y ~ 0 + f(
     model = "tp",
@@ -107,16 +106,16 @@ out <- ngme(
   data = data.frame(Y=Y),
   family = "normal",
   control_opt = control_opt(
-    iterations = 300,
+    iterations = 1,
     n_parallel_chain = 4,
     estimation = T,
     verbose = T,
-    stepsize = 3
+    stepsize = 1
   ),
-  debug = TRUE
+  debug = FALSE
 )
 
 out
 traceplot(out)
-traceplot(out, "field1")
+traceplot(out, "tp")
 ```

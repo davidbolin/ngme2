@@ -47,7 +47,6 @@ test_that("test posterior sampling and model_validation()", {
   W <- simulate(my_ar)
   Y <- W + rnorm(n=length(W), sd=sigma_eps)
 
-load_all()
   out <- ngme(
     Y ~ 1 + f(1:n_obs, name="ar", model="ar1") + f(1:n_obs, name="rw", model="rw1"),
     data=data.frame(Y=Y),
@@ -55,11 +54,11 @@ load_all()
   )
   out
 
-  load_all()
-  # 1. estimator = "mean"
+  # 1. estimator
   predict(out, map = list(ar = c(2,3,5), rw=c(5,2,1)), )
 
-  # 2. estimator = "mean", "sd"
+  # 2. compute idx
+  cross_validation(out)
 
   expect_no_error(samples <- sampling_cpp(out$replicates[[1]], 10, posterior = TRUE, seed=10))
 })

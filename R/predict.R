@@ -150,8 +150,8 @@ compute_indices <- function(ngme, test_idx, N = 100, seed=Sys.time()) {
   A_preds <- list()
   for (i in seq_along(ngme$models)) {
     A_preds[[i]] <- INLA::inla.spde.make.A(
-      mesh = ngme$models[[i]]$mesh,
-      loc = sub_locs(ngme$models[[i]]$map, test_idx)
+      mesh = ngme$models[[i]]$operator$mesh,
+      loc = sub_locs(ngme$models[[i]]$operator$map, test_idx)
     )
   }
 
@@ -273,11 +273,11 @@ cat("The average of indices computed: \n")
   ret <- mean_list(crs)
 } else if (inherits(ngme, "ngme")) {
   # take average mean of each block
-  weights <- sapply(ngme, function(x) length(x$Y))
+  weights <- sapply(ngme$replicates, function(x) length(x$Y))
   weights <- weights / sum(weights)
   ret <- list()
-  for (i in seq_along(ngme)) {
-    ret[[i]] <- cross_validation(ngme[[i]], type=type, k=k, N=N, percent=percent,
+  for (i in seq_along(ngme$replicates)) {
+    ret[[i]] <- cross_validation(ngme$replicates[[i]], type=type, k=k, N=N, percent=percent,
     times=times, group=group, print=print, seed=seed)
   }
   ret <- mean_list(ret, weights=weights)

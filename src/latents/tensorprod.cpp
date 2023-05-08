@@ -4,6 +4,7 @@
 // dKtx_t = dKt_t %x% Kx
 // dKtx_x = kt %x% dKx_x
 
+#include <unsupported/Eigen/KroneckerProduct>
 #include "../operator.h"
 #include "MatrixAlgebra.h"
 
@@ -17,10 +18,20 @@ Tensor_prod::Tensor_prod(const Rcpp::List& operator_list):
 {}
 
 SparseMatrix<double> Tensor_prod::getK(const VectorXd& theta_K) const {
+  // report the time for this function
+// double time = 0;
+// auto timer_computeg = std::chrono::steady_clock::now();
   SparseMatrix<double> K1 = first->getK(theta_K.segment(0, n_theta_1));
   SparseMatrix<double> K2 = second->getK(theta_K.segment(n_theta_1, n_theta_2));
 
-  return kroneckerEigen(K1, K2);
+  // use Eigen kronecker product
+  KroneckerProductSparse<SparseMatrix<double>, SparseMatrix<double> > kroneckerEigen(K1, K2);
+
+  SparseMatrix<double> K (K1.rows()*K2.rows(), K1.cols()*K2.cols());
+  kroneckerEigen.evalTo(K);
+// time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - timer_computeg).count();
+// std::cout << "size and time for kronecker product is " << K.rows() << " " << K.cols() << " " << time << std::endl;
+  return K;
 }
 
 SparseMatrix<double> Tensor_prod::get_dK(int index, const VectorXd& theta_K) const {

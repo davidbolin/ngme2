@@ -23,9 +23,8 @@ The separable space-time model is defined by the Kronecker product between the p
 The operator matrix $K$ of the tensor product model can be expressed by: $K = K_l \otimes K_r$ where $K_l$ and $K_r$ are the operator for the 2 sub-models.
 
 ```{r setup}
-library(ngme2)
 library(INLA)
-load_all()
+library(ngme2)
 ```
 
 ## Usage

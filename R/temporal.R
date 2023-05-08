@@ -118,27 +118,20 @@ rw1 <- function(
   cyclic    = FALSE,
   ...
 ) {
-  if (is.numeric(mesh)) {
-    stopifnot("The index of mesh should be integers."
-      = all(mesh == round(mesh)))
-    mesh <- INLA::inla.mesh.1d(loc = min(mesh):max(mesh))
-  }
-
   stopifnot("length of map and replicate should be the same." = length(map) == length(replicate))
 
+  mesh <- if (is.numeric(mesh)) INLA::inla.mesh.1d(loc = unique(mesh))
   x <- map
   n <- mesh$n; nrep <- length(unique(replicate))
 
   h <- diff(mesh$loc);
   n <- mesh$n
   if (!cyclic) {
-    mesh <- INLA::inla.mesh.1d(loc = unique(x))
     C <- Matrix::sparseMatrix(i = 1:n, j=1:n, x=1, dims=c(n,n))
     G <- Matrix::sparseMatrix(i = 2:n, j=1:(n-1), x=-1, dims=c(n,n))
     h <- c(0.01, h) # assume first point fixed to 0
   } else {
     stopifnot(length(x) >= 4)
-    mesh <- INLA::inla.mesh.1d(loc = x)
     C <- Matrix::Diagonal(n)
     G <- Matrix::sparseMatrix(i = 1:n, j=c(2:n, 1), x=-1, dims=c(n,n))
     h <- c(h, mean(h))
@@ -185,11 +178,8 @@ rw2 <- function(
   cyclic    = FALSE,
   ...
 ) {
-  if (is.numeric(mesh)) {
-    stopifnot("The index of mesh should be integers."
-      = all(mesh == round(mesh)))
-    mesh <- INLA::inla.mesh.1d(loc = min(mesh):max(mesh))
-  }
+  mesh <- if (is.numeric(mesh)) INLA::inla.mesh.1d(loc = unique(mesh))
+
   stopifnot("length of map and replicate should be the same." = length(map) == length(replicate))
 
   x <- map
@@ -244,11 +234,8 @@ ou <- function(
   B_K       = NULL,
   ...
 ) {
-  if (is.numeric(mesh)) {
-    stopifnot("The index of mesh should be integers."
-      = all(mesh == round(mesh)))
-    mesh <- INLA::inla.mesh.1d(loc = min(mesh):max(mesh))
-  }
+  mesh <- if (is.numeric(mesh)) INLA::inla.mesh.1d(loc = unique(mesh))
+
   stopifnot("length of map and replicate should be the same." = length(map) == length(replicate))
 
   h <- diff(mesh$loc); h <- c(h, mean(h))

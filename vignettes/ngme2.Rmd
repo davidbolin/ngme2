@@ -161,7 +161,7 @@ Some examples of using `f` function to specify `ngme_model`:
 
 ```{r f_model}
 ngme2::f(1:10, model = "ar1",
-  noise = noise_nig(), theta_K = 0.5)
+  noise = noise_nig(), eval=TRUE)
 ```
 
 One useful model would be the SPDE model with Gaussian or non-Gaussian noise, see the vignette
@@ -184,8 +184,7 @@ formula <- Y ~ x1 + f(
     noise = noise_nig(),
     theta_K = 0.5
   ) + f(1:5,
-    model = "rw",
-    order = 1,
+    model = "rw1",
     circular = T,
     noise = noise_normal()
   )
@@ -278,8 +277,7 @@ ngme_out <- ngme(
     1:n_obs,
     name = "my_ar",
     model = "ar1",
-    noise = noise_nig(),
-    theta_K = 0.9  # starting point for the alpha (parameter of K)
+    noise = noise_nig()
   ),
   data=data.frame(x1=x1, x2=x2, Y=Y),
   control_opt = control_opt(
@@ -307,9 +305,6 @@ The estimation results are close to the real parameter.
 
 We can also use the `traceplot` function to see the estimation traceplot.
 ```{r traceplot, fig.align="center", fig.width=6,fig.height=6,  fig.cap="Parameters of the AR1 model"}
-library(ggplot2)
-library(grid)
-library(gridExtra)
 traceplot(ngme_out, "my_ar")
 ```
 
@@ -382,16 +377,16 @@ ggplot() +
 # ind_pred <- sample(1:n, size = 0.1 * n)
 # Y_pred <- Y[ind_pred]
 # Y[ind_pred] <- NA
-
+load_all()
 out <- ngme(
   formula = Y ~ 1 +
-    f(inla.group(seaDist), name="rw", model = "rw", noise = noise_normal()) +
+    f(inla.group(seaDist), name="rw1", model = "rw1", noise = noise_normal()) +
     f(coords, model = "matern", mesh = prmesh, name="spde", noise = noise_normal()),
   data = data.frame(Y = Y),
   family = "nig",
   control_opt = control_opt(
     estimation = T,
-    iterations = 1000,
+    iterations = 100,
     n_slope_check = 4,
     stop_points = 10,
     std_lim = 0.1,

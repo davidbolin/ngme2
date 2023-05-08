@@ -109,6 +109,7 @@ iid <- function(
   replicate = rep(1, length_map(map)),
   ...
 ) {
+  if (inherits(map, "formula")) map <- model.matrix(map)[, -1]
   replicate <- as.integer(as.factor(replicate))
   K <- ngme_as_sparse(Matrix::Diagonal(length(map)))
 
@@ -149,6 +150,7 @@ ar1 <- function(
   theta_K   = 0,
   ...
 ) {
+  if (inherits(map, "formula")) map <- model.matrix(map)[, -1]
   replicate <- as.integer(as.factor(replicate))
   if (is.numeric(mesh)) {
     stopifnot("The index of mesh should be integers."
@@ -216,6 +218,7 @@ rw1 <- function(
   cyclic    = FALSE,
   ...
 ) {
+  if (inherits(map, "formula")) map <- model.matrix(map)[, -1]
   replicate <- as.integer(as.factor(replicate))
   stopifnot("length of map and replicate should be the same." = length(map) == length(replicate))
 
@@ -278,6 +281,7 @@ rw2 <- function(
   cyclic    = FALSE,
   ...
 ) {
+  if (inherits(map, "formula")) map <- model.matrix(map)[, -1]
   replicate <- as.integer(as.factor(replicate))
   mesh <- if (is.numeric(mesh)) INLA::inla.mesh.1d(loc = unique(mesh))
 
@@ -336,6 +340,7 @@ ou <- function(
   B_K       = NULL,
   ...
 ) {
+  if (inherits(map, "formula")) map <- model.matrix(map)[, -1]
   replicate <- as.integer(as.factor(replicate))
   mesh <- if (is.numeric(mesh)) INLA::inla.mesh.1d(loc = unique(mesh))
   n <- mesh$n; nrep <- length(unique(replicate))
@@ -404,6 +409,7 @@ matern <- function(
   B_K = NULL,
   ...
 ) {
+  if (inherits(map, "formula")) map <- model.matrix(map)[, -1]
   replicate <- as.integer(as.factor(replicate))
   stopifnot(alpha == 2 || alpha == 4)
 

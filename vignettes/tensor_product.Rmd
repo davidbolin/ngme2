@@ -36,6 +36,7 @@ The operator matrix of `first` and `second` field are exactly the first side and
 The following example gives a simple space-time model with a separable covariance structure.
 
 ```{r}
+load_all()
 mesh_1d <- inla.mesh.1d(1:10)
 time <- 1:3; time_rep <- rep(time, each=5)
 loc <- 1:5; loc_rep <- rep(loc, 3)
@@ -49,8 +50,7 @@ tp_model <- f(
   noise = noise_nig(),
   eval=TRUE # ignore this when in formula of ngme()
 )
-
-dim(tp_model$operator$A)
+tp_model
 ```
 
 
@@ -61,29 +61,23 @@ Now let's turn to simualte and estimate the tensor-product model.
 ```{r}
 set.seed(16)
 library(INLA)
+load_all()
 
 ##############################  simulation
 mesh2d <- inla.mesh.2d(
   loc.domain = cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5),
-  max.edge = c(0.5, 10)
+  max.edge = c(2, 10)
 )
 
 # generate random loc for each n_ar
 n_obs <- c(13, 22, 14, 20, 32) # observation for each year
 year <- rep(2001:2005, times = n_obs)
-year
+x <- runif(sum(n_obs)) * 10; y <- runif(sum(n_obs)) * 5
 
-locs <- list()
-for (i in 1:length(n_obs)) {
-  # simulate n_obs in each year
-  locs[[i]] <- cbind(runif(n_obs[[i]], 0, 10), runif(n_obs[[i]], 0, 5))
-}
-loc <- do.call(rbind, locs)
-
-true_model <- f(
+true_model <- ngme2::f(
   model = "tp", name="tp",
   first = ar1(year),
-  second = matern(loc, mesh = mesh2d),
+  second = matern(cbind(x, y), mesh = mesh2d),
   eval=T
 )
 
@@ -91,27 +85,29 @@ W <- simulate(true_model)
 AW <- as.numeric(true_model$A %*% W)
 n_obs <- length(AW)
 Y <- AW + rnorm(n_obs, sd=0.5)
+df <- data.frame(year, x, y, Y)
 
 ##############################  estimation
-# str(f(model=matern, group=ar, noise=noise_nig())$model_second$noise)
+load_all()
 out <- ngme(
-  Y ~ 0 + f(
-    model = "tp",
+  Y ~ 0 +
+  f(
+    model="tp",
     name="tp",
     first = ar1(year),
-    second = matern(loc, mesh = mesh2d),
+    second = matern(~x+y, mesh = mesh2d),
     control = control_f(numer_grad = T)
   ),
-  data = data.frame(Y=Y),
+  data = df,
   family = "normal",
   control_opt = control_opt(
     iterations = 1,
-    n_parallel_chain = 4,
+    n_parallel_chain = 1,
     estimation = T,
     verbose = T,
     stepsize = 1
   ),
-  debug = FALSE
+  debug = T
 )
 
 out

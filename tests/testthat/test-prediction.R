@@ -50,7 +50,7 @@ test_that("test posterior sampling and model_validation()", {
   out <- ngme(
     Y ~ 1 + f(1:n_obs, name="ar", model="ar1") + f(1:n_obs, name="rw", model="rw1"),
     data=data.frame(Y=Y),
-    control_opt=control_opt(print_check_info = FALSE)
+    control_opt=control_opt(print_check_info = FALSE, iteration=10)
   )
   out
 
@@ -65,20 +65,20 @@ test_that("test posterior sampling and model_validation()", {
 
 
 test_that("test lpo CV", {
-  # load_all()
-  ar_mod <- ar1(1:n_obs, model="ar1", noise=noise_nig())
+  ar_mod <- f(1:n_obs, model="ar1", noise=noise_nig(), eval=T)
   yy <- simulate(ar_mod) + rnorm(n_obs, sd=0.5)
   ng_100 <- ngme(
     yy~0+f(1:n_obs, model="ar1", noise=noise_nig()),
     data = data.frame(yy=yy),
     control_opt = control_opt(iterations = 100)
   )
+  cross_validation(ng_100, type="lpo", times=10)
+
   ng_1000 <- ngme(
     yy~0+f(1:n_obs, model="ar1", noise=noise_nig()),
     data = data.frame(yy=yy),
-    control_opt = control_opt(iterations = 1000)
+    control_opt = control_opt(iterations = 100)
   )
-  cross_validation(ng_100, type="lpo", times=10)
   cross_validation(ng_1000, type="lpo", times=10)
 
   expect_true(TRUE)

@@ -52,10 +52,15 @@ f <- function(
   ...
 ) {
   map <- eval(substitute(map), envir = data, enclos = parent.frame())
-  if (inherits(map, "formula")) { # random effect
-    name <- "effect"
-    model <- "re"
-    map <- model.matrix(map, data)
+
+  if (inherits(map, "formula")) {
+    if (model == "re") {
+      name <- "effect"
+      model <- "re"
+      map <- model.matrix(map, data)
+    } else {
+      map <- model.matrix(map, data)[, -1]
+    }
   }
   stopifnot("Please provide model from ngme_model_types():"
     = !is.null(model))
@@ -64,10 +69,11 @@ f <- function(
 
   stopifnot("Please specify model as character" = is.character(model))
 
-  if (model=="tp") map <- 1:(with(list(...), nrow(first$A)))
+  if (model=="tp" && !is.null(data))
+    map <- seq_len(nrow(data))
 
-  if (model=="bv" && is.null(map))
-    map <- 1:(with(list(...), nrow(first$A) + nrow(second$A)))
+  if (model=="bv" && is.null(map) && !is.null(data))
+    map <- seq_len(nrow(data))
 
   replicate <- eval(substitute(replicate), envir = data, enclos = parent.frame())
   replicate <- if (is.null(replicate)) rep(1, length_map(map))

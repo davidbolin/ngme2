@@ -43,15 +43,23 @@ test_that("test posterior sampling and model_validation()", {
 # load_all()
   n_obs <<- 20
   alpha <- 0.3; mu = -3; sigma=2; nu=2; sigma_eps <- 0.5
-  my_ar <<- model_ar1(1:n_obs, alpha=alpha, noise=noise_nig(mu=mu, sigma=sigma, nu=nu))
+  my_ar <<- f(1:n_obs, model="ar1", noise=noise_nig(mu=mu, sigma=sigma, nu=nu), eval=TRUE)
   W <- simulate(my_ar)
   Y <- W + rnorm(n=length(W), sd=sigma_eps)
 
-  out <- ngme(Y ~ 0 + f(1:n_obs, model="ar1"),
+load_all()
+  out <- ngme(
+    Y ~ 1 + f(1:n_obs, name="ar", model="ar1") + f(1:n_obs, name="rw", model="rw1"),
     data=data.frame(Y=Y),
     control_opt=control_opt(print_check_info = FALSE)
   )
-  # traceplot(out, "field1")
+  out
+
+  load_all()
+  # 1. estimator = "mean"
+  predict(out, map = list(ar = c(2,3,5), rw=c(5,2,1)), )
+
+  # 2. estimator = "mean", "sd"
 
   expect_no_error(samples <- sampling_cpp(out$replicates[[1]], 10, posterior = TRUE, seed=10))
 })

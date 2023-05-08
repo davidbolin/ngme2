@@ -94,7 +94,7 @@ test_that("the order of W same as order of index?", {
 
 ############################## AR1 case
 test_that("test estimation of basic ar with normal measurement noise", {
-  n_obs <- 2400
+  n_obs <- 20
   alpha <- 0.75
   mu <- 4; sigma <- 5; nu <- 0.2; sigma_eps <- 0.8
   ar1 <- f(1:n_obs, model="ar1", theta_K = ar1_a2th(0.8), noise=noise_nig(mu=mu, sigma=sigma, nu=nu), eval = T)
@@ -127,13 +127,18 @@ load_all()
     control_opt = control_opt(
       estimation = T,
       iterations = 100,
-      n_parallel_chain = 4,
+      n_parallel_chain = 1,
       print_check_info = FALSE,
       verbose = F,
     ),
     debug = T
   )
   out
+
+# 1. check this
+out$replicates[[1]]$models[[1]]$A
+predict(out$replicates[[1]], map = c(1,2,3))
+
   out$replicates[[1]]$models[[1]]$theta_K
   # traceplot(out, "ar")
   # traceplot(out)

@@ -36,10 +36,9 @@ The latent process defines different operator structure, and the block model col
 
 ### 2 Model Framework
 
-The package `ngme2` provides methods for mixed effect models both for single response
-variable case and multivariate response case (not yet).
+The package `ngme2` provides methods for mixed effect models both for single response variable case and bivariate response model (see bivariate model vignette for details).
 
-1.For **single response** case, it has the following form:
+It follows the general structure of the mixed effect model:
 $$
 \begin{aligned}
 Y = {\bf X}^{\top} {\bf \beta} + \sum_j {\bf A}_j W_j({\bf t}) + \epsilon.
@@ -70,16 +69,6 @@ Here is a simple template for using the core function `ngme` to model the single
 Here, function `f` is for modeling the stochastic process W with Gaussian or non-Gaussian noise,
 we will discuss this later.
 `noise` stands for the measurement noise distribution. In this case, the model will have a Gaussian likelihood.
-
-For **multivariate response** case, it has the following form:
-
-Here is a another template for using the core function `ngme` to model the bivariate response:
-
-    ngme(
-      formula=Y1 | Y2 ~ x1 + x2 + f(index, model="ar", noise="nig") | f(time, model="matern"),
-      data=data.frame(Y=Y, x1=x1, x2=x2, index=index, time=time),
-      family="normal"
-    )
 
 ### 3 Non-Gaussian Model
 
@@ -372,12 +361,6 @@ ggplot() +
 ```
 
 ```{r fit-parana, cache=TRUE}
-# leave 0.1 Y as prediction area
-# n <- length(Y)
-# ind_pred <- sample(1:n, size = 0.1 * n)
-# Y_pred <- Y[ind_pred]
-# Y[ind_pred] <- NA
-load_all()
 out <- ngme(
   formula = Y ~ 1 +
     f(inla.group(seaDist), name="rw1", model = "rw1", noise = noise_normal()) +
@@ -445,7 +428,6 @@ seaDist.prd <- apply(spDists(coord.prd,
 # first list is for 1st replicate (we only have 1 replicate)
 # second list is for different latent models (we have 2)
 pds <- predict(out, loc=list(list(seaDist.prd, coord.prd)))
-# [[1]] means for the 1st replicate (we only have 1), mean stands for the mean estimator
 lp <- pds[[1]]$mean
 ggplot() +
   geom_point(aes(

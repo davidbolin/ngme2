@@ -3,14 +3,12 @@
 \name{predict.ngme}
 \alias{predict.ngme}
 \title{Predict function of ngme2
-predict using ngme after estimation
-same as predict.ngme_replicate(ngme[[i]], data[[i]], loc[[i]]) i in which.rep}
+predict using ngme after estimation}
 \usage{
 \method{predict}{ngme}(
   object,
-  which.rep = seq_along(object),
+  map = NULL,
   data = NULL,
-  loc = list(NULL),
   type = "lp",
   estimator = c("mean", "sd", "5quantile", "95quantile", "median", "mode"),
   sampling_size = 100,
@@ -22,11 +20,9 @@ same as predict.ngme_replicate(ngme[[i]], data[[i]], loc[[i]]) i in which.rep}
 \arguments{
 \item{object}{a ngme object}
 
-\item{which.rep}{which replicate to use for prediction, can be a vector like c(1,2)}
+\item{map}{a named list (or dataframe) of the locations to make the prediction}
 
-\item{data}{a data.frame of covariates (used for fixed effects)}
-
-\item{loc}{a named list (or dataframe) of the locations to make the prediction
+\item{data}{a data.frame or matrix of covariates (used for fixed effects)
 names(loc) corresponding to the name each latent model
 vector or matrix (n * 2) for spatial coords}
 
@@ -48,5 +44,4 @@ a list of outputs contains estimation of operator paramters, noise parameters
 \description{
 Predict function of ngme2
 predict using ngme after estimation
-same as predict.ngme_replicate(ngme[[i]], data[[i]], loc[[i]]) i in which.rep
 }

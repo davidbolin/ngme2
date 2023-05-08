@@ -4,16 +4,12 @@
 \alias{tp}
 \title{ngme tensor-product model specification}
 \usage{
-tp(first, second, map = NULL, replicate = NULL, ...)
+tp(first, second, ...)
 }
 \arguments{
-\item{first}{ngme_model}
+\item{first}{left side of kronecker model (usually a temporal or iid model)}
 
-\item{second}{ngme_model}
-
-\item{map}{can be ignored, pass through first and second}
-
-\item{replicate}{replicate for the process}
+\item{second}{right side of kronecker model (ususally a spatial model)}
 
 \item{...}{extra arguments in f()}
 }

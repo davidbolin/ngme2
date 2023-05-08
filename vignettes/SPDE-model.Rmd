@@ -1,8 +1,8 @@
 ---
-title: "Ngme2 SPDE Matern model"
+title: "Ngme2 Matern SPDE model"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Ngme2 SPDE Matern model}
+  %\VignetteIndexEntry{Ngme2 Matern SPDE model}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -181,16 +181,22 @@ ggplot(nig_par, mapping = aes(x = x, y=dnig, colour=factor(sigma)))+
 
 ## Using SPDE Matérn model in ngme2
 
+### Parameterization
+
+In stationary case, the $K = \kappa^2 C + G$. However, if we allow $\kappa$ to change over space, we can introduce non-stationary version, where $K = diag(\kappa) C diag(\kappa) + G$, where $\kappa = \exp(B_K \theta_K)$, $B_K$ is the basis matrix user provide.
+
 ### Specification
 
-Use `model_matern` to specify the SPDE Matérn model, see `?model_matern` for more details.
+Use `f(model="matern")` to specify the SPDE Matérn model, see `?matern` for more details.
 Consider the following examples (both 1d and 2d cases):
 
 ```{r spde-1d}
 # 1d example
 loc <- c(1.1, 2.2, 3.5, 4.7)
-mesh_1d <- inla.mesh.1d(1:10)
-m1 <- model_matern(map = loc, mesh = mesh_1d)
+mesh_1d <- inla.mesh.1d(1:6)
+m1 <- matern(map = loc, mesh = mesh_1d)
+# K matrix for the matern model in this case
+m1$K
 ```
 
 ```{r create-mesh, fig.align="center"}
@@ -211,24 +217,6 @@ argo_mesh <- inla.mesh.2d(loc = loc_2d,
                     offset = c(max.edge, bound.outer)
 )
 plot(argo_mesh)
-```
-
-Specifying a 2d Matérn model is also very simple:
-
-```{r spde-2d}
-argo_spde <- model_matern(
-  map = loc_2d,
-  mesh = argo_mesh
-)
-```
-
-### Simulation
-
-Doing simulation is easy, we simply provide the model, and that's it!
-
-```{r simulation}
-simulate(m1)
-simulate(argo_spde)[1:20]
 ```
 
 ### Estimation
@@ -274,11 +262,8 @@ out <- ngme(
 out
 ```
 
-### Prediction
-
-Doing prediction with `ngme` is simple, simply put the value at preidcted location as `NA`.
-
+<!-- ### Prediction
 The `ngme` function firstly will estimate the model using the known data.
 After the estimation, the estimaed value and the samples given by gibbs sampler will be used to give a linear predictor.
 
-See the vignette [Prediction and estimation](pred_and_est.html) for details.
+See the vignette [Prediction and estimation](pred_and_est.html) for details. -->

@@ -22,7 +22,7 @@ bv(
 
 \item{map}{can be ignored, pass through first and second}
 
-\item{replicate}{replicate for the process}
+\item{replicate}{replicate passed to both first and second}
 
 \item{...}{extra arguments in f()}
 }

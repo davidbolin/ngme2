@@ -48,14 +48,15 @@ test_that("test posterior sampling and model_validation()", {
   Y <- W + rnorm(n=length(W), sd=sigma_eps)
 
   out <- ngme(
-    Y ~ 1 + f(1:n_obs, name="ar", model="ar1") + f(1:n_obs, name="rw", model="rw1"),
+    Y ~ 1 + f(1:n_obs, name="ar", model="ar1") + f(1:n_obs, name="rw", model="rw1") + f(1:n_obs, model="matern", mesh=INLA::inla.mesh.1d(1:10)),
     data=data.frame(Y=Y),
     control_opt=control_opt(print_check_info = FALSE, iteration=10)
   )
   out
 
   # 1. estimator
-  predict(out, map = list(ar = c(2,3,5), rw=c(5,2,1)), )
+  load_all()
+  predict(out, map = list(ar = c(2,3,5), rw=c(5,2,1),field1 = c(2,3,4) ))
 
   # 2. compute idx
   cross_validation(out)

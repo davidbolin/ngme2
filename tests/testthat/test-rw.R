@@ -94,23 +94,24 @@ test_that("the order of W same as order of index?", {
 
 ############################## AR1 case
 test_that("test estimation of basic ar with normal measurement noise", {
-  n_obs <- 20
+  n_obs <- 600
   alpha <- 0.75
-  mu <- 4; sigma <- 5; nu <- 0.2; sigma_eps <- 0.8
+  mu <- 4; sigma <- 2; nu <- 1; sigma_eps <- 0.8
   ar1 <- f(1:n_obs, model="ar1", theta_K = ar1_a2th(0.8), noise=noise_nig(mu=mu, sigma=sigma, nu=nu), eval = T)
 
   W <- simulate(ar1)
   mean(W)
   x1 = rnorm(n_obs);
+  # Y <-  -3 + x1 * 2  + rnorm(n_obs, sd = sigma_eps)
   Y <- W + rnorm(n_obs, sd = sigma_eps) - 3 + x1 * 2
 
 # plot(Y, type="l")
 load_all()
   out <- ngme(
-    Y ~ 1 + x1 + f(1:n_obs,
+    Y ~  1 + x1
+    + f(1:n_obs,
       model="ar1",
       name="ar",
-      alpha = -0.5,
       noise=noise_nig(
         # fix_nu = T, nu = 2,
         # h = ar1$noise$h,
@@ -126,23 +127,19 @@ load_all()
     ),
     control_opt = control_opt(
       estimation = T,
-      iterations = 100,
-      n_parallel_chain = 1,
+      iterations = 5000,
+      n_parallel_chain = 4,
       print_check_info = FALSE,
       verbose = F,
     ),
-    debug = T
+    debug = F
   )
-  out
-
-# 1. check this
-out$replicates[[1]]$models[[1]]$A
-predict(out$replicates[[1]], map = c(1,2,3))
+  out$replicates[[1]]$models[[1]]$n_rep
+  traceplot(out, "ar")
+  traceplot(out)
+plot(attr(W, "noise"), out$replicates[[1]]$models[[1]]$noise)
 
   out$replicates[[1]]$models[[1]]$theta_K
-  # traceplot(out, "ar")
-  # traceplot(out)
-  # plot(attr(W, "noise"), out$replicates[[1]]$models[[1]]$noise)
   # out$replicates[[1]]$models[[1]]$control$numer_grad
   # load_all()
 

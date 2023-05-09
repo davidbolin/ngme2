@@ -15,8 +15,9 @@ test_that("test Matern", {
 load_all()
   n_obs <- 800
   loc <- cbind(runif(n_obs, 0, 10), runif(n_obs, 0, 5))
-
-  true_model <- f(model="matern",
+# plot(mesh); points(loc)
+  true_model <- f(
+    model="matern",
     theta_K = log(3), mesh = mesh, map = loc,
     noise = noise_nig(
       mu=-4, sigma=1.5, nu=1, n = mesh$n
@@ -28,8 +29,7 @@ load_all()
   mean(W)
   mean(attr(W, "noise")$h)
 
-  A <- inla.spde.make.A(loc=loc, mesh=mesh)
-  Y <- as.numeric(A %*% W) + rnorm(n_obs, sd=0.5)
+  Y <- as.numeric(true_model$A %*% W) + rnorm(n_obs, sd=0.5)
 
   # make bubble plot
   # sp_obj <- as.data.frame(mesh$loc); sp_obj[, 3] <- W
@@ -47,7 +47,7 @@ load_all()
       noise=noise_nig(
         # fix_nu = T, nu=1
       ),
-      control = control_f(numer_grad = T),
+      control = control_f(numer_grad = F),
       # fix_theta_K = T, theta_kappa = log(3),
       # fix_W = TRUE, W = W,
       debug = T
@@ -55,10 +55,12 @@ load_all()
     data = data.frame(Y = Y),
     control_opt = control_opt(
       estimation = T,
-      iterations = 500,
+      iterations = 1000,
       n_parallel_chain = 4,
       print_check_info = F,
       verbose = T,
+      max_absolute_step = 10,
+      max_relative_step = 10,
       std_lim = 0.01
     ),
     debug = F

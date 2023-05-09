@@ -149,10 +149,7 @@ compute_indices <- function(ngme, test_idx, N = 100, seed=Sys.time()) {
 
   A_preds <- list()
   for (i in seq_along(ngme$models)) {
-    A_preds[[i]] <- INLA::inla.spde.make.A(
-      mesh = ngme$models[[i]]$operator$mesh,
-      loc = sub_locs(ngme$models[[i]]$operator$map, test_idx)
-    )
+    A_preds[[i]] <- ngme$models[[i]]$A[test_idx, ]
   }
 
   # A_pred_blcok <- [A1_pred .. An_pred]

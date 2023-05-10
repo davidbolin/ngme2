@@ -594,7 +594,7 @@ SparseMatrix<double, 0, int> kronecker(SparseMatrix<double, 0, int> &A, SparseMa
   B of size n1 x n2
  Set A(i:i+n1,j:j+n2) = B
 */
-void setSparseBlock(SparseMatrix<double, 0, int> *A, int i, int j, SparseMatrix<double, 0, int> &B)
+void setSparseBlock(SparseMatrix<double, 0, int> *A, int i, int j, const SparseMatrix<double, 0, int> &B)
 {
 	for (int k = 0; k < B.outerSize(); ++k)
 	{
@@ -608,7 +608,7 @@ void setSparseBlock(SparseMatrix<double, 0, int> *A, int i, int j, SparseMatrix<
   B of size n1 x n2
  Set A(i:i+n1,j:j+n2) = B (update)
 */
-void setSparseBlock_update(SparseMatrix<double, 0, int> *A, int i, int j, SparseMatrix<double, 0, int> &B)
+void setSparseBlock_update(SparseMatrix<double, 0, int> *A, int i, int j, const SparseMatrix<double, 0, int> &B)
 {
 	for (int k = 0; k < B.outerSize(); ++k)
 	{

@@ -71,8 +71,8 @@ void read_MatrixXd(MatrixXd&,std::string,std::string);
 SparseMatrix<double,0,int> Qinv2(SparseMatrix<double,0,int>& L);
 
 SparseMatrix<double,0,int> kronecker(SparseMatrix<double,0,int>&,SparseMatrix<double,0,int>&);
-void setSparseBlock(SparseMatrix<double,0,int>*,int, int, SparseMatrix<double,0,int>&);
-void setSparseBlock_update(SparseMatrix<double,0,int>*,int, int, SparseMatrix<double,0,int>&);
+void setSparseBlock(SparseMatrix<double,0,int>*,int, int, const SparseMatrix<double,0,int>&);
+void setSparseBlock_update(SparseMatrix<double,0,int>*,int, int, const SparseMatrix<double,0,int>&);
 
 //convert a full matrix to sparse format
 SparseMatrix<double,0,int> full2sparse(MatrixXd&);

@@ -36,6 +36,8 @@ protected:
     VectorXd h;
     int n_theta_K;
     bool zero_trace, symmetric;
+
+    // SparseMatrix<double> K;
 public:
     Operator(const Rcpp::List& operator_list) :
         h (Rcpp::as<VectorXd> (operator_list["h"])),

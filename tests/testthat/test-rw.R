@@ -134,7 +134,6 @@ load_all()
     ),
     debug = F
   )
-  out$replicates[[1]]$models[[1]]$n_rep
   traceplot(out, "ar")
   traceplot(out)
 plot(attr(W, "noise"), out$replicates[[1]]$models[[1]]$noise)

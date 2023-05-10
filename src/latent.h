@@ -144,7 +144,7 @@ public:
     void sample_cond_V();
 
     /*  3 Operator component   */
-    SparseMatrix<double, 0, int>& getK()  {
+    const SparseMatrix<double, 0, int>& getK()  {
         return K;
     }
 

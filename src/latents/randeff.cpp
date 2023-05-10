@@ -24,10 +24,11 @@ std::cout << "End Constructor of Randeff1" << std::endl;
 //     }
 
 // K^T K = Sigma^-1
-SparseMatrix<double> Randeff::getK(const VectorXd& theta_K) const {
+void Randeff::update_K(const VectorXd& theta_K) {
     VectorXd diag = theta_K.head(W_size).array().exp();
     VectorXd offdiag = theta_K.tail(W_size * (W_size+1) / 2 - W_size);
-int index = 0;
+
+    int index = 0;
     MatrixXd L (W_size, W_size); L.setZero();
     L.diagonal() = diag;
     for (int col=0; col < W_size; col++) {
@@ -37,21 +38,20 @@ int index = 0;
         }
     }
 
-    SparseMatrix<double> K = L.sparseView();
-    return K;
+    K = L.sparseView();
 }
 
 MatrixXd Randeff::get_dK_dense(int index, const VectorXd& alpha) const {
-    MatrixXd dK = MatrixXd::Zero(W_size, W_size);
-    VectorXd tmp = VectorXd::Zero(W_size * (W_size+1) / 2);
-    if (index < W_size) {
-        dK(index, index) = exp(alpha(index));
-    } else {
-        tmp(index) = 1;
-        dK = getK(tmp);
-        dK.diagonal().setZero();
-    }
-    return dK;
+    // MatrixXd dK = MatrixXd::Zero(W_size, W_size);
+    // VectorXd tmp = VectorXd::Zero(W_size * (W_size+1) / 2);
+    // if (index < W_size) {
+    //     dK(index, index) = exp(alpha(index));
+    // } else {
+    //     tmp(index) = 1;
+    //     dK = getK(tmp);
+    //     dK.diagonal().setZero();
+    // }
+    // return dK;
 }
 
 SparseMatrix<double> Randeff::get_dK(int index, const VectorXd& alpha) const {

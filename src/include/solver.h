@@ -19,13 +19,13 @@ public:
   virtual ~solver(){};
   virtual void init(int, int, int, double) = 0;
   virtual void initFromList(int, Rcpp::List const &) = 0;
-  virtual inline void analyze(Eigen::SparseMatrix<double, 0, int> &) = 0;
-  virtual void compute(Eigen::SparseMatrix<double, 0, int> &) = 0;
-  virtual void compute(Eigen::MatrixXd &) { std::cout << "compute not implimented for MatrixXd\n"; };
+  virtual inline void analyze(const Eigen::SparseMatrix<double, 0, int> &) = 0;
+  virtual void compute(const Eigen::SparseMatrix<double, 0, int> &) = 0;
+  virtual void compute(const Eigen::MatrixXd &) { std::cout << "compute not implimented for MatrixXd\n"; };
   virtual inline Eigen::VectorXd solve(Eigen::VectorXd &v, Eigen::VectorXd &) = 0;
-  virtual double trace(Eigen::MatrixXd &) = 0;
-  virtual double trace(Eigen::SparseMatrix<double, 0, int> &) = 0;
-  virtual double trace2(SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &) = 0;
+  virtual double trace(const Eigen::MatrixXd &) = 0;
+  virtual double trace(const Eigen::SparseMatrix<double, 0, int> &) = 0;
+  virtual double trace2(const SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &) = 0;
   virtual inline double logdet() { return 0.0; }
   virtual inline Eigen::VectorXd Qinv_diag()
   {
@@ -84,13 +84,13 @@ public:
   ~cholesky_solver(){};
   void init(int, int, int, double);
   void initFromList(int, Rcpp::List const &);
-  inline void analyze(Eigen::SparseMatrix<double, 0, int> &M) { R.analyzePattern(M); }
-  void compute(Eigen::SparseMatrix<double, 0, int> &);
+  inline void analyze(const Eigen::SparseMatrix<double, 0, int> &M) { R.analyzePattern(M); }
+  void compute(const Eigen::SparseMatrix<double, 0, int> &);
   inline Eigen::VectorXd solve(Eigen::VectorXd &v, Eigen::VectorXd &x) { return R.solve(v); }
   inline Eigen::VectorXd solve(const Eigen::VectorXd &v)               { return R.solve(v); }
-  double trace(Eigen::MatrixXd &);
-  double trace(Eigen::SparseMatrix<double, 0, int> &);
-  double trace2(SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &);
+  double trace(const Eigen::MatrixXd &);
+  double trace(const Eigen::SparseMatrix<double, 0, int> &);
+  double trace2(const SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &);
   inline double logdet()
   {
     set_ld();
@@ -113,13 +113,13 @@ private:
 public:
   void init(int, int, int, double);
   void initFromList(int, Rcpp::List const &);
-  void analyze(Eigen::SparseMatrix<double, 0, int> &);
-  void compute(Eigen::SparseMatrix<double, 0, int> &);
-  void compute(Eigen::MatrixXd &);
+  void analyze(const Eigen::SparseMatrix<double, 0, int> &);
+  void compute(const Eigen::SparseMatrix<double, 0, int> &);
+  void compute(const Eigen::MatrixXd &);
   Eigen::VectorXd solve(Eigen::VectorXd &v, Eigen::VectorXd &);
-  double trace(Eigen::MatrixXd &);
-  double trace(Eigen::SparseMatrix<double, 0, int> &);
-  double trace2(SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &);
+  double trace(const Eigen::MatrixXd &);
+  double trace(const Eigen::SparseMatrix<double, 0, int> &);
+  double trace2(const SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &);
   double logdet();
   Eigen::VectorXd rMVN(Eigen::VectorXd &, Eigen::VectorXd &)
   {
@@ -141,13 +141,14 @@ private:
 public:
   void init(int, int, int, double);
   void initFromList(int, Rcpp::List const &);
-  void analyze(Eigen::SparseMatrix<double, 0, int> &);
-  void compute(Eigen::SparseMatrix<double, 0, int> &);
+  void analyze(const Eigen::SparseMatrix<double, 0, int> &);
+  void compute(const Eigen::SparseMatrix<double, 0, int> &);
   void computeKTK(Eigen::SparseMatrix<double, 0, int> &);
-  double trace(Eigen::MatrixXd &);
-  double trace(Eigen::SparseMatrix<double, 0, int> &);
+  double trace(const Eigen::MatrixXd &);
+  double trace(const Eigen::SparseMatrix<double, 0, int> &);
+  double trace2(const SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &);
+
   double trace0(Eigen::SparseMatrix<double, 0, int> &);
-  double trace2(SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &);
   inline Eigen::VectorXd solve(Eigen::VectorXd &v, Eigen::VectorXd &x) { return LU_K.solve(v); }
   inline Eigen::VectorXd solve(Eigen::VectorXd &v) { return LU_K.solve(v); }
   inline Eigen::VectorXd solve(Eigen::VectorXd v) { return LU_K.solve(v); }

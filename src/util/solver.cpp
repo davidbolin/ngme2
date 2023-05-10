@@ -145,7 +145,7 @@ void cholesky_solver::initFromList(int nin, Rcpp::List const &)
   Qi_computed = 0;
 }
 
-void cholesky_solver::compute(SparseMatrix<double, 0, int> &M)
+void cholesky_solver::compute(const SparseMatrix<double, 0, int> &M)
 {
   R.factorize(M);
   Qi_computed = 0;
@@ -158,7 +158,7 @@ void cholesky_solver::set_ld()
 }
 
 // Solve trace(M*Q^-1)
-double cholesky_solver::trace(MatrixXd &M)
+double cholesky_solver::trace(const MatrixXd &M)
 {
 
   if (Qi_computed == 0)
@@ -188,7 +188,7 @@ SparseMatrix<double, 0, int> cholesky_solver::return_Qinv()
   return (Qi_reo);
 }
 
-double cholesky_solver::trace(SparseMatrix<double, 0, int> &M)
+double cholesky_solver::trace(const SparseMatrix<double, 0, int> &M)
 {
   if (Qi_computed == 0)
   {
@@ -210,7 +210,7 @@ double cholesky_solver::trace(SparseMatrix<double, 0, int> &M)
   */
 }
 
-double cholesky_solver::trace2(SparseMatrix<double, 0, int> &M1, SparseMatrix<double, 0, int> &M2)
+double cholesky_solver::trace2(const SparseMatrix<double, 0, int> &M1, SparseMatrix<double, 0, int> &M2)
 {
   /*
   std::cout << "trace2 is not working for cholesky!" << std::endl;
@@ -273,16 +273,16 @@ void lu_solver::initFromList(int nin, Rcpp::List const &in_list)
   Kinv_computed = 0;
 }
 
-void lu_solver::analyze(Eigen::SparseMatrix<double, 0, int> &K)
+void lu_solver::analyze(const Eigen::SparseMatrix<double, 0, int> &K)
 {
 }
 
-void lu_solver::compute(Eigen::SparseMatrix<double, 0, int> &M)
+void lu_solver::compute(const Eigen::SparseMatrix<double, 0, int> &M)
 {
   LU_K.compute(MatrixXd(M));
 }
 
-void lu_solver::compute(Eigen::MatrixXd &K)
+void lu_solver::compute(const Eigen::MatrixXd &K)
 {
 
   LU_K.compute(K);
@@ -295,7 +295,7 @@ Eigen::VectorXd lu_solver::solve(Eigen::VectorXd &v, Eigen::VectorXd &d)
 }
 
 // Solve trace(M*K^-1)
-double lu_solver::trace(Eigen::MatrixXd &M)
+double lu_solver::trace(const Eigen::MatrixXd &M)
 {
   if (Kinv_computed == 0)
   {
@@ -306,7 +306,7 @@ double lu_solver::trace(Eigen::MatrixXd &M)
   return (tmp1.diagonal().sum());
 }
 
-double lu_solver::trace(Eigen::SparseMatrix<double, 0, int> &M)
+double lu_solver::trace(const Eigen::SparseMatrix<double, 0, int> &M)
 {
   if (Kinv_computed == 0)
   {
@@ -317,7 +317,7 @@ double lu_solver::trace(Eigen::SparseMatrix<double, 0, int> &M)
   return (tmp1.diagonal().sum());
 }
 
-double lu_solver::trace2(SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &g)
+double lu_solver::trace2(const SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &g)
 {
   std::cout << "lu_solver::trace2 not implemented\n";
   throw;
@@ -345,7 +345,7 @@ void lu_sparse_solver::initFromList(int nin, Rcpp::List const &)
   KKtinv_computed = 0;
 }
 
-void lu_sparse_solver::compute(SparseMatrix<double, 0, int> &K_in)
+void lu_sparse_solver::compute(const SparseMatrix<double, 0, int> &K_in)
 {
   K = K_in;
 
@@ -382,7 +382,7 @@ void lu_sparse_solver::computeKTK(SparseMatrix<double, 0, int> &K_in)
 }
 
 // Solve trace(K^-1 M)
-double lu_sparse_solver::trace(MatrixXd &M)
+double lu_sparse_solver::trace(const MatrixXd &M)
 {
 
   std::cout << "lu_sparse_solver::trace for dense matrix M not implimented\n";
@@ -397,7 +397,7 @@ double lu_sparse_solver::trace0(SparseMatrix<double, 0, int> &M)
   return 0;
 }
 
-double lu_sparse_solver::trace(SparseMatrix<double, 0, int> &M)
+double lu_sparse_solver::trace(const SparseMatrix<double, 0, int> &M)
 {
   if (KKtinv_computed == 0)
   {
@@ -411,7 +411,7 @@ double lu_sparse_solver::trace(SparseMatrix<double, 0, int> &M)
   return KKtinv.cwiseProduct(Mreo).sum();
 }
 
-double lu_sparse_solver::trace2(SparseMatrix<double, 0, int> &M1, SparseMatrix<double, 0, int> &M2)
+double lu_sparse_solver::trace2(const SparseMatrix<double, 0, int> &M1, SparseMatrix<double, 0, int> &M2)
 {
   std::cout << "lu_sparse_solver::trace2 not implimented\n";
   throw;
@@ -424,10 +424,9 @@ inline double lu_sparse_solver::logdet()
   return R_Q.diagonal().array().log().sum();
 }
 
-void lu_sparse_solver::analyze(Eigen::SparseMatrix<double, 0, int> &M)
+void lu_sparse_solver::analyze(const Eigen::SparseMatrix<double, 0, int> &M)
 {
-  if (M.isCompressed() == 0)
-    M.makeCompressed();
+  // if (M.isCompressed() == 0) M.makeCompressed();
   L_KKt.analyzePattern(M.transpose() * M);
   LU_K.analyzePattern(M);
 }

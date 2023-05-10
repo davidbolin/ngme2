@@ -54,13 +54,11 @@ protected:
     int W_size, V_size, n_params, n_var {1}; // n_params=n_theta_K + n_theta_mu + n_theta_sigma + n_var
 
     // operator
-    std::unique_ptr<Operator> ope;
+    std::unique_ptr<Operator> ope, ope_add_eps;
     VectorXd h, theta_K;
     int n_theta_K;
     bool symmetricK, zero_trace, use_num_dK {false};
 
-    SparseMatrix<double, 0, int> K; // size = V_size * W_size
-    vector<SparseMatrix<double, 0, int>> dK;
     vector<double> trace;
     double eps;
 
@@ -145,7 +143,7 @@ public:
 
     /*  3 Operator component   */
     const SparseMatrix<double, 0, int>& getK()  {
-        return K;
+        return ope->getK();
     }
 
     /* 4 for optimizer */
@@ -155,8 +153,8 @@ public:
     void           finishOpt(int i) {fix_flag[i] = 0; }
 
     // used for general case
-    double function_K(VectorXd& parameter);
-    double function_K(SparseMatrix<double>& K);
+    // double function_K(VectorXd& parameter);
+    double function_K(const SparseMatrix<double>& K);
 
     VectorXd grad_theta_K();
     VectorXd grad_theta_mu();

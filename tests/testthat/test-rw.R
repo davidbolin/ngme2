@@ -117,7 +117,7 @@ load_all()
         # h = ar1$noise$h,
         # fix_V = TRUE, V = attr(W, "noise")$V
       ),
-      control=control_f(numer_grad = T),
+      control=control_f(numer_grad = F),
       debug = FALSE,
       # fix_W = T, W = W
     ),
@@ -127,9 +127,9 @@ load_all()
     ),
     control_opt = control_opt(
       estimation = T,
-      iterations = 5000,
+      iterations = 100,
       n_parallel_chain = 4,
-      print_check_info = FALSE,
+      print_check_info = TRUE,
       verbose = F,
     ),
     debug = F

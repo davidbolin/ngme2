@@ -32,28 +32,23 @@ void Tensor_prod::update_K(const VectorXd& theta_K) {
 // std::cout << "size and time for kronecker product is " << K.rows() << " " << K.cols() << " " << time << std::endl;
 }
 
-SparseMatrix<double> Tensor_prod::get_dK(int index, const VectorXd& theta_K) const {
+void Tensor_prod::update_dK(const VectorXd& theta_K) {
   VectorXd theta_K_1 = theta_K.segment(0, n_theta_1);
   VectorXd theta_K_2 = theta_K.segment(n_theta_1, n_theta_2);
+  // assume K is already updated!!
+  first->update_dK(theta_K_1);
+  second->update_dK(theta_K_2);
 
-  // to-do
-  // if (index < n_theta_1) {
-  //   SparseMatrix<double> dK_1 = first->get_dK(index, theta_K_1);
-  //   SparseMatrix<double> K_2 = second->getK(theta_K_2);
-  //   return kroneckerEigen(dK_1, K_2);
-  // } else {
-  //   SparseMatrix<double> dK_2 = second->get_dK(index - n_theta_2, theta_K_2);
-  //   SparseMatrix<double> K_1 = first->getK(theta_K_1);
-  //   return kroneckerEigen(K_1, dK_2);
-  // }
+  for (int index=0; index < n_theta_1; index++) {
+    if (index < n_theta_1) {
+      // return kroneckerEigen(dK_1, K_2);
+      KroneckerProductSparse<SparseMatrix<double>, SparseMatrix<double> > kroneckerEigen(first->get_dK()[index], second->getK());
+      kroneckerEigen.evalTo(dK[index]);
+    } else {
+      // return kroneckerEigen(K_1, dK_2);
+      KroneckerProductSparse<SparseMatrix<double>, SparseMatrix<double> > kroneckerEigen(first->getK(), second->get_dK()[index - n_theta_2]);
+      kroneckerEigen.evalTo(dK[index]);
+    }
+  }
 }
-
-
-// ------ iid model -----
-Iid::Iid(const Rcpp::List& operator_list):
-  Operator(operator_list),
-  I(Rcpp::as< SparseMatrix<double,0,int> > (operator_list["K"])) {}
-
-void Iid::update_K(const VectorXd& alpha) {}
-SparseMatrix<double> Iid::get_dK(int index, const VectorXd& alpha) const {return 0*I;}
 

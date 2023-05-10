@@ -25,9 +25,10 @@ void AR::update_K(const VectorXd& theta_K) {
     K = th2a(theta_K(0)) * C + G;
 }
 
-SparseMatrix<double> AR::get_dK(int index, const VectorXd& theta_K) const {
-    assert(index==0);
+void AR::update_dK(const VectorXd& theta_K) {
+    assert(theta_K.size() == 1);
+
     double th = theta_K(0);
     double da = 2 * (exp(th) / pow(1+exp(th), 2));
-    return da * C;
+    dK[0] = da * C;
 }

@@ -38,14 +38,22 @@ protected:
     bool zero_trace, symmetric;
 
     SparseMatrix<double> K;
+    vector<SparseMatrix<double>> dK;
 public:
     Operator(const Rcpp::List& operator_list) :
         h (Rcpp::as<VectorXd> (operator_list["h"])),
         n_theta_K (Rcpp::as<int> (operator_list["n_theta_K"])),
         zero_trace (Rcpp::as<bool> (operator_list["zero_trace"])),
         symmetric (Rcpp::as<bool> (operator_list["symmetric"])),
-        K (Rcpp::as<SparseMatrix<double>> (operator_list["K"]))
-    {}
+        K (Rcpp::as<SparseMatrix<double>> (operator_list["K"])),
+        dK (n_theta_K)
+    {
+      // initial dK
+      for (int i=0; i<n_theta_K; i++) {
+        dK[i].resize(K.rows(), K.cols());
+        dK[i].setZero();
+      }
+    }
 
     int get_n_theta_K() const {return n_theta_K;}
     const VectorXd& get_h() const {return h;}
@@ -53,10 +61,10 @@ public:
     bool is_zero_trace() const {return zero_trace;}
 
     const SparseMatrix<double>& getK() const {return K;}
-    // getdK
+    const vector<SparseMatrix<double>>& get_dK() const {return dK;}
 
     virtual void update_K(const VectorXd&) = 0;
-    virtual SparseMatrix<double, 0, int> get_dK(int index, const VectorXd&) const = 0;
+    virtual void update_dK(const VectorXd&) = 0;
 };
 
 class AR : public Operator {
@@ -68,7 +76,7 @@ public:
     AR(const Rcpp::List&);
 
     void update_K(const VectorXd& alpha);
-    SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
+    void update_dK(const VectorXd& alpha);
 
     double th2a(double th) const {return (-1 + 2*exp(th) / (1+exp(th)));}
     double a2th(double k) const {return (log((-1-k)/(-1+k)));}
@@ -82,8 +90,8 @@ private:
 public:
     Matern(const Rcpp::List&);
 
-    void update_K(const VectorXd& alpha);
-    SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
+    void update_K(const VectorXd&);
+    void update_dK(const VectorXd&);
 };
 
 class Matern_ns : public Operator {
@@ -96,8 +104,8 @@ private:
 public:
     Matern_ns(const Rcpp::List&, Type);
 
-    void update_K(const VectorXd& alpha);
-    SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
+    void update_K(const VectorXd&);
+    void update_dK(const VectorXd&);
 };
 
 class Tensor_prod : public Operator {
@@ -107,8 +115,8 @@ private:
 public:
   Tensor_prod(const Rcpp::List&);
 
-  void update_K(const VectorXd& alpha);
-  SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
+  void update_K(const VectorXd&);
+  void update_dK(const VectorXd&);
 };
 
 // Bivar
@@ -121,8 +129,8 @@ private:
 public:
     Bivar(const Rcpp::List&);
 
-    void update_K(const VectorXd& alpha);
-    SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
+    void update_K(const VectorXd&);
+    void update_dK(const VectorXd&);
 
     Matrix2d getD(double, double) const;
     Matrix2d get_dD_theta(double, double) const;
@@ -131,14 +139,15 @@ public:
     Matrix2d get_dD2_rho(double, double) const;
 };
 
+// notice dK is of size 0
 class Iid : public Operator {
-private:
-    SparseMatrix<double, 0, int> I;
 public:
-  Iid(const Rcpp::List&);
+  Iid(const Rcpp::List& operator_list):
+    Operator(operator_list)
+  {}
 
-  void update_K(const VectorXd& alpha);
-  SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
+  void update_K(const VectorXd& alpha) {};
+  void update_dK(const VectorXd& alpha) {};
 };
 
 // ---- Structure for random effects ----
@@ -152,8 +161,8 @@ class Randeff : public Operator{
     Randeff(const Rcpp::List&);
 
     void update_K(const VectorXd& theta_K);
+    void update_dK(const VectorXd& theta_K);
     MatrixXd get_dK_dense(int index, const VectorXd& alpha) const;
-    SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
     // VectorXd grad_theta_K();
     // void sample_cond_V() override;
     // void update_each_iter();

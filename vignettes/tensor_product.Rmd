@@ -101,7 +101,7 @@ out <- ngme(
   data = df,
   family = "normal",
   control_opt = control_opt(
-    iterations = 1,
+    iterations = 100,
     n_parallel_chain = 1,
     estimation = T,
     verbose = T,

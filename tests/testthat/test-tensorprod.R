@@ -35,11 +35,13 @@ test_that("ar x 2d case", {
   n1 <- 8
   n2 <- 300
   loc <- cbind(runif(n2, 0, 10), runif(n2, 0, 5))
+loc
+
 
 load_all()
 library(ngme2)
   tensor_model <- f(model="tp",
-    first = ar1(1:n1, theta_K = ar1_a2th(0.7)),
+    first = ar1(rep(1:n1, each=n2), theta_K = ar1_a2th(0.7)),
     second = matern(map=loc, mesh=mesh2d, theta_K = 1),
     noise = noise_nig(mu=-3, sigma=2, nu=1),
     eval = T

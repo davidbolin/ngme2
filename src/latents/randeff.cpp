@@ -54,9 +54,13 @@ MatrixXd Randeff::get_dK_dense(int index, const VectorXd& alpha) const {
     // return dK;
 }
 
-SparseMatrix<double> Randeff::get_dK(int index, const VectorXd& alpha) const {
-    return get_dK_dense(index, alpha).sparseView();
+void Randeff::update_dK(const VectorXd& theta_K) {
+
 }
+
+// SparseMatrix<double> Randeff::get_dK(int index, const VectorXd& alpha) const {
+//     return get_dK_dense(index, alpha).sparseView();
+// }
 
 // // handle specially, always return 0, but update Sigma
 // VectorXd Randeff::grad_theta_K() {

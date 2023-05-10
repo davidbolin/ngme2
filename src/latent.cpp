@@ -17,14 +17,15 @@ Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
 
     // operator
     ope           (OperatorFactory::create(Rcpp::as<Rcpp::List> (model_list["operator"]))),
+    ope_add_eps   (OperatorFactory::create(Rcpp::as<Rcpp::List> (model_list["operator"]))),
     h             (ope->get_h()),
     theta_K       (Rcpp::as<VectorXd>  (model_list["theta_K"])),
     n_theta_K     (theta_K.size()),
     symmetricK    (ope->is_symmetric()),
     zero_trace    (ope->is_zero_trace()),
 
-    K             (V_size, W_size),
-    dK            (n_theta_K),
+    // K             (V_size, W_size),
+    // dK            (n_theta_K),
     trace         (n_theta_K, 0.0),
     eps           (0.001),
 
@@ -38,7 +39,6 @@ Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
     a_vec         (V_size),
     b_vec         (V_size),
     nu            (1)
-
     // var           (Var(Rcpp::as<Rcpp::List> (model_list["noise"]), latent_rng()))
 {
     // read the control variable
@@ -87,19 +87,17 @@ Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
         fix_flag[latent_fix_nu] = 1;
     }
 
-    // init K and Q
-    K = ope->getK(theta_K);
-
+    // init Q
     if (V_size == W_size) {
         if (!symmetricK) {
             lu_solver_K.init(W_size, 0,0,0);
-            lu_solver_K.analyze(K);
+            lu_solver_K.analyze(getK());
         } else {
             chol_solver_K.init(W_size,0,0,0);
-            chol_solver_K.analyze(K);
+            chol_solver_K.analyze(getK());
         }
     }
-    SparseMatrix<double> Q = K.transpose() * K;
+    SparseMatrix<double> Q = getK().transpose() * getK();
     solver_Q.init(W_size, 0,0,0);
     solver_Q.analyze(Q);
     update_each_iter();
@@ -114,7 +112,7 @@ VectorXd Latent::grad_theta_mu() {
 
     hess += -(prevV-h).cwiseQuotient(prevSV).dot(prevV-h);
     for (int l=0; l < n_theta_mu; l++) {
-        grad(l) += (V-h).cwiseProduct(B_mu.col(l).cwiseQuotient(SV)).dot(K*W - mu.cwiseProduct(V-h));
+        grad(l) += (V-h).cwiseProduct(B_mu.col(l).cwiseQuotient(SV)).dot(getK()*W - mu.cwiseProduct(V-h));
     }
 
     // not use hessian
@@ -143,7 +141,7 @@ inline VectorXd Latent::grad_theta_sigma() {
     VectorXd prevSV = sigma.array().pow(2).matrix().cwiseProduct(prevV);
 
     // tmp = (KW - mu(V-h))^2 / V
-    VectorXd tmp = (K*W - mu.cwiseProduct(V-h)).array().pow(2).matrix().cwiseProduct(V.cwiseInverse());
+    VectorXd tmp = (getK()*W - mu.cwiseProduct(V-h)).array().pow(2).matrix().cwiseProduct(V.cwiseInverse());
     VectorXd tmp2 = tmp.cwiseProduct(sigma.array().pow(-2).matrix()) - VectorXd::Ones(V_size);
 
     // grad = Bi(tmp * sigma ^ -2 - 1)
@@ -172,7 +170,7 @@ inline VectorXd Latent::grad_theta_sigma_normal() {
     VectorXd grad = VectorXd::Zero(n_theta_sigma_normal);
 
     // tmp = (KW - mu(V-h))^2 / V
-    VectorXd tmp = (K*W).array().pow(2).matrix().cwiseProduct(V.cwiseInverse());
+    VectorXd tmp = (getK()*W).array().pow(2).matrix().cwiseProduct(V.cwiseInverse());
     // grad = Bi(tmp * sigma_normal ^ -2 - 1)
     VectorXd tmp1 = tmp.cwiseProduct(sigma_normal.array().pow(-2).matrix()) - VectorXd::Ones(V_size);
     grad += B_sigma_normal.transpose() * tmp1;
@@ -181,7 +179,7 @@ inline VectorXd Latent::grad_theta_sigma_normal() {
 }
 
 // pi(W|V)
-double Latent::function_K(SparseMatrix<double>& K) {
+double Latent::function_K(const SparseMatrix<double>& K) {
     double l = 0;
     VectorXd SV = getSV();
 
@@ -208,11 +206,12 @@ VectorXd Latent::grad_theta_K() {
 // std::cout << "K = " << K << std::endl;
     VectorXd grad = VectorXd::Zero(n_theta_K);
     if (numer_grad) {
-        double val = function_K(K);
+        double val = function_K(getK());
         for (int i=0; i < n_theta_K; i++) {
             VectorXd tmp = theta_K;
             tmp(i) += eps;
-            SparseMatrix<double> K_add_eps = ope->getK(tmp);
+            ope_add_eps->update_K(tmp);
+            SparseMatrix<double> K_add_eps = ope_add_eps->getK();
             double val_add_eps = function_K(K_add_eps);
             grad(i) = - (val_add_eps - val) / eps;
 // std::cout << "num_g = " << grad(i)  << std::endl;
@@ -220,9 +219,9 @@ VectorXd Latent::grad_theta_K() {
     } else {
         VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
 
-        VectorXd tmp = K * W - mu.cwiseProduct(V-h);
+        VectorXd tmp = getK() * W - mu.cwiseProduct(V-h);
         for (int j=0; j < n_theta_K; j++) {
-            grad(j) = trace[j] - (dK[j] * W).cwiseProduct(SV.cwiseInverse()).dot(tmp);
+            grad(j) = trace[j] - (ope->get_dK()[j] * W).cwiseProduct(SV.cwiseInverse()).dot(tmp);
             grad(j) = - grad(j) / W_size;
         }
     }
@@ -335,19 +334,17 @@ void Latent::update_each_iter() {
         sigma_normal = (B_sigma_normal * theta_sigma_normal).array().exp();
 
     // update on K, dK, trace, bigK for sampling...
-    K = ope->getK(theta_K);
+    ope->update_K(theta_K);
     if (!numer_grad && W_size == V_size) {
-        for (int i=0; i < n_theta_K; i++) {
-            dK[i] = ope->get_dK(i, theta_K);
-        }
+        ope->update_dK(theta_K);
         if (!zero_trace) {
             for (int i=0; i < n_theta_K; i++) {
                 if (!symmetricK) {
-                    lu_solver_K.computeKTK(K);
-                    trace[i] = lu_solver_K.trace(dK[i]);
+                    lu_solver_K.computeKTK(getK());
+                    trace[i] = lu_solver_K.trace(ope->get_dK()[i]);
                 } else {
-                    chol_solver_K.compute(K);
-                    trace[i] = chol_solver_K.trace(dK[i]);
+                    chol_solver_K.compute(getK());
+                    trace[i] = chol_solver_K.trace(ope->get_dK()[i]);
                 }
     // std::cout << "trace = " << trace[i] << std::endl;
                 // update trace_eps if using hessian
@@ -423,7 +420,7 @@ void Latent::sample_cond_V() {
     if (fix_flag[latent_fix_V] || noise_type == "normal") return;
 
     VectorXd a_inc_vec = mu.cwiseQuotient(sigma).array().pow(2);
-    VectorXd b_inc_vec = (K * W + mu.cwiseProduct(h)).cwiseQuotient(sigma).array().pow(2);
+    VectorXd b_inc_vec = (getK() * W + mu.cwiseProduct(h)).cwiseQuotient(sigma).array().pow(2);
 
     double dim = 1;
     VectorXd p_vec_new = p_vec - VectorXd::Constant(V_size, 0.5 * dim);

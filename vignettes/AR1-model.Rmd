@@ -48,14 +48,15 @@ Notice that AR(1) process is only well defined in the integer mesh (it can have 
 
 ```{r ar-usage}
 library(ngme2)
+load_all()
 set.seed(16)
 
-m1 <- model_ar1(3:5, noise = noise_normal())
+m1 <- ar1(3:5, noise = noise_normal())
 # check the operator matrix
 m1$K
 # length is 5 - 3 + 1
 
-m2 <- model_ar1(c(2011, 2012, 2015, 2016), noise = noise_nig(mu=5, sigma=1.5))
+m2 <- ar1(c(2011, 2012, 2015, 2016), noise = noise_nig(mu=5, sigma=1.5))
 m2$K
 # length is 2016 - 2011 + 1 = 6
 

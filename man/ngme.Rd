@@ -28,7 +28,7 @@ ngme(
 
 \item{control_ngme}{control for ngme model. by default it is \code{control_ngme()}. See \code{?control_ngme} for details.}
 
-\item{group}{group for multiple response variables.}
+\item{group}{group factor, used for multivariate model}
 
 \item{start}{starting ngme object (usually object from last fitting)}
 

@@ -41,8 +41,6 @@ Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
 
     // var           (Var(Rcpp::as<Rcpp::List> (model_list["noise"]), latent_rng()))
 {
-std::cout << "Begin constructor of latent" << std::endl;
-
     // read the control variable
     Rcpp::List control_f = Rcpp::as<Rcpp::List> (model_list["control"]);
         use_precond     = Rcpp::as<bool>        (control_f["use_precond"] );
@@ -101,12 +99,10 @@ std::cout << "Begin constructor of latent" << std::endl;
             chol_solver_K.analyze(K);
         }
     }
-std::cout << " here " << std::endl;
     SparseMatrix<double> Q = K.transpose() * K;
     solver_Q.init(W_size, 0,0,0);
     solver_Q.analyze(Q);
     update_each_iter();
-std::cout << "End constructor of latent" << std::endl;
 if (debug) std::cout << "End constructor of latent" << std::endl;
 }
 

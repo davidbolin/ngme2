@@ -12,7 +12,7 @@ traceplot(ngme, name = "general")
 \item{ngme}{ngme object}
 
 \item{name}{name of latent models, otherwise plot fixed effects and measurement noise
-should be in names(ngme$latents) or other}
+should be in names(ngme$models) or other}
 }
 \value{
 the traceplot

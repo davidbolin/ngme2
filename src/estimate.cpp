@@ -83,6 +83,8 @@ auto timer = std::chrono::steady_clock::now();
     for (int i = 0; i < n_chains; i++)
         opt_vec.push_back(Optimizer(control_opt));
 
+// std::cout << "Finish intialization." << std::endl;
+
     while (steps < iterations && !all_converge) {
         MatrixXd mat (n_chains, n_params);
         #pragma omp parallel for schedule(static)

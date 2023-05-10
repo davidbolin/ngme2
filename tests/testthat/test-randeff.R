@@ -45,6 +45,7 @@ out$replicates[[1]]$n_la_params
 })
 
 test_that("test on 1d random effects", {
+  load_all()
   # 1d rand eff
   group <- 50
   u <- rnorm(group, 0, 5)

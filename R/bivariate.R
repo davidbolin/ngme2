@@ -31,6 +31,7 @@ tp <- function(
   ngme_operator(
     map = map,  # placeholder
     mesh = NULL,
+    n_rep = 1,
     model = "tp",
     first = first,
     second = second,
@@ -67,6 +68,8 @@ bv <- function(
   ...
 ) {
   # inject replicate to sub models
+  stopifnot("Please don't specify replicate in first and second"
+    = first$n_rep == 1 & second$n_rep == 1)
   if (!is.null(replicate)) {
     first_call <- match.call()$first
     first_call$replicate <- replicate
@@ -93,6 +96,9 @@ bv <- function(
   bigD <- kronecker(D, Matrix::Diagonal(nrow(first$K)))
 
   ngme_operator(
+    map = first$map,
+    mesh = NULL,
+    n_rep = length(unique(replicate)),
     model       = "bv",
     first       = first,
     second      = second,

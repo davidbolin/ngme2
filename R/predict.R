@@ -4,11 +4,14 @@
 #' predict using ngme after estimation
 #'
 #' @param object a ngme object
+#' @param map a named list (or dataframe) of the locations to make the prediction
 #' @param data a data.frame or matrix of covariates (used for fixed effects)
-#' @param loc a named list (or dataframe) of the locations to make the prediction
 #'  names(loc) corresponding to the name each latent model
 #'  vector or matrix (n * 2) for spatial coords
-#' @param type what type of prediction, c("fe", "lp", "field1")
+#' @param type what type of prediction, c("fe", "lp", <model_name>)
+#' "fe" is fixed effect prediction
+#' <model_name> is prediction of a specific model
+#' "lp" is linear predictor (including fixed effect and all sub-models)
 #' @param estimator what type of estimator, c("mean", "median", "mode", "quantile")
 #' @param sampling_size size of posterior sampling
 #' @param seed random seed
@@ -17,11 +20,10 @@
 #'
 #' @return a list of outputs contains estimation of operator paramters, noise parameters
 #' @export
-#'
-predict.ngme_replicate <- function(
+predict.ngme <- function(
   object,
+  map = NULL,
   data = NULL,
-  loc = NULL,
   type = "lp",
   estimator = c("mean", "sd", "5quantile", "95quantile", "median", "mode"),
   sampling_size = 100,
@@ -29,13 +31,15 @@ predict.ngme_replicate <- function(
   seed = Sys.time(),
   ...
 ) {
+  fm <- attr(object, "fitting")$formula
+
   # recursively call predict.ngme_replicate if estimator is a list
   if (length(estimator) > 1) {
     res <- (lapply(estimator, function(x) {
-      predict.ngme_replicate(
+      predict.ngme(
         object,
         data = data,
-        loc = loc,
+        map = map,
         type = type,
         estimator = x,
         sampling_size = sampling_size,
@@ -46,17 +50,10 @@ predict.ngme_replicate <- function(
     names(res) <- estimator
     return (res)
   }
-  ngme <- object
-  # maybe not necessary...
-  # 0. length of output (loc 2d, loc 1d, )
-  # if (!is.null(loc) && (is.matrix(loc) || is.data.frame(loc)))
-  #   n_pred <- nrow(loc)
-  # else if (!is.null(loc))
-  #   n_pred <- length(loc)
-  # else
-  #   stop("not implement for loc=NULL yet")
+
+  # now estimator is a character
+  ngme <- object$replicate[[1]]
   stopifnot(sampling_size > 0)
-# why 4 times?
   samples_W <- sampling_cpp(ngme, n=sampling_size, posterior=TRUE, seed=seed)[["W"]]
   post_W <- switch(estimator,
     "mean"      = mean_list(samples_W),
@@ -77,100 +74,60 @@ predict.ngme_replicate <- function(
   j <- 1
   for (i in seq_along(ngme$models)) {
     sz <- ngme$models[[i]]$W_size
-    ngme$models[[i]]$W <- post_W[j:(j + sz - 1)]
+    ngme$models[[i]][[estimator]] <- post_W[j:(j + sz - 1)]
     j <- j + sz
   }
 
-  # 1. If provide loc, make A_pred for each model
-  if (!is.null(loc)) {
-    # make sure it's list
-    if (!is.list(loc)) loc <- list(loc)
+  if (!is.null(map)) {
+    stopifnot(
+      "map should be a named list (name for each model)"
+        = is.list(map) && !is.null(names(map))
+    )
+    names <- names(map)
+    stopifnot(length(names) == length(ngme$models))
 
-    # 1. Make A_pred at new loc for each latent model!!!
-    if (!is.null(names(loc))) {
-      names <- names(loc)
-      stopifnot(length(names) == length(ngme$models))
-      tmp_loc <- loc
-      for (i in seq_along(names)) {
-        stopifnot(!is.null(tmp_loc[[names[[i]]]]))
-        loc[[i]] <- tmp_loc[[names[[i]]]]
-      }
-    }
-
+    AW <- list()
     for (i in seq_along(ngme$models)) {
-      mesh <- ngme$models[[i]]$mesh
-      if (!is.null(mesh) &&
-          inherits(mesh, c("inla.mesh", "inla.mesh.1d"))) {
-        # model using INLA mesh
-          # watch out! reuse replicate!
-          # nrep <- length(unique(ngme$models[[i]]$replicate))
-        nrep <- 1
-        if (inherits(mesh, "inla.mesh")) {
-          # repl = rep(1:nrep, each = nrow(loc[[i]]))
-          locs = sapply(as.data.frame(loc[[i]]), rep.int, times=nrep)
-        } else {
-          # repl = rep(1:nrep, each = length(loc[[i]]))
-          locs = rep(loc[[i]], nrep)
-        }
-
-        ngme$models[[i]]$A_pred <- INLA::inla.spde.make.A(
-            mesh = mesh,
-            loc = locs
-            # repl = repl
-          )
-      } else if (!is.null(mesh)) {
-        # time series model using
-        # watch out! to-do
-message("Use ngme_ts_make_A...")
-        ngme$models[[i]]$A_pred <- ngme_ts_make_A(loc=loc[[i]])
-      } else {
-        stop("mesh is null, don't know how to make A")
-      }
+      loc = map[[ngme$models[[i]]$name]]
+      AW[[ngme$models[[i]]$name]] <- with(ngme$models[[i]], {
+        mesh <- operator$mesh
+        n_rep <- operator$n_rep
+        W_rep <- matrix(ngme$models[[i]][[estimator]], ncol = n_rep)
+        W_avg <- rowMeans(W_rep)
+        A <- INLA::inla.spde.make.A(loc = loc, mesh = mesh)
+        as.numeric(A %*% W_avg)
+      })
     }
   }
 
-  # 2. Every latent has A_pred, now let's predict by Xbeta + AW
-  # preds <- double(n_pred)
+  # e.g. names <- c("fe", "field1", "field2")
+  type_names <- if (type == "lp") c("fe", names(ngme$models)) else type
+
   preds <- 0
+  for (i in seq_along(type_names)) {
+    name <- type_names[[i]]
 
-  names <- if (type == "lp") c("fe", names(ngme$models)) else type
-  # names <- c("fe", "field1", "field2")
-
-  # ngme after estimation, has W, beta
-  for (i in seq_along(names)) {
-    name <- names[[i]]
-
-    if (name == "fe") {
-      # compute fe
-      if (length(ngme$beta) > 0) {
-        # make X_pred
-        if (!is.null(data)) {
-          X_pred <- as.matrix(data) # from formula
+    if (name == "fe" && length(ngme$beta) > 0) {
+        X_pred <- if (is.null(data) && attr(terms(fm), "intercept")) {
+          matrix(1, nrow = length(AW[[1]]), ncol = 1)
         } else {
-          X_pred <- ngme$X_pred
+          # build plain_fm
+          tf <- terms.formula(fm, specials = c("f"))
+          terms <- attr(tf, "term.labels")
+          intercept <- attr(tf, "intercept")
+          spec_order <- attr(tf, "specials")$f - 1
+          fixf <- if (length(spec_order) == 0) terms else terms[-spec_order]
+          plain_fm_str <- paste("~", intercept, paste(c("", fixf), collapse = " + "))
+          plain_fm <- formula(plain_fm_str)
+          model.matrix(plain_fm, data = data)
         }
-        # Add intercept if has
-        # If only has intercept, then X is of dim 1*1, which is fine
-        # (if we have further AW)
-        if ((is.null(X_pred) && length(ngme$beta) == 1) ||
-            (ncol(X_pred) == 1 + length(ngme$beta)))
-          X_pred <- cbind(1, X_pred)
-
         preds <- preds + as.numeric(X_pred %*% ngme$beta)
-      }
     } else if (name %in% names(ngme$models)) {
-      model <- ngme$models[[name]]
-      # A_pred?
-      if (is.null(model$A_pred))
-        stop("A_pred not available")
-      else
-        A_pred <- model$A_pred
-
-      preds <- preds + as.numeric(A_pred %*% model$W)
+      preds <- preds + AW[[name]]
     }
   }
+
   # lp case is just fe + A1 * W1 + A2 * W2
-  stopifnot(length(preds) > 1)
   preds
 }
 
@@ -192,10 +149,7 @@ compute_indices <- function(ngme, test_idx, N = 100, seed=Sys.time()) {
 
   A_preds <- list()
   for (i in seq_along(ngme$models)) {
-    A_preds[[i]] <- INLA::inla.spde.make.A(
-      mesh = ngme$models[[i]]$mesh,
-      loc = sub_locs(ngme$models[[i]]$map, test_idx)
-    )
+    A_preds[[i]] <- ngme$models[[i]]$A[test_idx, ]
   }
 
   # A_pred_blcok <- [A1_pred .. An_pred]
@@ -316,11 +270,11 @@ cat("The average of indices computed: \n")
   ret <- mean_list(crs)
 } else if (inherits(ngme, "ngme")) {
   # take average mean of each block
-  weights <- sapply(ngme, function(x) length(x$Y))
+  weights <- sapply(ngme$replicates, function(x) length(x$Y))
   weights <- weights / sum(weights)
   ret <- list()
-  for (i in seq_along(ngme)) {
-    ret[[i]] <- cross_validation(ngme[[i]], type=type, k=k, N=N, percent=percent,
+  for (i in seq_along(ngme$replicates)) {
+    ret[[i]] <- cross_validation(ngme$replicates[[i]], type=type, k=k, N=N, percent=percent,
     times=times, group=group, print=print, seed=seed)
   }
   ret <- mean_list(ret, weights=weights)
@@ -331,64 +285,3 @@ cat("The final result averaged over replicates: \n")
   attr(ret, "group") <- group
   return(invisible(ret))
 }
-
-######################################## for replicates
-
-#' Predict function of ngme2
-#' predict using ngme after estimation
-#' same as predict.ngme_replicate(ngme[[i]], data[[i]], loc[[i]]) i in which.rep
-#'
-#' @param object a ngme object
-#' @param which.rep which replicate to use for prediction, can be a vector like c(1,2)
-#' @param data a data.frame of covariates (used for fixed effects)
-#' @param loc a named list (or dataframe) of the locations to make the prediction
-#'  names(loc) corresponding to the name each latent model
-#'  vector or matrix (n * 2) for spatial coords
-#' @param type what type of prediction, c("fe", "lp", "field1")
-#' @param estimator what type of estimator, c("mean", "median", "mode", "quantile")
-#' @param sampling_size size of posterior sampling
-#' @param seed random seed
-#' @param q quantile if using "quantile"
-#' @param ... extra argument from 0 to 1 if using "quantile"
-#'
-#' @return a list of outputs contains estimation of operator paramters, noise parameters
-#' @export
-#'
-predict.ngme <- function(
-  object,
-  which.rep = seq_along(object),
-  data = NULL,
-  loc = list(NULL),
-  type = "lp",
-  estimator = c("mean", "sd", "5quantile", "95quantile", "median", "mode"),
-  sampling_size = 100,
-  q = NULL,
-  seed = Sys.time(),
-  ...
-) {
-  stopifnot(inherits(object, "ngme"))
-
-  if (!is.null(data)) stopifnot("Please provide data as list(...), make sure length(which.rep) == length(data)"
-    = length(which.rep) == length(data))
-
- stopifnot("Please provide data and loc as list(...), make sure length(which.rep) == length(loc)"
-  =length(which.rep) == length(loc))
-
-  res <- list()
-  for (i in which.rep) {
-    res[[i]] <- predict.ngme_replicate(
-      object[[i]],
-      data = if (!is.null(data)) data[[i]] else NULL,
-      loc = loc[[i]],
-      type = type,
-      estimator = estimator,
-      sampling_size = sampling_size,
-      q = q,
-      seed = seed,
-      ...
-    )
-  }
-  res
-}
-
-

@@ -19,6 +19,7 @@ f(
   debug = FALSE,
   fix_W = FALSE,
   fix_theta_K = FALSE,
+  subset = rep(TRUE, length_map(map)),
   eval = FALSE,
   ...
 )
@@ -32,6 +33,8 @@ f(
 (can also be specified in each ngme model)}
 
 \item{replicate}{Representing the replicate}
+
+\item{mesh}{mesh for the model}
 
 \item{control}{control variables for f model}
 
@@ -51,20 +54,12 @@ f(
 
 \item{fix_theta_K}{fix the estimation for theta_K.}
 
+\item{subset}{subset of the model}
+
 \item{eval}{evaluate the model}
 
 \item{...}{additional arguments
 inherit the data from ngme function}
-
-\item{effect_type}{if it is a random effect, see ngme_randeff_types()}
-
-\item{A}{A Matrix connecting observation and mesh}
-
-\item{A_pred}{A Matrix connecting NA location and mesh}
-
-\item{index_NA}{Logical vector, same as is.na(response var.)}
-
-\item{index_pred}{index for prediction}
 }
 \value{
 a list latent_in for constructing latent model, e.g. A, h, C, G,

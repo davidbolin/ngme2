@@ -294,7 +294,8 @@ ngme_parse_formula <- function(
   X_full    <- model.matrix(delete.response(terms(plain_fm)), as.data.frame(data))
 
   ########## parse models terms
-  pre_model <- list(); idx_effect = 1; idx_field = 1;
+  pre_model <- list();
+  idx_effect = 1; idx_field = 1; # for setting names
   for (i in spec_order) {
     if (!grepl("data *=", terms[i])) {
       # adding data=data if not specified

@@ -13,9 +13,7 @@ Matern::Matern(const Rcpp::List& operator_list):
     C           (Rcpp::as< SparseMatrix<double,0,int> > (operator_list["C"])),
     alpha       (Rcpp::as<int> (operator_list["alpha"])),
     Cdiag       (C.diagonal())
-{
-std::cout << "finish Constructor of Matern " << std::endl;
-}
+{}
 
 SparseMatrix<double> Matern::getK(const VectorXd& theta_K) const {
     double kappa = exp(theta_K(0));

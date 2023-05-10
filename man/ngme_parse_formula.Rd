@@ -4,7 +4,7 @@
 \alias{ngme_parse_formula}
 \title{Parse the formula for ngme function}
 \usage{
-ngme_parse_formula(fm, data, control_ngme, noise)
+ngme_parse_formula(fm, data, group, control_ngme, noise)
 }
 \arguments{
 \item{fm}{Formula}

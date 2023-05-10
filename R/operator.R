@@ -1,6 +1,7 @@
 ngme_operator <- function(
   map,
   mesh,
+  n_rep,
   model,
   K,
   h,
@@ -14,6 +15,7 @@ ngme_operator <- function(
     list(
       map = map,
       mesh = mesh,
+      n_rep = n_rep,
       model = model,
       K = K,
       h = h,
@@ -58,7 +60,9 @@ print.ngme_operator <- function(x, padding = 0, ...) {
 
   parameter <- with(operator, switch(model,
     ar1 = cat(pad_add4_space, "alpha = ", format(ar1_th2a(theta_K), digits=3), "\n", sep=""),
-    matern = cat(pad_add4_space, "theta_K = ", format(theta_K, digits=3), "\n", sep=""),
+    matern = if (length(theta_K) > 1)
+      cat(pad_add4_space, "theta_K = ", format(theta_K, digits=3), "\n", sep="") else
+      cat(pad_add4_space, "kappa = ", format(exp(theta_K), digits=3), "\n", sep=""),
     tp = {
       print(operator$first,  padding = padding + 4)
       print(operator$second, padding = padding + 4)

@@ -364,7 +364,7 @@ void lu_sparse_solver::compute(const SparseMatrix<double, 0, int> &K_in)
 }
 
 // similar to compute
-void lu_sparse_solver::computeKTK(SparseMatrix<double, 0, int> &K_in)
+void lu_sparse_solver::computeKTK(const SparseMatrix<double, 0, int> &K_in)
 {
   K = K_in;
 

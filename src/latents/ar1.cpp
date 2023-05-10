@@ -20,9 +20,9 @@ AR::AR(const Rcpp::List& operator_list):
 {}
 
 // wrt. parameter_K (bounded parameter)
-SparseMatrix<double> AR::getK(const VectorXd& theta_K) const {
+void AR::update_K(const VectorXd& theta_K) {
     assert (theta_K.size() == 1);
-    return th2a(theta_K(0)) * C + G;
+    K = th2a(theta_K(0)) * C + G;
 }
 
 SparseMatrix<double> AR::get_dK(int index, const VectorXd& theta_K) const {

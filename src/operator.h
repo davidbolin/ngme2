@@ -37,13 +37,14 @@ protected:
     int n_theta_K;
     bool zero_trace, symmetric;
 
-    // SparseMatrix<double> K;
+    SparseMatrix<double> K;
 public:
     Operator(const Rcpp::List& operator_list) :
         h (Rcpp::as<VectorXd> (operator_list["h"])),
         n_theta_K (Rcpp::as<int> (operator_list["n_theta_K"])),
         zero_trace (Rcpp::as<bool> (operator_list["zero_trace"])),
-        symmetric (Rcpp::as<bool> (operator_list["symmetric"]))
+        symmetric (Rcpp::as<bool> (operator_list["symmetric"])),
+        K (Rcpp::as<SparseMatrix<double>> (operator_list["K"]))
     {}
 
     int get_n_theta_K() const {return n_theta_K;}
@@ -51,7 +52,10 @@ public:
     bool is_symmetric() const {return symmetric;}
     bool is_zero_trace() const {return zero_trace;}
 
-    virtual SparseMatrix<double, 0, int> getK(const VectorXd&) const = 0;
+    const SparseMatrix<double>& getK() const {return K;}
+    // getdK
+
+    virtual void update_K(const VectorXd&) = 0;
     virtual SparseMatrix<double, 0, int> get_dK(int index, const VectorXd&) const = 0;
 };
 
@@ -63,7 +67,7 @@ private:
 public:
     AR(const Rcpp::List&);
 
-    SparseMatrix<double> getK(const VectorXd& alpha) const;
+    void update_K(const VectorXd& alpha);
     SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
 
     double th2a(double th) const {return (-1 + 2*exp(th) / (1+exp(th)));}
@@ -78,7 +82,7 @@ private:
 public:
     Matern(const Rcpp::List&);
 
-    SparseMatrix<double> getK(const VectorXd& alpha) const;
+    void update_K(const VectorXd& alpha);
     SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
 };
 
@@ -92,7 +96,7 @@ private:
 public:
     Matern_ns(const Rcpp::List&, Type);
 
-    SparseMatrix<double> getK(const VectorXd& alpha) const;
+    void update_K(const VectorXd& alpha);
     SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
 };
 
@@ -103,7 +107,7 @@ private:
 public:
   Tensor_prod(const Rcpp::List&);
 
-  SparseMatrix<double> getK(const VectorXd& alpha) const;
+  void update_K(const VectorXd& alpha);
   SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
 };
 
@@ -117,7 +121,7 @@ private:
 public:
     Bivar(const Rcpp::List&);
 
-    SparseMatrix<double> getK(const VectorXd& alpha) const;
+    void update_K(const VectorXd& alpha);
     SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
 
     Matrix2d getD(double, double) const;
@@ -133,7 +137,7 @@ private:
 public:
   Iid(const Rcpp::List&);
 
-  SparseMatrix<double> getK(const VectorXd& alpha) const;
+  void update_K(const VectorXd& alpha);
   SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
 };
 
@@ -147,7 +151,7 @@ class Randeff : public Operator{
   public:
     Randeff(const Rcpp::List&);
 
-    SparseMatrix<double> getK(const VectorXd& theta_K) const;
+    void update_K(const VectorXd& theta_K);
     MatrixXd get_dK_dense(int index, const VectorXd& alpha) const;
     SparseMatrix<double> get_dK(int index, const VectorXd& alpha) const;
     // VectorXd grad_theta_K();

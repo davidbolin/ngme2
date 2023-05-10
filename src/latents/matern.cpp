@@ -15,11 +15,10 @@ Matern::Matern(const Rcpp::List& operator_list):
     Cdiag       (C.diagonal())
 {}
 
-SparseMatrix<double> Matern::getK(const VectorXd& theta_K) const {
+void Matern::update_K(const VectorXd& theta_K) {
     double kappa = exp(theta_K(0));
     int W_size = G.rows();
 
-    SparseMatrix<double> K_a (W_size, W_size);
         // VectorXd k2C = (kappa * kappa * Cdiag);
         // SparseMatrix<double> KCK = k2C.asDiagonal();
     SparseMatrix<double> KCK = kappa * kappa * C;
@@ -30,16 +29,15 @@ SparseMatrix<double> Matern::getK(const VectorXd& theta_K) const {
 
     if (alpha==2) {
         // K_a = T (G + KCK) C^(-1/2) -> Actually, K_a = C^{-1/2} (G+KCK), since Q = K^T K.
-        K_a = (G + KCK);
+        K = (G + KCK);
     } else if (alpha==4) {
         // K_a = T (G + KCK) C^(-1) (G+KCK) C^(-1/2) -> Actually, K_a = C^{-1/2} (G + KCK) C^(-1) (G+KCK), since Q = K^T K.
-        K_a = (G + KCK) *
+        K = (G + KCK) *
             Cdiag.cwiseInverse().asDiagonal() * (G + KCK);
     } else {
         throw("alpha not equal to 2 or 4 is not implemented");
     }
 
-    return K_a;
 }
 
 // stationary
@@ -82,32 +80,29 @@ Matern_ns::Matern_ns(const Rcpp::List& operator_list, Type type):
 }
 
 // inherit get_K_parameter, grad_K_parameter, set_K_parameter
-SparseMatrix<double> Matern_ns::getK(const VectorXd& theta_kappa) const {
+void Matern_ns::update_K(const VectorXd& theta_kappa) {
     VectorXd kappas = (Bkappa * theta_kappa).array().exp();
     // std::cout <<  "theta_kappa here = " << theta_kappa << std::endl;
 
     int n_dim = G.rows();
-    SparseMatrix<double> K_a (n_dim, n_dim);
     if (type == Type::matern_ns) {
         SparseMatrix<double> KCK (n_dim, n_dim);
             KCK = kappas.cwiseProduct(kappas).cwiseProduct(Cdiag).asDiagonal();
         if (alpha==2) {
             // K_a = T (G + KCK) C^(-1/2)
             // Actually, K_a = C^{-1/2} (G+KCK), since Q = K^T K.
-            K_a = (G + KCK);
+            K = (G + KCK);
         } else if (alpha==4) {
-            // K_a = T (G + KCK) C^(-1) (G+KCK) C^(-1/2)
-            // Actually, K_a = C^{-1/2} (G + KCK) C^(-1) (G+KCK), since Q = K^T K.
-            K_a = (G + KCK) * Cdiag.cwiseInverse().asDiagonal() *
+            // K = T (G + KCK) C^(-1) (G+KCK) C^(-1/2)
+            // Actually, K = C^{-1/2} (G + KCK) C^(-1) (G+KCK), since Q = K^T K.
+            K = (G + KCK) * Cdiag.cwiseInverse().asDiagonal() *
             (G + KCK);
         } else {
             throw("alpha not equal to 2 or 4 is not implemented");
         }
     } else if (type == Type::ou) {
-        K_a = kappas.asDiagonal() * C + G;
+        K = kappas.asDiagonal() * C + G;
     }
-
-    return K_a;
 }
 
 // dK wrt. theta_K[index]

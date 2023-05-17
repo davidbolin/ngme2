@@ -26,7 +26,10 @@ predict using ngme after estimation}
 names(loc) corresponding to the name each latent model
 vector or matrix (n * 2) for spatial coords}
 
-\item{type}{what type of prediction, c("fe", "lp", "field1")}
+\item{type}{what type of prediction, c("fe", "lp", <model_name>)
+"fe" is fixed effect prediction
+<model_name> is prediction of a specific model
+"lp" is linear predictor (including fixed effect and all sub-models)}
 
 \item{estimator}{what type of estimator, c("mean", "median", "mode", "quantile")}
 

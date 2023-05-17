@@ -25,8 +25,6 @@ using Eigen::SparseMatrix;
 using Eigen::MatrixXd;
 using std::vector;
 
-
-
 const int BLOCK_FIX_FLAG_SIZE = 3;
 enum Block_fix_flag {
     block_fix_beta, block_fix_theta_mu, block_fix_theta_sigma
@@ -55,7 +53,15 @@ protected:
 
     int n_latent; // how mnay latent model
     int n_obs;  // how many observation
-    int n_params, n_la_params, n_feff, n_merr, n_repl;  // number of total params, la params, ...
+    int n_la_params, n_feff, n_merr, n_repl; // number of total replicates(blocks)
+
+    // Correlated measurement error
+    bool corr_measure;
+    double rho {0};
+    vector<int> cov_rows, cov_cols;
+    vector<bool> mark_cov;
+    SparseMatrix<double> Q_eps, dQ_eps;
+    int n_params;
 
     // fix estimation
     bool fix_flag[BLOCK_FIX_FLAG_SIZE] {0};
@@ -66,6 +72,7 @@ protected:
     double reduce_power, threshold;
 
     SparseMatrix<double> A, K, Q, QQ;      // not used: dK, d2K; G = [B_reff A]
+    SimplicialLLT<SparseMatrix<double, Lower>> Q_eps_solver;
 
     vector<std::unique_ptr<Latent>> latents;
     Var var;
@@ -222,6 +229,11 @@ public:
       }
     }
 
+    // residual_part = residual + AW
+    VectorXd get_residual_part() const {
+        return Y - X * beta - (-VectorXd::Ones(n_obs) + var.getV()).cwiseProduct(noise_mu);
+    }
+
     void sample_cond_block_V() {
         if (family == "nig") {
             VectorXd residual = get_residual();
@@ -260,6 +272,12 @@ public:
     Rcpp::List sampling(int n, bool posterior);
     Rcpp::List output() const;
     std::string get_par_string() const {return par_string;}
+
+    double th2rho(double th) const {return (-1 + 2*exp(th) / (1+exp(th)));}
+    double rho2th(double r) const {return (log((-1-r)/(-1+r)));}
+
+    // drho / dtheta
+    double dtheta_rho(double th) const {return 2 * exp(th) / pow(1+exp(th), 2);}
 };
 
 // ---- inherited functions ------

@@ -16,26 +16,21 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-(* to-write: what is random effect model*)
-
-In Ngme2, we can specify the random effect models. The syntax is similar to the latent models, using `f()` function.
+In Ngme2, we can specify the random effect models. The syntax is similar to other models, using `f()` function.
 
 ```{r setup}
 library(ngme2)
 load_all()
 ```
 
-## R interface
-
-The R interface is similar to the latent process model.
+Here is a simple example of using f
 
 ```{r}
-# repl indicates the replicate number (where the random effect is from)
-# (each replicate has 1 instance of random effect)
+# repl indicates the replicate number (the random effect is for each replicate)
 repl <- c(1, 1, 2, 2, 3, 3, 3)
 
 # random effect model accepts formula argument, as the design matrix
-f(~1 + x, model = "re", replicate=repl, effect_type = "normal",
+f(~1 + x, model = "re", replicate=repl, noise = noise_normal(),
   # ignore the last part, not needed when using f() in ngme function
   data = data.frame(x = 1:7), eval=TRUE)
 ```
@@ -44,10 +39,10 @@ f(~1 + x, model = "re", replicate=repl, effect_type = "normal",
 
 The random effect model is commonly used when we have observations from different groups (or replciates).
 
-In the following example, we have 1000 observations from 50 groups. The random effect is from a bivariate normal distribution with correlation.
+In the following example, we have 100 groups, each group has 20 observations. The random effect is from a bivariate normal distribution with covariance matrix Sigma.
 
 ```{r simulation}
-Sigma <- matrix(c(10, 5, 5, 30), 2, 2)
+Sigma <- matrix(c(20, 10, 10, 30), 2, 2)
 group <- 100
 U <- MASS::mvrnorm(group, mu=c(0,0), Sigma=Sigma)
 each_obs <- 20
@@ -56,7 +51,8 @@ z1 <- rnorm(group * each_obs, 0, 1)
 AA <- cbind(1, z1); t(AA) %*% AA
 x1 <- rexp(group * each_obs)
 x2 <- rep(1, (group * each_obs))
-# simulate Y
+
+# simulate observations
 Y <- double(group * each_obs)
 for (i in 1:group) {
   group_idx <- ((i-1)*each_obs+1):(i*each_obs)
@@ -67,6 +63,8 @@ for (i in 1:group) {
 }
 ```
 
+First we fit the model using lme4 package, next we fit the model using ngme2.
+
 ```{r lme4}
 # fit with lme4
 library(lme4)
@@ -76,34 +74,26 @@ lmer(Y ~ 0 + x2+ x1 + (z1 | repl),
 load_all()
 out <- ngme(
   formula = Y ~ 0 + x2 + x1 +
-    f(~1+z1, model="re", effect_type="normal", replicate=repl, control=control_f(numer_grad = F)),
+    f(~1+z1, model="re", noise=noise_normal(),
+      replicate=repl,
+      control=control_f(numer_grad = T)
+    ),
   data=data.frame(x1=x1, z1=z1, repl=repl),
   control_ngme = control_ngme(
     # beta = c(0, 0)
   ),
   control_opt = control_opt(
-    estimation = T,
-    iterations = 100,
+    iterations = 500,
     n_parallel_chain = 4,
     std_lim = 0.01,
-    stepsize = 1
+    print_check_info = FALSE,
+    seed = 3
   )
 )
+
+# check the result
 out
 traceplot(out, "effect1")
-out$replicates[[1]]$n_repl
-
-str(out$replicates[[1]])
-Ws <- matrix(0, nrow=100, ncol=2)
-for (j in 1:100) {
-  Ws[j, ] <- out$replicates[[j]]$latent[[1]]$W
-}
-
-print(Ws)
-colMeans(Ws)
-colMeans(Ws) - out$replicates[[1]]$beta
-out$replicates[[1]]$beta
-traceplot(out)
 ```
 
 ## Non-Gaussian case

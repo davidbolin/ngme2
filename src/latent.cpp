@@ -225,7 +225,7 @@ VectorXd Latent::grad_theta_K() {
             grad(j) = - grad(j) / W_size;
         }
     }
-
+// std::cout << "grad_K = " << grad.transpose() << std::endl;
     return grad;
 }
 
@@ -337,11 +337,23 @@ void Latent::update_each_iter() {
     ope->update_K(theta_K);
     if (!numer_grad && W_size == V_size) {
         ope->update_dK(theta_K);
+        // trace[i] = tr(K^-1 dK[i])
         if (!zero_trace) {
             for (int i=0; i < n_theta_K; i++) {
                 if (!symmetricK) {
-                    lu_solver_K.computeKTK(getK());
-                    trace[i] = lu_solver_K.trace(ope->get_dK()[i]);
+                    if (W_size > 10) {
+                        lu_solver_K.computeKTK(getK());
+                        trace[i] = lu_solver_K.trace(ope->get_dK()[i]);
+                    } else {
+                        // for random effect case (usually small dimension)
+                        if (getK().toDense().isLowerTriangular() && abs(ope->get_dK()[i].diagonal().sum()) < 0.001)
+                            trace[i] = 0;
+                        else
+                            trace[i] = getK().toDense().ldlt().solve(ope->get_dK()[i].toDense()).diagonal().sum();
+    // std::cout << "getK = " << getK() << std::endl;
+    // std::cout << "getdK = " << ope->get_dK()[i] << std::endl;
+    // std::cout << "trace = " << trace[i] << std::endl;
+                    }
                 } else {
                     chol_solver_K.compute(getK());
                     trace[i] = chol_solver_K.trace(ope->get_dK()[i]);

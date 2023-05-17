@@ -16,6 +16,7 @@
 #' @param group group factor, used for multivariate model
 #' @param family likelihood type, same as measurement noise specification, 1. string 2. ngme noise obejct
 #' @param start  starting ngme object (usually object from last fitting)
+#' @param corr_measure estimate the correlation between measurement noise (only for bivariate model case)
 #' @param debug  toggle debug mode
 #'
 #' @return random effects (for different replicate) + models(fixed effects, measuremnt noise, and latent process)
@@ -48,6 +49,7 @@ ngme <- function(
   control_ngme  = NULL,
   group         = NULL,
   start         = NULL,
+  corr_measure  = FALSE,
   debug         = FALSE
 ) {
    # -------------  CHECK INPUT ---------------
@@ -86,7 +88,7 @@ ngme <- function(
   stopifnot(class(noise) == "ngme_noise")
 
   # parse the formula get a list of ngme_replicate
-  ngme_model <- ngme_parse_formula(formula, data, group, control_ngme, noise)
+  ngme_model <- ngme_parse_formula(formula, data, control_ngme, noise, group, corr_measure)
   attr(ngme_model, "fitting") <- fitting
 
   ####### Use Last_fit ngme object to update Rcpp_list
@@ -112,7 +114,6 @@ ngme <- function(
 if (debug) {print(str(ngme_model$replicates[[1]]))}
 
 # check all f has the same replicate
-# otherwise change replicate to group="iid"
   ################# Run CPP ####################
   check_dim(ngme_model)
   if (control_opt$estimation) {
@@ -228,7 +229,6 @@ update_ngme_est <- function(
 #' @export
 print.ngme <- function(x, ...) {
   print(x$replicates[[1]])
-  cat("\n");
   cat("Number of replicates is ", x$n_repls, "\n");
 }
 
@@ -261,14 +261,17 @@ check_dim <- function(ngme_model) {
 #' @param data data.frame
 #' @param control_ngme control_ngme
 #' @param noise noise
+#' @param group group factor
+#' @param corr_measure logical, whether to estimate correlation
 #'
 #' @return a list (replicate) of ngme_replicate models
 ngme_parse_formula <- function(
   fm,
   data,
-  group,
   control_ngme,
-  noise
+  noise,
+  group,
+  corr_measure
 ) {
   enclos_env <- list2env(as.list(parent.frame()), parent = parent.frame(2))
   global_env_first <- list2env(as.list(parent.frame(2)), parent = parent.frame())
@@ -297,30 +300,12 @@ ngme_parse_formula <- function(
   pre_model <- list();
   idx_effect = 1; idx_field = 1; # for setting names
   for (i in spec_order) {
-    if (!grepl("data *=", terms[i])) {
-      # adding data=data if not specified
-      str <- gsub("^f\\(", "ngme2::f(data=data,", terms[i])
-    } else if (grepl("data *= *NULL", terms[i])) {
-      # change data=NULL to data=data
-      str <- gsub("^f\\(", "ngme2::f(", terms[i])
-      str <- gsub("data *= *NULL", "data=data", str)
-    } else {
-      # keep data=sth.
-      str <- gsub("^f\\(", "ngme2::f(", terms[i])
-    }
-
-    # add information of index_NA
-    # str <- gsub("ngme2::f\\(", "ngme2::f(index_NA=index_NA,", str)
-
-    # eval f model, may use global variable
+    str <- gsub("^f\\(", "ngme2::f(", terms[i])
     lang <- str2lang(str)
-    if (!is.null(lang$group)) {
-      # set subset to be the group
-      stopifnot("Please make sure group argument of f() belongs to group provided in ngme()"
-        = lang$group %in% levels(group))
-      lang$subset <- group == lang$group
-    }
 
+    # pass extra argument into f
+    if (is.null(lang$data)) lang$data <- data
+    if (is.null(lang$group)) lang$group <- group
     res <- eval(lang, envir = global_env_first)
 
     # give default name
@@ -346,18 +331,11 @@ ngme_parse_formula <- function(
     # re-evaluate each f model using idx
     models_rep <- list();
     for (tmp in pre_model) {
-      tmp$map <- sub_locs(tmp$map, idx)
+      tmp$map <- sub_map(tmp$map, idx)
       tmp$replicate <- tmp$replicate[idx]
       tmp$eval = TRUE
       tmp$data <- data[idx, , drop = FALSE]
       model_eval <- eval(tmp, envir = data, enclos = global_env_first)
-      if (!is.null(model_eval$W) && model_eval$model == "re") {
-        W_idx <- with(model_eval, (W_size*(i-1)+1):(W_size*i))
-        model_eval$W <- model_eval$W[W_idx]
-      }
-      if (!is.null(model_eval$noise$V) && model_eval$model == "re") {
-        model_eval$noise$V <- with(model_eval, rep(noise$V[i], W_size))
-      }
       models_rep[[model_eval$name]] <- model_eval
     }
 
@@ -368,6 +346,19 @@ ngme_parse_formula <- function(
 
     noise_new <- update_noise(noise, n = length(Y))
 
+    if (corr_measure) {
+      stopifnot(
+        "Please provide the group vector" = !is.null(group),
+        "length of unique group should equal to 2" = length(levels(group)) == 2
+      )
+
+      bv_idx <- which(sapply(models_rep, function(x) x$model) == "bv")
+      stopifnot("Please make sure there is 1 bivariate (bv) model" =
+        length(bv_idx) == 1)
+      bv_map <- models_rep[[bv_idx]]$map
+      cov_rc <- cov_row_col(bv_map, group)
+    }
+
     blocks_rep[[i]] <- ngme_replicate(
       Y = Y,
       X = X,
@@ -375,7 +366,11 @@ ngme_parse_formula <- function(
       models = models_rep,
       replicate = uni_repl[[i]],
       control_ngme = control_ngme,
-      n_repl = length(uni_repl)
+      n_repl = length(uni_repl),
+      corr_measure = corr_measure,
+      cov_rows = if (corr_measure) cov_rc$cov_rows else NULL,
+      cov_cols = if (corr_measure) cov_rc$cov_cols else NULL,
+      mark_cov = if (corr_measure) cov_rc$mark_cov else NULL
     )
   }
 
@@ -391,5 +386,43 @@ ngme_parse_formula <- function(
       control_ngme = control_ngme
     ),
     class = "ngme"
+  )
+}
+
+# bv_map: numeric or matrix of 2 col
+# group: factor
+# eps: consider correlation if |map1-map2| < eps
+cov_row_col <- function(bv_map, group, eps = 0.05) {
+  stopifnot(
+    length_map(bv_map) == length(group)
+  )
+  group <- as.factor(group)
+
+  n <- length(bv_map)
+  idx1 <- group == levels(group)[1]
+  idx2 <- group == levels(group)[2]
+
+  # subset bv_map
+  map1 <- sub_map(bv_map, idx1)
+  map2 <- sub_map(bv_map, idx2)
+  corr_map <- intersect(map1, map2)
+
+  cov_cols <- cov_rows <- 1:n
+  # cov_cols <- cov_rows <- double()
+  for (i in seq_along(corr_map)) {
+    rc <- which(bv_map == corr_map[i])
+    cov_rows[n+i] <- max(rc)
+    cov_cols[n+i] <- min(rc)
+  }
+
+  # sort cov_rows and cov_cols (col from small to big, then cov_rows)
+  sort_idx <- order(cov_cols, cov_rows)
+  cov_rows <- cov_rows[sort_idx]
+  cov_cols <- cov_cols[sort_idx]
+
+  list(
+    cov_rows = cov_rows - 1,
+    cov_cols = cov_cols - 1,
+    mark_cov = 1:n %in% c(cov_rows, cov_cols)
   )
 }

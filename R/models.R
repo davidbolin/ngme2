@@ -1,97 +1,3 @@
-
-# function for specify ngme.model basic structure
-# keep same with cpp latent structure
-ngme_model <- function(
-  model,
-  operator,
-  noise       = noise_normal(),
-  theta_K     = NULL,
-  W_size      = NULL,
-  W           = NULL,
-  fix_W       = FALSE,
-  A           = NULL,
-  control     = control_f(),
-  V_size      = NULL,
-  debug       = FALSE,
-  n_params    = NULL,
-  name        = "field",
-  mesh        = NULL,
-  par_string  = NULL,
-  map         = NULL,  # map is the covariates
-  replicate   = NULL,
-  group       = NULL,
-  ...
-) {
-  stopifnot(is.character(model))
-
-  stopifnot(inherits(operator, "ngme_operator"))
-  stopifnot(inherits(noise, "ngme_noise"))
-
-  # generate string (8 digits)
-  # K_str     <- switch(model,
-  #   ar1     = "   alpha",
-  #   matern  = paste0(" kappa_", seq_along(theta_K)),
-  #   rw1     = paste0(" ignored")
-  # )
-  # mu_str    <- paste0("    mu_", seq_along(noise$theta_mu))
-  # sigma_str <- paste0(" sigma_", seq_along(noise$theta_sigma))
-  # nu_str    <- "    nu_1"
-
-  # if ((noise$noise_type == "normal"))
-  #   par_string <- do.call(paste0, as.list(c(K_str, sigma_str)))
-  # else
-  #   par_string <- do.call(paste0, as.list(c(K_str, mu_str, sigma_str, nu_str)))
-
-  stopifnot("replicate is NULL" = !is.null(replicate))
-  stopifnot("make sure length of replicate == length of index" =
-   length(replicate) == length_map(map))
-  replicate <- as.integer(replicate)
-  if (is.null(n_params)) n_params <- length(operator$theta_K) + with(noise, n_params)
-
-  structure(
-    list(
-      model         = model,
-      operator      = operator,
-      noise_type    = noise$noise_type,
-      W_size        = W_size,
-      theta_K       = theta_K,
-      A             = A,
-      noise         = noise,
-      W             = W,
-      fix_W         = fix_W,
-      V_size        = V_size,
-      control       = control,
-      n_params      = n_params,
-      debug         = debug,
-      par_string    = par_string,
-      name          = name,
-      mesh          = mesh,
-      map           = map,
-      n_map         = length_map(map),
-      replicate     = replicate,
-      n_rep         = length(unique(replicate)),
-      group         = group,
-      ...
-    ),
-    class = "ngme_model"
-  )
-}
-
-#' Print ngme model
-#'
-#' @param x ngme model object
-#' @param padding number of white space padding in front
-#' @param ... ...
-#'
-#' @return a list (model specifications)
-#' @export
-print.ngme_model <- function(x, padding = 0, ...) {
-  model <- x
-  print.ngme_operator(model$operator, padding = padding)
-  print.ngme_noise(model$noise, padding = padding)
-  invisible(model)
-}
-
 # -------- ngme operators --------
 
 #' ngme iid model specification
@@ -145,18 +51,18 @@ iid <- function(
 #' ar1(c(1:3, 1:3), replicate = c(1,1,1,2,2,2))
 ar1 <- function(
   map,
-  mesh      = map,
+  mesh      = NULL,
   replicate = rep(1, length_map(map)),
   theta_K   = 0,
   ...
 ) {
   if (inherits(map, "formula")) map <- model.matrix(map)[, -1]
+
+  if (is.null(mesh)) mesh <- ngme_build_mesh(map)
   replicate <- as.integer(as.factor(replicate))
-  if (is.numeric(mesh)) {
-    stopifnot("The index of mesh should be integers."
-      = all(mesh == round(mesh)))
-    mesh <- INLA::inla.mesh.1d(loc = min(mesh):max(mesh))
-  }
+
+  stopifnot("The map should be integers."
+      = all(map == round(map)))
 
   stopifnot("length of map and replicate should be the same." = length(map) == length(replicate))
 
@@ -213,7 +119,7 @@ ar1 <- function(
 #' r1 <- rw1(1:7, cyclic = TRUE); r1$K
 rw1 <- function(
   map,
-  mesh      = map,
+  mesh      = NULL,
   replicate = rep(1, length_map(map)),
   cyclic    = FALSE,
   ...
@@ -222,10 +128,10 @@ rw1 <- function(
   replicate <- as.integer(as.factor(replicate))
   stopifnot("length of map and replicate should be the same." = length(map) == length(replicate))
 
-  mesh <- if (is.numeric(mesh)) INLA::inla.mesh.1d(loc = unique(mesh))
-  x <- map
+  if (is.null(mesh)) mesh <- ngme_build_mesh(map)
   n <- mesh$n; nrep <- length(unique(replicate))
 
+  x <- map
   h <- diff(mesh$loc);
   n <- mesh$n
   if (!cyclic) {
@@ -283,7 +189,7 @@ rw2 <- function(
 ) {
   if (inherits(map, "formula")) map <- model.matrix(map)[, -1]
   replicate <- as.integer(as.factor(replicate))
-  mesh <- if (is.numeric(mesh)) INLA::inla.mesh.1d(loc = unique(mesh))
+  if (is.null(mesh)) mesh <- ngme_build_mesh(map)
 
   stopifnot("length of map and replicate should be the same." = length(map) == length(replicate))
 
@@ -342,11 +248,11 @@ ou <- function(
 ) {
   if (inherits(map, "formula")) map <- model.matrix(map)[, -1]
   replicate <- as.integer(as.factor(replicate))
-  mesh <- if (is.numeric(mesh)) INLA::inla.mesh.1d(loc = unique(mesh))
   n <- mesh$n; nrep <- length(unique(replicate))
 
   stopifnot("length of map and replicate should be the same." = length(map) == length(replicate))
 
+  if (is.null(mesh)) mesh <- ngme_build_mesh(map)
   h <- diff(mesh$loc); h <- c(h, mean(h))
 
   if (is.null(B_K)) B_K <- matrix(1, nrow = length_map(map), ncol = 1)
@@ -470,85 +376,56 @@ matern <- function(
   )
 }
 
-# #' ngme random effect model
-# #'
-# #' @param map integer vector, time index for the AR(1) process
-# #' @param replicate replicate for the process
-# #' @param alpha 2 or 4, SPDE smoothness parameter
-# #' @param theta_K initial value for theta_K, kappa = exp(B_K %*% theta_K)
-# #' @param B_K bases for theta_K
-# #'
-# #' @param ... extra arguments
-# #'
-# #' @return ngme_operator object
-# #' @export
-# re <- function(
-#   map,
-#   mesh,
-#   replicate = rep(1, length_map(map)),
-#   alpha = 2,
-#   theta_K = 0,
-#   B_K = NULL,
-#   ...
-# ) {
-#   if (inherits(map, "formula")) map <- model.matrix(map)[, -1]
-#   replicate <- as.integer(as.factor(replicate))
-#   stopifnot(alpha == 2 || alpha == 4)
+#' ngme random effect model
+#'
+#' @param map integer vector, time index for the AR(1) process
+#' @param replicate replicate for the process
+#' @param alpha 2 or 4, SPDE smoothness parameter
+#' @param theta_K initial value for theta_K
+#'
+#' @param ... extra arguments
+#'
+#' @return ngme_operator object
+#' @export
+re <- function(
+  map,
+  replicate = rep(1, length_map(map)),
+  theta_K = NULL,
+  ...
+) {
+  if (inherits(map, "formula")) map <- model.matrix(map)
+    else map <- as.matrix(map)
 
-#   n <- mesh$n; nrep <- length(unique(replicate))
+  replicate <- as.integer(as.factor(replicate))
+  nrep <- length(unique(replicate))
 
-#   if (is.null(B_K) && length(theta_K) == 1)
-#     B_K <- matrix(1, nrow = mesh$n, ncol = 1)
-#   else if (is.null(B_K) && length(theta_K) > 1)
-#     stop("Please provide B_K for non-stationary case.")
+  B_K <- map
+  n_reff <- ncol(B_K) # number of random effects
+  n_theta_K <- sum(1:n_reff) # number of theta_K
+  h <- rep(1, n_reff)
 
-#   d <- get_inla_mesh_dimension(mesh)
-#   if (d == 1) {
-#     fem <- INLA::inla.mesh.1d.fem(mesh)
-#     C <- fem$c1
-#     G <- fem$g1
-#     h <- Matrix::diag(fem$c0)
-#   } else {
-#     fem <- INLA::inla.mesh.fem(mesh, order = alpha)
-#     C <- fem$c0  # diag
-#     G <- fem$g1
-#     h <- Matrix::diag(fem$c0)
-#   }
+  # provide initial value for theta_K
+  if (!is.null(theta_K)) {
+    stopifnot(length(theta_K) == n_theta_K)
+  } else {
+    theta_K <- rep(0, n_theta_K)
+  }
 
-#   # for replicate
-#   if (nrep > 1) {
-#     G <- Matrix::kronecker(diag(nrep), G)
-#     C <- Matrix::kronecker(diag(nrep), C)
-#     h <- rep(h, nrep)
-#   }
+  # build K
+  K <- diag(n_reff); diag(K) <- exp(theta_K[1:n_reff])
+  if (n_reff > 1)
+    K[lower.tri(K)] <- theta_K[(n_reff+1):n_theta_K]
 
-#   kappas <- as.numeric(exp(B_K %*% theta_K))
-#   if (length(theta_K) == 1) {
-#     # stationary
-#     K <- kappas[1]**alpha * C + G
-#   } else {
-#     # non-stationary
-#     K <- if (alpha == 2) diag(kappas) %*% C %*% diag(kappas)  + G
-#     else diag(kappas) %*% C %*% diag(kappas) %*% C %*% diag(kappas) + G
-#   }
-
-#   A <- if (!is.null(map)) INLA::inla.spde.make.A(mesh = mesh, loc = map, repl=replicate) else NULL
-
-#   ngme_operator(
-#     map = map,
-#     mesh = mesh,
-#     n_rep = nrep,
-#     alpha = alpha,
-#     model = "matern",
-#     theta_K = theta_K,
-#     B_K = B_K,
-#     C = ngme_as_sparse(C),
-#     G = ngme_as_sparse(G),
-#     K = ngme_as_sparse(K),
-#     h = h,
-#     A = A,
-#     symmetric = TRUE,
-#     zero_trace = FALSE
-#   )
-# }
-
+  ngme_operator(
+    map = map,
+    mesh = NULL,
+    n_rep = nrep,
+    model = "re",
+    theta_K = theta_K,
+    K = ngme_as_sparse(K),
+    h = h,
+    A = ngme_as_sparse(B_K),
+    symmetric = FALSE,
+    zero_trace = FALSE
+  )
+}

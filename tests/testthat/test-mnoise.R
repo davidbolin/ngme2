@@ -1,7 +1,7 @@
 # unit test measurement noise
 
 test_that("test basic mn", {
-  # load_all()
+  load_all()
   set.seed(100)
   n_obs <<- 500
   x <- rexp(n_obs)
@@ -18,6 +18,7 @@ test_that("test basic mn", {
   )
   out
   expect_true(out$replicates[[1]]$noise$theta_sigma - log(1.5) < 1)
+  out
 
   # 2. nig case
   y <- beta[[1]] + x * beta[[2]] +
@@ -30,8 +31,8 @@ test_that("test basic mn", {
       print_check_info = FALSE
   ))
   out
+  traceplot(out)
 
-  # traceplot(out, "mn")
   expect_true(out$replicates[[1]]$noise$theta_sigma - log(2) < 1)
   expect_true(out$replicates[[1]]$noise$theta_mu - (-3) < 1)
   expect_true(out$replicates[[1]]$noise$nu - 2 < 2)

@@ -121,17 +121,19 @@ test_that("Comparing different structures", {
   "sal" %in% levels(group_str)
 
 # 1. sal, temp ~ f(x, "rw1", group = sal) + bv(ar1, ar1)
+load_all()
   m1 <- ngme(
     Y ~ f(x, model = "rw1", group = "sal") +
     f(model="bv", first=ar1(1:3), second=ar1(1:3)),
-    data = data.frame(Y = c(Y1, Y2), x = c(x1, x2)),
     group = rep(c("sal", "temp"), each = 3),
     control_opt = control_opt(
       estimation = F,
       iterations = 1
-    )
+    ),
+    data = data.frame(Y = c(Y1, Y2), x = c(x1, x2)),
+    family = noise_nig(),
+    corr_measure = TRUE
   )
-  m1$replicates[[1]]$models[[1]]$A
 
   # 2. sal, temp ~ f(x, "rw1", group = c("sal", "temp")) + bv(ar1, ar1)
   m2 <- ngme(
@@ -171,3 +173,63 @@ test_that("Comparing different structures", {
 
 # f(x, subset=c(T,T,F)) of length Y
 # f(x, subset=c(1,2)) if group provide
+
+
+test_that("test corr measurement", {
+  Y <- rnorm(8)
+
+  load_all()
+  m1 <- ngme(
+    Y ~ f(
+      model="bv",
+      first=ar1(loc),
+      second=ar1(loc),
+      which_group = c(1, 2)
+    ),
+    data = data.frame(Y = Y, loc = c(1, 1, 2, 3, 4, 5, 4, 7)),
+    group = c(1, 2, 1, 2, 1, 1, 2, 2),
+    control_opt = control_opt(
+      estimation = F,
+      iterations = 1
+    )
+  )
+})
+
+# turn into vignette
+test_that("1 general case", {
+  Y <- rnorm(5)
+  loc1 <- c(1,1,2,3,2)
+  group <- c("s", "t", "s", "t", "t")
+
+  load_all()
+  # check the model
+  f(loc1, model="bv",
+    sub_models = c("ar1", "rw1"),
+    group = group,
+    which_group = c("t", "s"),
+    eval = TRUE
+  )
+
+  cov_row_col(loc1, group)
+
+  # ngme
+  load_all()
+  m1 <- ngme(
+    Y ~ f(
+      map = loc1,
+      model="bv",
+      first=ar1(loc1),
+      second=rw1(loc1),
+      which_group = c("t", "s")
+    ),
+    corr_measure = TRUE,
+    group = group,
+    data = data.frame(Y = Y, loc1 = loc1),
+    control_opt = control_opt(
+      estimation = T,
+      iterations = 1,
+      n_parallel_chain = 1
+    )
+  )
+  m1$replicates[[1]]$n_merr
+})

@@ -76,6 +76,25 @@ ar1(1:3)
     noise = c("normal", "nig"),
     eval=T)
 
-
-
 })
+
+test_that("index of lower matrix", {
+  idx <- function(n=3, index) {
+    stopifnot(index >= n)
+    col <- index / n - 1
+    row <- index %% n
+    c(row, col)
+  }
+  idx(4, 4)
+
+
+  A <- diag(rep(5,1))
+  A[2,4] <- A[4,2] <- 1
+ A
+  solve(A)
+
+  B <- matrix(c(1,0.5,0.5,1), ncol=2)
+  solve(B)
+})
+
+

@@ -154,15 +154,12 @@ public:
 // U|V ~ N(0, Sigma)
 class Randeff : public Operator{
   private:
-    std::mt19937 randeff_rng;
-    int n_repl;
-    int W_size;
+    int n_reff;
   public:
     Randeff(const Rcpp::List&);
 
     void update_K(const VectorXd& theta_K);
     void update_dK(const VectorXd& theta_K);
-    MatrixXd get_dK_dense(int index, const VectorXd& alpha) const;
     // VectorXd grad_theta_K();
     // void sample_cond_V() override;
     // void update_each_iter();

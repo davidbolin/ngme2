@@ -19,8 +19,9 @@ Tensor_prod::Tensor_prod(const Rcpp::List& operator_list):
 
 void Tensor_prod::update_K(const VectorXd& theta_K) {
   // report the time for this function
-// double time = 0;
-// auto timer_computeg = std::chrono::steady_clock::now();
+double time = 0;
+auto timer_computeg = std::chrono::steady_clock::now();
+std::cout << "update K now" << std::endl;
   first->update_K(theta_K.segment(0, n_theta_1));
   second->update_K(theta_K.segment(n_theta_1, n_theta_2));
 
@@ -28,8 +29,8 @@ void Tensor_prod::update_K(const VectorXd& theta_K) {
   KroneckerProductSparse<SparseMatrix<double>, SparseMatrix<double> > kroneckerEigen(first->getK(), second->getK());
 
   kroneckerEigen.evalTo(K);
-// time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - timer_computeg).count();
-// std::cout << "size and time for kronecker product is " << K.rows() << " " << K.cols() << " " << time << std::endl;
+time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - timer_computeg).count();
+std::cout << "size and time for kronecker product is " << K.rows() << " " << K.cols() << " " << time << std::endl;
 }
 
 void Tensor_prod::update_dK(const VectorXd& theta_K) {

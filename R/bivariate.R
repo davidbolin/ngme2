@@ -25,7 +25,8 @@ tp <- function(
     = length_map(first$map) == length_map(second$map))
 
   map <- second$map
-  group <- as.integer(as.factor(first$map))
+  group <- if (!is.matrix(first$map)) as.integer(as.factor(first$map))
+    else as.integer(as.factor(seq_len(nrow(first$map))))
   A <- INLA::inla.spde.make.A(loc=map, mesh=second$mesh, repl=group)
 
   ngme_operator(
@@ -51,42 +52,38 @@ tp <- function(
 #' Given 2 operator (first and second), build a correlated bivaraite operator based on K = D %*% diag(K_first, K_second)
 #'
 #' @param map can be ignored, pass through first and second
-#' @param replicate replicate passed to both first and second
-#' @param first ngme_model
-#' @param second ngme_model
+#' @param replicate replicate
+#' @param theta_K c(zeta, rho, theta_K_1, theta_K_2)
 #' @param ... extra arguments in f()
 #'
 #' @return a list of specification of model
 #' @export
 bv <- function(
-  first,
-  second,
-  zeta = 0, rho = 0,
-  map = NULL,
+  map,
+  mesh = NULL,
+  sub_models = c("ar1", "ar1"),
   replicate = NULL,
+  group = NULL,
+  which_group = levels(as.factor(group)),
   share_param = FALSE,
   ...
 ) {
-  # inject replicate to sub models
-  stopifnot("Please don't specify replicate in first and second"
-    = first$n_rep == 1 & second$n_rep == 1)
-  if (!is.null(replicate)) {
-    first_call <- match.call()$first
-    first_call$replicate <- replicate
-    first <- eval(first_call, envir = parent.frame())
+  if (inherits(map, "formula")) map <- model.matrix(map)[, -1]
+  if (is.null(replicate)) replicate <- rep(1, length_map(map))
 
-    second_call <- match.call()$second
-    second_call$replicate <- replicate
-    second <- eval(second_call, envir = parent.frame())
-  }
-
-  theta_K <- c(zeta, rho, first$theta_K, second$theta_K)
   stopifnot(
-    inherits(first, "ngme_operator"),
-    inherits(second, "ngme_operator"),
-    all(dim(first$K == second$K)),
-    length(theta_K) == first$n_theta_K + second$n_theta_K + 2
+    "Make sure replicate is independent accross the f() models"
+      = length(unique(replicate)) == 1,
+    "Length of which_group should be 2" = length(which_group) == 2
   )
+
+  if (is.null(mesh)) mesh <- ngme_build_mesh(map)
+
+  args <- as.list(environment())
+  first  <- build_operator(sub_models[1], args)
+  second <- build_operator(sub_models[2], args)
+
+  theta_K <- c(0, 0, first$theta_K, second$theta_K)
 
   # pass the theta_K to first and second
   first$theta_K <- theta_K[3:(2 + first$n_theta_K)]
@@ -104,7 +101,7 @@ bv <- function(
     second      = second,
     theta_K     = theta_K,
     K           = bigD %*% Matrix::bdiag(first$K, second$K),
-    A           = Matrix::bdiag(first$A, second$A),
+    A           = INLA::inla.spde.make.A(loc=map, mesh=mesh, repl=as.integer(as.factor(group))),
     h           = c(first$h, second$h),
     symmetric   = FALSE,
     zero_trace  = FALSE,

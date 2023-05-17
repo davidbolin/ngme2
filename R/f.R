@@ -15,7 +15,8 @@
 #' @param name      name of the field, for later use
 #' @param theta_K      Unbounded parameter for K
 #' @param data      specifed or inherit from ngme formula
-#' @param group    model as the group (see vignette for space-temporal model)
+#' @param group   group factor (can be provided in ngme())
+#' @param which_group  belong to which group
 #' @param W         starting value of the process
 #' @param fix_W  stop sampling for W
 #' @param fix_theta_K fix the estimation for theta_K.
@@ -42,6 +43,7 @@ f <- function(
   name        = NULL,
   data        = NULL,
   group       = NULL,
+  which_group = NULL,
   theta_K     = NULL,
   W           = NULL,
   debug       = FALSE,
@@ -62,6 +64,16 @@ f <- function(
       map <- model.matrix(map, data)[, -1]
     }
   }
+
+  # set the subset if provide group and which_group
+  if (!is.null(which_group)) {
+    stopifnot(
+      "Please provide group factor" = !is.null(group),
+      "Please check if which_group is in group"
+        = which_group %in% levels(as.factor(group)))
+    subset <- group %in% which_group
+  }
+
   stopifnot("Please provide model from ngme_model_types():"
     = !is.null(model))
 
@@ -70,9 +82,6 @@ f <- function(
   stopifnot("Please specify model as character" = is.character(model))
 
   if (model=="tp" && !is.null(data))
-    map <- seq_len(nrow(data))
-
-  if (model=="bv" && is.null(map) && !is.null(data))
     map <- seq_len(nrow(data))
 
   replicate <- eval(substitute(replicate), envir = data, enclos = parent.frame())
@@ -102,17 +111,7 @@ f <- function(
 
   # 1. build operator
   n <- mesh$n; nrep <- length(unique(replicate))
-  operator <- switch(model,
-    tp = do.call(tp, f_args),
-    bv = do.call(bv, f_args),
-    ar1 = do.call(ar1, f_args),
-    rw1 = do.call(rw1, f_args),
-    rw2 = do.call(rw2, f_args),
-    ou = do.call(ou, f_args),
-    matern = do.call(matern, f_args),
-    iid = do.call(iid, f_args),
-    stop("Unknown models")
-  )
+  operator <- build_operator(model, f_args)
 
   A <- if (is.null(operator$A))
     INLA::inla.spde.make.A(mesh = f_args$mesh, loc = map)
@@ -129,6 +128,10 @@ f <- function(
   #   )
   # else
   noise <- update_noise(noise, ope = operator)
+
+  if (model == "re") {
+    noise$fix_theta_sigma <- TRUE
+  }
 
   ngme_model(
     model     = model,
@@ -214,3 +217,38 @@ model_iid <- function(
   do.call(ngme_model, args)
 }
 
+
+build_operator <- function(model_name, args_list) {
+  switch(model_name,
+    tp = do.call(tp, args_list),
+    bv = do.call(bv, args_list),
+    ar1 = do.call(ar1, args_list),
+    rw1 = do.call(rw1, args_list),
+    rw2 = do.call(rw2, args_list),
+    ou = do.call(ou, args_list),
+    matern = do.call(matern, args_list),
+    iid = do.call(iid, args_list),
+    re = do.call(re, args_list),
+    stop("Unknown models")
+  )
+}
+
+# help to build a list of mesh for different replicates
+ngme_build_mesh <- function(
+  map = NULL,
+  ...
+) {
+  if (!is.null(map)) {
+    if (is.matrix(map) && ncol(map) == 2) {
+      stop("Please build and provide the mesh for spatial data using inla.mesh.2d()")
+    } else if (is.numeric(map)) {
+      mesh <- INLA::inla.mesh.1d(loc = map)
+    } else {
+      stop("map should be a matrix or a vector of numeric")
+    }
+  } else {
+    stop("map should be specified")
+  }
+
+  mesh
+}

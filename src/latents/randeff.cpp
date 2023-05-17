@@ -12,9 +12,9 @@
 // get_K_params, grad_K_params, set_K_params, output
 Randeff::Randeff(const Rcpp::List& operator_list):
     Operator(operator_list),
-    n_repl(operator_list["n_repl"])
+    n_reff(K.rows())
 {
-std::cout << "End Constructor of Randeff1" << std::endl;
+// std::cout << "End Constructor of Randeff1" << std::endl;
 }
 
 //     VectorXd getM() const {
@@ -25,37 +25,44 @@ std::cout << "End Constructor of Randeff1" << std::endl;
 
 // K^T K = Sigma^-1
 void Randeff::update_K(const VectorXd& theta_K) {
-    VectorXd diag = theta_K.head(W_size).array().exp();
-    VectorXd offdiag = theta_K.tail(W_size * (W_size+1) / 2 - W_size);
+    VectorXd diag = theta_K.head(n_reff).array().exp();
+    VectorXd offdiag = theta_K.tail(n_reff * (n_reff+1) / 2 - n_reff);
 
     int index = 0;
-    MatrixXd L (W_size, W_size); L.setZero();
+    MatrixXd L (n_reff, n_reff); L.setZero();
     L.diagonal() = diag;
-    for (int col=0; col < W_size; col++) {
-        for (int row=col+1; row < W_size; row++) {
+    for (int col=0; col < n_reff; col++) {
+        for (int row=col+1; row < n_reff; row++) {
             L(row, col) = offdiag(index);
             index++;
         }
     }
 
     K = L.sparseView();
-}
-
-MatrixXd Randeff::get_dK_dense(int index, const VectorXd& alpha) const {
-    // MatrixXd dK = MatrixXd::Zero(W_size, W_size);
-    // VectorXd tmp = VectorXd::Zero(W_size * (W_size+1) / 2);
-    // if (index < W_size) {
-    //     dK(index, index) = exp(alpha(index));
-    // } else {
-    //     tmp(index) = 1;
-    //     dK = getK(tmp);
-    //     dK.diagonal().setZero();
-    // }
-    // return dK;
+    // std::cout << "K \n" << K << std::endl;
 }
 
 void Randeff::update_dK(const VectorXd& theta_K) {
-
+    // std::cout << "Start update_dK" << std::endl;
+    for (int index=0; index < n_theta_K; index++) {
+        if (index < n_reff) {
+            dK[index].coeffRef(index, index) = exp(theta_K(index));
+        } else {
+            // compute row and col given index
+            int idx = index - n_reff;
+            int n = n_reff - 1;
+            int tmp = n;
+            int col = 0;
+            while (idx >= tmp) {
+                n--; col++;
+                tmp += n;
+            }
+            int row = n_reff - (tmp - idx);
+            dK[index].coeffRef(row, col) = 1;
+        }
+    // std::cout << "dK[" << index << "] \n" << dK[index] << std::endl;
+    }
+    // std::cout << "end update_dK" << std::endl;
 }
 
 // SparseMatrix<double> Randeff::get_dK(int index, const VectorXd& alpha) const {

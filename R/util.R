@@ -339,26 +339,8 @@ split_matrix <- function(mat, repl) {
   split_mat
 }
 
-# help to build a list of mesh for different replicates
-build_mesh <- function(
-  model,
-  map,
-  ...
-) {
-  if (model == "ar1") {
-    mesh <- INLA::inla.mesh.1d(min(map):max(map))
-  } else if (model %in% c("tp", "bv")) {
-    # check later
-    mesh = NULL
-  } else {
-    stop("Please provide mesh")
-  }
-
-  mesh
-}
-
 # helper function to unfiy way of accessing 1d and 2d index
-sub_locs <- function(locs, idx) {
+sub_map <- function(locs, idx) {
   if (inherits(locs, c("data.frame", "matrix"))) {
     locs[idx, , drop = FALSE]
   } else {
@@ -436,3 +418,13 @@ build_D <- function(theta, rho) {
   d22 <- cos(theta) * (sqrt(1+rho^2))
   matrix(c(d11, d21, d12, d22), nrow = 2, ncol = 2)
 }
+
+build_effect_K <- function(n_reff, theta_K) {
+  n_theta_K <- sum(1:n_reff)
+  K <- diag(n_reff); diag(K) <- exp(theta_K[1:n_reff])
+  if (n_reff > 1)
+    K[lower.tri(K)] <- theta_K[(n_reff+1):n_theta_K]
+  K
+}
+
+# build measurement matrix

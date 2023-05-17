@@ -108,7 +108,7 @@ test_that("test matern ns", {
       # theta_kappa = 2,
       noise = noise_nig(mu=-3, sigma = 2, nu = 1.5)))
   # mean(attr(W, "noise")$h)
-  Y <- as.numeric(A %*% W) + sigma.e * rnorm(n_obs)
+  Y_obs <- as.numeric(A %*% W) + sigma.e * rnorm(n_obs)
   # points(loc_obs[,1], loc_obs[,2], col="red", pch=16, cex=2)
   }
 
@@ -134,7 +134,8 @@ test_that("test matern ns", {
   trueV = attr(W,"noise")$V
 
   ngme_out <- ngme(
-    Y ~ 0 + f(loc_obs,
+    Y ~ 0 + f(
+      loc_obs,
       model="matern",
       mesh = mesh,
       theta_kappa = c(0.5, 0.5),

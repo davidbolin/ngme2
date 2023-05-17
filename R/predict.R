@@ -132,8 +132,8 @@ predict.ngme <- function(
 }
 
 # helper function to compute MSE, MAE, ..
-compute_indices <- function(ngme, test_idx, N = 100, seed=Sys.time()) {
-  stopifnot("idx wrong" = all(test_idx %in% seq_along(ngme$Y)))
+compute_indices <- function(ngme_1rep, test_idx, N = 100, seed=Sys.time()) {
+  stopifnot("idx wrong" = all(test_idx %in% seq_along(ngme_1rep$Y)))
 
   # 1. Make A1_pred, An_pred
   # A_pred_blcok  %*% block_W[[1 .. N]]
@@ -144,19 +144,19 @@ compute_indices <- function(ngme, test_idx, N = 100, seed=Sys.time()) {
   #   turn into df of dim: n_obs * N
   # option 2. AW comes from N chains
   #   to-do
-  y_data <- ngme$Y[test_idx]
+  y_data <- ngme_1rep$Y[test_idx]
   n_obs <- length(y_data)
 
   A_preds <- list()
-  for (i in seq_along(ngme$models)) {
-    A_preds[[i]] <- ngme$models[[i]]$A[test_idx, ]
+  for (i in seq_along(ngme_1rep$models)) {
+    A_preds[[i]] <- ngme_1rep$models[[i]]$A[test_idx, ]
   }
 
   # A_pred_blcok <- [A1_pred .. An_pred]
   # extract A and cbind!
   A_pred_block <- Reduce(cbind, x = A_preds)
-  Ws_block <- sampling_cpp(ngme, n=N, posterior=TRUE, seed=seed)[["W"]]
-  W2s_block <- sampling_cpp(ngme, n=N, posterior=TRUE, seed=seed)[["W"]]
+  Ws_block <- sampling_cpp(ngme_1rep, n=N, posterior=TRUE, seed=seed)[["W"]]
+  W2s_block <- sampling_cpp(ngme_1rep, n=N, posterior=TRUE, seed=seed)[["W"]]
   AW_N <- Reduce(cbind, sapply(Ws_block, function(W) A_pred_block %*% W))
   # AW_N <- as.data.frame(AW_N)
   # names(AW_N) <- 1:N
@@ -166,13 +166,13 @@ compute_indices <- function(ngme, test_idx, N = 100, seed=Sys.time()) {
   # sampling Y by, Y = X beta + (block_A %*% block_W) + eps
   # AW_N[[1]] is concat(A1 W1, A2 W2, ..)
 
-  fe <- with(ngme, as.numeric(X[test_idx, ,drop=FALSE] %*% beta))
+  fe <- with(ngme_1rep, as.numeric(X[test_idx, ,drop=FALSE] %*% beta))
   fe_N <- matrix(rep(fe, N), ncol=N, byrow=F)
 
   mn_N <- sapply(1:N, function(x)
-    simulate(ngme$noise, n_noise = length(y_data)))
+    simulate(ngme_1rep$noise, n_noise = length(y_data)))
   mn2_N <- sapply(1:N, function(x)
-    simulate(ngme$noise, n_noise = length(y_data)))
+    simulate(ngme_1rep$noise, n_noise = length(y_data)))
 
   mu_N <- fe_N + AW_N
   Y_N <- fe_N + AW_N + mn_N

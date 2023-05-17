@@ -103,15 +103,16 @@ test_that("test estimation of basic ar with normal measurement noise", {
   mean(W)
   x1 = rnorm(n_obs);
   # Y <-  -3 + x1 * 2  + rnorm(n_obs, sd = sigma_eps)
-  Y <- W + rnorm(n_obs, sd = sigma_eps) - 3 + x1 * 2
+  Y <- W + rnorm(n_obs, sd = sigma_eps)
 
 # plot(Y, type="l")
 load_all()
   out <- ngme(
-    Y ~  1 + x1
+    Y ~  0 +
     + f(1:n_obs,
       model="ar1",
       name="ar",
+      replicate = rep(1:6, each=100),
       noise=noise_nig(
         # fix_nu = T, nu = 2,
         # h = ar1$noise$h,

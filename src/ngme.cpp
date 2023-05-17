@@ -31,7 +31,7 @@ VectorXd Ngme::precond_grad() {
   if (sampling_strategy == Strategy::all) {
     for (int i=0; i < n_repl; i++) {
 // std::cout << "W repl i " << i << " =" << ngme_repls[i]->getW() << std::endl;
-      g +=  (num_each_repl[i] / sum_num_each_repl) * ngme_repls[i]->precond_grad();
+      g +=  (num_each_repl[i] / sum_num_each_repl) * ngme_repls[i]->precond_grad() / n_repl;
     }
   } else if (sampling_strategy == Strategy::ws) {
     // weighted sampling (WS) for each replicate
@@ -39,7 +39,6 @@ VectorXd Ngme::precond_grad() {
     g = (num_each_repl[idx] / sum_num_each_repl) * ngme_repls[idx]->precond_grad();
   }
 
-  // concat g_except_reff and g_reff
 if (debug) std::cout << "g in precond_grad() in ngme class = " << g << std::endl;
   return g;
 }

@@ -50,7 +50,7 @@ tp_model <- f(
   noise = noise_nig(),
   eval=TRUE # ignore this when in formula of ngme()
 )
-tp_model
+tp_model$operator$A
 ```
 
 
@@ -84,13 +84,12 @@ true_model <- ngme2::f(
 W <- simulate(true_model)
 AW <- as.numeric(true_model$A %*% W)
 n_obs <- length(AW)
-Y <- AW + rnorm(n_obs, sd=0.5)
-df <- data.frame(year, x, y, Y)
+Y_obs <- AW + rnorm(n_obs, sd=0.5)
+df <- data.frame(year, x, y, Y_obs)
 
 ##############################  estimation
-load_all()
 out <- ngme(
-  Y ~ 0 +
+  Y_obs ~ 0 +
   f(
     model="tp",
     name="tp",
@@ -107,10 +106,11 @@ out <- ngme(
     verbose = T,
     stepsize = 1
   ),
-  debug = T
+  debug = F
 )
-
 out
-traceplot(out)
+
+cross_validation(out)
+traceplot(out, "tp")
 traceplot(out, "tp")
 ```

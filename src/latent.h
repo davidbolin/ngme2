@@ -49,7 +49,8 @@ const int LATENT_FIX_FLAG_SIZE = 5;
 class Latent {
 protected:
     std::mt19937 latent_rng;
-    string model_type, noise_type;
+    string model_type;
+    vector<string> noise_type;
     bool debug;
     int W_size, V_size, n_params, n_var {1}; // n_params=n_theta_K + n_theta_mu + n_theta_sigma + n_var
 
@@ -72,15 +73,15 @@ protected:
     // mu = Bmu * theta_mu
     // sigma = exp(Bsigma * theta_sigma)
     VectorXd mu, sigma, sigma_normal;
-    int n_theta_mu, n_theta_sigma, n_theta_sigma_normal;
+    int n_theta_mu, n_theta_sigma, n_nu, n_theta_sigma_normal;
 
     // for numerical gradient.
     VectorXd W, prevW, V, prevV;
     SparseMatrix<double,0,int> A;
 
     // Var var;
-    VectorXd p_vec, a_vec, b_vec;
-    double nu;
+    VectorXd p_vec, a_vec, b_vec, nu;
+    // double nu;
 
     // solver
     cholesky_solver chol_solver_K;
@@ -160,7 +161,26 @@ public:
     VectorXd grad_theta_mu();
     VectorXd grad_theta_sigma();
     VectorXd grad_theta_sigma_normal(); // grad of sig. only for normal noise
-    double grad_theta_nu();
+    VectorXd grad_theta_nu() {
+        VectorXd grad(n_nu);
+        if (n_nu == 1)
+            grad(0) = grad_theta_nu(noise_type[0], nu[0], V, prevV, h);
+        else {
+            // for bivaraite case
+            int n = V_size / 2;
+            grad(0) = grad_theta_nu(noise_type[0], nu[0], V.segment(0, n), prevV.segment(0, n), h.segment(0, n));
+            grad(1) = grad_theta_nu(noise_type[1], nu[1], V.segment(n, n), prevV.segment(n, n), h.segment(n, n));
+        }
+        return grad;
+    }
+
+    double grad_theta_nu(
+        const string& noise_type,
+        double nu,
+        const VectorXd& V,
+        const VectorXd& prevV,
+        const VectorXd& h
+    ) const;
 
     Rcpp::List output() const;
 };

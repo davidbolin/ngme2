@@ -33,7 +33,7 @@ to-do
 
 It's better to understand with one exmaple. Say you have an time series model over 5 year from 2001 to 2005, with 2 fields *temperature* and *precipitation*. You want to model the two fields jointly, and their correlation. The data should look like
 
-```{r}
+```{r toy-data}
 temp <- c(32, 33, 35.5, 36); year_temp <- c(2001, 2002, 2003, 2004)
 precip <- c(0.1, 0.2, 0.5, 1, 0.2); year_pre <- c(2001, 2002, 2003, 2004, 2005)
 
@@ -44,33 +44,93 @@ labels <- c(rep("temp", 4), rep("precip", 5)) # group is label for 2 fields
 data <- data.frame(y, year, labels); data
 ```
 
-The model specification is
+The model specification is like this, notice the way to specify 2 sub_models:
+
+```{r toy-model}
+load_all()
+# 1st way: simply put model types, using both c() and list() are ok
+bv1 <- f(
+  year, model = "bv",
+  # sub_models = c(precip="ar1", temp="rw1"),
+  sub_models = list(precip="ar1", temp="rw1"),
+  group = labels, # can be provided in ngme()
+  noise = noise_normal(),
+  eval=T # can be ignored in ngme()
+)
+bv1
+
+# 2nd way: allow more argument for sub_models
+bv2 <- f(
+  year, model = "bv",
+  sub_models = list(
+    precip=list(model="ar1", rho=0.5),
+    temp=list(model="rw1")
+  ),
+  group = labels, # can be provided in ngme()
+  noise = noise_normal(),
+  eval=T # can be ignored in ngme()
+)
+bv2
+```
+
+The previous example assume the common noise across the two fields.
+
+But the bivariate model also allows for different driven nosie for each field, e.g. `precip` is driven by `nomral` noise, while `temp` is driven by `nig` noise. The model can be specified as:
+
+```{r toy-model-noise}
+load_all()
+bv3 <- f(
+  year, model = "bv",
+  sub_models = list(precip="ar1", temp="rw1"),
+  group = labels, # can be provided in ngme()
+  noise = list(
+    precip = noise_normal(),
+    temp = noise_nig()
+  ),
+  eval = T # can be ignored in ngme()
+)
+bv3
+```
+
+*Estimation example*
 
 ```{r}
 load_all()
-bv <- f(
+ngme(
+  y ~ f(
   year, model = "bv",
-  # sub_models = c(precip="ar1", temp="rw1"),
-  # sub_models = list(precip="ar1", temp="rw1"),
-  sub_models = list(precip=list(model="ar1", rho=0.5),temp=list(model="rw1")),
-  # noise = list(precip="nig", temp="nig"),
+  sub_models = list(precip="ar1", temp="rw1"),
   group = labels, # can be provided in ngme()
-  eval=T # can be ignored in ngme()
+  noise = list(precip = noise_normal(), temp = noise_nig())
+  ),
+  data = data,
+  control_opt = control_opt(
+    estimation = T,
+    iterations = 1
+  )
 )
-bv
-
-list(precip="ar1", temp="rw1")[1]
-as.list(c(precip="ar1", temp="rw1"))
-
 ```
-
-
-
-*Example 1*
 
 The next simple example is a 2d bivariate matern model in the 1d space.
 
 ```{r}
+noise1 <- update_noise(noise_nig(), n = 3)
+noise2 <- update_noise(noise_nig(), n = 3)
+as.matrix(Matrix::bdiag(noise1$B_mu, noise2$B_mu))
+bv_noise <- ngme_noise(
+  noise_type = c(noise1$noise_type, noise2$noise_type),
+  noise_names = c("temp", "sal"),
+  B_mu    = as.matrix(Matrix::bdiag(noise1$B_mu, noise2$B_mu)),
+  B_sigma = as.matrix(Matrix::bdiag(noise1$B_sigma, noise2$B_sigma)),
+  theta_mu    = c(noise1$theta_mu, noise2$theta_mu),
+  theta_sigma = c(noise1$theta_sigma, noise2$theta_sigma),
+  h = c(1:6)
+)
+str(bv_noise)
+
+load_all()
+noise_normal()$n_params
+f(1:10, model="ar1", eval=T)$n_params
 ```
 
 *Example 2* - models sharing the same parameter?

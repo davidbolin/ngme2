@@ -46,11 +46,11 @@ f <- function(
   which_group = NULL,
   theta_K     = NULL,
   W           = NULL,
-  debug       = FALSE,
   fix_W       = FALSE,
   fix_theta_K = FALSE,
   subset      = rep(TRUE, length_map(map)),
   eval        = FALSE,
+  debug       = FALSE,
   ...
 ) {
   map <- eval(substitute(map), envir = data, enclos = parent.frame())
@@ -147,7 +147,8 @@ f <- function(
     replicate = replicate,
     W         = W,
     fix_W     = fix_W,
-    name      = name
+    name      = name,
+    debug     = debug
   )
 }
 

@@ -425,13 +425,9 @@ VectorXd BlockModel::grad_theta_sigma() {
 VectorXd BlockModel::get_theta_merr() const {
   VectorXd theta_merr = VectorXd::Zero(n_merr);
 
-  if (family=="normal") {
-      theta_merr.segment(0, n_theta_sigma) = theta_sigma;
-  } else {
-      theta_merr.segment(0, n_theta_mu) = theta_mu;
-      theta_merr.segment(n_theta_mu, n_theta_sigma) = theta_sigma;
-      theta_merr(n_theta_mu + n_theta_sigma) =  var.get_log_nu();
-  }
+  theta_merr.segment(0, n_theta_mu) = theta_mu;
+  theta_merr.segment(n_theta_mu, n_theta_sigma) = theta_sigma;
+  theta_merr(n_theta_mu + n_theta_sigma) =  var.get_log_nu();
 
   // estimate correlation
   if (corr_measure) theta_merr(n_merr-1) = rho2th(rho);
@@ -442,13 +438,9 @@ VectorXd BlockModel::get_theta_merr() const {
 VectorXd BlockModel::grad_theta_merr() {
   VectorXd grad = VectorXd::Zero(n_merr);
 
-  if (family=="normal") {
-    if (!fix_flag[block_fix_theta_sigma])  grad.segment(0, n_theta_sigma) = grad_theta_sigma();
-  } else {
-    if (!fix_flag[block_fix_theta_mu])     grad.segment(0, n_theta_mu) = grad_theta_mu();
-    if (!fix_flag[block_fix_theta_sigma])  grad.segment(n_theta_mu, n_theta_sigma) = grad_theta_sigma();
-    grad(n_theta_mu + n_theta_sigma) = var.grad_log_nu();
-  }
+  if (!fix_flag[block_fix_theta_mu])     grad.segment(0, n_theta_mu) = grad_theta_mu();
+  if (!fix_flag[block_fix_theta_sigma])  grad.segment(n_theta_mu, n_theta_sigma) = grad_theta_sigma();
+  grad(n_theta_mu + n_theta_sigma) = var.grad_log_nu();
 
   // grad of theta_rho
   if (corr_measure) {
@@ -463,13 +455,10 @@ VectorXd BlockModel::grad_theta_merr() {
 }
 
 void BlockModel::set_theta_merr(const VectorXd& theta_merr) {
-  if (family=="normal") {
-    theta_sigma = theta_merr.segment(0, n_theta_sigma);
-  } else {
-    theta_mu = theta_merr.segment(0, n_theta_mu);
-    theta_sigma = theta_merr.segment(n_theta_mu, n_theta_sigma);
-    var.set_log_nu(theta_merr(n_theta_mu + n_theta_sigma));
-  }
+
+  theta_mu = theta_merr.segment(0, n_theta_mu);
+  theta_sigma = theta_merr.segment(n_theta_mu, n_theta_sigma);
+  var.set_log_nu(theta_merr(n_theta_mu + n_theta_sigma));
 
   // update mu, sigma
   noise_mu = (B_mu * theta_mu);

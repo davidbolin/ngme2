@@ -51,7 +51,6 @@ ngme_noise <- function(
   fix_theta_sigma = FALSE,
   fix_nu          = FALSE,
   V               = NULL,
-  # Vs              = NULL,
   h               = NULL,
   fix_V           = FALSE,
   theta_sigma_normal = NULL,
@@ -118,15 +117,11 @@ ngme_noise <- function(
       fix_theta_sigma = fix_theta_sigma,
       fix_nu          = fix_nu,
       fix_V           = fix_V,
-      n_params        = switch(noise_type,
-        "normal"     = length(theta_sigma),
-        "nig"        = length(c(theta_mu, theta_sigma, 1)),
-        "gal"        = length(c(theta_mu, theta_sigma, 1)),
-        "normal_nig" = length(c(theta_mu, theta_sigma, 1, theta_sigma_normal))
-      ), # parameter to estimate
+      n_params        = length(theta_mu) + length(theta_sigma) + length(nu),
       init_V          = TRUE,
       single_V        = FALSE, # only contain single V (for re)
-      hessian         = hessian
+      hessian         = hessian,
+      ...
     ),
     class = "ngme_noise"
   )
@@ -238,7 +233,20 @@ stopifnot("n / nrow(B_sigma) not integer" = abs(n/nrow(B_sigma) - round(n/nrow(B
 
   } else if (!is.null(new_noise)) {
   # update with another noise
-    if (noise$noise_type == "normal") {
+    if (length(noise$noise_type) == 2) {
+      # bv noise
+      # pass mu, sigma, nu to sub_models
+      n_theta_mu1 <- noise$bv_noises[[1]]$n_theta_mu
+      n_theta_mu2 <- noise$bv_noises[[2]]$n_theta_mu
+      n_theta_sigma1 <- noise$bv_noises[[1]]$n_theta_sigma
+      n_theta_sigma2 <- noise$bv_noises[[2]]$n_theta_sigma
+      noise$bv_noises[[1]]$theta_mu <- head(noise$theta_mu, n_theta_mu1)
+      noise$bv_noises[[2]]$theta_mu <- tail(noise$theta_mu, n_theta_mu2)
+      noise$bv_noises[[1]]$theta_sigma <- head(noise$theta_sigma, n_theta_sigma1)
+      noise$bv_noises[[2]]$theta_sigma <- tail(noise$theta_sigma, n_theta_sigma2)
+      noise$bv_noises[[1]]$nu <- noise$nu[[1]]
+      noise$bv_noises[[2]]$nu <- noise$nu[[2]]
+    } else if (noise$noise_type == "normal") {
       noise$theta_sigma <- new_noise$theta_sigma
     } else if (noise$noise_type == "normal_nig") {
       noise$theta_mu           <- new_noise$theta_mu
@@ -253,9 +261,34 @@ stopifnot("n / nrow(B_sigma) not integer" = abs(n/nrow(B_sigma) - round(n/nrow(B
       if (!is.null(new_noise$V)) noise$V <- new_noise$V
     }
   } else if (!is.null(operator)) {
-    noise$h <- operator$h
-    if (is.null(noise$V)) noise$V <- noise$h
-    noise <- update_noise(noise, n = length(noise$h))
+    if (operator$model == "bv" && is.list(noise)) {
+      # bivariate noise case
+      stopifnot(
+        length(noise) == 2,
+        inherits(noise[[1]], "ngme_noise"),
+        inherits(noise[[2]], "ngme_noise"),
+        "Please specify noise with name same as in sub_models"
+          = all(names(noise) %in% operator$model_names)
+      )
+      bv_noises <- noise
+      noise1 <- update_noise(noise[[1]], n = length(operator$h) / 2)
+      noise2 <- update_noise(noise[[2]], n = length(operator$h) / 2)
+      bv_noises[[1]] = noise1; bv_noises[[2]] = noise2
+      noise <- ngme_noise(
+        noise_type = c(noise1$noise_type, noise2$noise_type),
+        B_mu    = as.matrix(Matrix::bdiag(noise1$B_mu, noise2$B_mu)),
+        B_sigma = as.matrix(Matrix::bdiag(noise1$B_sigma, noise2$B_sigma)),
+        theta_mu    = c(noise1$theta_mu, noise2$theta_mu),
+        theta_sigma = c(noise1$theta_sigma, noise2$theta_sigma),
+        nu = c(noise1$nu, noise2$nu),
+        h = operator$h,
+        bv_noises = bv_noises
+      )
+    } else {
+      noise$h <- operator$h
+      if (is.null(noise$V)) noise$V <- noise$h
+      noise <- update_noise(noise, n = length(noise$h))
+    }
   }
 
   noise
@@ -277,34 +310,43 @@ create_noise <- function(x) {
 #'
 #' @return a list (noise specifications)
 #' @export
-print.ngme_noise <- function(x, padding = 0, ...) {
+print.ngme_noise <- function(x, padding = 0, prefix = "Noise type", ...) {
   noise <- x
   pad_space <- paste(rep(" ", padding), collapse = "")
   pad_add4_space <- paste(rep(" ", padding + 4), collapse = "")
 
   if (is.null(noise)) {
-    cat(pad_space); cat("Noise type - "); cat("NULL"); cat("\n")
+    cat(pad_space); cat(prefix); cat(": "); cat("NULL"); cat("\n")
   } else {
-    cat(pad_space); cat("Noise type - "); cat(noise$noise_type); cat("\n")
+    if (length(noise$noise_type) == 2) {
+      # bivariate noise
+      cat(pad_space); cat("Bivariate noise:"); cat("\n")
+      names <- names(noise$bv_noises)
+      print(noise$bv_noises[[1]], padding = padding + 4, prefix = names[[1]])
+      print(noise$bv_noises[[2]], padding = padding + 4, prefix = names[[2]])
+    } else {
+      # single noise
+      cat(pad_space); cat(prefix); cat(": "); cat(toupper(noise$noise_type)); cat("\n")
 
-    cat(pad_space); cat("Noise parameters: \n")
-    params <- with(noise, {
-      switch(noise_type,
-        "normal" = paste0(pad_add4_space, ngme_format("sigma", theta_sigma)),
-        "nig"    = paste0(pad_add4_space, ngme_format("mu", theta_mu),
-                    "\n", pad_add4_space, ngme_format("sigma", theta_sigma),
-                    "\n", pad_add4_space, ngme_format("nu", nu)),
-        "gal"    = paste0(pad_add4_space, ngme_format("mu", theta_mu),
-                    "\n", pad_add4_space, ngme_format("sigma", theta_sigma),
-                    "\n", pad_add4_space, ngme_format("nu", nu)),
-        "normal_nig" = paste0(pad_add4_space, ngme_format("mu", theta_mu),
-                    "\n", pad_add4_space, ngme_format("sigma_nig", theta_sigma),
-                    "\n", pad_add4_space, ngme_format("nu", nu),
-                    "\n", pad_add4_space, ngme_format("sigma_normal", theta_sigma_normal)),
-        stop("unknown noise type")
-      )
-    })
-    cat(params)
+      cat(pad_space); cat("Noise parameters: \n")
+      params <- with(noise, {
+        switch(noise_type,
+          "normal" = paste0(pad_add4_space, ngme_format("sigma", theta_sigma)),
+          "nig"    = paste0(pad_add4_space, ngme_format("mu", theta_mu),
+                      "\n", pad_add4_space, ngme_format("sigma", theta_sigma),
+                      "\n", pad_add4_space, ngme_format("nu", nu)),
+          "gal"    = paste0(pad_add4_space, ngme_format("mu", theta_mu),
+                      "\n", pad_add4_space, ngme_format("sigma", theta_sigma),
+                      "\n", pad_add4_space, ngme_format("nu", nu)),
+          "normal_nig" = paste0(pad_add4_space, ngme_format("mu", theta_mu),
+                      "\n", pad_add4_space, ngme_format("sigma_nig", theta_sigma),
+                      "\n", pad_add4_space, ngme_format("nu", nu),
+                      "\n", pad_add4_space, ngme_format("sigma_normal", theta_sigma_normal)),
+          stop("unknown noise type")
+        )
+      })
+      cat(params)
+    }
   }
   cat("\n")
   invisible(noise)

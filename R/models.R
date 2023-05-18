@@ -40,7 +40,7 @@ iid <- function(
 #' @param map integer vector, time index for the AR(1) process
 #' @param mesh mesh for build the model
 #' @param replicate replicate for the process
-#' @param theta_K initial value for theta_K, if want to specify, can use e.g. ar1_a2th(0.5)
+#' @param rho the correlation parameter (between -1 and 1)
 #'
 #' @param ... extra arguments
 #'
@@ -53,18 +53,21 @@ ar1 <- function(
   map,
   mesh      = NULL,
   replicate = rep(1, length_map(map)),
-  theta_K   = 0,
+  rho       = 0,
   ...
 ) {
+  # check map
   if (inherits(map, "formula")) map <- model.matrix(map)[, -1]
+  stopifnot("The map should be integers." = all(map == round(map)))
 
-  if (is.null(mesh)) mesh <- ngme_build_mesh(map)
+  # check replicate
   replicate <- as.integer(as.factor(replicate))
-
-  stopifnot("The map should be integers."
-      = all(map == round(map)))
-
   stopifnot("length of map and replicate should be the same." = length(map) == length(replicate))
+
+  # check mesh
+  if (is.null(mesh)) mesh <- ngme_build_mesh(map)
+  stopifnot("Mesh should be inla.mesh.1d."
+    = inherits(mesh, c("inla.mesh.1d")))
 
   n <- mesh$n; nrep <- length(unique(replicate))
 
@@ -80,8 +83,8 @@ ar1 <- function(
     h <- rep(h, nrep)
   }
 
-  stopifnot("The length of theta_K should be 1." = length(theta_K) == 1)
-  alpha <- ar1_th2a(theta_K)
+  theta_K <- ar1_a2th(rho)
+  stopifnot("The length of rho(theta_K) should be 1." = length(theta_K) == 1)
 
   A <- if (!is.null(map)) INLA::inla.spde.make.A(mesh = mesh, loc = map, repl=replicate) else NULL
 
@@ -93,7 +96,7 @@ ar1 <- function(
     theta_K = theta_K,
     C = ngme_as_sparse(C),
     G = ngme_as_sparse(G),
-    K = alpha * C + G,
+    K = rho * C + G,
     h = h,
     A = A,
     symmetric = FALSE,

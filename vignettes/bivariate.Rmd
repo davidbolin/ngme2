@@ -1,5 +1,5 @@
 ---
-title: "Bivariate model"
+title: "Bivariate models in Ngme2"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Bivariate model}
@@ -16,92 +16,61 @@ knitr::opts_chunk$set(
 
 ## Description
 
-In this vignette, we will introduce the bivariate model which supports two response variable.
+In this vignette, we will introduce the bivariate model which supports modeling two field and their correlation jointly.
 
-```{r setup}
-library(INLA)
-load_all()
+The `f` function specification is similar to ordinary model, but with two fields.
+Extra arguments for the `f` are:
+
+1. `group`: a vector of labels to indicate the group of different observations. If `group` is provided in `ngme()` function, no need to provide in `f()` function again.
+
+2. `sub_models`: characters of length 2 with names equal to one of the labels in `group`, specifying the sub-models for the two fields. e.g. `c(field1="rw1", field2="ar1")`
+
+## Model structure
+
+to-do
+
+## Usage by example
+
+It's better to understand with one exmaple. Say you have an time series model over 5 year from 2001 to 2005, with 2 fields *temperature* and *precipitation*. You want to model the two fields jointly, and their correlation. The data should look like
+
+```{r}
+temp <- c(32, 33, 35.5, 36); year_temp <- c(2001, 2002, 2003, 2004)
+precip <- c(0.1, 0.2, 0.5, 1, 0.2); year_pre <- c(2001, 2002, 2003, 2004, 2005)
+
+# bind them since we want to model them jointly
+y <- c(temp, precip); year <- c(year_temp, year_pre)
+labels <- c(rep("temp", 4), rep("precip", 5)) # group is label for 2 fields
+
+data <- data.frame(y, year, labels); data
 ```
 
-## Usage
+The model specification is
 
-The R interface for the bivariate model is similar to the univariate model. The only difference is that the `f` function takes two extra arguments `m1` and `m2` for the two response variables.
+```{r}
+load_all()
+bv <- f(
+  year, model = "bv",
+  # sub_models = c(precip="ar1", temp="rw1"),
+  # sub_models = list(precip="ar1", temp="rw1"),
+  sub_models = list(precip=list(model="ar1", rho=0.5),temp=list(model="rw1")),
+  # noise = list(precip="nig", temp="nig"),
+  group = labels, # can be provided in ngme()
+  eval=T # can be ignored in ngme()
+)
+bv
 
-`m1` and `m2` takes other models such as `ar1` or `matern` to specify the covariance structure of the two response variables.
+list(precip="ar1", temp="rw1")[1]
+as.list(c(precip="ar1", temp="rw1"))
+
+```
+
+
 
 *Example 1*
 
 The next simple example is a 2d bivariate matern model in the 1d space.
 
 ```{r}
-load_all()
-mesh1d <- inla.mesh.1d(1:10)
-f(
-  model="bv",
-  m1=matern(1:5, mesh=mesh1d),
-  m2=matern(1:5, mesh=mesh1d),
-  # noise inside better or outside?
-  noise=noise_normal(),
-  eval=T
-)
 ```
 
 *Example 2* - models sharing the same parameter?
-
-```{r}
-mesh1d <- inla.mesh.1d(1:10)
-f(
-  model="bv",
-  share_param = T,
-  m1=matern(1:5, mesh=mesh1d),
-  m2=matern(1:5, mesh=mesh1d),
-  # noise inside better or outside?
-  noise=noise_normal()
-)
-```
-
-## Simulation
-
-(add to the simulation)
-
-```{r}
-n_obs <- 200
-noise <- noise_nig(mu=-3, sigma=2, nu=1, n=n_obs * 2)
-
-K1 <- ar1(1:n_obs, alpha=0.5, noise=noise)$K
-K2 <- ar1(1:n_obs, alpha=0.5, noise=noise)$K
-D <- build_D(theta=1, rho=1) %x% Matrix::Diagonal(n_obs)
-K <- D %*% bdiag(K1, K2); K
-eps <- simulate(noise)
-
-W <- as.numeric(solve(K, eps))
-
-# Estimation
-Y <- W + rnorm(2*n_obs, sd=1.5)
-
-load_all()
-out <- ngme(
-  Y ~ 0 + f(
-    model="bv",
-    # share_param=T,
-    m1=ar1(1:n_obs, alpha=0.5),
-    m2=ar1(1:n_obs,alpha=0.5),
-    noise=noise_nig()
-  ),
-  data = data.frame(Y = Y),
-  control_opt = control_opt(
-    estimation = T,
-    n_parallel_chain = 1,
-    iterations = 300,
-    verbose = T
-  ),
-  debug=F
-)
-
-out
-traceplot(out, "field1")
-out$replicates[[1]]$models[[1]]$n_theta_K
-```
-
-
-

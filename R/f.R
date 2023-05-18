@@ -217,8 +217,13 @@ model_iid <- function(
   do.call(ngme_model, args)
 }
 
-
+# build operator
 build_operator <- function(model_name, args_list) {
+  stopifnot(
+    is.character(model_name),
+    is.list(args_list)
+  )
+
   switch(model_name,
     tp = do.call(tp, args_list),
     bv = do.call(bv, args_list),

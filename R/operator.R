@@ -61,7 +61,7 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
   cat(pad_space, model_name, sep="")
 
   parameter <- with(operator, switch(model,
-    ar1 = cat(pad_add4_space, "alpha = ", format(ar1_th2a(theta_K), digits=3), "\n", sep=""),
+    ar1 = cat(pad_add4_space, "rho = ", format(ar1_th2a(theta_K), digits=3), "\n", sep=""),
     matern = if (length(theta_K) > 1)
       cat(pad_add4_space, "theta_K = ", format(theta_K, digits=3), "\n", sep="") else
       cat(pad_add4_space, "kappa = ", format(exp(theta_K), digits=3), "\n", sep=""),
@@ -72,8 +72,8 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
     bv = {
       cat(pad_add4_space, "zeta = ", format(theta_K[1], digits=3), "\n", sep="")
       cat(pad_add4_space, "rho = ", format(theta_K[2], digits=3), "\n", sep="")
-      print(operator$first,  padding = padding + 4, prefix = "first")
-      print(operator$second, padding = padding + 4, prefix = "second")
+      print(operator$first,  padding = padding + 4, prefix = model_names[[1]])
+      print(operator$second, padding = padding + 4, prefix = model_names[[2]])
     },
     re = {
       cat(pad_add4_space, "Cov matrix: \n")

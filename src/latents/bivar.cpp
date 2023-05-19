@@ -17,7 +17,6 @@ void Bivar::update_K(const VectorXd& theta_K) {
   double rho = theta_K(1);
   VectorXd theta_K1 = theta_K.segment(2, n_theta_1);
   VectorXd theta_K2 = theta_K.segment(2 + n_theta_1, n_theta_2);
-
   Matrix2d D = getD(theta, rho);
   first->update_K(theta_K1);
   second->update_K(theta_K2);

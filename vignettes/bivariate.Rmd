@@ -2,7 +2,7 @@
 title: "Bivariate models in Ngme2"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Bivariate model}
+  %\VignetteIndexEntry{Bivariate models in Ngme2}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -78,7 +78,6 @@ The previous example assume the common noise across the two fields.
 But the bivariate model also allows for different driven nosie for each field, e.g. `precip` is driven by `nomral` noise, while `temp` is driven by `nig` noise. The model can be specified as:
 
 ```{r toy-model-noise}
-load_all()
 bv3 <- f(
   year, model = "bv",
   sub_models = list(precip="ar1", temp="rw1"),
@@ -95,7 +94,6 @@ bv3
 *Estimation example*
 
 ```{r}
-load_all()
 ngme(
   y ~ f(
   year, model = "bv",
@@ -106,31 +104,48 @@ ngme(
   data = data,
   control_opt = control_opt(
     estimation = T,
-    iterations = 1
+    iterations = 10
   )
 )
 ```
 
-The next simple example is a 2d bivariate matern model in the 1d space.
+## A 2d matern example
 
 ```{r}
-noise1 <- update_noise(noise_nig(), n = 3)
-noise2 <- update_noise(noise_nig(), n = 3)
-as.matrix(Matrix::bdiag(noise1$B_mu, noise2$B_mu))
-bv_noise <- ngme_noise(
-  noise_type = c(noise1$noise_type, noise2$noise_type),
-  noise_names = c("temp", "sal"),
-  B_mu    = as.matrix(Matrix::bdiag(noise1$B_mu, noise2$B_mu)),
-  B_sigma = as.matrix(Matrix::bdiag(noise1$B_sigma, noise2$B_sigma)),
-  theta_mu    = c(noise1$theta_mu, noise2$theta_mu),
-  theta_sigma = c(noise1$theta_sigma, noise2$theta_sigma),
-  h = c(1:6)
+load_all()
+library(INLA)
+pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
+mesh <- inla.mesh.2d(
+  loc.domain = pl01, cutoff = 0.2,
+  max.edge = c(2,10)
 )
-str(bv_noise)
+mesh$n
+n_obs <- 100
+long <- runif(n_obs, 0, 10)
+lat <- runif(n_obs, 0, 5)
+Y_sal <- rnorm(50); Y_temp <- rnorm(50)
+group <- c(rep("sal", 50), rep("temp", 50))
+
+data <- data.frame(Y=c(Y_sal, Y_temp), long, lat)
+head(data)
 
 load_all()
-noise_normal()$n_params
-f(1:10, model="ar1", eval=T)$n_params
+out <- ngme(
+  Y ~ f(
+    ~long + lat,
+    mesh = mesh,
+    model = "bv",
+    sub_models = list(sal="matern", temp="matern"),
+    group = group,
+    noise = list(sal = noise_nig(), temp = noise_nig())
+  ),
+  data = data,
+  control_opt = control_opt(
+    estimation = T,
+    iterations = 10,
+    verbose = T,
+    print_check_info = F
+  )
+)
+out
 ```
-
-*Example 2* - models sharing the same parameter?

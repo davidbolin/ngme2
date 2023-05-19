@@ -50,7 +50,7 @@ public:
     {
       // initial dK
       for (int i=0; i<n_theta_K; i++) {
-        dK[i].resize(K.rows(), K.cols());
+        dK[i].resize(h.size(), h.size());
         dK[i].setZero();
       }
     }
@@ -160,9 +160,6 @@ class Randeff : public Operator{
 
     void update_K(const VectorXd& theta_K);
     void update_dK(const VectorXd& theta_K);
-    // VectorXd grad_theta_K();
-    // void sample_cond_V() override;
-    // void update_each_iter();
 };
 
 // for initialize Latent models

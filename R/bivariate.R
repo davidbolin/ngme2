@@ -4,7 +4,7 @@
 #'
 #' @param map can be ignored, pass through first and second
 #' @param replicate replicate
-#' @param theta_K c(zeta, rho, theta_K_1, theta_K_2)
+#' @param theta_K c(zeta, eta, theta_K_1, theta_K_2)
 #' @param ... extra arguments in f()
 #'
 #' @return a list of specification of model
@@ -13,6 +13,7 @@ bv <- function(
   map,
   sub_models,
   mesh = NULL,
+  zeta = 0, eta = 0,
   replicate = NULL,
   group = NULL,
   share_param = FALSE,
@@ -51,7 +52,7 @@ bv <- function(
     second <- build_operator(arg2$model, modifyList(args, arg2))
   }
 
-  theta_K <- c(0, 0, first$theta_K, second$theta_K)
+  theta_K <- c(zeta, eta, first$theta_K, second$theta_K)
 
   # pass the theta_K to first and second
   first$theta_K <- theta_K[3:(2 + first$n_theta_K)]

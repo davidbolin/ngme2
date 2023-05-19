@@ -230,11 +230,15 @@ stopifnot("n / nrow(B_sigma) not integer" = abs(n/nrow(B_sigma) - round(n/nrow(B
     noise$n_noise <- n
     if (length(noise$h) == 1) noise$h <- rep(1, n)
     noise <- do.call(ngme_noise, noise)
-
   } else if (!is.null(new_noise)) {
-  # update with another noise
+    # update noise after estimation
+    noise$theta_mu           <- new_noise$theta_mu
+    noise$theta_sigma        <- new_noise$theta_sigma
+    noise$nu                 <- new_noise$nu
+    if (!is.null(new_noise$V)) noise$V <- new_noise$V
+
+    # bv noise
     if (length(noise$noise_type) == 2) {
-      # bv noise
       # pass mu, sigma, nu to sub_models
       n_theta_mu1 <- noise$bv_noises[[1]]$n_theta_mu
       n_theta_mu2 <- noise$bv_noises[[2]]$n_theta_mu
@@ -246,22 +250,11 @@ stopifnot("n / nrow(B_sigma) not integer" = abs(n/nrow(B_sigma) - round(n/nrow(B
       noise$bv_noises[[2]]$theta_sigma <- tail(noise$theta_sigma, n_theta_sigma2)
       noise$bv_noises[[1]]$nu <- noise$nu[[1]]
       noise$bv_noises[[2]]$nu <- noise$nu[[2]]
-    } else if (noise$noise_type == "normal") {
-      noise$theta_sigma <- new_noise$theta_sigma
     } else if (noise$noise_type == "normal_nig") {
-      noise$theta_mu           <- new_noise$theta_mu
-      noise$theta_sigma        <- new_noise$theta_sigma
       noise$theta_sigma_normal <- new_noise$theta_sigma_normal
-      noise$nu                 <- new_noise$nu
-      if (!is.null(new_noise$V)) noise$V <- new_noise$V
-    } else { # nig and gal
-      noise$theta_mu           <- new_noise$theta_mu
-      noise$theta_sigma        <- new_noise$theta_sigma
-      noise$nu                 <- new_noise$nu
-      if (!is.null(new_noise$V)) noise$V <- new_noise$V
     }
   } else if (!is.null(operator)) {
-    if (operator$model == "bv" && is.list(noise)) {
+    if (operator$model == "bv" && !(inherits(noise, "ngme_noise"))) {
       # bivariate noise case
       stopifnot(
         length(noise) == 2,
@@ -436,9 +429,4 @@ noise_normal_nig <- normal_nig <- function(
     n = n,
     ...
   )
-}
-
-# measurement nosie with correlation
-noise_corr_nig <- function() {
-  list()
 }

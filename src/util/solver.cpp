@@ -377,7 +377,7 @@ void lu_sparse_solver::computeKTK(const SparseMatrix<double, 0, int> &K_in)
     std::cout << ", K = " << K.rows() << " * " << K.cols() << std::endl;
   }
 
-  L_KKt.factorize(K.transpose() * K); // KTK
+  L_KKt.factorize(K.transpose() * K);
   KKtinv_computed = 0;
 }
 

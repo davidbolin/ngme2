@@ -41,6 +41,7 @@ Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
     nu            (noise_type.size())
 {
 if (debug) std::cout << "begin constructor of latent" << std::endl;
+    assert(W_size == V_size);
     // read the control variable
     Rcpp::List control_f = Rcpp::as<Rcpp::List> (model_list["control"]);
         use_precond     = Rcpp::as<bool>        (control_f["use_precond"] );
@@ -82,7 +83,8 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
     prevW = W;
     fix_flag[latent_fix_W] = Rcpp::as<bool> (model_list["fix_W"]); // fixW
 
-    // init Q
+    // init K, Q
+    ope->update_K(theta_K);
     if (V_size == W_size) {
         if (!symmetricK) {
             lu_solver_K.init(W_size, 0,0,0);
@@ -95,7 +97,8 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
     SparseMatrix<double> Q = getK().transpose() * getK();
     solver_Q.init(W_size, 0,0,0);
     solver_Q.analyze(Q);
-    update_each_iter();
+
+    update_each_iter(true);
 if (debug) std::cout << "End constructor of latent" << std::endl;
 }
 
@@ -298,7 +301,7 @@ void Latent::set_parameter(const VectorXd& theta) {
     update_each_iter();
 }
 
-void Latent::update_each_iter() {
+void Latent::update_each_iter(bool init) {
     // update mu and sigma
     mu = B_mu * theta_mu;
     sigma = (B_sigma * theta_sigma).array().exp();
@@ -314,9 +317,6 @@ void Latent::update_each_iter() {
             p_vec.segment(i*n, n) = VectorXd::Constant(n, -0.5);
             a_vec.segment(i*n, n) = VectorXd::Constant(n, nu(i));
             b_vec.segment(i*n, n) = a_vec.segment(i*n, n).cwiseProduct(h.segment(i*n, n).cwiseProduct(h.segment(i*n, n)));
-// std::cout << " mu = " << mu << std::endl;
-// std::cout << " sigma = " << sigma << std::endl;
-// std::cout << " b_vec = " << b_vec << std::endl;
         }
         if (noise_type[i] == "normal") mu.segment(i*n, n).setZero();
     }
@@ -325,43 +325,41 @@ void Latent::update_each_iter() {
         sigma_normal = (B_sigma_normal * theta_sigma_normal).array().exp();
 
     // update on K, dK, trace, bigK for sampling...
-    ope->update_K(theta_K);
-    if (!numer_grad && W_size == V_size) {
+    if (!init) ope->update_K(theta_K);
+    if (!numer_grad) {
         ope->update_dK(theta_K);
         // trace[i] = tr(K^-1 dK[i])
         if (!zero_trace) {
-            for (int i=0; i < n_theta_K; i++) {
-                if (!symmetricK) {
-                    if (W_size > 10) {
-                        lu_solver_K.computeKTK(getK());
+            if (!symmetricK) {
+                if (W_size > 10) {
+                    lu_solver_K.computeKTK(getK());
+                    for (int i=0; i < n_theta_K; i++)
                         trace[i] = lu_solver_K.trace(ope->get_dK()[i]);
-                    } else {
-                        // for random effect case (usually small dimension)
+                } else {
+                    // for random effect case (usually small dimension)
+                    for (int i=0; i < n_theta_K; i++) {
                         if (getK().toDense().isLowerTriangular() && abs(ope->get_dK()[i].diagonal().sum()) < 0.001)
                             trace[i] = 0;
                         else
                             trace[i] = getK().toDense().ldlt().solve(ope->get_dK()[i].toDense()).diagonal().sum();
-    // std::cout << "getK = " << getK() << std::endl;
-    // std::cout << "getdK = " << ope->get_dK()[i] << std::endl;
-    // std::cout << "trace = " << trace[i] << std::endl;
                     }
-                } else {
-                    chol_solver_K.compute(getK());
-                    trace[i] = chol_solver_K.trace(ope->get_dK()[i]);
                 }
-    // std::cout << "trace = " << trace[i] << std::endl;
-                // update trace_eps if using hessian
-                // if (use_precond) {
-                //     SparseMatrix<double> dK_eps = get_dK_by_eps(i, 0, eps);
-                //     if (!symmetricK) {
-                //         lu_solver_K.computeKTK(K);
-                //         trace[i] = lu_solver_K.trace(dK[i]);
-                //     } else {
-                //         chol_solver_K.compute(K);
-                //         trace[i] = chol_solver_K.trace(dK[i]);
-                //     }
-                // }
+            } else {
+                chol_solver_K.compute(getK());
+                for (int i=0; i < n_theta_K; i++)
+                    trace[i] = chol_solver_K.trace(ope->get_dK()[i]);
             }
+            // update trace_eps if using hessian
+            // if (use_precond) {
+            //     SparseMatrix<double> dK_eps = get_dK_by_eps(i, 0, eps);
+            //     if (!symmetricK) {
+            //         lu_solver_K.computeKTK(K);
+            //         trace[i] = lu_solver_K.trace(dK[i]);
+            //     } else {
+            //         chol_solver_K.compute(K);
+            //         trace[i] = chol_solver_K.trace(dK[i]);
+            //     }
+            // }
         }
     }
 }

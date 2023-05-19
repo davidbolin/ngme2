@@ -7,10 +7,15 @@
 test_that("test bv(ar1, ar1) with 1 noise", {
   load_all()
   n = 500
-  true_model <- f(model="bv",
-    first  = ar1(1:n, theta_K = ar1_a2th(0.8)),
-    second = ar1(1:n, theta_K = ar1_a2th(0.2)),
+
+  true_model <- f(
+    1:n,
+    model="bv",
     zeta = 1, rho = 0.5,
+    sub_models = list(
+      first = "ar1", second="ar1"
+    ),
+    group = c(rep("first", n/2), rep("second", n/2)),
     noise = noise_nig(mu=-3, sigma=2, nu=1),
     eval=T
   )
@@ -21,15 +26,16 @@ test_that("test bv(ar1, ar1) with 1 noise", {
   Y <- AW + rnorm(n_obs, sd=0.5)
 
   out <- ngme(
-    Y ~
-    # 0 + f(1:5, model="ar1", group="temp") +
-    0 + f (model="bv", name="bv",
-      zeta = 1,
-      first=ar1(1:n),
-      second=ar1(1:n),
-      noise = noise_nig(),
-      control = control_f(numer_grad = F)
+    Y ~ 0 + f(
+      1:n,
+      model="bv",
+      zeta = 1, rho = 0.5,
+      sub_models = list(
+        first = "ar1", second="ar1"
+      ),
+      noise = noise_nig(mu=-3, sigma=2, nu=1)
     ),
+    group = c(rep("first", n/2), rep("second", n/2)),
     # noise = noise_nig(correlated = TRUE),
     data = data.frame(Y = Y
       # group=group, loc1=.., loc2=..

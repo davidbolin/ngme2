@@ -91,7 +91,7 @@ public:
     Latent(const Rcpp::List&, unsigned long seed);
     ~Latent() {}
 
-    void update_each_iter();
+    void update_each_iter(bool init=false);
 
     /*  1 Model itself   */
     int get_W_size() const             {return W_size; }

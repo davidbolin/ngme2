@@ -91,7 +91,7 @@ protected:
 public:
     // BlockModel() {}
     BlockModel(const Rcpp::List& block_model, unsigned long seed);
-    virtual ~BlockModel() {}
+    ~BlockModel() = default;
 
     /* Gibbs Sampler */
     void burn_in(int iterations) {

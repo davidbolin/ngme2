@@ -108,25 +108,32 @@ simulate.ngme_noise <- function(
         return(simulate.ngme_noise(new_mn))
     }
 
-    n <- noise$n_noise
-    if (noise$noise_type == "nig") {
-        nu <- noise$nu
-        V <- ngme2::rig(n, a=nu, b=nu*(noise$h)^2, seed = seed)
-        mu <- drop(noise$B_mu %*% noise$theta_mu)
-        sigma <- drop(exp(noise$B_sigma %*% noise$theta_sigma))
-        noise$V <- V
-        e <- mu * (V - noise$h) + sigma * sqrt(V) * rnorm(n)
-    } else if (noise$noise_type == "normal") {
-        sigma <- drop(exp(noise$B_sigma %*% noise$theta_sigma))
-        e <- rnorm(n, sd = sigma * sqrt(noise$h))
-    } else if (noise$noise_type == "gal") {
-        nu <- noise$nu
-        V <- rgamma(n, shape = noise$h * nu, rate = nu)
-        mu <- drop(noise$B_mu %*% noise$theta_mu)
-        sigma <- drop(exp(noise$B_sigma %*% noise$theta_sigma))
-        noise$V <- V
-        e <- mu * (V - noise$h) + sigma * sqrt(V) * rnorm(n)
+    if (length(noise$noise_type) == 2) {
+        # bivariate noise
+        e <- c(simulate.ngme_noise(noise$bv_noises[[1]], seed = seed),
+            simulate.ngme_noise(noise$bv_noises[[2]], seed = seed))
+    } else {
+        n <- noise$n_noise
+        if (noise$noise_type == "nig") {
+            nu <- noise$nu
+            V <- ngme2::rig(n, a=nu, b=nu*(noise$h)^2, seed = seed)
+            mu <- drop(noise$B_mu %*% noise$theta_mu)
+            sigma <- drop(exp(noise$B_sigma %*% noise$theta_sigma))
+            noise$V <- V
+            e <- mu * (V - noise$h) + sigma * sqrt(V) * rnorm(n)
+        } else if (noise$noise_type == "normal") {
+            sigma <- drop(exp(noise$B_sigma %*% noise$theta_sigma))
+            e <- rnorm(n, sd = sigma * sqrt(noise$h))
+        } else if (noise$noise_type == "gal") {
+            nu <- noise$nu
+            V <- rgamma(n, shape = noise$h * nu, rate = nu)
+            mu <- drop(noise$B_mu %*% noise$theta_mu)
+            sigma <- drop(exp(noise$B_sigma %*% noise$theta_sigma))
+            noise$V <- V
+            e <- mu * (V - noise$h) + sigma * sqrt(V) * rnorm(n)
+        }
     }
+
     attr(e, "noise") <- noise
     e
 }

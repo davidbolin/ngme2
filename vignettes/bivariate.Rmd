@@ -78,6 +78,7 @@ The previous example assume the common noise across the two fields.
 But the bivariate model also allows for different driven nosie for each field, e.g. `precip` is driven by `nomral` noise, while `temp` is driven by `nig` noise. The model can be specified as:
 
 ```{r toy-model-noise}
+load_all()
 bv3 <- f(
   year, model = "bv",
   sub_models = list(precip="ar1", temp="rw1"),
@@ -89,17 +90,22 @@ bv3 <- f(
   eval = T # can be ignored in ngme()
 )
 bv3
+simulate(bv3)
+# bv3$noise$h
 ```
 
 *Estimation example*
 
 ```{r}
+load_all()
 ngme(
-  y ~ f(
-  year, model = "bv",
-  sub_models = list(precip="ar1", temp="rw1"),
-  group = labels, # can be provided in ngme()
-  noise = list(precip = noise_normal(), temp = noise_nig())
+  y ~ 0 + fe(~1+x, which_group = "temp") +
+  fe(~x, which_group = "precip") +
+  f(year,
+    model = "bv",
+    sub_models = list(precip="ar1", temp="rw1"),
+    group = labels, # can be provided in ngme()
+    noise = list(precip = noise_normal(), temp = noise_nig())
   ),
   data = data,
   control_opt = control_opt(
@@ -147,5 +153,5 @@ out <- ngme(
     print_check_info = F
   )
 )
-out
+out$replicates[[1]]$models[[1]]$noise$bv_noises[[2]]$h
 ```

@@ -263,10 +263,14 @@ stopifnot("n / nrow(B_sigma) not integer" = abs(n/nrow(B_sigma) - round(n/nrow(B
         "Please specify noise with name same as in sub_models"
           = all(names(noise) %in% operator$model_names)
       )
+      # build bv_noises contain 2 individual noise
       bv_noises <- noise
-      noise1 <- update_noise(noise[[1]], n = length(operator$h) / 2)
-      noise2 <- update_noise(noise[[2]], n = length(operator$h) / 2)
-      bv_noises[[1]] = noise1; bv_noises[[2]] = noise2
+        n_each = length(operator$h) / 2
+        noise1 <- update_noise(noise[[1]], n_each);
+        noise1$h <- head(operator$h, n_each)
+        noise2 <- update_noise(noise[[2]], n_each)
+        noise2$h <- tail(operator$h, n_each)
+        bv_noises[[1]] = noise1; bv_noises[[2]] = noise2
       noise <- ngme_noise(
         noise_type = c(noise1$noise_type, noise2$noise_type),
         B_mu    = as.matrix(Matrix::bdiag(noise1$B_mu, noise2$B_mu)),

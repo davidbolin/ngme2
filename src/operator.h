@@ -54,6 +54,7 @@ public:
         dK[i].setZero();
       }
     }
+    virtual ~Operator() = default;
 
     int get_n_theta_K() const {return n_theta_K;}
     const VectorXd& get_h() const {return h;}

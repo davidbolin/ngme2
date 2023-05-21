@@ -17,6 +17,7 @@ public:
     virtual VectorXd             grad()=0;
     virtual VectorXd             precond_grad()=0;
     virtual MatrixXd             precond() const=0;
+    virtual ~Model() = default;
 };
 
 

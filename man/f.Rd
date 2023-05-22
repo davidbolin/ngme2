@@ -14,13 +14,14 @@ f(
   name = NULL,
   data = NULL,
   group = NULL,
+  which_group = NULL,
   theta_K = NULL,
   W = NULL,
-  debug = FALSE,
   fix_W = FALSE,
   fix_theta_K = FALSE,
   subset = rep(TRUE, length_map(map)),
   eval = FALSE,
+  debug = FALSE,
   ...
 )
 }
@@ -42,13 +43,13 @@ f(
 
 \item{data}{specifed or inherit from ngme formula}
 
-\item{group}{model as the group (see vignette for space-temporal model)}
+\item{group}{group factor (can be provided in ngme())}
+
+\item{which_group}{belong to which group}
 
 \item{theta_K}{Unbounded parameter for K}
 
 \item{W}{starting value of the process}
-
-\item{debug}{Debug mode}
 
 \item{fix_W}{stop sampling for W}
 
@@ -57,6 +58,8 @@ f(
 \item{subset}{subset of the model}
 
 \item{eval}{evaluate the model}
+
+\item{debug}{Debug mode}
 
 \item{...}{additional arguments
 inherit the data from ngme function}

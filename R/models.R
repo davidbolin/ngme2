@@ -358,8 +358,7 @@ matern <- function(
     K <- if (alpha == 2) diag(kappas) %*% C %*% diag(kappas)  + G
     else diag(kappas) %*% C %*% diag(kappas) %*% C %*% diag(kappas) + G
   }
-
-  A <- if (!is.null(map)) INLA::inla.spde.make.A(mesh = mesh, loc = map, repl=replicate) else NULL
+  A <- INLA::inla.spde.make.A(mesh = mesh, loc = map, repl=replicate)
 
   ngme_operator(
     map = map,

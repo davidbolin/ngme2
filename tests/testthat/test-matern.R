@@ -5,22 +5,24 @@
 
 test_that("test Matern", {
   library(INLA)
-  pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
+  pl01 <- cbind(c(0, 1, 1, 0, 0) * 100, c(0, 0, 1, 1, 0) * 50)
   mesh <- inla.mesh.2d(
-    loc.domain = pl01, cutoff = 0.2,
-    max.edge = c(0.5,10)
+    loc.domain = pl01, cutoff = 2,
+    max.edge = c(5,100)
   )
+  plot(mesh)
+
 # mesh$n
 # plot(mesh)
 load_all()
   n_obs <- 800
-  loc <- cbind(runif(n_obs, 0, 10), runif(n_obs, 0, 5))
+  loc <- cbind(runif(n_obs, 0, 100), runif(n_obs, 0, 50))
 # plot(mesh); points(loc)
   true_model <- f(
     model="matern",
-    theta_K = log(3), mesh = mesh, map = loc,
+    theta_K = log(3), mesh = mesh2, map = loc2,
     noise = noise_nig(
-      mu=-4, sigma=1.5, nu=1, n = mesh$n
+      mu=-4, sigma=3, nu=0.5, n=mesh2$n
     ),
     eval=T
   )
@@ -30,7 +32,7 @@ load_all()
   mean(attr(W, "noise")$h)
 
   Y <- as.numeric(true_model$A %*% W) + rnorm(n_obs, sd=0.5)
-
+all(true_model$A == inla.spde.make.A(loc, mesh=mesh))
   # make bubble plot
   # sp_obj <- as.data.frame(mesh$loc); sp_obj[, 3] <- W
   # names(sp_obj) <- c("s1", "s2", "y")
@@ -39,15 +41,16 @@ load_all()
   # range(mesh$loc[, 1]); range(mesh$loc[, 2])
 
 # Matern case
+  load_all()
   out <- ngme(
-    Y ~ 0 + f(loc,
+    Y ~ 0 + f(loc2,
       model="matern",
       name="spde",
-      mesh = mesh,
+      mesh = mesh2,
       noise=noise_nig(
         # fix_nu = T, nu=1
       ),
-      control = control_f(numer_grad = F),
+      control = control_f(numer_grad = T),
       # fix_theta_K = T, theta_kappa = log(3),
       # fix_W = TRUE, W = W,
       debug = T
@@ -55,7 +58,7 @@ load_all()
     data = data.frame(Y = Y),
     control_opt = control_opt(
       estimation = T,
-      iterations = 1000,
+      iterations = 500,
       n_parallel_chain = 4,
       print_check_info = F,
       verbose = T,
@@ -69,7 +72,7 @@ load_all()
   out
   traceplot(out, "spde")
   traceplot(out)
-  plot(noise_nig(mu=-4,sigma=1.5,nu=1),
+  plot(noise_nig(mu=-4,sigma=3,nu=0.5),
     out$replicates[[1]]$models[[1]]$noise)
 
   # Now let's do some prediction

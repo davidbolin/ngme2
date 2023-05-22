@@ -103,6 +103,7 @@ ngme_noise <- function(
       h               = if (is.null(h)) rep(1, n) else h,
       noise_type      = noise_type,
       nu              = nu,
+      n_nu            = length(nu),
       V               = V,
       theta_mu        = theta_mu,
       theta_sigma     = theta_sigma,

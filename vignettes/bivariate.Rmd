@@ -117,6 +117,8 @@ ngme(
 
 ## A 2d matern example
 
+1. Simulation
+
 ```{r}
 load_all()
 library(INLA)
@@ -135,6 +137,22 @@ group <- c(rep("sal", 50), rep("temp", 50))
 data <- data.frame(Y=c(Y_sal, Y_temp), long, lat)
 head(data)
 
+true_model <- f(
+    ~long + lat,
+    mesh = mesh,
+    model = "bv",
+    sub_models = list(sal="matern", temp="matern"),
+    group = group,
+    noise = list(sal = noise_nig(), temp = noise_nig()),
+    eval=T
+  )
+W <- simulate(true_model)
+Y <- as.numeric(true_model$A %*% W); Y <- Y + rnorm(length(Y))
+```
+
+2. Estimation
+
+```{r}
 load_all()
 out <- ngme(
   Y ~ f(
@@ -148,10 +166,11 @@ out <- ngme(
   data = data,
   control_opt = control_opt(
     estimation = T,
-    iterations = 10,
+    iterations = 100,
     verbose = T,
     print_check_info = F
   )
 )
+out
 out$replicates[[1]]$models[[1]]$noise$bv_noises[[2]]$h
 ```

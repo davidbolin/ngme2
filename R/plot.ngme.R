@@ -186,39 +186,42 @@ traceplot <- function(ngme, name="general") {
     # get titles
     ts <- with(ngme$models[[name]], {
       switch(noise$noise_type,
-        "normal"     = list(
-          c("theta_K", "theta_sigma"),
-          c(operator$n_theta_K, noise$n_theta_sigma)
-        ),
+        # "normal"     = list(
+        #   c("theta_sigma"),
+        #   c(noise$n_theta_sigma)
+        # ),
         "normal_nig" = list(
-          c("theta_K", "theta_mu", "theta_sigma", "theta_sigma_normal", "log(nu)"),
-          c(operator$n_theta_K, noise$n_theta_mu,
-          noise$n_theta_sigma, noise$n_theta_sigma_normal, 1)
+          c("theta_mu", "theta_sigma", "theta_sigma_normal", "log(nu)"),
+          c(noise$n_theta_mu, noise$n_theta_sigma, noise$n_theta_sigma_normal, noise$n_nu)
         ),
         list(
-          c("theta_K", "theta_mu", "theta_sigma", "log(nu)"),
-          c(operator$n_theta_K, noise$n_theta_mu, noise$n_theta_sigma, 1)
+          c("theta_mu", "theta_sigma", "log(nu)"),
+          c(noise$n_theta_mu, noise$n_theta_sigma, noise$n_nu)
         )
       )
     })
+    if (length(ngme$models[[name]]$theta_K) > 0) {
+      ts[[1]] <- c("theta_K", ts[[1]])
+      ts[[2]] <- c(length(ngme$models[[name]]$theta_K), ts[[2]])
+    }
   } else {
     # block
     traj <- attr(ngme, "block_traj")
     # get titles
     ts <- with(ngme, {
       switch(noise$noise_type,
-        "normal"     = list(
-          c("theta_sigma", "beta"),
-          c(noise$n_theta_sigma, length(ngme$beta))
-        ),
+        # "normal"     = list(
+        #   c("theta_sigma", "beta"),
+        #   c(noise$n_theta_sigma, length(ngme$beta))
+        # ),
         "normal_nig" = list(
           c("theta_mu", "theta_sigma", "theta_sigma_normal", "log(nu)", "beta"),
           c(noise$n_theta_mu,
-          noise$n_theta_sigma, noise$n_theta_sigma_normal, 1, length(ngme$beta))
+          noise$n_theta_sigma, noise$n_theta_sigma_normal, noise$n_nu, length(ngme$beta))
         ),
         list(
           c("theta_mu", "theta_sigma", "log(nu)", "beta"),
-          c(noise$n_theta_mu, noise$n_theta_sigma, 1, length(ngme$beta))
+          c(noise$n_theta_mu, noise$n_theta_sigma, noise$n_nu, length(ngme$beta))
         )
       )
     })
@@ -226,7 +229,6 @@ traceplot <- function(ngme, name="general") {
   names <- c()
   for (i in seq_along(ts[[1]]))
     names <- c(names, paste(ts[[1]][[i]], seq_len(ts[[2]][[i]])))
-
   # make plot
   for (idx in seq_len(nrow(traj[[1]]))) {
     df <- sapply(traj, function(x) x[idx, ,drop=F])

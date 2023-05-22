@@ -74,6 +74,7 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
             prevV = V;
         }
 
+
     // init W
     if (model_list["W"] != R_NilValue) {
         W = Rcpp::as< VectorXd > (model_list["W"]);
@@ -107,30 +108,18 @@ VectorXd Latent::grad_theta_mu() {
     if (fix_flag[latent_fix_theta_mu]) return grad;
     if (n_nu == 1 && noise_type[0] == "normal") return grad;
 
-    double hess = 0;
     VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
     VectorXd prevSV = sigma.array().pow(2).matrix().cwiseProduct(prevV);
 
-    hess += -(prevV-h).cwiseQuotient(prevSV).dot(prevV-h);
     for (int l=0; l < n_theta_mu; l++) {
         grad(l) += (V-h).cwiseProduct(B_mu.col(l).cwiseQuotient(SV)).dot(getK()*W - mu.cwiseProduct(V-h));
     }
+    double hess = -(prevV-h).cwiseQuotient(prevSV).dot(prevV-h);
 
-    // not use hessian
-    // if (V_size < 10)
-    return - grad / sqrt(W_size);
-    // else
-        // return grad / (hess * n_rep);
-
-// if (debug) std::cout << "KW" << K*W << std::endl;
-// if (debug) std::cout << "V-h" << prevV-h << std::endl;
-// if (debug) std::cout << "SV = " << getSV() << std::endl;
-
-// if (debug) {
-// std::cout << "grad of mu=" << grad <<std::endl;
-// std::cout << "hess of mu=" << hess <<std::endl;
-// }
-    // return - grad / V_size;
+    if (V_size < 10)
+        return - grad / sqrt(W_size);
+    else
+        return grad / hess;
 }
 
 // return the gradient wrt. theta, theta=log(sigma)
@@ -142,12 +131,11 @@ inline VectorXd Latent::grad_theta_sigma() {
     VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
     VectorXd prevSV = sigma.array().pow(2).matrix().cwiseProduct(prevV);
 
-    // tmp = (KW - mu(V-h))^2 / V
-    VectorXd tmp = (getK()*W - mu.cwiseProduct(V-h)).array().pow(2).matrix().cwiseProduct(V.cwiseInverse());
-    VectorXd tmp2 = tmp.cwiseProduct(sigma.array().pow(-2).matrix()) - VectorXd::Ones(V_size);
+    // (KW-mu(V-h)) / (sigma^2 V)
+    VectorXd tmp = (getK()*W - mu.cwiseProduct(V-h)).array().pow(2).matrix().cwiseQuotient(SV);
 
     // grad = Bi(tmp * sigma ^ -2 - 1)
-    grad = B_sigma.transpose() * tmp2;
+    grad = B_sigma.transpose() * (tmp - VectorXd::Ones(V_size));
 
     return - 1.0 / V_size * grad;
 
@@ -264,6 +252,7 @@ const VectorXd Latent::get_parameter() const {
 const VectorXd Latent::get_grad() {
     VectorXd grad = VectorXd::Zero(n_params);
 
+    // compute gradient of each parameter
     grad.segment(0, n_theta_K) = grad_theta_K();
     grad.segment(n_theta_K, n_theta_mu) = grad_theta_mu();
     grad.segment(n_theta_K+n_theta_mu, n_theta_sigma) = grad_theta_sigma();
@@ -271,15 +260,19 @@ const VectorXd Latent::get_grad() {
     if (noise_type[0] == "normal_nig")
         grad.segment(n_theta_K+n_theta_mu+n_theta_sigma+n_nu, n_theta_sigma_normal) = grad_theta_sigma_normal();
 
-// std::cout << "g th k = " << grad_theta_K().transpose() << std::endl;
-// std::cout << "g th mu = " << grad_theta_mu().transpose() << std::endl;
-// std::cout << "g th sigma " << grad_theta_sigma().transpose() << std::endl;
-// std::cout << "g th nu " << grad_theta_nu().transpose() << std::endl;
-
 // DEBUG: checking grads
 if (debug) {
-    // std::cout << "gradient= " << grad << std::endl;
-    // std::cout << "one latent gradient time " << since(grad1).count() << std::endl;
+    if (abs(grad.segment(0, n_theta_K).mean()) > 1)
+    std::cout << "g_K is large, g_K = " << grad.segment(0, n_theta_K).mean() << std::endl;
+
+    if (abs(grad.segment(n_theta_K, n_theta_mu).mean()) > 1)
+    std::cout << "g_mu is large, g_mu = " << grad.segment(n_theta_K, n_theta_mu).mean() << std::endl;
+
+    if (abs(grad.segment(n_theta_K+n_theta_mu, n_theta_sigma).mean()) > 1)
+    std::cout << "g_sigma is large, g_sigma = " << grad.segment(n_theta_K+n_theta_mu, n_theta_sigma).mean() << std::endl;
+
+    if (abs(grad.segment(n_theta_K+n_theta_mu+n_theta_sigma, n_nu).mean()) > 1)
+    std::cout << "g_nu is large, g_nu = " << grad.segment(n_theta_K+n_theta_mu+n_theta_sigma, n_nu).mean() << std::endl;
 }
 // if (debug) std::cout << "finish latent gradient"<< std::endl;
     return grad;
@@ -305,8 +298,10 @@ void Latent::update_each_iter(bool init) {
     // update mu and sigma
     mu = B_mu * theta_mu;
     sigma = (B_sigma * theta_sigma).array().exp();
+    if (noise_type[0] == "normal_nig")
+        sigma_normal = (B_sigma_normal * theta_sigma_normal).array().exp();
 
-    // update 1 by 1
+    // update distribution of V
     int n = V_size / n_nu;
     for (int i=0; i < n_nu; i++) {
         if (noise_type[i] == "gal")  {
@@ -320,9 +315,6 @@ void Latent::update_each_iter(bool init) {
         }
         if (noise_type[i] == "normal") mu.segment(i*n, n).setZero();
     }
-
-    if (noise_type[0] == "normal_nig")
-        sigma_normal = (B_sigma_normal * theta_sigma_normal).array().exp();
 
     // update on K, dK, trace, bigK for sampling...
     if (!init) ope->update_K(theta_K);

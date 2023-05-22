@@ -5,26 +5,25 @@
 \title{ngme bivariate model specification}
 \usage{
 bv(
-  first,
-  second,
+  map,
+  sub_models,
+  mesh = NULL,
   zeta = 0,
-  rho = 0,
-  map = NULL,
+  eta = 0,
   replicate = NULL,
+  group = NULL,
   share_param = FALSE,
   ...
 )
 }
 \arguments{
-\item{first}{ngme_model}
-
-\item{second}{ngme_model}
-
 \item{map}{can be ignored, pass through first and second}
 
-\item{replicate}{replicate passed to both first and second}
+\item{replicate}{replicate}
 
 \item{...}{extra arguments in f()}
+
+\item{theta_K}{c(zeta, eta, theta_K_1, theta_K_2)}
 }
 \value{
 a list of specification of model

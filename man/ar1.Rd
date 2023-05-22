@@ -4,7 +4,7 @@
 \alias{ar1}
 \title{ngme AR(1) model specification}
 \usage{
-ar1(map, mesh = map, replicate = rep(1, length_map(map)), theta_K = 0, ...)
+ar1(map, mesh = NULL, replicate = rep(1, length_map(map)), rho = 0, ...)
 }
 \arguments{
 \item{map}{integer vector, time index for the AR(1) process}
@@ -13,7 +13,7 @@ ar1(map, mesh = map, replicate = rep(1, length_map(map)), theta_K = 0, ...)
 
 \item{replicate}{replicate for the process}
 
-\item{theta_K}{initial value for theta_K, if want to specify, can use e.g. ar1_a2th(0.5)}
+\item{rho}{the correlation parameter (between -1 and 1)}
 
 \item{...}{extra arguments}
 }

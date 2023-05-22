@@ -37,7 +37,7 @@ void Matern::update_K(const VectorXd& theta_K) {
     } else {
         throw("alpha not equal to 2 or 4 is not implemented");
     }
-
+// std::cout << " K = " << K << std::endl;
 }
 
 void Matern::update_dK(const VectorXd& theta_K) {

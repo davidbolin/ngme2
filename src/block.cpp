@@ -265,6 +265,12 @@ auto timer_computeg = std::chrono::steady_clock::now();
 
   VectorXd avg_gradient = VectorXd::Zero(n_params);
   for (int i=0; i < n_gibbs; i++) {
+// std::cout << "index of gibbs = " << i << std::endl;
+    // gibbs sampling
+    sampleV_WY();
+    sampleW_VY();
+    sample_cond_block_V();
+
     // stack grad
     VectorXd gradient = VectorXd::Zero(n_params);
 
@@ -287,10 +293,6 @@ time_compute_g += since(timer_computeg).count();
     avg_gradient += gradient;
 
 auto timer_sampleW = std::chrono::steady_clock::now();
-    // gibbs sampling
-    sampleV_WY();
-    sampleW_VY();
-    sample_cond_block_V();
 time_sample_w += since(timer_sampleW).count();
   }
 

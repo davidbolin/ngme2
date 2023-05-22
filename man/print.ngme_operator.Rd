@@ -4,7 +4,7 @@
 \alias{print.ngme_operator}
 \title{Print ngme operator}
 \usage{
-\method{print}{ngme_operator}(x, padding = 0, ...)
+\method{print}{ngme_operator}(x, padding = 0, prefix = "Model type", ...)
 }
 \arguments{
 \item{x}{ngme operator object}

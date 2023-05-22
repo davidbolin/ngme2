@@ -4,7 +4,7 @@
 \alias{print.ngme_noise}
 \title{Print ngme noise}
 \usage{
-\method{print}{ngme_noise}(x, padding = 0, ...)
+\method{print}{ngme_noise}(x, padding = 0, prefix = "Noise type", ...)
 }
 \arguments{
 \item{x}{noise object}

@@ -4,7 +4,7 @@
 \alias{ngme_parse_formula}
 \title{Parse the formula for ngme function}
 \usage{
-ngme_parse_formula(fm, data, group, control_ngme, noise)
+ngme_parse_formula(fm, data, control_ngme, noise, group, corr_measure)
 }
 \arguments{
 \item{fm}{Formula}
@@ -14,6 +14,10 @@ ngme_parse_formula(fm, data, group, control_ngme, noise)
 \item{control_ngme}{control_ngme}
 
 \item{noise}{noise}
+
+\item{group}{group factor}
+
+\item{corr_measure}{logical, whether to estimate correlation}
 }
 \value{
 a list (replicate) of ngme_replicate models

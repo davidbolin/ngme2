@@ -237,19 +237,20 @@ m1$replicates[[1]]$n_merr
 1. simulation
 
 ```{r}
+load_all()
 n_obs <- 4
-W <- simulate(f(1:n_obs, model="ar1", eval=TRUE))
+W <- simulate(f(1:n_obs, model="iid", eval=TRUE))
 
-Cov_eps <- matrix(c(1, 0.8, 0.8, 1), nrow=2)
+Cov_eps <- matrix(c(1, 0.9, 0.9, 1), nrow=2)
 Cov_eps <- Cov_eps %x% diag(n_obs / 2)
-# dim(Cov_eps)
-L <- chol(Cov_eps)
 
 # e~N(0, Cov_eps)
-e <- L %*% rnorm(n_obs)
-cov(e[1:(n_obs/2)], tail(e, n_obs/2))
-
+e <- MASS::mvrnorm(1, rep(0, n_obs), Cov_eps)
 Y <- W + e
+
+plot(head(e, n_obs/2), type="l")
+lines(tail(e, n_obs/2), col="red")
+
 load_all()
 out <- ngme(
   Y ~ 0 + f(
@@ -257,6 +258,7 @@ out <- ngme(
     model="ar1"
   ),
   family = noise_normal(
+    fix_theta_sigma = T,
     corr_measurement = TRUE,
     index_corr = c(1: (n_obs/2), 1: (n_obs/2))
   ),
@@ -264,6 +266,45 @@ out <- ngme(
   control_opt = control_opt(
     estimation = T,
     iterations = 1,
+    n_parallel_chain = 1
+  )
+)
+out
+traceplot(out)
+```
+
+```{r}
+load_all()
+n_obs <- 800
+W <- simulate(f(1:n_obs, model="ar1", eval=TRUE))
+
+Cov_eps <- matrix(c(1, -0.9, -0.9, 1), nrow=2)
+Cov_eps <- Cov_eps %x% diag(n_obs / 2)
+
+# e~N(0, Cov_eps)
+L <- t(chol(Cov_eps))
+e <- L %*% rnorm(n_obs)
+Y <- W + e
+
+plot(head(e, n_obs/2), type="l")
+lines(tail(e, n_obs/2), col="red")
+
+load_all()
+out <- ngme(
+  Y ~ 0 + f(
+    1:n_obs,
+    # fix_W = T, W = W,
+    model="ar1"
+  ),
+  family = noise_normal(
+    # fix_theta_sigma = T,
+    corr_measurement = TRUE,
+    index_corr = c(1: (n_obs/2), 1: (n_obs/2))
+  ),
+  data = data.frame(Y = Y),
+  control_opt = control_opt(
+    estimation = T,
+    iterations = 100,
     n_parallel_chain = 1
   )
 )

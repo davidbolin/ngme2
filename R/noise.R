@@ -363,7 +363,7 @@ print.ngme_noise <- function(x, padding = 0, prefix = "Noise type", ...) {
   }
   cat("\n")
   if (noise$corr_measurement) {
-    cat(pad_add4_space); cat("correlation(rho): ");
+    cat(pad_add4_space); cat("correlation(rho) = ");
     cat(format(noise$rho, digits=3)); cat("\n")
   }
   invisible(noise)

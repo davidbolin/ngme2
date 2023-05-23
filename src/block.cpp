@@ -519,6 +519,7 @@ std::cout << "rho=" << rho << std::endl;
         }
       }
     }
+
   }
 // show the construction
 // std::cout << "Q_eps == \n" << Q_eps << std::endl;

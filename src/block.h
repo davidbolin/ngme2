@@ -223,7 +223,6 @@ public:
     }
 
     VectorXd get_residual() const {
-      return Y;
       if (n_latent > 0) {
         return Y - A * getW() - X * beta - (-VectorXd::Ones(n_obs) + var.getV()).cwiseProduct(noise_mu);
       } else {

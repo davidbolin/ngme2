@@ -98,9 +98,11 @@ simulate(bv3)
 
 ```{r}
 load_all()
+out =
 ngme(
-  y ~ 0 + fe(~1+x, which_group = "temp") +
-  fe(~x, which_group = "precip") +
+  y ~ 0 +
+  #  fe(~1+x, which_group = "temp") +
+  # fe(~x, which_group = "precip") +
   f(year,
     model = "bv",
     sub_models = list(precip="ar1", temp="rw1"),
@@ -113,6 +115,7 @@ ngme(
     iterations = 10
   )
 )
+out
 ```
 
 ## A 2d matern example
@@ -194,7 +197,7 @@ out$replicates[[1]]$models[[1]]$noise$bv_noises[[2]]$h
 load_all()
 
 Y <- rnorm(5)
-loc1 <- c(1,1,2,3,2)
+loc1 <- c(1, 1, 2, 3, 2)
 group <- c("s", "t", "s", "t", "t")
 
 load_all()
@@ -230,6 +233,7 @@ m1 <- ngme(
     n_parallel_chain = 1
   )
 )
+m1
 m1$replicates[[1]]$n_merr
 
 ```
@@ -238,10 +242,10 @@ m1$replicates[[1]]$n_merr
 
 ```{r}
 load_all()
-n_obs <- 4
+n_obs <- 600
 W <- simulate(f(1:n_obs, model="iid", eval=TRUE))
 
-Cov_eps <- matrix(c(1, 0.9, 0.9, 1), nrow=2)
+Cov_eps <- matrix(c(1, -0, -0, 1), nrow=2)
 Cov_eps <- Cov_eps %x% diag(n_obs / 2)
 
 # e~N(0, Cov_eps)
@@ -265,7 +269,7 @@ out <- ngme(
   data = data.frame(Y = Y),
   control_opt = control_opt(
     estimation = T,
-    iterations = 1,
+    iterations = 300,
     n_parallel_chain = 1
   )
 )
@@ -278,7 +282,7 @@ load_all()
 n_obs <- 800
 W <- simulate(f(1:n_obs, model="ar1", eval=TRUE))
 
-Cov_eps <- matrix(c(1, -0.9, -0.9, 1), nrow=2)
+Cov_eps <- matrix(c(1, 0.9, 0.9, 1), nrow=2)
 Cov_eps <- Cov_eps %x% diag(n_obs / 2)
 
 # e~N(0, Cov_eps)
@@ -297,14 +301,14 @@ out <- ngme(
     model="ar1"
   ),
   family = noise_normal(
-    # fix_theta_sigma = T,
+    fix_theta_sigma = T,
     corr_measurement = TRUE,
     index_corr = c(1: (n_obs/2), 1: (n_obs/2))
   ),
   data = data.frame(Y = Y),
   control_opt = control_opt(
     estimation = T,
-    iterations = 100,
+    iterations = 1000,
     n_parallel_chain = 1
   )
 )

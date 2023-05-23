@@ -442,8 +442,8 @@ VectorXd BlockModel::get_theta_merr() const {
 
   // estimate correlation
 // std::cout << " rho === " << rho << std::endl;
-  // if (corr_measure) theta_merr(n_merr-1) = rho2th(rho);
-  if (corr_measure) theta_merr(n_merr-1) = (rho);
+  if (corr_measure) theta_merr(n_merr-1) = rho2th(rho);
+  // if (corr_measure) theta_merr(n_merr-1) = (rho);
 
   return theta_merr;
 }
@@ -458,14 +458,15 @@ VectorXd BlockModel::grad_theta_merr() {
   // grad of theta_rho
   if (corr_measure) {
     // Q_eps_solver.factorize(Q_eps);
-    double trace = rho/(1-rho*rho) * n_corr_pairs;
+std::cout << "n_corr_pairs = " << n_corr_pairs << std::endl;
+    double trace = 0.5 * 2 * rho/(1-rho*rho) * n_corr_pairs;
 std::cout << "trace = " << trace << std::endl;
     VectorXd res = get_residual();
     double drhs = -0.5 * (res).dot(dQ_eps * res);
 std::cout << "drhs = " << drhs << std::endl;
     grad(n_merr-1) = trace + drhs;
     grad(n_merr-1) *= - 1.0 / (n_obs);
-    // grad(n_merr-1) *= dtheta_rho(rho);
+    grad(n_merr-1) *= dtheta_rho(rho);
 std::cout << "grad of rho=" << grad(n_merr-1) << std::endl;
   }
 
@@ -484,8 +485,8 @@ void BlockModel::set_theta_merr(const VectorXd& theta_merr) {
 
   // update rho, and Q_eps
   if (corr_measure) {
-    // rho = th2rho(theta_merr(n_merr-1));
-    rho = (theta_merr(n_merr-1));
+    rho = th2rho(theta_merr(n_merr-1));
+    // rho = (theta_merr(n_merr-1));
 std::cout << "rho=" << rho << std::endl;
     VectorXd noise_V = var.getV();
     // update Q_eps

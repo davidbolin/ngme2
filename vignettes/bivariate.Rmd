@@ -125,29 +125,39 @@ library(INLA)
 pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
 mesh <- inla.mesh.2d(
   loc.domain = pl01, cutoff = 0.2,
-  max.edge = c(2,10)
+  max.edge = c(1,10)
 )
 mesh$n
 n_obs <- 100
 long <- runif(n_obs, 0, 10)
 lat <- runif(n_obs, 0, 5)
-Y_sal <- rnorm(50); Y_temp <- rnorm(50)
-group <- c(rep("sal", 50), rep("temp", 50))
-
-data <- data.frame(Y=c(Y_sal, Y_temp), long, lat)
+group <- c(rep("sal", n_obs/2), rep("temp", n_obs/2))
 head(data)
 
+load_all()
 true_model <- f(
     ~long + lat,
     mesh = mesh,
     model = "bv",
-    sub_models = list(sal="matern", temp="matern"),
+    sub_models = list(
+      sal="matern",
+      temp="matern"
+    ),
     group = group,
-    noise = list(sal = noise_nig(), temp = noise_nig()),
+    noise = noise_nig(
+      mu=-2, sigma=2, nu=1
+    ),
+    # noise = list(sal = noise_nig(
+    #   mu = -2, sigma=1, nu=1
+    # ), temp = noise_nig(
+    #   mu = 2, sigma=2, nu=0.5
+    # )),
     eval=T
   )
 W <- simulate(true_model)
 Y <- as.numeric(true_model$A %*% W); Y <- Y + rnorm(length(Y))
+
+data <- data.frame(Y, long, lat)
 ```
 
 2. Estimation
@@ -159,18 +169,104 @@ out <- ngme(
     ~long + lat,
     mesh = mesh,
     model = "bv",
+    name = "bv",
     sub_models = list(sal="matern", temp="matern"),
     group = group,
-    noise = list(sal = noise_nig(), temp = noise_nig())
+    noise = noise_nig()
+    # noise = list(sal = noise_nig(), temp = noise_nig())
   ),
   data = data,
   control_opt = control_opt(
     estimation = T,
-    iterations = 100,
+    iterations = 10,
     verbose = T,
     print_check_info = F
   )
 )
 out
+traceplot(out, "bv")
 out$replicates[[1]]$models[[1]]$noise$bv_noises[[2]]$h
+```
+
+## Correlated measurement noise
+
+```{r}
+load_all()
+
+Y <- rnorm(5)
+loc1 <- c(1,1,2,3,2)
+group <- c("s", "t", "s", "t", "t")
+
+load_all()
+# check the model
+f(loc1, model="bv",
+  sub_models = c(t="ar1", s="rw1"),
+  group = group,
+  which_group = c("t", "s"),
+  eval = TRUE
+)
+
+noise_normal(
+  corr_measurement = TRUE,
+  index_corr = c(1,1,2,3,2)
+)
+
+# ngme
+load_all()
+m1 <- ngme(
+  Y ~ f(
+    loc1, model="bv",
+    sub_models = c(t="ar1", s="rw1"),
+  ),
+  family = noise_normal(
+    corr_measurement = TRUE,
+    index_corr = c(1,1,2,3,2)
+  ),
+  group = group,
+  data = data.frame(Y = Y, loc1 = loc1),
+  control_opt = control_opt(
+    estimation = T,
+    iterations = 2,
+    n_parallel_chain = 1
+  )
+)
+m1$replicates[[1]]$n_merr
+
+```
+
+1. simulation
+
+```{r}
+n_obs <- 4
+W <- simulate(f(1:n_obs, model="ar1", eval=TRUE))
+
+Cov_eps <- matrix(c(1, 0.8, 0.8, 1), nrow=2)
+Cov_eps <- Cov_eps %x% diag(n_obs / 2)
+# dim(Cov_eps)
+L <- chol(Cov_eps)
+
+# e~N(0, Cov_eps)
+e <- L %*% rnorm(n_obs)
+cov(e[1:(n_obs/2)], tail(e, n_obs/2))
+
+Y <- W + e
+load_all()
+out <- ngme(
+  Y ~ 0 + f(
+    1:n_obs,
+    model="ar1"
+  ),
+  family = noise_normal(
+    corr_measurement = TRUE,
+    index_corr = c(1: (n_obs/2), 1: (n_obs/2))
+  ),
+  data = data.frame(Y = Y),
+  control_opt = control_opt(
+    estimation = T,
+    iterations = 1,
+    n_parallel_chain = 1
+  )
+)
+out
+traceplot(out)
 ```

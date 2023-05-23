@@ -58,8 +58,9 @@ protected:
     // Correlated measurement error
     bool corr_measure;
     double rho {0};
-    vector<int> cov_rows, cov_cols;
-    vector<bool> mark_cov;
+    vector<int> cor_rows, cor_cols;
+    vector<bool> has_correlation;
+    int n_corr_pairs;
     SparseMatrix<double> Q_eps, dQ_eps;
     int n_params;
 
@@ -277,7 +278,8 @@ public:
     double rho2th(double r) const {return (log((-1-r)/(-1+r)));}
 
     // drho / dtheta
-    double dtheta_rho(double th) const {return 2 * exp(th) / pow(1+exp(th), 2);}
+    // double dtheta_rho(double th) const {return 2 * exp(th) / pow(1+exp(th), 2);}
+    double dtheta_rho(double rho) const {return (1-rho*rho) / 2;}
 };
 
 // ---- inherited functions ------

@@ -16,7 +16,6 @@
 #' @param group group factor, used for multivariate model
 #' @param family likelihood type, same as measurement noise specification, 1. string 2. ngme noise obejct
 #' @param start  starting ngme object (usually object from last fitting)
-#' @param corr_measure estimate the correlation between measurement noise (only for bivariate model case)
 #' @param debug  toggle debug mode
 #'
 #' @return random effects (for different replicate) + models(fixed effects, measuremnt noise, and latent process)
@@ -49,7 +48,6 @@ ngme <- function(
   control_ngme  = NULL,
   group         = NULL,
   start         = NULL,
-  corr_measure  = FALSE,
   debug         = FALSE
 ) {
    # -------------  CHECK INPUT ---------------
@@ -88,7 +86,7 @@ ngme <- function(
   stopifnot(class(noise) == "ngme_noise")
 
   # parse the formula get a list of ngme_replicate
-  ngme_model <- ngme_parse_formula(formula, data, control_ngme, noise, group, corr_measure)
+  ngme_model <- ngme_parse_formula(formula, data, control_ngme, noise, group)
   attr(ngme_model, "fitting") <- fitting
 
   ####### Use Last_fit ngme object to update Rcpp_list
@@ -262,7 +260,6 @@ check_dim <- function(ngme_model) {
 #' @param control_ngme control_ngme
 #' @param noise noise
 #' @param group group factor
-#' @param corr_measure logical, whether to estimate correlation
 #'
 #' @return a list (replicate) of ngme_replicate models
 ngme_parse_formula <- function(
@@ -270,8 +267,7 @@ ngme_parse_formula <- function(
   data,
   control_ngme,
   noise,
-  group,
-  corr_measure
+  group
 ) {
   enclos_env <- list2env(as.list(parent.frame()), parent = parent.frame(2))
   global_env_first <- list2env(as.list(parent.frame(2)), parent = parent.frame())
@@ -346,17 +342,20 @@ ngme_parse_formula <- function(
 
     noise_new <- update_noise(noise, n = length(Y))
 
-    if (corr_measure) {
+    corr_measure <- FALSE
+    if (noise$corr_measurement) {
+      corr_measure <- TRUE
+      index_corr <- noise$index_corr
       stopifnot(
-        "Please provide the group vector" = !is.null(group),
-        "length of unique group should equal to 2" = length(levels(group)) == 2
+        "Please provide the index_corr vector" = !is.null(index_corr)
       )
 
-      bv_idx <- which(sapply(models_rep, function(x) x$model) == "bv")
-      stopifnot("Please make sure there is 1 bivariate (bv) model" =
-        length(bv_idx) == 1)
-      bv_map <- models_rep[[bv_idx]]$map
-      cov_rc <- cov_row_col(bv_map, group)
+      # bv_idx <- which(sapply(models_rep, function(x) x$model) == "bv")
+      # stopifnot("Please make sure there is 1 bivariate (bv) model" =
+      #   length(bv_idx) == 1)
+      # bv_map <- models_rep[[bv_idx]]$map
+
+      cov_rc <- compute_corr_index(index_corr)
     }
 
     blocks_rep[[i]] <- ngme_replicate(
@@ -368,9 +367,10 @@ ngme_parse_formula <- function(
       control_ngme = control_ngme,
       n_repl = length(uni_repl),
       corr_measure = corr_measure,
-      cov_rows = if (corr_measure) cov_rc$cov_rows else NULL,
-      cov_cols = if (corr_measure) cov_rc$cov_cols else NULL,
-      mark_cov = if (corr_measure) cov_rc$mark_cov else NULL
+      cor_rows = if (corr_measure) cov_rc$cor_rows else NULL,
+      cor_cols = if (corr_measure) cov_rc$cor_cols else NULL,
+      has_correlation = if (corr_measure) cov_rc$has_correlation else NULL,
+      n_corr_pairs = if (corr_measure) cov_rc$n_corr_pairs else NULL
     )
   }
 
@@ -389,40 +389,29 @@ ngme_parse_formula <- function(
   )
 }
 
-# bv_map: numeric or matrix of 2 col
-# group: factor
-# eps: consider correlation if |map1-map2| < eps
-cov_row_col <- function(bv_map, group, eps = 0.05) {
-  stopifnot(
-    length_map(bv_map) == length(group)
-  )
-  group <- as.factor(group)
+# idx: integer vector, indicating which observations are correlated
+compute_corr_index <- function(idx) {
+  stopifnot(sum(round(idx - as.integer(idx))) < 1e8)
+  n <- length(idx)
+  rows <- cols <- 1:n
 
-  n <- length(bv_map)
-  idx1 <- group == levels(group)[1]
-  idx2 <- group == levels(group)[2]
-
-  # subset bv_map
-  map1 <- sub_map(bv_map, idx1)
-  map2 <- sub_map(bv_map, idx2)
-  corr_map <- intersect(map1, map2)
-
-  cov_cols <- cov_rows <- 1:n
-  # cov_cols <- cov_rows <- double()
-  for (i in seq_along(corr_map)) {
-    rc <- which(bv_map == corr_map[i])
-    cov_rows[n+i] <- max(rc)
-    cov_cols[n+i] <- min(rc)
+  has_correlation <- rep(FALSE, n)
+  unique_idx <- unique(idx)
+  for (i in seq_along(unique_idx)) {
+    idx_i <- which(idx == unique_idx[i])
+    if (length(idx_i) == 1) next
+    stopifnot("Now we don't accept measurement noise over 2 places are correlated"
+      = length(idx_i) == 2)
+    rows[n+i] <- max(idx_i)
+    cols[n+i] <- min(idx_i)
+    has_correlation[idx_i] <- TRUE
   }
 
-  # sort cov_rows and cov_cols (col from small to big, then cov_rows)
-  sort_idx <- order(cov_cols, cov_rows)
-  cov_rows <- cov_rows[sort_idx]
-  cov_cols <- cov_cols[sort_idx]
-
+  sort_idx <- order(cols, rows) # col_major order
   list(
-    cov_rows = cov_rows - 1,
-    cov_cols = cov_cols - 1,
-    mark_cov = 1:n %in% c(cov_rows, cov_cols)
+    cor_rows = rows[sort_idx] - 1,
+    cor_cols = cols[sort_idx] - 1,
+    has_correlation = has_correlation,
+    n_corr_pairs = sum(has_correlation) / 2
   )
 }

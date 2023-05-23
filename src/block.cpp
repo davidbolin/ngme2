@@ -24,9 +24,10 @@ BlockModel::BlockModel(
   n_merr            (Rcpp::as<int>           (block_model["n_merr"])),
   n_repl            (Rcpp::as<int>           (block_model["n_repl"])),
   corr_measure      (Rcpp::as<bool>          (block_model["corr_measure"])),
-  cov_rows          (),
-  cov_cols          (),
-  mark_cov          (),
+  cor_rows          (),
+  cor_cols          (),
+  has_correlation   (),
+  n_corr_pairs      (0),
   Q_eps             (n_obs, n_obs),
   dQ_eps            (n_obs, n_obs),
   n_params          (n_la_params + n_feff + n_merr),
@@ -99,15 +100,16 @@ if (debug) std::cout << "before set block A" << std::endl;
   noise_sigma = (B_sigma * theta_sigma).array().exp();
 
   if (corr_measure) {
-    cov_cols = Rcpp::as<vector<int>> (block_model["cov_cols"]);
-    cov_rows = Rcpp::as<vector<int>> (block_model["cov_rows"]);
-    mark_cov = Rcpp::as<vector<bool>> (block_model["mark_cov"]);
+    cor_cols = Rcpp::as<vector<int>> (block_model["cor_cols"]);
+    cor_rows = Rcpp::as<vector<int>> (block_model["cor_rows"]);
+    has_correlation = Rcpp::as<vector<bool>> (block_model["has_correlation"]);
+    n_corr_pairs = Rcpp::as<int> (block_model["n_corr_pairs"]);
     vector<Triplet<double>> Q_eps_triplet, dQ_eps_triplet;
-    for (int i=0; i < cov_cols.size(); ++i) {
-      Q_eps_triplet.push_back(Triplet<double>(cov_rows[i], cov_cols[i], cov_rows[i] == cov_cols[i]));
-      if (mark_cov[cov_rows[i]]) {
+    for (int i=0; i < cor_cols.size(); ++i) {
+      Q_eps_triplet.push_back(Triplet<double>(cor_rows[i], cor_cols[i], cor_rows[i] == cor_cols[i]));
+      if (has_correlation[cor_rows[i]]) {
         // ignore uncorrelated locations
-        dQ_eps_triplet.push_back(Triplet<double>(cov_rows[i], cov_cols[i], cov_rows[i] == cov_cols[i]));
+        dQ_eps_triplet.push_back(Triplet<double>(cor_rows[i], cor_cols[i], cor_rows[i] == cor_cols[i]));
       }
     }
     Q_eps.setFromTriplets(Q_eps_triplet.begin(), Q_eps_triplet.end());
@@ -117,7 +119,7 @@ if (debug) std::cout << "before set block A" << std::endl;
     dQ_eps = dQ_lower.selfadjointView<Lower>();
 
     Q_eps_solver.analyzePattern(Q_eps);
-    std::cout << "Q_eps: " << Q_eps << std::endl;
+  // std::cout << "Q_eps: \n" << Q_eps << std::endl;
   }
 
 if (debug) std::cout << "After block construct noise" << std::endl;
@@ -130,7 +132,12 @@ if (debug) std::cout << "After block construct noise" << std::endl;
   if (n_latent > 0) {
     VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
     SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
-    SparseMatrix<double> QQ = Q + A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(var.getV()).asDiagonal() * A;
+    if (!corr_measure) {
+      QQ = Q + A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(var.getV()).asDiagonal() * A;
+    }
+    else{
+      QQ = Q + A.transpose() * Q_eps * A;
+    }
     chol_Q.analyze(Q);
     chol_QQ.analyze(QQ);
     LU_K.analyzePattern(K);
@@ -219,6 +226,8 @@ void BlockModel::sampleW_VY()
     QQ = Q + A.transpose() * Q_eps * A;
     M += A.transpose() * Q_eps * residual_part;
   }
+// std::cout << "Q: \n" << Q << std::endl;
+// std::cout << "QQ: \n" << QQ << std::endl;
 
 // std::cout << "M = " << M << std::endl;
   VectorXd z (W_sizes);
@@ -348,7 +357,6 @@ void BlockModel::sampleW_V()
   }
   KW = getMean() + KW;
 
-// std::cout << "K = " << K << std::endl;
   VectorXd W = VectorXd::Zero(W_sizes);
   if (V_sizes == W_sizes) {
     LU_K.factorize(K);
@@ -359,6 +367,7 @@ void BlockModel::sampleW_V()
     // W = chol_Q.solve(K.transpose() * KW);
     // W = K.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(KW);
   }
+// std::cout << "K = " << K << std::endl;
   setW(W);
 }
 
@@ -432,7 +441,9 @@ VectorXd BlockModel::get_theta_merr() const {
   theta_merr(n_theta_mu + n_theta_sigma) =  var.get_log_nu();
 
   // estimate correlation
+// std::cout << " rho === " << rho << std::endl;
   if (corr_measure) theta_merr(n_merr-1) = rho2th(rho);
+  // if (corr_measure) theta_merr(n_merr-1) = (rho);
 
   return theta_merr;
 }
@@ -447,10 +458,15 @@ VectorXd BlockModel::grad_theta_merr() {
   // grad of theta_rho
   if (corr_measure) {
     // Q_eps_solver.factorize(Q_eps);
-    // double trace = 0.5 * Q_eps_solver.solve(dQ_eps).diagonal().sum();
-    // double drhs = -0.5 * (Y-AW-X*beta).dot(Q_eps_solver.solve(Y-AW-X*beta));
-    // grad(n_merr-1) = trace+drhs;
-    grad(n_merr-1) = 0.1;
+    double trace = -rho*(3+rho*rho)/pow(rho*rho-1, 3) * n_corr_pairs;
+// std::cout << "trace = " << trace << std::endl;
+    VectorXd res = get_residual();
+    double drhs = -0.5 * (res).dot(dQ_eps * res);
+// std::cout << "drhs = " << drhs << std::endl;
+    grad(n_merr-1) = trace + drhs;
+    grad(n_merr-1) *= 1.0 / sqrt(n_obs);
+    grad(n_merr-1) *= dtheta_rho(rho);
+// std::cout << "grad of rho=" << grad(n_merr-1) << std::endl;
   }
 
   return grad;
@@ -469,36 +485,43 @@ void BlockModel::set_theta_merr(const VectorXd& theta_merr) {
   // update rho, and Q_eps
   if (corr_measure) {
     rho = th2rho(theta_merr(n_merr-1));
+    // rho = (theta_merr(n_merr-1));
+// std::cout << "rho=" << rho << std::endl;
     VectorXd noise_V = var.getV();
     // update Q_eps
-    for (int i=0; i < Q_eps.outerSize() - 1; i++) {
+// rho = 0.5;
+// noise_sigma = VectorXd::Ones(n_obs) * 0.5;
+    for (int i=0; i < Q_eps.outerSize(); i++) {
       for (SparseMatrix<double>::InnerIterator it(Q_eps, i); it; ++it) {
         if (it.row() == it.col()) {
           int idx = it.row();
           it.valueRef() = 1.0/(pow(noise_sigma(idx), 2) * noise_V(idx));
-          if (mark_cov[idx]) it.valueRef() /= (1-rho);
+          if (has_correlation[idx]) it.valueRef() /= (1-rho*rho);
         } else {
           double tmp = noise_sigma(it.row()) * noise_sigma(it.col()) * sqrt(noise_V(it.row()) * noise_V(it.col()));
-          it.valueRef() = -rho / ((1-rho) * tmp);
+          it.valueRef() = -rho / ((1-rho*rho) * tmp);
         }
       }
     }
 
-    // update dQ_eps
-    for (int i=0; i < dQ_eps.outerSize() - 1; i++) {
+    // update dQ_eps, and compute trace as sum_ij dQ_ij * Q^-1_ij
+    for (int i=0; i < dQ_eps.outerSize(); i++) {
       for (SparseMatrix<double>::InnerIterator it(dQ_eps, i); it; ++it) {
         if (it.row() == it.col()) {
           int idx = it.row();
-          double tmp = pow((1-rho) * noise_sigma(idx), 2) * noise_V(idx);
-          it.valueRef() = 1.0 / tmp;
+          double tmp = pow((1-rho*rho) * noise_sigma(idx), 2) * noise_V(idx);
+          it.valueRef() = 2.0*rho / tmp;
         } else {
           int r = it.row(); int c = it.col();
-          double tmp = pow(1-rho, 2) * noise_sigma(r) * noise_sigma(c) * sqrt(noise_V(r) * noise_V(c));
-          it.valueRef() = -1.0 / tmp;
+          double tmp = pow(1-rho*rho, 2) * noise_sigma(r) * noise_sigma(c) * sqrt(noise_V(r) * noise_V(c));
+          it.valueRef() = -(1+rho*rho) / tmp;
         }
       }
     }
   }
+// show the construction
+// std::cout << "Q_eps == \n" << Q_eps << std::endl;
+// std::cout << "dQ_eps == \n" << dQ_eps << std::endl;
 }
 
 // generate output to R
@@ -514,7 +537,8 @@ Rcpp::List BlockModel::output() const {
       Rcpp::Named("theta_mu")     = theta_mu,
       Rcpp::Named("theta_sigma")  = theta_sigma,
       Rcpp::Named("nu")           = var.get_nu(),
-      Rcpp::Named("V")            = var.getV()
+      Rcpp::Named("V")            = var.getV(),
+      Rcpp::Named("rho")          = rho
     ),
     Rcpp::Named("beta")             = beta,
     Rcpp::Named("models")          = latents_output

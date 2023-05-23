@@ -55,6 +55,9 @@ ngme_noise <- function(
   fix_V           = FALSE,
   theta_sigma_normal = NULL,
   hessian         = TRUE,
+  corr_measurement = FALSE,
+  index_corr      = NULL,
+  rho             = 0,
   ...
 ) {
   if ("nu" %in% names(list(...)))
@@ -122,6 +125,9 @@ ngme_noise <- function(
       init_V          = TRUE,
       single_V        = FALSE, # only contain single V (for re)
       hessian         = hessian,
+      corr_measurement = corr_measurement,
+      index_corr      = index_corr,
+      rho             = rho,
       ...
     ),
     class = "ngme_noise"
@@ -137,6 +143,8 @@ noise_normal <- normal <- function(
   theta_sigma = NULL,
   B_sigma = matrix(1, 1, 1),
   n = nrow(B_sigma),
+  corr_measurement = FALSE,
+  index_corr      = NULL,
   ...
 ) {
   sd <- sigma
@@ -166,6 +174,8 @@ noise_normal <- normal <- function(
     theta_sigma = theta_sigma,
     B_sigma = B_sigma,
     n = n,
+    corr_measurement = corr_measurement,
+    index_corr      = index_corr,
     ...
   )
 }
@@ -184,6 +194,8 @@ noise_nig <- nig <- function(
   theta_sigma   = NULL,
   B_mu          = matrix(1),
   B_sigma       = matrix(1),
+  corr_measurement = FALSE,
+  index_corr      = NULL,
   ...
 ) {
   # if nothing, then fill with default
@@ -207,6 +219,8 @@ noise_nig <- nig <- function(
     B_mu = B_mu,
     B_sigma = B_sigma,
     n = n,
+    corr_measurement = corr_measurement,
+    index_corr      = index_corr,
     ...
   )
 }
@@ -236,6 +250,7 @@ stopifnot("n / nrow(B_sigma) not integer" = abs(n/nrow(B_sigma) - round(n/nrow(B
     noise$theta_mu           <- new_noise$theta_mu
     noise$theta_sigma        <- new_noise$theta_sigma
     noise$nu                 <- new_noise$nu
+    noise$rho                <- new_noise$rho
     if (!is.null(new_noise$V)) noise$V <- new_noise$V
 
     # bv noise
@@ -347,6 +362,10 @@ print.ngme_noise <- function(x, padding = 0, prefix = "Noise type", ...) {
     }
   }
   cat("\n")
+  if (noise$corr_measurement) {
+    cat(pad_add4_space); cat("correlation(rho): ");
+    cat(format(noise$rho, digits=3)); cat("\n")
+  }
   invisible(noise)
 }
 
@@ -362,6 +381,8 @@ noise_gal <- gal <- function(
   theta_sigma   = NULL,
   B_mu          = matrix(1),
   B_sigma       = matrix(1),
+  corr_measurement = FALSE,
+  index_corr      = NULL,
   ...
 ) {
   # if nothing, then fill with default
@@ -385,6 +406,8 @@ noise_gal <- gal <- function(
     B_mu = B_mu,
     B_sigma = B_sigma,
     n = n,
+    corr_measurement = corr_measurement,
+    index_corr      = index_corr,
     ...
   )
 }
@@ -404,6 +427,8 @@ noise_normal_nig <- normal_nig <- function(
   B_mu          = matrix(1),
   B_sigma_nig   = matrix(1),
   B_sigma_normal = matrix(1),
+  corr_measurement = FALSE,
+  index_corr      = NULL,
   ...
 ) {
   # if nothing, then fill with default
@@ -432,6 +457,8 @@ noise_normal_nig <- normal_nig <- function(
     B_sigma = B_sigma_nig,
     B_sigma_normal = B_sigma_normal,
     n = n,
+    corr_measurement = corr_measurement,
+    index_corr      = index_corr,
     ...
   )
 }

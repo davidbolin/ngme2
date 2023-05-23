@@ -65,7 +65,7 @@ n_obs <- 1000
 day <- 1:n_obs
 W <- simulate(
   f(day, model="ar1", rho = 0.5,
-  noise = noise_nig(mu = -3, sigma = 1, nu=0.4),
+  noise = noise_nig(mu = -3, sigma = 4, nu=0.4),
   eval=T),
   seed = 16
 )
@@ -121,5 +121,5 @@ traceplot(ngme_out, "my_ar")
 
 # comparing the density of the noise estimated and the noise simulated
 plot(ngme_out$replicates[[1]]$models[[1]]$noise,
-  noise_nig(mu = -3, sigma = 1, nu=0.4))
+  noise_nig(mu = -3, sigma = 4, nu=0.4))
 ```

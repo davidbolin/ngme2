@@ -185,21 +185,18 @@ traceplot <- function(ngme, name="general") {
     traj <- attr(ngme$models[[name]], "lat_traj")
     # get titles
     ts <- with(ngme$models[[name]], {
-      switch(noise$noise_type,
-        # "normal"     = list(
-        #   c("theta_sigma"),
-        #   c(noise$n_theta_sigma)
-        # ),
-        "normal_nig" = list(
+      if (noise$noise_type[[1]] == "normal_nig") {
+       list(
           c("theta_mu", "theta_sigma", "theta_sigma_normal", "log(nu)"),
           c(noise$n_theta_mu, noise$n_theta_sigma, noise$n_theta_sigma_normal, noise$n_nu)
-        ),
+        )
+      } else {
         list(
           c("theta_mu", "theta_sigma", "log(nu)"),
           c(noise$n_theta_mu, noise$n_theta_sigma, noise$n_nu)
         )
-      )
-    })
+      }
+  })
     if (length(ngme$models[[name]]$theta_K) > 0) {
       ts[[1]] <- c("theta_K", ts[[1]])
       ts[[2]] <- c(length(ngme$models[[name]]$theta_K), ts[[2]])

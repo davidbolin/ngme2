@@ -5,24 +5,25 @@
 
 test_that("test Matern", {
   library(INLA)
-  pl01 <- cbind(c(0, 1, 1, 0, 0) * 100, c(0, 0, 1, 1, 0) * 50)
+  pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
   mesh <- inla.mesh.2d(
-    loc.domain = pl01, cutoff = 2,
-    max.edge = c(5,100)
+    loc.domain = pl01, cutoff = 0.2,
+    max.edge = c(0.5,10)
   )
   plot(mesh)
+  mesh$n
 
-# mesh$n
 # plot(mesh)
 load_all()
   n_obs <- 800
-  loc <- cbind(runif(n_obs, 0, 100), runif(n_obs, 0, 50))
+  loc <- cbind(runif(n_obs, 0, 10), runif(n_obs, 0, 5))
 # plot(mesh); points(loc)
   true_model <- f(
+    map = loc,
     model="matern",
-    theta_K = log(3), mesh = mesh2, map = loc2,
+    theta_K = log(3), mesh = mesh,
     noise = noise_nig(
-      mu=-4, sigma=3, nu=0.5, n=mesh2$n
+      mu=-4, sigma=3, nu=0.5
     ),
     eval=T
   )
@@ -43,14 +44,14 @@ all(true_model$A == inla.spde.make.A(loc, mesh=mesh))
 # Matern case
   load_all()
   out <- ngme(
-    Y ~ 0 + f(loc2,
+    Y ~ 0 + f(loc,
       model="matern",
       name="spde",
-      mesh = mesh2,
+      mesh = mesh,
       noise=noise_nig(
         # fix_nu = T, nu=1
       ),
-      control = control_f(numer_grad = T),
+      control = control_f(numer_grad = F),
       # fix_theta_K = T, theta_kappa = log(3),
       # fix_W = TRUE, W = W,
       debug = T
@@ -58,7 +59,7 @@ all(true_model$A == inla.spde.make.A(loc, mesh=mesh))
     data = data.frame(Y = Y),
     control_opt = control_opt(
       estimation = T,
-      iterations = 500,
+      iterations = 2000,
       n_parallel_chain = 4,
       print_check_info = F,
       verbose = T,

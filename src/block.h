@@ -223,6 +223,7 @@ public:
     }
 
     VectorXd get_residual() const {
+      return Y;
       if (n_latent > 0) {
         return Y - A * getW() - X * beta - (-VectorXd::Ones(n_obs) + var.getV()).cwiseProduct(noise_mu);
       } else {
@@ -278,8 +279,8 @@ public:
     double rho2th(double r) const {return (log((-1-r)/(-1+r)));}
 
     // drho / dtheta
-    // double dtheta_rho(double th) const {return 2 * exp(th) / pow(1+exp(th), 2);}
-    double dtheta_rho(double rho) const {return (1-rho*rho) / 2;}
+    double dtheta_rho(double th) const {return 2 * exp(th) / pow(1+exp(th), 2);}
+    double dtheta_th(double rho) const {return (1-rho*rho) / 2;}
 };
 
 // ---- inherited functions ------

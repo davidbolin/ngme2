@@ -278,22 +278,23 @@ traceplot(out)
 ```
 
 ```{r}
+library(devtools)
 load_all()
 n_obs <- 800
 W <- simulate(f(1:n_obs, model="ar1", eval=TRUE))
 
-Cov_eps <- matrix(c(1, 0.9, 0.9, 1), nrow=2)
+Cov_eps <- matrix(c(1, 0.4, 0.4, 1), nrow=2)
 Cov_eps <- Cov_eps %x% diag(n_obs / 2)
 
 # e~N(0, Cov_eps)
 L <- t(chol(Cov_eps))
 e <- L %*% rnorm(n_obs)
-Y <- W + e
+Y <- e #W + e
 
 plot(head(e, n_obs/2), type="l")
 lines(tail(e, n_obs/2), col="red")
 
-load_all()
+#load_all()
 out <- ngme(
   Y ~ 0 + f(
     1:n_obs,
@@ -308,7 +309,7 @@ out <- ngme(
   data = data.frame(Y = Y),
   control_opt = control_opt(
     estimation = T,
-    iterations = 1000,
+    iterations = 100,
     n_parallel_chain = 1
   )
 )

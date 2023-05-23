@@ -459,14 +459,14 @@ VectorXd BlockModel::grad_theta_merr() {
   if (corr_measure) {
     // Q_eps_solver.factorize(Q_eps);
 std::cout << "n_corr_pairs = " << n_corr_pairs << std::endl;
-    double trace = 0.5 * 2 * rho/(1-rho*rho) * n_corr_pairs;
+    double trace = rho/(1-rho*rho) * n_corr_pairs;
 std::cout << "trace = " << trace << std::endl;
     VectorXd res = get_residual();
     double drhs = -0.5 * (res).dot(dQ_eps * res);
 std::cout << "drhs = " << drhs << std::endl;
     grad(n_merr-1) = trace + drhs;
     grad(n_merr-1) *= - 1.0 / (n_obs);
-    grad(n_merr-1) *= dtheta_rho(rho);
+    grad(n_merr-1) *= dtheta_rho(rho2th(rho));
 std::cout << "grad of rho=" << grad(n_merr-1) << std::endl;
   }
 

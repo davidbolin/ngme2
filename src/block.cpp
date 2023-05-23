@@ -112,9 +112,11 @@ if (debug) std::cout << "before set block A" << std::endl;
         dQ_eps_triplet.push_back(Triplet<double>(cor_rows[i], cor_cols[i], cor_rows[i] == cor_cols[i]));
       }
     }
-    Q_eps.setFromTriplets(Q_eps_triplet.begin(), Q_eps_triplet.end());
+    SparseMatrix<double> Q_eps_lower (n_obs, n_obs);
+    Q_eps_lower.setFromTriplets(Q_eps_triplet.begin(), Q_eps_triplet.end());
+    Q_eps = Q_eps_lower.selfadjointView<Lower>();
 
-    SparseMatrix<double> dQ_lower = SparseMatrix<double>(n_obs, n_obs);
+    SparseMatrix<double> dQ_lower (n_obs, n_obs);
     dQ_lower.setFromTriplets(dQ_eps_triplet.begin(), dQ_eps_triplet.end());
     dQ_eps = dQ_lower.selfadjointView<Lower>();
 
@@ -458,16 +460,14 @@ VectorXd BlockModel::grad_theta_merr() {
   // grad of theta_rho
   if (corr_measure) {
     // Q_eps_solver.factorize(Q_eps);
-std::cout << "n_corr_pairs = " << n_corr_pairs << std::endl;
     double trace = 0.5 * 2 * rho/(1-rho*rho) * n_corr_pairs;
-std::cout << "trace = " << trace << std::endl;
     VectorXd res = get_residual();
     double drhs = -0.5 * (res).dot(dQ_eps * res);
-std::cout << "drhs = " << drhs << std::endl;
     grad(n_merr-1) = trace + drhs;
-    grad(n_merr-1) *= - 1.0 / (n_obs);
-    grad(n_merr-1) *= dtheta_rho(rho);
-std::cout << "grad of rho=" << grad(n_merr-1) << std::endl;
+    grad(n_merr-1) *= - 1.0 / (n_obs) * dtheta_rho(rho);
+// std::cout << "drhs = " << drhs << std::endl;
+// std::cout << "trace = " << trace << std::endl;
+// std::cout << "grad of rho=" << grad(n_merr-1) << std::endl;
   }
 
   return grad;
@@ -487,11 +487,9 @@ void BlockModel::set_theta_merr(const VectorXd& theta_merr) {
   if (corr_measure) {
     rho = th2rho(theta_merr(n_merr-1));
     // rho = (theta_merr(n_merr-1));
-std::cout << "rho=" << rho << std::endl;
+// std::cout << "rho=" << rho << std::endl;
     VectorXd noise_V = var.getV();
     // update Q_eps
-// rho = 0.2;
-// noise_sigma = VectorXd::Ones(n_obs) * 1.5;
     for (int i=0; i < Q_eps.outerSize(); i++) {
       for (SparseMatrix<double>::InnerIterator it(Q_eps, i); it; ++it) {
         if (it.row() == it.col()) {

@@ -279,8 +279,8 @@ traceplot(out)
 
 ```{r}
 load_all()
-n_obs <- 800
-W <- simulate(f(1:n_obs, model="ar1", eval=TRUE))
+n_obs <- 2000
+W <- simulate(f(1:n_obs, rho = 0.5, model="ar1", eval=TRUE))
 
 Cov_eps <- matrix(c(1, 0.9, 0.9, 1), nrow=2)
 Cov_eps <- Cov_eps %x% diag(n_obs / 2)
@@ -288,30 +288,33 @@ Cov_eps <- Cov_eps %x% diag(n_obs / 2)
 # e~N(0, Cov_eps)
 L <- t(chol(Cov_eps))
 e <- L %*% rnorm(n_obs)
-Y <- W + e
+
+x1 <- rexp(n_obs)
+x2 <- rnorm(n_obs)
+Y <-  W +e + x1 * (-3) + x2 * 1.5
 
 plot(head(e, n_obs/2), type="l")
 lines(tail(e, n_obs/2), col="red")
 
 load_all()
 out <- ngme(
-  Y ~ 0 + f(
+  Y ~ 0 + x1 + x2+ f(
     1:n_obs,
     # fix_W = T, W = W,
     model="ar1"
   ),
   family = noise_normal(
-    fix_theta_sigma = T,
+    # fix_theta_sigma = T,
     corr_measurement = TRUE,
     index_corr = c(1: (n_obs/2), 1: (n_obs/2))
   ),
-  data = data.frame(Y = Y),
+  data = data.frame(Y, x1, x2),
   control_opt = control_opt(
     estimation = T,
-    iterations = 1000,
+    iterations = 500,
     n_parallel_chain = 1
   )
 )
-out
 traceplot(out)
+out
 ```

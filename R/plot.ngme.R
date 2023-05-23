@@ -51,7 +51,7 @@ traceplot <- function(ngme, name="general") {
       )
     })
     if (ngme$noise$corr_measurement) {
-      ts[[1]] <- c(ts[[1]], "rho"); ts[[2]] <- c(ts[[2]], 1)
+      ts[[1]] <- c(ts[[1]], "theta_rho"); ts[[2]] <- c(ts[[2]], 1)
     }
     ts[[1]] <- c(ts[[1]], "beta"); ts[[2]] <- c(ts[[2]], length(ngme$beta))
   }

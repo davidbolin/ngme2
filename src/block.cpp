@@ -211,8 +211,7 @@ void BlockModel::sampleW_VY()
 // auto timer_computeg = std::chrono::steady_clock::now();
   if (n_latent==0) return;
 
-  VectorXd SV = getSV();
-  VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(SV);
+  VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
   VectorXd noise_V = var.getV();
 
   // init Q and QQ
@@ -464,7 +463,7 @@ VectorXd BlockModel::grad_theta_merr() {
     VectorXd res = get_residual();
     double drhs = -0.5 * (res).dot(dQ_eps * res);
     grad(n_merr-1) = trace + drhs;
-    grad(n_merr-1) *= - 1.0 / (n_obs) * dtheta_rho(rho);
+    grad(n_merr-1) *= - 1.0 / (n_obs) * dtheta_th(rho);
 // std::cout << "drhs = " << drhs << std::endl;
 // std::cout << "trace = " << trace << std::endl;
 // std::cout << "grad of rho=" << grad(n_merr-1) << std::endl;

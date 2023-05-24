@@ -107,6 +107,7 @@ VectorXd Latent::grad_theta_mu() {
     VectorXd grad = VectorXd::Zero(n_theta_mu);
     if (fix_flag[latent_fix_theta_mu]) return grad;
     if (n_nu == 1 && noise_type[0] == "normal") return grad;
+    if (n_nu == 2 && noise_type[0] == "normal" && noise_type[1] == "normal") return grad;
 
     VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
     VectorXd prevSV = sigma.array().pow(2).matrix().cwiseProduct(prevV);
@@ -235,8 +236,8 @@ Rcpp::List Latent::output() const {
 }
 
 const VectorXd Latent::get_parameter() const {
-// if (debug) std::cout << "Start latent get parameter"<< std::endl;
-    VectorXd parameter (n_params);
+if (debug) std::cout << "Start latent get parameter"<< std::endl;
+    VectorXd parameter = VectorXd::Zero(n_params);
 
     parameter.segment(0, n_theta_K)                         = theta_K;
     parameter.segment(n_theta_K, n_theta_mu)                = theta_mu;
@@ -244,8 +245,8 @@ const VectorXd Latent::get_parameter() const {
     parameter.segment(n_theta_K+n_theta_mu+n_theta_sigma,n_nu) = nu.array().log();
     if (noise_type[0] == "normal_nig")
         parameter.segment(n_theta_K+n_theta_mu+n_theta_sigma+n_nu, n_theta_sigma_normal) = theta_sigma_normal;
-// if (debug) std::cout << "parameter= " << parameter << std::endl;
 // if (debug) std::cout << "End latent get parameter"<< std::endl;
+if (debug) std::cout << "parameter= " << parameter << std::endl;
     return parameter;
 }
 

@@ -102,6 +102,7 @@ ngme <- function(
         for (i in seq_along(start[[i]]$models)) {
           models[[i]]$theta_K  <- start[[i]]$models[[i]]$theta_K
           models[[i]]$W        <- start[[i]]$models[[i]]$W
+          models[[i]]$V        <- start[[i]]$models[[i]]$V
           models[[i]]$noise    <- update_noise(
             models[[i]]$noise, new_noise = start[[i]]$models[[i]]$noise
           )
@@ -197,6 +198,7 @@ transform_traj <- function(traj) {
 update_ngme_est <- function(
   ngme_replicate, est_output
 ) {
+  names(est_output$beta) <- names(ngme_replicate$beta)
   ngme_replicate$beta <- est_output$beta
   ngme_replicate$noise <- update_noise(ngme_replicate$noise, new_noise = est_output$noise)
   for (i in seq_along(ngme_replicate$models)) {
@@ -272,17 +274,19 @@ ngme_parse_formula <- function(
   enclos_env <- list2env(as.list(parent.frame()), parent = parent.frame(2))
   global_env_first <- list2env(as.list(parent.frame(2)), parent = parent.frame())
 
-  tf <- terms.formula(fm, specials = c("f"))
+  tf <- terms.formula(fm, specials = c("f", "fe"))
   terms <- attr(tf, "term.labels")
   intercept <- attr(tf, "intercept")
 
   # order of f terms in labels
-  spec_order <- attr(tf, "specials")$f - 1
-
+  f_order <- attr(tf, "specials")$f - 1
+  fe_order <- attr(tf, "specials")$fe - 1
   # construct plain formula without f
   # watch out! terms[-double(0)] -> character(0)
-  fixf <- if (length(spec_order) == 0) terms else terms[-spec_order]
+  fixf <- if (length(f_order) == 0) terms else terms[-f_order]
+  fixf <- if (length(fe_order) == 0) fixf else fixf[-fe_order]
 
+  # construct fixed effect with resposne ~ intercept + fixf
   response <- deparse(attr(tf, "variables")[[2]])
   plain_fm_str <- paste(response, "~", intercept, paste(c("", fixf), collapse = " + "))
   plain_fm <- formula(plain_fm_str)
@@ -291,11 +295,24 @@ ngme_parse_formula <- function(
   ngme_response <- eval(stats::terms(fm)[[2]], envir = data, enclos = enclos_env)
   stopifnot("Have NA in your response variable" = all(!is.na(ngme_response)))
   X_full    <- model.matrix(delete.response(terms(plain_fm)), as.data.frame(data))
+  # adding fixed effect
+  for (i in fe_order) {
+    lang <- str2lang(terms[i])
+    stopifnot(
+      "Please provide which_group=<group_name>" = !is.null(lang$which),
+      "Please make sure <group_name> is in group" = lang$which %in% levels(group)
+    )
+    mask <- group == lang$which
+    X_sub <- model.matrix(as.formula(lang[[2]]), data)
+    colnames(X_sub) <- paste0(colnames(X_sub), "_", lang$which)
+    X_sub[!mask, ] <- 0
+    X_full <- cbind(X_full, X_sub)
+  }
 
   ########## parse models terms
   pre_model <- list();
   idx_effect = 1; idx_field = 1; # for setting names
-  for (i in spec_order) {
+  for (i in f_order) {
     str <- gsub("^f\\(", "ngme2::f(", terms[i])
     lang <- str2lang(str)
 

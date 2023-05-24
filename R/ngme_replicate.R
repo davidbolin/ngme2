@@ -30,11 +30,13 @@ ngme_replicate <- function(
   par_string <- do.call(paste0, as.list(c(models_string, beta_str, merr_str)))
 
   n_params <- n_feff + n_la_params + noise$n_params + corr_measure
+
+  beta <- control_ngme$beta; names(beta) <- colnames(X)
   structure(
     list(
       Y                 = Y,
       X                 = X,
-      beta              = control_ngme$beta,
+      beta              = beta,
       models            = models,
       noise             = noise,
       control_ngme      = control_ngme,
@@ -63,8 +65,9 @@ print.ngme_replicate <- function(x, ...) {
   cat("*** Ngme object ***\n\n");
 
   cat("Fixed effects: \n");
-  cat(paste("  ", ngme_format("beta", ngme$beta)));
-  cat("\n\n")
+  print(ngme$beta, digits=3)
+  # cat(paste("  ", ngme_format("beta", ngme$beta)));
+  cat("\n")
 
   cat("Models: \n");
   for (i in seq_along(ngme$models)) {

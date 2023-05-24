@@ -41,7 +41,9 @@ precip <- c(0.1, 0.2, 0.5, 1, 0.2); year_pre <- c(2001, 2002, 2003, 2004, 2005)
 y <- c(temp, precip); year <- c(year_temp, year_pre)
 labels <- c(rep("temp", 4), rep("precip", 5)) # group is label for 2 fields
 
-data <- data.frame(y, year, labels); data
+x1 <- 1:9
+data <- data.frame(y, year, x1, labels)
+data
 ```
 
 The model specification is like this, notice the way to specify 2 sub_models:
@@ -98,11 +100,10 @@ simulate(bv3)
 
 ```{r}
 load_all()
-out =
-ngme(
-  y ~ 0 +
-  #  fe(~1+x, which_group = "temp") +
-  # fe(~x, which_group = "precip") +
+data
+out = ngme(
+  y ~ 0 + fe(~1, which_group = "temp") +
+  fe(~1+x1, which_group = "precip") +
   f(year,
     model = "bv",
     sub_models = list(precip="ar1", temp="rw1"),
@@ -110,12 +111,14 @@ ngme(
     noise = list(precip = noise_normal(), temp = noise_nig())
   ),
   data = data,
+  group = data$labels,
   control_opt = control_opt(
     estimation = T,
     iterations = 10
   )
 )
 out
+out$replicates[[1]]$beta
 ```
 
 ## A 2d matern example
@@ -131,7 +134,7 @@ mesh <- inla.mesh.2d(
   max.edge = c(1,10)
 )
 mesh$n
-n_obs <- 100
+n_obs <- 300
 long <- runif(n_obs, 0, 10)
 lat <- runif(n_obs, 0, 5)
 group <- c(rep("sal", n_obs/2), rep("temp", n_obs/2))
@@ -147,19 +150,18 @@ true_model <- f(
       temp="matern"
     ),
     group = group,
-    noise = noise_nig(
-      mu=-2, sigma=2, nu=1
-    ),
-    # noise = list(sal = noise_nig(
-    #   mu = -2, sigma=1, nu=1
-    # ), temp = noise_nig(
-    #   mu = 2, sigma=2, nu=0.5
-    # )),
+    # noise = noise_nig(
+    #   mu=-2, sigma=2, nu=1
+    # ),
+    noise = list(sal = noise_nig(
+      mu = -2, sigma=1, nu=1
+    ), temp = noise_nig(
+      mu = 2, sigma=2, nu=0.5
+    )),
     eval=T
   )
 W <- simulate(true_model)
 Y <- as.numeric(true_model$A %*% W); Y <- Y + rnorm(length(Y))
-
 data <- data.frame(Y, long, lat)
 ```
 
@@ -175,18 +177,22 @@ out <- ngme(
     name = "bv",
     sub_models = list(sal="matern", temp="matern"),
     group = group,
-    noise = noise_nig()
+    debug=T,
+    # noise = noise_nig()
     # noise = list(sal = noise_nig(), temp = noise_nig())
+    noise = list(sal = noise_normal(), temp = noise_normal())
   ),
   data = data,
   control_opt = control_opt(
     estimation = T,
-    iterations = 10,
+    iterations = 300,
+    n_parallel_chain = 1,
     verbose = T,
     print_check_info = F
   )
 )
 out
+str(out$replicates[[1]]$models[[1]]$noise)
 traceplot(out, "bv")
 out$replicates[[1]]$models[[1]]$noise$bv_noises[[2]]$h
 ```
@@ -278,11 +284,12 @@ traceplot(out)
 ```
 
 ```{r}
+library(devtools)
 load_all()
 n_obs <- 2000
 W <- simulate(f(1:n_obs, rho = 0.5, model="ar1", eval=TRUE))
 
-Cov_eps <- matrix(c(1, 0.9, 0.9, 1), nrow=2)
+Cov_eps <- matrix(c(1, -0.9, -0.9, 1), nrow=2)
 Cov_eps <- Cov_eps %x% diag(n_obs / 2)
 
 # e~N(0, Cov_eps)
@@ -296,7 +303,7 @@ Y <-  W +e + x1 * (-3) + x2 * 1.5
 plot(head(e, n_obs/2), type="l")
 lines(tail(e, n_obs/2), col="red")
 
-load_all()
+# load_all()
 out <- ngme(
   Y ~ 0 + x1 + x2+ f(
     1:n_obs,
@@ -315,6 +322,6 @@ out <- ngme(
     n_parallel_chain = 1
   )
 )
-traceplot(out)
+traceplot(out, "field1")
 out
 ```

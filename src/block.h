@@ -279,7 +279,7 @@ public:
 
     // drho / dtheta
     // double dtheta_rho(double th) const {return 2 * exp(th) / pow(1+exp(th), 2);}
-    double dtheta_rho(double rho) const {return (1-rho*rho) / 2;}
+    double dtheta_th(double rho) const {return (1-rho*rho) / 2;}
 };
 
 // ---- inherited functions ------

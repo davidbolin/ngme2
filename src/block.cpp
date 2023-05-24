@@ -516,6 +516,7 @@ void BlockModel::set_theta_merr(const VectorXd& theta_merr) {
         }
       }
     }
+
   }
 // show the construction
 // std::cout << "Q_eps == \n" << Q_eps << std::endl;

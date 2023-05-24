@@ -2,9 +2,7 @@
 % Please edit documentation in R/plot.ngme.R
 \name{traceplot}
 \alias{traceplot}
-\title{c("fe", "beta") is fixed effects,
-  c("mn", "noise") is measurement nosie
-Trace plot of ngme fitting}
+\title{Trace plot of ngme fitting}
 \usage{
 traceplot(ngme, name = "general")
 }
@@ -18,7 +16,5 @@ should be in names(ngme$models) or other}
 the traceplot
 }
 \description{
-c("fe", "beta") is fixed effects,
-  c("mn", "noise") is measurement nosie
 Trace plot of ngme fitting
 }

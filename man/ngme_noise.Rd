@@ -18,15 +18,17 @@ ngme_noise(
   B_mu = NULL,
   theta_sigma = NULL,
   B_sigma = NULL,
+  theta_sigma_normal = NULL,
   B_sigma_normal = NULL,
   fix_theta_mu = FALSE,
   fix_theta_sigma = FALSE,
   fix_nu = FALSE,
   V = NULL,
-  h = NULL,
   fix_V = FALSE,
-  theta_sigma_normal = NULL,
   hessian = TRUE,
+  corr_measurement = FALSE,
+  index_corr = NULL,
+  rho = 0,
   ...
 )
 
@@ -35,6 +37,8 @@ noise_normal(
   theta_sigma = NULL,
   B_sigma = matrix(1, 1, 1),
   n = nrow(B_sigma),
+  corr_measurement = FALSE,
+  index_corr = NULL,
   ...
 )
 
@@ -48,6 +52,8 @@ noise_nig(
   theta_sigma = NULL,
   B_mu = matrix(1),
   B_sigma = matrix(1),
+  corr_measurement = FALSE,
+  index_corr = NULL,
   ...
 )
 
@@ -61,6 +67,8 @@ noise_gal(
   theta_sigma = NULL,
   B_mu = matrix(1),
   B_sigma = matrix(1),
+  corr_measurement = FALSE,
+  index_corr = NULL,
   ...
 )
 
@@ -77,6 +85,8 @@ noise_normal_nig(
   B_mu = matrix(1),
   B_sigma_nig = matrix(1),
   B_sigma_normal = matrix(1),
+  corr_measurement = FALSE,
+  index_corr = NULL,
   ...
 )
 }
@@ -99,6 +109,8 @@ noise_normal_nig(
 
 \item{B_sigma}{Basis matrix for sigma (if non-stationary)}
 
+\item{theta_sigma_normal}{for normal nosie with nig noise sharing same parameter}
+
 \item{B_sigma_normal}{for normal nosie with nig noise sharing same parameter}
 
 \item{fix_theta_mu}{fix the parameter of theta_mu}
@@ -109,11 +121,7 @@ noise_normal_nig(
 
 \item{V}{start value for V}
 
-\item{h}{numerical vector (> 0), mesh width}
-
 \item{fix_V}{fix the sampling of V}
-
-\item{theta_sigma_normal}{for normal nosie with nig noise sharing same parameter}
 
 \item{...}{additional arguments}
 
@@ -124,6 +132,8 @@ noise_normal_nig(
 \item{theta_sigma_nig}{similar to theta_sigma_normal}
 
 \item{B_sigma_nig}{similar to B_sigma_nig}
+
+\item{h}{numerical vector (> 0), mesh width}
 }
 \value{
 a list of specification of noise

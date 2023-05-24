@@ -1,4 +1,4 @@
-# This file contains ngme noise specifications (NIG and Normal)
+# This file contains ngme noise specifications
 
 #' @title ngme noise specification
 #' @aliases noise_nig noise_normal
@@ -10,7 +10,6 @@
 #' for specifying non-stationary mu and sigma,
 #' \deqn{\mu = B_{\mu} \theta_{\mu},} and
 #' \deqn{\sigma = \exp (B_{\sigma} \theta_{\sigma}),}
-#'
 #'
 #' @param noise_type    type of noise, "nig", "normal"
 #' @param n             number of noise (= nrow(B_mu) = nrow(B_sigma))
@@ -46,24 +45,19 @@ ngme_noise <- function(
   B_mu            = NULL,
   theta_sigma     = NULL,
   B_sigma         = NULL,
+  theta_sigma_normal = NULL,
   B_sigma_normal  = NULL,
   fix_theta_mu    = FALSE,
   fix_theta_sigma = FALSE,
   fix_nu          = FALSE,
   V               = NULL,
-  h               = NULL,
   fix_V           = FALSE,
-  theta_sigma_normal = NULL,
   hessian         = TRUE,
   corr_measurement = FALSE,
   index_corr      = NULL,
   rho             = 0,
   ...
 ) {
-  if ("nu" %in% names(list(...)))
-    nu <- list(...)$nu
-  else
-    nu <- nu
   if (is.null(theta_mu)) theta_mu <- mu
   if (is.null(theta_sigma)) theta_sigma <- log(sigma)
 
@@ -103,7 +97,6 @@ ngme_noise <- function(
   structure(
     list(
       n_noise         = n,  # this is same as V_size
-      h               = if (is.null(h)) rep(1, n) else h,
       noise_type      = noise_type,
       nu              = nu,
       n_nu            = length(nu),
@@ -139,12 +132,12 @@ ngme_noise <- function(
 #' @examples
 #' noise_normal(n = 10, sigma = 2)
 noise_normal <- normal <- function(
-  sigma = NULL,
-  theta_sigma = NULL,
-  B_sigma = matrix(1, 1, 1),
-  n = nrow(B_sigma),
-  corr_measurement = FALSE,
-  index_corr      = NULL,
+  sigma             = NULL,
+  theta_sigma       = NULL,
+  B_sigma           = matrix(1, 1, 1),
+  n                 = nrow(B_sigma),
+  corr_measurement  = FALSE,
+  index_corr        = NULL,
   ...
 ) {
   sd <- sigma
@@ -243,7 +236,6 @@ stopifnot("n / nrow(B_sigma) not integer" = abs(n/nrow(B_sigma) - round(n/nrow(B
       noise$B_sigma_normal <- matrix(data = rep(B_sigma_normal, n / nrow(B_sigma_normal)), nrow = n)
     }
     noise$n_noise <- n
-    if (length(noise$h) == 1) noise$h <- rep(1, n)
     noise <- do.call(ngme_noise, noise)
   } else if (!is.null(new_noise)) {
     # update noise after estimation
@@ -298,9 +290,7 @@ stopifnot("n / nrow(B_sigma) not integer" = abs(n/nrow(B_sigma) - round(n/nrow(B
         bv_noises = bv_noises
       )
     } else {
-      noise$h <- operator$h
-      if (is.null(noise$V)) noise$V <- noise$h
-      noise <- update_noise(noise, n = length(noise$h))
+      noise <- update_noise(noise, n = length(operator$h))
     }
   }
 

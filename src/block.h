@@ -18,16 +18,17 @@ BlockModel - for ngme each replicate
 #include "include/solver.h"
 #include "include/MatrixAlgebra.h"
 #include "model.h"
-#include "var.h"
 #include "latent.h"
+#include "sample_rGIG.h"
+#include "var.h"
 
 using Eigen::SparseMatrix;
 using Eigen::MatrixXd;
 using std::vector;
 
-const int BLOCK_FIX_FLAG_SIZE = 3;
+const int BLOCK_FIX_FLAG_SIZE = 5;
 enum Block_fix_flag {
-    block_fix_beta, block_fix_theta_mu, block_fix_theta_sigma
+    block_fix_beta, block_fix_theta_mu, block_fix_theta_sigma, blcok_fix_V, block_fix_nu
 };
 
 class BlockModel {
@@ -76,7 +77,8 @@ protected:
     SimplicialLLT<SparseMatrix<double, Lower>> Q_eps_solver;
 
     vector<std::unique_ptr<Latent>> latents;
-    Var var;
+    VectorXd p_vec, a_vec, b_vec, noise_V, noise_prevV;
+    double nu {1};
 
     // optimize related
     VectorXd stepsizes, gradients;
@@ -99,7 +101,7 @@ public:
         for (int i=0; i < iterations; i++) {
             sampleW_VY();
             sampleV_WY();
-            sample_cond_block_V()   ;
+            sample_noise_V();
         }
     }
 
@@ -224,37 +226,45 @@ public:
 
     VectorXd get_residual() const {
       if (n_latent > 0) {
-        return Y - A * getW() - X * beta - (-VectorXd::Ones(n_obs) + var.getV()).cwiseProduct(noise_mu);
+        return Y - A * getW() - X * beta - (-VectorXd::Ones(n_obs) + noise_V).cwiseProduct(noise_mu);
       } else {
-        return Y  - X * beta - (-VectorXd::Ones(n_obs) + var.getV()).cwiseProduct(noise_mu);
+        return Y  - X * beta - (-VectorXd::Ones(n_obs) + noise_V).cwiseProduct(noise_mu);
       }
     }
 
     // residual_part = residual + AW
     VectorXd get_residual_part() const {
-        return Y - X * beta - (-VectorXd::Ones(n_obs) + var.getV()).cwiseProduct(noise_mu);
+        return Y - X * beta - (-VectorXd::Ones(n_obs) + noise_V).cwiseProduct(noise_mu);
     }
 
-    void sample_cond_block_V() {
-        if (family == "nig") {
-            VectorXd residual = get_residual();
+    void sample_noise_V(bool posterior = true) {
+        if (family == "normal" || fix_flag[blcok_fix_V]) return;
+        noise_prevV = noise_V;
+
+        if (posterior) {
             VectorXd a_inc_vec = noise_mu.cwiseQuotient(noise_sigma).array().pow(2);
-            VectorXd b_inc_vec = (residual + var.getV().cwiseProduct(noise_mu)).cwiseQuotient(noise_sigma).array().pow(2);
-            var.sample_cond_V(a_inc_vec, b_inc_vec);
+            VectorXd b_inc_vec = (get_residual() + noise_V.cwiseProduct(noise_mu)).cwiseQuotient(noise_sigma).array().pow(2);
+            double dim = 1;
+            VectorXd p_vec_new = p_vec - VectorXd::Constant(n_obs, 0.5 * dim);
+            VectorXd a_vec_new = a_vec + a_inc_vec;
+            VectorXd b_vec_new = b_vec + b_inc_vec;
+            noise_V = rGIG_cpp(p_vec_new, a_vec_new, b_vec_new, rng());
+        } else {
+            noise_V = rGIG_cpp(p_vec, a_vec, b_vec, rng());
         }
     }
 
     // for updating hessian
     vector<VectorXd> get_VW() const {
         vector<VectorXd> ret (3);
-        ret[0] = var.getV();
+        ret[0] = noise_V;
         ret[1] = getV();
         ret[2] = getW();
         return ret;
     }
 
     void set_prev_VW(const vector<VectorXd>& VW) {
-        var.setPrevV(VW[0]);
+        noise_prevV = VW[0];
         setPrevV(VW[1]);
         setPrevW(VW[2]);
     }

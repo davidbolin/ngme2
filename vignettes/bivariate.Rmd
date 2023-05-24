@@ -101,14 +101,19 @@ simulate(bv3)
 ```{r}
 load_all()
 data
+# noise_nig_simple() have 1 V
 out = ngme(
   y ~ 0 + fe(~1, which_group = "temp") +
   fe(~1+x1, which_group = "precip") +
+  f(year, model="rw1", which_group = "temp") +
   f(year,
     model = "bv",
     sub_models = list(precip="ar1", temp="rw1"),
     group = labels, # can be provided in ngme()
-    noise = list(precip = noise_normal(), temp = noise_nig())
+    noise = list(
+      precip = noise_nig_simple(), temp = noise_nig(), #warning
+      share_V = FALSE  #type-3
+    )
   ),
   data = data,
   group = data$labels,
@@ -118,7 +123,7 @@ out = ngme(
   )
 )
 out
-out$replicates[[1]]$beta
+out$replicates[[1]]$X
 ```
 
 ## A 2d matern example
@@ -314,6 +319,7 @@ out <- ngme(
     # fix_theta_sigma = T,
     corr_measurement = TRUE,
     index_corr = c(1: (n_obs/2), 1: (n_obs/2))
+    # index_corr = "field1"
   ),
   data = data.frame(Y, x1, x2),
   control_opt = control_opt(
@@ -323,5 +329,7 @@ out <- ngme(
   )
 )
 traceplot(out, "field1")
+traceplot(out )
 out
+
 ```

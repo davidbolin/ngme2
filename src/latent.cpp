@@ -1,9 +1,4 @@
-// grad_theta_mu
-// grad_theta_sigma
-// function_K
-
 #include "latent.h"
-#include "operator.h"
 
 // K is V_size * W_size matrix
 Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
@@ -52,6 +47,8 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
     Rcpp::List noise_in = Rcpp::as<Rcpp::List> (model_list["noise"]);
         fix_flag[latent_fix_theta_mu]     = Rcpp::as<bool>  (noise_in["fix_theta_mu"]);
         fix_flag[latent_fix_theta_sigma]  = Rcpp::as<bool>  (noise_in["fix_theta_sigma"]);
+        fix_flag[latent_fix_V]  = Rcpp::as<bool> (noise_in["fix_V"]);
+        fix_flag[latent_fix_nu] = Rcpp::as<bool> (noise_in["fix_nu"]);
 
         B_mu     = Rcpp::as< MatrixXd >    (noise_in["B_mu"]);
         B_sigma  = Rcpp::as< MatrixXd >    (noise_in["B_sigma"]);
@@ -67,13 +64,11 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
 
         nu = Rcpp::as<VectorXd> (noise_in["nu"]);
         n_nu = nu.size();
-        fix_flag[latent_fix_V]  = Rcpp::as<bool> (noise_in["fix_V"]);
-        fix_flag[latent_fix_nu] = Rcpp::as<bool> (noise_in["fix_nu"]);
+
         if (!Rf_isNull(noise_in["V"])) {
             V = Rcpp::as< VectorXd > (noise_in["V"]);
             prevV = V;
         }
-
 
     // init W
     if (model_list["W"] != R_NilValue) {
@@ -355,56 +350,6 @@ void Latent::update_each_iter(bool init) {
             // }
         }
     }
-}
-
-double Latent::grad_theta_nu(
-    const string& noise_type,
-    double nu,
-    const VectorXd& V,
-    const VectorXd& prevV,
-    const VectorXd& h
-) const {
-    if (fix_flag[latent_fix_nu] || noise_type == "normal") return 0;
-    int n = V.size();
-    bool hessian = true;
-
-    // grad of log nu
-    double grad = 0;
-    if (noise_type == "gal") {
-        for(int i=0; i < n; i++) {
-            double nu_hi = nu * h[i];
-            //digamma(0.1) = digamma(1.1) - 1/0.1;
-            if(nu_hi > 1){
-                grad -=  nu_hi * R::digamma(nu_hi);
-            } else {
-                grad -=  nu_hi * R::digamma(nu_hi + 1) - 1.;
-            }
-        grad += nu_hi * (1 - log(1/nu) + log(V(i))) - nu * V(i);
-        }
-        grad = - grad / n;
-    } else { // type == nig or normal+nig
-        // df/dnu = 0.5 (2h + 1/nu - h^2/V - V)
-        // df/d(log nu) = df/dnu * nu
-        VectorXd tmp = 0.5 * (2*h + VectorXd::Constant(n, 1/nu)
-            - h.cwiseProduct(h).cwiseQuotient(V) - V);
-        double grad_nu = tmp.mean() * nu;
-
-        VectorXd tmp2 = 0.5 * (2*h + VectorXd::Constant(n, 1/nu)
-            - h.cwiseProduct(h).cwiseQuotient(prevV) - prevV);
-        double grad_nu2 = tmp2.mean();
-
-        grad = grad_nu * nu;
-        double hess_nu = -0.5 * pow(nu, -2);
-        // hess of log nu
-        double hess = nu * grad_nu2 + nu * nu * hess_nu;
-
-      if (hessian)
-        grad = grad / hess;     // use hessian
-      else
-        grad = - grad / n;
-    }
-
-    return grad;
 }
 
 void Latent::sample_V() {

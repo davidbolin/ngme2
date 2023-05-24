@@ -12,7 +12,6 @@ ngme(
   control_ngme = NULL,
   group = NULL,
   start = NULL,
-  corr_measure = FALSE,
   debug = FALSE
 )
 }
@@ -32,8 +31,6 @@ ngme(
 \item{group}{group factor, used for multivariate model}
 
 \item{start}{starting ngme object (usually object from last fitting)}
-
-\item{corr_measure}{estimate the correlation between measurement noise (only for bivariate model case)}
 
 \item{debug}{toggle debug mode}
 }

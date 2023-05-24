@@ -37,7 +37,13 @@ BlockModel::BlockModel(
   K                 (V_sizes, W_sizes),
   Q                 (W_sizes, W_sizes),
   QQ                (W_sizes, W_sizes),
-  var               (Var(Rcpp::as<Rcpp::List> (block_model["noise"]), rng())),
+
+  // var               (Var(Rcpp::as<Rcpp::List> (block_model["noise"]), rng())),
+  p_vec             (n_obs),
+  a_vec             (n_obs),
+  b_vec             (n_obs),
+  noise_V           (VectorXd::Ones(n_obs)),
+  noise_prevV       (VectorXd::Ones(n_obs)),
 
   curr_iter         (0),
   // dK            (V_sizes, W_sizes)
@@ -83,21 +89,24 @@ if (debug) std::cout << "before set block A" << std::endl;
 
   // 5. Init measurement noise
   Rcpp::List noise_in   = block_model["noise"];
+    fix_flag[block_fix_theta_mu]     = Rcpp::as<bool> (noise_in["fix_theta_mu"]);
+    fix_flag[block_fix_theta_sigma]  = Rcpp::as<bool> (noise_in["fix_theta_sigma"]);
+    fix_flag[blcok_fix_V]            = Rcpp::as<bool> (noise_in["fix_V"]);
+    fix_flag[block_fix_nu]           = Rcpp::as<bool> (noise_in["fix_nu"]);
 
-  B_mu          = (Rcpp::as<MatrixXd>      (noise_in["B_mu"])),
-  theta_mu      = (Rcpp::as<VectorXd>      (noise_in["theta_mu"])),
-  n_theta_mu    = (theta_mu.size()),
+    B_mu          = (Rcpp::as<MatrixXd>      (noise_in["B_mu"])),
+    theta_mu      = (Rcpp::as<VectorXd>      (noise_in["theta_mu"])),
+    n_theta_mu    = (theta_mu.size()),
 
-  B_sigma       = (Rcpp::as<MatrixXd>      (noise_in["B_sigma"])),
-  theta_sigma   = (Rcpp::as<VectorXd>      (noise_in["theta_sigma"])),
-  n_theta_sigma = (theta_sigma.size()),
+    B_sigma       = (Rcpp::as<MatrixXd>      (noise_in["B_sigma"])),
+    theta_sigma   = (Rcpp::as<VectorXd>      (noise_in["theta_sigma"])),
+    n_theta_sigma = (theta_sigma.size()),
 
-  fix_flag[block_fix_theta_mu]        = Rcpp::as<bool> (noise_in["fix_theta_mu"]);
-  fix_flag[block_fix_theta_sigma]     = Rcpp::as<bool> (noise_in["fix_theta_sigma"]);
-
-  family = Rcpp::as<string>  (noise_in["noise_type"]);
-  noise_mu = B_mu * theta_mu;
-  noise_sigma = (B_sigma * theta_sigma).array().exp();
+    family = Rcpp::as<string>  (noise_in["noise_type"]);
+    noise_mu = B_mu * theta_mu;
+    noise_sigma = (B_sigma * theta_sigma).array().exp();
+    nu = Rcpp::as<double> (noise_in["nu"]);
+    if (family!="normal") V_related::update_gig(family, nu, p_vec, a_vec, b_vec);
 
   if (corr_measure) {
     cor_cols = Rcpp::as<vector<int>> (block_model["cor_cols"]);
@@ -131,11 +140,13 @@ if (debug) std::cout << "After block construct noise" << std::endl;
 
   // 7. Init solvers
   assemble();
+if (debug) std::cout << "After block construct noise" << std::endl;
   if (n_latent > 0) {
     VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
+if (debug) std::cout << "After block construct noise" << std::endl;
     SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
     if (!corr_measure) {
-      QQ = Q + A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(var.getV()).asDiagonal() * A;
+      QQ = Q + A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V).asDiagonal() * A;
     }
     else{
       QQ = Q + A.transpose() * Q_eps * A;
@@ -212,7 +223,6 @@ void BlockModel::sampleW_VY()
   if (n_latent==0) return;
 
   VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
-  VectorXd noise_V = var.getV();
 
   // init Q and QQ
   Q = K.transpose() * inv_SV.asDiagonal() * K;
@@ -279,7 +289,7 @@ auto timer_computeg = std::chrono::steady_clock::now();
     // gibbs sampling
     sampleV_WY();
     sampleW_VY();
-    sample_cond_block_V();
+    sample_noise_V();
 
     // stack grad
     VectorXd gradient = VectorXd::Zero(n_params);
@@ -332,6 +342,7 @@ void BlockModel::set_parameter(const VectorXd& Theta) {
 
   // measurement noise
   set_theta_merr(Theta.segment(n_la_params, n_merr));
+  if (family!="normal") V_related::update_gig(family, nu, p_vec, a_vec, b_vec);
 
   // fixed effects
   if (!fix_flag[block_fix_beta]) {
@@ -374,7 +385,6 @@ void BlockModel::sampleW_V()
 
 // --------- Fiexed effects and Measurement Error ---------------
 VectorXd BlockModel::grad_beta() {
-  VectorXd noise_V = var.getV();
   VectorXd noise_inv_SV = noise_V.cwiseProduct(noise_sigma.array().pow(-2).matrix());
 
   VectorXd residual = get_residual(); // + X * beta;
@@ -394,7 +404,6 @@ VectorXd BlockModel::grad_theta_mu() {
   // MatrixXd hess = noise_X.transpose() * noise_inv_SV.asDiagonal() * noise_X;
   // grad = hess.ldlt().solve(grad);
 
-  VectorXd noise_V = var.getV();
   VectorXd noise_SV = noise_V.cwiseProduct(noise_sigma.array().pow(2).matrix());
 
   VectorXd residual = get_residual();
@@ -411,7 +420,6 @@ VectorXd BlockModel::grad_theta_mu() {
 
 VectorXd BlockModel::grad_theta_sigma() {
   VectorXd grad = VectorXd::Zero(n_theta_sigma);
-  VectorXd noise_V = var.getV();
   VectorXd noise_SV = noise_sigma.array().pow(2).matrix().cwiseProduct(noise_V);
   // grad = B_sigma.transpose() * (-0.5 * VectorXd::Ones(n_obs) + residual.array().pow(2).matrix().cwiseQuotient(noise_SV));
 
@@ -439,7 +447,7 @@ VectorXd BlockModel::get_theta_merr() const {
 
   theta_merr.segment(0, n_theta_mu) = theta_mu;
   theta_merr.segment(n_theta_mu, n_theta_sigma) = theta_sigma;
-  theta_merr(n_theta_mu + n_theta_sigma) =  var.get_log_nu();
+  theta_merr(n_theta_mu + n_theta_sigma) = exp(nu);
 
   // estimate correlation
 // std::cout << " rho === " << rho << std::endl;
@@ -454,7 +462,9 @@ VectorXd BlockModel::grad_theta_merr() {
 
   if (!fix_flag[block_fix_theta_mu])     grad.segment(0, n_theta_mu) = grad_theta_mu();
   if (!fix_flag[block_fix_theta_sigma])  grad.segment(n_theta_mu, n_theta_sigma) = grad_theta_sigma();
-  grad(n_theta_mu + n_theta_sigma) = var.grad_log_nu();
+  if (!fix_flag[block_fix_nu] && family != "normal") {
+    grad(n_theta_mu + n_theta_sigma) = V_related::grad_theta_nu(family, nu, noise_V, noise_prevV);
+  }
 
   // grad of theta_rho
   if (corr_measure) {
@@ -473,10 +483,9 @@ VectorXd BlockModel::grad_theta_merr() {
 }
 
 void BlockModel::set_theta_merr(const VectorXd& theta_merr) {
-
   theta_mu = theta_merr.segment(0, n_theta_mu);
   theta_sigma = theta_merr.segment(n_theta_mu, n_theta_sigma);
-  var.set_log_nu(theta_merr(n_theta_mu + n_theta_sigma));
+  nu = log(theta_merr(n_theta_mu + n_theta_sigma));
 
   // update mu, sigma
   noise_mu = (B_mu * theta_mu);
@@ -485,9 +494,6 @@ void BlockModel::set_theta_merr(const VectorXd& theta_merr) {
   // update rho, and Q_eps
   if (corr_measure) {
     rho = th2rho(theta_merr(n_merr-1));
-    // rho = (theta_merr(n_merr-1));
-// std::cout << "rho=" << rho << std::endl;
-    VectorXd noise_V = var.getV();
     // update Q_eps
     for (int i=0; i < Q_eps.outerSize(); i++) {
       for (SparseMatrix<double>::InnerIterator it(Q_eps, i); it; ++it) {
@@ -535,8 +541,8 @@ Rcpp::List BlockModel::output() const {
       Rcpp::Named("noise_type")   = family,
       Rcpp::Named("theta_mu")     = theta_mu,
       Rcpp::Named("theta_sigma")  = theta_sigma,
-      Rcpp::Named("nu")           = var.get_nu(),
-      Rcpp::Named("V")            = var.getV(),
+      Rcpp::Named("nu")           = nu,
+      Rcpp::Named("V")            = noise_V,
       Rcpp::Named("rho")          = rho
     ),
     Rcpp::Named("beta")             = beta,
@@ -559,12 +565,11 @@ Rcpp::List BlockModel::sampling(int n, bool posterior) {
     if (posterior) {
       sampleV_WY();
       sampleW_VY();
-      sample_cond_block_V();
+      sample_noise_V(true);
     } else {
       sample_V();
       sampleW_V();
-      var.sample_V();
-      // construct the Y in R
+      sample_noise_V(false);
     }
 
     AWs.push_back(A * getW());

@@ -25,8 +25,9 @@
 
 #include "include/timer.h"
 #include "include/solver.h"
-#include "var.h"
 #include "operator.h"
+#include "var.h"
+#include "sample_rGIG.h"
 
 using std::exp;
 using std::log;
@@ -79,7 +80,6 @@ protected:
     VectorXd W, prevW, V, prevV;
     SparseMatrix<double,0,int> A;
 
-    // Var var;
     VectorXd p_vec, a_vec, b_vec, nu;
     // double nu;
 
@@ -161,26 +161,19 @@ public:
     VectorXd grad_theta_mu();
     VectorXd grad_theta_sigma();
     VectorXd grad_theta_sigma_normal(); // grad of sig. only for normal noise
+
     VectorXd grad_theta_nu() {
         VectorXd grad(n_nu);
         if (n_nu == 1)
-            grad(0) = grad_theta_nu(noise_type[0], nu[0], V, prevV, h);
+            grad(0) = V_related::grad_theta_nu(noise_type[0], nu[0], V, prevV, h);
         else {
             // for bivaraite case
             int n = V_size / 2;
-            grad(0) = grad_theta_nu(noise_type[0], nu[0], V.segment(0, n), prevV.segment(0, n), h.segment(0, n));
-            grad(1) = grad_theta_nu(noise_type[1], nu[1], V.segment(n, n), prevV.segment(n, n), h.segment(n, n));
+            grad(0) = V_related::grad_theta_nu(noise_type[0], nu[0], V.segment(0, n), prevV.segment(0, n), h.segment(0, n));
+            grad(1) = V_related::grad_theta_nu(noise_type[1], nu[1], V.segment(n, n), prevV.segment(n, n), h.segment(n, n));
         }
         return grad;
     }
-
-    double grad_theta_nu(
-        const string& noise_type,
-        double nu,
-        const VectorXd& V,
-        const VectorXd& prevV,
-        const VectorXd& h
-    ) const;
 
     Rcpp::List output() const;
 };

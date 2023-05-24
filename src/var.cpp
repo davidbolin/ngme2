@@ -1,33 +1,35 @@
 #include "var.h"
 
-void Var::sample_cond_V(const VectorXd& a_inc_vec, const VectorXd& b_inc_vec, int dim, bool same) {
-    if (fix_V) return;
-    if (noise_type == "normal") return;
-
-    VectorXd p_vec(n), a_vec(n), b_vec(n);
+void V_related::update_gig(
+    const string& noise_type,
+    double nu,
+    VectorXd& p,
+    VectorXd& a,
+    VectorXd& b,
+    const VectorXd& h
+) {
+    int n = h.size();
     if (noise_type == "gal") {
-        prevV = V;
-        p_vec = (nu * h) - VectorXd::Constant(n, 0.5 * dim);
-        a_vec = VectorXd::Constant(n, 2 * nu) + a_inc_vec;
-        b_vec = b_inc_vec;
-    } else { // nig and normal+nig
-        prevV = V;
-        p_vec = VectorXd::Constant(n, -0.5 - 0.5 * dim);
-        a_vec = VectorXd::Constant(n, nu) + a_inc_vec;
-        b_vec = VectorXd::Constant(n, nu).cwiseProduct(h).cwiseProduct(h) + b_inc_vec;
-    }
-
-    // update V
-    if (same) {
-        double singleV = rGIG_cpp(p_vec(0), a_vec(0), b_vec(0), var_rng());
-        V = VectorXd::Constant(n, singleV);
-    } else {
-        V = rGIG_cpp(p_vec, a_vec, b_vec, var_rng());
+        p = h * nu;
+        a = VectorXd::Constant(n, nu * 2);
+        b = VectorXd::Constant(n, 1e-14);
+    } else if (noise_type == "nig" || noise_type == "normal_nig") {
+        p = VectorXd::Constant(n, -0.5);
+        a = VectorXd::Constant(n, nu);
+        b = a.cwiseProduct(h.cwiseProduct(h));
     }
 }
 
-double Var::grad_log_nu() const {
-    if (fix_nu || noise_type == "normal") return 0;
+double V_related::grad_theta_nu(
+    const string& noise_type,
+    double nu,
+    const VectorXd& V,
+    const VectorXd& prevV,
+    const VectorXd& h
+) {
+    if (noise_type == "normal") return 0;
+    int n = V.size();
+    bool hessian = true;
 
     // grad of log nu
     double grad = 0;
@@ -41,7 +43,6 @@ double Var::grad_log_nu() const {
                 grad -=  nu_hi * R::digamma(nu_hi + 1) - 1.;
             }
         grad += nu_hi * (1 - log(1/nu) + log(V(i))) - nu * V(i);
-// std::cout << "grad in var = " << grad << std::endl;
         }
         grad = - grad / n;
     } else { // type == nig or normal+nig
@@ -60,12 +61,11 @@ double Var::grad_log_nu() const {
         // hess of log nu
         double hess = nu * grad_nu2 + nu * nu * hess_nu;
 
-      if (hessian)
+    if (hessian)
         grad = grad / hess;     // use hessian
-      else
+    else
         grad = - grad / n;
-// std::cout << " grad = " << grad << std::endl;
     }
-
     return grad;
 }
+

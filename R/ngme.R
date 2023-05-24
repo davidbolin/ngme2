@@ -246,9 +246,6 @@ check_dim <- function(ngme_model) {
         if (ncol(latent$A) != latent$W_size) {
           stop("The number of columns of A is not equal to the W_size of the latent model")
         }
-        if (!all(latent$operator$h == latent$noise$h)) {
-          stop("The h of the latent model is not equal to the h of the noise")
-        }
 
         stopifnot(nrow(latent$noise$B_sigma) == latent$noise$n_noise)
     }

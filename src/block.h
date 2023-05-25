@@ -19,8 +19,7 @@ BlockModel - for ngme each replicate
 #include "include/MatrixAlgebra.h"
 #include "model.h"
 #include "latent.h"
-#include "sample_rGIG.h"
-#include "var.h"
+#include "noise.h"
 
 using Eigen::SparseMatrix;
 using Eigen::MatrixXd;
@@ -110,7 +109,7 @@ public:
     void sampleV_WY() {
       if(n_latent > 0){
         for (unsigned i=0; i < n_latent; i++) {
-            (*latents[i]).sample_cond_V();
+            (*latents[i]).sample_V(true);
         }
       }
     }
@@ -118,7 +117,7 @@ public:
     void sample_V() {
       if(n_latent > 0){
         for (unsigned i=0; i < n_latent; i++) {
-            (*latents[i]).sample_V();
+            (*latents[i]).sample_V(false);
         }
       }
     }
@@ -248,9 +247,11 @@ public:
             VectorXd p_vec_new = p_vec - VectorXd::Constant(n_obs, 0.5 * dim);
             VectorXd a_vec_new = a_vec + a_inc_vec;
             VectorXd b_vec_new = b_vec + b_inc_vec;
-            noise_V = rGIG_cpp(p_vec_new, a_vec_new, b_vec_new, rng());
+            // noise_V = rGIG_cpp(p_vec_new, a_vec_new, b_vec_new, rng());
+            NoiseUtil::sample_V(noise_V, family, p_vec_new, a_vec_new, b_vec_new, rng);
         } else {
-            noise_V = rGIG_cpp(p_vec, a_vec, b_vec, rng());
+            // noise_V = rGIG_cpp(p_vec, a_vec, b_vec, rng());
+            NoiseUtil::sample_V(noise_V, family, p_vec, a_vec, b_vec, rng);
         }
     }
 

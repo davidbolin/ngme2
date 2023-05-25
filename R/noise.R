@@ -52,6 +52,8 @@ ngme_noise <- function(
   fix_nu          = FALSE,
   V               = NULL,
   fix_V           = FALSE,
+  single_V        = FALSE,
+  init_V          = TRUE,
   hessian         = TRUE,
   corr_measurement = FALSE,
   index_corr      = NULL,
@@ -115,8 +117,8 @@ ngme_noise <- function(
       fix_nu          = fix_nu,
       fix_V           = fix_V,
       n_params        = length(theta_mu) + length(theta_sigma) + length(nu),
-      init_V          = TRUE,
-      single_V        = FALSE, # only contain single V (for re)
+      init_V          = init_V,
+      single_V        = single_V, # only contain single V (for re)
       hessian         = hessian,
       corr_measurement = corr_measurement,
       index_corr      = index_corr,

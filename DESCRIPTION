@@ -1,7 +1,7 @@
 Package: ngme2
 Type: Package
 Title: Latent Mixed Effects Models With Flexible Distributions
-Version: 0.3.0
+Version: 0.5.0
 Authors@R: c(
     person("David", "Bolin", email = "davidbolin@gmail.com", role = c("aut", "cre")),
     person("Xiaotian", "Jin", email = "jin.xiaotian.kim@gmail.com", role = "aut"),

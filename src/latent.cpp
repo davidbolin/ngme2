@@ -49,6 +49,7 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
         fix_flag[latent_fix_theta_sigma]  = Rcpp::as<bool>  (noise_in["fix_theta_sigma"]);
         fix_flag[latent_fix_V]  = Rcpp::as<bool> (noise_in["fix_V"]);
         fix_flag[latent_fix_nu] = Rcpp::as<bool> (noise_in["fix_nu"]);
+        single_V = Rcpp::as<bool> (noise_in["single_V"]);
 
         B_mu     = Rcpp::as< MatrixXd >    (noise_in["B_mu"]);
         B_sigma  = Rcpp::as< MatrixXd >    (noise_in["B_sigma"]);
@@ -300,15 +301,9 @@ void Latent::update_each_iter(bool init) {
     // update distribution of V
     int n = V_size / n_nu;
     for (int i=0; i < n_nu; i++) {
-        if (noise_type[i] == "gal")  {
-            p_vec.segment(i*n, n) = h.segment(i*n, n) * nu(i);
-            a_vec.segment(i*n, n) = VectorXd::Constant(n, nu(i) * 2);
-            b_vec.segment(i*n, n) = VectorXd::Constant(n, 1e-14);
-        } else { // nig or normal_nig
-            p_vec.segment(i*n, n) = VectorXd::Constant(n, -0.5);
-            a_vec.segment(i*n, n) = VectorXd::Constant(n, nu(i));
-            b_vec.segment(i*n, n) = a_vec.segment(i*n, n).cwiseProduct(h.segment(i*n, n).cwiseProduct(h.segment(i*n, n)));
-        }
+        NoiseUtil::update_gig(noise_type[i], nu(i),
+            p_vec.segment(i*n, n), a_vec.segment(i*n, n), b_vec.segment(i*n, n), h.segment(i*n, n));
+
         if (noise_type[i] == "normal") mu.segment(i*n, n).setZero();
     }
 
@@ -337,58 +332,33 @@ void Latent::update_each_iter(bool init) {
                 for (int i=0; i < n_theta_K; i++)
                     trace[i] = chol_solver_K.trace(ope->get_dK()[i]);
             }
-            // update trace_eps if using hessian
-            // if (use_precond) {
-            //     SparseMatrix<double> dK_eps = get_dK_by_eps(i, 0, eps);
-            //     if (!symmetricK) {
-            //         lu_solver_K.computeKTK(K);
-            //         trace[i] = lu_solver_K.trace(dK[i]);
-            //     } else {
-            //         chol_solver_K.compute(K);
-            //         trace[i] = chol_solver_K.trace(dK[i]);
-            //     }
-            // }
         }
     }
 }
 
-void Latent::sample_V() {
+void Latent::sample_V(bool posterior) {
     if (fix_flag[latent_fix_V]) return;
     prevV = V;
-
-    if (n_nu == 1 && noise_type[0] != "normal")
-        V = rGIG_cpp(p_vec, a_vec, b_vec, latent_rng());
-
-    if (n_nu > 1) {
-        int n = V_size / 2;
-        if (noise_type[0] != "normal")
-            V.segment(0, n) = rGIG_cpp(p_vec.segment(0, n), a_vec.segment(0, n), b_vec.segment(0, n), latent_rng());
-        if (noise_type[1] != "normal")
-            V.segment(n, n) = rGIG_cpp(p_vec.segment(n, n), a_vec.segment(n, n), b_vec.segment(n, n), latent_rng());
-    }
-}
-
-void Latent::sample_cond_V() {
-    if (fix_flag[latent_fix_V]) return;
-
-    VectorXd a_inc_vec = mu.cwiseQuotient(sigma).array().pow(2);
-    VectorXd b_inc_vec = (getK() * W + mu.cwiseProduct(h)).cwiseQuotient(sigma).array().pow(2);
 
     double dim = 1;
-    VectorXd p_vec_new = p_vec - VectorXd::Constant(V_size, 0.5 * dim);
-    VectorXd a_vec_new = a_vec + a_inc_vec;
-    VectorXd b_vec_new = b_vec + b_inc_vec;
+    VectorXd p_inc = VectorXd::Zero(V_size);
+    VectorXd a_inc = VectorXd::Zero(V_size);
+    VectorXd b_inc = VectorXd::Zero(V_size);
+    if (posterior) {
+        p_inc = VectorXd::Constant(V_size, -0.5 * dim);
+        a_inc = mu.cwiseQuotient(sigma).array().pow(2);
+        b_inc = (getK() * W + mu.cwiseProduct(h)).cwiseQuotient(sigma).array().pow(2);
+    }
 
-    prevV = V;
-    // sample the part where is not normal
+    // sample V provcess
     if (n_nu == 1 && noise_type[0] != "normal")
-        V = rGIG_cpp(p_vec_new, a_vec_new, b_vec_new, latent_rng());
-
+        NoiseUtil::sample_V(V, noise_type[0], p_vec+p_inc, a_vec+a_inc, b_vec+b_inc, latent_rng, single_V);
     if (n_nu > 1) {
         int n = V_size / 2;
         if (noise_type[0] != "normal")
-            V.segment(0, n) = rGIG_cpp(p_vec_new.segment(0, n), a_vec_new.segment(0, n), b_vec_new.segment(0, n), latent_rng());
+            NoiseUtil::sample_V(V.segment(0, n), noise_type[0], (p_vec+p_inc).segment(0, n), (a_vec+a_inc).segment(0, n), (b_vec+b_inc).segment(0, n), latent_rng, single_V);
         if (noise_type[1] != "normal")
-            V.segment(n, n) = rGIG_cpp(p_vec_new.segment(n, n), a_vec_new.segment(n, n), b_vec_new.segment(n, n), latent_rng());
+            NoiseUtil::sample_V(V.segment(n, n), noise_type[1], (p_vec+p_inc).segment(n, n), (a_vec+a_inc).segment(n, n), (b_vec+b_inc).segment(n, n), latent_rng, single_V);
     }
 }
+

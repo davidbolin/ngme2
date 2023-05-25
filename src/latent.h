@@ -26,8 +26,7 @@
 #include "include/timer.h"
 #include "include/solver.h"
 #include "operator.h"
-#include "var.h"
-#include "sample_rGIG.h"
+#include "noise.h"
 
 using std::exp;
 using std::log;
@@ -81,7 +80,7 @@ protected:
     SparseMatrix<double,0,int> A;
 
     VectorXd p_vec, a_vec, b_vec, nu;
-    // double nu;
+    bool single_V {false};
 
     // solver
     cholesky_solver chol_solver_K;
@@ -139,8 +138,7 @@ public:
         prevV = V;
     }
 
-    void sample_V();
-    void sample_cond_V();
+    void sample_V(bool posterior=true);
 
     /*  3 Operator component   */
     const SparseMatrix<double, 0, int>& getK()  {
@@ -165,12 +163,12 @@ public:
     VectorXd grad_theta_nu() {
         VectorXd grad(n_nu);
         if (n_nu == 1)
-            grad(0) = V_related::grad_theta_nu(noise_type[0], nu[0], V, prevV, h);
+            grad(0) = NoiseUtil::grad_theta_nu(noise_type[0], nu[0], V, prevV, h);
         else {
             // for bivaraite case
             int n = V_size / 2;
-            grad(0) = V_related::grad_theta_nu(noise_type[0], nu[0], V.segment(0, n), prevV.segment(0, n), h.segment(0, n));
-            grad(1) = V_related::grad_theta_nu(noise_type[1], nu[1], V.segment(n, n), prevV.segment(n, n), h.segment(n, n));
+            grad(0) = NoiseUtil::grad_theta_nu(noise_type[0], nu[0], V.segment(0, n), prevV.segment(0, n), h.segment(0, n));
+            grad(1) = NoiseUtil::grad_theta_nu(noise_type[1], nu[1], V.segment(n, n), prevV.segment(n, n), h.segment(n, n));
         }
         return grad;
     }

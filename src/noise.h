@@ -8,19 +8,20 @@
 #include <random>
 #include <string>
 #include <cmath>
+#include "sample_rGIG.h"
 
 using Eigen::VectorXd;
 using std::string;
 
-class V_related {
+class NoiseUtil {
 public:
     // update gig representation (p, a, b)
     static void update_gig(
         const string& noise_type,
         double nu,
-        VectorXd& p,
-        VectorXd& a,
-        VectorXd& b,
+        Eigen::Ref<Eigen::VectorXd> p,
+        Eigen::Ref<Eigen::VectorXd> a,
+        Eigen::Ref<Eigen::VectorXd> b,
         const VectorXd& h
     );
 
@@ -32,13 +33,30 @@ public:
         const VectorXd& h
     );
 
-    // h=1 version
+    // wrapper of sample GIG with extra argument
+    static void sample_V(
+        Eigen::Ref<Eigen::VectorXd> V,
+        const string& noise_type,
+        const VectorXd& p,
+        const VectorXd& a,
+        const VectorXd& b,
+        std::mt19937& rng,
+        bool single_V = false
+    ) {
+        if (single_V) {
+            V = VectorXd::Constant(1, rGIG_cpp(p[0], a[0], b[0], rng()));
+        } else {
+            V = rGIG_cpp(p, a, b, rng());
+        }
+    }
+
+    // ---- h = 1 ----
     static void update_gig(
         const string& noise_type,
         double nu,
-        VectorXd& p,
-        VectorXd& a,
-        VectorXd& b
+        Eigen::Ref<Eigen::VectorXd> p,
+        Eigen::Ref<Eigen::VectorXd> a,
+        Eigen::Ref<Eigen::VectorXd> b
     ) {
         VectorXd h = VectorXd::Ones(p.size());
         update_gig(noise_type, nu, p, a, b, h);

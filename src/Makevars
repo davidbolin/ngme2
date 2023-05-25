@@ -8,7 +8,7 @@ R_XTRA_CPPFLAGS =  -I$(R_INCLUDE_DIR)
 UTILS = util/GIG.o  util/rgig.o  util/MatrixAlgebra.o util/solver.o
 LATENTS = latents/ar1.o latents/matern.o latents/tensorprod.o latents/randeff.o latents/bivar.o
 
-OBJECTS = RcppExports.o var.o sample_rGIG.o estimate.o optimizer.o block.o latent.o ngme.o \
+OBJECTS = RcppExports.o noise.o sample_rGIG.o estimate.o optimizer.o block.o latent.o ngme.o \
    $(UTILS) $(TESTS) $(LATENTS)
 
 # Make the shared object

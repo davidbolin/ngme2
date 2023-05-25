@@ -106,7 +106,7 @@ if (debug) std::cout << "before set block A" << std::endl;
     noise_mu = B_mu * theta_mu;
     noise_sigma = (B_sigma * theta_sigma).array().exp();
     nu = Rcpp::as<double> (noise_in["nu"]);
-    if (family!="normal") V_related::update_gig(family, nu, p_vec, a_vec, b_vec);
+    if (family!="normal") NoiseUtil::update_gig(family, nu, p_vec, a_vec, b_vec);
 
   if (corr_measure) {
     cor_cols = Rcpp::as<vector<int>> (block_model["cor_cols"]);
@@ -342,7 +342,7 @@ void BlockModel::set_parameter(const VectorXd& Theta) {
 
   // measurement noise
   set_theta_merr(Theta.segment(n_la_params, n_merr));
-  if (family!="normal") V_related::update_gig(family, nu, p_vec, a_vec, b_vec);
+  if (family!="normal") NoiseUtil::update_gig(family, nu, p_vec, a_vec, b_vec);
 
   // fixed effects
   if (!fix_flag[block_fix_beta]) {
@@ -463,7 +463,7 @@ VectorXd BlockModel::grad_theta_merr() {
   if (!fix_flag[block_fix_theta_mu])     grad.segment(0, n_theta_mu) = grad_theta_mu();
   if (!fix_flag[block_fix_theta_sigma])  grad.segment(n_theta_mu, n_theta_sigma) = grad_theta_sigma();
   if (!fix_flag[block_fix_nu] && family != "normal") {
-    grad(n_theta_mu + n_theta_sigma) = V_related::grad_theta_nu(family, nu, noise_V, noise_prevV);
+    grad(n_theta_mu + n_theta_sigma) = NoiseUtil::grad_theta_nu(family, nu, noise_V, noise_prevV);
   }
 
   // grad of theta_rho

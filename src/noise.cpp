@@ -1,11 +1,11 @@
-#include "var.h"
+#include "noise.h"
 
-void V_related::update_gig(
+void NoiseUtil::update_gig(
     const string& noise_type,
     double nu,
-    VectorXd& p,
-    VectorXd& a,
-    VectorXd& b,
+    Eigen::Ref<Eigen::VectorXd> p,
+    Eigen::Ref<Eigen::VectorXd> a,
+    Eigen::Ref<Eigen::VectorXd> b,
     const VectorXd& h
 ) {
     int n = h.size();
@@ -20,7 +20,7 @@ void V_related::update_gig(
     }
 }
 
-double V_related::grad_theta_nu(
+double NoiseUtil::grad_theta_nu(
     const string& noise_type,
     double nu,
     const VectorXd& V,

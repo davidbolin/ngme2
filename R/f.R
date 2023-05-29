@@ -129,6 +129,11 @@ f <- function(
   # else
   noise <- update_noise(noise, ope = operator)
 
+  # check noise's dimension
+  # stopifnot(
+  #   nrow(noise$B_mu) == nrow(operator$K)
+  # )
+
   if (model == "re") {
     noise$fix_theta_sigma <- TRUE
   }

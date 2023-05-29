@@ -239,15 +239,15 @@ check_dim <- function(ngme_model) {
       stop("The number of columns of X is not equal to the length of beta")
     }
     for (latent in ngme$models) {
-        if (latent$V_size != latent$noise$n_noise) {
-          stop("The V_size of the latent model is not equal to the length of noise")
-        }
         # ncol(A) = W_size
         if (ncol(latent$A) != latent$W_size) {
           stop("The number of columns of A is not equal to the W_size of the latent model")
         }
 
-        stopifnot(nrow(latent$noise$B_sigma) == latent$noise$n_noise)
+        stopifnot(
+          nrow(latent$noise$B_sigma) == latent$V_size,
+          nrow(latent$noise$B_mu) == latent$V_size
+        )
     }
   }
 }

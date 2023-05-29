@@ -170,9 +170,9 @@ compute_indices <- function(ngme_1rep, test_idx, N = 100, seed=Sys.time()) {
   fe_N <- matrix(rep(fe, N), ncol=N, byrow=F)
 
   mn_N <- sapply(1:N, function(x)
-    simulate(ngme_1rep$noise, n_noise = length(y_data)))
+    simulate(ngme_1rep$noise))
   mn2_N <- sapply(1:N, function(x)
-    simulate(ngme_1rep$noise, n_noise = length(y_data)))
+    simulate(ngme_1rep$noise))
 
   mu_N <- fe_N + AW_N
   Y_N <- fe_N + AW_N + mn_N

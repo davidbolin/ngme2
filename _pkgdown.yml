@@ -89,7 +89,6 @@ reference:
     - simulate.ngme_noise
   - title: Auxiliary functions
     contents:
-    - create_noise
     - mean_list
     - ngme_as_sparse
     - control_opt

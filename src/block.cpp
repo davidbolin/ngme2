@@ -283,12 +283,14 @@ long long time_compute_g = 0;
 long long time_sample_w = 0;
 auto timer_computeg = std::chrono::steady_clock::now();
 
+  // sample_uncond_noise_V()
+  sample_uncond_V();
   VectorXd avg_gradient = VectorXd::Zero(n_params);
   for (int i=0; i < n_gibbs; i++) {
 // std::cout << "index of gibbs = " << i << std::endl;
     // gibbs sampling
-    sampleV_WY();
     sampleW_VY();
+    sampleV_WY();
     sample_noise_V();
 
     // stack grad
@@ -303,9 +305,10 @@ auto timer_computeg = std::chrono::steady_clock::now();
     }
 time_compute_g += since(timer_computeg).count();
 
-    // gradient.segment(n_la_params + n_feff, n_theta_sigma) = grad_theta_merr();
+    // grad for merr
     gradient.segment(n_la_params, n_merr) = grad_theta_merr();
-    // fixed effects
+
+    // grad for fixed effects
     if (!fix_flag[block_fix_beta]) {
       gradient.segment(n_la_params + n_merr, n_feff) = (1.0/n_repl) * grad_beta();
     }
@@ -567,7 +570,7 @@ Rcpp::List BlockModel::sampling(int n, bool posterior) {
       sampleW_VY();
       sample_noise_V(true);
     } else {
-      sample_V();
+      sample_uncond_V();
       sampleW_V();
       sample_noise_V(false);
     }

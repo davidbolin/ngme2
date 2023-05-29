@@ -2,6 +2,8 @@
 #define NGME_SAMPLE_RGIG_H
 
 #include <RcppEigen.h>
+using Eigen::VectorXd;
+using Eigen::Ref;
 
 Eigen::VectorXd rGIG_cpp(
 	const Eigen::VectorXd&,

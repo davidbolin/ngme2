@@ -4,6 +4,7 @@
 #include <chrono>
 #include <RcppEigen.h>
 #include "sample_rGIG.h"
+using Eigen::VectorXd;
 
 // [[Rcpp::export]]
 Eigen::VectorXd rGIG_cpp(
@@ -18,7 +19,7 @@ Eigen::VectorXd rGIG_cpp(
     seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
   sampler.seed(seed);
 
-  Eigen::VectorXd V(p.size());
+  VectorXd V(p.size());
   for(int i = 0; i < p.size(); i++)
     V[i] = sampler.sample(p[i], a[i], b[i]);
   return V;

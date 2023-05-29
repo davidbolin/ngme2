@@ -300,15 +300,6 @@ void Latent::update_each_iter(bool init) {
     if (noise_type[0] == "normal_nig")
         sigma_normal = (B_sigma_normal * theta_sigma_normal).array().exp();
 
-    // update distribution of V
-    int n = V_size / n_nu;
-    for (int i=0; i < n_nu; i++) {
-        NoiseUtil::update_gig(noise_type[i], nu(i),
-            p_vec.segment(i*n, n), a_vec.segment(i*n, n), b_vec.segment(i*n, n), h.segment(i*n, n));
-
-        if (noise_type[i] == "normal") mu.segment(i*n, n).setZero();
-    }
-
     // update on K, dK, trace, bigK for sampling...
     if (!init) ope->update_K(theta_K);
     if (!numer_grad) {
@@ -341,26 +332,49 @@ void Latent::update_each_iter(bool init) {
 void Latent::sample_V(bool posterior) {
     if (fix_flag[latent_fix_V]) return;
     prevV = V;
-
     double dim = 1;
-    VectorXd p_inc = VectorXd::Zero(V_size);
-    VectorXd a_inc = VectorXd::Zero(V_size);
-    VectorXd b_inc = VectorXd::Zero(V_size);
-    if (posterior) {
-        p_inc = VectorXd::Constant(V_size, -0.5 * dim);
-        a_inc = mu.cwiseQuotient(sigma).array().pow(2);
-        b_inc = (getK() * W + mu.cwiseProduct(h)).cwiseQuotient(sigma).array().pow(2);
-    }
 
-    // sample V provcess
-    if (n_nu == 1 && noise_type[0] != "normal")
-        NoiseUtil::sample_V(V, noise_type[0], p_vec+p_inc, a_vec+a_inc, b_vec+b_inc, latent_rng, single_V);
-    if (n_nu > 1) {
-        int n = V_size / 2;
-        if (noise_type[0] != "normal")
-            NoiseUtil::sample_V(V.segment(0, n), noise_type[0], (p_vec+p_inc).segment(0, n), (a_vec+a_inc).segment(0, n), (b_vec+b_inc).segment(0, n), latent_rng, single_V);
-        if (noise_type[1] != "normal")
-            NoiseUtil::sample_V(V.segment(n, n), noise_type[1], (p_vec+p_inc).segment(n, n), (a_vec+a_inc).segment(n, n), (b_vec+b_inc).segment(n, n), latent_rng, single_V);
+    int n = V_size / n_nu;
+    if (!posterior) {
+        // sample unconditional V (also build p, a, b)
+        if (single_V) {
+            // to-do (shareV or not)
+        } else {
+            // update p,a,b
+            for (int i=0; i < n_nu; i++) {
+                if (noise_type[i] == "normal") continue;
+                // update p_vec, a_vec, b_vec
+                NoiseUtil::update_gig(noise_type[i], nu(i),
+                p_vec.segment(i*n, n), a_vec.segment(i*n, n), b_vec.segment(i*n, n), h.segment(i*n, n));
+                V.segment(i*n, n) = rGIG_cpp(p_vec.segment(i*n, n), a_vec.segment(i*n, n), b_vec.segment(i*n, n), latent_rng());
+
+                // update p_inc, a_inc
+                p_inc = VectorXd::Constant(V_size, -0.5 * dim);
+                a_inc = mu.cwiseQuotient(sigma).array().pow(2);
+
+                // sample unconditional V
+                V.segment(i*n, n) = rGIG_cpp(p_vec.segment(i*n, n), a_vec.segment(i*n, n), b_vec.segment(i*n, n), latent_rng());
+            }
+            if (n_nu == 2 && share_V) {
+                V.segment(n, n) = V.segment(0, n);
+            }
+        }
+    } else {
+        // sample conditional V
+        if (single_V) {
+            // to-do (shareV or not)
+        } else {
+            // update b_inc
+            b_inc = (getK() * W + mu.cwiseProduct(h)).cwiseQuotient(sigma).array().pow(2);
+            for (int i=0; i < n_nu; i++) {
+                if (noise_type[i] == "normal") continue;
+
+                // sample conditional V
+                V.segment(i*n, n) = rGIG_cpp((p_vec+p_inc).segment(i*n, n), (a_vec+a_inc).segment(i*n, n), (b_vec+b_inc).segment(i*n, n), latent_rng());
+            }
+            if (n_nu == 2 && share_V) {
+                V.segment(n, n) = V.segment(0, n);
+            }
+        }
     }
 }
-

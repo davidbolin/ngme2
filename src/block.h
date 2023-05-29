@@ -114,7 +114,7 @@ public:
       }
     }
 
-    void sample_V() {
+    void sample_uncond_V() {
       if(n_latent > 0){
         for (unsigned i=0; i < n_latent; i++) {
             (*latents[i]).sample_V(false);

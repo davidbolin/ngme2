@@ -27,6 +27,7 @@
 #include "include/solver.h"
 #include "operator.h"
 #include "noise.h"
+#include "sample_rGIG.h"
 
 using std::exp;
 using std::log;
@@ -80,7 +81,8 @@ protected:
     SparseMatrix<double,0,int> A;
 
     VectorXd p_vec, a_vec, b_vec, nu;
-    bool single_V {false};
+    VectorXd p_inc, a_inc, b_inc;
+    bool single_V {false}, share_V {false};
 
     // solver
     cholesky_solver chol_solver_K;

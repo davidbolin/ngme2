@@ -117,7 +117,8 @@ VectorXd Latent::grad_theta_mu() {
         return - grad / sqrt(W_size);
     else
         // return grad / hess;
-        return - 1.0 / V_size * grad;
+        return - grad / sqrt(V_size);
+        // return - 1.0 / V_size * grad;
 }
 
 // return the gradient wrt. theta, theta=log(sigma)

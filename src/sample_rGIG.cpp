@@ -6,10 +6,12 @@
 #include "sample_rGIG.h"
 
 // [[Rcpp::export]]
-Eigen::VectorXd rGIG_cpp(Eigen::VectorXd p,
-                       Eigen::VectorXd   a,
-                       Eigen::VectorXd   b,
-                       unsigned long     seed) {
+Eigen::VectorXd rGIG_cpp(
+  const Eigen::VectorXd& p,
+	const Eigen::VectorXd& a,
+	const Eigen::VectorXd& b,
+  unsigned long     seed
+) {
 
   gig sampler;
   if(seed == 0)

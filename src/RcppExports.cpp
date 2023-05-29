@@ -38,14 +38,14 @@ BEGIN_RCPP
 END_RCPP
 }
 // rGIG_cpp
-Eigen::VectorXd rGIG_cpp(Eigen::VectorXd p, Eigen::VectorXd a, Eigen::VectorXd b, unsigned long seed);
+Eigen::VectorXd rGIG_cpp(const Eigen::VectorXd& p, const Eigen::VectorXd& a, const Eigen::VectorXd& b, unsigned long seed);
 RcppExport SEXP _ngme2_rGIG_cpp(SEXP pSEXP, SEXP aSEXP, SEXP bSEXP, SEXP seedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Eigen::VectorXd >::type p(pSEXP);
-    Rcpp::traits::input_parameter< Eigen::VectorXd >::type a(aSEXP);
-    Rcpp::traits::input_parameter< Eigen::VectorXd >::type b(bSEXP);
+    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type p(pSEXP);
+    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type a(aSEXP);
+    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type b(bSEXP);
     Rcpp::traits::input_parameter< unsigned long >::type seed(seedSEXP);
     rcpp_result_gen = Rcpp::wrap(rGIG_cpp(p, a, b, seed));
     return rcpp_result_gen;

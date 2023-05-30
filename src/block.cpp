@@ -284,12 +284,14 @@ long long time_sample_w = 0;
 auto timer_computeg = std::chrono::steady_clock::now();
 
   VectorXd avg_gradient = VectorXd::Zero(n_params);
+
+  // sample_uncond_V();
   for (int i=0; i < n_gibbs; i++) {
 // std::cout << "index of gibbs = " << i << std::endl;
     // gibbs sampling
-    sampleV_WY();
     sampleW_VY();
-    sample_noise_V();
+    sample_cond_V();
+    sample_cond_noise_V();
 
     // stack grad
     VectorXd gradient = VectorXd::Zero(n_params);
@@ -563,13 +565,13 @@ Rcpp::List BlockModel::sampling(int n, bool posterior) {
 
   for (int i=0; i < n; i++) {
     if (posterior) {
-      sampleV_WY();
+      sample_cond_V();
       sampleW_VY();
-      sample_noise_V(true);
+      sample_cond_noise_V(true);
     } else {
-      sample_V();
+      sample_uncond_V();
       sampleW_V();
-      sample_noise_V(false);
+      sample_cond_noise_V(false);
     }
 
     AWs.push_back(A * getW());

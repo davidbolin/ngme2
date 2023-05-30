@@ -99,14 +99,15 @@ public:
     void burn_in(int iterations) {
         for (int i=0; i < iterations; i++) {
             sampleW_VY();
-            sampleV_WY();
-            sample_noise_V();
+            sample_cond_V();
+            sample_cond_noise_V();
         }
     }
 
     int get_n_obs() const {return n_obs;}
     void sampleW_VY();
-    void sampleV_WY() {
+
+    void sample_cond_V() {
       if(n_latent > 0){
         for (unsigned i=0; i < n_latent; i++) {
             (*latents[i]).sample_V(true);
@@ -114,7 +115,7 @@ public:
       }
     }
 
-    void sample_V() {
+    void sample_uncond_V() {
       if(n_latent > 0){
         for (unsigned i=0; i < n_latent; i++) {
             (*latents[i]).sample_V(false);
@@ -236,7 +237,7 @@ public:
         return Y - X * beta - (-VectorXd::Ones(n_obs) + noise_V).cwiseProduct(noise_mu);
     }
 
-    void sample_noise_V(bool posterior = true) {
+    void sample_cond_noise_V(bool posterior = true) {
         if (family == "normal" || fix_flag[blcok_fix_V]) return;
         noise_prevV = noise_V;
 

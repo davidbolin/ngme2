@@ -72,8 +72,7 @@ ngme_noise <- function(
     "Please input B_mu as a matrix." = is.matrix(B_mu),
     "Please input B_sigma as a matrix." = is.matrix(B_sigma),
     "Please make sure ncol(B_mu) == length(theta_mu)." = ncol(B_mu) == length(theta_mu),
-    "Please make sure ncol(B_sigma) == length(theta_sigma)." = ncol(B_sigma) == length(theta_sigma),
-    nrow(B_mu) == nrow(B_sigma)
+    "Please make sure ncol(B_sigma) == length(theta_sigma)." = ncol(B_sigma) == length(theta_sigma)
   )
 
   structure(

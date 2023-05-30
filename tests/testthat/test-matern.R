@@ -30,7 +30,7 @@ load_all()
 
   W <- simulate(true_model)
   mean(W)
-  mean(attr(W, "noise")$h)
+  attr(W, "noise")
 
   Y <- as.numeric(true_model$A %*% W) + rnorm(n_obs, sd=0.5)
 all(true_model$A == inla.spde.make.A(loc, mesh=mesh))
@@ -54,21 +54,22 @@ all(true_model$A == inla.spde.make.A(loc, mesh=mesh))
       control = control_f(numer_grad = F),
       # fix_theta_K = T, theta_kappa = log(3),
       # fix_W = TRUE, W = W,
-      debug = T
+      debug = F
     ),
     data = data.frame(Y = Y),
     control_opt = control_opt(
       estimation = T,
-      iterations = 2000,
-      n_parallel_chain = 4,
+      iterations = 2,
+      n_parallel_chain = 1,
       print_check_info = F,
       verbose = T,
-      max_absolute_step = 10,
-      max_relative_step = 10,
+      max_absolute_step = 1,
+      max_relative_step = 1,
       std_lim = 0.01
     ),
     debug = F
   )
+
   # out$replicates[[1]]$models[[1]]$noise$h == out$replicates[[1]]$models[[1]]$h
   out
   traceplot(out, "spde")

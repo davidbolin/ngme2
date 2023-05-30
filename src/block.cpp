@@ -439,7 +439,7 @@ VectorXd BlockModel::get_theta_merr() const {
 
   theta_merr.segment(0, n_theta_mu) = theta_mu;
   theta_merr.segment(n_theta_mu, n_theta_sigma) = theta_sigma;
-  theta_merr(n_theta_mu + n_theta_sigma) = exp(nu);
+  theta_merr(n_theta_mu + n_theta_sigma) = log(nu);
 
   // estimate correlation
 // std::cout << " rho === " << rho << std::endl;
@@ -477,7 +477,7 @@ VectorXd BlockModel::grad_theta_merr() {
 void BlockModel::set_theta_merr(const VectorXd& theta_merr) {
   theta_mu = theta_merr.segment(0, n_theta_mu);
   theta_sigma = theta_merr.segment(n_theta_mu, n_theta_sigma);
-  nu = log(theta_merr(n_theta_mu + n_theta_sigma));
+  nu = exp(theta_merr(n_theta_mu + n_theta_sigma));
 
   // update mu, sigma
   noise_mu = (B_mu * theta_mu);

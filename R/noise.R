@@ -49,8 +49,8 @@ ngme_noise <- function(
   fix_nu          = FALSE,
   V               = NULL,
   fix_V           = FALSE,
-  single_V        = FALSE,
   init_V          = TRUE,
+  single_V        = FALSE,
   share_V         = FALSE,
   hessian         = TRUE,
   corr_measurement = FALSE,
@@ -356,13 +356,13 @@ print.ngme_noise <- function(x, padding = 0, prefix = "Noise type", ...) {
       # bivariate noise
       cat(pad_space); cat(" ");
       if (noise$single_V && noise$share_V) {
-        cat("Bivariate type-G1 noise (single_V && share_V) :");
+        cat("Bivariate type-G1 noise (single_V && share_V):");
       } else if (noise$single_V && !noise$share_V) {
-        cat("Bivariate type-G2 noise (single_V) :");
+        cat("Bivariate type-G2 noise (single_V):");
       } else if (!noise$single_V && noise$share_V) {
-        cat("Bivariate type-G3 noise (share_V) :");
+        cat("Bivariate type-G3 noise (share_V):");
       } else {
-        cat("Bivariate type-G4 noise :");
+        cat("Bivariate type-G4 noise:");
       }
       cat("\n")
       names <- names(noise$bv_noises)

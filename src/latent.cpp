@@ -268,7 +268,7 @@ const VectorXd Latent::get_grad() {
     if (noise_type[0] == "normal_nig")
         grad.segment(n_theta_K+n_theta_mu+n_theta_sigma+n_nu, n_theta_sigma_normal) = grad_theta_sigma_normal();
 // DEBUG: checking grads
-// if (debug) {
+if (debug) {
     if (abs(grad.segment(0, n_theta_K).mean()) > 1)
     std::cout << "g_K is large, g_K = " << grad.segment(0, n_theta_K).mean() << std::endl;
 
@@ -280,7 +280,7 @@ const VectorXd Latent::get_grad() {
 
     if (abs(grad.segment(n_theta_K+n_theta_mu+n_theta_sigma, n_nu).mean()) > 1)
     std::cout << "g_nu is large, g_nu = " << grad.segment(n_theta_K+n_theta_mu+n_theta_sigma, n_nu).mean() << std::endl;
-// }
+}
 // if (debug) std::cout << "finish latent gradient"<< std::endl;
     return grad;
 }

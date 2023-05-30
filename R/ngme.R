@@ -348,7 +348,6 @@ ngme_parse_formula <- function(
       model_eval <- eval(tmp, envir = data, enclos = global_env_first)
       models_rep[[model_eval$name]] <- model_eval
     }
-
     # give initial value (whole dataset)
     lm.model <- stats::lm.fit(X_full, ngme_response)
     if (is.null(control_ngme$beta)) control_ngme$beta <- lm.model$coeff

@@ -32,13 +32,14 @@ simulate.ngme_model <- function(
     if (length(noise$noise_type) == 2) {
         # bivariate noise
         e1 <- simulate_noise(noise$noise_type[[1]],
-          head(h, n/2), head(mu, n/2), head(sigma, n/2), nu[[1]], rnorm(1))
-        e2 <- simulate_noise(noise$noise_type[[2]],
-          tail(h, n/2), tail(mu, n/2), tail(sigma, n/2), nu[[2]], rnorm(1))
+          head(h, n/2), head(mu, n/2), head(sigma, n/2), nu[[1]], rnorm(1), noise$single_V)
+        if (noise$share_V) e2 <- e1
+        else e2 <- simulate_noise(noise$noise_type[[2]],
+            tail(h, n/2), tail(mu, n/2), tail(sigma, n/2), nu[[2]], rnorm(1), noise$single_V)
         e <- c(e1, e2);
         attr(e, "V") <- c(attr(e1, "V"), attr(e2, "V"))
     } else {
-        e <- simulate_noise(noise$noise_type, h, mu, sigma, nu, rnorm(1))
+        e <- simulate_noise(noise$noise_type, h, mu, sigma, nu, rnorm(1), noise$single_V)
     }
 
     W <- as.numeric(solve(model$operator$K, e))
@@ -49,25 +50,36 @@ simulate.ngme_model <- function(
     W
 }
 
-
 simulate_noise <- function(
-    noise_type, h_vec, mu_vec, sigma_vec, nu, seed
+    noise_type, h_vec, mu_vec, sigma_vec, nu, seed, single_V
 ) {
     stopifnot(
         length(mu_vec) == length(sigma_vec),
         length(mu_vec) == length(h_vec)
     )
     n <- length(mu_vec)
-    if (noise_type == "nig") {
-        V <- ngme2::rig(n, a=nu, b=nu * (h_vec)^2, seed = seed)
-    } else if (noise_type == "normal") {
-        V <- h_vec
-    } else if (noise_type == "gal") {
-        V <- rgamma(n, shape = h_vec * nu, rate = nu)
+    if (!single_V) {
+        if (noise_type == "nig") {
+            V <- ngme2::rig(n, a=nu, b=nu * (h_vec)^2, seed = seed)
+        } else if (noise_type == "normal") {
+            V <- h_vec
+        } else if (noise_type == "gal") {
+            V <- rgamma(n, shape = h_vec * nu, rate = nu)
+        } else {
+            stop("This type of nosie is not support yet!")
+        }
+        e <- mu_vec * (V - h_vec) + sigma_vec * sqrt(V) * rnorm(n)
     } else {
-        stop("This type of nosie is not support yet!")
+        if (noise_type == "nig") {
+            v1 <- ngme2::rig(1, a=nu, b=nu, seed=seed)
+        } else if (noise_type == "gal") {
+            v1 <- rgamma(1, nu, nu)
+        }
+        V <- rep(v1, n)
+        z <- rnorm(n, sd=sqrt(h_vec))
+        e <- (v1-1) * mu_vec * h_vec + sqrt(v1) * sigma_vec * z
     }
-    e <- mu_vec * (V - h_vec) + sigma_vec * sqrt(V) * rnorm(n)
+
     attr(e, "V") <- V
     e
 }

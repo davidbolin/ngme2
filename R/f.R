@@ -137,6 +137,9 @@ f <- function(
     noise2 <- update_noise(noise[[operator$model_names[[2]]]],
       n=length(operator$h)/2)
     bv_noises <- list(noise1, noise2); names(bv_noises) <- operator$model_names
+    share_V <- !is.null(noise$share_V) && noise$share_V
+    if (share_V && noise1$noise_type != noise2$noise_type)
+      stop("Now share_V is only supported for 2 NIG noise.")
     noise <- ngme_noise(
       noise_type = c(noise1$noise_type, noise2$noise_type),
       B_mu    = as.matrix(Matrix::bdiag(noise1$B_mu, noise2$B_mu)),
@@ -151,7 +154,6 @@ f <- function(
   } else {
     noise <- update_noise(noise, n = length(operator$h))
   }
-
   if (model == "re") {
     noise$fix_theta_sigma <- TRUE
   }

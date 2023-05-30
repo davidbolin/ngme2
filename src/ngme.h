@@ -36,9 +36,9 @@ private:
 public:
   Ngme(const Rcpp::List& list_ngmes, unsigned long seed, int sampling_strategy);
 
-  VectorXd get_parameter() const override;
+  VectorXd get_parameter() override;
   void set_parameter(const VectorXd& p) override;
-  VectorXd get_stepsizes() const override {
+  VectorXd get_stepsizes() override {
     return VectorXd::Ones(n_params);
   }
 

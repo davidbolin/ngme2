@@ -45,6 +45,7 @@ simulate.ngme_model <- function(
 
     # attach noise attributes
     attr(W, "noise") <- noise
+    attr(W, "V") <- attr(e, "V")
     W
 }
 

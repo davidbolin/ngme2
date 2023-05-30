@@ -61,7 +61,7 @@ m1$operator$K
 Simulating an AR(1) model with `ngme2` is simple. Just pass the corresponding model into `simulate` function.
 
 ```{r ar-simulation, fig.align="center"}
-n_obs <- 1000
+n_obs <- 500
 day <- 1:n_obs
 load_all()
 ar1_model <- f(day, model="ar1", rho = 0.5,
@@ -96,7 +96,10 @@ ngme_out <- ngme(
     # fix_W = T, W = W,
     name = "my_ar",
     model = "ar1",
-    noise = noise_nig(),
+    noise = noise_nig(
+      # fix_V = T,
+      # V = attr(W, "V")
+    ),
     debug=T
   ),
   data = data.frame(x1=x1, x2=x2, Y=Y),
@@ -109,7 +112,7 @@ ngme_out <- ngme(
     max_relative_step = 10,
     stop_points = 10,
     print_check_info = FALSE,
-    seed = 3
+    seed = 6
   )
 )
 ngme_out

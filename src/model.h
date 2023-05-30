@@ -9,8 +9,8 @@ using Eigen::Triplet;
 
 class Model {
 public:
-    virtual VectorXd             get_parameter() const=0;
-    virtual VectorXd             get_stepsizes() const {
+    virtual VectorXd             get_parameter()=0;
+    virtual VectorXd             get_stepsizes() {
         return VectorXd::Ones(get_parameter().size());
     };
     virtual void                 set_parameter(const VectorXd&)=0;
@@ -47,12 +47,12 @@ public:
 
     SomeFun(VectorXd x0) : x(x0) {}
 
-    VectorXd precond_grad() {
+    VectorXd precond_grad() override {
         return grad();
     }
 
     // gradient of f(x, y)
-    VectorXd grad() {
+    VectorXd grad() override {
         VectorXd g (2);
         g(0) = 6 * x(0) + 1;
         g(1) = 4 * x(1) + 3;
@@ -60,7 +60,7 @@ public:
     }
 
     // hessian of f(x, y)
-    MatrixXd precond() const {
+    MatrixXd precond() const override {
         return H;
     };
 
@@ -68,11 +68,11 @@ public:
         (*this).x = x;
     }
 
-    VectorXd get_parameter() const {
+    VectorXd get_parameter() override {
         return x;
     }
 
-    VectorXd get_stepsizes() const {
+    VectorXd get_stepsizes() override {
         return Eigen::VectorXd::Constant(2, 0);
     }
 };

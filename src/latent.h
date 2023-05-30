@@ -92,8 +92,6 @@ public:
     Latent(const Rcpp::List&, unsigned long seed);
     ~Latent() {}
 
-    void update_each_iter(bool init=false);
-
     /*  1 Model itself   */
     int get_W_size() const             {return W_size; }
     int get_V_size() const             {return V_size; }
@@ -140,7 +138,9 @@ public:
         prevV = V;
     }
 
-    void sample_V(bool posterior=true);
+    void update_each_iter(bool init=false);
+    void sample_cond_V();
+    void sample_uncond_V();
 
     /*  3 Operator component   */
     const SparseMatrix<double, 0, int>& getK()  {
@@ -148,7 +148,7 @@ public:
     }
 
     /* 4 for optimizer */
-    const VectorXd get_parameter() const;
+    const VectorXd get_parameter();
     const VectorXd get_grad();
     void           set_parameter(const VectorXd&);
     void           finishOpt(int i) {fix_flag[i] = 0; }

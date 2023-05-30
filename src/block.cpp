@@ -256,7 +256,7 @@ void BlockModel::sampleW_VY()
 }
 
 // ---------------- get, set update gradient ------------------
-VectorXd BlockModel::get_parameter() const {
+VectorXd BlockModel::get_parameter() {
 if (debug) std::cout << "Start get_parameter"<< std::endl;
     VectorXd thetas (n_params);
     int pos = 0;
@@ -292,7 +292,6 @@ auto timer_computeg = std::chrono::steady_clock::now();
     sampleW_VY();
     sampleV_WY();
     sample_noise_V();
-
     // stack grad
     VectorXd gradient = VectorXd::Zero(n_params);
 

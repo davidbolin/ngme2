@@ -97,6 +97,8 @@ public:
 
     /* Gibbs Sampler */
     void burn_in(int iterations) {
+        sample_uncond_V();
+        // sample_uncond_noise_V();
         for (int i=0; i < iterations; i++) {
             sampleW_VY();
             sampleV_WY();
@@ -109,7 +111,7 @@ public:
     void sampleV_WY() {
       if(n_latent > 0){
         for (unsigned i=0; i < n_latent; i++) {
-            (*latents[i]).sample_V(true);
+            (*latents[i]).sample_cond_V();
         }
       }
     }
@@ -117,7 +119,7 @@ public:
     void sample_uncond_V() {
       if(n_latent > 0){
         for (unsigned i=0; i < n_latent; i++) {
-            (*latents[i]).sample_V(false);
+            (*latents[i]).sample_uncond_V();
         }
       }
     }
@@ -129,7 +131,7 @@ public:
     /* Optimizer related */
     int                  get_n_params() const {return n_params;}
 
-    VectorXd             get_parameter() const;
+    VectorXd             get_parameter();
     void                 set_parameter(const VectorXd&);
     VectorXd             precond_grad();
 

@@ -60,7 +60,7 @@ VectorXd Ngme::grad() {
   return g;
 }
 
-VectorXd Ngme::get_parameter() const {
+VectorXd Ngme::get_parameter() {
   VectorXd p = ngme_repls[0]->get_parameter();
 if (debug) std::cout << "p in get_parameter() in ngme class = " << p << std::endl;
   return p;

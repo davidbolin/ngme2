@@ -59,8 +59,8 @@ all(true_model$A == inla.spde.make.A(loc, mesh=mesh))
     data = data.frame(Y = Y),
     control_opt = control_opt(
       estimation = T,
-      iterations = 2,
-      n_parallel_chain = 1,
+      iterations = 1000,
+      n_parallel_chain = 4,
       print_check_info = F,
       verbose = T,
       max_absolute_step = 1,

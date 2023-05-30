@@ -65,6 +65,8 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
 
         nu = Rcpp::as<VectorXd> (noise_in["nu"]);
         n_nu = nu.size();
+        share_V = Rcpp::as<bool> (noise_in["share_V"]);
+        single_V = Rcpp::as<bool> (noise_in["single_V"]);
 
     // init W
     if (model_list["W"] != R_NilValue) {
@@ -116,13 +118,14 @@ VectorXd Latent::grad_theta_mu() {
     for (int l=0; l < n_theta_mu; l++) {
         grad(l) += (V-h).cwiseProduct(B_mu.col(l).cwiseQuotient(SV)).dot(getK()*W - mu.cwiseProduct(V-h));
     }
-    double hess = -(prevV-h).cwiseQuotient(prevSV).dot(prevV-h);
+    // double hess = -(prevV-h).cwiseQuotient(prevSV).dot(prevV-h);
+    double hess = -(prevV-h).cwiseQuotient(SV).dot(prevV-h);
 
     if (V_size < 10)
         return - grad / sqrt(W_size);
     else
-        return - 1.0 / V_size * grad;
-        // return grad / hess;
+        // return - 1.0 / V_size * grad;
+        return grad / hess;
         // return - grad / sqrt(V_size);
 }
 

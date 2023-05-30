@@ -171,7 +171,10 @@ public:
             // for bivaraite case
             int n = V_size / 2;
             grad(0) = NoiseUtil::grad_theta_nu(noise_type[0], nu[0], V.segment(0, n), prevV.segment(0, n), h.segment(0, n));
-            grad(1) = NoiseUtil::grad_theta_nu(noise_type[1], nu[1], V.segment(n, n), prevV.segment(n, n), h.segment(n, n));
+            if (share_V)
+                grad(1) = grad(0);
+            else
+                grad(1) = NoiseUtil::grad_theta_nu(noise_type[1], nu[1], V.segment(n, n), prevV.segment(n, n), h.segment(n, n));
         }
         return grad;
     }

@@ -355,15 +355,15 @@ print.ngme_noise <- function(x, padding = 0, prefix = "Noise type", ...) {
   } else {
     if (length(noise$noise_type) == 2) {
       # bivariate noise
-      cat(pad_space); cat("Bivariate noise ");
+      cat(pad_space); cat(" ");
       if (noise$single_V && noise$share_V) {
-        cat("(Type-G1, single_V && share_V) :");
+        cat("Bivariate type-G1 noise (single_V && share_V) :");
       } else if (noise$single_V && !noise$share_V) {
-        cat("(Type-G2) single_V:");
+        cat("Bivariate type-G2 noise (single_V) :");
       } else if (!noise$single_V && noise$share_V) {
-        cat("(Type-G3, share_V) : ");
+        cat("Bivariate type-G3 noise (share_V) :");
       } else {
-        cat("(Type-G4) : ");
+        cat("Bivariate type-G4 noise :");
       }
       cat("\n")
       names <- names(noise$bv_noises)

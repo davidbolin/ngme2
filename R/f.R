@@ -121,18 +121,36 @@ f <- function(
   if (!all(subset)) A[!subset, ] <- 0
 
   # 2. build noise given operator
-  # if (model == "bv")
-  #   noise <- list(
-  #     update_noise(noise, ope = operator$first),
-  #     update_noise(noise, ope = operator$second)
-  #   )
-  # else
-  noise <- update_noise(noise, ope = operator)
-
-  # check noise's dimension
-  # stopifnot(
-  #   nrow(noise$B_mu) == nrow(operator$K)
-  # )
+  # bivariate noise
+  if (model == "bv") {
+    stopifnot(
+      "Please specify noise for each field" = length(noise) >= 2,
+      "Input: noise=list(a=<noise>,b=<noise>)" = inherits(noise[[1]], "ngme_noise"),
+      "Input: noise=list(a=<noise>,b=<noise>)" = inherits(noise[[2]], "ngme_noise"),
+      "Please specify noise with same name as in the sub_models argument!"
+        = all(names(noise[1:2]) %in% operator$model_names),
+      "Keep the noise same if you want to specify single V for each noise"
+        = noise[[1]]$single_V == noise[[2]]$single_V
+    )
+    noise1 <- update_noise(noise[[operator$model_names[[1]]]],
+      n=length(operator$h)/2)
+    noise2 <- update_noise(noise[[operator$model_names[[2]]]],
+      n=length(operator$h)/2)
+    bv_noises <- list(noise1, noise2); names(bv_noises) <- operator$model_names
+    noise <- ngme_noise(
+      noise_type = c(noise1$noise_type, noise2$noise_type),
+      B_mu    = as.matrix(Matrix::bdiag(noise1$B_mu, noise2$B_mu)),
+      B_sigma = as.matrix(Matrix::bdiag(noise1$B_sigma, noise2$B_sigma)),
+      theta_mu    = c(noise1$theta_mu, noise2$theta_mu),
+      theta_sigma = c(noise1$theta_sigma, noise2$theta_sigma),
+      nu = c(noise1$nu, noise2$nu),
+      share_V = !is.null(noise$share_V) && noise$share_V,
+      single_V = noise1$single_V,
+      bv_noises = bv_noises
+    )
+  } else {
+    noise <- update_noise(noise, n = length(operator$h))
+  }
 
   if (model == "re") {
     noise$fix_theta_sigma <- TRUE

@@ -254,7 +254,6 @@ spde_1d <- model_matern(
   mesh = mesh_1d,
   noise = noise_nig(mu=mu, sigma=sigma, nu=nu)
 )
-spde_1d$noise$h
 K <- spde_1d$C + spde_1d$G
 
 

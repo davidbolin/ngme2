@@ -47,7 +47,6 @@ library(ngme2)
     eval = T
   )
 
-  expect_true(all(tensor_model$noise$h == tensor_model$operator$h))
   expect_true(all(tensor_model$operator$K ==
      ar1(1:n1, theta_K = ar1_a2th(0.7))$K %x% matern(map=loc, mesh=mesh2d, theta_K = 1)$K))
   W <- simulate(tensor_model)
@@ -138,7 +137,6 @@ load_all()
     noise = noise_nig(mu=-3, sigma=2, nu=1),
     eval = T
   )
-  expect_true(all(tensor_model$noise$h == tensor_model$operator$h))
   W <- simulate(tensor_model)
 
   AW <- as.numeric(tensor_model$A %*% W)

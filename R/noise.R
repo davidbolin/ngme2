@@ -23,7 +23,6 @@
 #' @param fix_theta_mu    fix the parameter of theta_mu
 #' @param fix_theta_sigma  fix the parameter of theta_sigma
 #' @param fix_nu   fix the parameter of nu
-#' @param h        numerical vector (> 0), mesh width
 #' @param fix_V         fix the sampling of V
 #' @param theta_sigma_normal for normal nosie with nig noise sharing same parameter
 #' @param B_sigma_normal    for normal nosie with nig noise sharing same parameter
@@ -241,7 +240,7 @@ noise_gal <- gal <- function(
 }
 
 # update noise
-update_noise <- function(noise, n = NULL, new_noise = NULL, operator = NULL) {
+update_noise <- function(noise, n = NULL, new_noise = NULL) {
   # update with length n
   if (!is.null(n)) {
     stopifnot("n should be integer" = is.numeric(n))
@@ -281,37 +280,6 @@ stopifnot("n / nrow(B_sigma) not integer" = abs(n/nrow(B_sigma) - round(n/nrow(B
       noise$bv_noises[[2]]$nu <- noise$nu[[2]]
     } else if (noise$noise_type == "normal_nig") {
       noise$theta_sigma_normal <- new_noise$theta_sigma_normal
-    }
-  } else if (!is.null(operator)) {
-    if (operator$model == "bv" && !(inherits(noise, "ngme_noise"))) {
-      # bivariate noise case
-      stopifnot(
-        length(noise) == 2,
-        inherits(noise[[1]], "ngme_noise"),
-        inherits(noise[[2]], "ngme_noise"),
-        "Please specify noise with name same as in sub_models"
-          = all(names(noise) %in% operator$model_names)
-      )
-      # build bv_noises contain 2 individual noise
-      bv_noises <- noise
-        n_each = length(operator$h) / 2
-        noise1 <- update_noise(noise[[1]], n_each);
-        noise1$h <- head(operator$h, n_each)
-        noise2 <- update_noise(noise[[2]], n_each)
-        noise2$h <- tail(operator$h, n_each)
-        bv_noises[[1]] = noise1; bv_noises[[2]] = noise2
-      noise <- ngme_noise(
-        noise_type = c(noise1$noise_type, noise2$noise_type),
-        B_mu    = as.matrix(Matrix::bdiag(noise1$B_mu, noise2$B_mu)),
-        B_sigma = as.matrix(Matrix::bdiag(noise1$B_sigma, noise2$B_sigma)),
-        theta_mu    = c(noise1$theta_mu, noise2$theta_mu),
-        theta_sigma = c(noise1$theta_sigma, noise2$theta_sigma),
-        nu = c(noise1$nu, noise2$nu),
-        h = operator$h,
-        bv_noises = bv_noises
-      )
-    } else {
-      noise <- update_noise(noise, n = length(operator$h))
     }
   }
 
@@ -387,7 +355,17 @@ print.ngme_noise <- function(x, padding = 0, prefix = "Noise type", ...) {
   } else {
     if (length(noise$noise_type) == 2) {
       # bivariate noise
-      cat(pad_space); cat("Bivariate noise:"); cat("\n")
+      cat(pad_space); cat("Bivariate noise ");
+      if (noise$single_V && noise$share_V) {
+        cat("(Type-G1, single_V && share_V) :");
+      } else if (noise$single_V && !noise$share_V) {
+        cat("(Type-G2) single_V:");
+      } else if (!noise$single_V && noise$share_V) {
+        cat("(Type-G3, share_V) : ");
+      } else {
+        cat("(Type-G4) : ");
+      }
+      cat("\n")
       names <- names(noise$bv_noises)
       print(noise$bv_noises[[1]], padding = padding + 4, prefix = names[[1]])
       print(noise$bv_noises[[2]], padding = padding + 4, prefix = names[[2]])

@@ -70,7 +70,6 @@ all(true_model$A == inla.spde.make.A(loc, mesh=mesh))
     debug = F
   )
 
-  # out$replicates[[1]]$models[[1]]$noise$h == out$replicates[[1]]$models[[1]]$h
   out
   traceplot(out, "spde")
   traceplot(out)

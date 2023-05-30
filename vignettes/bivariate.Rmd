@@ -93,7 +93,6 @@ bv3 <- f(
 )
 bv3
 simulate(bv3)
-# bv3$noise$h
 ```
 
 *Estimation example*

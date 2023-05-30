@@ -66,11 +66,6 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
         nu = Rcpp::as<VectorXd> (noise_in["nu"]);
         n_nu = nu.size();
 
-        if (!Rf_isNull(noise_in["V"])) {
-            V = Rcpp::as< VectorXd > (noise_in["V"]);
-            prevV = V;
-        }
-
     // init W
     if (model_list["W"] != R_NilValue) {
         W = Rcpp::as< VectorXd > (model_list["W"]);
@@ -95,7 +90,17 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
     solver_Q.init(W_size, 0,0,0);
     solver_Q.analyze(Q);
 
+    // build mu, sigma, compute trace, ...
     update_each_iter(true);
+
+    // Initialize V
+    if (!Rf_isNull(noise_in["V"])) {
+        V = Rcpp::as< VectorXd > (noise_in["V"]);
+        prevV = V;
+    } else {
+        sample_uncond_V(); sample_uncond_V();
+    }
+
 if (debug) std::cout << "End constructor of latent" << std::endl;
 }
 
@@ -296,49 +301,65 @@ void Latent::set_parameter(const VectorXd& theta) {
 void Latent::sample_cond_V() {
     if (fix_flag[latent_fix_V]) return;
     prevV = V;
-    double dim = 1;
-    int n = V_size / n_nu;
 
+    // update b_inc (p,a_inc already built)
+    b_inc = (getK() * W + mu.cwiseProduct(h)).cwiseQuotient(sigma).array().pow(2);
+
+    int n = V_size / n_nu; // n is equal to h_size (of each mesh)
     // sample conditional V
     if (single_V) {
-        // to-do (shareV or not)
+        if (share_V) {
+            // type-G1 model (n_nu == 2, but keep same nu)
+            double v = rGIG_cpp(-0.5-n, nu[0]+a_inc.dot(h),nu[0]+b_inc.dot(h.cwiseInverse()), latent_rng());
+            V = v * VectorXd::Ones(V_size);
+        } else {
+            // type-G2 (n_nu==2) and also univariate single noise (n_nu==1)
+            for (int i=0; i < n_nu; i++) {
+                double v = rGIG_cpp(
+                    -0.5 - n*1.0/n_nu,
+                    nu[i] + a_inc.segment(i*n, n).dot(h.segment(i*n, n)),
+                    nu[i] + b_inc.segment(i*n, n).dot(h.segment(i*n, n).cwiseInverse()),
+                    latent_rng()
+                );
+                V.segment(i*n, n) = v * VectorXd::Ones(n);
+            }
+        }
     } else {
-        // update b_inc
-        b_inc = (getK() * W + mu.cwiseProduct(h)).cwiseQuotient(sigma).array().pow(2);
-        for (int i=0; i < n_nu; i++) {
-            if (noise_type[i] == "normal") continue;
+        if (share_V) {
+            // type-G3 (n_nu == 2, but keep same nu)
+            V = rGIG_cpp(VectorXd::Constant(V_size, -1.5), a_vec+a_inc, b_vec+b_inc, latent_rng());
+        } else {
+            // type-G4 (n_nu==2) and also univariate case general noise (n_nu==1)
+            for (int i=0; i < n_nu; i++) {
+                if (noise_type[i] == "normal") continue;
 
-            // sample conditional V
-            V.segment(i*n, n) = rGIG_cpp((p_vec+p_inc).segment(i*n, n), (a_vec+a_inc).segment(i*n, n), (b_vec+b_inc).segment(i*n, n), latent_rng());
+                // sample conditional V
+                V.segment(i*n, n) = rGIG_cpp((p_vec+p_inc).segment(i*n, n), (a_vec+a_inc).segment(i*n, n), (b_vec+b_inc).segment(i*n, n), latent_rng());
+            }
         }
-        if (n_nu == 2 && share_V) {
-            V.segment(n, n) = V.segment(0, n);
-        }
+
     }
 }
-
 
 void Latent::sample_uncond_V() {
     if (fix_flag[latent_fix_V]) return;
     prevV = V;
-    double dim = 1;
+
     int n = V_size / n_nu;
-
     if (single_V) {
-        // to-do (shareV or not)
-    } else {
-        // update p,a,b
         for (int i=0; i < n_nu; i++) {
-            if (noise_type[i] == "normal") continue;
-            // update p_vec, a_vec, b_vec
-            NoiseUtil::update_gig(noise_type[i], nu(i),
-            p_vec.segment(i*n, n), a_vec.segment(i*n, n), b_vec.segment(i*n, n), h.segment(i*n, n));
-            V.segment(i*n, n) = rGIG_cpp(p_vec.segment(i*n, n), a_vec.segment(i*n, n), b_vec.segment(i*n, n), latent_rng());
-
-            // update p_inc, a_inc
-            p_inc = VectorXd::Constant(V_size, -0.5 * dim);
-            a_inc = mu.cwiseQuotient(sigma).array().pow(2);
-
+            double v;
+            if (noise_type[i] == "nig" || noise_type[i] == "normal_nig")
+                v = rGIG_cpp(-0.5, nu[i], nu[i], latent_rng());
+            else if (noise_type[i] == "gal")
+                v = rGIG_cpp(-0.5, nu[i], nu[i], latent_rng());
+            V.segment(i*n, n) = v * VectorXd::Ones(n);
+        }
+        if (n_nu == 2 && share_V) {
+            V.segment(n, n) = V.segment(0, n);
+        }
+    } else {
+        for (int i=0; i < n_nu; i++) {
             // sample unconditional V
             V.segment(i*n, n) = rGIG_cpp(p_vec.segment(i*n, n), a_vec.segment(i*n, n), b_vec.segment(i*n, n), latent_rng());
         }
@@ -356,6 +377,20 @@ void Latent::update_each_iter(bool init) {
     sigma = (B_sigma * theta_sigma).array().exp();
     if (noise_type[0] == "normal_nig")
         sigma_normal = (B_sigma_normal * theta_sigma_normal).array().exp();
+
+    // update p,a,b, depend on nu, h
+    int n = V_size / n_nu;
+    for (int i=0; i < n_nu; i++) {
+        if (noise_type[i] == "normal") continue;
+        // update p_vec, a_vec, b_vec
+        NoiseUtil::update_gig(noise_type[i], nu(i),
+        p_vec.segment(i*n, n), a_vec.segment(i*n, n), b_vec.segment(i*n, n), h.segment(i*n, n));
+        V.segment(i*n, n) = rGIG_cpp(p_vec.segment(i*n, n), a_vec.segment(i*n, n), b_vec.segment(i*n, n), latent_rng());
+
+        // update p_inc, a_inc
+        p_inc = VectorXd::Constant(V_size, -0.5 * dim);
+        a_inc = mu.cwiseQuotient(sigma).array().pow(2);
+    }
 
     if (!numer_grad) {
         ope->update_dK(theta_K);

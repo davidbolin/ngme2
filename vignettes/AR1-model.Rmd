@@ -112,7 +112,7 @@ ngme_out <- ngme(
     max_relative_step = 10,
     stop_points = 10,
     print_check_info = FALSE,
-    seed = 6
+    seed = 3
   )
 )
 ngme_out

@@ -71,6 +71,18 @@ public:
         VectorXd h = VectorXd::Ones(V.size());
         return grad_theta_nu(noise_type, nu, V, prevV, h);
     }
+
+    static VectorXd rnorm_vec(int n, double mu, double sigma, unsigned long seed=0) {
+        std::mt19937 norm_rng(seed);
+        std::normal_distribution<double> rnorm {0,1};
+        VectorXd out(n);
+        for (int i = 0; i < n; i++)
+        {
+            // out[i] = R::rnorm(mu, sigma);
+            out[i] = rnorm(norm_rng) * sigma + mu;
+        }
+        return (out);
+    }
 };
 
 #endif

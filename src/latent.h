@@ -80,6 +80,7 @@ protected:
     VectorXd W, prevW, V, prevV;
     SparseMatrix<double,0,int> A;
 
+    int dim {1}; // noise dimension
     VectorXd p_vec, a_vec, b_vec, nu;
     VectorXd p_inc, a_inc, b_inc;
     bool single_V {false}, share_V {false};

@@ -174,18 +174,6 @@ if (debug) std::cout << "Finish SampleW|V" << std::endl;
 if (debug) std::cout << "End Block Constructor" << std::endl;
 }
 
-Eigen::VectorXd rnorm_vec(int n, double mu, double sigma, unsigned long seed=0)
-{
-  std::mt19937 norm_rng(seed);
-  std::normal_distribution<double> rnorm {0,1};
-  Eigen::VectorXd out(n);
-  for (int i = 0; i < n; i++)
-  {
-    // out[i] = R::rnorm(mu, sigma);
-    out[i] = rnorm(norm_rng) * sigma + mu;
-  }
-  return (out);
-}
 
 void BlockModel::setW(const VectorXd& W) {
   int pos = 0;
@@ -241,8 +229,7 @@ void BlockModel::sampleW_VY()
 // std::cout << "QQ: \n" << QQ << std::endl;
 
 // std::cout << "M = " << M << std::endl;
-  VectorXd z (W_sizes);
-  z = rnorm_vec(W_sizes, 0, 1, rng());
+  VectorXd z = NoiseUtil::rnorm_vec(W_sizes, 0, 1, rng());
 
   // sample W ~ N(QQ^-1*M, QQ^-1)
   chol_QQ.compute(QQ);
@@ -283,15 +270,18 @@ long long time_compute_g = 0;
 long long time_sample_w = 0;
 auto timer_computeg = std::chrono::steady_clock::now();
 
-  // sample_uncond_noise_V()
-  sample_uncond_V();
   VectorXd avg_gradient = VectorXd::Zero(n_params);
+
+  // sample_uncond_noise_V()
+  // sample_uncond_V();
   for (int i=0; i < n_gibbs; i++) {
 // std::cout << "index of gibbs = " << i << std::endl;
     // gibbs sampling
+    // order is really important here, sample W after cond V
+    sample_cond_V();
     sampleW_VY();
-    sampleV_WY();
-    sample_noise_V();
+    sample_cond_noise_V();
+
     // stack grad
     VectorXd gradient = VectorXd::Zero(n_params);
 
@@ -565,13 +555,13 @@ Rcpp::List BlockModel::sampling(int n, bool posterior) {
 
   for (int i=0; i < n; i++) {
     if (posterior) {
-      sampleV_WY();
+      sample_cond_V();
       sampleW_VY();
-      sample_noise_V(true);
+      sample_cond_noise_V(true);
     } else {
       sample_uncond_V();
       sampleW_V();
-      sample_noise_V(false);
+      sample_cond_noise_V(false);
     }
 
     AWs.push_back(A * getW());

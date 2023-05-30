@@ -15,7 +15,7 @@ test_that("test Matern", {
 
 # plot(mesh)
 load_all()
-  n_obs <- 800
+  n_obs <- 1000
   loc <- cbind(runif(n_obs, 0, 10), runif(n_obs, 0, 5))
 # plot(mesh); points(loc)
   true_model <- f(
@@ -23,7 +23,7 @@ load_all()
     model="matern",
     theta_K = log(3), mesh = mesh,
     noise = noise_nig(
-      mu=-4, sigma=3, nu=0.5
+      mu=-4, sigma=3, nu=1
     ),
     eval=T
   )
@@ -49,6 +49,7 @@ all(true_model$A == inla.spde.make.A(loc, mesh=mesh))
       name="spde",
       mesh = mesh,
       noise=noise_nig(
+        # sigma = 3, fix_theta_sigma=T
         # fix_nu = T, nu=1
       ),
       control = control_f(numer_grad = F),
@@ -59,7 +60,7 @@ all(true_model$A == inla.spde.make.A(loc, mesh=mesh))
     data = data.frame(Y = Y),
     control_opt = control_opt(
       estimation = T,
-      iterations = 1000,
+      iterations = 2000,
       n_parallel_chain = 4,
       print_check_info = F,
       verbose = T,

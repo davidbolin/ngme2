@@ -28,8 +28,6 @@ bv <- function(
     "Please provide names for sub_models" = !is.null(model_names),
     "Please provide group argument to indicate different fields"
       = !is.null(group),
-    "Make sure replicate is independent accross the f() models"
-      = length(unique(replicate)) == 1,
     "Length of sub_models should be 2" = length(sub_models) == 2,
     "Name of sub_models should be in group"
     = all(model_names %in% levels(as.factor(group)))

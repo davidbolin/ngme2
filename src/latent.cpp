@@ -323,24 +323,30 @@ void Latent::sample_cond_V() {
     if (single_V) {
         if (share_V) {
             // type-G1 model (n_nu == 2, but keep same nu)
-            double v = rGIG_cpp(-0.5-n, nu[0]+a_inc.dot(h),nu[0]+b_inc.dot(h.cwiseInverse()), latent_rng());
-            V = v * VectorXd::Ones(V_size);
+            double v1 = rGIG_cpp(-0.5-n, nu[0]+a_inc.dot(h),nu[0]+b_inc.dot(h.cwiseInverse()), latent_rng());
+            V = v1 * h;
         } else {
             // type-G2 (n_nu==2) and also univariate single noise (n_nu==1)
             for (int i=0; i < n_nu; i++) {
-                double v = rGIG_cpp(
+                double v1 = rGIG_cpp(
                     -0.5 - n*1.0/n_nu,
                     nu[i] + a_inc.segment(i*n, n).dot(h.segment(i*n, n)),
                     nu[i] + b_inc.segment(i*n, n).dot(h.segment(i*n, n).cwiseInverse()),
                     latent_rng()
                 );
-                V.segment(i*n, n) = v * VectorXd::Ones(n);
+                V.segment(i*n, n) = v1 * h.segment(i*n, n);
             }
         }
     } else {
         if (share_V) {
             // type-G3 (n_nu == 2, but keep same nu)
-            V = rGIG_cpp(VectorXd::Constant(V_size, -1.5), a_vec+a_inc, b_vec+b_inc, latent_rng());
+            // a_vec = rep(nu, n), b_vec = nu * h
+            V.head(n) = rGIG_cpp(
+                VectorXd::Constant(n, -1.5),
+                a_vec.head(n) + a_inc.head(n) + a_inc.tail(n),
+                b_vec.head(n) + b_inc.head(n) + b_inc.tail(n),
+                latent_rng());
+            V.tail(n) = V.head(n);
         } else {
             // type-G4 (n_nu==2) and also univariate case general noise (n_nu==1)
             for (int i=0; i < n_nu; i++) {
@@ -357,28 +363,28 @@ void Latent::sample_cond_V() {
 void Latent::sample_uncond_V() {
     if (fix_flag[latent_fix_V]) return;
     prevV = V;
-
     int n = V_size / n_nu;
+
+    // same logic as in simulation.R
     if (single_V) {
         for (int i=0; i < n_nu; i++) {
             double v;
             if (noise_type[i] == "nig" || noise_type[i] == "normal_nig")
                 v = rGIG_cpp(-0.5, nu[i], nu[i], latent_rng());
             else if (noise_type[i] == "gal")
-                v = rGIG_cpp(-0.5, nu[i], nu[i], latent_rng());
-            V.segment(i*n, n) = v * VectorXd::Ones(n);
-        }
-        if (n_nu == 2 && share_V) {
-            V.segment(n, n) = V.segment(0, n);
+                v = rGIG_cpp(nu[i], 2*nu[i], 1e-14, latent_rng());
+            V.segment(i*n, n) = v * h.segment(i*n, n);
         }
     } else {
         for (int i=0; i < n_nu; i++) {
             // sample unconditional V
             V.segment(i*n, n) = rGIG_cpp(p_vec.segment(i*n, n), a_vec.segment(i*n, n), b_vec.segment(i*n, n), latent_rng());
         }
-        if (n_nu == 2 && share_V) {
-            V.segment(n, n) = V.segment(0, n);
-        }
+    }
+
+    // keep both V same for bivariate noise with share_V case
+    if (n_nu == 2 && share_V) {
+        V.segment(n, n) = V.segment(0, n);
     }
 }
 
@@ -397,7 +403,7 @@ void Latent::update_each_iter(bool init) {
         if (noise_type[i] == "normal") continue;
         // update p_vec, a_vec, b_vec
         NoiseUtil::update_gig(noise_type[i], nu(i),
-        p_vec.segment(i*n, n), a_vec.segment(i*n, n), b_vec.segment(i*n, n), h.segment(i*n, n));
+        p_vec.segment(i*n, n), a_vec.segment(i*n, n), b_vec.segment(i*n, n), h.segment(i*n, n), single_V);
         V.segment(i*n, n) = rGIG_cpp(p_vec.segment(i*n, n), a_vec.segment(i*n, n), b_vec.segment(i*n, n), latent_rng());
 
         // update p_inc, a_inc
@@ -430,4 +436,21 @@ void Latent::update_each_iter(bool init) {
             }
         }
     }
+}
+
+VectorXd Latent::grad_theta_nu() {
+    VectorXd grad = VectorXd::Zero(n_nu);
+
+    if (n_nu == 1)
+        grad(0) = NoiseUtil::grad_theta_nu(noise_type[0], nu[0], V, prevV, h, single_V);
+    else {
+        // for bivaraite case
+        int n = V_size / 2;
+        grad(0) = NoiseUtil::grad_theta_nu(noise_type[0], nu[0], V.segment(0, n), prevV.segment(0, n), h.segment(0, n), single_V);
+        if (share_V)
+            grad(1) = grad(0);
+        else
+            grad(1) = NoiseUtil::grad_theta_nu(noise_type[1], nu[1], V.segment(n, n), prevV.segment(n, n), h.segment(n, n), single_V);
+    }
+    return grad;
 }

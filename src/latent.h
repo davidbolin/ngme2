@@ -162,22 +162,7 @@ public:
     VectorXd grad_theta_mu();
     VectorXd grad_theta_sigma();
     VectorXd grad_theta_sigma_normal(); // grad of sig. only for normal noise
-
-    VectorXd grad_theta_nu() {
-        VectorXd grad(n_nu);
-        if (n_nu == 1)
-            grad(0) = NoiseUtil::grad_theta_nu(noise_type[0], nu[0], V, prevV, h);
-        else {
-            // for bivaraite case
-            int n = V_size / 2;
-            grad(0) = NoiseUtil::grad_theta_nu(noise_type[0], nu[0], V.segment(0, n), prevV.segment(0, n), h.segment(0, n));
-            if (share_V)
-                grad(1) = grad(0);
-            else
-                grad(1) = NoiseUtil::grad_theta_nu(noise_type[1], nu[1], V.segment(n, n), prevV.segment(n, n), h.segment(n, n));
-        }
-        return grad;
-    }
+    VectorXd grad_theta_nu();
 
     Rcpp::List output() const;
 };

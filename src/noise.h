@@ -22,7 +22,8 @@ public:
         Eigen::Ref<Eigen::VectorXd> p,
         Eigen::Ref<Eigen::VectorXd> a,
         Eigen::Ref<Eigen::VectorXd> b,
-        const VectorXd& h
+        const VectorXd& h,
+        bool single_V = false
     );
 
     static double grad_theta_nu(
@@ -30,7 +31,8 @@ public:
         double nu,
         const VectorXd& V,
         const VectorXd& prevV,
-        const VectorXd& h
+        const VectorXd& h,
+        bool single_V = false
     );
 
     // wrapper of sample GIG with extra argument
@@ -56,7 +58,8 @@ public:
         double nu,
         Eigen::Ref<Eigen::VectorXd> p,
         Eigen::Ref<Eigen::VectorXd> a,
-        Eigen::Ref<Eigen::VectorXd> b
+        Eigen::Ref<Eigen::VectorXd> b,
+        bool single_V = false
     ) {
         VectorXd h = VectorXd::Ones(p.size());
         update_gig(noise_type, nu, p, a, b, h);
@@ -66,7 +69,8 @@ public:
         const string& noise_type,
         double nu,
         const VectorXd& V,
-        const VectorXd& prevV
+        const VectorXd& prevV,
+        bool single_V = false
     ) {
         VectorXd h = VectorXd::Ones(V.size());
         return grad_theta_nu(noise_type, nu, V, prevV, h);

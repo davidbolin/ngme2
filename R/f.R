@@ -138,8 +138,15 @@ f <- function(
       n=length(operator$h)/2)
     bv_noises <- list(noise1, noise2); names(bv_noises) <- operator$model_names
     share_V <- !is.null(noise$share_V) && noise$share_V
-    if (share_V && noise1$noise_type != noise2$noise_type)
-      stop("Now share_V is only supported for 2 NIG noise.")
+    if (share_V) {
+      stopifnot(
+        "share_V option is only supported for 2 NIG noise."
+          = noise1$noise_type == noise2$noise_type,
+        "share_V option requires nu from both noise are same."
+          = noise1$nu == noise2$nu
+      )
+    }
+
     noise <- ngme_noise(
       noise_type = c(noise1$noise_type, noise2$noise_type),
       B_mu    = as.matrix(Matrix::bdiag(noise1$B_mu, noise2$B_mu)),
@@ -149,7 +156,9 @@ f <- function(
       nu = c(noise1$nu, noise2$nu),
       share_V = !is.null(noise$share_V) && noise$share_V,
       single_V = noise1$single_V,
-      bv_noises = bv_noises
+      bv_noises = bv_noises,
+      fix_V = !is.null(noise$fix_V) && noise$fix_V,
+      V = if (!is.null(noise$V)) noise$V else NULL
     )
   } else {
     noise <- update_noise(noise, n = length(operator$h))

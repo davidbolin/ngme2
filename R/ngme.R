@@ -335,6 +335,8 @@ ngme_parse_formula <- function(
 
   uni_repl <- unique(replicate)
   blocks_rep <- list() # of length n_repl
+
+  noise_new <- update_noise(noise, n = length(ngme_response))
   for (i in seq_along(uni_repl)) {
     idx <- replicate == uni_repl[[i]]
     # data
@@ -354,8 +356,6 @@ ngme_parse_formula <- function(
     if (is.null(control_ngme$beta)) control_ngme$beta <- lm.model$coeff
     if (is.null(noise$theta_sigma)) noise$theta_sigma <- log(sd(lm.model$residuals))
 
-    noise_new <- update_noise(noise, n = length(Y))
-
     corr_measure <- FALSE
     if (noise$corr_measurement) {
       corr_measure <- TRUE
@@ -372,7 +372,7 @@ ngme_parse_formula <- function(
   # Y = AW + Xb + Pe, e|V_e ~ N(-mu+mu V_e, sigma^2 diag(V_e))
   # V_e is order by c(1,1,2,2,3,4,..) as in the order(corr_index)
       pmat <- as(as.integer(order(index_corr)), "pMatrix")
-      pmat <- Matrix::t(ngme_as_sparse(pmat))
+      # pmat <- ngme_as_sparse(Matrix::t(pmat))
       cov_rc <- compute_corr_index(index_corr)
       # cov_rc <- compute_corr_index(order(index_corr))
       # build p matrix given cov_rc
@@ -381,7 +381,7 @@ ngme_parse_formula <- function(
     blocks_rep[[i]] <- ngme_replicate(
       Y = Y,
       X = X,
-      noise = noise_new,
+      noise = update_noise(noise_new, sub_idx=idx),
       models = models_rep,
       replicate = uni_repl[[i]],
       control_ngme = control_ngme,

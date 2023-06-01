@@ -122,8 +122,8 @@ if (debug) std::cout << "before set block A" << std::endl;
       }
 
       // permutation matrix for sampling correlated V
-      pmat = Rcpp::as<SparseMatrix<double>> (block_model["pmat"]);
-      pmat_inv = pmat.transpose();
+      // pmat = Rcpp::as<SparseMatrix<double>> (block_model["pmat"]);
+      // pmat_inv = pmat.transpose();
     }
     SparseMatrix<double> Q_eps_lower (n_obs, n_obs);
     Q_eps_lower.setFromTriplets(Q_eps_triplet.begin(), Q_eps_triplet.end());

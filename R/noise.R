@@ -239,7 +239,7 @@ noise_gal <- gal <- function(
 }
 
 # update noise
-update_noise <- function(noise, n = NULL, new_noise = NULL) {
+update_noise <- function(noise, n=NULL, new_noise=NULL, sub_idx=NULL) {
   # update with length n
   if (!is.null(n)) {
     stopifnot("n should be integer" = is.numeric(n))
@@ -280,8 +280,12 @@ stopifnot("n / nrow(B_sigma) not integer" = abs(n/nrow(B_sigma) - round(n/nrow(B
     } else if (noise$noise_type == "normal_nig") {
       noise$theta_sigma_normal <- new_noise$theta_sigma_normal
     }
+  } else if (!is.null(sub_idx)) {
+    # subset measurement noise (for each replicate)
+    noise$B_mu <- noise$B_mu[sub_idx, , drop=FALSE]
+    noise$B_sigma <- noise$B_sigma[sub_idx, ,drop=FALSE]
+    noise$V <- noise$V[sub_idx]
   }
-
   noise
 }
 

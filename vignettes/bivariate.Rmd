@@ -264,20 +264,29 @@ out <- ngme(
   ),
   family = noise_normal(
     # fix_theta_sigma = T,
-    # corr_measurement = TRUE,
-    # index_corr = c(1: (n_obs/2), 1: (n_obs/2))
+    corr_measurement = TRUE,
+    index_corr = c(1: (n_obs/2), 1: (n_obs/2))
   ),
   data = data.frame(Y = Y),
   control_opt = control_opt(
-    estimation = T,
+    estimation = F,
     iterations = 1,
     n_parallel_chain = 1,
     verbose = T
   ),
   debug = T
 )
-out
 out$replicates[[1]]$pmat
+
+pmat <- as(as.integer(c(2,3,1)), "pMatrix")
+      pmat
+      class(pmat)
+      class(Matrix::t(pmat))
+      pp = ngme_as_sparse(Matrix::t(pmat))
+pp
+class(pp)
+
+class(out$replicates[[1]]$pmat)
 
 traceplot(out)
 

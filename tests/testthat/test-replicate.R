@@ -58,8 +58,8 @@ test_that("basic ar1 case with different length", {
   n_obs2 <- 100
   alpha <- 0.75
   mu <- -3; sigma <- 2.3; nu <- 2; sigma_eps <- 0.8
-  ar_1 <- model_ar1(1:n_obs1, alpha=alpha, noise=noise_nig(mu=mu, sigma=sigma, nu=nu))
-  ar_2 <- model_ar1(1:n_obs2, alpha=alpha, noise=noise_nig(mu=mu, sigma=sigma, nu=nu))
+  ar_1 <-f(1:n_obs1, model="ar1", rho=alpha, noise=noise_nig(mu=mu, sigma=sigma, nu=nu))
+  ar_2 <- f(1:n_obs2, model="ar1", rho=alpha, noise=noise_nig(mu=mu, sigma=sigma, nu=nu))
 
   W1 <- simulate(ar_1)
   W2 <- simulate(ar_2)
@@ -75,13 +75,13 @@ test_that("basic ar1 case with different length", {
       model="ar1",
       name="ar",
       alpha = -0.5,
-      replicate = c(rep(1, n_obs1), rep(2, n_obs2)),
       noise=noise_nig(),
       control=control_f(
         numer_grad = T
       ),
       debug = FALSE
     ),
+    replicate = c(rep(1, n_obs1), rep(2, n_obs2)),
     data = data.frame(Y = Y, time=c(1:n_obs1, 1:n_obs2), x1=x1, x2=x2),
     control_opt = control_opt(
       estimation = T,
@@ -94,9 +94,9 @@ test_that("basic ar1 case with different length", {
     debug = FALSE
   )
   out
+  traceplot(out, "ar")
   cross_validation(out)
   traceplot(out)
-  traceplot(out, "ar")
   plot(simulate(out$replicates[[1]]$models[["ar"]]), type="l")
   plot(Y, type="l")
   plot(attr(W1, "noise"), out$replicates[[1]]$models[[1]]$noise)

@@ -41,7 +41,6 @@ simulate.ngme_model <- function(
     } else {
         e <- simulate_noise(noise$noise_type, h, mu, sigma, nu, rnorm(1), noise$single_V)
     }
-
     W <- as.numeric(solve(model$operator$K, e))
 
     # attach noise attributes

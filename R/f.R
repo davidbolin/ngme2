@@ -57,8 +57,6 @@ f <- function(
 
   if (inherits(map, "formula")) {
     if (model == "re") {
-      name <- "effect"
-      model <- "re"
       map <- model.matrix(map, data)
     } else {
       map <- model.matrix(map, data)[, -1]
@@ -84,20 +82,9 @@ f <- function(
   if (model=="tp" && !is.null(data))
     map <- seq_len(nrow(data))
 
-  replicate <- eval(substitute(replicate), envir = data, enclos = parent.frame())
+  # replicate <- eval(substitute(replicate), envir = data, enclos = parent.frame())
   replicate <- if (is.null(replicate)) rep(1, length_map(map))
     else as.integer(as.factor(replicate))
-
-  # pre-model
-  if (!eval) {
-    args <- match.call()
-    args$name <- name
-    args$map <- map
-    args$model <- model
-    args$replicate <- replicate
-    args$n_repl <- length(unique(replicate))
-    return (args)
-  }
 
   # remove NULL in arguments
   f_args <- Filter(Negate(is.null),  as.list(environment()))
@@ -163,6 +150,10 @@ f <- function(
   } else {
     noise <- update_noise(noise, n = length(operator$h))
   }
+
+  if (noise$share_V && model!="bv")
+    stop("Not allow for share_V for univariate model")
+
   if (model == "re") {
     noise$fix_theta_sigma <- TRUE
   }

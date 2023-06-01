@@ -206,8 +206,8 @@ out$replicates[[1]]$models[[1]]$noise$bv_noises[[2]]$h
 ```{r}
 load_all()
 
-Y <- rnorm(5)
-loc1 <- c(1, 1, 2, 3, 2)
+Y <- 1:5
+loc1 <- c(2, 1, 1, 3, 2)
 group <- c("s", "t", "s", "t", "t")
 
 load_all()

@@ -129,7 +129,11 @@ if (debug) std::cout << "before set block A" << std::endl;
     dQ_lower.setFromTriplets(dQ_eps_triplet.begin(), dQ_eps_triplet.end());
     dQ_eps = dQ_lower.selfadjointView<Lower>();
 
-    Q_eps_solver.analyzePattern(Q_eps);
+    // permutation matrix for sampling correlated V
+    pmat = Rcpp::as<SparseMatrix<double>> (block_model["pmatrix"]);
+    pmat_inv = pmat.transpose();
+
+  // Q_eps_solver.analyzePattern(Q_eps);
   // std::cout << "Q_eps: \n" << Q_eps << std::endl;
   }
 
@@ -521,6 +525,31 @@ void BlockModel::set_theta_merr(const VectorXd& theta_merr) {
 // std::cout << "dQ_eps == \n" << dQ_eps << std::endl;
 }
 
+void BlockModel::sample_cond_noise_V(bool posterior) {
+  if (family == "normal" || fix_flag[blcok_fix_V]) return;
+  noise_prevV = noise_V;
+
+  if (posterior) {
+    if (!corr_measure) {
+      VectorXd a_inc_vec = noise_mu.cwiseQuotient(noise_sigma).array().pow(2);
+      VectorXd b_inc_vec = (get_residual() + noise_V.cwiseProduct(noise_mu)).cwiseQuotient(noise_sigma).array().pow(2);
+      double dim = 1;
+      VectorXd p_vec_new = p_vec - VectorXd::Constant(n_obs, 0.5 * dim);
+      VectorXd a_vec_new = a_vec + a_inc_vec;
+      VectorXd b_vec_new = b_vec + b_inc_vec;
+      // noise_V = rGIG_cpp(p_vec_new, a_vec_new, b_vec_new, rng());
+      NoiseUtil::sample_V(noise_V, family, p_vec_new, a_vec_new, b_vec_new, rng);
+    } else {
+      // with pmu and psigma
+      // pmat * res ~ N(-mu + mu V, Q^-1 = M^-1 diag(V) M^-T)
+    }
+  } else {
+      // noise_V = rGIG_cpp(p_vec, a_vec, b_vec, rng());
+      NoiseUtil::sample_V(noise_V, family, p_vec, a_vec, b_vec, rng);
+  }
+}
+
+
 // generate output to R
 Rcpp::List BlockModel::output() const {
   Rcpp::List latents_output;
@@ -537,7 +566,7 @@ Rcpp::List BlockModel::output() const {
       Rcpp::Named("V")            = noise_V,
       Rcpp::Named("rho")          = rho
     ),
-    Rcpp::Named("beta")             = beta,
+    Rcpp::Named("beta")            = beta,
     Rcpp::Named("models")          = latents_output
   );
 

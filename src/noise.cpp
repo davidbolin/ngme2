@@ -81,9 +81,9 @@ double NoiseUtil::grad_theta_nu(
             // theV ~ IG(nu, nu)
             // V_i = h_i * theV
             double theV = V(0) / h(0);
-            double theV2 = V(1) / h(1);
+// double theV2 = V(1) / h(1);
 // std::cout << "theV = " << theV << std::endl; std::cout << "theV2 = " << theV2 << std::endl;
-            grad = (nu - 3*theV - nu*theV*theV)/(2*theV*theV); // remove negative sign
+            grad = - 0.1 * (nu - 3*theV - nu*theV*theV)/(2*theV*theV); // remove negative sign
         } else if (noise_type == "gal") {
             // to-do
         }

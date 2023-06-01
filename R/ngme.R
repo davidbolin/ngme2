@@ -47,6 +47,7 @@ ngme <- function(
   control_opt   = NULL,
   control_ngme  = NULL,
   group         = NULL,
+  replicate     = NULL,
   start         = NULL,
   debug         = FALSE
 ) {
@@ -86,7 +87,7 @@ ngme <- function(
   stopifnot(class(noise) == "ngme_noise")
 
   # parse the formula get a list of ngme_replicate
-  ngme_model <- ngme_parse_formula(formula, data, control_ngme, noise, group)
+  ngme_model <- ngme_parse_formula(formula, data, control_ngme, noise, group, replicate)
   attr(ngme_model, "fitting") <- fitting
 
   ####### Use Last_fit ngme object to update Rcpp_list
@@ -266,8 +267,16 @@ ngme_parse_formula <- function(
   data,
   control_ngme,
   noise,
-  group
+  group,
+  replicate
 ) {
+  if (is.null(replicate)) replicate <- rep(1, nrow(data))
+  replicate <- as.integer(as.factor(replicate))
+  stopifnot(
+    "Please make sure the length of replicate is equal to the number of rows of data"
+     = nrow(data) == length(replicate)
+  )
+
   enclos_env <- list2env(as.list(parent.frame()), parent = parent.frame(2))
   global_env_first <- list2env(as.list(parent.frame(2)), parent = parent.frame())
 
@@ -316,24 +325,25 @@ ngme_parse_formula <- function(
     # pass extra argument into f
     if (is.null(lang$data)) lang$data <- data
     if (is.null(lang$group)) lang$group <- group
-    res <- eval(lang, envir = global_env_first)
+    if (is.null(lang$name) && lang$model == "re")
+      {lang$name <- paste0("effect", idx_effect); idx_effect <- idx_effect + 1}
+    if (is.null(lang$name))
+      {lang$name <- paste0("field", idx_field); idx_field <- idx_field + 1}
 
-    # give default name
-    if (res$name == "field") {res$name <- paste0("field", idx_field); idx_field <- idx_field + 1}
-    if (res$name == "effect") {res$name <- paste0("effect", idx_effect); idx_effect <- idx_effect + 1}
-    pre_model[[res$name]] <- res
+    pre_model[[lang$name]] <- lang
   }
   # splits f_eff, latent according to replicates
-  repls <- if (length(pre_model) > 0)
-      lapply(pre_model, function(x) x$replicate)
-    else
-      list(rep(1, length(ngme_response)))
+  # repls <- if (length(pre_model) > 0)
+  #     lapply(pre_model, function(x) x$replicate)
+  #   else
+  #     list(rep(1, length(ngme_response)))
+  # repl <- merge_repls(repls)
+  # uni_repl <- unique(repl)
 
-  repl <- merge_repls(repls)
-  uni_repl <- unique(repl)
+  uni_repl <- unique(replicate)
   blocks_rep <- list() # of length n_repl
   for (i in seq_along(uni_repl)) {
-    idx <- repl == uni_repl[[i]]
+    idx <- replicate == uni_repl[[i]]
     # data
     Y <- ngme_response[idx]
     X <- X_full[idx, , drop = FALSE]
@@ -342,8 +352,6 @@ ngme_parse_formula <- function(
     models_rep <- list();
     for (tmp in pre_model) {
       tmp$map <- sub_map(tmp$map, idx)
-      tmp$replicate <- tmp$replicate[idx]
-      tmp$eval = TRUE
       tmp$data <- data[idx, , drop = FALSE]
       model_eval <- eval(tmp, envir = data, enclos = global_env_first)
       models_rep[[model_eval$name]] <- model_eval
@@ -358,17 +366,17 @@ ngme_parse_formula <- function(
     corr_measure <- FALSE
     if (noise$corr_measurement) {
       corr_measure <- TRUE
-      index_corr <- noise$index_corr
-      stopifnot(
-        "Please provide the index_corr vector" = !is.null(index_corr)
-      )
-
-      # bv_idx <- which(sapply(models_rep, function(x) x$model) == "bv")
-      # stopifnot("Please make sure there is 1 bivariate (bv) model" =
-      #   length(bv_idx) == 1)
-      # bv_map <- models_rep[[bv_idx]]$map
-
+      index_corr <- noise$index_corr[idx]
+      if (is.null(index_corr)) {
+        bv_idx <- which(sapply(models_rep, function(x) x$model) == "bv")
+        # bv_map <- models_rep[[bv_idx]]$map
+        # to-do
+        # build index_corr based on bv_map
+      }
+      stopifnot("Please provide the index_corr vector" = !is.null(index_corr))
       cov_rc <- compute_corr_index(index_corr)
+      # build p matrix given cov_rc
+      pmatrix <- as(as.integer(order(index_corr)), "pMatrix")
     }
 
     blocks_rep[[i]] <- ngme_replicate(
@@ -383,7 +391,8 @@ ngme_parse_formula <- function(
       cor_rows = if (corr_measure) cov_rc$cor_rows else NULL,
       cor_cols = if (corr_measure) cov_rc$cor_cols else NULL,
       has_correlation = if (corr_measure) cov_rc$has_correlation else NULL,
-      n_corr_pairs = if (corr_measure) cov_rc$n_corr_pairs else NULL
+      n_corr_pairs = if (corr_measure) cov_rc$n_corr_pairs else NULL,
+      pmatrix = if (corr_measure) pmatrix else NULL
     )
   }
 
@@ -395,7 +404,7 @@ ngme_parse_formula <- function(
       replicates   = blocks_rep,
       n_repls      = n_repls,
       n_params     = n_params,
-      repls_ngme   = repls,
+      repls_ngme   = replicate,
       control_ngme = control_ngme
     ),
     class = "ngme"

@@ -1,13 +1,13 @@
-test_that("type-G1 works", {
+test_that("type-G1 not works", {
   ############################## Type-G1
-  n <- 500
   load_all()
+  n <- 500
   bv_type_G1 <- f(
-    zeta = 1, eta = 1,
+    zeta = 0, eta = 0,
     c(1:n, 1:n),
     model="bv",
     sub_models=list(
-      f1 = list(model="rw1"),
+      f1 = list(model="ar1", rho=-0.5),
       f2 = list(model="ar1", rho=0.5)
     ),
     group = c(rep("f1", n), rep("f2", n)),
@@ -18,16 +18,18 @@ test_that("type-G1 works", {
     ),
     eval = T
   )
-
+  bv_type_G1
+  W1 <- simulate.ngme_model(bv_type_G1)
+  range(W1)
+all(head(attr(W1, "V"), n) == tail(attr(W1, "V"), n))
   # simulate and estimate
-  W <- simulate.ngme_model(bv_type_G1)
-  Y <- W + rnorm(2*n)
+  Y <- W1 + rnorm(2*n)
   out <- ngme(
     Y ~ 0 + f(
       c(1:n, 1:n),
       model="bv",
       sub_models=list(
-        f1 = list(model="rw1"),
+        f1 = list(model="ar1"),
         f2 = list(model="ar1")
       ),
       debug=T,
@@ -43,7 +45,7 @@ test_that("type-G1 works", {
     control_opt = control_opt(
       estimation = T,
       n_parallel_chain = 1,
-      iterations = 10
+      iterations = 100
     )
   )
   out
@@ -68,29 +70,11 @@ test_that("type-G2 works", {
     ),
     eval = T
   )
+  bv_type_G2
   simulate(bv_type_G2)
 })
 
-test_that("type-G3 works", {
-  ############################## Type-G3
-  n <- 500
-  bv_type_G2 <- f(
-    c(1:n, 1:n),
-    model="bv",
-    sub_models=list(
-      f1 = list(model="rw1"),
-      f2 = list(model="ar1", rho=0.5)
-    ),
-    group = c(rep("f1", n), rep("f2", n)),
-    noise = list(
-      f1 = noise_nig(single_V=T),
-      f2 = noise_nig(single_V=T),
-      share_V = F
-    ),
-    eval = T
-  )
-  simulate(bv_type_G2)
-})
+
 
 test_that("type-G3 works", {
   load_all()
@@ -100,7 +84,7 @@ test_that("type-G3 works", {
     model="bv",
     zeta = 1, eta=1,
     sub_models=list(
-      f1 = list(model="rw1"),
+      f1 = list(model="ar1", rho=-0.5),
       f2 = list(model="ar1", rho=0.5)
     ),
     group = c(rep("f1", n), rep("f2", n)),
@@ -124,7 +108,7 @@ test_that("type-G3 works", {
       c(1:n, 1:n),
       model="bv",
       sub_models=list(
-        f1 = list(model="rw1"),
+        f1 = list(model="ar1"),
         f2 = list(model="ar1")
       ),
       debug=T,

@@ -52,7 +52,10 @@ all(true_model$A == inla.spde.make.A(loc, mesh=mesh))
         # sigma = 3, fix_theta_sigma=T
         # fix_nu = T, nu=1
       ),
-      control = control_f(numer_grad = F),
+      control = control_f(
+        numer_grad = F
+        # precond = c("mu", "sigma")
+      ),
       # fix_theta_K = T, theta_kappa = log(3),
       # fix_W = TRUE, W = W,
       debug = F

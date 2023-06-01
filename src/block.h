@@ -72,8 +72,8 @@ protected:
     bool debug, reduce_var;
     double reduce_power, threshold;
 
-    SparseMatrix<double> A, K, Q, QQ;      // not used: dK, d2K; G = [B_reff A]
-    SimplicialLLT<SparseMatrix<double, Lower>> Q_eps_solver;
+    SparseMatrix<double> A, K, Q, QQ, pmat, pmat_inv;
+    // SimplicialLLT<SparseMatrix<double, Lower>> Q_eps_solver;
 
     vector<std::unique_ptr<Latent>> latents;
     VectorXd p_vec, a_vec, b_vec, noise_V, noise_prevV;
@@ -239,24 +239,7 @@ public:
         return Y - X * beta - (-VectorXd::Ones(n_obs) + noise_V).cwiseProduct(noise_mu);
     }
 
-    void sample_cond_noise_V(bool posterior = true) {
-        if (family == "normal" || fix_flag[blcok_fix_V]) return;
-        noise_prevV = noise_V;
-
-        if (posterior) {
-            VectorXd a_inc_vec = noise_mu.cwiseQuotient(noise_sigma).array().pow(2);
-            VectorXd b_inc_vec = (get_residual() + noise_V.cwiseProduct(noise_mu)).cwiseQuotient(noise_sigma).array().pow(2);
-            double dim = 1;
-            VectorXd p_vec_new = p_vec - VectorXd::Constant(n_obs, 0.5 * dim);
-            VectorXd a_vec_new = a_vec + a_inc_vec;
-            VectorXd b_vec_new = b_vec + b_inc_vec;
-            // noise_V = rGIG_cpp(p_vec_new, a_vec_new, b_vec_new, rng());
-            NoiseUtil::sample_V(noise_V, family, p_vec_new, a_vec_new, b_vec_new, rng);
-        } else {
-            // noise_V = rGIG_cpp(p_vec, a_vec, b_vec, rng());
-            NoiseUtil::sample_V(noise_V, family, p_vec, a_vec, b_vec, rng);
-        }
-    }
+    void sample_cond_noise_V(bool posterior = true);
 
     // for updating hessian
     vector<VectorXd> get_VW() const {

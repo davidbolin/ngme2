@@ -355,6 +355,7 @@ ngme_parse_formula <- function(
     lm.model <- stats::lm.fit(X_full, ngme_response)
     if (is.null(control_ngme$beta)) control_ngme$beta <- lm.model$coeff
     if (is.null(noise$theta_sigma)) noise$theta_sigma <- log(sd(lm.model$residuals))
+    noise_rep <- update_noise(noise_new, sub_idx=idx)
 
     corr_measure <- FALSE
     if (noise$corr_measurement) {
@@ -371,17 +372,23 @@ ngme_parse_formula <- function(
   # pmat is the permutation matrix, s.t.
   # Y = AW + Xb + Pe, e|V_e ~ N(-mu+mu V_e, sigma^2 diag(V_e))
   # V_e is order by c(1,1,2,2,3,4,..) as in the order(corr_index)
-      pmat <- as(as.integer(order(index_corr)), "pMatrix")
-      # pmat <- ngme_as_sparse(Matrix::t(pmat))
-      cov_rc <- compute_corr_index(index_corr)
-      # cov_rc <- compute_corr_index(order(index_corr))
-      # build p matrix given cov_rc
+  # # pmat <- as(order(index_corr), "pMatrix")
+
+      # cov_rc <- compute_corr_index(index_corr)
+      p_order <- order(index_corr)
+      cov_rc <- compute_corr_index(index_corr[p_order])
+      X <- X[p_order, , drop = FALSE]
+      Y <- Y[p_order]
+      for (i in seq_along(models_rep))
+        models_rep[[i]]$A <- models_rep[[i]]$A[p_order, , drop = FALSE]
+      # check here
+      noise_rep <- update_noise(noise_rep, sub_idx = p_order)
     }
 
     blocks_rep[[i]] <- ngme_replicate(
       Y = Y,
       X = X,
-      noise = update_noise(noise_new, sub_idx=idx),
+      noise = noise_rep,
       models = models_rep,
       replicate = uni_repl[[i]],
       control_ngme = control_ngme,
@@ -390,8 +397,8 @@ ngme_parse_formula <- function(
       cor_rows = if (corr_measure) cov_rc$cor_rows else NULL,
       cor_cols = if (corr_measure) cov_rc$cor_cols else NULL,
       has_correlation = if (corr_measure) cov_rc$has_correlation else NULL,
-      n_corr_pairs = if (corr_measure) cov_rc$n_corr_pairs else NULL,
-      pmat = if (corr_measure) pmat else NULL
+      n_corr_pairs = if (corr_measure) cov_rc$n_corr_pairs else NULL
+      # pmat = if (corr_measure) pmat else NULL
     )
   }
 

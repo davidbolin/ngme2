@@ -300,7 +300,7 @@ load_all()
 n_obs <- 2000
 W <- simulate(f(1:n_obs, rho = 0.5, model="ar1", eval=TRUE))
 
-Cov_eps <- matrix(c(1, -0.9, -0.9, 1), nrow=2)
+Cov_eps <- matrix(c(1, 0.9, 0.9, 1), nrow=2)
 Cov_eps <- Cov_eps %x% diag(n_obs / 2)
 
 # e~N(0, Cov_eps)
@@ -314,7 +314,7 @@ Y <-  W +e + x1 * (-3) + x2 * 1.5
 plot(head(e, n_obs/2), type="l")
 lines(tail(e, n_obs/2), col="red")
 
-# load_all()
+load_all()
 out <- ngme(
   Y ~ 0 + x1 + x2+ f(
     1:n_obs,
@@ -335,7 +335,7 @@ out <- ngme(
   )
 )
 traceplot(out, "field1")
-traceplot(out )
+traceplot(out)
 out
 
 ```

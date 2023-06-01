@@ -120,6 +120,10 @@ if (debug) std::cout << "before set block A" << std::endl;
         // ignore uncorrelated locations
         dQ_eps_triplet.push_back(Triplet<double>(cor_rows[i], cor_cols[i], cor_rows[i] == cor_cols[i]));
       }
+
+      // permutation matrix for sampling correlated V
+      pmat = Rcpp::as<SparseMatrix<double>> (block_model["pmat"]);
+      pmat_inv = pmat.transpose();
     }
     SparseMatrix<double> Q_eps_lower (n_obs, n_obs);
     Q_eps_lower.setFromTriplets(Q_eps_triplet.begin(), Q_eps_triplet.end());
@@ -128,10 +132,6 @@ if (debug) std::cout << "before set block A" << std::endl;
     SparseMatrix<double> dQ_lower (n_obs, n_obs);
     dQ_lower.setFromTriplets(dQ_eps_triplet.begin(), dQ_eps_triplet.end());
     dQ_eps = dQ_lower.selfadjointView<Lower>();
-
-    // permutation matrix for sampling correlated V
-    pmat = Rcpp::as<SparseMatrix<double>> (block_model["pmatrix"]);
-    pmat_inv = pmat.transpose();
 
   // Q_eps_solver.analyzePattern(Q_eps);
   // std::cout << "Q_eps: \n" << Q_eps << std::endl;

@@ -332,13 +332,6 @@ ngme_parse_formula <- function(
 
     pre_model[[lang$name]] <- lang
   }
-  # splits f_eff, latent according to replicates
-  # repls <- if (length(pre_model) > 0)
-  #     lapply(pre_model, function(x) x$replicate)
-  #   else
-  #     list(rep(1, length(ngme_response)))
-  # repl <- merge_repls(repls)
-  # uni_repl <- unique(repl)
 
   uni_repl <- unique(replicate)
   blocks_rep <- list() # of length n_repl
@@ -374,9 +367,15 @@ ngme_parse_formula <- function(
         # build index_corr based on bv_map
       }
       stopifnot("Please provide the index_corr vector" = !is.null(index_corr))
+
+  # pmat is the permutation matrix, s.t.
+  # Y = AW + Xb + Pe, e|V_e ~ N(-mu+mu V_e, sigma^2 diag(V_e))
+  # V_e is order by c(1,1,2,2,3,4,..) as in the order(corr_index)
+      pmat <- as(as.integer(order(index_corr)), "pMatrix")
+      pmat <- Matrix::t(ngme_as_sparse(pmat))
       cov_rc <- compute_corr_index(index_corr)
+      # cov_rc <- compute_corr_index(order(index_corr))
       # build p matrix given cov_rc
-      pmatrix <- as(as.integer(order(index_corr)), "pMatrix")
     }
 
     blocks_rep[[i]] <- ngme_replicate(
@@ -392,7 +391,7 @@ ngme_parse_formula <- function(
       cor_cols = if (corr_measure) cov_rc$cor_cols else NULL,
       has_correlation = if (corr_measure) cov_rc$has_correlation else NULL,
       n_corr_pairs = if (corr_measure) cov_rc$n_corr_pairs else NULL,
-      pmatrix = if (corr_measure) pmatrix else NULL
+      pmat = if (corr_measure) pmat else NULL
     )
   }
 

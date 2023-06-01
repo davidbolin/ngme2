@@ -100,7 +100,9 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
         V = Rcpp::as< VectorXd > (noise_in["V"]);
         prevV = V;
     } else {
-        sample_uncond_V(); sample_uncond_V();
+        // V=h at init.
+        // to-fix (for normal noise case)
+        // sample_uncond_V(); // sample_uncond_V();
     }
 
 if (debug) std::cout << "End constructor of latent" << std::endl;
@@ -109,8 +111,9 @@ if (debug) std::cout << "End constructor of latent" << std::endl;
 VectorXd Latent::grad_theta_mu() {
     VectorXd grad = VectorXd::Zero(n_theta_mu);
     if (fix_flag[latent_fix_theta_mu]) return grad;
-    if (n_nu == 1 && noise_type[0] == "normal") return grad;
-    if (n_nu == 2 && noise_type[0] == "normal" && noise_type[1] == "normal") return grad;
+    if ((n_nu == 1 && noise_type[0] == "normal") ||
+        (n_nu == 2 && noise_type[0] == "normal" && noise_type[1] == "normal"))
+        return grad;
 
     VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
     VectorXd prevSV = sigma.array().pow(2).matrix().cwiseProduct(prevV);
@@ -129,15 +132,12 @@ VectorXd Latent::grad_theta_mu() {
         num_h(l) = (g_eps - g_o) / eps(0);
     }
 
-    return grad.cwiseQuotient(num_h);
-
-    // num_hess = (grad_eps - grad) / eps
-    // double hess = -(prevV-h).cwiseQuotient(prevSV).dot(prevV-h);
-
     // if (V_size < 10)
     //     return - grad / sqrt(W_size);
-    // else
-    //     return - 1.0 / V_size * grad;
+    return grad.cwiseQuotient(num_h);
+
+    // double ana_hess = -(prevV-h).cwiseQuotient(prevSV).dot(prevV-h);
+    // num_hess = (grad_eps - grad) / eps
 }
 
 // return the gradient wrt. theta, theta=log(sigma)
@@ -156,21 +156,6 @@ inline VectorXd Latent::grad_theta_sigma() {
     grad = B_sigma.transpose() * (tmp - VectorXd::Ones(V_size));
 
     return - 1.0 / V_size * grad;
-
-    // for (int l=0; l < n_theta_sigma; l++) {
-    //     VectorXd tmp1 = tmp.cwiseProduct(sigma.array().pow(-2).matrix()) - VectorXd::Ones(V_size);
-    //     VectorXd tmp2 = B_sigma.col(l).cwiseProduct(tmp1);
-    //     grad(l) = tmp2.sum();
-    // }
-
-// compute hessian
-    // VectorXd prevV = getPrevV();
-    // VectorXd prev_tmp = (K*prevW - mu.cwiseProduct(prevV-h)).array().pow(2).matrix().cwiseProduct(prevV.cwiseInverse());
-    // MatrixXd hess (n_theta_sigma, n_theta_sigma);
-    // VectorXd tmp3 = -2*prev_tmp.cwiseProduct(sigma.array().pow(-2).matrix());
-    // hess = B_sigma.transpose() * tmp3.asDiagonal() * B_sigma;
-
-    // return hess.llt().solve(grad);
 }
 
 inline VectorXd Latent::grad_theta_sigma_normal() {
@@ -186,7 +171,24 @@ inline VectorXd Latent::grad_theta_sigma_normal() {
     return - 1.0 / V_size * grad;
 }
 
-// pi(W|V)
+VectorXd Latent::grad_theta_nu() {
+    VectorXd grad = VectorXd::Zero(n_nu);
+
+    if (n_nu == 1)
+        grad(0) = NoiseUtil::grad_theta_nu(noise_type[0], nu[0], V, prevV, h, single_V);
+    else {
+        // for bivaraite case
+        int n = V_size / 2;
+        grad(0) = NoiseUtil::grad_theta_nu(noise_type[0], nu[0], V.segment(0, n), prevV.segment(0, n), h.segment(0, n), single_V);
+        if (share_V)
+            grad(1) = grad(0);
+        else
+            grad(1) = NoiseUtil::grad_theta_nu(noise_type[1], nu[1], V.segment(n, n), prevV.segment(n, n), h.segment(n, n), single_V);
+    }
+    return grad;
+}
+
+// log density of W|V
 double Latent::function_K(const SparseMatrix<double>& K) {
     double l = 0;
     VectorXd SV = getSV();
@@ -436,21 +438,4 @@ void Latent::update_each_iter(bool init) {
             }
         }
     }
-}
-
-VectorXd Latent::grad_theta_nu() {
-    VectorXd grad = VectorXd::Zero(n_nu);
-
-    if (n_nu == 1)
-        grad(0) = NoiseUtil::grad_theta_nu(noise_type[0], nu[0], V, prevV, h, single_V);
-    else {
-        // for bivaraite case
-        int n = V_size / 2;
-        grad(0) = NoiseUtil::grad_theta_nu(noise_type[0], nu[0], V.segment(0, n), prevV.segment(0, n), h.segment(0, n), single_V);
-        if (share_V)
-            grad(1) = grad(0);
-        else
-            grad(1) = NoiseUtil::grad_theta_nu(noise_type[1], nu[1], V.segment(n, n), prevV.segment(n, n), h.segment(n, n), single_V);
-    }
-    return grad;
 }

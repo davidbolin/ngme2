@@ -1,6 +1,7 @@
 // Implementation for block model and block_rep
 
 #include "block.h"
+#include "sample_rGIG.h"
 #include <random>
 #include <cmath>
 #include <iterator>
@@ -530,18 +531,33 @@ void BlockModel::sample_cond_noise_V(bool posterior) {
   noise_prevV = noise_V;
 
   if (posterior) {
+    VectorXd a_inc_vec = noise_mu.cwiseQuotient(noise_sigma).array().pow(2);
+    VectorXd b_inc_vec = (get_residual() + noise_V.cwiseProduct(noise_mu)).cwiseQuotient(noise_sigma).array().pow(2);
+    VectorXd a_vec_new = a_vec + a_inc_vec;
+    VectorXd b_vec_new = b_vec + b_inc_vec;
     if (!corr_measure) {
-      VectorXd a_inc_vec = noise_mu.cwiseQuotient(noise_sigma).array().pow(2);
-      VectorXd b_inc_vec = (get_residual() + noise_V.cwiseProduct(noise_mu)).cwiseQuotient(noise_sigma).array().pow(2);
       double dim = 1;
       VectorXd p_vec_new = p_vec - VectorXd::Constant(n_obs, 0.5 * dim);
-      VectorXd a_vec_new = a_vec + a_inc_vec;
-      VectorXd b_vec_new = b_vec + b_inc_vec;
       // noise_V = rGIG_cpp(p_vec_new, a_vec_new, b_vec_new, rng());
       NoiseUtil::sample_V(noise_V, family, p_vec_new, a_vec_new, b_vec_new, rng);
     } else {
       // with pmu and psigma
       // pmat * res ~ N(-mu + mu V, Q^-1 = M^-1 diag(V) M^-T)
+      // assert(noise_type == "nig");
+      int dim = 2;
+      VectorXd p_vec_new = p_vec - VectorXd::Constant(n_obs, 0.5 * dim);
+      // loop over 1..n, sample V_i
+      int i = 0;
+      while (i < n_obs) {
+        if (has_correlation[i]) {
+          // means obs_i and obs_i+1 share the same V
+          noise_V[i] = noise_V[i+1] = rGIG_cpp(p_vec[i], a_vec[i], b_vec[i], rng());
+          i += 2;
+        } else {
+          noise_V[i] = noise_V[i+1] = rGIG_cpp(p_vec[i], a_vec[i], b_vec[i], rng());
+          i++;
+        }
+      }
     }
   } else {
       // noise_V = rGIG_cpp(p_vec, a_vec, b_vec, rng());

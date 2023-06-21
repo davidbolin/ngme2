@@ -74,3 +74,37 @@ simulate_noise <- function(
     attr(e, "V") <- V
     e
 }
+
+#' Simulate ngme noise object
+#'
+#' @param object  ngme noise object
+#' @param nsim the number of noise
+#' @param seed seed
+#' @param h should be of same length as nsim
+#' @param ... ignored
+#'
+#' @return a realization of noise
+#' @export
+simulate.ngme_noise <- function(
+    object,
+    nsim = 1,
+    seed = NULL,
+    h = NULL,
+    ...
+) {
+    if (is.null(seed)) seed <- Sys.time()
+    if (is.null(h)) h <- rep(1, nsim)
+    if (length(h) > nsim) nsim <- length(h)
+    stopifnot(length(h) == nsim)
+
+    with(object, {
+        mu_vec    <- B_mu %*% theta_mu
+        sigma_vec <- exp(B_sigma %*% theta_sigma)
+        if (length(mu_vec) == 1) mu_vec <- rep(mu_vec, nsim)
+        if (length(sigma_vec) == 1) sigma_vec <- rep(sigma_vec, nsim)
+
+        simulate_noise(noise_type, h, mu_vec, sigma_vec, nu, seed, single_V)
+    })
+}
+
+

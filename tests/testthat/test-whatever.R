@@ -95,6 +95,9 @@ test_that("index of lower matrix", {
 
   B <- matrix(c(1,0.5,0.5,1), ncol=2)
   solve(B)
+
+  load_all()
+  simulate.ngme_noise(noise_nig(), nsim=10)
 })
 
 

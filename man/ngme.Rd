@@ -11,6 +11,7 @@ ngme(
   control_opt = NULL,
   control_ngme = NULL,
   group = NULL,
+  replicate = NULL,
   start = NULL,
   debug = FALSE
 )

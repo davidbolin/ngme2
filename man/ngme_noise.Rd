@@ -13,7 +13,6 @@ ngme_noise(
   mu = 0,
   sigma = 1,
   nu = 1,
-  n = 1,
   theta_mu = NULL,
   B_mu = NULL,
   theta_sigma = NULL,
@@ -25,6 +24,9 @@ ngme_noise(
   fix_nu = FALSE,
   V = NULL,
   fix_V = FALSE,
+  init_V = TRUE,
+  single_V = FALSE,
+  share_V = FALSE,
   hessian = TRUE,
   corr_measurement = FALSE,
   index_corr = NULL,
@@ -35,8 +37,7 @@ ngme_noise(
 noise_normal(
   sigma = NULL,
   theta_sigma = NULL,
-  B_sigma = matrix(1, 1, 1),
-  n = nrow(B_sigma),
+  B_sigma = matrix(1),
   corr_measurement = FALSE,
   index_corr = NULL,
   ...
@@ -46,7 +47,6 @@ noise_nig(
   mu = NULL,
   sigma = NULL,
   nu = NULL,
-  n = 1,
   V = NULL,
   theta_mu = NULL,
   theta_sigma = NULL,
@@ -61,7 +61,6 @@ noise_gal(
   mu = NULL,
   sigma = NULL,
   nu = NULL,
-  n = 1,
   V = NULL,
   theta_mu = NULL,
   theta_sigma = NULL,
@@ -99,8 +98,6 @@ noise_normal_nig(
 
 \item{nu}{specify the NIG noise parameter nu (nu>0), see \code{?nig}}
 
-\item{n}{number of noise (= nrow(B_mu) = nrow(B_sigma))}
-
 \item{theta_mu}{specify a non-stationary noise using theta_mu}
 
 \item{B_mu}{Basis matrix for mu (if non-stationary)}
@@ -132,8 +129,6 @@ noise_normal_nig(
 \item{theta_sigma_nig}{similar to theta_sigma_normal}
 
 \item{B_sigma_nig}{similar to B_sigma_nig}
-
-\item{h}{numerical vector (> 0), mesh width}
 }
 \value{
 a list of specification of noise
@@ -152,4 +147,5 @@ for specifying non-stationary mu and sigma,
 \examples{
 noise_normal(n = 10, sigma = 2)
 noise_nig(mu = 1, sigma = 2, nu = 1, n=10)
+noise_gal(mu = 1, sigma = 2, nu = 1, n=10)
 }

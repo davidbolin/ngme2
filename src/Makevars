@@ -5,8 +5,11 @@ R_XTRA_CPPFLAGS =  -I$(R_INCLUDE_DIR)
 # PKG_LIBS =  ${LAPACK_LIBS} ${BLAS_LIBS} ${FLIBS}  -L/opt/intel/mkl/lib/intel64 -Wl,--no-as-needed,-rpath,'/opt/intel/mkl/lib/intel64' -lmkl_intel_lp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl
 
 # TESTS = test/test-algebra.o  test/test-opt.o
-UTILS = util/GIG.o  util/rgig.o  util/MatrixAlgebra.o util/solver.o
+UTILS = util/num_diff.o util/GIG.o util/rgig.o  util/MatrixAlgebra.o util/solver.o
+# $(wildcard util/*.o)
+
 LATENTS = latents/ar1.o latents/matern.o latents/tensorprod.o latents/randeff.o latents/bivar.o
+# $(wildcard latents/*.o)
 
 OBJECTS = RcppExports.o noise.o sample_rGIG.o estimate.o optimizer.o block.o latent.o ngme.o \
    $(UTILS) $(TESTS) $(LATENTS)

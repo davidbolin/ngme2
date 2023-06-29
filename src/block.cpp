@@ -269,7 +269,7 @@ if (debug) std::cout << "Finish get_parameter"<< std::endl;
 }
 
 // avg over gibbs samples
-VectorXd BlockModel::precond_grad() {
+VectorXd BlockModel::grad() {
 if (debug) std::cout << "Start block gradient"<< std::endl;
 long long time_compute_g = 0;
 long long time_sample_w = 0;
@@ -386,9 +386,11 @@ VectorXd BlockModel::grad_beta() {
 
   VectorXd residual = get_residual(); // + X * beta;
   VectorXd grads = X.transpose() * noise_inv_SV.asDiagonal() * residual.cwiseQuotient(noise_sigma);
-  MatrixXd hess = X.transpose() * noise_inv_SV.asDiagonal() * X;
+
+  // MatrixXd hess = X.transpose() * noise_inv_SV.asDiagonal() * X;
   // grads = grads / A.rows();
-  grads = hess.ldlt().solve(grads);
+  // grads = hess.ldlt().solve(grads);
+
 // std::cout << "grads of beta=" << -grads << std::endl;
     return -grads;
 }
@@ -435,8 +437,8 @@ VectorXd BlockModel::grad_theta_sigma() {
   //         grad(i) = 0.5 * B_sigma.col(i).dot(VectorXd::Ones(n_obs) - Y_tilde_sq.cwiseQuotient(noise_sigma));
   //     }
   // }
-  grad = - grad / n_obs;
-  return grad;
+
+  return -grad;
 }
 
 VectorXd BlockModel::get_theta_merr() const {
@@ -637,7 +639,7 @@ Rcpp::List BlockModel::sampling(int n, bool posterior) {
 
 
 // provide stepsize
-inline void BlockModel::examine_gradient() {
+void BlockModel::examine_gradient() {
 
     // examine if the gradient under the threshold
     // for (int i=0; i < n_params; i++) {
@@ -666,4 +668,16 @@ inline void BlockModel::examine_gradient() {
 //     std::cout << "gradients=" << gradients <<std::endl;
 //     std::cout << "stepsizes=" << stepsizes <<std::endl;
 // }
+}
+
+MatrixXd BlockModel::precond() const {
+    // total 3 parts
+    // 1. preconditioner for fixed effects
+    // 2. preconditioner for measurement error
+    // 3. preconditioner for latent model
+
+    // default
+    VectorXd hess = VectorXd::Ones(n_params);
+    hess /= V_sizes;
+    return hess.asDiagonal();
 }

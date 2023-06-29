@@ -134,10 +134,9 @@ public:
 
     VectorXd             get_parameter();
     void                 set_parameter(const VectorXd&);
-    VectorXd             precond_grad();
 
+    VectorXd             grad();
     MatrixXd             precond() const;
-    // VectorXd             grad() {return precond_grad();}
 
     void                 examine_gradient();
     void                 sampleW_V();
@@ -286,14 +285,5 @@ public:
     beta (fixed effects)
     measurement noise
 */
-
-// Not Implemented
-inline MatrixXd BlockModel::precond() const {
-    MatrixXd precond;
-    std::cout << "Not implemented \n";
-    throw;
-    return precond;
-}
-
 
 #endif

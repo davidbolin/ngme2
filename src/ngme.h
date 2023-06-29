@@ -45,7 +45,6 @@ public:
   MatrixXd precond() const override;
   VectorXd grad() override;
   // add subsampling for some ngme_repls (SGD-IS sample only 1 replicate each time, according to the weights)
-  VectorXd precond_grad() override;
 
   std::string get_par_string() const {
     return ngme_repls[0]->get_par_string();

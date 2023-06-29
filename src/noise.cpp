@@ -52,7 +52,6 @@ double NoiseUtil::grad_theta_nu(
                 }
             grad += nu_hi * (1 - log(1/nu) + log(V(i))) - nu * V(i);
             }
-            grad = - grad / n;
         } else {
             // type == nig or normal+nig
             // df/dnu = 0.5 (2h + 1/nu - h^2/V - V)
@@ -70,10 +69,11 @@ double NoiseUtil::grad_theta_nu(
             // hess of log nu
             double hess = nu * grad_nu2 + nu * nu * hess_nu;
 
-        if (use_hessian)
-            grad = grad / hess;
-        else
-            grad = - grad / n;
+            grad *= n;
+        // if (use_hessian)
+        //     grad = grad / hess;
+        // else
+        //     grad = - grad / n;
         }
     } else {
         // single V case
@@ -89,6 +89,6 @@ double NoiseUtil::grad_theta_nu(
         }
     }
 
-    return grad;
+    return -grad;
 }
 

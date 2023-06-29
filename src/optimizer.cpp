@@ -30,15 +30,16 @@ Rcpp::List Optimizer::sgd(
         VectorXd grad = model.grad();
 // std::cout << "get gradient (ms): " << since(timer_grad).count() << std::endl;
 
-        if (precondioner) {
-            MatrixXd cond = model.precond();
+        // if (precondioner) {
+            MatrixXd H = model.precond();
+        std::cout << " H = " << H << std::endl;
 
-            // update x <- x - stepsize * H^-1 * grad(x)
-            x = x - stepsize * cond.selfadjointView<Eigen::Upper>().llt().solve(grad);
+            // // update x <- x - stepsize * H^-1 * grad(x)
+            x = x - stepsize * H.selfadjointView<Eigen::Upper>().llt().solve(grad);
 //            x = x - cond.selfadjointView<Eigen::Upper>().llt().solve(grad);
-        } else {
-            x = x - stepsize * grad;
-        }
+        // } else {
+            // x = x - stepsize * grad;
+        // }
 
         // record x and grad
         x_traj.push_back(x);
@@ -71,18 +72,19 @@ VectorXd Optimizer::sgd(
 
     VectorXd x = model.get_parameter();
 
-    VectorXd grad;
-
     for (int i = 0; i < iterations; i++) {
         trajs.push_back(x);
 // auto timer_grad = std::chrono::steady_clock::now();
-        grad = model.precond_grad();
+
+        // grad = model.precond_grad();
+        VectorXd grad = model.grad();
+        MatrixXd H = model.precond();
+        x = x - stepsize * H.selfadjointView<Eigen::Upper>().llt().solve(grad);
+        VectorXd one_step = model.get_stepsizes().cwiseProduct(H * grad);
+
 // std::cout << "get gradient (ms): " << since(timer_grad).count() << std::endl;
 
-        // VectorXd stepsizes = model.get_stepsizes();
-        // x = x - grad.cwiseProduct(stepsizes);
         // restrict one_step by |one_step(i)| / |x(i)| < rela_step
-        VectorXd one_step = grad.cwiseProduct(model.get_stepsizes());
 if (verbose) {
     std::cout << "one step = " << one_step << std::endl;
 }
@@ -119,16 +121,3 @@ std::cout << "parameter = : " << x << std::endl;
 
     return x;
 }
-
-
-        // VectorXd one_step = grad.cwiseProduct(model.get_stepsizes());
-
-        // // restrict one_step by |one_step(i)| / |x(i)| < rela_step
-        // // VectorXd ratio = one_step.cwiseAbs().cwiseQuotient(x.cwiseAbs());
-        // // for (int j = 0; j < ratio.size() && ratio(j) > max_relative_step; j++) {
-        // //     double sign = one_step(j) / abs(one_step(j));
-        // //     one_step(j) = sign * max_relative_step * x(j);
-        // // }
-
-        // x = x - one_step;
-        // model.set_parameter(x);

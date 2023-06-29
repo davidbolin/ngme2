@@ -83,29 +83,31 @@ See `?control_opt` for more optioins.
 ```{r ar-estimation, fig.align="center", cache=TRUE}
 x1 = runif(n_obs)
 x2 = rexp(n_obs)
-beta <- c(-1, 2)
+beta <- c(1, 2)
 X <- (model.matrix(~0+x1+x2))  # design matrix
 # add some fixed effects and measurement nosie
-Y <- as.numeric(X %*% beta) + W + rnorm(n_obs, sd = 1)
-
+Y <- as.numeric(X %*% beta) + W + rnorm(n_obs, sd = 1.5)
 # Fit the model with the AR1 model
 load_all()
 ngme_out <- ngme(
   Y ~ 0+x1 + x2 + f(
     1:n_obs,
     # fix_W = T, W = W,
-    # name = "my_ar",
+    name = "my_ar",
     model = "ar1",
     noise = noise_nig(
       # fix_V = T,
       # V = attr(W, "V")
+    ),
+    control = control_f(
+      numer_grad = T
     ),
     debug=T
   ),
   data = data.frame(x1=x1, x2=x2, Y=Y),
   control_opt = control_opt(
     burnin = 100,
-    iterations = 300,
+    iterations = 500,
     std_lim = 0.6,
     n_parallel_chain = 1,
     max_absolute_step = 10,

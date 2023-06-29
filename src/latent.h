@@ -45,7 +45,7 @@ enum Latent_fix_flag {
     latent_fix_nu,
     latent_fix_theta_sigma
 };
-const int LATENT_FIX_FLAG_SIZE = 5;
+const int LATENT_FIX_FLAG_SIZE = 6;
 
 class Latent {
 protected:
@@ -142,6 +142,8 @@ public:
     void update_each_iter(bool init=false);
     void sample_cond_V();
     void sample_uncond_V();
+
+    MatrixXd precond();
 
     /*  3 Operator component   */
     const SparseMatrix<double, 0, int>& getK()  {

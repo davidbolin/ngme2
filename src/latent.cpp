@@ -1,4 +1,5 @@
 #include "latent.h"
+#include "num_diff.h"
 
 // K is V_size * W_size matrix
 Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
@@ -123,18 +124,21 @@ VectorXd Latent::grad_theta_mu() {
         grad(l) = (V-h).cwiseProduct(B_mu.col(l).cwiseQuotient(SV)).dot(getK()*W - mu.cwiseProduct(V-h));
     }
 
-    // compute numerical hessian with prevV
-    VectorXd eps = VectorXd::Constant(V_size, 0.001);
-    VectorXd num_h = VectorXd::Zero(n_theta_mu);
-    for (int l=0; l < n_theta_mu; l++) {
-        double g_o = (prevV-h).cwiseProduct(B_mu.col(l).cwiseQuotient(prevSV)).dot(getK()*W - (mu).cwiseProduct(prevV-h));
-        double g_eps = (prevV-h).cwiseProduct(B_mu.col(l).cwiseQuotient(prevSV)).dot(getK()*W - (mu + eps).cwiseProduct(prevV-h));
-        num_h(l) = (g_eps - g_o) / eps(0);
-    }
+    return -grad;
+
+    // // compute numerical hessian with prevV
+    // VectorXd eps = VectorXd::Constant(V_size, 0.001);
+    // VectorXd num_h = VectorXd::Zero(n_theta_mu);
+    // for (int l=0; l < n_theta_mu; l++) {
+    //     double g_o = (prevV-h).cwiseProduct(B_mu.col(l).cwiseQuotient(prevSV)).dot(getK()*W - (mu).cwiseProduct(prevV-h));
+    //     double g_eps = (prevV-h).cwiseProduct(B_mu.col(l).cwiseQuotient(prevSV)).dot(getK()*W - (mu + eps).cwiseProduct(prevV-h));
+    //     num_h(l) = (g_eps - g_o) / eps(0);
+    // }
 
     // if (V_size < 10)
     //     return - grad / sqrt(W_size);
-    return grad.cwiseQuotient(num_h);
+    // else
+    //     return - grad / W_size;
 
     // double ana_hess = -(prevV-h).cwiseQuotient(prevSV).dot(prevV-h);
     // num_hess = (grad_eps - grad) / eps
@@ -155,7 +159,7 @@ inline VectorXd Latent::grad_theta_sigma() {
     // grad = Bi(tmp * sigma ^ -2 - 1)
     grad = B_sigma.transpose() * (tmp - VectorXd::Ones(V_size));
 
-    return - 1.0 / V_size * grad;
+    return -grad;
 }
 
 inline VectorXd Latent::grad_theta_sigma_normal() {
@@ -168,7 +172,8 @@ inline VectorXd Latent::grad_theta_sigma_normal() {
     VectorXd tmp1 = tmp.cwiseProduct(sigma_normal.array().pow(-2).matrix()) - VectorXd::Ones(V_size);
     grad += B_sigma_normal.transpose() * tmp1;
 
-    return - 1.0 / V_size * grad;
+    // return - 1.0 / V_size * grad;
+    return -grad;
 }
 
 VectorXd Latent::grad_theta_nu() {
@@ -185,6 +190,7 @@ VectorXd Latent::grad_theta_nu() {
         else
             grad(1) = NoiseUtil::grad_theta_nu(noise_type[1], nu[1], V.segment(n, n), prevV.segment(n, n), h.segment(n, n), single_V);
     }
+// std::cout << "g_nu = " << grad << std::endl;
     return grad;
 }
 
@@ -209,7 +215,7 @@ double Latent::function_K(const SparseMatrix<double>& K) {
     }
     // normalize
 // std::cout << " l = " << l / W_size << std::endl;
-    return l / W_size;
+    return l;
 }
 
 VectorXd Latent::grad_theta_K() {
@@ -225,19 +231,20 @@ VectorXd Latent::grad_theta_K() {
             ope_add_eps->update_K(tmp);
             SparseMatrix<double> K_add_eps = ope_add_eps->getK();
             double val_add_eps = function_K(K_add_eps);
-            grad(i) = - (val_add_eps - val) / eps;
+            grad(i) = (val_add_eps - val) / eps;
         }
+        // update using num_g
+        // grad = num_g()
     } else {
         VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
 
         VectorXd tmp = getK() * W - mu.cwiseProduct(V-h);
         for (int j=0; j < n_theta_K; j++) {
             grad(j) = trace[j] - (ope->get_dK()[j] * W).cwiseProduct(SV.cwiseInverse()).dot(tmp);
-            grad(j) = - grad(j) / W_size;
         }
     }
 // std::cout << "grad_K = " << grad.transpose() << std::endl;
-    return grad;
+    return -grad;
 }
 
 Rcpp::List Latent::output() const {
@@ -248,7 +255,7 @@ Rcpp::List Latent::output() const {
         Rcpp::Named("theta_mu")     = theta_mu,
         Rcpp::Named("theta_sigma")  = theta_sigma,
         Rcpp::Named("theta_sigma_normal")  = theta_sigma_normal,
-        Rcpp::Named("nu")           = nu,  // gives eta > 0, not log(eta)
+        Rcpp::Named("nu")           = nu,
         Rcpp::Named("V")            = V,
         Rcpp::Named("W")            = W
     );
@@ -282,16 +289,16 @@ const VectorXd Latent::get_grad() {
         grad.segment(n_theta_K+n_theta_mu+n_theta_sigma+n_nu, n_theta_sigma_normal) = grad_theta_sigma_normal();
 // DEBUG: checking grads
 if (debug) {
-    if (abs(grad.segment(0, n_theta_K).mean()) > 1)
+    if (abs(grad.segment(0, n_theta_K).mean()) > W_size)
     std::cout << "g_K is large, g_K = " << grad.segment(0, n_theta_K).mean() << std::endl;
 
-    if (abs(grad.segment(n_theta_K, n_theta_mu).mean()) > 1)
+    if (abs(grad.segment(n_theta_K, n_theta_mu).mean()) > W_size)
     std::cout << "g_mu is large, g_mu = " << grad.segment(n_theta_K, n_theta_mu).mean() << std::endl;
 
-    if (abs(grad.segment(n_theta_K+n_theta_mu, n_theta_sigma).mean()) > 1)
+    if (abs(grad.segment(n_theta_K+n_theta_mu, n_theta_sigma).mean()) > W_size)
     std::cout << "g_sigma is large, g_sigma = " << grad.segment(n_theta_K+n_theta_mu, n_theta_sigma).mean() << std::endl;
 
-    if (abs(grad.segment(n_theta_K+n_theta_mu+n_theta_sigma, n_nu).mean()) > 1)
+    if (abs(grad.segment(n_theta_K+n_theta_mu+n_theta_sigma, n_nu).mean()) > W_size)
     std::cout << "g_nu is large, g_nu = " << grad.segment(n_theta_K+n_theta_mu+n_theta_sigma, n_nu).mean() << std::endl;
 }
 // if (debug) std::cout << "finish latent gradient"<< std::endl;
@@ -438,4 +445,14 @@ void Latent::update_each_iter(bool init) {
             }
         }
     }
+}
+
+// to-do
+MatrixXd Latent::precond() {
+    // hessian of K, mu, sigma, nu
+
+    // default
+    VectorXd hess = VectorXd::Ones(n_params);
+    hess /= V_size;
+    return hess.asDiagonal();
 }

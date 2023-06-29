@@ -15,7 +15,6 @@ public:
     };
     virtual void                 set_parameter(const VectorXd&)=0;
     virtual VectorXd             grad()=0;
-    virtual VectorXd             precond_grad()=0;
     virtual MatrixXd             precond() const=0;
     virtual ~Model() = default;
 };
@@ -46,10 +45,6 @@ public:
     }
 
     SomeFun(VectorXd x0) : x(x0) {}
-
-    VectorXd precond_grad() override {
-        return grad();
-    }
 
     // gradient of f(x, y)
     VectorXd grad() override {

@@ -98,6 +98,13 @@ test_that("index of lower matrix", {
 
   load_all()
   simulate.ngme_noise(noise_nig(), nsim=10)
+
+  cor_mat <- matrix(0, nrow=3, ncol=3)
+  cor_mat[1,3] = 0.1
+  cor_mat[1,2] = 0.2
+  cor_mat[2,3] = 0.3
+  load_all()
+  precsion_matrix(p=3, model = ar1(1:10), zeta = c(1,2,3), cor_mat = cor_mat)
 })
 
 

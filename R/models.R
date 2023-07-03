@@ -431,3 +431,90 @@ re <- function(
     zero_trace = FALSE
   )
 }
+
+# ----  For computing precision matrix of multivariate model
+# p: dimension
+# cor_mat: controls the correlation (only look at upper.tri part)
+D_l <- function(p, cor_mat) {
+  stopifnot(
+    "cor_mat should be of dim p*p" =
+      is.matrix(cor_mat) &&
+      ncol(cor_mat) == p &&
+      nrow(cor_mat) == p
+  )
+  D_l <- diag(p)
+  D_l[upper.tri(D_l)] <- cor_mat[upper.tri(cor_mat)]
+  D_l <- t(D_l)
+  # compute k(j)
+  k <- double(p); k[1] <- 1
+  for (j in 2:p) {
+    # print(D_l[j, 1:(j-1)])
+    k[j] <- sqrt(1 + sum(D_l[j, 1:(j-1)] ^ 2))
+  }
+  D_l <- solve(D_l, diag(k))
+  D_l
+}
+
+dependence_matrix <- function(p, cor_mat, zeta=NULL, Q=NULL) {
+  Q_2d <- function(zeta) {
+    Q <- matrix(0, nrow = 2, ncol = 2)
+    Q[1, 1] <- cos(zeta)
+    Q[2, 2] <- cos(zeta)
+    Q[1, 2] <- -sin(zeta)
+    Q[2, 1] <- sin(zeta)
+    Q
+  }
+  stopifnot(
+    p-round(p)==0, p > 1,
+    "Please provide zeta (p <= 3) or Q matrix, see ?precision_matrix_multivariate"
+      = !is.null(zeta) | !is.null(Q)
+  )
+
+  # compute D_l
+  D_l <- D_l(p, cor_mat)
+  # compute Q
+  if (p == 2) {
+    stopifnot("Length of zeta should be 1 for p=2 case"
+      = length(zeta) == 1)
+    Q <- Q_2d(zeta)
+  } else if (p == 3) {
+    stopifnot("Length of zeta should be 3 for p=3 case"
+      = length(zeta) == 3)
+
+    Q_3x <- Matrix::bdiag(Q_2d(zeta[1]), 1)
+    Q_3z <- Matrix::bdiag(1, Q_2d(zeta[3]))
+    Q_3y <- matrix(0, nrow = 3, ncol = 3)
+    Q_3y[c(1, 3, 7, 9)] <- Q_2d(zeta[2])
+    Q <- Q_3x %*% Q_3y %*% Q_3z
+  } else {
+    if (is.null(Q)) stop("Please provide Q (p*p) for p > 3 case.")
+  }
+
+  Q %*% D_l
+}
+
+#' compute the precision matrix for multivariate model
+#'
+#' @param p dimension, should be integer and greater than 1
+#' @param model an ngme_operator object
+#' @param cor_mat matrix of dim p*p, controls the correlation (only look at upper.tri part)
+#' @param zeta parameter for Q matrix (length of 1 when p=2, length of 3 when p=3)
+#' @param Q orthogonal matrix of dim p*p (provide when p > 3)
+#'
+#' @return the precision matrix of the multivariate model
+#' @details The general model is defined as $D diag(L_1, ..., L_p) x = M$. D is the dependence matrix, it is paramterized by $D = Q(zeta) * D_l(cor_mat)$, where $Q$ is the orthogonal matrix, and $D_l$ is matrix controls the cross-correlation.
+#' See the section 2.2 of Bolin and Wallin (2020) for exact parameterization of Dependence matrix.
+#' @references
+#' Bolin, D. and Wallin, J. (2020), Multivariate type G Matérn stochastic partial differential equation random fields. J. R. Stat. Soc. B, 82: 215-239. https://doi.org/10.1111/rssb.12351
+#' @export
+#' @examples
+#' rho_mat <- matrix(0, nrow = 3, ncol = 3)
+#' rho_mat[1, 2] <- 0.4; rho_mat[1, 3] <- -0.5; rho_mat[2,3] <- 0.8
+#' precision_matrix_multivariate(3, ar1(1:5), rho_mat, zeta=c(1,2,3))
+precision_matrix_multivariate <- function(p, model, cor_mat, zeta=NULL, Q=NULL) {
+  D <- dependence_matrix(p, cor_mat, zeta, Q)
+  bigD <- kronecker(D, Matrix::Diagonal(nrow(model$K)))
+  K <- bigD %*% Matrix::bdiag(rep(list(model$K), p))
+  Matrix::t(K) %*% K
+}
+

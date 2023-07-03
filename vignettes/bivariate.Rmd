@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 
 In this vignette, we will introduce the bivariate model which supports modeling two field and their correlation jointly.
 
-The `f` function specification is similar to ordinary model, but with two fields.
+The `f` function specification is similar to ordinary model (See e.g. AR1-model), but with two more fields.
 Extra arguments for the `f` are:
 
 1. `group`: a vector of labels to indicate the group of different observations. If `group` is provided in `ngme()` function, no need to provide in `f()` function again.
@@ -27,17 +27,32 @@ Extra arguments for the `f` are:
 
 ## Model structure
 
-to-do
+The bivariate model can model two fields $X_1, X_2$ jointly.
+To model their correlation, we use dependence matrix $D(\zeta, \rho)$ to correlate them.
+
+The model is:
+$$
+D diag(L_1, L_2) = M
+$$
+
+The dependence matrix is defined as
+
+$$
+D() =
+$$
+
 
 ## Usage by example
 
-It's better to understand with one exmaple. Say you have an time series model over 5 year from 2001 to 2005, with 2 fields *temperature* and *precipitation*. You want to model the two fields jointly, and their correlation. The data should look like
+It's eaiser to understand with one exmaple. Say you have an time series model over 5 year from 2001 to 2005, with 2 fields *temperature* and *precipitation*. You want to model the two fields jointly, and their correlation. The data should look like
+
+### Specify bivariate model using f()
 
 ```{r toy-data}
 temp <- c(32, 33, 35.5, 36); year_temp <- c(2001, 2002, 2003, 2004)
 precip <- c(0.1, 0.2, 0.5, 1, 0.2); year_pre <- c(2001, 2002, 2003, 2004, 2005)
 
-# bind them since we want to model them jointly
+# bind 2 fields, and also make laebls for them
 y <- c(temp, precip); year <- c(year_temp, year_pre)
 labels <- c(rep("temp", 4), rep("precip", 5)) # group is label for 2 fields
 
@@ -46,9 +61,10 @@ data <- data.frame(y, year, x1, labels)
 data
 ```
 
-The model specification is like this, notice the way to specify 2 sub_models:
+The model specification is like this, notice the way to specify 2 sub-models, and also 2 types of noises for each sub-model.
 
 ```{r toy-model}
+library(devtools)
 load_all()
 # 1st way: simply put model types, using both c() and list() are ok
 bv1 <- f(
@@ -56,8 +72,10 @@ bv1 <- f(
   # sub_models = c(precip="ar1", temp="rw1"),
   sub_models = list(precip="ar1", temp="rw1"),
   group = labels, # can be provided in ngme()
-  noise = noise_normal(),
-  eval=T # can be ignored in ngme()
+  noise = list(
+    precip=noise_normal(),
+    temp=noise_normal()
+  )
 )
 bv1
 
@@ -69,33 +87,19 @@ bv2 <- f(
     temp=list(model="rw1")
   ),
   group = labels, # can be provided in ngme()
-  noise = noise_normal(),
-  eval=T # can be ignored in ngme()
+  noise = list(
+    precip=noise_normal(),
+    temp=noise_nig()
+  )
 )
 bv2
 ```
 
-The previous example assume the common noise across the two fields.
+### Interaction with other fields (e.g. fixed effects)
 
-But the bivariate model also allows for different driven nosie for each field, e.g. `precip` is driven by `nomral` noise, while `temp` is driven by `nig` noise. The model can be specified as:
+When it involves more than one field, things get complicated. When we have fixed effects but only for 1 field, we can use the special syntax `fe(<formula>, which_group=<group_name>)`. The argument `which_group` will tell which field we have fixed effects on. It works similar for modeling using `f()` function.
 
-```{r toy-model-noise}
-load_all()
-bv3 <- f(
-  year, model = "bv",
-  sub_models = list(precip="ar1", temp="rw1"),
-  group = labels, # can be provided in ngme()
-  noise = list(
-    precip = noise_normal(),
-    temp = noise_nig()
-  ),
-  eval = T # can be ignored in ngme()
-)
-bv3
-simulate(bv3)
-```
-
-*Estimation example*
+Here is one example, we have different fixed effects on different fields.
 
 ```{r}
 load_all()
@@ -110,8 +114,8 @@ out = ngme(
     sub_models = list(precip="ar1", temp="rw1"),
     group = labels, # can be provided in ngme()
     noise = list(
-      precip = noise_nig_simple(), temp = noise_nig(), #warning
-      share_V = FALSE  #type-3
+      precip = noise_nig(),
+      temp = noise_nig()
     )
   ),
   data = data,
@@ -126,6 +130,8 @@ out$replicates[[1]]$X
 ```
 
 ## A 2d matern example
+
+Next we see an less artificial example.
 
 1. Simulation
 
@@ -189,7 +195,7 @@ out <- ngme(
   data = data,
   control_opt = control_opt(
     estimation = T,
-    iterations = 300,
+    iterations = 30,
     n_parallel_chain = 1,
     verbose = T,
     print_check_info = F
@@ -202,6 +208,8 @@ out$replicates[[1]]$models[[1]]$noise$bv_noises[[2]]$h
 ```
 
 ## Correlated measurement noise
+
+Besides modeling the dependence between 2 fields. We can also measure the correlation between the measurement error of 2 fields.
 
 ```{r}
 load_all()
@@ -337,5 +345,4 @@ out <- ngme(
 traceplot(out, "field1")
 traceplot(out)
 out
-
 ```

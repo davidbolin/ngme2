@@ -1,12 +1,19 @@
 #' ngme bivariate model specification
 #'
-#' Given 2 operator (first and second), build a correlated bivaraite operator based on K = D %*% diag(K_first, K_second)
+#' Giving 2 sub_models, build a correlated bivaraite operator based on K = D(theta, eta) %*% diag(K_1, K_2)
+#' \deqn{D(\theta, \rho) = \begin{pmatrix}
+#'   \cos(\theta) + \rho \sin(\theta) & -\sin(theta) \sqrt{1+\rho^2} \\
+#'   \sin(\theta) - \rho \cos(\theta) & \cos(theta) \sqrt{1+\rho^2}
+#' \end{pmatrix}}
 #'
-#' @param map can be ignored, pass through first and second
+#' @param map index vector, formula or matrix
 #' @param sub_models a list of sub_models (total 2 sub_models)
 #' @param mesh mesh for build the model
-#' @param theta_K c(zeta, eta, theta_K_1, theta_K_2)
-#' @param ... extra arguments in f()
+#' @param group group vector, can be inherited from ngme() function
+#' @param theta parameter for Q matrix (rotation)
+#' @param rho parameter for D matrix (correlation)
+#' @param share_param TRUE if share the same parameter for 2 sub_models (of same type)
+#' @param ... ignore
 #'
 #' @return a list of specification of model
 #' @export
@@ -14,14 +21,12 @@ bv <- function(
   map,
   sub_models,
   mesh = NULL,
-  zeta = 0, eta = 0,
-  replicate = NULL,
+  theta = 0, rho = 0,
   group = NULL,
   share_param = FALSE,
   ...
 ) {
   if (inherits(map, "formula")) map <- model.matrix(map)[, -1]
-  if (is.null(replicate)) replicate <- rep(1, length_map(map))
   if (is.null(mesh)) mesh <- ngme_build_mesh(map)
 
   model_names <- names(sub_models)
@@ -51,8 +56,7 @@ bv <- function(
     stopifnot("Please provide model=.. in the list" = !is.null(arg2$model))
     second <- build_operator(arg2$model, modifyList(args, arg2))
   }
-
-  theta_K <- c(zeta, eta, first$theta_K, second$theta_K)
+  theta_K <- c(theta, rho, first$theta_K, second$theta_K)
 
   # pass the theta_K to first and second
   first$theta_K <- theta_K[3:(2 + first$n_theta_K)]
@@ -64,7 +68,6 @@ bv <- function(
   ngme_operator(
     map = first$map,
     mesh = NULL,
-    n_rep = length(unique(replicate)),
     model       = "bv",
     first       = first,
     second      = second,
@@ -86,8 +89,7 @@ bv <- function(
 #'
 #' @param first left side of kronecker model (usually a temporal or iid model)
 #' @param second right side of kronecker model (ususally a spatial model)
-#' @param ... extra arguments in f()
-# ' @param map pass through first and second
+#' @param ... extra arguments
 #'
 #' @return a list of specification of model
 #' @export
@@ -114,7 +116,6 @@ tp <- function(
   ngme_operator(
     map = map,  # placeholder
     mesh = NULL,
-    n_rep = 1,
     model = "tp",
     first = first,
     second = second,

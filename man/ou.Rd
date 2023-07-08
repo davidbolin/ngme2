@@ -4,27 +4,18 @@
 \alias{ou}
 \title{ngme Ornstein–Uhlenbeck process specification}
 \usage{
-ou(
-  map,
-  mesh = INLA::inla.mesh.1d(map),
-  replicate = rep(1, length_map(map)),
-  theta_K = 0,
-  B_K = NULL,
-  ...
-)
+ou(map, mesh = INLA::inla.mesh.1d(map), theta_K = 0, B_K = NULL, ...)
 }
 \arguments{
 \item{map}{numerical vector, covariates to build index for the process}
 
 \item{mesh}{mesh for build the model}
 
-\item{replicate}{replicate for the process}
-
 \item{theta_K}{initial value for theta_K, kappa = exp(B_K * theta_K)}
 
 \item{B_K}{bases for theta_K}
 
-\item{...}{extra arguments}
+\item{...}{ignore}
 }
 \value{
 ngme_operator object

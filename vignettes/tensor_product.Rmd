@@ -36,7 +36,6 @@ The operator matrix of `first` and `second` field are exactly the first side and
 The following example gives a simple space-time model with a separable covariance structure.
 
 ```{r}
-load_all()
 mesh_1d <- inla.mesh.1d(1:10)
 time <- 1:3; time_rep <- rep(time, each=5)
 loc <- 1:5; loc_rep <- rep(loc, 3)
@@ -61,7 +60,6 @@ Now let's turn to simualte and estimate the tensor-product model.
 ```{r}
 set.seed(16)
 library(INLA)
-load_all()
 
 ##############################  simulation
 mesh2d <- inla.mesh.2d(

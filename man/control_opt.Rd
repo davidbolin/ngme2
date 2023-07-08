@@ -66,7 +66,7 @@ control_opt(
 
 \item{verbose}{print estimation}
 
-\item{strategy_list}{subsampling of replicates of model, c("all", "is")
+\item{sampling_strategy}{subsampling method of replicates of model, c("all", "is")
 "all" means using all replicates in each iteration,
 "ws" means weighted sampling (each iteration use 1 replicate to compute the gradient, the sample probability is proption to its number of observations)}
 }

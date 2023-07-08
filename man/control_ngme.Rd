@@ -17,6 +17,8 @@ control_ngme(
 \arguments{
 \item{init_sample_W}{sample W|V at the beginning of each chain}
 
+\item{burnin}{integer, iterations for burnin period}
+
 \item{n_gibbs_samples}{number of gibbs sampels}
 
 \item{fix_beta}{logical, fix fixed effect}

@@ -102,7 +102,6 @@ Here, we can directly read the estimation of kappa and sigma (1/tau) as shown in
 ```{r}
 with(mcycle, {plot(times, accel)})
 lines(mesh$loc, result_inla$summary.random$time[, "mean"], col=2, lwd=2)
-load_all()
 pred_W <- predict(result_ngme, map=list(myspde = mesh$loc))
 # by dafult, predict() returns a bunch of statistics at the given location
 str(pred_W)

@@ -13,6 +13,7 @@
 #'    \code{NA} value in other columns will cause problem)
 #' @param control_opt  control for optimizer. by default it is \code{control_opt()}. See \code{?control_opt} for details.
 #' @param control_ngme control for ngme model. by default it is \code{control_ngme()}. See \code{?control_ngme} for details.
+#' @param replicate integer factor, used for divide data into different replicates
 #' @param group group factor, used for multivariate model
 #' @param family likelihood type, same as measurement noise specification, 1. string 2. ngme noise obejct
 #' @param start  starting ngme object (usually object from last fitting)
@@ -253,11 +254,12 @@ check_dim <- function(ngme_model) {
 
 #' Parse the formula for ngme function
 #'
-#' @param fm Formula
+#' @param fm formula
 #' @param data data.frame
 #' @param control_ngme control_ngme
 #' @param noise noise
 #' @param group group factor
+#' @param replicate replicate vector
 #'
 #' @return a list (replicate) of ngme_replicate models
 ngme_parse_formula <- function(

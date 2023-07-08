@@ -4,20 +4,12 @@
 \alias{rw2}
 \title{ngme random walk model of order 2}
 \usage{
-rw2(
-  map,
-  mesh = INLA::inla.mesh.1d(map),
-  replicate = rep(1, length_map(map)),
-  cyclic = FALSE,
-  ...
-)
+rw2(map, mesh = INLA::inla.mesh.1d(map), cyclic = FALSE, ...)
 }
 \arguments{
 \item{map}{numerical vector, covariates to build index for the process}
 
-\item{mesh}{mesh for the process, if not specified, will use inla.mesh.1d(loc = map)}
-
-\item{replicate}{replicate for the process}
+\item{mesh}{mesh for build the model}
 
 \item{cyclic}{whether the mesh is circular, i.e. the first one is connected to the last
 if it is circular, we will treat the 1st location and the last location as neigbour, with distance of average distance.}

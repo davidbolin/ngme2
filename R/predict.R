@@ -91,11 +91,9 @@ predict.ngme <- function(
       loc = map[[ngme$models[[i]]$name]]
       AW[[ngme$models[[i]]$name]] <- with(ngme$models[[i]], {
         mesh <- operator$mesh
-        n_rep <- operator$n_rep
-        W_rep <- matrix(ngme$models[[i]][[estimator]], ncol = n_rep)
-        W_avg <- rowMeans(W_rep)
+        W <- ngme$models[[i]][[estimator]]
         A <- INLA::inla.spde.make.A(loc = loc, mesh = mesh)
-        as.numeric(A %*% W_avg)
+        as.numeric(A %*% W)
       })
     }
   }

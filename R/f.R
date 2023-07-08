@@ -7,13 +7,11 @@
 #'
 #' @param map    symbol or numerical value: index or covariates to build index
 #' @param model     1. string: type of model, 2. ngme.spde object
-#' @param replicate   Representing the replicate
 #' @param noise     1. string: type of model, 2. ngme.noise object
 #'  (can also be specified in each ngme model)
 #' @param mesh      mesh for the model
 #' @param control      control variables for f model
 #' @param name      name of the field, for later use
-#' @param theta_K      Unbounded parameter for K
 #' @param data      specifed or inherit from ngme formula
 #' @param group   group factor (can be provided in ngme())
 #' @param which_group  belong to which group
@@ -23,7 +21,7 @@
 #' @param debug        Debug mode
 #' @param eval      evaluate the model
 #' @param subset    subset of the model
-#' @param ...       additional arguments
+#' @param ...       additional arguments (e.g. parameters for model)
 #'  inherit the data from ngme function
 #'
 #' @return a list latent_in for constructing latent model, e.g. A, h, C, G,
@@ -37,14 +35,12 @@ f <- function(
   map         = NULL,
   model       = NULL,
   noise       = noise_normal(),
-  replicate   = NULL,
   mesh        = NULL,
   control     = control_f(),
   name        = NULL,
   data        = NULL,
   group       = NULL,
   which_group = NULL,
-  theta_K     = NULL,
   W           = NULL,
   fix_W       = FALSE,
   fix_theta_K = FALSE,
@@ -82,10 +78,6 @@ f <- function(
   if (model=="tp" && !is.null(data))
     map <- seq_len(nrow(data))
 
-  # replicate <- eval(substitute(replicate), envir = data, enclos = parent.frame())
-  replicate <- if (is.null(replicate)) rep(1, length_map(map))
-    else as.integer(as.factor(replicate))
-
   # remove NULL in arguments
   f_args <- Filter(Negate(is.null),  as.list(environment()))
   # add arguments in ...
@@ -97,7 +89,7 @@ f <- function(
   # }
 
   # 1. build operator
-  n <- mesh$n; nrep <- length(unique(replicate))
+  n <- mesh$n
   operator <- build_operator(model, f_args)
 
   A <- if (is.null(operator$A))
@@ -165,83 +157,15 @@ f <- function(
     noise     = noise,
     W_size    = ncol(operator$K),
     V_size    = nrow(operator$K),
-    theta_K   = operator$theta_K,
     A         = A,
     control   = control,
     map       = map,
     n_map     = length_map(map),
-    replicate = replicate,
     W         = W,
     fix_W     = fix_W,
     name      = name,
     debug     = debug
   )
-}
-
-
-
-#' ngme iid model specification
-#'
-#' @param map integer vector, time index for the AR(1) process
-#' @param replicate replicate for the process
-#' @param index_NA Logical vector, same as is.na(response var.)
-#'
-#' @param noise noise, can be specified in f()
-#' @param data data, can be specified in f(), ngme()
-#' @param control controls using control_f(),
-#' @param ... extra arguments in f()
-#'
-#' @return a list of specification of model
-#' @export
-model_iid <- function(
-  map         = NULL,
-  replicate   = NULL,
-  data        = NULL,
-  index_NA    = NULL,
-  noise       = noise_normal(),
-  control     = control_f(),
-  ...
-) {
-  # capture symbol in index
-  map <- eval(substitute(map), envir = data, enclos = parent.frame())
-  n_map <- length_map(map)
-  stopifnot("The map should be integers." = all(map == round(map)))
-  if (is.null(replicate)) replicate <- rep(1, length_map(map))
-  if (is.null(index_NA)) index_NA <- rep(FALSE, length_map(map))
-
-  stopifnot("Make sure length(idx)==length(replicate)" = length(map) == length(replicate))
-
-  replicate <- if (!is.null(list(...)$replicate)) list(...)$replicate
-    else rep(1, length(map))
-
-  mesh <- INLA::inla.mesh.1d(loc=map)
-  tmp <- ngme_make_A(
-    mesh = mesh,
-    map = map,
-    n_map = n_map,
-    idx_NA = index_NA,
-    replicate = replicate
-  )
-  A <- tmp$A; A_pred <- tmp$A_pred
-
-  args <- within(list(...), {
-    mesh        = mesh
-    map         = map
-    n_map       = n_map
-    model       = "iid"
-    theta_K     = theta_K
-    W_size      = n_map
-    V_size      = n_map
-    A           = A
-    A_pred      = A_pred
-    h           = rep(1, n_map)
-    K           = ngme_as_sparse(Matrix::Diagonal(n_map))
-    noise       = noise
-    replicate   = replicate
-    n_rep       = length(unique(replicate))
-    control     = control
-  })
-  do.call(ngme_model, args)
 }
 
 # build operator

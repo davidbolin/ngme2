@@ -49,7 +49,6 @@ D() =
 It's eaiser to understand with one exmaple. Say we have a time series model over 5 year from 2001 to 2005, with 2 fields *temperature* and *precipitation*. You want to model the two fields jointly. The data look like the following:
 
 ```{r toy-data}
-library(devtools); load_all()
 temp <- c(32, 33, 35.5, 36); year_temp <- c(2001, 2002, 2003, 2004)
 precip <- c(0.1, 0.2, 0.5, 1, 0.2); year_pre <- c(2001, 2002, 2003, 2004, 2005)
 
@@ -68,6 +67,7 @@ Next we need to specify the model using `f()` function. Notice the way to specif
 # 1st way: simply put model types, using both c() and list() are ok
 bv1 <- f(
   year, model = "bv",
+  theta = 1,
   sub_models = list(precip="ar1", temp="rw1"),
   # sub_models = c(precip="ar1", temp="rw1"),
   group = labels, # can be provided in ngme()
@@ -221,7 +221,6 @@ Next we see an less artificial example.
 1. Simulation
 
 ```{r}
-load_all()
 library(INLA)
 pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
 mesh <- inla.mesh.2d(
@@ -235,7 +234,6 @@ lat <- runif(n_obs, 0, 5)
 group <- c(rep("sal", n_obs/2), rep("temp", n_obs/2))
 head(data)
 
-load_all()
 true_model <- f(
     ~long + lat,
     mesh = mesh,
@@ -262,7 +260,6 @@ data <- data.frame(Y, long, lat)
 2. Estimation
 
 ```{r}
-load_all()
 out <- ngme(
   Y ~ f(
     ~long + lat,

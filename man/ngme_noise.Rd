@@ -24,10 +24,8 @@ ngme_noise(
   fix_nu = FALSE,
   V = NULL,
   fix_V = FALSE,
-  init_V = TRUE,
   single_V = FALSE,
   share_V = FALSE,
-  hessian = TRUE,
   corr_measurement = FALSE,
   index_corr = NULL,
   rho = 0,
@@ -76,7 +74,6 @@ noise_normal_nig(
   mu = NULL,
   sigma_nig = NULL,
   nu = NULL,
-  n = 1,
   V = NULL,
   theta_mu = NULL,
   theta_sigma_nig = NULL,
@@ -119,6 +116,16 @@ noise_normal_nig(
 \item{V}{start value for V}
 
 \item{fix_V}{fix the sampling of V}
+
+\item{single_V}{TRUE if V is a single number}
+
+\item{share_V}{used only for bivariate model}
+
+\item{corr_measurement}{TRUE if we use correlated measurement noise}
+
+\item{index_corr}{used when corr_measurement=TRUE, indicate which observation has correlation}
+
+\item{rho}{used when corr_measurement=TRUE, starting point for correlation}
 
 \item{...}{additional arguments}
 

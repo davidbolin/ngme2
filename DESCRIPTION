@@ -13,7 +13,6 @@ License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true
 Imports:
-    Formula,
     Matrix,
     Rcpp,
     methods,
@@ -40,7 +39,8 @@ Suggests:
     lattice,
     viridis,
     rSPDE,
-    tidyr
+    tidyr,
+    lme4
 VignetteBuilder: knitr
 RoxygenNote: 7.2.3
 Config/testthat/edition: 3

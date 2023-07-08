@@ -3,26 +3,21 @@
 #' ngme iid model specification
 #'
 #' @param map index vector
-#' @param replicate replicate for the process
-#'
-#' @param ... extra arguments
+#' @param ... ignore
 #'
 #' @return ngme_operator object
 #' @export
 #'
 iid <- function(
   map,
-  replicate = rep(1, length_map(map)),
   ...
 ) {
   if (inherits(map, "formula")) map <- model.matrix(map)[, -1]
-  replicate <- as.integer(as.factor(replicate))
   K <- ngme_as_sparse(Matrix::Diagonal(length(map)))
 
   ngme_operator(
     map = map,
     mesh = NULL,
-    n_rep = length(unique(replicate)),
     model = "iid",
     theta_K = double(0),
     K = K,
@@ -35,24 +30,19 @@ iid <- function(
 
 #' ngme AR(1) model specification
 #'
-#' Generating C, G and A given index and replicate
-#'
 #' @param map integer vector, time index for the AR(1) process
 #' @param mesh mesh for build the model
-#' @param replicate replicate for the process
 #' @param rho the correlation parameter (between -1 and 1)
-#'
-#' @param ... extra arguments
+#' @param ... ignore
 #'
 #' @return ngme_operator object
 #' @export
 #'
 #' @examples
-#' ar1(c(1:3, 1:3), replicate = c(1,1,1,2,2,2))
+#' ar1(c(1:3, 1:3))
 ar1 <- function(
   map,
   mesh      = INLA::inla.mesh.1d(map),
-  replicate = rep(1, length_map(map)),
   rho       = 0,
   ...
 ) {
@@ -60,36 +50,32 @@ ar1 <- function(
   if (inherits(map, "formula")) map <- model.matrix(map)[, -1]
   stopifnot("The map should be integers." = all(map == round(map)))
 
-  # check replicate
-  replicate <- as.integer(as.factor(replicate))
-  stopifnot("length of map and replicate should be the same." = length(map) == length(replicate))
-
   # check mesh
   stopifnot("Mesh should be inla.mesh.1d." = inherits(mesh, c("inla.mesh.1d")))
 
-  n <- mesh$n; nrep <- length(unique(replicate))
+  n <- mesh$n
+  # nrep <- length(unique(replicate))
 
   h <- c(diff(mesh$loc), 1)
   G <- Matrix::Diagonal(n);
   C <- Matrix::sparseMatrix(j=1:(n-1), i=2:n, x=-1, dims=c(n,n))
   stopifnot("The mesh should be 1d and has gap 1." = all(h == 1))
 
-  # for replicate
-  if (nrep > 1) {
-    G <- Matrix::kronecker(diag(nrep), G)
-    C <- Matrix::kronecker(diag(nrep), C)
-    h <- rep(h, nrep)
-  }
+  # if (nrep > 1) {
+  #   G <- Matrix::kronecker(diag(nrep), G)
+  #   C <- Matrix::kronecker(diag(nrep), C)
+  #   h <- rep(h, nrep)
+  # }
 
   theta_K <- ar1_a2th(rho)
   stopifnot("The length of rho(theta_K) should be 1." = length(theta_K) == 1)
 
-  A <- if (!is.null(map)) INLA::inla.spde.make.A(mesh = mesh, loc = map, repl=replicate) else NULL
+  A <- if (!is.null(map)) INLA::inla.spde.make.A(mesh = mesh, loc = map) else NULL
 
   ngme_operator(
     map = map,
     mesh = mesh,
-    n_rep = nrep,
+    # n_rep = nrep,
     model = "ar1",
     theta_K = theta_K,
     C = ngme_as_sparse(C),
@@ -104,13 +90,10 @@ ar1 <- function(
 
 #' ngme random walk model of order 1
 #'
-#' generate K matrix of size (n-1) x n (non-cyclic case), where n is size of map
-#'
-#' @param map        numerical vector, covariates to build index for the process
-#' @param replicate replicate for the process
+#' @param map  numerical vector, covariates to build index for the process
 #' @param cyclic  whether the mesh is circular, i.e. the first one is connected to the last
 #'   if it is circular, we will treat the 1st location and the last location as neigbour, with distance of average distance.
-#' @param mesh      mesh for the process, if not specified, will use inla.mesh.1d(loc = map)
+#' @param mesh mesh for build the model
 #' @param ...       additional arguments
 #'
 #' @return a list
@@ -121,17 +104,13 @@ ar1 <- function(
 rw1 <- function(
   map,
   mesh      = INLA::inla.mesh.1d(map),
-  replicate = rep(1, length_map(map)),
   cyclic    = FALSE,
   ...
 ) {
   if (inherits(map, "formula")) map <- model.matrix(map)[, -1]
-  replicate <- as.integer(as.factor(replicate))
-  stopifnot("length of map and replicate should be the same." = length(map) == length(replicate))
 
   stopifnot("Mesh should be inla.mesh.1d." = inherits(mesh, c("inla.mesh.1d")))
-  n <- mesh$n; nrep <- length(unique(replicate))
-
+  n <- mesh$n
   x <- map
   h <- diff(mesh$loc);
   n <- mesh$n
@@ -146,20 +125,14 @@ rw1 <- function(
     h <- c(h, mean(h))
   }
 
-  # for replicate
-  G <- Matrix::kronecker(diag(nrep), G)
-  C <- Matrix::kronecker(diag(nrep), C)
-  h <- rep(h, nrep)
-
   ngme_operator(
     map = map,
     mesh = mesh,
-    n_rep = nrep,
     model = "rw1",
     theta_K = double(0),
     K = ngme_as_sparse(C + G),
     h = h,
-    A = INLA::inla.spde.make.A(mesh = mesh, loc = map, repl=replicate),
+    A = INLA::inla.spde.make.A(mesh = mesh, loc = map),
     symmetric = FALSE,
     zero_trace = FALSE
   )
@@ -170,10 +143,9 @@ rw1 <- function(
 #' generate K matrix of size (n-2) x n (non-cyclic case), where n is size of map
 #'
 #' @param map  numerical vector, covariates to build index for the process
-#' @param replicate replicate for the process
+#' @param mesh mesh for build the model
 #' @param cyclic  whether the mesh is circular, i.e. the first one is connected to the last
 #'   if it is circular, we will treat the 1st location and the last location as neigbour, with distance of average distance.
-#' @param mesh      mesh for the process, if not specified, will use inla.mesh.1d(loc = map)
 #' @param ...       additional arguments
 #'
 #' @return a list
@@ -184,19 +156,15 @@ rw1 <- function(
 rw2 <- function(
   map,
   mesh      = INLA::inla.mesh.1d(map),
-  replicate = rep(1, length_map(map)),
   cyclic    = FALSE,
   ...
 ) {
   if (inherits(map, "formula")) map <- model.matrix(map)[, -1]
-  replicate <- as.integer(as.factor(replicate))
   if (is.null(mesh)) mesh <- ngme_build_mesh(map)
-
-  stopifnot("length of map and replicate should be the same." = length(map) == length(replicate))
 
   x <- map
   stopifnot("Mesh should be inla.mesh.1d." = inherits(mesh, c("inla.mesh.1d")))
-  n <- mesh$n; nrep <- length(unique(replicate))
+  n <- mesh$n
   stopifnot("mesh too small" = n >= 3)
 
   h <- diff(mesh$loc)
@@ -210,20 +178,14 @@ rw2 <- function(
     h <- c(h, mean(h))
   }
 
-  # for replicate
-  G <- Matrix::kronecker(diag(nrep), G)
-  C <- Matrix::kronecker(diag(nrep), C)
-  h <- rep(h, nrep)
-
   ngme_operator(
     map = map,
     mesh = mesh,
-    n_rep = nrep,
     model = "rw2",
     theta_K = double(0),
     K = ngme_as_sparse(C + G),
     h = h,
-    A = INLA::inla.spde.make.A(mesh = mesh, loc = map, repl=replicate),
+    A = INLA::inla.spde.make.A(mesh = mesh, loc = map),
     symmetric = FALSE,
     zero_trace = FALSE
   )
@@ -232,29 +194,24 @@ rw2 <- function(
 #' ngme Ornstein–Uhlenbeck process specification
 #'
 #' @param map numerical vector, covariates to build index for the process
-#' @param replicate replicate for the process
 #' @param mesh mesh for build the model
 #' @param theta_K initial value for theta_K, kappa = exp(B_K * theta_K)
 #' @param B_K bases for theta_K
-#' @param ... extra arguments
+#' @param ... ignore
 #'
 #' @return ngme_operator object
 #' @export
 ou <- function(
   map,
   mesh      = INLA::inla.mesh.1d(map),
-  replicate = rep(1, length_map(map)),
   theta_K   = 0,
   B_K       = NULL,
   ...
 ) {
   if (inherits(map, "formula")) map <- model.matrix(map)[, -1]
-  replicate <- as.integer(as.factor(replicate))
 
   stopifnot("Mesh should be inla.mesh.1d." = inherits(mesh, c("inla.mesh.1d")))
-  n <- mesh$n; nrep <- length(unique(replicate))
-
-  stopifnot("length of map and replicate should be the same." = length(map) == length(replicate))
+  n <- mesh$n
 
   if (is.null(mesh)) mesh <- ngme_build_mesh(map)
   h <- diff(mesh$loc); h <- c(h, mean(h))
@@ -268,20 +225,12 @@ ou <- function(
   C <- Ce <- Matrix::bandSparse(n=n,m=n,k=c(-1,0),diagonals=cbind(0.5*c(h[-1],0), 0.5*h))
   Ci = Matrix::sparseMatrix(i=1:n,j=1:n,x=1/h,dims = c(n,n))
 
-  # for replicate
-  if (nrep > 1) {
-    G <- Matrix::kronecker(diag(nrep), G)
-    C <- Matrix::kronecker(diag(nrep), C)
-    h <- rep(h, nrep)
-  }
-
   kappas <- exp(as.numeric(B_K %*% theta_K))
   K <- Matrix::Diagonal(x=kappas) %*% C + G
 
   ngme_operator(
     map         = map,
     mesh        = mesh,
-    n_rep       = nrep,
     model       = "ou",
     B_K         = B_K,
     theta_K     = theta_K,
@@ -289,7 +238,7 @@ ou <- function(
     G           = ngme_as_sparse(G),
     K           = ngme_as_sparse(K),
     h           = h,
-    A           = INLA::inla.spde.make.A(mesh = mesh, loc = map, repl=replicate),
+    A           = INLA::inla.spde.make.A(mesh = mesh, loc = map),
     symmetric   = FALSE,
     zero_trace  = TRUE
   )
@@ -297,33 +246,27 @@ ou <- function(
 
 #' ngme Matern SPDE model specification
 #'
-#' Generating C, G and A given index and replicate
-#'
 #' @param map  numerical vector, covariates to build index for the process
 #' @param mesh mesh for build the SPDE model
-#' @param replicate replicate for the process
 #' @param alpha 2 or 4, SPDE smoothness parameter
 #' @param theta_K initial value for theta_K, kappa = exp(B_K * theta_K)
 #' @param B_K bases for theta_K
-#' @param ... extra arguments
+#' @param ... ignore
 #'
 #' @return ngme_operator object
 #' @export
 matern <- function(
   map,
   mesh,
-  replicate = rep(1, length_map(map)),
   alpha = 2,
   theta_K = 0,
   B_K = NULL,
   ...
 ) {
   if (inherits(map, "formula")) map <- model.matrix(map)[, -1]
-  replicate <- as.integer(as.factor(replicate))
   stopifnot(alpha == 2 || alpha == 4)
 
-  n <- mesh$n; nrep <- length(unique(replicate))
-
+  n <- mesh$n
   if (is.null(B_K) && length(theta_K) == 1)
     B_K <- matrix(1, nrow = mesh$n, ncol = 1)
   else if (is.null(B_K) && length(theta_K) > 1)
@@ -342,13 +285,6 @@ matern <- function(
     h <- Matrix::diag(fem$c0)
   }
 
-  # for replicate
-  if (nrep > 1) {
-    G <- Matrix::kronecker(diag(nrep), G)
-    C <- Matrix::kronecker(diag(nrep), C)
-    h <- rep(h, nrep)
-  }
-
   kappas <- as.numeric(exp(B_K %*% theta_K))
   if (length(theta_K) == 1) {
     # stationary
@@ -358,12 +294,11 @@ matern <- function(
     K <- if (alpha == 2) diag(kappas) %*% C %*% diag(kappas)  + G
     else diag(kappas) %*% C %*% diag(kappas) %*% C %*% diag(kappas) + G
   }
-  A <- INLA::inla.spde.make.A(mesh = mesh, loc = map, repl=replicate)
+  A <- INLA::inla.spde.make.A(mesh = mesh, loc = map)
 
   ngme_operator(
     map = map,
     mesh = mesh,
-    n_rep = nrep,
     alpha = alpha,
     model = "matern",
     theta_K = theta_K,
@@ -381,24 +316,18 @@ matern <- function(
 #' ngme random effect model
 #'
 #' @param map numerical vector, covariates to build index for the process (can be formula, provided data)
-#' @param replicate replicate for the process
-#' @param alpha 2 or 4, SPDE smoothness parameter
 #' @param theta_K initial value for theta_K (build covariance matrix)
-#' @param ... extra arguments
+#' @param ... ignore
 #'
 #' @return ngme_operator object
 #' @export
 re <- function(
   map,
-  replicate = rep(1, length_map(map)),
   theta_K = NULL,
   ...
 ) {
   if (inherits(map, "formula")) map <- model.matrix(map)
     else map <- as.matrix(map)
-
-  replicate <- as.integer(as.factor(replicate))
-  nrep <- length(unique(replicate))
 
   B_K <- map
   n_reff <- ncol(B_K) # number of random effects
@@ -420,7 +349,6 @@ re <- function(
   ngme_operator(
     map = map,
     mesh = NULL,
-    n_rep = nrep,
     model = "re",
     theta_K = theta_K,
     K = ngme_as_sparse(K),
@@ -454,36 +382,36 @@ D_l <- function(p, cor_mat) {
   D_l
 }
 
-dependence_matrix <- function(p, cor_mat, zeta=NULL, Q=NULL) {
-  Q_2d <- function(zeta) {
+dependence_matrix <- function(p, cor_mat, theta=NULL, Q=NULL) {
+  Q_2d <- function(theta) {
     Q <- matrix(0, nrow = 2, ncol = 2)
-    Q[1, 1] <- cos(zeta)
-    Q[2, 2] <- cos(zeta)
-    Q[1, 2] <- -sin(zeta)
-    Q[2, 1] <- sin(zeta)
+    Q[1, 1] <- cos(theta)
+    Q[2, 2] <- cos(theta)
+    Q[1, 2] <- -sin(theta)
+    Q[2, 1] <- sin(theta)
     Q
   }
   stopifnot(
     p-round(p)==0, p > 1,
-    "Please provide zeta (p <= 3) or Q matrix, see ?precision_matrix_multivariate"
-      = !is.null(zeta) | !is.null(Q)
+    "Please provide theta (p <= 3) or Q matrix, see ?precision_matrix_multivariate"
+      = !is.null(theta) | !is.null(Q)
   )
 
   # compute D_l
   D_l <- D_l(p, cor_mat)
   # compute Q
   if (p == 2) {
-    stopifnot("Length of zeta should be 1 for p=2 case"
-      = length(zeta) == 1)
-    Q <- Q_2d(zeta)
+    stopifnot("Length of theta should be 1 for p=2 case"
+      = length(theta) == 1)
+    Q <- Q_2d(theta)
   } else if (p == 3) {
-    stopifnot("Length of zeta should be 3 for p=3 case"
-      = length(zeta) == 3)
+    stopifnot("Length of theta should be 3 for p=3 case"
+      = length(theta) == 3)
 
-    Q_3x <- Matrix::bdiag(Q_2d(zeta[1]), 1)
-    Q_3z <- Matrix::bdiag(1, Q_2d(zeta[3]))
+    Q_3x <- Matrix::bdiag(Q_2d(theta[1]), 1)
+    Q_3z <- Matrix::bdiag(1, Q_2d(theta[3]))
     Q_3y <- matrix(0, nrow = 3, ncol = 3)
-    Q_3y[c(1, 3, 7, 9)] <- Q_2d(zeta[2])
+    Q_3y[c(1, 3, 7, 9)] <- Q_2d(theta[2])
     Q <- Q_3x %*% Q_3y %*% Q_3z
   } else {
     if (is.null(Q)) stop("Please provide Q (p*p) for p > 3 case.")
@@ -497,11 +425,11 @@ dependence_matrix <- function(p, cor_mat, zeta=NULL, Q=NULL) {
 #' @param p dimension, should be integer and greater than 1
 #' @param model an ngme_operator object
 #' @param cor_mat matrix of dim p*p, controls the correlation (only look at upper.tri part)
-#' @param zeta parameter for Q matrix (length of 1 when p=2, length of 3 when p=3)
+#' @param theta parameter for Q matrix (length of 1 when p=2, length of 3 when p=3)
 #' @param Q orthogonal matrix of dim p*p (provide when p > 3)
 #'
 #' @return the precision matrix of the multivariate model
-#' @details The general model is defined as $D diag(L_1, ..., L_p) x = M$. D is the dependence matrix, it is paramterized by $D = Q(zeta) * D_l(cor_mat)$, where $Q$ is the orthogonal matrix, and $D_l$ is matrix controls the cross-correlation.
+#' @details The general model is defined as $D diag(L_1, ..., L_p) x = M$. D is the dependence matrix, it is paramterized by $D = Q(theta) * D_l(cor_mat)$, where $Q$ is the orthogonal matrix, and $D_l$ is matrix controls the cross-correlation.
 #' See the section 2.2 of Bolin and Wallin (2020) for exact parameterization of Dependence matrix.
 #' @references
 #' Bolin, D. and Wallin, J. (2020), Multivariate type G Matérn stochastic partial differential equation random fields. J. R. Stat. Soc. B, 82: 215-239. https://doi.org/10.1111/rssb.12351
@@ -509,9 +437,9 @@ dependence_matrix <- function(p, cor_mat, zeta=NULL, Q=NULL) {
 #' @examples
 #' rho_mat <- matrix(0, nrow = 3, ncol = 3)
 #' rho_mat[1, 2] <- 0.4; rho_mat[1, 3] <- -0.5; rho_mat[2,3] <- 0.8
-#' precision_matrix_multivariate(3, ar1(1:5), rho_mat, zeta=c(1,2,3))
-precision_matrix_multivariate <- function(p, model, cor_mat, zeta=NULL, Q=NULL) {
-  D <- dependence_matrix(p, cor_mat, zeta, Q)
+#' precision_matrix_multivariate(3, ar1(1:5), rho_mat, theta=c(1,2,3))
+precision_matrix_multivariate <- function(p, model, cor_mat, theta=NULL, Q=NULL) {
+  D <- dependence_matrix(p, cor_mat, theta, Q)
   bigD <- kronecker(D, Matrix::Diagonal(nrow(model$K)))
   K <- bigD %*% Matrix::bdiag(rep(list(model$K), p))
   Matrix::t(K) %*% K

@@ -4,14 +4,12 @@
 \alias{iid}
 \title{ngme iid model specification}
 \usage{
-iid(map, replicate = rep(1, length_map(map)), ...)
+iid(map, ...)
 }
 \arguments{
 \item{map}{index vector}
 
-\item{replicate}{replicate for the process}
-
-\item{...}{extra arguments}
+\item{...}{ignore}
 }
 \value{
 ngme_operator object

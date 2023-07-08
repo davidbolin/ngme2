@@ -47,7 +47,6 @@ Suppose one has a response variable with $2n$ observations
 ```{r}
 library(ngme2)
 library(ggplot2)
-load_all()
 
 # creating ar1 process
 n <- 500

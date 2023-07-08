@@ -11,7 +11,7 @@ tp(first, second, ...)
 
 \item{second}{right side of kronecker model (ususally a spatial model)}
 
-\item{...}{extra arguments in f()}
+\item{...}{extra arguments}
 }
 \value{
 a list of specification of model

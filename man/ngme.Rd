@@ -31,6 +31,8 @@ ngme(
 
 \item{group}{group factor, used for multivariate model}
 
+\item{replicate}{integer factor, used for divide data into different replicates}
+
 \item{start}{starting ngme object (usually object from last fitting)}
 
 \item{debug}{toggle debug mode}

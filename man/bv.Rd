@@ -8,26 +8,37 @@ bv(
   map,
   sub_models,
   mesh = NULL,
-  zeta = 0,
-  eta = 0,
-  replicate = NULL,
+  theta = 0,
+  rho = 0,
   group = NULL,
   share_param = FALSE,
   ...
 )
 }
 \arguments{
-\item{map}{can be ignored, pass through first and second}
+\item{map}{index vector, formula or matrix}
 
-\item{replicate}{replicate}
+\item{sub_models}{a list of sub_models (total 2 sub_models)}
 
-\item{...}{extra arguments in f()}
+\item{mesh}{mesh for build the model}
 
-\item{theta_K}{c(zeta, eta, theta_K_1, theta_K_2)}
+\item{theta}{parameter for Q matrix (rotation)}
+
+\item{rho}{parameter for D matrix (correlation)}
+
+\item{group}{group vector, can be inherited from ngme() function}
+
+\item{share_param}{TRUE if share the same parameter for 2 sub_models (of same type)}
+
+\item{...}{ignore}
 }
 \value{
 a list of specification of model
 }
 \description{
-Given 2 operator (first and second), build a correlated bivaraite operator based on K = D %*% diag(K_first, K_second)
+Giving 2 sub_models, build a correlated bivaraite operator based on K = D(theta, eta) %*% diag(K_1, K_2)
+\deqn{D(\theta, \rho) = \begin{pmatrix}
+  \cos(\theta) + \rho \sin(\theta) & -\sin(theta) \sqrt{1+\rho^2} \\
+  \sin(\theta) - \rho \cos(\theta) & \cos(theta) \sqrt{1+\rho^2}
+\end{pmatrix}}
 }

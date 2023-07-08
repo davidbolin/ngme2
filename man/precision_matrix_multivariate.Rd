@@ -4,7 +4,7 @@
 \alias{precision_matrix_multivariate}
 \title{compute the precision matrix for multivariate model}
 \usage{
-precision_matrix_multivariate(p, model, cor_mat, zeta = NULL, Q = NULL)
+precision_matrix_multivariate(p, model, cor_mat, theta = NULL, Q = NULL)
 }
 \arguments{
 \item{p}{dimension, should be integer and greater than 1}
@@ -13,7 +13,7 @@ precision_matrix_multivariate(p, model, cor_mat, zeta = NULL, Q = NULL)
 
 \item{cor_mat}{matrix of dim p*p, controls the correlation (only look at upper.tri part)}
 
-\item{zeta}{parameter for Q matrix (length of 1 when p=2, length of 3 when p=3)}
+\item{theta}{parameter for Q matrix (length of 1 when p=2, length of 3 when p=3)}
 
 \item{Q}{orthogonal matrix of dim p*p (provide when p > 3)}
 }
@@ -24,13 +24,13 @@ the precision matrix of the multivariate model
 compute the precision matrix for multivariate model
 }
 \details{
-The general model is defined as $D diag(L_1, ..., L_p) x = M$. D is the dependence matrix, it is paramterized by $D = Q(zeta) * D_l(cor_mat)$, where $Q$ is the orthogonal matrix, and $D_l$ is matrix controls the cross-correlation.
+The general model is defined as $D diag(L_1, ..., L_p) x = M$. D is the dependence matrix, it is paramterized by $D = Q(theta) * D_l(cor_mat)$, where $Q$ is the orthogonal matrix, and $D_l$ is matrix controls the cross-correlation.
 See the section 2.2 of Bolin and Wallin (2020) for exact parameterization of Dependence matrix.
 }
 \examples{
 rho_mat <- matrix(0, nrow = 3, ncol = 3)
 rho_mat[1, 2] <- 0.4; rho_mat[1, 3] <- -0.5; rho_mat[2,3] <- 0.8
-precision_matrix_multivariate(3, ar1(1:5), rho_mat, zeta=c(1,2,3))
+precision_matrix_multivariate(3, ar1(1:5), rho_mat, theta=c(1,2,3))
 }
 \references{
 Bolin, D. and Wallin, J. (2020), Multivariate type G Matérn stochastic partial differential equation random fields. J. R. Stat. Soc. B, 82: 215-239. https://doi.org/10.1111/rssb.12351

@@ -1,7 +1,6 @@
 ngme_operator <- function(
   map,
   mesh,
-  n_rep,
   model,
   K,
   h,
@@ -16,7 +15,6 @@ ngme_operator <- function(
     list(
       map = map,
       mesh = mesh,
-      n_rep = n_rep,
       model = model,
       K = K,
       h = h,
@@ -35,6 +33,7 @@ ngme_operator <- function(
 #'
 #' @param x ngme operator object
 #' @param padding number of white space padding in front
+#' @param prefix prefix string
 #' @param ... ...
 #'
 #' @return a list (operator specifications)
@@ -70,8 +69,8 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
       print(operator$second, padding = padding + 4, prefix = "second")
     },
     bv = {
-      cat(pad_add4_space, "zeta = ", format(theta_K[1], digits=3), "\n", sep="")
-      cat(pad_add4_space, "eta = ", format(theta_K[2], digits=3), "\n", sep="")
+      cat(pad_add4_space, "theta = ", format(theta_K[1], digits=3), "\n", sep="")
+      cat(pad_add4_space, "rho = ", format(theta_K[2], digits=3), "\n", sep="")
       print(operator$first,  padding = padding + 4, prefix = model_names[[1]])
       print(operator$second, padding = padding + 4, prefix = model_names[[2]])
     },
@@ -109,7 +108,6 @@ ngme_model <- function(
   mesh        = NULL,
   par_string  = NULL,
   map         = NULL,  # map is the covariates
-  replicate   = NULL,
   group       = NULL,
   ...
 ) {
@@ -133,19 +131,15 @@ ngme_model <- function(
   # else
   #   par_string <- do.call(paste0, as.list(c(K_str, mu_str, sigma_str, nu_str)))
 
-  stopifnot("replicate is NULL" = !is.null(replicate))
-  stopifnot("make sure length of replicate == length of index" =
-   length(replicate) == length_map(map))
-  replicate <- as.integer(replicate)
   if (is.null(n_params)) n_params <- length(operator$theta_K) + with(noise, n_params)
 
   structure(
     list(
       model         = model,
       operator      = operator,
+      theta_K       = operator$theta_K,
       noise_type    = noise$noise_type,
       W_size        = W_size,
-      theta_K       = theta_K,
       A             = A,
       noise         = noise,
       W             = W,
@@ -159,8 +153,6 @@ ngme_model <- function(
       mesh          = mesh,
       map           = map,
       n_map         = length_map(map),
-      replicate     = replicate,
-      n_rep         = length(unique(replicate)),
       group         = group,
       ...
     ),

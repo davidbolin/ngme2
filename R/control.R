@@ -32,7 +32,7 @@
 #' @param window_size     numerical, length of window for final estimates
 #'
 #' @param verbose print estimation
-#' @param strategy_list subsampling of replicates of model, c("all", "is")
+#' @param sampling_strategy subsampling method of replicates of model, c("all", "is")
 #' "all" means using all replicates in each iteration,
 #' "ws" means weighted sampling (each iteration use 1 replicate to compute the gradient, the sample probability is proption to its number of observations)
 #' @return list of control variables
@@ -142,6 +142,7 @@ control_f <- function(
 #' @param init_sample_W  sample W|V at the beginning of each chain
 #' @param n_gibbs_samples    number of gibbs sampels
 #' @param fix_beta       logical, fix fixed effect
+#' @param burnin      integer, iterations for burnin period
 #' @param post_samples_size number of posterior samples
 #' @param beta           fixed effect value
 #' @param debug          debug mode

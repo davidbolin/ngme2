@@ -7,7 +7,7 @@
 ngme_parse_formula(fm, data, control_ngme, noise, group, replicate)
 }
 \arguments{
-\item{fm}{Formula}
+\item{fm}{formula}
 
 \item{data}{data.frame}
 
@@ -16,6 +16,8 @@ ngme_parse_formula(fm, data, control_ngme, noise, group, replicate)
 \item{noise}{noise}
 
 \item{group}{group factor}
+
+\item{replicate}{replicate vector}
 }
 \value{
 a list (replicate) of ngme_replicate models

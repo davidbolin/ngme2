@@ -4,20 +4,12 @@
 \alias{rw1}
 \title{ngme random walk model of order 1}
 \usage{
-rw1(
-  map,
-  mesh = INLA::inla.mesh.1d(map),
-  replicate = rep(1, length_map(map)),
-  cyclic = FALSE,
-  ...
-)
+rw1(map, mesh = INLA::inla.mesh.1d(map), cyclic = FALSE, ...)
 }
 \arguments{
 \item{map}{numerical vector, covariates to build index for the process}
 
-\item{mesh}{mesh for the process, if not specified, will use inla.mesh.1d(loc = map)}
-
-\item{replicate}{replicate for the process}
+\item{mesh}{mesh for build the model}
 
 \item{cyclic}{whether the mesh is circular, i.e. the first one is connected to the last
 if it is circular, we will treat the 1st location and the last location as neigbour, with distance of average distance.}
@@ -28,7 +20,7 @@ if it is circular, we will treat the 1st location and the last location as neigb
 a list
 }
 \description{
-generate K matrix of size (n-1) x n (non-cyclic case), where n is size of map
+ngme random walk model of order 1
 }
 \examples{
 r1 <- rw1(1:7, cyclic = TRUE); r1$K

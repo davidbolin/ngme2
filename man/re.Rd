@@ -4,18 +4,14 @@
 \alias{re}
 \title{ngme random effect model}
 \usage{
-re(map, replicate = rep(1, length_map(map)), theta_K = NULL, ...)
+re(map, theta_K = NULL, ...)
 }
 \arguments{
 \item{map}{numerical vector, covariates to build index for the process (can be formula, provided data)}
 
-\item{replicate}{replicate for the process}
-
 \item{theta_K}{initial value for theta_K (build covariance matrix)}
 
-\item{...}{extra arguments}
-
-\item{alpha}{2 or 4, SPDE smoothness parameter}
+\item{...}{ignore}
 }
 \value{
 ngme_operator object

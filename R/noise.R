@@ -30,6 +30,11 @@
 #' @param theta_sigma_nig similar to theta_sigma_normal
 #' @param B_sigma_nig     similar to B_sigma_nig
 #' @param sigma_nig     similar to sigma_normal
+#' @param single_V  TRUE if V is a single number
+#' @param share_V  used only for bivariate model
+#' @param corr_measurement TRUE if we use correlated measurement noise
+#' @param index_corr used when corr_measurement=TRUE, indicate which observation has correlation
+#' @param rho used when corr_measurement=TRUE, starting point for correlation
 #' @param ...       additional arguments
 #'
 #' @return a list of specification of noise
@@ -49,10 +54,8 @@ ngme_noise <- function(
   fix_nu          = FALSE,
   V               = NULL,
   fix_V           = FALSE,
-  init_V          = TRUE,
   single_V        = FALSE,
   share_V         = FALSE,
-  hessian         = TRUE,
   corr_measurement = FALSE,
   index_corr      = NULL,
   rho             = 0,
@@ -95,10 +98,8 @@ ngme_noise <- function(
       fix_nu          = fix_nu,
       fix_V           = fix_V,
       n_params        = length(theta_mu) + length(theta_sigma) + length(nu),
-      init_V          = init_V,
       single_V        = single_V,
       share_V         = share_V,
-      hessian         = hessian,
       corr_measurement = corr_measurement,
       index_corr      = index_corr,
       rho             = rho,
@@ -296,7 +297,6 @@ noise_normal_nig <- normal_nig <- function(
   mu            = NULL,
   sigma_nig     = NULL,
   nu            = NULL,
-  n             = 1,
   V             = NULL,
   theta_mu      = NULL,
   theta_sigma_nig   = NULL,
@@ -333,7 +333,6 @@ noise_normal_nig <- normal_nig <- function(
     B_mu = B_mu,
     B_sigma = B_sigma_nig,
     B_sigma_normal = B_sigma_normal,
-    n = n,
     corr_measurement = corr_measurement,
     index_corr      = index_corr,
     ...
@@ -344,6 +343,7 @@ noise_normal_nig <- normal_nig <- function(
 #'
 #' @param x noise object
 #' @param padding number of white space padding in front
+#' @param prefix prefix
 #' @param ... ...
 #'
 #' @return a list (noise specifications)

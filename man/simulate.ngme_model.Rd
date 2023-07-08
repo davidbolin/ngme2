@@ -22,8 +22,6 @@ a realization of latent model
 Simulate latent process with noise
 }
 \examples{
-B_sigma <- matrix(1:10 / 10, nrow=10)
-simulate(noise_nig(n = 10, B_sigma = B_sigma))
-simulate(noise_normal(theta_sigma = 1.5, B_sigma = B_sigma))
-simulate(model_ar1(1:10, theta_K = 0.4, noise = noise_nig()))
+simulate(f(1:10, model="ar1", rho = 0.4, noise = noise_nig()))
+simulate(f(rnorm(10), model="rw1", noise = noise_normal()))
 }

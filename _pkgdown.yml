@@ -33,6 +33,12 @@ navbar:
         href: articles/replicate.html
       - text: Model prediction and estimation
         href: articles/pred_and_est.html
+      - text: Bivariate models in Ngme2
+        href: articles/bivariate.html
+      - text: Random effects model in Ngme2
+        href: articles/random-effect.html
+      - text: Tensor product model
+        href: articles/tensor_product.html
     github:
       icon: fa-github
       href: https://github.com/davidbolin/ngme2
@@ -62,18 +68,22 @@ reference:
     contents:
     - ngme_model_types
     - f
-    - model_ar1
-    - model_matern
-    - model_rw
-    - model_ou
-    - model_tp
-    - model_iid
+    - ar1
+    - matern
+    - rw1
+    - rw2
+    - ou
+    - iid
+    - tp
+    - bv
+    - re
   - title: ngme2 noises
     contents:
     - ngme_noise
     - ngme_noise_types
     - noise_nig
     - noise_normal
+    - noise_normal_nig
   - title: Prediction and Cross validation
     contents:
     - predict.ngme

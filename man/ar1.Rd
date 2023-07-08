@@ -4,31 +4,23 @@
 \alias{ar1}
 \title{ngme AR(1) model specification}
 \usage{
-ar1(
-  map,
-  mesh = INLA::inla.mesh.1d(map),
-  replicate = rep(1, length_map(map)),
-  rho = 0,
-  ...
-)
+ar1(map, mesh = INLA::inla.mesh.1d(map), rho = 0, ...)
 }
 \arguments{
 \item{map}{integer vector, time index for the AR(1) process}
 
 \item{mesh}{mesh for build the model}
 
-\item{replicate}{replicate for the process}
-
 \item{rho}{the correlation parameter (between -1 and 1)}
 
-\item{...}{extra arguments}
+\item{...}{ignore}
 }
 \value{
 ngme_operator object
 }
 \description{
-Generating C, G and A given index and replicate
+ngme AR(1) model specification
 }
 \examples{
-ar1(c(1:3, 1:3), replicate = c(1,1,1,2,2,2))
+ar1(c(1:3, 1:3))
 }

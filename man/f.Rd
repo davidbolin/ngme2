@@ -8,14 +8,12 @@ f(
   map = NULL,
   model = NULL,
   noise = noise_normal(),
-  replicate = NULL,
   mesh = NULL,
   control = control_f(),
   name = NULL,
   data = NULL,
   group = NULL,
   which_group = NULL,
-  theta_K = NULL,
   W = NULL,
   fix_W = FALSE,
   fix_theta_K = FALSE,
@@ -33,8 +31,6 @@ f(
 \item{noise}{1. string: type of model, 2. ngme.noise object
 (can also be specified in each ngme model)}
 
-\item{replicate}{Representing the replicate}
-
 \item{mesh}{mesh for the model}
 
 \item{control}{control variables for f model}
@@ -46,8 +42,6 @@ f(
 \item{group}{group factor (can be provided in ngme())}
 
 \item{which_group}{belong to which group}
-
-\item{theta_K}{Unbounded parameter for K}
 
 \item{W}{starting value of the process}
 
@@ -61,7 +55,7 @@ f(
 
 \item{debug}{Debug mode}
 
-\item{...}{additional arguments
+\item{...}{additional arguments (e.g. parameters for model)
 inherit the data from ngme function}
 }
 \value{

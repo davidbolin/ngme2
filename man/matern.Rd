@@ -4,22 +4,12 @@
 \alias{matern}
 \title{ngme Matern SPDE model specification}
 \usage{
-matern(
-  map,
-  mesh,
-  replicate = rep(1, length_map(map)),
-  alpha = 2,
-  theta_K = 0,
-  B_K = NULL,
-  ...
-)
+matern(map, mesh, alpha = 2, theta_K = 0, B_K = NULL, ...)
 }
 \arguments{
 \item{map}{numerical vector, covariates to build index for the process}
 
 \item{mesh}{mesh for build the SPDE model}
-
-\item{replicate}{replicate for the process}
 
 \item{alpha}{2 or 4, SPDE smoothness parameter}
 
@@ -27,11 +17,11 @@ matern(
 
 \item{B_K}{bases for theta_K}
 
-\item{...}{extra arguments}
+\item{...}{ignore}
 }
 \value{
 ngme_operator object
 }
 \description{
-Generating C, G and A given index and replicate
+ngme Matern SPDE model specification
 }

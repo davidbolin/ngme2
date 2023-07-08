@@ -53,11 +53,9 @@ ngme(
    x2,
    model = "ar1",
    noise = noise_nig(),
-   theta_K = 0.5
+   rho = 0.5
  ) + f(x1,
-   model = "rw",
-   order = 1,
-   circular = TRUE,
+   model = "rw1",
    noise = noise_normal(),
  ),
  family = noise_normal(sd = 0.5),

@@ -2,7 +2,7 @@
 
 #' ngme iid model specification
 #'
-#' @param map integer vector, time index for the AR(1) process
+#' @param map index vector
 #' @param replicate replicate for the process
 #'
 #' @param ... extra arguments
@@ -51,7 +51,7 @@ iid <- function(
 #' ar1(c(1:3, 1:3), replicate = c(1,1,1,2,2,2))
 ar1 <- function(
   map,
-  mesh      = NULL,
+  mesh      = INLA::inla.mesh.1d(map),
   replicate = rep(1, length_map(map)),
   rho       = 0,
   ...
@@ -65,9 +65,7 @@ ar1 <- function(
   stopifnot("length of map and replicate should be the same." = length(map) == length(replicate))
 
   # check mesh
-  if (is.null(mesh)) mesh <- ngme_build_mesh(map)
-  stopifnot("Mesh should be inla.mesh.1d."
-    = inherits(mesh, c("inla.mesh.1d")))
+  stopifnot("Mesh should be inla.mesh.1d." = inherits(mesh, c("inla.mesh.1d")))
 
   n <- mesh$n; nrep <- length(unique(replicate))
 
@@ -122,7 +120,7 @@ ar1 <- function(
 #' r1 <- rw1(1:7, cyclic = TRUE); r1$K
 rw1 <- function(
   map,
-  mesh      = NULL,
+  mesh      = INLA::inla.mesh.1d(map),
   replicate = rep(1, length_map(map)),
   cyclic    = FALSE,
   ...
@@ -131,7 +129,7 @@ rw1 <- function(
   replicate <- as.integer(as.factor(replicate))
   stopifnot("length of map and replicate should be the same." = length(map) == length(replicate))
 
-  if (is.null(mesh)) mesh <- ngme_build_mesh(map)
+  stopifnot("Mesh should be inla.mesh.1d." = inherits(mesh, c("inla.mesh.1d")))
   n <- mesh$n; nrep <- length(unique(replicate))
 
   x <- map
@@ -171,7 +169,7 @@ rw1 <- function(
 #'
 #' generate K matrix of size (n-2) x n (non-cyclic case), where n is size of map
 #'
-#' @param map        numerical vector, covariates to build index for the process
+#' @param map  numerical vector, covariates to build index for the process
 #' @param replicate replicate for the process
 #' @param cyclic  whether the mesh is circular, i.e. the first one is connected to the last
 #'   if it is circular, we will treat the 1st location and the last location as neigbour, with distance of average distance.
@@ -185,7 +183,7 @@ rw1 <- function(
 #' r2 <- rw2(1:7); r2$K
 rw2 <- function(
   map,
-  mesh      = map,
+  mesh      = INLA::inla.mesh.1d(map),
   replicate = rep(1, length_map(map)),
   cyclic    = FALSE,
   ...
@@ -197,6 +195,7 @@ rw2 <- function(
   stopifnot("length of map and replicate should be the same." = length(map) == length(replicate))
 
   x <- map
+  stopifnot("Mesh should be inla.mesh.1d." = inherits(mesh, c("inla.mesh.1d")))
   n <- mesh$n; nrep <- length(unique(replicate))
   stopifnot("mesh too small" = n >= 3)
 
@@ -232,10 +231,10 @@ rw2 <- function(
 
 #' ngme Ornstein–Uhlenbeck process specification
 #'
-#' @param map integer vector, time index for the AR(1) process
+#' @param map numerical vector, covariates to build index for the process
 #' @param replicate replicate for the process
 #' @param mesh mesh for build the model
-#' @param theta_K initial value for theta_K, kappa = exp(B_K %*% theta_K)
+#' @param theta_K initial value for theta_K, kappa = exp(B_K * theta_K)
 #' @param B_K bases for theta_K
 #' @param ... extra arguments
 #'
@@ -243,14 +242,16 @@ rw2 <- function(
 #' @export
 ou <- function(
   map,
+  mesh      = INLA::inla.mesh.1d(map),
   replicate = rep(1, length_map(map)),
-  mesh      = map,
   theta_K   = 0,
   B_K       = NULL,
   ...
 ) {
   if (inherits(map, "formula")) map <- model.matrix(map)[, -1]
   replicate <- as.integer(as.factor(replicate))
+
+  stopifnot("Mesh should be inla.mesh.1d." = inherits(mesh, c("inla.mesh.1d")))
   n <- mesh$n; nrep <- length(unique(replicate))
 
   stopifnot("length of map and replicate should be the same." = length(map) == length(replicate))
@@ -298,13 +299,12 @@ ou <- function(
 #'
 #' Generating C, G and A given index and replicate
 #'
-#' @param map integer vector, time index for the AR(1) process
+#' @param map  numerical vector, covariates to build index for the process
 #' @param mesh mesh for build the SPDE model
 #' @param replicate replicate for the process
 #' @param alpha 2 or 4, SPDE smoothness parameter
-#' @param theta_K initial value for theta_K, kappa = exp(B_K %*% theta_K)
+#' @param theta_K initial value for theta_K, kappa = exp(B_K * theta_K)
 #' @param B_K bases for theta_K
-#'
 #' @param ... extra arguments
 #'
 #' @return ngme_operator object
@@ -380,11 +380,10 @@ matern <- function(
 
 #' ngme random effect model
 #'
-#' @param map integer vector, time index for the AR(1) process
+#' @param map numerical vector, covariates to build index for the process (can be formula, provided data)
 #' @param replicate replicate for the process
 #' @param alpha 2 or 4, SPDE smoothness parameter
-#' @param theta_K initial value for theta_K
-#'
+#' @param theta_K initial value for theta_K (build covariance matrix)
 #' @param ... extra arguments
 #'
 #' @return ngme_operator object

@@ -16,21 +16,23 @@ knitr::opts_chunk$set(
 
 ## Description
 
-In this vignette, we will introduce the bivariate model which supports modeling two field and their correlation jointly.
+For many applications, we need to deal with multivariate data. In this vignette, we will introduce the bivariate model which supports modeling two field and their correlation jointly.
 
-The `f` function specification is similar to ordinary model (See e.g. AR1-model), but with two more fields.
+The `f` function specification is similar to ordinary model (See e.g. [Ngme2 AR(1) model](AR1-model.html)), but with two more fields.
 Extra arguments for the `f` are:
 
-1. `group`: a vector of labels to indicate the group of different observations. If `group` is provided in `ngme()` function, no need to provide in `f()` function again.
+1. `group`: a vector of labels to indicate the group of different observations. For example, `group = c("field1", "field1", "field2", "field2", "field2)`.
+ If `group` is provided in `ngme()` function, no need to provide in `f()` function again.
 
-2. `sub_models`: characters of length 2 with names equal to one of the labels in `group`, specifying the sub-models for the two fields. e.g. `c(field1="rw1", field2="ar1")`
+2. `sub_models`: characters of length 2 with names equal to one of the labels in `group`, specifying the sub-models for the two fields. e.g. `sub_models=c(field1="rw1", field2="ar1")`
 
 ## Model structure
 
 The bivariate model can model two fields $X_1, X_2$ jointly.
-To model their correlation, we use dependence matrix $D(\zeta, \rho)$ to correlate them.
+To model their correlation, we use dependence matrix $D(\zeta, \rho)$ to correlate them (See Bolin and Wallin, 2020, section 2.2).
 
-The model is:
+<!-- The model is:
+to-do
 $$
 D diag(L_1, L_2) = M
 $$
@@ -39,16 +41,15 @@ The dependence matrix is defined as
 
 $$
 D() =
-$$
+-->
 
 
-## Usage by example
+## One simple time series example
 
-It's eaiser to understand with one exmaple. Say you have an time series model over 5 year from 2001 to 2005, with 2 fields *temperature* and *precipitation*. You want to model the two fields jointly, and their correlation. The data should look like
-
-### Specify bivariate model using f()
+It's eaiser to understand with one exmaple. Say we have a time series model over 5 year from 2001 to 2005, with 2 fields *temperature* and *precipitation*. You want to model the two fields jointly. The data look like the following:
 
 ```{r toy-data}
+library(devtools); load_all()
 temp <- c(32, 33, 35.5, 36); year_temp <- c(2001, 2002, 2003, 2004)
 precip <- c(0.1, 0.2, 0.5, 1, 0.2); year_pre <- c(2001, 2002, 2003, 2004, 2005)
 
@@ -61,16 +62,14 @@ data <- data.frame(y, year, x1, labels)
 data
 ```
 
-The model specification is like this, notice the way to specify 2 sub-models, and also 2 types of noises for each sub-model.
+Next we need to specify the model using `f()` function. Notice the way to specify 2 sub-models, and also 2 types of noises for each sub-model.
 
 ```{r toy-model}
-library(devtools)
-load_all()
 # 1st way: simply put model types, using both c() and list() are ok
 bv1 <- f(
   year, model = "bv",
-  # sub_models = c(precip="ar1", temp="rw1"),
   sub_models = list(precip="ar1", temp="rw1"),
+  # sub_models = c(precip="ar1", temp="rw1"),
   group = labels, # can be provided in ngme()
   noise = list(
     precip=noise_normal(),
@@ -83,29 +82,88 @@ bv1
 bv2 <- f(
   year, model = "bv",
   sub_models = list(
-    precip=list(model="ar1", rho=0.5),
+    precip=list(model="ar1", rho=0.5), # specify rho for ar1 model
     temp=list(model="rw1")
   ),
-  group = labels, # can be provided in ngme()
+  group = labels,
   noise = list(
     precip=noise_normal(),
-    temp=noise_nig()
+    temp=noise_nig() # can have 2 different noise for each field
   )
 )
 bv2
 ```
 
-### Interaction with other fields (e.g. fixed effects)
+## Four increasing construction of noise
+
+In bivariate models, we can have more control over the noise of the model. The noise can be classified into 4 category  (See Bolin and Wallin, 2020, section 3.1):
+
+- Type-G1: single mixing variable V, share V over 2 fileds
+
+- Type-G2: single V, different V for each field
+
+- Type-G3: general V, share V
+
+- Type-G4: general V, different V
+
+we can specify the type of noise by the following:
+
+```{r type-G}
+t1 <- f(
+  year, model = "bv",
+  sub_models = list(precip="ar1", temp="rw1"),
+  group = labels,
+  noise = list(
+    precip=noise_normal(single_V=TRUE),
+    temp=noise_normal(single_V=TRUE),
+    share_V = TRUE
+  )
+)
+t1
+
+t2 <- f(
+  year, model = "bv",
+  sub_models = list(precip="ar1", temp="rw1"),
+  group = labels,
+  noise = list(
+    precip=noise_normal(single_V=TRUE),
+    temp=noise_normal(single_V=TRUE)
+  )
+)
+t2
+
+t3 <- f(
+  year, model = "bv",
+  sub_models = list(precip="ar1", temp="rw1"),
+  group = labels,
+  noise = list(
+    precip=noise_normal(),
+    temp=noise_normal(),
+    share_V = TRUE
+  )
+)
+t3
+
+t4 <- f(
+  year, model = "bv",
+  sub_models = list(precip="ar1", temp="rw1"),
+  group = labels,
+  noise = list(
+    precip=noise_normal(),
+    temp=noise_normal()
+  )
+)
+t4
+```
+
+## Interaction with other fields (e.g. fixed effects)
 
 When it involves more than one field, things get complicated. When we have fixed effects but only for 1 field, we can use the special syntax `fe(<formula>, which_group=<group_name>)`. The argument `which_group` will tell which field we have fixed effects on. It works similar for modeling using `f()` function.
 
-Here is one example, we have different fixed effects on different fields.
+Here is one example, we have different fixed effects on different fields (Intercept for both fields, and *x1* for only *precip* field).
 
-```{r}
-load_all()
-data
-# noise_nig_simple() have 1 V
-out = ngme(
+```{r fixed-effect}
+m1 <- ngme(
   y ~ 0 + fe(~1, which_group = "temp") +
   fe(~1+x1, which_group = "precip") +
   f(year, model="rw1", which_group = "temp") +
@@ -121,17 +179,44 @@ out = ngme(
   data = data,
   group = data$labels,
   control_opt = control_opt(
-    estimation = T,
+    estimation = FALSE,
     iterations = 10
   )
 )
-out
-out$replicates[[1]]$X
+m1
+m1$replicates[[1]]$X
 ```
 
-## A 2d matern example
+## Correlated measurement noise
+
+Besides modeling the dependence between 2 fields. We can also measure the correlation between the measurement error of 2 fields. In the `family` argument, we need to set `corr_measurement` and give the `index_corr` to indicate which observations are correlated.
+
+```{r corr-measurement}
+Y <- 1:6
+loc1 <-  c(2,    1,   3,   1,   4,   2) # same index is correlated
+group <- c("s", "t", "s", "s", "t", "t")
+
+# ngme
+m2 <- ngme(
+  Y ~ 0 + f(
+    loc1, model="bv",
+    sub_models = c(t="ar1", s="rw1"),
+    noise = list(t=noise_nig(), s=noise_nig())
+  ),
+  family = noise_normal(
+    corr_measurement = TRUE,
+    index_corr = loc1
+  ),
+  group = group,
+  data = data.frame(Y = Y, loc1 = loc1)
+)
+m2
+```
+
+## A spatial matern example
 
 Next we see an less artificial example.
+<!--  to-do  -->
 
 1. Simulation
 
@@ -167,8 +252,7 @@ true_model <- f(
       mu = -2, sigma=1, nu=1
     ), temp = noise_nig(
       mu = 2, sigma=2, nu=0.5
-    )),
-    eval=T
+    ))
   )
 W <- simulate(true_model)
 Y <- as.numeric(true_model$A %*% W); Y <- Y + rnorm(length(Y))
@@ -195,9 +279,9 @@ out <- ngme(
   data = data,
   control_opt = control_opt(
     estimation = T,
-    iterations = 30,
+    iterations = 5,
     n_parallel_chain = 1,
-    verbose = T,
+    verbose = F,
     print_check_info = F
   )
 )
@@ -207,142 +291,105 @@ traceplot(out, "bv")
 out$replicates[[1]]$models[[1]]$noise$bv_noises[[2]]$h
 ```
 
-## Correlated measurement noise
-
-Besides modeling the dependence between 2 fields. We can also measure the correlation between the measurement error of 2 fields.
-
-```{r}
-load_all()
-
-Y <- 1:6
-loc1 <-  c(2,    1,   3,   1,   4,   2) # same index is correlated
-group <- c("s", "t", "s", "s", "t", "t")
-
-# ngme
-load_all()
-m1 <- ngme(
-  Y ~ f(
-    loc1, model="bv",
-    sub_models = c(t="ar1", s="rw1"),
-    noise = list(t=noise_nig(), s=noise_nig())
-  ),
-  family = noise_normal(
-    corr_measurement = TRUE,
-    index_corr = loc1
-  ),
-  group = group,
-  data = data.frame(Y = Y, loc1 = loc1),
-  control_opt = control_opt(
-    estimation = F,
-    iterations = 2,
-    n_parallel_chain = 1
-  )
-)
-
-# m1$replicates[[1]]$pmatrix %*% loc1
-m1$replicates[[1]]$pmat %*% c(1,1,2,2,3,4)
-
-m1$replicates[[1]]$n_merr
-```
-
 1. simulation
 
 ```{r}
-load_all()
-n_obs <- 20
-W <- simulate(f(1:n_obs, model="iid", eval=TRUE))
+# load_all()
+# n_obs <- 20
+# W <- simulate(f(1:n_obs, model="iid", eval=TRUE))
 
-Cov_eps <- matrix(c(1, -0, -0, 1), nrow=2)
-Cov_eps <- Cov_eps %x% diag(n_obs / 2)
+# Cov_eps <- matrix(c(1, -0, -0, 1), nrow=2)
+# Cov_eps <- Cov_eps %x% diag(n_obs / 2)
 
-# e~N(0, Cov_eps)
-e <- MASS::mvrnorm(1, rep(0, n_obs), Cov_eps)
-Y <- W + e
+# # e~N(0, Cov_eps)
+# e <- MASS::mvrnorm(1, rep(0, n_obs), Cov_eps)
+# Y <- W + e
 
-plot(head(e, n_obs/2), type="l")
-lines(tail(e, n_obs/2), col="red")
+# plot(head(e, n_obs/2), type="l")
+# lines(tail(e, n_obs/2), col="red")
 
-load_all()
-out <- ngme(
-  Y ~ 0 + f(
-    1:n_obs,
-    model="ar1",
-    debug=T,
-    noise= noise_normal()
-  ),
-  family = noise_normal(
-    # fix_theta_sigma = T,
-    corr_measurement = TRUE,
-    index_corr = c(1: (n_obs/2), 1: (n_obs/2))
-  ),
-  data = data.frame(Y = Y),
-  control_opt = control_opt(
-    estimation = F,
-    iterations = 1,
-    n_parallel_chain = 1,
-    verbose = T
-  ),
-  debug = T
-)
-out$replicates[[1]]$pmat
+# load_all()
+# out <- ngme(
+#   Y ~ 0 + f(
+#     1:n_obs,
+#     model="ar1",
+#     debug=T,
+#     noise= noise_normal()
+#   ),
+#   family = noise_normal(
+#     # fix_theta_sigma = T,
+#     corr_measurement = TRUE,
+#     index_corr = c(1: (n_obs/2), 1: (n_obs/2))
+#   ),
+#   data = data.frame(Y = Y),
+#   control_opt = control_opt(
+#     estimation = F,
+#     iterations = 1,
+#     n_parallel_chain = 1,
+#     verbose = T
+#   ),
+#   debug = T
+# )
+# out$replicates[[1]]$pmat
 
-pmat <- as(as.integer(c(2,3,1)), "pMatrix")
-      pmat
-      class(pmat)
-      class(Matrix::t(pmat))
-      pp = ngme_as_sparse(Matrix::t(pmat))
-pp
-class(pp)
+# pmat <- as(as.integer(c(2,3,1)), "pMatrix")
+#       pmat
+#       class(pmat)
+#       class(Matrix::t(pmat))
+#       pp = ngme_as_sparse(Matrix::t(pmat))
+# pp
+# class(pp)
 
-class(out$replicates[[1]]$pmat)
+# class(out$replicates[[1]]$pmat)
 
-traceplot(out)
+# traceplot(out)
 
 # test if it is permutation in variant!!
 
 ```
 
 ```{r}
-library(devtools)
-load_all()
-n_obs <- 2000
-W <- simulate(f(1:n_obs, rho = 0.5, model="ar1", eval=TRUE))
+# library(devtools)
+# load_all()
+# n_obs <- 2000
+# W <- simulate(f(1:n_obs, rho = 0.5, model="ar1", eval=TRUE))
 
-Cov_eps <- matrix(c(1, 0.9, 0.9, 1), nrow=2)
-Cov_eps <- Cov_eps %x% diag(n_obs / 2)
+# Cov_eps <- matrix(c(1, 0.9, 0.9, 1), nrow=2)
+# Cov_eps <- Cov_eps %x% diag(n_obs / 2)
 
-# e~N(0, Cov_eps)
-L <- t(chol(Cov_eps))
-e <- L %*% rnorm(n_obs)
+# # e~N(0, Cov_eps)
+# L <- t(chol(Cov_eps))
+# e <- L %*% rnorm(n_obs)
 
-x1 <- rexp(n_obs)
-x2 <- rnorm(n_obs)
-Y <-  W +e + x1 * (-3) + x2 * 1.5
+# x1 <- rexp(n_obs)
+# x2 <- rnorm(n_obs)
+# Y <-  W +e + x1 * (-3) + x2 * 1.5
 
-plot(head(e, n_obs/2), type="l")
-lines(tail(e, n_obs/2), col="red")
+# plot(head(e, n_obs/2), type="l")
+# lines(tail(e, n_obs/2), col="red")
 
-load_all()
-out <- ngme(
-  Y ~ 0 + x1 + x2+ f(
-    1:n_obs,
-    # fix_W = T, W = W,
-    model="ar1"
-  ),
-  family = noise_normal(
-    # fix_theta_sigma = T,
-    corr_measurement = TRUE,
-    index_corr = c(1: (n_obs/2), 1: (n_obs/2))
-    # index_corr = "field1"
-  ),
-  data = data.frame(Y, x1, x2),
-  control_opt = control_opt(
-    estimation = T,
-    iterations = 500,
-    n_parallel_chain = 1
-  )
-)
-traceplot(out, "field1")
-traceplot(out)
-out
+# load_all()
+# out <- ngme(
+#   Y ~ 0 + x1 + x2+ f(
+#     1:n_obs,
+#     # fix_W = T, W = W,
+#     model="ar1"
+#   ),
+#   family = noise_normal(
+#     # fix_theta_sigma = T,
+#     corr_measurement = TRUE,
+#     index_corr = c(1: (n_obs/2), 1: (n_obs/2))
+#     # index_corr = "field1"
+#   ),
+#   data = data.frame(Y, x1, x2),
+#   control_opt = control_opt(
+#     estimation = T,
+#     iterations = 5,
+#     n_parallel_chain = 1
+#   )
+# )
+# traceplot(out, "field1")
+# traceplot(out)
+# out
 ```
+

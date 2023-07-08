@@ -7,11 +7,11 @@
 re(map, replicate = rep(1, length_map(map)), theta_K = NULL, ...)
 }
 \arguments{
-\item{map}{integer vector, time index for the AR(1) process}
+\item{map}{numerical vector, covariates to build index for the process (can be formula, provided data)}
 
 \item{replicate}{replicate for the process}
 
-\item{theta_K}{initial value for theta_K}
+\item{theta_K}{initial value for theta_K (build covariance matrix)}
 
 \item{...}{extra arguments}
 

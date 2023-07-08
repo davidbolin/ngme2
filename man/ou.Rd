@@ -6,21 +6,21 @@
 \usage{
 ou(
   map,
+  mesh = INLA::inla.mesh.1d(map),
   replicate = rep(1, length_map(map)),
-  mesh = map,
   theta_K = 0,
   B_K = NULL,
   ...
 )
 }
 \arguments{
-\item{map}{integer vector, time index for the AR(1) process}
-
-\item{replicate}{replicate for the process}
+\item{map}{numerical vector, covariates to build index for the process}
 
 \item{mesh}{mesh for build the model}
 
-\item{theta_K}{initial value for theta_K, kappa = exp(B_K %*% theta_K)}
+\item{replicate}{replicate for the process}
+
+\item{theta_K}{initial value for theta_K, kappa = exp(B_K * theta_K)}
 
 \item{B_K}{bases for theta_K}
 

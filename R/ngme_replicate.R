@@ -65,9 +65,13 @@ print.ngme_replicate <- function(x, ...) {
   cat("*** Ngme object ***\n\n");
 
   cat("Fixed effects: \n");
-  print(ngme$beta, digits=3)
-  # cat(paste("  ", ngme_format("beta", ngme$beta)));
+  if (length(ngme$beta) > 0) {
+    print(ngme$beta, digits=3)
+  } else {
+    cat("  None\n")
+  }
   cat("\n")
+  # cat(paste("  ", ngme_format("beta", ngme$beta)));
 
   cat("Models: \n");
   for (i in seq_along(ngme$models)) {

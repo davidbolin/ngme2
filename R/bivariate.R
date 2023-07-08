@@ -3,7 +3,8 @@
 #' Given 2 operator (first and second), build a correlated bivaraite operator based on K = D %*% diag(K_first, K_second)
 #'
 #' @param map can be ignored, pass through first and second
-#' @param replicate replicate
+#' @param sub_models a list of sub_models (total 2 sub_models)
+#' @param mesh mesh for build the model
 #' @param theta_K c(zeta, eta, theta_K_1, theta_K_2)
 #' @param ... extra arguments in f()
 #'

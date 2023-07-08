@@ -106,7 +106,6 @@ The R class `ngme_noise` has the following interface:
 
 ```{r noise}
 library(ngme2)
-
 noise_normal(sigma = 1)                 # normal noise
 noise_nig(mu = 1, sigma = 2, nu = 1) # nig noise
 noise_nig(            # non-stationary nig noise
@@ -425,10 +424,8 @@ seaDist.prd <- apply(spDists(coord.prd,
 ), 1, min)
 
 # doing prediction by giving the predict location
-# first list is for 1st replicate (we only have 1 replicate)
-# second list is for different latent models (we have 2)
-pds <- predict(out, loc=list(list(seaDist.prd, coord.prd)))
-lp <- pds[[1]]$mean
+pds <- predict(out, map=list(rw1=seaDist.prd, spde=coord.prd))
+lp <- pds$mean
 ggplot() +
   geom_point(aes(
     x = coord.prd[, 1], y = coord.prd[, 2],

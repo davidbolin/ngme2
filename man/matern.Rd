@@ -15,7 +15,7 @@ matern(
 )
 }
 \arguments{
-\item{map}{integer vector, time index for the AR(1) process}
+\item{map}{numerical vector, covariates to build index for the process}
 
 \item{mesh}{mesh for build the SPDE model}
 
@@ -23,7 +23,7 @@ matern(
 
 \item{alpha}{2 or 4, SPDE smoothness parameter}
 
-\item{theta_K}{initial value for theta_K, kappa = exp(B_K %*% theta_K)}
+\item{theta_K}{initial value for theta_K, kappa = exp(B_K * theta_K)}
 
 \item{B_K}{bases for theta_K}
 

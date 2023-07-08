@@ -248,14 +248,14 @@ mesh_1d <- inla.mesh.1d(loc_1d)
 
 # specify the model we use
 mu <- 1; sigma <- 1; nu <- 0.5
-spde_1d <- model_matern(
+spde_1d <- f(
   loc_1d,
-  kappa = 1,
+  model = "matern",
+  theta_K = log(1),
   mesh = mesh_1d,
   noise = noise_nig(mu=mu, sigma=sigma, nu=nu)
 )
-K <- spde_1d$C + spde_1d$G
-
+K <- spde_1d$operator$K
 
 W <- simulate(spde_1d, seed = 10)
 plot(loc_1d, W, type = "l")
@@ -297,7 +297,7 @@ We will build 2 chains with different starting values and no burn-in samples.
 ```{r}
 # First step - Starting values for V
 # Considering a sample of inv-Gaussian as starting values for both chains
-h_nig_1d <- spde_1d$h
+h_nig_1d <- spde_1d$operator$h
 V_1 <- matrix(ngme2::rig(10, nu, nu*h_nig_1d^2, seed = 1), nrow = 1)
 V_2 <- matrix(ngme2::rig(10, nu, nu*h_nig_1d^2, seed = 2), nrow = 1)
 ```

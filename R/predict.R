@@ -22,7 +22,7 @@
 #' @export
 predict.ngme <- function(
   object,
-  map = NULL,
+  map,
   data = NULL,
   type = "lp",
   estimator = c("mean", "sd", "5quantile", "95quantile", "median", "mode"),
@@ -169,10 +169,11 @@ compute_indices <- function(ngme_1rep, test_idx, N = 100, seed=Sys.time()) {
   fe <- with(ngme_1rep, as.numeric(X[test_idx, ,drop=FALSE] %*% beta))
   fe_N <- matrix(rep(fe, N), ncol=N, byrow=F)
 
+  # simulate measurement noise
   mn_N <- sapply(1:N, function(x)
-    simulate(ngme_1rep$noise))
+    simulate(ngme_1rep$noise, nsim=length(ngme_1rep$Y))[test_idx])
   mn2_N <- sapply(1:N, function(x)
-    simulate(ngme_1rep$noise))
+    simulate(ngme_1rep$noise, nsim=length(ngme_1rep$Y))[test_idx])
 
   mu_N <- fe_N + AW_N
   Y_N <- fe_N + AW_N + mn_N

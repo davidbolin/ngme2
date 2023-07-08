@@ -27,11 +27,9 @@
 #'    x2,
 #'    model = "ar1",
 #'    noise = noise_nig(),
-#'    theta_K = 0.5
+#'    rho = 0.5
 #'  ) + f(x1,
-#'    model = "rw",
-#'    order = 1,
-#'    circular = TRUE,
+#'    model = "rw1",
 #'    noise = noise_normal(),
 #'  ),
 #'  family = noise_normal(sd = 0.5),
@@ -241,7 +239,7 @@ check_dim <- function(ngme_model) {
     }
     for (latent in ngme$models) {
         # ncol(A) = W_size
-        if (ncol(latent$A) != latent$W_size) {
+        if (ncol(latent[["A"]]) != latent$W_size) {
           stop("The number of columns of A is not equal to the W_size of the latent model")
         }
 
@@ -339,15 +337,15 @@ ngme_parse_formula <- function(
   noise_new <- update_noise(noise, n = length(ngme_response))
   for (i in seq_along(uni_repl)) {
     idx <- replicate == uni_repl[[i]]
-    # data
+
     Y <- ngme_response[idx]
     X <- X_full[idx, , drop = FALSE]
 
     # re-evaluate each f model using idx
     models_rep <- list();
     for (tmp in pre_model) {
-      tmp$map <- sub_map(tmp$map, idx)
-      tmp$data <- data[idx, , drop = FALSE]
+      # tmp$data <- data[idx, , drop = FALSE]
+      tmp$subset <- idx
       model_eval <- eval(tmp, envir = data, enclos = global_env_first)
       models_rep[[model_eval$name]] <- model_eval
     }

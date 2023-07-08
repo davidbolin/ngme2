@@ -263,35 +263,35 @@ emprical_mode <- function(x, breaks = max(20, length(x) / 20)) {
 
 
 # given a list of replicate
-merge_repls <- function(repls) {
-  # merge the list of data frames
-  # input: list of numerics
-  # output: merged list
-  # assert of equal length
-  stopifnot(length(unique(as.numeric(lapply(repls, length)))) == 1)
-  # helper function of merge 2 repls
-  merge_repl <- function(repl, group) {
-    halas <- FALSE
-    while (!halas) {
-      unique_group <- unique(group)
-      halas <- TRUE
-      if (length(unique_group) == 1) return (group)
-      for (i in 1:(length(unique_group)-1)) {
-        for (j in (i+1):length(unique_group)) {
-          if (length(intersect(repl[group == unique_group[i]], repl[group == unique_group[j]])) > 0) {
-            group[group == unique_group[j]] <- unique_group[i]
-            halas <- FALSE
-          }
-          if (!halas) break
-        }
-        if (!halas) break
-      }
-    }
-    group
-  }
+# merge_repls <- function(repls) {
+#   # merge the list of data frames
+#   # input: list of numerics
+#   # output: merged list
+#   # assert of equal length
+#   stopifnot(length(unique(as.numeric(lapply(repls, length)))) == 1)
+#   # helper function of merge 2 repls
+#   merge_repl <- function(repl, group) {
+#     halas <- FALSE
+#     while (!halas) {
+#       unique_group <- unique(group)
+#       halas <- TRUE
+#       if (length(unique_group) == 1) return (group)
+#       for (i in 1:(length(unique_group)-1)) {
+#         for (j in (i+1):length(unique_group)) {
+#           if (length(intersect(repl[group == unique_group[i]], repl[group == unique_group[j]])) > 0) {
+#             group[group == unique_group[j]] <- unique_group[i]
+#             halas <- FALSE
+#           }
+#           if (!halas) break
+#         }
+#         if (!halas) break
+#       }
+#     }
+#     group
+#   }
 
-  Reduce(function(x, y) merge_repl(x, y), repls)
-}
+#   Reduce(function(x, y) merge_repl(x, y), repls)
+# }
 
 # split block by repl
 split_block <- function(block, repl) {

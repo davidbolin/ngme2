@@ -244,7 +244,7 @@ ggplot(data=argo_float) +
 Next, we specfiy a model formula, and then fit the model.
 
 ```{r ngme-estimation, cache=TRUE}
-formula <- temp ~ sal + f(loc_2d, model = "matern", mesh=argo_mesh, noise = noise_normal(), debug = FALSE)
+formula <- temp ~ sal + f(loc_2d, model = "matern", mesh=argo_mesh, noise = noise_normal())
 
 out <- ngme(
   formula = formula,

@@ -125,16 +125,16 @@ $$
 
 ## Usage
 
-Use the `model_rw` or `f(model = "rw1")` or `f(model = "rw2")` (in formula) to specify a random walk model.
+Use the `f(model = "rw1")` or `f(model = "rw2")` (in formula) to specify a random walk model.
 
 ```{r rw-usage}
 library(ngme2)
 set.seed(16)
-m1 <- model_rw(rexp(5), order = 1, noise = noise_normal())
-m1$K
+m1 <- f(rexp(5), model="rw1", noise = noise_normal())
+m1$operator$K
 
-m2 <- model_rw(rnorm(6), order = 2, circular = TRUE)
-m2$K
+m2 <- f(rnorm(6), model="rw2", cyclic = TRUE)
+m2$operator$K
 ```
 
 ## Simulation
@@ -143,5 +143,4 @@ Doing the simulation is simple, just pass the corresponding model into `simulate
 
 ```{r rw-simulate}
 simulate(m1)
-simulate(m2)
 ```

@@ -7,7 +7,7 @@
 iid(map, replicate = rep(1, length_map(map)), ...)
 }
 \arguments{
-\item{map}{integer vector, time index for the AR(1) process}
+\item{map}{index vector}
 
 \item{replicate}{replicate for the process}
 

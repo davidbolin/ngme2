@@ -75,9 +75,9 @@ load_all()
 out <- ngme(
   formula = Y ~ 0 + x2 + x1 +
     f(~1+z1, model="re", noise=noise_normal(),
-      replicate=repl,
       control=control_f(numer_grad = T)
     ),
+  replicate=repl,
   data=data.frame(x1=x1, z1=z1, repl=repl),
   control_ngme = control_ngme(
     # beta = c(0, 0)
@@ -140,7 +140,8 @@ out <- ngme(
     ),
     # W = U, fix_W = TRUE,
     # fix_theta_K = T,
-    replicate=repl),
+  ),
+  replicate=repl,
   data=data.frame(Y=Y, x1=x1, z1=z1, repl=repl),
   control_ngme = control_ngme(
     n_gibbs_samples = 5
@@ -161,7 +162,7 @@ out
 
 (*correlated nig noise*)
 
-```{r}
+```{r eval=FALSE}
 # simulate random effects
 group <- 500; mu = -5; nu = 1;
 Sigma <- matrix(c(20, 5, 5, 10), 2, 2)
@@ -260,7 +261,7 @@ out_corr_nig
 
 <!-- Question regarding fixed effect -->
 
-```{r}
+```{r eval=FALSE}
 # convergence of fixed effects
 # simulate Y = 4 x + 1 + e
 x1 <- rnorm(100); x2 <- rnorm(100)

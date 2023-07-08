@@ -16,7 +16,7 @@ control_opt(
   n_slope_check = 3,
   std_lim = 0.1,
   trend_lim = 0.05,
-  print_check_info = TRUE,
+  print_check_info = FALSE,
   max_relative_step = 0.2,
   max_absolute_step = 1,
   reduce_var = FALSE,

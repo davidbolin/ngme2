@@ -48,7 +48,6 @@ Notice that AR(1) process is only well defined in the integer mesh (it can have 
 
 ```{r ar-usage}
 library(ngme2)
-load_all()
 set.seed(16)
 
 m1 <- f(2001:2004, model="ar1", rho=-0.5, noise = noise_normal())
@@ -63,12 +62,9 @@ Simulating an AR(1) model with `ngme2` is simple. Just pass the corresponding mo
 ```{r ar-simulation, fig.align="center"}
 n_obs <- 500
 day <- 1:n_obs
-load_all()
 ar1_model <- f(day, model="ar1", rho = 0.5,
-  noise = noise_nig(mu = -3, sigma = 4, nu=0.4), eval=T)
-W <- simulate(
-  ar1_model, seed = 16
-)
+  noise = noise_nig(mu = -3, sigma = 4, nu=0.4))
+W <- simulate(ar1_model, seed = 16)
 
 # check the acf to see the correlation
 acf(W)
@@ -88,21 +84,13 @@ X <- (model.matrix(~0+x1+x2))  # design matrix
 # add some fixed effects and measurement nosie
 Y <- as.numeric(X %*% beta) + W + rnorm(n_obs, sd = 1.5)
 # Fit the model with the AR1 model
-load_all()
 ngme_out <- ngme(
   Y ~ 0+x1 + x2 + f(
     1:n_obs,
-    # fix_W = T, W = W,
     name = "my_ar",
     model = "ar1",
-    noise = noise_nig(
-      # fix_V = T,
-      # V = attr(W, "V")
-    ),
-    control = control_f(
-      numer_grad = T
-    ),
-    debug=T
+    noise = noise_nig()
+    # control = control_f(numer_grad = T)
   ),
   data = data.frame(x1=x1, x2=x2, Y=Y),
   control_opt = control_opt(
@@ -128,8 +116,4 @@ traceplot(ngme_out, "my_ar")
 # comparing the density of the noise estimated and the noise simulated
 plot(ngme_out$replicates[[1]]$models[[1]]$noise,
   noise_nig(mu = -3, sigma = 4, nu=0.4))
-```
-
-```{r}
-load_all()
 ```

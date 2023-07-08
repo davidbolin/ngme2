@@ -102,14 +102,15 @@ Here, we can directly read the estimation of kappa and sigma (1/tau) as shown in
 ```{r}
 with(mcycle, {plot(times, accel)})
 lines(mesh$loc, result_inla$summary.random$time[, "mean"], col=2, lwd=2)
-pred_W <- predict(result_ngme, loc=list(myspde = mesh$loc))
+load_all()
+pred_W <- predict(result_ngme, map=list(myspde = mesh$loc))
 # by dafult, predict() returns a bunch of statistics at the given location
-str(pred_W[[1]])
-lines(mesh$loc, pred_W[[1]][["mean"]], col=3, lwd=2)
+str(pred_W)
+lines(mesh$loc, pred_W[["mean"]], col=3, lwd=2)
 title("Posterior mean with Ngme2 and INLA")
 # One can add some quantile band to the plot using Ngme2
-lines(mesh$loc, pred_W[[1]][["5quantile"]], col=4, lwd=2, lty=2)
-lines(mesh$loc, pred_W[[1]][["95quantile"]], col=5, lwd=2, lty=2)
+lines(mesh$loc, pred_W[["5quantile"]], col=4, lwd=2, lty=2)
+lines(mesh$loc, pred_W[["95quantile"]], col=5, lwd=2, lty=2)
 legend("bottomright", legend=c("INLA", "Ngme2", "Ngme2 5% quantile", "Ngme2 95% quantile"),
   col=c(2, 3, 4, 5), lty=c(1, 1, 2, 2), lwd=c(2, 2, 2, 2))
 ```
@@ -125,12 +126,13 @@ result_ngme2 <- ngme(
   data = mcycle,
   family = "normal",
   control_opt = control_opt(
+    seed = 3,
     iterations = 2000
   )
 )
 result_ngme2
 traceplot(result_ngme2, "myspde")
-plot(result_ngme2[[1]]$models[["myspde"]]$noise)
+plot(result_ngme2$replicates[[1]]$models[["myspde"]]$noise)
 ```
 
 ## Doing prediction with Ngme2
@@ -149,8 +151,7 @@ Next, we call the `predict` function with `loc` argument provided with a list of
 
 ```{r}
 # similar to the posterior mean in previous section
-prd_ngme <- predict(result_ngme2, loc = list(myspde=locs))[[1]][["mean"]]
-
+prd_ngme <- predict(result_ngme2, map = list(myspde=locs))[["mean"]]
 with(mcycle, {plot(times, accel)})
 lines(locs, prd_ngme, col=2)
 title("Prediction at unknown locations")

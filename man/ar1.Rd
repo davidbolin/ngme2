@@ -4,7 +4,13 @@
 \alias{ar1}
 \title{ngme AR(1) model specification}
 \usage{
-ar1(map, mesh = NULL, replicate = rep(1, length_map(map)), rho = 0, ...)
+ar1(
+  map,
+  mesh = INLA::inla.mesh.1d(map),
+  replicate = rep(1, length_map(map)),
+  rho = 0,
+  ...
+)
 }
 \arguments{
 \item{map}{integer vector, time index for the AR(1) process}

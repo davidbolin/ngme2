@@ -79,8 +79,8 @@ simulate_noise <- function(
 #'
 #' @param object  ngme noise object
 #' @param nsim the number of noise
-#' @param seed seed
 #' @param h should be of same length as nsim
+#' @param seed seed
 #' @param ... ignored
 #'
 #' @return a realization of noise
@@ -98,8 +98,8 @@ simulate.ngme_noise <- function(
     stopifnot(length(h) == nsim)
 
     with(object, {
-        mu_vec    <- B_mu %*% theta_mu
-        sigma_vec <- exp(B_sigma %*% theta_sigma)
+        mu_vec    <- as.numeric(B_mu %*% theta_mu)
+        sigma_vec <- as.numeric(exp(B_sigma %*% theta_sigma))
         if (length(mu_vec) == 1) mu_vec <- rep(mu_vec, nsim)
         if (length(sigma_vec) == 1) sigma_vec <- rep(sigma_vec, nsim)
 

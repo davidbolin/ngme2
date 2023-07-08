@@ -40,29 +40,30 @@ $|\alpha| < 1$ and $\epsilon^{(j)}_1, \ \cdots \ , \epsilon^{(j)}_{n}$ is either
 
 ### AR(1) model
 
-The following example will show how to use the replicates feature for an AR(1) model, to see more in detail the AR(1) model (include cross-reference).
+The following example will show how to use the replicates feature for an AR(1) model.
 
 Suppose one has a response variable with $2n$ observations
 
 ```{r}
 library(ngme2)
 library(ggplot2)
+load_all()
 
 # creating ar1 process
 n <- 500
-myar <- model_ar1(1:n, alpha = .75, noise = noise_nig())
+myar <- f(1:n, model="ar1", rho = .75, noise = noise_nig())
 
 W1 <- simulate(myar, seed = 314) # simulating one realization of the process
 W2 <- simulate(myar, seed = 159) # simulating another realization of the process
 
 # Creating the response variable from the process and adding measurement noise
 Y <- -3 + c(W1, W2) + rnorm(2 * n, sd = .2)
+
+df <- data.frame(Y, idx = 1:(2 * n), group = rep(1:2, each = n)) # creating the data frame to fit the model later
 ```
 
 
 ```{r echo = F}
-df <- data.frame(Y, idx = 1:(2 * n), group = rep(1:2, each = n)) # creating the data frame to fit the model later
-
 ggplot(df, aes(idx, Y)) +
   geom_path(aes(color = as.factor(group))) +
   labs(
@@ -99,17 +100,18 @@ epsilon}$), for instance, consider the following little example
 to illustrate the last statement.
 
 ```{r}
-no.replicates <- model_ar1(1:6, alpha = .5, noise = noise_normal())
+no.replicates <- f(1:6, model="ar1", rho = .5, noise = noise_normal())
 
-replicates <- model_ar1(rep(1:3, 2),
-  alpha = .5,
+replicates <- f(rep(1:3, 2),
+  model = "ar1",
+  rho = .5,
   noise = noise_normal(), replicate = rep(1:2, each = 3)
 )
 
 # K matrix from the model without replicates
-replicates$K
+replicates$operator$K
 # K matrix from the model with replicates
-no.replicates$K
+no.replicates$operator$K
 ```
 
 It is clear how the link between the last observation of the first process dissapears by looking at the $\mathbf{K}_{4, 3}$ entry of the matrix $\mathbf{K}$.
@@ -122,10 +124,13 @@ mod.replicates <- ngme(
   formula = Y ~ f(
     c(1:n, 1:n),
     model = "ar1",
-    replicate = group,
     noise = noise_nig()
   ),
-  data = df
+  replicate = df$group,
+  data = df,
+  control_opt = control_opt(
+    print_check_info = FALSE
+  )
 )
 
 mod.replicates
@@ -215,9 +220,10 @@ cienaga$temp <- scale(cienaga$temp)
 # fitting the model
 fit <- ngme(
   formula = temp ~ 1 +
-    f(as.matrix(cienaga[, 1:2]),model = "matern", mesh=mesh,
-      name = "spde", noise = noise_nig(), replicate=measurement),
+    f(as.matrix(cienaga[, 1:2]), model = "matern", mesh=mesh,
+      name = "spde", noise = noise_nig()),
   data = cienaga,
+  replicate=cienaga$measurement,
   control_opt = control_opt(
     estimation = T,
     iterations = 500,
@@ -228,7 +234,6 @@ fit <- ngme(
   debug = F,
 )
 fit
-traceplot(fit, "spde")
 ```
 
 With the fitted model, one can do predictions as follows.
@@ -243,13 +248,10 @@ projgrid <- rSPDE::rspde.mesh.projector(
 
 xy.in <- splancs::inout(projgrid$lattice$loc, as.matrix(cienaga.border[, 1:2]))
 coord.prd <- projgrid$lattice$loc[xy.in, ]
-locs_rep <- list(list(coord.prd), list(coord.prd))
-lp <- predict(fit, loc = locs_rep) # making the predictions
+lp <- predict(fit, map = list(spde=coord.prd)) # making the predictions
 
 # getting the mean of the predictions for each replicate
-preds1 <- lp[[1]][["mean"]]
-preds2 <- lp[[2]][["mean"]]
-preds_mean <- 0.5 * (preds1 + preds2)
+preds_mean <- lp[["mean"]]
 ```
 
 ```{r echo=F}

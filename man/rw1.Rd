@@ -4,7 +4,13 @@
 \alias{rw1}
 \title{ngme random walk model of order 1}
 \usage{
-rw1(map, mesh = NULL, replicate = rep(1, length_map(map)), cyclic = FALSE, ...)
+rw1(
+  map,
+  mesh = INLA::inla.mesh.1d(map),
+  replicate = rep(1, length_map(map)),
+  cyclic = FALSE,
+  ...
+)
 }
 \arguments{
 \item{map}{numerical vector, covariates to build index for the process}

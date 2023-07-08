@@ -7,7 +7,7 @@ predict using ngme after estimation}
 \usage{
 \method{predict}{ngme}(
   object,
-  map = NULL,
+  map,
   data = NULL,
   type = "lp",
   estimator = c("mean", "sd", "5quantile", "95quantile", "median", "mode"),

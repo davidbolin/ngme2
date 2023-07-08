@@ -85,8 +85,7 @@ if (debug) std::cout << "before set block A" << std::endl;
     setSparseBlock(&A, 0, n, (*it)->getA());
     n += (*it)->get_W_size();
   }
-
-// if (debug) std::cout << "After set block K" << std::endl;
+if (debug) std::cout << "After set block K" << std::endl;
 
   // 5. Init measurement noise
   Rcpp::List noise_in   = block_model["noise"];
@@ -306,7 +305,7 @@ time_compute_g += since(timer_computeg).count();
     if (!fix_flag[block_fix_beta]) {
       gradient.segment(n_la_params + n_merr, n_feff) = (1.0/n_repl) * grad_beta();
     }
-
+// std::cout << "here gradient = " << gradient << std::endl;
     avg_gradient += gradient;
 
 auto timer_sampleW = std::chrono::steady_clock::now();
@@ -391,7 +390,7 @@ VectorXd BlockModel::grad_beta() {
   // grads = grads / A.rows();
   // grads = hess.ldlt().solve(grads);
 
-// std::cout << "grads of beta=" << -grads << std::endl;
+  // std::cout << "grads of beta=" << grads << std::endl;
     return -grads;
 }
 
@@ -413,8 +412,8 @@ VectorXd BlockModel::grad_theta_mu() {
       // VectorXd tmp = residual + LU.solve(-h + )
       grad(l) = (noise_V - VectorXd::Ones(n_obs)).cwiseProduct(B_mu.col(l).cwiseQuotient(noise_SV)).dot(residual);
   }
-  grad = - 1.0 / n_obs * grad;
-  return grad;
+
+  return -grad;
 }
 
 VectorXd BlockModel::grad_theta_sigma() {
@@ -426,7 +425,6 @@ VectorXd BlockModel::grad_theta_sigma() {
   VectorXd vsq = (residual).array().pow(2).matrix().cwiseProduct(noise_V.cwiseInverse());
   VectorXd tmp1 = vsq.cwiseProduct(noise_sigma.array().pow(-2).matrix()) - VectorXd::Ones(n_obs);
   grad = B_sigma.transpose() * tmp1;
-
   // grad = - 0.5* B_sigma.transpose() * VectorXd::Ones(n_obs)
   // + B_sigma.transpose() * noise_sigma.array().pow(-2).matrix() * residual.cwiseProduct(noise_V.cwiseInverse()).dot(residual);
 
@@ -671,13 +669,18 @@ void BlockModel::examine_gradient() {
 }
 
 MatrixXd BlockModel::precond() const {
-    // total 3 parts
-    // 1. preconditioner for fixed effects
-    // 2. preconditioner for measurement error
-    // 3. preconditioner for latent model
-
     // default
-    VectorXd hess = VectorXd::Ones(n_params);
-    hess /= V_sizes;
+    // 1. preconditioner for fixed effects and measurement error
+    VectorXd hess_block = VectorXd::Ones(n_merr + n_feff);
+    hess_block /= n_obs;
+
+    // 2. preconditioner for latent model
+    VectorXd hess_la = VectorXd::Ones(n_la_params);
+    hess_la /= V_sizes;
+
+    // hess = concate(hess_block, hess_la)
+    VectorXd hess(n_params);
+    hess << hess_block, hess_la;
+
     return hess.asDiagonal();
 }

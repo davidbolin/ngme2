@@ -105,7 +105,8 @@ f <- function(
     else operator$A
 
   # subset the A matrix
-  if (!all(subset)) A[!subset, ] <- 0
+  # if (!all(subset)) A[!subset, ] <- 0
+  if (!all(subset)) A <- A[subset, , drop = FALSE]
 
   # 2. build noise given operator
   # bivariate noise

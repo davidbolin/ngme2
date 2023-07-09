@@ -36,7 +36,7 @@ navbar:
         href: articles/bivariate.html
       - text: Random effects model in Ngme2
         href: articles/random-effect.html
-      - text: Tensor product model
+      - text: Space-time (tensor product) model in Ngme2
         href: articles/tensor_product.html
     github:
       icon: fa-github
@@ -98,6 +98,7 @@ reference:
   - title: Auxiliary functions
     contents:
     - precision_matrix_multivariate
+    - precision_matrix_multivariate_spde
     - mean_list
     - ngme_as_sparse
     - control_opt

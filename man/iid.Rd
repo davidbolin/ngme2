@@ -4,10 +4,10 @@
 \alias{iid}
 \title{ngme iid model specification}
 \usage{
-iid(map, ...)
+iid(n, ...)
 }
 \arguments{
-\item{map}{index vector}
+\item{n}{integer, number of iid model}
 
 \item{...}{ignore}
 }

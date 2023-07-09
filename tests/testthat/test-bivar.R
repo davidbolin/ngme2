@@ -1,3 +1,23 @@
+test_that("test tp and bv operator", {
+  # 1. modify bv
+  n = 10
+  true_model <- f(
+    1:n,
+    model="bv",
+    theta = 0.5, rho = 0.5,
+    sub_models = list(
+      first = "ar1", second="ar1"
+    ),
+    group = c(rep("first", n/2), rep("second", n/2)),
+    noise = list(
+      first=noise_nig(mu=-3, sigma=2, nu=1),
+      second=noise_nig(mu=-3, sigma=2, nu=1)
+    )
+  )
+  true_model
+  # 2. modify tp
+})
+
 test_that("test bv(ar1, ar1) with 1 noise", {
   n <- 500
   true_model <- f(

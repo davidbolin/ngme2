@@ -4,11 +4,9 @@
 \alias{ou}
 \title{ngme Ornstein–Uhlenbeck process specification}
 \usage{
-ou(map, mesh = INLA::inla.mesh.1d(map), theta_K = 0, B_K = NULL, ...)
+ou(mesh, theta_K = 0, B_K = NULL, ...)
 }
 \arguments{
-\item{map}{numerical vector, covariates to build index for the process}
-
 \item{mesh}{mesh for build the model}
 
 \item{theta_K}{initial value for theta_K, kappa = exp(B_K * theta_K)}

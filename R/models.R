@@ -2,26 +2,23 @@
 
 #' ngme iid model specification
 #'
-#' @param map index vector
+#' @param n integer, number of iid model
 #' @param ... ignore
 #'
 #' @return ngme_operator object
 #' @export
 #'
 iid <- function(
-  map,
-  ...
+  n, ...
 ) {
-  if (inherits(map, "formula")) map <- model.matrix(map)[, -1]
-  K <- ngme_as_sparse(Matrix::Diagonal(length(map)))
+  K <- ngme_as_sparse(Matrix::Diagonal(n))
 
   ngme_operator(
-    map = map,
-    mesh = NULL,
+    mesh = INLA::inla.mesh.1d(loc = 1:n),
     model = "iid",
     theta_K = double(0),
     K = K,
-    h = rep(1, length(map)),
+    h = rep(1, n),
     A = K,
     symmetric = TRUE,
     zero_trace = FALSE
@@ -30,8 +27,7 @@ iid <- function(
 
 #' ngme AR(1) model specification
 #'
-#' @param map integer vector, time index for the AR(1) process
-#' @param mesh mesh for build the model
+#' @param mesh integer vector or inla.mesh.1d object, index to build the mesh
 #' @param rho the correlation parameter (between -1 and 1)
 #' @param ... ignore
 #'
@@ -41,48 +37,29 @@ iid <- function(
 #' @examples
 #' ar1(c(1:3, 1:3))
 ar1 <- function(
-  map,
-  mesh      = INLA::inla.mesh.1d(map),
-  rho       = 0,
-  ...
+  mesh, rho = 0, ...
 ) {
-  # check map
-  if (inherits(map, "formula")) map <- model.matrix(map)[, -1]
-  stopifnot("The map should be integers." = all(map == round(map)))
+  stopifnot("rho should be between -1 and 1" = rho >= -1 && rho <= 1)
 
-  # check mesh
-  stopifnot("Mesh should be inla.mesh.1d." = inherits(mesh, c("inla.mesh.1d")))
-
+  mesh <- ngme_build_mesh(mesh)
   n <- mesh$n
-  # nrep <- length(unique(replicate))
 
   h <- c(diff(mesh$loc), 1)
   G <- Matrix::Diagonal(n);
   C <- Matrix::sparseMatrix(j=1:(n-1), i=2:n, x=-1, dims=c(n,n))
   stopifnot("The mesh should be 1d and has gap 1." = all(h == 1))
 
-  # if (nrep > 1) {
-  #   G <- Matrix::kronecker(diag(nrep), G)
-  #   C <- Matrix::kronecker(diag(nrep), C)
-  #   h <- rep(h, nrep)
-  # }
-
   theta_K <- ar1_a2th(rho)
   stopifnot("The length of rho(theta_K) should be 1." = length(theta_K) == 1)
 
-  A <- if (!is.null(map)) INLA::inla.spde.make.A(mesh = mesh, loc = map) else NULL
-
   ngme_operator(
-    map = map,
     mesh = mesh,
-    # n_rep = nrep,
     model = "ar1",
     theta_K = theta_K,
     C = ngme_as_sparse(C),
     G = ngme_as_sparse(G),
     K = rho * C + G,
     h = h,
-    A = A,
     symmetric = FALSE,
     zero_trace = TRUE
   )
@@ -90,7 +67,7 @@ ar1 <- function(
 
 #' ngme random walk model of order 1
 #'
-#' @param map  numerical vector, covariates to build index for the process
+#' @param mesh numerical vector or inla.mesh.1d object, index to build the mesh
 #' @param cyclic  whether the mesh is circular, i.e. the first one is connected to the last
 #'   if it is circular, we will treat the 1st location and the last location as neigbour, with distance of average distance.
 #' @param mesh mesh for build the model
@@ -102,37 +79,31 @@ ar1 <- function(
 #' @examples
 #' r1 <- rw1(1:7, cyclic = TRUE); r1$K
 rw1 <- function(
-  map,
-  mesh      = INLA::inla.mesh.1d(map),
+  mesh,
   cyclic    = FALSE,
   ...
 ) {
-  if (inherits(map, "formula")) map <- model.matrix(map)[, -1]
+  mesh <- ngme_build_mesh(mesh)
 
-  stopifnot("Mesh should be inla.mesh.1d." = inherits(mesh, c("inla.mesh.1d")))
   n <- mesh$n
-  x <- map
   h <- diff(mesh$loc);
-  n <- mesh$n
   if (!cyclic) {
     C <- Matrix::sparseMatrix(i = 1:n, j=1:n, x=1, dims=c(n,n))
     G <- Matrix::sparseMatrix(i = 2:n, j=1:(n-1), x=-1, dims=c(n,n))
     h <- c(0.01, h) # assume first point fixed to 0
   } else {
-    stopifnot(length(x) >= 4)
+    stopifnot("Too less data point" = length(h) >= 3)
     C <- Matrix::Diagonal(n)
     G <- Matrix::sparseMatrix(i = 1:n, j=c(2:n, 1), x=-1, dims=c(n,n))
     h <- c(h, mean(h))
   }
 
   ngme_operator(
-    map = map,
     mesh = mesh,
     model = "rw1",
     theta_K = double(0),
     K = ngme_as_sparse(C + G),
     h = h,
-    A = INLA::inla.spde.make.A(mesh = mesh, loc = map),
     symmetric = FALSE,
     zero_trace = FALSE
   )
@@ -142,7 +113,7 @@ rw1 <- function(
 #'
 #' generate K matrix of size (n-2) x n (non-cyclic case), where n is size of map
 #'
-#' @param map  numerical vector, covariates to build index for the process
+#' @param mesh numerical vector or inla.mesh.1d object, index to build the mesh
 #' @param mesh mesh for build the model
 #' @param cyclic  whether the mesh is circular, i.e. the first one is connected to the last
 #'   if it is circular, we will treat the 1st location and the last location as neigbour, with distance of average distance.
@@ -154,15 +125,12 @@ rw1 <- function(
 #' @examples
 #' r2 <- rw2(1:7); r2$K
 rw2 <- function(
-  map,
-  mesh      = INLA::inla.mesh.1d(map),
-  cyclic    = FALSE,
+  mesh,
+  cyclic = FALSE,
   ...
 ) {
-  if (inherits(map, "formula")) map <- model.matrix(map)[, -1]
-  if (is.null(mesh)) mesh <- ngme_build_mesh(map)
+  mesh <- ngme_build_mesh(mesh)
 
-  x <- map
   stopifnot("Mesh should be inla.mesh.1d." = inherits(mesh, c("inla.mesh.1d")))
   n <- mesh$n
   stopifnot("mesh too small" = n >= 3)
@@ -179,13 +147,11 @@ rw2 <- function(
   }
 
   ngme_operator(
-    map = map,
     mesh = mesh,
     model = "rw2",
     theta_K = double(0),
     K = ngme_as_sparse(C + G),
     h = h,
-    A = INLA::inla.spde.make.A(mesh = mesh, loc = map),
     symmetric = FALSE,
     zero_trace = FALSE
   )
@@ -193,7 +159,7 @@ rw2 <- function(
 
 #' ngme Ornstein–Uhlenbeck process specification
 #'
-#' @param map numerical vector, covariates to build index for the process
+#' @param mesh numerical vector or inla.mesh.1d object, index to build the mesh
 #' @param mesh mesh for build the model
 #' @param theta_K initial value for theta_K, kappa = exp(B_K * theta_K)
 #' @param B_K bases for theta_K
@@ -202,34 +168,29 @@ rw2 <- function(
 #' @return ngme_operator object
 #' @export
 ou <- function(
-  map,
-  mesh      = INLA::inla.mesh.1d(map),
+  mesh,
   theta_K   = 0,
   B_K       = NULL,
   ...
 ) {
-  if (inherits(map, "formula")) map <- model.matrix(map)[, -1]
-
-  stopifnot("Mesh should be inla.mesh.1d." = inherits(mesh, c("inla.mesh.1d")))
+  mesh <- ngme_build_mesh(mesh)
   n <- mesh$n
 
-  if (is.null(mesh)) mesh <- ngme_build_mesh(map)
   h <- diff(mesh$loc); h <- c(h, mean(h))
 
-  if (is.null(B_K)) B_K <- matrix(1, nrow = length_map(map), ncol = 1)
+  if (is.null(B_K)) B_K <- matrix(1, nrow = length_map(mesh$loc), ncol = 1)
   stopifnot("B_theta is a matrix" = is.matrix(B_K))
   stopifnot("ncol(B_K) == length(theta_K)"
     = ncol(B_K) == length(theta_K))
 
   G <- Matrix::bandSparse(n=n,m=n,k=c(-1,0),diagonals=cbind(-rep(1,n), rep(1,n)))
   C <- Ce <- Matrix::bandSparse(n=n,m=n,k=c(-1,0),diagonals=cbind(0.5*c(h[-1],0), 0.5*h))
-  Ci = Matrix::sparseMatrix(i=1:n,j=1:n,x=1/h,dims = c(n,n))
+  Ci <- Matrix::sparseMatrix(i=1:n,j=1:n,x=1/h,dims = c(n,n))
 
   kappas <- exp(as.numeric(B_K %*% theta_K))
   K <- Matrix::Diagonal(x=kappas) %*% C + G
 
   ngme_operator(
-    map         = map,
     mesh        = mesh,
     model       = "ou",
     B_K         = B_K,
@@ -238,7 +199,6 @@ ou <- function(
     G           = ngme_as_sparse(G),
     K           = ngme_as_sparse(K),
     h           = h,
-    A           = INLA::inla.spde.make.A(mesh = mesh, loc = map),
     symmetric   = FALSE,
     zero_trace  = TRUE
   )
@@ -246,25 +206,23 @@ ou <- function(
 
 #' ngme Matern SPDE model specification
 #'
-#' @param map  numerical vector, covariates to build index for the process
-#' @param mesh mesh for build the SPDE model
+#' @param mesh an inla.mesh.2d object, mesh for build the SPDE model
 #' @param alpha 2 or 4, SPDE smoothness parameter
 #' @param theta_K initial value for theta_K, kappa = exp(B_K * theta_K)
-#' @param B_K bases for theta_K
+#' @param B_K bases for theta_K, ignore if use the stationary model
 #' @param ... ignore
 #'
 #' @return ngme_operator object
 #' @export
 matern <- function(
-  map,
   mesh,
   alpha = 2,
   theta_K = 0,
   B_K = NULL,
   ...
 ) {
-  if (inherits(map, "formula")) map <- model.matrix(map)[, -1]
-  stopifnot(alpha == 2 || alpha == 4)
+  mesh <- ngme_build_mesh(mesh)
+  stopifnot("alpha should be 2 or 4" = alpha == 2 || alpha == 4)
 
   n <- mesh$n
   if (is.null(B_K) && length(theta_K) == 1)
@@ -294,10 +252,8 @@ matern <- function(
     K <- if (alpha == 2) diag(kappas) %*% C %*% diag(kappas)  + G
     else diag(kappas) %*% C %*% diag(kappas) %*% C %*% diag(kappas) + G
   }
-  A <- INLA::inla.spde.make.A(mesh = mesh, loc = map)
 
   ngme_operator(
-    map = map,
     mesh = mesh,
     alpha = alpha,
     model = "matern",
@@ -307,7 +263,6 @@ matern <- function(
     G = ngme_as_sparse(G),
     K = ngme_as_sparse(K),
     h = h,
-    A = A,
     symmetric = TRUE,
     zero_trace = FALSE
   )
@@ -347,19 +302,19 @@ re <- function(
     K[lower.tri(K)] <- theta_K[(n_reff+1):n_theta_K]
 
   ngme_operator(
-    map = map,
     mesh = NULL,
     model = "re",
     theta_K = theta_K,
     K = ngme_as_sparse(K),
     h = h,
-    A = ngme_as_sparse(B_K),
+    B_K = B_K,
     symmetric = FALSE,
     zero_trace = FALSE
   )
 }
 
 # ----  For computing precision matrix of multivariate model
+
 # p: dimension
 # cor_mat: controls the correlation (only look at upper.tri part)
 D_l <- function(p, cor_mat) {
@@ -420,10 +375,10 @@ dependence_matrix <- function(p, cor_mat, theta=NULL, Q=NULL) {
   Q %*% D_l
 }
 
-#' compute the precision matrix for multivariate model
+#' Compute the precision matrix for multivariate model
 #'
 #' @param p dimension, should be integer and greater than 1
-#' @param model an ngme_operator object
+#' @param operator_list a list of ngme_operator object (length should be p)
 #' @param cor_mat matrix of dim p*p, controls the correlation (only look at upper.tri part)
 #' @param theta parameter for Q matrix (length of 1 when p=2, length of 3 when p=3)
 #' @param Q orthogonal matrix of dim p*p (provide when p > 3)
@@ -437,11 +392,90 @@ dependence_matrix <- function(p, cor_mat, theta=NULL, Q=NULL) {
 #' @examples
 #' rho_mat <- matrix(0, nrow = 3, ncol = 3)
 #' rho_mat[1, 2] <- 0.4; rho_mat[1, 3] <- -0.5; rho_mat[2,3] <- 0.8
-#' precision_matrix_multivariate(3, ar1(1:5), rho_mat, theta=c(1,2,3))
-precision_matrix_multivariate <- function(p, model, cor_mat, theta=NULL, Q=NULL) {
+#' operator_list <- list(ar1(1:5, rho=0.4), ar1(1:5, rho=0.5), ar1(1:5, rho=0.6))
+#' precision_matrix_multivariate(3, operator_list, rho_mat, theta=c(1,2,3))
+precision_matrix_multivariate <- function(p, operator_list, cor_mat, theta=NULL, Q=NULL) {
+  stopifnot("Please provide a list of p models" =  length(operator_list) == p)
+  stopifnot(
+    "cor_mat should be of dim p*p" =
+      is.matrix(cor_mat) &&
+      ncol(cor_mat) == p &&
+      nrow(cor_mat) == p
+  )
+
   D <- dependence_matrix(p, cor_mat, theta, Q)
-  bigD <- kronecker(D, Matrix::Diagonal(nrow(model$K)))
-  K <- bigD %*% Matrix::bdiag(rep(list(model$K), p))
-  Matrix::t(K) %*% K
+  bigD <- kronecker(D, Matrix::Diagonal(length(operator_list[[1]]$h)))
+
+  K_list <- lapply(operator_list, function(model) model$K)
+  K <- bigD %*% Matrix::bdiag(K_list)
+
+  # mass lumping version
+  Cinv <- rep(1 / operator_list[[1]]$h, p)
+  Matrix::t(K) %*% Matrix::Diagonal(x = Cinv) %*% K
 }
 
+
+#' Compute the precision matrix for multivariate spde Matern model
+#'
+#' @param p dimension, should be integer and greater than 1
+#' @param mesh an inla.mesh.2d object, mesh for build the SPDE model
+#' @param alpha 2 or 4, SPDE smoothness parameter
+#' @param theta_K_list a list (length is p) of theta_K
+#' @param B_K_list a list (length is p) of B_K (non-stationary case)
+#' @param cor_mat matrix of dim p*p, controls the correlation (only look at upper.tri part)
+#' @param theta parameter for Q matrix (length of 1 when p=2, length of 3 when p=3)
+#' @param Q orthogonal matrix of dim p*p (provide when p > 3)
+#'
+#' @return the precision matrix of the multivariate model
+#' @details The general model is defined as $D diag(L_1, ..., L_p) x = M$. D is the dependence matrix, it is paramterized by $D = Q(theta) * D_l(cor_mat)$, where $Q$ is the orthogonal matrix, and $D_l$ is matrix controls the cross-correlation.
+#' See the section 2.2 of Bolin and Wallin (2020) for exact parameterization of Dependence matrix.
+#' @references
+#' Bolin, D. and Wallin, J. (2020), Multivariate type G Matérn stochastic partial differential equation random fields. J. R. Stat. Soc. B, 82: 215-239. https://doi.org/10.1111/rssb.12351
+#' @export
+#' @examples
+#' rho_mat <- matrix(0, nrow = 3, ncol = 3)
+#' rho_mat[1, 2] <- 0.4; rho_mat[1, 3] <- -0.5; rho_mat[2,3] <- 0.8
+#' pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
+#' mesh <- INLA::inla.mesh.2d(
+#'   loc.domain = pl01, cutoff = 2,
+#'   max.edge = c(0.5, 10)
+#' )
+#' precision_matrix_multivariate_spde(
+#'   3,
+#'   mesh = INLA::inla.mesh.1d(1:10),
+#'   cor_mat = rho_mat,
+#'   alpha = 2,
+#'   theta_K_list = list(0,1,2),
+#'   theta = c(1,2,3)
+#' )
+precision_matrix_multivariate_spde <- function(
+  p,
+  mesh,
+  cor_mat,
+  alpha = 2,
+  theta_K_list = NULL,
+  B_K_list = NULL,
+  theta = NULL,
+  Q = NULL
+) {
+  if (is.null(B_K_list)) {
+    B_K_list <- lapply(1:p, function(i) NULL)
+  } else {
+    stopifnot("Please provide a list of B_K matrices for each matern model"
+      = length(B_K_list) == p)
+  }
+
+  if (is.null(theta_K_list)) {
+    theta_K_list <- lapply(1:p, function(i) 0)
+  } else {
+    stopifnot("Please provide a list of p parameters"
+      = length(theta_K_list) == p)
+  }
+
+  operator_list <- NULL
+  for (i in 1:p) {
+    operator_list[[i]] <- matern(mesh, alpha, theta_K_list[[i]], B_K_list[[i]])
+  }
+
+  precision_matrix_multivariate(p, operator_list, cor_mat, theta, Q)
+}

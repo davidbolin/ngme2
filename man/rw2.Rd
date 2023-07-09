@@ -4,11 +4,9 @@
 \alias{rw2}
 \title{ngme random walk model of order 2}
 \usage{
-rw2(map, mesh = INLA::inla.mesh.1d(map), cyclic = FALSE, ...)
+rw2(mesh, cyclic = FALSE, ...)
 }
 \arguments{
-\item{map}{numerical vector, covariates to build index for the process}
-
 \item{mesh}{mesh for build the model}
 
 \item{cyclic}{whether the mesh is circular, i.e. the first one is connected to the last

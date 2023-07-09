@@ -4,12 +4,10 @@
 \alias{ar1}
 \title{ngme AR(1) model specification}
 \usage{
-ar1(map, mesh = INLA::inla.mesh.1d(map), rho = 0, ...)
+ar1(mesh, rho = 0, ...)
 }
 \arguments{
-\item{map}{integer vector, time index for the AR(1) process}
-
-\item{mesh}{mesh for build the model}
+\item{mesh}{integer vector or inla.mesh.1d object, index to build the mesh}
 
 \item{rho}{the correlation parameter (between -1 and 1)}
 

@@ -5,12 +5,12 @@
 \title{Specifying a latent process model (wrapper function for each model)}
 \usage{
 f(
-  map = NULL,
-  model = NULL,
+  map,
+  model,
   noise = noise_normal(),
   mesh = NULL,
   control = control_f(),
-  name = NULL,
+  name = "field",
   data = NULL,
   group = NULL,
   which_group = NULL,
@@ -18,7 +18,6 @@ f(
   fix_W = FALSE,
   fix_theta_K = FALSE,
   subset = rep(TRUE, length_map(map)),
-  eval = FALSE,
   debug = FALSE,
   ...
 )
@@ -26,20 +25,19 @@ f(
 \arguments{
 \item{map}{symbol or numerical value: index or covariates to build index}
 
-\item{model}{1. string: type of model, 2. ngme.spde object}
+\item{model}{string, model type, see ngme_model_types()}
 
-\item{noise}{1. string: type of model, 2. ngme.noise object
-(can also be specified in each ngme model)}
+\item{noise}{can be either string or a ngme_noise object}
 
-\item{mesh}{mesh for the model}
+\item{mesh}{mesh for the model, if not provided, will be built from map}
 
-\item{control}{control variables for f model}
+\item{control}{control variables for latent model}
 
-\item{name}{name of the field, for later use}
+\item{name}{name of the field, for later use, if not provided, will be "field1" etc.}
 
-\item{data}{specifed or inherit from ngme formula}
+\item{data}{specifed or inherit from ngme() function}
 
-\item{group}{group factor (can be provided in ngme())}
+\item{group}{group factor indicate resposne variable, can be inherited from ngme() function}
 
 \item{which_group}{belong to which group}
 
@@ -51,15 +49,13 @@ f(
 
 \item{subset}{subset of the model}
 
-\item{eval}{evaluate the model}
-
-\item{debug}{Debug mode}
+\item{debug}{debug mode}
 
 \item{...}{additional arguments (e.g. parameters for model)
 inherit the data from ngme function}
 }
 \value{
-a list latent_in for constructing latent model, e.g. A, h, C, G,
+a list for constructing latent model, e.g. A, h, C, G,
 which also has
 1. Information about K matrix
 2. Information about noise

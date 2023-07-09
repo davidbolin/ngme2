@@ -5,9 +5,8 @@
 \title{ngme bivariate model specification}
 \usage{
 bv(
-  map,
+  mesh,
   sub_models,
-  mesh = NULL,
   theta = 0,
   rho = 0,
   group = NULL,
@@ -16,11 +15,9 @@ bv(
 )
 }
 \arguments{
-\item{map}{index vector, formula or matrix}
+\item{mesh}{mesh for build the model}
 
 \item{sub_models}{a list of sub_models (total 2 sub_models)}
-
-\item{mesh}{mesh for build the model}
 
 \item{theta}{parameter for Q matrix (rotation)}
 

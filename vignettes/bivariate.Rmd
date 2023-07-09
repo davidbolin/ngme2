@@ -70,7 +70,7 @@ Next we need to specify the model using `f()` function. Notice the way to specif
 # 1st way: simply put model types, using both c() and list() are ok
 bv1 <- f(
   year, model = "bv",
-  theta = 1,
+  theta = pi / 2, rho = 0.5,
   sub_models = list(precip="ar1", temp="rw1"),
   # sub_models = c(precip="ar1", temp="rw1"),
   group = labels, # can be provided in ngme()

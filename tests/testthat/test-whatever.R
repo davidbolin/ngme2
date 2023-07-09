@@ -40,7 +40,6 @@ test_that("compute 3d precision matrix", {
   cor_mat[1,3] = 0.1
   cor_mat[1,2] = 0.2
   cor_mat[2,3] = 0.3
-  precision_matrix_multivariate(p=3, model = ar1(1:10), theta = c(1,2,3), cor_mat = cor_mat)
 })
 
 

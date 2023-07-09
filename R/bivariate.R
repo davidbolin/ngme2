@@ -6,7 +6,7 @@
 #'   \sin(\theta) - \rho \cos(\theta) & \cos(theta) \sqrt{1+\rho^2}
 #' \end{pmatrix}}
 #'
-#' @param map index vector, formula or matrix
+#' @param mesh the mesh where model is defined
 #' @param sub_models a list of sub_models (total 2 sub_models)
 #' @param mesh mesh for build the model
 #' @param group group vector, can be inherited from ngme() function
@@ -18,16 +18,14 @@
 #' @return a list of specification of model
 #' @export
 bv <- function(
-  map,
+  mesh,
   sub_models,
-  mesh = NULL,
   theta = 0, rho = 0,
   group = NULL,
   share_param = FALSE,
   ...
 ) {
-  if (inherits(map, "formula")) map <- model.matrix(map)[, -1]
-  if (is.null(mesh)) mesh <- ngme_build_mesh(map)
+  mesh <- ngme_build_mesh(mesh)
 
   model_names <- names(sub_models)
   stopifnot(
@@ -66,14 +64,12 @@ bv <- function(
   bigD <- kronecker(D, Matrix::Diagonal(nrow(first$K)))
 
   ngme_operator(
-    map = first$map,
-    mesh = NULL,
+    mesh        = mesh,
     model       = "bv",
     first       = first,
     second      = second,
     theta_K     = theta_K,
     K           = bigD %*% Matrix::bdiag(first$K, second$K),
-    A           = INLA::inla.spde.make.A(loc=map, mesh=mesh, repl=as.integer(as.factor(group))),
     h           = c(first$h, second$h),
     symmetric   = FALSE,
     zero_trace  = FALSE,
@@ -87,9 +83,9 @@ bv <- function(
 #'
 #' Given 2 operator (first and second), build a tensor-product operator based on K = K_first x K_second (here x is Kronecker product)
 #'
-#' @param first left side of kronecker model (usually a temporal or iid model)
-#' @param second right side of kronecker model (ususally a spatial model)
-#' @param ... extra arguments
+#' @param first ngme_operator, left side of kronecker model (usually a temporal or iid model)
+#' @param second ngme_operator, right side of kronecker model (ususally a temporal or spatial model)
+#' @param ... ignore
 #'
 #' @return a list of specification of model
 #' @export
@@ -105,16 +101,7 @@ tp <- function(
   theta_K <- c(first$theta_K, second$theta_K)
   stopifnot(length(theta_K) == first$n_theta_K + second$n_theta_K)
 
-  stopifnot("the length of map of 2 submodel should be equal (complete)"
-    = length_map(first$map) == length_map(second$map))
-
-  map <- second$map
-  group <- if (!is.matrix(first$map)) as.integer(as.factor(first$map))
-    else as.integer(as.factor(seq_len(nrow(first$map))))
-  A <- INLA::inla.spde.make.A(loc=map, mesh=second$mesh, repl=group)
-
   ngme_operator(
-    map = map,  # placeholder
     mesh = NULL,
     model = "tp",
     first = first,
@@ -122,7 +109,6 @@ tp <- function(
     theta_K = theta_K,
     K = first$K %x% second$K,
     h = first$h %x% second$h,
-    A = A,
     symmetric = first$symmetric & second$symmetric,
     # check here
     zero_trace = first$zero_trace & second$zero_trace

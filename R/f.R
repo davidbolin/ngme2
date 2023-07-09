@@ -5,26 +5,24 @@
 #' The function is a wrapper function for specific submodels.
 #' (see ngme_models_types() for available models).
 #'
-#' @param map    symbol or numerical value: index or covariates to build index
-#' @param model     1. string: type of model, 2. ngme.spde object
-#' @param noise     1. string: type of model, 2. ngme.noise object
-#'  (can also be specified in each ngme model)
-#' @param mesh      mesh for the model
-#' @param control      control variables for f model
-#' @param name      name of the field, for later use
-#' @param data      specifed or inherit from ngme formula
-#' @param group   group factor (can be provided in ngme())
+#' @param map  symbol or numerical value: index or covariates to build index
+#' @param model  string, model type, see ngme_model_types()
+#' @param noise  can be either string or a ngme_noise object
+#' @param mesh   mesh for the model, if not provided, will be built from map
+#' @param control  control variables for latent model
+#' @param name   name of the field, for later use, if not provided, will be "field1" etc.
+#' @param data      specifed or inherit from ngme() function
+#' @param group   group factor indicate resposne variable, can be inherited from ngme() function
 #' @param which_group  belong to which group
-#' @param W         starting value of the process
+#' @param W      starting value of the process
 #' @param fix_W  stop sampling for W
 #' @param fix_theta_K fix the estimation for theta_K.
-#' @param debug        Debug mode
-#' @param eval      evaluate the model
+#' @param debug     debug mode
 #' @param subset    subset of the model
 #' @param ...       additional arguments (e.g. parameters for model)
 #'  inherit the data from ngme function
 #'
-#' @return a list latent_in for constructing latent model, e.g. A, h, C, G,
+#' @return a list for constructing latent model, e.g. A, h, C, G,
 #' which also has
 #' 1. Information about K matrix
 #' 2. Information about noise
@@ -32,12 +30,12 @@
 #'
 #' @export
 f <- function(
-  map         = NULL,
-  model       = NULL,
+  map,
+  model,
   noise       = noise_normal(),
   mesh        = NULL,
   control     = control_f(),
-  name        = NULL,
+  name        = "field",
   data        = NULL,
   group       = NULL,
   which_group = NULL,
@@ -45,7 +43,6 @@ f <- function(
   fix_W       = FALSE,
   fix_theta_K = FALSE,
   subset      = rep(TRUE, length_map(map)),
-  eval        = FALSE,
   debug       = FALSE,
   ...
 ) {
@@ -68,33 +65,41 @@ f <- function(
     subset <- group %in% which_group
   }
 
-  stopifnot("Please provide model from ngme_model_types():"
-    = !is.null(model))
+  stopifnot(
+    "Please provide model from ngme_model_types():" = !is.null(model),
+    "Please specify model as character" = is.character(model)
+  )
 
-  if (is.null(name)) name <- "field"
+  if (model == "tp") {
+    stopifnot(is.list(map) && length(map) == 2,
+      "Please specify map for 2 sub_models"
+        = is.list(map) && length(map) == 2)
+  }
 
-  stopifnot("Please specify model as character" = is.character(model))
-
-  if (model=="tp" && !is.null(data))
-    map <- seq_len(nrow(data))
+  # 0. build mesh if not specified
+  if (is.null(mesh)) {
+    mesh <- ngme_build_mesh(map, model)
+  }
 
   # remove NULL in arguments
   f_args <- Filter(Negate(is.null),  as.list(environment()))
   # add arguments in ...
   f_args <- c(f_args, list(...))
 
-  # 0. build mesh if not specified
-  # if (is.null(mesh)) {
-  #   f_args$mesh <- do.call(build_mesh, f_args)
-  # }
-
   # 1. build operator
-  n <- mesh$n
   operator <- build_operator(model, f_args)
 
-  A <- if (is.null(operator$A))
-    INLA::inla.spde.make.A(mesh = f_args$mesh, loc = map)
-    else operator$A
+  A <- switch(model,
+    "tp" = {
+      stopifnot("Now only support first to be 1d model"
+        = inherits(operator$first$mesh, "inla.mesh.1d"))
+      group <- as.integer(as.factor(map[[1]]))
+      A <- INLA::inla.spde.make.A(loc=map[[2]], mesh=operator$second$mesh, repl=group)
+    },
+    "bv" = INLA::inla.spde.make.A(loc=map, mesh=mesh, repl=as.integer(as.factor(group))),
+    "re" = ngme_as_sparse(operator$B_K),
+    INLA::inla.spde.make.A(mesh = mesh, loc = map)
+  )
 
   # subset the A matrix
   # if (!all(subset)) A[!subset, ] <- 0
@@ -191,19 +196,25 @@ build_operator <- function(model_name, args_list) {
 
 # help to build a list of mesh for different replicates
 ngme_build_mesh <- function(
-  map = NULL,
+  loc,
+  model = NULL,
   ...
 ) {
-  if (!is.null(map)) {
-    if (is.matrix(map) && ncol(map) == 2) {
-      stop("Please build and provide the mesh for spatial data using inla.mesh.2d()")
-    } else if (is.numeric(map)) {
-      mesh <- INLA::inla.mesh.1d(loc = map)
-    } else {
-      stop("map should be a matrix or a vector of numeric")
+  if (inherits(loc, "inla.mesh.1d") || inherits(loc, "inla.mesh")) return(loc)
+  if (!is.null(model)) {
+    if (model %in% c("re", "tp")) return(NULL)
+    if (model == "ar1") {
+      stopifnot("The map should be integers."
+        = is.numeric(loc) && all(loc == round(loc)))
     }
+  }
+
+  if (is.matrix(loc) && ncol(loc) == 2) {
+    stop("Please build and provide the mesh for spatial data using inla.mesh.2d()")
+  } else if (is.numeric(loc)) {
+    mesh <- INLA::inla.mesh.1d(loc = loc)
   } else {
-    stop("map should be specified")
+    stop("loc should be a matrix or a vector of numeric")
   }
 
   mesh

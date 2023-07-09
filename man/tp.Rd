@@ -7,11 +7,11 @@
 tp(first, second, ...)
 }
 \arguments{
-\item{first}{left side of kronecker model (usually a temporal or iid model)}
+\item{first}{ngme_operator, left side of kronecker model (usually a temporal or iid model)}
 
-\item{second}{right side of kronecker model (ususally a spatial model)}
+\item{second}{ngme_operator, right side of kronecker model (ususally a temporal or spatial model)}
 
-\item{...}{extra arguments}
+\item{...}{ignore}
 }
 \value{
 a list of specification of model

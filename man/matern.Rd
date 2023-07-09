@@ -4,18 +4,16 @@
 \alias{matern}
 \title{ngme Matern SPDE model specification}
 \usage{
-matern(map, mesh, alpha = 2, theta_K = 0, B_K = NULL, ...)
+matern(mesh, alpha = 2, theta_K = 0, B_K = NULL, ...)
 }
 \arguments{
-\item{map}{numerical vector, covariates to build index for the process}
-
-\item{mesh}{mesh for build the SPDE model}
+\item{mesh}{an inla.mesh.2d object, mesh for build the SPDE model}
 
 \item{alpha}{2 or 4, SPDE smoothness parameter}
 
 \item{theta_K}{initial value for theta_K, kappa = exp(B_K * theta_K)}
 
-\item{B_K}{bases for theta_K}
+\item{B_K}{bases for theta_K, ignore if use the stationary model}
 
 \item{...}{ignore}
 }

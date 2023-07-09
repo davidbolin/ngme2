@@ -5,11 +5,11 @@
 
 # test_that("test Matern", {
 #   library(INLA)
-#   pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
-#   mesh <- inla.mesh.2d(
-#     loc.domain = pl01, cutoff = 0.2,
-#     max.edge = c(0.5, 10)
-#   )
+  # pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
+  # mesh <- inla.mesh.2d(
+  #   loc.domain = pl01, cutoff = 0.2,
+  #   max.edge = c(0.5, 10)
+  # )
 #   plot(mesh)
 #   mesh$n
 

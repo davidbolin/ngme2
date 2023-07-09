@@ -30,7 +30,7 @@ Here is a simple example of using f
 repl <- c(1, 1, 2, 2, 3, 3, 3)
 
 # random effect model accepts formula argument, as the design matrix
-f(~1 + x, model = "re", replicate=repl, noise = noise_normal(),
+f(~1 + x, model = "re", noise = noise_normal(),
   # ignore the last part, not needed when using f() in ngme function
   data = data.frame(x = 1:7), eval=TRUE)
 ```
@@ -229,7 +229,8 @@ out_corr_nig <- ngme2::ngme(
     ),
     # fix_theta_K = T, theta_K = theta_K,
     # W = t(U), fix_W = T,
-    replicate=repl, debug=F),
+    debug=F),
+  replicate=repl,
   data=data.frame(Y=Y, x1=x1, z1=z1, repl=repl),
   control_ngme = control_ngme(
     # beta = c(0, 0)

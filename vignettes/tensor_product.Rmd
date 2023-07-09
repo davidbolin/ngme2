@@ -1,8 +1,8 @@
 ---
-title: "Tensor product model"
+title: "Space-time (tensor product) model in Ngme2"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Tensor product model}
+  %\VignetteIndexEntry{Space-time (tensor product) model in Ngme2}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -22,7 +22,7 @@ The separable space-time model is defined by the Kronecker product between the p
 
 The operator matrix $K$ of the tensor product model can be expressed by: $K = K_l \otimes K_r$ where $K_l$ and $K_r$ are the operator for the 2 sub-models.
 
-```{r setup}
+```{r setup, message=FALSE, warning=FALSE}
 library(INLA)
 library(ngme2)
 ```
@@ -42,14 +42,24 @@ loc <- 1:5; loc_rep <- rep(loc, 3)
 cbind(time_rep, loc_rep)
 
 tp_model <- f(
-  model="tp",
+  map = list(time_rep, loc_rep),
+  model = "tp",
   first = ar1(time_rep),
-  second = matern(loc_rep, mesh=mesh_1d),
+  second = matern(mesh=mesh_1d),
   complete = FALSE,
-  noise = noise_nig(),
-  eval=TRUE # ignore this when in formula of ngme()
+  noise = noise_nig()
 )
-tp_model$operator$A
+
+tp_model <- f(
+  map = list(time_rep, loc_rep),
+  model = "tp",
+  first = ar1(mesh = time_rep),
+  second = matern(mesh = mesh_1d),
+  complete = FALSE,
+  noise = noise_nig()
+)
+
+tp_model$A
 ```
 
 
@@ -96,7 +106,7 @@ out <- ngme(
   data = df,
   family = "normal",
   control_opt = control_opt(
-    iterations = 100,
+    iterations = 10,
     n_parallel_chain = 1,
     estimation = T,
     verbose = T,

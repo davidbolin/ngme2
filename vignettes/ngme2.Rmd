@@ -368,7 +368,7 @@ out <- ngme(
   family = "nig",
   control_opt = control_opt(
     estimation = T,
-    iterations = 100,
+    iterations = 1000,
     n_slope_check = 4,
     stop_points = 10,
     std_lim = 0.1,

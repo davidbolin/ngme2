@@ -95,7 +95,7 @@ ngme_out <- ngme(
   data = data.frame(x1=x1, x2=x2, Y=Y),
   control_opt = control_opt(
     burnin = 100,
-    iterations = 500,
+    iterations = 1000,
     std_lim = 0.6,
     n_parallel_chain = 1,
     max_absolute_step = 10,

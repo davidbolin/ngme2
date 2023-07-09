@@ -226,6 +226,12 @@ update_ngme_est <- function(
   ngme_replicate
 }
 
+#' Print an ngme model
+#'
+#' @param x ngme model object
+#' @param ... ...
+#'
+#' @return a list (model specifications)
 #' @export
 print.ngme <- function(x, ...) {
   print(x$replicates[[1]])

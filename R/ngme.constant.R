@@ -14,11 +14,3 @@ ngme_model_types <- function() {
     c("ar1", "matern", "rw", "ou", "tp", "iid", "re", "bv")
 }
 
-#' Show ngme random effects types
-#'
-#' @return available types for models
-#' @export
-ngme_randeff_types <- function() {
-    c("normal", "nig")
-}
-

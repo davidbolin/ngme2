@@ -19,6 +19,7 @@ knitr::opts_chunk$set(
 In Ngme2, we can specify the random effect models. The syntax is similar to other models, using `f()` function.
 
 ```{r setup}
+library(INLA)
 library(ngme2)
 ```
 

@@ -97,6 +97,7 @@ reference:
     - simulate.ngme_noise
   - title: Auxiliary functions
     contents:
+    - precision_matrix_multivariate
     - mean_list
     - ngme_as_sparse
     - control_opt
@@ -106,6 +107,8 @@ reference:
     - ngme_ts_make_A
     - print.ngme
     - print.ngme_model
+    - print.ngme_operator
+    - print.ngme_replicate
     - print.ngme_noise
   - title: Distributions
     contents:

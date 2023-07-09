@@ -4,94 +4,122 @@
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<meta name="description" content="ngme2">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Model prediction and estimation • ngme2</title>
-<script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.2.2/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.2.2/bootstrap.bundle.min.js"></script><link href="../deps/Roboto_Slab-0.4.5/font.css" rel="stylesheet">
-<!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
+<!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script><!-- Bootstrap --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha256-bZLfwXAP04zRMK2BjiO8iu9pf4FbLqX6zitd+tIvLhE=" crossorigin="anonymous">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script><!-- bootstrap-toc --><link rel="stylesheet" href="../bootstrap-toc.css">
+<script src="../bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
-<!-- bootstrap-toc --><script src="https://cdn.jsdelivr.net/gh/afeld/bootstrap-toc@v1.0.1/dist/bootstrap-toc.min.js" integrity="sha256-4veVQbu7//Lk5TSmc7YV48MxtMy98e26cf5MrgZYnwo=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- search --><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Model prediction and estimation">
+<!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
+<script src="../pkgdown.js"></script><meta property="og:title" content="Model prediction and estimation">
 <meta property="og:description" content="ngme2">
 <!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
 <![endif]-->
 </head>
-<body>
-    <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
+<body data-spy="scroll" data-target="#toc">
     
 
-    <nav class="navbar fixed-top navbar-dark navbar-expand-lg bg-primary"><div class="container">
-    
-    <a class="navbar-brand me-2" href="../index.html">ngme2</a>
+    <div class="container template-article">
+      <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <span class="navbar-brand">
+        <a class="navbar-link" href="../index.html">ngme2</a>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.0</span>
+      </span>
+    </div>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
-
-    
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-
-    <div id="navbar" class="collapse navbar-collapse ms-3">
-      <ul class="navbar-nav me-auto">
-<li class="nav-item">
-  <a class="nav-link" href="../articles/ngme2.html">Get started</a>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+<li>
+  <a href="../articles/ngme2.html">Get started</a>
 </li>
-<li class="nav-item">
-  <a class="nav-link" href="../reference/index.html">Functions</a>
+<li>
+  <a href="../reference/index.html">Functions</a>
 </li>
-<li class="active nav-item dropdown">
-  <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-vignettes">Vignettes</a>
-  <div class="dropdown-menu" aria-labelledby="dropdown-vignettes">
-    <a class="dropdown-item" href="../articles/Installation_and_configuration.html">Installation and configuration</a>
-    <a class="dropdown-item" href="../articles/inla_compare.html">Comparison with R-INLA</a>
-    <a class="dropdown-item" href="../articles/AR1-model.html">AR(1) model</a>
-    <a class="dropdown-item" href="../articles/RW-model.html">Random walk model</a>
-    <a class="dropdown-item" href="../articles/SPDE-model.html">SPDE Matern model</a>
-    <a class="dropdown-item" href="../articles/replicate.html">Ngme replicate feature</a>
-    <a class="dropdown-item" href="../articles/pred_and_est.html">Model prediction and estimation</a>
-  </div>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    Vignettes
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+<li>
+      <a href="../articles/Installation_and_configuration.html">Installation and configuration</a>
+    </li>
+    <li>
+      <a href="../articles/inla_compare.html">Comparison with R-INLA</a>
+    </li>
+    <li>
+      <a href="../articles/AR1-model.html">AR(1) model</a>
+    </li>
+    <li>
+      <a href="../articles/RW-model.html">Random walk model</a>
+    </li>
+    <li>
+      <a href="../articles/SPDE-model.html">SPDE Matern model</a>
+    </li>
+    <li>
+      <a href="../articles/replicate.html">Ngme replicate feature</a>
+    </li>
+    <li>
+      <a href="../articles/pred_and_est.html">Model prediction and estimation</a>
+    </li>
+    <li>
+      <a href="../articles/bivariate.html">Bivariate models in Ngme2</a>
+    </li>
+    <li>
+      <a href="../articles/random-effect.html">Random effects model in Ngme2</a>
+    </li>
+    <li>
+      <a href="../articles/tensor_product.html">Tensor product model</a>
+    </li>
+  </ul>
 </li>
-<li class="nav-item">
-  <a class="nav-link" href="../news/index.html">Changelog</a>
+<li>
+  <a href="../news/index.html">Changelog</a>
 </li>
       </ul>
-<form class="form-inline my-2 my-lg-0" role="search">
-        <input type="search" class="form-control me-sm-2" aria-label="Toggle navigation" name="search-input" data-search-index="../search.json" id="search-input" placeholder="Search for" autocomplete="off">
-</form>
-
-      <ul class="navbar-nav">
-<li class="nav-item">
-  <a class="external-link nav-link" href="https://github.com/davidbolin/ngme2" aria-label="Github">
+<ul class="nav navbar-nav navbar-right">
+<li>
+  <a href="https://github.com/davidbolin/ngme2" class="external-link">
     <span class="fa fa-github"></span>
      
   </a>
 </li>
-<li class="nav-item">
-  <a class="external-link nav-link" href="https://twitter.com/jdavidbolin" aria-label="Twitter">
+<li>
+  <a href="https://twitter.com/jdavidbolin" class="external-link">
     <span class="fa fa-twitter"></span>
      
   </a>
 </li>
       </ul>
 </div>
-
-    
+<!--/.nav-collapse -->
   </div>
-</nav><div class="container template-article">
+<!--/.container -->
+</div>
+<!--/.navbar -->
 
+      
 
-
-
-<div class="row">
-  <main id="main" class="col-md-9"><div class="page-header">
-      <img src="" class="logo" alt=""><h1>Model prediction and estimation</h1>
+      </header><div class="row">
+  <div class="col-md-9 contents">
+    <div class="page-header toc-ignore">
+      <h1 data-toc-skip>Model prediction and estimation</h1>
             
       
       
-      <div class="d-none name"><code>pred_and_est.Rmd</code></div>
+      <div class="hidden name"><code>pred_and_est.Rmd</code></div>
+
     </div>
 
     
@@ -368,30 +396,26 @@ sample for such a process is given below.</p>
 <span></span>
 <span><span class="co"># specify the model we use</span></span>
 <span><span class="va">mu</span> <span class="op">&lt;-</span> <span class="fl">1</span>; <span class="va">sigma</span> <span class="op">&lt;-</span> <span class="fl">1</span>; <span class="va">nu</span> <span class="op">&lt;-</span> <span class="fl">0.5</span></span>
-<span><span class="va">spde_1d</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/model_matern.html">model_matern</a></span><span class="op">(</span></span>
+<span><span class="va">spde_1d</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
 <span>  <span class="va">loc_1d</span>,</span>
-<span>  kappa <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  model <span class="op">=</span> <span class="st">"matern"</span>,</span>
+<span>  theta_K <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,</span>
 <span>  mesh <span class="op">=</span> <span class="va">mesh_1d</span>,</span>
 <span>  noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span>mu<span class="op">=</span><span class="va">mu</span>, sigma<span class="op">=</span><span class="va">sigma</span>, nu<span class="op">=</span><span class="va">nu</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="va">spde_1d</span><span class="op">$</span><span class="va">noise</span><span class="op">$</span><span class="va">h</span></span>
-<span><span class="co">#&gt;  [1] 0.05555556 0.11111111 0.11111111 0.11111111 0.11111111 0.11111111</span></span>
-<span><span class="co">#&gt;  [7] 0.11111111 0.11111111 0.11111111 0.05555556</span></span>
-<span><span class="va">K</span> <span class="op">&lt;-</span> <span class="va">spde_1d</span><span class="op">$</span><span class="va">C</span> <span class="op">+</span> <span class="va">spde_1d</span><span class="op">$</span><span class="va">G</span></span>
-<span></span>
+<span><span class="va">K</span> <span class="op">&lt;-</span> <span class="va">spde_1d</span><span class="op">$</span><span class="va">operator</span><span class="op">$</span><span class="va">K</span></span>
 <span></span>
 <span><span class="va">W</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="va">spde_1d</span>, seed <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">loc_1d</span>, <span class="va">W</span>, type <span class="op">=</span> <span class="st">"l"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="pred_and_est_files/figure-html/generate-VW-1.png" width="700" style="display: block; margin: auto;"></p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">W</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  num [1:10] -0.719 -0.716 -0.709 -0.708 -0.705 ...</span></span>
-<span><span class="co">#&gt;  - attr(*, "noise")=List of 20</span></span>
-<span><span class="co">#&gt;   ..$ n_noise             : int 10</span></span>
-<span><span class="co">#&gt;   ..$ h                   : num [1:10] 0.0556 0.1111 0.1111 0.1111 0.1111 ...</span></span>
+<span><span class="co">#&gt;  num [1:10] 2.13 2.15 2.19 2.28 2.38 ...</span></span>
+<span><span class="co">#&gt;  - attr(*, "noise")=List of 28</span></span>
 <span><span class="co">#&gt;   ..$ noise_type          : chr "nig"</span></span>
 <span><span class="co">#&gt;   ..$ nu                  : num 0.5</span></span>
-<span><span class="co">#&gt;   ..$ V                   : num [1:10] 0.000475 0.005676 0.003751 0.001964 0.014118 ...</span></span>
+<span><span class="co">#&gt;   ..$ n_nu                : int 1</span></span>
+<span><span class="co">#&gt;   ..$ V                   : NULL</span></span>
 <span><span class="co">#&gt;   ..$ theta_mu            : num 1</span></span>
 <span><span class="co">#&gt;   ..$ theta_sigma         : num 0</span></span>
 <span><span class="co">#&gt;   ..$ theta_sigma_normal  : NULL</span></span>
@@ -406,8 +430,18 @@ sample for such a process is given below.</p>
 <span><span class="co">#&gt;   ..$ fix_nu              : logi FALSE</span></span>
 <span><span class="co">#&gt;   ..$ fix_V               : logi FALSE</span></span>
 <span><span class="co">#&gt;   ..$ n_params            : int 3</span></span>
-<span><span class="co">#&gt;   ..$ init_V              : logi TRUE</span></span>
+<span><span class="co">#&gt;   ..$ single_V            : logi FALSE</span></span>
+<span><span class="co">#&gt;   ..$ share_V             : logi FALSE</span></span>
+<span><span class="co">#&gt;   ..$ corr_measurement    : logi FALSE</span></span>
+<span><span class="co">#&gt;   ..$ index_corr          : NULL</span></span>
+<span><span class="co">#&gt;   ..$ rho                 : num 0</span></span>
+<span><span class="co">#&gt;   ..$ n_nu                : int 1</span></span>
+<span><span class="co">#&gt;   ..$ n_theta_mu          : int 1</span></span>
+<span><span class="co">#&gt;   ..$ n_theta_sigma       : int 1</span></span>
+<span><span class="co">#&gt;   ..$ n_theta_sigma_normal: int 0</span></span>
+<span><span class="co">#&gt;   ..$ n_params            : int 3</span></span>
 <span><span class="co">#&gt;   ..- attr(*, "class")= chr "ngme_noise"</span></span>
+<span><span class="co">#&gt;  - attr(*, "V")= num [1:10] 0.02205 0.00527 0.01098 0.16272 0.08835 ...</span></span>
 <span></span>
 <span><span class="va">V</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">W</span>, <span class="st">"noise"</span><span class="op">)</span><span class="op">$</span><span class="va">V</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">loc_1d</span>, <span class="va">V</span>, type <span class="op">=</span> <span class="st">"l"</span><span class="op">)</span></span></code></pre></div>
@@ -427,26 +461,26 @@ function <em>inla.spde.make.A</em>.</p>
 <span><span class="op">)</span></span>
 <span><span class="va">A_matrix</span></span>
 <span><span class="co">#&gt; 9 x 10 sparse Matrix of class "dgCMatrix"</span></span>
-<span><span class="co">#&gt;                                                                       </span></span>
-<span><span class="co">#&gt;  [1,] . . 0.3975624 0.6024376 .         .          .         .        </span></span>
-<span><span class="co">#&gt;  [2,] . . .         .         0.1034058 0.89659422 .         .        </span></span>
-<span><span class="co">#&gt;  [3,] . . .         .         .         0.65272182 0.3472782 .        </span></span>
-<span><span class="co">#&gt;  [4,] . . .         .         .         0.23543868 0.7645613 .        </span></span>
-<span><span class="co">#&gt;  [5,] . . .         .         .         0.09864781 0.9013522 .        </span></span>
-<span><span class="co">#&gt;  [6,] . . .         .         .         .          0.7647693 0.2352307</span></span>
-<span><span class="co">#&gt;  [7,] . . .         .         .         .          0.6232258 0.3767742</span></span>
-<span><span class="co">#&gt;  [8,] . . .         .         .         .          .         .        </span></span>
-<span><span class="co">#&gt;  [9,] . . .         .         .         .          .         .        </span></span>
-<span><span class="co">#&gt;                             </span></span>
-<span><span class="co">#&gt;  [1,] .          .          </span></span>
-<span><span class="co">#&gt;  [2,] .          .          </span></span>
-<span><span class="co">#&gt;  [3,] .          .          </span></span>
-<span><span class="co">#&gt;  [4,] .          .          </span></span>
-<span><span class="co">#&gt;  [5,] .          .          </span></span>
-<span><span class="co">#&gt;  [6,] .          .          </span></span>
-<span><span class="co">#&gt;  [7,] .          .          </span></span>
-<span><span class="co">#&gt;  [8,] 0.99414616 0.005853845</span></span>
-<span><span class="co">#&gt;  [9,] 0.05157201 0.948427990</span></span>
+<span><span class="co">#&gt;                                                                               </span></span>
+<span><span class="co">#&gt;  [1,] . 0.6759772 0.3240228 .         .         .          .         .        </span></span>
+<span><span class="co">#&gt;  [2,] . .         0.3975624 0.6024376 .         .          .         .        </span></span>
+<span><span class="co">#&gt;  [3,] . .         .         .         0.1034058 0.89659422 .         .        </span></span>
+<span><span class="co">#&gt;  [4,] . .         .         .         .         0.65272182 0.3472782 .        </span></span>
+<span><span class="co">#&gt;  [5,] . .         .         .         .         0.23543868 0.7645613 .        </span></span>
+<span><span class="co">#&gt;  [6,] . .         .         .         .         0.09864781 0.9013522 .        </span></span>
+<span><span class="co">#&gt;  [7,] . .         .         .         .         .          0.6232258 0.3767742</span></span>
+<span><span class="co">#&gt;  [8,] . .         .         .         .         .          .         .        </span></span>
+<span><span class="co">#&gt;  [9,] . .         .         .         .         .          .         .        </span></span>
+<span><span class="co">#&gt;                           </span></span>
+<span><span class="co">#&gt;  [1,] .          .        </span></span>
+<span><span class="co">#&gt;  [2,] .          .        </span></span>
+<span><span class="co">#&gt;  [3,] .          .        </span></span>
+<span><span class="co">#&gt;  [4,] .          .        </span></span>
+<span><span class="co">#&gt;  [5,] .          .        </span></span>
+<span><span class="co">#&gt;  [6,] .          .        </span></span>
+<span><span class="co">#&gt;  [7,] .          .        </span></span>
+<span><span class="co">#&gt;  [8,] 0.33278191 0.6672181</span></span>
+<span><span class="co">#&gt;  [9,] 0.05157201 0.9484280</span></span>
 <span><span class="va">sigma_eps</span> <span class="op">=</span> <span class="fl">1</span></span>
 <span></span>
 <span><span class="va">Y</span> <span class="op">&lt;-</span> <span class="va">A_matrix</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="va">W</span> <span class="op">+</span> <span class="va">sigma_eps</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">9</span><span class="op">)</span></span>
@@ -463,7 +497,7 @@ no burn-in samples.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># First step - Starting values for V</span></span>
 <span><span class="co"># Considering a sample of inv-Gaussian as starting values for both chains</span></span>
-<span><span class="va">h_nig_1d</span> <span class="op">&lt;-</span> <span class="va">spde_1d</span><span class="op">$</span><span class="va">h</span></span>
+<span><span class="va">h_nig_1d</span> <span class="op">&lt;-</span> <span class="va">spde_1d</span><span class="op">$</span><span class="va">operator</span><span class="op">$</span><span class="va">h</span></span>
 <span><span class="va">V_1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu">ngme2</span><span class="fu">::</span><span class="fu"><a href="../reference/ig.html">rig</a></span><span class="op">(</span><span class="fl">10</span>, <span class="va">nu</span>, <span class="va">nu</span><span class="op">*</span><span class="va">h_nig_1d</span><span class="op">^</span><span class="fl">2</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">V_2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu">ngme2</span><span class="fu">::</span><span class="fu"><a href="../reference/ig.html">rig</a></span><span class="op">(</span><span class="fl">10</span>, <span class="va">nu</span>, <span class="va">nu</span><span class="op">*</span><span class="va">h_nig_1d</span><span class="op">^</span><span class="fl">2</span>, seed <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
 <p>Recall that <span class="math inline">\(V_j \sim IG(\nu, h_j^2 \cdot
@@ -540,24 +574,23 @@ values of <span class="math inline">\(E[\mathbf{w} | \mathbf{V},
 <p>Let us compare the posterior means:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">V</span></span>
-<span><span class="co">#&gt;  [1] 0.0004749677 0.0056760013 0.0037506555 0.0019636490 0.0141178141</span></span>
-<span><span class="co">#&gt;  [6] 0.0017224736 0.1070925727 0.0021844525 0.2940192918 0.0031267615</span></span>
+<span><span class="co">#&gt; NULL</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">V_1</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] 0.01968536 0.04965233 0.05668224 0.04677383 0.06198416 0.05058231</span></span>
-<span><span class="co">#&gt;  [7] 0.05041397 0.05222572 0.04711178 0.01817159</span></span>
+<span><span class="co">#&gt;  [1] 0.1427444 0.4109524 0.4384605 0.3918285 0.3342217 0.1281153 0.1148118</span></span>
+<span><span class="co">#&gt;  [8] 0.1004261 0.2126590 0.1069454</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">V_2</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] 0.02504482 0.04922318 0.03976870 0.04927722 0.04930477 0.04203808</span></span>
-<span><span class="co">#&gt;  [7] 0.04797514 0.05061746 0.04849463 0.01957168</span></span>
+<span><span class="co">#&gt;  [1] 0.27993096 0.40668069 0.51906236 0.48264448 0.10140387 0.26084901</span></span>
+<span><span class="co">#&gt;  [7] 0.13368597 0.17011220 0.10006576 0.06609838</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="va">W</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] -0.7194627 -0.7164203 -0.7085709 -0.7081622 -0.7047097 -0.7008863</span></span>
-<span><span class="co">#&gt;  [7] -0.7014796 -0.7270974 -0.7429993 -0.7469908</span></span>
+<span><span class="co">#&gt;  [1] 2.125704 2.146389 2.192808 2.276680 2.377165 2.452833 2.568609 2.757270</span></span>
+<span><span class="co">#&gt;  [9] 2.716516 2.726861</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">W_1</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] -0.8807693 -0.8806499 -0.8805828 -0.8807612 -0.8813596 -0.8831970</span></span>
-<span><span class="co">#&gt;  [7] -0.8849121 -0.8866045 -0.8870817 -0.8874786</span></span>
+<span><span class="co">#&gt;  [1] 2.512836 2.513249 2.489627 2.436392 2.365795 2.283965 2.225669 2.189838</span></span>
+<span><span class="co">#&gt;  [9] 2.179044 2.174397</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">W_2</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] -0.8858928 -0.8860544 -0.8864064 -0.8865960 -0.8863266 -0.8873130</span></span>
-<span><span class="co">#&gt;  [7] -0.8887598 -0.8904176 -0.8914405 -0.8927893</span></span></code></pre></div>
+<span><span class="co">#&gt;  [1] 2.616740 2.596773 2.561729 2.488356 2.384403 2.305939 2.232962 2.180472</span></span>
+<span><span class="co">#&gt;  [9] 2.143033 2.132930</span></span></code></pre></div>
 <p>Let us begin by building traceplots for <span class="math inline">\(V\)</span>:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">df_V</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">idx</span>, y <span class="op">=</span> <span class="va">V</span>, col <span class="op">=</span> <span class="va">chain</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
@@ -870,26 +903,33 @@ L((\mu,\sigma_\varepsilon); \mathbf{w}, \mathbf{V},\mathbf{Y}) &=& -n\log(\sigma
 \end{array}$$
 where $const$ does not depend on $(\mu,\sigma)$. -->
 </div>
-  </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
-    </nav></aside>
+  </div>
+
+  <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
+
+        <nav id="toc" data-toggle="toc"><h2 data-toc-skip>Contents</h2>
+    </nav>
+</div>
+
 </div>
 
 
 
-    <footer><div class="pkgdown-footer-left">
+      <footer><div class="copyright">
   <p></p>
 <p>Developed by David Bolin, Xiaotian Jin, Alexandre Simas, Jonas Wallin.</p>
 </div>
 
-<div class="pkgdown-footer-right">
+<div class="pkgdown">
   <p></p>
 <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
-    </footer>
+      </footer>
 </div>
 
   
+
 
   
 

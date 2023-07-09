@@ -6,12 +6,14 @@ articles:
   Installation_and_configuration: Installation_and_configuration.html
   RW-model: RW-model.html
   SPDE-model: SPDE-model.html
+  bivariate: bivariate.html
   inla_compare: inla_compare.html
-  multivariate-Matern: multivariate-Matern.html
   ngme2: ngme2.html
   pred_and_est: pred_and_est.html
+  random-effect: random-effect.html
   replicate: replicate.html
-last_built: 2023-03-22T13:30Z
+  tensor_product: tensor_product.html
+last_built: 2023-07-09T06:46Z
 urls:
   reference: https://davidbolin.github.io/ngme2/reference
   article: https://davidbolin.github.io/ngme2/articles

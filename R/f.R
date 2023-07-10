@@ -74,6 +74,14 @@ f <- function(
     stopifnot(is.list(map) && length(map) == 2,
       "Please specify map for 2 sub_models"
         = is.list(map) && length(map) == 2)
+    # eval formula
+    map <- lapply(map, function(x) {
+      if (inherits(x, "formula")) {
+        model.matrix(x, data)
+      } else {
+        x
+      }
+    })
   }
 
   # 0. build mesh if not specified

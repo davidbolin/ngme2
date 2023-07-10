@@ -81,10 +81,10 @@ year <- rep(2001:2005, times = n_obs)
 x <- runif(sum(n_obs)) * 10; y <- runif(sum(n_obs)) * 5
 
 true_model <- ngme2::f(
+  map = list(year, ~x+y),
   model = "tp", name="tp",
   first = ar1(year),
-  second = matern(cbind(x, y), mesh = mesh2d),
-  eval=T
+  second = matern(mesh = mesh2d)
 )
 
 W <- simulate(true_model)
@@ -96,11 +96,11 @@ df <- data.frame(year, x, y, Y_obs)
 ##############################  estimation
 out <- ngme(
   Y_obs ~ 0 +
-  f(
+  f(map = list(year, ~x+y),
     model="tp",
     name="tp",
     first = ar1(year),
-    second = matern(~x+y, mesh = mesh2d),
+    second = matern(mesh = mesh2d),
     control = control_f(numer_grad = T)
   ),
   data = df,

@@ -15,7 +15,6 @@ test_that("test tp and bv operator", {
     )
   )
   true_model
-  # 2. modify tp
 })
 
 test_that("test bv(ar1, ar1) with 1 noise", {

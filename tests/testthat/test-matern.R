@@ -1,94 +1,90 @@
-# # test spatial Matern model
+# test spatial Matern model
+# 1. test estimation of matern model
+# 2. test predict(out, loc=new_loc)
 
-# # 1. test estimation of matern model
-# # 2. test predict(out, loc=new_loc)
+test_that("test Matern", {
+  library(INLA)
+  pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
+  mesh <- inla.mesh.2d(
+    loc.domain = pl01, cutoff = 0.2,
+    max.edge = c(0.5, 10)
+  )
+  # plot(mesh)
+  mesh$n
 
-# test_that("test Matern", {
-#   library(INLA)
-  # pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
-  # mesh <- inla.mesh.2d(
-  #   loc.domain = pl01, cutoff = 0.2,
-  #   max.edge = c(0.5, 10)
-  # )
-#   plot(mesh)
-#   mesh$n
+  n_obs <- 500
+  loc <- cbind(runif(n_obs, 0, 10), runif(n_obs, 0, 5))
+# plot(mesh); points(loc)
+  true_model <- f(
+    map = loc,
+    model="matern",
+    theta_K = log(3), mesh = mesh,
+    noise = noise_nig(
+      mu=-4, sigma=3, nu=1
+    )
+  )
 
-# # plot(mesh)
-# load_all()
-#   n_obs <- 1000
-#   loc <- cbind(runif(n_obs, 0, 10), runif(n_obs, 0, 5))
-# # plot(mesh); points(loc)
-#   true_model <- f(
-#     map = loc,
-#     model="matern",
-#     theta_K = log(3), mesh = mesh,
-#     noise = noise_nig(
-#       mu=-4, sigma=3, nu=1
-#     ),
-#     eval=T
-#   )
+  W <- simulate(true_model)
+  mean(W)
+  attr(W, "noise")
+  Y <- as.numeric(true_model$A %*% W) + rnorm(n_obs, sd=0.5)
 
-#   W <- simulate(true_model)
-#   mean(W)
-#   attr(W, "noise")
+  # make bubble plot
+  # sp_obj <- as.data.frame(mesh$loc); sp_obj[, 3] <- W
+  # names(sp_obj) <- c("s1", "s2", "y")
+  # coordinates(sp_obj) <- ~ s1 + s2
+  # bubble(sp_obj, zcol=3)
+  # range(mesh$loc[, 1]); range(mesh$loc[, 2])
 
-#   Y <- as.numeric(true_model$A %*% W) + rnorm(n_obs, sd=0.5)
-# all(true_model$A == inla.spde.make.A(loc, mesh=mesh))
-#   # make bubble plot
-#   # sp_obj <- as.data.frame(mesh$loc); sp_obj[, 3] <- W
-#   # names(sp_obj) <- c("s1", "s2", "y")
-#   # coordinates(sp_obj) <- ~ s1 + s2
-#   # bubble(sp_obj, zcol=3)
-#   # range(mesh$loc[, 1]); range(mesh$loc[, 2])
+  # Matern case
+  out2 <- ngme(
+    Y ~ 0 + f(loc,
+      model="matern",
+      name="spde",
+      mesh = mesh,
+      noise=noise_nig(
+        # sigma = 3, fix_theta_sigma=T
+        # fix_nu = T, nu=1
+      ),
+      control = control_f(
+        numer_grad = F
+        # precond = c("mu", "sigma")
+      ),
+      # fix_theta_K = T, theta_kappa = log(3),
+      # fix_W = TRUE, W = W,
+      debug = F
+    ),
+    data = data.frame(Y = Y),
+    control_opt = control_opt(
+      estimation = T,
+      iterations = 20,
+      n_parallel_chain = 4,
+      print_check_info = F,
+      verbose = F,
+      max_absolute_step = 10,
+      max_relative_step = 10,
+      std_lim = 0.01,
+      preconditioner = "none"
+    ),
+    start=out,
+    debug = F
+  )
 
-# # Matern case
-#   load_all()
-#   out <- ngme(
-#     Y ~ 0 + f(loc,
-#       model="matern",
-#       name="spde",
-#       mesh = mesh,
-#       noise=noise_nig(
-#         # sigma = 3, fix_theta_sigma=T
-#         # fix_nu = T, nu=1
-#       ),
-#       control = control_f(
-#         numer_grad = F
-#         # precond = c("mu", "sigma")
-#       ),
-#       # fix_theta_K = T, theta_kappa = log(3),
-#       # fix_W = TRUE, W = W,
-#       debug = F
-#     ),
-#     data = data.frame(Y = Y),
-#     control_opt = control_opt(
-#       estimation = T,
-#       iterations = 2,
-#       n_parallel_chain = 4,
-#       print_check_info = F,
-#       verbose = F,
-#       max_absolute_step = 1,
-#       max_relative_step = 1,
-#       std_lim = 0.01
-#     ),
-#     debug = F
-#   )
+  out
+  traceplot(out, "spde")
+  traceplot(out)
+  plot(noise_nig(mu=-4,sigma=3,nu=1),
+    out$replicates[[1]]$models[[1]]$noise)
 
-#   out
-#   traceplot(out, "spde")
-#   traceplot(out)
-#   plot(noise_nig(mu=-4,sigma=3,nu=0.5),
-#     out$replicates[[1]]$models[[1]]$noise)
-
-#   # Now let's do some prediction
-#   new_xs <- c(3, 5, 7)
-#   new_ys <- c(3, 5, 3)
-#   coo <- matrix(c(new_xs, new_ys), ncol=2)
-#   predict(out, loc=list(coo))
-#   # plot(mesh)
-#   # points(x=new_xs, y = new_ys, type = "p", col="red", pch=16, cex=2)
-#   expect_true(TRUE)
-# })
+  # Now let's do some prediction
+  new_xs <- c(3, 5, 7)
+  new_ys <- c(3, 5, 3)
+  coo <- matrix(c(new_xs, new_ys), ncol=2)
+  predict(out, loc=list(coo))
+  # plot(mesh)
+  # points(x=new_xs, y = new_ys, type = "p", col="red", pch=16, cex=2)
+  expect_true(TRUE)
+})
 
 # test_that("test matern Non-stationary", {
 #   # library(devtools); library(INLA); load_all()

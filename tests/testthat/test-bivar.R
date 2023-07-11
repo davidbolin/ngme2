@@ -62,7 +62,6 @@ test_that("test bv(ar1, ar1) with 2 noise", {
     )
   )
   out
-  traceplot(out, "field1")
   out$replicates[[1]]$models[[1]]$theta_K
   out$replicates[[1]]$models[[1]]$operator$theta_K
 })

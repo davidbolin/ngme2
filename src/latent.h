@@ -62,7 +62,7 @@ protected:
     bool symmetricK, zero_trace, use_num_dK {false};
 
     vector<double> trace;
-    double eps;
+    double eps, precond_eps {1e-5};
 
     bool fix_flag[LATENT_FIX_FLAG_SIZE] {0};
     bool use_precond {false}, numer_grad {false};
@@ -148,12 +148,12 @@ public:
 
     // pi(W|V)
     double logd_W_given_V(const SparseMatrix<double>& K, const VectorXd& mu, const VectorXd& sigma, const VectorXd& V);
+    // pi(KW|V) fix K
+    double logd_KW_given_V(const VectorXd& mu, const VectorXd& sigma, const VectorXd& V);
 
     // pi(W|V) * pi(V)
-    double log_density(const VectorXd& parameter);
-    MatrixXd num_h(const VectorXd& v, double eps);
-
-    MatrixXd precond();
+    double log_density(const VectorXd& parameter, bool precond_K = false);
+    MatrixXd precond(bool precond_K = false);
 
     /*  3 Operator component   */
     const SparseMatrix<double, 0, int>& getK()  {

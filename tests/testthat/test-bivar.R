@@ -17,7 +17,7 @@ test_that("test tp and bv operator", {
   true_model
 })
 
-test_that("test bv(ar1, ar1) with 1 noise", {
+test_that("test bv(ar1, ar1) with 2 noise", {
   n <- 500
   true_model <- f(
     1:n,
@@ -38,7 +38,6 @@ test_that("test bv(ar1, ar1) with 1 noise", {
   n_obs <- length(AW)
   Y <- AW + rnorm(n_obs, sd=0.5)
 
-  load_all()
   out <- ngme(
     Y ~ 0 + f(
       1:n,
@@ -54,15 +53,16 @@ test_that("test bv(ar1, ar1) with 1 noise", {
       n_gibbs_samples = 5
     ),
     control_opt = control_opt(
-      iterations = 10,
+      iterations = 200,
       n_parallel_chain = 4,
       estimation = T,
       verbose = F,
-      print_check_info = F
+      print_check_info = F,
+      preconditioner = "full"
     )
   )
   out
-  # traceplot(out, "field1")
+  traceplot(out, "field1")
   out$replicates[[1]]$models[[1]]$theta_K
   out$replicates[[1]]$models[[1]]$operator$theta_K
 })

@@ -673,36 +673,36 @@ void BlockModel::examine_gradient() {
 MatrixXd BlockModel::precond(int strategy) const {
   MatrixXd precond = MatrixXd::Zero(n_params, n_params);
 
+  // 1. Preconditioner for Latents
+  int index_params = 0;
+  for (int i=0; i < n_latent; i++) {
+    int n_la = latents[i]->get_n_params();
+    if (strategy == 0) {
+      // No preconditioner
+      precond.block(index_params, index_params, n_la, n_la) = VectorXd::Constant(n_la, latents[i]->get_V_size()).asDiagonal();
+    } else if (strategy == 1) {
+      // Fast preconditioner
+      precond.block(index_params, index_params, n_la, n_la) = latents[i]->precond(false);
+    } else if (strategy == 2) {
+      // Full preconditioner
+      precond.block(index_params, index_params, n_la, n_la) = latents[i]->precond(true);
+    }
+    index_params += n_la;
+  }
+
+  // 2. Preconditioner for fixed effects and measurement error
   if (strategy == 0) {
     // No preconditioner
-    int index_params = 0;
-    for (int i=0; i < n_latent; i++) {
-      int n_la = latents[i]->get_n_params();
-        precond.block(index_params, index_params, n_la, n_la) = VectorXd::Constant(n_la, latents[i]->get_V_size()).asDiagonal();
-        index_params += n_la;
-    }
-
     precond.bottomRightCorner(n_merr + n_feff, n_merr + n_feff) = VectorXd::Constant(n_merr + n_feff, n_obs).asDiagonal();
-  } else if (strategy == 1) {
-    // Compute fast preconditioner (bdiag)
-    int index_params = 0;
-    for (int i=0; i < n_latent; i++) {
-        MatrixXd hess = latents[i]->precond();
-        precond.block(index_params, index_params, latents[i]->get_n_params(), latents[i]->get_n_params()) = latents[i]->precond();
-        index_params += latents[i]->get_n_params();
-    }
-    // preconditioner for fixed effects and measurement error
-    VectorXd v (n_merr + n_feff);
-    if (family != "normal")
-      v << theta_mu, theta_sigma, nu, beta;
-    else
-      v << theta_sigma, beta;
-    precond.bottomRightCorner(n_merr + n_feff, n_merr + n_feff) = num_h_no_latent(v, 1e-5);
-  } else if (strategy == 2) {
-    // compute full hessian
   } else {
-    throw std::invalid_argument("Invalid preconditioner strategy");
+    // have preconditioner
+    VectorXd v (n_merr + n_feff);
+    if (family != "normal") v << theta_mu, theta_sigma, nu, beta;
+      else v << theta_sigma, beta;
+    precond.bottomRightCorner(n_merr + n_feff, n_merr + n_feff)
+      = num_h_no_latent(v, 1e-5);
   }
+
 
 // std::cout << "block precond =" << precond <<std::endl;
   return precond;

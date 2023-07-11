@@ -415,27 +415,32 @@ void Latent::update_each_iter(bool init) {
     }
 }
 
-MatrixXd Latent::precond() {
-    VectorXd v (n_params);
-    v << theta_K, theta_mu, theta_sigma, nu;
-    return num_h(v, 1e-5);
-}
-
 // for compute hessian
-double Latent::log_density(const VectorXd& parameter) {
-    // 1. pi(W|V)
-    VectorXd theta_K = parameter.head(n_theta_K);
-    VectorXd theta_mu = parameter.segment(n_theta_K, n_theta_mu);
-    VectorXd theta_sigma = parameter.segment(n_theta_K + n_theta_mu, n_theta_sigma);
-    VectorXd mu = B_mu * theta_mu;
-    VectorXd sigma = (B_sigma * theta_sigma).array().exp();
+double Latent::log_density(const VectorXd& parameter, bool precond_K) {
+    double logd_W = 0;
+    double logd_V = 0;
 
-    ope_precond->update_K(theta_K);
-    SparseMatrix<double> K = ope_precond->getK();
-    double logd_W = logd_W_given_V(K, mu, sigma, prevV);
+    if (precond_K) {
+        // 1. pi(W|V)
+        VectorXd theta_K = parameter.head(n_theta_K);
+        VectorXd theta_mu = parameter.segment(n_theta_K, n_theta_mu);
+        VectorXd theta_sigma = parameter.segment(n_theta_K + n_theta_mu, n_theta_sigma);
+        VectorXd mu = B_mu * theta_mu;
+        VectorXd sigma = (B_sigma * theta_sigma).array().exp();
+
+        ope_precond->update_K(theta_K);
+        SparseMatrix<double> K = ope_precond->getK();
+        logd_W = logd_W_given_V(K, mu, sigma, prevV);
+    } else {
+        VectorXd theta_mu = parameter.head(n_theta_mu);
+        VectorXd theta_sigma = parameter.segment(n_theta_mu, n_theta_sigma);
+        VectorXd mu = B_mu * theta_mu;
+        VectorXd sigma = (B_sigma * theta_sigma).array().exp();
+
+        logd_W = logd_KW_given_V(mu, sigma, prevV);
+    }
 
     // 2. pi(V)
-    double logd_V = 0;
     if ((n_nu == 1 && noise_type[0] != "normal") ||
         (n_nu == 2 && noise_type[0] != "normal" && noise_type[1] != "normal")
     ) {
@@ -476,31 +481,65 @@ double Latent::logd_W_given_V(const SparseMatrix<double>& K, const VectorXd& mu,
     return l;
 }
 
-MatrixXd Latent::num_h(const VectorXd& v, double eps) {
-	int n = v.size();
-	MatrixXd hessian(n, n);
-	double original_val = log_density(v);
+// log density of KW|V
+double Latent::logd_KW_given_V(const VectorXd& mu, const VectorXd& sigma, const VectorXd& V) {
+    VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
+    SparseMatrix<double> K = getK();
+    VectorXd tmp = K * W - mu.cwiseProduct(V-h);
 
-	// compute f_v = log_density(v + eps * e_i)
+    double lhs = SV.array().log().sum();
+    double rhs = tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
+// std::cout << "lhs: " << lhs << std::endl;
+// std::cout << "rhs: " << rhs << std::endl;
+    return -0.5 * (lhs + rhs);
+}
+
+// Numerical hessian
+MatrixXd Latent::precond(bool precond_K) {
+    VectorXd parameter (n_params);
+    parameter << theta_K, theta_mu, theta_sigma, nu;
+
+    VectorXd v (parameter);
+    // update v if we don't need to compute hessian for K
+    if (!precond_K) {
+        v.resize(n_params - n_theta_K);
+        v = parameter.tail(n_params - n_theta_K);
+    }
+
+    int n = v.size();
+    MatrixXd num_hess(n, n);
+	double original_val = log_density(v, precond_K);
+
+	// compute f_v = log_density(v + precond_eps * e_i)
 	VectorXd f_v (n);
 	for (int i=0; i < n; i++) {
-		VectorXd tmp_v = v; tmp_v(i) += eps;
-		f_v(i) = log_density(tmp_v);
+		VectorXd tmp_v = v; tmp_v(i) += precond_eps;
+		f_v(i) = log_density(tmp_v, precond_K);
 	}
 
 	// compute H_ij = d2 f / dxi dxj
 	for (int i=0; i < n; i++) {
 		for (int j=0; j <= i; j++) {
-			VectorXd tmp_vij = v; tmp_vij(i) += eps; tmp_vij(j) += eps;
-			double f_vij = log_density(tmp_vij);
-			hessian(i, j) = (f_vij - f_v(i) - f_v(j) + original_val) / (eps * eps);
+			VectorXd tmp_vij = v; tmp_vij(i) += precond_eps; tmp_vij(j) += precond_eps;
+			double f_vij = log_density(tmp_vij, precond_K);
+			num_hess(i, j) = (f_vij - f_v(i) - f_v(j) + original_val) / (precond_eps * precond_eps);
 		}
 	}
+
 	// fill in the lower triangular part
 	for (int i=0; i < n; i++) {
 		for (int j=0; j < i; j++) {
-			hessian(j, i) = hessian(i, j);
+			num_hess(j, i) = num_hess(i, j);
 		}
 	}
-	return hessian;
+// std::cout << "num_hess: " << std::endl << num_hess << std::endl;
+
+    if (precond_K) {
+        return num_hess;
+    } else {
+        MatrixXd precond_full = MatrixXd::Zero(n_params, n_params);
+        precond_full.topLeftCorner(n_theta_K, n_theta_K) = VectorXd::Constant(n_theta_K, V_size).asDiagonal();
+        precond_full.bottomRightCorner(n_params - n_theta_K, n_params - n_theta_K) = num_hess;
+        return precond_full;
+    }
 }

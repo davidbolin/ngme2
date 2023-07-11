@@ -36,7 +36,7 @@ test_that("test basic mn", {
   traceplot(out)
 
   expect_true(out$replicates[[1]]$noise$theta_sigma - log(2) < 1)
-  expect_true(out$replicates[[1]]$noise$theta_mu - (-3) < 1)
+  expect_true(out$replicates[[1]]$noise$theta_mu - 3 < 1)
   expect_true(out$replicates[[1]]$noise$nu - 2 < 2)
 
   plot(noise_nig(mu=3, nu=2, sigma=2), out$replicates[[1]]$noise)

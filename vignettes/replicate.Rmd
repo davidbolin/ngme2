@@ -150,6 +150,7 @@ library(ggplot2)
 # reading the data and the boundary of Cienaga Grande
 data(cienaga)
 data(cienaga.border)
+cienaga.border
 # scale the coords
 cienaga.border[, 1] <- (cienaga.border[, 1] - mean(cienaga$East)) / sd(cienaga$East)
 cienaga.border[, 2] <- (cienaga.border[, 2] - mean(cienaga$North)) / sd(cienaga$North)

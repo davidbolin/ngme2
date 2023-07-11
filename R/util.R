@@ -293,46 +293,6 @@ emprical_mode <- function(x, breaks = max(20, length(x) / 20)) {
 #   Reduce(function(x, y) merge_repl(x, y), repls)
 # }
 
-# split block by repl
-split_block <- function(block, repl) {
-  # split Y, X
-  Ys <- split(block$Y, repl)
-  Xs <- split_matrix(block$X, repl)
-
-  # split models A
-  As <- lapply(block$models, function(latent) {
-    split_matrix(latent$A, repl)
-  })
-
-  modelss <- list()
-  for (i in unique(repl)) {
-    modelss[[i]] <- block$models
-    for (lat in seq_along(block$models)) {
-      modelss[[i]][[lat]]$A <- As[[lat]][[i]]
-    }
-  }
-
-  blocks <- list()
-  # build new blocks
-  for (i in unique(repl)) {
-    blocks[[i]] <- ngme_replicate(
-      Y                 = Ys[[i]],
-      X                 = Xs[[i]],
-      models           = modelss[[i]],
-      beta              = block$beta,
-      W_sizes           = block$W_sizes,
-      V_sizes           = block$V_sizes,
-      n_la_params       = block$n_la_params,
-      n_params          = block$n_params,
-      noise             = block$noise,
-      seed              = block$seed,
-      debug             = block$debug,
-      control           = block$control
-    )
-  }
-  blocks
-}
-
 split_matrix <- function(mat, repl) {
   split_mat <- lapply(split(mat, repl, drop = FALSE),
     matrix, ncol = ncol(mat))

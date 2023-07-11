@@ -34,3 +34,14 @@
 #' }
 #' @source ..
 "cienaga"
+
+#' The x y location of the border of the swamp of Cienaga Grande in Santa Marta, Colombia
+#'
+#' The data is of dimension 472 * 2. It contains the x and y coordinates of the border of the swamp.
+#'
+#' @format A data frame with 472 rows and 2 columns.
+#' \describe{
+#'   \item{East, North}{location}
+#' }
+#' @source ..
+"cienaga.border"

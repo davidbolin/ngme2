@@ -10,6 +10,8 @@ class Optimizer
 {
 private:
     bool verbose {false};
+    int precond_strategy; // 0 for none, 1 for fast, 2 for full
+    int curr_iter;
 
     int max_iter;
     double max_relative_step;
@@ -17,20 +19,19 @@ private:
     double eps;
     double stepsize;
     bool precondioner;
-    int curr_iter;
 
     // keep trajs
     std::vector<VectorXd> trajs;
 public:
     Optimizer(const Rcpp::List& control_opt)
-        : verbose(control_opt["verbose"]),
+      : verbose(control_opt["verbose"]),
+        precond_strategy(control_opt["precond_strategy"]),
         curr_iter(0)
         // max_iter(control_opt["max_iter"]),
         // max_relative_step(control_opt["max_relative_step"]),
         // max_absolute_step(control_opt["max_absolute_step"]),
         // eps(control_opt["eps"]),
         // stepsize(control_opt["stepsize"]),
-        // precondioner(control_opt["precondioner"]),
         // iterations(control_opt["iterations"])
     {}
 

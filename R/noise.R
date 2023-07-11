@@ -78,6 +78,12 @@ ngme_noise <- function(
     "Please make sure ncol(B_sigma) == length(theta_sigma)." = ncol(B_sigma) == length(theta_sigma)
   )
 
+  if (all(noise_type == "normal")) {
+    theta_mu <- double(0)
+    B_mu <- B_mu %*% theta_mu
+    nu <- double(0)
+  }
+
   structure(
     list(
       noise_type      = noise_type,
@@ -256,7 +262,7 @@ stopifnot("n / nrow(B_sigma) not integer" = abs(n/nrow(B_sigma) - round(n/nrow(B
       B_sigma_normal <- noise$B_sigma_normal
       noise$B_sigma_normal <- matrix(data = rep(B_sigma_normal, n / nrow(B_sigma_normal)), nrow = n)
     }
-    noise <- do.call(ngme_noise, noise)
+    # noise <- do.call(ngme_noise, noise)
   } else if (!is.null(new_noise)) {
     # update noise after estimation
     noise$theta_mu           <- new_noise$theta_mu

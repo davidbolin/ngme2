@@ -22,6 +22,8 @@ traceplot <- function(ngme, name="general") {
           c("theta_mu", "theta_sigma", "theta_sigma_normal", "log(nu)"),
           c(noise$n_theta_mu, noise$n_theta_sigma, noise$n_theta_sigma_normal, noise$n_nu)
         )
+      } else if (noise$noise_type[[1]] == "normal") {
+        list("theta_sigma", noise$n_theta_sigma)
       } else {
         list(
           c("theta_mu", "theta_sigma", "log(nu)"),
@@ -44,6 +46,7 @@ traceplot <- function(ngme, name="general") {
           c(noise$n_theta_mu,
           noise$n_theta_sigma, noise$n_theta_sigma_normal, noise$n_nu)
         ),
+        "normal" = list("theta_sigma", noise$n_theta_sigma),
         list(
           c("theta_mu", "theta_sigma", "log(nu)"),
           c(noise$n_theta_mu, noise$n_theta_sigma, noise$n_nu)

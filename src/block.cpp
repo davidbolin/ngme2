@@ -102,11 +102,14 @@ if (debug) std::cout << "After set block K" << std::endl;
     theta_sigma   = (Rcpp::as<VectorXd>      (noise_in["theta_sigma"])),
     n_theta_sigma = (theta_sigma.size()),
 
+    n_nu          = (Rcpp::as<int>           (noise_in["n_nu"])),
     family = Rcpp::as<string>  (noise_in["noise_type"]);
     noise_mu = B_mu * theta_mu;
     noise_sigma = (B_sigma * theta_sigma).array().exp();
-    nu = Rcpp::as<double> (noise_in["nu"]);
-    if (family!="normal") NoiseUtil::update_gig(family, nu, p_vec, a_vec, b_vec);
+    if (family!="normal") {
+      nu = Rcpp::as<double> (noise_in["nu"]);
+      NoiseUtil::update_gig(family, nu, p_vec, a_vec, b_vec);
+    }
 
   if (corr_measure) {
     cor_cols = Rcpp::as<vector<int>> (block_model["cor_cols"]);
@@ -144,10 +147,9 @@ if (debug) std::cout << "After block construct noise" << std::endl;
 
   // 7. Init solvers
   assemble();
-if (debug) std::cout << "After block construct noise" << std::endl;
+
   if (n_latent > 0) {
     VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
-if (debug) std::cout << "After block construct noise" << std::endl;
     SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
     if (!corr_measure) {
       QQ = Q + A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V).asDiagonal() * A;
@@ -247,6 +249,7 @@ void BlockModel::sampleW_VY()
 }
 
 // ---------------- get, set update gradient ------------------
+// order is Latent, merr, feff
 VectorXd BlockModel::get_parameter() {
 if (debug) std::cout << "Start get_parameter"<< std::endl;
     VectorXd thetas (n_params);
@@ -256,7 +259,6 @@ if (debug) std::cout << "Start get_parameter"<< std::endl;
       thetas.segment(pos, theta.size()) = theta;
       pos += theta.size();
     }
-
     thetas.segment(n_la_params, n_merr) = get_theta_merr();
 
     if (!fix_flag[block_fix_beta] ) {
@@ -286,9 +288,7 @@ auto timer_computeg = std::chrono::steady_clock::now();
     sampleW_VY();
     sample_cond_noise_V();
 
-    // stack grad
     VectorXd gradient = VectorXd::Zero(n_params);
-
     // get grad for each latent
     int pos = 0;
     for (std::vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
@@ -444,7 +444,8 @@ VectorXd BlockModel::get_theta_merr() const {
 
   theta_merr.segment(0, n_theta_mu) = theta_mu;
   theta_merr.segment(n_theta_mu, n_theta_sigma) = theta_sigma;
-  theta_merr(n_theta_mu + n_theta_sigma) = log(nu);
+  if (family != "normal")
+    theta_merr(n_theta_mu + n_theta_sigma) = log(nu);
 
   // estimate correlation
 // std::cout << " rho === " << rho << std::endl;
@@ -482,7 +483,8 @@ VectorXd BlockModel::grad_theta_merr() {
 void BlockModel::set_theta_merr(const VectorXd& theta_merr) {
   theta_mu = theta_merr.segment(0, n_theta_mu);
   theta_sigma = theta_merr.segment(n_theta_mu, n_theta_sigma);
-  nu = exp(theta_merr(n_theta_mu + n_theta_sigma));
+  if (family != "normal")
+    nu = exp(theta_merr(n_theta_mu + n_theta_sigma));
 
   // update mu, sigma
   noise_mu = (B_mu * theta_mu);
@@ -668,19 +670,101 @@ void BlockModel::examine_gradient() {
 // }
 }
 
-MatrixXd BlockModel::precond() const {
-    // default
-    // 1. preconditioner for fixed effects and measurement error
-    VectorXd hess_block = VectorXd::Ones(n_merr + n_feff);
-    hess_block /= n_obs;
+MatrixXd BlockModel::precond(int strategy) const {
+  MatrixXd precond = MatrixXd::Zero(n_params, n_params);
 
-    // 2. preconditioner for latent model
-    VectorXd hess_la = VectorXd::Ones(n_la_params);
-    hess_la /= V_sizes;
+  if (strategy == 0) {
+    // No preconditioner
+    int index_params = 0;
+    for (int i=0; i < n_latent; i++) {
+      int n_la = latents[i]->get_n_params();
+        precond.block(index_params, index_params, n_la, n_la) = VectorXd::Constant(n_la, latents[i]->get_V_size()).asDiagonal();
+        index_params += n_la;
+    }
 
-    // hess = concate(hess_block, hess_la)
-    VectorXd hess(n_params);
-    hess << hess_block, hess_la;
+    precond.bottomRightCorner(n_merr + n_feff, n_merr + n_feff) = VectorXd::Constant(n_merr + n_feff, n_obs).asDiagonal();
+  } else if (strategy == 1) {
+    // Compute fast preconditioner (bdiag)
+    int index_params = 0;
+    for (int i=0; i < n_latent; i++) {
+        MatrixXd hess = latents[i]->precond();
+        precond.block(index_params, index_params, latents[i]->get_n_params(), latents[i]->get_n_params()) = latents[i]->precond();
+        index_params += latents[i]->get_n_params();
+    }
+    // preconditioner for fixed effects and measurement error
+    VectorXd v (n_merr + n_feff);
+    if (family != "normal")
+      v << theta_mu, theta_sigma, nu, beta;
+    else
+      v << theta_sigma, beta;
+    precond.bottomRightCorner(n_merr + n_feff, n_merr + n_feff) = num_h_no_latent(v, 1e-5);
+  } else if (strategy == 2) {
+    // compute full hessian
+  } else {
+    throw std::invalid_argument("Invalid preconditioner strategy");
+  }
 
-    return hess.asDiagonal();
+// std::cout << "block precond =" << precond <<std::endl;
+  return precond;
+}
+
+// precond_fast: numerical hessian for c(beta, theta_mu, theta_sigma, nu)
+MatrixXd BlockModel::num_h_no_latent(const VectorXd& v, double eps) const {
+	int n = v.size();
+	MatrixXd hessian(n, n);
+	double original_val = logd_no_latent(v);
+	VectorXd f_v (n);
+	// compute f_v = logd_no_latent( + eps * e_i)
+	for (int i=0; i < n; i++) {
+		VectorXd tmp_v = v; tmp_v(i) += eps;
+		f_v(i) = logd_no_latent(tmp_v);
+	}
+
+	// compute H_ij = d2 f / dxi dxj
+	for (int i=0; i < n; i++) {
+		for (int j=0; j <= i; j++) {
+			VectorXd tmp_vij = v; tmp_vij(i) += eps; tmp_vij(j) += eps;
+			double f_vij = logd_no_latent(tmp_vij);
+			hessian(i, j) = (f_vij - f_v(i) - f_v(j) + original_val) / (eps * eps);
+		}
+	}
+
+	// fill in the lower triangular part
+	for (int i=0; i < n; i++) {
+		for (int j=0; j < i; j++) {
+			hessian(j, i) = hessian(i, j);
+		}
+	}
+	return hessian;
+}
+
+double BlockModel::logd_no_latent(const VectorXd& v) const {
+	VectorXd theta_mu = v.segment(0, n_theta_mu);
+	VectorXd theta_sigma = v.segment(n_theta_mu, n_theta_sigma);
+  // n_nu can be 0 or 1
+  VectorXd beta = v.segment(n_theta_mu + n_theta_sigma + n_nu, n_feff);
+
+  // compute mu & sigma
+  VectorXd noise_mu = (B_mu * theta_mu);
+  VectorXd noise_sigma = (B_sigma * theta_sigma).array().exp();
+// std::cout << "noise_mu=" << noise_mu << std::endl;
+// std::cout << "noise_sigma=" << noise_sigma << std::endl;
+
+  // pi(Y|W, V) (no correction for noise!)
+  // residual but using prevV
+	VectorXd tmp = Y - A * getW() - X * beta - (-VectorXd::Ones(n_obs) + noise_prevV).cwiseProduct(noise_mu);
+
+	double lhs = noise_sigma.array().log().sum();
+	double rhs = tmp.cwiseQuotient(noise_sigma).array().square().sum();
+	double logd_res = 0.5 * (lhs - rhs);
+
+  // pi(V)
+  double logd_V = 0;
+  VectorXd h = VectorXd::Ones(n_obs);
+  if (family != "normal") {
+    double nu = v(n_theta_mu + n_theta_sigma);
+    logd_V = NoiseUtil::log_density(family, noise_V, h, nu, FALSE);
+  }
+
+  return -(logd_res + logd_V);
 }

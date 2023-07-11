@@ -22,7 +22,7 @@ test_that("test bv(ar1, ar1) with 1 noise", {
   true_model <- f(
     1:n,
     model="bv",
-    zeta = 0.5, eta = 0.5,
+    theta = 0.5, rho = 0.5,
     sub_models = list(
       first = "ar1", second="ar1"
     ),
@@ -38,6 +38,7 @@ test_that("test bv(ar1, ar1) with 1 noise", {
   n_obs <- length(AW)
   Y <- AW + rnorm(n_obs, sd=0.5)
 
+  load_all()
   out <- ngme(
     Y ~ 0 + f(
       1:n,

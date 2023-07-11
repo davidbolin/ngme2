@@ -14,6 +14,7 @@ Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
     // operator
     ope           (OperatorFactory::create(Rcpp::as<Rcpp::List> (model_list["operator"]))),
     ope_add_eps   (OperatorFactory::create(Rcpp::as<Rcpp::List> (model_list["operator"]))),
+    ope_precond   (OperatorFactory::create(Rcpp::as<Rcpp::List> (model_list["operator"]))),
     h             (ope->get_h()),
     theta_K       (Rcpp::as<VectorXd>  (model_list["theta_K"])),
     n_theta_K     (theta_K.size()),
@@ -64,8 +65,10 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
         theta_sigma = Rcpp::as< VectorXd > (noise_in["theta_sigma"]);
         if (noise_type[0] == "normal_nig") theta_sigma_normal = Rcpp::as< VectorXd > (noise_in["theta_sigma_normal"]);
 
-        nu = Rcpp::as<VectorXd> (noise_in["nu"]);
-        n_nu = nu.size();
+        n_nu = Rcpp::as<int> (noise_in["n_nu"]);
+        nu.resize(n_nu);
+        if (n_nu > 0) nu = Rcpp::as<VectorXd> (noise_in["nu"]);
+
         share_V = Rcpp::as<bool> (noise_in["share_V"]);
         single_V = Rcpp::as<bool> (noise_in["single_V"]);
 
@@ -111,7 +114,7 @@ if (debug) std::cout << "End constructor of latent" << std::endl;
 
 VectorXd Latent::grad_theta_mu() {
     VectorXd grad = VectorXd::Zero(n_theta_mu);
-    if (fix_flag[latent_fix_theta_mu]) return grad;
+    if (n_theta_mu == 0 || fix_flag[latent_fix_theta_mu]) return grad;
     if ((n_nu == 1 && noise_type[0] == "normal") ||
         (n_nu == 2 && noise_type[0] == "normal" && noise_type[1] == "normal"))
         return grad;
@@ -181,7 +184,7 @@ VectorXd Latent::grad_theta_nu() {
 
     if (n_nu == 1)
         grad(0) = NoiseUtil::grad_theta_nu(noise_type[0], nu[0], V, prevV, h, single_V);
-    else {
+    else if (n_nu == 2) {
         // for bivaraite case
         int n = V_size / 2;
         grad(0) = NoiseUtil::grad_theta_nu(noise_type[0], nu[0], V.segment(0, n), prevV.segment(0, n), h.segment(0, n), single_V);
@@ -194,43 +197,19 @@ VectorXd Latent::grad_theta_nu() {
     return grad;
 }
 
-// log density of W|V
-double Latent::function_K(const SparseMatrix<double>& K) {
-    double l = 0;
-    VectorXd SV = getSV();
-
-    VectorXd tmp = K * W - mu.cwiseProduct(V-h);
-    if (K.rows() < 5) {
-        MatrixXd Kd = K.toDense();
-        l = log(Kd.diagonal().prod()) - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
-    } else {
-        if (!symmetricK) {
-            SparseMatrix<double> Q = K.transpose() * SV.cwiseInverse().asDiagonal() * K;
-            solver_Q.compute(Q);
-            l = 0.5 * solver_Q.logdet() - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
-        } else {
-            chol_solver_K.compute(K);
-            l = chol_solver_K.logdet() - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
-        }
-    }
-    // normalize
-// std::cout << " l = " << l / W_size << std::endl;
-    return l;
-}
-
 VectorXd Latent::grad_theta_K() {
 // std::cout << "K = " << K << std::endl;
     VectorXd grad = VectorXd::Zero(n_theta_K);
     if (fix_flag[latent_fix_theta_K]) return grad;
 
     if (numer_grad) {
-        double val = function_K(getK());
+        double val = logd_W_given_V(getK(), mu, sigma, V);
         for (int i=0; i < n_theta_K; i++) {
             VectorXd tmp = theta_K;
             tmp(i) += eps;
             ope_add_eps->update_K(tmp);
             SparseMatrix<double> K_add_eps = ope_add_eps->getK();
-            double val_add_eps = function_K(K_add_eps);
+            double val_add_eps = logd_W_given_V(K_add_eps, mu, sigma, V);
             grad(i) = (val_add_eps - val) / eps;
         }
         // update using num_g
@@ -278,6 +257,7 @@ if (debug) std::cout << "parameter= " << parameter << std::endl;
 }
 
 const VectorXd Latent::get_grad() {
+// if (debug) std::cout << "Start latent get grad"<< std::endl;
     VectorXd grad = VectorXd::Zero(n_params);
 
     // compute gradient of each parameter
@@ -287,20 +267,7 @@ const VectorXd Latent::get_grad() {
     grad.segment(n_theta_K+n_theta_mu+n_theta_sigma,n_nu)  = grad_theta_nu();
     if (noise_type[0] == "normal_nig")
         grad.segment(n_theta_K+n_theta_mu+n_theta_sigma+n_nu, n_theta_sigma_normal) = grad_theta_sigma_normal();
-// DEBUG: checking grads
-if (debug) {
-    if (abs(grad.segment(0, n_theta_K).mean()) > W_size)
-    std::cout << "g_K is large, g_K = " << grad.segment(0, n_theta_K).mean() << std::endl;
 
-    if (abs(grad.segment(n_theta_K, n_theta_mu).mean()) > W_size)
-    std::cout << "g_mu is large, g_mu = " << grad.segment(n_theta_K, n_theta_mu).mean() << std::endl;
-
-    if (abs(grad.segment(n_theta_K+n_theta_mu, n_theta_sigma).mean()) > W_size)
-    std::cout << "g_sigma is large, g_sigma = " << grad.segment(n_theta_K+n_theta_mu, n_theta_sigma).mean() << std::endl;
-
-    if (abs(grad.segment(n_theta_K+n_theta_mu+n_theta_sigma, n_nu).mean()) > W_size)
-    std::cout << "g_nu is large, g_nu = " << grad.segment(n_theta_K+n_theta_mu+n_theta_sigma, n_nu).mean() << std::endl;
-}
 // if (debug) std::cout << "finish latent gradient"<< std::endl;
     return grad;
 }
@@ -313,7 +280,6 @@ void Latent::set_parameter(const VectorXd& theta) {
     theta_mu = theta.segment(n_theta_K, n_theta_mu);
     theta_sigma = theta.segment(n_theta_K+n_theta_mu, n_theta_sigma);
     nu = theta.segment(n_theta_K+n_theta_mu+n_theta_sigma, n_nu).array().exp();
-
     if (noise_type[0] == "normal_nig") {
         theta_sigma_normal = theta.segment(n_theta_K+n_theta_mu+n_theta_sigma+n_nu, n_theta_sigma_normal);
     }
@@ -321,7 +287,7 @@ void Latent::set_parameter(const VectorXd& theta) {
 }
 
 void Latent::sample_cond_V() {
-    if (fix_flag[latent_fix_V]) return;
+    if (n_nu == 0 || fix_flag[latent_fix_V]) return;
     prevV = V;
 
     // update b_inc (p,a_inc already built)
@@ -370,7 +336,7 @@ void Latent::sample_cond_V() {
 }
 
 void Latent::sample_uncond_V() {
-    if (fix_flag[latent_fix_V]) return;
+    if (n_nu == 0 || fix_flag[latent_fix_V]) return;
     prevV = V;
     int n = V_size / n_nu;
 
@@ -407,17 +373,19 @@ void Latent::update_each_iter(bool init) {
         sigma_normal = (B_sigma_normal * theta_sigma_normal).array().exp();
 
     // update p,a,b, depend on nu, h
-    int n = V_size / n_nu;
-    for (int i=0; i < n_nu; i++) {
-        if (noise_type[i] == "normal") continue;
-        // update p_vec, a_vec, b_vec
-        NoiseUtil::update_gig(noise_type[i], nu(i),
-        p_vec.segment(i*n, n), a_vec.segment(i*n, n), b_vec.segment(i*n, n), h.segment(i*n, n), single_V);
-        V.segment(i*n, n) = rGIG_cpp(p_vec.segment(i*n, n), a_vec.segment(i*n, n), b_vec.segment(i*n, n), latent_rng());
+    if (n_nu > 0) {
+        int n = V_size / n_nu;
+        for (int i=0; i < n_nu; i++) {
+            if (noise_type[i] == "normal") continue;
+            // update p_vec, a_vec, b_vec
+            NoiseUtil::update_gig(noise_type[i], nu(i),
+            p_vec.segment(i*n, n), a_vec.segment(i*n, n), b_vec.segment(i*n, n), h.segment(i*n, n), single_V);
+            V.segment(i*n, n) = rGIG_cpp(p_vec.segment(i*n, n), a_vec.segment(i*n, n), b_vec.segment(i*n, n), latent_rng());
 
-        // update p_inc, a_inc
-        p_inc = VectorXd::Constant(V_size, -0.5 * dim);
-        a_inc = mu.cwiseQuotient(sigma).array().pow(2);
+            // update p_inc, a_inc
+            p_inc = VectorXd::Constant(V_size, -0.5 * dim);
+            a_inc = mu.cwiseQuotient(sigma).array().pow(2);
+        }
     }
 
     if (!numer_grad) {
@@ -447,12 +415,92 @@ void Latent::update_each_iter(bool init) {
     }
 }
 
-// to-do
 MatrixXd Latent::precond() {
-    // hessian of K, mu, sigma, nu
+    VectorXd v (n_params);
+    v << theta_K, theta_mu, theta_sigma, nu;
+    return num_h(v, 1e-5);
+}
 
-    // default
-    VectorXd hess = VectorXd::Ones(n_params);
-    hess /= V_size;
-    return hess.asDiagonal();
+// for compute hessian
+double Latent::log_density(const VectorXd& parameter) {
+    // 1. pi(W|V)
+    VectorXd theta_K = parameter.head(n_theta_K);
+    VectorXd theta_mu = parameter.segment(n_theta_K, n_theta_mu);
+    VectorXd theta_sigma = parameter.segment(n_theta_K + n_theta_mu, n_theta_sigma);
+    VectorXd mu = B_mu * theta_mu;
+    VectorXd sigma = (B_sigma * theta_sigma).array().exp();
+
+    ope_precond->update_K(theta_K);
+    SparseMatrix<double> K = ope_precond->getK();
+    double logd_W = logd_W_given_V(K, mu, sigma, prevV);
+
+    // 2. pi(V)
+    double logd_V = 0;
+    if ((n_nu == 1 && noise_type[0] != "normal") ||
+        (n_nu == 2 && noise_type[0] != "normal" && noise_type[1] != "normal")
+    ) {
+        nu = parameter.tail(n_nu);
+        // compute logd_V
+        if (n_nu == 1) {
+            logd_V = NoiseUtil::log_density(noise_type[0], V, h, nu[0], FALSE);
+        } else if (n_nu == 2) {
+            int n = V_size / n_nu;
+            for (int i=0; i < n_nu; i++) {
+                logd_V += NoiseUtil::log_density(noise_type[i], V.segment(i*n, n), h.segment(i*n, n), nu[i], FALSE);
+            }
+        }
+    }
+    return -(logd_W + logd_V);
+}
+
+// log density of W|V
+double Latent::logd_W_given_V(const SparseMatrix<double>& K, const VectorXd& mu, const VectorXd& sigma, const VectorXd& V) {
+    double l = 0;
+    VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
+
+    VectorXd tmp = K * W - mu.cwiseProduct(V-h);
+    if (K.rows() < 5) {
+        MatrixXd Kd = K.toDense();
+        l = log(Kd.diagonal().prod()) - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
+    } else {
+        // if (!symmetricK) {
+        SparseMatrix<double> Q = K.transpose() * SV.cwiseInverse().asDiagonal() * K;
+        solver_Q.compute(Q);
+        l = 0.5 * solver_Q.logdet() - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
+        // } else {
+        //     // check!!
+        //     chol_solver_K.compute(K);
+        //     l = chol_solver_K.logdet() - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
+        // }
+    }
+    return l;
+}
+
+MatrixXd Latent::num_h(const VectorXd& v, double eps) {
+	int n = v.size();
+	MatrixXd hessian(n, n);
+	double original_val = log_density(v);
+
+	// compute f_v = log_density(v + eps * e_i)
+	VectorXd f_v (n);
+	for (int i=0; i < n; i++) {
+		VectorXd tmp_v = v; tmp_v(i) += eps;
+		f_v(i) = log_density(tmp_v);
+	}
+
+	// compute H_ij = d2 f / dxi dxj
+	for (int i=0; i < n; i++) {
+		for (int j=0; j <= i; j++) {
+			VectorXd tmp_vij = v; tmp_vij(i) += eps; tmp_vij(j) += eps;
+			double f_vij = log_density(tmp_vij);
+			hessian(i, j) = (f_vij - f_v(i) - f_v(j) + original_val) / (eps * eps);
+		}
+	}
+	// fill in the lower triangular part
+	for (int i=0; i < n; i++) {
+		for (int j=0; j < i; j++) {
+			hessian(j, i) = hessian(i, j);
+		}
+	}
+	return hessian;
 }

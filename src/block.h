@@ -30,6 +30,8 @@ enum Block_fix_flag {
     block_fix_beta, block_fix_theta_mu, block_fix_theta_sigma, blcok_fix_V, block_fix_nu
 };
 
+enum precond_type {precond_none, precond_fast, precond_full};
+
 class BlockModel {
 protected:
 // W_sizes = row(A1) + ... + row(An)
@@ -50,6 +52,7 @@ protected:
     MatrixXd B_sigma;
     VectorXd noise_sigma, theta_sigma;
     int n_theta_sigma;
+    int n_nu {0}; // 0 for normal, 1 for other
 
     int n_latent; // how mnay latent model
     int n_obs;  // how many observation
@@ -136,7 +139,7 @@ public:
     void                 set_parameter(const VectorXd&);
 
     VectorXd             grad();
-    MatrixXd             precond() const;
+    MatrixXd             precond(int strategy=0) const;
 
     void                 examine_gradient();
     void                 sampleW_V();
@@ -276,14 +279,10 @@ public:
     // drho / dtheta
     // double dtheta_rho(double th) const {return 2 * exp(th) / pow(1+exp(th), 2);}
     double dtheta_th(double rho) const {return (1-rho*rho) / 2;}
-};
 
-// ---- inherited functions ------
-/* the way structuring the parameter
-    latents[1].get_parameter
-        ...
-    beta (fixed effects)
-    measurement noise
-*/
+    // compute numerical hessian for theta = c(beta, theta_mu, theta_sigma, nu)
+    MatrixXd num_h_no_latent(const VectorXd& v, double eps = 1e-5) const;
+    double logd_no_latent(const VectorXd& v) const;
+};
 
 #endif

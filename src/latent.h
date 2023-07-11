@@ -55,8 +55,8 @@ protected:
     bool debug;
     int W_size, V_size, n_params, n_var {1}; // n_params=n_theta_K + n_theta_mu + n_theta_sigma + n_var
 
-    // operator
-    std::unique_ptr<Operator> ope, ope_add_eps;
+    // operator (for compute K, for compute numerical gradient, for preconditioner)
+    std::unique_ptr<Operator> ope, ope_add_eps, ope_precond;
     VectorXd h, theta_K;
     int n_theta_K;
     bool symmetricK, zero_trace, use_num_dK {false};
@@ -135,6 +135,9 @@ public:
     const VectorXd getSV() const {
         return sigma.array().pow(2).matrix().cwiseProduct(V);
     }
+    const VectorXd getPrevSV() const {
+        return sigma.array().pow(2).matrix().cwiseProduct(prevV);
+    }
     void setPrevV(const VectorXd& V) {
         prevV = V;
     }
@@ -142,6 +145,13 @@ public:
     void update_each_iter(bool init=false);
     void sample_cond_V();
     void sample_uncond_V();
+
+    // pi(W|V)
+    double logd_W_given_V(const SparseMatrix<double>& K, const VectorXd& mu, const VectorXd& sigma, const VectorXd& V);
+
+    // pi(W|V) * pi(V)
+    double log_density(const VectorXd& parameter);
+    MatrixXd num_h(const VectorXd& v, double eps);
 
     MatrixXd precond();
 
@@ -155,10 +165,6 @@ public:
     const VectorXd get_grad();
     void           set_parameter(const VectorXd&);
     void           finishOpt(int i) {fix_flag[i] = 0; }
-
-    // used for general case
-    // double function_K(VectorXd& parameter);
-    double function_K(const SparseMatrix<double>& K);
 
     VectorXd grad_theta_K();
     VectorXd grad_theta_mu();

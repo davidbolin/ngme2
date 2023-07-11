@@ -42,7 +42,7 @@ public:
     return VectorXd::Ones(n_params);
   }
 
-  MatrixXd precond() const override;
+  MatrixXd precond(int strategy=0) const override;
   VectorXd grad() override;
   // add subsampling for some ngme_repls (SGD-IS sample only 1 replicate each time, according to the weights)
 

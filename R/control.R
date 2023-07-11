@@ -22,6 +22,7 @@
 #' @param std_lim         maximum allowed standard deviation
 #' @param trend_lim       maximum allowed slope
 #' @param print_check_info print the convergence information
+#' @param preconditioner  preconditioner, can be c("none", "fast", "full")
 #'
 #' @param max_relative_step   max relative step allowed in 1 iteration
 #' @param max_absolute_step   max absolute step allowed in 1 iteration
@@ -52,6 +53,7 @@ control_opt <- function(
   std_lim           = 0.1,
   trend_lim         = 0.05,
   print_check_info  = FALSE,
+  preconditioner    = "none",
 
   max_relative_step = 0.2,
   max_absolute_step = 1,
@@ -67,7 +69,11 @@ control_opt <- function(
   sampling_strategy = "all"
 ) {
   strategy_list <- c("all", "ws")
-  stopifnot(sampling_strategy %in% strategy_list)
+  preconditioner_list <- c("none", "fast", "full")
+  stopifnot(
+    sampling_strategy %in% strategy_list,
+    preconditioner %in% preconditioner_list
+  )
 
   if ((reduce_power <= 0.5) || (reduce_power > 1)) {
     stop("reduceVar should be in (0.5,1]")
@@ -100,6 +106,7 @@ control_opt <- function(
     window_size       = window_size,
 
     verbose           = verbose,
+    precond_strategy  = which(preconditioner_list == preconditioner) - 1, # start from 0
     sampling_strategy = which(strategy_list == sampling_strategy) - 1 # start from 0
   )
 

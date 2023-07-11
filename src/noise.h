@@ -1,5 +1,4 @@
 // nu = nu
-
 #ifndef NGME_VAR_H
 #define NGME_VAR_H
 
@@ -15,6 +14,7 @@ using std::string;
 
 class NoiseUtil {
 public:
+    static constexpr double Pi = 3.14159265358979323846;
     // update gig representation (p, a, b)
     static void update_gig(
         const string& noise_type,
@@ -52,6 +52,15 @@ public:
         }
     }
 
+    // compute pi(V|nu, h)
+    static double log_density(
+        const string& noise_type,
+        const VectorXd& V,
+        const VectorXd& h,
+        double nu,
+        bool single_V = false
+    );
+
     // ---- h = 1 ----
     static void update_gig(
         const string& noise_type,
@@ -87,6 +96,8 @@ public:
         }
         return (out);
     }
+
+
 };
 
 #endif

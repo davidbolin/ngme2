@@ -25,10 +25,10 @@ Ngme::Ngme(const Rcpp::List& R_ngme, unsigned long seed, int sampling_strategy) 
   weighted_sampler = std::discrete_distribution<int>(num_each_repl.begin(), num_each_repl.end());
 }
 
-MatrixXd Ngme::precond() const {
+MatrixXd Ngme::precond(int strategy) const {
   MatrixXd precond = MatrixXd::Zero(n_params, n_params);
   for (int i=0; i < n_repl; i++) {
-    precond += ngme_repls[i]->precond();
+    precond += ngme_repls[i]->precond(strategy);
   }
 
   return precond / n_repl;

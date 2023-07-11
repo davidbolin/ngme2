@@ -5,7 +5,6 @@
 using Eigen::VectorXd, Eigen::MatrixXd;
 
 VectorXd num_g(const VectorXd& v, double (*f)(const VectorXd&), double eps);
-
 MatrixXd num_h(const VectorXd& v, double (*f)(const VectorXd&), double eps);
 
 #endif

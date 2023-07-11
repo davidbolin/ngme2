@@ -82,10 +82,11 @@ x2 = rexp(n_obs)
 beta <- c(1, 2)
 X <- (model.matrix(~0+x1+x2))  # design matrix
 # add some fixed effects and measurement nosie
-Y <- as.numeric(X %*% beta) + W + rnorm(n_obs, sd = 1.5)
+Y <- as.numeric(X %*% beta) + W + rnorm(n_obs, sd = 0.5)
+
 # Fit the model with the AR1 model
 ngme_out <- ngme(
-  Y ~ 0+x1 + x2 + f(
+  Y ~ 0 + x1 + x2 + f(
     1:n_obs,
     name = "my_ar",
     model = "ar1",
@@ -102,7 +103,9 @@ ngme_out <- ngme(
     max_relative_step = 10,
     stop_points = 10,
     print_check_info = FALSE,
-    seed = 3
+    verbose = FALSE,
+    seed = 3,
+    preconditioner = "fast"
   )
 )
 ngme_out

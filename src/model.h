@@ -15,7 +15,7 @@ public:
     };
     virtual void                 set_parameter(const VectorXd&)=0;
     virtual VectorXd             grad()=0;
-    virtual MatrixXd             precond() const=0;
+    virtual MatrixXd             precond(int strategy=0) const=0;
     virtual ~Model() = default;
 };
 
@@ -55,7 +55,7 @@ public:
     }
 
     // hessian of f(x, y)
-    MatrixXd precond() const override {
+    MatrixXd precond(int strategy) const override {
         return H;
     };
 

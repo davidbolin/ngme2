@@ -8,53 +8,48 @@ using std::vector;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
-Rcpp::List Optimizer::sgd(
-    Model& model,
-    double stepsize,
-    double eps,
-    bool precondioner,
-    int iterations
-) {
-    vector<VectorXd> x_traj;
-    vector<VectorXd> grad_traj;
+// Rcpp::List Optimizer::sgd(
+//     Model& model,
+//     double stepsize,
+//     double eps,
+//     bool precondioner,
+//     int iterations
+// ) {
+//     vector<VectorXd> x_traj;
+//     vector<VectorXd> grad_traj;
 
-    int count = 0;
-    VectorXd x = model.get_parameter();
+//     int count = 0;
+//     VectorXd x = model.get_parameter();
 
-    bool terminate = false;
+//     bool terminate = false;
 
-    while (!terminate)
-    {
-        count += 1;
-// auto timer_grad = std::chrono::steady_clock::now();
-        VectorXd grad = model.grad();
-// std::cout << "get gradient (ms): " << since(timer_grad).count() << std::endl;
+//     while (!terminate)
+//     {
+//         count += 1;
+// // auto timer_grad = std::chrono::steady_clock::now();
+//         VectorXd grad = model.grad();
+// // std::cout << "get gradient (ms): " << since(timer_grad).count() << std::endl;
+// std::cout << "precond strategy = " << precond_strategy << std::endl;
+//         MatrixXd H = model.precond(precond_strategy);
+//         std::cout << " H = " << H << std::endl;
 
-        // if (precondioner) {
-            MatrixXd H = model.precond();
-        std::cout << " H = " << H << std::endl;
+//         // update x <- x - stepsize * H^-1 * grad(x)
+//         x = x - stepsize * H.selfadjointView<Eigen::Upper>().llt().solve(grad);
 
-            // // update x <- x - stepsize * H^-1 * grad(x)
-            x = x - stepsize * H.selfadjointView<Eigen::Upper>().llt().solve(grad);
-//            x = x - cond.selfadjointView<Eigen::Upper>().llt().solve(grad);
-        // } else {
-            // x = x - stepsize * grad;
-        // }
+//         // record x and grad
+//         x_traj.push_back(x);
+//         grad_traj.push_back(grad);
 
-        // record x and grad
-        x_traj.push_back(x);
-        grad_traj.push_back(grad);
+//         model.set_parameter(x);
 
-        model.set_parameter(x);
+//         // to-do: criteria of eps
+//         if ((grad.norm() <= pow(10, -6)) || (count > iterations))
+//             terminate = true;
 
-        // to-do: criteria of eps
-        if ((grad.norm() <= pow(10, -6)) || (count > iterations))
-            terminate = true;
-
-    }
-    return Rcpp::List::create(Rcpp::Named("grad_traj") = grad_traj,
-                              Rcpp::Named("x_traj") = x_traj);
-}
+//     }
+//     return Rcpp::List::create(Rcpp::Named("grad_traj") = grad_traj,
+//                               Rcpp::Named("x_traj") = x_traj);
+// }
 
 
 // x <- x - model.stepsize() * model.grad()
@@ -78,9 +73,10 @@ VectorXd Optimizer::sgd(
 
         // grad = model.precond_grad();
         VectorXd grad = model.grad();
-        MatrixXd H = model.precond();
-        x = x - stepsize * H.selfadjointView<Eigen::Upper>().llt().solve(grad);
-        VectorXd one_step = model.get_stepsizes().cwiseProduct(H * grad);
+        MatrixXd H = model.precond(precond_strategy);
+
+        // one step = stepsize * H^-1 * grad
+        VectorXd one_step = model.get_stepsizes().cwiseProduct(H.llt().solve(grad));
 
 // std::cout << "get gradient (ms): " << since(timer_grad).count() << std::endl;
 
@@ -110,7 +106,7 @@ if (verbose) {
         x = x - pow(tmp, reduce_power) * one_step;
 
 if (verbose) {
-std::cout << "iteration = : " << curr_iter << std::endl;
+std::cout << "iteration = : " << curr_iter+1 << std::endl;
 std::cout << "parameter = : " << x << std::endl;
 }
 

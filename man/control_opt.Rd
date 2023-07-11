@@ -17,6 +17,7 @@ control_opt(
   std_lim = 0.1,
   trend_lim = 0.05,
   print_check_info = FALSE,
+  preconditioner = "none",
   max_relative_step = 0.2,
   max_absolute_step = 1,
   reduce_var = FALSE,
@@ -51,6 +52,8 @@ control_opt(
 \item{trend_lim}{maximum allowed slope}
 
 \item{print_check_info}{print the convergence information}
+
+\item{preconditioner}{preconditioner, can be c("none", "fast", "full")}
 
 \item{max_relative_step}{max relative step allowed in 1 iteration}
 

@@ -70,10 +70,6 @@ double NoiseUtil::grad_theta_nu(
             double hess = nu * grad_nu2 + nu * nu * hess_nu;
 
             grad *= n;
-        // if (use_hessian)
-        //     grad = grad / hess;
-        // else
-        //     grad = - grad / n;
         }
     } else {
         // single V case
@@ -81,14 +77,40 @@ double NoiseUtil::grad_theta_nu(
             // theV ~ IG(nu, nu)
             // V_i = h_i * theV
             double theV = V(0) / h(0);
-// double theV2 = V(1) / h(1);
-// std::cout << "theV = " << theV << std::endl; std::cout << "theV2 = " << theV2 << std::endl;
             grad = - 0.1 * (nu - 3*theV - nu*theV*theV)/(2*theV*theV); // remove negative sign
         } else if (noise_type == "gal") {
-            // to-do
+            // theV ~ Gam(nu, nu)
+            throw std::runtime_error("Not implemented");
         }
     }
 
     return -grad;
 }
 
+double NoiseUtil::log_density(
+    const string& noise_type,
+    const VectorXd& V,
+    const VectorXd& h,
+    double nu,
+    bool single_V
+) {
+    assert(V.size() == h.size());
+    double logd=0;
+    for (int i = 0; i < V.size(); i++) {
+        double x = V(i);
+        if (noise_type == "nig") {
+            // V_i ~ IG(nu, nu h_i)
+            double mu = nu;
+            double lambda = nu * h(i);
+            logd += 0.5 * log(lambda / (2*Pi*pow(x, 3)))
+                - lambda * (x - mu) / (2*mu*mu*x);
+        } else if (noise_type == "gal") {
+            // V_i ~ Gamma(alpha=h_i nu, beta=nu), see wikipedia
+            double alpha = h(i) * nu;
+            double beta = nu;
+            logd += pow(beta, beta) / R::gammafn(alpha) * pow(x, alpha-1) * exp(-beta*x);
+        }
+    }
+
+    return logd;
+}

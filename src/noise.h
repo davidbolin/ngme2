@@ -61,6 +61,15 @@ public:
         bool single_V = false
     );
 
+    static double precond(
+        double eps,
+        const string& noise_type,
+        const VectorXd& V,
+        const VectorXd& h,
+        double nu,
+        bool single_V = false
+    );
+
     // ---- h = 1 ----
     static void update_gig(
         const string& noise_type,

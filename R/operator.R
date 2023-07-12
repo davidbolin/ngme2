@@ -67,8 +67,10 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
       print(operator$second, padding = padding + 4, prefix = "second")
     },
     bv = {
-      cat(pad_add4_space, "theta = ", format(theta_K[1], digits=3), "\n", sep="")
-      cat(pad_add4_space, "rho = ", format(theta_K[2], digits=3), "\n", sep="")
+      eta = theta_K[1]; theta = 2 * atan(eta)
+      th_rho = theta_K[2]; rho = ar1_th2a(th_rho)
+      cat(pad_add4_space, "theta = ", format(theta, digits=3), "\n", sep="")
+      cat(pad_add4_space, "rho = ", format(rho, digits=3), "\n", sep="")
       print(operator$first,  padding = padding + 4, prefix = model_names[[1]])
       print(operator$second, padding = padding + 4, prefix = model_names[[2]])
     },

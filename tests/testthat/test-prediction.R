@@ -2,13 +2,13 @@
 
 test_that("test predict general", {
   set.seed(10)
-  n_obs <<- 500
+  n_obs <- 500
   x1 <- rexp(n_obs); x2 <- rnorm(n_obs)
   beta <- c(-2, 4, 1)
   alpha <- 0.75
   mu <- 1.5; sigma <- 2.3; nu <- 2; sigma_eps <- 0.8
 
-  ar1 <- f(1:n_obs, model="ar1", alpha=alpha, noise=noise_nig(mu=mu, sigma=sigma, nu=nu))
+  ar1 <- f(1:n_obs, model="ar1", rho=alpha, noise=noise_nig(mu=mu, sigma=sigma, nu=nu))
   W <- simulate(ar1)
   Y <- beta[1] + x1 * beta[2] + x2 * beta[3] + W + rnorm(n_obs, sd = sigma_eps)
 

@@ -95,6 +95,7 @@ ngme <- function(
 
   # update with start (list of ngmes)
   if (inherits(start, "ngme")) {
+    # to-do: check start is of same length
     for (i in seq_along(ngme_model$replicates)) {
       ngme_model$replicates[[i]] <- within(ngme_model$replicates[[i]], {
         beta <- start$replicates[[i]]$beta

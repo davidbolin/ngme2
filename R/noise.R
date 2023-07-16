@@ -58,7 +58,7 @@ ngme_noise <- function(
   share_V         = FALSE,
   corr_measurement = FALSE,
   index_corr      = NULL,
-  rho             = 0,
+  rho             = double(0),
   ...
 ) {
   if (is.null(theta_mu)) theta_mu <- mu
@@ -84,6 +84,11 @@ ngme_noise <- function(
     nu <- double(0)
   }
 
+  # init rho
+  if (corr_measurement && length(rho) == 0) {
+    rho <- 0
+  }
+
   structure(
     list(
       noise_type      = noise_type,
@@ -103,7 +108,7 @@ ngme_noise <- function(
       fix_theta_sigma = fix_theta_sigma,
       fix_nu          = fix_nu,
       fix_V           = fix_V,
-      n_params        = length(theta_mu) + length(theta_sigma) + length(nu),
+      n_params        = length(theta_mu) + length(theta_sigma) + length(nu) + length(rho),
       single_V        = single_V,
       share_V         = share_V,
       corr_measurement = corr_measurement,

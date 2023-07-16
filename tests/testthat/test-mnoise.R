@@ -1,9 +1,9 @@
 test_that("test basic mn", {
   set.seed(100)
-  n_obs <- 500
+  n_obs <- 1000
   x <- rexp(n_obs)
-  beta <- c(-2, 3)
-  y <- beta[[1]] + x * beta[[2]] + rnorm(n_obs, sd = 3)
+  beta <- c(-1, 2)
+  y <- beta[[1]] + x * beta[[2]] + rnorm(n_obs, sd = 0.5)
 
   # summary(lm(y~x))
   out <- ngme(
@@ -22,6 +22,9 @@ test_that("test basic mn", {
   traceplot(out)
 
   # 2. nig case
+  n_obs <- 1000
+  x <- rexp(n_obs)
+  beta <- c(-2, 3)
   y <- beta[[1]] + x * beta[[2]] +
     rnig(n_obs, delta = -3, mu = 3, nu = 2, sigma = 2, seed=10)
 

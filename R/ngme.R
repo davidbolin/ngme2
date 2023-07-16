@@ -364,9 +364,7 @@ ngme_parse_formula <- function(
     if (is.null(noise$theta_sigma)) noise$theta_sigma <- log(sd(lm.model$residuals))
     noise_rep <- update_noise(noise_new, sub_idx=idx)
 
-    corr_measure <- FALSE
     if (noise$corr_measurement) {
-      corr_measure <- TRUE
       index_corr <- noise$index_corr[idx]
       if (is.null(index_corr)) {
         bv_idx <- which(sapply(models_rep, function(x) x$model) == "bv")
@@ -390,6 +388,12 @@ ngme_parse_formula <- function(
         models_rep[[i]]$A <- models_rep[[i]]$A[p_order, , drop = FALSE]
       # check here
       noise_rep <- update_noise(noise_rep, sub_idx = p_order)
+
+      # update noise with extra terms about correlation
+      noise_rep$cor_rows <- cov_rc$cor_rows
+      noise_rep$cor_cols <- cov_rc$cor_cols
+      noise_rep$has_correlation <- cov_rc$has_correlation
+      noise_rep$n_corr_pairs <- cov_rc$n_corr_pairs
     }
 
     blocks_rep[[i]] <- ngme_replicate(
@@ -399,13 +403,7 @@ ngme_parse_formula <- function(
       models = models_rep,
       replicate = uni_repl[[i]],
       control_ngme = control_ngme,
-      n_repl = length(uni_repl),
-      corr_measure = corr_measure,
-      cor_rows = if (corr_measure) cov_rc$cor_rows else NULL,
-      cor_cols = if (corr_measure) cov_rc$cor_cols else NULL,
-      has_correlation = if (corr_measure) cov_rc$has_correlation else NULL,
-      n_corr_pairs = if (corr_measure) cov_rc$n_corr_pairs else NULL
-      # pmat = if (corr_measure) pmat else NULL
+      n_repl = length(uni_repl)
     )
   }
 

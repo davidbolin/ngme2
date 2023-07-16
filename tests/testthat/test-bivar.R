@@ -22,7 +22,7 @@ test_that("test bv(ar1, ar1) with 2 noise", {
   true_model <- f(
     1:n,
     model="bv",
-    theta = 1.5, rho = 0.5,
+    theta = 0, rho = 0.6,
     sub_models = list(
       first = "ar1", second="ar1"
     ),
@@ -45,6 +45,7 @@ test_that("test bv(ar1, ar1) with 2 noise", {
       sub_models = list(
         first = "ar1", second="ar1"
       ),
+      control = control_f(numer_grad = F),
       noise = list(first=noise_nig(), second=noise_nig())
     ),
     group = c(rep("first", n/2), rep("second", n/2)),
@@ -58,7 +59,7 @@ test_that("test bv(ar1, ar1) with 2 noise", {
       estimation = T,
       verbose = T,
       print_check_info = F,
-      preconditioner = "fast"
+      preconditioner = "none"
     )
     # ,start = out
   )

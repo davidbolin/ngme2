@@ -455,15 +455,16 @@ double Latent::logd_W_given_V(const SparseMatrix<double>& K, const VectorXd& mu,
         MatrixXd Kd = K.toDense();
         l = log(Kd.diagonal().prod()) - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
     } else {
-        // if (!symmetricK) {
-        SparseMatrix<double> Q = K.transpose() * SV.cwiseInverse().asDiagonal() * K;
-        solver_Q.compute(Q);
-        l = 0.5 * solver_Q.logdet() - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
-        // } else {
-        //     // check!!
-        //     chol_solver_K.compute(K);
-        //     l = chol_solver_K.logdet() - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
-        // }
+        if (!symmetricK) {
+            SparseMatrix<double> Q = K.transpose() * SV.cwiseInverse().asDiagonal() * K;
+            solver_Q.compute(Q);
+            l = 0.5 * solver_Q.logdet() - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
+            // lu_solver_K.compute(K);
+            // l = lu_solver_K.logdet() - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
+        } else {
+            chol_solver_K.compute(K);
+            l = chol_solver_K.logdet() - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
+        }
     }
     return l;
 }
@@ -482,7 +483,8 @@ double Latent::logd_KW_given_V(const VectorXd& mu, const VectorXd& sigma, const 
 }
 
 // Numerical hessian
-MatrixXd Latent::precond(bool precond_K) {
+MatrixXd Latent::precond(bool precond_K, double eps) {
+    double precond_eps = eps;
     VectorXd parameter (n_params - n_nu);
     parameter << theta_K, theta_mu, theta_sigma;
 

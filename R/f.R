@@ -209,11 +209,13 @@ ngme_build_mesh <- function(
   ...
 ) {
   if (inherits(loc, "inla.mesh.1d") || inherits(loc, "inla.mesh")) return(loc)
+
   if (!is.null(model)) {
     if (model %in% c("re", "tp")) return(NULL)
     if (model == "ar1") {
       stopifnot("The map should be integers."
         = is.numeric(loc) && all(loc == round(loc)))
+      return (INLA::inla.mesh.1d(loc = min(loc):max(loc)))
     }
   }
 

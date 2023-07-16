@@ -44,23 +44,20 @@ protected:
     string family;
 
     // Fixed effects and Measurement noise
-    VectorXd beta;
-    MatrixXd B_mu;
-    VectorXd noise_mu, theta_mu;
-    int n_theta_mu;
+    VectorXd theta_mu, theta_sigma, nu, rho, beta;
 
-    MatrixXd B_sigma;
-    VectorXd noise_sigma, theta_sigma;
-    int n_theta_sigma;
-    int n_nu {0}; // 0 for normal, 1 for other
+    MatrixXd B_mu, B_sigma;
+    VectorXd noise_mu, noise_sigma;
+    int n_theta_mu, n_theta_sigma, n_nu, n_rho;
 
     int n_latent; // how mnay latent model
     int n_obs;  // how many observation
+
+    // n_merr = noise_nu.size + noise_sigma.size + noise_nu.size + rho.size beta.size
     int n_la_params, n_feff, n_merr, n_repl; // number of total replicates(blocks)
 
     // Correlated measurement error
     bool corr_measure;
-    double rho {0};
     vector<int> cor_rows, cor_cols;
     vector<bool> has_correlation;
     int n_corr_pairs;
@@ -80,7 +77,7 @@ protected:
 
     vector<std::unique_ptr<Latent>> latents;
     VectorXd p_vec, a_vec, b_vec, noise_V, noise_prevV;
-    double nu {1};
+    // double nu {1};
 
     // optimize related
     VectorXd stepsizes, gradients;
@@ -139,7 +136,7 @@ public:
     void                 set_parameter(const VectorXd&);
 
     VectorXd             grad();
-    MatrixXd             precond(int strategy=0) const;
+    MatrixXd             precond(int strategy=0, double eps=1e-5);
 
     void                 examine_gradient();
     void                 sampleW_V();
@@ -281,8 +278,8 @@ public:
     double dtheta_th(double rho) const {return (1-rho*rho) / 2;}
 
     // compute numerical hessian for theta = c(beta, theta_mu, theta_sigma, nu)
-    MatrixXd num_h_no_latent(const VectorXd& v, double eps = 1e-5) const;
-    double logd_no_latent(const VectorXd& v) const;
+    MatrixXd num_h_no_latent(const VectorXd& v, double eps = 1e-5);
+    double logd_no_latent(const VectorXd& v);
 };
 
 #endif

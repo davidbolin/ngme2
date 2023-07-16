@@ -18,31 +18,32 @@ knitr::opts_chunk$set(
 
 For many applications, we need to deal with multivariate data. In this vignette, we will introduce the bivariate model which supports modeling two field and their correlation jointly.
 
-The `f` function specification is similar to ordinary model (See e.g. [Ngme2 AR(1) model](AR1-model.html)), but with two more fields.
+The `f` function specification is similar to ordinary model (See e.g. [Ngme2 AR(1) model](AR1-model.html)), but with two more fields to help identify the variables.
 Extra arguments for the `f` are:
 
 1. `group`: a vector of labels to indicate the group of different observations. For example, `group = c("field1", "field1", "field2", "field2", "field2)`.
  If `group` is provided in `ngme()` function, no need to provide in `f()` function again.
 
-2. `sub_models`: characters of length 2 with names equal to one of the labels in `group`, specifying the sub-models for the two fields. e.g. `sub_models=c(field1="rw1", field2="ar1")`
+2. `sub_models`: characters of length 2 with names equal to one of the labels in `group`, specifying the sub-models for the two fields. e.g. `sub_models=c(field1="rw1", field2="ar1")`.
+
+We will see more examples in the following.
 
 ## Model structure
 
-The bivariate model can model two fields $X_1, X_2$ jointly.
-To model their correlation, we use dependence matrix $D(\zeta, \rho)$ to correlate them (See Bolin and Wallin, 2020, section 2.2).
+The bivariate model can model two fields $\mathbf{X}(s) = (X_1(s), X_2(s))$ jointly.
+To model their correlation, we use dependence matrix $D(\theta, \rho)$ to correlate them (See Bolin and Wallin, 2020, section 2.2).
 
-<!-- The model is:
-to-do
-$$
-D diag(L_1, L_2) = M
-$$
+The model is:
+$$ \mathbf{D(\theta, \rho)} diag(L_1, L_2) \mathbf{X}(s) = \mathcal{M},$$ where $\mathbf{D}$ is the dependence matrix, $\mathcal{M}$ is non-Gaussian noise, we will discuss the noise later.
 
 The dependence matrix is defined as
-
 $$
-D() =
--->
-
+D(\theta, \rho) = \begin{pmatrix}
+  \cos(\theta) + \rho \sin(\theta) & -\sin(\theta) \sqrt{1+\rho^2} \\
+  \sin(\theta) - \rho \cos(\theta) & \cos(\theta) \sqrt{1+\rho^2}
+\end{pmatrix},
+$$
+$\rho \in [-1, 1]$  controls the cross-correlation.
 
 ## One simple time series example
 
@@ -73,7 +74,7 @@ bv1 <- f(
   theta = pi / 2, rho = 0.5,
   sub_models = list(precip="ar1", temp="rw1"),
   # sub_models = c(precip="ar1", temp="rw1"),
-  group = labels, # can be provided in ngme()
+  group = labels, # can be inherited from ngme() function
   noise = list(
     precip=noise_normal(),
     temp=noise_normal()
@@ -85,7 +86,7 @@ bv1
 bv2 <- f(
   year, model = "bv",
   sub_models = list(
-    precip=list(model="ar1", rho=0.5), # specify rho for ar1 model
+    precip=list(model="ar1", rho=0.5), # specify correlation parameter for ar1 model
     temp=list(model="rw1")
   ),
   group = labels,
@@ -99,7 +100,7 @@ bv2
 
 ## Four increasing construction of noise
 
-In bivariate models, we can have more control over the noise of the model. The noise can be classified into 4 category  (See Bolin and Wallin, 2020, section 3.1):
+In bivariate models, we can have more control over the noise of the model. The noise can be classified into 4 category (See Bolin and Wallin, 2020, section 3.1 for details):
 
 - Type-G1: single mixing variable V, share V over 2 fileds
 
@@ -199,7 +200,6 @@ Y <- 1:6
 loc1 <-  c(2,    1,   3,   1,   4,   2) # same index is correlated
 group <- c("s", "t", "s", "s", "t", "t")
 
-# ngme
 m2 <- ngme(
   Y ~ 0 + f(
     loc1, model="bv",
@@ -211,20 +211,22 @@ m2 <- ngme(
     index_corr = loc1
   ),
   group = group,
-  data = data.frame(Y = Y, loc1 = loc1)
+  data = data.frame(Y = Y, loc1 = loc1),
+  control_opt = control_opt(
+    estimation = T,
+    preconditioner = "fast"
+  )
 )
 m2
 ```
 
-## A spatial matern example
+## A spatial Matern example
 
-Next we see an less artificial example.
-<!--  to-do  -->
+Next we see an less artificial example. We can use the bivaraite model to model 2 spatial fields.
 
 1. Simulation
 
 ```{r}
-load_all()
 pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
 mesh <- inla.mesh.2d(
   loc.domain = pl01, cutoff = 0.2,
@@ -235,7 +237,6 @@ n_obs <- 300
 long <- runif(n_obs, 0, 10)
 lat <- runif(n_obs, 0, 5)
 group <- c(rep("sal", n_obs/2), rep("temp", n_obs/2))
-head(data)
 
 true_model <- f(
   ~long + lat,
@@ -247,9 +248,6 @@ true_model <- f(
     temp="matern"
   ),
   group = group,
-  # noise = noise_nig(
-  #   mu=-2, sigma=2, nu=1
-  # ),
   noise = list(sal = noise_nig(
     mu = -2, sigma=1, nu=1
   ), temp = noise_nig(
@@ -279,7 +277,7 @@ out <- ngme(
   data = data,
   control_opt = control_opt(
     estimation = T,
-    iterations = 500,
+    iterations = 100,
     n_parallel_chain = 1,
     verbose = F,
     print_check_info = F
@@ -288,7 +286,7 @@ out <- ngme(
 out
 str(out$replicates[[1]]$models[[1]]$noise)
 traceplot(out, "bv")
-out$replicates[[1]]$models[[1]]$noise$bv_noises[[2]]$h
+# out$replicates[[1]]$models[[1]]$noise$bv_noises[[2]]$h
 ```
 
 1. simulation

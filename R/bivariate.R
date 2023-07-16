@@ -2,8 +2,8 @@
 #'
 #' Giving 2 sub_models, build a correlated bivaraite operator based on K = D(theta, eta) %*% diag(K_1, K_2)
 #' \deqn{D(\theta, \rho) = \begin{pmatrix}
-#'   \cos(\theta) + \rho \sin(\theta) & -\sin(theta) \sqrt{1+\rho^2} \\
-#'   \sin(\theta) - \rho \cos(\theta) & \cos(theta) \sqrt{1+\rho^2}
+#'   \cos(\theta) + \rho \sin(\theta) & -\sin(\theta) \sqrt{1+\rho^2} \\
+#'   \sin(\theta) - \rho \cos(\theta) & \cos(\theta) \sqrt{1+\rho^2}
 #' \end{pmatrix}}
 #'
 #' @param mesh the mesh where model is defined
@@ -66,7 +66,7 @@ bv <- function(
   first$theta_K <- theta_K[3:(2 + first$n_theta_K)]
   second$theta_K <- theta_K[(3 + first$n_theta_K):length(theta_K)]
 
-  D <- build_D(theta_K[1], theta_K[2])
+  D <- build_D(theta, rho)
   bigD <- kronecker(D, Matrix::Diagonal(nrow(first$K)))
 
   ngme_operator(

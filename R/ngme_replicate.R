@@ -5,7 +5,6 @@ ngme_replicate <- function(
   noise        = noise_normal(),
   models       = list(),
   control_ngme = list(),
-  corr_measure = FALSE,
   ...
 ) {
   # compute W_sizes and V_sizes
@@ -29,7 +28,7 @@ ngme_replicate <- function(
   )
   par_string <- do.call(paste0, as.list(c(models_string, beta_str, merr_str)))
 
-  n_params <- n_feff + n_la_params + noise$n_params + corr_measure
+  n_params <- n_feff + n_la_params + noise$n_params
 
   beta <- control_ngme$beta; names(beta) <- colnames(X)
   structure(
@@ -43,10 +42,9 @@ ngme_replicate <- function(
       par_string        = par_string,
       W_sizes           = W_sizes,
       V_sizes           = V_sizes,
-      n_merr            = noise$n_params + corr_measure,
+      n_merr            = noise$n_params,
       n_params          = n_params,
       n_la_params       = n_la_params,
-      corr_measure      = corr_measure,
       ...
     ),
     class = c("ngme_replicate", "list")

@@ -35,7 +35,7 @@ a list of specification of model
 \description{
 Giving 2 sub_models, build a correlated bivaraite operator based on K = D(theta, eta) %*% diag(K_1, K_2)
 \deqn{D(\theta, \rho) = \begin{pmatrix}
-  \cos(\theta) + \rho \sin(\theta) & -\sin(theta) \sqrt{1+\rho^2} \\
-  \sin(\theta) - \rho \cos(\theta) & \cos(theta) \sqrt{1+\rho^2}
+  \cos(\theta) + \rho \sin(\theta) & -\sin(\theta) \sqrt{1+\rho^2} \\
+  \sin(\theta) - \rho \cos(\theta) & \cos(\theta) \sqrt{1+\rho^2}
 \end{pmatrix}}
 }

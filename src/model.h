@@ -15,7 +15,9 @@ public:
     };
     virtual void                 set_parameter(const VectorXd&)=0;
     virtual VectorXd             grad()=0;
-    virtual MatrixXd             precond(int strategy=0) const=0;
+    virtual MatrixXd             precond(int strategy=0, double eps=1e-5)=0;
+
+    virtual int                  get_n_params() const = 0;
     virtual ~Model() = default;
 };
 
@@ -43,8 +45,11 @@ public:
         H << 6, 0,
              0, 4;
     }
-
     SomeFun(VectorXd x0) : x(x0) {}
+
+    int get_n_params() const override {
+        return 2;
+    }
 
     // gradient of f(x, y)
     VectorXd grad() override {
@@ -55,7 +60,7 @@ public:
     }
 
     // hessian of f(x, y)
-    MatrixXd precond(int strategy) const override {
+    MatrixXd precond(int strategy, double eps) override {
         return H;
     };
 

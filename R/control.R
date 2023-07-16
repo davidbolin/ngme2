@@ -23,6 +23,10 @@
 #' @param trend_lim       maximum allowed slope
 #' @param print_check_info print the convergence information
 #' @param preconditioner  preconditioner, can be c("none", "fast", "full")
+#' "none" means no preconditioner, "fast" means precondition everything except for the parameter of K matrix (for speed reason), "full" means precondition everything
+#' @param precond_eps   numerical, the gap used for estimate preconditioner, default is 1e-5
+#' @param precond_by_diff_chain logical, if TRUE, use different chains to estimate preconditioner, otherwise use the same chain (may introduce correlation).
+#' @param compute_precond_each_iter logical, if TRUE, compute preconditioner in each iteration, otherwise only compute once we arrive check point
 #'
 #' @param max_relative_step   max relative step allowed in 1 iteration
 #' @param max_absolute_step   max absolute step allowed in 1 iteration
@@ -54,6 +58,9 @@ control_opt <- function(
   trend_lim         = 0.05,
   print_check_info  = FALSE,
   preconditioner    = "fast",
+  precond_eps       = 1e-5,
+  precond_by_diff_chain = TRUE,
+  compute_precond_each_iter = TRUE,
 
   max_relative_step = 0.2,
   max_absolute_step = 1,
@@ -106,6 +113,9 @@ control_opt <- function(
     window_size       = window_size,
 
     verbose           = verbose,
+    precond_eps       = precond_eps,
+    precond_by_diff_chain = precond_by_diff_chain,
+    compute_precond_each_iter = compute_precond_each_iter,
     precond_strategy  = which(preconditioner_list == preconditioner) - 1, # start from 0
     sampling_strategy = which(strategy_list == sampling_strategy) - 1 # start from 0
   )
@@ -148,7 +158,7 @@ control_f <- function(
 #'
 #' @param init_sample_W  sample W|V at the beginning of each chain
 #' @param n_gibbs_samples    number of gibbs sampels
-#' @param fix_beta       logical, fix fixed effect
+#' @param fix_feff       logical, fix fixed effect
 #' @param burnin      integer, iterations for burnin period
 #' @param post_samples_size number of posterior samples
 #' @param beta           fixed effect value
@@ -159,17 +169,17 @@ control_ngme <- function(
   init_sample_W = TRUE,
   burnin = 100,
   n_gibbs_samples = 5,
-  fix_beta = FALSE,
+  fix_feff = FALSE,
   post_samples_size = 100,
-  beta = NULL,
+  feff = NULL,
   debug = FALSE
 ) {
   control <- list(
     burnin = burnin,
     init_sample_W = init_sample_W,
     n_gibbs_samples = n_gibbs_samples,
-    fix_beta = fix_beta,
-    beta = beta,
+    fix_beta = fix_feff,
+    beta = feff,
     post_samples_size = post_samples_size,
     stepsize = 1,
     debug = debug

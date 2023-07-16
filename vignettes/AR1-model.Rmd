@@ -44,20 +44,23 @@ $$
 ## Usage
 
 Use the `f(model="ar1")` (in formula) to specify a AR(1) model.
-Notice that AR(1) process is only well defined in the integer mesh (it can have gaps), see the following examples:
+Notice that AR(1) process is only well defined in the integer mesh (it can have gaps). In the following example, we generate mesh from 2001 to 2007 (7 nodes).
 
 ```{r ar-usage}
 library(ngme2)
 set.seed(16)
-m1 <- f(2001:2004, model="ar1", rho=-0.5, noise = noise_normal())
-
-# check the operator matrix
+m1 <- f(c(2001, 2005, 2003, 2007),
+  model="ar1", rho=-0.5, noise = noise_normal()
+)
 m1$operator$K
+
+# the internal A matrix tell how to map from mesh to our given index
+m1$A
 ```
 
 ## Simulation
 
-Simulating an AR(1) model with `ngme2` is simple. Just pass the corresponding model into `simulate` function.
+Doing simulation in Ngme2 is simple. Just pass the corresponding model into `simulate` function.
 
 ```{r ar-simulation, fig.align="center"}
 n_obs <- 500
@@ -66,22 +69,24 @@ ar1_model <- f(day, model="ar1", rho = 0.5,
   noise = noise_nig(mu = -3, sigma = 4, nu=0.4))
 W <- simulate(ar1_model, seed = 16)
 
+# 1 sample process of our model
+plot(W, type="l")
 # check the acf to see the correlation
-acf(W)
+acf(W, lag.max = 5)
 ```
 
 ## Estimation
 
 In this part we will show how to estiamte the AR model using `ngme` function.
-Here we can use `control_opt` to modify the control variables for the `ngme`.
+Here we can use `control_opt` to modify the control variables regarding estimation part for the `ngme` function.
 See `?control_opt` for more optioins.
 
 ```{r ar-estimation, fig.align="center", cache=TRUE}
+# add some fixed effects and measurement noise
+beta <- c(-1, 2)
 x1 = runif(n_obs)
 x2 = rexp(n_obs)
-beta <- c(1, 2)
-X <- (model.matrix(~0+x1+x2))  # design matrix
-# add some fixed effects and measurement nosie
+X <- (model.matrix(~0+x1+x2))
 Y <- as.numeric(X %*% beta) + W + rnorm(n_obs, sd = 0.5)
 
 # Fit the model with the AR1 model
@@ -99,13 +104,13 @@ ngme_out <- ngme(
     iterations = 1000,
     std_lim = 0.6,
     n_parallel_chain = 1,
-    max_absolute_step = 10,
-    max_relative_step = 10,
-    stop_points = 10,
+    stop_points = 20,
     print_check_info = FALSE,
     verbose = FALSE,
     seed = 3,
-    preconditioner = "fast"
+    preconditioner = "fast",
+    precond_eps = 1e-5,
+    compute_precond_each_iter = TRUE
   )
 )
 ngme_out

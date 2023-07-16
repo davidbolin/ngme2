@@ -34,6 +34,7 @@ Rcpp::List estimate_cpp(const Rcpp::List& R_ngme, const Rcpp::List& control_opt)
     const double max_relative_step = control_opt["max_relative_step"];
     const double max_absolute_step = control_opt["max_absolute_step"];
     const int sampling_strategy = control_opt["sampling_strategy"];
+    const bool compute_precond_each_iter = control_opt["compute_precond_each_iter"];
 
     Rcpp::List output = R_NilValue;
 
@@ -45,6 +46,8 @@ auto timer = std::chrono::steady_clock::now();
 #ifdef _OPENMP
     const int burnin = control_opt["burnin"];
     const bool exchange_VW = control_opt["exchange_VW"];
+    const bool precond_by_diff_chain = control_opt["precond_by_diff_chain"];
+
     int n_slope_check = (control_opt["n_slope_check"]);
     double std_lim = (control_opt["std_lim"]);
     double trend_lim = (control_opt["trend_lim"]);
@@ -91,8 +94,29 @@ auto timer = std::chrono::steady_clock::now();
         for (i=0; i < n_chains; i++) {
             // Optimizer opt (control_opt);
             // VectorXd param = opt.sgd(*(blocks[i]), 0.1, batch_steps, max_relative_step, max_absolute_step);
-            VectorXd param = opt_vec[i].sgd(*(ngmes[i]), 0.1, batch_steps, max_relative_step, max_absolute_step);
 
+            // set the preconditioner manually
+            if (!compute_precond_each_iter) {
+                if (precond_by_diff_chain) {
+                    // provide preconditioner
+                    opt_vec[i].set_precondioner(ngmes[i]->precond());
+                } else {
+                    opt_vec[i].set_precondioner(ngmes[i]->precond());
+                }
+                std::cout << " set mannually " << std::endl;
+            }
+
+            VectorXd param = opt_vec[i].sgd(
+                *(ngmes[i]),
+                0.1,
+                batch_steps,
+                max_relative_step,
+                max_absolute_step,
+                compute_precond_each_iter
+            );
+
+// compute preconditoner
+// update A1.precond = 1/3 (A2.precond + A3.precond + A4.precond)
             #pragma omp critical
             mat.row(i) = param;
         }
@@ -149,7 +173,13 @@ auto timer = std::chrono::steady_clock::now();
 #else // No parallel chain
     Ngme ngme (R_ngme, rng(), sampling_strategy);
     Optimizer opt (control_opt);
-    opt.sgd(ngme, 0.1, iterations, max_relative_step, max_absolute_step);
+    opt.sgd(
+        ngme,
+        0.1,
+        iterations,
+        max_relative_step, max_absolute_step,
+        compute_precond_each_iter
+    );
     // estimation done, posterior sampling
     // ngme.sampling(10, true);
     outputs.push_back(ngme.output());

@@ -22,7 +22,7 @@ test_that("test bv(ar1, ar1) with 2 noise", {
   true_model <- f(
     1:n,
     model="bv",
-    theta = 0.5, rho = 0.5,
+    theta = 1.5, rho = 0.5,
     sub_models = list(
       first = "ar1", second="ar1"
     ),
@@ -53,16 +53,17 @@ test_that("test bv(ar1, ar1) with 2 noise", {
       n_gibbs_samples = 5
     ),
     control_opt = control_opt(
-      iterations = 200,
+      iterations = 100,
       n_parallel_chain = 4,
       estimation = T,
-      verbose = F,
+      verbose = T,
       print_check_info = F,
-      preconditioner = "full"
+      preconditioner = "fast"
     )
+    # ,start = out
   )
   out
-  traceplot(out, "field1")
+  traceplot(out,"field1")
   out$replicates[[1]]$models[[1]]$theta_K
   out$replicates[[1]]$models[[1]]$operator$theta_K
 })

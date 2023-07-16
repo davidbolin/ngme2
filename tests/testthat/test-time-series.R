@@ -23,20 +23,23 @@ test_that("simulate and estimate of rw with NIG", {
     ),
     data = data.frame(Y = Y),
     control_opt = control_opt(
+      seed = 12,
       estimation = T,
-      iterations = 500,
+      iterations = 100,
       n_parallel_chain = 4,
       print_check_info = F,
+      preconditioner = "fast",
+      # preconditioner = "none",
       verbose = F
     )
     # debug = TRUE
   )
-  out
-  out$replicates[[1]]$models[[1]]$n_theta_K
+
+  traceplot(out)
   traceplot(out, "rw")
+  out$replicates[[1]]$models[[1]]$n_theta_K
   plot(out$replicates[[1]]$models[[1]]$noise,
     noise_nig(mu=mu, sigma=sigma, nu=nu))
-
 })
 
 ############################## AR1 case

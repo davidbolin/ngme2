@@ -54,7 +54,13 @@ bv <- function(
     stopifnot("Please provide model=.. in the list" = !is.null(arg2$model))
     second <- build_operator(arg2$model, modifyList(args, arg2))
   }
-  theta_K <- c(theta, rho, first$theta_K, second$theta_K)
+
+  stopifnot(
+    "theta is in (-pi, pi)" = theta >= -pi & theta <= pi,
+    "rho is in (-1, 1)" = rho >= -1 & rho <= 1
+  )
+  eta <- tan(theta / 2);
+  theta_K <- c(eta, ar1_a2th(rho), first$theta_K, second$theta_K)
 
   # pass the theta_K to first and second
   first$theta_K <- theta_K[3:(2 + first$n_theta_K)]

@@ -265,9 +265,11 @@ stopifnot("n / nrow(B_sigma) not integer" = abs(n/nrow(B_sigma) - round(n/nrow(B
     # noise <- do.call(ngme_noise, noise)
   } else if (!is.null(new_noise)) {
     # update noise after estimation
-    noise$theta_mu           <- new_noise$theta_mu
+    if (all(new_noise$noise_type != "normal")) {
+      noise$theta_mu <- new_noise$theta_mu
+      noise$nu       <- new_noise$nu
+    }
     noise$theta_sigma        <- new_noise$theta_sigma
-    noise$nu                 <- new_noise$nu
     noise$rho                <- new_noise$rho
     if (!is.null(new_noise$V)) noise$V <- new_noise$V
 

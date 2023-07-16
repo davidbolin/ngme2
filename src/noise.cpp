@@ -114,3 +114,19 @@ double NoiseUtil::log_density(
 
     return logd;
 }
+
+// (f(x+h) - 2f(x) +f(x-h)) / h^2
+double NoiseUtil::precond(
+    double eps,
+    const string& noise_type,
+    const VectorXd& V,
+    const VectorXd& h,
+    double nu,
+    bool single_V
+) {
+    double f1 = log_density(noise_type, V, h, nu+eps, single_V);
+    double f2 = log_density(noise_type, V, h, nu, single_V);
+    double f3 = log_density(noise_type, V, h, nu-eps, single_V);
+
+    return - (f1 - 2*f2 + f3) / (eps*eps);
+}

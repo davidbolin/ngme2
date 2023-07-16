@@ -224,6 +224,7 @@ Next we see an less artificial example.
 1. Simulation
 
 ```{r}
+load_all()
 pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
 mesh <- inla.mesh.2d(
   loc.domain = pl01, cutoff = 0.2,
@@ -237,23 +238,24 @@ group <- c(rep("sal", n_obs/2), rep("temp", n_obs/2))
 head(data)
 
 true_model <- f(
-    ~long + lat,
-    mesh = mesh,
-    model = "bv",
-    sub_models = list(
-      sal="matern",
-      temp="matern"
-    ),
-    group = group,
-    # noise = noise_nig(
-    #   mu=-2, sigma=2, nu=1
-    # ),
-    noise = list(sal = noise_nig(
-      mu = -2, sigma=1, nu=1
-    ), temp = noise_nig(
-      mu = 2, sigma=2, nu=0.5
-    ))
-  )
+  ~long + lat,
+  theta = 0.5, rho = 0.5,
+  mesh = mesh,
+  model = "bv",
+  sub_models = list(
+    sal="matern",
+    temp="matern"
+  ),
+  group = group,
+  # noise = noise_nig(
+  #   mu=-2, sigma=2, nu=1
+  # ),
+  noise = list(sal = noise_nig(
+    mu = -2, sigma=1, nu=1
+  ), temp = noise_nig(
+    mu = 2, sigma=2, nu=0.5
+  ))
+)
 W <- simulate(true_model)
 Y <- as.numeric(true_model$A %*% W); Y <- Y + rnorm(length(Y))
 data <- data.frame(Y, long, lat)
@@ -270,15 +272,14 @@ out <- ngme(
     name = "bv",
     sub_models = list(sal="matern", temp="matern"),
     group = group,
-    debug=T,
-    # noise = noise_nig()
-    # noise = list(sal = noise_nig(), temp = noise_nig())
-    noise = list(sal = noise_normal(), temp = noise_normal())
+    # debug=T,
+    noise = list(sal = noise_nig(), temp = noise_nig())
+    # noise = list(sal = noise_normal(), temp = noise_normal())
   ),
   data = data,
   control_opt = control_opt(
     estimation = T,
-    iterations = 5,
+    iterations = 500,
     n_parallel_chain = 1,
     verbose = F,
     print_check_info = F

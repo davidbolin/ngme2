@@ -120,7 +120,6 @@ VectorXd Latent::grad_theta_mu() {
         return grad;
 
     VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
-    VectorXd prevSV = sigma.array().pow(2).matrix().cwiseProduct(prevV);
 
     // compute gradient g with V
     for (int l=0; l < n_theta_mu; l++) {
@@ -128,23 +127,6 @@ VectorXd Latent::grad_theta_mu() {
     }
 
     return -grad;
-
-    // // compute numerical hessian with prevV
-    // VectorXd eps = VectorXd::Constant(V_size, 0.001);
-    // VectorXd num_h = VectorXd::Zero(n_theta_mu);
-    // for (int l=0; l < n_theta_mu; l++) {
-    //     double g_o = (prevV-h).cwiseProduct(B_mu.col(l).cwiseQuotient(prevSV)).dot(getK()*W - (mu).cwiseProduct(prevV-h));
-    //     double g_eps = (prevV-h).cwiseProduct(B_mu.col(l).cwiseQuotient(prevSV)).dot(getK()*W - (mu + eps).cwiseProduct(prevV-h));
-    //     num_h(l) = (g_eps - g_o) / eps(0);
-    // }
-
-    // if (V_size < 10)
-    //     return - grad / sqrt(W_size);
-    // else
-    //     return - grad / W_size;
-
-    // double ana_hess = -(prevV-h).cwiseQuotient(prevSV).dot(prevV-h);
-    // num_hess = (grad_eps - grad) / eps
 }
 
 // return the gradient wrt. theta, theta=log(sigma)
@@ -154,7 +136,6 @@ inline VectorXd Latent::grad_theta_sigma() {
 
     // std::cout << "W = " << W << std::endl;
     VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
-    VectorXd prevSV = sigma.array().pow(2).matrix().cwiseProduct(prevV);
 
     // (KW-mu(V-h)) / (sigma^2 V)
     VectorXd tmp = (getK()*W - mu.cwiseProduct(V-h)).array().pow(2).matrix().cwiseQuotient(SV);
@@ -251,7 +232,11 @@ if (debug) std::cout << "Start latent get parameter"<< std::endl;
     if (noise_type[0] == "normal_nig")
         parameter.segment(n_theta_K+n_theta_mu+n_theta_sigma+n_nu, n_theta_sigma_normal) = theta_sigma_normal;
 // if (debug) std::cout << "End latent get parameter"<< std::endl;
-if (debug) std::cout << "parameter= " << parameter << std::endl;
+if (debug) {
+    if (std::isnan(parameter(0))||std::isnan(-parameter(0)))
+        throw std::runtime_error("isnan");
+    std::cout << "parameter= " << parameter << std::endl;
+}
 
     return parameter;
 }
@@ -418,7 +403,6 @@ void Latent::update_each_iter(bool init) {
 // for compute hessian
 double Latent::log_density(const VectorXd& parameter, bool precond_K) {
     double logd_W = 0;
-    double logd_V = 0;
 
     if (precond_K) {
         // 1. pi(W|V)
@@ -441,21 +425,24 @@ double Latent::log_density(const VectorXd& parameter, bool precond_K) {
     }
 
     // 2. pi(V)
-    if ((n_nu == 1 && noise_type[0] != "normal") ||
-        (n_nu == 2 && noise_type[0] != "normal" && noise_type[1] != "normal")
-    ) {
-        nu = parameter.tail(n_nu);
-        // compute logd_V
-        if (n_nu == 1) {
-            logd_V = NoiseUtil::log_density(noise_type[0], V, h, nu[0], FALSE);
-        } else if (n_nu == 2) {
-            int n = V_size / n_nu;
-            for (int i=0; i < n_nu; i++) {
-                logd_V += NoiseUtil::log_density(noise_type[i], V.segment(i*n, n), h.segment(i*n, n), nu[i], FALSE);
-            }
-        }
-    }
-    return -(logd_W + logd_V);
+    // double logd_V = 0;
+    // if ((n_nu == 1 && noise_type[0] != "normal") ||
+    //     (n_nu == 2 && noise_type[0] != "normal" && noise_type[1] != "normal")
+    // ) {
+    //     nu = parameter.tail(n_nu);
+    //     // compute logd_V
+    //     if (n_nu == 1) {
+    //         logd_V = NoiseUtil::log_density(noise_type[0], V, h, nu[0], FALSE);
+    //     } else if (n_nu == 2) {
+    //         int n = V_size / n_nu;
+    //         for (int i=0; i < n_nu; i++) {
+    //             logd_V += NoiseUtil::log_density(noise_type[i], V.segment(i*n, n), h.segment(i*n, n), nu[i], FALSE);
+    //         }
+    //     }
+    // }
+    // return -(logd_W + logd_V);
+
+    return -logd_W;
 }
 
 // log density of W|V
@@ -496,14 +483,14 @@ double Latent::logd_KW_given_V(const VectorXd& mu, const VectorXd& sigma, const 
 
 // Numerical hessian
 MatrixXd Latent::precond(bool precond_K) {
-    VectorXd parameter (n_params);
-    parameter << theta_K, theta_mu, theta_sigma, nu;
+    VectorXd parameter (n_params - n_nu);
+    parameter << theta_K, theta_mu, theta_sigma;
 
     VectorXd v (parameter);
     // update v if we don't need to compute hessian for K
     if (!precond_K) {
-        v.resize(n_params - n_theta_K);
-        v = parameter.tail(n_params - n_theta_K);
+        v.resize(n_theta_mu + n_theta_sigma);
+        v << theta_mu, theta_sigma;
     }
 
     int n = v.size();
@@ -532,14 +519,28 @@ MatrixXd Latent::precond(bool precond_K) {
 			num_hess(j, i) = num_hess(i, j);
 		}
 	}
-// std::cout << "num_hess: " << std::endl << num_hess << std::endl;
 
+    MatrixXd precond_full = MatrixXd::Zero(n_params, n_params);
     if (precond_K) {
-        return num_hess;
+        precond_full.topLeftCorner(n_params - n_nu, n_params - n_nu) = num_hess;
     } else {
-        MatrixXd precond_full = MatrixXd::Zero(n_params, n_params);
         precond_full.topLeftCorner(n_theta_K, n_theta_K) = VectorXd::Constant(n_theta_K, V_size).asDiagonal();
-        precond_full.bottomRightCorner(n_params - n_theta_K, n_params - n_theta_K) = num_hess;
-        return precond_full;
+        precond_full.block(n_theta_K, n_theta_K, n_theta_mu + n_theta_sigma, n_theta_mu + n_theta_sigma) = num_hess;
     }
+
+    // update nu
+    for (int i=0; i < n_nu; i++) {
+        int n = V_size / n_nu;
+        double noise_hess = NoiseUtil::precond(precond_eps, noise_type[i], prevV.segment(i*n, n), h.segment(i*n, n), nu[i], single_V);
+
+        // prevent generate 0 or -0
+        if (abs(noise_hess) < 1) {
+            noise_hess = noise_hess > 0 ? 1 : -1;
+        }
+
+        precond_full(n_params - n_nu + i, n_params - n_nu + i) = noise_hess;
+    }
+
+// std::cout << "print hessian: " << std::endl << precond_full << std::endl;
+    return precond_full;
 }

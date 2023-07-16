@@ -95,16 +95,17 @@ ngme <- function(
 
   # update with start (list of ngmes)
   if (inherits(start, "ngme")) {
+    # to-do: check start is of same length
     for (i in seq_along(ngme_model$replicates)) {
       ngme_model$replicates[[i]] <- within(ngme_model$replicates[[i]], {
-        beta <- start[[i]]$beta
-        noise <- update_noise(noise, new_noise = start[[i]]$noise)
-        for (i in seq_along(start[[i]]$models)) {
-          models[[i]]$theta_K  <- start[[i]]$models[[i]]$theta_K
-          models[[i]]$W        <- start[[i]]$models[[i]]$W
-          models[[i]]$V        <- start[[i]]$models[[i]]$V
+        beta <- start$replicates[[i]]$beta
+        noise <- update_noise(noise, new_noise = start$replicates[[i]]$noise)
+        for (i in seq_along(start$replicates[[i]]$models)) {
+          models[[i]]$theta_K  <- start$replicates[[i]]$models[[i]]$theta_K
+          models[[i]]$W        <- start$replicates[[i]]$models[[i]]$W
+          models[[i]]$V        <- start$replicates[[i]]$models[[i]]$V
           models[[i]]$noise    <- update_noise(
-            models[[i]]$noise, new_noise = start[[i]]$models[[i]]$noise
+            models[[i]]$noise, new_noise = start$replicates[[i]]$models[[i]]$noise
           )
         }
       })

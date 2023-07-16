@@ -78,6 +78,11 @@ VectorXd Optimizer::sgd(
         // one step = stepsize * H^-1 * grad
         VectorXd one_step = model.get_stepsizes().cwiseProduct(H.llt().solve(grad));
 
+// if (std::isnan(one_step(one_step.size()-1))) {
+//     std::cout << "one_step ISNAN = " << one_step << std::endl;
+//     return x;
+// }
+
 // std::cout << "get gradient (ms): " << since(timer_grad).count() << std::endl;
 
         // restrict one_step by |one_step(i)| / |x(i)| < rela_step

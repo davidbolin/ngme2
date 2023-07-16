@@ -7,9 +7,10 @@
 precision_matrix_multivariate_spde(
   p,
   mesh,
-  cor_mat,
-  alpha = 2,
+  rho,
+  alpha_list = NULL,
   theta_K_list = NULL,
+  variance_list = NULL,
   B_K_list = NULL,
   theta = NULL,
   Q = NULL
@@ -20,17 +21,22 @@ precision_matrix_multivariate_spde(
 
 \item{mesh}{an inla.mesh.2d object, mesh for build the SPDE model}
 
-\item{cor_mat}{matrix of dim p*p, controls the correlation (only look at upper.tri part)}
-
-\item{alpha}{2 or 4, SPDE smoothness parameter}
+\item{rho}{vector with the p(p-1)/2 correlation parameters rho_11, rho_21, rho_22, ... rho_p1, rho_p2, ... rho_p(p-1)}
 
 \item{theta_K_list}{a list (length is p) of theta_K}
+
+\item{variance_list}{If provided, it should be a vector of length p, where the
+kth element corresponds to a desired variance of the kth field. The kth operator
+is then scaled by a constant c so that this variance is achieved in the stationary case
+(default no scaling)}
 
 \item{B_K_list}{a list (length is p) of B_K (non-stationary case)}
 
 \item{theta}{parameter for Q matrix (length of 1 when p=2, length of 3 when p=3)}
 
 \item{Q}{orthogonal matrix of dim p*p (provide when p > 3)}
+
+\item{alpha}{2 or 4, SPDE smoothness parameter}
 }
 \value{
 the precision matrix of the multivariate model
@@ -43,21 +49,44 @@ The general model is defined as $D diag(L_1, ..., L_p) x = M$. D is the dependen
 See the section 2.2 of Bolin and Wallin (2020) for exact parameterization of Dependence matrix.
 }
 \examples{
-rho_mat <- matrix(0, nrow = 3, ncol = 3)
-rho_mat[1, 2] <- 0.4; rho_mat[1, 3] <- -0.5; rho_mat[2,3] <- 0.8
-pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
-mesh <- INLA::inla.mesh.2d(
-  loc.domain = pl01, cutoff = 2,
-  max.edge = c(0.5, 10)
-)
-precision_matrix_multivariate_spde(
-  3,
-  mesh = INLA::inla.mesh.1d(1:10),
-  cor_mat = rho_mat,
-  alpha = 2,
-  theta_K_list = list(0,1,2),
-  theta = c(1,2,3)
-)
+library(INLA)
+library(fields)
+# Define mesh
+x <- seq(from=0,to=1,length.out = 40)
+mesh <- inla.mesh.create(lattice = inla.mesh.lattice(x,x), extend = FALSE)
+# Set parameters
+rho <- c(-0.5, 0.5,-0.25) #correlation parameters
+log_kappa <- list(2,2,2) #log(kappa)
+variances <- list(1,1,1) #set marginal variances to 1
+alpha <- list(2,2,2) #smoothness parameters
+# Compute precision
+Q <- precision_matrix_multivariate_spde(p, mesh = mesh, rho = rho,
+                                       alpha = alpha, theta_K_list = log_kappa,
+                                       variance_list = variances)
+
+A <- as.vector(inla.spde.make.A(mesh,loc = matrix(c(0.5,0.5),1,2)))
+Sigma <- as.vector(solve(Q,c(A,rep(0,2*mesh$n))))
+r11 <- Sigma[1:mesh$n]
+r12 <- Sigma[(mesh$n+1):(2*mesh$n)]
+r13 <- Sigma[(2*mesh$n+1):(3*mesh$n)]
+Sigma <- as.vector(solve(Q,c(rep(0,mesh$n),A,rep(0,mesh$n))))
+r22 <- Sigma[(mesh$n+1):(2*mesh$n)]
+r23 <- Sigma[(2*mesh$n+1):(3*mesh$n)]
+Sigma <- as.vector(solve(Q,v <- c(rep(0,2*mesh$n),A)))
+r33 <- Sigma[(2*mesh$n+1):(3*mesh$n)]
+
+proj <- inla.mesh.projector(mesh)
+
+par(mfrow=c(3,3))
+image.plot(inla.mesh.project(proj,r11), main = "Cov(X_1(s0),X_1(s)")
+plot.new()
+plot.new()
+image.plot(inla.mesh.project(proj,r12), main = "Cov(X_1(s0),X_2(s)")
+image.plot(inla.mesh.project(proj,r22), main = "Cov(X_2(s0),X_2(s)")
+plot.new()
+image.plot(inla.mesh.project(proj,r13), main = "Cov(X_1(s0),X_3(s)")
+image.plot(inla.mesh.project(proj,r23), main = "Cov(X_2(s0),X_3(s)")
+image.plot(inla.mesh.project(proj,r33), main = "Cov(X_3(s0),X_3(s)")
 }
 \references{
 Bolin, D. and Wallin, J. (2020), Multivariate type G Matérn stochastic partial differential equation random fields. J. R. Stat. Soc. B, 82: 215-239. https://doi.org/10.1111/rssb.12351

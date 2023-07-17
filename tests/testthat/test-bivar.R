@@ -19,12 +19,14 @@ test_that("test tp and bv operator", {
 
 test_that("test bv(ar1, ar1) with 2 noise", {
   n <- 500
+# load_all()
   true_model <- f(
     1:n,
     model="bv",
-    theta = 0, rho = 0.6,
+    theta = 0, rho = 0.8,
     sub_models = list(
-      first = "ar1", second="ar1"
+      first ="ar1",
+      second="ar1"
     ),
     group = c(rep("first", n/2), rep("second", n/2)),
     noise = list(
@@ -32,16 +34,18 @@ test_that("test bv(ar1, ar1) with 2 noise", {
       second=noise_nig(mu=-3, sigma=2, nu=1)
     )
   )
-
+true_model
   W <- simulate(true_model)
   AW <- as.numeric(true_model$A %*% W)
   n_obs <- length(AW)
   Y <- AW + rnorm(n_obs, sd=0.5)
 
+# load_all()
   out <- ngme(
     Y ~ 0 + f(
       1:n,
       model="bv",
+      # rho = 0.8,
       sub_models = list(
         first = "ar1", second="ar1"
       ),
@@ -59,7 +63,8 @@ test_that("test bv(ar1, ar1) with 2 noise", {
       estimation = T,
       verbose = T,
       print_check_info = F,
-      preconditioner = "none"
+      preconditioner = "fast",
+      precond_by_diff_chain = FALSE
     )
     # ,start = out
   )

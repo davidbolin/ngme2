@@ -34,6 +34,7 @@ void Bivar::update_K(const VectorXd& theta_K) {
   setSparseBlock(&K, n, n, K11);
 }
 
+// assume K is updated!!!
 void Bivar::update_dK(const VectorXd& theta_K) {
   double eta = theta_K(0);
   double theta = 2 * std::atan(eta);
@@ -42,9 +43,9 @@ void Bivar::update_dK(const VectorXd& theta_K) {
 
   VectorXd theta_K1 = theta_K.segment(2, n_theta_1);
   VectorXd theta_K2 = theta_K.segment(2 + n_theta_1, n_theta_2);
-  // assume K is updated!!!
-    // first->update_K(theta_K1);
-    // second->update_K(theta_K2);
+
+  first->update_K(theta_K1);
+  second->update_K(theta_K2);
   first->update_dK(theta_K1);
   second->update_dK(theta_K2);
 
@@ -55,18 +56,18 @@ void Bivar::update_dK(const VectorXd& theta_K) {
       SparseMatrix<double> K1 = first->getK();
       SparseMatrix<double> K2 = second->getK();
       Matrix2d dD;
-      if (index == 0) {
-        // d1 is dtheta / deta
+      if (index == 0) { // theta
+        // d0 is dtheta / deta
         // theta = 2 * atan(eta)
-        double d1 = 1 / (1+eta*eta);
-        dD = d1 * get_dD_theta(theta, rho);
+        double d0 = 1 / (1+eta*eta);
+        dD = d0 * get_dD_theta(theta, rho);
       }
-      else {
-        // d2 is drho / dth_rho
-        double d2 = 2 * (exp(th_rho) / pow(1+exp(th_rho), 2));
-        dD = d2 * get_dD_rho(theta, rho);
+      else { // rho
+        // d1 is drho / dth_rho
+        double d1 = 2 * (exp(th_rho) / pow(1+exp(th_rho), 2));
+        dD = d1 * get_dD_rho(theta, rho);
       }
-
+// std::cout << "dD = " << dD << std::endl;
       SparseMatrix<double> dK00 = VectorXd::Constant(n, dD(0,0)).asDiagonal() * K1;
       SparseMatrix<double> dK01 = VectorXd::Constant(n, dD(0,1)).asDiagonal() * K2;
       SparseMatrix<double> dK10 = VectorXd::Constant(n, dD(1,0)).asDiagonal() * K1;
@@ -76,6 +77,7 @@ void Bivar::update_dK(const VectorXd& theta_K) {
       setSparseBlock(&dK[index], 0, n, dK01);
       setSparseBlock(&dK[index], n, 0, dK10);
       setSparseBlock(&dK[index], n, n, dK11);
+// std::cout << "dK[" << index << "] = " << dK[index] << std::endl;
     } else if (!share_param && index < 2 + n_theta_1) {
       Matrix2d D = getD(theta, rho);
       SparseMatrix<double> dK00 = VectorXd::Constant(n, D(0,0)).asDiagonal() * first->get_dK()[index-2];

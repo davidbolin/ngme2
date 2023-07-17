@@ -26,7 +26,6 @@ bv <- function(
   ...
 ) {
   mesh <- ngme_build_mesh(mesh)
-
   model_names <- names(sub_models)
   stopifnot(
     "Please provide names for sub_models" = !is.null(model_names),
@@ -38,21 +37,23 @@ bv <- function(
   )
   group <- factor(group, levels = model_names)
 
-  # build 2 sub_models
-  args <- as.list(environment())
+  # build 2 sub_models (pass environment to sub_models)
+  # delete theta and rho in env_args (to avoid sub_models use them)
+  env_args <- as.list(environment())
+  env_args$theta <- NULL; env_args$rho <- NULL
   arg1 <- sub_models[[model_names[1]]]
   if (!is.list(arg1)) {
-    first <- build_operator(arg1, args)
+    first <- build_operator(arg1, env_args)
   } else {
     stopifnot("Please provide model=.. in the list" = !is.null(arg1$model))
-    first <- build_operator(arg1$model, modifyList(args, arg1))
+    first <- build_operator(arg1$model, modifyList(env_args, arg1))
   }
   arg2 <- sub_models[[model_names[2]]]
   if (!is.list(arg2)) {
-    second <- build_operator(arg2, args)
+    second <- build_operator(arg2, env_args)
   } else {
     stopifnot("Please provide model=.. in the list" = !is.null(arg2$model))
-    second <- build_operator(arg2$model, modifyList(args, arg2))
+    second <- build_operator(arg2$model, modifyList(env_args, arg2))
   }
 
   stopifnot(
@@ -67,6 +68,7 @@ bv <- function(
   second$theta_K <- theta_K[(3 + first$n_theta_K):length(theta_K)]
 
   D <- build_D(theta, rho)
+print(D)
   bigD <- kronecker(D, Matrix::Diagonal(nrow(first$K)))
 
   ngme_operator(

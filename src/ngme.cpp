@@ -31,7 +31,7 @@ MatrixXd Ngme::precond(int strategy, double eps) {
     precond += ngme_repls[i]->precond(strategy, eps);
   }
 
-std::cout << "precond in ngme class = \n" << precond << std::endl;
+// std::cout << "precond in ngme class = \n" << precond << std::endl;
 
   return precond / n_repl;
 }

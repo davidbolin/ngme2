@@ -109,7 +109,7 @@ ngme_out <- ngme(
     verbose = FALSE,
     seed = 3,
     preconditioner = "fast",
-    precond_by_diff_chain = TRUE,
+    precond_by_diff_chain = FALSE,
     precond_eps = 1e-5
   )
 )

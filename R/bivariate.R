@@ -68,7 +68,7 @@ bv <- function(
   second$theta_K <- theta_K[(3 + first$n_theta_K):length(theta_K)]
 
   D <- build_D(theta, rho)
-print(D)
+# print(D)
   bigD <- kronecker(D, Matrix::Diagonal(nrow(first$K)))
 
   ngme_operator(

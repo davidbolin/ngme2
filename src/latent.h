@@ -56,7 +56,7 @@ protected:
     int W_size, V_size, n_params, n_var {1}; // n_params=n_theta_K + n_theta_mu + n_theta_sigma + n_var
 
     // operator (for compute K, for compute numerical gradient, for preconditioner)
-    std::unique_ptr<Operator> ope, ope_add_eps, ope_precond;
+    std::shared_ptr<Operator> ope, ope_add_eps, ope_precond;
     VectorXd h, theta_K;
     int n_theta_K;
     bool symmetricK, zero_trace, use_num_dK {false};

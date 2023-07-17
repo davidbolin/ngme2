@@ -16,7 +16,7 @@ Ngme::Ngme(const Rcpp::List& R_ngme, unsigned long seed, int sampling_strategy) 
 
   for (int i=0; i < n_repl; i++) {
     Rcpp::List ngme_repl = Rcpp::as<Rcpp::List> (list_replicates[i]);
-    ngme_repls.push_back(std::make_unique<BlockModel>(ngme_repl, seed));
+    ngme_repls.push_back(std::make_shared<BlockModel>(ngme_repl, seed));
     num_each_repl.push_back(ngme_repls[i]->get_n_obs());
   }
   sum_num_each_repl = std::accumulate(num_each_repl.begin(), num_each_repl.end(), 0.0);

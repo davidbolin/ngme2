@@ -104,7 +104,7 @@ ngme_out <- ngme(
     iterations = 1000,
     std_lim = 0.01,
     n_parallel_chain = 4,
-    stop_points = 20,
+    stop_points = 10,
     print_check_info = FALSE,
     verbose = FALSE,
     seed = 3,

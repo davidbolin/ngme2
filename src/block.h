@@ -75,7 +75,7 @@ protected:
     SparseMatrix<double> A, K, Q, QQ, pmat, pmat_inv;
     // SimplicialLLT<SparseMatrix<double, Lower>> Q_eps_solver;
 
-    vector<std::unique_ptr<Latent>> latents;
+    vector<std::shared_ptr<Latent>> latents;
     VectorXd p_vec, a_vec, b_vec, noise_V, noise_prevV;
     // double nu {1};
 
@@ -145,7 +145,7 @@ public:
     void assemble() {
         int nrow = 0;
         int ncol = 0;
-        for (vector<std::unique_ptr<Latent>>::iterator it = latents.begin(); it != latents.end(); it++) {
+        for (vector<std::shared_ptr<Latent>>::iterator it = latents.begin(); it != latents.end(); it++) {
             setSparseBlock(&K,   nrow, ncol, (*it)->getK());
             // setSparseBlock(&dK,  n, n, (*it)->get_dK());
             // setSparseBlock(&d2K, n, n, (*it)->get_d2K());
@@ -158,7 +158,7 @@ public:
     VectorXd getMean() const {
         VectorXd mean (V_sizes);
         int pos = 0;
-        for (vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+        for (vector<std::shared_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
             int size = (*it)->get_V_size();
             mean.segment(pos, size) = (*it)->getMean();
             pos += size;
@@ -169,7 +169,7 @@ public:
     VectorXd getV() const {
         VectorXd V (V_sizes);
         int pos = 0;
-        for (vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+        for (vector<std::shared_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
             int size = (*it)->get_V_size();
             V.segment(pos, size) = (*it)->getV();
             pos += size;
@@ -181,7 +181,7 @@ public:
     VectorXd getPrevV() const {
         VectorXd V (V_sizes);
         int pos = 0;
-        for (vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+        for (vector<std::shared_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
             int size = (*it)->get_V_size();
             V.segment(pos, size) = (*it)->getPrevV();
             pos += size;
@@ -194,7 +194,7 @@ public:
     VectorXd getSV() const {
         VectorXd SV (V_sizes);
         int pos = 0;
-        for (vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+        for (vector<std::shared_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
             int size = (*it)->get_V_size();
             SV.segment(pos, size) = (*it)->getSV();
             pos += size;
@@ -206,7 +206,7 @@ public:
     VectorXd getW() const {
         VectorXd W (W_sizes);
         int pos = 0;
-        for (vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+        for (vector<std::shared_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
             int size = (*it)->get_W_size();
             W.segment(pos, size) = (*it)->getW();
             pos += size;
@@ -217,7 +217,7 @@ public:
     VectorXd getPrevW() const {
         VectorXd W (W_sizes);
         int pos = 0;
-        for (vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+        for (vector<std::shared_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
             int size = (*it)->get_W_size();
             W.segment(pos, size) = (*it)->getPrevW();
             pos += size;

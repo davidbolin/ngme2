@@ -111,7 +111,7 @@ public:
 
 class Tensor_prod : public Operator {
 private:
-  std::unique_ptr<Operator> first, second;
+  std::shared_ptr<Operator> first, second;
   int n_theta_1, n_theta_2;
 public:
   Tensor_prod(const Rcpp::List&);
@@ -123,7 +123,7 @@ public:
 // Bivar
 class Bivar : public Operator {
 private:
-    std::unique_ptr<Operator> first, second;
+    std::shared_ptr<Operator> first, second;
     int n_theta_1, n_theta_2;
     int n; // dim of K1 and K2 (same)
     bool share_param;
@@ -166,7 +166,7 @@ class Randeff : public Operator{
 // for initialize Latent models
 class OperatorFactory {
 public:
-  static std::unique_ptr<Operator> create(
+  static std::shared_ptr<Operator> create(
     const Rcpp::List& operator_in
   ) {
     string model_type = Rcpp::as<string> (operator_in["model"]);
@@ -174,21 +174,21 @@ public:
     int n_theta_K = theta_K.size();
 
     if (model_type == "tp") {
-      return std::make_unique<Tensor_prod>(operator_in);
+      return std::make_shared<Tensor_prod>(operator_in);
     } else if (model_type == "ar1") {
-      return std::make_unique<AR>(operator_in);
+      return std::make_shared<AR>(operator_in);
     } else if (model_type == "ou") {
-      return std::make_unique<Matern_ns>(operator_in, Type::ou);
+      return std::make_shared<Matern_ns>(operator_in, Type::ou);
     } else if (model_type == "matern" && n_theta_K > 1) {
-      return std::make_unique<Matern_ns>(operator_in, Type::matern_ns);
+      return std::make_shared<Matern_ns>(operator_in, Type::matern_ns);
     } else if (model_type == "matern" && n_theta_K == 1) {
-      return std::make_unique<Matern>(operator_in);
+      return std::make_shared<Matern>(operator_in);
     } else if (model_type == "iid" || model_type == "rw1" || model_type == "rw2") {
-      return std::make_unique<Iid>(operator_in);
+      return std::make_shared<Iid>(operator_in);
     } else if (model_type == "re") {
-      return std::make_unique<Randeff>(operator_in);
+      return std::make_shared<Randeff>(operator_in);
     } else if (model_type == "bv") {
-      return std::make_unique<Bivar>(operator_in);
+      return std::make_shared<Bivar>(operator_in);
     } else {
       throw std::runtime_error("Unknown model.");
     }

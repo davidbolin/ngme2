@@ -161,8 +161,6 @@ auto timer = std::chrono::steady_clock::now();
     }
     if (all_converge)
         std::cout << "Reach convergence in " << steps << " iterations." << std::endl;
-    else
-        std::cout << "Estimation ends." << std::endl;
 
 #else // No parallel chain
     Ngme ngme (R_ngme, rng(), sampling_strategy);
@@ -179,6 +177,7 @@ auto timer = std::chrono::steady_clock::now();
     trajs_chains.push_back(opt.get_trajs());
 #endif
 
+std::cout << "Estimation ends." << std::endl;
 std::cout << "Total time of the estimation is (s): " << since(timer).count() / 1000 << std::endl;
 
     outputs.attr("opt_traj") = trajs_chains;

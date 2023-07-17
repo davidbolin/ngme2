@@ -75,13 +75,13 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
     // construct acoording to models
     Rcpp::List latent_in = Rcpp::as<Rcpp::List> (latents_in[i]);
     unsigned long latent_seed = rng();
-    latents.push_back(std::make_unique<Latent>(latent_in, latent_seed));
+    latents.push_back(std::make_shared<Latent>(latent_in, latent_seed));
   }
 
 if (debug) std::cout << "before set block A" << std::endl;
   /* Init A */
   int n = 0;
-  for (std::vector<std::unique_ptr<Latent>>::iterator it = latents.begin(); it != latents.end(); it++) {
+  for (std::vector<std::shared_ptr<Latent>>::iterator it = latents.begin(); it != latents.end(); it++) {
     setSparseBlock(&A, 0, n, (*it)->getA());
     n += (*it)->get_W_size();
   }
@@ -183,7 +183,7 @@ if (debug) std::cout << "End Block Constructor" << std::endl;
 
 void BlockModel::setW(const VectorXd& W) {
   int pos = 0;
-  for (std::vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+  for (std::vector<std::shared_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
     int size = (*it)->get_W_size();
     (*it)->setW(W.segment(pos, size));
     pos += size;
@@ -192,7 +192,7 @@ void BlockModel::setW(const VectorXd& W) {
 
 void BlockModel::setPrevW(const VectorXd& W) {
   int pos = 0;
-  for (std::vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+  for (std::vector<std::shared_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
     int size = (*it)->get_W_size();
     (*it)->setPrevW(W.segment(pos, size));
     pos += size;
@@ -201,7 +201,7 @@ void BlockModel::setPrevW(const VectorXd& W) {
 
 void BlockModel::setPrevV(const VectorXd& V) {
   int pos = 0;
-  for (std::vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+  for (std::vector<std::shared_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
     int size = (*it)->get_V_size();
     (*it)->setPrevV(V.segment(pos, size));
     pos += size;
@@ -254,7 +254,7 @@ VectorXd BlockModel::get_parameter() {
 if (debug) std::cout << "Start get_parameter"<< std::endl;
     VectorXd thetas (n_params);
     int pos = 0;
-    for (std::vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+    for (std::vector<std::shared_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
       VectorXd theta = (*it)->get_parameter();
       thetas.segment(pos, theta.size()) = theta;
       pos += theta.size();
@@ -291,7 +291,7 @@ auto timer_computeg = std::chrono::steady_clock::now();
     VectorXd gradient = VectorXd::Zero(n_params);
     // get grad for each latent
     int pos = 0;
-    for (std::vector<std::unique_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+    for (std::vector<std::shared_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
       int theta_len = (*it)->get_n_params();
       gradient.segment(pos, theta_len) = (*it)->get_grad();
       pos += theta_len;
@@ -330,7 +330,7 @@ if (debug) {
 void BlockModel::set_parameter(const VectorXd& Theta) {
 if (debug) std::cout << "Start set_parameter"<< std::endl;
   int pos = 0;
-  for (std::vector<std::unique_ptr<Latent>>::iterator it = latents.begin(); it != latents.end(); it++) {
+  for (std::vector<std::shared_ptr<Latent>>::iterator it = latents.begin(); it != latents.end(); it++) {
     int theta_len = (*it)->get_n_params();
     VectorXd theta = Theta.segment(pos, theta_len);
     (*it)->set_parameter(theta);
@@ -628,7 +628,7 @@ Rcpp::List BlockModel::sampling(int n, bool posterior) {
 // fix parameter if converge
 // void BlockModel::check_converge(vector<bool>& converge) {
 //   int pos = 0;
-//   for (std::vector<std::unique_ptr<Latent>>::iterator it = latents.begin(); it != latents.end(); it++) {
+//   for (std::vector<std::shared_ptr<Latent>>::iterator it = latents.begin(); it != latents.end(); it++) {
 //     int theta_len = (*it)->get_n_params();
 //     vector<bool> sub_converge (converge.begin(), converge.begin() + theta_len);
 //     (*it)->check_converge(sub_converge);

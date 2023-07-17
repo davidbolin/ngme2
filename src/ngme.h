@@ -22,7 +22,7 @@ enum Strategy {all, ws};
 class Ngme : public Model {
 private:
   // for each replicate
-  vector<std::unique_ptr<BlockModel>> ngme_repls;
+  vector<std::shared_ptr<BlockModel>> ngme_repls;
   int n_repl, n_params;
 
   vector<int> num_each_repl;

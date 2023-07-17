@@ -80,7 +80,7 @@
       <a href="../articles/random-effect.html">Random effects model in Ngme2</a>
     </li>
     <li>
-      <a href="../articles/tensor_product.html">Tensor product model</a>
+      <a href="../articles/tensor_product.html">Space-time (tensor product) model in Ngme2</a>
     </li>
   </ul>
 </li>
@@ -410,8 +410,8 @@ sample for such a process is given below.</p>
 <p><img src="pred_and_est_files/figure-html/generate-VW-1.png" width="700" style="display: block; margin: auto;"></p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">W</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  num [1:10] 2.13 2.15 2.19 2.28 2.38 ...</span></span>
-<span><span class="co">#&gt;  - attr(*, "noise")=List of 28</span></span>
+<span><span class="co">#&gt;  num [1:10] 0.05142 0.05681 0.04357 0.02321 0.00155 ...</span></span>
+<span><span class="co">#&gt;  - attr(*, "noise")=List of 23</span></span>
 <span><span class="co">#&gt;   ..$ noise_type          : chr "nig"</span></span>
 <span><span class="co">#&gt;   ..$ nu                  : num 0.5</span></span>
 <span><span class="co">#&gt;   ..$ n_nu                : int 1</span></span>
@@ -434,14 +434,9 @@ sample for such a process is given below.</p>
 <span><span class="co">#&gt;   ..$ share_V             : logi FALSE</span></span>
 <span><span class="co">#&gt;   ..$ corr_measurement    : logi FALSE</span></span>
 <span><span class="co">#&gt;   ..$ index_corr          : NULL</span></span>
-<span><span class="co">#&gt;   ..$ rho                 : num 0</span></span>
-<span><span class="co">#&gt;   ..$ n_nu                : int 1</span></span>
-<span><span class="co">#&gt;   ..$ n_theta_mu          : int 1</span></span>
-<span><span class="co">#&gt;   ..$ n_theta_sigma       : int 1</span></span>
-<span><span class="co">#&gt;   ..$ n_theta_sigma_normal: int 0</span></span>
-<span><span class="co">#&gt;   ..$ n_params            : int 3</span></span>
+<span><span class="co">#&gt;   ..$ rho                 : num(0) </span></span>
 <span><span class="co">#&gt;   ..- attr(*, "class")= chr "ngme_noise"</span></span>
-<span><span class="co">#&gt;  - attr(*, "V")= num [1:10] 0.02205 0.00527 0.01098 0.16272 0.08835 ...</span></span>
+<span><span class="co">#&gt;  - attr(*, "V")= num [1:10] 0.00146 0.02152 0.1208 0.05924 0.00535 ...</span></span>
 <span></span>
 <span><span class="va">V</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">W</span>, <span class="st">"noise"</span><span class="op">)</span><span class="op">$</span><span class="va">V</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">loc_1d</span>, <span class="va">V</span>, type <span class="op">=</span> <span class="st">"l"</span><span class="op">)</span></span></code></pre></div>
@@ -576,21 +571,21 @@ values of <span class="math inline">\(E[\mathbf{w} | \mathbf{V},
 <code class="sourceCode R"><span><span class="va">V</span></span>
 <span><span class="co">#&gt; NULL</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">V_1</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] 0.1427444 0.4109524 0.4384605 0.3918285 0.3342217 0.1281153 0.1148118</span></span>
-<span><span class="co">#&gt;  [8] 0.1004261 0.2126590 0.1069454</span></span>
+<span><span class="co">#&gt;  [1] 0.03869525 0.07883489 0.08318541 0.06462850 0.04856035 0.06417731</span></span>
+<span><span class="co">#&gt;  [7] 0.06909545 0.06326457 0.06252715 0.03423336</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">V_2</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] 0.27993096 0.40668069 0.51906236 0.48264448 0.10140387 0.26084901</span></span>
-<span><span class="co">#&gt;  [7] 0.13368597 0.17011220 0.10006576 0.06609838</span></span>
+<span><span class="co">#&gt;  [1] 0.03431586 0.06890656 0.08906463 0.09228340 0.06316035 0.06865879</span></span>
+<span><span class="co">#&gt;  [7] 0.06074254 0.05936306 0.04671654 0.03783091</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="va">W</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] 2.125704 2.146389 2.192808 2.276680 2.377165 2.452833 2.568609 2.757270</span></span>
-<span><span class="co">#&gt;  [9] 2.716516 2.726861</span></span>
+<span><span class="co">#&gt;  [1]  0.051419956  0.056812439  0.043570762  0.023206078  0.001546090</span></span>
+<span><span class="co">#&gt;  [6] -0.026142519 -0.049508767 -0.054240767 -0.038157418 -0.008505854</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">W_1</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] 2.512836 2.513249 2.489627 2.436392 2.365795 2.283965 2.225669 2.189838</span></span>
-<span><span class="co">#&gt;  [9] 2.179044 2.174397</span></span>
+<span><span class="co">#&gt;  [1] -0.2209154 -0.2225685 -0.2283984 -0.2388688 -0.2502878 -0.2593539</span></span>
+<span><span class="co">#&gt;  [7] -0.2663503 -0.2726227 -0.2768288 -0.2780324</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">W_2</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] 2.616740 2.596773 2.561729 2.488356 2.384403 2.305939 2.232962 2.180472</span></span>
-<span><span class="co">#&gt;  [9] 2.143033 2.132930</span></span></code></pre></div>
+<span><span class="co">#&gt;  [1] -0.2204020 -0.2201462 -0.2228595 -0.2294975 -0.2403406 -0.2513914</span></span>
+<span><span class="co">#&gt;  [7] -0.2615077 -0.2696810 -0.2758935 -0.2771649</span></span></code></pre></div>
 <p>Let us begin by building traceplots for <span class="math inline">\(V\)</span>:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">df_V</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">idx</span>, y <span class="op">=</span> <span class="va">V</span>, col <span class="op">=</span> <span class="va">chain</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>

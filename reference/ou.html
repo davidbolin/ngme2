@@ -62,7 +62,7 @@
       <a href="../articles/random-effect.html">Random effects model in Ngme2</a>
     </li>
     <li>
-      <a href="../articles/tensor_product.html">Tensor product model</a>
+      <a href="../articles/tensor_product.html">Space-time (tensor product) model in Ngme2</a>
     </li>
   </ul></li>
 <li>
@@ -99,16 +99,12 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">ou</span><span class="op">(</span><span class="va">map</span>, mesh <span class="op">=</span> <span class="fu">INLA</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/INLA/man/inla.mesh.1d.html" class="external-link">inla.mesh.1d</a></span><span class="op">(</span><span class="va">map</span><span class="op">)</span>, theta_K <span class="op">=</span> <span class="fl">0</span>, B_K <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">ou</span><span class="op">(</span><span class="va">mesh</span>, theta_K <span class="op">=</span> <span class="fl">0</span>, B_K <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
     <h2>Arguments</h2>
-    <dl><dt>map</dt>
-<dd><p>numerical vector, covariates to build index for the process</p></dd>
-
-
-<dt>mesh</dt>
+    <dl><dt>mesh</dt>
 <dd><p>mesh for build the model</p></dd>
 
 

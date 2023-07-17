@@ -63,7 +63,7 @@ optimization process."><!-- mathjax --><script src="https://cdnjs.cloudflare.com
       <a href="../articles/random-effect.html">Random effects model in Ngme2</a>
     </li>
     <li>
-      <a href="../articles/tensor_product.html">Tensor product model</a>
+      <a href="../articles/tensor_product.html">Space-time (tensor product) model in Ngme2</a>
     </li>
   </ul></li>
 <li>
@@ -114,6 +114,9 @@ optimization process.</p>
 <span>  std_lim <span class="op">=</span> <span class="fl">0.1</span>,</span>
 <span>  trend_lim <span class="op">=</span> <span class="fl">0.05</span>,</span>
 <span>  print_check_info <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  preconditioner <span class="op">=</span> <span class="st">"fast"</span>,</span>
+<span>  precond_eps <span class="op">=</span> <span class="fl">1e-05</span>,</span>
+<span>  precond_by_diff_chain <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  max_relative_step <span class="op">=</span> <span class="fl">0.2</span>,</span>
 <span>  max_absolute_step <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  reduce_var <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -173,6 +176,19 @@ optimization process.</p>
 
 <dt>print_check_info</dt>
 <dd><p>print the convergence information</p></dd>
+
+
+<dt>preconditioner</dt>
+<dd><p>preconditioner, can be c("none", "fast", "full")
+"none" means no preconditioner, "fast" means precondition everything except for the parameter of K matrix (for speed reason), "full" means precondition everything</p></dd>
+
+
+<dt>precond_eps</dt>
+<dd><p>numerical, the gap used for estimate preconditioner, default is 1e-5</p></dd>
+
+
+<dt>precond_by_diff_chain</dt>
+<dd><p>logical, if TRUE, use different chains to estimate preconditioner (only computed at check points), if FALSE, use the same chain to estimate preconditioner (computed at each iteration)</p></dd>
 
 
 <dt>max_relative_step</dt>

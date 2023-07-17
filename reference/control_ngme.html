@@ -62,7 +62,7 @@
       <a href="../articles/random-effect.html">Random effects model in Ngme2</a>
     </li>
     <li>
-      <a href="../articles/tensor_product.html">Tensor product model</a>
+      <a href="../articles/tensor_product.html">Space-time (tensor product) model in Ngme2</a>
     </li>
   </ul></li>
 <li>
@@ -103,9 +103,9 @@
 <span>  init_sample_W <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  burnin <span class="op">=</span> <span class="fl">100</span>,</span>
 <span>  n_gibbs_samples <span class="op">=</span> <span class="fl">5</span>,</span>
-<span>  fix_beta <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  fix_feff <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  post_samples_size <span class="op">=</span> <span class="fl">100</span>,</span>
-<span>  beta <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  feff <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  debug <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -124,7 +124,7 @@
 <dd><p>number of gibbs sampels</p></dd>
 
 
-<dt>fix_beta</dt>
+<dt>fix_feff</dt>
 <dd><p>logical, fix fixed effect</p></dd>
 
 
@@ -132,12 +132,12 @@
 <dd><p>number of posterior samples</p></dd>
 
 
-<dt>beta</dt>
-<dd><p>fixed effect value</p></dd>
-
-
 <dt>debug</dt>
 <dd><p>debug mode</p></dd>
+
+
+<dt>beta</dt>
+<dd><p>fixed effect value</p></dd>
 
 </dl></div>
     <div id="value">

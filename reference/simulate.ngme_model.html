@@ -62,7 +62,7 @@
       <a href="../articles/random-effect.html">Random effects model in Ngme2</a>
     </li>
     <li>
-      <a href="../articles/tensor_product.html">Tensor product model</a>
+      <a href="../articles/tensor_product.html">Space-time (tensor product) model in Ngme2</a>
     </li>
   </ul></li>
 <li>
@@ -131,27 +131,80 @@
     <div id="ref-examples">
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="fu"><a href="f.html">f</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span>, model<span class="op">=</span><span class="st">"ar1"</span>, rho <span class="op">=</span> <span class="fl">0.4</span>, noise <span class="op">=</span> <span class="fu"><a href="ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [1]  0.6690850  0.7732363 -0.3435166  0.6874429  2.1474846  1.6070122</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [7]  0.3918122  0.2327348  0.8491000  0.7008393</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"noise")</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Noise type: NIG</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Noise parameters: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     mu = 0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     sigma = 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     nu = 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"V")</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [1] 0.6605555 1.6837801 0.1024953 0.7226880 4.0308443 0.1819606 0.3867774</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [8] 1.7841822 0.3687413 1.6975568</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in f(1:10, model = "ar1", rho = 0.4, noise = noise_nig()):</span> To many variables included in f(): 1:10 0.4 noise_nig()</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="fu"><a href="f.html">f</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">10</span><span class="op">)</span>, model<span class="op">=</span><span class="st">"rw1"</span>, noise <span class="op">=</span> <span class="fu"><a href="ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [1] -0.2742751 -0.3988274 -0.3191458 -0.2361269 -0.2113475 -0.3688491</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [7] -0.7464152 -1.0623405 -0.9246590 -0.7898908</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"noise")</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Noise type: NORMAL</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Noise parameters: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     sigma = 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"V")</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [1] 0.010000000 0.087802456 0.072635030 0.142657449 0.020518405 0.006760674</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [7] 0.063610877 0.414777752 0.577022684 0.771138654</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in f(rnorm(10), model = "rw1", noise = noise_normal()):</span> Argument `noise' in formula specification</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 		f(rnorm(10), noise = noise_normal(), model = "rw1")</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-err co"><span class="r-pr">#&gt;</span>   is invalid. Valid arguments are:</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	A</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	Cmatrix</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	Q.beta</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	W</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	X</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	Z</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	adjust.for.con.comp</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	args.ar1c</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	args.intslope</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	args.slm</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	bvalue</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	cdf</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	cgeneric</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	compute</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	constr</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	control.group</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	control.scopy</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	copy</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	covariates</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	cyclic</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	debug</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	diagonal</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	e</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	extraconstr</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	fixed</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	graph</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	graph.file</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	group</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	hyper</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	initial</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	locations</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	mean.linear</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	model</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	n</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	ncol</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	ngroup</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	nrep</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	nrow</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	nu</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	of</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	order</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	param</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	prec.linear</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	precision</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	prior</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	quantiles</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	range</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	rankdef</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	replicate</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	rgeneric</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	rho.max</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	rho.min</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	same.as</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	scale</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	scale.model</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	scopy</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	season.length</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	spde.prefix</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	spde2.prefix</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	spde2.transform</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	spde3.prefix</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	spde3.transform</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	strata</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	subject</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	values</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> 	vb.correct</span>
 </code></pre></div>
     </div>
   </div>

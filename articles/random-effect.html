@@ -80,7 +80,7 @@
       <a href="../articles/random-effect.html">Random effects model in Ngme2</a>
     </li>
     <li>
-      <a href="../articles/tensor_product.html">Tensor product model</a>
+      <a href="../articles/tensor_product.html">Space-time (tensor product) model in Ngme2</a>
     </li>
   </ul>
 </li>
@@ -157,7 +157,7 @@ similar to other models, using <code><a href="../reference/f.html">f()</a></code
 <span><span class="va">repl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">3</span>, <span class="fl">3</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># random effect model accepts formula argument, as the design matrix</span></span>
-<span><span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="op">~</span><span class="fl">1</span> <span class="op">+</span> <span class="va">x</span>, model <span class="op">=</span> <span class="st">"re"</span>, replicate<span class="op">=</span><span class="va">repl</span>, noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span><span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="op">~</span><span class="fl">1</span> <span class="op">+</span> <span class="va">x</span>, model <span class="op">=</span> <span class="st">"re"</span>, noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  <span class="co"># ignore the last part, not needed when using f() in ngme function</span></span>
 <span>  data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">7</span><span class="op">)</span>, eval<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Model type: Random effect</span></span>
@@ -185,9 +185,9 @@ with covariance matrix Sigma.</p>
 <span><span class="va">repl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="va">group</span>, each<span class="op">=</span><span class="va">each_obs</span><span class="op">)</span></span>
 <span><span class="va">z1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">group</span> <span class="op">*</span> <span class="va">each_obs</span>, <span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">AA</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">z1</span><span class="op">)</span>; <span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="va">AA</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="va">AA</span></span>
-<span><span class="co">#&gt;                         z1</span></span>
-<span><span class="co">#&gt;    2000.000000   -3.880394</span></span>
-<span><span class="co">#&gt; z1   -3.880394 1964.764952</span></span>
+<span><span class="co">#&gt;                       z1</span></span>
+<span><span class="co">#&gt;    2000.00000  -11.50658</span></span>
+<span><span class="co">#&gt; z1  -11.50658 1970.82408</span></span>
 <span><span class="va">x1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Exponential.html" class="external-link">rexp</a></span><span class="op">(</span><span class="va">group</span> <span class="op">*</span> <span class="va">each_obs</span><span class="op">)</span></span>
 <span><span class="va">x2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span>, <span class="op">(</span><span class="va">group</span> <span class="op">*</span> <span class="va">each_obs</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
@@ -210,16 +210,16 @@ using ngme2.</p>
 <span><span class="co">#&gt; Linear mixed model fit by REML ['lmerMod']</span></span>
 <span><span class="co">#&gt; Formula: Y ~ 0 + x2 + x1 + (z1 | repl)</span></span>
 <span><span class="co">#&gt;    Data: data.frame(Y = Y, x1 = x1, z1 = z1, repl = repl)</span></span>
-<span><span class="co">#&gt; REML criterion at convergence: 6942.753</span></span>
+<span><span class="co">#&gt; REML criterion at convergence: 6899.191</span></span>
 <span><span class="co">#&gt; Random effects:</span></span>
 <span><span class="co">#&gt;  Groups   Name        Std.Dev. Corr</span></span>
-<span><span class="co">#&gt;  repl     (Intercept) 4.789        </span></span>
-<span><span class="co">#&gt;           z1          5.651    0.34</span></span>
-<span><span class="co">#&gt;  Residual             1.008        </span></span>
+<span><span class="co">#&gt;  repl     (Intercept) 4.377        </span></span>
+<span><span class="co">#&gt;           z1          5.832    0.50</span></span>
+<span><span class="co">#&gt;  Residual             1.003        </span></span>
 <span><span class="co">#&gt; Number of obs: 2000, groups:  repl, 100</span></span>
 <span><span class="co">#&gt; Fixed Effects:</span></span>
 <span><span class="co">#&gt;     x2      x1  </span></span>
-<span><span class="co">#&gt;  3.603  -1.961</span></span>
+<span><span class="co">#&gt;  2.523  -2.022</span></span>
 <span></span>
 <span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
 <span>  formula <span class="op">=</span> <span class="va">Y</span> <span class="op">~</span> <span class="fl">0</span> <span class="op">+</span> <span class="va">x2</span> <span class="op">+</span> <span class="va">x1</span> <span class="op">+</span></span>
@@ -249,15 +249,15 @@ using ngme2.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt;    x2    x1 </span></span>
-<span><span class="co">#&gt;  3.86 -1.94 </span></span>
+<span><span class="co">#&gt;  2.84 -2.07 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $effect1</span></span>
 <span><span class="co">#&gt;   Model type: Random effect</span></span>
 <span><span class="co">#&gt;        Cov matrix: </span></span>
-<span><span class="co">#&gt;          [,1]      [,2]</span></span>
-<span><span class="co">#&gt; [1,] 9.405507  4.188224</span></span>
-<span><span class="co">#&gt; [2,] 4.188224 13.413987</span></span>
+<span><span class="co">#&gt;          [,1]     [,2]</span></span>
+<span><span class="co">#&gt; [1,] 18.79345 12.63047</span></span>
+<span><span class="co">#&gt; [2,] 12.63047 33.88382</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
 <span><span class="co">#&gt;       sigma = 1</span></span>
@@ -265,7 +265,7 @@ using ngme2.</p>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 1.02</span></span>
+<span><span class="co">#&gt;       sigma = 1</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  100</span></span>
@@ -289,18 +289,18 @@ well.</p>
 <span>  <span class="va">U</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">=</span> <span class="fu">MASS</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/MASS/man/mvrnorm.html" class="external-link">mvrnorm</a></span><span class="op">(</span><span class="fl">1</span>, mu<span class="op">=</span><span class="va">mean</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span>, Sigma <span class="op">=</span> <span class="va">V</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">*</span> <span class="va">Sigma</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">U</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] -0.04045141</span></span>
+<span><span class="co">#&gt; [1] 0.1489585</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">var</a></span><span class="op">(</span><span class="va">U</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 32.78261</span></span>
+<span><span class="co">#&gt; [1] 28.28361</span></span>
 <span></span>
 <span><span class="co"># another way to simulate</span></span>
 <span><span class="va">each_obs</span> <span class="op">&lt;-</span> <span class="fl">10</span></span>
 <span><span class="va">repl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="va">group</span>, each<span class="op">=</span><span class="va">each_obs</span><span class="op">)</span></span>
 <span><span class="va">z1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">group</span> <span class="op">*</span> <span class="va">each_obs</span>, <span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">AA</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">z1</span><span class="op">)</span>; <span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="va">AA</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="va">AA</span></span>
-<span><span class="co">#&gt;                   z1</span></span>
-<span><span class="co">#&gt;    5000.000  102.759</span></span>
-<span><span class="co">#&gt; z1  102.759 4997.942</span></span>
+<span><span class="co">#&gt;                     z1</span></span>
+<span><span class="co">#&gt;    5000.0000  -17.4483</span></span>
+<span><span class="co">#&gt; z1  -17.4483 4708.4912</span></span>
 <span><span class="va">x1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Exponential.html" class="external-link">rexp</a></span><span class="op">(</span><span class="va">group</span> <span class="op">*</span> <span class="va">each_obs</span><span class="op">)</span></span>
 <span><span class="co"># simulate Y</span></span>
 <span><span class="va">Y</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html" class="external-link">double</a></span><span class="op">(</span><span class="va">group</span> <span class="op">*</span> <span class="va">each_obs</span><span class="op">)</span></span>
@@ -350,14 +350,14 @@ well.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt; (Intercept)          x1 </span></span>
-<span><span class="co">#&gt;     -0.0127      0.9651 </span></span>
+<span><span class="co">#&gt;       0.148       0.934 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $effect1</span></span>
 <span><span class="co">#&gt;   Model type: Random effect</span></span>
 <span><span class="co">#&gt;        Cov matrix: </span></span>
-<span><span class="co">#&gt;          [,1]</span></span>
-<span><span class="co">#&gt; [1,] 6.334688</span></span>
+<span><span class="co">#&gt;        [,1]</span></span>
+<span><span class="co">#&gt; [1,] 24.514</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
 <span><span class="co">#&gt;       sigma = 1</span></span>
@@ -365,7 +365,7 @@ well.</p>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 1.01</span></span>
+<span><span class="co">#&gt;       sigma = 1</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  500</span></span></code></pre></div>
@@ -440,7 +440,8 @@ well.</p>
 <span>    <span class="op">)</span>,</span>
 <span>    <span class="co"># fix_theta_K = T, theta_K = theta_K,</span></span>
 <span>    <span class="co"># W = t(U), fix_W = T,</span></span>
-<span>    replicate<span class="op">=</span><span class="va">repl</span>, debug<span class="op">=</span><span class="cn">F</span><span class="op">)</span>,</span>
+<span>    debug<span class="op">=</span><span class="cn">F</span><span class="op">)</span>,</span>
+<span>  replicate<span class="op">=</span><span class="va">repl</span>,</span>
 <span>  data<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Y<span class="op">=</span><span class="va">Y</span>, x1<span class="op">=</span><span class="va">x1</span>, z1<span class="op">=</span><span class="va">z1</span>, repl<span class="op">=</span><span class="va">repl</span><span class="op">)</span>,</span>
 <span>  control_ngme <span class="op">=</span> <span class="fu"><a href="../reference/control_ngme.html">control_ngme</a></span><span class="op">(</span></span>
 <span>    <span class="co"># beta = c(0, 0)</span></span>

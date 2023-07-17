@@ -65,7 +65,7 @@ The function is a wrapper function for specific submodels.
       <a href="../articles/random-effect.html">Random effects model in Ngme2</a>
     </li>
     <li>
-      <a href="../articles/tensor_product.html">Tensor product model</a>
+      <a href="../articles/tensor_product.html">Space-time (tensor product) model in Ngme2</a>
     </li>
   </ul></li>
 <li>
@@ -106,12 +106,12 @@ The function is a wrapper function for specific submodels.
 
     <div id="ref-usage">
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">f</span><span class="op">(</span></span>
-<span>  map <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  model <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  <span class="va">map</span>,</span>
+<span>  <span class="va">model</span>,</span>
 <span>  noise <span class="op">=</span> <span class="fu"><a href="ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  mesh <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  control <span class="op">=</span> <span class="fu"><a href="control_f.html">control_f</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  name <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  name <span class="op">=</span> <span class="st">"field"</span>,</span>
 <span>  data <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  group <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  which_group <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -119,7 +119,6 @@ The function is a wrapper function for specific submodels.
 <span>  fix_W <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  fix_theta_K <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  subset <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="cn">TRUE</span>, <span class="fu">length_map</span><span class="op">(</span><span class="va">map</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  eval <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  debug <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -132,32 +131,31 @@ The function is a wrapper function for specific submodels.
 
 
 <dt>model</dt>
-<dd><p>1. string: type of model, 2. ngme.spde object</p></dd>
+<dd><p>string, model type, see ngme_model_types()</p></dd>
 
 
 <dt>noise</dt>
-<dd><p>1. string: type of model, 2. ngme.noise object
-(can also be specified in each ngme model)</p></dd>
+<dd><p>can be either string or a ngme_noise object</p></dd>
 
 
 <dt>mesh</dt>
-<dd><p>mesh for the model</p></dd>
+<dd><p>mesh for the model, if not provided, will be built from map</p></dd>
 
 
 <dt>control</dt>
-<dd><p>control variables for f model</p></dd>
+<dd><p>control variables for latent model</p></dd>
 
 
 <dt>name</dt>
-<dd><p>name of the field, for later use</p></dd>
+<dd><p>name of the field, for later use, if not provided, will be "field1" etc.</p></dd>
 
 
 <dt>data</dt>
-<dd><p>specifed or inherit from ngme formula</p></dd>
+<dd><p>specifed or inherit from ngme() function</p></dd>
 
 
 <dt>group</dt>
-<dd><p>group factor (can be provided in ngme())</p></dd>
+<dd><p>group factor indicate resposne variable, can be inherited from ngme() function</p></dd>
 
 
 <dt>which_group</dt>
@@ -180,12 +178,8 @@ The function is a wrapper function for specific submodels.
 <dd><p>subset of the model</p></dd>
 
 
-<dt>eval</dt>
-<dd><p>evaluate the model</p></dd>
-
-
 <dt>debug</dt>
-<dd><p>Debug mode</p></dd>
+<dd><p>debug mode</p></dd>
 
 
 <dt>...</dt>
@@ -197,7 +191,7 @@ inherit the data from ngme function</p></dd>
     <h2>Value</h2>
     
 
-<p>a list latent_in for constructing latent model, e.g. A, h, C, G,
+<p>a list for constructing latent model, e.g. A, h, C, G,
 which also has
 1. Information about K matrix
 2. Information about noise

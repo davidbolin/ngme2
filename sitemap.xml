@@ -58,6 +58,9 @@
     <loc>https://davidbolin.github.io/ngme2/reference/bv.html</loc>
   </url>
   <url>
+    <loc>https://davidbolin.github.io/ngme2/reference/cienaga.border.html</loc>
+  </url>
+  <url>
     <loc>https://davidbolin.github.io/ngme2/reference/cienaga.html</loc>
   </url>
   <url>
@@ -134,6 +137,9 @@
   </url>
   <url>
     <loc>https://davidbolin.github.io/ngme2/reference/precision_matrix_multivariate.html</loc>
+  </url>
+  <url>
+    <loc>https://davidbolin.github.io/ngme2/reference/precision_matrix_multivariate_spde.html</loc>
   </url>
   <url>
     <loc>https://davidbolin.github.io/ngme2/reference/predict.ngme.html</loc>

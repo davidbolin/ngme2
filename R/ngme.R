@@ -384,8 +384,9 @@ ngme_parse_formula <- function(
       cov_rc <- compute_corr_index(index_corr[p_order])
       X <- X[p_order, , drop = FALSE]
       Y <- Y[p_order]
-      for (i in seq_along(models_rep))
-        models_rep[[i]]$A <- models_rep[[i]]$A[p_order, , drop = FALSE]
+      for (j in seq_along(models_rep))
+        models_rep[[j]]$A <- models_rep[[j]]$A[p_order, , drop = FALSE]
+
       # check here
       noise_rep <- update_noise(noise_rep, sub_idx = p_order)
 

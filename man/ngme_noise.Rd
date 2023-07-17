@@ -28,7 +28,7 @@ ngme_noise(
   share_V = FALSE,
   corr_measurement = FALSE,
   index_corr = NULL,
-  rho = 0,
+  rho = double(0),
   ...
 )
 

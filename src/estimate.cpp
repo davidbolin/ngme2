@@ -34,7 +34,7 @@ Rcpp::List estimate_cpp(const Rcpp::List& R_ngme, const Rcpp::List& control_opt)
     const double max_relative_step = control_opt["max_relative_step"];
     const double max_absolute_step = control_opt["max_absolute_step"];
     const int sampling_strategy = control_opt["sampling_strategy"];
-    const bool compute_precond_each_iter = control_opt["compute_precond_each_iter"];
+    bool compute_precond_each_iter = true;
 
     Rcpp::List output = R_NilValue;
 
@@ -57,12 +57,20 @@ auto timer = std::chrono::steady_clock::now();
     double print_check_info = (control_opt["print_check_info"]);
     omp_set_num_threads(n_chains);
 
-    // init each model
-    std::vector<std::unique_ptr<Ngme>> ngmes;
+    if (n_chains > 1 && precond_by_diff_chain) {
+        compute_precond_each_iter = false;
+    }
+
+    // init model and optimizer
+    vector<std::shared_ptr<Ngme>> ngmes;
+    vector<Ngme_optimizer> opt_vec;
     int i = 0;
     for (i=0; i < n_chains; i++) {
-        ngmes.push_back(std::make_unique<Ngme>(R_ngme, rng(), sampling_strategy));
+        // Not thread-safe using Rcpp::List to init optimizer
+        ngmes.push_back(std::make_shared<Ngme>(R_ngme, rng(), sampling_strategy));
+        opt_vec.push_back(Ngme_optimizer(control_opt, ngmes[i]));
     }
+
     std::string par_string = ngmes[0]->get_par_string();
 
     // burn in period
@@ -80,34 +88,11 @@ auto timer = std::chrono::steady_clock::now();
 
     int curr_batch = 0;
 
-    // Not thread-safe using Rcpp::List to init optimizer
-    // so better init first
-    vector<Optimizer> opt_vec;
-    for (int i = 0; i < n_chains; i++)
-        opt_vec.push_back(Optimizer(control_opt));
-
-// std::cout << "Finish intialization." << std::endl;
-
     while (steps < iterations && !all_converge) {
         MatrixXd mat (n_chains, n_params);
         #pragma omp parallel for schedule(static)
         for (i=0; i < n_chains; i++) {
-            // Optimizer opt (control_opt);
-            // VectorXd param = opt.sgd(*(blocks[i]), 0.1, batch_steps, max_relative_step, max_absolute_step);
-
-            // set the preconditioner manually
-            if (!compute_precond_each_iter) {
-                if (precond_by_diff_chain) {
-                    // provide preconditioner
-                    opt_vec[i].set_precondioner(ngmes[i]->precond());
-                } else {
-                    opt_vec[i].set_precondioner(ngmes[i]->precond());
-                }
-                std::cout << " set mannually " << std::endl;
-            }
-
             VectorXd param = opt_vec[i].sgd(
-                *(ngmes[i]),
                 0.1,
                 batch_steps,
                 max_relative_step,
@@ -128,6 +113,15 @@ auto timer = std::chrono::steady_clock::now();
             vars(curr_batch, k) = (mat.col(k).array() - means(curr_batch, k)).square().sum() / (n_chains - 1);
 
         if (n_chains > 1) {
+            if (precond_by_diff_chain) {
+                // set the preconditioner by other chains
+                MatrixXd precond_sum = MatrixXd::Zero(n_params, n_params);
+                for (int i=0; i < n_chains; i++)
+                    precond_sum += opt_vec[i].get_preconditioner();
+                for (int i=0; i < n_chains; i++)
+                    opt_vec[i].set_preconditioner((precond_sum - opt_vec[i].get_preconditioner()) / (n_chains - 1));
+            }
+
             // exchange VW
             if (exchange_VW) {
                 vector<vector<VectorXd>> tmp = ngmes[0]->get_VW();
@@ -172,9 +166,8 @@ auto timer = std::chrono::steady_clock::now();
 
 #else // No parallel chain
     Ngme ngme (R_ngme, rng(), sampling_strategy);
-    Optimizer opt (control_opt);
+    Ngme_optimizer opt (control_opt, std::make_shared<Ngme>(ngme));
     opt.sgd(
-        ngme,
         0.1,
         iterations,
         max_relative_step, max_absolute_step,
@@ -258,8 +251,9 @@ std::vector<bool> check_conv(
     return conv;
 }
 
-// std.lim, trend.lim
 
+// check convergence of parallel chains
+// std.lim, trend.lim
 //   if(!is.null(dim(m))){
 //     n.test <- dim(m)[2]
 //     N <- dim(m)[1]

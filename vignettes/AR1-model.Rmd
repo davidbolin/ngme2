@@ -87,7 +87,7 @@ beta <- c(-1, 2)
 x1 = runif(n_obs)
 x2 = rexp(n_obs)
 X <- (model.matrix(~0+x1+x2))
-Y <- as.numeric(X %*% beta) + W + rnorm(n_obs, sd = 0.5)
+Y <- as.numeric(X %*% beta) + W + rnorm(n_obs, sd = 2)
 
 # Fit the model with the AR1 model
 ngme_out <- ngme(
@@ -102,15 +102,15 @@ ngme_out <- ngme(
   control_opt = control_opt(
     burnin = 100,
     iterations = 1000,
-    std_lim = 0.6,
-    n_parallel_chain = 1,
+    std_lim = 0.01,
+    n_parallel_chain = 4,
     stop_points = 20,
     print_check_info = FALSE,
     verbose = FALSE,
     seed = 3,
     preconditioner = "fast",
-    precond_eps = 1e-5,
-    compute_precond_each_iter = TRUE
+    precond_by_diff_chain = TRUE,
+    precond_eps = 1e-5
   )
 )
 ngme_out

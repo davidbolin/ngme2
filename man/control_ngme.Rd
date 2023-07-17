@@ -8,9 +8,9 @@ control_ngme(
   init_sample_W = TRUE,
   burnin = 100,
   n_gibbs_samples = 5,
-  fix_beta = FALSE,
+  fix_feff = FALSE,
   post_samples_size = 100,
-  beta = NULL,
+  feff = NULL,
   debug = FALSE
 )
 }
@@ -21,13 +21,13 @@ control_ngme(
 
 \item{n_gibbs_samples}{number of gibbs sampels}
 
-\item{fix_beta}{logical, fix fixed effect}
+\item{fix_feff}{logical, fix fixed effect}
 
 \item{post_samples_size}{number of posterior samples}
 
-\item{beta}{fixed effect value}
-
 \item{debug}{debug mode}
+
+\item{beta}{fixed effect value}
 }
 \value{
 a list of control variables for block model

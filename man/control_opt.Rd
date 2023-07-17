@@ -18,6 +18,8 @@ control_opt(
   trend_lim = 0.05,
   print_check_info = FALSE,
   preconditioner = "fast",
+  precond_eps = 1e-05,
+  precond_by_diff_chain = TRUE,
   max_relative_step = 0.2,
   max_absolute_step = 1,
   reduce_var = FALSE,
@@ -53,7 +55,12 @@ control_opt(
 
 \item{print_check_info}{print the convergence information}
 
-\item{preconditioner}{preconditioner, can be c("none", "fast", "full")}
+\item{preconditioner}{preconditioner, can be c("none", "fast", "full")
+"none" means no preconditioner, "fast" means precondition everything except for the parameter of K matrix (for speed reason), "full" means precondition everything}
+
+\item{precond_eps}{numerical, the gap used for estimate preconditioner, default is 1e-5}
+
+\item{precond_by_diff_chain}{logical, if TRUE, use different chains to estimate preconditioner (only computed at check points), if FALSE, use the same chain to estimate preconditioner (computed at each iteration)}
 
 \item{max_relative_step}{max relative step allowed in 1 iteration}
 

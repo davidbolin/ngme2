@@ -4,12 +4,14 @@
 #include <Rcpp.h>
 #include <RcppEigen.h>
 #include <Eigen/Dense>
-#include "model.h"
+#include "ngme.h"
 #include <memory>
 
-class Optimizer
+class Ngme_optimizer
 {
 private:
+    std::shared_ptr<Ngme> model;
+
     bool verbose {false};
     int precond_strategy; // 0 for none, 1 for fast, 2 for full
     double precond_eps;
@@ -22,17 +24,19 @@ private:
     double stepsize;
 
     // store the preconditioner
-    std::shared_ptr<MatrixXd> precondioner;
+    MatrixXd preconditioner;
 
     // keep trajs
     std::vector<VectorXd> trajs;
 public:
-    Optimizer(const Rcpp::List& control_opt);
+    Ngme_optimizer(
+        const Rcpp::List& control_opt,
+        std::shared_ptr<Ngme> model
+    );
 
     // provide model.get_stepsizes()
     // works with procond_grad
      Eigen::VectorXd sgd(
-        Model& model,
         double eps,
         int iterations,
         double max_relative_step,
@@ -43,8 +47,9 @@ public:
     std::vector<VectorXd> get_trajs() const { return trajs; }
 
     // getter and setter of preconditioner
-    MatrixXd get_precondioner() const { return *precondioner; }
-    void set_precondioner(const MatrixXd& precondioner) { this->precondioner = std::make_shared<MatrixXd>(precondioner); }
+    MatrixXd get_preconditioner() const { return preconditioner; }
+    void set_preconditioner(const MatrixXd& preconditioner)
+        { this->preconditioner = preconditioner; }
 };
 
 #endif

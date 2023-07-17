@@ -25,8 +25,7 @@
 #' @param preconditioner  preconditioner, can be c("none", "fast", "full")
 #' "none" means no preconditioner, "fast" means precondition everything except for the parameter of K matrix (for speed reason), "full" means precondition everything
 #' @param precond_eps   numerical, the gap used for estimate preconditioner, default is 1e-5
-#' @param precond_by_diff_chain logical, if TRUE, use different chains to estimate preconditioner, otherwise use the same chain (may introduce correlation).
-#' @param compute_precond_each_iter logical, if TRUE, compute preconditioner in each iteration, otherwise only compute once we arrive check point
+#' @param precond_by_diff_chain logical, if TRUE, use different chains to estimate preconditioner (only computed at check points), if FALSE, use the same chain to estimate preconditioner (computed at each iteration)
 #'
 #' @param max_relative_step   max relative step allowed in 1 iteration
 #' @param max_absolute_step   max absolute step allowed in 1 iteration
@@ -60,7 +59,6 @@ control_opt <- function(
   preconditioner    = "fast",
   precond_eps       = 1e-5,
   precond_by_diff_chain = TRUE,
-  compute_precond_each_iter = TRUE,
 
   max_relative_step = 0.2,
   max_absolute_step = 1,
@@ -115,7 +113,6 @@ control_opt <- function(
     verbose           = verbose,
     precond_eps       = precond_eps,
     precond_by_diff_chain = precond_by_diff_chain,
-    compute_precond_each_iter = compute_precond_each_iter,
     precond_strategy  = which(preconditioner_list == preconditioner) - 1, # start from 0
     sampling_strategy = which(strategy_list == sampling_strategy) - 1 # start from 0
   )

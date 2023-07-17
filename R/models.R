@@ -317,21 +317,18 @@ re <- function(
 
 # p: dimension
 # cor_mat: controls the correlation (only look at upper.tri part)
-D_l <- function(p, cor_mat) {
+D_l <- function(p, rho) {
   stopifnot(
-    "cor_mat should be of dim p*p" =
-      is.matrix(cor_mat) &&
-      ncol(cor_mat) == p &&
-      nrow(cor_mat) == p
+    "rho should be of length p(p-1)/2" =
+      length(rho) == p*(p-1)/2
   )
   D_l <- diag(p)
-  D_l[upper.tri(D_l)] <- cor_mat[upper.tri(cor_mat)]
-  D_l <- t(D_l)
+  D_l[lower.tri(D_l)] <- rho
   # compute k(j)
   k <- double(p); k[1] <- 1
   for (j in 2:p) {
     # print(D_l[j, 1:(j-1)])
-    k[j] <- sqrt(1 + sum(D_l[j, 1:(j-1)] ^ 2))
+    k[j] <- sqrt(1+sum(D_l[j, 1:(j-1)] ^ 2))
   }
   D_l <- solve(D_l, diag(k))
   D_l
@@ -353,7 +350,7 @@ dependence_matrix <- function(p, cor_mat, theta=NULL, Q=NULL) {
   )
 
   # compute D_l
-  D_l <- D_l(p, cor_mat)
+  D_l <- D_l(p, rho)
   # compute Q
   if (p == 2) {
     stopifnot("Length of theta should be 1 for p=2 case"
@@ -365,7 +362,7 @@ dependence_matrix <- function(p, cor_mat, theta=NULL, Q=NULL) {
 
     Q_3x <- Matrix::bdiag(Q_2d(theta[1]), 1)
     Q_3z <- Matrix::bdiag(1, Q_2d(theta[3]))
-    Q_3y <- matrix(0, nrow = 3, ncol = 3)
+    Q_3y <- diag(3)
     Q_3y[c(1, 3, 7, 9)] <- Q_2d(theta[2])
     Q <- Q_3x %*% Q_3y %*% Q_3z
   } else {
@@ -379,9 +376,10 @@ dependence_matrix <- function(p, cor_mat, theta=NULL, Q=NULL) {
 #'
 #' @param p dimension, should be integer and greater than 1
 #' @param operator_list a list of ngme_operator object (length should be p)
-#' @param cor_mat matrix of dim p*p, controls the correlation (only look at upper.tri part)
+#' @param rho vector with the p(p-1)/2 correlation parameters rho_11, rho_21, rho_22, ... rho_p1, rho_p2, ... rho_p(p-1)
 #' @param theta parameter for Q matrix (length of 1 when p=2, length of 3 when p=3)
 #' @param Q orthogonal matrix of dim p*p (provide when p > 3)
+#' @param scale A vector of length p with constants to multiply each operator matrix with
 #'
 #' @return the precision matrix of the multivariate model
 #' @details The general model is defined as $D diag(L_1, ..., L_p) x = M$. D is the dependence matrix, it is paramterized by $D = Q(theta) * D_l(cor_mat)$, where $Q$ is the orthogonal matrix, and $D_l$ is matrix controls the cross-correlation.
@@ -394,19 +392,28 @@ dependence_matrix <- function(p, cor_mat, theta=NULL, Q=NULL) {
 #' rho_mat[1, 2] <- 0.4; rho_mat[1, 3] <- -0.5; rho_mat[2,3] <- 0.8
 #' operator_list <- list(ar1(1:5, rho=0.4), ar1(1:5, rho=0.5), ar1(1:5, rho=0.6))
 #' precision_matrix_multivariate(3, operator_list, rho_mat, theta=c(1,2,3))
-precision_matrix_multivariate <- function(p, operator_list, cor_mat, theta=NULL, Q=NULL) {
+precision_matrix_multivariate <- function(p,
+                                          operator_list,
+                                          rho,
+                                          theta=NULL,
+                                          Q=NULL,
+                                          scale = NULL) {
   stopifnot("Please provide a list of p models" =  length(operator_list) == p)
   stopifnot(
-    "cor_mat should be of dim p*p" =
-      is.matrix(cor_mat) &&
-      ncol(cor_mat) == p &&
-      nrow(cor_mat) == p
+    "rho should be of length p(p-1)/2" =
+      length(rho) == p*(p-1)/2
   )
 
-  D <- dependence_matrix(p, cor_mat, theta, Q)
+  D <- dependence_matrix(p, rho, theta, Q)
   bigD <- kronecker(D, Matrix::Diagonal(length(operator_list[[1]]$h)))
 
-  K_list <- lapply(operator_list, function(model) model$K)
+  if(is.null(scale)){
+    scale <- rep(1,p)
+  }
+  K_list <- list()
+  for(i in 1:p){
+    K_list[[i]] <- scale[i]*operator_list[[i]]$K
+  }
   K <- bigD %*% Matrix::bdiag(K_list)
 
   # mass lumping version
@@ -422,7 +429,11 @@ precision_matrix_multivariate <- function(p, operator_list, cor_mat, theta=NULL,
 #' @param alpha 2 or 4, SPDE smoothness parameter
 #' @param theta_K_list a list (length is p) of theta_K
 #' @param B_K_list a list (length is p) of B_K (non-stationary case)
-#' @param cor_mat matrix of dim p*p, controls the correlation (only look at upper.tri part)
+#' @param variance_list If provided, it should be a vector of length p, where the
+#' kth element corresponds to a desired variance of the kth field. The kth operator
+#' is then scaled by a constant c so that this variance is achieved in the stationary case
+#' (default no scaling)
+#' @param rho vector with the p(p-1)/2 correlation parameters rho_11, rho_21, rho_22, ... rho_p1, rho_p2, ... rho_p(p-1)
 #' @param theta parameter for Q matrix (length of 1 when p=2, length of 3 when p=3)
 #' @param Q orthogonal matrix of dim p*p (provide when p > 3)
 #'
@@ -433,27 +444,53 @@ precision_matrix_multivariate <- function(p, operator_list, cor_mat, theta=NULL,
 #' Bolin, D. and Wallin, J. (2020), Multivariate type G Matérn stochastic partial differential equation random fields. J. R. Stat. Soc. B, 82: 215-239. https://doi.org/10.1111/rssb.12351
 #' @export
 #' @examples
-#' rho_mat <- matrix(0, nrow = 3, ncol = 3)
-#' rho_mat[1, 2] <- 0.4; rho_mat[1, 3] <- -0.5; rho_mat[2,3] <- 0.8
-#' pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
-#' mesh <- INLA::inla.mesh.2d(
-#'   loc.domain = pl01, cutoff = 2,
-#'   max.edge = c(0.5, 10)
-#' )
-#' precision_matrix_multivariate_spde(
-#'   3,
-#'   mesh = INLA::inla.mesh.1d(1:10),
-#'   cor_mat = rho_mat,
-#'   alpha = 2,
-#'   theta_K_list = list(0,1,2),
-#'   theta = c(1,2,3)
-#' )
+#' library(INLA)
+#' library(fields)
+#' # Define mesh
+#' x <- seq(from=0,to=1,length.out = 40)
+#' mesh <- inla.mesh.create(lattice = inla.mesh.lattice(x,x), extend = FALSE)
+#' # Set parameters
+#' rho <- c(-0.5, 0.5,-0.25) #correlation parameters
+#' log_kappa <- list(2,2,2) #log(kappa)
+#' variances <- list(1,1,1) #set marginal variances to 1
+#' alpha <- list(2,2,2) #smoothness parameters
+#' # Compute precision
+#' Q <- precision_matrix_multivariate_spde(p, mesh = mesh, rho = rho,
+#'                                        alpha = alpha, theta_K_list = log_kappa,
+#'                                        variance_list = variances)
+#'
+# Plot the cross covariances
+#' A <- as.vector(inla.spde.make.A(mesh,loc = matrix(c(0.5,0.5),1,2)))
+#' Sigma <- as.vector(solve(Q,c(A,rep(0,2*mesh$n))))
+#' r11 <- Sigma[1:mesh$n]
+#' r12 <- Sigma[(mesh$n+1):(2*mesh$n)]
+#' r13 <- Sigma[(2*mesh$n+1):(3*mesh$n)]
+#' Sigma <- as.vector(solve(Q,c(rep(0,mesh$n),A,rep(0,mesh$n))))
+#' r22 <- Sigma[(mesh$n+1):(2*mesh$n)]
+#' r23 <- Sigma[(2*mesh$n+1):(3*mesh$n)]
+#' Sigma <- as.vector(solve(Q,v <- c(rep(0,2*mesh$n),A)))
+#' r33 <- Sigma[(2*mesh$n+1):(3*mesh$n)]
+#'
+#' proj <- inla.mesh.projector(mesh)
+#'
+#' par(mfrow=c(3,3))
+#' image.plot(inla.mesh.project(proj,r11), main = "Cov(X_1(s0),X_1(s)")
+#' plot.new()
+#' plot.new()
+#' image.plot(inla.mesh.project(proj,r12), main = "Cov(X_1(s0),X_2(s)")
+#' image.plot(inla.mesh.project(proj,r22), main = "Cov(X_2(s0),X_2(s)")
+#' plot.new()
+#' image.plot(inla.mesh.project(proj,r13), main = "Cov(X_1(s0),X_3(s)")
+#' image.plot(inla.mesh.project(proj,r23), main = "Cov(X_2(s0),X_3(s)")
+#' image.plot(inla.mesh.project(proj,r33), main = "Cov(X_3(s0),X_3(s)")
+
 precision_matrix_multivariate_spde <- function(
   p,
   mesh,
-  cor_mat,
-  alpha = 2,
+  rho,
+  alpha_list = NULL,
   theta_K_list = NULL,
+  variance_list = NULL,
   B_K_list = NULL,
   theta = NULL,
   Q = NULL
@@ -472,10 +509,36 @@ precision_matrix_multivariate_spde <- function(
       = length(theta_K_list) == p)
   }
 
-  operator_list <- NULL
-  for (i in 1:p) {
-    operator_list[[i]] <- matern(mesh, alpha, theta_K_list[[i]], B_K_list[[i]])
+  if (is.null(alpha_list)) {
+    alpha_list <- lapply(1:p, function(i) 2)
+  } else {
+    stopifnot("Please provide a list of p alpha parameters"
+              = length(alpha_list) == p)
   }
 
-  precision_matrix_multivariate(p, operator_list, cor_mat, theta, Q)
+  if (is.null(variance_list)) {
+    variance_list <- lapply(1:p, function(i) NULL)
+    c <- NULL
+  } else {
+    stopifnot("Please provide a list of p variance parameters"
+              = length(variance_list) == p)
+    if(mesh$manifold %in% c("R2", "S2") ) {
+      d = 2
+    } else if(mesh$manifold == "R1") {
+      d = 1
+    }
+    scale <- rep(0,p)
+    for(i in 1:p){
+      scale[i] <- sqrt(gamma(alpha_list[[i]] - d/2)/(variance_list[[i]]*(4*pi)^(d/2)*exp(theta_K_list[[i]][1])^(2*(alpha_list[[i]]-d/2))*gamma(alpha_list[[i]])))
+    }
+  }
+
+  operator_list <- NULL
+  for (i in 1:p) {
+    operator_list[[i]] <- matern(mesh, alpha_list[[i]], theta_K_list[[i]], B_K_list[[i]])
+  }
+  if(is.null(theta)) {
+    theta <- rep(0,(p-1)*p/2)
+  }
+  precision_matrix_multivariate(p, operator_list, rho, theta, Q, scale = scale)
 }

@@ -7,9 +7,10 @@
 precision_matrix_multivariate(
   p,
   operator_list,
-  cor_mat,
+  rho,
   theta = NULL,
-  Q = NULL
+  Q = NULL,
+  scale = NULL
 )
 }
 \arguments{
@@ -17,11 +18,13 @@ precision_matrix_multivariate(
 
 \item{operator_list}{a list of ngme_operator object (length should be p)}
 
-\item{cor_mat}{matrix of dim p*p, controls the correlation (only look at upper.tri part)}
+\item{rho}{vector with the p(p-1)/2 correlation parameters rho_11, rho_21, rho_22, ... rho_p1, rho_p2, ... rho_p(p-1)}
 
 \item{theta}{parameter for Q matrix (length of 1 when p=2, length of 3 when p=3)}
 
 \item{Q}{orthogonal matrix of dim p*p (provide when p > 3)}
+
+\item{scale}{A vector of length p with constants to multiply each operator matrix with}
 }
 \value{
 the precision matrix of the multivariate model

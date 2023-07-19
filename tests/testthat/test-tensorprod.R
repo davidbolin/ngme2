@@ -179,3 +179,14 @@
 #   traceplot(out)
 # })
 
+test_that("build A for tp model", {
+  time = c(1, 1, 3, 2, 3, 2, 1)
+  loc = c(3, 2, 1, 1, 2, 2, 1)
+  m <- f(
+    map = list(time, loc),
+    model = "tp",
+    first = ar1(mesh=time),
+    second = rw1(mesh=loc)
+  )
+  m$A
+})

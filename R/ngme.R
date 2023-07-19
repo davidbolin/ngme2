@@ -449,3 +449,32 @@ compute_corr_index <- function(idx) {
     n_corr_pairs = sum(has_correlation) / 2
   )
 }
+
+#' Summary of ngme fit result
+#' @param object an object of class \code{ngme}
+#' @param name name of the latent model to be summarized (if NULL, will print all)
+#' @param ... other arguments
+#'
+#' @return a list of summary
+#' @export
+summary.ngme <- function(
+  object,
+  name = NULL,
+  ...
+) {
+  stopifnot(inherits(object, "ngme"))
+
+  result <- object
+
+  if (!is.null(name)) {
+    ngme_rep <- result$replicates[[1]]
+    stopifnot(
+      "Please provide the correct name of the model" =
+      name %in% names(ngme_rep$models)
+    )
+    result <- ngme_rep$models[[name]]
+  }
+
+  # to-do: provide coefficient
+  result
+}

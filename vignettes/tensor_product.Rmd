@@ -22,54 +22,43 @@ The separable space-time model is defined by the Kronecker product between the p
 
 The operator matrix $K$ of the tensor product model can be expressed by: $K = K_l \otimes K_r$ where $K_l$ and $K_r$ are the operator for the 2 sub-models.
 
-```{r setup, message=FALSE, warning=FALSE}
-library(INLA)
-library(ngme2)
-```
-
 ## Usage
 
-The R interface for tensor product model similar to the other models, except it require 2 extra field, namely `first` and `second`.
+The R interface for tensor product model needs map as a list of 2 indices and 2 operators namely `first` and `second` to build the model.
 
-The operator matrix of `first` and `second` field are exactly the first side and second side of the Kronecker product.
 
-The following example gives a simple space-time model with a separable covariance structure.
+The following is one simple example of how to build the space-time (1d location) model.
 
-```{r}
-mesh_1d <- inla.mesh.1d(1:10)
-time <- 1:3; time_rep <- rep(time, each=5)
-loc <- 1:5; loc_rep <- rep(loc, 3)
-cbind(time_rep, loc_rep)
+Here the mesh of the model will be ordered according to the order of the time index (year).
 
-tp_model <- f(
-  map = list(time_rep, loc_rep),
-  model = "tp",
-  first = ar1(time_rep),
-  second = matern(mesh=mesh_1d),
-  complete = FALSE,
-  noise = noise_nig()
-)
+```{r setup, message=FALSE, warning=FALSE}
+# load packages
+library(INLA)
+library(ngme2)
 
-tp_model <- f(
-  map = list(time_rep, loc_rep),
-  model = "tp",
-  first = ar1(mesh = time_rep),
-  second = matern(mesh = mesh_1d),
-  complete = FALSE,
-  noise = noise_nig()
-)
+time = c(2001, 2001, 2003, 2002, 2003, 2002, 2001)
+loc  = c(3, 2, 1, 1, 2, 2, 1)
 
-tp_model$A
+m0 <- f(map=list(time, loc), model="tp", first=ar1(time), second=rw1(loc))
+m0
+
+# The map from the underlying mesh to our observations
+m0$A
 ```
 
+Here the 1st, 2nd, 7th object are from first year (column 1 to 3), the 3rd, 5th are from second year (column 4 to 6), and the 4th, 6th are from third year (column 7 to 9).
+
+In general, we need to provide a list of 2 indices (from the data), and also provide the 2 meshes to the 2 underlying models separately (e.g. time and space).
+
+Next we will see a useful AR(1) x Matern 2d example.
 
 ## Simulation - (AR1 x Matern 2d case)
 
 Now let's turn to simualte and estimate the tensor-product model.
 
 ```{r}
-set.seed(16)
 ##############################  simulation
+set.seed(16)
 mesh2d <- inla.mesh.2d(
   loc.domain = cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5),
   max.edge = c(2, 10)
@@ -108,15 +97,15 @@ out <- ngme(
   control_opt = control_opt(
     iterations = 10,
     n_parallel_chain = 1,
-    estimation = T,
+    estimation = F,
     verbose = T,
     stepsize = 1
   ),
   debug = F
 )
-out
+# out
 
-cross_validation(out)
-traceplot(out, "tp")
-traceplot(out, "tp")
+# cross_validation(out)
+# traceplot(out, "tp")
+# traceplot(out, "tp")
 ```

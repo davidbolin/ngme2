@@ -386,5 +386,3 @@ build_effect_K <- function(n_reff, theta_K) {
     K[lower.tri(K)] <- theta_K[(n_reff+1):n_theta_K]
   K
 }
-
-# build measurement matrix

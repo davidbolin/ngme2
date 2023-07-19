@@ -14,9 +14,8 @@ Bivar::Bivar(const Rcpp::List& operator_list):
 
 void Bivar::update_K(const VectorXd& theta_K) {
   double eta = theta_K(0);
-  double theta = 2 * std::atan(eta);
-  double th_rho = theta_K(1);
-  double rho = (-1 + 2*exp(th_rho) / (1+exp(th_rho)));
+  double theta = std::atan(eta) / 2;
+  double rho = theta_K(1);
   VectorXd theta_K1 = theta_K.segment(2, n_theta_1);
   VectorXd theta_K2 = theta_K.segment(2 + n_theta_1, n_theta_2);
   Matrix2d D = getD(theta, rho);
@@ -37,15 +36,13 @@ void Bivar::update_K(const VectorXd& theta_K) {
 // assume K is updated!!!
 void Bivar::update_dK(const VectorXd& theta_K) {
   double eta = theta_K(0);
-  double theta = 2 * std::atan(eta);
-  double th_rho = theta_K(1);
-  double rho = (-1 + 2*exp(th_rho) / (1+exp(th_rho)));
-
+  double theta = std::atan(eta) / 2;
+  double rho = theta_K(1);
   VectorXd theta_K1 = theta_K.segment(2, n_theta_1);
   VectorXd theta_K2 = theta_K.segment(2 + n_theta_1, n_theta_2);
 
-  first->update_K(theta_K1);
-  second->update_K(theta_K2);
+  // first->update_K(theta_K1);
+  // second->update_K(theta_K2);
   first->update_dK(theta_K1);
   second->update_dK(theta_K2);
 
@@ -58,14 +55,12 @@ void Bivar::update_dK(const VectorXd& theta_K) {
       Matrix2d dD;
       if (index == 0) { // theta
         // d0 is dtheta / deta
-        // theta = 2 * atan(eta)
-        double d0 = 1 / (1+eta*eta);
+      // double theta = std::atan(eta) / 2;
+        double d0 = 1 / (2 * (1 + pow(eta, 2)));
         dD = d0 * get_dD_theta(theta, rho);
       }
       else { // rho
-        // d1 is drho / dth_rho
-        double d1 = 2 * (exp(th_rho) / pow(1+exp(th_rho), 2));
-        dD = d1 * get_dD_rho(theta, rho);
+        dD = get_dD_rho(theta, rho);
       }
 // std::cout << "dD = " << dD << std::endl;
       SparseMatrix<double> dK00 = VectorXd::Constant(n, dD(0,0)).asDiagonal() * K1;

@@ -18,15 +18,14 @@ test_that("test tp and bv operator", {
 })
 
 test_that("test bv(ar1, ar1) with 2 noise", {
-  n <- 500
-# load_all()
+  n <- 1000
   true_model <- f(
-    1:n,
+    c(1:(n/2), 1:(n/2)),
     model="bv",
-    theta = 0, rho = 0.8,
+    theta = 0.5, rho = 0.8,
     sub_models = list(
-      first ="ar1",
-      second="ar1"
+      first = list(model="ar1", rho=0.5),
+      second= list(model="ar1", rho=-0.5)
     ),
     group = c(rep("first", n/2), rep("second", n/2)),
     noise = list(
@@ -40,12 +39,12 @@ true_model
   n_obs <- length(AW)
   Y <- AW + rnorm(n_obs, sd=0.5)
 
-# load_all()
   out <- ngme(
     Y ~ 0 + f(
-      1:n,
+      c(1:(n/2), 1:(n/2)),
       model="bv",
-      # rho = 0.8,
+      # rho = 0.1,
+      theta = 0.45,
       sub_models = list(
         first = "ar1", second="ar1"
       ),
@@ -58,13 +57,15 @@ true_model
       n_gibbs_samples = 5
     ),
     control_opt = control_opt(
-      iterations = 100,
+      seed = 3,
+      iterations = 500,
       n_parallel_chain = 4,
       estimation = T,
       verbose = T,
       print_check_info = F,
-      preconditioner = "fast",
-      precond_by_diff_chain = FALSE
+      preconditioner = "full",
+      precond_by_diff_chain = TRUE,
+      precond_eps = 1e-5
     )
     # ,start = out
   )

@@ -32,7 +32,7 @@ MatrixXd Ngme::precond(int strategy, double eps) {
   }
 
 // std::cout << "precond in ngme class = \n" << precond << std::endl;
-
+// precond = precond + eps * MatrixXd::Identity(n_params, n_params);
   return precond / n_repl;
 }
 

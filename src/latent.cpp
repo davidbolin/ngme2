@@ -525,6 +525,7 @@ MatrixXd Latent::precond(bool precond_K, double eps) {
     MatrixXd precond_full = MatrixXd::Zero(n_params, n_params);
     if (precond_K) {
         precond_full.topLeftCorner(n_params - n_nu, n_params - n_nu) = num_hess;
+// std::cout << "prec = " << precond_full.topLeftCorner(n_theta_K, n_theta_K) << std::endl;
     } else {
         precond_full.topLeftCorner(n_theta_K, n_theta_K) = VectorXd::Constant(n_theta_K, V_size).asDiagonal();
         precond_full.block(n_theta_K, n_theta_K, n_theta_mu + n_theta_sigma, n_theta_mu + n_theta_sigma) = num_hess;

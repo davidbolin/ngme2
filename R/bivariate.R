@@ -57,18 +57,17 @@ bv <- function(
   }
 
   stopifnot(
-    "theta is in (-pi, pi)" = theta >= -pi & theta <= pi,
+    "theta is in (-pi/4, pi/4)" = theta >= -pi/4 & theta <= pi/4,
     "rho is in (-1, 1)" = rho >= -1 & rho <= 1
   )
-  eta <- tan(theta / 2);
-  theta_K <- c(eta, ar1_a2th(rho), first$theta_K, second$theta_K)
+  eta <- tan(theta * 2);
+  theta_K <- c(eta, rho, first$theta_K, second$theta_K)
 
   # pass the theta_K to first and second
   first$theta_K <- theta_K[3:(2 + first$n_theta_K)]
   second$theta_K <- theta_K[(3 + first$n_theta_K):length(theta_K)]
 
   D <- build_D(theta, rho)
-# print(D)
   bigD <- kronecker(D, Matrix::Diagonal(nrow(first$K)))
 
   ngme_operator(

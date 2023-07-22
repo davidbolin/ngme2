@@ -63,6 +63,7 @@ reference:
   - title: Fit the linear mixed effects model
     contents:
     - ngme
+    - summary.ngme
   - title: Latent models
     contents:
     - ngme_model_types

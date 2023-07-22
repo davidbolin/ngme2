@@ -353,7 +353,6 @@ ngme_parse_formula <- function(
     # re-evaluate each f model using idx
     models_rep <- list();
     for (tmp in pre_model) {
-      # tmp$data <- data[idx, , drop = FALSE]
       tmp$subset <- idx
       model_eval <- eval(tmp, envir = data, enclos = global_env_first)
       models_rep[[model_eval$name]] <- model_eval
@@ -476,5 +475,33 @@ summary.ngme <- function(
   }
 
   # to-do: provide coefficient
+  result
+}
+
+#' Ngme fit result
+#' @param object an object of class \code{ngme}
+#' @param name name of the latent model to be summarized (if NULL, will print all)
+#' @param ... other arguments
+#'
+#' @return a list of summary
+#' @export
+ngme_result <- function(
+  object,
+  name = NULL,
+  ...
+) {
+  stopifnot(inherits(object, "ngme"))
+  result <- object$replicates[[1]]
+
+  if (!is.null(name)) {
+    names <- sapply(result$models, function(x) x$name)
+    stopifnot(
+      "Please provide only one name" = length(name) == 1,
+      "Please provide the correct name of the model" =
+      name %in% names
+    )
+    result <- result$models[[name]]
+  }
+
   result
 }

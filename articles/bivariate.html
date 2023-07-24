@@ -125,11 +125,13 @@
     
     
 <div class="section level2">
-<h2 id="description">Description<a class="anchor" aria-label="anchor" href="#description"></a>
+<h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
 <p>For many applications, we need to deal with multivariate data. In
 this vignette, we will introduce the bivariate model which supports
-modeling two field and their correlation jointly.</p>
+modeling two (non-Gaussian) fields and their correlation jointly. The
+main reference is Bolin and Wallin (2020) <a href="https://doi.org/10.1111/rssb.12351" class="external-link">Multivariate Type G Matérn
+Stochastic Partial Differential Equation Random Fields</a>.</p>
 <p>The <code>f</code> function specification is similar to ordinary
 model (See e.g. <a href="AR1-model.html">Ngme2 AR(1) model</a>), but
 with two more fields to help identify the variables. Extra arguments for
@@ -153,21 +155,29 @@ e.g. <code>sub_models=c(field1="rw1", field2="ar1")</code>.</p></li>
 <p>The bivariate model can model two fields <span class="math inline">\(\mathbf{X}(s) = (X_1(s), X_2(s))\)</span> jointly.
 To model their correlation, we use dependence matrix <span class="math inline">\(D(\theta, \rho)\)</span> to correlate them (See
 Bolin and Wallin, 2020, section 2.2).</p>
-<p>The model is: <span class="math display">\[ \mathbf{D(\theta, \rho)}
-diag(L_1, L_2) \mathbf{X}(s) = \mathcal{M},\]</span> where <span class="math inline">\(\mathbf{D}\)</span> is the dependence matrix,
-<span class="math inline">\(\mathcal{M}\)</span> is non-Gaussian noise,
-we will discuss the noise later.</p>
+<p>Remember that, for the univariate model, it can be written as: <span class="math display">\[ \mathcal{L} \mathbf{X}(s) =
+\mathcal{M},\]</span> where <span class="math inline">\(\mathcal{L}\)</span> is some operator, <span class="math inline">\(\mathcal{M}\)</span> represents the noise
+(Gaussian or non-Gaussian).</p>
+<p>The bivariate model is similar, but with one more term to correlate
+the two fields: <span class="math display">\[ \mathbf{D(\theta, \rho)}
+diag(\mathcal{L_1}, \mathcal{L_2}) \mathbf{X}(s) = \mathcal{M},\]</span>
+where <span class="math inline">\(\mathbf{D}\)</span> is the dependence
+matrix. The noise can be classified into 4 types by their complexity, we
+will discuss them later.</p>
 <p>The dependence matrix is defined as <span class="math display">\[
 D(\theta, \rho) = \begin{pmatrix}
   \cos(\theta) + \rho \sin(\theta) &amp; -\sin(\theta) \sqrt{1+\rho^2}
 \\
   \sin(\theta) - \rho \cos(\theta) &amp; \cos(\theta) \sqrt{1+\rho^2}
 \end{pmatrix},
-\]</span> <span class="math inline">\(\rho \in [-1, 1]\)</span> controls
-the cross-correlation.</p>
+\]</span> where <span class="math inline">\(\theta \in [-\pi/4,
+\pi/4]\)</span> and <span class="math inline">\(\rho \in
+\mathbb{R}\)</span>. The <span class="math inline">\(\theta\)</span>
+controls the angle (rotation) of the bivariate model, and <span class="math inline">\(\rho\)</span> represents the cross-correlation
+between the two fields.</p>
 </div>
 <div class="section level2">
-<h2 id="one-simple-time-series-example">One simple time series example<a class="anchor" aria-label="anchor" href="#one-simple-time-series-example"></a>
+<h2 id="one-simple-example">One simple example<a class="anchor" aria-label="anchor" href="#one-simple-example"></a>
 </h2>
 <p>It’s eaiser to understand with one exmaple. Say we have a time series
 model over 5 year from 2001 to 2005, with 2 fields <em>temperature</em>
@@ -176,30 +186,11 @@ The data look like the following:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># load library</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">INLA</span><span class="op">)</span>; <span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://davidbolin.github.io/ngme2/">ngme2</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; Loading required package: Matrix</span></span>
-<span><span class="co">#&gt; Loading required package: sp</span></span>
-<span><span class="co">#&gt; The legacy packages maptools, rgdal, and rgeos, underpinning the sp package,</span></span>
-<span><span class="co">#&gt; which was just loaded, will retire in October 2023.</span></span>
-<span><span class="co">#&gt; Please refer to R-spatial evolution reports for details, especially</span></span>
-<span><span class="co">#&gt; https://r-spatial.org/r/2023/05/15/evolution4.html.</span></span>
-<span><span class="co">#&gt; It may be desirable to make the sf package available;</span></span>
-<span><span class="co">#&gt; package maintainers should consider adding sf to Suggests:.</span></span>
-<span><span class="co">#&gt; The sp package is now running under evolution status 2</span></span>
-<span><span class="co">#&gt;      (status 2 uses the sf package in place of rgdal)</span></span>
-<span><span class="co">#&gt; This is INLA_23.06.29 built 2023-06-30 04:37:06 UTC.</span></span>
-<span><span class="co">#&gt;  - See www.r-inla.org/contact-us for how to get help.</span></span>
-<span><span class="co">#&gt; This is ngme2 of version 0.5.0</span></span>
-<span><span class="co">#&gt; - See our homepage: https://davidbolin.github.io/ngme2 for more details.</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Attaching package: 'ngme2'</span></span>
-<span><span class="co">#&gt; The following object is masked from 'package:INLA':</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;     f</span></span>
 <span></span>
 <span><span class="va">temp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">32</span>, <span class="fl">33</span>, <span class="fl">35.5</span>, <span class="fl">36</span><span class="op">)</span>; <span class="va">year_temp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2001</span>, <span class="fl">2002</span>, <span class="fl">2003</span>, <span class="fl">2004</span><span class="op">)</span></span>
 <span><span class="va">precip</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.1</span>, <span class="fl">0.2</span>, <span class="fl">0.5</span>, <span class="fl">1</span>, <span class="fl">0.2</span><span class="op">)</span>; <span class="va">year_pre</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2001</span>, <span class="fl">2002</span>, <span class="fl">2003</span>, <span class="fl">2004</span>, <span class="fl">2005</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># bind 2 fields, and also make laebls for them</span></span>
+<span><span class="co"># bind 2 fields in one vector, and make labels for them</span></span>
 <span><span class="va">y</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">temp</span>, <span class="va">precip</span><span class="op">)</span>; <span class="va">year</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">year_temp</span>, <span class="va">year_pre</span><span class="op">)</span></span>
 <span><span class="va">labels</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="st">"temp"</span>, <span class="fl">4</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="st">"precip"</span>, <span class="fl">5</span><span class="op">)</span><span class="op">)</span> <span class="co"># group is label for 2 fields</span></span>
 <span></span>
@@ -223,9 +214,8 @@ each sub-model.</p>
 <code class="sourceCode R"><span><span class="co"># 1st way: simply put model types, using both c() and list() are ok</span></span>
 <span><span class="va">bv1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
 <span>  <span class="va">year</span>, model <span class="op">=</span> <span class="st">"bv"</span>,</span>
-<span>  theta <span class="op">=</span> <span class="va">pi</span> <span class="op">/</span> <span class="fl">2</span>, rho <span class="op">=</span> <span class="fl">0.5</span>,</span>
+<span>  theta <span class="op">=</span> <span class="va">pi</span> <span class="op">/</span> <span class="fl">8</span>, rho <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>  sub_models <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>precip<span class="op">=</span><span class="st">"ar1"</span>, temp<span class="op">=</span><span class="st">"rw1"</span><span class="op">)</span>,</span>
-<span>  <span class="co"># sub_models = c(precip="ar1", temp="rw1"),</span></span>
 <span>  group <span class="op">=</span> <span class="va">labels</span>, <span class="co"># can be inherited from ngme() function</span></span>
 <span>  noise <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    precip<span class="op">=</span><span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span>,</span>
@@ -234,7 +224,7 @@ each sub-model.</p>
 <span><span class="op">)</span></span>
 <span><span class="va">bv1</span></span>
 <span><span class="co">#&gt; Model type: Bivariate model</span></span>
-<span><span class="co">#&gt;     theta = 1.57</span></span>
+<span><span class="co">#&gt;     theta = 0.393</span></span>
 <span><span class="co">#&gt;     rho = 0.5</span></span>
 <span><span class="co">#&gt;     precip: AR(1)</span></span>
 <span><span class="co">#&gt;         rho = 0</span></span>
@@ -282,16 +272,17 @@ each sub-model.</p>
 <div class="section level2">
 <h2 id="four-increasing-construction-of-noise">Four increasing construction of noise<a class="anchor" aria-label="anchor" href="#four-increasing-construction-of-noise"></a>
 </h2>
-<p>In bivariate models, we can have more control over the noise of the
-model. The noise can be classified into 4 category (See Bolin and
+<p>In bivariate models, we can have more detailed control over the noise
+of the model. The noise can be classified into 4 category (See Bolin and
 Wallin, 2020, section 3.1 for details):</p>
 <ul>
-<li><p>Type-G1: single mixing variable V, share V over 2 fileds</p></li>
-<li><p>Type-G2: single V, different V for each field</p></li>
-<li><p>Type-G3: general V, share V</p></li>
-<li><p>Type-G4: general V, different V</p></li>
+<li><p>Type-G1: single mixing variable V, share V over 2
+fileds.</p></li>
+<li><p>Type-G2: single V, different V for each field.</p></li>
+<li><p>Type-G3: general V, share V.</p></li>
+<li><p>Type-G4: general V, different V.</p></li>
 </ul>
-<p>we can specify the type of noise by the following:</p>
+<p>We can specify the type of noise by the following:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">t1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
 <span>  <span class="va">year</span>, model <span class="op">=</span> <span class="st">"bv"</span>,</span>
@@ -415,7 +406,6 @@ fields (Intercept for both fields, and <em>x1</em> for only
 <span>  <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="va">year</span>,</span>
 <span>    model <span class="op">=</span> <span class="st">"bv"</span>,</span>
 <span>    sub_models <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>precip<span class="op">=</span><span class="st">"ar1"</span>, temp<span class="op">=</span><span class="st">"rw1"</span><span class="op">)</span>,</span>
-<span>    group <span class="op">=</span> <span class="va">labels</span>, <span class="co"># can be provided in ngme()</span></span>
 <span>    noise <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>      precip <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>      temp <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span></span>
@@ -423,54 +413,9 @@ fields (Intercept for both fields, and <em>x1</em> for only
 <span>  <span class="op">)</span>,</span>
 <span>  data <span class="op">=</span> <span class="va">data</span>,</span>
 <span>  group <span class="op">=</span> <span class="va">data</span><span class="op">$</span><span class="va">labels</span>,</span>
-<span>  control_opt <span class="op">=</span> <span class="fu"><a href="../reference/control_opt.html">control_opt</a></span><span class="op">(</span></span>
-<span>    estimation <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>    iterations <span class="op">=</span> <span class="fl">10</span></span>
-<span>  <span class="op">)</span></span>
+<span>  control_opt <span class="op">=</span> <span class="fu"><a href="../reference/control_opt.html">control_opt</a></span><span class="op">(</span>estimation <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="va">m1</span></span>
-<span><span class="co">#&gt; *** Ngme object ***</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Fixed effects: </span></span>
-<span><span class="co">#&gt;   (Intercept)_temp (Intercept)_precip          x1_precip </span></span>
-<span><span class="co">#&gt;               34.1               -0.3                0.1 </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Models: </span></span>
-<span><span class="co">#&gt; $field1</span></span>
-<span><span class="co">#&gt;   Model type: Random walk (order 1)</span></span>
-<span><span class="co">#&gt;       No parameter.</span></span>
-<span><span class="co">#&gt;   Noise type: NORMAL</span></span>
-<span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 1</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $field2</span></span>
-<span><span class="co">#&gt;   Model type: Bivariate model</span></span>
-<span><span class="co">#&gt;       theta = 0</span></span>
-<span><span class="co">#&gt;       rho = 0</span></span>
-<span><span class="co">#&gt;       precip: AR(1)</span></span>
-<span><span class="co">#&gt;           rho = 0</span></span>
-<span><span class="co">#&gt;       temp: Random walk (order 1)</span></span>
-<span><span class="co">#&gt;           No parameter.</span></span>
-<span><span class="co">#&gt;    Bivariate type-G4 noise:</span></span>
-<span><span class="co">#&gt;       precip: NIG</span></span>
-<span><span class="co">#&gt;       Noise parameters: </span></span>
-<span><span class="co">#&gt;           mu = 0</span></span>
-<span><span class="co">#&gt;           sigma = 1</span></span>
-<span><span class="co">#&gt;           nu = 1</span></span>
-<span><span class="co">#&gt;       temp: NIG</span></span>
-<span><span class="co">#&gt;       Noise parameters: </span></span>
-<span><span class="co">#&gt;           mu = 0</span></span>
-<span><span class="co">#&gt;           sigma = 1</span></span>
-<span><span class="co">#&gt;           nu = 1</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Measurement noise: </span></span>
-<span><span class="co">#&gt;   Noise type: NORMAL</span></span>
-<span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 1</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Number of replicates is  1</span></span>
+<span><span class="co"># examine the design matrix</span></span>
 <span><span class="va">m1</span><span class="op">$</span><span class="va">replicates</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">X</span></span>
 <span><span class="co">#&gt;   (Intercept)_temp (Intercept)_precip x1_precip</span></span>
 <span><span class="co">#&gt; 1                1                  0         0</span></span>
@@ -484,138 +429,91 @@ fields (Intercept for both fields, and <em>x1</em> for only
 <span><span class="co">#&gt; 9                0                  1         9</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="correlated-measurement-noise">Correlated measurement noise<a class="anchor" aria-label="anchor" href="#correlated-measurement-noise"></a>
+<h2 id="the-correlated-measurement-noise">The correlated measurement noise<a class="anchor" aria-label="anchor" href="#the-correlated-measurement-noise"></a>
 </h2>
-<p>Besides modeling the dependence between 2 fields. We can also measure
-the correlation between the measurement error of 2 fields. In the
-<code>family</code> argument, we need to set
-<code>corr_measurement</code> and give the <code>index_corr</code> to
-indicate which observations are correlated.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">Y</span> <span class="op">&lt;-</span> <span class="fl">1</span><span class="op">:</span><span class="fl">6</span></span>
-<span><span class="va">loc1</span> <span class="op">&lt;-</span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>,    <span class="fl">1</span>,   <span class="fl">3</span>,   <span class="fl">1</span>,   <span class="fl">4</span>,   <span class="fl">2</span><span class="op">)</span> <span class="co"># same index is correlated</span></span>
-<span><span class="va">group</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"s"</span>, <span class="st">"t"</span>, <span class="st">"s"</span>, <span class="st">"s"</span>, <span class="st">"t"</span>, <span class="st">"t"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">m2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
-<span>  <span class="va">Y</span> <span class="op">~</span> <span class="fl">0</span> <span class="op">+</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
-<span>    <span class="va">loc1</span>, model<span class="op">=</span><span class="st">"bv"</span>,</span>
-<span>    sub_models <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>t<span class="op">=</span><span class="st">"ar1"</span>, s<span class="op">=</span><span class="st">"rw1"</span><span class="op">)</span>,</span>
-<span>    noise <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>t<span class="op">=</span><span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span>, s<span class="op">=</span><span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="op">)</span>,</span>
-<span>  family <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span></span>
-<span>    corr_measurement <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>    index_corr <span class="op">=</span> <span class="va">loc1</span></span>
-<span>  <span class="op">)</span>,</span>
-<span>  group <span class="op">=</span> <span class="va">group</span>,</span>
-<span>  data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Y <span class="op">=</span> <span class="va">Y</span>, loc1 <span class="op">=</span> <span class="va">loc1</span><span class="op">)</span>,</span>
-<span>  control_opt <span class="op">=</span> <span class="fu"><a href="../reference/control_opt.html">control_opt</a></span><span class="op">(</span></span>
-<span>    estimation <span class="op">=</span> <span class="cn">T</span>,</span>
-<span>    preconditioner <span class="op">=</span> <span class="st">"fast"</span></span>
-<span>  <span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co">#&gt; Starting estimation... </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Posterior sampling done!</span></span>
-<span><span class="va">m2</span></span>
-<span><span class="co">#&gt; *** Ngme object ***</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Fixed effects: </span></span>
-<span><span class="co">#&gt;   None</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Models: </span></span>
-<span><span class="co">#&gt; $field1</span></span>
-<span><span class="co">#&gt;   Model type: Bivariate model</span></span>
-<span><span class="co">#&gt;       theta = -2.15</span></span>
-<span><span class="co">#&gt;       rho = 1</span></span>
-<span><span class="co">#&gt;       t: AR(1)</span></span>
-<span><span class="co">#&gt;           rho = -1</span></span>
-<span><span class="co">#&gt;       s: Random walk (order 1)</span></span>
-<span><span class="co">#&gt;           No parameter.</span></span>
-<span><span class="co">#&gt;    Bivariate type-G4 noise:</span></span>
-<span><span class="co">#&gt;       t: NIG</span></span>
-<span><span class="co">#&gt;       Noise parameters: </span></span>
-<span><span class="co">#&gt;           mu = -0.478</span></span>
-<span><span class="co">#&gt;           sigma = 1.21e-06</span></span>
-<span><span class="co">#&gt;           nu = 0.475</span></span>
-<span><span class="co">#&gt;       s: NIG</span></span>
-<span><span class="co">#&gt;       Noise parameters: </span></span>
-<span><span class="co">#&gt;           mu = 0.794</span></span>
-<span><span class="co">#&gt;           sigma = 6.59e-07</span></span>
-<span><span class="co">#&gt;           nu = 6.84</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Measurement noise: </span></span>
-<span><span class="co">#&gt;   Noise type: NORMAL</span></span>
-<span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 4.12</span></span>
-<span><span class="co">#&gt;       correlation(rho) = 0.327</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre></div>
+<p>Now since we are taking measures of 2 different fields, there is some
+situation that we might want to assume the measurement of 2 fields have
+some correlation.</p>
+<p>It can be written as <span class="math inline">\(Y = X \beta + A W +
+\epsilon\)</span>, here <span class="math inline">\(W\)</span> is the
+bivariate model, and <span class="math inline">\(\epsilon | V_{\epsilon}
+\sim N(0, \Sigma)\)</span>, <span class="math inline">\(\Sigma_{i j}
+\neq 0\)</span> if <span class="math inline">\(Y_i\)</span> and <span class="math inline">\(Y_j\)</span> are 2 different fields but measured
+at same location.</p>
+<p>Now we need to modify the <code>family</code> argument in
+<code>ngme</code> function, we need to set <code>corr_measurement</code>
+and give the <code>index_corr</code> to indicate which observations are
+correlated.</p>
+<p>We will see how to estimate it in the next example.</p>
 </div>
 <div class="section level2">
-<h2 id="a-spatial-matern-example">A spatial Matern example<a class="anchor" aria-label="anchor" href="#a-spatial-matern-example"></a>
+<h2 id="put-it-all-together-simulation-estimation-example">Put it all together (Simulation + Estimation example)<a class="anchor" aria-label="anchor" href="#put-it-all-together-simulation-estimation-example"></a>
 </h2>
-<p>Next we see an less artificial example. We can use the bivaraite
-model to model 2 spatial fields.</p>
-<ol style="list-style-type: decimal">
-<li>Simulation</li>
-</ol>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pl01</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span> <span class="op">*</span> <span class="fl">10</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">0</span><span class="op">)</span> <span class="op">*</span> <span class="fl">5</span><span class="op">)</span></span>
-<span><span class="va">mesh</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/INLA/man/inla.mesh.2d.html" class="external-link">inla.mesh.2d</a></span><span class="op">(</span></span>
-<span>  loc.domain <span class="op">=</span> <span class="va">pl01</span>, cutoff <span class="op">=</span> <span class="fl">0.2</span>,</span>
-<span>  max.edge <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">10</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">mesh</span><span class="op">$</span><span class="va">n</span></span>
-<span><span class="co">#&gt; [1] 257</span></span>
-<span><span class="va">n_obs</span> <span class="op">&lt;-</span> <span class="fl">300</span></span>
-<span><span class="va">long</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n_obs</span>, <span class="fl">0</span>, <span class="fl">10</span><span class="op">)</span></span>
-<span><span class="va">lat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n_obs</span>, <span class="fl">0</span>, <span class="fl">5</span><span class="op">)</span></span>
-<span><span class="va">group</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="st">"sal"</span>, <span class="va">n_obs</span><span class="op">/</span><span class="fl">2</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="st">"temp"</span>, <span class="va">n_obs</span><span class="op">/</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
+<p>In this example, we will first use <code>simulate</code> function to
+simulate the hidden bivariate process. Notice that we need to provide
+the labels for the 2 fields. Then we will generate the measurement noise
+<span class="math inline">\(\epsilon\)</span> with some correlation.
+Finally, we will use the <code>ngme</code> function to estimate the
+model.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">n_obs</span> <span class="op">&lt;-</span> <span class="fl">2000</span></span>
+<span><span class="va">n_each</span> <span class="op">&lt;-</span> <span class="va">n_obs</span> <span class="op">/</span> <span class="fl">2</span></span>
+<span><span class="va">group</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="st">"W1"</span>, <span class="va">n_each</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="st">"W2"</span>, <span class="va">n_each</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">true_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
-<span>  <span class="op">~</span><span class="va">long</span> <span class="op">+</span> <span class="va">lat</span>,</span>
-<span>  theta <span class="op">=</span> <span class="fl">0.5</span>, rho <span class="op">=</span> <span class="fl">0.5</span>,</span>
-<span>  mesh <span class="op">=</span> <span class="va">mesh</span>,</span>
-<span>  model <span class="op">=</span> <span class="st">"bv"</span>,</span>
-<span>  sub_models <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    sal<span class="op">=</span><span class="st">"matern"</span>,</span>
-<span>    temp<span class="op">=</span><span class="st">"matern"</span></span>
+<span><span class="va">W</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="va">n_each</span>, <span class="fl">1</span><span class="op">:</span><span class="va">n_each</span><span class="op">)</span>,</span>
+<span>    model<span class="op">=</span><span class="st">"bv"</span>,</span>
+<span>    theta<span class="op">=</span><span class="va">pi</span><span class="op">/</span><span class="fl">8</span>, rho<span class="op">=</span><span class="fl">0.5</span>,</span>
+<span>    sub_models <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>      W1 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>model<span class="op">=</span><span class="st">"ar1"</span>, rho<span class="op">=</span><span class="fl">0.6</span><span class="op">)</span>,</span>
+<span>      W2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>model<span class="op">=</span><span class="st">"ar1"</span>, rho<span class="op">=</span><span class="op">-</span><span class="fl">0.4</span><span class="op">)</span></span>
+<span>    <span class="op">)</span>,</span>
+<span>    group<span class="op">=</span><span class="va">group</span>,</span>
+<span>    noise<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>      W1 <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span>mu<span class="op">=</span><span class="op">-</span><span class="fl">2</span>,sigma<span class="op">=</span><span class="fl">1</span>,nu<span class="op">=</span><span class="fl">1</span><span class="op">)</span>,</span>
+<span>      W2 <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span>mu<span class="op">=</span><span class="fl">2</span>,sigma<span class="op">=</span><span class="fl">2</span>,nu<span class="op">=</span><span class="fl">0.5</span><span class="op">)</span></span>
+<span>    <span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co"># Here we assume W1 and W2 have positive correlated measurement error</span></span>
+<span><span class="co"># if they are measured at same index.</span></span>
+<span><span class="co"># Meaning Y(i) and Y(j) have correlated measurement noise</span></span>
+<span><span class="co"># if they represent underlying W1(index=k) and W2(index=k)</span></span>
+<span></span>
+<span><span class="co"># Generate covariance matrix for measurement noise</span></span>
+<span><span class="va">Cov_eps</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0.9</span>, <span class="fl">0.9</span>, <span class="fl">1</span><span class="op">)</span>, nrow<span class="op">=</span><span class="fl">2</span><span class="op">)</span></span>
+<span><span class="va">Cov_eps</span> <span class="op">&lt;-</span> <span class="va">Cov_eps</span> <span class="op"><a href="https://rdrr.io/r/base/kronecker.html" class="external-link">%x%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="va">n_obs</span> <span class="op">/</span> <span class="fl">2</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># e~N(0, Cov_eps)</span></span>
+<span><span class="va">L</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/chol.html" class="external-link">chol</a></span><span class="op">(</span><span class="va">Cov_eps</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">e</span> <span class="op">&lt;-</span> <span class="va">L</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_obs</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># fixed effects</span></span>
+<span><span class="va">x1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Exponential.html" class="external-link">rexp</a></span><span class="op">(</span><span class="va">n_obs</span><span class="op">)</span></span>
+<span><span class="va">x2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_obs</span><span class="op">)</span></span>
+<span><span class="va">feff</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">3</span>, <span class="fl">1.5</span><span class="op">)</span></span>
+<span><span class="va">Y</span> <span class="op">&lt;-</span>  <span class="va">W</span> <span class="op">+</span><span class="va">e</span> <span class="op">+</span> <span class="va">x1</span> <span class="op">*</span> <span class="va">feff</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">x2</span> <span class="op">*</span> <span class="va">feff</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span></span>
+<span></span>
+<span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
+<span>  <span class="va">Y</span> <span class="op">~</span> <span class="fl">0</span> <span class="op">+</span> <span class="va">x1</span> <span class="op">+</span> <span class="va">x2</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="va">n_each</span>, <span class="fl">1</span><span class="op">:</span><span class="va">n_each</span><span class="op">)</span>,</span>
+<span>    model<span class="op">=</span><span class="st">"bv"</span>,</span>
+<span>    name <span class="op">=</span> <span class="st">"bv"</span>,</span>
+<span>    sub_models <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>W1 <span class="op">=</span> <span class="st">"ar1"</span>, W2 <span class="op">=</span> <span class="st">"ar1"</span><span class="op">)</span>,</span>
+<span>    noise<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>      W1 <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>      W2 <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>    <span class="op">)</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  group <span class="op">=</span> <span class="va">group</span>,</span>
-<span>  noise <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>sal <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span></span>
-<span>    mu <span class="op">=</span> <span class="op">-</span><span class="fl">2</span>, sigma<span class="op">=</span><span class="fl">1</span>, nu<span class="op">=</span><span class="fl">1</span></span>
-<span>  <span class="op">)</span>, temp <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span></span>
-<span>    mu <span class="op">=</span> <span class="fl">2</span>, sigma<span class="op">=</span><span class="fl">2</span>, nu<span class="op">=</span><span class="fl">0.5</span></span>
-<span>  <span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">W</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="va">true_model</span><span class="op">)</span></span>
-<span><span class="va">Y</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">true_model</span><span class="op">$</span><span class="va">A</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="va">W</span><span class="op">)</span>; <span class="va">Y</span> <span class="op">&lt;-</span> <span class="va">Y</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">Y</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">Y</span>, <span class="va">long</span>, <span class="va">lat</span><span class="op">)</span></span></code></pre></div>
-<ol start="2" style="list-style-type: decimal">
-<li>Estimation</li>
-</ol>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
-<span>  <span class="va">Y</span> <span class="op">~</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
-<span>    <span class="op">~</span><span class="va">long</span> <span class="op">+</span> <span class="va">lat</span>,</span>
-<span>    mesh <span class="op">=</span> <span class="va">mesh</span>,</span>
-<span>    model <span class="op">=</span> <span class="st">"bv"</span>,</span>
-<span>    name <span class="op">=</span> <span class="st">"bv"</span>,</span>
-<span>    sub_models <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>sal<span class="op">=</span><span class="st">"matern"</span>, temp<span class="op">=</span><span class="st">"matern"</span><span class="op">)</span>,</span>
-<span>    group <span class="op">=</span> <span class="va">group</span>,</span>
-<span>    <span class="co"># debug=T,</span></span>
-<span>    noise <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>sal <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span>, temp <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
-<span>    <span class="co"># noise = list(sal = noise_normal(), temp = noise_normal())</span></span>
+<span>  family <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span></span>
+<span>    corr_measurement <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>    index_corr <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="va">n_each</span>, <span class="fl">1</span><span class="op">:</span><span class="va">n_each</span><span class="op">)</span></span>
 <span>  <span class="op">)</span>,</span>
-<span>  data <span class="op">=</span> <span class="va">data</span>,</span>
+<span>  data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">Y</span>, <span class="va">x1</span>, <span class="va">x2</span><span class="op">)</span>,</span>
 <span>  control_opt <span class="op">=</span> <span class="fu"><a href="../reference/control_opt.html">control_opt</a></span><span class="op">(</span></span>
-<span>    estimation <span class="op">=</span> <span class="cn">T</span>,</span>
-<span>    iterations <span class="op">=</span> <span class="fl">100</span>,</span>
-<span>    n_parallel_chain <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>    verbose <span class="op">=</span> <span class="cn">F</span>,</span>
-<span>    print_check_info <span class="op">=</span> <span class="cn">F</span></span>
+<span>    iterations <span class="op">=</span> <span class="fl">300</span>,</span>
+<span>    seed <span class="op">=</span> <span class="fl">7</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; Starting estimation... </span></span>
@@ -625,216 +523,40 @@ model to model 2 spatial fields.</p>
 <span><span class="co">#&gt; *** Ngme object ***</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
-<span><span class="co">#&gt; (Intercept) </span></span>
-<span><span class="co">#&gt;       0.259 </span></span>
+<span><span class="co">#&gt;    x1    x2 </span></span>
+<span><span class="co">#&gt; -2.94  1.55 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $bv</span></span>
 <span><span class="co">#&gt;   Model type: Bivariate model</span></span>
-<span><span class="co">#&gt;       theta = 0.522</span></span>
-<span><span class="co">#&gt;       rho = 0.175</span></span>
-<span><span class="co">#&gt;       sal: Matern</span></span>
-<span><span class="co">#&gt;           kappa = 1.14</span></span>
-<span><span class="co">#&gt;       temp: Matern</span></span>
-<span><span class="co">#&gt;           kappa = 0.531</span></span>
+<span><span class="co">#&gt;       theta = 0.395</span></span>
+<span><span class="co">#&gt;       rho = 0.557</span></span>
+<span><span class="co">#&gt;       W1: AR(1)</span></span>
+<span><span class="co">#&gt;           rho = 0.552</span></span>
+<span><span class="co">#&gt;       W2: AR(1)</span></span>
+<span><span class="co">#&gt;           rho = -0.398</span></span>
 <span><span class="co">#&gt;    Bivariate type-G4 noise:</span></span>
-<span><span class="co">#&gt;       sal: NIG</span></span>
+<span><span class="co">#&gt;       W1: NIG</span></span>
 <span><span class="co">#&gt;       Noise parameters: </span></span>
-<span><span class="co">#&gt;           mu = -0.00125</span></span>
-<span><span class="co">#&gt;           sigma = 0.753</span></span>
-<span><span class="co">#&gt;           nu = 0.867</span></span>
-<span><span class="co">#&gt;       temp: NIG</span></span>
+<span><span class="co">#&gt;           mu = -1.83</span></span>
+<span><span class="co">#&gt;           sigma = 1.31</span></span>
+<span><span class="co">#&gt;           nu = 0.82</span></span>
+<span><span class="co">#&gt;       W2: NIG</span></span>
 <span><span class="co">#&gt;       Noise parameters: </span></span>
-<span><span class="co">#&gt;           mu = 1.31</span></span>
-<span><span class="co">#&gt;           sigma = 1.42</span></span>
-<span><span class="co">#&gt;           nu = 0.839</span></span>
+<span><span class="co">#&gt;           mu = 1.95</span></span>
+<span><span class="co">#&gt;           sigma = 1.88</span></span>
+<span><span class="co">#&gt;           nu = 0.607</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 1.04</span></span>
+<span><span class="co">#&gt;       sigma = 0.834</span></span>
+<span><span class="co">#&gt;       correlation(rho) = 0.782</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Number of replicates is  1</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">out</span><span class="op">$</span><span class="va">replicates</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">models</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">noise</span><span class="op">)</span></span>
-<span><span class="co">#&gt; List of 23</span></span>
-<span><span class="co">#&gt;  $ noise_type          : chr [1:2] "nig" "nig"</span></span>
-<span><span class="co">#&gt;  $ nu                  : num [1:2] 0.867 0.839</span></span>
-<span><span class="co">#&gt;  $ n_nu                : int 2</span></span>
-<span><span class="co">#&gt;  $ V                   : num [1:514] 0.3653 0.4806 0.0497 0.3154 0.2033 ...</span></span>
-<span><span class="co">#&gt;  $ theta_mu            : num [1:2] -0.00125 1.30513</span></span>
-<span><span class="co">#&gt;  $ theta_sigma         : num [1:2] -0.284 0.349</span></span>
-<span><span class="co">#&gt;  $ theta_sigma_normal  : NULL</span></span>
-<span><span class="co">#&gt;  $ B_mu                : num [1:514, 1:2] 1 1 1 1 1 1 1 1 1 1 ...</span></span>
-<span><span class="co">#&gt;  $ B_sigma             : num [1:514, 1:2] 1 1 1 1 1 1 1 1 1 1 ...</span></span>
-<span><span class="co">#&gt;  $ B_sigma_normal      : NULL</span></span>
-<span><span class="co">#&gt;  $ n_theta_mu          : int 2</span></span>
-<span><span class="co">#&gt;  $ n_theta_sigma       : int 2</span></span>
-<span><span class="co">#&gt;  $ n_theta_sigma_normal: int 0</span></span>
-<span><span class="co">#&gt;  $ fix_theta_mu        : logi FALSE</span></span>
-<span><span class="co">#&gt;  $ fix_theta_sigma     : logi FALSE</span></span>
-<span><span class="co">#&gt;  $ fix_nu              : logi FALSE</span></span>
-<span><span class="co">#&gt;  $ fix_V               : logi FALSE</span></span>
-<span><span class="co">#&gt;  $ n_params            : int 6</span></span>
-<span><span class="co">#&gt;  $ single_V            : logi FALSE</span></span>
-<span><span class="co">#&gt;  $ share_V             : logi FALSE</span></span>
-<span><span class="co">#&gt;  $ corr_measurement    : logi FALSE</span></span>
-<span><span class="co">#&gt;  $ index_corr          : NULL</span></span>
-<span><span class="co">#&gt;  $ bv_noises           :List of 2</span></span>
-<span><span class="co">#&gt;   ..$ sal :List of 23</span></span>
-<span><span class="co">#&gt;   .. ..$ noise_type          : chr "nig"</span></span>
-<span><span class="co">#&gt;   .. ..$ nu                  : num 0.867</span></span>
-<span><span class="co">#&gt;   .. ..$ n_nu                : int 1</span></span>
-<span><span class="co">#&gt;   .. ..$ V                   : NULL</span></span>
-<span><span class="co">#&gt;   .. ..$ theta_mu            : num -0.00125</span></span>
-<span><span class="co">#&gt;   .. ..$ theta_sigma         : num -0.284</span></span>
-<span><span class="co">#&gt;   .. ..$ theta_sigma_normal  : NULL</span></span>
-<span><span class="co">#&gt;   .. ..$ B_mu                : num [1:257, 1] 1 1 1 1 1 1 1 1 1 1 ...</span></span>
-<span><span class="co">#&gt;   .. ..$ B_sigma             : num [1:257, 1] 1 1 1 1 1 1 1 1 1 1 ...</span></span>
-<span><span class="co">#&gt;   .. ..$ B_sigma_normal      : NULL</span></span>
-<span><span class="co">#&gt;   .. ..$ n_theta_mu          : int 1</span></span>
-<span><span class="co">#&gt;   .. ..$ n_theta_sigma       : int 1</span></span>
-<span><span class="co">#&gt;   .. ..$ n_theta_sigma_normal: int 0</span></span>
-<span><span class="co">#&gt;   .. ..$ fix_theta_mu        : logi FALSE</span></span>
-<span><span class="co">#&gt;   .. ..$ fix_theta_sigma     : logi FALSE</span></span>
-<span><span class="co">#&gt;   .. ..$ fix_nu              : logi FALSE</span></span>
-<span><span class="co">#&gt;   .. ..$ fix_V               : logi FALSE</span></span>
-<span><span class="co">#&gt;   .. ..$ n_params            : int 3</span></span>
-<span><span class="co">#&gt;   .. ..$ single_V            : logi FALSE</span></span>
-<span><span class="co">#&gt;   .. ..$ share_V             : logi FALSE</span></span>
-<span><span class="co">#&gt;   .. ..$ corr_measurement    : logi FALSE</span></span>
-<span><span class="co">#&gt;   .. ..$ index_corr          : NULL</span></span>
-<span><span class="co">#&gt;   .. ..$ rho                 : num(0) </span></span>
-<span><span class="co">#&gt;   .. ..- attr(*, "class")= chr "ngme_noise"</span></span>
-<span><span class="co">#&gt;   ..$ temp:List of 23</span></span>
-<span><span class="co">#&gt;   .. ..$ noise_type          : chr "nig"</span></span>
-<span><span class="co">#&gt;   .. ..$ nu                  : num 0.839</span></span>
-<span><span class="co">#&gt;   .. ..$ n_nu                : int 1</span></span>
-<span><span class="co">#&gt;   .. ..$ V                   : NULL</span></span>
-<span><span class="co">#&gt;   .. ..$ theta_mu            : num 1.31</span></span>
-<span><span class="co">#&gt;   .. ..$ theta_sigma         : num 0.349</span></span>
-<span><span class="co">#&gt;   .. ..$ theta_sigma_normal  : NULL</span></span>
-<span><span class="co">#&gt;   .. ..$ B_mu                : num [1:257, 1] 1 1 1 1 1 1 1 1 1 1 ...</span></span>
-<span><span class="co">#&gt;   .. ..$ B_sigma             : num [1:257, 1] 1 1 1 1 1 1 1 1 1 1 ...</span></span>
-<span><span class="co">#&gt;   .. ..$ B_sigma_normal      : NULL</span></span>
-<span><span class="co">#&gt;   .. ..$ n_theta_mu          : int 1</span></span>
-<span><span class="co">#&gt;   .. ..$ n_theta_sigma       : int 1</span></span>
-<span><span class="co">#&gt;   .. ..$ n_theta_sigma_normal: int 0</span></span>
-<span><span class="co">#&gt;   .. ..$ fix_theta_mu        : logi FALSE</span></span>
-<span><span class="co">#&gt;   .. ..$ fix_theta_sigma     : logi FALSE</span></span>
-<span><span class="co">#&gt;   .. ..$ fix_nu              : logi FALSE</span></span>
-<span><span class="co">#&gt;   .. ..$ fix_V               : logi FALSE</span></span>
-<span><span class="co">#&gt;   .. ..$ n_params            : int 3</span></span>
-<span><span class="co">#&gt;   .. ..$ single_V            : logi FALSE</span></span>
-<span><span class="co">#&gt;   .. ..$ share_V             : logi FALSE</span></span>
-<span><span class="co">#&gt;   .. ..$ corr_measurement    : logi FALSE</span></span>
-<span><span class="co">#&gt;   .. ..$ index_corr          : NULL</span></span>
-<span><span class="co">#&gt;   .. ..$ rho                 : num(0) </span></span>
-<span><span class="co">#&gt;   .. ..- attr(*, "class")= chr "ngme_noise"</span></span>
-<span><span class="co">#&gt;  - attr(*, "class")= chr "ngme_noise"</span></span>
-<span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">out</span>, <span class="st">"bv"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="bivariate_files/figure-html/unnamed-chunk-3-1.png" width="700"></p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># out$replicates[[1]]$models[[1]]$noise$bv_noises[[2]]$h</span></span></code></pre></div>
-<ol style="list-style-type: decimal">
-<li>simulation</li>
-</ol>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># load_all()</span></span>
-<span><span class="co"># n_obs &lt;- 20</span></span>
-<span><span class="co"># W &lt;- simulate(f(1:n_obs, model="iid", eval=TRUE))</span></span>
-<span></span>
-<span><span class="co"># Cov_eps &lt;- matrix(c(1, -0, -0, 1), nrow=2)</span></span>
-<span><span class="co"># Cov_eps &lt;- Cov_eps %x% diag(n_obs / 2)</span></span>
-<span></span>
-<span><span class="co"># # e~N(0, Cov_eps)</span></span>
-<span><span class="co"># e &lt;- MASS::mvrnorm(1, rep(0, n_obs), Cov_eps)</span></span>
-<span><span class="co"># Y &lt;- W + e</span></span>
-<span></span>
-<span><span class="co"># plot(head(e, n_obs/2), type="l")</span></span>
-<span><span class="co"># lines(tail(e, n_obs/2), col="red")</span></span>
-<span></span>
-<span><span class="co"># load_all()</span></span>
-<span><span class="co"># out &lt;- ngme(</span></span>
-<span><span class="co">#   Y ~ 0 + f(</span></span>
-<span><span class="co">#     1:n_obs,</span></span>
-<span><span class="co">#     model="ar1",</span></span>
-<span><span class="co">#     debug=T,</span></span>
-<span><span class="co">#     noise= noise_normal()</span></span>
-<span><span class="co">#   ),</span></span>
-<span><span class="co">#   family = noise_normal(</span></span>
-<span><span class="co">#     # fix_theta_sigma = T,</span></span>
-<span><span class="co">#     corr_measurement = TRUE,</span></span>
-<span><span class="co">#     index_corr = c(1: (n_obs/2), 1: (n_obs/2))</span></span>
-<span><span class="co">#   ),</span></span>
-<span><span class="co">#   data = data.frame(Y = Y),</span></span>
-<span><span class="co">#   control_opt = control_opt(</span></span>
-<span><span class="co">#     estimation = F,</span></span>
-<span><span class="co">#     iterations = 1,</span></span>
-<span><span class="co">#     n_parallel_chain = 1,</span></span>
-<span><span class="co">#     verbose = T</span></span>
-<span><span class="co">#   ),</span></span>
-<span><span class="co">#   debug = T</span></span>
-<span><span class="co"># )</span></span>
-<span><span class="co"># out$replicates[[1]]$pmat</span></span>
-<span></span>
-<span><span class="co"># pmat &lt;- as(as.integer(c(2,3,1)), "pMatrix")</span></span>
-<span><span class="co">#       pmat</span></span>
-<span><span class="co">#       class(pmat)</span></span>
-<span><span class="co">#       class(Matrix::t(pmat))</span></span>
-<span><span class="co">#       pp = ngme_as_sparse(Matrix::t(pmat))</span></span>
-<span><span class="co"># pp</span></span>
-<span><span class="co"># class(pp)</span></span>
-<span></span>
-<span><span class="co"># class(out$replicates[[1]]$pmat)</span></span>
-<span></span>
-<span><span class="co"># traceplot(out)</span></span>
-<span></span>
-<span><span class="co"># test if it is permutation in variant!!</span></span></code></pre></div>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># library(devtools)</span></span>
-<span><span class="co"># load_all()</span></span>
-<span><span class="co"># n_obs &lt;- 2000</span></span>
-<span><span class="co"># W &lt;- simulate(f(1:n_obs, rho = 0.5, model="ar1", eval=TRUE))</span></span>
-<span></span>
-<span><span class="co"># Cov_eps &lt;- matrix(c(1, 0.9, 0.9, 1), nrow=2)</span></span>
-<span><span class="co"># Cov_eps &lt;- Cov_eps %x% diag(n_obs / 2)</span></span>
-<span></span>
-<span><span class="co"># # e~N(0, Cov_eps)</span></span>
-<span><span class="co"># L &lt;- t(chol(Cov_eps))</span></span>
-<span><span class="co"># e &lt;- L %*% rnorm(n_obs)</span></span>
-<span></span>
-<span><span class="co"># x1 &lt;- rexp(n_obs)</span></span>
-<span><span class="co"># x2 &lt;- rnorm(n_obs)</span></span>
-<span><span class="co"># Y &lt;-  W +e + x1 * (-3) + x2 * 1.5</span></span>
-<span></span>
-<span><span class="co"># plot(head(e, n_obs/2), type="l")</span></span>
-<span><span class="co"># lines(tail(e, n_obs/2), col="red")</span></span>
-<span></span>
-<span><span class="co"># load_all()</span></span>
-<span><span class="co"># out &lt;- ngme(</span></span>
-<span><span class="co">#   Y ~ 0 + x1 + x2+ f(</span></span>
-<span><span class="co">#     1:n_obs,</span></span>
-<span><span class="co">#     # fix_W = T, W = W,</span></span>
-<span><span class="co">#     model="ar1"</span></span>
-<span><span class="co">#   ),</span></span>
-<span><span class="co">#   family = noise_normal(</span></span>
-<span><span class="co">#     # fix_theta_sigma = T,</span></span>
-<span><span class="co">#     corr_measurement = TRUE,</span></span>
-<span><span class="co">#     index_corr = c(1: (n_obs/2), 1: (n_obs/2))</span></span>
-<span><span class="co">#     # index_corr = "field1"</span></span>
-<span><span class="co">#   ),</span></span>
-<span><span class="co">#   data = data.frame(Y, x1, x2),</span></span>
-<span><span class="co">#   control_opt = control_opt(</span></span>
-<span><span class="co">#     estimation = T,</span></span>
-<span><span class="co">#     iterations = 5,</span></span>
-<span><span class="co">#     n_parallel_chain = 1</span></span>
-<span><span class="co">#   )</span></span>
-<span><span class="co"># )</span></span>
-<span><span class="co"># traceplot(out, "field1")</span></span>
-<span><span class="co"># traceplot(out)</span></span>
-<span><span class="co"># out</span></span></code></pre></div>
+<span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre></div>
+<!-- ## A spatial Matern example -->
 </div>
   </div>
 

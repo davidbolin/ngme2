@@ -124,6 +124,9 @@
     <loc>https://davidbolin.github.io/ngme2/reference/ngme_parse_formula.html</loc>
   </url>
   <url>
+    <loc>https://davidbolin.github.io/ngme2/reference/ngme_result.html</loc>
+  </url>
+  <url>
     <loc>https://davidbolin.github.io/ngme2/reference/ngme_ts_make_A.html</loc>
   </url>
   <url>
@@ -173,6 +176,9 @@
   </url>
   <url>
     <loc>https://davidbolin.github.io/ngme2/reference/simulate.ngme_noise.html</loc>
+  </url>
+  <url>
+    <loc>https://davidbolin.github.io/ngme2/reference/summary.ngme.html</loc>
   </url>
   <url>
     <loc>https://davidbolin.github.io/ngme2/reference/tp.html</loc>

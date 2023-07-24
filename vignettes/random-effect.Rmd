@@ -267,7 +267,7 @@ out = ngme(
   y ~ 1+x1 + x2,
   data = data.frame(y=y, x1=x1, x2=x2),
   control_ngme = control_ngme(
-    beta = c(0,0, 0)
+    # beta = c(0,0, 0)
   ),
   control_opt = control_opt(
     estimation = T,

@@ -158,7 +158,7 @@ control_f <- function(
 #' @param fix_feff       logical, fix fixed effect
 #' @param burnin      integer, iterations for burnin period
 #' @param post_samples_size number of posterior samples
-#' @param beta           fixed effect value
+#' @param feff           fixed effect value
 #' @param debug          debug mode
 #' @return a list of control variables for block model
 #' @export
@@ -175,8 +175,8 @@ control_ngme <- function(
     burnin = burnin,
     init_sample_W = init_sample_W,
     n_gibbs_samples = n_gibbs_samples,
-    fix_beta = fix_feff,
-    beta = feff,
+    fix_feff = fix_feff,
+    feff = feff,
     post_samples_size = post_samples_size,
     stepsize = 1,
     debug = debug

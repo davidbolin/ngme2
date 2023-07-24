@@ -391,7 +391,7 @@ Parameter estimation results:
 
 ```{r est-result, echo=FALSE}
 res1 <- data.frame(
-  intercept    = format(out$replicates[[1]]$beta, digits=3),
+  intercept    = format(out$replicates[[1]]$feff, digits=3),
   noise_mu     = format(out$replicates[[1]]$noise$theta_mu, digits=3),
   noise_sigma  = format(exp(out$replicates[[1]]$noise$theta_sigma), digits=3),
   noise_nu     = format(out$replicates[[1]]$noise$nu, digits=3),

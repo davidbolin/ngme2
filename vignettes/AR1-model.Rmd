@@ -83,11 +83,11 @@ See `?control_opt` for more optioins.
 
 ```{r ar-estimation, fig.align="center", cache=TRUE}
 # add some fixed effects and measurement noise
-beta <- c(-1, 2)
+feff <- c(-1, 2)
 x1 = runif(n_obs)
 x2 = rexp(n_obs)
 X <- (model.matrix(~0+x1+x2))
-Y <- as.numeric(X %*% beta) + W + rnorm(n_obs, sd = 2)
+Y <- as.numeric(X %*% feff) + W + rnorm(n_obs, sd = 2)
 
 # Fit the model with the AR1 model
 ngme_out <- ngme(

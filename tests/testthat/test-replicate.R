@@ -64,11 +64,11 @@
 #   W1 <- simulate(ar_1)
 #   W2 <- simulate(ar_2)
 #   Y <- c(W1, W2) + rnorm(n_obs1 + n_obs2, sd = sigma_eps)
-#   beta <- c(3,1,-1)
+#   feff <- c(3,1,-1)
 #   x1 <- rnorm(n_obs1 + n_obs2)
 #   x2 <- rexp(n_obs1 + n_obs2)
-#   Y <- beta[1] + beta[2] * x1 + beta[3] * x2 + Y
-#   # Y <- beta[1] + Y
+#   Y <- feff[1] + feff[2] * x1 + feff[3] * x2 + Y
+#   # Y <- feff[1] + Y
 
 #   out <- ngme(
 #     Y ~ x1 + x2 + f(time,

@@ -98,7 +98,7 @@ ngme <- function(
     # to-do: check start is of same length
     for (i in seq_along(ngme_model$replicates)) {
       ngme_model$replicates[[i]] <- within(ngme_model$replicates[[i]], {
-        beta <- start$replicates[[i]]$beta
+        feff <- start$replicates[[i]]$feff
         noise <- update_noise(noise, new_noise = start$replicates[[i]]$noise)
         for (i in seq_along(start$replicates[[i]]$models)) {
           models[[i]]$theta_K  <- start$replicates[[i]]$models[[i]]$theta_K
@@ -157,7 +157,7 @@ if (debug) {print(str(ngme_model$replicates[[1]]))}
         attr(ngme_model$replicates[[1]]$models[[i]], "lat_traj") <- lat_traj_chains
         idx <- idx + n_params
       }
-      # mn and beta
+      # mn and feff
       block_traj <- list()
       for (j in seq_along(traj_df_chains))
         block_traj[[j]] <- traj_df_chains[[j]][(idx + 1):ngme_model$replicates[[1]]$n_params, ]
@@ -199,8 +199,8 @@ transform_traj <- function(traj) {
 update_ngme_est <- function(
   ngme_replicate, est_output
 ) {
-  names(est_output$beta) <- names(ngme_replicate$beta)
-  ngme_replicate$beta <- est_output$beta
+  names(est_output$feff) <- names(ngme_replicate$feff)
+  ngme_replicate$feff <- est_output$feff
   ngme_replicate$noise <- update_noise(ngme_replicate$noise, new_noise = est_output$noise)
   for (i in seq_along(ngme_replicate$models)) {
     ngme_replicate$models[[i]]$operator$theta_K  <- ngme_replicate$models[[i]]$theta_K <- est_output$models[[i]]$theta_K
@@ -242,8 +242,8 @@ print.ngme <- function(x, ...) {
 ######
 check_dim <- function(ngme_model) {
   for (ngme in ngme_model$replicates) {
-    if (ncol(ngme$X) != length(ngme$beta)) {
-      stop("The number of columns of X is not equal to the length of beta")
+    if (ncol(ngme$X) != length(ngme$feff)) {
+      stop("The number of columns of X is not equal to the length of feff")
     }
     for (latent in ngme$models) {
         # ncol(A) = W_size
@@ -359,7 +359,7 @@ ngme_parse_formula <- function(
     }
     # give initial value (whole dataset)
     lm.model <- stats::lm.fit(X_full, ngme_response)
-    if (is.null(control_ngme$beta)) control_ngme$beta <- lm.model$coeff
+    if (is.null(control_ngme$feff)) control_ngme$feff <- lm.model$coeff
     if (is.null(noise$theta_sigma)) noise$theta_sigma <- log(sd(lm.model$residuals))
     noise_rep <- update_noise(noise_new, sub_idx=idx)
 

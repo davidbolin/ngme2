@@ -105,7 +105,7 @@ predict.ngme <- function(
   for (i in seq_along(type_names)) {
     name <- type_names[[i]]
 
-    if (name == "fe" && length(ngme$beta) > 0) {
+    if (name == "fe" && length(ngme$feff) > 0) {
         X_pred <- if (is.null(data) && attr(terms(fm), "intercept")) {
           matrix(1, nrow = length(AW[[1]]), ncol = 1)
         } else {
@@ -119,7 +119,7 @@ predict.ngme <- function(
           plain_fm <- formula(plain_fm_str)
           model.matrix(plain_fm, data = data)
         }
-        preds <- preds + as.numeric(X_pred %*% ngme$beta)
+        preds <- preds + as.numeric(X_pred %*% ngme$feff)
     } else if (name %in% names(ngme$models)) {
       preds <- preds + AW[[name]]
     }
@@ -135,7 +135,7 @@ compute_indices <- function(ngme_1rep, test_idx, N = 100, seed=Sys.time()) {
 
   # 1. Make A1_pred, An_pred
   # A_pred_blcok  %*% block_W[[1 .. N]]
-  # Y_N_pred <- AW_N_pred[1..N] + X_pred %*% beta + eps_N_pred
+  # Y_N_pred <- AW_N_pred[1..N] + X_pred %*% feff + eps_N_pred
   # compute criterion (Y_N_pred, Y_data)
 
   # option 1. AW comes from 1 chain
@@ -161,10 +161,10 @@ compute_indices <- function(ngme_1rep, test_idx, N = 100, seed=Sys.time()) {
 
   AW2_N <- Reduce(cbind, sapply(W2s_block, function(W) A_pred_block %*% W))
 
-  # sampling Y by, Y = X beta + (block_A %*% block_W) + eps
+  # sampling Y by, Y = X feff + (block_A %*% block_W) + eps
   # AW_N[[1]] is concat(A1 W1, A2 W2, ..)
 
-  fe <- with(ngme_1rep, as.numeric(X[test_idx, ,drop=FALSE] %*% beta))
+  fe <- with(ngme_1rep, as.numeric(X[test_idx, ,drop=FALSE] %*% feff))
   fe_N <- matrix(rep(fe, N), ncol=N, byrow=F)
 
   # simulate measurement noise

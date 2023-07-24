@@ -4,13 +4,13 @@ test_that("test predict general", {
   set.seed(10)
   n_obs <- 500
   x1 <- rexp(n_obs); x2 <- rnorm(n_obs)
-  beta <- c(-2, 4, 1)
+  feff <- c(-2, 4, 1)
   alpha <- 0.75
   mu <- 1.5; sigma <- 2.3; nu <- 2; sigma_eps <- 0.8
 
   ar1 <- f(1:n_obs, model="ar1", rho=alpha, noise=noise_nig(mu=mu, sigma=sigma, nu=nu))
   W <- simulate(ar1)
-  Y <- beta[1] + x1 * beta[2] + x2 * beta[3] + W + rnorm(n_obs, sd = sigma_eps)
+  Y <- feff[1] + x1 * feff[2] + x2 * feff[3] + W + rnorm(n_obs, sd = sigma_eps)
 
   # first we test estimation
   out <- ngme(
@@ -31,7 +31,7 @@ test_that("test predict general", {
   plot(out$replicates[[1]]$models[[1]]$noise, attr(W, "noise"))
 
   # compare results
-  expect_true(sum(abs(out$replicates[[1]]$beta - beta)) < 2)
+  expect_true(sum(abs(out$replicates[[1]]$feff - feff)) < 2)
   expect_true(abs(out$replicates[[1]]$noise$theta_sigma - log(sigma_eps)) < 1)
   expect_true(abs(out$replicates[[1]]$models[[1]]$noise$theta_mu - mu) < 1)
   expect_true(abs(out$replicates[[1]]$models[[1]]$noise$theta_sigma - log(sigma)) < 1)

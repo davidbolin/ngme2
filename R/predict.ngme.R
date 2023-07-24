@@ -19,8 +19,8 @@
 
 #   # fixed effects. watch out! Xb could be double(0)
 #   X_pred <- split_data$X_NA;
-#   Xb_pred <- drop(X_pred %*% ngme$beta)
-#   Xb_data <- drop(X_data %*% ngme$beta)
+#   Xb_pred <- drop(X_pred %*% ngme$feff)
+#   Xb_data <- drop(X_data %*% ngme$feff)
 
 #   # ngme_response[split_data$index_NA] <- if (length(Xb_pred) == 0) AW_pred else AW_pred + Xb_pred
 #   #
@@ -49,7 +49,7 @@
 #   # posterior sampling
 #   ngme <- post_sampling(ngme, sampling_iteration)
 
-#   linear_predictor <- X_pred %*% ngme$beta
+#   linear_predictor <- X_pred %*% ngme$feff
 #     for (latent in ngme$models)
 #       linear_predictor <- linear_predictor + A_pred[i] %*% latent$W
 

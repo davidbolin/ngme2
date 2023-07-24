@@ -64,6 +64,7 @@ reference:
     contents:
     - ngme
     - summary.ngme
+    - ngme_result
   - title: Latent models
     contents:
     - ngme_model_types

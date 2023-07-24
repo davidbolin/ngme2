@@ -1,4 +1,4 @@
-#' ngme bivariate model specification
+#' Ngme bivariate model specification
 #'
 #' Giving 2 sub_models, build a correlated bivaraite operator based on K = D(theta, eta) %*% diag(K_1, K_2)
 #' \deqn{D(\theta, \rho) = \begin{pmatrix}
@@ -10,8 +10,8 @@
 #' @param sub_models a list of sub_models (total 2 sub_models)
 #' @param mesh mesh for build the model
 #' @param group group vector, can be inherited from ngme() function
-#' @param theta parameter for Q matrix (rotation)
-#' @param rho parameter for D matrix (correlation)
+#' @param theta the rotation parameter (from -pi/4 to pi/4)
+#' @param rho the parameter related to correlation
 #' @param share_param TRUE if share the same parameter for 2 sub_models (of same type)
 #' @param ... ignore
 #'

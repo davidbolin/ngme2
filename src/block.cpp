@@ -18,7 +18,7 @@ BlockModel::BlockModel(
   Y                 (Rcpp::as<VectorXd>      (block_model["Y"])),
   W_sizes           (Rcpp::as<int>           (block_model["W_sizes"])),
   V_sizes           (Rcpp::as<int>           (block_model["V_sizes"])),
-  beta              (Rcpp::as<VectorXd>      (block_model["beta"])),
+  beta              (Rcpp::as<VectorXd>      (block_model["feff"])),
   n_obs             (Y.size()),
   n_la_params       (Rcpp::as<int>           (block_model["n_la_params"])),
   n_feff            (beta.size()),
@@ -65,7 +65,7 @@ BlockModel::BlockModel(
 if (debug) std::cout << "Begin Block Constructor" << std::endl;
 
   // 2. Init Fixed effects
-  fix_flag[block_fix_beta]   = Rcpp::as<bool>        (control_ngme["fix_beta"]);
+  fix_flag[block_fix_beta]   = Rcpp::as<bool>        (control_ngme["fix_feff"]);
   if (beta.size() == 0) fix_flag[block_fix_beta]  = true;
 
   // 4. Init latent models
@@ -137,7 +137,7 @@ if (debug) std::cout << "After set block K" << std::endl;
       dQ_eps = dQ_lower.selfadjointView<Lower>();
 
     // Q_eps_solver.analyzePattern(Q_eps);
-    // std::cout << "Q_eps: \n" << Q_eps << std::endl;
+// std::cout << "Q_eps: \n" << Q_eps << std::endl;
     }
 
 if (debug) std::cout << "After block construct noise" << std::endl;
@@ -470,7 +470,7 @@ VectorXd BlockModel::grad_theta_merr() {
     VectorXd res = get_residual();
     double drhs = -0.5 * (res).dot(dQ_eps * res);
     grad(n_merr-1) = trace + drhs;
-    grad(n_merr-1) *= - 1.0 / (n_obs) * dtheta_th(rho(0));
+    grad(n_merr-1) *= -dtheta_th(rho(0));
 // std::cout << "drhs = " << drhs << std::endl;
 // std::cout << "trace = " << trace << std::endl;
 // std::cout << "grad of rho=" << grad(n_merr-1) << std::endl;
@@ -583,7 +583,7 @@ Rcpp::List BlockModel::output() const {
       Rcpp::Named("V")            = noise_V,
       Rcpp::Named("rho")          = rho
     ),
-    Rcpp::Named("beta")            = beta,
+    Rcpp::Named("feff")            = beta,
     Rcpp::Named("models")          = latents_output
   );
 
@@ -692,7 +692,7 @@ if (debug) std::cout << "start precond"<< std::endl;
 if (debug) std::cout << "after latents precond"<< std::endl;
 
   // 2. Preconditioner for fixed effects and measurement error
-  if (strategy == 0 || corr_measure) {
+  if (strategy == 0) {
     // No preconditioner
     precond.bottomRightCorner(n_merr + n_feff, n_merr + n_feff) = VectorXd::Constant(n_merr + n_feff, n_obs).asDiagonal();
   } else {
@@ -753,7 +753,7 @@ double BlockModel::logd_no_latent(const VectorXd& v) {
 	VectorXd theta_mu = v.segment(0, n_theta_mu);
 	VectorXd theta_sigma = v.segment(n_theta_mu, n_theta_sigma);
   VectorXd nu = v.segment(n_theta_mu + n_theta_sigma, n_nu);
-  VectorXd rho = v.segment(n_theta_mu + n_theta_sigma + n_nu, n_rho);
+  VectorXd th_rho = v.segment(n_theta_mu + n_theta_sigma + n_nu, n_rho);
   VectorXd beta = v.tail(n_feff);
 
   // compute mu & sigma
@@ -769,15 +769,34 @@ double BlockModel::logd_no_latent(const VectorXd& v) {
 
   double logd_res = 0;
   if (corr_measure) {
-    // to-do, update Q given rho
-    // compute log det manually?
-    VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
-    // Q = K' * diag(1/SV) * K
-    SparseMatrix<double> QQ = K.transpose() * inv_SV.asDiagonal() * K + A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V).asDiagonal() * A;
-    chol_QQ.compute(QQ);
-    double lhs = chol_QQ.logdet();
-    double rhs = tmp.dot(QQ * tmp);
-    logd_res = - 0.5 * (lhs + rhs);
+    // update rho and Q_eps
+    double rho = th2rho(th_rho(0));
+    for (int i=0; i < Q_eps.outerSize(); i++) {
+      for (SparseMatrix<double>::InnerIterator it(Q_eps, i); it; ++it) {
+        if (it.row() == it.col()) {
+          int idx = it.row();
+          it.valueRef() = 1.0/(pow(noise_sigma(idx), 2) * noise_V(idx));
+          if (has_correlation[idx]) it.valueRef() /= (1-rho*rho);
+        } else {
+          double tmp = noise_sigma(it.row()) * noise_sigma(it.col()) * sqrt(noise_V(it.row()) * noise_V(it.col()));
+          it.valueRef() = -rho / ((1-rho*rho) * tmp);
+        }
+      }
+    }
+    // compute logdet of Q_eps
+    // lhs = Q_eps.logdet();
+    double lhs=0; int i=0;
+    while (i < n_obs) {
+      if (has_correlation[i]) {
+        lhs += - log((1-rho*rho) * SV[i] * SV[i+1]);
+        i+=2;
+      } else {
+        lhs += - log(SV[i]);
+        i+=1;
+      }
+    }
+    double rhs = tmp.dot(Q_eps * tmp);
+    logd_res = 0.5 * (lhs - rhs);
   } else {
     double lhs = SV.array().log().sum();
     double rhs = tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);

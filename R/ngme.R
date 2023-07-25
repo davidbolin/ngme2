@@ -364,15 +364,16 @@ ngme_parse_formula <- function(
     noise_rep <- update_noise(noise_new, sub_idx=idx)
 
     if (noise$corr_measurement) {
+      # compute index_corr
       index_corr <- noise$index_corr[idx]
-      if (is.null(index_corr)) {
-        bv_idx <- which(sapply(models_rep, function(x) x$model) == "bv")
-        # bv_map <- models_rep[[bv_idx]]$map
-        # to-do
-        # build index_corr based on bv_map
-      }
-      stopifnot("Please provide the index_corr vector" = !is.null(index_corr))
-
+      stopifnot(
+        "Please provide the index_corr vector, and you can use ?compute_index_corr_from_map function to compute it from data"
+          = !is.null(index_corr),
+        "The length of index_corr should be the same as the number of observations"
+          = length(index_corr) == sum(idx),
+        "Now more than 2 locations are correlated in 1 replicate is not allowed"
+          = !any(table(index_corr) > 2)
+      )
   # pmat is the permutation matrix, s.t.
   # Y = AW + Xb + Pe, e|V_e ~ N(-mu+mu V_e, sigma^2 diag(V_e))
   # V_e is order by c(1,1,2,2,3,4,..) as in the order(corr_index)
@@ -420,6 +421,40 @@ ngme_parse_formula <- function(
     ),
     class = "ngme"
   )
+}
+
+#' Helper function to compute the index_corr vector
+#'
+#' @param map used as location to compute distance
+#' @param data data.frame, used to evaluate map if map is a formula
+#' @param eps threshold to determine if two points are close (if close, we consider them as the same point)
+#'
+#' @return the index_corr vector for ngme correlated measurement noise
+#' @examples
+#' x_coord <- c(1.11, 1.12, 2, 1.3, 1.3)
+#' y_coord <- c(1.11, 1.11, 2, 1.3, 1.3)
+#' data = data.frame(x_coord, y_coord)
+#' compute_index_corr_from_map(
+#'  ~x_coord + y_coord,
+#'  data,
+#'  0.1
+#')
+#' @export
+compute_index_corr_from_map <- function(map, data, eps=0.1) {
+  if (is.null(map)) return(NULL)
+  if (inherits(map, "formula")) map <- model.matrix(map, data)[, -1]
+
+  index_corr <- 1:length_map(map)
+  if (length(index_corr) == 1) return(index_corr)
+  for (i in 2:length_map(map)) {
+    for (j in 1:(i-1)) {
+      if (dist(rbind(map[[i]], map[[j]])) < eps) {
+        index_corr[j] <- index_corr[i]
+      }
+    }
+  }
+
+  as.integer(as.factor(index_corr))
 }
 
 # idx: integer vector, indicating which observations are correlated
@@ -474,7 +509,6 @@ summary.ngme <- function(
     result <- ngme_rep$models[[name]]
   }
 
-  # to-do: provide coefficient
   result
 }
 

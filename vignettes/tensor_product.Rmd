@@ -14,18 +14,26 @@ knitr::opts_chunk$set(
 )
 ```
 
-## Description
+## Introduction
 
-In this vignette, we will show how to fit a tensor product model using ngme2. One useful example of this kind of model is the separable space-time model.
+In this vignette, we will show how to fit the separable space-time (tensor product) model using ngme2.
 
 The separable space-time model is defined by the Kronecker product between the precision matrices of the spatial and temporal random effects. Additional information about separable space-time models can be found in Cameletti et al. (2013).
 
-The operator matrix $K$ of the tensor product model can be expressed by: $K = K_l \otimes K_r$ where $K_l$ and $K_r$ are the operator for the 2 sub-models.
+## Model structure
 
-## Usage
+Remember that, for the univariate model, it can be written as:
+$$ \mathcal{L} \mathbf{X}(s) = \mathcal{M},$$ where $\mathcal{L}$ is some operator, $\mathcal{M}$ represents the noise (Gaussian or non-Gaussian).
 
-The R interface for tensor product model needs map as a list of 2 indices and 2 operators namely `first` and `second` to build the model.
+After we discretize (see e.g. [Ngme2 Matern SPDE model](SPDE-model.html) for details) the operator $\mathcal{L}$, we will get the operator matrix $K$.
 
+In the tensor product model, the operator matrix $K$ can be constructed by other two operator matrices of two models:
+
+$$K = K_l \otimes K_r.$$
+
+## One simple example
+
+The R interface for tensor product model requries map as a list of 2 indices and 2 operators namely `first` and `second` to build the model.
 
 The following is one simple example of how to build the space-time (1d location) model.
 
@@ -37,9 +45,11 @@ library(INLA)
 library(ngme2)
 
 time = c(2001, 2001, 2003, 2002, 2003, 2002, 2001)
-loc  = c(3, 2, 1, 1, 2, 2, 1)
+loc  = c(3.3, 2.0, 1.0, 1.0, 2.0, 2.0, 1.0)
 
-m0 <- f(map=list(time, loc), model="tp", first=ar1(time), second=rw1(loc))
+m0 <- f(map=list(time, loc), model="tp",
+  first=list(model="ar1"),
+  second=list(model="rw1"))
 m0
 
 # The map from the underlying mesh to our observations
@@ -52,60 +62,66 @@ In general, we need to provide a list of 2 indices (from the data), and also pro
 
 Next we will see a useful AR(1) x Matern 2d example.
 
-## Simulation - (AR1 x Matern 2d case)
+## A AR(1) x Matern 2d example
 
 Now let's turn to simualte and estimate the tensor-product model.
 
-```{r}
+```{r ar-matern, cache=TRUE}
 ##############################  simulation
 set.seed(16)
 mesh2d <- inla.mesh.2d(
   loc.domain = cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5),
-  max.edge = c(2, 10)
+  max.edge = c(1, 10),
+  cutoff = 0.1
 )
+mesh2d$n
 
-# generate random loc for each n_ar
-n_obs <- c(13, 22, 14, 20, 32) # observation for each year
+# generate random loc for each year
+n_obs <- c(102, 85, 120, 105, 109) # observation for each year
 year <- rep(2001:2005, times = n_obs)
-x <- runif(sum(n_obs)) * 10; y <- runif(sum(n_obs)) * 5
 
+# 2d coordinate
+x <- runif(sum(n_obs)) * 10;
+y <- runif(sum(n_obs)) * 5
+
+# set the model for simulation
 true_model <- ngme2::f(
   map = list(year, ~x+y),
-  model = "tp", name="tp",
-  first = ar1(year),
-  second = matern(mesh = mesh2d)
+  model = "tp",
+  first = list(model="ar1", rho = 0.5),
+  second = list(model="matern", mesh = mesh2d),
+  noise = noise_nig(mu=-2, sigma=1, nu=2)
 )
+true_model$operator$K
 
 W <- simulate(true_model)
 AW <- as.numeric(true_model$A %*% W)
-n_obs <- length(AW)
-Y_obs <- AW + rnorm(n_obs, sd=0.5)
+Y_obs <- AW + rnorm(length(AW), sd = 0.5)
 df <- data.frame(year, x, y, Y_obs)
 
 ##############################  estimation
-out <- ngme(
-  Y_obs ~ 0 +
-  f(map = list(year, ~x+y),
+ngme_fit <- ngme(
+  Y_obs ~ 0 + f(
+    map = list(year, ~x+y),
     model="tp",
     name="tp",
-    first = ar1(year),
-    second = matern(mesh = mesh2d),
-    control = control_f(numer_grad = T)
+    first = list(model="ar1"),
+    second = list(model="matern", mesh = mesh2d),
+    noise = noise_nig()
+    # control = control_f(numer_grad = T)
   ),
   data = df,
   family = "normal",
   control_opt = control_opt(
-    iterations = 10,
-    n_parallel_chain = 1,
-    estimation = F,
-    verbose = T,
-    stepsize = 1
+    iterations = 100,
+    n_parallel_chain = 4,
+    max_absolute_step = 0.5,
+    preconditioner = "full"
   ),
   debug = F
 )
-# out
 
-# cross_validation(out)
-# traceplot(out, "tp")
-# traceplot(out, "tp")
+ngme_fit
+# traceplot(ngme_fit, "tp")
+# traceplot(ngme_fit)
 ```

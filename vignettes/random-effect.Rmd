@@ -18,14 +18,10 @@ knitr::opts_chunk$set(
 
 In Ngme2, we can specify the random effect models. The syntax is similar to other models, using `f()` function.
 
-```{r setup}
-library(INLA)
-library(ngme2)
-```
-
 Here is a simple example of using f
 
 ```{r}
+library(ngme2)
 # repl indicates the replicate number (the random effect is for each replicate)
 repl <- c(1, 1, 2, 2, 3, 3, 3)
 

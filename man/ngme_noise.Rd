@@ -28,6 +28,7 @@ ngme_noise(
   share_V = FALSE,
   corr_measurement = FALSE,
   index_corr = NULL,
+  map_corr = NULL,
   rho = double(0),
   ...
 )
@@ -124,6 +125,8 @@ noise_normal_nig(
 \item{corr_measurement}{TRUE if we use correlated measurement noise}
 
 \item{index_corr}{used when corr_measurement=TRUE, indicate which observation has correlation}
+
+\item{map_corr}{1d, 2d, or formula, used when corr_measurement=TRUE, specify use which covariate to infer the index_corr.}
 
 \item{rho}{used when corr_measurement=TRUE, starting point for correlation}
 

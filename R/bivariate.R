@@ -105,6 +105,7 @@ tp <- function(
     inherits(first, "ngme_operator"),
     inherits(second, "ngme_operator")
   )
+
   theta_K <- c(first$theta_K, second$theta_K)
   stopifnot(length(theta_K) == first$n_theta_K + second$n_theta_K)
 
@@ -117,7 +118,6 @@ tp <- function(
     K = first$K %x% second$K,
     h = first$h %x% second$h,
     symmetric = first$symmetric & second$symmetric,
-    # check here
     zero_trace = first$zero_trace & second$zero_trace
   )
 }

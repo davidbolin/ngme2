@@ -81,7 +81,7 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
     prevW = W;
     fix_flag[latent_fix_W] = Rcpp::as<bool> (model_list["fix_W"]); // fixW
 
-    // init K, Q
+    // init K, Q, dK
     ope->update_K(theta_K);
     if (V_size == W_size) {
         if (!symmetricK) {
@@ -193,8 +193,6 @@ VectorXd Latent::grad_theta_K() {
             double val_add_eps = logd_W_given_V(K_add_eps, mu, sigma, V);
             grad(i) = (val_add_eps - val) / eps;
         }
-        // update using num_g
-        // grad = num_g()
     } else {
         VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
 

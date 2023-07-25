@@ -2,7 +2,7 @@
 % Please edit documentation in R/bivariate.R
 \name{bv}
 \alias{bv}
-\title{ngme bivariate model specification}
+\title{Ngme bivariate model specification}
 \usage{
 bv(
   mesh,
@@ -19,9 +19,9 @@ bv(
 
 \item{sub_models}{a list of sub_models (total 2 sub_models)}
 
-\item{theta}{parameter for Q matrix (rotation)}
+\item{theta}{the rotation parameter (from -pi/4 to pi/4)}
 
-\item{rho}{parameter for D matrix (correlation)}
+\item{rho}{the parameter related to correlation}
 
 \item{group}{group vector, can be inherited from ngme() function}
 

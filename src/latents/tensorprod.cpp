@@ -39,15 +39,14 @@ void Tensor_prod::update_dK(const VectorXd& theta_K) {
   // assume K is already updated!!
   first->update_dK(theta_K_1);
   second->update_dK(theta_K_2);
-
-  for (int index=0; index < n_theta_1; index++) {
+  for (int index=0; index < n_theta_1 + n_theta_2; index++) {
     if (index < n_theta_1) {
       // return kroneckerEigen(dK_1, K_2);
       KroneckerProductSparse<SparseMatrix<double>, SparseMatrix<double> > kroneckerEigen(first->get_dK()[index], second->getK());
       kroneckerEigen.evalTo(dK[index]);
     } else {
       // return kroneckerEigen(K_1, dK_2);
-      KroneckerProductSparse<SparseMatrix<double>, SparseMatrix<double> > kroneckerEigen(first->getK(), second->get_dK()[index - n_theta_2]);
+      KroneckerProductSparse<SparseMatrix<double>, SparseMatrix<double> > kroneckerEigen(first->getK(), second->get_dK()[index - n_theta_1]);
       kroneckerEigen.evalTo(dK[index]);
     }
   }

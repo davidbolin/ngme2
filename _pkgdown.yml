@@ -101,6 +101,7 @@ reference:
     contents:
     - precision_matrix_multivariate
     - precision_matrix_multivariate_spde
+    - compute_index_corr_from_map
     - mean_list
     - ngme_as_sparse
     - control_opt

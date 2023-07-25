@@ -70,6 +70,16 @@ f <- function(
     "Please specify model as character" = is.character(model)
   )
 
+  # 0. build mesh if not specified
+  if (is.null(mesh)) {
+    mesh <- ngme_build_mesh(map, model)
+  }
+
+  # remove NULL in arguments
+  f_args <- Filter(Negate(is.null),  as.list(environment()))
+  # add arguments in ...
+  f_args <- c(f_args, list(...))
+
   if (model == "tp") {
     stopifnot(is.list(map) && length(map) == 2,
       "Please specify map for 2 sub_models"
@@ -82,19 +92,28 @@ f <- function(
         x
       }
     })
+
+    # examine argument for tp model
+    first <- list(...)$first; second <- list(...)$second
+    stopifnot(
+      "The length of map of 2 sub_models should be same"
+        = length_map(map[[1]]) == length_map(map[[2]]),
+      "Please provide f(first = ..., second = ...), see ?tp."
+        = !is.null(first) && !is.null(second),
+      "Please make sure first is a list and second is a list"
+        = is.list(first) && is.list(second),
+      "Please provide the model argument in first and second"
+        = !is.null(first$model) && !is.null(second$model),
+      "Please provide mesh individually for first and second"
+        = is.null(mesh)
+    )
+    if (is.null(first$mesh)) first$mesh <- ngme_build_mesh(map[[1]])
+    if (is.null(second$mesh)) second$mesh <- ngme_build_mesh(map[[2]])
+    f_args$first <- build_operator(first$model, first)
+    f_args$second <- build_operator(second$model, second)
   }
 
-  # 0. build mesh if not specified
-  if (is.null(mesh)) {
-    mesh <- ngme_build_mesh(map, model)
-  }
-
-  # remove NULL in arguments
-  f_args <- Filter(Negate(is.null),  as.list(environment()))
-  # add arguments in ...
-  f_args <- c(f_args, list(...))
-
-  # 1. build operator
+  # build the operator
   operator <- build_operator(model, f_args)
 
   A <- switch(model,

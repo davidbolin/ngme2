@@ -34,6 +34,7 @@
 #' @param share_V  used only for bivariate model
 #' @param corr_measurement TRUE if we use correlated measurement noise
 #' @param index_corr used when corr_measurement=TRUE, indicate which observation has correlation
+#' @param map_corr 1d, 2d, or formula, used when corr_measurement=TRUE, specify use which covariate to infer the index_corr.
 #' @param rho used when corr_measurement=TRUE, starting point for correlation
 #' @param ...       additional arguments
 #'
@@ -58,6 +59,7 @@ ngme_noise <- function(
   share_V         = FALSE,
   corr_measurement = FALSE,
   index_corr      = NULL,
+  map_corr        = NULL,
   rho             = double(0),
   ...
 ) {
@@ -113,6 +115,7 @@ ngme_noise <- function(
       share_V         = share_V,
       corr_measurement = corr_measurement,
       index_corr      = index_corr,
+      map_corr        = map_corr,
       rho             = rho,
       ...
     ),

@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-In this vignette, we will show how to fit the separable space-time (tensor product) model using ngme2.
+In this vignette, we will show how to fit the separable space-time (tensor product) model using Ngme2.
 
 The separable space-time model is defined by the Kronecker product between the precision matrices of the spatial and temporal random effects. Additional information about separable space-time models can be found in Cameletti et al. (2013).
 
@@ -47,9 +47,12 @@ library(ngme2)
 time = c(2001, 2001, 2003, 2002, 2003, 2002, 2001)
 loc  = c(3.3, 2.0, 1.0, 1.0, 2.0, 2.0, 1.0)
 
-m0 <- f(map=list(time, loc), model="tp",
+m0 <- f(
+  map=list(time, loc),
+  model="tp",
   first=list(model="ar1"),
-  second=list(model="rw1"))
+  second=list(model="rw1")
+)
 m0
 
 # The map from the underlying mesh to our observations
@@ -92,7 +95,6 @@ true_model <- ngme2::f(
   second = list(model="matern", mesh = mesh2d),
   noise = noise_nig(mu=-2, sigma=1, nu=2)
 )
-true_model$operator$K
 
 W <- simulate(true_model)
 AW <- as.numeric(true_model$A %*% W)
@@ -113,15 +115,16 @@ ngme_fit <- ngme(
   data = df,
   family = "normal",
   control_opt = control_opt(
-    iterations = 100,
+    iterations = 300,
     n_parallel_chain = 4,
     max_absolute_step = 0.5,
     preconditioner = "full"
   ),
-  debug = F
+  debug = FALSE
 )
 
 ngme_fit
+# see the trajectory of estimation
 # traceplot(ngme_fit, "tp")
 # traceplot(ngme_fit)
 ```

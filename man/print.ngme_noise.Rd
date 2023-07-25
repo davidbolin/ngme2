@@ -4,7 +4,7 @@
 \alias{print.ngme_noise}
 \title{Print ngme noise}
 \usage{
-\method{print}{ngme_noise}(x, padding = 0, prefix = "Noise type", ...)
+\method{print}{ngme_noise}(x, padding = 0, prefix = "Noise type", suppress_sigma = FALSE, ...)
 }
 \arguments{
 \item{x}{noise object}
@@ -12,6 +12,8 @@
 \item{padding}{number of white space padding in front}
 
 \item{prefix}{prefix}
+
+\item{suppress_sigma}{suppress printing sigma}
 
 \item{...}{...}
 }

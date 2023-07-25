@@ -27,13 +27,20 @@ Ngme::Ngme(const Rcpp::List& R_ngme, unsigned long seed, int sampling_strategy) 
 
 MatrixXd Ngme::precond(int strategy, double eps) {
   MatrixXd precond = MatrixXd::Zero(n_params, n_params);
-  for (int i=0; i < n_repl; i++) {
-    precond += ngme_repls[i]->precond(strategy, eps);
+
+  // check here
+  if (sampling_strategy == Strategy::all) {
+    for (int i=0; i < n_repl; i++) {
+      precond += ngme_repls[i]->precond(strategy, eps) / n_repl;
+    }
+  } else if (sampling_strategy == Strategy::ws) {
+    // weighted sampling (WS) for each replicate
+    int idx = weighted_sampler(gen);
+    precond = (num_each_repl[idx] / sum_num_each_repl) * ngme_repls[idx]->precond(strategy, eps);
   }
 
 // std::cout << "precond in ngme class = \n" << precond << std::endl;
-// precond = precond + eps * MatrixXd::Identity(n_params, n_params);
-  return precond / n_repl;
+  return precond;
 }
 
 VectorXd Ngme::grad() {

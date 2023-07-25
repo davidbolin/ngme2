@@ -1,8 +1,8 @@
 ---
-title: "Random effects model in Ngme2"
+title: "Random-effects model (for repeated measurement data) in Ngme2"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Random effects model in Ngme2}
+  %\VignetteIndexEntry{Random-effects model (for repeated measurement data) in Ngme2}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -16,52 +16,70 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-In Ngme2, we can specify the random effect models. The syntax is similar to other models, using `f()` function.
+Laird and Ware (1982) were the first to consider decomposing the underlying signal into fixed effects and random effects. The fixed effects are the same for all replicates, while the random effects are different for each replicate.
 
-Here is a simple example of using f
+The model can be expressed:
 
-```{r}
+$$Y_{ij} = \mathbf{x}^T_{ij} \mathbf{\beta} + \mathbf{d}^T_{ij} \mathbf{U}_i + \epsilon_{ij}, \qquad j=1 \ldots n_i, i=1,\ldots,m$$
+
+where $m$ is the number of subjects(replicates), $n_i$ is the observation for each replicate. $Y_{ij}$ is the $j$th observation in the $i$th replicate, $\mathbf{x}_{ij}$ is the $j$th row of the design matrix $\mathbf{X}_i$, $\mathbf{\beta}$ is the fixed effects, $\mathbf{d}_{ij}$ is the $j$th row of the design matrix $\mathbf{D}_i$, $\mathbf{U}_i$ is the random effects, and $\epsilon_{ij}$ is the error term.
+
+In *Ngme2*, we can specify the random effect models similar to other ordinary models  using `f` function (See e.g. [Ngme2 AR(1) model](AR1-model.html)). But remember that it is only meaningful to use random effect model when we have enough replicates (see [Ngme2 replicates feature](replicate.html)).
+
+In *Ngme2*, the noise can be Gaussian and non-Gaussian. The Gaussian case would be simply:
+$$U_i \sim N(0, \Sigma) \qquad i=1,\ldots,m,$$ and the non-Gaussian (NIG and GAL) case would be:
+$$U_i|V_i \sim N(-\mu + \mu V_i, \Sigma) \text{ and } V_i \sim f(\nu) \qquad i=1,\ldots,m.$$
+where $m$ is the number of subjects, $\Sigma$ is the covariance matrix, $\mu$ is the skewness parameter and $\nu$ is the parameter for the mixing variable $V$ (the distribution of $V$ varies when we choose different type of non-Gaussian noises). More details can be found in Asar et al. (2020).
+
+## R interface
+
+Next is one simple specification of random effect model.
+
+```{r, message=FALSE, warning=FALSE}
 library(ngme2)
-# repl indicates the replicate number (the random effect is for each replicate)
-repl <- c(1, 1, 2, 2, 3, 3, 3)
+load_all()
 
 # random effect model accepts formula argument, as the design matrix
-f(~1 + x, model = "re", noise = noise_normal(),
-  # ignore the last part, not needed when using f() in ngme function
-  data = data.frame(x = 1:7), eval=TRUE)
+f(~1 + x, model = "re", noise = noise_nig(),
+  # data can be inherited from ngme() function
+  data = data.frame(x = 1:7))
 ```
 
 ## Simulation
 
-The random effect model is commonly used when we have observations from different groups (or replciates).
-
-In the following example, we have 100 groups, each group has 20 observations. The random effect is from a bivariate normal distribution with covariance matrix Sigma.
+In the following example, we have 100 groups, each group has 20 observations. The random effect follows a bivariate normal distribution with covariance matrix Sigma.
 
 ```{r simulation}
-Sigma <- matrix(c(20, 10, 10, 30), 2, 2)
+set.seed(32)
 group <- 100
+# the covariance matrix
+Sigma <- matrix(c(20, 10, 10, 30), 2, 2)
 U <- MASS::mvrnorm(group, mu=c(0,0), Sigma=Sigma)
+
+# generate replicate vector (indicate which replicate the observation belongs to)
 each_obs <- 20
 repl <- rep(1:group, each=each_obs)
-z1 <- rnorm(group * each_obs, 0, 1)
-AA <- cbind(1, z1); t(AA) %*% AA
-x1 <- rexp(group * each_obs)
-x2 <- rep(1, (group * each_obs))
+
+# generate data for both fixed and random effects
+beta <- c(3, 2)
+x2 <- rexp(group * each_obs)
+x1 <- rep(1, (group * each_obs))
+z1 <- rnorm(group * each_obs)
 
 # simulate observations
 Y <- double(group * each_obs)
 for (i in 1:group) {
   group_idx <- ((i-1)*each_obs+1):(i*each_obs)
   Y[group_idx] <-
-    x2[group_idx] * 3 - 2 * x1[group_idx] +  # fixed effects
-    U[i, 1] + z1[group_idx] * U[i, 2] + # random effects
+    beta[1] * x1[group_idx] + beta[2] * x2[group_idx] +  # fixed effects
+    U[i, 1] * 1             + U[i, 2] * z1[group_idx] + # random effects
     rnorm(each_obs)
 }
 ```
 
 First we fit the model using lme4 package, next we fit the model using ngme2.
 
-```{r lme4}
+```{r lme4, eval=TRUE, cache=TRUE, message=FALSE, warning=FALSE}
 # fit with lme4
 library(lme4)
 lmer(Y ~ 0 + x2+ x1 + (z1 | repl),
@@ -69,33 +87,31 @@ lmer(Y ~ 0 + x2+ x1 + (z1 | repl),
 
 out <- ngme(
   formula = Y ~ 0 + x2 + x1 +
-    f(~1+z1, model="re", noise=noise_normal(),
-      control=control_f(numer_grad = T)
+    f(~1+z1, model="re",
+      noise=noise_normal()
     ),
   replicate=repl,
-  data=data.frame(x1=x1, z1=z1, repl=repl),
-  control_ngme = control_ngme(
-    # beta = c(0, 0)
-  ),
+  data=data.frame(x1=x1, x2=x2, z1=z1),
   control_opt = control_opt(
-    iterations = 500,
-    n_parallel_chain = 4,
+    iterations = 200,
     std_lim = 0.01,
-    print_check_info = FALSE,
+    verbose = FALSE,
+    preconditioner = "none",
     seed = 3
   )
 )
 
-# check the result
 out
 traceplot(out, "effect1")
 ```
 
-## Non-Gaussian case
+The final result is very close to the lme4 package.
 
-The random effect model can be used for non-Gaussian case as well.
+<!-- ## Non-Gaussian Random Effects -->
 
-```{r}
+<!-- The random effect model can be used for non-Gaussian case as well. -->
+
+```{r eval=FALSE, echo=FALSE}
 # simulate Y
 group <- 500; mu = -5; nu = 1;
 Sigma <- matrix(c(4), 1, 1)
@@ -153,9 +169,8 @@ traceplot(out)
 out
 ```
 
-(*correlated nig noise*)
 
-```{r eval=FALSE}
+```{r eval=FALSE, echo=FALSE}
 # simulate random effects
 group <- 500; mu = -5; nu = 1;
 Sigma <- matrix(c(20, 5, 5, 10), 2, 2)
@@ -253,7 +268,7 @@ out_corr_nig
 
 <!-- Question regarding fixed effect -->
 
-```{r eval=FALSE}
+```{r eval=FALSE, echo=FALSE}
 # convergence of fixed effects
 # simulate Y = 4 x + 1 + e
 x1 <- rnorm(100); x2 <- rnorm(100)

@@ -78,7 +78,7 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
       cat(pad_add4_space); cat("theta_K = ", format(theta_K, digits=2), "\n", sep=" ")
     },
     re = {
-      cat(pad_add4_space, "Cov matrix: \n")
+      cat(pad_add4_space, "Covariance matrix (Sigma): \n")
       K = build_effect_K(nrow(operator$K), operator$theta_K)
       print(solve(t(K) %*% K))
     },
@@ -171,7 +171,8 @@ ngme_model <- function(
 print.ngme_model <- function(x, padding = 0, ...) {
   model <- x
   print.ngme_operator(model$operator, padding = padding)
-  print.ngme_noise(model$noise, padding = padding)
+  suppress_sigma <- if (model$model == "re") TRUE else FALSE
+  print.ngme_noise(model$noise, padding = padding, suppress_sigma=suppress_sigma)
   invisible(model)
 }
 

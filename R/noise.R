@@ -360,11 +360,12 @@ noise_normal_nig <- normal_nig <- function(
 #' @param x noise object
 #' @param padding number of white space padding in front
 #' @param prefix prefix
+#' @param suppress_sigma suppress printing sigma
 #' @param ... ...
 #'
 #' @return a list (noise specifications)
 #' @export
-print.ngme_noise <- function(x, padding = 0, prefix = "Noise type", ...) {
+print.ngme_noise <- function(x, padding = 0, prefix = "Noise type", suppress_sigma=FALSE, ...) {
   noise <- x
   pad_space <- paste(rep(" ", padding), collapse = "")
   pad_add4_space <- paste(rep(" ", padding + 4), collapse = "")
@@ -392,24 +393,32 @@ print.ngme_noise <- function(x, padding = 0, prefix = "Noise type", ...) {
       # single noise
       cat(pad_space); cat(prefix); cat(": "); cat(toupper(noise$noise_type)); cat("\n")
 
-      cat(pad_space); cat("Noise parameters: \n")
-      params <- with(noise, {
-        switch(noise_type,
-          "normal" = paste0(pad_add4_space, ngme_format("sigma", theta_sigma)),
-          "nig"    = paste0(pad_add4_space, ngme_format("mu", theta_mu),
-                      "\n", pad_add4_space, ngme_format("sigma", theta_sigma),
-                      "\n", pad_add4_space, ngme_format("nu", nu)),
-          "gal"    = paste0(pad_add4_space, ngme_format("mu", theta_mu),
-                      "\n", pad_add4_space, ngme_format("sigma", theta_sigma),
-                      "\n", pad_add4_space, ngme_format("nu", nu)),
-          "normal_nig" = paste0(pad_add4_space, ngme_format("mu", theta_mu),
-                      "\n", pad_add4_space, ngme_format("sigma_nig", theta_sigma),
-                      "\n", pad_add4_space, ngme_format("nu", nu),
-                      "\n", pad_add4_space, ngme_format("sigma_normal", theta_sigma_normal)),
-          stop("unknown noise type")
-        )
-      })
-      cat(params)
+      if (suppress_sigma && noise$noise_type == "normal") {
+        # skip
+      } else if (suppress_sigma) {
+        # only print mu and nu
+        cat(paste0(pad_add4_space, ngme_format("mu", noise$theta_mu), "\n",
+          pad_add4_space, ngme_format("nu", noise$nu)))
+      } else {
+        cat(pad_space); cat("Noise parameters: \n")
+        params <- with(noise, {
+          switch(noise_type,
+            "normal" = paste0(pad_add4_space, ngme_format("sigma", theta_sigma)),
+            "nig"    = paste0(pad_add4_space, ngme_format("mu", theta_mu),
+                        "\n", pad_add4_space, ngme_format("sigma", theta_sigma),
+                        "\n", pad_add4_space, ngme_format("nu", nu)),
+            "gal"    = paste0(pad_add4_space, ngme_format("mu", theta_mu),
+                        "\n", pad_add4_space, ngme_format("sigma", theta_sigma),
+                        "\n", pad_add4_space, ngme_format("nu", nu)),
+            "normal_nig" = paste0(pad_add4_space, ngme_format("mu", theta_mu),
+                        "\n", pad_add4_space, ngme_format("sigma_nig", theta_sigma),
+                        "\n", pad_add4_space, ngme_format("nu", nu),
+                        "\n", pad_add4_space, ngme_format("sigma_normal", theta_sigma_normal)),
+            NULL
+          )
+        })
+        cat(params)
+      }
     }
   }
   cat("\n")

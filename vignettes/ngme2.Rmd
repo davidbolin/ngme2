@@ -20,43 +20,36 @@ set.seed(10)
 
 In this vignette we provide a brief introduction to the `ngme2` package.
 
-`ngme2` is the updated version of R Package `ngme` (https://github.com/davidbolin/ngme), a package for estimating latent non-Gaussian models.
-It follows a **3-layer structure** in design (the general block model, latent process models, and noises) for specifying the whole statistical model.
-The latent process defines different operator structure, and the block model collects them together with the fixed effects and measurement noise.
+`Ngme2` (https://github.com/davidbolin/ngme2) is the updated version of `Ngme`, a package for estimating latent non-Gaussian models for repeated measurement data.
+`Ngme2` follows a hierachical structure, differnet components (latent processes, different types of noises) are flexible to change and combine.
 
 ### 1 Features
 
-1. Support spatial models like Matern model with non-Gaussian noise.
-2. Support models for temporal data like **AR1** and **random walk** of order 1 and 2.
-3. Support replicate at same locations.
-4. Support prediction at unknown locations.
-5. Model corss-validation.
-6. Comparing to the previous version, it now supports multiple stochastic processes in the latent model.
-
+1. Support temporal models like **AR(1)**, **Ornstein−Uhlenbeck** and **random walk** processes, and spatial models like **Matern** fields.
+2. Support latent processes constructed by **non-Gaussian noises** (normal inverse Gaussian(NIG), generalized asymmetric Laplace (GAL)).
+3. Support non-Gaussian, and correlated **measurement noises**.
+4. Support doing **prediction** at unknown locations.
+5. Support latent processes and random-effects model for **longitudinal data**.
+6. Support the bivariate type-G model, which can model 2 non-Gaussian fields jointly (Bolin 2020).
+7. Support the separable space-time model.
 
 ### 2 Model Framework
 
-The package `ngme2` provides methods for mixed effect models both for single response variable case and bivariate response model (see bivariate model vignette for details).
+The package `Ngme2` provides methods for mixed effect models in the following form:
 
-It follows the general structure of the mixed effect model:
 $$
-\begin{aligned}
-Y = {\bf X}^{\top} {\bf \beta} + \sum_j {\bf A}_j W_j({\bf t}) + \epsilon.
-\end{aligned}
+{\bf Y}_{ij} = {\bf x}^T_{ij} {\bf \beta} + {\bf d}^T_{ij} {\bf U}_i + W_i(t_{ij}) + \epsilon_{ij},
+\qquad j=1 \ldots n_i, i=1,\ldots,m
 $$
 
-Here,
-
+- $m$ is the number of subjects, $n_i$ is the number of observations for each subject,
 - $Y$ is the response variable,
 - ${\bf X}$ is the matrix of fixed effects explanatory variables,
-- ${\bf \beta}$ is the matrix of fixed effects coefficients,
-- ${\bf A}_j$ is the observation matrix for each process,
-- $W_j(t_j)$ is specified as a stochastic process,
+- ${\bf \beta}$ is the fixed effects,
+- ${\bf X}$ is the matrix of random effects explanatory variables,
+- $\bf U$ is the random effects,
+- $W_i(t_{ij})$ is a stochastic process driven by Gaussian or non-Gaussian noise,
 - $\epsilon$ is measurement error.
-
-Here, the process $W$ follows ${\bf K} W = z$,
-where $z$ is either Gaussian or non-Gaussian noise.
-${\bf K}$ is the operator matrix.
 
 Here is a simple template for using the core function `ngme` to model the single response:
 
@@ -91,7 +84,7 @@ See `?nig` for more details.
 1. Ngme2 does maximum likelihood estimation through preconditioned stochastic gradient descent.
 2. Multiple chains are run in parallel for better convergence checks.
 
-<!-- See `vignette()` for more details. -->
+See [Model estimation and prediction](pred_and_est.html) for more details.
 
 ## Ngme Model Structure
 

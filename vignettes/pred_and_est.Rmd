@@ -1,8 +1,8 @@
 ---
-title: "Model prediction and estimation"
+title: "Model estimation and prediction"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Model prediction and estimation}
+  %\VignetteIndexEntry{Model estimation and prediction}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

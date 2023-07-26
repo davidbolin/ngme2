@@ -60,8 +60,8 @@ control_opt <- function(
   precond_eps       = 1e-5,
   precond_by_diff_chain = TRUE,
 
-  max_relative_step = 0.2,
-  max_absolute_step = 1,
+  max_relative_step = 0.5,
+  max_absolute_step = 0.5,
 
   # reduce variance after conv. check
   reduce_var        = FALSE,

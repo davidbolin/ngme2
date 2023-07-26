@@ -37,7 +37,6 @@ Next is one simple specification of random effect model.
 
 ```{r, message=FALSE, warning=FALSE}
 library(ngme2)
-load_all()
 
 # random effect model accepts formula argument, as the design matrix
 f(~1 + x, model = "re", noise = noise_nig(),

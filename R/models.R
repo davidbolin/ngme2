@@ -300,6 +300,7 @@ re <- function(
   K <- diag(n_reff); diag(K) <- exp(theta_K[1:n_reff])
   if (n_reff > 1)
     K[lower.tri(K)] <- theta_K[(n_reff+1):n_theta_K]
+  K <- Matrix::Matrix(K)
 
   ngme_operator(
     mesh = NULL,

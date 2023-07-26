@@ -117,7 +117,7 @@
       <h1 data-toc-skip>Ngme2 - A new Flexible R Package for Latent
 non-Gaussian Models</h1>
             
-            <h4 data-toc-skip class="date">2023-07-24</h4>
+            <h4 data-toc-skip class="date">2023-07-26</h4>
       
       
       <div class="hidden name"><code>ngme2.Rmd</code></div>
@@ -131,42 +131,46 @@ non-Gaussian Models</h1>
 </h2>
 <p>In this vignette we provide a brief introduction to the
 <code>ngme2</code> package.</p>
-<p><code>ngme2</code> is the updated version of R Package
-<code>ngme</code> (<a href="https://github.com/davidbolin/ngme" class="external-link uri">https://github.com/davidbolin/ngme</a>), a package for
-estimating latent non-Gaussian models. It follows a <strong>3-layer
-structure</strong> in design (the general block model, latent process
-models, and noises) for specifying the whole statistical model. The
-latent process defines different operator structure, and the block model
-collects them together with the fixed effects and measurement noise.</p>
+<p><code>Ngme2</code> (<a href="https://github.com/davidbolin/ngme2" class="external-link uri">https://github.com/davidbolin/ngme2</a>) is the updated
+version of <code>Ngme</code>, a package for estimating latent
+non-Gaussian models for repeated measurement data. <code>Ngme2</code>
+follows a hierachical structure, differnet components (latent processes,
+different types of noises) are flexible to change and combine.</p>
 <div class="section level3">
 <h3 id="features">1 Features<a class="anchor" aria-label="anchor" href="#features"></a>
 </h3>
 <ol style="list-style-type: decimal">
-<li>Support spatial models like Matern model with non-Gaussian
-noise.</li>
-<li>Support models for temporal data like <strong>AR1</strong> and
-<strong>random walk</strong> of order 1 and 2.</li>
-<li>Support replicate at same locations.</li>
-<li>Support prediction at unknown locations.</li>
-<li>Model corss-validation.</li>
-<li>Comparing to the previous version, it now supports multiple
-stochastic processes in the latent model.</li>
+<li>Support temporal models like <strong>AR(1)</strong>,
+<strong>Ornstein−Uhlenbeck</strong> and <strong>random walk</strong>
+processes, and spatial models like <strong>Matern</strong> fields.</li>
+<li>Support latent processes constructed by <strong>non-Gaussian
+noises</strong> (normal inverse Gaussian(NIG), generalized asymmetric
+Laplace (GAL)).</li>
+<li>Support non-Gaussian, and correlated <strong>measurement
+noises</strong>.</li>
+<li>Support doing <strong>prediction</strong> at unknown locations.</li>
+<li>Support latent processes and random-effects model for
+<strong>longitudinal data</strong>.</li>
+<li>Support the bivariate type-G model, which can model 2 non-Gaussian
+fields jointly (Bolin 2020).</li>
+<li>Support the separable space-time model.</li>
 </ol>
 </div>
 <div class="section level3">
 <h3 id="model-framework">2 Model Framework<a class="anchor" aria-label="anchor" href="#model-framework"></a>
 </h3>
-<p>The package <code>ngme2</code> provides methods for mixed effect
-models both for single response variable case and bivariate response
-model (see bivariate model vignette for details).</p>
-<p>It follows the general structure of the mixed effect model: <span class="math display">\[
-\begin{aligned}
-Y = {\bf X}^{\top} {\bf \beta} + \sum_j {\bf A}_j W_j({\bf t}) +
-\epsilon.
-\end{aligned}
+<p>The package <code>Ngme2</code> provides methods for mixed effect
+models in the following form:</p>
+<p><span class="math display">\[
+{\bf Y}_{ij} = {\bf x}^T_{ij} {\bf \beta} + {\bf d}^T_{ij} {\bf U}_i +
+W_i(t_{ij}) + \epsilon_{ij},
+\qquad j=1 \ldots n_i, i=1,\ldots,m
 \]</span></p>
-<p>Here,</p>
 <ul>
+<li>
+<span class="math inline">\(m\)</span> is the number of subjects,
+<span class="math inline">\(n_i\)</span> is the number of observations
+for each subject,</li>
 <li>
 <span class="math inline">\(Y\)</span> is the response
 variable,</li>
@@ -174,22 +178,21 @@ variable,</li>
 <span class="math inline">\({\bf X}\)</span> is the matrix of fixed
 effects explanatory variables,</li>
 <li>
-<span class="math inline">\({\bf \beta}\)</span> is the matrix of
-fixed effects coefficients,</li>
+<span class="math inline">\({\bf \beta}\)</span> is the fixed
+effects,</li>
 <li>
-<span class="math inline">\({\bf A}_j\)</span> is the observation
-matrix for each process,</li>
+<span class="math inline">\({\bf X}\)</span> is the matrix of random
+effects explanatory variables,</li>
 <li>
-<span class="math inline">\(W_j(t_j)\)</span> is specified as a
-stochastic process,</li>
+<span class="math inline">\(\bf U\)</span> is the random
+effects,</li>
+<li>
+<span class="math inline">\(W_i(t_{ij})\)</span> is a stochastic
+process driven by Gaussian or non-Gaussian noise,</li>
 <li>
 <span class="math inline">\(\epsilon\)</span> is measurement
 error.</li>
 </ul>
-<p>Here, the process <span class="math inline">\(W\)</span> follows
-<span class="math inline">\({\bf K} W = z\)</span>, where <span class="math inline">\(z\)</span> is either Gaussian or non-Gaussian
-noise. <span class="math inline">\({\bf K}\)</span> is the operator
-matrix.</p>
 <p>Here is a simple template for using the core function
 <code>ngme</code> to model the single response:</p>
 <pre><code><span><span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
@@ -226,7 +229,8 @@ stochastic gradient descent.</li>
 <li>Multiple chains are run in parallel for better convergence
 checks.</li>
 </ol>
-<!-- See `vignette()` for more details. -->
+<p>See <a href="pred_and_est.html">Model estimation and prediction</a>
+for more details.</p>
 </div>
 </div>
 <div class="section level2">
@@ -480,17 +484,17 @@ K =
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $my_ar</span></span>
 <span><span class="co">#&gt;   Model type: AR(1)</span></span>
-<span><span class="co">#&gt;       rho = 0.56</span></span>
+<span><span class="co">#&gt;       rho = 0.563</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = 2.04</span></span>
-<span><span class="co">#&gt;       sigma = 3</span></span>
+<span><span class="co">#&gt;       mu = 2.05</span></span>
+<span><span class="co">#&gt;       sigma = 3.02</span></span>
 <span><span class="co">#&gt;       nu = 1.05</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.359</span></span>
+<span><span class="co">#&gt;       sigma = 0.357</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre></div>
@@ -596,7 +600,7 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt; (Intercept) </span></span>
-<span><span class="co">#&gt;        8.42 </span></span>
+<span><span class="co">#&gt;        8.38 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $rw1</span></span>
@@ -604,21 +608,21 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <span><span class="co">#&gt;       No parameter.</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.000132</span></span>
+<span><span class="co">#&gt;       sigma = 0.00106</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $spde</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
 <span><span class="co">#&gt;       kappa = 3.54</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 30.9</span></span>
+<span><span class="co">#&gt;       sigma = 31.2</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = 0.343</span></span>
+<span><span class="co">#&gt;       mu = 0.307</span></span>
 <span><span class="co">#&gt;       sigma = 2.02</span></span>
-<span><span class="co">#&gt;       nu = 1.9</span></span>
+<span><span class="co">#&gt;       nu = 1.85</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span>
@@ -657,13 +661,13 @@ Mean of the rainfall in Octobor 2012 in Paraná
 </tr></thead>
 <tbody><tr class="odd">
 <td align="left">(Intercept)</td>
-<td align="left">8.42</td>
-<td align="left">0.343</td>
+<td align="left">8.38</td>
+<td align="left">0.307</td>
 <td align="left">2.02</td>
-<td align="left">1.9</td>
-<td align="left">-8.94</td>
+<td align="left">1.85</td>
+<td align="left">-6.85</td>
 <td align="left">3.54</td>
-<td align="left">30.9</td>
+<td align="left">31.2</td>
 </tr></tbody>
 </table>
 <div class="section level3">
@@ -719,51 +723,51 @@ method.</p>
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/cross_validation.html">cross_validation</a></span><span class="op">(</span><span class="va">out</span>, type<span class="op">=</span><span class="st">"k-fold"</span>, k<span class="op">=</span><span class="fl">10</span>, print<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; In group 1 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.256973 8.443742 -1.154918 -1.410302</span></span>
+<span><span class="co">#&gt; 1 2.292448 9.187308 -1.137784 -1.443062</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In group 2 : </span></span>
-<span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.170931 7.782935 -1.113116 -1.386598</span></span>
+<span><span class="co">#&gt;        MAE      MSE     CRPS     sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.143975 7.652535 -1.09746 -1.414764</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In group 3 : </span></span>
-<span><span class="co">#&gt;       MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.17886 8.036948 -1.132406 -1.380667</span></span>
+<span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.199325 8.085303 -1.118133 -1.408065</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In group 4 : </span></span>
-<span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.089091 7.722886 -1.056454 -1.390193</span></span>
+<span><span class="co">#&gt;        MAE      MSE      CRPS    sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.045378 7.223653 -1.048622 -1.37411</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In group 5 : </span></span>
-<span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.125593 8.183978 -1.096477 -1.395056</span></span>
+<span><span class="co">#&gt;        MAE      MSE     CRPS     sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.137735 8.360464 -1.08377 -1.415689</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In group 6 : </span></span>
-<span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.165065 7.527008 -1.145678 -1.348428</span></span>
+<span><span class="co">#&gt;       MAE      MSE      CRPS    sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.23012 8.296363 -1.083961 -1.53363</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In group 7 : </span></span>
-<span><span class="co">#&gt;        MAE      MSE     CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.230063 7.874415 -1.23483 -1.289947</span></span>
+<span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.402749 9.170641 -1.268027 -1.388612</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In group 8 : </span></span>
-<span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.432027 10.21121 -1.247021 -1.454294</span></span>
+<span><span class="co">#&gt;        MAE     MSE     CRPS     sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.364652 9.14708 -1.28405 -1.357246</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In group 9 : </span></span>
-<span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.252214 8.236304 -1.198607 -1.330418</span></span>
+<span><span class="co">#&gt;        MAE     MSE      CRPS     sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.297291 8.69477 -1.132378 -1.451199</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In group 10 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.022609 6.587695 -1.049632 -1.313262</span></span>
+<span><span class="co">#&gt; 1 2.193977 7.862157 -1.022167 -1.496736</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; The average of indices computed: </span></span>
 <span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.192343 8.060712 -1.142914 -1.369917</span></span>
+<span><span class="co">#&gt; 1 2.230765 8.368027 -1.127635 -1.428311</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; The final result averaged over replicates: </span></span>
 <span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.192343 8.060712 -1.142914 -1.369917</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 2.230765 8.368027 -1.127635 -1.428311</span></span></code></pre></div>
 </div>
 </div>
   </div>

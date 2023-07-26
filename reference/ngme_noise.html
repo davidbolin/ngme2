@@ -123,6 +123,7 @@ Use <code><a href="ngme_noise_types.html">ngme_noise_types()</a></code> to check
 <span>  share_V <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  corr_measurement <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  index_corr <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  map_corr <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  rho <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html" class="external-link">double</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span>
@@ -258,6 +259,10 @@ Use <code><a href="ngme_noise_types.html">ngme_noise_types()</a></code> to check
 
 <dt>index_corr</dt>
 <dd><p>used when corr_measurement=TRUE, indicate which observation has correlation</p></dd>
+
+
+<dt>map_corr</dt>
+<dd><p>1d, 2d, or formula, used when corr_measurement=TRUE, specify use which covariate to infer the index_corr.</p></dd>
 
 
 <dt>rho</dt>

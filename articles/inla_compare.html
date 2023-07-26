@@ -193,7 +193,7 @@ maximum edge length.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">post_mode_kappa</span></span>
 <span><span class="co">#&gt;         x </span></span>
-<span><span class="co">#&gt; 0.1953787</span></span>
+<span><span class="co">#&gt; 0.2048997</span></span>
 <span></span>
 <span><span class="co"># posterior mode of tau</span></span>
 <span><span class="va">post_mode_tau</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="va">spde_res</span><span class="op">$</span><span class="va">marginals.tau</span>,</span>
@@ -204,7 +204,7 @@ maximum edge length.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fl">1</span> <span class="op">/</span> <span class="va">post_mode_tau</span> <span class="co"># for comparison with Ngme2 (same as sigma parameter in Ngme2)</span></span>
 <span><span class="co">#&gt;        x </span></span>
-<span><span class="co">#&gt; 10.26881</span></span></code></pre></div>
+<span><span class="co">#&gt; 10.60266</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="fit-1d-spde-model-with-ngme2">Fit 1d SPDE model with Ngme2<a class="anchor" aria-label="anchor" href="#fit-1d-spde-model-with-ngme2"></a>
@@ -231,15 +231,15 @@ maximum edge length.</p>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $myspde</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
-<span><span class="co">#&gt;       kappa = 0.214</span></span>
+<span><span class="co">#&gt;       kappa = 0.216</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 9.22</span></span>
+<span><span class="co">#&gt;       sigma = 9.01</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 22.7</span></span>
+<span><span class="co">#&gt;       sigma = 22.2</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre></div>
@@ -256,12 +256,12 @@ as shown in the result.</p>
 <span><span class="co"># by dafult, predict() returns a bunch of statistics at the given location</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">pred_W</span><span class="op">)</span></span>
 <span><span class="co">#&gt; List of 6</span></span>
-<span><span class="co">#&gt;  $ mean      : num [1:94] -0.561 -0.574 -1.468 -2.227 -2.627 ...</span></span>
-<span><span class="co">#&gt;  $ sd        : num [1:94] 10.4 10.4 10 10.1 10.3 ...</span></span>
-<span><span class="co">#&gt;  $ 5quantile : num [1:94] -17.2 -16.4 -17.9 -18 -18.5 ...</span></span>
-<span><span class="co">#&gt;  $ 95quantile: num [1:94] 15.1 14.8 11.6 11.1 14.1 ...</span></span>
-<span><span class="co">#&gt;  $ median    : num [1:94] -0.435 -0.204 -0.906 -2.276 -2.531 ...</span></span>
-<span><span class="co">#&gt;  $ mode      : num [1:94] 2.5 -2.5 -7.5 -5 -3 -1 -1 -1 -11 -9 ...</span></span>
+<span><span class="co">#&gt;  $ mean      : num [1:94] -0.285 -0.335 -0.374 -0.223 0.016 ...</span></span>
+<span><span class="co">#&gt;  $ sd        : num [1:94] 9.41 9.3 8.87 8.54 8.63 ...</span></span>
+<span><span class="co">#&gt;  $ 5quantile : num [1:94] -15.1 -15 -15.1 -14.2 -13.5 ...</span></span>
+<span><span class="co">#&gt;  $ 95quantile: num [1:94] 12.8 12.2 10.9 11.3 13 ...</span></span>
+<span><span class="co">#&gt;  $ median    : num [1:94] 0.832 0.36 0.24 -0.993 -0.33 ...</span></span>
+<span><span class="co">#&gt;  $ mode      : num [1:94] 5 3 1 -5 -1 -1 1 3 -5 -5 ...</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines</a></span><span class="op">(</span><span class="va">mesh</span><span class="op">$</span><span class="va">loc</span>, <span class="va">pred_W</span><span class="op">[[</span><span class="st">"mean"</span><span class="op">]</span><span class="op">]</span>, col<span class="op">=</span><span class="fl">3</span>, lwd<span class="op">=</span><span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/title.html" class="external-link">title</a></span><span class="op">(</span><span class="st">"Posterior mean with Ngme2 and INLA"</span><span class="op">)</span></span>
 <span><span class="co"># One can add some quantile band to the plot using Ngme2</span></span>
@@ -302,17 +302,17 @@ easily extend the model to non-Gaussian case by changing the
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $myspde</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
-<span><span class="co">#&gt;       kappa = 0.2</span></span>
+<span><span class="co">#&gt;       kappa = 0.254</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -4.32</span></span>
-<span><span class="co">#&gt;       sigma = 5.36</span></span>
-<span><span class="co">#&gt;       nu = 0.295</span></span>
+<span><span class="co">#&gt;       mu = -5.89</span></span>
+<span><span class="co">#&gt;       sigma = 5.6</span></span>
+<span><span class="co">#&gt;       nu = 0.343</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 23.1</span></span>
+<span><span class="co">#&gt;       sigma = 22.7</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span>

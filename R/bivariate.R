@@ -57,8 +57,7 @@ bv <- function(
   }
 
   stopifnot(
-    "theta is in (-pi/4, pi/4)" = theta >= -pi/4 & theta <= pi/4,
-    "rho is in (-1, 1)" = rho >= -1 & rho <= 1
+    "theta is in (-pi/4, pi/4)" = theta >= -pi/4 & theta <= pi/4
   )
   eta <- tan(theta * 2);
   theta_K <- c(eta, rho, first$theta_K, second$theta_K)

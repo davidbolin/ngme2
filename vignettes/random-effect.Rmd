@@ -92,10 +92,9 @@ out <- ngme(
   replicate=repl,
   data=data.frame(x1=x1, x2=x2, z1=z1),
   control_opt = control_opt(
-    iterations = 200,
+    iterations = 300,
     std_lim = 0.01,
     verbose = FALSE,
-    preconditioner = "none",
     seed = 3
   )
 )

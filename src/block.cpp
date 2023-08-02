@@ -679,7 +679,9 @@ if (debug) std::cout << "start precond"<< std::endl;
     int n_la = latents[i]->get_n_params();
     if (strategy == 0) {
       // No preconditioner
-      precond.block(index_params, index_params, n_la, n_la) = VectorXd::Constant(n_la, latents[i]->get_V_size()).asDiagonal();
+      precond.block(index_params, index_params, n_la, n_la) =
+        VectorXd::Constant(n_la, latents[i]->get_V_size()).asDiagonal();
+        // VectorXd::Constant(n_la, n_obs).asDiagonal();
     } else if (strategy == 1) {
       // Fast preconditioner
       precond.block(index_params, index_params, n_la, n_la) = latents[i]->precond(false, eps);

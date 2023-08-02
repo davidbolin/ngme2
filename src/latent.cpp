@@ -10,6 +10,7 @@ Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
     W_size        (Rcpp::as<int>        (model_list["W_size"])),
     V_size        (Rcpp::as<int>        (model_list["V_size"])),
     n_params      (Rcpp::as<int>        (model_list["n_params"])),
+    fix_parameters (VectorXi::Zero(n_params)),
 
     // operator
     ope           (OperatorFactory::create(Rcpp::as<Rcpp::List> (model_list["operator"]))),
@@ -109,6 +110,13 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
         // sample_uncond_V(); // sample_uncond_V();
     }
 
+    // compute which idx of param is fixed
+    if (fix_flag[latent_fix_theta_K]) fix_parameters.segment(0, n_theta_K).setOnes();
+    if (fix_flag[latent_fix_theta_mu]) fix_parameters.segment(n_theta_K, n_theta_mu).setOnes();
+    if (fix_flag[latent_fix_theta_sigma]) fix_parameters.segment(n_theta_K+n_theta_mu, n_theta_sigma).setOnes();
+    if (fix_flag[latent_fix_nu]) fix_parameters.segment(n_theta_K+n_theta_mu+n_theta_sigma, n_nu).setOnes();
+
+// std::cout << "fix param=" << fix_parameters << std::endl;
 if (debug) std::cout << "End constructor of latent" << std::endl;
 }
 
@@ -494,18 +502,20 @@ MatrixXd Latent::precond(bool precond_K, double eps) {
     }
 
     int n = v.size();
-    MatrixXd num_hess(n, n);
+    MatrixXd num_hess = VectorXd::Constant(n, 1.0).asDiagonal();
 	double original_val = log_density(v, precond_K);
 
 	// compute f_v = log_density(v + precond_eps * e_i)
 	VectorXd f_v (n);
 	for (int i=0; i < n; i++) {
+        if (fix_parameters[i]) continue;
 		VectorXd tmp_v = v; tmp_v(i) += precond_eps;
 		f_v(i) = log_density(tmp_v, precond_K);
 	}
 
 	// compute H_ij = d2 f / dxi dxj
 	for (int i=0; i < n; i++) {
+        if (fix_parameters[i]) continue;
 		for (int j=0; j <= i; j++) {
 			VectorXd tmp_vij = v; tmp_vij(i) += precond_eps; tmp_vij(j) += precond_eps;
 			double f_vij = log_density(tmp_vij, precond_K);
@@ -523,9 +533,11 @@ MatrixXd Latent::precond(bool precond_K, double eps) {
     MatrixXd precond_full = MatrixXd::Zero(n_params, n_params);
     if (precond_K) {
         precond_full.topLeftCorner(n_params - n_nu, n_params - n_nu) = num_hess;
-// std::cout << "prec = " << precond_full.topLeftCorner(n_theta_K, n_theta_K) << std::endl;
     } else {
-        precond_full.topLeftCorner(n_theta_K, n_theta_K) = VectorXd::Constant(n_theta_K, V_size).asDiagonal();
+        // scaled by ?
+        precond_full.topLeftCorner(n_theta_K, n_theta_K) =
+            VectorXd::Constant(n_theta_K, V_size).asDiagonal();
+            // VectorXd::Constant(n_theta_K, A.rows()).asDiagonal();
         precond_full.block(n_theta_K, n_theta_K, n_theta_mu + n_theta_sigma, n_theta_mu + n_theta_sigma) = num_hess;
     }
 

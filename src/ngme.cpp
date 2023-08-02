@@ -28,7 +28,6 @@ Ngme::Ngme(const Rcpp::List& R_ngme, unsigned long seed, int sampling_strategy) 
 MatrixXd Ngme::precond(int strategy, double eps) {
   MatrixXd precond = MatrixXd::Zero(n_params, n_params);
 
-  // check here
   if (sampling_strategy == Strategy::all) {
     for (int i=0; i < n_repl; i++) {
       precond += ngme_repls[i]->precond(strategy, eps) / n_repl;
@@ -39,7 +38,7 @@ MatrixXd Ngme::precond(int strategy, double eps) {
     precond = (num_each_repl[idx] / sum_num_each_repl) * ngme_repls[idx]->precond(strategy, eps);
   }
 
-// std::cout << "precond in ngme class = \n" << precond << std::endl;
+// std::cout << "precond in ngme class = \n" << precond.topLeftCorner(3,3) << std::endl;
   return precond;
 }
 

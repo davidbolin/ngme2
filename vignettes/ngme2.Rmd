@@ -76,7 +76,7 @@ KW|V \sim N(\gamma + \mu V, \sigma^2 \, diag(V)),
 $$
 also, $\mu$ and $\sigma$ can be non-stationary.
 
-In `ngme2`, we focus mainly on the normal inverse Gaussian (NIG) model.
+One example in `Ngme2` is the normal inverse Gaussian (NIG) noise, in this case, $V$ follows Inverse Gaussian distribution with parameter $\nu$ (IG($\nu$, $\nu$)).
 See `?nig` for more details.
 
 ### 4 Parameter Estimation
@@ -88,18 +88,29 @@ See [Model estimation and prediction](pred_and_est.html) for more details.
 
 ## Ngme Model Structure
 
-### Specify noise with `ngme_noise` object
+### Specify the driven noise
 
-The `ngme_noise` object is the most fundamental structure in `ngme2`.
-The object is used to specify the driving noise of the stochastic process and the measurement noise.
+There are 2 types of common noise involved in the model, one is the innovation noise of a stochastic process, one is the measurement noise of the observations.
+They can be both specified by `noise_<type>` function.
 
-For now we support two noises, one is **normal** noise, the other is the **NIG** noise.
+For now we support **normal**, **NIG**, and **GAL** noises.
 
 The R class `ngme_noise` has the following interface:
 
-```{r noise}
+```{r load-packages, message=FALSE, warning=FALSE}
+library(INLA)
+library(splancs)
+library(lattice)
+library(ggplot2)
+library(grid)
+library(gridExtra)
+library(viridis)
 library(ngme2)
-noise_normal(sigma = 1)                 # normal noise
+# load_all()
+```
+
+```{r noise}
+noise_normal(sigma = 1)              # normal noise
 noise_nig(mu = 1, sigma = 2, nu = 1) # nig noise
 noise_nig(            # non-stationary nig noise
   B_mu=matrix(c(1:10), ncol=2),
@@ -108,6 +119,8 @@ noise_nig(            # non-stationary nig noise
   theta_sigma = c(1,2),
   nu = 1)
 ```
+
+<!-- to-do, plot some nig noise -->
 
 The 3rd example is the non-stationary NIG noise,
 where $\mu = \bf B_{\mu} \bf \theta_{\mu}$, and $\sigma = \exp(\bf B_{\sigma} \bf \theta_{\sigma})$.
@@ -141,8 +154,7 @@ details.
 Some examples of using `f` function to specify `ngme_model`:
 
 ```{r f_model}
-ngme2::f(1:10, model = "ar1",
-  noise = noise_nig(), eval=TRUE)
+ngme2::f(1:10, model = "ar1", noise = noise_nig())
 ```
 
 One useful model would be the SPDE model with Gaussian or non-Gaussian noise, see the vignette
@@ -208,7 +220,7 @@ Now let's see an example of an AR1 process with nig noise.
 The process is defined as
 
 $$
-W_i = \alpha W_{i-1} + \epsilon_i,
+W_i = \rho W_{i-1} + \epsilon_i,
 $$
 Here, $\epsilon_1, ..,\epsilon_n$ is the iid **NIG** noise.
 And, it is easy to verify that
@@ -217,10 +229,10 @@ where
 $$
 K =
   \begin{bmatrix}
-    \alpha \\
-    -1 &  \alpha \\
+    \rho \\
+    -1 &  \rho \\
     & \ddots & \ddots \\
-    & & -1 &  \alpha
+    & & -1 &  \rho
   \end{bmatrix}
 $$
 
@@ -301,15 +313,6 @@ plot(
 
 ## Paraná dataset
 
-```{r load-packages}
-library(INLA)
-library(splancs)
-library(lattice)
-library(ggplot2)
-library(grid)
-library(gridExtra)
-library(viridis)
-```
 
 The rainfall data from Paraná (Brazil) is collected by the National Water Agency in Brazil (Agencia Nacional de Águas, ANA, in Portuguese).
 ANA collects data from many locations over Brazil, and all these data are freely available from the ANA website (http://www3.ana.gov.br/portal/ANA).
@@ -322,8 +325,8 @@ data(PRborder)
 
 # Create INLA mesh
 coords <- as.matrix(PRprec[, 1:2])
-prdomain <- inla.nonconvex.hull(coords, -0.03, -0.05, resolution = c(100, 100))
-prmesh <- inla.mesh.2d(boundary = prdomain, max.edge = c(0.45, 1), cutoff = 0.2)
+prdomain <- INLA::inla.nonconvex.hull(coords, -0.03, -0.05, resolution = c(100, 100))
+prmesh <- INLA::inla.mesh.2d(boundary = prdomain, max.edge = c(0.45, 1), cutoff = 0.2)
 
 # monthly mean at each location
 Y <- rowMeans(PRprec[, 12 + 1:31]) # 2 + Octobor
@@ -355,7 +358,7 @@ ggplot() +
 ```{r fit-parana, cache=TRUE}
 out <- ngme(
   formula = Y ~ 1 +
-    f(inla.group(seaDist), name="rw1", model = "rw1", noise = noise_normal()) +
+    f(INLA::inla.group(seaDist), name="rw1", model = "rw1", noise = noise_normal()) +
     f(coords, model = "matern", mesh = prmesh, name="spde", noise = noise_normal()),
   data = data.frame(Y = Y),
   family = "nig",
@@ -440,6 +443,6 @@ ggplot() +
 
 We can further validate our model by using cross-validation method.
 
-```{r}
+```{r cv, cache=TRUE}
 cross_validation(out, type="k-fold", k=10, print=TRUE)
 ```

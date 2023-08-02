@@ -54,6 +54,7 @@ protected:
     vector<string> noise_type;
     bool debug;
     int W_size, V_size, n_params, n_var {1}; // n_params=n_theta_K + n_theta_mu + n_theta_sigma + n_var
+    Eigen::VectorXi fix_parameters;
 
     // operator (for compute K, for compute numerical gradient, for preconditioner)
     std::shared_ptr<Operator> ope, ope_add_eps, ope_precond;

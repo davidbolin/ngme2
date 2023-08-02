@@ -410,7 +410,7 @@ sample for such a process is given below.</p>
 <p><img src="pred_and_est_files/figure-html/generate-VW-1.png" width="700" style="display: block; margin: auto;"></p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">W</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  num [1:10] 0.3645 0.3898 0.2224 0.0707 -0.0397 ...</span></span>
+<span><span class="co">#&gt;  num [1:10] -0.06406 -0.04834 -0.04296 -0.00889 0.05295 ...</span></span>
 <span><span class="co">#&gt;  - attr(*, "noise")=List of 24</span></span>
 <span><span class="co">#&gt;   ..$ noise_type          : chr "nig"</span></span>
 <span><span class="co">#&gt;   ..$ nu                  : num 0.5</span></span>
@@ -437,7 +437,7 @@ sample for such a process is given below.</p>
 <span><span class="co">#&gt;   ..$ map_corr            : NULL</span></span>
 <span><span class="co">#&gt;   ..$ rho                 : num(0) </span></span>
 <span><span class="co">#&gt;   ..- attr(*, "class")= chr "ngme_noise"</span></span>
-<span><span class="co">#&gt;  - attr(*, "V")= num [1:10] 0.00404 0.78522 0.24092 0.01442 0.00478 ...</span></span>
+<span><span class="co">#&gt;  - attr(*, "V")= num [1:10] 0.002 0.04173 0.00527 0.00964 0.32644 ...</span></span>
 <span></span>
 <span><span class="va">V</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">W</span>, <span class="st">"noise"</span><span class="op">)</span><span class="op">$</span><span class="va">V</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">loc_1d</span>, <span class="va">V</span>, type <span class="op">=</span> <span class="st">"l"</span><span class="op">)</span></span></code></pre></div>
@@ -572,21 +572,21 @@ values of <span class="math inline">\(E[\mathbf{w} | \mathbf{V},
 <code class="sourceCode R"><span><span class="va">V</span></span>
 <span><span class="co">#&gt; NULL</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">V_1</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] 0.02746188 0.09174763 0.08842542 0.07667353 0.06228864 0.05815397</span></span>
-<span><span class="co">#&gt;  [7] 0.05958380 0.04680963 0.04559342 0.02569734</span></span>
+<span><span class="co">#&gt;  [1] 0.02903637 0.08175874 0.08613764 0.10498208 0.07580635 0.06090754</span></span>
+<span><span class="co">#&gt;  [7] 0.06712737 0.07053938 0.06187615 0.02872298</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">V_2</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] 0.05663660 0.08504649 0.09117376 0.06217282 0.07171850 0.05482924</span></span>
-<span><span class="co">#&gt;  [7] 0.06176013 0.06599285 0.04478178 0.02565551</span></span>
+<span><span class="co">#&gt;  [1] 0.03304702 0.09963322 0.08879811 0.09270243 0.07676945 0.07541306</span></span>
+<span><span class="co">#&gt;  [7] 0.07760378 0.06402770 0.05224497 0.03680023</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="va">W</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1]  0.36453591  0.38981464  0.22239294  0.07073468 -0.03969290 -0.12065922</span></span>
-<span><span class="co">#&gt;  [7] -0.18356361 -0.19591180 -0.24978048 -0.25787017</span></span>
+<span><span class="co">#&gt;  [1] -0.064056598 -0.048344023 -0.042959413 -0.008893225  0.052946965</span></span>
+<span><span class="co">#&gt;  [6]  0.000362493 -0.026769472 -0.014978554  0.034715580  0.117976246</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">W_1</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] -0.2737630 -0.2739362 -0.2792705 -0.2899741 -0.3046239 -0.3182740</span></span>
-<span><span class="co">#&gt;  [7] -0.3293071 -0.3382472 -0.3443343 -0.3470021</span></span>
+<span><span class="co">#&gt;  [1] -0.1777231 -0.1781004 -0.1811481 -0.1886880 -0.2010806 -0.2135622</span></span>
+<span><span class="co">#&gt;  [7] -0.2236460 -0.2320564 -0.2379986 -0.2403148</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">W_2</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] -0.2680869 -0.2712880 -0.2785843 -0.2892875 -0.3009655 -0.3129751</span></span>
-<span><span class="co">#&gt;  [7] -0.3231911 -0.3309418 -0.3371979 -0.3386747</span></span></code></pre></div>
+<span><span class="co">#&gt;  [1] -0.1748536 -0.1751510 -0.1806797 -0.1893762 -0.2015495 -0.2134195</span></span>
+<span><span class="co">#&gt;  [7] -0.2234923 -0.2312321 -0.2364161 -0.2372159</span></span></code></pre></div>
 <p>Let us begin by building traceplots for <span class="math inline">\(V\)</span>:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">df_V</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">idx</span>, y <span class="op">=</span> <span class="va">V</span>, col <span class="op">=</span> <span class="va">chain</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>

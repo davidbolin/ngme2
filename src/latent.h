@@ -90,6 +90,10 @@ protected:
     cholesky_solver chol_solver_K;
     lu_sparse_solver lu_solver_K;
     cholesky_solver solver_Q; // Q = KT diag(1/SV) K
+
+    // priors
+    string prior_K_type, prior_mu_type, prior_sigma_type, prior_nu_type;
+    VectorXd prior_K_param, prior_mu_param, prior_sigma_param, prior_nu_param;
 public:
     Latent(const Rcpp::List&, unsigned long seed);
     ~Latent() {}

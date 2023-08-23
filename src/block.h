@@ -90,6 +90,10 @@ protected:
     SparseLU<SparseMatrix<double>> LU_K;
 
     std::string par_string;
+
+    // priors
+    string prior_mu_type, prior_sigma_type, prior_nu_type;
+    VectorXd prior_mu_param, prior_sigma_param, prior_nu_param;
 public:
     // BlockModel() {}
     BlockModel(const Rcpp::List& block_model, unsigned long seed);

@@ -1,4 +1,5 @@
 #include "latent.h"
+#include "prior.h"
 #include "num_diff.h"
 
 // K is V_size * W_size matrix
@@ -31,7 +32,7 @@ Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
     prevW         (W_size),
     V             (h),
     prevV         (h),
-    A             (Rcpp::as< SparseMatrix<double,0,int> >   (model_list["A"])),
+    A             (Rcpp::as<SparseMatrix<double,0,int>>   (model_list["A"])),
 
     p_vec         (V_size),
     a_vec         (V_size),
@@ -73,6 +74,23 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
         share_V = Rcpp::as<bool> (noise_in["share_V"]);
         single_V = Rcpp::as<bool> (noise_in["single_V"]);
 
+// std::cout << " here 1" << std::endl;
+        // init priors for parameter of K and noise
+        Rcpp::List prior_list = Rcpp::as<Rcpp::List> (model_list["prior_theta_K"]);
+            prior_K_type  = Rcpp::as<string> (prior_list["type"]);
+            prior_K_param = Rcpp::as<VectorXd> (prior_list["param"]);
+        prior_list = Rcpp::as<Rcpp::List> (noise_in["prior_mu"]);
+            prior_mu_type  = Rcpp::as<string> (prior_list["type"]);
+            prior_mu_param = Rcpp::as<VectorXd> (prior_list["param"]);
+        prior_list = Rcpp::as<Rcpp::List> (noise_in["prior_sigma"]);
+            prior_sigma_type  = Rcpp::as<string> (prior_list["type"]);
+            prior_sigma_param = Rcpp::as<VectorXd> (prior_list["param"]);
+        prior_list = Rcpp::as<Rcpp::List> (noise_in["prior_nu"]);
+            prior_nu_type  = Rcpp::as<string> (prior_list["type"]);
+            prior_nu_param = Rcpp::as<VectorXd> (prior_list["param"]);
+
+// std::cout << " here 2" << std::endl;
+
     // init W
     if (model_list["W"] != R_NilValue) {
         W = Rcpp::as< VectorXd > (model_list["W"]);
@@ -97,9 +115,11 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
     solver_Q.init(W_size, 0,0,0);
     solver_Q.analyze(Q);
 
+// std::cout << " here 3" << std::endl;
     // build mu, sigma, compute trace, ...
     update_each_iter(true);
 
+// std::cout << " here 4" << std::endl;
     // Initialize V
     if (!Rf_isNull(noise_in["V"])) {
         V = Rcpp::as< VectorXd > (noise_in["V"]);
@@ -132,6 +152,10 @@ VectorXd Latent::grad_theta_mu() {
     // compute gradient g with V
     for (int l=0; l < n_theta_mu; l++) {
         grad(l) = (V-h).cwiseProduct(B_mu.col(l).cwiseQuotient(SV)).dot(getK()*W - mu.cwiseProduct(V-h));
+// std::cout << "grad mu  = " << grad(l) << std::endl;
+// std::cout << "grad mu prior = " << PriorUtil::d_log_dens(prior_mu_type, prior_mu_param, theta_mu(l)) << std::endl;
+        // add prior
+        grad(l) += PriorUtil::d_log_dens(prior_mu_type, prior_mu_param, theta_mu(l));
     }
 
     return -grad;
@@ -151,6 +175,11 @@ inline VectorXd Latent::grad_theta_sigma() {
     // grad = Bi(tmp * sigma ^ -2 - 1)
     grad = B_sigma.transpose() * (tmp - VectorXd::Ones(V_size));
 
+    // add prior
+    for (int l=0; l < n_theta_sigma; l++) {
+        grad(l) += PriorUtil::d_log_dens(prior_sigma_type, prior_sigma_param, theta_sigma(l));
+    }
+
     return -grad;
 }
 
@@ -164,6 +193,10 @@ inline VectorXd Latent::grad_theta_sigma_normal() {
     VectorXd tmp1 = tmp.cwiseProduct(sigma_normal.array().pow(-2).matrix()) - VectorXd::Ones(V_size);
     grad += B_sigma_normal.transpose() * tmp1;
 
+    // add prior
+    for (int l=0; l < n_theta_sigma; l++) {
+        grad(l) += PriorUtil::d_log_dens(prior_sigma_type, prior_sigma_param, theta_sigma(l));
+    }
     // return - 1.0 / V_size * grad;
     return -grad;
 }
@@ -182,6 +215,14 @@ VectorXd Latent::grad_theta_nu() {
         else
             grad(1) = NoiseUtil::grad_theta_nu(noise_type[1], nu[1], V.segment(n, n), prevV.segment(n, n), h.segment(n, n), single_V);
     }
+
+    // add prior
+    for (int l=0; l < n_nu; l++) {
+// std::cout << "grad  = " << grad(l) << std::endl;
+// std::cout << "grad of prior = " << PriorUtil::d_log_dens(prior_nu_type, prior_nu_param, nu(l)) << std::endl;
+        grad(l) -= PriorUtil::d_log_dens(prior_nu_type, prior_nu_param, nu(l));
+    }
+
 // std::cout << "g_nu = " << grad << std::endl;
     return grad;
 }
@@ -209,6 +250,12 @@ VectorXd Latent::grad_theta_K() {
             grad(j) = trace[j] - (ope->get_dK()[j] * W).cwiseProduct(SV.cwiseInverse()).dot(tmp);
         }
     }
+
+    // add prior
+    for (int l=0; l < n_theta_K; l++) {
+        grad(l) += PriorUtil::d_log_dens(prior_K_type, prior_K_param, theta_K(l));
+    }
+
 // std::cout << "grad_K = " << grad.transpose() << std::endl;
     return -grad;
 }

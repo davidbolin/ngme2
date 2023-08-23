@@ -17,6 +17,7 @@
 #' @param W      starting value of the process
 #' @param fix_W  stop sampling for W
 #' @param fix_theta_K fix the estimation for theta_K.
+#' @param prior_theta_K prior for theta_K
 #' @param debug     debug mode
 #' @param subset    subset of the model
 #' @param ...       additional arguments (e.g. parameters for model)
@@ -42,6 +43,7 @@ f <- function(
   W           = NULL,
   fix_W       = FALSE,
   fix_theta_K = FALSE,
+  prior_theta_K = ngme_prior("normal", param=c(0, 0.001)),
   subset      = rep(TRUE, length_map(map)),
   debug       = FALSE,
   ...
@@ -67,7 +69,9 @@ f <- function(
 
   stopifnot(
     "Please provide model from ngme_model_types():" = !is.null(model),
-    "Please specify model as character" = is.character(model)
+    "Please specify model as character" = is.character(model),
+    "prior_theta_K is not specified properly, please use ngme_prior(..)"
+      = class(prior_theta_K) == "ngme_prior"
   )
 
   # 0. build mesh if not specified
@@ -196,7 +200,8 @@ f <- function(
     W         = W,
     fix_W     = fix_W,
     name      = name,
-    debug     = debug
+    debug     = debug,
+    prior_theta_K = prior_theta_K
   )
 }
 

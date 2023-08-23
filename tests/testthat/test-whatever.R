@@ -42,4 +42,30 @@ test_that("compute 3d precision matrix", {
   cor_mat[2,3] = 0.3
 })
 
+test_that("add priors", {
+  # ar1
+  load_all()
+  out <- ngme(
+    YY ~ 1 + f(X1,
+      model="ar1",
+      noise=noise_nig()
+    ),
+    data = data.frame(
+      YY=c(0,2,3,4,5),
+      X1=c(3,4,5,6,7)
+    ),
+    control_opt=control_opt(
+      iterations = 10,
+      print_check_info = FALSE,
+      estimation = T
+    )
+  )
+
+  out$replicates[[1]]$noise$prior_mu
+
+  # parameters, mu, sigma, nu
+  # priors on mu, sigma, nu
+})
+
+
 

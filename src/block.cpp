@@ -1,6 +1,7 @@
 // Implementation for block model and block_rep
 
 #include "block.h"
+#include "prior.h"
 #include "sample_rGIG.h"
 #include <random>
 #include <cmath>
@@ -109,6 +110,17 @@ if (debug) std::cout << "After set block K" << std::endl;
     nu = Rcpp::as<VectorXd> (noise_in["nu"]); n_nu = nu.size();
     rho = Rcpp::as<VectorXd> (noise_in["rho"]); n_rho = rho.size();
     corr_measure = Rcpp::as<bool> (noise_in["corr_measurement"]);
+
+    // init priors for noise_parameter
+    Rcpp::List prior_list = Rcpp::as<Rcpp::List> (noise_in["prior_mu"]);
+        prior_mu_type  = Rcpp::as<string> (prior_list[0]);
+        prior_mu_param = Rcpp::as<VectorXd> (prior_list["param"]);
+    prior_list = Rcpp::as<Rcpp::List> (noise_in["prior_sigma"]);
+        prior_sigma_type  = Rcpp::as<string> (prior_list["type"]);
+        prior_sigma_param = Rcpp::as<VectorXd> (prior_list["param"]);
+    prior_list = Rcpp::as<Rcpp::List> (noise_in["prior_nu"]);
+        prior_nu_type  = Rcpp::as<string> (prior_list["type"]);
+        prior_nu_param = Rcpp::as<VectorXd> (prior_list["param"]);
 
     if (family != "normal") {
       NoiseUtil::update_gig(family, nu(0), p_vec, a_vec, b_vec);
@@ -413,6 +425,9 @@ VectorXd BlockModel::grad_theta_mu() {
       // LU_K.factorize(getK());
       // VectorXd tmp = residual + LU.solve(-h + )
       grad(l) = (noise_V - VectorXd::Ones(n_obs)).cwiseProduct(B_mu.col(l).cwiseQuotient(noise_SV)).dot(residual);
+
+      // add prior
+      grad(l) += PriorUtil::d_log_dens(prior_mu_type, prior_mu_param, theta_mu(l));
   }
 
   return -grad;
@@ -427,16 +442,11 @@ VectorXd BlockModel::grad_theta_sigma() {
   VectorXd vsq = (residual).array().pow(2).matrix().cwiseProduct(noise_V.cwiseInverse());
   VectorXd tmp1 = vsq.cwiseProduct(noise_sigma.array().pow(-2).matrix()) - VectorXd::Ones(n_obs);
   grad = B_sigma.transpose() * tmp1;
-  // grad = - 0.5* B_sigma.transpose() * VectorXd::Ones(n_obs)
-  // + B_sigma.transpose() * noise_sigma.array().pow(-2).matrix() * residual.cwiseProduct(noise_V.cwiseInverse()).dot(residual);
 
-
-  // VectorXd Y_tilde_sq = (Y - A * getW() - X * beta).array().pow(2);
-  // if (family == "normal") {
-  //     for (int i=0; i < n_theta_sigma; i++) {
-  //         grad(i) = 0.5 * B_sigma.col(i).dot(VectorXd::Ones(n_obs) - Y_tilde_sq.cwiseQuotient(noise_sigma));
-  //     }
-  // }
+  // add prior
+  for (int l=0; l < n_theta_sigma; l++) {
+      grad(l) += PriorUtil::d_log_dens(prior_sigma_type, prior_sigma_param, theta_sigma(l));
+  }
 
   return -grad;
 }
@@ -461,6 +471,8 @@ VectorXd BlockModel::grad_theta_merr() {
   if (!fix_flag[block_fix_theta_sigma])  grad.segment(n_theta_mu, n_theta_sigma) = grad_theta_sigma();
   if (!fix_flag[block_fix_nu] && family != "normal") {
     grad(n_theta_mu + n_theta_sigma) = NoiseUtil::grad_theta_nu(family, nu(0), noise_V, noise_prevV);
+    // add prior
+    grad(n_theta_mu + n_theta_sigma) -= PriorUtil::d_log_dens(prior_nu_type, prior_nu_param, nu(0));
   }
 
   // grad of theta_rho

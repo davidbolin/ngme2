@@ -2,7 +2,7 @@
 % Please edit documentation in R/ngme.constant.R
 \name{ngme_model_types}
 \alias{ngme_model_types}
-\title{Show ngme mdoel types for K (operator)}
+\title{Show ngme model types}
 \usage{
 ngme_model_types()
 }
@@ -10,5 +10,5 @@ ngme_model_types()
 available types for models
 }
 \description{
-Show ngme mdoel types for K (operator)
+Show ngme model types
 }

@@ -17,6 +17,7 @@ f(
   W = NULL,
   fix_W = FALSE,
   fix_theta_K = FALSE,
+  prior_theta_K = ngme_prior("normal", param = c(0, 0.001)),
   subset = rep(TRUE, length_map(map)),
   debug = FALSE,
   ...
@@ -46,6 +47,8 @@ f(
 \item{fix_W}{stop sampling for W}
 
 \item{fix_theta_K}{fix the estimation for theta_K.}
+
+\item{prior_theta_K}{prior for theta_K}
 
 \item{subset}{subset of the model}
 

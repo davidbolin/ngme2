@@ -4,7 +4,7 @@ test_that("simulate and estimate of rw with NIG", {
   n_obs <- 500
   x <- rexp(n_obs, rate = 2)
   mu <- -3; sigma <- 5; nu <- 2; sigma_eps <- 0.8
-  my_rw <- f(x, model="rw1", noise=noise_nig(mu=-3, sigma=5, nu=2))
+  my_rw <- f(x, model="rw1", noise=noise_nig(mu=mu, sigma=sigma, nu=nu))
 
   W <- simulate(my_rw, seed = 3)
   Y <- as.numeric(my_rw$A %*% W) + rnorm(n=length(W), sd=sigma_eps)
@@ -25,7 +25,7 @@ test_that("simulate and estimate of rw with NIG", {
     control_opt = control_opt(
       seed = 12,
       estimation = T,
-      iterations = 100,
+      iterations = 500,
       n_parallel_chain = 4,
       print_check_info = F,
       preconditioner = "fast",
@@ -46,7 +46,7 @@ test_that("simulate and estimate of rw with NIG", {
 test_that("test estimation of basic ar with normal measurement noise", {
   n_obs <- 600
   alpha <- 0.75
-  mu <- 4; sigma <- 2; nu <- 1; sigma_eps <- 0.8
+  mu <- 3; sigma <- 2; nu <- 1; sigma_eps <- 0.8
   ar1 <- f(1:n_obs, model="ar1", rho=0.5, noise=noise_nig(mu=mu, sigma=sigma, nu=nu))
 
   W <- simulate(ar1)
@@ -61,7 +61,7 @@ test_that("test estimation of basic ar with normal measurement noise", {
     + f(1:n_obs,
       model="ar1",
       name="ar",
-      replicate = rep(1:6, each=100),
+      # replicate = rep(1:6, each=100),
       noise=noise_nig(
         # fix_nu = T, nu = 2,
         # h = ar1$noise$h,
@@ -77,7 +77,7 @@ test_that("test estimation of basic ar with normal measurement noise", {
     ),
     control_opt = control_opt(
       estimation = T,
-      iterations = 10,
+      iterations = 500,
       n_parallel_chain = 4,
       print_check_info = F,
       verbose = F,

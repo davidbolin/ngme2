@@ -30,6 +30,9 @@ ngme_noise(
   index_corr = NULL,
   map_corr = NULL,
   rho = double(0),
+  prior_mu = ngme_prior("normal", param = c(0, 0.01)),
+  prior_sigma = ngme_prior("normal", param = c(0, 0.01)),
+  prior_nu = ngme_prior("normal", param = c(0, 0.01)),
   ...
 )
 

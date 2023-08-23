@@ -61,6 +61,9 @@ ngme_noise <- function(
   index_corr      = NULL,
   map_corr        = NULL,
   rho             = double(0),
+  prior_mu        = ngme_prior("normal", param=c(0, 0.01)),
+  prior_sigma     = ngme_prior("normal", param=c(0, 0.01)),
+  prior_nu        = ngme_prior("normal", param=c(0, 0.01)),
   ...
 ) {
   if (is.null(theta_mu)) theta_mu <- mu
@@ -77,7 +80,13 @@ ngme_noise <- function(
     "Please input B_mu as a matrix." = is.matrix(B_mu),
     "Please input B_sigma as a matrix." = is.matrix(B_sigma),
     "Please make sure ncol(B_mu) == length(theta_mu)." = ncol(B_mu) == length(theta_mu),
-    "Please make sure ncol(B_sigma) == length(theta_sigma)." = ncol(B_sigma) == length(theta_sigma)
+    "Please make sure ncol(B_sigma) == length(theta_sigma)." = ncol(B_sigma) == length(theta_sigma),
+    "prior_mu is not specified properly, please use ngme_prior(..)"
+      = class(prior_mu) == "ngme_prior",
+    "prior_sigma is not specified properly, please use ngme_prior(..)"
+      = class(prior_sigma) == "ngme_prior",
+    "prior_nu is not specified properly, please use ngme_prior(..)"
+      = class(prior_nu) == "ngme_prior"
   )
 
   if (all(noise_type == "normal")) {
@@ -117,6 +126,9 @@ ngme_noise <- function(
       index_corr      = index_corr,
       map_corr        = map_corr,
       rho             = rho,
+      prior_mu        = prior_mu,
+      prior_sigma     = prior_sigma,
+      prior_nu        = prior_nu,
       ...
     ),
     class = "ngme_noise"

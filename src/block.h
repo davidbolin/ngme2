@@ -100,15 +100,7 @@ public:
     ~BlockModel() = default;
 
     /* Gibbs Sampler */
-    void burn_in(int iterations) {
-        // sample_uncond_V();
-        // sample_uncond_noise_V();
-        for (int i=0; i < iterations; i++) {
-            sample_cond_V();
-            sampleW_VY();
-            sample_cond_noise_V();
-        }
-    }
+    void burn_in(int);
 
     int get_n_obs() const {return n_obs;}
     void sampleW_VY();
@@ -270,7 +262,7 @@ public:
     void set_theta_merr(const VectorXd& theta_merr);
 
     // get length of W,V of iterations
-    Rcpp::List sampling(int n, bool posterior);
+    Rcpp::List sampling(int n, bool posterior, const SparseMatrix<double>& A);
     Rcpp::List output() const;
     std::string get_par_string() const {return par_string;}
 

@@ -20,6 +20,7 @@ control_opt(
   preconditioner = "fast",
   precond_eps = 1e-05,
   precond_by_diff_chain = TRUE,
+  compute_precond_each_iter = TRUE,
   max_relative_step = 0.5,
   max_absolute_step = 0.5,
   reduce_var = FALSE,
@@ -33,13 +34,13 @@ control_opt(
 \arguments{
 \item{seed}{set the seed for pesudo random number generator}
 
-\item{burnin}{burn-in periods}
+\item{burnin}{interations for burn-in periods (before optimization)}
 
-\item{iterations}{optimizing terations}
+\item{iterations}{optimization iterations}
 
-\item{stepsize}{stepsize}
+\item{stepsize}{stepsize for each iteration}
 
-\item{estimation}{estimating the parameters}
+\item{estimation}{run the estimation process (call C++ in backend)}
 
 \item{n_parallel_chain}{number of parallel chains}
 
@@ -61,6 +62,8 @@ control_opt(
 \item{precond_eps}{numerical, the gap used for estimate preconditioner, default is 1e-5}
 
 \item{precond_by_diff_chain}{logical, if TRUE, use different chains to estimate preconditioner (only computed at check points), if FALSE, use the same chain to estimate preconditioner (computed at each iteration)}
+
+\item{compute_precond_each_iter}{logical, if TRUE, compute preconditioner at each iteration, if FALSE, only compute preconditioner at check points (recommand set FALSE if have multiple chains running)}
 
 \item{max_relative_step}{max relative step allowed in 1 iteration}
 
@@ -84,7 +87,7 @@ control_opt(
 list of control variables
 }
 \description{
-These are configurations for \code{ngme} estimation and
+These are configurations for \code{ngme}
 optimization process.
 }
 \details{

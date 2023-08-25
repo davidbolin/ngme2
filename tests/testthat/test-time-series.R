@@ -77,6 +77,7 @@ test_that("test estimation of basic ar with normal measurement noise", {
     ),
     control_opt = control_opt(
       estimation = T,
+      burnin = 100,
       iterations = 500,
       n_parallel_chain = 4,
       print_check_info = F,

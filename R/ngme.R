@@ -60,19 +60,27 @@ ngme <- function(
 
   if (is.null(control_ngme)) control_ngme <- control_ngme()
   if (is.null(control_opt))  control_opt <- control_opt()
-  stopifnot(inherits(control_ngme, "control_ngme"))
-  stopifnot(inherits(control_opt, "control_opt"))
-  stopifnot("data provide should be of the same length" =
+  stopifnot(
+    inherits(control_ngme, "control_ngme"),
+    inherits(control_opt, "control_opt"),
+    "data provide should be of the same length" =
     all(diff(sapply(data, length)) == 0)
   )
-
   if (!is.null(group)) group <- as.factor(group)
+  if (is.null(replicate)) replicate <- rep(1, nrow(data))
+  replicate <- as.integer(as.factor(replicate))
+  stopifnot(
+    "Please make sure the length of replicate is equal to the number of rows of data"
+     = nrow(data) == length(replicate)
+  )
 
   # model fitting information
   fitting <- list(
     formula = formula,
     data = data,
-    family = family
+    family = family,
+    replicate = replicate,
+    n_data = nrow(data)
   )
   if (debug) control_ngme$debug <- TRUE
 
@@ -277,8 +285,6 @@ ngme_parse_formula <- function(
   group,
   replicate
 ) {
-  if (is.null(replicate)) replicate <- rep(1, nrow(data))
-  replicate <- as.integer(as.factor(replicate))
   stopifnot(
     "Please make sure the length of replicate is equal to the number of rows of data"
      = nrow(data) == length(replicate)
@@ -425,30 +431,26 @@ ngme_parse_formula <- function(
 
 #' Helper function to compute the index_corr vector
 #'
-#' @param map used as location to compute distance
-#' @param data data.frame, used to evaluate map if map is a formula
+#' @param map used as location to compute distance, can be 1d (numerical) or 2d (data.frame)
 #' @param eps threshold to determine if two points are close (if close, we consider them as the same point)
 #'
 #' @return the index_corr vector for ngme correlated measurement noise
 #' @examples
 #' x_coord <- c(1.11, 1.12, 2, 1.3, 1.3)
-#' y_coord <- c(1.11, 1.11, 2, 1.3, 1.3)
-#' data = data.frame(x_coord, y_coord)
-#' compute_index_corr_from_map(
-#'  ~x_coord + y_coord,
-#'  data,
-#'  0.1
-#')
+#' y_coord <- c(2.11, 2.11, 2, 3.3, 3.3)
+#' coord = data.frame(x_coord, y_coord)
+#' compute_index_corr_from_map(map = coord, 0.1)
 #' @export
-compute_index_corr_from_map <- function(map, data, eps=0.1) {
+compute_index_corr_from_map <- function(map, eps=0.1) {
   if (is.null(map)) return(NULL)
-  if (inherits(map, "formula")) map <- model.matrix(map, data)[, -1]
 
   index_corr <- 1:length_map(map)
   if (length(index_corr) == 1) return(index_corr)
   for (i in 2:length_map(map)) {
     for (j in 1:(i-1)) {
-      if (dist(rbind(map[[i]], map[[j]])) < eps) {
+      # compute dist of i and j entry
+      d <- dist(sub_map(map, c(i, j)))
+      if (d < eps) {
         index_corr[j] <- index_corr[i]
       }
     }

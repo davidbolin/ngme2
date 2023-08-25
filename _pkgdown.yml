@@ -30,7 +30,7 @@ navbar:
         href: articles/SPDE-model.html
       - text: Ngme replicate feature
         href: articles/replicate.html
-      - text: Model prediction and estimation
+      - text: Model estimation and prediction
         href: articles/pred_and_est.html
       - text: Bivariate models in Ngme2
         href: articles/bivariate.html

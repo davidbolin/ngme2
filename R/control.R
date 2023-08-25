@@ -1,6 +1,6 @@
 #' Generate control specifications for \code{ngme()} function.
 #'
-#' These are configurations for \code{ngme} estimation and
+#' These are configurations for \code{ngme}
 #' optimization process.
 #'
 #' @details
@@ -10,10 +10,10 @@
 #'  We compare the standard devation of estimated parameters (in different chains)
 #'  with std_lim.
 #' @param seed  set the seed for pesudo random number generator
-#' @param burnin          burn-in periods
-#' @param iterations      optimizing terations
-#' @param stepsize        stepsize
-#' @param estimation      estimating the parameters
+#' @param burnin          interations for burn-in periods (before optimization)
+#' @param iterations      optimization iterations
+#' @param stepsize        stepsize for each iteration
+#' @param estimation      run the estimation process (call C++ in backend)
 #'
 #' @param n_parallel_chain number of parallel chains
 #' @param stop_points     number of stop points for convergence check
@@ -26,6 +26,7 @@
 #' "none" means no preconditioner, "fast" means precondition everything except for the parameter of K matrix (for speed reason), "full" means precondition everything
 #' @param precond_eps   numerical, the gap used for estimate preconditioner, default is 1e-5
 #' @param precond_by_diff_chain logical, if TRUE, use different chains to estimate preconditioner (only computed at check points), if FALSE, use the same chain to estimate preconditioner (computed at each iteration)
+#' @param compute_precond_each_iter logical, if TRUE, compute preconditioner at each iteration, if FALSE, only compute preconditioner at check points (recommand set FALSE if have multiple chains running)
 #'
 #' @param max_relative_step   max relative step allowed in 1 iteration
 #' @param max_absolute_step   max absolute step allowed in 1 iteration
@@ -59,6 +60,7 @@ control_opt <- function(
   preconditioner    = "fast",
   precond_eps       = 1e-5,
   precond_by_diff_chain = TRUE,
+  compute_precond_each_iter = TRUE,
 
   max_relative_step = 0.5,
   max_absolute_step = 0.5,
@@ -113,6 +115,7 @@ control_opt <- function(
     verbose           = verbose,
     precond_eps       = precond_eps,
     precond_by_diff_chain = precond_by_diff_chain,
+    compute_precond_each_iter = compute_precond_each_iter,
     precond_strategy  = which(preconditioner_list == preconditioner) - 1, # start from 0
     sampling_strategy = which(strategy_list == sampling_strategy) - 1 # start from 0
   )
@@ -156,7 +159,6 @@ control_f <- function(
 #' @param init_sample_W  sample W|V at the beginning of each chain
 #' @param n_gibbs_samples    number of gibbs sampels
 #' @param fix_feff       logical, fix fixed effect
-#' @param burnin      integer, iterations for burnin period
 #' @param post_samples_size number of posterior samples
 #' @param feff           fixed effect value
 #' @param debug          debug mode
@@ -164,7 +166,6 @@ control_f <- function(
 #' @export
 control_ngme <- function(
   init_sample_W = TRUE,
-  burnin = 100,
   n_gibbs_samples = 5,
   fix_feff = FALSE,
   post_samples_size = 100,
@@ -172,7 +173,6 @@ control_ngme <- function(
   debug = FALSE
 ) {
   control <- list(
-    burnin = burnin,
     init_sample_W = init_sample_W,
     n_gibbs_samples = n_gibbs_samples,
     fix_feff = fix_feff,

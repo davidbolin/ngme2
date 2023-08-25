@@ -54,7 +54,6 @@ BlockModel::BlockModel(
 {
   // 1. Init controls
   Rcpp::List control_ngme = block_model["control_ngme"];
-    const int burnin = control_ngme["burnin"];
     const double stepsize = control_ngme["stepsize"];
     bool init_sample_W = Rcpp::as<bool> (control_ngme["init_sample_W"]);
     n_gibbs     =  Rcpp::as<int>    (control_ngme["n_gibbs_samples"]);
@@ -186,12 +185,21 @@ if (debug) std::cout << "After init solver && before sampleW_V" << std::endl;
     sampleW_V();
     sampleW_V();
   }
-if (debug) std::cout << "Finish SampleW|V" << std::endl;
-  burn_in(burnin);
-
 if (debug) std::cout << "End Block Constructor" << std::endl;
 }
 
+  void BlockModel::burn_in(int iterations) {
+      // sample_uncond_V();
+      // sample_uncond_noise_V();
+      for (int i=0; i < iterations; i++) {
+// std::cout << "burn in iteration = " << i << std::endl;
+          sample_cond_V();
+// std::cout << "cond V done" << std::endl;
+          sampleW_VY();
+// std::cout << "sample W done" << std::endl;
+          sample_cond_noise_V();
+      }
+  }
 
 void BlockModel::setW(const VectorXd& W) {
   int pos = 0;
@@ -603,7 +611,7 @@ Rcpp::List BlockModel::output() const {
 }
 
 // posterior
-Rcpp::List BlockModel::sampling(int n, bool posterior) {
+Rcpp::List BlockModel::sampling(int n, bool posterior, const SparseMatrix<double>& A) {
   std::vector<VectorXd> AWs; // blockA * blockW
   std::vector<VectorXd> Ws; // blockW
   std::vector<VectorXd> Vs; // blockV

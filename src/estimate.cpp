@@ -34,7 +34,7 @@ Rcpp::List estimate_cpp(const Rcpp::List& R_ngme, const Rcpp::List& control_opt)
     const double max_relative_step = control_opt["max_relative_step"];
     const double max_absolute_step = control_opt["max_absolute_step"];
     const int sampling_strategy = control_opt["sampling_strategy"];
-    bool compute_precond_each_iter = true;
+    bool compute_precond_each_iter = control_opt["compute_precond_each_iter"];
 
     Rcpp::List output = R_NilValue;
 
@@ -57,9 +57,9 @@ auto timer = std::chrono::steady_clock::now();
     double print_check_info = (control_opt["print_check_info"]);
     omp_set_num_threads(n_chains);
 
-    if (n_chains > 1 && precond_by_diff_chain) {
-        compute_precond_each_iter = false;
-    }
+    // if (n_chains > 1 && precond_by_diff_chain) {
+    //     compute_precond_each_iter = false;
+    // }
 
     // init model and optimizer
     vector<std::shared_ptr<Ngme>> ngmes;
@@ -74,9 +74,10 @@ auto timer = std::chrono::steady_clock::now();
     std::string par_string = ngmes[0]->get_par_string();
 
     // burn in period
-    // #pragma omp parallel for schedule(static)
-    // for (i=0; i < n_chains; i++)
-        // (ngmes[i])->burn_in(burnin+3);
+    #pragma omp parallel for schedule(static)
+    for (i=0; i < n_chains; i++)
+        (ngmes[i])->burn_in(burnin);
+
     int n_params = ngmes[0]->get_n_params();
     MatrixXd means (n_batch, n_params);
     MatrixXd vars (n_batch, n_params);
@@ -184,12 +185,13 @@ std::cout << "Total time of the estimation is (s): " << since(timer).count() / 1
     return outputs;
 }
 
+// A is the horizontal concat version of latent A
 // [[Rcpp::export]]
-Rcpp::List sampling_cpp(const Rcpp::List& ngme_replicate, int n, bool posterior, unsigned long seed) {
+Rcpp::List sampling_cpp(const Rcpp::List& ngme_replicate, int n, bool posterior, unsigned long seed, const Eigen::SparseMatrix<double>& A) {
     std::mt19937 rng (seed);
     BlockModel block (ngme_replicate, rng());
 
-    return block.sampling(n, posterior);
+    return block.sampling(n, posterior, A);
 }
 
 /*

@@ -4,12 +4,10 @@
 \alias{compute_index_corr_from_map}
 \title{Helper function to compute the index_corr vector}
 \usage{
-compute_index_corr_from_map(map, data, eps = 0.1)
+compute_index_corr_from_map(map, eps = 0.1)
 }
 \arguments{
-\item{map}{used as location to compute distance}
-
-\item{data}{data.frame, used to evaluate map if map is a formula}
+\item{map}{used as location to compute distance, can be 1d (numerical) or 2d (data.frame)}
 
 \item{eps}{threshold to determine if two points are close (if close, we consider them as the same point)}
 }
@@ -21,11 +19,7 @@ Helper function to compute the index_corr vector
 }
 \examples{
 x_coord <- c(1.11, 1.12, 2, 1.3, 1.3)
-y_coord <- c(1.11, 1.11, 2, 1.3, 1.3)
-data = data.frame(x_coord, y_coord)
-compute_index_corr_from_map(
- ~x_coord + y_coord,
- data,
- 0.1
-)
+y_coord <- c(2.11, 2.11, 2, 3.3, 3.3)
+coord = data.frame(x_coord, y_coord)
+compute_index_corr_from_map(map = coord, 0.1)
 }

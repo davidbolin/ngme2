@@ -404,7 +404,7 @@ void Latent::sample_uncond_V() {
 // at init, and after each set parameter
 void Latent::update_each_iter(bool init) {
     if (!init) ope->update_K(theta_K);
-
+// std::cout << " here 5" << std::endl;
     mu = B_mu * theta_mu;
     sigma = (B_sigma * theta_sigma).array().exp();
     if (noise_type[0] == "normal_nig")
@@ -427,12 +427,15 @@ void Latent::update_each_iter(bool init) {
     }
 
     if (!numer_grad) {
+// std::cout << " here 6" << std::endl;
         ope->update_dK(theta_K);
+// std::cout << " here 7" << std::endl;
         // trace[i] = tr(K^-1 dK[i])
         if (!zero_trace) {
             if (!symmetricK) {
                 if (W_size > 10) {
                     lu_solver_K.computeKTK(getK());
+// std::cout << " here 8" << std::endl;
                     for (int i=0; i < n_theta_K; i++)
                         trace[i] = lu_solver_K.trace(ope->get_dK()[i]);
                 } else {

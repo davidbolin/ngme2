@@ -2,44 +2,53 @@
 % Please edit documentation in R/predict.R
 \name{cross_validation}
 \alias{cross_validation}
-\title{Compute the cross-validation for the ngme model}
+\title{Compute the cross-validation for the ngme model
+Perform cross-validation for ngme model
+first into sub_groups (a list of target, and train data)}
 \usage{
 cross_validation(
   ngme,
   type = "k-fold",
-  k = 5,
+  seed = Sys.time(),
+  print = FALSE,
   N = 100,
+  k = 5,
   percent = 50,
   times = 10,
-  group = NULL,
-  print = FALSE,
-  seed = Sys.time()
+  target_idx = NULL,
+  train_idx = NULL
 )
 }
 \arguments{
 \item{ngme}{a ngme object}
 
-\item{type}{character, cv type, in c("k-fold", "loo", "lpo")
-loo is leave-one-out, and lpo is leave-percent-out}
+\item{type}{character, in c("k-fold", "loo", "lpo", "custom")
+k-fold is k-fold cross-validation, provide \code{k}
+loo is leave-one-out,
+lpo is leave-percent-out, provide \code{percent} from 1 to 100
+custom is user-defined group, provide \code{target} and \code{data}}
 
-\item{k}{integer, if using "k-fold" cv}
+\item{seed}{random seed}
 
-\item{N}{integer, number of samplings (the higher, the better)}
+\item{print}{print information during computation}
 
-\item{percent}{from 1 to 100, if using leave percent off cv ("lpo")}
+\item{N}{integer, number of MC sampling (i.e. sampling N process and average)}
+
+\item{k}{integer (only for k-fold type)}
+
+\item{percent}{from 1 to 100 (only for lpo type)}
 
 \item{times}{run how many times (only for lpo type)}
 
-\item{group}{group of indices of test set
-Can be the result of last CV function, or a list of indices}
+\item{target_idx}{a list of indices of the data (which data points to be predicted) (only for custom type)}
 
-\item{print}{print information along the process}
-
-\item{seed}{random seed}
+\item{train_idx}{a list of indices of the data (which data points to be used for re-sampling (not re-estimation)) (only for custom type)}
 }
 \value{
-a list of MSE, MAE, CRPS, sCRPS
+a list of criterions: MSE, MAE, CRPS, sCRPS
 }
 \description{
 Compute the cross-validation for the ngme model
+Perform cross-validation for ngme model
+first into sub_groups (a list of target, and train data)
 }

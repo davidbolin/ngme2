@@ -23,12 +23,16 @@ double time = 0;
 auto timer_computeg = std::chrono::steady_clock::now();
 // std::cout << "update K now" << std::endl;
   first->update_K(theta_K.segment(0, n_theta_1));
+// std::cout << "update K now1" << std::endl;
   second->update_K(theta_K.segment(n_theta_1, n_theta_2));
+// std::cout << "new K size = " << first->getK().rows() * second->getK().rows() << " " << first->getK().cols() * second->getK().cols() << std::endl;
 
   // use Eigen kronecker product
   KroneckerProductSparse<SparseMatrix<double>, SparseMatrix<double> > kroneckerEigen(first->getK(), second->getK());
 
   kroneckerEigen.evalTo(K);
+// std::cout << "update K now3" << std::endl;
+
 time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - timer_computeg).count();
 // std::cout << "size and time for kronecker product is " << K.rows() << " " << K.cols() << " " << time << std::endl;
 }

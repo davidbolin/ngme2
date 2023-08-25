@@ -75,6 +75,12 @@ public:
       ngme_repls[i]->set_prev_VW(prev_VW[i]);
     }
   }
+
+  void burn_in(int iterations) {
+    for (int i=0; i < n_repl; i++) {
+      ngme_repls[i]->burn_in(iterations);
+    }
+  }
 };
 
 #endif

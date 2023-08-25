@@ -114,6 +114,8 @@ reference:
     - print.ngme_operator
     - print.ngme_replicate
     - print.ngme_noise
+    - ngme_prior
+    - ngme_prior_types
   - title: Distributions
     contents:
     - ig

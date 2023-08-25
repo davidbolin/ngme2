@@ -292,6 +292,7 @@ cross_validation <- function(
 
   # 2. loop over each target_idx and train_idx, and compute the criterion
   crs <- NULL
+  data <- attr(ngme, "fitting")$data
   for (i in seq_along(target_idx)) {
     crs[[i]] <- compute_err_reps(
       ngme,
@@ -323,7 +324,6 @@ cross_validation <- function(
   # cat("The final result averaged over replicates: \n")
 
   print(as.data.frame(ret))
-  attr(ret, "target_idx") <- target_idx
   return(invisible(ret))
 }
 

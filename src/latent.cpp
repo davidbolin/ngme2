@@ -207,9 +207,11 @@ inline VectorXd Latent::grad_theta_sigma_normal() {
 }
 
 VectorXd Latent::grad_theta_nu() {
+// std::cout << "here nu" << std::endl;
     VectorXd grad = VectorXd::Zero(n_nu);
     if (noise_type.size() == 1) {
         // single noise
+        if (noise_type[0] == "normal") return grad;
         grad(0) = NoiseUtil::grad_theta_nu(noise_type[0], nu[0], V, prevV, h, single_V);
     } else {
         // bv noise
@@ -222,12 +224,14 @@ VectorXd Latent::grad_theta_nu() {
             else
                 grad(1) = NoiseUtil::grad_theta_nu(noise_type[1], nu[1], V.segment(n, n), prevV.segment(n, n), h.segment(n, n), single_V);
         } else if (n_nu == 1) {
-// std::cout << "here" << std::endl;
             // 1 NIG + 1 normal case
             int which = (noise_type[0] == "normal") ? 1 : 0;
             grad(0) = NoiseUtil::grad_theta_nu(
                 noise_type[which], nu[0], V.segment(which*n, n), prevV.segment(which*n, n), h.segment(which*n, n), single_V
             );
+        } else {
+            // normal + normal
+            // skip
         }
     }
 
@@ -311,7 +315,7 @@ if (debug) {
 }
 
 const VectorXd Latent::get_grad() {
-// if (debug) std::cout << "Start latent get grad"<< std::endl;
+if (debug) std::cout << "Start latent get grad"<< std::endl;
     VectorXd grad = VectorXd::Zero(n_params);
 
     // compute gradient of each parameter
@@ -322,7 +326,7 @@ const VectorXd Latent::get_grad() {
     if (noise_type[0] == "normal_nig")
         grad.segment(n_theta_K+n_theta_mu+n_theta_sigma+n_nu, n_theta_sigma_normal) = grad_theta_sigma_normal();
 
-// if (debug) std::cout << "finish latent gradient"<< std::endl;
+if (debug) std::cout << "finish latent gradient"<< std::endl;
     return grad;
 }
 

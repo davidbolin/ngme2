@@ -53,7 +53,7 @@
       <a href="../articles/replicate.html">Ngme replicate feature</a>
     </li>
     <li>
-      <a href="../articles/pred_and_est.html">Model prediction and estimation</a>
+      <a href="../articles/pred_and_est.html">Model estimation and prediction</a>
     </li>
     <li>
       <a href="../articles/bivariate.html">Bivariate models in Ngme2</a>
@@ -101,7 +101,6 @@
     <div id="ref-usage">
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">control_ngme</span><span class="op">(</span></span>
 <span>  init_sample_W <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  burnin <span class="op">=</span> <span class="fl">100</span>,</span>
 <span>  n_gibbs_samples <span class="op">=</span> <span class="fl">5</span>,</span>
 <span>  fix_feff <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  post_samples_size <span class="op">=</span> <span class="fl">100</span>,</span>
@@ -114,10 +113,6 @@
     <h2>Arguments</h2>
     <dl><dt>init_sample_W</dt>
 <dd><p>sample W|V at the beginning of each chain</p></dd>
-
-
-<dt>burnin</dt>
-<dd><p>integer, iterations for burnin period</p></dd>
 
 
 <dt>n_gibbs_samples</dt>

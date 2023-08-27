@@ -56,7 +56,7 @@ The function is a wrapper function for specific submodels.
       <a href="../articles/replicate.html">Ngme replicate feature</a>
     </li>
     <li>
-      <a href="../articles/pred_and_est.html">Model prediction and estimation</a>
+      <a href="../articles/pred_and_est.html">Model estimation and prediction</a>
     </li>
     <li>
       <a href="../articles/bivariate.html">Bivariate models in Ngme2</a>
@@ -118,6 +118,7 @@ The function is a wrapper function for specific submodels.
 <span>  W <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  fix_W <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  fix_theta_K <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  prior_theta_K <span class="op">=</span> <span class="fu"><a href="ngme_prior.html">ngme_prior</a></span><span class="op">(</span><span class="st">"normal"</span>, param <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.001</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  subset <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="cn">TRUE</span>, <span class="fu">length_map</span><span class="op">(</span><span class="va">map</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  debug <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  <span class="va">...</span></span>
@@ -172,6 +173,10 @@ The function is a wrapper function for specific submodels.
 
 <dt>fix_theta_K</dt>
 <dd><p>fix the estimation for theta_K.</p></dd>
+
+
+<dt>prior_theta_K</dt>
+<dd><p>prior for theta_K</p></dd>
 
 
 <dt>subset</dt>

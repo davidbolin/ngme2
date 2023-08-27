@@ -71,7 +71,7 @@
       <a href="../articles/replicate.html">Ngme replicate feature</a>
     </li>
     <li>
-      <a href="../articles/pred_and_est.html">Model prediction and estimation</a>
+      <a href="../articles/pred_and_est.html">Model estimation and prediction</a>
     </li>
     <li>
       <a href="../articles/bivariate.html">Bivariate models in Ngme2</a>
@@ -213,7 +213,7 @@ and also provide the 2 meshes to the 2 underlying models separately
 <span>  cutoff <span class="op">=</span> <span class="fl">0.1</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">mesh2d</span><span class="op">$</span><span class="va">n</span></span>
-<span><span class="co">#&gt; [1] 257</span></span>
+<span><span class="co">#&gt; [1] 256</span></span>
 <span></span>
 <span><span class="co"># generate random loc for each year</span></span>
 <span><span class="va">n_obs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">102</span>, <span class="fl">85</span>, <span class="fl">120</span>, <span class="fl">105</span>, <span class="fl">109</span><span class="op">)</span> <span class="co"># observation for each year</span></span>
@@ -272,19 +272,19 @@ and also provide the 2 meshes to the 2 underlying models separately
 <span><span class="co">#&gt; $tp</span></span>
 <span><span class="co">#&gt;   Model type: Tensor product</span></span>
 <span><span class="co">#&gt;       first: AR(1)</span></span>
-<span><span class="co">#&gt;           rho = 0.504</span></span>
+<span><span class="co">#&gt;           rho = 0.517</span></span>
 <span><span class="co">#&gt;       second: Matern</span></span>
-<span><span class="co">#&gt;           kappa = 0.718</span></span>
+<span><span class="co">#&gt;           kappa = 1.2</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -0.73</span></span>
-<span><span class="co">#&gt;       sigma = 0.998</span></span>
-<span><span class="co">#&gt;       nu = 0.923</span></span>
+<span><span class="co">#&gt;       mu = -1.37</span></span>
+<span><span class="co">#&gt;       sigma = 1.42</span></span>
+<span><span class="co">#&gt;       nu = 0.912</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.518</span></span>
+<span><span class="co">#&gt;       sigma = 0.516</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span>

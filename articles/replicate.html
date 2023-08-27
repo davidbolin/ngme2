@@ -71,7 +71,7 @@
       <a href="../articles/replicate.html">Ngme replicate feature</a>
     </li>
     <li>
-      <a href="../articles/pred_and_est.html">Model prediction and estimation</a>
+      <a href="../articles/pred_and_est.html">Model estimation and prediction</a>
     </li>
     <li>
       <a href="../articles/bivariate.html">Bivariate models in Ngme2</a>
@@ -251,17 +251,17 @@ process dissapears by looking at the <span class="math inline">\(\mathbf{K}_{4, 
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $field1</span></span>
 <span><span class="co">#&gt;   Model type: AR(1)</span></span>
-<span><span class="co">#&gt;       rho = 0.756</span></span>
+<span><span class="co">#&gt;       rho = 0.741</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = 0.0998</span></span>
-<span><span class="co">#&gt;       sigma = 1.06</span></span>
-<span><span class="co">#&gt;       nu = 0.842</span></span>
+<span><span class="co">#&gt;       mu = -0.0696</span></span>
+<span><span class="co">#&gt;       sigma = 1.01</span></span>
+<span><span class="co">#&gt;       nu = 0.867</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.167</span></span>
+<span><span class="co">#&gt;       sigma = 0.244</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  2</span></span></code></pre></div>
@@ -806,17 +806,17 @@ locations where the feature is unknown.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt; (Intercept) </span></span>
-<span><span class="co">#&gt;    5.97e-16 </span></span>
+<span><span class="co">#&gt;    5.87e-16 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $spde</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
-<span><span class="co">#&gt;       kappa = 0.994</span></span>
+<span><span class="co">#&gt;       kappa = 1.03</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -0.414</span></span>
-<span><span class="co">#&gt;       sigma = 0.993</span></span>
-<span><span class="co">#&gt;       nu = 1.05</span></span>
+<span><span class="co">#&gt;       mu = 0.319</span></span>
+<span><span class="co">#&gt;       sigma = 0.972</span></span>
+<span><span class="co">#&gt;       nu = 0.98</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
@@ -834,7 +834,7 @@ locations where the feature is unknown.</p>
 <span>  dims <span class="op">=</span> <span class="va">nxy</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">xy.in</span> <span class="op">&lt;-</span> <span class="fu">splancs</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/splancs/man/inout.html" class="external-link">inout</a></span><span class="op">(</span><span class="va">projgrid</span><span class="op">$</span><span class="va">lattice</span><span class="op">$</span><span class="va">loc</span>, <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">cienaga.border</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">xy.in</span> <span class="op">&lt;-</span> <span class="fu">splancs</span><span class="fu">::</span><span class="fu"><a href="https://rsbivand.github.io/splancs/reference/inout.html" class="external-link">inout</a></span><span class="op">(</span><span class="va">projgrid</span><span class="op">$</span><span class="va">lattice</span><span class="op">$</span><span class="va">loc</span>, <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">cienaga.border</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">coord.prd</span> <span class="op">&lt;-</span> <span class="va">projgrid</span><span class="op">$</span><span class="va">lattice</span><span class="op">$</span><span class="va">loc</span><span class="op">[</span><span class="va">xy.in</span>, <span class="op">]</span></span>
 <span><span class="va">lp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit</span>, map <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>spde<span class="op">=</span><span class="va">coord.prd</span><span class="op">)</span><span class="op">)</span> <span class="co"># making the predictions</span></span>
 <span></span>

@@ -71,7 +71,7 @@
       <a href="../articles/replicate.html">Ngme replicate feature</a>
     </li>
     <li>
-      <a href="../articles/pred_and_est.html">Model prediction and estimation</a>
+      <a href="../articles/pred_and_est.html">Model estimation and prediction</a>
     </li>
     <li>
       <a href="../articles/bivariate.html">Bivariate models in Ngme2</a>
@@ -117,7 +117,7 @@
       <h1 data-toc-skip>Ngme2 - A new Flexible R Package for Latent
 non-Gaussian Models</h1>
             
-            <h4 data-toc-skip class="date">2023-08-02</h4>
+            <h4 data-toc-skip class="date">2023-08-27</h4>
       
       
       <div class="hidden name"><code>ngme2.Rmd</code></div>
@@ -481,22 +481,22 @@ K =
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt; (Intercept)          x1          x2 </span></span>
-<span><span class="co">#&gt;       -2.91       -1.46        2.02 </span></span>
+<span><span class="co">#&gt;       -2.95       -1.37        2.04 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $my_ar</span></span>
 <span><span class="co">#&gt;   Model type: AR(1)</span></span>
-<span><span class="co">#&gt;       rho = 0.563</span></span>
+<span><span class="co">#&gt;       rho = 0.552</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = 2.05</span></span>
-<span><span class="co">#&gt;       sigma = 3.02</span></span>
-<span><span class="co">#&gt;       nu = 1.05</span></span>
+<span><span class="co">#&gt;       mu = 2.08</span></span>
+<span><span class="co">#&gt;       sigma = 2.97</span></span>
+<span><span class="co">#&gt;       nu = 1.11</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.357</span></span>
+<span><span class="co">#&gt;       sigma = 0.295</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre></div>
@@ -580,7 +580,7 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt; (Intercept) </span></span>
-<span><span class="co">#&gt;        8.38 </span></span>
+<span><span class="co">#&gt;        8.48 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $rw1</span></span>
@@ -588,21 +588,21 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <span><span class="co">#&gt;       No parameter.</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.00106</span></span>
+<span><span class="co">#&gt;       sigma = 0.000312</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $spde</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
-<span><span class="co">#&gt;       kappa = 3.54</span></span>
+<span><span class="co">#&gt;       kappa = 3.78</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 31.2</span></span>
+<span><span class="co">#&gt;       sigma = 30.1</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = 0.307</span></span>
-<span><span class="co">#&gt;       sigma = 2.02</span></span>
-<span><span class="co">#&gt;       nu = 1.85</span></span>
+<span><span class="co">#&gt;       mu = 0.426</span></span>
+<span><span class="co">#&gt;       sigma = 2</span></span>
+<span><span class="co">#&gt;       nu = 1.6</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span>
@@ -641,13 +641,13 @@ Mean of the rainfall in Octobor 2012 in Paraná
 </tr></thead>
 <tbody><tr class="odd">
 <td align="left">(Intercept)</td>
-<td align="left">8.38</td>
-<td align="left">0.307</td>
-<td align="left">2.02</td>
-<td align="left">1.85</td>
-<td align="left">-6.85</td>
-<td align="left">3.54</td>
-<td align="left">31.2</td>
+<td align="left">8.48</td>
+<td align="left">0.426</td>
+<td align="left">2</td>
+<td align="left">1.6</td>
+<td align="left">-8.07</td>
+<td align="left">3.78</td>
+<td align="left">30.1</td>
 </tr></tbody>
 </table>
 <div class="section level3">
@@ -660,7 +660,7 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <span>  ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="va">PRborder</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span><span class="op">)</span>, dims <span class="op">=</span> <span class="va">nxy</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">xy.in</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/splancs/man/inout.html" class="external-link">inout</a></span><span class="op">(</span><span class="va">projgrid</span><span class="op">$</span><span class="va">lattice</span><span class="op">$</span><span class="va">loc</span>, <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">PRborder</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, <span class="va">PRborder</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">xy.in</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rsbivand.github.io/splancs/reference/inout.html" class="external-link">inout</a></span><span class="op">(</span><span class="va">projgrid</span><span class="op">$</span><span class="va">lattice</span><span class="op">$</span><span class="va">loc</span>, <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">PRborder</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, <span class="va">PRborder</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">coord.prd</span> <span class="op">&lt;-</span> <span class="va">projgrid</span><span class="op">$</span><span class="va">lattice</span><span class="op">$</span><span class="va">loc</span><span class="op">[</span><span class="va">xy.in</span>, <span class="op">]</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">coord.prd</span>, type <span class="op">=</span> <span class="st">"p"</span>, cex <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span></span>
@@ -701,53 +701,48 @@ Mean of the rainfall in Octobor 2012 in Paraná
 method.</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/cross_validation.html">cross_validation</a></span><span class="op">(</span><span class="va">out</span>, type<span class="op">=</span><span class="st">"k-fold"</span>, k<span class="op">=</span><span class="fl">10</span>, print<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="co">#&gt; In group 1 : </span></span>
-<span><span class="co">#&gt;       MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.33786 8.896758 -1.177654 -1.433827</span></span>
+<span><span class="co">#&gt; In target_idx 1 : </span></span>
+<span><span class="co">#&gt;        MAE     MSE      CRPS    sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.250925 8.43707 -1.181524 -1.35115</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; In group 2 : </span></span>
-<span><span class="co">#&gt;        MAE      MSE    CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.116621 7.740183 -1.0875 -1.367997</span></span>
+<span><span class="co">#&gt; In target_idx 2 : </span></span>
+<span><span class="co">#&gt;        MAE      MSE      CRPS    sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.185959 8.123661 -1.146736 -1.36162</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; In group 3 : </span></span>
+<span><span class="co">#&gt; In target_idx 3 : </span></span>
+<span><span class="co">#&gt;        MAE      MSE     CRPS     sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.231906 8.412436 -1.16566 -1.396249</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; In target_idx 4 : </span></span>
+<span><span class="co">#&gt;        MAE      MSE     CRPS     sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.050923 7.076238 -1.08175 -1.333923</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; In target_idx 5 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.210972 8.082709 -1.114958 -1.434833</span></span>
+<span><span class="co">#&gt; 1 2.130007 8.300369 -1.096046 -1.401389</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; In group 4 : </span></span>
+<span><span class="co">#&gt; In target_idx 6 : </span></span>
+<span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.333615 9.158502 -1.149367 -1.458145</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; In target_idx 7 : </span></span>
+<span><span class="co">#&gt;        MAE    MSE      CRPS     sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.350873 9.0427 -1.235656 -1.373514</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; In target_idx 8 : </span></span>
 <span><span class="co">#&gt;       MAE      MSE      CRPS    sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.05232 7.637322 -1.021891 -1.40381</span></span>
+<span><span class="co">#&gt; 1 2.36709 9.465347 -1.313271 -1.32182</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; In group 5 : </span></span>
+<span><span class="co">#&gt; In target_idx 9 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.165127 8.405241 -1.122191 -1.392189</span></span>
+<span><span class="co">#&gt; 1 2.241305 8.484315 -1.130423 -1.454802</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; In group 6 : </span></span>
+<span><span class="co">#&gt; In target_idx 10 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.227372 8.149153 -1.162628 -1.391209</span></span>
+<span><span class="co">#&gt; 1 2.133699 7.323421 -1.127811 -1.328646</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; In group 7 : </span></span>
-<span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.268053 8.422155 -1.226273 -1.330456</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; In group 8 : </span></span>
-<span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.282425 8.545792 -1.253518 -1.334457</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; In group 9 : </span></span>
-<span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.235618 8.605423 -1.099757 -1.433289</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; In group 10 : </span></span>
-<span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.230125 8.100101 -1.070528 -1.474388</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; The average of indices computed: </span></span>
-<span><span class="co">#&gt;        MAE      MSE     CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.212649 8.258484 -1.13369 -1.399645</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; The final result averaged over replicates: </span></span>
-<span><span class="co">#&gt;        MAE      MSE     CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.212649 8.258484 -1.13369 -1.399645</span></span></code></pre></div>
+<span><span class="co">#&gt;       MAE      MSE      CRPS     sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.22763 8.382406 -1.162824 -1.378126</span></span></code></pre></div>
 </div>
 </div>
   </div>

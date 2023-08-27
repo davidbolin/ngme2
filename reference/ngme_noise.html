@@ -55,7 +55,7 @@ Use ngme_noise_types() to check all the available types."><!-- mathjax --><scrip
       <a href="../articles/replicate.html">Ngme replicate feature</a>
     </li>
     <li>
-      <a href="../articles/pred_and_est.html">Model prediction and estimation</a>
+      <a href="../articles/pred_and_est.html">Model estimation and prediction</a>
     </li>
     <li>
       <a href="../articles/bivariate.html">Bivariate models in Ngme2</a>
@@ -125,6 +125,9 @@ Use <code><a href="ngme_noise_types.html">ngme_noise_types()</a></code> to check
 <span>  index_corr <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  map_corr <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  rho <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html" class="external-link">double</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>,</span>
+<span>  prior_mu <span class="op">=</span> <span class="fu"><a href="ngme_prior.html">ngme_prior</a></span><span class="op">(</span><span class="st">"normal"</span>, param <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.01</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  prior_sigma <span class="op">=</span> <span class="fu"><a href="ngme_prior.html">ngme_prior</a></span><span class="op">(</span><span class="st">"normal"</span>, param <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.01</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  prior_nu <span class="op">=</span> <span class="fu"><a href="ngme_prior.html">ngme_prior</a></span><span class="op">(</span><span class="st">"normal"</span>, param <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.01</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span>
 <span></span>

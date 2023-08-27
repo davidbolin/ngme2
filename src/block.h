@@ -263,6 +263,10 @@ public:
 
     // get length of W,V of iterations
     Rcpp::List sampling(int n, bool posterior, const SparseMatrix<double>& A);
+    Rcpp::List sampling(int n, bool posterior) {
+        return sampling(n, posterior, A);
+    }
+
     Rcpp::List output() const;
     std::string get_par_string() const {return par_string;}
 

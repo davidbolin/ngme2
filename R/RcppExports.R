@@ -5,8 +5,12 @@ estimate_cpp <- function(R_ngme, control_opt) {
     .Call(`_ngme2_estimate_cpp`, R_ngme, control_opt)
 }
 
-sampling_cpp <- function(ngme_replicate, n, posterior, seed, A) {
-    .Call(`_ngme2_sampling_cpp`, ngme_replicate, n, posterior, seed, A)
+sampling_cpp_given_A <- function(ngme_replicate, n, posterior, seed, A) {
+    .Call(`_ngme2_sampling_cpp_given_A`, ngme_replicate, n, posterior, seed, A)
+}
+
+sampling_cpp <- function(ngme_replicate, n, posterior, seed) {
+    .Call(`_ngme2_sampling_cpp`, ngme_replicate, n, posterior, seed)
 }
 
 rGIG_cpp <- function(p, a, b, seed) {

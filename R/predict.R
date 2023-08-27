@@ -175,8 +175,8 @@ compute_err_1rep <- function(
 # print(A_obs_block)
 # print(A_pred_block)
 
-  Ws_block <- sampling_cpp(ngme_1rep, n=N, posterior=TRUE, seed=seed, A=A_obs_block)[["W"]]
-  W2s_block <- sampling_cpp(ngme_1rep, n=N, posterior=TRUE, seed=seed, A=A_obs_block)[["W"]]
+  Ws_block <- sampling_cpp_given_A(ngme_1rep, n=N, posterior=TRUE, seed=seed, A=A_obs_block)[["W"]]
+  W2s_block <- sampling_cpp_given_A(ngme_1rep, n=N, posterior=TRUE, seed=seed, A=A_obs_block)[["W"]]
   AW_N <- Reduce(cbind, sapply(Ws_block, function(W) A_pred_block %*% W))
   # AW_N <- as.data.frame(AW_N)
   # names(AW_N) <- 1:N

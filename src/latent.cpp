@@ -8,6 +8,7 @@ Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
     model_type    (Rcpp::as<string>     (model_list["model"])),
     noise_type    (Rcpp::as<vector<string>>     (model_list["noise_type"])),
     debug         (Rcpp::as<bool>       (model_list["debug"])),
+    n_noise       (noise_type.size()),
     W_size        (Rcpp::as<int>        (model_list["W_size"])),
     V_size        (Rcpp::as<int>        (model_list["V_size"])),
     n_params      (Rcpp::as<int>        (model_list["n_params"])),
@@ -36,8 +37,7 @@ Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
 
     p_vec         (V_size),
     a_vec         (V_size),
-    b_vec         (V_size),
-    nu            (noise_type.size())
+    b_vec         (V_size)
 {
 if (debug) std::cout << "begin constructor of latent" << std::endl;
     assert(W_size == V_size);
@@ -128,6 +128,10 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
         // V=h at init.
         // to-fix (for normal noise case)
         // sample_uncond_V(); // sample_uncond_V();
+        for (int i=0; i < noise_type.size(); i++) {
+            int n = V_size / n_noise;
+            if (noise_type[i] == "normal") V.segment(i*n, n) = h.segment(i*n, n);
+        }
     }
 
     // compute which idx of param is fixed
@@ -136,6 +140,7 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
     if (fix_flag[latent_fix_theta_sigma]) fix_parameters.segment(n_theta_K+n_theta_mu, n_theta_sigma).setOnes();
     if (fix_flag[latent_fix_nu]) fix_parameters.segment(n_theta_K+n_theta_mu+n_theta_sigma, n_nu).setOnes();
 
+
 // std::cout << "fix param=" << fix_parameters << std::endl;
 if (debug) std::cout << "End constructor of latent" << std::endl;
 }
@@ -143,8 +148,8 @@ if (debug) std::cout << "End constructor of latent" << std::endl;
 VectorXd Latent::grad_theta_mu() {
     VectorXd grad = VectorXd::Zero(n_theta_mu);
     if (n_theta_mu == 0 || fix_flag[latent_fix_theta_mu]) return grad;
-    if ((n_nu == 1 && noise_type[0] == "normal") ||
-        (n_nu == 2 && noise_type[0] == "normal" && noise_type[1] == "normal"))
+    if ((n_noise == 1 && noise_type[0] == "normal") ||
+        (n_noise == 2 && noise_type[0] == "normal" && noise_type[1] == "normal"))
         return grad;
 
     VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
@@ -203,19 +208,30 @@ inline VectorXd Latent::grad_theta_sigma_normal() {
 
 VectorXd Latent::grad_theta_nu() {
     VectorXd grad = VectorXd::Zero(n_nu);
-
-    if (n_nu == 1)
+    if (noise_type.size() == 1) {
+        // single noise
         grad(0) = NoiseUtil::grad_theta_nu(noise_type[0], nu[0], V, prevV, h, single_V);
-    else if (n_nu == 2) {
-        // for bivaraite case
+    } else {
+        // bv noise
         int n = V_size / 2;
-        grad(0) = NoiseUtil::grad_theta_nu(noise_type[0], nu[0], V.segment(0, n), prevV.segment(0, n), h.segment(0, n), single_V);
-        if (share_V)
-            grad(1) = grad(0);
-        else
-            grad(1) = NoiseUtil::grad_theta_nu(noise_type[1], nu[1], V.segment(n, n), prevV.segment(n, n), h.segment(n, n), single_V);
+        if (n_nu == 2) {
+            // 2 NIG case
+            grad(0) = NoiseUtil::grad_theta_nu(noise_type[0], nu[0], V.segment(0, n), prevV.segment(0, n), h.segment(0, n), single_V);
+            if (share_V)
+                grad(1) = grad(0);
+            else
+                grad(1) = NoiseUtil::grad_theta_nu(noise_type[1], nu[1], V.segment(n, n), prevV.segment(n, n), h.segment(n, n), single_V);
+        } else if (n_nu == 1) {
+// std::cout << "here" << std::endl;
+            // 1 NIG + 1 normal case
+            int which = (noise_type[0] == "normal") ? 1 : 0;
+            grad(0) = NoiseUtil::grad_theta_nu(
+                noise_type[which], nu[0], V.segment(which*n, n), prevV.segment(which*n, n), h.segment(which*n, n), single_V
+            );
+        }
     }
 
+// std::cout << "here2" << std::endl;
     // add prior
     for (int l=0; l < n_nu; l++) {
 // std::cout << "grad  = " << grad(l) << std::endl;
@@ -331,7 +347,7 @@ void Latent::sample_cond_V() {
     // update b_inc (p,a_inc already built)
     b_inc = (getK() * W + mu.cwiseProduct(h)).cwiseQuotient(sigma).array().pow(2);
 
-    int n = V_size / n_nu; // n is equal to h_size (of each mesh)
+    int n = V_size / n_noise; // n is equal to h_size (of each mesh)
     // sample conditional V
     if (single_V) {
         if (share_V) {
@@ -340,9 +356,11 @@ void Latent::sample_cond_V() {
             V = v1 * h;
         } else {
             // type-G2 (n_nu==2) and also univariate single noise (n_nu==1)
-            for (int i=0; i < n_nu; i++) {
+            for (int i=0; i < n_noise; i++) {
+                if (noise_type[i] == "normal") continue;
+
                 double v1 = rGIG_cpp(
-                    -0.5 - n*1.0/n_nu,
+                    -0.5 - n*1.0/n_noise,
                     nu[i] + a_inc.segment(i*n, n).dot(h.segment(i*n, n)),
                     nu[i] + b_inc.segment(i*n, n).dot(h.segment(i*n, n).cwiseInverse()),
                     latent_rng()
@@ -362,7 +380,7 @@ void Latent::sample_cond_V() {
             V.tail(n) = V.head(n);
         } else {
             // type-G4 (n_nu==2) and also univariate case general noise (n_nu==1)
-            for (int i=0; i < n_nu; i++) {
+            for (int i=0; i < n_noise; i++) {
                 if (noise_type[i] == "normal") continue;
 
                 // sample conditional V
@@ -376,11 +394,11 @@ void Latent::sample_cond_V() {
 void Latent::sample_uncond_V() {
     if (n_nu == 0 || fix_flag[latent_fix_V]) return;
     prevV = V;
-    int n = V_size / n_nu;
+    int n = V_size / n_noise;
 
     // same logic as in simulation.R
     if (single_V) {
-        for (int i=0; i < n_nu; i++) {
+        for (int i=0; i < n_noise; i++) {
             double v;
             if (noise_type[i] == "nig" || noise_type[i] == "normal_nig")
                 v = rGIG_cpp(-0.5, nu[i], nu[i], latent_rng());
@@ -389,7 +407,7 @@ void Latent::sample_uncond_V() {
             V.segment(i*n, n) = v * h.segment(i*n, n);
         }
     } else {
-        for (int i=0; i < n_nu; i++) {
+        for (int i=0; i < n_noise; i++) {
             // sample unconditional V
             V.segment(i*n, n) = rGIG_cpp(p_vec.segment(i*n, n), a_vec.segment(i*n, n), b_vec.segment(i*n, n), latent_rng());
         }
@@ -405,24 +423,29 @@ void Latent::sample_uncond_V() {
 void Latent::update_each_iter(bool init) {
     if (!init) ope->update_K(theta_K);
 // std::cout << " here 5" << std::endl;
+// std::cout << "B_mu size = " << B_mu.rows() << " * " << B_mu.cols() << std::endl;
+// std::cout << "t_mu size = " << theta_mu.size() << std::endl;
     mu = B_mu * theta_mu;
     sigma = (B_sigma * theta_sigma).array().exp();
     if (noise_type[0] == "normal_nig")
         sigma_normal = (B_sigma_normal * theta_sigma_normal).array().exp();
 
     // update p,a,b, depend on nu, h
+    int cur_noise = 0;
     if (n_nu > 0) {
-        int n = V_size / n_nu;
-        for (int i=0; i < n_nu; i++) {
+        int n = V_size / n_noise;
+        for (int i=0; i < n_noise; i++) {
             if (noise_type[i] == "normal") continue;
+
             // update p_vec, a_vec, b_vec
-            NoiseUtil::update_gig(noise_type[i], nu(i),
+            NoiseUtil::update_gig(noise_type[i], nu(cur_noise),
             p_vec.segment(i*n, n), a_vec.segment(i*n, n), b_vec.segment(i*n, n), h.segment(i*n, n), single_V);
             V.segment(i*n, n) = rGIG_cpp(p_vec.segment(i*n, n), a_vec.segment(i*n, n), b_vec.segment(i*n, n), latent_rng());
 
             // update p_inc, a_inc
             p_inc = VectorXd::Constant(V_size, -0.5 * dim);
             a_inc = mu.cwiseQuotient(sigma).array().pow(2);
+            cur_noise++;
         }
     }
 
@@ -490,8 +513,8 @@ double Latent::log_density(const VectorXd& parameter, bool precond_K) {
     //     if (n_nu == 1) {
     //         logd_V = NoiseUtil::log_density(noise_type[0], V, h, nu[0], FALSE);
     //     } else if (n_nu == 2) {
-    //         int n = V_size / n_nu;
-    //         for (int i=0; i < n_nu; i++) {
+    //         int n = V_size / n_noise;
+    //         for (int i=0; i < n_noise; i++) {
     //             logd_V += NoiseUtil::log_density(noise_type[i], V.segment(i*n, n), h.segment(i*n, n), nu[i], FALSE);
     //         }
     //     }
@@ -592,16 +615,20 @@ MatrixXd Latent::precond(bool precond_K, double eps) {
     }
 
     // update nu
-    for (int i=0; i < n_nu; i++) {
-        int n = V_size / n_nu;
-        double noise_hess = NoiseUtil::precond(precond_eps, noise_type[i], prevV.segment(i*n, n), h.segment(i*n, n), nu[i], single_V);
+    int cur_noise = 0;
+    for (int i=0; i < n_noise; i++) {
+        if (noise_type[i] == "normal") continue;
+
+        int n = V_size / n_noise;
+        double noise_hess = NoiseUtil::precond(precond_eps, noise_type[i], prevV.segment(i*n, n), h.segment(i*n, n), nu(cur_noise), single_V);
 
         // prevent generate 0 or -0
         if (abs(noise_hess) < 1) {
             noise_hess = noise_hess > 0 ? 1 : -1;
         }
 
-        precond_full(n_params - n_nu + i, n_params - n_nu + i) = noise_hess;
+        precond_full(n_params - n_nu + cur_noise, n_params - n_nu + cur_noise) = noise_hess;
+        cur_noise++;
     }
 
 // std::cout << "print hessian: " << std::endl << precond_full << std::endl;

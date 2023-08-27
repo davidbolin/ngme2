@@ -91,7 +91,7 @@ ngme_noise <- function(
 
   if (all(noise_type == "normal")) {
     theta_mu <- double(0)
-    B_mu <- B_mu %*% theta_mu
+    B_mu <- matrix(ncol=0, nrow=nrow(B_mu))
     nu <- double(0)
   }
 
@@ -304,8 +304,9 @@ stopifnot("n / nrow(B_sigma) not integer" = abs(n/nrow(B_sigma) - round(n/nrow(B
       noise$bv_noises[[2]]$theta_mu <- tail(noise$theta_mu, n_theta_mu2)
       noise$bv_noises[[1]]$theta_sigma <- head(noise$theta_sigma, n_theta_sigma1)
       noise$bv_noises[[2]]$theta_sigma <- tail(noise$theta_sigma, n_theta_sigma2)
-      noise$bv_noises[[1]]$nu <- noise$nu[[1]]
-      noise$bv_noises[[2]]$nu <- noise$nu[[2]]
+      for (j in seq_len(noise$n_nu)) {
+        noise$bv_noises[[j]]$nu <- noise$nu[[j]]
+      }
     } else if (noise$noise_type == "normal_nig") {
       noise$theta_sigma_normal <- new_noise$theta_sigma_normal
     }

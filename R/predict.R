@@ -26,7 +26,7 @@ predict.ngme <- function(
   data = NULL,
   type = "lp",
   estimator = c("mean", "sd", "5quantile", "95quantile", "median", "mode"),
-  sampling_size = 100,
+  sampling_size = 20,
   q = NULL,
   seed = Sys.time(),
   ...
@@ -93,6 +93,8 @@ predict.ngme <- function(
         mesh <- operator$mesh
         W <- ngme$models[[i]][[estimator]]
         A <- INLA::inla.spde.make.A(loc = loc, mesh = mesh)
+        if (model == "bv") A <- Matrix::bdiag(A, A)
+        stopifnot(ncol(A) == length(W))
         as.numeric(A %*% W)
       })
     }

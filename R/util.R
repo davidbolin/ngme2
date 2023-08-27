@@ -300,6 +300,14 @@ split_matrix <- function(mat, repl) {
 }
 
 # helper function to unfiy way of accessing 1d and 2d index
+as_map <- function(locs) {
+  if (inherits(locs, c("data.frame", "matrix"))) {
+    as.matrix(locs)
+  } else {
+    as.numeric(locs)
+  }
+}
+
 sub_map <- function(locs, idx) {
   if (inherits(locs, c("data.frame", "matrix"))) {
     locs[idx, , drop = FALSE]

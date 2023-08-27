@@ -26,109 +26,94 @@ predict.ngme <- function(
   data = NULL,
   type = "lp",
   estimator = c("mean", "sd", "5quantile", "95quantile", "median", "mode"),
-  sampling_size = 20,
+  sampling_size = 30,
   q = NULL,
   seed = Sys.time(),
   ...
 ) {
   fm <- attr(object, "fitting")$formula
-
-  # recursively call predict.ngme_replicate if estimator is a list
-  if (length(estimator) > 1) {
-    res <- (lapply(estimator, function(x) {
-      predict.ngme(
-        object,
-        data = data,
-        map = map,
-        type = type,
-        estimator = x,
-        sampling_size = sampling_size,
-        q = q,
-        ...
-      )
-    }))
-    names(res) <- estimator
-    return (res)
-  }
-
-  # now estimator is a character
   ngme <- object$replicate[[1]]
   stopifnot(sampling_size > 0)
   samples_W <- sampling_cpp(ngme, n=sampling_size, posterior=TRUE, seed=seed)[["W"]]
-  post_W <- switch(estimator,
-    "mean"      = mean_list(samples_W),
-    "median"    = apply(as.data.frame(samples_W), 1, median),
-    "sd"        = apply(as.data.frame(samples_W), 1, sd),
-    "mode"      = apply(as.data.frame(samples_W), 1, emprical_mode),
-    "5quantile" = apply(as.data.frame(samples_W), 1, function(x) {quantile(x, 0.05)}),
-    "95quantile" = apply(as.data.frame(samples_W), 1, function(x) {quantile(x, 0.95)}),
-    "quantile"  = {
-      stopifnot("please provide quantile argument q between 0 to 1"
-        = !is.null(q) && length(q) == 1 && q > 0 && q < 1)
-      apply(as.data.frame(samples_W), 1, function(x) {quantile(x, q)})
-    },
-    stop("No such estimator available")
-  )
 
-  # update post W (notice here W is concated)
-  j <- 1
-  for (i in seq_along(ngme$models)) {
-    sz <- ngme$models[[i]]$W_size
-    ngme$models[[i]][[estimator]] <- post_W[j:(j + sz - 1)]
-    j <- j + sz
-  }
-
-  if (!is.null(map)) {
-    stopifnot(
-      "map should be a named list (name for each model)"
-        = is.list(map) && !is.null(names(map))
+  ret <- NULL
+  for (estimator in estimator) {
+    post_W <- switch(estimator,
+      "mean"      = mean_list(samples_W),
+      "median"    = apply(as.data.frame(samples_W), 1, median),
+      "sd"        = apply(as.data.frame(samples_W), 1, sd),
+      "mode"      = apply(as.data.frame(samples_W), 1, emprical_mode),
+      "5quantile" = apply(as.data.frame(samples_W), 1, function(x) {quantile(x, 0.05)}),
+      "95quantile" = apply(as.data.frame(samples_W), 1, function(x) {quantile(x, 0.95)}),
+      "quantile"  = {
+        stopifnot("please provide quantile argument q between 0 to 1"
+          = !is.null(q) && length(q) == 1 && q > 0 && q < 1)
+        apply(as.data.frame(samples_W), 1, function(x) {quantile(x, q)})
+      },
+      stop("No such estimator available")
     )
-    names <- names(map)
-    stopifnot(length(names) == length(ngme$models))
 
-    AW <- list()
+    # update post W (notice here W is concated)
+    j <- 1
     for (i in seq_along(ngme$models)) {
-      loc = map[[ngme$models[[i]]$name]]
-      AW[[ngme$models[[i]]$name]] <- with(ngme$models[[i]], {
-        mesh <- operator$mesh
-        W <- ngme$models[[i]][[estimator]]
-        A <- INLA::inla.spde.make.A(loc = loc, mesh = mesh)
-        if (model == "bv") A <- Matrix::bdiag(A, A)
-        stopifnot(ncol(A) == length(W))
-        as.numeric(A %*% W)
-      })
+      sz <- ngme$models[[i]]$W_size
+      ngme$models[[i]][[estimator]] <- post_W[j:(j + sz - 1)]
+      j <- j + sz
     }
-  }
 
-  # e.g. names <- c("fe", "field1", "field2")
-  type_names <- if (type == "lp") c("fe", names(ngme$models)) else type
+    if (!is.null(map)) {
+      stopifnot(
+        "map should be a named list (name for each model)"
+          = is.list(map) && !is.null(names(map))
+      )
+      names <- names(map)
+      stopifnot(length(names) == length(ngme$models))
 
-  preds <- 0
-  for (i in seq_along(type_names)) {
-    name <- type_names[[i]]
-
-    if (name == "fe" && length(ngme$feff) > 0) {
-        X_pred <- if (is.null(data) && attr(terms(fm), "intercept")) {
-          matrix(1, nrow = length(AW[[1]]), ncol = 1)
-        } else {
-          # build plain_fm
-          tf <- terms.formula(fm, specials = c("f"))
-          terms <- attr(tf, "term.labels")
-          intercept <- attr(tf, "intercept")
-          spec_order <- attr(tf, "specials")$f - 1
-          fixf <- if (length(spec_order) == 0) terms else terms[-spec_order]
-          plain_fm_str <- paste("~", intercept, paste(c("", fixf), collapse = " + "))
-          plain_fm <- formula(plain_fm_str)
-          model.matrix(plain_fm, data = data)
-        }
-        preds <- preds + as.numeric(X_pred %*% ngme$feff)
-    } else if (name %in% names(ngme$models)) {
-      preds <- preds + AW[[name]]
+      AW <- list()
+      for (i in seq_along(ngme$models)) {
+        loc <- map[[ngme$models[[i]]$name]]
+    if (is.null(loc)) stop("The loction for model ", ngme$models[[i]]$name, " is not provided")
+        loc <- as.matrix(loc)
+        AW[[ngme$models[[i]]$name]] <- with(ngme$models[[i]], {
+          mesh <- operator$mesh
+          W <- ngme$models[[i]][[estimator]]
+          A <- INLA::inla.spde.make.A(loc = loc, mesh = mesh)
+          if (model == "bv") A <- Matrix::bdiag(A, A)
+          stopifnot(ncol(A) == length(W))
+          as.numeric(A %*% W)
+        })
+      }
     }
-  }
 
-  # lp case is just fe + A1 * W1 + A2 * W2
-  preds
+    # lp case is just fe + A1 * W1 + A2 * W2
+    # e.g. names <- c("fe", "field1", "field2")
+    type_names <- if (type == "lp") c("fe", names(ngme$models)) else type
+
+    preds <- 0
+    for (i in seq_along(type_names)) {
+      name <- type_names[[i]]
+      if (name == "fe" && length(ngme$feff) > 0) {
+          X_pred <- if (is.null(data) && attr(terms(fm), "intercept")) {
+            matrix(1, nrow = length(AW[[1]]), ncol = 1)
+          } else {
+            # build plain_fm
+            tf <- terms.formula(fm, specials = c("f"))
+            terms <- attr(tf, "term.labels")
+            intercept <- attr(tf, "intercept")
+            spec_order <- attr(tf, "specials")$f - 1
+            fixf <- if (length(spec_order) == 0) terms else terms[-spec_order]
+            plain_fm_str <- paste("~", intercept, paste(c("", fixf), collapse = " + "))
+            plain_fm <- formula(plain_fm_str)
+            model.matrix(plain_fm, data = data)
+          }
+          preds <- preds + as.numeric(X_pred %*% ngme$feff)
+      } else if (name %in% names(ngme$models)) {
+        preds <- preds + AW[[name]]
+      }
+    }
+    ret[[estimator]] <- preds
+  }
+  ret
 }
 
 # helper function to compute MSE, MAE, ... for each subset of target / data

@@ -15,7 +15,7 @@ cross_validation(
   k = 5,
   percent = 50,
   times = 10,
-  target_idx = NULL,
+  test_idx = NULL,
   train_idx = NULL
 )
 }
@@ -40,7 +40,7 @@ custom is user-defined group, provide \code{target} and \code{data}}
 
 \item{times}{run how many times (only for lpo type)}
 
-\item{target_idx}{a list of indices of the data (which data points to be predicted) (only for custom type)}
+\item{test_idx}{a list of indices of the data (which data points to be predicted) (only for custom type)}
 
 \item{train_idx}{a list of indices of the data (which data points to be used for re-sampling (not re-estimation)) (only for custom type)}
 }

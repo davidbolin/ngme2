@@ -117,10 +117,10 @@ predict.ngme <- function(
 }
 
 # helper function to compute MSE, MAE, ... for each subset of target / data
-# assume target_idx and train_idx belongs to same replicate
+# assume test_idx and train_idx belongs to same replicate
 compute_err_1rep <- function(
   ngme_1rep,
-  target_idx,
+  test_idx,
   train_idx,
   data,
   N = 100,
@@ -128,13 +128,13 @@ compute_err_1rep <- function(
 ) {
   stopifnot(
     "target idx should be a vector, and data idx should be a vector"
-     = is.vector(target_idx) && is.vector(train_idx),
+     = is.vector(test_idx) && is.vector(train_idx),
     "target idx and data idx should be in the range of rows of data"
-     = all(target_idx <= nrow(data)) && all(train_idx <= nrow(data))
+     = all(test_idx <= nrow(data)) && all(train_idx <= nrow(data))
   )
-  # if target_idx and train_idx overlap, warning message
-  if (length(intersect(target_idx, train_idx)) > 0) {
-    warning("Notice that target_idx and train_idx overlap!")
+  # if test_idx and train_idx overlap, warning message
+  if (length(intersect(test_idx, train_idx)) > 0) {
+    warning("Notice that test_idx and train_idx overlap!")
   }
 
   # 1. Make A1_pred, An_pred
@@ -146,12 +146,12 @@ compute_err_1rep <- function(
   #   turn into df of dim: n_obs * N
   # option 2. AW comes from N chains
   #   to-do
-  y_data <- ngme_1rep$Y[target_idx]
+  y_data <- ngme_1rep$Y[test_idx]
   n_obs <- length(y_data)
 
   A_preds <- list(); A_obs <- list()
   for (i in seq_along(ngme_1rep$models)) {
-    A_preds[[i]] <- ngme_1rep$models[[i]]$A[target_idx, ,drop=FALSE]
+    A_preds[[i]] <- ngme_1rep$models[[i]]$A[test_idx, ,drop=FALSE]
     A_obs[[i]] <- ngme_1rep$models[[i]]$A[train_idx, ,drop=FALSE]
   }
   # A_pred_blcok <- [A1_pred .. An_pred]
@@ -173,14 +173,14 @@ compute_err_1rep <- function(
   # sampling Y by, Y = X feff + (block_A %*% block_W) + eps
   # AW_N[[1]] is concat(A1 W1, A2 W2, ..)
 
-  fe <- with(ngme_1rep, as.numeric(X[target_idx, ,drop=FALSE] %*% feff))
+  fe <- with(ngme_1rep, as.numeric(X[test_idx, ,drop=FALSE] %*% feff))
   fe_N <- matrix(rep(fe, N), ncol=N, byrow=F)
 
   # simulate measurement noise
   mn_N <- sapply(1:N, function(x)
-    simulate(ngme_1rep$noise, nsim=length(ngme_1rep$Y))[target_idx])
+    simulate(ngme_1rep$noise, nsim=length(ngme_1rep$Y))[test_idx])
   mn2_N <- sapply(1:N, function(x)
-    simulate(ngme_1rep$noise, nsim=length(ngme_1rep$Y))[target_idx])
+    simulate(ngme_1rep$noise, nsim=length(ngme_1rep$Y))[test_idx])
 
   mu_N <- fe_N + AW_N
   Y_N <- fe_N + AW_N + mn_N
@@ -226,7 +226,7 @@ compute_err_1rep <- function(
 #' @param print print information during computation
 #' @param percent from 1 to 100 (only for lpo type)
 #' @param times run how many times (only for lpo type)
-#' @param target_idx a list of indices of the data (which data points to be predicted) (only for custom type)
+#' @param test_idx a list of indices of the data (which data points to be predicted) (only for custom type)
 #' @param train_idx  a list of indices of the data (which data points to be used for re-sampling (not re-estimation)) (only for custom type)
 #'
 #' @return a list of criterions: MSE, MAE, CRPS, sCRPS
@@ -240,7 +240,7 @@ cross_validation <- function(
   k = 5,
   percent = 50,
   times = 10,
-  target_idx = NULL,
+  test_idx = NULL,
   train_idx = NULL
 ) {
   stopifnot(
@@ -249,48 +249,48 @@ cross_validation <- function(
     "ngme is a ngme object"
       = inherits(ngme, "ngme")
   )
+  n_data <- attr(ngme, "fitting")$n_data
 
   # 1. compute indices of tartget and train if not custom type
   if (type == "k-fold") {
     # split idx into k
-    idx <- seq_len(attr(ngme, "fitting")$n_data)
+    idx <- seq_len(n_data)
     folds <- cut(sample(idx), breaks = k, label = FALSE)
-    target_idx <- lapply(1:k, function(x) {which(folds == x, arr.ind = TRUE)})
+    test_idx <- lapply(1:k, function(x) {which(folds == x, arr.ind = TRUE)})
     train_idx <- lapply(1:k, function(x) {which(folds != x, arr.ind = TRUE)})
   } else if (type == "loo") {
-    return(cross_validation(ngme, "k-fold", k = length(ngme$Y), seed=seed))
+    return(cross_validation(ngme, "k-fold", k = n_data, seed=seed))
   } else if (type == "lpo") {
-    n_Y <- length(ngme$Y)
     for (i in 1:times) {
-      target_idx[[i]] <- sample(1:n_Y, size = (percent/100) * n_Y)
-      train_idx[[i]] <- setdiff(1:n_Y, target_idx[[i]])
+      test_idx[[i]] <- sample(1:n_data, size = (percent/100) * n_data)
+      train_idx[[i]] <- setdiff(1:n_data, test_idx[[i]])
     }
   } else {
-    # check if target_idx and train_idx is provided and of same length
+    # check if test_idx and train_idx is provided and of same length
     stopifnot(
-      "target_idx and train_idx should be provided"
-        = !is.null(target_idx) && !is.null(train_idx),
-      "target_idx and train_idx should be a list"
-        = is.list(target_idx) && is.list(train_idx),
-      "target_idx and train_idx should be of same length"
-        = length(target_idx) == length(train_idx)
+      "test_idx and train_idx should be provided"
+        = !is.null(test_idx) && !is.null(train_idx),
+      "test_idx and train_idx should be a list"
+        = is.list(test_idx) && is.list(train_idx),
+      "test_idx and train_idx should be of same length"
+        = length(test_idx) == length(train_idx)
     )
   }
 
-  # 2. loop over each target_idx and train_idx, and compute the criterion
+  # 2. loop over each test_idx and train_idx, and compute the criterion
   crs <- NULL
   data <- attr(ngme, "fitting")$data
-  for (i in seq_along(target_idx)) {
+  for (i in seq_along(test_idx)) {
     crs[[i]] <- compute_err_reps(
       ngme,
-      target_idx[[i]],
+      test_idx[[i]],
       train_idx[[i]],
       data,
       N=N,
       seed=seed
     )
     if (print) {
-      cat(paste("In target_idx", i, ": \n"))
+      cat(paste("In test_idx", i, ": \n"))
       print(as.data.frame(crs[[i]]))
       cat("\n")
     }
@@ -304,7 +304,7 @@ cross_validation <- function(
   # ret <- list()
   # for (i in seq_along(ngme$replicates)) {
   #   ret[[i]] <- cross_validation(ngme$replicates[[i]], type=type, k=k, N=N, percent=percent,
-  #   times=times, target_idx=target_idx, print=print, seed=seed)
+  #   times=times, test_idx=test_idx, print=print, seed=seed)
   # }
   # ret <- mean_list(ret, weights=weights)
   # cat("\n")
@@ -316,7 +316,7 @@ cross_validation <- function(
 
 # helper function to dispatch over reps
 compute_err_reps <- function(
-  ngme, target_idx, train_idx, data, N=100, seed=Sys.time()
+  ngme, test_idx, train_idx, data, N=100, seed=Sys.time()
 ) {
   repls <- attr(ngme, "fitting")$replicate
   uni_repl <- unique(repls)
@@ -325,7 +325,7 @@ compute_err_reps <- function(
   for (i in seq_along(uni_repl)) {
     which_repl <- which(repls == uni_repl[i])
     # watch out! relative order within the same replicate!!
-    target_1rep <- intersect(target_idx, which_repl)
+    target_1rep <- intersect(test_idx, which_repl)
     train_1rep <- intersect(train_idx, which_repl)
     target_1rep <- match(target_1rep, which_repl)
     train_1rep <- match(train_1rep, which_repl)
@@ -336,7 +336,7 @@ compute_err_reps <- function(
     n_crs <- n_crs + 1
     crs[[n_crs]] <- compute_err_1rep(
       ngme$replicates[[i]],
-      target_idx = target_1rep,
+      test_idx = target_1rep,
       train_idx = train_1rep,
       data,
       N=N,

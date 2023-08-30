@@ -44,10 +44,9 @@ test_that("simulate and estimate of rw with NIG", {
 
 ############################## AR1 case
 test_that("test estimation of basic ar with normal measurement noise", {
-  n_obs <- 600
-  alpha <- 0.75
+  n_obs <- 800
   mu <- 3; sigma <- 2; nu <- 1; sigma_eps <- 0.8
-  ar1 <- f(1:n_obs, model="ar1", rho=0.5, noise=noise_nig(mu=mu, sigma=sigma, nu=nu))
+  ar1 <- f(1:n_obs, model="ar1", rho=0.7, noise=noise_nig(mu=mu, sigma=sigma, nu=nu))
 
   W <- simulate(ar1)
   mean(W)
@@ -92,6 +91,8 @@ plot(attr(W, "noise"), out$replicates[[1]]$models[[1]]$noise)
 
   out$replicates[[1]]$models[[1]]$theta_K
 
+  predict(out, list(ar=801:900))
+  cross_validation(out, type="loo")
   expect_true(TRUE)
 })
 

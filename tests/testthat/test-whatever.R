@@ -44,7 +44,6 @@ test_that("compute 3d precision matrix", {
 
 test_that("add priors", {
   # ar1
-  load_all()
   out <- ngme(
     YY ~ 1 + f(X1,
       model="ar1",

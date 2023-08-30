@@ -10,8 +10,8 @@ predict using ngme after estimation}
   map,
   data = NULL,
   type = "lp",
-  estimators = c("mean", "sd", "5quantile", "95quantile", "median", "mode"),
-  sampling_size = 20,
+  estimator = c("mean", "sd", "5quantile", "95quantile", "median", "mode"),
+  sampling_size = 30,
   q = NULL,
   seed = Sys.time(),
   ...
@@ -31,6 +31,8 @@ vector or matrix (n * 2) for spatial coords}
 <model_name> is prediction of a specific model
 "lp" is linear predictor (including fixed effect and all sub-models)}
 
+\item{estimator}{what type of estimator, c("mean", "median", "mode", "quantile")}
+
 \item{sampling_size}{size of posterior sampling}
 
 \item{q}{quantile if using "quantile"}
@@ -38,8 +40,6 @@ vector or matrix (n * 2) for spatial coords}
 \item{seed}{random seed}
 
 \item{...}{extra argument from 0 to 1 if using "quantile"}
-
-\item{estimator}{what type of estimator, c("mean", "median", "mode", "quantile")}
 }
 \value{
 a list of outputs contains estimation of operator paramters, noise parameters

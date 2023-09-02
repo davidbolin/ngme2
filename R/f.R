@@ -125,11 +125,20 @@ f <- function(
       stopifnot("Now only support first to be 1d model"
         = inherits(operator$first$mesh, "inla.mesh.1d"))
       group <- as.integer(as.factor(map[[1]]))
-      A <- INLA::inla.spde.make.A(loc=map[[2]], mesh=operator$second$mesh, repl=group)
+      # A <- INLA::inla.spde.make.A(loc=map[[2]], mesh=operator$second$mesh, repl=group)
+      blk <- fmesher::fm_block(group)
+      basis <- fmesher::fm_basis(operator$first$mesh, loc=map[[1]])
+      fmesher::fm_row_kron(Matrix::t(blk), basis)
     },
-    "bv" = INLA::inla.spde.make.A(loc=map, mesh=mesh, repl=as.integer(as.factor(group))),
+    "bv" = {
+      # INLA::inla.spde.make.A(loc=map, mesh=mesh, repl=as.integer(as.factor(group)))
+      blk <- fmesher::fm_block(group)
+      basis <- fmesher::fm_basis(mesh, loc=map)
+      fmesher::fm_row_kron(Matrix::t(blk), basis)
+    },
     "re" = ngme_as_sparse(operator$B_K),
-    INLA::inla.spde.make.A(mesh = mesh, loc = map)
+    # INLA::inla.spde.make.A(mesh = mesh, loc = map)
+    fmesher::fm_basis(mesh, loc=map)
   )
 
   # subset the A matrix
@@ -232,21 +241,21 @@ ngme_build_mesh <- function(
   model = NULL,
   ...
 ) {
-  if (inherits(loc, "inla.mesh.1d") || inherits(loc, "inla.mesh")) return(loc)
+  if (inherits(loc, c("inla.mesh.1d", "inla.mesh", "fm_mesh_1d", "fm_mesh_2d"))) return(loc)
 
   if (!is.null(model)) {
     if (model %in% c("re", "tp")) return(NULL)
     if (model == "ar1") {
       stopifnot("The map should be integers."
         = is.numeric(loc) && all(loc == round(loc)))
-      return (INLA::inla.mesh.1d(loc = min(loc):max(loc)))
+      return (fmesher::fm_mesh_1d(loc = min(loc):max(loc)))
     }
   }
 
   if (is.matrix(loc) && ncol(loc) == 2) {
     stop("Please build and provide the mesh for spatial data using inla.mesh.2d()")
   } else if (is.numeric(loc)) {
-    mesh <- INLA::inla.mesh.1d(loc = loc)
+    mesh <- fmesher::fm_mesh_1d(loc = loc)
   } else {
     stop("loc should be a matrix or a vector of numeric")
   }

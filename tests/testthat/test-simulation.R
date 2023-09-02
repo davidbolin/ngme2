@@ -16,7 +16,7 @@
 #   # 2. Matern with normal_nig noise (working on)
 #   # First we create mesh
 #   pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
-#   mesh <- INLA::inla.mesh.2d(
+#   mesh <- fmesher::fm_mesh_2d(
 #     loc.domain = pl01, cutoff = 0.3,
 #     max.edge = c(0.2, 0.7), offset = c(0.5, 1.5)
 #   )

@@ -14,7 +14,7 @@ iid <- function(
   K <- ngme_as_sparse(Matrix::Diagonal(n))
 
   ngme_operator(
-    mesh = INLA::inla.mesh.1d(loc = 1:n),
+    mesh = fmesher::fm_mesh_1d(loc = 1:n),
     model = "iid",
     theta_K = double(0),
     K = K,
@@ -45,7 +45,7 @@ ar1 <- function(
   n <- mesh$n
 
   h <- c(diff(mesh$loc), 1)
-  G <- Matrix::Diagonal(n);
+  G <- Matrix::Diagonal(n); G[1, 1] = sqrt(1-rho**2)
   C <- Matrix::sparseMatrix(j=1:(n-1), i=2:n, x=-1, dims=c(n,n))
   stopifnot("The mesh should be 1d and has gap 1." = all(h == 1))
 
@@ -232,12 +232,13 @@ matern <- function(
 
   d <- get_inla_mesh_dimension(mesh)
   if (d == 1) {
-    fem <- INLA::inla.mesh.1d.fem(mesh)
+    fem <- fmesher::fm_mesh_1d.fem(mesh)
     C <- fem$c1
     G <- fem$g1
     h <- Matrix::diag(fem$c0)
   } else {
-    fem <- INLA::inla.mesh.fem(mesh, order = alpha)
+    # fem <- INLA::inla.mesh.fem(mesh, order = alpha)
+    fem <- fmesher::fm_fem(mesh, order = alpha)
     C <- fem$c0  # diag
     G <- fem$g1
     h <- Matrix::diag(fem$c0)

@@ -199,7 +199,7 @@ Now we briefly show how to fit the model and how to predict for locations where 
 
 ```{r}
 # creating the mesh
-mesh <- INLA::inla.mesh.2d(
+mesh <- fmesher::fm_mesh_2d(
   loc.domain = cienaga.border,
   max.edge = c(0.4, 1),
   max.n = 500

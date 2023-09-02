@@ -77,7 +77,7 @@ predict.ngme <- function(
         AW[[ngme$models[[i]]$name]] <- with(ngme$models[[i]], {
           mesh <- operator$mesh
           W <- ngme$models[[i]][[estimator]]
-          A <- INLA::inla.spde.make.A(loc = loc, mesh = mesh)
+          A <- fmesher::fm_basis(mesh, loc = loc)
           if (model == "bv") A <- Matrix::bdiag(A, A)
           stopifnot(ncol(A) == length(W))
           as.numeric(A %*% W)

@@ -47,7 +47,7 @@ test_that("test posterior sampling and model_validation()", {
   Y <- W + rnorm(n=length(W), sd=sigma_eps)
 
   out <- ngme(
-    Y ~ 1 + f(1:n_obs, name="ar", model="ar1") + f(1:n_obs, name="rw", model="rw1") + f(1:n_obs, model="matern", mesh=INLA::inla.mesh.1d(1:10)),
+    Y ~ 1 + f(1:n_obs, name="ar", model="ar1") + f(1:n_obs, name="rw", model="rw1") + f(1:n_obs, model="matern", mesh=fmesher::fm_mesh_1d(1:10)),
     data=data.frame(Y=Y),
     control_opt=control_opt(print_check_info = FALSE, iteration=10)
   )

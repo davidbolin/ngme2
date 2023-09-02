@@ -5,7 +5,7 @@
 test_that("test Matern", {
   # library(INLA)
   pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
-  mesh <- INLA::inla.mesh.2d(
+  mesh <- fmesher::fm_mesh_2d(
     loc.domain = pl01, cutoff = 0.2,
     max.edge = c(0.5, 10)
   )
@@ -15,7 +15,8 @@ test_that("test Matern", {
   n_obs <- 600
   loc <- cbind(runif(n_obs, 0, 10), runif(n_obs, 0, 5))
 # plot(mesh); points(loc)
-  true_noise = noise_nig(mu=-1, sigma=1, nu=2)
+  true_noise = noise_nig(mu=-2, sigma=1, nu=0.5)
+  plot(true_noise)
 
   true_model <- f(
     map = loc,
@@ -55,10 +56,10 @@ test_that("test Matern", {
       n_parallel_chain = 4,
       print_check_info = F,
       verbose = T,
-      max_absolute_step = 10,
-      max_relative_step = 10,
+      max_absolute_step = 1,
+      max_relative_step = 1,
       std_lim = 0.01,
-      preconditioner = "none"
+      preconditioner = "fast"
     ),
     # start=out,
     debug = F
@@ -174,7 +175,7 @@ test_that("test Matern", {
 test_that("test 1d matern with numerical g", {
   library(INLA)
   n_mesh <- 800
-  mesh <- INLA::inla.mesh.1d(runif(n_mesh) * 800)
+  mesh <- fmesher::fm_mesh_1d(runif(n_mesh) * 800)
 
   n_obs <- 500
   loc <- runif(n_obs, 1, n_mesh)

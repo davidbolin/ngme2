@@ -18,7 +18,8 @@ Imports:
     methods,
     rlang,
     ggplot2,
-    graphics
+    graphics,
+    fmesher
 LinkingTo:
     testthat,
     Rcpp,

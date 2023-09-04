@@ -43,7 +43,6 @@ ar1 <- function(
 
   mesh <- ngme_build_mesh(mesh)
   n <- mesh$n
-
   h <- c(diff(mesh$loc), 1)
   G <- Matrix::Diagonal(n); G[1, 1] = sqrt(1-rho**2)
   C <- Matrix::sparseMatrix(j=1:(n-1), i=2:n, x=-1, dims=c(n,n))
@@ -206,7 +205,7 @@ ou <- function(
 
 #' ngme Matern SPDE model specification
 #'
-#' @param mesh an inla.mesh.2d object, mesh for build the SPDE model
+#' @param mesh an fmesher::fm_mesh_2d object, mesh for build the SPDE model
 #' @param alpha 2 or 4, SPDE smoothness parameter
 #' @param theta_K initial value for theta_K, kappa = exp(B_K * theta_K)
 #' @param B_K bases for theta_K, ignore if use the stationary model
@@ -232,7 +231,7 @@ matern <- function(
 
   d <- get_inla_mesh_dimension(mesh)
   if (d == 1) {
-    fem <- fmesher::fm_mesh_1d.fem(mesh)
+    fem <- fmesher::fm_fem(mesh)
     C <- fem$c1
     G <- fem$g1
     h <- Matrix::diag(fem$c0)
@@ -427,7 +426,7 @@ precision_matrix_multivariate <- function(p,
 #' Compute the precision matrix for multivariate spde Matern model
 #'
 #' @param p dimension, should be integer and greater than 1
-#' @param mesh an inla.mesh.2d object, mesh for build the SPDE model
+#' @param mesh an fmesher::fm_mesh_2d object, mesh for build the SPDE model
 #' @param alpha 2 or 4, SPDE smoothness parameter
 #' @param theta_K_list a list (length is p) of theta_K
 #' @param B_K_list a list (length is p) of B_K (non-stationary case)

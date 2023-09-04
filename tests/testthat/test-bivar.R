@@ -2,8 +2,8 @@ test_that("test tp and bv operator", {
   # 1. modify bv
   n = 10
   true_model <- f(
-    1:n,
-    model="bv",
+    c(1:(n/2), 1:(n/2)),
+    model = "bv",
     theta = 0.5, rho = 0.5,
     sub_models = list(
       first = "ar1", second="ar1"
@@ -78,7 +78,7 @@ true_model
 test_that("test on bv(matern, matern)", {
   # library(INLA)
   # pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
-  # mesh <- inla.mesh.2d(loc.domain = pl01, cutoff = 0.2, max.edge = c(1,10))
+  # mesh <- fmesher::fm_mesh_2d(loc.domain = pl01, cutoff = 0.2, max.edge = c(1,10))
   # mesh$n
 
   # n_obs1 <- 300

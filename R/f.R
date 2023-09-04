@@ -113,8 +113,10 @@ f <- function(
     )
     if (is.null(first$mesh)) first$mesh <- ngme_build_mesh(map[[1]])
     if (is.null(second$mesh)) second$mesh <- ngme_build_mesh(map[[2]])
-    f_args$first <- build_operator(first$model, first)
-    f_args$second <- build_operator(second$model, second)
+    f_args$first <- if (inherits(first, "ngme_operator")) first else
+      build_operator(first$model, first)
+    f_args$second <- if (inherits(second, "ngme_operator")) second else
+      build_operator(second$model, second)
   }
 
   # build the operator
@@ -124,15 +126,16 @@ f <- function(
     "tp" = {
       stopifnot("Now only support first to be 1d model"
         = inherits(operator$first$mesh, "inla.mesh.1d"))
-      group <- as.integer(as.factor(map[[1]]))
       # A <- INLA::inla.spde.make.A(loc=map[[2]], mesh=operator$second$mesh, repl=group)
-      blk <- fmesher::fm_block(group)
-      basis <- fmesher::fm_basis(operator$first$mesh, loc=map[[1]])
+      blk_group <- as.integer(as.factor(map[[1]]))
+      blk <- fmesher::fm_block(blk_group)
+      basis <- fmesher::fm_basis(operator$second$mesh, loc=map[[2]])
       fmesher::fm_row_kron(Matrix::t(blk), basis)
     },
     "bv" = {
       # INLA::inla.spde.make.A(loc=map, mesh=mesh, repl=as.integer(as.factor(group)))
-      blk <- fmesher::fm_block(group)
+      blk_group <- as.integer(as.factor(group))
+      blk <- fmesher::fm_block(blk_group)
       basis <- fmesher::fm_basis(mesh, loc=map)
       fmesher::fm_row_kron(Matrix::t(blk), basis)
     },
@@ -253,7 +256,7 @@ ngme_build_mesh <- function(
   }
 
   if (is.matrix(loc) && ncol(loc) == 2) {
-    stop("Please build and provide the mesh for spatial data using inla.mesh.2d()")
+    stop("Please build and provide the mesh for spatial data using fmesher::fm_mesh_2d()")
   } else if (is.numeric(loc)) {
     mesh <- fmesher::fm_mesh_1d(loc = loc)
   } else {

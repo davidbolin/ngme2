@@ -19,7 +19,7 @@ precision_matrix_multivariate_spde(
 \arguments{
 \item{p}{dimension, should be integer and greater than 1}
 
-\item{mesh}{an inla.mesh.2d object, mesh for build the SPDE model}
+\item{mesh}{an fmesher::fm_mesh_2d object, mesh for build the SPDE model}
 
 \item{rho}{vector with the p(p-1)/2 correlation parameters rho_11, rho_21, rho_22, ... rho_p1, rho_p2, ... rho_p(p-1)}
 

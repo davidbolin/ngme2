@@ -43,7 +43,7 @@ head(argo_df_xy)
 # INLA build mesh
 library(INLA)
 argo_al <- argo_df_xy[argo_idx_sel, ]
-mesh <- inla.mesh.2d(coordinates(argo_al),
+mesh <- fmesher::fm_mesh_2d(coordinates(argo_al),
   max.n = 1000, cutoff=100, max.edge = c(200, 1000))
 mesh$n
 plot(mesh)

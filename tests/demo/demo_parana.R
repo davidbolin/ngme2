@@ -24,8 +24,8 @@ lines(PRborder[1034:1078, 1], PRborder[1034:1078, 2], col=2, lwd=2)
 # create mesh
 coords <- as.matrix(PRprec[, 1:2])
 prdomain <- inla.nonconvex.hull(coords, -0.03, -0.05, resolution = c(100, 100))
-prmesh <- inla.mesh.2d(boundary = prdomain, max.edge = c(0.45, 1), cutoff = 0.2)
-prmesh2 <- inla.mesh.2d(coords, max.edge = c(0.45, 1), cutoff = 0.2)
+prmesh <- fmesher::fm_mesh_2d(boundary = prdomain, max.edge = c(0.45, 1), cutoff = 0.2)
+prmesh2 <- fmesher::fm_mesh_2d(coords, max.edge = c(0.45, 1), cutoff = 0.2)
 plot(prmesh)
 
 # monthly mean at each location

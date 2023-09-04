@@ -72,7 +72,7 @@ Now let's turn to simualte and estimate the tensor-product model.
 ```{r ar-matern, cache=TRUE}
 ##############################  simulation
 set.seed(16)
-mesh2d <- inla.mesh.2d(
+mesh2d <- fmesher::fm_mesh_2d(
   loc.domain = cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5),
   max.edge = c(1, 10),
   cutoff = 0.1

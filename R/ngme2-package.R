@@ -11,7 +11,7 @@
 #' @importFrom utils str head tail modifyList
 #' @importFrom ggplot2 ggplot aes geom_line xlab ylab guides labs
 #' @importFrom rlang .data
-#' @importFrom fmesher fm_mesh_1d fm_mesh_2d fm_basis
+#' @importFrom fmesher fm_mesh_1d fm_mesh_2d fm_basis fm_fem
 #' @importFrom graphics hist
 #' @importFrom stats median quantile as.formula
 #' @useDynLib ngme2, .registration = TRUE

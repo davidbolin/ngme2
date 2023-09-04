@@ -26,7 +26,7 @@
 #   library(INLA)
 
 # ##############################  simulation
-#   mesh2d <- inla.mesh.2d(
+#   mesh2d <- fmesher::fm_mesh_2d(
 #     loc.domain = cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5),
 #     max.edge = c(1.2, 10)
 #   )
@@ -112,24 +112,58 @@ test_that("iid x ar case", {
       map = list(time, loc),
       model = "tp",
       first = iid(n=3),
-      second = ar1(1:n_obs, rho=0.2),
+      second = ar1(loc),
+    ),
+    data = data.frame(Y=Y),
+    control_opt = control_opt(
+      iterations = 5
+    )
+  )
+
+  out <- ngme(
+    Y ~ 0 + f(
+      map = list(time, loc),
+      model = "tp",
+      first = list(model="iid", n=3),
+      second = list(model="ar1"),
       # control = control_f(numer_grad = T),
       debug=F
     ),
     data = data.frame(Y=Y),
     control_opt = control_opt(
       estimation = T,
-      iterations = 100,
+      iterations = 500,
       n_parallel_chain = 1,
       verbose = F
     ),
-    debug= T
+    debug= F
   )
   out
   traceplot(out, "field1")
 })
 
 # ##########################################################################
+
+test_that("ar x ar case (simulation)", {
+  time_idx <- 1:3; loc_index <- 4:7
+  map <- list(
+    time = c(1,3,2,3),
+    loc = c(4,4,4,4)
+  )
+
+  tensor_model <- f(
+    map = map,
+    model="tp",
+    first  = list(model="ar1", rho = 0.7, mesh=time_idx),
+    second = list(model="ar1", rho = 0.1, mesh=loc_index),
+    noise = noise_nig(mu=-3, sigma=2, nu=1)
+  )
+  # So the mesh$n is 3 * 4 = 12
+  with(tensor_model, {
+      expect_true(nrow(A)==4 && ncol(A)==12)
+      expect_true(nrow(operator$K)==12)
+  })
+})
 
 test_that("ar x ar case", {
   set.seed(16)
@@ -146,9 +180,7 @@ test_that("ar x ar case", {
     noise = noise_nig(mu=-3, sigma=2, nu=1)
   )
   tensor_model
-
   W <- simulate(tensor_model)
-
   AW <- as.numeric(tensor_model$A %*% W)
   n_obs <- length(AW)
   Y <- AW + rnorm(n_obs, sd=0.5)

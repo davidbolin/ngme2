@@ -7,7 +7,7 @@
 matern(mesh, alpha = 2, theta_K = 0, B_K = NULL, ...)
 }
 \arguments{
-\item{mesh}{an inla.mesh.2d object, mesh for build the SPDE model}
+\item{mesh}{an fmesher::fm_mesh_2d object, mesh for build the SPDE model}
 
 \item{alpha}{2 or 4, SPDE smoothness parameter}
 

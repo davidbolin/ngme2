@@ -37,7 +37,7 @@ plot(meuse, add = TRUE)
 ##############################
 # create mesh
 library(INLA)
-mesh <- inla.mesh.2d(loc=meuse@coords, max.n=200, max.edge = c(1,2))
+mesh <- fmesher::fm_mesh_2d(loc=meuse@coords, max.n=200, max.edge = c(1,2))
 plot(mesh)
 mesh$n
 
@@ -47,7 +47,7 @@ points(meuse, col = "red")
 head(meuse)
 
 prdomain <- inla.nonconvex.hull(meuse@coords, -0.03, -0.05, resolution = c(100, 100))
-prmesh <- inla.mesh.2d(meuse@coords, boundary = prdomain, max.n = 400, cutoff = 50)
+prmesh <- fmesher::fm_mesh_2d(meuse@coords, boundary = prdomain, max.n = 400, cutoff = 50)
 prmesh$n
 plot(prmesh)
 

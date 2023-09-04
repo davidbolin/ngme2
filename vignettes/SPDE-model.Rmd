@@ -156,7 +156,7 @@ where $K_1$ is a modified Bessel function of the third kind. In this form, the N
 The NIG model thus assumes that the stochastic variance $V_i$ follows an inverse Gaussian with parameters $\eta$ and $\eta h_i^2$, where $h_i = \int_{\mathcal{D}} \varphi_i(\mathbf{s}) d\mathbf{s}.$
 
 ```{r load-libs}
-library(INLA)
+library(fmesher)
 library(ngme2)
 library(ggplot2)
 library(plyr)
@@ -193,7 +193,7 @@ Consider the following examples (both 1d and 2d cases):
 ```{r spde-1d}
 # 1d example
 loc <- c(1.1, 2.2, 3.5, 4.7)
-mesh_1d <- inla.mesh.1d(1:6)
+mesh_1d <- fmesher::fm_mesh_1d(1:6)(1:6)
 m1 <- matern(map = loc, mesh = mesh_1d)
 # K matrix for the matern model in this case
 m1$K
@@ -209,7 +209,7 @@ max.edge    <- 1
 bound.outer <- 5
 loc_2d <- unique(cbind(argo_float$lon, argo_float$lat))
 # nrow(loc) == nrow(dat) no replicate
-argo_mesh <- inla.mesh.2d(loc = loc_2d,
+argo_mesh <- fmesher::fm_mesh_2d(loc = loc_2d,
                     # the inner edge and outer edge
                     max.edge = c(1,5),
                     cutoff = 0.3,

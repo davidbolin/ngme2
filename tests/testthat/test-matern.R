@@ -86,7 +86,7 @@ test_that("test Matern", {
 #   { # First we create mesh
 #     library(INLA)
 #     pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
-#     mesh <- inla.mesh.2d(
+#     mesh <- fmesher::fm_mesh_2d(
 #       loc.domain = pl01,
 #       max.edge = 0.5
 #     )

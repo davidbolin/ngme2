@@ -16,7 +16,7 @@
 #   x <- 21:27
 #   repl <- c(1,1,1,2,2,2,2)
 #   loc = cbind(rnorm(7), rnorm(7))
-#   mesh2d = inla.mesh.2d(loc=loc, max.n=20)
+#   mesh2d = fmesher::fm_mesh_2d(loc=loc, max.n=20)
 # ####### case 1. ar + rw + matern2d
 #   out <- ngme(
 #     y ~ 0 + x + f(1:7, model="ar1", replicate=c(1,1,1,2,2,2,2)) +

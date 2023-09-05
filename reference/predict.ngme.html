@@ -110,8 +110,8 @@ predict using ngme after estimation</p>
 <span>  <span class="va">map</span>,</span>
 <span>  data <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  type <span class="op">=</span> <span class="st">"lp"</span>,</span>
-<span>  estimators <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mean"</span>, <span class="st">"sd"</span>, <span class="st">"5quantile"</span>, <span class="st">"95quantile"</span>, <span class="st">"median"</span>, <span class="st">"mode"</span><span class="op">)</span>,</span>
-<span>  sampling_size <span class="op">=</span> <span class="fl">20</span>,</span>
+<span>  estimator <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mean"</span>, <span class="st">"sd"</span>, <span class="st">"5quantile"</span>, <span class="st">"95quantile"</span>, <span class="st">"median"</span>, <span class="st">"mode"</span><span class="op">)</span>,</span>
+<span>  sampling_size <span class="op">=</span> <span class="fl">30</span>,</span>
 <span>  q <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  seed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  <span class="va">...</span></span>
@@ -141,6 +141,10 @@ vector or matrix (n * 2) for spatial coords</p></dd>
 "lp" is linear predictor (including fixed effect and all sub-models)</p></dd>
 
 
+<dt>estimator</dt>
+<dd><p>what type of estimator, c("mean", "median", "mode", "quantile")</p></dd>
+
+
 <dt>sampling_size</dt>
 <dd><p>size of posterior sampling</p></dd>
 
@@ -155,10 +159,6 @@ vector or matrix (n * 2) for spatial coords</p></dd>
 
 <dt>...</dt>
 <dd><p>extra argument from 0 to 1 if using "quantile"</p></dd>
-
-
-<dt>estimator</dt>
-<dd><p>what type of estimator, c("mean", "median", "mode", "quantile")</p></dd>
 
 </dl></div>
     <div id="value">

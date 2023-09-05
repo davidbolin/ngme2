@@ -184,8 +184,8 @@ model over 5 year from 2001 to 2005, with 2 fields <em>temperature</em>
 and <em>precipitation</em>. You want to model the two fields jointly.
 The data look like the following:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># load library</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">INLA</span><span class="op">)</span>; <span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://davidbolin.github.io/ngme2/">ngme2</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://inlabru-org.github.io/fmesher/" class="external-link">fmesher</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://davidbolin.github.io/ngme2/">ngme2</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">temp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">32</span>, <span class="fl">33</span>, <span class="fl">35.5</span>, <span class="fl">36</span><span class="op">)</span>; <span class="va">year_temp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2001</span>, <span class="fl">2002</span>, <span class="fl">2003</span>, <span class="fl">2004</span><span class="op">)</span></span>
 <span><span class="va">precip</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.1</span>, <span class="fl">0.2</span>, <span class="fl">0.5</span>, <span class="fl">1</span>, <span class="fl">0.2</span><span class="op">)</span>; <span class="va">year_pre</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2001</span>, <span class="fl">2002</span>, <span class="fl">2003</span>, <span class="fl">2004</span>, <span class="fl">2005</span><span class="op">)</span></span>
@@ -482,10 +482,10 @@ model.</p>
 <span></span>
 <span><span class="co"># Generate covariance matrix for measurement noise</span></span>
 <span><span class="va">Cov_eps</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0.9</span>, <span class="fl">0.9</span>, <span class="fl">1</span><span class="op">)</span>, nrow<span class="op">=</span><span class="fl">2</span><span class="op">)</span></span>
-<span><span class="va">Cov_eps</span> <span class="op">&lt;-</span> <span class="va">Cov_eps</span> <span class="op"><a href="https://rdrr.io/r/base/kronecker.html" class="external-link">%x%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="va">n_obs</span> <span class="op">/</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="va">Cov_eps</span> <span class="op">&lt;-</span> <span class="va">Cov_eps</span> <span class="op"><a href="https://rdrr.io/r/base/kronecker.html" class="external-link">%x%</a></span> <span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="va">n_obs</span> <span class="op">/</span> <span class="fl">2</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># e~N(0, Cov_eps)</span></span>
-<span><span class="va">L</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/chol.html" class="external-link">chol</a></span><span class="op">(</span><span class="va">Cov_eps</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">L</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/chol.html" class="external-link">chol</a></span><span class="op">(</span><span class="va">Cov_eps</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">e</span> <span class="op">&lt;-</span> <span class="va">L</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_obs</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># fixed effects</span></span>
@@ -525,35 +525,35 @@ model.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt;    x1    x2 </span></span>
-<span><span class="co">#&gt; -3.02  1.53 </span></span>
+<span><span class="co">#&gt; -3.04  1.50 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $bv</span></span>
 <span><span class="co">#&gt;   Model type: Bivariate model</span></span>
-<span><span class="co">#&gt;       theta = 0.396</span></span>
-<span><span class="co">#&gt;       rho = 0.488</span></span>
+<span><span class="co">#&gt;       theta = 0.391</span></span>
+<span><span class="co">#&gt;       rho = 0.496</span></span>
 <span><span class="co">#&gt;       W1: AR(1)</span></span>
 <span><span class="co">#&gt;           rho = 0.606</span></span>
 <span><span class="co">#&gt;       W2: AR(1)</span></span>
-<span><span class="co">#&gt;           rho = -0.386</span></span>
+<span><span class="co">#&gt;           rho = -0.39</span></span>
 <span><span class="co">#&gt;    Bivariate type-G4 noise:</span></span>
 <span><span class="co">#&gt;       W1: NIG</span></span>
 <span><span class="co">#&gt;       Noise parameters: </span></span>
-<span><span class="co">#&gt;           mu = -1.65</span></span>
-<span><span class="co">#&gt;           sigma = 1.29</span></span>
-<span><span class="co">#&gt;           nu = 0.683</span></span>
+<span><span class="co">#&gt;           mu = -1.73</span></span>
+<span><span class="co">#&gt;           sigma = 1.1</span></span>
+<span><span class="co">#&gt;           nu = 0.979</span></span>
 <span><span class="co">#&gt;       W2: NIG</span></span>
 <span><span class="co">#&gt;       Noise parameters: </span></span>
-<span><span class="co">#&gt;           mu = 2.23</span></span>
-<span><span class="co">#&gt;           sigma = 2.08</span></span>
-<span><span class="co">#&gt;           nu = 0.563</span></span>
+<span><span class="co">#&gt;           mu = 2.34</span></span>
+<span><span class="co">#&gt;           sigma = 1.77</span></span>
+<span><span class="co">#&gt;           nu = 0.574</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.937</span></span>
-<span><span class="co">#&gt;       correlation(rho) = 0.953</span></span>
+<span><span class="co">#&gt;       sigma = 0.998</span></span>
+<span><span class="co">#&gt;       correlation(rho) = 0.944</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre></div>

@@ -158,13 +158,6 @@ an AR(1) model.</p>
 <p>Suppose one has a response variable with <span class="math inline">\(2n\)</span> observations</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://davidbolin.github.io/ngme2/">ngme2</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; This is ngme2 of version 0.5.0</span></span>
-<span><span class="co">#&gt; - See our homepage: https://davidbolin.github.io/ngme2 for more details.</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># creating ar1 process</span></span>
-<span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">500</span></span>
-<span><span class="va">myar</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="va">n</span>, model<span class="op">=</span><span class="st">"ar1"</span>, rho <span class="op">=</span> <span class="fl">.75</span>, noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; The legacy packages maptools, rgdal, and rgeos, underpinning the sp package,</span></span>
 <span><span class="co">#&gt; which was just loaded, will retire in October 2023.</span></span>
 <span><span class="co">#&gt; Please refer to R-spatial evolution reports for details, especially</span></span>
@@ -173,6 +166,13 @@ an AR(1) model.</p>
 <span><span class="co">#&gt; package maintainers should consider adding sf to Suggests:.</span></span>
 <span><span class="co">#&gt; The sp package is now running under evolution status 2</span></span>
 <span><span class="co">#&gt;      (status 2 uses the sf package in place of rgdal)</span></span>
+<span><span class="co">#&gt; This is ngme2 of version 0.5.0</span></span>
+<span><span class="co">#&gt; - See our homepage: https://davidbolin.github.io/ngme2 for more details.</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># creating ar1 process</span></span>
+<span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">500</span></span>
+<span><span class="va">myar</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="va">n</span>, model<span class="op">=</span><span class="st">"ar1"</span>, rho <span class="op">=</span> <span class="fl">.75</span>, noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">W1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="va">myar</span>, seed <span class="op">=</span> <span class="fl">314</span><span class="op">)</span> <span class="co"># simulating one realization of the process</span></span>
 <span><span class="va">W2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="va">myar</span>, seed <span class="op">=</span> <span class="fl">159</span><span class="op">)</span> <span class="co"># simulating another realization of the process</span></span>
@@ -204,20 +204,20 @@ to illustrate the last statement.</p>
 <span><span class="co"># K matrix from the model without replicates</span></span>
 <span><span class="va">replicates</span><span class="op">$</span><span class="va">operator</span><span class="op">$</span><span class="va">K</span></span>
 <span><span class="co">#&gt; 3 x 3 sparse Matrix of class "dgCMatrix"</span></span>
-<span><span class="co">#&gt;                 </span></span>
-<span><span class="co">#&gt; [1,]  1.0  .   .</span></span>
-<span><span class="co">#&gt; [2,] -0.5  1.0 .</span></span>
-<span><span class="co">#&gt; [3,]  .   -0.5 1</span></span>
+<span><span class="co">#&gt;                       </span></span>
+<span><span class="co">#&gt; [1,]  0.8660254  .   .</span></span>
+<span><span class="co">#&gt; [2,] -0.5000000  1.0 .</span></span>
+<span><span class="co">#&gt; [3,]  .         -0.5 1</span></span>
 <span><span class="co"># K matrix from the model with replicates</span></span>
 <span><span class="va">no.replicates</span><span class="op">$</span><span class="va">operator</span><span class="op">$</span><span class="va">K</span></span>
 <span><span class="co">#&gt; 6 x 6 sparse Matrix of class "dgCMatrix"</span></span>
-<span><span class="co">#&gt;                                </span></span>
-<span><span class="co">#&gt; [1,]  1.0  .    .    .    .   .</span></span>
-<span><span class="co">#&gt; [2,] -0.5  1.0  .    .    .   .</span></span>
-<span><span class="co">#&gt; [3,]  .   -0.5  1.0  .    .   .</span></span>
-<span><span class="co">#&gt; [4,]  .    .   -0.5  1.0  .   .</span></span>
-<span><span class="co">#&gt; [5,]  .    .    .   -0.5  1.0 .</span></span>
-<span><span class="co">#&gt; [6,]  .    .    .    .   -0.5 1</span></span></code></pre></div>
+<span><span class="co">#&gt;                                      </span></span>
+<span><span class="co">#&gt; [1,]  0.8660254  .    .    .    .   .</span></span>
+<span><span class="co">#&gt; [2,] -0.5000000  1.0  .    .    .   .</span></span>
+<span><span class="co">#&gt; [3,]  .         -0.5  1.0  .    .   .</span></span>
+<span><span class="co">#&gt; [4,]  .          .   -0.5  1.0  .   .</span></span>
+<span><span class="co">#&gt; [5,]  .          .    .   -0.5  1.0 .</span></span>
+<span><span class="co">#&gt; [6,]  .          .    .    .   -0.5 1</span></span></code></pre></div>
 <p>It is clear how the link between the last observation of the first
 process dissapears by looking at the <span class="math inline">\(\mathbf{K}_{4, 3}\)</span> entry of the matrix
 <span class="math inline">\(\mathbf{K}\)</span>.</p>
@@ -246,22 +246,22 @@ process dissapears by looking at the <span class="math inline">\(\mathbf{K}_{4, 
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt; (Intercept) </span></span>
-<span><span class="co">#&gt;       -3.03 </span></span>
+<span><span class="co">#&gt;       -3.02 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $field1</span></span>
 <span><span class="co">#&gt;   Model type: AR(1)</span></span>
-<span><span class="co">#&gt;       rho = 0.736</span></span>
+<span><span class="co">#&gt;       rho = 0.775</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = 0.0213</span></span>
-<span><span class="co">#&gt;       sigma = 0.995</span></span>
-<span><span class="co">#&gt;       nu = 0.803</span></span>
+<span><span class="co">#&gt;       mu = 0.0975</span></span>
+<span><span class="co">#&gt;       sigma = 0.991</span></span>
+<span><span class="co">#&gt;       nu = 0.902</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.267</span></span>
+<span><span class="co">#&gt;       sigma = 0.201</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  2</span></span></code></pre></div>
@@ -773,7 +773,7 @@ modeled.</p>
 locations where the feature is unknown.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># creating the mesh</span></span>
-<span><span class="va">mesh</span> <span class="op">&lt;-</span> <span class="fu">INLA</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/INLA/man/inla.mesh.2d.html" class="external-link">inla.mesh.2d</a></span><span class="op">(</span></span>
+<span><span class="va">mesh</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://inlabru-org.github.io/fmesher/reference/fm_mesh_2d.html" class="external-link">fm_mesh_2d</a></span><span class="op">(</span></span>
 <span>  loc.domain <span class="op">=</span> <span class="va">cienaga.border</span>,</span>
 <span>  max.edge <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.4</span>, <span class="fl">1</span><span class="op">)</span>,</span>
 <span>  max.n <span class="op">=</span> <span class="fl">500</span></span>
@@ -811,12 +811,12 @@ locations where the feature is unknown.</p>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $spde</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
-<span><span class="co">#&gt;       kappa = 0.851</span></span>
+<span><span class="co">#&gt;       kappa = 0.996</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -0.127</span></span>
-<span><span class="co">#&gt;       sigma = 0.954</span></span>
-<span><span class="co">#&gt;       nu = 0.888</span></span>
+<span><span class="co">#&gt;       mu = 0.216</span></span>
+<span><span class="co">#&gt;       sigma = 0.964</span></span>
+<span><span class="co">#&gt;       nu = 0.978</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>

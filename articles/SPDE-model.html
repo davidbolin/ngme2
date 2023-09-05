@@ -337,9 +337,7 @@ parameters, <span class="math inline">\(\mu, \gamma\)</span> and <span class="ma
 parameters <span class="math inline">\(\eta\)</span> and <span class="math inline">\(\eta h_i^2\)</span>, where <span class="math inline">\(h_i = \int_{\mathcal{D}} \varphi_i(\mathbf{s})
 d\mathbf{s}.\)</span></p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">INLA</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Loading required package: Matrix</span></span>
-<span><span class="co">#&gt; Loading required package: sp</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://inlabru-org.github.io/fmesher/" class="external-link">fmesher</a></span><span class="op">)</span></span>
 <span><span class="co">#&gt; The legacy packages maptools, rgdal, and rgeos, underpinning the sp package,</span></span>
 <span><span class="co">#&gt; which was just loaded, will retire in October 2023.</span></span>
 <span><span class="co">#&gt; Please refer to R-spatial evolution reports for details, especially</span></span>
@@ -348,16 +346,9 @@ d\mathbf{s}.\)</span></p>
 <span><span class="co">#&gt; package maintainers should consider adding sf to Suggests:.</span></span>
 <span><span class="co">#&gt; The sp package is now running under evolution status 2</span></span>
 <span><span class="co">#&gt;      (status 2 uses the sf package in place of rgdal)</span></span>
-<span><span class="co">#&gt; This is INLA_23.08.26 built 2023-08-26 14:24:50 UTC.</span></span>
-<span><span class="co">#&gt;  - See www.r-inla.org/contact-us for how to get help.</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://davidbolin.github.io/ngme2/">ngme2</a></span><span class="op">)</span></span>
 <span><span class="co">#&gt; This is ngme2 of version 0.5.0</span></span>
 <span><span class="co">#&gt; - See our homepage: https://davidbolin.github.io/ngme2 for more details.</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Attaching package: 'ngme2'</span></span>
-<span><span class="co">#&gt; The following object is masked from 'package:INLA':</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;     f</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://had.co.nz/plyr" class="external-link">plyr</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
@@ -398,7 +389,7 @@ examples (both 1d and 2d cases):</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># 1d example</span></span>
 <span><span class="va">loc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1.1</span>, <span class="fl">2.2</span>, <span class="fl">3.5</span>, <span class="fl">4.7</span><span class="op">)</span></span>
-<span><span class="va">mesh_1d</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/INLA/man/inla.mesh.1d.html" class="external-link">inla.mesh.1d</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span></span>
+<span><span class="va">mesh_1d</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://inlabru-org.github.io/fmesher/reference/fm_mesh_1d.html" class="external-link">fm_mesh_1d</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span></span>
 <span><span class="va">m1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/matern.html">matern</a></span><span class="op">(</span>map <span class="op">=</span> <span class="va">loc</span>, mesh <span class="op">=</span> <span class="va">mesh_1d</span><span class="op">)</span></span>
 <span><span class="co"># K matrix for the matern model in this case</span></span>
 <span><span class="va">m1</span><span class="op">$</span><span class="va">K</span></span>
@@ -425,9 +416,9 @@ examples (both 1d and 2d cases):</p>
 <span></span>
 <span><span class="va">max.edge</span>    <span class="op">&lt;-</span> <span class="fl">1</span></span>
 <span><span class="va">bound.outer</span> <span class="op">&lt;-</span> <span class="fl">5</span></span>
-<span><span class="va">loc_2d</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">argo_float</span><span class="op">$</span><span class="va">lon</span>, <span class="va">argo_float</span><span class="op">$</span><span class="va">lat</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">loc_2d</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">argo_float</span><span class="op">$</span><span class="va">lon</span>, <span class="va">argo_float</span><span class="op">$</span><span class="va">lat</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co"># nrow(loc) == nrow(dat) no replicate</span></span>
-<span><span class="va">argo_mesh</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/INLA/man/inla.mesh.2d.html" class="external-link">inla.mesh.2d</a></span><span class="op">(</span>loc <span class="op">=</span> <span class="va">loc_2d</span>,</span>
+<span><span class="va">argo_mesh</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://inlabru-org.github.io/fmesher/reference/fm_mesh_2d.html" class="external-link">fm_mesh_2d</a></span><span class="op">(</span>loc <span class="op">=</span> <span class="va">loc_2d</span>,</span>
 <span>                    <span class="co"># the inner edge and outer edge</span></span>
 <span>                    max.edge <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">5</span><span class="op">)</span>,</span>
 <span>                    cutoff <span class="op">=</span> <span class="fl">0.3</span>,</span>

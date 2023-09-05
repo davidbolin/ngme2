@@ -65,6 +65,7 @@ test_that("test posterior sampling and model_validation()", {
 
 
 test_that("test lpo CV", {
+  n_obs <- 100
   ar_mod <- f(1:n_obs, model="ar1", noise=noise_nig())
   yy <- simulate(ar_mod) + rnorm(n_obs, sd=0.5)
   ng_100 <- ngme(

@@ -13,12 +13,12 @@
 #' @importFrom rlang .data
 #' @importFrom fmesher fm_mesh_1d fm_mesh_2d fm_basis fm_fem
 #' @importFrom graphics hist
-#' @importFrom stats median quantile as.formula
+#' @importFrom stats median quantile as.formula dist
 #' @useDynLib ngme2, .registration = TRUE
 #' @name ngme2
 NULL
 
-.onLoad <- function(libname, pkgname) {
+.onAttach <- function(libname, pkgname) {
   version <- utils::packageVersion("ngme2")
    packageStartupMessage(
     "This is ngme2 of version ", version, "\n",

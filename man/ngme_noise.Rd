@@ -133,6 +133,12 @@ noise_normal_nig(
 
 \item{rho}{used when corr_measurement=TRUE, starting point for correlation}
 
+\item{prior_mu}{prior distribution for parameter of mu}
+
+\item{prior_sigma}{prior distribution for parameter of sigma}
+
+\item{prior_nu}{prior distribution for parameter of nu}
+
 \item{...}{additional arguments}
 
 \item{sigma_normal}{for normal nosie with nig noise sharing same parameter}

@@ -19,7 +19,8 @@ Imports:
     rlang,
     ggplot2,
     graphics,
-    fmesher
+    fmesher,
+    stats
 LinkingTo:
     testthat,
     Rcpp,
@@ -41,6 +42,7 @@ Suggests:
     viridis,
     rSPDE,
     tidyr,
+    fields,
     lme4
 VignetteBuilder: knitr
 RoxygenNote: 7.2.3

@@ -23,6 +23,8 @@ precision_matrix_multivariate_spde(
 
 \item{rho}{vector with the p(p-1)/2 correlation parameters rho_11, rho_21, rho_22, ... rho_p1, rho_p2, ... rho_p(p-1)}
 
+\item{alpha_list}{a list of SPDE smoothness parameter}
+
 \item{theta_K_list}{a list (length is p) of theta_K}
 
 \item{variance_list}{If provided, it should be a vector of length p, where the
@@ -35,8 +37,6 @@ is then scaled by a constant c so that this variance is achieved in the stationa
 \item{theta}{parameter for Q matrix (length of 1 when p=2, length of 3 when p=3)}
 
 \item{Q}{orthogonal matrix of dim p*p (provide when p > 3)}
-
-\item{alpha}{2 or 4, SPDE smoothness parameter}
 }
 \value{
 the precision matrix of the multivariate model
@@ -55,6 +55,7 @@ library(fields)
 x <- seq(from=0,to=1,length.out = 40)
 mesh <- inla.mesh.create(lattice = inla.mesh.lattice(x,x), extend = FALSE)
 # Set parameters
+p <- 3 #number of fields
 rho <- c(-0.5, 0.5,-0.25) #correlation parameters
 log_kappa <- list(2,2,2) #log(kappa)
 variances <- list(1,1,1) #set marginal variances to 1

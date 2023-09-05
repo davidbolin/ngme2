@@ -317,7 +317,7 @@ re <- function(
 # ----  For computing precision matrix of multivariate model
 
 # p: dimension
-# cor_mat: controls the correlation (only look at upper.tri part)
+# rho: a list of rho parameter, see paper D_l
 D_l <- function(p, rho) {
   stopifnot(
     "rho should be of length p(p-1)/2" =
@@ -335,7 +335,8 @@ D_l <- function(p, rho) {
   D_l
 }
 
-dependence_matrix <- function(p, cor_mat, theta=NULL, Q=NULL) {
+# return Q * D_l
+dependence_matrix <- function(p, rho, theta=NULL, Q=NULL) {
   Q_2d <- function(theta) {
     Q <- matrix(0, nrow = 2, ncol = 2)
     Q[1, 1] <- cos(theta)
@@ -389,10 +390,9 @@ dependence_matrix <- function(p, cor_mat, theta=NULL, Q=NULL) {
 #' Bolin, D. and Wallin, J. (2020), Multivariate type G Matérn stochastic partial differential equation random fields. J. R. Stat. Soc. B, 82: 215-239. https://doi.org/10.1111/rssb.12351
 #' @export
 #' @examples
-#' rho_mat <- matrix(0, nrow = 3, ncol = 3)
-#' rho_mat[1, 2] <- 0.4; rho_mat[1, 3] <- -0.5; rho_mat[2,3] <- 0.8
+#' rho <- c(-0.5, 0.5,-0.25) #correlation parameters
 #' operator_list <- list(ar1(1:5, rho=0.4), ar1(1:5, rho=0.5), ar1(1:5, rho=0.6))
-#' precision_matrix_multivariate(3, operator_list, rho_mat, theta=c(1,2,3))
+#' precision_matrix_multivariate(3, operator_list, rho, theta=c(1,2,3))
 precision_matrix_multivariate <- function(p,
                                           operator_list,
                                           rho,
@@ -427,7 +427,7 @@ precision_matrix_multivariate <- function(p,
 #'
 #' @param p dimension, should be integer and greater than 1
 #' @param mesh an fmesher::fm_mesh_2d object, mesh for build the SPDE model
-#' @param alpha 2 or 4, SPDE smoothness parameter
+#' @param alpha_list a list of SPDE smoothness parameter
 #' @param theta_K_list a list (length is p) of theta_K
 #' @param B_K_list a list (length is p) of B_K (non-stationary case)
 #' @param variance_list If provided, it should be a vector of length p, where the
@@ -451,6 +451,7 @@ precision_matrix_multivariate <- function(p,
 #' x <- seq(from=0,to=1,length.out = 40)
 #' mesh <- inla.mesh.create(lattice = inla.mesh.lattice(x,x), extend = FALSE)
 #' # Set parameters
+#' p <- 3 #number of fields
 #' rho <- c(-0.5, 0.5,-0.25) #correlation parameters
 #' log_kappa <- list(2,2,2) #log(kappa)
 #' variances <- list(1,1,1) #set marginal variances to 1

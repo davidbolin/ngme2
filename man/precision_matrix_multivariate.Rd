@@ -37,10 +37,9 @@ The general model is defined as $D diag(L_1, ..., L_p) x = M$. D is the dependen
 See the section 2.2 of Bolin and Wallin (2020) for exact parameterization of Dependence matrix.
 }
 \examples{
-rho_mat <- matrix(0, nrow = 3, ncol = 3)
-rho_mat[1, 2] <- 0.4; rho_mat[1, 3] <- -0.5; rho_mat[2,3] <- 0.8
+rho <- c(-0.5, 0.5,-0.25) #correlation parameters
 operator_list <- list(ar1(1:5, rho=0.4), ar1(1:5, rho=0.5), ar1(1:5, rho=0.6))
-precision_matrix_multivariate(3, operator_list, rho_mat, theta=c(1,2,3))
+precision_matrix_multivariate(3, operator_list, rho, theta=c(1,2,3))
 }
 \references{
 Bolin, D. and Wallin, J. (2020), Multivariate type G Matérn stochastic partial differential equation random fields. J. R. Stat. Soc. B, 82: 215-239. https://doi.org/10.1111/rssb.12351

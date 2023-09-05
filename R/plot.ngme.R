@@ -67,13 +67,18 @@ traceplot <- function(ngme, name="general") {
     # wierd stuff here
     df <- apply(df, c(1,2), as.numeric)
     df <- as.data.frame(df)
-    # browser()
     mean_traj <- rowMeans(df)
-    df$x <- seq_len(nrow(df))
+    df$x <- seq_len(nrow(df)); x <- NULL # get around check note
     df_long <- tidyr::gather(df, key = "key", value = "value", -x)
     ps[[idx]] <- ggplot() +
-      geom_line(data = df_long, aes(x=x, y=value, group=key)) +
-      geom_line(data = data.frame(x=seq_len(nrow(df)), y=mean_traj), aes(x=x,y=y), col="red") +
+      geom_line(
+        data = df_long,
+        mapping = aes(x=.data[["x"]], y=.data[["value"]], group=.data[["key"]])
+      ) + geom_line(
+        data = data.frame(x=seq_len(nrow(df)), y=mean_traj),
+        aes(x=.data[["x"]],y=.data[["y"]]),
+        col="red"
+      ) +
       labs(title = names[idx])
   }
 

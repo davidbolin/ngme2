@@ -36,6 +36,9 @@
 #' @param index_corr used when corr_measurement=TRUE, indicate which observation has correlation
 #' @param map_corr 1d, 2d, or formula, used when corr_measurement=TRUE, specify use which covariate to infer the index_corr.
 #' @param rho used when corr_measurement=TRUE, starting point for correlation
+#' @param prior_mu prior distribution for parameter of mu
+#' @param prior_sigma prior distribution for parameter of sigma
+#' @param prior_nu prior distribution for parameter of nu
 #' @param ...       additional arguments
 #'
 #' @return a list of specification of noise

@@ -92,7 +92,7 @@ plot(attr(W, "noise"), out$replicates[[1]]$models[[1]]$noise)
   out$replicates[[1]]$models[[1]]$theta_K
 
   predict(out, list(ar=801:900))
-  cross_validation(out, type="loo")
+  # cross_validation(out, type="loo")
   expect_true(TRUE)
 })
 

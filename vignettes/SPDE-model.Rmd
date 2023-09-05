@@ -193,7 +193,7 @@ Consider the following examples (both 1d and 2d cases):
 ```{r spde-1d}
 # 1d example
 loc <- c(1.1, 2.2, 3.5, 4.7)
-mesh_1d <- fmesher::fm_mesh_1d(1:6)(1:6)
+mesh_1d <- fmesher::fm_mesh_1d(1:6)
 m1 <- matern(map = loc, mesh = mesh_1d)
 # K matrix for the matern model in this case
 m1$K

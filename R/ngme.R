@@ -68,6 +68,15 @@ ngme <- function(
   )
   if (!is.null(group)) group <- as.factor(group)
   if (is.null(replicate)) replicate <- rep(1, nrow(data))
+  if (inherits(replicate, "formula")) {
+    # input as: replicate = ~id
+    stopifnot("Allow 1 variable (column in data) as replicate. i.g. replicate=~id"
+      = length(replicate) == 2 && length(replicate[[2]]) == 1)
+    replicate <- eval(replicate[[2]], envir = data, enclos = parent.frame())
+    stopifnot("replicate should take integer value" =
+       all(replicate - round(replicate) == 0))
+  }
+
   replicate <- as.integer(as.factor(replicate))
   stopifnot(
     "Please make sure the length of replicate is equal to the number of rows of data"
@@ -335,6 +344,7 @@ ngme_parse_formula <- function(
     str <- gsub("^f\\(", "ngme2::f(", terms[i])
     lang <- str2lang(str)
 
+    if (is.null(lang$model)) stop("Please provide model=<model_name>.")
     # pass extra argument into f
     if (is.null(lang$data)) lang$data <- data
     if (is.null(lang$group)) lang$group <- group

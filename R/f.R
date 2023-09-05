@@ -234,7 +234,7 @@ build_operator <- function(model_name, args_list) {
     matern = do.call(matern, args_list),
     iid = do.call(iid, args_list),
     re = do.call(re, args_list),
-    stop("Unknown models")
+    stop("Unknown models, please check if model name is in ngme_model_types()")
   )
 }
 

@@ -317,10 +317,14 @@ sub_map <- function(locs, idx) {
 }
 
 dim_map <- function(map) {
+  if (inherits(map, c("data.frame", "matrix"))) 2 else 1
+}
+
+rep_map <- function(map, times) {
   if (inherits(map, c("data.frame", "matrix"))) {
-    2
+    do.call(rbind, replicate(times, map, simplify=FALSE))
   } else {
-    1
+    rep(map, times = times)
   }
 }
 
@@ -333,7 +337,6 @@ length_map <- function(map) {
 }
 
 # vectorize a matrix
-
 veci <- function(v, n, m) {
   if (length(v) != n * m) {
     cat("Wrong dimensions in reshape:", length(v), "(", n, ",", m, ")\n")

@@ -16,7 +16,7 @@ Ngme_optimizer::Ngme_optimizer(
     precond_strategy(control_opt["precond_strategy"]),
     precond_eps(control_opt["precond_eps"]),
     curr_iter(0),
-    preconditioner(ngme->precond(precond_strategy, precond_eps))
+    preconditioner(ngme->precond(0, precond_eps))
 {}
 
 // x <- x - model->stepsize() * model->grad()
@@ -38,8 +38,9 @@ VectorXd Ngme_optimizer::sgd(
     for (int i = 0; i < iterations; i++) {
         trajs.push_back(x);
         VectorXd grad = model->grad();
-        if (compute_precond_each_iter)
+        if (compute_precond_each_iter) {
             preconditioner = model->precond(precond_strategy, precond_eps);
+        }
 
         // one step = stepsize * H^-1 * grad
         VectorXd one_step = model->get_stepsizes().cwiseProduct(preconditioner.llt().solve(grad));

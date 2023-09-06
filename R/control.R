@@ -26,7 +26,7 @@
 #' "none" means no preconditioner, "fast" means precondition everything except for the parameter of K matrix (for speed reason), "full" means precondition everything
 #' @param precond_eps   numerical, the gap used for estimate preconditioner, default is 1e-5
 #' @param precond_by_diff_chain logical, if TRUE, use different chains to estimate preconditioner (only computed at check points), if FALSE, use the same chain to estimate preconditioner (computed at each iteration)
-#' @param compute_precond_each_iter logical, if TRUE, compute preconditioner at each iteration, if FALSE, only compute preconditioner at check points (recommand set FALSE if have multiple chains running)
+#' @param compute_precond_each_iter logical, if TRUE, compute preconditioner at each iteration, if FALSE, only compute preconditioner at check points (if has only 1 chain running, it will be set TRUE)
 #'
 #' @param max_relative_step   max relative step allowed in 1 iteration
 #' @param max_absolute_step   max absolute step allowed in 1 iteration
@@ -60,7 +60,7 @@ control_opt <- function(
   preconditioner    = "fast",
   precond_eps       = 1e-5,
   precond_by_diff_chain = TRUE,
-  compute_precond_each_iter = TRUE,
+  compute_precond_each_iter = FALSE,
 
   max_relative_step = 0.5,
   max_absolute_step = 0.5,
@@ -87,6 +87,11 @@ control_opt <- function(
   }
 
   if (stop_points > iterations) stop_points <- iterations
+
+  if (n_parallel_chain == 1) {
+    compute_precond_each_iter <- TRUE
+    precond_by_diff_chain <- FALSE
+  }
 
   control <- list(
     seed              = seed,

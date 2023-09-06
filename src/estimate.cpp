@@ -57,8 +57,10 @@ auto timer = std::chrono::steady_clock::now();
     double print_check_info = (control_opt["print_check_info"]);
     omp_set_num_threads(n_chains);
 
-    // if (n_chains > 1 && precond_by_diff_chain) {
-    //     compute_precond_each_iter = false;
+    // set in R
+    // if (n_chains == 1) {
+    //     precond_by_diff_chain = false;
+    //     compute_precond_each_iter = true;
     // }
 
     // init model and optimizer

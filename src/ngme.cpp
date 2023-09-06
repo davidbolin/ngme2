@@ -14,6 +14,7 @@ Ngme::Ngme(const Rcpp::List& R_ngme, unsigned long seed, int sampling_strategy) 
   Rcpp::List list_replicates = Rcpp::as<Rcpp::List> (R_ngme["replicates"]);
   n_repl = list_replicates.size();
 
+  // build for each replciates
   for (int i=0; i < n_repl; i++) {
     Rcpp::List ngme_repl = Rcpp::as<Rcpp::List> (list_replicates[i]);
     ngme_repls.push_back(std::make_shared<BlockModel>(ngme_repl, seed));
@@ -38,7 +39,7 @@ MatrixXd Ngme::precond(int strategy, double eps) {
     precond = (num_each_repl[idx] / sum_num_each_repl) * ngme_repls[idx]->precond(strategy, eps);
   }
 
-// std::cout << "precond in ngme class = \n" << precond.topLeftCorner(3,3) << std::endl;
+// std::cout << "precond in ngme class = \n" << precond << std::endl;
   return precond;
 }
 

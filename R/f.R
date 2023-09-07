@@ -58,10 +58,16 @@ f <- function(
     }
   }
 
-  if (!is.null(data)) stopifnot(
-    "Please make sure length of map is same as nrow(data) in f()" =
+  if (!is.null(data)) {
+    if (model != "tp") stopifnot(
+      "Please make sure length of map is same as nrow(data) in f()" =
       length_map(map) == nrow(data)
-  )
+    ) else {
+      "Please make sure length of map is same as nrow(data) in f()" =
+      length_map(map[[1]]) == nrow(data) &&
+      length_map(map[[2]]) == nrow(data)
+    }
+  }
 
   # set the subset if provide group and which_group
   if (!is.null(which_group)) {

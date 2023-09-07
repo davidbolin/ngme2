@@ -13,7 +13,7 @@
 #' simulate(f(rnorm(10), model="rw1", noise = noise_normal()))
 simulate.ngme_model <- function(
     object,
-    nsim   = 1,
+    nsim   = NULL,
     seed   = NULL,
     ...
 ) {
@@ -79,30 +79,31 @@ simulate_noise <- function(
 #' Simulate ngme noise object
 #'
 #' @param object  ngme noise object
-#' @param nsim the number of noise
 #' @param h should be of same length as nsim
 #' @param seed seed
+#' @param nsim ignored
 #' @param ... ignored
 #'
 #' @return a realization of noise
 #' @export
 simulate.ngme_noise <- function(
     object,
-    nsim = 1,
+    nsim = NULL,
     seed = NULL,
     h = NULL,
     ...
 ) {
+    n_noise <- max(nrow(object$B_mu), nrow(object$B_sigma))
     if (is.null(seed)) seed <- Sys.time()
-    if (is.null(h)) h <- rep(1, nsim)
-    if (length(h) > nsim) nsim <- length(h)
-    stopifnot(length(h) == nsim)
+    if (is.null(h)) h <- rep(1, n_noise)
+    if (length(h) > n_noise) n_noise <- length(h)
+    stopifnot(length(h) == n_noise)
 
     with(object, {
         mu_vec    <- as.numeric(B_mu %*% theta_mu)
         sigma_vec <- as.numeric(exp(B_sigma %*% theta_sigma))
-        if (length(mu_vec) == 1) mu_vec <- rep(mu_vec, nsim)
-        if (length(sigma_vec) == 1) sigma_vec <- rep(sigma_vec, nsim)
+        if (length(mu_vec) == 1) mu_vec <- rep(mu_vec, n_noise)
+        if (length(sigma_vec) == 1) sigma_vec <- rep(sigma_vec, n_noise)
 
         simulate_noise(noise_type, h, mu_vec, sigma_vec, nu, seed, single_V)
     })

@@ -188,13 +188,11 @@ std::cout << "Total time of the estimation is (s): " << since(timer).count() / 1
 }
 
 // A is the horizontal concat version of latent A
-// [[Rcpp::export]]
-Rcpp::List sampling_cpp_given_A(const Rcpp::List& ngme_replicate, int n, bool posterior, unsigned long seed, const Eigen::SparseMatrix<double>& A) {
-    std::mt19937 rng (seed);
-    BlockModel block (ngme_replicate, rng());
-
-    return block.sampling(n, posterior, A);
-}
+// Rcpp::List sampling_cpp_given_A(const Rcpp::List& ngme_replicate, int n, bool posterior, unsigned long seed, const Eigen::SparseMatrix<double>& A) {
+//     std::mt19937 rng (seed);
+//     BlockModel block (ngme_replicate, rng());
+//     return block.sampling(n, posterior, A);
+// }
 
 // [[Rcpp::export]]
 Rcpp::List sampling_cpp(const Rcpp::List& ngme_replicate, int n, bool posterior, unsigned long seed) {

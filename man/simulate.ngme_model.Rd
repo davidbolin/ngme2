@@ -4,7 +4,7 @@
 \alias{simulate.ngme_model}
 \title{Simulate latent process with noise}
 \usage{
-\method{simulate}{ngme_model}(object, nsim = 1, seed = NULL, ...)
+\method{simulate}{ngme_model}(object, nsim = NULL, seed = NULL, ...)
 }
 \arguments{
 \item{object}{ngme model specified by f() function}

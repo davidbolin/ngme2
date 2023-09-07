@@ -158,6 +158,7 @@ if (debug) std::cout << "After block construct noise" << std::endl;
 
   // 7. Init solvers
   assemble();
+if (debug) std::cout << "After assemble" << std::endl;
 
   if (n_latent > 0) {
     VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
@@ -259,13 +260,16 @@ void BlockModel::sampleW_VY()
 
   // sample W ~ N(QQ^-1*M, QQ^-1)
   chol_QQ.compute(QQ);
+// std::cout << "len(M)" << M.size() << std::endl;
+// std::cout << "len(z)" << z.size() << std::endl;
   VectorXd W = chol_QQ.rMVN(M, z);
+// std::cout << "after compute" << std::endl;
   setW(W);
 
 // time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - timer_computeg).count();
 // std::cout << "size of W and time of sampling is " << W.size() << " " << time << std::endl;
 
-// if (debug) std::cout << "Finish sampling W" << std::endl;
+if (debug) std::cout << "Finish sampling W" << std::endl;
 }
 
 // ---------------- get, set update gradient ------------------
@@ -617,7 +621,7 @@ Rcpp::List BlockModel::sampling(int n, bool posterior, const SparseMatrix<double
   std::vector<VectorXd> Vs; // blockV
   std::vector<VectorXd> mn_Vs; // measurement nosie V
 
-  burn_in(5);
+  burn_in(1);
 
   for (int i=0; i < n; i++) {
     if (posterior) {

@@ -12,7 +12,9 @@ test_ngme <- function(
   precond_by_diff_chain = TRUE,
   compute_precond_each_iter = FALSE,
   max.n = 1000,
-  print = FALSE
+  print = FALSE,
+  debug = FALSE,
+  debug_f = FALSE
 ) {
   # create 2d mesh
   if (model %in% c("matern", "bvmatern")) {
@@ -30,7 +32,9 @@ print(paste("nodes of mesh = ", mesh$n))
     "ar1" = {
       idx <- 1:n_obs_per_rep
       ar1_model <- f(idx, model="ar1", rho = 0.5,
-      noise = noise_nig(mu = -3, sigma = 2, nu=0.4))
+      noise = noise_nig(mu = -3, sigma = 2, nu=0.4),
+      debug = debug_f
+      )
       W <- simulate(ar1_model, seed = 16)
       Y <- W + rnorm(n_obs_per_rep, sd = 2)
       list(Y=Y, idx=idx, group=rep(1, n_obs_per_rep))
@@ -42,7 +46,8 @@ print(paste("nodes of mesh = ", mesh$n))
         model="matern",
         theta_K = log(2),
         mesh = mesh,
-        noise = noise_nig(mu=-2, sigma=1, nu=0.5)
+        noise = noise_nig(mu=-2, sigma=1, nu=0.5),
+        debug = debug_f
       )
       W <- simulate(true_model)
       Y <- as.numeric(true_model$A %*% W) + rnorm(n_obs_per_rep, sd=0.5)
@@ -63,7 +68,8 @@ print(paste("nodes of mesh = ", mesh$n))
         noise = list(
           first=noise_nig(mu=-3, sigma=2, nu=1),
           second=noise_nig(mu=-3, sigma=2, nu=1)
-        )
+        ),
+        debug = debug_f
       )
       W <- simulate(true_model)
       AW <- as.numeric(true_model$A %*% W)
@@ -86,7 +92,8 @@ print(paste("nodes of mesh = ", mesh$n))
         noise = list(
           first=noise_nig(mu=-3, sigma=2, nu=1),
           second=noise_nig(mu=-3, sigma=2, nu=1)
-        )
+        ),
+        debug = debug_f
       )
       W <- simulate(true_model)
       AW <- as.numeric(true_model$A %*% W)
@@ -149,7 +156,8 @@ print(paste("nodes of mesh = ", mesh$n))
       stop_points = stop_points,
       preconditioner = preconditioner,
       sampling_strategy = sampling_strategy
-    )
+    ),
+    debug = debug
   )
 
   print(proc.time() - start)

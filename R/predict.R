@@ -116,22 +116,22 @@ predict.ngme <- function(
   ret
 }
 
+# ------- CV -------
+
 # helper function to compute MSE, MAE, ... for each subset of target / data
 # assume test_idx and train_idx belongs to same replicate
 compute_err_1rep <- function(
   ngme_1rep,
   test_idx,
   train_idx,
-  data,
   N = 100,
   seed=Sys.time()
 ) {
   stopifnot(
     "target idx should be a vector, and data idx should be a vector"
-     = is.vector(test_idx) && is.vector(train_idx),
-    "target idx and data idx should be in the range of rows of data"
-     = all(test_idx <= nrow(data)) && all(train_idx <= nrow(data))
+     = is.vector(test_idx) && is.vector(train_idx)
   )
+
   # if test_idx and train_idx overlap, warning message
   if (length(intersect(test_idx, train_idx)) > 0) {
     warning("Notice that test_idx and train_idx overlap!")
@@ -149,38 +149,48 @@ compute_err_1rep <- function(
   y_data <- ngme_1rep$Y[test_idx]
   n_obs <- length(y_data)
 
-  A_preds <- list(); A_obs <- list()
+  # Subset noise[test_idx, ] for test location
+  noise_test_idx <- ngme_1rep$noise
+  noise_test_idx$B_mu <- noise_test_idx$B_mu[test_idx,, drop=FALSE]
+  noise_test_idx$B_sigma <- noise_test_idx$B_sigma[test_idx,, drop=FALSE]
+  noise_test_idx$h <- noise_test_idx$h[test_idx]
+
+  X_pred <- ngme_1rep$X[test_idx,, drop=FALSE]
+
+  # Subset noise, X, Y in train location
+  ngme_1rep$noise$B_mu <- ngme_1rep$noise$B_mu[train_idx,, drop=FALSE]
+  ngme_1rep$noise$B_sigma <- ngme_1rep$noise$B_sigma[train_idx,, drop=FALSE]
+  ngme_1rep$X <- ngme_1rep$X[train_idx,, drop=FALSE]
+  ngme_1rep$Y <- ngme_1rep$Y[train_idx]
+
+  # Subset A for test and train location
+  A_preds <- list();
   for (i in seq_along(ngme_1rep$models)) {
     A_preds[[i]] <- ngme_1rep$models[[i]]$A[test_idx, ,drop=FALSE]
-    A_obs[[i]] <- ngme_1rep$models[[i]]$A[train_idx, ,drop=FALSE]
+    ngme_1rep$models[[i]]$A <- ngme_1rep$models[[i]]$A[train_idx,,drop=FALSE]
   }
+
   # A_pred_blcok <- [A1_pred .. An_pred]
   # extract A and cbind!
-  A_obs_block <- ngme_as_sparse(Reduce(cbind, x = A_obs))
   A_pred_block <- Reduce(cbind, x = A_preds)
-
-# print(A_obs_block)
 # print(A_pred_block)
 
-  Ws_block <- sampling_cpp_given_A(ngme_1rep, n=N, posterior=TRUE, seed=seed, A=A_obs_block)[["W"]]
-  W2s_block <- sampling_cpp_given_A(ngme_1rep, n=N, posterior=TRUE, seed=seed, A=A_obs_block)[["W"]]
-  AW_N <- Reduce(cbind, sapply(Ws_block, function(W) A_pred_block %*% W))
-  # AW_N <- as.data.frame(AW_N)
-  # names(AW_N) <- 1:N
+  Ws <- sampling_cpp(ngme_1rep, n=2*N, posterior=TRUE, seed=seed)[["W"]]
+  Ws_block <- head(Ws, N); W2s_block <- tail(Ws, N)
 
+  AW_N <- Reduce(cbind, sapply(Ws_block, function(W) A_pred_block %*% W))
   AW2_N <- Reduce(cbind, sapply(W2s_block, function(W) A_pred_block %*% W))
 
   # sampling Y by, Y = X feff + (block_A %*% block_W) + eps
   # AW_N[[1]] is concat(A1 W1, A2 W2, ..)
 
-  fe <- with(ngme_1rep, as.numeric(X[test_idx, ,drop=FALSE] %*% feff))
+  # generate fixed effect
+  fe <- with(ngme_1rep, as.numeric(X_pred %*% feff))
   fe_N <- matrix(rep(fe, N), ncol=N, byrow=F)
 
   # simulate measurement noise
-  mn_N <- sapply(1:N, function(x)
-    simulate(ngme_1rep$noise, nsim=length(ngme_1rep$Y))[test_idx])
-  mn2_N <- sapply(1:N, function(x)
-    simulate(ngme_1rep$noise, nsim=length(ngme_1rep$Y))[test_idx])
+  mn_N  <- sapply(1:N, function(x) simulate(noise_test_idx))
+  mn2_N <- sapply(1:N, function(x) simulate(noise_test_idx))
 
   mu_N <- fe_N + AW_N
   Y_N <- fe_N + AW_N + mn_N
@@ -279,13 +289,11 @@ cross_validation <- function(
 
   # 2. loop over each test_idx and train_idx, and compute the criterion
   crs <- NULL
-  data <- attr(ngme, "fitting")$data
   for (i in seq_along(test_idx)) {
     crs[[i]] <- compute_err_reps(
       ngme,
       test_idx[[i]],
       train_idx[[i]],
-      data,
       N=N,
       seed=seed
     )
@@ -316,8 +324,9 @@ cross_validation <- function(
 
 # helper function to dispatch over reps
 compute_err_reps <- function(
-  ngme, test_idx, train_idx, data, N=100, seed=Sys.time()
+  ngme, test_idx, train_idx, N=100, seed=Sys.time()
 ) {
+  stopifnot("Not a ngme object." = inherits(ngme, "ngme"))
   repls <- attr(ngme, "fitting")$replicate
   uni_repl <- unique(repls)
 
@@ -327,9 +336,10 @@ compute_err_reps <- function(
     # watch out! relative order within the same replicate!!
     target_1rep <- intersect(test_idx, which_repl)
     train_1rep <- intersect(train_idx, which_repl)
+    # the order in the replicate is not the same as in the data
     target_1rep <- match(target_1rep, which_repl)
     train_1rep <- match(train_1rep, which_repl)
-# print(train_1rep)
+# print(range(train_1rep))
 # print(target_1rep)
     # skip this replicate if no target or train data
     if (length(target_1rep) == 0 || length(train_1rep) == 0) next
@@ -338,7 +348,6 @@ compute_err_reps <- function(
       ngme$replicates[[i]],
       test_idx = target_1rep,
       train_idx = train_1rep,
-      data,
       N=N,
       seed=seed
     )
@@ -348,7 +357,6 @@ compute_err_reps <- function(
   # take weighted average over replicates
   mean_list(crs, weight)
 }
-
 
 
 # questions:

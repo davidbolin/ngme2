@@ -88,6 +88,7 @@ print(paste("nodes of mesh = ", mesh$n))
           first = list(model="matern", kappa=0.5),
           second= list(model="matern", kappa=0.5)
         ),
+        mesh = mesh,
         group = group_per_rep,
         noise = list(
           first=noise_nig(mu=-3, sigma=2, nu=1),

@@ -235,8 +235,8 @@ matern <- function(
     C <- fem$c1
     G <- fem$g1
     h <- Matrix::diag(fem$c0)
-  } else {
-    # fem <- INLA::inla.mesh.fem(mesh, order = alpha)
+  } else if (d == 2) {
+    # including S2 mesh
     fem <- fmesher::fm_fem(mesh, order = alpha)
     C <- fem$c0  # diag
     G <- fem$g1

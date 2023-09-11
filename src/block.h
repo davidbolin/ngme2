@@ -80,7 +80,7 @@ protected:
     // double nu {1};
 
     // optimize related
-    VectorXd stepsizes, gradients;
+    VectorXd stepsizes;
     int counting {0};
     VectorXd indicate_threshold, steps_to_threshold;
     int curr_iter; // how many times set is called.
@@ -89,6 +89,7 @@ protected:
     cholesky_solver chol_Q, chol_QQ;
     SparseLU<SparseMatrix<double>> LU_K;
 
+    bool all_gaussian, rao_blackwell; // No need for gibbs sampling
     std::string par_string;
 
     // priors
@@ -124,6 +125,7 @@ public:
     void setW(const VectorXd&);
     void setPrevW(const VectorXd&);
     void setPrevV(const VectorXd&);
+    void set_cond_W(const VectorXd&);
 
     /* Optimizer related */
     int                  get_n_params() const {return n_params;}

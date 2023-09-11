@@ -50,7 +50,8 @@ BlockModel::BlockModel(
   curr_iter         (0),
   // dK            (V_sizes, W_sizes)
   // d2K           (V_sizes, W_sizes)
-  par_string        (Rcpp::as<string>     (block_model["par_string"]))
+  all_gaussian     (Rcpp::as<bool>       (block_model["all_gaussian"])),
+  par_string       (Rcpp::as<string>     (block_model["par_string"]))
 {
   // 1. Init controls
   Rcpp::List control_ngme = block_model["control_ngme"];
@@ -58,6 +59,7 @@ BlockModel::BlockModel(
     bool init_sample_W = Rcpp::as<bool> (control_ngme["init_sample_W"]);
     n_gibbs     =  Rcpp::as<int>    (control_ngme["n_gibbs_samples"]);
     debug       = Rcpp::as<bool>   (control_ngme["debug"]);
+    rao_blackwell = Rcpp::as<bool> (control_ngme["rao_blackwellization"]);
     // reduce_var    =  Rcpp::as<bool>   (control_ngme["reduce_var"]);
     // reduce_power  =  Rcpp::as<double> (control_ngme["reduce_power"]);
     // threshold   =  Rcpp::as<double> (control_ngme["threshold"]);
@@ -211,6 +213,15 @@ void BlockModel::setW(const VectorXd& W) {
   }
 }
 
+void BlockModel::set_cond_W(const VectorXd& W) {
+  int pos = 0;
+  for (std::vector<std::shared_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+    int size = (*it)->get_W_size();
+    (*it)->set_cond_W(W.segment(pos, size));
+    pos += size;
+  }
+}
+
 void BlockModel::setPrevW(const VectorXd& W) {
   int pos = 0;
   for (std::vector<std::shared_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
@@ -230,8 +241,7 @@ void BlockModel::setPrevV(const VectorXd& V) {
 }
 
 // sample W|VY
-void BlockModel::sampleW_VY()
-{
+void BlockModel::sampleW_VY() {
 // if (debug) std::cout << "starting sampling W." << std::endl;
 // double time = 0;
 // auto timer_computeg = std::chrono::steady_clock::now();
@@ -263,8 +273,14 @@ void BlockModel::sampleW_VY()
 // std::cout << "len(M)" << M.size() << std::endl;
 // std::cout << "len(z)" << z.size() << std::endl;
   VectorXd W = chol_QQ.rMVN(M, z);
-// std::cout << "after compute" << std::endl;
   setW(W);
+
+  if (rao_blackwell) {
+    // compute E(W|V,Y) i.e. QQ^-1 M
+    W = chol_QQ.solve(M);
+    set_cond_W(W);
+  }
+// std::cout << "after compute" << std::endl;
 
 // time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - timer_computeg).count();
 // std::cout << "size of W and time of sampling is " << W.size() << " " << time << std::endl;
@@ -298,57 +314,54 @@ VectorXd BlockModel::grad() {
 if (debug) std::cout << "Start block gradient"<< std::endl;
 long long time_compute_g = 0;
 long long time_sample_w = 0;
-auto timer_computeg = std::chrono::steady_clock::now();
+// auto timer_computeg = std::chrono::steady_clock::now();
+// auto timer_sampleW = std::chrono::steady_clock::now();
+// time_sample_w += since(timer_sampleW).count();
 
-  VectorXd avg_gradient = VectorXd::Zero(n_params);
+  VectorXd latent_grad = VectorXd::Zero(n_la_params);
+  VectorXd noise_grad = VectorXd::Zero(n_params-n_la_params);
 
-  // sample_uncond_noise_V()
-  // sample_uncond_V();
-  for (int i=0; i < n_gibbs; i++) {
-// std::cout << "index of gibbs = " << i << std::endl;
-    // gibbs sampling
-    // order is really important here, sample W after cond V
-    sample_cond_V();
+  if (all_gaussian) {
+    // compute RB version of gradient
     sampleW_VY();
-    sample_cond_noise_V();
+  } else {
+    // Gibbs sampling
+    for (int i=0; i < n_gibbs; i++) {
+      sample_cond_V();
+      sampleW_VY();
 
-    VectorXd gradient = VectorXd::Zero(n_params);
-    // get grad for each latent
-    int pos = 0;
-    for (std::vector<std::shared_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
-      int theta_len = (*it)->get_n_params();
-      gradient.segment(pos, theta_len) = (*it)->get_grad();
-      pos += theta_len;
+      int pos = 0;
+      for (std::vector<std::shared_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+        int theta_len = (*it)->get_n_params();
+        // MC or RB
+        latent_grad.segment(pos, theta_len) += (*it)->get_grad(rao_blackwell);
+        pos += theta_len;
+      }
+
+      sample_cond_noise_V();
+      noise_grad.head(n_merr) += grad_theta_merr();
+      if (!fix_flag[block_fix_beta]) {
+        noise_grad.tail(n_feff) += (1.0/n_repl) * grad_beta();
+      }
     }
-time_compute_g += since(timer_computeg).count();
-
-    // grad for merr
-    gradient.segment(n_la_params, n_merr) = grad_theta_merr();
-
-    // grad for fixed effects
-    if (!fix_flag[block_fix_beta]) {
-      gradient.segment(n_la_params + n_merr, n_feff) = (1.0/n_repl) * grad_beta();
-    }
-// std::cout << "here gradient = " << gradient << std::endl;
-    avg_gradient += gradient;
-
-auto timer_sampleW = std::chrono::steady_clock::now();
-time_sample_w += since(timer_sampleW).count();
+    noise_grad  = (1.0/n_gibbs) * noise_grad;
+    latent_grad = (1.0/n_gibbs) * latent_grad;
   }
 
-  avg_gradient = (1.0/n_gibbs) * avg_gradient;
-  gradients = avg_gradient;
+  VectorXd avg_gradient = VectorXd::Zero(n_params);
+  avg_gradient.head(n_la_params) = latent_grad;
+  avg_gradient.tail(n_params-n_la_params) = noise_grad;
+
   // EXAMINE the gradient to change the stepsize
   if (reduce_var) examine_gradient();
 
 if (debug) {
   std::cout << "avg time for compute grad (ms): " << time_compute_g / n_gibbs << std::endl;
   std::cout << "avg time for sampling W(ms): " << time_sample_w / n_gibbs << std::endl;
-  std::cout << "gradients = " << gradients << std::endl;
   std::cout << "Finish block gradient"<< std::endl;
 }
 
-  return gradients;
+  return avg_gradient;
 }
 
 void BlockModel::set_parameter(const VectorXd& Theta) {

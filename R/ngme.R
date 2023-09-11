@@ -338,7 +338,7 @@ ngme_parse_formula <- function(
   }
 
   ########## parse models terms
-  pre_model <- list();
+  pre_model <- list(); all_gaussian <- noise$noise_type == "normal"
   idx_effect = 1; idx_field = 1; # for setting names
   for (i in f_order) {
     str <- gsub("^f\\(", "ngme2::f(", terms[i])
@@ -372,6 +372,7 @@ ngme_parse_formula <- function(
       tmp$subset <- idx
       model_eval <- eval(tmp, envir = data, enclos = global_env_first)
       models_rep[[model_eval$name]] <- model_eval
+      if (all(model_eval$noise$noise_type != "normal")) all_gaussian <- FALSE
     }
     # give initial value (whole dataset)
     lm.model <- stats::lm.fit(X_full, ngme_response)
@@ -420,7 +421,8 @@ ngme_parse_formula <- function(
       models = models_rep,
       replicate = uni_repl[[i]],
       control_ngme = control_ngme,
-      n_repl = length(uni_repl)
+      n_repl = length(uni_repl),
+      all_gaussian = all_gaussian
     )
   }
 

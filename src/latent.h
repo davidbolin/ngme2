@@ -78,7 +78,7 @@ protected:
     int n_theta_mu, n_theta_sigma, n_nu, n_theta_sigma_normal;
 
     // for numerical gradient.
-    VectorXd W, prevW, V, prevV;
+    VectorXd W, prevW, V, prevV, cond_W;
     SparseMatrix<double,0,int> A;
 
     int dim {1}; // noise dimension
@@ -121,9 +121,8 @@ public:
         }
     }
 
-    void setPrevW(const VectorXd& W) {
-        prevW = W;
-    }
+    void set_cond_W(const VectorXd& W) { cond_W = W; }
+    void setPrevW(const VectorXd& W) { prevW = W; }
 
     // used in block model
     VectorXd getMean() const {
@@ -167,14 +166,14 @@ public:
 
     /* 4 for optimizer */
     const VectorXd get_parameter();
-    const VectorXd get_grad();
+    const VectorXd get_grad(bool rao_blackwell=FALSE);
     void           set_parameter(const VectorXd&);
     void           finishOpt(int i) {fix_flag[i] = 0; }
 
-    VectorXd grad_theta_K();
-    VectorXd grad_theta_mu();
-    VectorXd grad_theta_sigma();
-    VectorXd grad_theta_sigma_normal(); // grad of sig. only for normal noise
+    VectorXd grad_theta_K(bool rao_blackwell=FALSE);
+    VectorXd grad_theta_mu(bool rao_blackwell=FALSE);
+    VectorXd grad_theta_sigma(bool rao_blackwell=FALSE);
+    VectorXd grad_theta_sigma_normal(bool rao_blackwell=FALSE); // grad of sig. only for normal noise
     VectorXd grad_theta_nu();
 
     Rcpp::List output() const;

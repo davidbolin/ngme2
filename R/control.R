@@ -175,6 +175,7 @@ control_ngme <- function(
   fix_feff = FALSE,
   post_samples_size = 100,
   feff = NULL,
+  rao_blackwellization = FALSE,
   debug = FALSE
 ) {
   control <- list(
@@ -184,6 +185,7 @@ control_ngme <- function(
     feff = feff,
     post_samples_size = post_samples_size,
     stepsize = 1,
+    rao_blackwellization = rao_blackwellization,
     debug = debug
   )
 

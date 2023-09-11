@@ -49,7 +49,6 @@ test_that("test estimation of basic ar with normal measurement noise", {
   ar1 <- f(1:n_obs, model="ar1", rho=0.7, noise=noise_nig(mu=mu, sigma=sigma, nu=nu))
 
   W <- simulate(ar1)
-  mean(W)
   x1 = rnorm(n_obs);
   # Y <-  -3 + x1 * 2  + rnorm(n_obs, sd = sigma_eps)
   Y <- W + rnorm(n_obs, sd = sigma_eps)
@@ -80,8 +79,9 @@ test_that("test estimation of basic ar with normal measurement noise", {
       iterations = 500,
       n_parallel_chain = 4,
       print_check_info = F,
-      verbose = F,
+      verbose = F
     ),
+    # start = out,
     debug = F
   )
   out

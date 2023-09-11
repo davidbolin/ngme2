@@ -31,6 +31,7 @@ Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
 
     W             (W_size),
     prevW         (W_size),
+    cond_W        (W_size),
     V             (h),
     prevV         (h),
     A             (Rcpp::as<SparseMatrix<double,0,int>>   (model_list["A"])),
@@ -145,7 +146,9 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
 if (debug) std::cout << "End constructor of latent" << std::endl;
 }
 
-VectorXd Latent::grad_theta_mu() {
+VectorXd Latent::grad_theta_mu(bool rao_blackwell) {
+    // use conditional E(W|V,Y)
+    VectorXd WW = (rao_blackwell) ? cond_W : W;
     VectorXd grad = VectorXd::Zero(n_theta_mu);
     if (n_theta_mu == 0 || fix_flag[latent_fix_theta_mu]) return grad;
     if ((n_noise == 1 && noise_type[0] == "normal") ||
@@ -156,7 +159,7 @@ VectorXd Latent::grad_theta_mu() {
 
     // compute gradient g with V
     for (int l=0; l < n_theta_mu; l++) {
-        grad(l) = (V-h).cwiseProduct(B_mu.col(l).cwiseQuotient(SV)).dot(getK()*W - mu.cwiseProduct(V-h));
+        grad(l) = (V-h).cwiseProduct(B_mu.col(l).cwiseQuotient(SV)).dot(getK()*WW - mu.cwiseProduct(V-h));
 // std::cout << "grad mu  = " << grad(l) << std::endl;
 // std::cout << "grad mu prior = " << PriorUtil::d_log_dens(prior_mu_type, prior_mu_param, theta_mu(l)) << std::endl;
         // add prior
@@ -167,7 +170,8 @@ VectorXd Latent::grad_theta_mu() {
 }
 
 // return the gradient wrt. theta, theta=log(sigma)
-inline VectorXd Latent::grad_theta_sigma() {
+inline VectorXd Latent::grad_theta_sigma(bool rao_blackwell) {
+    VectorXd WW = (rao_blackwell) ? cond_W : W;
     VectorXd grad = VectorXd::Zero(n_theta_sigma);
     if (fix_flag[latent_fix_theta_sigma]) return grad;
 
@@ -188,7 +192,8 @@ inline VectorXd Latent::grad_theta_sigma() {
     return -grad;
 }
 
-inline VectorXd Latent::grad_theta_sigma_normal() {
+inline VectorXd Latent::grad_theta_sigma_normal(bool rao_blackwell) {
+    if (rao_blackwell) W = cond_W; // use conditional E(W|V,Y)
     VectorXd V = VectorXd::Ones(V_size);
     VectorXd grad = VectorXd::Zero(n_theta_sigma_normal);
 
@@ -247,7 +252,7 @@ VectorXd Latent::grad_theta_nu() {
     return grad;
 }
 
-VectorXd Latent::grad_theta_K() {
+VectorXd Latent::grad_theta_K(bool rao_blackwell) {
 // std::cout << "K = " << K << std::endl;
     VectorXd grad = VectorXd::Zero(n_theta_K);
     if (fix_flag[latent_fix_theta_K]) return grad;
@@ -264,10 +269,13 @@ VectorXd Latent::grad_theta_K() {
         }
     } else {
         VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
-
         VectorXd tmp = getK() * W - mu.cwiseProduct(V-h);
         for (int j=0; j < n_theta_K; j++) {
-            grad(j) = trace[j] - (ope->get_dK()[j] * W).cwiseProduct(SV.cwiseInverse()).dot(tmp);
+            // if (!rao_blackwell) {
+                grad(j) = trace[j] - (ope->get_dK()[j] * W).cwiseProduct(SV.cwiseInverse()).dot(tmp);
+            // } else {
+                // grad(j) = trace[j] - (ope->get_dK()[j] * cond_W).cwiseProduct(SV.cwiseInverse()).dot(tmp);
+            // }
         }
     }
 
@@ -314,17 +322,17 @@ if (debug) {
     return parameter;
 }
 
-const VectorXd Latent::get_grad() {
+const VectorXd Latent::get_grad(bool rao_blackwell) {
 if (debug) std::cout << "Start latent get grad"<< std::endl;
     VectorXd grad = VectorXd::Zero(n_params);
 
     // compute gradient of each parameter
-    grad.segment(0, n_theta_K) = grad_theta_K();
-    grad.segment(n_theta_K, n_theta_mu) = grad_theta_mu();
-    grad.segment(n_theta_K+n_theta_mu, n_theta_sigma) = grad_theta_sigma();
+    grad.segment(0, n_theta_K) = grad_theta_K(rao_blackwell);
+    grad.segment(n_theta_K, n_theta_mu) = grad_theta_mu(rao_blackwell);
+    grad.segment(n_theta_K+n_theta_mu, n_theta_sigma) = grad_theta_sigma(rao_blackwell);
     grad.segment(n_theta_K+n_theta_mu+n_theta_sigma,n_nu)  = grad_theta_nu();
     if (noise_type[0] == "normal_nig")
-        grad.segment(n_theta_K+n_theta_mu+n_theta_sigma+n_nu, n_theta_sigma_normal) = grad_theta_sigma_normal();
+        grad.segment(n_theta_K+n_theta_mu+n_theta_sigma+n_nu, n_theta_sigma_normal) = grad_theta_sigma_normal(rao_blackwell);
 
 if (debug) std::cout << "finish latent gradient"<< std::endl;
     return grad;

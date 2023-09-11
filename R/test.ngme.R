@@ -34,7 +34,8 @@ test_ngme <- function(
   max.n = 1000,
   print = FALSE,
   debug = FALSE,
-  debug_f = FALSE
+  debug_f = FALSE,
+  rao_blackwellization = FALSE
 ) {
   # create 2d mesh
   if (model %in% c("matern", "bvmatern")) {
@@ -164,6 +165,9 @@ print(paste("nodes of mesh = ", mesh$n))
     replicate = repl,
     group = group,
     data = data.frame(Y=Y),
+    control_ngme = control_ngme(
+      rao_blackwellization = rao_blackwellization
+    ),
     control_opt = control_opt(
       burnin = 100,
       std_lim = 0.001,
@@ -178,6 +182,7 @@ print(paste("nodes of mesh = ", mesh$n))
       preconditioner = preconditioner,
       sampling_strategy = sampling_strategy
     ),
+    family = "nig",
     debug = debug
   )
 

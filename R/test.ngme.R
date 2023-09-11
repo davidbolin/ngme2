@@ -1,4 +1,24 @@
-# test effiency
+#' @title Test ngme function
+#'
+#' @description
+#' Test ngme function for different models
+#' @param model model name
+#' @param n_obs_per_rep number of observation per replicate
+#' @param n_replicate number of replicate
+#' @param n_iter number of iteration
+#' @param n_parallel_chain number of parallel chains
+#' @param stop_points     number of stop points for convergence check
+#' @param numer_grad numerical gradient
+#' @param preconditioner  preconditioner, can be c("none", "fast", "full")
+#' "none" means no preconditioner, "fast" means precondition everything except for the parameter of K matrix (for speed reason), "full" means precondition everything
+#' @param sampling_strategy subsampling method of replicates of model, c("all", "is")
+#' @param precond_by_diff_chain logical, if TRUE, use different chains to estimate preconditioner (only computed at check points), if FALSE, use the same chain to estimate preconditioner (computed at each iteration)
+#' @param compute_precond_each_iter logical, if TRUE, compute preconditioner at each iteration, if FALSE, only compute preconditioner at check points (if has only 1 chain running, it will be set TRUE)
+#' @param max.n maximum number for building mesh
+#' @param print print the process
+#' @param debug debug mode
+#' @param debug_f debug mode for latent process
+#' @export
 test_ngme <- function(
   model,
   n_obs_per_rep,
@@ -81,7 +101,7 @@ print(paste("nodes of mesh = ", mesh$n))
       group_per_rep <- c(rep("first", n_obs_per_rep/2), rep("second", n_obs_per_rep/2))
       idx_per_rep <- c(1:(n_obs_per_rep/2), 1:(n_obs_per_rep/2))
       true_model <- f(
-        idx_per_rep,
+        loc,
         model="bv",
         theta = 0.5, rho = 0.8,
         sub_models = list(

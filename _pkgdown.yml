@@ -116,6 +116,7 @@ reference:
     - print.ngme_noise
     - ngme_prior
     - ngme_prior_types
+    - test_ngme
   - title: Distributions
     contents:
     - ig

@@ -193,7 +193,7 @@ maximum edge length.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">post_mode_kappa</span></span>
 <span><span class="co">#&gt;         x </span></span>
-<span><span class="co">#&gt; 0.2060828</span></span>
+<span><span class="co">#&gt; 0.1946332</span></span>
 <span></span>
 <span><span class="co"># posterior mode of tau</span></span>
 <span><span class="va">post_mode_tau</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="va">spde_res</span><span class="op">$</span><span class="va">marginals.tau</span>,</span>
@@ -203,8 +203,8 @@ maximum edge length.</p>
 <p><img src="inla_compare_files/figure-html/unnamed-chunk-5-2.png" width="700"></p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fl">1</span> <span class="op">/</span> <span class="va">post_mode_tau</span> <span class="co"># for comparison with Ngme2 (same as sigma parameter in Ngme2)</span></span>
-<span><span class="co">#&gt;        x </span></span>
-<span><span class="co">#&gt; 10.07367</span></span></code></pre></div>
+<span><span class="co">#&gt;       x </span></span>
+<span><span class="co">#&gt; 10.3708</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="fit-1d-spde-model-with-ngme2">Fit 1d SPDE model with Ngme2<a class="anchor" aria-label="anchor" href="#fit-1d-spde-model-with-ngme2"></a>
@@ -231,15 +231,15 @@ maximum edge length.</p>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $myspde</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
-<span><span class="co">#&gt;       kappa = 0.242</span></span>
+<span><span class="co">#&gt;       kappa = 0.235</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 11</span></span>
+<span><span class="co">#&gt;       sigma = 11.4</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 22.8</span></span>
+<span><span class="co">#&gt;       sigma = 22.7</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre></div>
@@ -256,12 +256,12 @@ as shown in the result.</p>
 <span><span class="co"># by dafult, predict() returns a bunch of statistics at the given location</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">pred_W</span><span class="op">)</span></span>
 <span><span class="co">#&gt; List of 6</span></span>
-<span><span class="co">#&gt;  $ mean      : num [1:94] -3 -3 -2.6 -2.13 -1.58 ...</span></span>
-<span><span class="co">#&gt;  $ sd        : num [1:94] 12.5 12.7 12.1 11 11.1 ...</span></span>
-<span><span class="co">#&gt;  $ 5quantile : num [1:94] -23.4 -23.5 -24.1 -18.4 -20.5 ...</span></span>
-<span><span class="co">#&gt;  $ 95quantile: num [1:94] 16.8 17.5 16.2 16.2 16.6 ...</span></span>
-<span><span class="co">#&gt;  $ median    : num [1:94] -2.04 -2.09 -1.7 -1.4 -1.01 ...</span></span>
-<span><span class="co">#&gt;  $ mode      : num [1:94] 7 7 -1 -7 3 -11 -1 -7 -13 -1 ...</span></span>
+<span><span class="co">#&gt;  $ mean      : num [1:94] -3.18 -3.29 -3.74 -3.95 -4.37 ...</span></span>
+<span><span class="co">#&gt;  $ sd        : num [1:94] 11.95 11.7 9.77 9.12 8.89 ...</span></span>
+<span><span class="co">#&gt;  $ 5quantile : num [1:94] -20.1 -19.5 -17.3 -16.6 -15.4 ...</span></span>
+<span><span class="co">#&gt;  $ 95quantile: num [1:94] 19.94 19.29 13.46 10.04 7.41 ...</span></span>
+<span><span class="co">#&gt;  $ median    : num [1:94] -3.7 -3.89 -3.46 -4.29 -4.06 ...</span></span>
+<span><span class="co">#&gt;  $ mode      : num [1:94] -5 -3 -13 -1 -5 -5 1 -13 -11 -1 ...</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines</a></span><span class="op">(</span><span class="va">mesh</span><span class="op">$</span><span class="va">loc</span>, <span class="va">pred_W</span><span class="op">[[</span><span class="st">"mean"</span><span class="op">]</span><span class="op">]</span>, col<span class="op">=</span><span class="fl">3</span>, lwd<span class="op">=</span><span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/title.html" class="external-link">title</a></span><span class="op">(</span><span class="st">"Posterior mean with Ngme2 and INLA"</span><span class="op">)</span></span>
 <span><span class="co"># One can add some quantile band to the plot using Ngme2</span></span>

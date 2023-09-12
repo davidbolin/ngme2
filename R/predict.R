@@ -122,18 +122,18 @@ predict.ngme <- function(
 # assume test_idx and train_idx belongs to same replicate
 compute_err_1rep <- function(
   ngme_1rep,
-  test_idx,
-  train_idx,
+  bool_test_idx,
+  bool_train_idx,
   N = 100,
   seed=Sys.time()
 ) {
   stopifnot(
-    "target idx should be a vector, and data idx should be a vector"
-     = is.vector(test_idx) && is.vector(train_idx)
+    "bool_<..>_idx should be a logical vector" =
+      is.logical(bool_test_idx) && is.logical(bool_train_idx)
   )
 
   # if test_idx and train_idx overlap, warning message
-  if (length(intersect(test_idx, train_idx)) > 0) {
+  if (sum(bool_test_idx & bool_train_idx) > 0) {
     warning("Notice that test_idx and train_idx overlap!")
   }
 
@@ -146,28 +146,23 @@ compute_err_1rep <- function(
   #   turn into df of dim: n_obs * N
   # option 2. AW comes from N chains
   #   to-do
-  y_data <- ngme_1rep$Y[test_idx]
+  y_data <- ngme_1rep$Y[bool_test_idx]
   n_obs <- length(y_data)
 
   # Subset noise[test_idx, ] for test location
-  noise_test_idx <- ngme_1rep$noise
-  noise_test_idx$B_mu <- noise_test_idx$B_mu[test_idx,, drop=FALSE]
-  noise_test_idx$B_sigma <- noise_test_idx$B_sigma[test_idx,, drop=FALSE]
-  noise_test_idx$h <- noise_test_idx$h[test_idx]
-
-  X_pred <- ngme_1rep$X[test_idx,, drop=FALSE]
+  noise_test_idx <- subset_noise(ngme_1rep$noise, sub_idx = bool_test_idx)
+  X_pred <- ngme_1rep$X[bool_test_idx,, drop=FALSE]
 
   # Subset noise, X, Y in train location
-  ngme_1rep$noise$B_mu <- ngme_1rep$noise$B_mu[train_idx,, drop=FALSE]
-  ngme_1rep$noise$B_sigma <- ngme_1rep$noise$B_sigma[train_idx,, drop=FALSE]
-  ngme_1rep$X <- ngme_1rep$X[train_idx,, drop=FALSE]
-  ngme_1rep$Y <- ngme_1rep$Y[train_idx]
+  ngme_1rep$noise <- noise_test_idx
+  ngme_1rep$X <- ngme_1rep$X[bool_train_idx,, drop=FALSE]
+  ngme_1rep$Y <- ngme_1rep$Y[bool_train_idx]
 
   # Subset A for test and train location
   A_preds <- list();
   for (i in seq_along(ngme_1rep$models)) {
-    A_preds[[i]] <- ngme_1rep$models[[i]]$A[test_idx, ,drop=FALSE]
-    ngme_1rep$models[[i]]$A <- ngme_1rep$models[[i]]$A[train_idx,,drop=FALSE]
+    A_preds[[i]] <- ngme_1rep$models[[i]]$A[bool_test_idx, ,drop=FALSE]
+    ngme_1rep$models[[i]]$A <- ngme_1rep$models[[i]]$A[bool_train_idx,,drop=FALSE]
   }
 
   # A_pred_blcok <- [A1_pred .. An_pred]
@@ -332,25 +327,22 @@ compute_err_reps <- function(
 
   crs <- NULL; weight <- NULL; n_crs <- 0
   for (i in seq_along(uni_repl)) {
-    which_repl <- which(repls == uni_repl[i])
-    # watch out! relative order within the same replicate!!
-    target_1rep <- intersect(test_idx, which_repl)
-    train_1rep <- intersect(train_idx, which_repl)
-    # the order in the replicate is not the same as in the data
-    target_1rep <- match(target_1rep, which_repl)
-    train_1rep <- match(train_1rep, which_repl)
-# print(range(train_1rep))
-# print(target_1rep)
+    data_idx <- ngme$replicates[[i]]$data_idx
+    bool_train_idx <- data_idx %in% train_idx
+    bool_test_idx  <- data_idx %in% test_idx
+
     # skip this replicate if no target or train data
-    if (length(target_1rep) == 0 || length(train_1rep) == 0) next
+    if (sum(bool_train_idx) == 0 || sum(bool_test_idx) == 0) next
     n_crs <- n_crs + 1
     crs[[n_crs]] <- compute_err_1rep(
       ngme$replicates[[i]],
-      test_idx = target_1rep,
-      train_idx = train_1rep,
+      bool_train_idx = bool_train_idx,
+      bool_test_idx = bool_test_idx,
       N=N,
       seed=seed
     )
+
+    which_repl <- which(repls == uni_repl[i])
     weight <- c(weight, length(which_repl))
   }
 

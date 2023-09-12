@@ -269,7 +269,7 @@ noise_gal <- gal <- function(
 }
 
 # update noise
-update_noise <- function(noise, n=NULL, new_noise=NULL, sub_idx=NULL) {
+update_noise <- function(noise, n=NULL, new_noise=NULL) {
   # update with length n
   if (!is.null(n)) {
     stopifnot("n should be integer" = is.numeric(n))
@@ -313,11 +313,6 @@ stopifnot("n / nrow(B_sigma) not integer" = abs(n/nrow(B_sigma) - round(n/nrow(B
     } else if (noise$noise_type == "normal_nig") {
       noise$theta_sigma_normal <- new_noise$theta_sigma_normal
     }
-  } else if (!is.null(sub_idx)) {
-    # subset measurement noise (for each replicate)
-    noise$B_mu <- noise$B_mu[sub_idx, , drop=FALSE]
-    noise$B_sigma <- noise$B_sigma[sub_idx, ,drop=FALSE]
-    noise$V <- noise$V[sub_idx]
   }
   noise
 }
@@ -443,4 +438,26 @@ print.ngme_noise <- function(x, padding = 0, prefix = "Noise type", suppress_sig
     cat(format(noise$rho, digits=3)); cat("\n")
   }
   invisible(noise)
+}
+
+subset_noise <- function(noise, sub_idx, compute_corr=TRUE) {
+  noise$B_mu <- noise$B_mu[sub_idx, , drop=FALSE]
+  noise$B_sigma <- noise$B_sigma[sub_idx, ,drop=FALSE]
+  noise$V <- noise$V[sub_idx]
+
+  if (!is.null(noise$corr_measurement) &&
+    noise$corr_measurement && compute_corr
+  ) {
+    sub_index_corr <- noise$index_corr[sub_idx]
+    p_order <- order(sub_index_corr)
+    cov_rc <- compute_corr_index(sub_index_corr[p_order])
+
+    # update noise with extra terms about correlation
+    noise$cor_rows <- cov_rc$cor_rows
+    noise$cor_cols <- cov_rc$cor_cols
+    noise$has_correlation <- cov_rc$has_correlation
+    noise$n_corr_pairs <- cov_rc$n_corr_pairs
+    noise$index_corr <- sub_index_corr
+  }
+  noise
 }

@@ -139,7 +139,6 @@ if (debug) std::cout << "After set block K" << std::endl;
           // ignore uncorrelated locations
           dQ_eps_triplet.push_back(Triplet<double>(cor_rows[i], cor_cols[i], cor_rows[i] == cor_cols[i]));
         }
-
       }
       SparseMatrix<double> Q_eps_lower (n_obs, n_obs);
       Q_eps_lower.setFromTriplets(Q_eps_triplet.begin(), Q_eps_triplet.end());

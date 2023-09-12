@@ -378,9 +378,11 @@ ngme_parse_formula <- function(
     lm.model <- stats::lm.fit(X_full, ngme_response)
     if (is.null(control_ngme$feff)) control_ngme$feff <- lm.model$coeff
     if (is.null(noise$theta_sigma)) noise$theta_sigma <- log(sd(lm.model$residuals))
-    noise_rep <- update_noise(noise_new, sub_idx=idx)
+    noise_rep <- subset_noise(noise_new, sub_idx=idx, compute_corr=FALSE)
 
     if (noise$corr_measurement) {
+      stopifnot("Please make sure the length of index_corr is equal to the number of observations" =
+        length(noise$index_corr) == length(ngme_response))
       # compute index_corr
       index_corr <- noise$index_corr[idx]
       stopifnot(
@@ -396,25 +398,21 @@ ngme_parse_formula <- function(
   # V_e is order by c(1,1,2,2,3,4,..) as in the order(corr_index)
   # # pmat <- as(order(index_corr), "pMatrix")
 
-      # cov_rc <- compute_corr_index(index_corr)
+      # Reorder for the ngme_replicate
+      # s.t. index_corr=1,1,2,2,3,4,4,....
       p_order <- order(index_corr)
-      cov_rc <- compute_corr_index(index_corr[p_order])
+      data_idx <- which(replicate == uni_repl[[i]])[p_order]
       X <- X[p_order, , drop = FALSE]
       Y <- Y[p_order]
       for (j in seq_along(models_rep))
         models_rep[[j]]$A <- models_rep[[j]]$A[p_order, , drop = FALSE]
-
-      # check here
-      noise_rep <- update_noise(noise_rep, sub_idx = p_order)
-
-      # update noise with extra terms about correlation
-      noise_rep$cor_rows <- cov_rc$cor_rows
-      noise_rep$cor_cols <- cov_rc$cor_cols
-      noise_rep$has_correlation <- cov_rc$has_correlation
-      noise_rep$n_corr_pairs <- cov_rc$n_corr_pairs
+      # update noise, consider index_corr
+      noise_rep <- subset_noise(noise_rep, sub_idx = p_order, compute_corr = TRUE)
     }
 
     blocks_rep[[i]] <- ngme_replicate(
+      data_idx = data_idx,
+      index_corr = index_corr[p_order],
       Y = Y,
       X = X,
       noise = noise_rep,

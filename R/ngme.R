@@ -413,7 +413,6 @@ ngme_parse_formula <- function(
 
     blocks_rep[[i]] <- ngme_replicate(
       data_idx = data_idx,
-      index_corr = index_corr[p_order],
       Y = Y,
       X = X,
       noise = noise_rep,

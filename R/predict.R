@@ -146,17 +146,17 @@ compute_err_1rep <- function(
   #   turn into df of dim: n_obs * N
   # option 2. AW comes from N chains
   #   to-do
-  y_data <- ngme_1rep$Y[bool_test_idx]
-  n_obs <- length(y_data)
 
   # Subset noise[test_idx, ] for test location
-  noise_test_idx <- subset_noise(ngme_1rep$noise, sub_idx = bool_test_idx)
+  y_data <- ngme_1rep$Y[bool_test_idx]
+  n_obs <- length(y_data)
   X_pred <- ngme_1rep$X[bool_test_idx,, drop=FALSE]
+  noise_test_idx <- subset_noise(ngme_1rep$noise, sub_idx = bool_test_idx)
 
   # Subset noise, X, Y in train location
-  ngme_1rep$noise <- noise_test_idx
   ngme_1rep$X <- ngme_1rep$X[bool_train_idx,, drop=FALSE]
   ngme_1rep$Y <- ngme_1rep$Y[bool_train_idx]
+  ngme_1rep$noise <- subset_noise(ngme_1rep$noise, sub_idx = bool_train_idx)
 
   # Subset A for test and train location
   A_preds <- list();

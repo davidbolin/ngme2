@@ -362,6 +362,7 @@ ngme_parse_formula <- function(
   noise_new <- update_noise(noise, n = length(ngme_response))
   for (i in seq_along(uni_repl)) {
     idx <- replicate == uni_repl[[i]]
+    data_idx <- which(idx) # record the original index
 
     Y <- ngme_response[idx]
     X <- X_full[idx, , drop = FALSE]
@@ -401,7 +402,7 @@ ngme_parse_formula <- function(
       # Reorder for the ngme_replicate
       # s.t. index_corr=1,1,2,2,3,4,4,....
       p_order <- order(index_corr)
-      data_idx <- which(replicate == uni_repl[[i]])[p_order]
+      data_idx <- data_idx[p_order]
       X <- X[p_order, , drop = FALSE]
       Y <- Y[p_order]
       for (j in seq_along(models_rep))

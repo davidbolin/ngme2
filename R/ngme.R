@@ -360,6 +360,10 @@ ngme_parse_formula <- function(
   blocks_rep <- list() # of length n_repl
 
   noise_new <- update_noise(noise, n = length(ngme_response))
+  if (noise_new$corr_measurement) {
+      stopifnot("Please make sure the len(index_corr) == observations" =
+        length(ngme_response) == length(noise_new$index_corr))
+  }
   for (i in seq_along(uni_repl)) {
     idx <- replicate == uni_repl[[i]]
     data_idx <- which(idx) # record the original index
@@ -381,27 +385,16 @@ ngme_parse_formula <- function(
     if (is.null(noise$theta_sigma)) noise$theta_sigma <- log(sd(lm.model$residuals))
     noise_rep <- subset_noise(noise_new, sub_idx=idx, compute_corr=FALSE)
 
+    # Re-order according to index_corr!
+    # s.t. noise$index_corr=1,1,2,2,3,4,4,....
     if (noise$corr_measurement) {
-      stopifnot("Please make sure the length of index_corr is equal to the number of observations" =
-        length(noise$index_corr) == length(ngme_response))
-      # compute index_corr
-      index_corr <- noise$index_corr[idx]
       stopifnot(
-        "Please provide the index_corr vector, and you can use ?compute_index_corr_from_map function to compute it from data"
-          = !is.null(index_corr),
-        "The length of index_corr should be the same as the number of observations"
-          = length(index_corr) == sum(idx),
+        "The length of noise$index_corr should be the same as the number of observations"
+          = length(noise_rep$index_corr) == sum(idx),
         "Now more than 2 locations are correlated in 1 replicate is not allowed"
-          = !any(table(index_corr) > 2)
+          = !any(table(noise_rep$index_corr) > 2)
       )
-  # pmat is the permutation matrix, s.t.
-  # Y = AW + Xb + Pe, e|V_e ~ N(-mu+mu V_e, sigma^2 diag(V_e))
-  # V_e is order by c(1,1,2,2,3,4,..) as in the order(corr_index)
-  # # pmat <- as(order(index_corr), "pMatrix")
-
-      # Reorder for the ngme_replicate
-      # s.t. index_corr=1,1,2,2,3,4,4,....
-      p_order <- order(index_corr)
+      p_order <- order(noise_rep$index_corr)
       data_idx <- data_idx[p_order]
       X <- X[p_order, , drop = FALSE]
       Y <- Y[p_order]
@@ -477,13 +470,15 @@ compute_corr_index <- function(idx) {
 
   has_correlation <- rep(FALSE, n)
   unique_idx <- unique(idx)
+  count <- 1
   for (i in seq_along(unique_idx)) {
     idx_i <- which(idx == unique_idx[i])
     if (length(idx_i) == 1) next
     stopifnot("Now we don't accept measurement noise over 2 places are correlated"
       = length(idx_i) == 2)
-    rows[n+i] <- max(idx_i)
-    cols[n+i] <- min(idx_i)
+    rows[n+count] <- max(idx_i)
+    cols[n+count] <- min(idx_i)
+    count <- count + 1
     has_correlation[idx_i] <- TRUE
   }
 

@@ -444,20 +444,20 @@ subset_noise <- function(noise, sub_idx, compute_corr=TRUE) {
   noise$B_mu <- noise$B_mu[sub_idx, , drop=FALSE]
   noise$B_sigma <- noise$B_sigma[sub_idx, ,drop=FALSE]
   noise$V <- noise$V[sub_idx]
+  if (!is.null(noise$index_corr)) noise$index_corr <- noise$index_corr[sub_idx]
 
   if (!is.null(noise$corr_measurement) &&
     noise$corr_measurement && compute_corr
   ) {
-    sub_index_corr <- noise$index_corr[sub_idx]
-    p_order <- order(sub_index_corr)
-    cov_rc <- compute_corr_index(sub_index_corr[p_order])
+    p_order <- order(noise$index_corr)
+    cov_rc <- compute_corr_index(noise$index_corr[p_order])
 
     # update noise with extra terms about correlation
     noise$cor_rows <- cov_rc$cor_rows
     noise$cor_cols <- cov_rc$cor_cols
     noise$has_correlation <- cov_rc$has_correlation
     noise$n_corr_pairs <- cov_rc$n_corr_pairs
-    noise$index_corr <- sub_index_corr
+    noise$index_corr <- noise$index_corr[p_order]
   }
   noise
 }

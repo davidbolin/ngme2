@@ -1,6 +1,12 @@
 // implement the Ngme class and rand effect calss
 #include "ngme.h"
 
+#ifdef _OPENMP
+  #include<omp.h>
+  #pragma omp declare reduction(vec_plus : Eigen::VectorXd : omp_out += omp_in) initializer(omp_priv = Eigen::VectorXd::Zero(omp_orig.size()))
+  #pragma omp declare reduction(mat_plus : Eigen::MatrixXd : omp_out += omp_in) initializer(omp_priv = Eigen::MatrixXd::Zero(omp_orig.rows(), omp_orig.cols()))
+#endif
+
 // --------------- Ngme class ----------------
 Ngme::Ngme(const Rcpp::List& R_ngme, unsigned long seed, int sampling_strategy) :
   n_params          (Rcpp::as<int> (R_ngme["n_params"])),
@@ -30,6 +36,7 @@ MatrixXd Ngme::precond(int strategy, double eps) {
   MatrixXd precond = MatrixXd::Zero(n_params, n_params);
 
   if (sampling_strategy == Strategy::all) {
+    #pragma omp parallel for schedule(static) reduction(mat_plus:precond)
     for (int i=0; i < n_repl; i++) {
       precond += ngme_repls[i]->precond(strategy, eps) / n_repl;
     }
@@ -47,8 +54,8 @@ VectorXd Ngme::grad() {
   VectorXd g = VectorXd::Zero(n_params);
   // weighted averge over all replicates
   if (sampling_strategy == Strategy::all) {
+    #pragma omp parallel for schedule(static) reduction(vec_plus:g)
     for (int i=0; i < n_repl; i++) {
-// std::cout << "W repl i " << i << " =" << ngme_repls[i]->getW() << std::endl;
       g +=  (num_each_repl[i] / sum_num_each_repl) * ngme_repls[i]->grad() / n_repl;
     }
   } else if (sampling_strategy == Strategy::ws) {
@@ -61,6 +68,12 @@ VectorXd Ngme::grad() {
   return g;
 }
 
+void Ngme::burn_in(int iterations) {
+  #pragma omp parallel for schedule(static)
+  for (int i=0; i < n_repl; i++) {
+    ngme_repls[i]->burn_in(iterations);
+  }
+}
 
 VectorXd Ngme::get_parameter() {
   VectorXd p = ngme_repls[0]->get_parameter();
@@ -70,8 +83,11 @@ if (debug) std::cout << "p in get_parameter() in ngme class = " << p << std::end
 
 void Ngme::set_parameter(const VectorXd& p) {
   // set the same parameter for all latent
-  for (int i=0; i < n_repl; i++)
+std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+  #pragma omp parallel for schedule(static)
+  for (int i=0; i < n_repl; i++) {
     ngme_repls[i]->set_parameter(p);
+  }
 
   // set the different parameter for each random effect
   if (debug) std::cout << "set_parameter() in ngme class" << std::endl;

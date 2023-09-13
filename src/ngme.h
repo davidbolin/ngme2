@@ -10,6 +10,7 @@
 #include "include/MatrixAlgebra.h"
 #include "model.h"
 #include "block.h"
+// #include <chrono>
 
 using std::vector;
 
@@ -33,6 +34,9 @@ private:
   std::discrete_distribution<int> weighted_sampler;
 
   bool debug;
+
+  // for time profiling
+  // std::chrono::milliseconds ngme_precond_time, ngme_grad_time, ngme_set_time, ngme_get_time;
 public:
   Ngme(const Rcpp::List& list_ngmes, unsigned long seed, int sampling_strategy);
 
@@ -76,11 +80,7 @@ public:
     }
   }
 
-  void burn_in(int iterations) {
-    for (int i=0; i < n_repl; i++) {
-      ngme_repls[i]->burn_in(iterations);
-    }
-  }
+  void burn_in(int iterations);
 };
 
 #endif

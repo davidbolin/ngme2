@@ -1,5 +1,6 @@
 #include "../operator.h"
 #include "MatrixAlgebra.h"
+// #include <chrono>
 
 // ------- bivariate model -------
 Bivar::Bivar(const Rcpp::List& operator_list):

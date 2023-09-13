@@ -95,6 +95,12 @@ protected:
     // priors
     string prior_mu_type, prior_sigma_type, prior_nu_type;
     VectorXd prior_mu_param, prior_sigma_param, prior_nu_param;
+
+    // For computing RB gradient_K
+    vector<vector<SparseMatrix<double>>> block_dK;
+
+    // clock
+    std::chrono::milliseconds sampling_time {0}, update_time {0};
 public:
     // BlockModel() {}
     BlockModel(const Rcpp::List& block_model, unsigned long seed);
@@ -141,8 +147,7 @@ public:
 
     /* Aseemble */
     void assemble() {
-        int nrow = 0;
-        int ncol = 0;
+        int nrow = 0; int ncol = 0;
         for (vector<std::shared_ptr<Latent>>::iterator it = latents.begin(); it != latents.end(); it++) {
             setSparseBlock(&K,   nrow, ncol, (*it)->getK());
             // setSparseBlock(&dK,  n, n, (*it)->get_dK());
@@ -151,6 +156,20 @@ public:
             ncol += (*it)->get_W_size();
         }
     }
+
+    void assemble_dK() {
+        int nrow = 0; int ncol = 0;
+        for (int i=0; i < n_latent; i++) {
+            for (int j=0; j < latents[i]->get_n_theta_K(); j++) {
+                setSparseBlock(&block_dK[i][j], nrow, ncol, latents[i]->get_dK(j));
+            }
+            nrow += latents[i]->get_V_size();
+            ncol += latents[i]->get_W_size();
+        }
+    }
+
+    // tr(QQ^-1 dK^T diag(1/SV) K)
+    void compute_rb_trace();
 
     // return mean = mu*(V-h)
     VectorXd getMean() const {

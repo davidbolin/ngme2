@@ -105,6 +105,7 @@ void Matern_ns::update_K(const VectorXd& theta_kappa) {
 
 // dK wrt. theta_K[index]
 void Matern_ns::update_dK(const VectorXd& theta_K) {
+// std::cout << "update_dK matern" << std::endl;
     VectorXd kappas = (Bkappa * theta_K).array().exp();
     int n_dim = G.rows();
 

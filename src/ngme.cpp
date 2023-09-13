@@ -8,9 +8,10 @@
 #endif
 
 // --------------- Ngme class ----------------
-Ngme::Ngme(const Rcpp::List& R_ngme, unsigned long seed, int sampling_strategy) :
+Ngme::Ngme(const Rcpp::List& R_ngme, unsigned long seed, int sampling_strategy, int num_threads_repl) :
   n_params          (Rcpp::as<int> (R_ngme["n_params"])),
   sampling_strategy (sampling_strategy),
+  num_threads_repl  (num_threads_repl),
   gen               (seed),
   debug             (false)
 {
@@ -36,7 +37,7 @@ MatrixXd Ngme::precond(int strategy, double eps) {
   MatrixXd precond = MatrixXd::Zero(n_params, n_params);
 
   if (sampling_strategy == Strategy::all) {
-    #pragma omp parallel for schedule(static) reduction(mat_plus:precond)
+    #pragma omp parallel for schedule(static) reduction(mat_plus:precond) num_threads(num_threads_repl)
     for (int i=0; i < n_repl; i++) {
       precond += ngme_repls[i]->precond(strategy, eps) / n_repl;
     }
@@ -54,7 +55,7 @@ VectorXd Ngme::grad() {
   VectorXd g = VectorXd::Zero(n_params);
   // weighted averge over all replicates
   if (sampling_strategy == Strategy::all) {
-    #pragma omp parallel for schedule(static) reduction(vec_plus:g)
+    #pragma omp parallel for schedule(static) reduction(vec_plus:g) num_threads(num_threads_repl)
     for (int i=0; i < n_repl; i++) {
       g +=  (num_each_repl[i] / sum_num_each_repl) * ngme_repls[i]->grad() / n_repl;
     }
@@ -69,7 +70,7 @@ VectorXd Ngme::grad() {
 }
 
 void Ngme::burn_in(int iterations) {
-  #pragma omp parallel for schedule(static)
+  #pragma omp parallel for schedule(static) num_threads(num_threads_repl)
   for (int i=0; i < n_repl; i++) {
     ngme_repls[i]->burn_in(iterations);
   }
@@ -83,8 +84,8 @@ if (debug) std::cout << "p in get_parameter() in ngme class = " << p << std::end
 
 void Ngme::set_parameter(const VectorXd& p) {
   // set the same parameter for all latent
-std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-  #pragma omp parallel for schedule(static)
+// std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+  #pragma omp parallel for schedule(static) num_threads(num_threads_repl)
   for (int i=0; i < n_repl; i++) {
     ngme_repls[i]->set_parameter(p);
   }

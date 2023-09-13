@@ -62,11 +62,11 @@ protected:
     int n_theta_K;
     bool symmetricK, zero_trace, use_num_dK {false};
 
-    vector<double> trace;
+    vector<double> trace, rb_trace;
     double eps {1e-5};
 
     bool fix_flag[LATENT_FIX_FLAG_SIZE] {0};
-    bool use_precond {false}, numer_grad {false};
+    bool numer_grad {false};
 
     // mu and sigma, and sigma_normal (special case when using nig_normal case)
     MatrixXd B_mu, B_sigma, B_sigma_normal;
@@ -162,6 +162,14 @@ public:
     /*  3 Operator component   */
     const SparseMatrix<double, 0, int>& getK()  {
         return ope->getK();
+    }
+
+    const SparseMatrix<double, 0, int>& get_dK(int i)  {
+        return ope->get_dK()[i];
+    }
+
+    void set_rb_trace(const vector<double>& rb_trace) {
+        this->rb_trace = rb_trace;
     }
 
     /* 4 for optimizer */

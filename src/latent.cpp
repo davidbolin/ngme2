@@ -27,6 +27,7 @@ Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
     // K             (V_size, W_size),
     // dK            (n_theta_K),
     trace         (n_theta_K, 0.0),
+    rb_trace      (n_theta_K, 0.0),
     eps           (0.001),
 
     W             (W_size),
@@ -44,7 +45,6 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
     assert(W_size == V_size);
     // read the control variable
     Rcpp::List control_f = Rcpp::as<Rcpp::List> (model_list["control"]);
-        use_precond     = Rcpp::as<bool>        (control_f["use_precond"] );
         numer_grad      = Rcpp::as<bool>        (control_f["numer_grad"]) ;
         eps             = Rcpp::as<double>      (control_f["eps"]) ;
 
@@ -193,7 +193,7 @@ inline VectorXd Latent::grad_theta_sigma(bool rao_blackwell) {
 }
 
 inline VectorXd Latent::grad_theta_sigma_normal(bool rao_blackwell) {
-    if (rao_blackwell) W = cond_W; // use conditional E(W|V,Y)
+    VectorXd WW = (rao_blackwell) ? cond_W : W;
     VectorXd V = VectorXd::Ones(V_size);
     VectorXd grad = VectorXd::Zero(n_theta_sigma_normal);
 
@@ -263,19 +263,19 @@ VectorXd Latent::grad_theta_K(bool rao_blackwell) {
             VectorXd tmp = theta_K;
             tmp(i) += eps;
             ope_add_eps->update_K(tmp);
-            SparseMatrix<double> K_add_eps = ope_add_eps->getK();
-            double val_add_eps = logd_W_given_V(K_add_eps, mu, sigma, V);
+            // SparseMatrix<double> K_add_eps = ope_add_eps->getK();
+            double val_add_eps = logd_W_given_V(ope_add_eps->getK(), mu, sigma, V);
             grad(i) = (val_add_eps - val) / eps;
         }
     } else {
+        VectorXd WW = (rao_blackwell) ? cond_W : W;
+
         VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
-        VectorXd tmp = getK() * W - mu.cwiseProduct(V-h);
+        VectorXd tmp = getK() * WW - mu.cwiseProduct(V-h);
         for (int j=0; j < n_theta_K; j++) {
-            // if (!rao_blackwell) {
-                grad(j) = trace[j] - (ope->get_dK()[j] * W).cwiseProduct(SV.cwiseInverse()).dot(tmp);
-            // } else {
-                // grad(j) = trace[j] - (ope->get_dK()[j] * cond_W).cwiseProduct(SV.cwiseInverse()).dot(tmp);
-            // }
+            grad(j) = trace[j] - (ope->get_dK()[j] * WW).cwiseProduct(SV.cwiseInverse()).dot(tmp);
+            // add extra term
+            if (rao_blackwell) grad(j) -= rb_trace[j];
         }
     }
 
@@ -433,7 +433,9 @@ void Latent::sample_uncond_V() {
 
 // at init, and after each set parameter
 void Latent::update_each_iter(bool init) {
+// std::chrono::steady_clock::time_point startTime, endTime; startTime = std::chrono::steady_clock::now();
     if (!init) ope->update_K(theta_K);
+// endTime = std::chrono::steady_clock::now(); std::cout << "K_update time (ms): " << std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count() << std::endl;
 // std::cout << " here 5" << std::endl;
 // std::cout << "B_mu size = " << B_mu.rows() << " * " << B_mu.cols() << std::endl;
 // std::cout << "t_mu size = " << theta_mu.size() << std::endl;
@@ -462,15 +464,12 @@ void Latent::update_each_iter(bool init) {
     }
 
     if (!numer_grad) {
-// std::cout << " here 6" << std::endl;
         ope->update_dK(theta_K);
-// std::cout << " here 7" << std::endl;
         // trace[i] = tr(K^-1 dK[i])
         if (!zero_trace) {
             if (!symmetricK) {
                 if (W_size > 10) {
                     lu_solver_K.computeKTK(getK());
-// std::cout << " here 8" << std::endl;
                     for (int i=0; i < n_theta_K; i++)
                         trace[i] = lu_solver_K.trace(ope->get_dK()[i]);
                 } else {

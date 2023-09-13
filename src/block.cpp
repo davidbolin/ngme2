@@ -187,6 +187,19 @@ if (debug) std::cout << "After init solver && before sampleW_V" << std::endl;
     sampleW_V();
     sampleW_V();
   }
+
+  if (all_gaussian) rao_blackwell = true;
+  if (rao_blackwell) {
+    // Initialize block_dKs of length n_latent
+    block_dK.resize(n_latent);
+    for (int i=0; i < n_latent; i++) {
+      block_dK[i].resize(latents[i]->get_n_theta_K());
+      for (int j=0; j < latents[i]->get_n_theta_K(); j++) {
+        block_dK[i][j] = SparseMatrix<double>(V_sizes, W_sizes);
+      }
+    }
+  }
+
 if (debug) std::cout << "End Block Constructor" << std::endl;
 }
 
@@ -194,13 +207,14 @@ if (debug) std::cout << "End Block Constructor" << std::endl;
       // sample_uncond_V();
       // sample_uncond_noise_V();
       for (int i=0; i < iterations; i++) {
-// std::cout << "burn in iteration = " << i << std::endl;
+// std::cout << "burn in iteration i= " << i  << std::endl;
           sample_cond_V();
 // std::cout << "cond V done" << std::endl;
           sampleW_VY();
 // std::cout << "sample W done" << std::endl;
           sample_cond_noise_V();
       }
+// std::cout << "burn in done "  << std::endl;
   }
 
 void BlockModel::setW(const VectorXd& W) {
@@ -243,7 +257,6 @@ void BlockModel::setPrevV(const VectorXd& V) {
 void BlockModel::sampleW_VY() {
 // if (debug) std::cout << "starting sampling W." << std::endl;
 // double time = 0;
-// auto timer_computeg = std::chrono::steady_clock::now();
   if (n_latent==0) return;
 
   VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
@@ -279,9 +292,7 @@ void BlockModel::sampleW_VY() {
     W = chol_QQ.solve(M);
     set_cond_W(W);
   }
-// std::cout << "after compute" << std::endl;
 
-// time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - timer_computeg).count();
 // std::cout << "size of W and time of sampling is " << W.size() << " " << time << std::endl;
 
 if (debug) std::cout << "Finish sampling W" << std::endl;
@@ -322,22 +333,38 @@ long long time_sample_w = 0;
 
   if (all_gaussian) {
     // compute RB version of gradient
-    sampleW_VY();
+    assemble_dK();
+    sampleW_VY(); // QQ.compute
+    compute_rb_trace();
+
+    // get the grad (Latent, merr, feff)
+    int pos = 0;
+    for (std::vector<std::shared_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+      int theta_len = (*it)->get_n_params();
+      latent_grad.segment(pos, theta_len) += (*it)->get_grad(rao_blackwell);
+      pos += theta_len;
+    }
+    noise_grad.head(n_merr) += grad_theta_merr();
+    if (!fix_flag[block_fix_beta]) {
+      noise_grad.tail(n_feff) += (1.0/n_repl) * grad_beta();
+    }
   } else {
-    // Gibbs sampling
+    // Running Gibbs sampling
     for (int i=0; i < n_gibbs; i++) {
       sample_cond_V();
+// std::chrono::steady_clock::time_point startTime, endTime; startTime = std::chrono::steady_clock::now();
       sampleW_VY();
 
+      if (rao_blackwell) assemble_dK();
       int pos = 0;
       for (std::vector<std::shared_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
         int theta_len = (*it)->get_n_params();
-        // MC or RB
         latent_grad.segment(pos, theta_len) += (*it)->get_grad(rao_blackwell);
         pos += theta_len;
       }
 
       sample_cond_noise_V();
+// endTime = std::chrono::steady_clock::now(); sampling_time += std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);std::cout << "!!sampling time (ms): " << std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count() << std::endl;
       noise_grad.head(n_merr) += grad_theta_merr();
       if (!fix_flag[block_fix_beta]) {
         noise_grad.tail(n_feff) += (1.0/n_repl) * grad_beta();
@@ -365,6 +392,7 @@ if (debug) {
 
 void BlockModel::set_parameter(const VectorXd& Theta) {
 if (debug) std::cout << "Start set_parameter"<< std::endl;
+// std::chrono::steady_clock::time_point startTime, endTime; startTime = std::chrono::steady_clock::now();
   int pos = 0;
   for (std::vector<std::shared_ptr<Latent>>::iterator it = latents.begin(); it != latents.end(); it++) {
     int theta_len = (*it)->get_n_params();
@@ -383,6 +411,7 @@ if (debug) std::cout << "Start set_parameter"<< std::endl;
   }
 
   assemble(); //update K,dK,d2K after
+// endTime = std::chrono::steady_clock::now(); update_time = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime); std::cout << "block set time (ms): " << std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count() << std::endl;
   curr_iter++;
 }
 
@@ -620,6 +649,7 @@ Rcpp::List BlockModel::output() const {
       Rcpp::Named("rho")          = rho
     ),
     Rcpp::Named("feff")            = beta,
+    // Rcpp::Named("sampling_time")   = sampling_time.count(),
     Rcpp::Named("models")          = latents_output
   );
 
@@ -850,4 +880,18 @@ double BlockModel::logd_no_latent(const VectorXd& v) {
 
 // std::cout << "logd_res=" << logd_res << std::endl;
   return  -(logd_res + logd_V);
+}
+
+// tr(QQ^-1 dK^T diag(1/SV) K)
+void BlockModel::compute_rb_trace() {
+    for (int i=0; i < n_latent; i++) {
+        vector<double> rb_trace (latents[i]->get_n_theta_K(), 0);
+        for (int j=0; j < latents[i]->get_n_theta_K(); j++) {
+            VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
+            SparseMatrix<double> M = block_dK[i][j] * inv_SV.asDiagonal() * K;
+            rb_trace[j] = chol_QQ.trace(M);
+// std::cout << "rb trace = " << j << " = " << rb_trace[j] << std::endl;
+        }
+        latents[i]->set_rb_trace(rb_trace);
+    }
 }

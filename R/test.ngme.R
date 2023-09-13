@@ -31,11 +31,17 @@ test_ngme <- function(
   sampling_strategy = "all",
   precond_by_diff_chain = TRUE,
   compute_precond_each_iter = FALSE,
+  num_threads = c(n_parallel_chain, 4),
+  n_gibbs_samples = 5,
+  f_noise = "nig",
+  family = "nig",
   max.n = 1000,
   print = FALSE,
   debug = FALSE,
   debug_f = FALSE,
-  rao_blackwellization = FALSE
+  verbose = FALSE,
+  rao_blackwellization = FALSE,
+  seed = Sys.time()
 ) {
   # create 2d mesh
   if (model %in% c("matern", "bvmatern")) {
@@ -48,15 +54,19 @@ test_ngme <- function(
 print(paste("nodes of mesh = ", mesh$n))
   }
 
+f_simu_noise <- if (f_noise=="nig") noise_nig(mu = -3, sigma = 2, nu=0.4)
+  else noise_normal()
+f_form_noise <- if (f_noise=="nig") noise_nig() else noise_normal()
+
   # ------- Simulate data for each model --------
   sim_data <- switch(model,
     "ar1" = {
       idx <- 1:n_obs_per_rep
       ar1_model <- f(idx, model="ar1", rho = 0.5,
-      noise = noise_nig(mu = -3, sigma = 2, nu=0.4),
+      noise = f_simu_noise,
       debug = debug_f
       )
-      W <- simulate(ar1_model, seed = 16)
+      W <- simulate(ar1_model, seed = seed)
       Y <- W + rnorm(n_obs_per_rep, sd = 2)
       list(Y=Y, idx=idx, group=rep(1, n_obs_per_rep))
     },
@@ -67,11 +77,12 @@ print(paste("nodes of mesh = ", mesh$n))
         model="matern",
         theta_K = log(2),
         mesh = mesh,
-        noise = noise_nig(mu=-2, sigma=1, nu=0.5),
+        noise = f_simu_noise,
         debug = debug_f
       )
-      W <- simulate(true_model)
-      Y <- as.numeric(true_model$A %*% W) + rnorm(n_obs_per_rep, sd=0.5)
+      W <- simulate(true_model, seed = seed)
+      # Y <- as.numeric(true_model$A %*% W) + rnorm(n_obs_per_rep, sd=0.5)
+      Y <- as.numeric(true_model$A %*% W) + rnig(n_obs_per_rep, mu=1,delta=-1,nu=1,sigma=1)
       list(Y=Y, idx=loc, group=rep(1, n_obs_per_rep))
     },
     "bvar1" = {
@@ -92,7 +103,7 @@ print(paste("nodes of mesh = ", mesh$n))
         ),
         debug = debug_f
       )
-      W <- simulate(true_model)
+      W <- simulate(true_model, seed=seed)
       AW <- as.numeric(true_model$A %*% W)
       Y <- AW + rnorm(length(AW), sd=0.5)
       list(Y=Y, idx=idx_per_rep, group=group_per_rep)
@@ -117,7 +128,7 @@ print(paste("nodes of mesh = ", mesh$n))
         ),
         debug = debug_f
       )
-      W <- simulate(true_model)
+      W <- simulate(true_model, seed=seed)
       AW <- as.numeric(true_model$A %*% W)
       Y <- AW + rnorm(length(AW), sd=0.5)
       list(Y=Y, idx=idx_per_rep, group=group_per_rep)
@@ -129,13 +140,13 @@ print(paste("nodes of mesh = ", mesh$n))
   formula <- switch(model,
     "ar1" = Y ~ f(idx,
       model = "ar1",
-      noise = noise_nig(),
+      noise = f_form_noise,
       control = control_f(numer_grad = numer_grad)
     ),
     "matern" = Y ~ 0 + f(idx,
       model="matern",
       mesh = mesh,
-      noise=noise_nig(),
+      noise=f_form_noise,
       control = control_f(numer_grad = numer_grad)
     ),
     "bvar1" = Y ~ f(idx,
@@ -166,23 +177,25 @@ print(paste("nodes of mesh = ", mesh$n))
     group = group,
     data = data.frame(Y=Y),
     control_ngme = control_ngme(
+      n_gibbs_samples = n_gibbs_samples,
       rao_blackwellization = rao_blackwellization
     ),
     control_opt = control_opt(
       burnin = 100,
       std_lim = 0.001,
       print_check_info = FALSE,
-      verbose = FALSE,
-      seed = 3,
+      seed = seed,
+      num_threads = num_threads,
       iterations = n_iter,
       precond_by_diff_chain = precond_by_diff_chain,
       compute_precond_each_iter = compute_precond_each_iter,
       n_parallel_chain = n_parallel_chain,
       stop_points = stop_points,
+      verbose = verbose,
       preconditioner = preconditioner,
       sampling_strategy = sampling_strategy
     ),
-    family = "nig",
+    family = family,
     debug = debug
   )
 

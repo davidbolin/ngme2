@@ -10,6 +10,7 @@
 #include "include/MatrixAlgebra.h"
 #include "model.h"
 #include "block.h"
+// #include <chrono>
 
 using std::vector;
 
@@ -28,13 +29,22 @@ private:
   vector<int> num_each_repl;
   double sum_num_each_repl;
 
-  int sampling_strategy;
+  int sampling_strategy, num_threads_repl;
+
   std::mt19937 gen;
   std::discrete_distribution<int> weighted_sampler;
 
   bool debug;
+
+  // for time profiling
+  // std::chrono::milliseconds ngme_precond_time, ngme_grad_time, ngme_set_time, ngme_get_time;
 public:
-  Ngme(const Rcpp::List& list_ngmes, unsigned long seed, int sampling_strategy);
+  Ngme(
+    const Rcpp::List& list_ngmes,
+    unsigned long seed,
+    int sampling_strategy,
+    int num_threads_repl=4
+  );
 
   VectorXd get_parameter() override;
   void set_parameter(const VectorXd& p) override;
@@ -76,11 +86,7 @@ public:
     }
   }
 
-  void burn_in(int iterations) {
-    for (int i=0; i < n_repl; i++) {
-      ngme_repls[i]->burn_in(iterations);
-    }
-  }
+  void burn_in(int iterations);
 };
 
 #endif

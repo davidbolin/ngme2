@@ -130,6 +130,8 @@ ngme <- function(
   }
 if (debug) {print(str(ngme_model$replicates[[1]]))}
 
+# configuration of controls
+
 # check all f has the same replicate
   ################# Run CPP ####################
   check_dim(ngme_model)

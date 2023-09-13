@@ -131,7 +131,6 @@ compute_err_1rep <- function(
     "bool_<..>_idx should be a logical vector" =
       is.logical(bool_test_idx) && is.logical(bool_train_idx)
   )
-
   # if test_idx and train_idx overlap, warning message
   if (sum(bool_test_idx & bool_train_idx) > 0) {
     warning("Notice that test_idx and train_idx overlap!")

@@ -35,6 +35,7 @@ Rcpp::List estimate_cpp(const Rcpp::List& R_ngme, const Rcpp::List& control_opt)
     const double max_absolute_step = control_opt["max_absolute_step"];
     const int sampling_strategy = control_opt["sampling_strategy"];
     bool compute_precond_each_iter = control_opt["compute_precond_each_iter"];
+    const int n_repls = R_ngme["n_repls"];
 
     Rcpp::List output = R_NilValue;
 
@@ -55,7 +56,12 @@ auto timer = std::chrono::steady_clock::now();
     int n_chains = (control_opt["n_parallel_chain"]);
     int n_batch = (control_opt["stop_points"]);
     double print_check_info = (control_opt["print_check_info"]);
-    omp_set_num_threads(n_chains);
+
+    VectorXi num_threads = Rcpp::as<VectorXi>(control_opt["num_threads"]);
+    int n_threads_chain = num_threads[0];
+
+    omp_set_nested(1);
+    omp_set_num_threads(num_threads[0] * num_threads[1]);
 
     // set in R
     // if (n_chains == 1) {
@@ -69,14 +75,14 @@ auto timer = std::chrono::steady_clock::now();
     int i = 0;
     for (i=0; i < n_chains; i++) {
         // Not thread-safe using Rcpp::List to init optimizer
-        ngmes.push_back(std::make_shared<Ngme>(R_ngme, rng(), sampling_strategy));
+        ngmes.push_back(std::make_shared<Ngme>(R_ngme, rng(), sampling_strategy, num_threads[1]));
         opt_vec.push_back(Ngme_optimizer(control_opt, ngmes[i]));
     }
 
     std::string par_string = ngmes[0]->get_par_string();
 
     // burn in period
-    #pragma omp parallel for schedule(static)
+    #pragma omp parallel for schedule(static) num_threads(n_threads_chain)
     for (i=0; i < n_chains; i++)
         (ngmes[i])->burn_in(burnin);
 
@@ -93,7 +99,7 @@ auto timer = std::chrono::steady_clock::now();
 
     while (steps < iterations && !all_converge) {
         MatrixXd mat (n_chains, n_params);
-        #pragma omp parallel for schedule(static)
+        #pragma omp parallel for schedule(static) num_threads(n_threads_chain)
         for (i=0; i < n_chains; i++) {
             VectorXd param = opt_vec[i].sgd(
                 0.1,

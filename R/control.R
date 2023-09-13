@@ -29,6 +29,7 @@
 #' @param compute_precond_each_iter logical, if TRUE, compute preconditioner at each iteration, if FALSE, only compute preconditioner at check points (if has only 1 chain running, it will be set TRUE)
 #'
 #' @param num_threads maximum number of threads used in parallel computing, for example c(4, 5), which means we use 4 threads to parallize the chains, then use 5 threads to parallize different replicates in each chain
+#' Suggestion (num_parallel_chain, num_total_replicates)
 #' @param max_relative_step   max relative step allowed in 1 iteration
 #' @param max_absolute_step   max absolute step allowed in 1 iteration
 #'
@@ -66,7 +67,7 @@ control_opt <- function(
   max_relative_step = 0.5,
   max_absolute_step = 0.5,
 
-  num_threads       = c(n_parallel_chain, 4),
+  num_threads       = c(n_parallel_chain, 1),
 
   # reduce variance after conv. check
   reduce_var        = FALSE,

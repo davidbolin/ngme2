@@ -84,7 +84,10 @@ control_opt <- function(
   stopifnot(
     sampling_strategy %in% strategy_list,
     preconditioner %in% preconditioner_list,
-    is.numeric(num_threads) && length(num_threads) == 2
+    is.numeric(num_threads) && length(num_threads) == 2,
+    iterations > 0 && stop_points > 0,
+    "iterations should be multiple of stop_points"
+      = iterations %% stop_points == 0
   )
 
   if ((reduce_power <= 0.5) || (reduce_power > 1)) {

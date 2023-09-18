@@ -118,8 +118,9 @@ auto timer = std::chrono::steady_clock::now();
 
         // compute mean and variance
         means.row(curr_batch) = mat.colwise().mean();
-        for (int k=0; k < n_params; k++)
+        for (int k=0; k < n_params; k++) {
             vars(curr_batch, k) = (mat.col(k).array() - means(curr_batch, k)).square().sum() / (n_chains - 1);
+        }
 
         if (n_chains > 1) {
             if (precond_by_diff_chain) {

@@ -146,7 +146,7 @@ public:
         prevV = V;
     }
 
-    void update_each_iter(bool init=false);
+    void update_each_iter(bool initialization=false, bool update_dK=false);
     void sample_cond_V();
     void sample_uncond_V();
 
@@ -175,7 +175,7 @@ public:
     /* 4 for optimizer */
     const VectorXd get_parameter();
     const VectorXd get_grad(bool rao_blackwell=FALSE);
-    void           set_parameter(const VectorXd&);
+    void           set_parameter(const VectorXd&, bool update_dK=FALSE);
     void           finishOpt(int i) {fix_flag[i] = 0; }
 
     VectorXd grad_theta_K(bool rao_blackwell=FALSE);

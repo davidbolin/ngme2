@@ -118,7 +118,7 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
 
 // std::cout << " here 3" << std::endl;
     // build mu, sigma, compute trace, ...
-    update_each_iter(true);
+    update_each_iter(true, false);
 
 // std::cout << " here 4" << std::endl;
     // Initialize V
@@ -338,7 +338,7 @@ if (debug) std::cout << "finish latent gradient"<< std::endl;
     return grad;
 }
 
-void Latent::set_parameter(const VectorXd& theta) {
+void Latent::set_parameter(const VectorXd& theta, bool update_dK) {
 // if (debug) std::cout << "Start latent set parameter"<< std::endl;
 
     // nig, gal and normal+nig
@@ -349,7 +349,7 @@ void Latent::set_parameter(const VectorXd& theta) {
     if (noise_type[0] == "normal_nig") {
         theta_sigma_normal = theta.segment(n_theta_K+n_theta_mu+n_theta_sigma+n_nu, n_theta_sigma_normal);
     }
-    update_each_iter();
+    update_each_iter(false, update_dK || !numer_grad);
 }
 
 void Latent::sample_cond_V() {
@@ -432,9 +432,9 @@ void Latent::sample_uncond_V() {
 }
 
 // at init, and after each set parameter
-void Latent::update_each_iter(bool init) {
+void Latent::update_each_iter(bool initialization, bool update_dK) {
 // std::chrono::steady_clock::time_point startTime, endTime; startTime = std::chrono::steady_clock::now();
-    if (!init) ope->update_K(theta_K);
+    if (!initialization) ope->update_K(theta_K);
 // endTime = std::chrono::steady_clock::now(); std::cout << "K_update time (ms): " << std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count() << std::endl;
 // std::cout << " here 5" << std::endl;
 // std::cout << "B_mu size = " << B_mu.rows() << " * " << B_mu.cols() << std::endl;
@@ -463,8 +463,8 @@ void Latent::update_each_iter(bool init) {
         }
     }
 
+    if (update_dK) ope->update_dK(theta_K);
     if (!numer_grad) {
-        ope->update_dK(theta_K);
         // trace[i] = tr(K^-1 dK[i])
         if (!zero_trace) {
             if (!symmetricK) {

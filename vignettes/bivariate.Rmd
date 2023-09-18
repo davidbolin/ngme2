@@ -266,6 +266,7 @@ out <- ngme(
   )
 )
 out
+# traceplot(out, "bv")
 ```
 
 <!-- ## A spatial Matern example -->

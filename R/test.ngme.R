@@ -41,6 +41,7 @@ test_ngme <- function(
   debug_f = FALSE,
   verbose = FALSE,
   rao_blackwellization = FALSE,
+  start = NULL,
   seed = Sys.time()
 ) {
   # create 2d mesh
@@ -75,14 +76,14 @@ f_form_noise <- if (f_noise=="nig") noise_nig() else noise_normal()
       true_model <- f(
         map = loc,
         model="matern",
-        theta_K = log(2),
+        theta_K = log(5),
         mesh = mesh,
         noise = f_simu_noise,
         debug = debug_f
       )
       W <- simulate(true_model, seed = seed)
-      # Y <- as.numeric(true_model$A %*% W) + rnorm(n_obs_per_rep, sd=0.5)
-      Y <- as.numeric(true_model$A %*% W) + rnig(n_obs_per_rep, mu=1,delta=-1,nu=1,sigma=1)
+      Y <- as.numeric(true_model$A %*% W) + rnorm(n_obs_per_rep, sd=0.5)
+      # Y <- as.numeric(true_model$A %*% W) + rnig(n_obs_per_rep, mu=1,delta=-1,nu=1,sigma=1)
       list(Y=Y, idx=loc, group=rep(1, n_obs_per_rep))
     },
     "bvar1" = {
@@ -98,8 +99,8 @@ f_form_noise <- if (f_noise=="nig") noise_nig() else noise_normal()
         ),
         group = group_per_rep,
         noise = list(
-          first=noise_nig(mu=-3, sigma=2, nu=1),
-          second=noise_nig(mu=-3, sigma=2, nu=1)
+          first = f_simu_noise,
+          second = f_simu_noise
         ),
         debug = debug_f
       )
@@ -115,10 +116,10 @@ f_form_noise <- if (f_noise=="nig") noise_nig() else noise_normal()
       true_model <- f(
         loc,
         model="bv",
-        theta = 0.5, rho = 0.8,
+        theta = 0, rho = 0,
         sub_models = list(
-          first = list(model="matern", kappa=0.5),
-          second= list(model="matern", kappa=0.5)
+          first = list(model="matern", kappa=2),
+          second= list(model="matern", kappa=4)
         ),
         mesh = mesh,
         group = group_per_rep,
@@ -170,7 +171,7 @@ f_form_noise <- if (f_noise=="nig") noise_nig() else noise_normal()
   repl <- rep(1:n_replicate, each=n_obs_per_rep)
 
   # fit
-  start <- proc.time()
+  start_time <- proc.time()
   out <- ngme(
     formula,
     replicate = repl,
@@ -195,13 +196,14 @@ f_form_noise <- if (f_noise=="nig") noise_nig() else noise_normal()
       preconditioner = preconditioner,
       sampling_strategy = sampling_strategy
     ),
+    start = start,
     family = family,
     debug = debug
   )
 
-  print(proc.time() - start)
+  print(proc.time() - start_time)
   list(
     out = out,
-    time = proc.time() - start
+    time = proc.time() - start_time
   )
 }

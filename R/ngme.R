@@ -107,8 +107,8 @@ ngme <- function(
   attr(ngme_model, "fitting") <- fitting
 
   ####### Use Last_fit ngme object to update Rcpp_list
-  stopifnot("start should be an ngme object"
-    = inherits(start, "ngme") || is.null(start))
+  if (!is.null(start) && !inherits(start, "ngme"))
+   stop("start should be an ngme object.")
 
   # update with start (list of ngmes)
   if (inherits(start, "ngme")) {

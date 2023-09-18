@@ -68,6 +68,8 @@ control_opt <- function(
   max_absolute_step = 0.5,
 
   num_threads       = c(n_parallel_chain, 1),
+  # rao_blackwellization = FALSE,
+  # n_hutchinson_estimator = 20,
 
   # reduce variance after conv. check
   reduce_var        = FALSE,
@@ -116,6 +118,9 @@ control_opt <- function(
     trend_lim         = trend_lim,
 
     num_threads       = num_threads,
+    # rao_blackwellization = rao_blackwellization,
+    # n_hutchinson_estimator = n_hutchinson_estimator,
+
     print_check_info  = print_check_info,
 
     # variance reduction

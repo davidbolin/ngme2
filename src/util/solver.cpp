@@ -1,9 +1,15 @@
 #include "../include/solver.h"
 using namespace Eigen;
+double myround(double x){
+	if(x > 0){
+		return -1.0;
+	} else {
+		return 1.0;
+	}
+}
 
 /* --------------------------------------------------------- */
 // CHOLESKY SOLVER
-
 void cholesky_solver::init(int nin, int Nin, int max_iter, double tol)
 {
   n = nin;
@@ -59,6 +65,27 @@ SparseMatrix<double, 0, int> cholesky_solver::return_Qinv()
   SparseMatrix<double, 0, int> Qi_reo;
   Qi_reo = Qi.twistedBy(R.permutationPinv());
   return (Qi_reo);
+}
+
+double cholesky_solver::trace_num(const SparseMatrix<double, 0, int> &M)
+{
+  MatrixXd U (n,N);
+  U.setRandom(n,N);
+  U = U.unaryExpr(std::ref(myround));
+
+  if (QU_computed==0){
+    for(int i=0; i<N; i++){
+      QU.col(i) = R.solve(U.col(i));
+    }
+    QU_computed = 1;
+  }
+
+  Eigen::MatrixXd MQU = M*QU;
+  double t = 0;
+  for(int i=0;i<N;i++){
+    t += U.col(i).dot(MQU.col(i));
+  }
+  return t/N;
 }
 
 double cholesky_solver::trace(const SparseMatrix<double, 0, int> &M)

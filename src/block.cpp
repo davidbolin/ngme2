@@ -331,9 +331,9 @@ long long time_sample_w = 0;
   VectorXd latent_grad = VectorXd::Zero(n_la_params);
   VectorXd noise_grad = VectorXd::Zero(n_params-n_la_params);
 
+  if (rao_blackwell) assemble_dK(); // for computing trace
   if (all_gaussian) {
     // compute RB version of gradient
-    assemble_dK();
     sampleW_VY(); // QQ.compute
     compute_rb_trace();
 
@@ -351,11 +351,11 @@ long long time_sample_w = 0;
   } else {
     // Running Gibbs sampling
     for (int i=0; i < n_gibbs; i++) {
-      sample_cond_V();
 // std::chrono::steady_clock::time_point startTime, endTime; startTime = std::chrono::steady_clock::now();
+      sample_cond_V();
       sampleW_VY();
+      if (rao_blackwell) compute_rb_trace();
 
-      if (rao_blackwell) assemble_dK();
       int pos = 0;
       for (std::vector<std::shared_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
         int theta_len = (*it)->get_n_params();
@@ -397,7 +397,7 @@ if (debug) std::cout << "Start set_parameter"<< std::endl;
   for (std::vector<std::shared_ptr<Latent>>::iterator it = latents.begin(); it != latents.end(); it++) {
     int theta_len = (*it)->get_n_params();
     VectorXd theta = Theta.segment(pos, theta_len);
-    (*it)->set_parameter(theta);
+    (*it)->set_parameter(theta, rao_blackwell);
     pos += theta_len;
   }
 
@@ -884,14 +884,14 @@ double BlockModel::logd_no_latent(const VectorXd& v) {
 
 // tr(QQ^-1 dK^T diag(1/SV) K)
 void BlockModel::compute_rb_trace() {
-    for (int i=0; i < n_latent; i++) {
-        vector<double> rb_trace (latents[i]->get_n_theta_K(), 0);
-        for (int j=0; j < latents[i]->get_n_theta_K(); j++) {
-            VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
-            SparseMatrix<double> M = block_dK[i][j] * inv_SV.asDiagonal() * K;
-            rb_trace[j] = chol_QQ.trace(M);
-// std::cout << "rb trace = " << j << " = " << rb_trace[j] << std::endl;
-        }
-        latents[i]->set_rb_trace(rb_trace);
+  for (int i=0; i < n_latent; i++) {
+    vector<double> rb_trace (latents[i]->get_n_theta_K(), 0);
+    for (int j=0; j < latents[i]->get_n_theta_K(); j++) {
+      VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
+      SparseMatrix<double> M = block_dK[i][j] * inv_SV.asDiagonal() * K;
+      rb_trace[j] = chol_QQ.trace_num(M);
+std::cout <<"trace = " << rb_trace[j] << std::endl;
     }
+    latents[i]->set_rb_trace(rb_trace);
+  }
 }

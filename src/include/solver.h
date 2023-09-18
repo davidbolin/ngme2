@@ -9,6 +9,7 @@
 #include "MatrixAlgebra.h"
 #include <Rcpp.h>
 
+
 class solver
 {
 private:
@@ -72,10 +73,12 @@ public:
 class cholesky_solver : public virtual solver
 {
 private:
-  bool Qi_computed;
+  bool Qi_computed {false}, QU_computed {false};
   double ld;
   Eigen::SimplicialLLT<Eigen::SparseMatrix<double, 0, int> > R;
   Eigen::SparseMatrix<double, 0, int> Qi;
+  Eigen::MatrixXd QU;
+  int N {20};
   void set_ld();
 
 public:
@@ -84,12 +87,14 @@ public:
   ~cholesky_solver(){};
   void init(int, int, int, double);
   void initFromList(int, Rcpp::List const &);
-  inline void analyze(const Eigen::SparseMatrix<double, 0, int> &M) { R.analyzePattern(M); }
+  //
+  inline void analyze(const Eigen::SparseMatrix<double, 0, int> &M) { R.analyzePattern(M); n=M.cols(); QU.resize(n, N); QU_computed = false; }
   void compute(const Eigen::SparseMatrix<double, 0, int> &);
   inline Eigen::VectorXd solve(Eigen::VectorXd &v, Eigen::VectorXd &x) { return R.solve(v); }
   inline Eigen::VectorXd solve(const Eigen::VectorXd &v)               { return R.solve(v); }
   double trace(const Eigen::MatrixXd &);
   double trace(const Eigen::SparseMatrix<double, 0, int> &);
+  double trace_num(const Eigen::SparseMatrix<double, 0, int> &);
   double trace2(const SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &);
   inline double logdet()
   {

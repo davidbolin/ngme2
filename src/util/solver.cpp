@@ -28,6 +28,7 @@ void cholesky_solver::compute(const SparseMatrix<double, 0, int> &M)
 {
   R.factorize(M);
   Qi_computed = 0;
+  QU_computed = 0;
 }
 
 void cholesky_solver::set_ld()

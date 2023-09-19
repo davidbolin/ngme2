@@ -58,6 +58,7 @@ ngme <- function(
     stop("\n\tArgument `data' must be a data.frame.")
   }
 
+  # configure control parameters
   if (is.null(control_ngme)) control_ngme <- control_ngme()
   if (is.null(control_opt))  control_opt <- control_opt()
   stopifnot(
@@ -66,6 +67,8 @@ ngme <- function(
     "data provide should be of the same length" =
     all(diff(sapply(data, length)) == 0)
   )
+  control_ngme <- update_control_ngme(control_ngme, control_opt)
+
   if (!is.null(group)) group <- as.factor(group)
   if (is.null(replicate)) replicate <- rep(1, nrow(data))
   if (inherits(replicate, "formula")) {
@@ -162,6 +165,10 @@ if (debug) {print(str(ngme_model$replicates[[1]]))}
     #   ngme_model$replicates[[i]] <- ngme_replicate
     # }
     cat("Posterior sampling done! \n")
+
+    mn_nu <- ngme_model$replicates[[1]]$noise$nu
+    if (length(mn_nu) > 1 && mn_nu > 100)
+      cat("The parameter nu for measurement noise is too big, consider using family=normal instead. \n")
 
     # transform trajectory
     traj_df_chains <- transform_traj(attr(outputs, "opt_traj"))

@@ -32,6 +32,8 @@
 #' Suggestion (num_parallel_chain, num_total_replicates)
 #' @param max_relative_step   max relative step allowed in 1 iteration
 #' @param max_absolute_step   max absolute step allowed in 1 iteration
+#' @param rao_blackwellization  use rao_blackwellization
+#' @param n_trace_iter  use how many iterations to approximate the trace (Hutchinson’s trick)
 #'
 #' @param reduce_var      logical, reduce variace
 #' @param reduce_power    numerical the power of reduce level
@@ -68,14 +70,15 @@ control_opt <- function(
   max_absolute_step = 0.5,
 
   num_threads       = c(n_parallel_chain, 1),
-  # rao_blackwellization = FALSE,
-  # n_hutchinson_estimator = 20,
 
   # reduce variance after conv. check
   reduce_var        = FALSE,
   reduce_power      = 0.75,
   threshold         = 1e-5,
   window_size       = 1,
+
+  rao_blackwellization = FALSE,
+  n_trace_iter      = 10,
 
   # opt print
   verbose           = FALSE,
@@ -118,8 +121,8 @@ control_opt <- function(
     trend_lim         = trend_lim,
 
     num_threads       = num_threads,
-    # rao_blackwellization = rao_blackwellization,
-    # n_hutchinson_estimator = n_hutchinson_estimator,
+    rao_blackwellization = rao_blackwellization,
+    n_trace_iter      = n_trace_iter,
 
     print_check_info  = print_check_info,
 
@@ -187,7 +190,6 @@ control_ngme <- function(
   fix_feff = FALSE,
   post_samples_size = 100,
   feff = NULL,
-  rao_blackwellization = FALSE,
   debug = FALSE
 ) {
   control <- list(
@@ -197,10 +199,16 @@ control_ngme <- function(
     feff = feff,
     post_samples_size = post_samples_size,
     stepsize = 1,
-    rao_blackwellization = rao_blackwellization,
     debug = debug
   )
 
   class(control) <- "control_ngme"
   control
+}
+
+update_control_ngme <- function(control_ngme, control_opt) {
+  control_ngme$rao_blackwellization <- control_opt$rao_blackwellization
+  control_ngme$n_trace_iter <- control_opt$n_trace_iter
+
+  control_ngme
 }

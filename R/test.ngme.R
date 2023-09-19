@@ -41,6 +41,7 @@ test_ngme <- function(
   debug_f = FALSE,
   verbose = FALSE,
   rao_blackwellization = FALSE,
+  n_trace_iter = 10,
   start = NULL,
   estimation = TRUE,
   seed = Sys.time()
@@ -56,20 +57,22 @@ test_ngme <- function(
 print(paste("nodes of mesh = ", mesh$n))
   }
 
-f_simu_noise <- if (f_noise=="nig") noise_nig(mu = -3, sigma = 2, nu=0.4)
+f_sim_noise <- if (f_noise=="nig") noise_nig(mu = -3, sigma = 1.5, nu=0.5)
   else noise_normal()
-f_form_noise <- if (f_noise=="nig") noise_nig() else noise_normal()
+f_fm_noise <- if (f_noise=="nig") noise_nig() else noise_normal()
+mn_noise <- if (family=="nig") rnig(n_obs_per_rep, delta=-2, mu=2, nu=0.8, sigma=0.5)
+  else rnorm(n_obs_per_rep, sd=0.5)
 
   # ------- Simulate data for each model --------
   sim_data <- switch(model,
     "ar1" = {
       idx <- 1:n_obs_per_rep
       ar1_model <- f(idx, model="ar1", rho = 0.5,
-      noise = f_simu_noise,
+      noise = f_sim_noise,
       debug = debug_f
       )
       W <- simulate(ar1_model, seed = seed)
-      Y <- W + rnorm(n_obs_per_rep, sd = 2)
+      Y <- W + mn_noise
       list(Y=Y, idx=idx, group=rep(1, n_obs_per_rep))
     },
     "matern" = {
@@ -77,14 +80,13 @@ f_form_noise <- if (f_noise=="nig") noise_nig() else noise_normal()
       true_model <- f(
         map = loc,
         model="matern",
-        theta_K = log(5),
+        theta_K = log(4),
         mesh = mesh,
-        noise = f_simu_noise,
+        noise = f_sim_noise,
         debug = debug_f
       )
-      W <- simulate(true_model, seed = seed)
-      Y <- as.numeric(true_model$A %*% W) + rnorm(n_obs_per_rep, sd=0.5)
-      # Y <- as.numeric(true_model$A %*% W) + rnig(n_obs_per_rep, mu=1,delta=-1,nu=1,sigma=1)
+      W <- simulate(true_model, seed=seed)
+      Y <- as.numeric(true_model$A %*% W) + mn_noise
       list(Y=Y, idx=loc, group=rep(1, n_obs_per_rep))
     },
     "bvar1" = {
@@ -100,14 +102,13 @@ f_form_noise <- if (f_noise=="nig") noise_nig() else noise_normal()
         ),
         group = group_per_rep,
         noise = list(
-          first = f_simu_noise,
-          second = f_simu_noise
+          first = f_sim_noise,
+          second = f_sim_noise
         ),
         debug = debug_f
       )
       W <- simulate(true_model, seed=seed)
-      AW <- as.numeric(true_model$A %*% W)
-      Y <- AW + rnorm(length(AW), sd=0.5)
+      Y <- as.numeric(true_model$A %*% W) + mn_noise
       list(Y=Y, idx=idx_per_rep, group=group_per_rep)
     },
     "bvmatern" = {
@@ -131,8 +132,7 @@ f_form_noise <- if (f_noise=="nig") noise_nig() else noise_normal()
         debug = debug_f
       )
       W <- simulate(true_model, seed=seed)
-      AW <- as.numeric(true_model$A %*% W)
-      Y <- AW + rnorm(length(AW), sd=0.5)
+      Y <- as.numeric(true_model$A %*% W) + mn_noise
       list(Y=Y, idx=idx_per_rep, group=group_per_rep)
     },
     stop("Unknown test model")
@@ -142,13 +142,13 @@ f_form_noise <- if (f_noise=="nig") noise_nig() else noise_normal()
   formula <- switch(model,
     "ar1" = Y ~ f(idx,
       model = "ar1",
-      noise = f_form_noise,
+      noise = f_fm_noise,
       control = control_f(numer_grad = numer_grad)
     ),
     "matern" = Y ~ 0 + f(idx,
       model="matern",
       mesh = mesh,
-      noise=f_form_noise,
+      noise=f_fm_noise,
       control = control_f(numer_grad = numer_grad)
     ),
     "bvar1" = Y ~ f(idx,
@@ -179,13 +179,14 @@ f_form_noise <- if (f_noise=="nig") noise_nig() else noise_normal()
     group = group,
     data = data.frame(Y=Y),
     control_ngme = control_ngme(
-      n_gibbs_samples = n_gibbs_samples,
-      rao_blackwellization = rao_blackwellization
+      n_gibbs_samples = n_gibbs_samples
     ),
     control_opt = control_opt(
       burnin = 100,
       std_lim = 0.001,
       print_check_info = FALSE,
+      rao_blackwellization = rao_blackwellization,
+      n_trace_iter = n_trace_iter,
       seed = seed,
       num_threads = num_threads,
       iterations = n_iter,
@@ -206,6 +207,7 @@ f_form_noise <- if (f_noise=="nig") noise_nig() else noise_normal()
   print(proc.time() - start_time)
   list(
     out = out,
-    time = proc.time() - start_time
+    time = proc.time() - start_time,
+    f_sim_noise = f_sim_noise
   )
 }

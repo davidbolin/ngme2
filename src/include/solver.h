@@ -78,7 +78,7 @@ private:
   Eigen::SimplicialLLT<Eigen::SparseMatrix<double, 0, int> > R;
   Eigen::SparseMatrix<double, 0, int> Qi;
   Eigen::MatrixXd QU;
-  int N {20};
+  int N {50};
   void set_ld();
 
 public:
@@ -87,7 +87,8 @@ public:
   ~cholesky_solver(){};
   void init(int, int, int, double);
   void initFromList(int, Rcpp::List const &);
-  //
+
+  inline void set_N(int n) { N = n; }
   inline void analyze(const Eigen::SparseMatrix<double, 0, int> &M) { R.analyzePattern(M); n=M.cols(); QU.resize(n, N); QU_computed = false; }
   void compute(const Eigen::SparseMatrix<double, 0, int> &);
   inline Eigen::VectorXd solve(Eigen::VectorXd &v, Eigen::VectorXd &x) { return R.solve(v); }

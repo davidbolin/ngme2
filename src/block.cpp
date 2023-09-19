@@ -170,6 +170,11 @@ if (debug) std::cout << "After assemble" << std::endl;
     else{
       QQ = Q + A.transpose() * Q_eps * A;
     }
+
+    // set N for trace
+    int n_trace_iter = Rcpp::as<int> (control_ngme["n_trace_iter"]);
+    chol_QQ.set_N(n_trace_iter);
+
     chol_Q.analyze(Q);
     chol_QQ.analyze(QQ);
     LU_K.analyzePattern(K);
@@ -547,8 +552,10 @@ VectorXd BlockModel::grad_theta_merr() {
 void BlockModel::set_theta_merr(const VectorXd& theta_merr) {
   theta_mu = theta_merr.segment(0, n_theta_mu);
   theta_sigma = theta_merr.segment(n_theta_mu, n_theta_sigma);
-  if (family != "normal")
+  if (family != "normal") {
     nu(0) = exp(theta_merr(n_theta_mu + n_theta_sigma));
+    if (nu(0) > 1e4) nu(0) = 1e4;
+  }
 
   // update mu, sigma
   noise_mu = (B_mu * theta_mu);
@@ -890,7 +897,9 @@ void BlockModel::compute_rb_trace() {
       VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
       SparseMatrix<double> M = block_dK[i][j] * inv_SV.asDiagonal() * K;
       rb_trace[j] = chol_QQ.trace_num(M);
-std::cout <<"trace = " << rb_trace[j] << std::endl;
+//       double ana_trace = chol_QQ.trace(M);
+// std::cout <<"num trace = " << rb_trace[j] << std::endl;
+// std::cout <<"ana trace = " << ana_trace << std::endl;
     }
     latents[i]->set_rb_trace(rb_trace);
   }

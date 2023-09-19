@@ -69,6 +69,8 @@ bv <- function(
   D <- build_D(theta, rho)
   bigD <- kronecker(D, Matrix::Diagonal(nrow(first$K)))
 
+  eta_to_theta <- function(eta) atan(eta) / 2
+
   ngme_operator(
     mesh        = mesh,
     model       = "bv",
@@ -80,7 +82,12 @@ bv <- function(
     symmetric   = FALSE,
     zero_trace  = FALSE,
     model_names = model_names,
-    share_param = share_param
+    share_param = share_param,
+    param_name  = c("theta", "rho",
+      if (!is.null(first$param_name)) paste(first$param_name, "(1st)") else NULL,
+      if (!is.null(second$param_name)) paste(second$param_name, "(2nd)") else NULL
+    ),
+    param_trans = c(list(eta_to_theta, identity), first$param_trans, second$param_trans)
   )
 }
 
@@ -117,6 +124,8 @@ tp <- function(
     K = first$K %x% second$K,
     h = first$h %x% second$h,
     symmetric = first$symmetric & second$symmetric,
-    zero_trace = first$zero_trace & second$zero_trace
+    zero_trace = first$zero_trace & second$zero_trace,
+    param_name = c(first$param_name, second$param_name),
+    param_trans = c(first$param_trans, second$param_trans)
   )
 }

@@ -98,6 +98,11 @@ ngme_noise <- function(
     nu <- double(0)
   }
 
+  if (all(noise_type != "normal_nig")) {
+    theta_sigma_normal <- double(0)
+    B_sigma_normal <- matrix(ncol=0, nrow=nrow(B_mu))
+  }
+
   # init rho
   if (corr_measurement && length(rho) == 0) {
     rho <- 0
@@ -111,13 +116,13 @@ ngme_noise <- function(
       V               = V,
       theta_mu        = theta_mu,
       theta_sigma     = theta_sigma,
-      theta_sigma_normal     = theta_sigma_normal,
+      theta_sigma_normal = theta_sigma_normal,
       B_mu            = B_mu,
       B_sigma         = B_sigma,
       B_sigma_normal  = B_sigma_normal,
       n_theta_mu      = length(theta_mu),
       n_theta_sigma   = length(theta_sigma),
-      n_theta_sigma_normal   = length(theta_sigma_normal),
+      n_theta_sigma_normal = length(theta_sigma_normal),
       fix_theta_mu    = fix_theta_mu,
       fix_theta_sigma = fix_theta_sigma,
       fix_nu          = fix_nu,

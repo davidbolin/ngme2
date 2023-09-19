@@ -1,3 +1,87 @@
+get_noise_info <- function(noise) {
+  if (length(noise$noise_type) == 1) {
+    # mu
+    if (noise$n_theta_mu == 0) {
+      name_mu <- NULL
+    } else if (noise$n_theta_mu == 1 && is_stationary(noise$B_mu)) {
+      name_mu <- "mu"
+    }
+    else {
+      name_mu <- paste("theta_mu", seq_len(noise$n_theta_mu))
+    }
+    trans_mu <- rep(list(identity), noise$n_theta_mu)
+
+    # sigma
+    if (is_stationary(noise$B_sigma)) {
+      name_sigma <- "sigma"
+      trans_sigma <- list(exp)
+    } else {
+      name_sigma <- paste("theta_sigma", seq_len(noise$n_theta_sigma))
+      trans_sigma <- rep(list(identity), noise$n_theta_sigma)
+    }
+
+    if (length(noise$theta_sigma_normal) == 0) {
+      name_sigma_normal <- NULL
+      trans_sigma_normal <- NULL
+    } else if (length(noise$theta_sigma_normal) == 1 && is_stationary(noise$B_sigma_normal)) {
+      name_sigma_normal <- "sigma_normal"
+      trans_sigma_normal <- list(exp)
+    } else {
+      name_sigma_normal <- paste("theta_sigma_normal", seq_len(noise$n_theta_sigma_normal))
+      trans_sigma_normal <- rep(list(identity), noise$n_theta_sigma_normal)
+    }
+
+    # nu
+    name_nu <- if (noise$n_nu == 0) NULL
+      else if (noise$n_nu == 1) "nu"
+      else paste("nu", seq_len(noise$n_nu))
+    trans_nu <- rep(list(exp), noise$n_nu)
+
+    ts <- list(
+      # for bv noise
+      all = list(
+        name_mu = name_mu,
+        name_sigma = name_sigma,
+        name_sigma_normal = name_sigma_normal,
+        name_nu = name_nu,
+        trans_mu = trans_mu,
+        trans_sigma = trans_sigma,
+        trans_sigma_normal = trans_sigma_normal,
+        trans_nu = trans_nu
+      ),
+      # for plot
+      name = c(name_mu, name_sigma, name_sigma_normal, name_nu),
+      trans = c(trans_mu, trans_sigma, trans_sigma_normal, trans_nu)
+    )
+  } else {
+    # bivariate noise
+    n1 <- get_noise_info(noise$bv_noises[[1]])
+    n2 <- get_noise_info(noise$bv_noises[[2]])
+    n1 <- lapply(n1$all, function(x) if (is.character(x)) paste(x, "(1st)") else x)
+    n2 <- lapply(n2$all, function(x) if (is.character(x)) paste(x, "(2nd)") else x)
+
+    # re-arrange
+    ts <- list(
+      name = c(n1$name_mu, n2$name_mu,
+        n1$name_sigma, n2$name_sigma,
+        n1$name_sigma_normal, n2$name_sigma_normal,
+        n1$name_nu, n2$name_nu),
+      trans = c(n1$trans_mu, n2$trans_mu,
+        n1$trans_sigma, n2$trans_sigma,
+        n1$trans_sigma_normal, n2$trans_sigma_normal,
+        n1$trans_nu, n2$trans_nu)
+    )
+  }
+  ts
+}
+
+get_latent_info <- function(latent) {
+  ts <- get_noise_info(latent$noise)
+  ts$name <- c(latent$operator$param_name, ts$name)
+  ts$trans <- c(latent$operator$param_trans, ts$trans)
+  ts
+}
+
 #' Trace plot of ngme fitting
 #'
 #' @param ngme ngme object
@@ -14,54 +98,24 @@ traceplot <- function(ngme, name="general") {
   ps <- list()
 
   if (name %in% names(ngme$models)) {
+    # Plot latent trajectory
     traj <- attr(ngme$models[[name]], "lat_traj")
-    # get titles
-    ts <- with(ngme$models[[name]], {
-      if (noise$noise_type[[1]] == "normal_nig") {
-       list(
-          c("theta_mu", "theta_sigma", "theta_sigma_normal", "log(nu)"),
-          c(noise$n_theta_mu, noise$n_theta_sigma, noise$n_theta_sigma_normal, noise$n_nu)
-        )
-      } else if (noise$noise_type[[1]] == "normal") {
-        list("theta_sigma", noise$n_theta_sigma)
-      } else {
-        list(
-          c("theta_mu", "theta_sigma", "log(nu)"),
-          c(noise$n_theta_mu, noise$n_theta_sigma, noise$n_nu)
-        )
-      }
-  })
-    if (length(ngme$models[[name]]$theta_K) > 0) {
-      ts[[1]] <- c("theta_K", ts[[1]])
-      ts[[2]] <- c(length(ngme$models[[name]]$theta_K), ts[[2]])
-    }
+    ts <- get_latent_info(ngme$models[[name]])
   } else {
-    # block
+    # Plot block trajectory
     traj <- attr(ngme, "block_traj")
     # get titles
-    ts <- with(ngme, {
-      switch(noise$noise_type,
-        "normal_nig" = list(
-          c("theta_mu", "theta_sigma", "theta_sigma_normal", "log(nu)"),
-          c(noise$n_theta_mu,
-          noise$n_theta_sigma, noise$n_theta_sigma_normal, noise$n_nu)
-        ),
-        "normal" = list("theta_sigma", noise$n_theta_sigma),
-        list(
-          c("theta_mu", "theta_sigma", "log(nu)"),
-          c(noise$n_theta_mu, noise$n_theta_sigma, noise$n_nu)
-        )
-      )
-    })
+    ts <- get_noise_info(ngme$noise)
     if (ngme$noise$corr_measurement) {
-      ts[[1]] <- c(ts[[1]], "theta_rho"); ts[[2]] <- c(ts[[2]], 1)
+      ts$name <- c(ts$name, "rho(measurement)");
+      ts$trans <- c(ts$trans, list(ar1_th2a))
     }
-    ts[[1]] <- c(ts[[1]], "feff"); ts[[2]] <- c(ts[[2]], length(ngme$feff))
+    name_feff <- if (length(ngme$feff)==0) NULL else paste ("feff", seq_len(length(ngme$feff)))
+    trans_feff <- rep(list(identity), length(ngme$feff))
+    ts$name <- c(name_feff, ts$name)
+    ts$trans <- c(trans_feff, ts$trans)
   }
-  names <- c()
-  for (i in seq_along(ts[[1]]))
-    names <- c(names, paste(ts[[1]][[i]], seq_len(ts[[2]][[i]])))
-  # make plot
+
   for (idx in seq_len(nrow(traj[[1]]))) {
     df <- sapply(traj, function(x) x[idx, ,drop=F])
     # wierd stuff here
@@ -70,16 +124,25 @@ traceplot <- function(ngme, name="general") {
     mean_traj <- rowMeans(df)
     df$x <- seq_len(nrow(df)); x <- NULL # get around check note
     df_long <- tidyr::gather(df, key = "key", value = "value", -x)
+    ff <- ts$trans[[idx]]
+    df_long$value <- ff(df_long$value)
     ps[[idx]] <- ggplot() +
       geom_line(
         data = df_long,
-        mapping = aes(x=.data[["x"]], y=.data[["value"]], group=.data[["key"]])
+        mapping = aes(
+          x=.data[["x"]],
+          y=.data[["value"]],
+          group=.data[["key"]]
+        )
       ) + geom_line(
-        data = data.frame(x=seq_len(nrow(df)), y=mean_traj),
-        aes(x=.data[["x"]],y=.data[["y"]]),
+        data = data.frame(x=seq_len(nrow(df)), y=ff(mean_traj)),
+        aes(
+          x=.data[["x"]],
+          y=.data[["y"]]
+        ),
         col="red"
       ) +
-      labs(title = names[idx])
+      labs(title = ts$name[[idx]])
   }
 
   if (length(ps) > 1) ps["ncol"]=2

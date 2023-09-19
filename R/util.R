@@ -437,3 +437,9 @@ ngme_prior <- function(type, param=NULL) {
     class = "ngme_prior"
   )
 }
+
+# given a basis matrix, find if it is stationary
+is_stationary <- function(B) {
+  stopifnot(is.matrix(B))
+  ncol(B) == 1 && all(B == 1)
+}

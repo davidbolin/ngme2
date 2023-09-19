@@ -42,6 +42,7 @@ test_ngme <- function(
   verbose = FALSE,
   rao_blackwellization = FALSE,
   start = NULL,
+  estimation = TRUE,
   seed = Sys.time()
 ) {
   # create 2d mesh
@@ -194,6 +195,7 @@ f_form_noise <- if (f_noise=="nig") noise_nig() else noise_normal()
       stop_points = stop_points,
       verbose = verbose,
       preconditioner = preconditioner,
+      estimation = estimation,
       sampling_strategy = sampling_strategy
     ),
     start = start,

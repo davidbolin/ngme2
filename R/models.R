@@ -21,7 +21,8 @@ iid <- function(
     h = rep(1, n),
     A = K,
     symmetric = TRUE,
-    zero_trace = FALSE
+    zero_trace = FALSE,
+    param_name = character(0)
   )
 }
 
@@ -60,7 +61,9 @@ ar1 <- function(
     K = rho * C + G,
     h = h,
     symmetric = FALSE,
-    zero_trace = TRUE
+    zero_trace = TRUE,
+    param_name = "rho",
+    param_trans = list(ar1_th2a)
   )
 }
 
@@ -104,7 +107,8 @@ rw1 <- function(
     K = ngme_as_sparse(C + G),
     h = h,
     symmetric = FALSE,
-    zero_trace = FALSE
+    zero_trace = FALSE,
+    param_name = character(0)
   )
 }
 
@@ -152,7 +156,8 @@ rw2 <- function(
     K = ngme_as_sparse(C + G),
     h = h,
     symmetric = FALSE,
-    zero_trace = FALSE
+    zero_trace = FALSE,
+    param_name = character(0)
   )
 }
 
@@ -199,7 +204,8 @@ ou <- function(
     K           = ngme_as_sparse(K),
     h           = h,
     symmetric   = FALSE,
-    zero_trace  = TRUE
+    zero_trace  = TRUE,
+    param_name  = paste("theta_K", seq_len(length(theta_K)), sep = "")
   )
 }
 
@@ -253,6 +259,8 @@ matern <- function(
     else diag(kappas) %*% C %*% diag(kappas) %*% C %*% diag(kappas) + G
   }
 
+  stationary <- is_stationary(B_K)
+
   ngme_operator(
     mesh = mesh,
     alpha = alpha,
@@ -264,7 +272,9 @@ matern <- function(
     K = ngme_as_sparse(K),
     h = h,
     symmetric = TRUE,
-    zero_trace = FALSE
+    zero_trace = FALSE,
+    param_name = if (stationary) "kappa" else paste("theta_K", seq_len(length(theta_K)), sep = " "),
+    param_trans = if (stationary) exp else rep(list(identity), length(theta_K))
   )
 }
 
@@ -310,7 +320,9 @@ re <- function(
     h = h,
     B_K = B_K,
     symmetric = FALSE,
-    zero_trace = FALSE
+    zero_trace = FALSE,
+    param_name = paste("re_coeff", seq_len(length(theta_K)), sep = ""),
+    param_trans = rep(list(identity), length(theta_K))
   )
 }
 

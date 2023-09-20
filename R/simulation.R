@@ -17,6 +17,7 @@ simulate.ngme_model <- function(
     seed   = NULL,
     ...
 ) {
+    if (is.null(seed)) seed <- Sys.time()
     model <- object
     noise <- model$noise
 

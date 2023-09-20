@@ -111,10 +111,10 @@ traceplot <- function(ngme, name="general", hline=NULL) {
       ts$name <- c(ts$name, "rho(measurement)");
       ts$trans <- c(ts$trans, list(ar1_th2a))
     }
-    name_feff <- if (length(ngme$feff)==0) NULL else paste ("feff", seq_len(length(ngme$feff)))
+    name_feff <- if (length(ngme$feff)==0) NULL else paste ("fixed effect", seq_len(length(ngme$feff)))
     trans_feff <- rep(list(identity), length(ngme$feff))
-    ts$name <- c(name_feff, ts$name)
-    ts$trans <- c(trans_feff, ts$trans)
+    ts$name <- c(ts$name, name_feff)
+    ts$trans <- c(ts$trans, trans_feff)
   }
 
   for (idx in seq_len(nrow(traj[[1]]))) {

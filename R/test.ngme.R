@@ -63,9 +63,20 @@ print(paste("nodes of mesh = ", mesh$n))
     else noise_normal()
   f_fm_noise <- if (f_noise=="nig") noise_nig() else noise_normal()
 
-  mn_noise <- if (family=="nig")
+  mn_noise <- if (family == "nig")
     rnig(n_obs_per_rep, delta=-2, mu=2, nu=0.8, sigma=0.5, seed=seed)
-    else rnorm(n_obs_per_rep, sd=0.5)
+  else if (family == "cor_normal") {
+    family = noise_normal(
+      corr_measurement=TRUE,
+      index_corr=rep(1:(n_obs_per_rep/2), 2)
+    )
+    stopifnot(n_obs_per_rep %% 2 == 0)
+    rho = 0.7
+    Cov_kron <- matrix(c(.5, rho*.25, rho*.25, .5), nrow=2) %x% diag(n_obs_per_rep / 2)
+    L <- chol(Cov_kron)
+    L %*% rnorm(n_obs_per_rep)
+  } else
+    rnorm(n_obs_per_rep, sd=0.5)
   # ------- Simulate data for each model --------
   sim_data <- switch(model,
     "ar1" = {

@@ -9,7 +9,7 @@
 #' @importFrom stats simulate delete.response dnorm formula model.matrix rnorm sd terms terms.formula
 #' @importFrom methods as
 #' @importFrom utils str head tail modifyList
-#' @importFrom ggplot2 ggplot aes geom_line xlab ylab guides labs
+#' @importFrom ggplot2 ggplot aes geom_line xlab ylab guides labs geom_hline
 #' @importFrom rlang .data
 #' @importFrom fmesher fm_mesh_1d fm_mesh_2d fm_basis fm_fem
 #' @importFrom graphics hist

@@ -78,7 +78,7 @@ private:
   Eigen::SimplicialLLT<Eigen::SparseMatrix<double, 0, int> > R;
   Eigen::SparseMatrix<double, 0, int> Qi;
   Eigen::MatrixXd QU;
-  int N {50};
+  int N {10};
   void set_ld();
 
 public:
@@ -142,7 +142,9 @@ private:
   Eigen::SparseMatrix<double, 0, int> K;
   Eigen::SparseLU<Eigen::SparseMatrix<double, 0, int> > LU_K;
   Eigen::SimplicialLLT<Eigen::SparseMatrix<double, 0, int> > L_KKt;
-  int KKtinv_computed;
+  int KKtinv_computed, QU_cmputed;
+  Eigen::MatrixXd QU;
+  int N {10};
 
 public:
   void init(int, int, int, double);
@@ -153,6 +155,7 @@ public:
   double trace(const Eigen::MatrixXd &);
   double trace(const Eigen::SparseMatrix<double, 0, int> &);
   double trace2(const SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &);
+  double trace_num(const Eigen::SparseMatrix<double, 0, int> &);
 
   double trace0(Eigen::SparseMatrix<double, 0, int> &);
   inline Eigen::VectorXd solve(Eigen::VectorXd &v, Eigen::VectorXd &x) { return LU_K.solve(v); }

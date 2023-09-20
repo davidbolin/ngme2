@@ -312,6 +312,27 @@ double lu_sparse_solver::trace(const SparseMatrix<double, 0, int> &M)
   return KKtinv.cwiseProduct(Mreo).sum();
 }
 
+// double lu_sparse_solver::trace_num(const SparseMatrix<double, 0, int> &M)
+// {
+//   MatrixXd U (n, N);
+//   U.setRandom(n, N);
+//   U = U.unaryExpr(std::ref(myround));
+
+//   if (QU_computed==0){
+//     for(int i=0; i<N; i++){
+//       QU.col(i) = R.solve(U.col(i));
+//     }
+//     QU_computed = 1;
+//   }
+
+//   Eigen::MatrixXd MQU = M*QU;
+//   double t = 0;
+//   for(int i=0;i<N;i++){
+//     t += U.col(i).dot(MQU.col(i));
+//   }
+//   return t/N;
+// }
+
 double lu_sparse_solver::trace2(const SparseMatrix<double, 0, int> &M1, SparseMatrix<double, 0, int> &M2)
 {
   std::cout << "lu_sparse_solver::trace2 not implimented\n";

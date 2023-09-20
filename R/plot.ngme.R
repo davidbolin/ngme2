@@ -87,11 +87,12 @@ get_latent_info <- function(latent) {
 #' @param ngme ngme object
 #' @param name name of latent models, otherwise plot fixed effects and measurement noise
 #' should be in names(ngme$models) or other
+#' @param hline vector, add hline to each plot
 #'
 #' @return the traceplot
 #' @export
 #'
-traceplot <- function(ngme, name="general") {
+traceplot <- function(ngme, name="general", hline=NULL) {
   stopifnot(inherits(ngme, "ngme"))
   stopifnot(!is.null(name))
   ngme <- ngme$replicates[[1]]
@@ -141,8 +142,9 @@ traceplot <- function(ngme, name="general") {
           y=.data[["y"]]
         ),
         col="red"
-      ) +
-      labs(title = ts$name[[idx]])
+      ) + geom_hline(
+        yintercept=hline[[idx]], color="blue"
+      ) + labs(title = ts$name[[idx]])
   }
 
   if (length(ps) > 1) ps["ncol"]=2

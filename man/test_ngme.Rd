@@ -11,15 +11,26 @@ test_ngme(
   n_iter,
   n_parallel_chain = 4,
   stop_points = 20,
-  numer_grad = FALSE,
+  stepsize = 1,
+  numer_grad = TRUE,
   preconditioner = "fast",
   sampling_strategy = "all",
   precond_by_diff_chain = TRUE,
   compute_precond_each_iter = FALSE,
+  num_threads = c(n_parallel_chain, 4),
+  n_gibbs_samples = 5,
+  f_noise = "nig",
+  family = "nig",
   max.n = 1000,
   print = FALSE,
   debug = FALSE,
-  debug_f = FALSE
+  debug_f = FALSE,
+  verbose = FALSE,
+  rao_blackwellization = FALSE,
+  n_trace_iter = 10,
+  start = NULL,
+  estimation = TRUE,
+  seed = Sys.time()
 )
 }
 \arguments{

@@ -62,7 +62,8 @@ protected:
     int n_theta_K;
     bool symmetricK, zero_trace, use_num_dK {false};
 
-    vector<double> trace, rb_trace;
+    vector<double> trace;
+    VectorXd rb_trace;
     double eps {1e-5};
 
     bool fix_flag[LATENT_FIX_FLAG_SIZE] {0};
@@ -151,7 +152,7 @@ public:
     void sample_uncond_V();
 
     // pi(W|V)
-    double logd_W_given_V(const SparseMatrix<double>& K, const VectorXd& mu, const VectorXd& sigma, const VectorXd& V);
+    double logd_W_given_V(const VectorXd& W, const SparseMatrix<double>& K, const VectorXd& mu, const VectorXd& sigma, const VectorXd& V);
     // pi(KW|V) fix K
     double logd_KW_given_V(const VectorXd& mu, const VectorXd& sigma, const VectorXd& V);
 
@@ -168,7 +169,7 @@ public:
         return ope->get_dK()[i];
     }
 
-    void set_rb_trace(const vector<double>& rb_trace) {
+    void set_rb_trace(const VectorXd& rb_trace) {
         this->rb_trace = rb_trace;
     }
 

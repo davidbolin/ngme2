@@ -23,10 +23,13 @@ control_opt(
   compute_precond_each_iter = FALSE,
   max_relative_step = 0.5,
   max_absolute_step = 0.5,
+  num_threads = c(n_parallel_chain, 1),
   reduce_var = FALSE,
   reduce_power = 0.75,
   threshold = 1e-05,
   window_size = 1,
+  rao_blackwellization = FALSE,
+  n_trace_iter = 10,
   verbose = FALSE,
   sampling_strategy = "all"
 )
@@ -69,6 +72,9 @@ control_opt(
 
 \item{max_absolute_step}{max absolute step allowed in 1 iteration}
 
+\item{num_threads}{maximum number of threads used in parallel computing, for example c(4, 5), which means we use 4 threads to parallize the chains, then use 5 threads to parallize different replicates in each chain
+Suggestion (num_parallel_chain, num_total_replicates)}
+
 \item{reduce_var}{logical, reduce variace}
 
 \item{reduce_power}{numerical the power of reduce level}
@@ -76,6 +82,10 @@ control_opt(
 \item{threshold}{till when start to reduce the variance}
 
 \item{window_size}{numerical, length of window for final estimates}
+
+\item{rao_blackwellization}{use rao_blackwellization}
+
+\item{n_trace_iter}{use how many iterations to approximate the trace (Hutchinson’s trick)}
 
 \item{verbose}{print estimation}
 

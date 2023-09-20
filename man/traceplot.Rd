@@ -4,7 +4,7 @@
 \alias{traceplot}
 \title{Trace plot of ngme fitting}
 \usage{
-traceplot(ngme, name = "general")
+traceplot(ngme, name = "general", hline = NULL)
 }
 \arguments{
 \item{ngme}{ngme object}

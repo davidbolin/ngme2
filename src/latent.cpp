@@ -27,7 +27,7 @@ Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
     // K             (V_size, W_size),
     // dK            (n_theta_K),
     trace         (n_theta_K, 0.0),
-    rb_trace      (n_theta_K, 0.0),
+    rb_trace      (n_theta_K),
     eps           (0.001),
 
     W             (W_size),
@@ -108,6 +108,8 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
             lu_solver_K.init(W_size, 0,0,0);
             lu_solver_K.analyze(getK());
         } else {
+            int n_trace_iter = Rcpp::as<int> (model_list["n_trace_iter"]);
+            chol_solver_K.set_N(n_trace_iter);
             chol_solver_K.init(W_size,0,0,0);
             chol_solver_K.analyze(getK());
         }
@@ -257,27 +259,26 @@ VectorXd Latent::grad_theta_K(bool rao_blackwell) {
     VectorXd grad = VectorXd::Zero(n_theta_K);
     if (fix_flag[latent_fix_theta_K]) return grad;
 
+    VectorXd WW = (rao_blackwell) ? cond_W : W;
     if (numer_grad) {
-        double val = logd_W_given_V(getK(), mu, sigma, V);
+        double val = logd_W_given_V(WW, getK(), mu, sigma, V);
         for (int i=0; i < n_theta_K; i++) {
             VectorXd tmp = theta_K;
             tmp(i) += eps;
             ope_add_eps->update_K(tmp);
             // SparseMatrix<double> K_add_eps = ope_add_eps->getK();
-            double val_add_eps = logd_W_given_V(ope_add_eps->getK(), mu, sigma, V);
+            double val_add_eps = logd_W_given_V(WW, ope_add_eps->getK(), mu, sigma, V);
             grad(i) = (val_add_eps - val) / eps;
         }
     } else {
-        VectorXd WW = (rao_blackwell) ? cond_W : W;
-
         VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
         VectorXd tmp = getK() * WW - mu.cwiseProduct(V-h);
         for (int j=0; j < n_theta_K; j++) {
             grad(j) = trace[j] - (ope->get_dK()[j] * WW).cwiseProduct(SV.cwiseInverse()).dot(tmp);
-            // add extra term
-            if (rao_blackwell) grad(j) -= rb_trace[j];
         }
     }
+    // add trace term using RB
+    if (rao_blackwell) grad -= rb_trace;
 
     // add prior
     for (int l=0; l < n_theta_K; l++) {
@@ -470,8 +471,9 @@ void Latent::update_each_iter(bool initialization, bool update_dK) {
             if (!symmetricK) {
                 if (W_size > 10) {
                     lu_solver_K.computeKTK(getK());
-                    for (int i=0; i < n_theta_K; i++)
+                    for (int i=0; i < n_theta_K; i++){
                         trace[i] = lu_solver_K.trace(ope->get_dK()[i]);
+                    }
                 } else {
                     // for random effect case (usually small dimension)
                     for (int i=0; i < n_theta_K; i++) {
@@ -483,8 +485,9 @@ void Latent::update_each_iter(bool initialization, bool update_dK) {
                 }
             } else {
                 chol_solver_K.compute(getK());
-                for (int i=0; i < n_theta_K; i++)
-                    trace[i] = chol_solver_K.trace(ope->get_dK()[i]);
+                for (int i=0; i < n_theta_K; i++) {
+                    trace[i] = chol_solver_K.trace_num(ope->get_dK()[i]);
+                }
             }
         }
     }
@@ -504,7 +507,7 @@ double Latent::log_density(const VectorXd& parameter, bool precond_K) {
 
         ope_precond->update_K(theta_K);
         SparseMatrix<double> K = ope_precond->getK();
-        logd_W = logd_W_given_V(K, mu, sigma, prevV);
+        logd_W = logd_W_given_V(W, K, mu, sigma, prevV);
     } else {
         VectorXd theta_mu = parameter.head(n_theta_mu);
         VectorXd theta_sigma = parameter.segment(n_theta_mu, n_theta_sigma);
@@ -514,29 +517,11 @@ double Latent::log_density(const VectorXd& parameter, bool precond_K) {
         logd_W = logd_KW_given_V(mu, sigma, prevV);
     }
 
-    // 2. pi(V)
-    // double logd_V = 0;
-    // if ((n_nu == 1 && noise_type[0] != "normal") ||
-    //     (n_nu == 2 && noise_type[0] != "normal" && noise_type[1] != "normal")
-    // ) {
-    //     nu = parameter.tail(n_nu);
-    //     // compute logd_V
-    //     if (n_nu == 1) {
-    //         logd_V = NoiseUtil::log_density(noise_type[0], V, h, nu[0], FALSE);
-    //     } else if (n_nu == 2) {
-    //         int n = V_size / n_noise;
-    //         for (int i=0; i < n_noise; i++) {
-    //             logd_V += NoiseUtil::log_density(noise_type[i], V.segment(i*n, n), h.segment(i*n, n), nu[i], FALSE);
-    //         }
-    //     }
-    // }
-    // return -(logd_W + logd_V);
-
     return -logd_W;
 }
 
 // log density of W|V
-double Latent::logd_W_given_V(const SparseMatrix<double>& K, const VectorXd& mu, const VectorXd& sigma, const VectorXd& V) {
+double Latent::logd_W_given_V(const VectorXd& W, const SparseMatrix<double>& K, const VectorXd& mu, const VectorXd& sigma, const VectorXd& V) {
     double l = 0;
     VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
 

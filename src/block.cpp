@@ -60,6 +60,7 @@ BlockModel::BlockModel(
     n_gibbs     =  Rcpp::as<int>    (control_ngme["n_gibbs_samples"]);
     debug       = Rcpp::as<bool>   (control_ngme["debug"]);
     rao_blackwell = Rcpp::as<bool> (control_ngme["rao_blackwellization"]);
+    int n_trace_iter = Rcpp::as<int> (control_ngme["n_trace_iter"]);
     // reduce_var    =  Rcpp::as<bool>   (control_ngme["reduce_var"]);
     // reduce_power  =  Rcpp::as<double> (control_ngme["reduce_power"]);
     // threshold   =  Rcpp::as<double> (control_ngme["threshold"]);
@@ -76,6 +77,7 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
   for (int i=0; i < n_latent; ++i) {
     // construct acoording to models
     Rcpp::List latent_in = Rcpp::as<Rcpp::List> (latents_in[i]);
+    latent_in["n_trace_iter"] = n_trace_iter;
     unsigned long latent_seed = rng();
     latents.push_back(std::make_shared<Latent>(latent_in, latent_seed));
   }
@@ -171,8 +173,7 @@ if (debug) std::cout << "After assemble" << std::endl;
       QQ = Q + A.transpose() * Q_eps * A;
     }
 
-    // set N for trace
-    int n_trace_iter = Rcpp::as<int> (control_ngme["n_trace_iter"]);
+    // set N for trace estimator
     chol_QQ.set_N(n_trace_iter);
 
     chol_Q.analyze(Q);
@@ -892,15 +893,16 @@ double BlockModel::logd_no_latent(const VectorXd& v) {
 // tr(QQ^-1 dK^T diag(1/SV) K)
 void BlockModel::compute_rb_trace() {
   for (int i=0; i < n_latent; i++) {
-    vector<double> rb_trace (latents[i]->get_n_theta_K(), 0);
+    VectorXd rb_trace (latents[i]->get_n_theta_K());
     for (int j=0; j < latents[i]->get_n_theta_K(); j++) {
       VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
       SparseMatrix<double> M = block_dK[i][j] * inv_SV.asDiagonal() * K;
       rb_trace[j] = chol_QQ.trace_num(M);
-//       double ana_trace = chol_QQ.trace(M);
-// std::cout <<"num trace = " << rb_trace[j] << std::endl;
-// std::cout <<"ana trace = " << ana_trace << std::endl;
     }
     latents[i]->set_rb_trace(rb_trace);
   }
 }
+// double ana_trace = chol_QQ.trace(M);
+// std::cout <<"ana trace = " << ana_trace << std::endl;
+// std::cout <<"num trace = " << rb_trace[j] << std::endl;
+// std::cout << "-----" << std::endl;

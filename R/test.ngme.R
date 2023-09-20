@@ -22,11 +22,12 @@
 test_ngme <- function(
   model,
   n_obs_per_rep,
-  n_replicate,
   n_iter,
+  n_replicate=1,
   n_parallel_chain = 4,
-  stop_points = 20,
-  numer_grad = FALSE,
+  stop_points = 10,
+  stepsize =1,
+  numer_grad = TRUE,
   preconditioner = "fast",
   sampling_strategy = "all",
   precond_by_diff_chain = TRUE,
@@ -46,23 +47,25 @@ test_ngme <- function(
   estimation = TRUE,
   seed = Sys.time()
 ) {
+  set.seed(seed)
   # create 2d mesh
   if (model %in% c("matern", "bvmatern")) {
     pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
     mesh <- fmesher::fm_mesh_2d(
       loc.domain = pl01, cutoff = 0.2,
-      max.edge = c(0.5, 10),
+      max.edge = c(0.4, 10),
       max.n = max.n
     )
 print(paste("nodes of mesh = ", mesh$n))
   }
 
-f_sim_noise <- if (f_noise=="nig") noise_nig(mu = -3, sigma = 1.5, nu=0.5)
-  else noise_normal()
-f_fm_noise <- if (f_noise=="nig") noise_nig() else noise_normal()
-mn_noise <- if (family=="nig") rnig(n_obs_per_rep, delta=-2, mu=2, nu=0.8, sigma=0.5)
-  else rnorm(n_obs_per_rep, sd=0.5)
+  f_sim_noise <- if (f_noise=="nig") noise_nig(mu = -3, sigma = 1.5, nu=0.5)
+    else noise_normal()
+  f_fm_noise <- if (f_noise=="nig") noise_nig() else noise_normal()
 
+  mn_noise <- if (family=="nig")
+    rnig(n_obs_per_rep, delta=-2, mu=2, nu=0.8, sigma=0.5, seed=seed)
+    else rnorm(n_obs_per_rep, sd=0.5)
   # ------- Simulate data for each model --------
   sim_data <- switch(model,
     "ar1" = {
@@ -182,12 +185,12 @@ mn_noise <- if (family=="nig") rnig(n_obs_per_rep, delta=-2, mu=2, nu=0.8, sigma
       n_gibbs_samples = n_gibbs_samples
     ),
     control_opt = control_opt(
+      seed = seed,
       burnin = 100,
       std_lim = 0.001,
       print_check_info = FALSE,
       rao_blackwellization = rao_blackwellization,
       n_trace_iter = n_trace_iter,
-      seed = seed,
       num_threads = num_threads,
       iterations = n_iter,
       precond_by_diff_chain = precond_by_diff_chain,
@@ -197,6 +200,7 @@ mn_noise <- if (family=="nig") rnig(n_obs_per_rep, delta=-2, mu=2, nu=0.8, sigma
       verbose = verbose,
       preconditioner = preconditioner,
       estimation = estimation,
+      stepsize = stepsize,
       sampling_strategy = sampling_strategy
     ),
     start = start,

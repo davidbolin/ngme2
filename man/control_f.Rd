@@ -4,21 +4,16 @@
 \alias{control_f}
 \title{Generate control specifications for \code{f} function}
 \usage{
-control_f(
-  numer_grad = FALSE,
-  use_precond = FALSE,
-  use_num_hess = TRUE,
-  eps = 0.001
-)
+control_f(numer_grad = TRUE, use_num_hess = TRUE, eps = 0.001)
 }
 \arguments{
 \item{numer_grad}{whether to use numerical gradient}
 
-\item{use_precond}{whether to use preconditioner}
-
 \item{use_num_hess}{whether to use numerical hessian}
 
 \item{eps}{eps for computing numerical gradient}
+
+\item{use_precond}{whether to use preconditioner}
 }
 \value{
 list of control variables

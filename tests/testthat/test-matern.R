@@ -6,13 +6,13 @@ test_that("test Matern", {
   # library(INLA)
   pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
   mesh <- fmesher::fm_mesh_2d(
-    loc.domain = pl01, cutoff = 0.2,
-    max.edge = c(0.5, 10)
+    loc.domain = pl01, cutoff = 0.1,
+    max.edge = c(0.3, 10)
   )
   # plot(mesh)
   mesh$n
 
-  n_obs <- 600
+  n_obs <- 1000
   loc <- cbind(runif(n_obs, 0, 10), runif(n_obs, 0, 5))
 # plot(mesh); points(loc)
   true_noise = noise_nig(mu=-2, sigma=1, nu=0.5)
@@ -21,7 +21,7 @@ test_that("test Matern", {
   true_model <- f(
     map = loc,
     model="matern",
-    theta_K = log(2),
+    theta_K = log(4),
     mesh = mesh,
     noise = true_noise
   )
@@ -45,7 +45,7 @@ test_that("test Matern", {
       mesh = mesh,
       noise=noise_nig(),
       control = control_f(
-        numer_grad = F
+        numer_grad = TRUE
       ),
       debug = F
     ),
@@ -53,11 +53,13 @@ test_that("test Matern", {
     control_opt = control_opt(
       estimation = T,
       iterations = 1000,
+      rao_blackwellization = TRUE,
       n_parallel_chain = 4,
       print_check_info = F,
       verbose = T,
       max_absolute_step = 1,
       max_relative_step = 1,
+      stepsize = 2,
       std_lim = 0.01,
       preconditioner = "fast"
     ),

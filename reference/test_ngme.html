@@ -106,15 +106,26 @@
 <span>  <span class="va">n_iter</span>,</span>
 <span>  n_parallel_chain <span class="op">=</span> <span class="fl">4</span>,</span>
 <span>  stop_points <span class="op">=</span> <span class="fl">20</span>,</span>
-<span>  numer_grad <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  stepsize <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  numer_grad <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  preconditioner <span class="op">=</span> <span class="st">"fast"</span>,</span>
 <span>  sampling_strategy <span class="op">=</span> <span class="st">"all"</span>,</span>
 <span>  precond_by_diff_chain <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  compute_precond_each_iter <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  num_threads <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">n_parallel_chain</span>, <span class="fl">4</span><span class="op">)</span>,</span>
+<span>  n_gibbs_samples <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>  f_noise <span class="op">=</span> <span class="st">"nig"</span>,</span>
+<span>  family <span class="op">=</span> <span class="st">"nig"</span>,</span>
 <span>  max.n <span class="op">=</span> <span class="fl">1000</span>,</span>
 <span>  print <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  debug <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  debug_f <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  debug_f <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  rao_blackwellization <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  n_trace_iter <span class="op">=</span> <span class="fl">10</span>,</span>
+<span>  start <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  estimation <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  seed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 

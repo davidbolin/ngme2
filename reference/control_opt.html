@@ -120,10 +120,13 @@ optimization process.</p>
 <span>  compute_precond_each_iter <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  max_relative_step <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>  max_absolute_step <span class="op">=</span> <span class="fl">0.5</span>,</span>
+<span>  num_threads <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">n_parallel_chain</span>, <span class="fl">1</span><span class="op">)</span>,</span>
 <span>  reduce_var <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  reduce_power <span class="op">=</span> <span class="fl">0.75</span>,</span>
 <span>  threshold <span class="op">=</span> <span class="fl">1e-05</span>,</span>
 <span>  window_size <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  rao_blackwellization <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  n_trace_iter <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  sampling_strategy <span class="op">=</span> <span class="st">"all"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -204,6 +207,11 @@ optimization process.</p>
 <dd><p>max absolute step allowed in 1 iteration</p></dd>
 
 
+<dt>num_threads</dt>
+<dd><p>maximum number of threads used in parallel computing, for example c(4, 5), which means we use 4 threads to parallize the chains, then use 5 threads to parallize different replicates in each chain
+Suggestion (num_parallel_chain, num_total_replicates)</p></dd>
+
+
 <dt>reduce_var</dt>
 <dd><p>logical, reduce variace</p></dd>
 
@@ -218,6 +226,14 @@ optimization process.</p>
 
 <dt>window_size</dt>
 <dd><p>numerical, length of window for final estimates</p></dd>
+
+
+<dt>rao_blackwellization</dt>
+<dd><p>use rao_blackwellization</p></dd>
+
+
+<dt>n_trace_iter</dt>
+<dd><p>use how many iterations to approximate the trace (Hutchinson’s trick)</p></dd>
 
 
 <dt>verbose</dt>

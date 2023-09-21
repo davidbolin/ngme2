@@ -71,7 +71,7 @@ print(paste("nodes of mesh = ", mesh$n))
       index_corr=rep(1:(n_obs_per_rep/2), 2)
     )
     stopifnot(n_obs_per_rep %% 2 == 0)
-    rho = 0.7
+    rho = -0.7
     Cov_kron <- matrix(c(.5, rho*.25, rho*.25, .5), nrow=2) %x% diag(n_obs_per_rep / 2)
     L <- chol(Cov_kron)
     L %*% rnorm(n_obs_per_rep)

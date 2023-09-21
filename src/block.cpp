@@ -774,7 +774,9 @@ if (debug) std::cout << "after latents precond"<< std::endl;
   } else {
     // have preconditioner
     VectorXd v (n_merr + n_feff);
-    v << theta_mu, theta_sigma, nu, rho, beta;
+    VectorXd log_nu = nu.array().log();
+    VectorXd th_rho = rho.unaryExpr(std::ref(rho2th));
+    v << theta_mu, theta_sigma, log_nu, th_rho, beta;
 
     MatrixXd hess_merr_feff = num_h_no_latent(v, eps);
     precond.bottomRightCorner(n_merr + n_feff, n_merr + n_feff) = hess_merr_feff;
@@ -785,7 +787,7 @@ if (debug) std::cout << "after latents precond"<< std::endl;
   return precond;
 }
 
-// precond_fast: numerical hessian for c(beta, theta_mu, theta_sigma, nu)
+// precond_fast: numerical hessian for c(theta_mu, theta_sigma, nu, rho, feff)
 MatrixXd BlockModel::num_h_no_latent(const VectorXd& v, double eps) {
 	int n = v.size();
 	MatrixXd hessian(n, n);
@@ -804,14 +806,6 @@ MatrixXd BlockModel::num_h_no_latent(const VectorXd& v, double eps) {
 			double f_vij = logd_no_latent(tmp_vij);
 			double h_ij = (f_vij - f_v(i) - f_v(j) + original_val) / (eps * eps);
       hessian(i, j) = h_ij;
-      // if (i == 3) {
-      //   std::cout << "i = " << i << std::endl;
-      //   std::cout << "f_vij = " << f_vij << std::endl;
-      //   std::cout << "f_v(i) = " << f_v(i) << std::endl;
-      //   std::cout << "f_v(j) = " << f_v(j) << std::endl;
-      //   std::cout << "original_val = " << original_val << std::endl;
-      //   std::cout << "h_ij = " << h_ij << std::endl;
-      // }
 		}
 	}
 
@@ -824,11 +818,12 @@ MatrixXd BlockModel::num_h_no_latent(const VectorXd& v, double eps) {
 	return hessian;
 }
 
-// v = mu, sigma, nu, rho, beta
+// v = mu, sigma, nu, rho, feff
+// residual ~ N(-mu + mu V,
 double BlockModel::logd_no_latent(const VectorXd& v) {
 	VectorXd theta_mu = v.segment(0, n_theta_mu);
 	VectorXd theta_sigma = v.segment(n_theta_mu, n_theta_sigma);
-  VectorXd nu = v.segment(n_theta_mu + n_theta_sigma, n_nu);
+  VectorXd nu = v.segment(n_theta_mu + n_theta_sigma, n_nu).array().exp();
   VectorXd th_rho = v.segment(n_theta_mu + n_theta_sigma + n_nu, n_rho);
   VectorXd beta = v.tail(n_feff);
 
@@ -845,8 +840,10 @@ double BlockModel::logd_no_latent(const VectorXd& v) {
 
   double logd_res = 0;
   if (corr_measure) {
+    // No need to copy construct
+    // SparseMatrix<double> Q_eps_tmp = Q_eps;
     // update rho and Q_eps
-    double rho = th2rho(th_rho(0));
+    double rho = th_rho.unaryExpr(std::ref(th2rho))(0);
     for (int i=0; i < Q_eps.outerSize(); i++) {
       for (SparseMatrix<double>::InnerIterator it(Q_eps, i); it; ++it) {
         if (it.row() == it.col()) {

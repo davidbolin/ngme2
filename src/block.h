@@ -291,12 +291,12 @@ public:
     Rcpp::List output() const;
     std::string get_par_string() const {return par_string;}
 
-    double th2rho(double th) const {return (-1 + 2*exp(th) / (1+exp(th)));}
-    double rho2th(double r) const {return (log((-1-r)/(-1+r)));}
+    static double th2rho(double th) {return (-1 + 2*exp(th) / (1+exp(th)));}
+    static double rho2th(double r) {return (log((-1-r)/(-1+r)));}
 
     // drho / dtheta
     // double dtheta_rho(double th) const {return 2 * exp(th) / pow(1+exp(th), 2);}
-    double dtheta_th(double rho) const {return (1-rho*rho) / 2;}
+    static double dtheta_th(double rho) {return (1-rho*rho) / 2;}
 
     // compute numerical hessian for theta = c(beta, theta_mu, theta_sigma, nu)
     MatrixXd num_h_no_latent(const VectorXd& v, double eps = 1e-5);

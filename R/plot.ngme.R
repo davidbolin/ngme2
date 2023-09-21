@@ -72,6 +72,10 @@ get_noise_info <- function(noise) {
         n1$trans_nu, n2$trans_nu)
     )
   }
+  if (noise$corr_measurement) {
+    ts$name <- c(ts$name, "rho(measurement)");
+    ts$trans <- c(ts$trans, list(ar1_th2a))
+  }
   ts
 }
 
@@ -107,10 +111,6 @@ traceplot <- function(ngme, name="general", hline=NULL) {
     traj <- attr(ngme, "block_traj")
     # get titles
     ts <- get_noise_info(ngme$noise)
-    if (ngme$noise$corr_measurement) {
-      ts$name <- c(ts$name, "rho(measurement)");
-      ts$trans <- c(ts$trans, list(ar1_th2a))
-    }
     name_feff <- if (length(ngme$feff)==0) NULL else paste ("fixed effect", seq_len(length(ngme$feff)))
     trans_feff <- rep(list(identity), length(ngme$feff))
     ts$name <- c(ts$name, name_feff)

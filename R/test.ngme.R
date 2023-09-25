@@ -45,6 +45,10 @@ test_ngme <- function(
   n_trace_iter = 10,
   start = NULL,
   estimation = TRUE,
+  fix_theta_K = FALSE,
+  fix_theta_mu= FALSE,
+  fix_theta_sigma = FALSE,
+  fix_nu = FALSE,
   seed = Sys.time()
 ) {
   set.seed(seed)
@@ -61,7 +65,15 @@ print(paste("nodes of mesh = ", mesh$n))
 
   f_sim_noise <- if (f_noise=="nig") noise_nig(mu = -3, sigma = 1.5, nu=0.5)
     else noise_normal()
-  f_fm_noise <- if (f_noise=="nig") noise_nig() else noise_normal()
+  f_fm_noise <- if (f_noise=="nig") noise_nig(
+    fix_theta_mu = fix_theta_mu,
+    fix_theta_sigma = fix_theta_sigma,
+    fix_nu = fix_nu
+  ) else noise_normal(
+    fix_theta_mu = fix_theta_mu,
+    fix_theta_sigma = fix_theta_sigma,
+    fix_nu = fix_nu
+  )
 
   mn_noise <- if (family == "nig")
     rnig(n_obs_per_rep, delta=-2, mu=2, nu=0.8, sigma=1, seed=seed)
@@ -155,11 +167,13 @@ print(paste("nodes of mesh = ", mesh$n))
   # ------- Specify formula for each model -------
   formula <- switch(model,
     "ar1" = Y ~ 0 + f(idx,
+      fix_theta_K = fix_theta_K,
       model = "ar1",
       noise = f_fm_noise,
       control = control_f(numer_grad = numer_grad)
     ),
     "matern" = Y ~ 0 + f(idx,
+      fix_theta_K = fix_theta_K,
       model="matern",
       mesh = mesh,
       noise=f_fm_noise,
@@ -167,12 +181,14 @@ print(paste("nodes of mesh = ", mesh$n))
     ),
     "bvar1" = Y ~ f(idx,
       model="bv",
+      fix_theta_K = fix_theta_K,
       sub_models = list(first = "ar1", second="ar1"),
       control = control_f(numer_grad = numer_grad),
       noise = list(first=noise_nig(), second=noise_nig())
     ),
     "bvmatern" = Y ~ f(idx,
       model="bv",
+      fix_theta_K = fix_theta_K,
       sub_models = list(first = "matern", second="matern"),
       control = control_f(numer_grad = numer_grad),
       noise = list(first=noise_nig(), second=noise_nig())

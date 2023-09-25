@@ -50,6 +50,7 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
         eps             = Rcpp::as<double>      (control_f["eps"]) ;
 
     // construct from ngme_noise
+    fix_flag[latent_fix_theta_K]     = Rcpp::as<bool>  (model_list["fix_theta_K"]);
     Rcpp::List noise_in = Rcpp::as<Rcpp::List> (model_list["noise"]);
         fix_flag[latent_fix_theta_mu]     = Rcpp::as<bool>  (noise_in["fix_theta_mu"]);
         fix_flag[latent_fix_theta_sigma]  = Rcpp::as<bool>  (noise_in["fix_theta_sigma"]);
@@ -221,6 +222,8 @@ inline VectorXd Latent::grad_theta_sigma_normal(bool rao_blackwell) {
 VectorXd Latent::grad_theta_nu() {
 // std::cout << "here nu" << std::endl;
     VectorXd grad = VectorXd::Zero(n_nu);
+    if (n_nu == 0 || fix_flag[latent_fix_nu]) return grad;
+
     if (noise_type.size() == 1) {
         // single noise
         if (noise_type[0] == "normal") return grad;

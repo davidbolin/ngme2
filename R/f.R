@@ -224,6 +224,7 @@ f <- function(
     fix_W     = fix_W,
     name      = name,
     debug     = debug,
+    fix_theta_K = fix_theta_K,
     prior_theta_K = prior_theta_K
   )
 }

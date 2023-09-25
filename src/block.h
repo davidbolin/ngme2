@@ -47,7 +47,7 @@ protected:
     VectorXd theta_mu, theta_sigma, nu, rho, beta;
 
     MatrixXd B_mu, B_sigma;
-    VectorXd noise_mu, noise_sigma;
+    VectorXd noise_mu, noise_sigma, cond_W;
     int n_theta_mu, n_theta_sigma, n_nu, n_rho;
 
     int n_latent; // how mnay latent model
@@ -110,7 +110,7 @@ public:
     void burn_in(int);
 
     int get_n_obs() const {return n_obs;}
-    void sampleW_VY();
+    void sampleW_VY(bool burn_in = false);
 
     void sample_cond_V() {
       if(n_latent > 0){
@@ -170,6 +170,9 @@ public:
 
     // tr(QQ^-1 dK^T diag(1/SV) K)
     void compute_rb_trace();
+
+    // compute and set diag(Kt QQ^-1 K)
+    void compute_diag_Kt_QQinv_K();
 
     // return mean = mu*(V-h)
     VectorXd getMean() const {
@@ -242,9 +245,11 @@ public:
         return W;
     }
 
-    VectorXd get_residual() const {
-      if (n_latent > 0) {
+    VectorXd get_residual(bool rao_blackwell=false) const {
+      if (n_latent > 0 || !rao_blackwell) {
         return Y - A * getW() - X * beta - (-VectorXd::Ones(n_obs) + noise_V).cwiseProduct(noise_mu);
+      } else if (n_latent > 0 || rao_blackwell) {
+        return Y - A * cond_W - X * beta - (-VectorXd::Ones(n_obs) + noise_V).cwiseProduct(noise_mu);
       } else {
         return Y  - X * beta - (-VectorXd::Ones(n_obs) + noise_V).cwiseProduct(noise_mu);
       }

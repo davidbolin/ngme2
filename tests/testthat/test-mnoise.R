@@ -26,7 +26,7 @@ test_that("test basic mn", {
   x <- rexp(n_obs)
   beta <- c(-2, 3)
   y <- beta[[1]] + x * beta[[2]] +
-    rnig(n_obs, delta = -3, mu = 3, nu = 2, sigma = 2, seed=10)
+    rnig(n_obs, delta = -3, mu = 3, nu = 0.8, sigma = 0.5, seed=10)
 
   out <- ngme(y ~ x, data=data.frame(x=x,y=y), family = noise_nig(),
     control_opt = control_opt(
@@ -36,11 +36,11 @@ test_that("test basic mn", {
       preconditioner = "fast"
   ))
   out
-  traceplot(out)
+  traceplot(out, hline=c(3, 0.5, 0.8, -2, 3))
 
   expect_true(out$replicates[[1]]$noise$theta_sigma - log(2) < 1)
   expect_true(out$replicates[[1]]$noise$theta_mu - 3 < 1)
   expect_true(out$replicates[[1]]$noise$nu - 2 < 2)
 
-  plot(noise_nig(mu=3, nu=2, sigma=2), out$replicates[[1]]$noise)
+  plot(noise_nig(mu=3, nu=0.8, sigma=0.5), out$replicates[[1]]$noise)
 })

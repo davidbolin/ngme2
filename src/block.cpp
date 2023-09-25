@@ -216,7 +216,7 @@ if (debug) std::cout << "End Block Constructor" << std::endl;
 // std::cout << "burn in iteration i= " << i  << std::endl;
           sample_cond_V();
 // std::cout << "cond V done" << std::endl;
-          sampleW_VY();
+          sampleW_VY(true);
 // std::cout << "sample W done" << std::endl;
           sample_cond_noise_V();
       }
@@ -233,6 +233,8 @@ void BlockModel::setW(const VectorXd& W) {
 }
 
 void BlockModel::set_cond_W(const VectorXd& W) {
+  // cond_W = W;
+
   int pos = 0;
   for (std::vector<std::shared_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
     int size = (*it)->get_W_size();
@@ -260,14 +262,14 @@ void BlockModel::setPrevV(const VectorXd& V) {
 }
 
 // sample W|VY
-void BlockModel::sampleW_VY() {
+void BlockModel::sampleW_VY(bool burn_in) {
 // if (debug) std::cout << "starting sampling W." << std::endl;
 // double time = 0;
   if (n_latent==0) return;
 
   VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
 
-  // init Q and QQ
+  // init Q and QQ, Q is updated every iteration, so does QQ
   Q = K.transpose() * inv_SV.asDiagonal() * K;
   VectorXd residual_part = get_residual_part();
   VectorXd M = K.transpose() * inv_SV.asDiagonal() * getMean();
@@ -288,12 +290,13 @@ void BlockModel::sampleW_VY() {
 
   // sample W ~ N(QQ^-1*M, QQ^-1)
   chol_QQ.compute(QQ);
-// std::cout << "len(M)" << M.size() << std::endl;
-// std::cout << "len(z)" << z.size() << std::endl;
   VectorXd W = chol_QQ.rMVN(M, z);
   setW(W);
 
-  if (rao_blackwell) {
+  if (rao_blackwell && !burn_in) {
+    // compute and send diag(K^T QQ^-1 K) for RB of sigma
+    // compute_diag_Kt_QQinv_K();
+
     // compute E(W|V,Y) i.e. QQ^-1 M
     W = chol_QQ.solve(M);
     set_cond_W(W);
@@ -358,8 +361,9 @@ long long time_sample_w = 0;
     // Running Gibbs sampling
     for (int i=0; i < n_gibbs; i++) {
 // std::chrono::steady_clock::time_point startTime, endTime; startTime = std::chrono::steady_clock::now();
+      // bool QQ_update = (i==0) || family != "normal";
       sample_cond_V();
-      sampleW_VY();
+      sampleW_VY(false);
       if (rao_blackwell) compute_rb_trace();
 
       int pos = 0;
@@ -899,6 +903,19 @@ void BlockModel::compute_rb_trace() {
     latents[i]->set_rb_trace(rb_trace);
   }
 }
+
+void BlockModel::compute_diag_Kt_QQinv_K() {
+  VectorXd result (V_sizes);
+  // compute QQ^-1 K
+  for (int i=0; i < V_sizes; i++) {
+    result(i) = K.col(i).dot(chol_QQ.solve(K.col(i)));
+  }
+
+  for (int i=0; i < n_latent; i++) {
+    latents[i]->set_diag_Kt_QQinv_K(result);
+  }
+}
+
 // double ana_trace = chol_QQ.trace(M);
 // std::cout <<"ana trace = " << ana_trace << std::endl;
 // std::cout <<"num trace = " << rb_trace[j] << std::endl;

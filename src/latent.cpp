@@ -33,6 +33,7 @@ Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
     W             (W_size),
     prevW         (W_size),
     cond_W        (W_size),
+    diag_Kt_QQinv_K (VectorXd::Zero(W_size)),
     V             (h),
     prevV         (h),
     A             (Rcpp::as<SparseMatrix<double,0,int>>   (model_list["A"])),
@@ -174,6 +175,7 @@ VectorXd Latent::grad_theta_mu(bool rao_blackwell) {
 // return the gradient wrt. theta, theta=log(sigma)
 inline VectorXd Latent::grad_theta_sigma(bool rao_blackwell) {
     VectorXd WW = (rao_blackwell) ? cond_W : W;
+
     VectorXd grad = VectorXd::Zero(n_theta_sigma);
     if (fix_flag[latent_fix_theta_sigma]) return grad;
 
@@ -190,6 +192,9 @@ inline VectorXd Latent::grad_theta_sigma(bool rao_blackwell) {
     for (int l=0; l < n_theta_sigma; l++) {
         grad(l) += PriorUtil::d_log_dens(prior_sigma_type, prior_sigma_param, theta_sigma(l));
     }
+
+    // add trace term using RB
+    // if (rao_blackwell) grad += B_sigma.transpose() * diag_Kt_QQinv_K.cwiseQuotient(SV);
 
     return -grad;
 }

@@ -35,7 +35,7 @@ test_ngme <- function(
   num_threads = c(n_parallel_chain, 4),
   n_gibbs_samples = 5,
   f_noise = "nig",
-  family = "nig",
+  family = "normal",
   max.n = 1000,
   print = FALSE,
   debug = FALSE,
@@ -64,7 +64,7 @@ print(paste("nodes of mesh = ", mesh$n))
   f_fm_noise <- if (f_noise=="nig") noise_nig() else noise_normal()
 
   mn_noise <- if (family == "nig")
-    rnig(n_obs_per_rep, delta=-2, mu=2, nu=0.8, sigma=0.5, seed=seed)
+    rnig(n_obs_per_rep, delta=-2, mu=2, nu=0.8, sigma=1, seed=seed)
   else if (family == "cor_normal") {
     family = noise_normal(
       corr_measurement=TRUE,
@@ -76,7 +76,7 @@ print(paste("nodes of mesh = ", mesh$n))
     L <- chol(Cov_kron)
     L %*% rnorm(n_obs_per_rep)
   } else
-    rnorm(n_obs_per_rep, sd=0.5)
+    rnorm(n_obs_per_rep, sd=1)
   # ------- Simulate data for each model --------
   sim_data <- switch(model,
     "ar1" = {
@@ -154,7 +154,7 @@ print(paste("nodes of mesh = ", mesh$n))
 
   # ------- Specify formula for each model -------
   formula <- switch(model,
-    "ar1" = Y ~ f(idx,
+    "ar1" = Y ~ 0 + f(idx,
       model = "ar1",
       noise = f_fm_noise,
       control = control_f(numer_grad = numer_grad)
@@ -223,6 +223,7 @@ print(paste("nodes of mesh = ", mesh$n))
   list(
     out = out,
     time = proc.time() - start_time,
-    f_sim_noise = f_sim_noise
+    f_sim_noise = f_sim_noise,
+    m_noise = if (family=="nig") noise_nig(mu=2, sigma=1, nu=0.8) else noise_normal(sigma=1)
   )
 }

@@ -35,6 +35,7 @@ private:
   std::discrete_distribution<int> weighted_sampler;
 
   bool debug;
+  VectorXd stepsize;
 
   // for time profiling
   // std::chrono::milliseconds ngme_precond_time, ngme_grad_time, ngme_set_time, ngme_get_time;
@@ -49,7 +50,7 @@ public:
   VectorXd get_parameter() override;
   void set_parameter(const VectorXd& p) override;
   VectorXd get_stepsizes() override {
-    return VectorXd::Ones(n_params);
+    return stepsize;
   }
 
   MatrixXd precond(int strategy=0, double eps=1e-5) override;

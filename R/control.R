@@ -198,7 +198,6 @@ control_ngme <- function(
     fix_feff = fix_feff,
     feff = feff,
     post_samples_size = post_samples_size,
-    stepsize = 1,
     debug = debug
   )
 
@@ -209,6 +208,7 @@ control_ngme <- function(
 update_control_ngme <- function(control_ngme, control_opt) {
   control_ngme$rao_blackwellization <- control_opt$rao_blackwellization
   control_ngme$n_trace_iter <- control_opt$n_trace_iter
+  control_ngme$stepsize <- control_opt$stepsize
 
   control_ngme
 }

@@ -77,7 +77,7 @@ private:
   double ld;
   Eigen::SimplicialLLT<Eigen::SparseMatrix<double, 0, int> > R;
   Eigen::SparseMatrix<double, 0, int> Qi;
-  Eigen::MatrixXd QU;
+  Eigen::MatrixXd U, QU;
   int N {10};
   void set_ld();
 
@@ -89,10 +89,17 @@ public:
   void initFromList(int, Rcpp::List const &);
 
   inline void set_N(int n) { N = n; }
-  inline void analyze(const Eigen::SparseMatrix<double, 0, int> &M) { R.analyzePattern(M); n=M.cols(); QU.resize(n, N); QU_computed = false; }
+  inline void analyze(const Eigen::SparseMatrix<double, 0, int> &M) {
+    R.analyzePattern(M);
+    n=M.cols();
+    U.resize(n, N);
+    QU.resize(n, N);
+    QU_computed = false;
+  }
   void compute(const Eigen::SparseMatrix<double, 0, int> &);
   inline Eigen::VectorXd solve(Eigen::VectorXd &v, Eigen::VectorXd &x) { return R.solve(v); }
   inline Eigen::VectorXd solve(const Eigen::VectorXd &v)               { return R.solve(v); }
+  inline Eigen::SparseMatrix<double, 0, int> solveMatrix(const Eigen::SparseMatrix<double, 0, int> &v) { return R.solve(v); }
   double trace(const Eigen::MatrixXd &);
   double trace(const Eigen::SparseMatrix<double, 0, int> &);
   double trace_num(const Eigen::SparseMatrix<double, 0, int> &);

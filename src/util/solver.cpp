@@ -70,11 +70,9 @@ SparseMatrix<double, 0, int> cholesky_solver::return_Qinv()
 
 double cholesky_solver::trace_num(const SparseMatrix<double, 0, int> &M)
 {
-  MatrixXd U (n,N);
-  U.setRandom(n,N);
-  U = U.unaryExpr(std::ref(myround));
-
   if (QU_computed==0){
+    U.setRandom(n,N);
+    U = U.unaryExpr(std::ref(myround));
     for(int i=0; i<N; i++){
       QU.col(i) = R.solve(U.col(i));
     }

@@ -17,6 +17,7 @@ Ngme::Ngme(const Rcpp::List& R_ngme, unsigned long seed, int sampling_strategy, 
 {
   Rcpp::List control_ngme = R_ngme["control_ngme"];
     debug = Rcpp::as<bool> (control_ngme["debug"]);
+    stepsize = VectorXd::Constant(n_params, Rcpp::as<double> (control_ngme["stepsize"]));
 
   Rcpp::List list_replicates = Rcpp::as<Rcpp::List> (R_ngme["replicates"]);
   n_repl = list_replicates.size();

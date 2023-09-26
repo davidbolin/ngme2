@@ -63,7 +63,7 @@ protected:
     bool symmetricK, zero_trace, use_num_dK {false};
 
     vector<double> trace;
-    VectorXd rb_trace;
+    VectorXd rb_trace_K, rb_trace_sigma;
     double eps {1e-5};
 
     bool fix_flag[LATENT_FIX_FLAG_SIZE] {0};
@@ -104,6 +104,8 @@ public:
     int get_V_size() const             {return V_size; }
     int get_n_params() const           {return n_params; }
     int get_n_theta_K() const          {return n_theta_K; }
+    int get_n_theta_sigma() const      {return n_theta_sigma; }
+
     const VectorXd& get_theta_K() const {return theta_K; }
 
     SparseMatrix<double, 0, int>& getA()  {return A;}
@@ -170,8 +172,13 @@ public:
         return ope->get_dK()[i];
     }
 
-    void set_rb_trace(const VectorXd& rb_trace) {
-        this->rb_trace = rb_trace;
+    const VectorXd get_BSigma_col(int i)  {
+        return B_sigma.col(i);
+    }
+
+    void set_rb_trace(const VectorXd& rb_trace_K, const VectorXd& rb_trace_sigma) {
+        this->rb_trace_K = rb_trace_K;
+        this->rb_trace_sigma = rb_trace_sigma;
     }
 
     /* 4 for optimizer */

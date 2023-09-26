@@ -55,7 +55,7 @@ BlockModel::BlockModel(
 {
   // 1. Init controls
   Rcpp::List control_ngme = block_model["control_ngme"];
-    const double stepsize = control_ngme["stepsize"];
+    // const double stepsize = control_ngme["stepsize"];
     bool init_sample_W = Rcpp::as<bool> (control_ngme["init_sample_W"]);
     n_gibbs     =  Rcpp::as<int>    (control_ngme["n_gibbs_samples"]);
     debug       = Rcpp::as<bool>   (control_ngme["debug"]);
@@ -183,7 +183,7 @@ if (debug) std::cout << "After assemble" << std::endl;
 if (debug) std::cout << "After init solver " << std::endl;
 
   // 8. optimizer related
-  stepsizes = VectorXd::Constant(n_params, stepsize);
+  // stepsizes = VectorXd::Constant(n_params, stepsize);
   steps_to_threshold = VectorXd::Constant(n_params, 0);
   indicate_threshold = VectorXd::Constant(n_params, 0);
 
@@ -357,8 +357,7 @@ long long time_sample_w = 0;
     if (!fix_flag[block_fix_beta]) {
       noise_grad.tail(n_feff) += (1.0/n_repl) * grad_beta();
     }
-  } else {
-    // Running Gibbs sampling
+  } else { // Running Gibbs sampling
     for (int i=0; i < n_gibbs; i++) {
 // std::chrono::steady_clock::time_point startTime, endTime; startTime = std::chrono::steady_clock::now();
       // bool QQ_update = (i==0) || family != "normal";
@@ -893,26 +892,40 @@ double BlockModel::logd_no_latent(const VectorXd& v) {
 
 // tr(QQ^-1 dK^T diag(1/SV) K)
 void BlockModel::compute_rb_trace() {
+  int n = 0;
   for (int i=0; i < n_latent; i++) {
-    VectorXd rb_trace (latents[i]->get_n_theta_K());
+    VectorXd rb_trace_K (latents[i]->get_n_theta_K());
+    VectorXd rb_trace_sigma (latents[i]->get_n_theta_sigma());
+
+    VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
     for (int j=0; j < latents[i]->get_n_theta_K(); j++) {
-      VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
       SparseMatrix<double> M = block_dK[i][j] * inv_SV.asDiagonal() * K;
-      rb_trace[j] = chol_QQ.trace_num(M);
+      rb_trace_K[j] = chol_QQ.trace_num(M);
     }
-    latents[i]->set_rb_trace(rb_trace);
+
+    // compute for sigma: tr(Q^-1 K B_sigma.col(j)/SV K^T)
+    for (int j=0; j < latents[i]->get_n_theta_sigma(); j++) {
+      // build B_sigma_col_j (consider all latents)
+      VectorXd BSigma_col_over_SV = VectorXd::Zero(V_sizes);
+      BSigma_col_over_SV.segment(n, latents[i]->get_V_size()) = latents[i]->get_BSigma_col(j);
+      BSigma_col_over_SV = BSigma_col_over_SV.cwiseProduct(inv_SV);
+
+      rb_trace_sigma[j] = chol_QQ.trace_num(K * BSigma_col_over_SV.asDiagonal() * K.transpose());
+    }
+
+    latents[i]->set_rb_trace(rb_trace_K, rb_trace_sigma);
+    n += latents[i]->get_V_size();
   }
 }
 
-void BlockModel::compute_diag_Kt_QQinv_K() {
-  VectorXd result (V_sizes);
-  // compute QQ^-1 K
-  for (int i=0; i < V_sizes; i++) {
-    result(i) = K.col(i).dot(chol_QQ.solve(K.col(i)));
-  }
-
+void BlockModel::assemble_dK() {
+  int nrow = 0; int ncol = 0;
   for (int i=0; i < n_latent; i++) {
-    latents[i]->set_diag_Kt_QQinv_K(result);
+      for (int j=0; j < latents[i]->get_n_theta_K(); j++) {
+          setSparseBlock(&block_dK[i][j], nrow, ncol, latents[i]->get_dK(j));
+      }
+      nrow += latents[i]->get_V_size();
+      ncol += latents[i]->get_W_size();
   }
 }
 

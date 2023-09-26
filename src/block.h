@@ -157,22 +157,11 @@ public:
         }
     }
 
-    void assemble_dK() {
-        int nrow = 0; int ncol = 0;
-        for (int i=0; i < n_latent; i++) {
-            for (int j=0; j < latents[i]->get_n_theta_K(); j++) {
-                setSparseBlock(&block_dK[i][j], nrow, ncol, latents[i]->get_dK(j));
-            }
-            nrow += latents[i]->get_V_size();
-            ncol += latents[i]->get_W_size();
-        }
-    }
+    // assemble dK, and dK_sigma
+    void assemble_dK();
 
     // tr(QQ^-1 dK^T diag(1/SV) K)
     void compute_rb_trace();
-
-    // compute and set diag(Kt QQ^-1 K)
-    void compute_diag_Kt_QQinv_K();
 
     // return mean = mu*(V-h)
     VectorXd getMean() const {

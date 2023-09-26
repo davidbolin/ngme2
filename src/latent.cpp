@@ -27,7 +27,7 @@ Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
     // K             (V_size, W_size),
     // dK            (n_theta_K),
     trace         (n_theta_K, 0.0),
-    rb_trace      (n_theta_K),
+    rb_trace_K    (n_theta_K),
     eps           (0.001),
 
     W             (W_size),
@@ -64,6 +64,7 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
 
         n_theta_mu    =   (B_mu.cols());
         n_theta_sigma =   (B_sigma.cols());
+        rb_trace_sigma = VectorXd::Zero(n_theta_sigma);
         if (noise_type[0] == "normal_nig") n_theta_sigma_normal =   (B_sigma_normal.cols());
 
         theta_mu = Rcpp::as< VectorXd >    (noise_in["theta_mu"]);
@@ -184,7 +185,7 @@ inline VectorXd Latent::grad_theta_sigma(bool rao_blackwell) {
     VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
 
     // (KW-mu(V-h)) / (sigma^2 V)
-    VectorXd tmp = (getK()*W - mu.cwiseProduct(V-h)).array().pow(2).matrix().cwiseQuotient(SV);
+    VectorXd tmp = (getK()*WW - mu.cwiseProduct(V-h)).array().pow(2).matrix().cwiseQuotient(SV);
 
     // grad = Bi(tmp * sigma ^ -2 - 1)
     grad = B_sigma.transpose() * (tmp - VectorXd::Ones(V_size));
@@ -194,8 +195,7 @@ inline VectorXd Latent::grad_theta_sigma(bool rao_blackwell) {
         grad(l) += PriorUtil::d_log_dens(prior_sigma_type, prior_sigma_param, theta_sigma(l));
     }
 
-    // add trace term using RB
-    // if (rao_blackwell) grad += B_sigma.transpose() * diag_Kt_QQinv_K.cwiseQuotient(SV);
+    if (rao_blackwell) grad += rb_trace_sigma;
 
     return -grad;
 }
@@ -286,7 +286,7 @@ VectorXd Latent::grad_theta_K(bool rao_blackwell) {
         }
     }
     // add trace term using RB
-    if (rao_blackwell) grad -= rb_trace;
+    if (rao_blackwell) grad -= rb_trace_K;
 
     // add prior
     for (int l=0; l < n_theta_K; l++) {
@@ -513,6 +513,7 @@ double Latent::log_density(const VectorXd& parameter, bool precond_K) {
         VectorXd mu = B_mu * theta_mu;
         VectorXd sigma = (B_sigma * theta_sigma).array().exp();
 
+// std::cout << "theta_K = " << theta_K.transpose() << std::endl;
         ope_precond->update_K(theta_K);
         SparseMatrix<double> K = ope_precond->getK();
         logd_W = logd_W_given_V(W, K, mu, sigma, prevV);

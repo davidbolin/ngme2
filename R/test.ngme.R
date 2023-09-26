@@ -33,8 +33,8 @@ test_ngme <- function(
   precond_by_diff_chain = TRUE,
   compute_precond_each_iter = FALSE,
   num_threads = c(n_parallel_chain, 4),
+  f_noise = noise_nig(mu = -3, sigma = 1.5, nu=0.5),
   n_gibbs_samples = 5,
-  f_noise = "nig",
   family = "normal",
   max.n = 1000,
   print = FALSE,
@@ -53,7 +53,7 @@ test_ngme <- function(
 ) {
   set.seed(seed)
   # create 2d mesh
-  if (model %in% c("matern", "bvmatern")) {
+  if (model %in% c("matern", "bvmatern", "ar1+matern")) {
     pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
     mesh <- fmesher::fm_mesh_2d(
       loc.domain = pl01, cutoff = 0.2,
@@ -63,17 +63,14 @@ test_ngme <- function(
 print(paste("nodes of mesh = ", mesh$n))
   }
 
-  f_sim_noise <- if (f_noise=="nig") noise_nig(mu = -3, sigma = 1.5, nu=0.5)
-    else noise_normal()
-  f_fm_noise <- if (f_noise=="nig") noise_nig(
-    fix_theta_mu = fix_theta_mu,
-    fix_theta_sigma = fix_theta_sigma,
-    fix_nu = fix_nu
-  ) else noise_normal(
-    fix_theta_mu = fix_theta_mu,
-    fix_theta_sigma = fix_theta_sigma,
-    fix_nu = fix_nu
-  )
+  stopifnot(length(f_noise$noise_type) == 1)
+  f_fm_noise <- f_noise
+  f_fm_noise$fix_theta_mu = fix_theta_mu
+  f_fm_noise$fix_theta_sigma = fix_theta_sigma
+  f_fm_noise$fix_nu = fix_nu
+  f_fm_noise$theta_mu = rep(0, ncol(f_fm_noise$B_mu))
+  f_fm_noise$theta_sigma = rep(0, ncol(f_fm_noise$B_sigma))
+  f_fm_noise$nu = 1
 
   mn_noise <- if (family == "nig")
     rnig(n_obs_per_rep, delta=-2, mu=2, nu=0.8, sigma=1, seed=seed)
@@ -88,14 +85,13 @@ print(paste("nodes of mesh = ", mesh$n))
     L <- chol(Cov_kron)
     L %*% rnorm(n_obs_per_rep)
   } else
-    rnorm(n_obs_per_rep, sd=1)
+    rnorm(n_obs_per_rep, sd=0.2)
   # ------- Simulate data for each model --------
   sim_data <- switch(model,
     "ar1" = {
       idx <- 1:n_obs_per_rep
       ar1_model <- f(idx, model="ar1", rho = 0.5,
-      noise = f_sim_noise,
-      debug = debug_f
+        noise = f_noise
       )
       W <- simulate(ar1_model, seed = seed)
       Y <- W + mn_noise
@@ -103,17 +99,39 @@ print(paste("nodes of mesh = ", mesh$n))
     },
     "matern" = {
       loc <- cbind(runif(n_obs_per_rep, 0, 10), runif(n_obs_per_rep, 0, 5))
-      true_model <- f(
+      matern_model <- f(
         map = loc,
         model="matern",
         theta_K = log(4),
         mesh = mesh,
-        noise = f_sim_noise,
-        debug = debug_f
+        noise = f_noise
       )
-      W <- simulate(true_model, seed=seed)
-      Y <- as.numeric(true_model$A %*% W) + mn_noise
+      W <- simulate(matern_model, seed=seed)
+      Y <- as.numeric(matern_model$A %*% W) + mn_noise
       list(Y=Y, idx=loc, group=rep(1, n_obs_per_rep))
+    },
+    "ar1+ar1" = {
+      idx <- 1:n_obs_per_rep
+      ar1_model_1 <- f(idx, model="ar1", rho = 0.5, noise = f_noise)
+      ar1_model_2 <- f(idx, model="ar1", rho = -0.6, noise = f_noise)
+      W1 <- simulate(ar1_model_1, seed = seed)
+      W2 <- simulate(ar1_model_2, seed = seed)
+      Y <- W1 + W2 + mn_noise
+      list(Y=Y, idx=idx, group=rep(1, n_obs_per_rep))
+    },
+    "ar1+matern" = {
+      idx <- 1:n_obs_per_rep
+      ar1_model <- f(idx, model="ar1", rho = 0.5,noise = f_noise)
+      loc <- cbind(runif(n_obs_per_rep, 0, 10), runif(n_obs_per_rep, 0, 5))
+      matern_model <- f(
+        map = loc, model="matern",
+        theta_K = log(4), mesh = mesh,
+        noise = f_noise
+      )
+      W1 <- simulate(ar1_model, seed = seed)
+      W2 <- simulate(matern_model, seed = seed)
+      Y <- W1 + as.numeric(matern_model$A %*% W2) + mn_noise
+      list(Y=Y, idx=list(idx, loc), group=rep(1, n_obs_per_rep))
     },
     "bvar1" = {
       group_per_rep <- c(rep("first", n_obs_per_rep/2), rep("second", n_obs_per_rep/2))
@@ -128,10 +146,9 @@ print(paste("nodes of mesh = ", mesh$n))
         ),
         group = group_per_rep,
         noise = list(
-          first = f_sim_noise,
-          second = f_sim_noise
-        ),
-        debug = debug_f
+          first = f_noise,
+          second = f_noise
+        )
       )
       W <- simulate(true_model, seed=seed)
       Y <- as.numeric(true_model$A %*% W) + mn_noise
@@ -154,8 +171,7 @@ print(paste("nodes of mesh = ", mesh$n))
         noise = list(
           first=noise_nig(mu=-3, sigma=2, nu=1),
           second=noise_nig(mu=-3, sigma=2, nu=1)
-        ),
-        debug = debug_f
+        )
       )
       W <- simulate(true_model, seed=seed)
       Y <- as.numeric(true_model$A %*% W) + mn_noise
@@ -170,6 +186,7 @@ print(paste("nodes of mesh = ", mesh$n))
       fix_theta_K = fix_theta_K,
       model = "ar1",
       noise = f_fm_noise,
+      debug = debug_f,
       control = control_f(numer_grad = numer_grad)
     ),
     "matern" = Y ~ 0 + f(idx,
@@ -177,6 +194,36 @@ print(paste("nodes of mesh = ", mesh$n))
       model="matern",
       mesh = mesh,
       noise=f_fm_noise,
+      debug = debug_f,
+      control = control_f(numer_grad = numer_grad)
+    ),
+    "ar1+ar1" =  Y ~ 0 + f(idx,
+      fix_theta_K = fix_theta_K,
+      model = "ar1",
+      noise = f_fm_noise,
+      debug = debug_f,
+      name = "field1",
+      control = control_f(numer_grad = numer_grad)
+      ) + f(idx,
+      fix_theta_K = fix_theta_K,
+      model = "ar1",
+      noise = f_fm_noise,
+      debug = debug_f,
+      name = "field2",
+      control = control_f(numer_grad = numer_grad)
+    ),
+    "ar1+matern" = Y ~ 0 + f(idx[[1]],
+      fix_theta_K = fix_theta_K,
+      model = "ar1",
+      noise = f_fm_noise,
+      debug = debug_f,
+      control = control_f(numer_grad = numer_grad)
+      ) + f(idx[[2]],
+      fix_theta_K = fix_theta_K,
+      model="matern",
+      mesh = mesh,
+      noise=f_fm_noise,
+      debug = debug_f,
       control = control_f(numer_grad = numer_grad)
     ),
     "bvar1" = Y ~ f(idx,
@@ -184,12 +231,14 @@ print(paste("nodes of mesh = ", mesh$n))
       fix_theta_K = fix_theta_K,
       sub_models = list(first = "ar1", second="ar1"),
       control = control_f(numer_grad = numer_grad),
+      debug = debug_f,
       noise = list(first=noise_nig(), second=noise_nig())
     ),
     "bvmatern" = Y ~ f(idx,
       model="bv",
       fix_theta_K = fix_theta_K,
       sub_models = list(first = "matern", second="matern"),
+      debug = debug_f,
       control = control_f(numer_grad = numer_grad),
       noise = list(first=noise_nig(), second=noise_nig())
     ),
@@ -239,7 +288,7 @@ print(paste("nodes of mesh = ", mesh$n))
   list(
     out = out,
     time = proc.time() - start_time,
-    f_sim_noise = f_sim_noise,
-    m_noise = if (family=="nig") noise_nig(mu=2, sigma=1, nu=0.8) else noise_normal(sigma=1)
+    f_noise = f_noise,
+    m_noise = if (inherits(family, "ngme_noise")) family else if (family=="nig") noise_nig(mu=2, sigma=1, nu=0.8) else noise_normal(sigma=0.2)
   )
 }

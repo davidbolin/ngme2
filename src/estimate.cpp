@@ -22,7 +22,7 @@ using std::vector;
 
 using namespace Rcpp;
 
-std::vector<bool> check_conv(const MatrixXd&, const MatrixXd&, int, int, double, double, std::string, bool);
+std::vector<bool> check_conv(const MatrixXd&, const MatrixXd&, int, int, double, double, std::string, bool, int);
 
 // [[Rcpp::plugins(openmp)]]
 // [[Rcpp::export]]
@@ -144,7 +144,7 @@ auto timer = std::chrono::steady_clock::now();
 
             // 2. convergence check
             if (n_slope_check <= curr_batch + 1)
-                converge = check_conv(means, vars, curr_batch, n_slope_check, std_lim, trend_lim, par_string, print_check_info);
+                converge = check_conv(means, vars, curr_batch, n_slope_check, std_lim, trend_lim, par_string, print_check_info, batch_steps);
             all_converge = std::find(begin(converge), end(converge), false) == end(converge);
 
             // 3. if some parameter converge, stop compute gradient, or slow down the gradient.
@@ -224,7 +224,8 @@ std::vector<bool> check_conv(
     double std_lim,
     double trend_lim,
     std::string par_string,
-    bool print_check_info
+    bool print_check_info,
+    int batch_steps
 ) {
     int n_params = means.cols();
     std::vector<bool> conv (n_params, true);
@@ -245,7 +246,7 @@ std::vector<bool> check_conv(
     MatrixXd B (n_slope_check, 2);
         B.col(0) = VectorXd::Ones(n_slope_check);
         for (int i=0; i < n_slope_check; i++)
-            B(i, 1) = i;
+            B(i, 1) = i * batch_steps;
     for (int i = 0; i < n_params; i++) {
         // VectorXd mean = means.col(i)(Eigen::seq(curr_batch - n_slope_check + 1, curr_batch)); // Eigen 3.4 Eigen::seq
         VectorXd mean      = means.block(curr_batch - n_slope_check + 1, i, n_slope_check, 1);  // Eigen block API

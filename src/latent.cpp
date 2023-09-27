@@ -16,8 +16,8 @@ Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
 
     // operator
     ope           (OperatorFactory::create(Rcpp::as<Rcpp::List> (model_list["operator"]))),
-    ope_add_eps   (OperatorFactory::create(Rcpp::as<Rcpp::List> (model_list["operator"]))),
     ope_precond   (OperatorFactory::create(Rcpp::as<Rcpp::List> (model_list["operator"]))),
+    ope_addeps    (OperatorFactory::create(Rcpp::as<Rcpp::List> (model_list["operator"]))),
     h             (ope->get_h()),
     theta_K       (Rcpp::as<VectorXd>  (model_list["theta_K"])),
     n_theta_K     (theta_K.size()),
@@ -29,6 +29,7 @@ Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
     trace         (n_theta_K, 0.0),
     rb_trace_K    (n_theta_K),
     eps           (0.001),
+    num_dK        (n_theta_K, SparseMatrix<double>(V_size, W_size)),
 
     W             (W_size),
     prevW         (W_size),
@@ -144,7 +145,6 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
     if (fix_flag[latent_fix_theta_mu]) fix_parameters.segment(n_theta_K, n_theta_mu).setOnes();
     if (fix_flag[latent_fix_theta_sigma]) fix_parameters.segment(n_theta_K+n_theta_mu, n_theta_sigma).setOnes();
     if (fix_flag[latent_fix_nu]) fix_parameters.segment(n_theta_K+n_theta_mu+n_theta_sigma, n_nu).setOnes();
-
 
 // std::cout << "fix param=" << fix_parameters << std::endl;
 if (debug) std::cout << "End constructor of latent" << std::endl;
@@ -271,9 +271,8 @@ VectorXd Latent::grad_theta_K(bool rao_blackwell) {
         for (int i=0; i < n_theta_K; i++) {
             VectorXd tmp = theta_K;
             tmp(i) += eps;
-            ope_add_eps->update_K(tmp);
-            // SparseMatrix<double> K_add_eps = ope_add_eps->getK();
-            double val_add_eps = logd_W_given_V(WW, ope_add_eps->getK(), mu, sigma, V);
+            ope_addeps->update_K(tmp);
+            double val_add_eps = logd_W_given_V(WW, ope_addeps->getK(), mu, sigma, V);
             grad(i) = (val_add_eps - val) / eps;
         }
     } else {
@@ -356,7 +355,8 @@ void Latent::set_parameter(const VectorXd& theta, bool update_dK) {
     if (noise_type[0] == "normal_nig") {
         theta_sigma_normal = theta.segment(n_theta_K+n_theta_mu+n_theta_sigma+n_nu, n_theta_sigma_normal);
     }
-    update_each_iter(false, update_dK || !numer_grad);
+
+    update_each_iter(false, update_dK);
 }
 
 void Latent::sample_cond_V() {
@@ -470,9 +470,9 @@ void Latent::update_each_iter(bool initialization, bool update_dK) {
         }
     }
 
-    if (update_dK) ope->update_dK(theta_K);
     if (!numer_grad) {
         // trace[i] = tr(K^-1 dK[i])
+        ope->update_dK(theta_K);
         if (!zero_trace) {
             if (!symmetricK) {
                 if (W_size > 10) {
@@ -495,6 +495,15 @@ void Latent::update_each_iter(bool initialization, bool update_dK) {
                     trace[i] = chol_solver_K.trace_num(ope->get_dK()[i]);
                 }
             }
+        }
+    } else {
+        // update K numerical
+        for (int i=0; i < n_theta_K; i++) {
+            VectorXd tmp = theta_K;
+            tmp(i) += eps;
+            ope_addeps->update_K(tmp);
+
+            if (update_dK) num_dK[i] = (ope_addeps->getK() - ope->getK()) / eps;
         }
     }
 }
@@ -637,4 +646,11 @@ MatrixXd Latent::precond(bool precond_K, double eps) {
 
 // std::cout << "print hessian: " << std::endl << precond_full << std::endl;
     return precond_full;
+}
+
+const SparseMatrix<double, 0, int>& Latent::get_dK(int i) {
+    if (!numer_grad)
+        return ope->get_dK()[i];
+    else
+        return num_dK[i];
 }

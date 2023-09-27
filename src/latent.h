@@ -57,7 +57,7 @@ protected:
     Eigen::VectorXi fix_parameters;
 
     // operator (for compute K, for compute numerical gradient, for preconditioner)
-    std::shared_ptr<Operator> ope, ope_add_eps, ope_precond;
+    std::shared_ptr<Operator> ope, ope_precond, ope_addeps;
     VectorXd h, theta_K;
     int n_theta_K;
     bool symmetricK, zero_trace, use_num_dK {false};
@@ -68,6 +68,9 @@ protected:
 
     bool fix_flag[LATENT_FIX_FLAG_SIZE] {0};
     bool numer_grad {false};
+
+    vector<std::shared_ptr<Operator>> ope_add_eps;
+    vector<SparseMatrix<double>> num_dK;
 
     // mu and sigma, and sigma_normal (special case when using nig_normal case)
     MatrixXd B_mu, B_sigma, B_sigma_normal;
@@ -168,9 +171,7 @@ public:
         return ope->getK();
     }
 
-    const SparseMatrix<double, 0, int>& get_dK(int i)  {
-        return ope->get_dK()[i];
-    }
+    const SparseMatrix<double, 0, int>& get_dK(int i);
 
     const VectorXd get_BSigma_col(int i)  {
         return B_sigma.col(i);

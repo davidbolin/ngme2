@@ -47,7 +47,7 @@ protected:
     VectorXd theta_mu, theta_sigma, nu, rho, beta;
 
     MatrixXd B_mu, B_sigma;
-    VectorXd noise_mu, noise_sigma, cond_W;
+    VectorXd noise_mu, noise_sigma;
     int n_theta_mu, n_theta_sigma, n_nu, n_rho;
 
     int n_latent; // how mnay latent model
@@ -91,6 +91,7 @@ protected:
 
     bool all_gaussian, rao_blackwell; // No need for gibbs sampling
     std::string par_string;
+    VectorXd rb_trace_noise_sigma;
 
     // priors
     string prior_mu_type, prior_sigma_type, prior_nu_type;
@@ -223,6 +224,17 @@ public:
         return W;
     }
 
+    VectorXd get_cond_W() const {
+        VectorXd W (W_sizes);
+        int pos = 0;
+        for (vector<std::shared_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
+            int size = (*it)->get_W_size();
+            W.segment(pos, size) = (*it)->get_cond_W();
+            pos += size;
+        }
+        return W;
+    }
+
     VectorXd getPrevW() const {
         VectorXd W (W_sizes);
         int pos = 0;
@@ -235,10 +247,10 @@ public:
     }
 
     VectorXd get_residual(bool rao_blackwell=false) const {
-      if (n_latent > 0 || !rao_blackwell) {
+      if (n_latent > 0 && !rao_blackwell) {
         return Y - A * getW() - X * beta - (-VectorXd::Ones(n_obs) + noise_V).cwiseProduct(noise_mu);
-      } else if (n_latent > 0 || rao_blackwell) {
-        return Y - A * cond_W - X * beta - (-VectorXd::Ones(n_obs) + noise_V).cwiseProduct(noise_mu);
+      } else if (n_latent > 0 && rao_blackwell) {
+        return Y - A * get_cond_W() - X * beta - (-VectorXd::Ones(n_obs) + noise_V).cwiseProduct(noise_mu);
       } else {
         return Y  - X * beta - (-VectorXd::Ones(n_obs) + noise_V).cwiseProduct(noise_mu);
       }
@@ -295,6 +307,8 @@ public:
     // compute numerical hessian for theta = c(beta, theta_mu, theta_sigma, nu)
     MatrixXd num_h_no_latent(const VectorXd& v, double eps = 1e-5);
     double logd_no_latent(const VectorXd& v);
+
+    void test_in_the_end();
 };
 
 #endif

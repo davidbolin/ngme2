@@ -105,6 +105,7 @@ if (debug) std::cout << "After set block K" << std::endl;
     B_sigma       = (Rcpp::as<MatrixXd>      (noise_in["B_sigma"])),
     theta_sigma   = (Rcpp::as<VectorXd>      (noise_in["theta_sigma"])),
     n_theta_sigma = (theta_sigma.size()),
+    rb_trace_noise_sigma = VectorXd::Zero(n_theta_sigma),
 
     family = Rcpp::as<string>  (noise_in["noise_type"]);
     noise_mu = B_mu * theta_mu;
@@ -205,7 +206,6 @@ if (debug) std::cout << "After init solver && before sampleW_V" << std::endl;
       }
     }
   }
-
 if (debug) std::cout << "End Block Constructor" << std::endl;
 }
 
@@ -294,11 +294,9 @@ void BlockModel::sampleW_VY(bool burn_in) {
   setW(W);
 
   if (rao_blackwell && !burn_in) {
-    // compute and send diag(K^T QQ^-1 K) for RB of sigma
-    // compute_diag_Kt_QQinv_K();
-
     // compute E(W|V,Y) i.e. QQ^-1 M
     W = chol_QQ.solve(M);
+// std::cout << "cond W = " << W.transpose() << std::endl;
     set_cond_W(W);
   }
 
@@ -363,6 +361,7 @@ long long time_sample_w = 0;
       // bool QQ_update = (i==0) || family != "normal";
       sample_cond_V();
       sampleW_VY(false);
+      sample_cond_noise_V();
       if (rao_blackwell) compute_rb_trace();
 
       int pos = 0;
@@ -372,7 +371,6 @@ long long time_sample_w = 0;
         pos += theta_len;
       }
 
-      sample_cond_noise_V();
 // endTime = std::chrono::steady_clock::now(); sampling_time += std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);std::cout << "!!sampling time (ms): " << std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count() << std::endl;
       noise_grad.head(n_merr) += grad_theta_merr();
       if (!fix_flag[block_fix_beta]) {
@@ -480,7 +478,7 @@ VectorXd BlockModel::grad_theta_mu() {
 
   VectorXd noise_SV = noise_V.cwiseProduct(noise_sigma.array().pow(2).matrix());
 
-  VectorXd residual = get_residual();
+  VectorXd residual = get_residual(rao_blackwell);
   VectorXd grad = VectorXd::Zero(n_theta_mu);
   for (int l=0; l < n_theta_mu; l++) {
 
@@ -500,16 +498,16 @@ VectorXd BlockModel::grad_theta_sigma() {
   VectorXd noise_SV = noise_sigma.array().pow(2).matrix().cwiseProduct(noise_V);
   // grad = B_sigma.transpose() * (-0.5 * VectorXd::Ones(n_obs) + residual.array().pow(2).matrix().cwiseQuotient(noise_SV));
 
-  VectorXd residual = get_residual();
-  VectorXd vsq = (residual).array().pow(2).matrix().cwiseProduct(noise_V.cwiseInverse());
-  VectorXd tmp1 = vsq.cwiseProduct(noise_sigma.array().pow(-2).matrix()) - VectorXd::Ones(n_obs);
+  VectorXd residual = get_residual(rao_blackwell);
+  VectorXd vsq = (residual).array().pow(2).matrix().cwiseQuotient(noise_SV);
+  VectorXd tmp1 = vsq - VectorXd::Ones(n_obs);
   grad = B_sigma.transpose() * tmp1;
+  if (rao_blackwell) grad += rb_trace_noise_sigma;
 
   // add prior
   for (int l=0; l < n_theta_sigma; l++) {
       grad(l) += PriorUtil::d_log_dens(prior_sigma_type, prior_sigma_param, theta_sigma(l));
   }
-
   return -grad;
 }
 
@@ -640,31 +638,6 @@ void BlockModel::sample_cond_noise_V(bool posterior) {
       // noise_V = rGIG_cpp(p_vec, a_vec, b_vec, rng());
       NoiseUtil::sample_V(noise_V, family, p_vec, a_vec, b_vec, rng);
   }
-}
-
-
-// generate output to R
-Rcpp::List BlockModel::output() const {
-  Rcpp::List latents_output;
-  for (int i=0; i < n_latent; i++) {
-    latents_output.push_back((*latents[i]).output());
-  }
-
-  Rcpp::List out = Rcpp::List::create(
-    Rcpp::Named("noise") = Rcpp::List::create(
-      Rcpp::Named("noise_type")   = family,
-      Rcpp::Named("theta_mu")     = theta_mu,
-      Rcpp::Named("theta_sigma")  = theta_sigma,
-      Rcpp::Named("nu")           = nu,
-      Rcpp::Named("V")            = noise_V,
-      Rcpp::Named("rho")          = rho
-    ),
-    Rcpp::Named("feff")            = beta,
-    // Rcpp::Named("sampling_time")   = sampling_time.count(),
-    Rcpp::Named("models")          = latents_output
-  );
-
-  return out;
 }
 
 // posterior
@@ -890,17 +863,18 @@ double BlockModel::logd_no_latent(const VectorXd& v) {
   return  -(logd_res + logd_V);
 }
 
-// tr(QQ^-1 dK^T diag(1/SV) K)
 void BlockModel::compute_rb_trace() {
+if (debug) std::cout << "start compute trace" << std::endl;
   int n = 0;
+  VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
   for (int i=0; i < n_latent; i++) {
     VectorXd rb_trace_K (latents[i]->get_n_theta_K());
     VectorXd rb_trace_sigma (latents[i]->get_n_theta_sigma());
 
-    VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
+    // compute for K: tr(QQ^-1 dK^T diag(1/SV) K)
     for (int j=0; j < latents[i]->get_n_theta_K(); j++) {
-      SparseMatrix<double> M = block_dK[i][j] * inv_SV.asDiagonal() * K;
-      rb_trace_K[j] = chol_QQ.trace_num(M);
+      SparseMatrix<double> T = block_dK[i][j].transpose() * inv_SV.asDiagonal() * K;
+      rb_trace_K[j] = chol_QQ.trace_num(T);
     }
 
     // compute for sigma: tr(Q^-1 K B_sigma.col(j)/SV K^T)
@@ -910,12 +884,21 @@ void BlockModel::compute_rb_trace() {
       BSigma_col_over_SV.segment(n, latents[i]->get_V_size()) = latents[i]->get_BSigma_col(j);
       BSigma_col_over_SV = BSigma_col_over_SV.cwiseProduct(inv_SV);
 
-      rb_trace_sigma[j] = chol_QQ.trace_num(K * BSigma_col_over_SV.asDiagonal() * K.transpose());
+      SparseMatrix<double> T = K * BSigma_col_over_SV.asDiagonal() * K.transpose();
+      rb_trace_sigma[j] = chol_QQ.trace_num(T);
     }
 
     latents[i]->set_rb_trace(rb_trace_K, rb_trace_sigma);
     n += latents[i]->get_V_size();
   }
+
+  // compute for theta_sigma
+  VectorXd noise_SV = noise_V.cwiseProduct(noise_sigma.array().pow(2).matrix());
+  for (int j=0; j < n_theta_sigma; j++) {
+    SparseMatrix<double> T = A.transpose() * B_sigma.col(j).cwiseQuotient(noise_SV).asDiagonal() * A;
+    rb_trace_noise_sigma[j] = chol_QQ.trace_num(T);
+  }
+if (debug) std::cout << "after compute trace" << std::endl;
 }
 
 void BlockModel::assemble_dK() {
@@ -933,3 +916,53 @@ void BlockModel::assemble_dK() {
 // std::cout <<"ana trace = " << ana_trace << std::endl;
 // std::cout <<"num trace = " << rb_trace[j] << std::endl;
 // std::cout << "-----" << std::endl;
+
+// generate output to R
+Rcpp::List BlockModel::output() const {
+  Rcpp::List latents_output;
+  for (int i=0; i < n_latent; i++) {
+    latents_output.push_back((*latents[i]).output());
+  }
+
+  Rcpp::List out = Rcpp::List::create(
+    Rcpp::Named("noise") = Rcpp::List::create(
+      Rcpp::Named("noise_type")   = family,
+      Rcpp::Named("theta_mu")     = theta_mu,
+      Rcpp::Named("theta_sigma")  = theta_sigma,
+      Rcpp::Named("nu")           = nu,
+      Rcpp::Named("V")            = noise_V,
+      Rcpp::Named("rho")          = rho
+    ),
+    Rcpp::Named("feff")            = beta,
+    // Rcpp::Named("sampling_time")   = sampling_time.count(),
+    Rcpp::Named("models")          = latents_output
+  );
+
+  return out;
+}
+
+
+void BlockModel::test_in_the_end() {
+  sampleW_VY(); // compute QQ
+
+  VectorXd rb_trace_K (latents[0]->get_n_theta_K());
+  VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
+
+  // compute for K: tr(QQ^-1 dK^T diag(1/SV) K)
+  for (int j=0; j < latents[0]->get_n_theta_K(); j++) {
+    SparseMatrix<double> M = block_dK[0][j].transpose() * inv_SV.asDiagonal() * K;
+    rb_trace_K[j] = chol_QQ.trace(M);
+  }
+
+  VectorXd second_term = VectorXd::Zero(latents[0]->get_n_theta_K());
+  VectorXd cond_W_term = VectorXd::Zero(latents[0]->get_n_theta_K());
+  for (int s=0; s < 1000; s++) {
+    sampleW_VY();
+    for (int j=0; j < latents[0]->get_n_theta_K(); j++) {
+      second_term[j] += (block_dK[0][j].transpose() * getW()).cwiseProduct(inv_SV).dot(K * getW());
+      cond_W_term[j] += (block_dK[0][j].transpose() * get_cond_W()).cwiseProduct(inv_SV).dot(K * get_cond_W());
+    }
+
+    std::cout << "diff at iter " << s << " = " << second_term/(s+1) - rb_trace_K - cond_W_term/(s+1) << std::endl;
+  }
+}

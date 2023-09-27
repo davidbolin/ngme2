@@ -79,7 +79,7 @@ protected:
     int n_theta_mu, n_theta_sigma, n_nu, n_theta_sigma_normal;
 
     // for numerical gradient.
-    VectorXd W, prevW, V, prevV, cond_W, diag_Kt_QQinv_K;
+    VectorXd W, prevW, V, prevV, cond_W;
     SparseMatrix<double,0,int> A;
 
     int dim {1}; // noise dimension
@@ -124,8 +124,8 @@ public:
         }
     }
 
+    const VectorXd& get_cond_W() const { return cond_W; }
     void set_cond_W(const VectorXd& W) { cond_W = W; }
-    void set_diag_Kt_QQinv_K(const VectorXd& diag_Kt_QQinv_K) { this->diag_Kt_QQinv_K = diag_Kt_QQinv_K; }
     void setPrevW(const VectorXd& W) { prevW = W; }
 
     // used in block model

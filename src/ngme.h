@@ -88,6 +88,11 @@ public:
   }
 
   void burn_in(int iterations);
+
+  // for test only, after estimation
+  void test_in_the_end() {
+    ngme_repls[0]->test_in_the_end();
+  }
 };
 
 #endif

@@ -33,7 +33,6 @@ Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
     W             (W_size),
     prevW         (W_size),
     cond_W        (W_size),
-    diag_Kt_QQinv_K (VectorXd::Zero(W_size)),
     V             (h),
     prevV         (h),
     A             (Rcpp::as<SparseMatrix<double,0,int>>   (model_list["A"])),
@@ -196,7 +195,6 @@ inline VectorXd Latent::grad_theta_sigma(bool rao_blackwell) {
     }
 
     if (rao_blackwell) grad += rb_trace_sigma;
-
     return -grad;
 }
 
@@ -513,7 +511,6 @@ double Latent::log_density(const VectorXd& parameter, bool precond_K) {
         VectorXd mu = B_mu * theta_mu;
         VectorXd sigma = (B_sigma * theta_sigma).array().exp();
 
-// std::cout << "theta_K = " << theta_K.transpose() << std::endl;
         ope_precond->update_K(theta_K);
         SparseMatrix<double> K = ope_precond->getK();
         logd_W = logd_W_given_V(W, K, mu, sigma, prevV);
@@ -524,6 +521,7 @@ double Latent::log_density(const VectorXd& parameter, bool precond_K) {
         VectorXd sigma = (B_sigma * theta_sigma).array().exp();
 
         logd_W = logd_KW_given_V(mu, sigma, prevV);
+        // logd_W = logd_W_given_V(W, ope->getK(), mu, sigma, prevV);
     }
 
     return -logd_W;
@@ -541,13 +539,16 @@ double Latent::logd_W_given_V(const VectorXd& W, const SparseMatrix<double>& K, 
     } else {
         if (!symmetricK) {
             SparseMatrix<double> Q = K.transpose() * SV.cwiseInverse().asDiagonal() * K;
-            solver_Q.compute(Q);
+// cholesky_solver solver_Q_tmp;
+//  solver_Q_tmp.analyze(Q);
+ solver_Q.compute(Q);
             l = 0.5 * solver_Q.logdet() - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
-            // lu_solver_K.compute(K);
-            // l = lu_solver_K.logdet() - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
         } else {
             chol_solver_K.compute(K);
-            l = chol_solver_K.logdet() - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
+// cholesky_solver solver_K_tmp;
+// solver_K_tmp.analyze(K); solver_K_tmp.compute(K);
+            l = chol_solver_K.logdet() - 0.5 * SV.array().log().sum()
+                - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
         }
     }
     return l;
@@ -620,20 +621,18 @@ MatrixXd Latent::precond(bool precond_K, double eps) {
     }
 
     // update nu
-    int cur_noise = 0;
     for (int i=0; i < n_noise; i++) {
         if (noise_type[i] == "normal") continue;
 
         int n = V_size / n_noise;
-        double noise_hess = NoiseUtil::precond(precond_eps, noise_type[i], prevV.segment(i*n, n), h.segment(i*n, n), nu(cur_noise), single_V);
+        double noise_hess = NoiseUtil::precond(precond_eps, noise_type[i], prevV.segment(i*n, n), h.segment(i*n, n), nu(i), single_V);
 
         // prevent generate 0 or -0
         if (abs(noise_hess) < 1) {
             noise_hess = noise_hess > 0 ? 1 : -1;
         }
 
-        precond_full(n_params - n_nu + cur_noise, n_params - n_nu + cur_noise) = noise_hess;
-        cur_noise++;
+        precond_full(n_params - n_nu + i, n_params - n_nu + i) = noise_hess;
     }
 
 // std::cout << "print hessian: " << std::endl << precond_full << std::endl;

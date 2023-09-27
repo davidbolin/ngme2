@@ -164,6 +164,9 @@ auto timer = std::chrono::steady_clock::now();
     //     ngmes[i]->sampling(100, true);
     // }
 
+// for testing in the end
+// ngmes[0]->test_in_the_end();
+
     // generate outputs
     for (i=0; i < n_chains; i++) {
         outputs.push_back(ngmes[i]->output());

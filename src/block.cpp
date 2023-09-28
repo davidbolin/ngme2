@@ -195,7 +195,7 @@ if (debug) std::cout << "After init solver && before sampleW_V" << std::endl;
     sampleW_V();
   }
 
-  if (all_gaussian) rao_blackwell = true;
+  // if (all_gaussian) rao_blackwell = true;
   if (rao_blackwell) {
     // Initialize block_dKs of length n_latent
     block_dK.resize(n_latent);
@@ -339,7 +339,7 @@ long long time_sample_w = 0;
   VectorXd noise_grad = VectorXd::Zero(n_params-n_la_params);
 
   if (rao_blackwell) assemble_dK(); // for computing trace
-  if (all_gaussian) {
+  if (all_gaussian && rao_blackwell) {
     // compute RB version of gradient
     sampleW_VY(); // QQ.compute
     compute_rb_trace();

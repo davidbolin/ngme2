@@ -105,13 +105,14 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
     fix_flag[latent_fix_W] = Rcpp::as<bool> (model_list["fix_W"]); // fixW
 
     // init K, Q, dK
+    int n_trace_iter = Rcpp::as<int> (model_list["n_trace_iter"]);
     ope->update_K(theta_K);
     if (V_size == W_size) {
         if (!symmetricK) {
+            lu_solver_K.set_N(n_trace_iter);
             lu_solver_K.init(W_size, 0,0,0);
             lu_solver_K.analyze(getK());
         } else {
-            int n_trace_iter = Rcpp::as<int> (model_list["n_trace_iter"]);
             chol_solver_K.set_N(n_trace_iter);
             chol_solver_K.init(W_size,0,0,0);
             chol_solver_K.analyze(getK());
@@ -476,9 +477,10 @@ void Latent::update_each_iter(bool initialization, bool update_dK) {
         if (!zero_trace) {
             if (!symmetricK) {
                 if (W_size > 10) {
-                    lu_solver_K.computeKTK(getK());
+                    lu_solver_K.compute_LU(getK());
+                    // lu_solver_K.compute_KTK(getK());
                     for (int i=0; i < n_theta_K; i++){
-                        trace[i] = lu_solver_K.trace(ope->get_dK()[i]);
+                        trace[i] = lu_solver_K.trace_num(ope->get_dK()[i]);
                     }
                 } else {
                     // for random effect case (usually small dimension)

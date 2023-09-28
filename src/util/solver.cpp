@@ -235,6 +235,7 @@ void lu_sparse_solver::init(int nin, int Nin, int max_iter, double tol)
   n = nin;
   KKtinv.resize(n, n);
   KKtinv_computed = 0;
+  QU_computed = 0;
 }
 
 void lu_sparse_solver::initFromList(int nin, Rcpp::List const &)
@@ -242,9 +243,11 @@ void lu_sparse_solver::initFromList(int nin, Rcpp::List const &)
   n = nin;
   KKtinv.resize(n, n);
   KKtinv_computed = 0;
+  QU_computed = 0;
 }
 
-void lu_sparse_solver::compute(const SparseMatrix<double, 0, int> &K_in)
+void lu_sparse_solver::compute(
+  const SparseMatrix<double, 0, int> &K_in)
 {
   K = K_in;
 
@@ -260,10 +263,11 @@ void lu_sparse_solver::compute(const SparseMatrix<double, 0, int> &K_in)
   LU_K.factorize(K);
   L_KKt.factorize(K.transpose() * K); // KTK
   KKtinv_computed = 0;
+  QU_computed = 0;
 }
 
 // similar to compute
-void lu_sparse_solver::computeKTK(const SparseMatrix<double, 0, int> &K_in)
+void lu_sparse_solver::compute_KTK(const SparseMatrix<double, 0, int> &K_in)
 {
   K = K_in;
 
@@ -278,6 +282,24 @@ void lu_sparse_solver::computeKTK(const SparseMatrix<double, 0, int> &K_in)
 
   L_KKt.factorize(K.transpose() * K);
   KKtinv_computed = 0;
+}
+
+void lu_sparse_solver::compute_LU(const SparseMatrix<double, 0, int> &K_in)
+{
+  K = K_in;
+
+  if (K.isCompressed() == 0)
+    K.makeCompressed();
+
+  if (K.rows() != n)
+  {
+    std::cout << "incorrect matrix size: n= " << n;
+    std::cout << ", K = " << K.rows() << " * " << K.cols() << std::endl;
+  }
+
+  LU_K.factorize(K);
+  KKtinv_computed = 0;
+  QU_computed = 0;
 }
 
 // Solve trace(K^-1 M)
@@ -310,26 +332,24 @@ double lu_sparse_solver::trace(const SparseMatrix<double, 0, int> &M)
   return KKtinv.cwiseProduct(Mreo).sum();
 }
 
-// double lu_sparse_solver::trace_num(const SparseMatrix<double, 0, int> &M)
-// {
-//   MatrixXd U (n, N);
-//   U.setRandom(n, N);
-//   U = U.unaryExpr(std::ref(myround));
+double lu_sparse_solver::trace_num(const SparseMatrix<double, 0, int> &M)
+{
+  if (QU_computed==0) {
+    U.setRandom(n,N);
+    U = U.unaryExpr(std::ref(myround));
+    for(int i=0; i<N; i++){
+      QU.col(i) = LU_K.solve(U.col(i));
+    }
+    QU_computed = 1;
+  }
 
-//   if (QU_computed==0){
-//     for(int i=0; i<N; i++){
-//       QU.col(i) = R.solve(U.col(i));
-//     }
-//     QU_computed = 1;
-//   }
-
-//   Eigen::MatrixXd MQU = M*QU;
-//   double t = 0;
-//   for(int i=0;i<N;i++){
-//     t += U.col(i).dot(MQU.col(i));
-//   }
-//   return t/N;
-// }
+  Eigen::MatrixXd MQU = M*QU;
+  double t = 0;
+  for(int i=0;i<N;i++){
+    t += U.col(i).dot(MQU.col(i));
+  }
+  return t/N;
+}
 
 double lu_sparse_solver::trace2(const SparseMatrix<double, 0, int> &M1, SparseMatrix<double, 0, int> &M2)
 {
@@ -349,4 +369,8 @@ void lu_sparse_solver::analyze(const Eigen::SparseMatrix<double, 0, int> &M)
   // if (M.isCompressed() == 0) M.makeCompressed();
   L_KKt.analyzePattern(M.transpose() * M);
   LU_K.analyzePattern(M);
+  n=M.cols();
+  U.resize(n, N);
+  QU.resize(n, N);
+  QU_computed = false;
 }

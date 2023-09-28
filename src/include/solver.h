@@ -149,16 +149,18 @@ private:
   Eigen::SparseMatrix<double, 0, int> K;
   Eigen::SparseLU<Eigen::SparseMatrix<double, 0, int> > LU_K;
   Eigen::SimplicialLLT<Eigen::SparseMatrix<double, 0, int> > L_KKt;
-  int KKtinv_computed, QU_cmputed;
-  Eigen::MatrixXd QU;
+  int KKtinv_computed, QU_computed;
+  Eigen::MatrixXd U, QU;
   int N {10};
 
 public:
+  inline void set_N(int n) { N = n; }
   void init(int, int, int, double);
   void initFromList(int, Rcpp::List const &);
   void analyze(const Eigen::SparseMatrix<double, 0, int> &);
   void compute(const Eigen::SparseMatrix<double, 0, int> &);
-  void computeKTK(const Eigen::SparseMatrix<double, 0, int> &);
+  void compute_KTK(const Eigen::SparseMatrix<double, 0, int> &);
+  void compute_LU(const Eigen::SparseMatrix<double, 0, int> &);
   double trace(const Eigen::MatrixXd &);
   double trace(const Eigen::SparseMatrix<double, 0, int> &);
   double trace2(const SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &);

@@ -7,10 +7,10 @@
 test_ngme(
   model,
   n_obs_per_rep,
-  n_replicate,
   n_iter,
+  n_replicate = 1,
   n_parallel_chain = 4,
-  stop_points = 20,
+  stop_points = 10,
   stepsize = 1,
   numer_grad = TRUE,
   preconditioner = "fast",
@@ -18,18 +18,23 @@ test_ngme(
   precond_by_diff_chain = TRUE,
   compute_precond_each_iter = FALSE,
   num_threads = c(n_parallel_chain, 4),
+  f_noise = noise_nig(mu = -3, sigma = 1.5, nu = 0.5),
   n_gibbs_samples = 5,
-  f_noise = "nig",
-  family = "nig",
+  family = "normal",
   max.n = 1000,
   print = FALSE,
   debug = FALSE,
   debug_f = FALSE,
   verbose = FALSE,
   rao_blackwellization = FALSE,
+  precond_eps = 1e-05,
   n_trace_iter = 10,
   start = NULL,
   estimation = TRUE,
+  fix_theta_K = FALSE,
+  fix_theta_mu = FALSE,
+  fix_theta_sigma = FALSE,
+  fix_nu = FALSE,
   seed = Sys.time()
 )
 }
@@ -38,9 +43,9 @@ test_ngme(
 
 \item{n_obs_per_rep}{number of observation per replicate}
 
-\item{n_replicate}{number of replicate}
-
 \item{n_iter}{number of iteration}
+
+\item{n_replicate}{number of replicate}
 
 \item{n_parallel_chain}{number of parallel chains}
 

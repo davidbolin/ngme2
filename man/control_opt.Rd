@@ -8,10 +8,11 @@ control_opt(
   seed = Sys.time(),
   burnin = 100,
   iterations = 500,
-  stepsize = 1,
+  stepsize = 0.5,
   estimation = TRUE,
-  n_parallel_chain = 2,
   stop_points = 10,
+  iters_per_check = iterations/stop_points,
+  n_parallel_chain = 2,
   exchange_VW = TRUE,
   n_slope_check = 3,
   std_lim = 0.1,
@@ -45,9 +46,11 @@ control_opt(
 
 \item{estimation}{run the estimation process (call C++ in backend)}
 
-\item{n_parallel_chain}{number of parallel chains}
+\item{stop_points}{number of stop points for convergence check (or specify iters_per_check)}
 
-\item{stop_points}{number of stop points for convergence check}
+\item{iters_per_check}{run how many iterations between each check point (or specify stop_points)}
+
+\item{n_parallel_chain}{number of parallel chains}
 
 \item{exchange_VW}{exchange last V and W in each chian}
 

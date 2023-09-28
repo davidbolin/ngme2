@@ -11,6 +11,8 @@ traceplot(ngme, name = "general", hline = NULL)
 
 \item{name}{name of latent models, otherwise plot fixed effects and measurement noise
 should be in names(ngme$models) or other}
+
+\item{hline}{vector, add hline to each plot}
 }
 \value{
 the traceplot

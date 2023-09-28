@@ -638,9 +638,9 @@ MatrixXd Latent::precond(bool precond_K, double eps) {
         int n = V_size / n_noise;
         double noise_hess = NoiseUtil::precond(precond_eps, noise_type[i], prevV.segment(i*n, n), h.segment(i*n, n), nu(i), single_V);
 
-        // prevent generate 0 or -0
-        if (abs(noise_hess) < 1) {
-            noise_hess = noise_hess > 0 ? 1 : -1;
+        // prevent too small
+        if (abs(noise_hess) < n) {
+            noise_hess = noise_hess > 0 ? n : -n;
         }
 
         precond_full(n_params - n_nu + i, n_params - n_nu + i) = noise_hess;

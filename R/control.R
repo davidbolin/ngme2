@@ -16,7 +16,8 @@
 #' @param estimation      run the estimation process (call C++ in backend)
 #'
 #' @param n_parallel_chain number of parallel chains
-#' @param stop_points     number of stop points for convergence check
+#' @param stop_points     number of stop points for convergence check (or specify iters_per_check)
+#' @param iters_per_check run how many iterations between each check point (or specify stop_points)
 #' @param exchange_VW     exchange last V and W in each chian
 #' @param n_slope_check   number of stop points for regression
 #' @param std_lim         maximum allowed standard deviation
@@ -50,12 +51,13 @@ control_opt <- function(
   seed              = Sys.time(),
   burnin            = 100,
   iterations        = 500,
-  stepsize          = 1,
+  stepsize          = 0.5,
   estimation        = TRUE,
+  stop_points       = 10,
+  iters_per_check   = iterations / stop_points,
 
   # parallel options
   n_parallel_chain  = 2,
-  stop_points       = 10,
   exchange_VW       = TRUE,
   n_slope_check     = 3,
   std_lim           = 0.1,
@@ -86,6 +88,16 @@ control_opt <- function(
 ) {
   strategy_list <- c("all", "ws")
   preconditioner_list <- c("none", "fast", "full")
+
+  # if user inputs iters_per_check
+  if (!missing(iters_per_check) && !missing(stop_points)) {
+    stop("Specify only one of iters_per_check and stop_points")
+  } else if (!missing(iters_per_check)) {
+    stopifnot("iterations should be multiple of iters_per_check"
+      = iterations %% iters_per_check == 0)
+    stop_points <- iterations / iters_per_check
+  }
+
   stopifnot(
     sampling_strategy %in% strategy_list,
     preconditioner %in% preconditioner_list,
@@ -98,8 +110,6 @@ control_opt <- function(
   if ((reduce_power <= 0.5) || (reduce_power > 1)) {
     stop("reduceVar should be in (0.5,1]")
   }
-
-  if (stop_points > iterations) stop_points <- iterations
 
   if (n_parallel_chain == 1) {
     compute_precond_each_iter <- TRUE

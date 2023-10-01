@@ -442,6 +442,9 @@ print.ngme_noise <- function(x, padding = 0, prefix = "Noise type", suppress_sig
     cat(pad_add4_space); cat("correlation(rho) = ");
     cat(format(noise$rho, digits=3)); cat("\n")
   }
+  if (length(noise$nu) > 0 && all(noise$nu > 1000))
+    cat("(Notice: Parameter nu seems too big, consider use Gaussian noise.)\n")
+
   invisible(noise)
 }
 

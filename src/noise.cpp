@@ -35,11 +35,11 @@ double NoiseUtil::grad_theta_nu(
     const VectorXd& h,
     bool single_V
 ) {
+    if (nu > 10000) return 0;
     if (noise_type == "normal") return 0;
     int n = V.size();
     bool use_hessian = true;
     double grad = 0;
-
     if (!single_V) {
         if (noise_type == "gal") {
             for (int i=0; i < n; i++) {

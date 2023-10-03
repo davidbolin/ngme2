@@ -74,6 +74,7 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
   // 4. Init latent models
   Rcpp::List latents_in = block_model["models"];
   n_latent = latents_in.size(); // how many latent model
+  if (n_latent == 0) rao_blackwell = false;
   for (int i=0; i < n_latent; ++i) {
     // construct acoording to models
     Rcpp::List latent_in = Rcpp::as<Rcpp::List> (latents_in[i]);
@@ -343,7 +344,6 @@ long long time_sample_w = 0;
     // compute RB version of gradient
     sampleW_VY(); // QQ.compute
     compute_rb_trace();
-
     // get the grad (Latent, merr, feff)
     int pos = 0;
     for (std::vector<std::shared_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
@@ -456,7 +456,7 @@ void BlockModel::sampleW_V()
 VectorXd BlockModel::grad_beta() {
   VectorXd noise_inv_SV = noise_V.cwiseProduct(noise_sigma.array().pow(-2).matrix());
 
-  VectorXd residual = get_residual(); // + X * beta;
+  VectorXd residual = get_residual(rao_blackwell); // + X * beta;
   VectorXd grads = X.transpose() * noise_inv_SV.asDiagonal() * residual;
   //  * residual.cwiseQuotient(noise_sigma);
 
@@ -478,6 +478,7 @@ VectorXd BlockModel::grad_theta_mu() {
 
   VectorXd noise_SV = noise_V.cwiseProduct(noise_sigma.array().pow(2).matrix());
 
+  // VectorXd residual = get_residual(false);
   VectorXd residual = get_residual(rao_blackwell);
   VectorXd grad = VectorXd::Zero(n_theta_mu);
   for (int l=0; l < n_theta_mu; l++) {
@@ -497,7 +498,12 @@ VectorXd BlockModel::grad_theta_sigma() {
   VectorXd grad = VectorXd::Zero(n_theta_sigma);
   VectorXd noise_SV = noise_sigma.array().pow(2).matrix().cwiseProduct(noise_V);
   // grad = B_sigma.transpose() * (-0.5 * VectorXd::Ones(n_obs) + residual.array().pow(2).matrix().cwiseQuotient(noise_SV));
+  // std::cout << "get_cond_W = " << get_cond_W().mean() << std::endl;
+  // std::cout << "get_W = " << getW().mean() << std::endl;
+  // std::cout << "trace = " << rb_trace_noise_sigma << std::endl;
+  // std::cout << "-----  " << std::endl;
 
+  // VectorXd residual = get_residual(false);
   VectorXd residual = get_residual(rao_blackwell);
   VectorXd vsq = (residual).array().pow(2).matrix().cwiseQuotient(noise_SV);
   VectorXd tmp1 = vsq - VectorXd::Ones(n_obs);
@@ -884,7 +890,7 @@ if (debug) std::cout << "start compute trace" << std::endl;
       BSigma_col_over_SV.segment(n, latents[i]->get_V_size()) = latents[i]->get_BSigma_col(j);
       BSigma_col_over_SV = BSigma_col_over_SV.cwiseProduct(inv_SV);
 
-      SparseMatrix<double> T = K * BSigma_col_over_SV.asDiagonal() * K.transpose();
+      SparseMatrix<double> T = K.transpose() * BSigma_col_over_SV.asDiagonal() * K;
       rb_trace_sigma[j] = chol_QQ.trace_num(T);
     }
 

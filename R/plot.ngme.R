@@ -144,7 +144,8 @@ traceplot <- function(ngme, name="general", hline=NULL) {
         col="red"
       ) + geom_hline(
         yintercept=hline[[idx]], color="blue"
-      ) + labs(title = ts$name[[idx]])
+      ) + labs(title = ts$name[[idx]]) +
+      xlab(NULL) + ylab(NULL)
   }
 
   if (length(ps) > 1) ps["ncol"]=2

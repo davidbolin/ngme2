@@ -38,7 +38,7 @@ In this vignette we provide a brief introduction to the `ngme2` package.
 The package `Ngme2` provides methods for mixed effect models in the following form:
 
 $$
-{\bf Y}_{ij} = {\bf x}^T_{ij} {\bf \beta} + {\bf d}^T_{ij} {\bf U}_i + W_i(t_{ij}) + \epsilon_{ij},
+{\bf Y}_{ij} = {\bf X}^T_{ij} {\bf \beta} + {\bf D}^T_{ij} {\bf U}_i + W_i(t_{ij}) + \epsilon_{ij},
 \qquad j=1 \ldots n_i, i=1,\ldots,m
 $$
 
@@ -46,7 +46,7 @@ $$
 - $Y$ is the response variable,
 - ${\bf X}$ is the matrix of fixed effects explanatory variables,
 - ${\bf \beta}$ is the fixed effects,
-- ${\bf X}$ is the matrix of random effects explanatory variables,
+- ${\bf D}$ is the matrix of random effects explanatory variables,
 - $\bf U$ is the random effects,
 - $W_i(t_{ij})$ is a stochastic process driven by Gaussian or non-Gaussian noise,
 - $\epsilon$ is measurement error.
@@ -352,7 +352,15 @@ ggplot() +
   geom_path(aes(x = PRborder[1034:1078, 1], y = PRborder[
     1034:1078,
     2
-  ]), colour = "red")
+  ]), colour = "red") +
+  theme(
+    axis.title.x = element_blank(),   # Remove x-axis label
+    axis.title.y = element_blank(),   # Remove y-axis label
+    axis.line = element_blank(),      # Remove axis lines
+    axis.text.x = element_blank(),    # Remove x-axis tick labels
+    axis.text.y = element_blank(),    # Remove y-axis tick labels
+    legend.title = element_blank()
+  )
 ```
 
 ```{r fit-parana, cache=TRUE}

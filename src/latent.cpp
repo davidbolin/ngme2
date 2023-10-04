@@ -262,7 +262,7 @@ VectorXd Latent::grad_theta_nu() {
 }
 
 VectorXd Latent::grad_theta_K(bool rao_blackwell) {
-// std::cout << "K = " << K << std::endl;
+
     VectorXd grad = VectorXd::Zero(n_theta_K);
     if (fix_flag[latent_fix_theta_K]) return grad;
 

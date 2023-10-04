@@ -26,14 +26,14 @@ test_ngme <- function(
   n_replicate=1,
   n_parallel_chain = 4,
   stop_points = 10,
-  stepsize =1,
+  stepsize = 0.5,
   numer_grad = TRUE,
   preconditioner = "fast",
   sampling_strategy = "all",
   precond_by_diff_chain = TRUE,
   compute_precond_each_iter = FALSE,
   num_threads = c(n_parallel_chain, 4),
-  f_noise = noise_nig(mu = -3, sigma = 1.5, nu=0.5),
+  f_noise = noise_nig(mu = -2, sigma = 1.5, nu=0.5),
   n_gibbs_samples = 5,
   family = "normal",
   max.n = 1000,
@@ -74,21 +74,26 @@ print(paste("nodes of mesh = ", mesh$n))
   f_fm_noise$nu = 1
 
   mn_noise <- if (family == "nig")
-    rnig(n_obs_per_rep, delta=-2, mu=2, nu=0.8, sigma=1, seed=seed)
+    # rnig(n_obs_per_rep, delta=-3, mu=3, nu=0.8, sigma=0.5, seed=seed)
+    rnig(n_obs_per_rep, delta=0, mu=0, nu=0.8, sigma=0.5, seed=seed)
   else if (family == "cor_normal") {
     family = noise_normal(
       corr_measurement=TRUE,
       index_corr=rep(1:(n_obs_per_rep/2), 2)
     )
     stopifnot(n_obs_per_rep %% 2 == 0)
-    rho = -0.7
-    Cov_kron <- matrix(c(.5, rho*.25, rho*.25, .5), nrow=2) %x% diag(n_obs_per_rep / 2)
-    L <- chol(Cov_kron)
-    L %*% rnorm(n_obs_per_rep)
+    rho = -0.5
+    Cov_kron <- matrix(c(.5, rho*.5, rho*.5, .5), nrow=2) %x% diag(n_obs_per_rep / 2)
+    L <- t(chol(Cov_kron))
+    as.numeric(L %*% rnorm(n_obs_per_rep))
   } else
     rnorm(n_obs_per_rep, sd=0.2)
+
   # ------- Simulate data for each model --------
   sim_data <- switch(model,
+    "none" = {
+      list(Y = mn_noise, group=rep(1, n_obs_per_rep))
+    },
     "ar1" = {
       idx <- 1:n_obs_per_rep
       ar1_model <- f(idx, model="ar1", rho = 0.5,
@@ -183,7 +188,8 @@ print(paste("nodes of mesh = ", mesh$n))
 
   # ------- Specify formula for each model -------
   formula <- switch(model,
-    "ar1" = Y ~ 0 + f(idx,
+    "none" = Y ~ 0,
+    "ar1" = Y ~ 1 + f(idx,
       fix_theta_K = fix_theta_K,
       model = "ar1",
       noise = f_fm_noise,
@@ -233,7 +239,7 @@ print(paste("nodes of mesh = ", mesh$n))
       sub_models = list(first = "ar1", second="ar1"),
       control = control_f(numer_grad = numer_grad),
       debug = debug_f,
-      noise = list(first=noise_nig(), second=noise_nig())
+      noise = list(first=f_fm_noise, second=f_fm_noise)
     ),
     "bvmatern" = Y ~ f(idx,
       model="bv",
@@ -241,7 +247,7 @@ print(paste("nodes of mesh = ", mesh$n))
       sub_models = list(first = "matern", second="matern"),
       debug = debug_f,
       control = control_f(numer_grad = numer_grad),
-      noise = list(first=noise_nig(), second=noise_nig())
+      noise = list(first=f_fm_noise, second=f_fm_noise)
     ),
   )
 
@@ -291,6 +297,8 @@ print(paste("nodes of mesh = ", mesh$n))
     out = out,
     time = proc.time() - start_time,
     f_noise = f_noise,
-    m_noise = if (inherits(family, "ngme_noise")) family else if (family=="nig") noise_nig(mu=2, sigma=1, nu=0.8) else noise_normal(sigma=0.2)
+    m_noise = if (inherits(family, "ngme_noise")) family
+      else if (family=="nig") noise_nig(mu=0, sigma=0.5, nu=0.8)
+      else noise_normal(sigma=0.2)
   )
 }

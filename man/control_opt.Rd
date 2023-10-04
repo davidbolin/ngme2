@@ -32,7 +32,9 @@ control_opt(
   rao_blackwellization = FALSE,
   n_trace_iter = 10,
   verbose = FALSE,
-  sampling_strategy = "all"
+  sampling_strategy = "all",
+  sgd_method = "vanilla",
+  sgd_parameters = NULL
 )
 }
 \arguments{
@@ -95,6 +97,10 @@ Suggestion (num_parallel_chain, num_total_replicates)}
 \item{sampling_strategy}{subsampling method of replicates of model, c("all", "is")
 "all" means using all replicates in each iteration,
 "ws" means weighted sampling (each iteration use 1 replicate to compute the gradient, the sample probability is proption to its number of observations)}
+
+\item{sgd_method}{currently support c("vanilla", "momentum")}
+
+\item{sgd_parameter}{for momentum, provide c(beta1, beta2), in each iteration, the step is computed as m = bet1 * m (previous turn) + beta2 * gradient}
 }
 \value{
 list of control variables

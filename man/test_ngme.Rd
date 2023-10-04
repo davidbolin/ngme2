@@ -7,30 +7,16 @@
 test_ngme(
   model,
   n_obs_per_rep,
-  n_iter,
   n_replicate = 1,
-  n_parallel_chain = 4,
-  stop_points = 10,
-  stepsize = 1,
+  control_opt = control_opt(),
   numer_grad = TRUE,
-  preconditioner = "fast",
-  sampling_strategy = "all",
-  precond_by_diff_chain = TRUE,
-  compute_precond_each_iter = FALSE,
-  num_threads = c(n_parallel_chain, 4),
-  f_noise = noise_nig(mu = -3, sigma = 1.5, nu = 0.5),
+  f_noise = noise_nig(mu = -2, sigma = 1.5, nu = 0.5),
   n_gibbs_samples = 5,
   family = "normal",
   max.n = 1000,
-  print = FALSE,
   debug = FALSE,
   debug_f = FALSE,
-  verbose = FALSE,
-  rao_blackwellization = FALSE,
-  precond_eps = 1e-05,
-  n_trace_iter = 10,
   start = NULL,
-  estimation = TRUE,
   fix_theta_K = FALSE,
   fix_theta_mu = FALSE,
   fix_theta_sigma = FALSE,
@@ -43,15 +29,19 @@ test_ngme(
 
 \item{n_obs_per_rep}{number of observation per replicate}
 
-\item{n_iter}{number of iteration}
-
 \item{n_replicate}{number of replicate}
+
+\item{numer_grad}{numerical gradient}
+
+\item{max.n}{maximum number for building mesh}
+
+\item{debug}{debug mode}
+
+\item{debug_f}{debug mode for latent process}
 
 \item{n_parallel_chain}{number of parallel chains}
 
 \item{stop_points}{number of stop points for convergence check}
-
-\item{numer_grad}{numerical gradient}
 
 \item{preconditioner}{preconditioner, can be c("none", "fast", "full")
 "none" means no preconditioner, "fast" means precondition everything except for the parameter of K matrix (for speed reason), "full" means precondition everything}
@@ -61,14 +51,6 @@ test_ngme(
 \item{precond_by_diff_chain}{logical, if TRUE, use different chains to estimate preconditioner (only computed at check points), if FALSE, use the same chain to estimate preconditioner (computed at each iteration)}
 
 \item{compute_precond_each_iter}{logical, if TRUE, compute preconditioner at each iteration, if FALSE, only compute preconditioner at check points (if has only 1 chain running, it will be set TRUE)}
-
-\item{max.n}{maximum number for building mesh}
-
-\item{print}{print the process}
-
-\item{debug}{debug mode}
-
-\item{debug_f}{debug mode for latent process}
 }
 \description{
 Test ngme function for different models

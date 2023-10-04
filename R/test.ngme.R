@@ -5,7 +5,6 @@
 #' @param model model name
 #' @param n_obs_per_rep number of observation per replicate
 #' @param n_replicate number of replicate
-#' @param n_iter number of iteration
 #' @param n_parallel_chain number of parallel chains
 #' @param stop_points     number of stop points for convergence check
 #' @param numer_grad numerical gradient
@@ -15,37 +14,22 @@
 #' @param precond_by_diff_chain logical, if TRUE, use different chains to estimate preconditioner (only computed at check points), if FALSE, use the same chain to estimate preconditioner (computed at each iteration)
 #' @param compute_precond_each_iter logical, if TRUE, compute preconditioner at each iteration, if FALSE, only compute preconditioner at check points (if has only 1 chain running, it will be set TRUE)
 #' @param max.n maximum number for building mesh
-#' @param print print the process
 #' @param debug debug mode
 #' @param debug_f debug mode for latent process
 #' @export
 test_ngme <- function(
   model,
   n_obs_per_rep,
-  n_iter,
   n_replicate=1,
-  n_parallel_chain = 4,
-  stop_points = 10,
-  stepsize = 0.5,
+  control_opt = control_opt(),
   numer_grad = TRUE,
-  preconditioner = "fast",
-  sampling_strategy = "all",
-  precond_by_diff_chain = TRUE,
-  compute_precond_each_iter = FALSE,
-  num_threads = c(n_parallel_chain, 4),
   f_noise = noise_nig(mu = -2, sigma = 1.5, nu=0.5),
   n_gibbs_samples = 5,
   family = "normal",
   max.n = 1000,
-  print = FALSE,
   debug = FALSE,
   debug_f = FALSE,
-  verbose = FALSE,
-  rao_blackwellization = FALSE,
-  precond_eps = 1e-5,
-  n_trace_iter = 10,
   start = NULL,
-  estimation = TRUE,
   fix_theta_K = FALSE,
   fix_theta_mu= FALSE,
   fix_theta_sigma = FALSE,
@@ -267,26 +251,7 @@ print(paste("nodes of mesh = ", mesh$n))
     control_ngme = control_ngme(
       n_gibbs_samples = n_gibbs_samples
     ),
-    control_opt = control_opt(
-      seed = seed,
-      burnin = 0,
-      std_lim = 0.001,
-      print_check_info = FALSE,
-      precond_eps = precond_eps,
-      rao_blackwellization = rao_blackwellization,
-      n_trace_iter = n_trace_iter,
-      num_threads = num_threads,
-      iterations = n_iter,
-      precond_by_diff_chain = precond_by_diff_chain,
-      compute_precond_each_iter = compute_precond_each_iter,
-      n_parallel_chain = n_parallel_chain,
-      stop_points = stop_points,
-      verbose = verbose,
-      preconditioner = preconditioner,
-      estimation = estimation,
-      stepsize = stepsize,
-      sampling_strategy = sampling_strategy
-    ),
+    control_opt = control_opt,
     start = start,
     family = family,
     debug = debug

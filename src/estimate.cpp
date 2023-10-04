@@ -234,26 +234,44 @@ std::vector<bool> check_conv(
     std::string trend_line  = " < trend_lim: ";
 
     // 1. check coef. of var. of every parameter < std_lim
-    for (int i=0; i < n_params; i++)
+    for (int i=0; i < n_params; i++) {
+// std::cout << "i = " << i << std::endl;
+// std::cout << "std_lim ratio = " << sqrt(vars(curr_batch, i)) / (abs(means(curr_batch, i)) + pow(10,-5)) / std_lim << std::endl;
         if (sqrt(vars(curr_batch, i)) / (abs(means(curr_batch, i)) + pow(10,-5)) > std_lim) {
             conv[i] = false;
             std_line += "   false"; // of length 8
         } else {
             std_line += "    true";
         }
+    }
 
     // 2. check the slope of every para < threshold
-    MatrixXd B (n_slope_check, 2);
+    MatrixXd B (n_slope_check, 2); // B is the design matrix
         B.col(0) = VectorXd::Ones(n_slope_check);
         for (int i=0; i < n_slope_check; i++)
-            B(i, 1) = i * batch_steps;
+            B(i, 1) = i;
+            // B(i, 1) = i * batch_steps;
+
     for (int i = 0; i < n_params; i++) {
         // VectorXd mean = means.col(i)(Eigen::seq(curr_batch - n_slope_check + 1, curr_batch)); // Eigen 3.4 Eigen::seq
         VectorXd mean      = means.block(curr_batch - n_slope_check + 1, i, n_slope_check, 1);  // Eigen block API
         VectorXd Sigma_inv = vars.block(curr_batch - n_slope_check + 1, i, n_slope_check, 1).cwiseInverse();
+
         MatrixXd Q = B.transpose() * Sigma_inv.asDiagonal() * B;
         Vector2d beta = Q.llt().solve(B.transpose() * Sigma_inv.asDiagonal() * mean);
-        if (abs(beta(1)) - 2 * sqrt(Q(1, 1)) > trend_lim * abs(beta(0))) {
+        // MatrixXd Q = B.transpose() * B;
+        // Vector2d beta = Q.llt().solve(B.transpose() * mean);
+
+// check the criterion
+// std::cout << "i = " << i << std::endl;
+// std::cout << "beta(1)/trend = " << abs(beta(1))/trend_lim << std::endl;
+// std::cout << "Q = \n" << Q << std::endl;
+// std::cout << "-------" << std::endl;
+
+// Q(1,1) is way too big
+// if (abs(beta(1)) - 2 * sqrt(Q(1, 1)) > trend_lim * abs(beta(0))) {
+
+        if (abs(beta(1)) > trend_lim) {
             conv[i] = false;
             trend_line += "   false";
         } else {
@@ -265,7 +283,7 @@ std::vector<bool> check_conv(
     }
 
     if (print_check_info) std::cout << "stop " << curr_batch+1 << ": \n"
-        << par_string << "\n"
+        // << par_string << "\n"
         << std_line << "\n"
         << trend_line << "\n\n";
     return conv;

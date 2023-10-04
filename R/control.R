@@ -45,6 +45,8 @@
 #' @param sampling_strategy subsampling method of replicates of model, c("all", "is")
 #' "all" means using all replicates in each iteration,
 #' "ws" means weighted sampling (each iteration use 1 replicate to compute the gradient, the sample probability is proption to its number of observations)
+#' @param sgd_method currently support c("vanilla", "momentum")
+#' @param sgd_parameter for momentum, provide c(beta1, beta2), in each iteration, the step is computed as m = bet1 * m (previous turn) + beta2 * gradient
 #' @return list of control variables
 #' @export
 control_opt <- function(
@@ -61,7 +63,7 @@ control_opt <- function(
   exchange_VW       = TRUE,
   n_slope_check     = 3,
   std_lim           = 0.1,
-  trend_lim         = 0.05,
+  trend_lim         = 0.01,
   print_check_info  = FALSE,
   preconditioner    = "fast",
   precond_eps       = 1e-5,
@@ -84,7 +86,9 @@ control_opt <- function(
 
   # opt print
   verbose           = FALSE,
-  sampling_strategy = "all"
+  sampling_strategy = "all",
+  sgd_method        = "vanilla",
+  sgd_parameters    = NULL
 ) {
   strategy_list <- c("all", "ws")
   preconditioner_list <- c("none", "fast", "full")
@@ -104,7 +108,8 @@ control_opt <- function(
     is.numeric(num_threads) && length(num_threads) == 2,
     iterations > 0 && stop_points > 0,
     "iterations should be multiple of stop_points"
-      = iterations %% stop_points == 0
+      = iterations %% stop_points == 0,
+    sgd_method %in% c("vanilla", "momentum")
   )
 
   if ((reduce_power <= 0.5) || (reduce_power > 1)) {
@@ -114,6 +119,23 @@ control_opt <- function(
   if (n_parallel_chain == 1) {
     compute_precond_each_iter <- TRUE
     precond_by_diff_chain <- FALSE
+  }
+
+  if (sgd_method=="adam") {
+    if (is.null(sgd_parameters)) {
+      sgd_parameters <- c(
+        beta1 = 1 - 0.95,
+        beta2 = 1 - 0.999,
+        epsilon = 1e-8
+      )
+    }
+  } else if (sgd_method=="momentum") {
+    if (is.null(sgd_parameters)) {
+      sgd_parameters <- c(
+        beta1 = 0.1,
+        beta2 = 1
+      )
+    }
   }
 
   control <- list(
@@ -149,7 +171,9 @@ control_opt <- function(
     precond_by_diff_chain = precond_by_diff_chain,
     compute_precond_each_iter = compute_precond_each_iter,
     precond_strategy  = which(preconditioner_list == preconditioner) - 1, # start from 0
-    sampling_strategy = which(strategy_list == sampling_strategy) - 1 # start from 0
+    sampling_strategy = which(strategy_list == sampling_strategy) - 1, # start from 0,
+    sgd_method        = sgd_method,
+    sgd_parameters    = sgd_parameters
   )
 
   class(control) <- "control_opt"

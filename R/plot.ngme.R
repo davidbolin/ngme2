@@ -117,9 +117,12 @@ traceplot <- function(ngme, name="general", hline=NULL) {
     ts$trans <- c(ts$trans, trans_feff)
   }
 
+  # record the geom_lines for comparison later
+  avg_lines <- NULL
+
   for (idx in seq_len(nrow(traj[[1]]))) {
     df <- sapply(traj, function(x) x[idx, ,drop=F])
-    # wierd stuff here
+    # weird stuff here
     df <- apply(df, c(1,2), as.numeric)
     df <- as.data.frame(df)
     mean_traj <- rowMeans(df)
@@ -146,10 +149,15 @@ traceplot <- function(ngme, name="general", hline=NULL) {
         yintercept=hline[[idx]], color="blue"
       ) + labs(title = ts$name[[idx]]) +
       xlab(NULL) + ylab(NULL)
+
+    avg_lines[[ts$name[[idx]]]] <- ff(mean_traj)
   }
 
   if (length(ps) > 1) ps["ncol"]=2
-  do.call(gridExtra::grid.arrange, ps)
+  result <- do.call(gridExtra::grid.arrange, ps)
+
+  attr(result, "avg_lines") <- avg_lines
+  invisible(result)
 }
 
 
@@ -198,4 +206,25 @@ plot.ngme_noise <- function(x, y = NULL, ...) {
   }
 
   gg + ggplot2::labs(title = "Density Plot")
+}
+
+
+compare_traceplot <- function(l1, l2) {
+  l1 <- as.data.frame(l1);
+  l2 <- as.data.frame(l2)
+
+  ps <- list()
+  n_plots = length(l1)
+  n_iter = length(l1[[1]])
+
+  for (i in seq_len(n_plots)) {
+    df <- data.frame(c1 = l1[[i]], c2 = l2[[i]], title=names(l1)[[i]])
+    ps[[i]] <- ggplot(data=df) +
+      geom_line(aes(x=1:n_iter, y=c1), col="1") +
+      geom_line(aes(x=1:n_iter, y=c2), col="2") +
+      labs(title = df$title) +
+      xlab(NULL) + ylab(NULL)
+  }
+
+  do.call(gridExtra::grid.arrange, ps)
 }

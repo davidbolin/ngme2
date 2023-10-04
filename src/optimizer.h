@@ -23,6 +23,13 @@ private:
     double eps;
     double stepsize;
 
+    std::string method;
+    VectorXd sgd_parameters;
+
+    // ADAM
+    double beta1 {0.1}, beta2 {0.99}, eps_hat {1e-8};
+    VectorXd m, v; // momentum, velocity
+
     // store the preconditioner
     MatrixXd preconditioner;
 

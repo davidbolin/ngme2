@@ -129,7 +129,9 @@ optimization process.</p>
 <span>  rao_blackwellization <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  n_trace_iter <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  sampling_strategy <span class="op">=</span> <span class="st">"all"</span></span>
+<span>  sampling_strategy <span class="op">=</span> <span class="st">"all"</span>,</span>
+<span>  sgd_method <span class="op">=</span> <span class="st">"vanilla"</span>,</span>
+<span>  sgd_parameters <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -249,6 +251,14 @@ Suggestion (num_parallel_chain, num_total_replicates)</p></dd>
 <dd><p>subsampling method of replicates of model, c("all", "is")
 "all" means using all replicates in each iteration,
 "ws" means weighted sampling (each iteration use 1 replicate to compute the gradient, the sample probability is proption to its number of observations)</p></dd>
+
+
+<dt>sgd_method</dt>
+<dd><p>currently support c("vanilla", "momentum")</p></dd>
+
+
+<dt>sgd_parameter</dt>
+<dd><p>for momentum, provide c(beta1, beta2), in each iteration, the step is computed as m = bet1 * m (previous turn) + beta2 * gradient</p></dd>
 
 </dl></div>
     <div id="value">

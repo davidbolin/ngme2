@@ -764,6 +764,8 @@ if (debug) std::cout << "after latents precond"<< std::endl;
     precond.bottomRightCorner(n_merr + n_feff, n_merr + n_feff) = hess_merr_feff;
 // std::cout << "merr feff precond = " << hess_merr_feff <<std::endl;
   }
+  // add small eps to diagonal
+  precond += VectorXd::Constant(n_params, 1e-5).asDiagonal();
 
 // std::cout << "block precond =" << precond <<std::endl;
   return precond;

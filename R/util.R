@@ -443,3 +443,53 @@ is_stationary <- function(B) {
   stopifnot(is.matrix(B))
   ncol(B) == 1 && all(B == 1)
 }
+
+
+#' @title ngme make mesh for different replicates
+#' @description
+#' Make different mesh for different replicates
+#'
+#' @param data provide the data.frame
+#' @param map provide the map to make mesh, i.g. ~x+y, x and y will be extracted from data to make a 2d mesh
+#' @param replicate provide the replicate information, i.g. ~id
+#' @param mesh_type type of mesh, "regular" means use all the point from same replicate to make a mesh
+#'
+#' @return a list of mesh of length of different replicates
+#' @export
+ngme_make_mesh_repls <- function(
+  data,
+  map,
+  replicate,
+  mesh_type = "regular"
+) {
+
+  if (inherits(map, "formula")) {
+    map <- model.matrix(map, data)[, -1]
+  }
+
+  if (inherits(replicate, "formula")) {
+    replicate <- model.matrix(replicate, data)[, -1]
+  }
+
+  stopifnot(length_map(map) == length(replicate))
+
+  mesh_repls <- NULL
+  for (repl in replicate) {
+    map_repl <- subset(map, replicate == repl)
+    if (dim_map(map) == 1)
+      mesh_repls[[as.character(repl)]] <- tryCatch(
+        fmesher::fm_mesh_1d(map_repl),
+        error = function(e) {
+          stop("The nodes for making mesh is not valid for replicate id=" , repl)
+        }
+      )
+    else if (dim_map(map) == 2) {
+      stop("Not implemented yet.")
+      mesh_repls[[repl]] <- fmesher::fm_mesh_2d(map_repl)
+    } else {
+      stop("The dimension of the mesh should be 1 or 2.")
+    }
+  }
+
+  mesh_repls
+}

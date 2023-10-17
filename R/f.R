@@ -8,7 +8,7 @@
 #' @param map  symbol or numerical value: index or covariates to build index
 #' @param model  string, model type, see ngme_model_types()
 #' @param noise  can be either string or a ngme_noise object
-#' @param mesh   mesh for the model, if not provided, will be built from map
+#' @param mesh   mesh for the model, if not provided, will be built from map, can be a list of meshs for different replicates
 #' @param control  control variables for latent model
 #' @param name   name of the field, for later use, if not provided, will be "field1" etc.
 #' @param data      specifed or inherit from ngme() function
@@ -87,7 +87,7 @@ f <- function(
 
   # 0. build mesh if not specified
   if (is.null(mesh)) {
-    mesh <- ngme_build_mesh(map, model)
+    mesh <- ngme_build_mesh(sub_map(map, subset), model)
   }
 
   # remove NULL in arguments

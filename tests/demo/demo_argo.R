@@ -1,6 +1,9 @@
 # this script is try to fit the Argo data at North Atlantic Ocean
 # large-scale mapping using global sinusoidal or Mollweide projection.
 load("tests/data/argo_2018_10.Rdata")
+data(argo_float)
+str(argo_float)
+
 argo_al$JulDay <- NULL
 nrow(argo_df)
 argo_df$Long <- (argo_df$Long + 180) %% 360 - 180

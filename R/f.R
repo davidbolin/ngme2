@@ -219,6 +219,7 @@ f <- function(
     A         = A,
     control   = control,
     map       = map,
+    mesh      = mesh,
     n_map     = length_map(map),
     W         = W,
     fix_W     = fix_W,
@@ -272,7 +273,7 @@ ngme_build_mesh <- function(
   } else if (is.numeric(loc)) {
     mesh <- fmesher::fm_mesh_1d(loc = loc)
   } else {
-    stop("loc should be a matrix or a vector of numeric")
+    stop("The mesh provided is invalid.")
   }
 
   mesh

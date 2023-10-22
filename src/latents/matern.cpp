@@ -18,15 +18,13 @@ Matern::Matern(const Rcpp::List& operator_list):
 void Matern::update_K(const VectorXd& theta_K) {
     double kappa = exp(theta_K(0));
     int W_size = G.rows();
-
-        // VectorXd k2C = (kappa * kappa * Cdiag);
-        // SparseMatrix<double> KCK = k2C.asDiagonal();
     SparseMatrix<double> KCK = kappa * kappa * C;
 
-    // VectorXd kappas = VectorXd::Constant(W_size, theta_K(0));
-    // SparseMatrix<double> KCK (W_size, W_size);
-    //     KCK = kappas.cwiseProduct(kappas).cwiseProduct(Cdiag).asDiagonal();
-
+    // for test old ngme model parameterization
+    // if (theta_K.size() == 1 && alpha == 2) {
+    //     // stationary
+    //     K = 0.5 * (pow(kappa, -1.5) * G + pow(kappa, 0.5) * C);
+    // } else
     if (alpha==2) {
         // K_a = T (G + KCK) C^(-1/2) -> Actually, K_a = C^{-1/2} (G+KCK), since Q = K^T K.
         K = (G + KCK);

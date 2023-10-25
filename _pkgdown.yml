@@ -38,6 +38,8 @@ navbar:
         href: articles/random-effect.html
       - text: Space-time (tensor product) model in Ngme2
         href: articles/tensor_product.html
+      - text: Matern SPDE model on Metric Graph
+        href: articles/matern-on-graph.html
     github:
       icon: fa-github
       href: https://github.com/davidbolin/ngme2

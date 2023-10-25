@@ -128,6 +128,7 @@ control_opt <- function(
         beta2 = 1 - 0.999,
         epsilon = 1e-8
       )
+    stopifnot(length(sgd_parameters) == 2)
     }
   } else if (sgd_method=="momentum") {
     if (is.null(sgd_parameters)) {
@@ -136,6 +137,7 @@ control_opt <- function(
         beta2 = 1
       )
     }
+    stopifnot(length(sgd_parameters) == 2)
   }
 
   control <- list(

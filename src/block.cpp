@@ -159,7 +159,10 @@ if (debug) std::cout << "After set block K" << std::endl;
 if (debug) std::cout << "After block construct noise" << std::endl;
 
   // 6. Fix V and init V
-  // if (fix_flag[block_fix_V]) var.fixV();
+  if (noise_in.containsElementNamed("V") && !Rf_isNull(noise_in["V"])) {
+      noise_V = Rcpp::as< VectorXd > (noise_in["V"]);
+      noise_prevV = noise_V;
+  }
 
   // 7. Init solvers
   assemble();
@@ -490,7 +493,6 @@ VectorXd BlockModel::grad_theta_mu() {
       // add prior
       grad(l) += PriorUtil::d_log_dens(prior_mu_type, prior_mu_param, theta_mu(l));
   }
-
   return -grad;
 }
 
@@ -614,6 +616,7 @@ void BlockModel::sample_cond_noise_V(bool posterior) {
   if (posterior) {
     VectorXd a_inc_vec = noise_mu.cwiseQuotient(noise_sigma).array().pow(2);
     VectorXd b_inc_vec = (get_residual() + noise_V.cwiseProduct(noise_mu)).cwiseQuotient(noise_sigma).array().pow(2);
+    // VectorXd b_inc_vec = (Y - A * getW() - X * beta - noise_mu).cwiseQuotient(noise_sigma).array().pow(2);
     VectorXd a_vec_new = a_vec + a_inc_vec;
     VectorXd b_vec_new = b_vec + b_inc_vec;
     if (!corr_measure) {

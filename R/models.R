@@ -222,32 +222,55 @@ ou <- function(
 matern <- function(
   mesh,
   alpha = 2,
-  theta_K = 0,
+  theta_K = NULL,
   B_K = NULL,
   ...
 ) {
   mesh <- ngme_build_mesh(mesh)
   stopifnot("alpha should be 2 or 4" = alpha == 2 || alpha == 4)
 
-  n <- mesh$n
+  if (inherits(mesh, "metric_graph")) {
+    if (is.null(mesh$mesh$C)) {
+      mesh$compute_fem()
+    }
+    C <- mesh$mesh$C
+    G <- mesh$mesh$G
+    h <- mesh$mesh$weights
+    d <- 0
+  } else {
+    d <- get_inla_mesh_dimension(mesh)
+    if (d == 1) {
+      fem <- fmesher::fm_fem(mesh)
+      C <- fem$c1
+      G <- fem$g1
+      h <- Matrix::diag(fem$c0)
+    } else if (d == 2) {
+      # including S2 mesh
+      fem <- fmesher::fm_fem(mesh, order = alpha)
+      C <- fem$c0  # diag
+      G <- fem$g1
+      h <- Matrix::diag(fem$c0)
+    }
+  }
+
+  if (is.null(theta_K)) {
+    if (inherits(mesh, "metric_graph"))
+      theta_K = 0
+    else {
+      # loc <- if (d == 1) mesh$loc else mesh$loc[, c(1,2)]
+      # dist_mat <- as.matrix(dist(loc))
+      # max_dist <- max(dist_mat[lower.tri(dist_mat)])
+      # range = max(4*min(h), max_dist)
+      # theta_K = log(sqrt(8*3/2)/(0.2*range))
+      theta_K = 0
+    }
+  }
+
+  mesh_n <- length(h)
   if (is.null(B_K) && length(theta_K) == 1)
-    B_K <- matrix(1, nrow = mesh$n, ncol = 1)
+    B_K <- matrix(1, nrow = mesh_n, ncol = 1)
   else if (is.null(B_K) && length(theta_K) > 1)
     stop("Please provide B_K for non-stationary case.")
-
-  d <- get_inla_mesh_dimension(mesh)
-  if (d == 1) {
-    fem <- fmesher::fm_fem(mesh)
-    C <- fem$c1
-    G <- fem$g1
-    h <- Matrix::diag(fem$c0)
-  } else if (d == 2) {
-    # including S2 mesh
-    fem <- fmesher::fm_fem(mesh, order = alpha)
-    C <- fem$c0  # diag
-    G <- fem$g1
-    h <- Matrix::diag(fem$c0)
-  }
 
   kappas <- as.numeric(exp(B_K %*% theta_K))
   if (length(theta_K) == 1) {
@@ -260,7 +283,6 @@ matern <- function(
   }
 
   stationary <- is_stationary(B_K)
-
   ngme_operator(
     mesh = mesh,
     alpha = alpha,

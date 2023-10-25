@@ -971,7 +971,9 @@ rnig <- function (n, delta, mu, nu, sigma, h=NULL, seed = 0)
   }
 
   V = as.vector(rig(n, nu, nu, seed = seed))
-  return(delta_new + mu_new*V + sigma_new*sqrt(V)*stats::rnorm(n))
+  res <- delta_new + mu_new*V + sigma_new*sqrt(V)*stats::rnorm(n)
+  attr(res, "V") <- V
+  return(res)
 }
 
 #' @rdname nig

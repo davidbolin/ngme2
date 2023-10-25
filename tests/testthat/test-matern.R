@@ -45,7 +45,7 @@ test_that("test Matern", {
       mesh = mesh,
       noise=noise_nig(),
       control = control_f(
-        numer_grad = TRUE
+        numer_grad = FALSE
       ),
       debug = F
     ),
@@ -53,15 +53,17 @@ test_that("test Matern", {
     control_opt = control_opt(
       estimation = T,
       iterations = 1000,
-      rao_blackwellization = TRUE,
+      # rao_blackwellization = TRUE,
       n_parallel_chain = 4,
       print_check_info = F,
       verbose = T,
       max_absolute_step = 1,
       max_relative_step = 1,
-      stepsize = 2,
+      stepsize = 0.5,
       std_lim = 0.01,
-      preconditioner = "fast"
+      preconditioner = "fast",
+      sgd_method = "momentum",
+      sgd_parameters = c(0.4, 1)
     ),
     # start=out,
     debug = F

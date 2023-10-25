@@ -77,7 +77,8 @@ predict.ngme <- function(
         AW[[ngme$models[[i]]$name]] <- with(ngme$models[[i]], {
           mesh <- operator$mesh
           W <- ngme$models[[i]][[estimator]]
-          A <- fmesher::fm_basis(mesh, loc = loc)
+          A <- if (inherits(mesh, "metric_graph")) mesh$fem_basis(loc)
+            else fmesher::fm_basis(mesh, loc = loc)
           if (model == "bv") A <- Matrix::bdiag(A, A)
           stopifnot(ncol(A) == length(W))
           as.numeric(A %*% W)
@@ -96,6 +97,7 @@ predict.ngme <- function(
           X_pred <- if (is.null(data) && attr(terms(fm), "intercept")) {
             matrix(1, nrow = length(AW[[1]]), ncol = 1)
           } else {
+            stopifnot("Please provide covariates for predictions" = !is.null(data))
             # build plain_fm
             tf <- terms.formula(fm, specials = c("f"))
             terms <- attr(tf, "term.labels")

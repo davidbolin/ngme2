@@ -48,6 +48,16 @@ f <- function(
   debug       = FALSE,
   ...
 ) {
+  if ((missing(map) || (is.null(map))) && inherits(mesh, "metric_graph")) {
+    stopifnot("To use metric graph model, please install MetricGraph package"
+      = rlang::is_installed("MetricGraph"))
+
+    # extract the map
+    graph_data <- (tryCatch(mesh$get_data(), error=function(e) NULL))
+    map <- if (is.null(graph_data)) NULL
+      else with(graph_data, cbind(`__edge_number`, `__distance_on_edge`))
+  }
+
   map <- eval(substitute(map), envir = data, enclos = parent.frame())
 
   if (inherits(map, "formula")) {
@@ -133,27 +143,31 @@ f <- function(
   # build the operator
   operator <- build_operator(model, f_args)
 
-  A <- switch(model,
-    "tp" = {
-      stopifnot("Now only support first to be 1d model"
-        = inherits(operator$first$mesh, "inla.mesh.1d"))
-      # A <- INLA::inla.spde.make.A(loc=map[[2]], mesh=operator$second$mesh, repl=group)
-      blk_group <- as.integer(as.factor(map[[1]]))
-      blk <- fmesher::fm_block(blk_group)
-      basis <- fmesher::fm_basis(operator$second$mesh, loc=map[[2]])
-      fmesher::fm_row_kron(Matrix::t(blk), basis)
-    },
-    "bv" = {
-      # INLA::inla.spde.make.A(loc=map, mesh=mesh, repl=as.integer(as.factor(group)))
-      blk_group <- as.integer(as.factor(group))
-      blk <- fmesher::fm_block(blk_group)
-      basis <- fmesher::fm_basis(mesh, loc=map)
-      fmesher::fm_row_kron(Matrix::t(blk), basis)
-    },
-    "re" = ngme_as_sparse(operator$B_K),
-    # INLA::inla.spde.make.A(mesh = mesh, loc = map)
-    fmesher::fm_basis(mesh, loc=map)
-  )
+  if (inherits(mesh, "metric_graph")) {
+    A <- if (is.null(map)) NULL else mesh$fem_basis(map)
+  } else {
+    A <- switch(model,
+      "tp" = {
+        stopifnot("Now only support first to be 1d model"
+          = inherits(operator$first$mesh, "inla.mesh.1d"))
+        # A <- INLA::inla.spde.make.A(loc=map[[2]], mesh=operator$second$mesh, repl=group)
+        blk_group <- as.integer(as.factor(map[[1]]))
+        blk <- fmesher::fm_block(blk_group)
+        basis <- fmesher::fm_basis(operator$second$mesh, loc=map[[2]])
+        fmesher::fm_row_kron(Matrix::t(blk), basis)
+      },
+      "bv" = {
+        # INLA::inla.spde.make.A(loc=map, mesh=mesh, repl=as.integer(as.factor(group)))
+        blk_group <- as.integer(as.factor(group))
+        blk <- fmesher::fm_block(blk_group)
+        basis <- fmesher::fm_basis(mesh, loc=map)
+        fmesher::fm_row_kron(Matrix::t(blk), basis)
+      },
+      "re" = ngme_as_sparse(operator$B_K),
+      # INLA::inla.spde.make.A(mesh = mesh, loc = map)
+      fmesher::fm_basis(mesh, loc=map)
+    )
+  }
 
   # subset the A matrix
   # if (!all(subset)) A[!subset, ] <- 0
@@ -257,7 +271,7 @@ ngme_build_mesh <- function(
   model = NULL,
   ...
 ) {
-  if (inherits(loc, c("inla.mesh.1d", "inla.mesh", "fm_mesh_1d", "fm_mesh_2d"))) return(loc)
+  if (inherits(loc, c("inla.mesh.1d", "inla.mesh", "fm_mesh_1d", "fm_mesh_2d", "metric_graph"))) return(loc)
 
   if (!is.null(model)) {
     if (model %in% c("re", "tp")) return(NULL)

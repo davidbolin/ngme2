@@ -21,7 +21,7 @@ test_ngme <- function(
   model,
   n_obs_per_rep,
   n_replicate=1,
-  control_opt = control_opt(),
+  control_opt = NULL,
   numer_grad = TRUE,
   f_noise = noise_nig(mu = -2, sigma = 1.5, nu=0.5),
   n_gibbs_samples = 5,
@@ -36,6 +36,8 @@ test_ngme <- function(
   fix_nu = FALSE,
   seed = Sys.time()
 ) {
+  if (is.null(control_opt)) control_opt <- control_opt()
+
   set.seed(seed)
   # create 2d mesh
   if (model %in% c("matern", "bvmatern", "ar1+matern")) {
@@ -57,21 +59,33 @@ print(paste("nodes of mesh = ", mesh$n))
   f_fm_noise$theta_sigma = rep(0, ncol(f_fm_noise$B_sigma))
   f_fm_noise$nu = 1
 
-  mn_noise <- if (family == "nig")
-    # rnig(n_obs_per_rep, delta=-3, mu=3, nu=0.8, sigma=0.5, seed=seed)
-    rnig(n_obs_per_rep, delta=0, mu=0, nu=0.8, sigma=0.5, seed=seed)
-  else if (family == "cor_normal") {
-    family = noise_normal(
-      corr_measurement=TRUE,
-      index_corr=rep(1:(n_obs_per_rep/2), 2)
+  if (family == "nig") {
+    mn_noise <- rnig(n_obs_per_rep, delta=2, mu=-2, nu=1, sigma=0.5, seed=seed)
+    real_mn_noise <- noise_nig(mu=-2,sigma=0.5,nu=1)
+    fm_mn_noise <- noise_nig(
+      # nu=2, fix_nu=TRUE
+      # V = attr(mn_noise, "V"), fix_V = TRUE
     )
+  } else if (family == "normal") {
+    mn_noise <- rnorm(n_obs_per_rep, sd=0.1)
+    real_mn_noise <- noise_normal(sigma=0.1)
+    fm_mn_noise <- noise_normal()
+  } else if (family == "cor_normal") {
     stopifnot(n_obs_per_rep %% 2 == 0)
     rho = -0.5
     Cov_kron <- matrix(c(.5, rho*.5, rho*.5, .5), nrow=2) %x% diag(n_obs_per_rep / 2)
     L <- t(chol(Cov_kron))
-    as.numeric(L %*% rnorm(n_obs_per_rep))
-  } else
-    rnorm(n_obs_per_rep, sd=0.2)
+    mn_noise <- as.numeric(L %*% rnorm(n_obs_per_rep))
+    real_mn_noise <- noise_normal(
+      corr_measurement=TRUE,
+      index_corr=rep(1:(n_obs_per_rep/2), 2),
+      rho = -0.5
+    )
+    fm_mn_noise = noise_normal(
+      corr_measurement=TRUE,
+      index_corr=rep(1:(n_obs_per_rep/2), 2)
+    )
+  }
 
   # ------- Simulate data for each model --------
   sim_data <- switch(model,
@@ -167,13 +181,53 @@ print(paste("nodes of mesh = ", mesh$n))
       Y <- as.numeric(true_model$A %*% W) + mn_noise
       list(Y=Y, idx=idx_per_rep, group=group_per_rep)
     },
+    "graph" = {
+      # library(MetricGraph)
+      edge1 <- rbind(c(0,0),c(1,0))
+      edge2 <- rbind(c(0,0),c(0,1))
+      edge3 <- rbind(c(0,1),c(-1,1))
+      theta <- seq(from=pi,to=3*pi/2,length.out = 20)
+      edge4 <- cbind(sin(theta),1+ cos(theta))
+      graph <- MetricGraph::metric_graph$new(edges = list(edge1, edge2, edge3, edge4))
+      # graph <- MetricGraph::metric_graph$new(edges = list(edge1))
+      graph$build_mesh(h = 0.02)
+
+      matern_graph <- f(
+        model="matern",
+        theta_K = log(8),
+        mesh=graph,
+        noise=f_noise
+      )
+
+      W <- simulate(matern_graph, seed=seed)
+
+      # build observation and A matrices
+      obs.per.edge <- n_obs_per_rep / graph$nE
+      obs.loc <- NULL
+      for(i in 1:graph$nE) {
+        obs.loc <- rbind(obs.loc,
+                        cbind(rep(i,obs.per.edge), runif(obs.per.edge)))
+      }
+      A <- graph$fem_basis(obs.loc)
+      Y <- as.numeric(A %*% W) + mn_noise
+
+      df_data <- data.frame(
+        Y = Y, edge_number = obs.loc[,1],
+        distance_on_edge = obs.loc[,2])
+
+      graph$clear_observations()
+      graph$add_observations(data = df_data, normalized = TRUE)
+  # browser()
+
+      list(Y=graph$get_data()$Y, idx=NULL, group=rep(1, n_obs_per_rep))
+    },
     stop("Unknown test model")
   )
 
   # ------- Specify formula for each model -------
   formula <- switch(model,
     "none" = Y ~ 0,
-    "ar1" = Y ~ 1 + f(idx,
+    "ar1" = Y ~ 0 + f(idx,
       fix_theta_K = fix_theta_K,
       model = "ar1",
       noise = f_fm_noise,
@@ -233,8 +287,15 @@ print(paste("nodes of mesh = ", mesh$n))
       control = control_f(numer_grad = numer_grad),
       noise = list(first=f_fm_noise, second=f_fm_noise)
     ),
+    "graph" = Y ~ 0 + f(idx,
+      fix_theta_K = fix_theta_K,
+      model="matern",
+      mesh = graph,
+      noise=f_fm_noise,
+      debug = debug_f,
+      control = control_f(numer_grad = numer_grad)
+    )
   )
-
   # make replicate
   idx <- rep_map(sim_data$idx, n_replicate)
   group <- rep(sim_data$group, n_replicate)
@@ -253,7 +314,7 @@ print(paste("nodes of mesh = ", mesh$n))
     ),
     control_opt = control_opt,
     start = start,
-    family = family,
+    family = fm_mn_noise,
     debug = debug
   )
 
@@ -262,8 +323,6 @@ print(paste("nodes of mesh = ", mesh$n))
     out = out,
     time = proc.time() - start_time,
     f_noise = f_noise,
-    m_noise = if (inherits(family, "ngme_noise")) family
-      else if (family=="nig") noise_nig(mu=0, sigma=0.5, nu=0.8)
-      else noise_normal(sigma=0.2)
+    m_noise = real_mn_noise
   )
 }

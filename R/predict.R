@@ -73,12 +73,27 @@ predict.ngme <- function(
       for (i in seq_along(ngme$models)) {
         loc <- map[[ngme$models[[i]]$name]]
     if (is.null(loc)) stop("The loction for model ", ngme$models[[i]]$name, " is not provided")
-        loc <- as.matrix(loc)
+        if (ngme$models[[i]]$model != "tp")
+          loc <- as.matrix(loc)
+        else {
+          stopifnot(
+            length(loc) == 2, # map 1 and map 2
+            length_map(loc[[1]]) == length_map(loc[[2]])
+          )
+        }
+
         AW[[ngme$models[[i]]$name]] <- with(ngme$models[[i]], {
           mesh <- operator$mesh
           W <- ngme$models[[i]][[estimator]]
-          A <- if (inherits(mesh, "metric_graph")) mesh$fem_basis(loc)
+          A <- if (inherits(mesh, "metric_graph"))
+              mesh$fem_basis(loc)
+            else if (model=="tp") {
+              A1 <- fmesher::fm_basis(mesh[[1]], loc = loc[[1]])
+              A2 <- fmesher::fm_basis(mesh[[2]], loc = as.matrix(loc[[2]]))
+              fmesher::fm_row_kron(A1, A2)
+            }
             else fmesher::fm_basis(mesh, loc = loc)
+
           if (model == "bv") A <- Matrix::bdiag(A, A)
           stopifnot(ncol(A) == length(W))
           as.numeric(A %*% W)

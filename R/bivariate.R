@@ -116,7 +116,7 @@ tp <- function(
   stopifnot(length(theta_K) == first$n_theta_K + second$n_theta_K)
 
   ngme_operator(
-    mesh = NULL,
+    mesh = list(first$mesh, second$mesh),
     model = "tp",
     first = first,
     second = second,

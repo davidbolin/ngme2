@@ -16,7 +16,7 @@ control_opt(
   exchange_VW = TRUE,
   n_slope_check = 3,
   std_lim = 0.1,
-  trend_lim = 0.05,
+  trend_lim = 0.01,
   print_check_info = FALSE,
   preconditioner = "fast",
   precond_eps = 1e-05,

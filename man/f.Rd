@@ -30,7 +30,7 @@ f(
 
 \item{noise}{can be either string or a ngme_noise object}
 
-\item{mesh}{mesh for the model, if not provided, will be built from map}
+\item{mesh}{mesh for the model, if not provided, will be built from map, can be a list of meshs for different replicates}
 
 \item{control}{control variables for latent model}
 

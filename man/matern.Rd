@@ -4,7 +4,7 @@
 \alias{matern}
 \title{ngme Matern SPDE model specification}
 \usage{
-matern(mesh, alpha = 2, theta_K = 0, B_K = NULL, ...)
+matern(mesh, alpha = 2, theta_K = NULL, B_K = NULL, ...)
 }
 \arguments{
 \item{mesh}{an fmesher::fm_mesh_2d object, mesh for build the SPDE model}

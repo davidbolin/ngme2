@@ -8,7 +8,7 @@ test_ngme(
   model,
   n_obs_per_rep,
   n_replicate = 1,
-  control_opt = control_opt(),
+  control_opt = NULL,
   numer_grad = TRUE,
   f_noise = noise_nig(mu = -2, sigma = 1.5, nu = 0.5),
   n_gibbs_samples = 5,

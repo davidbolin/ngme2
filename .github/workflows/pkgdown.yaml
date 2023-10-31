@@ -2,6 +2,7 @@ on:
   push:
     branches:
       - devel
+      - test
 
 name: pkgdown
 

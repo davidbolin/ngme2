@@ -85,6 +85,22 @@ print(paste("nodes of mesh = ", mesh$n))
       corr_measurement=TRUE,
       index_corr=rep(1:(n_obs_per_rep/2), 2)
     )
+  } else if (family == "cor_nig") {
+    # simulation of cor_nig?
+    stopifnot(n_obs_per_rep %% 2 == 0)
+    rho = -0.5
+    Cov_kron <- matrix(c(.5, rho*.5, rho*.5, .5), nrow=2) %x% diag(n_obs_per_rep / 2)
+    L <- t(chol(Cov_kron))
+    mn_noise <- as.numeric(L %*% rnorm(n_obs_per_rep))
+    real_mn_noise <- noise_nig(
+      corr_measurement=TRUE,
+      index_corr=rep(1:(n_obs_per_rep/2), 2),
+      rho = -0.5
+    )
+    fm_mn_noise = noise_nig(
+      corr_measurement=TRUE,
+      index_corr=rep(1:(n_obs_per_rep/2), 2)
+    )
   }
 
   # ------- Simulate data for each model --------
@@ -159,9 +175,10 @@ print(paste("nodes of mesh = ", mesh$n))
       list(Y=Y, idx=idx_per_rep, group=group_per_rep)
     },
     "bvmatern" = {
-      loc <- cbind(runif(n_obs_per_rep, 0, 10), runif(n_obs_per_rep, 0, 5))
       group_per_rep <- c(rep("first", n_obs_per_rep/2), rep("second", n_obs_per_rep/2))
       idx_per_rep <- c(1:(n_obs_per_rep/2), 1:(n_obs_per_rep/2))
+      loc <- cbind(runif(n_obs_per_rep/2, 0, 10), runif(n_obs_per_rep/2, 0, 5))
+      loc <- rbind(loc, loc)
       true_model <- f(
         loc,
         model="bv",
@@ -179,7 +196,7 @@ print(paste("nodes of mesh = ", mesh$n))
       )
       W <- simulate(true_model, seed=seed)
       Y <- as.numeric(true_model$A %*% W) + mn_noise
-      list(Y=Y, idx=idx_per_rep, group=group_per_rep)
+      list(Y=Y, idx=loc, group=group_per_rep)
     },
     "graph" = {
       # library(MetricGraph)
@@ -283,6 +300,7 @@ print(paste("nodes of mesh = ", mesh$n))
       model="bv",
       fix_theta_K = fix_theta_K,
       sub_models = list(first = "matern", second="matern"),
+      mesh = mesh,
       debug = debug_f,
       control = control_f(numer_grad = numer_grad),
       noise = list(first=f_fm_noise, second=f_fm_noise)

@@ -135,6 +135,11 @@ if (debug) std::cout << "After set block K" << std::endl;
       cor_cols = Rcpp::as<vector<int>> (noise_in["cor_cols"]);
       cor_rows = Rcpp::as<vector<int>> (noise_in["cor_rows"]);
       has_correlation = Rcpp::as<vector<bool>> (noise_in["has_correlation"]);
+// print has_correlation
+// std::cout << "has_correlation = ";
+// for (int i=0; i < has_correlation.size(); i++) {
+//   std::cout << has_correlation[i] << " ";
+// }
       n_corr_pairs = Rcpp::as<int> (noise_in["n_corr_pairs"]);
       vector<Triplet<double>> Q_eps_triplet, dQ_eps_triplet;
       for (int i=0; i < cor_cols.size(); ++i) {
@@ -219,10 +224,11 @@ if (debug) std::cout << "End Block Constructor" << std::endl;
       for (int i=0; i < iterations; i++) {
 // std::cout << "burn in iteration i= " << i  << std::endl;
           sample_cond_V();
-// std::cout << "cond V done" << std::endl;
+// std::cout << "sample cond V done" << std::endl;
           sampleW_VY(true);
 // std::cout << "sample W done" << std::endl;
           sample_cond_noise_V();
+// std::cout << "sample cond_noise_V done" << std::endl;
       }
 // std::cout << "burn in done "  << std::endl;
   }
@@ -619,6 +625,7 @@ void BlockModel::sample_cond_noise_V(bool posterior) {
     // VectorXd b_inc_vec = (Y - A * getW() - X * beta - noise_mu).cwiseQuotient(noise_sigma).array().pow(2);
     VectorXd a_vec_new = a_vec + a_inc_vec;
     VectorXd b_vec_new = b_vec + b_inc_vec;
+
     if (!corr_measure) {
       double dim = 1;
       VectorXd p_vec_new = p_vec - VectorXd::Constant(n_obs, 0.5 * dim);
@@ -633,6 +640,8 @@ void BlockModel::sample_cond_noise_V(bool posterior) {
       // loop over 1..n, sample V_i
       int i = 0;
       while (i < n_obs) {
+// std::cout << " i = " << i << std::endl;
+// std::cout << " has_cor[i] = " << has_correlation[i] << std::endl;
         if (has_correlation[i]) {
           // means obs_i and obs_i+1 share the same V
           noise_V[i] = noise_V[i+1] = rGIG_cpp(p_vec[i], a_vec[i], b_vec[i], rng());

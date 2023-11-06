@@ -165,6 +165,7 @@ compute_err_1rep <- function(
 
   # Subset noise[test_idx, ] for test location
   y_data <- ngme_1rep$Y[bool_test_idx]
+  group_data <- ngme_1rep$group[bool_test_idx]
   n_obs <- length(y_data)
   X_pred <- ngme_1rep$X[bool_test_idx,, drop=FALSE]
   noise_test_idx <- subset_noise(ngme_1rep$noise, sub_idx = bool_test_idx)
@@ -222,13 +223,28 @@ compute_err_1rep <- function(
     E3[[i]] <- mean((yi - y_data[i])^2)
   }
 
-  # compute MSE, MAE, CRPS, sCRPS
-  list(
-    MAE = mean(E1),
-    MSE = mean(E3),
-    CRPS = mean(0.5 * E2 - E1),
-    sCRPS = mean(-E2 / E1 - 0.5 * log(E2))
-  )
+  # compute MSE, MAE, CRPS, sCRPS within each group
+  if (is.null(group_data)) {
+    list(
+      MAE = mean(E1),
+      MSE = mean(E3),
+      CRPS = mean(0.5 * E2 - E1),
+      sCRPS = mean(-E2 / E1 - 0.5 * log(E2))
+    )
+  } else {
+    A <- split(E1, group_data)
+    B <- split(E3, group_data)
+    C <- split(0.5 * E2 - E1, group_data)
+    D <- split(-E2 / E1 - 0.5 * log(E2), group_data)
+
+    list(
+      MAE = sapply(A, mean),
+      MSE = sapply(B, mean),
+      CRPS = sapply(C, mean),
+      sCRPS = sapply(D, mean)
+    )
+  }
+
 }
 
 #' Compute the cross-validation for the ngme model
@@ -264,6 +280,7 @@ cross_validation <- function(
   test_idx = NULL,
   train_idx = NULL
 ) {
+  set.seed(seed) # to-do: will set seed affect user?
   stopifnot(
     "type should be in c('k-fold', 'loo', 'lpo', 'custom')"
       = type %in% c("k-fold", "loo", "lpo", "custom"),

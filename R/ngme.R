@@ -14,7 +14,7 @@
 #' @param control_opt  control for optimizer. by default it is \code{control_opt()}. See \code{?control_opt} for details.
 #' @param control_ngme control for ngme model. by default it is \code{control_ngme()}. See \code{?control_ngme} for details.
 #' @param replicate integer factor, used for divide data into different replicates
-#' @param group group factor, used for multivariate model
+#' @param group group factor, used for bivariate model, indicating which group the observation belongs to
 #' @param family likelihood type, same as measurement noise specification, 1. string 2. ngme noise obejct
 #' @param start  starting ngme object (usually object from last fitting)
 #' @param debug  toggle debug mode
@@ -422,6 +422,7 @@ ngme_parse_formula <- function(
       data_idx = data_idx,
       Y = Y,
       X = X,
+      group = group,
       noise = noise_rep,
       models = models_rep,
       replicate = uni_repl[[i]],

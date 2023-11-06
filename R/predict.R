@@ -142,7 +142,7 @@ compute_err_1rep <- function(
   bool_test_idx,
   bool_train_idx,
   N = 100,
-  seed=Sys.time()
+  seed = NULL
 ) {
   stopifnot(
     "bool_<..>_idx should be a logical vector" =
@@ -187,6 +187,7 @@ compute_err_1rep <- function(
   A_pred_block <- Reduce(cbind, x = A_preds)
 # print(A_pred_block)
 
+  if (is.null(seed)) seed <- Sys.time()
   Ws <- sampling_cpp(ngme_1rep, n=2*N, posterior=TRUE, seed=seed)[["W"]]
   Ws_block <- head(Ws, N); W2s_block <- tail(Ws, N)
 
@@ -271,7 +272,7 @@ compute_err_1rep <- function(
 cross_validation <- function(
   ngme,
   type = "k-fold",
-  seed = Sys.time(),
+  seed = NULL,
   print = FALSE,
   N = 100,
   k = 5,
@@ -280,7 +281,7 @@ cross_validation <- function(
   test_idx = NULL,
   train_idx = NULL
 ) {
-  set.seed(seed) # to-do: will set seed affect user?
+  if (!is.null(seed)) set.seed(seed)
   stopifnot(
     "type should be in c('k-fold', 'loo', 'lpo', 'custom')"
       = type %in% c("k-fold", "loo", "lpo", "custom"),
@@ -352,7 +353,7 @@ cross_validation <- function(
 
 # helper function to dispatch over reps
 compute_err_reps <- function(
-  ngme, test_idx, train_idx, N=100, seed=Sys.time()
+  ngme, test_idx, train_idx, N=100, seed=NULL
 ) {
   stopifnot("Not a ngme object." = inherits(ngme, "ngme"))
   repls <- attr(ngme, "fitting")$replicate

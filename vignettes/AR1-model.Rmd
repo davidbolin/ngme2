@@ -34,7 +34,7 @@ ${\bf X} = (X_1, \dots, X_n)$,  ${\boldsymbol \epsilon} = (\epsilon_1, \dots, \e
 $$
 K =
   \begin{bmatrix}
-    1 \\
+    \sqrt{1-\rho^2} \\
     -\rho &  1 \\
     & \ddots & \ddots \\
     & & -\rho &  1

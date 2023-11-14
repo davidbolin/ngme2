@@ -422,7 +422,7 @@ ngme_parse_formula <- function(
       data_idx = data_idx,
       Y = Y,
       X = X,
-      group = group,
+      group = group[idx],
       noise = noise_rep,
       models = models_rep,
       replicate = uni_repl[[i]],

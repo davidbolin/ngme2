@@ -135,6 +135,151 @@ predict.ngme <- function(
 
 # ------- CV -------
 
+
+#' Compute the cross-validation for the ngme model
+#' Perform cross-validation for ngme model
+#' first into sub_groups (a list of target, and train data)
+#'
+#' @param ngme a ngme object
+#' @param type character, in c("k-fold", "loo", "lpo", "custom")
+#' k-fold is k-fold cross-validation, provide \code{k}
+#' loo is leave-one-out,
+#' lpo is leave-percent-out, provide \code{percent} from 1 to 100
+#' custom is user-defined group, provide \code{target} and \code{data}
+#' @param seed random seed
+#' @param N integer, number of MC sampling (i.e. sampling N process and average)
+#' @param k integer (only for k-fold type)
+#' @param print print information during computation
+#' @param percent from 1 to 100 (only for lpo type)
+#' @param times run how many times (only for lpo type)
+#' @param test_idx a list of indices of the data (which data points to be predicted) (only for custom type)
+#' @param train_idx  a list of indices of the data (which data points to be used for re-sampling (not re-estimation)) (only for custom type)
+#'
+#' @return a list of criterions: MSE, MAE, CRPS, sCRPS
+#' @export
+cross_validation <- function(
+  ngme,
+  type = "k-fold",
+  seed = NULL,
+  print = FALSE,
+  N = 100,
+  k = 5,
+  percent = 50,
+  times = 10,
+  test_idx = NULL,
+  train_idx = NULL
+) {
+  if (!is.null(seed)) set.seed(seed)
+  stopifnot(
+    "type should be in c('k-fold', 'loo', 'lpo', 'custom')"
+      = type %in% c("k-fold", "loo", "lpo", "custom"),
+    "ngme is a ngme object"
+      = inherits(ngme, "ngme")
+  )
+  n_data <- attr(ngme, "fitting")$n_data
+
+  # 1. compute indices of tartget and train if not custom type
+  if (type == "k-fold") {
+    # split idx into k
+    idx <- seq_len(n_data)
+    folds <- cut(sample(idx), breaks = k, label = FALSE)
+    test_idx <- lapply(1:k, function(x) {which(folds == x, arr.ind = TRUE)})
+    train_idx <- lapply(1:k, function(x) {which(folds != x, arr.ind = TRUE)})
+  } else if (type == "loo") {
+    return(cross_validation(ngme, "k-fold", k = n_data, seed=seed))
+  } else if (type == "lpo") {
+    for (i in 1:times) {
+      test_idx[[i]] <- sample(1:n_data, size = (percent/100) * n_data)
+      train_idx[[i]] <- setdiff(1:n_data, test_idx[[i]])
+    }
+  } else {
+    # check if test_idx and train_idx is provided and of same length
+    stopifnot(
+      "test_idx and train_idx should be provided"
+        = !is.null(test_idx) && !is.null(train_idx),
+      "test_idx and train_idx should be a list"
+        = is.list(test_idx) && is.list(train_idx),
+      "test_idx and train_idx should be of same length"
+        = length(test_idx) == length(train_idx)
+    )
+  }
+
+  # Alternative. do not distinguish between replicates?
+  # But the internal mesh may not be the same for each replicate....
+
+  # 2. loop over each test_idx and train_idx, and compute the criterion
+  crs <- NULL
+  for (i in seq_along(test_idx)) {
+    crs[[i]] <- compute_err_reps(
+      ngme,
+      test_idx[[i]],
+      train_idx[[i]],
+      N=N,
+      seed=seed
+    )
+    if (print) {
+      cat(paste("In test_idx", i, ": \n"))
+      print(as.data.frame(crs[[i]]))
+      cat("\n")
+    }
+  }
+
+  # 3. take (weighted by train_data?) average over all groups
+  ret <- mean_list(crs)
+
+  # weights <- sapply(ngme$replicates, function(x) length(x$Y))
+  # weights <- weights / sum(weights)
+  # ret <- list()
+  # for (i in seq_along(ngme$replicates)) {
+  #   ret[[i]] <- cross_validation(ngme$replicates[[i]], type=type, k=k, N=N, percent=percent,
+  #   times=times, test_idx=test_idx, print=print, seed=seed)
+  # }
+  # ret <- mean_list(ret, weights=weights)
+  # cat("\n")
+  # cat("The final result averaged over replicates: \n")
+
+  print(as.data.frame(ret))
+  return(invisible(ret))
+}
+
+# helper function to dispatch over reps
+compute_err_reps <- function(
+  ngme,
+  test_idx,
+  train_idx,
+  N = 100,
+  seed = NULL
+) {
+  stopifnot("Not a ngme object." = inherits(ngme, "ngme"))
+  repls <- attr(ngme, "fitting")$replicate
+  uni_repl <- unique(repls)
+
+  crs <- NULL; weight <- NULL; n_crs <- 0
+  for (i in seq_along(uni_repl)) {
+    data_idx <- ngme$replicates[[i]]$data_idx
+    bool_train_idx <- data_idx %in% train_idx
+    bool_test_idx  <- data_idx %in% test_idx
+
+    # skip this replicate if no target or train data
+    if (sum(bool_train_idx) == 0 || sum(bool_test_idx) == 0) next
+    n_crs <- n_crs + 1
+    crs[[n_crs]] <- compute_err_1rep(
+      ngme$replicates[[i]],
+      bool_train_idx = bool_train_idx,
+      bool_test_idx = bool_test_idx,
+      N=N,
+      seed=seed
+    )
+
+    which_repl <- which(repls == uni_repl[i])
+    weight <- c(weight, length(which_repl))
+  }
+
+  # take weighted average over replicates
+  mean_list(crs, weight)
+}
+
+
 # helper function to compute MSE, MAE, ... for each subset of target / data
 # assume test_idx and train_idx belongs to same replicate
 compute_err_1rep <- function(
@@ -245,144 +390,8 @@ compute_err_1rep <- function(
       sCRPS = sapply(D, mean)
     )
   }
-
 }
 
-#' Compute the cross-validation for the ngme model
-#' Perform cross-validation for ngme model
-#' first into sub_groups (a list of target, and train data)
-#'
-#' @param ngme a ngme object
-#' @param type character, in c("k-fold", "loo", "lpo", "custom")
-#' k-fold is k-fold cross-validation, provide \code{k}
-#' loo is leave-one-out,
-#' lpo is leave-percent-out, provide \code{percent} from 1 to 100
-#' custom is user-defined group, provide \code{target} and \code{data}
-#' @param seed random seed
-#' @param N integer, number of MC sampling (i.e. sampling N process and average)
-#' @param k integer (only for k-fold type)
-#' @param print print information during computation
-#' @param percent from 1 to 100 (only for lpo type)
-#' @param times run how many times (only for lpo type)
-#' @param test_idx a list of indices of the data (which data points to be predicted) (only for custom type)
-#' @param train_idx  a list of indices of the data (which data points to be used for re-sampling (not re-estimation)) (only for custom type)
-#'
-#' @return a list of criterions: MSE, MAE, CRPS, sCRPS
-#' @export
-cross_validation <- function(
-  ngme,
-  type = "k-fold",
-  seed = NULL,
-  print = FALSE,
-  N = 100,
-  k = 5,
-  percent = 50,
-  times = 10,
-  test_idx = NULL,
-  train_idx = NULL
-) {
-  if (!is.null(seed)) set.seed(seed)
-  stopifnot(
-    "type should be in c('k-fold', 'loo', 'lpo', 'custom')"
-      = type %in% c("k-fold", "loo", "lpo", "custom"),
-    "ngme is a ngme object"
-      = inherits(ngme, "ngme")
-  )
-  n_data <- attr(ngme, "fitting")$n_data
-
-  # 1. compute indices of tartget and train if not custom type
-  if (type == "k-fold") {
-    # split idx into k
-    idx <- seq_len(n_data)
-    folds <- cut(sample(idx), breaks = k, label = FALSE)
-    test_idx <- lapply(1:k, function(x) {which(folds == x, arr.ind = TRUE)})
-    train_idx <- lapply(1:k, function(x) {which(folds != x, arr.ind = TRUE)})
-  } else if (type == "loo") {
-    return(cross_validation(ngme, "k-fold", k = n_data, seed=seed))
-  } else if (type == "lpo") {
-    for (i in 1:times) {
-      test_idx[[i]] <- sample(1:n_data, size = (percent/100) * n_data)
-      train_idx[[i]] <- setdiff(1:n_data, test_idx[[i]])
-    }
-  } else {
-    # check if test_idx and train_idx is provided and of same length
-    stopifnot(
-      "test_idx and train_idx should be provided"
-        = !is.null(test_idx) && !is.null(train_idx),
-      "test_idx and train_idx should be a list"
-        = is.list(test_idx) && is.list(train_idx),
-      "test_idx and train_idx should be of same length"
-        = length(test_idx) == length(train_idx)
-    )
-  }
-
-  # 2. loop over each test_idx and train_idx, and compute the criterion
-  crs <- NULL
-  for (i in seq_along(test_idx)) {
-    crs[[i]] <- compute_err_reps(
-      ngme,
-      test_idx[[i]],
-      train_idx[[i]],
-      N=N,
-      seed=seed
-    )
-    if (print) {
-      cat(paste("In test_idx", i, ": \n"))
-      print(as.data.frame(crs[[i]]))
-      cat("\n")
-    }
-  }
-
-  # 3. take (weighted by train_data?) average over all groups
-  ret <- mean_list(crs)
-
-  # weights <- sapply(ngme$replicates, function(x) length(x$Y))
-  # weights <- weights / sum(weights)
-  # ret <- list()
-  # for (i in seq_along(ngme$replicates)) {
-  #   ret[[i]] <- cross_validation(ngme$replicates[[i]], type=type, k=k, N=N, percent=percent,
-  #   times=times, test_idx=test_idx, print=print, seed=seed)
-  # }
-  # ret <- mean_list(ret, weights=weights)
-  # cat("\n")
-  # cat("The final result averaged over replicates: \n")
-
-  print(as.data.frame(ret))
-  return(invisible(ret))
-}
-
-# helper function to dispatch over reps
-compute_err_reps <- function(
-  ngme, test_idx, train_idx, N=100, seed=NULL
-) {
-  stopifnot("Not a ngme object." = inherits(ngme, "ngme"))
-  repls <- attr(ngme, "fitting")$replicate
-  uni_repl <- unique(repls)
-
-  crs <- NULL; weight <- NULL; n_crs <- 0
-  for (i in seq_along(uni_repl)) {
-    data_idx <- ngme$replicates[[i]]$data_idx
-    bool_train_idx <- data_idx %in% train_idx
-    bool_test_idx  <- data_idx %in% test_idx
-
-    # skip this replicate if no target or train data
-    if (sum(bool_train_idx) == 0 || sum(bool_test_idx) == 0) next
-    n_crs <- n_crs + 1
-    crs[[n_crs]] <- compute_err_1rep(
-      ngme$replicates[[i]],
-      bool_train_idx = bool_train_idx,
-      bool_test_idx = bool_test_idx,
-      N=N,
-      seed=seed
-    )
-
-    which_repl <- which(repls == uni_repl[i])
-    weight <- c(weight, length(which_repl))
-  }
-
-  # take weighted average over replicates
-  mean_list(crs, weight)
-}
 
 
 # questions:

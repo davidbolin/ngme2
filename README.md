@@ -1,10 +1,10 @@
 # The `ngme2` Package
 
-`ngme2` is an R package used for fitting non-gaussian mixed effects models. These models are fitted in an efficient manner.
+`ngme2` is an R package used for working with non-gaussian mixed effects models. See 
 
-Basic statistical operations such as likelihood evaluations and kriging predictions are also implemented.
+[davidbolin.github.io/ngme2/](https://davidbolin.github.io/ngme2/)
 
-# Installation instructions
+for an introduction to the package.
 
 The development version can be installed using the command
 

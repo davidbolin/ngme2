@@ -387,7 +387,7 @@ ngme_parse_formula <- function(
       data_idx <- data_idx[p_order]
       X <- X[p_order, , drop = FALSE]
       Y <- Y[p_order]
-      group <- group[p_order]
+      group_rep <- group[idx][p_order]
       for (j in seq_along(models_rep))
         models_rep[[j]]$A <- models_rep[[j]]$A[p_order, , drop = FALSE]
       # update noise, consider index_corr
@@ -398,7 +398,7 @@ ngme_parse_formula <- function(
       data_idx = data_idx,
       Y = Y,
       X = X,
-      group = group[idx],
+      group = group_rep,
       noise = noise_rep,
       models = models_rep,
       replicate = uni_repl[[i]],

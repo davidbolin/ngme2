@@ -41,14 +41,13 @@ simulate.ngme_model <- function(
         e <- simulate_noise(noise$noise_type, h, mu, sigma, nu, seed+3, noise$single_V)
     }
     W <- as.numeric(solve(model$operator$K, e))
+    W <- W - mean(W)
 
     # attach noise attributes
     attr(W, "noise") <- noise
     attr(W, "V") <- attr(e, "V")
 
-    # make it mean 0
-    # W
-    W - mean(W)
+    return (W)
 }
 
 simulate_noise <- function(

@@ -176,7 +176,7 @@ cross_validation <- function(
     "ngme is a ngme object"
       = inherits(ngme, "ngme")
   )
-  n_data <- attr(ngme, "fitting")$n_data
+  n_data <- attr(ngme, "fit")$n_data
 
   # 1. compute indices of tartget and train if not custom type
   if (type == "k-fold") {
@@ -251,7 +251,7 @@ compute_err_reps <- function(
   seed = NULL
 ) {
   stopifnot("Not a ngme object." = inherits(ngme, "ngme"))
-  repls <- attr(ngme, "fitting")$replicate
+  repls <- attr(ngme, "fit")$replicate
   uni_repl <- unique(repls)
 
   crs <- NULL; weight <- NULL; n_crs <- 0

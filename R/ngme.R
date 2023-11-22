@@ -13,10 +13,10 @@
 #'    \code{NA} value in other columns will cause problem)
 #' @param control_opt  control for optimizer. by default it is \code{control_opt()}. See \code{?control_opt} for details.
 #' @param control_ngme control for ngme model. by default it is \code{control_ngme()}. See \code{?control_ngme} for details.
-#' @param replicate integer factor, used for divide data into different replicates
-#' @param group group factor, used for bivariate model, indicating which group the observation belongs to
+#' @param replicate factor, used for divide data into different replicates
+#' @param group factor, used for bivariate model, indicating which group the observation belongs to
 #' @param family likelihood type, same as measurement noise specification, 1. string 2. ngme noise obejct
-#' @param start  starting ngme object (usually object from last fitting)
+#' @param start  starting ngme object (usually object from last fit)
 #' @param debug  toggle debug mode
 #'
 #' @return random effects (for different replicate) + models(fixed effects, measuremnt noise, and latent process)
@@ -69,36 +69,16 @@ ngme <- function(
   )
   control_ngme <- update_control_ngme(control_ngme, control_opt)
 
-  if (!is.null(group)) group <- as.factor(group)
-  if (is.null(replicate)) replicate <- rep(1, nrow(data))
-  if (inherits(replicate, "formula")) {
-    # input as: replicate = ~id
-    stopifnot("Allow 1 variable (column in data) as replicate. i.g. replicate=~id"
-      = length(replicate) == 2 && length(replicate[[2]]) == 1)
+  group <- validate_rep_or_group(group, data)
+  replicate <- validate_rep_or_group(replicate, data)
 
-    replicate <- eval(replicate[[2]], envir = data, enclos = parent.frame())
-    stopifnot("replicate should take integer value" =
-       all(replicate - round(replicate) == 0))
-  }
-  if (inherits(replicate, "character")) {
-    # input as: replicate = "id"
-    replicate <- data[[replicate]]
-    stopifnot("replicate should take integer value" =
-       all(replicate - round(replicate) == 0))
-  }
-
-  replicate <- as.integer(as.factor(replicate))
-  stopifnot(
-    "Please make sure the length of replicate is equal to the number of rows of data"
-     = nrow(data) == length(replicate)
-  )
-
-  # model fitting information
-  fitting <- list(
+  # model fit information
+  fit <- list(
     formula = formula,
     data = data,
     family = family,
     replicate = replicate,
+    group = group,
     n_data = nrow(data)
   )
   if (debug) control_ngme$debug <- TRUE
@@ -114,7 +94,7 @@ ngme <- function(
 
   # parse the formula get a list of ngme_replicate
   ngme_model <- ngme_parse_formula(formula, data, control_ngme, noise, group, replicate)
-  attr(ngme_model, "fitting") <- fitting
+  attr(ngme_model, "fit") <- fit
 
   ####### Use Last_fit ngme object to update Rcpp_list
   if (!is.null(start) && !inherits(start, "ngme"))
@@ -310,11 +290,6 @@ ngme_parse_formula <- function(
   group,
   replicate
 ) {
-  stopifnot(
-    "Please make sure the length of replicate is equal to the number of rows of data"
-     = nrow(data) == length(replicate)
-  )
-
   enclos_env <- list2env(as.list(parent.frame()), parent = parent.frame(2))
   global_env_first <- list2env(as.list(parent.frame(2)), parent = parent.frame())
 
@@ -412,6 +387,7 @@ ngme_parse_formula <- function(
       data_idx <- data_idx[p_order]
       X <- X[p_order, , drop = FALSE]
       Y <- Y[p_order]
+      group <- group[p_order]
       for (j in seq_along(models_rep))
         models_rep[[j]]$A <- models_rep[[j]]$A[p_order, , drop = FALSE]
       # update noise, consider index_corr

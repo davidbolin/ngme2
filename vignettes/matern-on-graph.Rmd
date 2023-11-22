@@ -198,10 +198,10 @@ matern_graph <- f(
 matern_graph
 W <- simulate(matern_graph, seed=10)
 
-graph$plot_function(W)
+graph$plot_function(X=as.numeric(W))
 
 # 3d plot of the random field
-graph$plot_function(W, plotly=TRUE)
+graph$plot_function(X=as.numeric(W), plotly=TRUE)
 ```
 
 With the latent field generated, next we construct observations.

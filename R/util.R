@@ -493,3 +493,31 @@ ngme_make_mesh_repls <- function(
 
   mesh_repls
 }
+
+
+# check if group is valid
+# return as integer
+validate_rep_or_group <- function(replicate, data) {
+  if (is.null(replicate))
+    return (rep(1, nrow(data)))
+
+  if (inherits(replicate, "formula")) {
+    # input as: replicate = ~id
+    stopifnot("Allow 1 variable (column in data) as replicate. i.g. replicate=~id"
+      = length(replicate) == 2 && length(replicate[[2]]) == 1)
+
+    replicate <- eval(replicate[[2]], envir = data, enclos = parent.frame())
+  }
+
+  if (inherits(replicate, "character") && (length(replicate) == 1)) {
+    # input as: replicate = "id"
+    replicate <- data[[replicate]]
+  }
+
+  stopifnot(
+    "Please make sure the length of replicate is equal to the number of rows of data"
+     = nrow(data) == length(replicate)
+  )
+
+  return (as.factor(replicate))
+}

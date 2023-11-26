@@ -373,6 +373,7 @@ ngme_parse_formula <- function(
     if (is.null(control_ngme$feff)) control_ngme$feff <- lm.model$coeff
     if (is.null(noise$theta_sigma)) noise$theta_sigma <- log(sd(lm.model$residuals))
     noise_rep <- subset_noise(noise_new, sub_idx=idx, compute_corr=FALSE)
+    group_rep <- group[idx]
 
     # Re-order according to index_corr!
     # s.t. noise$index_corr=1,1,2,2,3,4,4,....
@@ -387,7 +388,7 @@ ngme_parse_formula <- function(
       data_idx <- data_idx[p_order]
       X <- X[p_order, , drop = FALSE]
       Y <- Y[p_order]
-      group_rep <- group[idx][p_order]
+      group_rep <- group_rep[p_order]
       for (j in seq_along(models_rep))
         models_rep[[j]]$A <- models_rep[[j]]$A[p_order, , drop = FALSE]
       # update noise, consider index_corr

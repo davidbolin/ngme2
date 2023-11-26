@@ -108,7 +108,11 @@ ngme <- function(
         feff <- start$replicates[[i]]$feff
         noise <- update_noise(noise, new_noise = start$replicates[[i]]$noise)
         for (i in seq_along(start$replicates[[i]]$models)) {
-          models[[i]]$theta_K  <- start$replicates[[i]]$models[[i]]$theta_K
+          # update operator representation
+          models[[i]]$operator <-
+            start$replicates[[i]]$models[[i]]$operator
+          # update parameters
+          models[[i]]$theta_K  <- models[[i]]$operator$theta_K
           models[[i]]$W        <- start$replicates[[i]]$models[[i]]$W
           models[[i]]$V        <- start$replicates[[i]]$models[[i]]$V
           models[[i]]$noise    <- update_noise(

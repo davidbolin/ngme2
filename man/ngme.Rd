@@ -29,11 +29,11 @@ ngme(
 
 \item{control_ngme}{control for ngme model. by default it is \code{control_ngme()}. See \code{?control_ngme} for details.}
 
-\item{group}{group factor, used for multivariate model}
+\item{group}{factor, used for bivariate model, indicating which group the observation belongs to}
 
-\item{replicate}{integer factor, used for divide data into different replicates}
+\item{replicate}{factor, used for divide data into different replicates}
 
-\item{start}{starting ngme object (usually object from last fitting)}
+\item{start}{starting ngme object (usually object from last fit)}
 
 \item{debug}{toggle debug mode}
 }

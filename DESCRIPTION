@@ -43,6 +43,7 @@ Suggests:
     tidyr,
     fields,
     lme4,
+    plotly,
     MetricGraph (>= 1.1.2)
 VignetteBuilder: knitr
 RoxygenNote: 7.2.3

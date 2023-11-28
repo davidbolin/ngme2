@@ -9,7 +9,7 @@ first into sub_groups (a list of target, and train data)}
 cross_validation(
   ngme,
   type = "k-fold",
-  seed = Sys.time(),
+  seed = NULL,
   print = FALSE,
   N = 100,
   k = 5,
@@ -20,7 +20,7 @@ cross_validation(
 )
 }
 \arguments{
-\item{ngme}{a ngme object}
+\item{ngme}{a ngme object, or a list of ngme object (if comparing multiple models)}
 
 \item{type}{character, in c("k-fold", "loo", "lpo", "custom")
 k-fold is k-fold cross-validation, provide \code{k}

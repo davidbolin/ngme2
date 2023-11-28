@@ -140,7 +140,7 @@ predict.ngme <- function(
 #' Perform cross-validation for ngme model
 #' first into sub_groups (a list of target, and train data)
 #'
-#' @param ngme a ngme object
+#' @param ngme a ngme object, or a list of ngme object (if comparing multiple models)
 #' @param type character, in c("k-fold", "loo", "lpo", "custom")
 #' k-fold is k-fold cross-validation, provide \code{k}
 #' loo is leave-one-out,
@@ -169,14 +169,16 @@ cross_validation <- function(
   test_idx = NULL,
   train_idx = NULL
 ) {
+  # check input
+  if (inherits(ngme, "ngme")) ngme <- list(ngme)
+  n_data <- attr(ngme[[1]], "fit")$n_data
+  if (is.null(n_data)) stop("Please provide ngme object or a list of ngme object")
+
   if (!is.null(seed)) set.seed(seed)
   stopifnot(
     "type should be in c('k-fold', 'loo', 'lpo', 'custom')"
-      = type %in% c("k-fold", "loo", "lpo", "custom"),
-    "ngme is a ngme object"
-      = inherits(ngme, "ngme")
+      = type %in% c("k-fold", "loo", "lpo", "custom")
   )
-  n_data <- attr(ngme, "fit")$n_data
 
   # 1. compute indices of tartget and train if not custom type
   if (type == "k-fold") {
@@ -203,29 +205,37 @@ cross_validation <- function(
         = length(test_idx) == length(train_idx)
     )
   }
-
   # Alternative. do not distinguish between replicates?
   # But the internal mesh may not be the same for each replicate....
 
   # 2. loop over each test_idx and train_idx, and compute the criterion
-  crs <- NULL
-  for (i in seq_along(test_idx)) {
-    crs[[i]] <- compute_err_reps(
-      ngme,
-      test_idx[[i]],
-      train_idx[[i]],
-      N=N,
-      seed=seed
-    )
-    if (print) {
-      cat(paste("In test_idx", i, ": \n"))
-      print(as.data.frame(crs[[i]]))
-      cat("\n")
+  final_crs <- list()
+  for (idx in seq_along(ngme)) {
+    crs <- NULL
+    for (i in seq_along(test_idx)) {
+      crs[[i]] <- compute_err_reps(
+        ngme[[idx]],
+        test_idx[[i]],
+        train_idx[[i]],
+        N=N,
+        seed=seed
+      )
+      if (print) {
+        cat(paste("In test_idx", i, ": \n"))
+        print(as.data.frame(crs[[i]]))
+        cat("\n")
+      }
     }
+    final_crs[[idx]] <- as.data.frame(mean_list(crs))
   }
+  ret <- do.call(rbind, final_crs)
+  rownames(ret) <- if (length(rownames(final_crs[[1]]))==1) names(ngme)
+    else {
+      names_list = lapply(names(ngme), function(x) paste(x, rownames(final_crs[[1]]), sep = "_"))
+      do.call(c, names_list)
+    }
 
   # 3. take (weighted by train_data?) average over all groups
-  ret <- mean_list(crs)
 
   # weights <- sapply(ngme$replicates, function(x) length(x$Y))
   # weights <- weights / sum(weights)
@@ -238,7 +248,7 @@ cross_validation <- function(
   # cat("\n")
   # cat("The final result averaged over replicates: \n")
 
-  print(as.data.frame(ret))
+  print(ret)
   return(invisible(ret))
 }
 

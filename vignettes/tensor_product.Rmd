@@ -16,62 +16,73 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-In this vignette, we will show how to fit the separable space-time (tensor product) model using Ngme2.
+In this vignette, we will show how to fit the separable space-time model (using tensor product structure in `ngme2`).
 
 The separable space-time model is defined by the Kronecker product between the precision matrices of the spatial and temporal random effects. Additional information about separable space-time models can be found in Cameletti et al. (2013).
 
 ## Model structure
 
-Remember that, for the univariate model, it can be written as:
-$$ \mathcal{L} \mathbf{X}(s) = \mathcal{M},$$ where $\mathcal{L}$ is some operator, $\mathcal{M}$ represents the noise (Gaussian or non-Gaussian).
-
-After we discretize (see e.g. [Ngme2 Matern SPDE model](SPDE-model.html) for details) the operator $\mathcal{L}$, we will get the operator matrix $K$.
+For the usual model, we have the following structure:
+$$ \mathbf{K} \mathbf{X}(s) = \boldsymbol{\epsilon},$$ where $\mathbf{K}$ is some operator matrix, $\boldsymbol{\epsilon}$ represents the noise (Gaussian or non-Gaussian).
 
 In the tensor product model, the operator matrix $K$ can be constructed by other two operator matrices of two models:
 
-$$K = K_l \otimes K_r.$$
+$$K = K_l \otimes K_r,$$
+where $K_l$ and $K_r$ are the operator matrices of the first and second models, respectively.
 
-## One simple example
 
-The R interface for tensor product model requries map as a list of 2 indices and 2 operators namely `first` and `second` to build the model.
+## A toy example
 
-The following is one simple example of how to build the space-time (1d location) model.
+To use the space-time model, we need to first define the mesh of the model, i.e., the discretization of the space-time domain (time $\times$ location). It can be done by providing the mesh for each. For example, we can provide the same mesh as in the regular spatial model, and also provide the mesh for the time index.
+
+The R interface for tensor product model requires map as a list of 2 indices and 2 operators namely `first` (time) and `second` (space) to build the model.
+
+The following is one simple example of how to build the space-time (2d location) model.
 
 Here the mesh of the model will be ordered according to the order of the time index (year).
 
 ```{r setup, message=FALSE, warning=FALSE}
-# load packages
+set.seed(16)
 library(INLA)
 library(ngme2)
 
-time = c(2001, 2001, 2003, 2002, 2003, 2002, 2001)
-loc  = c(3.3, 2.0, 1.0, 1.0, 2.0, 2.0, 1.0)
+n <- 10
+# generate time randomly of length n
+time <- sample(2001:2004, n, replace = TRUE)
+# generate 2d location randomly of length n
+loc <- cbind(runif(n), runif(n)) * 10
 
-m0 <- f(
-  map=list(time, loc),
-  model="tp",
-  first=list(model="ar1"),
-  second=list(model="rw1")
+# show the time and loc
+data.frame(time, loc)
+
+
+# create the mesh for space (2d location)
+mesh <- fmesher::fm_mesh_2d(
+  loc.domain = cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5),
+  max.edge = c(1, 10),
+  cutoff = 0.1
 )
-m0
+plot(mesh)
 
-# The map from the underlying mesh to our observations
-m0$A
+# define the space-time model
+m0 <- f(
+  map=list(time, loc), # from the data
+  model="tp",
+  first=list(model="ar1"), # ar1 model for time (mesh generated automatically)
+  second = list(model="matern", mesh = mesh)
+)
+
+# show the model
+m0
 ```
 
-Here the 1st, 2nd, 7th object are from first year (column 1 to 3), the 3rd, 5th are from second year (column 4 to 6), and the 4th, 6th are from third year (column 7 to 9).
-
-In general, we need to provide a list of 2 indices (from the data), and also provide the 2 meshes to the 2 underlying models separately (e.g. time and space).
-
-Next we will see a useful AR(1) x Matern 2d example.
 
 ## A AR(1) x Matern 2d example
 
-Now let's turn to simualte and estimate the tensor-product model.
+Now let's turn to simulate and estimate this type of model.
 
 ```{r ar-matern, cache=TRUE}
 ##############################  simulation
-set.seed(16)
 mesh2d <- fmesher::fm_mesh_2d(
   loc.domain = cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5),
   max.edge = c(1, 10),
@@ -80,8 +91,8 @@ mesh2d <- fmesher::fm_mesh_2d(
 mesh2d$n
 
 # generate random loc for each year
-n_obs <- c(102, 85, 120, 105, 109) # observation for each year
-year <- rep(2001:2005, times = n_obs)
+n_obs <- c(102, 85, 120, 105, 109, 100) # observation for each year
+year <- rep(2001:2006, times = n_obs)
 
 # 2d coordinate
 x <- runif(sum(n_obs)) * 10;
@@ -115,16 +126,48 @@ ngme_fit <- ngme(
   data = df,
   family = "normal",
   control_opt = control_opt(
-    iterations = 300,
+    iterations = 2000,
     n_parallel_chain = 4,
-    max_absolute_step = 0.5,
-    preconditioner = "full"
+    verbose = TRUE,
+    rao_blackwellization = TRUE,
+    preconditioner = "fast"
   ),
   debug = FALSE
 )
 
 ngme_fit
-# see the trajectory of estimation
-# traceplot(ngme_fit, "tp")
+```
+
+To see the results of estimation, we can use `traceplot` function.
+
+```{r}
+traceplot(ngme_fit, "tp")
+# compare noise density
+plot(noise_nig(mu=-2, sigma=1, nu=2), ngme_result(ngme_fit, "tp")$noise)
 # traceplot(ngme_fit)
 ```
+
+
+## Doing prediction
+
+Next we will show how to do prediction at unknown year and location.
+
+```{r}
+# new predict location
+n_new <- 10
+# generate time randomly of length n
+time_new <- sample(2001:2004, n_new, replace = TRUE)
+# generate 2d location randomly of length n
+loc_new <- cbind(runif(n_new), runif(n_new)) * 10
+
+# For the tp model (model name we give), we need two arguments to do the prediction.
+predict(ngme_fit, map=list(tp=list(
+  year=time_new,
+  pos=loc_new
+)))
+```
+
+
+## References
+
+* Cameletti, M., Lindgren, F., Simpson, D., & Rue, H. (2013). Spatio-temporal modeling of particulate matter concentration through the SPDE approach. AStA Advances in Statistical Analysis, 97(2), 109-131. https://doi.org/10.1007/s10182-012-0196-3

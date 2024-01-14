@@ -25,6 +25,9 @@
     <loc>https://davidbolin.github.io/ngme2/articles/inla_compare.html</loc>
   </url>
   <url>
+    <loc>https://davidbolin.github.io/ngme2/articles/matern-on-graph.html</loc>
+  </url>
+  <url>
     <loc>https://davidbolin.github.io/ngme2/articles/ngme2.html</loc>
   </url>
   <url>
@@ -113,6 +116,9 @@
   </url>
   <url>
     <loc>https://davidbolin.github.io/ngme2/reference/ngme_as_sparse.html</loc>
+  </url>
+  <url>
+    <loc>https://davidbolin.github.io/ngme2/reference/ngme_make_mesh_repls.html</loc>
   </url>
   <url>
     <loc>https://davidbolin.github.io/ngme2/reference/ngme_model_types.html</loc>

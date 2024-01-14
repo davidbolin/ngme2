@@ -82,6 +82,9 @@
     <li>
       <a href="../articles/tensor_product.html">Space-time (tensor product) model in Ngme2</a>
     </li>
+    <li>
+      <a href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a>
+    </li>
   </ul>
 </li>
 <li>
@@ -158,12 +161,6 @@ an AR(1) model.</p>
 <p>Suppose one has a response variable with <span class="math inline">\(2n\)</span> observations</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://davidbolin.github.io/ngme2/">ngme2</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; The legacy packages maptools, rgdal, and rgeos, underpinning the sp package,</span></span>
-<span><span class="co">#&gt; which was just loaded, were retired in October 2023.</span></span>
-<span><span class="co">#&gt; Please refer to R-spatial evolution reports for details, especially</span></span>
-<span><span class="co">#&gt; https://r-spatial.org/r/2023/05/15/evolution4.html.</span></span>
-<span><span class="co">#&gt; It may be desirable to make the sf package available;</span></span>
-<span><span class="co">#&gt; package maintainers should consider adding sf to Suggests:.</span></span>
 <span><span class="co">#&gt; This is ngme2 of version 0.5.0</span></span>
 <span><span class="co">#&gt; - See our homepage: https://davidbolin.github.io/ngme2 for more details.</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
@@ -244,22 +241,22 @@ process dissapears by looking at the <span class="math inline">\(\mathbf{K}_{4, 
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt; (Intercept) </span></span>
-<span><span class="co">#&gt;          -3 </span></span>
+<span><span class="co">#&gt;       -3.12 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $field1</span></span>
 <span><span class="co">#&gt;   Model type: AR(1)</span></span>
-<span><span class="co">#&gt;       rho = 0.732</span></span>
+<span><span class="co">#&gt;       rho = 0.767</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = 0.0187</span></span>
-<span><span class="co">#&gt;       sigma = 0.928</span></span>
-<span><span class="co">#&gt;       nu = 0.987</span></span>
+<span><span class="co">#&gt;       mu = -0.00642</span></span>
+<span><span class="co">#&gt;       sigma = 1.05</span></span>
+<span><span class="co">#&gt;       nu = 0.902</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.347</span></span>
+<span><span class="co">#&gt;       sigma = 0.176</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  2</span></span></code></pre></div>
@@ -335,12 +332,12 @@ locations where the feature is unknown.</p>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $spde</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
-<span><span class="co">#&gt;       kappa = 1</span></span>
+<span><span class="co">#&gt;       kappa = 0.941</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = 0.13</span></span>
-<span><span class="co">#&gt;       sigma = 0.933</span></span>
-<span><span class="co">#&gt;       nu = 0.975</span></span>
+<span><span class="co">#&gt;       mu = -0.0837</span></span>
+<span><span class="co">#&gt;       sigma = 0.877</span></span>
+<span><span class="co">#&gt;       nu = 1.15</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>

@@ -82,6 +82,9 @@
     <li>
       <a href="../articles/tensor_product.html">Space-time (tensor product) model in Ngme2</a>
     </li>
+    <li>
+      <a href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a>
+    </li>
   </ul>
 </li>
 <li>
@@ -584,21 +587,21 @@ values of <span class="math inline">\(E[\mathbf{w} | \mathbf{V},
 <code class="sourceCode R"><span><span class="va">V</span></span>
 <span><span class="co">#&gt; NULL</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">V_1</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] 0.03429509 0.07212826 0.05958902 0.05906838 0.05556012 0.07131941</span></span>
-<span><span class="co">#&gt;  [7] 0.06580771 0.06771194 0.06808522 0.03439098</span></span>
+<span><span class="co">#&gt;  [1] 0.02557809 0.07216393 0.06916989 0.07422464 0.07115670 0.06042754</span></span>
+<span><span class="co">#&gt;  [7] 0.06838335 0.06364336 0.05227373 0.02387668</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">V_2</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] 0.03765339 0.06906618 0.05847479 0.05381986 0.08348755 0.06786238</span></span>
-<span><span class="co">#&gt;  [7] 0.07181039 0.07060419 0.07375590 0.02755096</span></span>
+<span><span class="co">#&gt;  [1] 0.02755574 0.06923030 0.07840990 0.05478980 0.06450270 0.04482354</span></span>
+<span><span class="co">#&gt;  [7] 0.05280639 0.06773603 0.05776002 0.03017718</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="va">W</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  [1]  0.029313262  0.033848724  0.042621145  0.039104490  0.023632058</span></span>
 <span><span class="co">#&gt;  [6]  0.009599138 -0.014322323 -0.044418503 -0.056662155 -0.062715837</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">W_1</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] -0.3488109 -0.3484611 -0.3472973 -0.3460886 -0.3461163 -0.3454747</span></span>
-<span><span class="co">#&gt;  [7] -0.3454892 -0.3454591 -0.3460421 -0.3467054</span></span>
+<span><span class="co">#&gt;  [1] -0.3379065 -0.3367966 -0.3363771 -0.3347024 -0.3344666 -0.3367914</span></span>
+<span><span class="co">#&gt;  [7] -0.3383127 -0.3409753 -0.3429928 -0.3446039</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">W_2</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] -0.3388113 -0.3387965 -0.3387610 -0.3378254 -0.3366051 -0.3372755</span></span>
-<span><span class="co">#&gt;  [7] -0.3379622 -0.3394330 -0.3411612 -0.3430917</span></span></code></pre></div>
+<span><span class="co">#&gt;  [1] -0.3524809 -0.3515087 -0.3510214 -0.3519400 -0.3522814 -0.3540450</span></span>
+<span><span class="co">#&gt;  [7] -0.3552620 -0.3555416 -0.3567184 -0.3576754</span></span></code></pre></div>
 <p>Let us begin by building traceplots for <span class="math inline">\(V\)</span>:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">df_V</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">idx</span>, y <span class="op">=</span> <span class="va">V</span>, col <span class="op">=</span> <span class="va">chain</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>

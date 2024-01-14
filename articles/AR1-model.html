@@ -82,6 +82,9 @@
     <li>
       <a href="../articles/tensor_product.html">Space-time (tensor product) model in Ngme2</a>
     </li>
+    <li>
+      <a href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a>
+    </li>
   </ul>
 </li>
 <li>
@@ -146,7 +149,7 @@ X_i &amp;= \rho X_{i-1} + \epsilon_i, \; i = 2, \dots , n,
 \epsilon} = (\epsilon_1, \dots, \epsilon_n)\)</span>, and <span class="math display">\[
 K =
   \begin{bmatrix}
-    1 \\
+    \sqrt{1-\rho^2} \\
     -\rho &amp;  1 \\
     &amp; \ddots &amp; \ddots \\
     &amp; &amp; -\rho &amp;  1
@@ -162,12 +165,6 @@ mesh (it can have gaps). In the following example, we generate mesh from
 2001 to 2007 (7 nodes).</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://davidbolin.github.io/ngme2/">ngme2</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; The legacy packages maptools, rgdal, and rgeos, underpinning the sp package,</span></span>
-<span><span class="co">#&gt; which was just loaded, were retired in October 2023.</span></span>
-<span><span class="co">#&gt; Please refer to R-spatial evolution reports for details, especially</span></span>
-<span><span class="co">#&gt; https://r-spatial.org/r/2023/05/15/evolution4.html.</span></span>
-<span><span class="co">#&gt; It may be desirable to make the sf package available;</span></span>
-<span><span class="co">#&gt; package maintainers should consider adding sf to Suggests:.</span></span>
 <span><span class="co">#&gt; This is ngme2 of version 0.5.0</span></span>
 <span><span class="co">#&gt; - See our homepage: https://davidbolin.github.io/ngme2 for more details.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">16</span><span class="op">)</span></span>

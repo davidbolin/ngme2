@@ -64,6 +64,9 @@
     <li>
       <a href="../articles/tensor_product.html">Space-time (tensor product) model in Ngme2</a>
     </li>
+    <li>
+      <a href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a>
+    </li>
   </ul></li>
 <li>
   <a href="../news/index.html">Changelog</a>
@@ -103,7 +106,7 @@
 <span>  <span class="va">model</span>,</span>
 <span>  <span class="va">n_obs_per_rep</span>,</span>
 <span>  n_replicate <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>  control_opt <span class="op">=</span> <span class="fu"><a href="control_opt.html">control_opt</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  control_opt <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  numer_grad <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  f_noise <span class="op">=</span> <span class="fu"><a href="ngme_noise.html">noise_nig</a></span><span class="op">(</span>mu <span class="op">=</span> <span class="op">-</span><span class="fl">2</span>, sigma <span class="op">=</span> <span class="fl">1.5</span>, nu <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span>,</span>
 <span>  n_gibbs_samples <span class="op">=</span> <span class="fl">5</span>,</span>
@@ -134,8 +137,24 @@
 <dd><p>number of replicate</p></dd>
 
 
+<dt>control_opt</dt>
+<dd><p>control options for optimization, see <code><a href="control_opt.html">control_opt</a></code></p></dd>
+
+
 <dt>numer_grad</dt>
 <dd><p>numerical gradient</p></dd>
+
+
+<dt>f_noise</dt>
+<dd><p>noise function</p></dd>
+
+
+<dt>n_gibbs_samples</dt>
+<dd><p>number of gibbs samples</p></dd>
+
+
+<dt>family</dt>
+<dd><p>family of noise</p></dd>
 
 
 <dt>max.n</dt>
@@ -150,29 +169,28 @@
 <dd><p>debug mode for latent process</p></dd>
 
 
-<dt>n_parallel_chain</dt>
-<dd><p>number of parallel chains</p></dd>
+<dt>start</dt>
+<dd><p>start value for optimization</p></dd>
 
 
-<dt>stop_points</dt>
-<dd><p>number of stop points for convergence check</p></dd>
+<dt>fix_theta_K</dt>
+<dd><p>fix theta_K</p></dd>
 
 
-<dt>preconditioner</dt>
-<dd><p>preconditioner, can be c("none", "fast", "full")
-"none" means no preconditioner, "fast" means precondition everything except for the parameter of K matrix (for speed reason), "full" means precondition everything</p></dd>
+<dt>fix_theta_mu</dt>
+<dd><p>fix theta_mu</p></dd>
 
 
-<dt>sampling_strategy</dt>
-<dd><p>subsampling method of replicates of model, c("all", "is")</p></dd>
+<dt>fix_theta_sigma</dt>
+<dd><p>fix theta_sigma</p></dd>
 
 
-<dt>precond_by_diff_chain</dt>
-<dd><p>logical, if TRUE, use different chains to estimate preconditioner (only computed at check points), if FALSE, use the same chain to estimate preconditioner (computed at each iteration)</p></dd>
+<dt>fix_nu</dt>
+<dd><p>fix nu</p></dd>
 
 
-<dt>compute_precond_each_iter</dt>
-<dd><p>logical, if TRUE, compute preconditioner at each iteration, if FALSE, only compute preconditioner at check points (if has only 1 chain running, it will be set TRUE)</p></dd>
+<dt>seed</dt>
+<dd><p>seed</p></dd>
 
 </dl></div>
 

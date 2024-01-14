@@ -8,12 +8,13 @@ articles:
   SPDE-model: SPDE-model.html
   bivariate: bivariate.html
   inla_compare: inla_compare.html
+  matern-on-graph: matern-on-graph.html
   ngme2: ngme2.html
   pred_and_est: pred_and_est.html
   random-effect: random-effect.html
   replicate: replicate.html
   tensor_product: tensor_product.html
-last_built: 2023-10-12T12:21Z
+last_built: 2024-01-14T12:12Z
 urls:
   reference: https://davidbolin.github.io/ngme2/reference
   article: https://davidbolin.github.io/ngme2/articles

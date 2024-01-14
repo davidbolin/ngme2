@@ -70,6 +70,9 @@ first into sub_groups (a list of target, and train data)"><!-- mathjax --><scrip
     <li>
       <a href="../articles/tensor_product.html">Space-time (tensor product) model in Ngme2</a>
     </li>
+    <li>
+      <a href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a>
+    </li>
   </ul></li>
 <li>
   <a href="../news/index.html">Changelog</a>
@@ -112,7 +115,7 @@ first into sub_groups (a list of target, and train data)</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">cross_validation</span><span class="op">(</span></span>
 <span>  <span class="va">ngme</span>,</span>
 <span>  type <span class="op">=</span> <span class="st">"k-fold"</span>,</span>
-<span>  seed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  print <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  N <span class="op">=</span> <span class="fl">100</span>,</span>
 <span>  k <span class="op">=</span> <span class="fl">5</span>,</span>
@@ -126,7 +129,7 @@ first into sub_groups (a list of target, and train data)</p>
     <div id="arguments">
     <h2>Arguments</h2>
     <dl><dt>ngme</dt>
-<dd><p>a ngme object</p></dd>
+<dd><p>a ngme object, or a list of ngme object (if comparing multiple models)</p></dd>
 
 
 <dt>type</dt>

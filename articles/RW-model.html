@@ -82,6 +82,9 @@
     <li>
       <a href="../articles/tensor_product.html">Space-time (tensor product) model in Ngme2</a>
     </li>
+    <li>
+      <a href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a>
+    </li>
   </ul>
 </li>
 <li>
@@ -246,12 +249,6 @@ K =
 model.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://davidbolin.github.io/ngme2/">ngme2</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; The legacy packages maptools, rgdal, and rgeos, underpinning the sp package,</span></span>
-<span><span class="co">#&gt; which was just loaded, were retired in October 2023.</span></span>
-<span><span class="co">#&gt; Please refer to R-spatial evolution reports for details, especially</span></span>
-<span><span class="co">#&gt; https://r-spatial.org/r/2023/05/15/evolution4.html.</span></span>
-<span><span class="co">#&gt; It may be desirable to make the sf package available;</span></span>
-<span><span class="co">#&gt; package maintainers should consider adding sf to Suggests:.</span></span>
 <span><span class="co">#&gt; This is ngme2 of version 0.5.0</span></span>
 <span><span class="co">#&gt; - See our homepage: https://davidbolin.github.io/ngme2 for more details.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">16</span><span class="op">)</span></span>
@@ -283,13 +280,13 @@ model.</p>
 into <code>simulate</code> function.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="va">m1</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] -0.4546134 -0.3934663 -0.7834841  0.5088361  1.1227278</span></span>
+<span><span class="co">#&gt; [1]  0.3110488  0.2658004 -0.1749570  0.1098060 -0.5116981</span></span>
 <span><span class="co">#&gt; attr(,"noise")</span></span>
 <span><span class="co">#&gt; Noise type: NORMAL</span></span>
 <span><span class="co">#&gt; Noise parameters: </span></span>
 <span><span class="co">#&gt;     sigma = 1</span></span>
 <span><span class="co">#&gt; attr(,"V")</span></span>
-<span><span class="co">#&gt; [1] 0.0100000 0.2984231 0.2733051 0.6073784 0.7235113</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 0.01000000 0.04591664 0.08563153 0.14053423 1.32128775</span></span></code></pre></div>
 </div>
   </div>
 

@@ -70,6 +70,9 @@ See ngme_model_types() for available models."><!-- mathjax --><script src="https
     <li>
       <a href="../articles/tensor_product.html">Space-time (tensor product) model in Ngme2</a>
     </li>
+    <li>
+      <a href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a>
+    </li>
   </ul></li>
 <li>
   <a href="../news/index.html">Changelog</a>
@@ -149,15 +152,15 @@ See <code><a href="ngme_model_types.html">ngme_model_types()</a></code> for avai
 
 
 <dt>group</dt>
-<dd><p>group factor, used for multivariate model</p></dd>
+<dd><p>factor, used for bivariate model, indicating which group the observation belongs to</p></dd>
 
 
 <dt>replicate</dt>
-<dd><p>integer factor, used for divide data into different replicates</p></dd>
+<dd><p>factor, used for divide data into different replicates</p></dd>
 
 
 <dt>start</dt>
-<dd><p>starting ngme object (usually object from last fitting)</p></dd>
+<dd><p>starting ngme object (usually object from last fit)</p></dd>
 
 
 <dt>debug</dt>

@@ -55,7 +55,7 @@ f <- function(
     # extract the map
     graph_data <- (tryCatch(mesh$get_data(), error=function(e) NULL))
     map <- if (is.null(graph_data)) NULL
-      else with(graph_data, cbind(`__edge_number`, `__distance_on_edge`))
+      else with(graph_data, cbind(`.edge_number`, `.distance_on_edge`))
   }
 
   map <- eval(substitute(map), envir = data, enclos = parent.frame())

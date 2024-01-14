@@ -31,7 +31,7 @@ predict.ngme <- function(
   seed = Sys.time(),
   ...
 ) {
-  fm <- attr(object, "fitting")$formula
+  fm <- attr(object, "fit")$formula
   ngme <- object$replicate[[1]]
   stopifnot(sampling_size > 0)
   samples_W <- sampling_cpp(ngme, n=sampling_size, posterior=TRUE, seed=seed)[["W"]]

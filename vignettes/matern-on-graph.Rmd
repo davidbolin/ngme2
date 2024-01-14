@@ -305,12 +305,12 @@ fit_repl <- ngme(
     iterations = 2000,
     num_threads = c(4, 5),
     # preconditioner = "full",
-    # rao_blackwellization = TRUE,
+    rao_blackwellization = TRUE,
     n_parallel_chain = 4,
-    verbose = TRUE,
+    # verbose = TRUE,
     seed = 1
   ),
-  replicate = "__group"
+  replicate = ".group"
 )
 fit_repl
 traceplot(fit_repl, "graph")

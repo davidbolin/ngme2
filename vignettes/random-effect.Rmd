@@ -81,8 +81,11 @@ First we fit the model using lme4 package, next we fit the model using ngme2.
 ```{r lme4, eval=TRUE, cache=TRUE, message=FALSE, warning=FALSE}
 # fit with lme4
 library(lme4)
-lmer(Y ~ 0 + x2+ x1 + (z1 | repl),
-  data=data.frame(Y=Y, x1=x1, z1=z1, repl=repl))
+# lme4 has some problems with the latest version of Matrix
+if (packageVersion("Matrix") < "1.6.2") {
+  lmer(Y ~ 0 + x2+ x1 + (z1 | repl),
+    data=data.frame(Y=Y, x1=x1, z1=z1, repl=repl))
+}
 
 out <- ngme(
   formula = Y ~ 0 + x2 + x1 +

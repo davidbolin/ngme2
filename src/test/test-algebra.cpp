@@ -32,9 +32,9 @@ context("Test generating MVN") {
     VectorXd mu (4);
     mu << 1,1,1,1;
 
-    std::cout << m1;
+    // std::cout << m1;
     solver.analyze(m1);
-    std::cout << solver.rMVN(mu, mu);
+    // std::cout << solver.rMVN(mu, mu);
   }
 }
 

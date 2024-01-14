@@ -65,7 +65,7 @@ BlockModel::BlockModel(
     // reduce_power  =  Rcpp::as<double> (control_ngme["reduce_power"]);
     // threshold   =  Rcpp::as<double> (control_ngme["threshold"]);
 
-if (debug) std::cout << "Begin Block Constructor" << std::endl;
+// if (debug) std::cout << "Begin Block Constructor" << std::endl;
 
   // 2. Init Fixed effects
   fix_flag[block_fix_beta]   = Rcpp::as<bool>        (control_ngme["fix_feff"]);
@@ -83,14 +83,14 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
     latents.push_back(std::make_shared<Latent>(latent_in, latent_seed));
   }
 
-if (debug) std::cout << "before set block A" << std::endl;
+// if (debug) std::cout << "before set block A" << std::endl;
   /* Init A */
   int n = 0;
   for (std::vector<std::shared_ptr<Latent>>::iterator it = latents.begin(); it != latents.end(); it++) {
     setSparseBlock(&A, 0, n, (*it)->getA());
     n += (*it)->get_W_size();
   }
-if (debug) std::cout << "After set block K" << std::endl;
+// if (debug) std::cout << "After set block K" << std::endl;
 
   // 5. Init measurement noise (consider corr_measure)
   Rcpp::List noise_in   = block_model["noise"];
@@ -161,7 +161,7 @@ if (debug) std::cout << "After set block K" << std::endl;
 // std::cout << "Q_eps: \n" << Q_eps << std::endl;
     }
 
-if (debug) std::cout << "After block construct noise" << std::endl;
+// if (debug) std::cout << "After block construct noise" << std::endl;
 
   // 6. Fix V and init V
   if (noise_in.containsElementNamed("V") && !Rf_isNull(noise_in["V"])) {
@@ -171,7 +171,7 @@ if (debug) std::cout << "After block construct noise" << std::endl;
 
   // 7. Init solvers
   assemble();
-if (debug) std::cout << "After assemble" << std::endl;
+// if (debug) std::cout << "After assemble" << std::endl;
 
   if (n_latent > 0) {
     VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
@@ -190,14 +190,14 @@ if (debug) std::cout << "After assemble" << std::endl;
     chol_QQ.analyze(QQ);
     LU_K.analyzePattern(K);
   }
-if (debug) std::cout << "After init solver " << std::endl;
+// if (debug) std::cout << "After init solver " << std::endl;
 
   // 8. optimizer related
   // stepsizes = VectorXd::Constant(n_params, stepsize);
   steps_to_threshold = VectorXd::Constant(n_params, 0);
   indicate_threshold = VectorXd::Constant(n_params, 0);
 
-if (debug) std::cout << "After init solver && before sampleW_V" << std::endl;
+// if (debug) std::cout << "After init solver && before sampleW_V" << std::endl;
 
   if (n_latent > 0 && init_sample_W) {
     sampleW_V();
@@ -215,7 +215,7 @@ if (debug) std::cout << "After init solver && before sampleW_V" << std::endl;
       }
     }
   }
-if (debug) std::cout << "End Block Constructor" << std::endl;
+// if (debug) std::cout << "End Block Constructor" << std::endl;
 }
 
   void BlockModel::burn_in(int iterations) {
@@ -312,13 +312,13 @@ void BlockModel::sampleW_VY(bool burn_in) {
 
 // std::cout << "size of W and time of sampling is " << W.size() << " " << time << std::endl;
 
-if (debug) std::cout << "Finish sampling W" << std::endl;
+// if (debug) std::cout << "Finish sampling W" << std::endl;
 }
 
 // ---------------- get, set update gradient ------------------
 // order is Latent, merr, feff
 VectorXd BlockModel::get_parameter() {
-if (debug) std::cout << "Start get_parameter"<< std::endl;
+// if (debug) std::cout << "Start get_parameter"<< std::endl;
     VectorXd thetas (n_params);
     int pos = 0;
     for (std::vector<std::shared_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
@@ -332,13 +332,13 @@ if (debug) std::cout << "Start get_parameter"<< std::endl;
       thetas.segment(n_la_params + n_merr, n_feff) = beta;
     }
 
-if (debug) std::cout << "Finish get_parameter"<< std::endl;
+// if (debug) std::cout << "Finish get_parameter"<< std::endl;
     return thetas;
 }
 
 // avg over gibbs samples
 VectorXd BlockModel::grad() {
-if (debug) std::cout << "Start block gradient"<< std::endl;
+// if (debug) std::cout << "Start block gradient"<< std::endl;
 long long time_compute_g = 0;
 long long time_sample_w = 0;
 // auto timer_computeg = std::chrono::steady_clock::now();
@@ -397,17 +397,17 @@ long long time_sample_w = 0;
   // EXAMINE the gradient to change the stepsize
   if (reduce_var) examine_gradient();
 
-if (debug) {
-  std::cout << "avg time for compute grad (ms): " << time_compute_g / n_gibbs << std::endl;
-  std::cout << "avg time for sampling W(ms): " << time_sample_w / n_gibbs << std::endl;
-  std::cout << "Finish block gradient"<< std::endl;
-}
+// if (debug) {
+//   std::cout << "avg time for compute grad (ms): " << time_compute_g / n_gibbs << std::endl;
+//   std::cout << "avg time for sampling W(ms): " << time_sample_w / n_gibbs << std::endl;
+//   std::cout << "Finish block gradient"<< std::endl;
+// }
 
   return avg_gradient;
 }
 
 void BlockModel::set_parameter(const VectorXd& Theta) {
-if (debug) std::cout << "Start set_parameter"<< std::endl;
+// if (debug) std::cout << "Start set_parameter"<< std::endl;
 // std::chrono::steady_clock::time_point startTime, endTime; startTime = std::chrono::steady_clock::now();
   int pos = 0;
   for (std::vector<std::shared_ptr<Latent>>::iterator it = latents.begin(); it != latents.end(); it++) {
@@ -738,7 +738,7 @@ void BlockModel::examine_gradient() {
 }
 
 MatrixXd BlockModel::precond(int strategy, double eps) {
-if (debug) std::cout << "start precond"<< std::endl;
+// if (debug) std::cout << "start precond"<< std::endl;
   MatrixXd precond = MatrixXd::Zero(n_params, n_params);
 
   // 1. Preconditioner for Latents
@@ -759,7 +759,7 @@ if (debug) std::cout << "start precond"<< std::endl;
     }
     index_params += n_la;
   }
-if (debug) std::cout << "after latents precond"<< std::endl;
+// if (debug) std::cout << "after latents precond"<< std::endl;
 
   // 2. Preconditioner for fixed effects and measurement error
   if (strategy == 0) {
@@ -884,7 +884,7 @@ double BlockModel::logd_no_latent(const VectorXd& v) {
 }
 
 void BlockModel::compute_rb_trace() {
-if (debug) std::cout << "start compute trace" << std::endl;
+// if (debug) std::cout << "start compute trace" << std::endl;
   int n = 0;
   VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
   for (int i=0; i < n_latent; i++) {
@@ -918,7 +918,7 @@ if (debug) std::cout << "start compute trace" << std::endl;
     SparseMatrix<double> T = A.transpose() * B_sigma.col(j).cwiseQuotient(noise_SV).asDiagonal() * A;
     rb_trace_noise_sigma[j] = chol_QQ.trace_num(T);
   }
-if (debug) std::cout << "after compute trace" << std::endl;
+// if (debug) std::cout << "after compute trace" << std::endl;
 }
 
 void BlockModel::assemble_dK() {
@@ -983,6 +983,6 @@ void BlockModel::test_in_the_end() {
       cond_W_term[j] += (block_dK[0][j].transpose() * get_cond_W()).cwiseProduct(inv_SV).dot(K * get_cond_W());
     }
 
-    std::cout << "diff at iter " << s << " = " << second_term/(s+1) - rb_trace_K - cond_W_term/(s+1) << std::endl;
+    // std::cout << "diff at iter " << s << " = " << second_term/(s+1) - rb_trace_K - cond_W_term/(s+1) << std::endl;
   }
 }

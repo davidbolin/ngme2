@@ -79,7 +79,7 @@ void Ngme::burn_in(int iterations) {
 
 VectorXd Ngme::get_parameter() {
   VectorXd p = ngme_repls[0]->get_parameter();
-if (debug) std::cout << "p in get_parameter() in ngme class = " << p << std::endl;
+// if (debug) std::cout << "p in get_parameter() in ngme class = " << p << std::endl;
   return p;
 }
 
@@ -92,5 +92,5 @@ void Ngme::set_parameter(const VectorXd& p) {
   }
 
   // set the different parameter for each random effect
-  if (debug) std::cout << "set_parameter() in ngme class" << std::endl;
+  // if (debug) std::cout << "set_parameter() in ngme class" << std::endl;
 }

@@ -42,7 +42,7 @@ Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
     a_vec         (V_size),
     b_vec         (V_size)
 {
-if (debug) std::cout << "begin constructor of latent" << std::endl;
+// if (debug) std::cout << "begin constructor of latent" << std::endl;
     assert(W_size == V_size);
     // read the control variable
     Rcpp::List control_f = Rcpp::as<Rcpp::List> (model_list["control"]);
@@ -148,7 +148,7 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
     if (fix_flag[latent_fix_nu]) fix_parameters.segment(n_theta_K+n_theta_mu+n_theta_sigma, n_nu).setOnes();
 
 // std::cout << "fix param=" << fix_parameters << std::endl;
-if (debug) std::cout << "End constructor of latent" << std::endl;
+// if (debug) std::cout << "End constructor of latent" << std::endl;
 }
 
 VectorXd Latent::grad_theta_mu(bool rao_blackwell) {
@@ -310,7 +310,7 @@ Rcpp::List Latent::output() const {
 }
 
 const VectorXd Latent::get_parameter() {
-if (debug) std::cout << "Start latent get parameter"<< std::endl;
+// if (debug) std::cout << "Start latent get parameter"<< std::endl;
     VectorXd parameter = VectorXd::Zero(n_params);
 
     parameter.segment(0, n_theta_K)                         = theta_K;
@@ -320,17 +320,17 @@ if (debug) std::cout << "Start latent get parameter"<< std::endl;
     if (noise_type[0] == "normal_nig")
         parameter.segment(n_theta_K+n_theta_mu+n_theta_sigma+n_nu, n_theta_sigma_normal) = theta_sigma_normal;
 // if (debug) std::cout << "End latent get parameter"<< std::endl;
-if (debug) {
-    if (std::isnan(parameter(0))||std::isnan(-parameter(0)))
-        throw std::runtime_error("isnan");
-    std::cout << "parameter= " << parameter << std::endl;
-}
+// if (debug) {
+//     if (std::isnan(parameter(0))||std::isnan(-parameter(0)))
+//         throw std::runtime_error("isnan");
+//     std::cout << "parameter= " << parameter << std::endl;
+// }
 
     return parameter;
 }
 
 const VectorXd Latent::get_grad(bool rao_blackwell) {
-if (debug) std::cout << "Start latent get grad"<< std::endl;
+// if (debug) std::cout << "Start latent get grad"<< std::endl;
     VectorXd grad = VectorXd::Zero(n_params);
 
     // compute gradient of each parameter
@@ -341,7 +341,7 @@ if (debug) std::cout << "Start latent get grad"<< std::endl;
     if (noise_type[0] == "normal_nig")
         grad.segment(n_theta_K+n_theta_mu+n_theta_sigma+n_nu, n_theta_sigma_normal) = grad_theta_sigma_normal(rao_blackwell);
 
-if (debug) std::cout << "finish latent gradient"<< std::endl;
+// if (debug) std::cout << "finish latent gradient"<< std::endl;
     return grad;
 }
 

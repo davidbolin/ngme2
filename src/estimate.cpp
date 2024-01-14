@@ -173,7 +173,7 @@ auto timer = std::chrono::steady_clock::now();
         trajs_chains.push_back(opt_vec[i].get_trajs());
     }
     if (all_converge)
-        std::cout << "Reach convergence in " << steps << " iterations." << std::endl;
+        Rcpp::Rcout << "Reach convergence in " << steps << " iterations." << std::endl;
 
 #else // No parallel chain
     Ngme ngme (R_ngme, rng(), sampling_strategy);
@@ -190,8 +190,8 @@ auto timer = std::chrono::steady_clock::now();
     trajs_chains.push_back(opt.get_trajs());
 #endif
 
-std::cout << "Estimation ends." << std::endl;
-std::cout << "Total time of the estimation is (s): " << since(timer).count() / 1000 << std::endl;
+Rcpp::Rcout << "Estimation ends." << std::endl;
+Rcpp::Rcout << "Total time of the estimation is (s): " << since(timer).count() / 1000 << std::endl;
 
     outputs.attr("opt_traj") = trajs_chains;
     return outputs;
@@ -282,10 +282,10 @@ std::vector<bool> check_conv(
 // std::cout << "beta here = " << Q << std::endl;
     }
 
-    if (print_check_info) std::cout << "stop " << curr_batch+1 << ": \n"
-        // << par_string << "\n"
-        << std_line << "\n"
-        << trend_line << "\n\n";
+    // if (print_check_info) std::cout << "stop " << curr_batch+1 << ": \n"
+    //     // << par_string << "\n"
+    //     << std_line << "\n"
+    //     << trend_line << "\n\n";
     return conv;
 }
 

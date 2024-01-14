@@ -108,11 +108,12 @@ VectorXd Ngme_optimizer::sgd(
 
         x = x - pow(tmp, reduce_power) * one_step;
 
-if (verbose) {
-std::cout << "one step = " << one_step << std::endl;
-std::cout << "iteration = : " << curr_iter+1 << std::endl;
-std::cout << "parameter = : " << x << std::endl;
-}
+// watch-out
+// if (verbose) {
+// Rcpp::Rcout << "one step = " << one_step << std::endl;
+// Rcpp::Rcout << "iteration = : " << curr_iter+1 << std::endl;
+// Rcpp::Rcout << "parameter = : " << x << std::endl;
+// }
 
         model->set_parameter(x);
         curr_iter += 1;

@@ -225,7 +225,7 @@ double lu_solver::trace(const Eigen::SparseMatrix<double, 0, int> &M)
 
 double lu_solver::trace2(const SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &g)
 {
-  std::cout << "lu_solver::trace2 not implemented\n";
+  // std::cout << "lu_solver::trace2 not implemented\n";
   throw;
 }
 
@@ -263,8 +263,8 @@ void lu_sparse_solver::compute(
 
   if (K.rows() != n)
   {
-    std::cout << "incorrect matrix size: n= " << n;
-    std::cout << ", K = " << K.rows() << " * " << K.cols() << std::endl;
+    // std::cout << "incorrect matrix size: n= " << n;
+    // std::cout << ", K = " << K.rows() << " * " << K.cols() << std::endl;
   }
 
   LU_K.factorize(K);
@@ -283,8 +283,8 @@ void lu_sparse_solver::compute_KTK(const SparseMatrix<double, 0, int> &K_in)
 
   if (K.rows() != n)
   {
-    std::cout << "incorrect matrix size: n= " << n;
-    std::cout << ", K = " << K.rows() << " * " << K.cols() << std::endl;
+    // std::cout << "incorrect matrix size: n= " << n;
+    // std::cout << ", K = " << K.rows() << " * " << K.cols() << std::endl;
   }
 
   L_KKt.factorize(K.transpose() * K);
@@ -300,8 +300,8 @@ void lu_sparse_solver::compute_LU(const SparseMatrix<double, 0, int> &K_in)
 
   if (K.rows() != n)
   {
-    std::cout << "incorrect matrix size: n= " << n;
-    std::cout << ", K = " << K.rows() << " * " << K.cols() << std::endl;
+    // std::cout << "incorrect matrix size: n= " << n;
+    // std::cout << ", K = " << K.rows() << " * " << K.cols() << std::endl;
   }
 
   LU_K.factorize(K);
@@ -313,14 +313,14 @@ void lu_sparse_solver::compute_LU(const SparseMatrix<double, 0, int> &K_in)
 double lu_sparse_solver::trace(const MatrixXd &M)
 {
 
-  std::cout << "lu_sparse_solver::trace for dense matrix M not implimented\n";
+  // std::cout << "lu_sparse_solver::trace for dense matrix M not implimented\n";
   throw;
   return 0;
 }
 
 double lu_sparse_solver::trace0(SparseMatrix<double, 0, int> &M)
 {
-  std::cout << "lu_sparse_solver0 not implemented";
+  // std::cout << "lu_sparse_solver0 not implemented";
   throw;
   return 0;
 }
@@ -366,7 +366,7 @@ double lu_sparse_solver::trace_num(const SparseMatrix<double, 0, int> &M)
 
 double lu_sparse_solver::trace2(const SparseMatrix<double, 0, int> &M1, SparseMatrix<double, 0, int> &M2)
 {
-  std::cout << "lu_sparse_solver::trace2 not implimented\n";
+  // std::cout << "lu_sparse_solver::trace2 not implimented\n";
   throw;
   return 0;
 }

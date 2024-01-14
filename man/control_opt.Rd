@@ -100,7 +100,7 @@ Suggestion (num_parallel_chain, num_total_replicates)}
 
 \item{sgd_method}{currently support c("vanilla", "momentum")}
 
-\item{sgd_parameter}{for momentum, provide c(beta1, beta2), in each iteration, the step is computed as m = bet1 * m (previous turn) + beta2 * gradient}
+\item{sgd_parameters}{for momentum, provide c(beta1, beta2), in each iteration, the step is computed as m = bet1 * m (previous turn) + beta2 * gradient}
 }
 \value{
 list of control variables

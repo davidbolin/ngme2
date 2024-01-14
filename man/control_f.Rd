@@ -12,8 +12,6 @@ control_f(numer_grad = TRUE, use_num_hess = TRUE, eps = 0.001)
 \item{use_num_hess}{whether to use numerical hessian}
 
 \item{eps}{eps for computing numerical gradient}
-
-\item{use_precond}{whether to use preconditioner}
 }
 \value{
 list of control variables

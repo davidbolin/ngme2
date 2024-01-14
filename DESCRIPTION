@@ -3,12 +3,12 @@ Type: Package
 Title: Latent Mixed Effects Models With Flexible Distributions
 Version: 0.5.0
 Authors@R: c(
-    person("David", "Bolin", email = "davidbolin@gmail.com", role = c("aut", "cre")),
+    person("David", "Bolin", email = "davidbolin@gmail.com", role = c("aut", "cre", "cph")),
     person("Xiaotian", "Jin", email = "jin.xiaotian.kim@gmail.com", role = "aut"),
     person("Alexandre", "Simas", email = "alexandre.impa@gmail.com", role = "aut"),
     person("Jonas", "Wallin", email = "jonas.wallin81@gmail.com", role = "aut"))
 Maintainer: David Bolin <davidbolin@gmail.com>
-Description: Inference and prediction for mixed effects models with flexible non-Gaussian and Gaussian distributions.
+Description: Inference and prediction for linear mixed effects models with flexible non-Gaussian and Gaussian distributions.
 License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true
@@ -50,4 +50,4 @@ RoxygenNote: 7.2.3
 Config/testthat/edition: 3
 URL: https://davidbolin.github.io/ngme2/
 Depends:
-    R (>= 2.10)
+    R (>= 3.50)

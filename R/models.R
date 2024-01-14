@@ -205,7 +205,8 @@ ou <- function(
     h           = h,
     symmetric   = FALSE,
     zero_trace  = TRUE,
-    param_name  = paste("theta_K", seq_len(length(theta_K)), sep = "")
+    param_name  = paste("theta_K", seq_len(length(theta_K)), sep = ""),
+    param_trans = rep(list(identity), length(theta_K))
   )
 }
 

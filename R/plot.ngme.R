@@ -218,6 +218,7 @@ compare_traceplot <- function(l1, l2) {
   n_iter = length(l1[[1]])
 
   for (i in seq_len(n_plots)) {
+    c1 <- c2 <- NULL
     df <- data.frame(c1 = l1[[i]], c2 = l2[[i]], title=names(l1)[[i]])
     ps[[i]] <- ggplot(data=df) +
       geom_line(aes(x=1:n_iter, y=c1), col="1") +

@@ -116,7 +116,7 @@ test_that("iid x ar case", {
     ),
     data = data.frame(Y=Y),
     control_opt = control_opt(
-      iterations = 5
+      iterations = 10
     )
   )
 

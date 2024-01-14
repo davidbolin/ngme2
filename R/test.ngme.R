@@ -5,17 +5,20 @@
 #' @param model model name
 #' @param n_obs_per_rep number of observation per replicate
 #' @param n_replicate number of replicate
-#' @param n_parallel_chain number of parallel chains
-#' @param stop_points     number of stop points for convergence check
 #' @param numer_grad numerical gradient
-#' @param preconditioner  preconditioner, can be c("none", "fast", "full")
-#' "none" means no preconditioner, "fast" means precondition everything except for the parameter of K matrix (for speed reason), "full" means precondition everything
-#' @param sampling_strategy subsampling method of replicates of model, c("all", "is")
-#' @param precond_by_diff_chain logical, if TRUE, use different chains to estimate preconditioner (only computed at check points), if FALSE, use the same chain to estimate preconditioner (computed at each iteration)
-#' @param compute_precond_each_iter logical, if TRUE, compute preconditioner at each iteration, if FALSE, only compute preconditioner at check points (if has only 1 chain running, it will be set TRUE)
 #' @param max.n maximum number for building mesh
 #' @param debug debug mode
 #' @param debug_f debug mode for latent process
+#' @param f_noise noise function
+#' @param n_gibbs_samples number of gibbs samples
+#' @param family family of noise
+#' @param seed seed
+#' @param start start value for optimization
+#' @param fix_theta_K fix theta_K
+#' @param fix_theta_mu fix theta_mu
+#' @param fix_theta_sigma fix theta_sigma
+#' @param fix_nu fix nu
+#' @param control_opt control options for optimization, see \code{\link{control_opt}}
 #' @export
 test_ngme <- function(
   model,
@@ -118,7 +121,7 @@ print(paste("nodes of mesh = ", mesh$n))
       list(Y=Y, idx=idx, group=rep(1, n_obs_per_rep))
     },
     "matern" = {
-      loc <- cbind(runif(n_obs_per_rep, 0, 10), runif(n_obs_per_rep, 0, 5))
+      loc <- cbind(stats::runif(n_obs_per_rep, 0, 10), stats::runif(n_obs_per_rep, 0, 5))
       matern_model <- f(
         map = loc,
         model="matern",
@@ -142,7 +145,7 @@ print(paste("nodes of mesh = ", mesh$n))
     "ar1+matern" = {
       idx <- 1:n_obs_per_rep
       ar1_model <- f(idx, model="ar1", rho = 0.5,noise = f_noise)
-      loc <- cbind(runif(n_obs_per_rep, 0, 10), runif(n_obs_per_rep, 0, 5))
+      loc <- cbind(stats::runif(n_obs_per_rep, 0, 10), stats::runif(n_obs_per_rep, 0, 5))
       matern_model <- f(
         map = loc, model="matern",
         theta_K = log(4), mesh = mesh,
@@ -177,7 +180,7 @@ print(paste("nodes of mesh = ", mesh$n))
     "bvmatern" = {
       group_per_rep <- c(rep("first", n_obs_per_rep/2), rep("second", n_obs_per_rep/2))
       idx_per_rep <- c(1:(n_obs_per_rep/2), 1:(n_obs_per_rep/2))
-      loc <- cbind(runif(n_obs_per_rep/2, 0, 10), runif(n_obs_per_rep/2, 0, 5))
+      loc <- cbind(stats::runif(n_obs_per_rep/2, 0, 10), stats::runif(n_obs_per_rep/2, 0, 5))
       loc <- rbind(loc, loc)
       true_model <- f(
         loc,
@@ -223,7 +226,7 @@ print(paste("nodes of mesh = ", mesh$n))
       obs.loc <- NULL
       for(i in 1:graph$nE) {
         obs.loc <- rbind(obs.loc,
-                        cbind(rep(i,obs.per.edge), runif(obs.per.edge)))
+                        cbind(rep(i,obs.per.edge), stats::runif(obs.per.edge)))
       }
       A <- graph$fem_basis(obs.loc)
       Y <- as.numeric(A %*% W) + mn_noise

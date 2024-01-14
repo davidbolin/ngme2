@@ -1,13 +1,13 @@
 Package: ngme2
 Type: Package
-Title: Latent Mixed Effects Models With Flexible Distributions
+Title: Latent Mixed Effects Models with Flexible Distributions
 Version: 0.5.0
 Authors@R: c(
-    person("David", "Bolin", email = "davidbolin@gmail.com", role = c("aut", "cre", "cph")),
-    person("Xiaotian", "Jin", email = "jin.xiaotian.kim@gmail.com", role = "aut"),
+    person("David", "Bolin", email = "davidbolin@gmail.com", role = c("aut", "cph")),
+    person("Xiaotian", "Jin", email = "xiaotian.jin@kaust.edu.sa", role =c("aut", "cre")),
     person("Alexandre", "Simas", email = "alexandre.impa@gmail.com", role = "aut"),
     person("Jonas", "Wallin", email = "jonas.wallin81@gmail.com", role = "aut"))
-Maintainer: David Bolin <davidbolin@gmail.com>
+Maintainer: Xiaotian Jin <xiaotian.jin@kaust.edu.sa>
 Description: Inference and prediction for linear mixed effects models with flexible non-Gaussian and Gaussian distributions.
 License: GPL (>= 2)
 Encoding: UTF-8

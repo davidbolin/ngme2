@@ -43,7 +43,6 @@ Here the mesh of the model will be ordered according to the order of the time in
 
 ```{r setup, message=FALSE, warning=FALSE}
 set.seed(16)
-library(INLA)
 library(ngme2)
 
 n <- 10

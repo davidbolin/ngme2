@@ -177,7 +177,6 @@ test_that("test Matern", {
 
 ##################################################
 test_that("test 1d matern with numerical g", {
-  library(INLA)
   n_mesh <- 800
   mesh <- fmesher::fm_mesh_1d(runif(n_mesh) * 800)
 

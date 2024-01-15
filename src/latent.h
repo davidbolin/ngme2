@@ -82,7 +82,7 @@ protected:
     int n_theta_mu, n_theta_sigma, n_nu, n_theta_sigma_normal;
 
     // for numerical gradient.
-    VectorXd W, prevW, V, prevV, cond_W;
+    VectorXd W, prevW, cond_W, V, prevV;
     SparseMatrix<double,0,int> A;
 
     int dim {1}; // noise dimension

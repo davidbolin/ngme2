@@ -248,7 +248,7 @@ mesh_1d <- inla.mesh.1d(loc_1d)
 
 # specify the model we use
 mu <- 1; sigma <- 1; nu <- 0.5
-spde_1d <- f(
+spde_1d <- ngme2::f(
   loc_1d,
   model = "matern",
   theta_K = log(1),

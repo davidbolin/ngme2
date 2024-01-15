@@ -43,14 +43,17 @@ double NoiseUtil::grad_theta_nu(
     if (!single_V) {
         if (noise_type == "gal") {
             for (int i=0; i < n; i++) {
+                // //digamma(0.1) = digamma(1.1) - 1/0.1;
+                // if(nu_hi > 1){
+                //     grad -=  nu_hi * R::digamma(nu_hi);
+                // } else {
+                //     grad -=  nu_hi * R::digamma(nu_hi + 1) - 1.;
+                // }
+                // grad += nu_hi * (1 - log(1/nu) + log(V(i))) - nu * V(i);
+
                 double nu_hi = nu * h[i];
-                //digamma(0.1) = digamma(1.1) - 1/0.1;
-                if(nu_hi > 1){
-                    grad -=  nu_hi * R::digamma(nu_hi);
-                } else {
-                    grad -=  nu_hi * R::digamma(nu_hi + 1) - 1.;
-                }
-            grad += nu_hi * (1 - log(1/nu) + log(V(i))) - nu * V(i);
+                double v = V(i);
+                grad -= -v + h[i] * (1 + log(v) - log(1/nu) + R::digamma(nu_hi));
             }
         } else {
             // type == nig or normal+nig

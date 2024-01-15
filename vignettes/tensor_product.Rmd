@@ -65,7 +65,7 @@ mesh <- fmesher::fm_mesh_2d(
 plot(mesh)
 
 # define the space-time model
-m0 <- f(
+m0 <- ngme2::f(
   map=list(time, loc), # from the data
   model="tp",
   first=list(model="ar1"), # ar1 model for time (mesh generated automatically)
@@ -111,7 +111,11 @@ W <- simulate(true_model)
 AW <- as.numeric(true_model$A %*% W)
 Y_obs <- AW + rnorm(length(AW), sd = 0.5)
 df <- data.frame(year, x, y, Y_obs)
+```
 
+Next we run the estimation:
+
+```{r}
 ##############################  estimation
 ngme_fit <- ngme(
   Y_obs ~ 0 + f(

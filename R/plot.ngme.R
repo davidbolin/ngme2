@@ -200,6 +200,7 @@ plot.ngme_noise <- function(x, y = NULL, ...) {
     nu <- noise2$nu
     switch(noise2$noise_type,
       "nig"     = dd2 <- dnig(xx, -mu, mu, nu, sigma),
+      "gal"     = dd2 <- dgal(xx, -mu, mu, nu, sigma),
       "normal"  = dd2 <- dnorm(xx, sd = sigma),
       stop("Plot for this type is not implemented")
     )

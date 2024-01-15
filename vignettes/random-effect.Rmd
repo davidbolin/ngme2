@@ -39,7 +39,7 @@ Next is one simple specification of random effect model.
 library(ngme2)
 
 # random effect model accepts formula argument, as the design matrix
-f(~1 + x, model = "re", noise = noise_nig(),
+ngme2::f(~1 + x, model = "re", noise = noise_nig(),
   # data can be inherited from ngme() function
   data = data.frame(x = 1:7))
 ```

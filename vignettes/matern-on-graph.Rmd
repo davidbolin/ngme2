@@ -188,7 +188,7 @@ Next, we simulation non-Gaussian Matern field with NIG noise using `simulate` fu
 
 ```{r}
 simu_nig <- noise_nig(mu=-10, sigma=30, nu=0.5)
-matern_graph <- f(
+matern_graph <- ngme2::f(
   model="matern",
   theta_K = log(6), #kappa = 8
   mesh=graph,

@@ -98,7 +98,7 @@ For now we support **normal**, **NIG**, and **GAL** noises.
 The R class `ngme_noise` has the following interface:
 
 ```{r load-packages, message=FALSE, warning=FALSE}
-library(INLA)
+library(fmesher)
 library(splancs)
 library(lattice)
 library(ggplot2)
@@ -320,12 +320,13 @@ ANA collects data from many locations over Brazil, and all these data are freely
 We will briefly illustrate the command we use, and the result of the estimation.
 
 ```{r read-parana}
+library(INLA)
 data(PRprec)
 data(PRborder)
 
-# Create INLA mesh
+# Create mesh
 coords <- as.matrix(PRprec[, 1:2])
-prdomain <- INLA::inla.nonconvex.hull(coords, -0.03, -0.05, resolution = c(100, 100))
+prdomain <- fmesher::fm_nonconvex_hull(coords, -0.03, -0.05, resolution = c(100, 100))
 prmesh <- fmesher::fm_mesh_2d(boundary = prdomain, max.edge = c(0.45, 1), cutoff = 0.2)
 
 # monthly mean at each location
@@ -366,7 +367,7 @@ ggplot() +
 ```{r fit-parana, cache=TRUE}
 out <- ngme(
   formula = Y ~ 1 +
-    f(INLA::inla.group(seaDist), name="rw1", model = "rw1", noise = noise_normal()) +
+    f(seaDist, name="rw1", model = "rw1", noise = noise_normal()) +
     f(coords, model = "matern", mesh = prmesh, name="spde", noise = noise_normal()),
   data = data.frame(Y = Y),
   family = "nig",

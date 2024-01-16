@@ -64,7 +64,7 @@ public:
         return H;
     };
 
-    void set_parameter(const VectorXd& x) {
+    void set_parameter(const VectorXd& x) override {
         (*this).x = x;
     }
 

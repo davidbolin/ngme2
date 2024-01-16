@@ -259,8 +259,12 @@ build_operator <- function(model_name, args_list) {
     rw2 = do.call(rw2, args_list),
     ou = do.call(ou, args_list),
     matern = do.call(matern, args_list),
-    iid = do.call(iid, args_list),
     re = do.call(re, args_list),
+    iid = {
+      if (is.null(args_list$n))
+        args_list$n <- length_map(args_list$map)
+      do.call(iid, args_list)
+    },
     stop("Unknown models, please check if model name is in ngme_model_types()")
   )
 }

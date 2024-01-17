@@ -111,6 +111,15 @@ print(paste("nodes of mesh = ", mesh$n))
     "none" = {
       list(Y = mn_noise, group=rep(1, n_obs_per_rep))
     },
+    "iid" = {
+      idx <- 1:n_obs_per_rep
+      iid_model <- f(idx, model="iid",
+        noise = f_noise
+      )
+      W <- simulate(iid_model, seed = seed)
+      Y <- W + mn_noise
+      list(Y=Y, idx=idx, group=rep(1, n_obs_per_rep))
+    },
     "ar1" = {
       idx <- 1:n_obs_per_rep
       ar1_model <- f(idx, model="ar1", rho = 0.5,
@@ -247,6 +256,13 @@ print(paste("nodes of mesh = ", mesh$n))
   # ------- Specify formula for each model -------
   formula <- switch(model,
     "none" = Y ~ 0,
+    "iid" = Y ~ 0 + f(idx,
+      fix_theta_K = fix_theta_K,
+      model = "iid",
+      noise = f_fm_noise,
+      debug = debug_f,
+      control = control_f(numer_grad = numer_grad)
+    ),
     "ar1" = Y ~ 0 + f(idx,
       fix_theta_K = fix_theta_K,
       model = "ar1",

@@ -26,7 +26,7 @@ bv <- function(
   ...
 ) {
   mesh <- ngme_build_mesh(mesh)
-  model_names <- names(sub_models)
+  model_names <- sort(names(sub_models))
   stopifnot(
     "Please provide names for sub_models" = !is.null(model_names),
     "Please provide group argument to indicate different fields"
@@ -74,7 +74,7 @@ bv <- function(
   ngme_operator(
     mesh        = mesh,
     model       = "bv",
-    first       = first,
+    first        = first,
     second      = second,
     theta_K     = theta_K,
     K           = bigD %*% Matrix::bdiag(first$K, second$K),

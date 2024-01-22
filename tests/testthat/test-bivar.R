@@ -24,13 +24,13 @@ test_that("test bv(ar1, ar1) with 2 noise", {
     model="bv",
     theta = 0.5, rho = 0.8,
     sub_models = list(
-      first = list(model="ar1", rho=0.5),
-      second= list(model="ar1", rho=-0.5)
+      A = list(model="ar1", rho=0.5),
+      B = list(model="ar1", rho=-0.5)
     ),
-    group = c(rep("first", n/2), rep("second", n/2)),
+    group = c(rep("A", n/2), rep("B", n/2)),
     noise = list(
-      first=noise_nig(mu=-3, sigma=2, nu=1),
-      second=noise_nig(mu=-3, sigma=2, nu=1)
+      A=noise_nig(mu=3, sigma=2, nu=1),
+      B=noise_nig(mu=-3, sigma=2, nu=1)
     )
   )
 true_model
@@ -38,6 +38,8 @@ true_model
   AW <- as.numeric(true_model$A %*% W)
   n_obs <- length(AW)
   Y <- AW + rnorm(n_obs, sd=0.5)
+  # Y = c(Y_A, Y_B)
+  # label = c(A, B)
 
   out <- ngme(
     Y ~ 0 + f(
@@ -46,19 +48,20 @@ true_model
       # rho = 0.1,
       theta = 0.45,
       sub_models = list(
-        first = "ar1", second="ar1"
+        A = "ar1",
+        B = "ar1"
       ),
       control = control_f(numer_grad = F),
-      noise = list(first=noise_nig(), second=noise_nig())
+      noise = list(A=noise_nig(), B=noise_nig())
     ),
-    group = c(rep("first", n/2), rep("second", n/2)),
+    group = c(rep("A", n/2), rep("B", n/2)),
     data = data.frame(Y = Y),
     control_ngme = control_ngme(
       n_gibbs_samples = 5
     ),
     control_opt = control_opt(
       seed = 3,
-      iterations = 500,
+      iterations = 50,
       n_parallel_chain = 4,
       estimation = T,
       verbose = T,

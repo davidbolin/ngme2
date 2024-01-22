@@ -33,7 +33,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">ngme2</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.6.0</span>
       </span>
     </div>
 
@@ -120,7 +120,7 @@
       <h1 data-toc-skip>Model estimation and prediction</h1>
             
       
-      
+      <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/HEAD/vignettes/pred_and_est.Rmd" class="external-link"><code>vignettes/pred_and_est.Rmd</code></a></small>
       <div class="hidden name"><code>pred_and_est.Rmd</code></div>
 
     </div>
@@ -384,22 +384,22 @@ NIG model:</p>
 <p>We will consider a mesh with 10 equally spaced nodes. The code to
 sample for such a process is given below.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">INLA</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://inlabru-org.github.io/fmesher/" class="external-link">fmesher</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://davidbolin.github.io/ngme2/">ngme2</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tidyr.tidyverse.org" class="external-link">tidyr</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://Matrix.R-forge.R-project.org" class="external-link">Matrix</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">loc_1d</span> <span class="op">&lt;-</span> <span class="fl">0</span><span class="op">:</span><span class="fl">9</span><span class="op">/</span><span class="fl">9</span></span>
-<span><span class="va">mesh_1d</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/INLA/man/inla.mesh.1d.html" class="external-link">inla.mesh.1d</a></span><span class="op">(</span><span class="va">loc_1d</span><span class="op">)</span></span>
-<span></span>
+<span><span class="va">mesh_1d</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://inlabru-org.github.io/fmesher/reference/fm_mesh_1d.html" class="external-link">fm_mesh_1d</a></span><span class="op">(</span><span class="va">loc_1d</span><span class="op">)</span></span>
 <span><span class="co"># inla.mesh.fem</span></span>
 <span><span class="co"># inla.mesh.1d.fem(mesh_1d)$c1 + inla.mesh.1d.fem(mesh_1d)$g1</span></span>
 <span><span class="co"># attr(simulate(noise_nig(n=10, 1,1,0.5), seed=10), "noise")$h</span></span>
 <span></span>
 <span><span class="co"># specify the model we use</span></span>
 <span><span class="va">mu</span> <span class="op">&lt;-</span> <span class="fl">1</span>; <span class="va">sigma</span> <span class="op">&lt;-</span> <span class="fl">1</span>; <span class="va">nu</span> <span class="op">&lt;-</span> <span class="fl">0.5</span></span>
-<span><span class="va">spde_1d</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
+<span><span class="va">spde_1d</span> <span class="op">&lt;-</span> <span class="fu">ngme2</span><span class="fu">::</span><span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
 <span>  <span class="va">loc_1d</span>,</span>
 <span>  model <span class="op">=</span> <span class="st">"matern"</span>,</span>
 <span>  theta_K <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,</span>
@@ -462,12 +462,12 @@ determine the locations of the observations. Once we determine the
 locations we will need to build the <span class="math inline">\(A\)</span> matrix to obtain the values of the
 process <span class="math inline">\(X\)</span> at those locations. We
 can build the <span class="math inline">\(A\)</span> matrix by using the
-function <em>inla.spde.make.A</em>.</p>
+function <em>fm_basis</em>.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">new_loc_1d</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">9</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">A_matrix</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/INLA/man/inla.spde.make.A.html" class="external-link">inla.spde.make.A</a></span><span class="op">(</span></span>
-<span>  mesh <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/INLA/man/inla.mesh.1d.html" class="external-link">inla.mesh.1d</a></span><span class="op">(</span><span class="va">loc_1d</span><span class="op">)</span>,</span>
+<span><span class="va">A_matrix</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://inlabru-org.github.io/fmesher/reference/fm_basis.html" class="external-link">fm_basis</a></span><span class="op">(</span></span>
+<span>  mesh <span class="op">=</span> <span class="fu"><a href="https://inlabru-org.github.io/fmesher/reference/fm_mesh_1d.html" class="external-link">fm_mesh_1d</a></span><span class="op">(</span><span class="va">loc_1d</span><span class="op">)</span>,</span>
 <span>  loc <span class="op">=</span> <span class="va">new_loc_1d</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">A_matrix</span></span>
@@ -587,21 +587,21 @@ values of <span class="math inline">\(E[\mathbf{w} | \mathbf{V},
 <code class="sourceCode R"><span><span class="va">V</span></span>
 <span><span class="co">#&gt; NULL</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">V_1</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] 0.02557809 0.07216393 0.06916989 0.07422464 0.07115670 0.06042754</span></span>
-<span><span class="co">#&gt;  [7] 0.06838335 0.06364336 0.05227373 0.02387668</span></span>
+<span><span class="co">#&gt;  [1] 0.03029353 0.08018597 0.07273897 0.10224641 0.05537179 0.05634165</span></span>
+<span><span class="co">#&gt;  [7] 0.05254246 0.05650605 0.06265832 0.03030878</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">V_2</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] 0.02755574 0.06923030 0.07840990 0.05478980 0.06450270 0.04482354</span></span>
-<span><span class="co">#&gt;  [7] 0.05280639 0.06773603 0.05776002 0.03017718</span></span>
+<span><span class="co">#&gt;  [1] 0.02948703 0.06162313 0.07511216 0.05999804 0.06340018 0.06933272</span></span>
+<span><span class="co">#&gt;  [7] 0.08077456 0.06063107 0.08516419 0.03493997</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="va">W</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  [1]  0.029313262  0.033848724  0.042621145  0.039104490  0.023632058</span></span>
 <span><span class="co">#&gt;  [6]  0.009599138 -0.014322323 -0.044418503 -0.056662155 -0.062715837</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">W_1</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] -0.3379065 -0.3367966 -0.3363771 -0.3347024 -0.3344666 -0.3367914</span></span>
-<span><span class="co">#&gt;  [7] -0.3383127 -0.3409753 -0.3429928 -0.3446039</span></span>
+<span><span class="co">#&gt;  [1] -0.3291162 -0.3284836 -0.3293010 -0.3305966 -0.3343862 -0.3380598</span></span>
+<span><span class="co">#&gt;  [7] -0.3415034 -0.3444917 -0.3463112 -0.3471316</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">W_2</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] -0.3524809 -0.3515087 -0.3510214 -0.3519400 -0.3522814 -0.3540450</span></span>
-<span><span class="co">#&gt;  [7] -0.3552620 -0.3555416 -0.3567184 -0.3576754</span></span></code></pre></div>
+<span><span class="co">#&gt;  [1] -0.3454918 -0.3446225 -0.3428479 -0.3414059 -0.3394598 -0.3375681</span></span>
+<span><span class="co">#&gt;  [7] -0.3363241 -0.3370177 -0.3364685 -0.3378986</span></span></code></pre></div>
 <p>Let us begin by building traceplots for <span class="math inline">\(V\)</span>:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">df_V</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">idx</span>, y <span class="op">=</span> <span class="va">V</span>, col <span class="op">=</span> <span class="va">chain</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
@@ -669,7 +669,7 @@ Rao-Blackwellization for the predictions.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Computing A matrix at t^\ast</span></span>
 <span></span>
-<span><span class="va">A_pred</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/INLA/man/inla.spde.make.A.html" class="external-link">inla.spde.make.A</a></span><span class="op">(</span><span class="va">mesh_1d</span>, loc <span class="op">=</span> <span class="fl">5</span><span class="op">/</span><span class="fl">9</span><span class="op">)</span></span>
+<span><span class="va">A_pred</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://inlabru-org.github.io/fmesher/reference/fm_basis.html" class="external-link">fm_basis</a></span><span class="op">(</span>mesh <span class="op">=</span> <span class="va">mesh_1d</span>, loc <span class="op">=</span> <span class="fl">5</span><span class="op">/</span><span class="fl">9</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># MC_estimate:</span></span>
 <span></span>

@@ -33,7 +33,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">ngme2</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.6.0</span>
       </span>
     </div>
 
@@ -120,9 +120,9 @@
       <h1 data-toc-skip>Ngme2 - A new Flexible R Package for Latent
 non-Gaussian Models</h1>
             
-            <h4 data-toc-skip class="date">2024-01-14</h4>
+            <h4 data-toc-skip class="date">2024-01-22</h4>
       
-      
+      <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/HEAD/vignettes/ngme2.Rmd" class="external-link"><code>vignettes/ngme2.Rmd</code></a></small>
       <div class="hidden name"><code>ngme2.Rmd</code></div>
 
     </div>
@@ -252,7 +252,7 @@ of the observations. They can be both specified by
 <strong>GAL</strong> noises.</p>
 <p>The R class <code>ngme_noise</code> has the following interface:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">INLA</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://inlabru-org.github.io/fmesher/" class="external-link">fmesher</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://www.maths.lancs.ac.uk/~rowlings/Splancs/" class="external-link">splancs</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://lattice.r-forge.r-project.org/" class="external-link">lattice</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
@@ -534,12 +534,23 @@ are freely available from the ANA website (<a href="http://www3.ana.gov.br/porta
 <p>We will briefly illustrate the command we use, and the result of the
 estimation.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">PRprec</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">INLA</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Loading required package: Matrix</span></span>
+<span><span class="co">#&gt; This is INLA_24.01.20 built 2024-01-19 21:33:59 UTC.</span></span>
+<span><span class="co">#&gt;  - See www.r-inla.org/contact-us for how to get help.</span></span>
+<span><span class="co">#&gt;  - List available models/likelihoods/etc with inla.list.models()</span></span>
+<span><span class="co">#&gt;  - Use inla.doc(&lt;NAME&gt;) to access documentation</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Attaching package: 'INLA'</span></span>
+<span><span class="co">#&gt; The following object is masked from 'package:ngme2':</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;     f</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">PRprec</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">PRborder</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Create INLA mesh</span></span>
+<span><span class="co"># Create mesh</span></span>
 <span><span class="va">coords</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">PRprec</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="va">prdomain</span> <span class="op">&lt;-</span> <span class="fu">INLA</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/INLA/man/inla.nonconvex.hull.html" class="external-link">inla.nonconvex.hull</a></span><span class="op">(</span><span class="va">coords</span>, <span class="op">-</span><span class="fl">0.03</span>, <span class="op">-</span><span class="fl">0.05</span>, resolution <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">100</span>, <span class="fl">100</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">prdomain</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://inlabru-org.github.io/fmesher/reference/fm_nonconvex_hull.html" class="external-link">fm_nonconvex_hull</a></span><span class="op">(</span><span class="va">coords</span>, <span class="op">-</span><span class="fl">0.03</span>, <span class="op">-</span><span class="fl">0.05</span>, resolution <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">100</span>, <span class="fl">100</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">prmesh</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://inlabru-org.github.io/fmesher/reference/fm_mesh_2d.html" class="external-link">fm_mesh_2d</a></span><span class="op">(</span>boundary <span class="op">=</span> <span class="va">prdomain</span>, max.edge <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.45</span>, <span class="fl">1</span><span class="op">)</span>, cutoff <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># monthly mean at each location</span></span>
@@ -560,7 +571,7 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
 <span>  formula <span class="op">=</span> <span class="va">Y</span> <span class="op">~</span> <span class="fl">1</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="fu">INLA</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/INLA/man/group.html" class="external-link">inla.group</a></span><span class="op">(</span><span class="va">seaDist</span><span class="op">)</span>, name<span class="op">=</span><span class="st">"rw1"</span>, model <span class="op">=</span> <span class="st">"rw1"</span>, noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="va">seaDist</span>, name<span class="op">=</span><span class="st">"rw1"</span>, model <span class="op">=</span> <span class="st">"rw1"</span>, noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="va">coords</span>, model <span class="op">=</span> <span class="st">"matern"</span>, mesh <span class="op">=</span> <span class="va">prmesh</span>, name<span class="op">=</span><span class="st">"spde"</span>, noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Y <span class="op">=</span> <span class="va">Y</span><span class="op">)</span>,</span>
 <span>  family <span class="op">=</span> <span class="st">"nig"</span>,</span>
@@ -583,7 +594,7 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt; (Intercept) </span></span>
-<span><span class="co">#&gt;        9.96 </span></span>
+<span><span class="co">#&gt;        10.3 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $rw1</span></span>
@@ -591,21 +602,21 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <span><span class="co">#&gt;       No parameter.</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.0846</span></span>
+<span><span class="co">#&gt;       sigma = 0.0959</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $spde</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
-<span><span class="co">#&gt;       kappa = 5.57</span></span>
+<span><span class="co">#&gt;       kappa = 6.84</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 41.8</span></span>
+<span><span class="co">#&gt;       sigma = 52.3</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = 0.349</span></span>
-<span><span class="co">#&gt;       sigma = 1.97</span></span>
-<span><span class="co">#&gt;       nu = 1.9</span></span>
+<span><span class="co">#&gt;       mu = 0.463</span></span>
+<span><span class="co">#&gt;       sigma = 1.98</span></span>
+<span><span class="co">#&gt;       nu = 1.22</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span>
@@ -644,13 +655,13 @@ Mean of the rainfall in Octobor 2012 in Paraná
 </tr></thead>
 <tbody><tr class="odd">
 <td align="left">(Intercept)</td>
-<td align="left">9.96</td>
-<td align="left">0.349</td>
-<td align="left">1.97</td>
-<td align="left">1.9</td>
-<td align="left">-2.47</td>
-<td align="left">5.57</td>
-<td align="left">41.8</td>
+<td align="left">10.3</td>
+<td align="left">0.463</td>
+<td align="left">1.98</td>
+<td align="left">1.22</td>
+<td align="left">-2.34</td>
+<td align="left">6.84</td>
+<td align="left">52.3</td>
 </tr></tbody>
 </table>
 <div class="section level3">
@@ -706,46 +717,46 @@ method.</p>
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/cross_validation.html">cross_validation</a></span><span class="op">(</span><span class="va">out</span>, type<span class="op">=</span><span class="st">"k-fold"</span>, k<span class="op">=</span><span class="fl">10</span>, print<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; In test_idx 1 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.600528 11.30226 -1.353972 -1.517788</span></span>
+<span><span class="co">#&gt; 1 2.650427 11.61046 -1.371679 -1.515407</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 2 : </span></span>
-<span><span class="co">#&gt;        MAE     MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.483456 10.0532 -1.237202 -1.540128</span></span>
+<span><span class="co">#&gt;        MAE      MSE     CRPS    sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.373862 9.859237 -1.17037 -1.50988</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 3 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.326968 8.870051 -1.168178 -1.522492</span></span>
+<span><span class="co">#&gt; 1 2.498594 10.27797 -1.231826 -1.564726</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 4 : </span></span>
-<span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.270038 8.738227 -1.110896 -1.540706</span></span>
+<span><span class="co">#&gt;        MAE     MSE      CRPS     sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.477994 10.8252 -1.166963 -1.624205</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 5 : </span></span>
-<span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.392581 10.14254 -1.237825 -1.484713</span></span>
+<span><span class="co">#&gt;        MAE     MSE      CRPS     sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.466385 10.6762 -1.301316 -1.473642</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 6 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.462354 9.848451 -1.310961 -1.464274</span></span>
+<span><span class="co">#&gt; 1 2.472112 9.960121 -1.305562 -1.475318</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 7 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.650776 10.84133 -1.410165 -1.478462</span></span>
+<span><span class="co">#&gt; 1 2.603201 10.66432 -1.422462 -1.423961</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 8 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE     CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.592262 10.85449 -1.38779 -1.454497</span></span>
+<span><span class="co">#&gt; 1 2.621205 11.07434 -1.41353 -1.448012</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 9 : </span></span>
-<span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.569789 10.52451 -1.342812 -1.476552</span></span>
+<span><span class="co">#&gt;       MAE      MSE      CRPS     sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.59372 11.11039 -1.353956 -1.495135</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 10 : </span></span>
-<span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.444407 9.420437 -1.216804 -1.511985</span></span>
+<span><span class="co">#&gt;        MAE      MSE     CRPS     sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.410783 9.358116 -1.22825 -1.483145</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;        MAE      MSE     CRPS    sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.479316 10.05955 -1.27766 -1.49916</span></span></code></pre></div>
+<span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.516828 10.54164 -1.296591 -1.501343</span></span></code></pre></div>
 </div>
 </div>
   </div>

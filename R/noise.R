@@ -6,20 +6,22 @@
 #' Please use \code{noise_nig} and \code{noise_normal} for simpler usage.
 #' Use \code{ngme_noise_types()} to check all the available types.
 #'
-#' @details The parameterization is given in \code{?nig}. Moreover,
-#' for specifying non-stationary mu and sigma,
+#' @details The parameterization is given in \code{?nig} and \code{?gal}. Moreover,
+#' for specifying non-stationary mu and sigma, nu
 #' \deqn{\mu = B_{\mu} \theta_{\mu},} and
 #' \deqn{\sigma = \exp (B_{\sigma} \theta_{\sigma}),}
+#' \deqn{\nu = \exp (B_{\nu} \theta_{\nu}).}
 #'
 #' @param noise_type    type of noise, "nig", "normal"
 #' @param mu          specify the NIG noise parameter mu, see \code{?nig}
 #' @param sigma       specify the noise parameter sigma, see \code{?nig}
-#' @param nu          specify the NIG noise parameter nu (nu>0), see \code{?nig}
 #' @param V             start value for V
 #' @param theta_mu      specify a non-stationary noise using theta_mu
 #' @param B_mu          Basis matrix for mu (if non-stationary)
 #' @param theta_sigma   specify a non-stationary noise using theta_sigma
 #' @param B_sigma       Basis matrix for sigma (if non-stationary)
+#' @param theta_nu      specify a non-stationary noise using theta_nu
+#' @param B_nu          Basis matrix for nu (if non-stationary)
 #' @param fix_theta_mu    fix the parameter of theta_mu
 #' @param fix_theta_sigma  fix the parameter of theta_sigma
 #' @param fix_nu   fix the parameter of nu
@@ -47,10 +49,12 @@ ngme_noise <- function(
   mu              = 0,
   sigma           = 1,
   nu              = 1,
-  theta_mu        = NULL,
   B_mu            = NULL,
-  theta_sigma     = NULL,
+  theta_mu        = NULL,
   B_sigma         = NULL,
+  theta_sigma     = NULL,
+  B_nu            = NULL,
+  theta_nu        = NULL,
   theta_sigma_normal = NULL,
   B_sigma_normal  = NULL,
   fix_theta_mu    = FALSE,
@@ -70,20 +74,24 @@ ngme_noise <- function(
   ...
 ) {
   if (is.null(theta_mu)) theta_mu <- mu
-  if (is.null(theta_sigma)) theta_sigma <- log(sigma)
+  if (is.null(theta_sigma))
+    theta_sigma <- if (sigma>0) log(sigma) else stop("ngme_noise: sigma should be positive.")
+  if (is.null(theta_nu))
+    theta_nu <- if (nu>0) log(nu) else stop("ngme_noise: nu should be positive.")
 
   stopifnot("Unkown noise type. Please check ngme_noise_types()" =
     noise_type %in% ngme_noise_types())
-  stopifnot("ngme_noise: nu should be positive" = nu > 0)
 
   if (is.null(B_mu)) B_mu <- as.matrix(1)
   if (is.null(B_sigma)) B_sigma <- as.matrix(1)
+  if (is.null(B_nu)) B_nu <- as.matrix(1)
 
   stopifnot(
     "Please input B_mu as a matrix." = is.matrix(B_mu),
     "Please input B_sigma as a matrix." = is.matrix(B_sigma),
     "Please make sure ncol(B_mu) == length(theta_mu)." = ncol(B_mu) == length(theta_mu),
     "Please make sure ncol(B_sigma) == length(theta_sigma)." = ncol(B_sigma) == length(theta_sigma),
+    "Please make sure ncol(B_nu) == length(theta_nu)." = ncol(B_nu) == length(theta_nu),
     "prior_mu is not specified properly, please use ngme_prior(..)"
       = class(prior_mu) == "ngme_prior",
     "prior_sigma is not specified properly, please use ngme_prior(..)"
@@ -95,7 +103,8 @@ ngme_noise <- function(
   if (all(noise_type == "normal")) {
     theta_mu <- double(0)
     B_mu <- matrix(ncol=0, nrow=nrow(B_mu))
-    nu <- double(0)
+    theta_nu <- double(0)
+    B_nu <- matrix(ncol=0, nrow=nrow(B_nu))
   }
 
   if (all(noise_type != "normal_nig")) {
@@ -111,23 +120,24 @@ ngme_noise <- function(
   structure(
     list(
       noise_type      = noise_type,
-      nu              = nu,
-      n_nu            = length(nu),
       V               = V,
       theta_mu        = theta_mu,
       theta_sigma     = theta_sigma,
       theta_sigma_normal = theta_sigma_normal,
+      theta_nu        = theta_nu,
       B_mu            = B_mu,
       B_sigma         = B_sigma,
       B_sigma_normal  = B_sigma_normal,
+      B_nu            = B_nu,
       n_theta_mu      = length(theta_mu),
       n_theta_sigma   = length(theta_sigma),
+      n_theta_nu      = length(theta_nu),
       n_theta_sigma_normal = length(theta_sigma_normal),
       fix_theta_mu    = fix_theta_mu,
       fix_theta_sigma = fix_theta_sigma,
       fix_nu          = fix_nu,
       fix_V           = fix_V,
-      n_params        = length(theta_mu) + length(theta_sigma) + length(nu) + length(rho),
+      n_params        = length(theta_mu) + length(theta_sigma) + length(theta_nu) + length(rho),
       single_V        = single_V,
       share_V         = share_V,
       corr_measurement = corr_measurement,
@@ -198,8 +208,10 @@ noise_nig <- nig <- function(
   V             = NULL,
   theta_mu      = NULL,
   theta_sigma   = NULL,
+  theta_nu      = NULL,
   B_mu          = matrix(1),
   B_sigma       = matrix(1),
+  B_nu          = matrix(1),
   corr_measurement = FALSE,
   index_corr      = NULL,
   ...
@@ -208,22 +220,24 @@ noise_nig <- nig <- function(
   stopifnot("Please use theta_mu for non-stationary mu." = length(mu) < 2)
   if (is.null(mu) && is.null(theta_mu)) theta_mu <- 0
   if (is.null(sigma) && is.null(theta_sigma)) theta_sigma <- 0
-  if (is.null(nu)) nu <- 1
+  if (is.null(nu) && is.null(theta_nu)) theta_nu <- 0
 
   if (!is.null(nu) && nu <= 0) stop("ngme_nosie: nu should be positive.")
   if (!is.null(sigma) && sigma <= 0) stop("ngme_nosie: sigma should be positive.")
 
   if (!is.null(mu))     theta_mu <- mu
   if (!is.null(sigma))  theta_sigma <- log(sigma)
+  if (!is.null(nu))     theta_nu <- log(nu)
 
   ngme_noise(
     noise_type = "nig",
     theta_mu = theta_mu,
     theta_sigma = theta_sigma,
-    nu = nu,
+    theta_nu = theta_nu,
     V = V,
     B_mu = B_mu,
     B_sigma = B_sigma,
+    B_nu = B_nu,
     corr_measurement = corr_measurement,
     index_corr      = index_corr,
     ...
@@ -241,8 +255,10 @@ noise_gal <- gal <- function(
   V             = NULL,
   theta_mu      = NULL,
   theta_sigma   = NULL,
+  theta_nu      = NULL,
   B_mu          = matrix(1),
   B_sigma       = matrix(1),
+  B_nu          = matrix(1),
   corr_measurement = FALSE,
   index_corr      = NULL,
   ...
@@ -251,22 +267,24 @@ noise_gal <- gal <- function(
   stopifnot("Please use theta_mu for non-stationary mu." = length(mu) < 2)
   if (is.null(mu) && is.null(theta_mu)) theta_mu <- 0
   if (is.null(sigma) && is.null(theta_sigma)) theta_sigma <- 0
-  if (is.null(nu)) nu <- 1
+  if (is.null(nu) && is.null(theta_nu)) theta_nu <- 0
 
   if (!is.null(nu) && nu <= 0) stop("ngme_nosie: nu should be positive.")
   if (!is.null(sigma) && sigma <= 0) stop("ngme_nosie: sigma should be positive.")
 
   if (!is.null(mu))     theta_mu <- mu
   if (!is.null(sigma))  theta_sigma <- log(sigma)
+  if (!is.null(nu))     theta_nu <- log(nu)
 
   ngme_noise(
     noise_type = "gal",
     theta_mu = theta_mu,
     theta_sigma = theta_sigma,
-    nu = nu,
+    theta_nu = theta_nu,
     V = V,
     B_mu = B_mu,
     B_sigma = B_sigma,
+    B_nu = B_nu,
     corr_measurement = corr_measurement,
     index_corr      = index_corr,
     ...
@@ -286,6 +304,10 @@ stopifnot("n / nrow(B_mu) not integer" = abs(n/nrow(B_mu) - round(n/nrow(B_mu)))
 stopifnot("n / nrow(B_sigma) not integer" = abs(n/nrow(B_sigma) - round(n/nrow(B_sigma))) < 1e-4)
     noise$B_sigma <- matrix(data = rep(B_sigma, n / nrow(B_sigma)), nrow = n)
 
+    B_nu <- noise$B_nu
+stopifnot("n / nrow(B_nu) not integer" = abs(n/nrow(B_nu) - round(n/nrow(B_nu))) < 1e-4)
+    noise$B_nu <- matrix(data = rep(B_nu, n / nrow(B_nu)), nrow = n)
+
     if (noise$noise_type == "normal_nig") {
       B_sigma_normal <- noise$B_sigma_normal
       noise$B_sigma_normal <- matrix(data = rep(B_sigma_normal, n / nrow(B_sigma_normal)), nrow = n)
@@ -294,8 +316,8 @@ stopifnot("n / nrow(B_sigma) not integer" = abs(n/nrow(B_sigma) - round(n/nrow(B
   } else if (!is.null(new_noise)) {
     # update noise after estimation
     if (all(new_noise$noise_type != "normal")) {
-      noise$theta_mu <- new_noise$theta_mu
-      noise$nu       <- new_noise$nu
+      noise$theta_mu  <- new_noise$theta_mu
+      noise$theta_nu  <- new_noise$theta_nu
     }
     noise$theta_sigma        <- new_noise$theta_sigma
     noise$rho                <- new_noise$rho
@@ -304,17 +326,18 @@ stopifnot("n / nrow(B_sigma) not integer" = abs(n/nrow(B_sigma) - round(n/nrow(B
     # bv noise
     if (length(noise$noise_type) == 2) {
       # pass mu, sigma, nu to sub_models
-      n_theta_mu1 <- noise$bv_noises[[1]]$n_theta_mu
-      n_theta_mu2 <- noise$bv_noises[[2]]$n_theta_mu
+      n_theta_mu1    <- noise$bv_noises[[1]]$n_theta_mu
+      n_theta_mu2    <- noise$bv_noises[[2]]$n_theta_mu
       n_theta_sigma1 <- noise$bv_noises[[1]]$n_theta_sigma
       n_theta_sigma2 <- noise$bv_noises[[2]]$n_theta_sigma
-      noise$bv_noises[[1]]$theta_mu <- head(noise$theta_mu, n_theta_mu1)
-      noise$bv_noises[[2]]$theta_mu <- tail(noise$theta_mu, n_theta_mu2)
+      n_theta_nu1    <- noise$bv_noises[[1]]$n_theta_nu
+      n_theta_nu2    <- noise$bv_noises[[2]]$n_theta_nu
+      noise$bv_noises[[1]]$theta_mu    <- head(noise$theta_mu, n_theta_mu1)
+      noise$bv_noises[[2]]$theta_mu    <- tail(noise$theta_mu, n_theta_mu2)
       noise$bv_noises[[1]]$theta_sigma <- head(noise$theta_sigma, n_theta_sigma1)
       noise$bv_noises[[2]]$theta_sigma <- tail(noise$theta_sigma, n_theta_sigma2)
-      for (j in seq_len(noise$n_nu)) {
-        noise$bv_noises[[j]]$nu <- noise$nu[[j]]
-      }
+      noise$bv_noises[[1]]$theta_nu    <- head(noise$theta_nu, n_theta_nu1)
+      noise$bv_noises[[2]]$theta_nu    <- tail(noise$theta_nu, n_theta_nu2)
     } else if (noise$noise_type == "normal_nig") {
       noise$theta_sigma_normal <- new_noise$theta_sigma_normal
     }
@@ -333,9 +356,11 @@ noise_normal_nig <- normal_nig <- function(
   theta_mu      = NULL,
   theta_sigma_nig   = NULL,
   theta_sigma_normal   = NULL,
+  theta_nu      = NULL,
   B_mu          = matrix(1),
   B_sigma_nig   = matrix(1),
   B_sigma_normal = matrix(1),
+  B_nu          = matrix(1),
   corr_measurement = FALSE,
   index_corr      = NULL,
   ...
@@ -344,7 +369,7 @@ noise_normal_nig <- normal_nig <- function(
   stopifnot("Please use theta_mu for non-stationary mu." = length(mu) < 2)
   if (is.null(mu) && is.null(theta_mu)) theta_mu <- 0
   if (is.null(sigma_nig) && is.null(theta_sigma_nig)) theta_sigma_nig <- 0
-  if (is.null(nu)) nu <- 1
+  if (is.null(nu) && is.null(theta_nu)) theta_nu <- 0
   if (is.null(sigma_normal) && is.null(theta_sigma_normal)) theta_sigma_normal <- 0
 
   if (!is.null(nu) && nu <= 0) stop("ngme_nosie: nu should be positive.")
@@ -354,17 +379,19 @@ noise_normal_nig <- normal_nig <- function(
   if (!is.null(mu))     theta_mu <- mu
   if (!is.null(sigma_nig))  theta_sigma_nig <- log(sigma_nig)
   if (!is.null(sigma_normal))  theta_sigma_normal <- log(sigma_normal)
+  if (!is.null(nu))     theta_nu <- log(nu)
 
   ngme_noise(
     noise_type = "normal_nig",
     theta_mu = theta_mu,
     theta_sigma = theta_sigma_nig,
     theta_sigma_normal = theta_sigma_normal,
-    nu = nu,
+    theta_nu = theta_nu,
     V = V,
     B_mu = B_mu,
     B_sigma = B_sigma_nig,
     B_sigma_normal = B_sigma_normal,
+    B_nu = B_nu,
     corr_measurement = corr_measurement,
     index_corr      = index_corr,
     ...
@@ -414,7 +441,7 @@ print.ngme_noise <- function(x, padding = 0, prefix = "Noise type", suppress_sig
       } else if (suppress_sigma) {
         # only print mu and nu
         cat(paste0(pad_add4_space, ngme_format("mu", noise$theta_mu), "\n",
-          pad_add4_space, ngme_format("nu", noise$nu)))
+          pad_add4_space, ngme_format("nu", noise$theta_nu)))
       } else {
         cat(pad_space); cat("Noise parameters: \n")
         params <- with(noise, {
@@ -422,13 +449,13 @@ print.ngme_noise <- function(x, padding = 0, prefix = "Noise type", suppress_sig
             "normal" = paste0(pad_add4_space, ngme_format("sigma", theta_sigma)),
             "nig"    = paste0(pad_add4_space, ngme_format("mu", theta_mu),
                         "\n", pad_add4_space, ngme_format("sigma", theta_sigma),
-                        "\n", pad_add4_space, ngme_format("nu", nu)),
+                        "\n", pad_add4_space, ngme_format("nu", theta_nu)),
             "gal"    = paste0(pad_add4_space, ngme_format("mu", theta_mu),
                         "\n", pad_add4_space, ngme_format("sigma", theta_sigma),
-                        "\n", pad_add4_space, ngme_format("nu", nu)),
+                        "\n", pad_add4_space, ngme_format("nu", theta_nu)),
             "normal_nig" = paste0(pad_add4_space, ngme_format("mu", theta_mu),
                         "\n", pad_add4_space, ngme_format("sigma_nig", theta_sigma),
-                        "\n", pad_add4_space, ngme_format("nu", nu),
+                        "\n", pad_add4_space, ngme_format("nu", theta_nu),
                         "\n", pad_add4_space, ngme_format("sigma_normal", theta_sigma_normal)),
             NULL
           )
@@ -442,7 +469,7 @@ print.ngme_noise <- function(x, padding = 0, prefix = "Noise type", suppress_sig
     cat(pad_add4_space); cat("correlation(rho) = ");
     cat(format(noise$rho, digits=3)); cat("\n")
   }
-  if (length(noise$nu) > 0 && all(noise$nu > 1000))
+  if (all(noise$B_nu %*% noise$theta_nu > 1000))
     cat("(Notice: Parameter nu seems too big, consider use Gaussian noise.)\n")
 
   invisible(noise)

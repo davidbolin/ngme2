@@ -67,7 +67,7 @@ ngme_format <- function(param, val, model = NULL, ...) {
 
   if (is.null(model)) { # noise
     if (stationary)
-      val <- if (grepl("sigma", param, fixed=TRUE))
+      val <- if (grepl("sigma", param, fixed=TRUE) || grepl("nu", param, fixed=TRUE))
         format(exp(val), digits = 3) else format(val, digits = 3)
     else
       val <-  paste0(format(val, digits = 3), collapse = ", ")
@@ -81,7 +81,8 @@ ngme_format <- function(param, val, model = NULL, ...) {
                 else paste0("theta_sigma_normal = ", val),
       "mu"    = if (stationary) paste0("mu = ", val)
                 else paste0("theta_mu = ", val),
-      "nu"    = paste0("nu = ", val),
+      "nu"    = if (stationary) paste0("nu = ", val)
+                else paste0("theta_nu = ", val),
       "feff"  = if (dne) "No fixed effects" else paste0("feff = ", val)
     )
   } else { # model

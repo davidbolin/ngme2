@@ -117,7 +117,7 @@ control_opt <- function(
   }
 
   if (n_parallel_chain == 1) {
-    compute_precond_each_iter <- TRUE
+    # compute_precond_each_iter <- TRUE
     precond_by_diff_chain <- FALSE
   }
 

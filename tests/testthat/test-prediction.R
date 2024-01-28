@@ -35,7 +35,7 @@ test_that("test predict general", {
   expect_true(abs(out$replicates[[1]]$noise$theta_sigma - log(sigma_eps)) < 1)
   expect_true(abs(out$replicates[[1]]$models[[1]]$noise$theta_mu - mu) < 1)
   expect_true(abs(out$replicates[[1]]$models[[1]]$noise$theta_sigma - log(sigma)) < 1)
-  expect_true(abs(out$replicates[[1]]$models[[1]]$noise$nu - nu) < 5)
+  expect_true(abs(out$replicates[[1]]$models[[1]]$noise$theta_nu - log(nu)) < 5)
 })
 
 

@@ -157,9 +157,9 @@ if (debug) {print(str(ngme_model$replicates[[1]]))}
     # }
     cat("Posterior sampling done! \n")
 
-    mn_nu <- ngme_model$replicates[[1]]$noise$nu
-    if (length(mn_nu) > 1 && mn_nu > 100)
-      cat("The parameter nu for measurement noise is too big, consider using family=normal instead. \n")
+    # mn_nu <- ngme_model$replicates[[1]]$noise$nu
+    # if (length(mn_nu) > 1 && mn_nu > 100)
+    #   cat("The parameter nu for measurement noise is too big, consider using family=normal instead. \n")
 
     # transform trajectory
     traj_df_chains <- transform_traj(attr(outputs, "opt_traj"))

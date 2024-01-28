@@ -60,7 +60,7 @@ print(paste("nodes of mesh = ", mesh$n))
   f_fm_noise$fix_nu = fix_nu
   f_fm_noise$theta_mu = rep(0, ncol(f_fm_noise$B_mu))
   f_fm_noise$theta_sigma = rep(0, ncol(f_fm_noise$B_sigma))
-  f_fm_noise$nu = 1
+  f_fm_noise$theta_nu = rep(0, ncol(f_fm_noise$B_nu))
 
   if (family == "nig") {
     mn_noise <- rnig(n_obs_per_rep, delta=2, mu=-2, nu=1, sigma=0.5, seed=seed)

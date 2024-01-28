@@ -33,8 +33,8 @@ test_that("test bv(ar1, ar1) with 2 noise", {
       B=noise_nig(mu=-3, sigma=2, nu=1)
     )
   )
-true_model
-  W <- simulate(true_model)
+true_model$operator$K
+  W <- simulate(true_model, seed=1)
   AW <- as.numeric(true_model$A %*% W)
   n_obs <- length(AW)
   Y <- AW + rnorm(n_obs, sd=0.5)
@@ -61,7 +61,7 @@ true_model
     ),
     control_opt = control_opt(
       seed = 3,
-      iterations = 50,
+      iterations = 500,
       n_parallel_chain = 4,
       estimation = T,
       verbose = T,

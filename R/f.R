@@ -183,7 +183,11 @@ f <- function(
       "Please specify noise with same name as in the sub_models argument!"
         = all(names(noise[1:2]) %in% operator$model_names),
       "Keep the noise same if you want to specify single V for each noise"
-        = noise[[1]]$single_V == noise[[2]]$single_V
+        = noise[[1]]$single_V == noise[[2]]$single_V,
+      "Does not support non-stationary nu for bivariate noise"
+        = length(unique(c(noise[[1]]$theta_nu, noise[[2]]$theta_nu))) == 1,
+      "Two noise should be the same type"
+        = noise[[1]]$noise_type == noise[[2]]$noise_type
     )
     noise1 <- update_noise(noise[[operator$model_names[[1]]]],
       n=length(operator$h)/2)
@@ -196,7 +200,7 @@ f <- function(
         "share_V option is only supported for 2 NIG noise."
           = noise1$noise_type == noise2$noise_type,
         "share_V option requires nu from both noise are same."
-          = noise1$nu == noise2$nu
+          = noise1$theta_nu == noise2$theta_nu
       )
     }
 
@@ -204,9 +208,10 @@ f <- function(
       noise_type = c(noise1$noise_type, noise2$noise_type),
       B_mu    = as.matrix(Matrix::bdiag(noise1$B_mu, noise2$B_mu)),
       B_sigma = as.matrix(Matrix::bdiag(noise1$B_sigma, noise2$B_sigma)),
+      B_nu    = as.matrix(Matrix::bdiag(noise1$B_nu, noise2$B_nu)),
       theta_mu    = c(noise1$theta_mu, noise2$theta_mu),
       theta_sigma = c(noise1$theta_sigma, noise2$theta_sigma),
-      nu = c(noise1$nu, noise2$nu),
+      theta_nu    = c(noise1$theta_nu, noise2$theta_nu),
       share_V = !is.null(noise$share_V) && noise$share_V,
       single_V = noise1$single_V,
       bv_noises = bv_noises,

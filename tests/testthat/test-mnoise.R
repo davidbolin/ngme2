@@ -40,7 +40,7 @@ test_that("test basic mn", {
 
   expect_true(out$replicates[[1]]$noise$theta_sigma - log(2) < 1)
   expect_true(out$replicates[[1]]$noise$theta_mu - 3 < 1)
-  expect_true(out$replicates[[1]]$noise$nu - 2 < 2)
+  expect_true(out$replicates[[1]]$noise$theta_nu - log(2) < 2)
 
   plot(noise_nig(mu=3, nu=0.8, sigma=0.5), out$replicates[[1]]$noise)
 })

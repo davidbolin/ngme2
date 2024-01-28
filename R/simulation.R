@@ -25,16 +25,19 @@ simulate.ngme_model <- function(
     h <- model$operator$h
     mu    <- as.numeric(noise$B_mu %*% noise$theta_mu)
     sigma <- as.numeric(exp(noise$B_sigma %*% noise$theta_sigma))
-    nu <- noise$nu
+    nu    <- as.numeric(exp(noise$B_nu %*% noise$theta_nu))
     n <- length(mu)
 
     if (length(noise$noise_type) == 2) {
         # bivariate noise
         e1 <- simulate_noise(noise$noise_type[[1]],
-          head(h, n/2), head(mu, n/2), head(sigma, n/2), nu[[1]], seed+1, noise$single_V)
-        if (noise$share_V) e2 <- e1
+          head(h, n/2), head(mu, n/2), head(sigma, n/2), head(nu, n/2),
+          seed+1, noise$single_V)
+        if (noise$share_V)
+            e2 <- e1
         else e2 <- simulate_noise(noise$noise_type[[2]],
-            tail(h, n/2), tail(mu, n/2), tail(sigma, n/2), nu[[2]], seed+2, noise$single_V)
+          tail(h, n/2), tail(mu, n/2), tail(sigma, n/2), tail(nu, n/2),
+          seed+2, noise$single_V)
         e <- c(e1, e2);
         attr(e, "V") <- c(attr(e1, "V"), attr(e2, "V"))
     } else {
@@ -51,10 +54,12 @@ simulate.ngme_model <- function(
 }
 
 simulate_noise <- function(
-    noise_type, h_vec, mu_vec, sigma_vec, nu, seed, single_V
+    noise_type, h_vec, mu_vec, sigma_vec, nu_vec, seed, single_V
 ) {
+    set.seed(seed)
     stopifnot(
         length(mu_vec) == length(sigma_vec),
+        length(mu_vec) == length(nu_vec),
         length(mu_vec) == length(h_vec)
     )
     n <- length(mu_vec)
@@ -62,11 +67,11 @@ simulate_noise <- function(
     if (noise_type == "normal") {
         V <- h_vec
     } else if (noise_type == "nig" || noise_type == "normal_nig") {
-        V <- if (single_V) h_vec * ngme2::rig(1, a=nu, b=nu, seed=seed)
-            else ngme2::rig(n, a=nu, b=nu * (h_vec)^2, seed = seed)
+        V <- if (single_V) h_vec * ngme2::rig(1, a=nu_vec[1], b=nu_vec[1], seed=seed)
+            else ngme2::rig(n, a=nu_vec, b=nu_vec * (h_vec)^2, seed = seed)
     } else if (noise_type == "gal") {
-        V <- if (single_V) h_vec * rgamma(1, nu, nu)
-            else rgamma(n, shape = h_vec * nu, rate = nu)
+        V <- if (single_V) h_vec * rgamma(1, nu_vec[1], nu_vec[1])
+            else rgamma(n, shape = h_vec * nu_vec, rate = nu_vec)
     } else {
         stop("unknown noise to simulate")
     }
@@ -93,7 +98,7 @@ simulate.ngme_noise <- function(
     h = NULL,
     ...
 ) {
-    n_noise <- max(nrow(object$B_mu), nrow(object$B_sigma))
+    n_noise <- max(nrow(object$B_mu), nrow(object$B_sigma), nrow(object$B_nu))
     if (is.null(seed)) seed <- Sys.time()
     if (is.null(h)) h <- rep(1, n_noise)
     if (length(h) > n_noise) n_noise <- length(h)
@@ -102,10 +107,12 @@ simulate.ngme_noise <- function(
     with(object, {
         mu_vec    <- as.numeric(B_mu %*% theta_mu)
         sigma_vec <- as.numeric(exp(B_sigma %*% theta_sigma))
+        nu_vec <- as.numeric(exp(B_nu %*% theta_nu))
         if (length(mu_vec) == 1) mu_vec <- rep(mu_vec, n_noise)
         if (length(sigma_vec) == 1) sigma_vec <- rep(sigma_vec, n_noise)
+        if (length(nu_vec) == 1) nu_vec <- rep(nu_vec, n_noise)
 
-        simulate_noise(noise_type, h, mu_vec, sigma_vec, nu, seed, single_V)
+        simulate_noise(noise_type, h, mu_vec, sigma_vec, nu_vec, seed, single_V)
     })
 }
 

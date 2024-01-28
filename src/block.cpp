@@ -106,13 +106,18 @@ if (debug) std::cout << "After set block K" << std::endl;
     B_sigma       = (Rcpp::as<MatrixXd>      (noise_in["B_sigma"])),
     theta_sigma   = (Rcpp::as<VectorXd>      (noise_in["theta_sigma"])),
     n_theta_sigma = (theta_sigma.size()),
+
+    B_nu          = (Rcpp::as<MatrixXd>      (noise_in["B_nu"])),
+    theta_nu      = (Rcpp::as<VectorXd>      (noise_in["theta_nu"])),
+    n_theta_nu    = (theta_nu.size()),
+
     rb_trace_noise_sigma = VectorXd::Zero(n_theta_sigma),
 
     family = Rcpp::as<string>  (noise_in["noise_type"]);
     noise_mu = B_mu * theta_mu;
     noise_sigma = (B_sigma * theta_sigma).array().exp();
+    noise_nu = (B_nu * theta_nu).array().exp();
 
-    nu = Rcpp::as<VectorXd> (noise_in["nu"]); n_nu = nu.size();
     rho = Rcpp::as<VectorXd> (noise_in["rho"]); n_rho = rho.size();
     corr_measure = Rcpp::as<bool> (noise_in["corr_measurement"]);
 
@@ -128,7 +133,7 @@ if (debug) std::cout << "After set block K" << std::endl;
         prior_nu_param = Rcpp::as<VectorXd> (prior_list["param"]);
 
     if (family != "normal") {
-      NoiseUtil::update_gig(family, nu(0), p_vec, a_vec, b_vec);
+      NoiseUtil::update_gig(family, noise_nu, p_vec, a_vec, b_vec);
     }
 
     if (corr_measure) {
@@ -419,7 +424,7 @@ if (debug) std::cout << "Start set_parameter"<< std::endl;
 
   // measurement noise
   set_theta_merr(Theta.segment(n_la_params, n_merr));
-  if (family!="normal") NoiseUtil::update_gig(family, nu(0), p_vec, a_vec, b_vec);
+  if (family!="normal") NoiseUtil::update_gig(family, noise_nu, p_vec, a_vec, b_vec);
 
   // fixed effects
   if (!fix_flag[block_fix_beta]) {
@@ -429,6 +434,7 @@ if (debug) std::cout << "Start set_parameter"<< std::endl;
   assemble(); //update K,dK,d2K after
 // endTime = std::chrono::steady_clock::now(); update_time = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime); std::cout << "block set time (ms): " << std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count() << std::endl;
   curr_iter++;
+if (debug) std::cout << "Finish set_parameter"<< std::endl;
 }
 
 // sample W|V
@@ -531,7 +537,8 @@ VectorXd BlockModel::get_theta_merr() const {
   theta_merr.segment(0, n_theta_mu) = theta_mu;
   theta_merr.segment(n_theta_mu, n_theta_sigma) = theta_sigma;
   if (family != "normal")
-    theta_merr(n_theta_mu + n_theta_sigma) = log(nu(0));
+    theta_merr.tail(n_theta_nu) = theta_nu;
+
 // std::cout << " rho === " << rho << std::endl;
   if (corr_measure) theta_merr(n_merr-1) = rho2th(rho(0));
 
@@ -544,9 +551,10 @@ VectorXd BlockModel::grad_theta_merr() {
   if (!fix_flag[block_fix_theta_mu])     grad.segment(0, n_theta_mu) = grad_theta_mu();
   if (!fix_flag[block_fix_theta_sigma])  grad.segment(n_theta_mu, n_theta_sigma) = grad_theta_sigma();
   if (!fix_flag[block_fix_nu] && family != "normal") {
-    grad(n_theta_mu + n_theta_sigma) = NoiseUtil::grad_theta_nu(family, nu(0), noise_V, noise_prevV);
+    grad.segment(n_theta_mu + n_theta_sigma, n_theta_nu) = NoiseUtil::grad_theta_nu(family, B_nu, noise_nu, noise_V, noise_prevV);
+
     // add prior
-    grad(n_theta_mu + n_theta_sigma) -= PriorUtil::d_log_dens(prior_nu_type, prior_nu_param, nu(0));
+    // grad(n_theta_mu + n_theta_sigma) -= PriorUtil::d_log_dens(prior_nu_type, prior_nu_param, noise_nu);
   }
 
   // grad of theta_rho
@@ -569,8 +577,8 @@ void BlockModel::set_theta_merr(const VectorXd& theta_merr) {
   theta_mu = theta_merr.segment(0, n_theta_mu);
   theta_sigma = theta_merr.segment(n_theta_mu, n_theta_sigma);
   if (family != "normal") {
-    nu(0) = exp(theta_merr(n_theta_mu + n_theta_sigma));
-    if (nu(0) > 1e4) nu(0) = 1e4;
+    theta_nu = theta_merr.segment(n_theta_mu + n_theta_sigma, n_theta_nu);
+    if (theta_nu(0) > log(1e4)) theta_nu(0) = 1e4;
   }
 
   // update mu, sigma
@@ -740,7 +748,6 @@ void BlockModel::examine_gradient() {
 MatrixXd BlockModel::precond(int strategy, double eps) {
 if (debug) std::cout << "start precond"<< std::endl;
   MatrixXd precond = MatrixXd::Zero(n_params, n_params);
-
   // 1. Preconditioner for Latents
   int index_params = 0;
   for (int i=0; i < n_latent; i++) {
@@ -763,14 +770,13 @@ if (debug) std::cout << "after latents precond"<< std::endl;
 
   // 2. Preconditioner for fixed effects and measurement error
   if (strategy == 0) {
-    // No preconditioner
+    // No preconditioner (or the 1st iteration)
     precond.bottomRightCorner(n_merr + n_feff, n_merr + n_feff) = VectorXd::Constant(n_merr + n_feff, n_obs).asDiagonal();
   } else {
     // have preconditioner
     VectorXd v (n_merr + n_feff);
-    VectorXd log_nu = nu.array().log();
     VectorXd th_rho = rho.unaryExpr(std::ref(rho2th));
-    v << theta_mu, theta_sigma, log_nu, th_rho, beta;
+    v << theta_mu, theta_sigma, theta_nu, th_rho, beta;
 
     MatrixXd hess_merr_feff = num_h_no_latent(v, eps);
     precond.bottomRightCorner(n_merr + n_feff, n_merr + n_feff) = hess_merr_feff;
@@ -819,8 +825,8 @@ MatrixXd BlockModel::num_h_no_latent(const VectorXd& v, double eps) {
 double BlockModel::logd_no_latent(const VectorXd& v) {
 	VectorXd theta_mu = v.segment(0, n_theta_mu);
 	VectorXd theta_sigma = v.segment(n_theta_mu, n_theta_sigma);
-  VectorXd nu = v.segment(n_theta_mu + n_theta_sigma, n_nu).array().exp();
-  VectorXd th_rho = v.segment(n_theta_mu + n_theta_sigma + n_nu, n_rho);
+  VectorXd nu = v.segment(n_theta_mu + n_theta_sigma, n_theta_nu).array().exp();
+  VectorXd th_rho = v.segment(n_theta_mu + n_theta_sigma + n_theta_nu, n_rho);
   VectorXd beta = v.tail(n_feff);
 
   // compute mu & sigma
@@ -876,7 +882,7 @@ double BlockModel::logd_no_latent(const VectorXd& v) {
   double logd_V = 0;
   VectorXd h = VectorXd::Ones(n_obs);
   if (family != "normal") {
-    logd_V = NoiseUtil::log_density(family, noise_V, h, nu(0), FALSE);
+    logd_V = NoiseUtil::log_density(family, noise_V, h, B_nu, theta_nu, FALSE);
   }
 
 // std::cout << "logd_res=" << logd_res << std::endl;
@@ -949,7 +955,7 @@ Rcpp::List BlockModel::output() const {
       Rcpp::Named("noise_type")   = family,
       Rcpp::Named("theta_mu")     = theta_mu,
       Rcpp::Named("theta_sigma")  = theta_sigma,
-      Rcpp::Named("nu")           = nu,
+      Rcpp::Named("theta_nu")     = theta_nu,
       Rcpp::Named("V")            = noise_V,
       Rcpp::Named("rho")          = rho
     ),

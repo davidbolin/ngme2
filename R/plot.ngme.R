@@ -32,10 +32,15 @@ get_noise_info <- function(noise) {
     }
 
     # nu
-    name_nu <- if (noise$n_nu == 0) NULL
-      else if (noise$n_nu == 1) "nu"
-      else paste("nu", seq_len(noise$n_nu))
-    trans_nu <- rep(list(exp), noise$n_nu)
+    if (noise$n_theta_nu == 0) {
+      name_nu <- trans_nu <- NULL
+    } else if (is_stationary(noise$B_nu)) {
+      name_nu <- "nu"
+      trans_nu <- list(exp)
+    } else {
+      name_nu <- paste("theta_nu", seq_len(noise$n_theta_nu))
+      trans_nu <- rep(list(identity), noise$n_theta_nu)
+    }
 
     ts <- list(
       # for bv noise
@@ -177,9 +182,10 @@ plot.ngme_noise <- function(x, y = NULL, ...) {
   noise <- x; noise2 <- y
   mu <- noise$theta_mu
   sigma <- exp(noise$theta_sigma)
-  nu <- noise$nu
+  nu <- exp(noise$theta_nu)
   stopifnot("only implemented for stationary mu" = length(mu) == 1)
   stopifnot("only implemented for stationary sigma" = length(sigma) == 1)
+  stopifnot("only implemented for stationary nu" = length(nu) == 1)
 
   xlim <- if (!is.null(list(...)$xlim)) list(...)$xlim else c(-10, 10)
 
@@ -197,7 +203,7 @@ plot.ngme_noise <- function(x, y = NULL, ...) {
   if (!is.null(noise2)) {
     mu <- noise2$theta_mu
     sigma <- exp(noise2$theta_sigma)
-    nu <- noise2$nu
+    nu <- exp(noise$theta_nu)
     switch(noise2$noise_type,
       "nig"     = dd2 <- dnig(xx, -mu, mu, nu, sigma),
       "gal"     = dd2 <- dgal(xx, -mu, mu, nu, sigma),

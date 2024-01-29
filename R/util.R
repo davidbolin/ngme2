@@ -522,3 +522,15 @@ validate_rep_or_group <- function(replicate, data) {
 
   return (as.factor(replicate))
 }
+
+#' @title Use more interpretable parameterization of the matern model
+#' @description
+#' From SPDE parameter (kappa, sigma, alpha) to (theta_kappa, theta_sigma, theta_alpha)
+#'
+#' @param ope provide the operator
+#'
+#' @return a list of mesh of length of different replicates
+#' @export
+matern_result <- function(ope) {
+  stop("to-do")
+}

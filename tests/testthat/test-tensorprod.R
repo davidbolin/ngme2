@@ -229,3 +229,29 @@ test_that("build A for tp model", {
   )
   m$A
 })
+
+test_that("test model specification", {
+  pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
+  prmesh1 <- fmesher::fm_mesh_2d(
+    loc.domain = pl01, cutoff = 0.1,
+    max.edge = c(1, 10)
+  )
+  prmesh1$n
+
+  dat = data.frame(
+    y = c(1,2,3),
+    xcoo = rnorm(3),
+    ycoo = rnorm(3),
+    w = runif(3),
+    time = sample(3)
+  )
+
+  f(map = list(~time, ~xcoo + ycoo),
+    model="tp",
+    first=list(model="ar1"),
+    second=list(model="matern", mesh=prmesh1, alpha=2),
+    noise = noise_normal(),
+    data = dat
+  )
+})
+

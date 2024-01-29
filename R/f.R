@@ -106,13 +106,14 @@ f <- function(
   f_args <- c(f_args, list(...))
 
   if (model == "tp") {
-    stopifnot(is.list(map) && length(map) == 2,
-      "Please specify map for 2 sub_models"
-        = is.list(map) && length(map) == 2)
+    stopifnot(
+      "Please specify map as a list of length two (for 2 sub-models)" =
+      is.list(map) && length(map) == 2
+    )
     # eval formula
     map <- lapply(map, function(x) {
       if (inherits(x, "formula")) {
-        model.matrix(x, data)
+        model.matrix(x, data)[, -1]
       } else {
         x
       }
@@ -132,8 +133,10 @@ f <- function(
       "Please provide mesh individually for first and second"
         = is.null(mesh)
     )
-    if (is.null(first$mesh)) first$mesh <- ngme_build_mesh(map[[1]])
-    if (is.null(second$mesh)) second$mesh <- ngme_build_mesh(map[[2]])
+
+    if (is.null(first$mesh)) first$mesh <- ngme_build_mesh(map[[1]], model=first$model)
+    if (is.null(second$mesh)) second$mesh <- ngme_build_mesh(map[[2]],
+    model=second$model)
     f_args$first <- if (inherits(first, "ngme_operator")) first else
       build_operator(first$model, first)
     f_args$second <- if (inherits(second, "ngme_operator")) second else

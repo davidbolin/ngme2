@@ -33,7 +33,10 @@ predict.ngme <- function(
 ) {
   fm <- attr(object, "fit")$formula
   ngme <- object$replicate[[1]]
-  stopifnot(sampling_size > 0)
+  stopifnot(
+    sampling_size > 0,
+    "Make sure the object is of class 'ngme'." = inherits(object, "ngme")
+  )
   samples_W <- sampling_cpp(ngme, n=sampling_size, posterior=TRUE, seed=seed)[["W"]]
 
   ret <- NULL

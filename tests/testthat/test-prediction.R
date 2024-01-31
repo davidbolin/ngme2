@@ -85,3 +85,27 @@ test_that("test lpo CV", {
   expect_true(TRUE)
 })
 
+test_that("test prediction with repls", {
+  # load_all()
+  # out <- test_ngme("ar1", n_obs_per_rep = 50, n_replicate = 5)
+  # out
+  # predict.ngme(out$out, map=list(field1=c(1,2,3)))
+
+  # out2 <- ngme(
+  #   formula,
+  #   replicate = repl,
+  #   group = group,
+  #   data = data.frame(Y=Y),
+  #   control_ngme = control_ngme(
+  #     n_gibbs_samples = n_gibbs_samples
+  #   ),
+  #   control_opt = control_opt(
+  #     estimation = F
+  #   ),
+  #   start = out,
+  #   family = fm_mn_noise,
+  #   debug = debug
+  # )
+  # predict.ngme(out, map=list(field1=c(1,2,3)))
+  # predict.ngme(out2, map=list(field1=c(1,2,3)))
+})

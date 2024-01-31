@@ -110,10 +110,14 @@ traceplot <- function(ngme, name="general", hline=NULL) {
   if (name %in% names(ngme$models)) {
     # Plot latent trajectory
     traj <- attr(ngme$models[[name]], "lat_traj")
+    stopifnot("Please run ngme() to estimate the model before using traceplot()"
+      = !is.null(traj))
     ts <- get_latent_info(ngme$models[[name]])
   } else {
     # Plot block trajectory
     traj <- attr(ngme, "block_traj")
+    stopifnot("Please run ngme() to estimate the model before using traceplot()"
+      = !is.null(traj))
     # get titles
     ts <- get_noise_info(ngme$noise)
     name_feff <- if (length(ngme$feff)==0) NULL else paste ("fixed effect", seq_len(length(ngme$feff)))

@@ -156,7 +156,7 @@ ngme_noise <- function(
 #' @rdname ngme_noise
 #' @export
 #' @examples
-#' noise_normal(n = 10, sigma = 2)
+#' noise_normal(sigma = 2)
 noise_normal <- normal <- function(
   sigma             = NULL,
   theta_sigma       = NULL,
@@ -200,7 +200,7 @@ noise_normal <- normal <- function(
 #' @rdname ngme_noise
 #' @export
 #' @examples
-#' noise_nig(mu = 1, sigma = 2, nu = 1, n=10)
+#' noise_nig(mu = 1, sigma = 2, nu = 1)
 noise_nig <- nig <- function(
   mu            = NULL,
   sigma         = NULL,
@@ -247,7 +247,7 @@ noise_nig <- nig <- function(
 #' @rdname ngme_noise
 #' @export
 #' @examples
-#' noise_gal(mu = 1, sigma = 2, nu = 1, n=10)
+#' noise_gal(mu = 1, sigma = 2, nu = 1)
 noise_gal <- gal <- function(
   mu            = NULL,
   sigma         = NULL,
@@ -476,9 +476,11 @@ print.ngme_noise <- function(x, padding = 0, prefix = "Noise type", suppress_sig
 }
 
 subset_noise <- function(noise, sub_idx, compute_corr=TRUE) {
-  noise$B_mu <- noise$B_mu[sub_idx, , drop=FALSE]
+  noise$B_mu    <- noise$B_mu[sub_idx, , drop=FALSE]
   noise$B_sigma <- noise$B_sigma[sub_idx, ,drop=FALSE]
-  noise$V <- noise$V[sub_idx]
+  noise$B_nu    <- noise$B_nu[sub_idx, ,drop=FALSE]
+  noise$V       <- noise$V[sub_idx]
+
   if (!is.null(noise$index_corr)) noise$index_corr <- noise$index_corr[sub_idx]
 
   if (!is.null(noise$corr_measurement) &&

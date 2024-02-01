@@ -29,3 +29,33 @@
 # })
 
 
+test_that("simulate ngme object (with repls)", {
+  out = test_ngme("ar1", n_obs_per_rep = 10, n_replicate = 2)
+  simulate(out$out)
+
+  out2 = ngme(
+    y ~ 0+f(c(1:5, 1:5), model="ar1"),
+    replicate = repls,
+    data = data.frame(y=1:10),
+    family = noise_normal()
+  )
+  out2
+  simulate.ngme(out2, posterior = FALSE)
+  out2$replicate[["A"]]$Y
+})
+
+
+test_that("simulate correlated noise", {
+  out = ngme(
+    y ~ 0+f(c(1:5), model="ar1"),
+    data = data.frame(y=1:5),
+    family = noise_nig(
+      corr_measurement = TRUE,
+      index_corr = c(1,1,2,3,3)
+    ),
+    control_opt = control_opt(
+      estimation = F
+    )
+  )
+  simulate(out)
+})

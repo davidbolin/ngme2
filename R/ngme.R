@@ -349,7 +349,8 @@ ngme_parse_formula <- function(
 
     pre_model[[lang$name]] <- lang
   }
-  uni_repl <- unique(replicate)
+
+  levels <- levels(replicate)
   blocks_rep <- list() # of length n_repl
 
   noise_new <- update_noise(noise, n = length(ngme_response))
@@ -357,8 +358,8 @@ ngme_parse_formula <- function(
       stopifnot("Please make sure the len(index_corr) == observations" =
         length(ngme_response) == length(noise_new$index_corr))
   }
-  for (i in seq_along(uni_repl)) {
-    idx <- replicate == uni_repl[[i]]
+  for (level in levels) {
+    idx <- replicate == level
     data_idx <- which(idx) # record the original index
 
     Y <- ngme_response[idx]
@@ -395,20 +396,20 @@ ngme_parse_formula <- function(
       group_rep <- group_rep[p_order]
       for (j in seq_along(models_rep))
         models_rep[[j]]$A <- models_rep[[j]]$A[p_order, , drop = FALSE]
+
       # update noise, consider index_corr
       noise_rep <- subset_noise(noise_rep, sub_idx = p_order, compute_corr = TRUE)
     }
 
-    blocks_rep[[i]] <- ngme_replicate(
+    blocks_rep[[level]] <- ngme_replicate(
       data_idx = data_idx,
       Y = Y,
       X = X,
       group = group_rep,
       noise = noise_rep,
       models = models_rep,
-      replicate = uni_repl[[i]],
       control_ngme = control_ngme,
-      n_repl = length(uni_repl),
+      n_repl = length(levels),
       all_gaussian = all_gaussian
     )
   }

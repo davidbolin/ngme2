@@ -500,7 +500,7 @@ ngme_make_mesh_repls <- function(
 # return as integer
 validate_rep_or_group <- function(replicate, data) {
   if (is.null(replicate))
-    return (rep(1, nrow(data)))
+    replicate <- rep(1, nrow(data))
 
   if (inherits(replicate, "formula")) {
     # input as: replicate = ~id

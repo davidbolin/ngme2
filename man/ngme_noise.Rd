@@ -13,10 +13,12 @@ ngme_noise(
   mu = 0,
   sigma = 1,
   nu = 1,
-  theta_mu = NULL,
   B_mu = NULL,
-  theta_sigma = NULL,
+  theta_mu = NULL,
   B_sigma = NULL,
+  theta_sigma = NULL,
+  B_nu = NULL,
+  theta_nu = NULL,
   theta_sigma_normal = NULL,
   B_sigma_normal = NULL,
   fix_theta_mu = FALSE,
@@ -52,8 +54,10 @@ noise_nig(
   V = NULL,
   theta_mu = NULL,
   theta_sigma = NULL,
+  theta_nu = NULL,
   B_mu = matrix(1),
   B_sigma = matrix(1),
+  B_nu = matrix(1),
   corr_measurement = FALSE,
   index_corr = NULL,
   ...
@@ -66,8 +70,10 @@ noise_gal(
   V = NULL,
   theta_mu = NULL,
   theta_sigma = NULL,
+  theta_nu = NULL,
   B_mu = matrix(1),
   B_sigma = matrix(1),
+  B_nu = matrix(1),
   corr_measurement = FALSE,
   index_corr = NULL,
   ...
@@ -82,9 +88,11 @@ noise_normal_nig(
   theta_mu = NULL,
   theta_sigma_nig = NULL,
   theta_sigma_normal = NULL,
+  theta_nu = NULL,
   B_mu = matrix(1),
   B_sigma_nig = matrix(1),
   B_sigma_normal = matrix(1),
+  B_nu = matrix(1),
   corr_measurement = FALSE,
   index_corr = NULL,
   ...
@@ -97,15 +105,17 @@ noise_normal_nig(
 
 \item{sigma}{specify the noise parameter sigma, see \code{?nig}}
 
-\item{nu}{specify the NIG noise parameter nu (nu>0), see \code{?nig}}
+\item{B_mu}{Basis matrix for mu (if non-stationary)}
 
 \item{theta_mu}{specify a non-stationary noise using theta_mu}
 
-\item{B_mu}{Basis matrix for mu (if non-stationary)}
+\item{B_sigma}{Basis matrix for sigma (if non-stationary)}
 
 \item{theta_sigma}{specify a non-stationary noise using theta_sigma}
 
-\item{B_sigma}{Basis matrix for sigma (if non-stationary)}
+\item{B_nu}{Basis matrix for nu (if non-stationary)}
+
+\item{theta_nu}{specify a non-stationary noise using theta_nu}
 
 \item{theta_sigma_normal}{for normal nosie with nig noise sharing same parameter}
 
@@ -158,13 +168,14 @@ Please use \code{noise_nig} and \code{noise_normal} for simpler usage.
 Use \code{ngme_noise_types()} to check all the available types.
 }
 \details{
-The parameterization is given in \code{?nig}. Moreover,
-for specifying non-stationary mu and sigma,
+The parameterization is given in \code{?nig} and \code{?gal}. Moreover,
+for specifying non-stationary mu and sigma, nu
 \deqn{\mu = B_{\mu} \theta_{\mu},} and
 \deqn{\sigma = \exp (B_{\sigma} \theta_{\sigma}),}
+\deqn{\nu = \exp (B_{\nu} \theta_{\nu}).}
 }
 \examples{
-noise_normal(n = 10, sigma = 2)
-noise_nig(mu = 1, sigma = 2, nu = 1, n=10)
-noise_gal(mu = 1, sigma = 2, nu = 1, n=10)
+noise_normal(sigma = 2)
+noise_nig(mu = 1, sigma = 2, nu = 1)
+noise_gal(mu = 1, sigma = 2, nu = 1)
 }

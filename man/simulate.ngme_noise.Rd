@@ -9,7 +9,7 @@
 \arguments{
 \item{object}{ngme noise object}
 
-\item{nsim}{ignored}
+\item{nsim}{length of the noise}
 
 \item{seed}{seed}
 

@@ -154,7 +154,7 @@ f <- function(
         stopifnot("Now only support first to be 1d model"
           = inherits(operator$first$mesh, "inla.mesh.1d"))
         # A <- INLA::inla.spde.make.A(loc=map[[2]], mesh=operator$second$mesh, repl=group)
-        blk_group <- as.integer(as.factor(map[[1]]))
+        blk_group <- as.integer(map[[1]])
         blk <- fmesher::fm_block(blk_group)
         basis <- fmesher::fm_basis(operator$second$mesh, loc=map[[2]])
         fmesher::fm_row_kron(Matrix::t(blk), basis)

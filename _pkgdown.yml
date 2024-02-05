@@ -97,6 +97,7 @@ reference:
     - traceplot
   - title: Simulation functions
     contents:
+    - simulate.ngme
     - simulate.ngme_model
     - simulate.ngme_noise
   - title: Auxiliary functions

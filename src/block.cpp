@@ -367,7 +367,7 @@ long long time_sample_w = 0;
     }
     noise_grad.head(n_merr) += grad_theta_merr();
     if (!fix_flag[block_fix_beta]) {
-      noise_grad.tail(n_feff) += (1.0/n_repl) * grad_beta();
+      noise_grad.tail(n_feff) += grad_beta();
     }
   } else { // Running Gibbs sampling
     for (int i=0; i < n_gibbs; i++) {
@@ -388,7 +388,7 @@ long long time_sample_w = 0;
 // endTime = std::chrono::steady_clock::now(); sampling_time += std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);std::cout << "!!sampling time (ms): " << std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count() << std::endl;
       noise_grad.head(n_merr) += grad_theta_merr();
       if (!fix_flag[block_fix_beta]) {
-        noise_grad.tail(n_feff) += (1.0/n_repl) * grad_beta();
+        noise_grad.tail(n_feff) += grad_beta();
       }
     }
     noise_grad  = (1.0/n_gibbs) * noise_grad;

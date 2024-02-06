@@ -170,13 +170,12 @@ simulate.ngme <- function(
   replicate <- attr$fit$replicate
   for (repl in levels(replicate)) {
     repl_idx <- replicate == repl
-    Y[repl_idx] <- simulate_1rep(object$replicate[[repl]], posterior, seed)
-  }
+    this_repl <- object$replicate[[repl]]
+    Y[repl_idx] <- simulate_1rep(this_repl, posterior, seed)
 
-  # add measurement noise
-  if (m_noise) {
-    noise <- object$replicate[[1]]$noise
-    Y <- Y + simulate(noise, nsim=nsim, seed=seed)
+    # add measurement noise
+    if (m_noise) Y[repl_idx] <-
+      Y[repl_idx] + simulate(this_repl$noise, nsim=nsim, seed=seed)
   }
 
   Y

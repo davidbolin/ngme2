@@ -18,7 +18,7 @@ test_that("numerical gradient works", {
     theta_K = theta_k,
     noise = noise_nig()
   )
-  W <- simulate(ou)
+  W <- simulate(ou)[[1]]
   Y <- W + rnorm(n_obs, sd=0.01)
 
   out <- ngme(

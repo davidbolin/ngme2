@@ -116,7 +116,7 @@ print(paste("nodes of mesh = ", mesh$n))
       iid_model <- f(idx, model="iid",
         noise = f_noise
       )
-      W <- simulate(iid_model, seed = seed)
+      W <- simulate(iid_model, seed = seed)[[1]]
       Y <- W + mn_noise
       list(Y=Y, idx=idx, group=rep(1, n_obs_per_rep))
     },
@@ -125,7 +125,7 @@ print(paste("nodes of mesh = ", mesh$n))
       ar1_model <- f(idx, model="ar1", rho = 0.5,
         noise = f_noise
       )
-      W <- simulate(ar1_model, seed = seed)
+      W <- simulate(ar1_model, seed = seed)[[1]]
       Y <- W + mn_noise
       list(Y=Y, idx=idx, group=rep(1, n_obs_per_rep))
     },
@@ -138,7 +138,7 @@ print(paste("nodes of mesh = ", mesh$n))
         mesh = mesh,
         noise = f_noise
       )
-      W <- simulate(matern_model, seed=seed)
+      W <- simulate(matern_model, seed=seed)[[1]]
       Y <- as.numeric(matern_model$A %*% W) + mn_noise
       list(Y=Y, idx=loc, group=rep(1, n_obs_per_rep))
     },
@@ -146,8 +146,8 @@ print(paste("nodes of mesh = ", mesh$n))
       idx <- 1:n_obs_per_rep
       ar1_model_1 <- f(idx, model="ar1", rho = 0.5, noise = f_noise)
       ar1_model_2 <- f(idx, model="ar1", rho = -0.6, noise = f_noise)
-      W1 <- simulate(ar1_model_1, seed = seed)
-      W2 <- simulate(ar1_model_2, seed = seed)
+      W1 <- simulate(ar1_model_1, seed = seed)[[1]]
+      W2 <- simulate(ar1_model_2, seed = seed)[[1]]
       Y <- W1 + W2 + mn_noise
       list(Y=Y, idx=idx, group=rep(1, n_obs_per_rep))
     },
@@ -160,8 +160,8 @@ print(paste("nodes of mesh = ", mesh$n))
         theta_K = log(4), mesh = mesh,
         noise = f_noise
       )
-      W1 <- simulate(ar1_model, seed = seed)
-      W2 <- simulate(matern_model, seed = seed)
+      W1 <- simulate(ar1_model, seed = seed)[[1]]
+      W2 <- simulate(matern_model, seed = seed)[[1]]
       Y <- W1 + as.numeric(matern_model$A %*% W2) + mn_noise
       list(Y=Y, idx=list(idx, loc), group=rep(1, n_obs_per_rep))
     },
@@ -182,7 +182,7 @@ print(paste("nodes of mesh = ", mesh$n))
           second = f_noise
         )
       )
-      W <- simulate(true_model, seed=seed)
+      W <- simulate(true_model, seed=seed)[[1]]
       Y <- as.numeric(true_model$A %*% W) + mn_noise
       list(Y=Y, idx=idx_per_rep, group=group_per_rep)
     },
@@ -206,7 +206,7 @@ print(paste("nodes of mesh = ", mesh$n))
           second=noise_nig(mu=-3, sigma=2, nu=1)
         )
       )
-      W <- simulate(true_model, seed=seed)
+      W <- simulate(true_model, seed=seed)[[1]]
       Y <- as.numeric(true_model$A %*% W) + mn_noise
       list(Y=Y, idx=loc, group=group_per_rep)
     },
@@ -228,7 +228,7 @@ print(paste("nodes of mesh = ", mesh$n))
         noise=f_noise
       )
 
-      W <- simulate(matern_graph, seed=seed)
+      W <- simulate(matern_graph, seed=seed)[[1]]
 
       # build observation and A matrices
       obs.per.edge <- n_obs_per_rep / graph$nE

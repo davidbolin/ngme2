@@ -31,7 +31,7 @@
 
 test_that("simulate ngme object (with repls)", {
   out = test_ngme("ar1", n_obs_per_rep = 10, n_replicate = 2)
-  simulate(out$out)
+  simulate(out$out)[[1]]
 
   out2 = ngme(
     y ~ 0+f(c(1:5, 1:5), model="ar1"),
@@ -57,5 +57,5 @@ test_that("simulate correlated noise", {
       estimation = F
     )
   )
-  simulate(out)
+  simulate(out)[[1]]
 })

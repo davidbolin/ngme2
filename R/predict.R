@@ -360,8 +360,8 @@ compute_err_1rep <- function(
   fe_N <- matrix(rep(fe, N), ncol=N, byrow=F)
 
   # simulate measurement noise
-  mn_N  <- sapply(1:N, function(x) simulate(noise_test_idx))
-  mn2_N <- sapply(1:N, function(x) simulate(noise_test_idx))
+  mn_N  <- sapply(1:N, function(x) simulate(noise_test_idx)[[1]])
+  mn2_N <- sapply(1:N, function(x) simulate(noise_test_idx)[[1]])
 
   mu_N <- fe_N + AW_N
   Y_N <- fe_N + AW_N + mn_N

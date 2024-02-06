@@ -93,8 +93,8 @@ bv2 <- f(
   ),
   group = labels,
   noise = list(
-    precip=noise_normal(),
-    temp=noise_nig() # can have 2 different noise for each field
+    precip=noise_nig(),
+    temp=noise_nig()
   )
 )
 bv2
@@ -222,7 +222,7 @@ W <- simulate(
       W2 = noise_nig(mu=2,sigma=2,nu=0.5)
     )
   )
-)
+)[[1]]
 # Here we assume W1 and W2 have positive correlated measurement error
 # if they are measured at same index.
 # Meaning Y(i) and Y(j) have correlated measurement noise
@@ -299,7 +299,7 @@ true_model <- f(
     mu = 2, sigma=2, nu=0.5
   ))
 )
-W <- simulate(true_model)
+W <- simulate(true_model)[[1]]
 Y <- as.numeric(true_model$A %*% W); Y <- Y + rnorm(length(Y))
 data <- data.frame(Y, long, lat)
 

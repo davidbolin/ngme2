@@ -52,8 +52,8 @@ library(ggplot2)
 n <- 500
 myar <- ngme2::f(1:n, model="ar1", rho = .75, noise = noise_nig())
 
-W1 <- simulate(myar, seed = 314) # simulating one realization of the process
-W2 <- simulate(myar, seed = 159) # simulating another realization of the process
+W1 <- simulate(myar, seed = 314)[[1]] # simulating one realization of the process
+W2 <- simulate(myar, seed = 159)[[1]] # simulating another realization of the process
 
 # Creating the response variable from the process and adding measurement noise
 Y <- -3 + c(W1, W2) + rnorm(2 * n, sd = .2)

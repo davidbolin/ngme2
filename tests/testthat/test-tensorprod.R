@@ -100,9 +100,9 @@
 test_that("iid x ar case", {
   set.seed(16)
   n_obs <- 200
-  Y1 <- simulate(f(1:n_obs, model="ar1", rho=0.7, noise=noise_normal()))
-  Y2 <- simulate(f(1:n_obs, model="ar1", rho=0.7, noise=noise_normal()))
-  Y3 <- simulate(f(1:n_obs, model="ar1", rho=0.7, noise=noise_normal()))
+  Y1 <- simulate(f(1:n_obs, model="ar1", rho=0.7, noise=noise_normal()))[[1]]
+  Y2 <- simulate(f(1:n_obs, model="ar1", rho=0.7, noise=noise_normal()))[[1]]
+  Y3 <- simulate(f(1:n_obs, model="ar1", rho=0.7, noise=noise_normal()))[[1]]
   Y <- c(Y1, Y2, Y3) + rnorm(n = 3*n_obs)
   time <- rep(1:3, each=n_obs)
   loc <- rep(1:n_obs, 3)
@@ -180,7 +180,7 @@ test_that("ar x ar case", {
     noise = noise_nig(mu=-3, sigma=2, nu=1)
   )
   tensor_model
-  W <- simulate(tensor_model)
+  W <- simulate(tensor_model)[[1]]
   AW <- as.numeric(tensor_model$A %*% W)
   n_obs <- length(AW)
   Y <- AW + rnorm(n_obs, sd=0.5)

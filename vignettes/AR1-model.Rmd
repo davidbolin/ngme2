@@ -67,7 +67,7 @@ n_obs <- 1000
 day <- 1:n_obs
 ar1_model <- f(day, model="ar1", rho = 0.5,
   noise = noise_nig(mu = -3, sigma = 4, nu=0.4))
-W <- simulate(ar1_model, seed = 16)
+W <- simulate(ar1_model, seed = 16, nsim=1)[[1]]
 
 # 1 sample process of our model
 plot(W, type="l")

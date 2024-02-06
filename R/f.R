@@ -187,8 +187,6 @@ f <- function(
         = all(names(noise[1:2]) %in% operator$model_names),
       "Keep the noise same if you want to specify single V for each noise"
         = noise[[1]]$single_V == noise[[2]]$single_V,
-      "Does not support non-stationary nu for bivariate noise"
-        = length(unique(c(noise[[1]]$theta_nu, noise[[2]]$theta_nu))) == 1,
       "Two noise should be the same type"
         = noise[[1]]$noise_type == noise[[2]]$noise_type
     )

@@ -9,7 +9,7 @@ test_that("test predict general", {
   mu <- 1.5; sigma <- 2.3; nu <- 2; sigma_eps <- 0.8
 
   ar1 <- f(1:n_obs, model="ar1", rho=alpha, noise=noise_nig(mu=mu, sigma=sigma, nu=nu))
-  W <- simulate(ar1)
+  W <- simulate(ar1)[[1]]
   Y <- feff[1] + x1 * feff[2] + x2 * feff[3] + W + rnorm(n_obs, sd = sigma_eps)
 
   # first we test estimation
@@ -43,7 +43,7 @@ test_that("test posterior sampling and model_validation()", {
   n_obs <- 20
   alpha <- 0.3; mu = -3; sigma=2; nu=2; sigma_eps <- 0.5
   my_ar <- f(1:n_obs, model="ar1", noise=noise_nig(mu=mu, sigma=sigma, nu=nu), eval=TRUE)
-  W <- simulate(my_ar)
+  W <- simulate(my_ar)[[1]]
   Y <- W + rnorm(n=length(W), sd=sigma_eps)
 
   out <- ngme(
@@ -67,7 +67,7 @@ test_that("test posterior sampling and model_validation()", {
 test_that("test lpo CV", {
   n_obs <- 100
   ar_mod <- f(1:n_obs, model="ar1", noise=noise_nig())
-  yy <- simulate(ar_mod) + rnorm(n_obs, sd=0.5)
+  yy <- simulate(ar_mod)[[1]] + rnorm(n_obs, sd=0.5)
   ng_100 <- ngme(
     yy~0+f(1:n_obs, model="ar1", noise=noise_nig()),
     data = data.frame(yy=yy),

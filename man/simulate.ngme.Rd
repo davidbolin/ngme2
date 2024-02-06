@@ -4,14 +4,7 @@
 \alias{simulate.ngme}
 \title{Simulate from a ngme object (possibly with replicates)}
 \usage{
-\method{simulate}{ngme}(
-  object,
-  posterior = TRUE,
-  m_noise = TRUE,
-  seed = NULL,
-  nsim = NULL,
-  ...
-)
+\method{simulate}{ngme}(object, posterior = TRUE, m_noise = TRUE, nsim = 1, seed = NULL, ...)
 }
 \arguments{
 \item{object}{ngme object}
@@ -20,9 +13,9 @@
 
 \item{m_noise}{whether to add the measurement noise}
 
-\item{seed}{seed}
+\item{nsim}{number of simulations}
 
-\item{nsim}{ignored}
+\item{seed}{seed}
 
 \item{...}{ignored}
 }

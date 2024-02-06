@@ -257,7 +257,7 @@ spde_1d <- ngme2::f(
 )
 K <- spde_1d$operator$K
 
-W <- simulate(spde_1d, seed = 10)
+W <- simulate(spde_1d, seed = 10)[[1]]
 plot(loc_1d, W, type = "l")
 str(W)
 

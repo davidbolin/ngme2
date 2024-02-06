@@ -1,7 +1,7 @@
 #' Simulate latent process with noise
 #'
-#' @param object  ngme model specified by f() function
-#' @param nsim ignored
+#' @param object ngme model specified by f() function
+#' @param nsim number of simulations
 #' @param seed seed
 #' @param ... ignored
 #'
@@ -13,44 +13,52 @@
 #' simulate(f(rnorm(10), model="rw1", noise = noise_normal()))
 simulate.ngme_model <- function(
   object,
-  nsim   = NULL,
-  seed   = NULL,
+  nsim = 1,
+  seed = NULL,
   ...
 ) {
   if (is.null(seed)) seed <- Sys.time()
   model <- object
   noise <- model$noise
 
-  # simulate noise
-  h <- model$operator$h
-  mu    <- as.numeric(noise$B_mu %*% noise$theta_mu)
-  sigma <- as.numeric(exp(noise$B_sigma %*% noise$theta_sigma))
-  nu    <- as.numeric(exp(noise$B_nu %*% noise$theta_nu))
-  n <- length(mu)
+  sims <- list(); V_sim <- list()
+  for (nn in 1:nsim) {
+    seed <- seed + nn
+    # simulate noise
+    h <- model$operator$h
+    mu    <- as.numeric(noise$B_mu %*% noise$theta_mu)
+    sigma <- as.numeric(exp(noise$B_sigma %*% noise$theta_sigma))
+    nu    <- as.numeric(exp(noise$B_nu %*% noise$theta_nu))
+    n <- length(mu)
 
-  if (length(noise$noise_type) == 2) {
-    # bivariate noise
-    e1 <- simulate_noise(noise$noise_type[[1]],
-      head(h, n/2), head(mu, n/2), head(sigma, n/2), head(nu, n/2),
-      seed+1, noise$single_V)
-    if (noise$share_V)
-      e2 <- e1
-    else e2 <- simulate_noise(noise$noise_type[[2]],
-      tail(h, n/2), tail(mu, n/2), tail(sigma, n/2), tail(nu, n/2),
-      seed+2, noise$single_V)
-    e <- c(e1, e2);
-    attr(e, "V") <- c(attr(e1, "V"), attr(e2, "V"))
-  } else {
-    e <- simulate_noise(noise$noise_type, h, mu, sigma, nu, seed+3, noise$single_V)
+    if (length(noise$noise_type) == 2) {
+      # bivariate noise
+      e1 <- simulate_noise(noise$noise_type[[1]],
+        head(h, n/2), head(mu, n/2), head(sigma, n/2), head(nu, n/2),
+        seed+1000, noise$single_V)
+      if (noise$share_V)
+        e2 <- e1
+      else e2 <- simulate_noise(noise$noise_type[[2]],
+        tail(h, n/2), tail(mu, n/2), tail(sigma, n/2), tail(nu, n/2),
+        seed+2000, noise$single_V)
+      e <- c(e1, e2);
+      attr(e, "V") <- c(attr(e1, "V"), attr(e2, "V"))
+    } else {
+      e <- simulate_noise(noise$noise_type, h, mu, sigma, nu, seed+3, noise$single_V)
+    }
+
+    W <- as.numeric(solve(model$operator$K, e))
+    W <- W - mean(W)
+
+    sims[[paste0("sim_", nn)]] <- W
+    V_sim[[paste0("sim_", nn)]] <- attr(e, "V")
   }
-  W <- as.numeric(solve(model$operator$K, e))
-  W <- W - mean(W)
 
-  # attach noise attributes
-  attr(W, "noise") <- noise
-  attr(W, "V") <- attr(e, "V")
-
-  return (W)
+  structure(
+    as.data.frame(sims),
+    V_sim = as.data.frame(V_sim),
+    noise = noise
+  )
 }
 
 simulate_noise <- function(
@@ -86,61 +94,67 @@ simulate_noise <- function(
 #' @param object  ngme noise object
 #' @param h should be of same length as nsim
 #' @param seed seed
-#' @param nsim length of the noise
+#' @param nsim number of simulations
 #' @param ... ignored
 #'
-#' @return a realization of noise
+#' @return data.frame (each col is a realization)
 #' @export
 simulate.ngme_noise <- function(
   object,
-  nsim = NULL,
+  nsim = 1,
   seed = NULL,
   h = NULL,
   ...
 ) {
-  n_noise <- max(nrow(object$B_mu), nrow(object$B_sigma), nrow(object$B_nu), nsim)
+  n_noise <- max(nrow(object$B_mu), nrow(object$B_sigma), nrow(object$B_nu))
   if (is.null(seed)) seed <- Sys.time()
   if (is.null(h)) h <- rep(1, n_noise)
   if (length(h) > n_noise) n_noise <- length(h)
   stopifnot(length(h) == n_noise)
 
-  # return this
-  with(object, {
-    res <- numeric(n_noise)
-    mu_vec    <- as.numeric(B_mu %*% theta_mu)
-    sigma_vec <- as.numeric(exp(B_sigma %*% theta_sigma))
-    nu_vec <- as.numeric(exp(B_nu %*% theta_nu))
-    if (length(mu_vec) == 1) mu_vec <- rep(mu_vec, n_noise)
-    if (length(sigma_vec) == 1) sigma_vec <- rep(sigma_vec, n_noise)
-    if (length(nu_vec) == 1) nu_vec <- rep(nu_vec, n_noise)
+  sims <- list()
+  for (nn in 1:nsim) {
+    seed <- seed + nn
+    sims[[paste0("sim_", nn)]] <-  with(object, {
+      res <- numeric(n_noise)
+      mu_vec    <- as.numeric(B_mu %*% theta_mu)
+      sigma_vec <- as.numeric(exp(B_sigma %*% theta_sigma))
+      nu_vec <- as.numeric(exp(B_nu %*% theta_nu))
+      if (length(mu_vec) == 1) mu_vec <- rep(mu_vec, n_noise)
+      if (length(sigma_vec) == 1) sigma_vec <- rep(sigma_vec, n_noise)
+      if (length(nu_vec) == 1) nu_vec <- rep(nu_vec, n_noise)
 
-    if (!corr_measurement) {
-      res <- simulate_noise(noise_type, h, mu_vec, sigma_vec, nu_vec, seed, single_V)
-    } else {
-      # simulate correlated noise
-      i = 1;
-      while (i <= n_noise) {
-        if (i==n_noise || index_corr[[i]] != index_corr[[i+1]]) {
-          res[i] <- simulate_noise(noise_type, h[i], mu_vec[i], sigma_vec[i], nu_vec[i], seed, single_V)
-          i = i + 1
-        } else {
-          # simulate a pair correlated noise
-          if (noise_type == "normal") {
-            cov_mat <- matrix(c(sigma_vec[i]^2, sigma_vec[i]*sigma_vec[i+1]*rho,
-                                sigma_vec[i]*sigma_vec[i+1]*rho, sigma_vec[i+1]^2),
-                              nrow=2)
-            res[i:(i+1)] <- mvtnorm::rmvnorm(1, rep(0, 2), cov_mat)
-            i = i + 2
+      if (!corr_measurement) {
+        res <- simulate_noise(noise_type, h, mu_vec, sigma_vec, nu_vec, seed, single_V)
+      } else {
+        # simulate correlated noise
+        i = 1;
+        while (i <= n_noise) {
+          if (i==n_noise || index_corr[[i]] != index_corr[[i+1]]) {
+            res[i] <- simulate_noise(noise_type, h[i], mu_vec[i], sigma_vec[i], nu_vec[i], seed, single_V)
+            i = i + 1
           } else {
-            # to-do
-            warning("Simulation of correlated NIG and GAL is not implemented yet, return only 0 for now.")
-            return (res)
+            # simulate a pair correlated noise
+            if (noise_type == "normal") {
+              cov_mat <- matrix(c(sigma_vec[i]^2, sigma_vec[i]*sigma_vec[i+1]*rho,
+                                  sigma_vec[i]*sigma_vec[i+1]*rho, sigma_vec[i+1]^2),
+                                nrow=2)
+              res[i:(i+1)] <- mvtnorm::rmvnorm(1, rep(0, 2), cov_mat)
+              i = i + 2
+            } else {
+              stop("Simulation of correlated NIG and GAL is not implemented yet, return only 0 for now.")
+            }
           }
         }
       }
-    }
-    res
-  })
+      res
+    })
+  }
+
+  structure(
+    as.data.frame(sims),
+    V_sim = as.data.frame(lapply(sims, function(x) attr(x, "V")))
+  )
 }
 
 
@@ -149,8 +163,8 @@ simulate.ngme_noise <- function(
 #' @param object  ngme object
 #' @param posterior whether to simulate from posterior sampling of latent fields
 #' @param m_noise whether to add the measurement noise
+#' @param nsim number of simulations
 #' @param seed seed
-#' @param nsim ignored
 #' @param ... ignored
 #'
 #' @return a realization of ngme object
@@ -159,26 +173,32 @@ simulate.ngme <- function(
   object,
   posterior = TRUE,
   m_noise = TRUE,
+  nsim = 1,
   seed = NULL,
-  nsim = NULL,
   ...
 ) {
+  if (is.null(seed)) seed <- Sys.time()
   attr <- attributes(object)
-  Y <- numeric(attr$fit$n_data)
+  sims <- list()
 
-  # simulate from different replicates
-  replicate <- attr$fit$replicate
-  for (repl in levels(replicate)) {
-    repl_idx <- replicate == repl
-    this_repl <- object$replicate[[repl]]
-    Y[repl_idx] <- simulate_1rep(this_repl, posterior, seed)
+  for (nn in 1:nsim) {
+    seed <- seed + nn
+    Y <- numeric(attr$fit$n_data)
+    # simulate from different replicates
+    replicate <- attr$fit$replicate
+    for (repl in levels(replicate)) {
+      repl_idx <- replicate == repl
+      this_repl <- object$replicate[[repl]]
+      Y[repl_idx] <- simulate_1rep(this_repl, posterior, seed)
 
-    # add measurement noise
-    if (m_noise) Y[repl_idx] <-
-      Y[repl_idx] + simulate(this_repl$noise, nsim=nsim, seed=seed)
+      sim_noise <- simulate(this_repl$noise, nsim=1, seed=seed)[[1]]
+      # add measurement noise
+      if (m_noise) Y[repl_idx] <- Y[repl_idx] + sim_noise
+    }
+    sims[[paste0("sim_", nn)]] <- Y
   }
 
-  Y
+  as.data.frame(sims)
 }
 
 # simulate from one replicate

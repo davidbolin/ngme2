@@ -196,7 +196,7 @@ matern_graph <- ngme2::f(
 )
 
 matern_graph
-W <- simulate(matern_graph, seed=10)
+W <- simulate(matern_graph, seed=10)[[1]]
 
 graph$plot_function(X=as.numeric(W))
 

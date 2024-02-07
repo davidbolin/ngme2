@@ -154,7 +154,8 @@ f <- function(
         stopifnot("Now only support first to be 1d model"
           = inherits(operator$first$mesh, "inla.mesh.1d"))
         # A <- INLA::inla.spde.make.A(loc=map[[2]], mesh=operator$second$mesh, repl=group)
-        blk_group <- as.integer(map[[1]])
+        # watch-out! Should use as.factor to start at 1, not min(map[[1]])
+        blk_group <- as.integer(as.factor(map[[1]]))
         blk <- fmesher::fm_block(blk_group)
         basis <- fmesher::fm_basis(operator$second$mesh, loc=map[[2]])
         fmesher::fm_row_kron(Matrix::t(blk), basis)
@@ -289,6 +290,7 @@ ngme_build_mesh <- function(
       stopifnot("The map should be integers."
         = is.numeric(loc) && all(loc == round(loc)))
       return (fmesher::fm_mesh_1d(loc = min(loc):max(loc)))
+      # return (fmesher::fm_mesh_1d(as.integer(as.factor(loc))))
     }
   }
 

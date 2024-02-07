@@ -111,10 +111,12 @@ Use <code><a href="ngme_noise_types.html">ngme_noise_types()</a></code> to check
 <span>  mu <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  sigma <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  nu <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>  theta_mu <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  B_mu <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  theta_sigma <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  theta_mu <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  B_sigma <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  theta_sigma <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  B_nu <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  theta_nu <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  theta_sigma_normal <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  B_sigma_normal <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  fix_theta_mu <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -150,8 +152,10 @@ Use <code><a href="ngme_noise_types.html">ngme_noise_types()</a></code> to check
 <span>  V <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  theta_mu <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  theta_sigma <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  theta_nu <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  B_mu <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,</span>
 <span>  B_sigma <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,</span>
+<span>  B_nu <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,</span>
 <span>  corr_measurement <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  index_corr <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
@@ -164,8 +168,10 @@ Use <code><a href="ngme_noise_types.html">ngme_noise_types()</a></code> to check
 <span>  V <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  theta_mu <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  theta_sigma <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  theta_nu <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  B_mu <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,</span>
 <span>  B_sigma <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,</span>
+<span>  B_nu <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,</span>
 <span>  corr_measurement <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  index_corr <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
@@ -180,9 +186,11 @@ Use <code><a href="ngme_noise_types.html">ngme_noise_types()</a></code> to check
 <span>  theta_mu <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  theta_sigma_nig <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  theta_sigma_normal <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  theta_nu <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  B_mu <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,</span>
 <span>  B_sigma_nig <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,</span>
 <span>  B_sigma_normal <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,</span>
+<span>  B_nu <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,</span>
 <span>  corr_measurement <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  index_corr <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
@@ -203,24 +211,28 @@ Use <code><a href="ngme_noise_types.html">ngme_noise_types()</a></code> to check
 <dd><p>specify the noise parameter sigma, see <code><a href="nig.html">?nig</a></code></p></dd>
 
 
-<dt>nu</dt>
-<dd><p>specify the NIG noise parameter nu (nu&gt;0), see <code><a href="nig.html">?nig</a></code></p></dd>
+<dt>B_mu</dt>
+<dd><p>Basis matrix for mu (if non-stationary)</p></dd>
 
 
 <dt>theta_mu</dt>
 <dd><p>specify a non-stationary noise using theta_mu</p></dd>
 
 
-<dt>B_mu</dt>
-<dd><p>Basis matrix for mu (if non-stationary)</p></dd>
+<dt>B_sigma</dt>
+<dd><p>Basis matrix for sigma (if non-stationary)</p></dd>
 
 
 <dt>theta_sigma</dt>
 <dd><p>specify a non-stationary noise using theta_sigma</p></dd>
 
 
-<dt>B_sigma</dt>
-<dd><p>Basis matrix for sigma (if non-stationary)</p></dd>
+<dt>B_nu</dt>
+<dd><p>Basis matrix for nu (if non-stationary)</p></dd>
+
+
+<dt>theta_nu</dt>
+<dd><p>specify a non-stationary noise using theta_nu</p></dd>
 
 
 <dt>theta_sigma_normal</dt>
@@ -315,25 +327,26 @@ Use <code><a href="ngme_noise_types.html">ngme_noise_types()</a></code> to check
     </div>
     <div id="details">
     <h2>Details</h2>
-    <p>The parameterization is given in <code><a href="nig.html">?nig</a></code>. Moreover,
-for specifying non-stationary mu and sigma,
+    <p>The parameterization is given in <code><a href="nig.html">?nig</a></code> and <code><a href="gal.html">?gal</a></code>. Moreover,
+for specifying non-stationary mu and sigma, nu
 $$\mu = B_{\mu} \theta_{\mu},$$ and
-$$\sigma = \exp (B_{\sigma} \theta_{\sigma}),$$</p>
+$$\sigma = \exp (B_{\sigma} \theta_{\sigma}),$$
+$$\nu = \exp (B_{\nu} \theta_{\nu}).$$</p>
     </div>
 
     <div id="ref-examples">
     <h2>Examples</h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">noise_normal</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">10</span>, sigma <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">noise_normal</span><span class="op">(</span>sigma <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Noise type: NORMAL</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Noise parameters: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     sigma = 2</span>
-<span class="r-in"><span><span class="fu">noise_nig</span><span class="op">(</span>mu <span class="op">=</span> <span class="fl">1</span>, sigma <span class="op">=</span> <span class="fl">2</span>, nu <span class="op">=</span> <span class="fl">1</span>, n<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">noise_nig</span><span class="op">(</span>mu <span class="op">=</span> <span class="fl">1</span>, sigma <span class="op">=</span> <span class="fl">2</span>, nu <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Noise type: NIG</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Noise parameters: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     mu = 1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     sigma = 2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     nu = 1</span>
-<span class="r-in"><span><span class="fu">noise_gal</span><span class="op">(</span>mu <span class="op">=</span> <span class="fl">1</span>, sigma <span class="op">=</span> <span class="fl">2</span>, nu <span class="op">=</span> <span class="fl">1</span>, n<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">noise_gal</span><span class="op">(</span>mu <span class="op">=</span> <span class="fl">1</span>, sigma <span class="op">=</span> <span class="fl">2</span>, nu <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Noise type: GAL</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Noise parameters: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     mu = 1</span>

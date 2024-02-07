@@ -201,7 +201,7 @@ model into <code>simulate</code> function.</p>
 <span><span class="va">day</span> <span class="op">&lt;-</span> <span class="fl">1</span><span class="op">:</span><span class="va">n_obs</span></span>
 <span><span class="va">ar1_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="va">day</span>, model<span class="op">=</span><span class="st">"ar1"</span>, rho <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>  noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span>mu <span class="op">=</span> <span class="op">-</span><span class="fl">3</span>, sigma <span class="op">=</span> <span class="fl">4</span>, nu<span class="op">=</span><span class="fl">0.4</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">W</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="va">ar1_model</span>, seed <span class="op">=</span> <span class="fl">16</span><span class="op">)</span></span>
+<span><span class="va">W</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="va">ar1_model</span>, seed <span class="op">=</span> <span class="fl">16</span>, nsim<span class="op">=</span><span class="fl">1</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
 <span></span>
 <span><span class="co"># 1 sample process of our model</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">W</span>, type<span class="op">=</span><span class="st">"l"</span><span class="op">)</span></span></code></pre></div>
@@ -258,23 +258,23 @@ optioins.</p>
 <span><span class="co">#&gt; *** Ngme object ***</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
-<span><span class="co">#&gt;     x1     x2 </span></span>
-<span><span class="co">#&gt; -0.918  2.041 </span></span>
+<span><span class="co">#&gt;    x1    x2 </span></span>
+<span><span class="co">#&gt; -1.65  2.11 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $my_ar</span></span>
 <span><span class="co">#&gt;   Model type: AR(1)</span></span>
-<span><span class="co">#&gt;       rho = 0.501</span></span>
+<span><span class="co">#&gt;       rho = 0.47</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -2.53</span></span>
-<span><span class="co">#&gt;       sigma = 3.8</span></span>
-<span><span class="co">#&gt;       nu = 0.34</span></span>
+<span><span class="co">#&gt;       mu = -2.6</span></span>
+<span><span class="co">#&gt;       sigma = 4.03</span></span>
+<span><span class="co">#&gt;       nu = 0.346</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 2.05</span></span>
+<span><span class="co">#&gt;       sigma = 2</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span>

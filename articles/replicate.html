@@ -169,8 +169,8 @@ an AR(1) model.</p>
 <span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">500</span></span>
 <span><span class="va">myar</span> <span class="op">&lt;-</span> <span class="fu">ngme2</span><span class="fu">::</span><span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="va">n</span>, model<span class="op">=</span><span class="st">"ar1"</span>, rho <span class="op">=</span> <span class="fl">.75</span>, noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">W1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="va">myar</span>, seed <span class="op">=</span> <span class="fl">314</span><span class="op">)</span> <span class="co"># simulating one realization of the process</span></span>
-<span><span class="va">W2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="va">myar</span>, seed <span class="op">=</span> <span class="fl">159</span><span class="op">)</span> <span class="co"># simulating another realization of the process</span></span>
+<span><span class="va">W1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="va">myar</span>, seed <span class="op">=</span> <span class="fl">314</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span> <span class="co"># simulating one realization of the process</span></span>
+<span><span class="va">W2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="va">myar</span>, seed <span class="op">=</span> <span class="fl">159</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span> <span class="co"># simulating another realization of the process</span></span>
 <span></span>
 <span><span class="co"># Creating the response variable from the process and adding measurement noise</span></span>
 <span><span class="va">Y</span> <span class="op">&lt;-</span> <span class="op">-</span><span class="fl">3</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">W1</span>, <span class="va">W2</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">2</span> <span class="op">*</span> <span class="va">n</span>, sd <span class="op">=</span> <span class="fl">.2</span><span class="op">)</span></span>
@@ -241,22 +241,22 @@ process dissapears by looking at the <span class="math inline">\(\mathbf{K}_{4, 
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt; (Intercept) </span></span>
-<span><span class="co">#&gt;       -2.99 </span></span>
+<span><span class="co">#&gt;       -2.83 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $field1</span></span>
 <span><span class="co">#&gt;   Model type: AR(1)</span></span>
-<span><span class="co">#&gt;       rho = 0.759</span></span>
+<span><span class="co">#&gt;       rho = 0.76</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = 0.0289</span></span>
-<span><span class="co">#&gt;       sigma = 0.982</span></span>
-<span><span class="co">#&gt;       nu = 1.11</span></span>
+<span><span class="co">#&gt;       mu = -0.0102</span></span>
+<span><span class="co">#&gt;       sigma = 0.998</span></span>
+<span><span class="co">#&gt;       nu = 1.01</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.226</span></span>
+<span><span class="co">#&gt;       sigma = 0.284</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  2</span></span></code></pre></div>
@@ -327,17 +327,17 @@ locations where the feature is unknown.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt; (Intercept) </span></span>
-<span><span class="co">#&gt;    5.83e-16 </span></span>
+<span><span class="co">#&gt;    5.82e-16 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $spde</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
-<span><span class="co">#&gt;       kappa = 0.964</span></span>
+<span><span class="co">#&gt;       kappa = 0.897</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -0.00033</span></span>
-<span><span class="co">#&gt;       sigma = 1.16</span></span>
-<span><span class="co">#&gt;       nu = 1.15</span></span>
+<span><span class="co">#&gt;       mu = 0.0392</span></span>
+<span><span class="co">#&gt;       sigma = 1.35</span></span>
+<span><span class="co">#&gt;       nu = 1.08</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>

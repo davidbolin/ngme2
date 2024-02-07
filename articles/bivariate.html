@@ -250,8 +250,8 @@ each sub-model.</p>
 <span>  <span class="op">)</span>,</span>
 <span>  group <span class="op">=</span> <span class="va">labels</span>,</span>
 <span>  noise <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    precip<span class="op">=</span><span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>    temp<span class="op">=</span><span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span> <span class="co"># can have 2 different noise for each field</span></span>
+<span>    precip<span class="op">=</span><span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>    temp<span class="op">=</span><span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">bv2</span></span>
@@ -263,9 +263,11 @@ each sub-model.</p>
 <span><span class="co">#&gt;     temp: Random walk (order 1)</span></span>
 <span><span class="co">#&gt;         No parameter.</span></span>
 <span><span class="co">#&gt;  Bivariate type-G4 noise:</span></span>
-<span><span class="co">#&gt;     precip: NORMAL</span></span>
+<span><span class="co">#&gt;     precip: NIG</span></span>
 <span><span class="co">#&gt;     Noise parameters: </span></span>
+<span><span class="co">#&gt;         mu = 0</span></span>
 <span><span class="co">#&gt;         sigma = 1</span></span>
+<span><span class="co">#&gt;         nu = 1</span></span>
 <span><span class="co">#&gt;     temp: NIG</span></span>
 <span><span class="co">#&gt;     Noise parameters: </span></span>
 <span><span class="co">#&gt;         mu = 0</span></span>
@@ -477,7 +479,7 @@ model.</p>
 <span>      W2 <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span>mu<span class="op">=</span><span class="fl">2</span>,sigma<span class="op">=</span><span class="fl">2</span>,nu<span class="op">=</span><span class="fl">0.5</span><span class="op">)</span></span>
 <span>    <span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
-<span><span class="op">)</span></span>
+<span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="co"># Here we assume W1 and W2 have positive correlated measurement error</span></span>
 <span><span class="co"># if they are measured at same index.</span></span>
 <span><span class="co"># Meaning Y(i) and Y(j) have correlated measurement noise</span></span>
@@ -528,35 +530,35 @@ model.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt;    x1    x2 </span></span>
-<span><span class="co">#&gt; -2.90  1.54 </span></span>
+<span><span class="co">#&gt; -2.96  1.42 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $bv</span></span>
 <span><span class="co">#&gt;   Model type: Bivariate model</span></span>
-<span><span class="co">#&gt;       theta = 0.398</span></span>
-<span><span class="co">#&gt;       rho = 0.547</span></span>
+<span><span class="co">#&gt;       theta = 0.426</span></span>
+<span><span class="co">#&gt;       rho = 0.548</span></span>
 <span><span class="co">#&gt;       W1: AR(1)</span></span>
-<span><span class="co">#&gt;           rho = 0.572</span></span>
+<span><span class="co">#&gt;           rho = 0.621</span></span>
 <span><span class="co">#&gt;       W2: AR(1)</span></span>
-<span><span class="co">#&gt;           rho = -0.391</span></span>
+<span><span class="co">#&gt;           rho = -0.368</span></span>
 <span><span class="co">#&gt;    Bivariate type-G4 noise:</span></span>
 <span><span class="co">#&gt;       W1: NIG</span></span>
 <span><span class="co">#&gt;       Noise parameters: </span></span>
-<span><span class="co">#&gt;           mu = -1.61</span></span>
-<span><span class="co">#&gt;           sigma = 1.05</span></span>
-<span><span class="co">#&gt;           nu = 0.652</span></span>
+<span><span class="co">#&gt;           mu = -1.44</span></span>
+<span><span class="co">#&gt;           sigma = 1</span></span>
+<span><span class="co">#&gt;           nu = 0.533</span></span>
 <span><span class="co">#&gt;       W2: NIG</span></span>
 <span><span class="co">#&gt;       Noise parameters: </span></span>
-<span><span class="co">#&gt;           mu = 1.99</span></span>
-<span><span class="co">#&gt;           sigma = 2.03</span></span>
-<span><span class="co">#&gt;           nu = 0.486</span></span>
+<span><span class="co">#&gt;           mu = 1.82</span></span>
+<span><span class="co">#&gt;           sigma = 1.72</span></span>
+<span><span class="co">#&gt;           nu = 0.396</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 1.05</span></span>
-<span><span class="co">#&gt;       correlation(rho) = 0.478</span></span>
+<span><span class="co">#&gt;       sigma = 1.08</span></span>
+<span><span class="co">#&gt;       correlation(rho) = 0.521</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span>

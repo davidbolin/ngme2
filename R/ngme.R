@@ -105,7 +105,9 @@ ngme <- function(
     # to-do: check start is of same length
     for (i in seq_along(ngme_model$replicates)) {
       ngme_model$replicates[[i]] <- within(ngme_model$replicates[[i]], {
-        feff <- start$replicates[[i]]$feff
+        # check if feff is correct size
+        if (length(feff) == length(start$replicates[[i]]$feff))
+          feff <- start$replicates[[i]]$feff
         noise <- update_noise(noise, new_noise = start$replicates[[i]]$noise)
         for (i in seq_along(start$replicates[[i]]$models)) {
           # update operator representation

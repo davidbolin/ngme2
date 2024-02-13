@@ -154,7 +154,7 @@ predict.ngme <- function(
 #' @param k integer (only for k-fold type)
 #' @param print print information during computation
 #' @param percent from 1 to 100 (only for lpo type)
-#' @param times run how many times (only for lpo type)
+#' @param times how many test cases (only for lpo type)
 #' @param test_idx a list of indices of the data (which data points to be predicted) (only for custom type)
 #' @param train_idx  a list of indices of the data (which data points to be used for re-sampling (not re-estimation)) (only for custom type)
 #'

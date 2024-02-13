@@ -243,7 +243,7 @@ f <- function(
     mesh      = mesh,
     n_map     = length_map(map),
     W         = W,
-    fix_W     = fix_W,
+    fix_W      = fix_W,
     name      = name,
     debug     = debug,
     fix_theta_K = fix_theta_K,

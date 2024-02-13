@@ -582,8 +582,9 @@ void BlockModel::set_theta_merr(const VectorXd& theta_merr) {
   }
 
   // update mu, sigma
-  noise_mu = (B_mu * theta_mu);
+  noise_mu    = (B_mu * theta_mu);
   noise_sigma = (B_sigma * theta_sigma).array().exp();
+  noise_nu    = (B_nu * theta_nu).array().exp();
 
   // update rho, and Q_eps
   if (corr_measure) {
@@ -821,19 +822,17 @@ MatrixXd BlockModel::num_h_no_latent(const VectorXd& v, double eps) {
 }
 
 // v = mu, sigma, nu, rho, feff
-// residual ~ N(-mu + mu V,
+// residual ~ N(-mu + mu V, .. )
 double BlockModel::logd_no_latent(const VectorXd& v) {
-	VectorXd theta_mu = v.segment(0, n_theta_mu);
+	VectorXd theta_mu    = v.segment(0, n_theta_mu);
 	VectorXd theta_sigma = v.segment(n_theta_mu, n_theta_sigma);
-  VectorXd nu = v.segment(n_theta_mu + n_theta_sigma, n_theta_nu).array().exp();
+	VectorXd theta_nu    = v.segment(n_theta_mu + n_theta_sigma, n_theta_nu);
   VectorXd th_rho = v.segment(n_theta_mu + n_theta_sigma + n_theta_nu, n_rho);
   VectorXd beta = v.tail(n_feff);
 
-  // compute mu & sigma
-  VectorXd noise_mu = (B_mu * theta_mu);
+  // compute mu sigma, nu
+  VectorXd noise_mu    = (B_mu * theta_mu);
   VectorXd noise_sigma = (B_sigma * theta_sigma).array().exp();
-// std::cout << "noise_mu=" << noise_mu << std::endl;
-// std::cout << "noise_sigma=" << noise_sigma << std::endl;
 
   // pi(Y|W, V) (no correction for noise!)
   // residual but using prevV

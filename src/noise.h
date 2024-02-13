@@ -96,7 +96,7 @@ public:
         bool single_V = false
     ) {
         VectorXd h = VectorXd::Ones(V.size());
-        return grad_theta_nu(noise_type, B_nu, nu, V, prevV, h);
+        return grad_theta_nu(noise_type, B_nu, nu, V, prevV, h, single_V);
     }
 
     static VectorXd rnorm_vec(int n, double mu, double sigma, unsigned long seed=0) {

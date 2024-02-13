@@ -120,7 +120,7 @@
       <h1 data-toc-skip>Ngme2 - A new Flexible R Package for Latent
 non-Gaussian Models</h1>
             
-            <h4 data-toc-skip class="date">2024-02-07</h4>
+            <h4 data-toc-skip class="date">2024-02-13</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/HEAD/vignettes/ngme2.Rmd" class="external-link"><code>vignettes/ngme2.Rmd</code></a></small>
       <div class="hidden name"><code>ngme2.Rmd</code></div>
@@ -536,7 +536,7 @@ estimation.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">INLA</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Loading required package: Matrix</span></span>
-<span><span class="co">#&gt; This is INLA_24.02.07 built 2024-02-06 21:48:47 UTC.</span></span>
+<span><span class="co">#&gt; This is INLA_24.02.09 built 2024-02-09 03:41:25 UTC.</span></span>
 <span><span class="co">#&gt;  - See www.r-inla.org/contact-us for how to get help.</span></span>
 <span><span class="co">#&gt;  - List available models/likelihoods/etc with inla.list.models()</span></span>
 <span><span class="co">#&gt;  - Use inla.doc(&lt;NAME&gt;) to access documentation</span></span>
@@ -594,7 +594,7 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt; (Intercept) </span></span>
-<span><span class="co">#&gt;        4.45 </span></span>
+<span><span class="co">#&gt;        10.4 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $rw1</span></span>
@@ -602,21 +602,21 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <span><span class="co">#&gt;       No parameter.</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.14</span></span>
+<span><span class="co">#&gt;       sigma = 0.0954</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $spde</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
-<span><span class="co">#&gt;       kappa = 1.72</span></span>
+<span><span class="co">#&gt;       kappa = 6.43</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 19.2</span></span>
+<span><span class="co">#&gt;       sigma = 48.8</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = 0.22</span></span>
-<span><span class="co">#&gt;       sigma = 2.11</span></span>
-<span><span class="co">#&gt;       nu = 149</span></span>
+<span><span class="co">#&gt;       mu = 0.523</span></span>
+<span><span class="co">#&gt;       sigma = 1.99</span></span>
+<span><span class="co">#&gt;       nu = 1.58</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span>
@@ -655,13 +655,13 @@ Mean of the rainfall in Octobor 2012 in Paraná
 </tr></thead>
 <tbody><tr class="odd">
 <td align="left">(Intercept)</td>
-<td align="left">4.45</td>
-<td align="left">0.22</td>
-<td align="left">2.11</td>
-<td align="left">149</td>
-<td align="left">-1.97</td>
-<td align="left">1.72</td>
-<td align="left">19.2</td>
+<td align="left">10.4</td>
+<td align="left">0.523</td>
+<td align="left">1.99</td>
+<td align="left">1.58</td>
+<td align="left">-2.35</td>
+<td align="left">6.43</td>
+<td align="left">48.8</td>
 </tr></tbody>
 </table>
 <div class="section level3">
@@ -717,46 +717,46 @@ method.</p>
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/cross_validation.html">cross_validation</a></span><span class="op">(</span><span class="va">out</span>, type<span class="op">=</span><span class="st">"k-fold"</span>, k<span class="op">=</span><span class="fl">10</span>, print<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; In test_idx 1 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE      CRPS      sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.441288 9.644255 -1.874856 -0.7372135</span></span>
+<span><span class="co">#&gt; 1 2.719966 13.28719 -2.132753 -0.7511648</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 2 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE      CRPS      sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.704873 11.65077 -2.155328 -0.6687649</span></span>
+<span><span class="co">#&gt; 1 2.664887 12.28703 -2.103831 -0.7280622</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 3 : </span></span>
-<span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.354671 9.149903 -1.806013 -0.741149</span></span>
+<span><span class="co">#&gt;        MAE      MSE      CRPS      sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.396704 8.672422 -1.832726 -0.7194749</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 4 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE      CRPS      sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.488335 10.01587 -1.936481 -0.7266304</span></span>
+<span><span class="co">#&gt; 1 2.195101 7.885756 -1.625568 -0.8322079</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 5 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE      CRPS      sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.670859 10.70264 -2.127135 -0.6082814</span></span>
+<span><span class="co">#&gt; 1 2.508559 12.77341 -1.960011 -0.7563522</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 6 : </span></span>
-<span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.763427 10.37635 -2.219385 -0.564673</span></span>
+<span><span class="co">#&gt;        MAE     MSE      CRPS      sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.815368 11.3402 -2.229447 -0.6774096</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 7 : </span></span>
-<span><span class="co">#&gt;        MAE      MSE      CRPS      sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.964854 13.80027 -2.399233 -0.6409097</span></span>
+<span><span class="co">#&gt;        MAE     MSE      CRPS     sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.696942 13.0659 -2.106075 -0.722676</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 8 : </span></span>
-<span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.520216 9.638078 -1.957742 -0.691457</span></span>
+<span><span class="co">#&gt;        MAE     MSE      CRPS      sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.481901 9.75658 -1.886327 -0.7898872</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 9 : </span></span>
-<span><span class="co">#&gt;        MAE      MSE      CRPS      sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.219694 8.174455 -1.640905 -0.8123961</span></span>
+<span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.502041 10.99312 -1.547413 -1.154213</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 10 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE      CRPS      sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.603398 9.488556 -2.059475 -0.6115245</span></span>
+<span><span class="co">#&gt; 1 2.793372 13.34312 -2.200178 -0.7379755</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;        MAE      MSE      CRPS   sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.573162 10.26411 -2.017655 -0.6803</span></span></code></pre></div>
+<span><span class="co">#&gt;        MAE      MSE      CRPS      sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.577484 11.34047 -1.962433 -0.7869424</span></span></code></pre></div>
 </div>
 </div>
   </div>

@@ -466,41 +466,43 @@ if (debug) std::cout << "update_each_iter" << std::endl;
         }
     }
 
-    if (!numer_grad) {
-        // trace[i] = tr(K^-1 dK[i])
-        ope->update_dK(theta_K);
-        if (!zero_trace) {
-            if (!symmetricK) {
-                if (W_size > 10) {
-                    lu_solver_K.compute_LU(getK());
-                    // lu_solver_K.compute_KTK(getK());
-                    for (int i=0; i < n_theta_K; i++){
-                        trace[i] = lu_solver_K.trace_num(ope->get_dK()[i]);
+    // Update K and dK
+    if (!fix_parameters[latent_fix_theta_K]) {
+        if (!numer_grad) {
+            // Compute trace[i] = tr(K^-1 dK[i])
+            ope->update_dK(theta_K);
+            if (!zero_trace) {
+                if (!symmetricK) {
+                    if (W_size > 10) {
+                        lu_solver_K.compute_LU(getK());
+                        // lu_solver_K.compute_KTK(getK());
+                        for (int i=0; i < n_theta_K; i++){
+                            trace[i] = lu_solver_K.trace_num(ope->get_dK()[i]);
+                        }
+                    } else {
+                        // for random effect case (usually small dimension)
+                        for (int i=0; i < n_theta_K; i++) {
+                            if (getK().toDense().isLowerTriangular() && abs(ope->get_dK()[i].diagonal().sum()) < 0.001)
+                                trace[i] = 0;
+                            else
+                                trace[i] = getK().toDense().ldlt().solve(ope->get_dK()[i].toDense()).diagonal().sum();
+                        }
                     }
                 } else {
-                    // for random effect case (usually small dimension)
+                    chol_solver_K.compute(getK());
                     for (int i=0; i < n_theta_K; i++) {
-                        if (getK().toDense().isLowerTriangular() && abs(ope->get_dK()[i].diagonal().sum()) < 0.001)
-                            trace[i] = 0;
-                        else
-                            trace[i] = getK().toDense().ldlt().solve(ope->get_dK()[i].toDense()).diagonal().sum();
+                        trace[i] = chol_solver_K.trace_num(ope->get_dK()[i]);
                     }
                 }
-            } else {
-                chol_solver_K.compute(getK());
-                for (int i=0; i < n_theta_K; i++) {
-                    trace[i] = chol_solver_K.trace_num(ope->get_dK()[i]);
-                }
             }
-        }
-    } else {
-        // update K numerical
-        for (int i=0; i < n_theta_K; i++) {
-            VectorXd tmp = theta_K;
-            tmp(i) += eps;
-            ope_addeps->update_K(tmp);
-
-            if (update_dK) num_dK[i] = (ope_addeps->getK() - ope->getK()) / eps;
+        } else {
+            // Update K numerical
+            for (int i=0; i < n_theta_K; i++) {
+                VectorXd tmp = theta_K;
+                tmp(i) += eps;
+                ope_addeps->update_K(tmp);
+                if (update_dK) num_dK[i] = (ope_addeps->getK() - ope->getK()) / eps;
+            }
         }
     }
 }

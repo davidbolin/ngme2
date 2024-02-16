@@ -16,7 +16,8 @@ cross_validation(
   percent = 50,
   times = 10,
   test_idx = NULL,
-  train_idx = NULL
+  train_idx = NULL,
+  keep_test_information = FALSE
 )
 }
 \arguments{
@@ -38,11 +39,13 @@ custom is user-defined group, provide \code{target} and \code{data}}
 
 \item{percent}{from 1 to 100 (only for lpo type)}
 
-\item{times}{run how many times (only for lpo type)}
+\item{times}{how many test cases (only for lpo type)}
 
 \item{test_idx}{a list of indices of the data (which data points to be predicted) (only for custom type)}
 
 \item{train_idx}{a list of indices of the data (which data points to be used for re-sampling (not re-estimation)) (only for custom type)}
+
+\item{keep_test_information}{logical, keep test information (pred_1, pred_2, Y_1, Y_2) in the return (as attributes), pred_1 and pred_2 are the prediction of the two chains, Y_1 and Y_2 are the true value of the two chains}
 }
 \value{
 a list of criterions: MSE, MAE, CRPS, sCRPS

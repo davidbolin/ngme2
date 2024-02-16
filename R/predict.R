@@ -174,8 +174,9 @@ cross_validation <- function(
   train_idx = NULL,
   keep_test_information = FALSE
 ) {
-  # check input
   if (inherits(ngme, "ngme")) ngme <- list(ngme)
+  if (is.null(names(ngme))) names(ngme) <- paste("model", seq_along(ngme), sep = "_" )
+
   n_data <- attr(ngme[[1]], "fit")$n_data
   if (is.null(n_data)) stop("Please provide ngme object or a list of ngme object")
 
@@ -241,7 +242,9 @@ cross_validation <- function(
     final_crs[[idx]] <- as.data.frame(mean_list(crs))
   }
   ret <- do.call(rbind, final_crs)
-  rownames(ret) <- if (length(rownames(final_crs[[1]]))==1) names(ngme)
+
+  rownames(ret) <- if (length(rownames(final_crs[[1]])) == 1)
+      names(ngme)
     else {
       names_list = lapply(names(ngme), function(x) paste(x, rownames(final_crs[[1]]), sep = "_"))
       do.call(c, names_list)
@@ -410,8 +413,10 @@ compute_err_1rep <- function(
   Y_N_1 <- pred_N_1 + mn_N_1
   Y_N_2 <- pred_N_2 + mn_N_2
 
+  pred <- 0.5*(rowMeans(as.matrix(pred_N_1)) + rowMeans(as.matrix(pred_N_2)))
+
   # Now Y is of dim n_obs * N
-  E4 <- E3 <- E2 <- E1 <- double(length(y_data))
+  E2 <- E1 <- double(length(y_data))
   for (i in 1:n_obs) {
     # turn row of df into numeric vector.
     yi_1 <- as.numeric(Y_N_1[i, ])
@@ -421,33 +426,27 @@ compute_err_1rep <- function(
     E1[[i]] <- mean(abs(yi_1 - y_data[i]))
     # estimate E(| Y_i - y_data |)
     E2[[i]] <- mean(abs(yi_1 - yi_2))
-    # For MSE
-    E3[[i]] <- mean((Y_N_1[i, ] - y_data[i])^2)
-    # For MAE
-    E4[[i]] <- mean(abs(Y_N_1[i, ] - y_data[i]))
   }
 
   # compute MSE, MAE, CRPS, sCRPS within each group
-  if (is.null(group_data)) {
-    scores <- list(
-      MAE = mean(E4),
-      MSE = mean(E3),
-      CRPS = mean(0.5 * E2 - E1),
-      sCRPS = mean(-E2 / E1 - 0.5 * log(E2))
-    )
-  } else {
-    A <- split(E4, group_data)
-    B <- split(E3, group_data)
-    C <- split(0.5 * E2 - E1, group_data)
-    D <- split(-E2 / E1 - 0.5 * log(E2), group_data)
+  pred_group <- split(pred, group_data)
+  y_data_group <- split(y_data, group_data)
+  CRPS  <- split(0.5 * E2 - E1, group_data)
+  sCRPS <- split(-E2 / E1 - 0.5 * log(E2), group_data)
 
-    scores <- list(
-      MAE = sapply(A, mean),
-      MSE = sapply(B, mean),
-      CRPS = sapply(C, mean),
-      sCRPS = sapply(D, mean)
-    )
+  # Compute MAE and MSE within each group
+  MAE = MSE = double(length(pred_group))
+  for (j in seq_along(pred_group)) {
+    MAE[[j]] <- mean(abs(pred_group[[j]] - y_data_group[[j]]))
+    MSE[[j]] <- mean((pred_group[[j]] - y_data_group[[j]])^2)
   }
+
+  scores <- data.frame(
+    MAE   = MAE,
+    MSE   = MSE,
+    CRPS  = sapply(CRPS, mean),
+    sCRPS = sapply(sCRPS, mean)
+  )
 
   # scores results and 2 predictions
   list(
@@ -462,5 +461,5 @@ compute_err_1rep <- function(
 
 
 # questions:
-# 1. loop over replicates, and do CV for each replciate, and average
+# 1. loop over replicates, and do CV for each replicate, and average
 # 2. partition first, then do CV for each partition (with many replicates), and average

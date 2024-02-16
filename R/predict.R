@@ -157,6 +157,7 @@ predict.ngme <- function(
 #' @param times how many test cases (only for lpo type)
 #' @param test_idx a list of indices of the data (which data points to be predicted) (only for custom type)
 #' @param train_idx  a list of indices of the data (which data points to be used for re-sampling (not re-estimation)) (only for custom type)
+#' @param keep_test_information logical, keep test information (pred_1, pred_2, Y_1, Y_2) in the return (as attributes), pred_1 and pred_2 are the prediction of the two chains, Y_1 and Y_2 are the true value of the two chains
 #'
 #' @return a list of criterions: MSE, MAE, CRPS, sCRPS
 #' @export
@@ -170,7 +171,8 @@ cross_validation <- function(
   percent = 50,
   times = 10,
   test_idx = NULL,
-  train_idx = NULL
+  train_idx = NULL,
+  keep_test_information = FALSE
 ) {
   # check input
   if (inherits(ngme, "ngme")) ngme <- list(ngme)
@@ -212,17 +214,24 @@ cross_validation <- function(
   # But the internal mesh may not be the same for each replicate....
 
   # 2. loop over each test_idx and train_idx, and compute the criterion
-  final_crs <- list()
+  final_crs <- list(); pred_1 <- list(); pred_2 <- list(); Y_1 <- list(); Y_2 <- list()
   for (idx in seq_along(ngme)) {
     crs <- NULL
     for (i in seq_along(test_idx)) {
-      crs[[i]] <- compute_err_reps(
+      test_idx[[i]] <- sort(test_idx[[i]])
+      result <- compute_err_reps(
         ngme[[idx]],
         test_idx[[i]],
         train_idx[[i]],
         N=N,
         seed=seed
       )
+      crs[[i]] <- result$score
+      pred_1[[i]] <- result$pred_1
+      pred_2[[i]] <- result$pred_2
+      Y_1[[i]] <- result$Y_1
+      Y_2[[i]] <- result$Y_2
+
       if (print) {
         cat(paste("In test_idx", i, ": \n"))
         print(as.data.frame(crs[[i]]))
@@ -252,7 +261,20 @@ cross_validation <- function(
   # cat("The final result averaged over replicates: \n")
 
   print(ret)
-  return(invisible(ret))
+
+  if (!keep_test_information) {
+    invisible(ret)
+  } else {
+    structure(
+      invisible(ret),
+      train_idx = train_idx,
+      test_idx = test_idx,
+      pred_1 = pred_1,
+      pred_2 = pred_2,
+      Y_1 = Y_1,
+      Y_2 = Y_2
+    )
+  }
 }
 
 # helper function to dispatch over reps
@@ -267,29 +289,46 @@ compute_err_reps <- function(
   repls <- attr(ngme, "fit")$replicate
   uni_repl <- unique(repls)
 
-  crs <- NULL; weight <- NULL; n_crs <- 0
+  crs <- NULL; weight <- NULL; n_crs <- 0;
+  pred_1 <- double(length = length(test_idx)); pred_2 <- double(length = length(test_idx))
+  Y_1 <- double(length = length(test_idx)); Y_2 <- double(length = length(test_idx))
+
   for (i in seq_along(uni_repl)) {
-    data_idx <- ngme$replicates[[i]]$data_idx
-    bool_train_idx <- data_idx %in% train_idx
-    bool_test_idx  <- data_idx %in% test_idx
+    data_idx_rep <- ngme$replicates[[i]]$data_idx
+    bool_train_idx <- data_idx_rep %in% train_idx # current rep has train
+    bool_test_idx  <- data_idx_rep %in% test_idx  # current rep has test
 
     # skip this replicate if no target or train data
     if (sum(bool_train_idx) == 0 || sum(bool_test_idx) == 0) next
     n_crs <- n_crs + 1
-    crs[[n_crs]] <- compute_err_1rep(
+    result_1rep <- compute_err_1rep(
       ngme$replicates[[i]],
       bool_train_idx = bool_train_idx,
       bool_test_idx = bool_test_idx,
       N=N,
       seed=seed
     )
+    crs[[n_crs]] <- result_1rep$scores
+
+    # Assume which_idx_pred ordered (order test idx)
+    which_idx_pred <- data_idx_rep[bool_test_idx]
+    pred_1[test_idx %in% which_idx_pred] <- result_1rep$pred_1
+    pred_2[test_idx %in% which_idx_pred] <- result_1rep$pred_2
+    Y_1[test_idx %in% which_idx_pred] <- result_1rep$Y_1
+    Y_2[test_idx %in% which_idx_pred] <- result_1rep$Y_2
 
     which_repl <- which(repls == uni_repl[i])
     weight <- c(weight, length(which_repl))
   }
 
   # take weighted average over replicates
-  mean_list(crs, weight)
+  list(
+    score = mean_list(crs, weight),
+    pred_1 = pred_1,
+    pred_2 = pred_2,
+    Y_1 = Y_1,
+    Y_2 = Y_2
+  )
 }
 
 
@@ -349,60 +388,75 @@ compute_err_1rep <- function(
   Ws <- sampling_cpp(ngme_1rep, n=2*N, posterior=TRUE, seed=seed)[["W"]]
   Ws_block <- head(Ws, N); W2s_block <- tail(Ws, N)
 
-  AW_N <- Reduce(cbind, sapply(Ws_block, function(W) A_pred_block %*% W))
-  AW2_N <- Reduce(cbind, sapply(W2s_block, function(W) A_pred_block %*% W))
+# Note: Ws_block is a list of N realizations of W of current replicate
+# Note: AW_N_1 is a matrix of n_test * N
+  AW_N_1 <- Reduce(cbind, sapply(Ws_block, function(W) A_pred_block %*% W))
+  AW_N_2 <- Reduce(cbind, sapply(W2s_block, function(W) A_pred_block %*% W))
 
   # sampling Y by, Y = X feff + (block_A %*% block_W) + eps
-  # AW_N[[1]] is concat(A1 W1, A2 W2, ..)
+  # AW_N_1[[1]] is concat(A1 W1, A2 W2, ..)
 
   # generate fixed effect
   fe <- with(ngme_1rep, as.numeric(X_pred %*% feff))
   fe_N <- matrix(rep(fe, N), ncol=N, byrow=F)
 
   # simulate measurement noise
-  mn_N  <- sapply(1:N, function(x) simulate(noise_test_idx)[[1]])
-  mn2_N <- sapply(1:N, function(x) simulate(noise_test_idx)[[1]])
+  mn_N_1 <- sapply(1:N, function(x) simulate(noise_test_idx)[[1]])
+  mn_N_2 <- sapply(1:N, function(x) simulate(noise_test_idx)[[1]])
 
-  mu_N <- fe_N + AW_N
-  Y_N <- fe_N + AW_N + mn_N
-  Y2_N <- fe_N + AW2_N + mn2_N
+  pred_N_1 <- fe_N + AW_N_1
+  pred_N_2 <- fe_N + AW_N_2
+
+  Y_N_1 <- pred_N_1 + mn_N_1
+  Y_N_2 <- pred_N_2 + mn_N_2
 
   # Now Y is of dim n_obs * N
-  E3 <- E2 <- E1 <- double(length(y_data))
+  E4 <- E3 <- E2 <- E1 <- double(length(y_data))
   for (i in 1:n_obs) {
     # turn row of df into numeric vector.
-    yi <- as.numeric(Y_N[i, ])
-    yi2 <- as.numeric(Y2_N[i, ])
+    yi_1 <- as.numeric(Y_N_1[i, ])
+    yi_2 <- as.numeric(Y_N_2[i, ])
 
     # estimate E(| Y_i - y_data |). y_data is observation
-    E1[[i]] <- mean(abs(yi - y_data[i]))
+    E1[[i]] <- mean(abs(yi_1 - y_data[i]))
     # estimate E(| Y_i - y_data |)
-    E2[[i]] <- mean(abs(yi - yi2))
-    # estimate E(| Y_i - y_data |^2)
-    E3[[i]] <- mean((yi - y_data[i])^2)
+    E2[[i]] <- mean(abs(yi_1 - yi_2))
+    # For MSE
+    E3[[i]] <- mean((Y_N_1[i, ] - y_data[i])^2)
+    # For MAE
+    E4[[i]] <- mean(abs(Y_N_1[i, ] - y_data[i]))
   }
 
   # compute MSE, MAE, CRPS, sCRPS within each group
   if (is.null(group_data)) {
-    list(
-      MAE = mean(E1),
+    scores <- list(
+      MAE = mean(E4),
       MSE = mean(E3),
       CRPS = mean(0.5 * E2 - E1),
       sCRPS = mean(-E2 / E1 - 0.5 * log(E2))
     )
   } else {
-    A <- split(E1, group_data)
+    A <- split(E4, group_data)
     B <- split(E3, group_data)
     C <- split(0.5 * E2 - E1, group_data)
     D <- split(-E2 / E1 - 0.5 * log(E2), group_data)
 
-    list(
+    scores <- list(
       MAE = sapply(A, mean),
       MSE = sapply(B, mean),
       CRPS = sapply(C, mean),
       sCRPS = sapply(D, mean)
     )
   }
+
+  # scores results and 2 predictions
+  list(
+    scores = scores,
+    Y_1 = rowMeans(as.matrix(Y_N_1)),
+    Y_2 = rowMeans(as.matrix(Y_N_2)),
+    pred_1 = rowMeans(as.matrix(pred_N_1)),
+    pred_2 = rowMeans(as.matrix(pred_N_2))
+  )
 }
 
 

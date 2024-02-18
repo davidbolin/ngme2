@@ -157,7 +157,7 @@ predict.ngme <- function(
 #' @param times how many test cases (only for lpo type)
 #' @param test_idx a list of indices of the data (which data points to be predicted) (only for custom type)
 #' @param train_idx  a list of indices of the data (which data points to be used for re-sampling (not re-estimation)) (only for custom type)
-#' @param keep_test_information logical, keep test information (pred_1, pred_2, Y_1, Y_2) in the return (as attributes), pred_1 and pred_2 are the prediction of the two chains, Y_1 and Y_2 are the true value of the two chains
+#' @param keep_test_information logical, keep test information (pred_1, pred_2) in the return (as attributes), pred_1 and pred_2 are the prediction of the two chains
 #'
 #' @return a list of criterions: MSE, MAE, CRPS, sCRPS
 #' @export
@@ -215,7 +215,7 @@ cross_validation <- function(
   # But the internal mesh may not be the same for each replicate....
 
   # 2. loop over each test_idx and train_idx, and compute the criterion
-  final_crs <- list(); pred_1 <- list(); pred_2 <- list(); Y_1 <- list(); Y_2 <- list()
+  final_crs <- list(); pred_1 <- list(); pred_2 <- list();
   for (idx in seq_along(ngme)) {
     crs <- NULL
     for (i in seq_along(test_idx)) {
@@ -230,8 +230,8 @@ cross_validation <- function(
       crs[[i]] <- result$score
       pred_1[[i]] <- result$pred_1
       pred_2[[i]] <- result$pred_2
-      Y_1[[i]] <- result$Y_1
-      Y_2[[i]] <- result$Y_2
+      # Y_1[[i]] <- result$Y_1
+      # Y_2[[i]] <- result$Y_2
 
       if (print) {
         cat(paste("In test_idx", i, ": \n"))
@@ -273,9 +273,9 @@ cross_validation <- function(
       train_idx = train_idx,
       test_idx = test_idx,
       pred_1 = pred_1,
-      pred_2 = pred_2,
-      Y_1 = Y_1,
-      Y_2 = Y_2
+      pred_2 = pred_2
+      # Y_1 = Y_1,
+      # Y_2 = Y_2
     )
   }
 }
@@ -294,7 +294,6 @@ compute_err_reps <- function(
 
   crs <- NULL; weight <- NULL; n_crs <- 0;
   pred_1 <- double(length = length(test_idx)); pred_2 <- double(length = length(test_idx))
-  Y_1 <- double(length = length(test_idx)); Y_2 <- double(length = length(test_idx))
 
   for (i in seq_along(uni_repl)) {
     data_idx_rep <- ngme$replicates[[i]]$data_idx
@@ -317,8 +316,8 @@ compute_err_reps <- function(
     which_idx_pred <- data_idx_rep[bool_test_idx]
     pred_1[test_idx %in% which_idx_pred] <- result_1rep$pred_1
     pred_2[test_idx %in% which_idx_pred] <- result_1rep$pred_2
-    Y_1[test_idx %in% which_idx_pred] <- result_1rep$Y_1
-    Y_2[test_idx %in% which_idx_pred] <- result_1rep$Y_2
+    # Y_1[test_idx %in% which_idx_pred] <- result_1rep$Y_1
+    # Y_2[test_idx %in% which_idx_pred] <- result_1rep$Y_2
 
     which_repl <- which(repls == uni_repl[i])
     weight <- c(weight, length(which_repl))
@@ -328,9 +327,9 @@ compute_err_reps <- function(
   list(
     score = mean_list(crs, weight),
     pred_1 = pred_1,
-    pred_2 = pred_2,
-    Y_1 = Y_1,
-    Y_2 = Y_2
+    pred_2 = pred_2
+    # Y_1 = Y_1,
+    # Y_2 = Y_2
   )
 }
 
@@ -403,56 +402,60 @@ compute_err_1rep <- function(
   fe <- with(ngme_1rep, as.numeric(X_pred %*% feff))
   fe_N <- matrix(rep(fe, N), ncol=N, byrow=F)
 
-  # simulate measurement noise
-  mn_N_1 <- sapply(1:N, function(x) simulate(noise_test_idx)[[1]])
-  mn_N_2 <- sapply(1:N, function(x) simulate(noise_test_idx)[[1]])
-
   pred_N_1 <- fe_N + AW_N_1
   pred_N_2 <- fe_N + AW_N_2
 
-  Y_N_1 <- pred_N_1 + mn_N_1
-  Y_N_2 <- pred_N_2 + mn_N_2
+  # simulate measurement noise
+  # mn_N_1 <- sapply(1:N, function(x) simulate(noise_test_idx)[[1]])
+  # mn_N_2 <- sapply(1:N, function(x) simulate(noise_test_idx)[[1]])
+  # Y_N_1 <- pred_N_1 + mn_N_1
+  # Y_N_2 <- pred_N_2 + mn_N_2
 
   pred <- 0.5*(rowMeans(as.matrix(pred_N_1)) + rowMeans(as.matrix(pred_N_2)))
 
   # Now Y is of dim n_obs * N
-  E2 <- E1 <- double(length(y_data))
+  E_pred_data <- E_pred_pred <- double(length(y_data))
   for (i in 1:n_obs) {
     # turn row of df into numeric vector.
-    yi_1 <- as.numeric(Y_N_1[i, ])
-    yi_2 <- as.numeric(Y_N_2[i, ])
+    pred_1 <- as.numeric(pred_N_1[i, ])
+    pred_2 <- as.numeric(pred_N_2[i, ])
 
-    # estimate E(| Y_i - y_data |). y_data is observation
-    E1[[i]] <- mean(abs(yi_1 - y_data[i]))
-    # estimate E(| Y_i - y_data |)
-    E2[[i]] <- mean(abs(yi_1 - yi_2))
+    # estimate E(| X_i - y_data |). y_data is observation, X_i ~ predictive distribution at i
+    E_pred_data[[i]] <- mean(abs(pred_1 - y_data[i]))
+
+    # estimate E(| X_i - Y_i |) , X_i, Y_i ~ predictive distribution at i
+    E_pred_pred[[i]] <- mean(abs(pred_1 - pred_2))
   }
 
   # compute MSE, MAE, CRPS, sCRPS within each group
-  pred_group <- split(pred, group_data)
-  y_data_group <- split(y_data, group_data)
-  CRPS  <- split(0.5 * E2 - E1, group_data)
-  sCRPS <- split(-E2 / E1 - 0.5 * log(E2), group_data)
+  pred_each_group   <- split(pred, group_data)
+  y_data_each_group <- split(y_data, group_data)
+
+  CRPS  <- split(0.5 * E_pred_pred - E_pred_data, group_data)
+  sCRPS <- split(
+    -E_pred_data / E_pred_pred - 0.5 * log(E_pred_pred),
+    group_data
+  )
 
   # Compute MAE and MSE within each group
-  MAE = MSE = double(length(pred_group))
-  for (j in seq_along(pred_group)) {
-    MAE[[j]] <- mean(abs(pred_group[[j]] - y_data_group[[j]]))
-    MSE[[j]] <- mean((pred_group[[j]] - y_data_group[[j]])^2)
+  MAE = MSE = double(length(pred_each_group))
+  for (j in seq_along(pred_each_group)) {
+    MAE[[j]] <- mean(abs(pred_each_group[[j]] - y_data_each_group[[j]]))
+    MSE[[j]] <- mean((pred_each_group[[j]] - y_data_each_group[[j]])^2)
   }
 
   scores <- data.frame(
     MAE   = MAE,
     MSE   = MSE,
-    CRPS  = sapply(CRPS, mean),
-    sCRPS = sapply(sCRPS, mean)
+    CRPS  = sapply(CRPS, mean), # mean over 1:n_obs_test within each group
+    sCRPS = sapply(sCRPS, mean) # same
   )
 
   # scores results and 2 predictions
   list(
     scores = scores,
-    Y_1 = rowMeans(as.matrix(Y_N_1)),
-    Y_2 = rowMeans(as.matrix(Y_N_2)),
+    # Y_1 = rowMeans(as.matrix(Y_N_1)),
+    # Y_2 = rowMeans(as.matrix(Y_N_2)),
     pred_1 = rowMeans(as.matrix(pred_N_1)),
     pred_2 = rowMeans(as.matrix(pred_N_2))
   )

@@ -122,7 +122,8 @@ first into sub_groups (a list of target, and train data)</p>
 <span>  percent <span class="op">=</span> <span class="fl">50</span>,</span>
 <span>  times <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>  test_idx <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  train_idx <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  train_idx <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  keep_test_information <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -161,7 +162,7 @@ custom is user-defined group, provide <code>target</code> and <code>data</code><
 
 
 <dt>times</dt>
-<dd><p>run how many times (only for lpo type)</p></dd>
+<dd><p>how many test cases (only for lpo type)</p></dd>
 
 
 <dt>test_idx</dt>
@@ -170,6 +171,10 @@ custom is user-defined group, provide <code>target</code> and <code>data</code><
 
 <dt>train_idx</dt>
 <dd><p>a list of indices of the data (which data points to be used for re-sampling (not re-estimation)) (only for custom type)</p></dd>
+
+
+<dt>keep_test_information</dt>
+<dd><p>logical, keep test information (pred_1, pred_2, Y_1, Y_2) in the return (as attributes), pred_1 and pred_2 are the prediction of the two chains, Y_1 and Y_2 are the true value of the two chains</p></dd>
 
 </dl></div>
     <div id="value">

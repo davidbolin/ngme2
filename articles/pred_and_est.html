@@ -210,8 +210,8 @@ N(\mathbf{K}^{-1}(-\mu \mathbf{h}+\mu\mathbf{V}),
 \sigma^2\mathbf{K}^{-1}{\rm diag}(\mathbf{V})\mathbf{K}^{-1}),\]</span>
 where <span class="math inline">\(\mathbf{K} =
 \kappa^2\mathbf{C}+\mathbf{G}\)</span> is the discretization of the
-differential operator and <span class="math inline">\(\mathbf{h} =
-(h_1,\ldots,h_n)\)</span>.</p>
+differential operator and <span class="math inline">\(\mathbf{h}
+=  (h_1,\ldots,h_n)\)</span>.</p>
 </div>
 <div class="section level2">
 <h2 id="prediction">Prediction<a class="anchor" aria-label="anchor" href="#prediction"></a>
@@ -225,8 +225,8 @@ observations. Usually, when doing such predictions, one provides mean
 and variance of the predictive distribution. We will now describe how
 one can generate these quantities when assuming the model defined in the
 previous sections.</p>
-<p>Let us assume we want to obtain predictions at locations <span class="math inline">\(\widetilde{\mathbf{s}}_1, \ldots,
-\widetilde{\mathbf{s}}_p \in \mathcal{D}\)</span>, where <span class="math inline">\(p\in \mathbb{N}\)</span>.</p>
+<p>Let us assume we want to obtain predictions at locations <span class="math inline">\(\widetilde{\mathbf{s}}_1,
+\ldots, \widetilde{\mathbf{s}}_p \in \mathcal{D}\)</span>, where <span class="math inline">\(p\in \mathbb{N}\)</span>.</p>
 <p>Notice that for <span class="math inline">\(j=1,\ldots,p\)</span>,
 <span class="math display">\[X_n(\widetilde{\mathbf{s}}_j) =
 \sum_{i=1}^n w_i \varphi_i(\widetilde{\mathbf{s}}_j).\]</span>
@@ -538,21 +538,21 @@ values of <span class="math inline">\(E[\mathbf{w} | \mathbf{V},
 <code class="sourceCode R"><span><span class="va">V</span></span>
 <span><span class="co">#&gt; NULL</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">V_1</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] 0.03791486 0.07272601 0.06620186 0.06447379 0.05548191 0.05959653</span></span>
-<span><span class="co">#&gt;  [7] 0.07586170 0.06138068 0.07025703 0.03576510</span></span>
+<span><span class="co">#&gt;  [1] 0.01902825 0.06651695 0.06520489 0.05266256 0.06976265 0.06410971</span></span>
+<span><span class="co">#&gt;  [7] 0.07116324 0.06468294 0.08829663 0.03294361</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">V_2</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] 0.02729725 0.05384547 0.06082829 0.05512798 0.07084292 0.07781245</span></span>
-<span><span class="co">#&gt;  [7] 0.06699065 0.09237101 0.06895230 0.03051058</span></span>
+<span><span class="co">#&gt;  [1] 0.04195546 0.05381624 0.04791360 0.04635418 0.06414210 0.07714118</span></span>
+<span><span class="co">#&gt;  [7] 0.07170290 0.07012908 0.07212784 0.03659477</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="va">W</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  [1]  0.002694590  0.020771634  0.032185870  0.045046367  0.017760541</span></span>
 <span><span class="co">#&gt;  [6]  0.002791359 -0.015611763 -0.021791327 -0.039828396 -0.044018875</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">W_1</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] -0.3300762 -0.3295733 -0.3276758 -0.3257476 -0.3225314 -0.3170855</span></span>
-<span><span class="co">#&gt;  [7] -0.3125726 -0.3097893 -0.3065585 -0.3057521</span></span>
+<span><span class="co">#&gt;  [1] -0.3425603 -0.3399062 -0.3368584 -0.3320806 -0.3252443 -0.3183799</span></span>
+<span><span class="co">#&gt;  [7] -0.3110827 -0.3062482 -0.3014881 -0.3009410</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">W_2</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] -0.3671217 -0.3660150 -0.3630219 -0.3575603 -0.3501116 -0.3425110</span></span>
-<span><span class="co">#&gt;  [7] -0.3368072 -0.3322667 -0.3310565 -0.3305429</span></span></code></pre></div>
+<span><span class="co">#&gt;  [1] -0.3577880 -0.3580955 -0.3556810 -0.3516391 -0.3451045 -0.3389941</span></span>
+<span><span class="co">#&gt;  [7] -0.3339355 -0.3301391 -0.3282666 -0.3275190</span></span></code></pre></div>
 <p>Let us begin by building traceplots for <span class="math inline">\(V\)</span>:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">df_V</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">idx</span>, y <span class="op">=</span> <span class="va">V</span>, col <span class="op">=</span> <span class="va">chain</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>

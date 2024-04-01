@@ -689,15 +689,14 @@ Rcpp::List BlockModel::sampling(int n, bool posterior, const SparseMatrix<double
 
     AWs.push_back(A * getW());
     Ws.push_back(getW());
-    // Vs.push_back(getV());
+    Vs.push_back(getV());
     // mn_Vs.push_back(var.getV());
   }
 
   return Rcpp::List::create(
     Rcpp::Named("AW") = AWs,
-    Rcpp::Named("W") = Ws
-    // ,
-    // Rcpp::Named("V") = Vs,
+    Rcpp::Named("W") = Ws,
+    Rcpp::Named("V") = Vs
     // Rcpp::Named("noise_V") = mn_Vs
   );
 }

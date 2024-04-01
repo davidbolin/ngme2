@@ -142,23 +142,29 @@ if (debug) {print(str(ngme_model$replicates[[1]]))}
     for (i in seq_along(ngme_model$replicates))
       ngme_model$replicates[[i]] <- update_ngme_est(ngme_model$replicates[[i]], est_output[[i]])
 
-    # return the mean of samples of W of posterior
-    # cat("Starting posterior sampling... \nNote: Use ngme$models[[model_name]]$W  to access the posterior mean of process \n")
-    # for (i in seq_along(ngme_model$replicates)) {
-    #   ngme_replicate <- ngme_model$replicates[[i]]
-    #   ngme_replicate$control_ngme$init_sample_W <- FALSE
-    #   mean_post_W <- mean_list(
-    #     sampling_cpp(ngme_replicate, control_ngme$post_samples_size, TRUE, control_opt$seed)[["W"]]
-    #   )
+    # return posterior samples of W and V
+    cat("Starting posterior sampling... \n")
+    for (i in seq_along(ngme_model$replicates)) {
+      res <- sampling_cpp(
+        ngme_model$replicates[[i]],
+        n = control_ngme$n_post_samples,
+        posterior = TRUE,
+        seed = control_opt$seed
+      )
 
-    #   idx <- 1
-    #   for (j in seq_along(ngme_replicate$models)) {
-    #     ngme_replicate$models[[j]]$W <- mean_post_W[idx : (ngme_replicate$models[[j]]$W_size + idx - 1)]
-    #     idx <- idx + ngme_replicate$models[[j]]$W_size
-    #   }
-    #   ngme_model$replicates[[i]] <- ngme_replicate
-    # }
+      df_V <- data.frame(res$V)
+      colnames(df_V) <- paste0("sample_", 1:ncol(df_V))
+      ngme_model$replicates[[i]]$post_V <- df_V
+
+      df_W <- data.frame(res$W)
+      colnames(df_W) <- paste0("sample_", 1:ncol(df_W))
+      ngme_model$replicates[[i]]$post_W <- df_W
+    }
     cat("Posterior sampling done! \n")
+    cat("Note:
+      1. Use ngme_post_samples(..) to access the posterior samples.
+      2. Use ngme_result(..) to access different latent models. \n"
+    )
 
     # mn_nu <- ngme_model$replicates[[1]]$noise$nu
     # if (length(mn_nu) > 1 && mn_nu > 100)
@@ -223,7 +229,13 @@ update_ngme_est <- function(
   ngme_replicate$feff <- est_output$feff
   ngme_replicate$noise <- update_noise(ngme_replicate$noise, new_noise = est_output$noise)
   for (i in seq_along(ngme_replicate$models)) {
-    ngme_replicate$models[[i]]$operator$theta_K  <- ngme_replicate$models[[i]]$theta_K <- est_output$models[[i]]$theta_K
+    # update theta_K and K
+    theta_K <- ngme_replicate$models[[i]]$theta_K <- est_output$models[[i]]$theta_K
+    ngme_replicate$models[[i]]$operator$theta_K  <- theta_K
+    ngme_replicate$models[[i]]$operator$K  <-
+      ngme_replicate$models[[i]]$operator$update_K(theta_K)
+
+    # update W and noise
     ngme_replicate$models[[i]]$W        <- est_output$models[[i]]$W
     ngme_replicate$models[[i]]$noise    <- update_noise(
       ngme_replicate$models[[i]]$noise, new_noise = est_output$models[[i]]
@@ -519,20 +531,20 @@ summary.ngme <- function(
   result
 }
 
-#' Ngme fit result
-#' @param object an object of class \code{ngme}
+#' ngme fit result
+#' @param ngme_object a ngme model
 #' @param name name of the latent model to be summarized (if NULL, will print all)
-#' @param ... other arguments
+#' @param replicate replicate number
 #'
 #' @return a list of summary
 #' @export
 ngme_result <- function(
-  object,
+  ngme_object,
   name = NULL,
-  ...
+  replicate = 1
 ) {
-  stopifnot(inherits(object, "ngme"))
-  result <- object$replicates[[1]]
+  stopifnot(inherits(ngme_object, "ngme"))
+  result <- ngme_object$replicates[[replicate]]
 
   if (!is.null(name)) {
     names <- sapply(result$models, function(x) x$name)

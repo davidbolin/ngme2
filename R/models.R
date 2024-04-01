@@ -17,6 +17,7 @@ iid <- function(
     mesh = fmesher::fm_mesh_1d(loc = 1:n),
     model = "iid",
     theta_K = double(0),
+    update_K = function(theta_K) {K},
     K = K,
     h = rep(1, n),
     A = K,
@@ -52,13 +53,15 @@ ar1 <- function(
   theta_K <- ar1_a2th(rho)
   stopifnot("The length of rho(theta_K) should be 1." = length(theta_K) == 1)
 
+  update_K <- function(theta_K) {ar1_th2a(theta_K) * C + G}
   ngme_operator(
     mesh = mesh,
     model = "ar1",
     theta_K = theta_K,
     C = ngme_as_sparse(C),
     G = ngme_as_sparse(G),
-    K = rho * C + G,
+    update_K = update_K,
+    K = update_K(theta_K),
     h = h,
     symmetric = FALSE,
     zero_trace = TRUE,
@@ -104,6 +107,7 @@ rw1 <- function(
     mesh = mesh,
     model = "rw1",
     theta_K = double(0),
+    update_K = function(theta_K) {C + G},
     K = ngme_as_sparse(C + G),
     h = h,
     symmetric = FALSE,
@@ -153,6 +157,7 @@ rw2 <- function(
     mesh = mesh,
     model = "rw2",
     theta_K = double(0),
+    update_K = function(theta_K) {C + G},
     K = ngme_as_sparse(C + G),
     h = h,
     symmetric = FALSE,
@@ -194,11 +199,16 @@ ou <- function(
   kappas <- exp(as.numeric(B_K %*% theta_K))
   K <- Matrix::Diagonal(x=kappas) %*% C + G
 
+  update_K <- function(theta_K) {
+    kappas <- exp(as.numeric(B_K %*% theta_K))
+    Matrix::Diagonal(x=kappas) %*% C + G
+  }
   ngme_operator(
     mesh        = mesh,
     model       = "ou",
     B_K         = B_K,
     theta_K     = theta_K,
+    update_K    = update_K,
     C           = ngme_as_sparse(C),
     G           = ngme_as_sparse(G),
     K           = ngme_as_sparse(K),
@@ -284,6 +294,15 @@ matern <- function(
   }
 
   stationary <- is_stationary(B_K)
+  update_K <- function(theta_K) {
+    kappas <- as.numeric(exp(B_K %*% theta_K))
+    if (length(theta_K) == 1) {
+      kappas[1]**alpha * C + G
+    } else {
+      if (alpha == 2) diag(kappas) %*% C %*% diag(kappas) + G
+      else diag(kappas) %*% C %*% diag(kappas) %*% C %*% diag(kappas) + G
+    }
+  }
   ngme_operator(
     mesh = mesh,
     alpha = alpha,
@@ -293,6 +312,7 @@ matern <- function(
     C = ngme_as_sparse(C),
     G = ngme_as_sparse(G),
     K = ngme_as_sparse(K),
+    update_K = update_K,
     h = h,
     symmetric = TRUE,
     zero_trace = FALSE,
@@ -335,11 +355,19 @@ re <- function(
     K[lower.tri(K)] <- theta_K[(n_reff+1):n_theta_K]
   K <- Matrix::Matrix(K)
 
+  update_K <- function(theta_K) {
+    K <- diag(n_reff); diag(K) <- exp(theta_K[1:n_reff])
+    if (n_reff > 1)
+      K[lower.tri(K)] <- theta_K[(n_reff+1):n_theta_K]
+    Matrix::Matrix(K)
+  }
+
   ngme_operator(
     mesh = NULL,
     model = "re",
     theta_K = theta_K,
     K = ngme_as_sparse(K),
+    update_K = update_K,
     h = h,
     B_K = B_K,
     symmetric = FALSE,

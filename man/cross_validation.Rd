@@ -45,7 +45,7 @@ custom is user-defined group, provide \code{target} and \code{data}}
 
 \item{train_idx}{a list of indices of the data (which data points to be used for re-sampling (not re-estimation)) (only for custom type)}
 
-\item{keep_test_information}{logical, keep test information (pred_1, pred_2, Y_1, Y_2) in the return (as attributes), pred_1 and pred_2 are the prediction of the two chains, Y_1 and Y_2 are the true value of the two chains}
+\item{keep_test_information}{logical, keep test information (pred_1, pred_2) in the return (as attributes), pred_1 and pred_2 are the prediction of the two chains}
 }
 \value{
 a list of criterions: MSE, MAE, CRPS, sCRPS

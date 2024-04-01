@@ -2,20 +2,20 @@
 % Please edit documentation in R/ngme.R
 \name{ngme_result}
 \alias{ngme_result}
-\title{Ngme fit result}
+\title{ngme fit result}
 \usage{
-ngme_result(object, name = NULL, ...)
+ngme_result(ngme_object, name = NULL, replicate = 1)
 }
 \arguments{
-\item{object}{an object of class \code{ngme}}
+\item{ngme_object}{a ngme model}
 
 \item{name}{name of the latent model to be summarized (if NULL, will print all)}
 
-\item{...}{other arguments}
+\item{replicate}{replicate number}
 }
 \value{
 a list of summary
 }
 \description{
-Ngme fit result
+ngme fit result
 }

@@ -214,7 +214,7 @@ control_f <- function(
 #' @param init_sample_W  sample W|V at the beginning of each chain
 #' @param n_gibbs_samples    number of gibbs sampels
 #' @param fix_feff       logical, fix fixed effect
-#' @param post_samples_size number of posterior samples
+#' @param n_post_samples number of posterior samples, see ?ngme_post_samples()
 #' @param feff           fixed effect value
 #' @param debug          debug mode
 #' @return a list of control variables for block model
@@ -223,7 +223,7 @@ control_ngme <- function(
   init_sample_W = TRUE,
   n_gibbs_samples = 5,
   fix_feff = FALSE,
-  post_samples_size = 100,
+  n_post_samples = 100,
   feff = NULL,
   debug = FALSE
 ) {
@@ -232,7 +232,7 @@ control_ngme <- function(
     n_gibbs_samples = n_gibbs_samples,
     fix_feff = fix_feff,
     feff = feff,
-    post_samples_size = post_samples_size,
+    n_post_samples = n_post_samples,
     debug = debug
   )
 

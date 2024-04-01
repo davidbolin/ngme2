@@ -534,3 +534,106 @@ validate_rep_or_group <- function(replicate, data) {
 # matern_result <- function(ope) {
 #   stop("to-do")
 # }
+
+
+# return the relative idx among all latent models
+# using W_size assume W_size == V_size
+idx_range <- function(ngme_rep, name_or_idx) {
+  if (is.character(name_or_idx)) {
+    idx <- which(sapply(ngme_rep$models, function(model) model$name) == name_or_idx)
+  } else {
+    idx <- name_or_idx
+  }
+
+  models <- ngme_rep$models
+  tmp <- sapply(models, function(model) model$W_size)
+  sizes = Reduce(`+`, tmp, accumulate = TRUE)
+
+  if (idx == 1) {
+    return (1:sizes[1])
+  } else {
+    return ((sizes[idx-1]+1):sizes[idx])
+  }
+}
+
+#' @title posterior samples of different latent models
+#' @description
+#' Extract the posterior samples of different latent models
+#'
+#' @param ngme_object ngme object
+#' @param model_name name of the model, or index of the model
+#' @param type type of samples, "W" or "V"
+#' @param replicate which replicate
+#'
+#' @return a data.frame of posterior samples (mesh_size * n_post_samples)
+#' @export
+ngme_post_samples <- function(
+  ngme_object,
+  model_name=1,
+  type = "W",
+  replicate = 1
+) {
+  ngme_rep <- ngme_object$replicates[[replicate]]
+  stopifnot(
+    inherits(ngme_rep, "ngme_replicate"),
+    type %in% c("W", "V")
+  )
+  idx <- idx_range(ngme_rep, model_name)
+
+  if (type == "W") {
+    return (ngme_rep$post_W[idx, , ])
+  } else {
+    return (ngme_rep$post_V[idx, , ])
+  }
+}
+
+#' @title variance of the data or the latent field
+#' @description
+#' Compute the variance of the data or the latent field
+#'
+#' @param ngme ngme_model
+#' @param model_name
+#'   if model_name = "data", then return the covariance matrix of the data (without measurement noise)
+#'   if the model_name is the name or index of the latent, then return the covariance matrix of the latent field
+#' @param replicate which replicate
+#'
+#' @return a data.frame of posterior samples (mesh_size * n_post_samples)
+#' @export
+ngme_cov_matrix <- function(
+  ngme_object,
+  model_name = "data",
+  replicate = 1
+) {
+  ngme_rep <- ngme_object$replicates[[replicate]]
+
+  stopifnot(
+    "Please provide the correct ngme object." = inherits(ngme_object, "ngme"),
+    "Please provide the correct model name or index." =
+      model_name %in% c(
+        "data",
+        sapply(ngme_rep$models, function(model) model$name),
+        1:length(ngme_rep$models)
+      )
+  )
+
+  if (model_name == "data") {
+    V_mean = apply(ngme_rep$post_V, 1, mean)
+
+    diag_K = Matrix::bdiag(
+      sapply(ngme_rep$models, function(model) model$operator$K))
+
+    Q <- diag_K %*% diag(1 / V_mean) %*% Matrix::t(diag_K)
+    block_A <- Reduce(cbind, sapply(ngme_rep$models, function(model) model$A))
+
+    # return A Q^(-1) A^t,
+    return (block_A %*% Matrix::solve(Q, Matrix::t(block_A)))
+  } else {
+    K <- ngme_rep$models[[model_name]]$operator$K
+
+    idx <- idx_range(ngme_rep, model_name)
+    V_mean = apply(ngme_rep$post_V[idx, , ], 1, mean)
+
+    Q <- K %*% diag(1 / V_mean) %*% Matrix::t(K)
+    return (solve(Q))
+  }
+}

@@ -71,12 +71,19 @@ bv <- function(
 
   eta_to_theta <- function(eta) atan(eta) / 2
 
+  update_K <- function(theta_K) {
+    eta <- theta_K[1]
+    rho <- theta_K[2]
+    D <- build_D(eta, rho)
+    kronecker(D, Matrix::Diagonal(nrow(first$K)))
+  }
   ngme_operator(
     mesh        = mesh,
     model       = "bv",
     first        = first,
     second      = second,
     theta_K     = theta_K,
+    update_K    = update_K,
     K           = bigD %*% Matrix::bdiag(first$K, second$K),
     h           = c(first$h, second$h),
     symmetric   = FALSE,
@@ -115,12 +122,16 @@ tp <- function(
   theta_K <- c(first$theta_K, second$theta_K)
   stopifnot(length(theta_K) == first$n_theta_K + second$n_theta_K)
 
+  update_K <- function(theta_K) {
+    first$K %x% second$K
+  }
   ngme_operator(
     mesh = list(first$mesh, second$mesh),
     model = "tp",
     first = first,
     second = second,
     theta_K = theta_K,
+    update_K = update_K,
     K = first$K %x% second$K,
     h = first$h %x% second$h,
     symmetric = first$symmetric & second$symmetric,

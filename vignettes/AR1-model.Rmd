@@ -22,7 +22,7 @@ An **autoregressive model of order 1 (AR(1))** specifies that the output variabl
 The simplest AR model is an AR(1) model, which is given by:
 
 \begin{align}
-X_1 &= \epsilon_1, \\
+X_1 &= \frac{1}{\sqrt{1-\rho^2}} \epsilon_1, \\
 X_i &= \rho X_{i-1} + \epsilon_i, \; i = 2, \dots , n,
 \end{align}
 where $|\rho| < 1$, $\epsilon_1, ..,\epsilon_n$ is either i.i.d. **NIG** or **Gaussian** noise.

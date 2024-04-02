@@ -279,7 +279,11 @@ the time index (year).</p>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; Starting estimation... </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Posterior sampling done!</span></span>
+<span><span class="co">#&gt; Starting posterior sampling... </span></span>
+<span><span class="co">#&gt; Posterior sampling done! </span></span>
+<span><span class="co">#&gt; Note:</span></span>
+<span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
+<span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
 <span></span>
 <span><span class="va">ngme_fit</span></span>
 <span><span class="co">#&gt; *** Ngme object ***</span></span>
@@ -291,19 +295,19 @@ the time index (year).</p>
 <span><span class="co">#&gt; $tp</span></span>
 <span><span class="co">#&gt;   Model type: Tensor product</span></span>
 <span><span class="co">#&gt;       first: AR(1)</span></span>
-<span><span class="co">#&gt;           rho = 0.47</span></span>
+<span><span class="co">#&gt;           rho = 0.426</span></span>
 <span><span class="co">#&gt;       second: Matern</span></span>
-<span><span class="co">#&gt;           kappa = 0.8</span></span>
+<span><span class="co">#&gt;           kappa = 1.18</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -1.09</span></span>
-<span><span class="co">#&gt;       sigma = 1.16</span></span>
-<span><span class="co">#&gt;       nu = 1.01</span></span>
+<span><span class="co">#&gt;       mu = -1.68</span></span>
+<span><span class="co">#&gt;       sigma = 1.66</span></span>
+<span><span class="co">#&gt;       nu = 0.903</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.487</span></span>
+<span><span class="co">#&gt;       sigma = 0.488</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre></div>
@@ -338,28 +342,28 @@ location.</p>
 <span>  pos<span class="op">=</span><span class="va">loc_new</span></span>
 <span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; $mean</span></span>
-<span><span class="co">#&gt;  [1]  0.13775101  0.00000000 -0.02357359  0.04728595  0.34741871  0.32872329</span></span>
-<span><span class="co">#&gt;  [7] -0.44371275  0.17192074  0.00000000  0.08375349</span></span>
+<span><span class="co">#&gt;  [1] -0.66787943  0.00000000 -0.11646659  0.14634509 -0.24111122  0.00000000</span></span>
+<span><span class="co">#&gt;  [7] -0.29182694  0.04902148  0.00000000  0.00000000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sd</span></span>
-<span><span class="co">#&gt;  [1] 0.7103426 0.0000000 0.3932499 0.2186923 0.2432172 0.2220439 0.5940999</span></span>
-<span><span class="co">#&gt;  [8] 0.3584064 0.0000000 0.2620541</span></span>
+<span><span class="co">#&gt;  [1] 0.4397784 0.0000000 0.3977610 0.2988847 0.5017267 0.0000000 0.3749255</span></span>
+<span><span class="co">#&gt;  [8] 0.8428842 0.0000000 0.0000000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`5quantile`</span></span>
-<span><span class="co">#&gt;  [1] -1.01967099  0.00000000 -0.76290373 -0.26492613 -0.08026795 -0.05375730</span></span>
-<span><span class="co">#&gt;  [7] -1.27933612 -0.37316081  0.00000000 -0.36073843</span></span>
+<span><span class="co">#&gt;  [1] -1.4240818  0.0000000 -0.8691878 -0.3370819 -1.0489738  0.0000000</span></span>
+<span><span class="co">#&gt;  [7] -0.8889110 -1.5938211  0.0000000  0.0000000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`95quantile`</span></span>
-<span><span class="co">#&gt;  [1] 1.0365521 0.0000000 0.4954590 0.4044230 0.6875109 0.6342475 0.4054842</span></span>
-<span><span class="co">#&gt;  [8] 0.6698086 0.0000000 0.4392877</span></span>
+<span><span class="co">#&gt;  [1] -0.1658383  0.0000000  0.4073674  0.5494720  0.4254835  0.0000000</span></span>
+<span><span class="co">#&gt;  [7]  0.1969348  1.0469966  0.0000000  0.0000000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $median</span></span>
-<span><span class="co">#&gt;  [1]  0.21031368  0.00000000  0.04693460  0.02261157  0.37142179  0.34380850</span></span>
-<span><span class="co">#&gt;  [7] -0.41871111  0.16218452  0.00000000  0.11829226</span></span>
+<span><span class="co">#&gt;  [1] -0.57752865  0.00000000 -0.07234696  0.13636547 -0.10076406  0.00000000</span></span>
+<span><span class="co">#&gt;  [7] -0.23690184  0.14509065  0.00000000  0.00000000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $mode</span></span>
-<span><span class="co">#&gt;  [1]  0.073620562  0.000000000  0.037351167 -0.006809303  0.175160050</span></span>
-<span><span class="co">#&gt;  [6]  0.286918028 -0.450813487 -0.008876066  0.000000000 -0.043551336</span></span></code></pre></div>
+<span><span class="co">#&gt;  [1] -0.77017318  0.00000000  0.04283489  0.14672268 -0.11717179  0.00000000</span></span>
+<span><span class="co">#&gt;  [7] -0.18492053  0.68872212  0.00000000  0.00000000</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>

@@ -137,7 +137,7 @@ that the output variable depends linearly on its own previous values and
 on a stochastic term. The simplest AR model is an AR(1) model, which is
 given by:</p>
 <p><span class="math display">\[\begin{align}
-X_1 &amp;= \epsilon_1, \\
+X_1 &amp;= \frac{1}{\sqrt{1-\rho^2}} \epsilon_1, \\
 X_i &amp;= \rho X_{i-1} + \epsilon_i, \; i = 2, \dots , n,
 \end{align}\]</span> where <span class="math inline">\(|\rho| &lt;
 1\)</span>, <span class="math inline">\(\epsilon_1,
@@ -253,7 +253,11 @@ optioins.</p>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; Starting estimation... </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Posterior sampling done!</span></span>
+<span><span class="co">#&gt; Starting posterior sampling... </span></span>
+<span><span class="co">#&gt; Posterior sampling done! </span></span>
+<span><span class="co">#&gt; Note:</span></span>
+<span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
+<span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
 <span><span class="va">ngme_out</span></span>
 <span><span class="co">#&gt; *** Ngme object ***</span></span>
 <span><span class="co">#&gt; </span></span>

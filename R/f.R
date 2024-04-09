@@ -165,23 +165,36 @@ blk_group <- blk_group-min(blk_group)+1
         A0 = fmesher::fm_row_kron(Matrix::t(blk), basis)
 if (operator$second$model == "bv") {
 # extra steps
-# 1. A <- cbind(A, 0), double the column
-# 2. select row=="second group"
-# 3. swap A[row, first_half] and A[row, second_half]
+# 1. expand A <- cbind(A, 0), double the column
+# 2. move 2nd field to the 2nd half
+# 3. re-order the 1st and 2nd
+# e.g., (each field is of size 2)
+# 1 2 3 4 5 6 7 8 to
+# 1 2 5 6 3 4 7 8
   A_expand <- cbind(
     A0,
     matrix(0, nrow=nrow(A0), ncol=ncol(A0))
   )
+    # make sure it's factor
+    group = as.factor(group)
   # select row (of the 2nd field)
-    second_field <- group == levels(group)[[2]]
-    first_half <- 1:ncol(A0)
-    second_half <- 1:ncol(A0) + ncol(A0)
-  # swap 1st field and second field
-    tmp <- A_expand[second_field, first_half]
-    A_expand[second_field, first_half] <-
-      A_expand[second_field, second_half]
-    A_expand[second_field, second_half] <- tmp
-  ngme_as_sparse(A_expand)
+    row_2nd_field <- group == levels(group)[[2]]
+    half_1st <- 1:ncol(A0)
+    half_2nd <- 1:ncol(A0) + ncol(A0)
+  # Move the 2nd field to the right
+    A_expand[row_2nd_field, half_2nd] <-
+      A_expand[row_2nd_field, half_1st]
+    A_expand[row_2nd_field, half_1st] <- 0
+  # Re-order (f1 f2 f1 f2 ...)
+    n <- operator$first$mesh$n
+    bv_mesh_size <-  operator$second$mesh$n
+
+    idx <- 1:ncol(A_expand)
+    field_1st_idx <- ceiling(idx / bv_mesh_size) %% bv_mesh_size == 1
+    field_2nd_idx <- !field_1st_idx
+    reorder_idx = c(which(field_1st_idx), which(field_2nd_idx))
+  # return after re-order
+  ngme_as_sparse(A_expand[, reorder_idx])
 } else {
   A0
 }

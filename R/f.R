@@ -157,9 +157,34 @@ f <- function(
         # watch-out! Should use as.factor to start at 1, not min(map[[1]])
         # blk_group <- as.integer(as.factor(map[[1]]))
         blk_group <- as.integer(map[[1]])
+# important to start with 1
+blk_group <- blk_group-min(blk_group)+1
+# browser()
         blk <- fmesher::fm_block(blk_group)
         basis <- fmesher::fm_basis(operator$second$mesh, loc=map[[2]])
-        fmesher::fm_row_kron(Matrix::t(blk), basis)
+        A0 = fmesher::fm_row_kron(Matrix::t(blk), basis)
+if (operator$second$model == "bv") {
+# extra steps
+# 1. A <- cbind(A, 0), double the column
+# 2. select row=="second group"
+# 3. swap A[row, first_half] and A[row, second_half]
+  A_expand <- cbind(
+    A0,
+    matrix(0, nrow=nrow(A0), ncol=ncol(A0))
+  )
+  # select row (of the 2nd field)
+    second_field <- group == levels(group)[[2]]
+    first_half <- 1:ncol(A0)
+    second_half <- 1:ncol(A0) + ncol(A0)
+  # swap 1st field and second field
+    tmp <- A_expand[second_field, first_half]
+    A_expand[second_field, first_half] <-
+      A_expand[second_field, second_half]
+    A_expand[second_field, second_half] <- tmp
+  ngme_as_sparse(A_expand)
+} else {
+  A0
+}
       },
       "bv" = {
         # INLA::inla.spde.make.A(loc=map, mesh=mesh, repl=as.integer(as.factor(group)))

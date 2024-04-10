@@ -34,6 +34,8 @@ navbar:
         href: articles/pred_and_est.html
       - text: Bivariate models in Ngme2
         href: articles/bivariate.html
+      - text: Space-time bivariate model in Ngme2
+        href: articles/tp-bv.html
       - text: Random effects model in Ngme2
         href: articles/random-effect.html
       - text: Space-time (tensor product) model in Ngme2

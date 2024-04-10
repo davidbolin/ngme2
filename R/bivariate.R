@@ -27,6 +27,13 @@ bv <- function(
 ) {
   mesh <- ngme_build_mesh(mesh)
   model_names <- sort(names(sub_models))
+
+  # read group argument from parent frame
+  if (is.null(group) &&
+      exists("group", parent.frame())){
+    group = get("group", parent.frame())
+  }
+
   stopifnot(
     "Please provide names for sub_models" = !is.null(model_names),
     "Please provide group argument to indicate different fields"

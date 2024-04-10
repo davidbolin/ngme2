@@ -79,12 +79,13 @@ f <- function(
     }
   }
 
+  group <- validate_rep_or_group(group, data)
   # set the subset if provide group and which_group
   if (!is.null(which_group)) {
     stopifnot(
       "Please provide group factor" = !is.null(group),
       "Please check if which_group is in group"
-        = which_group %in% levels(as.factor(group)))
+        = which_group %in% levels(group))
     subset <- group %in% which_group
   }
 
@@ -175,8 +176,6 @@ if (operator$second$model == "bv") {
     A0,
     matrix(0, nrow=nrow(A0), ncol=ncol(A0))
   )
-    # make sure it's factor
-    group = as.factor(group)
   # select row (of the 2nd field)
     row_2nd_field <- group == levels(group)[[2]]
     half_1st <- 1:ncol(A0)

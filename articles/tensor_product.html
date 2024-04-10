@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Space-time (tensor product) model in Ngme2 • ngme2</title>
-<!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script><!-- Bootstrap --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha256-bZLfwXAP04zRMK2BjiO8iu9pf4FbLqX6zitd+tIvLhE=" crossorigin="anonymous">
+<!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script><!-- Bootstrap --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha256-bZLfwXAP04zRMK2BjiO8iu9pf4FbLqX6zitd+tIvLhE=" crossorigin="anonymous">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script><!-- bootstrap-toc --><link rel="stylesheet" href="../bootstrap-toc.css">
 <script src="../bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
@@ -75,6 +75,9 @@
     </li>
     <li>
       <a href="../articles/bivariate.html">Bivariate models in Ngme2</a>
+    </li>
+    <li>
+      <a href="../articles/tp-bv.html">Space-time bivariate model in Ngme2</a>
     </li>
     <li>
       <a href="../articles/random-effect.html">Random effects model in Ngme2</a>
@@ -295,19 +298,19 @@ the time index (year).</p>
 <span><span class="co">#&gt; $tp</span></span>
 <span><span class="co">#&gt;   Model type: Tensor product</span></span>
 <span><span class="co">#&gt;       first: AR(1)</span></span>
-<span><span class="co">#&gt;           rho = 0.477</span></span>
+<span><span class="co">#&gt;           rho = 0.469</span></span>
 <span><span class="co">#&gt;       second: Matern</span></span>
-<span><span class="co">#&gt;           kappa = 0.868</span></span>
+<span><span class="co">#&gt;           kappa = 1.2</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -0.656</span></span>
-<span><span class="co">#&gt;       sigma = 1.25</span></span>
-<span><span class="co">#&gt;       nu = 0.709</span></span>
+<span><span class="co">#&gt;       mu = -1.12</span></span>
+<span><span class="co">#&gt;       sigma = 2.28</span></span>
+<span><span class="co">#&gt;       nu = 0.967</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.492</span></span>
+<span><span class="co">#&gt;       sigma = 0.514</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre></div>
@@ -342,28 +345,28 @@ location.</p>
 <span>  pos<span class="op">=</span><span class="va">loc_new</span></span>
 <span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; $mean</span></span>
-<span><span class="co">#&gt;  [1]  0.03634795 -0.36332160 -0.06028664  0.38393791  0.00000000 -0.28748846</span></span>
-<span><span class="co">#&gt;  [7]  0.00000000  0.15092865  0.28868972  0.52669535</span></span>
+<span><span class="co">#&gt;  [1] -1.5459577  0.0000000  0.0000000  0.0300727  0.0000000 -0.1278014</span></span>
+<span><span class="co">#&gt;  [7]  0.0000000  0.1713462  0.0000000  0.3691386</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sd</span></span>
-<span><span class="co">#&gt;  [1] 0.2464890 0.2578849 0.5174445 0.3187198 0.0000000 0.2691620 0.0000000</span></span>
-<span><span class="co">#&gt;  [8] 0.2701588 0.2208944 0.2139089</span></span>
+<span><span class="co">#&gt;  [1] 0.5458106 0.0000000 0.0000000 0.3693085 0.0000000 0.4390748 0.0000000</span></span>
+<span><span class="co">#&gt;  [8] 0.3656025 0.0000000 0.3628745</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`5quantile`</span></span>
-<span><span class="co">#&gt;  [1] -0.40801258 -0.74198513 -0.77840206 -0.06917763  0.00000000 -0.82012300</span></span>
-<span><span class="co">#&gt;  [7]  0.00000000 -0.29039117 -0.05222943  0.22858346</span></span>
+<span><span class="co">#&gt;  [1] -2.5814251  0.0000000  0.0000000 -0.4969275  0.0000000 -0.9020309</span></span>
+<span><span class="co">#&gt;  [7]  0.0000000 -0.4659961  0.0000000 -0.3126429</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`95quantile`</span></span>
-<span><span class="co">#&gt;  [1] 0.44130126 0.02112343 0.65403297 0.92479179 0.00000000 0.06951375</span></span>
-<span><span class="co">#&gt;  [7] 0.00000000 0.55679218 0.61112249 0.87139234</span></span>
+<span><span class="co">#&gt;  [1] -0.9010573  0.0000000  0.0000000  0.6448540  0.0000000  0.4577001</span></span>
+<span><span class="co">#&gt;  [7]  0.0000000  0.6753879  0.0000000  0.8527005</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $median</span></span>
-<span><span class="co">#&gt;  [1]  0.009613149 -0.350774647 -0.114706423  0.368987820  0.000000000</span></span>
-<span><span class="co">#&gt;  [6] -0.238606872  0.000000000  0.164825775  0.294053345  0.521707568</span></span>
+<span><span class="co">#&gt;  [1] -1.50167583  0.00000000  0.00000000 -0.01761069  0.00000000 -0.09179907</span></span>
+<span><span class="co">#&gt;  [7]  0.00000000  0.20499921  0.00000000  0.38433896</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $mode</span></span>
-<span><span class="co">#&gt;  [1]  0.01013371 -0.33739146 -0.51260086  0.38392885  0.00000000 -0.19059123</span></span>
-<span><span class="co">#&gt;  [7]  0.00000000 -0.01837408  0.29601301  0.50299663</span></span></code></pre></div>
+<span><span class="co">#&gt;  [1] -1.50888959  0.00000000  0.00000000 -0.08444940  0.00000000  0.02193902</span></span>
+<span><span class="co">#&gt;  [7]  0.00000000  0.13494280  0.00000000  0.30858083</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
@@ -394,7 +397,7 @@ SPDE approach. AStA Advances in Statistical Analysis, 97(2), 109-131. <a href="h
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.8.</p>
 </div>
 
       </footer>

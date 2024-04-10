@@ -1,20 +1,20 @@
 pandoc: 3.1.11
-pkgdown: 2.0.7
+pkgdown: 2.0.8
 pkgdown_sha: ~
 articles:
   AR1-model: AR1-model.html
-  Installation_and_configuration: Installation_and_configuration.html
-  RW-model: RW-model.html
-  SPDE-model: SPDE-model.html
   bivariate: bivariate.html
   inla_compare: inla_compare.html
+  Installation_and_configuration: Installation_and_configuration.html
   matern-on-graph: matern-on-graph.html
   ngme2: ngme2.html
   pred_and_est: pred_and_est.html
   random-effect: random-effect.html
   replicate: replicate.html
+  RW-model: RW-model.html
+  SPDE-model: SPDE-model.html
   tensor_product: tensor_product.html
-last_built: 2024-04-09T21:44Z
+last_built: 2024-04-10T15:56Z
 urls:
   reference: https://davidbolin.github.io/ngme2/reference
   article: https://davidbolin.github.io/ngme2/articles

@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ngme2 - A new Flexible R Package for Latent non-Gaussian Models • ngme2</title>
-<!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script><!-- Bootstrap --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha256-bZLfwXAP04zRMK2BjiO8iu9pf4FbLqX6zitd+tIvLhE=" crossorigin="anonymous">
+<!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script><!-- Bootstrap --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha256-bZLfwXAP04zRMK2BjiO8iu9pf4FbLqX6zitd+tIvLhE=" crossorigin="anonymous">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script><!-- bootstrap-toc --><link rel="stylesheet" href="../bootstrap-toc.css">
 <script src="../bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
@@ -77,6 +77,9 @@
       <a href="../articles/bivariate.html">Bivariate models in Ngme2</a>
     </li>
     <li>
+      <a href="../articles/tp-bv.html">Space-time bivariate model in Ngme2</a>
+    </li>
+    <li>
       <a href="../articles/random-effect.html">Random effects model in Ngme2</a>
     </li>
     <li>
@@ -120,7 +123,7 @@
       <h1 data-toc-skip>Ngme2 - A new Flexible R Package for Latent
 non-Gaussian Models</h1>
             
-            <h4 data-toc-skip class="date">2024-04-09</h4>
+            <h4 data-toc-skip class="date">2024-04-10</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/HEAD/vignettes/ngme2.Rmd" class="external-link"><code>vignettes/ngme2.Rmd</code></a></small>
       <div class="hidden name"><code>ngme2.Rmd</code></div>
@@ -724,47 +727,47 @@ method.</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/cross_validation.html">cross_validation</a></span><span class="op">(</span><span class="va">out</span>, type<span class="op">=</span><span class="st">"k-fold"</span>, k<span class="op">=</span><span class="fl">10</span>, print<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; In test_idx 1 : </span></span>
-<span><span class="co">#&gt;       MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.85529 6.138488 -1.439649 -1.767368</span></span>
+<span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
+<span><span class="co">#&gt; 1 1.831559 5.901594 -1.433551 -1.763733</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 2 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.613219 4.536145 -1.249916 -1.705271</span></span>
+<span><span class="co">#&gt; 1 1.630384 4.642711 -1.274295 -1.734397</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 3 : </span></span>
-<span><span class="co">#&gt;       MAE     MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.62317 4.85898 -1.278844 -1.772917</span></span>
+<span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
+<span><span class="co">#&gt; 1 1.613005 4.822042 -1.251466 -1.742109</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 4 : </span></span>
-<span><span class="co">#&gt;        MAE    MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.577221 4.4936 -1.201943 -1.626331</span></span>
+<span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
+<span><span class="co">#&gt; 1 1.584853 4.562317 -1.204273 -1.646168</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 5 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.606796 5.177548 -1.249835 -1.683292</span></span>
+<span><span class="co">#&gt; 1 1.605099 5.305137 -1.250747 -1.700233</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 6 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.733583 5.030799 -1.357467 -1.803014</span></span>
+<span><span class="co">#&gt; 1 1.763178 5.173848 -1.387181 -1.792365</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 7 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.990209 6.058539 -1.531722 -1.942429</span></span>
+<span><span class="co">#&gt; 1 1.945649 5.795698 -1.527598 -1.940519</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 8 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.886228 5.864269 -1.479696 -1.925257</span></span>
+<span><span class="co">#&gt; 1 1.881989 5.883763 -1.489163 -1.934927</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 9 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE      CRPS    sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.802266 5.293871 -1.383317 -1.79531</span></span>
+<span><span class="co">#&gt; 1 1.777096 5.155883 -1.372676 -1.80961</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 10 : </span></span>
-<span><span class="co">#&gt;        MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.719889 4.501431 -1.318638 -1.737086</span></span>
+<span><span class="co">#&gt;       MAE      MSE      CRPS     sCRPS</span></span>
+<span><span class="co">#&gt; 1 1.69215 4.438032 -1.288959 -1.680185</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;              MAE      MSE      CRPS     sCRPS</span></span>
-<span><span class="co">#&gt; model_1 1.740787 5.195367 -1.349103 -1.775827</span></span></code></pre></div>
+<span><span class="co">#&gt; model_1 1.732496 5.168102 -1.347991 -1.774425</span></span></code></pre></div>
 </div>
 </div>
   </div>
@@ -786,7 +789,7 @@ method.</p>
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.8.</p>
 </div>
 
       </footer>

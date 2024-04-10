@@ -499,6 +499,10 @@ ngme_make_mesh_repls <- function(
 # check if group is valid
 # return as integer
 validate_rep_or_group <- function(replicate, data) {
+  if (is.null(data)) {
+    return (as.factor(replicate))
+  }
+
   if (is.null(replicate))
     replicate <- rep(1, nrow(data))
 

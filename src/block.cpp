@@ -456,7 +456,8 @@ void BlockModel::sampleW_V()
   VectorXd W = VectorXd::Zero(W_sizes);
   if (V_sizes == W_sizes) {
     LU_K.factorize(K);
-    W = LU_K.solve(KW);
+    int success = LU_K.info();
+    if (success == 0) W = LU_K.solve(KW);
   } else {
     // SparseMatrix<double> Q = K.transpose() * K;
     // chol_Q.compute(Q);

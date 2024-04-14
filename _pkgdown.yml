@@ -69,6 +69,7 @@ reference:
     - ngme
     - summary.ngme
     - ngme_result
+    - ngme_cov_matrix
   - title: Latent models
     contents:
     - ngme_model_types

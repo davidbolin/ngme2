@@ -17,7 +17,6 @@ This model is a combination of the previous two, we use the bivariate model as t
 
 ```{r setup}
 library(ngme2)
-library(devtools); load_all()
 ```
 
 First we specify the two indices for the space-time model. We have 20 time points and 40 mesh locations for space.
@@ -96,7 +95,6 @@ bv_list_2 <- list(
     )
   )
 )
-library(tidyverse)
 nn = length(Y)
 
 fit0 = ngme(
@@ -120,13 +118,4 @@ fit0
 traceplot(fit0, "field1")
 ```
 
-
 Here we can see, we get the simulated parameter correctly.
-
-
-```{r}
-library(devtools); load_all()
-f(1:5, model="rw1", cyclic=T)$operator$K
-f(1:5, model="rw1", cyclic=F)$operator$K
-
-```

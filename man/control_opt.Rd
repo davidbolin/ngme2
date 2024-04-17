@@ -10,6 +10,7 @@ control_opt(
   iterations = 500,
   stepsize = 0.5,
   estimation = TRUE,
+  standardize_fixed = TRUE,
   stop_points = 10,
   iters_per_check = iterations/stop_points,
   n_parallel_chain = 2,
@@ -47,6 +48,8 @@ control_opt(
 \item{stepsize}{stepsize for each iteration}
 
 \item{estimation}{run the estimation process (call C++ in backend)}
+
+\item{standardize_fixed}{whether or not standardize the fixed effect}
 
 \item{stop_points}{number of stop points for convergence check (or specify iters_per_check)}
 

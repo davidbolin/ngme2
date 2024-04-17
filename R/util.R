@@ -599,7 +599,7 @@ ngme_post_samples <- function(
 #' @param model_name
 #'   if model_name = "data", then return the covariance matrix of the data (without measurement noise)
 #'   if the model_name is the name or index of the latent, then return the covariance matrix of the latent field
-#' @param replicate which replicate
+#' @param replicate which replicate (default = 1)
 #'
 #' @return a data.frame of posterior samples (mesh_size * n_post_samples)
 #' @export

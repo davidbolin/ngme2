@@ -14,6 +14,7 @@
 #' @param iterations      optimization iterations
 #' @param stepsize        stepsize for each iteration
 #' @param estimation      run the estimation process (call C++ in backend)
+#' @param standardize_fixed  whether or not standardize the fixed effect
 #'
 #' @param n_parallel_chain number of parallel chains
 #' @param stop_points     number of stop points for convergence check (or specify iters_per_check)
@@ -55,6 +56,7 @@ control_opt <- function(
   iterations        = 500,
   stepsize          = 0.5,
   estimation        = TRUE,
+  standardize_fixed  = TRUE,
   stop_points       = 10,
   iters_per_check   = iterations / stop_points,
 
@@ -146,6 +148,7 @@ control_opt <- function(
     iterations        = iterations,
     stepsize          = stepsize,
     estimation        = estimation,
+    standardize_fixed  = standardize_fixed,
 
     n_parallel_chain  = n_parallel_chain,
     stop_points       = stop_points,

@@ -93,7 +93,10 @@ ngme <- function(
   stopifnot(class(noise) == "ngme_noise")
 
   # parse the formula get a list of ngme_replicate
-  ngme_model <- ngme_parse_formula(formula, data, control_ngme, noise, group, replicate)
+  ngme_model <- ngme_parse_formula(
+    formula, data, control_ngme, noise, group, replicate,
+    control_opt$standardize_fixed # convert fixed effects
+  )
   attr(ngme_model, "fit") <- fit
 
   ####### Use Last_fit ngme object to update Rcpp_list
@@ -170,7 +173,7 @@ if (debug) {print(str(ngme_model$replicates[[1]]))}
     # if (length(mn_nu) > 1 && mn_nu > 100)
     #   cat("The parameter nu for measurement noise is too big, consider using family=normal instead. \n")
 
-    # transform trajectory
+    # Transform trajectory
     traj_df_chains <- transform_traj(attr(outputs, "opt_traj"))
     # dispatch trajs to each latent and block
       idx <- 0;
@@ -183,10 +186,28 @@ if (debug) {print(str(ngme_model$replicates[[1]]))}
         attr(ngme_model$replicates[[1]]$models[[i]], "lat_traj") <- lat_traj_chains
         idx <- idx + n_params
       }
-      # mn and feff
+
+      # measurement noise and feff
       block_traj <- list()
-      for (j in seq_along(traj_df_chains))
+      n_feff <- length(ngme_model$replicates[[1]]$feff)
+      n_chains <- length(traj_df_chains)
+      for (j in seq_len(n_chains)) {
         block_traj[[j]] <- traj_df_chains[[j]][(idx + 1):ngme_model$replicates[[1]]$n_params, ]
+      }
+
+      n_block_params <- nrow(block_traj[[1]])
+      # update feff (if using svd)
+      if (ngme_model$replicates[[1]]$standardize) {
+        svd <- ngme_model$replicates[[1]]$svd
+        # loop over num. of chains
+        for (i in seq_along(block_traj)) {
+          # last n_feff rows are fixed effects
+          feff_idx <- (n_block_params - n_feff + 1):n_block_params
+          betas = as.matrix(block_traj[[i]][feff_idx, ])
+          block_traj[[i]][feff_idx,] = svd$v %*% diag(1/svd$d) %*% betas
+        }
+      }
+
       attr(ngme_model$replicates[[1]], "block_traj") <- block_traj
       attr(outputs, "opt_traj") <- NULL
   }
@@ -222,11 +243,27 @@ transform_traj <- function(traj) {
   dfs
 }
 
+# use estimate result to update ngme object
 update_ngme_est <- function(
   ngme_replicate, est_output
 ) {
+  # Fixed effects
   names(est_output$feff) <- names(ngme_replicate$feff)
   ngme_replicate$feff <- est_output$feff
+
+  if (ngme_replicate$standardize) {
+    # standardize feff (transform back)
+    feff = as.numeric(ngme_replicate$svd$v %*% (1/ngme_replicate$svd$d * ngme_replicate$feff))
+    names(feff) <- names(ngme_replicate$feff)
+    ngme_replicate$feff <- feff
+
+    # convert U back to UDV^t
+    X <- ngme_replicate$svd$u %*% diag(ngme_replicate$svd$d) %*% t(ngme_replicate$svd$v)
+    colnames(X) <- colnames(ngme_replicate$X)
+    ngme_replicate$X <- X
+    ngme_replicate$X
+  }
+
   ngme_replicate$noise <- update_noise(ngme_replicate$noise, new_noise = est_output$noise)
   for (i in seq_along(ngme_replicate$models)) {
     # update theta_K and K
@@ -322,7 +359,8 @@ ngme_parse_formula <- function(
   control_ngme,
   noise,
   group,
-  replicate
+  replicate,
+  standardize
 ) {
   enclos_env <- list2env(as.list(parent.frame()), parent = parent.frame(2))
   global_env_first <- list2env(as.list(parent.frame(2)), parent = parent.frame())
@@ -347,8 +385,16 @@ ngme_parse_formula <- function(
   # eval the data
   ngme_response <- eval(stats::terms(fm)[[2]], envir = data, enclos = enclos_env)
   stopifnot("Have NA in your response variable" = all(!is.na(ngme_response)))
-  X_full    <- model.matrix(delete.response(terms(plain_fm)), as.data.frame(data))
-  # adding fixed effect
+  X_full <- model.matrix(delete.response(terms(plain_fm)), as.data.frame(data))
+
+  svd <- svd(X_full)
+  if (any((svd$d) < 1e-10)) stop("The design matrix is not full rank.")
+  if (standardize) {
+    colnames(svd$u) <- colnames(X_full)
+    X_full <- svd$u  # do regression wrt U
+  }
+
+  # adding fixed effect (fe() syntax used for bivariate model..)
   for (i in fe_order) {
     lang <- str2lang(terms[i])
     stopifnot(
@@ -440,7 +486,9 @@ ngme_parse_formula <- function(
       models = models_rep,
       control_ngme = control_ngme,
       n_repl = length(levels),
-      all_gaussian = all_gaussian
+      all_gaussian = all_gaussian,
+      standardize = standardize,
+      svd = svd
     )
   }
 

@@ -30,8 +30,8 @@
 #' @param precond_by_diff_chain logical, if TRUE, use different chains to estimate preconditioner (only computed at check points), if FALSE, use the same chain to estimate preconditioner (computed at each iteration)
 #' @param compute_precond_each_iter logical, if TRUE, compute preconditioner at each iteration, if FALSE, only compute preconditioner at check points (if has only 1 chain running, it will be set TRUE)
 #'
-#' @param num_threads maximum number of threads used in parallel computing, for example c(4, 5), which means we use 4 threads to parallize the chains, then use 5 threads to parallize different replicates in each chain
-#' Suggestion (num_parallel_chain, num_total_replicates)
+#' @param max_num_threads maximum number of threads used for parallel computing, by default will be set same as n_parallel_chain.
+#' If it is more than n_parallel_chain, the rest will be used to parallel different replicates of the model.
 #' @param max_relative_step   max relative step allowed in 1 iteration
 #' @param max_absolute_step   max absolute step allowed in 1 iteration
 #' @param rao_blackwellization  use rao_blackwellization
@@ -62,6 +62,8 @@ control_opt <- function(
 
   # parallel options
   n_parallel_chain  = 2,
+  max_num_threads   = n_parallel_chain,
+
   exchange_VW       = TRUE,
   n_slope_check     = 3,
   std_lim           = 0.1,
@@ -74,8 +76,6 @@ control_opt <- function(
 
   max_relative_step = 0.5,
   max_absolute_step = 0.5,
-
-  num_threads       = c(n_parallel_chain, 1),
 
   # reduce variance after conv. check
   reduce_var        = FALSE,
@@ -107,7 +107,7 @@ control_opt <- function(
   stopifnot(
     sampling_strategy %in% strategy_list,
     preconditioner %in% preconditioner_list,
-    is.numeric(num_threads) && length(num_threads) == 2,
+    is.numeric(max_num_threads) && length(max_num_threads) == 1,
     iterations > 0 && stop_points > 0,
     "iterations should be multiple of stop_points"
       = iterations %% stop_points == 0,
@@ -157,7 +157,10 @@ control_opt <- function(
     std_lim           = std_lim,
     trend_lim         = trend_lim,
 
-    num_threads       = num_threads,
+    num_threads       = c(
+      max(n_parallel_chain, 1),
+      max(floor(max_num_threads / n_parallel_chain), 1),
+    ),
     rao_blackwellization = rao_blackwellization,
     n_trace_iter      = n_trace_iter,
 

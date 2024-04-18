@@ -293,7 +293,7 @@ graph$clear_observations()
 graph$add_observations(data = df_data, normalized = TRUE, group="repl")
 ```
 
-Next step is easy, we simply provide extra `replicate` argument to be same as the group from the graph  function.
+Next step is easy, we simply provide extra `replicate` argument to be same as the group from the graph function.
 
 ```{r fig.align = "center",echo=TRUE}
 fit_repl <- ngme(
@@ -303,7 +303,6 @@ fit_repl <- ngme(
   control_opt = control_opt(
     stepsize = 2,
     iterations = 2000,
-    num_threads = c(4, 5),
     # preconditioner = "full",
     rao_blackwellization = TRUE,
     n_parallel_chain = 4,

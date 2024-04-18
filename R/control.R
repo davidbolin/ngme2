@@ -159,7 +159,7 @@ control_opt <- function(
 
     num_threads       = c(
       max(n_parallel_chain, 1),
-      max(floor(max_num_threads / n_parallel_chain), 1),
+      max(floor(max_num_threads / n_parallel_chain), 1)
     ),
     rao_blackwellization = rao_blackwellization,
     n_trace_iter      = n_trace_iter,

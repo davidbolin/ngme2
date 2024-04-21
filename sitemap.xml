@@ -43,6 +43,9 @@
     <loc>https://davidbolin.github.io/ngme2/articles/tensor_product.html</loc>
   </url>
   <url>
+    <loc>https://davidbolin.github.io/ngme2/articles/tp-bv.html</loc>
+  </url>
+  <url>
     <loc>https://davidbolin.github.io/ngme2/authors.html</loc>
   </url>
   <url>
@@ -118,6 +121,9 @@
     <loc>https://davidbolin.github.io/ngme2/reference/ngme_as_sparse.html</loc>
   </url>
   <url>
+    <loc>https://davidbolin.github.io/ngme2/reference/ngme_cov_matrix.html</loc>
+  </url>
+  <url>
     <loc>https://davidbolin.github.io/ngme2/reference/ngme_make_mesh_repls.html</loc>
   </url>
   <url>
@@ -131,6 +137,9 @@
   </url>
   <url>
     <loc>https://davidbolin.github.io/ngme2/reference/ngme_parse_formula.html</loc>
+  </url>
+  <url>
+    <loc>https://davidbolin.github.io/ngme2/reference/ngme_post_samples.html</loc>
   </url>
   <url>
     <loc>https://davidbolin.github.io/ngme2/reference/ngme_prior.html</loc>

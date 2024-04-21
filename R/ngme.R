@@ -387,8 +387,14 @@ ngme_parse_formula <- function(
   stopifnot("Have NA in your response variable" = all(!is.na(ngme_response)))
   X_full <- model.matrix(delete.response(terms(plain_fm)), as.data.frame(data))
 
-  svd <- svd(X_full)
-  if (any((svd$d) < 1e-10)) stop("The design matrix is not full rank.")
+  # Do SVD if ncol > 1
+  if (ncol(X_full) > 1) {
+    svd <- svd(X_full)
+    if (any((svd$d) < 1e-10)) stop("The design matrix is not full rank.")
+  } else {
+    standardize <- FALSE
+  }
+
   if (standardize) {
     colnames(svd$u) <- colnames(X_full)
     X_full <- svd$u  # do regression wrt U

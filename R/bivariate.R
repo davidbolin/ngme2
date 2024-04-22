@@ -23,6 +23,7 @@ bv <- function(
   theta = 0, rho = 0,
   group = NULL,
   share_param = FALSE,
+  fix_bv_theta = FALSE,
   ...
 ) {
   mesh <- ngme_build_mesh(mesh)
@@ -97,6 +98,7 @@ bv <- function(
     zero_trace  = FALSE,
     model_names = model_names,
     share_param = share_param,
+    fix_bv_theta = fix_bv_theta,
     param_name  = c("theta", "rho",
       if (!is.null(first$param_name)) paste(first$param_name, "(1st)") else NULL,
       if (!is.null(second$param_name)) paste(second$param_name, "(2nd)") else NULL

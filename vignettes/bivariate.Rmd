@@ -276,43 +276,45 @@ traceplot(
 )
 
 # fixed effects and measurement noise
-traceplot(out, hline=c(1, 0.7, -3, 1.5))
+# traceplot(out, hline=c(1, 0.7, -3, 1.5))
 ```
 
 ### Ex2. Fixed effects + Bivariate model (Matérn) + Correlated measurement noise
 
 Next, we consider a spatial bivariate model.
 
-```{r spatial, echo=FALSE, eval=FALSE}
+```{r spatial}
 pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
 mesh <- fmesher::fm_mesh_2d(
   loc.domain = pl01,
   cutoff = 0.2,
-  max.edge = c(0.6, 10)
+  max.edge = c(0.7, 10)
 )
 mesh$n
 n_obs <- 2000
-long <- runif(n_obs, 0, 10)
-lat <- runif(n_obs, 0, 5)
+
+# generate random locations (same for two fields)
+long <- runif(n_obs/2, 0, 10); lat <- runif(n_obs/2, 0, 5)
+long <- c(long, long); lat <- c(lat, lat)
 group <- c(rep("W1", n_obs/2), rep("W2", n_obs/2))
 
-plot(mesh)
-points(long, lat)
+# plot the mesh
+plot(mesh); points(long, lat)
 
 true_model <- f(
   ~long + lat,
-  theta = pi/8, rho = 0.5,
+  theta = pi/8, rho = 1,
   mesh = mesh,
   model = "bv",
   sub_models = list(
-    W1 = list(model = "matern", theta_K = log(4)),
-    W2 = list(model = "matern", theta_K = log(6))
+    W1 = list(model = "matern", theta_K = log(3)),
+    W2 = list(model = "matern", theta_K = log(5))
   ),
   group = group,
   noise = list(W1 = noise_nig(
-    mu = -2, sigma=1, nu=1
+    # mu = -2, sigma=1, nu=1
   ), W2 = noise_nig(
-    mu = 2, sigma=2, nu=0.5
+    # mu = 2, sigma=2, nu=0.5
   ))
 )
 W <- simulate(true_model)[[1]]
@@ -325,13 +327,20 @@ out <- ngme(
     mesh = mesh,
     model = "bv",
     name = "bv",
-    sub_models = list(W1="matern", W2="matern"),
-    noise = list(W1 = noise_nig(), W2 = noise_nig())
+    fix_theta_K = TRUE,
+    sub_models = list(
+      W1 = list(model = "matern", theta_K = log(3)),
+      W2 = list(model = "matern", theta_K = log(5))
+    ),
+    noise = list(
+      W1 = noise_nig(),
+      W2 = noise_nig()
+    )
   ),
   group = group,
   data = data,
   control_opt = control_opt(
-    iterations = 5000,
+    iterations = 3000,
     n_parallel_chain = 4,
     # rao_blackwellization = TRUE,
     verbose = F,
@@ -343,9 +352,9 @@ out
 # comparing with simulated value
 traceplot(
   out, "bv",
-  hline=c(pi/8, 0.5, 4, 6, -2, 2, 1, 2, 1, 0.5)
+  hline=c(pi/8, 0.5, 3, 5, 0, 0, 1, 1, 1, 1)
+  # hline=c(pi/8, 0.5, 4, 6, -2, 2, 1, 2, 1, 0.5)
 )
-
 ```
 
 ## Helper tool to build correlation index between two fields

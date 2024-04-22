@@ -126,7 +126,7 @@ private:
     std::shared_ptr<Operator> first, second;
     int n_theta_1, n_theta_2;
     int n; // dim of K1 and K2 (same)
-    bool share_param;
+    bool share_param, fix_bv_theta;
 public:
     Bivar(const Rcpp::List&);
 

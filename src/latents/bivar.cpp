@@ -10,12 +10,15 @@ Bivar::Bivar(const Rcpp::List& operator_list):
   n_theta_1 (first->get_n_theta_K()),
   n_theta_2 (second->get_n_theta_K()),
   n (h.size() / 2),
-  share_param (Rcpp::as<bool> (operator_list["share_param"]))
+  share_param (Rcpp::as<bool> (operator_list["share_param"])),
+  fix_bv_theta (Rcpp::as<bool> (operator_list["fix_bv_theta"]))
 {}
 
 void Bivar::update_K(const VectorXd& theta_K) {
   double eta = theta_K(0);
   double theta = std::atan(eta) / 2;
+  if (fix_bv_theta) { theta = 0; }
+
   double rho = theta_K(1);
   VectorXd theta_K1 = theta_K.segment(2, n_theta_1);
   VectorXd theta_K2 = theta_K.segment(2 + n_theta_1, n_theta_2);
@@ -38,6 +41,8 @@ void Bivar::update_K(const VectorXd& theta_K) {
 void Bivar::update_dK(const VectorXd& theta_K) {
   double eta = theta_K(0);
   double theta = std::atan(eta) / 2;
+  if (fix_bv_theta) { theta = 0; }
+
   double rho = theta_K(1);
   VectorXd theta_K1 = theta_K.segment(2, n_theta_1);
   VectorXd theta_K2 = theta_K.segment(2 + n_theta_1, n_theta_2);

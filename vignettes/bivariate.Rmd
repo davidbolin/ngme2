@@ -1,8 +1,8 @@
 ---
-title: "Bivariate models in Ngme2"
+title: "Bivariate type-G models in Ngme2"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Bivariate models in Ngme2}
+  %\VignetteIndexEntry{Bivariate type-G models in Ngme2}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -203,6 +203,8 @@ We will see how to estimate it in the next example.
 
 In this example, we will first use `simulate` function to simulate the hidden bivariate process. Notice that we need to provide the labels for the 2 fields. Then we will generate the measurement noise $\epsilon$ with some correlation. Finally, we will use the `ngme` function to estimate the model.
 
+### Ex1. Fixed effects + Bivariate model (AR1) + Correlated measurement noise
+
 ```{r corr-measurement, cache=TRUE}
 n_obs <- 2000
 n_each <- n_obs / 2
@@ -229,11 +231,11 @@ W <- simulate(
 # if they represent underlying W1(index=k) and W2(index=k)
 
 # Generate covariance matrix for measurement noise
-Cov_eps <- matrix(c(1, 0.9, 0.9, 1), nrow=2)
-Cov_eps <- Cov_eps %x% diag(n_obs / 2)
+Cov_same_idx <- matrix(c(1, 0.7, 0.7, 1), nrow=2)
+Cov_measurement <- Cov_same_idx %x% diag(n_obs / 2)
 
-# e~N(0, Cov_eps)
-L <- t(chol(Cov_eps))
+# e ~ N(0, Cov_measurement)
+L <- t(chol(Cov_measurement))
 e <- L %*% rnorm(n_obs)
 
 # fixed effects
@@ -261,78 +263,94 @@ out <- ngme(
   ),
   data = data.frame(Y, x1, x2),
   control_opt = control_opt(
-    iterations = 300,
+    iterations = 3000,
     seed = 7
   )
 )
 out
-# traceplot(out, "bv")
+
+# comparing with simulated value
+traceplot(
+  out, "bv",
+  hline=c(pi/8, 0.5, 0.6, -0.4, -2, 2, 1, 2, 1, 0.5)
+)
+
+# fixed effects and measurement noise
+traceplot(out, hline=c(1, 0.7, -3, 1.5))
 ```
 
-<!-- ## A spatial Matern example -->
+### Ex2. Fixed effects + Bivariate model (Matérn) + Correlated measurement noise
+
+Next, we consider a spatial bivariate model.
 
 ```{r spatial, echo=FALSE, eval=FALSE}
 pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
 mesh <- fmesher::fm_mesh_2d(
-  loc.domain = pl01, cutoff = 0.2,
-  max.edge = c(1,10)
+  loc.domain = pl01,
+  cutoff = 0.2,
+  max.edge = c(0.6, 10)
 )
 mesh$n
-n_obs <- 300
+n_obs <- 2000
 long <- runif(n_obs, 0, 10)
 lat <- runif(n_obs, 0, 5)
-group <- c(rep("sal", n_obs/2), rep("temp", n_obs/2))
+group <- c(rep("W1", n_obs/2), rep("W2", n_obs/2))
+
+plot(mesh)
+points(long, lat)
 
 true_model <- f(
   ~long + lat,
-  theta = 0.5, rho = 0.5,
+  theta = pi/8, rho = 0.5,
   mesh = mesh,
   model = "bv",
   sub_models = list(
-    sal="matern",
-    temp="matern"
+    W1 = list(model = "matern", theta_K = log(4)),
+    W2 = list(model = "matern", theta_K = log(6))
   ),
   group = group,
-  noise = list(sal = noise_nig(
+  noise = list(W1 = noise_nig(
     mu = -2, sigma=1, nu=1
-  ), temp = noise_nig(
+  ), W2 = noise_nig(
     mu = 2, sigma=2, nu=0.5
   ))
 )
 W <- simulate(true_model)[[1]]
-Y <- as.numeric(true_model$A %*% W); Y <- Y + rnorm(length(Y))
+Y <- as.numeric(true_model$A %*% W) + rnorm(n_obs, sd=0.2)
 data <- data.frame(Y, long, lat)
 
 out <- ngme(
-  Y ~ f(
+  Y ~ 0 + f(
     ~long + lat,
     mesh = mesh,
     model = "bv",
     name = "bv",
-    sub_models = list(sal="matern", temp="matern"),
-    group = group,
-    # debug=T,
-    noise = list(sal = noise_nig(), temp = noise_nig())
-    # noise = list(sal = noise_normal(), temp = noise_normal())
+    sub_models = list(W1="matern", W2="matern"),
+    noise = list(W1 = noise_nig(), W2 = noise_nig())
   ),
+  group = group,
   data = data,
   control_opt = control_opt(
-    estimation = F,
-    iterations = 100,
-    n_parallel_chain = 1,
+    iterations = 5000,
+    n_parallel_chain = 4,
+    # rao_blackwellization = TRUE,
     verbose = F,
     print_check_info = F
   )
 )
-# out
-# str(out$replicates[[1]]$models[[1]]$noise)
-# traceplot(out, "bv")
-# out$replicates[[1]]$models[[1]]$noise$bv_noises[[2]]$h
+out
+
+# comparing with simulated value
+traceplot(
+  out, "bv",
+  hline=c(pi/8, 0.5, 4, 6, -2, 2, 1, 2, 1, 0.5)
+)
+
 ```
 
-We can see the estimation results are pretty close to the true value!
+## Helper tool to build correlation index between two fields
 
-Also, sometimes it's tedious to provide to `index_corr` argument to indicate which observations are correlated,
+Sometimes it's tedious to provide to `index_corr` argument to indicate which observations are correlated,
 we can use the helper function `compute_index_corr_from_map` to reduce the work.
 
 It can helps to compute the distance (both 1d or 2d distance) given the location we want to use.

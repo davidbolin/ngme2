@@ -50,8 +50,9 @@ simulate.ngme_model <- function(
     W <- as.numeric(solve(model$operator$K, e))
     W <- W - mean(W)
 
-    sims[[paste0("sim_", nn)]] <- W
-    V_sim[[paste0("sim_", nn)]] <- attr(e, "V")
+    # Need to re-order W and V by A matrix!!!
+    sims[[paste0("sim_", nn)]] <- as.numeric(model$A %*% W)
+    V_sim[[paste0("sim_", nn)]] <- as.numeric(model$A %*% attr(e, "V"))
   }
 
   structure(

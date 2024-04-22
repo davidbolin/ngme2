@@ -210,8 +210,9 @@ n_obs <- 2000
 n_each <- n_obs / 2
 group <- c(rep("W1", n_each), rep("W2", n_each))
 
-W <- simulate(
-  f(c(1:n_each, 1:n_each),
+reorder_loc = sample(1:n_each)
+sim_fields <- simulate(
+  f(c(reorder_loc, reorder_loc),
     model="bv",
     theta=pi/8, rho=0.5,
     sub_models = list(
@@ -243,11 +244,11 @@ x1 <- rexp(n_obs)
 x2 <- rnorm(n_obs)
 feff <- c(-3, 1.5)
 # ignore A since here A is Idenitity matrix (well-ordered)
-Y <- W + x1 * feff[1] + x2 * feff[2] + as.numeric(e)
+Y <- sim_fields + x1 * feff[1] + x2 * feff[2] + as.numeric(e)
 
 out <- ngme(
   Y ~ 0 + x1 + x2 +
-    f(c(1:n_each, 1:n_each),
+    f(c(reorder_loc, reorder_loc),
     model="bv",
     name = "bv",
     sub_models = list(W1 = "ar1", W2 = "ar1"),
@@ -288,7 +289,7 @@ pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
 mesh <- fmesher::fm_mesh_2d(
   loc.domain = pl01,
   cutoff = 0.2,
-  max.edge = c(0.7, 10)
+  max.edge = c(0.9, 10)
 )
 mesh$n
 n_obs <- 2000
@@ -301,36 +302,41 @@ group <- c(rep("W1", n_obs/2), rep("W2", n_obs/2))
 # plot the mesh
 plot(mesh); points(long, lat)
 
+# parameters of the bivariate model
+theta = pi/8; rho = 1; theta_K_1 = log(1); theta_K_2 = log(5);
+mu_1 = -2; sigma_1 = 1; nu_1 = 1
+mu_2 = 2; sigma_2 = 2; nu_2 = 0.5
+
 true_model <- f(
-  ~long + lat,
-  theta = pi/8, rho = 1,
+  ~ long + lat,
+  theta = theta,
+  rho = rho,
   mesh = mesh,
   model = "bv",
   sub_models = list(
-    W1 = list(model = "matern", theta_K = log(3)),
-    W2 = list(model = "matern", theta_K = log(5))
+    W1 = list(model = "matern", theta_K = theta_K_1),
+    W2 = list(model = "matern", theta_K = theta_K_2)
   ),
   group = group,
   noise = list(W1 = noise_nig(
-    # mu = -2, sigma=1, nu=1
+    mu = mu_1, sigma = sigma_1, nu=nu_1
   ), W2 = noise_nig(
-    # mu = 2, sigma=2, nu=0.5
+    mu = mu_2, sigma = sigma_2, nu=nu_2
   ))
 )
+
 W <- simulate(true_model)[[1]]
-Y <- as.numeric(true_model$A %*% W) + rnorm(n_obs, sd=0.2)
-data <- data.frame(Y, long, lat)
+Y <- W + rnorm(n_obs, sd=0.2)
 
 out <- ngme(
   Y ~ 0 + f(
-    ~long + lat,
+    ~ long + lat,
     mesh = mesh,
     model = "bv",
     name = "bv",
-    fix_theta_K = TRUE,
     sub_models = list(
-      W1 = list(model = "matern", theta_K = log(3)),
-      W2 = list(model = "matern", theta_K = log(5))
+      W1 = list(model = "matern"),
+      W2 = list(model = "matern")
     ),
     noise = list(
       W1 = noise_nig(),
@@ -338,13 +344,14 @@ out <- ngme(
     )
   ),
   group = group,
-  data = data,
+  data = data.frame(Y, long, lat),
   control_opt = control_opt(
-    iterations = 3000,
+    iterations = 5000,
     n_parallel_chain = 4,
-    # rao_blackwellization = TRUE,
-    verbose = F,
-    print_check_info = F
+    rao_blackwellization = TRUE,
+    verbose = T,
+    print_check_info = F,
+    seed = 50
   )
 )
 out
@@ -352,8 +359,8 @@ out
 # comparing with simulated value
 traceplot(
   out, "bv",
-  hline=c(pi/8, 0.5, 3, 5, 0, 0, 1, 1, 1, 1)
-  # hline=c(pi/8, 0.5, 4, 6, -2, 2, 1, 2, 1, 0.5)
+  hline=c(theta, rho, exp(theta_K_1), exp(theta_K_2),
+    mu_1, mu_2, sigma_1, sigma_2, nu_1, nu_2)
 )
 ```
 

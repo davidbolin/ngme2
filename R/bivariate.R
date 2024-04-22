@@ -20,7 +20,8 @@
 bv <- function(
   mesh,
   sub_models,
-  theta = 0, rho = 0,
+  theta = 0,
+  rho = 0,
   group = NULL,
   share_param = FALSE,
   fix_bv_theta = FALSE,

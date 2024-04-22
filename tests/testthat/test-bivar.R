@@ -35,9 +35,8 @@ test_that("test bv(ar1, ar1) with 2 noise", {
   )
 true_model$operator$K
   W <- simulate(true_model, seed=1)[[1]]
-  AW <- as.numeric(true_model$A %*% W)
-  n_obs <- length(AW)
-  Y <- AW + rnorm(n_obs, sd=0.5)
+  n_obs <- length(W)
+  Y <- W + rnorm(n_obs, sd=0.5)
   # Y = c(Y_A, Y_B)
   # label = c(A, B)
 
@@ -100,9 +99,8 @@ test_that("test on bv(matern, matern)", {
   )
 
   W <- simulate(true_model)[[1]]
-  AW <- as.numeric(true_model$A %*% W)
-  n_obs <- length(AW)
-  Y <- AW + rnorm(n_obs, sd=0.5)
+  n_obs <- length(W)
+  Y <- W + rnorm(n_obs, sd=0.5)
   length(Y)
 
   out <- ngme(

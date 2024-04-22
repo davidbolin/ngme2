@@ -107,8 +107,7 @@ true_model <- ngme2::f(
 )
 
 W <- simulate(true_model)[[1]]
-AW <- as.numeric(true_model$A %*% W)
-Y_obs <- AW + rnorm(length(AW), sd = 0.5)
+Y_obs <- W + rnorm(length(W), sd = 0.5)
 df <- data.frame(year, x, y, Y_obs)
 ```
 

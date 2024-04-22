@@ -51,8 +51,14 @@ simulate.ngme_model <- function(
     W <- W - mean(W)
 
     # Need to re-order W and V by A matrix!!!
-    sims[[paste0("sim_", nn)]] <- as.numeric(model$A %*% W)
-    V_sim[[paste0("sim_", nn)]] <- as.numeric(model$A %*% attr(e, "V"))
+    if (is.null(model$A)) {
+      # model does not contain A matrix, e.g., Matern graph model!
+      sims[[paste0("sim_", nn)]] <-  W
+      V_sim[[paste0("sim_", nn)]] <- attr(e, "V")
+    } else {
+      sims[[paste0("sim_", nn)]] <- as.numeric(model$A %*% W)
+      V_sim[[paste0("sim_", nn)]] <- as.numeric(model$A %*% attr(e, "V"))
+    }
   }
 
   structure(

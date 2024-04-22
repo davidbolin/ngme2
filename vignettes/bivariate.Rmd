@@ -203,9 +203,9 @@ We will see how to estimate it in the next example.
 
 In this example, we will first use `simulate` function to simulate the hidden bivariate process. Notice that we need to provide the labels for the 2 fields. Then we will generate the measurement noise $\epsilon$ with some correlation. Finally, we will use the `ngme` function to estimate the model.
 
-### Ex1. Fixed effects + Bivariate model (AR1) + Correlated measurement noise
+### Ex1. Fixed effects + Bivariate model (AR1, Normal) + Correlated measurement noise
 
-```{r corr-measurement, cache=TRUE}
+```{r}
 n_obs <- 2000
 n_each <- n_obs / 2
 group <- c(rep("W1", n_each), rep("W2", n_each))
@@ -214,15 +214,15 @@ reorder_loc = sample(1:n_each)
 sim_fields <- simulate(
   f(c(reorder_loc, reorder_loc),
     model="bv",
-    theta=pi/8, rho=0.5,
+    rho=5,
     sub_models = list(
       W1 = list(model="ar1", rho=0.6),
       W2 = list(model="ar1", rho=-0.4)
     ),
     group=group,
     noise=list(
-      W1 = noise_nig(mu=-2,sigma=1,nu=1),
-      W2 = noise_nig(mu=2,sigma=2,nu=0.5)
+      W1 = noise_normal(sigma = 3),
+      W2 = noise_normal(sigma = 0.5)
     )
   )
 )[[1]]
@@ -243,7 +243,82 @@ e <- L %*% rnorm(n_obs)
 x1 <- rexp(n_obs)
 x2 <- rnorm(n_obs)
 feff <- c(-3, 1.5)
-# ignore A since here A is Idenitity matrix (well-ordered)
+
+Y <- sim_fields + x1 * feff[1] + x2 * feff[2] + as.numeric(e)
+
+out <- ngme(
+  Y ~ 0 + x1 + x2 +
+    f(c(reorder_loc, reorder_loc),
+    model="bv",
+    name = "bv",
+    sub_models = list(W1 = "ar1", W2 = "ar1"),
+    noise=list(
+      W1 = noise_normal(),
+      W2 = noise_normal()
+    )
+  ),
+  group = group,
+  family = noise_normal(
+    corr_measurement = TRUE,
+    index_corr = c(1:n_each, 1:n_each)
+  ),
+  data = data.frame(Y, x1, x2),
+  control_opt = control_opt(
+    iterations = 100,
+    rao_blackwellization = TRUE,
+    seed = 7
+  )
+)
+out
+
+# comparing with simulated value
+traceplot(
+  out, "bv",
+  hline=c(0, 5, 0.6, -0.4, 3, 0.5)
+)
+```
+
+### Ex2. Fixed effects + Bivariate model (AR1, NIG) + Correlated measurement noise
+
+```{r corr-measurement, cache=TRUE}
+n_obs <- 1000
+n_each <- n_obs / 2
+group <- c(rep("W1", n_each), rep("W2", n_each))
+
+theta = pi/8; rho = 3; rho_1 = 0.6; rho_2 = 0.4
+mu_1 = -2; sigma_1 = 1; nu_1 = 1
+mu_2 = 2; sigma_2 = 2; nu_2 = 0.5
+
+reorder_loc = sample(1:n_each)
+sim_fields <- simulate(
+  f(c(reorder_loc, reorder_loc),
+    model="bv",
+    theta=theta, rho=rho,
+    sub_models = list(
+      W1 = list(model="ar1", rho=rho_1),
+      W2 = list(model="ar1", rho=rho_2)
+    ),
+    group=group,
+    noise=list(
+      W1 = noise_nig(mu=mu_1, sigma=sigma_1, nu=nu_1),
+      W2 = noise_nig(mu=mu_2, sigma=sigma_2, nu=nu_2)
+    )
+  )
+)[[1]]
+
+# Same as previous
+Cov_same_idx <- matrix(c(1, 0.7, 0.7, 1), nrow=2)
+Cov_measurement <- Cov_same_idx %x% diag(n_obs / 2)
+
+# e ~ N(0, Cov_measurement)
+L <- t(chol(Cov_measurement))
+e <- L %*% rnorm(n_obs)
+
+# fixed effects
+x1 <- rexp(n_obs)
+x2 <- rnorm(n_obs)
+feff <- c(-3, 1.5)
+
 Y <- sim_fields + x1 * feff[1] + x2 * feff[2] + as.numeric(e)
 
 out <- ngme(
@@ -264,7 +339,9 @@ out <- ngme(
   ),
   data = data.frame(Y, x1, x2),
   control_opt = control_opt(
-    iterations = 3000,
+    iterations = 500,
+    stepsize = 2,
+    n_parallel_chain = 4,
     seed = 7
   )
 )
@@ -273,14 +350,20 @@ out
 # comparing with simulated value
 traceplot(
   out, "bv",
-  hline=c(pi/8, 0.5, 0.6, -0.4, -2, 2, 1, 2, 1, 0.5)
+  hline=c(theta, rho, rho_1, rho_2,
+    mu_1, mu_2, sigma_1, sigma_2, nu_1, nu_2)
 )
-
 # fixed effects and measurement noise
 # traceplot(out, hline=c(1, 0.7, -3, 1.5))
+
+#
+# ngme2:::build_D(0, 5)
+# ngme2:::build_D(theta, 1)
+# ngme2:::build_D(-0.43, 1.37)
+# ngme2:::build_D(theta, 0.5)
 ```
 
-### Ex2. Fixed effects + Bivariate model (Matérn) + Correlated measurement noise
+### Ex3. Fixed effects + Bivariate model (Matérn, NIG) + Correlated measurement noise
 
 Next, we consider a spatial bivariate model.
 

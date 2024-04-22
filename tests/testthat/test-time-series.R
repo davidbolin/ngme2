@@ -7,7 +7,7 @@ test_that("simulate and estimate of rw with NIG", {
   my_rw <- f(x, model="rw1", noise=noise_nig(mu=mu, sigma=sigma, nu=nu))
 
   W <- simulate(my_rw, seed = 3)[[1]]
-  Y <- as.numeric(my_rw$A %*% W) + rnorm(n=length(W), sd=sigma_eps)
+  Y <- W + rnorm(n=length(W), sd=sigma_eps)
 
   out <- ngme(
     Y ~ 0 + f(x,

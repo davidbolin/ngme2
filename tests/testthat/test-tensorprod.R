@@ -49,11 +49,10 @@
 
 #   expect_true(all(tensor_model$operator$K ==
 #      ar1(1:n1, theta_K = ar1_a2th(0.7))$K %x% matern(map=loc, mesh=mesh2d, theta_K = 1)$K))
-#   W <- simulate(tensor_model)
+#   W <- simulate(tensor_model)[[1]]
 
-#   AW <- as.numeric(tensor_model$A %*% W)
-#   n_obs <- length(AW)
-#   Y <- AW + rnorm(n_obs, sd=0.5)
+#   n_obs <- length(W)
+#   Y <- W + rnorm(n_obs, sd=0.5)
 #   mean(attr(W, "noise")$V)
 
 # ##############################  estimation
@@ -181,9 +180,8 @@ test_that("ar x ar case", {
   )
   tensor_model
   W <- simulate(tensor_model)[[1]]
-  AW <- as.numeric(tensor_model$A %*% W)
-  n_obs <- length(AW)
-  Y <- AW + rnorm(n_obs, sd=0.5)
+  n_obs <- length(W)
+  Y <- W + rnorm(n_obs, sd=0.5)
 
 ##############################  estimation
   out <- ngme(

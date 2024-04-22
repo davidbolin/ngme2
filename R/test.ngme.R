@@ -139,7 +139,7 @@ print(paste("nodes of mesh = ", mesh$n))
         noise = f_noise
       )
       W <- simulate(matern_model, seed=seed)[[1]]
-      Y <- as.numeric(matern_model$A %*% W) + mn_noise
+      Y <- W + mn_noise
       list(Y=Y, idx=loc, group=rep(1, n_obs_per_rep))
     },
     "ar1+ar1" = {
@@ -162,7 +162,7 @@ print(paste("nodes of mesh = ", mesh$n))
       )
       W1 <- simulate(ar1_model, seed = seed)[[1]]
       W2 <- simulate(matern_model, seed = seed)[[1]]
-      Y <- W1 + as.numeric(matern_model$A %*% W2) + mn_noise
+      Y <- W1 + W2 + mn_noise
       list(Y=Y, idx=list(idx, loc), group=rep(1, n_obs_per_rep))
     },
     "bvar1" = {
@@ -183,7 +183,7 @@ print(paste("nodes of mesh = ", mesh$n))
         )
       )
       W <- simulate(true_model, seed=seed)[[1]]
-      Y <- as.numeric(true_model$A %*% W) + mn_noise
+      Y <- W + mn_noise
       list(Y=Y, idx=idx_per_rep, group=group_per_rep)
     },
     "bvmatern" = {
@@ -207,7 +207,7 @@ print(paste("nodes of mesh = ", mesh$n))
         )
       )
       W <- simulate(true_model, seed=seed)[[1]]
-      Y <- as.numeric(true_model$A %*% W) + mn_noise
+      Y <- W + mn_noise
       list(Y=Y, idx=loc, group=group_per_rep)
     },
     "graph" = {

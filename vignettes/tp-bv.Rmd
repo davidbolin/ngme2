@@ -76,7 +76,7 @@ f_model <- f(
 W = simulate(f_model)[[1]]
 
 # Adding measurement noise
-Y = as.numeric(f_model$A %*% W) + rnorm(length(W), sd=0.2)
+Y = W + rnorm(length(W), sd=0.2)
 ```
 
 ## Estimation

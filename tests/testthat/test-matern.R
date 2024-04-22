@@ -28,7 +28,7 @@ test_that("test Matern", {
 
   W <- simulate(true_model)[[1]]
   attr(W, "noise")
-  Y <- as.numeric(true_model$A %*% W) + rnorm(n_obs, sd=0.5)
+  Y <- W + rnorm(n_obs, sd=0.5)
 
   # make bubble plot
   # sp_obj <- as.data.frame(mesh$loc); sp_obj[, 3] <- W
@@ -191,7 +191,7 @@ test_that("test 1d matern with numerical g", {
   # eps <- simulate.ngme_noise(real_noise)
   # K <- 4 * spde1d$C + spde1d$G
   # W <- as.numeric(solve(K, eps))
-  Y <- as.numeric(spde1d$A %*% W) + rnorm(n_obs, sd=0.5)
+  Y <- W + rnorm(n_obs, sd=0.5)
 # plot(Y, type="l")
 
   out <- ngme(

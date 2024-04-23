@@ -281,11 +281,12 @@ traceplot(
 ### Ex2. Fixed effects + Bivariate model (AR1, NIG) + Correlated measurement noise
 
 ```{r corr-measurement, cache=TRUE}
+set.seed(125)
 n_obs <- 1000
 n_each <- n_obs / 2
 group <- c(rep("W1", n_each), rep("W2", n_each))
 
-theta = pi/8; rho = 3; rho_1 = 0.6; rho_2 = 0.4
+theta = pi/8; rho = 2; rho_1 = 0.6; rho_2 = 0.4
 mu_1 = -2; sigma_1 = 1; nu_1 = 1
 mu_2 = 2; sigma_2 = 2; nu_2 = 0.5
 
@@ -293,7 +294,8 @@ reorder_loc = sample(1:n_each)
 sim_fields <- simulate(
   f(c(reorder_loc, reorder_loc),
     model="bv",
-    theta=theta, rho=rho,
+    theta = theta,
+    rho = rho,
     sub_models = list(
       W1 = list(model="ar1", rho=rho_1),
       W2 = list(model="ar1", rho=rho_2)
@@ -340,9 +342,9 @@ out <- ngme(
   data = data.frame(Y, x1, x2),
   control_opt = control_opt(
     iterations = 500,
-    stepsize = 2,
+    stepsize = 1,
     n_parallel_chain = 4,
-    seed = 7
+    seed = 113
   )
 )
 out
@@ -363,7 +365,7 @@ traceplot(
 # ngme2:::build_D(theta, 0.5)
 ```
 
-### Ex3. Fixed effects + Bivariate model (Matérn, NIG) + Correlated measurement noise
+### Ex3. Fixed effects + Bivariate model (Matérn, Normal) + iid measurement noise
 
 Next, we consider a spatial bivariate model.
 
@@ -372,10 +374,10 @@ pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
 mesh <- fmesher::fm_mesh_2d(
   loc.domain = pl01,
   cutoff = 0.2,
-  max.edge = c(0.9, 10)
+  max.edge = c(0.5, 10)
 )
 mesh$n
-n_obs <- 2000
+n_obs <- 1000
 
 # generate random locations (same for two fields)
 long <- runif(n_obs/2, 0, 10); lat <- runif(n_obs/2, 0, 5)
@@ -386,9 +388,10 @@ group <- c(rep("W1", n_obs/2), rep("W2", n_obs/2))
 plot(mesh); points(long, lat)
 
 # parameters of the bivariate model
-theta = pi/8; rho = 1; theta_K_1 = log(1); theta_K_2 = log(5);
-mu_1 = -2; sigma_1 = 1; nu_1 = 1
-mu_2 = 2; sigma_2 = 2; nu_2 = 0.5
+theta = 0; rho = 1;
+theta_K_1 = log(2); theta_K_2 = log(5);
+mu_1 = -2; sigma_1 = 0.5; nu_1 = 1
+mu_2 = 2; sigma_2 = 0.3; nu_2 = 0.5
 
 true_model <- f(
   ~ long + lat,
@@ -401,11 +404,12 @@ true_model <- f(
     W2 = list(model = "matern", theta_K = theta_K_2)
   ),
   group = group,
-  noise = list(W1 = noise_nig(
-    mu = mu_1, sigma = sigma_1, nu=nu_1
-  ), W2 = noise_nig(
-    mu = mu_2, sigma = sigma_2, nu=nu_2
-  ))
+  noise = list(
+    W1 = noise_normal(sigma = sigma_1),
+    W2 = noise_normal(sigma = sigma_2)
+    # W1 = noise_nig(mu = mu_1, sigma = sigma_1, nu=nu_1),
+    # W2 = noise_nig(mu = mu_2, sigma = sigma_2, nu=nu_2)
+  )
 )
 
 W <- simulate(true_model)[[1]]
@@ -421,21 +425,25 @@ out <- ngme(
       W1 = list(model = "matern"),
       W2 = list(model = "matern")
     ),
+    # debug=T,
     noise = list(
-      W1 = noise_nig(),
-      W2 = noise_nig()
+      # W1 = noise_nig(),
+      # W2 = noise_nig()
+      W1 = noise_normal(),
+      W2 = noise_normal()
     )
   ),
   group = group,
   data = data.frame(Y, long, lat),
   control_opt = control_opt(
-    iterations = 5000,
+    iterations = 500,
     n_parallel_chain = 4,
     rao_blackwellization = TRUE,
     verbose = T,
     print_check_info = F,
     seed = 50
-  )
+  ),
+  debug = F
 )
 out
 
@@ -443,7 +451,7 @@ out
 traceplot(
   out, "bv",
   hline=c(theta, rho, exp(theta_K_1), exp(theta_K_2),
-    mu_1, mu_2, sigma_1, sigma_2, nu_1, nu_2)
+    sigma_1, sigma_2)
 )
 ```
 

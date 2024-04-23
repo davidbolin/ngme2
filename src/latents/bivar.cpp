@@ -16,7 +16,7 @@ Bivar::Bivar(const Rcpp::List& operator_list):
 
 void Bivar::update_K(const VectorXd& theta_K) {
   double eta = theta_K(0);
-  double theta = std::atan(eta) / 2;
+  double theta = std::atan(eta);
   if (fix_bv_theta) { theta = 0; }
 
   double rho = theta_K(1);
@@ -40,7 +40,7 @@ void Bivar::update_K(const VectorXd& theta_K) {
 // assume K is updated!!!
 void Bivar::update_dK(const VectorXd& theta_K) {
   double eta = theta_K(0);
-  double theta = std::atan(eta) / 2;
+  double theta = std::atan(eta);
   if (fix_bv_theta) { theta = 0; }
 
   double rho = theta_K(1);

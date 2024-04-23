@@ -10,7 +10,8 @@
 #' @param sub_models a list of sub_models (total 2 sub_models)
 #' @param mesh mesh for build the model
 #' @param group group vector, can be inherited from ngme() function
-#' @param theta the rotation parameter (from -pi/4 to pi/4)
+#' @param theta the rotation parameter (starting point should
+#'   from -pi/4 to pi/4)
 #' @param rho the parameter related to correlation
 #' @param share_param TRUE if share the same parameter for 2 sub_models (of same type)
 #' @param ... ignore
@@ -66,9 +67,10 @@ bv <- function(
   }
 
   stopifnot(
-    "theta is in (-pi/4, pi/4)" = theta >= -pi/4 & theta <= pi/4
+    "the theta should be in (-pi/2, pi/2)"
+      = theta >= -pi/2 & theta <= pi/2
   )
-  eta <- tan(theta * 2);
+  eta <- tan(theta)
   theta_K <- c(eta, rho, first$theta_K, second$theta_K)
 
   # pass the theta_K to first and second
@@ -78,7 +80,10 @@ bv <- function(
   D <- build_D(theta, rho)
   bigD <- kronecker(D, Matrix::Diagonal(nrow(first$K)))
 
-  eta_to_theta <- function(eta) atan(eta) / 2
+  # the range of theta is (-pi/4, pi/4), we expand it to (-pi/2, pi/2)
+  # so that the maximum can be reached in either direction
+  # in the end, we will NOT transform it back to (-pi/4, pi/4)
+  eta_to_theta <- function(eta) atan(eta)
 
   update_K <- function(theta_K) {
     eta <- theta_K[1]

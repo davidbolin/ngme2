@@ -84,38 +84,38 @@ Y = W + rnorm(length(W), sd=0.2)
 Now we turn to estimate the model using simulated data.
 
 ```{r}
-bv_list_2 <- list(
-  model="bv",
-  sub_models = list(
-    f1 = list(
-      model="ar1"
-    ),
-    f2 = list(
-      model="ar1"
-    )
-  )
-)
-nn = length(Y)
+# bv_list_2 <- list(
+#   model="bv",
+#   sub_models = list(
+#     f1 = list(
+#       model="ar1"
+#     ),
+#     f2 = list(
+#       model="ar1"
+#     )
+#   )
+# )
+# nn = length(Y)
 
-fit0 = ngme(
-  Y ~ 0 + f(1:nn, model="rw1") +
-    f(map=list(
-      time_idx, bv_idx
-    ),
-    model="tp",
-    first = list(model="ar1"),
-    second = bv_list_2,
-    noise=noise_nig()
-  ),
-  control_opt = control_opt(
-    iterations = 10
-  ),
-  data=data.frame(Y=Y),
-  group = group
-)
-fit0
+# fit0 = ngme(
+#   Y ~ 0 + f(1:nn, model="rw1") +
+#     f(map=list(
+#       time_idx, bv_idx
+#     ),
+#     model="tp",
+#     first = list(model="ar1"),
+#     second = bv_list_2,
+#     noise=noise_nig()
+#   ),
+#   control_opt = control_opt(
+#     iterations = 10
+#   ),
+#   data=data.frame(Y=Y),
+#   group = group
+# )
+# fit0
 
-traceplot(fit0, "field1")
+# traceplot(fit0, "field1")
 ```
 
 Here we can see, we get the simulated parameter correctly.

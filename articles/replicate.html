@@ -248,22 +248,22 @@ process dissapears by looking at the <span class="math inline">\(\mathbf{K}_{4, 
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt; (Intercept) </span></span>
-<span><span class="co">#&gt;       -3.02 </span></span>
+<span><span class="co">#&gt;       -3.01 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $field1</span></span>
 <span><span class="co">#&gt;   Model type: AR(1)</span></span>
-<span><span class="co">#&gt;       rho = 0.749</span></span>
+<span><span class="co">#&gt;       rho = 0.758</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -0.0317</span></span>
-<span><span class="co">#&gt;       sigma = 1.02</span></span>
-<span><span class="co">#&gt;       nu = 1.09</span></span>
+<span><span class="co">#&gt;       mu = -0.0523</span></span>
+<span><span class="co">#&gt;       sigma = 0.985</span></span>
+<span><span class="co">#&gt;       nu = 0.991</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.21</span></span>
+<span><span class="co">#&gt;       sigma = 0.28</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  2</span></span></code></pre></div>
@@ -307,7 +307,7 @@ locations where the feature is unknown.</p>
 <span>  max.n <span class="op">=</span> <span class="fl">500</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">mesh</span><span class="op">$</span><span class="va">n</span></span>
-<span><span class="co">#&gt; [1] 460</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 457</span></span></code></pre></div>
 <p><img src="replicate_files/figure-html/unnamed-chunk-10-1.png" width="672" style="display: block; margin: auto;"></p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># fitting the model</span></span>
@@ -343,12 +343,12 @@ locations where the feature is unknown.</p>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $spde</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
-<span><span class="co">#&gt;       kappa = 0.896</span></span>
+<span><span class="co">#&gt;       kappa = 0.886</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = 0.0391</span></span>
-<span><span class="co">#&gt;       sigma = 0.829</span></span>
-<span><span class="co">#&gt;       nu = 0.72</span></span>
+<span><span class="co">#&gt;       mu = 0.0211</span></span>
+<span><span class="co">#&gt;       sigma = 0.997</span></span>
+<span><span class="co">#&gt;       nu = 0.845</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>

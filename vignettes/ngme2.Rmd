@@ -196,14 +196,14 @@ The distribution of the measurement error $\epsilon$ is given in the `ngme` func
 The entire model can be fitted, along with the specification of the distribution of the measurement error through the `ngme` function:
 
 ```{r ngme_block}
-# ngme(
-#   formula = formula,
-#   family = noise_normal(sigma = 0.5),
-#   data = data.frame(Y = 1:5, x1 = 2:6, x2 = 3:7),
-#   control_opt = control_opt(
-#     estimation = FALSE
-#   )
-# )
+ngme(
+  formula = formula,
+  family = noise_normal(sigma = 0.5),
+  data = data.frame(Y = 1:5, x1 = 2:6, x2 = 3:7),
+  control_opt = control_opt(
+    estimation = FALSE
+  )
+)
 ```
 
 It gives the `ngme` object, which has three parts:
@@ -237,27 +237,27 @@ K =
 $$
 
 ```{r simulate_ar1}
-# n_obs <- 500
-# sigma_eps <- 0.5
-# alpha <- 0.5
-# mu = 2; delta = -mu
-# sigma <- 3
-# nu <- 1
+n_obs <- 500
+sigma_eps <- 0.5
+alpha <- 0.5
+mu = 2; delta = -mu
+sigma <- 3
+nu <- 1
 
-# # First we generate V. V_i follows inverse Gaussian distribution
-# trueV <- ngme2::rig(n_obs, nu, nu, seed = 10)
+# First we generate V. V_i follows inverse Gaussian distribution
+trueV <- ngme2::rig(n_obs, nu, nu, seed = 10)
 
-# # Then generate the nig noise
-# mynoise <- delta + mu*trueV + sigma * sqrt(trueV) * rnorm(n_obs)
-# trueW <- Reduce(function(x,y){y + alpha*x}, mynoise, accumulate = T)
-# Y = trueW + rnorm(n_obs, mean=0, sd=sigma_eps)
+# Then generate the nig noise
+mynoise <- delta + mu*trueV + sigma * sqrt(trueV) * rnorm(n_obs)
+trueW <- Reduce(function(x,y){y + alpha*x}, mynoise, accumulate = T)
+Y = trueW + rnorm(n_obs, mean=0, sd=sigma_eps)
 
-# # Add some fixed effects
-# x1 = runif(n_obs)
-# x2 = rexp(n_obs)
-# beta <- c(-3, -1, 2)
-# X <- (model.matrix(Y ~ x1 + x2))  # design matrix
-# Y = as.numeric(Y + X %*% beta)
+# Add some fixed effects
+x1 = runif(n_obs)
+x2 = rexp(n_obs)
+beta <- c(-3, -1, 2)
+X <- (model.matrix(Y ~ x1 + x2))  # design matrix
+Y = as.numeric(Y + X %*% beta)
 ```
 
 Now let's fit the model using `ngme`. Here we can use `control_opt` to modify the
@@ -265,32 +265,32 @@ control variables for the `ngme`. See `?control_opt` for more optioins.
 
 ```{r fit_ar1, cache=TRUE}
 # # Fit the model with the AR1 model
-# ngme_out <- ngme(
-#   Y ~ x1 + x2 + f(
-#     1:n_obs,
-#     name = "my_ar",
-#     model = "ar1",
-#     noise = noise_nig()
-#   ),
-#   data=data.frame(x1=x1, x2=x2, Y=Y),
-#   control_opt = control_opt(
-#     burnin = 100,
-#     iterations = 1000,
-#     std_lim = 0.4,
-#     n_parallel_chain = 4,
-#     stop_points = 10,
-#     print_check_info = FALSE,
-#     seed = 3,
-#     sampling_strategy = "ws"
-#     # verbose = T
-#   )
-# )
+ngme_out <- ngme(
+  Y ~ x1 + x2 + f(
+    1:n_obs,
+    name = "my_ar",
+    model = "ar1",
+    noise = noise_nig()
+  ),
+  data=data.frame(x1=x1, x2=x2, Y=Y),
+  control_opt = control_opt(
+    burnin = 100,
+    iterations = 1000,
+    std_lim = 0.4,
+    n_parallel_chain = 4,
+    stop_points = 10,
+    print_check_info = FALSE,
+    seed = 3,
+    sampling_strategy = "ws"
+    # verbose = T
+  )
+)
 ```
 
 Next we can read the result directly from the object.
 
 ```{r out}
-# ngme_out
+ngme_out
 ```
 
 As we can see, the model converges in 350 iterations.
@@ -298,17 +298,17 @@ The estimation results are close to the real parameter.
 
 We can also use the `traceplot` function to see the estimation traceplot.
 ```{r traceplot, fig.align="center", fig.width=6,fig.height=6,  fig.cap="Parameters of the AR1 model"}
-# traceplot(ngme_out, "my_ar")
+traceplot(ngme_out, "my_ar")
 ```
 
 We can also do a density comparison with the estimated noise and the true NIG noise:
 
 ```{r compare-density}
 # ngme_out$replicates[[1]] means for the 1st replicate
-# plot(
-#   ngme_out$replicates[[1]]$models[[1]]$noise,
-#   noise_nig(mu = mu, sigma = sigma, nu = nu)
-# )
+plot(
+  ngme_out$replicates[[1]]$models[[1]]$noise,
+  noise_nig(mu = mu, sigma = sigma, nu = nu)
+)
 ```
 
 ## Paraná dataset
@@ -320,132 +320,132 @@ ANA collects data from many locations over Brazil, and all these data are freely
 We will briefly illustrate the command we use, and the result of the estimation.
 
 ```{r read-parana}
-# library(INLA)
-# data(PRprec)
-# data(PRborder)
+library(INLA)
+data(PRprec)
+data(PRborder)
 
-# # Create mesh
-# coords <- as.matrix(PRprec[, 1:2])
-# prdomain <- fmesher::fm_nonconvex_hull(coords, -0.03, -0.05, resolution = c(100, 100))
-# prmesh <- fmesher::fm_mesh_2d(boundary = prdomain, max.edge = c(0.45, 1), cutoff = 0.2)
+# Create mesh
+coords <- as.matrix(PRprec[, 1:2])
+prdomain <- fmesher::fm_nonconvex_hull(coords, -0.03, -0.05, resolution = c(100, 100))
+prmesh <- fmesher::fm_mesh_2d(boundary = prdomain, max.edge = c(0.45, 1), cutoff = 0.2)
 
-# # monthly mean at each location
-# Y <- rowMeans(PRprec[, 12 + 1:31]) # 2 + Octobor
+# monthly mean at each location
+Y <- rowMeans(PRprec[, 12 + 1:31]) # 2 + Octobor
 
-# ind <- !is.na(Y) # non-NA index
-# Y <- Y_mean <- Y[ind]
-# coords <- as.matrix(PRprec[ind, 1:2])
-# seaDist <- apply(spDists(coords, PRborder[1034:1078, ],
-#   longlat = TRUE
-# ), 1, min)
+ind <- !is.na(Y) # non-NA index
+Y <- Y_mean <- Y[ind]
+coords <- as.matrix(PRprec[ind, 1:2])
+seaDist <- apply(spDists(coords, PRborder[1034:1078, ],
+  longlat = TRUE
+), 1, min)
 ```
 
 Plot the data:
 
 ```{r plot-data, message=FALSE,fig.width=6,fig.height=6,fig.align='center', echo=FALSE, fig.cap="Mean of the rainfall in Octobor 2012 in Paraná"}
-# ggplot() +
-#   geom_point(aes(
-#     x = coords[, 1], y = coords[, 2],
-#     colour = Y
-#   ), size = 2, alpha = 1) +
-#   scale_color_gradientn(colours = viridis(100)) +
-#   geom_path(aes(x = PRborder[, 1], y = PRborder[, 2])) +
-#   geom_path(aes(x = PRborder[1034:1078, 1], y = PRborder[
-#     1034:1078,
-#     2
-#   ]), colour = "red") +
-#   theme(
-#     axis.title.x = element_blank(),   # Remove x-axis label
-#     axis.title.y = element_blank(),   # Remove y-axis label
-#     axis.line = element_blank(),      # Remove axis lines
-#     axis.text.x = element_blank(),    # Remove x-axis tick labels
-#     axis.text.y = element_blank(),    # Remove y-axis tick labels
-#     legend.title = element_blank()
-#   )
+ggplot() +
+  geom_point(aes(
+    x = coords[, 1], y = coords[, 2],
+    colour = Y
+  ), size = 2, alpha = 1) +
+  scale_color_gradientn(colours = viridis(100)) +
+  geom_path(aes(x = PRborder[, 1], y = PRborder[, 2])) +
+  geom_path(aes(x = PRborder[1034:1078, 1], y = PRborder[
+    1034:1078,
+    2
+  ]), colour = "red") +
+  theme(
+    axis.title.x = element_blank(),   # Remove x-axis label
+    axis.title.y = element_blank(),   # Remove y-axis label
+    axis.line = element_blank(),      # Remove axis lines
+    axis.text.x = element_blank(),    # Remove x-axis tick labels
+    axis.text.y = element_blank(),    # Remove y-axis tick labels
+    legend.title = element_blank()
+  )
 ```
 
 ```{r fit-parana, cache=TRUE}
-# out <- ngme(
-#   formula = Y ~ 1 +
-#     f(seaDist, name="rw1", model = "rw1", noise = noise_normal()) +
-#     f(coords, model = "matern", mesh = prmesh, name="spde", noise = noise_normal()),
-#   data = data.frame(Y = Y),
-#   family = "nig",
-#   control_opt = control_opt(
-#     estimation = T,
-#     iterations = 1000,
-#     n_slope_check = 4,
-#     stop_points = 10,
-#     std_lim = 0.1,
-#     n_parallel_chain = 4,
-#     print_check_info = FALSE,
-#     seed = 16
-#   )
-# )
-# out
+out <- ngme(
+  formula = Y ~ 1 +
+    f(seaDist, name="rw1", model = "rw1", noise = noise_normal()) +
+    f(coords, model = "matern", mesh = prmesh, name="spde", noise = noise_normal()),
+  data = data.frame(Y = Y),
+  family = "nig",
+  control_opt = control_opt(
+    estimation = T,
+    iterations = 1000,
+    n_slope_check = 4,
+    stop_points = 10,
+    std_lim = 0.1,
+    n_parallel_chain = 4,
+    print_check_info = FALSE,
+    seed = 16
+  )
+)
+out
 
-# # traceplots
-# ## fixed effects and measurement error
-# traceplot(out)
+# traceplots
+## fixed effects and measurement error
+traceplot(out)
 
-# ## spde model
-# traceplot(out, "spde")
+## spde model
+traceplot(out, "spde")
 ```
 
 Parameter estimation results:
 
 ```{r est-result, echo=FALSE}
-# res1 <- data.frame(
-#   intercept    = format(out$replicates[[1]]$feff, digits=3),
-#   noise_mu     = format(out$replicates[[1]]$noise$theta_mu, digits=3),
-#   noise_sigma  = format(exp(out$replicates[[1]]$noise$theta_sigma), digits=3),
-#   noise_nu     = format(exp(out$replicates[[1]]$noise$theta_nu), digits=3),
-#   rw_sigma     = format(out$replicates[[1]]$models[[1]]$noise$theta_sigma, digits=3),
-#   ma_kappa     = format(exp(out$replicates[[1]]$models[[2]]$theta_K), digits=3),
-#   ma_sigma     = format(exp(out$replicates[[1]]$models[[2]]$noise$theta_sigma), digits=3)
-# )
-# knitr::kable(res1, caption = "Estimations for the model")
+res1 <- data.frame(
+  intercept    = format(out$replicates[[1]]$feff, digits=3),
+  noise_mu     = format(out$replicates[[1]]$noise$theta_mu, digits=3),
+  noise_sigma  = format(exp(out$replicates[[1]]$noise$theta_sigma), digits=3),
+  noise_nu     = format(exp(out$replicates[[1]]$noise$theta_nu), digits=3),
+  rw_sigma     = format(out$replicates[[1]]$models[[1]]$noise$theta_sigma, digits=3),
+  ma_kappa     = format(exp(out$replicates[[1]]$models[[2]]$theta_K), digits=3),
+  ma_sigma     = format(exp(out$replicates[[1]]$models[[2]]$noise$theta_sigma), digits=3)
+)
+knitr::kable(res1, caption = "Estimations for the model")
 ```
 
 ### Prediction
 
 ```{r predict, cache=TRUE}
-# nxy <- c(150, 100)
-# projgrid <- rSPDE::rspde.mesh.projector(prmesh,
-#   xlim = range(PRborder[, 1]),
-#   ylim = range(PRborder[, 2]), dims = nxy
-# )
+nxy <- c(150, 100)
+projgrid <- rSPDE::rspde.mesh.projector(prmesh,
+  xlim = range(PRborder[, 1]),
+  ylim = range(PRborder[, 2]), dims = nxy
+)
 
-# xy.in <- inout(projgrid$lattice$loc, cbind(PRborder[, 1], PRborder[, 2]))
+xy.in <- inout(projgrid$lattice$loc, cbind(PRborder[, 1], PRborder[, 2]))
 
-# coord.prd <- projgrid$lattice$loc[xy.in, ]
-# plot(coord.prd, type = "p", cex = 0.1)
-# lines(PRborder)
-# points(coords[, 1], coords[, 2], pch = 19, cex = 0.5, col = "red")
+coord.prd <- projgrid$lattice$loc[xy.in, ]
+plot(coord.prd, type = "p", cex = 0.1)
+lines(PRborder)
+points(coords[, 1], coords[, 2], pch = 19, cex = 0.5, col = "red")
 
-# seaDist.prd <- apply(spDists(coord.prd,
-#   PRborder[1034:1078, ],
-#   longlat = TRUE
-# ), 1, min)
+seaDist.prd <- apply(spDists(coord.prd,
+  PRborder[1034:1078, ],
+  longlat = TRUE
+), 1, min)
 
-# # doing prediction by giving the predict location
-# pds <- predict(out, map=list(rw1=seaDist.prd, spde=coord.prd))
-# lp <- pds$mean
-# ggplot() +
-#   geom_point(aes(
-#     x = coord.prd[, 1], y = coord.prd[, 2],
-#     colour = lp
-#   ), size = 2, alpha = 1) +
-#   geom_point(aes(
-#     x = coords[, 1], y = coords[, 2],
-#     colour = Y_mean
-#   ), size = 2, alpha = 1) +
-#   scale_color_gradientn(colours = viridis(100)) +
-#   geom_path(aes(x = PRborder[, 1], y = PRborder[, 2])) +
-#   geom_path(aes(x = PRborder[1034:1078, 1], y = PRborder[
-#     1034:1078,
-#     2
-#   ]), colour = "red")
+# doing prediction by giving the predict location
+pds <- predict(out, map=list(rw1=seaDist.prd, spde=coord.prd))
+lp <- pds$mean
+ggplot() +
+  geom_point(aes(
+    x = coord.prd[, 1], y = coord.prd[, 2],
+    colour = lp
+  ), size = 2, alpha = 1) +
+  geom_point(aes(
+    x = coords[, 1], y = coords[, 2],
+    colour = Y_mean
+  ), size = 2, alpha = 1) +
+  scale_color_gradientn(colours = viridis(100)) +
+  geom_path(aes(x = PRborder[, 1], y = PRborder[, 2])) +
+  geom_path(aes(x = PRborder[1034:1078, 1], y = PRborder[
+    1034:1078,
+    2
+  ]), colour = "red")
 ```
 
 ### Cross-validation
@@ -453,5 +453,5 @@ Parameter estimation results:
 We can further validate our model by using cross-validation method.
 
 ```{r cv, cache=TRUE}
-# cross_validation(out, type="k-fold", k=10, print=TRUE)
+cross_validation(out, type="k-fold", k=10, print=TRUE)
 ```

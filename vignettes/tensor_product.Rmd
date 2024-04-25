@@ -115,38 +115,38 @@ Next we run the estimation:
 
 ```{r}
 ##############################  estimation
-# ngme_fit <- ngme(
-#   Y_obs ~ 0 + f(
-#     map = list(year, ~x+y),
-#     model="tp",
-#     name="tp",
-#     first = list(model="ar1"),
-#     second = list(model="matern", mesh = mesh2d),
-#     noise = noise_nig()
-#     # control = control_f(numer_grad = T)
-#   ),
-#   data = df,
-#   family = "normal",
-#   control_opt = control_opt(
-#     iterations = 2000,
-#     n_parallel_chain = 4,
-#     verbose = TRUE,
-#     rao_blackwellization = TRUE,
-#     preconditioner = "fast"
-#   ),
-#   debug = FALSE
-# )
+ngme_fit <- ngme(
+  Y_obs ~ 0 + f(
+    map = list(year, ~x+y),
+    model="tp",
+    name="tp",
+    first = list(model="ar1"),
+    second = list(model="matern", mesh = mesh2d),
+    noise = noise_nig()
+    # control = control_f(numer_grad = T)
+  ),
+  data = df,
+  family = "normal",
+  control_opt = control_opt(
+    iterations = 2000,
+    n_parallel_chain = 4,
+    verbose = TRUE,
+    rao_blackwellization = TRUE,
+    preconditioner = "fast"
+  ),
+  debug = FALSE
+)
 
-# ngme_fit
+ngme_fit
 ```
 
 To see the results of estimation, we can use `traceplot` function.
 
 ```{r}
-# traceplot(ngme_fit, "tp")
-# # compare noise density
-# plot(noise_nig(mu=-2, sigma=1, nu=2), ngme_result(ngme_fit, "tp")$noise)
-# # traceplot(ngme_fit)
+traceplot(ngme_fit, "tp")
+# compare noise density
+plot(noise_nig(mu=-2, sigma=1, nu=2), ngme_result(ngme_fit, "tp")$noise)
+# traceplot(ngme_fit)
 ```
 
 
@@ -155,18 +155,18 @@ To see the results of estimation, we can use `traceplot` function.
 Next we will show how to do prediction at unknown year and location.
 
 ```{r}
-# # new predict location
-# n_new <- 10
-# # generate time randomly of length n
-# time_new <- sample(2001:2004, n_new, replace = TRUE)
-# # generate 2d location randomly of length n
-# loc_new <- cbind(runif(n_new), runif(n_new)) * 10
+# new predict location
+n_new <- 10
+# generate time randomly of length n
+time_new <- sample(2001:2004, n_new, replace = TRUE)
+# generate 2d location randomly of length n
+loc_new <- cbind(runif(n_new), runif(n_new)) * 10
 
-# # For the tp model (model name we give), we need two arguments to do the prediction.
-# predict(ngme_fit, map=list(tp=list(
-#   year=time_new,
-#   pos=loc_new
-# )))
+# For the tp model (model name we give), we need two arguments to do the prediction.
+predict(ngme_fit, map=list(tp=list(
+  year=time_new,
+  pos=loc_new
+)))
 ```
 
 

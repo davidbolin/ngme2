@@ -166,98 +166,98 @@ set.seed(16)
 First we will build the graph and construct a uniform mesh on each edges.
 
 ```{r fig.align = "center",echo=TRUE}
-# edge1 <- rbind(c(0,0),c(1,0))
-# edge2 <- rbind(c(0,0),c(0,1))
-# edge3 <- rbind(c(0,1),c(-1,1))
-# theta <- seq(from=pi,to=3*pi/2,length.out = 20)
-# edge4 <- cbind(sin(theta),1+ cos(theta))
-# edges = list(edge1, edge2, edge3, edge4)
-# graph <- metric_graph$new(edges = edges)
-# graph$plot()
+edge1 <- rbind(c(0,0),c(1,0))
+edge2 <- rbind(c(0,0),c(0,1))
+edge3 <- rbind(c(0,1),c(-1,1))
+theta <- seq(from=pi,to=3*pi/2,length.out = 20)
+edge4 <- cbind(sin(theta),1+ cos(theta))
+edges = list(edge1, edge2, edge3, edge4)
+graph <- metric_graph$new(edges = edges)
+graph$plot()
 
-# # construct the mesh
-# graph$build_mesh(h = 0.1)
-# graph$plot(mesh = TRUE)
+# construct the mesh
+graph$build_mesh(h = 0.1)
+graph$plot(mesh = TRUE)
 
-# # Refine the mesh and print how many mesh nodes
-# graph$build_mesh(h = 0.005)
-# length(graph$mesh$h)
+# Refine the mesh and print how many mesh nodes
+graph$build_mesh(h = 0.005)
+length(graph$mesh$h)
 ```
 
 Next, we simulation non-Gaussian Matern field with NIG noise using `simulate` function.
 
 ```{r}
-# simu_nig <- noise_nig(mu=-10, sigma=30, nu=0.5)
-# matern_graph <- ngme2::f(
-#   model="matern",
-#   theta_K = log(6), #kappa = 8
-#   mesh=graph,
-#   noise=simu_nig
-# )
+simu_nig <- noise_nig(mu=-10, sigma=30, nu=0.5)
+matern_graph <- ngme2::f(
+  model="matern",
+  theta_K = log(6), #kappa = 8
+  mesh=graph,
+  noise=simu_nig
+)
 
-# matern_graph
-# W <- simulate(matern_graph, seed=10)[[1]]
+matern_graph
+W <- simulate(matern_graph, seed=10)[[1]]
 
-# graph$plot_function(X=as.numeric(W))
+graph$plot_function(X=as.numeric(W))
 
-# # 3d plot of the random field
-# graph$plot_function(X=as.numeric(W), plotly=TRUE)
+# 3d plot of the random field
+graph$plot_function(X=as.numeric(W), plotly=TRUE)
 ```
 
 With the latent field generated, next we construct observations.
 
 ```{r, fig.align="center",echo=TRUE}
-# # build observation and A matrix
-# obs.per.edge <- 200 # how many observations per edge
-# obs.loc <- NULL
-# for(i in 1:graph$nE) {
-#   obs.loc <- rbind(obs.loc,
-#                    cbind(rep(i,obs.per.edge), runif(obs.per.edge)))
-# }
-# n.obs <- obs.per.edge*graph$nE
-# A <- graph$fem_basis(obs.loc)
+# build observation and A matrix
+obs.per.edge <- 200 # how many observations per edge
+obs.loc <- NULL
+for(i in 1:graph$nE) {
+  obs.loc <- rbind(obs.loc,
+                   cbind(rep(i,obs.per.edge), runif(obs.per.edge)))
+}
+n.obs <- obs.per.edge*graph$nE
+A <- graph$fem_basis(obs.loc)
 
-# # using the model for inference
-# sigma.e <- 0.1
-# x1 <- obs.loc[,1]
-# x2 <- obs.loc[,2]
+# using the model for inference
+sigma.e <- 0.1
+x1 <- obs.loc[,1]
+x2 <- obs.loc[,2]
 
-# Y <- 2*x1 - 3*x2 + as.vector(A %*% W + sigma.e * rnorm(n.obs))
+Y <- 2*x1 - 3*x2 + as.vector(A %*% W + sigma.e * rnorm(n.obs))
 
-# df_data <- data.frame(y = Y, edge_number = obs.loc[,1],
-#                     distance_on_edge = obs.loc[,2],
-#                     x1 = x1, x2 = x2)
+df_data <- data.frame(y = Y, edge_number = obs.loc[,1],
+                    distance_on_edge = obs.loc[,2],
+                    x1 = x1, x2 = x2)
 
-# graph$clear_observations()
-# graph$add_observations(data = df_data, normalized = TRUE)
-# graph$plot(data = "y")
+graph$clear_observations()
+graph$add_observations(data = df_data, normalized = TRUE)
+graph$plot(data = "y")
 ```
 
 
 Next we estimate the model using ngme2:
 
 ```{r model-fit, cache=TRUE, fig.align="center", echo=TRUE}
-# fit_nig <- ngme(
-#   y ~ 0 + x1 + x2 +
-#     f(model="matern", mesh=graph, name="graph", noise=noise_nig()),
-#   data = graph$get_data(),
-#   control_opt = control_opt(
-#     stepsize = 0.5,
-#     iterations = 1000,
-#     iters_per_check = 100,
-#     # preconditioner = "full",
-#     rao_blackwellization = TRUE,
-#     n_parallel_chain = 4,
-#     # sgd_method = "momentum",
-#     # sgd_parameters = c(0.4, 1), #accelarate the fitting
-#     # verbose = TRUE,
-#     seed = 1
-#   )
-# )
+fit_nig <- ngme(
+  y ~ 0 + x1 + x2 +
+    f(model="matern", mesh=graph, name="graph", noise=noise_nig()),
+  data = graph$get_data(),
+  control_opt = control_opt(
+    stepsize = 0.5,
+    iterations = 1000,
+    iters_per_check = 100,
+    # preconditioner = "full",
+    rao_blackwellization = TRUE,
+    n_parallel_chain = 4,
+    # sgd_method = "momentum",
+    # sgd_parameters = c(0.4, 1), #accelarate the fitting
+    # verbose = TRUE,
+    seed = 1
+  )
+)
 
-# fit_nig
-# traceplot(fit_nig, "graph")
-# traceplot(fit_nig)
+fit_nig
+traceplot(fit_nig, "graph")
+traceplot(fit_nig)
 ```
 
 # Graph model with replicates
@@ -265,55 +265,55 @@ Next we estimate the model using ngme2:
 The model with replicates is similar to other models in ngme2. We simply provide the `replicate` argument in `ngme` function.
 
 ```{r}
-# n_repl <- 5
-# df_data <- NULL
-# for (repl in 1:n_repl) {
-#   obs.per.edge <- 200 # how many observations per edge
-#   obs.loc <- NULL
-#   for(i in 1:graph$nE) {
-#     obs.loc <- rbind(obs.loc,
-#                     cbind(rep(i,obs.per.edge), runif(obs.per.edge)))
-#   }
-#   n.obs <- obs.per.edge*graph$nE
-#   A <- graph$fem_basis(obs.loc)
+n_repl <- 5
+df_data <- NULL
+for (repl in 1:n_repl) {
+  obs.per.edge <- 200 # how many observations per edge
+  obs.loc <- NULL
+  for(i in 1:graph$nE) {
+    obs.loc <- rbind(obs.loc,
+                    cbind(rep(i,obs.per.edge), runif(obs.per.edge)))
+  }
+  n.obs <- obs.per.edge*graph$nE
+  A <- graph$fem_basis(obs.loc)
 
-#   # using the model for inference
-#   sigma.e <- 0.1
-#   x1 <- obs.loc[,1]
-#   x2 <- obs.loc[,2]
+  # using the model for inference
+  sigma.e <- 0.1
+  x1 <- obs.loc[,1]
+  x2 <- obs.loc[,2]
 
-#   Y <- 2*x1 - 3*x2 + as.vector(A %*% W + sigma.e * rnorm(n.obs))
+  Y <- 2*x1 - 3*x2 + as.vector(A %*% W + sigma.e * rnorm(n.obs))
 
-#   df_data_tmp <- data.frame(y = Y, edge_number = obs.loc[,1],
-#                       distance_on_edge = obs.loc[,2],
-#                       x1 = x1, x2 = x2, repl = repl)
-#   df_data <- rbind(df_data, df_data_tmp)
-# }
-# graph$clear_observations()
-# graph$add_observations(data = df_data, normalized = TRUE, group="repl")
+  df_data_tmp <- data.frame(y = Y, edge_number = obs.loc[,1],
+                      distance_on_edge = obs.loc[,2],
+                      x1 = x1, x2 = x2, repl = repl)
+  df_data <- rbind(df_data, df_data_tmp)
+}
+graph$clear_observations()
+graph$add_observations(data = df_data, normalized = TRUE, group="repl")
 ```
 
 Next step is easy, we simply provide extra `replicate` argument to be same as the group from the graph function.
 
 ```{r fig.align = "center",echo=TRUE}
-# fit_repl <- ngme(
-#   y ~ 0 + x1 + x2 +
-#     f(model="matern", mesh=graph, name="graph", noise=noise_nig()),
-#   data = graph$get_data(),
-#   control_opt = control_opt(
-#     stepsize = 2,
-#     iterations = 2000,
-#     # preconditioner = "full",
-#     rao_blackwellization = TRUE,
-#     n_parallel_chain = 4,
-#     # verbose = TRUE,
-#     seed = 1
-#   ),
-#   replicate = ".group"
-# )
-# fit_repl
-# traceplot(fit_repl, "graph")
-# traceplot(fit_repl)
+fit_repl <- ngme(
+  y ~ 0 + x1 + x2 +
+    f(model="matern", mesh=graph, name="graph", noise=noise_nig()),
+  data = graph$get_data(),
+  control_opt = control_opt(
+    stepsize = 2,
+    iterations = 2000,
+    # preconditioner = "full",
+    rao_blackwellization = TRUE,
+    n_parallel_chain = 4,
+    # verbose = TRUE,
+    seed = 1
+  ),
+  replicate = ".group"
+)
+fit_repl
+traceplot(fit_repl, "graph")
+traceplot(fit_repl)
 ```
 
 # Kringing
@@ -323,23 +323,23 @@ Kringing is a method for predicting the value of a random field at an unobserved
 We can use `predict` function in `ngme2` to do kringing.
 
 ```{r fig.align = "center",echo=TRUE}
-# # create new observations
-# locs <- graph$get_mesh_locations()
-# X = as.data.frame(locs)
-# names(X) <- c("x1", "x2")
+# create new observations
+locs <- graph$get_mesh_locations()
+X = as.data.frame(locs)
+names(X) <- c("x1", "x2")
 
-# preds <- predict(
-#   fit_repl,
-#   data = X,
-#   # data = list(x1=0, x2=0),
-#   map = list(graph = locs)
-# )
+preds <- predict(
+  fit_repl,
+  data = X,
+  # data = list(x1=0, x2=0),
+  map = list(graph = locs)
+)
 
-# # plot the prediction
-# graph$plot_function(preds$mean)
+# plot the prediction
+graph$plot_function(preds$mean)
 
-# # compare with the true data
-# graph$plot(data="y")
+# compare with the true data
+graph$plot(data="y")
 ```
 
 # References {-}

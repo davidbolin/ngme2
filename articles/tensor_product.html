@@ -258,114 +258,55 @@ the time index (year).</p>
 <p>Next we run the estimation:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">##############################  estimation</span></span>
-<span><span class="va">ngme_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
-<span>  <span class="va">Y_obs</span> <span class="op">~</span> <span class="fl">0</span> <span class="op">+</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
-<span>    map <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">year</span>, <span class="op">~</span><span class="va">x</span><span class="op">+</span><span class="va">y</span><span class="op">)</span>,</span>
-<span>    model<span class="op">=</span><span class="st">"tp"</span>,</span>
-<span>    name<span class="op">=</span><span class="st">"tp"</span>,</span>
-<span>    first <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>model<span class="op">=</span><span class="st">"ar1"</span><span class="op">)</span>,</span>
-<span>    second <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>model<span class="op">=</span><span class="st">"matern"</span>, mesh <span class="op">=</span> <span class="va">mesh2d</span><span class="op">)</span>,</span>
-<span>    noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span></span>
-<span>    <span class="co"># control = control_f(numer_grad = T)</span></span>
-<span>  <span class="op">)</span>,</span>
-<span>  data <span class="op">=</span> <span class="va">df</span>,</span>
-<span>  family <span class="op">=</span> <span class="st">"normal"</span>,</span>
-<span>  control_opt <span class="op">=</span> <span class="fu"><a href="../reference/control_opt.html">control_opt</a></span><span class="op">(</span></span>
-<span>    iterations <span class="op">=</span> <span class="fl">2000</span>,</span>
-<span>    n_parallel_chain <span class="op">=</span> <span class="fl">4</span>,</span>
-<span>    verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>    rao_blackwellization <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>    preconditioner <span class="op">=</span> <span class="st">"fast"</span></span>
-<span>  <span class="op">)</span>,</span>
-<span>  debug <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co">#&gt; Starting estimation... </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Starting posterior sampling... </span></span>
-<span><span class="co">#&gt; Posterior sampling done! </span></span>
-<span><span class="co">#&gt; Note:</span></span>
-<span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
-<span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
+<span><span class="co"># ngme_fit &lt;- ngme(</span></span>
+<span><span class="co">#   Y_obs ~ 0 + f(</span></span>
+<span><span class="co">#     map = list(year, ~x+y),</span></span>
+<span><span class="co">#     model="tp",</span></span>
+<span><span class="co">#     name="tp",</span></span>
+<span><span class="co">#     first = list(model="ar1"),</span></span>
+<span><span class="co">#     second = list(model="matern", mesh = mesh2d),</span></span>
+<span><span class="co">#     noise = noise_nig()</span></span>
+<span><span class="co">#     # control = control_f(numer_grad = T)</span></span>
+<span><span class="co">#   ),</span></span>
+<span><span class="co">#   data = df,</span></span>
+<span><span class="co">#   family = "normal",</span></span>
+<span><span class="co">#   control_opt = control_opt(</span></span>
+<span><span class="co">#     iterations = 2000,</span></span>
+<span><span class="co">#     n_parallel_chain = 4,</span></span>
+<span><span class="co">#     verbose = TRUE,</span></span>
+<span><span class="co">#     rao_blackwellization = TRUE,</span></span>
+<span><span class="co">#     preconditioner = "fast"</span></span>
+<span><span class="co">#   ),</span></span>
+<span><span class="co">#   debug = FALSE</span></span>
+<span><span class="co"># )</span></span>
 <span></span>
-<span><span class="va">ngme_fit</span></span>
-<span><span class="co">#&gt; *** Ngme object ***</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Fixed effects: </span></span>
-<span><span class="co">#&gt;   None</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Models: </span></span>
-<span><span class="co">#&gt; $tp</span></span>
-<span><span class="co">#&gt;   Model type: Tensor product</span></span>
-<span><span class="co">#&gt;       first: AR(1)</span></span>
-<span><span class="co">#&gt;           rho = 0.391</span></span>
-<span><span class="co">#&gt;       second: Matern</span></span>
-<span><span class="co">#&gt;           kappa = 0.663</span></span>
-<span><span class="co">#&gt;   Noise type: NIG</span></span>
-<span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -0.632</span></span>
-<span><span class="co">#&gt;       sigma = 1</span></span>
-<span><span class="co">#&gt;       nu = 0.773</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Measurement noise: </span></span>
-<span><span class="co">#&gt;   Noise type: NORMAL</span></span>
-<span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.532</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre></div>
+<span><span class="co"># ngme_fit</span></span></code></pre></div>
 <p>To see the results of estimation, we can use <code>traceplot</code>
 function.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">ngme_fit</span>, <span class="st">"tp"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="tensor_product_files/figure-html/unnamed-chunk-3-1.png" width="700"></p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># compare noise density</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span>mu<span class="op">=</span><span class="op">-</span><span class="fl">2</span>, sigma<span class="op">=</span><span class="fl">1</span>, nu<span class="op">=</span><span class="fl">2</span><span class="op">)</span>, <span class="fu"><a href="../reference/ngme_result.html">ngme_result</a></span><span class="op">(</span><span class="va">ngme_fit</span>, <span class="st">"tp"</span><span class="op">)</span><span class="op">$</span><span class="va">noise</span><span class="op">)</span></span></code></pre></div>
-<p><img src="tensor_product_files/figure-html/unnamed-chunk-3-2.png" width="700"></p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># traceplot(ngme_fit)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="co"># traceplot(ngme_fit, "tp")</span></span>
+<span><span class="co"># # compare noise density</span></span>
+<span><span class="co"># plot(noise_nig(mu=-2, sigma=1, nu=2), ngme_result(ngme_fit, "tp")$noise)</span></span>
+<span><span class="co"># # traceplot(ngme_fit)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="doing-prediction">Doing prediction<a class="anchor" aria-label="anchor" href="#doing-prediction"></a>
 </h2>
 <p>Next we will show how to do prediction at unknown year and
 location.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># new predict location</span></span>
-<span><span class="va">n_new</span> <span class="op">&lt;-</span> <span class="fl">10</span></span>
-<span><span class="co"># generate time randomly of length n</span></span>
-<span><span class="va">time_new</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fl">2001</span><span class="op">:</span><span class="fl">2004</span>, <span class="va">n_new</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="co"># generate 2d location randomly of length n</span></span>
-<span><span class="va">loc_new</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n_new</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n_new</span><span class="op">)</span><span class="op">)</span> <span class="op">*</span> <span class="fl">10</span></span>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># # new predict location</span></span>
+<span><span class="co"># n_new &lt;- 10</span></span>
+<span><span class="co"># # generate time randomly of length n</span></span>
+<span><span class="co"># time_new &lt;- sample(2001:2004, n_new, replace = TRUE)</span></span>
+<span><span class="co"># # generate 2d location randomly of length n</span></span>
+<span><span class="co"># loc_new &lt;- cbind(runif(n_new), runif(n_new)) * 10</span></span>
 <span></span>
-<span><span class="co"># For the tp model (model name we give), we need two arguments to do the prediction.</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">ngme_fit</span>, map<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>tp<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>  year<span class="op">=</span><span class="va">time_new</span>,</span>
-<span>  pos<span class="op">=</span><span class="va">loc_new</span></span>
-<span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; $mean</span></span>
-<span><span class="co">#&gt;  [1] -0.3402838  0.3956136  0.0000000  0.5649335 -0.2219871  0.2746593</span></span>
-<span><span class="co">#&gt;  [7]  0.1117609  0.2357100  0.3474844  0.5864537</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $sd</span></span>
-<span><span class="co">#&gt;  [1] 0.6271694 0.2488525 0.0000000 0.2584049 0.6826535 0.2130948 0.2639412</span></span>
-<span><span class="co">#&gt;  [8] 0.3021283 0.4246521 0.4600971</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $`5quantile`</span></span>
-<span><span class="co">#&gt;  [1] -1.248733629  0.003465757  0.000000000  0.102401641 -1.486525382</span></span>
-<span><span class="co">#&gt;  [6] -0.016386818 -0.311225781 -0.172728997 -0.362082951 -0.109103598</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $`95quantile`</span></span>
-<span><span class="co">#&gt;  [1] 0.4572869 0.7530423 0.0000000 0.8485382 0.6807017 0.5202036 0.5152675</span></span>
-<span><span class="co">#&gt;  [8] 0.6469717 1.0240642 1.3207332</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $median</span></span>
-<span><span class="co">#&gt;  [1] -0.3888453  0.4065381  0.0000000  0.6212995 -0.1920644  0.2948973</span></span>
-<span><span class="co">#&gt;  [7]  0.1323342  0.2632938  0.3534177  0.6243464</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $mode</span></span>
-<span><span class="co">#&gt;  [1] -0.4313338  0.3245667  0.0000000  0.7027097 -0.2694549  0.2182644</span></span>
-<span><span class="co">#&gt;  [7]  0.1560903  0.2558408  0.3451000  0.6000711</span></span></code></pre></div>
+<span><span class="co"># # For the tp model (model name we give), we need two arguments to do the prediction.</span></span>
+<span><span class="co"># predict(ngme_fit, map=list(tp=list(</span></span>
+<span><span class="co">#   year=time_new,</span></span>
+<span><span class="co">#   pos=loc_new</span></span>
+<span><span class="co"># )))</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>

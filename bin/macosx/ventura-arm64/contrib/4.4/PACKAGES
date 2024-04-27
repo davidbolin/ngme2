@@ -3,8 +3,9 @@ Version: 0.6.0
 Depends: R (>= 3.50)
 Imports: Matrix, Rcpp, methods, rlang, ggplot2, graphics, fmesher, stats
 LinkingTo: testthat, Rcpp, RcppEigen,
-Suggests: knitr, rmarkdown, INLA, dplyr, plyr, MASS, gridExtra, grid, testthat (>=
-         3.0.0), xml2, splancs, lattice, viridis, rSPDE, tidyr, fields, lme4, plotly,
-         usethis, devtools, MetricGraph (>= 1.1.2)
+Suggests: knitr, rmarkdown, INLA, dplyr, plyr, MASS, gridExtra, grid,
+        testthat (>= 3.0.0), xml2, splancs, lattice, viridis, rSPDE,
+        tidyr, fields, lme4, plotly, usethis, devtools, MetricGraph (>=
+        1.1.2)
 License: GPL (>= 2)
-MD5sum: e5c2d785cf0f752e99a8f29cf3e28530
+MD5sum: aa7cead4a2eb672336509d0557d1f073

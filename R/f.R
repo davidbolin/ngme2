@@ -205,6 +205,13 @@ if (operator$second$model == "bv") {
         basis <- fmesher::fm_basis(mesh, loc=map)
         fmesher::fm_row_kron(Matrix::t(blk), basis)
       },
+      "bv2" = {
+        # INLA::inla.spde.make.A(loc=map, mesh=mesh, repl=as.integer(as.factor(group)))
+        blk_group <- as.integer(as.factor(group))
+        blk <- fmesher::fm_block(blk_group)
+        basis <- fmesher::fm_basis(mesh, loc=map)
+        fmesher::fm_row_kron(Matrix::t(blk), basis)
+      },
       "re" = ngme_as_sparse(operator$B_K),
       # INLA::inla.spde.make.A(mesh = mesh, loc = map)
       fmesher::fm_basis(mesh, loc=map)
@@ -217,7 +224,7 @@ if (operator$second$model == "bv") {
 
   # 2. build noise given operator
   # bivariate noise
-  if (model == "bv") {
+  if (model == "bv" || model == "bv2") {
     stopifnot(
       "Please specify noise for each field" = length(noise) >= 2,
       "Input: noise=list(a=<noise>,b=<noise>)" = inherits(noise[[1]], "ngme_noise"),
@@ -304,14 +311,15 @@ build_operator <- function(model_name, args_list) {
   )
 
   switch(model_name,
-    tp = do.call(tp, args_list),
-    bv = do.call(bv, args_list),
+    tp  = do.call(tp, args_list),
+    bv  = do.call(bv, args_list),
+    bv2 = do.call(bv2, args_list),
     ar1 = do.call(ar1, args_list),
     rw1 = do.call(rw1, args_list),
     rw2 = do.call(rw2, args_list),
-    ou = do.call(ou, args_list),
+    ou  = do.call(ou, args_list),
     matern = do.call(matern, args_list),
-    re = do.call(re, args_list),
+    re  = do.call(re, args_list),
     iid = {
       if (is.null(args_list$n))
         args_list$n <- length_map(args_list$map)

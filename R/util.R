@@ -520,7 +520,7 @@ validate_rep_or_group <- function(replicate, data) {
   }
 
   stopifnot(
-    "Please make sure the length of replicate is equal to the number of rows of data"
+    "Please make sure the length of replicate/group is equal to the number of rows of data"
      = nrow(data) == length(replicate)
   )
 

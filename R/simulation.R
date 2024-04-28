@@ -48,9 +48,8 @@ simulate.ngme_model <- function(
     }
 
     W <- as.numeric(solve(model$operator$K, e))
-    W <- W - mean(W)
 
-    # Need to re-order W and V by A matrix!!!
+    # Need to map W and V to data by A matrix!!!
     if (is.null(model$A)) {
       # model does not contain A matrix, e.g., Matern graph model!
       sims[[paste0("sim_", nn)]] <-  W

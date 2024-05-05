@@ -547,10 +547,15 @@ double Latent::logd_W_given_V(const VectorXd& W, const SparseMatrix<double>& K, 
     } else {
         if (!symmetricK) {
             SparseMatrix<double> Q = K.transpose() * SV.cwiseInverse().asDiagonal() * K;
-// cholesky_solver solver_Q_tmp;
-//  solver_Q_tmp.analyze(Q);
- solver_Q.compute(Q);
+
+            // solver_Q.analyze(Q);
+            solver_Q.compute(Q);
             l = 0.5 * solver_Q.logdet() - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
+        
+            // SparseLU<SparseMatrix<double>> solver_Q_tmp;
+            // solver_Q_tmp.analyzePattern(Q); 
+            // solver_Q_tmp.factorize(Q);
+            // l = 0.5 * solver_Q_tmp.logAbsDeterminant() - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
         } else {
             chol_solver_K.compute(K);
 // cholesky_solver solver_K_tmp;
@@ -580,7 +585,7 @@ MatrixXd Latent::precond(bool precond_K, double eps) {
     double precond_eps = eps;
     VectorXd parameter (n_params - n_theta_nu);
     parameter << theta_K, theta_mu, theta_sigma;
-
+    
     VectorXd v (parameter);
     // update v if we don't need to compute hessian for K
     if (!precond_K) {
@@ -590,23 +595,53 @@ MatrixXd Latent::precond(bool precond_K, double eps) {
 
     int n = v.size();
     MatrixXd num_hess_no_nu = VectorXd::Constant(n, 1.0).asDiagonal();
-	double original_val = log_density(v, precond_K);
 
-	// compute f_v = log_density(v + precond_eps * e_i)
-	VectorXd f_v (n);
+	// compute fwd_fwd(i, j) = log_density(v + eps * e_i + eps * e_j)
+	MatrixXd fwd_fwd (n, n);
 	for (int i=0; i < n; i++) {
-        if (fix_parameters[i]) continue;
-		VectorXd tmp_v = v; tmp_v(i) += precond_eps;
-		f_v(i) = log_density(tmp_v, precond_K);
+        for (int j=0; j < n; j++) {
+            // if (fix_parameters[i]) continue;
+            VectorXd tmp = v; 
+            tmp(i) += precond_eps; tmp(j) += precond_eps;
+            fwd_fwd(i, j) = log_density(tmp, precond_K);
+        }
 	}
+
+    MatrixXd fwd_bwd (n, n);
+    for (int i=0; i < n; i++) {
+        // if (fix_parameters[i]) continue;
+        for (int j=0; j < n; j++) {
+            VectorXd tmp = v; 
+            tmp(i) += precond_eps; tmp(j) -= precond_eps;
+            fwd_bwd(i, j) = log_density(tmp, precond_K);
+        }
+    }       
+
+    MatrixXd bwd_fwd (n, n);
+    for (int i=0; i < n; i++) {
+        for (int j=0; j < n; j++) {
+            // if (fix_parameters[i]) continue;
+            VectorXd tmp = v; 
+            tmp(i) -= precond_eps; tmp(j) += precond_eps;
+            bwd_fwd(i, j) = log_density(tmp, precond_K);
+        }
+    }
+
+    MatrixXd bwd_bwd (n, n);
+    for (int i=0; i < n; i++) {
+        for (int j=0; j < n; j++) {
+            // if (fix_parameters[i]) continue;
+            VectorXd tmp = v; 
+            tmp(i) -= precond_eps; tmp(j) -= precond_eps;
+            bwd_bwd(i, j) = log_density(tmp, precond_K);
+        }
+    }
 
 	// compute H_ij = d2 f / dxi dxj
 	for (int i=0; i < n; i++) {
         if (fix_parameters[i]) continue;
 		for (int j=0; j <= i; j++) {
-			VectorXd tmp_vij = v; tmp_vij(i) += precond_eps; tmp_vij(j) += precond_eps;
-			double f_vij = log_density(tmp_vij, precond_K);
-			num_hess_no_nu(i, j) = (f_vij - f_v(i) - f_v(j) + original_val) / (precond_eps * precond_eps);
+			num_hess_no_nu(i, j) = (fwd_fwd(i, j) - fwd_bwd(i, j) - bwd_fwd(i, j) + bwd_bwd(i, j)) / (4 * precond_eps * precond_eps);
 		}
 	}
 
@@ -621,10 +656,10 @@ MatrixXd Latent::precond(bool precond_K, double eps) {
     if (precond_K) {
         precond_full.topLeftCorner(n_params - n_theta_nu, n_params - n_theta_nu) = num_hess_no_nu;
     } else {
-        // scaled by ?
+        // fill K part as diag(1)
         precond_full.topLeftCorner(n_theta_K, n_theta_K) =
             VectorXd::Constant(n_theta_K, V_size).asDiagonal();
-            // VectorXd::Constant(n_theta_K, A.rows()).asDiagonal();
+        // fill the rest
         precond_full.block(n_theta_K, n_theta_K, n_theta_mu + n_theta_sigma, n_theta_mu + n_theta_sigma) = num_hess_no_nu;
     }
 
@@ -637,22 +672,7 @@ MatrixXd Latent::precond(bool precond_K, double eps) {
         // precond_full.bottomRightCorner(n_theta_nu, n_theta_nu) = NoiseUtil::precond(precond_eps, noise_type[0], prevV, h, B_nu, theta_nu, single_V);
     }
 
-    // update nu
-    // for (int i=0; i < n_noise; i++) {
-    //     if (noise_type[i] == "normal") continue;
-
-    //     int n = V_size / n_noise;
-    //     double noise_hess = NoiseUtil::precond(precond_eps, noise_type[i], prevV.segment(i*n, n), h.segment(i*n, n), nu(i), single_V);
-
-    //     // prevent too small
-    //     if (abs(noise_hess) < n) {
-    //         noise_hess = noise_hess > 0 ? n : -n;
-    //     }
-
-    //     precond_full(n_params - n_nu + i, n_params - n_nu + i) = noise_hess;
-    // }
-
-// std::cout << "print hessian: " << std::endl << precond_full << std::endl;
+std::cout << "print hessian: " << std::endl << precond_full << std::endl;
     return precond_full;
 }
 

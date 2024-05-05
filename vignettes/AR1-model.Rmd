@@ -101,16 +101,16 @@ ngme_out <- ngme(
   data = data.frame(x1=x1, x2=x2, Y=Y),
   control_opt = control_opt(
     burnin = 100,
-    iterations = 1000,
+    iterations = 500,
     std_lim = 0.01,
     n_parallel_chain = 4,
+    compute_precond_each_iter = TRUE,
     stop_points = 20,
     print_check_info = FALSE,
-    verbose = FALSE,
+    verbose = T,
     seed = 3,
-    preconditioner = "fast",
-    precond_by_diff_chain = TRUE,
-    precond_eps = 1e-5
+    preconditioner = "full",
+    precond_by_diff_chain = FALSE
   )
 )
 ngme_out

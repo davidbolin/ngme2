@@ -123,14 +123,15 @@ auto timer = std::chrono::steady_clock::now();
         }
 
         if (n_chains > 1) {
-            if (precond_by_diff_chain) {
-                // set the preconditioner by other chains
-                MatrixXd precond_sum = MatrixXd::Zero(n_params, n_params);
-                for (int i=0; i < n_chains; i++)
-                    precond_sum += opt_vec[i].get_preconditioner();
-                for (int i=0; i < n_chains; i++)
-                    opt_vec[i].set_preconditioner((precond_sum - opt_vec[i].get_preconditioner()) / (n_chains - 1));
-            }
+            // if (precond_by_diff_chain) {
+            //     // set the preconditioner by other chains
+            //     MatrixXd precond_sum = MatrixXd::Zero(n_params, n_params);
+            //     for (int i=0; i < n_chains; i++)
+            //         precond_sum += opt_vec[i].get_preconditioner();
+            //     for (int i=0; i < n_chains; i++)
+            //         // opt_vec[i].set_preconditioner((precond_sum - opt_vec[i].get_preconditioner()) / (n_chains - 1));
+            //         opt_vec[i].set_preconditioner((precond_sum) / (n_chains));
+            // }
 
             // exchange VW
             if (exchange_VW) {

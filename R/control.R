@@ -1,3 +1,4 @@
+
 #' Generate control specifications for \code{ngme()} function.
 #'
 #' These are configurations for \code{ngme}

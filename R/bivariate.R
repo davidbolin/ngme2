@@ -1,3 +1,5 @@
+
+
 #' Ngme bivariate model specification
 #'
 #' Giving 2 sub_models, build a correlated bivaraite operator based on K = D(theta, eta) %*% diag(K_1, K_2)

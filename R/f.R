@@ -236,6 +236,18 @@ if (operator$second$model == "bv") {
       "Two noise should be the same type"
         = noise[[1]]$noise_type == noise[[2]]$noise_type
     )
+
+# make sure the noise is in the same order as the model_names
+if (noise[[1]]$noise_type == "normal") {
+  stopifnot(
+    "Please use model=bv2 for Gaussian noise (then rotation is fixed)" = model == "bv2"
+  )
+}
+if (noise[[1]]$noise_type != "normal") {
+  stopifnot(
+    "Please use model=bv for non-Gaussian noise" = model == "bv"
+  )
+}
     noise1 <- update_noise(noise[[operator$model_names[[1]]]],
       n=length(operator$h)/2)
     noise2 <- update_noise(noise[[operator$model_names[[2]]]],

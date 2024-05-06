@@ -4,7 +4,7 @@
 \alias{rmsprop}
 \title{Root Mean Square Propagation (RMSProp) SGD optimization}
 \usage{
-rmsprop(stepsize = 0.1, beta1 = 0.9, epsilon = 1e-08)
+rmsprop(stepsize = 0.05, beta1 = 0.9, epsilon = 1e-08)
 }
 \arguments{
 \item{stepsize}{stepsize for SGD}

@@ -41,7 +41,7 @@ vanilla <- function(
 #' (used in \code{control_opt} function)
 #' @export
 momentum <- function(
-  stepsize = 0.5,
+  stepsize = 0.05,
   beta1 = 0.9,
   beta2 = 1 - beta1
 ) {
@@ -69,7 +69,7 @@ momentum <- function(
 #' (used in \code{control_opt} function)
 #' @export
 adagrad <- function(
-  stepsize = 0.5,
+  stepsize = 0.05,
   epsilon = 1e-8
 ) {
   ret <- list(
@@ -97,7 +97,7 @@ adagrad <- function(
 #' (used in \code{control_opt} function)
 #' @export
 rmsprop <- function(
-  stepsize = 0.1,
+  stepsize = 0.05,
   beta1 = 0.9,
   epsilon = 1e-8
 ) {
@@ -129,7 +129,7 @@ rmsprop <- function(
 #' (used in \code{control_opt} function)
 #' @export
 adam <- function(
-  stepsize = 0.1,
+  stepsize = 0.05,
   beta1 = 0.9,
   beta2 = 0.999,
   epsilon = 1e-8
@@ -163,7 +163,7 @@ adam <- function(
 #' (used in \code{control_opt} function)
 #' @export
 adamW <- function(
-  stepsize = 0.1,
+  stepsize = 0.05,
   beta1 = 0.9,
   beta2 = 0.999,
   lambda = 0.01,

@@ -4,7 +4,7 @@
 \alias{momentum}
 \title{Momentum SGD optimization}
 \usage{
-momentum(stepsize = 0.5, beta1 = 0.9, beta2 = 1 - beta1)
+momentum(stepsize = 0.05, beta1 = 0.9, beta2 = 1 - beta1)
 }
 \arguments{
 \item{stepsize}{stepsize for SGD}

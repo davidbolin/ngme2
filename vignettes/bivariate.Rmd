@@ -213,7 +213,7 @@ group <- c(rep("W1", n_each), rep("W2", n_each))
 reorder_loc = sample(1:n_each)
 sim_fields <- simulate(
   f(c(reorder_loc, reorder_loc),
-    model="bv",
+    model="bv2",
     rho=5,
     sub_models = list(
       W1 = list(model="ar1", rho=0.6),
@@ -222,11 +222,11 @@ sim_fields <- simulate(
     group=group,
     noise=list(
       W1 = noise_normal(sigma = 3),
-      W2 = noise_normal(sigma = 0.5)
+      W2 = noise_normal(sigma = 2)
     )
   )
 )[[1]]
-# Here we assume W1 and W2 have positive correlated measurement error
+# Here we assume f1 and f2 have positive correlated measurement error
 # if they are measured at same index.
 # Meaning Y(i) and Y(j) have correlated measurement noise
 # if they represent underlying W1(index=k) and W2(index=k)
@@ -249,7 +249,7 @@ Y <- sim_fields + x1 * feff[1] + x2 * feff[2] + as.numeric(e)
 out <- ngme(
   Y ~ 0 + x1 + x2 +
     f(c(reorder_loc, reorder_loc),
-    model="bv",
+    model="bv2",
     name = "bv",
     sub_models = list(W1 = "ar1", W2 = "ar1"),
     noise=list(
@@ -264,8 +264,15 @@ out <- ngme(
   ),
   data = data.frame(Y, x1, x2),
   control_opt = control_opt(
-    iterations = 100,
+    exchange_VW = FALSE,
+    n_parallel_chain = 4,
+    optimization_method = adamW(
+      stepsize = 0.01
+    ),
+    iterations = 5000,
+    preconditioner = "none",
     rao_blackwellization = TRUE,
+    precond_by_diff_chain = FALSE,
     seed = 7
   )
 )
@@ -274,8 +281,9 @@ out
 # comparing with simulated value
 traceplot(
   out, "bv",
-  hline=c(0, 5, 0.6, -0.4, 3, 0.5)
+  hline=c(5, 0.6, -0.4, 3, 1)
 )
+traceplot(out, hline=c(1, 0.7, -3, 1.5))
 ```
 
 ### Ex2. Fixed effects + Bivariate model (AR1, NIG) + Correlated measurement noise
@@ -342,7 +350,6 @@ out <- ngme(
   data = data.frame(Y, x1, x2),
   control_opt = control_opt(
     iterations = 500,
-    stepsize = 1,
     n_parallel_chain = 4,
     seed = 113
   )

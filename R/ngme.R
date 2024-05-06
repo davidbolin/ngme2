@@ -289,7 +289,7 @@ update_ngme_est <- function(
 
       # update output for tp-bv model
       lat <- ngme_replicate$models[[i]]
-      if (lat$operator$second$model == "bv") {
+      if (lat$operator$second$model  %in% c("bv", "bv2")) {
         bv = lat$operator$second
 
         n1 = bv$first$n_theta_K
@@ -301,7 +301,7 @@ update_ngme_est <- function(
       }
     }
 
-    if (ngme_replicate$models[[i]]$model == "bv") {
+    if (ngme_replicate$models[[i]]$model %in% c("bv", "bv2")) {
       n1 <- ngme_replicate$models[[i]]$operator$first$n_theta_K
       n2 <- ngme_replicate$models[[i]]$operator$second$n_theta_K
       ngme_replicate$models[[i]]$operator$first$theta_K <- ngme_replicate$models[[i]]$theta_K[3:(n1+2)]

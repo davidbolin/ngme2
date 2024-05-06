@@ -5,7 +5,7 @@
 \title{AdamW SGD optimization}
 \usage{
 adamW(
-  stepsize = 0.1,
+  stepsize = 0.05,
   beta1 = 0.9,
   beta2 = 0.999,
   lambda = 0.01,

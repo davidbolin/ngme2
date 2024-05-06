@@ -4,7 +4,7 @@
 \alias{adagrad}
 \title{AdaGrad SGD optimization}
 \usage{
-adagrad(stepsize = 0.5, epsilon = 1e-08)
+adagrad(stepsize = 0.05, epsilon = 1e-08)
 }
 \arguments{
 \item{stepsize}{stepsize for SGD}

@@ -14,6 +14,7 @@
 #' @param iterations      optimization iterations
 #' @param stepsize        stepsize for each iteration
 #' @param estimation      run the estimation process (call C++ in backend)
+#' @param standardize_fixed  whether or not standardize the fixed effect
 #'
 #' @param n_parallel_chain number of parallel chains
 #' @param stop_points     number of stop points for convergence check (or specify iters_per_check)
@@ -29,8 +30,8 @@
 #' @param precond_by_diff_chain logical, if TRUE, use different chains to estimate preconditioner (only computed at check points), if FALSE, use the same chain to estimate preconditioner (computed at each iteration)
 #' @param compute_precond_each_iter logical, if TRUE, compute preconditioner at each iteration, if FALSE, only compute preconditioner at check points (if has only 1 chain running, it will be set TRUE)
 #'
-#' @param num_threads maximum number of threads used in parallel computing, for example c(4, 5), which means we use 4 threads to parallize the chains, then use 5 threads to parallize different replicates in each chain
-#' Suggestion (num_parallel_chain, num_total_replicates)
+#' @param max_num_threads maximum number of threads used for parallel computing, by default will be set same as n_parallel_chain.
+#' If it is more than n_parallel_chain, the rest will be used to parallel different replicates of the model.
 #' @param max_relative_step   max relative step allowed in 1 iteration
 #' @param max_absolute_step   max absolute step allowed in 1 iteration
 #' @param rao_blackwellization  use rao_blackwellization
@@ -46,20 +47,22 @@
 #' "all" means using all replicates in each iteration,
 #' "ws" means weighted sampling (each iteration use 1 replicate to compute the gradient, the sample probability is proption to its number of observations)
 #' @param sgd_method currently support c("vanilla", "momentum")
-#' @param sgd_parameter for momentum, provide c(beta1, beta2), in each iteration, the step is computed as m = bet1 * m (previous turn) + beta2 * gradient
+#' @param sgd_parameters for momentum, provide c(beta1, beta2), in each iteration, the step is computed as m = beta1 * m (previous turn) + beta2 * gradient
 #' @return list of control variables
 #' @export
 control_opt <- function(
   seed              = Sys.time(),
   burnin            = 100,
   iterations        = 500,
-  stepsize          = 0.5,
   estimation        = TRUE,
+  standardize_fixed  = TRUE,
   stop_points       = 10,
   iters_per_check   = iterations / stop_points,
 
   # parallel options
   n_parallel_chain  = 2,
+  max_num_threads   = n_parallel_chain,
+
   exchange_VW       = TRUE,
   n_slope_check     = 3,
   std_lim           = 0.1,
@@ -70,10 +73,11 @@ control_opt <- function(
   precond_by_diff_chain = TRUE,
   compute_precond_each_iter = FALSE,
 
+  # stepsize          = 0.5,
+  optimization_method = vanilla(),
+
   max_relative_step = 0.5,
   max_absolute_step = 0.5,
-
-  num_threads       = c(n_parallel_chain, 1),
 
   # reduce variance after conv. check
   reduce_var        = FALSE,
@@ -83,12 +87,11 @@ control_opt <- function(
 
   rao_blackwellization = FALSE,
   n_trace_iter      = 10,
+  sampling_strategy = "all",
 
   # opt print
-  verbose           = FALSE,
-  sampling_strategy = "all",
-  sgd_method        = "vanilla",
-  sgd_parameters    = NULL
+  verbose           = FALSE
+
 ) {
   strategy_list <- c("all", "ws")
   preconditioner_list <- c("none", "fast", "full")
@@ -105,11 +108,11 @@ control_opt <- function(
   stopifnot(
     sampling_strategy %in% strategy_list,
     preconditioner %in% preconditioner_list,
-    is.numeric(num_threads) && length(num_threads) == 2,
+    is.numeric(max_num_threads) && length(max_num_threads) == 1,
     iterations > 0 && stop_points > 0,
     "iterations should be multiple of stop_points"
       = iterations %% stop_points == 0,
-    sgd_method %in% c("vanilla", "momentum")
+    inherits(optimization_method, "ngme_optimization")
   )
 
   if ((reduce_power <= 0.5) || (reduce_power > 1)) {
@@ -117,35 +120,16 @@ control_opt <- function(
   }
 
   if (n_parallel_chain == 1) {
-    compute_precond_each_iter <- TRUE
+    # compute_precond_each_iter <- TRUE
     precond_by_diff_chain <- FALSE
-  }
-
-  if (sgd_method=="adam") {
-    if (is.null(sgd_parameters)) {
-      sgd_parameters <- c(
-        beta1 = 1 - 0.95,
-        beta2 = 1 - 0.999,
-        epsilon = 1e-8
-      )
-    stopifnot(length(sgd_parameters) == 2)
-    }
-  } else if (sgd_method=="momentum") {
-    if (is.null(sgd_parameters)) {
-      sgd_parameters <- c(
-        beta1 = 0.1,
-        beta2 = 1
-      )
-    }
-    stopifnot(length(sgd_parameters) == 2)
   }
 
   control <- list(
     seed              = seed,
     burnin            = burnin,
     iterations        = iterations,
-    stepsize          = stepsize,
     estimation        = estimation,
+    standardize_fixed  = standardize_fixed,
 
     n_parallel_chain  = n_parallel_chain,
     stop_points       = stop_points,
@@ -154,7 +138,10 @@ control_opt <- function(
     std_lim           = std_lim,
     trend_lim         = trend_lim,
 
-    num_threads       = num_threads,
+    num_threads       = c(
+      max(n_parallel_chain, 1),
+      max(floor(max_num_threads / n_parallel_chain), 1)
+    ),
     rao_blackwellization = rao_blackwellization,
     n_trace_iter      = n_trace_iter,
 
@@ -174,8 +161,11 @@ control_opt <- function(
     compute_precond_each_iter = compute_precond_each_iter,
     precond_strategy  = which(preconditioner_list == preconditioner) - 1, # start from 0
     sampling_strategy = which(strategy_list == sampling_strategy) - 1, # start from 0,
-    sgd_method        = sgd_method,
-    sgd_parameters    = sgd_parameters
+
+    # optimization method related 
+    stepsize          = optimization_method$stepsize,
+    sgd_method        = optimization_method$method,
+    sgd_parameters    = optimization_method$sgd_parameters
   )
 
   class(control) <- "control_opt"
@@ -185,7 +175,6 @@ control_opt <- function(
 #' Generate control specifications for \code{f} function
 #'
 #' @param numer_grad    whether to use numerical gradient
-#' @param use_precond   whether to use preconditioner
 #' @param use_num_hess  whether to use numerical hessian
 #' @param eps           eps for computing numerical gradient
 #'
@@ -215,7 +204,7 @@ control_f <- function(
 #' @param init_sample_W  sample W|V at the beginning of each chain
 #' @param n_gibbs_samples    number of gibbs sampels
 #' @param fix_feff       logical, fix fixed effect
-#' @param post_samples_size number of posterior samples
+#' @param n_post_samples number of posterior samples, see ?ngme_post_samples()
 #' @param feff           fixed effect value
 #' @param debug          debug mode
 #' @return a list of control variables for block model
@@ -224,7 +213,7 @@ control_ngme <- function(
   init_sample_W = TRUE,
   n_gibbs_samples = 5,
   fix_feff = FALSE,
-  post_samples_size = 100,
+  n_post_samples = 100,
   feff = NULL,
   debug = FALSE
 ) {
@@ -233,7 +222,7 @@ control_ngme <- function(
     n_gibbs_samples = n_gibbs_samples,
     fix_feff = fix_feff,
     feff = feff,
-    post_samples_size = post_samples_size,
+    n_post_samples = n_post_samples,
     debug = debug
   )
 

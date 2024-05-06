@@ -188,7 +188,7 @@ Next, we simulation non-Gaussian Matern field with NIG noise using `simulate` fu
 
 ```{r}
 simu_nig <- noise_nig(mu=-10, sigma=30, nu=0.5)
-matern_graph <- f(
+matern_graph <- ngme2::f(
   model="matern",
   theta_K = log(6), #kappa = 8
   mesh=graph,
@@ -196,12 +196,12 @@ matern_graph <- f(
 )
 
 matern_graph
-W <- simulate(matern_graph, seed=10)
+W <- simulate(matern_graph, seed=10)[[1]]
 
-graph$plot_function(W)
+graph$plot_function(X=as.numeric(W))
 
 # 3d plot of the random field
-graph$plot_function(W, plotly=TRUE)
+graph$plot_function(X=as.numeric(W), plotly=TRUE)
 ```
 
 With the latent field generated, next we construct observations.
@@ -293,7 +293,7 @@ graph$clear_observations()
 graph$add_observations(data = df_data, normalized = TRUE, group="repl")
 ```
 
-Next step is easy, we simply provide extra `replicate` argument to be same as the group from the graph  function.
+Next step is easy, we simply provide extra `replicate` argument to be same as the group from the graph function.
 
 ```{r fig.align = "center",echo=TRUE}
 fit_repl <- ngme(
@@ -303,14 +303,13 @@ fit_repl <- ngme(
   control_opt = control_opt(
     stepsize = 2,
     iterations = 2000,
-    num_threads = c(4, 5),
     # preconditioner = "full",
-    # rao_blackwellization = TRUE,
+    rao_blackwellization = TRUE,
     n_parallel_chain = 4,
-    verbose = TRUE,
+    # verbose = TRUE,
     seed = 1
   ),
-  replicate = "__group"
+  replicate = ".group"
 )
 fit_repl
 traceplot(fit_repl, "graph")

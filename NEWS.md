@@ -1,4 +1,4 @@
-# ngme2 (development version)
+# ngme2 0.6.0
 * First version of the package
 
 # version 0.2.0

@@ -36,8 +36,8 @@ myar <- f(1:n, model="ar1", alpha = 0.75,
   nu = 2
 ))
 
-W1 <- simulate(myar)
-W2 <- simulate(myar)
+W1 <- simulate(myar)[[1]]
+W2 <- simulate(myar)[[1]]
 Y = c(W1, W2) + rnorm(2*n, sd=0.9)
 
 res_ngme2 <- ngme(

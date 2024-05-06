@@ -233,22 +233,22 @@ We will consider a mesh with 10 equally spaced nodes.
 The code to sample for such a process is given below.
 
 ```{r generate-VW, message=FALSE, fig.align="center"}
-library(INLA)
+library(fmesher)
 library(ngme2)
 library(ggplot2)
 library(tidyr)
+library(Matrix)
 set.seed(123)
 
 loc_1d <- 0:9/9
-mesh_1d <- inla.mesh.1d(loc_1d)
-
+mesh_1d <- fm_mesh_1d(loc_1d)
 # inla.mesh.fem
 # inla.mesh.1d.fem(mesh_1d)$c1 + inla.mesh.1d.fem(mesh_1d)$g1
 # attr(simulate(noise_nig(n=10, 1,1,0.5), seed=10), "noise")$h
 
 # specify the model we use
 mu <- 1; sigma <- 1; nu <- 0.5
-spde_1d <- f(
+spde_1d <- ngme2::f(
   loc_1d,
   model = "matern",
   theta_K = log(1),
@@ -257,7 +257,7 @@ spde_1d <- f(
 )
 K <- spde_1d$operator$K
 
-W <- simulate(spde_1d, seed = 10)
+W <- simulate(spde_1d, seed = 10)[[1]]
 plot(loc_1d, W, type = "l")
 str(W)
 
@@ -269,13 +269,13 @@ We will now generate 9 uniformly distributed random locations to determine
 the locations of the observations. Once we determine the locations we will
 need to build the $A$ matrix to obtain the values of the process $X$
 at those locations. We can build the $A$ matrix by using the
-function *inla.spde.make.A*.
+function *fm_basis*.
 
 ```{r, fig.width=7, fig.height=5}
 new_loc_1d <- sort(runif(9))
 
-A_matrix <- inla.spde.make.A(
-  mesh = inla.mesh.1d(loc_1d),
+A_matrix <- fmesher::fm_basis(
+  mesh = fm_mesh_1d(loc_1d),
   loc = new_loc_1d
 )
 A_matrix
@@ -462,7 +462,7 @@ $t^\ast = 5/9$. We will compute MC and Rao-Blackwellization for the predictions.
 ```{r, fig.width=7, fig.height=5}
 # Computing A matrix at t^\ast
 
-A_pred <- inla.spde.make.A(mesh_1d, loc = 5/9)
+A_pred <- fm_basis(mesh = mesh_1d, loc = 5/9)
 
 # MC_estimate:
 

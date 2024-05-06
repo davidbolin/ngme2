@@ -17,6 +17,7 @@ iid <- function(
     mesh = fmesher::fm_mesh_1d(loc = 1:n),
     model = "iid",
     theta_K = double(0),
+    update_K = function(theta_K) {K},
     K = K,
     h = rep(1, n),
     A = K,
@@ -52,13 +53,15 @@ ar1 <- function(
   theta_K <- ar1_a2th(rho)
   stopifnot("The length of rho(theta_K) should be 1." = length(theta_K) == 1)
 
+  update_K <- function(theta_K) {ar1_th2a(theta_K) * C + G}
   ngme_operator(
     mesh = mesh,
     model = "ar1",
     theta_K = theta_K,
     C = ngme_as_sparse(C),
     G = ngme_as_sparse(G),
-    K = rho * C + G,
+    update_K = update_K,
+    K = update_K(theta_K),
     h = h,
     symmetric = FALSE,
     zero_trace = TRUE,
@@ -104,6 +107,7 @@ rw1 <- function(
     mesh = mesh,
     model = "rw1",
     theta_K = double(0),
+    update_K = function(theta_K) {C + G},
     K = ngme_as_sparse(C + G),
     h = h,
     symmetric = FALSE,
@@ -153,6 +157,7 @@ rw2 <- function(
     mesh = mesh,
     model = "rw2",
     theta_K = double(0),
+    update_K = function(theta_K) {C + G},
     K = ngme_as_sparse(C + G),
     h = h,
     symmetric = FALSE,
@@ -194,18 +199,24 @@ ou <- function(
   kappas <- exp(as.numeric(B_K %*% theta_K))
   K <- Matrix::Diagonal(x=kappas) %*% C + G
 
+  update_K <- function(theta_K) {
+    kappas <- exp(as.numeric(B_K %*% theta_K))
+    Matrix::Diagonal(x=kappas) %*% C + G
+  }
   ngme_operator(
     mesh        = mesh,
     model       = "ou",
     B_K         = B_K,
     theta_K     = theta_K,
+    update_K    = update_K,
     C           = ngme_as_sparse(C),
     G           = ngme_as_sparse(G),
     K           = ngme_as_sparse(K),
     h           = h,
     symmetric   = FALSE,
     zero_trace  = TRUE,
-    param_name  = paste("theta_K", seq_len(length(theta_K)), sep = "")
+    param_name  = paste("theta_K", seq_len(length(theta_K)), sep = ""),
+    param_trans = rep(list(identity), length(theta_K))
   )
 }
 
@@ -240,8 +251,8 @@ matern <- function(
   } else {
     d <- get_inla_mesh_dimension(mesh)
     if (d == 1) {
-      fem <- fmesher::fm_fem(mesh)
-      C <- fem$c1
+      fem <- fmesher::fm_fem(mesh, order = alpha)
+      C <- fem$c0
       G <- fem$g1
       h <- Matrix::diag(fem$c0)
     } else if (d == 2) {
@@ -272,17 +283,30 @@ matern <- function(
   else if (is.null(B_K) && length(theta_K) > 1)
     stop("Please provide B_K for non-stationary case.")
 
-  kappas <- as.numeric(exp(B_K %*% theta_K))
-  if (length(theta_K) == 1) {
-    # stationary
-    K <- kappas[1]**alpha * C + G
-  } else {
-    # non-stationary
-    K <- if (alpha == 2) diag(kappas) %*% C %*% diag(kappas)  + G
-    else diag(kappas) %*% C %*% diag(kappas) %*% C %*% diag(kappas) + G
-  }
-
   stationary <- is_stationary(B_K)
+  update_K <- function(theta_K) {
+    kappas <- as.numeric(exp(B_K %*% theta_K))
+    if (length(theta_K) == 1) {
+      if (alpha == 2) {
+        kappas[1]^2 * C + G
+      } else {
+        Cinv <- C;
+        diag(Cinv) <- 1 / diag(C)
+        (G + kappas[1]^2 * C) %*% Cinv %*% (G + kappas[1]^2 * C)
+      }
+    } else {
+      GpKCK <- diag(kappas) %*% C %*% diag(kappas) + G
+      if (alpha == 2)
+        GpKCK
+      else {
+        Cinv <- C;
+        diag(Cinv) <- 1 / diag(C)
+        (GpKCK) %*% Cinv %*% GpKCK
+      }
+    }
+  }
+  K <- update_K(theta_K)
+
   ngme_operator(
     mesh = mesh,
     alpha = alpha,
@@ -292,11 +316,16 @@ matern <- function(
     C = ngme_as_sparse(C),
     G = ngme_as_sparse(G),
     K = ngme_as_sparse(K),
+    update_K = update_K,
     h = h,
     symmetric = TRUE,
     zero_trace = FALSE,
-    param_name = if (stationary) "kappa" else paste("theta_K", seq_len(length(theta_K)), sep = " "),
-    param_trans = if (stationary) exp else rep(list(identity), length(theta_K))
+    param_name =
+      if (stationary) "kappa"
+      else paste("theta_K", seq_len(length(theta_K)), sep = " "),
+    param_trans =
+      if (stationary) exp
+      else rep(list(identity), length(theta_K))
   )
 }
 
@@ -329,16 +358,20 @@ re <- function(
   }
 
   # build K
-  K <- diag(n_reff); diag(K) <- exp(theta_K[1:n_reff])
-  if (n_reff > 1)
-    K[lower.tri(K)] <- theta_K[(n_reff+1):n_theta_K]
-  K <- Matrix::Matrix(K)
+  update_K <- function(theta_K) {
+    K <- diag(n_reff); diag(K) <- exp(theta_K[1:n_reff])
+    if (n_reff > 1)
+      K[lower.tri(K)] <- theta_K[(n_reff+1):n_theta_K]
+    Matrix::Matrix(K)
+  }
+  K <- update_K(theta_K)
 
   ngme_operator(
     mesh = NULL,
     model = "re",
     theta_K = theta_K,
     K = ngme_as_sparse(K),
+    update_K = update_K,
     h = h,
     B_K = B_K,
     symmetric = FALSE,
@@ -479,11 +512,11 @@ precision_matrix_multivariate <- function(p,
 #' Bolin, D. and Wallin, J. (2020), Multivariate type G Matérn stochastic partial differential equation random fields. J. R. Stat. Soc. B, 82: 215-239. https://doi.org/10.1111/rssb.12351
 #' @export
 #' @examples
-#' library(INLA)
+#' library(fmesher)
 #' library(fields)
 #' # Define mesh
 #' x <- seq(from=0,to=1,length.out = 40)
-#' mesh <- inla.mesh.create(lattice = inla.mesh.lattice(x,x), extend = FALSE)
+#' mesh <-  fm_rcdt_2d_inla(lattice = fm_lattice_2d(x,x), extend = FALSE)
 #' # Set parameters
 #' p <- 3 #number of fields
 #' rho <- c(-0.5, 0.5,-0.25) #correlation parameters
@@ -494,9 +527,8 @@ precision_matrix_multivariate <- function(p,
 #' Q <- precision_matrix_multivariate_spde(p, mesh = mesh, rho = rho,
 #'                                        alpha = alpha, theta_K_list = log_kappa,
 #'                                        variance_list = variances)
-#'
-# Plot the cross covariances
-#' A <- as.vector(inla.spde.make.A(mesh,loc = matrix(c(0.5,0.5),1,2)))
+#' # Plot the cross covariances
+#' A <- as.vector(fm_basis(mesh,loc = matrix(c(0.5,0.5),1,2)))
 #' Sigma <- as.vector(solve(Q,c(A,rep(0,2*mesh$n))))
 #' r11 <- Sigma[1:mesh$n]
 #' r12 <- Sigma[(mesh$n+1):(2*mesh$n)]
@@ -507,18 +539,18 @@ precision_matrix_multivariate <- function(p,
 #' Sigma <- as.vector(solve(Q,v <- c(rep(0,2*mesh$n),A)))
 #' r33 <- Sigma[(2*mesh$n+1):(3*mesh$n)]
 #'
-#' proj <- inla.mesh.projector(mesh)
+#' proj <- fm_evaluator(mesh)
 #'
 #' par(mfrow=c(3,3))
-#' image.plot(inla.mesh.project(proj,r11), main = "Cov(X_1(s0),X_1(s)")
+#' image.plot(fm_evaluate(proj,r11), main = "Cov(X_1(s0),X_1(s)")
 #' plot.new()
 #' plot.new()
-#' image.plot(inla.mesh.project(proj,r12), main = "Cov(X_1(s0),X_2(s)")
-#' image.plot(inla.mesh.project(proj,r22), main = "Cov(X_2(s0),X_2(s)")
+#' image.plot(fm_evaluate(proj,r12), main = "Cov(X_1(s0),X_2(s)")
+#' image.plot(fm_evaluate(proj,r22), main = "Cov(X_2(s0),X_2(s)")
 #' plot.new()
-#' image.plot(inla.mesh.project(proj,r13), main = "Cov(X_1(s0),X_3(s)")
-#' image.plot(inla.mesh.project(proj,r23), main = "Cov(X_2(s0),X_3(s)")
-#' image.plot(inla.mesh.project(proj,r33), main = "Cov(X_3(s0),X_3(s)")
+#' image.plot(fm_evaluate(proj,r13), main = "Cov(X_1(s0),X_3(s)")
+#' image.plot(fm_evaluate(proj,r23), main = "Cov(X_2(s0),X_3(s)")
+#' image.plot(fm_evaluate(proj,r33), main = "Cov(X_3(s0),X_3(s)")
 
 precision_matrix_multivariate_spde <- function(
   p,

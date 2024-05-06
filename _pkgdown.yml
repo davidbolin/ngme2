@@ -34,6 +34,8 @@ navbar:
         href: articles/pred_and_est.html
       - text: Bivariate models in Ngme2
         href: articles/bivariate.html
+      - text: Space-time bivariate model in Ngme2
+        href: articles/tp-bv.html
       - text: Random effects model in Ngme2
         href: articles/random-effect.html
       - text: Space-time (tensor product) model in Ngme2
@@ -67,6 +69,8 @@ reference:
     - ngme
     - summary.ngme
     - ngme_result
+    - ngme_cov_matrix
+    - ngme_post_samples
   - title: Latent models
     contents:
     - ngme_model_types
@@ -97,6 +101,7 @@ reference:
     - traceplot
   - title: Simulation functions
     contents:
+    - simulate.ngme
     - simulate.ngme_model
     - simulate.ngme_noise
   - title: Auxiliary functions

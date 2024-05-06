@@ -10,6 +10,7 @@
 #include "sample_rGIG.h"
 
 using Eigen::VectorXd;
+using Eigen::MatrixXd;
 using std::string;
 
 class NoiseUtil {
@@ -18,7 +19,7 @@ public:
     // update gig representation (p, a, b)
     static void update_gig(
         const string& noise_type,
-        double nu,
+        const VectorXd& nu,
         Eigen::Ref<Eigen::VectorXd> p,
         Eigen::Ref<Eigen::VectorXd> a,
         Eigen::Ref<Eigen::VectorXd> b,
@@ -26,9 +27,10 @@ public:
         bool single_V = false
     );
 
-    static double grad_theta_nu(
+    static VectorXd grad_theta_nu(
         const string& noise_type,
-        double nu,
+        const MatrixXd& B_nu,
+        const VectorXd& nu,
         const VectorXd& V,
         const VectorXd& prevV,
         const VectorXd& h,
@@ -52,28 +54,30 @@ public:
         }
     }
 
-    // compute pi(V|nu, h)
+    // compute pi(V|theta_nu, h)
     static double log_density(
         const string& noise_type,
         const VectorXd& V,
         const VectorXd& h,
-        double nu,
+        const MatrixXd& B_nu,
+        const VectorXd& theta_nu,
         bool single_V = false
     );
 
-    static double precond(
+    static MatrixXd precond(
         double eps,
         const string& noise_type,
         const VectorXd& V,
         const VectorXd& h,
-        double nu,
+        const MatrixXd& B_nu,
+        const VectorXd& theta_nu,
         bool single_V = false
     );
 
     // ---- h = 1 ----
     static void update_gig(
         const string& noise_type,
-        double nu,
+        const VectorXd& nu,
         Eigen::Ref<Eigen::VectorXd> p,
         Eigen::Ref<Eigen::VectorXd> a,
         Eigen::Ref<Eigen::VectorXd> b,
@@ -83,15 +87,16 @@ public:
         update_gig(noise_type, nu, p, a, b, h);
     }
 
-    static double grad_theta_nu(
+    static VectorXd grad_theta_nu(
         const string& noise_type,
-        double nu,
+        const MatrixXd& B_nu,
+        const VectorXd& nu,
         const VectorXd& V,
         const VectorXd& prevV,
         bool single_V = false
     ) {
         VectorXd h = VectorXd::Ones(V.size());
-        return grad_theta_nu(noise_type, nu, V, prevV, h);
+        return grad_theta_nu(noise_type, B_nu, nu, V, prevV, h, single_V);
     }
 
     static VectorXd rnorm_vec(int n, double mu, double sigma, unsigned long seed=0) {
@@ -105,8 +110,6 @@ public:
         }
         return (out);
     }
-
-
 };
 
 #endif

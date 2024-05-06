@@ -49,11 +49,10 @@
 
 #   expect_true(all(tensor_model$operator$K ==
 #      ar1(1:n1, theta_K = ar1_a2th(0.7))$K %x% matern(map=loc, mesh=mesh2d, theta_K = 1)$K))
-#   W <- simulate(tensor_model)
+#   W <- simulate(tensor_model)[[1]]
 
-#   AW <- as.numeric(tensor_model$A %*% W)
-#   n_obs <- length(AW)
-#   Y <- AW + rnorm(n_obs, sd=0.5)
+#   n_obs <- length(W)
+#   Y <- W + rnorm(n_obs, sd=0.5)
 #   mean(attr(W, "noise")$V)
 
 # ##############################  estimation
@@ -100,9 +99,9 @@
 test_that("iid x ar case", {
   set.seed(16)
   n_obs <- 200
-  Y1 <- simulate(f(1:n_obs, model="ar1", rho=0.7, noise=noise_normal()))
-  Y2 <- simulate(f(1:n_obs, model="ar1", rho=0.7, noise=noise_normal()))
-  Y3 <- simulate(f(1:n_obs, model="ar1", rho=0.7, noise=noise_normal()))
+  Y1 <- simulate(f(1:n_obs, model="ar1", rho=0.7, noise=noise_normal()))[[1]]
+  Y2 <- simulate(f(1:n_obs, model="ar1", rho=0.7, noise=noise_normal()))[[1]]
+  Y3 <- simulate(f(1:n_obs, model="ar1", rho=0.7, noise=noise_normal()))[[1]]
   Y <- c(Y1, Y2, Y3) + rnorm(n = 3*n_obs)
   time <- rep(1:3, each=n_obs)
   loc <- rep(1:n_obs, 3)
@@ -116,7 +115,7 @@ test_that("iid x ar case", {
     ),
     data = data.frame(Y=Y),
     control_opt = control_opt(
-      iterations = 5
+      iterations = 10
     )
   )
 
@@ -180,10 +179,9 @@ test_that("ar x ar case", {
     noise = noise_nig(mu=-3, sigma=2, nu=1)
   )
   tensor_model
-  W <- simulate(tensor_model)
-  AW <- as.numeric(tensor_model$A %*% W)
-  n_obs <- length(AW)
-  Y <- AW + rnorm(n_obs, sd=0.5)
+  W <- simulate(tensor_model)[[1]]
+  n_obs <- length(W)
+  Y <- W + rnorm(n_obs, sd=0.5)
 
 ##############################  estimation
   out <- ngme(
@@ -229,3 +227,29 @@ test_that("build A for tp model", {
   )
   m$A
 })
+
+test_that("test model specification", {
+  pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
+  prmesh1 <- fmesher::fm_mesh_2d(
+    loc.domain = pl01, cutoff = 0.1,
+    max.edge = c(1, 10)
+  )
+  prmesh1$n
+
+  dat = data.frame(
+    y = c(1,2,3),
+    xcoo = rnorm(3),
+    ycoo = rnorm(3),
+    w = runif(3),
+    time = sample(3)
+  )
+
+  f(map = list(~time, ~xcoo + ycoo),
+    model="tp",
+    first=list(model="ar1"),
+    second=list(model="matern", mesh=prmesh1, alpha=2),
+    noise = noise_normal(),
+    data = dat
+  )
+})
+

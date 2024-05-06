@@ -55,7 +55,7 @@ f <- function(
     # extract the map
     graph_data <- (tryCatch(mesh$get_data(), error=function(e) NULL))
     map <- if (is.null(graph_data)) NULL
-      else with(graph_data, cbind(`__edge_number`, `__distance_on_edge`))
+      else with(graph_data, cbind(`.edge_number`, `.distance_on_edge`))
   }
 
   map <- eval(substitute(map), envir = data, enclos = parent.frame())
@@ -79,12 +79,13 @@ f <- function(
     }
   }
 
+  group <- validate_rep_or_group(group, data)
   # set the subset if provide group and which_group
   if (!is.null(which_group)) {
     stopifnot(
       "Please provide group factor" = !is.null(group),
       "Please check if which_group is in group"
-        = which_group %in% levels(as.factor(group)))
+        = which_group %in% levels(group))
     subset <- group %in% which_group
   }
 
@@ -106,13 +107,14 @@ f <- function(
   f_args <- c(f_args, list(...))
 
   if (model == "tp") {
-    stopifnot(is.list(map) && length(map) == 2,
-      "Please specify map for 2 sub_models"
-        = is.list(map) && length(map) == 2)
+    stopifnot(
+      "Please specify map as a list of length two (for 2 sub-models)" =
+      is.list(map) && length(map) == 2
+    )
     # eval formula
     map <- lapply(map, function(x) {
       if (inherits(x, "formula")) {
-        model.matrix(x, data)
+        model.matrix(x, data)[, -1]
       } else {
         x
       }
@@ -132,8 +134,10 @@ f <- function(
       "Please provide mesh individually for first and second"
         = is.null(mesh)
     )
-    if (is.null(first$mesh)) first$mesh <- ngme_build_mesh(map[[1]])
-    if (is.null(second$mesh)) second$mesh <- ngme_build_mesh(map[[2]])
+
+    if (is.null(first$mesh)) first$mesh <- ngme_build_mesh(map[[1]], model=first$model)
+    if (is.null(second$mesh)) second$mesh <- ngme_build_mesh(map[[2]],
+    model=second$model)
     f_args$first <- if (inherits(first, "ngme_operator")) first else
       build_operator(first$model, first)
     f_args$second <- if (inherits(second, "ngme_operator")) second else
@@ -151,12 +155,57 @@ f <- function(
         stopifnot("Now only support first to be 1d model"
           = inherits(operator$first$mesh, "inla.mesh.1d"))
         # A <- INLA::inla.spde.make.A(loc=map[[2]], mesh=operator$second$mesh, repl=group)
-        blk_group <- as.integer(as.factor(map[[1]]))
+        # watch-out! Should use as.factor to start at 1, not min(map[[1]])
+        # blk_group <- as.integer(as.factor(map[[1]]))
+        blk_group <- as.integer(map[[1]])
+# important to start with 1
+blk_group <- blk_group-min(blk_group)+1
+# browser()
         blk <- fmesher::fm_block(blk_group)
         basis <- fmesher::fm_basis(operator$second$mesh, loc=map[[2]])
-        fmesher::fm_row_kron(Matrix::t(blk), basis)
+        A0 = fmesher::fm_row_kron(Matrix::t(blk), basis)
+if (operator$second$model == "bv") {
+# extra steps
+# 1. expand A <- cbind(A, 0), double the column
+# 2. move 2nd field to the 2nd half
+# 3. re-order the 1st and 2nd
+# e.g., (each field is of size 2)
+# 1 2 3 4 5 6 7 8 to
+# 1 2 5 6 3 4 7 8
+  A_expand <- cbind(
+    A0,
+    matrix(0, nrow=nrow(A0), ncol=ncol(A0))
+  )
+  # select row (of the 2nd field)
+    row_2nd_field <- group == levels(group)[[2]]
+    half_1st <- 1:ncol(A0)
+    half_2nd <- 1:ncol(A0) + ncol(A0)
+  # Move the 2nd field to the right
+    A_expand[row_2nd_field, half_2nd] <-
+      A_expand[row_2nd_field, half_1st]
+    A_expand[row_2nd_field, half_1st] <- 0
+  # Re-order (f1 f2 f1 f2 ...)
+    n <- operator$first$mesh$n
+    bv_mesh_size <-  operator$second$mesh$n
+
+    idx <- 1:ncol(A_expand)
+    field_1st_idx <- ceiling(idx / bv_mesh_size) %% bv_mesh_size == 1
+    field_2nd_idx <- !field_1st_idx
+    reorder_idx = c(which(field_1st_idx), which(field_2nd_idx))
+  # return after re-order
+  ngme_as_sparse(A_expand[, reorder_idx])
+} else {
+  A0
+}
       },
       "bv" = {
+        # INLA::inla.spde.make.A(loc=map, mesh=mesh, repl=as.integer(as.factor(group)))
+        blk_group <- as.integer(as.factor(group))
+        blk <- fmesher::fm_block(blk_group)
+        basis <- fmesher::fm_basis(mesh, loc=map)
+        fmesher::fm_row_kron(Matrix::t(blk), basis)
+      },
+      "bv2" = {
         # INLA::inla.spde.make.A(loc=map, mesh=mesh, repl=as.integer(as.factor(group)))
         blk_group <- as.integer(as.factor(group))
         blk <- fmesher::fm_block(blk_group)
@@ -175,7 +224,7 @@ f <- function(
 
   # 2. build noise given operator
   # bivariate noise
-  if (model == "bv") {
+  if (model == "bv" || model == "bv2") {
     stopifnot(
       "Please specify noise for each field" = length(noise) >= 2,
       "Input: noise=list(a=<noise>,b=<noise>)" = inherits(noise[[1]], "ngme_noise"),
@@ -183,7 +232,9 @@ f <- function(
       "Please specify noise with same name as in the sub_models argument!"
         = all(names(noise[1:2]) %in% operator$model_names),
       "Keep the noise same if you want to specify single V for each noise"
-        = noise[[1]]$single_V == noise[[2]]$single_V
+        = noise[[1]]$single_V == noise[[2]]$single_V,
+      "Two noise should be the same type"
+        = noise[[1]]$noise_type == noise[[2]]$noise_type
     )
     noise1 <- update_noise(noise[[operator$model_names[[1]]]],
       n=length(operator$h)/2)
@@ -196,7 +247,7 @@ f <- function(
         "share_V option is only supported for 2 NIG noise."
           = noise1$noise_type == noise2$noise_type,
         "share_V option requires nu from both noise are same."
-          = noise1$nu == noise2$nu
+          = noise1$theta_nu == noise2$theta_nu
       )
     }
 
@@ -204,15 +255,23 @@ f <- function(
       noise_type = c(noise1$noise_type, noise2$noise_type),
       B_mu    = as.matrix(Matrix::bdiag(noise1$B_mu, noise2$B_mu)),
       B_sigma = as.matrix(Matrix::bdiag(noise1$B_sigma, noise2$B_sigma)),
+      B_nu    = as.matrix(Matrix::bdiag(noise1$B_nu, noise2$B_nu)),
       theta_mu    = c(noise1$theta_mu, noise2$theta_mu),
       theta_sigma = c(noise1$theta_sigma, noise2$theta_sigma),
-      nu = c(noise1$nu, noise2$nu),
+      theta_nu    = c(noise1$theta_nu, noise2$theta_nu),
       share_V = !is.null(noise$share_V) && noise$share_V,
       single_V = noise1$single_V,
       bv_noises = bv_noises,
       fix_V = !is.null(noise$fix_V) && noise$fix_V,
       V = if (!is.null(noise$V)) noise$V else NULL
     )
+
+    # if noise is normal, Do not estimate theta
+    if (all(noise$noise_type == "normal")) {
+      # set fix_bv_theta, theta=0 for normal noise
+      operator$fix_bv_theta <- TRUE
+      operator$theta_K[1] <- 0
+    }
   } else {
     noise <- update_noise(noise, n = length(operator$h))
   }
@@ -236,7 +295,7 @@ f <- function(
     mesh      = mesh,
     n_map     = length_map(map),
     W         = W,
-    fix_W     = fix_W,
+    fix_W      = fix_W,
     name      = name,
     debug     = debug,
     fix_theta_K = fix_theta_K,
@@ -252,15 +311,20 @@ build_operator <- function(model_name, args_list) {
   )
 
   switch(model_name,
-    tp = do.call(tp, args_list),
-    bv = do.call(bv, args_list),
+    tp  = do.call(tp, args_list),
+    bv  = do.call(bv, args_list),
+    bv2 = do.call(bv2, args_list),
     ar1 = do.call(ar1, args_list),
     rw1 = do.call(rw1, args_list),
     rw2 = do.call(rw2, args_list),
-    ou = do.call(ou, args_list),
+    ou  = do.call(ou, args_list),
     matern = do.call(matern, args_list),
-    iid = do.call(iid, args_list),
-    re = do.call(re, args_list),
+    re  = do.call(re, args_list),
+    iid = {
+      if (is.null(args_list$n))
+        args_list$n <- length_map(args_list$map)
+      do.call(iid, args_list)
+    },
     stop("Unknown models, please check if model name is in ngme_model_types()")
   )
 }
@@ -279,6 +343,7 @@ ngme_build_mesh <- function(
       stopifnot("The map should be integers."
         = is.numeric(loc) && all(loc == round(loc)))
       return (fmesher::fm_mesh_1d(loc = min(loc):max(loc)))
+      # return (fmesher::fm_mesh_1d(as.integer(as.factor(loc))))
     }
   }
 

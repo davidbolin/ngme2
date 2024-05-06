@@ -6,8 +6,8 @@ test_that("simulate and estimate of rw with NIG", {
   mu <- -3; sigma <- 5; nu <- 2; sigma_eps <- 0.8
   my_rw <- f(x, model="rw1", noise=noise_nig(mu=mu, sigma=sigma, nu=nu))
 
-  W <- simulate(my_rw, seed = 3)
-  Y <- as.numeric(my_rw$A %*% W) + rnorm(n=length(W), sd=sigma_eps)
+  W <- simulate(my_rw, seed = 3)[[1]]
+  Y <- W + rnorm(n=length(W), sd=sigma_eps)
 
   out <- ngme(
     Y ~ 0 + f(x,
@@ -48,7 +48,7 @@ test_that("test estimation of basic ar with normal measurement noise", {
   mu <- 3; sigma <- 2; nu <- 1; sigma_eps <- 0.8
   ar1 <- f(1:n_obs, model="ar1", rho=0.7, noise=noise_nig(mu=mu, sigma=sigma, nu=nu))
 
-  W <- simulate(ar1)
+  W <- simulate(ar1)[[1]]
   x1 = rnorm(n_obs);
   # Y <-  -3 + x1 * 2  + rnorm(n_obs, sd = sigma_eps)
   Y <- W + rnorm(n_obs, sd = sigma_eps)

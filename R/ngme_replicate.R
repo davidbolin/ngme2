@@ -5,6 +5,7 @@ ngme_replicate <- function(
   noise        = noise_normal(),
   models       = list(),
   control_ngme = control_ngme(),
+  standardize  = TRUE,
   ...
 ) {
   # compute W_sizes and V_sizes
@@ -43,6 +44,7 @@ ngme_replicate <- function(
       n_merr            = noise$n_params,
       n_params          = n_params,
       n_la_params       = n_la_params,
+      standardize       = standardize,
       ...
     ),
     class = c("ngme_replicate", "list")
@@ -57,27 +59,27 @@ ngme_replicate <- function(
 #' @return a list (noise specifications)
 #' @export
 print.ngme_replicate <- function(x, ...) {
-  ngme <- x
+  ngme_rep <- x
   cat("*** Ngme object ***\n\n");
 
   cat("Fixed effects: \n");
-  if (length(ngme$feff) > 0) {
-    print(ngme$feff, digits=3)
+  if (length(ngme_rep$feff) > 0) {
+    print(ngme_rep$feff, digits=3)
   } else {
     cat("  None\n")
   }
   cat("\n")
-  # cat(paste("  ", ngme_format("feff", ngme$feff)));
+  # cat(paste("  ", ngme_rep_format("feff", ngme_rep$feff)));
 
   cat("Models: \n");
-  for (i in seq_along(ngme$models)) {
+  for (i in seq_along(ngme_rep$models)) {
     # cat("[["); cat(i); cat("]]")
-    # cat("\""); cat(names(ngme$models)[[i]]); cat("\"\n")
-    cat("$"); cat(names(ngme$models)[[i]]); cat("\n")
-    print(ngme$models[[i]], padding = 2)
+    # cat("\""); cat(names(ngme_rep$models)[[i]]); cat("\"\n")
+    cat("$"); cat(names(ngme_rep$models)[[i]]); cat("\n")
+    print(ngme_rep$models[[i]], padding = 2)
     cat("\n")
   }
 
   cat("Measurement noise: \n");
-  print(ngme$noise, padding = 2); cat("\n\n")
+  print(ngme_rep$noise, padding = 2); cat("\n\n")
 }

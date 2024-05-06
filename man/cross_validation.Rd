@@ -9,18 +9,19 @@ first into sub_groups (a list of target, and train data)}
 cross_validation(
   ngme,
   type = "k-fold",
-  seed = Sys.time(),
+  seed = NULL,
   print = FALSE,
   N = 100,
   k = 5,
   percent = 50,
   times = 10,
   test_idx = NULL,
-  train_idx = NULL
+  train_idx = NULL,
+  keep_test_information = FALSE
 )
 }
 \arguments{
-\item{ngme}{a ngme object}
+\item{ngme}{a ngme object, or a list of ngme object (if comparing multiple models)}
 
 \item{type}{character, in c("k-fold", "loo", "lpo", "custom")
 k-fold is k-fold cross-validation, provide \code{k}
@@ -38,11 +39,13 @@ custom is user-defined group, provide \code{target} and \code{data}}
 
 \item{percent}{from 1 to 100 (only for lpo type)}
 
-\item{times}{run how many times (only for lpo type)}
+\item{times}{how many test cases (only for lpo type)}
 
 \item{test_idx}{a list of indices of the data (which data points to be predicted) (only for custom type)}
 
 \item{train_idx}{a list of indices of the data (which data points to be used for re-sampling (not re-estimation)) (only for custom type)}
+
+\item{keep_test_information}{logical, keep test information (pred_1, pred_2) in the return (as attributes), pred_1 and pred_2 are the prediction of the two chains}
 }
 \value{
 a list of criterions: MSE, MAE, CRPS, sCRPS

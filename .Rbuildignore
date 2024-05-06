@@ -8,3 +8,5 @@
 ^index\.md$
 ^doc$
 ^Meta$
+^cran-comments\.md$
+^CRAN-SUBMISSION$

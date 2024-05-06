@@ -32,10 +32,15 @@ get_noise_info <- function(noise) {
     }
 
     # nu
-    name_nu <- if (noise$n_nu == 0) NULL
-      else if (noise$n_nu == 1) "nu"
-      else paste("nu", seq_len(noise$n_nu))
-    trans_nu <- rep(list(exp), noise$n_nu)
+    if (noise$n_theta_nu == 0) {
+      name_nu <- trans_nu <- NULL
+    } else if (is_stationary(noise$B_nu)) {
+      name_nu <- "nu"
+      trans_nu <- list(exp)
+    } else {
+      name_nu <- paste("theta_nu", seq_len(noise$n_theta_nu))
+      trans_nu <- rep(list(identity), noise$n_theta_nu)
+    }
 
     ts <- list(
       # for bv noise
@@ -105,10 +110,14 @@ traceplot <- function(ngme, name="general", hline=NULL) {
   if (name %in% names(ngme$models)) {
     # Plot latent trajectory
     traj <- attr(ngme$models[[name]], "lat_traj")
+    stopifnot("Please run ngme() to estimate the model before using traceplot()"
+      = !is.null(traj))
     ts <- get_latent_info(ngme$models[[name]])
   } else {
     # Plot block trajectory
     traj <- attr(ngme, "block_traj")
+    stopifnot("Please run ngme() to estimate the model before using traceplot()"
+      = !is.null(traj))
     # get titles
     ts <- get_noise_info(ngme$noise)
     name_feff <- if (length(ngme$feff)==0) NULL else paste ("fixed effect", seq_len(length(ngme$feff)))
@@ -177,15 +186,17 @@ plot.ngme_noise <- function(x, y = NULL, ...) {
   noise <- x; noise2 <- y
   mu <- noise$theta_mu
   sigma <- exp(noise$theta_sigma)
-  nu <- noise$nu
+  nu <- exp(noise$theta_nu)
   stopifnot("only implemented for stationary mu" = length(mu) == 1)
   stopifnot("only implemented for stationary sigma" = length(sigma) == 1)
+  stopifnot("only implemented for stationary nu" = length(nu) == 1)
 
   xlim <- if (!is.null(list(...)$xlim)) list(...)$xlim else c(-10, 10)
 
   xx <- seq(xlim[[1]], xlim[[2]], length = 400)
   switch(noise$noise_type,
     "nig"     = dd <- dnig(xx, -mu, mu, nu, sigma),
+    "gal"     = dd <- dgal(xx, -mu, mu, nu, sigma),
     "normal"  = dd <- dnorm(xx, sd = sigma),
     stop("Plot for this type is not implemented")
   )
@@ -196,9 +207,10 @@ plot.ngme_noise <- function(x, y = NULL, ...) {
   if (!is.null(noise2)) {
     mu <- noise2$theta_mu
     sigma <- exp(noise2$theta_sigma)
-    nu <- noise2$nu
+    nu <- exp(noise$theta_nu)
     switch(noise2$noise_type,
       "nig"     = dd2 <- dnig(xx, -mu, mu, nu, sigma),
+      "gal"     = dd2 <- dgal(xx, -mu, mu, nu, sigma),
       "normal"  = dd2 <- dnorm(xx, sd = sigma),
       stop("Plot for this type is not implemented")
     )
@@ -218,6 +230,7 @@ compare_traceplot <- function(l1, l2) {
   n_iter = length(l1[[1]])
 
   for (i in seq_len(n_plots)) {
+    c1 <- c2 <- NULL
     df <- data.frame(c1 = l1[[i]], c2 = l2[[i]], title=names(l1)[[i]])
     ps[[i]] <- ggplot(data=df) +
       geom_line(aes(x=1:n_iter, y=c1), col="1") +

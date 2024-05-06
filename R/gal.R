@@ -34,7 +34,7 @@
 #'  \eqn{x>0}, \eqn{\nu>0} and \eqn{\mu,\delta, \sigma\in\mathbb{R}}.
 #'  See Barndorff-Nielsen (1977, 1978 and 1997) for further details.
 #'
-#' If the mixing variable $V$ follows a Gamma distribution (same parameterization in R):
+#' If the mixing variable \eqn{V} follows a Gamma distribution (same parameterization in R):
 #' \deqn{V \sim \Gamma(h \nu, \nu),} then the poserior follows the GAL distribution (a special case of GIG distribution):
 #' \deqn{
 #' -\mu +\mu V + \sigma \sqrt{V} Z \sim GIG(h \nu - 0.5, 2 \nu + (\frac{\mu}{\sigma})^{2}, 0)
@@ -76,7 +76,7 @@ dgal <- function(x, delta, mu, nu, sigma, log=FALSE){
     } else if(length(mu)==1){
       mu <- rep(mu, length(delta))
     } else{
-      stop("delta and mu are vectors of different lenghts")
+      stop("delta and mu are vectors of different lengths")
     }
   }
   if (length(mu) != length(nu)){
@@ -109,6 +109,7 @@ dgal <- function(x, delta, mu, nu, sigma, log=FALSE){
   if (min(nu) < 0)
     stop("vector nu must be  positive")
   n = length(x)
+
   if(n < length(delta)){
     delta_new = delta[1:n]
     mu_new = mu[1:n]
@@ -140,10 +141,23 @@ dgal <- function(x, delta, mu, nu, sigma, log=FALSE){
     sigma_new = sigma
   }
 
-  p_vec = nu_new - 0.5
-  a_vec = 2 * nu_new + (mu_new / sigma_new)^2
+  # p_vec = nu_new - 0.5
+  # a_vec = 2 * nu_new + (mu_new / sigma_new)^2
+  # dgig(x, p_vec, a_vec, b = 1e-14, log)
 
-  dgig(x, p_vec, a_vec, b = 1e-14, log)
+  densgal <- sapply(1:n, function(i){
+    l <- exp(nu_new[i] + mu_new[i] * (x[i] - delta_new[i]) /sigma_new[i]^2) *
+      sqrt(nu_new[i] * mu_new[i]^2/sigma_new[i]^2 + nu_new[i]^2) /
+      (pi * sqrt(nu_new[i] * sigma_new[i]^2 + (x[i] - delta_new[i])^2)) *
+      besselK(sqrt((nu_new[i] * sigma_new[i]^2 + (x[i] - delta_new[i])^2) *
+                     (mu_new[i]^2/sigma_new[i]^4 + nu_new[i]/sigma_new[i]^2)),
+              1,FALSE)
+
+    dens <- ifelse(log, log(l), l)
+    return(dens)
+  })
+
+  return(densgal)
 }
 
 #' @rdname gal

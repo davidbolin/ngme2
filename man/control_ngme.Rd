@@ -8,7 +8,7 @@ control_ngme(
   init_sample_W = TRUE,
   n_gibbs_samples = 5,
   fix_feff = FALSE,
-  post_samples_size = 100,
+  n_post_samples = 100,
   feff = NULL,
   debug = FALSE
 )
@@ -20,7 +20,7 @@ control_ngme(
 
 \item{fix_feff}{logical, fix fixed effect}
 
-\item{post_samples_size}{number of posterior samples}
+\item{n_post_samples}{number of posterior samples, see ?ngme_post_samples()}
 
 \item{feff}{fixed effect value}
 

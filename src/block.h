@@ -44,11 +44,11 @@ protected:
     string family;
 
     // Fixed effects and Measurement noise
-    VectorXd theta_mu, theta_sigma, nu, rho, beta;
+    VectorXd theta_mu, theta_sigma, theta_nu, rho, beta;
 
-    MatrixXd B_mu, B_sigma;
-    VectorXd noise_mu, noise_sigma;
-    int n_theta_mu, n_theta_sigma, n_nu, n_rho;
+    MatrixXd B_mu, B_sigma, B_nu;
+    VectorXd noise_mu, noise_sigma, noise_nu;
+    int n_theta_mu, n_theta_sigma, n_theta_nu, n_rho;
 
     int n_latent; // how mnay latent model
     int n_obs;  // how many observation

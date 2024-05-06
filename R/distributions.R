@@ -107,6 +107,14 @@ dgig <- function(x, p, a ,b, log=FALSE){
   }
 
   densgig <- sapply(1:n, function(i){
+    if (b_new[i] == 0) {
+      return (dgamma(x[i], shape = p_new[i], rate = a_new[i]/2, log = log))
+    }
+    if (a_new[i] == 0) {
+      return (digam(x[i], a =
+      -p_new[i], b = b_new[i]/2, log = log))
+    }
+
     if(x[i] <= 0){
       dens <- ifelse(log, -Inf,0)
       return(dens)
@@ -333,6 +341,13 @@ qgig <- function(prob, p, a, b, lower.tail = TRUE, log.p = FALSE){
     b_new <- b
   }
   quant_gig <- sapply(1:n, function(i){
+    if (b_new[i] == 0){
+      return (qgamma(prob[i], shape = p_new[i], rate = a_new[i]/2, lower.tail = lower.tail, log.p = log.p))
+    }
+    if (a_new[i] == 0){
+      return (qigam(prob[i], a = -p_new[i], b = b_new[i]/2, lower.tail = lower.tail, log.p = log.p))
+    }
+
     if(a_new[i]<1 & b_new[i]<1){
       up_bd <- max(1/a_new[i] * 1/b_new[i], 100)
     } else if (a[i]>=1){

@@ -50,10 +50,10 @@ library(ggplot2)
 
 # creating ar1 process
 n <- 500
-myar <- f(1:n, model="ar1", rho = .75, noise = noise_nig())
+myar <- ngme2::f(1:n, model="ar1", rho = .75, noise = noise_nig())
 
-W1 <- simulate(myar, seed = 314) # simulating one realization of the process
-W2 <- simulate(myar, seed = 159) # simulating another realization of the process
+W1 <- simulate(myar, seed = 314)[[1]] # simulating one realization of the process
+W2 <- simulate(myar, seed = 159)[[1]] # simulating another realization of the process
 
 # Creating the response variable from the process and adding measurement noise
 Y <- -3 + c(W1, W2) + rnorm(2 * n, sd = .2)
@@ -99,9 +99,9 @@ epsilon}$), for instance, consider the following little example
 to illustrate the last statement.
 
 ```{r}
-no.replicates <- f(1:6, model="ar1", rho = .5, noise = noise_normal())
+no.replicates <- ngme2::f(1:6, model="ar1", rho = .5, noise = noise_normal())
 
-replicates <- f(rep(1:3, 2),
+replicates <- ngme2::f(rep(1:3, 2),
   model = "ar1",
   rho = .5,
   noise = noise_normal(), replicate = rep(1:2, each = 3)

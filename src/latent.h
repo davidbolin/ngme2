@@ -73,20 +73,21 @@ protected:
     vector<SparseMatrix<double>> num_dK;
 
     // mu and sigma, and sigma_normal (special case when using nig_normal case)
-    MatrixXd B_mu, B_sigma, B_sigma_normal;
-    VectorXd theta_mu, theta_sigma, theta_sigma_normal;
+    MatrixXd B_mu, B_sigma, B_sigma_normal, B_nu;
+    VectorXd theta_mu, theta_sigma, theta_sigma_normal, theta_nu;
 
     // mu = Bmu * theta_mu
     // sigma = exp(Bsigma * theta_sigma)
-    VectorXd mu, sigma, sigma_normal;
-    int n_theta_mu, n_theta_sigma, n_nu, n_theta_sigma_normal;
+    // nu = exp(Bnu * theta_nu)
+    VectorXd mu, sigma, sigma_normal, nu;
+    int n_theta_mu, n_theta_sigma, n_theta_nu, n_theta_sigma_normal;
 
     // for numerical gradient.
-    VectorXd W, prevW, V, prevV, cond_W;
+    VectorXd W, prevW, cond_W, V, prevV;
     SparseMatrix<double,0,int> A;
 
     int dim {1}; // noise dimension
-    VectorXd p_vec, a_vec, b_vec, nu;
+    VectorXd p_vec, a_vec, b_vec;
     VectorXd p_inc, a_inc, b_inc;
     bool single_V {false}, share_V {false};
 

@@ -71,7 +71,14 @@ SparseMatrix<double, 0, int> cholesky_solver::return_Qinv()
 double cholesky_solver::trace_num(const SparseMatrix<double, 0, int> &M)
 {
   if (QU_computed==0){
-    U.setRandom(n,N);
+    // U.setRandom(n,N);
+    // The MatrixXd::Random() is complained by R CMD check
+    for (int i = 0; i < n; ++i) {
+      for (int j = 0; j < N; ++j) {
+        U(i, j) = R::runif(-1.0, 1.0);
+      }
+    }
+
     U = U.unaryExpr(std::ref(myround));
     for(int i=0; i<N; i++){
       QU.col(i) = R.solve(U.col(i));
@@ -335,7 +342,13 @@ double lu_sparse_solver::trace(const SparseMatrix<double, 0, int> &M)
 double lu_sparse_solver::trace_num(const SparseMatrix<double, 0, int> &M)
 {
   if (QU_computed==0) {
-    U.setRandom(n,N);
+    // U.setRandom(n,N);
+    for (int i = 0; i < n; ++i) {
+      for (int j = 0; j < N; ++j) {
+        U(i, j) = R::runif(-1.0, 1.0);
+      }
+    }
+
     U = U.unaryExpr(std::ref(myround));
     for(int i=0; i<N; i++){
       QU.col(i) = LU_K.solve(U.col(i));

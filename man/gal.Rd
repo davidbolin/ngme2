@@ -62,7 +62,7 @@ by
  \eqn{x>0}, \eqn{\nu>0} and \eqn{\mu,\delta, \sigma\in\mathbb{R}}.
  See Barndorff-Nielsen (1977, 1978 and 1997) for further details.
 
-If the mixing variable $V$ follows a Gamma distribution (same parameterization in R):
+If the mixing variable \eqn{V} follows a Gamma distribution (same parameterization in R):
 \deqn{V \sim \Gamma(h \nu, \nu),} then the poserior follows the GAL distribution (a special case of GIG distribution):
 \deqn{
 -\mu +\mu V + \sigma \sqrt{V} Z \sim GIG(h \nu - 0.5, 2 \nu + (\frac{\mu}{\sigma})^{2}, 0)

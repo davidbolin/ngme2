@@ -1,14 +1,14 @@
 Package: ngme2
 Type: Package
-Title: Latent Mixed Effects Models With Flexible Distributions
-Version: 0.5.0
+Title: Latent Mixed Effects Models with Flexible Distributions
+Version: 0.6.0
 Authors@R: c(
-    person("David", "Bolin", email = "davidbolin@gmail.com", role = c("aut", "cre")),
-    person("Xiaotian", "Jin", email = "jin.xiaotian.kim@gmail.com", role = "aut"),
+    person("David", "Bolin", email = "davidbolin@gmail.com", role = c("aut", "cph")),
+    person("Xiaotian", "Jin", email = "xiaotian.jin@kaust.edu.sa", role =c("aut", "cre")),
     person("Alexandre", "Simas", email = "alexandre.impa@gmail.com", role = "aut"),
     person("Jonas", "Wallin", email = "jonas.wallin81@gmail.com", role = "aut"))
-Maintainer: David Bolin <davidbolin@gmail.com>
-Description: Inference and prediction for mixed effects models with flexible non-Gaussian and Gaussian distributions.
+Maintainer: Xiaotian Jin <xiaotian.jin@kaust.edu.sa>
+Description: Inference and prediction for linear mixed effects models with flexible non-Gaussian and Gaussian distributions.
 License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true
@@ -37,17 +37,20 @@ Suggests:
     testthat (>= 3.0.0),
     xml2,
     splancs,
-    rgdal,
     lattice,
     viridis,
     rSPDE,
     tidyr,
     fields,
     lme4,
-    MetricGraph
+    plotly,
+    usethis,
+    devtools,
+    MetricGraph (>= 1.1.2)
 VignetteBuilder: knitr
 RoxygenNote: 7.2.3
 Config/testthat/edition: 3
-URL: https://davidbolin.github.io/ngme2/
+URL: https://davidbolin.github.io/ngme2/, https://github.com/davidbolin/ngme2
 Depends:
-    R (>= 2.10)
+    R (>= 3.50)
+BugReports: https://github.com/davidbolin/ngme2/issues

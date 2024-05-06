@@ -10,9 +10,11 @@ control_opt(
   iterations = 500,
   stepsize = 0.5,
   estimation = TRUE,
+  standardize_fixed = TRUE,
   stop_points = 10,
   iters_per_check = iterations/stop_points,
   n_parallel_chain = 2,
+  max_num_threads = n_parallel_chain,
   exchange_VW = TRUE,
   n_slope_check = 3,
   std_lim = 0.1,
@@ -24,7 +26,6 @@ control_opt(
   compute_precond_each_iter = FALSE,
   max_relative_step = 0.5,
   max_absolute_step = 0.5,
-  num_threads = c(n_parallel_chain, 1),
   reduce_var = FALSE,
   reduce_power = 0.75,
   threshold = 1e-05,
@@ -48,11 +49,16 @@ control_opt(
 
 \item{estimation}{run the estimation process (call C++ in backend)}
 
+\item{standardize_fixed}{whether or not standardize the fixed effect}
+
 \item{stop_points}{number of stop points for convergence check (or specify iters_per_check)}
 
 \item{iters_per_check}{run how many iterations between each check point (or specify stop_points)}
 
 \item{n_parallel_chain}{number of parallel chains}
+
+\item{max_num_threads}{maximum number of threads used for parallel computing, by default will be set same as n_parallel_chain.
+If it is more than n_parallel_chain, the rest will be used to parallel different replicates of the model.}
 
 \item{exchange_VW}{exchange last V and W in each chian}
 
@@ -77,9 +83,6 @@ control_opt(
 
 \item{max_absolute_step}{max absolute step allowed in 1 iteration}
 
-\item{num_threads}{maximum number of threads used in parallel computing, for example c(4, 5), which means we use 4 threads to parallize the chains, then use 5 threads to parallize different replicates in each chain
-Suggestion (num_parallel_chain, num_total_replicates)}
-
 \item{reduce_var}{logical, reduce variace}
 
 \item{reduce_power}{numerical the power of reduce level}
@@ -100,7 +103,7 @@ Suggestion (num_parallel_chain, num_total_replicates)}
 
 \item{sgd_method}{currently support c("vanilla", "momentum")}
 
-\item{sgd_parameter}{for momentum, provide c(beta1, beta2), in each iteration, the step is computed as m = bet1 * m (previous turn) + beta2 * gradient}
+\item{sgd_parameters}{for momentum, provide c(beta1, beta2), in each iteration, the step is computed as m = beta1 * m (previous turn) + beta2 * gradient}
 }
 \value{
 list of control variables

@@ -4,12 +4,12 @@
 \alias{simulate.ngme_noise}
 \title{Simulate ngme noise object}
 \usage{
-\method{simulate}{ngme_noise}(object, nsim = NULL, seed = NULL, h = NULL, ...)
+\method{simulate}{ngme_noise}(object, nsim = 1, seed = NULL, h = NULL, ...)
 }
 \arguments{
 \item{object}{ngme noise object}
 
-\item{nsim}{ignored}
+\item{nsim}{number of simulations}
 
 \item{seed}{seed}
 
@@ -18,7 +18,7 @@
 \item{...}{ignored}
 }
 \value{
-a realization of noise
+data.frame (each col is a realization)
 }
 \description{
 Simulate ngme noise object

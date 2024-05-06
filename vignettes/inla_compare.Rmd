@@ -49,6 +49,8 @@ spde <- inla.spde2.matern(mesh, alpha=2)
 A <- inla.spde.make.A(mesh, loc=mcycle$times)
 ind <- inla.spde.make.index("time", spde$n.spde)
 data <- list(accel = mcycle$accel, time = ind$time)
+
+# INLA
 result_inla <- inla(
   accel ~ -1 + f(time, model=spde),
   data = data,

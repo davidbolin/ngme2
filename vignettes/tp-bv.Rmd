@@ -1,0 +1,121 @@
+---
+title: "Space-time bivariate model in Ngme2"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Space-time bivariate model in Ngme2}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+This is a demonstration of using `ngme2` package to fit a space-time bivariate model.
+Before use this model, please make sure you are familiar with the space-time (tensor product) model and bivariate model separately
+(Please see [Ngme2 space-time model](tensor_product.html) and [Ngme2 bivariate model](bivariate.html) for more details).
+
+This model is a combination of the previous two, we use the bivariate model as the second part of the tensor product model.
+
+## Simulation
+
+```{r setup}
+library(ngme2)
+```
+
+First we specify the two indices for the space-time model. We have 20 time points and 40 mesh locations for space.
+
+```{r}
+time_len = 20
+half_bv_len = 50
+
+# specify indices for 2 parts
+time_idx = rep(1:time_len, each=half_bv_len*2)
+bv_idx = rep(c(1:half_bv_len,1:half_bv_len), time_len)
+
+# group to indicate two different fields for bivariate model
+group = rep(rep(c("f1", "f2"), each=half_bv_len),time_len)
+```
+
+Next, we specify the bivariate model using a list, here we consider a bivariate model with two AR(1) processes.
+
+```{r}
+bv_list <- list(
+  model="bv",
+  sub_models = list(
+    f1 = list(
+      model="ar1",
+      rho=0.5
+    ),
+    f2 = list(
+      model="ar1",
+      rho=-0.3
+    )
+  )
+)
+```
+
+Then we specify the full model using the `f` function, which is a tensor product model with the first part being an AR(1) process and the second part being the bivariate model.
+
+```{r}
+f_model <- f(
+  map=list(
+    time_idx,
+    bv_idx
+  ),
+  model="tp",
+  first = list(
+    model="ar1", rho=0.6
+  ),
+  second = bv_list,
+  group = group,
+  noise=noise_nig(
+    mu=-2,
+    sigma=1,
+    nu=2
+  )
+)
+
+# Simulate the latent fields
+W = simulate(f_model)[[1]]
+
+# Adding measurement noise
+Y = W + rnorm(length(W), sd=0.2)
+```
+
+## Estimation
+
+Now we turn to estimate the model using simulated data.
+
+```{r}
+bv_list_2 <- list(
+  model="bv",
+  sub_models = list(
+    f1 = list(
+      model="ar1"
+    ),
+    f2 = list(
+      model="ar1"
+    )
+  )
+)
+nn = length(Y)
+
+fit0 = ngme(
+  Y ~ 0 + f(1:nn, model="rw1") +
+    f(map=list(
+      time_idx, bv_idx
+    ),
+    model="tp",
+    first = list(model="ar1"),
+    second = bv_list_2,
+    noise=noise_nig()
+  ),
+  control_opt = control_opt(
+    iterations = 10
+  ),
+  data=data.frame(Y=Y),
+  group = group
+)
+fit0
+
+traceplot(fit0, "field1")
+```
+
+Here we can see, we get the simulated parameter correctly.

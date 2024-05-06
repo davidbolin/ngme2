@@ -8,7 +8,7 @@ test_that("test non-stat mu", {
     nu = 3
   ))
 
-  W <- simulate(ar)
+  W <- simulate(ar)[[1]]
   Y <- W + rnorm(n_obs, sd = 0.8)
 
   res <- ngme(

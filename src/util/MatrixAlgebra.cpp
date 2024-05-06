@@ -9,10 +9,12 @@ using namespace std;
 MatrixXd communicationMatrix(const int n, const int m)
 {
 	MatrixXd K(n * m, n * m);
-
+	int j;
 	K.setZero();
-	for (int i = 0; i < n * m; i++)
-		K(i, floor(i / m) + n * (i % m)) = 1;
+	for (int i = 0; i < n * m; i++){
+		j = floor(i / m) + n * (i % m);
+		K(i, j) = 1;
+	}
 
 	return K;
 }

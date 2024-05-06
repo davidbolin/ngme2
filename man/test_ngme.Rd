@@ -31,7 +31,15 @@ test_ngme(
 
 \item{n_replicate}{number of replicate}
 
+\item{control_opt}{control options for optimization, see \code{\link{control_opt}}}
+
 \item{numer_grad}{numerical gradient}
+
+\item{f_noise}{noise function}
+
+\item{n_gibbs_samples}{number of gibbs samples}
+
+\item{family}{family of noise}
 
 \item{max.n}{maximum number for building mesh}
 
@@ -39,18 +47,17 @@ test_ngme(
 
 \item{debug_f}{debug mode for latent process}
 
-\item{n_parallel_chain}{number of parallel chains}
+\item{start}{start value for optimization}
 
-\item{stop_points}{number of stop points for convergence check}
+\item{fix_theta_K}{fix theta_K}
 
-\item{preconditioner}{preconditioner, can be c("none", "fast", "full")
-"none" means no preconditioner, "fast" means precondition everything except for the parameter of K matrix (for speed reason), "full" means precondition everything}
+\item{fix_theta_mu}{fix theta_mu}
 
-\item{sampling_strategy}{subsampling method of replicates of model, c("all", "is")}
+\item{fix_theta_sigma}{fix theta_sigma}
 
-\item{precond_by_diff_chain}{logical, if TRUE, use different chains to estimate preconditioner (only computed at check points), if FALSE, use the same chain to estimate preconditioner (computed at each iteration)}
+\item{fix_nu}{fix nu}
 
-\item{compute_precond_each_iter}{logical, if TRUE, compute preconditioner at each iteration, if FALSE, only compute preconditioner at check points (if has only 1 chain running, it will be set TRUE)}
+\item{seed}{seed}
 }
 \description{
 Test ngme function for different models

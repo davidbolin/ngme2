@@ -40,7 +40,7 @@ MatrixXd Ngme::precond(int strategy, double eps) {
   if (sampling_strategy == Strategy::all) {
     #pragma omp parallel for schedule(static) reduction(mat_plus:precond) num_threads(num_threads_repl)
     for (int i=0; i < n_repl; i++) {
-      precond += ngme_repls[i]->precond(strategy, eps) / n_repl;
+      precond += (num_each_repl[i] / sum_num_each_repl) * ngme_repls[i]->precond(strategy, eps);
     }
   } else if (sampling_strategy == Strategy::ws) {
     // weighted sampling (WS) for each replicate
@@ -58,7 +58,7 @@ VectorXd Ngme::grad() {
   if (sampling_strategy == Strategy::all) {
     #pragma omp parallel for schedule(static) reduction(vec_plus:g) num_threads(num_threads_repl)
     for (int i=0; i < n_repl; i++) {
-      g +=  (num_each_repl[i] / sum_num_each_repl) * ngme_repls[i]->grad() / n_repl;
+      g += (num_each_repl[i] / sum_num_each_repl) * ngme_repls[i]->grad();
     }
   } else if (sampling_strategy == Strategy::ws) {
     // weighted sampling (WS) for each replicate

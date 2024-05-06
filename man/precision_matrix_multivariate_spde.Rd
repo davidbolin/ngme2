@@ -49,11 +49,11 @@ The general model is defined as $D diag(L_1, ..., L_p) x = M$. D is the dependen
 See the section 2.2 of Bolin and Wallin (2020) for exact parameterization of Dependence matrix.
 }
 \examples{
-library(INLA)
+library(fmesher)
 library(fields)
 # Define mesh
 x <- seq(from=0,to=1,length.out = 40)
-mesh <- inla.mesh.create(lattice = inla.mesh.lattice(x,x), extend = FALSE)
+mesh <-  fm_rcdt_2d_inla(lattice = fm_lattice_2d(x,x), extend = FALSE)
 # Set parameters
 p <- 3 #number of fields
 rho <- c(-0.5, 0.5,-0.25) #correlation parameters
@@ -64,8 +64,8 @@ alpha <- list(2,2,2) #smoothness parameters
 Q <- precision_matrix_multivariate_spde(p, mesh = mesh, rho = rho,
                                        alpha = alpha, theta_K_list = log_kappa,
                                        variance_list = variances)
-
-A <- as.vector(inla.spde.make.A(mesh,loc = matrix(c(0.5,0.5),1,2)))
+# Plot the cross covariances
+A <- as.vector(fm_basis(mesh,loc = matrix(c(0.5,0.5),1,2)))
 Sigma <- as.vector(solve(Q,c(A,rep(0,2*mesh$n))))
 r11 <- Sigma[1:mesh$n]
 r12 <- Sigma[(mesh$n+1):(2*mesh$n)]
@@ -76,18 +76,18 @@ r23 <- Sigma[(2*mesh$n+1):(3*mesh$n)]
 Sigma <- as.vector(solve(Q,v <- c(rep(0,2*mesh$n),A)))
 r33 <- Sigma[(2*mesh$n+1):(3*mesh$n)]
 
-proj <- inla.mesh.projector(mesh)
+proj <- fm_evaluator(mesh)
 
 par(mfrow=c(3,3))
-image.plot(inla.mesh.project(proj,r11), main = "Cov(X_1(s0),X_1(s)")
+image.plot(fm_evaluate(proj,r11), main = "Cov(X_1(s0),X_1(s)")
 plot.new()
 plot.new()
-image.plot(inla.mesh.project(proj,r12), main = "Cov(X_1(s0),X_2(s)")
-image.plot(inla.mesh.project(proj,r22), main = "Cov(X_2(s0),X_2(s)")
+image.plot(fm_evaluate(proj,r12), main = "Cov(X_1(s0),X_2(s)")
+image.plot(fm_evaluate(proj,r22), main = "Cov(X_2(s0),X_2(s)")
 plot.new()
-image.plot(inla.mesh.project(proj,r13), main = "Cov(X_1(s0),X_3(s)")
-image.plot(inla.mesh.project(proj,r23), main = "Cov(X_2(s0),X_3(s)")
-image.plot(inla.mesh.project(proj,r33), main = "Cov(X_3(s0),X_3(s)")
+image.plot(fm_evaluate(proj,r13), main = "Cov(X_1(s0),X_3(s)")
+image.plot(fm_evaluate(proj,r23), main = "Cov(X_2(s0),X_3(s)")
+image.plot(fm_evaluate(proj,r33), main = "Cov(X_3(s0),X_3(s)")
 }
 \references{
 Bolin, D. and Wallin, J. (2020), Multivariate type G Matérn stochastic partial differential equation random fields. J. R. Stat. Soc. B, 82: 215-239. https://doi.org/10.1111/rssb.12351

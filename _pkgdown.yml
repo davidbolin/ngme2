@@ -91,6 +91,15 @@ reference:
     - noise_nig
     - noise_normal
     - noise_normal_nig
+  - title: ngme2 optimization methods
+    contents:
+    - vanilla
+    - vanilla
+    - momentum
+    - adagrad
+    - rmsprop
+    - adam
+    - adamW
   - title: Prediction and Cross validation
     contents:
     - predict.ngme

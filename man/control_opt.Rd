@@ -8,7 +8,6 @@ control_opt(
   seed = Sys.time(),
   burnin = 100,
   iterations = 500,
-  stepsize = 0.5,
   estimation = TRUE,
   standardize_fixed = TRUE,
   stop_points = 10,
@@ -24,6 +23,7 @@ control_opt(
   precond_eps = 1e-05,
   precond_by_diff_chain = TRUE,
   compute_precond_each_iter = FALSE,
+  optimization_method = vanilla(),
   max_relative_step = 0.5,
   max_absolute_step = 0.5,
   reduce_var = FALSE,
@@ -32,10 +32,8 @@ control_opt(
   window_size = 1,
   rao_blackwellization = FALSE,
   n_trace_iter = 10,
-  verbose = FALSE,
   sampling_strategy = "all",
-  sgd_method = "vanilla",
-  sgd_parameters = NULL
+  verbose = FALSE
 )
 }
 \arguments{
@@ -44,8 +42,6 @@ control_opt(
 \item{burnin}{interations for burn-in periods (before optimization)}
 
 \item{iterations}{optimization iterations}
-
-\item{stepsize}{stepsize for each iteration}
 
 \item{estimation}{run the estimation process (call C++ in backend)}
 
@@ -95,11 +91,13 @@ If it is more than n_parallel_chain, the rest will be used to parallel different
 
 \item{n_trace_iter}{use how many iterations to approximate the trace (Hutchinson’s trick)}
 
-\item{verbose}{print estimation}
-
 \item{sampling_strategy}{subsampling method of replicates of model, c("all", "is")
 "all" means using all replicates in each iteration,
 "ws" means weighted sampling (each iteration use 1 replicate to compute the gradient, the sample probability is proption to its number of observations)}
+
+\item{verbose}{print estimation}
+
+\item{stepsize}{stepsize for each iteration}
 
 \item{sgd_method}{currently support c("vanilla", "momentum")}
 

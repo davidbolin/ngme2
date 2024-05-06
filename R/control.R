@@ -54,7 +54,6 @@ control_opt <- function(
   seed              = Sys.time(),
   burnin            = 100,
   iterations        = 500,
-  stepsize          = 0.5,
   estimation        = TRUE,
   standardize_fixed  = TRUE,
   stop_points       = 10,
@@ -74,6 +73,9 @@ control_opt <- function(
   precond_by_diff_chain = TRUE,
   compute_precond_each_iter = FALSE,
 
+  # stepsize          = 0.5,
+  optimization_method = vanilla(),
+
   max_relative_step = 0.5,
   max_absolute_step = 0.5,
 
@@ -85,12 +87,11 @@ control_opt <- function(
 
   rao_blackwellization = FALSE,
   n_trace_iter      = 10,
+  sampling_strategy = "all",
 
   # opt print
-  verbose           = FALSE,
-  sampling_strategy = "all",
-  sgd_method        = "vanilla",
-  sgd_parameters    = NULL
+  verbose           = FALSE
+
 ) {
   strategy_list <- c("all", "ws")
   preconditioner_list <- c("none", "fast", "full")
@@ -111,7 +112,7 @@ control_opt <- function(
     iterations > 0 && stop_points > 0,
     "iterations should be multiple of stop_points"
       = iterations %% stop_points == 0,
-    sgd_method %in% c("vanilla", "momentum")
+    inherits(optimization_method, "ngme_optimization")
   )
 
   if ((reduce_power <= 0.5) || (reduce_power > 1)) {
@@ -123,30 +124,10 @@ control_opt <- function(
     precond_by_diff_chain <- FALSE
   }
 
-  if (sgd_method=="adam") {
-    if (is.null(sgd_parameters)) {
-      sgd_parameters <- c(
-        beta1 = 1 - 0.95,
-        beta2 = 1 - 0.999,
-        epsilon = 1e-8
-      )
-    stopifnot(length(sgd_parameters) == 2)
-    }
-  } else if (sgd_method=="momentum") {
-    if (is.null(sgd_parameters)) {
-      sgd_parameters <- c(
-        beta1 = 0.1,
-        beta2 = 1
-      )
-    }
-    stopifnot(length(sgd_parameters) == 2)
-  }
-
   control <- list(
     seed              = seed,
     burnin            = burnin,
     iterations        = iterations,
-    stepsize          = stepsize,
     estimation        = estimation,
     standardize_fixed  = standardize_fixed,
 
@@ -180,8 +161,11 @@ control_opt <- function(
     compute_precond_each_iter = compute_precond_each_iter,
     precond_strategy  = which(preconditioner_list == preconditioner) - 1, # start from 0
     sampling_strategy = which(strategy_list == sampling_strategy) - 1, # start from 0,
-    sgd_method        = sgd_method,
-    sgd_parameters    = sgd_parameters
+
+    # optimization method related 
+    stepsize          = optimization_method$stepsize,
+    sgd_method        = optimization_method$method,
+    sgd_parameters    = optimization_method$sgd_parameters
   )
 
   class(control) <- "control_opt"

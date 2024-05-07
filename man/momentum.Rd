@@ -4,7 +4,7 @@
 \alias{momentum}
 \title{Momentum SGD optimization}
 \usage{
-momentum(stepsize = 0.5, beta1 = 0.9, beta2 = 1 - beta1)
+momentum(stepsize = 0.05, beta1 = 0.9, beta2 = 1 - beta1)
 }
 \arguments{
 \item{stepsize}{stepsize for SGD}
@@ -22,6 +22,6 @@ Momentum SGD optimization
 }
 \details{
 The update rule for momentum is:
- v_t = beta1 * v_{t-1} + beta2 * g_t
- x_{t+1} = x_t - stepsize * v_t
+\deqn{v_t = \beta_1 v_{t-1} + \beta_2 g_t}
+\deqn{x_{t+1} = x_t - \text{stepsize} * v_t}
 }

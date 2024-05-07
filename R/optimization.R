@@ -22,7 +22,7 @@ vanilla <- function(
     stepsize       = stepsize,
     sgd_parameters = NULL
   )
-  class(ret) <- "ngme_optimization"
+  class(ret) <- "ngme_optimizer"
   ret
 }
 
@@ -30,8 +30,8 @@ vanilla <- function(
 #'
 #' @details
 #' The update rule for momentum is:
-#'  v_t = beta1 * v_{t-1} + beta2 * g_t
-#'  x_{t+1} = x_t - stepsize * v_t
+#' \deqn{v_t = \beta_1 v_{t-1} + \beta_2 g_t}
+#' \deqn{x_{t+1} = x_t - \text{stepsize} * v_t}
 #'
 #' @param stepsize stepsize for SGD
 #' @param beta1 beta1 for momentum
@@ -41,7 +41,7 @@ vanilla <- function(
 #' (used in \code{control_opt} function)
 #' @export
 momentum <- function(
-  stepsize = 0.5,
+  stepsize = 0.05,
   beta1 = 0.9,
   beta2 = 1 - beta1
 ) {
@@ -50,7 +50,7 @@ momentum <- function(
     stepsize       = stepsize,
     sgd_parameters = c(beta1, beta2)
   )
-  class(ret) <- "ngme_optimization"
+  class(ret) <- "ngme_optimizer"
   ret
 }
 
@@ -59,8 +59,8 @@ momentum <- function(
 #'
 #' @details
 #' The update rule for AdaGrad is:
-#'  v_t = v_{t-1} + g_t^2
-#'  x_{t+1} = x_t - stepsize * g_t / (sqrt(v_t) + epsilon)
+#' \deqn{v_t = v_{t-1} + g_t^2}
+#' \deqn{x_{t+1} = x_t - \text{stepsize} * \frac{g_t}{\sqrt{v_t} + \epsilon}}
 #'
 #' @param stepsize stepsize for SGD
 #' @param epsilon epsilon for numerical stability
@@ -69,7 +69,7 @@ momentum <- function(
 #' (used in \code{control_opt} function)
 #' @export
 adagrad <- function(
-  stepsize = 0.5,
+  stepsize = 0.05,
   epsilon = 1e-8
 ) {
   ret <- list(
@@ -77,7 +77,7 @@ adagrad <- function(
     stepsize       = stepsize,
     sgd_parameters = epsilon
   )
-  class(ret) <- "ngme_optimization"
+  class(ret) <- "ngme_optimizer"
   ret
 }
 
@@ -86,8 +86,8 @@ adagrad <- function(
 #'
 #' @details
 #' The update rule for RMSProp is:
-#'  v_t = beta1 * v_{t-1} + (1-beta1) * g_t^2
-#'  x_{t+1} = x_t - stepsize * g_t / (sqrt(v_t) + epsilon)
+#' \deqn{v_t = \beta_1 v_{t-1} + (1 - \beta_1) g_t^2}
+#' \deqn{x_{t+1} = x_t - \text{stepsize} * \frac{g_t}{\sqrt{v_t} + \epsilon}}
 #'
 #' @param stepsize stepsize for SGD
 #' @param beta1 beta1 for momentum
@@ -97,7 +97,7 @@ adagrad <- function(
 #' (used in \code{control_opt} function)
 #' @export
 rmsprop <- function(
-  stepsize = 0.1,
+  stepsize = 0.05,
   beta1 = 0.9,
   epsilon = 1e-8
 ) {
@@ -106,7 +106,7 @@ rmsprop <- function(
     stepsize       = stepsize,
     sgd_parameters = c(beta1, epsilon)
   )
-  class(ret) <- "ngme_optimization"
+  class(ret) <- "ngme_optimizer"
   ret
 }
 
@@ -114,11 +114,11 @@ rmsprop <- function(
 #'
 #' @details
 #' The update rule for Adam is:
-#'  m_t = beta1 * m_{t-1} + (1 - beta1) * g_t
-#'  v_t = beta2 * v_{t-1} + (1 - beta2) * g_t^2
-#'  m_t_hat = m_t / (1 - beta1^t)
-#'  v_t_hat = v_t / (1 - beta2^t)
-#'  x_{t+1} = x_t - stepsize * m_t_hat / (sqrt(v_t_hat) + epsilon)
+#' \deqn{m_t = \beta_1 m_{t-1} + (1 - \beta_1) g_t}
+#' \deqn{v_t = \beta_2 v_{t-1} + (1 - \beta_2) g_t^2}
+#' \deqn{\hat{m_t} = m_t / (1 - \beta_1^t)}
+#' \deqn{\hat{v_t} = v_t / (1 - \beta_2^t)}
+#' \deqn{x_{t+1} = x_t - \text{stepsize} * \frac{\hat{m_t}}{\sqrt{\hat{v_t}} + \epsilon}}
 #' 
 #' @param stepsize stepsize for SGD
 #' @param beta1 beta1 for Adam
@@ -129,7 +129,7 @@ rmsprop <- function(
 #' (used in \code{control_opt} function)
 #' @export
 adam <- function(
-  stepsize = 0.1,
+  stepsize = 0.05,
   beta1 = 0.9,
   beta2 = 0.999,
   epsilon = 1e-8
@@ -139,7 +139,7 @@ adam <- function(
     stepsize       = stepsize,
     sgd_parameters = c(beta1, beta2, epsilon)
   )
-  class(ret) <- "ngme_optimization"
+  class(ret) <- "ngme_optimizer"
   ret
 }
 
@@ -147,11 +147,11 @@ adam <- function(
 #'
 #' @details
 #' The update rule for AdamW is:
-#'  m_t = beta1 * m_{t-1} + (1 - beta1) * g_t
-#'  v_t = beta2 * v_{t-1} + (1 - beta2) * g_t^2
-#'  m_t_hat = m_t / (1 - beta1^t)
-#'  v_t_hat = v_t / (1 - beta2^t)
-#'  x_{t+1} = x_t - stepsize * (lambda * x_t + m_t_hat / (sqrt(v_t_hat) + epsilon))
+#' \deqn{m_t = \beta_1 m_{t-1} + (1 - \beta_1) g_t}
+#' \deqn{v_t = \beta_2 v_{t-1} + (1 - \beta_2) g_t^2}
+#' \deqn{\hat{m_t} = m_t / (1 - \beta_1^t)}
+#' \deqn{\hat{v_t} = v_t / (1 - \beta_2^t)}
+#' \deqn{x_{t+1} = x_t - \text{stepsize} * \left( \lambda x_t + \frac{\hat{m_t}}{\sqrt{\hat{v_t}} + \epsilon} \right)}
 #'
 #' @param stepsize stepsize for SGD
 #' @param beta1 beta1 for AdamW
@@ -163,7 +163,7 @@ adam <- function(
 #' (used in \code{control_opt} function)
 #' @export
 adamW <- function(
-  stepsize = 0.1,
+  stepsize = 0.05,
   beta1 = 0.9,
   beta2 = 0.999,
   lambda = 0.01,
@@ -174,6 +174,6 @@ adamW <- function(
     stepsize       = stepsize,
     sgd_parameters = c(beta1, beta2, lambda, epsilon)
   )
-  class(ret) <- "ngme_optimization"
+  class(ret) <- "ngme_optimizer"
   ret
 }

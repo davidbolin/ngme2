@@ -183,7 +183,7 @@ tp <- function(
 #'
 #' @return a list of specification of model
 #' @export
-bv2 <- function(
+bv_normal <- function(
   mesh,
   sub_models,
   rho = 0,
@@ -250,7 +250,7 @@ bv2 <- function(
 
   ngme_operator(
     mesh        = mesh,
-    model       = "bv2",
+    model       = "bv_normal",
     first        = first,
     second      = second,
     theta_K     = theta_K,

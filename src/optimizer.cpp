@@ -22,7 +22,10 @@ Ngme_optimizer::Ngme_optimizer(
     v(VectorXd::Zero(ngme->get_n_params())),
     preconditioner(ngme->precond(0, precond_eps))
 {
-    sgd_parameters = (Rcpp::as<VectorXd>(control_opt["sgd_parameters"]));
+    if (method != "vanilla") {
+        sgd_parameters = (Rcpp::as<VectorXd>(control_opt["sgd_parameters"]));
+    }
+
     if (method =="momentum") {
         beta1 = sgd_parameters(0);
         beta2 = sgd_parameters(1);

@@ -107,9 +107,14 @@ ngme_out <- ngme(
     stop_points = 20,
     print_check_info = FALSE,
     verbose = FALSE,
+    preconditioner = "none",
     seed = 3,
-    preconditioner = "fast",
-    precond_by_diff_chain = TRUE,
+    optimizer = adam(
+      beta1=0.9,
+      beta2=0.999
+    ),
+    # preconditioner = "fast",
+    # precond_by_diff_chain = TRUE,
     precond_eps = 1e-5
   )
 )

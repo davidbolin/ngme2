@@ -13,7 +13,6 @@
 #' @param seed  set the seed for pesudo random number generator
 #' @param burnin          interations for burn-in periods (before optimization)
 #' @param iterations      optimization iterations
-#' @param stepsize        stepsize for each iteration
 #' @param estimation      run the estimation process (call C++ in backend)
 #' @param standardize_fixed  whether or not standardize the fixed effect
 #'
@@ -25,6 +24,11 @@
 #' @param std_lim         maximum allowed standard deviation
 #' @param trend_lim       maximum allowed slope
 #' @param print_check_info print the convergence information
+#' @param optimizer choose different sgd optimization method, 
+#' currently support "vanilla", "momentum", "adagrad", "rmsprop", "adam", "adamW"
+#' see ?vanilla, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW
+#'
+#'
 #' @param preconditioner  preconditioner, can be c("none", "fast", "full")
 #' "none" means no preconditioner, "fast" means precondition everything except for the parameter of K matrix (for speed reason), "full" means precondition everything
 #' @param precond_eps   numerical, the gap used for estimate preconditioner, default is 1e-5
@@ -47,8 +51,6 @@
 #' @param sampling_strategy subsampling method of replicates of model, c("all", "is")
 #' "all" means using all replicates in each iteration,
 #' "ws" means weighted sampling (each iteration use 1 replicate to compute the gradient, the sample probability is proption to its number of observations)
-#' @param sgd_method currently support c("vanilla", "momentum")
-#' @param sgd_parameters for momentum, provide c(beta1, beta2), in each iteration, the step is computed as m = beta1 * m (previous turn) + beta2 * gradient
 #' @return list of control variables
 #' @export
 control_opt <- function(
@@ -61,7 +63,7 @@ control_opt <- function(
   iters_per_check   = iterations / stop_points,
 
   # parallel options
-  n_parallel_chain  = 2,
+  n_parallel_chain  = 4,
   max_num_threads   = n_parallel_chain,
 
   exchange_VW       = TRUE,
@@ -69,13 +71,14 @@ control_opt <- function(
   std_lim           = 0.1,
   trend_lim         = 0.01,
   print_check_info  = FALSE,
-  preconditioner    = "fast",
+
+  # preconditioner related
+  preconditioner    = "none",
   precond_eps       = 1e-5,
-  precond_by_diff_chain = TRUE,
+  precond_by_diff_chain = FALSE,
   compute_precond_each_iter = FALSE,
 
-  # stepsize          = 0.5,
-  optimization_method = vanilla(),
+  optimizer = adamW(),
 
   max_relative_step = 0.5,
   max_absolute_step = 0.5,
@@ -92,7 +95,6 @@ control_opt <- function(
 
   # opt print
   verbose           = FALSE
-
 ) {
   strategy_list <- c("all", "ws")
   preconditioner_list <- c("none", "fast", "full")
@@ -113,7 +115,7 @@ control_opt <- function(
     iterations > 0 && stop_points > 0,
     "iterations should be multiple of stop_points"
       = iterations %% stop_points == 0,
-    inherits(optimization_method, "ngme_optimization")
+    inherits(optimizer, "ngme_optimizer")
   )
 
   if ((reduce_power <= 0.5) || (reduce_power > 1)) {
@@ -164,9 +166,9 @@ control_opt <- function(
     sampling_strategy = which(strategy_list == sampling_strategy) - 1, # start from 0,
 
     # optimization method related 
-    stepsize          = optimization_method$stepsize,
-    sgd_method        = optimization_method$method,
-    sgd_parameters    = optimization_method$sgd_parameters
+    stepsize          = optimizer$stepsize,
+    sgd_method        = optimizer$method,
+    sgd_parameters    = optimizer$sgd_parameters
   )
 
   class(control) <- "control_opt"

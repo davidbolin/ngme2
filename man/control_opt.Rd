@@ -12,18 +12,18 @@ control_opt(
   standardize_fixed = TRUE,
   stop_points = 10,
   iters_per_check = iterations/stop_points,
-  n_parallel_chain = 2,
+  n_parallel_chain = 4,
   max_num_threads = n_parallel_chain,
   exchange_VW = TRUE,
   n_slope_check = 3,
   std_lim = 0.1,
   trend_lim = 0.01,
   print_check_info = FALSE,
-  preconditioner = "fast",
+  preconditioner = "none",
   precond_eps = 1e-05,
-  precond_by_diff_chain = TRUE,
+  precond_by_diff_chain = FALSE,
   compute_precond_each_iter = FALSE,
-  optimization_method = vanilla(),
+  optimizer = adamW(),
   max_relative_step = 0.5,
   max_absolute_step = 0.5,
   reduce_var = FALSE,
@@ -75,6 +75,10 @@ If it is more than n_parallel_chain, the rest will be used to parallel different
 
 \item{compute_precond_each_iter}{logical, if TRUE, compute preconditioner at each iteration, if FALSE, only compute preconditioner at check points (if has only 1 chain running, it will be set TRUE)}
 
+\item{optimizer}{choose different sgd optimization method, 
+currently support "vanilla", "momentum", "adagrad", "rmsprop", "adam", "adamW"
+see ?vanilla, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW}
+
 \item{max_relative_step}{max relative step allowed in 1 iteration}
 
 \item{max_absolute_step}{max absolute step allowed in 1 iteration}
@@ -96,12 +100,6 @@ If it is more than n_parallel_chain, the rest will be used to parallel different
 "ws" means weighted sampling (each iteration use 1 replicate to compute the gradient, the sample probability is proption to its number of observations)}
 
 \item{verbose}{print estimation}
-
-\item{stepsize}{stepsize for each iteration}
-
-\item{sgd_method}{currently support c("vanilla", "momentum")}
-
-\item{sgd_parameters}{for momentum, provide c(beta1, beta2), in each iteration, the step is computed as m = beta1 * m (previous turn) + beta2 * gradient}
 }
 \value{
 list of control variables

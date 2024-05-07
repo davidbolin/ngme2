@@ -23,7 +23,7 @@ control_opt(
   precond_eps = 1e-05,
   precond_by_diff_chain = FALSE,
   compute_precond_each_iter = FALSE,
-  optimization_method = adamW(),
+  optimizer = adamW(),
   max_relative_step = 0.5,
   max_absolute_step = 0.5,
   reduce_var = FALSE,
@@ -75,7 +75,7 @@ If it is more than n_parallel_chain, the rest will be used to parallel different
 
 \item{compute_precond_each_iter}{logical, if TRUE, compute preconditioner at each iteration, if FALSE, only compute preconditioner at check points (if has only 1 chain running, it will be set TRUE)}
 
-\item{optimization_method}{choose different sgd optimization method, 
+\item{optimizer}{choose different sgd optimization method, 
 currently support "vanilla", "momentum", "adagrad", "rmsprop", "adam", "adamW"
 see ?vanilla, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW}
 
@@ -100,10 +100,6 @@ see ?vanilla, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW}
 "ws" means weighted sampling (each iteration use 1 replicate to compute the gradient, the sample probability is proption to its number of observations)}
 
 \item{verbose}{print estimation}
-
-\item{sgd_method}{currently support c("vanilla", "momentum")}
-
-\item{sgd_parameters}{for momentum, provide c(beta1, beta2), in each iteration, the step is computed as m = beta1 * m (previous turn) + beta2 * gradient}
 }
 \value{
 list of control variables

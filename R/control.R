@@ -24,7 +24,7 @@
 #' @param std_lim         maximum allowed standard deviation
 #' @param trend_lim       maximum allowed slope
 #' @param print_check_info print the convergence information
-#' @param optimization_method choose different sgd optimization method, 
+#' @param optimizer choose different sgd optimization method, 
 #' currently support "vanilla", "momentum", "adagrad", "rmsprop", "adam", "adamW"
 #' see ?vanilla, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW
 #'
@@ -51,8 +51,6 @@
 #' @param sampling_strategy subsampling method of replicates of model, c("all", "is")
 #' "all" means using all replicates in each iteration,
 #' "ws" means weighted sampling (each iteration use 1 replicate to compute the gradient, the sample probability is proption to its number of observations)
-#' @param sgd_method currently support c("vanilla", "momentum")
-#' @param sgd_parameters for momentum, provide c(beta1, beta2), in each iteration, the step is computed as m = beta1 * m (previous turn) + beta2 * gradient
 #' @return list of control variables
 #' @export
 control_opt <- function(
@@ -80,7 +78,7 @@ control_opt <- function(
   precond_by_diff_chain = FALSE,
   compute_precond_each_iter = FALSE,
 
-  optimization_method = adamW(),
+  optimizer = adamW(),
 
   max_relative_step = 0.5,
   max_absolute_step = 0.5,
@@ -117,7 +115,7 @@ control_opt <- function(
     iterations > 0 && stop_points > 0,
     "iterations should be multiple of stop_points"
       = iterations %% stop_points == 0,
-    inherits(optimization_method, "ngme_optimization")
+    inherits(optimizer, "ngme_optimizer")
   )
 
   if ((reduce_power <= 0.5) || (reduce_power > 1)) {
@@ -168,9 +166,9 @@ control_opt <- function(
     sampling_strategy = which(strategy_list == sampling_strategy) - 1, # start from 0,
 
     # optimization method related 
-    stepsize          = optimization_method$stepsize,
-    sgd_method        = optimization_method$method,
-    sgd_parameters    = optimization_method$sgd_parameters
+    stepsize          = optimizer$stepsize,
+    sgd_method        = optimizer$method,
+    sgd_parameters    = optimizer$sgd_parameters
   )
 
   class(control) <- "control_opt"

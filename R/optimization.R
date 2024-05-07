@@ -22,7 +22,7 @@ vanilla <- function(
     stepsize       = stepsize,
     sgd_parameters = NULL
   )
-  class(ret) <- "ngme_optimization"
+  class(ret) <- "ngme_optimizer"
   ret
 }
 
@@ -50,7 +50,7 @@ momentum <- function(
     stepsize       = stepsize,
     sgd_parameters = c(beta1, beta2)
   )
-  class(ret) <- "ngme_optimization"
+  class(ret) <- "ngme_optimizer"
   ret
 }
 
@@ -77,7 +77,7 @@ adagrad <- function(
     stepsize       = stepsize,
     sgd_parameters = epsilon
   )
-  class(ret) <- "ngme_optimization"
+  class(ret) <- "ngme_optimizer"
   ret
 }
 
@@ -106,7 +106,7 @@ rmsprop <- function(
     stepsize       = stepsize,
     sgd_parameters = c(beta1, epsilon)
   )
-  class(ret) <- "ngme_optimization"
+  class(ret) <- "ngme_optimizer"
   ret
 }
 
@@ -139,7 +139,7 @@ adam <- function(
     stepsize       = stepsize,
     sgd_parameters = c(beta1, beta2, epsilon)
   )
-  class(ret) <- "ngme_optimization"
+  class(ret) <- "ngme_optimizer"
   ret
 }
 
@@ -174,6 +174,6 @@ adamW <- function(
     stepsize       = stepsize,
     sgd_parameters = c(beta1, beta2, lambda, epsilon)
   )
-  class(ret) <- "ngme_optimization"
+  class(ret) <- "ngme_optimizer"
   ret
 }

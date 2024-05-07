@@ -269,7 +269,7 @@ out <- ngme(
   control_opt = control_opt(
     exchange_VW = FALSE,
     n_parallel_chain = 4,
-    optimization_method = adamW(
+    optimizer = adamW(
       stepsize = 0.01
     ),
     iterations = 5000,

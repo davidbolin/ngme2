@@ -109,7 +109,7 @@ ngme_out <- ngme(
     verbose = FALSE,
     preconditioner = "none",
     seed = 3,
-    optimization_method = adam(
+    optimizer = adam(
       beta1=0.9,
       beta2=0.999
     ),

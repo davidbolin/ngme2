@@ -392,13 +392,13 @@ examples (both 1d and 2d cases):</p>
 <span><span class="co"># K matrix for the matern model in this case</span></span>
 <span><span class="va">m1</span><span class="op">$</span><span class="va">K</span></span>
 <span><span class="co">#&gt; 6 x 6 sparse Matrix of class "dgCMatrix"</span></span>
-<span><span class="co">#&gt;                                                                       </span></span>
-<span><span class="co">#&gt; [1,]  1.3333333 -0.8333333  .          .          .          .        </span></span>
-<span><span class="co">#&gt; [2,] -0.8333333  2.6666667 -0.8333333  .          .          .        </span></span>
-<span><span class="co">#&gt; [3,]  .         -0.8333333  2.6666667 -0.8333333  .          .        </span></span>
-<span><span class="co">#&gt; [4,]  .          .         -0.8333333  2.6666667 -0.8333333  .        </span></span>
-<span><span class="co">#&gt; [5,]  .          .          .         -0.8333333  2.6666667 -0.8333333</span></span>
-<span><span class="co">#&gt; [6,]  .          .          .          .         -0.8333333  1.3333333</span></span></code></pre></div>
+<span><span class="co">#&gt;                           </span></span>
+<span><span class="co">#&gt; [1,]  1.5 -1  .  .  .  .  </span></span>
+<span><span class="co">#&gt; [2,] -1.0  3 -1  .  .  .  </span></span>
+<span><span class="co">#&gt; [3,]  .   -1  3 -1  .  .  </span></span>
+<span><span class="co">#&gt; [4,]  .    . -1  3 -1  .  </span></span>
+<span><span class="co">#&gt; [5,]  .    .  . -1  3 -1.0</span></span>
+<span><span class="co">#&gt; [6,]  .    .  .  . -1  1.5</span></span></code></pre></div>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># 2d example</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">argo_float</span><span class="op">)</span></span>
@@ -479,22 +479,22 @@ First we explore the how the data look like:</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt; (Intercept)         sal </span></span>
-<span><span class="co">#&gt;     0.00747     7.27674 </span></span>
+<span><span class="co">#&gt;     -0.0442      7.7935 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $field1</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
-<span><span class="co">#&gt;       kappa = 0.79</span></span>
+<span><span class="co">#&gt;       kappa = 1.11</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 1.36</span></span>
+<span><span class="co">#&gt;       sigma = 2.1</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -0.064</span></span>
-<span><span class="co">#&gt;       sigma = 0.488</span></span>
-<span><span class="co">#&gt;       nu = 0.399</span></span>
+<span><span class="co">#&gt;       mu = -0.0301</span></span>
+<span><span class="co">#&gt;       sigma = 0.492</span></span>
+<span><span class="co">#&gt;       nu = 0.113</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre></div>

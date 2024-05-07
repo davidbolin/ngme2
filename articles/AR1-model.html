@@ -248,9 +248,14 @@ optioins.</p>
 <span>    stop_points <span class="op">=</span> <span class="fl">20</span>,</span>
 <span>    print_check_info <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>    verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>    preconditioner <span class="op">=</span> <span class="st">"none"</span>,</span>
 <span>    seed <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>    preconditioner <span class="op">=</span> <span class="st">"fast"</span>,</span>
-<span>    precond_by_diff_chain <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>    optimizer <span class="op">=</span> <span class="fu"><a href="../reference/adam.html">adam</a></span><span class="op">(</span></span>
+<span>      beta1<span class="op">=</span><span class="fl">0.9</span>,</span>
+<span>      beta2<span class="op">=</span><span class="fl">0.999</span></span>
+<span>    <span class="op">)</span>,</span>
+<span>    <span class="co"># preconditioner = "fast",</span></span>
+<span>    <span class="co"># precond_by_diff_chain = TRUE,</span></span>
 <span>    precond_eps <span class="op">=</span> <span class="fl">1e-5</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
@@ -266,22 +271,22 @@ optioins.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt;    x1    x2 </span></span>
-<span><span class="co">#&gt; -1.65  2.13 </span></span>
+<span><span class="co">#&gt; -1.24  2.23 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $my_ar</span></span>
 <span><span class="co">#&gt;   Model type: AR(1)</span></span>
-<span><span class="co">#&gt;       rho = 0.461</span></span>
+<span><span class="co">#&gt;       rho = 0.466</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -2.61</span></span>
-<span><span class="co">#&gt;       sigma = 4.12</span></span>
-<span><span class="co">#&gt;       nu = 0.35</span></span>
+<span><span class="co">#&gt;       mu = -2.68</span></span>
+<span><span class="co">#&gt;       sigma = 4.21</span></span>
+<span><span class="co">#&gt;       nu = 0.319</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 1.97</span></span>
+<span><span class="co">#&gt;       sigma = 2.05</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span>

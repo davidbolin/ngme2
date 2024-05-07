@@ -269,10 +269,8 @@ out <- ngme(
   control_opt = control_opt(
     exchange_VW = FALSE,
     n_parallel_chain = 4,
-    optimizer = adamW(
-      stepsize = 0.01
-    ),
-    iterations = 5000,
+    optimizer = adam(stepsize = 0.01),
+    iterations = 10000,
     preconditioner = "none",
     rao_blackwellization = TRUE,
     precond_by_diff_chain = FALSE,
@@ -284,7 +282,7 @@ out
 # comparing with simulated value
 traceplot(
   out, "bv",
-  hline=c(5, 0.6, -0.4, 3, 1)
+  hline=c(5, 0.6, -0.4, 3, 2)
 )
 traceplot(out, hline=c(1, 0.7, -3, 1.5))
 ```

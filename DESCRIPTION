@@ -47,6 +47,7 @@ Suggests:
     usethis,
     devtools,
     MetricGraph (>= 1.1.2)
+Additional_repositories: https://inla.r-inla-download.org/R/testing
 VignetteBuilder: knitr
 RoxygenNote: 7.2.3
 Config/testthat/edition: 3

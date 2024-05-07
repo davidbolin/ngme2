@@ -6,8 +6,13 @@
 
 for an introduction to the package.
 
-The development version can be installed using the command
+The development version of `ngme2` can be installed using the command
 
 ```r
 remotes::install_github("davidbolin/ngme2", ref = "devel")
+```
+
+The stable version of `ngme2` can be installed using the command:
+```r
+install.packages("ngme2", repos = "https://davidbolin.github.io/ngme2/")
 ```

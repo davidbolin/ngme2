@@ -178,23 +178,25 @@ control_opt <- function(
 #' Generate control specifications for \code{f} function
 #'
 #' @param numer_grad    whether to use numerical gradient
-#' @param use_num_hess  whether to use numerical hessian
+#' @param improve_hessian  improve numerical hessian by using central difference estimation (O(eps^2) error)
+#' default is forward difference estimation (O(eps) error)
+#'
 #' @param eps           eps for computing numerical gradient
 #'
 #' @return list of control variables
 #' @export
 control_f <- function(
-  numer_grad    = TRUE,
-  use_num_hess  = TRUE,
-  eps           = 0.001
+  numer_grad       = TRUE,
+  improve_hessian  = TRUE,
+  eps              = 0.0001
   # use_iter_solver = FALSE
   ) {
 
   control <- list(
-    numer_grad    = numer_grad,
-    use_num_hess  = use_num_hess,
-    eps           = eps,
-    use_iter_solver = FALSE
+    numer_grad       = numer_grad,
+    improve_hessian  = improve_hessian,
+    eps              = eps,
+    use_iter_solver  = FALSE
   )
 
   class(control) <- "control_f"

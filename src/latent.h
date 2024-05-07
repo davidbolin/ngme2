@@ -68,6 +68,7 @@ protected:
 
     bool fix_flag[LATENT_FIX_FLAG_SIZE] {0};
     bool numer_grad {false};
+    bool improve_hessian {false};
 
     vector<std::shared_ptr<Operator>> ope_add_eps;
     vector<SparseMatrix<double>> num_dK;

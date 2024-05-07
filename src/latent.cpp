@@ -47,6 +47,7 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
     // read the control variable
     Rcpp::List control_f = Rcpp::as<Rcpp::List> (model_list["control"]);
         numer_grad      = Rcpp::as<bool>        (control_f["numer_grad"]) ;
+        improve_hessian = Rcpp::as<bool>        (control_f["improve_hessian"]) ;
         eps             = Rcpp::as<double>      (control_f["eps"]) ;
 
     // construct from ngme_noise
@@ -597,8 +598,7 @@ MatrixXd Latent::precond(bool precond_K, double eps) {
     MatrixXd num_hess_no_nu = VectorXd::Constant(n, 1.0).asDiagonal();
 
 // which version of hessian to compute
-bool central_diff = true;
-if (!central_diff) {
+if (!improve_hessian) {
 // Forward difference (error is O(eps)
     // compute f_v = log_density(v + precond_eps * e_i)
     double original_val = log_density(v, precond_K);
@@ -697,7 +697,7 @@ if (!central_diff) {
         // precond_full.bottomRightCorner(n_theta_nu, n_theta_nu) = NoiseUtil::precond(precond_eps, noise_type[0], prevV, h, B_nu, theta_nu, single_V);
     }
 
-std::cout << "print hessian: " << std::endl << precond_full << std::endl;
+// std::cout << "print hessian: " << std::endl << precond_full << std::endl;
     return precond_full;
 }
 

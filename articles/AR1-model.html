@@ -241,6 +241,7 @@ optioins.</p>
 <span>  <span class="op">)</span>,</span>
 <span>  data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x1<span class="op">=</span><span class="va">x1</span>, x2<span class="op">=</span><span class="va">x2</span>, Y<span class="op">=</span><span class="va">Y</span><span class="op">)</span>,</span>
 <span>  control_opt <span class="op">=</span> <span class="fu"><a href="../reference/control_opt.html">control_opt</a></span><span class="op">(</span></span>
+<span>    optimizer <span class="op">=</span> <span class="fu"><a href="../reference/vanilla.html">vanilla</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>    burnin <span class="op">=</span> <span class="fl">100</span>,</span>
 <span>    iterations <span class="op">=</span> <span class="fl">1000</span>,</span>
 <span>    std_lim <span class="op">=</span> <span class="fl">0.01</span>,</span>
@@ -250,10 +251,6 @@ optioins.</p>
 <span>    verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>    preconditioner <span class="op">=</span> <span class="st">"none"</span>,</span>
 <span>    seed <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>    optimizer <span class="op">=</span> <span class="fu"><a href="../reference/adam.html">adam</a></span><span class="op">(</span></span>
-<span>      beta1<span class="op">=</span><span class="fl">0.9</span>,</span>
-<span>      beta2<span class="op">=</span><span class="fl">0.999</span></span>
-<span>    <span class="op">)</span>,</span>
 <span>    <span class="co"># preconditioner = "fast",</span></span>
 <span>    <span class="co"># precond_by_diff_chain = TRUE,</span></span>
 <span>    precond_eps <span class="op">=</span> <span class="fl">1e-5</span></span>
@@ -270,34 +267,34 @@ optioins.</p>
 <span><span class="co">#&gt; *** Ngme object ***</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
-<span><span class="co">#&gt;    x1    x2 </span></span>
-<span><span class="co">#&gt; -1.23  2.23 </span></span>
+<span><span class="co">#&gt;     x1     x2 </span></span>
+<span><span class="co">#&gt; -0.268  2.072 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $my_ar</span></span>
 <span><span class="co">#&gt;   Model type: AR(1)</span></span>
-<span><span class="co">#&gt;       rho = 0.465</span></span>
+<span><span class="co">#&gt;       rho = 0.466</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -2.73</span></span>
-<span><span class="co">#&gt;       sigma = 4.18</span></span>
-<span><span class="co">#&gt;       nu = 0.325</span></span>
+<span><span class="co">#&gt;       mu = -2.57</span></span>
+<span><span class="co">#&gt;       sigma = 4.08</span></span>
+<span><span class="co">#&gt;       nu = 0.345</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 2</span></span>
+<span><span class="co">#&gt;       sigma = 2.05</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span>
 <span></span>
 <span><span class="co"># traceplot of fixed effects and measurementn noise</span></span>
-<span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">ngme_out</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">ngme_out</span>, hline<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="op">-</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="AR1-model_files/figure-html/ar-estimation-1.png" width="700" style="display: block; margin: auto;"></p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="co"># traceplot of ar1 model</span></span>
-<span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">ngme_out</span>, <span class="st">"my_ar"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">ngme_out</span>, <span class="st">"my_ar"</span>, hline<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="op">-</span><span class="fl">3</span>, <span class="fl">4</span>, <span class="fl">0.4</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="AR1-model_files/figure-html/ar-estimation-2.png" width="700" style="display: block; margin: auto;"></p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>

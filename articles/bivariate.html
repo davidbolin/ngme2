@@ -547,12 +547,9 @@ measurement noise<a class="anchor" aria-label="anchor" href="#ex1--fixed-effects
 <span>  <span class="op">)</span>,</span>
 <span>  data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">Y</span>, <span class="va">x1</span>, <span class="va">x2</span><span class="op">)</span>,</span>
 <span>  control_opt <span class="op">=</span> <span class="fu"><a href="../reference/control_opt.html">control_opt</a></span><span class="op">(</span></span>
-<span>    exchange_VW <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>    n_parallel_chain <span class="op">=</span> <span class="fl">4</span>,</span>
-<span>    optimizer <span class="op">=</span> <span class="fu"><a href="../reference/adamW.html">adamW</a></span><span class="op">(</span></span>
-<span>      stepsize <span class="op">=</span> <span class="fl">0.01</span></span>
-<span>    <span class="op">)</span>,</span>
-<span>    iterations <span class="op">=</span> <span class="fl">5000</span>,</span>
+<span>    optimizer <span class="op">=</span> <span class="fu"><a href="../reference/adam.html">adam</a></span><span class="op">(</span>stepsize <span class="op">=</span> <span class="fl">0.01</span><span class="op">)</span>,</span>
+<span>    iterations <span class="op">=</span> <span class="fl">10000</span>,</span>
 <span>    preconditioner <span class="op">=</span> <span class="st">"none"</span>,</span>
 <span>    rao_blackwellization <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>    precond_by_diff_chain <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -571,31 +568,31 @@ measurement noise<a class="anchor" aria-label="anchor" href="#ex1--fixed-effects
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt;    x1    x2 </span></span>
-<span><span class="co">#&gt; -2.78  1.48 </span></span>
+<span><span class="co">#&gt; -3.01  1.55 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $bv</span></span>
 <span><span class="co">#&gt;   Model type: Bivariate model (normal noise)</span></span>
 <span><span class="co">#&gt;       theta = 0</span></span>
-<span><span class="co">#&gt;       rho = 2.87</span></span>
+<span><span class="co">#&gt;       rho = 3.31</span></span>
 <span><span class="co">#&gt;       W1: AR(1)</span></span>
-<span><span class="co">#&gt;           rho = -0.373</span></span>
+<span><span class="co">#&gt;           rho = 0.596</span></span>
 <span><span class="co">#&gt;       W2: AR(1)</span></span>
-<span><span class="co">#&gt;           rho = NA</span></span>
+<span><span class="co">#&gt;           rho = -0.407</span></span>
 <span><span class="co">#&gt;    Bivariate type-G4 noise:</span></span>
 <span><span class="co">#&gt;       W1: NORMAL</span></span>
 <span><span class="co">#&gt;       Noise parameters: </span></span>
-<span><span class="co">#&gt;           sigma = 3.2</span></span>
+<span><span class="co">#&gt;           sigma = 3.06</span></span>
 <span><span class="co">#&gt;       W2: NORMAL</span></span>
 <span><span class="co">#&gt;       Noise parameters: </span></span>
-<span><span class="co">#&gt;           sigma = 3.24</span></span>
+<span><span class="co">#&gt;           sigma = 1.39</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.55</span></span>
-<span><span class="co">#&gt;       correlation(rho) = 0.49</span></span>
+<span><span class="co">#&gt;       sigma = 0.994</span></span>
+<span><span class="co">#&gt;       correlation(rho) = 0.788</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span>
@@ -603,7 +600,7 @@ measurement noise<a class="anchor" aria-label="anchor" href="#ex1--fixed-effects
 <span><span class="co"># comparing with simulated value</span></span>
 <span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span></span>
 <span>  <span class="va">out</span>, <span class="st">"bv"</span>,</span>
-<span>  hline<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5</span>, <span class="fl">0.6</span>, <span class="op">-</span><span class="fl">0.4</span>, <span class="fl">3</span>, <span class="fl">1</span><span class="op">)</span></span>
+<span>  hline<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5</span>, <span class="fl">0.6</span>, <span class="op">-</span><span class="fl">0.4</span>, <span class="fl">3</span>, <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p><img src="bivariate_files/figure-html/unnamed-chunk-2-1.png" width="700"></p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
@@ -675,6 +672,7 @@ measurement noise<a class="anchor" aria-label="anchor" href="#ex2--fixed-effects
 <span>  <span class="op">)</span>,</span>
 <span>  data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">Y</span>, <span class="va">x1</span>, <span class="va">x2</span><span class="op">)</span>,</span>
 <span>  control_opt <span class="op">=</span> <span class="fu"><a href="../reference/control_opt.html">control_opt</a></span><span class="op">(</span></span>
+<span>    optimizer <span class="op">=</span> <span class="fu"><a href="../reference/adam.html">adam</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>    iterations <span class="op">=</span> <span class="fl">500</span>,</span>
 <span>    n_parallel_chain <span class="op">=</span> <span class="fl">4</span>,</span>
 <span>    seed <span class="op">=</span> <span class="fl">113</span></span>
@@ -692,35 +690,35 @@ measurement noise<a class="anchor" aria-label="anchor" href="#ex2--fixed-effects
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt;    x1    x2 </span></span>
-<span><span class="co">#&gt; -2.82  1.47 </span></span>
+<span><span class="co">#&gt; -2.98  1.57 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $bv</span></span>
 <span><span class="co">#&gt;   Model type: Bivariate model (non-Gaussian noise)</span></span>
-<span><span class="co">#&gt;       theta = -0.944</span></span>
-<span><span class="co">#&gt;       rho = 1.76</span></span>
+<span><span class="co">#&gt;       theta = -0.257</span></span>
+<span><span class="co">#&gt;       rho = 2.02</span></span>
 <span><span class="co">#&gt;       W1: AR(1)</span></span>
-<span><span class="co">#&gt;           rho = 0.564</span></span>
+<span><span class="co">#&gt;           rho = 0.593</span></span>
 <span><span class="co">#&gt;       W2: AR(1)</span></span>
-<span><span class="co">#&gt;           rho = 0.393</span></span>
+<span><span class="co">#&gt;           rho = 0.4</span></span>
 <span><span class="co">#&gt;    Bivariate type-G4 noise:</span></span>
 <span><span class="co">#&gt;       W1: NIG</span></span>
 <span><span class="co">#&gt;       Noise parameters: </span></span>
-<span><span class="co">#&gt;           mu = 1.06</span></span>
-<span><span class="co">#&gt;           sigma = 1.7</span></span>
-<span><span class="co">#&gt;           nu = 0.802</span></span>
+<span><span class="co">#&gt;           mu = -0.865</span></span>
+<span><span class="co">#&gt;           sigma = 1.48</span></span>
+<span><span class="co">#&gt;           nu = 0.784</span></span>
 <span><span class="co">#&gt;       W2: NIG</span></span>
 <span><span class="co">#&gt;       Noise parameters: </span></span>
-<span><span class="co">#&gt;           mu = 1.89</span></span>
-<span><span class="co">#&gt;           sigma = 1.29</span></span>
-<span><span class="co">#&gt;           nu = 1.09</span></span>
+<span><span class="co">#&gt;           mu = 1.86</span></span>
+<span><span class="co">#&gt;           sigma = 1.83</span></span>
+<span><span class="co">#&gt;           nu = 0.566</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.961</span></span>
-<span><span class="co">#&gt;       correlation(rho) = 0.721</span></span>
+<span><span class="co">#&gt;       sigma = 0.666</span></span>
+<span><span class="co">#&gt;       correlation(rho) = 0.347</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span>
@@ -843,24 +841,24 @@ measurement noise<a class="anchor" aria-label="anchor" href="#ex3--fixed-effects
 <span><span class="co">#&gt; $bv</span></span>
 <span><span class="co">#&gt;   Model type: Bivariate model (normal noise)</span></span>
 <span><span class="co">#&gt;       theta = 0</span></span>
-<span><span class="co">#&gt;       rho = 0.808</span></span>
+<span><span class="co">#&gt;       rho = 0.381</span></span>
 <span><span class="co">#&gt;       W1: Matern</span></span>
-<span><span class="co">#&gt;           kappa = 3.96</span></span>
+<span><span class="co">#&gt;           kappa = 2.75</span></span>
 <span><span class="co">#&gt;       W2: Matern</span></span>
-<span><span class="co">#&gt;           kappa = NA</span></span>
+<span><span class="co">#&gt;           kappa = 3.73</span></span>
 <span><span class="co">#&gt;    Bivariate type-G4 noise:</span></span>
 <span><span class="co">#&gt;       W1: NORMAL</span></span>
 <span><span class="co">#&gt;       Noise parameters: </span></span>
-<span><span class="co">#&gt;           sigma = 0.483</span></span>
+<span><span class="co">#&gt;           sigma = 0.644</span></span>
 <span><span class="co">#&gt;       W2: NORMAL</span></span>
 <span><span class="co">#&gt;       Noise parameters: </span></span>
-<span><span class="co">#&gt;           sigma = 0.119</span></span>
+<span><span class="co">#&gt;           sigma = 0.539</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.203</span></span>
+<span><span class="co">#&gt;       sigma = 0.196</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span>

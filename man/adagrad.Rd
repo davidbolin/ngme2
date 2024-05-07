@@ -20,6 +20,6 @@ AdaGrad SGD optimization
 }
 \details{
 The update rule for AdaGrad is:
- v_t = v_{t-1} + g_t^2
- x_{t+1} = x_t - stepsize * g_t / (sqrt(v_t) + epsilon)
+\deqn{v_t = v_{t-1} + g_t^2}
+\deqn{x_{t+1} = x_t - \text{stepsize} * \frac{g_t}{\sqrt{v_t} + \epsilon}}
 }

@@ -32,9 +32,9 @@ AdamW SGD optimization
 }
 \details{
 The update rule for AdamW is:
- m_t = beta1 * m_{t-1} + (1 - beta1) * g_t
- v_t = beta2 * v_{t-1} + (1 - beta2) * g_t^2
- m_t_hat = m_t / (1 - beta1^t)
- v_t_hat = v_t / (1 - beta2^t)
- x_{t+1} = x_t - stepsize * (lambda * x_t + m_t_hat / (sqrt(v_t_hat) + epsilon))
+\deqn{m_t = \beta_1 m_{t-1} + (1 - \beta_1) g_t}
+\deqn{v_t = \beta_2 v_{t-1} + (1 - \beta_2) g_t^2}
+\deqn{\hat{m_t} = m_t / (1 - \beta_1^t)}
+\deqn{\hat{v_t} = v_t / (1 - \beta_2^t)}
+\deqn{x_{t+1} = x_t - \text{stepsize} * \left( \lambda x_t + \frac{\hat{m_t}}{\sqrt{\hat{v_t}} + \epsilon} \right)}
 }

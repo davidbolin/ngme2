@@ -22,6 +22,6 @@ Root Mean Square Propagation (RMSProp) SGD optimization
 }
 \details{
 The update rule for RMSProp is:
- v_t = beta1 * v_{t-1} + (1-beta1) * g_t^2
- x_{t+1} = x_t - stepsize * g_t / (sqrt(v_t) + epsilon)
+\deqn{v_t = \beta_1 v_{t-1} + (1 - \beta_1) g_t^2}
+\deqn{x_{t+1} = x_t - \text{stepsize} * \frac{g_t}{\sqrt{v_t} + \epsilon}}
 }

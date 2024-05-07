@@ -596,7 +596,31 @@ MatrixXd Latent::precond(bool precond_K, double eps) {
     int n = v.size();
     MatrixXd num_hess_no_nu = VectorXd::Constant(n, 1.0).asDiagonal();
 
-	// compute fwd_fwd(i, j) = log_density(v + eps * e_i + eps * e_j)
+// which version of hessian to compute
+bool central_diff = true;
+if (!central_diff) {
+// Forward difference (error is O(eps)
+    // compute f_v = log_density(v + precond_eps * e_i)
+    double original_val = log_density(v, precond_K);
+    VectorXd f_v (n);
+    for (int i=0; i < n; i++) {
+        if (fix_parameters[i]) continue;
+        VectorXd tmp_v = v; tmp_v(i) += precond_eps;
+        f_v(i) = log_density(tmp_v, precond_K);
+    }
+    
+    // compute H_ij = d2 f / dxi dxj
+    for (int i=0; i < n; i++) {
+        if (fix_parameters[i]) continue;
+        for (int j=0; j <= i; j++) {
+            VectorXd tmp_vij = v; tmp_vij(i) += precond_eps; tmp_vij(j) += precond_eps;
+            double f_vij = log_density(tmp_vij, precond_K);
+            num_hess_no_nu(i, j) = (f_vij - f_v(i) - f_v(j) + original_val) / (precond_eps * precond_eps);
+        }
+    }
+} else {
+// Central difference (error is O(eps^2)
+    // compute fwd_fwd(i, j) = log_density(v + eps * e_i + eps * e_j)
 	MatrixXd fwd_fwd (n, n);
 	for (int i=0; i < n; i++) {
         for (int j=0; j < n; j++) {
@@ -644,6 +668,7 @@ MatrixXd Latent::precond(bool precond_K, double eps) {
 			num_hess_no_nu(i, j) = (fwd_fwd(i, j) - fwd_bwd(i, j) - bwd_fwd(i, j) + bwd_bwd(i, j)) / (4 * precond_eps * precond_eps);
 		}
 	}
+}
 
 	// fill in the lower triangular part
 	for (int i=0; i < n; i++) {

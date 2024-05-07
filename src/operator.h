@@ -210,7 +210,7 @@ public:
       return std::make_shared<Randeff>(operator_in);
     } else if (model_type == "bv") {
       return std::make_shared<Bivar>(operator_in);
-    } else if (model_type == "bv2") {
+    } else if (model_type == "bv_normal") {
       return std::make_shared<Bivar2>(operator_in);
     } else {
       throw std::runtime_error("Unknown model.");

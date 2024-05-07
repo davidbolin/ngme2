@@ -70,10 +70,13 @@ data
 
 Next we need to specify the model using `f()` function. Notice the way to specify 2 sub-models, and also 2 types of noises for each sub-model.
 
+Notice that if we choose the Gaussian noise, we need to specify the model type as "bv_normal" so that the rotation is fixed to 0 (no rotation). If we choose the non-Gaussian noise, we can use "bv" model type.
+
 ```{r toy-model}
 # 1st way: simply put model types, using both c() and list() are ok
+# Choose model="bv_normal" if use Gaussian noise, 
 bv1 <- f(
-  year, model = "bv",
+  year, model = "bv_normal",
   theta = pi / 8, rho = 0.5,
   sub_models = list(precip="ar1", temp="rw1"),
   group = labels, # can be inherited from ngme() function
@@ -85,7 +88,7 @@ bv1 <- f(
 bv1
 
 # 2nd way: allow more argument for sub_models
-bv2 <- f(
+bv_normal <- f(
   year, model = "bv",
   sub_models = list(
     precip=list(model="ar1", rho=0.5), # specify correlation parameter for ar1 model
@@ -97,7 +100,7 @@ bv2 <- f(
     temp=noise_nig()
   )
 )
-bv2
+bv_normal
 ```
 
 ## Four increasing construction of noise
@@ -120,8 +123,8 @@ t1 <- f(
   sub_models = list(precip="ar1", temp="rw1"),
   group = labels,
   noise = list(
-    precip=noise_normal(single_V=TRUE),
-    temp=noise_normal(single_V=TRUE),
+    precip=noise_nig(single_V=TRUE),
+    temp=noise_nig(single_V=TRUE),
     share_V = TRUE
   )
 )
@@ -132,8 +135,8 @@ t2 <- f(
   sub_models = list(precip="ar1", temp="rw1"),
   group = labels,
   noise = list(
-    precip=noise_normal(single_V=TRUE),
-    temp=noise_normal(single_V=TRUE)
+    precip=noise_nig(single_V=TRUE),
+    temp=noise_nig(single_V=TRUE)
   )
 )
 t2
@@ -143,8 +146,8 @@ t3 <- f(
   sub_models = list(precip="ar1", temp="rw1"),
   group = labels,
   noise = list(
-    precip=noise_normal(),
-    temp=noise_normal(),
+    precip=noise_nig(),
+    temp=noise_nig(),
     share_V = TRUE
   )
 )
@@ -155,8 +158,8 @@ t4 <- f(
   sub_models = list(precip="ar1", temp="rw1"),
   group = labels,
   noise = list(
-    precip=noise_normal(),
-    temp=noise_normal()
+    precip=noise_nig(),
+    temp=noise_nig()
   )
 )
 t4
@@ -213,7 +216,7 @@ group <- c(rep("W1", n_each), rep("W2", n_each))
 reorder_loc = sample(1:n_each)
 sim_fields <- simulate(
   f(c(reorder_loc, reorder_loc),
-    model="bv2",
+    model="bv_normal",
     rho=5,
     sub_models = list(
       W1 = list(model="ar1", rho=0.6),
@@ -249,7 +252,7 @@ Y <- sim_fields + x1 * feff[1] + x2 * feff[2] + as.numeric(e)
 out <- ngme(
   Y ~ 0 + x1 + x2 +
     f(c(reorder_loc, reorder_loc),
-    model="bv2",
+    model="bv_normal",
     name = "bv",
     sub_models = list(W1 = "ar1", W2 = "ar1"),
     noise=list(

@@ -83,7 +83,7 @@ reference:
     - iid
     - tp
     - bv
-    - bv2
+    - bv_normal
     - re
   - title: ngme2 noises
     contents:

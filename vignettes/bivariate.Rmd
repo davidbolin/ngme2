@@ -408,7 +408,7 @@ true_model <- f(
   theta = theta,
   rho = rho,
   mesh = mesh,
-  model = "bv",
+  model = "bv_normal",
   sub_models = list(
     W1 = list(model = "matern", theta_K = theta_K_1),
     W2 = list(model = "matern", theta_K = theta_K_2)
@@ -429,7 +429,7 @@ out <- ngme(
   Y ~ 0 + f(
     ~ long + lat,
     mesh = mesh,
-    model = "bv",
+    model = "bv_normal",
     name = "bv",
     sub_models = list(
       W1 = list(model = "matern"),

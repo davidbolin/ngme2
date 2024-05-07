@@ -8,7 +8,7 @@ name: pkgdown
 
 jobs:
   pkgdown:
-    runs-on: macOS-latest
+    runs-on: ubuntu-20.04
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
     steps:
@@ -21,12 +21,11 @@ jobs:
 
       - uses: r-lib/actions/setup-pandoc@v2
 
-      - name: Install system dependencies on MacOS (X11, gdal)
+      - name: Install system dependencies on Linux (GL)
+        if: runner.os == 'Linux'
         run: |
-          brew install --cask xquartz
-          brew install pkg-config
-          brew install proj@9
-          brew install gdal
+          sudo apt-get update -y && sudo apt-get install -y libglu1-mesa-dev
+          
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           dependencies: '"all"'
@@ -47,3 +46,11 @@ jobs:
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
           Rscript -e 'pkgdown::deploy_to_branch(new_process = FALSE)'
+          git config pull.rebase true
+          git fetch origin          
+          git checkout repo_files
+          git checkout gh-pages
+          git checkout repo_files -- src/contrib
+          git add src/contrib
+          git commit -m "Adding repo files"
+          git push origin gh-pages

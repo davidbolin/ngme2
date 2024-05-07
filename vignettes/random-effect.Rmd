@@ -160,8 +160,7 @@ out <- ngme(
   control_opt = control_opt(
     estimation = T,
     iterations = 500,
-    n_parallel_chain = 4,
-    stepsize = 1
+    n_parallel_chain = 4
   )
 )
 str(out$replicates[[1]]$latent[[1]])
@@ -249,11 +248,10 @@ out_corr_nig <- ngme2::ngme(
     n_gibbs_samples = 5
   ),
   control_opt = control_opt(
-    estimation = T,
+    estimation = TRUE,
     iterations = 50,
     n_parallel_chain = 6,
-    stepsize = 0.1,
-    verbose = T
+    verbose = TRUE
   )
 )
 traceplot(out_corr_nig, "effect1")
@@ -285,7 +283,6 @@ out = ngme(
     estimation = T,
     iterations = 1000,
     n_parallel_chain = 4,
-    stepsize = 1,
     trend_lim = 0.0001
   )
 )

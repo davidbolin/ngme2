@@ -24,9 +24,14 @@ where $\gamma, \mu$ are parameters, $Z\sim N(0,1)$ and is independent of $V$, an
 One example is the normal inverse Gaussian (NIG) noise. (See `vignette("SPDE-approach", package = "ngme2")` for more details)
 
 ## Installation instructions #
-The development version can be installed using the command
+The development version of `ngme2` can be installed using the command
 ```r
 remotes::install_github("davidbolin/ngme2", ref = "devel")
+```
+
+The stable version of `ngme2` can be installed using the command:
+```r
+install.packages("ngme2", repos = "https://davidbolin.github.io/ngme2/")
 ```
 
 See also the [Installation and Configuration][ref] vignette.

@@ -22,15 +22,27 @@ Ngme_optimizer::Ngme_optimizer(
     v(VectorXd::Zero(ngme->get_n_params())),
     preconditioner(ngme->precond(0, precond_eps))
 {
-    if (method == "adam") {
+    if (method != "vanilla") {
         sgd_parameters = (Rcpp::as<VectorXd>(control_opt["sgd_parameters"]));
+    }
+
+    if (method =="momentum") {
+        beta1 = sgd_parameters(0);
+        beta2 = sgd_parameters(1);
+    } else if (method == "adagrad") {
+        eps_hat = sgd_parameters(0);
+    } else if (method == "rmsprop") {
+        beta1 = sgd_parameters(0);
+        eps_hat = sgd_parameters(1);
+    } else if (method == "adam") {
         beta1 = sgd_parameters(0);
         beta2 = sgd_parameters(1);
         eps_hat = sgd_parameters(2);
-    } else if (method =="momentum") {
-        sgd_parameters = (Rcpp::as<VectorXd>(control_opt["sgd_parameters"]));
+    } else if (method == "adamW") {
         beta1 = sgd_parameters(0);
         beta2 = sgd_parameters(1);
+        lambda = sgd_parameters(2);
+        eps_hat = sgd_parameters(3);
     }
 }
 
@@ -63,18 +75,34 @@ VectorXd Ngme_optimizer::sgd(
         VectorXd one_step;
         if (method == "adam") {
             m = beta1 * m + (1 - beta1) * grad;
-            // biased !
             v = beta2 * v + (1 - beta2) * grad.cwiseProduct(grad);
-            // VectorXd diag_precond = preconditioner.diagonal();
-            // v = beta2 * v + (1 - beta2) * diag_precond;
             VectorXd m_hat = m / (1 - pow(beta1, curr_iter+1));
             VectorXd v_hat = v / (1 - pow(beta2, curr_iter+1));
-
-            one_step = model->get_stepsizes().cwiseProduct(m_hat.cwiseQuotient(v_hat.cwiseSqrt() + VectorXd::Constant(v_hat.size(), eps_hat)));
+            one_step = model->get_stepsizes().cwiseProduct(
+                m_hat.cwiseQuotient(v_hat.cwiseSqrt() + VectorXd::Constant(v_hat.size(), eps_hat)));
+        } else if (method == "adamW") {
+            m = beta1 * m + (1 - beta1) * grad;
+            v = beta2 * v + (1 - beta2) * grad.cwiseProduct(grad);
+            VectorXd m_hat = m / (1 - pow(beta1, curr_iter+1));
+            VectorXd v_hat = v / (1 - pow(beta2, curr_iter+1));
+            one_step = model->get_stepsizes().cwiseProduct(
+                lambda * x + // extra term for generalization
+                m_hat.cwiseQuotient(v_hat.cwiseSqrt() + VectorXd::Constant(v_hat.size(), eps_hat)));
         } else if (method == "momentum") {
             m = beta1 * m + beta2 * grad;
             one_step = model->get_stepsizes().cwiseProduct(m);
+        } else if (method == "adagrad") {
+//  v_t = v_{t-1} + g_t^2
+//  x_{t+1} = x_t - stepsize * g_t / (sqrt(v_t) + epsilon)
+            v = v + grad.cwiseProduct(grad);
+            one_step = model->get_stepsizes().cwiseProduct(grad.cwiseQuotient(v.cwiseSqrt() + VectorXd::Constant(v.size(), eps_hat)));
+        } else if (method == "rmsprop") {
+//  v_t = beta1 * v_{t-1} + (1-beta1) * g_t^2
+//  x_{t+1} = x_t - stepsize * g_t / (sqrt(v_t) + epsilon) 
+            v = beta1 * v + (1-beta1) * grad.cwiseProduct(grad);
+            one_step = model->get_stepsizes().cwiseProduct(grad.cwiseQuotient(v.cwiseSqrt() + VectorXd::Constant(v.size(), eps_hat)));
         } else {
+            // vanilla
             one_step = model->get_stepsizes().cwiseProduct(grad);
         }
 

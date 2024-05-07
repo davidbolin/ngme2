@@ -100,6 +100,7 @@ ngme_out <- ngme(
   ),
   data = data.frame(x1=x1, x2=x2, Y=Y),
   control_opt = control_opt(
+    optimizer = vanilla(),
     burnin = 100,
     iterations = 500,
     std_lim = 0.01,
@@ -107,19 +108,21 @@ ngme_out <- ngme(
     compute_precond_each_iter = TRUE,
     stop_points = 20,
     print_check_info = FALSE,
-    verbose = T,
+    verbose = FALSE,
+    preconditioner = "none",
     seed = 3,
-    preconditioner = "full",
-    precond_by_diff_chain = FALSE
+    # preconditioner = "fast",
+    # precond_by_diff_chain = TRUE,
+    precond_eps = 1e-5
   )
 )
 ngme_out
 
 # traceplot of fixed effects and measurementn noise
-traceplot(ngme_out)
+traceplot(ngme_out, hline=c(2, -1, 2))
 
 # traceplot of ar1 model
-traceplot(ngme_out, "my_ar")
+traceplot(ngme_out, "my_ar", hline=c(0.5, -3, 4, 0.4))
 
 # comparing the density of the noise estimated and the noise simulated
 plot(ngme_out$replicates[[1]]$models[[1]]$noise,

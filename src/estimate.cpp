@@ -60,7 +60,7 @@ auto timer = std::chrono::steady_clock::now();
     VectorXi num_threads = Rcpp::as<VectorXi>(control_opt["num_threads"]);
     int n_threads_chain = num_threads[0];
 
-    omp_set_nested(1);
+    omp_set_max_active_levels(2);
     omp_set_num_threads(num_threads[0] * num_threads[1]);
 
     // set in R

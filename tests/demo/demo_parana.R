@@ -158,8 +158,7 @@ out_nig_norm_norm <- ngme(
     stop_points = 10,
     std_lim = 0.1,
     n_parallel_chain = 4,
-    print_check_info = TRUE,
-    stepsize = 0.5,
+    print_check_info = TRUE
   ),
   # debug = TRUE,
   seed = 16

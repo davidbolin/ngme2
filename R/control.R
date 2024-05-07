@@ -1,3 +1,4 @@
+
 #' Generate control specifications for \code{ngme()} function.
 #'
 #' These are configurations for \code{ngme}
@@ -12,7 +13,6 @@
 #' @param seed  set the seed for pesudo random number generator
 #' @param burnin          interations for burn-in periods (before optimization)
 #' @param iterations      optimization iterations
-#' @param stepsize        stepsize for each iteration
 #' @param estimation      run the estimation process (call C++ in backend)
 #' @param standardize_fixed  whether or not standardize the fixed effect
 #'
@@ -24,6 +24,11 @@
 #' @param std_lim         maximum allowed standard deviation
 #' @param trend_lim       maximum allowed slope
 #' @param print_check_info print the convergence information
+#' @param optimizer choose different sgd optimization method, 
+#' currently support "vanilla", "momentum", "adagrad", "rmsprop", "adam", "adamW"
+#' see ?vanilla, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW
+#'
+#'
 #' @param preconditioner  preconditioner, can be c("none", "fast", "full")
 #' "none" means no preconditioner, "fast" means precondition everything except for the parameter of K matrix (for speed reason), "full" means precondition everything
 #' @param precond_eps   numerical, the gap used for estimate preconditioner, default is 1e-5
@@ -46,22 +51,19 @@
 #' @param sampling_strategy subsampling method of replicates of model, c("all", "is")
 #' "all" means using all replicates in each iteration,
 #' "ws" means weighted sampling (each iteration use 1 replicate to compute the gradient, the sample probability is proption to its number of observations)
-#' @param sgd_method currently support c("vanilla", "momentum")
-#' @param sgd_parameters for momentum, provide c(beta1, beta2), in each iteration, the step is computed as m = beta1 * m (previous turn) + beta2 * gradient
 #' @return list of control variables
 #' @export
 control_opt <- function(
   seed              = Sys.time(),
   burnin            = 100,
   iterations        = 500,
-  stepsize          = 0.5,
   estimation        = TRUE,
   standardize_fixed  = TRUE,
   stop_points       = 10,
   iters_per_check   = iterations / stop_points,
 
   # parallel options
-  n_parallel_chain  = 2,
+  n_parallel_chain  = 4,
   max_num_threads   = n_parallel_chain,
 
   exchange_VW       = TRUE,
@@ -69,10 +71,14 @@ control_opt <- function(
   std_lim           = 0.1,
   trend_lim         = 0.01,
   print_check_info  = FALSE,
-  preconditioner    = "fast",
+
+  # preconditioner related
+  preconditioner    = "none",
   precond_eps       = 1e-5,
-  precond_by_diff_chain = TRUE,
+  precond_by_diff_chain = FALSE,
   compute_precond_each_iter = FALSE,
+
+  optimizer = adamW(),
 
   max_relative_step = 0.5,
   max_absolute_step = 0.5,
@@ -85,12 +91,10 @@ control_opt <- function(
 
   rao_blackwellization = FALSE,
   n_trace_iter      = 10,
+  sampling_strategy = "all",
 
   # opt print
-  verbose           = FALSE,
-  sampling_strategy = "all",
-  sgd_method        = "vanilla",
-  sgd_parameters    = NULL
+  verbose           = FALSE
 ) {
   strategy_list <- c("all", "ws")
   preconditioner_list <- c("none", "fast", "full")
@@ -111,7 +115,7 @@ control_opt <- function(
     iterations > 0 && stop_points > 0,
     "iterations should be multiple of stop_points"
       = iterations %% stop_points == 0,
-    sgd_method %in% c("vanilla", "momentum")
+    inherits(optimizer, "ngme_optimizer")
   )
 
   if ((reduce_power <= 0.5) || (reduce_power > 1)) {
@@ -123,30 +127,10 @@ control_opt <- function(
     precond_by_diff_chain <- FALSE
   }
 
-  if (sgd_method=="adam") {
-    if (is.null(sgd_parameters)) {
-      sgd_parameters <- c(
-        beta1 = 1 - 0.95,
-        beta2 = 1 - 0.999,
-        epsilon = 1e-8
-      )
-    stopifnot(length(sgd_parameters) == 2)
-    }
-  } else if (sgd_method=="momentum") {
-    if (is.null(sgd_parameters)) {
-      sgd_parameters <- c(
-        beta1 = 0.1,
-        beta2 = 1
-      )
-    }
-    stopifnot(length(sgd_parameters) == 2)
-  }
-
   control <- list(
     seed              = seed,
     burnin            = burnin,
     iterations        = iterations,
-    stepsize          = stepsize,
     estimation        = estimation,
     standardize_fixed  = standardize_fixed,
 
@@ -180,8 +164,11 @@ control_opt <- function(
     compute_precond_each_iter = compute_precond_each_iter,
     precond_strategy  = which(preconditioner_list == preconditioner) - 1, # start from 0
     sampling_strategy = which(strategy_list == sampling_strategy) - 1, # start from 0,
-    sgd_method        = sgd_method,
-    sgd_parameters    = sgd_parameters
+
+    # optimization method related 
+    stepsize          = optimizer$stepsize,
+    sgd_method        = optimizer$method,
+    sgd_parameters    = optimizer$sgd_parameters
   )
 
   class(control) <- "control_opt"

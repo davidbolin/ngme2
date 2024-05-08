@@ -51,6 +51,8 @@ jobs:
           git checkout repo_files
           git checkout gh-pages
           git checkout repo_files -- src/contrib
+          git checkout repo_files -- bin
           git add src/contrib
+          git add bin
           git commit -m "Adding repo files"
           git push origin gh-pages

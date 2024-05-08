@@ -203,9 +203,8 @@ test_that("ar x ar case", {
     control_opt = control_opt(
       iterations = 100,
       n_parallel_chain = 4,
-      estimation = T,
-      verbose = T,
-      stepsize = 1,
+      estimation = TRUE,
+      verbose = TRUE,
       max_absolute_step = 10,
       max_relative_step = 10
     ),

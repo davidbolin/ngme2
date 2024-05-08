@@ -45,7 +45,8 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
     ar1 = "AR(1)",
     matern = "Matern",
     tp  = "Tensor product",
-    bv  = "Bivariate model",
+    bv  = "Bivariate model (non-Gaussian noise)",
+    bv_normal  = "Bivariate model (normal noise)",
     iid = "IID model",
     rw1 = "Random walk (order 1)",
     rw2 = "Random walk (order 2)",
@@ -69,6 +70,14 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
     bv = {
       theta = operator$param_trans[[1]](theta_K[1])
       rho = operator$param_trans[[2]](theta_K[2])
+      cat(pad_add4_space, "theta = ", format(theta, digits=3), "\n", sep="")
+      cat(pad_add4_space, "rho = ", format(rho, digits=3), "\n", sep="")
+      print(operator$first,  padding = padding + 4, prefix = model_names[[1]])
+      print(operator$second, padding = padding + 4, prefix = model_names[[2]])
+    },
+    bv_normal = {
+      theta = 0
+      rho = operator$param_trans[[1]](theta_K[1])
       cat(pad_add4_space, "theta = ", format(theta, digits=3), "\n", sep="")
       cat(pad_add4_space, "rho = ", format(rho, digits=3), "\n", sep="")
       print(operator$first,  padding = padding + 4, prefix = model_names[[1]])

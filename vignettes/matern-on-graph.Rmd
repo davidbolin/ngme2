@@ -242,14 +242,10 @@ fit_nig <- ngme(
     f(model="matern", mesh=graph, name="graph", noise=noise_nig()),
   data = graph$get_data(),
   control_opt = control_opt(
-    stepsize = 0.5,
     iterations = 1000,
     iters_per_check = 100,
-    # preconditioner = "full",
     rao_blackwellization = TRUE,
     n_parallel_chain = 4,
-    # sgd_method = "momentum",
-    # sgd_parameters = c(0.4, 1), #accelarate the fitting
     # verbose = TRUE,
     seed = 1
   )
@@ -301,7 +297,6 @@ fit_repl <- ngme(
     f(model="matern", mesh=graph, name="graph", noise=noise_nig()),
   data = graph$get_data(),
   control_opt = control_opt(
-    stepsize = 2,
     iterations = 2000,
     # preconditioner = "full",
     rao_blackwellization = TRUE,

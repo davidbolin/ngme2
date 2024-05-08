@@ -59,7 +59,6 @@ test_that("test Matern", {
       verbose = T,
       max_absolute_step = 1,
       max_relative_step = 1,
-      stepsize = 0.5,
       std_lim = 0.01,
       preconditioner = "fast",
       sgd_method = "momentum",

@@ -251,8 +251,8 @@ matern <- function(
   } else {
     d <- get_inla_mesh_dimension(mesh)
     if (d == 1) {
-      fem <- fmesher::fm_fem(mesh)
-      C <- fem$c1
+      fem <- fmesher::fm_fem(mesh, order = alpha)
+      C <- fem$c0
       G <- fem$g1
       h <- Matrix::diag(fem$c0)
     } else if (d == 2) {
@@ -283,26 +283,30 @@ matern <- function(
   else if (is.null(B_K) && length(theta_K) > 1)
     stop("Please provide B_K for non-stationary case.")
 
-  kappas <- as.numeric(exp(B_K %*% theta_K))
-  if (length(theta_K) == 1) {
-    # stationary
-    K <- kappas[1]**alpha * C + G
-  } else {
-    # non-stationary
-    K <- if (alpha == 2) diag(kappas) %*% C %*% diag(kappas)  + G
-    else diag(kappas) %*% C %*% diag(kappas) %*% C %*% diag(kappas) + G
-  }
-
   stationary <- is_stationary(B_K)
   update_K <- function(theta_K) {
     kappas <- as.numeric(exp(B_K %*% theta_K))
     if (length(theta_K) == 1) {
-      kappas[1]**alpha * C + G
+      if (alpha == 2) {
+        kappas[1]^2 * C + G
+      } else {
+        Cinv <- C;
+        diag(Cinv) <- 1 / diag(C)
+        (G + kappas[1]^2 * C) %*% Cinv %*% (G + kappas[1]^2 * C)
+      }
     } else {
-      if (alpha == 2) diag(kappas) %*% C %*% diag(kappas) + G
-      else diag(kappas) %*% C %*% diag(kappas) %*% C %*% diag(kappas) + G
+      GpKCK <- diag(kappas) %*% C %*% diag(kappas) + G
+      if (alpha == 2)
+        GpKCK
+      else {
+        Cinv <- C;
+        diag(Cinv) <- 1 / diag(C)
+        (GpKCK) %*% Cinv %*% GpKCK
+      }
     }
   }
+  K <- update_K(theta_K)
+
   ngme_operator(
     mesh = mesh,
     alpha = alpha,
@@ -316,8 +320,12 @@ matern <- function(
     h = h,
     symmetric = TRUE,
     zero_trace = FALSE,
-    param_name = if (stationary) "kappa" else paste("theta_K", seq_len(length(theta_K)), sep = " "),
-    param_trans = if (stationary) exp else rep(list(identity), length(theta_K))
+    param_name =
+      if (stationary) "kappa"
+      else paste("theta_K", seq_len(length(theta_K)), sep = " "),
+    param_trans =
+      if (stationary) exp
+      else rep(list(identity), length(theta_K))
   )
 }
 

@@ -277,13 +277,6 @@ if (noise[[1]]$noise_type != "normal") {
       fix_V = !is.null(noise$fix_V) && noise$fix_V,
       V = if (!is.null(noise$V)) noise$V else NULL
     )
-
-    # if noise is normal, Do not estimate theta
-    if (all(noise$noise_type == "normal")) {
-      # set fix_bv_theta, theta=0 for normal noise
-      operator$fix_bv_theta <- TRUE
-      operator$theta_K[1] <- 0
-    }
   } else {
     noise <- update_noise(noise, n = length(operator$h))
   }

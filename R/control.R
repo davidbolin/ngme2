@@ -42,11 +42,6 @@
 #' @param rao_blackwellization  use rao_blackwellization
 #' @param n_trace_iter  use how many iterations to approximate the trace (Hutchinson’s trick)
 #'
-#' @param reduce_var      logical, reduce variace
-#' @param reduce_power    numerical the power of reduce level
-#' @param threshold       till when start to reduce the variance
-#' @param window_size     numerical, length of window for final estimates
-#'
 #' @param verbose print estimation
 #' @param sampling_strategy subsampling method of replicates of model, c("all", "is")
 #' "all" means using all replicates in each iteration,
@@ -62,6 +57,13 @@ control_opt <- function(
   stop_points       = 10,
   iters_per_check   = iterations / stop_points,
 
+  optimizer         = adam(),
+  # preconditioner related
+  preconditioner    = "none",
+  precond_eps       = 1e-5,
+  precond_by_diff_chain = FALSE,
+  compute_precond_each_iter = FALSE,
+  
   # parallel options
   n_parallel_chain  = 4,
   max_num_threads   = n_parallel_chain,
@@ -72,22 +74,8 @@ control_opt <- function(
   trend_lim         = 0.01,
   print_check_info  = FALSE,
 
-  # preconditioner related
-  preconditioner    = "none",
-  precond_eps       = 1e-5,
-  precond_by_diff_chain = FALSE,
-  compute_precond_each_iter = FALSE,
-
-  optimizer = adamW(),
-
   max_relative_step = 0.5,
   max_absolute_step = 0.5,
-
-  # reduce variance after conv. check
-  reduce_var        = FALSE,
-  reduce_power      = 0.75,
-  threshold         = 1e-5,
-  window_size       = 1,
 
   rao_blackwellization = FALSE,
   n_trace_iter      = 10,
@@ -118,13 +106,20 @@ control_opt <- function(
     inherits(optimizer, "ngme_optimizer")
   )
 
-  if ((reduce_power <= 0.5) || (reduce_power > 1)) {
-    stop("reduceVar should be in (0.5,1]")
-  }
 
   if (n_parallel_chain == 1) {
     # compute_precond_each_iter <- TRUE
     precond_by_diff_chain <- FALSE
+  }
+
+  # variance reduction techniques (not used for now)
+  {
+    reduce_var        = FALSE
+    reduce_power      = 0.75
+    threshold         = 1e-5
+    window_size       = 1
+    stopifnot("reduceVar should be in (0.5,1]" = 
+      (reduce_power > 0.5) && (reduce_power <= 1))
   }
 
   control <- list(
@@ -147,28 +142,29 @@ control_opt <- function(
     ),
     rao_blackwellization = rao_blackwellization,
     n_trace_iter      = n_trace_iter,
-
     print_check_info  = print_check_info,
+    verbose           = verbose,
+    sampling_strategy = which(strategy_list == sampling_strategy) - 1, # start from 0,
 
-    # variance reduction
     max_relative_step = max_relative_step,
     max_absolute_step = max_absolute_step,
-    reduce_var        = reduce_var,
-    reduce_power      = reduce_power,
-    threshold         = threshold,
-    window_size       = window_size,
 
-    verbose           = verbose,
+    # preconditioner related
     precond_eps       = precond_eps,
     precond_by_diff_chain = precond_by_diff_chain,
     compute_precond_each_iter = compute_precond_each_iter,
     precond_strategy  = which(preconditioner_list == preconditioner) - 1, # start from 0
-    sampling_strategy = which(strategy_list == sampling_strategy) - 1, # start from 0,
 
     # optimization method related 
     stepsize          = optimizer$stepsize,
     sgd_method        = optimizer$method,
-    sgd_parameters    = optimizer$sgd_parameters
+    sgd_parameters    = optimizer$sgd_parameters,
+
+    # variance reduction (not used for now)
+    reduce_var        = reduce_var,
+    reduce_power      = reduce_power,
+    threshold         = threshold,
+    window_size       = window_size
   )
 
   class(control) <- "control_opt"

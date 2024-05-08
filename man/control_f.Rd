@@ -4,12 +4,13 @@
 \alias{control_f}
 \title{Generate control specifications for \code{f} function}
 \usage{
-control_f(numer_grad = TRUE, use_num_hess = TRUE, eps = 0.001)
+control_f(numer_grad = TRUE, improve_hessian = TRUE, eps = 1e-04)
 }
 \arguments{
 \item{numer_grad}{whether to use numerical gradient}
 
-\item{use_num_hess}{whether to use numerical hessian}
+\item{improve_hessian}{improve numerical hessian by using central difference estimation (O(eps^2) error)
+default is forward difference estimation (O(eps) error)}
 
 \item{eps}{eps for computing numerical gradient}
 }

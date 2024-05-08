@@ -350,7 +350,7 @@ out <- ngme(
   data = data.frame(Y, x1, x2),
   control_opt = control_opt(
     optimizer = adam(),
-    iterations = 500,
+    iterations = 10000,
     n_parallel_chain = 4,
     seed = 113
   )
@@ -448,10 +448,10 @@ out <- ngme(
     n_parallel_chain = 4,
     rao_blackwellization = TRUE,
     verbose = T,
-    print_check_info = F,
+    print_check_info = FALSE,
     seed = 50
   ),
-  debug = F
+  debug = FALSE
 )
 out
 

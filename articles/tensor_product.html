@@ -273,9 +273,9 @@ the time index (year).</p>
 <span>  control_opt <span class="op">=</span> <span class="fu"><a href="../reference/control_opt.html">control_opt</a></span><span class="op">(</span></span>
 <span>    iterations <span class="op">=</span> <span class="fl">2000</span>,</span>
 <span>    n_parallel_chain <span class="op">=</span> <span class="fl">4</span>,</span>
-<span>    optimizer <span class="op">=</span> <span class="fu"><a href="../reference/adamW.html">adamW</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>    verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>    rao_blackwellization <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>    preconditioner <span class="op">=</span> <span class="st">"none"</span></span>
+<span>    preconditioner <span class="op">=</span> <span class="st">"fast"</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  debug <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
@@ -297,26 +297,26 @@ the time index (year).</p>
 <span><span class="co">#&gt; $tp</span></span>
 <span><span class="co">#&gt;   Model type: Tensor product</span></span>
 <span><span class="co">#&gt;       first: AR(1)</span></span>
-<span><span class="co">#&gt;           rho = 0.439</span></span>
+<span><span class="co">#&gt;           rho = 0.518</span></span>
 <span><span class="co">#&gt;       second: Matern</span></span>
-<span><span class="co">#&gt;           kappa = 1.09</span></span>
+<span><span class="co">#&gt;           kappa = 0.899</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -2.67</span></span>
-<span><span class="co">#&gt;       sigma = 0.685</span></span>
-<span><span class="co">#&gt;       nu = 1.27</span></span>
+<span><span class="co">#&gt;       mu = -1.31</span></span>
+<span><span class="co">#&gt;       sigma = 1.12</span></span>
+<span><span class="co">#&gt;       nu = 1.8</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.52</span></span>
+<span><span class="co">#&gt;       sigma = 0.514</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre></div>
 <p>To see the results of estimation, we can use <code>traceplot</code>
 function.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">ngme_fit</span>, <span class="st">"tp"</span>, hline<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>rho<span class="op">=</span><span class="fl">0.5</span>, kappa<span class="op">=</span><span class="fl">1</span>, mu<span class="op">=</span><span class="op">-</span><span class="fl">2</span>, sigma<span class="op">=</span><span class="fl">1</span>, nu<span class="op">=</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">ngme_fit</span>, <span class="st">"tp"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tensor_product_files/figure-html/unnamed-chunk-3-1.png" width="700"></p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># compare noise density</span></span>
@@ -344,28 +344,28 @@ location.</p>
 <span>  pos<span class="op">=</span><span class="va">loc_new</span></span>
 <span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; $mean</span></span>
-<span><span class="co">#&gt;  [1]  0.22489420  0.00000000  0.00000000  0.42440674  0.08929086  0.26646768</span></span>
-<span><span class="co">#&gt;  [7]  0.00000000 -0.52448339  0.00000000  0.00000000</span></span>
+<span><span class="co">#&gt;  [1]  0.00000000  0.08358294  0.51128565  0.00000000  0.36579114  0.14004220</span></span>
+<span><span class="co">#&gt;  [7]  0.00000000 -1.18585918  0.00000000  0.02579020</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sd</span></span>
-<span><span class="co">#&gt;  [1] 0.2440916 0.0000000 0.0000000 0.2161077 0.2765667 0.2648942 0.0000000</span></span>
-<span><span class="co">#&gt;  [8] 0.2861552 0.0000000 0.0000000</span></span>
+<span><span class="co">#&gt;  [1] 0.0000000 0.2561275 0.2347190 0.0000000 0.1814013 0.5609806 0.0000000</span></span>
+<span><span class="co">#&gt;  [8] 0.3090078 0.0000000 0.2817549</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`5quantile`</span></span>
-<span><span class="co">#&gt;  [1] -0.20954775  0.00000000  0.00000000  0.09517644 -0.43582614 -0.14361860</span></span>
-<span><span class="co">#&gt;  [7]  0.00000000 -0.92813735  0.00000000  0.00000000</span></span>
+<span><span class="co">#&gt;  [1]  0.0000000 -0.3780330  0.1695061  0.0000000  0.1029757 -0.7170236</span></span>
+<span><span class="co">#&gt;  [7]  0.0000000 -1.6440799  0.0000000 -0.4738942</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`95quantile`</span></span>
-<span><span class="co">#&gt;  [1]  0.57434960  0.00000000  0.00000000  0.73125994  0.52650033  0.65971732</span></span>
-<span><span class="co">#&gt;  [7]  0.00000000 -0.04041732  0.00000000  0.00000000</span></span>
+<span><span class="co">#&gt;  [1]  0.0000000  0.4367279  0.8068905  0.0000000  0.6519057  0.9584634</span></span>
+<span><span class="co">#&gt;  [7]  0.0000000 -0.7310173  0.0000000  0.3862247</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $median</span></span>
-<span><span class="co">#&gt;  [1]  0.2385488  0.0000000  0.0000000  0.4246009  0.1240931  0.2810103</span></span>
-<span><span class="co">#&gt;  [7]  0.0000000 -0.5283449  0.0000000  0.0000000</span></span>
+<span><span class="co">#&gt;  [1]  0.00000000  0.10714087  0.55984337  0.00000000  0.35277325  0.12280535</span></span>
+<span><span class="co">#&gt;  [7]  0.00000000 -1.20800525  0.00000000  0.05254626</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $mode</span></span>
-<span><span class="co">#&gt;  [1]  0.2381182  0.0000000  0.0000000  0.2189850  0.1450645  0.2937681</span></span>
-<span><span class="co">#&gt;  [7]  0.0000000 -0.5695865  0.0000000  0.0000000</span></span></code></pre></div>
+<span><span class="co">#&gt;  [1]  0.0000000  0.1346997  0.5997898  0.0000000  0.3132453 -0.1799265</span></span>
+<span><span class="co">#&gt;  [7]  0.0000000 -1.4770185  0.0000000  0.1053171</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>

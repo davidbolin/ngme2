@@ -105,7 +105,7 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">control_f</span><span class="op">(</span>numer_grad <span class="op">=</span> <span class="cn">TRUE</span>, improve_hessian <span class="op">=</span> <span class="cn">TRUE</span>, eps <span class="op">=</span> <span class="fl">1e-04</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">control_f</span><span class="op">(</span>numer_grad <span class="op">=</span> <span class="cn">TRUE</span>, use_num_hess <span class="op">=</span> <span class="cn">TRUE</span>, eps <span class="op">=</span> <span class="fl">0.001</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -114,9 +114,8 @@
 <dd><p>whether to use numerical gradient</p></dd>
 
 
-<dt>improve_hessian</dt>
-<dd><p>improve numerical hessian by using central difference estimation (O(eps^2) error)
-default is forward difference estimation (O(eps) error)</p></dd>
+<dt>use_num_hess</dt>
+<dd><p>whether to use numerical hessian</p></dd>
 
 
 <dt>eps</dt>

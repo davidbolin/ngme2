@@ -130,9 +130,9 @@ ngme_fit <- ngme(
   control_opt = control_opt(
     iterations = 2000,
     n_parallel_chain = 4,
-    verbose = TRUE,
+    optimizer = adamW(),
     rao_blackwellization = TRUE,
-    preconditioner = "fast"
+    preconditioner = "none"
   ),
   debug = FALSE
 )
@@ -143,7 +143,7 @@ ngme_fit
 To see the results of estimation, we can use `traceplot` function.
 
 ```{r}
-traceplot(ngme_fit, "tp")
+traceplot(ngme_fit, "tp", hline=c(rho=0.5, kappa=1, mu=-2, sigma=1, nu=2))
 # compare noise density
 plot(noise_nig(mu=-2, sigma=1, nu=2), ngme_result(ngme_fit, "tp")$noise)
 # traceplot(ngme_fit)

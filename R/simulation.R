@@ -56,7 +56,7 @@ simulate.ngme_model <- function(
       V_sim[[paste0("sim_", nn)]] <- attr(e, "V")
     } else {
       sims[[paste0("sim_", nn)]] <- as.numeric(model$A %*% W)
-      V_sim[[paste0("sim_", nn)]] <- as.numeric(model$A %*% attr(e, "V"))
+      V_sim[[paste0("sim_", nn)]] <- attr(e, "V")
     }
   }
 

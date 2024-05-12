@@ -284,7 +284,7 @@ if (noise[[1]]$noise_type != "normal") {
   if (noise$share_V && !(model %in% c("bv", "bv_normal")))
     stop("Not allow for share_V for univariate model")
 
-  if (model == "re") {
+  if (model %in% c("re", "bv_normal")) {
     noise$fix_theta_sigma <- TRUE
   }
 

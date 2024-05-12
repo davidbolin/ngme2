@@ -187,6 +187,8 @@ bv_normal <- function(
   mesh,
   sub_models,
   rho = 0,
+  c1 = 1, 
+  c2 = 1,
   group = NULL,
   share_param = FALSE,
   fix_bv_theta = FALSE,
@@ -231,21 +233,25 @@ bv_normal <- function(
     second <- build_operator(arg2$model, modifyList(env_args, arg2))
   }
 
-  theta_K <- c(rho, first$theta_K, second$theta_K)
-
-  # pass the theta_K to first and second
-  first$theta_K <- theta_K[2:(1 + first$n_theta_K)]
-  second$theta_K <- theta_K[(2 + first$n_theta_K):length(theta_K)]
-
-  D <- build_D(0, rho)
-  bigD <- kronecker(D, Matrix::Diagonal(nrow(first$K)))
+  stopifnot(c1 > 0, c2 > 0)
+  theta_K <- c(rho, log(c1), log(c2), first$theta_K, second$theta_K)
 
   update_K <- function(theta_K) {
     rho <- theta_K[1]
+    c1 <- exp(theta_K[2])
+    c2 <- exp(theta_K[3])
+
     D <- build_D(0, rho)
     bigD <- kronecker(D, Matrix::Diagonal(nrow(first$K)))
 
-    bigD
+    # pass the theta_K to first and second
+    first$theta_K <- theta_K[4:(3 + first$n_theta_K)]
+    second$theta_K <- theta_K[(4 + first$n_theta_K):length(theta_K)]
+
+    first$K <- first$update_K(first$theta_K)
+    second$K <- second$update_K(second$theta_K)
+
+    bigD %*% Matrix::bdiag(c1 * first$K, c2 * second$K)
   }
 
   ngme_operator(
@@ -255,7 +261,7 @@ bv_normal <- function(
     second      = second,
     theta_K     = theta_K,
     update_K    = update_K,
-    K           = bigD %*% Matrix::bdiag(first$K, second$K),
+    K           = update_K(theta_K),
     h           = c(first$h, second$h),
     symmetric   = FALSE,
     zero_trace  = FALSE,
@@ -263,9 +269,11 @@ bv_normal <- function(
     share_param = share_param,
     fix_bv_theta = fix_bv_theta,
     param_name  = c("rho",
+      "c1",
+      "c2",
       if (!is.null(first$param_name)) paste(first$param_name, "(1st)") else NULL,
       if (!is.null(second$param_name)) paste(second$param_name, "(2nd)") else NULL
     ),
-    param_trans = c(list(identity), first$param_trans, second$param_trans)
+    param_trans = c(identity, exp, exp, first$param_trans, second$param_trans)
   )
 }

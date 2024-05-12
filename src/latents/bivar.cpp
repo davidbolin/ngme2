@@ -171,16 +171,18 @@ Bivar2::Bivar2(const Rcpp::List& operator_list):
 
 void Bivar2::update_K(const VectorXd& theta_K) {
   double rho = theta_K(0);
-  VectorXd theta_K1 = theta_K.segment(1, n_theta_1);
-  VectorXd theta_K2 = theta_K.segment(1 + n_theta_1, n_theta_2);
+  double c1 = exp(theta_K(1));
+  double c2 = exp(theta_K(2));
+  VectorXd theta_K1 = theta_K.segment(3, n_theta_1);
+  VectorXd theta_K2 = theta_K.segment(3 + n_theta_1, n_theta_2);
   Matrix2d D = getD(0, rho);
   first->update_K(theta_K1);
   second->update_K(theta_K2);
 
-  SparseMatrix<double> K00 = VectorXd::Constant(n, D(0,0)).asDiagonal() * first->getK();
-  SparseMatrix<double> K01 = VectorXd::Constant(n, D(0,1)).asDiagonal() * second->getK();
-  SparseMatrix<double> K10 = VectorXd::Constant(n, D(1,0)).asDiagonal() * first->getK();
-  SparseMatrix<double> K11 = VectorXd::Constant(n, D(1,1)).asDiagonal() * second->getK();
+  SparseMatrix<double> K00 = c1 * VectorXd::Constant(n, D(0,0)).asDiagonal() * first->getK();
+  SparseMatrix<double> K01 = c2 * VectorXd::Constant(n, D(0,1)).asDiagonal() * second->getK();
+  SparseMatrix<double> K10 = c1 * VectorXd::Constant(n, D(1,0)).asDiagonal() * first->getK();
+  SparseMatrix<double> K11 = c2 * VectorXd::Constant(n, D(1,1)).asDiagonal() * second->getK();
 
   setSparseBlock(&K, 0, 0, K00);
   setSparseBlock(&K, 0, n, K01);

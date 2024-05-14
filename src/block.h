@@ -289,9 +289,15 @@ public:
     void set_theta_merr(const VectorXd& theta_merr);
 
     // get length of W,V of iterations
-    Rcpp::List sampling(int n, bool posterior, const SparseMatrix<double>& A);
-    Rcpp::List sampling(int n, bool posterior) {
-        return sampling(n, posterior, A);
+    Rcpp::List sampling(
+        int n, 
+        int n_burnin,
+        bool posterior, 
+        const SparseMatrix<double>& A
+    );
+    
+    Rcpp::List sampling(int n, int n_burnin, bool posterior) {
+        return sampling(n, n_burnin, posterior, A);
     }
 
     Rcpp::List output() const;

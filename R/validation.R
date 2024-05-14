@@ -15,6 +15,7 @@
 #' @param print print information during computation
 #' @param percent from 1 to 100 (only for lpo type)
 #' @param times how many test cases (only for lpo type)
+#' @param n_gibbs_samples number of gibbs samples
 #' @param test_idx a list of indices of the data (which data points to be predicted) (only for custom type)
 #' @param train_idx  a list of indices of the data (which data points to be used for re-sampling (not re-estimation)) (only for custom type)
 #' @param keep_test_information logical, keep test information (pred_1, pred_2) in the return (as attributes), pred_1 and pred_2 are the prediction of the two chains
@@ -30,6 +31,7 @@ cross_validation <- function(
   k = 5,
   percent = 50,
   times = 10,
+  n_gibbs_samples = 50,
   test_idx = NULL,
   train_idx = NULL,
   keep_test_information = FALSE
@@ -85,6 +87,7 @@ cross_validation <- function(
         test_idx[[i]],
         train_idx[[i]],
         N=N,
+        n_gibbs_samples = n_gibbs_samples,
         seed=seed
       )
       crs[[i]] <- result$score
@@ -146,6 +149,7 @@ compute_err_reps <- function(
   test_idx,
   train_idx,
   N = 100,
+  n_gibbs_samples = 50,
   seed = NULL
 ) {
   stopifnot("Not a ngme object." = inherits(ngme, "ngme"))
@@ -168,6 +172,7 @@ compute_err_reps <- function(
       bool_train_idx = bool_train_idx,
       bool_test_idx = bool_test_idx,
       N=N,
+      n_gibbs_samples = n_gibbs_samples,
       seed=seed
     )
     crs[[n_crs]] <- result_1rep$scores
@@ -201,6 +206,7 @@ compute_err_1rep <- function(
   bool_test_idx,
   bool_train_idx,
   N = 100,
+  n_gibbs_samples = 50,
   seed = NULL
 ) {
   stopifnot(
@@ -247,7 +253,18 @@ compute_err_1rep <- function(
 # print(A_pred_block)
 
   if (is.null(seed)) seed <- Sys.time()
-  Ws <- sampling_cpp(ngme_1rep, n=2*N, posterior=TRUE, seed=seed)[["W"]]
+
+  # increase n_gibbs_samples
+  ngme_1rep$control_ngme$n_gibbs_samples=n_gibbs_samples
+
+  Ws <- sampling_cpp(
+    ngme_1rep, 
+    n=2*N, 
+    n_burnin = N,
+    posterior=TRUE, 
+    seed=seed
+  )[["W"]]
+  
   Ws_block <- head(Ws, N); W2s_block <- tail(Ws, N)
 
 # Note: Ws_block is a list of N realizations of W of current replicate

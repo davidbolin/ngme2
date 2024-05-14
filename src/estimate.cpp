@@ -206,11 +206,17 @@ std::cout << "Total time of the estimation is (s): " << since(timer).count() / 1
 // }
 
 // [[Rcpp::export]]
-Rcpp::List sampling_cpp(const Rcpp::List& ngme_replicate, int n, bool posterior, unsigned long seed) {
+Rcpp::List sampling_cpp(
+    const Rcpp::List& ngme_replicate, 
+    int n, 
+    int n_burnin,
+    bool posterior, 
+    unsigned long seed
+) {
     std::mt19937 rng (seed);
     BlockModel block (ngme_replicate, rng());
 
-    return block.sampling(n, posterior);
+    return block.sampling(n, n_burnin, posterior);
 }
 
 /*

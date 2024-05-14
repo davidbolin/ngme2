@@ -11,7 +11,8 @@ predict using ngme after estimation}
   data = NULL,
   type = "lp",
   estimator = c("mean", "sd", "5quantile", "95quantile", "median", "mode"),
-  sampling_size = 30,
+  sampling_size = 100,
+  burnin_size = 100,
   q = NULL,
   seed = Sys.time(),
   ...
@@ -34,6 +35,8 @@ vector or matrix (n * 2) for spatial coords}
 \item{estimator}{what type of estimator, c("mean", "median", "mode", "quantile")}
 
 \item{sampling_size}{size of posterior sampling}
+
+\item{burnin_size}{size of posterior burnin}
 
 \item{q}{quantile if using "quantile"}
 

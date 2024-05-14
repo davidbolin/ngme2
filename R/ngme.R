@@ -151,6 +151,7 @@ if (debug) {print(str(ngme_model$replicates[[1]]))}
       res <- sampling_cpp(
         ngme_model$replicates[[i]],
         n = control_ngme$n_post_samples,
+        n_burnin = 1,
         posterior = TRUE,
         seed = control_opt$seed
       )

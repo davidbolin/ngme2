@@ -669,13 +669,15 @@ void BlockModel::sample_cond_noise_V(bool posterior) {
 }
 
 // posterior
-Rcpp::List BlockModel::sampling(int n, bool posterior, const SparseMatrix<double>& A) {
+Rcpp::List BlockModel::sampling(
+  int n, int n_burnin, bool posterior, const SparseMatrix<double>& A
+) {
   std::vector<VectorXd> AWs; // blockA * blockW
   std::vector<VectorXd> Ws; // blockW
   std::vector<VectorXd> Vs; // blockV
   std::vector<VectorXd> mn_Vs; // measurement nosie V
 
-  burn_in(1);
+  burn_in(n_burnin);
 
   for (int i=0; i < n; i++) {
     if (posterior) {

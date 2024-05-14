@@ -8,6 +8,8 @@ bv_normal(
   mesh,
   sub_models,
   rho = 0,
+  c1 = 1,
+  c2 = 1,
   group = NULL,
   share_param = FALSE,
   fix_bv_theta = FALSE,

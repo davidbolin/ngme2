@@ -14,6 +14,7 @@
 #' "lp" is linear predictor (including fixed effect and all sub-models)
 #' @param estimator what type of estimator, c("mean", "median", "mode", "quantile")
 #' @param sampling_size size of posterior sampling
+#' @param burnin_size size of posterior burnin
 #' @param seed random seed
 #' @param q quantile if using "quantile"
 #' @param ... extra argument from 0 to 1 if using "quantile"
@@ -26,7 +27,8 @@ predict.ngme <- function(
   data = NULL,
   type = "lp",
   estimator = c("mean", "sd", "5quantile", "95quantile", "median", "mode"),
-  sampling_size = 30,
+  sampling_size = 100,
+  burnin_size = 100,
   q = NULL,
   seed = Sys.time(),
   ...
@@ -37,7 +39,12 @@ predict.ngme <- function(
     sampling_size > 0,
     "Make sure the object is of class 'ngme'." = inherits(object, "ngme")
   )
-  samples_W <- sampling_cpp(ngme, n=sampling_size, posterior=TRUE, seed=seed)[["W"]]
+  samples_W <- sampling_cpp(ngme, 
+    n=sampling_size, 
+    n_burnin = sampling_size, 
+    posterior=TRUE, 
+    seed=seed
+  )[["W"]]
 
   ret <- NULL
   for (estimator in estimator) {

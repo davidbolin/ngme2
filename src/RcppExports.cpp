@@ -24,16 +24,17 @@ BEGIN_RCPP
 END_RCPP
 }
 // sampling_cpp
-Rcpp::List sampling_cpp(const Rcpp::List& ngme_replicate, int n, bool posterior, unsigned long seed);
-RcppExport SEXP _ngme2_sampling_cpp(SEXP ngme_replicateSEXP, SEXP nSEXP, SEXP posteriorSEXP, SEXP seedSEXP) {
+Rcpp::List sampling_cpp(const Rcpp::List& ngme_replicate, int n, int n_burnin, bool posterior, unsigned long seed);
+RcppExport SEXP _ngme2_sampling_cpp(SEXP ngme_replicateSEXP, SEXP nSEXP, SEXP n_burninSEXP, SEXP posteriorSEXP, SEXP seedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::List& >::type ngme_replicate(ngme_replicateSEXP);
     Rcpp::traits::input_parameter< int >::type n(nSEXP);
+    Rcpp::traits::input_parameter< int >::type n_burnin(n_burninSEXP);
     Rcpp::traits::input_parameter< bool >::type posterior(posteriorSEXP);
     Rcpp::traits::input_parameter< unsigned long >::type seed(seedSEXP);
-    rcpp_result_gen = Rcpp::wrap(sampling_cpp(ngme_replicate, n, posterior, seed));
+    rcpp_result_gen = Rcpp::wrap(sampling_cpp(ngme_replicate, n, n_burnin, posterior, seed));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -54,7 +55,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_ngme2_estimate_cpp", (DL_FUNC) &_ngme2_estimate_cpp, 2},
-    {"_ngme2_sampling_cpp", (DL_FUNC) &_ngme2_sampling_cpp, 4},
+    {"_ngme2_sampling_cpp", (DL_FUNC) &_ngme2_sampling_cpp, 5},
     {"_ngme2_rGIG_cpp", (DL_FUNC) &_ngme2_rGIG_cpp, 4},
     {NULL, NULL, 0}
 };

@@ -993,3 +993,29 @@ void BlockModel::test_in_the_end() {
     std::cout << "diff at iter " << s << " = " << second_term/(s+1) - rb_trace_K - cond_W_term/(s+1) << std::endl;
   }
 }
+
+// marginal log likelihood  pi(Y) = pi(Y|W, V) pi(W|V) pi(V)
+double BlockModel::log_likelihood() const {
+  // compute log likelihood
+  // pi(Y|W, noise_V) 
+  VectorXd res = Y - A * getW() - X * beta - (-VectorXd::Ones(n_obs) + noise_V).cwiseProduct(noise_mu);
+  VectorXd noise_SV = noise_sigma.array().pow(2).matrix().cwiseProduct(noise_V);
+
+  // res ~ N(0, noise_SV) 
+  // -0.5 * res^T noise_SV^-1 res - 0.5 logdet(noise_SV)
+  double pi = atan(1)*4;
+  double log_y_given_WV = -0.5 * (res.cwiseProduct(res).cwiseQuotient(noise_SV)).sum() - 0.5 * noise_SV.array().log().sum() - n_obs * log(2*pi);
+  
+  // pi(block V)
+  double logd_noiseV = 0;
+  if (family != "normal") {
+    logd_noiseV = NoiseUtil::log_density(family, noise_V, VectorXd::Ones(n_obs), B_nu, theta_nu, FALSE);
+  }
+
+  double logd_WV = 0;
+  for (int i=0; i < n_latent; i++) {
+    logd_WV += latents[i]->logd_W_V();
+  }
+  
+  return log_y_given_WV + logd_noiseV + logd_WV;
+}

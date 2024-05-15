@@ -140,6 +140,7 @@ if (verbose) {
 std::cout << "one step = " << one_step << std::endl;
 std::cout << "iteration = : " << curr_iter+1 << std::endl;
 std::cout << "parameter = : " << x << std::endl;
+std::cout << "marginal likelihood = : " <<  model->log_likelihood() << std::endl;
 }
 
         model->set_parameter(x);

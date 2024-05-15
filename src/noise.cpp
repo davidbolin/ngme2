@@ -102,6 +102,8 @@ double NoiseUtil::log_density(
     const VectorXd& theta_nu,
     bool single_V
 ) {
+    if (noise_type != "nig" && noise_type != "gal") return 0;
+
     VectorXd nu = (B_nu * theta_nu).array().exp();
     assert(V.size() == h.size());
     double logd=0;

@@ -163,7 +163,10 @@ public:
     double logd_W_given_V(const VectorXd& W, const SparseMatrix<double>& K, const VectorXd& mu, const VectorXd& sigma, const VectorXd& V);
     // pi(KW|V) fix K
     double logd_KW_given_V(const VectorXd& mu, const VectorXd& sigma, const VectorXd& V);
-
+    
+    // return log(pi(KW|V)) + log(pi(V))
+    double logd_W_V();
+    
     // pi(W|V) * pi(V)
     double log_density(const VectorXd& parameter, bool precond_K = false);
     MatrixXd precond(bool precond_K = false, double eps = 1e-5);

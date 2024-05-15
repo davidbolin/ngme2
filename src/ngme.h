@@ -89,6 +89,14 @@ public:
 
   void burn_in(int iterations);
 
+  double log_likelihood() const {
+    double ll = 0;
+    for (int i=0; i < n_repl; i++) {
+      ll += ngme_repls[i]->log_likelihood();
+    }
+    return ll;
+  }
+
   // for test only, after estimation
   void test_in_the_end() {
     ngme_repls[0]->test_in_the_end();

@@ -707,3 +707,18 @@ const SparseMatrix<double, 0, int>& Latent::get_dK(int i) {
     else
         return num_dK[i];
 }
+
+
+// return log(pi(KW|V)) + log(pi(V))
+double Latent::logd_W_V() {
+    double logd_V = 0;
+    if (n_noise == 1) {
+        logd_V = NoiseUtil::log_density(noise_type[0], V, h, B_nu, theta_nu, single_V);
+    } else if (n_noise == 2) {
+        double logd_V1 = NoiseUtil::log_density(noise_type[0], V.head(V_size/2), h.head(V_size/2), B_nu.block(0, 0, V_size/2, B_nu.cols()), theta_nu, single_V);
+        double logd_V2 = NoiseUtil::log_density(noise_type[1], V.tail(V_size/2), h.tail(V_size/2), B_nu.block(V_size/2, 0, V_size/2, B_nu.cols()), theta_nu, single_V);
+        logd_V = logd_V1 + logd_V2;
+    }
+
+    return logd_W_given_V(W, getK(), mu, sigma, V) + logd_V;
+}

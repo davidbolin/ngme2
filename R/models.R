@@ -64,7 +64,7 @@ ar1 <- function(
     K = update_K(theta_K),
     h = h,
     symmetric = FALSE,
-    zero_trace = TRUE,
+    zero_trace = FALSE,
     param_name = "rho",
     param_trans = list(ar1_th2a)
   )

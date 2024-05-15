@@ -137,9 +137,9 @@ VectorXd Ngme_optimizer::sgd(
         x = x - pow(tmp, reduce_power) * one_step;
 
 if (verbose) {
-std::cout << "one step = " << one_step << std::endl;
 std::cout << "iteration = : " << curr_iter+1 << std::endl;
-std::cout << "parameter = : " << x << std::endl;
+// std::cout << "one step = " << one_step << std::endl;
+// std::cout << "parameter = : " << x << std::endl;
 std::cout << "marginal likelihood = : " <<  model->log_likelihood() << std::endl;
 }
 

@@ -298,7 +298,6 @@ fit_repl <- ngme(
   data = graph$get_data(),
   control_opt = control_opt(
     iterations = 2000,
-    # preconditioner = "full",
     rao_blackwellization = TRUE,
     n_parallel_chain = 4,
     # verbose = TRUE,

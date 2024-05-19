@@ -13,8 +13,7 @@ test_that("test basic mn", {
       iterations = 100,
       # verbose = T,
       print_check_info = FALSE,
-      n_parallel_chain = 1,
-      preconditioner = "fast"
+      n_parallel_chain = 1
     )
   )
   expect_true(out$replicates[[1]]$noise$theta_sigma - log(1.5) < 1)
@@ -34,8 +33,7 @@ test_that("test basic mn", {
       n_parallel_chain = 4,
       n_slope_check = 10,
       # rao_blackwellization = TRUE,
-      print_check_info = FALSE,
-      preconditioner = "fast"
+      print_check_info = FALSE
   ))
   out
   traceplot(out, hline=c(5, 0.8, 0.05, -2, 3))
@@ -68,8 +66,7 @@ test_that("test ar1 + NIG noise", {
       n_parallel_chain = 4,
       n_slope_check = 10,
       # rao_blackwellization = TRUE,
-      print_check_info = FALSE,
-      preconditioner = "fast"
+      print_check_info = FALSE
   ))
   out
 

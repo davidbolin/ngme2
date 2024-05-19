@@ -131,8 +131,7 @@ ngme_fit <- ngme(
     iterations = 2000,
     n_parallel_chain = 4,
     optimizer = adamW(),
-    rao_blackwellization = TRUE,
-    preconditioner = "none"
+    rao_blackwellization = TRUE
   ),
   debug = FALSE
 )

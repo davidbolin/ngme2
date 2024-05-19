@@ -270,9 +270,7 @@ out <- ngme(
     n_parallel_chain = 4,
     optimizer = adam(stepsize = 0.01),
     iterations = 10000,
-    preconditioner = "none",
     rao_blackwellization = TRUE,
-    precond_by_diff_chain = FALSE,
     seed = 7
   )
 )

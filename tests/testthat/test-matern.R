@@ -59,10 +59,7 @@ test_that("test Matern", {
       verbose = T,
       max_absolute_step = 1,
       max_relative_step = 1,
-      std_lim = 0.01,
-      preconditioner = "fast",
-      sgd_method = "momentum",
-      sgd_parameters = c(0.4, 1)
+      std_lim = 0.01
     ),
     # start=out,
     debug = F
@@ -199,8 +196,7 @@ test_that("test 1d matern with numerical g", {
     control_opt = control_opt(
       estimation = T,
       iterations = 500,
-      n_parallel_chain = 4,
-      preconditioner = "none"
+      n_parallel_chain = 4
     )
     # ,start = out
   )

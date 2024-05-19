@@ -28,8 +28,6 @@ test_that("simulate and estimate of rw with NIG", {
       iterations = 500,
       n_parallel_chain = 4,
       print_check_info = F,
-      preconditioner = "fast",
-      # preconditioner = "none",
       verbose = F
     )
     # debug = TRUE

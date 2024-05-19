@@ -504,7 +504,7 @@ VectorXd BlockModel::grad_theta_mu() {
       grad(l) = (noise_V - VectorXd::Ones(n_obs)).cwiseProduct(B_mu.col(l).cwiseQuotient(noise_SV)).dot(residual);
 
       // add prior
-      grad(l) += PriorUtil::d_log_dens(prior_mu_type, prior_mu_param, theta_mu(l));
+      // grad(l) += PriorUtil::d_log_dens(prior_mu_type, prior_mu_param, theta_mu(l));
   }
   return -grad;
 }
@@ -526,9 +526,10 @@ VectorXd BlockModel::grad_theta_sigma() {
   if (rao_blackwell) grad += rb_trace_noise_sigma;
 
   // add prior
-  for (int l=0; l < n_theta_sigma; l++) {
-      grad(l) += PriorUtil::d_log_dens(prior_sigma_type, prior_sigma_param, theta_sigma(l));
-  }
+  // for (int l=0; l < n_theta_sigma; l++) {
+  //     grad(l) += PriorUtil::d_log_dens(prior_sigma_type, prior_sigma_param, theta_sigma(l));
+  // }
+
   return -grad;
 }
 
@@ -1004,7 +1005,7 @@ double BlockModel::log_likelihood() const {
   // res ~ N(0, noise_SV) 
   // -0.5 * res^T noise_SV^-1 res - 0.5 logdet(noise_SV)
   double pi = atan(1)*4;
-  double log_y_given_WV = -0.5 * (res.cwiseProduct(res).cwiseQuotient(noise_SV)).sum() - 0.5 * noise_SV.array().log().sum() - n_obs * log(2*pi);
+  double log_y_given_WV = -0.5 * (res.cwiseProduct(res).cwiseQuotient(noise_SV)).sum() - noise_SV.cwiseSqrt().array().log().sum() - 0.5 * n_obs * log(2*pi);
   
   // pi(block V)
   double logd_noiseV = 0;
@@ -1016,6 +1017,10 @@ double BlockModel::log_likelihood() const {
   for (int i=0; i < n_latent; i++) {
     logd_WV += latents[i]->logd_W_V();
   }
-  
+  // std::cout << "res = " << res << std::endl;
+  // std::cout << "logd_noiseV = " << logd_noiseV << std::endl;
+  // std::cout << "logd_WV = " << logd_WV << std::endl;
+  std::cout << "sigme.e" << sqrt(noise_SV(1)) << std::endl;
+  std::cout << "log_y_given_WV = " << log_y_given_WV << std::endl;
   return log_y_given_WV + logd_noiseV + logd_WV;
 }

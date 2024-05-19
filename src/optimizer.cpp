@@ -22,7 +22,7 @@ Ngme_optimizer::Ngme_optimizer(
     v(VectorXd::Zero(ngme->get_n_params())),
     preconditioner(ngme->precond(0, precond_eps))
 {
-    if (method != "vanilla") {
+    if (method != "precond_sgd") {
         sgd_parameters = (Rcpp::as<VectorXd>(control_opt["sgd_parameters"]));
     }
 
@@ -102,7 +102,7 @@ VectorXd Ngme_optimizer::sgd(
             v = beta1 * v + (1-beta1) * grad.cwiseProduct(grad);
             one_step = model->get_stepsizes().cwiseProduct(grad.cwiseQuotient(v.cwiseSqrt() + VectorXd::Constant(v.size(), eps_hat)));
         } else {
-            // vanilla
+            // precond_sgd
             one_step = model->get_stepsizes().cwiseProduct(grad);
         }
 

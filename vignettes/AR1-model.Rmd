@@ -63,6 +63,7 @@ m1$A
 Doing simulation in Ngme2 is simple. Just pass the corresponding model into `simulate` function.
 
 ```{r ar-simulation, fig.align="center"}
+load_all()
 n_obs <- 1000
 day <- 1:n_obs
 ar1_model <- f(day, model="ar1", rho = 0.5,
@@ -100,16 +101,14 @@ ngme_out <- ngme(
   ),
   data = data.frame(x1=x1, x2=x2, Y=Y),
   control_opt = control_opt(
-    optimizer = vanilla(),
+    optimizer = precond_sgd(),
     burnin = 100,
     iterations = 500,
     std_lim = 0.01,
     n_parallel_chain = 4,
-    compute_precond_each_iter = TRUE,
     stop_points = 20,
     print_check_info = FALSE,
     verbose = FALSE,
-    preconditioner = "full",
     seed = 3
   )
 )

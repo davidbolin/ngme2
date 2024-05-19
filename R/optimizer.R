@@ -1,26 +1,48 @@
 # different methods for SGD
-# vanilla
+# preconditioner_sgd
 # momentum
 # adagrad
 # rmsprop
 # adam
 # adamW
 
-#' Vanilla SGD optimization
+#' Preconditioner SGD optimization
 #'
 #' @param stepsize stepsize for SGD
+#' @param preconditioner  preconditioner, can be c("none", "fast", "full")
+#' "none" means no preconditioner, i.e., vanilla SGD,
+#' "full" means compute numerical hessian as preconditioner
+#' "bfgs" means use BFGS preconditioner
+#' "fast" means compute numerical hessian except for the parameter of K matrix (for speed reason) 
+# ' The update rule for BFGS is:
+# ' \deqn{H_{t+1} = H_t + \frac{y_t y_t^T}{y_t^T s_t} - \frac{H_t s_t s_t^T H_t}{s_t^T H_t s_t}}
+# ' \deqn{x_{t+1} = x_t - H_{t+1} g_t}
+#' @param precond_eps   numerical, the gap used for estimate preconditioner, default is 1e-5
+#' @param precond_by_diff_chain logical, if TRUE, use different chains to estimate preconditioner (only computed at check points), if FALSE, use the same chain to estimate preconditioner (computed at each iteration)
+#' @param compute_precond_each_iter logical, if TRUE, compute preconditioner at each iteration, if FALSE, only compute preconditioner at check points (if has only 1 chain running, it will be set TRUE)
 #'
 #' @return a list of control variables for optimization 
 #' (used in \code{control_opt} function)
 #' @export
-vanilla <- function(
-  stepsize = 0.5
+precond_sgd <- function(
+  stepsize = 0.5,
+  # preconditioner related
+  preconditioner    = "fast",
+  precond_eps       = 1e-5,
+  precond_by_diff_chain = FALSE,
+  compute_precond_each_iter = FALSE
 ) {
 
   ret <- list(
-    method         = "vanilla",
+    # sgd related
+    method         = "precond_sgd",
     stepsize       = stepsize,
-    sgd_parameters = NULL
+    sgd_parameters = NULL,
+    # preconditioner related
+    preconditioner  = preconditioner,
+    precond_eps     = precond_eps,
+    precond_by_diff_chain = precond_by_diff_chain,
+    compute_precond_each_iter = compute_precond_each_iter
   )
   class(ret) <- "ngme_optimizer"
   ret

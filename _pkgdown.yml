@@ -94,8 +94,7 @@ reference:
     - noise_normal_nig
   - title: ngme2 optimization methods
     contents:
-    - vanilla
-    - vanilla
+    - precond_sgd
     - momentum
     - adagrad
     - rmsprop

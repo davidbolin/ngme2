@@ -25,15 +25,9 @@
 #' @param trend_lim       maximum allowed slope
 #' @param print_check_info print the convergence information
 #' @param optimizer choose different sgd optimization method, 
-#' currently support "vanilla", "momentum", "adagrad", "rmsprop", "adam", "adamW"
-#' see ?vanilla, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW
+#' currently support "precond_sgd", "momentum", "adagrad", "rmsprop", "adam", "adamW"
+#' see precond_sgd, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW
 #'
-#'
-#' @param preconditioner  preconditioner, can be c("none", "fast", "full")
-#' "none" means no preconditioner, "fast" means precondition everything except for the parameter of K matrix (for speed reason), "full" means precondition everything
-#' @param precond_eps   numerical, the gap used for estimate preconditioner, default is 1e-5
-#' @param precond_by_diff_chain logical, if TRUE, use different chains to estimate preconditioner (only computed at check points), if FALSE, use the same chain to estimate preconditioner (computed at each iteration)
-#' @param compute_precond_each_iter logical, if TRUE, compute preconditioner at each iteration, if FALSE, only compute preconditioner at check points (if has only 1 chain running, it will be set TRUE)
 #'
 #' @param max_num_threads maximum number of threads used for parallel computing, by default will be set same as n_parallel_chain.
 #' If it is more than n_parallel_chain, the rest will be used to parallel different replicates of the model.
@@ -58,11 +52,6 @@ control_opt <- function(
   iters_per_check   = iterations / stop_points,
 
   optimizer         = adam(),
-  # preconditioner related
-  preconditioner    = "none",
-  precond_eps       = 1e-5,
-  precond_by_diff_chain = FALSE,
-  compute_precond_each_iter = FALSE,
   
   # parallel options
   n_parallel_chain  = 4,
@@ -85,7 +74,19 @@ control_opt <- function(
   verbose           = FALSE
 ) {
   strategy_list <- c("all", "ws")
-  preconditioner_list <- c("none", "fast", "full")
+  preconditioner_list <- c("none", "fast", "full", "bfgs")
+
+  # read preconditioner from optimizer
+  preconditioner            <- "none"
+  precond_eps               <- 1e-5
+  precond_by_diff_chain     <- FALSE
+  compute_precond_each_iter <- FALSE
+  if (optimizer$method == "precond_sgd") {
+    preconditioner    = optimizer$preconditioner
+    precond_eps       = optimizer$precond_eps
+    precond_by_diff_chain = optimizer$precond_by_diff_chain
+    compute_precond_each_iter = optimizer$compute_precond_each_iter
+  }
 
   # if user inputs iters_per_check
   if (!missing(iters_per_check) && !missing(stop_points)) {
@@ -108,7 +109,6 @@ control_opt <- function(
 
 
   if (n_parallel_chain == 1) {
-    # compute_precond_each_iter <- TRUE
     precond_by_diff_chain <- FALSE
   }
 

@@ -32,6 +32,10 @@ private:
 
     // store the preconditioner
     MatrixXd preconditioner;
+    
+    // bfgs: H approximates the inverse of Hessian 
+    MatrixXd H;
+    VectorXd grad, prev_grad, x, prev_x;
 
     // keep trajs
     std::vector<VectorXd> trajs;

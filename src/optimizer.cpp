@@ -20,9 +20,11 @@ Ngme_optimizer::Ngme_optimizer(
     method(Rcpp::as<std::string>(control_opt["sgd_method"])),
     m(VectorXd::Zero(ngme->get_n_params())),
     v(VectorXd::Zero(ngme->get_n_params())),
-    preconditioner(ngme->precond(0, precond_eps))
+    preconditioner(ngme->precond(0, precond_eps)),
+    grad(VectorXd::Zero(ngme->get_n_params())),
+    x(ngme->get_parameter())
 {
-    if (method != "precond_sgd") {
+    if (method != "precond_sgd" && method != "bfgs") {
         sgd_parameters = (Rcpp::as<VectorXd>(control_opt["sgd_parameters"]));
     }
 
@@ -43,7 +45,17 @@ Ngme_optimizer::Ngme_optimizer(
         beta2 = sgd_parameters(1);
         lambda = sgd_parameters(2);
         eps_hat = sgd_parameters(3);
+    } else if (method == "bfgs") {
+        // init for BFGS
+        H = MatrixXd::Identity(ngme->get_n_params(), ngme->get_n_params()) * 1e-8;
+    } else {
+        // precond_sgd
     }
+
+    grad = model->grad();
+    prev_grad = grad;
+    x = model->get_parameter();
+    prev_x = x;
 }
 
 // x <- x - model->stepsize() * model->grad()
@@ -58,17 +70,18 @@ VectorXd Ngme_optimizer::sgd(
     int var_reduce_iter = 5000;
     double reduce_power = 0.2; // 0-1, the bigger, the stronger
 
-    // initialize preconditioner
-    VectorXd x = model->get_parameter();
-
 // auto timer_grad = std::chrono::steady_clock::now();
     for (int i = 0; i < iterations; i++) {
         trajs.push_back(x);
-        VectorXd grad = model->grad();
+
+        grad = model->grad();
         if (compute_precond_each_iter) {
             preconditioner = model->precond(precond_strategy, precond_eps);
         }
-        grad = preconditioner.llt().solve(grad);
+        
+        if (precond_strategy > 0) {
+            grad = preconditioner.llt().solve(grad);
+        }
 
         // which SGD step
         // default: one step = stepsize * H^-1 * grad
@@ -101,6 +114,35 @@ VectorXd Ngme_optimizer::sgd(
 //  x_{t+1} = x_t - stepsize * g_t / (sqrt(v_t) + epsilon) 
             v = beta1 * v + (1-beta1) * grad.cwiseProduct(grad);
             one_step = model->get_stepsizes().cwiseProduct(grad.cwiseQuotient(v.cwiseSqrt() + VectorXd::Constant(v.size(), eps_hat)));
+        } else if (method == "bfgs" && curr_iter > 0) {
+            double curr_loglik = model->log_likelihood();
+            // Choose stepsize (3.1 backtracking line search)
+            double alpha = 1; // stepsize
+            double c = 1e-4; // Armijo condition
+            double rho1 = 0.9; // backtracking rate
+            
+            // BFGS update
+            VectorXd s = x - prev_x;
+            VectorXd y = grad - prev_grad;
+            double rho = 1.0 / y.dot(s);
+            H = (MatrixXd::Identity(H.rows(), H.cols()) - rho * s * y.transpose()) * H * (MatrixXd::Identity(H.rows(), H.cols()) - rho * y * s.transpose()) + rho * s * s.transpose();
+            one_step = model->get_stepsizes().cwiseProduct(H * grad);
+
+            bool backtracking = true;
+            while (backtracking && alpha > 0.05) {
+                VectorXd new_x = x - alpha * one_step;
+                model->set_parameter(new_x);
+                double new_loglik = model->log_likelihood();
+                if (new_loglik > curr_loglik + c * alpha * grad.dot(one_step)) {
+                    backtracking = false;
+                } else {
+                    alpha *= rho1;
+                }
+            }
+            one_step *= alpha;
+
+            // update prev_x and prev_grad
+            prev_x = x; prev_grad = grad;
         } else {
             // precond_sgd
             one_step = model->get_stepsizes().cwiseProduct(grad);

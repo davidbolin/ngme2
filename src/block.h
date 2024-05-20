@@ -113,6 +113,7 @@ public:
     int get_n_obs() const {return n_obs;}
     void sampleW_VY(bool burn_in = false);
     double log_likelihood() const;
+    double log_likelihood(const VectorXd& param);
 
     void sample_cond_V() {
       if(n_latent > 0){

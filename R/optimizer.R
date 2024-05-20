@@ -12,11 +12,7 @@
 #' @param preconditioner  preconditioner, can be c("none", "fast", "full")
 #' "none" means no preconditioner, i.e., vanilla SGD,
 #' "full" means compute numerical hessian as preconditioner
-#' "bfgs" means use BFGS preconditioner
 #' "fast" means compute numerical hessian except for the parameter of K matrix (for speed reason) 
-# ' The update rule for BFGS is:
-# ' \deqn{H_{t+1} = H_t + \frac{y_t y_t^T}{y_t^T s_t} - \frac{H_t s_t s_t^T H_t}{s_t^T H_t s_t}}
-# ' \deqn{x_{t+1} = x_t - H_{t+1} g_t}
 #' @param precond_eps   numerical, the gap used for estimate preconditioner, default is 1e-5
 #' @param precond_by_diff_chain logical, if TRUE, use different chains to estimate preconditioner (only computed at check points), if FALSE, use the same chain to estimate preconditioner (computed at each iteration)
 #' @param compute_precond_each_iter logical, if TRUE, compute preconditioner at each iteration, if FALSE, only compute preconditioner at check points (if has only 1 chain running, it will be set TRUE)
@@ -195,6 +191,29 @@ adamW <- function(
     method         = "adamW",
     stepsize       = stepsize,
     sgd_parameters = c(beta1, beta2, lambda, epsilon)
+  )
+  class(ret) <- "ngme_optimizer"
+  ret
+}
+
+
+#' BFGS optimization
+#'
+#' @param stepsize initial stepsize for BFGS
+#' "bfgs" means use BFGS preconditioner
+# ' The update rule for BFGS is:
+# ' \deqn{H_{t+1} = H_t + \frac{y_t y_t^T}{y_t^T s_t} - \frac{H_t s_t s_t^T H_t}{s_t^T H_t s_t}}
+# ' \deqn{x_{t+1} = x_t - H_{t+1} g_t}
+#' @return a list of control variables for optimization
+#' (used in \code{control_opt} function)
+#' @export
+bfgs <- function(
+  stepsize = 1
+) {
+  ret <- list(
+    method         = "bfgs",
+    stepsize       = 1,
+    sgd_parameters = NULL
   )
   class(ret) <- "ngme_optimizer"
   ret

@@ -74,7 +74,7 @@ control_opt <- function(
   verbose           = FALSE
 ) {
   strategy_list <- c("all", "ws")
-  preconditioner_list <- c("none", "fast", "full", "bfgs")
+  preconditioner_list <- c("none", "fast", "full")
 
   # read preconditioner from optimizer
   preconditioner            <- "none"

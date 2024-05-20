@@ -1024,3 +1024,9 @@ double BlockModel::log_likelihood() const {
   std::cout << "log_y_given_WV = " << log_y_given_WV << std::endl;
   return log_y_given_WV + logd_noiseV + logd_WV;
 }
+
+
+double BlockModel::log_likelihood(const VectorXd& param) {
+  set_parameter(param);
+  return log_likelihood();
+}

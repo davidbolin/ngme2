@@ -98,6 +98,15 @@ ngme <- function(
     control_opt$standardize_fixed # convert fixed effects
   )
   attr(ngme_model, "fit") <- fit
+  
+  # Check if using bfgs for non-Gaussian model
+  if (control_opt$sgd_method == "bfgs") {
+    stopifnot(
+      "Please use other optimizer for non-Gaussian model, BFGS is used for optimizing Gaussian model likelihood." =
+      ngme_model$replicates[[1]]$all_gaussian &&
+      noise$noise_type == "normal"
+    )
+  }
 
   ####### Use Last_fit ngme object to update Rcpp_list
   if (!is.null(start) && !inherits(start, "ngme"))

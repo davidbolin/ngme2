@@ -13,7 +13,7 @@
 #' "none" means no preconditioner, i.e., vanilla SGD,
 #' "full" means compute numerical hessian as preconditioner
 #' "fast" means compute numerical hessian except for the parameter of K matrix (for speed reason) 
-#' @param precond_eps   numerical, the gap used for estimate preconditioner, default is 1e-5
+#' @param numerical_eps   numerical, the gap used for estimate preconditioner, default is 1e-5
 #' @param precond_by_diff_chain logical, if TRUE, use different chains to estimate preconditioner (only computed at check points), if FALSE, use the same chain to estimate preconditioner (computed at each iteration)
 #' @param compute_precond_each_iter logical, if TRUE, compute preconditioner at each iteration, if FALSE, only compute preconditioner at check points (if has only 1 chain running, it will be set TRUE)
 #'
@@ -24,7 +24,7 @@ precond_sgd <- function(
   stepsize = 0.5,
   # preconditioner related
   preconditioner    = "fast",
-  precond_eps       = 1e-5,
+  numerical_eps       = 1e-5,
   precond_by_diff_chain = FALSE,
   compute_precond_each_iter = FALSE
 ) {
@@ -36,7 +36,7 @@ precond_sgd <- function(
     sgd_parameters = NULL,
     # preconditioner related
     preconditioner  = preconditioner,
-    precond_eps     = precond_eps,
+    numerical_eps     = numerical_eps,
     precond_by_diff_chain = precond_by_diff_chain,
     compute_precond_each_iter = compute_precond_each_iter
   )

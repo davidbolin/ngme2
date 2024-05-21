@@ -7,7 +7,7 @@
 precond_sgd(
   stepsize = 0.5,
   preconditioner = "fast",
-  precond_eps = 1e-05,
+  numerical_eps = 1e-05,
   precond_by_diff_chain = FALSE,
   compute_precond_each_iter = FALSE
 )
@@ -18,10 +18,9 @@ precond_sgd(
 \item{preconditioner}{preconditioner, can be c("none", "fast", "full")
 "none" means no preconditioner, i.e., vanilla SGD,
 "full" means compute numerical hessian as preconditioner
-"bfgs" means use BFGS preconditioner
 "fast" means compute numerical hessian except for the parameter of K matrix (for speed reason)}
 
-\item{precond_eps}{numerical, the gap used for estimate preconditioner, default is 1e-5}
+\item{numerical_eps}{numerical, the gap used for estimate preconditioner, default is 1e-5}
 
 \item{precond_by_diff_chain}{logical, if TRUE, use different chains to estimate preconditioner (only computed at check points), if FALSE, use the same chain to estimate preconditioner (computed at each iteration)}
 

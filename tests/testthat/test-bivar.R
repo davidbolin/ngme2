@@ -62,7 +62,7 @@ true_model$operator$K
       optimizer = precond_sgd(
         preconditioner = "full",
         precond_by_diff_chain = TRUE,
-        precond_eps = 1e-5
+        numerical_eps = 1e-5
       ),
       seed = 3,
       iterations = 500,

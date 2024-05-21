@@ -14,13 +14,13 @@ Ngme_optimizer::Ngme_optimizer(
 ) : model(ngme),
     verbose(control_opt["verbose"]),
     precond_strategy(control_opt["precond_strategy"]),
-    precond_eps(control_opt["precond_eps"]),
+    numerical_eps(control_opt["numerical_eps"]),
     curr_iter(0),
 
     method(Rcpp::as<std::string>(control_opt["sgd_method"])),
     m(VectorXd::Zero(ngme->get_n_params())),
     v(VectorXd::Zero(ngme->get_n_params())),
-    preconditioner(ngme->precond(0, precond_eps)),
+    preconditioner(ngme->precond(0, numerical_eps)),
     grad(VectorXd::Zero(ngme->get_n_params())),
     x(ngme->get_parameter())
 {
@@ -74,13 +74,11 @@ VectorXd Ngme_optimizer::sgd(
     for (int i = 0; i < iterations; i++) {
         trajs.push_back(x);
 
-        grad = model->grad();
-        if (compute_precond_each_iter) {
-            preconditioner = model->precond(precond_strategy, precond_eps);
-        }
-        
-        if (precond_strategy > 0) {
-            grad = preconditioner.llt().solve(grad);
+        if (method != "bfgs") {
+            // stochastic gradient descent
+            grad = model->grad();
+        } else {
+            grad = numerical_grad(x);
         }
 
         // which SGD step
@@ -115,36 +113,34 @@ VectorXd Ngme_optimizer::sgd(
             v = beta1 * v + (1-beta1) * grad.cwiseProduct(grad);
             one_step = model->get_stepsizes().cwiseProduct(grad.cwiseQuotient(v.cwiseSqrt() + VectorXd::Constant(v.size(), eps_hat)));
         } else if (method == "bfgs" && curr_iter > 0) {
-            double curr_loglik = model->log_likelihood();
-            // Choose stepsize (3.1 backtracking line search)
-            double alpha = 1; // stepsize
-            double c = 1e-4; // Armijo condition
-            double rho1 = 0.9; // backtracking rate
-            
-            // BFGS update
+            // BFGS - deterministic for Gaussian model
             VectorXd s = x - prev_x;
             VectorXd y = grad - prev_grad;
             double rho = 1.0 / y.dot(s);
             H = (MatrixXd::Identity(H.rows(), H.cols()) - rho * s * y.transpose()) * H * (MatrixXd::Identity(H.rows(), H.cols()) - rho * y * s.transpose()) + rho * s * s.transpose();
-            one_step = model->get_stepsizes().cwiseProduct(H * grad);
+            // compute direction
+            one_step = - model->get_stepsizes().cwiseProduct(H * grad);
 
-            bool backtracking = true;
-            while (backtracking && alpha > 0.05) {
-                VectorXd new_x = x - alpha * one_step;
-                model->set_parameter(new_x);
-                double new_loglik = model->log_likelihood();
-                if (new_loglik > curr_loglik + c * alpha * grad.dot(one_step)) {
-                    backtracking = false;
-                } else {
-                    alpha *= rho1;
-                }
-            }
-            one_step *= alpha;
-
-            // update prev_x and prev_grad
+            double curr_loglik = model->log_likelihood();
+            double alpha = line_search(
+                x, one_step, curr_loglik, grad.dot(one_step),
+                1e-4, // c1
+                0.9, // c2
+                1.1 // alpha_max
+            );
+            
+            // note here feed the opposite direction
+            one_step = - alpha * one_step;
             prev_x = x; prev_grad = grad;
         } else {
             // precond_sgd
+            if (compute_precond_each_iter) {
+                preconditioner = model->precond(precond_strategy, numerical_eps);
+            }
+            
+            if (precond_strategy > 0) {
+                grad = preconditioner.llt().solve(grad);
+            }
             one_step = model->get_stepsizes().cwiseProduct(grad);
         }
 
@@ -182,7 +178,8 @@ if (verbose) {
 std::cout << "iteration = : " << curr_iter+1 << std::endl;
 // std::cout << "one step = " << one_step << std::endl;
 // std::cout << "parameter = : " << x << std::endl;
-std::cout << "marginal likelihood = : " <<  model->log_likelihood() << std::endl;
+std::cout << "negative marginal likelihood := " <<  model->log_likelihood() << std::endl;
+std::cout << "---------------------------" << std::endl; 
 }
 
         model->set_parameter(x);
@@ -191,7 +188,92 @@ std::cout << "marginal likelihood = : " <<  model->log_likelihood() << std::endl
 
     // update preconditioner if not computed
     if (!compute_precond_each_iter)
-        preconditioner = model->precond(precond_strategy, precond_eps);
+        preconditioner = model->precond(precond_strategy, numerical_eps);
 
     return x;
+}
+
+// line_search algo for BFGS
+// Algorithm 3.5 in Nocedal and Wright
+double Ngme_optimizer::line_search(
+    const VectorXd& x, 
+    const VectorXd& p, 
+    double phi_0,
+    double phi_prime_0,
+    double c1,   
+    double c2,   
+    double alpha_max
+) {
+    double alpha_0 = 0.0;
+    // double alpha_i = 0.5 * alpha_max; // Initial step length
+    double alpha_i = 1;
+    int i = 1;
+
+    while (true) {
+        VectorXd x_new = x + alpha_i * p;
+        double phi_alpha_i = log_likelihood(x_new);
+
+        if (phi_alpha_i > phi_0 + c1 * alpha_i * phi_prime_0 
+        || (phi_alpha_i >= log_likelihood(x + (alpha_i - 0.5 * alpha_max) * p) && i > 1)) {
+            return zoom(
+                x, p, alpha_i - 0.5 * alpha_max, alpha_i, c1, c2,
+                phi_0, phi_prime_0
+            );
+        }
+
+        double phi_prime_alpha_i = directional_derivative(x_new, p);
+        if (std::abs(phi_prime_alpha_i) <= -c2 * phi_prime_0) {
+            return alpha_i;
+        }
+        if (phi_prime_alpha_i >= 0) {
+            return zoom(
+                x, p, alpha_i, alpha_i - 0.5 * alpha_max, c1, c2,
+                phi_0, phi_prime_0
+            );
+        }
+
+        alpha_i = 0.5 * (alpha_i + alpha_max); // Update alpha_i
+        i++;
+    }
+}
+
+
+// Zoom function (Algorithm 3.6)
+double Ngme_optimizer::zoom(
+    const VectorXd& x, 
+    const VectorXd& p, 
+    double alpha_lo, 
+    double alpha_hi, 
+    double c1, double c2,
+    double phi_0,
+    double phi_prime_0
+) {
+// std::cout << "zoom" << std::endl;
+    while (true) {
+        // Interpolate (using bisection as an example)
+        double alpha_j = 0.5 * (alpha_lo + alpha_hi);
+
+        VectorXd x_new = x + alpha_j * p;
+        
+        double phi_alpha_j = log_likelihood(x_new);
+        
+        if (phi_alpha_j > phi_0 + c1 * alpha_j * phi_prime_0 || phi_alpha_j >= log_likelihood(x + alpha_lo * p)) {
+            alpha_hi = alpha_j;
+        } else {
+            double phi_prime_alpha_j = directional_derivative(x_new, p);
+            if (std::abs(phi_prime_alpha_j) <= -c2 * phi_prime_0) {
+                return alpha_j;
+            }
+            if (phi_prime_alpha_j * (alpha_hi - alpha_lo) >= 0) {
+                alpha_hi = alpha_lo;
+            }
+            alpha_lo = alpha_j;
+        }
+
+        // Termination condition to prevent infinite loop (can be tuned)
+        if (std::abs(alpha_hi - alpha_lo) < 1e-8) {
+            return alpha_j;
+        }
+    }
+// std::cout << "zoom out" << std::endl;
 }

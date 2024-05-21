@@ -107,7 +107,6 @@ ngme_out <- ngme(
     n_parallel_chain = 4,
     stop_points = 20,
     print_check_info = FALSE,
-    verbose = FALSE,
     seed = 3
   )
 )

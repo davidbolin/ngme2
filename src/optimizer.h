@@ -14,13 +14,12 @@ private:
 
     bool verbose {false};
     int precond_strategy; // 0 for none, 1 for fast, 2 for full
-    double precond_eps;
+    double numerical_eps;
     int curr_iter;
 
     int max_iter;
     double max_relative_step;
     double max_absolute_step;
-    double eps;
     double stepsize;
 
     std::string method;
@@ -61,6 +60,49 @@ public:
     MatrixXd get_preconditioner() const { return preconditioner; }
     void set_preconditioner(const MatrixXd& preconditioner)
         { this->preconditioner = preconditioner; }
+    
+    double line_search(
+        const VectorXd& x, 
+        const VectorXd& p, 
+        double phi_0,
+        double phi_prime_0,
+        double c1 = 1e-4, 
+        double c2 = 0.9, 
+        double alpha_max = 1.0
+    );
+
+    double zoom(
+        const VectorXd& x, 
+        const VectorXd& p, 
+        double alpha_lo, 
+        double alpha_hi, 
+        double c1, double c2,
+        double phi_0,
+        double phi_prime_0
+    );
+
+    double log_likelihood(const VectorXd& x) { 
+        model->set_parameter(x); 
+        return model->log_likelihood(); 
+    }
+    
+    // compute numerical gradient using log_likelihood
+    VectorXd numerical_grad(const VectorXd& x) {
+        VectorXd grad(x.size());
+        for (int i=0; i < x.size(); i++) {
+            VectorXd x_plus = x;
+            x_plus(i) += numerical_eps;
+            VectorXd x_minus = x;
+            x_minus(i) -= numerical_eps;
+            grad(i) = (log_likelihood(x_plus) - log_likelihood(x_minus)) / (2 * numerical_eps);
+        }
+        return grad;
+    }
+
+    // The derivative of log_likelihood in the direction of p
+    double directional_derivative(const VectorXd& x, const VectorXd& p) {
+        return numerical_grad(x).dot(p);
+    }
 };
 
 #endif

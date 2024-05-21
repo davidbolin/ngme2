@@ -180,7 +180,7 @@ if (debug) std::cout << "After assemble" << std::endl;
 
   if (n_latent > 0) {
     VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
-    SparseMatrix<double> Q = K.transpose() * inv_SV.asDiagonal() * K;
+    Q = K.transpose() * inv_SV.asDiagonal() * K;
     if (!corr_measure) {
       QQ = Q + A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V).asDiagonal() * A;
     }
@@ -190,9 +190,9 @@ if (debug) std::cout << "After assemble" << std::endl;
 
     // set N for trace estimator
     chol_QQ.set_N(n_trace_iter);
-
     chol_Q.analyze(Q);
     chol_QQ.analyze(QQ);
+    chol_QQ.compute(QQ);
     LU_K.analyzePattern(K);
   }
 if (debug) std::cout << "After init solver " << std::endl;
@@ -228,7 +228,7 @@ if (debug) std::cout << "End Block Constructor" << std::endl;
       // sample_uncond_noise_V();
       for (int i=0; i < iterations; i++) {
 // std::cout << "burn in iteration i= " << i  << std::endl;
-          sample_cond_V();
+          sample_cond_V(false);
 // std::cout << "sample cond V done" << std::endl;
           sampleW_VY(true);
 // std::cout << "sample W done" << std::endl;
@@ -281,30 +281,23 @@ void BlockModel::sampleW_VY(bool burn_in) {
 // if (debug) std::cout << "starting sampling W." << std::endl;
 // double time = 0;
   if (n_latent==0) return;
-
   VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
 
-  // init Q and QQ, Q is updated every iteration, so does QQ
-  Q = K.transpose() * inv_SV.asDiagonal() * K;
-  VectorXd residual_part = get_residual_part();
+  // M = K' * inv(SV) * mean + A' * inv(Sigma) * (Y - X * beta - (1 - V) mu)
   VectorXd M = K.transpose() * inv_SV.asDiagonal() * getMean();
 
   if (!corr_measure) {
-    QQ = Q + A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V).asDiagonal() * A;
-    M += A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V).asDiagonal() * residual_part;
+    M += A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V).asDiagonal() * get_residual_part();
+  } else{
+    M += A.transpose() * Q_eps * get_residual_part();
   }
-  else{
-    QQ = Q + A.transpose() * Q_eps * A;
-    M += A.transpose() * Q_eps * residual_part;
-  }
+
 // std::cout << "Q: \n" << Q << std::endl;
 // std::cout << "QQ: \n" << QQ << std::endl;
-
 // std::cout << "M = " << M << std::endl;
   VectorXd z = NoiseUtil::rnorm_vec(W_sizes, 0, 1, rng());
 
   // sample W ~ N(QQ^-1*M, QQ^-1)
-  chol_QQ.compute(QQ);
   VectorXd W = chol_QQ.rMVN(M, z);
   setW(W);
 
@@ -434,6 +427,12 @@ if (debug) std::cout << "Start set_parameter"<< std::endl;
   assemble(); //update K,dK,d2K after
 // endTime = std::chrono::steady_clock::now(); update_time = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime); std::cout << "block set time (ms): " << std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count() << std::endl;
   curr_iter++;
+
+
+  // Update Q, QQ and chol_QQ if family="normal"
+  // otherwise, it's updated in sample_V.
+  if (family == "normal") { update_QQ(); }
+
 if (debug) std::cout << "Finish set_parameter"<< std::endl;
 }
 
@@ -682,7 +681,7 @@ Rcpp::List BlockModel::sampling(
 
   for (int i=0; i < n; i++) {
     if (posterior) {
-      sample_cond_V();
+      sample_cond_V(false);
       sampleW_VY();
       sample_cond_noise_V(true);
     } else {
@@ -995,38 +994,43 @@ void BlockModel::test_in_the_end() {
   }
 }
 
-// marginal log likelihood  pi(Y) = pi(Y|W, V) pi(W|V) pi(V)
-double BlockModel::log_likelihood() const {
+// joint log likelihood  
+// pi(Y) ~ N(X beta, noise_sigma^2 I + A Q^-1 A^T)
+// pi(W) ~ N(0, Q^-1) 
+// pi(Y|W) ~ N(AW + X beta, noise_sigma^2 I)
+double BlockModel::log_likelihood() {
   // compute log likelihood
   // pi(Y|W, noise_V) 
-  VectorXd res = Y - A * getW() - X * beta - (-VectorXd::Ones(n_obs) + noise_V).cwiseProduct(noise_mu);
-  VectorXd noise_SV = noise_sigma.array().pow(2).matrix().cwiseProduct(noise_V);
+  chol_Q.compute(Q);
+  double log_like = 0;
+  // 1 log_det part
+    log_like += chol_Q.logdet();
+    if (!corr_measure) {
+      // logdet(Q_eps)
+      log_like -= 2 * noise_sigma.array().log().sum();
+    } else {
 
-  // res ~ N(0, noise_SV) 
-  // -0.5 * res^T noise_SV^-1 res - 0.5 logdet(noise_SV)
-  double pi = atan(1)*4;
-  double log_y_given_WV = -0.5 * (res.cwiseProduct(res).cwiseQuotient(noise_SV)).sum() - noise_SV.cwiseSqrt().array().log().sum() - 0.5 * n_obs * log(2*pi);
+    }
+    log_like -= chol_QQ.logdet();
+
+  // // 2 the rest
+    // v1 = A^T noise_sigma^-2 (Y - X beta)
+    VectorXd v1, v2, mean_post;
+    if (!corr_measure) {
+      v1 = A.transpose() * noise_sigma.array().pow(-2).matrix().asDiagonal() * (Y - X * beta);
+      VectorXd mean_post = chol_QQ.solve(v1);
+      log_like -= mean_post.transpose() * Q * mean_post;
+      
+      // v2 = Y - X beta - A mean_post
+      VectorXd v2 = Y - A * mean_post - X * beta;
+      log_like -= v2.cwiseProduct(noise_sigma.array().pow(-2).matrix()).dot(v2);
+    } else {
+      
+    }
+
+  log_like -= n_obs * log(2 * M_PI);
   
-  // pi(block V)
-  double logd_noiseV = 0;
-  if (family != "normal") {
-    logd_noiseV = NoiseUtil::log_density(family, noise_V, VectorXd::Ones(n_obs), B_nu, theta_nu, FALSE);
-  }
-
-  double logd_WV = 0;
-  for (int i=0; i < n_latent; i++) {
-    logd_WV += latents[i]->logd_W_V();
-  }
-  // std::cout << "res = " << res << std::endl;
-  // std::cout << "logd_noiseV = " << logd_noiseV << std::endl;
-  // std::cout << "logd_WV = " << logd_WV << std::endl;
-  std::cout << "sigme.e" << sqrt(noise_SV(1)) << std::endl;
-  std::cout << "log_y_given_WV = " << log_y_given_WV << std::endl;
-  return log_y_given_WV + logd_noiseV + logd_WV;
+  // return the negative log likelihood for optimization
+  return -0.5 * log_like;
 }
 
-
-double BlockModel::log_likelihood(const VectorXd& param) {
-  set_parameter(param);
-  return log_likelihood();
-}

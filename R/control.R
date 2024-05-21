@@ -78,12 +78,12 @@ control_opt <- function(
 
   # read preconditioner from optimizer
   preconditioner            <- "none"
-  precond_eps               <- 1e-5
+  numerical_eps             <- 1e-5
   precond_by_diff_chain     <- FALSE
   compute_precond_each_iter <- FALSE
   if (optimizer$method == "precond_sgd") {
     preconditioner    = optimizer$preconditioner
-    precond_eps       = optimizer$precond_eps
+    numerical_eps       = optimizer$numerical_eps
     precond_by_diff_chain = optimizer$precond_by_diff_chain
     compute_precond_each_iter = optimizer$compute_precond_each_iter
   }
@@ -150,7 +150,7 @@ control_opt <- function(
     max_absolute_step = max_absolute_step,
 
     # preconditioner related
-    precond_eps       = precond_eps,
+    numerical_eps       = numerical_eps,
     precond_by_diff_chain = precond_by_diff_chain,
     compute_precond_each_iter = compute_precond_each_iter,
     precond_strategy  = which(preconditioner_list == preconditioner) - 1, # start from 0

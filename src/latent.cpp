@@ -583,7 +583,7 @@ double Latent::logd_KW_given_V(const VectorXd& mu, const VectorXd& sigma, const 
 
 // Numerical hessian
 MatrixXd Latent::precond(bool precond_K, double eps) {
-    double precond_eps = eps;
+    double numerical_eps = eps;
     VectorXd parameter (n_params - n_theta_nu);
     parameter << theta_K, theta_mu, theta_sigma;
     
@@ -600,12 +600,12 @@ MatrixXd Latent::precond(bool precond_K, double eps) {
 // which version of hessian to compute
 if (!improve_hessian) {
 // Forward difference (error is O(eps)
-    // compute f_v = log_density(v + precond_eps * e_i)
+    // compute f_v = log_density(v + numerical_eps * e_i)
     double original_val = log_density(v, precond_K);
     VectorXd f_v (n);
     for (int i=0; i < n; i++) {
         if (fix_parameters[i]) continue;
-        VectorXd tmp_v = v; tmp_v(i) += precond_eps;
+        VectorXd tmp_v = v; tmp_v(i) += numerical_eps;
         f_v(i) = log_density(tmp_v, precond_K);
     }
     
@@ -613,9 +613,9 @@ if (!improve_hessian) {
     for (int i=0; i < n; i++) {
         if (fix_parameters[i]) continue;
         for (int j=0; j <= i; j++) {
-            VectorXd tmp_vij = v; tmp_vij(i) += precond_eps; tmp_vij(j) += precond_eps;
+            VectorXd tmp_vij = v; tmp_vij(i) += numerical_eps; tmp_vij(j) += numerical_eps;
             double f_vij = log_density(tmp_vij, precond_K);
-            num_hess_no_nu(i, j) = (f_vij - f_v(i) - f_v(j) + original_val) / (precond_eps * precond_eps);
+            num_hess_no_nu(i, j) = (f_vij - f_v(i) - f_v(j) + original_val) / (numerical_eps * numerical_eps);
         }
     }
 } else {
@@ -626,7 +626,7 @@ if (!improve_hessian) {
         for (int j=0; j < n; j++) {
             // if (fix_parameters[i]) continue;
             VectorXd tmp = v; 
-            tmp(i) += precond_eps; tmp(j) += precond_eps;
+            tmp(i) += numerical_eps; tmp(j) += numerical_eps;
             fwd_fwd(i, j) = log_density(tmp, precond_K);
         }
 	}
@@ -636,7 +636,7 @@ if (!improve_hessian) {
         // if (fix_parameters[i]) continue;
         for (int j=0; j < n; j++) {
             VectorXd tmp = v; 
-            tmp(i) += precond_eps; tmp(j) -= precond_eps;
+            tmp(i) += numerical_eps; tmp(j) -= numerical_eps;
             fwd_bwd(i, j) = log_density(tmp, precond_K);
         }
     }       
@@ -646,7 +646,7 @@ if (!improve_hessian) {
         for (int j=0; j < n; j++) {
             // if (fix_parameters[i]) continue;
             VectorXd tmp = v; 
-            tmp(i) -= precond_eps; tmp(j) += precond_eps;
+            tmp(i) -= numerical_eps; tmp(j) += numerical_eps;
             bwd_fwd(i, j) = log_density(tmp, precond_K);
         }
     }
@@ -656,7 +656,7 @@ if (!improve_hessian) {
         for (int j=0; j < n; j++) {
             // if (fix_parameters[i]) continue;
             VectorXd tmp = v; 
-            tmp(i) -= precond_eps; tmp(j) -= precond_eps;
+            tmp(i) -= numerical_eps; tmp(j) -= numerical_eps;
             bwd_bwd(i, j) = log_density(tmp, precond_K);
         }
     }
@@ -665,7 +665,7 @@ if (!improve_hessian) {
 	for (int i=0; i < n; i++) {
         if (fix_parameters[i]) continue;
 		for (int j=0; j <= i; j++) {
-			num_hess_no_nu(i, j) = (fwd_fwd(i, j) - fwd_bwd(i, j) - bwd_fwd(i, j) + bwd_bwd(i, j)) / (4 * precond_eps * precond_eps);
+			num_hess_no_nu(i, j) = (fwd_fwd(i, j) - fwd_bwd(i, j) - bwd_fwd(i, j) + bwd_bwd(i, j)) / (4 * numerical_eps * numerical_eps);
 		}
 	}
 }
@@ -694,7 +694,7 @@ if (!improve_hessian) {
         precond_full.bottomRightCorner(n_theta_nu, n_theta_nu) = V_size * MatrixXd::Identity(n_theta_nu, n_theta_nu);
     } else {
         precond_full.bottomRightCorner(n_theta_nu, n_theta_nu) = V_size * MatrixXd::Identity(n_theta_nu, n_theta_nu);
-        // precond_full.bottomRightCorner(n_theta_nu, n_theta_nu) = NoiseUtil::precond(precond_eps, noise_type[0], prevV, h, B_nu, theta_nu, single_V);
+        // precond_full.bottomRightCorner(n_theta_nu, n_theta_nu) = NoiseUtil::precond(numerical_eps, noise_type[0], prevV, h, B_nu, theta_nu, single_V);
     }
 
 // std::cout << "print hessian: " << std::endl << precond_full << std::endl;

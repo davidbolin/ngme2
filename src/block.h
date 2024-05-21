@@ -112,14 +112,18 @@ public:
 
     int get_n_obs() const {return n_obs;}
     void sampleW_VY(bool burn_in = false);
-    double log_likelihood() const;
-    double log_likelihood(const VectorXd& param);
+    
+    double log_likelihood();
 
-    void sample_cond_V() {
+    void sample_cond_V(bool update_Q = true) {
       if(n_latent > 0){
         for (unsigned i=0; i < n_latent; i++) {
             (*latents[i]).sample_cond_V();
         }
+      }
+
+      if (update_Q) {
+        update_QQ();
       }
     }
 
@@ -129,6 +133,19 @@ public:
             (*latents[i]).sample_uncond_V();
         }
       }
+    }
+
+    void update_QQ() {
+      // update Q and QQ
+      VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
+      Q = K.transpose() * inv_SV.asDiagonal() * K;
+
+      if (!corr_measure) {
+        QQ = Q + A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V).asDiagonal() * A;
+      } else{
+        QQ = Q + A.transpose() * Q_eps * A;
+      }
+      chol_QQ.compute(QQ);
     }
 
     void setW(const VectorXd&);
@@ -258,7 +275,7 @@ public:
       }
     }
 
-    // residual_part = residual + AW
+    // residual_part = Y - X beta - (1 - V) mu
     VectorXd get_residual_part() const {
         return Y - X * beta - (-VectorXd::Ones(n_obs) + noise_V).cwiseProduct(noise_mu);
     }

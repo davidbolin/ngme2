@@ -199,7 +199,7 @@ adamW <- function(
 
 #' BFGS optimization
 #'
-#' @param stepsize initial stepsize for BFGS
+#' @param line_search line search method, can be c("backtracking", "wofle")
 #' "bfgs" means use BFGS preconditioner
 # ' The update rule for BFGS is:
 # ' \deqn{H_{t+1} = H_t + \frac{y_t y_t^T}{y_t^T s_t} - \frac{H_t s_t s_t^T H_t}{s_t^T H_t s_t}}
@@ -208,11 +208,14 @@ adamW <- function(
 #' (used in \code{control_opt} function)
 #' @export
 bfgs <- function(
-  stepsize = 1
+  line_search = "backtracking"
 ) {
+  stopifnot(line_search %in% c("backtracking", "wolfe"))
+
   ret <- list(
     method         = "bfgs",
     stepsize       = 1,
+    line_search    = line_search,
     sgd_parameters = NULL
   )
   class(ret) <- "ngme_optimizer"

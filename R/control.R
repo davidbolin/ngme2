@@ -33,6 +33,8 @@
 #' If it is more than n_parallel_chain, the rest will be used to parallel different replicates of the model.
 #' @param max_relative_step   max relative step allowed in 1 iteration
 #' @param max_absolute_step   max absolute step allowed in 1 iteration
+#' @param converge_eps        convergence threshold, test if grad.norm() < converge_eps
+#'
 #' @param rao_blackwellization  use rao_blackwellization
 #' @param n_trace_iter  use how many iterations to approximate the trace (Hutchinson’s trick)
 #'
@@ -65,6 +67,7 @@ control_opt <- function(
 
   max_relative_step = 0.5,
   max_absolute_step = 0.5,
+  converge_eps      = 1e-5,
 
   rao_blackwellization = FALSE,
   n_trace_iter      = 10,
@@ -148,6 +151,7 @@ control_opt <- function(
 
     max_relative_step = max_relative_step,
     max_absolute_step = max_absolute_step,
+    converge_eps      = converge_eps,
 
     # preconditioner related
     numerical_eps       = numerical_eps,
@@ -159,6 +163,7 @@ control_opt <- function(
     stepsize          = optimizer$stepsize,
     sgd_method        = optimizer$method,
     sgd_parameters    = optimizer$sgd_parameters,
+    line_search       = optimizer$line_search,
 
     # variance reduction (not used for now)
     reduce_var        = reduce_var,

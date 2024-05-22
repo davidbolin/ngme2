@@ -15,6 +15,7 @@ Ngme_optimizer::Ngme_optimizer(
     verbose(control_opt["verbose"]),
     precond_strategy(control_opt["precond_strategy"]),
     numerical_eps(control_opt["numerical_eps"]),
+    converge_eps(control_opt["converge_eps"]),
     curr_iter(0),
 
     method(Rcpp::as<std::string>(control_opt["sgd_method"])),
@@ -48,6 +49,7 @@ Ngme_optimizer::Ngme_optimizer(
     } else if (method == "bfgs") {
         // init for BFGS
         H = MatrixXd::Identity(ngme->get_n_params(), ngme->get_n_params()) * 1e-8;
+        line_search_method = Rcpp::as<std::string>(control_opt["line_search"]);
     } else {
         // precond_sgd
     }
@@ -79,6 +81,10 @@ VectorXd Ngme_optimizer::sgd(
             grad = model->grad();
         } else {
             grad = numerical_grad(x);
+            if (grad.norm() < converge_eps) {
+                std::cout << "grad.norm() < " << converge_eps << ", reach convergence" << std::endl;
+                break;
+            }
         }
 
         // which SGD step
@@ -119,10 +125,11 @@ VectorXd Ngme_optimizer::sgd(
             double rho = 1.0 / y.dot(s);
             H = (MatrixXd::Identity(H.rows(), H.cols()) - rho * s * y.transpose()) * H * (MatrixXd::Identity(H.rows(), H.cols()) - rho * y * s.transpose()) + rho * s * s.transpose();
             // compute direction
-            one_step = - model->get_stepsizes().cwiseProduct(H * grad);
+            one_step = - H * grad;
 
             double curr_loglik = model->log_likelihood();
             double alpha = line_search(
+                line_search_method,
                 x, one_step, curr_loglik, grad.dot(one_step),
                 1e-4, // c1
                 0.9, // c2
@@ -144,12 +151,13 @@ VectorXd Ngme_optimizer::sgd(
             one_step = model->get_stepsizes().cwiseProduct(grad);
         }
 
-/* test NAN
-// if (std::isnan(one_step(one_step.size()-1))) {
-//     std::cout << "one_step ISNAN = " << one_step << std::endl;
-//     return x;
-// }
-*/
+// Test if one_step is NAN
+if (std::isnan(one_step(one_step.size()-1))) {
+    std::cout << "grad.norm() = " << grad.norm() << std::endl;
+    std::cout << " H = " << H << std::endl;
+    std::cout << "one_step ISNAN = " << one_step << std::endl;
+    return x;
+}
 
 // std::cout << "get gradient (ms): " << since(timer_grad).count() << std::endl;
         // restrict one_step by |one_step(i)| / |x(i)| < rela_step
@@ -176,6 +184,7 @@ VectorXd Ngme_optimizer::sgd(
 
 if (verbose) {
 std::cout << "iteration = : " << curr_iter+1 << std::endl;
+std::cout << "grad.norm() = " << grad.norm() << std::endl;
 // std::cout << "one step = " << one_step << std::endl;
 // std::cout << "parameter = : " << x << std::endl;
 std::cout << "negative marginal likelihood := " <<  model->log_likelihood() << std::endl;
@@ -195,7 +204,7 @@ std::cout << "---------------------------" << std::endl;
 
 // line_search algo for BFGS
 // Algorithm 3.5 in Nocedal and Wright
-double Ngme_optimizer::line_search(
+double Ngme_optimizer::line_search_wolfe(
     const VectorXd& x, 
     const VectorXd& p, 
     double phi_0,
@@ -204,36 +213,56 @@ double Ngme_optimizer::line_search(
     double c2,   
     double alpha_max
 ) {
+    // alpha_max = 2;
+    
     double alpha_0 = 0.0;
     // double alpha_i = 0.5 * alpha_max; // Initial step length
     double alpha_i = 1;
+    
+    // Initial values
+    double phi_alpha_i = phi_0;
+    double phi_prime_alpha_i = phi_prime_0;
+    double prev_phi_alpha_i = phi_0;
+    double prev_alpha_i = 0.0;
+
     int i = 1;
 
     while (true) {
         VectorXd x_new = x + alpha_i * p;
-        double phi_alpha_i = log_likelihood(x_new);
+        prev_phi_alpha_i = phi_alpha_i;
+        phi_alpha_i = log_likelihood(x_new);
+
 
         if (phi_alpha_i > phi_0 + c1 * alpha_i * phi_prime_0 
-        || (phi_alpha_i >= log_likelihood(x + (alpha_i - 0.5 * alpha_max) * p) && i > 1)) {
+        || (phi_alpha_i >= prev_phi_alpha_i && i > 1)) {
+// std::cout << "zoom in 1" << std::endl;
             return zoom(
-                x, p, alpha_i - 0.5 * alpha_max, alpha_i, c1, c2,
+                x, p, alpha_i - 0.5 * alpha_max, alpha_i, c1, c2, // prev_alpha_i, alpha_i
                 phi_0, phi_prime_0
             );
         }
 
-        double phi_prime_alpha_i = directional_derivative(x_new, p);
+        phi_prime_alpha_i = directional_derivative(x_new, p);
         if (std::abs(phi_prime_alpha_i) <= -c2 * phi_prime_0) {
             return alpha_i;
         }
         if (phi_prime_alpha_i >= 0) {
+// std::cout << "zoom in 2" << std::endl;
             return zoom(
                 x, p, alpha_i, alpha_i - 0.5 * alpha_max, c1, c2,
                 phi_0, phi_prime_0
             );
         }
 
+        prev_alpha_i = alpha_i;
         alpha_i = 0.5 * (alpha_i + alpha_max); // Update alpha_i
         i++;
+// std::cout << "line search iteration = " << i << std::endl;
+
+        // Termination condition to prevent infinite loop (can be tuned)
+        if (i > 30) {
+            return alpha_i;
+        }
     }
 }
 
@@ -248,7 +277,9 @@ double Ngme_optimizer::zoom(
     double phi_0,
     double phi_prime_0
 ) {
-// std::cout << "zoom" << std::endl;
+// if (alpha_lo > alpha_hi) {
+//     std::cout << "warning: alpha_lo > alpha_hi" << std::endl;
+// }
     while (true) {
         // Interpolate (using bisection as an example)
         double alpha_j = 0.5 * (alpha_lo + alpha_hi);
@@ -272,8 +303,37 @@ double Ngme_optimizer::zoom(
 
         // Termination condition to prevent infinite loop (can be tuned)
         if (std::abs(alpha_hi - alpha_lo) < 1e-8) {
+// std::cout << "zoom out" << std::endl;
             return alpha_j;
         }
     }
-// std::cout << "zoom out" << std::endl;
+}
+
+
+double Ngme_optimizer::line_search_backtracking(
+    const VectorXd& x, 
+    const VectorXd& p, 
+    double phi_0,
+    double phi_prime_0,
+    double c1,   
+    double c2,   
+    double alpha_max
+) {
+    double alpha = alpha_max;
+    double phi_alpha = phi_0;
+    double phi_prime_alpha = phi_prime_0;
+
+    while (phi_alpha > phi_0 + c1 * alpha * phi_prime_0) {
+        alpha *= 0.9;
+        VectorXd x_new = x + alpha * p;
+        phi_alpha = log_likelihood(x_new);
+        phi_prime_alpha = directional_derivative(x_new, p);
+
+        if (alpha < 1e-7) {
+// std::cout << "warning: alpha < 1e-7" << std::endl;
+            // cannot return 0, H will be NAN
+            return alpha;
+        }
+    }
+    return alpha;
 }

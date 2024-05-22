@@ -15,6 +15,7 @@ private:
     bool verbose {false};
     int precond_strategy; // 0 for none, 1 for fast, 2 for full
     double numerical_eps;
+    double converge_eps;
     int curr_iter;
 
     int max_iter;
@@ -22,7 +23,8 @@ private:
     double max_absolute_step;
     double stepsize;
 
-    std::string method;
+
+    std::string method, line_search_method;
     VectorXd sgd_parameters;
 
     // variable for different sgd methods
@@ -61,7 +63,17 @@ public:
     void set_preconditioner(const MatrixXd& preconditioner)
         { this->preconditioner = preconditioner; }
     
-    double line_search(
+    double line_search_wolfe(
+        const VectorXd& x, 
+        const VectorXd& p, 
+        double phi_0,
+        double phi_prime_0,
+        double c1 = 1e-4, 
+        double c2 = 0.9, 
+        double alpha_max = 1.0
+    );
+
+    double line_search_backtracking(
         const VectorXd& x, 
         const VectorXd& p, 
         double phi_0,
@@ -102,6 +114,26 @@ public:
     // The derivative of log_likelihood in the direction of p
     double directional_derivative(const VectorXd& x, const VectorXd& p) {
         return numerical_grad(x).dot(p);
+    }
+
+
+    double line_search(
+        string method,
+        const VectorXd& x, 
+        const VectorXd& p, 
+        double phi_0,
+        double phi_prime_0,
+        double c1 = 1e-4, 
+        double c2 = 0.9, 
+        double alpha_max = 1.0
+    ) {
+        if (method == "wolfe") {
+            return line_search_wolfe(x, p, phi_0, phi_prime_0, c1, c2, alpha_max);
+        } else if (method == "backtracking") {
+            return line_search_backtracking(x, p, phi_0, phi_prime_0, c1, c2, alpha_max);
+        } else {
+            Rcpp::stop("line search method not implemented");
+        }
     }
 };
 

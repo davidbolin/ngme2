@@ -127,6 +127,9 @@ VectorXd Ngme_optimizer::sgd(
             // compute direction
             one_step = - H * grad;
 
+            // make sure the direction is descent
+            assert (grad.dot(one_step) < 0);
+            
             double curr_loglik = model->log_likelihood();
             double alpha = line_search(
                 line_search_method,
@@ -165,10 +168,10 @@ if (std::isnan(one_step(one_step.size()-1))) {
             for (int j = 0; j < one_step.size(); j++) {
                 double sign = one_step(j) > 0 ? 1.0 : -1.0;
 
-                // take limit on relative step
-                if (abs(x(j)) > 1 && abs(one_step(j)) > rela_max_step(j)) {
-                    one_step(j) = sign * rela_max_step(j);
-                }
+                // // take limit on relative step
+                // if (abs(x(j)) > 1 && abs(one_step(j)) > rela_max_step(j)) {
+                //     one_step(j) = sign * rela_max_step(j);
+                // }
 
                 // take limit on absolute step
                 if (abs(one_step(j)) > max_absolute_step) {
@@ -185,9 +188,9 @@ if (std::isnan(one_step(one_step.size()-1))) {
 if (verbose) {
 std::cout << "iteration = : " << curr_iter+1 << std::endl;
 std::cout << "grad.norm() = " << grad.norm() << std::endl;
-// std::cout << "one step = " << one_step << std::endl;
+std::cout << "one step = " << one_step << std::endl;
 // std::cout << "parameter = : " << x << std::endl;
-std::cout << "negative marginal likelihood := " <<  model->log_likelihood() << std::endl;
+std::cout << "marginal likelihood := " <<  -model->log_likelihood() << std::endl;
 std::cout << "---------------------------" << std::endl; 
 }
 

@@ -208,7 +208,7 @@ adamW <- function(
 #' (used in \code{control_opt} function)
 #' @export
 bfgs <- function(
-  line_search = "backtracking"
+  line_search = "wolfe"
 ) {
   stopifnot(line_search %in% c("backtracking", "wolfe"))
 

@@ -4,10 +4,10 @@
 \alias{bfgs}
 \title{BFGS optimization}
 \usage{
-bfgs(stepsize = 1)
+bfgs(line_search = "wolfe")
 }
 \arguments{
-\item{stepsize}{initial stepsize for BFGS
+\item{line_search}{line search method, can be c("backtracking", "wofle")
 "bfgs" means use BFGS preconditioner}
 }
 \value{

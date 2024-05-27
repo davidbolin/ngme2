@@ -42,10 +42,11 @@ enum Latent_fix_flag {
     latent_fix_W,
     latent_fix_V,
     latent_fix_theta_mu,
-    latent_fix_nu,
-    latent_fix_theta_sigma
+    latent_fix_theta_nu,
+    latent_fix_theta_sigma,
+    latent_fix_theta_sigma_normal
 };
-const int LATENT_FIX_FLAG_SIZE = 6;
+const int LATENT_FIX_FLAG_SIZE = 7;
 
 class Latent {
 protected:
@@ -54,7 +55,6 @@ protected:
     vector<string> noise_type;
     bool debug;
     int n_noise, W_size, V_size, n_params, n_var {1}; // n_params=n_theta_K + n_theta_mu + n_theta_sigma + n_var
-    Eigen::VectorXi fix_parameters;
 
     // operator (for compute K, for compute numerical gradient, for preconditioner)
     std::shared_ptr<Operator> ope, ope_precond, ope_addeps;

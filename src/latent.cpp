@@ -12,7 +12,6 @@ Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
     W_size        (Rcpp::as<int>        (model_list["W_size"])),
     V_size        (Rcpp::as<int>        (model_list["V_size"])),
     n_params      (Rcpp::as<int>        (model_list["n_params"])),
-    fix_parameters (VectorXi::Zero(n_params)),
 
     // operator
     ope           (OperatorFactory::create(Rcpp::as<Rcpp::List> (model_list["operator"]))),
@@ -55,8 +54,10 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
     Rcpp::List noise_in = Rcpp::as<Rcpp::List> (model_list["noise"]);
         fix_flag[latent_fix_theta_mu]     = Rcpp::as<bool>  (noise_in["fix_theta_mu"]);
         fix_flag[latent_fix_theta_sigma]  = Rcpp::as<bool>  (noise_in["fix_theta_sigma"]);
+        fix_flag[latent_fix_theta_nu]     = Rcpp::as<bool> (noise_in["fix_theta_nu"]);
+        fix_flag[latent_fix_theta_sigma_normal]  = Rcpp::as<bool> (noise_in["fix_theta_sigma_normal"]);
         fix_flag[latent_fix_V]  = Rcpp::as<bool> (noise_in["fix_V"]);
-        fix_flag[latent_fix_nu] = Rcpp::as<bool> (noise_in["fix_nu"]);
+
         single_V = Rcpp::as<bool> (noise_in["single_V"]);
 
         B_mu     = Rcpp::as< MatrixXd >    (noise_in["B_mu"]);
@@ -65,9 +66,10 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
 
         if (noise_type[0] == "normal_nig") B_sigma_normal  = Rcpp::as< MatrixXd >    (noise_in["B_sigma_normal"]);
 
-        n_theta_mu    =   (B_mu.cols());
-        n_theta_sigma =   (B_sigma.cols());
-        n_theta_nu    =   (B_nu.cols());
+        n_theta_mu    = Rcpp::as< int > (noise_in["n_theta_mu"]);
+        n_theta_sigma = Rcpp::as< int > (noise_in["n_theta_sigma"]);
+        n_theta_nu    = Rcpp::as< int > (noise_in["n_theta_nu"]);
+
         rb_trace_sigma = VectorXd::Zero(n_theta_sigma);
         if (noise_type[0] == "normal_nig") n_theta_sigma_normal =   (B_sigma_normal.cols());
 
@@ -141,13 +143,7 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
         }
     }
 
-    // compute which idx of param is fixed
-    if (fix_flag[latent_fix_theta_K]) fix_parameters.segment(0, n_theta_K).setOnes();
-    if (fix_flag[latent_fix_theta_mu]) fix_parameters.segment(n_theta_K, n_theta_mu).setOnes();
-    if (fix_flag[latent_fix_theta_sigma]) fix_parameters.segment(n_theta_K+n_theta_mu, n_theta_sigma).setOnes();
-    if (fix_flag[latent_fix_nu]) fix_parameters.segment(n_theta_K+n_theta_mu+n_theta_sigma, n_theta_nu).setOnes();
 
-// std::cout << "fix param=" << fix_parameters << std::endl;
 if (debug) std::cout << "End constructor of latent" << std::endl;
 }
 
@@ -221,7 +217,7 @@ inline VectorXd Latent::grad_theta_sigma_normal(bool rao_blackwell) {
 VectorXd Latent::grad_theta_nu() {
 // std::cout << "here nu" << std::endl;
     VectorXd grad = VectorXd::Zero(n_theta_nu);
-    if (n_theta_nu == 0 || fix_flag[latent_fix_nu]) return grad;
+    if (n_theta_nu == 0 || fix_flag[latent_fix_theta_nu]) return grad;
 
     if (noise_type[0] == "normal") return grad;
     if (n_noise == 1) {
@@ -304,15 +300,23 @@ Rcpp::List Latent::output() const {
 
 const VectorXd Latent::get_parameter() {
 if (debug) std::cout << "Start latent get parameter"<< std::endl;
+if (debug) std::cout << "fix_theta_sigma = " << 
+    fix_flag[latent_fix_theta_sigma] << std::endl;
+
     VectorXd parameter = VectorXd::Zero(n_params);
 
-    parameter.segment(0, n_theta_K)                         = theta_K;
-    parameter.segment(n_theta_K, n_theta_mu)                = theta_mu;
-    parameter.segment(n_theta_K+n_theta_mu, n_theta_sigma)  = theta_sigma;
-    parameter.segment(n_theta_K+n_theta_mu+n_theta_sigma,n_theta_nu) = theta_nu;
+    if (!fix_flag[latent_fix_theta_K])
+        parameter.segment(0, n_theta_K) = theta_K;
+    if (!fix_flag[latent_fix_theta_mu])
+        parameter.segment(n_theta_K, n_theta_mu) = theta_mu;
+    if (!fix_flag[latent_fix_theta_sigma])
+        parameter.segment(n_theta_K+n_theta_mu, n_theta_sigma) = theta_sigma;
+    if (!fix_flag[latent_fix_theta_nu])
+        parameter.segment(n_theta_K+n_theta_mu+n_theta_sigma,n_theta_nu) = theta_nu;
 
     if (noise_type[0] == "normal_nig")
         parameter.segment(n_theta_K+n_theta_mu+n_theta_sigma+n_theta_nu, n_theta_sigma_normal) = theta_sigma_normal;
+
 // if (debug) std::cout << "End latent get parameter"<< std::endl;
 if (debug) {
     if (std::isnan(parameter(0))||std::isnan(-parameter(0)))
@@ -328,10 +332,14 @@ if (debug) std::cout << "Start latent get grad"<< std::endl;
     VectorXd grad = VectorXd::Zero(n_params);
 
     // compute gradient of each parameter
-    grad.segment(0, n_theta_K) = grad_theta_K(rao_blackwell);
-    grad.segment(n_theta_K, n_theta_mu) = grad_theta_mu(rao_blackwell);
-    grad.segment(n_theta_K+n_theta_mu, n_theta_sigma) = grad_theta_sigma(rao_blackwell);
-    grad.segment(n_theta_K+n_theta_mu+n_theta_sigma,n_theta_nu)  = grad_theta_nu();
+    if (!fix_flag[latent_fix_theta_K])
+        grad.segment(0, n_theta_K) = grad_theta_K(rao_blackwell);
+    if (!fix_flag[latent_fix_theta_mu])
+        grad.segment(n_theta_K, n_theta_mu) = grad_theta_mu(rao_blackwell);
+    if (!fix_flag[latent_fix_theta_sigma])
+        grad.segment(n_theta_K+n_theta_mu, n_theta_sigma) = grad_theta_sigma(rao_blackwell);
+    if (!fix_flag[latent_fix_theta_nu])
+        grad.segment(n_theta_K+n_theta_mu+n_theta_sigma,n_theta_nu)  = grad_theta_nu();
 
     if (noise_type[0] == "normal_nig")
         grad.segment(n_theta_K+n_theta_mu+n_theta_sigma+n_theta_nu, n_theta_sigma_normal) = grad_theta_sigma_normal(rao_blackwell);
@@ -344,16 +352,21 @@ void Latent::set_parameter(const VectorXd& theta, bool update_dK) {
 // if (debug) std::cout << "Start latent set parameter"<< std::endl;
 
     // nig, gal and normal+nig
-    theta_K = theta.segment(0, n_theta_K);
-    theta_mu = theta.segment(n_theta_K, n_theta_mu);
-    theta_sigma = theta.segment(n_theta_K+n_theta_mu, n_theta_sigma);
-    theta_nu = theta.segment(n_theta_K+n_theta_mu+n_theta_sigma, n_theta_nu);
-
+    if (!fix_flag[latent_fix_theta_K])
+        theta_K = theta.segment(0, n_theta_K);
+    if (!fix_flag[latent_fix_theta_mu])
+        theta_mu = theta.segment(n_theta_K, n_theta_mu);
+    if (!fix_flag[latent_fix_theta_sigma])
+        theta_sigma = theta.segment(n_theta_K+n_theta_mu, n_theta_sigma);
+    if (!fix_flag[latent_fix_theta_nu])
+        theta_nu = theta.segment(n_theta_K+n_theta_mu+n_theta_sigma, n_theta_nu);
+    
     if (noise_type[0] == "normal_nig") {
         theta_sigma_normal = theta.segment(n_theta_K+n_theta_mu+n_theta_sigma+n_theta_nu, n_theta_sigma_normal);
     }
 
     update_each_iter(false, update_dK);
+if (debug) std::cout << "Finish latent set parameter"<< std::endl;
 }
 
 void Latent::sample_cond_V() {
@@ -468,7 +481,7 @@ if (debug) std::cout << "update_each_iter" << std::endl;
     }
 
     // Update K and dK
-    if (!fix_parameters[latent_fix_theta_K]) {
+    if (!fix_flag[latent_fix_theta_K]) {
         if (!numer_grad) {
             // Compute trace[i] = tr(K^-1 dK[i])
             ope->update_dK(theta_K);
@@ -506,31 +519,52 @@ if (debug) std::cout << "update_each_iter" << std::endl;
             }
         }
     }
+if (debug) std::cout << "finish update_each_iter" << std::endl;
 }
 
 // for compute hessian
 double Latent::log_density(const VectorXd& parameter, bool precond_K) {
     double logd_W = 0;
 
+    VectorXd theta_K, theta_mu, theta_sigma, tmp_mu, tmp_sigma;
     if (precond_K) {
         // 1. pi(W|V)
-        VectorXd theta_K = parameter.head(n_theta_K);
-        VectorXd theta_mu = parameter.segment(n_theta_K, n_theta_mu);
-        VectorXd theta_sigma = parameter.segment(n_theta_K + n_theta_mu, n_theta_sigma);
-        VectorXd mu = B_mu * theta_mu;
-        VectorXd sigma = (B_sigma * theta_sigma).array().exp();
+        if (!fix_flag[latent_fix_theta_K])
+            theta_K = parameter.head(n_theta_K);
+
+        if (!fix_flag[latent_fix_theta_mu]) {
+            theta_mu = parameter.segment(n_theta_K, n_theta_mu);
+            tmp_mu = B_mu * theta_mu;
+        } else {
+            tmp_mu = mu;
+        }
+
+        if (!fix_flag[latent_fix_theta_sigma]) {
+            theta_sigma = parameter.segment(n_theta_K + n_theta_mu, n_theta_sigma);
+            tmp_sigma = (B_sigma * theta_sigma).array().exp();
+        } else {
+            tmp_sigma = sigma;
+        }
 
         ope_precond->update_K(theta_K);
         SparseMatrix<double> K = ope_precond->getK();
-        logd_W = logd_W_given_V(W, K, mu, sigma, prevV);
+        logd_W = logd_W_given_V(W, K, tmp_mu, tmp_sigma, prevV);
     } else {
-        VectorXd theta_mu = parameter.head(n_theta_mu);
-        VectorXd theta_sigma = parameter.segment(n_theta_mu, n_theta_sigma);
-        VectorXd mu = B_mu * theta_mu;
-        VectorXd sigma = (B_sigma * theta_sigma).array().exp();
+        if (!fix_flag[latent_fix_theta_mu]) {
+            theta_mu = parameter.head(n_theta_mu);
+            tmp_mu = B_mu * theta_mu;
+        } else {
+            tmp_mu = mu;
+        }
 
-        logd_W = logd_KW_given_V(mu, sigma, prevV);
-        // logd_W = logd_W_given_V(W, ope->getK(), mu, sigma, prevV);
+        if (!fix_flag[latent_fix_theta_sigma]) {
+            theta_sigma = parameter.segment(n_theta_mu, n_theta_sigma);
+            tmp_sigma = (B_sigma * theta_sigma).array().exp();
+        } else {
+            tmp_sigma = sigma;
+        }
+            
+        logd_W = logd_KW_given_V(tmp_mu, tmp_sigma, prevV);
     }
 
     return -logd_W;
@@ -584,14 +618,19 @@ double Latent::logd_KW_given_V(const VectorXd& mu, const VectorXd& sigma, const 
 // Numerical hessian
 MatrixXd Latent::precond(bool precond_K, double eps) {
     double numerical_eps = eps;
-    VectorXd parameter (n_params - n_theta_nu);
-    parameter << theta_K, theta_mu, theta_sigma;
-    
-    VectorXd v (parameter);
-    // update v if we don't need to compute hessian for K
+
+    VectorXd v;
     if (!precond_K) {
-        v.resize(n_theta_mu + n_theta_sigma);
-        v << theta_mu, theta_sigma;
+        v = VectorXd::Zero(n_theta_mu + n_theta_sigma);
+        // v << theta_mu, theta_sigma;
+        if (!fix_flag[latent_fix_theta_mu]) v.head(n_theta_mu) = theta_mu;
+        if (!fix_flag[latent_fix_theta_sigma]) v.tail(n_theta_sigma) = theta_sigma;
+    } else {
+        v = VectorXd::Zero(n_params - n_theta_nu);
+        // v << theta_K, theta_mu, theta_sigma;
+        if (!fix_flag[latent_fix_theta_K]) v.head(n_theta_K) = theta_K;
+        if (!fix_flag[latent_fix_theta_mu]) v.segment(n_theta_K, n_theta_mu) = theta_mu;
+        if (!fix_flag[latent_fix_theta_sigma]) v.segment(n_theta_K+n_theta_mu, n_theta_sigma) = theta_sigma;
     }
 
     int n = v.size();
@@ -604,14 +643,12 @@ if (!improve_hessian) {
     double original_val = log_density(v, precond_K);
     VectorXd f_v (n);
     for (int i=0; i < n; i++) {
-        if (fix_parameters[i]) continue;
         VectorXd tmp_v = v; tmp_v(i) += numerical_eps;
         f_v(i) = log_density(tmp_v, precond_K);
     }
     
     // compute H_ij = d2 f / dxi dxj
     for (int i=0; i < n; i++) {
-        if (fix_parameters[i]) continue;
         for (int j=0; j <= i; j++) {
             VectorXd tmp_vij = v; tmp_vij(i) += numerical_eps; tmp_vij(j) += numerical_eps;
             double f_vij = log_density(tmp_vij, precond_K);
@@ -624,7 +661,6 @@ if (!improve_hessian) {
 	MatrixXd fwd_fwd (n, n);
 	for (int i=0; i < n; i++) {
         for (int j=0; j < n; j++) {
-            // if (fix_parameters[i]) continue;
             VectorXd tmp = v; 
             tmp(i) += numerical_eps; tmp(j) += numerical_eps;
             fwd_fwd(i, j) = log_density(tmp, precond_K);
@@ -633,7 +669,6 @@ if (!improve_hessian) {
 
     MatrixXd fwd_bwd (n, n);
     for (int i=0; i < n; i++) {
-        // if (fix_parameters[i]) continue;
         for (int j=0; j < n; j++) {
             VectorXd tmp = v; 
             tmp(i) += numerical_eps; tmp(j) -= numerical_eps;
@@ -644,7 +679,6 @@ if (!improve_hessian) {
     MatrixXd bwd_fwd (n, n);
     for (int i=0; i < n; i++) {
         for (int j=0; j < n; j++) {
-            // if (fix_parameters[i]) continue;
             VectorXd tmp = v; 
             tmp(i) -= numerical_eps; tmp(j) += numerical_eps;
             bwd_fwd(i, j) = log_density(tmp, precond_K);
@@ -654,7 +688,6 @@ if (!improve_hessian) {
     MatrixXd bwd_bwd (n, n);
     for (int i=0; i < n; i++) {
         for (int j=0; j < n; j++) {
-            // if (fix_parameters[i]) continue;
             VectorXd tmp = v; 
             tmp(i) -= numerical_eps; tmp(j) -= numerical_eps;
             bwd_bwd(i, j) = log_density(tmp, precond_K);
@@ -663,7 +696,6 @@ if (!improve_hessian) {
 
 	// compute H_ij = d2 f / dxi dxj
 	for (int i=0; i < n; i++) {
-        if (fix_parameters[i]) continue;
 		for (int j=0; j <= i; j++) {
 			num_hess_no_nu(i, j) = (fwd_fwd(i, j) - fwd_bwd(i, j) - bwd_fwd(i, j) + bwd_bwd(i, j)) / (4 * numerical_eps * numerical_eps);
 		}
@@ -690,7 +722,7 @@ if (!improve_hessian) {
 
     // compute numerical hessian for theta_nu
     // watch-out! for some reason, hessian for theta_nu is getting too small
-    if (fix_flag[latent_fix_nu]) {
+    if (fix_flag[latent_fix_theta_nu]) {
         precond_full.bottomRightCorner(n_theta_nu, n_theta_nu) = V_size * MatrixXd::Identity(n_theta_nu, n_theta_nu);
     } else {
         precond_full.bottomRightCorner(n_theta_nu, n_theta_nu) = V_size * MatrixXd::Identity(n_theta_nu, n_theta_nu);

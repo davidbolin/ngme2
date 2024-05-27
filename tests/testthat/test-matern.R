@@ -143,7 +143,7 @@ test_that("test Matern", {
 #       # W = as.numeric(W), fix_W = TRUE,
 #       noise = noise_nig(
 #         # V = trueV, fix_V = TRUE
-#         # fix_nu = T, fix_theta_sigma=T, fix_theta_mu=T
+#         # fix_theta_nu = T, fix_theta_sigma=T, fix_theta_mu=T
 #       ),
 #       control = control_f(numer_grad = F),
 #       debug = F,

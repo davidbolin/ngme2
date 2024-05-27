@@ -40,12 +40,14 @@ MatrixXd Ngme::precond(int strategy, double eps) {
   if (sampling_strategy == Strategy::all) {
     #pragma omp parallel for schedule(static) reduction(mat_plus:precond) num_threads(num_threads_repl)
     for (int i=0; i < n_repl; i++) {
-      precond += (num_each_repl[i] / sum_num_each_repl) * ngme_repls[i]->precond(strategy, eps);
+      // precond += (num_each_repl[i] / sum_num_each_repl) * ngme_repls[i]->precond(strategy, eps);
+      precond += ngme_repls[i]->precond(strategy, eps);
     }
   } else if (sampling_strategy == Strategy::ws) {
     // weighted sampling (WS) for each replicate
     int idx = weighted_sampler(gen);
-    precond = (num_each_repl[idx] / sum_num_each_repl) * ngme_repls[idx]->precond(strategy, eps);
+    // precond = (num_each_repl[idx] / sum_num_each_repl) * ngme_repls[idx]->precond(strategy, eps);
+    precond = ngme_repls[idx]->precond(strategy, eps);
   }
 
 // std::cout << "precond in ngme class = \n" << precond << std::endl;
@@ -58,12 +60,13 @@ VectorXd Ngme::grad() {
   if (sampling_strategy == Strategy::all) {
     #pragma omp parallel for schedule(static) reduction(vec_plus:g) num_threads(num_threads_repl)
     for (int i=0; i < n_repl; i++) {
-      g += (num_each_repl[i] / sum_num_each_repl) * ngme_repls[i]->grad();
+      // g += (num_each_repl[i] / sum_num_each_repl) * ngme_repls[i]->grad();
+      g += ngme_repls[i]->grad();
     }
   } else if (sampling_strategy == Strategy::ws) {
     // weighted sampling (WS) for each replicate
     int idx = weighted_sampler(gen);
-    g = (num_each_repl[idx] / sum_num_each_repl) * ngme_repls[idx]->grad();
+    g = ngme_repls[idx]->grad();
   }
 
 // if (debug) std::cout << "g in grad() in ngme class = " << g << std::endl;

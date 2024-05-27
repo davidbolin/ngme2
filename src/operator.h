@@ -140,15 +140,36 @@ public:
     Matrix2d get_dD2_rho(double, double) const;
 };
 
-// Bivar2 (theta=0)
-class Bivar2 : public Operator {
+// Bivar_normal
+// class Bivar_normal : public Operator {
+// private:
+//     std::shared_ptr<Operator> first, second;
+//     int n_theta_1, n_theta_2;
+//     int n; // dim of K1 and K2 (same)
+//     bool share_param, fix_bv_theta;
+// public:
+//     Bivar_normal(const Rcpp::List&);
+
+//     void update_K(const VectorXd&);
+//     void update_dK(const VectorXd&);
+
+//     Matrix2d getD(double, double) const;
+//     Matrix2d get_dD_theta(double, double) const;
+//     Matrix2d get_dD_rho(double, double) const;
+//     Matrix2d get_dD2_theta(double, double) const;
+//     Matrix2d get_dD2_rho(double, double) const;
+// };
+
+
+// Bivar_normal_ope (theta=0)
+class Bivar_normal_ope : public Operator {
 private:
     std::shared_ptr<Operator> first, second;
     int n_theta_1, n_theta_2;
     int n; // dim of K1 and K2 (same)
     bool share_param, fix_bv_theta;
 public:
-    Bivar2(const Rcpp::List&);
+    Bivar_normal_ope(const Rcpp::List&);
 
     void update_K(const VectorXd&);
     void update_dK(const VectorXd&);
@@ -209,9 +230,11 @@ public:
     } else if (model_type == "re") {
       return std::make_shared<Randeff>(operator_in);
     } else if (model_type == "bv") {
-      return std::make_shared<Bivar>(operator_in);
+      return std::make_shared<Bivar>(operator_in);    
+    // } else if (model_type == "bv_normal_2" {
+      // return std::make_shared<Bivar_normal>(operator_in);
     } else if (model_type == "bv_normal") {
-      return std::make_shared<Bivar2>(operator_in);
+      return std::make_shared<Bivar_normal_ope>(operator_in);
     } else {
       throw std::runtime_error("Unknown model.");
     }

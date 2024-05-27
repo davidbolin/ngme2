@@ -42,6 +42,11 @@ get_noise_info <- function(noise) {
       trans_nu <- rep(list(identity), noise$n_theta_nu)
     }
 
+if (noise$fix_theta_mu) name_mu <- trans_mu <- NULL
+if (noise$fix_theta_sigma) name_sigma <- trans_sigma <- NULL
+if (noise$fix_theta_nu) name_nu <- trans_nu <- NULL
+if (noise$fix_theta_sigma_normal) name_sigma_normal <- trans_sigma_normal <- NULL
+
     ts <- list(
       # for bv noise
       all = list(

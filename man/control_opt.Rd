@@ -22,6 +22,7 @@ control_opt(
   print_check_info = FALSE,
   max_relative_step = 0.5,
   max_absolute_step = 0.5,
+  converge_eps = 1e-05,
   rao_blackwellization = FALSE,
   n_trace_iter = 10,
   sampling_strategy = "all",
@@ -65,6 +66,8 @@ If it is more than n_parallel_chain, the rest will be used to parallel different
 \item{max_relative_step}{max relative step allowed in 1 iteration}
 
 \item{max_absolute_step}{max absolute step allowed in 1 iteration}
+
+\item{converge_eps}{convergence threshold, test if grad.norm() < converge_eps}
 
 \item{rao_blackwellization}{use rao_blackwellization}
 

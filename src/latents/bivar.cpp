@@ -158,7 +158,7 @@ Matrix2d Bivar::get_dD2_rho(double theta, double rho) const {
 
 
 // ------- bivariate model (theta=0, Gaussian noise) -------
-Bivar2::Bivar2(const Rcpp::List& operator_list):
+Bivar_normal_ope::Bivar_normal_ope(const Rcpp::List& operator_list):
   Operator(operator_list),
   first (OperatorFactory::create(operator_list["first"])),
   second (OperatorFactory::create(operator_list["second"])),
@@ -169,7 +169,7 @@ Bivar2::Bivar2(const Rcpp::List& operator_list):
   fix_bv_theta (Rcpp::as<bool> (operator_list["fix_bv_theta"]))
 {}
 
-void Bivar2::update_K(const VectorXd& theta_K) {
+void Bivar_normal_ope::update_K(const VectorXd& theta_K) {
   double rho = theta_K(0);
   double c1 = exp(theta_K(1));
   double c2 = exp(theta_K(2));
@@ -191,7 +191,7 @@ void Bivar2::update_K(const VectorXd& theta_K) {
 }
 
 // assume K is updated!!!
-void Bivar2::update_dK(const VectorXd& theta_K) {
+void Bivar_normal_ope::update_dK(const VectorXd& theta_K) {
   double rho = theta_K(0);
   VectorXd theta_K1 = theta_K.segment(1, n_theta_1);
   VectorXd theta_K2 = theta_K.segment(1 + n_theta_1, n_theta_2);
@@ -250,7 +250,7 @@ void Bivar2::update_dK(const VectorXd& theta_K) {
   }
 }
 
-Matrix2d Bivar2::getD(double theta, double rho) const {
+Matrix2d Bivar_normal_ope::getD(double theta, double rho) const {
   Matrix2d D;
   D(0,0) = cos(theta) + rho*sin(theta);
   D(0,1) = -sin(theta) * pow(1+pow(rho,2),0.5);
@@ -259,7 +259,7 @@ Matrix2d Bivar2::getD(double theta, double rho) const {
   return D;
 }
 
-Matrix2d Bivar2::get_dD_theta(double theta, double rho) const {
+Matrix2d Bivar_normal_ope::get_dD_theta(double theta, double rho) const {
   Matrix2d Dtheta;
   Dtheta(0,0) = -sin(theta) + rho*cos(theta);
   Dtheta(0,1) = -cos(theta)*pow(1+pow(rho,2),0.5);
@@ -268,7 +268,7 @@ Matrix2d Bivar2::get_dD_theta(double theta, double rho) const {
   return Dtheta;
 }
 
-Matrix2d Bivar2::get_dD_rho(double theta, double rho) const {
+Matrix2d Bivar_normal_ope::get_dD_rho(double theta, double rho) const {
   Matrix2d Drho;
   Drho(0,0) = sin(theta);
   Drho(0,1) = -sin(theta)*rho*pow(1+pow(rho,2),-0.5);
@@ -277,7 +277,7 @@ Matrix2d Bivar2::get_dD_rho(double theta, double rho) const {
   return Drho;
 }
 
-Matrix2d Bivar2::get_dD2_theta(double theta, double rho) const {
+Matrix2d Bivar_normal_ope::get_dD2_theta(double theta, double rho) const {
   Matrix2d Dtheta2;
   Dtheta2(0,0) = -cos(theta) - rho*sin(theta);
   Dtheta2(0,1) = sin(theta)*pow(1+pow(rho,2),0.5);
@@ -286,7 +286,7 @@ Matrix2d Bivar2::get_dD2_theta(double theta, double rho) const {
   return Dtheta2;
 }
 
-Matrix2d Bivar2::get_dD2_rho(double theta, double rho) const {
+Matrix2d Bivar_normal_ope::get_dD2_rho(double theta, double rho) const {
   MatrixXd Drho2(2,2);
   Drho2(0,0) = 0;
   Drho2(0,1) = -sin(theta)*pow(1+pow(rho,2),-0.5);

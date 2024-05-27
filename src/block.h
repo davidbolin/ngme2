@@ -25,9 +25,13 @@ using Eigen::SparseMatrix;
 using Eigen::MatrixXd;
 using std::vector;
 
-const int BLOCK_FIX_FLAG_SIZE = 5;
+const int BLOCK_FIX_FLAG_SIZE = 7;
 enum Block_fix_flag {
-    block_fix_beta, block_fix_theta_mu, block_fix_theta_sigma, blcok_fix_V, block_fix_nu
+    block_fix_beta, 
+    // noise_parameters
+    block_fix_theta_mu, block_fix_theta_sigma, block_fix_theta_nu, block_fix_rho, blcok_fix_V, 
+    // currently not supported
+    block_fix_theta_sigma_normal
 };
 
 enum precond_type {precond_none, precond_fast, precond_full};
@@ -73,7 +77,6 @@ protected:
     double reduce_power, threshold;
 
     SparseMatrix<double> A, K, Q, QQ, pmat, pmat_inv;
-    // SimplicialLLT<SparseMatrix<double, Lower>> Q_eps_solver;
 
     vector<std::shared_ptr<Latent>> latents;
     VectorXd p_vec, a_vec, b_vec, noise_V, noise_prevV;
@@ -86,8 +89,10 @@ protected:
     int curr_iter; // how many times set is called.
 
     // solvers
-    cholesky_solver chol_Q, chol_QQ;
+    // SimplicialLLT<SparseMatrix<double, Lower>> Q_eps_solver;
+    cholesky_solver chol_Q, chol_QQ, chol_Q_eps;
     SparseLU<SparseMatrix<double>> LU_K;
+    double logdet_Q_eps;
 
     bool all_gaussian, rao_blackwell; // No need for gibbs sampling
     std::string par_string;
@@ -135,18 +140,8 @@ public:
       }
     }
 
-    void update_QQ() {
-      // update Q and QQ
-      VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
-      Q = K.transpose() * inv_SV.asDiagonal() * K;
-
-      if (!corr_measure) {
-        QQ = Q + A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V).asDiagonal() * A;
-      } else{
-        QQ = Q + A.transpose() * Q_eps * A;
-      }
-      chol_QQ.compute(QQ);
-    }
+    void update_QQ();
+    void update_Q_eps(double rho);
 
     void setW(const VectorXd&);
     void setPrevW(const VectorXd&);

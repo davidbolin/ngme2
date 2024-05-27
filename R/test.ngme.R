@@ -17,7 +17,7 @@
 #' @param fix_theta_K fix theta_K
 #' @param fix_theta_mu fix theta_mu
 #' @param fix_theta_sigma fix theta_sigma
-#' @param fix_nu fix nu
+#' @param fix_theta_nu fix nu
 #' @param control_opt control options for optimization, see \code{\link{control_opt}}
 #' @export
 test_ngme <- function(
@@ -36,7 +36,7 @@ test_ngme <- function(
   fix_theta_K = FALSE,
   fix_theta_mu= FALSE,
   fix_theta_sigma = FALSE,
-  fix_nu = FALSE,
+  fix_theta_nu = FALSE,
   seed = Sys.time()
 ) {
   if (is.null(control_opt)) control_opt <- control_opt()
@@ -57,7 +57,7 @@ print(paste("nodes of mesh = ", mesh$n))
   f_fm_noise <- f_noise
   f_fm_noise$fix_theta_mu = fix_theta_mu
   f_fm_noise$fix_theta_sigma = fix_theta_sigma
-  f_fm_noise$fix_nu = fix_nu
+  f_fm_noise$fix_theta_nu = fix_theta_nu
   f_fm_noise$theta_mu = rep(0, ncol(f_fm_noise$B_mu))
   f_fm_noise$theta_sigma = rep(0, ncol(f_fm_noise$B_sigma))
   f_fm_noise$theta_nu = rep(0, ncol(f_fm_noise$B_nu))
@@ -66,7 +66,7 @@ print(paste("nodes of mesh = ", mesh$n))
     mn_noise <- rnig(n_obs_per_rep, delta=2, mu=-2, nu=1, sigma=0.5, seed=seed)
     real_mn_noise <- noise_nig(mu=-2,sigma=0.5,nu=1)
     fm_mn_noise <- noise_nig(
-      # nu=2, fix_nu=TRUE
+      # nu=2, fix_theta_nu=TRUE
       # V = attr(mn_noise, "V"), fix_V = TRUE
     )
   } else if (family == "normal") {

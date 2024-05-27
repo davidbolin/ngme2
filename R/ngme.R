@@ -114,22 +114,39 @@ ngme <- function(
 
   # update with start (list of ngmes)
   if (inherits(start, "ngme")) {
-    # to-do: check start is of same length
     for (i in seq_along(ngme_model$replicates)) {
       ngme_model$replicates[[i]] <- within(ngme_model$replicates[[i]], {
         # check if feff is the same, then overwrite the feff
-        same_feff <- all(dim(X) == dim(start$replicates[[i]]$X)) &&
-          all(X == start$replicates[[i]]$X)
-        if (same_feff) feff <- start$replicates[[i]]$feff
+        same_feff <- all(dim(X) == dim(start$replicates[[i]]$X))
+        if (same_feff) {
+          if (!ngme_model$replicates[[i]]$standardize)
+            feff <- start$replicates[[i]]$feff
+          else {
+            # notice that the SVD effects
+            svd <- start$replicates[[i]]$svd
+            feff <- as.numeric(t(svd$v) %*% start$replicates[[i]]$feff) * svd$d
+          }
+        }
+        
         noise <- update_noise(noise, new_noise = start$replicates[[i]]$noise)
         for (i in seq_along(start$replicates[[i]]$models)) {
           # update operator representation
           models[[i]]$operator <-
             start$replicates[[i]]$models[[i]]$operator
+
+stopifnot(
+  "Please provide the same number of parameters" =
+  length(models[[i]]$theta_K) == length(start$replicates[[i]]$models[[i]]$theta_K))
+stopifnot(
+  "length of W should be the same" =
+  models[[i]]$W_size == length(start$replicates[[i]]$models[[i]]$W))
+stopifnot(
+  "length of V should be the same" =
+  models[[i]]$V_size == length(start$replicates[[i]]$models[[i]]$noise$V))
           # update parameters
           models[[i]]$theta_K  <- models[[i]]$operator$theta_K
           models[[i]]$W        <- start$replicates[[i]]$models[[i]]$W
-          models[[i]]$V        <- start$replicates[[i]]$models[[i]]$V
+          models[[i]]$noise$V  <- start$replicates[[i]]$models[[i]]$noise$V
           models[[i]]$noise    <- update_noise(
             models[[i]]$noise, new_noise = start$replicates[[i]]$models[[i]]$noise
           )

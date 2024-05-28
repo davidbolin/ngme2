@@ -324,8 +324,8 @@ compute_err_1rep <- function(
   scores <- data.frame(
     MAE   = MAE,
     MSE   = MSE,
-    CRPS  = sapply(CRPS, mean), # mean over 1:n_obs_test within each group
-    sCRPS = sapply(sCRPS, mean) # same
+    negCRPS  = -sapply(CRPS, mean), # mean over 1:n_obs_test within each group
+    negsCRPS = -sapply(sCRPS, mean) # same
   )
 
   # scores results and 2 predictions

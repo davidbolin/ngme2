@@ -23,6 +23,10 @@ bv_normal(
 
 \item{rho}{the parameter related to correlation}
 
+\item{c1}{the noise sd for 1st sub_model}
+
+\item{c2}{the noise sd for 2nd sub_model}
+
 \item{group}{group vector, can be inherited from ngme() function}
 
 \item{share_param}{TRUE if share the same parameter for 2 sub_models (of same type)}

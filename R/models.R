@@ -320,6 +320,7 @@ matern <- function(
     h = h,
     symmetric = TRUE,
     zero_trace = FALSE,
+    stationary = stationary,
     param_name =
       if (stationary) "kappa"
       else paste("theta_K", seq_len(length(theta_K)), sep = " "),

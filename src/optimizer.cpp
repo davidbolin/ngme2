@@ -58,6 +58,9 @@ Ngme_optimizer::Ngme_optimizer(
     prev_grad = grad;
     x = model->get_parameter();
     prev_x = x;
+    
+    // some initialization
+    model->set_parameter(x);
 }
 
 // x <- x - model->stepsize() * model->grad()
@@ -179,11 +182,12 @@ if (std::isnan(one_step(one_step.size()-1))) {
                 }
             }
 
-        // variance reduction
+        // variance reduction (not enabled)
             int r = curr_iter - var_reduce_iter;
             double tmp = r > 0 ? (1.0/r) : 1.0;
+            // x = x - pow(tmp, reduce_power) * one_step;
+            x = x - one_step;
 
-        x = x - pow(tmp, reduce_power) * one_step;
 
 if (verbose) {
 std::cout << "iteration = : " << curr_iter+1 << std::endl;
@@ -199,7 +203,7 @@ std::cout << "---------------------------" << std::endl;
     }
 
     // update preconditioner if not computed
-    if (!compute_precond_each_iter)
+    if (!compute_precond_each_iter && precond_strategy > 0 && method == "precond_sgd") 
         preconditioner = model->precond(precond_strategy, numerical_eps);
 
     return x;
@@ -263,7 +267,9 @@ double Ngme_optimizer::line_search_wolfe(
 // std::cout << "line search iteration = " << i << std::endl;
 
         // Termination condition to prevent infinite loop (can be tuned)
-        if (i > 30) {
+        if (i > 50) {
+std::cout << "warning: line search iteration > 50" << std::endl;
+std::cout << "alpha_i = " << alpha_i << std::endl;
             return alpha_i;
         }
     }

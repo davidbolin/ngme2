@@ -93,6 +93,8 @@ public:
 
     void update_K(const VectorXd&);
     void update_dK(const VectorXd&);
+
+    int get_alpha() const {return alpha;}
 };
 
 class Matern_ns : public Operator {
@@ -182,6 +184,29 @@ public:
 };
 
 
+class bv_matern_normal : public Operator {
+private:
+    std::shared_ptr<Matern> first, second;
+    int n_theta_1, n_theta_2;
+    int n; // dim of K1 and K2 (same)
+    bool share_param, fix_bv_theta;
+    double dim, alpha1, alpha2, nu1, nu2;
+public:
+    bv_matern_normal(const Rcpp::List&);
+
+    void update_K(const VectorXd&);
+    void update_dK(const VectorXd&);
+
+    Matrix2d getD(double, double) const;
+    Matrix2d get_dD_theta(double, double) const;
+    Matrix2d get_dD_rho(double, double) const;
+    Matrix2d get_dD2_theta(double, double) const;
+    Matrix2d get_dD2_rho(double, double) const;
+};
+
+
+
+
 // notice dK is of size 0
 class Iid : public Operator {
 public:
@@ -231,8 +256,8 @@ public:
       return std::make_shared<Randeff>(operator_in);
     } else if (model_type == "bv") {
       return std::make_shared<Bivar>(operator_in);    
-    // } else if (model_type == "bv_normal_2" {
-      // return std::make_shared<Bivar_normal>(operator_in);
+    } else if (model_type == "bv_matern_normal") {
+      return std::make_shared<bv_matern_normal>(operator_in);
     } else if (model_type == "bv_normal") {
       return std::make_shared<Bivar_normal_ope>(operator_in);
     } else {

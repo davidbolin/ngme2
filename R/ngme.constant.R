@@ -12,7 +12,7 @@ ngme_noise_types <- function() {
 #' @export
 ngme_model_types <- function() {
     c("ar1", "matern", "rw", "ou", "tp", "iid", "re", 
-        "bv", "bv_normal_2", "bv_normal")
+        "bv", "bv_matern_normal", "bv_normal")
 }
 
 #' Show ngme priors

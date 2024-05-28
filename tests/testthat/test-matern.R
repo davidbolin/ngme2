@@ -9,6 +9,7 @@ test_that("test Matern", {
     loc.domain = pl01, cutoff = 0.1,
     max.edge = c(0.3, 10)
   )
+  mesh$manifold
   # plot(mesh)
   mesh$n
 

@@ -328,7 +328,7 @@ update_ngme_est <- function(
       }
     }
 
-    if (ngme_replicate$models[[i]]$model %in% c("bv", "bv_normal")) {
+    if (ngme_replicate$models[[i]]$model %in% c("bv", "bv_normal", "bv_matern_normal")) {
       n1 <- ngme_replicate$models[[i]]$operator$first$n_theta_K
       n2 <- ngme_replicate$models[[i]]$operator$second$n_theta_K
 

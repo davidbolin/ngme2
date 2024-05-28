@@ -217,15 +217,16 @@ reorder_loc = sample(1:n_each)
 sim_fields <- simulate(
   f(c(reorder_loc, reorder_loc),
     model="bv_normal",
-    rho=5,
+    rho=3,
+    c1=2, c2=1,
     sub_models = list(
       W1 = list(model="ar1", rho=0.6),
       W2 = list(model="ar1", rho=-0.4)
     ),
     group=group,
     noise=list(
-      W1 = noise_normal(sigma = 3),
-      W2 = noise_normal(sigma = 2)
+      W1 = noise_normal(sigma = 1),
+      W2 = noise_normal(sigma = 1)
     )
   )
 )[[1]]
@@ -235,7 +236,10 @@ sim_fields <- simulate(
 # if they represent underlying W1(index=k) and W2(index=k)
 
 # Generate covariance matrix for measurement noise
-Cov_same_idx <- matrix(c(1, 0.7, 0.7, 1), nrow=2)
+sd_1 = 0.6; sd_2 = 0.9; rho_e = 0.9
+Cov_same_idx <- matrix(c(sd_1^2, rho_e*sd_1*sd_2, rho_e*sd_1*sd_2, sd_2^2), nrow=2)
+
+
 Cov_measurement <- Cov_same_idx %x% diag(n_obs / 2)
 
 # e ~ N(0, Cov_measurement)
@@ -248,6 +252,10 @@ x2 <- rnorm(n_obs)
 feff <- c(-3, 1.5)
 
 Y <- sim_fields + x1 * feff[1] + x2 * feff[2] + as.numeric(e)
+
+B_sigma = matrix(0, nrow=n_obs, ncol=2)
+B_sigma[group=="W1", 1] = 1
+B_sigma[group=="W2", 2] = 1
 
 out <- ngme(
   Y ~ 0 + x1 + x2 +
@@ -263,13 +271,16 @@ out <- ngme(
   group = group,
   family = noise_normal(
     corr_measurement = TRUE,
-    index_corr = c(1:n_each, 1:n_each)
+    index_corr = c(1:n_each, 1:n_each),
+    B_sigma = B_sigma,
+    theta_sigma = c(0, 0)
   ),
   data = data.frame(Y, x1, x2),
   control_opt = control_opt(
     n_parallel_chain = 4,
     optimizer = adam(stepsize = 0.01),
-    iterations = 10000,
+    verbose = TRUE,
+    iterations = 5000,
     rao_blackwellization = TRUE,
     seed = 7
   )
@@ -279,9 +290,9 @@ out
 # comparing with simulated value
 traceplot(
   out, "bv",
-  hline=c(5, 0.6, -0.4, 3, 2)
+  hline=c(3, 2, 1, 0.6, -0.4)
 )
-traceplot(out, hline=c(1, 0.7, -3, 1.5))
+traceplot(out, hline=c(log(sd_1), log(sd_2), rho_e, -3, 1.5))
 ```
 
 ### Ex2. Fixed effects + Bivariate model (AR1, NIG) + Correlated measurement noise

@@ -209,16 +209,19 @@ In this example, we will first use `simulate` function to simulate the hidden bi
 ### Ex1. Fixed effects + Bivariate model (AR1, Normal) + Correlated measurement noise
 
 ```{r}
+load_all("../ngme2")
 n_obs <- 2000
 n_each <- n_obs / 2
-group <- c(rep("W1", n_each), rep("W2", n_each))
+group <- rep(c("W1", "W2"), n_each)
 
 reorder_loc = sample(1:n_each)
+reorder_loc = 1:n_each
+
 sim_fields <- simulate(
-  f(c(reorder_loc, reorder_loc),
+  f(rep(reorder_loc, each=2),
     model="bv_normal",
     rho=3,
-    c1=2, c2=1,
+    c1=1, c2=1,
     sub_models = list(
       W1 = list(model="ar1", rho=0.6),
       W2 = list(model="ar1", rho=-0.4)
@@ -230,6 +233,10 @@ sim_fields <- simulate(
     )
   )
 )[[1]]
+
+acf(sim_fields[group=="W1"])
+acf(sim_fields[group=="W2"])
+
 # Here we assume f1 and f2 have positive correlated measurement error
 # if they are measured at same index.
 # Meaning Y(i) and Y(j) have correlated measurement noise
@@ -239,8 +246,8 @@ sim_fields <- simulate(
 sd_1 = 0.6; sd_2 = 0.9; rho_e = 0.9
 Cov_same_idx <- matrix(c(sd_1^2, rho_e*sd_1*sd_2, rho_e*sd_1*sd_2, sd_2^2), nrow=2)
 
-
-Cov_measurement <- Cov_same_idx %x% diag(n_obs / 2)
+A_list <- replicate(n_each, Cov_same_idx, simplify = FALSE)
+Cov_measurement <- Matrix::bdiag(A_list)
 
 # e ~ N(0, Cov_measurement)
 L <- t(chol(Cov_measurement))
@@ -251,15 +258,17 @@ x1 <- rexp(n_obs)
 x2 <- rnorm(n_obs)
 feff <- c(-3, 1.5)
 
-Y <- sim_fields + x1 * feff[1] + x2 * feff[2] + as.numeric(e)
+# Y <- sim_fields + x1 * feff[1] + x2 * feff[2] + as.numeric(e)
+Y <- sim_fields + as.numeric(e)
 
 B_sigma = matrix(0, nrow=n_obs, ncol=2)
 B_sigma[group=="W1", 1] = 1
 B_sigma[group=="W2", 2] = 1
 
-out <- ngme(
-  Y ~ 0 + x1 + x2 +
-    f(c(reorder_loc, reorder_loc),
+load_all("../ngme2")
+bvar_cor <- ngme(
+  Y ~ 0 + # x1 + x2 +
+    f(rep(reorder_loc, each=2),
     model="bv_normal",
     name = "bv",
     sub_models = list(W1 = "ar1", W2 = "ar1"),
@@ -271,28 +280,93 @@ out <- ngme(
   group = group,
   family = noise_normal(
     corr_measurement = TRUE,
-    index_corr = c(1:n_each, 1:n_each),
+    index_corr = rep(1:n_each, each=2),
+    rho = 0.5,
     B_sigma = B_sigma,
     theta_sigma = c(0, 0)
   ),
   data = data.frame(Y, x1, x2),
   control_opt = control_opt(
-    n_parallel_chain = 4,
+    # estimation = FALSE,
+    # standardize_fixed = TRUE,
+    n_parallel_chain = 1,
     optimizer = adam(stepsize = 0.01),
     verbose = TRUE,
-    iterations = 5000,
-    rao_blackwellization = TRUE,
+    iterations = 500,
+    iters_per_check = 1,
+    # rao_blackwellization = TRUE,
     seed = 7
   )
+  , start = bvar_cor
 )
+traceplot(bvar_cor, "bv", hline=c(3,1,1,0.6,-0.4))
+traceplot(bvar_cor, hline=c(log(sd_1), log(sd_2), rho_e, -3, 1.5))
+
+bvar_ind <- ngme(
+  Y ~ 0 + # x1 + x2 +
+    f(rep(reorder_loc, each=2),
+    model="bv_normal",
+    name = "bv",
+    sub_models = list(W1 = "ar1", W2 = "ar1"),
+    noise=list(
+      W1 = noise_normal(),
+      W2 = noise_normal()
+    )
+  ),
+  group = group,
+  family = noise_normal(
+    B_sigma = B_sigma,
+    theta_sigma = c(0, 0)
+  ),
+  data = data.frame(Y, x1, x2),
+  control_opt = control_opt(
+    # estimation = FALSE,
+    # standardize_fixed = TRUE,
+    n_parallel_chain = 1,
+    optimizer = adam(stepsize = 0.01),
+    verbose = TRUE,
+    iterations = 50,
+    iters_per_check = 1,
+    # rao_blackwellization = TRUE,
+    seed = 7
+  )
+  , start = bvar_ind
+)
+traceplot(bvar_ind, "bv", hline=c(3,1,1,0.6,-0.4))
+traceplot(bvar_ind, hline=c(log(sd_1), log(sd_2), -3, 1.5))
+
+
+# out_cor
+# out_ind
+load_all("../ngme2")
+cv <- cross_validation(
+  list(
+    cor=bvar_cor, 
+    ind=bvar_ind
+  ),
+  n_gibbs_samples = 100,
+  print=TRUE, 
+  k = 2
+)
+
+cv
+
 out
+
+out$replicates[[1]]$models[[1]]$A
+out$replicates[[1]]$Y
+out$replicates[[1]]$noise$index_corr
 
 # comparing with simulated value
 traceplot(
   out, "bv",
   hline=c(3, 2, 1, 0.6, -0.4)
 )
-traceplot(out, hline=c(log(sd_1), log(sd_2), rho_e, -3, 1.5))
+traceplot(out1, hline=c(log(sd_1), log(sd_2), rho_e, -3, 1.5))
+# traceplot(out, hline=c(log(sd_1), log(sd_2), -3, 1.5))
+
+
+
 ```
 
 ### Ex2. Fixed effects + Bivariate model (AR1, NIG) + Correlated measurement noise
@@ -304,8 +378,9 @@ n_each <- n_obs / 2
 group <- c(rep("W1", n_each), rep("W2", n_each))
 
 theta = pi/8; rho = 2; rho_1 = 0.6; rho_2 = 0.4
-mu_1 = -2; sigma_1 = 1; nu_1 = 1
-mu_2 = 2; sigma_2 = 2; nu_2 = 0.5
+sigma_1 = 1; sigma_2 = 2;
+# mu_1 = -2; sigma_1 = 1; nu_1 = 1
+# mu_2 = 2; sigma_2 = 2; nu_2 = 0.5
 
 reorder_loc = sample(1:n_each)
 sim_fields <- simulate(
@@ -319,8 +394,8 @@ sim_fields <- simulate(
     ),
     group=group,
     noise=list(
-      W1 = noise_nig(mu=mu_1, sigma=sigma_1, nu=nu_1),
-      W2 = noise_nig(mu=mu_2, sigma=sigma_2, nu=nu_2)
+      # W1 = noise_nig(mu=mu_1, sigma=sigma_1, nu=nu_1),
+      # W2 = noise_nig(mu=mu_2, sigma=sigma_2, nu=nu_2)
     )
   )
 )[[1]]
@@ -359,16 +434,44 @@ out <- ngme(
   data = data.frame(Y, x1, x2),
   control_opt = control_opt(
     optimizer = adam(),
-    iterations = 10000,
+    iterations = 1000,
+    verbose = T,
     n_parallel_chain = 4,
     seed = 113
   )
 )
 out
 
+out_ind <- ngme(
+  Y ~ 0 + x1 + x2 +
+    f(c(reorder_loc, reorder_loc),
+    model="bv",
+    name = "bv",
+    sub_models = list(W1 = "ar1", W2 = "ar1"),
+    noise=list(
+      W1 = noise_nig(),
+      W2 = noise_nig()
+    )
+  ),
+  group = group,
+  family = noise_normal(
+    # corr_measurement = TRUE,
+    # index_corr = c(1:n_each, 1:n_each)
+  ),
+  data = data.frame(Y, x1, x2),
+  control_opt = control_opt(
+    optimizer = adam(),
+    iterations = 1000,
+    # verbose = T,
+    n_parallel_chain = 4,
+    seed = 113
+  )
+)
+out_ind
+
 # comparing with simulated value
 traceplot(
-  out, "bv",
+  out1, "bv",
   hline=c(theta, rho, rho_1, rho_2,
     mu_1, mu_2, sigma_1, sigma_2, nu_1, nu_2)
 )
@@ -410,29 +513,54 @@ theta_K_1 = log(2); theta_K_2 = log(5);
 mu_1 = -2; sigma_1 = 0.5; nu_1 = 1
 mu_2 = 2; sigma_2 = 0.3; nu_2 = 0.5
 
+load_all("../ngme2")
 true_model <- f(
   ~ long + lat,
   theta = theta,
   rho = rho,
   mesh = mesh,
-  model = "bv_normal",
+  sd1=sigma_1,sd2=sigma_2,
+  model = "bv_matern_normal",
   sub_models = list(
     W1 = list(model = "matern", theta_K = theta_K_1),
     W2 = list(model = "matern", theta_K = theta_K_2)
   ),
   group = group,
   noise = list(
-    W1 = noise_normal(sigma = sigma_1),
-    W2 = noise_normal(sigma = sigma_2)
+    W1 = noise_normal(),
+    W2 = noise_normal()
     # W1 = noise_nig(mu = mu_1, sigma = sigma_1, nu=nu_1),
     # W2 = noise_nig(mu = mu_2, sigma = sigma_2, nu=nu_2)
   )
 )
 
 W <- simulate(true_model)[[1]]
-Y <- W + rnorm(n_obs, sd=0.2)
 
-out <- ngme(
+sd_1 = 0.6; sd_2 = 0.9; rho_e = 0.9
+Cov_same_idx <- matrix(c(sd_1^2, rho_e*sd_1*sd_2, rho_e*sd_1*sd_2, sd_2^2), nrow=2)
+
+
+Cov_measurement <- Cov_same_idx %x% diag(n_obs / 2)
+
+# e ~ N(0, Cov_measurement)
+L <- t(chol(Cov_measurement))
+e <- L %*% rnorm(n_obs)
+
+# fixed effects
+x1 <- rexp(n_obs)
+x2 <- rnorm(n_obs)
+feff <- c(-3, 1.5)
+
+# Y <- sim_fields + x1 * feff[1] + x2 * feff[2] + as.numeric(e)
+Y <- W + as.numeric(e)
+# Y <- c(1:10)
+
+B_sigma = matrix(0, nrow=n_obs, ncol=2)
+B_sigma[group=="W1", 1] = 1
+B_sigma[group=="W2", 2] = 1
+
+
+out_cor <- ngme(
   Y ~ 0 + f(
     ~ long + lat,
     mesh = mesh,
@@ -444,15 +572,20 @@ out <- ngme(
     ),
     # debug=T,
     noise = list(
-      # W1 = noise_nig(),
-      # W2 = noise_nig()
       W1 = noise_normal(),
       W2 = noise_normal()
     )
   ),
   group = group,
+  family = noise_normal(
+    corr_measurement = TRUE,
+    index_corr = c(1:(n_obs/2), 1:(n_obs/2)),
+    B_sigma = B_sigma,
+    theta_sigma = c(0, 0)
+  ),
   data = data.frame(Y, long, lat),
   control_opt = control_opt(
+    standardize_fixed = FALSE,
     iterations = 500,
     n_parallel_chain = 4,
     rao_blackwellization = TRUE,
@@ -462,13 +595,17 @@ out <- ngme(
   ),
   debug = FALSE
 )
-out
+out_cor
 
 # comparing with simulated value
 traceplot(
-  out, "bv",
-  hline=c(theta, rho, exp(theta_K_1), exp(theta_K_2),
-    sigma_1, sigma_2)
+  out_cor, "bv",
+  hline=c(rho, sigma_1, sigma_2, exp(theta_K_1), exp(theta_K_2))
+)
+
+traceplot(
+  out_cor,
+  hline=c(log(sd_1), log(sd_2), rho_e)
 )
 ```
 
@@ -488,4 +625,17 @@ coords <- data.frame(x_coord, y_coord)
 
 # here we can see 2 pairs (1 and 3, 5 and 6) of observations are close enough
 compute_index_corr_from_map(coords, eps = 0.1)
+```
+
+
+```{r}
+load_all("../ngme2")
+cv = cross_validation(
+  list(
+    cor=out_cor, ind=out_ind
+  ),
+  k=20,
+  print=TRUE
+)
+cv
 ```

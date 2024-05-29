@@ -492,7 +492,7 @@ print.ngme_noise <- function(x, padding = 0, prefix = "Noise type", suppress_sig
   invisible(noise)
 }
 
-subset_noise <- function(noise, sub_idx, compute_corr=TRUE) {
+subset_noise <- function(noise, sub_idx, compute_corr) {
   noise$B_mu    <- noise$B_mu[sub_idx, , drop=FALSE]
   noise$B_sigma <- noise$B_sigma[sub_idx, ,drop=FALSE]
   noise$B_nu    <- noise$B_nu[sub_idx, ,drop=FALSE]

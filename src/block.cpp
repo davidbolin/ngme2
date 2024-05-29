@@ -190,8 +190,7 @@ if (debug) std::cout << "After assemble" << std::endl;
     Q = K.transpose() * inv_SV.asDiagonal() * K;
     if (!corr_measure) {
       QQ = Q + A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V).asDiagonal() * A;
-    }
-    else{
+    } else{
       QQ = Q + A.transpose() * Q_eps * A;
     }
 

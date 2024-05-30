@@ -25,27 +25,18 @@
 #' @param trend_lim       maximum allowed slope
 #' @param print_check_info print the convergence information
 #' @param optimizer choose different sgd optimization method, 
-#' currently support "vanilla", "momentum", "adagrad", "rmsprop", "adam", "adamW"
-#' see ?vanilla, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW
+#' currently support "precond_sgd", "momentum", "adagrad", "rmsprop", "adam", "adamW"
+#' see precond_sgd, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW
 #'
-#'
-#' @param preconditioner  preconditioner, can be c("none", "fast", "full")
-#' "none" means no preconditioner, "fast" means precondition everything except for the parameter of K matrix (for speed reason), "full" means precondition everything
-#' @param precond_eps   numerical, the gap used for estimate preconditioner, default is 1e-5
-#' @param precond_by_diff_chain logical, if TRUE, use different chains to estimate preconditioner (only computed at check points), if FALSE, use the same chain to estimate preconditioner (computed at each iteration)
-#' @param compute_precond_each_iter logical, if TRUE, compute preconditioner at each iteration, if FALSE, only compute preconditioner at check points (if has only 1 chain running, it will be set TRUE)
 #'
 #' @param max_num_threads maximum number of threads used for parallel computing, by default will be set same as n_parallel_chain.
 #' If it is more than n_parallel_chain, the rest will be used to parallel different replicates of the model.
 #' @param max_relative_step   max relative step allowed in 1 iteration
 #' @param max_absolute_step   max absolute step allowed in 1 iteration
+#' @param converge_eps        convergence threshold, test if grad.norm() < converge_eps
+#'
 #' @param rao_blackwellization  use rao_blackwellization
 #' @param n_trace_iter  use how many iterations to approximate the trace (Hutchinson’s trick)
-#'
-#' @param reduce_var      logical, reduce variace
-#' @param reduce_power    numerical the power of reduce level
-#' @param threshold       till when start to reduce the variance
-#' @param window_size     numerical, length of window for final estimates
 #'
 #' @param verbose print estimation
 #' @param sampling_strategy subsampling method of replicates of model, c("all", "is")
@@ -62,6 +53,8 @@ control_opt <- function(
   stop_points       = 10,
   iters_per_check   = iterations / stop_points,
 
+  optimizer         = adam(),
+  
   # parallel options
   n_parallel_chain  = 4,
   max_num_threads   = n_parallel_chain,
@@ -72,22 +65,9 @@ control_opt <- function(
   trend_lim         = 0.01,
   print_check_info  = FALSE,
 
-  # preconditioner related
-  preconditioner    = "none",
-  precond_eps       = 1e-5,
-  precond_by_diff_chain = FALSE,
-  compute_precond_each_iter = FALSE,
-
-  optimizer = adamW(),
-
   max_relative_step = 0.5,
   max_absolute_step = 0.5,
-
-  # reduce variance after conv. check
-  reduce_var        = FALSE,
-  reduce_power      = 0.75,
-  threshold         = 1e-5,
-  window_size       = 1,
+  converge_eps      = 1e-5,
 
   rao_blackwellization = FALSE,
   n_trace_iter      = 10,
@@ -98,6 +78,18 @@ control_opt <- function(
 ) {
   strategy_list <- c("all", "ws")
   preconditioner_list <- c("none", "fast", "full")
+
+  # read preconditioner from optimizer
+  preconditioner            <- "none"
+  numerical_eps             <- 1e-5
+  precond_by_diff_chain     <- FALSE
+  compute_precond_each_iter <- FALSE
+  if (optimizer$method == "precond_sgd") {
+    preconditioner    = optimizer$preconditioner
+    numerical_eps       = optimizer$numerical_eps
+    precond_by_diff_chain = optimizer$precond_by_diff_chain
+    compute_precond_each_iter = optimizer$compute_precond_each_iter
+  }
 
   # if user inputs iters_per_check
   if (!missing(iters_per_check) && !missing(stop_points)) {
@@ -118,13 +110,19 @@ control_opt <- function(
     inherits(optimizer, "ngme_optimizer")
   )
 
-  if ((reduce_power <= 0.5) || (reduce_power > 1)) {
-    stop("reduceVar should be in (0.5,1]")
-  }
 
   if (n_parallel_chain == 1) {
-    # compute_precond_each_iter <- TRUE
     precond_by_diff_chain <- FALSE
+  }
+
+  # variance reduction techniques (not used for now)
+  {
+    reduce_var        = FALSE
+    reduce_power      = 0.75
+    threshold         = 1e-5
+    window_size       = 1
+    stopifnot("reduceVar should be in (0.5,1]" = 
+      (reduce_power > 0.5) && (reduce_power <= 1))
   }
 
   control <- list(
@@ -147,28 +145,31 @@ control_opt <- function(
     ),
     rao_blackwellization = rao_blackwellization,
     n_trace_iter      = n_trace_iter,
-
     print_check_info  = print_check_info,
+    verbose           = verbose,
+    sampling_strategy = which(strategy_list == sampling_strategy) - 1, # start from 0,
 
-    # variance reduction
     max_relative_step = max_relative_step,
     max_absolute_step = max_absolute_step,
-    reduce_var        = reduce_var,
-    reduce_power      = reduce_power,
-    threshold         = threshold,
-    window_size       = window_size,
+    converge_eps      = converge_eps,
 
-    verbose           = verbose,
-    precond_eps       = precond_eps,
+    # preconditioner related
+    numerical_eps       = numerical_eps,
     precond_by_diff_chain = precond_by_diff_chain,
     compute_precond_each_iter = compute_precond_each_iter,
     precond_strategy  = which(preconditioner_list == preconditioner) - 1, # start from 0
-    sampling_strategy = which(strategy_list == sampling_strategy) - 1, # start from 0,
 
     # optimization method related 
     stepsize          = optimizer$stepsize,
     sgd_method        = optimizer$method,
-    sgd_parameters    = optimizer$sgd_parameters
+    sgd_parameters    = optimizer$sgd_parameters,
+    line_search       = optimizer$line_search,
+
+    # variance reduction (not used for now)
+    reduce_var        = reduce_var,
+    reduce_power      = reduce_power,
+    threshold         = threshold,
+    window_size       = window_size
   )
 
   class(control) <- "control_opt"
@@ -178,23 +179,25 @@ control_opt <- function(
 #' Generate control specifications for \code{f} function
 #'
 #' @param numer_grad    whether to use numerical gradient
-#' @param use_num_hess  whether to use numerical hessian
+#' @param improve_hessian  improve numerical hessian by using central difference estimation (O(eps^2) error)
+#' default is forward difference estimation (O(eps) error)
+#'
 #' @param eps           eps for computing numerical gradient
 #'
 #' @return list of control variables
 #' @export
 control_f <- function(
-  numer_grad    = TRUE,
-  use_num_hess  = TRUE,
-  eps           = 0.001
+  numer_grad       = TRUE,
+  improve_hessian  = TRUE,
+  eps              = 0.0001
   # use_iter_solver = FALSE
   ) {
 
   control <- list(
-    numer_grad    = numer_grad,
-    use_num_hess  = use_num_hess,
-    eps           = eps,
-    use_iter_solver = FALSE
+    numer_grad       = numer_grad,
+    improve_hessian  = improve_hessian,
+    eps              = eps,
+    use_iter_solver  = FALSE
   )
 
   class(control) <- "control_f"

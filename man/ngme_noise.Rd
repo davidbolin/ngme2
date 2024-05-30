@@ -23,7 +23,9 @@ ngme_noise(
   B_sigma_normal = NULL,
   fix_theta_mu = FALSE,
   fix_theta_sigma = FALSE,
-  fix_nu = FALSE,
+  fix_rho = FALSE,
+  fix_theta_sigma_normal = FALSE,
+  fix_theta_nu = FALSE,
   V = NULL,
   fix_V = FALSE,
   single_V = FALSE,
@@ -125,7 +127,11 @@ noise_normal_nig(
 
 \item{fix_theta_sigma}{fix the parameter of theta_sigma}
 
-\item{fix_nu}{fix the parameter of nu}
+\item{fix_rho}{fix the parameter of rho}
+
+\item{fix_theta_sigma_normal}{fix the parameter of sigma_normal, used in noise_normal_nig()}
+
+\item{fix_theta_nu}{fix the parameter of nu}
 
 \item{V}{start value for V}
 

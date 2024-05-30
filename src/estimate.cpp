@@ -123,14 +123,15 @@ auto timer = std::chrono::steady_clock::now();
         }
 
         if (n_chains > 1) {
-            if (precond_by_diff_chain) {
-                // set the preconditioner by other chains
-                MatrixXd precond_sum = MatrixXd::Zero(n_params, n_params);
-                for (int i=0; i < n_chains; i++)
-                    precond_sum += opt_vec[i].get_preconditioner();
-                for (int i=0; i < n_chains; i++)
-                    opt_vec[i].set_preconditioner((precond_sum - opt_vec[i].get_preconditioner()) / (n_chains - 1));
-            }
+            // if (precond_by_diff_chain) {
+            //     // set the preconditioner by other chains
+            //     MatrixXd precond_sum = MatrixXd::Zero(n_params, n_params);
+            //     for (int i=0; i < n_chains; i++)
+            //         precond_sum += opt_vec[i].get_preconditioner();
+            //     for (int i=0; i < n_chains; i++)
+            //         // opt_vec[i].set_preconditioner((precond_sum - opt_vec[i].get_preconditioner()) / (n_chains - 1));
+            //         opt_vec[i].set_preconditioner((precond_sum) / (n_chains));
+            // }
 
             // exchange VW
             if (exchange_VW) {
@@ -205,11 +206,17 @@ std::cout << "Total time of the estimation is (s): " << since(timer).count() / 1
 // }
 
 // [[Rcpp::export]]
-Rcpp::List sampling_cpp(const Rcpp::List& ngme_replicate, int n, bool posterior, unsigned long seed) {
+Rcpp::List sampling_cpp(
+    const Rcpp::List& ngme_replicate, 
+    int n, 
+    int n_burnin,
+    bool posterior, 
+    unsigned long seed
+) {
     std::mt19937 rng (seed);
     BlockModel block (ngme_replicate, rng());
 
-    return block.sampling(n, posterior);
+    return block.sampling(n, n_burnin, posterior);
 }
 
 /*

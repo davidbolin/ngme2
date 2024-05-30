@@ -15,6 +15,7 @@
 #' @param print print information during computation
 #' @param percent from 1 to 100 (only for lpo type)
 #' @param times how many test cases (only for lpo type)
+#' @param n_gibbs_samples number of gibbs samples
 #' @param test_idx a list of indices of the data (which data points to be predicted) (only for custom type)
 #' @param train_idx  a list of indices of the data (which data points to be used for re-sampling (not re-estimation)) (only for custom type)
 #' @param keep_test_information logical, keep test information (pred_1, pred_2) in the return (as attributes), pred_1 and pred_2 are the prediction of the two chains
@@ -30,6 +31,7 @@ cross_validation <- function(
   k = 5,
   percent = 50,
   times = 10,
+  n_gibbs_samples = 50,
   test_idx = NULL,
   train_idx = NULL,
   keep_test_information = FALSE
@@ -85,6 +87,7 @@ cross_validation <- function(
         test_idx[[i]],
         train_idx[[i]],
         N=N,
+        n_gibbs_samples = n_gibbs_samples,
         seed=seed
       )
       crs[[i]] <- result$score
@@ -146,6 +149,7 @@ compute_err_reps <- function(
   test_idx,
   train_idx,
   N = 100,
+  n_gibbs_samples = 50,
   seed = NULL
 ) {
   stopifnot("Not a ngme object." = inherits(ngme, "ngme"))
@@ -163,11 +167,14 @@ compute_err_reps <- function(
     # skip this replicate if no target or train data
     if (sum(bool_train_idx) == 0 || sum(bool_test_idx) == 0) next
     n_crs <- n_crs + 1
+
+    ngme_1rep = ngme$replicates[[i]]
     result_1rep <- compute_err_1rep(
-      ngme$replicates[[i]],
+      ngme_1rep,
       bool_train_idx = bool_train_idx,
       bool_test_idx = bool_test_idx,
       N=N,
+      n_gibbs_samples = n_gibbs_samples,
       seed=seed
     )
     crs[[n_crs]] <- result_1rep$scores
@@ -201,6 +208,7 @@ compute_err_1rep <- function(
   bool_test_idx,
   bool_train_idx,
   N = 100,
+  n_gibbs_samples = 50,
   seed = NULL
 ) {
   stopifnot(
@@ -222,17 +230,23 @@ compute_err_1rep <- function(
   # option 2. AW comes from N chains
   #   to-do
 
+# Since we revert the order of Y, now we need to 
+# revert the train and test idx to match
+# NOT REALLY, I DID IT in the outside function!!!
+
   # Subset noise[test_idx, ] for test location
   y_data <- ngme_1rep$Y[bool_test_idx]
   group_data <- ngme_1rep$group[bool_test_idx]
-  n_obs <- length(y_data)
   X_pred <- ngme_1rep$X[bool_test_idx,, drop=FALSE]
-  noise_test_idx <- subset_noise(ngme_1rep$noise, sub_idx = bool_test_idx)
+  # noise_test_idx <- subset_noise(ngme_1rep$noise, sub_idx = bool_test_idx)
 
   # Subset noise, X, Y in train location
   ngme_1rep$X <- ngme_1rep$X[bool_train_idx,, drop=FALSE]
   ngme_1rep$Y <- ngme_1rep$Y[bool_train_idx]
-  ngme_1rep$noise <- subset_noise(ngme_1rep$noise, sub_idx = bool_train_idx)
+  
+  ngme_1rep$noise <- subset_noise(
+    ngme_1rep$noise, sub_idx = bool_train_idx, compute_corr = TRUE
+  )
 
   # Subset A for test and train location
   A_preds <- list();
@@ -247,7 +261,18 @@ compute_err_1rep <- function(
 # print(A_pred_block)
 
   if (is.null(seed)) seed <- Sys.time()
-  Ws <- sampling_cpp(ngme_1rep, n=2*N, posterior=TRUE, seed=seed)[["W"]]
+
+  # increase n_gibbs_samples
+  ngme_1rep$control_ngme$n_gibbs_samples=n_gibbs_samples
+
+  Ws <- sampling_cpp(
+    ngme_1rep, 
+    n=2*N, 
+    n_burnin = N,
+    posterior=TRUE, 
+    seed=seed
+  )[["W"]]
+  
   Ws_block <- head(Ws, N); W2s_block <- tail(Ws, N)
 
 # Note: Ws_block is a list of N realizations of W of current replicate
@@ -274,6 +299,7 @@ compute_err_1rep <- function(
   pred <- 0.5*(rowMeans(as.matrix(pred_N_1)) + rowMeans(as.matrix(pred_N_2)))
 
   # Now Y is of dim n_obs * N
+  n_obs <- length(y_data)
   E_pred_data <- E_pred_pred <- double(length(y_data))
   for (i in 1:n_obs) {
     # turn row of df into numeric vector.
@@ -307,8 +333,8 @@ compute_err_1rep <- function(
   scores <- data.frame(
     MAE   = MAE,
     MSE   = MSE,
-    CRPS  = sapply(CRPS, mean), # mean over 1:n_obs_test within each group
-    sCRPS = sapply(sCRPS, mean) # same
+    neg.CRPS  = -sapply(CRPS, mean), # mean over 1:n_obs_test within each group
+    neg.sCRPS = -sapply(sCRPS, mean) # same
   )
 
   # scores results and 2 predictions

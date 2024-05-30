@@ -21,7 +21,7 @@ simulate.ngme_model <- function(
   model <- object
   noise <- model$noise
 
-  sims <- list(); V_sim <- list()
+  sims <- list(); V_sim <- list(); W_sim <- list()
   for (nn in 1:nsim) {
     seed <- seed + nn
     # simulate noise
@@ -54,14 +54,17 @@ simulate.ngme_model <- function(
       # model does not contain A matrix, e.g., Matern graph model!
       sims[[paste0("sim_", nn)]] <-  W
       V_sim[[paste0("sim_", nn)]] <- attr(e, "V")
+      W_sim[[paste0("sim_", nn)]] <- W
     } else {
       sims[[paste0("sim_", nn)]] <- as.numeric(model$A %*% W)
-      V_sim[[paste0("sim_", nn)]] <- as.numeric(model$A %*% attr(e, "V"))
+      V_sim[[paste0("sim_", nn)]] <- attr(e, "V")
+      W_sim[[paste0("sim_", nn)]] <- W
     }
   }
 
   structure(
     as.data.frame(sims),
+    W_sim = as.data.frame(W_sim),
     V_sim = as.data.frame(V_sim),
     noise = noise
   )
@@ -217,7 +220,7 @@ simulate_1rep <- function(ngme_1rep, posterior=TRUE, seed=NULL) {
   A_block <- Reduce(cbind, x = As)
 
   if (is.null(seed)) seed <- Sys.time()
-  Ws <- sampling_cpp(ngme_1rep, n=1, posterior=posterior, seed=seed)[["W"]] [[1]]
+  Ws <- sampling_cpp(ngme_1rep, n=1, n_burnin = 1, posterior=posterior, seed=seed)[["W"]] [[1]]
 
   # return A W + X beta
   as.numeric(A_block %*% Ws + ngme_1rep$X %*% ngme_1rep$feff)

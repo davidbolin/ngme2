@@ -59,17 +59,16 @@ true_model$operator$K
       n_gibbs_samples = 5
     ),
     control_opt = control_opt(
+      optimizer = precond_sgd(
+        preconditioner = "full",
+        precond_by_diff_chain = TRUE,
+        numerical_eps = 1e-5
+      ),
       seed = 3,
       iterations = 500,
       n_parallel_chain = 4,
-      estimation = T,
-      verbose = T,
-      print_check_info = F,
-      preconditioner = "full",
-      precond_by_diff_chain = TRUE,
-      precond_eps = 1e-5
+      print_check_info = F
     )
-    # ,start = out
   )
   out
   traceplot(out,"field1")

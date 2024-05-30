@@ -84,6 +84,7 @@ reference:
     - tp
     - bv
     - bv_normal
+    - bv_matern_normal
     - re
   - title: ngme2 noises
     contents:
@@ -94,13 +95,13 @@ reference:
     - noise_normal_nig
   - title: ngme2 optimization methods
     contents:
-    - vanilla
-    - vanilla
+    - precond_sgd
     - momentum
     - adagrad
     - rmsprop
     - adam
     - adamW
+    - bfgs
   - title: Prediction and Cross validation
     contents:
     - predict.ngme

@@ -42,6 +42,11 @@ get_noise_info <- function(noise) {
       trans_nu <- rep(list(identity), noise$n_theta_nu)
     }
 
+if (noise$fix_theta_mu) name_mu <- trans_mu <- NULL
+if (noise$fix_theta_sigma) name_sigma <- trans_sigma <- NULL
+if (noise$fix_theta_nu) name_nu <- trans_nu <- NULL
+if (noise$fix_theta_sigma_normal) name_sigma_normal <- trans_sigma_normal <- NULL
+
     ts <- list(
       # for bv noise
       all = list(
@@ -187,9 +192,11 @@ plot.ngme_noise <- function(x, y = NULL, ...) {
   mu <- noise$theta_mu
   sigma <- exp(noise$theta_sigma)
   nu <- exp(noise$theta_nu)
-  stopifnot("only implemented for stationary mu" = length(mu) == 1)
+  stopifnot("only implemented for stationary mu" = 
+    length(mu) == 1 || noise$noise_type == "normal")
   stopifnot("only implemented for stationary sigma" = length(sigma) == 1)
-  stopifnot("only implemented for stationary nu" = length(nu) == 1)
+  stopifnot("only implemented for stationary nu" = 
+    length(nu) == 1 || noise$noise_type == "normal")
 
   xlim <- if (!is.null(list(...)$xlim)) list(...)$xlim else c(-10, 10)
 

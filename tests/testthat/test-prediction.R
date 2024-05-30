@@ -60,7 +60,7 @@ test_that("test posterior sampling and model_validation()", {
   cross_validation(out)
 
   out$replicates[[1]]$Y
-  expect_no_error(samples <- sampling_cpp(out$replicates[[1]], 10, posterior = TRUE, seed=10))
+  expect_no_error(samples <- sampling_cpp(out$replicates[[1]], 10, 1, posterior = TRUE, seed=10))
 })
 
 

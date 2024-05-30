@@ -12,6 +12,7 @@ control_opt(
   standardize_fixed = TRUE,
   stop_points = 10,
   iters_per_check = iterations/stop_points,
+  optimizer = adam(),
   n_parallel_chain = 4,
   max_num_threads = n_parallel_chain,
   exchange_VW = TRUE,
@@ -19,17 +20,9 @@ control_opt(
   std_lim = 0.1,
   trend_lim = 0.01,
   print_check_info = FALSE,
-  preconditioner = "none",
-  precond_eps = 1e-05,
-  precond_by_diff_chain = FALSE,
-  compute_precond_each_iter = FALSE,
-  optimizer = adamW(),
   max_relative_step = 0.5,
   max_absolute_step = 0.5,
-  reduce_var = FALSE,
-  reduce_power = 0.75,
-  threshold = 1e-05,
-  window_size = 1,
+  converge_eps = 1e-05,
   rao_blackwellization = FALSE,
   n_trace_iter = 10,
   sampling_strategy = "all",
@@ -51,6 +44,10 @@ control_opt(
 
 \item{iters_per_check}{run how many iterations between each check point (or specify stop_points)}
 
+\item{optimizer}{choose different sgd optimization method, 
+currently support "precond_sgd", "momentum", "adagrad", "rmsprop", "adam", "adamW"
+see precond_sgd, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW}
+
 \item{n_parallel_chain}{number of parallel chains}
 
 \item{max_num_threads}{maximum number of threads used for parallel computing, by default will be set same as n_parallel_chain.
@@ -66,30 +63,11 @@ If it is more than n_parallel_chain, the rest will be used to parallel different
 
 \item{print_check_info}{print the convergence information}
 
-\item{preconditioner}{preconditioner, can be c("none", "fast", "full")
-"none" means no preconditioner, "fast" means precondition everything except for the parameter of K matrix (for speed reason), "full" means precondition everything}
-
-\item{precond_eps}{numerical, the gap used for estimate preconditioner, default is 1e-5}
-
-\item{precond_by_diff_chain}{logical, if TRUE, use different chains to estimate preconditioner (only computed at check points), if FALSE, use the same chain to estimate preconditioner (computed at each iteration)}
-
-\item{compute_precond_each_iter}{logical, if TRUE, compute preconditioner at each iteration, if FALSE, only compute preconditioner at check points (if has only 1 chain running, it will be set TRUE)}
-
-\item{optimizer}{choose different sgd optimization method, 
-currently support "vanilla", "momentum", "adagrad", "rmsprop", "adam", "adamW"
-see ?vanilla, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW}
-
 \item{max_relative_step}{max relative step allowed in 1 iteration}
 
 \item{max_absolute_step}{max absolute step allowed in 1 iteration}
 
-\item{reduce_var}{logical, reduce variace}
-
-\item{reduce_power}{numerical the power of reduce level}
-
-\item{threshold}{till when start to reduce the variance}
-
-\item{window_size}{numerical, length of window for final estimates}
+\item{converge_eps}{convergence threshold, test if grad.norm() < converge_eps}
 
 \item{rao_blackwellization}{use rao_blackwellization}
 

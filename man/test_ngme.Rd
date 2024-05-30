@@ -20,7 +20,7 @@ test_ngme(
   fix_theta_K = FALSE,
   fix_theta_mu = FALSE,
   fix_theta_sigma = FALSE,
-  fix_nu = FALSE,
+  fix_theta_nu = FALSE,
   seed = Sys.time()
 )
 }
@@ -55,7 +55,7 @@ test_ngme(
 
 \item{fix_theta_sigma}{fix theta_sigma}
 
-\item{fix_nu}{fix nu}
+\item{fix_theta_nu}{fix nu}
 
 \item{seed}{seed}
 }

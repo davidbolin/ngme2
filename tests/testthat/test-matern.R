@@ -3,12 +3,13 @@
 # 2. test predict(out, loc=new_loc)
 
 test_that("test Matern", {
-  # library(INLA)
+  library(ngme2)
   pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
   mesh <- fmesher::fm_mesh_2d(
     loc.domain = pl01, cutoff = 0.1,
     max.edge = c(0.3, 10)
   )
+  mesh$manifold
   # plot(mesh)
   mesh$n
 
@@ -16,6 +17,7 @@ test_that("test Matern", {
   loc <- cbind(runif(n_obs, 0, 10), runif(n_obs, 0, 5))
 # plot(mesh); points(loc)
   true_noise = noise_nig(mu=-2, sigma=1, nu=0.5)
+  true_noise = noise_normal(sigma=4)
   plot(true_noise)
 
   true_model <- f(
@@ -43,7 +45,8 @@ test_that("test Matern", {
       model="matern",
       name="spde",
       mesh = mesh,
-      noise=noise_nig(),
+      # noise=noise_nig(),
+      noise=noise_normal(),
       control = control_f(
         numer_grad = FALSE
       ),
@@ -52,25 +55,21 @@ test_that("test Matern", {
     data = data.frame(Y = Y),
     control_opt = control_opt(
       estimation = T,
-      iterations = 1000,
-      # rao_blackwellization = TRUE,
+      iterations = 100,
+      optimizer = adam(),
+      rao_blackwellization = TRUE,
       n_parallel_chain = 4,
       print_check_info = F,
       verbose = T,
-      max_absolute_step = 1,
-      max_relative_step = 1,
-      std_lim = 0.01,
-      preconditioner = "fast",
-      sgd_method = "momentum",
-      sgd_parameters = c(0.4, 1)
+      std_lim = 0.01
     ),
-    # start=out,
+    start=out,
     debug = F
   )
 
   out
-  traceplot(out, "spde")
-  traceplot(out)
+  traceplot(out, "spde", hline=c(4, 4))
+  traceplot(out, hline=0.5)
   plot(true_noise,
     out$replicates[[1]]$models[[1]]$noise)
 
@@ -146,7 +145,7 @@ test_that("test Matern", {
 #       # W = as.numeric(W), fix_W = TRUE,
 #       noise = noise_nig(
 #         # V = trueV, fix_V = TRUE
-#         # fix_nu = T, fix_theta_sigma=T, fix_theta_mu=T
+#         # fix_theta_nu = T, fix_theta_sigma=T, fix_theta_mu=T
 #       ),
 #       control = control_f(numer_grad = F),
 #       debug = F,
@@ -199,8 +198,7 @@ test_that("test 1d matern with numerical g", {
     control_opt = control_opt(
       estimation = T,
       iterations = 500,
-      n_parallel_chain = 4,
-      preconditioner = "none"
+      n_parallel_chain = 4
     )
     # ,start = out
   )

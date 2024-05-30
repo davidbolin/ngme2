@@ -42,10 +42,11 @@ enum Latent_fix_flag {
     latent_fix_W,
     latent_fix_V,
     latent_fix_theta_mu,
-    latent_fix_nu,
-    latent_fix_theta_sigma
+    latent_fix_theta_nu,
+    latent_fix_theta_sigma,
+    latent_fix_theta_sigma_normal
 };
-const int LATENT_FIX_FLAG_SIZE = 6;
+const int LATENT_FIX_FLAG_SIZE = 7;
 
 class Latent {
 protected:
@@ -54,7 +55,6 @@ protected:
     vector<string> noise_type;
     bool debug;
     int n_noise, W_size, V_size, n_params, n_var {1}; // n_params=n_theta_K + n_theta_mu + n_theta_sigma + n_var
-    Eigen::VectorXi fix_parameters;
 
     // operator (for compute K, for compute numerical gradient, for preconditioner)
     std::shared_ptr<Operator> ope, ope_precond, ope_addeps;
@@ -68,6 +68,7 @@ protected:
 
     bool fix_flag[LATENT_FIX_FLAG_SIZE] {0};
     bool numer_grad {false};
+    bool improve_hessian {false};
 
     vector<std::shared_ptr<Operator>> ope_add_eps;
     vector<SparseMatrix<double>> num_dK;
@@ -162,7 +163,10 @@ public:
     double logd_W_given_V(const VectorXd& W, const SparseMatrix<double>& K, const VectorXd& mu, const VectorXd& sigma, const VectorXd& V);
     // pi(KW|V) fix K
     double logd_KW_given_V(const VectorXd& mu, const VectorXd& sigma, const VectorXd& V);
-
+    
+    // return log(pi(KW|V)) + log(pi(V))
+    double logd_W_V();
+    
     // pi(W|V) * pi(V)
     double log_density(const VectorXd& parameter, bool precond_K = false);
     MatrixXd precond(bool precond_K = false, double eps = 1e-5);

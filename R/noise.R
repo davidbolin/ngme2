@@ -22,9 +22,11 @@
 #' @param B_sigma       Basis matrix for sigma (if non-stationary)
 #' @param theta_nu      specify a non-stationary noise using theta_nu
 #' @param B_nu          Basis matrix for nu (if non-stationary)
-#' @param fix_theta_mu    fix the parameter of theta_mu
+#' @param fix_theta_mu     fix the parameter of theta_mu
 #' @param fix_theta_sigma  fix the parameter of theta_sigma
-#' @param fix_nu   fix the parameter of nu
+#' @param fix_theta_nu     fix the parameter of nu
+#' @param fix_theta_sigma_normal  fix the parameter of sigma_normal, used in noise_normal_nig()
+#' @param fix_rho    fix the parameter of rho
 #' @param fix_V         fix the sampling of V
 #' @param theta_sigma_normal for normal nosie with nig noise sharing same parameter
 #' @param B_sigma_normal    for normal nosie with nig noise sharing same parameter
@@ -57,11 +59,13 @@ ngme_noise <- function(
   theta_nu        = NULL,
   theta_sigma_normal = NULL,
   B_sigma_normal  = NULL,
-  fix_theta_mu    = FALSE,
-  fix_theta_sigma = FALSE,
-  fix_nu          = FALSE,
+  fix_theta_mu     = FALSE,
+  fix_theta_sigma  = FALSE,
+  fix_rho          = FALSE,
+  fix_theta_sigma_normal = FALSE,
+  fix_theta_nu     = FALSE,
   V               = NULL,
-  fix_V           = FALSE,
+  fix_V            = FALSE,
   single_V        = FALSE,
   share_V         = FALSE,
   corr_measurement = FALSE,
@@ -117,6 +121,12 @@ ngme_noise <- function(
     rho <- 0
   }
 
+  n_theta_mu    <- if (fix_theta_mu) 0 else length(theta_mu)
+  n_theta_sigma <- if (fix_theta_sigma) 0 else length(theta_sigma)
+  n_theta_nu    <- if (fix_theta_nu) 0 else length(theta_nu)
+  n_rho         <- if (fix_rho) 0 else length(rho)
+  n_theta_sigma_normal <- if (fix_theta_sigma_normal) 0 else length(theta_sigma_normal)
+
   structure(
     list(
       noise_type      = noise_type,
@@ -129,15 +139,22 @@ ngme_noise <- function(
       B_sigma         = B_sigma,
       B_sigma_normal  = B_sigma_normal,
       B_nu            = B_nu,
-      n_theta_mu      = length(theta_mu),
-      n_theta_sigma   = length(theta_sigma),
-      n_theta_nu      = length(theta_nu),
-      n_theta_sigma_normal = length(theta_sigma_normal),
+
+      n_theta_mu      = n_theta_mu,
+      n_theta_sigma   = n_theta_sigma,
+      n_theta_nu      = n_theta_nu,
+      n_rho           = n_rho,
+      n_theta_sigma_normal = n_theta_sigma_normal,
+
       fix_theta_mu    = fix_theta_mu,
       fix_theta_sigma = fix_theta_sigma,
-      fix_nu          = fix_nu,
+      fix_theta_nu    = fix_theta_nu,
       fix_V           = fix_V,
-      n_params        = length(theta_mu) + length(theta_sigma) + length(theta_nu) + length(rho),
+      fix_rho         = fix_rho,
+      fix_theta_sigma_normal = fix_theta_sigma_normal,
+
+      n_params        = n_theta_mu + n_theta_sigma + n_theta_nu + n_rho + n_theta_sigma_normal,
+      
       single_V        = single_V,
       share_V         = share_V,
       corr_measurement = corr_measurement,
@@ -475,7 +492,7 @@ print.ngme_noise <- function(x, padding = 0, prefix = "Noise type", suppress_sig
   invisible(noise)
 }
 
-subset_noise <- function(noise, sub_idx, compute_corr=TRUE) {
+subset_noise <- function(noise, sub_idx, compute_corr) {
   noise$B_mu    <- noise$B_mu[sub_idx, , drop=FALSE]
   noise$B_sigma <- noise$B_sigma[sub_idx, ,drop=FALSE]
   noise$B_nu    <- noise$B_nu[sub_idx, ,drop=FALSE]

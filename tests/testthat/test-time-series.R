@@ -14,7 +14,7 @@ test_that("simulate and estimate of rw with NIG", {
       model="rw1",
       name="rw",
       noise=noise_nig(
-        # fix_nu = TRUE, nu = 2,
+        # fix_theta_nu = TRUE, nu = 2,
         # fix_theta_sigma = TRUE, sigma = sigma,
         # fix_V = TRUE, V = V
       ),
@@ -28,8 +28,6 @@ test_that("simulate and estimate of rw with NIG", {
       iterations = 500,
       n_parallel_chain = 4,
       print_check_info = F,
-      preconditioner = "fast",
-      # preconditioner = "none",
       verbose = F
     )
     # debug = TRUE
@@ -61,7 +59,7 @@ test_that("test estimation of basic ar with normal measurement noise", {
       name="ar",
       # replicate = rep(1:6, each=100),
       noise=noise_nig(
-        # fix_nu = T, nu = 2,
+        # fix_theta_nu = T, nu = 2,
         # h = ar1$noise$h,
         # fix_V = TRUE, V = attr(W, "noise")$V
       ),

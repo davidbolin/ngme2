@@ -64,7 +64,7 @@ ar1 <- function(
     K = update_K(theta_K),
     h = h,
     symmetric = FALSE,
-    zero_trace = TRUE,
+    zero_trace = FALSE,
     param_name = "rho",
     param_trans = list(ar1_th2a)
   )
@@ -320,6 +320,7 @@ matern <- function(
     h = h,
     symmetric = TRUE,
     zero_trace = FALSE,
+    stationary = stationary,
     param_name =
       if (stationary) "kappa"
       else paste("theta_K", seq_len(length(theta_K)), sep = " "),

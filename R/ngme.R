@@ -98,6 +98,15 @@ ngme <- function(
     control_opt$standardize_fixed # convert fixed effects
   )
   attr(ngme_model, "fit") <- fit
+  
+  # Check if using bfgs for non-Gaussian model
+  if (control_opt$sgd_method == "bfgs") {
+    stopifnot(
+      "Please use other optimizer for non-Gaussian model, BFGS is used for optimizing Gaussian model likelihood." =
+      ngme_model$replicates[[1]]$all_gaussian &&
+      noise$noise_type == "normal"
+    )
+  }
 
   ####### Use Last_fit ngme object to update Rcpp_list
   if (!is.null(start) && !inherits(start, "ngme"))
@@ -105,22 +114,39 @@ ngme <- function(
 
   # update with start (list of ngmes)
   if (inherits(start, "ngme")) {
-    # to-do: check start is of same length
     for (i in seq_along(ngme_model$replicates)) {
       ngme_model$replicates[[i]] <- within(ngme_model$replicates[[i]], {
         # check if feff is the same, then overwrite the feff
-        same_feff <- all(dim(X) == dim(start$replicates[[i]]$X)) &&
-          all(X == start$replicates[[i]]$X)
-        if (same_feff) feff <- start$replicates[[i]]$feff
+        same_feff <- all(dim(X) == dim(start$replicates[[i]]$X))
+        if (same_feff) {
+          if (!ngme_model$replicates[[i]]$standardize)
+            feff <- start$replicates[[i]]$feff
+          else {
+            # notice that the SVD effects
+            svd <- start$replicates[[i]]$svd
+            feff <- as.numeric(t(svd$v) %*% start$replicates[[i]]$feff) * svd$d
+          }
+        }
+        
         noise <- update_noise(noise, new_noise = start$replicates[[i]]$noise)
         for (i in seq_along(start$replicates[[i]]$models)) {
           # update operator representation
           models[[i]]$operator <-
             start$replicates[[i]]$models[[i]]$operator
+
+stopifnot(
+  "Please provide the same number of parameters" =
+  length(models[[i]]$theta_K) == length(start$replicates[[i]]$models[[i]]$theta_K))
+stopifnot(
+  "length of W should be the same" =
+  models[[i]]$W_size == length(start$replicates[[i]]$models[[i]]$W))
+stopifnot(
+  "length of V should be the same" =
+  models[[i]]$V_size == length(start$replicates[[i]]$models[[i]]$noise$V))
           # update parameters
           models[[i]]$theta_K  <- models[[i]]$operator$theta_K
           models[[i]]$W        <- start$replicates[[i]]$models[[i]]$W
-          models[[i]]$V        <- start$replicates[[i]]$models[[i]]$V
+          models[[i]]$noise$V  <- start$replicates[[i]]$models[[i]]$noise$V
           models[[i]]$noise    <- update_noise(
             models[[i]]$noise, new_noise = start$replicates[[i]]$models[[i]]$noise
           )
@@ -151,6 +177,7 @@ if (debug) {print(str(ngme_model$replicates[[1]]))}
       res <- sampling_cpp(
         ngme_model$replicates[[i]],
         n = control_ngme$n_post_samples,
+        n_burnin = 1,
         posterior = TRUE,
         seed = control_opt$seed
       )
@@ -301,11 +328,11 @@ update_ngme_est <- function(
       }
     }
 
-    if (ngme_replicate$models[[i]]$model %in% c("bv", "bv_normal")) {
+    if (ngme_replicate$models[[i]]$model %in% c("bv", "bv_normal", "bv_matern_normal")) {
       n1 <- ngme_replicate$models[[i]]$operator$first$n_theta_K
       n2 <- ngme_replicate$models[[i]]$operator$second$n_theta_K
 
-      n_param_bv <- if (ngme_replicate$models[[i]]$model == "bv") 2 else 1
+      n_param_bv <- if (ngme_replicate$models[[i]]$model == "bv") 2 else 3
       ngme_replicate$models[[i]]$operator$first$theta_K <- ngme_replicate$models[[i]]$theta_K[(n_param_bv+1) : (n1+n_param_bv)]
       ngme_replicate$models[[i]]$operator$second$theta_K <- ngme_replicate$models[[i]]$theta_K[(n1+n_param_bv+1) : (n1+n2+n_param_bv)]
     }
@@ -466,6 +493,10 @@ ngme_parse_formula <- function(
 
     # Re-order according to index_corr!
     # s.t. noise$index_corr=1,1,2,2,3,4,4,....
+    
+    # p_oder is the order after permutation
+    # original is just 1 2 3, ...
+    p_order <- seq_along(Y)
     if (noise$corr_measurement) {
       stopifnot(
         "The length of noise$index_corr should be the same as the number of observations"
@@ -477,6 +508,8 @@ ngme_parse_formula <- function(
       data_idx <- data_idx[p_order]
       X <- X[p_order, , drop = FALSE]
       Y <- Y[p_order]
+      if (standardize) svd$u <- svd$u[p_order, , drop = FALSE]
+
       group_rep <- group_rep[p_order]
       for (j in seq_along(models_rep))
         models_rep[[j]]$A <- models_rep[[j]]$A[p_order, , drop = FALSE]

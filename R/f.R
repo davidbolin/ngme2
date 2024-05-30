@@ -48,6 +48,14 @@ f <- function(
   debug       = FALSE,
   ...
 ) {
+  # examine control_f
+
+  if (!control$numer_grad) {
+    if (model %in% c("bv_matern_normal", "bv_normal")) {
+      stop("Not support for non-numerical gradient for bivariate model")
+    }
+  }
+
   if ((missing(map) || (is.null(map))) && inherits(mesh, "metric_graph")) {
     stopifnot("To use metric graph model, please install MetricGraph package"
       = rlang::is_installed("MetricGraph"))
@@ -198,13 +206,8 @@ if (operator$second$model == "bv") {
   A0
 }
       },
-      "bv" = {
-        # INLA::inla.spde.make.A(loc=map, mesh=mesh, repl=as.integer(as.factor(group)))
-        blk_group <- as.integer(as.factor(group))
-        blk <- fmesher::fm_block(blk_group)
-        basis <- fmesher::fm_basis(mesh, loc=map)
-        fmesher::fm_row_kron(Matrix::t(blk), basis)
-      },
+      "bv" = ,
+      "bv_matern_normal" = ,
       "bv_normal" = {
         # INLA::inla.spde.make.A(loc=map, mesh=mesh, repl=as.integer(as.factor(group)))
         blk_group <- as.integer(as.factor(group))
@@ -224,7 +227,7 @@ if (operator$second$model == "bv") {
 
   # 2. build noise given operator
   # bivariate noise
-  if (model == "bv" || model == "bv_normal") {
+  if (model %in% c("bv", "bv_matern_normal", "bv_normal")) {
     stopifnot(
       "Please specify noise for each field" = length(noise) >= 2,
       "Input: noise=list(a=<noise>,b=<noise>)" = inherits(noise[[1]], "ngme_noise"),
@@ -240,9 +243,10 @@ if (operator$second$model == "bv") {
 # make sure the noise is in the same order as the model_names
 if (noise[[1]]$noise_type == "normal") {
   stopifnot(
-    "Please use model=bv_normal for Gaussian noise (then rotation is fixed)" = model == "bv_normal"
+    "Please use model=bv_normal/bv_matern_normal for Gaussian noise (then rotation is fixed)" = model %in% c("bv_normal", "bv_matern_normal")
   )
 }
+
 if (noise[[1]]$noise_type != "normal") {
   stopifnot(
     "Please use model=bv for non-Gaussian noise" = model == "bv"
@@ -277,22 +281,17 @@ if (noise[[1]]$noise_type != "normal") {
       fix_V = !is.null(noise$fix_V) && noise$fix_V,
       V = if (!is.null(noise$V)) noise$V else NULL
     )
-
-    # if noise is normal, Do not estimate theta
-    if (all(noise$noise_type == "normal")) {
-      # set fix_bv_theta, theta=0 for normal noise
-      operator$fix_bv_theta <- TRUE
-      operator$theta_K[1] <- 0
-    }
   } else {
     noise <- update_noise(noise, n = length(operator$h))
   }
 
-  if (noise$share_V && !(model %in% c("bv", "bv_normal")))
+  if (noise$share_V && !(model %in% c("bv", "bv_normal", "bv_matern_normal")))
     stop("Not allow for share_V for univariate model")
 
-  if (model == "re") {
+  if (model %in% c("re", "bv_normal", "bv_matern_normal")) {
     noise$fix_theta_sigma <- TRUE
+    noise$n_params  <- noise$n_params - noise$n_theta_sigma
+    noise$n_theta_sigma  <- 0
   }
 
   ngme_model(
@@ -325,6 +324,7 @@ build_operator <- function(model_name, args_list) {
   switch(model_name,
     tp  = do.call(tp, args_list),
     bv  = do.call(bv, args_list),
+    bv_matern_normal = do.call(bv_matern_normal, args_list),
     bv_normal = do.call(bv_normal, args_list),
     ar1 = do.call(ar1, args_list),
     rw1 = do.call(rw1, args_list),

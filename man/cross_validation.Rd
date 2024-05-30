@@ -15,6 +15,7 @@ cross_validation(
   k = 5,
   percent = 50,
   times = 10,
+  n_gibbs_samples = 50,
   test_idx = NULL,
   train_idx = NULL,
   keep_test_information = FALSE
@@ -40,6 +41,8 @@ custom is user-defined group, provide \code{target} and \code{data}}
 \item{percent}{from 1 to 100 (only for lpo type)}
 
 \item{times}{how many test cases (only for lpo type)}
+
+\item{n_gibbs_samples}{number of gibbs samples}
 
 \item{test_idx}{a list of indices of the data (which data points to be predicted) (only for custom type)}
 

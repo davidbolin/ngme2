@@ -63,10 +63,12 @@ m1$A
 Doing simulation in Ngme2 is simple. Just pass the corresponding model into `simulate` function.
 
 ```{r ar-simulation, fig.align="center"}
+load_all()
 n_obs <- 1000
 day <- 1:n_obs
 ar1_model <- f(day, model="ar1", rho = 0.5,
-  noise = noise_nig(mu = -3, sigma = 4, nu=0.4))
+  noise = noise_normal(sigma = 4))
+  # noise = noise_nig(mu = -3, sigma = 4, nu=0.4))
 W <- simulate(ar1_model, seed = 16, nsim=1)[[1]]
 
 # 1 sample process of our model
@@ -90,30 +92,28 @@ X <- (model.matrix(~0+x1+x2))
 Y <- as.numeric(X %*% feff) + W + rnorm(n_obs, sd = 2)
 
 # Fit the model with the AR1 model
+load_all()
 ngme_out <- ngme(
   Y ~ 0 + x1 + x2 + f(
     1:n_obs,
     name = "my_ar",
     model = "ar1",
-    noise = noise_nig()
-    # control = control_f(numer_grad = T)
+    noise = noise_normal(),
+    control = control_f(numer_grad = TRUE, improve_hessian = FALSE)
   ),
   data = data.frame(x1=x1, x2=x2, Y=Y),
   control_opt = control_opt(
-    optimizer = vanilla(),
+    optimizer = bfgs(),
     burnin = 100,
-    iterations = 1000,
+    iterations = 500,
     std_lim = 0.01,
-    n_parallel_chain = 4,
-    stop_points = 20,
+    n_parallel_chain = 1,
+    stop_points = 10,
+    verbose = TRUE,
     print_check_info = FALSE,
-    verbose = FALSE,
-    preconditioner = "none",
-    seed = 3,
-    # preconditioner = "fast",
-    # precond_by_diff_chain = TRUE,
-    precond_eps = 1e-5
+    seed = 3
   )
+  # , start = ngme_out
 )
 ngme_out
 

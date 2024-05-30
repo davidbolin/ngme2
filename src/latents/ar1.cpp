@@ -22,13 +22,21 @@ AR::AR(const Rcpp::List& operator_list):
 // wrt. parameter_K (bounded parameter)
 void AR::update_K(const VectorXd& theta_K) {
     assert (theta_K.size() == 1);
-    K = th2a(theta_K(0)) * C + G;
+    
+    // G[1, 1] = sqrt(1-rho**2)
+    double rho = th2a(theta_K(0));
+    
+    // G.coeffRef(0, 0) = sqrt(1 - pow(rho, 2));
+    K = rho * C + G;
+    K.coeffRef(0, 0) = sqrt(1 - pow(rho, 2));
 }
 
 void AR::update_dK(const VectorXd& theta_K) {
     assert(theta_K.size() == 1);
 
     double th = theta_K(0);
+    double rho = th2a(th);
     double da = 2 * (exp(th) / pow(1+exp(th), 2));
     dK[0] = da * C;
+    dK[0].coeffRef(0, 0) = da * (-rho) / sqrt(1 - pow(rho, 2));
 }

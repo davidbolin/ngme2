@@ -84,6 +84,7 @@ reference:
     - tp
     - bv
     - bv_normal
+    - bv_matern_normal
     - re
   - title: ngme2 noises
     contents:

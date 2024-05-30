@@ -167,8 +167,10 @@ compute_err_reps <- function(
     # skip this replicate if no target or train data
     if (sum(bool_train_idx) == 0 || sum(bool_test_idx) == 0) next
     n_crs <- n_crs + 1
+
+    ngme_1rep = ngme$replicates[[i]]
     result_1rep <- compute_err_1rep(
-      ngme$replicates[[i]],
+      ngme_1rep,
       bool_train_idx = bool_train_idx,
       bool_test_idx = bool_test_idx,
       N=N,
@@ -228,17 +230,23 @@ compute_err_1rep <- function(
   # option 2. AW comes from N chains
   #   to-do
 
+# Since we revert the order of Y, now we need to 
+# revert the train and test idx to match
+# NOT REALLY, I DID IT in the outside function!!!
+
   # Subset noise[test_idx, ] for test location
   y_data <- ngme_1rep$Y[bool_test_idx]
   group_data <- ngme_1rep$group[bool_test_idx]
-  n_obs <- length(y_data)
   X_pred <- ngme_1rep$X[bool_test_idx,, drop=FALSE]
-  noise_test_idx <- subset_noise(ngme_1rep$noise, sub_idx = bool_test_idx)
+  # noise_test_idx <- subset_noise(ngme_1rep$noise, sub_idx = bool_test_idx)
 
   # Subset noise, X, Y in train location
   ngme_1rep$X <- ngme_1rep$X[bool_train_idx,, drop=FALSE]
   ngme_1rep$Y <- ngme_1rep$Y[bool_train_idx]
-  ngme_1rep$noise <- subset_noise(ngme_1rep$noise, sub_idx = bool_train_idx)
+  
+  ngme_1rep$noise <- subset_noise(
+    ngme_1rep$noise, sub_idx = bool_train_idx, compute_corr = TRUE
+  )
 
   # Subset A for test and train location
   A_preds <- list();
@@ -291,6 +299,7 @@ compute_err_1rep <- function(
   pred <- 0.5*(rowMeans(as.matrix(pred_N_1)) + rowMeans(as.matrix(pred_N_2)))
 
   # Now Y is of dim n_obs * N
+  n_obs <- length(y_data)
   E_pred_data <- E_pred_pred <- double(length(y_data))
   for (i in 1:n_obs) {
     # turn row of df into numeric vector.
@@ -324,8 +333,8 @@ compute_err_1rep <- function(
   scores <- data.frame(
     MAE   = MAE,
     MSE   = MSE,
-    CRPS  = sapply(CRPS, mean), # mean over 1:n_obs_test within each group
-    sCRPS = sapply(sCRPS, mean) # same
+    neg.CRPS  = -sapply(CRPS, mean), # mean over 1:n_obs_test within each group
+    neg.sCRPS = -sapply(sCRPS, mean) # same
   )
 
   # scores results and 2 predictions

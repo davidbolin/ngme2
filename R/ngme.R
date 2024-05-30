@@ -493,6 +493,10 @@ ngme_parse_formula <- function(
 
     # Re-order according to index_corr!
     # s.t. noise$index_corr=1,1,2,2,3,4,4,....
+    
+    # p_oder is the order after permutation
+    # original is just 1 2 3, ...
+    p_order <- seq_along(Y)
     if (noise$corr_measurement) {
       stopifnot(
         "The length of noise$index_corr should be the same as the number of observations"
@@ -504,6 +508,8 @@ ngme_parse_formula <- function(
       data_idx <- data_idx[p_order]
       X <- X[p_order, , drop = FALSE]
       Y <- Y[p_order]
+      if (standardize) svd$u <- svd$u[p_order, , drop = FALSE]
+
       group_rep <- group_rep[p_order]
       for (j in seq_along(models_rep))
         models_rep[[j]]$A <- models_rep[[j]]$A[p_order, , drop = FALSE]

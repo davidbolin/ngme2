@@ -169,8 +169,9 @@ mesh (it can have gaps). In the following example, we generate mesh from
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://davidbolin.github.io/ngme2/">ngme2</a></span><span class="op">)</span></span>
 <span><span class="co">#&gt; This is ngme2 of version 0.6.0</span></span>
-<span><span class="co">#&gt; - See our homepage: https://davidbolin.github.io/ngme2 for more details.</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">16</span><span class="op">)</span></span>
+<span><span class="co">#&gt; - See our homepage: https://davidbolin.github.io/ngme2 for more details.</span></span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">16</span><span class="op">)</span></span>
 <span><span class="va">m1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2001</span>, <span class="fl">2005</span>, <span class="fl">2003</span>, <span class="fl">2007</span><span class="op">)</span>,</span>
 <span>  model<span class="op">=</span><span class="st">"ar1"</span>, rho<span class="op">=</span><span class="op">-</span><span class="fl">0.5</span>, noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
@@ -183,8 +184,9 @@ mesh (it can have gaps). In the following example, we generate mesh from
 <span><span class="co">#&gt; [4,] .         .   0.5 1.0 .   .   .</span></span>
 <span><span class="co">#&gt; [5,] .         .   .   0.5 1.0 .   .</span></span>
 <span><span class="co">#&gt; [6,] .         .   .   .   0.5 1.0 .</span></span>
-<span><span class="co">#&gt; [7,] .         .   .   .   .   0.5 1</span></span>
-<span></span>
+<span><span class="co">#&gt; [7,] .         .   .   .   .   0.5 1</span></span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
 <span><span class="co"># the internal A matrix tell how to map from mesh to our given index</span></span>
 <span><span class="va">m1</span><span class="op">$</span><span class="va">A</span></span>
 <span><span class="co">#&gt; 4 x 7 sparse Matrix of class "dgCMatrix"</span></span>
@@ -199,7 +201,7 @@ mesh (it can have gaps). In the following example, we generate mesh from
 </h2>
 <p>Doing simulation in Ngme2 is simple. Just pass the corresponding
 model into <code>simulate</code> function.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">n_obs</span> <span class="op">&lt;-</span> <span class="fl">1000</span></span>
 <span><span class="va">day</span> <span class="op">&lt;-</span> <span class="fl">1</span><span class="op">:</span><span class="va">n_obs</span></span>
 <span><span class="va">ar1_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="va">day</span>, model<span class="op">=</span><span class="st">"ar1"</span>, rho <span class="op">=</span> <span class="fl">0.5</span>,</span>
@@ -209,7 +211,7 @@ model into <code>simulate</code> function.</p>
 <span><span class="co"># 1 sample process of our model</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">W</span>, type<span class="op">=</span><span class="st">"l"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="AR1-model_files/figure-html/ar-simulation-1.png" width="700" style="display: block; margin: auto;"></p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># check the acf to see the correlation</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/stats/acf.html" class="external-link">acf</a></span><span class="op">(</span><span class="va">W</span>, lag.max <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span></code></pre></div>
 <p><img src="AR1-model_files/figure-html/ar-simulation-2.png" width="700" style="display: block; margin: auto;"></p>
@@ -222,7 +224,7 @@ model into <code>simulate</code> function.</p>
 modify the control variables regarding estimation part for the
 <code>ngme</code> function. See <code><a href="../reference/control_opt.html">?control_opt</a></code> for more
 optioins.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># add some fixed effects and measurement noise</span></span>
 <span><span class="va">feff</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="va">x1</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n_obs</span><span class="op">)</span></span>
@@ -236,24 +238,20 @@ optioins.</p>
 <span>    <span class="fl">1</span><span class="op">:</span><span class="va">n_obs</span>,</span>
 <span>    name <span class="op">=</span> <span class="st">"my_ar"</span>,</span>
 <span>    model <span class="op">=</span> <span class="st">"ar1"</span>,</span>
-<span>    noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span></span>
-<span>    <span class="co"># control = control_f(numer_grad = T)</span></span>
+<span>    noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>    control <span class="op">=</span> <span class="fu"><a href="../reference/control_f.html">control_f</a></span><span class="op">(</span>numer_grad <span class="op">=</span> <span class="cn">TRUE</span>, improve_hessian <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x1<span class="op">=</span><span class="va">x1</span>, x2<span class="op">=</span><span class="va">x2</span>, Y<span class="op">=</span><span class="va">Y</span><span class="op">)</span>,</span>
 <span>  control_opt <span class="op">=</span> <span class="fu"><a href="../reference/control_opt.html">control_opt</a></span><span class="op">(</span></span>
-<span>    optimizer <span class="op">=</span> <span class="fu"><a href="../reference/vanilla.html">vanilla</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>    optimizer <span class="op">=</span> <span class="fu"><a href="../reference/adam.html">adam</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>    burnin <span class="op">=</span> <span class="fl">100</span>,</span>
-<span>    iterations <span class="op">=</span> <span class="fl">1000</span>,</span>
+<span>    iterations <span class="op">=</span> <span class="fl">500</span>,</span>
 <span>    std_lim <span class="op">=</span> <span class="fl">0.01</span>,</span>
 <span>    n_parallel_chain <span class="op">=</span> <span class="fl">4</span>,</span>
-<span>    stop_points <span class="op">=</span> <span class="fl">20</span>,</span>
-<span>    print_check_info <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>    stop_points <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>    verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>    preconditioner <span class="op">=</span> <span class="st">"none"</span>,</span>
-<span>    seed <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>    <span class="co"># preconditioner = "fast",</span></span>
-<span>    <span class="co"># precond_by_diff_chain = TRUE,</span></span>
-<span>    precond_eps <span class="op">=</span> <span class="fl">1e-5</span></span>
+<span>    print_check_info <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>    seed <span class="op">=</span> <span class="fl">3</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; Starting estimation... </span></span>
@@ -262,44 +260,49 @@ optioins.</p>
 <span><span class="co">#&gt; Posterior sampling done! </span></span>
 <span><span class="co">#&gt; Note:</span></span>
 <span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
-<span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
-<span><span class="va">ngme_out</span></span>
+<span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ngme_out</span></span>
 <span><span class="co">#&gt; *** Ngme object ***</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
-<span><span class="co">#&gt;     x1     x2 </span></span>
-<span><span class="co">#&gt; -0.268  2.072 </span></span>
+<span><span class="co">#&gt;    x1    x2 </span></span>
+<span><span class="co">#&gt; -0.91  2.25 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $my_ar</span></span>
 <span><span class="co">#&gt;   Model type: AR(1)</span></span>
-<span><span class="co">#&gt;       rho = 0.466</span></span>
+<span><span class="co">#&gt;       rho = 0.461</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -2.57</span></span>
-<span><span class="co">#&gt;       sigma = 4.08</span></span>
-<span><span class="co">#&gt;       nu = 0.345</span></span>
+<span><span class="co">#&gt;       mu = -2.6</span></span>
+<span><span class="co">#&gt;       sigma = 4.15</span></span>
+<span><span class="co">#&gt;       nu = 0.33</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 2.05</span></span>
+<span><span class="co">#&gt;       sigma = 2.03</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Number of replicates is  1</span></span>
-<span></span>
+<span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
 <span><span class="co"># traceplot of fixed effects and measurementn noise</span></span>
 <span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">ngme_out</span>, hline<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="op">-</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="AR1-model_files/figure-html/ar-estimation-1.png" width="700" style="display: block; margin: auto;"></p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="co"># traceplot of ar1 model</span></span>
 <span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">ngme_out</span>, <span class="st">"my_ar"</span>, hline<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="op">-</span><span class="fl">3</span>, <span class="fl">4</span>, <span class="fl">0.4</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="AR1-model_files/figure-html/ar-estimation-2.png" width="700" style="display: block; margin: auto;"></p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
+<span><span class="co"># Use ngme_result to extract the latent part</span></span>
+<span></span>
 <span><span class="co"># comparing the density of the noise estimated and the noise simulated</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">ngme_out</span><span class="op">$</span><span class="va">replicates</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">models</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">noise</span>,</span>
+<span><span class="va">ar1</span> <span class="op">=</span> <span class="fu"><a href="../reference/ngme_result.html">ngme_result</a></span><span class="op">(</span><span class="va">ngme_out</span>, <span class="st">"my_ar"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">ar1</span><span class="op">$</span><span class="va">noise</span>,</span>
 <span>  <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span>mu <span class="op">=</span> <span class="op">-</span><span class="fl">3</span>, sigma <span class="op">=</span> <span class="fl">4</span>, nu<span class="op">=</span><span class="fl">0.4</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="AR1-model_files/figure-html/ar-estimation-3.png" width="700" style="display: block; margin: auto;"></p>
 </div>

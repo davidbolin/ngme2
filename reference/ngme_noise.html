@@ -124,7 +124,9 @@ Use <code><a href="ngme_noise_types.html">ngme_noise_types()</a></code> to check
 <span>  B_sigma_normal <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  fix_theta_mu <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  fix_theta_sigma <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  fix_nu <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  fix_rho <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  fix_theta_sigma_normal <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  fix_theta_nu <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  V <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  fix_V <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  single_V <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -254,7 +256,15 @@ Use <code><a href="ngme_noise_types.html">ngme_noise_types()</a></code> to check
 <dd><p>fix the parameter of theta_sigma</p></dd>
 
 
-<dt>fix_nu</dt>
+<dt>fix_rho</dt>
+<dd><p>fix the parameter of rho</p></dd>
+
+
+<dt>fix_theta_sigma_normal</dt>
+<dd><p>fix the parameter of sigma_normal, used in noise_normal_nig()</p></dd>
+
+
+<dt>fix_theta_nu</dt>
 <dd><p>fix the parameter of nu</p></dd>
 
 

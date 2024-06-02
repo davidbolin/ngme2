@@ -346,8 +346,9 @@ d\mathbf{s}.\)</span></p>
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://inlabru-org.github.io/fmesher/" class="external-link">fmesher</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://davidbolin.github.io/ngme2/">ngme2</a></span><span class="op">)</span></span>
 <span><span class="co">#&gt; This is ngme2 of version 0.6.0</span></span>
-<span><span class="co">#&gt; - See our homepage: https://davidbolin.github.io/ngme2 for more details.</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
+<span><span class="co">#&gt; - See our homepage: https://davidbolin.github.io/ngme2 for more details.</span></span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://had.co.nz/plyr" class="external-link">plyr</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -361,8 +362,9 @@ d\mathbf{s}.\)</span></p>
 <span><span class="co">#&gt;     filter, lag</span></span>
 <span><span class="co">#&gt; The following objects are masked from 'package:base':</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;     intersect, setdiff, setequal, union</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://sjmgarnier.github.io/viridis/" class="external-link">viridis</a></span><span class="op">)</span></span>
+<span><span class="co">#&gt;     intersect, setdiff, setequal, union</span></span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://sjmgarnier.github.io/viridis/" class="external-link">viridis</a></span><span class="op">)</span></span>
 <span><span class="co">#&gt; Loading required package: viridisLite</span></span></code></pre></div>
 <p><img src="SPDE-model_files/figure-html/nig-1.png" width="672"></p>
 </div>
@@ -384,7 +386,7 @@ diag(\kappa) C diag(\kappa) + G\)</span>, where <span class="math inline">\(\kap
 <p>Use <code>f(model="matern")</code> to specify the SPDE Matérn model,
 see <code><a href="../reference/matern.html">?matern</a></code> for more details. Consider the following
 examples (both 1d and 2d cases):</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># 1d example</span></span>
 <span><span class="va">loc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1.1</span>, <span class="fl">2.2</span>, <span class="fl">3.5</span>, <span class="fl">4.7</span><span class="op">)</span></span>
 <span><span class="va">mesh_1d</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://inlabru-org.github.io/fmesher/reference/fm_mesh_1d.html" class="external-link">fm_mesh_1d</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span></span>
@@ -399,7 +401,7 @@ examples (both 1d and 2d cases):</p>
 <span><span class="co">#&gt; [4,]  .    . -1  3 -1  .  </span></span>
 <span><span class="co">#&gt; [5,]  .    .  . -1  3 -1.0</span></span>
 <span><span class="co">#&gt; [6,]  .    .  .  . -1  1.5</span></span></code></pre></div>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># 2d example</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">argo_float</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">argo_float</span><span class="op">)</span></span>
@@ -409,8 +411,9 @@ examples (both 1d and 2d cases):</p>
 <span><span class="co">#&gt; 3 -63.732 163.294 -0.0008063143 -0.1151362</span></span>
 <span><span class="co">#&gt; 4 -63.700 162.568 -0.0209534220 -0.2378965</span></span>
 <span><span class="co">#&gt; 5 -63.269 169.623  0.0409914840  0.3375048</span></span>
-<span><span class="co">#&gt; 6 -63.113 171.526  0.0269408910  0.2145556</span></span>
-<span><span class="co"># take longitude and latitude to build the mesh</span></span>
+<span><span class="co">#&gt; 6 -63.113 171.526  0.0269408910  0.2145556</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># take longitude and latitude to build the mesh</span></span>
 <span></span>
 <span><span class="va">max.edge</span>    <span class="op">&lt;-</span> <span class="fl">1</span></span>
 <span><span class="va">bound.outer</span> <span class="op">&lt;-</span> <span class="fl">5</span></span>
@@ -431,7 +434,7 @@ examples (both 1d and 2d cases):</p>
 </h3>
 <p>Let’s use the previous <code>argo_float</code> spatial (2d) example.
 First we explore the how the data look like:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># tempearture</span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span>data<span class="op">=</span><span class="va">argo_float</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span></span>
@@ -440,7 +443,7 @@ First we explore the how the data look like:</p>
 <span>  <span class="op">)</span>, size <span class="op">=</span> <span class="fl">2</span>, alpha <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_gradient.html" class="external-link">scale_color_gradientn</a></span><span class="op">(</span>colours <span class="op">=</span> <span class="fu"><a href="https://sjmgarnier.github.io/viridisLite/reference/viridis.html" class="external-link">viridis</a></span><span class="op">(</span><span class="fl">100</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="SPDE-model_files/figure-html/plot-data-1.png" width="700" style="display: block; margin: auto;"></p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="co"># salinity</span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span>data<span class="op">=</span><span class="va">argo_float</span><span class="op">)</span> <span class="op">+</span></span>
@@ -451,7 +454,7 @@ First we explore the how the data look like:</p>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_gradient.html" class="external-link">scale_color_gradientn</a></span><span class="op">(</span>colours <span class="op">=</span> <span class="fu"><a href="https://sjmgarnier.github.io/viridisLite/reference/viridis.html" class="external-link">viridis</a></span><span class="op">(</span><span class="fl">100</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="SPDE-model_files/figure-html/plot-data-2.png" width="700" style="display: block; margin: auto;"></p>
 <p>Next, we specfiy a model formula, and then fit the model.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">formula</span> <span class="op">&lt;-</span> <span class="va">temp</span> <span class="op">~</span> <span class="va">sal</span> <span class="op">+</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="va">loc_2d</span>, model <span class="op">=</span> <span class="st">"matern"</span>, mesh<span class="op">=</span><span class="va">argo_mesh</span>, noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
@@ -473,28 +476,29 @@ First we explore the how the data look like:</p>
 <span><span class="co">#&gt; Posterior sampling done! </span></span>
 <span><span class="co">#&gt; Note:</span></span>
 <span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
-<span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
-<span><span class="va">out</span></span>
+<span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">out</span></span>
 <span><span class="co">#&gt; *** Ngme object ***</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt; (Intercept)         sal </span></span>
-<span><span class="co">#&gt;     -0.0531      7.8515 </span></span>
+<span><span class="co">#&gt;     -0.0314      7.8387 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $field1</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
-<span><span class="co">#&gt;       kappa = 1.19</span></span>
+<span><span class="co">#&gt;       kappa = 1.18</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 2.27</span></span>
+<span><span class="co">#&gt;       sigma = 2.29</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -0.0133</span></span>
-<span><span class="co">#&gt;       sigma = 0.473</span></span>
-<span><span class="co">#&gt;       nu = 0.13</span></span>
+<span><span class="co">#&gt;       mu = -0.023</span></span>
+<span><span class="co">#&gt;       sigma = 0.475</span></span>
+<span><span class="co">#&gt;       nu = 0.122</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre></div>

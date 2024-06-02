@@ -154,14 +154,15 @@ package.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">mcycle</span><span class="op">)</span></span>
 <span><span class="co">#&gt; 'data.frame':    133 obs. of  2 variables:</span></span>
 <span><span class="co">#&gt;  $ times: num  2.4 2.6 3.2 3.6 4 6.2 6.6 6.8 7.8 8.2 ...</span></span>
-<span><span class="co">#&gt;  $ accel: num  0 -1.3 -2.7 0 -2.7 -2.7 -2.7 -1.3 -2.7 -2.7 ...</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="va">mcycle</span>, <span class="op">{</span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">times</span>, <span class="va">accel</span><span class="op">)</span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co">#&gt;  $ accel: num  0 -1.3 -2.7 0 -2.7 -2.7 -2.7 -1.3 -2.7 -2.7 ...</span></span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="va">mcycle</span>, <span class="op">{</span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">times</span>, <span class="va">accel</span><span class="op">)</span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
 <p><img src="inla_compare_files/figure-html/unnamed-chunk-2-1.png" width="700"></p>
 <p>Next we will create the mesh, in order to use the SPDE model. The
 mesh is created by the function <code>inla.mesh.1d</code>. The first
 argument is the location of the mesh points. The second argument is the
 maximum edge length.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mesh</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/INLA/man/inla.mesh.1d.html" class="external-link">inla.mesh.1d</a></span><span class="op">(</span><span class="va">mcycle</span><span class="op">$</span><span class="va">times</span>, max.edge<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">10</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">mesh</span><span class="op">$</span><span class="va">n</span></span>
 <span><span class="co">#&gt; [1] 94</span></span></code></pre></div>
@@ -172,7 +173,7 @@ maximum edge length.</p>
 <div class="section level3">
 <h3 id="fit-the-model-with-inla">Fit the model with INLA<a class="anchor" aria-label="anchor" href="#fit-the-model-with-inla"></a>
 </h3>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># fit use INLA</span></span>
 <span><span class="va">spde</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/INLA/man/inla.spde2.matern.html" class="external-link">inla.spde2.matern</a></span><span class="op">(</span><span class="va">mesh</span>, alpha<span class="op">=</span><span class="fl">2</span><span class="op">)</span></span>
 <span><span class="va">A</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/INLA/man/inla.spde.make.A.html" class="external-link">inla.spde.make.A</a></span><span class="op">(</span><span class="va">mesh</span>, loc<span class="op">=</span><span class="va">mcycle</span><span class="op">$</span><span class="va">times</span><span class="op">)</span></span>
@@ -187,7 +188,7 @@ maximum edge length.</p>
 <span>  control.compute <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>config<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>Let’s check the estimation of SPDE model parameters</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">spde_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/INLA/man/inla.spde.result.html" class="external-link">inla.spde.result</a></span><span class="op">(</span><span class="va">result_inla</span>, <span class="st">"time"</span>, <span class="va">spde</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># posterior mode of kappa</span></span>
@@ -198,18 +199,19 @@ maximum edge length.</p>
 <span>  type<span class="op">=</span><span class="st">"l"</span>, main<span class="op">=</span><span class="st">"kappa"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/abline.html" class="external-link">abline</a></span><span class="op">(</span>v<span class="op">=</span><span class="va">post_mode_kappa</span>, col<span class="op">=</span><span class="fl">2</span><span class="op">)</span></span></code></pre></div>
 <p><img src="inla_compare_files/figure-html/unnamed-chunk-5-1.png" width="700"></p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">post_mode_kappa</span></span>
 <span><span class="co">#&gt;         x </span></span>
-<span><span class="co">#&gt; 0.2006511</span></span>
-<span></span>
+<span><span class="co">#&gt; 0.2006511</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
 <span><span class="co"># posterior mode of tau</span></span>
 <span><span class="va">post_mode_tau</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="va">spde_res</span><span class="op">$</span><span class="va">marginals.tau</span>,</span>
 <span>  <span class="va">tau.1</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/which.min.html" class="external-link">which.max</a></span><span class="op">(</span><span class="va">tau.1</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span><span class="op">)</span>, <span class="fl">1</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">spde_res</span><span class="op">$</span><span class="va">marginals.tau</span><span class="op">$</span><span class="va">tau.1</span>, type<span class="op">=</span><span class="st">"l"</span>, main<span class="op">=</span><span class="st">"tau"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/abline.html" class="external-link">abline</a></span><span class="op">(</span>v<span class="op">=</span><span class="va">post_mode_tau</span>, col<span class="op">=</span><span class="fl">2</span><span class="op">)</span></span></code></pre></div>
 <p><img src="inla_compare_files/figure-html/unnamed-chunk-5-2.png" width="700"></p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fl">1</span> <span class="op">/</span> <span class="va">post_mode_tau</span> <span class="co"># for comparison with Ngme2 (same as sigma parameter in Ngme2)</span></span>
 <span><span class="co">#&gt;        x </span></span>
 <span><span class="co">#&gt; 10.39322</span></span></code></pre></div>
@@ -218,7 +220,7 @@ maximum edge length.</p>
 <h3 id="fit-1d-spde-model-with-ngme2">Fit 1d SPDE model with Ngme2<a class="anchor" aria-label="anchor" href="#fit-1d-spde-model-with-ngme2"></a>
 </h3>
 <p>Next we do similar thing with Ngme2.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">result_ngme</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
 <span>  <span class="va">accel</span> <span class="op">~</span> <span class="op">-</span><span class="fl">1</span> <span class="op">+</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="va">times</span>, model<span class="op">=</span><span class="st">"matern"</span>, mesh<span class="op">=</span><span class="va">mesh</span>, name<span class="op">=</span><span class="st">"myspde"</span><span class="op">)</span>,</span>
 <span>  data <span class="op">=</span> <span class="va">mcycle</span>,</span>
@@ -233,8 +235,9 @@ maximum edge length.</p>
 <span><span class="co">#&gt; Posterior sampling done! </span></span>
 <span><span class="co">#&gt; Note:</span></span>
 <span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
-<span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
-<span><span class="va">result_ngme</span></span>
+<span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">result_ngme</span></span>
 <span><span class="co">#&gt; *** Ngme object ***</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
@@ -243,15 +246,15 @@ maximum edge length.</p>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $myspde</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
-<span><span class="co">#&gt;       kappa = 0.29</span></span>
+<span><span class="co">#&gt;       kappa = 0.237</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 5.14</span></span>
+<span><span class="co">#&gt;       sigma = 6.21</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 15.7</span></span>
+<span><span class="co">#&gt;       sigma = 20.9</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre></div>
@@ -261,20 +264,21 @@ as shown in the result.</p>
 <div class="section level3">
 <h3 id="compare-the-results">Compare the results<a class="anchor" aria-label="anchor" href="#compare-the-results"></a>
 </h3>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="va">mcycle</span>, <span class="op">{</span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">times</span>, <span class="va">accel</span><span class="op">)</span><span class="op">}</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines</a></span><span class="op">(</span><span class="va">mesh</span><span class="op">$</span><span class="va">loc</span>, <span class="va">result_inla</span><span class="op">$</span><span class="va">summary.random</span><span class="op">$</span><span class="va">time</span><span class="op">[</span>, <span class="st">"mean"</span><span class="op">]</span>, col<span class="op">=</span><span class="fl">2</span>, lwd<span class="op">=</span><span class="fl">2</span><span class="op">)</span></span>
 <span><span class="va">pred_W</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">result_ngme</span>, map<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>myspde <span class="op">=</span> <span class="va">mesh</span><span class="op">$</span><span class="va">loc</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co"># by dafult, predict() returns a bunch of statistics at the given location</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">pred_W</span><span class="op">)</span></span>
 <span><span class="co">#&gt; List of 6</span></span>
-<span><span class="co">#&gt;  $ mean      : num [1:94] -2.527 -2.564 -1.951 -1.275 -0.719 ...</span></span>
-<span><span class="co">#&gt;  $ sd        : num [1:94] 7.1 7.05 6.45 5.54 5.2 ...</span></span>
-<span><span class="co">#&gt;  $ 5quantile : num [1:94] -14.05 -14.02 -12.77 -11.06 -9.01 ...</span></span>
-<span><span class="co">#&gt;  $ 95quantile: num [1:94] 9.01 8.82 8.89 7.24 7.37 ...</span></span>
-<span><span class="co">#&gt;  $ median    : num [1:94] -1.82 -1.827 -1.457 -1.342 -0.305 ...</span></span>
-<span><span class="co">#&gt;  $ mode      : num [1:94] 1 1.5 -0.5 -3.5 -0.5 -5 -1 -1 -3.5 -10.5 ...</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines</a></span><span class="op">(</span><span class="va">mesh</span><span class="op">$</span><span class="va">loc</span>, <span class="va">pred_W</span><span class="op">[[</span><span class="st">"mean"</span><span class="op">]</span><span class="op">]</span>, col<span class="op">=</span><span class="fl">3</span>, lwd<span class="op">=</span><span class="fl">2</span><span class="op">)</span></span>
+<span><span class="co">#&gt;  $ mean      : num [1:94] -0.736 -0.776 -0.941 -0.954 -0.978 ...</span></span>
+<span><span class="co">#&gt;  $ sd        : num [1:94] 9.02 9.04 8.55 8.21 8.22 ...</span></span>
+<span><span class="co">#&gt;  $ 5quantile : num [1:94] -16 -15.8 -15.5 -15.5 -13.9 ...</span></span>
+<span><span class="co">#&gt;  $ 95quantile: num [1:94] 14.7 14.6 14.9 13.6 15.6 ...</span></span>
+<span><span class="co">#&gt;  $ median    : num [1:94] -0.648 -0.904 -1.528 -1.994 -2.079 ...</span></span>
+<span><span class="co">#&gt;  $ mode      : num [1:94] -3 -3 -3 -5 -3 -9 -9 -5 -1 -1 ...</span></span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines</a></span><span class="op">(</span><span class="va">mesh</span><span class="op">$</span><span class="va">loc</span>, <span class="va">pred_W</span><span class="op">[[</span><span class="st">"mean"</span><span class="op">]</span><span class="op">]</span>, col<span class="op">=</span><span class="fl">3</span>, lwd<span class="op">=</span><span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/title.html" class="external-link">title</a></span><span class="op">(</span><span class="st">"Posterior mean with Ngme2 and INLA"</span><span class="op">)</span></span>
 <span><span class="co"># One can add some quantile band to the plot using Ngme2</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines</a></span><span class="op">(</span><span class="va">mesh</span><span class="op">$</span><span class="va">loc</span>, <span class="va">pred_W</span><span class="op">[[</span><span class="st">"5quantile"</span><span class="op">]</span><span class="op">]</span>, col<span class="op">=</span><span class="fl">4</span>, lwd<span class="op">=</span><span class="fl">2</span>, lty<span class="op">=</span><span class="fl">2</span><span class="op">)</span></span>
@@ -291,7 +295,7 @@ as shown in the result.</p>
 easily extend the model to non-Gaussian case by changing the
 <code>noise</code> argument, and we can start from previous result using
 <code>start</code> argument.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># refit the model using nig noise</span></span>
 <span><span class="va">result_ngme2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
 <span>  <span class="va">accel</span> <span class="op">~</span> <span class="op">-</span><span class="fl">1</span> <span class="op">+</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="va">times</span>, model<span class="op">=</span><span class="st">"matern"</span>, mesh<span class="op">=</span><span class="va">mesh</span>, name<span class="op">=</span><span class="st">"myspde"</span>, noise<span class="op">=</span><span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
@@ -308,8 +312,9 @@ easily extend the model to non-Gaussian case by changing the
 <span><span class="co">#&gt; Posterior sampling done! </span></span>
 <span><span class="co">#&gt; Note:</span></span>
 <span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
-<span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
-<span><span class="va">result_ngme2</span></span>
+<span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">result_ngme2</span></span>
 <span><span class="co">#&gt; *** Ngme object ***</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
@@ -318,23 +323,24 @@ easily extend the model to non-Gaussian case by changing the
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $myspde</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
-<span><span class="co">#&gt;       kappa = 0.245</span></span>
+<span><span class="co">#&gt;       kappa = 0.303</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -2.14</span></span>
-<span><span class="co">#&gt;       sigma = 6.19</span></span>
-<span><span class="co">#&gt;       nu = 0.343</span></span>
+<span><span class="co">#&gt;       mu = -1.5</span></span>
+<span><span class="co">#&gt;       sigma = 9.56</span></span>
+<span><span class="co">#&gt;       nu = 0.108</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 20.3</span></span>
+<span><span class="co">#&gt;       sigma = 22.4</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Number of replicates is  1</span></span>
-<span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">result_ngme2</span>, <span class="st">"myspde"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">result_ngme2</span>, <span class="st">"myspde"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="inla_compare_files/figure-html/unnamed-chunk-8-1.png" width="700"></p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">result_ngme2</span><span class="op">$</span><span class="va">replicates</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">models</span><span class="op">[[</span><span class="st">"myspde"</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">noise</span><span class="op">)</span></span></code></pre></div>
 <p><img src="inla_compare_files/figure-html/unnamed-chunk-8-2.png" width="700"></p>
 </div>
@@ -345,15 +351,16 @@ easily extend the model to non-Gaussian case by changing the
 effort, we will skip it (since it’s not the main focus). While in Ngme2,
 it can be done in just one line of code.</p>
 <p>First we need to create a new mesh for prediction.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">rg</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="va">mcycle</span><span class="op">$</span><span class="va">times</span><span class="op">)</span></span>
 <span><span class="va">rg</span></span>
-<span><span class="co">#&gt; [1]  2.4 57.6</span></span>
-<span><span class="va">locs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span>from<span class="op">=</span><span class="va">rg</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, to<span class="op">=</span><span class="va">rg</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span>, length <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co">#&gt; [1]  2.4 57.6</span></span></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">locs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span>from<span class="op">=</span><span class="va">rg</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, to<span class="op">=</span><span class="va">rg</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span>, length <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span></code></pre></div>
 <p>Next, we call the <code>predict</code> function with <code>loc</code>
 argument provided with a list of new locations (for each latent
 model).</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># similar to the posterior mean in previous section</span></span>
 <span><span class="va">prd_ngme</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">result_ngme2</span>, map <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>myspde<span class="op">=</span><span class="va">locs</span><span class="op">)</span><span class="op">)</span><span class="op">[[</span><span class="st">"mean"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="va">mcycle</span>, <span class="op">{</span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">times</span>, <span class="va">accel</span><span class="op">)</span><span class="op">}</span><span class="op">)</span></span>

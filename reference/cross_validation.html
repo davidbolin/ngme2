@@ -118,6 +118,7 @@ first into sub_groups (a list of target, and train data)</p>
 <span>  k <span class="op">=</span> <span class="fl">5</span>,</span>
 <span>  percent <span class="op">=</span> <span class="fl">50</span>,</span>
 <span>  times <span class="op">=</span> <span class="fl">10</span>,</span>
+<span>  n_gibbs_samples <span class="op">=</span> <span class="fl">50</span>,</span>
 <span>  test_idx <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  train_idx <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  keep_test_information <span class="op">=</span> <span class="cn">FALSE</span></span>
@@ -160,6 +161,10 @@ custom is user-defined group, provide <code>target</code> and <code>data</code><
 
 <dt>times</dt>
 <dd><p>how many test cases (only for lpo type)</p></dd>
+
+
+<dt>n_gibbs_samples</dt>
+<dd><p>number of gibbs samples</p></dd>
 
 
 <dt>test_idx</dt>

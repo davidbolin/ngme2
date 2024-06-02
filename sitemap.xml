@@ -70,7 +70,13 @@
     <loc>https://davidbolin.github.io/ngme2/reference/argo_float.html</loc>
   </url>
   <url>
+    <loc>https://davidbolin.github.io/ngme2/reference/bfgs.html</loc>
+  </url>
+  <url>
     <loc>https://davidbolin.github.io/ngme2/reference/bv.html</loc>
+  </url>
+  <url>
+    <loc>https://davidbolin.github.io/ngme2/reference/bv_matern_normal.html</loc>
   </url>
   <url>
     <loc>https://davidbolin.github.io/ngme2/reference/bv_normal.html</loc>
@@ -184,6 +190,9 @@
     <loc>https://davidbolin.github.io/ngme2/reference/precision_matrix_multivariate_spde.html</loc>
   </url>
   <url>
+    <loc>https://davidbolin.github.io/ngme2/reference/precond_sgd.html</loc>
+  </url>
+  <url>
     <loc>https://davidbolin.github.io/ngme2/reference/predict.ngme.html</loc>
   </url>
   <url>
@@ -233,8 +242,5 @@
   </url>
   <url>
     <loc>https://davidbolin.github.io/ngme2/reference/traceplot.html</loc>
-  </url>
-  <url>
-    <loc>https://davidbolin.github.io/ngme2/reference/vanilla.html</loc>
   </url>
 </urlset>

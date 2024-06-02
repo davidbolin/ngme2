@@ -165,8 +165,9 @@ an AR(1) model.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://davidbolin.github.io/ngme2/">ngme2</a></span><span class="op">)</span></span>
 <span><span class="co">#&gt; This is ngme2 of version 0.6.0</span></span>
-<span><span class="co">#&gt; - See our homepage: https://davidbolin.github.io/ngme2 for more details.</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
+<span><span class="co">#&gt; - See our homepage: https://davidbolin.github.io/ngme2 for more details.</span></span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># creating ar1 process</span></span>
 <span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">500</span></span>
@@ -190,7 +191,7 @@ models in the have the same form <span class="math inline">\(K
 \mathbf{W} = \mathbf{\
 epsilon}\)</span>), for instance, consider the following little example
 to illustrate the last statement.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">no.replicates</span> <span class="op">&lt;-</span> <span class="fu">ngme2</span><span class="fu">::</span><span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">6</span>, model<span class="op">=</span><span class="st">"ar1"</span>, rho <span class="op">=</span> <span class="fl">.5</span>, noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">replicates</span> <span class="op">&lt;-</span> <span class="fu">ngme2</span><span class="fu">::</span><span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span>, <span class="fl">2</span><span class="op">)</span>,</span>
@@ -205,8 +206,9 @@ to illustrate the last statement.</p>
 <span><span class="co">#&gt;                       </span></span>
 <span><span class="co">#&gt; [1,]  0.8660254  .   .</span></span>
 <span><span class="co">#&gt; [2,] -0.5000000  1.0 .</span></span>
-<span><span class="co">#&gt; [3,]  .         -0.5 1</span></span>
-<span><span class="co"># K matrix from the model with replicates</span></span>
+<span><span class="co">#&gt; [3,]  .         -0.5 1</span></span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># K matrix from the model with replicates</span></span>
 <span><span class="va">no.replicates</span><span class="op">$</span><span class="va">operator</span><span class="op">$</span><span class="va">K</span></span>
 <span><span class="co">#&gt; 6 x 6 sparse Matrix of class "dgCMatrix"</span></span>
 <span><span class="co">#&gt;                                      </span></span>
@@ -221,7 +223,7 @@ process dissapears by looking at the <span class="math inline">\(\mathbf{K}_{4, 
 <span class="math inline">\(\mathbf{K}\)</span>.</p>
 <p>With that being said, one can fit the model using the
 <code>ngme</code> function as shown below.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># fitting the model</span></span>
 <span><span class="va">mod.replicates</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
 <span>  formula <span class="op">=</span> <span class="va">Y</span> <span class="op">~</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
@@ -241,29 +243,30 @@ process dissapears by looking at the <span class="math inline">\(\mathbf{K}_{4, 
 <span><span class="co">#&gt; Posterior sampling done! </span></span>
 <span><span class="co">#&gt; Note:</span></span>
 <span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
-<span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
-<span></span>
+<span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
 <span><span class="va">mod.replicates</span></span>
 <span><span class="co">#&gt; *** Ngme object ***</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt; (Intercept) </span></span>
-<span><span class="co">#&gt;        -2.9 </span></span>
+<span><span class="co">#&gt;       -3.17 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $field1</span></span>
 <span><span class="co">#&gt;   Model type: AR(1)</span></span>
-<span><span class="co">#&gt;       rho = 0.753</span></span>
+<span><span class="co">#&gt;       rho = 0.767</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = 0.00721</span></span>
-<span><span class="co">#&gt;       sigma = 1.02</span></span>
-<span><span class="co">#&gt;       nu = 1.02</span></span>
+<span><span class="co">#&gt;       mu = -0.0932</span></span>
+<span><span class="co">#&gt;       sigma = 0.982</span></span>
+<span><span class="co">#&gt;       nu = 0.973</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.234</span></span>
+<span><span class="co">#&gt;       sigma = 0.315</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  2</span></span></code></pre></div>
@@ -279,7 +282,7 @@ this data cannot be treated as spatiotemporal, despite that, the
 multiple measurements can be treated as replicates.</p>
 <p>In this particular case the temperature is the feature that will be
 modeled.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># library(ngme2)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
 <span></span>
@@ -299,7 +302,7 @@ modeled.</p>
 <p><img src="replicate_files/figure-html/unnamed-chunk-8-1.png" width="672" style="display: block; margin: auto;"><img src="replicate_files/figure-html/unnamed-chunk-8-2.png" width="672" style="display: block; margin: auto;"></p>
 <p>Now we briefly show how to fit the model and how to predict for
 locations where the feature is unknown.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># creating the mesh</span></span>
 <span><span class="va">mesh</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://inlabru-org.github.io/fmesher/reference/fm_mesh_2d.html" class="external-link">fm_mesh_2d</a></span><span class="op">(</span></span>
 <span>  loc.domain <span class="op">=</span> <span class="va">cienaga.border</span>,</span>
@@ -309,7 +312,7 @@ locations where the feature is unknown.</p>
 <span><span class="va">mesh</span><span class="op">$</span><span class="va">n</span></span>
 <span><span class="co">#&gt; [1] 457</span></span></code></pre></div>
 <p><img src="replicate_files/figure-html/unnamed-chunk-10-1.png" width="672" style="display: block; margin: auto;"></p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># fitting the model</span></span>
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
 <span>  formula <span class="op">=</span> <span class="va">temp</span> <span class="op">~</span> <span class="fl">1</span> <span class="op">+</span></span>
@@ -332,23 +335,24 @@ locations where the feature is unknown.</p>
 <span><span class="co">#&gt; Posterior sampling done! </span></span>
 <span><span class="co">#&gt; Note:</span></span>
 <span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
-<span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
-<span><span class="va">fit</span></span>
+<span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit</span></span>
 <span><span class="co">#&gt; *** Ngme object ***</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt; (Intercept) </span></span>
-<span><span class="co">#&gt;    1.06e-13 </span></span>
+<span><span class="co">#&gt;   -6.28e-14 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $spde</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
-<span><span class="co">#&gt;       kappa = 0.654</span></span>
+<span><span class="co">#&gt;       kappa = 1.16</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -0.178</span></span>
-<span><span class="co">#&gt;       sigma = 1.15</span></span>
-<span><span class="co">#&gt;       nu = 1.31</span></span>
+<span><span class="co">#&gt;       mu = 0.164</span></span>
+<span><span class="co">#&gt;       sigma = 1.02</span></span>
+<span><span class="co">#&gt;       nu = 1.09</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
@@ -358,7 +362,7 @@ locations where the feature is unknown.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  2</span></span></code></pre></div>
 <p>With the fitted model, one can do predictions as follows.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">nxy</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">300</span>, <span class="fl">200</span><span class="op">)</span></span>
 <span><span class="va">projgrid</span> <span class="op">&lt;-</span> <span class="fu">rSPDE</span><span class="fu">::</span><span class="fu"><a href="https://davidbolin.github.io/rSPDE/reference/rspde.mesh.project.html" class="external-link">rspde.mesh.projector</a></span><span class="op">(</span></span>
 <span>  mesh <span class="op">=</span> <span class="va">mesh</span>,</span>

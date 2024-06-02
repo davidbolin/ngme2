@@ -250,33 +250,35 @@ using ngme2.</p>
 <span><span class="co">#&gt; Posterior sampling done! </span></span>
 <span><span class="co">#&gt; Note:</span></span>
 <span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
-<span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
-<span></span>
+<span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
 <span><span class="va">out</span></span>
 <span><span class="co">#&gt; *** Ngme object ***</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt;   x2   x1 </span></span>
-<span><span class="co">#&gt; 1.91 2.21 </span></span>
+<span><span class="co">#&gt; 1.98 2.84 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $effect1</span></span>
 <span><span class="co">#&gt;   Model type: Random effect</span></span>
 <span><span class="co">#&gt;        Covariance matrix (Sigma): </span></span>
-<span><span class="co">#&gt;          [,1]     [,2]</span></span>
-<span><span class="co">#&gt; [1,] 14.67092  4.48313</span></span>
-<span><span class="co">#&gt; [2,]  4.48313 24.79862</span></span>
+<span><span class="co">#&gt;           [,1]      [,2]</span></span>
+<span><span class="co">#&gt; [1,] 14.349534  4.861275</span></span>
+<span><span class="co">#&gt; [2,]  4.861275 25.848298</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.999</span></span>
+<span><span class="co">#&gt;       sigma = 1</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Number of replicates is  100</span></span>
-<span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">out</span>, <span class="st">"effect1"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co">#&gt; Number of replicates is  100</span></span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">out</span>, <span class="st">"effect1"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="random-effect_files/figure-html/lme4-1.png" width="700"></p>
 <p>The final result is very close to the lme4 package.</p>
 <!-- ## Non-Gaussian Random Effects -->

@@ -189,8 +189,9 @@ the time index (year).</p>
 <span><span class="co">#&gt; 7  2004 8.4731194 9.513628</span></span>
 <span><span class="co">#&gt; 8  2004 6.8851465 9.739844</span></span>
 <span><span class="co">#&gt; 9  2002 7.1672573 7.647669</span></span>
-<span><span class="co">#&gt; 10 2002 0.7615558 4.748097</span></span>
-<span></span>
+<span><span class="co">#&gt; 10 2002 0.7615558 4.748097</span></span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
 <span></span>
 <span><span class="co"># create the mesh for space (2d location)</span></span>
 <span><span class="va">mesh</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://inlabru-org.github.io/fmesher/reference/fm_mesh_2d.html" class="external-link">fm_mesh_2d</a></span><span class="op">(</span></span>
@@ -200,7 +201,7 @@ the time index (year).</p>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">mesh</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tensor_product_files/figure-html/setup-1.png" width="700"></p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="co"># define the space-time model</span></span>
 <span><span class="va">m0</span> <span class="op">&lt;-</span> <span class="fu">ngme2</span><span class="fu">::</span><span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
@@ -225,7 +226,7 @@ the time index (year).</p>
 <h2 id="a-ar1-x-matern-2d-example">A AR(1) x Matern 2d example<a class="anchor" aria-label="anchor" href="#a-ar1-x-matern-2d-example"></a>
 </h2>
 <p>Now let’s turn to simulate and estimate this type of model.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">##############################  simulation</span></span>
 <span><span class="va">mesh2d</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://inlabru-org.github.io/fmesher/reference/fm_mesh_2d.html" class="external-link">fm_mesh_2d</a></span><span class="op">(</span></span>
 <span>  loc.domain <span class="op">=</span> <span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span> <span class="op">*</span> <span class="fl">10</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">0</span><span class="op">)</span> <span class="op">*</span> <span class="fl">5</span><span class="op">)</span>,</span>
@@ -233,8 +234,9 @@ the time index (year).</p>
 <span>  cutoff <span class="op">=</span> <span class="fl">0.1</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">mesh2d</span><span class="op">$</span><span class="va">n</span></span>
-<span><span class="co">#&gt; [1] 256</span></span>
-<span></span>
+<span><span class="co">#&gt; [1] 256</span></span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
 <span><span class="co"># generate random loc for each year</span></span>
 <span><span class="va">n_obs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">102</span>, <span class="fl">85</span>, <span class="fl">120</span>, <span class="fl">105</span>, <span class="fl">109</span>, <span class="fl">100</span><span class="op">)</span> <span class="co"># observation for each year</span></span>
 <span><span class="va">year</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">2001</span><span class="op">:</span><span class="fl">2006</span>, times <span class="op">=</span> <span class="va">n_obs</span><span class="op">)</span></span>
@@ -256,7 +258,7 @@ the time index (year).</p>
 <span><span class="va">Y_obs</span> <span class="op">&lt;-</span> <span class="va">W</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">W</span><span class="op">)</span>, sd <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span>
 <span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">year</span>, <span class="va">x</span>, <span class="va">y</span>, <span class="va">Y_obs</span><span class="op">)</span></span></code></pre></div>
 <p>Next we run the estimation:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">##############################  estimation</span></span>
 <span><span class="va">ngme_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
 <span>  <span class="va">Y_obs</span> <span class="op">~</span> <span class="fl">0</span> <span class="op">+</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
@@ -273,9 +275,8 @@ the time index (year).</p>
 <span>  control_opt <span class="op">=</span> <span class="fu"><a href="../reference/control_opt.html">control_opt</a></span><span class="op">(</span></span>
 <span>    iterations <span class="op">=</span> <span class="fl">2000</span>,</span>
 <span>    n_parallel_chain <span class="op">=</span> <span class="fl">4</span>,</span>
-<span>    verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>    rao_blackwellization <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>    preconditioner <span class="op">=</span> <span class="st">"fast"</span></span>
+<span>    optimizer <span class="op">=</span> <span class="fu"><a href="../reference/adamW.html">adamW</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>    rao_blackwellization <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  debug <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
@@ -285,8 +286,9 @@ the time index (year).</p>
 <span><span class="co">#&gt; Posterior sampling done! </span></span>
 <span><span class="co">#&gt; Note:</span></span>
 <span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
-<span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
-<span></span>
+<span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
 <span><span class="va">ngme_fit</span></span>
 <span><span class="co">#&gt; *** Ngme object ***</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -297,32 +299,32 @@ the time index (year).</p>
 <span><span class="co">#&gt; $tp</span></span>
 <span><span class="co">#&gt;   Model type: Tensor product</span></span>
 <span><span class="co">#&gt;       first: AR(1)</span></span>
-<span><span class="co">#&gt;           rho = 0.518</span></span>
+<span><span class="co">#&gt;           rho = 0.321</span></span>
 <span><span class="co">#&gt;       second: Matern</span></span>
-<span><span class="co">#&gt;           kappa = 0.899</span></span>
+<span><span class="co">#&gt;           kappa = 0.793</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -1.31</span></span>
-<span><span class="co">#&gt;       sigma = 1.12</span></span>
-<span><span class="co">#&gt;       nu = 1.8</span></span>
+<span><span class="co">#&gt;       mu = -0.987</span></span>
+<span><span class="co">#&gt;       sigma = 1.07</span></span>
+<span><span class="co">#&gt;       nu = 2.01</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.514</span></span>
+<span><span class="co">#&gt;       sigma = 0.513</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre></div>
 <p>To see the results of estimation, we can use <code>traceplot</code>
 function.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">ngme_fit</span>, <span class="st">"tp"</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">ngme_fit</span>, <span class="st">"tp"</span>, hline<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>rho<span class="op">=</span><span class="fl">0.5</span>, kappa<span class="op">=</span><span class="fl">1</span>, mu<span class="op">=</span><span class="op">-</span><span class="fl">2</span>, sigma<span class="op">=</span><span class="fl">1</span>, nu<span class="op">=</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tensor_product_files/figure-html/unnamed-chunk-3-1.png" width="700"></p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># compare noise density</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span>mu<span class="op">=</span><span class="op">-</span><span class="fl">2</span>, sigma<span class="op">=</span><span class="fl">1</span>, nu<span class="op">=</span><span class="fl">2</span><span class="op">)</span>, <span class="fu"><a href="../reference/ngme_result.html">ngme_result</a></span><span class="op">(</span><span class="va">ngme_fit</span>, <span class="st">"tp"</span><span class="op">)</span><span class="op">$</span><span class="va">noise</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tensor_product_files/figure-html/unnamed-chunk-3-2.png" width="700"></p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># traceplot(ngme_fit)</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -330,7 +332,7 @@ function.</p>
 </h2>
 <p>Next we will show how to do prediction at unknown year and
 location.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># new predict location</span></span>
 <span><span class="va">n_new</span> <span class="op">&lt;-</span> <span class="fl">10</span></span>
 <span><span class="co"># generate time randomly of length n</span></span>
@@ -344,28 +346,28 @@ location.</p>
 <span>  pos<span class="op">=</span><span class="va">loc_new</span></span>
 <span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; $mean</span></span>
-<span><span class="co">#&gt;  [1]  0.00000000  0.08358294  0.51128565  0.00000000  0.36579114  0.14004220</span></span>
-<span><span class="co">#&gt;  [7]  0.00000000 -1.18585918  0.00000000  0.02579020</span></span>
+<span><span class="co">#&gt;  [1]  0.00000000  0.59178477  0.07430443  0.04033572 -0.50342185  0.00000000</span></span>
+<span><span class="co">#&gt;  [7]  0.00000000  0.00000000  0.01949922 -0.47981404</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sd</span></span>
-<span><span class="co">#&gt;  [1] 0.0000000 0.2561275 0.2347190 0.0000000 0.1814013 0.5609806 0.0000000</span></span>
-<span><span class="co">#&gt;  [8] 0.3090078 0.0000000 0.2817549</span></span>
+<span><span class="co">#&gt;  [1] 0.0000000 0.3953980 0.2641067 0.4820251 0.3402844 0.0000000 0.0000000</span></span>
+<span><span class="co">#&gt;  [8] 0.0000000 0.3355090 0.2767745</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`5quantile`</span></span>
-<span><span class="co">#&gt;  [1]  0.0000000 -0.3780330  0.1695061  0.0000000  0.1029757 -0.7170236</span></span>
-<span><span class="co">#&gt;  [7]  0.0000000 -1.6440799  0.0000000 -0.4738942</span></span>
+<span><span class="co">#&gt;  [1]  0.00000000 -0.04457668 -0.37639163 -0.64335145 -0.97885261  0.00000000</span></span>
+<span><span class="co">#&gt;  [7]  0.00000000  0.00000000 -0.49947033 -0.92705411</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`95quantile`</span></span>
-<span><span class="co">#&gt;  [1]  0.0000000  0.4367279  0.8068905  0.0000000  0.6519057  0.9584634</span></span>
-<span><span class="co">#&gt;  [7]  0.0000000 -0.7310173  0.0000000  0.3862247</span></span>
+<span><span class="co">#&gt;  [1]  0.00000000  1.25061874  0.50533516  0.95614980  0.11748783  0.00000000</span></span>
+<span><span class="co">#&gt;  [7]  0.00000000  0.00000000  0.62222345 -0.09117959</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $median</span></span>
-<span><span class="co">#&gt;  [1]  0.00000000  0.10714087  0.55984337  0.00000000  0.35277325  0.12280535</span></span>
-<span><span class="co">#&gt;  [7]  0.00000000 -1.20800525  0.00000000  0.05254626</span></span>
+<span><span class="co">#&gt;  [1]  0.000000000  0.558921931  0.071067896  0.003358829 -0.545725693</span></span>
+<span><span class="co">#&gt;  [6]  0.000000000  0.000000000  0.000000000  0.015323032 -0.447145212</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $mode</span></span>
-<span><span class="co">#&gt;  [1]  0.0000000  0.1346997  0.5997898  0.0000000  0.3132453 -0.1799265</span></span>
-<span><span class="co">#&gt;  [7]  0.0000000 -1.4770185  0.0000000  0.1053171</span></span></code></pre></div>
+<span><span class="co">#&gt;  [1]  0.00000000  0.53518503  0.02284106  0.05381383 -0.66155073  0.00000000</span></span>
+<span><span class="co">#&gt;  [7]  0.00000000  0.00000000 -0.04047755 -0.38981920</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>

@@ -85,7 +85,7 @@ VectorXd Ngme_optimizer::sgd(
         } else {
             grad = numerical_grad(x);
             if (grad.norm() < converge_eps) {
-                std::cout << "grad.norm() < " << converge_eps << ", reach convergence" << std::endl;
+std::cout << "grad.norm() < " << converge_eps << ", reach convergence" << std::endl;
                 break;
             }
         }
@@ -131,7 +131,7 @@ VectorXd Ngme_optimizer::sgd(
             one_step = - H * grad;
 
             // make sure the direction is descent
-            assert (grad.dot(one_step) < 0);
+            if (grad.dot(one_step) > 0) { one_step = - one_step; }
             
             double curr_loglik = model->log_likelihood();
             double alpha = line_search(

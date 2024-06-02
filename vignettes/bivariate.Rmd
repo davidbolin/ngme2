@@ -382,9 +382,11 @@ traceplot(
 )
 ```
 
-### Ex3. Fixed effects + Bivariate model (Matérn, Normal) + iid measurement noise
+### Ex3. Fixed effects + Bivariate model (Matérn, Normal) + Correlated measurement noise
 
-Next, we consider a spatial bivariate model.
+Next, we consider a spatial bivariate Matérn model with correlated noise.
+The `model="bv_matern_normal"` can be used specifically only for bivariate model with Gaussian driven noise, so that the parameterization matches with the paper.
+
 
 ```{r spatial}
 pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
@@ -410,13 +412,12 @@ theta_K_1 = log(2); theta_K_2 = log(5);
 mu_1 = -2; sigma_1 = 0.5; nu_1 = 1
 mu_2 = 2; sigma_2 = 0.3; nu_2 = 0.5
 
-load_all("../ngme2")
 true_model <- f(
   ~ long + lat,
   theta = theta,
   rho = rho,
   mesh = mesh,
-  sd1=sigma_1,sd2=sigma_2,
+  sd1=sigma_1, sd2=sigma_2,
   model = "bv_matern_normal",
   sub_models = list(
     W1 = list(model = "matern", theta_K = theta_K_1),
@@ -426,8 +427,6 @@ true_model <- f(
   noise = list(
     W1 = noise_normal(),
     W2 = noise_normal()
-    # W1 = noise_nig(mu = mu_1, sigma = sigma_1, nu=nu_1),
-    # W2 = noise_nig(mu = mu_2, sigma = sigma_2, nu=nu_2)
   )
 )
 

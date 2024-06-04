@@ -123,7 +123,7 @@
       <h1 data-toc-skip>Ngme2 - A new Flexible R Package for Latent
 non-Gaussian Models</h1>
             
-            <h4 data-toc-skip class="date">2024-06-02</h4>
+            <h4 data-toc-skip class="date">2024-06-04</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/HEAD/vignettes/ngme2.Rmd" class="external-link"><code>vignettes/ngme2.Rmd</code></a></small>
       <div class="hidden name"><code>ngme2.Rmd</code></div>
@@ -545,7 +545,7 @@ estimation.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">INLA</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Loading required package: Matrix</span></span>
-<span><span class="co">#&gt; This is INLA_24.06.02 built 2024-06-02 07:54:10 UTC.</span></span>
+<span><span class="co">#&gt; This is INLA_24.06.04 built 2024-06-03 20:33:29 UTC.</span></span>
 <span><span class="co">#&gt;  - See www.r-inla.org/contact-us for how to get help.</span></span>
 <span><span class="co">#&gt;  - List available models/likelihoods/etc with inla.list.models()</span></span>
 <span><span class="co">#&gt;  - Use inla.doc(&lt;NAME&gt;) to access documentation</span></span>
@@ -733,46 +733,46 @@ method.</p>
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/cross_validation.html">cross_validation</a></span><span class="op">(</span><span class="va">out</span>, type<span class="op">=</span><span class="st">"k-fold"</span>, k<span class="op">=</span><span class="fl">10</span>, print<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; In test_idx 1 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.908043 5.773562 1.357312  1.564784</span></span>
+<span><span class="co">#&gt; 1 2.075043 7.163469 1.509143  1.612397</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 2 : </span></span>
-<span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.939212 5.940459 1.375296  1.552319</span></span>
+<span><span class="co">#&gt;       MAE      MSE neg.CRPS neg.sCRPS</span></span>
+<span><span class="co">#&gt; 1 1.85735 5.939776  1.37939  1.556317</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 3 : </span></span>
-<span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.718765 5.601297 1.268172  1.537979</span></span>
+<span><span class="co">#&gt;        MAE     MSE neg.CRPS neg.sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.190875 7.84448   1.6701  1.793044</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 4 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.802522 6.215781 1.305034  1.488123</span></span>
+<span><span class="co">#&gt; 1 1.678009 4.625589 1.234967  1.509852</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 5 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.916988 7.110795 1.373692  1.518498</span></span>
+<span><span class="co">#&gt; 1 1.878458 4.728735 1.278788  1.500171</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 6 : </span></span>
-<span><span class="co">#&gt;        MAE     MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.765594 5.69383 1.315845  1.541106</span></span>
+<span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
+<span><span class="co">#&gt; 1 1.609337 3.980569 1.130602   1.45384</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 7 : </span></span>
-<span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.445946 8.741325 1.768869  1.775214</span></span>
+<span><span class="co">#&gt;       MAE      MSE neg.CRPS neg.sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.14998 8.452627 1.611511  1.662327</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 8 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.255494 8.346524  1.65796  1.706093</span></span>
+<span><span class="co">#&gt; 1 1.837742 6.838283 1.356633  1.536369</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 9 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.787271 5.611673 1.337936  1.582253</span></span>
+<span><span class="co">#&gt; 1 1.867929 5.485996 1.312071  1.542326</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 10 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.715322 4.933637 1.314507  1.559279</span></span>
+<span><span class="co">#&gt; 1 2.175493 8.200767 1.630424  1.722223</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;              MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; model_1 1.925516 6.396888 1.407462  1.582565</span></span></code></pre></div>
+<span><span class="co">#&gt; model_1 1.932022 6.326029 1.411363  1.588887</span></span></code></pre></div>
 </div>
 </div>
   </div>

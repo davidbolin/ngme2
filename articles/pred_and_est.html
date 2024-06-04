@@ -544,12 +544,12 @@ values of <span class="math inline">\(E[\mathbf{w} | \mathbf{V},
 <span><span class="co">#&gt; NULL</span></span></code></pre></div>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums-methods.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">V_1</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] 0.03273526 0.07417571 0.06941619 0.05948236 0.05307904 0.08587194</span></span>
-<span><span class="co">#&gt;  [7] 0.06618310 0.06335107 0.05670626 0.05557164</span></span></code></pre></div>
+<span><span class="co">#&gt;  [1] 0.02995553 0.05989872 0.07451099 0.06137548 0.07450415 0.06671269</span></span>
+<span><span class="co">#&gt;  [7] 0.05702610 0.07590979 0.06930967 0.04724003</span></span></code></pre></div>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums-methods.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">V_2</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] 0.03024100 0.05855070 0.04648470 0.07337273 0.07172348 0.07152563</span></span>
-<span><span class="co">#&gt;  [7] 0.07657981 0.07388647 0.07825086 0.04043894</span></span></code></pre></div>
+<span><span class="co">#&gt;  [1] 0.03567886 0.05872770 0.07271168 0.05078939 0.07223746 0.07250009</span></span>
+<span><span class="co">#&gt;  [7] 0.07410032 0.06587120 0.08430480 0.04761354</span></span></code></pre></div>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="va">W</span><span class="op">)</span></span>
@@ -557,12 +557,12 @@ values of <span class="math inline">\(E[\mathbf{w} | \mathbf{V},
 <span><span class="co">#&gt;  [6]  0.030076087  0.011708335  0.005539407 -0.012462080 -0.016644480</span></span></code></pre></div>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums-methods.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">W_1</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] -0.3216304 -0.3203319 -0.3177806 -0.3140027 -0.3078963 -0.3001602</span></span>
-<span><span class="co">#&gt;  [7] -0.2949010 -0.2903787 -0.2860168 -0.2829658</span></span></code></pre></div>
+<span><span class="co">#&gt;  [1] -0.3150281 -0.3139829 -0.3113651 -0.3078016 -0.3020980 -0.2957440</span></span>
+<span><span class="co">#&gt;  [7] -0.2900351 -0.2844520 -0.2798048 -0.2775022</span></span></code></pre></div>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums-methods.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">W_2</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] -0.3492841 -0.3478277 -0.3434119 -0.3370120 -0.3303600 -0.3223218</span></span>
-<span><span class="co">#&gt;  [7] -0.3154357 -0.3101564 -0.3070861 -0.3055713</span></span></code></pre></div>
+<span><span class="co">#&gt;  [1] -0.3385090 -0.3372381 -0.3336737 -0.3291182 -0.3225057 -0.3157194</span></span>
+<span><span class="co">#&gt;  [7] -0.3091397 -0.3041848 -0.3008233 -0.2992728</span></span></code></pre></div>
 <p>Let us begin by building traceplots for <span class="math inline">\(V\)</span>:</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">df_V</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">idx</span>, y <span class="op">=</span> <span class="va">V</span>, col <span class="op">=</span> <span class="va">chain</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>

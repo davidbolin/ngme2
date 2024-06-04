@@ -246,7 +246,7 @@ maximum edge length.</p>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $myspde</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
-<span><span class="co">#&gt;       kappa = 0.237</span></span>
+<span><span class="co">#&gt;       kappa = 0.236</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
 <span><span class="co">#&gt;       sigma = 6.21</span></span>
@@ -271,12 +271,12 @@ as shown in the result.</p>
 <span><span class="co"># by dafult, predict() returns a bunch of statistics at the given location</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">pred_W</span><span class="op">)</span></span>
 <span><span class="co">#&gt; List of 6</span></span>
-<span><span class="co">#&gt;  $ mean      : num [1:94] -0.736 -0.776 -0.941 -0.954 -0.978 ...</span></span>
-<span><span class="co">#&gt;  $ sd        : num [1:94] 9.02 9.04 8.55 8.21 8.22 ...</span></span>
-<span><span class="co">#&gt;  $ 5quantile : num [1:94] -16 -15.8 -15.5 -15.5 -13.9 ...</span></span>
-<span><span class="co">#&gt;  $ 95quantile: num [1:94] 14.7 14.6 14.9 13.6 15.6 ...</span></span>
-<span><span class="co">#&gt;  $ median    : num [1:94] -0.648 -0.904 -1.528 -1.994 -2.079 ...</span></span>
-<span><span class="co">#&gt;  $ mode      : num [1:94] -3 -3 -3 -5 -3 -9 -9 -5 -1 -1 ...</span></span></code></pre></div>
+<span><span class="co">#&gt;  $ mean      : num [1:94] -1.105 -1.11 -1.161 -1.02 -0.943 ...</span></span>
+<span><span class="co">#&gt;  $ sd        : num [1:94] 8.63 8.61 8.27 7.73 7.52 ...</span></span>
+<span><span class="co">#&gt;  $ 5quantile : num [1:94] -14.8 -14.7 -13.7 -11.4 -11.2 ...</span></span>
+<span><span class="co">#&gt;  $ 95quantile: num [1:94] 10.38 10.43 10.79 9.65 11.39 ...</span></span>
+<span><span class="co">#&gt;  $ median    : num [1:94] -1.5 -1.47 -1.75 -1.29 -0.86 ...</span></span>
+<span><span class="co">#&gt;  $ mode      : num [1:94] -1 -2.5 -3 3 1 -1 1 1 -1 -9 ...</span></span></code></pre></div>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines</a></span><span class="op">(</span><span class="va">mesh</span><span class="op">$</span><span class="va">loc</span>, <span class="va">pred_W</span><span class="op">[[</span><span class="st">"mean"</span><span class="op">]</span><span class="op">]</span>, col<span class="op">=</span><span class="fl">3</span>, lwd<span class="op">=</span><span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/title.html" class="external-link">title</a></span><span class="op">(</span><span class="st">"Posterior mean with Ngme2 and INLA"</span><span class="op">)</span></span>

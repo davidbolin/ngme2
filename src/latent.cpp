@@ -111,17 +111,17 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
     ope->update_K(theta_K);
     if (V_size == W_size) {
         if (!symmetricK) {
-            lu_solver_K.set_N(n_trace_iter);
-            lu_solver_K.init(W_size, 0,0,0);
+            // lu_solver_K.set_N(n_trace_iter);
+            lu_solver_K.init(W_size, n_trace_iter, 0, 0);
             lu_solver_K.analyze(getK());
         } else {
-            chol_solver_K.set_N(n_trace_iter);
-            chol_solver_K.init(W_size,0,0,0);
+            // chol_solver_K.set_N(n_trace_iter);
+            chol_solver_K.init(W_size, n_trace_iter, 0, 0);
             chol_solver_K.analyze(getK());
         }
     }
     SparseMatrix<double> Q = getK().transpose() * getK();
-    solver_Q.init(W_size, 0,0,0);
+    solver_Q.init(W_size, n_trace_iter,0,0);
     solver_Q.analyze(Q);
 
 // std::cout << " here 3" << std::endl;

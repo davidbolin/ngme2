@@ -19,7 +19,7 @@ public:
   solver(){};
   virtual ~solver(){};
   virtual void init(int, int, int, double) = 0;
-  virtual void initFromList(int, Rcpp::List const &) = 0;
+  // virtual void initFromList(int, Rcpp::List const &) = 0;
   virtual inline void analyze(const Eigen::SparseMatrix<double, 0, int> &) = 0;
   virtual void compute(const Eigen::SparseMatrix<double, 0, int> &) = 0;
   virtual void compute(const Eigen::MatrixXd &) { std::cout << "compute not implimented for MatrixXd\n"; };
@@ -86,14 +86,11 @@ public:
   cholesky_solver(){};
   ~cholesky_solver(){};
   void init(int, int, int, double);
-  void initFromList(int, Rcpp::List const &);
+  // void initFromList(int, Rcpp::List const &);
 
   inline void set_N(int n) { N = n; }
   inline void analyze(const Eigen::SparseMatrix<double, 0, int> &M) {
     R.analyzePattern(M);
-    n=M.cols();
-    U.resize(n, N);
-    QU.resize(n, N);
     QU_computed = false;
   }
   void compute(const Eigen::SparseMatrix<double, 0, int> &);
@@ -156,7 +153,7 @@ private:
 public:
   inline void set_N(int n) { N = n; }
   void init(int, int, int, double);
-  void initFromList(int, Rcpp::List const &);
+  // void initFromList(int, Rcpp::List const &);
   void analyze(const Eigen::SparseMatrix<double, 0, int> &);
   void compute(const Eigen::SparseMatrix<double, 0, int> &);
   void compute_KTK(const Eigen::SparseMatrix<double, 0, int> &);

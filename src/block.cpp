@@ -194,8 +194,13 @@ if (debug) std::cout << "After assemble" << std::endl;
       QQ = Q + A.transpose() * Q_eps * A;
     }
 
-    // set N for trace estimator
-    chol_QQ.set_N(n_trace_iter);
+    // Init solver, set N for trace estimator
+    // chol_QQ.set_N(n_trace_iter);
+    chol_QQ.init(W_sizes, n_trace_iter, 0,0);
+    chol_Q.init(W_sizes, n_trace_iter, 0,0);
+    chol_Q_eps.init(W_sizes, n_trace_iter, 0,0);
+    
+    // Analyze pattern
     chol_Q.analyze(Q);
     chol_QQ.analyze(QQ);
     chol_QQ.compute(QQ);

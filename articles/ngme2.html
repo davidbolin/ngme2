@@ -123,7 +123,7 @@
       <h1 data-toc-skip>Ngme2 - A new Flexible R Package for Latent
 non-Gaussian Models</h1>
             
-            <h4 data-toc-skip class="date">2024-06-04</h4>
+            <h4 data-toc-skip class="date">2024-06-09</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/HEAD/vignettes/ngme2.Rmd" class="external-link"><code>vignettes/ngme2.Rmd</code></a></small>
       <div class="hidden name"><code>ngme2.Rmd</code></div>
@@ -523,9 +523,39 @@ estimation traceplot.</p>
 Parameters of the AR1 model
 </p>
 </div>
+<pre><code><span><span class="co">#&gt; [[1]]</span></span></code></pre>
+<div class="figure" style="text-align: center">
+<img src="ngme2_files/figure-html/traceplot-2.png" alt="Parameters of the AR1 model" width="576"><p class="caption">
+Parameters of the AR1 model
+</p>
+</div>
+<pre><code><span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; [[2]]</span></span></code></pre>
+<div class="figure" style="text-align: center">
+<img src="ngme2_files/figure-html/traceplot-3.png" alt="Parameters of the AR1 model" width="576"><p class="caption">
+Parameters of the AR1 model
+</p>
+</div>
+<pre><code><span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; [[3]]</span></span></code></pre>
+<div class="figure" style="text-align: center">
+<img src="ngme2_files/figure-html/traceplot-4.png" alt="Parameters of the AR1 model" width="576"><p class="caption">
+Parameters of the AR1 model
+</p>
+</div>
+<pre><code><span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; [[4]]</span></span></code></pre>
+<div class="figure" style="text-align: center">
+<img src="ngme2_files/figure-html/traceplot-5.png" alt="Parameters of the AR1 model" width="576"><p class="caption">
+Parameters of the AR1 model
+</p>
+</div>
+<pre><code><span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $ncol</span></span>
+<span><span class="co">#&gt; [1] 2</span></span></code></pre>
 <p>We can also do a density comparison with the estimated noise and the
 true NIG noise:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># ngme_out$replicates[[1]] means for the 1st replicate</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span></span>
 <span>  <span class="va">ngme_out</span><span class="op">$</span><span class="va">replicates</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">models</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">noise</span>,</span>
@@ -542,10 +572,10 @@ ANA collects data from many locations over Brazil, and all these data
 are freely available from the ANA website (<a href="http://www3.ana.gov.br/portal/ANA" class="external-link uri">http://www3.ana.gov.br/portal/ANA</a>).</p>
 <p>We will briefly illustrate the command we use, and the result of the
 estimation.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">INLA</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Loading required package: Matrix</span></span>
-<span><span class="co">#&gt; This is INLA_24.06.04 built 2024-06-03 20:33:29 UTC.</span></span>
+<span><span class="co">#&gt; This is INLA_24.06.08 built 2024-06-08 18:23:09 UTC.</span></span>
 <span><span class="co">#&gt;  - See www.r-inla.org/contact-us for how to get help.</span></span>
 <span><span class="co">#&gt;  - List available models/likelihoods/etc with inla.list.models()</span></span>
 <span><span class="co">#&gt;  - Use inla.doc(&lt;NAME&gt;) to access documentation</span></span>
@@ -554,7 +584,7 @@ estimation.</p>
 <span><span class="co">#&gt; The following object is masked from 'package:ngme2':</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;     f</span></span></code></pre></div>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">PRprec</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">PRborder</span><span class="op">)</span></span>
 <span></span>
@@ -578,7 +608,7 @@ estimation.</p>
 Mean of the rainfall in Octobor 2012 in Paraná
 </p>
 </div>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
 <span>  formula <span class="op">=</span> <span class="va">Y</span> <span class="op">~</span> <span class="fl">1</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="va">seaDist</span>, name<span class="op">=</span><span class="st">"rw1"</span>, model <span class="op">=</span> <span class="st">"rw1"</span>, noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
@@ -603,7 +633,7 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <span><span class="co">#&gt; Note:</span></span>
 <span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
 <span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span></code></pre></div>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">out</span></span>
 <span><span class="co">#&gt; *** Ngme object ***</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -635,17 +665,39 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre></div>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="co"># traceplots</span></span>
 <span><span class="co">## fixed effects and measurement error</span></span>
 <span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">out</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ngme2_files/figure-html/fit-parana-1.png" width="700"></p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<pre><code><span><span class="co">#&gt; [[1]]</span></span></code></pre>
+<p><img src="ngme2_files/figure-html/fit-parana-2.png" width="700"></p>
+<pre><code><span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; [[2]]</span></span></code></pre>
+<p><img src="ngme2_files/figure-html/fit-parana-3.png" width="700"></p>
+<pre><code><span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; [[3]]</span></span></code></pre>
+<p><img src="ngme2_files/figure-html/fit-parana-4.png" width="700"></p>
+<pre><code><span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; [[4]]</span></span></code></pre>
+<p><img src="ngme2_files/figure-html/fit-parana-5.png" width="700"></p>
+<pre><code><span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $ncol</span></span>
+<span><span class="co">#&gt; [1] 2</span></span></code></pre>
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="co">## spde model</span></span>
 <span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">out</span>, <span class="st">"spde"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="ngme2_files/figure-html/fit-parana-2.png" width="700"></p>
+<p><img src="ngme2_files/figure-html/fit-parana-6.png" width="700"></p>
+<pre><code><span><span class="co">#&gt; [[1]]</span></span></code></pre>
+<p><img src="ngme2_files/figure-html/fit-parana-7.png" width="700"></p>
+<pre><code><span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; [[2]]</span></span></code></pre>
+<p><img src="ngme2_files/figure-html/fit-parana-8.png" width="700"></p>
+<pre><code><span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $ncol</span></span>
+<span><span class="co">#&gt; [1] 2</span></span></code></pre>
 <p>Parameter estimation results:</p>
 <table style="width:100%;" class="table">
 <caption>Estimations for the model</caption>
@@ -683,7 +735,7 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <div class="section level3">
 <h3 id="prediction">Prediction<a class="anchor" aria-label="anchor" href="#prediction"></a>
 </h3>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">nxy</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">150</span>, <span class="fl">100</span><span class="op">)</span></span>
 <span><span class="va">projgrid</span> <span class="op">&lt;-</span> <span class="fu">rSPDE</span><span class="fu">::</span><span class="fu"><a href="https://davidbolin.github.io/rSPDE/reference/rspde.mesh.project.html" class="external-link">rspde.mesh.projector</a></span><span class="op">(</span><span class="va">prmesh</span>,</span>
 <span>  xlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="va">PRborder</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span><span class="op">)</span>,</span>
@@ -697,7 +749,7 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines</a></span><span class="op">(</span><span class="va">PRborder</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/points.html" class="external-link">points</a></span><span class="op">(</span><span class="va">coords</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, <span class="va">coords</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span>, pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.5</span>, col <span class="op">=</span> <span class="st">"red"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ngme2_files/figure-html/predict-1.png" width="700"></p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="va">seaDist.prd</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="fu"><a href="https://edzer.github.io/sp/reference/spDistsN1.html" class="external-link">spDists</a></span><span class="op">(</span><span class="va">coord.prd</span>,</span>
 <span>  <span class="va">PRborder</span><span class="op">[</span><span class="fl">1034</span><span class="op">:</span><span class="fl">1078</span>, <span class="op">]</span>,</span>
@@ -729,50 +781,50 @@ Mean of the rainfall in Octobor 2012 in Paraná
 </h3>
 <p>We can further validate our model by using cross-validation
 method.</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/cross_validation.html">cross_validation</a></span><span class="op">(</span><span class="va">out</span>, type<span class="op">=</span><span class="st">"k-fold"</span>, k<span class="op">=</span><span class="fl">10</span>, print<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; In test_idx 1 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.075043 7.163469 1.509143  1.612397</span></span>
+<span><span class="co">#&gt; 1 1.901284 5.744925 1.351739  1.565577</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 2 : </span></span>
-<span><span class="co">#&gt;       MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.85735 5.939776  1.37939  1.556317</span></span>
+<span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
+<span><span class="co">#&gt; 1 1.950531 6.008155 1.400111  1.572764</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 3 : </span></span>
-<span><span class="co">#&gt;        MAE     MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.190875 7.84448   1.6701  1.793044</span></span>
+<span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
+<span><span class="co">#&gt; 1 1.726757 5.683205 1.328379  1.571011</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 4 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.678009 4.625589 1.234967  1.509852</span></span>
+<span><span class="co">#&gt; 1 1.779162 6.391219 1.306771  1.493221</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 5 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.878458 4.728735 1.278788  1.500171</span></span>
+<span><span class="co">#&gt; 1 1.892079 7.031843 1.333816  1.505472</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 6 : </span></span>
-<span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.609337 3.980569 1.130602   1.45384</span></span>
+<span><span class="co">#&gt;       MAE      MSE neg.CRPS neg.sCRPS</span></span>
+<span><span class="co">#&gt; 1 1.75419 5.651122 1.337934  1.564144</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 7 : </span></span>
-<span><span class="co">#&gt;       MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.14998 8.452627 1.611511  1.662327</span></span>
+<span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.452917 8.666255 1.772073  1.770251</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 8 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.837742 6.838283 1.356633  1.536369</span></span>
+<span><span class="co">#&gt; 1 2.262161 8.249712 1.658438  1.711189</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 9 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.867929 5.485996 1.312071  1.542326</span></span>
+<span><span class="co">#&gt; 1 1.802043 5.749943 1.340927  1.560125</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test_idx 10 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.175493 8.200767 1.630424  1.722223</span></span>
+<span><span class="co">#&gt; 1 1.654719 4.782747 1.281059  1.537021</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;              MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; model_1 1.932022 6.326029 1.411363  1.588887</span></span></code></pre></div>
+<span><span class="co">#&gt; model_1 1.917584 6.395913 1.411125  1.585078</span></span></code></pre></div>
 </div>
 </div>
   </div>

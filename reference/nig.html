@@ -208,39 +208,41 @@ Then $$\delta+\mu V + \sigma \sqrt{V} Z$$ has the distribution of $$NIG(\delta=-
     <div id="ref-examples">
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">rnig</span><span class="op">(</span><span class="fl">100</span>, delta <span class="op">=</span> <span class="fl">0</span>, mu <span class="op">=</span> <span class="fl">5</span>, sigma <span class="op">=</span> <span class="fl">1</span>, nu <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   [1]  1.59663587  1.43074615  1.10772579  1.61670730  1.01468738  3.74621893</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   [7]  5.94203728  2.26869594  4.87860055  2.72619801 12.94598807  6.16349829</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [13]  2.98255054  4.64839600  2.08818310  0.62998985  3.84406656  3.41171866</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [19] 13.60462824  0.89933029  9.46794115  2.51598916  6.88155311  3.33362466</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [25]  2.18521011  5.89451352  4.31854197  7.70187437  4.32535775  5.14741234</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [31]  3.78333151  0.42307174 10.47714325  1.06699867  3.36499401  4.34103074</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [37]  0.79766309 10.78164321  8.46697446  2.03689873  2.36492477  2.37761496</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [43]  1.87193874  3.15369995  3.58910163  6.03342660  4.56717264  1.50497777</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [49]  1.72601043  8.53213360  6.36034153  2.87007657  2.08530722 11.08613784</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [55]  5.39401074  0.93094757  1.26175877 10.46051186  4.53794384  1.21453703</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [61]  5.72376255  6.22015463  6.43603448  1.66030072  2.11678394  5.71367423</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [67]  3.45056425  5.98527576  6.39975204  0.55820198  2.30805166  6.27792556</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [73]  1.41422165 10.96690671  2.14665789  9.01879226  4.56458125  1.79478576</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [79]  0.65590151  3.91838825  5.25342113  6.27726349 25.06694019 14.65212167</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [85] 13.34635561  2.11939475  1.55335159  0.09126851  6.42272246  2.29412838</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [91]  3.24906622  4.27193812  3.74213575  1.69049621 10.60959445  2.26713481</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [97] 20.05239780  9.56878488  2.27327298  1.45165089</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   [1]  3.42917866 13.40944562  0.98064393  4.02329849 22.44935192  1.59900469</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   [7] 17.38544158  5.90492697  4.37043841  0.70497913  1.39498279  4.60872048</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [13] 11.39276828  1.67829232  2.43685155  7.88579238 10.63603695  5.43586222</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [19]  4.73373837  1.65861484  6.17999440  2.57962625  5.41422030  2.13783105</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [25] 10.78428803  3.92430475  1.99480074  1.85390930  3.37633426  1.98018575</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [31]  1.05467186  0.44887644  1.33350375  2.86322182  1.76682616  3.08546125</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [37]  5.53198322 12.35513037  1.11236103  2.87915234  3.90236155  6.22713229</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [43]  3.13180887  3.72270160  8.90141471  2.55927370  3.12719262  1.65570683</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [49]  5.07893556  4.84916939  5.30280243 10.58279599  2.78676807 24.59141888</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [55] 12.23788363  4.66558997  3.12756784  0.02084858  7.13338684  3.44195436</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [61]  2.54634900  4.62285408  1.11327485  1.30678307 10.07743450  7.20126362</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [67]  3.25372023  2.37936269  4.27756262  2.94696581 11.69430723  4.46592957</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [73]  1.18794852  1.95310384  9.25333345  3.38633160 10.38484405  4.37534977</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [79]  1.25716074 31.99713199  5.57986631  5.06500436  5.68136937  2.25720542</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [85]  7.07235469  2.11620733  0.69213707  0.62896263  2.48324108  4.77750731</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [91]  9.79936930  7.42849513 25.63432923  2.11613171  1.55437937  0.28971885</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [97]  6.00589756  1.53623821  5.30897366  8.99681914</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"V")</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   [1] 0.2425487 0.1640308 0.4722916 0.2452707 0.3115542 0.6097918 1.0332643</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   [8] 0.3740532 1.0874813 0.5577938 3.3226487 1.3520972 0.5810333 0.9405820</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [15] 0.8718137 0.1789213 0.9385365 0.6367758 2.6098283 0.2785758 1.8149839</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [22] 0.4964623 1.2760521 0.5662330 0.4803546 0.7436336 0.9453234 1.2422924</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [29] 0.9076042 0.9159523 0.7681066 0.1364089 2.2543316 0.1982801 0.6545348</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [36] 1.0297943 0.1795363 1.8350521 1.6451788 0.2946106 0.5390314 0.5838142</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [43] 0.3706827 0.7063595 0.6128378 0.8755842 0.7999358 0.2631890 0.2167057</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [50] 1.9485016 0.8285438 0.5674102 0.4602450 1.5481569 0.9666342 0.2395074</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [57] 0.2769534 2.5612977 0.8359051 0.1685270 0.9148811 1.0071672 1.5532093</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [64] 0.2967774 0.4491490 0.9958942 0.5084982 1.2542027 1.2822262 0.2305984</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [71] 0.6304822 1.5121077 0.4477360 2.1265346 0.3552109 1.7731679 0.6675888</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [78] 0.4346524 0.2482453 0.7741766 0.8293362 1.3583957 4.6902719 2.8584254</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [85] 3.1391962 0.2552483 0.3250636 0.2074389 0.9572310 0.4574651 0.4574671</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [92] 0.8062603 0.6817298 0.4516213 2.0039250 0.6981317 4.2076503 1.6811874</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [99] 0.5302168 0.4052749</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   [1] 0.56831009 2.23147278 0.43744878 0.67513272 4.92157018 0.23350641</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   [7] 3.20389749 1.04762757 0.98019265 0.14745053 0.58737757 1.02573847</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [13] 2.24811056 0.34223510 0.96527148 1.74230860 2.39853151 1.02923968</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [19] 0.88215689 0.45833665 1.17281239 0.50910448 0.99434166 0.34870516</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [25] 2.25061024 0.44728553 0.45562077 0.23981471 0.71296393 0.32809001</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [31] 0.21701532 0.14276231 0.32724297 0.54751956 0.34005657 0.75549686</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [37] 1.15718149 2.12527589 0.20543407 0.43828552 0.86409482 1.41395511</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [43] 0.62156405 0.82632989 1.61011693 0.31367764 0.53280901 0.29136275</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [49] 0.77308696 1.15631621 0.66362409 2.10384072 0.60694413 3.86159333</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [55] 2.27547932 1.04446003 0.66359491 0.09410496 1.33605123 0.55358300</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [61] 0.36422907 0.72377710 0.34868967 0.23027722 2.07086897 1.27415956</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [67] 0.47518016 0.51239992 0.85737351 0.81271701 2.68751699 1.11329579</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [73] 0.39184709 0.36300236 1.68903896 0.65862266 1.68698450 0.98926682</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [79] 0.40003849 6.37216826 0.88705254 1.10588438 0.98797666 0.42372051</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [85] 1.76703856 0.25476915 0.14814410 0.38278420 0.31029301 0.95353721</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [91] 1.60013915 1.42178867 4.94719318 0.54831177 0.26774581 0.18334780</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [97] 1.31124855 0.22261761 1.17424409 2.05841183</span>
 <span class="r-in"><span><span class="fu">pnig</span><span class="op">(</span><span class="fl">0.4</span>, delta <span class="op">=</span> <span class="fl">0</span>, mu <span class="op">=</span> <span class="fl">5</span>, sigma <span class="op">=</span> <span class="fl">1</span>, nu <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.01597497</span>
 <span class="r-in"><span><span class="fu">qnig</span><span class="op">(</span><span class="fl">0.8</span>, delta <span class="op">=</span> <span class="fl">0</span>, mu <span class="op">=</span> <span class="fl">5</span>, sigma <span class="op">=</span> <span class="fl">1</span>, nu <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>

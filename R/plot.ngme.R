@@ -171,7 +171,9 @@ traceplot <- function(ngme, name="general", hline=NULL) {
   result <- do.call(gridExtra::grid.arrange, ps)
 
   attr(result, "avg_lines") <- avg_lines
-  invisible(result)
+  
+  # invisible(result)
+  ps
 }
 
 

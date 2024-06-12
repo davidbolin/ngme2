@@ -83,6 +83,8 @@ protected:
     VectorXd mu, sigma, sigma_normal, nu;
     int n_theta_mu, n_theta_sigma, n_theta_nu, n_theta_sigma_normal;
 
+    double nu_lower_bound;
+
     // for numerical gradient.
     VectorXd W, prevW, cond_W, V, prevV;
     SparseMatrix<double,0,int> A;

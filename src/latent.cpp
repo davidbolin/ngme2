@@ -70,6 +70,8 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
         n_theta_sigma = Rcpp::as< int > (noise_in["n_theta_sigma"]);
         n_theta_nu    = Rcpp::as< int > (noise_in["n_theta_nu"]);
 
+        nu_lower_bound    = Rcpp::as< double > (noise_in["nu_lower_bound"]);
+
         rb_trace_sigma = VectorXd::Zero(n_theta_sigma);
         if (noise_type[0] == "normal_nig") n_theta_sigma_normal =   (B_sigma_normal.cols());
 
@@ -459,6 +461,7 @@ void Latent::update_each_iter(bool initialization, bool update_dK) {
     mu = B_mu * theta_mu;
     sigma = (B_sigma * theta_sigma).array().exp();
     nu = (B_nu * theta_nu).array().exp();
+    nu = nu.cwiseMax(nu_lower_bound);
 
     if (noise_type[0] == "normal_nig")
         sigma_normal = (B_sigma_normal * theta_sigma_normal).array().exp();

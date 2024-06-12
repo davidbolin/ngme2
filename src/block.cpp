@@ -122,6 +122,7 @@ if (debug) std::cout << "After set block K" << std::endl;
 
     rho   = Rcpp::as<VectorXd> (noise_in["rho"]); 
     n_rho = Rcpp::as<int>      (noise_in["n_rho"]);
+    nu_lower_bound = Rcpp::as<double> (noise_in["nu_lower_bound"]);
     
     corr_measure = Rcpp::as<bool> (noise_in["corr_measurement"]);
 
@@ -608,6 +609,7 @@ if (debug) std::cout << "start set theta_merr" << std::endl;
   noise_mu    = (B_mu * theta_mu);
   noise_sigma = (B_sigma * theta_sigma).array().exp();
   noise_nu    = (B_nu * theta_nu).array().exp();
+  noise_nu    = noise_nu.cwiseMax(nu_lower_bound);
 
 // show the Q construction
 // std::cout << "Q_eps == \n" << Q_eps << std::endl;

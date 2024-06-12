@@ -70,7 +70,8 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
         n_theta_sigma = Rcpp::as< int > (noise_in["n_theta_sigma"]);
         n_theta_nu    = Rcpp::as< int > (noise_in["n_theta_nu"]);
 
-        nu_lower_bound    = Rcpp::as< double > (noise_in["nu_lower_bound"]);
+        if (noise_in.containsElementNamed("nu_lower_bound"))
+            nu_lower_bound  = Rcpp::as< double > (noise_in["nu_lower_bound"]);
 
         rb_trace_sigma = VectorXd::Zero(n_theta_sigma);
         if (noise_type[0] == "normal_nig") n_theta_sigma_normal =   (B_sigma_normal.cols());

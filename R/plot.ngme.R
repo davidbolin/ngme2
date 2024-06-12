@@ -173,7 +173,7 @@ traceplot <- function(ngme, name="general", hline=NULL) {
   attr(result, "avg_lines") <- avg_lines
   
   # invisible(result)
-  ps
+  invisible(ps)
 }
 
 

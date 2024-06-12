@@ -33,6 +33,7 @@ ngme_noise(
   corr_measurement = FALSE,
   index_corr = NULL,
   map_corr = NULL,
+  nu_lower_bound = 0.01,
   rho = double(0),
   prior_mu = ngme_prior("normal", param = c(0, 0.01)),
   prior_sigma = ngme_prior("normal", param = c(0, 0.01)),
@@ -57,6 +58,7 @@ noise_nig(
   theta_mu = NULL,
   theta_sigma = NULL,
   theta_nu = NULL,
+  nu_lower_bound = 0.01,
   B_mu = matrix(1),
   B_sigma = matrix(1),
   B_nu = matrix(1),
@@ -73,6 +75,7 @@ noise_gal(
   theta_mu = NULL,
   theta_sigma = NULL,
   theta_nu = NULL,
+  nu_lower_bound = 0.01,
   B_mu = matrix(1),
   B_sigma = matrix(1),
   B_nu = matrix(1),
@@ -146,6 +149,8 @@ noise_normal_nig(
 \item{index_corr}{used when corr_measurement=TRUE, indicate which observation has correlation}
 
 \item{map_corr}{1d, 2d, or formula, used when corr_measurement=TRUE, specify use which covariate to infer the index_corr.}
+
+\item{nu_lower_bound}{specify the lower bound of parameter nu}
 
 \item{rho}{used when corr_measurement=TRUE, starting point for correlation}
 

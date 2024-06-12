@@ -134,6 +134,7 @@ Use <code><a href="ngme_noise_types.html">ngme_noise_types()</a></code> to check
 <span>  corr_measurement <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  index_corr <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  map_corr <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  nu_lower_bound <span class="op">=</span> <span class="fl">0.01</span>,</span>
 <span>  rho <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html" class="external-link">double</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>,</span>
 <span>  prior_mu <span class="op">=</span> <span class="fu"><a href="ngme_prior.html">ngme_prior</a></span><span class="op">(</span><span class="st">"normal"</span>, param <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.01</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  prior_sigma <span class="op">=</span> <span class="fu"><a href="ngme_prior.html">ngme_prior</a></span><span class="op">(</span><span class="st">"normal"</span>, param <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.01</span><span class="op">)</span><span class="op">)</span>,</span>
@@ -158,6 +159,7 @@ Use <code><a href="ngme_noise_types.html">ngme_noise_types()</a></code> to check
 <span>  theta_mu <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  theta_sigma <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  theta_nu <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  nu_lower_bound <span class="op">=</span> <span class="fl">0.01</span>,</span>
 <span>  B_mu <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,</span>
 <span>  B_sigma <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,</span>
 <span>  B_nu <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,</span>
@@ -174,6 +176,7 @@ Use <code><a href="ngme_noise_types.html">ngme_noise_types()</a></code> to check
 <span>  theta_mu <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  theta_sigma <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  theta_nu <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  nu_lower_bound <span class="op">=</span> <span class="fl">0.01</span>,</span>
 <span>  B_mu <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,</span>
 <span>  B_sigma <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,</span>
 <span>  B_nu <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,</span>
@@ -294,6 +297,10 @@ Use <code><a href="ngme_noise_types.html">ngme_noise_types()</a></code> to check
 
 <dt>map_corr</dt>
 <dd><p>1d, 2d, or formula, used when corr_measurement=TRUE, specify use which covariate to infer the index_corr.</p></dd>
+
+
+<dt>nu_lower_bound</dt>
+<dd><p>specify the lower bound of parameter nu</p></dd>
 
 
 <dt>rho</dt>

@@ -255,37 +255,35 @@ process and the second part being the bivariate model.</p>
 <span><span class="co">##       No parameter.</span></span>
 <span><span class="co">##   Noise type: NORMAL</span></span>
 <span><span class="co">##   Noise parameters: </span></span>
-<span><span class="co">##       sigma = 0.732</span></span>
+<span><span class="co">##       sigma = 0.779</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $field2</span></span>
 <span><span class="co">##   Model type: Tensor product</span></span>
 <span><span class="co">##       first: AR(1)</span></span>
-<span><span class="co">##           rho = 0.242</span></span>
+<span><span class="co">##           rho = 0.239</span></span>
 <span><span class="co">##       second: Bivariate model (non-Gaussian noise)</span></span>
-<span><span class="co">##           theta = -0.081</span></span>
-<span><span class="co">##           rho = -0.0607</span></span>
+<span><span class="co">##           theta = -0.037</span></span>
+<span><span class="co">##           rho = -0.0543</span></span>
 <span><span class="co">##           f1: AR(1)</span></span>
-<span><span class="co">##               rho = 0.243</span></span>
+<span><span class="co">##               rho = 0.244</span></span>
 <span><span class="co">##           f2: AR(1)</span></span>
-<span><span class="co">##               rho = -0.212</span></span>
+<span><span class="co">##               rho = -0.232</span></span>
 <span><span class="co">##   Noise type: NIG</span></span>
 <span><span class="co">##   Noise parameters: </span></span>
-<span><span class="co">##       mu = -0.466</span></span>
-<span><span class="co">##       sigma = 1.49</span></span>
-<span><span class="co">##       nu = 0.631</span></span>
+<span><span class="co">##       mu = -0.475</span></span>
+<span><span class="co">##       sigma = 1.51</span></span>
+<span><span class="co">##       nu = 0.677</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Measurement noise: </span></span>
 <span><span class="co">##   Noise type: NORMAL</span></span>
 <span><span class="co">##   Noise parameters: </span></span>
-<span><span class="co">##       sigma = 1.19</span></span>
+<span><span class="co">##       sigma = 1.27</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Number of replicates is  1</span></span></code></pre>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">fit0</span>, <span class="st">"field1"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tp-bv_files/figure-html/unnamed-chunk-4-1.png" width="700"></p>
-<pre><code><span><span class="co">## [[1]]</span></span></code></pre>
-<p><img src="tp-bv_files/figure-html/unnamed-chunk-4-2.png" width="700"></p>
 <p>Here we can see, we get the simulated parameter correctly.</p>
 </div>
   </div>

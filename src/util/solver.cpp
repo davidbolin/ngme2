@@ -13,15 +13,15 @@ double myround(double x){
 void cholesky_solver::init(int nin, int Nin, int max_iter, double tol)
 {
   n = nin;
-  Qi.resize(n, n);
-  Qi_computed = 0;
-}
+  N = Nin;
+  U.resize(n, N);
+  QU.resize(n, N);
 
-void cholesky_solver::initFromList(int nin, Rcpp::List const &)
-{
-  n = nin;
-  Qi.resize(n, n);
-  Qi_computed = 0;
+  for (int i = 0; i < n; ++i) {
+    for (int j = 0; j < N; ++j) {
+      U(i, j) = R::runif(-1.0, 1.0);
+    }
+  }
 }
 
 void cholesky_solver::compute(const SparseMatrix<double, 0, int> &M)
@@ -73,11 +73,11 @@ double cholesky_solver::trace_num(const SparseMatrix<double, 0, int> &M)
   if (QU_computed==0){
     // U.setRandom(n,N);
     // The MatrixXd::Random() is complained by R CMD check
-    for (int i = 0; i < n; ++i) {
-      for (int j = 0; j < N; ++j) {
-        U(i, j) = R::runif(-1.0, 1.0);
-      }
-    }
+    // for (int i = 0; i < n; ++i) {
+    //   for (int j = 0; j < N; ++j) {
+    //     U(i, j) = R::runif(-1.0, 1.0);
+    //   }
+    // }
 
     U = U.unaryExpr(std::ref(myround));
     for(int i=0; i<N; i++){
@@ -168,13 +168,7 @@ Eigen::VectorXd cholesky_solver::Qinv_diag()
 void lu_solver::init(int nin, int Nin, int max_iter, double tol)
 {
   n = nin;
-  Kinv.resize(n, n);
-  Kinv_computed = 0;
-}
-
-void lu_solver::initFromList(int nin, Rcpp::List const &in_list)
-{
-  n = nin;
+  
   Kinv.resize(n, n);
   Kinv_computed = 0;
 }
@@ -240,14 +234,16 @@ inline double lu_solver::logdet()
 void lu_sparse_solver::init(int nin, int Nin, int max_iter, double tol)
 {
   n = nin;
-  KKtinv.resize(n, n);
-  KKtinv_computed = 0;
-  QU_computed = 0;
-}
+  N = Nin;
+  U.resize(n, N);
+  QU.resize(n, N);
 
-void lu_sparse_solver::initFromList(int nin, Rcpp::List const &)
-{
-  n = nin;
+  for (int i = 0; i < n; ++i) {
+    for (int j = 0; j < N; ++j) {
+      U(i, j) = R::runif(-1.0, 1.0);
+    }
+  }
+
   KKtinv.resize(n, n);
   KKtinv_computed = 0;
   QU_computed = 0;
@@ -343,11 +339,11 @@ double lu_sparse_solver::trace_num(const SparseMatrix<double, 0, int> &M)
 {
   if (QU_computed==0) {
     // U.setRandom(n,N);
-    for (int i = 0; i < n; ++i) {
-      for (int j = 0; j < N; ++j) {
-        U(i, j) = R::runif(-1.0, 1.0);
-      }
-    }
+    // for (int i = 0; i < n; ++i) {
+    //   for (int j = 0; j < N; ++j) {
+    //     U(i, j) = R::runif(-1.0, 1.0);
+    //   }
+    // }
 
     U = U.unaryExpr(std::ref(myround));
     for(int i=0; i<N; i++){

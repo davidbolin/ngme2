@@ -54,6 +54,8 @@ protected:
     VectorXd noise_mu, noise_sigma, noise_nu;
     int n_theta_mu, n_theta_sigma, n_theta_nu, n_rho;
 
+    double nu_lower_bound {1e-4};
+
     int n_latent; // how mnay latent model
     int n_obs;  // how many observation
 

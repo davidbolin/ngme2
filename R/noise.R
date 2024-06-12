@@ -21,6 +21,7 @@
 #' @param theta_sigma   specify a non-stationary noise using theta_sigma
 #' @param B_sigma       Basis matrix for sigma (if non-stationary)
 #' @param theta_nu      specify a non-stationary noise using theta_nu
+#' @param nu_lower_bound specify the lower bound of parameter nu
 #' @param B_nu          Basis matrix for nu (if non-stationary)
 #' @param fix_theta_mu     fix the parameter of theta_mu
 #' @param fix_theta_sigma  fix the parameter of theta_sigma
@@ -71,6 +72,7 @@ ngme_noise <- function(
   corr_measurement = FALSE,
   index_corr      = NULL,
   map_corr        = NULL,
+  nu_lower_bound  = 0.01,
   rho             = double(0),
   prior_mu        = ngme_prior("normal", param=c(0, 0.01)),
   prior_sigma     = ngme_prior("normal", param=c(0, 0.01)),
@@ -149,6 +151,7 @@ ngme_noise <- function(
       fix_theta_mu    = fix_theta_mu,
       fix_theta_sigma = fix_theta_sigma,
       fix_theta_nu    = fix_theta_nu,
+      nu_lower_bound = nu_lower_bound,
       fix_V           = fix_V,
       fix_rho         = fix_rho,
       fix_theta_sigma_normal = fix_theta_sigma_normal,
@@ -226,6 +229,7 @@ noise_nig <- nig <- function(
   theta_mu      = NULL,
   theta_sigma   = NULL,
   theta_nu      = NULL,
+  nu_lower_bound = 0.01,
   B_mu          = matrix(1),
   B_sigma       = matrix(1),
   B_nu          = matrix(1),
@@ -273,6 +277,7 @@ noise_gal <- gal <- function(
   theta_mu      = NULL,
   theta_sigma   = NULL,
   theta_nu      = NULL,
+  nu_lower_bound = 0.01,
   B_mu          = matrix(1),
   B_sigma       = matrix(1),
   B_nu          = matrix(1),

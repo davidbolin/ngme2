@@ -192,6 +192,19 @@ rgig <- function (n, p, a, b, seed = 0)
     a_new <- a
     b_new <- b
   }
+
+  if (all(a==0)) {
+    stopifnot("p should be negative when a is zero" =
+                all(p_new < 0))
+    return (rigam(n, a = -p_new, b = b_new/2))
+  }
+  
+  if (all(b==0)) {
+    stopifnot("p should be positive when b is zero" =
+                all(p_new > 0))
+    return (rgamma(n, shape = p_new, rate = a_new/2))
+  }
+
   return(rGIG_cpp(p_new, a_new, b_new, seed))
 }
 

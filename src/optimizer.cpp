@@ -194,7 +194,7 @@ std::cout << "iteration = : " << curr_iter+1 << std::endl;
 std::cout << "grad.norm() = " << grad.norm() << std::endl;
 std::cout << "one step = " << one_step << std::endl;
 // std::cout << "parameter = : " << x << std::endl;
-std::cout << "marginal likelihood := " <<  -model->log_likelihood() << std::endl;
+// std::cout << "marginal likelihood := " <<  -model->log_likelihood() << std::endl;
 std::cout << "---------------------------" << std::endl; 
 }
 
@@ -268,8 +268,8 @@ double Ngme_optimizer::line_search_wolfe(
 
         // Termination condition to prevent infinite loop (can be tuned)
         if (i > 50) {
-std::cout << "warning: line search iteration > 50" << std::endl;
-std::cout << "alpha_i = " << alpha_i << std::endl;
+// std::cout << "warning: line search iteration > 50" << std::endl;
+// std::cout << "alpha_i = " << alpha_i << std::endl;
             return alpha_i;
         }
     }

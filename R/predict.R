@@ -104,7 +104,7 @@ predict.ngme <- function(
             }
             else fmesher::fm_basis(mesh, loc = loc)
 
-          if (model == "bv") A <- Matrix::bdiag(A, A)
+          if (model %in% c("bv", "bv_normal", "bv_matern_normal")) A <- Matrix::bdiag(A, A)
           stopifnot(ncol(A) == length(W))
           as.numeric(A %*% W)
         })

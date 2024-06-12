@@ -291,37 +291,12 @@ optioins.</p>
 <span><span class="co"># traceplot of fixed effects and measurementn noise</span></span>
 <span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">ngme_out</span>, hline<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="op">-</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="AR1-model_files/figure-html/ar-estimation-1.png" width="700" style="display: block; margin: auto;"></p>
-<pre><code><span><span class="co">#&gt; [[1]]</span></span></code></pre>
-<p><img src="AR1-model_files/figure-html/ar-estimation-2.png" width="700" style="display: block; margin: auto;"></p>
-<pre><code><span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; [[2]]</span></span></code></pre>
-<p><img src="AR1-model_files/figure-html/ar-estimation-3.png" width="700" style="display: block; margin: auto;"></p>
-<pre><code><span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; [[3]]</span></span></code></pre>
-<p><img src="AR1-model_files/figure-html/ar-estimation-4.png" width="700" style="display: block; margin: auto;"></p>
-<pre><code><span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $ncol</span></span>
-<span><span class="co">#&gt; [1] 2</span></span></code></pre>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="co"># traceplot of ar1 model</span></span>
 <span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">ngme_out</span>, <span class="st">"my_ar"</span>, hline<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="op">-</span><span class="fl">3</span>, <span class="fl">4</span>, <span class="fl">0.4</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="AR1-model_files/figure-html/ar-estimation-5.png" width="700" style="display: block; margin: auto;"></p>
-<pre><code><span><span class="co">#&gt; [[1]]</span></span></code></pre>
-<p><img src="AR1-model_files/figure-html/ar-estimation-6.png" width="700" style="display: block; margin: auto;"></p>
-<pre><code><span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; [[2]]</span></span></code></pre>
-<p><img src="AR1-model_files/figure-html/ar-estimation-7.png" width="700" style="display: block; margin: auto;"></p>
-<pre><code><span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; [[3]]</span></span></code></pre>
-<p><img src="AR1-model_files/figure-html/ar-estimation-8.png" width="700" style="display: block; margin: auto;"></p>
-<pre><code><span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; [[4]]</span></span></code></pre>
-<p><img src="AR1-model_files/figure-html/ar-estimation-9.png" width="700" style="display: block; margin: auto;"></p>
-<pre><code><span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $ncol</span></span>
-<span><span class="co">#&gt; [1] 2</span></span></code></pre>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<p><img src="AR1-model_files/figure-html/ar-estimation-2.png" width="700" style="display: block; margin: auto;"></p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="co"># Use ngme_result to extract the latent part</span></span>
 <span></span>
@@ -329,7 +304,7 @@ optioins.</p>
 <span><span class="va">ar1</span> <span class="op">=</span> <span class="fu"><a href="../reference/ngme_result.html">ngme_result</a></span><span class="op">(</span><span class="va">ngme_out</span>, <span class="st">"my_ar"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">ar1</span><span class="op">$</span><span class="va">noise</span>,</span>
 <span>  <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span>mu <span class="op">=</span> <span class="op">-</span><span class="fl">3</span>, sigma <span class="op">=</span> <span class="fl">4</span>, nu<span class="op">=</span><span class="fl">0.4</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="AR1-model_files/figure-html/ar-estimation-10.png" width="700" style="display: block; margin: auto;"></p>
+<p><img src="AR1-model_files/figure-html/ar-estimation-3.png" width="700" style="display: block; margin: auto;"></p>
 </div>
   </div>
 

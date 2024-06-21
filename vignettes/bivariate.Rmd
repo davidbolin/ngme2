@@ -430,7 +430,7 @@ true_model <- f(
   )
 )
 
-W <- simulate(true_model)[[1]]
+sim_fields <- simulate(true_model)[[1]]
 
 sd_1 = 0.6; sd_2 = 0.9; rho_e = 0.9
 Cov_same_idx <- matrix(c(sd_1^2, rho_e*sd_1*sd_2, rho_e*sd_1*sd_2, sd_2^2), nrow=2)
@@ -458,7 +458,7 @@ out_cor <- ngme(
   Y ~ 0 + f(
     ~ long + lat,
     mesh = mesh,
-    model = "bv_normal",
+    model = "bv_matern_normal",
     name = "bv",
     sub_models = list(
       W1 = list(model = "matern"),

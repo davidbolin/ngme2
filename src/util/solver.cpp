@@ -17,11 +17,12 @@ void cholesky_solver::init(int nin, int Nin, int max_iter, double tol)
   U.resize(n, N);
   QU.resize(n, N);
 
-  for (int i = 0; i < n; ++i) {
-    for (int j = 0; j < N; ++j) {
-      U(i, j) = R::runif(-1.0, 1.0);
-    }
-  }
+  // set random in at the beginning
+  // for (int i = 0; i < n; ++i) {
+  //   for (int j = 0; j < N; ++j) {
+  //     U(i, j) = R::runif(-1.0, 1.0);
+  //   }
+  // }
 }
 
 void cholesky_solver::compute(const SparseMatrix<double, 0, int> &M)
@@ -73,11 +74,11 @@ double cholesky_solver::trace_num(const SparseMatrix<double, 0, int> &M)
   if (QU_computed==0){
     // U.setRandom(n,N);
     // The MatrixXd::Random() is complained by R CMD check
-    // for (int i = 0; i < n; ++i) {
-    //   for (int j = 0; j < N; ++j) {
-    //     U(i, j) = R::runif(-1.0, 1.0);
-    //   }
-    // }
+    for (int i = 0; i < n; ++i) {
+      for (int j = 0; j < N; ++j) {
+        U(i, j) = R::runif(-1.0, 1.0);
+      }
+    }
 
     U = U.unaryExpr(std::ref(myround));
     for(int i=0; i<N; i++){
@@ -238,12 +239,6 @@ void lu_sparse_solver::init(int nin, int Nin, int max_iter, double tol)
   U.resize(n, N);
   QU.resize(n, N);
 
-  for (int i = 0; i < n; ++i) {
-    for (int j = 0; j < N; ++j) {
-      U(i, j) = R::runif(-1.0, 1.0);
-    }
-  }
-
   KKtinv.resize(n, n);
   KKtinv_computed = 0;
   QU_computed = 0;
@@ -339,11 +334,11 @@ double lu_sparse_solver::trace_num(const SparseMatrix<double, 0, int> &M)
 {
   if (QU_computed==0) {
     // U.setRandom(n,N);
-    // for (int i = 0; i < n; ++i) {
-    //   for (int j = 0; j < N; ++j) {
-    //     U(i, j) = R::runif(-1.0, 1.0);
-    //   }
-    // }
+    for (int i = 0; i < n; ++i) {
+      for (int j = 0; j < N; ++j) {
+        U(i, j) = R::runif(-1.0, 1.0);
+      }
+    }
 
     U = U.unaryExpr(std::ref(myround));
     for(int i=0; i<N; i++){

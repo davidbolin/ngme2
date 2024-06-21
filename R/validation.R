@@ -16,6 +16,7 @@
 #' @param percent from 1 to 100 (only for lpo type)
 #' @param times how many test cases (only for lpo type)
 #' @param n_gibbs_samples number of gibbs samples
+#' @param n_burnin number of burnin
 #' @param test_idx a list of indices of the data (which data points to be predicted) (only for custom type)
 #' @param train_idx  a list of indices of the data (which data points to be used for re-sampling (not re-estimation)) (only for custom type)
 #' @param keep_test_information logical, keep test information (pred_1, pred_2) in the return (as attributes), pred_1 and pred_2 are the prediction of the two chains
@@ -28,10 +29,11 @@ cross_validation <- function(
   seed = NULL,
   print = FALSE,
   N = 100,
+  n_gibbs_samples = 100,
+  n_burnin = 100,
   k = 5,
   percent = 50,
   times = 10,
-  n_gibbs_samples = 50,
   test_idx = NULL,
   train_idx = NULL,
   keep_test_information = FALSE
@@ -149,7 +151,8 @@ compute_err_reps <- function(
   test_idx,
   train_idx,
   N = 100,
-  n_gibbs_samples = 50,
+  n_gibbs_samples = 100,
+  n_burnin = 100,
   seed = NULL
 ) {
   stopifnot("Not a ngme object." = inherits(ngme, "ngme"))
@@ -209,6 +212,7 @@ compute_err_1rep <- function(
   bool_train_idx,
   N = 100,
   n_gibbs_samples = 50,
+  n_burnin = 10,
   seed = NULL
 ) {
   stopifnot(
@@ -238,7 +242,7 @@ compute_err_1rep <- function(
   y_data <- ngme_1rep$Y[bool_test_idx]
   group_data <- ngme_1rep$group[bool_test_idx]
   X_pred <- ngme_1rep$X[bool_test_idx,, drop=FALSE]
-  # noise_test_idx <- subset_noise(ngme_1rep$noise, sub_idx = bool_test_idx)
+  noise_test_idx <- subset_noise(ngme_1rep$noise, sub_idx = bool_test_idx)
 
   # Subset noise, X, Y in train location
   ngme_1rep$X <- ngme_1rep$X[bool_train_idx,, drop=FALSE]
@@ -262,18 +266,19 @@ compute_err_1rep <- function(
 
   if (is.null(seed)) seed <- Sys.time()
 
-  # increase n_gibbs_samples
-  ngme_1rep$control_ngme$n_gibbs_samples=n_gibbs_samples
+  N_sim <- n_gibbs_samples * N
 
+  # increase n_gibbs_samples
   Ws <- sampling_cpp(
     ngme_1rep, 
-    n=2*N, 
-    n_burnin = N,
-    posterior=TRUE, 
+    n = 2 * N_sim, 
+    n_burnin = n_burnin,
+    posterior = TRUE, 
     seed=seed
   )[["W"]]
   
-  Ws_block <- head(Ws, N); W2s_block <- tail(Ws, N)
+  Ws_block  <- head(Ws, N_sim)
+  W2s_block <- tail(Ws, N_sim)
 
 # Note: Ws_block is a list of N realizations of W of current replicate
 # Note: AW_N_1 is a matrix of n_test * N
@@ -285,41 +290,48 @@ compute_err_1rep <- function(
 
   # generate fixed effect
   fe <- with(ngme_1rep, as.numeric(X_pred %*% feff))
-  fe_N <- matrix(rep(fe, N), ncol=N, byrow=F)
+  fe_N <- matrix(
+    rep(fe, N_sim), 
+    ncol = N_sim, 
+    byrow=F
+  )
 
   pred_N_1 <- fe_N + AW_N_1
   pred_N_2 <- fe_N + AW_N_2
 
   # simulate measurement noise
-  # mn_N_1 <- sapply(1:N, function(x) simulate(noise_test_idx)[[1]])
-  # mn_N_2 <- sapply(1:N, function(x) simulate(noise_test_idx)[[1]])
-  # Y_N_1 <- pred_N_1 + mn_N_1
-  # Y_N_2 <- pred_N_2 + mn_N_2
+  mn_N_1 <- sapply(1:N_sim, function(x) simulate(noise_test_idx)[[1]])
+  mn_N_2 <- sapply(1:N_sim, function(x) simulate(noise_test_idx)[[1]])
+  
+  # simulate y
+  Y_N_1 <- pred_N_1 + mn_N_1
+  Y_N_2 <- pred_N_2 + mn_N_2
 
   pred <- 0.5*(rowMeans(as.matrix(pred_N_1)) + rowMeans(as.matrix(pred_N_2)))
 
   # Now Y is of dim n_obs * N
   n_obs <- length(y_data)
-  E_pred_data <- E_pred_pred <- double(length(y_data))
+  E_sim_data <- E_sim_sim <- double(length(y_data))
+  
   for (i in 1:n_obs) {
     # turn row of df into numeric vector.
-    pred_1 <- as.numeric(pred_N_1[i, ])
-    pred_2 <- as.numeric(pred_N_2[i, ])
+    y_sim1 <- as.numeric(Y_N_1[i, ])
+    y_sim2 <- as.numeric(Y_N_2[i, ])
 
     # estimate E(| X_i - y_data |). y_data is observation, X_i ~ predictive distribution at i
-    E_pred_data[[i]] <- mean(abs(pred_1 - y_data[i]))
+    E_sim_data[[i]] <- mean(abs(y_sim1 - y_data[i]))
 
     # estimate E(| X_i - Y_i |) , X_i, Y_i ~ predictive distribution at i
-    E_pred_pred[[i]] <- mean(abs(pred_1 - pred_2))
+    E_sim_sim[[i]] <- mean(abs(y_sim1 - y_sim2))
   }
 
   # compute MSE, MAE, CRPS, sCRPS within each group
   pred_each_group   <- split(pred, group_data)
   y_data_each_group <- split(y_data, group_data)
 
-  CRPS  <- split(0.5 * E_pred_pred - E_pred_data, group_data)
+  CRPS  <- split(0.5 * E_sim_sim - E_sim_data, group_data)
   sCRPS <- split(
-    -E_pred_data / E_pred_pred - 0.5 * log(E_pred_pred),
+    -E_sim_data / E_sim_sim - 0.5 * log(E_sim_sim),
     group_data
   )
 

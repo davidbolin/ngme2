@@ -290,8 +290,9 @@ bvar_cor <- ngme(
   control_opt = control_opt(
     n_parallel_chain = 4,
     optimizer = adam(stepsize = 0.01),
+    std_lim = 1e-3,
     iterations = 5000,
-    iters_per_check = 1,
+    iters_per_check = 100,
     rao_blackwellization = TRUE,
     seed = 7
   )
@@ -367,8 +368,7 @@ out <- ngme(
   control_opt = control_opt(
     optimizer = adam(),
     iterations = 5000,
-    # verbose = TRUE,
-    n_parallel_chain = 4,
+    n_parallel_chain = 1,
     seed = 113
   )
 )
@@ -430,11 +430,10 @@ true_model <- f(
   )
 )
 
-W <- simulate(true_model)[[1]]
+sim_fields <- simulate(true_model)[[1]]
 
 sd_1 = 0.6; sd_2 = 0.9; rho_e = 0.9
 Cov_same_idx <- matrix(c(sd_1^2, rho_e*sd_1*sd_2, rho_e*sd_1*sd_2, sd_2^2), nrow=2)
-
 
 Cov_measurement <- Cov_same_idx %x% diag(n_obs / 2)
 
@@ -453,12 +452,11 @@ B_sigma = matrix(0, nrow=n_obs, ncol=2)
 B_sigma[group=="W1", 1] = 1
 B_sigma[group=="W2", 2] = 1
 
-
 out_cor <- ngme(
-  Y ~ 0 + f(
+  Y ~ 0 + x1 + x2 + f(
     ~ long + lat,
     mesh = mesh,
-    model = "bv_normal",
+    model = "bv_matern_normal",
     name = "bv",
     sub_models = list(
       W1 = list(model = "matern"),
@@ -498,7 +496,7 @@ traceplot(
 
 traceplot(
   out_cor,
-  hline=c(log(sd_1), log(sd_2), rho_e)
+  hline=c(log(sd_1), log(sd_2), rho_e, feff)
 )
 ```
 

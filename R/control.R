@@ -61,7 +61,7 @@ control_opt <- function(
 
   exchange_VW       = TRUE,
   n_slope_check     = 3,
-  std_lim           = 0.1,
+  std_lim           = 0.01,
   trend_lim         = 0.01,
   print_check_info  = FALSE,
 

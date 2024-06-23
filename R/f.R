@@ -155,71 +155,7 @@ f <- function(
   # build the operator
   operator <- build_operator(model, f_args)
 
-  if (inherits(mesh, "metric_graph")) {
-    A <- if (is.null(map)) NULL else mesh$fem_basis(map)
-  } else {
-    A <- switch(model,
-      "tp" = {
-        stopifnot("Now only support first to be 1d model"
-          = inherits(operator$first$mesh, "inla.mesh.1d"))
-        # A <- INLA::inla.spde.make.A(loc=map[[2]], mesh=operator$second$mesh, repl=group)
-        # watch-out! Should use as.factor to start at 1, not min(map[[1]])
-        # blk_group <- as.integer(as.factor(map[[1]]))
-        blk_group <- as.integer(map[[1]])
-# important to start with 1
-blk_group <- blk_group-min(blk_group)+1
-# browser()
-        blk <- fmesher::fm_block(blk_group)
-        basis <- fmesher::fm_basis(operator$second$mesh, loc=map[[2]])
-        A0 = fmesher::fm_row_kron(Matrix::t(blk), basis)
-if (operator$second$model == "bv") {
-# extra steps
-# 1. expand A <- cbind(A, 0), double the column
-# 2. move 2nd field to the 2nd half
-# 3. re-order the 1st and 2nd
-# e.g., (each field is of size 2)
-# 1 2 3 4 5 6 7 8 to
-# 1 2 5 6 3 4 7 8
-  A_expand <- cbind(
-    A0,
-    matrix(0, nrow=nrow(A0), ncol=ncol(A0))
-  )
-  # select row (of the 2nd field)
-    row_2nd_field <- group == levels(group)[[2]]
-    half_1st <- 1:ncol(A0)
-    half_2nd <- 1:ncol(A0) + ncol(A0)
-  # Move the 2nd field to the right
-    A_expand[row_2nd_field, half_2nd] <-
-      A_expand[row_2nd_field, half_1st]
-    A_expand[row_2nd_field, half_1st] <- 0
-  # Re-order (f1 f2 f1 f2 ...)
-    n <- operator$first$mesh$n
-    bv_mesh_size <-  operator$second$mesh$n
-
-    idx <- 1:ncol(A_expand)
-    field_1st_idx <- ceiling(idx / bv_mesh_size) %% bv_mesh_size == 1
-    field_2nd_idx <- !field_1st_idx
-    reorder_idx = c(which(field_1st_idx), which(field_2nd_idx))
-  # return after re-order
-  ngme_as_sparse(A_expand[, reorder_idx])
-} else {
-  A0
-}
-      },
-      "bv" = ,
-      "bv_matern_normal" = ,
-      "bv_normal" = {
-        # INLA::inla.spde.make.A(loc=map, mesh=mesh, repl=as.integer(as.factor(group)))
-        blk_group <- as.integer(as.factor(group))
-        blk <- fmesher::fm_block(blk_group)
-        basis <- fmesher::fm_basis(mesh, loc=map)
-        fmesher::fm_row_kron(Matrix::t(blk), basis)
-      },
-      "re" = ngme_as_sparse(operator$B_K),
-      # INLA::inla.spde.make.A(mesh = mesh, loc = map)
-      fmesher::fm_basis(mesh, loc=map)
-    )
-  }
+  A <- ngme_build_A(model, mesh, map, operator, group)
 
   # subset the A matrix
   # if (!all(subset)) A[!subset, ] <- 0

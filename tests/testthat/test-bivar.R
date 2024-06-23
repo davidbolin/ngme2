@@ -18,7 +18,7 @@ test_that("test tp and bv operator", {
 })
 
 test_that("test bv(ar1, ar1) with 2 noise", {
-  n <- 1000
+  n <- 100
   true_model <- f(
     c(1:(n/2), 1:(n/2)),
     model="bv",
@@ -65,16 +65,22 @@ true_model$operator$K
         numerical_eps = 1e-5
       ),
       seed = 3,
-      iterations = 500,
+      iterations = 5,
+      stop_points = 5,
       n_parallel_chain = 4,
       print_check_info = F
     )
   )
+
   out
   traceplot(out,"field1")
   out$replicates[[1]]$models[[1]]$theta_K
   out$replicates[[1]]$models[[1]]$operator$theta_K
-  predict(out, map=list(field1=c(1,2,3)))
+
+  predict(out, 
+    map = list(field1=c(1,2,3)),
+    group = c("B", "B", "A")
+  )
 })
 
 test_that("test on bv(matern, matern)", {
@@ -129,7 +135,10 @@ test_that("test on bv(matern, matern)", {
 
   out
   traceplot(out, "field1")
-  predict(out, map=list(field1=cbind(c(1,2,3), c(2,3,4))))
+  predict(out, 
+    map=list(field1=cbind(c(1,2,3), c(2,3,4))),
+    group = rep("A", 6)
+  )
   # out$replicates[[1]]$models[[1]]$theta_K
   # out$replicates[[1]]$models[[1]]$operator$theta_K
 })

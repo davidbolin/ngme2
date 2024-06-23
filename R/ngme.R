@@ -97,6 +97,11 @@ ngme <- function(
     formula, data, control_ngme, noise, group, replicate,
     control_opt$standardize_fixed # convert fixed effects
   )
+  
+  if (contain_bv_model(ngme_model)) {
+    stopifnot("Please supply `group` argument in ngme() function, not in f()." =
+      length(levels(group)) == 2)
+  }
   attr(ngme_model, "fit") <- fit
   
   # Check if using bfgs for non-Gaussian model

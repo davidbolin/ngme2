@@ -12,6 +12,8 @@
 #' "fe" is fixed effect prediction
 #' <model_name> is prediction of a specific model
 #' "lp" is linear predictor (including fixed effect and all sub-models)
+#' @param group which filed to predict 
+#'   (used for bivariate model, should be of same length as map)
 #' @param estimator what type of estimator, c("mean", "median", "mode", "quantile")
 #' @param sampling_size size of posterior sampling
 #' @param burnin_size size of posterior burnin
@@ -26,6 +28,7 @@ predict.ngme <- function(
   map,
   data = NULL,
   type = "lp",
+  group = NULL,
   estimator = c("mean", "sd", "5quantile", "95quantile", "median", "mode"),
   sampling_size = 100,
   burnin_size = 100,
@@ -92,25 +95,21 @@ predict.ngme <- function(
           )
         }
 
-        AW[[ngme$models[[i]]$name]] <- with(ngme$models[[i]], {
-          mesh <- operator$mesh
-          W <- ngme$models[[i]][[estimator]]
-          A <- if (inherits(mesh, "metric_graph"))
-              mesh$fem_basis(loc)
-            else if (model=="tp") {
-              A1 <- fmesher::fm_basis(mesh[[1]], loc = loc[[1]])
-              A2 <- fmesher::fm_basis(mesh[[2]], loc = as.matrix(loc[[2]]))
-              fmesher::fm_row_kron(A1, A2)
-            }
-            else fmesher::fm_basis(mesh, loc = loc)
+        mesh <- ngme$models[[i]]$operator$mesh
+        W <- ngme$models[[i]][[estimator]]
 
-          if (model %in% c("bv", "bv_normal", "bv_matern_normal")) A <- Matrix::bdiag(A, A)
-          stopifnot(ncol(A) == length(W))
-          as.numeric(A %*% W)
-        })
+        A <- ngme_build_A(
+          ngme$models[[i]]$model,
+          mesh,
+          loc,
+          ngme$models[[i]]$operator,
+          group,
+          group_levels = levels(ngme$group)
+        )
+        
+        AW[[ngme$models[[i]]$name]] <- as.numeric(A %*% W)
       }
     }
-
     # lp case is just fe + A1 * W1 + A2 * W2
     # e.g. names <- c("fe", "field1", "field2")
     type_names <- if (type == "lp") c("fe", names(ngme$models)) else type

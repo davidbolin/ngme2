@@ -445,7 +445,7 @@ if (debug) std::cout << "Start set_parameter"<< std::endl;
 
   // Update Q, QQ and chol_QQ if family="normal"
   // otherwise, it's updated in sample_V.
-  if (family == "normal") { update_QQ(); }
+  if (n_latent > 0 && family == "normal") { update_QQ(); }
 
 if (debug) std::cout << "Finish set_parameter"<< std::endl;
 }

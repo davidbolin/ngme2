@@ -28,7 +28,7 @@ cross_validation <- function(
   type = "k-fold",
   seed = NULL,
   print = FALSE,
-  N = 100,
+  N = 5,
   n_gibbs_samples = 100,
   n_burnin = 100,
   k = 5,
@@ -99,7 +99,7 @@ cross_validation <- function(
       # Y_2[[i]] <- result$Y_2
 
       if (print) {
-        cat(paste("In test_idx", i, ": \n"))
+        cat(paste("In test batch", i, ": \n"))
         print(as.data.frame(crs[[i]]))
         cat("\n")
       }
@@ -262,7 +262,6 @@ compute_err_1rep <- function(
   # A_pred_blcok <- [A1_pred .. An_pred]
   # extract A and cbind!
   A_pred_block <- Reduce(cbind, x = A_preds)
-# print(A_pred_block)
 
   if (is.null(seed)) seed <- Sys.time()
 
@@ -282,8 +281,10 @@ compute_err_1rep <- function(
 
 # Note: Ws_block is a list of N realizations of W of current replicate
 # Note: AW_N_1 is a matrix of n_test * N
-  AW_N_1 <- Reduce(cbind, sapply(Ws_block, function(W) A_pred_block %*% W))
-  AW_N_2 <- Reduce(cbind, sapply(W2s_block, function(W) A_pred_block %*% W))
+  AW_N_1 <- if (length(ngme_1rep$models) == 0) 0 else
+    Reduce(cbind, sapply(Ws_block, function(W) A_pred_block %*% W))
+  AW_N_2 <- if (length(ngme_1rep$models) == 0) 0 else
+    Reduce(cbind, sapply(W2s_block, function(W) A_pred_block %*% W))
 
   # sampling Y by, Y = X feff + (block_A %*% block_W) + eps
   # AW_N_1[[1]] is concat(A1 W1, A2 W2, ..)

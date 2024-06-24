@@ -127,10 +127,8 @@ public:
         for (unsigned i=0; i < n_latent; i++) {
             (*latents[i]).sample_cond_V();
         }
-      }
-
-      if (update_Q) {
-        update_QQ();
+        
+        if (update_Q) update_QQ();
       }
     }
 

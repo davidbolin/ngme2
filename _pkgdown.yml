@@ -42,6 +42,8 @@ navbar:
         href: articles/tensor_product.html
       - text: Matern SPDE model on Metric Graph
         href: articles/matern-on-graph.html
+      - text: Cross-validation for the ngme2 models
+        href: articles/cross-validation.html
     github:
       icon: fa-github
       href: https://github.com/davidbolin/ngme2

@@ -13,7 +13,7 @@
 #' @param N integer, number of MC sampling (i.e. sampling N process and average)
 #' @param k integer (only for k-fold type)
 #' @param print print information during computation
-#' @param percent from 1 to 100 (only for lpo type)
+#' @param percent how many percent for testing? from 0 to 1 (for lpo type)
 #' @param times how many test cases (only for lpo type)
 #' @param n_gibbs_samples number of gibbs samples
 #' @param n_burnin number of burnin
@@ -32,7 +32,7 @@ cross_validation <- function(
   n_gibbs_samples = 100,
   n_burnin = 100,
   k = 5,
-  percent = 50,
+  percent = 0.2,
   times = 10,
   test_idx = NULL,
   train_idx = NULL,
@@ -60,8 +60,12 @@ cross_validation <- function(
   } else if (type == "loo") {
     return(cross_validation(ngme, "k-fold", k = n_data, seed=seed))
   } else if (type == "lpo") {
+    stopifnot(
+      "percent should be between 0 and 1" = percent > 0 && percent < 1,
+      "times should be a positive integer" = times > 0
+    )
     for (i in 1:times) {
-      test_idx[[i]] <- sample(1:n_data, size = (percent/100) * n_data)
+      test_idx[[i]] <- sample(1:n_data, size = percent * n_data)
       train_idx[[i]] <- setdiff(1:n_data, test_idx[[i]])
     }
   } else {

@@ -72,6 +72,9 @@ random generation for the generalised inverse-Gaussian distribution
     <li>
       <a href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a>
     </li>
+    <li>
+      <a href="../articles/cross-validation.html">Cross-validation for the ngme2 models</a>
+    </li>
   </ul></li>
 <li>
   <a href="../news/index.html">Changelog</a>
@@ -190,9 +193,9 @@ New York–Berlin: Springer-Verlag. <a href="https://doi.org/10.1007/978-1-4612-
     <div id="ref-examples">
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">rgig</span><span class="op">(</span><span class="fl">20</span>, p <span class="op">=</span> <span class="fl">1</span>, a <span class="op">=</span> <span class="fl">1</span>, b <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [1] 0.4788154 1.2190076 5.7535124 6.1418849 1.9676787 1.0536049 1.8771640</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [8] 2.1139137 3.8276172 0.4640873 1.1478613 1.3346148 0.2406971 2.3698752</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [15] 1.2296157 2.4990408 3.9317533 1.1967895 6.3042237 3.5449621</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [1] 2.0245487 1.5033312 2.6483773 0.2750000 1.2048887 0.5746794 1.2872864</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [8] 1.9508442 0.5881445 2.5186603 3.8368538 0.5387789 3.1852430 1.9811268</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [15] 4.0162906 2.1201109 1.0005921 0.6964250 0.4222655 1.6125620</span>
 <span class="r-in"><span><span class="fu">pgig</span><span class="op">(</span><span class="fl">0.4</span>, p <span class="op">=</span> <span class="fl">1</span>, a <span class="op">=</span> <span class="fl">1</span>, b <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.02956016</span>
 <span class="r-in"><span><span class="fu">qgig</span><span class="op">(</span><span class="fl">0.8</span>, p <span class="op">=</span> <span class="fl">1</span>, a <span class="op">=</span> <span class="fl">1</span>, b <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>

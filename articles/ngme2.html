@@ -88,6 +88,9 @@
     <li>
       <a href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a>
     </li>
+    <li>
+      <a href="../articles/cross-validation.html">Cross-validation for the ngme2 models</a>
+    </li>
   </ul>
 </li>
 <li>
@@ -123,7 +126,7 @@
       <h1 data-toc-skip>Ngme2 - A new Flexible R Package for Latent
 non-Gaussian Models</h1>
             
-            <h4 data-toc-skip class="date">2024-06-23</h4>
+            <h4 data-toc-skip class="date">2024-06-25</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/HEAD/vignettes/ngme2.Rmd" class="external-link"><code>vignettes/ngme2.Rmd</code></a></small>
       <div class="hidden name"><code>ngme2.Rmd</code></div>
@@ -731,48 +734,48 @@ Mean of the rainfall in Octobor 2012 in Paraná
 method.</p>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/cross_validation.html">cross_validation</a></span><span class="op">(</span><span class="va">out</span>, type<span class="op">=</span><span class="st">"k-fold"</span>, k<span class="op">=</span><span class="fl">10</span>, print<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="co">#&gt; In test_idx 1 : </span></span>
-<span><span class="co">#&gt;        MAE     MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.890881 5.72347 1.435726  1.544542</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; In test_idx 2 : </span></span>
-<span><span class="co">#&gt;       MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.93199 5.875606 1.344997   1.48972</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; In test_idx 3 : </span></span>
+<span><span class="co">#&gt; In test batch 1 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.710971 5.612088 1.181451  1.449091</span></span>
+<span><span class="co">#&gt; 1 1.889213 5.731759 1.612654  1.738487</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; In test_idx 4 : </span></span>
+<span><span class="co">#&gt; In test batch 2 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.782829 6.253516 1.141992  1.417948</span></span>
+<span><span class="co">#&gt; 1 1.938029 5.925605 1.613854  1.675694</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; In test_idx 5 : </span></span>
-<span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.891631 7.018201 1.320533  1.505757</span></span>
+<span><span class="co">#&gt; In test batch 3 : </span></span>
+<span><span class="co">#&gt;        MAE    MSE neg.CRPS neg.sCRPS</span></span>
+<span><span class="co">#&gt; 1 1.709008 5.5996 1.859197  1.882396</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; In test_idx 6 : </span></span>
+<span><span class="co">#&gt; In test batch 4 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.762426 5.650896 1.285764  1.480637</span></span>
+<span><span class="co">#&gt; 1 1.786109 6.299185  1.17377  1.481511</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; In test_idx 7 : </span></span>
+<span><span class="co">#&gt; In test batch 5 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.435932 8.631845 1.584372   1.58991</span></span>
+<span><span class="co">#&gt; 1 1.891581 7.016979 1.314351  1.515019</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; In test_idx 8 : </span></span>
+<span><span class="co">#&gt; In test batch 6 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.255247 8.350524 1.524904  1.577319</span></span>
+<span><span class="co">#&gt; 1 1.756296 5.653526 1.354554  1.549885</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; In test_idx 9 : </span></span>
+<span><span class="co">#&gt; In test batch 7 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.803744 5.698687 1.346078  1.515924</span></span>
+<span><span class="co">#&gt; 1 2.435339 8.620223 1.971657  1.879135</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; In test_idx 10 : </span></span>
+<span><span class="co">#&gt; In test batch 8 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.683813 4.803948 1.350297  1.515389</span></span>
+<span><span class="co">#&gt; 1 2.267692 8.441395 2.295976   2.03483</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; In test batch 9 : </span></span>
+<span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
+<span><span class="co">#&gt; 1 1.801553 5.705332  1.77803  1.834675</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; In test batch 10 : </span></span>
+<span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
+<span><span class="co">#&gt; 1 1.713528 4.944049 1.608934  1.677022</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;              MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; model_1 1.914946 6.361878 1.351611  1.508624</span></span></code></pre></div>
+<span><span class="co">#&gt; model_1 1.918835 6.393765 1.658298  1.726865</span></span></code></pre></div>
 </div>
 </div>
   </div>

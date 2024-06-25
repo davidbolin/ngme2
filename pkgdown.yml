@@ -4,6 +4,7 @@ pkgdown_sha: ~
 articles:
   AR1-model: AR1-model.html
   bivariate: bivariate.html
+  cross-validation: cross-validation.html
   inla_compare: inla_compare.html
   Installation_and_configuration: Installation_and_configuration.html
   matern-on-graph: matern-on-graph.html
@@ -15,7 +16,7 @@ articles:
   SPDE-model: SPDE-model.html
   tensor_product: tensor_product.html
   tp-bv: tp-bv.html
-last_built: 2024-06-23T20:04Z
+last_built: 2024-06-25T08:47Z
 urls:
   reference: https://davidbolin.github.io/ngme2/reference
   article: https://davidbolin.github.io/ngme2/articles

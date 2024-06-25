@@ -72,6 +72,9 @@ random generation for the inverse-Gaussian distribution
     <li>
       <a href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a>
     </li>
+    <li>
+      <a href="../articles/cross-validation.html">Cross-validation for the ngme2 models</a>
+    </li>
   </ul></li>
 <li>
   <a href="../news/index.html">Changelog</a>
@@ -186,23 +189,23 @@ by
     <div id="ref-examples">
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">rig</span><span class="op">(</span><span class="fl">100</span>, a <span class="op">=</span> <span class="fl">1</span>, b <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   [1]  2.2167522  0.2210842  1.4865195  5.8149826  0.3179211  2.3131200</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   [7]  0.1926807  3.3925743  1.6866504  1.5606023  0.8518163  0.6065988</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [13]  1.1794634  0.4413349  0.4056006  0.5969307  0.6936886  0.2806999</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [19]  2.7397296  0.3157359  0.6271440  0.7011992  0.8711119  0.2426125</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [25]  1.0620607  0.3833817  0.3833223  0.9443199  0.3352077  0.1483679</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [31]  0.8845880  0.8694081  0.7516639  0.6222356  1.7076623  1.6129527</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [37]  0.1760584  0.1777339  0.3750239  1.4663541  1.0834225  1.2651164</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [43]  0.4447223  0.4248618  0.2889234  2.4144754  0.1436164  0.2161127</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [49]  0.3557553  0.7116551  0.8085628  0.4120152  4.2682266  0.7508977</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [55]  1.1359893  2.9268488  0.2755294  0.8350264  0.5733148  0.6995711</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [61]  0.7392434  0.5205265 10.2573841  4.1671948  2.2669628  0.3605040</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [67]  0.4582791  0.6230268  0.3835486  1.1498354  0.8261501  2.3121788</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [73]  0.9953955  0.4234485  0.4084538  1.6210011  2.4212395  0.4372981</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [79]  0.9201974  0.7275290  0.4716538  0.5362428  0.4776427  1.2058828</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [85]  0.7086278  0.5637849  0.7149687  1.7145582  0.6578667  0.8064545</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [91]  0.2102369  1.0035773  0.2921265  0.8030192  1.0054478  0.9959171</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [97]  0.2293897  1.5545137  0.3170084  1.2054328</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   [1]  0.4671296  1.5880029  1.2487025  0.2705375  1.2745681  0.2866341</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   [7]  1.7577362  0.7700482  2.2085093  0.9096280  0.3351781  1.4201179</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [13]  0.6701966  0.3915095  0.5783150  0.9244972  0.4543568 10.3566432</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [19]  0.6193239  1.2145466  1.7652222  1.1691372  2.2656918  0.5670956</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [25]  0.4071945  0.7010776  0.5500264  1.8616396  2.2820510  0.4079995</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [31]  1.6721723  1.0785584  0.7362593  0.2127431  0.3468853  0.4172918</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [37]  0.3994285  0.5102053  0.3337736  0.7547433  0.8405797  0.3211802</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [43]  1.1390353  1.4776001  0.1790793  1.2336111  1.3617858  0.8262387</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [49]  1.0140247  0.9486407  1.6022991  0.1415112  0.7075061  0.7987484</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [55]  3.0522307  2.7991005  1.2508793  2.0591429  1.9645667  1.3594345</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [61]  2.5593165  0.8100584  2.5425977  0.6282934  0.4856666  2.6084197</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [67]  0.5937900  0.4268691  1.3569787  5.9958813  0.3580398  0.5623606</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [73]  0.3363942  0.3573284  1.1401139  2.9216450  0.7509414  0.7926961</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [79]  1.9150916  0.8353366  0.9154339  0.7939626  0.8646262  0.3288937</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [85]  0.4049024  0.5250207  1.1268550  3.6119058  0.9616167  0.4126785</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [91]  1.4631830  0.5937483  4.3367146  0.9693358  0.7098625  0.4622752</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [97]  0.3464503  0.3818606  1.1158210  0.1326034</span>
 <span class="r-in"><span><span class="fu">pig</span><span class="op">(</span><span class="fl">0.4</span>, a <span class="op">=</span> <span class="fl">1</span>, b <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.2706137</span>
 <span class="r-in"><span><span class="fu">qig</span><span class="op">(</span><span class="fl">0.8</span>, a <span class="op">=</span> <span class="fl">1</span>, b <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>

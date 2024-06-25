@@ -88,6 +88,9 @@
     <li>
       <a href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a>
     </li>
+    <li>
+      <a href="../articles/cross-validation.html">Cross-validation for the ngme2 models</a>
+    </li>
   </ul>
 </li>
 <li>
@@ -187,7 +190,7 @@ maximum edge length.</p>
 <span>  control.predictor <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>A <span class="op">=</span> <span class="va">A</span><span class="op">)</span>,</span>
 <span>  control.compute <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>config<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in normalizePath(inla.dir): path[1]="/tmp/RtmpRmcx96/file3bb75164ef6e":</span></span>
+<span><span class="co">#&gt; Warning in normalizePath(inla.dir): path[1]="/tmp/RtmpcwLA0w/file3bbc7e0021de":</span></span>
 <span><span class="co">#&gt; No such file or directory</span></span></code></pre></div>
 <p>Let’s check the estimation of SPDE model parameters</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
@@ -251,7 +254,7 @@ maximum edge length.</p>
 <span><span class="co">#&gt;       kappa = 0.237</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 6.21</span></span>
+<span><span class="co">#&gt;       sigma = 6.22</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
@@ -273,12 +276,12 @@ as shown in the result.</p>
 <span><span class="co"># by dafult, predict() returns a bunch of statistics at the given location</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">pred_W</span><span class="op">)</span></span>
 <span><span class="co">#&gt; List of 6</span></span>
-<span><span class="co">#&gt;  $ mean      : num [1:94] -1.26 -1.26 -1.21 -1.26 -1.35 ...</span></span>
-<span><span class="co">#&gt;  $ sd        : num [1:94] 9.98 9.9 8.9 8.64 8.49 ...</span></span>
-<span><span class="co">#&gt;  $ 5quantile : num [1:94] -18.2 -18.1 -16.4 -15.5 -14.8 ...</span></span>
-<span><span class="co">#&gt;  $ 95quantile: num [1:94] 13.1 13 11.6 13.3 12.7 ...</span></span>
-<span><span class="co">#&gt;  $ median    : num [1:94] -0.919 -1.192 -2.068 -2.097 -1.979 ...</span></span>
-<span><span class="co">#&gt;  $ mode      : num [1:94] -1 -1 -3 -5 -5 -1 -1 -3 3 -5 ...</span></span></code></pre></div>
+<span><span class="co">#&gt;  $ mean      : num [1:94] -0.944 -0.966 -1.034 -0.809 -0.585 ...</span></span>
+<span><span class="co">#&gt;  $ sd        : num [1:94] 8.81 8.69 7.83 7.44 7.25 ...</span></span>
+<span><span class="co">#&gt;  $ 5quantile : num [1:94] -15 -15.1 -13.7 -12 -12.4 ...</span></span>
+<span><span class="co">#&gt;  $ 95quantile: num [1:94] 13.88 13.89 11.26 8.32 9.54 ...</span></span>
+<span><span class="co">#&gt;  $ median    : num [1:94] -0.749 -0.671 -0.623 -0.315 -0.849 ...</span></span>
+<span><span class="co">#&gt;  $ mode      : num [1:94] 3 -1 -1 5 -3 -1 -1 -1 -3 -3 ...</span></span></code></pre></div>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines</a></span><span class="op">(</span><span class="va">mesh</span><span class="op">$</span><span class="va">loc</span>, <span class="va">pred_W</span><span class="op">[[</span><span class="st">"mean"</span><span class="op">]</span><span class="op">]</span>, col<span class="op">=</span><span class="fl">3</span>, lwd<span class="op">=</span><span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/title.html" class="external-link">title</a></span><span class="op">(</span><span class="st">"Posterior mean with Ngme2 and INLA"</span><span class="op">)</span></span>

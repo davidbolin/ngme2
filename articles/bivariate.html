@@ -88,6 +88,9 @@
     <li>
       <a href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a>
     </li>
+    <li>
+      <a href="../articles/cross-validation.html">Cross-validation for the ngme2 models</a>
+    </li>
   </ul>
 </li>
 <li>
@@ -602,19 +605,19 @@ measurement noise<a class="anchor" aria-label="anchor" href="#ex1--fixed-effects
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt;    x1    x2 </span></span>
-<span><span class="co">#&gt; -2.98  1.53 </span></span>
+<span><span class="co">#&gt; -3.01  1.44 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $bv</span></span>
 <span><span class="co">#&gt;   Model type: Bivariate model 2 (normal noise)</span></span>
 <span><span class="co">#&gt;       theta = 0(fixed) </span></span>
-<span><span class="co">#&gt;       rho = 2.7</span></span>
-<span><span class="co">#&gt;       c1 = 0.974</span></span>
-<span><span class="co">#&gt;       c2 = 0.993</span></span>
+<span><span class="co">#&gt;       rho = 2.5</span></span>
+<span><span class="co">#&gt;       c1 = 1.07</span></span>
+<span><span class="co">#&gt;       c2 = 1.03</span></span>
 <span><span class="co">#&gt;       W1: AR(1)</span></span>
-<span><span class="co">#&gt;           rho = 0.589</span></span>
+<span><span class="co">#&gt;           rho = 0.617</span></span>
 <span><span class="co">#&gt;       W2: AR(1)</span></span>
-<span><span class="co">#&gt;           rho = -0.398</span></span>
+<span><span class="co">#&gt;           rho = -0.409</span></span>
 <span><span class="co">#&gt;    Bivariate type-G4 noise:</span></span>
 <span><span class="co">#&gt;       W1: NORMAL</span></span>
 <span><span class="co">#&gt;       Noise parameters: </span></span>
@@ -627,8 +630,8 @@ measurement noise<a class="anchor" aria-label="anchor" href="#ex1--fixed-effects
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       theta_sigma = -0.5052, -0.0897</span></span>
-<span><span class="co">#&gt;       correlation(rho) = 0.903</span></span>
+<span><span class="co">#&gt;       theta_sigma = -0.511, -0.146</span></span>
+<span><span class="co">#&gt;       correlation(rho) = 0.912</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre></div>
@@ -724,35 +727,35 @@ measurement noise<a class="anchor" aria-label="anchor" href="#ex2--fixed-effects
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt;    x1    x2 </span></span>
-<span><span class="co">#&gt; -3.07  1.57 </span></span>
+<span><span class="co">#&gt; -3.00  1.63 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $bv</span></span>
 <span><span class="co">#&gt;   Model type: Bivariate model (non-Gaussian noise)</span></span>
-<span><span class="co">#&gt;       theta = 0.371</span></span>
-<span><span class="co">#&gt;       rho = 1.81</span></span>
+<span><span class="co">#&gt;       theta = -1.19</span></span>
+<span><span class="co">#&gt;       rho = 1.94</span></span>
 <span><span class="co">#&gt;       W1: AR(1)</span></span>
-<span><span class="co">#&gt;           rho = 0.594</span></span>
+<span><span class="co">#&gt;           rho = 0.618</span></span>
 <span><span class="co">#&gt;       W2: AR(1)</span></span>
-<span><span class="co">#&gt;           rho = 0.406</span></span>
+<span><span class="co">#&gt;           rho = 0.427</span></span>
 <span><span class="co">#&gt;    Bivariate type-G4 noise:</span></span>
 <span><span class="co">#&gt;       W1: NIG</span></span>
 <span><span class="co">#&gt;       Noise parameters: </span></span>
-<span><span class="co">#&gt;           mu = -1.92</span></span>
-<span><span class="co">#&gt;           sigma = 0.568</span></span>
-<span><span class="co">#&gt;           nu = 0.861</span></span>
+<span><span class="co">#&gt;           mu = 2.89</span></span>
+<span><span class="co">#&gt;           sigma = 1.1</span></span>
+<span><span class="co">#&gt;           nu = 0.686</span></span>
 <span><span class="co">#&gt;       W2: NIG</span></span>
 <span><span class="co">#&gt;       Noise parameters: </span></span>
-<span><span class="co">#&gt;           mu = 2.01</span></span>
-<span><span class="co">#&gt;           sigma = 1.39</span></span>
-<span><span class="co">#&gt;           nu = 0.504</span></span>
+<span><span class="co">#&gt;           mu = 2.39</span></span>
+<span><span class="co">#&gt;           sigma = 0.965</span></span>
+<span><span class="co">#&gt;           nu = 1.8</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 1.13</span></span>
-<span><span class="co">#&gt;       correlation(rho) = 0.79</span></span>
+<span><span class="co">#&gt;       sigma = 0.946</span></span>
+<span><span class="co">#&gt;       correlation(rho) = 0.683</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre></div>
@@ -889,19 +892,19 @@ that the parameterization matches with the paper.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt;    x1    x2 </span></span>
-<span><span class="co">#&gt; -2.96  1.45 </span></span>
+<span><span class="co">#&gt; -2.99  1.50 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $bv</span></span>
 <span><span class="co">#&gt;   Model type: Bivariate Matern model (normal noise)</span></span>
 <span><span class="co">#&gt;       theta = 0(fixed) </span></span>
-<span><span class="co">#&gt;       rho = 3.69</span></span>
-<span><span class="co">#&gt;       sd1 = 0.46</span></span>
-<span><span class="co">#&gt;       sd2 = 0.112</span></span>
+<span><span class="co">#&gt;       rho = 1.02</span></span>
+<span><span class="co">#&gt;       sd1 = 0.539</span></span>
+<span><span class="co">#&gt;       sd2 = 0.26</span></span>
 <span><span class="co">#&gt;       W1: Matern</span></span>
-<span><span class="co">#&gt;           kappa = 1.57</span></span>
+<span><span class="co">#&gt;           kappa = 1.6</span></span>
 <span><span class="co">#&gt;       W2: Matern</span></span>
-<span><span class="co">#&gt;           kappa = 2.4</span></span>
+<span><span class="co">#&gt;           kappa = 3.1</span></span>
 <span><span class="co">#&gt;    Bivariate type-G4 noise:</span></span>
 <span><span class="co">#&gt;       W1: NORMAL</span></span>
 <span><span class="co">#&gt;       Noise parameters: </span></span>
@@ -914,8 +917,8 @@ that the parameterization matches with the paper.</p>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       theta_sigma = -0.4001, -0.0565</span></span>
-<span><span class="co">#&gt;       correlation(rho) = 0.912</span></span>
+<span><span class="co">#&gt;       theta_sigma = -0.5029, -0.0947</span></span>
+<span><span class="co">#&gt;       correlation(rho) = 0.905</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre></div>

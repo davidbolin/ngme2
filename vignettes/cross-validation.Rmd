@@ -40,8 +40,7 @@ Doing cross-validation in the `ngme2` package is straightforward. We can use the
 Let's run a simple example using the AR(1) model. We will generate some data and fit the AR(1) model using the `ngme2` function. Then, we will perform cross-validation using the `cross_validation` function.
 
 ```{r ar1, message=FALSE, warning=FALSE}
-# library(ngme2)
-load_all()
+library(ngme2)
 set.seed(10)
 n_obs = 100
 ar1_model = f(1:n_obs, model="ar1", rho=0.5)
@@ -102,7 +101,6 @@ cv1 <- cross_validation(
 )
 
 # Leave-percent-out cross-validation (20%) with 5 repetitions
-load_all()
 cross_validation(
   list(
     linear = fit_linear,

@@ -694,8 +694,10 @@ ngme_build_A <- function(model, mesh, map, operator, group, group_levels=NULL) {
       # Move the 2nd field to the right
         A_expand[row_2nd_field, half_2nd] <-
           A_expand[row_2nd_field, half_1st]
-        A_expand[row_2nd_field, half_1st] <- 0
-      
+
+        if (any(row_2nd_field)) 
+          A_expand[row_2nd_field, half_1st] <- 0
+
       # Re-order (f1 f2 f1 f2 ...)
         n <- operator$first$mesh$n
         bv_mesh_size <-  operator$second$mesh$n

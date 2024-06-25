@@ -246,7 +246,9 @@ compute_err_1rep <- function(
   y_data <- ngme_1rep$Y[bool_test_idx]
   group_data <- ngme_1rep$group[bool_test_idx]
   X_pred <- ngme_1rep$X[bool_test_idx,, drop=FALSE]
-  noise_test_idx <- subset_noise(ngme_1rep$noise, sub_idx = bool_test_idx)
+  noise_test_idx <- subset_noise(
+    ngme_1rep$noise, sub_idx = bool_test_idx, compute_corr = TRUE
+  )
 
   # Subset noise, X, Y in train location
   ngme_1rep$X <- ngme_1rep$X[bool_train_idx,, drop=FALSE]

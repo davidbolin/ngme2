@@ -99,9 +99,10 @@ cv1 <- cross_validation(
   N = 5,
   seed = 10
 )
+cv1$mean.scores
 
 # Leave-percent-out cross-validation (20%) with 5 repetitions
-cross_validation(
+cv2 <- cross_validation(
   list(
     linear = fit_linear,
     ar1_poor = fit_ar_poor,
@@ -113,4 +114,5 @@ cross_validation(
   n_gibbs_samples = 500,
   seed = 10
 )
+cv2$mean.scores
 ```

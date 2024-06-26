@@ -132,6 +132,7 @@ predict.ngme <- function(
             plain_fm <- formula(plain_fm_str)
             model.matrix(plain_fm, data = data)
           }
+if (nrow(X_pred) < nrow(data)) stop("The data has NA values in the covariates.")
           preds <- preds + as.numeric(X_pred %*% ngme$feff)
       } else if (name %in% names(ngme$models)) {
         preds <- preds + AW[[name]]

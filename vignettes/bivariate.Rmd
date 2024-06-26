@@ -519,4 +519,15 @@ compute_index_corr_from_map(coords, eps = 0.1)
 ```
 
 
-<!-- ## Cross-validation for the bivariate model -->
+## Cross-validation for the bivariate model
+
+Let's run a more complex example using the bivariate model. We will generate some data and fit the bivariate model using the `ngme2` function. Then, we will perform cross-validation using the `cross_validation` function.
+
+```{r}
+cv1 = cross_validation(
+  bvar_cor, k=5, N=3, n_gibbs_samples = 50
+)
+cv1$mean.scores
+cv1$sd.scores
+```
+

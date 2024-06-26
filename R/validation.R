@@ -19,7 +19,7 @@
 #' @param n_burnin number of burnin
 #' @param test_idx a list of indices of the data (which data points to be predicted) (only for custom type)
 #' @param train_idx  a list of indices of the data (which data points to be used for re-sampling (not re-estimation)) (only for custom type)
-#' @param keep_test_information logical, keep test information (pred_1, pred_2) in the return (as attributes), pred_1 and pred_2 are the prediction of the two chains
+#' @param keep_pred logical, keep test information (pred_1, pred_2) in the return (as attributes), pred_1 and pred_2 are the prediction of the two chains
 #'
 #' @return a list of criterions: MSE, MAE, CRPS, sCRPS
 #' @export
@@ -36,8 +36,12 @@ cross_validation <- function(
   times = 10,
   test_idx = NULL,
   train_idx = NULL,
-  keep_test_information = FALSE
+  keep_pred = FALSE
 ) {
+  if (!requireNamespace("parallel", quietly = TRUE)) {
+    message("Parallel package not available. Running in serial mode. You can install `parallel` package to speed up the computation.")
+  }
+  
   if (inherits(ngme, "ngme")) ngme <- list(ngme)
   if (is.null(names(ngme))) names(ngme) <- paste("model", seq_along(ngme), sep = "_" )
 
@@ -83,9 +87,11 @@ cross_validation <- function(
   # But the internal mesh may not be the same for each replicate....
 
   # 2. loop over each test_idx and train_idx, and compute the criterion
-  final_crs <- list(); pred_1 <- list(); pred_2 <- list();
+  final_mean <- final_sd <- list(); 
+  pred_1 <- list(); pred_2 <- list();
   for (idx in seq_along(ngme)) {
-    crs <- NULL
+if (print) cat(paste0("Model ", names(ngme)[[idx]], ": \n\n"))
+    scores <- sd_scores <- NULL
     for (i in seq_along(test_idx)) {
       test_idx[[i]] <- sort(test_idx[[i]])
       result <- compute_err_reps(
@@ -94,9 +100,11 @@ cross_validation <- function(
         train_idx[[i]],
         N=N,
         n_gibbs_samples = n_gibbs_samples,
-        seed=seed
+        seed=seed,
+        keep_pred=keep_pred
       )
-      crs[[i]] <- result$score
+      scores[[i]] <- result$scores
+      sd_scores[[i]] <- result$sd_scores
       pred_1[[i]] <- result$pred_1
       pred_2[[i]] <- result$pred_2
       # Y_1[[i]] <- result$Y_1
@@ -104,20 +112,26 @@ cross_validation <- function(
 
       if (print) {
         cat(paste("In test batch", i, ": \n"))
-        print(as.data.frame(crs[[i]]))
+        print(as.data.frame(scores[[i]]))
         cat("\n")
       }
     }
-    final_crs[[idx]] <- as.data.frame(mean_list(crs))
-  }
-  ret <- do.call(rbind, final_crs)
 
-  rownames(ret) <- if (length(rownames(final_crs[[1]])) == 1)
-      names(ngme)
-    else {
-      names_list = lapply(names(ngme), function(x) paste(x, rownames(final_crs[[1]]), sep = "_"))
-      do.call(c, names_list)
-    }
+    final_mean[[idx]] <- as.data.frame(mean_list(scores))
+    final_sd[[idx]] <- as.data.frame(mean_list(sd_scores))
+  }
+  # convert to data.frame
+  final_mean <- do.call(rbind, final_mean)
+  final_sd <- do.call(rbind, final_sd)
+
+  if (nrow(scores[[1]]) == 1) {
+      rownames(final_mean) <- names(ngme) # univariate model
+  } else {
+      names_list = lapply(names(ngme), function(x) paste(x, rownames(final_mean), sep = "_"))
+      rownames(final_mean) <- do.call(c, names_list)
+  }
+  
+  rownames(final_sd) <- rownames(final_mean)
 
   # 3. take (weighted by train_data?) average over all groups
 
@@ -132,9 +146,12 @@ cross_validation <- function(
   # cat("\n")
   # cat("The final result averaged over replicates: \n")
 
-  print(ret)
-
-  if (!keep_test_information) {
+  ret = list(
+    mean.scores = final_mean,
+    sd.scores = final_sd
+  )
+  
+  if (!keep_pred) {
     invisible(ret)
   } else {
     structure(
@@ -157,13 +174,15 @@ compute_err_reps <- function(
   N = 100,
   n_gibbs_samples = 100,
   n_burnin = 100,
-  seed = NULL
+  seed = NULL,
+  keep_pred = FALSE
 ) {
   stopifnot("Not a ngme object." = inherits(ngme, "ngme"))
   repls <- attr(ngme, "fit")$replicate
   uni_repl <- unique(repls)
 
-  crs <- NULL; weight <- NULL; n_crs <- 0;
+  scores <- sd_scores <- weight <- NULL; 
+  n_scores <- 0;
   pred_1 <- double(length = length(test_idx)); pred_2 <- double(length = length(test_idx))
 
   for (i in seq_along(uni_repl)) {
@@ -173,7 +192,7 @@ compute_err_reps <- function(
 
     # skip this replicate if no target or train data
     if (sum(bool_train_idx) == 0 || sum(bool_test_idx) == 0) next
-    n_crs <- n_crs + 1
+    n_scores <- n_scores + 1
 
     ngme_1rep = ngme$replicates[[i]]
     result_1rep <- compute_err_1rep(
@@ -182,16 +201,21 @@ compute_err_reps <- function(
       bool_test_idx = bool_test_idx,
       N=N,
       n_gibbs_samples = n_gibbs_samples,
-      seed=seed
+      seed=seed,
+      keep_pred=keep_pred
     )
-    crs[[n_crs]] <- result_1rep$scores
+    scores[[n_scores]] <- result_1rep$mean_scores
+    sd_scores[[n_scores]] <- result_1rep$sd_scores
 
     # Assume which_idx_pred ordered (order test idx)
     which_idx_pred <- data_idx_rep[bool_test_idx]
-    pred_1[test_idx %in% which_idx_pred] <- result_1rep$pred_1
-    pred_2[test_idx %in% which_idx_pred] <- result_1rep$pred_2
-    # Y_1[test_idx %in% which_idx_pred] <- result_1rep$Y_1
-    # Y_2[test_idx %in% which_idx_pred] <- result_1rep$Y_2
+    
+    if (keep_pred) {
+      pred_1[test_idx %in% which_idx_pred] <- result_1rep$pred_1
+      pred_2[test_idx %in% which_idx_pred] <- result_1rep$pred_2
+      # Y_1[test_idx %in% which_idx_pred] <- result_1rep$Y_1
+      # Y_2[test_idx %in% which_idx_pred] <- result_1rep$Y_2
+    }
 
     which_repl <- which(repls == uni_repl[i])
     weight <- c(weight, length(which_repl))
@@ -199,7 +223,8 @@ compute_err_reps <- function(
 
   # take weighted average over replicates
   list(
-    score = mean_list(crs, weight),
+    scores = mean_list(scores, weight),
+    sd_scores = mean_list(sd_scores, weight),
     pred_1 = pred_1,
     pred_2 = pred_2
     # Y_1 = Y_1,
@@ -217,7 +242,8 @@ compute_err_1rep <- function(
   N = 100,
   n_gibbs_samples = 50,
   n_burnin = 10,
-  seed = NULL
+  seed = NULL,
+  keep_pred = FALSE
 ) {
   stopifnot(
     "bool_<..>_idx should be a logical vector" =
@@ -271,19 +297,76 @@ compute_err_1rep <- function(
 
   if (is.null(seed)) seed <- Sys.time()
 
-  N_sim <- n_gibbs_samples * N
+  scores <- pred_N_1 <- pred_N_2 <- list()
 
-  # increase n_gibbs_samples
+  if (!requireNamespace("parallel", quietly = TRUE)) {
+    for (nn in 1:N) {
+      scores[[nn]] <- compute_scores(
+        ngme_1rep, n_gibbs_samples, n_burnin, seed+nn, A_pred_block, noise_test_idx, y_data, group_data, X_pred
+      )
+    }
+  } else {
+    numCores <- parallel::detectCores() - 1  
+    scores = parallel::mclapply(1:N, function(nn) {
+      s <- compute_scores(
+        ngme_1rep, n_gibbs_samples, n_burnin, seed+nn, A_pred_block, noise_test_idx, y_data, group_data, X_pred
+      )
+      s
+    }, mc.cores = numCores)
+  }
+
+  # compute extra pred_N?
+  if (keep_pred) {
+    tmp = compute_pred_N(
+      ngme_1rep, n_gibbs_samples, n_burnin, seed, A_pred_block, noise_test_idx, y_data, group_data, X_pred
+    )
+    pred_N_1 <- tmp$pred_N_1
+    pred_N_2 <- tmp$pred_N_2
+  }
+
+  n_group = length(levels(group_data))
+  # compute mean and sd
+  array_3d <- array(unlist(scores), 
+    dim = c(n_group, 4, length(scores)))
+
+  mean_array <- apply(array_3d, c(1, 2), mean)
+  sd_array <- apply(array_3d, c(1, 2), sd)
+
+  colnames(mean_array) <- colnames(sd_array) <- names(scores[[1]])
+  rownames(mean_array) <- rownames(sd_array) <- rownames(scores[[1]])
+
+  # scores results and 2 predictions
+  list(
+    mean_scores = mean_array,
+    sd_scores = sd_array,
+    # Y_1 = rowMeans(as.matrix(Y_N_1)),
+    # Y_2 = rowMeans(as.matrix(Y_N_2)),
+    pred_1 = pred_N_1,
+    pred_2 = pred_N_2
+  )
+}
+
+
+
+# questions:
+# 1. loop over replicates, and do CV for each replicate, and average
+# 2. partition first, then do CV for each partition (with many replicates), and average
+
+
+# helper function to compute the scores
+compute_scores <- function(
+  ngme_1rep, n_gibbs_samples, n_burnin, seed, A_pred_block, noise_test_idx, y_data, group_data, X_pred
+) {
   Ws <- sampling_cpp(
     ngme_1rep, 
-    n = 2 * N_sim, 
+    n = n_gibbs_samples * 2, 
     n_burnin = n_burnin,
     posterior = TRUE, 
     seed=seed
   )[["W"]]
   
-  Ws_block  <- head(Ws, N_sim)
-  W2s_block <- tail(Ws, N_sim)
+  Ws_block  <- head(Ws, n_gibbs_samples)
+  W2s_block <- tail(Ws, n_gibbs_samples)
 
 # Note: Ws_block is a list of N realizations of W of current replicate
 # Note: AW_N_1 is a matrix of n_test * N
@@ -298,8 +381,8 @@ compute_err_1rep <- function(
   # generate fixed effect
   fe <- with(ngme_1rep, as.numeric(X_pred %*% feff))
   fe_N <- matrix(
-    rep(fe, N_sim), 
-    ncol = N_sim, 
+    rep(fe, n_gibbs_samples), 
+    ncol = n_gibbs_samples, 
     byrow=F
   )
 
@@ -307,8 +390,8 @@ compute_err_1rep <- function(
   pred_N_2 <- fe_N + AW_N_2
 
   # simulate measurement noise
-  mn_N_1 <- sapply(1:N_sim, function(x) simulate(noise_test_idx)[[1]])
-  mn_N_2 <- sapply(1:N_sim, function(x) simulate(noise_test_idx)[[1]])
+  mn_N_1 <- sapply(1:n_gibbs_samples, function(x) simulate(noise_test_idx)[[1]])
+  mn_N_2 <- sapply(1:n_gibbs_samples, function(x) simulate(noise_test_idx)[[1]])
   
   # simulate y
   Y_N_1 <- pred_N_1 + mn_N_1
@@ -356,18 +439,47 @@ compute_err_1rep <- function(
     neg.sCRPS = -sapply(sCRPS, mean) # same
   )
 
-  # scores results and 2 predictions
-  list(
-    scores = scores,
-    # Y_1 = rowMeans(as.matrix(Y_N_1)),
-    # Y_2 = rowMeans(as.matrix(Y_N_2)),
-    pred_1 = rowMeans(as.matrix(pred_N_1)),
-    pred_2 = rowMeans(as.matrix(pred_N_2))
-  )
+  scores
 }
 
+# helper function to compute the scores
+compute_pred_N <- function(
+  ngme_1rep, n_gibbs_samples, n_burnin, seed, A_pred_block, noise_test_idx, y_data, group_data, X_pred
+) {
+  Ws <- sampling_cpp(
+    ngme_1rep, 
+    n = n_gibbs_samples * 2, 
+    n_burnin = n_burnin,
+    posterior = TRUE, 
+    seed=seed
+  )[["W"]]
+  
+  Ws_block  <- head(Ws, n_gibbs_samples)
+  W2s_block <- tail(Ws, n_gibbs_samples)
 
+# Note: Ws_block is a list of N realizations of W of current replicate
+# Note: AW_N_1 is a matrix of n_test * N
+  AW_N_1 <- if (length(ngme_1rep$models) == 0) 0 else
+    Reduce(cbind, sapply(Ws_block, function(W) A_pred_block %*% W))
+  AW_N_2 <- if (length(ngme_1rep$models) == 0) 0 else
+    Reduce(cbind, sapply(W2s_block, function(W) A_pred_block %*% W))
 
-# questions:
-# 1. loop over replicates, and do CV for each replicate, and average
-# 2. partition first, then do CV for each partition (with many replicates), and average
+  # sampling Y by, Y = X feff + (block_A %*% block_W) + eps
+  # AW_N_1[[1]] is concat(A1 W1, A2 W2, ..)
+
+  # generate fixed effect
+  fe <- with(ngme_1rep, as.numeric(X_pred %*% feff))
+  fe_N <- matrix(
+    rep(fe, n_gibbs_samples), 
+    ncol = n_gibbs_samples, 
+    byrow=F
+  )
+
+  pred_N_1 <- fe_N + AW_N_1
+  pred_N_2 <- fe_N + AW_N_2
+  
+  list(
+    pred_N_1 = rowMeans(as.matrix(pred_N_1)),
+    pred_N_2 = rowMeans(as.matrix(pred_N_2))
+  )
+}

@@ -10,7 +10,7 @@
 #' lpo is leave-percent-out, provide \code{percent} from 1 to 100
 #' custom is user-defined group, provide \code{target} and \code{data}
 #' @param seed random seed
-#' @param N integer, number of MC sampling (i.e. sampling N process and average)
+#' @param N integer, number of simulations (e.g., estimate MAE, MSE, .. N times)
 #' @param k integer (only for k-fold type)
 #' @param print print information during computation
 #' @param percent how many percent for testing? from 0 to 1 (for lpo type)
@@ -21,7 +21,9 @@
 #' @param train_idx  a list of indices of the data (which data points to be used for re-sampling (not re-estimation)) (only for custom type)
 #' @param keep_pred logical, keep test information (pred_1, pred_2) in the return (as attributes), pred_1 and pred_2 are the prediction of the two chains
 #'
-#' @return a list of criterions: MSE, MAE, CRPS, sCRPS
+#' @return 
+#'  1. mean of N estimations of 4 criterions: MSE, MAE, CRPS, sCRPS
+#'  2. standard deviation of N estimations of 4 criterions: MSE, MAE, CRPS, sCRPS
 #' @export
 cross_validation <- function(
   ngme,

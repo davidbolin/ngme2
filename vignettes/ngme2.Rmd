@@ -106,7 +106,6 @@ library(grid)
 library(gridExtra)
 library(viridis)
 library(ngme2)
-# load_all()
 ```
 
 ```{r noise}

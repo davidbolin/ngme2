@@ -11,14 +11,15 @@ cross_validation(
   type = "k-fold",
   seed = NULL,
   print = FALSE,
-  N = 100,
+  N = 5,
+  n_gibbs_samples = 100,
+  n_burnin = 100,
   k = 5,
-  percent = 50,
+  percent = 0.2,
   times = 10,
-  n_gibbs_samples = 50,
   test_idx = NULL,
   train_idx = NULL,
-  keep_test_information = FALSE
+  keep_pred = FALSE
 )
 }
 \arguments{
@@ -34,24 +35,27 @@ custom is user-defined group, provide \code{target} and \code{data}}
 
 \item{print}{print information during computation}
 
-\item{N}{integer, number of MC sampling (i.e. sampling N process and average)}
+\item{N}{integer, number of simulations (e.g., estimate MAE, MSE, .. N times)}
+
+\item{n_gibbs_samples}{number of gibbs samples}
+
+\item{n_burnin}{number of burnin}
 
 \item{k}{integer (only for k-fold type)}
 
-\item{percent}{from 1 to 100 (only for lpo type)}
+\item{percent}{how many percent for testing? from 0 to 1 (for lpo type)}
 
 \item{times}{how many test cases (only for lpo type)}
-
-\item{n_gibbs_samples}{number of gibbs samples}
 
 \item{test_idx}{a list of indices of the data (which data points to be predicted) (only for custom type)}
 
 \item{train_idx}{a list of indices of the data (which data points to be used for re-sampling (not re-estimation)) (only for custom type)}
 
-\item{keep_test_information}{logical, keep test information (pred_1, pred_2) in the return (as attributes), pred_1 and pred_2 are the prediction of the two chains}
+\item{keep_pred}{logical, keep test information (pred_1, pred_2) in the return (as attributes), pred_1 and pred_2 are the prediction of the two chains}
 }
 \value{
-a list of criterions: MSE, MAE, CRPS, sCRPS
+1. mean of N estimations of 4 criterions: MSE, MAE, CRPS, sCRPS
+ 2. standard deviation of N estimations of 4 criterions: MSE, MAE, CRPS, sCRPS
 }
 \description{
 Compute the cross-validation for the ngme model

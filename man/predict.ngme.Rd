@@ -10,6 +10,7 @@ predict using ngme after estimation}
   map,
   data = NULL,
   type = "lp",
+  group = NULL,
   estimator = c("mean", "sd", "5quantile", "95quantile", "median", "mode"),
   sampling_size = 100,
   burnin_size = 100,
@@ -31,6 +32,9 @@ vector or matrix (n * 2) for spatial coords}
 "fe" is fixed effect prediction
 <model_name> is prediction of a specific model
 "lp" is linear predictor (including fixed effect and all sub-models)}
+
+\item{group}{which filed to predict 
+(used for bivariate model, should be of same length as map)}
 
 \item{estimator}{what type of estimator, c("mean", "median", "mode", "quantile")}
 

@@ -116,6 +116,7 @@ predict using ngme after estimation</p>
 <span>  <span class="va">map</span>,</span>
 <span>  data <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  type <span class="op">=</span> <span class="st">"lp"</span>,</span>
+<span>  group <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  estimator <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mean"</span>, <span class="st">"sd"</span>, <span class="st">"5quantile"</span>, <span class="st">"95quantile"</span>, <span class="st">"median"</span>, <span class="st">"mode"</span><span class="op">)</span>,</span>
 <span>  sampling_size <span class="op">=</span> <span class="fl">100</span>,</span>
 <span>  burnin_size <span class="op">=</span> <span class="fl">100</span>,</span>
@@ -146,6 +147,11 @@ vector or matrix (n * 2) for spatial coords</p></dd>
 "fe" is fixed effect prediction
 &lt;model_name&gt; is prediction of a specific model
 "lp" is linear predictor (including fixed effect and all sub-models)</p></dd>
+
+
+<dt>group</dt>
+<dd><p>which filed to predict 
+(used for bivariate model, should be of same length as map)</p></dd>
 
 
 <dt>estimator</dt>

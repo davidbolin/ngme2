@@ -126,7 +126,7 @@
       <h1 data-toc-skip>Ngme2 - A new Flexible R Package for Latent
 non-Gaussian Models</h1>
             
-            <h4 data-toc-skip class="date">2024-06-25</h4>
+            <h4 data-toc-skip class="date">2024-06-27</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/HEAD/vignettes/ngme2.Rmd" class="external-link"><code>vignettes/ngme2.Rmd</code></a></small>
       <div class="hidden name"><code>ngme2.Rmd</code></div>
@@ -265,8 +265,7 @@ of the observations. They can be both specified by
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">grid</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">gridExtra</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://sjmgarnier.github.io/viridis/" class="external-link">viridis</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://davidbolin.github.io/ngme2/">ngme2</a></span><span class="op">)</span></span>
-<span><span class="co"># load_all()</span></span></code></pre></div>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://davidbolin.github.io/ngme2/">ngme2</a></span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span>sigma <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>              <span class="co"># normal noise</span></span>
 <span><span class="co">#&gt; Noise type: NORMAL</span></span>
@@ -548,7 +547,7 @@ estimation.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">INLA</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Loading required package: Matrix</span></span>
-<span><span class="co">#&gt; This is INLA_24.06.19 built 2024-06-19 13:30:03 UTC.</span></span>
+<span><span class="co">#&gt; This is INLA_24.06.27 built 2024-06-27 02:36:04 UTC.</span></span>
 <span><span class="co">#&gt;  - See www.r-inla.org/contact-us for how to get help.</span></span>
 <span><span class="co">#&gt;  - List available models/likelihoods/etc with inla.list.models()</span></span>
 <span><span class="co">#&gt;  - Use inla.doc(&lt;NAME&gt;) to access documentation</span></span>
@@ -734,48 +733,47 @@ Mean of the rainfall in Octobor 2012 in Paraná
 method.</p>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/cross_validation.html">cross_validation</a></span><span class="op">(</span><span class="va">out</span>, type<span class="op">=</span><span class="st">"k-fold"</span>, k<span class="op">=</span><span class="fl">10</span>, print<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Model model_1: </span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test batch 1 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.889213 5.731759 1.612654  1.738487</span></span>
+<span><span class="co">#&gt; 1 1.882925 5.718946 1.954246  1.902519</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test batch 2 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.938029 5.925605 1.613854  1.675694</span></span>
+<span><span class="co">#&gt; 1 1.930433 5.883251 1.855714  1.836673</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test batch 3 : </span></span>
-<span><span class="co">#&gt;        MAE    MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.709008 5.5996 1.859197  1.882396</span></span>
+<span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
+<span><span class="co">#&gt; 1 1.709486 5.576399 1.708269  1.744452</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test batch 4 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.786109 6.299185  1.17377  1.481511</span></span>
+<span><span class="co">#&gt; 1 1.773975 6.262868 1.751655  1.740648</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test batch 5 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.891581 7.016979 1.314351  1.515019</span></span>
+<span><span class="co">#&gt; 1 1.877782 6.921857 1.906123  1.956922</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test batch 6 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.756296 5.653526 1.354554  1.549885</span></span>
+<span><span class="co">#&gt; 1 1.767246 5.672974 1.807966  1.815391</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test batch 7 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.435339 8.620223 1.971657  1.879135</span></span>
+<span><span class="co">#&gt; 1 2.440268 8.656207 2.395052  2.147153</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test batch 8 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.267692 8.441395 2.295976   2.03483</span></span>
+<span><span class="co">#&gt; 1 2.257169 8.322451 1.966168  1.866692</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test batch 9 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.801553 5.705332  1.77803  1.834675</span></span>
+<span><span class="co">#&gt; 1 1.798837 5.682221 2.357042  2.215585</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test batch 10 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.713528 4.944049 1.608934  1.677022</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;              MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; model_1 1.918835 6.393765 1.658298  1.726865</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 1.691218 4.829733 1.883291  1.869066</span></span></code></pre></div>
 </div>
 </div>
   </div>

@@ -117,14 +117,15 @@ first into sub_groups (a list of target, and train data)</p>
 <span>  type <span class="op">=</span> <span class="st">"k-fold"</span>,</span>
 <span>  seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  print <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  N <span class="op">=</span> <span class="fl">100</span>,</span>
+<span>  N <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>  n_gibbs_samples <span class="op">=</span> <span class="fl">100</span>,</span>
+<span>  n_burnin <span class="op">=</span> <span class="fl">100</span>,</span>
 <span>  k <span class="op">=</span> <span class="fl">5</span>,</span>
-<span>  percent <span class="op">=</span> <span class="fl">50</span>,</span>
+<span>  percent <span class="op">=</span> <span class="fl">0.2</span>,</span>
 <span>  times <span class="op">=</span> <span class="fl">10</span>,</span>
-<span>  n_gibbs_samples <span class="op">=</span> <span class="fl">50</span>,</span>
 <span>  test_idx <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  train_idx <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  keep_test_information <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  keep_pred <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -151,7 +152,15 @@ custom is user-defined group, provide <code>target</code> and <code>data</code><
 
 
 <dt>N</dt>
-<dd><p>integer, number of MC sampling (i.e. sampling N process and average)</p></dd>
+<dd><p>integer, number of simulations (e.g., estimate MAE, MSE, .. N times)</p></dd>
+
+
+<dt>n_gibbs_samples</dt>
+<dd><p>number of gibbs samples</p></dd>
+
+
+<dt>n_burnin</dt>
+<dd><p>number of burnin</p></dd>
 
 
 <dt>k</dt>
@@ -159,15 +168,11 @@ custom is user-defined group, provide <code>target</code> and <code>data</code><
 
 
 <dt>percent</dt>
-<dd><p>from 1 to 100 (only for lpo type)</p></dd>
+<dd><p>how many percent for testing? from 0 to 1 (for lpo type)</p></dd>
 
 
 <dt>times</dt>
 <dd><p>how many test cases (only for lpo type)</p></dd>
-
-
-<dt>n_gibbs_samples</dt>
-<dd><p>number of gibbs samples</p></dd>
 
 
 <dt>test_idx</dt>
@@ -178,7 +183,7 @@ custom is user-defined group, provide <code>target</code> and <code>data</code><
 <dd><p>a list of indices of the data (which data points to be used for re-sampling (not re-estimation)) (only for custom type)</p></dd>
 
 
-<dt>keep_test_information</dt>
+<dt>keep_pred</dt>
 <dd><p>logical, keep test information (pred_1, pred_2) in the return (as attributes), pred_1 and pred_2 are the prediction of the two chains</p></dd>
 
 </dl></div>
@@ -186,7 +191,8 @@ custom is user-defined group, provide <code>target</code> and <code>data</code><
     <h2>Value</h2>
     
 
-<p>a list of criterions: MSE, MAE, CRPS, sCRPS</p>
+<p>1. mean of N estimations of 4 criterions: MSE, MAE, CRPS, sCRPS
+ 2. standard deviation of N estimations of 4 criterions: MSE, MAE, CRPS, sCRPS</p>
     </div>
 
   </div>

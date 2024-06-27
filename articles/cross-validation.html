@@ -125,7 +125,7 @@
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Cross-validation for the ngme2 models</h1>
             
-            <h4 data-toc-skip class="date">2024-06-25</h4>
+            <h4 data-toc-skip class="date">2024-06-27</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/HEAD/vignettes/cross-validation.Rmd" class="external-link"><code>vignettes/cross-validation.Rmd</code></a></small>
       <div class="hidden name"><code>cross-validation.Rmd</code></div>
@@ -216,15 +216,15 @@ Then, we will perform cross-validation using the
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $field1</span></span>
 <span><span class="co">#&gt;   Model type: AR(1)</span></span>
-<span><span class="co">#&gt;       rho = 0.242</span></span>
+<span><span class="co">#&gt;       rho = 0.24</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 1.09</span></span>
+<span><span class="co">#&gt;       sigma = 0.879</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.862</span></span>
+<span><span class="co">#&gt;       sigma = 0.794</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre></div>
@@ -256,15 +256,15 @@ Then, we will perform cross-validation using the
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $field1</span></span>
 <span><span class="co">#&gt;   Model type: AR(1)</span></span>
-<span><span class="co">#&gt;       rho = 0.671</span></span>
+<span><span class="co">#&gt;       rho = 0.405</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.924</span></span>
+<span><span class="co">#&gt;       sigma = 1.11</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.781</span></span>
+<span><span class="co">#&gt;       sigma = 0.229</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre></div>
@@ -292,7 +292,7 @@ Then, we will perform cross-validation using the
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt; (Intercept)           x </span></span>
-<span><span class="co">#&gt;     -0.4288      0.0115 </span></span>
+<span><span class="co">#&gt;     0.61269    -0.00733 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
@@ -320,14 +320,15 @@ Then, we will perform cross-validation using the
 <span>  N <span class="op">=</span> <span class="fl">5</span>,</span>
 <span>  seed <span class="op">=</span> <span class="fl">10</span></span>
 <span><span class="op">)</span></span>
+<span><span class="va">cv1</span><span class="op">$</span><span class="va">mean.scores</span></span>
 <span><span class="co">#&gt;                MAE      MSE  neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; linear   1.1568423 2.053166 1.0309791  5.475238</span></span>
-<span><span class="co">#&gt; ar1_poor 1.0446154 1.715793 0.7876247  1.249642</span></span>
-<span><span class="co">#&gt; ar1      0.9603908 1.441514 0.7317107  1.225714</span></span></code></pre></div>
+<span><span class="co">#&gt; linear   0.9868920 1.482239 1.1816195       NaN</span></span>
+<span><span class="co">#&gt; ar1_poor 0.9679035 1.332588 0.7730157  1.268533</span></span>
+<span><span class="co">#&gt; ar1      0.9059583 1.165960 0.6296668  1.117240</span></span></code></pre></div>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="co"># Leave-percent-out cross-validation (20%) with 5 repetitions</span></span>
-<span><span class="fu"><a href="../reference/cross_validation.html">cross_validation</a></span><span class="op">(</span></span>
+<span><span class="va">cv2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cross_validation.html">cross_validation</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    linear <span class="op">=</span> <span class="va">fit_linear</span>,</span>
 <span>    ar1_poor <span class="op">=</span> <span class="va">fit_ar_poor</span>,</span>
@@ -339,10 +340,11 @@ Then, we will perform cross-validation using the
 <span>  n_gibbs_samples <span class="op">=</span> <span class="fl">500</span>,</span>
 <span>  seed <span class="op">=</span> <span class="fl">10</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt;                MAE      MSE  neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; linear   1.1162252 1.845721 0.9110127 10.405692</span></span>
-<span><span class="co">#&gt; ar1_poor 0.9676457 1.487007 0.8121407  1.250432</span></span>
-<span><span class="co">#&gt; ar1      0.8970169 1.296046 0.6402234  1.147286</span></span></code></pre></div>
+<span><span class="va">cv2</span><span class="op">$</span><span class="va">mean.scores</span></span>
+<span><span class="co">#&gt;               MAE      MSE  neg.CRPS neg.sCRPS</span></span>
+<span><span class="co">#&gt; linear   1.050634 1.624720 1.3375753       NaN</span></span>
+<span><span class="co">#&gt; ar1_poor 1.079465 1.617042 0.8831579  1.377796</span></span>
+<span><span class="co">#&gt; ar1      1.059467 1.479989 0.6996426  1.176597</span></span></code></pre></div>
 </div>
   </div>
 

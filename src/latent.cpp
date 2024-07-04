@@ -46,6 +46,7 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
     // read the control variable
     Rcpp::List control_f = Rcpp::as<Rcpp::List> (model_list["control"]);
         numer_grad      = Rcpp::as<bool>        (control_f["numer_grad"]) ;
+if (control_f.containsElementNamed("improve_hessian"))
         improve_hessian = Rcpp::as<bool>        (control_f["improve_hessian"]) ;
         eps             = Rcpp::as<double>      (control_f["eps"]) ;
 
@@ -54,7 +55,9 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
     Rcpp::List noise_in = Rcpp::as<Rcpp::List> (model_list["noise"]);
         fix_flag[latent_fix_theta_mu]     = Rcpp::as<bool>  (noise_in["fix_theta_mu"]);
         fix_flag[latent_fix_theta_sigma]  = Rcpp::as<bool>  (noise_in["fix_theta_sigma"]);
+if (noise_in.containsElementNamed("fix_theta_nu"))
         fix_flag[latent_fix_theta_nu]     = Rcpp::as<bool> (noise_in["fix_theta_nu"]);
+if (noise_in.containsElementNamed("latent_fix_theta_sigma_normal"))
         fix_flag[latent_fix_theta_sigma_normal]  = Rcpp::as<bool> (noise_in["fix_theta_sigma_normal"]);
         fix_flag[latent_fix_V]  = Rcpp::as<bool> (noise_in["fix_V"]);
 

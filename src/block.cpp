@@ -98,7 +98,9 @@ if (debug) std::cout << "After set block K" << std::endl;
     fix_flag[block_fix_theta_mu]     = Rcpp::as<bool> (noise_in["fix_theta_mu"]);
     fix_flag[block_fix_theta_sigma]  = Rcpp::as<bool> (noise_in["fix_theta_sigma"]);
     fix_flag[blcok_fix_V]            = Rcpp::as<bool> (noise_in["fix_V"]);
+if (noise_in.containsElementNamed("fix_theta_nu"))
     fix_flag[block_fix_theta_nu]     = Rcpp::as<bool> (noise_in["fix_theta_nu"]);
+if (noise_in.containsElementNamed("fix_rho"))
     fix_flag[block_fix_rho]          = Rcpp::as<bool> (noise_in["fix_rho"]);
 
     B_mu          = (Rcpp::as<MatrixXd>      (noise_in["B_mu"])),
@@ -121,8 +123,9 @@ if (debug) std::cout << "After set block K" << std::endl;
     noise_nu    = (B_nu * theta_nu).array().exp();
 
     rho   = Rcpp::as<VectorXd> (noise_in["rho"]); 
+if (noise_in.containsElementNamed("n_rho"))
     n_rho = Rcpp::as<int>      (noise_in["n_rho"]);
-
+else n_rho = 0;
     if (noise_in.containsElementNamed("nu_lower_bound"))
       nu_lower_bound = Rcpp::as<double> (noise_in["nu_lower_bound"]);
     

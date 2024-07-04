@@ -38,6 +38,7 @@ cross_validation <- function(
   times = 10,
   test_idx = NULL,
   train_idx = NULL,
+  # ignore_replicates = FALSE,
   keep_pred = FALSE
 ) {
   if (!requireNamespace("parallel", quietly = TRUE)) {
@@ -92,6 +93,14 @@ cross_validation <- function(
   final_mean <- final_sd <- list(); 
   pred_1 <- list(); pred_2 <- list();
 
+  # keep only the 1st replicate
+  # if (ignore_replicates) {
+  #   ngme = lapply(ngme, function(x) {
+  #     x$replicates = list(x$replicates[[1]])
+  #     x
+  #   })
+  # }
+
   for (idx in seq_along(ngme)) {
 if (print) cat(paste0("Model ", names(ngme)[[idx]], ": \n\n"))
     scores <- sd_scores <- NULL
@@ -107,7 +116,7 @@ if (print) cat(paste0("Model ", names(ngme)[[idx]], ": \n\n"))
             ngme[[idx]],
             test_idx[[i]],
             train_idx[[i]],
-            N=N,
+            N = N,
             n_gibbs_samples = n_gibbs_samples,
             seed=seed,
             keep_pred=keep_pred

@@ -91,31 +91,61 @@ cross_validation <- function(
   # 2. loop over each test_idx and train_idx, and compute the criterion
   final_mean <- final_sd <- list(); 
   pred_1 <- list(); pred_2 <- list();
+
   for (idx in seq_along(ngme)) {
 if (print) cat(paste0("Model ", names(ngme)[[idx]], ": \n\n"))
     scores <- sd_scores <- NULL
-    for (i in seq_along(test_idx)) {
-      test_idx[[i]] <- sort(test_idx[[i]])
-      result <- compute_err_reps(
-        ngme[[idx]],
-        test_idx[[i]],
-        train_idx[[i]],
-        N=N,
-        n_gibbs_samples = n_gibbs_samples,
-        seed=seed,
-        keep_pred=keep_pred
-      )
-      scores[[i]] <- result$scores
-      sd_scores[[i]] <- result$sd_scores
-      pred_1[[i]] <- result$pred_1
-      pred_2[[i]] <- result$pred_2
-      # Y_1[[i]] <- result$Y_1
-      # Y_2[[i]] <- result$Y_2
 
-      if (print) {
-        cat(paste("In test batch", i, ": \n"))
-        print(as.data.frame(scores[[i]]))
-        cat("\n")
+    # loop over each test_idx and train_idx
+    if (requireNamespace("parallel", quietly = TRUE)) {
+      if (print) cat("Running in parallel mode. \n")
+      numCores <- parallel::detectCores() - 1
+      ret = parallel::mclapply(
+        seq_along(test_idx),
+        function(i) {
+          result <- compute_err_reps(
+            ngme[[idx]],
+            test_idx[[i]],
+            train_idx[[i]],
+            N=N,
+            n_gibbs_samples = n_gibbs_samples,
+            seed=seed,
+            keep_pred=keep_pred
+          )
+          if (print) {
+            cat(paste("In test batch", i, ": \n"))
+            print(as.data.frame(result$scores))
+            cat("\n")
+          }
+          result
+        },
+        mc.cores = numCores
+      )
+      scores <- lapply(ret, function(x) x$scores)
+      sd_scores <- lapply(ret, function(x) x$sd_scores)
+      pred_1 <- lapply(ret, function(x) x$pred_1)
+      pred_2 <- lapply(ret, function(x) x$pred_2)
+    } else {
+      for (i in seq_along(test_idx)) {
+        result <- compute_err_reps(
+          ngme[[idx]],
+          test_idx[[i]],
+          train_idx[[i]],
+          N=N,
+          n_gibbs_samples = n_gibbs_samples,
+          seed=seed,
+          keep_pred=keep_pred
+        )
+        scores[[i]] <- result$scores
+        sd_scores[[i]] <- result$sd_scores
+        pred_1[[i]] <- result$pred_1
+        pred_2[[i]] <- result$pred_2
+
+        if (print) {
+          cat(paste("In test batch", i, ": \n"))
+          print(as.data.frame(scores[[i]]))
+          cat("\n")
+        }
       }
     }
 
@@ -179,6 +209,7 @@ compute_err_reps <- function(
   seed = NULL,
   keep_pred = FALSE
 ) {
+  test_idx <- sort(test_idx)
   stopifnot("Not a ngme object." = inherits(ngme, "ngme"))
   repls <- attr(ngme, "fit")$replicate
   uni_repl <- unique(repls)

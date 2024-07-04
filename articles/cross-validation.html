@@ -216,15 +216,15 @@ Then, we will perform cross-validation using the
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $field1</span></span>
 <span><span class="co">#&gt;   Model type: AR(1)</span></span>
-<span><span class="co">#&gt;       rho = 0.243</span></span>
+<span><span class="co">#&gt;       rho = 0.238</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.867</span></span>
+<span><span class="co">#&gt;       sigma = 0.714</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.795</span></span>
+<span><span class="co">#&gt;       sigma = 0.677</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre></div>
@@ -256,15 +256,15 @@ Then, we will perform cross-validation using the
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $field1</span></span>
 <span><span class="co">#&gt;   Model type: AR(1)</span></span>
-<span><span class="co">#&gt;       rho = 0.456</span></span>
+<span><span class="co">#&gt;       rho = 0.573</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 1.1</span></span>
+<span><span class="co">#&gt;       sigma = 0.748</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.138</span></span>
+<span><span class="co">#&gt;       sigma = 0.548</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre></div>
@@ -292,13 +292,13 @@ Then, we will perform cross-validation using the
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt; (Intercept)           x </span></span>
-<span><span class="co">#&gt;     0.43198    -0.00351 </span></span>
+<span><span class="co">#&gt;    -0.16948     0.00919 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 1.16</span></span>
+<span><span class="co">#&gt;       sigma = 1.07</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre></div>
@@ -321,10 +321,10 @@ Then, we will perform cross-validation using the
 <span>  seed <span class="op">=</span> <span class="fl">10</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">cv1</span><span class="op">$</span><span class="va">mean.scores</span></span>
-<span><span class="co">#&gt;                MAE      MSE  neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; linear   1.0021891 1.514881 0.9006803       NaN</span></span>
-<span><span class="co">#&gt; ar1_poor 0.9141135 1.273451 0.6958439  1.180063</span></span>
-<span><span class="co">#&gt; ar1      0.8257668 1.009212 0.5794773  1.073315</span></span></code></pre></div>
+<span><span class="co">#&gt;                MAE       MSE  neg.CRPS neg.sCRPS</span></span>
+<span><span class="co">#&gt; linear   0.8432742 1.0809549 0.7974937       NaN</span></span>
+<span><span class="co">#&gt; ar1_poor 0.8072278 1.0392176 0.6847734  1.220535</span></span>
+<span><span class="co">#&gt; ar1      0.7779488 0.9160218 0.5903707  1.115080</span></span></code></pre></div>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="co"># Leave-percent-out cross-validation (20%) with 5 repetitions</span></span>
@@ -342,9 +342,9 @@ Then, we will perform cross-validation using the
 <span><span class="op">)</span></span>
 <span><span class="va">cv2</span><span class="op">$</span><span class="va">mean.scores</span></span>
 <span><span class="co">#&gt;                MAE      MSE  neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; linear   0.8735992 1.158365 0.8272708       NaN</span></span>
-<span><span class="co">#&gt; ar1_poor 0.8481640 1.041455 0.6718577  1.157529</span></span>
-<span><span class="co">#&gt; ar1      0.8392500 1.013869 0.5837170  1.079801</span></span></code></pre></div>
+<span><span class="co">#&gt; linear   0.8626743 1.163210 1.0252977       NaN</span></span>
+<span><span class="co">#&gt; ar1_poor 0.8633346 1.164464 0.7290992  1.267883</span></span>
+<span><span class="co">#&gt; ar1      0.8605305 1.156011 0.7258408  1.273118</span></span></code></pre></div>
 </div>
   </div>
 

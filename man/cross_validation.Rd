@@ -19,7 +19,8 @@ cross_validation(
   times = 10,
   test_idx = NULL,
   train_idx = NULL,
-  keep_pred = FALSE
+  keep_pred = FALSE,
+  parallel = TRUE
 )
 }
 \arguments{
@@ -52,6 +53,8 @@ custom is user-defined group, provide \code{target} and \code{data}}
 \item{train_idx}{a list of indices of the data (which data points to be used for re-sampling (not re-estimation)) (only for custom type)}
 
 \item{keep_pred}{logical, keep test information (pred_1, pred_2) in the return (as attributes), pred_1 and pred_2 are the prediction of the two chains}
+
+\item{parallel}{logical, run in parallel mode}
 }
 \value{
 1. mean of N estimations of 4 criterions: MSE, MAE, CRPS, sCRPS

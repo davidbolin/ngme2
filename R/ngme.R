@@ -17,6 +17,7 @@
 #' @param group factor, used for bivariate model, indicating which group the observation belongs to
 #' @param family likelihood type, same as measurement noise specification, 1. string 2. ngme noise obejct
 #' @param start  starting ngme object (usually object from last fit)
+#' @param moving_window number of iterations to average the estimation
 #' @param debug  toggle debug mode
 #'
 #' @return random effects (for different replicate) + models(fixed effects, measuremnt noise, and latent process)
@@ -48,6 +49,7 @@ ngme <- function(
   group         = NULL,
   replicate     = NULL,
   start         = NULL,
+  moving_window = 1, # return the average estimation of last .. iterations
   debug         = FALSE
 ) {
    # -------------  CHECK INPUT ---------------

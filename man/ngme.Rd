@@ -13,6 +13,7 @@ ngme(
   group = NULL,
   replicate = NULL,
   start = NULL,
+  moving_window = 1,
   debug = FALSE
 )
 }
@@ -34,6 +35,8 @@ ngme(
 \item{replicate}{factor, used for divide data into different replicates}
 
 \item{start}{starting ngme object (usually object from last fit)}
+
+\item{moving_window}{number of iterations to average the estimation}
 
 \item{debug}{toggle debug mode}
 }

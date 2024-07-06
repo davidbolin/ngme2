@@ -101,12 +101,18 @@ get_latent_info <- function(latent) {
 #' @param ngme ngme object
 #' @param name name of latent models, otherwise plot fixed effects and measurement noise
 #' should be in names(ngme$models) or other
+#' @param moving_window moving window for the traceplot
 #' @param hline vector, add hline to each plot
 #'
 #' @return the traceplot
 #' @export
 #'
-traceplot <- function(ngme, name="general", hline=NULL) {
+traceplot <- function(
+  ngme, 
+  name="general", 
+  moving_window=1,
+  hline=NULL
+) {
   stopifnot(inherits(ngme, "ngme"))
   stopifnot(!is.null(name))
   ngme <- ngme$replicates[[1]]
@@ -139,32 +145,39 @@ traceplot <- function(ngme, name="general", hline=NULL) {
     # weird stuff here
     df <- apply(df, c(1,2), as.numeric)
     df <- as.data.frame(df)
-    mean_traj <- rowMeans(df)
     df$x <- seq_len(nrow(df)); x <- NULL # get around check note
     df_long <- tidyr::gather(df, key = "key", value = "value", -x)
     ff <- ts$trans[[idx]]
     df_long$value <- ff(df_long$value)
+    
+    # update df using moving window
+    df_long <- df_long %>%
+      dplyr::group_by(key) %>%
+      dplyr::mutate(moving_avg = rollapply(value, width = moving_window, FUN = mean, align = "right", fill = NA)) %>%
+      na.omit()
+    
+    df_mean <- df_long %>%
+      dplyr::group_by(x) %>%
+      dplyr::summarise(mean_moving_avg = mean(moving_avg)) 
+
     ps[[idx]] <- ggplot() +
       geom_line(
         data = df_long,
         mapping = aes(
           x=.data[["x"]],
-          y=.data[["value"]],
+          y=.data[["moving_avg"]],
           group=.data[["key"]]
         )
       ) + geom_line(
-        data = data.frame(x=seq_len(nrow(df)), y=ff(mean_traj)),
-        aes(
-          x=.data[["x"]],
-          y=.data[["y"]]
-        ),
+        data = df_mean,
+        aes(x=x, y=mean_moving_avg),
         col="red"
       ) + geom_hline(
         yintercept=hline[[idx]], color="blue"
       ) + labs(title = ts$name[[idx]]) +
       xlab(NULL) + ylab(NULL)
 
-    avg_lines[[ts$name[[idx]]]] <- ff(mean_traj)
+    avg_lines[[ts$name[[idx]]]] <- ff(df_mean$mean_moving_avg)
   }
 
   if (length(ps) > 1) ps["ncol"]=2
@@ -172,7 +185,11 @@ traceplot <- function(ngme, name="general", hline=NULL) {
 
   attr(result, "avg_lines") <- avg_lines
   
-  # invisible(result)
+  # print estimates of last iteration
+  cat("Last estimates:\n")
+  last_estimates <- lapply(avg_lines, function(x) x[length(x)])
+  print(last_estimates)
+
   invisible(ps)
 }
 

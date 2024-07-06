@@ -4,13 +4,15 @@
 \alias{traceplot}
 \title{Trace plot of ngme fitting}
 \usage{
-traceplot(ngme, name = "general", hline = NULL)
+traceplot(ngme, name = "general", moving_window = 1, hline = NULL)
 }
 \arguments{
 \item{ngme}{ngme object}
 
 \item{name}{name of latent models, otherwise plot fixed effects and measurement noise
 should be in names(ngme$models) or other}
+
+\item{moving_window}{moving window for the traceplot}
 
 \item{hline}{vector, add hline to each plot}
 }

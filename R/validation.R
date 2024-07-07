@@ -15,12 +15,15 @@
 #' @param print print information during computation
 #' @param percent how many percent for testing? from 0 to 1 (for lpo type)
 #' @param times how many test cases (only for lpo type)
+#' @param transform a function to transform the data (e.g., log, exp, ...)
+#' e.g., the MAE will be computed as |transform(Y) - transform(Y_pred)|
 #' @param n_gibbs_samples number of gibbs samples
 #' @param n_burnin number of burnin
 #' @param test_idx a list of indices of the data (which data points to be predicted) (only for custom type)
 #' @param train_idx  a list of indices of the data (which data points to be used for re-sampling (not re-estimation)) (only for custom type)
 #' @param keep_pred logical, keep test information (pred_1, pred_2) in the return (as attributes), pred_1 and pred_2 are the prediction of the two chains
 #'
+#' @param parallel logical, run in parallel mode
 #' @param parallel logical, run in parallel mode
 #' @return 
 #'  1. mean of N estimations of 4 criterions: MSE, MAE, CRPS, sCRPS
@@ -37,6 +40,7 @@ cross_validation <- function(
   k = 5,
   percent = 0.2,
   times = 10,
+  transform = identity,
   test_idx = NULL,
   train_idx = NULL,
   keep_pred = FALSE,
@@ -122,7 +126,8 @@ if (print) cat(paste0("Model ", names(ngme)[[idx]], ": \n\n"))
             n_gibbs_samples = n_gibbs_samples,
             seed=seed,
             keep_pred=keep_pred,
-            parallel = TRUE
+            parallel = TRUE,
+            transform = transform
           )
           if (print) {
             cat(paste("In test batch", i, ": \n"))
@@ -149,7 +154,8 @@ if (print) cat(paste0("Model ", names(ngme)[[idx]], ": \n\n"))
           n_gibbs_samples = n_gibbs_samples,
           seed=seed,
           keep_pred=keep_pred,
-          parallel = FALSE
+          parallel = FALSE,
+          transform = transform
         )
         scores[[i]] <- result$scores
         sd_scores[[i]] <- result$sd_scores
@@ -225,7 +231,8 @@ compute_err_reps <- function(
   n_burnin = 100,
   seed = NULL,
   keep_pred = FALSE,
-  parallel = TRUE 
+  parallel = TRUE,
+  transform = identity
 ) {
   test_idx <- sort(test_idx)
   stopifnot("Not a ngme object." = inherits(ngme, "ngme"))
@@ -255,7 +262,8 @@ compute_err_reps <- function(
       n_gibbs_samples = n_gibbs_samples,
       seed=seed,
       keep_pred=keep_pred,
-      parallel = parallel
+      parallel = parallel,
+      transform = transform
     )
     scores[[n_scores]] <- result_1rep$mean_scores
     sd_scores[[n_scores]] <- result_1rep$sd_scores
@@ -297,7 +305,8 @@ compute_err_1rep <- function(
   n_burnin = 10,
   seed = NULL,
   keep_pred = FALSE,
-  parallel = TRUE
+  parallel = TRUE,
+  transform = identity
 ) {
   stopifnot(
     "bool_<..>_idx should be a logical vector" =
@@ -347,14 +356,14 @@ compute_err_1rep <- function(
     numCores <- parallel::detectCores() - 1  
     scores = parallel::mclapply(1:N, function(nn) {
       s <- compute_scores(
-        ngme_1rep, n_gibbs_samples, n_burnin, seed+nn, A_pred_block, noise_test_idx, y_data, group_data, X_pred
+        ngme_1rep, n_gibbs_samples, n_burnin, seed+nn, A_pred_block, noise_test_idx, y_data, group_data, X_pred, transform 
       )
       s
     }, mc.cores = numCores)
   } else {
     for (nn in 1:N) {
       scores[[nn]] <- compute_scores(
-        ngme_1rep, n_gibbs_samples, n_burnin, seed+nn, A_pred_block, noise_test_idx, y_data, group_data, X_pred
+        ngme_1rep, n_gibbs_samples, n_burnin, seed+nn, A_pred_block, noise_test_idx, y_data, group_data, X_pred, transform
       )
     }
   }
@@ -399,7 +408,7 @@ compute_err_1rep <- function(
 
 # helper function to compute the scores
 compute_scores <- function(
-  ngme_1rep, n_gibbs_samples, n_burnin, seed, A_pred_block, noise_test_idx, y_data, group_data, X_pred
+  ngme_1rep, n_gibbs_samples, n_burnin, seed, A_pred_block, noise_test_idx, y_data, group_data, X_pred, transform
 ) {
   Ws <- sampling_cpp(
     ngme_1rep, 
@@ -442,9 +451,10 @@ compute_scores <- function(
   Y_N_2 <- pred_N_2 + mn_N_2
 
   compute_score_given_pred(
-    pred_N_1, pred_N_2, 
-    Y_N_1, Y_N_2, 
-    y_data, group_data
+    transform(pred_N_1), transform(pred_N_2), 
+    transform(Y_N_1), transform(Y_N_2),
+    transform(y_data),
+    group_data
   )
 }
 

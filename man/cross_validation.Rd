@@ -17,6 +17,7 @@ cross_validation(
   k = 5,
   percent = 0.2,
   times = 10,
+  transform = identity,
   test_idx = NULL,
   train_idx = NULL,
   keep_pred = FALSE,
@@ -47,6 +48,9 @@ custom is user-defined group, provide \code{target} and \code{data}}
 \item{percent}{how many percent for testing? from 0 to 1 (for lpo type)}
 
 \item{times}{how many test cases (only for lpo type)}
+
+\item{transform}{a function to transform the data (e.g., log, exp, ...)
+e.g., the MAE will be computed as |transform(Y) - transform(Y_pred)|}
 
 \item{test_idx}{a list of indices of the data (which data points to be predicted) (only for custom type)}
 

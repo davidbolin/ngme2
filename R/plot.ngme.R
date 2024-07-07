@@ -153,7 +153,7 @@ traceplot <- function(
     # update df using moving window
     df_long <- df_long %>%
       dplyr::group_by(key) %>%
-      dplyr::mutate(moving_avg = rollapply(value, width = moving_window, FUN = mean, align = "right", fill = NA)) %>%
+      dplyr::mutate(moving_avg = zoo::rollapply(value, width = moving_window, FUN = mean, align = "right", fill = NA)) %>%
       na.omit()
     
     df_mean <- df_long %>%

@@ -376,7 +376,7 @@ if (debug) std::cout << "Finish latent set parameter"<< std::endl;
 }
 
 void Latent::sample_cond_V() {
-    if (n_theta_nu == 0 || fix_flag[latent_fix_V]) return;
+    if (fix_flag[latent_fix_V]) return;
     prevV = V;
 
     // update b_inc (p,a_inc already built)
@@ -427,7 +427,7 @@ void Latent::sample_cond_V() {
 }
 
 void Latent::sample_uncond_V() {
-    if (n_theta_nu == 0 || fix_flag[latent_fix_V]) return;
+    if (fix_flag[latent_fix_V]) return;
     prevV = V;
     int n = V_size / n_noise;
 
@@ -473,18 +473,16 @@ void Latent::update_each_iter(bool initialization, bool update_dK) {
 if (debug) std::cout << "update_each_iter" << std::endl;
 
     // update p,a,b, depend on nu, h
-    if (n_theta_nu > 0) {
-        for (int i=0; i < n_noise; i++) {
-            if (noise_type[i] == "normal") continue;
+    for (int i=0; i < n_noise; i++) {
+        if (noise_type[i] == "normal") continue;
 
-            // update p_vec, a_vec, b_vec
-            NoiseUtil::update_gig(noise_type[i], nu, p_vec, a_vec, b_vec, h, single_V);
-            V = rGIG_cpp(p_vec, a_vec, b_vec, latent_rng());
+        // update p_vec, a_vec, b_vec
+        NoiseUtil::update_gig(noise_type[i], nu, p_vec, a_vec, b_vec, h, single_V);
+        V = rGIG_cpp(p_vec, a_vec, b_vec, latent_rng());
 
-            // update p_inc, a_inc
-            p_inc = VectorXd::Constant(V_size, -0.5 * dim);
-            a_inc = mu.cwiseQuotient(sigma).array().pow(2);
-        }
+        // update p_inc, a_inc
+        p_inc = VectorXd::Constant(V_size, -0.5 * dim);
+        a_inc = mu.cwiseQuotient(sigma).array().pow(2);
     }
 
     // Update K and dK

@@ -419,7 +419,12 @@ void Latent::sample_cond_V() {
                 if (noise_type[i] == "normal") continue;
 
                 // sample conditional V
-                V.segment(i*n, n) = rGIG_cpp((p_vec+p_inc).segment(i*n, n), (a_vec+a_inc).segment(i*n, n), (b_vec+b_inc).segment(i*n, n), latent_rng());
+                V.segment(i*n, n) = rGIG_cpp(
+                    (p_vec + p_inc).segment(i*n, n), 
+                    (a_vec + a_inc).segment(i*n, n), 
+                    (b_vec + b_inc).segment(i*n, n), 
+                    latent_rng()
+                );
             }
         }
 
@@ -438,7 +443,7 @@ void Latent::sample_uncond_V() {
             if (noise_type[i] == "nig" || noise_type[i] == "normal_nig")
                 v = rGIG_cpp(-0.5, nu[i], nu[i], latent_rng());
             else if (noise_type[i] == "gal")
-                v = rGIG_cpp(nu[i], 2*nu[i], 1e-14, latent_rng());
+                v = rGIG_cpp(h[i] * nu[i], 2*nu[i], 1e-14, latent_rng());
             V.segment(i*n, n) = v * h.segment(i*n, n);
         }
     } else {

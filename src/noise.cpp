@@ -48,35 +48,21 @@ VectorXd NoiseUtil::grad_theta_nu(
         if (noise_type == "gal") {
             VectorXd pg (n);
             for (int j=0; j < n; j++) pg(j) = R::digamma(nu[j]*h[j]);
-            VectorXd tmp = h - V + h.cwiseProduct(V.array().log().matrix())
+            
+            VectorXd tmp = h - V
+                + h.cwiseProduct(V.array().log().matrix())
                 - h.cwiseProduct(nu.cwiseInverse().array().log().matrix())
                 - h.cwiseProduct(pg);
+            
             grad = B_nu.transpose() * tmp.cwiseProduct(nu);
-            // for (int j=0; j < n; j++) {
-            //     double nu_hj = nu[j] * h[j];
-            //     double v = V(j);
-            //     grad(i) -= (-v + h[j] * (1 + log(v) - log(1/nu[j]) + R::digamma(nu_hj))) * B_nu(j, i);
-            //     grad(i) /= n;
-            //     std::cout << "grad: " << grad(i) << std::endl;
-            // }
         } else {
             // type == nig or normal+nig
             // df/dnu = 0.5 (2h + 1/nu - h^2/V - V)
             // df/d(log nu) = df/dnu * nu
             VectorXd tmp = 0.5 * (2*h + nu.cwiseInverse()
                 - h.cwiseProduct(h).cwiseQuotient(V) - V);
+
             grad = B_nu.transpose() * tmp.cwiseProduct(nu);
-        // skip the hessian
-            // VectorXd tmp2 = 0.5 * (2*h + VectorXd::Constant(n, 1/nu)
-            //     - h.cwiseProduct(h).cwiseQuotient(prevV) - prevV);
-            // double grad_nu2 = tmp2.mean();
-
-            // grad = grad_nu * nu;
-            // double hess_nu = -0.5 * pow(nu, -2);
-            // // hess of log nu
-            // double hess = nu * grad_nu2 + nu * nu * hess_nu;
-
-            // grad *= n;
         }
     } else {
         // single V case
@@ -119,7 +105,7 @@ double NoiseUtil::log_density(
             // V_i ~ Gamma(alpha=h_i nu, beta=nu), see wikipedia
             double alpha = h(i) * nu(i);
             double beta = nu(i);
-            logd += pow(beta, beta) / R::gammafn(alpha) * pow(x, alpha-1) * exp(-beta*x);
+            logd += pow(beta, alpha) / R::gammafn(alpha) * pow(x, alpha-1) * exp(-beta*x);
         }
     }
 

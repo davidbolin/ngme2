@@ -177,7 +177,7 @@ traceplot <- function(
       ) + labs(title = ts$name[[idx]]) +
       xlab(NULL) + ylab(NULL)
 
-    avg_lines[[ts$name[[idx]]]] <- ff(df_mean$mean_moving_avg)
+    avg_lines[[ts$name[[idx]]]] <- df_mean$mean_moving_avg
   }
 
   if (length(ps) > 1) ps["ncol"]=2

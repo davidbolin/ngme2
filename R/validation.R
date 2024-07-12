@@ -24,7 +24,8 @@
 #' @param keep_pred logical, keep test information (pred_1, pred_2) in the return (as attributes), pred_1 and pred_2 are the prediction of the two chains
 #'
 #' @param parallel logical, run in parallel mode
-#' @param parallel logical, run in parallel mode
+#' @param cores_layer1 integer, number of cores for the first layer (over testing samples)
+#' @param cores_layer2 integer, number of cores for the second layer (over computing scores for N simulations)
 #' @return 
 #'  1. mean of N estimations of 4 criterions: MSE, MAE, CRPS, sCRPS
 #'  2. standard deviation of N estimations of 4 criterions: MSE, MAE, CRPS, sCRPS
@@ -44,7 +45,9 @@ cross_validation <- function(
   test_idx = NULL,
   train_idx = NULL,
   keep_pred = FALSE,
-  parallel = TRUE
+  parallel = TRUE,
+  cores_layer1 = if (parallel) parallel::detectCores() else 1,
+  cores_layer2 = if (parallel) parallel::detectCores() else 1
 ) {
   if (!requireNamespace("parallel", quietly = TRUE)) {
     message("Parallel package not available. Running in serial mode. You can install `parallel` package to speed up the computation.")
@@ -114,7 +117,6 @@ if (print) cat(paste0("Model ", names(ngme)[[idx]], ": \n\n"))
     # loop over each test_idx and train_idx
     if (parallel && requireNamespace("parallel", quietly = TRUE)) {
       if (print) cat("Running in parallel mode. \n")
-      numCores <- parallel::detectCores() - 1
       ret = parallel::mclapply(
         seq_along(test_idx),
         function(i) {
@@ -127,7 +129,8 @@ if (print) cat(paste0("Model ", names(ngme)[[idx]], ": \n\n"))
             seed=seed,
             keep_pred=keep_pred,
             parallel = TRUE,
-            transform = transform
+            transform = transform,
+            num_cores = cores_layer2
           )
           if (print) {
             cat(paste("In test batch", i, ": \n"))
@@ -136,7 +139,7 @@ if (print) cat(paste0("Model ", names(ngme)[[idx]], ": \n\n"))
           }
           result
         },
-        mc.cores = numCores
+        mc.cores = cores_layer1
       )
       scores <- lapply(ret, function(x) x$scores)
       sd_scores <- lapply(ret, function(x) x$sd_scores)
@@ -232,7 +235,8 @@ compute_err_reps <- function(
   seed = NULL,
   keep_pred = FALSE,
   parallel = TRUE,
-  transform = identity
+  transform = identity,
+  num_cores = 1
 ) {
   test_idx <- sort(test_idx)
   stopifnot("Not a ngme object." = inherits(ngme, "ngme"))
@@ -263,7 +267,8 @@ compute_err_reps <- function(
       seed=seed,
       keep_pred=keep_pred,
       parallel = parallel,
-      transform = transform
+      transform = transform,
+      num_cores = num_cores
     )
     scores[[n_scores]] <- result_1rep$mean_scores
     sd_scores[[n_scores]] <- result_1rep$sd_scores
@@ -306,7 +311,8 @@ compute_err_1rep <- function(
   seed = NULL,
   keep_pred = FALSE,
   parallel = TRUE,
-  transform = identity
+  transform = identity,
+  num_cores = num_cores
 ) {
   stopifnot(
     "bool_<..>_idx should be a logical vector" =
@@ -353,13 +359,12 @@ compute_err_1rep <- function(
   scores <- pred_1 <- pred_2 <- Y_1 <- Y_2 <- list()
 
   if (parallel && requireNamespace("parallel", quietly = TRUE)) {
-    numCores <- parallel::detectCores() - 1  
     scores = parallel::mclapply(1:N, function(nn) {
       s <- compute_scores(
         ngme_1rep, n_gibbs_samples, n_burnin, seed+nn, A_pred_block, noise_test_idx, y_data, group_data, X_pred, transform 
       )
       s
-    }, mc.cores = numCores)
+    }, mc.cores = num_cores)
   } else {
     for (nn in 1:N) {
       scores[[nn]] <- compute_scores(

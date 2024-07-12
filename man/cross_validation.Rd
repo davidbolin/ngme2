@@ -21,7 +21,9 @@ cross_validation(
   test_idx = NULL,
   train_idx = NULL,
   keep_pred = FALSE,
-  parallel = TRUE
+  parallel = TRUE,
+  cores_layer1 = if (parallel) parallel::detectCores() else 1,
+  cores_layer2 = if (parallel) parallel::detectCores() else 1
 )
 }
 \arguments{
@@ -59,6 +61,10 @@ e.g., the MAE will be computed as |transform(Y) - transform(Y_pred)|}
 \item{keep_pred}{logical, keep test information (pred_1, pred_2) in the return (as attributes), pred_1 and pred_2 are the prediction of the two chains}
 
 \item{parallel}{logical, run in parallel mode}
+
+\item{cores_layer1}{integer, number of cores for the first layer (over testing samples)}
+
+\item{cores_layer2}{integer, number of cores for the second layer (over computing scores for N simulations)}
 }
 \value{
 1. mean of N estimations of 4 criterions: MSE, MAE, CRPS, sCRPS

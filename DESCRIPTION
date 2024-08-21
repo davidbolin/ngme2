@@ -49,7 +49,7 @@ Suggests:
     MetricGraph (>= 1.1.2)
 Additional_repositories: https://inla.r-inla-download.org/R/testing
 VignetteBuilder: knitr
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1
 Config/testthat/edition: 3
 URL: https://davidbolin.github.io/ngme2/, https://github.com/davidbolin/ngme2
 Depends:

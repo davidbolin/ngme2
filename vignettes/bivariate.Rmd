@@ -306,7 +306,7 @@ traceplot(bvar_cor, hline=c(log(sd_1), log(sd_2), rho_e, -3, 1.5))
 ### Ex2. Fixed effects + Bivariate model (AR1, NIG) + Correlated measurement noise
 
 ```{r corr-measurement, cache=TRUE}
-set.seed(125)
+set.seed(169)
 n_obs <- 1000
 n_each <- n_obs / 2
 group <- c(rep("W1", n_each), rep("W2", n_each))
@@ -368,7 +368,7 @@ out <- ngme(
   control_opt = control_opt(
     optimizer = adam(),
     iterations = 5000,
-    n_parallel_chain = 1,
+    n_parallel_chain = 4,
     seed = 113
   )
 )

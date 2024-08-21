@@ -7,13 +7,14 @@
 #'
 #' @param map  symbol or numerical value: index or covariates to build index
 #' @param model  string, model type, see ngme_model_types()
-#' @param noise  can be either string or a ngme_noise object
+#' @param noise  ngme_noise object, noise_nig() or noise_gal()
 #' @param mesh   mesh for the model, if not provided, will be built from map, can be a list of meshs for different replicates
 #' @param control  control variables for latent model
 #' @param name   name of the field, for later use, if not provided, will be "field1" etc.
 #' @param data      specifed or inherit from ngme() function
 #' @param group   group factor indicate resposne variable, can be inherited from ngme() function
 #' @param which_group  belong to which group
+#' @param A  observation matrix, automatically computed given map and model except for Bayesian regression
 #' @param W      starting value of the process
 #' @param fix_W  stop sampling for W
 #' @param fix_theta_K fix the estimation for theta_K.
@@ -40,6 +41,7 @@ f <- function(
   data        = NULL,
   group       = NULL,
   which_group = NULL,
+  A           = NULL,
   W           = NULL,
   fix_W       = FALSE,
   fix_theta_K = FALSE,
@@ -49,12 +51,16 @@ f <- function(
   ...
 ) {
   # examine control_f
-
   if (!control$numer_grad) {
     if (model %in% c("bv_matern_normal", "bv_normal")) {
       stop("Not support for non-numerical gradient for bivariate model")
     }
   }
+
+  # examine the noise 
+  stopifnot(
+    "Please provide noise as ngme_noise object" = inherits(noise, "ngme_noise")
+  )
 
   if ((missing(map) || (is.null(map))) && inherits(mesh, "metric_graph")) {
     stopifnot("To use metric graph model, please install MetricGraph package"
@@ -76,7 +82,7 @@ f <- function(
     }
   }
 
-  if (!is.null(data)) {
+  if (!is.null(data) && is.null(A)) {
     if (model != "tp") stopifnot(
       "Please make sure length of map is same as nrow(data) in f()" =
       length_map(map) == nrow(data)
@@ -105,7 +111,7 @@ f <- function(
   )
 
   # 0. build mesh if not specified
-  if (is.null(mesh)) {
+  if (is.null(mesh) && is.null(A)) {
     mesh <- ngme_build_mesh(sub_map(map, subset), model)
   }
 
@@ -155,8 +161,9 @@ f <- function(
   # build the operator
   operator <- build_operator(model, f_args)
 
-  A <- ngme_build_A(model, mesh, map, operator, group)
-
+  A <- if (is.null(A)) ngme_build_A(model, mesh, map, operator, group)
+        else ngme_as_sparse(A)
+  
   # subset the A matrix
   # if (!all(subset)) A[!subset, ] <- 0
   if (!all(subset)) A <- A[subset, , drop = FALSE]

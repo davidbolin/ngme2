@@ -42,9 +42,10 @@ predict.ngme <- function(
     sampling_size > 0,
     "Make sure the object is of class 'ngme'." = inherits(object, "ngme")
   )
+  
   samples_W <- sampling_cpp(ngme, 
-    n=sampling_size, 
-    n_burnin = sampling_size, 
+    n = sampling_size, 
+    n_burnin = burnin_size, 
     posterior=TRUE, 
     seed=seed
   )[["W"]]

@@ -14,6 +14,7 @@ f(
   data = NULL,
   group = NULL,
   which_group = NULL,
+  A = NULL,
   W = NULL,
   fix_W = FALSE,
   fix_theta_K = FALSE,
@@ -28,7 +29,7 @@ f(
 
 \item{model}{string, model type, see ngme_model_types()}
 
-\item{noise}{can be either string or a ngme_noise object}
+\item{noise}{ngme_noise object, noise_nig() or noise_gal()}
 
 \item{mesh}{mesh for the model, if not provided, will be built from map, can be a list of meshs for different replicates}
 
@@ -41,6 +42,8 @@ f(
 \item{group}{group factor indicate resposne variable, can be inherited from ngme() function}
 
 \item{which_group}{belong to which group}
+
+\item{A}{observation matrix, automatically computed given map and model except for Bayesian regression}
 
 \item{W}{starting value of the process}
 

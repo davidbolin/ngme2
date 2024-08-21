@@ -2,11 +2,30 @@
 % Please edit documentation in R/ngme2-package.R
 \docType{package}
 \name{ngme2}
+\alias{ngme2-package}
 \alias{ngme2}
-\title{ngme2}
+\title{Inference and prediction for mixed effects models with flexible non-Gaussian and Gaussian distributions.}
 \description{
-Inference and prediction for mixed effects models with flexible non-Gaussian and Gaussian distributions.
+Inference and prediction for linear mixed effects models with flexible non-Gaussian and Gaussian distributions.
+}
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://davidbolin.github.io/ngme2/}
+  \item \url{https://github.com/davidbolin/ngme2}
+  \item Report bugs at \url{https://github.com/davidbolin/ngme2/issues}
+}
+
 }
 \author{
-David Bolin <davidbolin@gmail.com>
+\strong{Maintainer}: Xiaotian Jin \email{xiaotian.jin@kaust.edu.sa}
+
+Authors:
+\itemize{
+  \item David Bolin \email{davidbolin@gmail.com} [copyright holder]
+  \item Alexandre Simas \email{alexandre.impa@gmail.com}
+  \item Jonas Wallin \email{jonas.wallin81@gmail.com}
 }
+
+}
+\keyword{internal}

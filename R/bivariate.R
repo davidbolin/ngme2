@@ -410,3 +410,94 @@ bv_matern_normal <- function(
     param_trans = c(identity, exp, exp, first$param_trans, second$param_trans)
   )
 }
+
+
+
+#' ngme space-time non-separable model specification
+#'
+#' @param mesh an fmesher::fm_mesh_2d object, mesh for build the SPDE model
+# ' @param alpha 2 or 4, SPDE smoothness parameter
+#' @param theta_K initial value for theta_K, kappa = exp(B_K * theta_K)
+#' @param B_K bases for theta_K, ignore if use the stationary model
+#' @param ... ignore
+#'
+#' @return ngme_operator object
+#' @export
+adv_diff <- function(
+  mesh_t,
+  mesh_s,
+  # parameters
+    c = 1,
+    lambda = 1,
+    # H = I,
+    gamma = 0,
+  alpha = 2,
+  B_K = NULL,
+  ...
+) {
+  mesh <- ngme_build_mesh(mesh)
+  stopifnot("alpha should be 2 or 4" = alpha == 2 || alpha == 4)
+
+
+  
+  FV = mesh$graph$tv
+  P <- sf::st_coordinates(fmesher::fm_vertices(mesh))[,1:2]
+  fem2d <- rSPDE.fem2d(FV = FV, P = P)
+
+  nt <- mesh_t$n
+  Bt <- bandSparse(n = nt, m = nt, k = c(-1, 0, 1),
+                   diagonals = cbind(rep(0.5,nt), rep(0,nt), rep(-0.5,nt)))
+  Bt[1,1] = -0.5
+  Bt[nt,nt] = 0.5
+
+
+  update_K <- function(theta_K) {
+    kappas <- as.numeric(exp(B_K %*% theta_K))
+    if (length(theta_K) == 1) {
+      if (alpha == 2) {
+        kappas[1]^2 * C + G
+      } else {
+        Cinv <- C;
+        diag(Cinv) <- 1 / diag(C)
+        (G + kappas[1]^2 * C) %*% Cinv %*% (G + kappas[1]^2 * C)
+      }
+    } else {
+      GpKCK <- diag(kappas) %*% C %*% diag(kappas) + G
+      if (alpha == 2)
+        GpKCK
+      else {
+        Cinv <- C;
+        diag(Cinv) <- 1 / diag(C)
+        (GpKCK) %*% Cinv %*% GpKCK
+      }
+    }
+  }
+  K <- update_K(theta_K)
+
+  
+
+  ngme_operator(
+    mesh = mesh,
+    alpha = alpha,
+    model = "matern",
+    theta_K = theta_K,
+    B_K = B_K,
+    C = ngme_as_sparse(C),
+    G = ngme_as_sparse(G),
+    K = ngme_as_sparse(K),
+    update_K = update_K,
+    h = h,
+    symmetric = TRUE,
+    zero_trace = FALSE,
+    stationary = stationary,
+    param_name =
+      if (stationary) "kappa"
+      else paste("theta_K", seq_len(length(theta_K)), sep = " "),
+    param_trans =
+      if (stationary) exp
+      else rep(list(identity), length(theta_K))
+  )
+}
+
+
+

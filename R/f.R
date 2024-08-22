@@ -59,7 +59,7 @@ f <- function(
 
   # examine the noise 
   stopifnot(
-    "Please provide noise as ngme_noise object" = inherits(noise, "ngme_noise")
+    "Please provide noise as ngme_noise object" = !is.character(noise)
   )
 
   if ((missing(map) || (is.null(map))) && inherits(mesh, "metric_graph")) {

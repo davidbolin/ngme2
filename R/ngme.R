@@ -335,11 +335,15 @@ update_ngme_est <- function(
       }
     }
 
-    if (ngme_replicate$models[[i]]$model %in% c("bv", "bv_normal", "bv_matern_normal")) {
+    if (ngme_replicate$models[[i]]$model %in% c("bv", "bv_normal", "bv_matern_normal", "bv_matern_nig")) {
       n1 <- ngme_replicate$models[[i]]$operator$first$n_theta_K
       n2 <- ngme_replicate$models[[i]]$operator$second$n_theta_K
 
-      n_param_bv <- if (ngme_replicate$models[[i]]$model == "bv") 2 else 3
+      n_param_bv <- switch(ngme_replicate$models[[i]]$model, 
+        "bv" = 2,
+        "bv_matern_nig" = 4,
+        3
+      )
       ngme_replicate$models[[i]]$operator$first$theta_K <- ngme_replicate$models[[i]]$theta_K[(n_param_bv+1) : (n1+n_param_bv)]
       ngme_replicate$models[[i]]$operator$second$theta_K <- ngme_replicate$models[[i]]$theta_K[(n1+n_param_bv+1) : (n1+n2+n_param_bv)]
     }

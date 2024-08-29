@@ -717,7 +717,7 @@ ngme_build_A <- function(model, mesh, map, operator, group, group_levels=NULL) {
   }
   
   # bivariate model
-  if (model %in% c("bv", "bv_normal", "bv_matern_normal")) {
+  if (model %in% c("bv", "bv_normal", "bv_matern_normal", "bv_matern_nig")) {
     # check if group is valid
     if (length(group) == 0) stop("Please provide the `group` argument.")
     all(group %in% group_levels) || stop("The group is not valid.")
@@ -742,10 +742,10 @@ ngme_build_A <- function(model, mesh, map, operator, group, group_levels=NULL) {
 
 contain_bv_model <- function(ngme){
   any(sapply(ngme$replicates[[1]]$models, function(model) {
-    model$model %in% c("bv", "bv_normal", "bv_matern_normal")
+    model$model %in% c("bv", "bv_normal", "bv_matern_normal", "bv_matern_nig")
   })) || 
   any(sapply(ngme$replicates[[1]]$models, function(model) {
-    model$model %in% c("tp") && model$operator$second$model %in% c("bv", "bv_normal", "bv_matern_normal")
+    model$model %in% c("tp") && model$operator$second$model %in% c("bv", "bv_normal", "bv_matern_normal", "bv_matern_nig")
   }))
 }
 

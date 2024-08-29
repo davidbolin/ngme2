@@ -411,6 +411,137 @@ bv_matern_normal <- function(
   )
 }
 
+#' Ngme bivariate model with NIG noise
+#'
+#' Giving 2 sub_models, build a correlated bivaraite operator based on K = D(theta, eta) %*% diag(K_1, K_2)
+#' \deqn{D(\theta, \rho) = \begin{pmatrix}
+#'   \cos(\theta) + \rho \sin(\theta) & -\sin(\theta) \sqrt{1+\rho^2} \\
+#'   \sin(\theta) - \rho \cos(\theta) & \cos(\theta) \sqrt{1+\rho^2}
+#' \end{pmatrix}}
+#'
+#' @param mesh the mesh where model is defined
+#' @param sub_models a list of sub_models (should be two matern models)
+#' @param mesh mesh for build the model
+#' @param group group vector, can be inherited from ngme() function
+#' @param theta the parameter related to rotation
+#' @param rho the parameter related to correlation
+#' @param share_param TRUE if share the same parameter for 2 sub_models (of same type)
+#' @param ... ignore
+#'
+#' @return a list of specification of model
+#' @export
+bv_matern_nig <- function(
+  mesh,
+  sub_models,
+  theta = 0,
+  rho = 0,
+  sd1=1, sd2=1,
+  group = NULL,
+  share_param = FALSE,
+  fix_bv_theta = FALSE,
+  ...
+) {
+  mesh <- ngme_build_mesh(mesh)
+  d <- switch(mesh$manifold, 
+    "R1" = 1,
+    "R2" = 2,
+    stop("manifold not supported")
+  )
+
+  # sort the sub_models
+  model_names <- sort(names(sub_models))
+
+  # read group argument from parent frame
+  if (is.null(group) &&
+      exists("group", parent.frame())){
+    group = get("group", parent.frame())
+  }
+
+  stopifnot(
+    "Please provide names for sub_models" = !is.null(model_names),
+    "Please provide group argument to indicate different fields"
+      = !is.null(group),
+    "Length of sub_models should be 2" = length(sub_models) == 2,
+    "Name of sub_models should be in group"
+    = all(model_names %in% levels(as.factor(group))),
+    "sd1 and sd2 should be positive" = sd1 > 0 & sd2 > 0
+  )
+  group <- factor(group, levels = model_names)
+
+  # build 2 sub_models (pass environment to sub_models)
+  # delete theta and rho in env_args (to avoid sub_models use them)
+  env_args <- as.list(environment())
+  env_args$theta <- NULL;
+  env_args$rho <- NULL
+  arg1 <- sub_models[[model_names[1]]]
+  if (!is.list(arg1)) {
+    first <- build_operator(arg1, env_args)
+  } else {
+    stopifnot("Please provide model=.. in the list" = !is.null(arg1$model))
+    first <- build_operator(arg1$model, modifyList(env_args, arg1))
+  }
+  arg2 <- sub_models[[model_names[2]]]
+  if (!is.list(arg2)) {
+    second <- build_operator(arg2, env_args)
+  } else {
+    stopifnot("Please provide model=.. in the list" = !is.null(arg2$model))
+    second <- build_operator(arg2$model, modifyList(env_args, arg2))
+  }
+
+  theta_K <- c(
+    rho, log(sd1), log(sd2), theta,
+    first$theta_K, second$theta_K
+  )
+
+  update_K <- function(theta_K) {
+    theta <- theta_K[1]
+    rho <- theta_K[2]
+    sd1 <- exp(theta_K[3])
+    sd2 <- exp(theta_K[4])
+    theta_K1 <- theta_K[5:(4 + first$n_theta_K)]
+    theta_K2 <- theta_K[(5 + first$n_theta_K):length(theta_K)]
+    
+    alpha1 <- first$alpha; alpha2 <- second$alpha
+    kappa1 <- exp(first$theta_K); kappa2 <- exp(second$theta_K)
+
+    nu1 = alpha1 - d/2; nu2 = alpha2 - d/2
+    c1 = sqrt(gamma(nu1) / (gamma(alpha1))) / (kappa1^(nu1) * (4*pi)^(d/4) * sd1)
+    c2 = sqrt(gamma(nu2) / (gamma(alpha2))) / (kappa2^(nu2) * (4*pi)^(d/4) * sd2)
+
+    D <- build_D(theta, rho)
+    bigD <- kronecker(D, Matrix::Diagonal(nrow(first$K)))
+    first$K <- first$update_K(theta_K1)
+    second$K <- second$update_K(theta_K2)
+    bigD %*% Matrix::bdiag(c1 * first$K, c2 * second$K)
+  }
+
+  ngme_operator(
+    mesh        = mesh,
+    model       = "bv_matern_nig",
+    first        = first,
+    second      = second,
+    theta_K     = theta_K,
+    update_K    = update_K,
+    K           = update_K(theta_K),
+    h           = c(first$h, second$h),
+    dim         = d,
+    symmetric   = FALSE,
+    zero_trace  = FALSE,
+    model_names = model_names,
+    share_param = share_param,
+    fix_bv_theta = fix_bv_theta,
+    param_name  = c("theta", "rho", "sd1", "sd2",
+      if (!is.null(first$param_name)) paste(first$param_name, "(1st)") else NULL,
+      if (!is.null(second$param_name)) paste(second$param_name, "(2nd)") else NULL
+    ),
+    param_trans = c(identity, identity, exp, exp, first$param_trans, second$param_trans)
+  )
+}
+
+
+
+
+
 
 
 #' ngme space-time non-separable model specification

@@ -52,14 +52,16 @@ f <- function(
 ) {
   # examine control_f
   if (!control$numer_grad) {
-    if (model %in% c("bv_matern_normal", "bv_normal")) {
+    if (model %in% c("bv_matern_normal", "bv_normal", "bv_matern_nig", "spacetime")) {
       stop("Not support for non-numerical gradient for bivariate model")
     }
   }
 
   # examine the noise 
   stopifnot(
-    "Please provide noise as ngme_noise object" = inherits(noise, "ngme_noise")
+    "Please provide noise as ngme_noise object" = 
+      model %in% c("bv", "bv_normal", "bv_matern_normal", "bv_matern_nig") ||
+      inherits(noise, "ngme_noise")
   )
 
   if ((missing(map) || (is.null(map))) && inherits(mesh, "metric_graph")) {
@@ -171,7 +173,7 @@ f <- function(
 
   # 2. build noise given operator
   # bivariate noise
-  if (model %in% c("bv", "bv_matern_normal", "bv_normal")) {
+  if (model %in% c("bv", "bv_matern_normal", "bv_normal", "bv_matern_nig")) {
     stopifnot(
       "Please specify noise for each field" = length(noise) >= 2,
       "Input: noise=list(a=<noise>,b=<noise>)" = inherits(noise[[1]], "ngme_noise"),
@@ -193,7 +195,8 @@ if (noise[[1]]$noise_type == "normal") {
 
 if (noise[[1]]$noise_type != "normal") {
   stopifnot(
-    "Please use model=bv for non-Gaussian noise" = model == "bv"
+    "Please use model=bv for non-Gaussian noise" = 
+      model %in% c("bv", "bv_matern_nig")
   )
 }
     noise1 <- update_noise(noise[[operator$model_names[[1]]]],
@@ -229,10 +232,11 @@ if (noise[[1]]$noise_type != "normal") {
     noise <- update_noise(noise, n = length(operator$h))
   }
 
-  if (noise$share_V && !(model %in% c("bv", "bv_normal", "bv_matern_normal")))
+  if (noise$share_V && 
+    !(model %in% c("bv", "bv_normal", "bv_matern_normal", "bv_matern_nig")))
     stop("Not allow for share_V for univariate model")
 
-  if (model %in% c("re", "bv_normal", "bv_matern_normal")) {
+  if (model %in% c("re", "bv_normal", "bv_matern_normal", "bv_matern_nig")) {
     noise$fix_theta_sigma <- TRUE
     noise$n_params  <- noise$n_params - noise$n_theta_sigma
     noise$n_theta_sigma  <- 0
@@ -268,8 +272,9 @@ build_operator <- function(model_name, args_list) {
   switch(model_name,
     tp  = do.call(tp, args_list),
     bv  = do.call(bv, args_list),
-    bv_matern_normal = do.call(bv_matern_normal, args_list),
     bv_normal = do.call(bv_normal, args_list),
+    bv_matern_normal = do.call(bv_matern_normal, args_list),
+    bv_matern_nig = do.call(bv_matern_nig, args_list),
     ar1 = do.call(ar1, args_list),
     rw1 = do.call(rw1, args_list),
     rw2 = do.call(rw2, args_list),

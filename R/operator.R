@@ -53,6 +53,7 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
     rw2 = "Random walk (order 2)",
     ou  = "Ornstein-Uhlenbeck",
     re  = "Random effect",
+    spacetime = if (operator$method == "galerkin") "Space-time (Galerkin)" else "Space-time (Implicit Euler)",
     "Unknown"
   )
 
@@ -107,6 +108,12 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
       cat(pad_add4_space, "Covariance matrix (Sigma): \n")
       K = build_effect_K(nrow(operator$K), operator$theta_K)
       print(solve(t(K) %*% K))
+    },
+    spacetime = {
+      cat(pad_add4_space); cat("alpha =", format(alpha, digits=2), "(fixed)", "\n", sep=" ")
+      cat(pad_add4_space); cat("gamma =", format(gamma, digits=2), "(fixed)", "\n", sep=" ")
+      cat(pad_add4_space); cat("c =", format(exp(theta_K[1]), digits=2), "\n", sep=" ")
+      cat(pad_add4_space); cat("kappa =", format(exp(theta_K[2]), digits=2), "\n", sep=" ")
     },
     cat(pad_add4_space, "No parameter.", "\n", sep="")
   ))

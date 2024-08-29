@@ -122,6 +122,20 @@ public:
   void update_dK(const VectorXd&);
 };
 
+class Spacetime : public Operator {
+private:
+  VectorXd Ct_diag, Cs_diag; // not used
+  SparseMatrix<double, 0, int> BtCs,   Gs, Bs, Ct, Cs, S;
+  double lambda, alpha;
+  string method; // galerkin, backward Euler
+  bool stabilization;
+public:
+  Spacetime(const Rcpp::List&);
+
+  void update_K(const VectorXd&);
+  void update_dK(const VectorXd&);
+};
+
 // Bivar
 class Bivar : public Operator {
 private:
@@ -244,6 +258,8 @@ public:
       return std::make_shared<Tensor_prod>(operator_in);
     } else if (model_type == "ar1") {
       return std::make_shared<AR>(operator_in);
+    } else if (model_type == "spacetime") {
+      return std::make_shared<Spacetime>(operator_in);
     } else if (model_type == "ou") {
       return std::make_shared<Matern_ns>(operator_in, Type::ou);
     } else if (model_type == "matern" && n_theta_K > 1) {

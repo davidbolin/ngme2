@@ -645,6 +645,7 @@ ngme_cov_matrix <- function(
 
 ngme_build_A <- function(model, mesh, map, operator, group, group_levels=NULL) {
   group <- validate_rep_or_group(group, NULL)
+  
   if (is.null(group_levels)) group_levels <- levels(group)
 
   if (inherits(mesh, "metric_graph")) {
@@ -652,9 +653,11 @@ ngme_build_A <- function(model, mesh, map, operator, group, group_levels=NULL) {
     return (A)
   }
 
-  if (model == "tp") {
+  if (model %in% c("tp", "spacetime")) {
+    mesh_t <- if (model=="tp") operator$first$mesh else operator$mesh[[1]]
+    mesh_s <- if (model=="tp") operator$second$mesh else operator$mesh[[2]]
     stopifnot("Now only support first to be 1d model"
-      = inherits(operator$first$mesh, "inla.mesh.1d"))
+      = inherits(mesh_t, "inla.mesh.1d"))
 
     # watch-out! Should use as.factor to start at 1, not min(map[[1]])
     # blk_group <- as.integer(as.factor(map[[1]]))
@@ -663,13 +666,12 @@ ngme_build_A <- function(model, mesh, map, operator, group, group_levels=NULL) {
     # important to start with 1
     blk_group <- blk_group-min(blk_group)+1
 
-    blk <- fmesher::fm_block(blk_group, n_block = mesh[[1]]$n)
-    basis <- fmesher::fm_basis(operator$second$mesh, loc=map[[2]])
+    blk <- fmesher::fm_block(blk_group, n_block = mesh_t$n)
+    basis <- fmesher::fm_basis(mesh_s, loc=map[[2]])
     A0 = fmesher::fm_row_kron(Matrix::t(blk), basis)
 
-    if (operator$second$model != "bv") {
-      return (ngme_as_sparse(A0))
-    } else {
+    if (model=="tp" && operator$second$model == "bv") {
+      # for tp-bv model
       # check if group is valid
       if (length(group) == 0) stop("Please provide the `group` argument.")
       all(group %in% group_levels) || stop("The group is not valid.")
@@ -709,9 +711,12 @@ ngme_build_A <- function(model, mesh, map, operator, group, group_levels=NULL) {
       
       # return after re-order
         return (ngme_as_sparse(A_expand[, reorder_idx]))
-      }
+    } else {
+      return (ngme_as_sparse(A0))
+    }
   }
-
+  
+  # bivariate model
   if (model %in% c("bv", "bv_normal", "bv_matern_normal")) {
     # check if group is valid
     if (length(group) == 0) stop("Please provide the `group` argument.")

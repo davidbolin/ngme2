@@ -415,87 +415,155 @@ bv_matern_normal <- function(
 
 #' ngme space-time non-separable model specification
 #'
-#' @param mesh an fmesher::fm_mesh_2d object, mesh for build the SPDE model
+#' Given a spatial and temporal model, build a non-separable space-time model
+#'
+#'   can use ~ map_s + map_t to specify the model
+#' @param mesh a list of 2 objects,
+#' .   list(mesh_t, mesh_s), mesh_t is temporal mesh, mesh_s is spatial mesh
 # ' @param alpha 2 or 4, SPDE smoothness parameter
-#' @param theta_K initial value for theta_K, kappa = exp(B_K * theta_K)
-#' @param B_K bases for theta_K, ignore if use the stationary model
+#' @param c parameter
+#' @param kappa kappa parameter from matern SPDE
+#' @param lambda the spatial damping parameter
+#' @param gamma  2d vector, direction of the transport term
+#' @param method discretization method,
+#' @param alpha 2 or 4, SPDE smoothness parameter
+#' choose "galerkin" or "euler" for implicit euler
+#' @param normalize_gamma TRUE if normalize gamma to unit length
+#' @param stabilization TRUE if use stabilization term (for implicit euler)
 #' @param ... ignore
 #'
 #' @return ngme_operator object
 #' @export
-adv_diff <- function(
-  mesh_t,
-  mesh_s,
+spacetime <- function(
+  mesh,
+  gamma = c(1, 1), # gamma (s): function of mesh node
+  lambda = 1, # fixed
+  alpha = 2, # alpha = 2, 4, fixed
+  method = "galerkin", # galerkin, implicit euler
   # parameters
-    c = 1,
-    lambda = 1,
-    # H = I,
-    gamma = 0,
-  alpha = 2,
-  B_K = NULL,
+  c = 1,
+  kappa = 1,
+  normalize_gamma = TRUE,
+  stabilization = TRUE,
   ...
 ) {
-  mesh <- ngme_build_mesh(mesh)
-  stopifnot("alpha should be 2 or 4" = alpha == 2 || alpha == 4)
 
+  stopifnot(
+    "Please provide mesh as a list of length 2" = length(mesh) == 2,
+    "alpha should be 2 or 4" = alpha == 2 || alpha == 4,
+    "gamma should be of length 2" = length(gamma) == 2,
+    "method should be galerkin or euler" = method %in% c("galerkin", "euler"),
+    "First mesh should be 1d" = fmesher::fm_manifold_dim(mesh[[1]]) == 1,
+    "Second mesh should be 2d" =
+      fmesher::fm_manifold_dim(mesh[[2]]) == 2
+  )
 
-  
-  FV = mesh$graph$tv
-  P <- sf::st_coordinates(fmesher::fm_vertices(mesh))[,1:2]
-  fem2d <- rSPDE.fem2d(FV = FV, P = P)
+  if (normalize_gamma) gamma <- gamma / sqrt(sum(gamma^2))
 
+  mesh_t <- mesh[[1]]
+  mesh_s <- mesh[[2]]
+
+##### temporal FEM #####
+  fem_t <- fmesher::fm_fem(mesh_t, order = 2)
   nt <- mesh_t$n
-  Bt <- bandSparse(n = nt, m = nt, k = c(-1, 0, 1),
+  Ct <- fem_t$c0
+  Gt <- fem_t$g1
+  
+  # Build Bt
+  Bt <- Matrix::bandSparse(n = nt, m = nt, k = c(-1, 0, 1),
                    diagonals = cbind(rep(0.5,nt), rep(0,nt), rep(-0.5,nt)))
   Bt[1,1] = -0.5
   Bt[nt,nt] = 0.5
 
+##### space FEM #####
+  fem_s <- fmesher::fm_fem(mesh_s, order = alpha)
+  ns <- mesh_s$n
+  Cs <- fem_s$c0
+  Gs <- fem_s$g1
+  
+  # Build Bs
+  ret = ngme_make_Bs(mesh_s, gamma)
+  Bs <- ret$H
+  S <- ret$S  #stability matrix
+  
+  # compute h
+  if (method == "galerkin"){
+    h <- Matrix::diag(Ct) %x% Matrix::diag(Cs)
+  } else {
+    dt =c(1, diff(mesh_t$loc))
+    h <- dt %x% Matrix::diag(Cs) / c
+  }
 
+  # FV = mesh$graph$tv
+  # P <- sf::st_coordinates(fmesher::fm_vertices(mesh))[,1:2]
+  # fem2d <- rSPDE.fem2d(FV = FV, P = P)
+
+  theta_K <- c(log(c), log(kappa))
   update_K <- function(theta_K) {
-    kappas <- as.numeric(exp(B_K %*% theta_K))
-    if (length(theta_K) == 1) {
-      if (alpha == 2) {
-        kappas[1]^2 * C + G
-      } else {
-        Cinv <- C;
-        diag(Cinv) <- 1 / diag(C)
-        (G + kappas[1]^2 * C) %*% Cinv %*% (G + kappas[1]^2 * C)
+    c <- exp(theta_K[1])
+    kappa <- exp(theta_K[2])
+
+    # compute L_s
+    L = kappa^2 * Cs + lambda * Gs + Bs
+  
+    Cs_inv <- Matrix::Diagonal(n = ns, x = 1/Matrix::diag(Cs))
+    
+  # watch-out! make sure which t
+    if (alpha == 4) L = L %*% Cs_inv %*% Matrix::t(L)
+    
+    if (method == "galerkin") {
+      K <- Bt %x% Cs + 1/c * Ct %x% L
+    } else if (method == "euler") {
+      # implicit euler
+      dt =c(1, diff(mesh_t$loc))
+
+      null_matrix <- Matrix::Diagonal(n = ns, x = 0)
+      
+      if (stabilization) {
+        L = L + S
       }
-    } else {
-      GpKCK <- diag(kappas) %*% C %*% diag(kappas) + G
-      if (alpha == 2)
-        GpKCK
-      else {
-        Cinv <- C;
-        diag(Cinv) <- 1 / diag(C)
-        (GpKCK) %*% Cinv %*% GpKCK
-      }
+      
+      diag_L <- Matrix::bdiag(
+        lapply(1:(nt-1), function(i) L)
+      )
+      
+      K <- rw1(1:nt)$K %x% Cs + 1/c *
+        Matrix::bdiag(null_matrix, diag_L)
     }
+    return (K)
   }
   K <- update_K(theta_K)
 
-  
+  BtCs = if (method == "galerkin")
+    ngme_as_sparse(Bt %x% Cs) 
+    else ngme_as_sparse(rw1(1:nt)$K %x% Cs )
 
   ngme_operator(
+    model = "spacetime",
     mesh = mesh,
     alpha = alpha,
-    model = "matern",
+    gamma = gamma,
+    lambda = lambda,
+    method = method,
     theta_K = theta_K,
-    B_K = B_K,
-    C = ngme_as_sparse(C),
-    G = ngme_as_sparse(G),
     K = ngme_as_sparse(K),
     update_K = update_K,
     h = h,
-    symmetric = TRUE,
+    Ct_diag = Matrix::diag(Ct),
+    Cs_diag = Matrix::diag(Cs),
+    BtCs = BtCs,
+    Ct = ngme_as_sparse(Ct),
+    Cs = ngme_as_sparse(Cs),
+    Gs = ngme_as_sparse(Gs),
+    Bs = ngme_as_sparse(Bs),
+    S = ngme_as_sparse(S),
+    stabilization = stabilization,
+    symmetric = FALSE,
     zero_trace = FALSE,
-    stationary = stationary,
     param_name =
-      if (stationary) "kappa"
-      else paste("theta_K", seq_len(length(theta_K)), sep = " "),
+      c("c", "kappa", "lambda"),
     param_trans =
-      if (stationary) exp
-      else rep(list(identity), length(theta_K))
+      c(identity, exp, identity)
   )
 }
 

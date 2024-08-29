@@ -83,7 +83,7 @@ f <- function(
   }
 
   if (!is.null(data) && is.null(A)) {
-    if (model != "tp") stopifnot(
+    if (! model %in% c("tp", "spacetime")) stopifnot(
       "Please make sure length of map is same as nrow(data) in f()" =
       length_map(map) == nrow(data)
     ) else {
@@ -120,12 +120,13 @@ f <- function(
   # add arguments in ...
   f_args <- c(f_args, list(...))
 
-  if (model == "tp") {
+  # if (model %in% c("tp", "spacetime")) {
+  if (model %in% c("tp")) {
     stopifnot(
       "Please specify map as a list of length two (for 2 sub-models)" =
       is.list(map) && length(map) == 2
     )
-    # eval formula
+    
     map <- lapply(map, function(x) {
       if (inherits(x, "formula")) {
         model.matrix(x, data)[, -1]
@@ -275,6 +276,7 @@ build_operator <- function(model_name, args_list) {
     ou  = do.call(ou, args_list),
     matern = do.call(matern, args_list),
     re  = do.call(re, args_list),
+    spacetime = do.call(spacetime, args_list),
     iid = {
       if (is.null(args_list$n))
         args_list$n <- length_map(args_list$map)

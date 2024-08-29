@@ -122,6 +122,20 @@ public:
   void update_dK(const VectorXd&);
 };
 
+class Spacetime : public Operator {
+private:
+  VectorXd Ct_diag, Cs_diag; // not used
+  SparseMatrix<double, 0, int> BtCs,   Gs, Bs, Ct, Cs, S;
+  double lambda, alpha;
+  string method; // galerkin, backward Euler
+  bool stabilization;
+public:
+  Spacetime(const Rcpp::List&);
+
+  void update_K(const VectorXd&);
+  void update_dK(const VectorXd&);
+};
+
 // Bivar
 class Bivar : public Operator {
 private:
@@ -204,7 +218,25 @@ public:
     Matrix2d get_dD2_rho(double, double) const;
 };
 
+class bv_matern_nig : public Operator {
+private:
+    std::shared_ptr<Matern> first, second;
+    int n_theta_1, n_theta_2;
+    int n; // dim of K1 and K2 (same)
+    bool share_param, fix_bv_theta;
+    double dim, alpha1, alpha2, nu1, nu2;
+public:
+    bv_matern_nig(const Rcpp::List&);
 
+    void update_K(const VectorXd&);
+    void update_dK(const VectorXd&);
+
+    Matrix2d getD(double, double) const;
+    Matrix2d get_dD_theta(double, double) const;
+    Matrix2d get_dD_rho(double, double) const;
+    Matrix2d get_dD2_theta(double, double) const;
+    Matrix2d get_dD2_rho(double, double) const;
+};
 
 
 // notice dK is of size 0
@@ -244,6 +276,8 @@ public:
       return std::make_shared<Tensor_prod>(operator_in);
     } else if (model_type == "ar1") {
       return std::make_shared<AR>(operator_in);
+    } else if (model_type == "spacetime") {
+      return std::make_shared<Spacetime>(operator_in);
     } else if (model_type == "ou") {
       return std::make_shared<Matern_ns>(operator_in, Type::ou);
     } else if (model_type == "matern" && n_theta_K > 1) {
@@ -256,10 +290,12 @@ public:
       return std::make_shared<Randeff>(operator_in);
     } else if (model_type == "bv") {
       return std::make_shared<Bivar>(operator_in);    
-    } else if (model_type == "bv_matern_normal") {
-      return std::make_shared<bv_matern_normal>(operator_in);
     } else if (model_type == "bv_normal") {
       return std::make_shared<Bivar_normal_ope>(operator_in);
+    } else if (model_type == "bv_matern_normal") {
+      return std::make_shared<bv_matern_normal>(operator_in);
+    } else if (model_type == "bv_matern_nig") {
+      return std::make_shared<bv_matern_nig>(operator_in);
     } else {
       throw std::runtime_error("Unknown model.");
     }

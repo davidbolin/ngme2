@@ -47,12 +47,14 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
     tp  = "Tensor product",
     bv  = "Bivariate model (non-Gaussian noise)",
     bv_matern_normal  = "Bivariate Matern model (normal noise)",
+    bv_matern_nig  = "Bivariate Matern model (NIG noise)",
     bv_normal  = "Bivariate model 2 (normal noise)",
     iid = "IID model",
     rw1 = "Random walk (order 1)",
     rw2 = "Random walk (order 2)",
     ou  = "Ornstein-Uhlenbeck",
     re  = "Random effect",
+    spacetime = if (operator$method == "galerkin") "Space-time (Galerkin)" else "Space-time (Implicit Euler)",
     "Unknown"
   )
 
@@ -100,6 +102,18 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
       print(operator$first,  padding = padding + 4, prefix = model_names[[1]])
       print(operator$second, padding = padding + 4, prefix = model_names[[2]])
     },
+    bv_matern_nig = {
+      theta = operator$param_trans[[1]](theta_K[1])
+      rho   = operator$param_trans[[2]](theta_K[2])
+      sd1   = operator$param_trans[[3]](theta_K[3])
+      sd2   = operator$param_trans[[4]](theta_K[4])
+      cat(pad_add4_space, "theta = ", format(theta, digits=3), "\n", sep="")
+      cat(pad_add4_space, "rho = ", format(rho, digits=3), "\n", sep="")
+      cat(pad_add4_space, "sd1 = ", format(sd1, digits=3), "\n", sep="")
+      cat(pad_add4_space, "sd2 = ", format(sd2, digits=3), "\n", sep="")
+      print(operator$first,  padding = padding + 4, prefix = model_names[[1]])
+      print(operator$second, padding = padding + 4, prefix = model_names[[2]])
+    },
     ou = {
       cat(pad_add4_space); cat("theta_K = ", format(theta_K, digits=2), "\n", sep=" ")
     },
@@ -107,6 +121,12 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
       cat(pad_add4_space, "Covariance matrix (Sigma): \n")
       K = build_effect_K(nrow(operator$K), operator$theta_K)
       print(solve(t(K) %*% K))
+    },
+    spacetime = {
+      cat(pad_add4_space); cat("alpha =", format(alpha, digits=2), "(fixed)", "\n", sep=" ")
+      cat(pad_add4_space); cat("gamma =", format(gamma, digits=2), "(fixed)", "\n", sep=" ")
+      cat(pad_add4_space); cat("c =", format(exp(theta_K[1]), digits=2), "\n", sep=" ")
+      cat(pad_add4_space); cat("kappa =", format(exp(theta_K[2]), digits=2), "\n", sep=" ")
     },
     cat(pad_add4_space, "No parameter.", "\n", sep="")
   ))

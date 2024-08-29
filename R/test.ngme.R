@@ -194,16 +194,16 @@ print(paste("nodes of mesh = ", mesh$n))
       true_model <- f(
         loc,
         model="bv",
-        theta = 0, rho = 0,
+        theta = pi/4, rho = 2,
         sub_models = list(
           first = list(model="matern", kappa=2),
-          second= list(model="matern", kappa=4)
+          second= list(model="matern", kappa=5)
         ),
         mesh = mesh,
         group = group_per_rep,
         noise = list(
-          first=noise_nig(mu=-3, sigma=2, nu=1),
-          second=noise_nig(mu=-3, sigma=2, nu=1)
+          first=noise_nig(mu=-2, sigma=0.5, nu=1),
+          second=noise_nig(mu=2, sigma=0.3, nu=0.5)
         )
       )
       W <- simulate(true_model, seed=seed)[[1]]

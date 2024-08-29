@@ -115,6 +115,8 @@ if (noise_in.containsElementNamed("latent_fix_theta_sigma_normal"))
     // init K, Q, dK
     int n_trace_iter = Rcpp::as<int> (model_list["n_trace_iter"]);
     ope->update_K(theta_K);
+
+// if (debug) std::cout << "update K" << std::endl;
     if (V_size == W_size) {
         if (!symmetricK) {
             // lu_solver_K.set_N(n_trace_iter);

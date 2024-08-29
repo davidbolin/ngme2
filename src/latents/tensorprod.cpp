@@ -56,3 +56,66 @@ void Tensor_prod::update_dK(const VectorXd& theta_K) {
   }
 }
 
+
+
+
+
+
+
+// Non-separable Space-time model
+
+Spacetime::Spacetime(const Rcpp::List& operator_list):
+  Operator(operator_list),
+  Ct_diag (Rcpp::as<VectorXd> (operator_list["Ct_diag"])),
+  Cs_diag (Rcpp::as<VectorXd> (operator_list["Cs_diag"])),
+  BtCs (Rcpp::as<SparseMatrix<double, 0, int>> (operator_list["BtCs"])),
+  Gs (Rcpp::as<SparseMatrix<double, 0, int>> (operator_list["Gs"])),
+  Bs (Rcpp::as<SparseMatrix<double, 0, int>> (operator_list["Bs"])),
+  // Ct (Ct_diag.asDiagonal()),
+  // Cs (Cs_diag.asDiagonal()),
+  Ct (Rcpp::as<SparseMatrix<double, 0, int>> (operator_list["Ct"])),
+  Cs (Rcpp::as<SparseMatrix<double, 0, int>> (operator_list["Cs"])),
+  S (Rcpp::as<SparseMatrix<double, 0, int>> (operator_list["S"])),
+  lambda (Rcpp::as<double> (operator_list["lambda"])),
+  alpha (Rcpp::as<double> (operator_list["alpha"])),
+  // S  (Rcpp::as<SparseMatrix<double, 0, int>> (operator_list["S"])),
+  method (Rcpp::as<string> (operator_list["method"])),
+  stabilization (Rcpp::as<bool> (operator_list["stabilization"]))
+{}
+
+void Spacetime::update_K(const VectorXd& theta_K) {
+  double c = exp(theta_K[0]);
+  double kappa = exp(theta_K[1]);
+
+  SparseMatrix<double> Ls = (kappa*kappa * Cs + lambda * Gs + Bs);
+  
+  // alpha=4, L = L %*% solve(Ct %x% Cs, L) 
+  if (alpha == 4) 
+    Ls = Ls * Cs_diag.cwiseInverse().asDiagonal() * Ls.transpose();
+  // Ct is diagonal
+
+if (method == "galerkin") {
+  KroneckerProductSparse<SparseMatrix<double>, SparseMatrix<double> > kroneckerEigen(Ct, Ls);
+
+  // update K
+  K = kroneckerEigen.eval();
+} else if (method == "euler") {
+  // K = bdiag(0, Ls, ..., Ls) 
+
+  // create diag(0, 1, 1, ..., 1) (nt-1) 1
+  Eigen::SparseMatrix<double> I_sparse(Ct.rows(), Ct.rows());
+  for (int i = 1; i < Ct.rows(); ++i) {
+    I_sparse.insert(i, i) = 1;
+  }
+
+  if (stabilization) Ls = Ls + S;
+
+  KroneckerProductSparse<SparseMatrix<double>, SparseMatrix<double> > kroneckerEigen(I_sparse, Ls);
+}
+  
+  K = BtCs + K / c;
+}
+
+void Spacetime::update_dK(const VectorXd& theta_K) {
+}
+

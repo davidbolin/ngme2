@@ -2,8 +2,8 @@
 % Please edit documentation in R/ngme2-package.R
 \docType{package}
 \name{ngme2}
-\alias{ngme2-package}
 \alias{ngme2}
+\alias{ngme2-package}
 \title{Inference and prediction for mixed effects models with flexible non-Gaussian and Gaussian distributions.}
 \description{
 Inference and prediction for linear mixed effects models with flexible non-Gaussian and Gaussian distributions.

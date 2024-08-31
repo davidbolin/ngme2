@@ -489,7 +489,7 @@ bv_matern_nig <- function(
   }
 
   theta_K <- c(
-    rho, log(sd1), log(sd2), theta,
+    theta, rho, log(sd1), log(sd2),
     first$theta_K, second$theta_K
   )
 

@@ -240,6 +240,10 @@ if (noise[[1]]$noise_type != "normal") {
     noise$fix_theta_sigma <- TRUE
     noise$n_params  <- noise$n_params - noise$n_theta_sigma
     noise$n_theta_sigma  <- 0
+
+    # for printing to ignore sigma
+    noise$bv_noises[[1]]$fix_theta_sigma <- TRUE
+    noise$bv_noises[[2]]$fix_theta_sigma <- TRUE
   }
 
   ngme_model(

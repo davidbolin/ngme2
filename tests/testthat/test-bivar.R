@@ -162,12 +162,11 @@ test_that("test on bv matern NIG", {
   # plot(mesh); points(long, lat)
  
   # parameters of the bivariate model
-  theta = pi/4; rho = 1;
+  theta = pi/4; rho = 0.2
   theta_K_1 = log(2); theta_K_2 = log(5);
   mu_1 = -2; sigma_1 = 0.5; nu_1 = 1
   mu_2 = 2; sigma_2 = 0.3; nu_2 = 0.5
 
-  # load_all()
   true_model <- f(
     ~ long + lat,
     theta = theta,
@@ -209,7 +208,7 @@ test_that("test on bv matern NIG", {
   B_sigma[group=="W1", 1] = 1
   B_sigma[group=="W2", 2] = 1
 
-load_all()
+# load_all()
   out_cor <- ngme(
     Y ~ 0 + x1 + x2 + f(
       ~ long + lat,

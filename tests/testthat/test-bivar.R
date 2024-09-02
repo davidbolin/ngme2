@@ -208,8 +208,41 @@ test_that("test on bv matern NIG", {
   B_sigma[group=="W1", 1] = 1
   B_sigma[group=="W2", 2] = 1
 
-# load_all()
-  out_cor <- ngme(
+# 
+  out_cor_gauss <- ngme(
+    Y ~ 0 + x1 + x2 + f(
+      ~ long + lat,
+      mesh = mesh,
+      model = "bv_matern_normal",
+      name = "bv",
+      sub_models = list(
+        W1 = list(model = "matern"),
+        W2 = list(model = "matern")
+      ),
+      # debug=T,
+      noise = list(
+        W1 = noise_normal(),
+        W2 = noise_normal()
+      )
+    ),
+    group = group,
+    family = noise_normal(
+      corr_measurement = TRUE,
+      index_corr = c(1:(n_obs/2), 1:(n_obs/2)),
+      B_sigma = B_sigma,
+      theta_sigma = c(0, 0)
+    ),
+    data = data.frame(Y, long, lat),
+    control_opt = control_opt(
+      iterations = 20,
+      n_parallel_chain = 4,
+      seed = 50
+    ),
+    debug = FALSE
+  )
+  out_cor_gauss
+
+  out_cor_nig <- ngme(
     Y ~ 0 + x1 + x2 + f(
       ~ long + lat,
       mesh = mesh,
@@ -234,27 +267,13 @@ test_that("test on bv matern NIG", {
     ),
     data = data.frame(Y, long, lat),
     control_opt = control_opt(
+      estimation = TRUE,
       iterations = 20,
-      n_parallel_chain = 4,
-      rao_blackwellization = TRUE,
-      verbose = TRUE,
       print_check_info = FALSE,
       seed = 50
     ),
-    debug = FALSE
+    debug = FALSE,
+    start = out_cor_gauss
   )
-  
-  out_cor
-
-  # comparing with simulated value
-  traceplot(
-    out_cor, "bv",
-    hline=c(theta, rho, sigma_1, sigma_2, exp(theta_K_1), exp(theta_K_2),
-    mu_1, mu_2, nu_1, nu_2)
-  )
-
-  traceplot(
-    out_cor,
-    hline=c(log(sd_1), log(sd_2), rho_e, feff)
-  )
+  out_cor_nig
 })

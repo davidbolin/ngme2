@@ -136,26 +136,43 @@ ngme <- function(
         }
         
         noise <- update_noise(noise, new_noise = start$replicates[[i]]$noise)
-        for (i in seq_along(start$replicates[[i]]$models)) {
-          # update operator representation
-          models[[i]]$operator <-
-            start$replicates[[i]]$models[[i]]$operator
+        for (j in seq_along(start$replicates[[i]]$models)) {
+          prev_model_type <- 
+            start$replicates[[i]]$models[[j]]$model
+          prev_model_ope <- 
+            start$replicates[[i]]$models[[j]]$operator
+          
+          # update parameter of K
+          if (models[[j]]$model == "bv_matern_nig" && prev_model_type == "bv_matern_normal") {
+            # update theta_K
+            models[[j]]$theta_K <- models[[j]]$operator$theta_K <- 
+              c(0, prev_model_ope$theta_K)
+            
+            # for printing
+            models[[j]]$operator$first <- prev_model_ope$first
+            models[[j]]$operator$second <- prev_model_ope$second
+          } else {
+            stopifnot(
+              "Please make sure model type are the same" =
+              models[[j]]$model == prev_model_type)
+            # default case
+            # update operator representation
+            models[[j]]$operator <- prev_model_ope
+
+            models[[j]]$theta_K  <- models[[j]]$operator$theta_K
+          }
 
 stopifnot(
-  "Please provide the same number of parameters" =
-  length(models[[i]]$theta_K) == length(start$replicates[[i]]$models[[i]]$theta_K))
-stopifnot(
   "length of W should be the same" =
-  models[[i]]$W_size == length(start$replicates[[i]]$models[[i]]$W))
+  models[[j]]$W_size == length(start$replicates[[i]]$models[[j]]$W))
 stopifnot(
   "length of V should be the same" =
-  models[[i]]$V_size == length(start$replicates[[i]]$models[[i]]$noise$V))
-          # update parameters
-          models[[i]]$theta_K  <- models[[i]]$operator$theta_K
-          models[[i]]$W        <- start$replicates[[i]]$models[[i]]$W
-          models[[i]]$noise$V  <- start$replicates[[i]]$models[[i]]$noise$V
-          models[[i]]$noise    <- update_noise(
-            models[[i]]$noise, new_noise = start$replicates[[i]]$models[[i]]$noise
+  models[[j]]$V_size == length(start$replicates[[i]]$models[[j]]$noise$V))
+          # update the rest
+          models[[j]]$W        <- start$replicates[[i]]$models[[j]]$W
+          models[[j]]$noise$V  <- start$replicates[[i]]$models[[j]]$noise$V
+          models[[j]]$noise    <- update_noise(
+            models[[j]]$noise, new_noise = start$replicates[[i]]$models[[j]]$noise
           )
         }
       })

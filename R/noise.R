@@ -29,6 +29,8 @@
 #' @param fix_theta_sigma_normal  fix the parameter of sigma_normal, used in noise_normal_nig()
 #' @param fix_rho    fix the parameter of rho
 #' @param fix_V         fix the sampling of V
+#' @param shared_sigma allow only in measurement noise,
+#'  gives Y|W ~ N(mean * sigma, sigma^2)
 #' @param theta_sigma_normal for normal nosie with nig noise sharing same parameter
 #' @param B_sigma_normal    for normal nosie with nig noise sharing same parameter
 #' @param sigma_normal  for normal nosie with nig noise sharing same parameter
@@ -73,6 +75,7 @@ ngme_noise <- function(
   index_corr      = NULL,
   map_corr        = NULL,
   nu_lower_bound  = 0.01,
+  shared_sigma    = FALSE,
   rho             = double(0),
   prior_mu        = ngme_prior("normal", param=c(0, 0.01)),
   prior_sigma     = ngme_prior("normal", param=c(0, 0.01)),
@@ -164,6 +167,7 @@ ngme_noise <- function(
       index_corr      = index_corr,
       map_corr        = map_corr,
       rho             = rho,
+      shared_sigma    = shared_sigma,
       prior_mu        = prior_mu,
       prior_sigma     = prior_sigma,
       prior_nu        = prior_nu,

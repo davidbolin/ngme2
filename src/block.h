@@ -96,7 +96,7 @@ protected:
     SparseLU<SparseMatrix<double>> LU_K;
     double logdet_Q_eps;
 
-    bool all_gaussian, rao_blackwell; // No need for gibbs sampling
+    bool all_gaussian, rao_blackwell, shared_sigma; // No need for gibbs sampling
     std::string par_string;
     VectorXd rb_trace_noise_sigma;
 

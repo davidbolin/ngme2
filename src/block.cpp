@@ -114,6 +114,7 @@ if (noise_in.containsElementNamed("fix_rho"))
     B_nu          = (Rcpp::as<MatrixXd>      (noise_in["B_nu"])),
     theta_nu      = (Rcpp::as<VectorXd>      (noise_in["theta_nu"])),
     n_theta_nu    = (Rcpp::as<int>           (noise_in["n_theta_nu"])),
+    shared_sigma  = Rcpp::as<bool> (noise_in["shared_sigma"]),
 
     rb_trace_noise_sigma = VectorXd::Zero(n_theta_sigma),
 
@@ -194,6 +195,10 @@ if (debug) std::cout << "After assemble" << std::endl;
   if (n_latent > 0) {
     VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
     Q = K.transpose() * inv_SV.asDiagonal() * K;
+    if (!corr_measure && shared_sigma) {
+      // special case of shared_sigma
+      QQ = Q + A.transpose() * A;
+    } else
     if (!corr_measure) {
       QQ = Q + A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V).asDiagonal() * A;
     } else{
@@ -303,9 +308,13 @@ void BlockModel::sampleW_VY(bool burn_in) {
   // M = K' * inv(SV) * mean + A' * inv(Sigma) * (Y - X * beta - (1 - V) mu)
   VectorXd M = K.transpose() * inv_SV.asDiagonal() * getMean();
 
-  if (!corr_measure) {
+  if (!corr_measure && shared_sigma) {
+    // special case of shared_sigma, replace Y by Y/sigma_e
+    M += A.transpose() * (get_residual_part() - Y + Y.cwiseQuotient(noise_sigma)); 
+  }
+  else if (!corr_measure) {
     M += A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V).asDiagonal() * get_residual_part();
-  } else{
+  } else {
     M += A.transpose() * Q_eps * get_residual_part();
   }
 
@@ -490,6 +499,12 @@ VectorXd BlockModel::grad_beta() {
 
   VectorXd residual = get_residual(rao_blackwell); // + X * beta;
   VectorXd grads = X.transpose() * noise_inv_SV.asDiagonal() * residual;
+
+// special case
+if (shared_sigma) {
+  residual = residual - Y + Y.cwiseQuotient(noise_sigma); // replace Y by Y/sigma_e
+  grads = X.transpose() * residual;
+}
   //  * residual.cwiseQuotient(noise_sigma);
 
   // MatrixXd hess = X.transpose() * noise_inv_SV.asDiagonal() * X;
@@ -509,6 +524,8 @@ VectorXd BlockModel::grad_theta_mu() {
   // grad = hess.ldlt().solve(grad);
 
   VectorXd noise_SV = noise_V.cwiseProduct(noise_sigma.array().pow(2).matrix());
+
+if (shared_sigma) {noise_SV = noise_V;}
 
   // VectorXd residual = get_residual(false);
   VectorXd residual = get_residual(rao_blackwell);
@@ -540,6 +557,15 @@ VectorXd BlockModel::grad_theta_sigma() {
   VectorXd tmp1 = vsq - VectorXd::Ones(n_obs);
   grad = B_sigma.transpose() * tmp1;
   if (rao_blackwell) grad += rb_trace_noise_sigma;
+
+// special case for Y|W ～ N(sigma_e(X*beta + A*W), sigma_e)
+// dsigma_e = -1 + e^(-2 t) Y^2 - e^-t Y (A W + X \[Beta]) , t = log_sigma_e
+if (shared_sigma) {
+  VectorXd mean = - get_residual(false) + Y;  // AW+Xbeta
+  VectorXd Y_by_sigma = Y.cwiseQuotient(noise_sigma);
+  VectorXd Y_by_sigma_sq = Y_by_sigma.array().pow(2);
+  grad = B_sigma.transpose() * (- VectorXd::Ones(n_obs) + Y_by_sigma_sq - Y_by_sigma.cwiseProduct(mean));
+}
 
   // add prior
   // for (int l=0; l < n_theta_sigma; l++) {
@@ -1028,7 +1054,11 @@ void BlockModel::update_QQ() {
 
   // update Q and QQ
   Q = K.transpose() * inv_SV.asDiagonal() * K;
-  if (!corr_measure) {
+  if (!corr_measure && shared_sigma) {
+    // spacial case for Y|W ~ N(sigma_e(X*beta + A*W), sigma_e)
+    QQ = Q + A.transpose() * noise_V.cwiseInverse().asDiagonal() * A;
+  }
+  else if (!corr_measure) {
     QQ = Q + A.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V).asDiagonal() * A;
   } else{
     QQ = Q + A.transpose() * Q_eps * A;

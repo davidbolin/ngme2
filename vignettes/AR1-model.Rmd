@@ -114,7 +114,7 @@ ngme_out <- ngme(
 ngme_out
 
 # traceplot of fixed effects and measurementn noise
-traceplot(ngme_out, hline=c(2, -1, 2))
+traceplot(ngme_out, hline=c(2, -1, 2), moving_window = 20)
 
 # traceplot of ar1 model
 traceplot(ngme_out, "my_ar", hline=c(0.5, -3, 4, 0.4))

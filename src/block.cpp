@@ -568,9 +568,9 @@ if (shared_sigma) {
 }
 
   // add prior
-  // for (int l=0; l < n_theta_sigma; l++) {
-  //     grad(l) += PriorUtil::d_log_dens(prior_sigma_type, prior_sigma_param, theta_sigma(l));
-  // }
+  for (int l=0; l < n_theta_sigma; l++) {
+    grad(l) += PriorUtil::d_log_dens(prior_sigma_type, prior_sigma_param, theta_sigma(l));
+  }
 
   return -grad;
 }

@@ -559,7 +559,6 @@ bv_matern_nig <- function(
 #' @param method discretization method,
 #' @param alpha 2 or 4, SPDE smoothness parameter
 #' choose "galerkin" or "euler" for implicit euler
-#' @param normalize_gamma TRUE if normalize gamma to unit length
 #' @param stabilization TRUE if use stabilization term (for implicit euler)
 #' @param ... ignore
 #'
@@ -567,14 +566,14 @@ bv_matern_nig <- function(
 #' @export
 spacetime <- function(
   mesh,
-  gamma = c(1, 1), # gamma (s): function of mesh node
   lambda = 1, # fixed
   alpha = 2, # alpha = 2, 4, fixed
+  gamma = c(0, 0), # gamma (s): function of mesh node
   method = "galerkin", # galerkin, implicit euler
   # parameters
-  c = 1,
+  cc = 1,
   kappa = 1,
-  normalize_gamma = TRUE,
+  # normalize_gamma = TRUE,
   stabilization = TRUE,
   ...
 ) {
@@ -588,8 +587,6 @@ spacetime <- function(
     "Second mesh should be 2d" =
       fmesher::fm_manifold_dim(mesh[[2]]) == 2
   )
-
-  if (normalize_gamma) gamma <- gamma / sqrt(sum(gamma^2))
 
   mesh_t <- mesh[[1]]
   mesh_s <- mesh[[2]]
@@ -622,20 +619,20 @@ spacetime <- function(
     h <- Matrix::diag(Ct) %x% Matrix::diag(Cs)
   } else {
     dt =c(1, diff(mesh_t$loc))
-    h <- dt %x% Matrix::diag(Cs) / c
+    h <- dt %x% Matrix::diag(Cs) / cc
   }
 
   # FV = mesh$graph$tv
   # P <- sf::st_coordinates(fmesher::fm_vertices(mesh))[,1:2]
   # fem2d <- rSPDE.fem2d(FV = FV, P = P)
 
-  theta_K <- c(log(c), log(kappa))
+  theta_K <- c(log(cc), log(kappa))
   update_K <- function(theta_K) {
-    c <- exp(theta_K[1])
+    cc <- exp(theta_K[1])
     kappa <- exp(theta_K[2])
 
     # compute L_s
-    L = kappa^2 * Cs + lambda * Gs + Bs
+    L = kappa^2 * Cs + lambda * Gs # + Bs
   
     Cs_inv <- Matrix::Diagonal(n = ns, x = 1/Matrix::diag(Cs))
     
@@ -643,7 +640,7 @@ spacetime <- function(
     if (alpha == 4) L = L %*% Cs_inv %*% Matrix::t(L)
     
     if (method == "galerkin") {
-      K <- Bt %x% Cs + 1/c * Ct %x% L
+      K <- Bt %x% Cs + 1/cc * Ct %x% L
     } else if (method == "euler") {
       # implicit euler
       dt =c(1, diff(mesh_t$loc))
@@ -651,14 +648,14 @@ spacetime <- function(
       null_matrix <- Matrix::Diagonal(n = ns, x = 0)
       
       if (stabilization) {
-        L = L + S
+        L = L # + S
       }
       
       diag_L <- Matrix::bdiag(
         lapply(1:(nt-1), function(i) L)
       )
       
-      K <- rw1(1:nt)$K %x% Cs + 1/c *
+      K <- rw1(1:nt)$K %x% Cs + 1/cc *
         Matrix::bdiag(null_matrix, diag_L)
     }
     return (K)
@@ -667,7 +664,7 @@ spacetime <- function(
 
   BtCs = if (method == "galerkin")
     ngme_as_sparse(Bt %x% Cs) 
-    else ngme_as_sparse(rw1(1:nt)$K %x% Cs )
+    else ngme_as_sparse(rw1(1:nt)$K %x% Cs)
 
   ngme_operator(
     model = "spacetime",
@@ -692,9 +689,9 @@ spacetime <- function(
     symmetric = FALSE,
     zero_trace = FALSE,
     param_name =
-      c("c", "kappa", "lambda"),
+      c("cc", "kappa"),
     param_trans =
-      c(identity, exp, identity)
+      c(exp, exp)
   )
 }
 

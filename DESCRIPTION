@@ -46,7 +46,8 @@ Suggests:
     plotly,
     usethis,
     devtools,
-    MetricGraph (>= 1.1.2)
+    MetricGraph (>= 1.1.2),
+    zoo
 Additional_repositories: https://inla.r-inla-download.org/R/testing
 VignetteBuilder: knitr
 RoxygenNote: 7.3.1

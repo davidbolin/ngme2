@@ -125,7 +125,7 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
     spacetime = {
       cat(pad_add4_space); cat("alpha =", format(alpha, digits=2), "(fixed)", "\n", sep=" ")
       cat(pad_add4_space); cat("gamma =", format(gamma, digits=2), "(fixed)", "\n", sep=" ")
-      cat(pad_add4_space); cat("c =", format(exp(theta_K[1]), digits=2), "\n", sep=" ")
+      cat(pad_add4_space); cat("cc =", format(exp(theta_K[1]), digits=2), "\n", sep=" ")
       cat(pad_add4_space); cat("kappa =", format(exp(theta_K[2]), digits=2), "\n", sep=" ")
     },
     cat(pad_add4_space, "No parameter.", "\n", sep="")

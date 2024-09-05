@@ -115,6 +115,8 @@ traceplot <- function(
 ) {
   stopifnot(inherits(ngme, "ngme"))
   stopifnot(!is.null(name))
+  stopifnot(requireNamespace("dplyr", quietly = TRUE))
+  stopifnot(requireNamespace("tidyr", quietly = TRUE))
   ngme <- ngme$replicates[[1]]
   ps <- list()
 
@@ -151,14 +153,23 @@ traceplot <- function(
     df_long$value <- ff(df_long$value)
     
     # update df using moving window
-    df_long <- df_long %>%
-      dplyr::group_by(key) %>%
-      dplyr::mutate(moving_avg = zoo::rollapply(value, width = moving_window, FUN = mean, align = "right", fill = NA)) %>%
-      na.omit()
+    df_long <- dplyr::group_by(df_long, key)
+    if (moving_window > 1) {
+      if (!requireNamespace("zoo", quietly = TRUE)) {
+        message("Package 'zoo' is not installed. Using original data without moving average.")
+        df_long$moving_avg <- df_long$value
+      } else {
+        df_long <- dplyr::mutate(df_long, moving_avg = zoo::rollapply(value, width = moving_window, FUN = mean, align = "right", fill = NA))
+      }
+    } else {
+      df_long$moving_avg <- df_long$value
+    }
+    df_long <- na.omit(df_long)
     
-    df_mean <- df_long %>%
-      dplyr::group_by(x) %>%
-      dplyr::summarise(mean_moving_avg = mean(moving_avg)) 
+    df_mean <- dplyr::summarise(
+      dplyr::group_by(df_long, x),
+      mean_moving_avg = mean(moving_avg)
+    )
 
     ps[[idx]] <- ggplot() +
       geom_line(

@@ -87,7 +87,8 @@ void Spacetime::update_K(const VectorXd& theta_K) {
   double c = exp(theta_K[0]);
   double kappa = exp(theta_K[1]);
 
-  SparseMatrix<double> Ls = (kappa*kappa * Cs + lambda * Gs + Bs);
+  // SparseMatrix<double> Ls = (kappa*kappa * Cs + lambda * Gs + Bs);
+  SparseMatrix<double> Ls = (kappa*kappa * Cs + lambda * Gs);
   
   // alpha=4, L = L %*% solve(Ct %x% Cs, L) 
   if (alpha == 4) 
@@ -108,7 +109,7 @@ if (method == "galerkin") {
     I_sparse.insert(i, i) = 1;
   }
 
-  if (stabilization) Ls = Ls + S;
+  // if (stabilization) Ls = Ls + S;
 
   KroneckerProductSparse<SparseMatrix<double>, SparseMatrix<double> > kroneckerEigen(I_sparse, Ls);
 }

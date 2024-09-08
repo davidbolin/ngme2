@@ -635,8 +635,8 @@ spacetime <- function(
   FV = mesh_s$graph$tv
   P <- sf::st_coordinates(fmesher::fm_vertices(mesh_s))[,1:2]
   fem2d <- rSPDE::rSPDE.fem2d(FV = FV, P = P)
-  Bx = fem2d$Bx
-  By = fem2d$By
+  Bx = fem2d$Bx; By = fem2d$By
+  Hxx = fem2d$Hxx; Hyy = fem2d$Hyy; Hxy = fem2d$Hxy; Hyx = fem2d$Hyx
 
   theta_K <- if (fix_gamma) c(log(cc), log(kappa)) else 
     c(log(cc), log(kappa), theta_gamma_x, theta_gamma_y)
@@ -648,14 +648,23 @@ spacetime <- function(
   # gamma_t <- B_gamma_t %*% theta_gamma_t
 
   build_Bs <- function(gamma_x, gamma_y) {
-    Matrix::Diagonal(x = gamma_x) %*% Bx + Matrix::Diagonal(x = gamma_y) %*% By 
+    Dx = Matrix::Diagonal(x = gamma_x) 
+    Dy = Matrix::Diagonal(x = gamma_y)
+    Dx %*% Bx %*% Dx + Dy %*% By %*% Dy
   }
-  build_S <- function() {
-    Matrix::Diagonal(x = rep(0, ns))
+
+  build_S <- function(gamma_x, gamma_y) {
+    gamma_xx = gamma_x^2
+    gamma_yy = gamma_y^2
+    gamma_xy = gamma_x * gamma_y
+    Dxx = Matrix::Diagonal(x = gamma_xx)
+    Dyy = Matrix::Diagonal(x = gamma_yy)
+    Dxy = Matrix::Diagonal(x = gamma_xy)
+    Dxx %*% Hxx %*% Dxx + Dyy %*% Hyy %*% Dyy + Dxy %*% (Hxy + Hyx) %*% Dxy
   }
     
   Bs = build_Bs(gamma_x, gamma_y)
-  S = build_S()
+  S = build_S(gamma_x, gamma_y)
   
   # compute L_s
   update_K <- function(theta_K) {
@@ -669,7 +678,7 @@ spacetime <- function(
 
     if (!fix_gamma) {
       Bs = build_Bs(gamma_x, gamma_y)
-      S = build_S()
+      S = build_S(gamma_x, gamma_y)
     }
 
     # compute L_s
@@ -731,6 +740,10 @@ spacetime <- function(
     Bx = ngme_as_sparse(Bx),
     By = ngme_as_sparse(By),
     S = ngme_as_sparse(S),
+    Hxx = ngme_as_sparse(Hxx),
+    Hyy = ngme_as_sparse(Hyy),
+    Hxy = ngme_as_sparse(Hxy),
+    Hyx = ngme_as_sparse(Hyx),
     stabilization = stabilization,
     symmetric = FALSE,
     zero_trace = FALSE,

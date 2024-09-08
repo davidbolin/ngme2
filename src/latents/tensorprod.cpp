@@ -76,6 +76,10 @@ Spacetime::Spacetime(const Rcpp::List& operator_list):
   By (Rcpp::as<SparseMatrix<double, 0, int>> (operator_list["By"])),
   S (Rcpp::as<SparseMatrix<double, 0, int>> (operator_list["S"])),
   Bs (Rcpp::as<SparseMatrix<double, 0, int>> (operator_list["Bs"])),
+  Hxx (Rcpp::as<SparseMatrix<double, 0, int>> (operator_list["Hxx"])),
+  Hyy (Rcpp::as<SparseMatrix<double, 0, int>> (operator_list["Hyy"])),
+  Hxy (Rcpp::as<SparseMatrix<double, 0, int>> (operator_list["Hxy"])),
+  Hyx (Rcpp::as<SparseMatrix<double, 0, int>> (operator_list["Hyx"])),
   B_gamma_x (Rcpp::as<MatrixXd> (operator_list["B_gamma_x"])),
   B_gamma_y (Rcpp::as<MatrixXd> (operator_list["B_gamma_y"])),
   theta_gamma_x (Rcpp::as<VectorXd> (operator_list["theta_gamma_x"])),
@@ -98,7 +102,17 @@ void Spacetime::update_K(const VectorXd& theta_K) {
     theta_gamma_y = theta_K.segment(2 + n_theta_gamma_x, n_theta_gamma_y);
     VectorXd gamma_x = B_gamma_x * theta_gamma_x;
     VectorXd gamma_y = B_gamma_y * theta_gamma_y;
-    Bs = gamma_x.asDiagonal() * Bx + gamma_y.asDiagonal() * By;
+    Bs = gamma_x.asDiagonal() * Bx * gamma_x.asDiagonal() + 
+      gamma_y.asDiagonal() * By * gamma_y.asDiagonal();
+    
+    if (stabilization) {
+      VectorXd gamma_xx = gamma_x.array().square();
+      VectorXd gamma_yy = gamma_y.array().square();
+      VectorXd gamma_xy = gamma_x.array() * gamma_y.array();
+      S = gamma_xx.asDiagonal() * Hxx * gamma_xx.asDiagonal() + 
+        gamma_yy.asDiagonal() * Hyy * gamma_yy.asDiagonal() + 
+        gamma_xy.asDiagonal() * (Hxy + Hyx) * gamma_xy.asDiagonal();
+    }
   }
 
   SparseMatrix<double> Ls = (kappa*kappa * Cs + lambda * Gs + Bs);

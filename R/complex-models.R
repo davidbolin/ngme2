@@ -542,8 +542,6 @@ bv_matern_nig <- function(
 
 
 
-
-
 #' ngme space-time non-separable model specification
 #'
 #' Given a spatial and temporal model, build a non-separable space-time model
@@ -556,7 +554,6 @@ bv_matern_nig <- function(
 #' @param kappa kappa parameter from matern SPDE
 #' @param lambda the spatial damping parameter
 #' @param gamma  2d vector, direction of the transport term
-#' @param method discretization method,
 #' @param alpha 2 or 4, SPDE smoothness parameter
 #' choose "galerkin" or "euler" for implicit euler
 #' @param stabilization TRUE if use stabilization term (for implicit euler)
@@ -569,7 +566,7 @@ spacetime <- function(
   lambda = 1, # fixed
   alpha = 2, # alpha = 2, 4, fixed
   gamma = c(0, 0), # gamma (s): function of mesh node
-  method = "galerkin", # galerkin, implicit euler
+  # method = "euler", # implicit euler
   # parameters
   cc = 1,
   kappa = 1,
@@ -577,6 +574,7 @@ spacetime <- function(
   stabilization = TRUE,
   ...
 ) {
+  method = "euler" # for now only support implicit euler
 
   stopifnot(
     "Please provide mesh as a list of length 2" = length(mesh) == 2,
@@ -585,7 +583,8 @@ spacetime <- function(
     "method should be galerkin or euler" = method %in% c("galerkin", "euler"),
     "First mesh should be 1d" = fmesher::fm_manifold_dim(mesh[[1]]) == 1,
     "Second mesh should be 2d" =
-      fmesher::fm_manifold_dim(mesh[[2]]) == 2
+      fmesher::fm_manifold_dim(mesh[[2]]) == 2,
+    "require package rSPDE" = requireNamespace("rSPDE", quietly = TRUE)
   )
 
   mesh_t <- mesh[[1]]
@@ -622,9 +621,9 @@ spacetime <- function(
     h <- dt %x% Matrix::diag(Cs) / cc
   }
 
-  # FV = mesh$graph$tv
-  # P <- sf::st_coordinates(fmesher::fm_vertices(mesh))[,1:2]
-  # fem2d <- rSPDE.fem2d(FV = FV, P = P)
+  FV = mesh$graph$tv
+  P <- sf::st_coordinates(fmesher::fm_vertices(mesh))[,1:2]
+  fem2d <- rSPDE::rSPDE.fem2d(FV = FV, P = P)
 
   theta_K <- c(log(cc), log(kappa))
   update_K <- function(theta_K) {
@@ -662,8 +661,7 @@ spacetime <- function(
   }
   K <- update_K(theta_K)
 
-  BtCs = if (method == "galerkin")
-    ngme_as_sparse(Bt %x% Cs) 
+  BtCs = if (method == "galerkin") ngme_as_sparse(Bt %x% Cs) 
     else ngme_as_sparse(rw1(1:nt)$K %x% Cs)
 
   ngme_operator(

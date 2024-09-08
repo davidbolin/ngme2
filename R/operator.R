@@ -124,8 +124,18 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
     },
     spacetime = {
       cat(pad_add4_space); cat("alpha =", format(alpha, digits=2), "(fixed)", "\n", sep=" ")
-      cat(pad_add4_space); cat("gamma =", format(gamma, digits=2), "(fixed)", "\n", sep=" ")
+      if (!fix_gamma) {
+        theta_gamma_x <- theta_K[3:(2+n_theta_gamma_x)]
+        theta_gamma_y <- theta_K[(3+n_theta_gamma_x):(2+n_theta_gamma_x+n_theta_gamma_y)]
+        cat(pad_add4_space); cat("theta_gamma_x =", format(theta_gamma_x, digits=2), "\n", sep=" ")
+        cat(pad_add4_space); cat("theta_gamma_y =", format(theta_gamma_y, digits=2), "\n", sep=" ")
+      } else {
+        cat(pad_add4_space); cat("theta_gamma_x =", format(theta_gamma_x, digits=2), "(fixed)", "\n", sep=" ")
+        cat(pad_add4_space); cat("theta_gamma_y =", format(theta_gamma_y, digits=2), "(fixed)", "\n", sep=" ")
+      }
+      
       cat(pad_add4_space); cat("cc =", format(exp(theta_K[1]), digits=2), "\n", sep=" ")
+      
       cat(pad_add4_space); cat("kappa =", format(exp(theta_K[2]), digits=2), "\n", sep=" ")
     },
     cat(pad_add4_space, "No parameter.", "\n", sep="")

@@ -70,25 +70,38 @@ Spacetime::Spacetime(const Rcpp::List& operator_list):
   Cs_diag (Rcpp::as<VectorXd> (operator_list["Cs_diag"])),
   BtCs (Rcpp::as<SparseMatrix<double, 0, int>> (operator_list["BtCs"])),
   Gs (Rcpp::as<SparseMatrix<double, 0, int>> (operator_list["Gs"])),
-  Bs (Rcpp::as<SparseMatrix<double, 0, int>> (operator_list["Bs"])),
-  // Ct (Ct_diag.asDiagonal()),
-  // Cs (Cs_diag.asDiagonal()),
   Ct (Rcpp::as<SparseMatrix<double, 0, int>> (operator_list["Ct"])),
   Cs (Rcpp::as<SparseMatrix<double, 0, int>> (operator_list["Cs"])),
+  Bx (Rcpp::as<SparseMatrix<double, 0, int>> (operator_list["Bx"])),
+  By (Rcpp::as<SparseMatrix<double, 0, int>> (operator_list["By"])),
   S (Rcpp::as<SparseMatrix<double, 0, int>> (operator_list["S"])),
+  Bs (Rcpp::as<SparseMatrix<double, 0, int>> (operator_list["Bs"])),
+  B_gamma_x (Rcpp::as<MatrixXd> (operator_list["B_gamma_x"])),
+  B_gamma_y (Rcpp::as<MatrixXd> (operator_list["B_gamma_y"])),
+  theta_gamma_x (Rcpp::as<VectorXd> (operator_list["theta_gamma_x"])),
+  theta_gamma_y (Rcpp::as<VectorXd> (operator_list["theta_gamma_y"])),
+  n_theta_gamma_x (Rcpp::as<int> (operator_list["n_theta_gamma_x"])),
+  n_theta_gamma_y (Rcpp::as<int> (operator_list["n_theta_gamma_y"])),
   lambda (Rcpp::as<double> (operator_list["lambda"])),
   alpha (Rcpp::as<double> (operator_list["alpha"])),
-  // S  (Rcpp::as<SparseMatrix<double, 0, int>> (operator_list["S"])),
   method (Rcpp::as<string> (operator_list["method"])),
-  stabilization (Rcpp::as<bool> (operator_list["stabilization"]))
+  stabilization (Rcpp::as<bool> (operator_list["stabilization"])),
+  fix_gamma (Rcpp::as<bool> (operator_list["fix_gamma"]))
 {}
 
 void Spacetime::update_K(const VectorXd& theta_K) {
   double c = exp(theta_K[0]);
   double kappa = exp(theta_K[1]);
 
-  // SparseMatrix<double> Ls = (kappa*kappa * Cs + lambda * Gs + Bs);
-  SparseMatrix<double> Ls = (kappa*kappa * Cs + lambda * Gs);
+  if (!fix_gamma) {
+    theta_gamma_x = theta_K.segment(2, n_theta_gamma_x);
+    theta_gamma_y = theta_K.segment(2 + n_theta_gamma_x, n_theta_gamma_y);
+    VectorXd gamma_x = B_gamma_x * theta_gamma_x;
+    VectorXd gamma_y = B_gamma_y * theta_gamma_y;
+    Bs = gamma_x.asDiagonal() * Bx + gamma_y.asDiagonal() * By;
+  }
+
+  SparseMatrix<double> Ls = (kappa*kappa * Cs + lambda * Gs + Bs);
   
   // alpha=4, L = L %*% solve(Ct %x% Cs, L) 
   if (alpha == 4) 
@@ -109,9 +122,10 @@ if (method == "galerkin") {
     I_sparse.insert(i, i) = 1;
   }
 
-  // if (stabilization) Ls = Ls + S;
+  if (stabilization) Ls = Ls + S;
 
   KroneckerProductSparse<SparseMatrix<double>, SparseMatrix<double> > kroneckerEigen(I_sparse, Ls);
+  K = kroneckerEigen.eval();
 }
   
   K = BtCs + K / c;

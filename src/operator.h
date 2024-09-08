@@ -125,10 +125,13 @@ public:
 class Spacetime : public Operator {
 private:
   VectorXd Ct_diag, Cs_diag; // not used
-  SparseMatrix<double, 0, int> BtCs,   Gs, Bs, Ct, Cs, S;
+  SparseMatrix<double, 0, int> BtCs, Gs, Ct, Cs, Bx, By, S, Bs;
+  MatrixXd B_gamma_x, B_gamma_y;
+  VectorXd theta_gamma_x, theta_gamma_y;
+  int n_theta_gamma_x, n_theta_gamma_y;
   double lambda, alpha;
   string method; // galerkin, backward Euler
-  bool stabilization;
+  bool stabilization, fix_gamma;
 public:
   Spacetime(const Rcpp::List&);
 

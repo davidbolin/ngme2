@@ -8,7 +8,13 @@ spacetime(
   mesh,
   lambda = 1,
   alpha = 2,
-  gamma = c(0, 0),
+  fix_gamma = FALSE,
+  theta_gamma_x = 0,
+  theta_gamma_y = 0,
+  theta_gamma_t = 0,
+  B_gamma_x = matrix(1, nrow = mesh[[2]]$n, ncol = 1),
+  B_gamma_y = matrix(1, nrow = mesh[[2]]$n, ncol = 1),
+  B_gamma_t = matrix(1, nrow = mesh[[1]]$n, ncol = 1),
   cc = 1,
   kappa = 1,
   stabilization = TRUE,
@@ -24,7 +30,22 @@ spacetime(
 \item{alpha}{2 or 4, SPDE smoothness parameter
 choose "galerkin" or "euler" for implicit euler}
 
-\item{gamma}{2d vector, direction of the transport term}
+\item{fix_gamma}{TRUE if fix gamma (advection term), FALSE if estimate gamma}
+
+\item{theta_gamma_x}{the x component of the advection term,
+gamma_x = B_gamma_x %*% theta_gamma_x}
+
+\item{theta_gamma_y}{the y component of the advection term,
+gamma_y = B_gamma_y %*% theta_gamma_y}
+
+\item{theta_gamma_t}{the t component of the advection term,
+gamma_t = B_gamma_t %*% theta_gamma_t}
+
+\item{B_gamma_x}{the design matrix for the x component of the advection term}
+
+\item{B_gamma_y}{the design matrix for the y component of the advection term}
+
+\item{B_gamma_t}{the design matrix for the t component of the advection term}
 
 \item{kappa}{kappa parameter from matern SPDE}
 

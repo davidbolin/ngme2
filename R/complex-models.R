@@ -1,5 +1,3 @@
-
-
 #' Ngme bivariate model specification
 #'
 #' Giving 2 sub_models, build a correlated bivaraite operator based on K = D(theta, eta) %*% diag(K_1, K_2)
@@ -553,7 +551,16 @@ bv_matern_nig <- function(
 #' @param c parameter
 #' @param kappa kappa parameter from matern SPDE
 #' @param lambda the spatial damping parameter
-#' @param gamma  2d vector, direction of the transport term
+#' @param fix_gamma TRUE if fix gamma (advection term), FALSE if estimate gamma
+#' @param theta_gamma_x the x component of the advection term,
+#' gamma_x = B_gamma_x %*% theta_gamma_x
+#' @param theta_gamma_y the y component of the advection term,
+#' gamma_y = B_gamma_y %*% theta_gamma_y
+#' @param theta_gamma_t the t component of the advection term,
+#' gamma_t = B_gamma_t %*% theta_gamma_t
+#' @param B_gamma_x the design matrix for the x component of the advection term
+#' @param B_gamma_y the design matrix for the y component of the advection term
+#' @param B_gamma_t the design matrix for the t component of the advection term
 #' @param alpha 2 or 4, SPDE smoothness parameter
 #' choose "galerkin" or "euler" for implicit euler
 #' @param stabilization TRUE if use stabilization term (for implicit euler)
@@ -565,12 +572,16 @@ spacetime <- function(
   mesh,
   lambda = 1, # fixed
   alpha = 2, # alpha = 2, 4, fixed
-  gamma = c(0, 0), # gamma (s): function of mesh node
-  # method = "euler", # implicit euler
-  # parameters
+  # advection term
+  fix_gamma = FALSE,
+  theta_gamma_x = 0, 
+  theta_gamma_y = 0, 
+  theta_gamma_t = 0, 
+  B_gamma_x = matrix(1, nrow = mesh[[2]]$n, ncol = 1),
+  B_gamma_y = matrix(1, nrow = mesh[[2]]$n, ncol = 1),
+  B_gamma_t = matrix(1, nrow = mesh[[1]]$n, ncol = 1),
   cc = 1,
   kappa = 1,
-  # normalize_gamma = TRUE,
   stabilization = TRUE,
   ...
 ) {
@@ -579,12 +590,17 @@ spacetime <- function(
   stopifnot(
     "Please provide mesh as a list of length 2" = length(mesh) == 2,
     "alpha should be 2 or 4" = alpha == 2 || alpha == 4,
-    "gamma should be of length 2" = length(gamma) == 2,
     "method should be galerkin or euler" = method %in% c("galerkin", "euler"),
     "First mesh should be 1d" = fmesher::fm_manifold_dim(mesh[[1]]) == 1,
     "Second mesh should be 2d" =
       fmesher::fm_manifold_dim(mesh[[2]]) == 2,
-    "require package rSPDE" = requireNamespace("rSPDE", quietly = TRUE)
+    "require package rSPDE" = requireNamespace("rSPDE", quietly = TRUE),
+    "B_gamma_x and B_gamma_y should have the same number of rows as the spatial mesh" = 
+      nrow(B_gamma_x) == mesh[[2]]$n && nrow(B_gamma_y) == mesh[[2]]$n,
+    "theta_gamma_x should be of length ncol(B_gamma_x)" = 
+      length(theta_gamma_x) == ncol(B_gamma_x),
+    "theta_gamma_y should be of length ncol(B_gamma_y)" = 
+      length(theta_gamma_y) == ncol(B_gamma_y)
   )
 
   mesh_t <- mesh[[1]]
@@ -608,11 +624,6 @@ spacetime <- function(
   Cs <- fem_s$c0
   Gs <- fem_s$g1
   
-  # Build Bs
-  ret = ngme_make_Bs(mesh_s, gamma)
-  Bs <- ret$H
-  S <- ret$S  #stability matrix
-  
   # compute h
   if (method == "galerkin"){
     h <- Matrix::diag(Ct) %x% Matrix::diag(Cs)
@@ -621,17 +632,48 @@ spacetime <- function(
     h <- dt %x% Matrix::diag(Cs) / cc
   }
 
-  FV = mesh$graph$tv
-  P <- sf::st_coordinates(fmesher::fm_vertices(mesh))[,1:2]
+  FV = mesh_s$graph$tv
+  P <- sf::st_coordinates(fmesher::fm_vertices(mesh_s))[,1:2]
   fem2d <- rSPDE::rSPDE.fem2d(FV = FV, P = P)
+  Bx = fem2d$Bx
+  By = fem2d$By
 
-  theta_K <- c(log(cc), log(kappa))
+  theta_K <- if (fix_gamma) c(log(cc), log(kappa)) else 
+    c(log(cc), log(kappa), theta_gamma_x, theta_gamma_y)
+  n_theta_gamma_x <- if (fix_gamma) 0 else ncol(B_gamma_x)
+  n_theta_gamma_y <- if (fix_gamma) 0 else ncol(B_gamma_y)
+
+  gamma_x <- B_gamma_x %*% theta_gamma_x
+  gamma_y <- B_gamma_y %*% theta_gamma_y
+  # gamma_t <- B_gamma_t %*% theta_gamma_t
+
+  build_Bs <- function(gamma_x, gamma_y) {
+    Matrix::Diagonal(x = gamma_x) %*% Bx + Matrix::Diagonal(x = gamma_y) %*% By 
+  }
+  build_S <- function() {
+    Matrix::Diagonal(x = rep(0, ns))
+  }
+    
+  Bs = build_Bs(gamma_x, gamma_y)
+  S = build_S()
+  
+  # compute L_s
   update_K <- function(theta_K) {
     cc <- exp(theta_K[1])
     kappa <- exp(theta_K[2])
+    theta_gamma_x <- if (length(theta_K) > 2) theta_K[3:(2 + n_theta_gamma_x)] else double(0)
+    theta_gamma_y <- if (length(theta_K) > 2) theta_K[(3 + n_theta_gamma_x):length(theta_K)] else double(0)
+
+    gamma_x <- as.vector(B_gamma_x %*% theta_gamma_x)
+    gamma_y <- as.vector(B_gamma_y %*% theta_gamma_y)
+
+    if (!fix_gamma) {
+      Bs = build_Bs(gamma_x, gamma_y)
+      S = build_S()
+    }
 
     # compute L_s
-    L = kappa^2 * Cs + lambda * Gs # + Bs
+    L = kappa^2 * Cs + lambda * Gs + Bs
   
     Cs_inv <- Matrix::Diagonal(n = ns, x = 1/Matrix::diag(Cs))
     
@@ -642,12 +684,10 @@ spacetime <- function(
       K <- Bt %x% Cs + 1/cc * Ct %x% L
     } else if (method == "euler") {
       # implicit euler
-      dt =c(1, diff(mesh_t$loc))
-
       null_matrix <- Matrix::Diagonal(n = ns, x = 0)
       
       if (stabilization) {
-        L = L # + S
+        L = L + S
       }
       
       diag_L <- Matrix::bdiag(
@@ -668,8 +708,14 @@ spacetime <- function(
     model = "spacetime",
     mesh = mesh,
     alpha = alpha,
-    gamma = gamma,
+    theta_gamma_x = theta_gamma_x,
+    theta_gamma_y = theta_gamma_y,
+    fix_gamma = fix_gamma,
     lambda = lambda,
+    B_gamma_x = B_gamma_x,
+    B_gamma_y = B_gamma_y,
+    n_theta_gamma_x = n_theta_gamma_x,
+    n_theta_gamma_y = n_theta_gamma_y,
     method = method,
     theta_K = theta_K,
     K = ngme_as_sparse(K),
@@ -682,14 +728,16 @@ spacetime <- function(
     Cs = ngme_as_sparse(Cs),
     Gs = ngme_as_sparse(Gs),
     Bs = ngme_as_sparse(Bs),
+    Bx = ngme_as_sparse(Bx),
+    By = ngme_as_sparse(By),
     S = ngme_as_sparse(S),
     stabilization = stabilization,
     symmetric = FALSE,
     zero_trace = FALSE,
     param_name =
-      c("cc", "kappa"),
+      c("cc", "kappa", if (!fix_gamma) c("theta_gamma_x", "theta_gamma_y") else NULL),
     param_trans =
-      c(exp, exp)
+      c(exp, exp, if (!fix_gamma) c(identity, identity) else NULL)
   )
 }
 

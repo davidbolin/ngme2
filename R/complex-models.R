@@ -512,7 +512,8 @@ bv_matern_nig <- function(
     second$K <- second$update_K(theta_K2)
     bigD %*% Matrix::bdiag(c1 * first$K, c2 * second$K)
   }
-
+  
+  eta_to_theta <- function(eta) atan(eta)
   ngme_operator(
     mesh        = mesh,
     model       = "bv_matern_nig",
@@ -532,7 +533,7 @@ bv_matern_nig <- function(
       if (!is.null(first$param_name)) paste(first$param_name, "(1st)") else NULL,
       if (!is.null(second$param_name)) paste(second$param_name, "(2nd)") else NULL
     ),
-    param_trans = c(identity, identity, exp, exp, first$param_trans, second$param_trans)
+    param_trans = c(eta_to_theta, identity, exp, exp, first$param_trans, second$param_trans)
   )
 }
 
@@ -660,7 +661,10 @@ spacetime <- function(
     Dxx = Matrix::Diagonal(x = gamma_xx)
     Dyy = Matrix::Diagonal(x = gamma_yy)
     Dxy = Matrix::Diagonal(x = gamma_xy)
-    Dxx %*% Hxx %*% Dxx + Dyy %*% Hyy %*% Dyy + Dxy %*% (Hxy + Hyx) %*% Dxy
+    tmp = Dxx %*% Hxx %*% Dxx + Dyy %*% Hyy %*% Dyy + Dxy %*% (Hxy + Hyx) %*% Dxy
+    # gamma_norm = sqrt(sum(gamma_x^2 + gamma_y^2))
+    # (Cs %*% tmp) / gamma_norm
+    tmp
   }
     
   Bs = build_Bs(gamma_x, gamma_y)

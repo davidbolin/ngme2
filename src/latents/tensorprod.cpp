@@ -112,6 +112,8 @@ void Spacetime::update_K(const VectorXd& theta_K) {
       S = gamma_xx.asDiagonal() * Hxx * gamma_xx.asDiagonal() + 
         gamma_yy.asDiagonal() * Hyy * gamma_yy.asDiagonal() + 
         gamma_xy.asDiagonal() * (Hxy + Hyx) * gamma_xy.asDiagonal();
+      // double gamma_norm = sqrt((gamma_x.array().square() + gamma_y.array().square()).sum());
+      // S = Cs_diag.asDiagonal() * S / gamma_norm;
     }
   }
 

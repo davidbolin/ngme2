@@ -130,18 +130,23 @@ if (method == "galerkin") {
   // update K
   K = kroneckerEigen.eval();
 } else if (method == "euler") {
-  // K = bdiag(0, Ls, ..., Ls) 
-
-  // create diag(0, 1, 1, ..., 1) (nt-1) 1
-  Eigen::SparseMatrix<double> I_sparse(Ct.rows(), Ct.rows());
-  for (int i = 1; i < Ct.rows(); ++i) {
-    I_sparse.insert(i, i) = 1;
-  }
-
   if (stabilization) Ls = Ls + S;
+  // Build K = bdiag(0, Ls, ..., Ls) 
+  // 1st approach: Using Kronecker product
+  // create diag(0, 1, 1, ..., 1) (nt-1) 1
+  // Eigen::SparseMatrix<double> I_sparse(Ct.rows(), Ct.rows());
+  // for (int i = 1; i < Ct.rows(); ++i) {
+  //   I_sparse.insert(i, i) = 1;
+  // }
 
-  KroneckerProductSparse<SparseMatrix<double>, SparseMatrix<double> > kroneckerEigen(I_sparse, Ls);
-  K = kroneckerEigen.eval();
+  // KroneckerProductSparse<SparseMatrix<double>, SparseMatrix<double> > kroneckerEigen(I_sparse, Ls);
+  // K = kroneckerEigen.eval();
+
+  // 2nd approach: build Bdiag(0, Ls, ..., Ls) directly
+  K.setZero();
+  for (int i = 1; i < Ct.rows(); ++i) {
+    setSparseBlock(&K, i * Ls.rows(), i * Ls.cols(), Ls);
+  }
 }
   
   K = BtCs + K / c;

@@ -148,10 +148,10 @@ test_that("test on bv matern NIG", {
   mesh <- fmesher::fm_mesh_2d(
     loc.domain = pl01,
     cutoff = 0.2,
-    max.edge = c(2, 10)
+    max.edge = c(1, 5)
   )
   mesh$n
-  n_obs <- 100
+  n_obs <- 500
 
   # generate random locations (same for two fields)
   long <- runif(n_obs/2, 0, 10); lat <- runif(n_obs/2, 0, 5)
@@ -180,8 +180,8 @@ test_that("test on bv matern NIG", {
     ),
     group = group,
     noise = list(
-      W1 = noise_nig(),
-      W2 = noise_nig()
+      W1 = noise_nig(mu=mu_1, sigma=1, nu=nu_1),
+      W2 = noise_nig(mu=mu_2, sigma=1, nu=nu_2)
     )
   )
   true_model
@@ -241,6 +241,8 @@ test_that("test on bv matern NIG", {
     debug = FALSE
   )
   out_cor_gauss
+  traceplot(out_cor_gauss, "bv")
+  traceplot(out_cor_gauss, hline = c(log(sd_1), log(sd_2), rho_e, feff))
 
   out_cor_nig <- ngme(
     Y ~ 0 + x1 + x2 + f(
@@ -270,7 +272,8 @@ test_that("test on bv matern NIG", {
       estimation = TRUE,
       iterations = 20,
       print_check_info = FALSE,
-      seed = 50
+      seed = 50,
+      n_parallel_chain = 1
     ),
     debug = FALSE,
     start = out_cor_gauss

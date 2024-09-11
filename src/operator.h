@@ -227,7 +227,7 @@ private:
     int n_theta_1, n_theta_2;
     int n; // dim of K1 and K2 (same)
     bool share_param, fix_bv_theta;
-    double dim, alpha1, alpha2, nu1, nu2;
+    double dim, alpha1, alpha2, nu1, nu2, bv_theta;
 public:
     bv_matern_nig(const Rcpp::List&);
 

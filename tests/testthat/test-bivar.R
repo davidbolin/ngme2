@@ -250,6 +250,8 @@ test_that("test on bv matern NIG", {
       mesh = mesh,
       model = "bv_matern_nig",
       name = "bv",
+      theta = pi/4,
+      fix_bv_theta = TRUE,
       sub_models = list(
         W1 = list(model = "matern"),
         W2 = list(model = "matern")
@@ -279,4 +281,6 @@ test_that("test on bv matern NIG", {
     start = out_cor_gauss
   )
   out_cor_nig
+  traceplot(out_cor_nig, "bv")
+  traceplot(out_cor_nig, hline = c(log(sd_1), log(sd_2), rho_e, feff))
 })

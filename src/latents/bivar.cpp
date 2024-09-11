@@ -412,16 +412,22 @@ bv_matern_nig::bv_matern_nig(const Rcpp::List& operator_list):
   alpha1 (first->get_alpha()),
   alpha2 (second->get_alpha()),
   nu1 (alpha1 - 0.5*dim),
-  nu2 (alpha2 - 0.5*dim)
+  nu2 (alpha2 - 0.5*dim),
+  bv_theta (Rcpp::as<double> (operator_list["bv_theta"]))
 {}
 
 void bv_matern_nig::update_K(const VectorXd& theta_K) {
-  double theta = theta_K(0);
-  double rho = theta_K(1);
-  double sd1 = exp(theta_K(2));
-  double sd2 = exp(theta_K(3));
-  VectorXd theta_K1 = theta_K.segment(4, n_theta_1);
-  VectorXd theta_K2 = theta_K.segment(4 + n_theta_1, n_theta_2);
+  double theta;
+  if (!fix_bv_theta) {
+    theta = theta_K(0);
+  } else {
+    theta = bv_theta;
+  }
+  double rho = theta_K(1 - fix_bv_theta);
+  double sd1 = exp(theta_K(2 - fix_bv_theta));
+  double sd2 = exp(theta_K(3 - fix_bv_theta));
+  VectorXd theta_K1 = theta_K.segment(4 - fix_bv_theta, n_theta_1);
+  VectorXd theta_K2 = theta_K.segment(4 - fix_bv_theta + n_theta_1, n_theta_2);
   Matrix2d D = getD(theta, rho);
   first->update_K(theta_K1);
   second->update_K(theta_K2);

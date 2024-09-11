@@ -145,8 +145,13 @@ ngme <- function(
           # update parameter of K
           if (models[[j]]$model == "bv_matern_nig" && prev_model_type == "bv_matern_normal") {
             # update theta_K
-            models[[j]]$theta_K <- models[[j]]$operator$theta_K <- 
-              c(0, prev_model_ope$theta_K)
+            if (!models[[j]]$operator$fix_bv_theta) {
+              models[[j]]$theta_K <- models[[j]]$operator$theta_K <- 
+                c(0, prev_model_ope$theta_K)
+            } else {
+              models[[j]]$theta_K <- models[[j]]$operator$theta_K <- 
+                prev_model_ope$theta_K
+            }
             
             # for printing
             models[[j]]$operator$first <- prev_model_ope$first

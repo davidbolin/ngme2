@@ -103,11 +103,12 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
       print(operator$second, padding = padding + 4, prefix = model_names[[2]])
     },
     bv_matern_nig = {
-      theta = operator$param_trans[[1]](theta_K[1])
-      rho   = operator$param_trans[[2]](theta_K[2])
-      sd1   = operator$param_trans[[3]](theta_K[3])
-      sd2   = operator$param_trans[[4]](theta_K[4])
-      cat(pad_add4_space, "theta = ", format(theta, digits=3), "\n", sep="")
+      fix_theta = operator$fix_bv_theta
+      theta = if (fix_theta) operator$bv_theta else operator$param_trans[[1]](theta_K[1])
+      rho   = operator$param_trans[[2 - fix_theta]](theta_K[2 - fix_theta])
+      sd1   = operator$param_trans[[3 - fix_theta]](theta_K[3 - fix_theta])
+      sd2   = operator$param_trans[[4 - fix_theta]](theta_K[4 - fix_theta])
+      cat(pad_add4_space, "theta = ", format(theta, digits=3), if (fix_theta) "(fixed)" else "", "\n", sep="")
       cat(pad_add4_space, "rho = ", format(rho, digits=3), "\n", sep="")
       cat(pad_add4_space, "sd1 = ", format(sd1, digits=3), "\n", sep="")
       cat(pad_add4_space, "sd2 = ", format(sd2, digits=3), "\n", sep="")

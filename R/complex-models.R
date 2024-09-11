@@ -456,6 +456,7 @@ bv_matern_nig <- function(
   }
 
   stopifnot(
+    "theta should be within (-pi/2, pi/2)" = theta > -pi/2 & theta < pi/2,
     "Please provide names for sub_models" = !is.null(model_names),
     "Please provide group argument to indicate different fields"
       = !is.null(group),
@@ -486,19 +487,34 @@ bv_matern_nig <- function(
     second <- build_operator(arg2$model, modifyList(env_args, arg2))
   }
 
-  theta_K <- c(
-    theta, rho, log(sd1), log(sd2),
-    first$theta_K, second$theta_K
-  )
+  if (!fix_bv_theta) {
+    theta_K <- c(
+      theta, rho, log(sd1), log(sd2),
+      first$theta_K, second$theta_K
+    )
+  } else {
+    theta_K <- c(
+      rho, log(sd1), log(sd2),
+      first$theta_K, second$theta_K
+    )
+  }
 
   update_K <- function(theta_K) {
-    theta <- theta_K[1]
-    rho <- theta_K[2]
-    sd1 <- exp(theta_K[3])
-    sd2 <- exp(theta_K[4])
-    theta_K1 <- theta_K[5:(4 + first$n_theta_K)]
-    theta_K2 <- theta_K[(5 + first$n_theta_K):length(theta_K)]
-    
+    if (!fix_bv_theta) {
+      theta <- theta_K[1]
+      rho <- theta_K[2]
+      sd1 <- exp(theta_K[3])
+      sd2 <- exp(theta_K[4])
+      theta_K1 <- theta_K[5:(4 + first$n_theta_K)]
+      theta_K2 <- theta_K[(5 + first$n_theta_K):length(theta_K)]
+    } else {
+      rho <- theta_K[1]
+      sd1 <- exp(theta_K[2])
+      sd2 <- exp(theta_K[3])
+      theta_K1 <- theta_K[4:(3 + first$n_theta_K)]
+      theta_K2 <- theta_K[(4 + first$n_theta_K):length(theta_K)]
+    }
+  
     alpha1 <- first$alpha; alpha2 <- second$alpha
     kappa1 <- exp(first$theta_K); kappa2 <- exp(second$theta_K)
 
@@ -529,11 +545,12 @@ bv_matern_nig <- function(
     model_names = model_names,
     share_param = share_param,
     fix_bv_theta = fix_bv_theta,
-    param_name  = c("theta", "rho", "sd1", "sd2",
+    bv_theta    = theta,
+    param_name  = c(if (!fix_bv_theta) "theta" else NULL, "rho", "sd1", "sd2",
       if (!is.null(first$param_name)) paste(first$param_name, "(1st)") else NULL,
       if (!is.null(second$param_name)) paste(second$param_name, "(2nd)") else NULL
     ),
-    param_trans = c(eta_to_theta, identity, exp, exp, first$param_trans, second$param_trans)
+    param_trans = c(if (!fix_bv_theta) eta_to_theta else NULL, identity, exp, exp, first$param_trans, second$param_trans)
   )
 }
 

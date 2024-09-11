@@ -577,16 +577,19 @@ spacetime <- function(
   fix_gamma = FALSE,
   theta_gamma_x = 0, 
   theta_gamma_y = 0, 
-  theta_gamma_t = 0, 
+  # theta_gamma_t = 0, 
   B_gamma_x = matrix(1, nrow = mesh[[2]]$n, ncol = 1),
   B_gamma_y = matrix(1, nrow = mesh[[2]]$n, ncol = 1),
-  B_gamma_t = matrix(1, nrow = mesh[[1]]$n, ncol = 1),
+  # B_gamma_t = matrix(1, nrow = mesh[[1]]$n, ncol = 1),
   cc = 1,
   kappa = 1,
   stabilization = TRUE,
   ...
 ) {
   method = "euler" # for now only support implicit euler
+  if (theta_gamma_x == 0 && theta_gamma_y == 0 && fix_gamma) {
+    stabilization = FALSE
+  }
 
   stopifnot(
     "Please provide mesh as a list of length 2" = length(mesh) == 2,
@@ -655,6 +658,11 @@ spacetime <- function(
   }
 
   build_S <- function(gamma_x, gamma_y) {
+    # if gamma_x and gamma_y are 0, then S = 0
+    if (sum(gamma_x^2 + gamma_y^2) < 1e-8) {
+      return (Matrix::Diagonal(n = ns, x = 0))
+    }
+
     gamma_xx = gamma_x^2
     gamma_yy = gamma_y^2
     gamma_xy = gamma_x * gamma_y
@@ -662,9 +670,8 @@ spacetime <- function(
     Dyy = Matrix::Diagonal(x = gamma_yy)
     Dxy = Matrix::Diagonal(x = gamma_xy)
     tmp = Dxx %*% Hxx %*% Dxx + Dyy %*% Hyy %*% Dyy + Dxy %*% (Hxy + Hyx) %*% Dxy
-    # gamma_norm = sqrt(sum(gamma_x^2 + gamma_y^2))
-    # (Cs %*% tmp) / gamma_norm
-    tmp
+    gamma_norm = sqrt(sum(gamma_x^2 + gamma_y^2))
+    (Cs %*% tmp) / gamma_norm
   }
     
   Bs = build_Bs(gamma_x, gamma_y)

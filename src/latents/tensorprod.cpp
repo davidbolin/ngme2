@@ -106,14 +106,19 @@ void Spacetime::update_K(const VectorXd& theta_K) {
       gamma_y.asDiagonal() * By * gamma_y.asDiagonal();
     
     if (stabilization) {
-      VectorXd gamma_xx = gamma_x.array().square();
-      VectorXd gamma_yy = gamma_y.array().square();
-      VectorXd gamma_xy = gamma_x.array() * gamma_y.array();
-      S = gamma_xx.asDiagonal() * Hxx * gamma_xx.asDiagonal() + 
-        gamma_yy.asDiagonal() * Hyy * gamma_yy.asDiagonal() + 
-        gamma_xy.asDiagonal() * (Hxy + Hyx) * gamma_xy.asDiagonal();
-      // double gamma_norm = sqrt((gamma_x.array().square() + gamma_y.array().square()).sum());
-      // S = Cs_diag.asDiagonal() * S / gamma_norm;
+      // if gamma_x and gamma_y are 0, then S = 0
+      if (gamma_x.norm() < 1e-8 && gamma_y.norm() < 1e-8) {
+        S.setZero();
+      } else {
+        VectorXd gamma_xx = gamma_x.array().square();
+        VectorXd gamma_yy = gamma_y.array().square();
+        VectorXd gamma_xy = gamma_x.array() * gamma_y.array();
+        S = gamma_xx.asDiagonal() * Hxx * gamma_xx.asDiagonal() + 
+          gamma_yy.asDiagonal() * Hyy * gamma_yy.asDiagonal() + 
+          gamma_xy.asDiagonal() * (Hxy + Hyx) * gamma_xy.asDiagonal();
+        double gamma_norm = sqrt((gamma_x.array().square() + gamma_y.array().square()).sum());
+        S = Cs_diag.asDiagonal() * S / gamma_norm;
+      }
     }
   }
 

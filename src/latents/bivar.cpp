@@ -419,7 +419,7 @@ bv_matern_nig::bv_matern_nig(const Rcpp::List& operator_list):
 void bv_matern_nig::update_K(const VectorXd& theta_K) {
   double theta;
   if (!fix_bv_theta) {
-    theta = theta_K(0);
+    theta = atan(theta_K(0));
   } else {
     theta = bv_theta;
   }

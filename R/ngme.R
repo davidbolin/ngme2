@@ -363,7 +363,7 @@ update_ngme_est <- function(
 
       n_param_bv <- switch(ngme_replicate$models[[i]]$model, 
         "bv" = 2,
-        "bv_matern_nig" = 4,
+        "bv_matern_nig" = 4 - ngme_replicate$models[[i]]$operator$fix_bv_theta,
         3
       )
       ngme_replicate$models[[i]]$operator$first$theta_K <- ngme_replicate$models[[i]]$theta_K[(n_param_bv+1) : (n1+n_param_bv)]

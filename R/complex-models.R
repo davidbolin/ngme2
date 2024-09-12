@@ -487,9 +487,10 @@ bv_matern_nig <- function(
     second <- build_operator(arg2$model, modifyList(env_args, arg2))
   }
 
+  eta <- tan(theta)
   if (!fix_bv_theta) {
     theta_K <- c(
-      theta, rho, log(sd1), log(sd2),
+      eta, rho, log(sd1), log(sd2),
       first$theta_K, second$theta_K
     )
   } else {
@@ -501,7 +502,7 @@ bv_matern_nig <- function(
 
   update_K <- function(theta_K) {
     if (!fix_bv_theta) {
-      theta <- theta_K[1]
+      theta <- atan(theta_K[1]) 
       rho <- theta_K[2]
       sd1 <- exp(theta_K[3])
       sd2 <- exp(theta_K[4])

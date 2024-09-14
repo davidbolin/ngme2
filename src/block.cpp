@@ -114,7 +114,11 @@ if (noise_in.containsElementNamed("fix_rho"))
     B_nu          = (Rcpp::as<MatrixXd>      (noise_in["B_nu"])),
     theta_nu      = (Rcpp::as<VectorXd>      (noise_in["theta_nu"])),
     n_theta_nu    = (Rcpp::as<int>           (noise_in["n_theta_nu"])),
-    shared_sigma  = Rcpp::as<bool> (noise_in["shared_sigma"]),
+    // check if shared_sigma exists
+    if (noise_in.containsElementNamed("shared_sigma"))
+      shared_sigma  = Rcpp::as<bool> (noise_in["shared_sigma"]);
+    else
+      shared_sigma = false;
 
     rb_trace_noise_sigma = VectorXd::Zero(n_theta_sigma),
 

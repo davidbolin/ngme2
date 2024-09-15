@@ -159,6 +159,19 @@ public:
     Matrix2d get_dD2_rho(double, double) const;
 };
 
+class General : public Operator {
+private:
+    string theta_trans;
+    vector<SparseMatrix<double, 0, int>> matrices;
+public:
+    General(const Rcpp::List&);
+
+    void update_K(const VectorXd& theta_K);
+    void update_dK(const VectorXd& theta_K);
+
+    VectorXd param_trans_fun(const VectorXd& theta_K, const string& name) const;
+};
+
 // Bivar_normal
 // class Bivar_normal : public Operator {
 // private:
@@ -299,6 +312,8 @@ public:
       return std::make_shared<bv_matern_normal>(operator_in);
     } else if (model_type == "bv_matern_nig") {
       return std::make_shared<bv_matern_nig>(operator_in);
+    } else if (model_type == "general") {
+      return std::make_shared<General>(operator_in);
     } else {
       throw std::runtime_error("Unknown model.");
     }

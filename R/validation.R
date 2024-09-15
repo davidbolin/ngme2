@@ -179,19 +179,29 @@ if (print) cat(paste0("Model ", names(ngme)[[idx]], ": \n\n"))
     final_sd[[idx]] <- as.data.frame(mean_list(sd_scores))
   }
   
-  if (nrow(scores[[1]]) == 1) {
-    for (idx in seq_along(ngme)) {
-      rownames(final_mean[[idx]]) <- names(ngme)[[idx]] # univariate model
-    }
-  } else {
-    for (idx in seq_along(ngme)) {
-      rownames(final_mean[[idx]]) <- paste(names(ngme)[[idx]], rownames(final_mean[[idx]]), sep = "_")
-    }
-  }
-
   # convert to data.frame
   final_mean <- do.call(rbind, final_mean)
   final_sd <- do.call(rbind, final_sd)
+
+  if (nrow(scores[[1]]) == 1) {
+    rownames(final_mean) <- names(ngme) # univariate model
+  } else {
+    names_list = lapply(names(ngme), function(x) paste(x, rownames(final_mean), sep = "_"))
+    rownames(final_mean) <- do.call(c, names_list)
+  }
+
+# if (nrow(scores[[1]]) == 1) {
+#   for (idx in seq_along(ngme)) {
+#     rownames(final_mean[[idx]]) <- names(ngme)[[idx]] # univariate model
+#   }
+# } else {
+#   for (idx in seq_along(ngme)) {
+#     rownames(final_mean[[idx]]) <- paste(names(ngme)[[idx]], rownames(final_mean[[idx]]), sep = "_")
+#   }
+# }
+# # convert to data.frame
+# final_mean <- do.call(rbind, final_mean)
+# final_sd <- do.call(rbind, final_sd)
   
   rownames(final_sd) <- rownames(final_mean)
 

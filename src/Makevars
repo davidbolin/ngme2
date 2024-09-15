@@ -8,7 +8,7 @@ R_XTRA_CPPFLAGS =  -I$(R_INCLUDE_DIR)
 UTILS = util/num_diff.o util/GIG.o util/rgig.o util/MatrixAlgebra.o util/solver.o
 # $(wildcard util/*.o)
 
-LATENTS = latents/ar1.o latents/matern.o latents/tensorprod.o latents/randeff.o latents/bivar.o
+LATENTS = latents/ar1.o latents/matern.o latents/tensorprod.o latents/randeff.o latents/bivar.o latents/general.o
 # $(wildcard latents/*.o)
 
 OBJECTS = RcppExports.o prior.o noise.o sample_rGIG.o estimate.o optimizer.o block.o latent.o ngme.o \

@@ -62,7 +62,7 @@ test_that("test Matern", {
       verbose = T,
       std_lim = 0.01
     ),
-    start=out,
+    # start=out,
     debug = F
   )
 

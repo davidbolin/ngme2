@@ -161,15 +161,15 @@ public:
 
 class General : public Operator {
 private:
-    string theta_trans;
     vector<SparseMatrix<double, 0, int>> matrices;
+    string trans_type;
 public:
     General(const Rcpp::List&);
 
     void update_K(const VectorXd& theta_K);
     void update_dK(const VectorXd& theta_K);
 
-    VectorXd param_trans_fun(const VectorXd& theta_K, const string& name) const;
+    VectorXd param_trans_fun(const VectorXd& theta_K, const string& trans_type) const;
 };
 
 // Bivar_normal

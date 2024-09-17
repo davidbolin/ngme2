@@ -88,6 +88,8 @@ reference:
     - bv_normal
     - bv_matern_normal
     - re
+    - spacetime
+    - general
   - title: ngme2 noises
     contents:
     - ngme_noise
@@ -104,6 +106,7 @@ reference:
     - adam
     - adamW
     - bfgs
+    - adaptive_gd
   - title: Prediction and Cross validation
     contents:
     - predict.ngme

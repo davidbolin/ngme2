@@ -1,7 +1,19 @@
-# implementation of the general K operator
-# K = sum_i f_i(theta_i) * matrices_i
-
-general_ope <- function(
+#' ngme general K operator
+#'
+#' K = sum_i f_i(theta_i) * matrices_i
+#' f_i depends on the parameter transformation type
+#'
+#' @param theta_K the parameter vector
+#' @param trans_type the type of parameter transformation
+#' @param matrices the matrices
+#' @param h the h vector
+#' @param zero_trace whether the trace of K is zero
+#' @param mesh the mesh
+#' @param ... ignore
+#'
+#' @return ngme_operator object
+#' @export
+general <- function(
   theta_K, 
   trans_type,
   matrices,

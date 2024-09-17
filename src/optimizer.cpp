@@ -75,6 +75,10 @@ VectorXd Ngme_optimizer::sgd(
     int var_reduce_iter = 5000;
     double reduce_power = 0.2; // 0-1, the bigger, the stronger
 
+    // Initialize for adaptive gradient descent
+    double avg_stepsize = model->get_stepsizes().mean();
+    double theta = 1e9, prev_avg_stepsize = avg_stepsize;
+
 // auto timer_grad = std::chrono::steady_clock::now();
     for (int i = 0; i < iterations; i++) {
         trajs.push_back(x);
@@ -121,6 +125,25 @@ std::cout << "grad.norm() < " << converge_eps << ", reach convergence" << std::e
 //  x_{t+1} = x_t - stepsize * g_t / (sqrt(v_t) + epsilon) 
             v = beta1 * v + (1-beta1) * grad.cwiseProduct(grad);
             one_step = model->get_stepsizes().cwiseProduct(grad.cwiseQuotient(v.cwiseSqrt() + VectorXd::Constant(v.size(), eps_hat)));
+        } else if (method == "adaptive_gd") {
+            // adaptive gradient descent
+            // The update rule for adaptive gradient descent is:
+            // \deqn{\lambda_k = \min(\sqrt{1 + \theta_{k-1}} \lambda_{k-1}, \frac{||x_k - x_{k-1}||}{2 ||\nabla f(x_k) - \nabla f(x_{k-1})||} )}
+            // \deqn{x_{k+1} = x_k - \lambda_k \nabla f(x_k)}
+            // \deqn{\theta_k = \lambda_k / \lambda_{k-1}}
+            if (i==0) {
+                one_step = avg_stepsize * grad;
+            } else {
+                avg_stepsize = std::min(
+                    std::sqrt(1 + theta) * prev_avg_stepsize, 
+                    0.5 * (x - prev_x).norm() / (grad - prev_grad).norm()
+                );
+                theta = avg_stepsize / prev_avg_stepsize;
+                prev_grad = grad;
+                one_step = avg_stepsize * grad;
+            }
+// std::cout << "avg_stepsize = " << avg_stepsize << std::endl;
+// std::cout << "theta = " << theta << std::endl;
         } else if (method == "bfgs" && curr_iter > 0) {
             // BFGS - deterministic for Gaussian model
             VectorXd s = x - prev_x;

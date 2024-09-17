@@ -286,7 +286,7 @@ build_operator <- function(model_name, args_list) {
     matern = do.call(matern, args_list),
     re  = do.call(re, args_list),
     spacetime = do.call(spacetime, args_list),
-    general = do.call(general_ope, args_list),
+    general = do.call(general, args_list),
     iid = {
       if (is.null(args_list$n))
         args_list$n <- length_map(args_list$map)

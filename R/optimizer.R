@@ -221,3 +221,27 @@ bfgs <- function(
   class(ret) <- "ngme_optimizer"
   ret
 }
+
+#' Adaptive gradient descent
+#' From the paper: https://arxiv.org/pdf/1910.09529
+#' The update rule for adaptive gradient descent is:
+#' \deqn{\lambda_k = \min(\sqrt{1 + \theta_{k-1}} \lambda_{k-1}, \frac{||x_k - x_{k-1}||}{2 ||\nabla f(x_k) - \nabla f(x_{k-1})||} )}
+#' \deqn{x_{k+1} = x_k - \lambda_k \nabla f(x_k)}
+#' \deqn{\theta_k = \lambda_k / \lambda_{k-1}}
+#'  
+#' @param stepsize initial stepsize for SGD
+#'
+#' @return a list of control variables for optimization
+#' (used in \code{control_opt} function)
+#' @export
+adaptive_gd <- function(
+  stepsize = 0.01
+) {
+  ret <- list(
+    method         = "adaptive_gd",
+    stepsize       = stepsize,
+    sgd_parameters = double(0)
+  )
+  class(ret) <- "ngme_optimizer"
+  ret
+}

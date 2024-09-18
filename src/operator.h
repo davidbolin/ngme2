@@ -162,14 +162,16 @@ public:
 class General : public Operator {
 private:
     vector<SparseMatrix<double, 0, int>> matrices;
-    string trans_type;
+    MatrixXd idx_mat; 
+    vector<string> trans;
 public:
     General(const Rcpp::List&);
 
     void update_K(const VectorXd& theta_K);
     void update_dK(const VectorXd& theta_K);
 
-    VectorXd param_trans_fun(const VectorXd& theta_K, const string& trans_type) const;
+    // VectorXd param_trans_fun(const VectorXd& theta_K, const string& trans_type) const;
+    VectorXd compute_coef(const VectorXd& theta_K, const MatrixXd& idx_mat, const vector<string>& trans) const;
 };
 
 // Bivar_normal

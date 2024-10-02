@@ -81,9 +81,7 @@ double cholesky_solver::trace_num(const SparseMatrix<double, 0, int> &M)
     }
 
     U = U.unaryExpr(std::ref(myround));
-    for(int i=0; i<N; i++){
-      QU.col(i) = R.solve(U.col(i));
-    }
+    QU = R.solve(U);
     QU_computed = 1;
   }
 
@@ -377,4 +375,142 @@ void lu_sparse_solver::analyze(const Eigen::SparseMatrix<double, 0, int> &M)
   U.resize(n, N);
   QU.resize(n, N);
   QU_computed = false;
+}
+
+
+
+
+
+void iterative_solver::initFromList(int nin,const Rcpp::List & init_list)
+{
+  if(nin <= 0 )
+  {
+    Rcpp::Rcout << "iterative_solver::initFromList nin must be greater then >0\n";
+    throw("error");
+  }
+  n = nin;
+
+  // N = Rcpp::as<int>(init_list["trace.iter"]);
+  // R.setMaxIterations(Rcpp::as<int>(init_list["trace.solver.max.iter"]));
+  // R.setTolerance(Rcpp::as<double>(init_list["trace.solver.tol"]));
+
+  N = 100;
+  R.setMaxIterations(100);
+
+  QU.setZero(n,N);
+  QU.setZero(n,N);
+  U.setRandom(n,N);
+  U = U.unaryExpr(std::ref(myround));
+
+  prevQU.setZero(n,N);
+  MQU.setZero(n,N);
+}
+
+void iterative_solver::init(int nin,int Nin,int max_iter,double tol)
+{
+  std::cout << "max iter = " << max_iter << std::endl;
+  N = Nin;
+  n = nin;
+  // R.setMaxIterations(max_iter);
+  R.setTolerance(tol);
+
+  QU.setZero(n,N);
+  U.setRandom(n,N);
+  U = U.unaryExpr(std::ref(myround));
+  prevQU.setZero(n,N);
+
+  MQU.setZero(n,N);
+}
+
+void iterative_solver::compute(const SparseMatrix<double,0,int>& M)
+{
+  R.compute(M);
+  //U.setRandom(n,N);
+  //U = U.unaryExpr(std::ptr_fun(myround));
+  QU_computed = 0;
+}
+
+//Solve trace(M*Q^-1)
+double iterative_solver::trace(const MatrixXd& M)
+{
+  if(QU_computed==0){
+    for(int i=0;i<N;i++){
+      QU.col(i) = R.solveWithGuess(U.col(i),QU.col(i));
+    }
+    QU_computed = 1;
+  }
+
+
+  MQU = M*QU;
+  double t = 0;
+
+  for(int i=0;i<N;i++){
+    t += U.col(i).dot(MQU.col(i));
+  }
+
+  return t/N;
+}
+
+double iterative_solver::trace(const SparseMatrix<double,0,int>& M)
+{
+
+  if(QU_computed==0){
+    for(int i=0;i<N;i++){
+      QU.col(i) = R.solveWithGuess(U.col(i),QU.col(i));
+    }
+    QU_computed = 1;
+  }
+  MQU = M*QU;
+  double t = 0;
+  for(int i=0;i<N;i++){
+    t += U.col(i).dot(MQU.col(i));
+  }
+  return t/N;
+}
+
+//sovle trace(M1*Q^-1*M2*Q^-1)
+double iterative_solver::trace2(const SparseMatrix<double,0,int>& M1, SparseMatrix<double,0,int>& M2)
+{
+
+  if(QU_computed==0){
+    for(int i=0;i<N;i++){
+      QU.col(i) = R.solveWithGuess(U.col(i),QU.col(i));
+    }
+    QU_computed = 1;
+  }
+  MU = M2.transpose()*U;
+  MQU = M1*QU;
+  for(int i=0;i<N;i++){
+    MU.col(i) = R.solveWithGuess(MU.col(i),MU.col(i));
+  }
+  double t = 0;
+  for(int i=0;i<N;i++){
+    t += MU.col(i).dot(MQU.col(i));
+  }
+  return t/N;
+}
+
+double iterative_solver::trace_num(const SparseMatrix<double, 0, int> &M)
+{
+  // only compute when R.compute() is called
+  if (QU_computed==0) {
+    // U.setRandom(n,N);
+    // for (int i = 0; i < n; ++i) {
+    //   for (int j = 0; j < N; ++j) {
+    //     U(i, j) = R::runif(-1.0, 1.0);
+    //   }
+    // }
+    // U = U.unaryExpr(std::ref(myround)); 
+
+    QU = R.solveWithGuess(U, prevQU);
+    QU_computed = 1;
+    prevQU = QU;
+  }
+
+  MQU = M*QU;
+  double t = 0;
+  for(int i=0;i<N;i++){
+    t += U.col(i).dot(MQU.col(i));
+  }
+  return t/N;
 }

@@ -28,7 +28,6 @@
 #' currently support "precond_sgd", "momentum", "adagrad", "rmsprop", "adam", "adamW"
 #' see precond_sgd, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW
 #'
-#'
 #' @param max_num_threads maximum number of threads used for parallel computing, by default will be set same as n_parallel_chain.
 #' If it is more than n_parallel_chain, the rest will be used to parallel different replicates of the model.
 #' @param max_relative_step   max relative step allowed in 1 iteration
@@ -181,7 +180,7 @@ control_opt <- function(
 #' @param numer_grad    whether to use numerical gradient
 #' @param improve_hessian  improve numerical hessian by using central difference estimation (O(eps^2) error)
 #' default is forward difference estimation (O(eps) error)
-#'
+#' @param iterative_solver  whether to use iterative solver for the linear system
 #' @param eps           eps for computing numerical gradient
 #'
 #' @return list of control variables
@@ -189,15 +188,15 @@ control_opt <- function(
 control_f <- function(
   numer_grad       = TRUE,
   improve_hessian  = TRUE,
-  eps              = 0.0001
-  # use_iter_solver = FALSE
+  eps              = 0.0001,
+  iterative_solver = FALSE
   ) {
 
   control <- list(
     numer_grad       = numer_grad,
     improve_hessian  = improve_hessian,
     eps              = eps,
-    use_iter_solver  = FALSE
+    iterative_solver = iterative_solver
   )
 
   class(control) <- "control_f"
@@ -213,6 +212,7 @@ control_f <- function(
 #' @param n_post_samples number of posterior samples, see ?ngme_post_samples()
 #' @param feff           fixed effect value
 #' @param debug          debug mode
+#' @param iterative_solver  whether to use iterative solver for the linear system
 #' @return a list of control variables for block model
 #' @export
 control_ngme <- function(
@@ -221,7 +221,8 @@ control_ngme <- function(
   fix_feff = FALSE,
   n_post_samples = 100,
   feff = NULL,
-  debug = FALSE
+  debug = FALSE,
+  iterative_solver = FALSE
 ) {
   control <- list(
     init_sample_W = init_sample_W,
@@ -229,7 +230,8 @@ control_ngme <- function(
     fix_feff = fix_feff,
     feff = feff,
     n_post_samples = n_post_samples,
-    debug = debug
+    debug = debug,
+    iterative_solver = iterative_solver
   )
 
   class(control) <- "control_ngme"

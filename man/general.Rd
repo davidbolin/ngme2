@@ -4,25 +4,45 @@
 \alias{general}
 \title{ngme general K operator}
 \usage{
-general(theta_K, trans_type, matrices, h, zero_trace = FALSE, mesh = NULL, ...)
+general(
+  theta_K,
+  trans,
+  matrices,
+  h,
+  interact = NULL,
+  theta_K2 = NULL,
+  trans2 = NULL,
+  matrices2 = NULL,
+  h2 = NULL,
+  zero_trace = FALSE,
+  mesh = NULL,
+  ...
+)
 }
 \arguments{
 \item{theta_K}{the parameter vector}
 
-\item{trans_type}{the type of parameter transformation}
-
 \item{matrices}{the matrices}
 
 \item{h}{the h vector}
+
+\item{interact}{the interaction type}
+
+\item{theta_K2}{the second parameter vector}
+
+\item{trans2}{the second parameter transformation type}
+
+\item{matrices2}{the second matrices}
+
+\item{h2}{the second h vector}
 
 \item{zero_trace}{whether the trace of K is zero}
 
 \item{mesh}{the mesh}
 
 \item{...}{ignore}
-}
-\value{
-ngme_operator object
+
+\item{trans_type}{the type of parameter transformation}
 }
 \description{
 K = sum_i f_i(theta_i) * matrices_i

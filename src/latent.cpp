@@ -49,7 +49,7 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
 if (control_f.containsElementNamed("improve_hessian"))
         improve_hessian = Rcpp::as<bool>        (control_f["improve_hessian"]) ;
         eps             = Rcpp::as<double>      (control_f["eps"]) ;
-
+        use_iterative_solver = Rcpp::as<bool>      (control_f["iterative_solver"]) ;
     // construct from ngme_noise
     fix_flag[latent_fix_theta_K]     = Rcpp::as<bool>  (model_list["fix_theta_K"]);
     Rcpp::List noise_in = Rcpp::as<Rcpp::List> (model_list["noise"]);
@@ -126,6 +126,12 @@ if (noise_in.containsElementNamed("latent_fix_theta_sigma_normal"))
             // chol_solver_K.set_N(n_trace_iter);
             chol_solver_K.init(W_size, n_trace_iter, 0, 0);
             chol_solver_K.analyze(getK());
+            int iter_solver_max_iter = 10;
+            double iter_solve_tol = 1e-6;
+            if (use_iterative_solver) {
+                iterative_solver_K.init(W_size, n_trace_iter, iter_solver_max_iter, iter_solve_tol);
+                iterative_solver_K.compute(getK());
+            }
         }
     }
     SparseMatrix<double> Q = getK().transpose() * getK();
@@ -515,9 +521,21 @@ if (debug) std::cout << "update_each_iter" << std::endl;
                         }
                     }
                 } else {
-                    chol_solver_K.compute(getK());
-                    for (int i=0; i < n_theta_K; i++) {
-                        trace[i] = chol_solver_K.trace_num(ope->get_dK()[i]);
+                    // control_f$iterative_solver
+                    if (use_iterative_solver) {
+                        iter_solver_iter++;
+                        if (iter_solver_iter % 1 == 0) {
+                            iterative_solver_K.compute(getK());
+                        }
+
+                        for (int i=0; i < n_theta_K; i++) {
+                            trace[i] = iterative_solver_K.trace_num(ope->get_dK()[i]);
+                        }
+                    } else {
+                        chol_solver_K.compute(getK());
+                        for (int i=0; i < n_theta_K; i++) {
+                            trace[i] = chol_solver_K.trace_num(ope->get_dK()[i]);
+                        }
                     }
                 }
             }

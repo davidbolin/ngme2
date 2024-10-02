@@ -43,32 +43,6 @@ public:
   }
 };
 
-class iterative_solver : public virtual solver
-{
-private:
-  int N;
-  Eigen::MatrixXd U, QU, MQU, MU;
-  bool QU_computed;
-  Eigen::ConjugateGradient<Eigen::SparseMatrix<double, 0, int>, Lower|Upper > R;
-
-public:
-  ~iterative_solver(){};
-  void init(int, int, int, double);
-  void initFromList(int, Rcpp::List const &);
-  inline void analyze(Eigen::SparseMatrix<double, 0, int> &M) { R.analyzePattern(M); }
-  void compute(Eigen::SparseMatrix<double, 0, int> &);
-  inline Eigen::VectorXd solve(Eigen::VectorXd &v, Eigen::VectorXd &x) { return R.solveWithGuess(v, x); }
-  double trace(Eigen::MatrixXd &);
-  double trace(Eigen::SparseMatrix<double, 0, int> &);
-  double trace2(SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &);
-  Eigen::VectorXd rMVN(Eigen::VectorXd &mu, Eigen::VectorXd &z)
-  {
-    std::cout << "rMVN not implimented\n";
-    Eigen::VectorXd X;
-    return X;
-  }
-};
-
 
 class cholesky_solver : public virtual solver
 {
@@ -174,5 +148,43 @@ public:
     throw;
   };
 };
+
+
+class iterative_solver : public virtual solver
+{
+private:
+  int N;
+  Eigen::MatrixXd U, QU, MQU, MU, prevQU;
+  bool QU_computed;
+  Eigen::ConjugateGradient<Eigen::SparseMatrix<double, 0, int>, Lower, Eigen::IncompleteCholesky<double> > R;
+  // Eigen::ConjugateGradient<Eigen::SparseMatrix<double, 0, int>, Lower|Upper, DiagonalPreconditioner<double> > R;
+  int curr_iter {0};
+public:
+  ~iterative_solver(){};
+  void init(int, int, int, double);
+  void initFromList(int, Rcpp::List const &);
+  
+  // Update this line to match the base class signature
+  inline void analyze(const Eigen::SparseMatrix<double, 0, int> &M) override { 
+    R.compute(M);
+    QU_computed = false;
+  }
+  
+  void compute(const Eigen::SparseMatrix<double, 0, int> &);
+  inline Eigen::VectorXd solve(Eigen::VectorXd &v, Eigen::VectorXd &x) { return R.solveWithGuess(v, x); }
+  double trace(const Eigen::MatrixXd &);
+  double trace(const Eigen::SparseMatrix<double, 0, int> &);
+  double trace2(const SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &);
+  double trace_num(const SparseMatrix<double, 0, int> &);
+  Eigen::VectorXd rMVN(Eigen::VectorXd &mu, Eigen::VectorXd &z)
+  {
+    std::cout << "rMVN not implimented\n";
+    Eigen::VectorXd X;
+    return X;
+  }
+};
+
+
+
 
 #endif

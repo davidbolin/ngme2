@@ -66,9 +66,7 @@ protected:
     VectorXd rb_trace_K, rb_trace_sigma;
     double eps {1e-5};
 
-    bool fix_flag[LATENT_FIX_FLAG_SIZE] {0};
-    bool numer_grad {false};
-    bool improve_hessian {false};
+    bool fix_flag[LATENT_FIX_FLAG_SIZE] {0}, numer_grad {false}, improve_hessian {false}, use_iterative_solver {false};
 
     vector<std::shared_ptr<Operator>> ope_add_eps;
     vector<SparseMatrix<double>> num_dK;
@@ -95,6 +93,7 @@ protected:
     bool single_V {false}, share_V {false};
 
     // solver
+    iterative_solver iterative_solver_K;
     cholesky_solver chol_solver_K;
     lu_sparse_solver lu_solver_K;
     cholesky_solver solver_Q; // Q = KT diag(1/SV) K
@@ -102,6 +101,8 @@ protected:
     // priors
     string prior_K_type, prior_mu_type, prior_sigma_type, prior_nu_type;
     VectorXd prior_K_param, prior_mu_param, prior_sigma_param, prior_nu_param;
+
+    int iter_solver_iter {0};
 public:
     Latent(const Rcpp::List&, unsigned long seed);
     ~Latent() {}

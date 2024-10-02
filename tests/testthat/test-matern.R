@@ -4,11 +4,23 @@
 
 test_that("test Matern", {
   pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
-  mesh <- fmesher::fm_mesh_2d(
+  mesh_2k <- fmesher::fm_mesh_2d(
     loc.domain = pl01, cutoff = 0.1,
     max.edge = c(0.3, 10)
   )
-  mesh$manifold
+  mesh_2k$n
+  mesh_8k <- fmesher::fm_mesh_2d(
+    loc.domain = pl01, cutoff = 0.08,
+    max.edge = c(0.1, 10)
+  )
+  mesh_8k$n
+  mesh_17k <- fmesher::fm_mesh_2d(
+    loc.domain = pl01, cutoff = 0.01,
+    max.edge = c(0.1, 10)
+  )
+  mesh_17k$n
+
+  mesh <- mesh_17k
   # plot(mesh)
   mesh$n
 
@@ -17,7 +29,7 @@ test_that("test Matern", {
 # plot(mesh); points(loc)
   true_noise = noise_nig(mu=-2, sigma=1, nu=0.5)
   true_noise = noise_normal(sigma=4)
-  plot(true_noise)
+  # plot(true_noise)
 
   true_model <- f(
     map = loc,
@@ -27,7 +39,8 @@ test_that("test Matern", {
     noise = true_noise
   )
 
-  W <- simulate(true_model)[[1]]
+  W <- rnorm(n_obs)
+  # W <- simulate(true_model)[[1]]
   attr(W, "noise")
   Y <- W + rnorm(n_obs, sd=0.5)
 
@@ -39,6 +52,7 @@ test_that("test Matern", {
   # range(mesh$loc[, 1]); range(mesh$loc[, 2])
 
   # Matern case
+  load_all()
   out <- ngme(
     Y ~ 0 + f(loc,
       model="matern",
@@ -47,11 +61,15 @@ test_that("test Matern", {
       # noise=noise_nig(),
       noise=noise_normal(),
       control = control_f(
+        # iterative_solver = TRUE,
         numer_grad = FALSE
       ),
       debug = F
     ),
     data = data.frame(Y = Y),
+    control_ngme = control_ngme(
+      use_iterative_solver = TRUE
+    ),
     control_opt = control_opt(
       estimation = T,
       iterations = 100,

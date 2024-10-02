@@ -92,11 +92,12 @@ protected:
 
     // solvers
     // SimplicialLLT<SparseMatrix<double, Lower>> Q_eps_solver;
+    iterative_solver iterative_QQ;
     cholesky_solver chol_Q, chol_QQ, chol_Q_eps;
     SparseLU<SparseMatrix<double>> LU_K;
     double logdet_Q_eps;
 
-    bool all_gaussian, rao_blackwell, shared_sigma; // No need for gibbs sampling
+    bool all_gaussian, rao_blackwell, shared_sigma, use_iterative_solver; // No need for gibbs sampling
     std::string par_string;
     VectorXd rb_trace_noise_sigma;
 

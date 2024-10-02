@@ -61,6 +61,7 @@ BlockModel::BlockModel(
     n_gibbs     =  Rcpp::as<int>    (control_ngme["n_gibbs_samples"]);
     debug       = Rcpp::as<bool>   (control_ngme["debug"]);
     rao_blackwell = Rcpp::as<bool> (control_ngme["rao_blackwellization"]);
+    use_iterative_solver = Rcpp::as<bool> (control_ngme["iterative_solver"]);
     int n_trace_iter = Rcpp::as<int> (control_ngme["n_trace_iter"]);
     // reduce_var    =  Rcpp::as<bool>   (control_ngme["reduce_var"]);
     // reduce_power  =  Rcpp::as<double> (control_ngme["reduce_power"]);
@@ -212,15 +213,24 @@ if (debug) std::cout << "After assemble" << std::endl;
 
     // Init solver, set N for trace estimator
     // chol_QQ.set_N(n_trace_iter);
-    chol_QQ.init(W_sizes, n_trace_iter, 0,0);
     chol_Q.init(W_sizes, n_trace_iter, 0,0);
     chol_Q_eps.init(W_sizes, n_trace_iter, 0,0);
     
     // Analyze pattern
     chol_Q.analyze(Q);
+    LU_K.analyzePattern(K);
+
+    chol_QQ.init(W_sizes, n_trace_iter, 0,0);
     chol_QQ.analyze(QQ);
     chol_QQ.compute(QQ);
-    LU_K.analyzePattern(K);
+    
+    int iter_solver_max_iter = 100;
+    double iter_solver_tol = 1e-6;
+    int n_trace_iter = 100;
+    if (use_iterative_solver) {
+      iterative_QQ.init(W_sizes, n_trace_iter, iter_solver_max_iter, iter_solver_tol);
+      iterative_QQ.compute(QQ);
+    }
   }
 if (debug) std::cout << "After init solver " << std::endl;
 
@@ -912,7 +922,11 @@ if (debug) std::cout << "start compute trace" << std::endl;
     // compute for K: tr(QQ^-1 dK^T diag(1/SV) K)
     for (int j=0; j < latents[i]->get_n_theta_K(); j++) {
       SparseMatrix<double> T = block_dK[i][j].transpose() * inv_SV.asDiagonal() * K;
-      rb_trace_K[j] = chol_QQ.trace_num(T);
+      if (use_iterative_solver) {
+        rb_trace_K[j] = iterative_QQ.trace_num(T);
+      } else {
+        rb_trace_K[j] = chol_QQ.trace_num(T);
+      }
     }
 
     // compute for sigma: tr(Q^-1 K B_sigma.col(j)/SV K^T)
@@ -923,7 +937,11 @@ if (debug) std::cout << "start compute trace" << std::endl;
       BSigma_col_over_SV = BSigma_col_over_SV.cwiseProduct(inv_SV);
 
       SparseMatrix<double> T = K.transpose() * BSigma_col_over_SV.asDiagonal() * K;
-      rb_trace_sigma[j] = chol_QQ.trace_num(T);
+      if (use_iterative_solver) {
+        rb_trace_sigma[j] = iterative_QQ.trace_num(T);
+      } else {
+        rb_trace_sigma[j] = chol_QQ.trace_num(T);
+      }
     }
 
     latents[i]->set_rb_trace(rb_trace_K, rb_trace_sigma);
@@ -934,7 +952,11 @@ if (debug) std::cout << "start compute trace" << std::endl;
   VectorXd noise_SV = noise_V.cwiseProduct(noise_sigma.array().pow(2).matrix());
   for (int j=0; j < n_theta_sigma; j++) {
     SparseMatrix<double> T = A.transpose() * B_sigma.col(j).cwiseQuotient(noise_SV).asDiagonal() * A;
-    rb_trace_noise_sigma[j] = chol_QQ.trace_num(T);
+    if (use_iterative_solver) {
+      rb_trace_noise_sigma[j] = iterative_QQ.trace_num(T);
+    } else {
+      rb_trace_noise_sigma[j] = chol_QQ.trace_num(T);
+    }
   }
 if (debug) std::cout << "after compute trace" << std::endl;
 }
@@ -1069,6 +1091,7 @@ void BlockModel::update_QQ() {
     QQ = Q + A.transpose() * Q_eps * A;
   }
   chol_QQ.compute(QQ);
+  // iterative_QQ.compute(QQ);
 }
 
 // update Q_eps, dQ_eps, and compute trace as sum_ij dQ_ij * Q^-1_ij

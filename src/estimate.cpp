@@ -27,6 +27,7 @@ std::vector<bool> check_conv(const MatrixXd&, const MatrixXd&, int, int, double,
 // [[Rcpp::plugins(openmp)]]
 // [[Rcpp::export]]
 Rcpp::List estimate_cpp(const Rcpp::List& R_ngme, const Rcpp::List& control_opt) {
+    // Eigen::initParallel();
     unsigned long seed = Rcpp::as<unsigned long> (control_opt["seed"]);
     std::mt19937 rng (seed);
 

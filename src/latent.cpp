@@ -126,11 +126,13 @@ if (noise_in.containsElementNamed("latent_fix_theta_sigma_normal"))
             // chol_solver_K.set_N(n_trace_iter);
             chol_solver_K.init(W_size, n_trace_iter, 0, 0);
             chol_solver_K.analyze(getK());
+            
+            // iterative solver set up
             int iter_solver_max_iter = 10;
-            double iter_solve_tol = 1e-6;
+            double iter_solve_tol = 1e-3;
             if (use_iterative_solver) {
                 iterative_solver_K.init(W_size, n_trace_iter, iter_solver_max_iter, iter_solve_tol);
-                iterative_solver_K.compute(getK());
+                iterative_solver_K.analyze(getK());
             }
         }
     }

@@ -95,7 +95,7 @@ param_trans_fun <- function(theta_K, name) {
 #' @param trans_type the type of parameter transformation
 #' @param matrices the matrices
 #' @param h the h vector
-#' @param interact the interaction type
+#' @param interact the interaction type, "multiply" or "kronecker"
 #' @param theta_K2 the second parameter vector
 #' @param trans2 the second parameter transformation type
 #' @param matrices2 the second matrices
@@ -158,6 +158,7 @@ general <- function(
     }
     # expand matrices and combine with interaction
     matrices <- expand_matrices(matrices, matrices2, interact)
+
     update_K <- function(theta_K) {
       coef <- compute_coef(theta_K, idx, trans)
       K <- 0
@@ -167,7 +168,11 @@ general <- function(
       return(K)
     }
     
-    theta_K <- c(theta_K, theta_K2)
+    theta_K <- c(theta_K, theta_K2); trans <- c(trans, trans2)
+    for (name in names(theta_K)) {
+      theta_K[name] <- name2fun(trans[[name]], inv=TRUE)(theta_K[name])
+    }
+
     if (interact == "kronecker") h <- h %x% h2 else h <- h * h2
   }
 
@@ -200,22 +205,34 @@ compute_coef <- function(theta_K, idx, trans) {
     p <- apply(idx, 2, function(x) x[i])
     for (name in names(theta_K)) {
       if (p[name]) {
-        coef[i] <- coef[i] * name2fun(trans[[name]])(theta_K[name])
+        coef[i] <- coef[i] * name2fun(trans[[name]], inv=FALSE)(theta_K[name])
       }
     }
   }
   return(coef)
 }
 
-name2fun <- function(trans) {
-  if (trans == "exp2") {
-    return(function(x) exp(2*x))
-  } else if (trans == "tanh") {
-    return(ar1_th2a)
-  } else if (trans == "identity") {
-    return(function(x) x)
+name2fun <- function(trans, inv=FALSE) {
+  if (!inv) {
+    if (trans == "exp2") {
+      return(function(x) exp(2*x))
+    } else if (trans == "tanh") {
+      return(ar1_th2a)
+    } else if (trans == "identity") {
+      return(function(x) x)
+    } else {
+      stop("Unknown transformation")
+    }
   } else {
-    stop("Unknown transformation")
+    if (trans == "exp2") {
+      return(function(x) log(x) / 2)
+    } else if (trans == "tanh") {
+      return(ar1_a2th)
+    } else if (trans == "identity") {
+      return(function(x) x)
+    } else {
+      stop("Unknown transformation")
+    }
   }
 }
 
@@ -227,7 +244,7 @@ expand_matrices <- function(matrices, matrices2, interact) {
     for (i in seq_along(matrices)) {
       # Multiply the matrices and store the result
       if (interact == "multiply") {
-        result[[idx]] <- matraices[[i]] %*% matrices2[[j]]
+        result[[idx]] <- matrices[[i]] %*% matrices2[[j]]
       } else if (interact == "kronecker") {
         result[[idx]] <- kronecker(matrices[[i]], matrices2[[j]])
       }

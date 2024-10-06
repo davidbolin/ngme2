@@ -1,4 +1,5 @@
 #include "../include/solver.h"
+
 using namespace Eigen;
 double myround(double x){
 	if(x > 0){
@@ -424,7 +425,8 @@ void iterative_solver::init(int nin,int Nin,int max_iter,double tol)
 
 void iterative_solver::compute(const SparseMatrix<double,0,int>& M)
 {
-  R.compute(M);
+  R.factorize(M);
+
   //U.setRandom(n,N);
   //U = U.unaryExpr(std::ptr_fun(myround));
   QU_computed = 0;

@@ -9,7 +9,6 @@
 #include "MatrixAlgebra.h"
 #include <Rcpp.h>
 
-
 class solver
 {
 private:

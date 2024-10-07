@@ -517,6 +517,8 @@ double iterative_solver::trace_num(const SparseMatrix<double, 0, int> &M)
   return t/N;
 }
 
+#ifdef __APPLE__
+// if system is macOS, use Eigen::AccelerateLLT 
 void accel_llt_solver::init(int nin, int Nin, int max_iter, double tol) {
   // std::cout << "accel_llt_solver::init" << std::endl;
   n = nin;
@@ -561,3 +563,5 @@ Eigen::VectorXd accel_llt_solver::rMVN(Eigen::VectorXd &mu, Eigen::VectorXd &z)
   // Sample without Cholesky?
   return QU;
 }
+
+#endif

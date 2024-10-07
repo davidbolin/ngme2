@@ -12,10 +12,6 @@
 #include <Eigen/Sparse>
 #include "MatrixAlgebra.h"
 
-// if system is macOS, use Eigen::AccelerateLLT
-#ifdef __APPLE__
-#include <Eigen/AccelerateSupport>
-#endif
 
 class solver
 {
@@ -194,6 +190,9 @@ public:
   }
 };
 
+// if system is macOS, use Eigen::AccelerateLLT
+#ifdef __APPLE__
+#include <Eigen/AccelerateSupport>
 class accel_llt_solver : public virtual solver
 {
 private:
@@ -224,5 +223,7 @@ public:
   double trace_num(const SparseMatrix<double, 0, int> &);
   Eigen::VectorXd rMVN(Eigen::VectorXd &, Eigen::VectorXd &);
 };
+#endif
+
 
 #endif

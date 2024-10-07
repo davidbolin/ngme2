@@ -4,11 +4,6 @@ BlockModel - for ngme each replicate
 #ifndef NGME_BLOCK_H
 #define NGME_BLOCK_H
 
-// #define EIGEN_USE_MKL_ALL
-#include <Rcpp.h>
-#include <RcppEigen.h>
-#include <Eigen/Sparse>
-
 #include <string>
 #include <vector>
 #include <iostream>

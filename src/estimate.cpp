@@ -1,5 +1,8 @@
+#define COMPLEX R_COMPLEX
 #include <Rcpp.h>
 #include <RcppEigen.h>
+#undef COMPLEX
+
 #include "optimizer.h"
 #include "ngme.h"
 #include "include/timer.h"

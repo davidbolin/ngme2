@@ -1,10 +1,11 @@
+#define COMPLEX R_COMPLEX
 #include <Rcpp.h>
+#undef COMPLEX
+
 #include <random>
 #include <chrono>
 #include "GIG.h"
 #include "Rmath.h"
-using namespace Rcpp;
-
 
 double db_EiV_GIG(double p, double a, double b) {
     double sqrt_ab = sqrt(a * b);

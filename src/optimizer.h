@@ -1,9 +1,6 @@
 #ifndef NGME_OPT_H
 #define NGME_OPT_H
 
-#include <Rcpp.h>
-#include <RcppEigen.h>
-#include <Eigen/Dense>
 #include "ngme.h"
 #include <memory>
 

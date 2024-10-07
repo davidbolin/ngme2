@@ -6,8 +6,12 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
+
+#define COMPLEX R_COMPLEX
 #include <Rcpp.h>
 #include <RcppEigen.h>
+#undef COMPLEX
+
 #include <Eigen/SparseLU>
 #include <Eigen/Dense>
 #include <random>

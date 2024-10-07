@@ -1,8 +1,5 @@
-// #include <Rcpp.h>
-
 #include "rgig.h"
 #include <chrono>
-#include <RcppEigen.h>
 #include "sample_rGIG.h"
 using Eigen::VectorXd;
 

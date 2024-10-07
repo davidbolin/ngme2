@@ -2,7 +2,10 @@
 #ifndef NGME_VAR_H
 #define NGME_VAR_H
 
+#define COMPLEX R_COMPLEX
 #include <Rcpp.h>
+#undef COMPLEX
+
 #include <Eigen/Dense>
 #include <random>
 #include <string>

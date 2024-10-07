@@ -1,13 +1,16 @@
 #ifndef __Solver__Solver__
 #define __Solver__Solver__
+
+#define COMPLEX R_COMPLEX
+#include <Rcpp.h>
+#undef COMPLEX
+
 #include <iostream>
 #include <string.h>
-#include <RcppEigen.h>
 #include <Eigen/Dense>
 #include <Eigen/LU>
 #include <Eigen/Sparse>
 #include "MatrixAlgebra.h"
-#include <Rcpp.h>
 
 class solver
 {
@@ -83,7 +86,6 @@ public:
   Eigen::VectorXd rMVN(Eigen::VectorXd &, Eigen::VectorXd &);
   SparseMatrix<double, 0, int> return_Qinv();
 };
-
 
 
 class lu_solver : public virtual solver
@@ -182,8 +184,5 @@ public:
     return X;
   }
 };
-
-
-
 
 #endif

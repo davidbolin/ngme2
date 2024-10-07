@@ -1,7 +1,7 @@
 #ifndef NGME_SAMPLE_RGIG_H
 #define NGME_SAMPLE_RGIG_H
 
-#include <RcppEigen.h>
+#include <Eigen/Dense>
 using Eigen::VectorXd;
 using Eigen::Ref;
 

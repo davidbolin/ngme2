@@ -1,6 +1,4 @@
 #include "../include/MatrixAlgebra.h"
-#include <Rcpp.h>
-#include <RcppEigen.h>
 
 typedef Eigen::Triplet<double> T;
 using namespace Eigen;

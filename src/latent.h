@@ -15,8 +15,6 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
-#include <Rcpp.h>
-#include <RcppEigen.h>
 #include <Eigen/SparseLU>
 #include <Eigen/Dense>
 #include <random>

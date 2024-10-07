@@ -1,7 +1,6 @@
 #ifndef NGME_H
 #define NGME_H
 
-#include <Rcpp.h>
 #include <vector>
 #include <string>
 #include <iostream>

@@ -26,7 +26,7 @@ general(
 
 \item{h}{the h vector}
 
-\item{interact}{the interaction type}
+\item{interact}{the interaction type, "multiply" or "kronecker"}
 
 \item{theta_K2}{the second parameter vector}
 

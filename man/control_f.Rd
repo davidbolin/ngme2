@@ -4,7 +4,12 @@
 \alias{control_f}
 \title{Generate control specifications for \code{f} function}
 \usage{
-control_f(numer_grad = TRUE, improve_hessian = TRUE, eps = 1e-04)
+control_f(
+  numer_grad = TRUE,
+  improve_hessian = TRUE,
+  eps = 1e-04,
+  iterative_solver = FALSE
+)
 }
 \arguments{
 \item{numer_grad}{whether to use numerical gradient}
@@ -13,6 +18,8 @@ control_f(numer_grad = TRUE, improve_hessian = TRUE, eps = 1e-04)
 default is forward difference estimation (O(eps) error)}
 
 \item{eps}{eps for computing numerical gradient}
+
+\item{iterative_solver}{whether to use iterative solver for the linear system}
 }
 \value{
 list of control variables

@@ -518,6 +518,7 @@ double iterative_solver::trace_num(const SparseMatrix<double, 0, int> &M)
 }
 
 void accel_llt_solver::init(int nin, int Nin, int max_iter, double tol) {
+  // std::cout << "accel_llt_solver::init" << std::endl;
   n = nin;
   N = Nin;
   U.resize(n, N);

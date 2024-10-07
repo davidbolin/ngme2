@@ -88,6 +88,7 @@ protected:
     // solvers
     // SimplicialLLT<SparseMatrix<double, Lower>> Q_eps_solver;
     iterative_solver iterative_QQ;
+//  accel_llt_solver chol_Q, chol_QQ, chol_Q_eps;
     cholesky_solver chol_Q, chol_QQ, chol_Q_eps;
     SparseLU<SparseMatrix<double>> LU_K;
     double logdet_Q_eps;

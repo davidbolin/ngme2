@@ -273,13 +273,45 @@ VectorXd Latent::grad_theta_K(bool rao_blackwell) {
 
     VectorXd WW = (rao_blackwell) ? cond_W : W;
     if (numer_grad) {
+        VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
+        SparseMatrix<double> Q = getK().transpose() * SV.cwiseInverse().asDiagonal() * getK();
+        
+        if (W_size > 5 && !symmetricK) {
+            // Initialize solver Q
+            solver_Q.compute(Q);
+        } else if (W_size > 5 && symmetricK) {
+            chol_solver_K.compute(getK());
+        }
+        
         double val = logd_W_given_V(WW, getK(), mu, sigma, V);
         for (int i=0; i < n_theta_K; i++) {
             VectorXd tmp = theta_K;
             tmp(i) += eps;
             ope_addeps->update_K(tmp);
+
+            // Derivative of numerical gradient
+            // grad(i) = (loglikelihood(K+eps) - loglikelihood(K)) / eps
+            //         = (logdet(K_eps) + rest(K_eps) - logdet(K) - rest(K)) / eps
+            //         = logdet_difference + rest
+            
+            // Here we compute rest_difference
             double val_add_eps = logd_W_given_V(WW, ope_addeps->getK(), mu, sigma, V);
             grad(i) = (val_add_eps - val) / eps;
+
+            // compute logdet difference = (logdet(K_eps) - logdet(K)) / eps
+            double logdet_difference = 0;
+            if (W_size > 5) {
+                SparseMatrix<double> K_eps = ope_addeps->getK();
+                SparseMatrix<double> dK = (K_eps - getK()) / eps;
+                if (!symmetricK) {
+                    SparseMatrix<double> Q_eps = K_eps.transpose() * SV.cwiseInverse().asDiagonal() * K_eps;
+                    SparseMatrix<double> dQ = (Q_eps - Q) / eps;
+                    logdet_difference = 0.5 * solver_Q.trace_num(dQ);
+                } else {
+                    logdet_difference = chol_solver_K.trace_num(dK);
+                }
+                grad(i) += logdet_difference;
+            }
         }
     } else {
         VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
@@ -602,9 +634,10 @@ double Latent::log_density(const VectorXd& parameter, bool precond_K) {
     return -logd_W;
 }
 
-// log density of W|V
+// log density of W|V (remove logdet term when K.rows() > 5)
 double Latent::logd_W_given_V(const VectorXd& W, const SparseMatrix<double>& K, const VectorXd& mu, const VectorXd& sigma, const VectorXd& V) {
-    double l = 0;
+    double l = 0; 
+    double l_no_logdet = 0;
     VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
 
     VectorXd tmp = K * W - mu.cwiseProduct(V-h);
@@ -613,24 +646,22 @@ double Latent::logd_W_given_V(const VectorXd& W, const SparseMatrix<double>& K, 
         l = log(Kd.diagonal().prod()) - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
     } else {
         if (!symmetricK) {
-            SparseMatrix<double> Q = K.transpose() * SV.cwiseInverse().asDiagonal() * K;
-
-            // solver_Q.analyze(Q);
-            solver_Q.compute(Q);
-            l = 0.5 * solver_Q.logdet() - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
-        
-            // SparseLU<SparseMatrix<double>> solver_Q_tmp;
-            // solver_Q_tmp.analyzePattern(Q); 
-            // solver_Q_tmp.factorize(Q);
-            // l = 0.5 * solver_Q_tmp.logAbsDeterminant() - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
+            l_no_logdet = -0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
+            
+            // previous version (include logdet term)
+            // SparseMatrix<double> Q = K.transpose() * SV.cwiseInverse().asDiagonal() * K;
+            // solver_Q.compute(Q);
+            // l_no_logdet = 0.5 * solver_Q.logdet() - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
         } else {
-            chol_solver_K.compute(K);
-// cholesky_solver solver_K_tmp;
-// solver_K_tmp.analyze(K); solver_K_tmp.compute(K);
-            l = chol_solver_K.logdet() - 0.5 * SV.array().log().sum()
-                - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
+            l_no_logdet = -0.5 * SV.array().log().sum() - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
+            
+            // previous version (include logdet term)
+            // chol_solver_K.compute(K);
+            // l_no_logdet = chol_solver_K.logdet() - 0.5 * SV.array().log().sum() - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
         }
+        l = l_no_logdet;
     }
+    
     return l;
 }
 

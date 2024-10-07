@@ -516,3 +516,47 @@ double iterative_solver::trace_num(const SparseMatrix<double, 0, int> &M)
   }
   return t/N;
 }
+
+void accel_llt_solver::init(int nin, int Nin, int max_iter, double tol) {
+  n = nin;
+  N = Nin;
+  U.resize(n, N);
+  QU.resize(n, N);
+  QU_computed = false;
+}
+
+double accel_llt_solver::trace_num(const SparseMatrix<double, 0, int> &M)
+{
+  if (QU_computed==0){
+    // U.setRandom(n,N);
+    // The MatrixXd::Random() is complained by R CMD check
+    for (int i = 0; i < n; ++i) {
+      for (int j = 0; j < N; ++j) {
+        U(i, j) = R::runif(-1.0, 1.0);
+      }
+    }
+
+    U = U.unaryExpr(std::ref(myround));
+    QU = R.solve(U);
+    QU_computed = 1;
+  }
+
+  Eigen::MatrixXd MQU = M*QU;
+  double t = 0;
+  for(int i=0;i<N;i++){
+    t += U.col(i).dot(MQU.col(i));
+  }
+  return t/N;
+}
+
+
+double accel_llt_solver::logdet() {
+  return 0.0;
+}
+
+// Sample Q^-1mu + chol(Q)Z = N(Q^-1mu,Q^-1), R is chol(Q)
+Eigen::VectorXd accel_llt_solver::rMVN(Eigen::VectorXd &mu, Eigen::VectorXd &z)
+{
+  // Sample without Cholesky?
+  return QU;
+}

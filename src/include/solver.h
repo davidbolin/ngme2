@@ -12,6 +12,11 @@
 #include <Eigen/Sparse>
 #include "MatrixAlgebra.h"
 
+// if system is macOS, use Eigen::AccelerateLLT
+#ifdef __APPLE__
+#include <Eigen/AccelerateSupport>
+#endif
+
 class solver
 {
 private:
@@ -70,8 +75,12 @@ public:
     QU_computed = false;
   }
   void compute(const Eigen::SparseMatrix<double, 0, int> &);
-  inline Eigen::VectorXd solve(Eigen::VectorXd &v, Eigen::VectorXd &x) { return R.solve(v); }
-  inline Eigen::VectorXd solve(const Eigen::VectorXd &v)               { return R.solve(v); }
+  inline Eigen::VectorXd solve(Eigen::VectorXd &v, Eigen::VectorXd &x) { 
+    return R.solve(v); 
+  }
+  inline Eigen::VectorXd solve(const Eigen::VectorXd &v) { 
+    return R.solve(v); 
+  }
   inline Eigen::SparseMatrix<double, 0, int> solveMatrix(const Eigen::SparseMatrix<double, 0, int> &v) { return R.solve(v); }
   double trace(const Eigen::MatrixXd &);
   double trace(const Eigen::SparseMatrix<double, 0, int> &);
@@ -183,6 +192,37 @@ public:
     Eigen::VectorXd X;
     return X;
   }
+};
+
+class accel_llt_solver : public virtual solver
+{
+private:
+  Eigen::AccelerateLLT<Eigen::SparseMatrix<double, 0, int> > R;
+  bool Qi_computed {false}, QU_computed {false}; 
+  Eigen::SparseMatrix<double, 0, int> Qi;
+  Eigen::MatrixXd U, QU;
+  int N {10};
+public:
+  void init(int, int, int, double);
+  void analyze(const Eigen::SparseMatrix<double, 0, int> & M) {
+    R.analyzePattern(M);
+    QU_computed = false;
+  }
+  void compute(const Eigen::SparseMatrix<double, 0, int> & M) {
+    R.factorize(M);
+    Qi_computed = false;
+    QU_computed = false;
+  }
+  inline Eigen::VectorXd solve(Eigen::VectorXd &v, Eigen::VectorXd &x) { return R.solve(v); }
+  inline Eigen::VectorXd solve(const Eigen::VectorXd &v) { return R.solve(v); }
+  inline Eigen::SparseMatrix<double, 0, int> solveMatrix(const Eigen::SparseMatrix<double, 0, int> &v) { return R.solve(v); }
+  
+  double logdet() override;
+  double trace(const Eigen::MatrixXd &) {return 0.0;}
+  double trace(const Eigen::SparseMatrix<double, 0, int> &) {return 0.0;}
+  double trace2(const SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &) {return 0.0;}
+  double trace_num(const SparseMatrix<double, 0, int> &);
+  Eigen::VectorXd rMVN(Eigen::VectorXd &, Eigen::VectorXd &);
 };
 
 #endif

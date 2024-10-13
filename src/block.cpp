@@ -333,13 +333,20 @@ void BlockModel::sampleW_VY(bool burn_in) {
     M += A.transpose() * Q_eps * get_residual_part();
   }
 
-// std::cout << "Q: \n" << Q << std::endl;
-// std::cout << "QQ: \n" << QQ << std::endl;
-// std::cout << "M = " << M << std::endl;
-  VectorXd z = NoiseUtil::rnorm_vec(W_sizes, 0, 1, rng());
+  SparseMatrix<double> G = inv_SV.cwiseSqrt().asDiagonal() * K;
+  SparseMatrix<double> H = get_sqrt_AtSVA();
+  VectorXd z1 = NoiseUtil::rnorm_vec(G.rows(), 0, 1, rng());
+  VectorXd z2 = NoiseUtil::rnorm_vec(H.rows(), 0, 1, rng());
 
   // sample W ~ N(QQ^-1*M, QQ^-1)
-  VectorXd W = chol_QQ.rMVN(M, z);
+  
+  // Sampling method using cholesky decomposition, using matrixL()
+  // W = QQ^-1*M + L^-1*z1 + L^-T*z2
+  // VectorXd W = chol_QQ.rMVN(M, z1);
+
+  // Sampling method using tricks, purely solve, not matrixL()
+  VectorXd W = chol_QQ.rMVN(G, H, M, z1, z2);
+
   setW(W);
 
   if (rao_blackwell && !burn_in) {
@@ -1092,6 +1099,18 @@ void BlockModel::update_QQ() {
   }
   chol_QQ.compute(QQ);
   // iterative_QQ.compute(QQ);
+}
+
+SparseMatrix<double> BlockModel::get_sqrt_AtSVA() const {
+  VectorXd inv_noise_SV = noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V);  
+  if (!corr_measure && shared_sigma) {
+    return noise_V.cwiseSqrt().cwiseInverse().asDiagonal() * A;
+  } else if (!corr_measure) {
+    return inv_noise_SV.cwiseSqrt().asDiagonal() * A;
+  } else {
+    // TODO: implement this
+    return A;
+  }
 }
 
 // update Q_eps, dQ_eps, and compute trace as sum_ij dQ_ij * Q^-1_ij

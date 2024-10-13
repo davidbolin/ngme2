@@ -88,8 +88,14 @@ protected:
     // solvers
     // SimplicialLLT<SparseMatrix<double, Lower>> Q_eps_solver;
     iterative_solver iterative_QQ;
-//  accel_llt_solver chol_Q, chol_QQ, chol_Q_eps;
-    cholesky_solver chol_Q, chol_QQ, chol_Q_eps;
+    cholesky_solver chol_Q, chol_Q_eps;
+
+#ifdef __APPLE__
+    accel_llt_solver chol_QQ;
+#else
+    cholesky_solver chol_QQ;
+#endif
+
     SparseLU<SparseMatrix<double>> LU_K;
     double logdet_Q_eps;
 
@@ -139,6 +145,7 @@ public:
 
     void update_QQ();
     void update_Q_eps(double rho);
+    SparseMatrix<double> get_sqrt_AtSVA() const;
 
     void setW(const VectorXd&);
     void setPrevW(const VectorXd&);

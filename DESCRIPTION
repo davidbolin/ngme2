@@ -9,7 +9,7 @@ Authors@R: c(
     person("Jonas", "Wallin", email = "jonas.wallin81@gmail.com", role = "aut"))
 Maintainer: Xiaotian Jin <xiaotian.jin@kaust.edu.sa>
 Description: Inference and prediction for linear mixed effects models with flexible non-Gaussian and Gaussian distributions.
-License: GPL (>= 2)
+License: GPL (>= 3) | file LICENSE
 Encoding: UTF-8
 LazyData: true
 Imports:
@@ -56,3 +56,4 @@ URL: https://davidbolin.github.io/ngme2/, https://github.com/davidbolin/ngme2
 Depends:
     R (>= 3.50)
 BugReports: https://github.com/davidbolin/ngme2/issues
+Copyright: The R package and code, and the main programs, were written by and are Copyright by David Bolin, Xiaotian Jin, Alexandre Simas, and Jonas Wallin, and are redistributable under the GNU Public License, version 3 or later. The package also includes code from the Eigen library. For details see the COPYRIGHTS file.

@@ -1,13 +1,13 @@
 test_that("general model", {
   mesh2d <- fmesher::fm_mesh_2d(
     loc.domain = cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5),
-    max.edge = c(1, 10),
+    max.edge = c(0.3, 10),
     cutoff = 0.1
   )
   mesh2d$n
   # generate random loc for each year
-  n_obs <- c(102, 85, 120, 105, 109, 100) # observation for each year
-  year <- rep(2001:2006, times = n_obs)
+  n_obs <- c(102, 85, 120, 105, 109, 100, 30) # observation for each year
+  year <- rep(2001:2007, times = n_obs)
   # 2d coordinate
   x <- runif(sum(n_obs)) * 10;
   y <- runif(sum(n_obs)) * 5
@@ -23,13 +23,15 @@ test_that("general model", {
     noise = noise_nig(mu=-2, sigma=1, nu=2)
   )
   dim(true_model$A)
+  n_Y <- dim(true_model$A)[1]
   true_model$operator$first
   true_model$operator$second
-  W <- simulate(true_model)[[1]]
-  Y_obs <- W + rnorm(length(W), sd = 0.5)
+  # W <- simulate(true_model)[[1]]
+
+  W <- rnorm(n_Y, mean = 0, sd = 0.1)
+  Y_obs <- W + rnorm(n_Y, sd = 0.5)
   df <- data.frame(year, x, y, Y_obs)
 
-  load_all()
   out3 <- ngme(
     Y ~ 0 + f(loc,
         model="general",
@@ -59,11 +61,12 @@ test_that("general model", {
       control_opt = control_opt(
         estimation = T,
         iterations = 20,
+        verbose = TRUE,
         optimizer = adam(),
         rao_blackwellization = TRUE,
-        n_parallel_chain = 4,
+        n_parallel_chain = 1,
+        max_num_threads = 1,
         print_check_info = F,
-        verbose = T,
         std_lim = 0.01
       ),
     # start=out,

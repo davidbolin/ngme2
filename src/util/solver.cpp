@@ -135,7 +135,6 @@ double cholesky_solver::trace2(const SparseMatrix<double, 0, int> &M1, SparseMat
 // Sample Q^-1mu + chol(Q)Z = N(Q^-1mu,Q^-1), R is chol(Q)
 Eigen::VectorXd cholesky_solver::rMVN(Eigen::VectorXd &mu, Eigen::VectorXd &z)
 {
-
   // dest = R.permutationP() * mu;
   Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> RP;
   RP.resize(mu.size());
@@ -146,6 +145,16 @@ Eigen::VectorXd cholesky_solver::rMVN(Eigen::VectorXd &mu, Eigen::VectorXd &z)
   dest = R.matrixU().solve(dest + z);
   dest = R.permutationPinv() * dest;
   return dest;
+}
+
+Eigen::VectorXd cholesky_solver::rMVN(
+    SparseMatrix<double, 0, int> & G,
+    SparseMatrix<double, 0, int> & H,
+    Eigen::VectorXd & mu, 
+    Eigen::VectorXd & z1, 
+    Eigen::VectorXd & z2
+) {
+    return solver::rMVN(G, H, mu, z1, z2);
 }
 
 Eigen::VectorXd cholesky_solver::Qinv_diag()
@@ -550,18 +559,6 @@ double accel_llt_solver::trace_num(const SparseMatrix<double, 0, int> &M)
     t += U.col(i).dot(MQU.col(i));
   }
   return t/N;
-}
-
-
-double accel_llt_solver::logdet() {
-  return 0.0;
-}
-
-// Sample Q^-1mu + chol(Q)Z = N(Q^-1mu,Q^-1), R is chol(Q)
-Eigen::VectorXd accel_llt_solver::rMVN(Eigen::VectorXd &mu, Eigen::VectorXd &z)
-{
-  // Sample without Cholesky?
-  return QU;
 }
 
 #endif

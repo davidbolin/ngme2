@@ -137,8 +137,8 @@ if (noise_in.containsElementNamed("latent_fix_theta_sigma_normal"))
         }
     }
     SparseMatrix<double> Q = getK().transpose() * getK();
-    solver_Q.init(W_size, n_trace_iter,0,0);
-    solver_Q.analyze(Q);
+    chol_solver_Q.init(W_size, n_trace_iter,0,0);
+    chol_solver_Q.analyze(Q);
 
 // std::cout << " here 3" << std::endl;
     // build mu, sigma, compute trace, ...
@@ -278,7 +278,7 @@ VectorXd Latent::grad_theta_K(bool rao_blackwell) {
         
         if (W_size > 5 && !symmetricK) {
             // Initialize solver Q
-            solver_Q.compute(Q);
+            chol_solver_Q.compute(Q);
         } else if (W_size > 5 && symmetricK) {
             chol_solver_K.compute(getK());
         }
@@ -306,7 +306,7 @@ VectorXd Latent::grad_theta_K(bool rao_blackwell) {
                 if (!symmetricK) {
                     SparseMatrix<double> Q_eps = K_eps.transpose() * SV.cwiseInverse().asDiagonal() * K_eps;
                     SparseMatrix<double> dQ = (Q_eps - Q) / eps;
-                    logdet_difference = 0.5 * solver_Q.trace_num(dQ);
+                    logdet_difference = 0.5 * chol_solver_Q.trace_num(dQ);
                 } else {
                     logdet_difference = chol_solver_K.trace_num(dK);
                 }
@@ -535,8 +535,8 @@ if (debug) std::cout << "update_each_iter" << std::endl;
     // Update K and dK
     if (!fix_flag[latent_fix_theta_K]) {
         if (!numer_grad) {
-            // Compute trace[i] = tr(K^-1 dK[i])
             ope->update_dK(theta_K);
+            // compute trace[i] = tr(K^-1 dK[i])
             if (!zero_trace) {
                 if (!symmetricK) {
                     if (W_size > 10) {
@@ -561,7 +561,6 @@ if (debug) std::cout << "update_each_iter" << std::endl;
                         if (iter_solver_iter % 1 == 0) {
                             iterative_solver_K.compute(getK());
                         }
-
                         for (int i=0; i < n_theta_K; i++) {
                             trace[i] = iterative_solver_K.trace_num(ope->get_dK()[i]);
                         }
@@ -650,8 +649,8 @@ double Latent::logd_W_given_V(const VectorXd& W, const SparseMatrix<double>& K, 
             
             // previous version (include logdet term)
             // SparseMatrix<double> Q = K.transpose() * SV.cwiseInverse().asDiagonal() * K;
-            // solver_Q.compute(Q);
-            // l_no_logdet = 0.5 * solver_Q.logdet() - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
+            // chol_solver_Q.compute(Q);
+            // l_no_logdet = 0.5 * chol_solver_Q.logdet() - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
         } else {
             l_no_logdet = -0.5 * SV.array().log().sum() - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
             

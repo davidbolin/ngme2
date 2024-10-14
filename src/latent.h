@@ -94,9 +94,12 @@ protected:
     iterative_solver iterative_solver_K;
 #ifdef __APPLE__
     accel_llt_solver chol_solver_K, chol_solver_Q;
+// #elif defined(USEMKL)
+//     pardiso_llt_solver chol_solver_K, chol_solver_Q;
 #else
     cholesky_solver chol_solver_K, chol_solver_Q;
 #endif
+
     lu_sparse_solver lu_solver_K;
 
     // priors

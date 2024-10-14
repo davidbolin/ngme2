@@ -562,3 +562,39 @@ double accel_llt_solver::trace_num(const SparseMatrix<double, 0, int> &M)
 }
 
 #endif
+
+#ifdef USEMKL
+void pardiso_llt_solver::init(int nin, int Nin, int max_iter, double tol) {
+  n = nin;
+  N = Nin;
+  U.resize(n, N);
+  QU.resize(n, N);
+  QU_computed = false;
+  R.pardisoParameterArray()[2] = 1;   // Single thread
+}
+
+double pardiso_llt_solver::trace_num(const SparseMatrix<double, 0, int> &M)
+{
+  std::cout << "pardiso_llt_solver::trace_num" << std::endl;
+  if (QU_computed==0){
+    // U.setRandom(n,N);
+    // The MatrixXd::Random() is complained by R CMD check
+    for (int i = 0; i < n; ++i) {
+      for (int j = 0; j < N; ++j) {
+        U(i, j) = R::runif(-1.0, 1.0);
+      }
+    }
+
+    U = U.unaryExpr(std::ref(myround));
+    QU = R.solve(U);
+    QU_computed = 1;
+  }
+
+  Eigen::MatrixXd MQU = M*QU;
+  double t = 0;
+  for(int i=0;i<N;i++){
+    t += U.col(i).dot(MQU.col(i));
+  }
+  return t/N;
+}
+#endif

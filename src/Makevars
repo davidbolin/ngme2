@@ -1,11 +1,18 @@
-PKG_CPPFLAGS = -DDEBUG -Iinclude -I../inst/include
-PKG_CXXFLAGS = -DDEBUG  $(SHLIB_OPENMP_CXXFLAGS)
+PKG_CPPFLAGS = -Iinclude -I../inst/include # -DNDEBUG -DDEBUG
+PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS)
 
 # macOS uses Accelerate, Linux uses system BLAS/LAPACK or MKL
 ifeq ($(UNAME), Darwin)
-  PKG_LIBS = $(SHLIB_OPENMP_CXXFLAGS) -framework Accelerate
-else
-  PKG_LIBS = $(SHLIB_OPENMP_CXXFLAGS) 
+  PKG_LIBS = -framework Accelerate
+# else ifdef MKLROOT
+#   PKG_CPPFLAGS += -DUSEMKL -I$(MKLROOT)/include
+#   # If MKL is installed, use MKL libraries
+#   PKG_LIBS = $(SHLIB_OPENMP_CXXFLAGS) \
+#              -L$(MKLROOT)/lib/intel64 \
+#              -lmkl_gnu_thread -lmkl_core \
+#              -lgomp -lpthread -lm -ldl
+#   LDFLAGS += -Wl,-rpath,$(MKLROOT)/lib/intel64
+#   $(info MKL detected, using MKL libraries.)
 endif
 
 R_XTRA_CPPFLAGS =  -I$(R_INCLUDE_DIR)

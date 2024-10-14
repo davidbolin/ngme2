@@ -1,3 +1,7 @@
+#ifdef USEMKL   
+  #define EIGEN_USE_MKL_ALL
+#endif
+
 #define COMPLEX R_COMPLEX
 #include <Rcpp.h>
 #include <RcppEigen.h>

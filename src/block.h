@@ -92,6 +92,8 @@ protected:
 
 #ifdef __APPLE__
     accel_llt_solver chol_QQ;
+// #elif defined(USEMKL)
+//     pardiso_llt_solver chol_QQ;
 #else
     cholesky_solver chol_QQ;
 #endif

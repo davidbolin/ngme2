@@ -13,6 +13,10 @@ ifeq ($(UNAME), Darwin)
 #              -lgomp -lpthread -lm -ldl
 #   LDFLAGS += -Wl,-rpath,$(MKLROOT)/lib/intel64
 #   $(info MKL detected, using MKL libraries.)
+else 
+  PKG_CPPFLAGS += -I$(CONDA_PREFIX)/include/suitesparse -DUSECHOLMOD
+  PKG_LIBS += -L$(CONDA_PREFIX)/lib -lcholmod -lsuitesparseconfig
+  $(info Using suitesparse libraries.)
 endif
 
 R_XTRA_CPPFLAGS =  -I$(R_INCLUDE_DIR)

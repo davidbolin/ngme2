@@ -236,7 +236,6 @@ public:
 };
 #endif
 
-
 #ifdef USEMKL
 #include <Eigen/PardisoSupport>
 class pardiso_llt_solver : public virtual solver {
@@ -266,5 +265,39 @@ public:
   double trace_num(const SparseMatrix<double, 0, int> &);
 };
 #endif
+
+#ifdef USECHOLMOD
+#include <cholmod.h>
+#include <Eigen/CholmodSupport>
+class cholmod_llt_solver : public virtual solver {
+private:
+  // Eigen::CholmodSimplicialLLT<Eigen::SparseMatrix<double, 0, int> > R;
+  Eigen::CholmodSupernodalLLT<Eigen::SparseMatrix<double, 0, int> > R;
+  bool Qi_computed {false}, QU_computed {false}; 
+  Eigen::SparseMatrix<double, 0, int> Qi;
+  Eigen::MatrixXd U, QU;
+  int N {10};
+public:
+  void init(int, int, int, double);
+  void analyze(const Eigen::SparseMatrix<double, 0, int> & M) {
+    R.analyzePattern(M);
+    QU_computed = false;
+  }
+  void compute(const Eigen::SparseMatrix<double, 0, int> & M) {
+    R.factorize(M);
+    Qi_computed = false;
+    QU_computed = false;
+  }
+  inline Eigen::VectorXd solve(Eigen::VectorXd &v, Eigen::VectorXd &x) { return R.solve(v); }
+  inline Eigen::VectorXd solve(Eigen::VectorXd &v) { return R.solve(v); }
+  inline Eigen::SparseMatrix<double, 0, int> solveMatrix(const Eigen::SparseMatrix<double, 0, int> &v) { return R.solve(v); }
+  double trace(const Eigen::MatrixXd &) {return 0.0;}
+  double trace(const Eigen::SparseMatrix<double, 0, int> &) {return 0.0;}
+  double trace2(const SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &) {return 0.0;}
+  double trace_num(const SparseMatrix<double, 0, int> &);
+};
+#endif
+
+
 
 #endif

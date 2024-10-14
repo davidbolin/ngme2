@@ -94,6 +94,8 @@ protected:
     accel_llt_solver chol_QQ;
 // #elif defined(USEMKL)
 //     pardiso_llt_solver chol_QQ;
+// #elif defined(USECHOLMOD)
+//     cholmod_llt_solver chol_QQ;
 #else
     cholesky_solver chol_QQ;
 #endif

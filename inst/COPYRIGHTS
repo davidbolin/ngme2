@@ -1,0 +1,16 @@
+# COPYRIGHTS
+
+This R package contains code licensed under different licenses. Below is a list of included components and their respective licenses:
+
+1. **Eigen Library**:
+   - License: Mozilla Public License 2.0 (MPL-2.0)
+   - Copyright (C) 2008-2023, Eigen contributors
+   - Eigen is located in `inst/include/Eigen/`
+   - For more information, visit: https://eigen.tuxfamily.org
+
+   The Eigen library is licensed under the MPL-2.0 license, which is available at:
+   https://www.mozilla.org/MPL/2.0/
+
+2. **All the other code**:
+   - License: GPL-3
+   - Copyright (C) 2024 David Bolin, Xiaotian Jin, Alexendre Simas, Jonas Wallin.

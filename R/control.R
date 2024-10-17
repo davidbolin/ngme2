@@ -113,7 +113,8 @@ control_opt <- function(
     iterations > 0 && stop_points > 0,
     "iterations should be multiple of stop_points"
       = iterations %% stop_points == 0,
-    inherits(optimizer, "ngme_optimizer")
+    inherits(optimizer, "ngme_optimizer"),
+    solver_type %in% solver_type_list
   )
 
 

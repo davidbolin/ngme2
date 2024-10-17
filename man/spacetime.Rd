@@ -20,45 +20,39 @@ spacetime(
 )
 }
 \arguments{
-\item{mesh}{a list of 2 objects,
-.   list(mesh_t, mesh_s), mesh_t is temporal mesh, mesh_s is spatial mesh}
+\item{mesh}{A list of two objects:
+- `mesh_t`: The temporal mesh.
+- `mesh_s`: The spatial mesh.}
 
-\item{lambda}{the spatial damping parameter}
+\item{lambda}{The spatial damping parameter.}
 
-\item{alpha}{2 or 4, SPDE smoothness parameter
-choose "galerkin" or "euler" for implicit euler}
+\item{alpha}{2 or 4, SPDE smoothness parameter.}
 
-\item{fix_gamma}{TRUE if fix gamma (advection term), FALSE if estimate gamma}
+\item{fix_gamma}{TRUE if fix gamma (advection term), FALSE if estimate gamma.}
 
-\item{theta_gamma_x}{the x component of the advection term,
-gamma_x = B_gamma_x %*% theta_gamma_x}
+\item{theta_gamma_x}{The x component of the advection term: `gamma_x = B_gamma_x %*% theta_gamma_x`.}
 
-\item{theta_gamma_y}{the y component of the advection term,
-gamma_y = B_gamma_y %*% theta_gamma_y}
+\item{theta_gamma_y}{The y component of the advection term: `gamma_y = B_gamma_y %*% theta_gamma_y`.}
 
-\item{B_gamma_x}{the design matrix for the x component of the advection term}
+\item{B_gamma_x}{The design matrix for the x component of the advection term.}
 
-\item{B_gamma_y}{the design matrix for the y component of the advection term}
+\item{B_gamma_y}{The design matrix for the y component of the advection term.}
 
-\item{kappa}{kappa parameter from matern SPDE}
+\item{kappa}{Kappa parameter from Matern SPDE.}
 
-\item{stabilization}{TRUE if use stabilization term (for implicit euler)}
+\item{stabilization}{TRUE if using a stabilization term (for implicit Euler).}
 
-\item{...}{ignore}
+\item{...}{Additional arguments (ignored).}
 
-\item{c}{parameter}
+\item{c}{Parameter.}
 
-\item{theta_gamma_t}{the t component of the advection term,
-gamma_t = B_gamma_t %*% theta_gamma_t}
+\item{theta_gamma_t}{The t component of the advection term: `gamma_t = B_gamma_t %*% theta_gamma_t`.}
 
-\item{B_gamma_t}{the design matrix for the t component of the advection term}
+\item{B_gamma_t}{The design matrix for the t component of the advection term.}
 }
 \value{
-ngme_operator object
+ngme_operator object.
 }
 \description{
-Given a spatial and temporal model, build a non-separable space-time model
-}
-\details{
-can use ~ map_s + map_t to specify the model
+Given a spatial and temporal model, build a non-separable space-time model.
 }

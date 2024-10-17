@@ -21,7 +21,7 @@ public:
   solver(const solver &){};
   solver(){};
   virtual ~solver(){};
-  virtual void init(int, int, int, double) = 0;
+  virtual void init(int, int, int, double, int) = 0;
   // virtual void initFromList(int, Rcpp::List const &) = 0;
   virtual inline void analyze(const Eigen::SparseMatrix<double, 0, int> &) = 0;
   virtual void compute(const Eigen::SparseMatrix<double, 0, int> &) = 0;
@@ -79,7 +79,7 @@ public:
   cholesky_solver(const cholesky_solver &){};
   cholesky_solver(){};
   ~cholesky_solver(){};
-  void init(int, int, int, double);
+  void init(int, int, int, double, int);
   // void initFromList(int, Rcpp::List const &);
 
   inline void set_N(int n) { N = n; }
@@ -129,7 +129,7 @@ private:
   int Kinv_computed;
 
 public:
-  void init(int, int, int, double);
+  void init(int, int, int, double, int);
   void initFromList(int, Rcpp::List const &);
   void analyze(const Eigen::SparseMatrix<double, 0, int> &);
   void compute(const Eigen::SparseMatrix<double, 0, int> &);
@@ -155,7 +155,7 @@ private:
 
 public:
   inline void set_N(int n) { N = n; }
-  void init(int, int, int, double);
+  void init(int, int, int, double, int);
   // void initFromList(int, Rcpp::List const &);
   void analyze(const Eigen::SparseMatrix<double, 0, int> &);
   void compute(const Eigen::SparseMatrix<double, 0, int> &);
@@ -185,7 +185,7 @@ private:
   int curr_iter {0};
 public:
   ~iterative_solver(){};
-  void init(int, int, int, double);
+  void init(int, int, int, double, int);
   void initFromList(int, Rcpp::List const &);
   
   // Update this line to match the base class signature
@@ -203,39 +203,6 @@ public:
   double trace_num(const SparseMatrix<double, 0, int> &);
 };
 
-// if system is macOS, use Eigen::AccelerateLLT
-#ifdef __APPLE__
-#include <Eigen/AccelerateSupport>
-class accel_llt_solver : public virtual solver
-{
-private:
-  Eigen::AccelerateLLT<Eigen::SparseMatrix<double, 0, int> > R;
-  bool Qi_computed {false}, QU_computed {false}; 
-  Eigen::SparseMatrix<double, 0, int> Qi;
-  Eigen::MatrixXd U, QU;
-  int N {10};
-public:
-  void init(int, int, int, double);
-  void analyze(const Eigen::SparseMatrix<double, 0, int> & M) {
-    R.analyzePattern(M);
-    QU_computed = false;
-  }
-  void compute(const Eigen::SparseMatrix<double, 0, int> & M) {
-    R.factorize(M);
-    Qi_computed = false;
-    QU_computed = false;
-  }
-  inline Eigen::VectorXd solve(Eigen::VectorXd &v, Eigen::VectorXd &x) { return R.solve(v); }
-  inline Eigen::VectorXd solve(Eigen::VectorXd &v) { return R.solve(v); }
-  inline Eigen::SparseMatrix<double, 0, int> solveMatrix(const Eigen::SparseMatrix<double, 0, int> &v) { return R.solve(v); }
-  
-  double trace(const Eigen::MatrixXd &) {return 0.0;}
-  double trace(const Eigen::SparseMatrix<double, 0, int> &) {return 0.0;}
-  double trace2(const SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &) {return 0.0;}
-  double trace_num(const SparseMatrix<double, 0, int> &);
-};
-#endif
-
 #ifdef USEMKL
 #include <Eigen/PardisoSupport>
 class pardiso_llt_solver : public virtual solver {
@@ -246,7 +213,7 @@ private:
   Eigen::MatrixXd U, QU;
   int N {10};
 public:
-  void init(int, int, int, double);
+  void init(int, int, int, double, int);
   void analyze(const Eigen::SparseMatrix<double, 0, int> & M) {
     R.analyzePattern(M);
     QU_computed = false;
@@ -266,38 +233,137 @@ public:
 };
 #endif
 
-#ifdef USECHOLMOD
 #include <cholmod.h>
 #include <Eigen/CholmodSupport>
-class cholmod_llt_solver : public virtual solver {
+#ifdef __APPLE__
+#include <Eigen/AccelerateSupport>
+#endif
+
+class sparse_llt_solver : public virtual solver {
 private:
-  // Eigen::CholmodSimplicialLLT<Eigen::SparseMatrix<double, 0, int> > R;
-  Eigen::CholmodSupernodalLLT<Eigen::SparseMatrix<double, 0, int> > R;
+  Eigen::SimplicialLLT<Eigen::SparseMatrix<double, 0, int> > R_eigen;
+  Eigen::CholmodSimplicialLLT<Eigen::SparseMatrix<double, 0, int> > R_simplicial;
+  Eigen::CholmodSupernodalLLT<Eigen::SparseMatrix<double, 0, int> > R_supernodal;
+  #ifdef __APPLE__
+    Eigen::AccelerateLLT<Eigen::SparseMatrix<double, 0, int> > R_accelerate;
+  #endif
+
+  int solver_type {0};
   bool Qi_computed {false}, QU_computed {false}; 
   Eigen::SparseMatrix<double, 0, int> Qi;
   Eigen::MatrixXd U, QU;
   int N {10};
 public:
-  void init(int, int, int, double);
+  void init(int, int, int, double, int);
   void analyze(const Eigen::SparseMatrix<double, 0, int> & M) {
-    R.analyzePattern(M);
+    switch (solver_type) {
+      case 0:
+        R_eigen.analyzePattern(M);
+        break;
+      case 1:
+        R_simplicial.analyzePattern(M);
+        break;
+      case 2:
+        R_supernodal.analyzePattern(M);
+        break;
+      #ifdef __APPLE__
+      case 3:
+        R_accelerate.analyzePattern(M);
+        break;
+      #endif
+      default:
+        throw;
+    }
     QU_computed = false;
   }
+
   void compute(const Eigen::SparseMatrix<double, 0, int> & M) {
-    R.factorize(M);
+    switch (solver_type) {
+      case 0:
+        R_eigen.factorize(M);
+        break;
+      case 1:
+        R_simplicial.factorize(M);
+        break;
+      case 2:
+        R_supernodal.factorize(M);
+        break;
+      #ifdef __APPLE__
+      case 3:
+        R_accelerate.factorize(M);
+        break;
+      #endif
+      default:
+        throw;
+    }
     Qi_computed = false;
     QU_computed = false;
   }
-  inline Eigen::VectorXd solve(Eigen::VectorXd &v, Eigen::VectorXd &x) { return R.solve(v); }
-  inline Eigen::VectorXd solve(Eigen::VectorXd &v) { return R.solve(v); }
-  inline Eigen::SparseMatrix<double, 0, int> solveMatrix(const Eigen::SparseMatrix<double, 0, int> &v) { return R.solve(v); }
+
+  inline Eigen::VectorXd solve(Eigen::VectorXd &v, Eigen::VectorXd &x) { 
+    return solve(v);
+  }
+
+  inline Eigen::VectorXd solve(Eigen::VectorXd &v) { 
+    switch (solver_type) {
+      case 0:
+        return R_eigen.solve(v);
+      case 1:
+        return R_simplicial.solve(v);
+      case 2:
+        return R_supernodal.solve(v);
+      #ifdef __APPLE__
+      case 3:
+        return R_accelerate.solve(v);
+      #endif
+      default:
+        throw;
+    }
+  }
+
+  inline Eigen::MatrixXd solve(Eigen::MatrixXd &v) { 
+    switch (solver_type) {
+      case 0:
+        std::cout << "Using eigen solver" << std::endl;
+        return R_eigen.solve(v);
+      case 1:
+        std::cout << "Using cholmod solver" << std::endl;
+        return R_simplicial.solve(v);
+      case 2:
+        std::cout << "Using supernodal solver" << std::endl;
+        return R_supernodal.solve(v);
+      #ifdef __APPLE__
+      case 3:
+        std::cout << "Using accelerate solver" << std::endl;
+        return R_accelerate.solve(v);
+      #endif
+      default:
+        throw;
+    }
+  }
+
+
+  inline Eigen::SparseMatrix<double, 0, int> solveMatrix(const Eigen::SparseMatrix<double, 0, int> &v) { 
+    switch (solver_type) {
+      case 0:
+        return R_eigen.solve(v);
+      case 1:
+        return R_simplicial.solve(v);
+      case 2:
+        return R_supernodal.solve(v);
+      #ifdef __APPLE__
+      case 3:
+        return R_accelerate.solve(v);
+      #endif
+      default:
+        throw;
+    }
+  }
+  
   double trace(const Eigen::MatrixXd &) {return 0.0;}
   double trace(const Eigen::SparseMatrix<double, 0, int> &) {return 0.0;}
   double trace2(const SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &) {return 0.0;}
   double trace_num(const SparseMatrix<double, 0, int> &);
 };
-#endif
-
-
 
 #endif

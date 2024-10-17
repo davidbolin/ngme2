@@ -561,31 +561,26 @@ bv_matern_nig <- function(
 
 #' ngme space-time non-separable model specification
 #'
-#' Given a spatial and temporal model, build a non-separable space-time model
+#' Given a spatial and temporal model, build a non-separable space-time model.
 #'
-#'   can use ~ map_s + map_t to specify the model
-#' @param mesh a list of 2 objects,
-#' .   list(mesh_t, mesh_s), mesh_t is temporal mesh, mesh_s is spatial mesh
-# ' @param alpha 2 or 4, SPDE smoothness parameter
-#' @param c parameter
-#' @param kappa kappa parameter from matern SPDE
-#' @param lambda the spatial damping parameter
-#' @param fix_gamma TRUE if fix gamma (advection term), FALSE if estimate gamma
-#' @param theta_gamma_x the x component of the advection term,
-#' gamma_x = B_gamma_x %*% theta_gamma_x
-#' @param theta_gamma_y the y component of the advection term,
-#' gamma_y = B_gamma_y %*% theta_gamma_y
-#' @param theta_gamma_t the t component of the advection term,
-#' gamma_t = B_gamma_t %*% theta_gamma_t
-#' @param B_gamma_x the design matrix for the x component of the advection term
-#' @param B_gamma_y the design matrix for the y component of the advection term
-#' @param B_gamma_t the design matrix for the t component of the advection term
-#' @param alpha 2 or 4, SPDE smoothness parameter
-#' choose "galerkin" or "euler" for implicit euler
-#' @param stabilization TRUE if use stabilization term (for implicit euler)
-#' @param ... ignore
-#'
-#' @return ngme_operator object
+#' @param mesh A list of two objects:
+#'   - `mesh_t`: The temporal mesh.
+#'   - `mesh_s`: The spatial mesh.
+#' @param alpha 2 or 4, SPDE smoothness parameter.
+#' @param c Parameter.
+#' @param kappa Kappa parameter from Matern SPDE.
+#' @param lambda The spatial damping parameter.
+#' @param fix_gamma TRUE if fix gamma (advection term), FALSE if estimate gamma.
+#' @param theta_gamma_x The x component of the advection term: `gamma_x = B_gamma_x %*% theta_gamma_x`.
+#' @param theta_gamma_y The y component of the advection term: `gamma_y = B_gamma_y %*% theta_gamma_y`.
+#' @param theta_gamma_t The t component of the advection term: `gamma_t = B_gamma_t %*% theta_gamma_t`.
+#' @param B_gamma_x The design matrix for the x component of the advection term.
+#' @param B_gamma_y The design matrix for the y component of the advection term.
+#' @param B_gamma_t The design matrix for the t component of the advection term.
+#' @param stabilization TRUE if using a stabilization term (for implicit Euler).
+#' @param ... Additional arguments (ignored).
+#' 
+#' @return ngme_operator object.
 #' @export
 spacetime <- function(
   mesh,

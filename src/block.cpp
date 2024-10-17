@@ -63,6 +63,8 @@ BlockModel::BlockModel(
     rao_blackwell = Rcpp::as<bool> (control_ngme["rao_blackwellization"]);
     use_iterative_solver = Rcpp::as<bool> (control_ngme["iterative_solver"]);
     int n_trace_iter = Rcpp::as<int> (control_ngme["n_trace_iter"]);
+    int solver_type = Rcpp::as<int> (control_ngme["solver_type"]);
+
     // reduce_var    =  Rcpp::as<bool>   (control_ngme["reduce_var"]);
     // reduce_power  =  Rcpp::as<double> (control_ngme["reduce_power"]);
     // threshold   =  Rcpp::as<double> (control_ngme["threshold"]);
@@ -80,6 +82,7 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
   for (int i=0; i < n_latent; ++i) {
     // construct acoording to models
     Rcpp::List latent_in = Rcpp::as<Rcpp::List> (latents_in[i]);
+    latent_in["solver_type"] = solver_type;
     latent_in["n_trace_iter"] = n_trace_iter;
     unsigned long latent_seed = rng();
     latents.push_back(std::make_shared<Latent>(latent_in, latent_seed));
@@ -213,14 +216,14 @@ if (debug) std::cout << "After assemble" << std::endl;
 
     // Init solver, set N for trace estimator
     // chol_QQ.set_N(n_trace_iter);
-    chol_Q.init(W_sizes, n_trace_iter, 0,0);
-    chol_Q_eps.init(W_sizes, n_trace_iter, 0,0);
+    chol_Q.init(W_sizes, n_trace_iter, 0, 0, solver_type);
+    chol_Q_eps.init(W_sizes, n_trace_iter, 0, 0, solver_type);
     
     // Analyze pattern
     chol_Q.analyze(Q);
     LU_K.analyzePattern(K);
 
-    chol_QQ.init(W_sizes, n_trace_iter, 0,0);
+    chol_QQ.init(W_sizes, n_trace_iter, 0, 0, solver_type);
     chol_QQ.analyze(QQ);
     chol_QQ.compute(QQ);
     
@@ -228,7 +231,7 @@ if (debug) std::cout << "After assemble" << std::endl;
     double iter_solver_tol = 1e-6;
     int n_trace_iter = 100;
     if (use_iterative_solver) {
-      iterative_QQ.init(W_sizes, n_trace_iter, iter_solver_max_iter, iter_solver_tol);
+      iterative_QQ.init(W_sizes, n_trace_iter, iter_solver_max_iter, iter_solver_tol, 0);
       iterative_QQ.compute(QQ);
     }
   }

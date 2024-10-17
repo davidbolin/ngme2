@@ -41,6 +41,11 @@
 #' @param sampling_strategy subsampling method of replicates of model, c("all", "is")
 #' "all" means using all replicates in each iteration,
 #' "ws" means weighted sampling (each iteration use 1 replicate to compute the gradient, the sample probability is proption to its number of observations)
+#' @param solver_type 
+#' "eigen" means using eigen solver
+#' "cholmod" means using cholmod solver
+#' "supernodal" means using supernodal solver
+#' "accelerate" means using accelerate solver
 #' @return list of control variables
 #' @export
 control_opt <- function(
@@ -71,12 +76,14 @@ control_opt <- function(
   rao_blackwellization = FALSE,
   n_trace_iter      = 10,
   sampling_strategy = "all",
+  solver_type       = "eigen",
 
   # opt print
   verbose           = FALSE
 ) {
   strategy_list <- c("all", "ws")
   preconditioner_list <- c("none", "fast", "full")
+  solver_type_list <- c("eigen", "cholmod", "supernodal", "accelerate")
 
   # read preconditioner from optimizer
   preconditioner            <- "none"
@@ -164,6 +171,9 @@ control_opt <- function(
     sgd_parameters    = optimizer$sgd_parameters,
     line_search       = optimizer$line_search,
 
+    # solver related
+    solver_type       = which(solver_type_list == solver_type) - 1, # start from 0
+
     # variance reduction (not used for now)
     reduce_var        = reduce_var,
     reduce_power      = reduce_power,
@@ -242,6 +252,7 @@ update_control_ngme <- function(control_ngme, control_opt) {
   control_ngme$rao_blackwellization <- control_opt$rao_blackwellization
   control_ngme$n_trace_iter <- control_opt$n_trace_iter
   control_ngme$stepsize <- control_opt$stepsize
+  control_ngme$solver_type <- control_opt$solver_type
 
   control_ngme
 }

@@ -11,7 +11,7 @@ double myround(double x){
 
 /* --------------------------------------------------------- */
 // CHOLESKY SOLVER
-void cholesky_solver::init(int nin, int Nin, int max_iter, double tol)
+void cholesky_solver::init(int nin, int Nin, int max_iter, double tol, int solver_type)
 {
   n = nin;
   N = Nin;
@@ -174,7 +174,7 @@ Eigen::VectorXd cholesky_solver::Qinv_diag()
 // LU SOLVER
 /* --------------------------------------------------------- */
 /* --------------------------------------------------------- */
-void lu_solver::init(int nin, int Nin, int max_iter, double tol)
+void lu_solver::init(int nin, int Nin, int max_iter, double tol, int solver_type)
 {
   n = nin;
   
@@ -240,7 +240,7 @@ inline double lu_solver::logdet()
 /* --------------------------------------------------------- */
 // LU sparse SOLVER
 
-void lu_sparse_solver::init(int nin, int Nin, int max_iter, double tol)
+void lu_sparse_solver::init(int nin, int Nin, int max_iter, double tol, int solver_type)
 {
   n = nin;
   N = Nin;
@@ -416,7 +416,7 @@ void iterative_solver::initFromList(int nin,const Rcpp::List & init_list)
   MQU.setZero(n,N);
 }
 
-void iterative_solver::init(int nin,int Nin,int max_iter,double tol)
+void iterative_solver::init(int nin,int Nin,int max_iter,double tol, int solver_type)
 {
   std::cout << "max iter = " << max_iter << std::endl;
   N = Nin;
@@ -526,43 +526,6 @@ double iterative_solver::trace_num(const SparseMatrix<double, 0, int> &M)
   return t/N;
 }
 
-#ifdef __APPLE__
-// if system is macOS, use Eigen::AccelerateLLT 
-void accel_llt_solver::init(int nin, int Nin, int max_iter, double tol) {
-  // std::cout << "accel_llt_solver::init" << std::endl;
-  n = nin;
-  N = Nin;
-  U.resize(n, N);
-  QU.resize(n, N);
-  QU_computed = false;
-}
-
-double accel_llt_solver::trace_num(const SparseMatrix<double, 0, int> &M)
-{
-  if (QU_computed==0){
-    // U.setRandom(n,N);
-    // The MatrixXd::Random() is complained by R CMD check
-    for (int i = 0; i < n; ++i) {
-      for (int j = 0; j < N; ++j) {
-        U(i, j) = R::runif(-1.0, 1.0);
-      }
-    }
-
-    U = U.unaryExpr(std::ref(myround));
-    QU = R.solve(U);
-    QU_computed = 1;
-  }
-
-  Eigen::MatrixXd MQU = M*QU;
-  double t = 0;
-  for(int i=0;i<N;i++){
-    t += U.col(i).dot(MQU.col(i));
-  }
-  return t/N;
-}
-
-#endif
-
 #ifdef USEMKL
 void pardiso_llt_solver::init(int nin, int Nin, int max_iter, double tol) {
   n = nin;
@@ -599,18 +562,17 @@ double pardiso_llt_solver::trace_num(const SparseMatrix<double, 0, int> &M)
 }
 #endif
 
-#ifdef USECHOLMOD
-void cholmod_llt_solver::init(int nin, int Nin, int max_iter, double tol) {
+void sparse_llt_solver::init(int nin, int Nin, int max_iter, double tol, int solver_type) {
   n = nin;
   N = Nin;
   U.resize(n, N);
   QU.resize(n, N);
   QU_computed = false;
+  this->solver_type = solver_type;
 }
 
-double cholmod_llt_solver::trace_num(const SparseMatrix<double, 0, int> &M)
+double sparse_llt_solver::trace_num(const SparseMatrix<double, 0, int> &M)
 {
-  // std::cout << "cholmod_llt_solver::trace_num" << std::endl;
   if (QU_computed==0){
     // U.setRandom(n,N);
     // The MatrixXd::Random() is complained by R CMD check
@@ -621,7 +583,7 @@ double cholmod_llt_solver::trace_num(const SparseMatrix<double, 0, int> &M)
     }
 
     U = U.unaryExpr(std::ref(myround));
-    QU = R.solve(U);
+    QU = solve(U);
     QU_computed = 1;
   }
 
@@ -632,4 +594,3 @@ double cholmod_llt_solver::trace_num(const SparseMatrix<double, 0, int> &M)
   }
   return t/N;
 }
-#endif

@@ -26,6 +26,7 @@ control_opt(
   rao_blackwellization = FALSE,
   n_trace_iter = 10,
   sampling_strategy = "all",
+  solver_type = "eigen",
   verbose = FALSE
 )
 }
@@ -76,6 +77,11 @@ If it is more than n_parallel_chain, the rest will be used to parallel different
 \item{sampling_strategy}{subsampling method of replicates of model, c("all", "is")
 "all" means using all replicates in each iteration,
 "ws" means weighted sampling (each iteration use 1 replicate to compute the gradient, the sample probability is proption to its number of observations)}
+
+\item{solver_type}{"eigen" means using eigen solver
+"cholmod" means using cholmod solver
+"supernodal" means using supernodal solver
+"accelerate" means using accelerate solver}
 
 \item{verbose}{print estimation}
 }

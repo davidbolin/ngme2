@@ -90,15 +90,7 @@ protected:
     iterative_solver iterative_QQ;
     cholesky_solver chol_Q, chol_Q_eps;
 
-#ifdef __APPLE__
-    accel_llt_solver chol_QQ;
-// #elif defined(USEMKL)
-//     pardiso_llt_solver chol_QQ;
-// #elif defined(USECHOLMOD)
-//     cholmod_llt_solver chol_QQ;
-#else
-    cholesky_solver chol_QQ;
-#endif
+    sparse_llt_solver chol_QQ;
 
     SparseLU<SparseMatrix<double>> LU_K;
     double logdet_Q_eps;

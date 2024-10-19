@@ -203,40 +203,13 @@ public:
   double trace_num(const SparseMatrix<double, 0, int> &);
 };
 
-#ifdef USEMKL
-#include <Eigen/PardisoSupport>
-class pardiso_llt_solver : public virtual solver {
-private:
-  Eigen::PardisoLLT<Eigen::SparseMatrix<double, 0, int> > R;
-  bool Qi_computed {false}, QU_computed {false}; 
-  Eigen::SparseMatrix<double, 0, int> Qi;
-  Eigen::MatrixXd U, QU;
-  int N {10};
-public:
-  void init(int, int, int, double, int);
-  void analyze(const Eigen::SparseMatrix<double, 0, int> & M) {
-    R.analyzePattern(M);
-    QU_computed = false;
-  }
-  void compute(const Eigen::SparseMatrix<double, 0, int> & M) {
-    R.factorize(M);
-    Qi_computed = false;
-    QU_computed = false;
-  }
-  inline Eigen::VectorXd solve(Eigen::VectorXd &v, Eigen::VectorXd &x) { return R.solve(v); }
-  inline Eigen::VectorXd solve(Eigen::VectorXd &v) { return R.solve(v); }
-  inline Eigen::SparseMatrix<double, 0, int> solveMatrix(const Eigen::SparseMatrix<double, 0, int> &v) { return R.solve(v); }
-  double trace(const Eigen::MatrixXd &) {return 0.0;}
-  double trace(const Eigen::SparseMatrix<double, 0, int> &) {return 0.0;}
-  double trace2(const SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &) {return 0.0;}
-  double trace_num(const SparseMatrix<double, 0, int> &);
-};
-#endif
-
 #include <cholmod.h>
 #include <Eigen/CholmodSupport>
 #ifdef __APPLE__
 #include <Eigen/AccelerateSupport>
+#endif
+#ifdef USEMKL
+#include <Eigen/PardisoSupport>
 #endif
 
 class sparse_llt_solver : public virtual solver {
@@ -244,9 +217,12 @@ private:
   Eigen::SimplicialLLT<Eigen::SparseMatrix<double, 0, int> > R_eigen;
   Eigen::CholmodSimplicialLLT<Eigen::SparseMatrix<double, 0, int> > R_simplicial;
   Eigen::CholmodSupernodalLLT<Eigen::SparseMatrix<double, 0, int> > R_supernodal;
-  #ifdef __APPLE__
-    Eigen::AccelerateLLT<Eigen::SparseMatrix<double, 0, int> > R_accelerate;
-  #endif
+#ifdef __APPLE__
+  Eigen::AccelerateLLT<Eigen::SparseMatrix<double, 0, int> > R_accelerate;
+#endif
+#ifdef USEMKL
+  Eigen::PardisoLLT<Eigen::SparseMatrix<double, 0, int> > R_pardiso;
+#endif
 
   int solver_type {0};
   bool Qi_computed {false}, QU_computed {false}; 
@@ -266,11 +242,16 @@ public:
       case 2:
         R_supernodal.analyzePattern(M);
         break;
-      #ifdef __APPLE__
+#ifdef __APPLE__
       case 3:
         R_accelerate.analyzePattern(M);
         break;
-      #endif
+#endif
+#ifdef USEMKL
+      case 4:
+        R_pardiso.analyzePattern(M);
+        break;
+#endif
       default:
         throw;
     }
@@ -288,11 +269,16 @@ public:
       case 2:
         R_supernodal.factorize(M);
         break;
-      #ifdef __APPLE__
+#ifdef __APPLE__
       case 3:
         R_accelerate.factorize(M);
         break;
-      #endif
+#endif
+#ifdef USEMKL
+      case 4:
+        R_pardiso.factorize(M);
+        break;
+#endif
       default:
         throw;
     }
@@ -312,10 +298,14 @@ public:
         return R_simplicial.solve(v);
       case 2:
         return R_supernodal.solve(v);
-      #ifdef __APPLE__
+#ifdef __APPLE__
       case 3:
         return R_accelerate.solve(v);
-      #endif
+#endif
+#ifdef USEMKL
+      case 4:
+        return R_pardiso.solve(v);
+#endif
       default:
         throw;
     }
@@ -332,11 +322,16 @@ public:
       case 2:
         std::cout << "Using supernodal solver" << std::endl;
         return R_supernodal.solve(v);
-      #ifdef __APPLE__
+#ifdef __APPLE__
       case 3:
         std::cout << "Using accelerate solver" << std::endl;
         return R_accelerate.solve(v);
-      #endif
+#endif
+#ifdef USEMKL
+      case 4:
+        std::cout << "Using pardiso solver" << std::endl;
+        return R_pardiso.solve(v);
+#endif
       default:
         throw;
     }
@@ -351,10 +346,14 @@ public:
         return R_simplicial.solve(v);
       case 2:
         return R_supernodal.solve(v);
-      #ifdef __APPLE__
+#ifdef __APPLE__
       case 3:
         return R_accelerate.solve(v);
-      #endif
+#endif
+#ifdef USEMKL
+      case 4:
+        return R_pardiso.solve(v);
+#endif
       default:
         throw;
     }

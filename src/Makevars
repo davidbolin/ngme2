@@ -2,7 +2,7 @@
 UNAME := $(shell uname)
 
 # Make the shared object
-$(SHLIB): $(OBJECTS) $(sslib)
+$(SHLIB): $(OBJECTS) 
 
 # Compile Suitesparse
 ssdir = SuiteSparse
@@ -32,7 +32,25 @@ PKG_CPPFLAGS += -Iinclude -I../inst/include # -DNDEBUG -DDEBUG
 PKG_CXXFLAGS += $(SHLIB_OPENMP_CXXFLAGS)
 
 ## NB: INSTALL does not clean subdirectories between subarchitectures
-$(sslib1), $(sslib2), $(sslib3), $(sslib4), $(sslib5), $(sslib6), $(sslib7) :
+$(sslib1):
+	cd $(@D) && $(MAKE) clean all $(ssenv)
+
+$(sslib2):
+	cd $(@D) && $(MAKE) clean all $(ssenv)
+
+$(sslib3):
+	cd $(@D) && $(MAKE) clean all $(ssenv)
+
+$(sslib4):
+	cd $(@D) && $(MAKE) clean all $(ssenv)
+
+$(sslib5):
+	cd $(@D) && $(MAKE) clean all $(ssenv)
+
+$(sslib6):
+	cd $(@D) && $(MAKE) clean all $(ssenv)
+
+$(sslib7):
 	cd $(@D) && $(MAKE) clean all $(ssenv)
 
 
@@ -40,6 +58,17 @@ $(sslib1), $(sslib2), $(sslib3), $(sslib4), $(sslib5), $(sslib6), $(sslib7) :
 ifeq ($(UNAME), Darwin)
   PKG_LIBS += -framework Accelerate
 endif
+
+# MKLROOT = /opt/intel/mkl
+# ifdef MKLROOT
+#   PKG_CPPFLAGS += -DUSEMKL -I$(MKLROOT)/include
+#   # If MKL is installed, use MKL libraries
+#   PKG_LIBS += -L$(MKLROOT)/lib/intel64 \
+#              -lmkl_rt -lmkl_gnu_thread -lmkl_core \
+#              -lgomp -lpthread -lm -ldl
+#   PKG_LIBS += -Wl,-rpath,$(MKLROOT)/lib/intel64
+#   $(info MKL detected, using MKL libraries.)
+# endif
 
 R_XTRA_CPPFLAGS =  -I$(R_INCLUDE_DIR)
 PKG_LIBS += $(SHLIB_OPENMP_CXXFLAGS)
@@ -53,7 +82,7 @@ UTILS = util/num_diff.o util/GIG.o util/rgig.o util/MatrixAlgebra.o util/solver.
 LATENTS = latents/ar1.o latents/matern.o latents/tensorprod.o latents/randeff.o latents/bivar.o latents/general.o
 # $(wildcard latents/*.o)
 
-OBJECTS = RcppExports.o prior.o noise.o sample_rGIG.o estimate.o optimizer.o block.o latent.o ngme.o \
+OBJECTS = $(sslib) RcppExports.o prior.o noise.o sample_rGIG.o estimate.o optimizer.o block.o latent.o ngme.o \
    $(UTILS) $(TESTS) $(LATENTS)
 
 

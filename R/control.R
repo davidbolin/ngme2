@@ -46,6 +46,7 @@
 #' "cholmod" means using cholmod solver
 #' "supernodal" means using supernodal solver
 #' "accelerate" means using accelerate solver
+#' "pardiso" means using pardiso solver
 #' @return list of control variables
 #' @export
 control_opt <- function(
@@ -83,7 +84,7 @@ control_opt <- function(
 ) {
   strategy_list <- c("all", "ws")
   preconditioner_list <- c("none", "fast", "full")
-  solver_type_list <- c("eigen", "cholmod", "supernodal", "accelerate")
+  solver_type_list <- c("eigen", "cholmod", "supernodal", "accelerate", "pardiso")
 
   # read preconditioner from optimizer
   preconditioner            <- "none"
@@ -116,7 +117,15 @@ control_opt <- function(
     inherits(optimizer, "ngme_optimizer"),
     solver_type %in% solver_type_list
   )
-
+  
+  if (Sys.info()["sysname"] != "Darwin" && solver_type == "accelerate") {
+    warning("accelerate solver is not supported on MacOS, switch to default eigen solver")
+    solver_type <- "eigen"
+  }
+  if (Sys.info()["sysname"] == "Darwin" && solver_type == "pardiso") {
+    warning("pardiso solver is not supported on MacOS, switch to default eigen solver")
+    solver_type <- "eigen"
+  }
 
   if (n_parallel_chain == 1) {
     precond_by_diff_chain <- FALSE

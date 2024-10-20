@@ -314,22 +314,22 @@ public:
   inline Eigen::MatrixXd solve(Eigen::MatrixXd &v) { 
     switch (solver_type) {
       case 0:
-        std::cout << "Using eigen solver" << std::endl;
+        // std::cout << "Using eigen solver" << std::endl;
         return R_eigen.solve(v);
       case 1:
-        std::cout << "Using cholmod solver" << std::endl;
+        // std::cout << "Using cholmod solver" << std::endl;
         return R_simplicial.solve(v);
       case 2:
-        std::cout << "Using supernodal solver" << std::endl;
+        // std::cout << "Using supernodal solver" << std::endl;
         return R_supernodal.solve(v);
 #ifdef __APPLE__
       case 3:
-        std::cout << "Using accelerate solver" << std::endl;
+        // std::cout << "Using accelerate solver" << std::endl;
         return R_accelerate.solve(v);
 #endif
 #ifdef USEMKL
       case 4:
-        std::cout << "Using pardiso solver" << std::endl;
+        // std::cout << "Using pardiso solver" << std::endl;
         return R_pardiso.solve(v);
 #endif
       default:

@@ -1,6 +1,15 @@
 # Set UNAME to detect the operating system
 UNAME := $(shell uname)
 
+# # Target to check if BLAS and LAPACK are installed
+# check_libs:
+# 	@echo "Checking for BLAS and LAPACK..."
+# 	@echo "int main() { return 0; }" > conftest.c
+# 	@$(CXX) conftest.c -o conftest $(BLAS_LIB) $(LAPACK_LIB) $(FLIBS) > /dev/null 2>&1 || \
+# 	(echo "Error: BLAS and/or LAPACK and/or FLIBS not found. Please install them or set the correct paths."; exit 1)
+# 	@rm -f conftest.c conftest
+# 	@echo "BLAS and LAPACK and FLIBS found."
+
 # Make the shared object
 $(SHLIB): $(OBJECTS) 
 

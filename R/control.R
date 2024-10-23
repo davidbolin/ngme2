@@ -77,7 +77,7 @@ control_opt <- function(
   rao_blackwellization = FALSE,
   n_trace_iter      = 10,
   sampling_strategy = "all",
-  solver_type       = "eigen",
+  solver_type       = if (Sys.info()["sysname"] == "Darwin") "accelerate" else "supernodal",
 
   # opt print
   verbose           = FALSE

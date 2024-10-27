@@ -161,6 +161,7 @@ public:
 
     // pi(W|V)
     double logd_W_given_V(const VectorXd& W, const SparseMatrix<double>& K, const VectorXd& mu, const VectorXd& sigma, const VectorXd& V);
+    double logd_W_given_V_without_logdet(const VectorXd& W, const SparseMatrix<double>& K, const VectorXd& mu, const VectorXd& sigma, const VectorXd& V);
     // pi(KW|V) fix K
     double logd_KW_given_V(const VectorXd& mu, const VectorXd& sigma, const VectorXd& V);
     

@@ -61,7 +61,7 @@ BlockModel::BlockModel(
     n_gibbs     =  Rcpp::as<int>    (control_ngme["n_gibbs_samples"]);
     debug       = Rcpp::as<bool>   (control_ngme["debug"]);
     rao_blackwell = Rcpp::as<bool> (control_ngme["rao_blackwellization"]);
-    use_iterative_solver = Rcpp::as<bool> (control_ngme["iterative_solver"]);
+    use_iterative_solver = control_ngme.containsElementNamed("iterative_solver") ? Rcpp::as<bool> (control_ngme["iterative_solver"]) : false;
     int n_trace_iter = Rcpp::as<int> (control_ngme["n_trace_iter"]);
     int solver_type = Rcpp::as<int> (control_ngme["solver_type"]);
 
@@ -102,16 +102,9 @@ if (debug) std::cout << "After set block K" << std::endl;
     fix_flag[block_fix_theta_mu]     = Rcpp::as<bool> (noise_in["fix_theta_mu"]);
     fix_flag[block_fix_theta_sigma]  = Rcpp::as<bool> (noise_in["fix_theta_sigma"]);
     fix_flag[blcok_fix_V]            = Rcpp::as<bool> (noise_in["fix_V"]);
-if (noise_in.containsElementNamed("fix_theta_nu"))
-    fix_flag[block_fix_theta_nu]     = Rcpp::as<bool> (noise_in["fix_theta_nu"]);
-if (noise_in.containsElementNamed("fix_rho"))
-    fix_flag[block_fix_rho]          = Rcpp::as<bool> (noise_in["fix_rho"]);
-
-    // check if shared_sigma exists
-    if (noise_in.containsElementNamed("shared_sigma"))
-      shared_sigma  = Rcpp::as<bool> (noise_in["shared_sigma"]);
-    else
-      shared_sigma = false;
+    fix_flag[block_fix_theta_nu]     = noise_in.containsElementNamed("fix_theta_nu") ? Rcpp::as<bool> (noise_in["fix_theta_nu"]) : false;
+    fix_flag[block_fix_rho]          = noise_in.containsElementNamed("fix_rho") ? Rcpp::as<bool> (noise_in["fix_rho"]) : false;
+    shared_sigma = noise_in.containsElementNamed("shared_sigma") ? Rcpp::as<bool> (noise_in["shared_sigma"]) : false;
 
     B_mu          = (Rcpp::as<MatrixXd>      (noise_in["B_mu"])),
     theta_mu      = (Rcpp::as<VectorXd>      (noise_in["theta_mu"])),
@@ -133,12 +126,8 @@ if (noise_in.containsElementNamed("fix_rho"))
     noise_nu    = (B_nu * theta_nu).array().exp();
 
     rho   = Rcpp::as<VectorXd> (noise_in["rho"]); 
-if (noise_in.containsElementNamed("n_rho"))
-    n_rho = Rcpp::as<int>      (noise_in["n_rho"]);
-else n_rho = 0;
-    if (noise_in.containsElementNamed("nu_lower_bound"))
-      nu_lower_bound = Rcpp::as<double> (noise_in["nu_lower_bound"]);
-    
+    n_rho = noise_in.containsElementNamed("n_rho") ? Rcpp::as<int>      (noise_in["n_rho"]) : 0;
+    nu_lower_bound = noise_in.containsElementNamed("nu_lower_bound") ? Rcpp::as<double> (noise_in["nu_lower_bound"]) : 0.0;
     corr_measure = Rcpp::as<bool> (noise_in["corr_measurement"]);
 
     // init priors for noise_parameter
@@ -798,6 +787,7 @@ void BlockModel::examine_gradient() {
 MatrixXd BlockModel::precond(int strategy, double eps) {
 if (debug) std::cout << "start precond"<< std::endl;
   MatrixXd precond = MatrixXd::Zero(n_params, n_params);
+
   // 1. Preconditioner for Latents
   int index_params = 0;
   for (int i=0; i < n_latent; i++) {
@@ -817,6 +807,7 @@ if (debug) std::cout << "start precond"<< std::endl;
     }
     index_params += n_la;
   }
+
 if (debug) std::cout << "after latents precond"<< std::endl;
   // 2. Preconditioner for fixed effects and measurement error
   if (strategy == 0) {
@@ -835,7 +826,7 @@ if (debug) std::cout << "after latents precond"<< std::endl;
 
     MatrixXd hess_merr_feff = num_h_no_latent(v, eps);
     precond.bottomRightCorner(n_merr + n_feff, n_merr + n_feff) = hess_merr_feff;
-// std::cout << "merr feff precond = " << hess_merr_feff <<std::endl;
+
   }
   // add small eps to diagonal
   precond += VectorXd::Constant(n_params, 1e-5).asDiagonal();

@@ -46,19 +46,17 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
     // read the control variable
     Rcpp::List control_f = Rcpp::as<Rcpp::List> (model_list["control"]);
         numer_grad      = Rcpp::as<bool>        (control_f["numer_grad"]) ;
-if (control_f.containsElementNamed("improve_hessian"))
-        improve_hessian = Rcpp::as<bool>        (control_f["improve_hessian"]) ;
         eps             = Rcpp::as<double>      (control_f["eps"]) ;
-        use_iterative_solver = Rcpp::as<bool>      (control_f["iterative_solver"]) ;
+        improve_hessian = control_f.containsElementNamed("improve_hessian") ? Rcpp::as<bool> (control_f["improve_hessian"]) : false;
+        use_iterative_solver = control_f.containsElementNamed("iterative_solver") ? Rcpp::as<bool> (control_f["iterative_solver"]) : false;
+
     // construct from ngme_noise
     fix_flag[latent_fix_theta_K]     = Rcpp::as<bool>  (model_list["fix_theta_K"]);
     Rcpp::List noise_in = Rcpp::as<Rcpp::List> (model_list["noise"]);
         fix_flag[latent_fix_theta_mu]     = Rcpp::as<bool>  (noise_in["fix_theta_mu"]);
         fix_flag[latent_fix_theta_sigma]  = Rcpp::as<bool>  (noise_in["fix_theta_sigma"]);
-if (noise_in.containsElementNamed("fix_theta_nu"))
-        fix_flag[latent_fix_theta_nu]     = Rcpp::as<bool> (noise_in["fix_theta_nu"]);
-if (noise_in.containsElementNamed("latent_fix_theta_sigma_normal"))
-        fix_flag[latent_fix_theta_sigma_normal]  = Rcpp::as<bool> (noise_in["fix_theta_sigma_normal"]);
+        fix_flag[latent_fix_theta_nu]     = noise_in.containsElementNamed("fix_theta_nu") ? Rcpp::as<bool> (noise_in["fix_theta_nu"]) : false;
+        fix_flag[latent_fix_theta_sigma_normal]  = noise_in.containsElementNamed("latent_fix_theta_sigma_normal") ? Rcpp::as<bool> (noise_in["fix_theta_sigma_normal"]) : false;
         fix_flag[latent_fix_V]  = Rcpp::as<bool> (noise_in["fix_V"]);
 
         single_V = Rcpp::as<bool> (noise_in["single_V"]);
@@ -72,9 +70,7 @@ if (noise_in.containsElementNamed("latent_fix_theta_sigma_normal"))
         n_theta_mu    = Rcpp::as< int > (noise_in["n_theta_mu"]);
         n_theta_sigma = Rcpp::as< int > (noise_in["n_theta_sigma"]);
         n_theta_nu    = Rcpp::as< int > (noise_in["n_theta_nu"]);
-
-        if (noise_in.containsElementNamed("nu_lower_bound"))
-            nu_lower_bound  = Rcpp::as< double > (noise_in["nu_lower_bound"]);
+        nu_lower_bound  = noise_in.containsElementNamed("nu_lower_bound") ? Rcpp::as< double > (noise_in["nu_lower_bound"]) : 0.0;
 
         rb_trace_sigma = VectorXd::Zero(n_theta_sigma);
         if (noise_type[0] == "normal_nig") n_theta_sigma_normal =   (B_sigma_normal.cols());

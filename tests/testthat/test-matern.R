@@ -52,7 +52,7 @@ test_that("test Matern", {
   # range(mesh$loc[, 1]); range(mesh$loc[, 2])
 
   # Matern case
-  devtools::load_all()
+  # devtools::load_all()
   out <- ngme(
     Y ~ 0 + f(loc,
       model="matern",
@@ -62,7 +62,7 @@ test_that("test Matern", {
       noise=noise_normal(),
       control = control_f(
         # iterative_solver = TRUE,
-        numer_grad = TRUE
+        numer_grad = FALSE
       ),
       debug = F
     ),

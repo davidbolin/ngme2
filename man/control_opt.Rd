@@ -26,7 +26,7 @@ control_opt(
   rao_blackwellization = FALSE,
   n_trace_iter = 10,
   sampling_strategy = "all",
-  solver_type = "eigen",
+  solver_type = if (Sys.info()["sysname"] == "Darwin") "accelerate" else "supernodal",
   verbose = FALSE
 )
 }
@@ -81,7 +81,8 @@ If it is more than n_parallel_chain, the rest will be used to parallel different
 \item{solver_type}{"eigen" means using eigen solver
 "cholmod" means using cholmod solver
 "supernodal" means using supernodal solver
-"accelerate" means using accelerate solver}
+"accelerate" means using accelerate solver
+"pardiso" means using pardiso solver}
 
 \item{verbose}{print estimation}
 }

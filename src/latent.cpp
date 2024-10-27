@@ -305,7 +305,7 @@ VectorXd Latent::grad_theta_K(bool rao_blackwell) {
                     SparseMatrix<double> dQ = (Q_eps - Q) / eps;
                     logdet_difference = 0.5 * chol_solver_Q.trace_num(dQ);
                 } else {
-                    logdet_difference = chol_solver_K.trace_num(dK) -0.5 * SV.array().log().sum();
+                    logdet_difference = chol_solver_K.trace_num(dK);
                 }
             } else {
                 MatrixXd Kd = getK().toDense();
@@ -655,18 +655,11 @@ double Latent::logd_W_given_V(const VectorXd& W, const SparseMatrix<double>& K, 
     return logdet + logd_W_given_V_without_logdet(W, K, mu, sigma, V);
 }
 
-// log density of W|V (remove logdet term
+// log density of W|V (remove logdet term)
 double Latent::logd_W_given_V_without_logdet(const VectorXd& W, const SparseMatrix<double>& K, const VectorXd& mu, const VectorXd& sigma, const VectorXd& V) {
-    double l_no_logdet = 0;
     VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
     VectorXd tmp = K * W - mu.cwiseProduct(V-h);
-    if (K.rows() < 5) {
-        MatrixXd Kd = K.toDense();
-        l_no_logdet = - 0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
-    } else {
-        l_no_logdet = -0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
-    }
-    return l_no_logdet;
+    return -0.5 * tmp.cwiseProduct(SV.cwiseInverse()).dot(tmp);
 }
 
 

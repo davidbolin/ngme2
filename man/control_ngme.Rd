@@ -10,8 +10,7 @@ control_ngme(
   fix_feff = FALSE,
   n_post_samples = 100,
   feff = NULL,
-  debug = FALSE,
-  iterative_solver = FALSE
+  debug = FALSE
 )
 }
 \arguments{
@@ -26,8 +25,6 @@ control_ngme(
 \item{feff}{fixed effect value}
 
 \item{debug}{debug mode}
-
-\item{iterative_solver}{whether to use iterative solver for the linear system}
 }
 \value{
 a list of control variables for block model

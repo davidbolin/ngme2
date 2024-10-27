@@ -61,9 +61,9 @@ BlockModel::BlockModel(
     n_gibbs     =  Rcpp::as<int>    (control_ngme["n_gibbs_samples"]);
     debug       = Rcpp::as<bool>   (control_ngme["debug"]);
     rao_blackwell = Rcpp::as<bool> (control_ngme["rao_blackwellization"]);
-    use_iterative_solver = control_ngme.containsElementNamed("iterative_solver") ? Rcpp::as<bool> (control_ngme["iterative_solver"]) : false;
     int n_trace_iter = Rcpp::as<int> (control_ngme["n_trace_iter"]);
-    int solver_type = Rcpp::as<int> (control_ngme["solver_type"]);
+    use_iterative_solver = control_ngme.containsElementNamed("iterative_solver") ? Rcpp::as<bool> (control_ngme["iterative_solver"]) : false;
+    int solver_type = control_ngme.containsElementNamed("solver_type") ? Rcpp::as<int> (control_ngme["solver_type"]) : 0;
 
     // reduce_var    =  Rcpp::as<bool>   (control_ngme["reduce_var"]);
     // reduce_power  =  Rcpp::as<double> (control_ngme["reduce_power"]);

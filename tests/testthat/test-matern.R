@@ -20,7 +20,7 @@ test_that("test Matern", {
   )
   mesh_17k$n
 
-  mesh <- mesh_17k
+  mesh <- mesh_8k
   # plot(mesh)
   mesh$n
 
@@ -39,8 +39,8 @@ test_that("test Matern", {
     noise = true_noise
   )
 
-  W <- rnorm(n_obs)
-  # W <- simulate(true_model)[[1]]
+  # W <- rnorm(n_obs)
+  W <- simulate(true_model)[[1]]
   attr(W, "noise")
   Y <- W + rnorm(n_obs, sd=0.5)
 
@@ -52,7 +52,7 @@ test_that("test Matern", {
   # range(mesh$loc[, 1]); range(mesh$loc[, 2])
 
   # Matern case
-  load_all()
+  devtools::load_all()
   out <- ngme(
     Y ~ 0 + f(loc,
       model="matern",
@@ -62,23 +62,26 @@ test_that("test Matern", {
       noise=noise_normal(),
       control = control_f(
         # iterative_solver = TRUE,
-        numer_grad = FALSE
+        numer_grad = TRUE
       ),
       debug = F
     ),
     data = data.frame(Y = Y),
     control_ngme = control_ngme(
-      use_iterative_solver = TRUE
+      # use_iterative_solver = TRUE
     ),
     control_opt = control_opt(
       estimation = T,
-      iterations = 100,
-      optimizer = adam(),
+      iterations = 500,
+      optimizer = precond_sgd(
+        # preconditioner = "full"
+      ),
       rao_blackwellization = TRUE,
       n_parallel_chain = 4,
       print_check_info = F,
       verbose = T,
       std_lim = 0.01
+      # solver_type = "eigen"
     ),
     # start=out,
     debug = F

@@ -363,6 +363,26 @@ public:
   double trace(const Eigen::SparseMatrix<double, 0, int> &) {return 0.0;}
   double trace2(const SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &) {return 0.0;}
   double trace_num(const SparseMatrix<double, 0, int> &);
+  double logdet() {
+    switch (solver_type) {
+      case 0:
+        return log(R_eigen.determinant());
+      case 1:
+        return R_simplicial.logDeterminant();
+      case 2:
+        return R_supernodal.logDeterminant();
+#ifdef __APPLE__
+      case 3:
+        throw;
+#endif
+#ifdef USEMKL
+      case 4:
+        throw;
+#endif
+      default:
+        throw;
+    }
+  }
 };
 
 #endif

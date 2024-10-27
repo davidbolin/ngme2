@@ -20,7 +20,8 @@ Imports:
     ggplot2,
     graphics,
     fmesher,
-    stats
+    stats,
+    gridExtra
 LinkingTo:
     testthat,
     Rcpp,
@@ -32,7 +33,6 @@ Suggests:
     dplyr,
     plyr,
     MASS,
-    gridExtra,
     grid,
     testthat (>= 3.0.0),
     xml2,

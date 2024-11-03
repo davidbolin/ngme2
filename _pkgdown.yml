@@ -87,6 +87,8 @@ reference:
     - bv
     - bv_normal
     - bv_matern_normal
+    - bv_matern_nig
+    - compute_score_given_pred
     - re
     - spacetime
     - general

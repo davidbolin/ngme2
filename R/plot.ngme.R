@@ -142,10 +142,18 @@ traceplot <- function(
   # record the geom_lines for comparison later
   avg_lines <- NULL
 
-  for (idx in seq_len(nrow(traj[[1]]))) {
-    df <- sapply(traj, function(x) x[idx, ,drop=F])
-    # weird stuff here
-    df <- apply(df, c(1,2), as.numeric)
+  n_parameters <- nrow(traj[[1]]) # number of parameters to draw
+  for (idx in seq_len(n_parameters)) {
+    # extract the idx-th parameter from each chain
+    df <- lapply(traj, function(x) x[idx, ,drop=F])
+    df <- lapply(df, as.numeric)
+    
+    # if not all chains are of the same length, use the minimum length
+    lengths <- sapply(df, length)
+    min_length <- min(lengths)
+    df <- lapply(df, function(x) x[seq_len(min_length)])
+    warning("Some chains are of different lengths. Only the minimum length is used.")
+
     df <- as.data.frame(df)
     df$x <- seq_len(nrow(df)); x <- NULL # get around check note
     df_long <- tidyr::gather(df, key = "key", value = "value", -x)

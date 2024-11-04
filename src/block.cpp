@@ -166,6 +166,7 @@ if (debug) std::cout << "After set block K" << std::endl;
       SparseMatrix<double> Q_eps_lower (n_obs, n_obs);
       Q_eps_lower.setFromTriplets(Q_eps_triplet.begin(), Q_eps_triplet.end());
       Q_eps = Q_eps_lower.selfadjointView<Lower>();
+      sqrt_Rinv = Q_eps; // initialize sqrt_Rinv as Q_eps
 
       SparseMatrix<double> dQ_lower (n_obs, n_obs);
       dQ_lower.setFromTriplets(dQ_eps_triplet.begin(), dQ_eps_triplet.end());
@@ -1102,8 +1103,7 @@ SparseMatrix<double> BlockModel::get_sqrt_AtSVA() const {
   } else if (!corr_measure) {
     return inv_noise_SV.cwiseSqrt().asDiagonal() * A;
   } else {
-    // TODO: implement this
-    return A;
+    return sqrt_Rinv * inv_noise_SV.cwiseSqrt().asDiagonal() * A;
   }
 }
 
@@ -1119,6 +1119,19 @@ void BlockModel::update_Q_eps(double rho) {
         } else {
           double tmp = noise_sigma(it.row()) * noise_sigma(it.col()) * sqrt(noise_V(it.row()) * noise_V(it.col()));
           it.valueRef() = -rho / ((1-rho*rho) * tmp);
+        }
+      }
+    }
+
+    // update sqrt_Rinv
+    for (int i=0; i < sqrt_Rinv.outerSize(); i++) {
+      for (SparseMatrix<double>::InnerIterator it(sqrt_Rinv, i); it; ++it) {
+        if (it.row() == it.col()) {
+          int idx = it.row();
+          it.valueRef() = has_correlation[idx] ? 
+            (sqrt(1+rho)+sqrt(1-rho))/(2*sqrt(1-rho*rho)) : 1;
+        } else {
+          it.valueRef() = (-sqrt(1+rho)+sqrt(1-rho))/(2*sqrt(1-rho*rho));
         }
       }
     }

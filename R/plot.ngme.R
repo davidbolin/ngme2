@@ -150,9 +150,11 @@ traceplot <- function(
     
     # if not all chains are of the same length, use the minimum length
     lengths <- sapply(df, length)
-    min_length <- min(lengths)
-    df <- lapply(df, function(x) x[seq_len(min_length)])
-    warning("Some chains are of different lengths. Only the minimum length is used.")
+    if (length(unique(lengths)) > 1) {
+      min_length <- min(lengths)
+      df <- lapply(df, function(x) x[seq_len(min_length)])
+      warning("Some chains are of different lengths. Only the minimum length is used.")
+    }
 
     df <- as.data.frame(df)
     df$x <- seq_len(nrow(df)); x <- NULL # get around check note

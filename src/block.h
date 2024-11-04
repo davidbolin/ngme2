@@ -62,7 +62,10 @@ protected:
     vector<int> cor_rows, cor_cols;
     vector<bool> has_correlation;
     int n_corr_pairs;
-    SparseMatrix<double> Q_eps, dQ_eps;
+    SparseMatrix<double> Q_eps, dQ_eps, sqrt_Rinv;
+    // Q_eps = A^T diag(1/SV) A (no correlation)
+    // Q_eps = A^T vcov^-1 A (with correlation)
+    // vcov = diag(sigma sqrt(V)) R diag(sigma sqrt(V))
     int n_params;
 
     // fix estimation

@@ -298,7 +298,7 @@ std::vector<bool> check_conv(
     }
 
     if (print_check_info) std::cout << "stop " << curr_batch+1 << ": \n"
-        // << par_string << "\n"
+        << par_string << "\n"
         << std_line << "\n"
         << trend_line << "\n\n";
     return conv;

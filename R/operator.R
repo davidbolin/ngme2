@@ -185,14 +185,21 @@ ngme_model <- function(
   #   matern  = paste0(" kappa_", seq_along(theta_K)),
   #   rw1     = paste0(" ignored")
   # )
-  # mu_str    <- paste0("    mu_", seq_along(noise$theta_mu))
-  # sigma_str <- paste0(" sigma_", seq_along(noise$theta_sigma))
-  # nu_str    <- "    nu_1"
 
-  # if ((noise$noise_type == "normal"))
-  #   par_string <- do.call(paste0, as.list(c(K_str, sigma_str)))
-  # else
-  #   par_string <- do.call(paste0, as.list(c(K_str, mu_str, sigma_str, nu_str)))
+  # make it str with each parameter name contain 8 digits (right aligned)
+  ope_params <- operator$param_name
+  ope_str   <- sapply(ope_params, function(x) sprintf("%8s", x))
+  mu_params <- paste0("mu_", seq_along(noise$theta_mu))
+  mu_str    <- sapply(mu_params, function(x) sprintf("%8s", x))
+  sigma_params <- paste0("sigma_", seq_along(noise$theta_sigma))
+  sigma_str <- sapply(sigma_params, function(x) sprintf("%8s", x))
+  nu_params <- paste0("nu_", seq_along(noise$nu))
+  nu_str    <- sapply(nu_params, function(x) sprintf("%8s", x))
+
+  if ((noise$noise_type == "normal"))
+    par_string <- paste0(ope_str, sigma_str)
+  else
+    par_string <- paste0(ope_str, mu_str, sigma_str, nu_str)
 
   if (is.null(n_params)) n_params <- length(operator$theta_K) + with(noise, n_params)
 

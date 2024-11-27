@@ -121,13 +121,13 @@ traceplot <- function(
   ps <- list()
 
   if (name %in% names(ngme$models)) {
-    # Plot latent trajectory
+    # Plot trajectory of parameters of the model
     traj <- attr(ngme$models[[name]], "lat_traj")
     stopifnot("Please run ngme() to estimate the model before using traceplot()"
       = !is.null(traj))
     ts <- get_latent_info(ngme$models[[name]])
   } else {
-    # Plot block trajectory
+    # Plot trajectory of parameters of the noise
     traj <- attr(ngme, "block_traj")
     stopifnot("Please run ngme() to estimate the model before using traceplot()"
       = !is.null(traj))

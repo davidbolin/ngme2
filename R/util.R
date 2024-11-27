@@ -710,3 +710,57 @@ contain_bv_model <- function(ngme){
   }))
 }
 
+
+#' @title get the trajectories of parameters of the model
+#' @description
+#' Get the trajectories of the parameters of the model
+#'
+#' @param ngme_object ngme object
+#' @param model_name name of the model, if NULL, return the trajectories of the parameters of the measurement noise and fixed effects
+#' @return a list of trajectories, each element is a matrix of trajectories (n_samples * n_trajectories)
+#' @export
+get_trajectories <- function(
+  ngme_object,
+  model_name
+) {
+  stopifnot(inherits(ngme_object, "ngme"))
+
+  ngme <- ngme_object$replicates[[1]]
+  if (!is.null(model_name) && model_name %in% names(ngme$models)) {
+    traj <- attr(ngme$models[[model_name]], "lat_traj")
+    ts <- get_latent_info(ngme$models[[model_name]])
+  } else {
+    traj <- attr(ngme, "block_traj")
+    ts <- get_noise_info(ngme$noise)
+  }
+  #  str(traj)
+  #  List of 4
+  #  $ :'data.frame':       4 obs. of  1000 variables:
+  
+  convert_to_3d_array <- function(traj) {
+    # Extract the dimensions
+    num_replicates <- length(traj) # Number of replicates
+    num_variables <- nrow(traj[[1]]) # Number of variables (4)
+    num_iterations <- ncol(traj[[1]]) # Number of iterations (1000)
+    
+    # Initialize an empty 3D array
+    array_3d <- array(NA, dim = c(num_variables, num_iterations, num_replicates))
+    
+    # Fill the array
+    for (replicate_index in seq_len(num_replicates)) {
+      array_3d[,,replicate_index] <- as.matrix(traj[[replicate_index]])
+    }
+    
+    return(array_3d)
+  }
+  traj_3d <- convert_to_3d_array(traj)
+
+  ret <- list()
+  for (i in seq_along(ts$name)) {
+    name <- ts$name[i]
+    data <- traj_3d[i, , ]
+    ret[[name]] <- ts$trans[[i]](data)
+  }
+
+  return (ret)
+}

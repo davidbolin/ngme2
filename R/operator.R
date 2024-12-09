@@ -196,7 +196,7 @@ ngme_model <- function(
   nu_params <- paste0("nu_", seq_along(noise$nu))
   nu_str    <- sapply(nu_params, function(x) sprintf("%8s", x))
 
-  if ((noise$noise_type == "normal"))
+  if (all(noise$noise_type == "normal"))
     par_string <- paste0(ope_str, sigma_str)
   else
     par_string <- paste0(ope_str, mu_str, sigma_str, nu_str)

@@ -5,8 +5,8 @@
 // ------- bivariate model -------
 Bivar::Bivar(const Rcpp::List& operator_list):
   Operator(operator_list),
-  first (OperatorFactory::create(operator_list["first"])),
-  second (OperatorFactory::create(operator_list["second"])),
+  first (OperatorFactory::create(Rcpp::as<Rcpp::List>(operator_list["first"]))),
+  second (OperatorFactory::create(Rcpp::as<Rcpp::List>(operator_list["second"]))),
   n_theta_1 (first->get_n_theta_K()),
   n_theta_2 (second->get_n_theta_K()),
   n (h.size() / 2),
@@ -160,8 +160,8 @@ Matrix2d Bivar::get_dD2_rho(double theta, double rho) const {
 // ------- bivariate model (theta=0, Gaussian noise) -------
 Bivar_normal_ope::Bivar_normal_ope(const Rcpp::List& operator_list):
   Operator(operator_list),
-  first (OperatorFactory::create(operator_list["first"])),
-  second (OperatorFactory::create(operator_list["second"])),
+  first (OperatorFactory::create(Rcpp::as<Rcpp::List>(operator_list["first"]))),
+  second (OperatorFactory::create(Rcpp::as<Rcpp::List>(operator_list["second"]))),
   n_theta_1 (first->get_n_theta_K()),
   n_theta_2 (second->get_n_theta_K()),
   n (h.size() / 2),
@@ -302,8 +302,8 @@ Matrix2d Bivar_normal_ope::get_dD2_rho(double theta, double rho) const {
 // ------- bivariate model only for matern normal model
 bv_matern_normal::bv_matern_normal(const Rcpp::List& operator_list):
   Operator(operator_list),
-  first (std::make_shared<Matern>(operator_list["first"])),
-  second (std::make_shared<Matern>(operator_list["second"])),
+  first (std::make_shared<Matern>(Rcpp::as<Rcpp::List>(operator_list["first"]))),
+  second (std::make_shared<Matern>(Rcpp::as<Rcpp::List>(operator_list["second"]))),
   n_theta_1 (first->get_n_theta_K()),
   n_theta_2 (second->get_n_theta_K()),
   n (h.size() / 2),
@@ -401,8 +401,8 @@ Matrix2d bv_matern_normal::get_dD2_rho(double theta, double rho) const {
 // ------- bivariate model only for matern normal model
 bv_matern_nig::bv_matern_nig(const Rcpp::List& operator_list):
   Operator(operator_list),
-  first (std::make_shared<Matern>(operator_list["first"])),
-  second (std::make_shared<Matern>(operator_list["second"])),
+  first (std::make_shared<Matern>(Rcpp::as<Rcpp::List>(operator_list["first"]))),
+  second (std::make_shared<Matern>(Rcpp::as<Rcpp::List>(operator_list["second"]))),
   n_theta_1 (first->get_n_theta_K()),
   n_theta_2 (second->get_n_theta_K()),
   n (h.size() / 2),

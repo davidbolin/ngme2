@@ -166,7 +166,7 @@ public:
 class General : public Operator {
 private:
     vector<SparseMatrix<double, 0, int>> matrices;
-    MatrixXd idx_mat; 
+    MatrixXd idx_mat;
     vector<string> trans;
 public:
     General(const Rcpp::List&);
@@ -311,7 +311,7 @@ public:
     } else if (model_type == "re") {
       return std::make_shared<Randeff>(operator_in);
     } else if (model_type == "bv") {
-      return std::make_shared<Bivar>(operator_in);    
+      return std::make_shared<Bivar>(operator_in);
     } else if (model_type == "bv_normal") {
       return std::make_shared<Bivar_normal_ope>(operator_in);
     } else if (model_type == "bv_matern_normal") {

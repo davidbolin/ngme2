@@ -46,6 +46,7 @@ cross_validation <- function(
   train_idx = NULL,
   keep_pred = FALSE,
   parallel = TRUE,
+  merge_replicates = FALSE,
   cores_layer1 = if (parallel) parallel::detectCores() else 1,
   cores_layer2 = if (parallel) parallel::detectCores() else 1
 ) {
@@ -110,6 +111,8 @@ cross_validation <- function(
   #   })
   # }
 
+  compute_err <- if (merge_replicates) compute_err_merged_reps else compute_err_reps
+
   for (idx in seq_along(ngme)) {
 if (print) cat(paste0("Model ", names(ngme)[[idx]], ": \n\n"))
     scores <- sd_scores <- NULL
@@ -120,7 +123,7 @@ if (print) cat(paste0("Model ", names(ngme)[[idx]], ": \n\n"))
       ret = parallel::mclapply(
         seq_along(test_idx),
         function(i) {
-          result <- compute_err_reps(
+          result <- compute_err(
             ngme[[idx]],
             test_idx[[i]],
             train_idx[[i]],
@@ -143,13 +146,13 @@ if (print) cat(paste0("Model ", names(ngme)[[idx]], ": \n\n"))
       )
       scores <- lapply(ret, function(x) x$scores)
       sd_scores <- lapply(ret, function(x) x$sd_scores)
-      pred_1 <- lapply(ret, function(x) x$pred_1)
-      pred_2 <- lapply(ret, function(x) x$pred_2)
-      Y_1 <- lapply(ret, function(x) x$Y_1)
-      Y_2 <- lapply(ret, function(x) x$Y_2)
+      # pred_1 <- lapply(ret, function(x) x$pred_1)
+      # pred_2 <- lapply(ret, function(x) x$pred_2)
+      # Y_1 <- lapply(ret, function(x) x$Y_1)
+      # Y_2 <- lapply(ret, function(x) x$Y_2)
     } else {
       for (i in seq_along(test_idx)) {
-        result <- compute_err_reps(
+        result <- compute_err(
           ngme[[idx]],
           test_idx[[i]],
           train_idx[[i]],
@@ -162,10 +165,10 @@ if (print) cat(paste0("Model ", names(ngme)[[idx]], ": \n\n"))
         )
         scores[[i]] <- result$scores
         sd_scores[[i]] <- result$sd_scores
-        pred_1[[i]] <- result$pred_1
-        pred_2[[i]] <- result$pred_2
-        Y_1[[i]] <- result$Y_1
-        Y_2[[i]] <- result$Y_2
+        # pred_1[[i]] <- result$pred_1
+        # pred_2[[i]] <- result$pred_2
+        # Y_1[[i]] <- result$Y_1
+        # Y_2[[i]] <- result$Y_2
 
         if (print) {
           cat(paste("In test batch", i, ": \n"))
@@ -238,7 +241,71 @@ if (print) cat(paste0("Model ", names(ngme)[[idx]], ": \n\n"))
   }
 }
 
-# helper function to dispatch over reps
+# Compute error with merged 1 replicate using helper function merge_replicates
+compute_err_merged_reps <- function(
+  ngme,
+  test_idx,
+  train_idx,
+  N = 100,
+  n_gibbs_samples = 100,
+  n_burnin = 100,
+  seed = NULL,
+  keep_pred = FALSE,
+  parallel = TRUE,
+  transform = identity,
+  num_cores = 1
+) {
+  if (is.null(seed)) seed <- Sys.time()
+  stopifnot("Not a ngme object." = inherits(ngme, "ngme"))
+
+  test_idx <- sort(test_idx)
+  repls <- attr(ngme, "fit")$replicate
+  uni_repl <- unique(repls)
+
+  scores <- sd_scores <- weight <- NULL; 
+  n_scores <- 0;
+  pred_1 <- double(length = length(test_idx)); pred_2 <- double(length = length(test_idx))
+  Y_1 <- double(length = length(test_idx)); Y_2 <- double(length = length(test_idx))
+
+  ret <- merge_replicates(ngme, train_idx, test_idx)
+  merged_rep <- ret$merged_rep
+  
+  scores <- list()
+  for (sim_n in 1:N) {
+    scores[[sim_n]] <- compute_scores(
+      merged_rep, 
+      n_gibbs_samples, 
+      n_burnin, 
+      seed + sim_n, 
+      ret$test_A_block, 
+      ret$test_noise, 
+      ret$test_Y, 
+      ret$test_group, 
+      ret$test_X, 
+      transform
+    )
+  }
+
+  # compute mean and sd of scores
+  n_group = length(levels(ret$test_group))
+  array_3d <- array(unlist(scores), 
+    dim = c(n_group, 4, length(scores)))
+
+  mean_array <- apply(array_3d, c(1, 2), mean)
+  sd_array <- apply(array_3d, c(1, 2), sd)
+
+  colnames(mean_array) <- colnames(sd_array) <- names(scores[[1]])
+  rownames(mean_array) <- rownames(sd_array) <- rownames(scores[[1]])
+
+  list(
+    scores = mean_array,
+    sd_scores = sd_array
+  )
+}
+
+
+
+# Compute error with multiple replicates using helper function compute_err_1rep
 compute_err_reps <- function(
   ngme,
   test_idx,
@@ -427,7 +494,7 @@ compute_err_1rep <- function(
 
 # helper function to compute the scores
 compute_scores <- function(
-  ngme_1rep, n_gibbs_samples, n_burnin, seed, A_pred_block, noise_test_idx, y_data, group_data, X_pred, transform
+  ngme_1rep, n_gibbs_samples, n_burnin, seed, A_pred_block, test_noise, y_data, group_data, X_pred, transform
 ) {
   Ws <- sampling_cpp(
     ngme_1rep, 
@@ -462,8 +529,8 @@ compute_scores <- function(
   pred_N_2 <- fe_N + AW_N_2
 
   # simulate measurement noise
-  mn_N_1 <- sapply(1:n_gibbs_samples, function(x) simulate(noise_test_idx)[[1]])
-  mn_N_2 <- sapply(1:n_gibbs_samples, function(x) simulate(noise_test_idx)[[1]])
+  mn_N_1 <- sapply(1:n_gibbs_samples, function(x) simulate(test_noise)[[1]])
+  mn_N_2 <- sapply(1:n_gibbs_samples, function(x) simulate(test_noise)[[1]])
   
   # simulate y
   Y_N_1 <- pred_N_1 + mn_N_1
@@ -589,4 +656,81 @@ compute_score_given_pred <- function(
   )
 
   scores
+}
+
+
+#' Merge model of replicates into model of 1 replicate given train_idx and 
+#' test_idx, the merged model contains all the information of train_idx from 
+#' different replicates.
+#'
+#' @param ngme a ngme object
+#' @param train_idx a vector of indices of train data
+#' @param test_idx a vector of indices of test data
+merge_replicates <- function(
+  ngme, 
+  train_idx, 
+  test_idx
+) {
+  repls <- attr(ngme, "fit")$replicate
+  uni_repl <- unique(repls)
+  merged_rep <- ngme$replicates[[1]]
+  n_latent <- length(merged_rep$models)
+  
+
+  train_X <- train_Y <- train_noise <- list()
+  test_X <- test_Y <- test_noise <- test_group <- list()
+  A_preds_block <- list()
+  A_train <- vector("list", n_latent)
+  # Loop over each replicate
+  for (i in seq_along(uni_repl)) {
+    data_idx_rep <- ngme$replicates[[i]]$data_idx
+    bool_train_idx <- data_idx_rep %in% train_idx # current rep has train
+    bool_test_idx  <- data_idx_rep %in% test_idx  # current rep has test
+
+    ngme_1rep <- ngme$replicates[[i]]
+    train_X[[i]]     <- ngme_1rep$X[bool_train_idx,, drop=FALSE]
+    train_Y[[i]]     <- ngme_1rep$Y[bool_train_idx]
+    train_noise[[i]] <- subset_noise(
+      ngme_1rep$noise, sub_idx = bool_train_idx, compute_corr = TRUE
+    )
+
+    test_X[[i]]     <- ngme_1rep$X[bool_test_idx,, drop=FALSE]
+    test_Y[[i]]     <- ngme_1rep$Y[bool_test_idx]
+    test_group[[i]] <- ngme_1rep$group[bool_test_idx]
+    test_noise[[i]] <- subset_noise(
+      ngme_1rep$noise, sub_idx = bool_test_idx, compute_corr = TRUE
+    )
+
+    # Subset A for test and train location
+    A_preds <- list();
+    for (j in seq_len(n_latent)) {
+      A_train[[j]][[i]] <- ngme_1rep$models[[j]]$A[bool_train_idx,,drop=FALSE]
+      A_preds[[j]] <- ngme_1rep$models[[j]]$A[bool_test_idx, ,drop=FALSE]
+    }
+    A_preds_block[[i]] <- Reduce(cbind, x = A_preds)
+  }
+
+  # Merge train data
+  merged_rep$X     <- Reduce(rbind, train_X)
+  merged_rep$Y     <- Reduce(c, train_Y)
+  merged_rep$noise <- Reduce(merge_noise, train_noise)
+  for (j in seq_len(n_latent)) {
+    merged_rep$models[[j]]$A <- Reduce(rbind, A_train[[j]])
+  }
+
+  # organize test data
+  test_Y       <- Reduce(c, test_Y)
+  test_group   <- Reduce(c, test_group)
+  test_X       <- Reduce(rbind, test_X)
+  test_noise   <- Reduce(merge_noise, test_noise)
+  test_A_block <- Reduce(rbind, x = A_preds_block)
+
+  return(list(
+    merged_rep = merged_rep,
+    test_Y = test_Y,
+    test_X = test_X,
+    test_noise = test_noise,
+    test_A_block = test_A_block,
+    test_group = test_group
+  ))
 }

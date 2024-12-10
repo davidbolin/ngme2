@@ -526,3 +526,42 @@ subset_noise <- function(noise, sub_idx, compute_corr) {
   }
   noise
 }
+
+
+#' Merge 2 noise into 1 noise
+#'
+#' @param noise1 noise 1
+#' @param noise2 noise 2
+#'
+#' @return merged noise
+#' @export
+merge_noise <- function(noise1, noise2) {
+  noise1$B_mu    <- rbind(noise1$B_mu, noise2$B_mu)
+  noise1$B_sigma <- rbind(noise1$B_sigma, noise2$B_sigma)
+  noise1$B_nu    <- rbind(noise1$B_nu, noise2$B_nu)
+  noise1$V       <- c(noise1$V, noise2$V)
+  noise1
+
+  if (!is.null(noise1$index_corr) && !is.null(noise2$index_corr)) {
+    max_idx <- max(noise1$index_corr, noise2$index_corr)
+    # avoid overlap index
+    noise1$index_corr <- c(noise1$index_corr, noise2$index_corr + max_idx)
+  }
+
+  # Update correlation
+  if (!is.null(noise1$corr_measurement) &&
+    noise1$corr_measurement
+  ) {
+    p_order <- order(noise1$index_corr)
+    cov_rc <- compute_corr_index(noise1$index_corr[p_order])
+
+    # update noise with extra terms about correlation
+    noise1$cor_rows <- cov_rc$cor_rows
+    noise1$cor_cols <- cov_rc$cor_cols
+    noise1$has_correlation <- cov_rc$has_correlation
+    noise1$n_corr_pairs <- cov_rc$n_corr_pairs
+    noise1$index_corr <- noise1$index_corr[p_order]
+  }
+
+  noise1
+}

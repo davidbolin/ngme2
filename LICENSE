@@ -1,0 +1,9 @@
+This package is licensed under the GNU General Public License version 3 (GPL-3).
+
+The package also includes portions of the Eigen library, which is licensed under the Mozilla Public License 2.0 (MPL-2.0). These portions are located in the `inst/include/Eigen/` directory.
+
+The full text of the GPL-3 license can be found at:
+https://www.gnu.org/licenses/gpl-3.0.en.html
+
+The full text of the MPL-2.0 license can be found at:
+https://www.mozilla.org/MPL/2.0/

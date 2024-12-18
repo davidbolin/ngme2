@@ -553,18 +553,25 @@ compute_scores <- function(
     ncol = n_gibbs_samples, 
     byrow=F
   )
+  
+  n_thin <- length(Ws_block_thin)
+  fe_N_thin <- matrix(
+    rep(fe, n_thin), 
+    ncol = n_thin, 
+    byrow=F
+  )
 
   # prediction using all samples
   pred_N_1 <- fe_N + AW_N_1
   pred_N_2 <- fe_N + AW_N_2
 
   # prediction using thinning samples
-  pred_N_1_thin <- fe_N + AW_N_1_thin
-  pred_N_2_thin <- fe_N + AW_N_2_thin
+  pred_N_1_thin <- fe_N_thin + AW_N_1_thin
+  pred_N_2_thin <- fe_N_thin + AW_N_2_thin
 
   # simulate measurement noise
-  mn_N_1 <- sapply(1:n_gibbs_samples, function(x) simulate(test_noise)[[1]])
-  mn_N_2 <- sapply(1:n_gibbs_samples, function(x) simulate(test_noise)[[1]])
+  mn_N_1 <- sapply(1:n_thin, function(x) simulate(test_noise)[[1]])
+  mn_N_2 <- sapply(1:n_thin, function(x) simulate(test_noise)[[1]])
   
   # simulate y using thinning samples
   Y_N_1_thin <- pred_N_1_thin + mn_N_1

@@ -22,7 +22,7 @@
 #' @param test_idx a list of indices of the data (which data points to be predicted) (only for custom type)
 #' @param train_idx  a list of indices of the data (which data points to be used for re-sampling (not re-estimation)) (only for custom type)
 #' @param keep_pred logical, keep test information (pred_1, pred_2) in the return (as attributes), pred_1 and pred_2 are the prediction of the two chains
-#'
+#' @param thining_gap integer, the gap between samples for thinning, if 0, then no thinning, if 1, then keep 50% of the samples for CRPS, sCRPS, etc.
 #' @param parallel logical, run in parallel mode
 #' @param cores_layer1 integer, number of cores for the first layer (over testing samples)
 #' @param cores_layer2 integer, number of cores for the second layer (over computing scores for N simulations)
@@ -46,10 +46,13 @@ cross_validation <- function(
   train_idx = NULL,
   keep_pred = FALSE,
   parallel = TRUE,
-  merge_replicates = FALSE,
+  thining_gap = 1, # Used for computing CRPS, sCRPS, the gap between samples for thinning, if 0, then no thinning, if 1, then keep 50% of the samples for CRPS, sCRPS, etc.
+  # merge_replicates = FALSE, # remove this option
   cores_layer1 = if (parallel) parallel::detectCores() else 1,
   cores_layer2 = if (parallel) parallel::detectCores() else 1
 ) {
+  merge_replicates = FALSE
+
   if (!requireNamespace("parallel", quietly = TRUE)) {
     message("Parallel package not available. Running in serial mode. You can install `parallel` package to speed up the computation.")
   }
@@ -133,7 +136,8 @@ if (print) cat(paste0("Model ", names(ngme)[[idx]], ": \n\n"))
             keep_pred=keep_pred,
             parallel = TRUE,
             transform = transform,
-            num_cores = cores_layer2
+            num_cores = cores_layer2,
+            thining_gap = thining_gap
           )
           if (print) {
             cat(paste("In test batch", i, ": \n"))
@@ -161,7 +165,8 @@ if (print) cat(paste0("Model ", names(ngme)[[idx]], ": \n\n"))
           seed=seed,
           keep_pred=keep_pred,
           parallel = FALSE,
-          transform = transform
+          transform = transform,
+          thining_gap = thining_gap
         )
         scores[[i]] <- result$scores
         sd_scores[[i]] <- result$sd_scores
@@ -253,7 +258,8 @@ compute_err_merged_reps <- function(
   keep_pred = FALSE,
   parallel = TRUE,
   transform = identity,
-  num_cores = 1
+  num_cores = 1,
+  thining_gap = 1
 ) {
   if (is.null(seed)) seed <- Sys.time()
   stopifnot("Not a ngme object." = inherits(ngme, "ngme"))
@@ -282,7 +288,8 @@ compute_err_merged_reps <- function(
       ret$test_Y, 
       ret$test_group, 
       ret$test_X, 
-      transform
+      transform,
+      thining_gap = thining_gap
     )
   }
 
@@ -317,7 +324,8 @@ compute_err_reps <- function(
   keep_pred = FALSE,
   parallel = TRUE,
   transform = identity,
-  num_cores = 1
+  num_cores = 1,
+  thining_gap = 1
 ) {
   test_idx <- sort(test_idx)
   stopifnot("Not a ngme object." = inherits(ngme, "ngme"))
@@ -349,7 +357,8 @@ compute_err_reps <- function(
       keep_pred=keep_pred,
       parallel = parallel,
       transform = transform,
-      num_cores = num_cores
+      num_cores = num_cores,
+      thining_gap = thining_gap
     )
     scores[[n_scores]] <- result_1rep$mean_scores
     sd_scores[[n_scores]] <- result_1rep$sd_scores
@@ -393,7 +402,8 @@ compute_err_1rep <- function(
   keep_pred = FALSE,
   parallel = TRUE,
   transform = identity,
-  num_cores = num_cores
+  num_cores = num_cores,
+  thining_gap = 1
 ) {
   stopifnot(
     "bool_<..>_idx should be a logical vector" =
@@ -442,14 +452,14 @@ compute_err_1rep <- function(
   if (parallel && requireNamespace("parallel", quietly = TRUE)) {
     scores = parallel::mclapply(1:N, function(nn) {
       s <- compute_scores(
-        ngme_1rep, n_gibbs_samples, n_burnin, seed+nn, A_pred_block, noise_test_idx, y_data, group_data, X_pred, transform 
+        ngme_1rep, n_gibbs_samples, n_burnin, seed+nn, A_pred_block, noise_test_idx, y_data, group_data, X_pred, transform, thining_gap
       )
       s
     }, mc.cores = num_cores)
   } else {
     for (nn in 1:N) {
       scores[[nn]] <- compute_scores(
-        ngme_1rep, n_gibbs_samples, n_burnin, seed+nn, A_pred_block, noise_test_idx, y_data, group_data, X_pred, transform
+        ngme_1rep, n_gibbs_samples, n_burnin, seed+nn, A_pred_block, noise_test_idx, y_data, group_data, X_pred, transform, thining_gap
       )
     }
   }
@@ -494,7 +504,17 @@ compute_err_1rep <- function(
 
 # helper function to compute the scores
 compute_scores <- function(
-  ngme_1rep, n_gibbs_samples, n_burnin, seed, A_pred_block, test_noise, y_data, group_data, X_pred, transform
+  ngme_1rep, 
+  n_gibbs_samples, 
+  n_burnin, 
+  seed, 
+  A_pred_block, 
+  test_noise, 
+  y_data, 
+  group_data, 
+  X_pred, 
+  transform,
+  thining_gap # keep 50% of the thinning samples for CRPS, sCRPS
 ) {
   Ws <- sampling_cpp(
     ngme_1rep, 
@@ -507,12 +527,21 @@ compute_scores <- function(
   Ws_block  <- head(Ws, n_gibbs_samples)
   W2s_block <- tail(Ws, n_gibbs_samples)
 
+  # keep 50% of the thinning samples for CRPS, sCRPS
+  Ws_block_thin <- Ws_block[seq(1, n_gibbs_samples, by=thining_gap+1)]
+  W2s_block_thin <- W2s_block[seq(1, n_gibbs_samples, by=thining_gap+1)]
+
 # Note: Ws_block is a list of N realizations of W of current replicate
 # Note: AW_N_1 is a matrix of n_test * N
   AW_N_1 <- if (length(ngme_1rep$models) == 0) 0 else
     Reduce(cbind, sapply(Ws_block, function(W) A_pred_block %*% W))
   AW_N_2 <- if (length(ngme_1rep$models) == 0) 0 else
     Reduce(cbind, sapply(W2s_block, function(W) A_pred_block %*% W))
+
+  AW_N_1_thin <- if (length(ngme_1rep$models) == 0) 0 else
+    Reduce(cbind, sapply(Ws_block_thin, function(W) A_pred_block %*% W))
+  AW_N_2_thin <- if (length(ngme_1rep$models) == 0) 0 else
+    Reduce(cbind, sapply(W2s_block_thin, function(W) A_pred_block %*% W))
 
   # sampling Y by, Y = X feff + (block_A %*% block_W) + eps
   # AW_N_1[[1]] is concat(A1 W1, A2 W2, ..)
@@ -525,21 +554,26 @@ compute_scores <- function(
     byrow=F
   )
 
+  # prediction using all samples
   pred_N_1 <- fe_N + AW_N_1
   pred_N_2 <- fe_N + AW_N_2
+
+  # prediction using thinning samples
+  pred_N_1_thin <- fe_N + AW_N_1_thin
+  pred_N_2_thin <- fe_N + AW_N_2_thin
 
   # simulate measurement noise
   mn_N_1 <- sapply(1:n_gibbs_samples, function(x) simulate(test_noise)[[1]])
   mn_N_2 <- sapply(1:n_gibbs_samples, function(x) simulate(test_noise)[[1]])
   
-  # simulate y
-  Y_N_1 <- pred_N_1 + mn_N_1
-  Y_N_2 <- pred_N_2 + mn_N_2
+  # simulate y using thinning samples
+  Y_N_1_thin <- pred_N_1_thin + mn_N_1
+  Y_N_2_thin <- pred_N_2_thin + mn_N_2
 
   compute_score_given_pred(
-    transform(pred_N_1), transform(pred_N_2), 
-    transform(Y_N_1), transform(Y_N_2),
-    transform(y_data),
+    transform(pred_N_1), transform(pred_N_2),  # for MAE, MSE
+    transform(Y_N_1_thin), transform(Y_N_2_thin), # for CRPS, sCRPS
+    transform(y_data), 
     group_data
   )
 }
@@ -610,34 +644,34 @@ compute_pred_N <- function(
 #' @param group_data a vector of length n_obs
 compute_score_given_pred <- function(
   pred_N_1, pred_N_2, 
-  Y_N_1, Y_N_2, 
+  Y_N_1_thin, Y_N_2_thin,
   y_data, group_data
 ) {
   pred <- 0.5*(rowMeans(as.matrix(pred_N_1)) + rowMeans(as.matrix(pred_N_2)))
 
   # Now Y is of dim n_obs * N
   n_obs <- length(y_data)
-  E_sim_data <- E_sim_sim <- double(length(y_data))
+  E_sim_data_thin <- E_sim_sim_thin <- double(length(y_data))
   
   for (i in 1:n_obs) {
     # turn row of df into numeric vector.
-    y_sim1 <- as.numeric(Y_N_1[i, ])
-    y_sim2 <- as.numeric(Y_N_2[i, ])
+    y_sim1_thin <- as.numeric(Y_N_1_thin[i, ])
+    y_sim2_thin <- as.numeric(Y_N_2_thin[i, ])
 
     # estimate E(| X_i - y_data |). y_data is observation, X_i ~ predictive distribution at i
-    E_sim_data[[i]] <- mean(abs(y_sim1 - y_data[i]))
+    E_sim_data_thin[[i]] <- mean(abs(y_sim1_thin - y_data[i]))
 
     # estimate E(| X_i - Y_i |) , X_i, Y_i ~ predictive distribution at i
-    E_sim_sim[[i]] <- mean(abs(y_sim1 - y_sim2))
+    E_sim_sim_thin[[i]] <- mean(abs(y_sim1_thin - y_sim2_thin))
   }
 
   # compute MSE, MAE, CRPS, sCRPS within each group
   pred_each_group   <- split(pred, group_data)
   y_data_each_group <- split(y_data, group_data)
 
-  CRPS  <- split(0.5 * E_sim_sim - E_sim_data, group_data)
-  sCRPS <- split(
-    -E_sim_data / E_sim_sim - 0.5 * log(E_sim_sim),
+  CRPS_thin <- split(0.5 * E_sim_sim_thin - E_sim_data_thin, group_data)
+  sCRPS_thin <- split(
+    -E_sim_data_thin / E_sim_sim_thin - 0.5 * log(E_sim_sim_thin),
     group_data
   )
 
@@ -651,8 +685,8 @@ compute_score_given_pred <- function(
   scores <- data.frame(
     MAE   = MAE,
     MSE   = MSE,
-    neg.CRPS  = -sapply(CRPS, mean), # mean over 1:n_obs_test within each group
-    neg.sCRPS = -sapply(sCRPS, mean) # same
+    neg.CRPS  = -sapply(CRPS_thin, mean), # mean over 1:n_obs_test within each group
+    neg.sCRPS = -sapply(sCRPS_thin, mean) # same
   )
 
   scores

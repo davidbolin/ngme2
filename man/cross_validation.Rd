@@ -22,6 +22,7 @@ cross_validation(
   train_idx = NULL,
   keep_pred = FALSE,
   parallel = TRUE,
+  thining_gap = 1,
   cores_layer1 = if (parallel) parallel::detectCores() else 1,
   cores_layer2 = if (parallel) parallel::detectCores() else 1
 )
@@ -61,6 +62,8 @@ e.g., the MAE will be computed as |transform(Y) - transform(Y_pred)|}
 \item{keep_pred}{logical, keep test information (pred_1, pred_2) in the return (as attributes), pred_1 and pred_2 are the prediction of the two chains}
 
 \item{parallel}{logical, run in parallel mode}
+
+\item{thining_gap}{integer, the gap between samples for thinning, if 0, then no thinning, if 1, then keep 50% of the samples for CRPS, sCRPS, etc.}
 
 \item{cores_layer1}{integer, number of cores for the first layer (over testing samples)}
 

@@ -360,12 +360,18 @@ stopifnot("n / nrow(B_nu) not integer" = abs(n/nrow(B_nu) - round(n/nrow(B_nu)))
       n_theta_sigma2 <- noise$bv_noises[[2]]$n_theta_sigma
       n_theta_nu1    <- noise$bv_noises[[1]]$n_theta_nu
       n_theta_nu2    <- noise$bv_noises[[2]]$n_theta_nu
-      noise$bv_noises[[1]]$theta_mu    <- head(noise$theta_mu, n_theta_mu1)
-      noise$bv_noises[[2]]$theta_mu    <- tail(noise$theta_mu, n_theta_mu2)
-      noise$bv_noises[[1]]$theta_sigma <- head(noise$theta_sigma, n_theta_sigma1)
-      noise$bv_noises[[2]]$theta_sigma <- tail(noise$theta_sigma, n_theta_sigma2)
-      noise$bv_noises[[1]]$theta_nu    <- head(noise$theta_nu, n_theta_nu1)
-      noise$bv_noises[[2]]$theta_nu    <- tail(noise$theta_nu, n_theta_nu2)
+      if (!noise$fix_theta_mu) {
+        noise$bv_noises[[1]]$theta_mu    <- head(noise$theta_mu, n_theta_mu1)
+        noise$bv_noises[[2]]$theta_mu    <- tail(noise$theta_mu, n_theta_mu2)
+      }
+      if (!noise$fix_theta_sigma) {
+        noise$bv_noises[[1]]$theta_sigma <- head(noise$theta_sigma, n_theta_sigma1)
+        noise$bv_noises[[2]]$theta_sigma <- tail(noise$theta_sigma, n_theta_sigma2)
+      }
+      if (!noise$fix_theta_nu) {
+        noise$bv_noises[[1]]$theta_nu    <- head(noise$theta_nu, n_theta_nu1)
+        noise$bv_noises[[2]]$theta_nu    <- tail(noise$theta_nu, n_theta_nu2)
+      }
     } else if (noise$noise_type == "normal_nig") {
       noise$theta_sigma_normal <- new_noise$theta_sigma_normal
     }

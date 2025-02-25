@@ -573,10 +573,11 @@ bv_matern_nig <- function(
 #' @param fix_gamma TRUE if fix gamma (advection term), FALSE if estimate gamma.
 #' @param theta_gamma_x The x component of the advection term: `gamma_x = B_gamma_x %*% theta_gamma_x`.
 #' @param theta_gamma_y The y component of the advection term: `gamma_y = B_gamma_y %*% theta_gamma_y`.
-#' @param theta_gamma_t The t component of the advection term: `gamma_t = B_gamma_t %*% theta_gamma_t`.
+# ' @param theta_gamma_t The t component of the advection term: `gamma_t = B_gamma_t %*% theta_gamma_t`.
 #' @param B_gamma_x The design matrix for the x component of the advection term.
 #' @param B_gamma_y The design matrix for the y component of the advection term.
-#' @param B_gamma_t The design matrix for the t component of the advection term.
+#' @param B_gamma_x_list A list of design matrices for the x component of the advection term on every time node, length(B_gamma_x_list) == nt-1.
+#' @param B_gamma_y_list A list of design matrices for the y component of the advection term on every time node, length(B_gamma_y_list) == nt-1.
 #' @param stabilization TRUE if using a stabilization term (for implicit Euler).
 #' @param ... Additional arguments (ignored).
 #' 
@@ -593,6 +594,9 @@ spacetime <- function(
   # theta_gamma_t = 0, 
   B_gamma_x = matrix(1, nrow = mesh[[2]]$n, ncol = 1),
   B_gamma_y = matrix(1, nrow = mesh[[2]]$n, ncol = 1),
+  # or, a list of B_gamma_x, B_gamma_y on every time node.
+  B_gamma_x_list = NULL,
+  B_gamma_y_list = NULL,
   # B_gamma_t = matrix(1, nrow = mesh[[1]]$n, ncol = 1),
   cc = 1,
   kappa = 1,
@@ -604,28 +608,47 @@ spacetime <- function(
     stabilization = FALSE
   }
 
+  mesh_t <- mesh[[1]]; nt <- mesh_t$n
+  mesh_s <- mesh[[2]]; ns <- mesh_s$n
   stopifnot(
     "Please provide mesh as a list of length 2" = length(mesh) == 2,
     "alpha should be 2 or 4" = alpha == 2 || alpha == 4,
     "method should be galerkin or euler" = method %in% c("galerkin", "euler"),
-    "First mesh should be 1d" = fmesher::fm_manifold_dim(mesh[[1]]) == 1,
+    "First mesh should be 1d" = fmesher::fm_manifold_dim(mesh_t) == 1,
     "Second mesh should be 2d" =
-      fmesher::fm_manifold_dim(mesh[[2]]) == 2,
-    "require package rSPDE" = requireNamespace("rSPDE", quietly = TRUE),
-    "B_gamma_x and B_gamma_y should have the same number of rows as the spatial mesh" = 
-      nrow(B_gamma_x) == mesh[[2]]$n && nrow(B_gamma_y) == mesh[[2]]$n,
-    "theta_gamma_x should be of length ncol(B_gamma_x)" = 
-      length(theta_gamma_x) == ncol(B_gamma_x),
-    "theta_gamma_y should be of length ncol(B_gamma_y)" = 
-      length(theta_gamma_y) == ncol(B_gamma_y)
+      fmesher::fm_manifold_dim(mesh_s) == 2,
+    "require package rSPDE" = requireNamespace("rSPDE", quietly = TRUE)
   )
 
-  mesh_t <- mesh[[1]]
-  mesh_s <- mesh[[2]]
+  if (!is.null(B_gamma_x_list) && !is.null(B_gamma_y_list)) {
+    stopifnot(
+      "B_gamma_x_list and B_gamma_y_list should have the same length" = 
+        length(B_gamma_x_list) == length(B_gamma_y_list),
+      "The number of time nodes should be the same as the length of B_gamma_x_list and B_gamma_y_list" = 
+        nt-1 == length(B_gamma_x_list),
+      "The ncol of items in B_gamma_x_list should be the same as the length of theta_gamma_x" = 
+        all(sapply(B_gamma_x_list, ncol) == length(theta_gamma_x)),
+      "The ncol of items in B_gamma_y_list should be the same as the length of theta_gamma_y" = 
+        all(sapply(B_gamma_y_list, ncol) == length(theta_gamma_y))
+    )
+  } else {
+    # Use B_gamma_x and B_gamma_y
+    stopifnot(
+      "B_gamma_x and B_gamma_y should have the same number of rows as the spatial mesh" = 
+        nrow(B_gamma_x) == ns && nrow(B_gamma_y) == ns,
+      "theta_gamma_x should be of length ncol(B_gamma_x)" =
+        length(theta_gamma_x) == ncol(B_gamma_x),
+      "theta_gamma_y should be of length ncol(B_gamma_y)" =
+        length(theta_gamma_y) == ncol(B_gamma_y)
+    )
+    
+    # turn it into a list
+    B_gamma_x_list <- lapply(1:(nt-1), function(i) B_gamma_x)
+    B_gamma_y_list <- lapply(1:(nt-1), function(i) B_gamma_y)
+  }
 
 ##### temporal FEM #####
   fem_t <- fmesher::fm_fem(mesh_t, order = 2)
-  nt <- mesh_t$n
   Ct <- fem_t$c0
   Gt <- fem_t$g1
   
@@ -637,7 +660,6 @@ spacetime <- function(
 
 ##### space FEM #####
   fem_s <- fmesher::fm_fem(mesh_s, order = alpha)
-  ns <- mesh_s$n
   Cs <- fem_s$c0
   Gs <- fem_s$g1
   
@@ -660,8 +682,11 @@ spacetime <- function(
   n_theta_gamma_x <- if (fix_gamma) 0 else ncol(B_gamma_x)
   n_theta_gamma_y <- if (fix_gamma) 0 else ncol(B_gamma_y)
 
-  gamma_x <- B_gamma_x %*% theta_gamma_x
-  gamma_y <- B_gamma_y %*% theta_gamma_y
+  # gamma_x <- B_gamma_x %*% theta_gamma_x
+  # gamma_y <- B_gamma_y %*% theta_gamma_y
+
+  gamma_x_list <- lapply(1:(nt-1), function(i) B_gamma_x_list[[i]] %*% theta_gamma_x)
+  gamma_y_list <- lapply(1:(nt-1), function(i) B_gamma_y_list[[i]] %*% theta_gamma_y)
   # gamma_t <- B_gamma_t %*% theta_gamma_t
 
   build_Bs <- function(gamma_x, gamma_y) {
@@ -670,12 +695,15 @@ spacetime <- function(
     Dx %*% Bx %*% Dx + Dy %*% By %*% Dy
   }
 
+  build_Bs_list <- function(gamma_x_list, gamma_y_list) {
+    lapply(1:(nt-1), function(i) build_Bs(gamma_x_list[[i]], gamma_y_list[[i]]))
+  }
+
   build_S <- function(gamma_x, gamma_y) {
     # if gamma_x and gamma_y are 0, then S = 0
     if (sum(gamma_x^2 + gamma_y^2) < 1e-8) {
       return (Matrix::Diagonal(n = ns, x = 0))
     }
-
     gamma_xx = gamma_x^2
     gamma_yy = gamma_y^2
     gamma_xy = gamma_x * gamma_y
@@ -684,12 +712,13 @@ spacetime <- function(
     Dxy = Matrix::Diagonal(x = gamma_xy)
     tmp = Dxx %*% Hxx %*% Dxx + Dyy %*% Hyy %*% Dyy + Dxy %*% (Hxy + Hyx) %*% Dxy
     gamma_norm = sqrt(sum(gamma_x^2 + gamma_y^2))
-    (Cs %*% tmp) / gamma_norm
+    Cs %*% tmp / gamma_norm
+  }
+
+  build_S_list <- function(gamma_x_list, gamma_y_list) {
+    lapply(1:(nt-1), function(i) build_S(gamma_x_list[[i]], gamma_y_list[[i]]))
   }
     
-  Bs = build_Bs(gamma_x, gamma_y)
-  S = build_S(gamma_x, gamma_y)
-  
   # compute L_s
   update_K <- function(theta_K) {
     cc <- exp(theta_K[1])
@@ -697,41 +726,60 @@ spacetime <- function(
     theta_gamma_x <- if (length(theta_K) > 2) theta_K[3:(2 + n_theta_gamma_x)] else double(0)
     theta_gamma_y <- if (length(theta_K) > 2) theta_K[(3 + n_theta_gamma_x):length(theta_K)] else double(0)
 
-    gamma_x <- as.vector(B_gamma_x %*% theta_gamma_x)
-    gamma_y <- as.vector(B_gamma_y %*% theta_gamma_y)
+    # gamma_x <- as.vector(B_gamma_x %*% theta_gamma_x)
+    # gamma_y <- as.vector(B_gamma_y %*% theta_gamma_y)
+    gamma_x_list <- lapply(1:(nt-1), function(i) as.vector(B_gamma_x_list[[i]] %*% theta_gamma_x))
+    gamma_y_list <- lapply(1:(nt-1), function(i) as.vector(B_gamma_y_list[[i]] %*% theta_gamma_y))
 
     if (!fix_gamma) {
-      Bs = build_Bs(gamma_x, gamma_y)
-      S = build_S(gamma_x, gamma_y)
+      # Bs = build_Bs(gamma_x, gamma_y)
+      # S = build_S(gamma_x, gamma_y)
+      Bs_list = build_Bs_list(gamma_x_list, gamma_y_list)
+      S_list = build_S_list(gamma_x_list, gamma_y_list)
     }
 
     # compute L_s
-    L = kappa^2 * Cs + lambda * Gs + Bs
-  
+    # Turn L into a list
+    # L = kappa^2 * Cs + lambda * Gs + Bs
+    L_list = lapply(1:(nt-1), function(i) kappa^2 * Cs + lambda * Gs + Bs_list[[i]])
+
     Cs_inv <- Matrix::Diagonal(n = ns, x = 1/Matrix::diag(Cs))
     
   # watch-out! make sure which t
     if (alpha == 4) L = L %*% Cs_inv %*% Matrix::t(L)
     
     if (method == "galerkin") {
+      # not used
       K <- Bt %x% Cs + 1/cc * Ct %x% L
     } else if (method == "euler") {
       # implicit euler
       null_matrix <- Matrix::Diagonal(n = ns, x = 0)
       
       if (stabilization) {
-        L = L + S
+        # L = L + S
+        L_list = lapply(1:(nt-1), function(i) L_list[[i]] + S_list[[i]])
       }
       
-      diag_L <- Matrix::bdiag(
-        lapply(1:(nt-1), function(i) L)
+      # diagonalize the list of L
+      # diag_L <- Matrix::bdiag(
+      #   lapply(1:(nt-1), function(i) L)
+      # )
+
+      diag_L_list <- Matrix::bdiag(
+        lapply(1:(nt-1), function(i) L_list[[i]])
       )
+
+      # K <- rw1(1:nt)$K %x% Cs + 1/cc *
+      #   Matrix::bdiag(null_matrix, diag_L)
       
       K <- rw1(1:nt)$K %x% Cs + 1/cc *
-        Matrix::bdiag(null_matrix, diag_L)
+        Matrix::bdiag(null_matrix, diag_L_list)
     }
     return (K)
   }
+
+  Bs_list = build_Bs_list(gamma_x_list, gamma_y_list)
+  S_list = build_S_list(gamma_x_list, gamma_y_list)
   K <- update_K(theta_K)
 
   BtCs = if (method == "galerkin") ngme_as_sparse(Bt %x% Cs) 
@@ -745,8 +793,11 @@ spacetime <- function(
     theta_gamma_y = theta_gamma_y,
     fix_gamma = fix_gamma,
     lambda = lambda,
-    B_gamma_x = B_gamma_x,
-    B_gamma_y = B_gamma_y,
+    nt = nt,
+    # B_gamma_x = B_gamma_x,
+    # B_gamma_y = B_gamma_y,
+    B_gamma_x_list = B_gamma_x_list,
+    B_gamma_y_list = B_gamma_y_list,
     n_theta_gamma_x = n_theta_gamma_x,
     n_theta_gamma_y = n_theta_gamma_y,
     method = method,
@@ -760,10 +811,10 @@ spacetime <- function(
     Ct = ngme_as_sparse(Ct),
     Cs = ngme_as_sparse(Cs),
     Gs = ngme_as_sparse(Gs),
-    Bs = ngme_as_sparse(Bs),
     Bx = ngme_as_sparse(Bx),
     By = ngme_as_sparse(By),
-    S = ngme_as_sparse(S),
+    Bs = ngme_as_sparse(Bs_list[[1]]), # only for fixed gamma case
+    S = ngme_as_sparse(S_list[[1]]), # only for fixed gamma case
     Hxx = ngme_as_sparse(Hxx),
     Hyy = ngme_as_sparse(Hyy),
     Hxy = ngme_as_sparse(Hxy),

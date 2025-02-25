@@ -13,6 +13,8 @@ spacetime(
   theta_gamma_y = 0,
   B_gamma_x = matrix(1, nrow = mesh[[2]]$n, ncol = 1),
   B_gamma_y = matrix(1, nrow = mesh[[2]]$n, ncol = 1),
+  B_gamma_x_list = NULL,
+  B_gamma_y_list = NULL,
   cc = 1,
   kappa = 1,
   stabilization = TRUE,
@@ -38,6 +40,10 @@ spacetime(
 
 \item{B_gamma_y}{The design matrix for the y component of the advection term.}
 
+\item{B_gamma_x_list}{A list of design matrices for the x component of the advection term on every time node, length(B_gamma_x_list) == nt-1.}
+
+\item{B_gamma_y_list}{A list of design matrices for the y component of the advection term on every time node, length(B_gamma_y_list) == nt-1.}
+
 \item{kappa}{Kappa parameter from Matern SPDE.}
 
 \item{stabilization}{TRUE if using a stabilization term (for implicit Euler).}
@@ -45,10 +51,6 @@ spacetime(
 \item{...}{Additional arguments (ignored).}
 
 \item{c}{Parameter.}
-
-\item{theta_gamma_t}{The t component of the advection term: `gamma_t = B_gamma_t %*% theta_gamma_t`.}
-
-\item{B_gamma_t}{The design matrix for the t component of the advection term.}
 }
 \value{
 ngme_operator object.

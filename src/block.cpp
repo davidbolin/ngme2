@@ -718,7 +718,8 @@ Rcpp::List BlockModel::sampling(
 
   for (int i=0; i < n; i++) {
     if (posterior) {
-      sample_cond_V(false);
+      // sample_cond_V(false);
+      sample_cond_V(true);
       sampleW_VY();
       sample_cond_noise_V(true);
     } else {

@@ -10,14 +10,14 @@
 #' lpo is leave-percent-out, provide \code{percent} from 1 to 100
 #' custom is user-defined group, provide \code{target} and \code{data}
 #' @param seed random seed
-#' @param N integer, number of simulations (e.g., estimate MAE, MSE, .. N times)
+#' @param N_sim integer, number of simulations (e.g., estimate MAE, MSE, .. N times)
 #' @param k integer (only for k-fold type)
 #' @param print print information during computation
 #' @param percent how many percent for testing? from 0 to 1 (for lpo type)
 #' @param times how many test cases (only for lpo type)
 #' @param transform a function to transform the data (e.g., log, exp, ...)
 #' e.g., the MAE will be computed as |transform(Y) - transform(Y_pred)|
-#' @param n_gibbs_samples number of gibbs samples
+#' @param n_gibbs_samples number of gibbs samples of latent process, used for computing CRPS, sCRPS
 #' @param n_burnin number of burnin
 #' @param test_idx a list of indices of the data (which data points to be predicted) (only for custom type)
 #' @param train_idx  a list of indices of the data (which data points to be used for re-sampling (not re-estimation)) (only for custom type)
@@ -25,17 +25,17 @@
 #' @param thining_gap integer, the gap between samples for thinning, if 0, then no thinning, if 1, then keep 50% of the samples for CRPS, sCRPS, etc.
 #' @param parallel logical, run in parallel mode
 #' @param cores_layer1 integer, number of cores for the first layer (over testing samples)
-#' @param cores_layer2 integer, number of cores for the second layer (over computing scores for N simulations)
+#' @param cores_layer2 integer, number of cores for the second layer (over computing scores for N_sim simulations)
 #' @return 
-#'  1. mean of N estimations of 4 criterions: MSE, MAE, CRPS, sCRPS
-#'  2. standard deviation of N estimations of 4 criterions: MSE, MAE, CRPS, sCRPS
+#'  1. mean of N_sim estimations of 4 criterions: MSE, MAE, CRPS, sCRPS
+#'  2. standard deviation of N_sim estimations of 4 criterions: MSE, MAE, CRPS, sCRPS
 #' @export
 cross_validation <- function(
   ngme,
   type = "k-fold",
   seed = NULL,
   print = FALSE,
-  N = 5,
+  N_sim = 5,
   n_gibbs_samples = 100,
   n_burnin = 100,
   k = 5,
@@ -45,7 +45,7 @@ cross_validation <- function(
   test_idx = NULL,
   train_idx = NULL,
   keep_pred = FALSE,
-  parallel = TRUE,
+  parallel = FALSE,
   thining_gap = 1, # Used for computing CRPS, sCRPS, the gap between samples for thinning, if 0, then no thinning, if 1, then keep 50% of the samples for CRPS, sCRPS, etc.
   # merge_replicates = FALSE, # remove this option
   cores_layer1 = if (parallel) parallel::detectCores() else 1,
@@ -130,7 +130,7 @@ if (print) cat(paste0("Model ", names(ngme)[[idx]], ": \n\n"))
             ngme[[idx]],
             test_idx[[i]],
             train_idx[[i]],
-            N = N,
+            N_sim=N_sim,
             n_gibbs_samples = n_gibbs_samples,
             seed=seed,
             keep_pred=keep_pred,
@@ -160,7 +160,7 @@ if (print) cat(paste0("Model ", names(ngme)[[idx]], ": \n\n"))
           ngme[[idx]],
           test_idx[[i]],
           train_idx[[i]],
-          N=N,
+          N_sim=N_sim,
           n_gibbs_samples = n_gibbs_samples,
           seed=seed,
           keep_pred=keep_pred,
@@ -251,7 +251,7 @@ compute_err_merged_reps <- function(
   ngme,
   test_idx,
   train_idx,
-  N = 100,
+  N_sim,
   n_gibbs_samples = 100,
   n_burnin = 100,
   seed = NULL,
@@ -277,7 +277,7 @@ compute_err_merged_reps <- function(
   merged_rep <- ret$merged_rep
   
   scores <- list()
-  for (sim_n in 1:N) {
+  for (sim_n in 1:N_sim) {
     scores[[sim_n]] <- compute_scores(
       merged_rep, 
       n_gibbs_samples, 
@@ -317,7 +317,7 @@ compute_err_reps <- function(
   ngme,
   test_idx,
   train_idx,
-  N = 100,
+  N_sim,
   n_gibbs_samples = 100,
   n_burnin = 100,
   seed = NULL,
@@ -351,7 +351,7 @@ compute_err_reps <- function(
       ngme_1rep,
       bool_train_idx = bool_train_idx,
       bool_test_idx = bool_test_idx,
-      N=N,
+      N_sim=N_sim,
       n_gibbs_samples = n_gibbs_samples,
       seed=seed,
       keep_pred=keep_pred,
@@ -395,7 +395,7 @@ compute_err_1rep <- function(
   ngme_1rep,
   bool_test_idx,
   bool_train_idx,
-  N = 100,
+  N_sim,
   n_gibbs_samples = 50,
   n_burnin = 10,
   seed = NULL,
@@ -450,14 +450,14 @@ compute_err_1rep <- function(
   scores <- pred_1 <- pred_2 <- Y_1 <- Y_2 <- list()
 
   if (parallel && requireNamespace("parallel", quietly = TRUE)) {
-    scores = parallel::mclapply(1:N, function(nn) {
+    scores = parallel::mclapply(1:N_sim, function(nn) {
       s <- compute_scores(
         ngme_1rep, n_gibbs_samples, n_burnin, seed+nn, A_pred_block, noise_test_idx, y_data, group_data, X_pred, transform, thining_gap
       )
       s
     }, mc.cores = num_cores)
   } else {
-    for (nn in 1:N) {
+    for (nn in 1:N_sim) {
       scores[[nn]] <- compute_scores(
         ngme_1rep, n_gibbs_samples, n_burnin, seed+nn, A_pred_block, noise_test_idx, y_data, group_data, X_pred, transform, thining_gap
       )
@@ -654,7 +654,11 @@ compute_score_given_pred <- function(
   Y_N_1_thin, Y_N_2_thin,
   y_data, group_data
 ) {
-  pred <- 0.5*(rowMeans(as.matrix(pred_N_1)) + rowMeans(as.matrix(pred_N_2)))
+  # Use ensemble prediction (buggy)
+  # pred <- 0.5*(rowMeans(as.matrix(pred_N_1)) + rowMeans(as.matrix(pred_N_2)))
+
+  # Use only 1 realization
+  pred <- pred_N_1[, 1] 
 
   # Now Y is of dim n_obs * N
   n_obs <- length(y_data)

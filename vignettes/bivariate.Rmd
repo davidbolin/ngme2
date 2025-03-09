@@ -491,7 +491,7 @@ out_cor
 # comparing with simulated value
 traceplot(
   out_cor, "bv",
-  hline=c(rho, sigma_1, sigma_2, exp(theta_K_1), exp(theta_K_2))
+  # hline=c(rho, sigma_1, sigma_2, exp(theta_K_1), exp(theta_K_2))
 )
 
 traceplot(

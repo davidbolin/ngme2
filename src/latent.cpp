@@ -2,6 +2,9 @@
 #include "prior.h"
 #include "num_diff.h"
 
+// Define the constant for minimum W size threshold
+const int MIN_W_SIZE = 5;
+
 // K is V_size * W_size matrix
 Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
     latent_rng    (seed),
@@ -273,10 +276,10 @@ VectorXd Latent::grad_theta_K(bool rao_blackwell) {
         VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
         SparseMatrix<double> Q = getK().transpose() * SV.cwiseInverse().asDiagonal() * getK();
         
-        if (W_size > 5 && !symmetricK) {
+        if (W_size > MIN_W_SIZE && !symmetricK) {
             // Initialize solver Q
             chol_solver_Q.compute(Q);
-        } else if (W_size > 5 && symmetricK) {
+        } else if (W_size > MIN_W_SIZE && symmetricK) {
             chol_solver_K.compute(getK());
         }
         
@@ -297,7 +300,7 @@ VectorXd Latent::grad_theta_K(bool rao_blackwell) {
 
             // compute logdet difference = (logdet(K_eps) - logdet(K)) / eps
             double logdet_difference = 0;
-            if (W_size > 5) {
+            if (W_size > MIN_W_SIZE) {
                 SparseMatrix<double> K_eps = ope_addeps->getK();
                 SparseMatrix<double> dK = (K_eps - getK()) / eps;
                 if (!symmetricK) {
@@ -308,8 +311,9 @@ VectorXd Latent::grad_theta_K(bool rao_blackwell) {
                     logdet_difference = chol_solver_K.trace_num(dK);
                 }
             } else {
+                MatrixXd Kd_eps = ope_addeps->getK().toDense();
                 MatrixXd Kd = getK().toDense();
-                logdet_difference = log(Kd.diagonal().prod());
+                logdet_difference = (log(Kd_eps.diagonal().prod()) - log(Kd.diagonal().prod())) / eps;
             }
             grad(i) += logdet_difference;
         }
@@ -540,7 +544,7 @@ if (debug) std::cout << "update_each_iter" << std::endl;
             // compute trace[i] = tr(K^-1 dK[i])
             if (!zero_trace) {
                 if (!symmetricK) {
-                    if (W_size > 10) {
+                    if (W_size > MIN_W_SIZE) {
                         lu_solver_K.compute_LU(getK());
                         // lu_solver_K.compute_KTK(getK());
                         for (int i=0; i < n_theta_K; i++){
@@ -637,7 +641,7 @@ double Latent::log_density(const VectorXd& parameter, bool precond_K) {
 // log density of W|V (remove logdet term when K.rows() > 5)
 double Latent::logd_W_given_V(const VectorXd& W, const SparseMatrix<double>& K, const VectorXd& mu, const VectorXd& sigma, const VectorXd& V) {
     double logdet = 0;
-    if (K.rows() < 5) {
+    if (K.rows() < MIN_W_SIZE) {
         MatrixXd Kd = K.toDense();
         logdet = log(Kd.diagonal().prod());
     } else {

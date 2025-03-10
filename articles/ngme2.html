@@ -515,22 +515,22 @@ K =
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt; (Intercept)          x1          x2 </span></span>
-<span><span class="co">#&gt;       -2.88       -1.39        2.03 </span></span>
+<span><span class="co">#&gt;       -2.88       -1.38        2.03 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $my_ar</span></span>
 <span><span class="co">#&gt;   Model type: AR(1)</span></span>
-<span><span class="co">#&gt;       rho = 0.562</span></span>
+<span><span class="co">#&gt;       rho = 0.564</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = 1.91</span></span>
-<span><span class="co">#&gt;       sigma = 2.98</span></span>
-<span><span class="co">#&gt;       nu = 0.958</span></span>
+<span><span class="co">#&gt;       mu = 1.92</span></span>
+<span><span class="co">#&gt;       sigma = 2.97</span></span>
+<span><span class="co">#&gt;       nu = 0.97</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.572</span></span>
+<span><span class="co">#&gt;       sigma = 0.578</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre></div>
@@ -547,16 +547,16 @@ Parameters of the AR1 model
 </div>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $rho</span></span>
-<span><span class="co">#&gt; [1] 0.5618929</span></span>
+<span><span class="co">#&gt; [1] 0.5631879</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $mu</span></span>
-<span><span class="co">#&gt; [1] 1.911687</span></span>
+<span><span class="co">#&gt; [1] 1.915625</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 2.977575</span></span>
+<span><span class="co">#&gt; [1] 2.970037</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nu</span></span>
-<span><span class="co">#&gt; [1] 0.9632136</span></span></code></pre>
+<span><span class="co">#&gt; [1] 0.9736066</span></span></code></pre>
 <p>We can also do a density comparison with the estimated noise and the
 true NIG noise:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
@@ -641,7 +641,7 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt; (Intercept) </span></span>
-<span><span class="co">#&gt;        11.7 </span></span>
+<span><span class="co">#&gt;        11.4 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $rw1</span></span>
@@ -649,21 +649,21 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <span><span class="co">#&gt;       No parameter.</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.153</span></span>
+<span><span class="co">#&gt;       sigma = 0.147</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $spde</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
-<span><span class="co">#&gt;       kappa = 8.87</span></span>
+<span><span class="co">#&gt;       kappa = 8.62</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 67.4</span></span>
+<span><span class="co">#&gt;       sigma = 66.9</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = 0.532</span></span>
+<span><span class="co">#&gt;       mu = 0.512</span></span>
 <span><span class="co">#&gt;       sigma = 1.98</span></span>
-<span><span class="co">#&gt;       nu = 1.53</span></span>
+<span><span class="co">#&gt;       nu = 1.38</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span>
@@ -674,26 +674,26 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <p><img src="ngme2_files/figure-html/fit-parana-1.png" width="700"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $mu</span></span>
-<span><span class="co">#&gt; [1] 0.5315388</span></span>
+<span><span class="co">#&gt; [1] 0.5087879</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 1.974728</span></span>
+<span><span class="co">#&gt; [1] 1.97628</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nu</span></span>
-<span><span class="co">#&gt; [1] 1.557119</span></span>
+<span><span class="co">#&gt; [1] 1.40042</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`fixed effect 1`</span></span>
-<span><span class="co">#&gt; [1] 11.6537</span></span>
+<span><span class="co">#&gt; [1] 11.44296</span></span>
 <span></span>
 <span><span class="co">## spde model</span></span>
 <span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">out</span>, <span class="st">"spde"</span><span class="op">)</span></span></code></pre>
 <p><img src="ngme2_files/figure-html/fit-parana-2.png" width="700"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $kappa</span></span>
-<span><span class="co">#&gt; [1] 8.948713</span></span>
+<span><span class="co">#&gt; [1] 8.680286</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 67.09296</span></span></code></pre>
+<span><span class="co">#&gt; [1] 66.52357</span></span></code></pre>
 <p>Parameter estimation results:</p>
 <table style="width:100%;" class="table">
 <caption>Estimations for the model</caption>
@@ -719,13 +719,13 @@ Mean of the rainfall in Octobor 2012 in Paraná
 </tr></thead>
 <tbody><tr class="odd">
 <td align="left">(Intercept)</td>
-<td align="left">11.7</td>
-<td align="left">0.532</td>
+<td align="left">11.4</td>
+<td align="left">0.512</td>
 <td align="left">1.98</td>
-<td align="left">1.53</td>
-<td align="left">-1.88</td>
-<td align="left">8.87</td>
-<td align="left">67.4</td>
+<td align="left">1.38</td>
+<td align="left">-1.92</td>
+<td align="left">8.62</td>
+<td align="left">66.9</td>
 </tr></tbody>
 </table>
 <div class="section level3">
@@ -783,43 +783,43 @@ method.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test batch 1 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.184942 8.914969 2.232348   2.51785</span></span>
+<span><span class="co">#&gt; 1 1.879914 6.729468 1.910122  2.339705</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test batch 2 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.873169 5.932669 1.830541   2.29933</span></span>
+<span><span class="co">#&gt; 1 1.620123 4.263918 1.741033  2.080317</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test batch 3 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.850633 5.513033 1.786073  2.222671</span></span>
+<span><span class="co">#&gt; 1 1.774997 5.112811 1.779756  2.189064</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test batch 4 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.025607 6.911993 2.031517  2.385369</span></span>
+<span><span class="co">#&gt; 1 1.891425 5.858277 1.817186  2.106733</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test batch 5 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.670428 4.448853 1.697939   2.16604</span></span>
+<span><span class="co">#&gt; 1 1.751086 5.037383 1.734271  2.075144</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test batch 6 : </span></span>
-<span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.878646 5.476574  1.82216  2.306179</span></span>
+<span><span class="co">#&gt;       MAE      MSE neg.CRPS neg.sCRPS</span></span>
+<span><span class="co">#&gt; 1 1.93932 6.221879  1.76866  2.198034</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test batch 7 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.094412 7.625822  1.89149  2.247214</span></span>
+<span><span class="co">#&gt; 1 1.758901 4.952034 1.690294  2.173703</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test batch 8 : </span></span>
-<span><span class="co">#&gt;       MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.16867 8.083963 1.887493  2.187273</span></span>
+<span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
+<span><span class="co">#&gt; 1 2.171359 8.329172 2.293968  2.688091</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test batch 9 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 2.001969 6.146833 1.952957  2.357578</span></span>
+<span><span class="co">#&gt; 1 2.329787 9.106648 2.421012  2.652389</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; In test batch 10 : </span></span>
 <span><span class="co">#&gt;        MAE      MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; 1 1.548242 4.112211 1.801398  2.184679</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 1.738129 4.677124 1.787835  2.035434</span></span></code></pre></div>
 </div>
 </div>
   </div>

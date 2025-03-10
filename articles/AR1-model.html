@@ -269,22 +269,22 @@ optioins.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt;     x1     x2 </span></span>
-<span><span class="co">#&gt; -0.908  2.252 </span></span>
+<span><span class="co">#&gt; -0.906  2.251 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $my_ar</span></span>
 <span><span class="co">#&gt;   Model type: AR(1)</span></span>
-<span><span class="co">#&gt;       rho = 0.467</span></span>
+<span><span class="co">#&gt;       rho = 0.466</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -2.61</span></span>
+<span><span class="co">#&gt;       mu = -2.59</span></span>
 <span><span class="co">#&gt;       sigma = 4.07</span></span>
-<span><span class="co">#&gt;       nu = 0.327</span></span>
+<span><span class="co">#&gt;       nu = 0.323</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 2.07</span></span>
+<span><span class="co">#&gt;       sigma = 2.08</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span>
@@ -294,29 +294,29 @@ optioins.</p>
 <p><img src="AR1-model_files/figure-html/ar-estimation-1.png" width="700" style="display: block; margin: auto;"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 2.062277</span></span>
+<span><span class="co">#&gt; [1] 2.087015</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`fixed effect 1`</span></span>
-<span><span class="co">#&gt; [1] -0.8972278</span></span>
+<span><span class="co">#&gt; [1] -0.8961596</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`fixed effect 2`</span></span>
-<span><span class="co">#&gt; [1] 2.25039</span></span>
+<span><span class="co">#&gt; [1] 2.250038</span></span>
 <span></span>
 <span><span class="co"># traceplot of ar1 model</span></span>
 <span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">ngme_out</span>, <span class="st">"my_ar"</span>, hline<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="op">-</span><span class="fl">3</span>, <span class="fl">4</span>, <span class="fl">0.4</span><span class="op">)</span><span class="op">)</span></span></code></pre>
 <p><img src="AR1-model_files/figure-html/ar-estimation-2.png" width="700" style="display: block; margin: auto;"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $rho</span></span>
-<span><span class="co">#&gt; [1] 0.467343</span></span>
+<span><span class="co">#&gt; [1] 0.4665081</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $mu</span></span>
-<span><span class="co">#&gt; [1] -2.611481</span></span>
+<span><span class="co">#&gt; [1] -2.585679</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 4.07554</span></span>
+<span><span class="co">#&gt; [1] 4.073769</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nu</span></span>
-<span><span class="co">#&gt; [1] 0.3271541</span></span>
+<span><span class="co">#&gt; [1] 0.3240358</span></span>
 <span></span>
 <span><span class="co"># Use ngme_result to extract the latent part</span></span>
 <span></span>

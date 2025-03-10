@@ -1,4 +1,4 @@
-# The `ngme2` Package
+# The `ngme2` Package <a href="https://davidbolin.github.io/ngme2/"><img src="./man/figures/logo.png" align="right" height="138" /></a>
 
 `ngme2` is an R package used for working with linear non-gaussian mixed effects models. See
 

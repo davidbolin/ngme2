@@ -12,14 +12,13 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
 <!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
 <script src="../pkgdown.js"></script><meta property="og:title" content="Space-time (tensor product) model in Ngme2">
-<meta property="og:description" content="ngme2">
 <!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
 <![endif]-->
 </head>
 <body data-spy="scroll" data-target="#toc">
-    
+
 
     <div class="container template-article">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
@@ -48,7 +47,7 @@
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Vignettes
-     
+
     <span class="caret"></span>
   </a>
   <ul class="dropdown-menu" role="menu">
@@ -101,13 +100,13 @@
 <li>
   <a href="https://github.com/davidbolin/ngme2" class="external-link">
     <span class="fa fa-github"></span>
-     
+
   </a>
 </li>
 <li>
   <a href="https://twitter.com/jdavidbolin" class="external-link">
     <span class="fa fa-twitter"></span>
-     
+
   </a>
 </li>
       </ul>
@@ -118,7 +117,7 @@
 </div>
 <!--/.navbar -->
 
-      
+
 
       </header><div class="row">
   <div class="col-md-9 contents">
@@ -126,7 +125,7 @@
       <h1 data-toc-skip>Space-time (tensor product) model in Ngme2</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/HEAD/vignettes/tensor_product.Rmd" class="external-link"><code>vignettes/tensor_product.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/devel/vignettes/tensor_product.Rmd" class="external-link"><code>vignettes/tensor_product.Rmd</code></a></small>
       <div class="hidden name"><code>tensor_product.Rmd</code></div>
 
     </div>
@@ -146,23 +145,33 @@ found in Cameletti et al. (2013).</p>
 <div class="section level2">
 <h2 id="model-structure">Model structure<a class="anchor" aria-label="anchor" href="#model-structure"></a>
 </h2>
-<p>For the usual model, we have the following structure: <span class="math display">\[ \mathbf{K} \mathbf{X}(s) =
-\boldsymbol{\epsilon},\]</span> where <span class="math inline">\(\mathbf{K}\)</span> is some operator matrix, <span class="math inline">\(\boldsymbol{\epsilon}\)</span> represents the
-noise (Gaussian or non-Gaussian).</p>
-<p>In the tensor product model, the operator matrix <span class="math inline">\(K\)</span> can be constructed by other two
-operator matrices of two models:</p>
-<p><span class="math display">\[K = K_l \otimes K_r,\]</span> where
-<span class="math inline">\(K_l\)</span> and <span class="math inline">\(K_r\)</span> are the operator matrices of the
-first and second models, respectively.</p>
+<p>For the usual model, we have the following structure:
+<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>𝐊</mi><mi>𝐗</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mi>𝛜</mi><mo>,</mo></mrow><annotation encoding="application/x-tex"> \mathbf{K} \mathbf{X}(s) = \boldsymbol{\epsilon},</annotation></semantics></math>
+where
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>𝐊</mi><annotation encoding="application/x-tex">\mathbf{K}</annotation></semantics></math>
+is some operator matrix,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>𝛜</mi><annotation encoding="application/x-tex">\boldsymbol{\epsilon}</annotation></semantics></math>
+represents the noise (Gaussian or non-Gaussian).</p>
+<p>In the tensor product model, the operator matrix
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>
+can be constructed by other two operator matrices of two models:</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>K</mi><mo>=</mo><msub><mi>K</mi><mi>l</mi></msub><mo>⊗</mo><msub><mi>K</mi><mi>r</mi></msub><mo>,</mo></mrow><annotation encoding="application/x-tex">K = K_l \otimes K_r,</annotation></semantics></math>
+where
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>K</mi><mi>l</mi></msub><annotation encoding="application/x-tex">K_l</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>K</mi><mi>r</mi></msub><annotation encoding="application/x-tex">K_r</annotation></semantics></math>
+are the operator matrices of the first and second models,
+respectively.</p>
 </div>
 <div class="section level2">
 <h2 id="a-toy-example">A toy example<a class="anchor" aria-label="anchor" href="#a-toy-example"></a>
 </h2>
 <p>To use the space-time model, we need to first define the mesh of the
-model, i.e., the discretization of the space-time domain (time <span class="math inline">\(\times\)</span> location). It can be done by
-providing the mesh for each. For example, we can provide the same mesh
-as in the regular spatial model, and also provide the mesh for the time
-index.</p>
+model, i.e., the discretization of the space-time domain (time
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>×</mo><annotation encoding="application/x-tex">\times</annotation></semantics></math>
+location). It can be done by providing the mesh for each. For example,
+we can provide the same mesh as in the regular spatial model, and also
+provide the mesh for the time index.</p>
 <p>The R interface for tensor product model requires map as a list of 2
 indices and 2 operators namely <code>first</code> (time) and
 <code>second</code> (space) to build the model.</p>
@@ -192,9 +201,8 @@ the time index (year).</p>
 <span><span class="co">#&gt; 7  2004 8.4731194 9.513628</span></span>
 <span><span class="co">#&gt; 8  2004 6.8851465 9.739844</span></span>
 <span><span class="co">#&gt; 9  2002 7.1672573 7.647669</span></span>
-<span><span class="co">#&gt; 10 2002 0.7615558 4.748097</span></span></code></pre></div>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
+<span><span class="co">#&gt; 10 2002 0.7615558 4.748097</span></span>
+<span></span>
 <span></span>
 <span><span class="co"># create the mesh for space (2d location)</span></span>
 <span><span class="va">mesh</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://inlabru-org.github.io/fmesher/reference/fm_mesh_2d.html" class="external-link">fm_mesh_2d</a></span><span class="op">(</span></span>
@@ -204,7 +212,7 @@ the time index (year).</p>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">mesh</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tensor_product_files/figure-html/setup-1.png" width="700"></p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="co"># define the space-time model</span></span>
 <span><span class="va">m0</span> <span class="op">&lt;-</span> <span class="fu">ngme2</span><span class="fu">::</span><span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
@@ -229,7 +237,7 @@ the time index (year).</p>
 <h2 id="a-ar1-x-matern-2d-example">A AR(1) x Matern 2d example<a class="anchor" aria-label="anchor" href="#a-ar1-x-matern-2d-example"></a>
 </h2>
 <p>Now let’s turn to simulate and estimate this type of model.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">##############################  simulation</span></span>
 <span><span class="va">mesh2d</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://inlabru-org.github.io/fmesher/reference/fm_mesh_2d.html" class="external-link">fm_mesh_2d</a></span><span class="op">(</span></span>
 <span>  loc.domain <span class="op">=</span> <span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span> <span class="op">*</span> <span class="fl">10</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">0</span><span class="op">)</span> <span class="op">*</span> <span class="fl">5</span><span class="op">)</span>,</span>
@@ -237,9 +245,8 @@ the time index (year).</p>
 <span>  cutoff <span class="op">=</span> <span class="fl">0.1</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">mesh2d</span><span class="op">$</span><span class="va">n</span></span>
-<span><span class="co">#&gt; [1] 256</span></span></code></pre></div>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
+<span><span class="co">#&gt; [1] 256</span></span>
+<span></span>
 <span><span class="co"># generate random loc for each year</span></span>
 <span><span class="va">n_obs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">102</span>, <span class="fl">85</span>, <span class="fl">120</span>, <span class="fl">105</span>, <span class="fl">109</span>, <span class="fl">100</span><span class="op">)</span> <span class="co"># observation for each year</span></span>
 <span><span class="va">year</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">2001</span><span class="op">:</span><span class="fl">2006</span>, times <span class="op">=</span> <span class="va">n_obs</span><span class="op">)</span></span>
@@ -261,7 +268,7 @@ the time index (year).</p>
 <span><span class="va">Y_obs</span> <span class="op">&lt;-</span> <span class="va">W</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">W</span><span class="op">)</span>, sd <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span>
 <span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">year</span>, <span class="va">x</span>, <span class="va">y</span>, <span class="va">Y_obs</span><span class="op">)</span></span></code></pre></div>
 <p>Next we run the estimation:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">##############################  estimation</span></span>
 <span><span class="va">ngme_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
 <span>  <span class="va">Y_obs</span> <span class="op">~</span> <span class="fl">0</span> <span class="op">+</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
@@ -289,9 +296,8 @@ the time index (year).</p>
 <span><span class="co">#&gt; Posterior sampling done! </span></span>
 <span><span class="co">#&gt; Note:</span></span>
 <span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
-<span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span></code></pre></div>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
+<span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
+<span></span>
 <span><span class="va">ngme_fit</span></span>
 <span><span class="co">#&gt; *** Ngme object ***</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -302,32 +308,46 @@ the time index (year).</p>
 <span><span class="co">#&gt; $tp</span></span>
 <span><span class="co">#&gt;   Model type: Tensor product</span></span>
 <span><span class="co">#&gt;       first: AR(1)</span></span>
-<span><span class="co">#&gt;           rho = 0.514</span></span>
+<span><span class="co">#&gt;           rho = 0.612</span></span>
 <span><span class="co">#&gt;       second: Matern</span></span>
-<span><span class="co">#&gt;           kappa = 1.13</span></span>
+<span><span class="co">#&gt;           kappa = 1.41</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -1.28</span></span>
-<span><span class="co">#&gt;       sigma = 1.96</span></span>
-<span><span class="co">#&gt;       nu = 4.3</span></span>
+<span><span class="co">#&gt;       mu = -2.79</span></span>
+<span><span class="co">#&gt;       sigma = 1.9</span></span>
+<span><span class="co">#&gt;       nu = 3.56</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.47</span></span>
+<span><span class="co">#&gt;       sigma = 0.463</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre></div>
 <p>To see the results of estimation, we can use <code>traceplot</code>
 function.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">ngme_fit</span>, <span class="st">"tp"</span>, hline<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>rho<span class="op">=</span><span class="fl">0.5</span>, kappa<span class="op">=</span><span class="fl">1</span>, mu<span class="op">=</span><span class="op">-</span><span class="fl">2</span>, sigma<span class="op">=</span><span class="fl">1</span>, nu<span class="op">=</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tensor_product_files/figure-html/unnamed-chunk-3-1.png" width="700"></p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># compare noise density</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span>mu<span class="op">=</span><span class="op">-</span><span class="fl">2</span>, sigma<span class="op">=</span><span class="fl">1</span>, nu<span class="op">=</span><span class="fl">2</span><span class="op">)</span>, <span class="fu"><a href="../reference/ngme_result.html">ngme_result</a></span><span class="op">(</span><span class="va">ngme_fit</span>, <span class="st">"tp"</span><span class="op">)</span><span class="op">$</span><span class="va">noise</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Last estimates:</span></span>
+<span><span class="co">#&gt; $rho</span></span>
+<span><span class="co">#&gt; [1] 0.6117037</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $kappa</span></span>
+<span><span class="co">#&gt; [1] 1.408582</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $mu</span></span>
+<span><span class="co">#&gt; [1] -2.782159</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $sigma</span></span>
+<span><span class="co">#&gt; [1] 1.9268</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $nu</span></span>
+<span><span class="co">#&gt; [1] 4.07738</span></span>
+<span><span class="co"># compare noise density</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span>mu<span class="op">=</span><span class="op">-</span><span class="fl">2</span>, sigma<span class="op">=</span><span class="fl">1</span>, nu<span class="op">=</span><span class="fl">2</span><span class="op">)</span>, <span class="fu"><a href="../reference/ngme_result.html">ngme_result</a></span><span class="op">(</span><span class="va">ngme_fit</span>, <span class="st">"tp"</span><span class="op">)</span><span class="op">$</span><span class="va">noise</span><span class="op">)</span></span></code></pre>
 <p><img src="tensor_product_files/figure-html/unnamed-chunk-3-2.png" width="700"></p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># traceplot(ngme_fit)</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -335,7 +355,7 @@ function.</p>
 </h2>
 <p>Next we will show how to do prediction at unknown year and
 location.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># new predict location</span></span>
 <span><span class="va">n_new</span> <span class="op">&lt;-</span> <span class="fl">10</span></span>
 <span><span class="co"># generate time randomly of length n</span></span>
@@ -349,28 +369,28 @@ location.</p>
 <span>  pos<span class="op">=</span><span class="va">loc_new</span></span>
 <span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; $mean</span></span>
-<span><span class="co">#&gt;  [1]  0.11076131  0.25521114 -0.23393493  0.02202567 -0.15007069 -0.26155805</span></span>
-<span><span class="co">#&gt;  [7] -0.62394231  0.00000000  0.00000000  0.12252419</span></span>
+<span><span class="co">#&gt;  [1]  0.15402522  0.00000000  0.00000000 -0.26943856 -0.03685697 -0.05401719</span></span>
+<span><span class="co">#&gt;  [7]  0.00000000  0.10208244  0.07721798  0.00000000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sd</span></span>
-<span><span class="co">#&gt;  [1] 0.3557793 0.2924080 0.4802204 0.4047148 0.3371403 0.3789182 0.2990750</span></span>
-<span><span class="co">#&gt;  [8] 0.0000000 0.0000000 0.2920359</span></span>
+<span><span class="co">#&gt;  [1] 0.6268652 0.0000000 0.0000000 0.5921412 0.2896545 0.6388063 0.0000000</span></span>
+<span><span class="co">#&gt;  [8] 0.7446952 0.7516926 0.0000000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`5quantile`</span></span>
-<span><span class="co">#&gt;  [1] -0.5109521 -0.2328689 -0.9995056 -0.6258928 -0.6556876 -0.8882341</span></span>
-<span><span class="co">#&gt;  [7] -1.0958471  0.0000000  0.0000000 -0.3041830</span></span>
+<span><span class="co">#&gt;  [1] -0.8178946  0.0000000  0.0000000 -1.3331099 -0.4997416 -1.1380827</span></span>
+<span><span class="co">#&gt;  [7]  0.0000000 -1.1204562 -1.0900590  0.0000000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`95quantile`</span></span>
-<span><span class="co">#&gt;  [1]  0.6455526  0.7348335  0.5897497  0.6951214  0.3435178  0.3512717</span></span>
-<span><span class="co">#&gt;  [7] -0.1221288  0.0000000  0.0000000  0.5972997</span></span>
+<span><span class="co">#&gt;  [1] 1.0511004 0.0000000 0.0000000 0.5203771 0.3994101 0.9570110 0.0000000</span></span>
+<span><span class="co">#&gt;  [8] 1.1488012 1.1393878 0.0000000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $median</span></span>
-<span><span class="co">#&gt;  [1]  0.105589164  0.267562606 -0.222658876 -0.004439151 -0.136869210</span></span>
-<span><span class="co">#&gt;  [6] -0.298346533 -0.624474389  0.000000000  0.000000000  0.109596491</span></span>
+<span><span class="co">#&gt;  [1]  0.16774997  0.00000000  0.00000000 -0.19045306 -0.01645242  0.01195739</span></span>
+<span><span class="co">#&gt;  [7]  0.00000000  0.15422368  0.10415882  0.00000000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $mode</span></span>
-<span><span class="co">#&gt;  [1]  0.07470627  0.24344197 -0.36707037  0.03183859 -0.08161654 -0.37972631</span></span>
-<span><span class="co">#&gt;  [7] -0.64299749  0.00000000  0.00000000  0.04306675</span></span></code></pre></div>
+<span><span class="co">#&gt;  [1] -0.093771178  0.000000000  0.000000000  0.036899619 -0.004425658</span></span>
+<span><span class="co">#&gt;  [6]  0.064163536  0.000000000  0.609580576 -0.444388133  0.000000000</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
@@ -386,9 +406,7 @@ SPDE approach. AStA Advances in Statistical Analysis, 97(2), 109-131. <a href="h
 
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
 
-        <nav id="toc" data-toggle="toc"><h2 data-toc-skip>Contents</h2>
-    </nav>
-</div>
+      </div>
 
 </div>
 
@@ -401,16 +419,16 @@ SPDE approach. AStA Advances in Statistical Analysis, 97(2), 109-131. <a href="h
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.9.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
 </div>
 
       </footer>
 </div>
 
-  
 
 
-  
+
+
 
   </body>
 </html>

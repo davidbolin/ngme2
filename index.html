@@ -13,13 +13,14 @@
 <!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="pkgdown.css" rel="stylesheet">
 <script src="pkgdown.js"></script><meta property="og:title" content="Latent Mixed Effects Models with Flexible Distributions">
 <meta property="og:description" content="Inference and prediction for linear mixed effects models with flexible non-Gaussian and Gaussian distributions.">
+<meta property="og:image" content="https://davidbolin.github.io/ngme2/logo.png">
 <!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
 <![endif]-->
 </head>
 <body data-spy="scroll" data-target="#toc">
-    
+
 
     <div class="container template-home">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
@@ -48,7 +49,7 @@
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Vignettes
-     
+
     <span class="caret"></span>
   </a>
   <ul class="dropdown-menu" role="menu">
@@ -101,13 +102,13 @@
 <li>
   <a href="https://github.com/davidbolin/ngme2" class="external-link">
     <span class="fa fa-github"></span>
-     
+
   </a>
 </li>
 <li>
   <a href="https://twitter.com/jdavidbolin" class="external-link">
     <span class="fa fa-twitter"></span>
-     
+
   </a>
 </li>
       </ul>
@@ -118,7 +119,7 @@
 </div>
 <!--/.navbar -->
 
-      
+
 
       </header><div class="row">
   <div class="contents col-md-9">
@@ -130,11 +131,13 @@
 <div class="section level2">
 <h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
-<p>Several popular Gaussian random field models can be represented as solutions to stochastic partial differential equations (SPDEs) of the form <span class="math display"><em>L</em><sup><em>β</em></sup>(<em>τ</em><em>u</em>) = 𝒲.</span> Here <span class="math inline">𝒲</span> is a Gaussian white noise, <span class="math inline"><em>L</em></span> is a second-order differential operator, the fractional power <span class="math inline"><em>β</em> &gt; 0</span> determines the smoothness of u. See <a href="https://rss.onlinelibrary.wiley.com/doi/full/10.1111/j.1467-9868.2011.00777.x" class="external-link">An explicit link between Gaussian fields and Gaussian Markov random fields: the stochastic partial differential equation approach</a> for further details.</p>
-<p>This package aims to address the non-Gaussian extension to the SPDE approach model by replacing the driven noise <span class="math inline">𝒲</span> to be a non-Gaussian noise <span class="math inline">ℳ</span>. More specificly, a type-G Lévy process.</p>
-<p>The increment of a type-G Lévy process can be represented as <span class="math display">$$
+<p>Several popular Gaussian random field models can be represented as solutions to stochastic partial differential equations (SPDEs) of the form <math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>L</mi><mi>β</mi></msup><mrow><mo stretchy="true" form="prefix">(</mo><mi>τ</mi><mi>u</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mi>𝒲</mi><mi>.</mi></mrow><annotation encoding="application/x-tex">
+L^\beta (\tau u) = \mathcal{W}.
+</annotation></semantics></math> Here <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>𝒲</mi><annotation encoding="application/x-tex">\mathcal{W}</annotation></semantics></math> is a Gaussian white noise, <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>L</mi><annotation encoding="application/x-tex">L</annotation></semantics></math> is a second-order differential operator, the fractional power <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>β</mi><mo>&gt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\beta &gt; 0</annotation></semantics></math> determines the smoothness of u. See <a href="https://rss.onlinelibrary.wiley.com/doi/full/10.1111/j.1467-9868.2011.00777.x" class="external-link">An explicit link between Gaussian fields and Gaussian Markov random fields: the stochastic partial differential equation approach</a> for further details.</p>
+<p>This package aims to address the non-Gaussian extension to the SPDE approach model by replacing the driven noise <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>𝒲</mi><annotation encoding="application/x-tex">\mathcal{W}</annotation></semantics></math> to be a non-Gaussian noise <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ℳ</mi><annotation encoding="application/x-tex">\mathcal{M}</annotation></semantics></math>. More specificly, a type-G Lévy process.</p>
+<p>The increment of a type-G Lévy process can be represented as <math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>γ</mi><mo>+</mo><mi>μ</mi><mi>V</mi><mo>+</mo><mi>σ</mi><msqrt><mi>V</mi></msqrt><mi>Z</mi><mo>,</mo></mrow><annotation encoding="application/x-tex">
 \gamma + \mu V + \sigma \sqrt{V}Z,
-$$</span> where <span class="math inline"><em>γ</em>, <em>μ</em></span> are parameters, <span class="math inline"><em>Z</em> ∼ <em>N</em>(0,1)</span> and is independent of <span class="math inline"><em>V</em></span>, and <span class="math inline"><em>V</em></span> is a positive infinitely divisible random variable.</p>
+</annotation></semantics></math> where <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>γ</mi><mo>,</mo><mi>μ</mi></mrow><annotation encoding="application/x-tex">\gamma, \mu</annotation></semantics></math> are parameters, <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Z</mi><mo>∼</mo><mi>N</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">Z\sim N(0,1)</annotation></semantics></math> and is independent of <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>V</mi><annotation encoding="application/x-tex">V</annotation></semantics></math>, and <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>V</mi><annotation encoding="application/x-tex">V</annotation></semantics></math> is a positive infinitely divisible random variable.</p>
 <p>One example is the normal inverse Gaussian (NIG) noise. (See <code>vignette("SPDE-approach", package = "ngme2")</code> for more details)</p>
 </div>
 <div class="section level2">
@@ -166,7 +169,8 @@ $$</span> where <span class="math inline"><em>γ</em>, <em>μ</em></span> are 
 <div class="license">
 <h2 data-toc-skip>License</h2>
 <ul class="list-unstyled">
-<li>GPL (&gt;= 2)</li>
+<li>GPL (&gt;= 3) | file <a href="LICENSE-text.html">LICENSE</a>
+</li>
 </ul>
 </div>
 
@@ -201,16 +205,16 @@ $$</span> where <span class="math inline"><em>γ</em>, <em>μ</em></span> are 
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.9.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
 </div>
 
       </footer>
 </div>
 
-  
 
 
-  
+
+
 
   </body>
 </html>

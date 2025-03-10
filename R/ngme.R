@@ -316,9 +316,10 @@ update_ngme_est <- function(
     # convert U back to UDV^t
     X <- ngme_replicate$svd$u %*% diag(ngme_replicate$svd$d) %*% t(ngme_replicate$svd$v)
     colnames(X) <- colnames(ngme_replicate$X)
-    ngme_replicate$X <- X
-    ngme_replicate$X
+    nrow_one_repl = nrow(ngme_replicate$X)
+    ngme_replicate$X <- X[1:nrow_one_repl, ]
   }
+
 
   ngme_replicate$noise <- update_noise(ngme_replicate$noise, new_noise = est_output$noise)
   for (i in seq_along(ngme_replicate$models)) {

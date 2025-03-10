@@ -101,7 +101,7 @@ random generation for the generalised inverse-Gaussian distribution
   <div class="col-md-9 contents">
     <div class="page-header">
     <h1>The Generalised Inverse-Gaussian (GIG) Distribution</h1>
-    <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/devel/R/distributions.R" class="external-link"><code>R/distributions.R</code></a></small>
+    <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/test/R/distributions.R" class="external-link"><code>R/distributions.R</code></a></small>
     <div class="hidden name"><code>gig.Rd</code></div>
     </div>
 
@@ -189,9 +189,10 @@ New York–Berlin: Springer-Verlag. <a href="https://doi.org/10.1007/978-1-4612-
     <div id="ref-examples">
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">rgig</span><span class="op">(</span><span class="fl">20</span>, p <span class="op">=</span> <span class="fl">1</span>, a <span class="op">=</span> <span class="fl">1</span>, b <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [1] 3.0268133 1.7125289 2.1537123 4.2680125 3.7127099 7.0684839 1.0311199</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [8] 0.5480734 4.8584068 2.3706979 1.3586274 5.6203886 2.8557719 0.5318383</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [15] 1.5720721 0.7241972 1.5525875 0.4440244 1.7110722 3.2800842</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [1]  2.3827973  6.0370313  0.3867328  3.8693916  2.9199098  6.3884229</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [7]  5.9779023  3.2839452 11.1053732  0.6534453  0.7587914  2.8115241</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [13]  3.2699192  5.7604195  2.9214936  3.5376235  1.4561011  1.6051855</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [19]  2.7988311  4.8644552</span>
 <span class="r-in"><span><span class="fu">pgig</span><span class="op">(</span><span class="fl">0.4</span>, p <span class="op">=</span> <span class="fl">1</span>, a <span class="op">=</span> <span class="fl">1</span>, b <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.02956016</span>
 <span class="r-in"><span><span class="fu">qgig</span><span class="op">(</span><span class="fl">0.8</span>, p <span class="op">=</span> <span class="fl">1</span>, a <span class="op">=</span> <span class="fl">1</span>, b <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>

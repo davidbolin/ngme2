@@ -269,22 +269,22 @@ optioins.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt;     x1     x2 </span></span>
-<span><span class="co">#&gt; -0.906  2.251 </span></span>
+<span><span class="co">#&gt; -0.907  2.251 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $my_ar</span></span>
 <span><span class="co">#&gt;   Model type: AR(1)</span></span>
-<span><span class="co">#&gt;       rho = 0.467</span></span>
+<span><span class="co">#&gt;       rho = 0.466</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -2.58</span></span>
+<span><span class="co">#&gt;       mu = -2.57</span></span>
 <span><span class="co">#&gt;       sigma = 4.06</span></span>
-<span><span class="co">#&gt;       nu = 0.323</span></span>
+<span><span class="co">#&gt;       nu = 0.319</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 2.1</span></span>
+<span><span class="co">#&gt;       sigma = 2.09</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span>
@@ -294,29 +294,29 @@ optioins.</p>
 <p><img src="AR1-model_files/figure-html/ar-estimation-1.png" width="700" style="display: block; margin: auto;"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 2.102297</span></span>
+<span><span class="co">#&gt; [1] 2.091547</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`fixed effect 1`</span></span>
-<span><span class="co">#&gt; [1] -0.8953399</span></span>
+<span><span class="co">#&gt; [1] -0.8968195</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`fixed effect 2`</span></span>
-<span><span class="co">#&gt; [1] 2.249814</span></span>
+<span><span class="co">#&gt; [1] 2.250449</span></span>
 <span></span>
 <span><span class="co"># traceplot of ar1 model</span></span>
 <span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">ngme_out</span>, <span class="st">"my_ar"</span>, hline<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="op">-</span><span class="fl">3</span>, <span class="fl">4</span>, <span class="fl">0.4</span><span class="op">)</span><span class="op">)</span></span></code></pre>
 <p><img src="AR1-model_files/figure-html/ar-estimation-2.png" width="700" style="display: block; margin: auto;"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $rho</span></span>
-<span><span class="co">#&gt; [1] 0.4662153</span></span>
+<span><span class="co">#&gt; [1] 0.4664433</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $mu</span></span>
-<span><span class="co">#&gt; [1] -2.576099</span></span>
+<span><span class="co">#&gt; [1] -2.571704</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 4.063496</span></span>
+<span><span class="co">#&gt; [1] 4.064808</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nu</span></span>
-<span><span class="co">#&gt; [1] 0.3233646</span></span>
+<span><span class="co">#&gt; [1] 0.3194337</span></span>
 <span></span>
 <span><span class="co"># Use ngme_result to extract the latent part</span></span>
 <span></span>

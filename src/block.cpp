@@ -711,6 +711,7 @@ Rcpp::List BlockModel::sampling(
 ) {
   std::vector<VectorXd> AWs; // blockA * blockW
   std::vector<VectorXd> Ws; // blockW
+  std::vector<VectorXd> cond_Ws; // blockW
   std::vector<VectorXd> Vs; // blockV
   std::vector<VectorXd> mn_Vs; // measurement nosie V
 
@@ -720,6 +721,7 @@ Rcpp::List BlockModel::sampling(
     if (posterior) {
       // sample_cond_V(false);
       sample_cond_V(true);
+  // std::cout << " V=" << noise_V << std::endl;
       sampleW_VY();
       sample_cond_noise_V(true);
     } else {
@@ -731,14 +733,15 @@ Rcpp::List BlockModel::sampling(
     AWs.push_back(A * getW());
     Ws.push_back(getW());
     Vs.push_back(getV());
+    cond_Ws.push_back(get_cond_W());
     // mn_Vs.push_back(var.getV());
   }
 
   return Rcpp::List::create(
     Rcpp::Named("AW") = AWs,
     Rcpp::Named("W") = Ws,
-    Rcpp::Named("V") = Vs
-    // Rcpp::Named("noise_V") = mn_Vs
+    Rcpp::Named("V") = Vs,
+    Rcpp::Named("cond_W") = cond_Ws
   );
 }
 

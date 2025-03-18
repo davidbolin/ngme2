@@ -204,6 +204,18 @@ simulate.ngme <- function(
       # add measurement noise
       if (m_noise) Y[repl_idx] <- Y[repl_idx] + sim_noise
     }
+    
+    # If Y is correlated, we need to re-order the simulated Y to match the original Y
+    corr = object$replicates[[1]]$noise$corr_measurement
+    if (corr) {
+      Y <- Y[order(object$repls_ngme)]
+      data_dix <- c()
+      for (repl in levels(replicate)) {
+        data_dix <- c(data_dix, object$replicate[[repl]]$data_idx)
+      }
+      Y <- Y[order(data_dix)]
+    }
+
     sims[[paste0("sim_", nn)]] <- Y
   }
 

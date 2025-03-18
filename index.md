@@ -1,4 +1,4 @@
-# The `ngme2` Package  <img src="man/figures/logo.png" align="right" />
+# The `ngme2` Package  <img src="man/figures/logo.png" align="right" width="80" height="80" />
 
 `ngme2` is an R package used for fitting non-gaussian mixed effects models. These models are fitted using maximum likelihood estimation and preconditioned stochastic gradient descent.
 

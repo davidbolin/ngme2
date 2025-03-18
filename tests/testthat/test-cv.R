@@ -65,14 +65,14 @@ test_that("test cross validation (NIG and gaussian)", {
   ret_gauss <- readRDS("examples/models/ret_gauss.rds")
   ret_nig <- readRDS("examples/models/ret_nig.rds")
 
-  seed <- 1234
+  seed <- 500
   cv <- cross_validation(
     list(gauss=ret_gauss, nig=ret_nig),
     k=20,
     parallel=FALSE,
     n_gibbs_samples=100,
     print=TRUE,
-    N_sim=1,
+    N_sim=4,
     seed=seed+50
   )
   cv

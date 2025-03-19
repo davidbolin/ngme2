@@ -714,14 +714,13 @@ Rcpp::List BlockModel::sampling(
   std::vector<VectorXd> cond_Ws; // blockW
   std::vector<VectorXd> Vs; // blockV
   std::vector<VectorXd> mn_Vs; // measurement nosie V
+  rao_blackwell = true;
 
-  burn_in(n_burnin);
+  if (!all_gaussian) burn_in(n_burnin);
 
   for (int i=0; i < n; i++) {
     if (posterior) {
-      // sample_cond_V(false);
-      sample_cond_V(true);
-  // std::cout << " V=" << noise_V << std::endl;
+      if (!all_gaussian) sample_cond_V(true);
       sampleW_VY();
       sample_cond_noise_V(true);
     } else {

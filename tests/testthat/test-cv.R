@@ -184,8 +184,7 @@ test_that("test R and C version of prediction are the same", {
       data = data.frame(Y = Y_new),
       family = noise_normal(sigma=sigma_eps),
       control_opt = control_opt(
-        estimation = FALSE,
-        rao_blackwellization = TRUE
+        estimation = FALSE
       )
     )
 
@@ -193,6 +192,7 @@ test_that("test R and C version of prediction are the same", {
     # Check that the A matrix is the same as the one used in the C++ code
     expect_true(all(ngme_model$replicates[[1]]$models[[1]]$A == A_obs[-i, ]))
     
+    time_start <- Sys.time()
     ret = sampling_cpp(
       ngme_repl,
       n = 100,
@@ -200,6 +200,8 @@ test_that("test R and C version of prediction are the same", {
       seed = seed,
       posterior = TRUE
     )
+    time_end <- Sys.time()
+    print(paste0("time taken: ", time_end - time_start))
 
     if (gaussian){
       last_m_cpp <- ret$cond_W[[100]]

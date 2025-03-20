@@ -364,46 +364,72 @@ ggplot() +
 ```
 
 ```{r fit-parana, cache=TRUE}
-out <- ngme(
+# Define the control options
+control = control_opt(
+  iterations = 3000,
+  n_slope_check = 4,
+  stop_points = 10,
+  std_lim = 0.1,
+  n_parallel_chain = 4,
+  print_check_info = FALSE,
+  seed = 16
+)
+
+m_gauss_nig <- ngme(
   formula = Y ~ 1 +
     f(seaDist, name="rw1", model = "rw1", noise = noise_normal()) +
     f(coords, model = "matern", mesh = prmesh, name="spde", noise = noise_normal()),
   data = data.frame(Y = Y),
-  family = "nig",
-  control_opt = control_opt(
-    estimation = T,
-    iterations = 1000,
-    n_slope_check = 4,
-    stop_points = 10,
-    std_lim = 0.1,
-    n_parallel_chain = 4,
-    print_check_info = FALSE,
-    seed = 16
-  )
+  family = noise_nig(),
+  control_opt = control
 )
-out
+m_gauss_nig
 
 # traceplots
 ## fixed effects and measurement error
-traceplot(out)
+traceplot(m_gauss_nig)
 
 ## spde model
-traceplot(out, "spde")
+traceplot(m_gauss_nig, "spde")
 ```
 
 Parameter estimation results:
 
 ```{r est-result, echo=FALSE}
-res1 <- data.frame(
-  intercept    = format(out$replicates[[1]]$feff, digits=3),
-  noise_mu     = format(out$replicates[[1]]$noise$theta_mu, digits=3),
-  noise_sigma  = format(exp(out$replicates[[1]]$noise$theta_sigma), digits=3),
-  noise_nu     = format(exp(out$replicates[[1]]$noise$theta_nu), digits=3),
-  rw_sigma     = format(out$replicates[[1]]$models[[1]]$noise$theta_sigma, digits=3),
-  ma_kappa     = format(exp(out$replicates[[1]]$models[[2]]$theta_K), digits=3),
-  ma_sigma     = format(exp(out$replicates[[1]]$models[[2]]$noise$theta_sigma), digits=3)
+res_gauss_nig <- data.frame(
+  intercept    = format(m_gauss_nig$replicates[[1]]$feff, digits=3),
+  noise_mu     = format(m_gauss_nig$replicates[[1]]$noise$theta_mu, digits=3),
+  noise_sigma  = format(exp(m_gauss_nig$replicates[[1]]$noise$theta_sigma), digits=3),
+  noise_nu     = format(exp(m_gauss_nig$replicates[[1]]$noise$theta_nu), digits=3),
+  rw_sigma     = format(m_gauss_nig$replicates[[1]]$models[[1]]$noise$theta_sigma, digits=3),
+  ma_kappa     = format(exp(m_gauss_nig$replicates[[1]]$models[[2]]$theta_K), digits=3),
+  ma_sigma     = format(exp(m_gauss_nig$replicates[[1]]$models[[2]]$noise$theta_sigma), digits=3)
 )
-knitr::kable(res1, caption = "Estimations for the model")
+knitr::kable(res_gauss_nig, caption = "Estimations for the model")
+```
+
+Similarily, we can fit some different models:
+
+```{r fit-different-models, echo=FALSE, cache=TRUE}
+m_gauss_gauss <- ngme(
+  formula = Y ~ 1 +
+    f(seaDist, name="rw1", model = "rw1", noise = noise_normal()) +
+    f(coords, model = "matern", mesh = prmesh, name="spde", noise = noise_normal()),
+  data = data.frame(Y = Y),
+  family = noise_normal(),
+  control_opt = control
+)
+m_gauss_gauss
+
+m_nig_nig <- ngme(
+  formula = Y ~ 1 +
+    f(seaDist, name="rw1", model = "rw1", noise = noise_nig()) +
+    f(coords, model = "matern", mesh = prmesh, name="spde", noise = noise_nig()),
+  data = data.frame(Y = Y),
+  family = noise_nig(),
+  control_opt = control
+)
+m_nig_nig
 ```
 
 ### Prediction
@@ -428,7 +454,7 @@ seaDist.prd <- apply(spDists(coord.prd,
 ), 1, min)
 
 # doing prediction by giving the predict location
-pds <- predict(out, map=list(rw1=seaDist.prd, spde=coord.prd))
+pds <- predict(m_gauss_nig, map=list(rw1=seaDist.prd, spde=coord.prd))
 lp <- pds$mean
 ggplot() +
   geom_point(aes(
@@ -452,5 +478,17 @@ ggplot() +
 We can further validate our model by using cross-validation method.
 
 ```{r cv, cache=TRUE}
-cross_validation(out, type="k-fold", k=10, print=TRUE)
+cv <- cross_validation(
+  list(
+    gauss_nig = m_gauss_nig,
+    gauss_gauss = m_gauss_gauss,
+    nig_nig = m_nig_nig
+  ), 
+  type="k-fold", 
+  k=10,
+  n_gibbs_samples = 2000,
+  n_burnin = 200
+)
+
+knitr::kable(cv, caption = "Cross-validation results")
 ```

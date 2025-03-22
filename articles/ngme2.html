@@ -125,7 +125,7 @@
       <h1 data-toc-skip>Ngme2 - A new Flexible R Package for Latent
 non-Gaussian Models</h1>
             
-            <h4 data-toc-skip class="date">2025-03-20</h4>
+            <h4 data-toc-skip class="date">2025-03-22</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/test/vignettes/ngme2.Rmd" class="external-link"><code>vignettes/ngme2.Rmd</code></a></small>
       <div class="hidden name"><code>ngme2.Rmd</code></div>
@@ -515,22 +515,22 @@ K =
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt; (Intercept)          x1          x2 </span></span>
-<span><span class="co">#&gt;       -2.88       -1.39        2.03 </span></span>
+<span><span class="co">#&gt;       -2.88       -1.38        2.03 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $my_ar</span></span>
 <span><span class="co">#&gt;   Model type: AR(1)</span></span>
-<span><span class="co">#&gt;       rho = 0.563</span></span>
+<span><span class="co">#&gt;       rho = 0.565</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = 1.91</span></span>
-<span><span class="co">#&gt;       sigma = 2.98</span></span>
-<span><span class="co">#&gt;       nu = 0.963</span></span>
+<span><span class="co">#&gt;       mu = 1.93</span></span>
+<span><span class="co">#&gt;       sigma = 2.97</span></span>
+<span><span class="co">#&gt;       nu = 0.967</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.561</span></span>
+<span><span class="co">#&gt;       sigma = 0.575</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre></div>
@@ -547,16 +547,16 @@ Parameters of the AR1 model
 </div>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $rho</span></span>
-<span><span class="co">#&gt; [1] 0.563124</span></span>
+<span><span class="co">#&gt; [1] 0.5647368</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $mu</span></span>
-<span><span class="co">#&gt; [1] 1.907802</span></span>
+<span><span class="co">#&gt; [1] 1.926566</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 2.976536</span></span>
+<span><span class="co">#&gt; [1] 2.965467</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nu</span></span>
-<span><span class="co">#&gt; [1] 0.9615419</span></span></code></pre>
+<span><span class="co">#&gt; [1] 0.9707294</span></span></code></pre>
 <p>We can also do a density comparison with the estimated noise and the
 true NIG noise:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
@@ -651,21 +651,21 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <span><span class="co">#&gt;       No parameter.</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.162</span></span>
+<span><span class="co">#&gt;       sigma = 0.158</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $spde</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
-<span><span class="co">#&gt;       kappa = 9.04</span></span>
+<span><span class="co">#&gt;       kappa = 8.95</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 66.7</span></span>
+<span><span class="co">#&gt;       sigma = 65.5</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = 0.514</span></span>
-<span><span class="co">#&gt;       sigma = 1.98</span></span>
-<span><span class="co">#&gt;       nu = 1.41</span></span>
+<span><span class="co">#&gt;       mu = 0.488</span></span>
+<span><span class="co">#&gt;       sigma = 1.99</span></span>
+<span><span class="co">#&gt;       nu = 1.26</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span>
@@ -676,26 +676,26 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <p><img src="ngme2_files/figure-html/fit-parana-1.png" width="700"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $mu</span></span>
-<span><span class="co">#&gt; [1] 0.5087072</span></span>
+<span><span class="co">#&gt; [1] 0.4867012</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 1.974641</span></span>
+<span><span class="co">#&gt; [1] 1.978664</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nu</span></span>
-<span><span class="co">#&gt; [1] 1.451759</span></span>
+<span><span class="co">#&gt; [1] 1.270492</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`fixed effect 1`</span></span>
-<span><span class="co">#&gt; [1] 11.83629</span></span>
+<span><span class="co">#&gt; [1] 11.77967</span></span>
 <span></span>
 <span><span class="co">## spde model</span></span>
 <span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">m_gauss_nig</span>, <span class="st">"spde"</span><span class="op">)</span></span></code></pre>
 <p><img src="ngme2_files/figure-html/fit-parana-2.png" width="700"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $kappa</span></span>
-<span><span class="co">#&gt; [1] 9.040067</span></span>
+<span><span class="co">#&gt; [1] 8.907505</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 66.9249</span></span></code></pre>
+<span><span class="co">#&gt; [1] 65.93206</span></span></code></pre>
 <p>Parameter estimation results:</p>
 <table style="width:100%;" class="table">
 <caption>Estimations for the model</caption>
@@ -722,12 +722,12 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <tbody><tr class="odd">
 <td align="left">(Intercept)</td>
 <td align="left">11.8</td>
-<td align="left">0.514</td>
-<td align="left">1.98</td>
-<td align="left">1.41</td>
-<td align="left">-1.82</td>
-<td align="left">9.04</td>
-<td align="left">66.7</td>
+<td align="left">0.488</td>
+<td align="left">1.99</td>
+<td align="left">1.26</td>
+<td align="left">-1.85</td>
+<td align="left">8.95</td>
+<td align="left">65.5</td>
 </tr></tbody>
 </table>
 <p>Similarily, we can fit some different models:</p>
@@ -754,7 +754,7 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $spde</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
-<span><span class="co">#&gt;       kappa = 16</span></span>
+<span><span class="co">#&gt;       kappa = 16.1</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
 <span><span class="co">#&gt;       sigma = 165</span></span>
@@ -777,7 +777,7 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt; (Intercept) </span></span>
-<span><span class="co">#&gt;        9.75 </span></span>
+<span><span class="co">#&gt;          15 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $rw1</span></span>
@@ -785,25 +785,62 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <span><span class="co">#&gt;       No parameter.</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = 0.395</span></span>
-<span><span class="co">#&gt;       sigma = 0.0286</span></span>
-<span><span class="co">#&gt;       nu = 93.9</span></span>
+<span><span class="co">#&gt;       mu = -0.881</span></span>
+<span><span class="co">#&gt;       sigma = 0.0788</span></span>
+<span><span class="co">#&gt;       nu = 12.8</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $spde</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
-<span><span class="co">#&gt;       kappa = 4.15</span></span>
+<span><span class="co">#&gt;       kappa = 16.4</span></span>
+<span><span class="co">#&gt;   Noise type: NORMAL</span></span>
+<span><span class="co">#&gt;   Noise parameters: </span></span>
+<span><span class="co">#&gt;       sigma = 166</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Measurement noise: </span></span>
+<span><span class="co">#&gt;   Noise type: NORMAL</span></span>
+<span><span class="co">#&gt;   Noise parameters: </span></span>
+<span><span class="co">#&gt;       sigma = 1.95</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Number of replicates is  1</span></span>
+<span><span class="co">#&gt; Starting estimation... </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Starting posterior sampling... </span></span>
+<span><span class="co">#&gt; Posterior sampling done! </span></span>
+<span><span class="co">#&gt; Note:</span></span>
+<span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
+<span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
+<span><span class="co">#&gt; *** Ngme object ***</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Fixed effects: </span></span>
+<span><span class="co">#&gt; (Intercept) </span></span>
+<span><span class="co">#&gt;        10.1 </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Models: </span></span>
+<span><span class="co">#&gt; $rw1</span></span>
+<span><span class="co">#&gt;   Model type: Random walk (order 1)</span></span>
+<span><span class="co">#&gt;       No parameter.</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = 9.45</span></span>
-<span><span class="co">#&gt;       sigma = 32.5</span></span>
-<span><span class="co">#&gt;       nu = 0.978</span></span>
+<span><span class="co">#&gt;       mu = 0.602</span></span>
+<span><span class="co">#&gt;       sigma = 0.0148</span></span>
+<span><span class="co">#&gt;       nu = 91.8</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $spde</span></span>
+<span><span class="co">#&gt;   Model type: Matern</span></span>
+<span><span class="co">#&gt;       kappa = 4.67</span></span>
+<span><span class="co">#&gt;   Noise type: NIG</span></span>
+<span><span class="co">#&gt;   Noise parameters: </span></span>
+<span><span class="co">#&gt;       mu = 9.36</span></span>
+<span><span class="co">#&gt;       sigma = 34.7</span></span>
+<span><span class="co">#&gt;       nu = 0.852</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = 0.256</span></span>
+<span><span class="co">#&gt;       mu = 0.301</span></span>
 <span><span class="co">#&gt;       sigma = 2.05</span></span>
-<span><span class="co">#&gt;       nu = 2.39</span></span>
+<span><span class="co">#&gt;       nu = 2.55</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre>
@@ -859,8 +896,9 @@ method.</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cross_validation.html">cross_validation</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    gauss_nig <span class="op">=</span> <span class="va">m_gauss_nig</span>,</span>
 <span>    gauss_gauss <span class="op">=</span> <span class="va">m_gauss_gauss</span>,</span>
+<span>    gauss_nig <span class="op">=</span> <span class="va">m_gauss_nig</span>,</span>
+<span>    nig_gauss <span class="op">=</span> <span class="va">m_nig_gauss</span>,</span>
 <span>    nig_nig <span class="op">=</span> <span class="va">m_nig_nig</span></span>
 <span>  <span class="op">)</span>, </span>
 <span>  type<span class="op">=</span><span class="st">"k-fold"</span>, </span>
@@ -869,14 +907,9 @@ method.</p>
 <span>  n_burnin <span class="op">=</span> <span class="fl">200</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">cv</span>, caption <span class="op">=</span> <span class="st">"Cross-validation results"</span><span class="op">)</span></span></code></pre></div>
-<table class="table kable_wrapper">
-<caption>
-Cross-validation results
-</caption>
-<tbody><tr>
-<td>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">cv</span><span class="op">$</span><span class="va">mean.scores</span>, caption <span class="op">=</span> <span class="st">"Cross-validation results"</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
+<caption>Cross-validation results</caption>
 <thead><tr class="header">
 <th align="left"></th>
 <th align="right">MAE</th>
@@ -886,64 +919,34 @@ Cross-validation results
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left">gauss_nig</td>
-<td align="right">1.753215</td>
-<td align="right">5.247251</td>
-<td align="right">1.903760</td>
-<td align="right">2.282906</td>
+<td align="left">gauss_gauss</td>
+<td align="right">1.718613</td>
+<td align="right">4.989854</td>
+<td align="right">1.884440</td>
+<td align="right">2.206221</td>
 </tr>
 <tr class="even">
-<td align="left">gauss_gauss</td>
-<td align="right">1.751130</td>
-<td align="right">5.190149</td>
-<td align="right">1.946775</td>
-<td align="right">2.261297</td>
-</tr>
-<tr class="odd">
-<td align="left">nig_nig</td>
-<td align="right">1.762620</td>
-<td align="right">5.323991</td>
-<td align="right">2.043964</td>
-<td align="right">2.719257</td>
-</tr>
-</tbody>
-</table>
-</td>
-<td>
-<table class="table">
-<thead><tr class="header">
-<th align="left"></th>
-<th align="right">MAE</th>
-<th align="right">MSE</th>
-<th align="right">neg.CRPS</th>
-<th align="right">neg.sCRPS</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
 <td align="left">gauss_nig</td>
-<td align="right">0.0026668</td>
-<td align="right">0.0112611</td>
-<td align="right">0.1498071</td>
-<td align="right">0.1422172</td>
+<td align="right">1.718076</td>
+<td align="right">5.043865</td>
+<td align="right">1.879980</td>
+<td align="right">2.280666</td>
+</tr>
+<tr class="odd">
+<td align="left">nig_gauss</td>
+<td align="right">1.719618</td>
+<td align="right">4.990036</td>
+<td align="right">1.879636</td>
+<td align="right">2.182613</td>
 </tr>
 <tr class="even">
-<td align="left">gauss_gauss</td>
-<td align="right">0.0025768</td>
-<td align="right">0.0117357</td>
-<td align="right">0.1790425</td>
-<td align="right">0.1670511</td>
-</tr>
-<tr class="odd">
 <td align="left">nig_nig</td>
-<td align="right">0.0042637</td>
-<td align="right">0.0289020</td>
-<td align="right">0.1682747</td>
-<td align="right">0.1891919</td>
+<td align="right">1.722942</td>
+<td align="right">5.100784</td>
+<td align="right">2.010780</td>
+<td align="right">2.696305</td>
 </tr>
 </tbody>
-</table>
-</td>
-</tr></tbody>
 </table>
 </div>
 </div>

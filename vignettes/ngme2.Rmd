@@ -421,6 +421,16 @@ m_gauss_gauss <- ngme(
 )
 m_gauss_gauss
 
+m_nig_gauss <- ngme(
+  formula = Y ~ 1 +
+    f(seaDist, name="rw1", model = "rw1", noise = noise_nig()) +
+    f(coords, model = "matern", mesh = prmesh, name="spde", noise = noise_normal()),
+  data = data.frame(Y = Y),
+  family = noise_normal(),
+  control_opt = control
+)
+m_nig_gauss
+
 m_nig_nig <- ngme(
   formula = Y ~ 1 +
     f(seaDist, name="rw1", model = "rw1", noise = noise_nig()) +
@@ -480,8 +490,9 @@ We can further validate our model by using cross-validation method.
 ```{r cv, cache=TRUE}
 cv <- cross_validation(
   list(
-    gauss_nig = m_gauss_nig,
     gauss_gauss = m_gauss_gauss,
+    gauss_nig = m_gauss_nig,
+    nig_gauss = m_nig_gauss,
     nig_nig = m_nig_nig
   ), 
   type="k-fold", 
@@ -490,5 +501,5 @@ cv <- cross_validation(
   n_burnin = 200
 )
 
-knitr::kable(cv, caption = "Cross-validation results")
+knitr::kable(cv$mean.scores, caption = "Cross-validation results")
 ```

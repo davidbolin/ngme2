@@ -18,7 +18,7 @@ navbar:
     articles:
       text: Vignettes
       menu:
-      - text: Installation and configuration
+      - text: Installation and configuration (using OpenMP)
         href: articles/Installation_and_configuration.html
       - text: Comparison with R-INLA
         href: articles/inla_compare.html

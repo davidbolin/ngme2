@@ -1,8 +1,8 @@
 ---
-title: "Installation and configuration"
+title: "Installation and configuration (using OpenMP)"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Installation and configuration}
+  %\VignetteIndexEntry{Installation and configuration (using OpenMP)}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -24,8 +24,6 @@ clang: error: unsupported option '-fopenmp'
 
 In order to make use of OpenMP to enable multi-threading in OS X, we need to
 use compilers which supports OpneMP.
-
-### Approach 1: Using the ~/.R/Makevars file (recommended)
 
 The macOS default Apple Clang compiler doesn't support OpenMP. To enable OpenMP functionality in packages like `ngme2`, we need to:
 
@@ -69,72 +67,9 @@ After making these changes, reinstall the `ngme2` package to take advantage of t
 remotes::install_github("davidbolin/ngme2", ref = "devel")
 ```
 
-### Approach 2: Set up LLVM Clang as your system compiler
-
-This approach involves installing LLVM/Clang and making it your default system compiler. This affects not just R but all compilation on your system.
-
-1. First, install LLVM using Homebrew:
-
-```
-brew install llvm
-```
-
-2. Add the LLVM binary directory to your PATH by adding this line to your shell profile (e.g., ~/.zshrc or ~/.bash_profile):
-
-```
-echo 'export PATH="/opt/homebrew/opt/llvm/bin:$PATH"' >> ~/.zshrc
-```
-
-3. Reload your shell profile or restart your terminal session:
-
-```
-source ~/.zshrc
-```
-
-4. Verify that LLVM's clang is now your default compiler:
-
-```
-which clang
-clang --version
-```
-
-5. Test that OpenMP is supported:
-
-```
-echo "#include <omp.h>
-#include <stdio.h>
-int main() {
-  #pragma omp parallel
-  {
-    printf(\"Hello from thread %d\\n\", omp_get_thread_num());
-  }
-  return 0;
-}" > test_omp.c
-
-clang -fopenmp test_omp.c -o test_omp
-./test_omp
-```
-
-If OpenMP is working correctly, you should see output from multiple threads.
-
-6. Configure R to use your system compiler by creating a `~/.R/Makevars` file:
-
-```
-mkdir -p ~/.R
-cat > ~/.R/Makevars << EOF
-SHLIB_OPENMP_CFLAGS = -fopenmp
-SHLIB_OPENMP_CXXFLAGS = -fopenmp
-SHLIB_OPENMP_FFLAGS = -fopenmp
-EOF
-```
-
-After completing these steps, reinstall the `ngme2` package to ensure it's built with OpenMP support.
-
-Both approaches will enable parallel processing features in the `ngme2` package. Approach 1 is recommended for most users as it only affects R package compilation without changing your system's default compiler.
-
 ## Linux
 
-Most Linux distributions come with GCC/G++ compilers that already support OpenMP. Here's how to ensure your system is ready for `ngme2` with OpenMP support:
+Most Linux distributions come with GCC/G++ compilers that already support OpenMP. If not, you can install the development tools package for your distribution.
 
 ### 1. Install required dependencies
 

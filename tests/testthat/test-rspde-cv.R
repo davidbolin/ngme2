@@ -125,12 +125,13 @@ test_that("test CV (rSPDE))", {
     list(
       gauss_gauss = m_gauss_gauss
     ),
+    N = 10,
     type = "custom",
     train_idx = trains,
     test_idx = tests,
-    n_gibbs_samples = 1000,
+    n_gibbs_samples = 2000,
     print = TRUE,
-    thining_gap = 0
+    thining_gap = 10
   )
 
   # compare the results

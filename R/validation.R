@@ -46,7 +46,7 @@ cross_validation <- function(
   train_idx = NULL,
   keep_pred = FALSE,
   parallel = FALSE,
-  thining_gap = 0, # Used for computing CRPS, sCRPS, the gap between samples for thinning, if 0, then no thinning, if 1, then keep 50% of the samples for CRPS, sCRPS, etc.
+  thining_gap = 1, # Used for computing CRPS, sCRPS, the gap between samples for thinning, if 0, then no thinning, if 1, then keep 50% of the samples for CRPS, sCRPS, etc.
   # merge_replicates = FALSE, # remove this option
   cores_layer1 = if (parallel) min(parallel::detectCores(), 2) else 1,  # Limit to 2 cores for safety
   cores_layer2 = if (parallel) min(parallel::detectCores(), 2) else 1   # Limit to 2 cores for safety
@@ -639,8 +639,10 @@ compute_scores <- function(
     pred_N_2_thin <- fe_N_thin + AW_N_2_thin
     
     # simulate measurement noise
-    mn_N_1 <- sapply(1:n_thin, function(x) simulate(test_noise, seed = seed_int)[[1]])
-    mn_N_2 <- sapply(1:n_thin, function(x) simulate(test_noise, seed = seed_int+1)[[1]])
+    seed_group_1 <- seed_int + 1:n_thin
+    seed_group_2 <- seed_int + 1:n_thin + n_thin
+    mn_N_1 <- sapply(1:n_thin, function(x) simulate(test_noise, seed = seed_group_1[x])[[1]])
+    mn_N_2 <- sapply(1:n_thin, function(x) simulate(test_noise, seed = seed_group_2[x])[[1]])
     
     # simulate y using thinning samples
     Y_N_1_thin <- pred_N_1_thin + mn_N_1
@@ -709,7 +711,7 @@ compute_pred_N <- function(
   
   # simulate measurement noise
   mn_N_1 <- sapply(1:n_gibbs_samples, function(x) simulate(noise_test_idx, seed = seed)[[1]])
-  mn_N_2 <- sapply(1:n_gibbs_samples, function(x) simulate(noise_test_idx, seed = seed)[[1]])
+  mn_N_2 <- sapply(1:n_gibbs_samples, function(x) simulate(noise_test_idx, seed = seed+1)[[1]])
 
   # simulate y
   Y_N_1 <- pred_N_1 + mn_N_1

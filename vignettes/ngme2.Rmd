@@ -492,34 +492,16 @@ cv <- cross_validation(
     nig_gauss = m_nig_gauss,
     nig_nig = m_nig_nig
   ), 
-  type="k-fold", 
-  k=10,
+  type = "k-fold", 
+  k = 10,
   n_gibbs_samples = 2000,
   n_burnin = 200,
-  seed = 10
+  seed = 20
 )
 
 # Create a basic table with knitr
 cv_table <- knitr::kable(cv$mean.scores, caption = "Cross-validation results")
 
-# Apply styling with kableExtra
-cv_table <- kableExtra::kable_styling(cv_table)
-
-# Highlight the rows with minimum values for each metric
-cv_table <- kableExtra::row_spec(cv_table, which.min(cv$mean.scores$RMSE), 
-                       color = "red", 
-                       bold = TRUE)
-cv_table <- kableExtra::row_spec(cv_table, which.min(cv$mean.scores$MAE), 
-                       color = "red", 
-                       bold = TRUE)
-cv_table <- kableExtra::row_spec(cv_table, which.min(cv$mean.scores$CRPS), 
-                       color = "red", 
-                       bold = TRUE)
-cv_table <- kableExtra::row_spec(cv_table, which.min(cv$mean.scores$DSS), 
-                       color = "red", 
-                       bold = TRUE)
-
-# Display the table
 cv_table
 ```
 

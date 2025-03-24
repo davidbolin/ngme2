@@ -46,7 +46,7 @@ cross_validation <- function(
   train_idx = NULL,
   keep_pred = FALSE,
   parallel = FALSE,
-  thining_gap = 1, # Used for computing CRPS, sCRPS, the gap between samples for thinning, if 0, then no thinning, if 1, then keep 50% of the samples for CRPS, sCRPS, etc.
+  thining_gap = 0, # Used for computing CRPS, sCRPS, the gap between samples for thinning, if 0, then no thinning, if 1, then keep 50% of the samples for CRPS, sCRPS, etc.
   # merge_replicates = FALSE, # remove this option
   cores_layer1 = if (parallel) min(parallel::detectCores(), 2) else 1,  # Limit to 2 cores for safety
   cores_layer2 = if (parallel) min(parallel::detectCores(), 2) else 1   # Limit to 2 cores for safety
@@ -263,7 +263,7 @@ compute_err_merged_reps <- function(
   parallel = TRUE,
   transform = identity,
   num_cores = 1,
-  thining_gap = 1
+  thining_gap = 0
 ) {
   if (is.null(seed)) seed <- Sys.time()
   stopifnot("Not a ngme object." = inherits(ngme, "ngme"))
@@ -640,7 +640,7 @@ compute_scores <- function(
     
     # simulate measurement noise
     mn_N_1 <- sapply(1:n_thin, function(x) simulate(test_noise, seed = seed_int)[[1]])
-    mn_N_2 <- sapply(1:n_thin, function(x) simulate(test_noise, seed = seed_int)[[1]])
+    mn_N_2 <- sapply(1:n_thin, function(x) simulate(test_noise, seed = seed_int+1)[[1]])
     
     # simulate y using thinning samples
     Y_N_1_thin <- pred_N_1_thin + mn_N_1

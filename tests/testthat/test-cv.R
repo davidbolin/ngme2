@@ -59,7 +59,7 @@ test_that("test merged replicate", {
   s
 })
 
-
+# This test ensures the posterior sampling procedure in both C++ and R are the same!
 test_that("test cross validation (NIG and gaussian)", {
   # load fitted models
   ret_gauss <- readRDS("examples/models/ret_gauss.rds")

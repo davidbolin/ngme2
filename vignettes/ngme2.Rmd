@@ -499,21 +499,28 @@ cv <- cross_validation(
   seed = 10
 )
 
-knitr::kable(cv$mean.scores, 
-             caption = "Cross-validation results") %>%
-  kableExtra::kable_styling() %>%
-  kableExtra::row_spec(which.min(cv$mean.scores$RMSE), 
-                       color = "red", 
-                       bold = TRUE) %>%
-  kableExtra::row_spec(which.min(cv$mean.scores$MAE), 
-                       color = "red", 
-                       bold = TRUE) %>%
-  kableExtra::row_spec(which.min(cv$mean.scores$CRPS), 
-                       color = "red", 
-                       bold = TRUE) %>%
-  kableExtra::row_spec(which.min(cv$mean.scores$DSS), 
+# Create a basic table with knitr
+cv_table <- knitr::kable(cv$mean.scores, caption = "Cross-validation results")
+
+# Apply styling with kableExtra
+cv_table <- kableExtra::kable_styling(cv_table)
+
+# Highlight the rows with minimum values for each metric
+cv_table <- kableExtra::row_spec(cv_table, which.min(cv$mean.scores$RMSE), 
                        color = "red", 
                        bold = TRUE)
+cv_table <- kableExtra::row_spec(cv_table, which.min(cv$mean.scores$MAE), 
+                       color = "red", 
+                       bold = TRUE)
+cv_table <- kableExtra::row_spec(cv_table, which.min(cv$mean.scores$CRPS), 
+                       color = "red", 
+                       bold = TRUE)
+cv_table <- kableExtra::row_spec(cv_table, which.min(cv$mean.scores$DSS), 
+                       color = "red", 
+                       bold = TRUE)
+
+# Display the table
+cv_table
 ```
 
 As we can see, the NIG-Gaussian model performs the best in most of the metrics.

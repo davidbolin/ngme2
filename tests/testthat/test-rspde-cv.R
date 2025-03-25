@@ -29,7 +29,7 @@ extract_rspde_fit <- function(rspde_fit, rspde_model) {
   )
 }
 
-
+# This tests the cross-validation of the rSPDE package against the ngme2 package
 test_that("test CV (rSPDE))", {
   library(ggplot2)
   library(INLA)
@@ -88,6 +88,7 @@ test_that("test CV (rSPDE))", {
   rspde_result <- extract_rspde_fit(rspde_fit, rspde_model)
   rspde_result
 
+  # Construct the ngme model (using rSPDE parameters)
   m_gauss_gauss <- ngme(
     formula = y ~ 1 +
       f(seaDist, name="rw1", model = "rw1", noise = noise_normal(
@@ -109,6 +110,7 @@ test_that("test CV (rSPDE))", {
   m_gauss_gauss
   rspde_result
 
+  # Cross-validation of the rSPDE model
   rspde_cv <- rSPDE::cross_validation(
     list(
       rspde = rspde_fit
@@ -118,9 +120,12 @@ test_that("test CV (rSPDE))", {
     print = TRUE,
     return_train_test = TRUE
   )
+  
+  # Given trains and tests for ngme CV
   trains <- sapply(rspde_cv$train_test, function(x) x$train)
   tests <- sapply(rspde_cv$train_test, function(x) x$test)
 
+  # Cross-validation of the ngme model
   ngme_cv <- ngme2::cross_validation(
     list(
       gauss_gauss = m_gauss_gauss
@@ -134,14 +139,41 @@ test_that("test CV (rSPDE))", {
     thining_gap = 10
   )
 
-  # compare the results
+  # read the results
   ngme_cv$mean.scores
   rspde_cv$scores_df
+
+  n_batches <- length(trains)
+
+  # Create train_test_folds for rSPDE::cross_validation from ngme CV
+  # This converts
+  train_test_folds <- lapply(1:n_batches, function(i) list(train = list(trains[[i]]), test = list(tests[[i]])))
+
+  # Cross-validation of the rSPDE model
+  rspde_cv_2 <- rSPDE::cross_validation(
+    list(
+      rspde = rspde_fit
+    ),
+    print = TRUE,
+    train_test_indexes = train_test_folds
+  )
+
+  # Compare the results
+  mse_diff <- as.numeric(rspde_cv_2$mse[[1]]) - ngme_cv$mean.scores$MSE
+  mae_diff <- as.numeric(rspde_cv_2$mae[[1]]) - ngme_cv$mean.scores$MAE
+  crps_diff <- as.numeric(rspde_cv_2$crps[[1]]) - ngme_cv$mean.scores$neg.CRPS
+  sCRPS_diff <- as.numeric(rspde_cv_2$scrps[[1]]) - ngme_cv$mean.scores$neg.sCRPS
+
+  expect_true(abs(mse_diff) < 0.05)
+  expect_true(abs(mae_diff) < 0.05)
+  expect_true(abs(crps_diff) < 0.05)
+  expect_true(abs(sCRPS_diff) < 0.05)
 })
 
 
-test_that("test iid CRPS", {
-  n_obs <- 10
+test_that("test iid CRPS, sCRPS", {
+  set.seed(345)
+  n_obs <- 100
   ys <- rnorm(n_obs, 0, 1)
 
   n_sim <- 1000
@@ -169,17 +201,18 @@ test_that("test iid CRPS", {
   )
   ng
 
-  cv_iid <- cross_validation(
+  # Cross-validation of the ngme model
+  cv_iid <- ngme2::cross_validation(
     list(
       ng = ng
     ),
-    N=30,
     type = "loo",
-    n_gibbs_samples = 2000,
+    n_gibbs_samples = 1000,
     print = TRUE,
     thining_gap = 0
   )
-  cv_iid$mean.scores
-  mean(CRPS)
-  mean(sCRPS)
+  cv_iid
+
+  expect_true(abs(cv_iid$mean.scores$neg.CRPS + mean(CRPS)) < 0.1)
+  expect_true(abs(cv_iid$mean.scores$neg.sCRPS + mean(sCRPS)) < 0.1)
 })

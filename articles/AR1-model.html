@@ -125,7 +125,7 @@
       <h1 data-toc-skip>Ngme2 AR(1) model</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/test/vignettes/AR1-model.Rmd" class="external-link"><code>vignettes/AR1-model.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/devel/vignettes/AR1-model.Rmd" class="external-link"><code>vignettes/AR1-model.Rmd</code></a></small>
       <div class="hidden name"><code>AR1-model.Rmd</code></div>
 
     </div>
@@ -269,22 +269,22 @@ optioins.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt;     x1     x2 </span></span>
-<span><span class="co">#&gt; -0.907  2.252 </span></span>
+<span><span class="co">#&gt; -0.905  2.250 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $my_ar</span></span>
 <span><span class="co">#&gt;   Model type: AR(1)</span></span>
-<span><span class="co">#&gt;       rho = 0.464</span></span>
+<span><span class="co">#&gt;       rho = 0.467</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -2.59</span></span>
-<span><span class="co">#&gt;       sigma = 4.1</span></span>
-<span><span class="co">#&gt;       nu = 0.322</span></span>
+<span><span class="co">#&gt;       mu = -2.57</span></span>
+<span><span class="co">#&gt;       sigma = 4.08</span></span>
+<span><span class="co">#&gt;       nu = 0.321</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 2.07</span></span>
+<span><span class="co">#&gt;       sigma = 2.08</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span>
@@ -294,29 +294,29 @@ optioins.</p>
 <p><img src="AR1-model_files/figure-html/ar-estimation-1.png" width="700" style="display: block; margin: auto;"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 2.069076</span></span>
+<span><span class="co">#&gt; [1] 2.077501</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`fixed effect 1`</span></span>
-<span><span class="co">#&gt; [1] -0.8963246</span></span>
+<span><span class="co">#&gt; [1] -0.8943669</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`fixed effect 2`</span></span>
-<span><span class="co">#&gt; [1] 2.250637</span></span>
+<span><span class="co">#&gt; [1] 2.249046</span></span>
 <span></span>
 <span><span class="co"># traceplot of ar1 model</span></span>
 <span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">ngme_out</span>, <span class="st">"my_ar"</span>, hline<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="op">-</span><span class="fl">3</span>, <span class="fl">4</span>, <span class="fl">0.4</span><span class="op">)</span><span class="op">)</span></span></code></pre>
 <p><img src="AR1-model_files/figure-html/ar-estimation-2.png" width="700" style="display: block; margin: auto;"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $rho</span></span>
-<span><span class="co">#&gt; [1] 0.4644999</span></span>
+<span><span class="co">#&gt; [1] 0.4669178</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $mu</span></span>
-<span><span class="co">#&gt; [1] -2.588073</span></span>
+<span><span class="co">#&gt; [1] -2.567937</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 4.105368</span></span>
+<span><span class="co">#&gt; [1] 4.083487</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nu</span></span>
-<span><span class="co">#&gt; [1] 0.3223944</span></span>
+<span><span class="co">#&gt; [1] 0.3216838</span></span>
 <span></span>
 <span><span class="co"># Use ngme_result to extract the latent part</span></span>
 <span></span>

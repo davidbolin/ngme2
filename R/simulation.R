@@ -137,14 +137,19 @@ simulate.ngme_noise <- function(
         res <- simulate_noise(noise_type, h, mu_vec, sigma_vec, nu_vec, seed, single_V)
       } else {
         # simulate correlated noise
+        stopifnot(
+          is.numeric(object$index_corr),
+          "index_corr must be non-decreasing" = all(diff(object$index_corr) >= 0)
+        )
         i = 1;
         while (i <= n_noise) {
           if (i==n_noise || index_corr[[i]] != index_corr[[i+1]]) {
-            res[i] <- simulate_noise(noise_type, h[i], mu_vec[i], sigma_vec[i], nu_vec[i], seed, single_V)
+            res[i] <- simulate_noise(noise_type, h[i], mu_vec[i], sigma_vec[i], nu_vec[i], seed + i, single_V)
             i = i + 1
           } else {
             # simulate a pair correlated noise
             if (noise_type == "normal") {
+              set.seed(seed + i)
               cov_mat <- matrix(c(sigma_vec[i]^2, sigma_vec[i]*sigma_vec[i+1]*rho,
                                   sigma_vec[i]*sigma_vec[i+1]*rho, sigma_vec[i+1]^2),
                                 nrow=2)
@@ -159,7 +164,6 @@ simulate.ngme_noise <- function(
       res
     })
   }
-
   structure(
     as.data.frame(sims),
     V_sim = as.data.frame(lapply(sims, function(x) attr(x, "V")))
@@ -235,5 +239,10 @@ simulate_1rep <- function(ngme_1rep, posterior=TRUE, seed=NULL) {
   Ws <- sampling_cpp(ngme_1rep, n=1, n_burnin = 1, posterior=posterior, seed=seed)[["W"]] [[1]]
 
   # return A W + X beta
-  as.numeric(A_block %*% Ws + ngme_1rep$X %*% ngme_1rep$feff)
+  if (!is.null(A_block)) {
+    as.numeric(A_block %*% Ws + ngme_1rep$X %*% ngme_1rep$feff)
+  } else {
+    # No latent fields
+    as.numeric(ngme_1rep$X %*% ngme_1rep$feff)
+  }
 }

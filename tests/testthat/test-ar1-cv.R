@@ -50,7 +50,7 @@ setup({
   traceplot(m_gauss_gauss, "my_ar")
 })
 
-# Same it's not obvious in MAE, and MSE
+# Seem it's not obvious in MAE, and MSE
 test_that("test CV between NIG and Gauss", {
   cv = ngme2::cross_validation(
     list(

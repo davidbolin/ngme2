@@ -120,7 +120,7 @@ control_opt <- function(
   )
 
   if (solver_type %in% c("pardiso", "accelerate") && preconditioner != "none") {
-    warning("Preconditioner is not supported with Pardiso or Accelerate solver, switching to supernodal solver")
+    message("Preconditioner is not supported with Pardiso or Accelerate solver, switching to supernodal solver")
     solver_type <- "supernodal"
   }
   

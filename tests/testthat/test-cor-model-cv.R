@@ -1,7 +1,4 @@
-
-
 test_that("cross validation for AR1 correlated noise model", {
-  load_all()
   n_obs <- 2000
   n_each <- n_obs / 2
 
@@ -43,22 +40,37 @@ test_that("cross validation for AR1 correlated noise model", {
   traceplot(m_cor, hline = c(1, 0.9))
   traceplot(m_cor, "field1", hline = c(0.6, 1))
 
+  m_neg_cor <- ngme(
+    y ~ 0 + f(1:n_obs, model="ar1", rho=0.6),
+    family = noise_normal(
+      corr_measurement = TRUE,
+      index_corr = rep(1:n_each, each=2),
+      rho = -0.9
+    ),
+    data = data.frame(y=y),
+    control_opt = control_opt(estimation = FALSE)
+  )
+  m_neg_cor
+
+
   m_ind <- ngme(
     y ~ 0 + f(1:n_obs, model="ar1", rho=0.6),
     family = noise_normal(),
     data = data.frame(y=y),
-    control_opt = control_opt
+    control_opt = control_opt(estimation = FALSE)
   )
   traceplot(m_ind)
   traceplot(m_ind, "field1", hline = c(0.6, 1))
 
-  cv_res <- cross_validation(
+  cv_res <- ngme2::cross_validation(
     list(
       m_cor = m_cor,
+      m_neg_cor = m_neg_cor,
       m_ind = m_ind
     ),
     type = "k-fold",
-    k = 10
+    k = 5,
+    seed = 30
   )
 
   cv_res

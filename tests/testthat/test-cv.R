@@ -85,8 +85,9 @@ test_that("test cross validation (NIG and gaussian)", {
 
 test_that("test R and C version of prediction are the same", {
   # Set Gaussian to FALSE to test NIG case
+  # gaussian <- FALSE
+  library(Matrix)
   for (gaussian in c(TRUE, FALSE)){
-
     seed <- 500
     set.seed(seed)
     
@@ -245,4 +246,51 @@ test_that("test R and C version of prediction are the same", {
       expect_true(mean(abs(mean_m - mean_m_cpp)) < 0.2)
     }
   }
+})
+
+# This test ensures CRPS and sCRPS are computed correctly
+test_that("test iid CRPS, sCRPS", {
+  set.seed(345)
+  n_obs <- 100
+  ys <- rnorm(n_obs, 0, 1)
+
+  n_sim <- 1000
+  y_sim1 <- rnorm(n_sim, 0, 1)
+  y_sim2 <- rnorm(n_sim, 0, 1)
+  CRPS <- numeric(n_obs)
+  sCRPS <- numeric(n_obs)
+  for (i in 1:n_obs) {
+    y <- ys[i]
+    E_sim_data <- mean(abs(y_sim1 - y))
+    E_sim_sim <- mean(abs(y_sim1 - y_sim2))
+    CRPS[i] <- 0.5 * E_sim_sim - E_sim_data
+    sCRPS[i] <- -E_sim_data / E_sim_sim - 0.5 * log(E_sim_sim)
+  }
+  mean(CRPS)
+  mean(sCRPS)
+
+  ng <- ngme(
+    y ~ 0,
+    data = data.frame(y = ys),
+    family = noise_normal(
+      sigma = 1
+    ),
+    control_opt = control_opt(estimation = FALSE)
+  )
+  ng
+
+  # Cross-validation of the ngme model
+  cv_iid <- ngme2::cross_validation(
+    list(
+      ng = ng
+    ),
+    type = "loo",
+    n_gibbs_samples = 1000,
+    print = TRUE,
+    thining_gap = 0
+  )
+  cv_iid
+
+  expect_true(abs(cv_iid$mean.scores$neg.CRPS + mean(CRPS)) < 0.1)
+  expect_true(abs(cv_iid$mean.scores$neg.sCRPS + mean(sCRPS)) < 0.1)
 })

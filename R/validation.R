@@ -36,7 +36,7 @@ cross_validation <- function(
   seed = NULL,
   print = FALSE,
   N_sim = 5,
-  n_gibbs_samples = 100,
+  n_gibbs_samples = 500,
   n_burnin = 100,
   k = 5,
   percent = 0.2,
@@ -222,9 +222,11 @@ cross_validation <- function(
   final_sd <- do.call(rbind, final_sd)
 
   if (nrow(scores[[1]]) == 1) {
-    rownames(final_mean) <- names(ngme) # univariate model
+    # univariate model
+    rownames(final_mean) <- names(ngme) 
   } else {
-    names_list = lapply(names(ngme), function(x) paste(x, rownames(final_mean), sep = "_"))
+    # bivariate model
+    names_list = lapply(names(ngme), function(x) paste(x, rownames(final_mean)[1:2], sep = "_"))
     rownames(final_mean) <- do.call(c, names_list)
   }
 
@@ -453,37 +455,6 @@ compute_err_1rep <- function(
 
   scores <- pred_1 <- pred_2 <- Y_1 <- Y_2 <- list()
 
-  # No nested parallel
-  # Add error handling for parallel execution
-  # if (parallel && requireNamespace("parallel", quietly = TRUE) && num_cores > 1) {
-  #   tryCatch({
-  #     scores = parallel::mclapply(1:N_sim, function(nn) {
-  #       tryCatch({
-  #         s <- compute_scores(
-  #           ngme_1rep, n_gibbs_samples, n_burnin, seed+nn, A_pred_block, 
-  #           noise_test_idx, y_data, group_data, X_pred, transform, thining_gap
-  #         )
-  #         s
-  #       }, error = function(e) {
-  #         warning(paste("Error in parallel computation:", e$message))
-  #         NULL
-  #       })
-  #     }, mc.cores = min(num_cores, 2))  # Limit to 2 cores for safety
-      
-  #     # Filter out NULL results
-  #     scores <- scores[!sapply(scores, is.null)]
-      
-  #     # If all parallel attempts failed, fall back to sequential
-  #     if (length(scores) == 0) {
-  #       warning("All parallel attempts failed, falling back to sequential computation")
-  #       parallel <- FALSE
-  #     }
-  #   }, error = function(e) {
-  #     warning(paste("Error in parallel execution:", e$message))
-  #     parallel <- FALSE
-  #   })
-  # }
-  
   # Fall back to sequential if parallel failed or was not requested
   # if (!parallel || length(scores) == 0) {
     for (nn in 1:N_sim) {
@@ -587,6 +558,7 @@ compute_scores <- function(
     })
     
     Ws <- Ws_result[["W"]]
+    # Ws <- Ws_result[["cond_W"]]
     
     if (is.null(Ws) || length(Ws) == 0) {
       stop("sampling_cpp returned NULL or empty result")
@@ -677,13 +649,16 @@ compute_scores <- function(
 compute_pred_N <- function(
   ngme_1rep, n_gibbs_samples, n_burnin, seed, A_pred_block, noise_test_idx, y_data, group_data, X_pred
 ) {
+  seed_int <- as.integer(abs(seed) %% 2147483647)
+
   Ws <- sampling_cpp(
     ngme_1rep, 
     n = n_gibbs_samples * 2, 
     n_burnin = n_burnin,
     posterior = TRUE, 
-    seed=seed
+    seed=seed_int
   )[["W"]]
+  # )[["cond_W"]]
   
   Ws_block  <- head(Ws, n_gibbs_samples)
   W2s_block <- tail(Ws, n_gibbs_samples)
@@ -710,8 +685,10 @@ compute_pred_N <- function(
   pred_N_2 <- fe_N + AW_N_2
   
   # simulate measurement noise
-  mn_N_1 <- sapply(1:n_gibbs_samples, function(x) simulate(noise_test_idx, seed = seed)[[1]])
-  mn_N_2 <- sapply(1:n_gibbs_samples, function(x) simulate(noise_test_idx, seed = seed+1)[[1]])
+  seed_group_1 <- seed_int + 1:n_thin
+  seed_group_2 <- seed_int + 1:n_thin + n_thin
+  mn_N_1 <- sapply(1:n_thin, function(x) simulate(test_noise, seed = seed_group_1[x])[[1]])
+  mn_N_2 <- sapply(1:n_thin, function(x) simulate(test_noise, seed = seed_group_2[x])[[1]])
 
   # simulate y
   Y_N_1 <- pred_N_1 + mn_N_1

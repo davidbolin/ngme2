@@ -1,4 +1,4 @@
-// implement the Ngme class and rand effect calss
+// implement the Ngme class and rand effect class
 #include "ngme.h"
 
 #ifdef _OPENMP
@@ -22,10 +22,10 @@ Ngme::Ngme(const Rcpp::List& R_ngme, unsigned long seed, int sampling_strategy, 
   Rcpp::List list_replicates = Rcpp::as<Rcpp::List> (R_ngme["replicates"]);
   n_repl = list_replicates.size();
 
-  // build for each replciates
+  // build for each replicates
   for (int i=0; i < n_repl; i++) {
     Rcpp::List ngme_repl = Rcpp::as<Rcpp::List> (list_replicates[i]);
-    ngme_repls.push_back(std::make_shared<BlockModel>(ngme_repl, seed));
+    ngme_repls.push_back(std::make_shared<BlockModel>(ngme_repl, seed + i));
     num_each_repl.push_back(ngme_repls[i]->get_n_obs());
   }
   sum_num_each_repl = std::accumulate(num_each_repl.begin(), num_each_repl.end(), 0.0);

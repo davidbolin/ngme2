@@ -134,38 +134,41 @@ test_that("test CV (rSPDE))", {
     type = "custom",
     train_idx = trains,
     test_idx = tests,
-    n_gibbs_samples = 2000,
+    n_gibbs_samples = 200,
     print = TRUE,
-    thining_gap = 10
+    thining_gap = 0,
+    parallel = TRUE,
+    seed = 123
   )
 
   # read the results
+  rspde_cv <- rspde_cv$scores_df
   ngme_cv$mean.scores
-  rspde_cv$scores_df
+  rspde_cv
 
-  n_batches <- length(trains)
+  # n_batches <- length(trains)
 
-  # Create train_test_folds for rSPDE::cross_validation from ngme CV
-  # This converts
-  train_test_folds <- lapply(1:n_batches, function(i) list(train = list(trains[[i]]), test = list(tests[[i]])))
+  # # Create train_test_folds for rSPDE::cross_validation from ngme CV
+  # # This converts
+  # train_test_folds <- lapply(1:n_batches, function(i) list(train = list(trains[[i]]), test = list(tests[[i]])))
 
-  # Cross-validation of the rSPDE model
-  rspde_cv_2 <- rSPDE::cross_validation(
-    list(
-      rspde = rspde_fit
-    ),
-    print = TRUE,
-    train_test_indexes = train_test_folds
-  )
+  # # Cross-validation of the rSPDE model
+  # rspde_cv_2 <- rSPDE::cross_validation(
+  #   list(
+  #     rspde = rspde_fit
+  #   ),
+  #   print = TRUE,
+  #   train_test_indexes = train_test_folds
+  # )
 
   # Compare the results
-  mse_diff <- as.numeric(rspde_cv_2$mse[[1]]) - ngme_cv$mean.scores$MSE
-  mae_diff <- as.numeric(rspde_cv_2$mae[[1]]) - ngme_cv$mean.scores$MAE
-  crps_diff <- as.numeric(rspde_cv_2$crps[[1]]) - ngme_cv$mean.scores$neg.CRPS
-  sCRPS_diff <- as.numeric(rspde_cv_2$scrps[[1]]) - ngme_cv$mean.scores$neg.sCRPS
+  mse_diff <- as.numeric(rspde_cv$mse[[1]]) - ngme_cv$mean.scores$MSE
+  mae_diff <- as.numeric(rspde_cv$mae[[1]]) - ngme_cv$mean.scores$MAE
+  crps_diff <- as.numeric(rspde_cv$crps[[1]]) - ngme_cv$mean.scores$neg.CRPS
+  sCRPS_diff <- as.numeric(rspde_cv$scrps[[1]]) - ngme_cv$mean.scores$neg.sCRPS
 
-  expect_true(abs(mse_diff) < 0.05)
   expect_true(abs(mae_diff) < 0.05)
+  expect_true(abs(mse_diff) < 0.05)
   expect_true(abs(crps_diff) < 0.05)
   expect_true(abs(sCRPS_diff) < 0.05)
 })

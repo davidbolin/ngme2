@@ -258,7 +258,7 @@ if (debug) std::cout << "End Block Constructor" << std::endl;
       // sample_uncond_noise_V();
       for (int i=0; i < iterations; i++) {
 // std::cout << "burn in iteration i= " << i  << std::endl;
-          sample_cond_V(false);
+          sample_cond_V(true);
 // std::cout << "sample cond V done" << std::endl;
           sampleW_VY(true);
 // std::cout << "sample W done" << std::endl;

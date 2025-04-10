@@ -720,7 +720,7 @@ Rcpp::List BlockModel::sampling(
 
   for (int i=0; i < n; i++) {
     if (posterior) {
-      if (!all_gaussian) sample_cond_V(false);
+      if (!all_gaussian) sample_cond_V(true);
       sampleW_VY();
       sample_cond_noise_V(true);
     } else {

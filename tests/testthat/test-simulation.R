@@ -47,15 +47,39 @@ test_that("simulate ngme object (with repls)", {
 
 test_that("simulate correlated noise", {
   out = ngme(
-    y ~ 0+f(c(1:5), model="ar1"),
+    y ~ 0 + f(c(1:5), model="ar1"),
     data = data.frame(y=1:5),
-    family = noise_nig(
+    family = noise_normal(
       corr_measurement = TRUE,
-      index_corr = c(1,1,2,3,3)
+      rho = 0.9,
+      index_corr = c(1,1,2,3,2)
     ),
     control_opt = control_opt(
       estimation = F
     )
   )
+  out
   simulate(out)[[1]]
+  # cross_validation(out)
+
+  # set.seed(123)
+  out = ngme(
+    y ~ 0,
+    data = data.frame(y=1:4),
+    family = noise_normal(
+      corr_measurement = TRUE,
+      rho = 0.9,
+      index_corr = c(1,1,2,3)
+    ),
+    control_opt = control_opt(
+      estimation = F
+    )
+  )
+  simulate(
+    out$replicates[[1]]$noise,
+    seed = 123
+  )[[1]]
+
+  # r = cross_validation(out)
+  # r
 })

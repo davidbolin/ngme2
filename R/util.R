@@ -625,7 +625,9 @@ ngme_build_A <- function(model, mesh, map, operator, group, group_levels=NULL) {
     
     blk_group <- as.integer(map[[1]])
     # important to start with 1
-    blk_group <- blk_group-min(blk_group)+1
+    min_loc <- mesh_t$interval[[1]]
+    blk_group <- blk_group - min_loc + 1
+    stopifnot("The map[[1]] of the tp model is not valid, out of range." = all(blk_group <= (mesh_t$range[2] + 1)))
 
     blk <- fmesher::fm_block(blk_group, n_block = mesh_t$n)
     basis <- fmesher::fm_basis(mesh_s, loc=map[[2]])

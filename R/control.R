@@ -115,10 +115,14 @@ control_opt <- function(
     "iterations should be multiple of stop_points"
       = iterations %% stop_points == 0,
     inherits(optimizer, "ngme_optimizer"),
-    solver_type %in% solver_type_list,
-    "Please use other solver than Pardiso and Accelerate if want to use preconditioner"
-      = !(solver_type %in% c("pardiso", "accelerate") && preconditioner != "none")
+    "solver_type should be in (eigen, cholmod, supernodal, accelerate, pardiso)"
+      = solver_type %in% solver_type_list
   )
+
+  if (solver_type %in% c("pardiso", "accelerate") && preconditioner != "none") {
+    message("Preconditioner is not supported with Pardiso or Accelerate solver, switching to supernodal solver")
+    solver_type <- "supernodal"
+  }
   
   if (Sys.info()["sysname"] != "Darwin" && solver_type == "accelerate") {
     warning("accelerate solver is not supported on MacOS, switch to default eigen solver")

@@ -103,6 +103,7 @@ get_latent_info <- function(latent) {
 #' should be in names(ngme$models) or other
 #' @param moving_window moving window for the traceplot
 #' @param hline vector, add hline to each plot
+#' @param combine bool, if TRUE, plot the combination of all plots, otherwise 1 by 1
 #'
 #' @return the traceplot
 #' @export
@@ -111,7 +112,8 @@ traceplot <- function(
   ngme, 
   name="general", 
   moving_window=1,
-  hline=NULL
+  hline=NULL,
+  combine=TRUE
 ) {
   stopifnot(inherits(ngme, "ngme"))
   stopifnot(!is.null(name))
@@ -201,8 +203,18 @@ traceplot <- function(
     avg_lines[[ts$name[[idx]]]] <- df_mean$mean_moving_avg
   }
 
-  if (length(ps) > 1) ps["ncol"]=2
-  result <- do.call(gridExtra::grid.arrange, ps)
+  # Display results based on combine parameter
+  result <- NULL
+  if (combine) {
+    if (length(ps) > 1) ps["ncol"] <- 2
+    result <- do.call(gridExtra::grid.arrange, ps)
+  } else {
+    # Print plots one by one
+    for (p in ps) {
+      print(p)
+    }
+    result <- ps
+  }
 
   attr(result, "avg_lines") <- avg_lines
   
@@ -211,7 +223,7 @@ traceplot <- function(
   last_estimates <- lapply(avg_lines, function(x) x[length(x)])
   print(last_estimates)
 
-  invisible(ps)
+  invisible(result)
 }
 
 

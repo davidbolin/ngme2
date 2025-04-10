@@ -473,7 +473,7 @@ compute_err_1rep <- function(
         warning(paste("Error in sequential computation:", e$message))
       })
     }
-  # }
+  }
   
   # Check if we have any valid scores
   if (length(scores) == 0) {

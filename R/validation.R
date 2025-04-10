@@ -455,8 +455,14 @@ compute_err_1rep <- function(
 
   scores <- pred_1 <- pred_2 <- Y_1 <- Y_2 <- list()
 
-  # Fall back to sequential if parallel failed or was not requested
-  # if (!parallel || length(scores) == 0) {
+  if (parallel && requireNamespace("parallel", quietly = TRUE)) {
+    scores = parallel::mclapply(1:N_sim, function(nn) {
+      s <- compute_scores(
+        ngme_1rep, n_gibbs_samples, n_burnin, seed+nn, A_pred_block, noise_test_idx, y_data, group_data, X_pred, transform, thining_gap
+      )
+      s
+    }, mc.cores = num_cores)
+  } else {
     for (nn in 1:N_sim) {
       tryCatch({
         scores[[nn]] <- compute_scores(

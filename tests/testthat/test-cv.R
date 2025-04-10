@@ -69,7 +69,7 @@ test_that("test cross validation (NIG and gaussian)", {
   cv <- cross_validation(
     list(gauss=ret_gauss, nig=ret_nig),
     k=20,
-    parallel=FALSE,
+    parallel=TRUE,
     n_gibbs_samples=100,
     print=TRUE,
     N_sim=4,

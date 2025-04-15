@@ -11,8 +11,8 @@ cross_validation(
   type = "k-fold",
   seed = NULL,
   print = FALSE,
-  N = 5,
-  n_gibbs_samples = 100,
+  N_sim = 5,
+  n_gibbs_samples = 500,
   n_burnin = 100,
   k = 5,
   percent = 0.2,
@@ -21,10 +21,10 @@ cross_validation(
   test_idx = NULL,
   train_idx = NULL,
   keep_pred = FALSE,
-  parallel = TRUE,
+  parallel = FALSE,
   thining_gap = 1,
-  cores_layer1 = if (parallel) parallel::detectCores() else 1,
-  cores_layer2 = if (parallel) parallel::detectCores() else 1
+  cores_layer1 = if (parallel) min(parallel::detectCores(), 2) else 1,
+  cores_layer2 = if (parallel) min(parallel::detectCores(), 2) else 1
 )
 }
 \arguments{
@@ -40,9 +40,9 @@ custom is user-defined group, provide \code{target} and \code{data}}
 
 \item{print}{print information during computation}
 
-\item{N}{integer, number of simulations (e.g., estimate MAE, MSE, .. N times)}
+\item{N_sim}{integer, number of simulations (e.g., estimate MAE, MSE, .. N times)}
 
-\item{n_gibbs_samples}{number of gibbs samples}
+\item{n_gibbs_samples}{number of gibbs samples of latent process, used for computing CRPS, sCRPS}
 
 \item{n_burnin}{number of burnin}
 
@@ -67,11 +67,11 @@ e.g., the MAE will be computed as |transform(Y) - transform(Y_pred)|}
 
 \item{cores_layer1}{integer, number of cores for the first layer (over testing samples)}
 
-\item{cores_layer2}{integer, number of cores for the second layer (over computing scores for N simulations)}
+\item{cores_layer2}{integer, number of cores for the second layer (over computing scores for N_sim simulations)}
 }
 \value{
-1. mean of N estimations of 4 criterions: MSE, MAE, CRPS, sCRPS
- 2. standard deviation of N estimations of 4 criterions: MSE, MAE, CRPS, sCRPS
+1. mean of N_sim estimations of 4 criterions: MSE, MAE, CRPS, sCRPS
+ 2. standard deviation of N_sim estimations of 4 criterions: MSE, MAE, CRPS, sCRPS
 }
 \description{
 Compute the cross-validation for the ngme model

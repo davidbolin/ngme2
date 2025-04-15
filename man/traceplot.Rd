@@ -4,7 +4,13 @@
 \alias{traceplot}
 \title{Trace plot of ngme fitting}
 \usage{
-traceplot(ngme, name = "general", moving_window = 1, hline = NULL)
+traceplot(
+  ngme,
+  name = "general",
+  moving_window = 1,
+  hline = NULL,
+  combine = TRUE
+)
 }
 \arguments{
 \item{ngme}{ngme object}
@@ -15,6 +21,8 @@ should be in names(ngme$models) or other}
 \item{moving_window}{moving window for the traceplot}
 
 \item{hline}{vector, add hline to each plot}
+
+\item{combine}{bool, if TRUE, plot the combination of all plots, otherwise 1 by 1}
 }
 \value{
 the traceplot

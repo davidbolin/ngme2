@@ -633,7 +633,7 @@ ngme_build_A <- function(model, mesh, map, operator, group, group_levels=NULL) {
     basis <- fmesher::fm_basis(mesh_s, loc=map[[2]])
     A0 = fmesher::fm_row_kron(Matrix::t(blk), basis)
 
-    if (model=="tp" && operator$second$model == "bv") {
+    if (model=="tp" && operator$second$model %in% c("bv", "bv_matern_normal", "bv_normal", "bv_matern_nig")) {
       # for tp-bv model
       # check if group is valid
       if (length(group) == 0) stop("Please provide the `group` argument.")

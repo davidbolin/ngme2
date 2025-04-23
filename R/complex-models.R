@@ -567,7 +567,7 @@ bv_matern_nig <- function(
 #'   - `mesh_t`: The temporal mesh.
 #'   - `mesh_s`: The spatial mesh.
 #' @param alpha 2 or 4, SPDE smoothness parameter.
-#' @param c Parameter.
+#' @param cc Parameter c in the SPDE.
 #' @param kappa Kappa parameter from Matern SPDE.
 #' @param lambda The spatial damping parameter.
 #' @param fix_gamma TRUE if fix gamma (advection term), FALSE if estimate gamma.
@@ -587,6 +587,8 @@ spacetime <- function(
   mesh,
   lambda = 1, # fixed
   alpha = 2, # alpha = 2, 4, fixed
+  cc = 1,
+  kappa = 1,
   # advection term
   fix_gamma = FALSE,
   theta_gamma_x = 0, 
@@ -598,8 +600,6 @@ spacetime <- function(
   B_gamma_x_list = NULL,
   B_gamma_y_list = NULL,
   # B_gamma_t = matrix(1, nrow = mesh[[1]]$n, ncol = 1),
-  cc = 1,
-  kappa = 1,
   stabilization = TRUE,
   ...
 ) {
@@ -658,6 +658,14 @@ spacetime <- function(
   Bt[1,1] = -0.5
   Bt[nt,nt] = 0.5
 
+# Bt
+# [1,] -0.5 -0.5  .    .    .  
+# [2,]  0.5  .   -0.5  .    .  
+# [3,]  .    0.5  .   -0.5  .  
+# [4,]  .    .    0.5  .   -0.5
+# [5,]  .    .    .    0.5  0.5
+
+
 ##### space FEM #####
   fem_s <- fmesher::fm_fem(mesh_s, order = alpha)
   Cs <- fem_s$c0
@@ -667,6 +675,7 @@ spacetime <- function(
   if (method == "galerkin"){
     h <- Matrix::diag(Ct) %x% Matrix::diag(Cs)
   } else {
+    # implicit euler
     dt =c(1, diff(mesh_t$loc))
     h <- dt %x% Matrix::diag(Cs) / cc
   }
@@ -688,7 +697,6 @@ spacetime <- function(
   gamma_x_list <- lapply(1:(nt-1), function(i) B_gamma_x_list[[i]] %*% theta_gamma_x)
   gamma_y_list <- lapply(1:(nt-1), function(i) B_gamma_y_list[[i]] %*% theta_gamma_y)
   # gamma_t <- B_gamma_t %*% theta_gamma_t
-
   build_Bs <- function(gamma_x, gamma_y) {
     Dx = Matrix::Diagonal(x = gamma_x) 
     Dy = Matrix::Diagonal(x = gamma_y)
@@ -774,6 +782,8 @@ spacetime <- function(
       
       K <- rw1(1:nt)$K %x% Cs + 1/cc *
         Matrix::bdiag(null_matrix, diag_L_list)
+      
+      K <- sqrt(cc) * K
     }
     return (K)
   }

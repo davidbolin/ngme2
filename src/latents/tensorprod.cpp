@@ -172,6 +172,8 @@ void Spacetime::update_K(const VectorXd& theta_K) {
   }
   K = BtCs + K / c;
 
+  K = sqrt(c) * K;
+
   // SparseMatrix<double> Ls = (kappa*kappa * Cs + lambda * Gs + Bs);
   
   // alpha=4, L = L %*% solve(Ct %x% Cs, L) 

@@ -49,6 +49,83 @@ bv_list <- list(
     )
   )
 )
+
+
+mesh_s <- fmesher::fm_mesh_1d(seq(0, 1, length.out=40))
+
+bv_matern_normal_list <- list(
+  model="bv_matern_normal",
+  mesh = mesh_s,
+  group = group,
+  sub_models = list(
+    f1 = list(
+      model="matern"
+    ),
+    f2 = list(
+      model="matern"
+    )
+  )
+)
+
+f_matern_normal <- f(
+  map=list(
+    time_idx,
+    bv_idx
+  ),
+  model="tp",
+  first = list(
+    model="ar1", rho=0.6
+  ),
+  second = bv_matern_normal_list,
+  group = group,
+  noise=noise_nig(
+    mu=-2,
+    sigma=1,
+    nu=2
+  )
+)
+f_matern_normal
+
+
+bv_matern_nig_list <- list(
+  model="bv_matern_nig",
+  mesh = mesh_s,
+  group = group,
+  sub_models = list(
+    f1 = list(
+      model="matern"
+    ),
+    f2 = list(
+      model="matern"
+    )
+  ),
+  noise = list(
+    f1 = noise_nig(),
+    f2 = noise_nig()
+  )
+)
+
+f_matern_nig <- f(
+  map=list(
+    time_idx,
+    bv_idx
+  ),
+  model="tp",
+  first = list(
+    model="ar1", rho=0.6
+  ),
+  second = bv_matern_nig_list,
+  group = group,
+  noise=noise_nig(
+    mu=-2,
+    sigma=1,
+    nu=2
+  )
+)
+f_matern_nig
+
+
+
 ```
 
 Then we specify the full model using the `f` function, which is a tensor product model with the first part being an AR(1) process and the second part being the bivariate model.
@@ -71,6 +148,7 @@ f_model <- f(
     nu=2
   )
 )
+f_model
 
 # Simulate the latent fields
 W = simulate(f_model)[[1]]

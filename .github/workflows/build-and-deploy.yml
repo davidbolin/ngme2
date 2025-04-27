@@ -6,9 +6,9 @@ on:
       - stable
 
 permissions:
-  contents: write   # Allow clone and write to the repository
-  actions: read     # Allow download and execute Marketplace Actions (e.g. upload-artifact)
-  packages: write   # Allow read/write GitHub Packages
+  contents: write
+  actions: read
+  packages: write
 
 jobs:
   build:
@@ -40,10 +40,6 @@ jobs:
       run: |
         brew install llvm
         brew install libomp
-        mkdir -p ~/.R
-        echo "CXXFLAGS += -fopenmp -I$(brew --prefix llvm)/include" >> ~/.R/Makevars
-        echo "CFLAGS   += -fopenmp -I$(brew --prefix llvm)/include" >> ~/.R/Makevars
-        echo "LDFLAGS  += -fopenmp -L$(brew --prefix llvm)/lib -Wl,-rpath,$(brew --prefix llvm)/lib" >> ~/.R/Makevars
 
     - name: Configure compiler for LLVM and OpenMP (macOS only)
       if: matrix.os == 'macos-latest'
@@ -55,6 +51,15 @@ jobs:
         echo "CFLAGS=-fopenmp -I$LLVM_PREFIX/include" >> $GITHUB_ENV
         echo "CXXFLAGS=-fopenmp -I$LLVM_PREFIX/include" >> $GITHUB_ENV
         echo "LDFLAGS=-fopenmp -L$LLVM_PREFIX/lib -Wl,-rpath,$LLVM_PREFIX/lib" >> $GITHUB_ENV
+
+    - name: Setup R Makevars for OpenMP (macOS only)
+      if: matrix.os == 'macos-latest'
+      run: |
+        mkdir -p ~/.R
+        echo "CXXFLAGS += -fopenmp -I$(brew --prefix llvm)/include" >> ~/.R/Makevars
+        echo "CFLAGS   += -fopenmp -I$(brew --prefix llvm)/include" >> ~/.R/Makevars
+        echo "LDFLAGS  += -fopenmp -L$(brew --prefix llvm)/lib -Wl,-rpath,$(brew --prefix llvm)/lib" >> ~/.R/Makevars
+        echo "DYLD_FALLBACK_LIBRARY_PATH=$(brew --prefix llvm)/lib:/usr/local/lib:/usr/lib" >> $GITHUB_ENV
 
     - name: Build source package (all platforms)
       run: |
@@ -103,60 +108,63 @@ jobs:
 
     - name: Create directory structure
       run: |
-        mkdir -p .binaries/bin/windows .binaries/bin/macos .binaries/src/contrib
+        mkdir -p .binaries/bin/windows/contrib/4.4
+        mkdir -p .binaries/bin/windows/contrib/4.5
+        mkdir -p .binaries/bin/macosx/big-sur-arm64/contrib/4.4
+        mkdir -p .binaries/bin/macosx/big-sur-arm64/contrib/4.5
+        mkdir -p .binaries/src/contrib
 
-    # Download all Windows binaries
+    # 下载 Windows binaries
     - name: Download Windows r4.4
       uses: actions/download-artifact@v4
       with:
         name: binary-windows-r4.4
-        path: .binaries/bin/windows/4.4
+        path: .binaries/bin/windows/contrib/4.4
     - name: Download Windows r4.5
       uses: actions/download-artifact@v4
       with:
         name: binary-windows-r4.5
-        path: .binaries/bin/windows/4.5
+        path: .binaries/bin/windows/contrib/4.5
 
-    # Download all macOS binaries
+    # 下载 macOS binaries
     - name: Download macOS r4.4
       uses: actions/download-artifact@v4
       with:
         name: binary-macos-r4.4
-        path: .binaries/bin/macosx/4.4
+        path: .binaries/bin/macosx/big-sur-arm64/contrib/4.4
     - name: Download macOS r4.5
       uses: actions/download-artifact@v4
       with:
         name: binary-macos-r4.5
-        path: .binaries/bin/macosx/4.5
+        path: .binaries/bin/macosx/big-sur-arm64/contrib/4.5
 
-    # Download all Linux source packages
-    - name: Download Linux source r4.4
+    # 下载 Linux source
+    - name: Download source r4.4
       uses: actions/download-artifact@v4
       with:
         name: source-linux-r4.4
         path: .binaries/src/contrib
-    - name: Download Linux source r4.5
+    - name: Download source r4.5
       uses: actions/download-artifact@v4
       with:
         name: source-linux-r4.5
         path: .binaries/src/contrib
 
-    # Create .nojekyll (allow dot-folders)
     - name: Create .nojekyll (allow dot-folders)
       run: touch .nojekyll
 
     - name: Generate PACKAGES indices
       run: |
         Rscript -e 'tools::write_PACKAGES(".binaries/src/contrib", type="source")'
-        Rscript -e 'tools::write_PACKAGES(".binaries/bin/windows/4.4", type="win.binary")'
-        Rscript -e 'tools::write_PACKAGES(".binaries/bin/windows/4.5", type="win.binary")'
-        Rscript -e 'tools::write_PACKAGES(".binaries/bin/macosx/4.4", type="mac.binary")'
-        Rscript -e 'tools::write_PACKAGES(".binaries/bin/macosx/4.5", type="mac.binary")'
+        Rscript -e 'tools::write_PACKAGES(".binaries/bin/windows/contrib/4.4", type="win.binary")'
+        Rscript -e 'tools::write_PACKAGES(".binaries/bin/windows/contrib/4.5", type="win.binary")'
+        Rscript -e 'tools::write_PACKAGES(".binaries/bin/macosx/big-sur-arm64/contrib/4.4", type="mac.binary")'
+        Rscript -e 'tools::write_PACKAGES(".binaries/bin/macosx/big-sur-arm64/contrib/4.5", type="mac.binary")'
 
     - name: Commit & Push
       run: |
         git config user.name  "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
         git add .
-        git commit -m "Update binaries $(date +%Y-%m-%d) [skip ci]" || echo "No changes to commit"
+        git commit -m "🚀 Update binaries for $(date +%Y-%m-%d) [skip ci]" || echo "No changes to commit"
         git push origin gh-pages

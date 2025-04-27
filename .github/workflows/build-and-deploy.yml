@@ -16,6 +16,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest, macos-latest, ubuntu-latest]
+        r-version: ["4.4", "4.5"]
 
     steps:
     - name: Checkout source
@@ -24,7 +25,7 @@ jobs:
     - name: Setup R
       uses: r-lib/actions/setup-r@v2
       with:
-        r-version: "release"
+        r-version: ${{ matrix.r-version }}
         extra-repositories: "https://inla.r-inla-download.org/R/testing"
 
     - name: Install build deps
@@ -36,35 +37,28 @@ jobs:
 
     - name: Build & pack binary
       run: |
-        R CMD build .
-        if [ "${{ matrix.os }}" = "windows-latest" ]; then
-          R CMD INSTALL --build $(ls -t *.tar.gz | head -n 1)
-        elif [ "${{ matrix.os }}" = "macos-latest" ]; then
-          R CMD INSTALL --build $(ls -t *.tar.gz | head -n 1)
-        else
-          R CMD INSTALL --build $(ls -t *.tar.gz | head -n 1)
-        fi
+        R CMD INSTALL --build $(ls -t *.tar.gz | head -n 1)
       shell: bash
 
     - name: Upload Windows binary
       if: matrix.os == 'windows-latest'
       uses: actions/upload-artifact@v4
       with:
-        name: binary-windows
+        name: binary-windows-r${{ matrix.r-version }}
         path: "*.zip"
 
     - name: Upload macOS binary
       if: matrix.os == 'macos-latest'
       uses: actions/upload-artifact@v4
       with:
-        name: binary-macos
+        name: binary-macos-r${{ matrix.r-version }}
         path: "*.tgz"
 
-    - name: Upload Linux binary
+    - name: Upload Linux source
       if: matrix.os == 'ubuntu-latest'
       uses: actions/upload-artifact@v4
       with:
-        name: binary-linux
+        name: source-linux-r${{ matrix.r-version }}
         path: "*.tar.gz"
 
   deploy:
@@ -77,15 +71,45 @@ jobs:
       with:
         ref: gh-pages
 
-    - name: Download binaries
+    - name: Create directory structure
+      run: |
+        mkdir -p .binaries/bin/windows .binaries/bin/macos .binaries/src/contrib
+
+    # Download all Windows binaries
+    - name: Download Windows r4.4
       uses: actions/download-artifact@v4
       with:
-        name: binary-windows-latest
-        path: .binaries/bin/windows
-    - uses: actions/download-artifact@v4
+        name: binary-windows-r4.4
+        path: .binaries/bin/windows/4.4
+    - name: Download Windows r4.5
+      uses: actions/download-artifact@v4
       with:
-        name: binary-macos-latest
-        path: .binaries/bin/macos
+        name: binary-windows-r4.5
+        path: .binaries/bin/windows/4.5
+
+    # Download all macOS binaries
+    - name: Download macOS r4.4
+      uses: actions/download-artifact@v4
+      with:
+        name: binary-macos-r4.4
+        path: .binaries/bin/macos/4.4
+    - name: Download macOS r4.5
+      uses: actions/download-artifact@v4
+      with:
+        name: binary-macos-r4.5
+        path: .binaries/bin/macos/4.5
+
+    # Download all Linux source packages
+    - name: Download source r4.4
+      uses: actions/download-artifact@v4
+      with:
+        name: source-linux-r4.4
+        path: .binaries/src/contrib
+    - name: Download source r4.5
+      uses: actions/download-artifact@v4
+      with:
+        name: source-linux-r4.5
+        path: .binaries/src/contrib
 
     - name: Create .nojekyll (allow dot-folders)
       run: touch .nojekyll

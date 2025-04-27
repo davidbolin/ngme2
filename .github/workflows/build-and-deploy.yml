@@ -66,6 +66,9 @@ jobs:
         echo "CFLAGS=-fopenmp -I$RFW/include" >> ~/.R/Makevars
         echo "LDFLAGS=-fopenmp -L$RFW/lib -Wl,-rpath,$RFW/lib" >> ~/.R/Makevars
         
+        # Explicitly set PKG_LIBS to include libomp.dylib
+        echo "PKG_LIBS=-L$RFW/lib -Wl,-rpath,$RFW/lib -lomp" >> ~/.R/Makevars
+        
         # Debug: Show contents of Makevars
         echo "Contents of ~/.R/Makevars:"
         cat ~/.R/Makevars
@@ -96,6 +99,14 @@ jobs:
 
     - name: Build source package (all platforms)
       run: |
+        # For macOS, set PKG_LIBS
+        if [[ "$RUNNER_OS" == "macOS" ]]; then
+          RFW=$(R RHOME)
+          export PKG_LIBS="-L$RFW/lib -lomp -Wl,-rpath,$RFW/lib"
+          echo "Set PKG_LIBS=$PKG_LIBS for macOS"
+        fi
+        
+        # Build the source package
         R CMD build .
       shell: bash
 
@@ -104,6 +115,15 @@ jobs:
       run: |
         # Get R framework path
         RFW=$(R RHOME)
+        
+        # Create a package-specific Makevars.site file
+        mkdir -p $RFW/etc
+        cat > $RFW/etc/Makevars.site << EOF
+        # Package-specific OpenMP settings
+        PKG_LIBS += -L$RFW/lib -lomp -Wl,-rpath,$RFW/lib
+        EOF
+        echo "Created $RFW/etc/Makevars.site:"
+        cat $RFW/etc/Makevars.site
         
         # Install the package without building binary
         R CMD INSTALL --no-multiarch --no-test-load $(ls -t *.tar.gz | head -n 1)
@@ -124,6 +144,10 @@ jobs:
           echo "Patching ngme2.so with install_name_tool..."
           install_name_tool -change @rpath/libomp.dylib "$RFW/lib/libomp.dylib" "$PKGPATH/libs/ngme2.so" || echo "Patching failed"
           
+          # Also try with any other potential OpenMP references
+          install_name_tool -change libomp.dylib "$RFW/lib/libomp.dylib" "$PKGPATH/libs/ngme2.so" || echo "Patching libomp.dylib failed"
+          install_name_tool -change @loader_path/libomp.dylib "$RFW/lib/libomp.dylib" "$PKGPATH/libs/ngme2.so" || echo "Patching @loader_path failed"
+          
           # Check dependencies after patching
           echo "Dependencies after patching:"
           otool -L "$PKGPATH/libs/ngme2.so"
@@ -142,12 +166,18 @@ jobs:
         export DYLD_LIBRARY_PATH=/usr/local/lib:$RFW/lib
         export DYLD_FALLBACK_LIBRARY_PATH=/usr/local/lib:$RFW/lib:/usr/lib
         
+        # Set PKG_LIBS explicitly
+        export PKG_LIBS="-L$RFW/lib -lomp -Wl,-rpath,$RFW/lib"
+        echo "Set PKG_LIBS=$PKG_LIBS"
+        
         # Get the installed package path
         PKGPATH=$(Rscript -e 'cat(find.package("ngme2"))')
         
         # Build the binary package from the installed package
         R CMD REMOVE ngme2  # Remove the installed package
-        R CMD INSTALL --build $(ls -t *.tar.gz | head -n 1)
+        
+        # Build with explicit PKG_LIBS
+        PKG_LIBS="-L$RFW/lib -lomp -Wl,-rpath,$RFW/lib" R CMD INSTALL --build $(ls -t *.tar.gz | head -n 1)
       shell: bash
 
     - name: Install & build binary (Win only)

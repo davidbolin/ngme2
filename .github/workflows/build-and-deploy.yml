@@ -40,6 +40,10 @@ jobs:
       run: |
         brew install llvm
         brew install libomp
+        mkdir -p ~/.R
+        echo "CXXFLAGS += -fopenmp -I$(brew --prefix llvm)/include" >> ~/.R/Makevars
+        echo "CFLAGS   += -fopenmp -I$(brew --prefix llvm)/include" >> ~/.R/Makevars
+        echo "LDFLAGS  += -fopenmp -L$(brew --prefix llvm)/lib -Wl,-rpath,$(brew --prefix llvm)/lib" >> ~/.R/Makevars
 
     - name: Configure compiler for LLVM and OpenMP (macOS only)
       if: matrix.os == 'macos-latest'

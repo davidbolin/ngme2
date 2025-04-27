@@ -6,9 +6,9 @@ on:
       - stable
 
 permissions:
-  contents: read    # 用来 clone 你的仓库
-  actions: read     # 允许下载并执行 Marketplace 上的 Actions（例如 upload-artifact）
-  packages: write   # 如果你需要读/写 GitHub Packages
+  contents: read    # Allow clone the repository
+  actions: read     # Allow download and execute Marketplace Actions (e.g. upload-artifact)
+  packages: write   # Allow read/write GitHub Packages
 
 jobs:
   build:
@@ -82,7 +82,7 @@ jobs:
       with:
         name: binary-windows-latest
         path: .binaries/bin/windows
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4
       with:
         name: binary-macos-latest
         path: .binaries/bin/macos

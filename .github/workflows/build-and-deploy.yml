@@ -60,8 +60,19 @@ jobs:
     - name: Symlink R's libomp into /usr/local/lib for CI
       if: matrix.os == 'macos-latest'
       run: |
+        # 1. 取得 R 框架目录
         RFW=$(R RHOME)
-        sudo ln -sf $RFW/lib/libomp.dylib /usr/local/lib/libomp.dylib
+        echo "R framework path: $RFW"
+
+        # 2. 确保 /usr/local/lib 存在
+        sudo mkdir -p /usr/local/lib
+
+        # 3. 建立指向 R.framework 自带 libomp.dylib 的链接
+        sudo ln -sf "$RFW/lib/libomp.dylib" /usr/local/lib/libomp.dylib
+
+        # 4. 验证一下
+        echo "Symlinked libomp:"
+        ls -l /usr/local/lib/libomp.dylib
 
     - name: Build source package (all platforms)
       run: |

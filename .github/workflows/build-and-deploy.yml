@@ -65,7 +65,7 @@ jobs:
     - name: Install & build binary (macOS only)
       if: matrix.os == 'macos-latest'
       run: |
-        export DYLD_FALLBACK_LIBRARY_PATH=$(brew --prefix llvm)/lib:/usr/local/lib:/usr/lib
+        export DYLD_FALLBACK_LIBRARY_PATH=/Library/Frameworks/R.framework/Resources/lib:/usr/local/lib:/usr/lib
         R CMD INSTALL --build $(ls -t *.tar.gz | head -n 1)
       shell: bash
 

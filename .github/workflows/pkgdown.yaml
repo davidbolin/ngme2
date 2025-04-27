@@ -30,6 +30,7 @@ jobs:
           dependencies: '"all"'
           extra-packages: |
              pkgdown
+
       - name: Session info
         run: |
           options(width = 100)

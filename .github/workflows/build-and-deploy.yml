@@ -27,6 +27,10 @@ jobs:
     - name: Install build deps
       run: Rscript -e 'install.packages(c("devtools"), repos="https://cloud.r-project.org")'
 
+    - uses: r-lib/actions/setup-r-dependencies@v2
+      with:
+        dependencies: '"all"'
+
     - name: Build & pack binary
       run: |
         R CMD build .

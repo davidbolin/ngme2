@@ -15,7 +15,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        # os: [macos-latest, ubuntu-latest, windows-latest]
         os: [macos-latest]
+        # r-version: ["4.1", "4.2", "4.3", "4.4", "4.5"]
         r-version: ["4.5"]
 
     steps:
@@ -35,14 +37,10 @@ jobs:
       with:
         dependencies: '"all"'
 
-    - name: Install LLVM (macOS only)
-      if: matrix.os == 'macos-latest'
-      run: |
-        brew install llvm
-
     - name: Configure LLVM and OpenMP for R (macOS only)
       if: matrix.os == 'macos-latest'
       run: |
+        brew install llvm
         LLVM_PREFIX=$(brew --prefix llvm)
         RFW=$(R RHOME)
 
@@ -93,12 +91,27 @@ jobs:
           exit 1
         fi
 
-    - name: Build binary package (macOS only)
+    - name: Build binary package from installed package (macOS only)
       if: matrix.os == 'macos-latest'
+      run: |
+        PKGPATH=$(Rscript -e 'cat(find.package("ngme2"))')
+        echo "Building binary package from installed path: $PKGPATH"
+        R CMD build --binary "$PKGPATH"
+      shell: bash
+
+    - name: Build binary package (Windows only)
+      if: matrix.os == 'windows-latest'
       run: |
         PKG=$(ls -t *.tar.gz | head -n 1)
         R CMD INSTALL --build "$PKG"
       shell: bash
+
+    - name: Upload Windows binary
+      if: matrix.os == 'windows-latest'
+      uses: actions/upload-artifact@v4
+      with:
+        name: binary-windows-r${{ matrix.r-version }}
+        path: "*.zip"
 
     - name: Upload macOS binary
       if: matrix.os == 'macos-latest'
@@ -106,6 +119,13 @@ jobs:
       with:
         name: binary-macos-r${{ matrix.r-version }}
         path: "*.tgz"
+
+    - name: Upload Linux source
+      if: matrix.os == 'ubuntu-latest'
+      uses: actions/upload-artifact@v4
+      with:
+        name: source-linux-r${{ matrix.r-version }}
+        path: "*.tar.gz"
 
   deploy:
     needs: build
@@ -122,14 +142,36 @@ jobs:
 
     - name: Create directory structure
       run: |
+        mkdir -p .binaries/bin/windows/contrib/4.1
+        mkdir -p .binaries/bin/windows/contrib/4.2
+        mkdir -p .binaries/bin/windows/contrib/4.3
+        mkdir -p .binaries/bin/windows/contrib/4.4
+        mkdir -p .binaries/bin/windows/contrib/4.5
+        mkdir -p .binaries/bin/macosx/big-sur-arm64/contrib/4.1
+        mkdir -p .binaries/bin/macosx/big-sur-arm64/contrib/4.2
+        mkdir -p .binaries/bin/macosx/big-sur-arm64/contrib/4.3
+        mkdir -p .binaries/bin/macosx/big-sur-arm64/contrib/4.4
         mkdir -p .binaries/bin/macosx/big-sur-arm64/contrib/4.5
         mkdir -p .binaries/src/contrib
 
-    - name: Download macOS binaries
+    # 下载 artifacts
+    - name: Download all Windows binaries
       uses: actions/download-artifact@v4
       with:
-        name: binary-macos-r4.5
-        path: .binaries/bin/macosx/big-sur-arm64/contrib/4.5
+        pattern: binary-windows-r*
+        path: .binaries/bin/windows/contrib/
+
+    - name: Download all macOS binaries
+      uses: actions/download-artifact@v4
+      with:
+        pattern: binary-macos-r*
+        path: .binaries/bin/macosx/big-sur-arm64/contrib/
+
+    - name: Download all Linux sources
+      uses: actions/download-artifact@v4
+      with:
+        pattern: source-linux-r*
+        path: .binaries/src/contrib
 
     - name: Create .nojekyll
       run: touch .nojekyll
@@ -137,7 +179,10 @@ jobs:
     - name: Generate PACKAGES indices
       run: |
         Rscript -e 'tools::write_PACKAGES(".binaries/src/contrib", type="source")'
-        Rscript -e 'tools::write_PACKAGES(".binaries/bin/macosx/big-sur-arm64/contrib/4.5", type="mac.binary")'
+        for v in 4.1 4.2 4.3 4.4 4.5; do
+          Rscript -e "tools::write_PACKAGES('.binaries/bin/windows/contrib/$v', type='win.binary')"
+          Rscript -e "tools::write_PACKAGES('.binaries/bin/macosx/big-sur-arm64/contrib/$v', type='mac.binary')"
+        done
 
     - name: Commit & Push
       run: |

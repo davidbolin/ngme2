@@ -6,7 +6,7 @@ on:
       - stable
 
 permissions:
-  contents: read    # Allow clone the repository
+  contents: write   # Allow clone and write to the repository
   actions: read     # Allow download and execute Marketplace Actions (e.g. upload-artifact)
   packages: write   # Allow read/write GitHub Packages
 
@@ -41,16 +41,16 @@ jobs:
         brew install llvm
         brew install libomp
 
-    - name: Configure compiler for LLVM (macOS only)
+    - name: Configure compiler for LLVM and OpenMP (macOS only)
       if: matrix.os == 'macos-latest'
       run: |
         LLVM_PREFIX=$(brew --prefix llvm)
         echo "PATH=$LLVM_PREFIX/bin:$PATH" >> $GITHUB_ENV
         echo "CC=$LLVM_PREFIX/bin/clang" >> $GITHUB_ENV
         echo "CXX=$LLVM_PREFIX/bin/clang++" >> $GITHUB_ENV
-        echo "CFLAGS=-I$LLVM_PREFIX/include" >> $GITHUB_ENV
-        echo "CXXFLAGS=-I$LLVM_PREFIX/include" >> $GITHUB_ENV
-        echo "LDFLAGS=-L$LLVM_PREFIX/lib -Wl,-rpath,$LLVM_PREFIX/lib" >> $GITHUB_ENV
+        echo "CFLAGS=-fopenmp -I$LLVM_PREFIX/include" >> $GITHUB_ENV
+        echo "CXXFLAGS=-fopenmp -I$LLVM_PREFIX/include" >> $GITHUB_ENV
+        echo "LDFLAGS=-fopenmp -L$LLVM_PREFIX/lib -Wl,-rpath,$LLVM_PREFIX/lib" >> $GITHUB_ENV
 
     - name: Build source package (all platforms)
       run: |
@@ -154,5 +154,5 @@ jobs:
         git config user.name  "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
         git add .
-        git commit -m "Update binaries $(date +%Y-%m-%d)" || echo "No changes to commit"
+        git commit -m "Update binaries $(date +%Y-%m-%d) [skip ci]" || echo "No changes to commit"
         git push origin gh-pages

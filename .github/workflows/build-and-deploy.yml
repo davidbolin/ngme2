@@ -94,9 +94,26 @@ jobs:
     - name: Build binary package from installed package (macOS only)
       if: matrix.os == 'macos-latest'
       run: |
+        # Get installed path
         PKGPATH=$(Rscript -e 'cat(find.package("ngme2"))')
-        echo "Building binary package from installed path: $PKGPATH"
-        R CMD build --binary "$PKGPATH"
+        echo "Installed package path: $PKGPATH"
+        
+        # Find original source folder
+        SRCPKG=$(ls -t *.tar.gz | head -n 1)
+        echo "Source package tar.gz: $SRCPKG"
+        
+        # Extract source
+        mkdir extracted_src
+        tar -xf "$SRCPKG" -C extracted_src
+        echo "Extracted source:"
+        ls -R extracted_src
+        
+        # Copy patched .so back into extracted src
+        cp "$PKGPATH/libs/ngme2.so" extracted_src/ngme2/libs/
+        echo "Copied patched ngme2.so back into source"
+
+        # Build binary from the extracted and patched source
+        R CMD build --binary extracted_src/ngme2
       shell: bash
 
     - name: Build binary package (Windows only)

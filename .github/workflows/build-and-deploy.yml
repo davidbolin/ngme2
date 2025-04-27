@@ -15,8 +15,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
-        r-version: ["4.4", "4.5"]
+        # os: [windows-latest, macos-latest, ubuntu-latest]
+        # r-version: ["4.4", "4.5"]
+        os: [macos-latest]
+        r-version: ["4.5"]
 
     steps:
     - name: Checkout source
@@ -57,16 +59,11 @@ jobs:
         echo "CFLAGS   += -fopenmp -I$R_FRAMEWORK_PATH/include" >> ~/.R/Makevars
         echo "LDFLAGS  += -fopenmp -L$R_FRAMEWORK_PATH/lib -Wl,-rpath,$R_FRAMEWORK_PATH/lib -Wl,-install_name,@rpath/libomp.dylib" >> ~/.R/Makevars
 
-    - name: Build source package (all platforms)
-      run: |
-        R CMD build .
-      shell: bash
-
-    - name: Build shared object for inspection (macOS only)
+    - name: Build the shared object for patching (macOS only)
       if: matrix.os == 'macos-latest'
       run: |
-        # 找到 R.framework 安装路径
         RFW=$(R RHOME)
+        # build just the .so so we can patch it 
         "$RFW"/bin/R CMD SHLIB \
           src/*.cpp \
           -I"$RFW/include" -fopenmp \
@@ -76,11 +73,19 @@ jobs:
           -lomp \
           -o ngme2.so
 
-        echo "=== LC_RPATH entries ==="
-        otool -l ngme2.so | awk '/cmd LC_RPATH/{print;getline;print}'
+    - name: Patch ngme2.so to @loader_path
+      if: matrix.os == 'macos-latest'
+      run: |
+        RFW=$(R RHOME)
+        # change the absolute or @rpath reference to loader-relative
+        install_name_tool -change \
+          @rpath/libomp.dylib \
+          @loader_path/../Resources/lib/libomp.dylib \
+          ngme2.so
 
-        echo "=== All linked dylibs ==="
-        otool -L ngme2.so
+    - name: Build source package (all platforms)
+      run: |
+        R CMD build .
       shell: bash
 
     - name: Install & build binary (macOS only)

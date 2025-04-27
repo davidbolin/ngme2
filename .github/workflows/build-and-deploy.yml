@@ -35,10 +35,10 @@ jobs:
       with:
         dependencies: '"all"'
 
-    - name: Build source package (Linux only)
-      if: matrix.os == 'ubuntu-latest'
+    - name: Build source package (all platforms)
       run: |
         R CMD build .
+      shell: bash
 
     - name: Install & build binary (Win/macOS only)
       if: matrix.os != 'ubuntu-latest'

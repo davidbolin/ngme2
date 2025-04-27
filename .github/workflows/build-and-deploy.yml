@@ -66,10 +66,17 @@ jobs:
         R CMD build .
       shell: bash
 
-    - name: Install & build binary (Win/macOS only)
-      if: matrix.os != 'ubuntu-latest'
+    - name: Install & build binary (macOS only)
+      if: matrix.os == 'macos-latest'
       run: |
+        export DYLD_FALLBACK_LIBRARY_PATH=$(brew --prefix llvm)/lib:/usr/local/lib:/usr/lib
         R CMD INSTALL --build $(ls -t *.tar.gz | head -n 1)
+      shell: bash
+
+    - name: Install & build binary (Win only)
+      if: matrix.os == 'windows-latest'
+      run: |
+        R CMD INSTALL --build $(ls -t *.zip | head -n 1)
       shell: bash
 
     - name: Upload Windows binary

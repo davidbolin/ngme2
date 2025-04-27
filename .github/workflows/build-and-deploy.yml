@@ -15,8 +15,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # os: [windows-latest, macos-latest, ubuntu-latest]
-        # r-version: ["4.4", "4.5"]
         os: [macos-latest]
         r-version: ["4.5"]
 
@@ -37,161 +35,70 @@ jobs:
       with:
         dependencies: '"all"'
 
-    - name: Install LLVM for OpenMP (macOS only)
+    - name: Install LLVM (macOS only)
       if: matrix.os == 'macos-latest'
       run: |
         brew install llvm
 
-    - name: Configure compiler to use LLVM (macOS only)
+    - name: Configure LLVM and OpenMP for R (macOS only)
       if: matrix.os == 'macos-latest'
       run: |
-        # Set LLVM as the compiler
         LLVM_PREFIX=$(brew --prefix llvm)
+        RFW=$(R RHOME)
+
         echo "PATH=$LLVM_PREFIX/bin:$PATH" >> $GITHUB_ENV
         echo "CC=$LLVM_PREFIX/bin/clang" >> $GITHUB_ENV
         echo "CXX=$LLVM_PREFIX/bin/clang++" >> $GITHUB_ENV
+        echo "CFLAGS=-fopenmp -I$RFW/include" >> $GITHUB_ENV
+        echo "CXXFLAGS=-fopenmp -I$RFW/include" >> $GITHUB_ENV
+        echo "LDFLAGS=-fopenmp -L$RFW/lib -Wl,-rpath,$RFW/lib" >> $GITHUB_ENV
+        echo "DYLD_FALLBACK_LIBRARY_PATH=$RFW/lib:/usr/local/lib:/usr/lib" >> $GITHUB_ENV
 
-    - name: Setup R's OpenMP (macOS only)
-      if: matrix.os == 'macos-latest'
-      run: |
-        # Get R framework path
-        RFW=$(R RHOME)
-        echo "R framework path: $RFW"
-        
-        # Create ~/.R/Makevars file for R package compilation
         mkdir -p ~/.R
-        
-        # Configure OpenMP flags to use R's internal OpenMP
-        echo "CXXFLAGS=-fopenmp -I$RFW/include" > ~/.R/Makevars
-        echo "CFLAGS=-fopenmp -I$RFW/include" >> ~/.R/Makevars
-        echo "LDFLAGS=-fopenmp -L$RFW/lib -Wl,-rpath,$RFW/lib" >> ~/.R/Makevars
-        
-        # Explicitly set PKG_LIBS to include libomp.dylib
-        echo "PKG_LIBS=-L$RFW/lib -Wl,-rpath,$RFW/lib -lomp" >> ~/.R/Makevars
-        
-        # Debug: Show contents of Makevars
-        echo "Contents of ~/.R/Makevars:"
-        cat ~/.R/Makevars
+        echo "CXXFLAGS += -fopenmp -I$RFW/include" >> ~/.R/Makevars
+        echo "CFLAGS   += -fopenmp -I$RFW/include" >> ~/.R/Makevars
+        echo "LDFLAGS  += -fopenmp -L$RFW/lib -Wl,-rpath,$RFW/lib" >> ~/.R/Makevars
 
-    - name: Make R's OpenMP available system-wide (macOS only)
-      if: matrix.os == 'macos-latest'
+    - name: Build source package
       run: |
-        # Get R framework path
-        RFW=$(R RHOME)
-        
-        # Create /usr/local/lib if it doesn't exist
-        sudo mkdir -p /usr/local/lib
-        
-        # Symlink R's libomp.dylib to /usr/local/lib
-        sudo ln -sf "$RFW/lib/libomp.dylib" /usr/local/lib/libomp.dylib
-        
-        # Verify the link
-        echo "Symlinked R's libomp to /usr/local/lib:"
-        ls -l /usr/local/lib/libomp.dylib
-        
-        # Set dynamic library paths
-        echo "DYLD_LIBRARY_PATH=/usr/local/lib:$RFW/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
-        echo "DYLD_FALLBACK_LIBRARY_PATH=/usr/local/lib:$RFW/lib:$DYLD_FALLBACK_LIBRARY_PATH" >> $GITHUB_ENV
-        
-        # Debug: Examine OpenMP symbols in R's libomp
-        echo "Symbols in R's libomp:"
-        nm -g $RFW/lib/libomp.dylib | grep kmpc || echo "No kmpc symbols found"
-
-    - name: Build source package (all platforms)
-      run: |
-        # For macOS, set PKG_LIBS
-        if [[ "$RUNNER_OS" == "macOS" ]]; then
-          RFW=$(R RHOME)
-          export PKG_LIBS="-L$RFW/lib -lomp -Wl,-rpath,$RFW/lib"
-          echo "Set PKG_LIBS=$PKG_LIBS for macOS"
-        fi
-        
-        # Build the source package
         R CMD build .
       shell: bash
 
-    - name: Install without building binary first (macOS only)
+    - name: Install from source without test-load (macOS only)
       if: matrix.os == 'macos-latest'
       run: |
-        # Get R framework path
+        PKG=$(ls -t *.tar.gz | head -n 1)
+        R CMD INSTALL --no-multiarch --no-test-load "$PKG"
+
+    - name: Patch OpenMP paths after install (macOS only)
+      if: matrix.os == 'macos-latest'
+      run: |
         RFW=$(R RHOME)
-        
-        # Create a package-specific Makevars.site file
-        mkdir -p $RFW/etc
-        cat > $RFW/etc/Makevars.site << EOF
-        # Package-specific OpenMP settings
-        PKG_LIBS += -L$RFW/lib -lomp -Wl,-rpath,$RFW/lib
-        EOF
-        echo "Created $RFW/etc/Makevars.site:"
-        cat $RFW/etc/Makevars.site
-        
-        # Install the package without building binary
-        R CMD INSTALL --no-multiarch --no-test-load $(ls -t *.tar.gz | head -n 1)
-        
-        # Find the installed .so file
         PKGPATH=$(Rscript -e 'cat(find.package("ngme2"))')
         echo "Package installed at: $PKGPATH"
-        
-        # Check if the .so file exists
+
         if [ -f "$PKGPATH/libs/ngme2.so" ]; then
           echo "Found ngme2.so at $PKGPATH/libs/ngme2.so"
-          
-          # Check dependencies before patching
-          echo "Original dependencies:"
           otool -L "$PKGPATH/libs/ngme2.so"
-          
-          # Try to patch the .so file to use a specific path for libomp
-          echo "Patching ngme2.so with install_name_tool..."
-          install_name_tool -change @rpath/libomp.dylib "$RFW/lib/libomp.dylib" "$PKGPATH/libs/ngme2.so" || echo "Patching failed"
-          
-          # Also try with any other potential OpenMP references
-          install_name_tool -change libomp.dylib "$RFW/lib/libomp.dylib" "$PKGPATH/libs/ngme2.so" || echo "Patching libomp.dylib failed"
-          install_name_tool -change @loader_path/libomp.dylib "$RFW/lib/libomp.dylib" "$PKGPATH/libs/ngme2.so" || echo "Patching @loader_path failed"
-          
-          # Check dependencies after patching
+
+          echo "Patching ngme2.so install_name..."
+          install_name_tool -change @rpath/libomp.dylib "$RFW/lib/libomp.dylib" "$PKGPATH/libs/ngme2.so" || true
+          install_name_tool -change libomp.dylib "$RFW/lib/libomp.dylib" "$PKGPATH/libs/ngme2.so" || true
+          install_name_tool -change @loader_path/libomp.dylib "$RFW/lib/libomp.dylib" "$PKGPATH/libs/ngme2.so" || true
+
           echo "Dependencies after patching:"
           otool -L "$PKGPATH/libs/ngme2.so"
         else
-          echo "Could not find ngme2.so at expected location"
-          find "$PKGPATH" -name "*.so" -type f
+          echo "ngme2.so not found!"
+          exit 1
         fi
 
     - name: Build binary package (macOS only)
       if: matrix.os == 'macos-latest'
       run: |
-        # Get R framework path
-        RFW=$(R RHOME)
-        
-        # Set environment variables for dynamic loading
-        export DYLD_LIBRARY_PATH=/usr/local/lib:$RFW/lib
-        export DYLD_FALLBACK_LIBRARY_PATH=/usr/local/lib:$RFW/lib:/usr/lib
-        
-        # Set PKG_LIBS explicitly
-        export PKG_LIBS="-L$RFW/lib -lomp -Wl,-rpath,$RFW/lib"
-        echo "Set PKG_LIBS=$PKG_LIBS"
-        
-        # Get the installed package path
-        PKGPATH=$(Rscript -e 'cat(find.package("ngme2"))')
-        
-        # Build the binary package from the installed package
-        R CMD REMOVE ngme2  # Remove the installed package
-        
-        # Build with explicit PKG_LIBS
-        PKG_LIBS="-L$RFW/lib -lomp -Wl,-rpath,$RFW/lib" R CMD INSTALL --build $(ls -t *.tar.gz | head -n 1)
+        PKG=$(ls -t *.tar.gz | head -n 1)
+        R CMD INSTALL --build "$PKG"
       shell: bash
-
-    - name: Install & build binary (Win only)
-      if: matrix.os == 'windows-latest'
-      run: |
-        R CMD INSTALL --build $(ls -t *.tar.gz | head -n 1)
-      shell: bash
-
-    - name: Upload Windows binary
-      if: matrix.os == 'windows-latest'
-      uses: actions/upload-artifact@v4
-      with:
-        name: binary-windows-r${{ matrix.r-version }}
-        path: "*.zip"
 
     - name: Upload macOS binary
       if: matrix.os == 'macos-latest'
@@ -199,13 +106,6 @@ jobs:
       with:
         name: binary-macos-r${{ matrix.r-version }}
         path: "*.tgz"
-
-    - name: Upload Linux source
-      if: matrix.os == 'ubuntu-latest'
-      uses: actions/upload-artifact@v4
-      with:
-        name: source-linux-r${{ matrix.r-version }}
-        path: "*.tar.gz"
 
   deploy:
     needs: build
@@ -222,60 +122,26 @@ jobs:
 
     - name: Create directory structure
       run: |
-        mkdir -p .binaries/bin/windows/contrib/4.4
-        mkdir -p .binaries/bin/windows/contrib/4.5
-        mkdir -p .binaries/bin/macosx/big-sur-arm64/contrib/4.4
         mkdir -p .binaries/bin/macosx/big-sur-arm64/contrib/4.5
         mkdir -p .binaries/src/contrib
-    # 下载 Windows binaries
-    - name: Download Windows r4.4
-      uses: actions/download-artifact@v4
-      with:
-        name: binary-windows-r4.4
-        path: .binaries/bin/windows/contrib/4.4
-    - name: Download Windows r4.5
-      uses: actions/download-artifact@v4
-      with:
-        name: binary-windows-r4.5
-        path: .binaries/bin/windows/contrib/4.5
 
-    # 下载 macOS binaries
-    - name: Download macOS r4.4
-      uses: actions/download-artifact@v4
-      with:
-        name: binary-macos-r4.4
-        path: .binaries/bin/macosx/big-sur-arm64/contrib/4.4
-    - name: Download macOS r4.5
+    - name: Download macOS binaries
       uses: actions/download-artifact@v4
       with:
         name: binary-macos-r4.5
         path: .binaries/bin/macosx/big-sur-arm64/contrib/4.5
 
-    # 下载 Linux source
-    - name: Download source r4.4
-      uses: actions/download-artifact@v4
-      with:
-        name: source-linux-r4.4
-        path: .binaries/src/contrib
-    - name: Download source r4.5
-      uses: actions/download-artifact@v4
-      with:
-        name: source-linux-r4.5
-        path: .binaries/src/contrib
-
-    - name: Create .nojekyll (allow dot-folders)
+    - name: Create .nojekyll
       run: touch .nojekyll
 
     - name: Generate PACKAGES indices
       run: |
         Rscript -e 'tools::write_PACKAGES(".binaries/src/contrib", type="source")'
-        Rscript -e 'tools::write_PACKAGES(".binaries/bin/windows/contrib/4.4", type="win.binary")'
-        Rscript -e 'tools::write_PACKAGES(".binaries/bin/windows/contrib/4.5", type="win.binary")'
-        Rscript -e 'tools::write_PACKAGES(".binaries/bin/macosx/big-sur-arm64/contrib/4.4", type="mac.binary")'
         Rscript -e 'tools::write_PACKAGES(".binaries/bin/macosx/big-sur-arm64/contrib/4.5", type="mac.binary")'
+
     - name: Commit & Push
       run: |
-        git config user.name  "github-actions[bot]"
+        git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
         git add .
         git commit -m "🚀 Update binaries for $(date +%Y-%m-%d) [skip ci]" || echo "No changes to commit"

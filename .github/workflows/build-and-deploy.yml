@@ -76,7 +76,7 @@ jobs:
     - name: Install & build binary (Win only)
       if: matrix.os == 'windows-latest'
       run: |
-        R CMD INSTALL --build $(ls -t *.zip | head -n 1)
+        R CMD INSTALL --build $(ls -t *.tar.gz | head -n 1)
       shell: bash
 
     - name: Upload Windows binary

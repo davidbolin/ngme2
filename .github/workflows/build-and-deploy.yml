@@ -40,7 +40,8 @@ jobs:
     - name: Install LLVM for OpenMP (macOS only)
       if: matrix.os == 'macos-latest'
       run: |
-        brew install llvm
+        brew install llvm libomp
+
     - name: Configure compiler to use LLVM (macOS only)
       if: matrix.os == 'macos-latest'
       run: |
@@ -48,14 +49,27 @@ jobs:
         echo "PATH=$LLVM_PREFIX/bin:$PATH" >> $GITHUB_ENV
         echo "CC=$LLVM_PREFIX/bin/clang" >> $GITHUB_ENV
         echo "CXX=$LLVM_PREFIX/bin/clang++" >> $GITHUB_ENV
+        # Explicitly set LDFLAGS to use brew-installed libomp
+        echo "LDFLAGS=-L$(brew --prefix libomp)/lib -Wl,-rpath,$(brew --prefix libomp)/lib" >> $GITHUB_ENV
+        # Also set these for R package building
+        mkdir -p ~/.R
+        echo "CXXFLAGS=-I$(brew --prefix libomp)/include" >> ~/.R/Makevars
+        echo "CFLAGS=-I$(brew --prefix libomp)/include" >> ~/.R/Makevars
+        echo "LDFLAGS+=-L$(brew --prefix libomp)/lib -lomp" >> ~/.R/Makevars
+
     - name: Setup OpenMP to link R-provided libomp (macOS only)
       if: matrix.os == 'macos-latest'
       run: |
         export R_FRAMEWORK_PATH=$(R RHOME)
         mkdir -p ~/.R
-        echo "CXXFLAGS += -fopenmp -I$R_FRAMEWORK_PATH/include" >> ~/.R/Makevars
-        echo "CFLAGS   += -fopenmp -I$R_FRAMEWORK_PATH/include" >> ~/.R/Makevars
-        echo "LDFLAGS  += -fopenmp -L$R_FRAMEWORK_PATH/lib -Wl,-rpath,$R_FRAMEWORK_PATH/lib -Wl,-install_name,@rpath/libomp.dylib" >> ~/.R/Makevars
+        # Update to use both R's and brew's OpenMP
+        echo "CXXFLAGS += -fopenmp -I$R_FRAMEWORK_PATH/include -I$(brew --prefix libomp)/include" >> ~/.R/Makevars
+        echo "CFLAGS   += -fopenmp -I$R_FRAMEWORK_PATH/include -I$(brew --prefix libomp)/include" >> ~/.R/Makevars
+        echo "LDFLAGS  += -fopenmp -L$R_FRAMEWORK_PATH/lib -L$(brew --prefix libomp)/lib -lomp" >> ~/.R/Makevars
+        
+        # Show the contents of Makevars
+        echo "Contents of ~/.R/Makevars:"
+        cat ~/.R/Makevars
 
     - name: Symlink R's libomp into /usr/local/lib for CI
       if: matrix.os == 'macos-latest'
@@ -73,6 +87,24 @@ jobs:
         # 4. 验证一下
         echo "Symlinked libomp:"
         ls -l /usr/local/lib/libomp.dylib
+        
+        # 5. Also link the brew-installed libomp
+        sudo ln -sf "$(brew --prefix libomp)/lib/libomp.dylib" /usr/local/lib/libomp.brew.dylib
+        ls -l /usr/local/lib/libomp.brew.dylib
+
+    - name: Debug OpenMP symbols (macOS only)
+      if: matrix.os == 'macos-latest'
+      run: |
+        # Check symbols in both R's and brew's libomp
+        echo "Symbols in R's libomp:"
+        nm -g $(R RHOME)/lib/libomp.dylib | grep kmpc_dispatch
+        
+        echo "Symbols in brew's libomp:"
+        nm -g $(brew --prefix libomp)/lib/libomp.dylib | grep kmpc_dispatch
+        
+        # Set DYLD paths to help with runtime loading
+        echo "DYLD_LIBRARY_PATH=/usr/local/lib:$(brew --prefix libomp)/lib:$(R RHOME)/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
+        echo "DYLD_FALLBACK_LIBRARY_PATH=/usr/local/lib:$(brew --prefix libomp)/lib:$(R RHOME)/lib:$DYLD_FALLBACK_LIBRARY_PATH" >> $GITHUB_ENV
 
     - name: Build source package (all platforms)
       run: |

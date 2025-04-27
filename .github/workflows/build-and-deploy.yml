@@ -98,7 +98,7 @@ jobs:
         PKGPATH=$(Rscript -e 'cat(find.package("ngme2"))')
         echo "Installed package path: $PKGPATH"
         
-        # Find original source folder
+        # Find original source tar.gz
         SRCPKG=$(ls -t *.tar.gz | head -n 1)
         echo "Source package tar.gz: $SRCPKG"
         
@@ -108,7 +108,10 @@ jobs:
         echo "Extracted source:"
         ls -R extracted_src
         
-        # Copy patched .so back into extracted src
+        # Create libs/ directory if not exist
+        mkdir -p extracted_src/ngme2/libs
+        
+        # Copy patched .so back into extracted source
         cp "$PKGPATH/libs/ngme2.so" extracted_src/ngme2/libs/
         echo "Copied patched ngme2.so back into source"
 

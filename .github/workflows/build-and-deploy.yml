@@ -58,7 +58,7 @@ jobs:
         mkdir -p ~/.R
         echo "CXXFLAGS += -fopenmp -I$(brew --prefix llvm)/include" >> ~/.R/Makevars
         echo "CFLAGS   += -fopenmp -I$(brew --prefix llvm)/include" >> ~/.R/Makevars
-        echo "LDFLAGS  += -fopenmp -L$(brew --prefix llvm)/lib -Wl,-rpath,$(brew --prefix llvm)/lib -lomp" >> ~/.R/Makevars
+        echo "LDFLAGS  += -fopenmp -L$(brew --prefix llvm)/lib -Wl,-rpath,$(brew --prefix llvm)/lib -lomp -Wl,-install_name,@rpath/libomp.dylib" >> ~/.R/Makevars
 
     - name: Build source package (all platforms)
       run: |

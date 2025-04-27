@@ -40,120 +40,107 @@ jobs:
     - name: Install LLVM for OpenMP (macOS only)
       if: matrix.os == 'macos-latest'
       run: |
-        brew install llvm
-
-    - name: Configure compiler to use LLVM (macOS only)
-      if: matrix.os == 'macos-latest'
-      run: |
-        # Set LLVM as the compiler
-        LLVM_PREFIX=$(brew --prefix llvm)
-        echo "PATH=$LLVM_PREFIX/bin:$PATH" >> $GITHUB_ENV
-        echo "CC=$LLVM_PREFIX/bin/clang" >> $GITHUB_ENV
-        echo "CXX=$LLVM_PREFIX/bin/clang++" >> $GITHUB_ENV
-
-    - name: Setup R's OpenMP (macOS only)
-      if: matrix.os == 'macos-latest'
-      run: |
-        # Get R framework path
-        RFW=$(R RHOME)
-        echo "R framework path: $RFW"
+        # Install LLVM and libomp explicitly
+        brew install llvm libomp
         
-        # Create ~/.R/Makevars file for R package compilation
+        # Check installed OpenMP libraries
+        echo "Checking installed OpenMP libraries:"
+        ls -la $(brew --prefix libomp)/lib/
+
+    - name: Create Makevars with explicit libomp config (macOS only)
+      if: matrix.os == 'macos-latest'
+      run: |
+        # Get brew paths
+        LLVM_PREFIX=$(brew --prefix llvm)
+        LIBOMP_PREFIX=$(brew --prefix libomp)
+        
+        # Create ~/.R/Makevars with explicit settings
         mkdir -p ~/.R
         
-        # Configure OpenMP flags to use R's internal OpenMP
-        echo "CXXFLAGS=-fopenmp -I$RFW/include" > ~/.R/Makevars
-        echo "CFLAGS=-fopenmp -I$RFW/include" >> ~/.R/Makevars
-        echo "LDFLAGS=-fopenmp -L$RFW/lib -Wl,-rpath,$RFW/lib" >> ~/.R/Makevars
+        # Create a very explicit Makevars file
+        cat > ~/.R/Makevars << EOF
+        # Use LLVM clang compilers
+        CC=$(which clang)
+        CXX=$(which clang++)
         
-        # Debug: Show contents of Makevars
-        echo "Contents of ~/.R/Makevars:"
+        # OpenMP flags - use brew libomp explicitly
+        CPPFLAGS=-I${LIBOMP_PREFIX}/include
+        CFLAGS=-I${LIBOMP_PREFIX}/include -fopenmp
+        CXXFLAGS=-I${LIBOMP_PREFIX}/include -fopenmp
+        
+        # Linker flags - explicit paths to libomp
+        LDFLAGS=-L${LIBOMP_PREFIX}/lib -Wl,-rpath,${LIBOMP_PREFIX}/lib -lomp
+        EOF
+        
+        # Display the created Makevars file
+        echo "Created ~/.R/Makevars:"
         cat ~/.R/Makevars
 
-    - name: Make R's OpenMP available system-wide (macOS only)
+    - name: Create custom OpenMP test (macOS only)
       if: matrix.os == 'macos-latest'
       run: |
-        # Get R framework path
-        RFW=$(R RHOME)
+        # Create a simple OpenMP test program
+        cat > openmp_test.cpp << EOF
+        #include <omp.h>
+        #include <stdio.h>
+        int main() {
+          int nthreads, tid;
+          #pragma omp parallel private(tid)
+          {
+            tid = omp_get_thread_num();
+            printf("Hello, world from thread = %d\\n", tid);
+            if (tid == 0) {
+              nthreads = omp_get_num_threads();
+              printf("Number of threads = %d\\n", nthreads);
+            }
+          }
+          return 0;
+        }
+        EOF
         
-        # Create /usr/local/lib if it doesn't exist
-        sudo mkdir -p /usr/local/lib
+        # Compile and run the test program
+        LIBOMP_PREFIX=$(brew --prefix libomp)
+        clang++ -I${LIBOMP_PREFIX}/include -L${LIBOMP_PREFIX}/lib -Wl,-rpath,${LIBOMP_PREFIX}/lib -fopenmp openmp_test.cpp -o openmp_test
         
-        # Symlink R's libomp.dylib to /usr/local/lib
-        sudo ln -sf "$RFW/lib/libomp.dylib" /usr/local/lib/libomp.dylib
+        # Run the test
+        echo "Running OpenMP test:"
+        ./openmp_test
         
-        # Verify the link
-        echo "Symlinked R's libomp to /usr/local/lib:"
-        ls -l /usr/local/lib/libomp.dylib
-        
-        # Set dynamic library paths
-        echo "DYLD_LIBRARY_PATH=/usr/local/lib:$RFW/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
-        echo "DYLD_FALLBACK_LIBRARY_PATH=/usr/local/lib:$RFW/lib:$DYLD_FALLBACK_LIBRARY_PATH" >> $GITHUB_ENV
-        
-        # Debug: Examine OpenMP symbols in R's libomp
-        echo "Symbols in R's libomp:"
-        nm -g $RFW/lib/libomp.dylib | grep kmpc || echo "No kmpc symbols found"
+        # Check for OpenMP symbols
+        nm -g ${LIBOMP_PREFIX}/lib/libomp.dylib | grep kmpc_dispatch_deinit || echo "Symbol not found in brew libomp"
 
     - name: Build source package (all platforms)
       run: |
         R CMD build .
       shell: bash
 
-    - name: Install without building binary first (macOS only)
+    - name: Manual build with explicit flags (macOS only)
       if: matrix.os == 'macos-latest'
       run: |
-        # Get R framework path
-        RFW=$(R RHOME)
+        # Get libomp path
+        LIBOMP_PREFIX=$(brew --prefix libomp)
         
-        # Install the package without building binary
-        R CMD INSTALL --no-multiarch --no-test-load $(ls -t *.tar.gz | head -n 1)
+        # Extract the source package
+        PKGFILE=$(ls -t *.tar.gz | head -n 1)
+        tar xf $PKGFILE
+        cd ngme2
         
-        # Find the installed .so file
-        PKGPATH=$(Rscript -e 'cat(find.package("ngme2"))')
-        echo "Package installed at: $PKGPATH"
+        # Manually invoke installation with explicit flags
+        DYLD_FALLBACK_LIBRARY_PATH=${LIBOMP_PREFIX}/lib:/usr/local/lib:/usr/lib \
+        DYLD_LIBRARY_PATH=${LIBOMP_PREFIX}/lib:/usr/local/lib \
+        R CMD INSTALL \
+          --configure-args="--with-openmp-include=${LIBOMP_PREFIX}/include --with-openmp-lib=${LIBOMP_PREFIX}/lib" \
+          --no-test-load \
+          .
         
-        # Check if the .so file exists
-        if [ -f "$PKGPATH/libs/ngme2.so" ]; then
-          echo "Found ngme2.so at $PKGPATH/libs/ngme2.so"
-          
-          # Check dependencies before patching
-          echo "Original dependencies:"
-          otool -L "$PKGPATH/libs/ngme2.so"
-          
-          # Try to patch the .so file to use a specific path for libomp
-          echo "Patching ngme2.so with install_name_tool..."
-          install_name_tool -change @rpath/libomp.dylib "$RFW/lib/libomp.dylib" "$PKGPATH/libs/ngme2.so" || echo "Patching failed"
-          
-          # Check dependencies after patching
-          echo "Dependencies after patching:"
-          otool -L "$PKGPATH/libs/ngme2.so"
-        else
-          echo "Could not find ngme2.so at expected location"
-          find "$PKGPATH" -name "*.so" -type f
-        fi
-
-    - name: Build binary package (macOS only)
-      if: matrix.os == 'macos-latest'
-      run: |
-        # Get R framework path
-        RFW=$(R RHOME)
+        # Find the shared object
+        find . -name "*.so" -type f
         
-        # Set environment variables for dynamic loading
-        export DYLD_LIBRARY_PATH=/usr/local/lib:$RFW/lib
-        export DYLD_FALLBACK_LIBRARY_PATH=/usr/local/lib:$RFW/lib:/usr/lib
+        # Go back to the parent directory
+        cd ..
         
-        # Get the installed package path
-        PKGPATH=$(Rscript -e 'cat(find.package("ngme2"))')
-        
-        # Build the binary package from the installed package
-        R CMD REMOVE ngme2  # Remove the installed package
-        R CMD INSTALL --build $(ls -t *.tar.gz | head -n 1)
-      shell: bash
-
-    - name: Install & build binary (Win only)
-      if: matrix.os == 'windows-latest'
-      run: |
-        R CMD INSTALL --build $(ls -t *.tar.gz | head -n 1)
+        # Create the binary package
+        R CMD INSTALL --build $PKGFILE
       shell: bash
 
     - name: Upload Windows binary

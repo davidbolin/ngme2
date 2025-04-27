@@ -62,6 +62,27 @@ jobs:
         R CMD build .
       shell: bash
 
+    - name: Build shared object for inspection (macOS only)
+      if: matrix.os == 'macos-latest'
+      run: |
+        # 找到 R.framework 安装路径
+        RFW=$(R RHOME)
+        "$RFW"/bin/R CMD SHLIB \
+          src/*.cpp \
+          -I"$RFW/include" -fopenmp \
+          -L"$RFW/lib" \
+          -Wl,-rpath,"$RFW/lib" \
+          -Wl,-install_name,@rpath/libomp.dylib \
+          -lomp \
+          -o ngme2.so
+
+        echo "=== LC_RPATH entries ==="
+        otool -l ngme2.so | awk '/cmd LC_RPATH/{print;getline;print}'
+
+        echo "=== All linked dylibs ==="
+        otool -L ngme2.so
+      shell: bash
+
     - name: Install & build binary (macOS only)
       if: matrix.os == 'macos-latest'
       run: |

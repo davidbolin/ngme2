@@ -35,6 +35,23 @@ jobs:
       with:
         dependencies: '"all"'
 
+    - name: Install LLVM for OpenMP (macOS only)
+      if: matrix.os == 'macos-latest'
+      run: |
+        brew install llvm
+        brew install libomp
+
+    - name: Configure compiler for LLVM (macOS only)
+      if: matrix.os == 'macos-latest'
+      run: |
+        LLVM_PREFIX=$(brew --prefix llvm)
+        echo "PATH=$LLVM_PREFIX/bin:$PATH" >> $GITHUB_ENV
+        echo "CC=$LLVM_PREFIX/bin/clang" >> $GITHUB_ENV
+        echo "CXX=$LLVM_PREFIX/bin/clang++" >> $GITHUB_ENV
+        echo "CFLAGS=-I$LLVM_PREFIX/include" >> $GITHUB_ENV
+        echo "CXXFLAGS=-I$LLVM_PREFIX/include" >> $GITHUB_ENV
+        echo "LDFLAGS=-L$LLVM_PREFIX/lib -Wl,-rpath,$LLVM_PREFIX/lib" >> $GITHUB_ENV
+
     - name: Build source package (all platforms)
       run: |
         R CMD build .

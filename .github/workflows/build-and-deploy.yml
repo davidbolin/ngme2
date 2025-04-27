@@ -41,7 +41,6 @@ jobs:
       if: matrix.os == 'macos-latest'
       run: |
         brew install llvm
-
     - name: Configure compiler to use LLVM (macOS only)
       if: matrix.os == 'macos-latest'
       run: |
@@ -49,7 +48,6 @@ jobs:
         echo "PATH=$LLVM_PREFIX/bin:$PATH" >> $GITHUB_ENV
         echo "CC=$LLVM_PREFIX/bin/clang" >> $GITHUB_ENV
         echo "CXX=$LLVM_PREFIX/bin/clang++" >> $GITHUB_ENV
-
     - name: Setup OpenMP to link R-provided libomp (macOS only)
       if: matrix.os == 'macos-latest'
       run: |
@@ -59,29 +57,11 @@ jobs:
         echo "CFLAGS   += -fopenmp -I$R_FRAMEWORK_PATH/include" >> ~/.R/Makevars
         echo "LDFLAGS  += -fopenmp -L$R_FRAMEWORK_PATH/lib -Wl,-rpath,$R_FRAMEWORK_PATH/lib -Wl,-install_name,@rpath/libomp.dylib" >> ~/.R/Makevars
 
-    - name: Build the shared object for patching (macOS only)
+    - name: Symlink R's libomp into /usr/local/lib for CI
       if: matrix.os == 'macos-latest'
       run: |
         RFW=$(R RHOME)
-        # build just the .so so we can patch it 
-        "$RFW"/bin/R CMD SHLIB \
-          src/*.cpp \
-          -I"$RFW/include" -fopenmp \
-          -L"$RFW/lib" \
-          -Wl,-rpath,"$RFW/lib" \
-          -Wl,-install_name,@rpath/libomp.dylib \
-          -lomp \
-          -o ngme2.so
-
-    - name: Patch ngme2.so to @loader_path
-      if: matrix.os == 'macos-latest'
-      run: |
-        RFW=$(R RHOME)
-        # change the absolute or @rpath reference to loader-relative
-        install_name_tool -change \
-          @rpath/libomp.dylib \
-          @loader_path/../Resources/lib/libomp.dylib \
-          ngme2.so
+        sudo ln -sf $RFW/lib/libomp.dylib /usr/local/lib/libomp.dylib
 
     - name: Build source package (all platforms)
       run: |
@@ -142,7 +122,6 @@ jobs:
         mkdir -p .binaries/bin/macosx/big-sur-arm64/contrib/4.4
         mkdir -p .binaries/bin/macosx/big-sur-arm64/contrib/4.5
         mkdir -p .binaries/src/contrib
-
     # 下载 Windows binaries
     - name: Download Windows r4.4
       uses: actions/download-artifact@v4
@@ -189,7 +168,6 @@ jobs:
         Rscript -e 'tools::write_PACKAGES(".binaries/bin/windows/contrib/4.5", type="win.binary")'
         Rscript -e 'tools::write_PACKAGES(".binaries/bin/macosx/big-sur-arm64/contrib/4.4", type="mac.binary")'
         Rscript -e 'tools::write_PACKAGES(".binaries/bin/macosx/big-sur-arm64/contrib/4.5", type="mac.binary")'
-
     - name: Commit & Push
       run: |
         git config user.name  "github-actions[bot]"

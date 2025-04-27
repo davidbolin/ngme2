@@ -38,11 +38,11 @@ jobs:
       run: |
         R CMD build .
         if [ "${{ matrix.os }}" = "windows-latest" ]; then
-          R CMD INSTALL --build ngme2.0.0.tar.gz  
+          R CMD INSTALL --build $(ls -t *.tar.gz | head -n 1)
         elif [ "${{ matrix.os }}" = "macos-latest" ]; then
-          R CMD INSTALL --build ngme2.0.0.tar.gz  
+          R CMD INSTALL --build $(ls -t *.tar.gz | head -n 1)
         else
-          R CMD INSTALL --build ngme2.0.0.tar.gz
+          R CMD INSTALL --build $(ls -t *.tar.gz | head -n 1)
         fi
       shell: bash
 
@@ -51,9 +51,9 @@ jobs:
       with:
         name: binary-${{ matrix.os }}
         path: |
-          ngme2.0.0.zip     # Windows
-          ngme2.0.0.tgz     # macOS
-          ngme2.0.0.tar.gz  # Linux
+          $(ls -t *.zip | head -n 1)     # Windows
+          $(ls -t *.tgz | head -n 1)     # macOS
+          $(ls -t *.tar.gz | head -n 1)  # Linux
 
   deploy:
     needs: build

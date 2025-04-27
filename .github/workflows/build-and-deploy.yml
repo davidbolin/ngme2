@@ -5,6 +5,11 @@ on:
     branches:
       - stable
 
+permissions:
+  contents: read    # 用来 clone 你的仓库
+  actions: read     # 允许下载并执行 Marketplace 上的 Actions（例如 upload-artifact）
+  packages: write   # 如果你需要读/写 GitHub Packages
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -38,8 +43,9 @@ jobs:
       with:
         name: binary-${{ matrix.os }}
         path: |
-          ngme2.0.0.zip     # Windows 输出
-          ngme2.0.0.tgz     # macOS 输出
+          ngme2.0.0.zip     # Windows
+          ngme2.0.0.tgz     # macOS
+          ngme2.0.0.tar.gz  # Linux
 
   deploy:
     needs: build

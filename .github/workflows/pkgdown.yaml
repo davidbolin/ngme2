@@ -1,10 +1,9 @@
+name: pkgdown
+
 on:
   push:
     branches:
-      - devel
-      - test
-
-name: pkgdown
+      - stable
 
 jobs:
   pkgdown:

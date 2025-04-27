@@ -35,7 +35,13 @@ jobs:
       with:
         dependencies: '"all"'
 
-    - name: Build & pack binary
+    - name: Build source package (Linux only)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        R CMD build .
+
+    - name: Install & build binary (Win/macOS only)
+      if: matrix.os != 'ubuntu-latest'
       run: |
         R CMD INSTALL --build $(ls -t *.tar.gz | head -n 1)
       shell: bash

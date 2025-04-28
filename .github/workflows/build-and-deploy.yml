@@ -113,6 +113,7 @@ jobs:
         # Set paths from Homebrew
         LLVM_PREFIX=$(brew --prefix llvm@18)
         LIBOMP_PREFIX=$(brew --prefix libomp)
+        GCC_PREFIX=$(brew --prefix gcc)
         R_HOME=$(R RHOME)
         
         # Set environment variables for the build
@@ -123,13 +124,14 @@ jobs:
         export CXXFLAGS="-fopenmp -I$LLVM_PREFIX/include -I$LIBOMP_PREFIX/include"
         
         # Improve portability with @rpath and avoid hardcoded paths
-        export LDFLAGS="-L$LLVM_PREFIX/lib -L$LIBOMP_PREFIX/lib -lomp -Wl,-rpath,@loader_path/../Resources/lib"
-        export DYLD_FALLBACK_LIBRARY_PATH="$LIBOMP_PREFIX/lib:$LLVM_PREFIX/lib:$R_HOME/lib:/usr/local/lib:/usr/lib"
+        export LDFLAGS="-L$LLVM_PREFIX/lib -L$LIBOMP_PREFIX/lib -L$GCC_PREFIX/lib/gcc/current -lomp -Wl,-rpath,@loader_path/../Resources/lib"
+        export DYLD_FALLBACK_LIBRARY_PATH="$LIBOMP_PREFIX/lib:$LLVM_PREFIX/lib:$R_HOME/lib:$GCC_PREFIX/lib/gcc/current:/usr/local/lib:/usr/lib"
         
         # Show actual paths for debugging
         echo "Paths in use:"
         echo "LLVM_PREFIX: $LLVM_PREFIX"
         echo "LIBOMP_PREFIX: $LIBOMP_PREFIX" 
+        echo "GCC_PREFIX: $GCC_PREFIX"
         echo "R_HOME: $R_HOME"
         echo "DYLD_FALLBACK_LIBRARY_PATH: $DYLD_FALLBACK_LIBRARY_PATH"
         
@@ -145,18 +147,46 @@ jobs:
         mkdir -p check_pkg
         tar -xzf "$BUILT_PKG" -C check_pkg
         if [ -f check_pkg/ngme2/libs/ngme2.so ]; then
-          echo "Checking .so dependencies:"
+          echo "Checking .so dependencies before patching:"
           otool -L check_pkg/ngme2/libs/ngme2.so
           
-          # Fix library paths to improve portability
-          echo "Patching library paths in ngme2.so..."
-          install_name_tool -change "$LLVM_PREFIX/lib/c++/libc++.1.dylib" "@rpath/libc++.1.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libc++ path"
-          install_name_tool -change "$LIBOMP_PREFIX/lib/libomp.dylib" "@rpath/libomp.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libomp path"
-          
-          # Copy necessary libraries to package lib directory
+          # Create lib directory for bundled libraries
           mkdir -p check_pkg/ngme2/libs/Resources/lib
+          
+          # Fix all external library paths to improve portability
+          echo "Patching all library paths in ngme2.so..."
+          
+          # 1. LLVM C++ standard library
+          install_name_tool -change "$LLVM_PREFIX/lib/c++/libc++.1.dylib" "@rpath/libc++.1.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libc++ path"
+          install_name_tool -change "@rpath/libc++.1.dylib" "@rpath/libc++.1.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libc++ path"
+          install_name_tool -change "$LLVM_PREFIX/lib/libunwind.1.dylib" "@rpath/libunwind.1.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libunwind path"
+          
+          # 2. OpenMP library
+          install_name_tool -change "$LIBOMP_PREFIX/lib/libomp.dylib" "@rpath/libomp.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libomp path"
+          install_name_tool -change "$R_HOME/lib/libomp.dylib" "@rpath/libomp.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch R libomp path"
+          install_name_tool -change "/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/lib/libomp.dylib" "@rpath/libomp.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch R libomp path"
+          
+          # 3. GCC Fortran runtime libraries
+          install_name_tool -change "$GCC_PREFIX/lib/gcc/current/libgfortran.5.dylib" "@rpath/libgfortran.5.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libgfortran path"
+          install_name_tool -change "$GCC_PREFIX/lib/gcc/current/libquadmath.0.dylib" "@rpath/libquadmath.0.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libquadmath path"
+          install_name_tool -change "/opt/homebrew/opt/gcc/lib/gcc/current/libgfortran.5.dylib" "@rpath/libgfortran.5.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libgfortran path"
+          install_name_tool -change "/opt/homebrew/opt/gcc/lib/gcc/current/libquadmath.0.dylib" "@rpath/libquadmath.0.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libquadmath path"
+          
+          # 4. R framework libraries (we'll keep these as-is since they should be available on any R installation)
+          
+          # Copy all necessary libraries to the package lib directory
+          echo "Copying required libraries to package lib directory..."
+          
+          # Copy LLVM libraries
           cp "$LLVM_PREFIX/lib/c++/libc++.1.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libc++.1.dylib"
+          cp "$LLVM_PREFIX/lib/libunwind.1.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libunwind.1.dylib"
+          
+          # Copy OpenMP library
           cp "$LIBOMP_PREFIX/lib/libomp.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libomp.dylib"
+          
+          # Copy GCC Fortran runtime libraries
+          cp "$GCC_PREFIX/lib/gcc/current/libgfortran.5.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libgfortran.5.dylib"
+          cp "$GCC_PREFIX/lib/gcc/current/libquadmath.0.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libquadmath.0.dylib"
           
           # Verify patched libraries
           echo "Dependencies after patching:"
@@ -166,6 +196,10 @@ jobs:
           cd check_pkg
           tar -czf "../$BUILT_PKG" ngme2
           cd ..
+          
+          # Verify the final package
+          echo "Final package created: $BUILT_PKG"
+          ls -la "$BUILT_PKG"
         fi
       shell: bash
 
@@ -211,58 +245,59 @@ jobs:
 
     - name: Create directory structure
       run: |
-        mkdir -p .binaries/bin/windows/contrib/4.4
-        mkdir -p .binaries/bin/windows/contrib/4.5
-        mkdir -p .binaries/bin/macosx/big-sur-arm64/contrib/4.4
-        mkdir -p .binaries/bin/macosx/big-sur-arm64/contrib/4.5
-        mkdir -p .binaries/src/contrib
+        # Create directory structure in the root of gh-pages
+        mkdir -p bin/windows/contrib/4.4
+        mkdir -p bin/windows/contrib/4.5
+        mkdir -p bin/macosx/big-sur-arm64/contrib/4.4
+        mkdir -p bin/macosx/big-sur-arm64/contrib/4.5
+        mkdir -p src/contrib
 
     # Download Windows binaries
     - name: Download Windows r4.4
       uses: actions/download-artifact@v4
       with:
         name: binary-windows-r4.4
-        path: .binaries/bin/windows/contrib/4.4
+        path: bin/windows/contrib/4.4
     - name: Download Windows r4.5
       uses: actions/download-artifact@v4
       with:
         name: binary-windows-r4.5
-        path: .binaries/bin/windows/contrib/4.5
+        path: bin/windows/contrib/4.5
 
     # Download macOS binaries
     - name: Download macOS r4.4
       uses: actions/download-artifact@v4
       with:
         name: binary-macos-r4.4
-        path: .binaries/bin/macosx/big-sur-arm64/contrib/4.4
+        path: bin/macosx/big-sur-arm64/contrib/4.4
     - name: Download macOS r4.5
       uses: actions/download-artifact@v4
       with:
         name: binary-macos-r4.5
-        path: .binaries/bin/macosx/big-sur-arm64/contrib/4.5
+        path: bin/macosx/big-sur-arm64/contrib/4.5
 
     # Download Linux source
     - name: Download source r4.4
       uses: actions/download-artifact@v4
       with:
         name: source-linux-r4.4
-        path: .binaries/src/contrib
+        path: src/contrib
     - name: Download source r4.5
       uses: actions/download-artifact@v4
       with:
         name: source-linux-r4.5
-        path: .binaries/src/contrib
+        path: src/contrib
 
     - name: Create .nojekyll (allow dot-folders)
       run: touch .nojekyll
 
     - name: Generate PACKAGES indices
       run: |
-        Rscript -e 'tools::write_PACKAGES(".binaries/src/contrib", type="source")'
-        Rscript -e 'tools::write_PACKAGES(".binaries/bin/windows/contrib/4.4", type="win.binary")'
-        Rscript -e 'tools::write_PACKAGES(".binaries/bin/windows/contrib/4.5", type="win.binary")'
-        Rscript -e 'tools::write_PACKAGES(".binaries/bin/macosx/big-sur-arm64/contrib/4.4", type="mac.binary")'
-        Rscript -e 'tools::write_PACKAGES(".binaries/bin/macosx/big-sur-arm64/contrib/4.5", type="mac.binary")'
+        Rscript -e 'tools::write_PACKAGES("src/contrib", type="source")'
+        Rscript -e 'tools::write_PACKAGES("bin/windows/contrib/4.4", type="win.binary")'
+        Rscript -e 'tools::write_PACKAGES("bin/windows/contrib/4.5", type="win.binary")'
+        Rscript -e 'tools::write_PACKAGES("bin/macosx/big-sur-arm64/contrib/4.4", type="mac.binary")'
+        Rscript -e 'tools::write_PACKAGES("bin/macosx/big-sur-arm64/contrib/4.5", type="mac.binary")'
 
     - name: Commit & Push
       run: |

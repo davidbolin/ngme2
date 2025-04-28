@@ -111,12 +111,12 @@ jobs:
         # Create libs/ directory if not exist
         mkdir -p extracted_src/ngme2/libs
         
-        # Copy patched .so back into extracted source
+        # Copy patched .so into extracted source
         cp "$PKGPATH/libs/ngme2.so" extracted_src/ngme2/libs/
         echo "Copied patched ngme2.so back into source"
 
-        # Build binary from the extracted and patched source
-        R CMD build --binary extracted_src/ngme2
+        # Now **INSTALL --build** to generate .tgz
+        R CMD INSTALL --build extracted_src/ngme2
       shell: bash
 
     - name: Build binary package (Windows only)

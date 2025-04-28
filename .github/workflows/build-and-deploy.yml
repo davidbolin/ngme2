@@ -60,17 +60,20 @@ jobs:
       if: matrix.os == 'macos-latest'
       run: |
         export R_FRAMEWORK_PATH=$(R RHOME)
+        LLVM_PREFIX=$(brew --prefix llvm@18)
+        LIBOMP_PREFIX=$(brew --prefix libomp)
+        
         mkdir -p ~/.R
         
-        # Create a comprehensive Makevars file with LLVM@18
+        # Create a comprehensive Makevars file with LLVM@18 with dynamic paths
         cat > ~/.R/Makevars << EOF
         # Use Homebrew LLVM's clang compiler (supports OpenMP)
-        CC=/opt/homebrew/opt/llvm@18/bin/clang
-        CXX=/opt/homebrew/opt/llvm@18/bin/clang++
-        CXX11=/opt/homebrew/opt/llvm@18/bin/clang++
-        CXX14=/opt/homebrew/opt/llvm@18/bin/clang++
-        CXX17=/opt/homebrew/opt/llvm@18/bin/clang++ 
-        CXX20=/opt/homebrew/opt/llvm@18/bin/clang++
+        CC=$(brew --prefix llvm@18)/bin/clang
+        CXX=$(brew --prefix llvm@18)/bin/clang++
+        CXX11=$(brew --prefix llvm@18)/bin/clang++
+        CXX14=$(brew --prefix llvm@18)/bin/clang++
+        CXX17=$(brew --prefix llvm@18)/bin/clang++ 
+        CXX20=$(brew --prefix llvm@18)/bin/clang++
 
         # Add OpenMP flags
         SHLIB_OPENMP_CFLAGS = -fopenmp
@@ -78,16 +81,24 @@ jobs:
         SHLIB_OPENMP_FFLAGS = -fopenmp
 
         # Include and library paths for LLVM and OpenMP
-        CFLAGS += -I/opt/homebrew/opt/llvm@18/include -I/opt/homebrew/opt/libomp/include
-        CXXFLAGS += -I/opt/homebrew/opt/llvm@18/include -I/opt/homebrew/opt/libomp/include
-        LDFLAGS += -L/opt/homebrew/opt/llvm@18/lib -L/opt/homebrew/opt/llvm@18/lib/c++ -Wl,-rpath,/opt/homebrew/opt/llvm@18/lib/c++ -L/opt/homebrew/opt/libomp/lib
+        CFLAGS += -I$(brew --prefix llvm@18)/include -I$(brew --prefix libomp)/include
+        CXXFLAGS += -I$(brew --prefix llvm@18)/include -I$(brew --prefix libomp)/include
+        
+        # Use -rpath with @rpath notation for better portability
+        LDFLAGS += -L$(brew --prefix llvm@18)/lib -L$(brew --prefix llvm@18)/lib/c++ -L$(brew --prefix libomp)/lib -Wl,-rpath,@loader_path/../lib -Wl,-rpath,@loader_path/../../lib -lomp
 
-        FLIBS = -L/opt/homebrew/lib/gcc/current -lgfortran -lquadmath
+        # Set FLIBS for Fortran
+        FLIBS = -L$(brew --prefix gcc)/lib/gcc/current -lgfortran -lquadmath
         EOF
         
         # Display the contents of Makevars
         echo "Contents of ~/.R/Makevars:"
         cat ~/.R/Makevars
+        
+        # For debugging - show the actual paths
+        echo "Actual paths:"
+        echo "LLVM_PREFIX: $LLVM_PREFIX"
+        echo "LIBOMP_PREFIX: $LIBOMP_PREFIX"
     - name: Build source package (all platforms)
       run: |
         R CMD build .
@@ -99,6 +110,7 @@ jobs:
         # Set paths from Homebrew
         LLVM_PREFIX=$(brew --prefix llvm@18)
         LIBOMP_PREFIX=$(brew --prefix libomp)
+        R_HOME=$(R RHOME)
         
         # Set environment variables for the build
         export PATH="$LLVM_PREFIX/bin:$PATH"
@@ -106,16 +118,33 @@ jobs:
         export CXX="$LLVM_PREFIX/bin/clang++"
         export CFLAGS="-fopenmp -I$LLVM_PREFIX/include -I$LIBOMP_PREFIX/include"
         export CXXFLAGS="-fopenmp -I$LLVM_PREFIX/include -I$LIBOMP_PREFIX/include"
-        export LDFLAGS="-L$LLVM_PREFIX/lib -L$LLVM_PREFIX/lib/c++ -Wl,-rpath,$LLVM_PREFIX/lib/c++ -L$LIBOMP_PREFIX/lib"
-        export DYLD_FALLBACK_LIBRARY_PATH="$LIBOMP_PREFIX/lib:$LLVM_PREFIX/lib:$LLVM_PREFIX/lib/c++:/usr/local/lib:/usr/lib"
+        
+        # 使用 @rpath 提高可移植性
+        export LDFLAGS="-L$LLVM_PREFIX/lib -L$LIBOMP_PREFIX/lib -lomp -Wl,-rpath,@loader_path/../lib -Wl,-rpath,@loader_path/../../lib"
+        export DYLD_FALLBACK_LIBRARY_PATH="$LIBOMP_PREFIX/lib:$LLVM_PREFIX/lib:$R_HOME/lib:/usr/local/lib:/usr/lib"
+        
+        # Show actual paths for debugging
+        echo "Paths in use:"
+        echo "LLVM_PREFIX: $LLVM_PREFIX"
+        echo "LIBOMP_PREFIX: $LIBOMP_PREFIX" 
+        echo "R_HOME: $R_HOME"
+        echo "DYLD_FALLBACK_LIBRARY_PATH: $DYLD_FALLBACK_LIBRARY_PATH"
         
         # Build the binary package
         echo "Building binary package with LLVM@18..."
         R CMD INSTALL --build $(ls -t *.tar.gz | head -n 1)
         
-        # Verify the created binary package
-        echo "Created binary package:"
-        ls -l *.tgz
+        # Check for OpenMP in the built package
+        BUILT_PKG=$(ls -t *.tgz | head -n 1)
+        echo "Created binary package: $BUILT_PKG"
+        
+        # Extract and check the .so file
+        mkdir -p check_pkg
+        tar -xzf "$BUILT_PKG" -C check_pkg
+        if [ -f check_pkg/ngme2/libs/ngme2.so ]; then
+          echo "Checking .so dependencies:"
+          otool -L check_pkg/ngme2/libs/ngme2.so
+        fi
       shell: bash
 
     - name: Install & build binary (Win only)

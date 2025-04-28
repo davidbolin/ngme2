@@ -15,8 +15,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # os: [windows-latest, macos-latest, ubuntu-latest]
-        os: [macos-latest]
+        os: [windows-latest, macos-latest, ubuntu-latest]
         r-version: ["4.4", "4.5"]
 
     steps:
@@ -49,6 +48,7 @@ jobs:
         # Check library files
         ls -la $(brew --prefix llvm@18)/lib | grep -i omp
         ls -la $(brew --prefix libomp)/lib
+
     - name: Configure compiler to use LLVM (macOS only)
       if: matrix.os == 'macos-latest'
       run: |
@@ -56,6 +56,7 @@ jobs:
         echo "PATH=$LLVM_PREFIX/bin:$PATH" >> $GITHUB_ENV
         echo "CC=$LLVM_PREFIX/bin/clang" >> $GITHUB_ENV
         echo "CXX=$LLVM_PREFIX/bin/clang++" >> $GITHUB_ENV
+
     - name: Setup OpenMP to link R-provided libomp (macOS only)
       if: matrix.os == 'macos-latest'
       run: |
@@ -99,6 +100,7 @@ jobs:
         echo "Actual paths:"
         echo "LLVM_PREFIX: $LLVM_PREFIX"
         echo "LIBOMP_PREFIX: $LIBOMP_PREFIX"
+
     - name: Build source package (all platforms)
       run: |
         R CMD build .
@@ -119,7 +121,7 @@ jobs:
         export CFLAGS="-fopenmp -I$LLVM_PREFIX/include -I$LIBOMP_PREFIX/include"
         export CXXFLAGS="-fopenmp -I$LLVM_PREFIX/include -I$LIBOMP_PREFIX/include"
         
-        # 使用 @rpath 提高可移植性
+        # Use @rpath for better portability
         export LDFLAGS="-L$LLVM_PREFIX/lib -L$LIBOMP_PREFIX/lib -lomp -Wl,-rpath,@loader_path/../lib -Wl,-rpath,@loader_path/../../lib"
         export DYLD_FALLBACK_LIBRARY_PATH="$LIBOMP_PREFIX/lib:$LLVM_PREFIX/lib:$R_HOME/lib:/usr/local/lib:/usr/lib"
         
@@ -241,6 +243,7 @@ jobs:
         Rscript -e 'tools::write_PACKAGES(".binaries/bin/windows/contrib/4.5", type="win.binary")'
         Rscript -e 'tools::write_PACKAGES(".binaries/bin/macosx/big-sur-arm64/contrib/4.4", type="mac.binary")'
         Rscript -e 'tools::write_PACKAGES(".binaries/bin/macosx/big-sur-arm64/contrib/4.5", type="mac.binary")'
+
     - name: Commit & Push
       run: |
         git config user.name  "github-actions[bot]"

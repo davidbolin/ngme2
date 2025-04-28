@@ -91,12 +91,31 @@ jobs:
           exit 1
         fi
 
-    - name: Build binary from installed package (macOS only)
+    - name: Build binary package from patched install (macOS only)
       if: matrix.os == 'macos-latest'
       run: |
+        # 安装目录里拿到 patch 完的 so
         PKGPATH=$(Rscript -e 'cat(find.package("ngme2"))')
-        echo "Building macOS binary from installed pkg at: $PKGPATH"
-        R CMD INSTALL --build "$PKGPATH"
+        echo "Patched install at: $PKGPATH"
+        
+        # 找到原来的源码包
+        SRCPKG=$(ls -t *.tar.gz | head -n1)
+        echo "Source tar.gz: $SRCPKG"
+        
+        # 解压源码到临时目录
+        mkdir -p extracted_src
+        tar -xzf "$SRCPKG" -C extracted_src
+        SRC_DIR=extracted_src/ngme2
+        
+        # 把 patch 好的 so 放回去
+        mkdir -p "$SRC_DIR/libs"
+        cp "$PKGPATH/libs/ngme2.so" "$SRC_DIR/libs/"
+        
+        # **删除 src/ 目录**，防止 R CMD INSTALL 重新编译
+        rm -rf "$SRC_DIR/src"
+        
+        # 最后一步：直接基于这个目录打包 binary
+        R CMD INSTALL --build "$SRC_DIR"
       shell: bash
 
     - name: Build binary package (Windows only)

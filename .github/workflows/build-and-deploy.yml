@@ -29,11 +29,11 @@ jobs:
         extra-repositories: "https://inla.r-inla-download.org/R/testing"
 
     - name: Install build deps
-      run: Rscript -e 'install.packages(c("devtools"), repos="https://cloud.r-project.org")'
+      run: Rscript -e 'install.packages(c("devtools", "remotes"), repos="https://cloud.r-project.org")'
 
-    - uses: r-lib/actions/setup-r-dependencies@v2
-      with:
-        dependencies: '"all"'
+    - name: Install dependencies
+      run: |
+        Rscript -e 'remotes::install_deps(dependencies = TRUE, upgrade = "never")'
 
     - name: Install LLVM for OpenMP (macOS only)
       if: matrix.os == 'macos-latest'

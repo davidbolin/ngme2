@@ -75,6 +75,9 @@ jobs:
         PKGPATH=$(Rscript -e 'cat(find.package("ngme2"))')
         echo "Package installed at: $PKGPATH"
 
+        echo "🧪 Testing that ngme2 can actually load in R (1st time):"
+        Rscript -e 'library(ngme2); cat("✅ ngme2 loaded, OpenMP test: ", sum(getOption("ngme2.openmp.threads")>0), " threads\n")'
+
         if [ -f "$PKGPATH/libs/ngme2.so" ]; then
           echo "Found ngme2.so at $PKGPATH/libs/ngme2.so"
           otool -L "$PKGPATH/libs/ngme2.so"
@@ -86,6 +89,9 @@ jobs:
 
           echo "Dependencies after patching:"
           otool -L "$PKGPATH/libs/ngme2.so"
+
+          echo "🧪 Testing that ngme2 can actually load in R (2nd time):"
+          Rscript -e 'library(ngme2); cat("✅ ngme2 loaded, OpenMP test: ", sum(getOption("ngme2.openmp.threads")>0), " threads\n")'
         else
           echo "ngme2.so not found!"
           exit 1

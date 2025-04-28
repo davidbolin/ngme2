@@ -15,8 +15,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
-        r-version: ["4.2", "4.3", "4.4", "4.5"]
+        os: [macos-latest]
+        r-version: ["4.4", "4.5"]
 
     steps:
     - name: Checkout source
@@ -103,7 +103,8 @@ jobs:
 
     - name: Build source package (all platforms)
       run: |
-        R CMD build .
+        # Build source package without vignettes
+        R CMD build --no-build-vignettes --no-manual .
       shell: bash
 
     - name: Install & build binary (macOS only)
@@ -121,8 +122,8 @@ jobs:
         export CFLAGS="-fopenmp -I$LLVM_PREFIX/include -I$LIBOMP_PREFIX/include"
         export CXXFLAGS="-fopenmp -I$LLVM_PREFIX/include -I$LIBOMP_PREFIX/include"
         
-        # Use @rpath for better portability
-        export LDFLAGS="-L$LLVM_PREFIX/lib -L$LIBOMP_PREFIX/lib -lomp -Wl,-rpath,@loader_path/../lib -Wl,-rpath,@loader_path/../../lib"
+        # Improve portability with @rpath and avoid hardcoded paths
+        export LDFLAGS="-L$LLVM_PREFIX/lib -L$LIBOMP_PREFIX/lib -lomp -Wl,-rpath,@loader_path/../Resources/lib"
         export DYLD_FALLBACK_LIBRARY_PATH="$LIBOMP_PREFIX/lib:$LLVM_PREFIX/lib:$R_HOME/lib:/usr/local/lib:/usr/lib"
         
         # Show actual paths for debugging
@@ -132,9 +133,9 @@ jobs:
         echo "R_HOME: $R_HOME"
         echo "DYLD_FALLBACK_LIBRARY_PATH: $DYLD_FALLBACK_LIBRARY_PATH"
         
-        # Build the binary package
+        # Build the binary package without vignettes
         echo "Building binary package with LLVM@18..."
-        R CMD INSTALL --build $(ls -t *.tar.gz | head -n 1)
+        R CMD INSTALL --build --no-build-vignettes --no-docs --no-html --no-multiarch $(ls -t *.tar.gz | head -n 1)
         
         # Check for OpenMP in the built package
         BUILT_PKG=$(ls -t *.tgz | head -n 1)
@@ -146,13 +147,32 @@ jobs:
         if [ -f check_pkg/ngme2/libs/ngme2.so ]; then
           echo "Checking .so dependencies:"
           otool -L check_pkg/ngme2/libs/ngme2.so
+          
+          # Fix library paths to improve portability
+          echo "Patching library paths in ngme2.so..."
+          install_name_tool -change "$LLVM_PREFIX/lib/c++/libc++.1.dylib" "@rpath/libc++.1.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libc++ path"
+          install_name_tool -change "$LIBOMP_PREFIX/lib/libomp.dylib" "@rpath/libomp.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libomp path"
+          
+          # Copy necessary libraries to package lib directory
+          mkdir -p check_pkg/ngme2/libs/Resources/lib
+          cp "$LLVM_PREFIX/lib/c++/libc++.1.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libc++.1.dylib"
+          cp "$LIBOMP_PREFIX/lib/libomp.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libomp.dylib"
+          
+          # Verify patched libraries
+          echo "Dependencies after patching:"
+          otool -L check_pkg/ngme2/libs/ngme2.so
+          
+          # Repack the binary package with bundled libraries
+          cd check_pkg
+          tar -czf "../$BUILT_PKG" ngme2
+          cd ..
         fi
       shell: bash
 
     - name: Install & build binary (Win only)
       if: matrix.os == 'windows-latest'
       run: |
-        R CMD INSTALL --build $(ls -t *.tar.gz | head -n 1)
+        R CMD INSTALL --build --no-build-vignettes --no-docs --no-html --no-multiarch $(ls -t *.tar.gz | head -n 1)
       shell: bash
 
     - name: Upload Windows binary
@@ -191,27 +211,13 @@ jobs:
 
     - name: Create directory structure
       run: |
-        mkdir -p .binaries/bin/windows/contrib/4.2
-        mkdir -p .binaries/bin/windows/contrib/4.3
         mkdir -p .binaries/bin/windows/contrib/4.4
         mkdir -p .binaries/bin/windows/contrib/4.5
-        mkdir -p .binaries/bin/macosx/big-sur-arm64/contrib/4.2
-        mkdir -p .binaries/bin/macosx/big-sur-arm64/contrib/4.3
         mkdir -p .binaries/bin/macosx/big-sur-arm64/contrib/4.4
         mkdir -p .binaries/bin/macosx/big-sur-arm64/contrib/4.5
         mkdir -p .binaries/src/contrib
 
     # Download Windows binaries
-    - name: Download Windows r4.2
-      uses: actions/download-artifact@v4
-      with:
-        name: binary-windows-r4.2
-        path: .binaries/bin/windows/contrib/4.2
-    - name: Download Windows r4.3
-      uses: actions/download-artifact@v4
-      with:
-        name: binary-windows-r4.3
-        path: .binaries/bin/windows/contrib/4.3
     - name: Download Windows r4.4
       uses: actions/download-artifact@v4
       with:
@@ -224,16 +230,6 @@ jobs:
         path: .binaries/bin/windows/contrib/4.5
 
     # Download macOS binaries
-    - name: Download macOS r4.2
-      uses: actions/download-artifact@v4
-      with:
-        name: binary-macos-r4.2
-        path: .binaries/bin/macosx/big-sur-arm64/contrib/4.2
-    - name: Download macOS r4.3
-      uses: actions/download-artifact@v4
-      with:
-        name: binary-macos-r4.3
-        path: .binaries/bin/macosx/big-sur-arm64/contrib/4.3
     - name: Download macOS r4.4
       uses: actions/download-artifact@v4
       with:
@@ -246,16 +242,6 @@ jobs:
         path: .binaries/bin/macosx/big-sur-arm64/contrib/4.5
 
     # Download Linux source
-    - name: Download source r4.2
-      uses: actions/download-artifact@v4
-      with:
-        name: source-linux-r4.2
-        path: .binaries/src/contrib
-    - name: Download source r4.3
-      uses: actions/download-artifact@v4
-      with:
-        name: source-linux-r4.3
-        path: .binaries/src/contrib
     - name: Download source r4.4
       uses: actions/download-artifact@v4
       with:
@@ -273,12 +259,8 @@ jobs:
     - name: Generate PACKAGES indices
       run: |
         Rscript -e 'tools::write_PACKAGES(".binaries/src/contrib", type="source")'
-        Rscript -e 'tools::write_PACKAGES(".binaries/bin/windows/contrib/4.2", type="win.binary")'
-        Rscript -e 'tools::write_PACKAGES(".binaries/bin/windows/contrib/4.3", type="win.binary")'
         Rscript -e 'tools::write_PACKAGES(".binaries/bin/windows/contrib/4.4", type="win.binary")'
         Rscript -e 'tools::write_PACKAGES(".binaries/bin/windows/contrib/4.5", type="win.binary")'
-        Rscript -e 'tools::write_PACKAGES(".binaries/bin/macosx/big-sur-arm64/contrib/4.2", type="mac.binary")'
-        Rscript -e 'tools::write_PACKAGES(".binaries/bin/macosx/big-sur-arm64/contrib/4.3", type="mac.binary")'
         Rscript -e 'tools::write_PACKAGES(".binaries/bin/macosx/big-sur-arm64/contrib/4.4", type="mac.binary")'
         Rscript -e 'tools::write_PACKAGES(".binaries/bin/macosx/big-sur-arm64/contrib/4.5", type="mac.binary")'
 

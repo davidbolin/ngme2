@@ -7,48 +7,104 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-Currently, the develop version can be installed using the command.
+## Installation Options
 
+There are two ways to install the `ngme2` package:
+
+### 1. Installing Pre-built Binaries (Recommended)
+
+Pre-built binaries are available for Windows and macOS with R versions 4.2, 4.3, 4.4, and 4.5. This is the **recommended** installation method as it avoids compilation issues, especially on macOS where OpenMP configuration can be challenging.
+
+```r
+# Install ngme2 package from pre-built binaries
+install.packages("ngme2", 
+                 repos = "https://davidbolin.github.io/ngme2/.binaries",
+                 type = "binary")
 ```
+
+The installation process will automatically detect your R version and operating system, and install the appropriate binary package.
+
+You can also use this convenience function to handle the installation:
+
+```r
+# Function to install the appropriate ngme2 binary
+install_ngme2 <- function() {
+  # Detect R version
+  r_version <- paste(R.version$major, strsplit(R.version$minor, ".", fixed=TRUE)[[1]][1], sep=".")
+  
+  # Detect system
+  system_type <- Sys.info()["sysname"]
+  
+  # Check if the detected R version is supported
+  supported_versions <- c("4.2", "4.3", "4.4", "4.5")
+  if(!r_version %in% supported_versions) {
+    warning("Your R version (", r_version, ") may not have a pre-built binary. ",
+            "Trying the closest version or falling back to source installation.")
+    # Find the closest version
+    r_num <- as.numeric(r_version)
+    closest_version <- supported_versions[which.min(abs(as.numeric(supported_versions) - r_num))]
+    r_version <- closest_version
+  }
+  
+  message("Installing ngme2 for R ", r_version, " from repository")
+  
+  # Install the package
+  install.packages("ngme2", 
+                  repos = "https://davidbolin.github.io/ngme2/.binaries", 
+                  type = "binary")
+}
+
+# Run the function to install
+install_ngme2()
+```
+
+### 2. Installing from Source
+
+If you prefer to install from source, or if pre-built binaries are not available for your platform or R version, you can install directly from GitHub:
+
+```r
 remotes::install_github("davidbolin/ngme2", ref = "devel")
 ```
 
-## Mac OS X
+**Note**: Installing from source requires appropriate C++ compilers and OpenMP support. This can be complex, particularly on macOS. See the platform-specific instructions below if you encounter issues.
 
-For Mac OS X system, the default C++ compiler in OS X has does not support OpenMP.
+## Platform-Specific Configuration for Source Installation
+
+If you need to install from source, follow these platform-specific instructions:
+
+### Mac OS X
+
+For Mac OS X, the default C++ compiler does not support OpenMP, which is required for multi-threading in `ngme2`.
 
 ```
 ➜ clang -fopenmp hello.cpp
 clang: error: unsupported option '-fopenmp'
 ```
 
-In order to make use of OpenMP to enable multi-threading in OS X, we need to
-use compilers which supports OpneMP.
+To enable OpenMP on macOS:
 
-The macOS default Apple Clang compiler doesn't support OpenMP. To enable OpenMP functionality in packages like `ngme2`, we need to:
+1. **Important Note**: There seems to be an incompatibility between R's internal OpenMP dylib and newer versions of LLVM. You should specifically install LLVM version 18 to avoid issues:
 
-1. Install LLVM/Clang compiler with OpenMP support via Homebrew:
-
-```
-brew install llvm libomp
+```bash
+brew install llvm@18 libomp
 ```
 
 2. Create the ~/.R directory if it doesn't exist already:
 
-```
+```bash
 mkdir -p ~/.R
 ```
 
-3. Add the following configuration to `~/.R/Makevars`:
+3. Add the following configuration to `~/.R/Makevars` (use this exact configuration):
 
 ```
 # Use Homebrew LLVM's clang compiler (supports OpenMP)
-CC=/opt/homebrew/opt/llvm/bin/clang
-CXX=/opt/homebrew/opt/llvm/bin/clang++
-CXX11=/opt/homebrew/opt/llvm/bin/clang++
-CXX14=/opt/homebrew/opt/llvm/bin/clang++
-CXX17=/opt/homebrew/opt/llvm/bin/clang++
-CXX20=/opt/homebrew/opt/llvm/bin/clang++
+CC=/opt/homebrew/opt/llvm@18/bin/clang
+CXX=/opt/homebrew/opt/llvm@18/bin/clang++
+CXX11=/opt/homebrew/opt/llvm@18/bin/clang++
+CXX14=/opt/homebrew/opt/llvm@18/bin/clang++
+CXX17=/opt/homebrew/opt/llvm@18/bin/clang++ 
+CXX20=/opt/homebrew/opt/llvm@18/bin/clang++
 
 # Add OpenMP flags
 SHLIB_OPENMP_CFLAGS = -fopenmp
@@ -56,22 +112,28 @@ SHLIB_OPENMP_CXXFLAGS = -fopenmp
 SHLIB_OPENMP_FFLAGS = -fopenmp
 
 # Include and library paths for LLVM and OpenMP
-CFLAGS += -I/opt/homebrew/opt/llvm/include
-CXXFLAGS += -I/opt/homebrew/opt/llvm/include
-LDFLAGS += -L/opt/homebrew/opt/llvm/lib -L/opt/homebrew/opt/llvm/lib/c++ -Wl,-rpath,/opt/homebrew/opt/llvm/lib/c++
+CFLAGS += -I/opt/homebrew/opt/llvm@18/include -I/opt/homebrew/opt/libomp/include
+CXXFLAGS += -I/opt/homebrew/opt/llvm@18/include -I/opt/homebrew/opt/libomp/include
+LDFLAGS += -L/opt/homebrew/opt/llvm@18/lib -L/opt/homebrew/opt/llvm@18/lib/c++ -Wl,-rpath,/opt/homebrew/opt/llvm@18/lib/c++ -L/opt/homebrew/opt/libomp/lib
+
+FLIBS = -L/opt/homebrew/lib/gcc/current -lgfortran -lquadmath
 ```
 
-After making these changes, reinstall the `ngme2` package to take advantage of the OpenMP functionality for parallel processing.
+Note: 
+- The paths shown are for Apple Silicon Macs (M1/M2/M3). If you're using an Intel Mac, replace `/opt/homebrew/` with `/usr/local/`.
+- It's critical to use LLVM version 18 specifically due to compatibility issues with R's OpenMP implementation and newer LLVM versions.
 
-```
+4. After configuring the compiler, install from GitHub:
+
+```r
 remotes::install_github("davidbolin/ngme2", ref = "devel")
 ```
 
-## Linux
+### Linux
 
 Most Linux distributions come with GCC/G++ compilers that already support OpenMP. If not, you can install the development tools package for your distribution.
 
-### 1. Install required dependencies
+#### 1. Install required dependencies
 
 For Debian/Ubuntu-based systems:
 
@@ -86,45 +148,7 @@ For Red Hat/Fedora-based systems:
 sudo dnf install R-devel gcc-c++ openblas-devel lapack-devel gcc-gfortran
 ```
 
-### 2. Verify OpenMP support
-
-Check if your GCC compiler supports OpenMP:
-
-```bash
-gcc --version
-echo "#include <omp.h>
-#include <stdio.h>
-int main() {
-  #pragma omp parallel
-  {
-    printf(\"Hello from thread %d\\n\", omp_get_thread_num());
-  }
-  return 0;
-}" > test_omp.c
-
-gcc -fopenmp test_omp.c -o test_omp
-./test_omp
-```
-
-### 3. Configure OpenMP for R (optional)
-
-If you want to customize the OpenMP settings, you can create a `~/.R/Makevars` file:
-
-```bash
-mkdir -p ~/.R
-cat > ~/.R/Makevars << EOF
-# Use all available cores by default
-# Adjust the number as needed for your system
-OMP_NUM_THREADS=4
-
-# OpenMP flags
-SHLIB_OPENMP_CFLAGS = -fopenmp
-SHLIB_OPENMP_CXXFLAGS = -fopenmp
-SHLIB_OPENMP_FFLAGS = -fopenmp
-EOF
-```
-
-### 4. Install ngme2
+#### 2. Install ngme2
 
 ```r
 # From within R
@@ -132,11 +156,11 @@ install.packages("remotes")
 remotes::install_github("davidbolin/ngme2", ref = "devel")
 ```
 
-## Windows
+### Windows
 
-Windows installation is generally simpler as the standard R tools for Windows already include appropriate C++ compilers with OpenMP support.
+Windows installation from source is generally simpler as the standard R tools for Windows already include appropriate C++ compilers with OpenMP support.
 
-### 1. Install Rtools
+#### 1. Install Rtools
 
 Download and install the version of Rtools that corresponds to your R version from:
 https://cran.r-project.org/bin/windows/Rtools/
@@ -147,36 +171,13 @@ During installation:
 - Make sure to select the option to add Rtools to your system PATH
 - Install the toolchain components
 
-### 2. Verify installation
-
-From your R console, check if Rtools is properly installed:
-
-```r
-Sys.which("make")
-# Should return the path to the make executable
-```
-
-### 3. Install ngme2
+#### 2. Install ngme2
 
 ```r
 # From within R
 install.packages("remotes")
 remotes::install_github("davidbolin/ngme2", ref = "devel")
 ```
-
-### 4. Configure OpenMP settings (optional)
-
-If you need to customize the OpenMP behavior, you can create a `.Renviron` file in your user directory:
-
-```
-# Open R and run:
-file.edit("~/.Renviron")
-
-# Add the following line to control the number of OpenMP threads:
-OMP_NUM_THREADS=4
-```
-
-This will limit OpenMP to using 4 threads. Adjust the number according to your system's capabilities.
 
 ## Verifying OpenMP installation
 

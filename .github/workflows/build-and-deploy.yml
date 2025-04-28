@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest, windows-latest, ubuntu-latest]
-        r-version: ["4.2", "4.3", "4.4", "4.5"]
+        r-version: ["4.3", "4.4", "4.5"]
 
     steps:
     - name: Checkout source
@@ -270,22 +270,15 @@ jobs:
     - name: Create directory structure
       run: |
         # Create directory structure in the root of gh-pages
-        mkdir -p bin/windows/contrib/4.2
         mkdir -p bin/windows/contrib/4.3
         mkdir -p bin/windows/contrib/4.4
         mkdir -p bin/windows/contrib/4.5
-        mkdir -p bin/macosx/big-sur-arm64/contrib/4.2
         mkdir -p bin/macosx/big-sur-arm64/contrib/4.3
         mkdir -p bin/macosx/big-sur-arm64/contrib/4.4
         mkdir -p bin/macosx/big-sur-arm64/contrib/4.5
         mkdir -p src/contrib
 
     # Download Windows binaries
-    - name: Download Windows r4.2
-      uses: actions/download-artifact@v4
-      with:
-        name: binary-windows-r4.2
-        path: bin/windows/contrib/4.2
     - name: Download Windows r4.3
       uses: actions/download-artifact@v4
       with:
@@ -303,11 +296,6 @@ jobs:
         path: bin/windows/contrib/4.5
 
     # Download macOS binaries
-    - name: Download macOS r4.2
-      uses: actions/download-artifact@v4
-      with:
-        name: binary-macos-r4.2
-        path: bin/macosx/big-sur-arm64/contrib/4.2
     - name: Download macOS r4.3
       uses: actions/download-artifact@v4
       with:
@@ -325,11 +313,6 @@ jobs:
         path: bin/macosx/big-sur-arm64/contrib/4.5
 
     # Download Linux source
-    - name: Download source r4.2
-      uses: actions/download-artifact@v4
-      with:
-        name: source-linux-r4.2
-        path: src/contrib
     - name: Download source r4.3
       uses: actions/download-artifact@v4
       with:
@@ -352,11 +335,9 @@ jobs:
     - name: Generate PACKAGES indices
       run: |
         Rscript -e 'tools::write_PACKAGES("src/contrib", type="source")'
-        Rscript -e 'tools::write_PACKAGES("bin/windows/contrib/4.2", type="win.binary")'
         Rscript -e 'tools::write_PACKAGES("bin/windows/contrib/4.3", type="win.binary")'
         Rscript -e 'tools::write_PACKAGES("bin/windows/contrib/4.4", type="win.binary")'
         Rscript -e 'tools::write_PACKAGES("bin/windows/contrib/4.5", type="win.binary")'
-        Rscript -e 'tools::write_PACKAGES("bin/macosx/big-sur-arm64/contrib/4.2", type="mac.binary")'
         Rscript -e 'tools::write_PACKAGES("bin/macosx/big-sur-arm64/contrib/4.3", type="mac.binary")'
         Rscript -e 'tools::write_PACKAGES("bin/macosx/big-sur-arm64/contrib/4.4", type="mac.binary")'
         Rscript -e 'tools::write_PACKAGES("bin/macosx/big-sur-arm64/contrib/4.5", type="mac.binary")'

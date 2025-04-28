@@ -91,32 +91,12 @@ jobs:
           exit 1
         fi
 
-    - name: Build binary package from installed package (macOS only)
+    - name: Build binary from installed package (macOS only)
       if: matrix.os == 'macos-latest'
       run: |
-        # Get installed path
         PKGPATH=$(Rscript -e 'cat(find.package("ngme2"))')
-        echo "Installed package path: $PKGPATH"
-        
-        # Find original source tar.gz
-        SRCPKG=$(ls -t *.tar.gz | head -n 1)
-        echo "Source package tar.gz: $SRCPKG"
-        
-        # Extract source
-        mkdir extracted_src
-        tar -xf "$SRCPKG" -C extracted_src
-        echo "Extracted source:"
-        ls -R extracted_src
-        
-        # Create libs/ directory if not exist
-        mkdir -p extracted_src/ngme2/libs
-        
-        # Copy patched .so into extracted source
-        cp "$PKGPATH/libs/ngme2.so" extracted_src/ngme2/libs/
-        echo "Copied patched ngme2.so back into source"
-
-        # Now **INSTALL --build** to generate .tgz
-        R CMD INSTALL --build extracted_src/ngme2
+        echo "Building macOS binary from installed pkg at: $PKGPATH"
+        R CMD INSTALL --build "$PKGPATH"
       shell: bash
 
     - name: Build binary package (Windows only)

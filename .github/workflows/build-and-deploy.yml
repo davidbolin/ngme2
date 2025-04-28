@@ -163,6 +163,7 @@ jobs:
           install_name_tool -change "$LLVM_PREFIX/lib/c++/libc++.1.dylib" "@rpath/libc++.1.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libc++ path"
           install_name_tool -change "@rpath/libc++.1.dylib" "@rpath/libc++.1.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libc++ path"
           install_name_tool -change "$LLVM_PREFIX/lib/libunwind.1.dylib" "@rpath/libunwind.1.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libunwind path"
+          install_name_tool -change "$LLVM_PREFIX/lib/c++/libc++abi.1.dylib" "@rpath/libc++abi.1.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libc++abi path"
           
           # 2. OpenMP library
           install_name_tool -change "$LIBOMP_PREFIX/lib/libomp.dylib" "@rpath/libomp.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libomp path"
@@ -183,6 +184,7 @@ jobs:
           # Copy LLVM libraries
           cp "$LLVM_PREFIX/lib/c++/libc++.1.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libc++.1.dylib"
           cp "$LLVM_PREFIX/lib/libunwind.1.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libunwind.1.dylib"
+          cp "$LLVM_PREFIX/lib/c++/libc++abi.1.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libc++abi.1.dylib"
           
           # Copy OpenMP library
           cp "$LIBOMP_PREFIX/lib/libomp.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libomp.dylib"
@@ -194,6 +196,17 @@ jobs:
           # Check if all required libraries were copied
           echo "Libraries in libs/Resources/lib directory:"
           ls -la check_pkg/ngme2/libs/Resources/lib/
+          
+          # Fix paths within the copied libraries
+          echo "Fixing paths within copied libraries..."
+          install_name_tool -change "$LLVM_PREFIX/lib/c++/libc++abi.1.dylib" "@rpath/libc++abi.1.dylib" check_pkg/ngme2/libs/Resources/lib/libc++.1.dylib || echo "Failed to patch libc++abi path in libc++.1.dylib"
+          
+          # Check dependencies of each library to ensure all paths are fixed
+          echo "Checking dependencies of all bundled libraries:"
+          for lib in check_pkg/ngme2/libs/Resources/lib/*.dylib; do
+            echo "Dependencies for $lib:"
+            otool -L "$lib"
+          done
           
           # Verify patched libraries
           echo "Dependencies after patching:"

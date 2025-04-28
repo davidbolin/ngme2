@@ -15,10 +15,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # os: [macos-latest, ubuntu-latest, windows-latest]
+        # os: [windows-latest, macos-latest, ubuntu-latest]
         os: [macos-latest]
-        # r-version: ["4.1", "4.2", "4.3", "4.4", "4.5"]
-        r-version: ["4.5"]
+        r-version: ["4.4", "4.5"]
 
     steps:
     - name: Checkout source
@@ -37,98 +36,41 @@ jobs:
       with:
         dependencies: '"all"'
 
-    - name: Configure LLVM and OpenMP for R (macOS only)
+    - name: Install LLVM for OpenMP (macOS only)
       if: matrix.os == 'macos-latest'
       run: |
-        brew install llvm
-        LLVM_PREFIX=$(brew --prefix llvm)
-        RFW=$(R RHOME)
-
+        brew install llvm@18
+    - name: Configure compiler to use LLVM (macOS only)
+      if: matrix.os == 'macos-latest'
+      run: |
+        LLVM_PREFIX=$(brew --prefix llvm@18)
         echo "PATH=$LLVM_PREFIX/bin:$PATH" >> $GITHUB_ENV
         echo "CC=$LLVM_PREFIX/bin/clang" >> $GITHUB_ENV
         echo "CXX=$LLVM_PREFIX/bin/clang++" >> $GITHUB_ENV
-        echo "CFLAGS=-fopenmp -I$RFW/include" >> $GITHUB_ENV
-        echo "CXXFLAGS=-fopenmp -I$RFW/include" >> $GITHUB_ENV
-        echo "LDFLAGS=-fopenmp -L$RFW/lib -Wl,-rpath,$RFW/lib" >> $GITHUB_ENV
-        echo "DYLD_FALLBACK_LIBRARY_PATH=$RFW/lib:/usr/local/lib:/usr/lib" >> $GITHUB_ENV
-
+    - name: Setup OpenMP to link R-provided libomp (macOS only)
+      if: matrix.os == 'macos-latest'
+      run: |
+        export R_FRAMEWORK_PATH=$(R RHOME)
         mkdir -p ~/.R
-        echo "CXXFLAGS += -fopenmp -I$RFW/include" >> ~/.R/Makevars
-        echo "CFLAGS   += -fopenmp -I$RFW/include" >> ~/.R/Makevars
-        echo "LDFLAGS  += -fopenmp -L$RFW/lib -Wl,-rpath,$RFW/lib" >> ~/.R/Makevars
-
-    - name: Build source package
+        echo "CXXFLAGS += -fopenmp -I$R_FRAMEWORK_PATH/include" >> ~/.R/Makevars
+        echo "CFLAGS   += -fopenmp -I$R_FRAMEWORK_PATH/include" >> ~/.R/Makevars
+        echo "LDFLAGS  += -fopenmp -L$R_FRAMEWORK_PATH/lib -Wl,-rpath,$R_FRAMEWORK_PATH/lib -Wl,-install_name,@rpath/libomp.dylib" >> ~/.R/Makevars
+    - name: Build source package (all platforms)
       run: |
         R CMD build .
       shell: bash
 
-    - name: Install from source without test-load (macOS only)
+    - name: Install & build binary (macOS only)
       if: matrix.os == 'macos-latest'
       run: |
-        PKG=$(ls -t *.tar.gz | head -n 1)
-        R CMD INSTALL --no-multiarch --no-test-load "$PKG"
-
-    - name: Patch OpenMP paths after install (macOS only)
-      if: matrix.os == 'macos-latest'
-      run: |
-        RFW=$(R RHOME)
-        PKGPATH=$(Rscript -e 'cat(find.package("ngme2"))')
-        echo "Package installed at: $PKGPATH"
-
-        echo "🧪 Testing that ngme2 can actually load in R (1st time):"
-        Rscript -e 'library(ngme2); cat("✅ ngme2 loaded, OpenMP test: ", sum(getOption("ngme2.openmp.threads")>0), " threads\n")'
-
-        if [ -f "$PKGPATH/libs/ngme2.so" ]; then
-          echo "Found ngme2.so at $PKGPATH/libs/ngme2.so"
-          otool -L "$PKGPATH/libs/ngme2.so"
-
-          echo "Patching ngme2.so install_name..."
-          install_name_tool -change @rpath/libomp.dylib "$RFW/lib/libomp.dylib" "$PKGPATH/libs/ngme2.so" || true
-          install_name_tool -change libomp.dylib "$RFW/lib/libomp.dylib" "$PKGPATH/libs/ngme2.so" || true
-          install_name_tool -change @loader_path/libomp.dylib "$RFW/lib/libomp.dylib" "$PKGPATH/libs/ngme2.so" || true
-
-          echo "Dependencies after patching:"
-          otool -L "$PKGPATH/libs/ngme2.so"
-
-          echo "🧪 Testing that ngme2 can actually load in R (2nd time):"
-          Rscript -e 'library(ngme2); cat("✅ ngme2 loaded, OpenMP test: ", sum(getOption("ngme2.openmp.threads")>0), " threads\n")'
-        else
-          echo "ngme2.so not found!"
-          exit 1
-        fi
-
-    - name: Build macOS binary from patched source (macOS only)
-      if: matrix.os == 'macos-latest'
-      run: |
-        # 1. 找到刚打出来的 source 包
-        SRCTGZ=$(ls -t *.tar.gz | head -n1)
-        echo "Source package: $SRCTGZ"
-
-        # 2. 解压到 srcpkg 目录
-        mkdir -p srcpkg
-        tar -xzf "$SRCTGZ" -C srcpkg
-
-        # 3. 进入源码包
-        cd srcpkg/ngme2
-
-        # 4. 移除 src/，绝对不触发任何编译
-        rm -rf src
-
-        # 5. 拷贝你先前安装并 patch 好的 so
-        PKGPATH=$(Rscript -e 'cat(find.package("ngme2"))')
-        echo "Copying patched so from: $PKGPATH/libs/ngme2.so"
-        mkdir -p libs
-        cp "$PKGPATH/libs/ngme2.so" libs/
-
-        # 6. 最后一行：直接 build binary package
-        R CMD INSTALL --build .
+        export DYLD_FALLBACK_LIBRARY_PATH=$(brew --prefix llvm@18)/lib:/usr/local/lib:/usr/lib
+        R CMD INSTALL --build $(ls -t *.tar.gz | head -n 1)
       shell: bash
 
-    - name: Build binary package (Windows only)
+    - name: Install & build binary (Win only)
       if: matrix.os == 'windows-latest'
       run: |
-        PKG=$(ls -t *.tar.gz | head -n 1)
-        R CMD INSTALL --build "$PKG"
+        R CMD INSTALL --build $(ls -t *.tar.gz | head -n 1)
       shell: bash
 
     - name: Upload Windows binary
@@ -167,51 +109,61 @@ jobs:
 
     - name: Create directory structure
       run: |
-        mkdir -p .binaries/bin/windows/contrib/4.1
-        mkdir -p .binaries/bin/windows/contrib/4.2
-        mkdir -p .binaries/bin/windows/contrib/4.3
         mkdir -p .binaries/bin/windows/contrib/4.4
         mkdir -p .binaries/bin/windows/contrib/4.5
-        mkdir -p .binaries/bin/macosx/big-sur-arm64/contrib/4.1
-        mkdir -p .binaries/bin/macosx/big-sur-arm64/contrib/4.2
-        mkdir -p .binaries/bin/macosx/big-sur-arm64/contrib/4.3
         mkdir -p .binaries/bin/macosx/big-sur-arm64/contrib/4.4
         mkdir -p .binaries/bin/macosx/big-sur-arm64/contrib/4.5
         mkdir -p .binaries/src/contrib
 
-    # 下载 artifacts
-    - name: Download all Windows binaries
+    # 下载 Windows binaries
+    - name: Download Windows r4.4
       uses: actions/download-artifact@v4
       with:
-        pattern: binary-windows-r*
-        path: .binaries/bin/windows/contrib/
+        name: binary-windows-r4.4
+        path: .binaries/bin/windows/contrib/4.4
+    - name: Download Windows r4.5
+      uses: actions/download-artifact@v4
+      with:
+        name: binary-windows-r4.5
+        path: .binaries/bin/windows/contrib/4.5
 
-    - name: Download all macOS binaries
+    # 下载 macOS binaries
+    - name: Download macOS r4.4
       uses: actions/download-artifact@v4
       with:
-        pattern: binary-macos-r*
-        path: .binaries/bin/macosx/big-sur-arm64/contrib/
+        name: binary-macos-r4.4
+        path: .binaries/bin/macosx/big-sur-arm64/contrib/4.4
+    - name: Download macOS r4.5
+      uses: actions/download-artifact@v4
+      with:
+        name: binary-macos-r4.5
+        path: .binaries/bin/macosx/big-sur-arm64/contrib/4.5
 
-    - name: Download all Linux sources
+    # 下载 Linux source
+    - name: Download source r4.4
       uses: actions/download-artifact@v4
       with:
-        pattern: source-linux-r*
+        name: source-linux-r4.4
+        path: .binaries/src/contrib
+    - name: Download source r4.5
+      uses: actions/download-artifact@v4
+      with:
+        name: source-linux-r4.5
         path: .binaries/src/contrib
 
-    - name: Create .nojekyll
+    - name: Create .nojekyll (allow dot-folders)
       run: touch .nojekyll
 
     - name: Generate PACKAGES indices
       run: |
         Rscript -e 'tools::write_PACKAGES(".binaries/src/contrib", type="source")'
-        for v in 4.1 4.2 4.3 4.4 4.5; do
-          Rscript -e "tools::write_PACKAGES('.binaries/bin/windows/contrib/$v', type='win.binary')"
-          Rscript -e "tools::write_PACKAGES('.binaries/bin/macosx/big-sur-arm64/contrib/$v', type='mac.binary')"
-        done
-
+        Rscript -e 'tools::write_PACKAGES(".binaries/bin/windows/contrib/4.4", type="win.binary")'
+        Rscript -e 'tools::write_PACKAGES(".binaries/bin/windows/contrib/4.5", type="win.binary")'
+        Rscript -e 'tools::write_PACKAGES(".binaries/bin/macosx/big-sur-arm64/contrib/4.4", type="mac.binary")'
+        Rscript -e 'tools::write_PACKAGES(".binaries/bin/macosx/big-sur-arm64/contrib/4.5", type="mac.binary")'
     - name: Commit & Push
       run: |
-        git config user.name "github-actions[bot]"
+        git config user.name  "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
         git add .
         git commit -m "🚀 Update binaries for $(date +%Y-%m-%d) [skip ci]" || echo "No changes to commit"

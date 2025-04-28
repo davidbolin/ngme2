@@ -1,0 +1,128 @@
+---
+title: "Ngme2 AR(1) model"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Ngme2 AR(1) model}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+In this vignette, we will introduce the autoregressive model in `ngme2`.
+
+## Description
+
+An **autoregressive model of order 1 (AR(1))** specifies that the output variable depends linearly on its own previous values and on a stochastic term.
+The simplest AR model is an AR(1) model, which is given by:
+
+\begin{align}
+X_1 &= \frac{1}{\sqrt{1-\rho^2}} \epsilon_1, \\
+X_i &= \rho X_{i-1} + \epsilon_i, \; i = 2, \dots , n,
+\end{align}
+where $|\rho| < 1$, $\epsilon_1, ..,\epsilon_n$ is either i.i.d. **NIG** or **Gaussian** noise.
+
+It is easy to verify that
+$$ K{\bf X} = \boldsymbol\epsilon,$$
+where
+${\bf X} = (X_1, \dots, X_n)$,  ${\boldsymbol \epsilon} = (\epsilon_1, \dots, \epsilon_n)$, and
+$$
+K =
+  \begin{bmatrix}
+    \sqrt{1-\rho^2} \\
+    -\rho &  1 \\
+    & \ddots & \ddots \\
+    & & -\rho &  1
+  \end{bmatrix}.
+$$
+
+## Usage
+
+Use the `f(model="ar1")` (in formula) to specify a AR(1) model.
+Notice that AR(1) process is only well defined in the integer mesh (it can have gaps). In the following example, we generate mesh from 2001 to 2007 (7 nodes).
+
+```{r ar-usage}
+library(ngme2)
+set.seed(16)
+m1 <- f(c(2001, 2005, 2003, 2007),
+  model="ar1", rho=-0.5, noise = noise_normal()
+)
+m1$operator$K
+
+# the internal A matrix tell how to map from mesh to our given index
+m1$A
+```
+
+## Simulation
+
+Doing simulation in Ngme2 is simple. Just pass the corresponding model into `simulate` function.
+
+```{r ar-simulation, fig.align="center"}
+n_obs <- 1000
+day <- 1:n_obs
+ar1_model <- f(day, model="ar1", rho = 0.5,
+  noise = noise_nig(mu = -3, sigma = 4, nu=0.4))
+W <- simulate(ar1_model, seed = 16, nsim=1)[[1]]
+
+# 1 sample process of our model
+plot(W, type="l")
+# check the acf to see the correlation
+acf(W, lag.max = 5)
+```
+
+## Estimation
+
+In this part we will show how to estiamte the AR model using `ngme` function.
+Here we can use `control_opt` to modify the control variables regarding estimation part for the `ngme` function.
+See `?control_opt` for more optioins.
+
+```{r ar-estimation, fig.align="center", cache=TRUE}
+# add some fixed effects and measurement noise
+feff <- c(-1, 2)
+x1 = runif(n_obs)
+x2 = rexp(n_obs)
+X <- (model.matrix(~0+x1+x2))
+Y <- as.numeric(X %*% feff) + W + rnorm(n_obs, sd = 2)
+
+# Fit the model with the AR1 model
+ngme_out <- ngme(
+  Y ~ 0 + x1 + x2 + f(
+    1:n_obs,
+    name = "my_ar",
+    model = "ar1",
+    noise = noise_nig(),
+    control = control_f(numer_grad = TRUE, improve_hessian = FALSE)
+  ),
+  data = data.frame(x1=x1, x2=x2, Y=Y),
+  control_opt = control_opt(
+    optimizer = adam(),
+    burnin = 100,
+    iterations = 500,
+    std_lim = 0.01,
+    n_parallel_chain = 4,
+    stop_points = 10,
+    verbose = FALSE,
+    print_check_info = FALSE,
+    seed = 3
+  )
+)
+ngme_out
+
+# traceplot of fixed effects and measurementn noise
+traceplot(ngme_out, hline=c(2, -1, 2), moving_window = 20)
+
+# traceplot of ar1 model
+traceplot(ngme_out, "my_ar", hline=c(0.5, -3, 4, 0.4))
+
+# Use ngme_result to extract the latent part
+
+# comparing the density of the noise estimated and the noise simulated
+ar1 = ngme_result(ngme_out, "my_ar")
+plot(ar1$noise,
+  noise_nig(mu = -3, sigma = 4, nu=0.4))
+```

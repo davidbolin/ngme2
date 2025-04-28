@@ -15,7 +15,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest]
+        os: [macos-latest, windows-latest, ubuntu-latest]
         r-version: ["4.4", "4.5"]
 
     steps:
@@ -86,7 +86,7 @@ jobs:
         CXXFLAGS += -I$(brew --prefix llvm@18)/include -I$(brew --prefix libomp)/include
         
         # Use -rpath with @rpath notation for better portability
-        LDFLAGS += -L$(brew --prefix llvm@18)/lib -L$(brew --prefix llvm@18)/lib/c++ -L$(brew --prefix libomp)/lib -Wl,-rpath,@loader_path/../lib -Wl,-rpath,@loader_path/../../lib -lomp
+        LDFLAGS += -L$(brew --prefix llvm@18)/lib -L$(brew --prefix llvm@18)/lib/c++ -L$(brew --prefix libomp)/lib -Wl,-rpath,@loader_path/Resources/lib -lomp
 
         # Set FLIBS for Fortran
         FLIBS = -L$(brew --prefix gcc)/lib/gcc/current -lgfortran -lquadmath
@@ -124,7 +124,7 @@ jobs:
         export CXXFLAGS="-fopenmp -I$LLVM_PREFIX/include -I$LIBOMP_PREFIX/include"
         
         # Improve portability with @rpath and avoid hardcoded paths
-        export LDFLAGS="-L$LLVM_PREFIX/lib -L$LIBOMP_PREFIX/lib -L$GCC_PREFIX/lib/gcc/current -lomp -Wl,-rpath,@loader_path/../Resources/lib"
+        export LDFLAGS="-L$LLVM_PREFIX/lib -L$LIBOMP_PREFIX/lib -L$GCC_PREFIX/lib/gcc/current -lomp -Wl,-rpath,@loader_path/Resources/lib"
         export DYLD_FALLBACK_LIBRARY_PATH="$LIBOMP_PREFIX/lib:$LLVM_PREFIX/lib:$R_HOME/lib:$GCC_PREFIX/lib/gcc/current:/usr/local/lib:/usr/lib"
         
         # Show actual paths for debugging
@@ -155,6 +155,9 @@ jobs:
           
           # Fix all external library paths to improve portability
           echo "Patching all library paths in ngme2.so..."
+          
+          # Add the correct rpath to the .so file itself
+          install_name_tool -add_rpath "@loader_path/Resources/lib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to add rpath"
           
           # 1. LLVM C++ standard library
           install_name_tool -change "$LLVM_PREFIX/lib/c++/libc++.1.dylib" "@rpath/libc++.1.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libc++ path"
@@ -188,9 +191,17 @@ jobs:
           cp "$GCC_PREFIX/lib/gcc/current/libgfortran.5.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libgfortran.5.dylib"
           cp "$GCC_PREFIX/lib/gcc/current/libquadmath.0.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libquadmath.0.dylib"
           
+          # Check if all required libraries were copied
+          echo "Libraries in libs/Resources/lib directory:"
+          ls -la check_pkg/ngme2/libs/Resources/lib/
+          
           # Verify patched libraries
           echo "Dependencies after patching:"
           otool -L check_pkg/ngme2/libs/ngme2.so
+          
+          # Verify rpath settings
+          echo "Rpath settings in ngme2.so:"
+          otool -l check_pkg/ngme2/libs/ngme2.so | grep -A2 LC_RPATH
           
           # Repack the binary package with bundled libraries
           cd check_pkg

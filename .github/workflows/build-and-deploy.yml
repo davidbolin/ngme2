@@ -39,7 +39,16 @@ jobs:
     - name: Install LLVM for OpenMP (macOS only)
       if: matrix.os == 'macos-latest'
       run: |
-        brew install llvm@18
+        # Install LLVM@18 and libomp
+        brew install llvm@18 libomp
+        
+        # Verify installation paths
+        echo "LLVM@18 installed at: $(brew --prefix llvm@18)"
+        echo "libomp installed at: $(brew --prefix libomp)"
+        
+        # Check library files
+        ls -la $(brew --prefix llvm@18)/lib | grep -i omp
+        ls -la $(brew --prefix libomp)/lib
     - name: Configure compiler to use LLVM (macOS only)
       if: matrix.os == 'macos-latest'
       run: |
@@ -52,9 +61,33 @@ jobs:
       run: |
         export R_FRAMEWORK_PATH=$(R RHOME)
         mkdir -p ~/.R
-        echo "CXXFLAGS += -fopenmp -I$R_FRAMEWORK_PATH/include" >> ~/.R/Makevars
-        echo "CFLAGS   += -fopenmp -I$R_FRAMEWORK_PATH/include" >> ~/.R/Makevars
-        echo "LDFLAGS  += -fopenmp -L$R_FRAMEWORK_PATH/lib -Wl,-rpath,$R_FRAMEWORK_PATH/lib -Wl,-install_name,@rpath/libomp.dylib" >> ~/.R/Makevars
+        
+        # Create a comprehensive Makevars file with LLVM@18
+        cat > ~/.R/Makevars << EOF
+        # Use Homebrew LLVM's clang compiler (supports OpenMP)
+        CC=/opt/homebrew/opt/llvm@18/bin/clang
+        CXX=/opt/homebrew/opt/llvm@18/bin/clang++
+        CXX11=/opt/homebrew/opt/llvm@18/bin/clang++
+        CXX14=/opt/homebrew/opt/llvm@18/bin/clang++
+        CXX17=/opt/homebrew/opt/llvm@18/bin/clang++ 
+        CXX20=/opt/homebrew/opt/llvm@18/bin/clang++
+
+        # Add OpenMP flags
+        SHLIB_OPENMP_CFLAGS = -fopenmp
+        SHLIB_OPENMP_CXXFLAGS = -fopenmp
+        SHLIB_OPENMP_FFLAGS = -fopenmp
+
+        # Include and library paths for LLVM and OpenMP
+        CFLAGS += -I/opt/homebrew/opt/llvm@18/include -I/opt/homebrew/opt/libomp/include
+        CXXFLAGS += -I/opt/homebrew/opt/llvm@18/include -I/opt/homebrew/opt/libomp/include
+        LDFLAGS += -L/opt/homebrew/opt/llvm@18/lib -L/opt/homebrew/opt/llvm@18/lib/c++ -Wl,-rpath,/opt/homebrew/opt/llvm@18/lib/c++ -L/opt/homebrew/opt/libomp/lib
+
+        FLIBS = -L/opt/homebrew/lib/gcc/current -lgfortran -lquadmath
+        EOF
+        
+        # Display the contents of Makevars
+        echo "Contents of ~/.R/Makevars:"
+        cat ~/.R/Makevars
     - name: Build source package (all platforms)
       run: |
         R CMD build .
@@ -63,8 +96,26 @@ jobs:
     - name: Install & build binary (macOS only)
       if: matrix.os == 'macos-latest'
       run: |
-        export DYLD_FALLBACK_LIBRARY_PATH=$(brew --prefix llvm@18)/lib:/usr/local/lib:/usr/lib
+        # Set paths from Homebrew
+        LLVM_PREFIX=$(brew --prefix llvm@18)
+        LIBOMP_PREFIX=$(brew --prefix libomp)
+        
+        # Set environment variables for the build
+        export PATH="$LLVM_PREFIX/bin:$PATH"
+        export CC="$LLVM_PREFIX/bin/clang"
+        export CXX="$LLVM_PREFIX/bin/clang++"
+        export CFLAGS="-fopenmp -I$LLVM_PREFIX/include -I$LIBOMP_PREFIX/include"
+        export CXXFLAGS="-fopenmp -I$LLVM_PREFIX/include -I$LIBOMP_PREFIX/include"
+        export LDFLAGS="-L$LLVM_PREFIX/lib -L$LLVM_PREFIX/lib/c++ -Wl,-rpath,$LLVM_PREFIX/lib/c++ -L$LIBOMP_PREFIX/lib"
+        export DYLD_FALLBACK_LIBRARY_PATH="$LIBOMP_PREFIX/lib:$LLVM_PREFIX/lib:$LLVM_PREFIX/lib/c++:/usr/local/lib:/usr/lib"
+        
+        # Build the binary package
+        echo "Building binary package with LLVM@18..."
         R CMD INSTALL --build $(ls -t *.tar.gz | head -n 1)
+        
+        # Verify the created binary package
+        echo "Created binary package:"
+        ls -l *.tgz
       shell: bash
 
     - name: Install & build binary (Win only)

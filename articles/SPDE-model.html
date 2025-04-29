@@ -403,7 +403,7 @@ code to specify the SPDE Matérn model in 1d case with NIG noise:</p>
 <span>  <span class="op">)</span>,</span>
 <span>  data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Y <span class="op">=</span> <span class="va">Y</span><span class="op">)</span>,</span>
 <span>  control_opt <span class="op">=</span> <span class="fu"><a href="../reference/control_opt.html">control_opt</a></span><span class="op">(</span></span>
-<span>    iterations <span class="op">=</span> <span class="fl">3000</span>,</span>
+<span>    iterations <span class="op">=</span> <span class="fl">2000</span>,</span>
 <span>    optimizer <span class="op">=</span> <span class="fu"><a href="../reference/precond_sgd.html">precond_sgd</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>    solver <span class="op">=</span> <span class="st">"supernodal"</span>,</span>
 <span>    rao_blackwellization <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -427,17 +427,17 @@ code to specify the SPDE Matérn model in 1d case with NIG noise:</p>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $spde</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
-<span><span class="co">#&gt;       kappa = 3.94</span></span>
+<span><span class="co">#&gt;       kappa = 2.48</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -1.7</span></span>
-<span><span class="co">#&gt;       sigma = 1.15</span></span>
-<span><span class="co">#&gt;       nu = 0.464</span></span>
+<span><span class="co">#&gt;       mu = -0.707</span></span>
+<span><span class="co">#&gt;       sigma = 0.702</span></span>
+<span><span class="co">#&gt;       nu = 0.665</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.492</span></span>
+<span><span class="co">#&gt;       sigma = 0.502</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span>
@@ -445,21 +445,21 @@ code to specify the SPDE Matérn model in 1d case with NIG noise:</p>
 <p><img src="SPDE-model_files/figure-html/unnamed-chunk-3-2.png" width="700"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $kappa</span></span>
-<span><span class="co">#&gt; [1] 3.945232</span></span>
+<span><span class="co">#&gt; [1] 2.478363</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $mu</span></span>
-<span><span class="co">#&gt; [1] -1.704709</span></span>
+<span><span class="co">#&gt; [1] -0.7071469</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 1.15019</span></span>
+<span><span class="co">#&gt; [1] 0.7017118</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nu</span></span>
-<span><span class="co">#&gt; [1] 0.4643931</span></span>
+<span><span class="co">#&gt; [1] 0.6740723</span></span>
 <span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">out</span>, hline<span class="op">=</span><span class="fl">0.5</span><span class="op">)</span> </span></code></pre>
 <p><img src="SPDE-model_files/figure-html/unnamed-chunk-3-3.png" width="700"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 0.493301</span></span>
+<span><span class="co">#&gt; [1] 0.5016508</span></span>
 <span></span>
 <span><span class="co"># Compare with the true density </span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">true_noise</span>,</span>
@@ -551,24 +551,24 @@ First we explore the how the data look like:</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt; (Intercept)         sal </span></span>
-<span><span class="co">#&gt;       0.868       8.030 </span></span>
+<span><span class="co">#&gt;        1.56        8.23 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $spde</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
-<span><span class="co">#&gt;       kappa = 0.733</span></span>
+<span><span class="co">#&gt;       kappa = 0.42</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -0.851</span></span>
-<span><span class="co">#&gt;       sigma = 2.09</span></span>
-<span><span class="co">#&gt;       nu = 0.475</span></span>
+<span><span class="co">#&gt;       mu = -0.155</span></span>
+<span><span class="co">#&gt;       sigma = 1.66</span></span>
+<span><span class="co">#&gt;       nu = 0.474</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -0.0604</span></span>
-<span><span class="co">#&gt;       sigma = 0.655</span></span>
-<span><span class="co">#&gt;       nu = 0.0788</span></span>
+<span><span class="co">#&gt;       mu = 0.0677</span></span>
+<span><span class="co">#&gt;       sigma = 0.801</span></span>
+<span><span class="co">#&gt;       nu = 0.0716</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span>
@@ -577,33 +577,33 @@ First we explore the how the data look like:</p>
 <p><img src="SPDE-model_files/figure-html/ngme-estimation-1.png" width="700"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $kappa</span></span>
-<span><span class="co">#&gt; [1] 0.9223424</span></span>
+<span><span class="co">#&gt; [1] 0.5432602</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $mu</span></span>
-<span><span class="co">#&gt; [1] -0.8479764</span></span>
+<span><span class="co">#&gt; [1] -0.1610098</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 2.136856</span></span>
+<span><span class="co">#&gt; [1] 1.71234</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nu</span></span>
-<span><span class="co">#&gt; [1] 0.4900381</span></span>
+<span><span class="co">#&gt; [1] 0.4810313</span></span>
 <span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">out</span><span class="op">)</span></span></code></pre>
 <p><img src="SPDE-model_files/figure-html/ngme-estimation-2.png" width="700"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $mu</span></span>
-<span><span class="co">#&gt; [1] 0.1331467</span></span>
+<span><span class="co">#&gt; [1] -0.2068991</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 0.6392965</span></span>
+<span><span class="co">#&gt; [1] 0.7104558</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nu</span></span>
-<span><span class="co">#&gt; [1] 0.0790425</span></span>
+<span><span class="co">#&gt; [1] 0.07171986</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`fixed effect 1`</span></span>
-<span><span class="co">#&gt; [1] 0.8914478</span></span>
+<span><span class="co">#&gt; [1] 1.532805</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`fixed effect 2`</span></span>
-<span><span class="co">#&gt; [1] 8.000974</span></span></code></pre>
+<span><span class="co">#&gt; [1] 8.220824</span></span></code></pre>
 <!-- ### Prediction
 The `ngme` function firstly will estimate the model using the known data.
 After the estimation, the estimaed value and the samples given by gibbs sampler will be used to give a linear predictor.
@@ -642,7 +642,7 @@ is the basis matrix user provide.</p>
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.2.</p>
 </div>
 
       </footer>

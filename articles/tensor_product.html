@@ -283,7 +283,7 @@ the time index (year).</p>
 <span>  data <span class="op">=</span> <span class="va">df</span>,</span>
 <span>  family <span class="op">=</span> <span class="st">"normal"</span>,</span>
 <span>  control_opt <span class="op">=</span> <span class="fu"><a href="../reference/control_opt.html">control_opt</a></span><span class="op">(</span></span>
-<span>    iterations <span class="op">=</span> <span class="fl">2000</span>,</span>
+<span>    iterations <span class="op">=</span> <span class="fl">1000</span>,</span>
 <span>    n_parallel_chain <span class="op">=</span> <span class="fl">4</span>,</span>
 <span>    optimizer <span class="op">=</span> <span class="fu"><a href="../reference/adamW.html">adamW</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>    rao_blackwellization <span class="op">=</span> <span class="cn">TRUE</span></span>
@@ -308,19 +308,19 @@ the time index (year).</p>
 <span><span class="co">#&gt; $tp</span></span>
 <span><span class="co">#&gt;   Model type: Tensor product</span></span>
 <span><span class="co">#&gt;       first: AR(1)</span></span>
-<span><span class="co">#&gt;           rho = 0.43</span></span>
+<span><span class="co">#&gt;           rho = 0.571</span></span>
 <span><span class="co">#&gt;       second: Matern</span></span>
-<span><span class="co">#&gt;           kappa = 0.833</span></span>
+<span><span class="co">#&gt;           kappa = 0.875</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -2.36</span></span>
-<span><span class="co">#&gt;       sigma = 0.869</span></span>
-<span><span class="co">#&gt;       nu = 2.74</span></span>
+<span><span class="co">#&gt;       mu = -2.23</span></span>
+<span><span class="co">#&gt;       sigma = 0.298</span></span>
+<span><span class="co">#&gt;       nu = 1.36</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.49</span></span>
+<span><span class="co">#&gt;       sigma = 0.506</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre></div>
@@ -331,19 +331,19 @@ function.</p>
 <p><img src="tensor_product_files/figure-html/unnamed-chunk-3-1.png" width="700"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $rho</span></span>
-<span><span class="co">#&gt; [1] 0.4283809</span></span>
+<span><span class="co">#&gt; [1] 0.56991</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $kappa</span></span>
-<span><span class="co">#&gt; [1] 0.8862204</span></span>
+<span><span class="co">#&gt; [1] 0.880821</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $mu</span></span>
-<span><span class="co">#&gt; [1] -2.360168</span></span>
+<span><span class="co">#&gt; [1] -2.230375</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 0.8795416</span></span>
+<span><span class="co">#&gt; [1] 0.2981166</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nu</span></span>
-<span><span class="co">#&gt; [1] 3.698281</span></span>
+<span><span class="co">#&gt; [1] 2.249242</span></span>
 <span><span class="co"># compare noise density</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span>mu<span class="op">=</span><span class="op">-</span><span class="fl">2</span>, sigma<span class="op">=</span><span class="fl">1</span>, nu<span class="op">=</span><span class="fl">2</span><span class="op">)</span>, <span class="fu"><a href="../reference/ngme_result.html">ngme_result</a></span><span class="op">(</span><span class="va">ngme_fit</span>, <span class="st">"tp"</span><span class="op">)</span><span class="op">$</span><span class="va">noise</span><span class="op">)</span></span></code></pre>
 <p><img src="tensor_product_files/figure-html/unnamed-chunk-3-2.png" width="700"></p>
@@ -369,28 +369,28 @@ location.</p>
 <span>  pos<span class="op">=</span><span class="va">loc_new</span></span>
 <span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; $mean</span></span>
-<span><span class="co">#&gt;  [1]  0.02164594  0.00000000 -0.63600722 -0.14748356  0.00000000  0.17004135</span></span>
-<span><span class="co">#&gt;  [7]  0.00000000  0.39713085  0.00000000 -0.03139049</span></span>
+<span><span class="co">#&gt;  [1]  0.47852037  0.23019735 -1.17655609 -0.18271549  0.62352546 -1.09975896</span></span>
+<span><span class="co">#&gt;  [7] -0.68227768  0.00000000 -0.08999222  0.42539550</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sd</span></span>
-<span><span class="co">#&gt;  [1] 0.3452692 0.0000000 0.6239039 0.9488273 0.0000000 0.6183946 0.0000000</span></span>
-<span><span class="co">#&gt;  [8] 0.2261463 0.0000000 0.2520423</span></span>
+<span><span class="co">#&gt;  [1] 0.2360144 0.1605548 0.2899448 0.1780994 0.1834743 0.3138664 0.5145494</span></span>
+<span><span class="co">#&gt;  [8] 0.0000000 0.2111713 0.2920307</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`5quantile`</span></span>
-<span><span class="co">#&gt;  [1] -0.55788302  0.00000000 -1.61643639 -1.80099326  0.00000000 -0.84328211</span></span>
-<span><span class="co">#&gt;  [7]  0.00000000 -0.03939611  0.00000000 -0.44983131</span></span>
+<span><span class="co">#&gt;  [1]  0.05673815 -0.03330594 -1.68061509 -0.48645327  0.33514369 -1.61513517</span></span>
+<span><span class="co">#&gt;  [7] -1.49628979  0.00000000 -0.47701221 -0.13702359</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`95quantile`</span></span>
-<span><span class="co">#&gt;  [1] 0.4959378 0.0000000 0.3283719 1.1846360 0.0000000 1.0821586 0.0000000</span></span>
-<span><span class="co">#&gt;  [8] 0.6913546 0.0000000 0.3658797</span></span>
+<span><span class="co">#&gt;  [1]  0.80598341  0.46940758 -0.75621361  0.11200259  0.87465324 -0.65490767</span></span>
+<span><span class="co">#&gt;  [7]  0.08698856  0.00000000  0.23112417  0.78235841</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $median</span></span>
-<span><span class="co">#&gt;  [1]  0.06066873  0.00000000 -0.61790425  0.00120380  0.00000000  0.20179293</span></span>
-<span><span class="co">#&gt;  [7]  0.00000000  0.43687825  0.00000000 -0.01283308</span></span>
+<span><span class="co">#&gt;  [1]  0.51504952  0.24046957 -1.14558403 -0.18527603  0.62160756 -1.08253544</span></span>
+<span><span class="co">#&gt;  [7] -0.61507787  0.00000000 -0.06453283  0.49058972</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $mode</span></span>
-<span><span class="co">#&gt;  [1]  0.12717022  0.00000000 -0.53635933  0.11989300  0.00000000  0.03517463</span></span>
-<span><span class="co">#&gt;  [7]  0.00000000  0.46530005  0.00000000 -0.21820280</span></span></code></pre></div>
+<span><span class="co">#&gt;  [1]  0.57845784  0.32670285 -1.14933194 -0.20398649  0.56327713 -0.97275923</span></span>
+<span><span class="co">#&gt;  [7] -0.65445047  0.00000000 -0.08730767  0.64689785</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
@@ -419,7 +419,7 @@ SPDE approach. AStA Advances in Statistical Analysis, 97(2), 109-131. <a href="h
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.2.</p>
 </div>
 
       </footer>

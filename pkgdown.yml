@@ -1,5 +1,5 @@
 pandoc: 3.1.11
-pkgdown: 2.1.1
+pkgdown: 2.1.2
 pkgdown_sha: ~
 articles:
   AR1-model: AR1-model.html
@@ -16,7 +16,7 @@ articles:
   SPDE-model: SPDE-model.html
   tensor_product: tensor_product.html
   tp-bv: tp-bv.html
-last_built: 2025-03-25T05:40Z
+last_built: 2025-04-29T07:00Z
 urls:
   reference: https://davidbolin.github.io/ngme2/reference
   article: https://davidbolin.github.io/ngme2/articles

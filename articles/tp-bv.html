@@ -174,11 +174,118 @@ bivariate model with two AR(1) processes.</p>
 <span>      rho<span class="op">=</span><span class="op">-</span><span class="fl">0.3</span></span>
 <span>    <span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<span><span class="op">)</span></span>
+<span></span>
+<span></span>
+<span><span class="va">mesh_s</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://inlabru-org.github.io/fmesher/reference/fm_mesh_1d.html" class="external-link">fm_mesh_1d</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, length.out<span class="op">=</span><span class="fl">40</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">bv_matern_normal_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  model<span class="op">=</span><span class="st">"bv_matern_normal"</span>,</span>
+<span>  mesh <span class="op">=</span> <span class="va">mesh_s</span>,</span>
+<span>  group <span class="op">=</span> <span class="va">group</span>,</span>
+<span>  sub_models <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    f1 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>      model<span class="op">=</span><span class="st">"matern"</span></span>
+<span>    <span class="op">)</span>,</span>
+<span>    f2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>      model<span class="op">=</span><span class="st">"matern"</span></span>
+<span>    <span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">f_matern_normal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
+<span>  map<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    <span class="va">time_idx</span>,</span>
+<span>    <span class="va">bv_idx</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  model<span class="op">=</span><span class="st">"tp"</span>,</span>
+<span>  first <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    model<span class="op">=</span><span class="st">"ar1"</span>, rho<span class="op">=</span><span class="fl">0.6</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  second <span class="op">=</span> <span class="va">bv_matern_normal_list</span>,</span>
+<span>  group <span class="op">=</span> <span class="va">group</span>,</span>
+<span>  noise<span class="op">=</span><span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span></span>
+<span>    mu<span class="op">=</span><span class="op">-</span><span class="fl">2</span>,</span>
+<span>    sigma<span class="op">=</span><span class="fl">1</span>,</span>
+<span>    nu<span class="op">=</span><span class="fl">2</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">f_matern_normal</span></span></code></pre></div>
+<pre><code><span><span class="co">## Model type: Tensor product</span></span>
+<span><span class="co">##     first: AR(1)</span></span>
+<span><span class="co">##         rho = 0.6</span></span>
+<span><span class="co">##     second: Bivariate Matern model (normal noise)</span></span>
+<span><span class="co">##         theta = 0(fixed) </span></span>
+<span><span class="co">##         rho = 0</span></span>
+<span><span class="co">##         sd1 = 1</span></span>
+<span><span class="co">##         sd2 = 1</span></span>
+<span><span class="co">##         f1: Matern</span></span>
+<span><span class="co">##             kappa = 1</span></span>
+<span><span class="co">##         f2: Matern</span></span>
+<span><span class="co">##             kappa = 1</span></span>
+<span><span class="co">## Noise type: NIG</span></span>
+<span><span class="co">## Noise parameters: </span></span>
+<span><span class="co">##     mu = -2</span></span>
+<span><span class="co">##     sigma = 1</span></span>
+<span><span class="co">##     nu = 2</span></span></code></pre>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">bv_matern_nig_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  model<span class="op">=</span><span class="st">"bv_matern_nig"</span>,</span>
+<span>  mesh <span class="op">=</span> <span class="va">mesh_s</span>,</span>
+<span>  group <span class="op">=</span> <span class="va">group</span>,</span>
+<span>  sub_models <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    f1 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>      model<span class="op">=</span><span class="st">"matern"</span></span>
+<span>    <span class="op">)</span>,</span>
+<span>    f2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>      model<span class="op">=</span><span class="st">"matern"</span></span>
+<span>    <span class="op">)</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  noise <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    f1 <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>    f2 <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">f_matern_nig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
+<span>  map<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    <span class="va">time_idx</span>,</span>
+<span>    <span class="va">bv_idx</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  model<span class="op">=</span><span class="st">"tp"</span>,</span>
+<span>  first <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    model<span class="op">=</span><span class="st">"ar1"</span>, rho<span class="op">=</span><span class="fl">0.6</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  second <span class="op">=</span> <span class="va">bv_matern_nig_list</span>,</span>
+<span>  group <span class="op">=</span> <span class="va">group</span>,</span>
+<span>  noise<span class="op">=</span><span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span></span>
+<span>    mu<span class="op">=</span><span class="op">-</span><span class="fl">2</span>,</span>
+<span>    sigma<span class="op">=</span><span class="fl">1</span>,</span>
+<span>    nu<span class="op">=</span><span class="fl">2</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">f_matern_nig</span></span></code></pre></div>
+<pre><code><span><span class="co">## Model type: Tensor product</span></span>
+<span><span class="co">##     first: AR(1)</span></span>
+<span><span class="co">##         rho = 0.6</span></span>
+<span><span class="co">##     second: Bivariate Matern model (NIG noise)</span></span>
+<span><span class="co">##         theta = 0</span></span>
+<span><span class="co">##         rho = 0</span></span>
+<span><span class="co">##         sd1 = 1</span></span>
+<span><span class="co">##         sd2 = 1</span></span>
+<span><span class="co">##         f1: Matern</span></span>
+<span><span class="co">##             kappa = 1</span></span>
+<span><span class="co">##         f2: Matern</span></span>
+<span><span class="co">##             kappa = 1</span></span>
+<span><span class="co">## Noise type: NIG</span></span>
+<span><span class="co">## Noise parameters: </span></span>
+<span><span class="co">##     mu = -2</span></span>
+<span><span class="co">##     sigma = 1</span></span>
+<span><span class="co">##     nu = 2</span></span></code></pre>
 <p>Then we specify the full model using the <code>f</code> function,
 which is a tensor product model with the first part being an AR(1)
 process and the second part being the bivariate model.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">f_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
 <span>  map<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    <span class="va">time_idx</span>,</span>
@@ -196,8 +303,24 @@ process and the second part being the bivariate model.</p>
 <span>    nu<span class="op">=</span><span class="fl">2</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Simulate the latent fields</span></span>
+<span><span class="va">f_model</span></span></code></pre></div>
+<pre><code><span><span class="co">## Model type: Tensor product</span></span>
+<span><span class="co">##     first: AR(1)</span></span>
+<span><span class="co">##         rho = 0.6</span></span>
+<span><span class="co">##     second: Bivariate model (non-Gaussian noise)</span></span>
+<span><span class="co">##         theta = 0</span></span>
+<span><span class="co">##         rho = 0</span></span>
+<span><span class="co">##         f1: AR(1)</span></span>
+<span><span class="co">##             rho = 0.5</span></span>
+<span><span class="co">##         f2: AR(1)</span></span>
+<span><span class="co">##             rho = -0.3</span></span>
+<span><span class="co">## Noise type: NIG</span></span>
+<span><span class="co">## Noise parameters: </span></span>
+<span><span class="co">##     mu = -2</span></span>
+<span><span class="co">##     sigma = 1</span></span>
+<span><span class="co">##     nu = 2</span></span></code></pre>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Simulate the latent fields</span></span>
 <span><span class="va">W</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="va">f_model</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
 <span></span>
 <span><span class="co"># Adding measurement noise</span></span>
@@ -207,7 +330,7 @@ process and the second part being the bivariate model.</p>
 <h2 id="estimation">Estimation<a class="anchor" aria-label="anchor" href="#estimation"></a>
 </h2>
 <p>Now we turn to estimate the model using simulated data.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">bv_list_2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  model<span class="op">=</span><span class="st">"bv"</span>,</span>
 <span>  sub_models <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
@@ -244,7 +367,7 @@ process and the second part being the bivariate model.</p>
 <span><span class="co">## Note:</span></span>
 <span><span class="co">##       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
 <span><span class="co">##       2. Use ngme_result(..) to access different latent models.</span></span></code></pre>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit0</span></span></code></pre></div>
 <pre><code><span><span class="co">## *** Ngme object ***</span></span>
 <span><span class="co">## </span></span>
@@ -257,38 +380,38 @@ process and the second part being the bivariate model.</p>
 <span><span class="co">##       No parameter.</span></span>
 <span><span class="co">##   Noise type: NORMAL</span></span>
 <span><span class="co">##   Noise parameters: </span></span>
-<span><span class="co">##       sigma = 0.819</span></span>
+<span><span class="co">##       sigma = 0.703</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $field2</span></span>
 <span><span class="co">##   Model type: Tensor product</span></span>
 <span><span class="co">##       first: AR(1)</span></span>
 <span><span class="co">##           rho = 0.24</span></span>
 <span><span class="co">##       second: Bivariate model (non-Gaussian noise)</span></span>
-<span><span class="co">##           theta = -0.0875</span></span>
-<span><span class="co">##           rho = -0.0222</span></span>
+<span><span class="co">##           theta = -0.00243</span></span>
+<span><span class="co">##           rho = -0.0666</span></span>
 <span><span class="co">##           f1: AR(1)</span></span>
-<span><span class="co">##               rho = 0.222</span></span>
+<span><span class="co">##               rho = 0.242</span></span>
 <span><span class="co">##           f2: AR(1)</span></span>
-<span><span class="co">##               rho = -0.231</span></span>
+<span><span class="co">##               rho = -0.226</span></span>
 <span><span class="co">##   Noise type: NIG</span></span>
 <span><span class="co">##   Noise parameters: </span></span>
-<span><span class="co">##       mu = -0.474</span></span>
-<span><span class="co">##       sigma = 1.49</span></span>
-<span><span class="co">##       nu = 0.639</span></span>
+<span><span class="co">##       mu = -0.459</span></span>
+<span><span class="co">##       sigma = 1.5</span></span>
+<span><span class="co">##       nu = 0.646</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Measurement noise: </span></span>
 <span><span class="co">##   Noise type: NORMAL</span></span>
 <span><span class="co">##   Noise parameters: </span></span>
-<span><span class="co">##       sigma = 1.2</span></span>
+<span><span class="co">##       sigma = 1.26</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Number of replicates is  1</span></span></code></pre>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">fit0</span>, <span class="st">"field1"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tp-bv_files/figure-html/unnamed-chunk-4-1.png" width="700"></p>
 <pre><code><span><span class="co">## Last estimates:</span></span>
 <span><span class="co">## $sigma</span></span>
-<span><span class="co">## [1] 0.8591701</span></span></code></pre>
+<span><span class="co">## [1] 0.7411933</span></span></code></pre>
 <p>Here we can see, we get the simulated parameter correctly.</p>
 </div>
   </div>
@@ -308,7 +431,7 @@ process and the second part being the bivariate model.</p>
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.2.</p>
 </div>
 
       </footer>

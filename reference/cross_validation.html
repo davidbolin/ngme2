@@ -112,8 +112,8 @@
 <span>  type <span class="op">=</span> <span class="st">"k-fold"</span>,</span>
 <span>  seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  print <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  N <span class="op">=</span> <span class="fl">5</span>,</span>
-<span>  n_gibbs_samples <span class="op">=</span> <span class="fl">100</span>,</span>
+<span>  N_sim <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>  n_gibbs_samples <span class="op">=</span> <span class="fl">500</span>,</span>
 <span>  n_burnin <span class="op">=</span> <span class="fl">100</span>,</span>
 <span>  k <span class="op">=</span> <span class="fl">5</span>,</span>
 <span>  percent <span class="op">=</span> <span class="fl">0.2</span>,</span>
@@ -122,10 +122,10 @@
 <span>  test_idx <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  train_idx <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  keep_pred <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  parallel <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  parallel <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  thining_gap <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>  cores_layer1 <span class="op">=</span> <span class="kw">if</span> <span class="op">(</span><span class="va">parallel</span><span class="op">)</span> <span class="fu">parallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">detectCores</a></span><span class="op">(</span><span class="op">)</span> <span class="kw">else</span> <span class="fl">1</span>,</span>
-<span>  cores_layer2 <span class="op">=</span> <span class="kw">if</span> <span class="op">(</span><span class="va">parallel</span><span class="op">)</span> <span class="fu">parallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">detectCores</a></span><span class="op">(</span><span class="op">)</span> <span class="kw">else</span> <span class="fl">1</span></span>
+<span>  cores_layer1 <span class="op">=</span> <span class="kw">if</span> <span class="op">(</span><span class="va">parallel</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fu">parallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">detectCores</a></span><span class="op">(</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span> <span class="kw">else</span> <span class="fl">1</span>,</span>
+<span>  cores_layer2 <span class="op">=</span> <span class="kw">if</span> <span class="op">(</span><span class="va">parallel</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fu">parallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">detectCores</a></span><span class="op">(</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span> <span class="kw">else</span> <span class="fl">1</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -153,12 +153,12 @@ custom is user-defined group, provide <code>target</code> and <code>data</code><
 <dd><p>print information during computation</p></dd>
 
 
-<dt id="arg-n">N<a class="anchor" aria-label="anchor" href="#arg-n"></a></dt>
+<dt id="arg-n-sim">N_sim<a class="anchor" aria-label="anchor" href="#arg-n-sim"></a></dt>
 <dd><p>integer, number of simulations (e.g., estimate MAE, MSE, .. N times)</p></dd>
 
 
 <dt id="arg-n-gibbs-samples">n_gibbs_samples<a class="anchor" aria-label="anchor" href="#arg-n-gibbs-samples"></a></dt>
-<dd><p>number of gibbs samples</p></dd>
+<dd><p>number of gibbs samples of latent process, used for computing CRPS, sCRPS</p></dd>
 
 
 <dt id="arg-n-burnin">n_burnin<a class="anchor" aria-label="anchor" href="#arg-n-burnin"></a></dt>
@@ -201,10 +201,10 @@ e.g., the MAE will be computed as |transform(Y) - transform(Y_pred)|</p></dd>
 <dt id="arg-thining-gap">thining_gap<a class="anchor" aria-label="anchor" href="#arg-thining-gap"></a></dt>
 <dd><p>integer, the gap between samples for thinning, if 0, then no thinning, if 1, then keep 50<!-- % of the samples for CRPS, sCRPS, etc.} --></p>
 <p>cores_layer1integer, number of cores for the first layer (over testing samples)</p>
-<p>cores_layer2integer, number of cores for the second layer (over computing scores for N simulations)</p></dd>
+<p>cores_layer2integer, number of cores for the second layer (over computing scores for N_sim simulations)</p></dd>
 
-</dl><p>1. mean of N estimations of 4 criterions: MSE, MAE, CRPS, sCRPS
- 2. standard deviation of N estimations of 4 criterions: MSE, MAE, CRPS, sCRPS
+</dl><p>1. mean of N_sim estimations of 4 criterions: MSE, MAE, CRPS, sCRPS
+ 2. standard deviation of N_sim estimations of 4 criterions: MSE, MAE, CRPS, sCRPS
 
 
 Compute the cross-validation for the ngme model
@@ -224,7 +224,7 @@ first into sub_groups (a list of target, and train data)</p>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.2.</p>
 </div>
 
       </footer></div>

@@ -133,39 +133,108 @@ OpenMP)</h1>
 
     
     
-<p>Currently, the develop version can be installed using the
-command.</p>
-<pre><code><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"davidbolin/ngme2"</span>, ref <span class="op">=</span> <span class="st">"devel"</span><span class="op">)</span></span></code></pre>
 <div class="section level2">
-<h2 id="mac-os-x">Mac OS X<a class="anchor" aria-label="anchor" href="#mac-os-x"></a>
+<h2 id="installation-options">Installation Options<a class="anchor" aria-label="anchor" href="#installation-options"></a>
 </h2>
-<p>For Mac OS X system, the default C++ compiler in OS X has does not
-support OpenMP.</p>
+<p>There are two ways to install the <code>ngme2</code> package:</p>
+<div class="section level3">
+<h3 id="installing-pre-built-binaries-recommended">1. Installing Pre-built Binaries (Recommended)<a class="anchor" aria-label="anchor" href="#installing-pre-built-binaries-recommended"></a>
+</h3>
+<p>Pre-built binaries are available for Windows and macOS with R
+versions 4.2, 4.3, 4.4, and 4.5. This is the
+<strong>recommended</strong> installation method as it avoids
+compilation issues, especially on macOS where OpenMP configuration can
+be challenging.</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Install ngme2 package from pre-built binaries</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"ngme2"</span>, </span>
+<span>                 repos <span class="op">=</span> <span class="st">"https://davidbolin.github.io/ngme2/.binaries"</span>,</span>
+<span>                 type <span class="op">=</span> <span class="st">"binary"</span><span class="op">)</span></span></code></pre></div>
+<p>The installation process will automatically detect your R version and
+operating system, and install the appropriate binary package.</p>
+<p>You can also use this convenience function to handle the
+installation:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Function to install the appropriate ngme2 binary</span></span>
+<span><span class="va">install_ngme2</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="co"># Detect R version</span></span>
+<span>  <span class="va">r_version</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">R.version</span><span class="op">$</span><span class="va">major</span>, <span class="fu"><a href="https://rdrr.io/r/base/strsplit.html" class="external-link">strsplit</a></span><span class="op">(</span><span class="va">R.version</span><span class="op">$</span><span class="va">minor</span>, <span class="st">"."</span>, fixed<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, sep<span class="op">=</span><span class="st">"."</span><span class="op">)</span></span>
+<span>  </span>
+<span>  <span class="co"># Detect system</span></span>
+<span>  <span class="va">system_type</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.info.html" class="external-link">Sys.info</a></span><span class="op">(</span><span class="op">)</span><span class="op">[</span><span class="st">"sysname"</span><span class="op">]</span></span>
+<span>  </span>
+<span>  <span class="co"># Check if the detected R version is supported</span></span>
+<span>  <span class="va">supported_versions</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"4.2"</span>, <span class="st">"4.3"</span>, <span class="st">"4.4"</span>, <span class="st">"4.5"</span><span class="op">)</span></span>
+<span>  <span class="kw">if</span><span class="op">(</span><span class="op">!</span><span class="va">r_version</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">supported_versions</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="kw"><a href="https://rdrr.io/r/base/warning.html" class="external-link">warning</a></span><span class="op">(</span><span class="st">"Your R version ("</span>, <span class="va">r_version</span>, <span class="st">") may not have a pre-built binary. "</span>,</span>
+<span>            <span class="st">"Trying the closest version or falling back to source installation."</span><span class="op">)</span></span>
+<span>    <span class="co"># Find the closest version</span></span>
+<span>    <span class="va">r_num</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">r_version</span><span class="op">)</span></span>
+<span>    <span class="va">closest_version</span> <span class="op">&lt;-</span> <span class="va">supported_versions</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/which.min.html" class="external-link">which.min</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">supported_versions</span><span class="op">)</span> <span class="op">-</span> <span class="va">r_num</span><span class="op">)</span><span class="op">)</span><span class="op">]</span></span>
+<span>    <span class="va">r_version</span> <span class="op">&lt;-</span> <span class="va">closest_version</span></span>
+<span>  <span class="op">}</span></span>
+<span>  </span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"Installing ngme2 for R "</span>, <span class="va">r_version</span>, <span class="st">" from repository"</span><span class="op">)</span></span>
+<span>  </span>
+<span>  <span class="co"># Install the package</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"ngme2"</span>, </span>
+<span>                  repos <span class="op">=</span> <span class="st">"https://davidbolin.github.io/ngme2/.binaries"</span>, </span>
+<span>                  type <span class="op">=</span> <span class="st">"binary"</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="co"># Run the function to install</span></span>
+<span><span class="fu">install_ngme2</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="installing-from-source">2. Installing from Source<a class="anchor" aria-label="anchor" href="#installing-from-source"></a>
+</h3>
+<p>If you prefer to install from source, or if pre-built binaries are
+not available for your platform or R version, you can install directly
+from GitHub:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"davidbolin/ngme2"</span>, ref <span class="op">=</span> <span class="st">"devel"</span><span class="op">)</span></span></code></pre></div>
+<p><strong>Note</strong>: Installing from source requires appropriate
+C++ compilers and OpenMP support. This can be complex, particularly on
+macOS. See the platform-specific instructions below if you encounter
+issues.</p>
+</div>
+</div>
+<div class="section level2">
+<h2 id="platform-specific-configuration-for-source-installation">Platform-Specific Configuration for Source Installation<a class="anchor" aria-label="anchor" href="#platform-specific-configuration-for-source-installation"></a>
+</h2>
+<p>If you need to install from source, follow these platform-specific
+instructions:</p>
+<div class="section level3">
+<h3 id="mac-os-x">Mac OS X<a class="anchor" aria-label="anchor" href="#mac-os-x"></a>
+</h3>
+<p>For Mac OS X, the default C++ compiler does not support OpenMP, which
+is required for multi-threading in <code>ngme2</code>.</p>
 <pre><code>➜ clang -fopenmp hello.cpp
 clang: error: unsupported option '-fopenmp'</code></pre>
-<p>In order to make use of OpenMP to enable multi-threading in OS X, we
-need to use compilers which supports OpneMP.</p>
-<p>The macOS default Apple Clang compiler doesn’t support OpenMP. To
-enable OpenMP functionality in packages like <code>ngme2</code>, we need
-to:</p>
+<p>To enable OpenMP on macOS:</p>
 <ol style="list-style-type: decimal">
-<li>Install LLVM/Clang compiler with OpenMP support via Homebrew:</li>
+<li>
+<strong>Important Note</strong>: There seems to be an
+incompatibility between R’s internal OpenMP dylib and newer versions of
+LLVM. You should specifically install LLVM version 18 to avoid
+issues:</li>
 </ol>
-<pre><code>brew install llvm libomp</code></pre>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="ex">brew</span> install llvm@18 libomp</span></code></pre></div>
 <ol start="2" style="list-style-type: decimal">
 <li>Create the ~/.R directory if it doesn’t exist already:</li>
 </ol>
-<pre><code>mkdir -p ~/.R</code></pre>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> ~/.R</span></code></pre></div>
 <ol start="3" style="list-style-type: decimal">
-<li>Add the following configuration to <code>~/.R/Makevars</code>:</li>
+<li>Add the following configuration to <code>~/.R/Makevars</code> (use
+this exact configuration):</li>
 </ol>
 <pre><code># Use Homebrew LLVM's clang compiler (supports OpenMP)
-CC=/opt/homebrew/opt/llvm/bin/clang
-CXX=/opt/homebrew/opt/llvm/bin/clang++
-CXX11=/opt/homebrew/opt/llvm/bin/clang++
-CXX14=/opt/homebrew/opt/llvm/bin/clang++
-CXX17=/opt/homebrew/opt/llvm/bin/clang++
-CXX20=/opt/homebrew/opt/llvm/bin/clang++
+CC=/opt/homebrew/opt/llvm@18/bin/clang
+CXX=/opt/homebrew/opt/llvm@18/bin/clang++
+CXX11=/opt/homebrew/opt/llvm@18/bin/clang++
+CXX14=/opt/homebrew/opt/llvm@18/bin/clang++
+CXX17=/opt/homebrew/opt/llvm@18/bin/clang++ 
+CXX20=/opt/homebrew/opt/llvm@18/bin/clang++
 
 # Add OpenMP flags
 SHLIB_OPENMP_CFLAGS = -fopenmp
@@ -173,116 +242,69 @@ SHLIB_OPENMP_CXXFLAGS = -fopenmp
 SHLIB_OPENMP_FFLAGS = -fopenmp
 
 # Include and library paths for LLVM and OpenMP
-CFLAGS += -I/opt/homebrew/opt/llvm/include
-CXXFLAGS += -I/opt/homebrew/opt/llvm/include
-LDFLAGS += -L/opt/homebrew/opt/llvm/lib -L/opt/homebrew/opt/llvm/lib/c++ -Wl,-rpath,/opt/homebrew/opt/llvm/lib/c++</code></pre>
-<p>After making these changes, reinstall the <code>ngme2</code> package
-to take advantage of the OpenMP functionality for parallel
-processing.</p>
-<pre><code><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"davidbolin/ngme2"</span>, ref <span class="op">=</span> <span class="st">"devel"</span><span class="op">)</span></span></code></pre>
+CFLAGS += -I/opt/homebrew/opt/llvm@18/include -I/opt/homebrew/opt/libomp/include
+CXXFLAGS += -I/opt/homebrew/opt/llvm@18/include -I/opt/homebrew/opt/libomp/include
+LDFLAGS += -L/opt/homebrew/opt/llvm@18/lib -L/opt/homebrew/opt/llvm@18/lib/c++ -Wl,-rpath,/opt/homebrew/opt/llvm@18/lib/c++ -L/opt/homebrew/opt/libomp/lib
+
+FLIBS = -L/opt/homebrew/lib/gcc/current -lgfortran -lquadmath</code></pre>
+<p>Note: - The paths shown are for Apple Silicon Macs (M1/M2/M3). If
+you’re using an Intel Mac, replace <code>/opt/homebrew/</code> with
+<code>/usr/local/</code>. - It’s critical to use LLVM version 18
+specifically due to compatibility issues with R’s OpenMP implementation
+and newer LLVM versions.</p>
+<ol start="4" style="list-style-type: decimal">
+<li>After configuring the compiler, install from GitHub:</li>
+</ol>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"davidbolin/ngme2"</span>, ref <span class="op">=</span> <span class="st">"devel"</span><span class="op">)</span></span></code></pre></div>
 </div>
-<div class="section level2">
-<h2 id="linux">Linux<a class="anchor" aria-label="anchor" href="#linux"></a>
-</h2>
+<div class="section level3">
+<h3 id="linux">Linux<a class="anchor" aria-label="anchor" href="#linux"></a>
+</h3>
 <p>Most Linux distributions come with GCC/G++ compilers that already
 support OpenMP. If not, you can install the development tools package
 for your distribution.</p>
-<div class="section level3">
-<h3 id="install-required-dependencies">1. Install required dependencies<a class="anchor" aria-label="anchor" href="#install-required-dependencies"></a>
-</h3>
+<div class="section level4">
+<h4 id="install-required-dependencies">1. Install required dependencies<a class="anchor" aria-label="anchor" href="#install-required-dependencies"></a>
+</h4>
 <p>For Debian/Ubuntu-based systems:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="fu">sudo</span> apt-get update</span>
-<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="fu">sudo</span> apt-get install r-base-dev build-essential libopenblas-dev liblapack-dev gfortran</span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="fu">sudo</span> apt-get update</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="fu">sudo</span> apt-get install r-base-dev build-essential libopenblas-dev liblapack-dev gfortran</span></code></pre></div>
 <p>For Red Hat/Fedora-based systems:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="fu">sudo</span> dnf install R-devel gcc-c++ openblas-devel lapack-devel gcc-gfortran</span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="fu">sudo</span> dnf install R-devel gcc-c++ openblas-devel lapack-devel gcc-gfortran</span></code></pre></div>
 </div>
-<div class="section level3">
-<h3 id="verify-openmp-support">2. Verify OpenMP support<a class="anchor" aria-label="anchor" href="#verify-openmp-support"></a>
-</h3>
-<p>Check if your GCC compiler supports OpenMP:</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="fu">gcc</span> <span class="at">--version</span></span>
-<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"#include &lt;omp.h&gt;</span></span>
-<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="st">#include &lt;stdio.h&gt;</span></span>
-<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="st">int main() {</span></span>
-<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="st">  #pragma omp parallel</span></span>
-<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="st">  {</span></span>
-<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a><span class="st">    printf(</span><span class="dt">\"</span><span class="st">Hello from thread %d</span><span class="dt">\\</span><span class="st">n</span><span class="dt">\"</span><span class="st">, omp_get_thread_num());</span></span>
-<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a><span class="st">  }</span></span>
-<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a><span class="st">  return 0;</span></span>
-<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a><span class="st">}"</span> <span class="op">&gt;</span> test_omp.c</span>
-<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a></span>
-<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a><span class="fu">gcc</span> <span class="at">-fopenmp</span> test_omp.c <span class="at">-o</span> test_omp</span>
-<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a><span class="ex">./test_omp</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="configure-openmp-for-r-optional">3. Configure OpenMP for R (optional)<a class="anchor" aria-label="anchor" href="#configure-openmp-for-r-optional"></a>
-</h3>
-<p>If you want to customize the OpenMP settings, you can create a
-<code>~/.R/Makevars</code> file:</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> ~/.R</span>
-<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="fu">cat</span> <span class="op">&gt;</span> ~/.R/Makevars <span class="op">&lt;&lt; EOF</span></span>
-<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a><span class="st"># Use all available cores by default</span></span>
-<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="st"># Adjust the number as needed for your system</span></span>
-<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a><span class="st">OMP_NUM_THREADS=4</span></span>
-<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a></span>
-<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a><span class="st"># OpenMP flags</span></span>
-<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a><span class="st">SHLIB_OPENMP_CFLAGS = -fopenmp</span></span>
-<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a><span class="st">SHLIB_OPENMP_CXXFLAGS = -fopenmp</span></span>
-<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a><span class="st">SHLIB_OPENMP_FFLAGS = -fopenmp</span></span>
-<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a><span class="op">EOF</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="install-ngme2">4. Install ngme2<a class="anchor" aria-label="anchor" href="#install-ngme2"></a>
-</h3>
+<div class="section level4">
+<h4 id="install-ngme2">2. Install ngme2<a class="anchor" aria-label="anchor" href="#install-ngme2"></a>
+</h4>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># From within R</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"davidbolin/ngme2"</span>, ref <span class="op">=</span> <span class="st">"devel"</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
-<div class="section level2">
-<h2 id="windows">Windows<a class="anchor" aria-label="anchor" href="#windows"></a>
-</h2>
-<p>Windows installation is generally simpler as the standard R tools for
-Windows already include appropriate C++ compilers with OpenMP
-support.</p>
 <div class="section level3">
-<h3 id="install-rtools">1. Install Rtools<a class="anchor" aria-label="anchor" href="#install-rtools"></a>
+<h3 id="windows">Windows<a class="anchor" aria-label="anchor" href="#windows"></a>
 </h3>
+<p>Windows installation from source is generally simpler as the standard
+R tools for Windows already include appropriate C++ compilers with
+OpenMP support.</p>
+<div class="section level4">
+<h4 id="install-rtools">1. Install Rtools<a class="anchor" aria-label="anchor" href="#install-rtools"></a>
+</h4>
 <p>Download and install the version of Rtools that corresponds to your R
 version from: <a href="https://cran.r-project.org/bin/windows/Rtools/" class="external-link uri">https://cran.r-project.org/bin/windows/Rtools/</a></p>
 <p>For R 4.0.0 and newer, use Rtools40 or newer.</p>
 <p>During installation: - Make sure to select the option to add Rtools
 to your system PATH - Install the toolchain components</p>
 </div>
-<div class="section level3">
-<h3 id="verify-installation">2. Verify installation<a class="anchor" aria-label="anchor" href="#verify-installation"></a>
-</h3>
-<p>From your R console, check if Rtools is properly installed:</p>
+<div class="section level4">
+<h4 id="install-ngme2-1">2. Install ngme2<a class="anchor" aria-label="anchor" href="#install-ngme2-1"></a>
+</h4>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Sys.which.html" class="external-link">Sys.which</a></span><span class="op">(</span><span class="st">"make"</span><span class="op">)</span></span>
-<span><span class="co"># Should return the path to the make executable</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="install-ngme2-1">3. Install ngme2<a class="anchor" aria-label="anchor" href="#install-ngme2-1"></a>
-</h3>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># From within R</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"davidbolin/ngme2"</span>, ref <span class="op">=</span> <span class="st">"devel"</span><span class="op">)</span></span></code></pre></div>
 </div>
-<div class="section level3">
-<h3 id="configure-openmp-settings-optional">4. Configure OpenMP settings (optional)<a class="anchor" aria-label="anchor" href="#configure-openmp-settings-optional"></a>
-</h3>
-<p>If you need to customize the OpenMP behavior, you can create a
-<code>.Renviron</code> file in your user directory:</p>
-<pre><code><span><span class="co"># Open R and run:</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/file.edit.html" class="external-link">file.edit</a></span><span class="op">(</span><span class="st">"~/.Renviron"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Add the following line to control the number of OpenMP threads:</span></span>
-<span><span class="va">OMP_NUM_THREADS</span><span class="op">=</span><span class="fl">4</span></span></code></pre>
-<p>This will limit OpenMP to using 4 threads. Adjust the number
-according to your system’s capabilities.</p>
 </div>
 </div>
 <div class="section level2">
@@ -290,7 +312,7 @@ according to your system’s capabilities.</p>
 </h2>
 <p>To verify that OpenMP is working correctly with <code>ngme2</code>,
 you can run a simple test:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://davidbolin.github.io/ngme2/">ngme2</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Check OpenMP capabilities</span></span>
@@ -351,7 +373,7 @@ Rtools for your R version.</li>
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.2.</p>
 </div>
 
       </footer>

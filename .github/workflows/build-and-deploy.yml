@@ -43,6 +43,13 @@ jobs:
           sessioninfo::session_info(pkgs, include_base = TRUE)
         shell: Rscript {0}
 
+      - name: Install build deps
+        run: Rscript -e 'install.packages(c("devtools", "remotes"), repos="https://cloud.r-project.org")'
+
+      - name: Install dependencies
+        run: |
+          Rscript -e 'remotes::install_deps(dependencies = TRUE, upgrade = "never")'
+
       - name: Install package
         run: R CMD INSTALL .
 

@@ -40,9 +40,11 @@ jobs:
 
       - name: Install package
         run: R CMD INSTALL .
+        shell: bash
 
       - name: Run R CMD check
         run: R CMD check --no-manual --no-build-vignettes --as-cran .
+        shell: bash
 
       - name: Print session info
         run: |

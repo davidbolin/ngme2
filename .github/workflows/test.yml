@@ -1,0 +1,52 @@
+name: Test R package on devel
+
+on:
+  push:
+    branches:
+      - devel
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        r-version: ["4.3", "4.4", "4.5"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: ${{ matrix.r-version }}
+          extra-repositories: "https://inla.r-inla-download.org/R/testing"
+
+      - name: Cache R packages
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.R_LIBS_USER }}
+          key: ${{ runner.os }}-r-${{ matrix.r-version }}-${{ hashFiles('**/DESCRIPTION') }}
+          restore-keys: |
+            ${{ runner.os }}-r-${{ matrix.r-version }}-
+
+      - name: Install build deps
+        run: Rscript -e 'install.packages(c("devtools", "remotes"), repos="https://cloud.r-project.org")'
+
+      - name: Install dependencies
+        run: Rscript -e 'remotes::install_deps(dependencies = TRUE, upgrade = "never")'
+
+      - name: Install package
+        run: R CMD INSTALL .
+
+      - name: Run R CMD check
+        run: R CMD check --no-manual --no-build-vignettes --as-cran .
+
+      - name: Print session info
+        run: |
+          options(width = 100)
+          pkgs <- installed.packages()[, "Package"]
+          sessioninfo::session_info(pkgs, include_base = TRUE)
+        shell: Rscript {0}

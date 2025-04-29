@@ -291,7 +291,7 @@ bvar_cor <- ngme(
     n_parallel_chain = 4,
     optimizer = adam(stepsize = 0.01),
     std_lim = 1e-3,
-    iterations = 5000,
+    iterations = 1000,
     iters_per_check = 100,
     rao_blackwellization = TRUE,
     seed = 7
@@ -367,7 +367,7 @@ out <- ngme(
   data = data.frame(Y, x1, x2),
   control_opt = control_opt(
     optimizer = adam(),
-    iterations = 5000,
+    iterations = 1000,
     n_parallel_chain = 4,
     seed = 113
   )
@@ -477,7 +477,7 @@ out_cor <- ngme(
   ),
   data = data.frame(Y, long, lat),
   control_opt = control_opt(
-    iterations = 5000,
+    iterations = 1000,
     n_parallel_chain = 4,
     rao_blackwellization = TRUE,
     # verbose = TRUE,

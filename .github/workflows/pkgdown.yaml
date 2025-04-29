@@ -3,7 +3,9 @@ name: pkgdown
 on:
   push:
     branches:
-      - devel
+      - stable
+
+name: pkgdown
 
 jobs:
   pkgdown:
@@ -45,14 +47,24 @@ jobs:
         run: |
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
+          
+          # Build and deploy site
           Rscript -e 'pkgdown::deploy_to_branch(new_process = FALSE)'
-          git config pull.rebase true
-          git fetch origin          
-          git checkout repo_files
+          
+          # Make sure we are up-to-date
+          git fetch origin
           git checkout gh-pages
-          git checkout repo_files -- src/contrib
-          git checkout repo_files -- bin
-          git add src/contrib
-          git add bin
-          git commit -m "Adding repo files"
-          git push origin gh-pages
+          
+          # Clean untracked files if any (optional but safer)
+          git clean -fd
+          
+          # Add all updated files (important!)
+          git add .
+
+          # Only commit if there is anything to commit
+          if ! git diff --cached --quiet; then
+            git commit -m "Update pkgdown site [skip ci]"
+            git push origin gh-pages
+          else
+            echo "No changes to commit."
+          fi

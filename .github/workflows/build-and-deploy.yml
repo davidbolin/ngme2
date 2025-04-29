@@ -1,4 +1,4 @@
-name: Build & Deploy R binaries
+name: Build & Deploy R binaries and pkgdown
 
 on:
   push:
@@ -11,6 +11,48 @@ permissions:
   packages: write
 
 jobs:
+  pkgdown:
+    runs-on: ubuntu-22.04
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: "release"
+          extra-repositories: "https://inla.r-inla-download.org/R/testing"
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - name: Install system dependencies on Linux (GL)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -y && sudo apt-get install -y libglu1-mesa-dev
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          dependencies: '"all"'
+          extra-packages: |
+            pkgdown
+
+      - name: Session info
+        run: |
+          options(width = 100)
+          pkgs <- installed.packages()[, "Package"]
+          sessioninfo::session_info(pkgs, include_base = TRUE)
+        shell: Rscript {0}
+
+      - name: Install package
+        run: R CMD INSTALL .
+
+      - name: Deploy pkgdown site
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+          # This step pushes the docs/ to the gh-pages branch
+          Rscript -e 'pkgdown::deploy_to_branch(new_process = FALSE)'
+
   build:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -255,7 +297,7 @@ jobs:
         path: "*.tar.gz"
 
   deploy:
-    needs: build
+    needs: [build, pkgdown]
     runs-on: ubuntu-latest
 
     steps:
@@ -347,5 +389,9 @@ jobs:
         git config user.name  "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
         git add .
-        git commit -m "🚀 Update binaries for $(date +%Y-%m-%d) [skip ci]" || echo "No changes to commit"
-        git push origin gh-pages
+        if ! git diff --cached --quiet; then
+          git commit -m "🚀 Update binaries for $(date +%Y-%m-%d) [skip ci]"
+          git push origin gh-pages
+        else
+          echo "No changes to commit."
+        fi

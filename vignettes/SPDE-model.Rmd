@@ -192,7 +192,7 @@ out <- ngme(
   ),
   data = data.frame(Y = Y),
   control_opt = control_opt(
-    iterations = 3000,
+    iterations = 2000,
     optimizer = precond_sgd(),
     solver = "supernodal",
     rao_blackwellization = TRUE,

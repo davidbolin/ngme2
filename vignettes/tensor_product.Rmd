@@ -128,7 +128,7 @@ ngme_fit <- ngme(
   data = df,
   family = "normal",
   control_opt = control_opt(
-    iterations = 2000,
+    iterations = 1000,
     n_parallel_chain = 4,
     optimizer = adamW(),
     rao_blackwellization = TRUE

@@ -2,7 +2,6 @@ on:
   push:
     branches:
       - devel
-      - test
 
 name: pkgdown
 
@@ -48,11 +47,6 @@ jobs:
           Rscript -e 'pkgdown::deploy_to_branch(new_process = FALSE)'
           git config pull.rebase true
           git fetch origin          
-          git checkout repo_files
           git checkout gh-pages
-          git checkout repo_files -- src/contrib
-          git checkout repo_files -- bin
-          git add src/contrib
-          git add bin
-          git commit -m "Adding repo files"
+          git commit -m "Adding pkgdown site"
           git push origin gh-pages

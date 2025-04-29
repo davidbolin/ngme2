@@ -400,7 +400,7 @@ ggplot() +
 ```{r fit-parana, cache=TRUE}
 # Define the control options
 control = control_opt(
-  iterations = 3000,
+  iterations = 2000,
   n_slope_check = 4,
   stop_points = 10,
   std_lim = 0.1,

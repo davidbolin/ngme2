@@ -32,7 +32,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">ngme2</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.6.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.0</span>
       </span>
     </div>
 
@@ -125,7 +125,7 @@
       <h1 data-toc-skip>Space-time bivariate model in Ngme2</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/devel/vignettes/tp-bv.Rmd" class="external-link"><code>vignettes/tp-bv.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/stable/vignettes/tp-bv.Rmd" class="external-link"><code>vignettes/tp-bv.Rmd</code></a></small>
       <div class="hidden name"><code>tp-bv.Rmd</code></div>
 
     </div>
@@ -145,7 +145,7 @@ model as the second part of the tensor product model.</p>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://davidbolin.github.io/ngme2/">ngme2</a></span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## This is ngme2 of version 0.6.0</span></span>
+<pre><code><span><span class="co">## This is ngme2 of version 0.7.0</span></span>
 <span><span class="co">## - See our homepage: https://davidbolin.github.io/ngme2 for more details.</span></span></code></pre>
 <p>First we specify the two indices for the space-time model. We have 20
 time points and 40 mesh locations for space.</p>
@@ -380,29 +380,29 @@ process and the second part being the bivariate model.</p>
 <span><span class="co">##       No parameter.</span></span>
 <span><span class="co">##   Noise type: NORMAL</span></span>
 <span><span class="co">##   Noise parameters: </span></span>
-<span><span class="co">##       sigma = 0.703</span></span>
+<span><span class="co">##       sigma = 0.876</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $field2</span></span>
 <span><span class="co">##   Model type: Tensor product</span></span>
 <span><span class="co">##       first: AR(1)</span></span>
-<span><span class="co">##           rho = 0.24</span></span>
+<span><span class="co">##           rho = 0.239</span></span>
 <span><span class="co">##       second: Bivariate model (non-Gaussian noise)</span></span>
-<span><span class="co">##           theta = -0.00243</span></span>
-<span><span class="co">##           rho = -0.0666</span></span>
+<span><span class="co">##           theta = -0.0499</span></span>
+<span><span class="co">##           rho = 0.0575</span></span>
 <span><span class="co">##           f1: AR(1)</span></span>
 <span><span class="co">##               rho = 0.242</span></span>
 <span><span class="co">##           f2: AR(1)</span></span>
-<span><span class="co">##               rho = -0.226</span></span>
+<span><span class="co">##               rho = -0.23</span></span>
 <span><span class="co">##   Noise type: NIG</span></span>
 <span><span class="co">##   Noise parameters: </span></span>
-<span><span class="co">##       mu = -0.459</span></span>
-<span><span class="co">##       sigma = 1.5</span></span>
-<span><span class="co">##       nu = 0.646</span></span>
+<span><span class="co">##       mu = -0.462</span></span>
+<span><span class="co">##       sigma = 1.53</span></span>
+<span><span class="co">##       nu = 0.643</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Measurement noise: </span></span>
 <span><span class="co">##   Noise type: NORMAL</span></span>
 <span><span class="co">##   Noise parameters: </span></span>
-<span><span class="co">##       sigma = 1.26</span></span>
+<span><span class="co">##       sigma = 1.31</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Number of replicates is  1</span></span></code></pre>
@@ -411,7 +411,7 @@ process and the second part being the bivariate model.</p>
 <p><img src="tp-bv_files/figure-html/unnamed-chunk-4-1.png" width="700"></p>
 <pre><code><span><span class="co">## Last estimates:</span></span>
 <span><span class="co">## $sigma</span></span>
-<span><span class="co">## [1] 0.7411933</span></span></code></pre>
+<span><span class="co">## [1] 0.9167779</span></span></code></pre>
 <p>Here we can see, we get the simulated parameter correctly.</p>
 </div>
   </div>

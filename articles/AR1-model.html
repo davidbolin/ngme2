@@ -32,7 +32,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">ngme2</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.6.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.0</span>
       </span>
     </div>
 
@@ -125,7 +125,7 @@
       <h1 data-toc-skip>Ngme2 AR(1) model</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/devel/vignettes/AR1-model.Rmd" class="external-link"><code>vignettes/AR1-model.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/stable/vignettes/AR1-model.Rmd" class="external-link"><code>vignettes/AR1-model.Rmd</code></a></small>
       <div class="hidden name"><code>AR1-model.Rmd</code></div>
 
     </div>
@@ -173,7 +173,7 @@ mesh (it can have gaps). In the following example, we generate mesh from
 2001 to 2007 (7 nodes).</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://davidbolin.github.io/ngme2/">ngme2</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; This is ngme2 of version 0.6.0</span></span>
+<span><span class="co">#&gt; This is ngme2 of version 0.7.0</span></span>
 <span><span class="co">#&gt; - See our homepage: https://davidbolin.github.io/ngme2 for more details.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">16</span><span class="op">)</span></span>
 <span><span class="va">m1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2001</span>, <span class="fl">2005</span>, <span class="fl">2003</span>, <span class="fl">2007</span><span class="op">)</span>,</span>
@@ -269,7 +269,7 @@ optioins.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt;     x1     x2 </span></span>
-<span><span class="co">#&gt; -0.908  2.251 </span></span>
+<span><span class="co">#&gt; -0.908  2.250 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $my_ar</span></span>
@@ -277,14 +277,14 @@ optioins.</p>
 <span><span class="co">#&gt;       rho = 0.466</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -2.54</span></span>
-<span><span class="co">#&gt;       sigma = 4.08</span></span>
+<span><span class="co">#&gt;       mu = -2.59</span></span>
+<span><span class="co">#&gt;       sigma = 4.06</span></span>
 <span><span class="co">#&gt;       nu = 0.31</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 2.11</span></span>
+<span><span class="co">#&gt;       sigma = 2.1</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span>
@@ -294,29 +294,29 @@ optioins.</p>
 <p><img src="AR1-model_files/figure-html/ar-estimation-1.png" width="700" style="display: block; margin: auto;"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 2.099778</span></span>
+<span><span class="co">#&gt; [1] 2.09405</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`fixed effect 1`</span></span>
-<span><span class="co">#&gt; [1] -0.897587</span></span>
+<span><span class="co">#&gt; [1] -0.8968304</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`fixed effect 2`</span></span>
-<span><span class="co">#&gt; [1] 2.249948</span></span>
+<span><span class="co">#&gt; [1] 2.24937</span></span>
 <span></span>
 <span><span class="co"># traceplot of ar1 model</span></span>
 <span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">ngme_out</span>, <span class="st">"my_ar"</span>, hline<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="op">-</span><span class="fl">3</span>, <span class="fl">4</span>, <span class="fl">0.4</span><span class="op">)</span><span class="op">)</span></span></code></pre>
 <p><img src="AR1-model_files/figure-html/ar-estimation-2.png" width="700" style="display: block; margin: auto;"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $rho</span></span>
-<span><span class="co">#&gt; [1] 0.4663593</span></span>
+<span><span class="co">#&gt; [1] 0.4659072</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $mu</span></span>
-<span><span class="co">#&gt; [1] -2.5428</span></span>
+<span><span class="co">#&gt; [1] -2.586214</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 4.07966</span></span>
+<span><span class="co">#&gt; [1] 4.057838</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nu</span></span>
-<span><span class="co">#&gt; [1] 0.3105812</span></span>
+<span><span class="co">#&gt; [1] 0.310375</span></span>
 <span></span>
 <span><span class="co"># Use ngme_result to extract the latent part</span></span>
 <span></span>

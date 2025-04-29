@@ -32,7 +32,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">ngme2</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.6.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.0</span>
       </span>
     </div>
 
@@ -125,7 +125,7 @@
       <h1 data-toc-skip>Ngme2 replicates feature</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/devel/vignettes/replicate.Rmd" class="external-link"><code>vignettes/replicate.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/stable/vignettes/replicate.Rmd" class="external-link"><code>vignettes/replicate.Rmd</code></a></small>
       <div class="hidden name"><code>replicate.Rmd</code></div>
 
     </div>
@@ -183,7 +183,7 @@ an AR(1) model.</p>
 observations</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://davidbolin.github.io/ngme2/">ngme2</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; This is ngme2 of version 0.6.0</span></span>
+<span><span class="co">#&gt; This is ngme2 of version 0.7.0</span></span>
 <span><span class="co">#&gt; - See our homepage: https://davidbolin.github.io/ngme2 for more details.</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
 <span></span>
@@ -270,22 +270,22 @@ entry of the matrix
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt; (Intercept) </span></span>
-<span><span class="co">#&gt;       -3.03 </span></span>
+<span><span class="co">#&gt;       -3.08 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $field1</span></span>
 <span><span class="co">#&gt;   Model type: AR(1)</span></span>
-<span><span class="co">#&gt;       rho = 0.751</span></span>
+<span><span class="co">#&gt;       rho = 0.749</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -0.0523</span></span>
+<span><span class="co">#&gt;       mu = -0.0622</span></span>
 <span><span class="co">#&gt;       sigma = 1.01</span></span>
-<span><span class="co">#&gt;       nu = 1.2</span></span>
+<span><span class="co">#&gt;       nu = 1.14</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.212</span></span>
+<span><span class="co">#&gt;       sigma = 0.223</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  2</span></span></code></pre></div>
@@ -365,12 +365,12 @@ locations where the feature is unknown.</p>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $spde</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
-<span><span class="co">#&gt;       kappa = 1.45</span></span>
+<span><span class="co">#&gt;       kappa = 0.595</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -0.677</span></span>
-<span><span class="co">#&gt;       sigma = 0.747</span></span>
-<span><span class="co">#&gt;       nu = 0.391</span></span>
+<span><span class="co">#&gt;       mu = 0.314</span></span>
+<span><span class="co">#&gt;       sigma = 0.423</span></span>
+<span><span class="co">#&gt;       nu = 1.38</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>

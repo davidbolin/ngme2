@@ -32,7 +32,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">ngme2</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.6.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.0</span>
       </span>
     </div>
 
@@ -125,7 +125,7 @@
       <h1 data-toc-skip>Space-time (tensor product) model in Ngme2</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/devel/vignettes/tensor_product.Rmd" class="external-link"><code>vignettes/tensor_product.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/stable/vignettes/tensor_product.Rmd" class="external-link"><code>vignettes/tensor_product.Rmd</code></a></small>
       <div class="hidden name"><code>tensor_product.Rmd</code></div>
 
     </div>
@@ -310,17 +310,17 @@ the time index (year).</p>
 <span><span class="co">#&gt;       first: AR(1)</span></span>
 <span><span class="co">#&gt;           rho = 0.571</span></span>
 <span><span class="co">#&gt;       second: Matern</span></span>
-<span><span class="co">#&gt;           kappa = 0.875</span></span>
+<span><span class="co">#&gt;           kappa = 1.01</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -2.23</span></span>
-<span><span class="co">#&gt;       sigma = 0.298</span></span>
-<span><span class="co">#&gt;       nu = 1.36</span></span>
+<span><span class="co">#&gt;       mu = -2.06</span></span>
+<span><span class="co">#&gt;       sigma = 0.714</span></span>
+<span><span class="co">#&gt;       nu = 1.59</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.506</span></span>
+<span><span class="co">#&gt;       sigma = 0.526</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre></div>
@@ -331,19 +331,19 @@ function.</p>
 <p><img src="tensor_product_files/figure-html/unnamed-chunk-3-1.png" width="700"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $rho</span></span>
-<span><span class="co">#&gt; [1] 0.56991</span></span>
+<span><span class="co">#&gt; [1] 0.5673304</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $kappa</span></span>
-<span><span class="co">#&gt; [1] 0.880821</span></span>
+<span><span class="co">#&gt; [1] 1.007068</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $mu</span></span>
-<span><span class="co">#&gt; [1] -2.230375</span></span>
+<span><span class="co">#&gt; [1] -2.072136</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 0.2981166</span></span>
+<span><span class="co">#&gt; [1] 0.7669568</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nu</span></span>
-<span><span class="co">#&gt; [1] 2.249242</span></span>
+<span><span class="co">#&gt; [1] 2.038605</span></span>
 <span><span class="co"># compare noise density</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span>mu<span class="op">=</span><span class="op">-</span><span class="fl">2</span>, sigma<span class="op">=</span><span class="fl">1</span>, nu<span class="op">=</span><span class="fl">2</span><span class="op">)</span>, <span class="fu"><a href="../reference/ngme_result.html">ngme_result</a></span><span class="op">(</span><span class="va">ngme_fit</span>, <span class="st">"tp"</span><span class="op">)</span><span class="op">$</span><span class="va">noise</span><span class="op">)</span></span></code></pre>
 <p><img src="tensor_product_files/figure-html/unnamed-chunk-3-2.png" width="700"></p>
@@ -369,28 +369,28 @@ location.</p>
 <span>  pos<span class="op">=</span><span class="va">loc_new</span></span>
 <span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; $mean</span></span>
-<span><span class="co">#&gt;  [1]  0.47852037  0.23019735 -1.17655609 -0.18271549  0.62352546 -1.09975896</span></span>
-<span><span class="co">#&gt;  [7] -0.68227768  0.00000000 -0.08999222  0.42539550</span></span>
+<span><span class="co">#&gt;  [1]  0.01058961  0.00000000  0.77728612  0.00000000  0.00000000 -0.30114730</span></span>
+<span><span class="co">#&gt;  [7]  0.00000000  0.06690657  0.25735836  0.00000000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sd</span></span>
-<span><span class="co">#&gt;  [1] 0.2360144 0.1605548 0.2899448 0.1780994 0.1834743 0.3138664 0.5145494</span></span>
-<span><span class="co">#&gt;  [8] 0.0000000 0.2111713 0.2920307</span></span>
+<span><span class="co">#&gt;  [1] 0.3548790 0.0000000 0.2531738 0.0000000 0.0000000 0.6823156 0.0000000</span></span>
+<span><span class="co">#&gt;  [8] 0.7159347 0.5869396 0.0000000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`5quantile`</span></span>
-<span><span class="co">#&gt;  [1]  0.05673815 -0.03330594 -1.68061509 -0.48645327  0.33514369 -1.61513517</span></span>
-<span><span class="co">#&gt;  [7] -1.49628979  0.00000000 -0.47701221 -0.13702359</span></span>
+<span><span class="co">#&gt;  [1] -0.6062050  0.0000000  0.2856545  0.0000000  0.0000000 -1.5175419</span></span>
+<span><span class="co">#&gt;  [7]  0.0000000 -1.1481784 -0.9482556  0.0000000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`95quantile`</span></span>
-<span><span class="co">#&gt;  [1]  0.80598341  0.46940758 -0.75621361  0.11200259  0.87465324 -0.65490767</span></span>
-<span><span class="co">#&gt;  [7]  0.08698856  0.00000000  0.23112417  0.78235841</span></span>
+<span><span class="co">#&gt;  [1] 0.5020163 0.0000000 1.0984691 0.0000000 0.0000000 0.6096415 0.0000000</span></span>
+<span><span class="co">#&gt;  [8] 1.0686852 0.9316713 0.0000000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $median</span></span>
-<span><span class="co">#&gt;  [1]  0.51504952  0.24046957 -1.14558403 -0.18527603  0.62160756 -1.08253544</span></span>
-<span><span class="co">#&gt;  [7] -0.61507787  0.00000000 -0.06453283  0.49058972</span></span>
+<span><span class="co">#&gt;  [1]  0.0314584  0.0000000  0.8237296  0.0000000  0.0000000 -0.2353908</span></span>
+<span><span class="co">#&gt;  [7]  0.0000000  0.1575857  0.3968224  0.0000000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $mode</span></span>
-<span><span class="co">#&gt;  [1]  0.57845784  0.32670285 -1.14933194 -0.20398649  0.56327713 -0.97275923</span></span>
-<span><span class="co">#&gt;  [7] -0.65445047  0.00000000 -0.08730767  0.64689785</span></span></code></pre></div>
+<span><span class="co">#&gt;  [1] -0.01198553  0.00000000  0.88016820  0.00000000  0.00000000 -0.34830492</span></span>
+<span><span class="co">#&gt;  [7]  0.00000000  0.20283258  0.64730538  0.00000000</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>

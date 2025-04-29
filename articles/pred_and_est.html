@@ -32,7 +32,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">ngme2</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.6.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.0</span>
       </span>
     </div>
 
@@ -125,7 +125,7 @@
       <h1 data-toc-skip>Model estimation and prediction</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/devel/vignettes/pred_and_est.Rmd" class="external-link"><code>vignettes/pred_and_est.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/stable/vignettes/pred_and_est.Rmd" class="external-link"><code>vignettes/pred_and_est.Rmd</code></a></small>
       <div class="hidden name"><code>pred_and_est.Rmd</code></div>
 
     </div>
@@ -698,21 +698,21 @@ during the sampling.</p>
 <code class="sourceCode R"><span><span class="va">V</span></span>
 <span><span class="co">#&gt; NULL</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums-methods.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">V_1</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] 0.04235054 0.05805359 0.06591999 0.05781559 0.07085276 0.06909535</span></span>
-<span><span class="co">#&gt;  [7] 0.06939915 0.06305782 0.07231899 0.04051198</span></span>
+<span><span class="co">#&gt;  [1] 0.03518328 0.06157893 0.06145490 0.07920597 0.05699727 0.06590035</span></span>
+<span><span class="co">#&gt;  [7] 0.07000956 0.07552670 0.06361000 0.03803115</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums-methods.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">V_2</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] 0.02310392 0.05146154 0.06649494 0.05046907 0.06991079 0.08616378</span></span>
-<span><span class="co">#&gt;  [7] 0.06358754 0.08883066 0.07076092 0.03080030</span></span>
+<span><span class="co">#&gt;  [1] 0.03250840 0.05371371 0.05830125 0.06515841 0.06483724 0.07223126</span></span>
+<span><span class="co">#&gt;  [7] 0.06585341 0.07974029 0.06933462 0.04248868</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="va">W</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  [1]  0.029985516  0.048025393  0.059415769  0.072248733  0.045016944</span></span>
 <span><span class="co">#&gt;  [6]  0.030076087  0.011708335  0.005539407 -0.012462080 -0.016644480</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums-methods.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">W_1</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] -0.3110887 -0.3112333 -0.3096712 -0.3065528 -0.3015760 -0.2966270</span></span>
-<span><span class="co">#&gt;  [7] -0.2922155 -0.2894719 -0.2857986 -0.2843108</span></span>
+<span><span class="co">#&gt;  [1] -0.3158249 -0.3148470 -0.3110956 -0.3058982 -0.3009947 -0.2943200</span></span>
+<span><span class="co">#&gt;  [7] -0.2891492 -0.2853377 -0.2825731 -0.2819109</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums-methods.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">W_2</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] -0.3390476 -0.3367676 -0.3318203 -0.3263928 -0.3189115 -0.3113953</span></span>
-<span><span class="co">#&gt;  [7] -0.3071305 -0.3038126 -0.3045164 -0.3044918</span></span></code></pre></div>
+<span><span class="co">#&gt;  [1] -0.3469235 -0.3455768 -0.3409403 -0.3346316 -0.3271458 -0.3195940</span></span>
+<span><span class="co">#&gt;  [7] -0.3134401 -0.3081059 -0.3059933 -0.3042083</span></span></code></pre></div>
 <p>Let us begin by building traceplots for
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>V</mi><annotation encoding="application/x-tex">V</annotation></semantics></math>:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">

@@ -2,13 +2,17 @@ name: Build & Deploy R binaries and pkgdown
 
 on:
   push:
-    branches:
-      - stable
+    branches: [stable]
 
 permissions:
   contents: write
   actions: read
   packages: write
+
+# Default to bash for all runs
+defaults:
+  run:
+    shell: bash
 
 jobs:
   pkgdown:
@@ -16,40 +20,21 @@ jobs:
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: actions/checkout@v2
-
+      # ───── public preamble ─────
+      - uses: actions/checkout@v3
       - uses: r-lib/actions/setup-r@v2
         with:
-          r-version: "release"
+          r-version: release
           extra-repositories: "https://inla.r-inla-download.org/R/testing"
-
       - uses: r-lib/actions/setup-pandoc@v2
 
-      - name: Install system dependencies on Linux (GL)
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update -y && sudo apt-get install -y libglu1-mesa-dev
-
-      - uses: r-lib/actions/setup-r-dependencies@v2
+      # ───── reuse Install R deps Composite Action ─────
+      - name: Prepare R environment
+        uses: ./.github/actions/install-r-deps
         with:
-          dependencies: '"all"'
-          extra-packages: |
-            pkgdown
+          r-version: 'release'
 
-      - name: Session info
-        run: |
-          options(width = 100)
-          pkgs <- installed.packages()[, "Package"]
-          sessioninfo::session_info(pkgs, include_base = TRUE)
-        shell: Rscript {0}
-
-      - name: Install build deps
-        run: Rscript -e 'install.packages(c("devtools", "remotes"), repos="https://cloud.r-project.org")'
-
-      - name: Install dependencies
-        run: |
-          Rscript -e 'remotes::install_deps(dependencies = TRUE, upgrade = "never")'
-
+      # ───── install own package and deploy site ─────
       - name: Install package
         run: R CMD INSTALL .
 
@@ -57,348 +42,125 @@ jobs:
         run: |
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
-          # This step pushes the docs/ to the gh-pages branch
           Rscript -e 'pkgdown::deploy_to_branch(new_process = FALSE)'
+
 
   build:
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest, ubuntu-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         r-version: ["4.3", "4.4", "4.5"]
-
     steps:
-    - name: Checkout source
-      uses: actions/checkout@v3
+      # ───── public preamble ─────
+      - uses: actions/checkout@v3
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: ${{ matrix.r-version }}
+          extra-repositories: "https://inla.r-inla-download.org/R/testing"
 
-    - name: Setup R
-      uses: r-lib/actions/setup-r@v2
-      with:
-        r-version: ${{ matrix.r-version }}
-        extra-repositories: "https://inla.r-inla-download.org/R/testing"
+      # ───── reuse Install R deps Composite Action ─────
+      - name: Prepare R environment
+        uses: ./.github/actions/install-r-deps
+        with:
+          r-version: ${{ matrix.r-version }}
 
-    - name: Install build deps
-      run: Rscript -e 'install.packages(c("devtools", "remotes"), repos="https://cloud.r-project.org")'
+      # ───── macOS extra configuration OpenMP ─────
+      - name: Install LLVM & libomp (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install llvm@18 libomp
+          echo "PATH=$(brew --prefix llvm@18)/bin:$PATH" >> $GITHUB_ENV
+          echo "CC=$(brew --prefix llvm@18)/bin/clang"   >> $GITHUB_ENV
+          echo "CXX=$(brew --prefix llvm@18)/bin/clang++" >> $GITHUB_ENV
+          mkdir -p ~/.R
+          cat > ~/.R/Makevars <<'EOF'
+          CC=$(brew --prefix llvm@18)/bin/clang
+          CXX=$(brew --prefix llvm@18)/bin/clang++
+          SHLIB_OPENMP_CFLAGS = -fopenmp
+          SHLIB_OPENMP_CXXFLAGS = -fopenmp
+          LDFLAGS += -L$(brew --prefix llvm@18)/lib -lomp
+          EOF
 
-    - name: Install dependencies
-      run: |
-        Rscript -e 'remotes::install_deps(dependencies = TRUE, upgrade = "never")'
+      # ───── build source package ─────
+      - name: Build source package
+        run: R CMD build --no-build-vignettes --no-manual .
+        working-directory: .
 
-    - name: Install LLVM for OpenMP (macOS only)
-      if: matrix.os == 'macos-latest'
-      run: |
-        # Install LLVM@18 and libomp
-        brew install llvm@18 libomp
-        
-        # Verify installation paths
-        echo "LLVM@18 installed at: $(brew --prefix llvm@18)"
-        echo "libomp installed at: $(brew --prefix libomp)"
-        
-        # Check library files
-        ls -la $(brew --prefix llvm@18)/lib | grep -i omp
-        ls -la $(brew --prefix libomp)/lib
+      # ───── build binary and upload for each platform ─────
+      - name: Build & upload binary (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          R CMD INSTALL --build --no-build-vignettes --no-docs --no-html --no-multiarch *.tar.gz
+        shell: bash
+      - name: Upload macOS binary
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-${{ matrix.r-version }}
+          path: "*.tgz"
 
-    - name: Configure compiler to use LLVM (macOS only)
-      if: matrix.os == 'macos-latest'
-      run: |
-        LLVM_PREFIX=$(brew --prefix llvm@18)
-        echo "PATH=$LLVM_PREFIX/bin:$PATH" >> $GITHUB_ENV
-        echo "CC=$LLVM_PREFIX/bin/clang" >> $GITHUB_ENV
-        echo "CXX=$LLVM_PREFIX/bin/clang++" >> $GITHUB_ENV
+      - name: Build & upload binary (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          R CMD INSTALL --build --no-build-vignettes --no-docs --no-html --no-multiarch *.tar.gz
+        shell: bash
+      - name: Upload Windows binary
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-${{ matrix.r-version }}
+          path: "*.zip"
 
-    - name: Setup OpenMP to link R-provided libomp (macOS only)
-      if: matrix.os == 'macos-latest'
-      run: |
-        export R_FRAMEWORK_PATH=$(R RHOME)
-        LLVM_PREFIX=$(brew --prefix llvm@18)
-        LIBOMP_PREFIX=$(brew --prefix libomp)
-        
-        mkdir -p ~/.R
-        
-        # Create a comprehensive Makevars file with LLVM@18 with dynamic paths
-        cat > ~/.R/Makevars << EOF
-        # Use Homebrew LLVM's clang compiler (supports OpenMP)
-        CC=$(brew --prefix llvm@18)/bin/clang
-        CXX=$(brew --prefix llvm@18)/bin/clang++
-        CXX11=$(brew --prefix llvm@18)/bin/clang++
-        CXX14=$(brew --prefix llvm@18)/bin/clang++
-        CXX17=$(brew --prefix llvm@18)/bin/clang++ 
-        CXX20=$(brew --prefix llvm@18)/bin/clang++
+      - name: Upload source artifact (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-${{ matrix.r-version }}
+          path: "*.tar.gz"
 
-        # Add OpenMP flags
-        SHLIB_OPENMP_CFLAGS = -fopenmp
-        SHLIB_OPENMP_CXXFLAGS = -fopenmp
-        SHLIB_OPENMP_FFLAGS = -fopenmp
-
-        # Include and library paths for LLVM and OpenMP
-        CFLAGS += -I$(brew --prefix llvm@18)/include -I$(brew --prefix libomp)/include
-        CXXFLAGS += -I$(brew --prefix llvm@18)/include -I$(brew --prefix libomp)/include
-        
-        # Use -rpath with @rpath notation for better portability
-        LDFLAGS += -L$(brew --prefix llvm@18)/lib -L$(brew --prefix llvm@18)/lib/c++ -L$(brew --prefix libomp)/lib -Wl,-rpath,@loader_path/Resources/lib -lomp
-
-        # Set FLIBS for Fortran
-        FLIBS = -L$(brew --prefix gcc)/lib/gcc/current -lgfortran -lquadmath
-        EOF
-        
-        # Display the contents of Makevars
-        echo "Contents of ~/.R/Makevars:"
-        cat ~/.R/Makevars
-        
-        # For debugging - show the actual paths
-        echo "Actual paths:"
-        echo "LLVM_PREFIX: $LLVM_PREFIX"
-        echo "LIBOMP_PREFIX: $LIBOMP_PREFIX"
-
-    - name: Build source package (all platforms)
-      run: |
-        # Build source package without vignettes
-        R CMD build --no-build-vignettes --no-manual .
-      shell: bash
-
-    - name: Install & build binary (macOS only)
-      if: matrix.os == 'macos-latest'
-      run: |
-        # Set paths from Homebrew
-        LLVM_PREFIX=$(brew --prefix llvm@18)
-        LIBOMP_PREFIX=$(brew --prefix libomp)
-        GCC_PREFIX=$(brew --prefix gcc)
-        R_HOME=$(R RHOME)
-        
-        # Set environment variables for the build
-        export PATH="$LLVM_PREFIX/bin:$PATH"
-        export CC="$LLVM_PREFIX/bin/clang"
-        export CXX="$LLVM_PREFIX/bin/clang++"
-        export CFLAGS="-fopenmp -I$LLVM_PREFIX/include -I$LIBOMP_PREFIX/include"
-        export CXXFLAGS="-fopenmp -I$LLVM_PREFIX/include -I$LIBOMP_PREFIX/include"
-        
-        # Improve portability with @rpath and avoid hardcoded paths
-        export LDFLAGS="-L$LLVM_PREFIX/lib -L$LIBOMP_PREFIX/lib -L$GCC_PREFIX/lib/gcc/current -lomp -Wl,-rpath,@loader_path/Resources/lib"
-        export DYLD_FALLBACK_LIBRARY_PATH="$LIBOMP_PREFIX/lib:$LLVM_PREFIX/lib:$R_HOME/lib:$GCC_PREFIX/lib/gcc/current:/usr/local/lib:/usr/lib"
-        
-        # Show actual paths for debugging
-        echo "Paths in use:"
-        echo "LLVM_PREFIX: $LLVM_PREFIX"
-        echo "LIBOMP_PREFIX: $LIBOMP_PREFIX" 
-        echo "GCC_PREFIX: $GCC_PREFIX"
-        echo "R_HOME: $R_HOME"
-        echo "DYLD_FALLBACK_LIBRARY_PATH: $DYLD_FALLBACK_LIBRARY_PATH"
-        
-        # Build the binary package without vignettes
-        echo "Building binary package with LLVM@18..."
-        R CMD INSTALL --build --no-build-vignettes --no-docs --no-html --no-multiarch $(ls -t *.tar.gz | head -n 1)
-        
-        # Check for OpenMP in the built package
-        BUILT_PKG=$(ls -t *.tgz | head -n 1)
-        echo "Created binary package: $BUILT_PKG"
-        
-        # Extract and check the .so file
-        mkdir -p check_pkg
-        tar -xzf "$BUILT_PKG" -C check_pkg
-        if [ -f check_pkg/ngme2/libs/ngme2.so ]; then
-          echo "Checking .so dependencies before patching:"
-          otool -L check_pkg/ngme2/libs/ngme2.so
-          
-          # Create lib directory for bundled libraries
-          mkdir -p check_pkg/ngme2/libs/Resources/lib
-          
-          # Fix all external library paths to improve portability
-          echo "Patching all library paths in ngme2.so..."
-          
-          # Add the correct rpath to the .so file itself
-          install_name_tool -add_rpath "@loader_path/Resources/lib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to add rpath"
-          
-          # 1. LLVM C++ standard library
-          install_name_tool -change "$LLVM_PREFIX/lib/c++/libc++.1.dylib" "@rpath/libc++.1.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libc++ path"
-          install_name_tool -change "@rpath/libc++.1.dylib" "@rpath/libc++.1.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libc++ path"
-          install_name_tool -change "$LLVM_PREFIX/lib/libunwind.1.dylib" "@rpath/libunwind.1.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libunwind path"
-          install_name_tool -change "$LLVM_PREFIX/lib/c++/libc++abi.1.dylib" "@rpath/libc++abi.1.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libc++abi path"
-          
-          # 2. OpenMP library
-          install_name_tool -change "$LIBOMP_PREFIX/lib/libomp.dylib" "@rpath/libomp.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libomp path"
-          install_name_tool -change "$R_HOME/lib/libomp.dylib" "@rpath/libomp.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch R libomp path"
-          install_name_tool -change "/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/lib/libomp.dylib" "@rpath/libomp.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch R libomp path"
-          
-          # 3. GCC Fortran runtime libraries
-          install_name_tool -change "$GCC_PREFIX/lib/gcc/current/libgfortran.5.dylib" "@rpath/libgfortran.5.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libgfortran path"
-          install_name_tool -change "$GCC_PREFIX/lib/gcc/current/libquadmath.0.dylib" "@rpath/libquadmath.0.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libquadmath path"
-          install_name_tool -change "/opt/homebrew/opt/gcc/lib/gcc/current/libgfortran.5.dylib" "@rpath/libgfortran.5.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libgfortran path"
-          install_name_tool -change "/opt/homebrew/opt/gcc/lib/gcc/current/libquadmath.0.dylib" "@rpath/libquadmath.0.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libquadmath path"
-          
-          # 4. R framework libraries (we'll keep these as-is since they should be available on any R installation)
-          
-          # Copy all necessary libraries to the package lib directory
-          echo "Copying required libraries to package lib directory..."
-          
-          # Copy LLVM libraries
-          cp "$LLVM_PREFIX/lib/c++/libc++.1.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libc++.1.dylib"
-          cp "$LLVM_PREFIX/lib/libunwind.1.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libunwind.1.dylib"
-          cp "$LLVM_PREFIX/lib/c++/libc++abi.1.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libc++abi.1.dylib"
-          
-          # Copy OpenMP library
-          cp "$LIBOMP_PREFIX/lib/libomp.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libomp.dylib"
-          
-          # Copy GCC Fortran runtime libraries
-          cp "$GCC_PREFIX/lib/gcc/current/libgfortran.5.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libgfortran.5.dylib"
-          cp "$GCC_PREFIX/lib/gcc/current/libquadmath.0.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libquadmath.0.dylib"
-          
-          # Check if all required libraries were copied
-          echo "Libraries in libs/Resources/lib directory:"
-          ls -la check_pkg/ngme2/libs/Resources/lib/
-          
-          # Fix paths within the copied libraries
-          echo "Fixing paths within copied libraries..."
-          install_name_tool -change "$LLVM_PREFIX/lib/c++/libc++abi.1.dylib" "@rpath/libc++abi.1.dylib" check_pkg/ngme2/libs/Resources/lib/libc++.1.dylib || echo "Failed to patch libc++abi path in libc++.1.dylib"
-          
-          # Check dependencies of each library to ensure all paths are fixed
-          echo "Checking dependencies of all bundled libraries:"
-          for lib in check_pkg/ngme2/libs/Resources/lib/*.dylib; do
-            echo "Dependencies for $lib:"
-            otool -L "$lib"
-          done
-          
-          # Verify patched libraries
-          echo "Dependencies after patching:"
-          otool -L check_pkg/ngme2/libs/ngme2.so
-          
-          # Verify rpath settings
-          echo "Rpath settings in ngme2.so:"
-          otool -l check_pkg/ngme2/libs/ngme2.so | grep -A2 LC_RPATH
-          
-          # Repack the binary package with bundled libraries
-          cd check_pkg
-          tar -czf "../$BUILT_PKG" ngme2
-          cd ..
-          
-          # Verify the final package
-          echo "Final package created: $BUILT_PKG"
-          ls -la "$BUILT_PKG"
-        fi
-      shell: bash
-
-    - name: Install & build binary (Win only)
-      if: matrix.os == 'windows-latest'
-      run: |
-        R CMD INSTALL --build --no-build-vignettes --no-docs --no-html --no-multiarch $(ls -t *.tar.gz | head -n 1)
-      shell: bash
-
-    - name: Upload Windows binary
-      if: matrix.os == 'windows-latest'
-      uses: actions/upload-artifact@v4
-      with:
-        name: binary-windows-r${{ matrix.r-version }}
-        path: "*.zip"
-
-    - name: Upload macOS binary
-      if: matrix.os == 'macos-latest'
-      uses: actions/upload-artifact@v4
-      with:
-        name: binary-macos-r${{ matrix.r-version }}
-        path: "*.tgz"
-
-    - name: Upload Linux source
-      if: matrix.os == 'ubuntu-latest'
-      uses: actions/upload-artifact@v4
-      with:
-        name: source-linux-r${{ matrix.r-version }}
-        path: "*.tar.gz"
 
   deploy:
     needs: [build, pkgdown]
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout gh-pages branch
-      uses: actions/checkout@v3
-      with:
-        ref: gh-pages
+      - uses: actions/checkout@v3
+        with: { ref: gh-pages }
 
-    - name: Setup R
-      uses: r-lib/actions/setup-r@v2
+      - name: Create pkgdown + binary dirs
+        run: |
+          mkdir -p docs \
+                   bin/windows/contrib \
+                   bin/macosx/contrib \
+                   src/contrib
 
-    - name: Create directory structure
-      run: |
-        # Create directory structure in the root of gh-pages
-        mkdir -p bin/windows/contrib/4.3
-        mkdir -p bin/windows/contrib/4.4
-        mkdir -p bin/windows/contrib/4.5
-        mkdir -p bin/macosx/big-sur-arm64/contrib/4.3
-        mkdir -p bin/macosx/big-sur-arm64/contrib/4.4
-        mkdir -p bin/macosx/big-sur-arm64/contrib/4.5
-        mkdir -p src/contrib
+      - name: Fetch pkgdown site
+        run: |
+          git fetch origin gh-pages:gh-pages
+          git worktree add site gh-pages
+          cp -r site/* docs/
+          rm -rf site
 
-    # Download Windows binaries
-    - name: Download Windows r4.3
-      uses: actions/download-artifact@v4
-      with:
-        name: binary-windows-r4.3
-        path: bin/windows/contrib/4.3
-    - name: Download Windows r4.4
-      uses: actions/download-artifact@v4
-      with:
-        name: binary-windows-r4.4
-        path: bin/windows/contrib/4.4
-    - name: Download Windows r4.5
-      uses: actions/download-artifact@v4
-      with:
-        name: binary-windows-r4.5
-        path: bin/windows/contrib/4.5
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: .
 
-    # Download macOS binaries
-    - name: Download macOS r4.3
-      uses: actions/download-artifact@v4
-      with:
-        name: binary-macos-r4.3
-        path: bin/macosx/big-sur-arm64/contrib/4.3
-    - name: Download macOS r4.4
-      uses: actions/download-artifact@v4
-      with:
-        name: binary-macos-r4.4
-        path: bin/macosx/big-sur-arm64/contrib/4.4
-    - name: Download macOS r4.5
-      uses: actions/download-artifact@v4
-      with:
-        name: binary-macos-r4.5
-        path: bin/macosx/big-sur-arm64/contrib/4.5
+      - name: Generate PACKAGES indices
+        run: |
+          Rscript -e 'tools::write_PACKAGES("src/contrib", type="source")'
+          Rscript -e 'tools::write_PACKAGES("bin/windows/contrib",    type="win.binary")'
+          Rscript -e 'tools::write_PACKAGES("bin/macosx/contrib",    type="mac.binary")'
 
-    # Download Linux source
-    - name: Download source r4.3
-      uses: actions/download-artifact@v4
-      with:
-        name: source-linux-r4.3
-        path: src/contrib
-    - name: Download source r4.4
-      uses: actions/download-artifact@v4
-      with:
-        name: source-linux-r4.4
-        path: src/contrib
-    - name: Download source r4.5
-      uses: actions/download-artifact@v4
-      with:
-        name: source-linux-r4.5
-        path: src/contrib
-
-    - name: Create .nojekyll (allow dot-folders)
-      run: touch .nojekyll
-
-    - name: Generate PACKAGES indices
-      run: |
-        Rscript -e 'tools::write_PACKAGES("src/contrib", type="source")'
-        Rscript -e 'tools::write_PACKAGES("bin/windows/contrib/4.3", type="win.binary")'
-        Rscript -e 'tools::write_PACKAGES("bin/windows/contrib/4.4", type="win.binary")'
-        Rscript -e 'tools::write_PACKAGES("bin/windows/contrib/4.5", type="win.binary")'
-        Rscript -e 'tools::write_PACKAGES("bin/macosx/big-sur-arm64/contrib/4.3", type="mac.binary")'
-        Rscript -e 'tools::write_PACKAGES("bin/macosx/big-sur-arm64/contrib/4.4", type="mac.binary")'
-        Rscript -e 'tools::write_PACKAGES("bin/macosx/big-sur-arm64/contrib/4.5", type="mac.binary")'
-
-    - name: Commit & Push
-      run: |
-        git config user.name  "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        git add .
-        if ! git diff --cached --quiet; then
-          git commit -m "🚀 Update binaries for $(date +%Y-%m-%d) [skip ci]"
-          git push origin gh-pages
-        else
-          echo "No changes to commit."
-        fi
+      - name: Commit & Push
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          if ! git diff --cached --quiet; then
+            git commit -m "🚀 Unified deploy [skip ci]"
+            git push origin gh-pages
+          else
+            echo "No changes to commit."
+          fi

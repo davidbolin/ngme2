@@ -1,0 +1,34 @@
+name: 'Install R dependencies'
+description: 'Cache R packages + install system libs + install R deps'
+runs:
+  using: 'composite'
+  steps:
+    - name: Cache R packages
+      uses: actions/cache@v3
+      with:
+        path: ${{ env.R_LIBS_USER }}
+        key: ${{ runner.os }}-r-${{ inputs.r-version }}-${{ hashFiles('**/DESCRIPTION') }}
+        restore-keys: |
+          ${{ runner.os }}-r-
+
+    - name: Install system libs (Linux)
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install -y libglu1-mesa-dev
+
+    - name: Install build tools
+      shell: bash
+      run: |
+        Rscript -e 'install.packages(c("devtools","remotes","pkgdown"), repos="https://cloud.r-project.org")'
+
+    - name: Install R package dependencies
+      shell: bash
+      run: |
+        Rscript -e 'remotes::install_deps(dependencies = TRUE, upgrade = "never")'
+
+inputs:
+  r-version:
+    description: 'R version for cache key'
+    required: true 

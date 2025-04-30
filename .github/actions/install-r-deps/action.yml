@@ -23,10 +23,24 @@ runs:
       run: |
         Rscript -e 'install.packages(c("devtools","remotes","pkgdown"), repos="https://cloud.r-project.org")'
 
+    - name: Add INLA repository to available repos
+      shell: bash
+      run: |
+        echo "Setting up INLA repository..."
+        echo 'options(repos = c(INLA = "https://inla.r-inla-download.org/R/testing", CRAN = "https://cloud.r-project.org"))' > ~/.Rprofile
+        Rscript -e 'cat("Available repositories:", paste(names(getOption("repos")), collapse=", "), "\n")'
+
     - name: Install R package dependencies
       shell: bash
       run: |
+        echo "Installing all package dependencies..."
         Rscript -e 'remotes::install_deps(dependencies = TRUE, upgrade = "never")'
+        
+    - name: Verify all dependencies
+      shell: bash
+      run: |
+        echo "Verifying all dependencies are installed..."
+        Rscript -e 'deps <- read.dcf("DESCRIPTION", fields="Depends")[1,]; if(!is.na(deps)) deps <- gsub("\\s*\\([^)]+\\)", "", unlist(strsplit(deps, ",\\s*"))); cat("Checking dependencies:", paste(deps, collapse=", "), "\n"); missing <- character(0); for(dep in deps) if(dep != "R" && !requireNamespace(dep, quietly=TRUE)) missing <- c(missing, dep); if(length(missing) > 0) stop("Missing dependencies: ", paste(missing, collapse=", ")) else cat("All dependencies verified!\n")'
 
 inputs:
   r-version:

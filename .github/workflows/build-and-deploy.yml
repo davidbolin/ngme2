@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: r-lib/actions/setup-r@v2
         with:
-          r-version: 'release'
+          r-version: '4.4'
           extra-repositories: "https://inla.r-inla-download.org/R/testing"
       - uses: r-lib/actions/setup-pandoc@v2
 
@@ -91,12 +91,7 @@ jobs:
           mkdir -p ~/.R
           cat > ~/.R/Makevars << EOF
           # Use Homebrew LLVM's clang compiler (supports OpenMP)
-          CC=$LLVM_PREFIX/bin/clang
-          CXX=$LLVM_PREFIX/bin/clang++
-          CXX11=$LLVM_PREFIX/bin/clang++
-          CXX14=$LLVM_PREFIX/bin/clang++
           CXX17=$LLVM_PREFIX/bin/clang++
-          CXX20=$LLVM_PREFIX/bin/clang++
           
           # Add OpenMP flags
           SHLIB_OPENMP_CFLAGS = -fopenmp

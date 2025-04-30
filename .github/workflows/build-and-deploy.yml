@@ -70,18 +70,52 @@ jobs:
       - name: Install LLVM & libomp (macOS)
         if: matrix.os == 'macos-latest'
         run: |
+          # Install LLVM@18 and libomp
           brew install llvm@18 libomp
-          echo "PATH=$(brew --prefix llvm@18)/bin:$PATH" >> $GITHUB_ENV
-          echo "CC=$(brew --prefix llvm@18)/bin/clang"   >> $GITHUB_ENV
-          echo "CXX=$(brew --prefix llvm@18)/bin/clang++" >> $GITHUB_ENV
+          
+          # Set environment variables
+          LLVM_PREFIX=$(brew --prefix llvm@18)
+          LIBOMP_PREFIX=$(brew --prefix libomp)
+          GCC_PREFIX=$(brew --prefix gcc)
+          
+          echo "PATH=$LLVM_PREFIX/bin:$PATH" >> $GITHUB_ENV
+          echo "CC=$LLVM_PREFIX/bin/clang" >> $GITHUB_ENV
+          echo "CXX=$LLVM_PREFIX/bin/clang++" >> $GITHUB_ENV
+          
+          # Create a comprehensive Makevars file with proper paths
           mkdir -p ~/.R
-          cat > ~/.R/Makevars <<'EOF'
-          CC=$(brew --prefix llvm@18)/bin/clang
-          CXX=$(brew --prefix llvm@18)/bin/clang++
+          cat > ~/.R/Makevars << EOF
+          # Use Homebrew LLVM's clang compiler (supports OpenMP)
+          CC=$LLVM_PREFIX/bin/clang
+          CXX=$LLVM_PREFIX/bin/clang++
+          CXX11=$LLVM_PREFIX/bin/clang++
+          CXX14=$LLVM_PREFIX/bin/clang++
+          CXX17=$LLVM_PREFIX/bin/clang++
+          CXX20=$LLVM_PREFIX/bin/clang++
+          
+          # Add OpenMP flags
           SHLIB_OPENMP_CFLAGS = -fopenmp
           SHLIB_OPENMP_CXXFLAGS = -fopenmp
-          LDFLAGS += -L$(brew --prefix llvm@18)/lib -lomp
+          SHLIB_OPENMP_FFLAGS = -fopenmp
+          
+          # Include and library paths
+          CFLAGS += -I$LLVM_PREFIX/include -I$LIBOMP_PREFIX/include
+          CXXFLAGS += -I$LLVM_PREFIX/include -I$LIBOMP_PREFIX/include
+          
+          # Use -rpath with @rpath notation for better portability
+          LDFLAGS += -L$LLVM_PREFIX/lib -L$LLVM_PREFIX/lib/c++ -L$LIBOMP_PREFIX/lib -Wl,-rpath,@loader_path/Resources/lib -lomp
+          
+          # Set Fortran libs
+          FLIBS = -L$GCC_PREFIX/lib/gcc/current -lgfortran -lquadmath
           EOF
+          
+          # For debugging
+          echo "Contents of ~/.R/Makevars:"
+          cat ~/.R/Makevars
+          
+          echo "LLVM_PREFIX: $LLVM_PREFIX"
+          echo "LIBOMP_PREFIX: $LIBOMP_PREFIX"
+          echo "GCC_PREFIX: $GCC_PREFIX"
 
       # ───── build source package ─────
       - name: Build source package
@@ -92,7 +126,69 @@ jobs:
       - name: Build & upload binary (macOS)
         if: matrix.os == 'macos-latest'
         run: |
+          # Set paths from Homebrew
+          LLVM_PREFIX=$(brew --prefix llvm@18)
+          LIBOMP_PREFIX=$(brew --prefix libomp)
+          GCC_PREFIX=$(brew --prefix gcc)
+          R_HOME=$(R RHOME)
+          
+          # Set environment variables for the build
+          export PATH="$LLVM_PREFIX/bin:$PATH"
+          export CC="$LLVM_PREFIX/bin/clang"
+          export CXX="$LLVM_PREFIX/bin/clang++"
+          export CFLAGS="-fopenmp -I$LLVM_PREFIX/include -I$LIBOMP_PREFIX/include"
+          export CXXFLAGS="-fopenmp -I$LLVM_PREFIX/include -I$LIBOMP_PREFIX/include"
+          export LDFLAGS="-L$LLVM_PREFIX/lib -L$LIBOMP_PREFIX/lib -L$GCC_PREFIX/lib/gcc/current -lomp -Wl,-rpath,@loader_path/Resources/lib"
+          export DYLD_FALLBACK_LIBRARY_PATH="$LIBOMP_PREFIX/lib:$LLVM_PREFIX/lib:$R_HOME/lib:$GCC_PREFIX/lib/gcc/current:/usr/local/lib:/usr/lib"
+          
+          # Build the binary package
           R CMD INSTALL --build --no-build-vignettes --no-docs --no-html --no-multiarch *.tar.gz
+          
+          # Post-process the binary to make it portable
+          BUILT_PKG=$(ls -t *.tgz | head -n 1)
+          echo "Created binary package: $BUILT_PKG"
+          
+          # Extract and check the .so file
+          mkdir -p check_pkg
+          tar -xzf "$BUILT_PKG" -C check_pkg
+          if [ -f check_pkg/ngme2/libs/ngme2.so ]; then
+            echo "Checking .so dependencies before patching:"
+            otool -L check_pkg/ngme2/libs/ngme2.so
+            
+            # Create lib directory for bundled libraries
+            mkdir -p check_pkg/ngme2/libs/Resources/lib
+            
+            # Add rpath to the .so file
+            install_name_tool -add_rpath "@loader_path/Resources/lib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to add rpath"
+            
+            # Fix library paths in the .so file
+            install_name_tool -change "$LLVM_PREFIX/lib/c++/libc++.1.dylib" "@rpath/libc++.1.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libc++ path"
+            install_name_tool -change "$LLVM_PREFIX/lib/libunwind.1.dylib" "@rpath/libunwind.1.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libunwind path"
+            install_name_tool -change "$LLVM_PREFIX/lib/c++/libc++abi.1.dylib" "@rpath/libc++abi.1.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libc++abi path"
+            install_name_tool -change "$LIBOMP_PREFIX/lib/libomp.dylib" "@rpath/libomp.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libomp path"
+            install_name_tool -change "$R_HOME/lib/libomp.dylib" "@rpath/libomp.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch R libomp path"
+            install_name_tool -change "/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/lib/libomp.dylib" "@rpath/libomp.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch R libomp path"
+            install_name_tool -change "$GCC_PREFIX/lib/gcc/current/libgfortran.5.dylib" "@rpath/libgfortran.5.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libgfortran path"
+            install_name_tool -change "$GCC_PREFIX/lib/gcc/current/libquadmath.0.dylib" "@rpath/libquadmath.0.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libquadmath path"
+            
+            # Copy required libraries
+            cp "$LLVM_PREFIX/lib/c++/libc++.1.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libc++.1.dylib"
+            cp "$LLVM_PREFIX/lib/libunwind.1.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libunwind.1.dylib"
+            cp "$LLVM_PREFIX/lib/c++/libc++abi.1.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libc++abi.1.dylib"
+            cp "$LIBOMP_PREFIX/lib/libomp.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libomp.dylib"
+            cp "$GCC_PREFIX/lib/gcc/current/libgfortran.5.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libgfortran.5.dylib"
+            cp "$GCC_PREFIX/lib/gcc/current/libquadmath.0.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libquadmath.0.dylib"
+            
+            # Fix paths within the copied libraries
+            install_name_tool -change "$LLVM_PREFIX/lib/c++/libc++abi.1.dylib" "@rpath/libc++abi.1.dylib" check_pkg/ngme2/libs/Resources/lib/libc++.1.dylib || echo "Failed to patch libc++abi path in libc++.1.dylib"
+            
+            # Repack the binary package with bundled libraries
+            cd check_pkg
+            tar -czf "../$BUILT_PKG" ngme2
+            cd ..
+            
+            echo "Final package created: $BUILT_PKG"
+          fi
         shell: bash
       - name: Upload macOS binary
         if: matrix.os == 'macos-latest'

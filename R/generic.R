@@ -1,4 +1,4 @@
-# #' ngme general K operator
+# #' ngme generic K operator
 # #'
 # #' K = sum_i f_i(theta_i) * matrices_i
 # #' f_i depends on the parameter transformation type
@@ -13,7 +13,7 @@
 # #'
 # #' @return ngme_operator object
 # #' @export
-# general <- function(
+# generic <- function(
 #   theta_K, 
 #   trans_type,
 #   matrices,
@@ -45,7 +45,7 @@
 #   symmetric <- all(sapply(matrices, Matrix::isSymmetric))
 
 #   ngme_operator(
-#     model = "general",
+#     model = "generic",
 #     mesh = mesh,
 #     K = K,
 #     h = h,
@@ -86,7 +86,7 @@ param_trans_fun <- function(theta_K, name) {
 }
 
 
-#' ngme general K operator
+#' ngme generic K operator
 #'
 #' K = sum_i f_i(theta_i) * matrices_i
 #' f_i depends on the parameter transformation type
@@ -103,7 +103,7 @@ param_trans_fun <- function(theta_K, name) {
 #' @param zero_trace whether the trace of K is zero
 #' @param mesh the mesh
 #' @param ... ignore
-general <- function(
+generic <- function(
   theta_K,
   trans,
   matrices,
@@ -181,7 +181,7 @@ general <- function(
   idx_mat <- as.matrix(as.data.frame(idx))
   
   ngme_operator(
-    model = "general",
+    model = "generic",
     mesh = mesh,
     K = update_K(theta_K),
     h = h,

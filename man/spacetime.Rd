@@ -8,6 +8,8 @@ spacetime(
   mesh,
   lambda = 1,
   alpha = 2,
+  cc = 1,
+  kappa = 1,
   fix_gamma = FALSE,
   theta_gamma_x = 0,
   theta_gamma_y = 0,
@@ -15,8 +17,6 @@ spacetime(
   B_gamma_y = matrix(1, nrow = mesh[[2]]$n, ncol = 1),
   B_gamma_x_list = NULL,
   B_gamma_y_list = NULL,
-  cc = 1,
-  kappa = 1,
   stabilization = TRUE,
   ...
 )
@@ -29,6 +29,10 @@ spacetime(
 \item{lambda}{The spatial damping parameter.}
 
 \item{alpha}{2 or 4, SPDE smoothness parameter.}
+
+\item{cc}{Parameter c in the SPDE.}
+
+\item{kappa}{Kappa parameter from Matern SPDE.}
 
 \item{fix_gamma}{TRUE if fix gamma (advection term), FALSE if estimate gamma.}
 
@@ -44,13 +48,9 @@ spacetime(
 
 \item{B_gamma_y_list}{A list of design matrices for the y component of the advection term on every time node, length(B_gamma_y_list) == nt-1.}
 
-\item{kappa}{Kappa parameter from Matern SPDE.}
-
 \item{stabilization}{TRUE if using a stabilization term (for implicit Euler).}
 
 \item{...}{Additional arguments (ignored).}
-
-\item{c}{Parameter.}
 }
 \value{
 ngme_operator object.

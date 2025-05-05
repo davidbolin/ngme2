@@ -91,7 +91,7 @@ reference:
     - compute_score_given_pred
     - re
     - spacetime
-    - general
+    - generic
   - title: ngme2 noises
     contents:
     - ngme_noise

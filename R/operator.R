@@ -54,7 +54,7 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
     rw2 = "Random walk (order 2)",
     ou  = "Ornstein-Uhlenbeck",
     re  = "Random effect",
-    general = "General K",
+    generic = "Generic",
     spacetime = if (operator$method == "galerkin") "Space-time (Galerkin)" else "Space-time (Implicit Euler)",
     "Unknown"
   )
@@ -140,7 +140,7 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
       
       cat(pad_add4_space); cat("kappa =", format(exp(theta_K[2]), digits=2), "\n", sep=" ")
     },
-    general = {
+    generic = {
       for (name in names(theta_K)) {
         cat(pad_add4_space, name, "=", format(theta_K[name], digits=2), "\n", sep=" ")
       }

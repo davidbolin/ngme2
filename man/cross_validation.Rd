@@ -70,8 +70,11 @@ e.g., the MAE will be computed as |transform(Y) - transform(Y_pred)|}
 \item{cores_layer2}{integer, number of cores for the second layer (over computing scores for N_sim simulations)}
 }
 \value{
-1. mean of N_sim estimations of 4 criterions: MSE, MAE, CRPS, sCRPS
- 2. standard deviation of N_sim estimations of 4 criterions: MSE, MAE, CRPS, sCRPS
+A list containing:
+  \itemize{
+    \item mean.scores - mean of N_sim estimations of 4 criterions: MSE, MAE, CRPS, sCRPS
+    \item sd.scores - standard deviation of N_sim estimations of 4 criterions: MSE, MAE, CRPS, sCRPS
+  }
 }
 \description{
 Compute the cross-validation for the ngme model

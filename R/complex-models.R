@@ -564,8 +564,10 @@ bv_matern_nig <- function(
 #' Given a spatial and temporal model, build a non-separable space-time model.
 #'
 #' @param mesh A list of two objects:
-#'   - `mesh_t`: The temporal mesh.
-#'   - `mesh_s`: The spatial mesh.
+#'   \itemize{
+#'     \item mesh_t - The temporal mesh
+#'     \item mesh_s - The spatial mesh
+#'   }
 #' @param alpha 2 or 4, SPDE smoothness parameter.
 #' @param cc Parameter c in the SPDE.
 #' @param kappa Kappa parameter from Matern SPDE.

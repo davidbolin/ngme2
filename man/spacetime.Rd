@@ -23,8 +23,10 @@ spacetime(
 }
 \arguments{
 \item{mesh}{A list of two objects:
-- `mesh_t`: The temporal mesh.
-- `mesh_s`: The spatial mesh.}
+\itemize{
+  \item mesh_t - The temporal mesh
+  \item mesh_s - The spatial mesh
+}}
 
 \item{lambda}{The spatial damping parameter.}
 

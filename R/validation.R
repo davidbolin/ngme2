@@ -26,9 +26,11 @@
 #' @param parallel logical, run in parallel mode
 #' @param cores_layer1 integer, number of cores for the first layer (over testing samples)
 #' @param cores_layer2 integer, number of cores for the second layer (over computing scores for N_sim simulations)
-#' @return 
-#'  1. mean of N_sim estimations of 4 criterions: MSE, MAE, CRPS, sCRPS
-#'  2. standard deviation of N_sim estimations of 4 criterions: MSE, MAE, CRPS, sCRPS
+#' @return A list containing:
+#'   \itemize{
+#'     \item mean.scores - mean of N_sim estimations of 4 criterions: MSE, MAE, CRPS, sCRPS
+#'     \item sd.scores - standard deviation of N_sim estimations of 4 criterions: MSE, MAE, CRPS, sCRPS
+#'   }
 #' @export
 cross_validation <- function(
   ngme,

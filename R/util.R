@@ -1,18 +1,23 @@
 #' Create Time Series Cross-Validation Indices
 #' 
-#' @description
-#' Creates indices for time series cross-validation with options for expanding window
-#' or sliding window approaches. Supports both single-step and multi-step forecasting.
+#' @description Creates indices for time series cross-validation with options for expanding window
+#' or sliding window approaches. Supports both single-step and multi-step forecasting, and can
+#' handle replicated observations.
 #' 
 #' @param time_idx A numeric vector of time indices in ascending order
 #' @param train_length An integer specifying the fixed length of training sets. 
 #'        If NULL (default), an expanding window approach is used.
 #' @param test_length An integer specifying the number of observations to include in each test set.
 #'        Default is 1 (single-step forecasting).
+#' @param replicate An optional vector of the same length as time_idx, indicating which observations
+#'        belong to the same replicate group. When provided, ensures that all observations with the
+#'        same replicate value are either entirely in the training set or entirely in the test set.
 #' 
 #' @return A list with two components:
+#' \describe{
 #'   \item{train}{A list of numeric vectors, where each vector contains the time indices for training in that fold}
 #'   \item{test}{A list of numeric vectors, where each vector contains the time indices for testing in that fold}
+#' }
 #' 
 #' @details
 #' Time series cross-validation requires respecting the temporal order of observations.
@@ -26,6 +31,11 @@
 #' 
 #' The test_length parameter allows for multi-step forecasting evaluation.
 #' 
+#' When replicate is provided, the function ensures that all observations with the same 
+#' replicate value are kept together, either all in the training set or all in the test set.
+#' This is useful for scenarios where multiple observations at the same time point should
+#' be treated as a group.
+#' 
 #' @examples
 #' # Expanding window approach with single-step forecasting
 #' cv_expanding <- make_time_series_cv_index(1:10)
@@ -36,11 +46,17 @@
 #' # Sliding window with multi-step forecasting (predict 2 steps ahead)
 #' cv_multistep <- make_time_series_cv_index(1:10, train_length = 3, test_length = 2)
 #' 
+#' # Working with replicates
+#' time_idx <- c(1, 1, 1, 2, 2, 3, 3)
+#' replicates <- c(1, 1, 1, 2, 2, 3, 3)
+#' cv_with_replicates <- make_time_series_cv_index(time_idx, replicate = replicates)
+#' 
 #' @export
 make_time_series_cv_index <- function(
   time_idx, 
-  train_length=NULL,
-  test_length=1
+  train_length = NULL,
+  test_length = 1,
+  replicate = time_idx
 ) {
   # Validate inputs
   if (!is.numeric(time_idx)) {
@@ -57,54 +73,140 @@ make_time_series_cv_index <- function(
     stop("test_length must be at least 1")
   }
   
-  # Sort time indices to ensure chronological order if they aren't already
-  if(!all(diff(time_idx) >= 0)) {
-    time_idx <- sort(unique(time_idx))
-    n <- length(time_idx)
-  }
-  
   # Initialize lists for train and test indices
   train_indices <- list()
   test_indices <- list()
   
-  if (is.null(train_length)) {
-    # Expanding window mode (default behavior)
-    # We'll create as many folds as possible while ensuring enough test points
-    for (i in 1:(n-test_length)) {
-      # Training set: indices from 1 to i
-      train_indices[[i]] <- time_idx[1:i]
+  # Validate and process replicate information if provided
+  if (!is.null(replicate)) {
+    if (length(replicate) != length(time_idx)) {
+      stop("replicate must have the same length as time_idx")
+    }
+    # Create a data frame to keep track of time points and their replicates
+    data <- data.frame(
+      idx = 1:length(time_idx),
+      time = time_idx,
+      replicate = replicate
+    )
+    
+    # Sort by time and then by replicate to ensure proper ordering
+    data <- data[order(data$time, data$replicate), ]
+    
+    # Get unique replicates in order of their first appearance
+    unique_replicates <- unique(data$replicate)
+    replicate_first_times <- tapply(data$time, data$replicate, min)
+    replicate_order <- order(replicate_first_times)
+    sorted_unique_replicates <- unique_replicates[replicate_order]
+    
+    # We'll work with replicate groups instead of individual time points
+    time_groups <- sort(unique(replicate_first_times))
+    n_groups <- length(time_groups)
+    
+    # Time series CV with replicates - we'll work with groups
+    if (is.null(train_length)) {
+      # Expanding window mode with replicates
+      # We'll create folds by using all earlier replicates for training and later ones for testing
       
-      # Test set: the next test_length observations after training
-      test_indices[[i]] <- time_idx[(i+1):min(i+test_length, n)]
+      # For each possible train/test split of replicate groups
+      for (i in 1:(n_groups - 1)) {
+        # Identify which replicates are in training set
+        train_replicates <- sorted_unique_replicates[1:i]
+        
+        # Get all rows where the replicate is in the training set
+        train_idx <- data$idx[data$replicate %in% train_replicates]
+        train_indices[[i]] <- time_idx[train_idx]
+        
+        # Get the next replicate(s) for testing based on test_length
+        test_replicates <- sorted_unique_replicates[
+          (i+1):min(i+test_length, n_groups)
+        ]
+        
+        # Get all rows where the replicate is in the test set
+        test_idx <- data$idx[data$replicate %in% test_replicates]
+        test_indices[[i]] <- time_idx[test_idx]
+      }
+    } else {
+      # Fixed-length sliding window with replicates
+      
+      # Validate train_length - now in terms of number of replicate groups
+      if (train_length <= 0 || train_length >= n_groups) {
+        stop("train_length must be between 1 and the number of replicate groups - 1")
+      }
+      
+      # The maximum number of folds we can create
+      max_folds <- n_groups - train_length - test_length + 1
+      
+      # Ensure we have at least one fold
+      if (max_folds < 1) {
+        stop("Not enough replicate groups for the specified train_length and test_length")
+      }
+      
+      # Generate sliding window CV folds based on replicate groups
+      for (i in 1:max_folds) {
+        # Training set: replicates from position i to i+train_length-1
+        train_replicates <- sorted_unique_replicates[i:(i+train_length-1)]
+        
+        # Get all rows where the replicate is in the training set
+        train_idx <- data$idx[data$replicate %in% train_replicates]
+        train_indices[[i]] <- time_idx[train_idx]
+        
+        # Test set: the next test_length replicates
+        test_replicates <- sorted_unique_replicates[
+          (i+train_length):(min(i+train_length+test_length-1, n_groups))
+        ]
+        
+        # Get all rows where the replicate is in the test set
+        test_idx <- data$idx[data$replicate %in% test_replicates]
+        test_indices[[i]] <- time_idx[test_idx]
+      }
     }
   } else {
-    # Fixed-length sliding window mode
-    
-    # Validate train_length
-    if (train_length <= 0 || train_length >= n) {
-      stop("train_length must be between 1 and length(time_idx)-1")
+    # Standard time series CV without replicates
+    # Sort time indices to ensure chronological order if they aren't already
+    if (!all(diff(time_idx) >= 0)) {
+      time_idx <- sort(unique(time_idx))
+      n <- length(time_idx)
     }
     
-    # The maximum number of folds we can create with fixed window size and ensuring enough test points
-    max_folds <- n - train_length - test_length + 1
-    
-    # Ensure we have at least one fold
-    if (max_folds < 1) {
-      stop("Not enough data points for the specified train_length and test_length combination")
-    }
-    
-    # Generate sliding window CV folds
-    for (i in 1:max_folds) {
-      # For sliding window: start with indices i:(i+train_length-1)
-      start_idx <- i
-      end_idx <- i + train_length - 1
+    if (is.null(train_length)) {
+      # Expanding window mode (default behavior)
+      # We'll create as many folds as possible while ensuring enough test points
+      for (i in 1:(n-test_length)) {
+        # Training set: indices from 1 to i
+        train_indices[[i]] <- time_idx[1:i]
+        
+        # Test set: the next test_length observations after training
+        test_indices[[i]] <- time_idx[(i+1):min(i+test_length, n)]
+      }
+    } else {
+      # Fixed-length sliding window mode
       
-      # Training set: window of length train_length
-      train_indices[[i]] <- time_idx[start_idx:end_idx]
+      # Validate train_length
+      if (train_length <= 0 || train_length >= n) {
+        stop("train_length must be between 1 and length(time_idx)-1")
+      }
       
-      # Test set: the next test_length observations after training
-      test_end_idx <- min(end_idx + test_length, n)
-      test_indices[[i]] <- time_idx[(end_idx+1):test_end_idx]
+      # The maximum number of folds we can create
+      max_folds <- n - train_length - test_length + 1
+      
+      # Ensure we have at least one fold
+      if (max_folds < 1) {
+        stop("Not enough data points for the specified train_length and test_length")
+      }
+      
+      # Generate sliding window CV folds
+      for (i in 1:max_folds) {
+        # For sliding window: start with indices i:(i+train_length-1)
+        start_idx <- i
+        end_idx <- i + train_length - 1
+        
+        # Training set: window of length train_length
+        train_indices[[i]] <- time_idx[start_idx:end_idx]
+        
+        # Test set: the next test_length observations after training
+        test_end_idx <- min(end_idx + test_length, n)
+        test_indices[[i]] <- time_idx[(end_idx+1):test_end_idx]
+      }
     }
   }
   

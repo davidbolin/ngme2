@@ -124,6 +124,7 @@ reference:
     - simulate.ngme_noise
   - title: Auxiliary functions
     contents:
+    - make_time_series_cv_index
     - precision_matrix_multivariate
     - precision_matrix_multivariate_spde
     - compute_index_corr_from_map

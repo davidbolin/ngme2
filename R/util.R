@@ -1,16 +1,120 @@
+#' Create Time Series Cross-Validation Indices
+#' 
+#' @description
+#' Creates indices for time series cross-validation with options for expanding window
+#' or sliding window approaches. Supports both single-step and multi-step forecasting.
+#' 
+#' @param time_idx A numeric vector of time indices in ascending order
+#' @param train_length An integer specifying the fixed length of training sets. 
+#'        If NULL (default), an expanding window approach is used.
+#' @param test_length An integer specifying the number of observations to include in each test set.
+#'        Default is 1 (single-step forecasting).
+#' 
+#' @return A list with two components:
+#'   \item{train}{A list of numeric vectors, where each vector contains the time indices for training in that fold}
+#'   \item{test}{A list of numeric vectors, where each vector contains the time indices for testing in that fold}
+#' 
+#' @details
+#' Time series cross-validation requires respecting the temporal order of observations.
+#' This function implements two common approaches:
+#' 
+#' 1. Expanding window (when train_length = NULL): The training set grows with each fold, 
+#'    starting with a minimal set and expanding to include all but the test data.
+#' 
+#' 2. Sliding window (when train_length is specified): Uses a fixed-length window 
+#'    that slides through the time series, maintaining the same training size across folds.
+#' 
+#' The test_length parameter allows for multi-step forecasting evaluation.
+#' 
+#' @examples
+#' # Expanding window approach with single-step forecasting
+#' cv_expanding <- make_time_series_cv_index(1:10)
+#' 
+#' # Sliding window approach with window size 3 and single-step forecasting
+#' cv_sliding <- make_time_series_cv_index(1:10, train_length = 3)
+#' 
+#' # Sliding window with multi-step forecasting (predict 2 steps ahead)
+#' cv_multistep <- make_time_series_cv_index(1:10, train_length = 3, test_length = 2)
+#' 
+#' @export
+make_time_series_cv_index <- function(
+  time_idx, 
+  train_length=NULL,
+  test_length=1
+) {
+  # Validate inputs
+  if (!is.numeric(time_idx)) {
+    stop("time_idx must be numeric")
+  }
+  
+  n <- length(time_idx)
+  if (n < 2) {
+    stop("time_idx must have at least 2 elements")
+  }
+  
+  # Validate test_length
+  if (test_length < 1) {
+    stop("test_length must be at least 1")
+  }
+  
+  # Sort time indices to ensure chronological order if they aren't already
+  if(!all(diff(time_idx) >= 0)) {
+    time_idx <- sort(unique(time_idx))
+    n <- length(time_idx)
+  }
+  
+  # Initialize lists for train and test indices
+  train_indices <- list()
+  test_indices <- list()
+  
+  if (is.null(train_length)) {
+    # Expanding window mode (default behavior)
+    # We'll create as many folds as possible while ensuring enough test points
+    for (i in 1:(n-test_length)) {
+      # Training set: indices from 1 to i
+      train_indices[[i]] <- time_idx[1:i]
+      
+      # Test set: the next test_length observations after training
+      test_indices[[i]] <- time_idx[(i+1):min(i+test_length, n)]
+    }
+  } else {
+    # Fixed-length sliding window mode
+    
+    # Validate train_length
+    if (train_length <= 0 || train_length >= n) {
+      stop("train_length must be between 1 and length(time_idx)-1")
+    }
+    
+    # The maximum number of folds we can create with fixed window size and ensuring enough test points
+    max_folds <- n - train_length - test_length + 1
+    
+    # Ensure we have at least one fold
+    if (max_folds < 1) {
+      stop("Not enough data points for the specified train_length and test_length combination")
+    }
+    
+    # Generate sliding window CV folds
+    for (i in 1:max_folds) {
+      # For sliding window: start with indices i:(i+train_length-1)
+      start_idx <- i
+      end_idx <- i + train_length - 1
+      
+      # Training set: window of length train_length
+      train_indices[[i]] <- time_idx[start_idx:end_idx]
+      
+      # Test set: the next test_length observations after training
+      test_end_idx <- min(end_idx + test_length, n)
+      test_indices[[i]] <- time_idx[(end_idx+1):test_end_idx]
+    }
+  }
+  
+  # Return the result as a list containing train and test indices
+  return(list(
+    train = train_indices,
+    test = test_indices
+  ))
+}
 
-# ngme.ts.make.A <- function(loc) {
-#   n_loc = length(loc)
-#   n_range = max(loc)-min(loc)+1
-#   if (any((diff(sort(loc))) > 1)) stop("no gaps allowed")
-#
-#   A = matrix(0, nrow=n_loc, ncol=n_range)
-#   for (i in 1:n_loc) {
-#     A[i, loc[i]-min(loc)+1] = 1
-#   }
-# #Do an na.rm
-#   as(A, "dgCMatrix")
-# }
 
 
 #' Convert sparse matrix into sparse dgCMatrix

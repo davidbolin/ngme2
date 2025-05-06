@@ -54,3 +54,6 @@ idea.md
 /doc/
 /Meta/
 tests/scripts/
+
+# SuiteSparse library files
+src/SuiteSparse/**/*.a

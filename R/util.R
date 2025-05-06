@@ -12,6 +12,9 @@
 #' @param replicate An optional vector of the same length as time_idx, indicating which observations
 #'        belong to the same replicate group. When provided, ensures that all observations with the
 #'        same replicate value are either entirely in the training set or entirely in the test set.
+#' @param gap An integer specifying the gap between the training set and test set.
+#'        Default is 0 (no gap, test set starts immediately after training set).
+#'        For example, gap=1 means skip one time point between training and test (useful for 2-step ahead forecasting).
 #' 
 #' @return A list with two components:
 #' \describe{
@@ -36,6 +39,9 @@
 #' This is useful for scenarios where multiple observations at the same time point should
 #' be treated as a group.
 #' 
+#' The gap parameter creates a separation between training and test sets, which is useful
+#' for multi-step ahead forecasting validation.
+#' 
 #' @examples
 #' # Expanding window approach with single-step forecasting
 #' cv_expanding <- make_time_series_cv_index(1:10)
@@ -51,12 +57,16 @@
 #' replicates <- c(1, 1, 1, 2, 2, 3, 3)
 #' cv_with_replicates <- make_time_series_cv_index(time_idx, replicate = replicates)
 #' 
+#' # 2-step ahead forecasting with a gap
+#' cv_with_gap <- make_time_series_cv_index(1:10, gap = 1)
+#' 
 #' @export
 make_time_series_cv_index <- function(
   time_idx, 
   train_length = NULL,
   test_length = 1,
-  replicate = time_idx
+  replicate = time_idx,
+  gap = 0
 ) {
   # Validate inputs
   if (!is.numeric(time_idx)) {
@@ -71,6 +81,11 @@ make_time_series_cv_index <- function(
   # Validate test_length
   if (test_length < 1) {
     stop("test_length must be at least 1")
+  }
+  
+  # Validate gap
+  if (gap < 0) {
+    stop("gap must be non-negative")
   }
   
   # Initialize lists for train and test indices
@@ -107,8 +122,16 @@ make_time_series_cv_index <- function(
       # Expanding window mode with replicates
       # We'll create folds by using all earlier replicates for training and later ones for testing
       
+      # Calculate the maximum number of folds considering the gap
+      max_folds <- n_groups - gap - test_length
+      
+      # Ensure we have at least one fold
+      if (max_folds < 1) {
+        stop("Not enough replicate groups for the specified gap and test_length")
+      }
+      
       # For each possible train/test split of replicate groups
-      for (i in 1:(n_groups - 1)) {
+      for (i in 1:max_folds) {
         # Identify which replicates are in training set
         train_replicates <- sorted_unique_replicates[1:i]
         
@@ -116,9 +139,9 @@ make_time_series_cv_index <- function(
         train_idx <- data$idx[data$replicate %in% train_replicates]
         train_indices[[i]] <- time_idx[train_idx]
         
-        # Get the next replicate(s) for testing based on test_length
+        # Get the test replicates after the gap
         test_replicates <- sorted_unique_replicates[
-          (i+1):min(i+test_length, n_groups)
+          (i+1+gap):min(i+gap+test_length, n_groups)
         ]
         
         # Get all rows where the replicate is in the test set
@@ -133,12 +156,12 @@ make_time_series_cv_index <- function(
         stop("train_length must be between 1 and the number of replicate groups - 1")
       }
       
-      # The maximum number of folds we can create
-      max_folds <- n_groups - train_length - test_length + 1
+      # The maximum number of folds we can create, accounting for the gap
+      max_folds <- n_groups - train_length - gap - test_length + 1
       
       # Ensure we have at least one fold
       if (max_folds < 1) {
-        stop("Not enough replicate groups for the specified train_length and test_length")
+        stop("Not enough replicate groups for the specified train_length, gap, and test_length")
       }
       
       # Generate sliding window CV folds based on replicate groups
@@ -150,9 +173,9 @@ make_time_series_cv_index <- function(
         train_idx <- data$idx[data$replicate %in% train_replicates]
         train_indices[[i]] <- time_idx[train_idx]
         
-        # Test set: the next test_length replicates
+        # Test set: the next test_length replicates after the gap
         test_replicates <- sorted_unique_replicates[
-          (i+train_length):(min(i+train_length+test_length-1, n_groups))
+          (i+train_length+gap):(min(i+train_length+gap+test_length-1, n_groups))
         ]
         
         # Get all rows where the replicate is in the test set
@@ -171,12 +194,21 @@ make_time_series_cv_index <- function(
     if (is.null(train_length)) {
       # Expanding window mode (default behavior)
       # We'll create as many folds as possible while ensuring enough test points
-      for (i in 1:(n-test_length)) {
+      # and accounting for the gap
+      max_folds <- n - gap - test_length
+      
+      if (max_folds < 1) {
+        stop("Not enough data points for the specified gap and test_length")
+      }
+      
+      for (i in 1:max_folds) {
         # Training set: indices from 1 to i
         train_indices[[i]] <- time_idx[1:i]
         
-        # Test set: the next test_length observations after training
-        test_indices[[i]] <- time_idx[(i+1):min(i+test_length, n)]
+        # Test set: observations after training and gap
+        test_start <- i + 1 + gap
+        test_end <- min(test_start + test_length - 1, n)
+        test_indices[[i]] <- time_idx[test_start:test_end]
       }
     } else {
       # Fixed-length sliding window mode
@@ -186,12 +218,12 @@ make_time_series_cv_index <- function(
         stop("train_length must be between 1 and length(time_idx)-1")
       }
       
-      # The maximum number of folds we can create
-      max_folds <- n - train_length - test_length + 1
+      # The maximum number of folds we can create, accounting for the gap
+      max_folds <- n - train_length - gap - test_length + 1
       
       # Ensure we have at least one fold
       if (max_folds < 1) {
-        stop("Not enough data points for the specified train_length and test_length")
+        stop("Not enough data points for the specified train_length, gap, and test_length")
       }
       
       # Generate sliding window CV folds
@@ -203,9 +235,10 @@ make_time_series_cv_index <- function(
         # Training set: window of length train_length
         train_indices[[i]] <- time_idx[start_idx:end_idx]
         
-        # Test set: the next test_length observations after training
-        test_end_idx <- min(end_idx + test_length, n)
-        test_indices[[i]] <- time_idx[(end_idx+1):test_end_idx]
+        # Test set: observations after training and gap
+        test_start <- end_idx + 1 + gap
+        test_end <- min(test_start + test_length - 1, n)
+        test_indices[[i]] <- time_idx[test_start:test_end]
       }
     }
   }

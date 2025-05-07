@@ -166,13 +166,13 @@ public:
     Matrix2d get_dD2_rho(double, double) const;
 };
 
-class General : public Operator {
+class Generic : public Operator {
 private:
     vector<SparseMatrix<double, 0, int>> matrices;
     MatrixXd idx_mat;
     vector<string> trans;
 public:
-    General(const Rcpp::List&);
+    Generic(const Rcpp::List&);
 
     void update_K(const VectorXd& theta_K);
     void update_dK(const VectorXd& theta_K);
@@ -321,8 +321,8 @@ public:
       return std::make_shared<bv_matern_normal>(operator_in);
     } else if (model_type == "bv_matern_nig") {
       return std::make_shared<bv_matern_nig>(operator_in);
-    } else if (model_type == "general") {
-      return std::make_shared<General>(operator_in);
+    } else if (model_type == "generic") {
+      return std::make_shared<Generic>(operator_in);
     } else {
       throw std::runtime_error("Unknown model.");
     }

@@ -1,4 +1,5 @@
 #include "../include/solver.h"
+#include <random>
 
 using namespace Eigen;
 double myround(double x){
@@ -70,17 +71,16 @@ SparseMatrix<double, 0, int> cholesky_solver::return_Qinv()
   return (Qi_reo);
 }
 
-double cholesky_solver::trace_num(const SparseMatrix<double, 0, int> &M)
+double cholesky_solver::trace_num(const SparseMatrix<double, 0, int> &M, unsigned int seed)
 {
   if (QU_computed==0){
-    // U.setRandom(n,N);
-    // The MatrixXd::Random() is complained by R CMD check
+    std::mt19937 rng(seed);
+    std::uniform_real_distribution<double> dist(-1.0, 1.0);
     for (int i = 0; i < n; ++i) {
       for (int j = 0; j < N; ++j) {
-        U(i, j) = R::runif(-1.0, 1.0);
+        U(i, j) = dist(rng);
       }
     }
-
     U = U.unaryExpr(std::ref(myround));
     QU = R.solve(U);
     QU_computed = 1;
@@ -338,16 +338,16 @@ double lu_sparse_solver::trace(const SparseMatrix<double, 0, int> &M)
   return KKtinv.cwiseProduct(Mreo).sum();
 }
 
-double lu_sparse_solver::trace_num(const SparseMatrix<double, 0, int> &M)
+double lu_sparse_solver::trace_num(const SparseMatrix<double, 0, int> &M, unsigned int seed)
 {
   if (QU_computed==0) {
-    // U.setRandom(n,N);
+    std::mt19937 rng(seed);
+    std::uniform_real_distribution<double> dist(-1.0, 1.0);
     for (int i = 0; i < n; ++i) {
       for (int j = 0; j < N; ++j) {
-        U(i, j) = R::runif(-1.0, 1.0);
+        U(i, j) = dist(rng);
       }
     }
-
     U = U.unaryExpr(std::ref(myround));
     for(int i=0; i<N; i++){
       QU.col(i) = LU_K.solve(U.col(i));
@@ -501,17 +501,18 @@ double iterative_solver::trace2(const SparseMatrix<double,0,int>& M1, SparseMatr
   return t/N;
 }
 
-double iterative_solver::trace_num(const SparseMatrix<double, 0, int> &M)
+double iterative_solver::trace_num(const SparseMatrix<double, 0, int> &M, unsigned int seed)
 {
   // only compute when R.compute() is called
   if (QU_computed==0) {
-    // U.setRandom(n,N);
-    // for (int i = 0; i < n; ++i) {
-    //   for (int j = 0; j < N; ++j) {
-    //     U(i, j) = R::runif(-1.0, 1.0);
-    //   }
-    // }
-    // U = U.unaryExpr(std::ref(myround)); 
+    std::mt19937 rng(seed);
+    std::uniform_real_distribution<double> dist(-1.0, 1.0);
+    for (int i = 0; i < n; ++i) {
+      for (int j = 0; j < N; ++j) {
+        U(i, j) = dist(rng);
+      }
+    }
+    U = U.unaryExpr(std::ref(myround)); 
 
     QU = R.solveWithGuess(U, prevQU);
     QU_computed = 1;
@@ -537,17 +538,16 @@ void sparse_llt_solver::init(int nin, int Nin, int max_iter, double tol, int sol
   this->solver_type = solver_type;
 }
 
-double sparse_llt_solver::trace_num(const SparseMatrix<double, 0, int> &M)
+double sparse_llt_solver::trace_num(const SparseMatrix<double, 0, int> &M, unsigned int seed)
 {
   if (QU_computed==0){
-    // U.setRandom(n,N);
-    // The MatrixXd::Random() is complained by R CMD check
+    std::mt19937 rng(seed);
+    std::uniform_real_distribution<double> dist(-1.0, 1.0);
     for (int i = 0; i < n; ++i) {
       for (int j = 0; j < N; ++j) {
-        U(i, j) = R::runif(-1.0, 1.0);
+        U(i, j) = dist(rng);
       }
     }
-
     U = U.unaryExpr(std::ref(myround));
     QU = solve(U);
     QU_computed = 1;

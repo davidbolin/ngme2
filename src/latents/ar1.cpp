@@ -28,7 +28,7 @@ void AR::update_K(const VectorXd& theta_K) {
     
     // G.coeffRef(0, 0) = sqrt(1 - pow(rho, 2));
     K = rho * C + G;
-    K.coeffRef(0, 0) = sqrt(1 - pow(rho, 2));
+    // K.coeffRef(0, 0) = sqrt(1 - pow(rho, 2));
 }
 
 void AR::update_dK(const VectorXd& theta_K) {

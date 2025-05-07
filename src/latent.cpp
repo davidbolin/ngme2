@@ -100,8 +100,6 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
             prior_nu_type  = Rcpp::as<string> (prior_list["type"]);
             prior_nu_param = Rcpp::as<VectorXd> (prior_list["param"]);
 
-// std::cout << " here 2" << std::endl;
-
     // init W
     if (model_list["W"] != R_NilValue) {
         W = Rcpp::as< VectorXd > (model_list["W"]);
@@ -141,11 +139,9 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
     chol_solver_Q.init(W_size, n_trace_iter, 0, 0, solver_type);
     chol_solver_Q.analyze(Q);
 
-// std::cout << " here 3" << std::endl;
     // build mu, sigma, compute trace, ...
     update_each_iter(true, false);
 
-// std::cout << " here 4" << std::endl;
     // Initialize V
     if (!Rf_isNull(noise_in["V"])) {
         V = Rcpp::as< VectorXd > (noise_in["V"]);
@@ -159,7 +155,6 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
             if (noise_type[i] == "normal") V.segment(i*n, n) = h.segment(i*n, n);
         }
     }
-
 
 if (debug) std::cout << "End constructor of latent" << std::endl;
 }
@@ -306,9 +301,9 @@ VectorXd Latent::grad_theta_K(bool rao_blackwell) {
                 if (!symmetricK) {
                     SparseMatrix<double> Q_eps = K_eps.transpose() * SV.cwiseInverse().asDiagonal() * K_eps;
                     SparseMatrix<double> dQ = (Q_eps - Q) / eps;
-                    logdet_difference = 0.5 * chol_solver_Q.trace_num(dQ);
+                    logdet_difference = 0.5 * chol_solver_Q.trace_num(dQ, latent_rng());
                 } else {
-                    logdet_difference = chol_solver_K.trace_num(dK);
+                    logdet_difference = chol_solver_K.trace_num(dK, latent_rng());
                 }
             } else {
                 MatrixXd Kd_eps = ope_addeps->getK().toDense();
@@ -316,6 +311,7 @@ VectorXd Latent::grad_theta_K(bool rao_blackwell) {
                 logdet_difference = (log(Kd_eps.diagonal().prod()) - log(Kd.diagonal().prod())) / eps;
             }
             grad(i) += logdet_difference;
+            // std::cout << "grad(i) = " << grad(i) << std::endl;
         }
     } else {
         VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
@@ -396,7 +392,7 @@ if (debug) std::cout << "Start latent get grad"<< std::endl;
 
     if (noise_type[0] == "normal_nig")
         grad.segment(n_theta_K+n_theta_mu+n_theta_sigma+n_theta_nu, n_theta_sigma_normal) = grad_theta_sigma_normal(rao_blackwell);
-
+// std::cout << "grad = " << grad.transpose() << std::endl;
 if (debug) std::cout << "finish latent gradient"<< std::endl;
     return grad;
 }
@@ -458,7 +454,8 @@ void Latent::sample_cond_V() {
                 VectorXd::Constant(n, -1.5),
                 a_vec.head(n) + a_inc.head(n) + a_inc.tail(n),
                 b_vec.head(n) + b_inc.head(n) + b_inc.tail(n),
-                latent_rng());
+                latent_rng()
+            );
             V.tail(n) = V.head(n);
         } else {
             // type-G4 (n_nu==2) and also univariate case general noise (n_nu==1)
@@ -548,7 +545,7 @@ if (debug) std::cout << "update_each_iter" << std::endl;
                         lu_solver_K.compute_LU(getK());
                         // lu_solver_K.compute_KTK(getK());
                         for (int i=0; i < n_theta_K; i++){
-                            trace[i] = lu_solver_K.trace_num(ope->get_dK()[i]);
+                            trace[i] = lu_solver_K.trace_num(ope->get_dK()[i], latent_rng());
                         }
                     } else {
                         // for random effect case (usually small dimension)
@@ -567,12 +564,12 @@ if (debug) std::cout << "update_each_iter" << std::endl;
                             iterative_solver_K.compute(getK());
                         }
                         for (int i=0; i < n_theta_K; i++) {
-                            trace[i] = iterative_solver_K.trace_num(ope->get_dK()[i]);
+                            trace[i] = iterative_solver_K.trace_num(ope->get_dK()[i], latent_rng());
                         }
                     } else {
                         chol_solver_K.compute(getK());
                         for (int i=0; i < n_theta_K; i++) {
-                            trace[i] = chol_solver_K.trace_num(ope->get_dK()[i]);
+                            trace[i] = chol_solver_K.trace_num(ope->get_dK()[i], latent_rng());
                         }
                     }
                 }

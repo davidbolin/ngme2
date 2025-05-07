@@ -84,7 +84,7 @@ if (debug) std::cout << "Begin Block Constructor" << std::endl;
     Rcpp::List latent_in = Rcpp::as<Rcpp::List> (latents_in[i]);
     latent_in["solver_type"] = solver_type;
     latent_in["n_trace_iter"] = n_trace_iter;
-    unsigned long latent_seed = rng();
+    unsigned long latent_seed = seed + (i+1) * 1000;
     latents.push_back(std::make_shared<Latent>(latent_in, latent_seed));
   }
 
@@ -325,11 +325,13 @@ void BlockModel::sampleW_VY(bool burn_in) {
   } else {
     M += A.transpose() * Q_eps * get_residual_part();
   }
-
+  
   SparseMatrix<double> G = inv_SV.cwiseSqrt().asDiagonal() * K;
   SparseMatrix<double> H = get_sqrt_AtSVA();
-  VectorXd z1 = NoiseUtil::rnorm_vec(G.rows(), 0, 1, rng());
-  VectorXd z2 = NoiseUtil::rnorm_vec(H.rows(), 0, 1, rng());
+  unsigned long seed1 = rng();
+  unsigned long seed2 = rng();
+  VectorXd z1 = NoiseUtil::rnorm_vec(G.rows(), 0, 1, seed1);
+  VectorXd z2 = NoiseUtil::rnorm_vec(H.rows(), 0, 1, seed2);
 
   // sample W ~ N(QQ^-1*M, QQ^-1)
   
@@ -339,6 +341,7 @@ void BlockModel::sampleW_VY(bool burn_in) {
 
   // Sampling method using tricks, purely solve, not matrixL()
   VectorXd W = chol_QQ.rMVN(G, H, M, z1, z2);
+  // std::cout << "W = " << W.transpose() << std::endl;
 
   setW(W);
 
@@ -928,9 +931,9 @@ if (debug) std::cout << "start compute trace" << std::endl;
     for (int j=0; j < latents[i]->get_n_theta_K(); j++) {
       SparseMatrix<double> T = block_dK[i][j].transpose() * inv_SV.asDiagonal() * K;
       if (use_iterative_solver) {
-        rb_trace_K[j] = iterative_QQ.trace_num(T);
+        rb_trace_K[j] = iterative_QQ.trace_num(T, rng());
       } else {
-        rb_trace_K[j] = chol_QQ.trace_num(T);
+        rb_trace_K[j] = chol_QQ.trace_num(T, rng());
       }
     }
 
@@ -943,9 +946,9 @@ if (debug) std::cout << "start compute trace" << std::endl;
 
       SparseMatrix<double> T = K.transpose() * BSigma_col_over_SV.asDiagonal() * K;
       if (use_iterative_solver) {
-        rb_trace_sigma[j] = iterative_QQ.trace_num(T);
+        rb_trace_sigma[j] = iterative_QQ.trace_num(T, rng());
       } else {
-        rb_trace_sigma[j] = chol_QQ.trace_num(T);
+        rb_trace_sigma[j] = chol_QQ.trace_num(T, rng());
       }
     }
 
@@ -958,9 +961,9 @@ if (debug) std::cout << "start compute trace" << std::endl;
   for (int j=0; j < n_theta_sigma; j++) {
     SparseMatrix<double> T = A.transpose() * B_sigma.col(j).cwiseQuotient(noise_SV).asDiagonal() * A;
     if (use_iterative_solver) {
-      rb_trace_noise_sigma[j] = iterative_QQ.trace_num(T);
+      rb_trace_noise_sigma[j] = iterative_QQ.trace_num(T, rng());
     } else {
-      rb_trace_noise_sigma[j] = chol_QQ.trace_num(T);
+      rb_trace_noise_sigma[j] = chol_QQ.trace_num(T, rng());
     }
   }
 if (debug) std::cout << "after compute trace" << std::endl;

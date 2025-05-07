@@ -100,7 +100,7 @@ public:
   inline Eigen::SparseMatrix<double, 0, int> solveMatrix(const Eigen::SparseMatrix<double, 0, int> &v) { return R.solve(v); }
   double trace(const Eigen::MatrixXd &);
   double trace(const Eigen::SparseMatrix<double, 0, int> &);
-  double trace_num(const Eigen::SparseMatrix<double, 0, int> &);
+  double trace_num(const Eigen::SparseMatrix<double, 0, int> &, unsigned int seed = 0);
   double trace2(const SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &);
   inline double logdet()
   {
@@ -164,7 +164,7 @@ public:
   double trace(const Eigen::MatrixXd &);
   double trace(const Eigen::SparseMatrix<double, 0, int> &);
   double trace2(const SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &);
-  double trace_num(const Eigen::SparseMatrix<double, 0, int> &);
+  double trace_num(const Eigen::SparseMatrix<double, 0, int> &, unsigned int seed = 0);
 
   double trace0(Eigen::SparseMatrix<double, 0, int> &);
   inline Eigen::VectorXd solve(Eigen::VectorXd &v, Eigen::VectorXd &x) { return LU_K.solve(v); }
@@ -200,7 +200,7 @@ public:
   double trace(const Eigen::MatrixXd &);
   double trace(const Eigen::SparseMatrix<double, 0, int> &);
   double trace2(const SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &);
-  double trace_num(const SparseMatrix<double, 0, int> &);
+  double trace_num(const SparseMatrix<double, 0, int> &, unsigned int seed = 0);
 };
 
 #include <cholmod.h>
@@ -362,7 +362,7 @@ public:
   double trace(const Eigen::MatrixXd &) {return 0.0;}
   double trace(const Eigen::SparseMatrix<double, 0, int> &) {return 0.0;}
   double trace2(const SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &) {return 0.0;}
-  double trace_num(const SparseMatrix<double, 0, int> &);
+  double trace_num(const Eigen::SparseMatrix<double, 0, int> &, unsigned int seed = 0);
   double logdet() {
     switch (solver_type) {
       case 0:

@@ -325,6 +325,9 @@ update_ngme_est <- function(
   for (i in seq_along(ngme_replicate$models)) {
     # update theta_K and K
     theta_K <- est_output$models[[i]]$theta_K
+    if ("param_name" %in% names(ngme_replicate$models[[i]]$operator)) {
+      names(theta_K) <- ngme_replicate$models[[i]]$operator$param_name
+    }
     ngme_replicate$models[[i]]$operator$theta_K <-
       ngme_replicate$models[[i]]$theta_K <- theta_K
 

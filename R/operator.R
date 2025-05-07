@@ -141,8 +141,8 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
       cat(pad_add4_space); cat("kappa =", format(exp(theta_K[2]), digits=2), "\n", sep=" ")
     },
     generic = {
-      for (name in names(theta_K)) {
-        cat(pad_add4_space, name, "=", format(theta_K[name], digits=2), "\n", sep=" ")
+      for (i in seq_along(param_name)) {
+        cat(pad_add4_space, param_name[i], "=", format(theta_K[i], digits=2), "\n", sep=" ")
       }
     },
     cat(pad_add4_space, "No parameter.", "\n", sep="")

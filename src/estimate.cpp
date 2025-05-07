@@ -83,7 +83,7 @@ auto timer = std::chrono::steady_clock::now();
     int i = 0;
     for (i=0; i < n_chains; i++) {
         // Not thread-safe using Rcpp::List to init optimizer
-        ngmes.push_back(std::make_shared<Ngme>(R_ngme, rng(), sampling_strategy, num_threads[1]));
+        ngmes.push_back(std::make_shared<Ngme>(R_ngme, seed + i, sampling_strategy, num_threads[1]));
         opt_vec.push_back(Ngme_optimizer(control_opt, ngmes[i]));
     }
 
@@ -185,7 +185,7 @@ auto timer = std::chrono::steady_clock::now();
         std::cout << "Reach convergence in " << steps << " iterations." << std::endl;
 
 #else // No parallel chain
-    Ngme ngme (R_ngme, rng(), sampling_strategy);
+    Ngme ngme (R_ngme, seed, sampling_strategy);
     Ngme_optimizer opt (control_opt, std::make_shared<Ngme>(ngme));
     opt.sgd(
         0.1,
@@ -222,7 +222,7 @@ Rcpp::List sampling_cpp(
     unsigned long seed
 ) {
     std::mt19937 rng (seed);
-    BlockModel block (ngme_replicate, rng());
+    BlockModel block (ngme_replicate, seed);
 
     return block.sampling(n, n_burnin, posterior);
 }

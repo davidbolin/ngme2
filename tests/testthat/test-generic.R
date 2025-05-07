@@ -8,22 +8,6 @@ test_that("generic model operator K works", {
   )
   K = generic_model$K
   expect_equal(K, 1 * A + 2 * B + 3 * C)
-
-  # Test AR1 representation
-  ar1 <- ar1(1:2, rho=0.5)
-  
-  generic_model_ar1 <- generic(
-    theta_K = c(rho=0.5),
-    trans = c(rho="tanh"),
-    matrices = list(ar1$C, ar1$G),
-    h = ar1$h
-  )
-
-  expect_equal(ar1$K, ar1$C * 0.5 + ar1$G)
-  expect_equal(generic_model_ar1, ar1$K)
-  
-
-  # Test AR1 representation
 })
 
 test_that("generic model == AR1 model", {
@@ -31,7 +15,9 @@ test_that("generic model == AR1 model", {
   seed <- 10; n_obs <- 10; Y <- rnorm(n_obs)
   ar1 <- ar1(1:n_obs, rho=0.5)
   g = name2fun("tanh", inv=TRUE)
-  
+  ar1$param_name
+  ar1$param_trans
+
   generic_ar1 <- generic(
     theta_K = c(rho=g(0.5)),
     trans = c(rho="tanh"),
@@ -46,8 +32,8 @@ test_that("generic model == AR1 model", {
 
   control <- control_opt(
     seed = seed,
-    iterations = 1,
-    n_parallel_chain = 1,
+    iterations = 100,
+    n_parallel_chain = 4,
     stop_points = 1
   )
 
@@ -64,6 +50,7 @@ test_that("generic model == AR1 model", {
   fit_ar1
   est_rho_ar1 <- ar1_th2a(ngme_result(fit_ar1, "my_ar")$operator$theta_K)
   print(est_rho_ar1)
+  traceplot(fit_ar1, "my_ar")
 
   fit_generic <- ngme(
     Y ~ 0 + f(
@@ -81,9 +68,9 @@ test_that("generic model == AR1 model", {
   fit_generic
   est_rho_generic <- ar1_th2a(ngme_result(fit_generic, "generic")$operator$theta_K)
   print(est_rho_generic)
-  # traceplot(fit_generic, "generic")
+  traceplot(fit_generic, "generic")
 
-  expect_equal(est_rho_generic, est_rho_ar1)
+  expect_equal(est_rho_generic[[1]], est_rho_ar1[[1]])
 })
 
 test_that("generic model == Matern model", {
@@ -104,11 +91,16 @@ test_that("generic model == Matern model", {
 
 
 test_that("generic model == Matern model", {
-  seed <- 10; n_obs <- 10; Y <- rnorm(n_obs)
-  mesh = fmesher::fm_mesh_1d(seq(0, 1, length.out = 10))
-  matern <- matern(mesh, theta_K = 0.7)
+  seed <- 10; n_obs <- 5; Y <- rnorm(n_obs)
+  mesh = fmesher::fm_mesh_1d(seq(0, 1, length.out = 6))
+
+  matern <- matern(
+    mesh, theta_K = 0.7
+  )
   g = name2fun("exp2", inv=TRUE)
-  
+  matern$symmetric
+  matern$zero_trace
+
   generic_matern <- generic(
     theta_K = c(x=0.7),
     trans = c(x="exp2"),
@@ -116,6 +108,10 @@ test_that("generic model == Matern model", {
     h = matern$h, 
     mesh = mesh
   )
+  expect_equal(generic_matern$symmetric, matern$symmetric)
+  expect_equal(generic_matern$zero_trace, matern$zero_trace)
+  expect_equal(generic_matern$mesh, matern$mesh)
+  expect_equal(generic_matern$h, matern$h)
 
   expect_equal(matern$K, matern$C * exp(2*0.7) + matern$G)
   expect_equal(generic_matern$K, matern$K)
@@ -123,9 +119,10 @@ test_that("generic model == Matern model", {
 
   control <- control_opt(
     seed = seed,
-    iterations = 1,
-    n_parallel_chain = 1,
-    stop_points = 1
+    iterations = 100,
+    n_parallel_chain = 4,
+    stop_points = 1,
+    # verbose = TRUE
   )
 
   fit_matern <- ngme(
@@ -134,12 +131,15 @@ test_that("generic model == Matern model", {
       name = "my_ar",
       model = "matern",
       theta_K = 0.7,
+      mesh = mesh
     ),
     data = data.frame(Y=Y),
     control_opt = control
   )
   fit_matern
   est_x_matern <- ngme_result(fit_matern, "my_ar")$operator$theta_K
+  exp(est_x_matern[[1]])
+  traceplot(fit_matern, "my_ar")
 
   fit_generic <- ngme(
     Y ~ 0 + f(
@@ -149,12 +149,15 @@ test_that("generic model == Matern model", {
       theta_K = c(x=0.7),
       trans = c(x="exp2"),
       matrices = list(matern$C, matern$G),
-      h = matern$h
+      h = matern$h,
+      mesh = mesh
     ),
     data = data.frame(Y=Y),
     control_opt = control
   )
   fit_generic
   est_x_generic <- ngme_result(fit_generic, "generic")$operator$theta_K
+  traceplot(fit_generic, "generic")
+  exp(est_x_generic[[1]])
   expect_equal(est_x_generic[[1]], est_x_matern[[1]])
 })

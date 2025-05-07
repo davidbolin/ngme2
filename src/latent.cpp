@@ -183,7 +183,7 @@ VectorXd Latent::grad_theta_mu(bool rao_blackwell) {
 }
 
 // return the gradient wrt. theta, theta=log(sigma)
-inline VectorXd Latent::grad_theta_sigma(bool rao_blackwell) {
+VectorXd Latent::grad_theta_sigma(bool rao_blackwell) {
     VectorXd WW = (rao_blackwell) ? cond_W : W;
 
     VectorXd grad = VectorXd::Zero(n_theta_sigma);
@@ -191,12 +191,28 @@ inline VectorXd Latent::grad_theta_sigma(bool rao_blackwell) {
 
     // std::cout << "W = " << W << std::endl;
     VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
+    VectorXd V_minus_h = V - h;
 
-    // (KW-mu(V-h)) / (sigma^2 V)
-    VectorXd tmp = (getK()*WW - mu.cwiseProduct(V-h)).array().pow(2).matrix().cwiseQuotient(SV);
+    // Consider the case of Normal + NIG, use 1st half of W and V
+    if (noise_type[0] == "normal_nig" && n_noise == 1) {
+        // Use the 1st half of W and V (NIG noise)
+        WW = W.segment(0, W_size/2);
+        SV = SV.segment(0, V_size/2);
+        V_minus_h = V_minus_h.segment(0, V_size/2);
+        SparseMatrix<double> KK = getK().block(0, 0, W_size/2, W_size/2);
+        VectorXd mu_half = mu.segment(0, V_size/2);
+        MatrixXd B_sigma_half = B_sigma.block(0, 0, W_size/2, n_theta_sigma);
 
-    // grad = Bi(tmp * sigma ^ -2 - 1)
-    grad = B_sigma.transpose() * (tmp - VectorXd::Ones(V_size));
+        // Compute the gradient of sigma
+        VectorXd tmp = (KK*WW - mu_half.cwiseProduct(V_minus_h)).array().pow(2).matrix().cwiseQuotient(SV);
+        grad = B_sigma_half.transpose() * (tmp - VectorXd::Ones(tmp.size()));
+    } else{
+        // Compute the gradient of sigma
+        // (KW-mu(V-h)) / (sigma^2 V)
+        VectorXd tmp = (getK()*WW - mu.cwiseProduct(V_minus_h)).array().pow(2).matrix().cwiseQuotient(SV);
+        // grad = Bi(tmp * sigma ^ -2 - 1)
+        grad = B_sigma.transpose() * (tmp - VectorXd::Ones(tmp.size()));
+    }
 
     // add prior
     for (int l=0; l < n_theta_sigma; l++) {
@@ -207,21 +223,31 @@ inline VectorXd Latent::grad_theta_sigma(bool rao_blackwell) {
     return -grad;
 }
 
-inline VectorXd Latent::grad_theta_sigma_normal(bool rao_blackwell) {
+// Consider the case of Normal + NIG, use 2nd half of W and V
+VectorXd Latent::grad_theta_sigma_normal(bool rao_blackwell) {
     VectorXd WW = (rao_blackwell) ? cond_W : W;
     VectorXd V = VectorXd::Ones(V_size);
     VectorXd grad = VectorXd::Zero(n_theta_sigma_normal);
 
+    // get the 2nd half of W and V
+    WW = W.segment(W_size/2, W_size/2);
+    V = V.segment(V_size/2, V_size/2);
+    SparseMatrix<double> KK = getK().block(W_size/2, W_size/2, W_size/2, W_size/2);
+    VectorXd sigma_normal_half = sigma_normal.segment(V_size/2, V_size/2);
+    MatrixXd B_sigma_normal_half = B_sigma_normal.block(W_size/2, 0, W_size/2, n_theta_sigma_normal);
+
+    // Compute the gradient of sigma_normal
     // tmp = (KW - mu(V-h))^2 / V
-    VectorXd tmp = (getK()*W).array().pow(2).matrix().cwiseProduct(V.cwiseInverse());
+    VectorXd tmp = (KK*WW).array().pow(2).matrix().cwiseProduct(V.cwiseInverse());
     // grad = Bi(tmp * sigma_normal ^ -2 - 1)
-    VectorXd tmp1 = tmp.cwiseProduct(sigma_normal.array().pow(-2).matrix()) - VectorXd::Ones(V_size);
-    grad += B_sigma_normal.transpose() * tmp1;
+    VectorXd tmp1 = tmp.cwiseProduct(sigma_normal_half.array().pow(-2).matrix()) - VectorXd::Ones(sigma_normal_half.size());
+    grad += B_sigma_normal_half.transpose() * tmp1;
 
     // add prior
-    for (int l=0; l < n_theta_sigma; l++) {
+    for (int l=0; l < n_theta_sigma_normal; l++) {
         grad(l) += PriorUtil::d_log_dens(prior_sigma_type, prior_sigma_param, theta_sigma(l));
     }
+
     // return - 1.0 / V_size * grad;
     return -grad;
 }
@@ -470,8 +496,13 @@ void Latent::sample_cond_V() {
                     latent_rng()
                 );
             }
+            
+            // consider the case of normal + nig/gal
+            if (noise_type[0] == "normal_nig" && n_noise == 1) {
+                // Set the 2nd half of V to be 1
+                V.segment(V_size/2, V_size/2) = VectorXd::Ones(V_size/2);
+            }
         }
-
     }
 }
 

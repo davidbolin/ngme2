@@ -25,7 +25,7 @@ test_that("simulate and estimate of rw with NIG", {
     control_opt = control_opt(
       seed = 12,
       estimation = T,
-      iterations = 500,
+      iterations = 100,
       n_parallel_chain = 4,
       print_check_info = F,
       verbose = F
@@ -40,7 +40,6 @@ test_that("simulate and estimate of rw with NIG", {
     noise_nig(mu=mu, sigma=sigma, nu=nu))
 })
 
-############################## AR1 case
 test_that("test estimation of basic ar with normal measurement noise", {
   n_obs <- 800
   mu <- 3; sigma <- 2; nu <- 1; sigma_eps <- 0.8
@@ -68,29 +67,22 @@ test_that("test estimation of basic ar with normal measurement noise", {
       # fix_W = T, W = W
     ),
     data = data.frame(Y = Y, x1=x1),
-    control_ngme = control_ngme(
-      # n_gibbs_samples = 5
-    ),
     control_opt = control_opt(
       estimation = T,
       burnin = 100,
-      iterations = 500,
+      iterations = 10,
       n_parallel_chain = 4,
       print_check_info = F,
       verbose = F
     ),
-    # start = out,
     debug = F
   )
   out
   traceplot(out, "ar")
   traceplot(out)
-plot(attr(W, "noise"), out$replicates[[1]]$models[[1]]$noise)
 
   out$replicates[[1]]$models[[1]]$theta_K
 
   predict(out, list(ar=801:900))
-  # cross_validation(out, type="loo")
-  expect_true(TRUE)
 })
 

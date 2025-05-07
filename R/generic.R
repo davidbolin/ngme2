@@ -45,13 +45,13 @@ generic <- function(
   trans,
   matrices,
   h,
+  mesh = NULL,
+  zero_trace = FALSE,
   interact = NULL,
   theta_K2 = NULL,
   trans2 = NULL,
   matrices2 = NULL,
   h2 = NULL,
-  zero_trace = FALSE,
-  mesh = NULL,
   ...
 ) {
   if (!is.null(mesh)) mesh <- ngme_build_mesh(mesh)
@@ -115,6 +115,7 @@ generic <- function(
     model = "generic",
     mesh = mesh,
     K = update_K(theta_K),
+    generic = TRUE,
     h = h,
     idx_mat = idx_mat,
     theta_K = theta_K,
@@ -142,6 +143,7 @@ compute_coef <- function(theta_K, idx, trans) {
   }
   return(coef)
 }
+
 
 #' Convert transformation name to function
 #'

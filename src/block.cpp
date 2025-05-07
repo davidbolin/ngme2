@@ -325,7 +325,7 @@ void BlockModel::sampleW_VY(bool burn_in) {
   } else {
     M += A.transpose() * Q_eps * get_residual_part();
   }
-  
+
   SparseMatrix<double> G = inv_SV.cwiseSqrt().asDiagonal() * K;
   SparseMatrix<double> H = get_sqrt_AtSVA();
   unsigned long seed1 = rng();
@@ -348,7 +348,6 @@ void BlockModel::sampleW_VY(bool burn_in) {
   if (rao_blackwell && !burn_in) {
     // compute E(W|V,Y) i.e. QQ^-1 M
     W = chol_QQ.solve(M);
-// std::cout << "cond W = " << W.transpose() << std::endl;
     set_cond_W(W);
   }
 

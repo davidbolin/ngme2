@@ -6,6 +6,7 @@ ngme_operator <- function(
   theta_K = NULL,
   zero_trace = FALSE,
   symmetric = FALSE,
+  generic = FALSE,
   ...
 ) {
   if (is.null(K)) stop("K is NULL.")
@@ -20,6 +21,7 @@ ngme_operator <- function(
       n_theta_K = length(theta_K),
       zero_trace = zero_trace,
       symmetric = symmetric,
+      generic = generic,
       ...
     ),
     class = "ngme_operator"
@@ -141,8 +143,9 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
       cat(pad_add4_space); cat("kappa =", format(exp(theta_K[2]), digits=2), "\n", sep=" ")
     },
     generic = {
-      for (i in seq_along(param_name)) {
-        cat(pad_add4_space, param_name[i], "=", format(theta_K[i], digits=2), "\n", sep=" ")
+      for (i in seq_along(operator$param_name)) {
+        t <- operator$theta_K[i]
+        cat(pad_add4_space, operator$param_name[i], "=", format(t, digits=3), "\n", sep=" ")
       }
     },
     cat(pad_add4_space, "No parameter.", "\n", sep="")

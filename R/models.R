@@ -54,6 +54,17 @@ ar1 <- function(
   stopifnot("The length of rho(theta_K) should be 1." = length(theta_K) == 1)
 
   update_K <- function(theta_K) {ar1_th2a(theta_K) * C + G}
+
+  # Create a generic model internally
+  g <- name2fun("tanh", inv=TRUE)
+  generic <- generic(
+    theta_K = c(rho=g(rho)),
+    trans = c(rho="tanh"),
+    matrices = list(C, G),
+    h = h,
+    mesh = mesh
+  )
+
   ngme_operator(
     mesh = mesh,
     model = "ar1",
@@ -66,7 +77,10 @@ ar1 <- function(
     symmetric = FALSE,
     zero_trace = FALSE,
     param_name = "rho",
-    param_trans = list(ar1_th2a)
+    param_trans = list(ar1_th2a),
+    # using the generic structure to build the operator
+    generic = TRUE,
+    generic_operator = generic
   )
 }
 

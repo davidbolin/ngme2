@@ -4,7 +4,13 @@
 \alias{make_time_series_cv_index}
 \title{Create Time Series Cross-Validation Indices}
 \usage{
-make_time_series_cv_index(time_idx, train_length = NULL, test_length = 1)
+make_time_series_cv_index(
+  time_idx,
+  train_length = NULL,
+  test_length = 1,
+  replicate = time_idx,
+  gap = 0
+)
 }
 \arguments{
 \item{time_idx}{A numeric vector of time indices in ascending order}
@@ -14,15 +20,26 @@ If NULL (default), an expanding window approach is used.}
 
 \item{test_length}{An integer specifying the number of observations to include in each test set.
 Default is 1 (single-step forecasting).}
+
+\item{replicate}{An optional vector of the same length as time_idx, indicating which observations
+belong to the same replicate group. When provided, ensures that all observations with the
+same replicate value are either entirely in the training set or entirely in the test set.}
+
+\item{gap}{An integer specifying the gap between the training set and test set.
+Default is 0 (no gap, test set starts immediately after training set).
+For example, gap=1 means skip one time point between training and test (useful for 2-step ahead forecasting).}
 }
 \value{
 A list with two components:
+\describe{
   \item{train}{A list of numeric vectors, where each vector contains the time indices for training in that fold}
   \item{test}{A list of numeric vectors, where each vector contains the time indices for testing in that fold}
 }
+}
 \description{
 Creates indices for time series cross-validation with options for expanding window
-or sliding window approaches. Supports both single-step and multi-step forecasting.
+or sliding window approaches. Supports both single-step and multi-step forecasting, and can
+handle replicated observations.
 }
 \details{
 Time series cross-validation requires respecting the temporal order of observations.
@@ -35,6 +52,14 @@ This function implements two common approaches:
    that slides through the time series, maintaining the same training size across folds.
 
 The test_length parameter allows for multi-step forecasting evaluation.
+
+When replicate is provided, the function ensures that all observations with the same 
+replicate value are kept together, either all in the training set or all in the test set.
+This is useful for scenarios where multiple observations at the same time point should
+be treated as a group.
+
+The gap parameter creates a separation between training and test sets, which is useful
+for multi-step ahead forecasting validation.
 }
 \examples{
 # Expanding window approach with single-step forecasting
@@ -45,5 +70,13 @@ cv_sliding <- make_time_series_cv_index(1:10, train_length = 3)
 
 # Sliding window with multi-step forecasting (predict 2 steps ahead)
 cv_multistep <- make_time_series_cv_index(1:10, train_length = 3, test_length = 2)
+
+# Working with replicates
+time_idx <- c(1, 1, 1, 2, 2, 3, 3)
+replicates <- c(1, 1, 1, 2, 2, 3, 3)
+cv_with_replicates <- make_time_series_cv_index(time_idx, replicate = replicates)
+
+# 2-step ahead forecasting with a gap
+cv_with_gap <- make_time_series_cv_index(1:10, gap = 1)
 
 }

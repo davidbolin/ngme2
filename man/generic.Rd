@@ -20,7 +20,9 @@ generic(
 )
 }
 \arguments{
-\item{theta_K}{the parameter vector}
+\item{theta_K}{the parameter vector (in real scale)}
+
+\item{trans}{transformation for each parameter (into original scale)}
 
 \item{matrices}{the matrices}
 
@@ -41,8 +43,6 @@ generic(
 \item{mesh}{the mesh}
 
 \item{...}{ignore}
-
-\item{trans_type}{the type of parameter transformation}
 }
 \description{
 K = sum_i f_i(theta_i) * matrices_i

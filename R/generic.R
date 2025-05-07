@@ -146,13 +146,14 @@ compute_coef <- function(theta_K, idx, trans) {
 #' Convert transformation name to function
 #'
 #' This function converts a transformation name to the corresponding function.
-#  Convertion is from original scale to real scale by default.
+#' Convertion is from original scale to real scale by default.
 #' Available transformations:
 #' \itemize{
 #'   \item \code{exp2}: $\exp(2x)$, inverse is $\log(x)/2$
 #'   \item \code{tanh}: Hyperbolic tangent transformation used for AR1 parameter, uses ar1_th2a and ar1_a2th
 #'   \item \code{identity}: Identity function, no transformation
 #'   \item \code{exp}: $\exp(x)$, inverse is $\log(x)$
+#' }
 #'
 #' @param trans Character string specifying the transformation type from original scale to real scale
 #' @param inv Logical, if TRUE returns the transformation function from real scale to original scale

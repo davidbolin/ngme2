@@ -147,6 +147,7 @@ reference:
     - merge_noise
     - merge_replicates
     - get_trajectories
+    - name2fun
   - title: Distributions
     contents:
     - ig

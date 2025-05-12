@@ -59,8 +59,6 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
         fix_flag[latent_fix_theta_mu]     = Rcpp::as<bool>  (noise_in["fix_theta_mu"]);
         fix_flag[latent_fix_theta_sigma]  = Rcpp::as<bool>  (noise_in["fix_theta_sigma"]);
         fix_flag[latent_fix_theta_nu]     = noise_in.containsElementNamed("fix_theta_nu") ? Rcpp::as<bool> (noise_in["fix_theta_nu"]) : false;
-        fix_flag[latent_fix_theta_sigma_normal]  = noise_in.containsElementNamed("latent_fix_theta_sigma_normal") ? Rcpp::as<bool> (noise_in["fix_theta_sigma_normal"]) : false;
-        fix_flag[latent_fix_V]  = Rcpp::as<bool> (noise_in["fix_V"]);
 
         single_V = Rcpp::as<bool> (noise_in["single_V"]);
 
@@ -68,20 +66,16 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
         B_sigma  = Rcpp::as< MatrixXd >    (noise_in["B_sigma"]);
         B_nu     = Rcpp::as< MatrixXd >    (noise_in["B_nu"]);
 
-        if (noise_type[0] == "normal_nig") B_sigma_normal  = Rcpp::as< MatrixXd >    (noise_in["B_sigma_normal"]);
-
         n_theta_mu    = Rcpp::as< int > (noise_in["n_theta_mu"]);
         n_theta_sigma = Rcpp::as< int > (noise_in["n_theta_sigma"]);
         n_theta_nu    = Rcpp::as< int > (noise_in["n_theta_nu"]);
         nu_lower_bound  = noise_in.containsElementNamed("nu_lower_bound") ? Rcpp::as< double > (noise_in["nu_lower_bound"]) : 0.0;
 
         rb_trace_sigma = VectorXd::Zero(n_theta_sigma);
-        if (noise_type[0] == "normal_nig") n_theta_sigma_normal =   (B_sigma_normal.cols());
 
         theta_mu    = Rcpp::as< VectorXd > (noise_in["theta_mu"]);
         theta_sigma = Rcpp::as< VectorXd > (noise_in["theta_sigma"]);
         theta_nu    = Rcpp::as< VectorXd > (noise_in["theta_nu"]);
-        if (noise_type[0] == "normal_nig") theta_sigma_normal = Rcpp::as< VectorXd > (noise_in["theta_sigma_normal"]);
 
         share_V = Rcpp::as<bool> (noise_in["share_V"]);
         single_V = Rcpp::as<bool> (noise_in["single_V"]);
@@ -178,7 +172,6 @@ VectorXd Latent::grad_theta_mu(bool rao_blackwell) {
         // add prior
         grad(l) += PriorUtil::d_log_dens(prior_mu_type, prior_mu_param, theta_mu(l));
     }
-
     return -grad;
 }
 
@@ -193,26 +186,11 @@ VectorXd Latent::grad_theta_sigma(bool rao_blackwell) {
     VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
     VectorXd V_minus_h = V - h;
 
-    // Consider the case of Normal + NIG, use 1st half of W and V
-    if (noise_type[0] == "normal_nig" && n_noise == 1) {
-        // Use the 1st half of W and V (NIG noise)
-        WW = W.segment(0, W_size/2);
-        SV = SV.segment(0, V_size/2);
-        V_minus_h = V_minus_h.segment(0, V_size/2);
-        SparseMatrix<double> KK = getK().block(0, 0, W_size/2, W_size/2);
-        VectorXd mu_half = mu.segment(0, V_size/2);
-        MatrixXd B_sigma_half = B_sigma.block(0, 0, W_size/2, n_theta_sigma);
-
-        // Compute the gradient of sigma
-        VectorXd tmp = (KK*WW - mu_half.cwiseProduct(V_minus_h)).array().pow(2).matrix().cwiseQuotient(SV);
-        grad = B_sigma_half.transpose() * (tmp - VectorXd::Ones(tmp.size()));
-    } else{
-        // Compute the gradient of sigma
-        // (KW-mu(V-h)) / (sigma^2 V)
-        VectorXd tmp = (getK()*WW - mu.cwiseProduct(V_minus_h)).array().pow(2).matrix().cwiseQuotient(SV);
-        // grad = Bi(tmp * sigma ^ -2 - 1)
-        grad = B_sigma.transpose() * (tmp - VectorXd::Ones(tmp.size()));
-    }
+    // Compute the gradient of sigma
+    // (KW-mu(V-h)) / (sigma^2 V)
+    VectorXd tmp = (getK()*WW - mu.cwiseProduct(V_minus_h)).array().pow(2).matrix().cwiseQuotient(SV);
+    // grad = Bi(tmp * sigma ^ -2 - 1)
+    grad = B_sigma.transpose() * (tmp - VectorXd::Ones(tmp.size()));
 
     // add prior
     for (int l=0; l < n_theta_sigma; l++) {
@@ -220,35 +198,6 @@ VectorXd Latent::grad_theta_sigma(bool rao_blackwell) {
     }
 
     if (rao_blackwell) grad += rb_trace_sigma;
-    return -grad;
-}
-
-// Consider the case of Normal + NIG, use 2nd half of W and V
-VectorXd Latent::grad_theta_sigma_normal(bool rao_blackwell) {
-    VectorXd WW = (rao_blackwell) ? cond_W : W;
-    VectorXd V = VectorXd::Ones(V_size);
-    VectorXd grad = VectorXd::Zero(n_theta_sigma_normal);
-
-    // get the 2nd half of W and V
-    WW = W.segment(W_size/2, W_size/2);
-    V = V.segment(V_size/2, V_size/2);
-    SparseMatrix<double> KK = getK().block(W_size/2, W_size/2, W_size/2, W_size/2);
-    VectorXd sigma_normal_half = sigma_normal.segment(V_size/2, V_size/2);
-    MatrixXd B_sigma_normal_half = B_sigma_normal.block(W_size/2, 0, W_size/2, n_theta_sigma_normal);
-
-    // Compute the gradient of sigma_normal
-    // tmp = (KW - mu(V-h))^2 / V
-    VectorXd tmp = (KK*WW).array().pow(2).matrix().cwiseProduct(V.cwiseInverse());
-    // grad = Bi(tmp * sigma_normal ^ -2 - 1)
-    VectorXd tmp1 = tmp.cwiseProduct(sigma_normal_half.array().pow(-2).matrix()) - VectorXd::Ones(sigma_normal_half.size());
-    grad += B_sigma_normal_half.transpose() * tmp1;
-
-    // add prior
-    for (int l=0; l < n_theta_sigma_normal; l++) {
-        grad(l) += PriorUtil::d_log_dens(prior_sigma_type, prior_sigma_param, theta_sigma(l));
-    }
-
-    // return - 1.0 / V_size * grad;
     return -grad;
 }
 
@@ -260,7 +209,17 @@ VectorXd Latent::grad_theta_nu() {
     if (noise_type[0] == "normal") return grad;
     if (n_noise == 1) {
         // single noise
-        grad = NoiseUtil::grad_theta_nu(noise_type[0], B_nu, nu, V, prevV, h, single_V);
+        if (noise_type[0] == "normal_nig") {
+            // Using the 1st half of the parameters
+            MatrixXd B_nu_half = B_nu.block(0, 0, B_nu.rows()/2, B_nu.cols());
+            VectorXd nu_half = nu.segment(0, nu.size()/2);
+            VectorXd V_half = V.segment(0, V.size()/2);
+            VectorXd prevV_half = prevV.segment(0, prevV.size()/2);
+            VectorXd h_half = h.segment(0, h.size()/2);
+            grad = NoiseUtil::grad_theta_nu(noise_type[0], B_nu_half, nu_half, V_half, prevV_half, h_half, single_V);
+        } else {
+            grad = NoiseUtil::grad_theta_nu(noise_type[0], B_nu, nu, V, prevV, h, single_V);
+        }
     } else { // same as single noise case
         // bv noise (does not allow for non-stationary nu)
         // 2 NIG case
@@ -366,7 +325,6 @@ Rcpp::List Latent::output() const {
         Rcpp::Named("theta_K")      = theta_K, // same parameterization as input
         Rcpp::Named("theta_mu")     = theta_mu,
         Rcpp::Named("theta_sigma")  = theta_sigma,
-        Rcpp::Named("theta_sigma_normal")  = theta_sigma_normal,
         Rcpp::Named("theta_nu")     = theta_nu,
         Rcpp::Named("V")            = V,
         Rcpp::Named("W")            = W
@@ -389,8 +347,6 @@ if (debug) std::cout << "fix_theta_sigma = " <<
     if (!fix_flag[latent_fix_theta_nu])
         parameter.segment(n_theta_K+n_theta_mu+n_theta_sigma,n_theta_nu) = theta_nu;
 
-    if (noise_type[0] == "normal_nig")
-        parameter.segment(n_theta_K+n_theta_mu+n_theta_sigma+n_theta_nu, n_theta_sigma_normal) = theta_sigma_normal;
 
 // if (debug) std::cout << "End latent get parameter"<< std::endl;
 if (debug) {
@@ -416,8 +372,6 @@ if (debug) std::cout << "Start latent get grad"<< std::endl;
     if (!fix_flag[latent_fix_theta_nu])
         grad.segment(n_theta_K+n_theta_mu+n_theta_sigma,n_theta_nu)  = grad_theta_nu();
 
-    if (noise_type[0] == "normal_nig")
-        grad.segment(n_theta_K+n_theta_mu+n_theta_sigma+n_theta_nu, n_theta_sigma_normal) = grad_theta_sigma_normal(rao_blackwell);
 // std::cout << "grad = " << grad.transpose() << std::endl;
 if (debug) std::cout << "finish latent gradient"<< std::endl;
     return grad;
@@ -436,9 +390,6 @@ void Latent::set_parameter(const VectorXd& theta, bool update_dK) {
     if (!fix_flag[latent_fix_theta_nu])
         theta_nu = theta.segment(n_theta_K+n_theta_mu+n_theta_sigma, n_theta_nu);
     
-    if (noise_type[0] == "normal_nig") {
-        theta_sigma_normal = theta.segment(n_theta_K+n_theta_mu+n_theta_sigma+n_theta_nu, n_theta_sigma_normal);
-    }
 
     update_each_iter(false, update_dK);
 if (debug) std::cout << "Finish latent set parameter"<< std::endl;
@@ -546,9 +497,6 @@ void Latent::update_each_iter(bool initialization, bool update_dK) {
     sigma = (B_sigma * theta_sigma).array().exp();
     nu = (B_nu * theta_nu).array().exp();
     nu = nu.cwiseMax(nu_lower_bound);
-
-    if (noise_type[0] == "normal_nig")
-        sigma_normal = (B_sigma_normal * theta_sigma_normal).array().exp();
 
 if (debug) std::cout << "update_each_iter" << std::endl;
 

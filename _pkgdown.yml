@@ -28,6 +28,8 @@ navbar:
         href: articles/RW-model.html
       - text: SPDE Matern model
         href: articles/SPDE-model.html
+      - text: Models with Combined Gaussian and NIG Noise 
+        href: articles/normal-nig-noise.html
       - text: Ngme replicate feature
         href: articles/replicate.html
       - text: Model estimation and prediction

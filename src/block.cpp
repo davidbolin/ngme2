@@ -257,13 +257,9 @@ if (debug) std::cout << "End Block Constructor" << std::endl;
       // sample_uncond_V();
       // sample_uncond_noise_V();
       for (int i=0; i < iterations; i++) {
-// std::cout << "burn in iteration i= " << i  << std::endl;
           sample_cond_V(true);
-// std::cout << "sample cond V done" << std::endl;
           sampleW_VY(true);
-// std::cout << "sample W done" << std::endl;
           sample_cond_noise_V();
-// std::cout << "sample cond_noise_V done" << std::endl;
       }
 // std::cout << "burn in done "  << std::endl;
   }
@@ -341,7 +337,6 @@ void BlockModel::sampleW_VY(bool burn_in) {
 
   // Sampling method using tricks, purely solve, not matrixL()
   VectorXd W = chol_QQ.rMVN(G, H, M, z1, z2);
-  // std::cout << "W = " << W.transpose() << std::endl;
 
   setW(W);
 

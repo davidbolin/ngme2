@@ -159,7 +159,7 @@ ngme_noise <- function(
       fix_rho         = fix_rho,
       fix_theta_sigma_normal = fix_theta_sigma_normal,
 
-      n_params        = n_theta_mu + n_theta_sigma + n_theta_nu + n_rho + n_theta_sigma_normal,
+      n_params        = n_theta_mu + n_theta_sigma + n_theta_nu + n_rho,
       
       single_V        = single_V,
       share_V         = share_V,
@@ -328,19 +328,29 @@ update_noise <- function(noise, n=NULL, new_noise=NULL) {
 stopifnot("n / nrow(B_mu) not integer" = abs(n/nrow(B_mu) - round(n/nrow(B_mu))) < 1e-4)
     noise$B_mu <- matrix(data = rep(B_mu, n / nrow(B_mu)), nrow = n)
 
-    B_sigma <- noise$B_sigma
-stopifnot("n / nrow(B_sigma) not integer" = abs(n/nrow(B_sigma) - round(n/nrow(B_sigma))) < 1e-4)
-    noise$B_sigma <- matrix(data = rep(B_sigma, n / nrow(B_sigma)), nrow = n)
-
     B_nu <- noise$B_nu
 stopifnot("n / nrow(B_nu) not integer" = abs(n/nrow(B_nu) - round(n/nrow(B_nu))) < 1e-4)
     noise$B_nu <- matrix(data = rep(B_nu, n / nrow(B_nu)), nrow = n)
 
+    # Reshape Basis Matrix for Normal-NIG noise
     if (noise$noise_type == "normal_nig") {
+      # Merge B_sigma_normal and B_sigma_nig
       B_sigma_normal <- noise$B_sigma_normal
       noise$B_sigma_normal <- matrix(data = rep(B_sigma_normal, n / nrow(B_sigma_normal)), nrow = n)
+      B_sigma_nig <- noise$B_sigma_nig
+      noise$B_sigma_nig <- matrix(data = rep(B_sigma_nig, n / nrow(B_sigma_nig)), nrow = n)
+      
+      noise$B_sigma <- as.matrix(Matrix::bdiag(
+        noise$B_sigma_nig, # place holder
+        noise$B_sigma_normal
+      ))
+      noise$B_mu <- rbind(noise$B_mu, matrix(0, nrow(noise$B_mu), ncol(noise$B_sigma_normal)))
+      noise$B_nu <- rbind(noise$B_nu, noise$B_nu)
+    } else {
+      B_sigma <- noise$B_sigma
+stopifnot("n / nrow(B_sigma) not integer" = abs(n/nrow(B_sigma) - round(n/nrow(B_sigma))) < 1e-4)
+      noise$B_sigma <- matrix(data = rep(B_sigma, n / nrow(B_sigma)), nrow = n)
     }
-    # noise <- do.call(ngme_noise, noise)
   } else if (!is.null(new_noise)) {
     # update noise after estimation
     if (all(new_noise$noise_type != "normal")) {
@@ -372,8 +382,13 @@ stopifnot("n / nrow(B_nu) not integer" = abs(n/nrow(B_nu) - round(n/nrow(B_nu)))
         noise$bv_noises[[1]]$theta_nu    <- head(noise$theta_nu, n_theta_nu1)
         noise$bv_noises[[2]]$theta_nu    <- tail(noise$theta_nu, n_theta_nu2)
       }
-    } else if (noise$noise_type == "normal_nig") {
-      noise$theta_sigma_normal <- new_noise$theta_sigma_normal
+    }
+
+    if (noise$noise_type == "normal_nig") {
+      n_theta_sigma_nig <- length(noise$theta_sigma_nig)
+      n_theta_sigma_normal <- length(noise$theta_sigma_normal)
+      noise$theta_sigma_nig <- noise$theta_sigma[1:n_theta_sigma_nig]
+      noise$theta_sigma_normal <- noise$theta_sigma[(n_theta_sigma_nig+1):(n_theta_sigma_nig+n_theta_sigma_normal)]
     }
   }
   noise
@@ -418,14 +433,16 @@ noise_normal_nig <- normal_nig <- function(
   ngme_noise(
     noise_type = "normal_nig",
     theta_mu = theta_mu,
-    theta_sigma = theta_sigma_nig,
+    theta_sigma_nig = theta_sigma_nig,
     theta_sigma_normal = theta_sigma_normal,
+    theta_sigma = c(theta_sigma_nig, theta_sigma_normal),
     theta_nu = theta_nu,
     V = V,
     B_mu = B_mu,
-    B_sigma = B_sigma_nig,
-    B_sigma_normal = B_sigma_normal,
+    B_sigma = cbind(B_sigma_nig, B_sigma_normal),
     B_nu = B_nu,
+    B_sigma_nig = B_sigma_nig,
+    B_sigma_normal = B_sigma_normal,
     corr_measurement = corr_measurement,
     index_corr      = index_corr,
     ...
@@ -488,7 +505,7 @@ print.ngme_noise <- function(x, padding = 0, prefix = "Noise type", suppress_sig
                         "\n", pad_add4_space, ngme_format("sigma", theta_sigma),
                         "\n", pad_add4_space, ngme_format("nu", theta_nu)),
             "normal_nig" = paste0(pad_add4_space, ngme_format("mu", theta_mu),
-                        "\n", pad_add4_space, ngme_format("sigma_nig", theta_sigma),
+                        "\n", pad_add4_space, ngme_format("sigma_nig", theta_sigma_nig),
                         "\n", pad_add4_space, ngme_format("nu", theta_nu),
                         "\n", pad_add4_space, ngme_format("sigma_normal", theta_sigma_normal)),
             NULL

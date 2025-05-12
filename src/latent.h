@@ -70,14 +70,14 @@ protected:
     vector<SparseMatrix<double>> num_dK;
 
     // mu and sigma, and sigma_normal (special case when using nig_normal case)
-    MatrixXd B_mu, B_sigma, B_sigma_normal, B_nu;
-    VectorXd theta_mu, theta_sigma, theta_sigma_normal, theta_nu;
+    MatrixXd B_mu, B_sigma, B_nu;
+    VectorXd theta_mu, theta_sigma, theta_nu;
 
     // mu = Bmu * theta_mu
     // sigma = exp(Bsigma * theta_sigma)
     // nu = exp(Bnu * theta_nu)
-    VectorXd mu, sigma, sigma_normal, nu;
-    int n_theta_mu, n_theta_sigma, n_theta_nu, n_theta_sigma_normal;
+    VectorXd mu, sigma, nu;
+    int n_theta_mu, n_theta_sigma, n_theta_nu;
 
     double nu_lower_bound {1e-3};
 
@@ -100,6 +100,7 @@ protected:
     VectorXd prior_K_param, prior_mu_param, prior_sigma_param, prior_nu_param;
 
     int iter_solver_iter {0};
+
 public:
     Latent(const Rcpp::List&, unsigned long seed);
     ~Latent() {}
@@ -197,8 +198,9 @@ public:
     VectorXd grad_theta_K(bool rao_blackwell=FALSE);
     VectorXd grad_theta_mu(bool rao_blackwell=FALSE);
     VectorXd grad_theta_sigma(bool rao_blackwell=FALSE);
-    VectorXd grad_theta_sigma_normal(bool rao_blackwell=FALSE); // grad of sig. only for normal noise
     VectorXd grad_theta_nu();
+
+    
 
     Rcpp::List output() const;
 };

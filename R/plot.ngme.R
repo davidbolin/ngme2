@@ -12,23 +12,31 @@ get_noise_info <- function(noise) {
     trans_mu <- rep(list(identity), noise$n_theta_mu)
 
     # sigma
-    if (is_stationary(noise$B_sigma)) {
-      name_sigma <- "sigma"
-      trans_sigma <- list(exp)
+    if (noise$noise == "normal_nig") {
+      if (is_stationary(noise$B_sigma_nig)) {
+        name_sigma_nig <- "sigma_nig"
+        trans_sigma_nig <- list(exp)
+      } else {
+        name_sigma_nig <- paste("theta_sigma_nig", seq_len(noise$n_theta_sigma_nig))
+        trans_sigma_nig <- rep(list(identity), noise$n_theta_sigma_nig)
+      }
+      if (is_stationary(noise$B_sigma_normal)) {
+        name_sigma_normal <- "sigma_normal"
+        trans_sigma_normal <- list(exp)
+      } else {
+        name_sigma_normal <- paste("theta_sigma_normal", seq_len(noise$n_theta_sigma_normal))
+        trans_sigma_normal <- rep(list(identity), noise$n_theta_sigma_normal)
+      }
+      name_sigma <- c(name_sigma_nig, name_sigma_normal)
+      trans_sigma <- c(trans_sigma_nig, trans_sigma_normal)
     } else {
-      name_sigma <- paste("theta_sigma", seq_len(noise$n_theta_sigma))
-      trans_sigma <- rep(list(identity), noise$n_theta_sigma)
-    }
-
-    if (length(noise$theta_sigma_normal) == 0) {
-      name_sigma_normal <- NULL
-      trans_sigma_normal <- NULL
-    } else if (length(noise$theta_sigma_normal) == 1 && is_stationary(noise$B_sigma_normal)) {
-      name_sigma_normal <- "sigma_normal"
-      trans_sigma_normal <- list(exp)
-    } else {
-      name_sigma_normal <- paste("theta_sigma_normal", seq_len(noise$n_theta_sigma_normal))
-      trans_sigma_normal <- rep(list(identity), noise$n_theta_sigma_normal)
+      if (is_stationary(noise$B_sigma)) {
+        name_sigma <- "sigma"
+        trans_sigma <- list(exp)
+      } else {
+        name_sigma <- paste("theta_sigma", seq_len(noise$n_theta_sigma))
+        trans_sigma <- rep(list(identity), noise$n_theta_sigma)
+      }
     }
 
     # nu
@@ -45,23 +53,20 @@ get_noise_info <- function(noise) {
 if (noise$fix_theta_mu) name_mu <- trans_mu <- NULL
 if (noise$fix_theta_sigma) name_sigma <- trans_sigma <- NULL
 if (noise$fix_theta_nu) name_nu <- trans_nu <- NULL
-if (noise$fix_theta_sigma_normal) name_sigma_normal <- trans_sigma_normal <- NULL
 
     ts <- list(
       # for bv noise
       all = list(
         name_mu = name_mu,
         name_sigma = name_sigma,
-        name_sigma_normal = name_sigma_normal,
         name_nu = name_nu,
         trans_mu = trans_mu,
         trans_sigma = trans_sigma,
-        trans_sigma_normal = trans_sigma_normal,
         trans_nu = trans_nu
       ),
       # for plot
-      name = c(name_mu, name_sigma, name_sigma_normal, name_nu),
-      trans = c(trans_mu, trans_sigma, trans_sigma_normal, trans_nu)
+      name = c(name_mu, name_sigma, name_nu),
+      trans = c(trans_mu, trans_sigma, trans_nu)
     )
   } else {
     # bivariate noise
@@ -74,11 +79,9 @@ if (noise$fix_theta_sigma_normal) name_sigma_normal <- trans_sigma_normal <- NUL
     ts <- list(
       name = c(n1$name_mu, n2$name_mu,
         n1$name_sigma, n2$name_sigma,
-        n1$name_sigma_normal, n2$name_sigma_normal,
         n1$name_nu, n2$name_nu),
       trans = c(n1$trans_mu, n2$trans_mu,
         n1$trans_sigma, n2$trans_sigma,
-        n1$trans_sigma_normal, n2$trans_sigma_normal,
         n1$trans_nu, n2$trans_nu)
     )
   }

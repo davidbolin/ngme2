@@ -154,6 +154,18 @@ noise_nig(            # non-stationary nig noise
   nu = 1)
 ```
 
+Additionally, `ngme2` provides a special combined noise model that merges both Gaussian and NIG noise components:
+
+```{r noise_normal_nig}
+noise_normal_nig(
+  mu = 2,             # NIG parameter mu
+  sigma_nig = 3,      # NIG noise scale
+  nu = 1,             # NIG shape parameter
+  sigma_normal = 0.8  # Normal noise standard deviation
+)
+```
+
+This combined noise model is particularly useful for complex processes where both normal variations and heavy-tailed events occur. For more details, see the dedicated vignette: `vignette("normal-nig-noise", package = "ngme2")`.
 
 The 3rd example is the non-stationary NIG noise,
 where $\mu = \bf B_{\mu} \bf \theta_{\mu}$, and $\sigma = \exp(\bf B_{\sigma} \bf \theta_{\sigma})$.

@@ -58,6 +58,10 @@ f <- function(
   }
 
   # examine the noise 
+  if (is.list(noise) && !inherits(noise, "ngme_noise")) {
+    noise <- convert_noise_list_to_normal_nig(noise)
+  }
+  
   stopifnot(
     "Please provide noise as ngme_noise object" = 
       model %in% c("bv", "bv_normal", "bv_matern_normal", "bv_matern_nig") ||
@@ -251,6 +255,24 @@ if (noise[[1]]$noise_type != "normal") {
     }
   }
 
+  # Reshape the noise structure for normal_nig
+  if (noise$noise_type %in% c(
+    "normal_nig", "normal_gal", "nig_gal"
+  )) {
+    # update operator matrices M to be diag(M, M)
+    if (operator$generic) {
+      operator$generic_operator$matrices <- lapply(operator$generic_operator$matrices, function(x) {
+        Matrix::bdiag(x, x)
+      })
+      operator$K <- operator$generic_operator$K <- Matrix::bdiag(operator$K, operator$K)
+      operator$h <- operator$generic_operator$h <- c(operator$h, operator$h)
+    }
+    # A <- [A A]
+    A <- cbind(A, A)
+
+    W <- c(W, W)
+  }
+
   ngme_model(
     model     = model,
     operator  = operator,
@@ -298,6 +320,40 @@ build_operator <- function(model_name, args_list) {
       do.call(iid, args_list)
     },
     stop("Unknown models, please check if model name is in ngme_model_types()")
+  )
+}
+
+# Convert a list containing both nig and normal noise to a normal_nig noise object
+convert_noise_list_to_normal_nig <- function(noise_list) {
+  # Check if we have a list with both nig and normal noise types
+  if (!(length(noise_list) == 2 && 
+      ((inherits(noise_list[[1]], "ngme_noise") && noise_list[[1]]$noise_type == "nig" && 
+        inherits(noise_list[[2]], "ngme_noise") && noise_list[[2]]$noise_type == "normal") ||
+       (inherits(noise_list[[1]], "ngme_noise") && noise_list[[1]]$noise_type == "normal" && 
+        inherits(noise_list[[2]], "ngme_noise") && noise_list[[2]]$noise_type == "nig")))) {
+    return(noise_list)
+  }
+  
+  # Extract the nig and normal components
+  nig_noise <- if (noise_list[[1]]$noise_type == "nig") noise_list[[1]] else noise_list[[2]]
+  normal_noise <- if (noise_list[[1]]$noise_type == "normal") noise_list[[1]] else noise_list[[2]]
+  
+  # Create a normal_nig noise object
+  noise_normal_nig(
+    mu = nig_noise$theta_mu,
+    sigma_nig = exp(nig_noise$theta_sigma),
+    sigma_normal = exp(normal_noise$theta_sigma),
+    nu = exp(nig_noise$theta_nu),
+    B_mu = nig_noise$B_mu,
+    B_sigma_nig = nig_noise$B_sigma,
+    B_sigma_normal = normal_noise$B_sigma,
+    B_nu = nig_noise$B_nu,
+    fix_theta_mu = nig_noise$fix_theta_mu,
+    fix_theta_sigma = nig_noise$fix_theta_sigma || normal_noise$fix_theta_sigma,
+    fix_theta_nu = nig_noise$fix_theta_nu,
+    corr_measurement = nig_noise$corr_measurement || normal_noise$corr_measurement,
+    V = nig_noise$V,
+    fix_V = nig_noise$fix_V
   )
 }
 

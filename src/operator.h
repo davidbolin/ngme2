@@ -73,21 +73,6 @@ public:
     virtual void update_dK(const VectorXd&) = 0;
 };
 
-class AR : public Operator {
-private:
-    SparseMatrix<double, 0, int> G, C;
-    Type type;
-    MatrixXd B_K;
-public:
-    AR(const Rcpp::List&);
-
-    void update_K(const VectorXd& alpha);
-    void update_dK(const VectorXd& alpha);
-
-    double th2a(double th) const {return (-1 + 2*exp(th) / (1+exp(th)));}
-    double a2th(double k) const {return (log((-1-k)/(-1+k)));}
-};
-
 class Matern : public Operator {
 private:
     SparseMatrix<double, 0, int> G, C;
@@ -265,17 +250,6 @@ public:
 };
 
 
-// notice dK is of size 0
-class Iid : public Operator {
-public:
-  Iid(const Rcpp::List& operator_list):
-    Operator(operator_list)
-  {}
-
-  void update_K(const VectorXd& alpha) {};
-  void update_dK(const VectorXd& alpha) {};
-};
-
 // ---- Structure for random effects ----
 // U|V ~ N(0, Sigma)
 class Randeff : public Operator{
@@ -306,8 +280,6 @@ public:
       return std::make_shared<Generic>(operator_in["generic_operator"]);
     } else if (model_type == "tp") {
       return std::make_shared<Tensor_prod>(operator_in);
-    } else if (model_type == "ar1") {
-      return std::make_shared<AR>(operator_in);
     } else if (model_type == "spacetime") {
       return std::make_shared<Spacetime>(operator_in);
     } else if (model_type == "ou") {
@@ -316,8 +288,6 @@ public:
       return std::make_shared<Matern_ns>(operator_in, Type::matern_ns);
     } else if (model_type == "matern" && n_theta_K == 1) {
       return std::make_shared<Matern>(operator_in);
-    } else if (model_type == "iid" || model_type == "rw1" || model_type == "rw2") {
-      return std::make_shared<Iid>(operator_in);
     } else if (model_type == "re") {
       return std::make_shared<Randeff>(operator_in);
     } else if (model_type == "bv") {

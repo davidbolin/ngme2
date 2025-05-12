@@ -161,3 +161,55 @@ test_that("generic model == Matern model", {
   exp(est_x_generic[[1]])
   expect_equal(est_x_generic[[1]], est_x_matern[[1]])
 })
+
+
+test_that("generic model == RW1 model", {
+  # Test AR1 representation
+  seed <- 10; n_obs <- 10; Y <- rnorm(n_obs)
+  rw1 <- rw1(1:n_obs)
+
+  generic_rw1 <- generic(
+    matrices = list(rw1$K),
+    h = rw1$h, 
+    mesh = 1:n_obs
+  )
+  generic_rw1$K
+
+  expect_equal(generic_rw1$K, rw1$K)
+  # expect_equal(generic_rw1$matrices, list(rw1$K))
+
+  control <- control_opt(
+    seed = seed,
+    iterations = 100,
+    n_parallel_chain = 4,
+    stop_points = 1
+  )
+
+  fit_rw1 <- ngme(
+    Y ~ 0 + f(
+      1:n_obs,
+      name = "my_rw1",
+      model = "rw1",
+    ),
+    data = data.frame(Y=Y),
+    control_opt = control
+  )
+  fit_rw1
+  est_sigma_rw1 <- ngme_result(fit_rw1, "my_rw1")$noise$theta_sigma
+
+  fit_generic <- ngme(
+    Y ~ 0 + f(
+      1:n_obs,
+      model = "generic",
+      name = "generic",
+      matrices = list(rw1$K),
+      h = rw1$h
+    ),
+    data = data.frame(Y=Y),
+    control_opt = control
+  )
+  fit_generic
+  est_sigma_generic <- ngme_result(fit_generic, "generic")$noise$theta_sigma
+
+  expect_equal(est_sigma_generic[[1]], est_sigma_rw1[[1]])
+})

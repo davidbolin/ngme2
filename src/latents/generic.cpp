@@ -4,11 +4,22 @@ Generic::Generic(const Rcpp::List& operator_list):
     Operator(operator_list),
     matrices(Rcpp::as<std::vector<SparseMatrix<double, 0, int>>>(operator_list["matrices"])),
     idx_mat(Rcpp::as<MatrixXd>(operator_list["idx_mat"])),
-    trans(Rcpp::as<std::vector<std::string>>(operator_list["trans"]))
+    trans(operator_list.containsElementNamed("trans") && !Rf_isNull(operator_list["trans"]) ? 
+          Rcpp::as<std::vector<std::string>>(operator_list["trans"]) : 
+          std::vector<std::string>())
 {}
 
 void Generic::update_K(const VectorXd& theta_K) {
-    VectorXd coef = compute_coef(theta_K, idx_mat, trans);
+    VectorXd coef;
+    if (theta_K.size() > 0) {
+        coef = compute_coef(theta_K, idx_mat, trans);
+    }
+    // If coef size is less than matrices size, pad it with 1s
+    if (coef.size() < matrices.size()) {
+        VectorXd padded_coef = VectorXd::Ones(matrices.size());
+        padded_coef.head(coef.size()) = coef;
+        coef = padded_coef;
+    }
     K.setZero();
     for (int i = 0; i < matrices.size(); i++) {
         K += coef[i] * matrices[i];

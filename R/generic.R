@@ -28,8 +28,8 @@ param_trans_fun <- function(theta_K, name) {
 #' K = sum_i f_i(theta_i) * matrices_i
 #' f_i depends on the parameter transformation type
 #'
-#' @param theta_K the parameter vector (in real scale)
-#' @param trans transformation for each parameter (into original scale)
+#' @param theta_K the parameter vector (in real scale), if missing, will be initialized as double(0)
+#' @param trans transformation for each parameter (into original scale), if missing, will be initialized as NULL
 #' @param matrices the matrices
 #' @param h the h vector
 #' @param interact the interaction type, "multiply" or "kronecker"
@@ -56,17 +56,36 @@ generic <- function(
 ) {
   if (!is.null(mesh)) mesh <- ngme_build_mesh(mesh)
 
+  # If theta_K is not provided, initialize it as double(0)
+  if (missing(theta_K)) {
+    theta_K <- double(0)
+    if (missing(trans)) {
+      trans <- NULL
+    }
+  }
+
   stopifnot(
     "length of theta_K and trans should be the same" = length(theta_K) == length(trans),
-    "theta_K and trans should be named" = !is.null(names(theta_K)) && !is.null(names(trans)),
+    "theta_K and trans should be named" = !is.null(theta_K) || !is.null(names(theta_K)) || !is.null(trans) || !is.null(names(trans)),
     "theta_K and trans should have same names" = all(names(theta_K) == names(trans)),
     "h should be of the same dimension as the matrices" = length(h) == nrow(matrices[[1]])
+  ,
+  "matrices should not be NULL" = !is.null(matrices),
+  "matrices should be a list" = is.list(matrices),
+  "matrices should not be a list of NULL" = all(!sapply(matrices, is.null)),
+  "all matrices should have the same dimensions" = all(sapply(matrices, function(m) nrow(m) == nrow(matrices[[1]])) & 
+                                                      sapply(matrices, function(m) ncol(m) == ncol(matrices[[1]])))
   )
+
   # Helper function to compute the coefficient of each matrix
   update_K <- function(theta_K) {
     coef <- compute_coef(theta_K, idx, trans)
+    # If length of coefficients is less than number of matrices, pad with 1s
+    if (length(coef) < length(matrices)) {
+      coef <- c(coef, rep(1, length(matrices) - length(coef)))
+    }
     K <- 0
-    for (i in 1:length(coef)) {
+    for (i in seq_along(matrices)) {
       K <- K + coef[i] * matrices[[i]]
     }
     return(K)

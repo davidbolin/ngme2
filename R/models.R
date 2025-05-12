@@ -13,6 +13,12 @@ iid <- function(
 ) {
   K <- ngme_as_sparse(Matrix::Diagonal(n))
 
+  generic_operator <- generic(
+    matrices = list(K),
+    h = rep(1, n),
+    mesh = fmesher::fm_mesh_1d(loc = 1:n)
+  )
+
   ngme_operator(
     mesh = fmesher::fm_mesh_1d(loc = 1:n),
     model = "iid",
@@ -23,7 +29,10 @@ iid <- function(
     A = K,
     symmetric = TRUE,
     zero_trace = FALSE,
-    param_name = character(0)
+    param_name = character(0),
+    # using the generic structure to build the operator
+    generic = TRUE,
+    generic_operator = generic_operator
   )
 }
 
@@ -57,7 +66,7 @@ ar1 <- function(
 
   # Create a generic model internally
   g <- name2fun("tanh", inv=TRUE)
-  generic <- generic(
+  generic_operator <- generic(
     theta_K = c(rho=g(rho)),
     trans = c(rho="tanh"),
     matrices = list(C, G),
@@ -80,7 +89,7 @@ ar1 <- function(
     param_trans = list(ar1_th2a),
     # using the generic structure to build the operator
     generic = TRUE,
-    generic_operator = generic
+    generic_operator = generic_operator
   )
 }
 
@@ -116,17 +125,27 @@ rw1 <- function(
     G <- Matrix::sparseMatrix(i = 1:n, j=c(2:n, 1), x=-1, dims=c(n,n))
     h <- c(h, mean(h))
   }
+  K = ngme_as_sparse(C + G)
+
+  generic_operator <- generic(
+    matrices = list(K),
+    h = h,
+    mesh = mesh
+  )
 
   ngme_operator(
     mesh = mesh,
     model = "rw1",
     theta_K = double(0),
-    update_K = function(theta_K) {C + G},
-    K = ngme_as_sparse(C + G),
+    update_K = function(theta_K) {K},
+    K = K,
     h = h,
     symmetric = FALSE,
     zero_trace = FALSE,
-    param_name = character(0)
+    param_name = character(0),
+    # using the generic structure to build the operator
+    generic = TRUE,
+    generic_operator = generic_operator
   )
 }
 
@@ -167,16 +186,27 @@ rw2 <- function(
     h <- c(h, mean(h))
   }
 
+  K <- ngme_as_sparse(C + G)
+
+  generic_operator <- generic(
+    matrices = list(K),
+    h = h,
+    mesh = mesh
+  )
+
   ngme_operator(
     mesh = mesh,
     model = "rw2",
     theta_K = double(0),
-    update_K = function(theta_K) {C + G},
-    K = ngme_as_sparse(C + G),
+    update_K = function(theta_K) {K},
+    K = K,
     h = h,
     symmetric = FALSE,
     zero_trace = FALSE,
-    param_name = character(0)
+    param_name = character(0),
+    # using the generic structure to build the operator
+    generic = TRUE,
+    generic_operator = generic_operator
   )
 }
 

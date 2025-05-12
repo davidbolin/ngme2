@@ -96,7 +96,7 @@ PKG_LIBS += $(SHLIB_OPENMP_CXXFLAGS)
 UTILS = util/num_diff.o util/GIG.o util/rgig.o util/MatrixAlgebra.o util/solver.o
 # $(wildcard util/*.o)
 
-LATENTS = latents/ar1.o latents/matern.o latents/tensorprod.o latents/randeff.o latents/bivar.o latents/generic.o
+LATENTS = latents/matern.o latents/tensorprod.o latents/randeff.o latents/bivar.o latents/generic.o
 # $(wildcard latents/*.o)
 
 OBJECTS = $(sslib) RcppExports.o prior.o noise.o sample_rGIG.o estimate.o optimizer.o block.o latent.o ngme.o \

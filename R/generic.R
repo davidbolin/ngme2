@@ -164,6 +164,10 @@ compute_coef_new <- function(theta_K, trans, n_matrices) {
 #'   \item \code{tanh}: Hyperbolic tangent transformation used for AR1 parameter, uses ar1_th2a and ar1_a2th
 #'   \item \code{identity}: Identity function, no transformation
 #'   \item \code{exp}: $\exp(x)$, inverse is $\log(x)$
+#'   \item \code{sqrt}: $\sqrt(x)$, inverse is $x^2$
+#'   \item \code{square}: $x^2$, inverse is $\sqrt(x)$
+#'   \item \code{log}: $\log(x)$, inverse is $\exp(x)$
+#' }
 #'
 #' @param trans Character string specifying the transformation type from original scale to real scale
 #' @param inv Logical, if TRUE returns the transformation function from real scale to original scale

@@ -6,41 +6,32 @@
 \usage{
 generic(
   theta_K,
-  trans,
   matrices,
   h,
-  interact = NULL,
-  theta_K2 = NULL,
-  trans2 = NULL,
-  matrices2 = NULL,
-  h2 = NULL,
-  zero_trace = FALSE,
+  basis_theta_K = NULL,
+  trans = NULL,
   mesh = NULL,
+  zero_trace = FALSE,
   ...
 )
 }
 \arguments{
-\item{theta_K}{the parameter vector (in real scale)}
-
-\item{trans}{transformation for each parameter (into original scale)}
+\item{theta_K}{the parameter vector (in real scale), if missing, will be initialized as double(0)}
 
 \item{matrices}{the matrices}
 
 \item{h}{the h vector}
 
-\item{interact}{the interaction type, "multiply" or "kronecker"}
+\item{basis_theta_K}{the basis of theta_K, if applied, will use the non-stationary model}
 
-\item{theta_K2}{the second parameter vector}
-
-\item{trans2}{the second parameter transformation type}
-
-\item{matrices2}{the second matrices}
-
-\item{h2}{the second h vector}
-
-\item{zero_trace}{whether the trace of K is zero}
+\item{trans}{transformation for each parameter (from real scale to original scale), must be a list where each element
+is a character vector defining transformations for each matrix
+(e.g., trans=list(a=c("identity","exp","null","null")) means parameter 'a' affects
+matrix 1 with identity transformation and matrix 2 with exp transformation)}
 
 \item{mesh}{the mesh}
+
+\item{zero_trace}{whether the trace of K is zero}
 
 \item{...}{ignore}
 }

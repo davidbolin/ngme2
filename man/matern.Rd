@@ -4,14 +4,16 @@
 \alias{matern}
 \title{ngme Matern SPDE model specification}
 \usage{
-matern(mesh, alpha = 2, theta_K = NULL, B_K = NULL, ...)
+matern(mesh, alpha = 2, kappa = NULL, theta_K = NULL, B_K = NULL, ...)
 }
 \arguments{
 \item{mesh}{an fmesher::fm_mesh_2d object, mesh for build the SPDE model}
 
 \item{alpha}{2 or 4, SPDE smoothness parameter}
 
-\item{theta_K}{initial value for theta_K, kappa = exp(B_K * theta_K)}
+\item{kappa}{the range parameter, for the stationary model, it is the range parameter}
+
+\item{theta_K}{kappa = exp(B_K * theta_K), for the non-stationary model, it is the range parameter}
 
 \item{B_K}{bases for theta_K, ignore if use the stationary model}
 

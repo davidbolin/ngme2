@@ -268,7 +268,8 @@ ou <- function(
 #'
 #' @param mesh an fmesher::fm_mesh_2d object, mesh for build the SPDE model
 #' @param alpha 2 or 4, SPDE smoothness parameter
-#' @param theta_K initial value for theta_K, kappa = exp(B_K * theta_K)
+#' @param kappa the range parameter, for the stationary model, it is the range parameter
+#' @param theta_K kappa = exp(B_K * theta_K), for the non-stationary model, it is the range parameter
 #' @param B_K bases for theta_K, ignore if use the stationary model
 #' @param ... ignore
 #'
@@ -277,12 +278,22 @@ ou <- function(
 matern <- function(
   mesh,
   alpha = 2,
+  kappa = NULL,
   theta_K = NULL,
   B_K = NULL,
   ...
 ) {
   mesh <- ngme_build_mesh(mesh)
   stopifnot("alpha should be 2 or 4" = alpha == 2 || alpha == 4)
+
+  if (is.null(kappa)) {
+    if (is.null(theta_K)) {
+      theta_K <- 0
+    }
+  } else {
+    stopifnot("kappa should be a single value" = length(kappa) == 1)
+    theta_K <- log(kappa)
+  }
 
   if (inherits(mesh, "metric_graph")) {
     if (is.null(mesh$mesh$C)) {
@@ -335,8 +346,9 @@ matern <- function(
         kappas[1]^2 * C + G
       } else {
         Cinv <- C;
-        diag(Cinv) <- 1 / diag(C)
+        diag(Cinv) <- 1 / Matrix::diag(C)
         (G + kappas[1]^2 * C) %*% Cinv %*% (G + kappas[1]^2 * C)
+        # same as kappa^4 C + 2 kappa^2 G + G Cinv G
       }
     } else {
       GpKCK <- diag(kappas) %*% C %*% diag(kappas) + G
@@ -344,12 +356,36 @@ matern <- function(
         GpKCK
       else {
         Cinv <- C;
-        diag(Cinv) <- 1 / diag(C)
+        diag(Cinv) <- 1 / Matrix::diag(C)
         (GpKCK) %*% Cinv %*% GpKCK
       }
     }
   }
   K <- update_K(theta_K)
+
+  # if (stationary) {
+  #   if (alpha == 2) {
+  #     generic_operator <- generic(
+  #       matrices = list(C, G),
+  #       theta_K = kappa,
+  #       # trans = c(theta_K = "exp"),
+  #       h = h,
+  #       mesh = mesh
+  #     )
+  #   } else {  # alpha == 4
+  #     generic_operator <- generic(
+  #       matrices = list(K),
+  #       h = h,
+  #       mesh = mesh
+  #     )
+  #   }
+  # } else {
+  #   generic_operator <- generic(
+  #     matrices = list(K),
+  #     h = h,
+  #     mesh = mesh
+  #   )
+  # }
 
   ngme_operator(
     mesh = mesh,

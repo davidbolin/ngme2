@@ -39,19 +39,19 @@ void Matern::update_K(const VectorXd& theta_K) {
 }
 
 void Matern::update_dK(const VectorXd& theta_K) {
-    assert(theta_K.size()==1);
-    double kappa = exp(theta_K(0));
-    int W_size = G.rows();
+    // assert(theta_K.size()==1);
+    // double kappa = exp(theta_K(0));
+    // int W_size = G.rows();
 
-    if (alpha==2)
-        dK[0] = 2.0*kappa*C;
-    else if (alpha==4)
-        dK[0] = 4.0*kappa*C * G + 4.0* pow(kappa, 3) * C;
-    else
-        throw("alpha != 2 or 4");
+    // if (alpha==2)
+    //     dK[0] = 2.0*kappa*C;
+    // else if (alpha==4)
+    //     dK[0] = 4.0*kappa*C * G + 4.0* pow(kappa, 3) * C;
+    // else
+    //     throw("alpha != 2 or 4");
 
-    // dkappa / dtheta = kappa
-    dK[0] = kappa * dK[0];
+    // // dkappa / dtheta = kappa
+    // dK[0] = kappa * dK[0];
 }
 
 // ---------------------------- Matern_ns ----------------------------

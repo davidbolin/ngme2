@@ -109,7 +109,6 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
 
     int solver_type = Rcpp::as<int> (model_list["solver_type"]);
 
-// if (debug) std::cout << "update K" << std::endl;
     if (V_size == W_size) {
         if (!symmetricK) {
             // lu_solver_K.set_N(n_trace_iter);

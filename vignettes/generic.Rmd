@@ -1,0 +1,283 @@
+---
+title: "Using the Generic Model in ngme2"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Using the Generic Model}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5
+)
+```
+
+```{r setup, message=FALSE}
+library(ngme2)
+library(Matrix)
+```
+
+## Introduction
+
+The generic model in ngme2 provides a flexible framework for creating custom spatial or temporal models by specifying arbitrary linear combinations of matrices. This flexibility allows you to:
+
+1. Implement existing models (AR1, Matérn, RW1, etc.) in a consistent framework
+2. Combine different models or extend them with new components
+3. Develop entirely new models tailored to your specific needs
+
+At its core, the generic model builds a precision matrix K as a weighted sum of matrices:
+
+$$K = \sum_{i=1}^m f_i(\theta) \cdot M_i$$
+
+where $M_i$ are arbitrary matrices, $\theta$ are parameters, and $f_i$ are transformation functions for those parameters.
+
+## Basic Usage
+
+### Model Structure
+
+The generic model is specified with the following key arguments:
+
+- `matrices`: A list of matrices to be combined
+- `theta_K`: Named parameter vector in real scale
+- `trans`: Transformation specifications for parameters
+- `h`: Integration weights
+
+Let's start with a simple example:
+
+```{r}
+# Create simple matrices for demonstration
+A <- matrix(1, 3, 3)
+B <- matrix(2, 3, 3)
+C <- matrix(3, 3, 3)
+D <- matrix(4, 3, 3)
+
+# Create a generic model with fixed parameters
+model <- generic(
+  theta_K = c(a=1, b=2, c=3),
+  trans = list(
+    a = c("identity", "null", "null", "null"),
+    b = c("null", "exp", "null", "null"),
+    c = c("null", "null", "identity", "null")
+  ),
+  matrices = list(A, B, C, D),
+  h = c(1, 1, 1)
+)
+```
+
+In this example:
+- Parameter `a` affects matrix A with identity transformation
+- Parameter `b` affects matrix B with exponential transformation
+- Parameter `c` affects matrix C with identity transformation
+- Matrix D has a fixed coefficient of 1
+
+The resulting precision matrix is:
+
+$$K = a \cdot A + e^b \cdot B + c \cdot C + D$$
+
+```{r}
+# View the resulting K matrix
+model$K
+```
+
+## Parameter Transformations
+
+The generic model supports various transformation functions that can be applied to parameters:
+
+```{r, echo=FALSE}
+transformations <- data.frame(
+  Name = c("identity", "exp", "exp2", "exp4", "tanh"),
+  Forward = c("f(x) = x", "f(x) = exp(x)", "f(x) = exp(2x)", "f(x) = exp(4x)", "AR1 transform"),
+  Inverse = c("f^-1(x) = x", "f^-1(x) = log(x)", "f^-1(x) = log(x)/2", "f^-1(x) = log(x)/4", "AR1 inverse transform"),
+  Usage = c("Linear effects", "Variance parameters", "Squared parameters", "Fourth power parameters", "AR1 correlation parameter")
+)
+knitr::kable(transformations)
+```
+
+### Flexible Parameter Structure
+
+The power of the generic model comes from its flexible parameter structure. You can:
+
+1. Have one parameter affect multiple matrices with different transformations
+2. Have multiple parameters affect the same matrix
+3. Use "null" to indicate no effect on a matrix
+
+For example:
+
+```{r}
+# More complex parameter structure
+complex_model <- generic(
+  theta_K = c(a=1, b=2),
+  trans = list(
+    a = c("identity", "exp", "null", "null"),
+    b = c("null", "identity", "exp2", "null")
+  ),
+  matrices = list(A, B, C, D),
+  h = c(1, 1, 1)
+)
+```
+
+This model creates:
+
+$$K = a \cdot A + (e^a + b) \cdot B + e^{2b} \cdot C + D$$
+
+## Recreating Standard Models
+
+The generic model can recreate standard models within ngme2. This is useful for understanding how these models work internally or for extending them.
+
+### AR1 Model
+
+```{r}
+# Create an AR1 model with rho=0.5
+x <- 1:10
+ar1_model <- ar1(x, rho=0.5)
+
+# Get the inverse transformation of 0.5 for AR1
+g <- name2fun("tanh", inv=TRUE)
+
+# Recreate the AR1 model using generic
+generic_ar1 <- generic(
+  theta_K = c(rho=g(0.5)),
+  trans = list(rho=c("tanh", "null")),
+  matrices = list(ar1_model$C, ar1_model$G),
+  h = ar1_model$h,
+  mesh = x
+)
+
+# Verify they are equivalent
+all.equal(ar1_model$K, generic_ar1$K)
+```
+
+### Matérn Model
+
+```{r}
+# Create a mesh for the Matérn model
+mesh <- fmesher::fm_mesh_1d(seq(0, 1, length.out=10))
+
+# Create a Matérn model with kappa = exp(0.7)
+matern_model <- matern(mesh, theta_K=0.7)
+
+# Recreate the Matérn model using generic
+generic_matern <- generic(
+  theta_K = c(kappa=0.7),
+  trans = list(kappa=c("exp2", "null")),
+  matrices = list(matern_model$C, matern_model$G),
+  h = matern_model$h,
+  mesh = mesh
+)
+
+# Verify they are equivalent
+all.equal(matern_model$K, generic_matern$K)
+```
+
+## Creating Advanced Custom Models
+
+You can create advanced custom models by deriving new matrices based on your application requirements.
+
+### Example: Combining AR1 and Matérn
+
+Let's create a model that combines AR1 temporal dependence with Matérn spatial dependence:
+
+```{r, eval=FALSE}
+# Generate spatial mesh and temporal points
+spatial_mesh <- fmesher::fm_mesh_1d(seq(0, 1, length.out=10))
+temporal_points <- 1:5
+
+# Create base models
+matern_base <- matern(spatial_mesh, theta_K=0.5)
+ar1_base <- ar1(temporal_points, rho=0.7)
+
+# Extract matrices
+C_space <- matern_base$C
+G_space <- matern_base$G
+C_time <- ar1_base$C
+G_time <- ar1_base$G
+
+# Create combined matrices for a separable space-time model
+# Using Kronecker products for separable structure
+M1 <- kronecker(C_space, C_time)  # Space C × Time C
+M2 <- kronecker(C_space, G_time)  # Space C × Time G
+M3 <- kronecker(G_space, C_time)  # Space G × Time C
+M4 <- kronecker(G_space, G_time)  # Space G × Time G
+
+# Create the combined model
+spacetime_model <- generic(
+  theta_K = c(kappa=0.5, rho=name2fun("tanh", inv=TRUE)(0.7)),
+  trans = list(
+    kappa = c("exp2", "exp2", "null", "null"),
+    rho = c("null", "tanh", "tanh", "null")
+  ),
+  matrices = list(M1, M2, M3, M4),
+  h = kronecker(matern_base$h, ar1_base$h)
+)
+```
+
+## Advanced Features and Best Practices
+
+### Multiple Parameters Affecting the Same Matrix
+
+You can have multiple parameters affect the same matrix:
+
+```{r}
+model_multi_param <- generic(
+  theta_K = c(a=1, b=2),
+  trans = list(
+    a = c("identity", "identity", "null"),
+    b = c("exp", "null", "identity")
+  ),
+  matrices = list(A, B, C),
+  h = c(1, 1, 1)
+)
+```
+
+This creates:
+$$K = (a + e^b) \cdot A + a \cdot B + b \cdot C$$
+
+### Avoiding Common Pitfalls
+
+1. **Match matrix dimensions**: All matrices must have the same dimensions
+
+2. **Match transformation vector lengths**: For each parameter, the length of the transformation vector must match the number of matrices
+
+3. **Use named parameters**: Always provide names for theta_K parameters
+
+4. **Ensure positive definiteness**: For valid precision matrices, make sure the resulting K is positive definite
+
+### Custom Transformations
+
+If the provided transformations are not sufficient, you can add more to the `name2fun` function:
+
+```{r, eval=FALSE}
+# Example: Add a square root transformation
+# (This would need to be added to the name2fun function in the package source)
+sqrt_trans <- list(
+  forward = function(x) sqrt(x),
+  inverse = function(x) x^2
+)
+
+# Then you could use it in your models
+model_sqrt <- generic(
+  theta_K = c(a=4),
+  trans = list(a = c("sqrt", "null")),
+  matrices = list(A, B),
+  h = c(1, 1, 1)
+)
+```
+
+## Conclusion
+
+The generic model in ngme2 offers a powerful framework for customizing spatial, temporal, or spatio-temporal models. By understanding how to combine and transform matrices, you can:
+
+1. Implement existing models in a consistent way
+2. Develop hybrid models that combine features of different approaches
+3. Create entirely novel models tailored to your specific application
+
+This flexibility makes the generic model a valuable tool for researchers and practitioners working with complex spatial or temporal data.
+
+## References
+
+- Lindgren, F., & Rue, H. (2015). Bayesian spatial modelling with R-INLA. Journal of Statistical Software, 63(19), 1-25.
+- Rue, H., Martino, S., & Chopin, N. (2009). Approximate Bayesian inference for latent Gaussian models by using integrated nested Laplace approximations. Journal of the Royal Statistical Society: Series B, 71(2), 319-392. 

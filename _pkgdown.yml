@@ -46,6 +46,8 @@ navbar:
         href: articles/matern-on-graph.html
       - text: Cross-validation for the ngme2 models
         href: articles/cross-validation.html
+      - text: Using the Generic Model in ngme2
+        href: articles/generic.html
     github:
       icon: fa-github
       href: https://github.com/davidbolin/ngme2

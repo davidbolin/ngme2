@@ -6,6 +6,7 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
+#include <map>
 
 #define COMPLEX R_COMPLEX
 #include <Rcpp.h>
@@ -155,16 +156,15 @@ public:
 class Generic : public Operator {
 private:
     vector<SparseMatrix<double, 0, int>> matrices;
-    MatrixXd idx_mat;
-    vector<string> trans;
+    vector<string> param_names;
+    std::map<string, vector<string>> trans_map;
 public:
     Generic(const Rcpp::List&);
 
     void update_K(const VectorXd& theta_K);
     void update_dK(const VectorXd& theta_K);
 
-    // VectorXd param_trans_fun(const VectorXd& theta_K, const string& trans_type) const;
-    VectorXd compute_coef(const VectorXd& theta_K, const MatrixXd& idx_mat, const vector<string>& trans) const;
+    double apply_transform(double value, const string& trans_type) const;
 };
 
 // Bivar_normal

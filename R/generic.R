@@ -1,89 +1,82 @@
-# pre-defined parameter transformation functions
-param_trans_fun <- function(theta_K, name) {
-  th2a <- ar1_th2a
-
-  if (name == "matern") {
-    stopifnot(length(theta_K) == 1)
-    return(c(exp(2*theta_K), 1))
-  } else if (name == "ar1 x matern") {
-    stopifnot(length(theta_K) == 2)
-    # (aC1 + G1) x (kappa^2 C2 + G2)
-    # matrices = (C1C2, C1G2, G1C2, G1G2)
-    # theta = (a kappa^2, a, kappa^2, 1)
-    # theta = (th2a(theta1) * exp(2theta2), th2a(theta1), exp(2theta2), 1)
-    return(c(
-      th2a(theta_K[1]) * exp(2*theta_K[2]),
-      th2a(theta_K[1]),
-      exp(2*theta_K[2]),
-      1
-    ))
-  } else {
-    stop("Unknown parameter transformation name")
-  }
-}
-
-
 #' ngme generic K operator
 #'
 #' K = sum_i f_i(theta_i) * matrices_i
 #' f_i depends on the parameter transformation type
 #'
 #' @param theta_K the parameter vector (in real scale), if missing, will be initialized as double(0)
-#' @param trans transformation for each parameter (into original scale), if missing, will be initialized as NULL
+#' @param trans transformation for each parameter (from real scale to original scale), must be a list where each element
+#'   is a character vector defining transformations for each matrix
+#'   (e.g., trans=list(a=c("identity","exp","null","null")) means parameter 'a' affects
+#'   matrix 1 with identity transformation and matrix 2 with exp transformation)
+#' @param basis_theta_K the basis of theta_K, if applied, will use the non-stationary model
 #' @param matrices the matrices
 #' @param h the h vector
-#' @param interact the interaction type, "multiply" or "kronecker"
-#' @param theta_K2 the second parameter vector
-#' @param trans2 the second parameter transformation type
-#' @param matrices2 the second matrices
-#' @param h2 the second h vector
 #' @param zero_trace whether the trace of K is zero
 #' @param mesh the mesh
 #' @param ... ignore
 generic <- function(
-  theta_K,
-  trans,
-  matrices,
-  h,
-  mesh = NULL,
-  zero_trace = FALSE,
-  interact = NULL,
-  theta_K2 = NULL,
-  trans2 = NULL,
-  matrices2 = NULL,
-  h2 = NULL,
-  ...
-) {
+    theta_K,
+    matrices,
+    h,
+    basis_theta_K = NULL,
+    trans = NULL,
+    mesh = NULL,
+    zero_trace = FALSE,
+    ...) {
   if (!is.null(mesh)) mesh <- ngme_build_mesh(mesh)
 
   # If theta_K is not provided, initialize it as double(0)
   if (missing(theta_K)) {
     theta_K <- double(0)
-    if (missing(trans)) {
-      trans <- NULL
+  }
+
+  # Validate matrices
+  stopifnot(
+    "matrices should not be NULL" = !is.null(matrices),
+    "matrices should be a list" = is.list(matrices),
+    "matrices should not be a list of NULL" = all(!sapply(matrices, is.null)),
+    "all matrices should have the same dimensions" = all(sapply(matrices, function(m) nrow(m) == nrow(matrices[[1]])) &
+      sapply(matrices, function(m) ncol(m) == ncol(matrices[[1]]))),
+    "h should be of the same dimension as the matrices" = length(h) == nrow(matrices[[1]])
+  )
+
+  # Convert old format to new format if needed
+  if (is.null(trans) && length(theta_K) > 0) {
+    # If trans is NULL, create default trans with only 1s for the identity matrices
+    trans <- list()
+    for (i in seq_along(theta_K)) {
+      trans[[i]] <- rep("null", length(matrices))
+      trans[[i]][i] <- "identity"
+    }
+    # If no parameters provided, just use default behavior (all matrices with coefficient 1)
+  } else if (is.character(trans)) {
+    # Convert old format to new format
+    old_trans <- trans
+    trans <- list()
+    for (i in seq_along(theta_K)) {
+      param_name <- names(theta_K)[i]
+      trans[[param_name]] <- rep("null", length(matrices))
+      trans[[param_name]][i] <- old_trans[i]
     }
   }
 
-  stopifnot(
-    "length of theta_K and trans should be the same" = length(theta_K) == length(trans),
-    "theta_K and trans should be named" = !is.null(theta_K) || !is.null(names(theta_K)) || !is.null(trans) || !is.null(names(trans)),
-    "theta_K and trans should have same names" = all(names(theta_K) == names(trans)),
-    "h should be of the same dimension as the matrices" = length(h) == nrow(matrices[[1]])
-  ,
-  "matrices should not be NULL" = !is.null(matrices),
-  "matrices should be a list" = is.list(matrices),
-  "matrices should not be a list of NULL" = all(!sapply(matrices, is.null)),
-  "all matrices should have the same dimensions" = all(sapply(matrices, function(m) nrow(m) == nrow(matrices[[1]])) & 
-                                                      sapply(matrices, function(m) ncol(m) == ncol(matrices[[1]])))
-  )
+  # Validate the structure of trans
+  if (length(theta_K) > 0) {
+    # Only validate trans if we have parameters
+    for (param_name in names(trans)) {
+      if (length(trans[[param_name]]) != length(matrices)) {
+        stop(sprintf(
+          "For parameter '%s', the transformation vector length (%d) must match the number of matrices (%d)",
+          param_name, length(trans[[param_name]]), length(matrices)
+        ))
+      }
+    }
+  }
 
   # Helper function to compute the coefficient of each matrix
   update_K <- function(theta_K) {
-    coef <- compute_coef(theta_K, idx, trans)
-    # If length of coefficients is less than number of matrices, pad with 1s
-    if (length(coef) < length(matrices)) {
-      coef <- c(coef, rep(1, length(matrices) - length(coef)))
-    }
+    coef <- compute_coef_new(theta_K, trans, length(matrices))
+
     K <- 0
     for (i in seq_along(matrices)) {
       K <- K + coef[i] * matrices[[i]]
@@ -91,52 +84,12 @@ generic <- function(
     return(K)
   }
 
-  if (is.null(interact)) {
-    idx <- list()
-    for (i in seq_len(length(theta_K))) {
-      name <- names(theta_K)[i]
-      idx[[name]] <- rep(FALSE, length(matrices))
-      idx[[name]][[i]] <- TRUE
-    }
-  } else {
-    param <- names(theta_K); param2 <- names(theta_K2)
-    trans <- c(trans, trans2)
-    
-    if (length(param) < length(matrices)) {
-      param <- c(param, rep(1, length(matrices) - length(param)))
-    }
-    if (length(param2) < length(matrices2)) {
-      param2 <- c(param2, rep(1, length(matrices2) - length(param2)))
-    }
-    
-    expanded_param <- expand.grid(param, param2)
-    idx <- list()
-    for (p in c(param, param2)) {
-      # which rows contains p
-      idx[[p]] <- apply(expanded_param, 1, function(x) any(x == p))
-    }
-    # expand matrices and combine with interaction
-    matrices <- expand_matrices(matrices, matrices2, interact)
-
-    theta_K <- c(theta_K, theta_K2); trans <- c(trans, trans2)
-    for (name in names(theta_K)) {
-      theta_K[name] <- name2fun(trans[[name]], inv=FALSE)(theta_K[name])
-    }
-
-    if (interact == "kronecker") h <- h %x% h2 else h <- h * h2
-  }
-
-  # remove `1` from idx
-  idx[["1"]] <- NULL
-  idx_mat <- as.matrix(as.data.frame(idx))
-  
   ngme_operator(
     model = "generic",
     mesh = mesh,
-    K = update_K(theta_K),
+    K = ngme_as_sparse(update_K(theta_K)),
     generic = TRUE,
     h = h,
-    idx_mat = idx_mat,
     theta_K = theta_K,
     trans = trans,
     update_K = update_K,
@@ -144,25 +97,61 @@ generic <- function(
     symmetric = all(sapply(matrices, Matrix::isSymmetric)),
     zero_trace = zero_trace,
     param_name = names(theta_K),
-    param_trans = lapply(trans, name2fun)
+    param_trans = get_param_trans(trans)
   )
 }
 
-compute_coef <- function(theta_K, idx, trans) {
-  idx <- as.data.frame(idx)
-  nrow <- nrow(idx)
-  coef <- rep(1, nrow)
-  for (i in 1:nrow) {
-    p <- apply(idx, 2, function(x) x[i])
-    for (name in names(theta_K)) {
-      if (p[name]) {
-        coef[i] <- coef[i] * name2fun(trans[[name]])(theta_K[name])
+# Helper function to get param_trans from trans list
+# For each parameter, if only one transformation type is used (excluding null),
+# use that transformation function, otherwise use identity
+get_param_trans <- function(trans) {
+  if (is.null(trans) || length(trans) == 0) {
+    return(NULL)
+  }
+  
+  result <- list()
+  
+  for (param_name in names(trans)) {
+    # Get all transformations for this parameter (excluding "null")
+    trans_types <- unique(trans[[param_name]][trans[[param_name]] != "null"])
+    
+    if (length(trans_types) == 1) {
+      # If only one transformation type is used, use that
+      result[[param_name]] <- name2fun(trans_types)
+    } else {
+      # If multiple or no transformation types are used, use identity
+      result[[param_name]] <- name2fun("identity")
+    }
+  }
+  
+  return(result)
+}
+
+# Calculate coefficients for each matrix based on parameters and transformations
+compute_coef_new <- function(theta_K, trans, n_matrices) {
+  coef <- rep(1, n_matrices)
+
+  # If no parameters, return all ones (default behavior)
+  if (length(theta_K) == 0) {
+    return(coef)
+  }
+
+  for (param_name in names(theta_K)) {
+    if (param_name %in% names(trans)) {
+      for (i in seq_along(trans[[param_name]])) {
+        trans_type <- trans[[param_name]][i]
+        if (trans_type != "null") {
+          # Apply the transformation function to the parameter value
+          transformed_value <- name2fun(trans_type)(theta_K[param_name])
+          # Multiply the coefficient by the transformed parameter value
+          coef[i] <- coef[i] * transformed_value
+        }
       }
     }
   }
+
   return(coef)
 }
-
 
 #' Convert transformation name to function
 #'
@@ -170,63 +159,63 @@ compute_coef <- function(theta_K, idx, trans) {
 #' Convertion is from original scale to real scale by default.
 #' Available transformations:
 #' \itemize{
+#'   \item \code{exp4}: $\exp(4x)$, inverse is $\log(x)/4$
 #'   \item \code{exp2}: $\exp(2x)$, inverse is $\log(x)/2$
 #'   \item \code{tanh}: Hyperbolic tangent transformation used for AR1 parameter, uses ar1_th2a and ar1_a2th
 #'   \item \code{identity}: Identity function, no transformation
 #'   \item \code{exp}: $\exp(x)$, inverse is $\log(x)$
-#' }
 #'
 #' @param trans Character string specifying the transformation type from original scale to real scale
 #' @param inv Logical, if TRUE returns the transformation function from real scale to original scale
 #'
 #' @return A function that applies the specified transformation
 #' @export
-name2fun <- function(trans, inv=FALSE) {
-  if (!inv) {
-    if (trans == "exp2") {
-      return(function(x) exp(2*x))
-    } else if (trans == "tanh") {
-      return(ar1_th2a)
-    } else if (trans == "identity") {
-      return(function(x) x)
-    } else if (trans == "exp") {
-      return(function(x) exp(x))
-    } else {
-      stop("Unknown transformation")
-    }
-  } else {
-    if (trans == "exp2") {
-      return(function(x) log(x) / 2)
-    } else if (trans == "tanh") {
-      return(ar1_a2th)
-    } else if (trans == "identity") {
-      return(function(x) x)
-    } else if (trans == "exp") {
-      return(function(x) log(x))
-    } else {
-      stop("Unknown transformation")
-    }
-  }
-}
-
-expand_matrices <- function(matrices, matrices2, interact) {
-  result <- list()
-  idx <- 1
+name2fun <- function(trans, inv = FALSE) {
+  # Define transformation functions in a list
+  transformations <- list(
+    exp4 = list(
+      forward = function(x) exp(4 * x),
+      inverse = function(x) log(x) / 4
+    ),
+    exp2 = list(
+      forward = function(x) exp(2 * x),
+      inverse = function(x) log(x) / 2
+    ),
+    tanh = list(
+      forward = ar1_th2a,  # restrict the range of rho to (-1, 1)
+      inverse = ar1_a2th
+    ),
+    identity = list(
+      forward = function(x) x,
+      inverse = function(x) x
+    ),
+    exp = list(
+      forward = function(x) exp(x),
+      inverse = function(x) log(x)
+    ),
+    sqrt = list(
+      forward = function(x) sqrt(x),
+      inverse = function(x) x^2
+    ),
+    square = list(
+      forward = function(x) x^2,
+      inverse = function(x) sqrt(x)
+    ),
+    log = list(
+      forward = function(x) log(x),
+      inverse = function(x) exp(x)
+    )
+  )
   
-  for (j in seq_along(matrices2)) {
-    for (i in seq_along(matrices)) {
-      # Multiply the matrices and store the result
-      if (interact == "multiply") {
-        result[[idx]] <- matrices[[i]] %*% matrices2[[j]]
-      } else if (interact == "kronecker") {
-        result[[idx]] <- kronecker(matrices[[i]], matrices2[[j]])
-      }
-
-      # Optionally, name the result for clarity
-      names(result)[idx] <- paste0("m1_", i, "_m2_", j)
-      # Increment the index counter
-      idx <- idx + 1
-    }
+  # Check if transformation exists
+  if (!trans %in% names(transformations)) {
+    stop("Unknown transformation: ", trans)
   }
-  return(result)
+  
+  # Return the appropriate function
+  if (!inv) {
+    return(transformations[[trans]]$forward)
+  } else {
+    return(transformations[[trans]]$inverse)
+  }
 }

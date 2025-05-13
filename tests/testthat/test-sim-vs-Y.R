@@ -15,7 +15,6 @@ test_that("test cor model single replicate", {
   index_corr = rep(1:n, 2)
   index_corr
 
-  load_all()
   # fit cor model
   mod = ngme(
     Y ~ f(c(1:(2*n)), model="ar1", noise=noise_nig()),

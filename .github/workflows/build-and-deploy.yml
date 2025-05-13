@@ -41,7 +41,7 @@ jobs:
 
       - name: Use stable INLA repo
         run: |
-          echo 'inla.setOption(inla.call = "remote")' >> ~/.Rprofile
+          echo 'library(INLA); inla.setOption(inla.call = "remote")' >> ~/.Rprofile
 
       # ───── install own package and deploy site ─────
       - name: Install package

@@ -333,7 +333,7 @@ stopifnot("n / nrow(B_nu) not integer" = abs(n/nrow(B_nu) - round(n/nrow(B_nu)))
     noise$B_nu <- matrix(data = rep(B_nu, n / nrow(B_nu)), nrow = n)
 
     # Reshape Basis Matrix for Normal-NIG noise
-    if (noise$noise_type == "normal_nig") {
+    if (all(noise$noise_type == "normal_nig")) {
       # Merge B_sigma_normal and B_sigma_nig
       B_sigma_normal <- noise$B_sigma_normal
       noise$B_sigma_normal <- matrix(data = rep(B_sigma_normal, n / nrow(B_sigma_normal)), nrow = n)
@@ -384,7 +384,7 @@ stopifnot("n / nrow(B_sigma) not integer" = abs(n/nrow(B_sigma) - round(n/nrow(B
       }
     }
 
-    if (noise$noise_type == "normal_nig") {
+    if (all(noise$noise_type == "normal_nig")) {
       n_theta_sigma_nig <- length(noise$theta_sigma_nig)
       n_theta_sigma_normal <- length(noise$theta_sigma_normal)
       noise$theta_sigma_nig <- noise$theta_sigma[1:n_theta_sigma_nig]

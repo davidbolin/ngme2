@@ -256,9 +256,9 @@ if (noise[[1]]$noise_type != "normal") {
   }
 
   # Reshape the noise structure for normal_nig
-  if (noise$noise_type %in% c(
+  if (all(noise$noise_type %in% c(
     "normal_nig", "normal_gal", "nig_gal"
-  )) {
+  ))) {
     # update operator matrices M to be diag(M, M)
     if (operator$generic) {
       operator$generic_operator$matrices <- lapply(operator$generic_operator$matrices, function(x) {

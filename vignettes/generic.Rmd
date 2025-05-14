@@ -90,8 +90,8 @@ The generic model supports various transformation functions that can be applied 
 ```{r, echo=FALSE}
 transformations <- data.frame(
   Name = c("identity", "exp", "exp2", "exp4", "tanh"),
-  Forward = c("f(x) = x", "f(x) = exp(x)", "f(x) = exp(2x)", "f(x) = exp(4x)", "AR1 transform"),
-  Inverse = c("f^-1(x) = x", "f^-1(x) = log(x)", "f^-1(x) = log(x)/2", "f^-1(x) = log(x)/4", "AR1 inverse transform"),
+  Forward = c("f(x) = x", "f(x) = exp(x)", "f(x) = exp(2x)", "f(x) = exp(4x)", "f(x) = -1 + (2 * exp(x)) / (1 + exp(x))"),
+  Inverse = c("f^-1(x) = x", "f^-1(x) = log(x)", "f^-1(x) = log(x)/2", "f^-1(x) = log(x)/4", "f^-1(x) = log((-1 - x) / (-1 + x))"),
   Usage = c("Linear effects", "Variance parameters", "Squared parameters", "Fourth power parameters", "AR1 correlation parameter")
 )
 knitr::kable(transformations)

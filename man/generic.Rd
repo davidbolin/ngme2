@@ -8,7 +8,7 @@ generic(
   theta_K,
   matrices,
   h,
-  basis_theta_K = NULL,
+  B_theta_K = NULL,
   trans = NULL,
   mesh = NULL,
   zero_trace = FALSE,
@@ -22,7 +22,7 @@ generic(
 
 \item{h}{the h vector}
 
-\item{basis_theta_K}{the basis of theta_K, if applied, will use the non-stationary model}
+\item{B_theta_K}{the basis of theta_K, if applied, will use the non-stationary model}
 
 \item{trans}{transformation for each parameter (from real scale to original scale), must be a list where each element
 is a character vector defining transformations for each matrix

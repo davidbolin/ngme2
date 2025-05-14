@@ -69,7 +69,7 @@ mu <- 2           # NIG parameter mu
 delta <- -mu      # NIG parameter delta (typically set to -mu)
 sigma_nig <- 3    # NIG noise scale
 nu <- 1           # NIG shape parameter
-sigma_normal <- 0.8  # Normal noise standard deviation
+sigma_normal <- 2  # Normal noise standard deviation
 
 # First we generate V. V_i follows inverse Gaussian distribution
 trueV <- ngme2::rig(n_obs, nu, nu, seed = 10)
@@ -105,7 +105,7 @@ plot(mixed_noise, type="l", main="Underlying Normal-NIG noise",
 
 The `ngme2` package provides the `noise_normal_nig()` function to specify a combined Normal-NIG noise model. Let's fit our simulated data:
 
-```{r fit_model, eval=FALSE}
+```{r fit_model, eval=TRUE, cache=TRUE}
 # Fit model with Normal-NIG noise
 ngme_out <- ngme(
   Y ~ x1 + x2 + f(
@@ -113,7 +113,7 @@ ngme_out <- ngme(
     name = "my_ar",
     model = "ar1",
     # noise = noise_normal_nig()  # This specifies the combined noise model
-    noise = list(noise_nig(mu=2, sigma_nig=3, nu=1), noise_normal(sigma_normal=0.8))
+    noise = list(noise_nig(mu=2, sigma_nig=3, nu=1), noise_normal(sigma_normal=1))
   ),
   data = data.frame(x1=x1, x2=x2, Y=Y),
   control_opt = control_opt(
@@ -127,6 +127,11 @@ ngme_out <- ngme(
 
 # Show model summary
 summary(ngme_out)
+```
+
+```{r}
+traceplot(ngme_out, hline = c(sigma_eps, beta))
+traceplot(ngme_out, "my_ar", hline=c(alpha, mu, sigma_nig, sigma_normal, nu))
 ```
 
 ## Visualizing the Results

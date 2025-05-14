@@ -8,17 +8,18 @@
 #'   is a character vector defining transformations for each matrix
 #'   (e.g., trans=list(a=c("identity","exp","null","null")) means parameter 'a' affects
 #'   matrix 1 with identity transformation and matrix 2 with exp transformation)
-#' @param basis_theta_K the basis of theta_K, if applied, will use the non-stationary model
+#' @param B_theta_K the basis of theta_K, if applied, will use the non-stationary model
 #' @param matrices the matrices
 #' @param h the h vector
 #' @param zero_trace whether the trace of K is zero
 #' @param mesh the mesh
 #' @param ... ignore
+#' @export
 generic <- function(
     theta_K,
     matrices,
     h,
-    basis_theta_K = NULL,
+    B_theta_K = NULL,
     trans = NULL,
     mesh = NULL,
     zero_trace = FALSE,

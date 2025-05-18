@@ -277,6 +277,106 @@ The generic model in ngme2 offers a powerful framework for customizing spatial, 
 
 This flexibility makes the generic model a valuable tool for researchers and practitioners working with complex spatial or temporal data.
 
+## Non-Stationary Extension with generic_ns
+
+The `generic_ns` model extends the `generic` model by allowing for non-stationary, spatially-varying parameters. While the standard `generic` model creates a precision matrix as a weighted sum of matrices, `generic_ns` enables parameter values to vary across space or time.
+
+### Key Features
+
+The non-stationary model differs from the standard generic model in several important ways:
+
+1. **Spatially-varying parameters**: Parameters can vary across the domain using basis expansions
+2. **Matrix multiplications**: Uses parameter-dependent diagonal matrices multiplied with fixed matrices
+3. **Explicit position specification**: Requires explicit instructions on how matrices are combined
+
+### Basic Usage
+
+A simple example of the non-stationary model:
+
+```{r, eval=FALSE}
+# Create a simple 1D mesh
+mesh <- fmesher::fm_mesh_1d(seq(0, 1, length.out=10))
+n <- 10
+
+# Create two simple matrices
+A <- matrix(1, n, n)
+B <- matrix(2, n, n)
+
+# Create a basis for a spatially-varying parameter
+B_alpha <- matrix(0, n, 2)
+B_alpha[1:(n/2), 1] <- 1      # First half of the domain
+B_alpha[(n/2+1):n, 2] <- 1    # Second half of the domain
+
+# Create a non-stationary model with space-varying alpha
+ns_model <- generic_ns(
+  theta_K = list(alpha = c(0.5, 2)),  # Different values for each region
+  matrices = list(A, B),
+  B_theta_K = list(alpha = B_alpha),  # Basis expansion for alpha
+  trans = list(alpha = "exp"),        # Exponential transformation
+  position = list(c(1, 2), c(3)),     # D_alpha * A + B
+  h = rep(1, n),
+  mesh = mesh
+)
+```
+
+In this example:
+- `alpha` varies between two regions (value 0.5 in the first half, 2 in the second half)
+- The precision matrix is constructed as D_alpha * A + B, where D_alpha is a diagonal matrix
+
+### Non-Stationary Matérn Example
+
+A more practical example is creating a Matérn model with spatially-varying kappa:
+
+```{r, eval=FALSE}
+# Create a 1D mesh
+mesh <- fmesher::fm_mesh_1d(seq(0, 1, length.out=10))
+n <- 10
+
+# Create standard Matérn components
+matern_model <- matern(mesh)
+
+# Create basis for spatially-varying kappa
+B_kappa <- matrix(0, n, 2)
+B_kappa[1:(n/2), 1] <- 1      # First half of the domain
+B_kappa[(n/2+1):n, 2] <- 1    # Second half of the domain
+
+# Create model with space-varying kappa
+ns_matern <- generic_ns(
+  theta_K = list(kappa = c(log(1), log(2))),  # Different kappa values
+  matrices = list(matern_model$C, matern_model$G),
+  B_theta_K = list(kappa = B_kappa),
+  trans = list(kappa = "exp2"),  # kappa^2 transformation
+  position = list(c(1, 2), c(3)),  # D_kappa^2 * C + G
+  h = matern_model$h,
+  mesh = mesh
+)
+```
+
+This creates a Matérn model where the range parameter varies across space.
+
+### Matrix Positions Explained
+
+The `position` parameter in `generic_ns` controls how matrices are combined:
+
+- Each element in the list represents a term in the sum
+- Each vector contains indices specifying which matrices to multiply together
+- Parameter matrices (diagonal matrices) are listed first, followed by fixed matrices
+
+For example, with `position = list(c(1, 2), c(3))`:
+- The first term multiplies parameter matrix 1 with fixed matrix 1 (indices 1 and 2)
+- The second term is just fixed matrix 2 (index 3)
+
+### Best Practices
+
+When working with the non-stationary model:
+
+1. **Design basis functions carefully**: The basis functions in `B_theta_K` determine how parameters vary across space
+2. **Keep track of matrix indices**: The position specification requires careful tracking of matrix indices
+3. **Start simple**: Begin with simple non-stationary models before building complexity
+4. **Validate results**: Compare with simpler models to ensure the non-stationary behavior is as expected
+
+`generic_ns` offers powerful extensions for modeling spatial heterogeneity while maintaining the flexibility of the `generic` framework.
+
 ## References
 
 - Lindgren, F., & Rue, H. (2015). Bayesian spatial modelling with R-INLA. Journal of Statistical Software, 63(19), 1-25.

@@ -96,6 +96,7 @@ reference:
     - re
     - spacetime
     - generic
+    - generic_ns
   - title: ngme2 noises
     contents:
     - ngme_noise

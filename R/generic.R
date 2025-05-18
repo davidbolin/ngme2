@@ -1,25 +1,81 @@
-#' ngme generic K operator
+#' Generic precision matrix operator
 #'
-#' K = sum_i f_i(theta_i) * matrices_i
-#' f_i depends on the parameter transformation type
+#' Creates a flexible precision matrix K by allowing linear combinations of base matrices
+#' with parameter-dependent coefficients. The model follows the form:
+#' K = sum_i f_i(theta) * matrices_i, where f_i depends on the parameter transformation.
 #'
-#' @param theta_K the parameter vector (in real scale), if missing, will be initialized as double(0)
-#' @param trans transformation for each parameter (from real scale to original scale), must be a list where each element
-#'   is a character vector defining transformations for each matrix
-#'   (e.g., trans=list(a=c("identity","exp","null","null")) means parameter 'a' affects
-#'   matrix 1 with identity transformation and matrix 2 with exp transformation)
-#' @param B_theta_K the basis of theta_K, if applied, will use the non-stationary model
-#' @param matrices the matrices
-#' @param h the h vector
-#' @param zero_trace whether the trace of K is zero
-#' @param mesh the mesh
-#' @param ... ignore
+#' This function can be used to represent various models like AR1, Matern, and RW1 in a unified framework.
+#'
+#' @param theta_K The parameter vector (in real scale). If missing, initialized as double(0)
+#' @param matrices A list of matrices to be combined with parameter-dependent coefficients
+#' @param h The integration weights vector
+#' @param trans Transformation for each parameter. Must be a list where each element
+#'   is a character vector defining transformations for each matrix.
+#'   For example, `trans=list(kappa=c("exp2", "identity", "null"))` means parameter 'kappa'
+#'   affects matrix 1 with exp2 transformation, matrix 2 with identity, and doesn't affect matrix 3.
+#'   Available transformations: "identity", "exp", "exp2", "exp4", "sqrt", "square", "log", "tanh"
+#' @param mesh The mesh object
+#' @param zero_trace Whether the trace of K should be zero
+#' @param ... Additional arguments (ignored)
+#' 
+#' @details 
+#' The `generic` function provides a flexible way to construct precision matrices by combining 
+#' existing matrices with transformed parameters. Here's how it works:
+#' 
+#' 1. Each parameter in `theta_K` can affect one or more matrices in the `matrices` list
+#' 2. The `trans` list defines how each parameter transforms before multiplying each matrix
+#' 3. For each matrix, the coefficients from all parameters are multiplied together
+#' 4. The final K is the sum of all transformed matrices
+#' 
+#' Common use cases:
+#' 
+#' - **AR1 model**: K = rho * C + G (where rho is between -1 and 1)
+#' - **Matern (alpha=2)**: K = kappa^2 * C + G (where kappa > 0)
+#' - **Matern (alpha=4)**: K = kappa^4 * C + 2*kappa^2 * G + G * Cinv * G
+#' 
+#' @examples
+#' \dontrun{
+#' # AR1 model with rho = 0.5
+#' ar1_obj <- ar1(1:10, rho = 0.5)
+#' g <- name2fun("tanh", inv = TRUE)
+#' generic_ar1 <- generic(
+#'   theta_K = c(rho = g(0.5)),  # Transform from real scale
+#'   trans = list(rho = c("tanh", "null")),  # Apply tanh to first matrix
+#'   matrices = list(ar1_obj$C, ar1_obj$G),
+#'   h = ar1_obj$h
+#' )
+#' 
+#' # Matern model with kappa = 2
+#' mesh <- fmesher::fm_mesh_1d(seq(0, 1, length.out = 10))
+#' matern_obj <- matern(mesh)
+#' log_kappa <- log(2)
+#' generic_matern <- generic(
+#'   theta_K = c(kappa = log_kappa),
+#'   trans = list(kappa = c("exp2", "null")),  # exp(2*kappa) for C, nothing for G
+#'   matrices = list(matern_obj$C, matern_obj$G),
+#'   h = matern_obj$h
+#' )
+#' 
+#' # Matern model with alpha = 4 and kappa = 2
+#' mesh <- fmesher::fm_mesh_2d(cbind(x = runif(20), y = runif(20)))
+#' matern_obj <- matern(mesh, alpha = 4)
+#' C <- matern_obj$C
+#' G <- matern_obj$G
+#' Cinv <- C; diag(Cinv) <- 1 / Matrix::diag(C)
+#' 
+#' generic_matern4 <- generic(
+#'   theta_K = c(kappa = log(2)),
+#'   trans = list(kappa = c("exp4", "exp2", "null")),
+#'   matrices = list(C, 2*G, G %*% Cinv %*% G),
+#'   h = matern_obj$h
+#' )
+#' }
+#'
 #' @export
 generic <- function(
     theta_K,
     matrices,
     h,
-    B_theta_K = NULL,
     trans = NULL,
     mesh = NULL,
     zero_trace = FALSE,

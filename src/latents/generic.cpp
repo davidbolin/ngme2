@@ -1,4 +1,5 @@
 #include "../operator.h"
+#include "../include/transform_utils.h"
 
 Generic::Generic(const Rcpp::List& operator_list):
     Operator(operator_list),
@@ -55,7 +56,7 @@ void Generic::update_K(const VectorXd& theta_K) {
             for (size_t i = 0; i < param_trans.size() && i < matrices.size(); i++) {
                 const std::string& trans_type = param_trans[i];
                 if (trans_type != "null") {
-                    double transformed_value = apply_transform(param_value, trans_type);
+                    double transformed_value = ngme::transforms::apply_transform(param_value, trans_type);
                     coef[i] *= transformed_value;
                 }
             }
@@ -74,26 +75,5 @@ void Generic::update_dK(const VectorXd& theta_K) {
 }
 
 double Generic::apply_transform(double value, const std::string& trans_type) const {
-    if (trans_type == "exp4") {
-        return exp(4 * value);
-    } else if (trans_type == "exp2") {
-        return exp(2 * value);
-    } else if (trans_type == "tanh") {
-        return (-1 + (2 * exp(value)) / (1 + exp(value)));
-    } else if (trans_type == "identity") {
-        return value;
-    } else if (trans_type == "exp") {
-        return exp(value);
-    } else if (trans_type == "sqrt") {
-        return sqrt(value);
-    } else if (trans_type == "square") {
-        return value * value;
-    } else if (trans_type == "log") {
-        return log(value);
-    } else if (trans_type == "null") {
-        return 1;
-    } else {
-        // Default to identity for unknown transformations
-        return value;
-    }
+    return ngme::transforms::apply_transform(value, trans_type);
 }

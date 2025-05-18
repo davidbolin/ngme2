@@ -68,7 +68,7 @@ Matern_ns::Matern_ns(const Rcpp::List& operator_list, Type type):
     type        (type),
     G           (Rcpp::as< SparseMatrix<double,0,int> > (operator_list["G"])),
     C           (Rcpp::as< SparseMatrix<double,0,int> > (operator_list["C"])),
-    alpha       (2),
+    alpha       (Rcpp::as<int> (operator_list["alpha"])),
     Bkappa      (Rcpp::as<MatrixXd> (operator_list["B_K"])),
     Cdiag       (C.diagonal())
 {
@@ -104,35 +104,35 @@ void Matern_ns::update_K(const VectorXd& theta_kappa) {
 // dK wrt. theta_K[index]
 void Matern_ns::update_dK(const VectorXd& theta_K) {
 // std::cout << "update_dK matern" << std::endl;
-    VectorXd kappas = (Bkappa * theta_K).array().exp();
-    int n_dim = G.rows();
+    // VectorXd kappas = (Bkappa * theta_K).array().exp();
+    // int n_dim = G.rows();
 
-    for (int index = 0; index < n_theta_K; index++) {
-        if (type == Type::matern_ns) {
-            // dKCK
-            SparseMatrix<double> CK(n_dim, n_dim);
-            // CK = kappas.cwiseProduct(Cdiag).asDiagonal();
+    // for (int index = 0; index < n_theta_K; index++) {
+    //     if (type == Type::matern_ns) {
+    //         // dKCK
+    //         SparseMatrix<double> CK(n_dim, n_dim);
+    //         // CK = kappas.cwiseProduct(Cdiag).asDiagonal();
 
-            SparseMatrix<double> dKCK(n_dim, n_dim);
-            //  dKCK = 2*kappas.cwiseProduct(Bkappa.col(index)).asDiagonal() * CK;
-            // kappas * (Bkappa * CK + CK * Bkappa).sparseView();
-                VectorXd kappas2 = kappas.cwiseProduct(kappas);
-                dKCK = 2*kappas2.cwiseProduct(Cdiag).cwiseProduct(Bkappa.col(index)).asDiagonal();
-            if (alpha == 2) {
-                dK[index] = dKCK;
-            }
-            else if (alpha == 4) {
-                SparseMatrix<double> KCK(n_dim, n_dim);
-                KCK = kappas.cwiseProduct(kappas).cwiseProduct(Cdiag).asDiagonal();
-                SparseMatrix<double> tmp = Cdiag.cwiseInverse().asDiagonal() * (G + KCK);
-                dK[index] = dKCK * tmp + tmp * dKCK;
-            }
-            else {
-                throw("alpha not equal to 2 or 4 is not implemented");
-            }
-        } else {
-            // check
-            dK[index] = kappas.cwiseProduct(Bkappa.col(index)).asDiagonal() * C;
-        }
-    }
+    //         SparseMatrix<double> dKCK(n_dim, n_dim);
+    //         //  dKCK = 2*kappas.cwiseProduct(Bkappa.col(index)).asDiagonal() * CK;
+    //         // kappas * (Bkappa * CK + CK * Bkappa).sparseView();
+    //             VectorXd kappas2 = kappas.cwiseProduct(kappas);
+    //             dKCK = 2*kappas2.cwiseProduct(Cdiag).cwiseProduct(Bkappa.col(index)).asDiagonal();
+    //         if (alpha == 2) {
+    //             dK[index] = dKCK;
+    //         }
+    //         else if (alpha == 4) {
+    //             SparseMatrix<double> KCK(n_dim, n_dim);
+    //             KCK = kappas.cwiseProduct(kappas).cwiseProduct(Cdiag).asDiagonal();
+    //             SparseMatrix<double> tmp = Cdiag.cwiseInverse().asDiagonal() * (G + KCK);
+    //             dK[index] = dKCK * tmp + tmp * dKCK;
+    //         }
+    //         else {
+    //             throw("alpha not equal to 2 or 4 is not implemented");
+    //         }
+    //     } else {
+    //         // check
+    //         dK[index] = kappas.cwiseProduct(Bkappa.col(index)).asDiagonal() * C;
+    //     }
+    // }
 }

@@ -167,6 +167,32 @@ public:
     double apply_transform(double value, const string& trans_type) const;
 };
 
+class generic_ns : public Operator {
+private:
+    // Matrices for the model
+    vector<SparseMatrix<double, 0, int>> matrices;
+    
+    // Position combinations for matrix operations
+    vector<vector<int>> position;
+    
+    // Parameter mappings
+    std::map<string, vector<int>> param_map;
+    
+    // Parameter transformations
+    std::map<string, string> trans_map;
+    
+    // Basis matrices for spatial varying parameters
+    std::map<string, MatrixXd> B_theta_K;
+    
+public:
+    generic_ns(const Rcpp::List&);
+    
+    void update_K(const VectorXd& theta_K);
+    void update_dK(const VectorXd& theta_K);
+    
+    double apply_transform(double value, const string& trans_type) const;
+};
+
 // Bivar_normal
 // class Bivar_normal : public Operator {
 // private:
@@ -275,11 +301,20 @@ public:
 
     if (model_type == "generic") {
       return std::make_shared<Generic>(operator_in);
+    } else if (model_type == "generic_ns") {
+      return std::make_shared<generic_ns>(operator_in);
     } else if (generic) {
-      // using the generic structure to build the operator
-      return std::make_shared<Generic>(operator_in["generic_operator"]);
-    } else if (model_type == "tp") {
-      return std::make_shared<Tensor_prod>(operator_in);
+      Rcpp::List generic_operator = Rcpp::as<Rcpp::List> (operator_in["generic_operator"]);
+      string generic_type = Rcpp::as<string> (generic_operator["model"]);
+      if (generic_type == "generic") {
+        // stationary generic model
+        return std::make_shared<Generic>(generic_operator);
+      } else if (generic_type == "generic_ns") {
+        // non-stationary generic model
+        return std::make_shared<generic_ns>(generic_operator);
+      } else {
+        throw std::runtime_error("Unknown model.");
+      }
     } else if (model_type == "spacetime") {
       return std::make_shared<Spacetime>(operator_in);
     } else if (model_type == "ou") {

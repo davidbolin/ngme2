@@ -121,6 +121,10 @@ f <- function(
     mesh <- ngme_build_mesh(sub_map(map, subset), model)
   }
 
+  if (!inherits(mesh, "fm_mesh_1d") && !inherits(mesh, "fm_mesh_2d")) {
+    stop("Please provide mesh as fm_mesh_1d or fm_mesh_2d")
+  }
+
   # remove NULL in arguments
   f_args <- Filter(Negate(is.null),  as.list(environment()))
   # add arguments in ...
@@ -314,6 +318,7 @@ build_operator <- function(model_name, args_list) {
     re  = do.call(re, args_list),
     spacetime = do.call(spacetime, args_list),
     generic = do.call(generic, args_list),
+    generic_ns = do.call(generic_ns, args_list),
     iid = {
       if (is.null(args_list$n))
         args_list$n <- length_map(args_list$map)

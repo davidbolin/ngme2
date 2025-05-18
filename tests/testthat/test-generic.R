@@ -79,6 +79,7 @@ test_that("generic model == AR1 model", {
 })
 
 test_that("generic model == Matern model (alpha == 2)", {
+  n_obs <- 10
   mesh = fmesher::fm_mesh_1d(seq(0, 1, length.out = 10))
 
   matern <- matern(mesh, theta_K = 0.7)
@@ -141,6 +142,7 @@ test_that("generic model == Matern model (alpha == 2)", {
 })
 
 test_that("generic model == Matern model (alpha == 4)", {
+  n_obs <- 10
   x <- seq(0, 1, length.out = 10); y <- seq(0, 1, length.out = 10)
   mesh = fmesher::fm_mesh_2d(cbind(x, y))
 

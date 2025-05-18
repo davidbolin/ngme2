@@ -247,6 +247,20 @@ ou <- function(
     kappas <- exp(as.numeric(B_K %*% theta_K))
     Matrix::Diagonal(x=kappas) %*% C + G
   }
+
+  generic_operator <- generic_ns(
+    matrices = list(C, G),
+    theta_K = list(theta_K = theta_K),
+    trans = list(theta_K = "exp"),
+    B_theta_K = list(theta_K = B_K),
+    position = list(
+      c(1, 2),
+      c(3)
+    ),
+    h = h,
+    mesh = mesh
+  )
+
   ngme_operator(
     mesh        = mesh,
     model       = "ou",
@@ -260,7 +274,10 @@ ou <- function(
     symmetric   = FALSE,
     zero_trace  = TRUE,
     param_name  = paste("theta_K", seq_len(length(theta_K)), sep = ""),
-    param_trans = rep(list(identity), length(theta_K))
+    param_trans = rep(list(identity), length(theta_K)),
+    # using the generic structure to build the operator
+    generic = TRUE,
+    generic_operator = generic_operator
   )
 }
 
@@ -318,6 +335,8 @@ matern <- function(
       h <- Matrix::diag(fem$c0)
     }
   }
+  Cinv <- C;
+  diag(Cinv) <- 1 / Matrix::diag(C)
 
   if (is.null(theta_K)) {
     if (inherits(mesh, "metric_graph"))
@@ -341,7 +360,7 @@ matern <- function(
   stationary <- is_stationary(B_K)
   update_K <- function(theta_K) {
     kappas <- as.numeric(exp(B_K %*% theta_K))
-    if (length(theta_K) == 1) {
+    if (stationary) {
       if (alpha == 2) {
         kappas[1]^2 * C + G
       } else {
@@ -363,29 +382,51 @@ matern <- function(
   }
   K <- update_K(theta_K)
 
-  # if (stationary) {
-  #   if (alpha == 2) {
-  #     generic_operator <- generic(
-  #       matrices = list(C, G),
-  #       theta_K = kappa,
-  #       # trans = c(theta_K = "exp"),
-  #       h = h,
-  #       mesh = mesh
-  #     )
-  #   } else {  # alpha == 4
-  #     generic_operator <- generic(
-  #       matrices = list(K),
-  #       h = h,
-  #       mesh = mesh
-  #     )
-  #   }
-  # } else {
-  #   generic_operator <- generic(
-  #     matrices = list(K),
-  #     h = h,
-  #     mesh = mesh
-  #   )
-  # }
+  if (stationary && alpha == 2) {
+    generic_operator <- generic(
+      matrices = list(C, G),
+      theta_K = c(theta_K = theta_K),
+      trans = c(theta_K = "exp"),
+      h = h,
+      mesh = mesh
+      )
+  } else if (stationary && alpha == 4) {
+    generic_operator <- generic(
+      theta_K = c(theta_K=theta_K),
+      trans = list(theta_K=c("exp4", "exp2", "null")),
+      matrices = list(C, 2*G, G %*% Cinv %*% G),
+      h = h,
+      mesh = mesh
+    )
+  } else if (alpha == 2) {
+    generic_operator <- generic_ns(
+      theta_K = list(theta=theta_K),
+      trans = list(theta=c("exp")),
+      B_theta_K = list(theta = B_K),
+      matrices = list(C, G, Cinv),
+      position = list(
+        c(1, 2, 1), 
+        c(3) 
+      ),
+      h = h,
+      mesh = mesh
+    )
+  } else if (alpha == 4) {
+    generic_operator <- generic_ns(
+      theta_K = list(theta_K=theta_K),
+      trans = list(theta_K=c("exp")),
+      B_theta_K = list(theta_K = B_K),
+      matrices = list(C, G, Cinv),
+      position = list(
+        c(1, 2, 1, 4, 1, 2, 1), 
+        c(1, 2, 1, 4, 3), 
+        c(3, 4, 1, 2, 1), 
+        c(3, 4, 3)
+      ),
+      h = h,
+      mesh = mesh
+    )
+  }
 
   ngme_operator(
     mesh = mesh,
@@ -406,7 +447,10 @@ matern <- function(
       else paste("theta_K", seq_len(length(theta_K)), sep = " "),
     param_trans =
       if (stationary) exp
-      else rep(list(identity), length(theta_K))
+      else rep(list(identity), length(theta_K)),
+    # using the generic structure to build the operator
+    generic = TRUE,
+    generic_operator = generic_operator
   )
 }
 

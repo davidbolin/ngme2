@@ -386,7 +386,7 @@ matern <- function(
     generic_operator <- generic(
       matrices = list(C, G),
       theta_K = c(theta_K = theta_K),
-      trans = c(theta_K = "exp"),
+      trans = c(theta_K = "exp2"),
       h = h,
       mesh = mesh
       )

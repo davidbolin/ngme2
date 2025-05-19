@@ -457,9 +457,8 @@ test_that("generic_ns model == ou model", {
 })
 
 
-# Retire bv_matern_nig
+# bv_matern_nig
 test_that("generic_ns model == bv_matern_nig model", {
-  load_all()
   pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
   mesh <- fmesher::fm_mesh_2d(
     loc.domain = pl01,
@@ -512,5 +511,5 @@ test_that("generic_ns model == bv_matern_nig model", {
     ),
     debug = FALSE
   )
-
+  out_cor
 })

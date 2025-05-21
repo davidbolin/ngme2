@@ -13,13 +13,8 @@ iid <- function(
 ) {
   K <- ngme_as_sparse(Matrix::Diagonal(n))
 
-  generic_operator <- generic(
-    matrices = list(K),
-    h = rep(1, n),
-    mesh = fmesher::fm_mesh_1d(loc = 1:n)
-  )
-
   ngme_operator(
+    matrices = list(K),
     mesh = fmesher::fm_mesh_1d(loc = 1:n),
     model = "iid",
     theta_K = double(0),
@@ -30,9 +25,7 @@ iid <- function(
     symmetric = TRUE,
     zero_trace = FALSE,
     param_name = character(0),
-    # using the generic structure to build the operator
-    generic = TRUE,
-    generic_operator = generic_operator
+    generic_type = "generic"
   )
 }
 
@@ -57,6 +50,8 @@ ar1 <- function(
   h <- c(diff(mesh$loc), 1)
   G <- Matrix::Diagonal(n); G[1, 1] = sqrt(1-rho**2)
   C <- Matrix::sparseMatrix(j=1:(n-1), i=2:n, x=-1, dims=c(n,n))
+  G <- ngme_as_sparse(G)
+  C <- ngme_as_sparse(C)
   stopifnot("The mesh should be 1d and has gap 1." = all(h == 1))
 
   theta_K <- ar1_a2th(rho)
@@ -66,30 +61,24 @@ ar1 <- function(
 
   # Create a generic model internally
   g <- name2fun("tanh", inv=TRUE)
-  generic_operator <- generic(
-    theta_K = c(rho=g(rho)),
-    trans = c(rho="tanh"),
-    matrices = list(C, G),
-    h = h,
-    mesh = mesh
-  )
 
   ngme_operator(
     mesh = mesh,
     model = "ar1",
-    theta_K = theta_K,
-    C = ngme_as_sparse(C),
-    G = ngme_as_sparse(G),
-    update_K = update_K,
-    K = update_K(theta_K),
+    theta_K = c(rho=g(rho)),
+    trans = c(rho="tanh"),
+    matrices = list(C, G),
     h = h,
+    C = C,
+    G = G,
+    update_K = update_K,
+    K = ngme_as_sparse(update_K(theta_K)),
     symmetric = FALSE,
     zero_trace = FALSE,
     param_name = "rho",
     param_trans = list(ar1_th2a),
     # using the generic structure to build the operator
-    generic = TRUE,
-    generic_operator = generic_operator
+    generic_type = "generic"
   )
 }
 
@@ -127,25 +116,18 @@ rw1 <- function(
   }
   K = ngme_as_sparse(C + G)
 
-  generic_operator <- generic(
-    matrices = list(K),
-    h = h,
-    mesh = mesh
-  )
-
   ngme_operator(
     mesh = mesh,
+    matrices = list(K),
     model = "rw1",
+    generic_type = "generic",
     theta_K = double(0),
     update_K = function(theta_K) {K},
     K = K,
     h = h,
     symmetric = FALSE,
     zero_trace = FALSE,
-    param_name = character(0),
-    # using the generic structure to build the operator
-    generic = TRUE,
-    generic_operator = generic_operator
+    param_name = character(0)
   )
 }
 
@@ -188,25 +170,18 @@ rw2 <- function(
 
   K <- ngme_as_sparse(C + G)
 
-  generic_operator <- generic(
-    matrices = list(K),
-    h = h,
-    mesh = mesh
-  )
-
   ngme_operator(
     mesh = mesh,
     model = "rw2",
+    generic_type = "generic",
+    matrices = list(K),
     theta_K = double(0),
     update_K = function(theta_K) {K},
     K = K,
     h = h,
     symmetric = FALSE,
     zero_trace = FALSE,
-    param_name = character(0),
-    # using the generic structure to build the operator
-    generic = TRUE,
-    generic_operator = generic_operator
+    param_name = character(0)
   )
 }
 
@@ -214,8 +189,8 @@ rw2 <- function(
 #'
 #' @param mesh numerical vector or inla.mesh.1d object, index to build the mesh
 #' @param mesh mesh for build the model
-#' @param theta_K initial value for theta_K, kappa = exp(B_K * theta_K)
-#' @param B_K bases for theta_K
+#' @param theta_K initial value for theta_K, kappa = exp(B_theta_K * theta_K)
+#' @param B_theta_K bases for theta_K
 #' @param ... ignore
 #'
 #' @return ngme_operator object
@@ -223,7 +198,7 @@ rw2 <- function(
 ou <- function(
   mesh,
   theta_K   = 0,
-  B_K       = NULL,
+  B_theta_K = NULL,
   ...
 ) {
   mesh <- ngme_build_mesh(mesh)
@@ -231,53 +206,44 @@ ou <- function(
 
   h <- diff(mesh$loc); h <- c(h, mean(h))
 
-  if (is.null(B_K)) B_K <- matrix(1, nrow = length_map(mesh$loc), ncol = 1)
-  stopifnot("B_theta is a matrix" = is.matrix(B_K))
-  stopifnot("ncol(B_K) == length(theta_K)"
-    = ncol(B_K) == length(theta_K))
+  if (is.null(B_theta_K)) B_theta_K <- matrix(1, nrow = length_map(mesh$loc), ncol = 1)
+  stopifnot("B_theta_K is a matrix" = is.matrix(B_theta_K))
+  stopifnot("ncol(B_theta_K) == length(theta_K)"
+    = ncol(B_theta_K) == length(theta_K))
 
   G <- Matrix::bandSparse(n=n,m=n,k=c(-1,0),diagonals=cbind(-rep(1,n), rep(1,n)))
   C <- Ce <- Matrix::bandSparse(n=n,m=n,k=c(-1,0),diagonals=cbind(0.5*c(h[-1],0), 0.5*h))
   Ci <- Matrix::sparseMatrix(i=1:n,j=1:n,x=1/h,dims = c(n,n))
 
-  kappas <- exp(as.numeric(B_K %*% theta_K))
+  kappas <- exp(as.numeric(B_theta_K %*% theta_K))
   K <- Matrix::Diagonal(x=kappas) %*% C + G
 
   update_K <- function(theta_K) {
-    kappas <- exp(as.numeric(B_K %*% theta_K))
+    kappas <- exp(as.numeric(B_theta_K %*% theta_K))
     Matrix::Diagonal(x=kappas) %*% C + G
   }
 
-  generic_operator <- generic_ns(
+  C <- ngme_as_sparse(C)
+  G <- ngme_as_sparse(G)
+  K <- ngme_as_sparse(K)
+
+  generic_ns(
+    model = "ou",
+    C = C,
+    G = G,
+    param_name  = paste("theta_K", seq_len(length(theta_K)), sep = ""),
+    param_trans = rep(list(identity), length(theta_K)),
+
     matrices = list(C, G),
     theta_K = list(theta_K = theta_K),
     trans = list(theta_K = "exp"),
-    B_theta_K = list(theta_K = B_K),
+    B_theta_K = list(theta_K = B_theta_K),
     position = list(
       c(1, 2),
       c(3)
     ),
     h = h,
     mesh = mesh
-  )
-
-  ngme_operator(
-    mesh        = mesh,
-    model       = "ou",
-    B_K         = B_K,
-    theta_K     = theta_K,
-    update_K    = update_K,
-    C           = ngme_as_sparse(C),
-    G           = ngme_as_sparse(G),
-    K           = ngme_as_sparse(K),
-    h           = h,
-    symmetric   = FALSE,
-    zero_trace  = TRUE,
-    param_name  = paste("theta_K", seq_len(length(theta_K)), sep = ""),
-    param_trans = rep(list(identity), length(theta_K)),
-    # using the generic structure to build the operator
-    generic = TRUE,
-    generic_operator = generic_operator
   )
 }
 
@@ -286,8 +252,8 @@ ou <- function(
 #' @param mesh an fmesher::fm_mesh_2d object, mesh for build the SPDE model
 #' @param alpha 2 or 4, SPDE smoothness parameter
 #' @param kappa the range parameter, for the stationary model, it is the range parameter
-#' @param theta_K kappa = exp(B_K * theta_K), for the non-stationary model, it is the range parameter
-#' @param B_K bases for theta_K, ignore if use the stationary model
+#' @param theta_K kappa = exp(B_theta_K * theta_K), for the non-stationary model, it is the range parameter
+#' @param B_theta_K bases for theta_K, ignore if use the stationary model
 #' @param ... ignore
 #'
 #' @return ngme_operator object
@@ -297,7 +263,7 @@ matern <- function(
   alpha = 2,
   kappa = NULL,
   theta_K = NULL,
-  B_K = NULL,
+  B_theta_K = NULL,
   ...
 ) {
   mesh <- ngme_build_mesh(mesh)
@@ -352,14 +318,14 @@ matern <- function(
   }
 
   mesh_n <- length(h)
-  if (is.null(B_K) && length(theta_K) == 1)
-    B_K <- matrix(1, nrow = mesh_n, ncol = 1)
-  else if (is.null(B_K) && length(theta_K) > 1)
-    stop("Please provide B_K for non-stationary case.")
+  if (is.null(B_theta_K) && length(theta_K) == 1)
+    B_theta_K <- matrix(1, nrow = mesh_n, ncol = 1)
+  else if (is.null(B_theta_K) && length(theta_K) > 1)
+    stop("Please provide B_theta_K for non-stationary case.")
 
-  stationary <- is_stationary(B_K)
+  stationary <- is_stationary(B_theta_K)
   update_K <- function(theta_K) {
-    kappas <- as.numeric(exp(B_K %*% theta_K))
+    kappas <- as.numeric(exp(B_theta_K %*% theta_K))
     if (stationary) {
       if (alpha == 2) {
         kappas[1]^2 * C + G
@@ -382,75 +348,64 @@ matern <- function(
   }
   K <- update_K(theta_K)
 
+  C <- ngme_as_sparse(C)
+  G <- ngme_as_sparse(G)
+  Cinv <- ngme_as_sparse(Cinv)
+
   if (stationary && alpha == 2) {
-    generic_operator <- generic(
-      matrices = list(C, G),
-      theta_K = c(theta_K = theta_K),
-      trans = c(theta_K = "exp2"),
-      h = h,
-      mesh = mesh
-      )
+    matrices = list(C, G)
+    theta_K = c(theta_K = theta_K)
+    trans = c(theta_K = "exp2")
+    position = NULL
   } else if (stationary && alpha == 4) {
-    generic_operator <- generic(
-      theta_K = c(theta_K=theta_K),
-      trans = list(theta_K=c("exp4", "exp2", "null")),
-      matrices = list(C, 2*G, G %*% Cinv %*% G),
-      h = h,
-      mesh = mesh
-    )
+    matrices = list(C, 2*G, G %*% Cinv %*% G)
+    theta_K = c(theta_K=theta_K)
+    trans = list(theta_K=c("exp4", "exp2", "null"))
+    position = NULL
   } else if (alpha == 2) {
-    generic_operator <- generic_ns(
-      theta_K = list(theta=theta_K),
-      trans = list(theta=c("exp")),
-      B_theta_K = list(theta = B_K),
-      matrices = list(C, G, Cinv),
-      position = list(
-        c(1, 2, 1), 
-        c(3) 
-      ),
-      h = h,
-      mesh = mesh
+    theta_K = list(theta=theta_K)
+    trans = list(theta=c("exp"))
+    B_theta_K = list(theta = B_theta_K)
+    matrices = list(C, G, Cinv)
+    position = list(
+      c(1, 2, 1), 
+      c(3) 
     )
   } else if (alpha == 4) {
-    generic_operator <- generic_ns(
-      theta_K = list(theta_K=theta_K),
-      trans = list(theta_K=c("exp")),
-      B_theta_K = list(theta_K = B_K),
-      matrices = list(C, G, Cinv),
-      position = list(
-        c(1, 2, 1, 4, 1, 2, 1), 
-        c(1, 2, 1, 4, 3), 
-        c(3, 4, 1, 2, 1), 
-        c(3, 4, 3)
-      ),
-      h = h,
-      mesh = mesh
+    theta_K = list(theta_K=theta_K)
+    trans = list(theta_K=c("exp"))
+    B_theta_K = list(theta_K = B_theta_K)
+    matrices = list(C, G, Cinv)
+    position = list(
+      c(1, 2, 1, 4, 1, 2, 1), 
+      c(1, 2, 1, 4, 3), 
+      c(3, 4, 1, 2, 1), 
+      c(3, 4, 3)
     )
   }
 
-  ngme_operator(
+  if (stationary) g <- generic else g <- generic_ns
+
+  g(
+    model = "matern",
     mesh = mesh,
     alpha = alpha,
-    model = "matern",
     theta_K = theta_K,
-    B_K = B_K,
-    C = ngme_as_sparse(C),
-    G = ngme_as_sparse(G),
-    K = ngme_as_sparse(K),
-    update_K = update_K,
+    trans = trans,
+    matrices = matrices,
+    position = position,
+    B_theta_K = B_theta_K,
+    C = C,
+    G = G,
+    # update_K = update_K,
     h = h,
-    symmetric = TRUE,
-    zero_trace = FALSE,
     stationary = stationary,
     param_name =
       if (stationary) "kappa"
       else paste("theta_K", seq_len(length(theta_K)), sep = " "),
     param_trans =
       if (stationary) exp
-      else rep(list(identity), length(theta_K)),
-    # using the generic structure to build the operator
-    generic = TRUE,
-    generic_operator = generic_operator
+      else rep(list(identity), length(theta_K))
   )
 }
 
@@ -470,8 +425,8 @@ re <- function(
   if (inherits(map, "formula")) map <- model.matrix(map)
     else map <- as.matrix(map)
 
-  B_K <- map
-  n_reff <- ncol(B_K) # number of random effects
+  B_theta_K <- map
+  n_reff <- ncol(B_theta_K) # number of random effects
   n_theta_K <- sum(1:n_reff) # number of theta_K
   h <- rep(1, n_reff)
 
@@ -498,7 +453,7 @@ re <- function(
     K = ngme_as_sparse(K),
     update_K = update_K,
     h = h,
-    B_K = B_K,
+    B_theta_K = B_theta_K,
     symmetric = FALSE,
     zero_trace = FALSE,
     param_name = paste("re_coeff", seq_len(length(theta_K)), sep = ""),

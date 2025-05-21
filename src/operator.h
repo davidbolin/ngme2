@@ -40,7 +40,8 @@ class Operator {
 protected:
     VectorXd h;
     int n_theta_K;
-    bool zero_trace, symmetric, generic;
+    bool zero_trace, symmetric;
+    string generic_type;
 
     SparseMatrix<double> K;
     vector<SparseMatrix<double>> dK;
@@ -50,7 +51,7 @@ public:
         n_theta_K (Rcpp::as<int> (operator_list["n_theta_K"])),
         zero_trace (Rcpp::as<bool> (operator_list["zero_trace"])),
         symmetric (Rcpp::as<bool> (operator_list["symmetric"])),
-        generic (Rcpp::as<bool> (operator_list["generic"])),
+        generic_type (Rcpp::as<string> (operator_list["generic_type"])),
         K (Rcpp::as<SparseMatrix<double>> (operator_list["K"])),
         dK (n_theta_K)
     {
@@ -296,25 +297,19 @@ public:
   ) {
     string model_type = Rcpp::as<string> (operator_in["model"]);
     VectorXd theta_K = Rcpp::as<VectorXd> (operator_in["theta_K"]);
-    bool generic = Rcpp::as<bool> (operator_in["generic"]);
+    string generic_type = Rcpp::as<string> (operator_in["generic_type"]);
     int n_theta_K = theta_K.size();
 
     if (model_type == "generic") {
       return std::make_shared<Generic>(operator_in);
     } else if (model_type == "generic_ns") {
       return std::make_shared<generic_ns>(operator_in);
-    } else if (generic) {
-      Rcpp::List generic_operator = Rcpp::as<Rcpp::List> (operator_in["generic_operator"]);
-      string generic_type = Rcpp::as<string> (generic_operator["model"]);
-      if (generic_type == "generic") {
-        // stationary generic model
-        return std::make_shared<Generic>(generic_operator);
-      } else if (generic_type == "generic_ns") {
-        // non-stationary generic model
-        return std::make_shared<generic_ns>(generic_operator);
-      } else {
-        throw std::runtime_error("Unknown model.");
-      }
+    } else if (generic_type == "generic") {
+      return std::make_shared<Generic>(operator_in);
+    } else if (generic_type == "generic_ns") {
+      return std::make_shared<generic_ns>(operator_in);
+    } else if (model_type == "tp") {
+      return std::make_shared<Tensor_prod>(operator_in);
     } else if (model_type == "spacetime") {
       return std::make_shared<Spacetime>(operator_in);
     } else if (model_type == "ou") {

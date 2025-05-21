@@ -299,7 +299,7 @@ test_that("generic model == Matern model (alpha == 2 or 4)", {
     mesh, 
     alpha = 4, 
     theta_K = theta_kappa,
-    B_K = B_kappa
+    B_theta_K = B_kappa
   )
   kappas <- as.numeric(exp(B_kappa %*% theta_kappa))
   D_kappa <- Matrix::Diagonal(x = kappas)
@@ -348,7 +348,7 @@ test_that("generic model == Matern model (alpha == 2 or 4)", {
       cbind(x, y),
       mesh = mesh,
       theta_K = theta_kappa,
-      B_K = B_kappa,
+      B_theta_K = B_kappa,
       model = "matern",
       alpha = 2,
     ),
@@ -382,13 +382,12 @@ test_that("generic model == Matern model (alpha == 2 or 4)", {
   est_theta_generic_2 <- ngme_result(fit_generic_2, "generic")$operator$theta_K
   expect_equal(est_theta_generic_2[[1]], est_theta_matern_2[[1]], tolerance = 1e-4)
   
-
   fit_matern_4 <- ngme(
     Y ~ 0 + f(
       cbind(x, y),
       mesh = mesh,
       theta_K = theta_kappa,
-      B_K = B_kappa,
+      B_theta_K = B_kappa,
       model = "matern",
       alpha = 4,
     ),
@@ -428,16 +427,16 @@ test_that("generic model == Matern model (alpha == 2 or 4)", {
 test_that("generic_ns model == ou model", {
   n <- 10
   theta_K <- c(0.5, 0.3)
-  B_K <- matrix(rnorm(n * 2), n, 2)
+  B_theta_K <- matrix(rnorm(n * 2), n, 2)
   h <- rep(1, n)
   mesh <- 1:n
 
-  kappas <- as.numeric(exp(B_K %*% theta_K))
+  kappas <- as.numeric(exp(B_theta_K %*% theta_K))
   D_kappa <- Matrix::Diagonal(x = kappas)
   ou_model <- ou(
     mesh = mesh,
     theta_K = theta_K,
-    B_K = B_K,
+    B_theta_K = B_theta_K,
     h = h
   )
   C <- ou_model$C
@@ -447,7 +446,7 @@ test_that("generic_ns model == ou model", {
   generic_model <- generic_ns(
     theta_K = list(theta_K = theta_K),
     trans = list(theta_K = c("exp")),
-    B_theta_K = list(theta_K = B_K),
+    B_theta_K = list(theta_K = B_theta_K),
     matrices = list(C, G),
     position = list(c(1, 2), c(3)),
     h = h,

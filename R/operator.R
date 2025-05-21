@@ -6,7 +6,7 @@ ngme_operator <- function(
   theta_K = NULL,
   zero_trace = FALSE,
   symmetric = FALSE,
-  generic = FALSE,
+  generic_type = "none", # "none", "generic", "generic_ns"
   ...
 ) {
   if (is.null(K)) stop("K is NULL.")
@@ -21,7 +21,7 @@ ngme_operator <- function(
       n_theta_K = length(theta_K),
       zero_trace = zero_trace,
       symmetric = symmetric,
-      generic = generic,
+      generic_type = generic_type,
       ...
     ),
     class = "ngme_operator"

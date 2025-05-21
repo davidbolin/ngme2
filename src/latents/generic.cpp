@@ -44,12 +44,10 @@ void Generic::update_K(const VectorXd& theta_K) {
             // Get parameter name and value
             std::string param_name = param_names[p];
             double param_value = theta_K[p];
-            
             // Skip if parameter not in trans_map
             if (trans_map.find(param_name) == trans_map.end()) {
                 continue;
             }
-            
             const std::vector<std::string>& param_trans = trans_map[param_name];
             
             // Apply transformations for this parameter to each matrix

@@ -121,10 +121,6 @@ f <- function(
     mesh <- ngme_build_mesh(sub_map(map, subset), model)
   }
 
-  if (!inherits(mesh, "fm_mesh_1d") && !inherits(mesh, "fm_mesh_2d")) {
-    stop("Please provide mesh as fm_mesh_1d or fm_mesh_2d")
-  }
-
   # remove NULL in arguments
   f_args <- Filter(Negate(is.null),  as.list(environment()))
   # add arguments in ...

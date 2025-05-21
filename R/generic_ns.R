@@ -94,6 +94,7 @@ generic_ns <- function(
     matrices,
     position,
     h,
+    model = "generic_ns",
     B_theta_K = NULL,
     trans = NULL,
     mesh = NULL,
@@ -191,58 +192,58 @@ generic_ns <- function(
     param_trans[[param_name]] <- name2fun(trans[[param_name]])
   }
   
-  # Helper function to compute K
-  update_K <- function(theta_K = NULL) {
-    # Create local copies of necessary variables to ensure proper scoping
-    local_param_matrices <- param_matrices
-    local_all_matrices <- all_matrices
-    
-    # If theta_K is provided, update parameter matrices
-    if (!is.null(theta_K)) {
-      # Extract parameter values from flat theta_K vector using param_map
-      for (param_name in names(param_map)) {
-        indices <- param_map[[param_name]]
-        param_values <- theta_K[indices]
-        
-        # Get basis matrix
-        B <- B_theta_K[[param_name]]
-        
-        # Apply transformation
-        trans_type <- trans[[param_name]]
-        transformed_value <- name2fun(trans_type)(B %*% param_values)
-        
-        # Create parameter matrix
-        if (trans_type %in% c("identity", "exp", "exp2", "exp4", "sqrt", "square", "log", "tanh")) {
-          # For element-wise transformations, create diagonal matrix
-          local_param_matrices[[param_name]] <- Matrix::Diagonal(x = as.numeric(transformed_value))
-        } else {
-          # For other transformations, create the matrix directly
-          local_param_matrices[[param_name]] <- transformed_value
-        }
-      }
-      
-      # Recombine matrices
-      local_all_matrices <- c(local_param_matrices, matrices)
-    }
-    
+  # Helper function to compute K (theta_K is a flat vector)
+  update_K <- function(theta_K) {
     # Initialize K as zero matrix
-    n <- nrow(local_all_matrices[[1]])
+    n <- nrow(matrices[[1]])
     K <- Matrix::Matrix(0, n, n)
     
-    # For each position combination
-    for (pos in position) {
-      # Check if position indices are valid
-      if (any(pos > length(local_all_matrices))) {
-        stop(sprintf("Position index %d is out of bounds (max: %d)", 
-                    max(pos), length(local_all_matrices)))
+    # Create parameter matrices using basis expansions
+    param_matrices <- list()
+    all_matrices <- list()
+    
+    # First, create parameter matrices
+    for (param_name in names(param_map)) {
+      indices <- param_map[[param_name]]
+      
+      # Get basis matrix
+      B <- if (!is.null(B_theta_K[[param_name]])) {
+        B_theta_K[[param_name]]
+      } else {
+        # Default to matrix of ones (1 column)
+        Matrix::Matrix(1, nrow = n, ncol = 1)
       }
       
+      # Extract parameter values from theta_K
+      param_values <- theta_K[indices]
+      
+      # Apply basis expansion
+      expanded_values <- as.vector(B %*% param_values)
+      
+      # Apply transformation
+      trans_type <- if (!is.null(trans[[param_name]])) trans[[param_name]] else "identity"
+      transformed_values <- name2fun(trans_type)(expanded_values)
+      
+      # Create diagonal matrix from expanded values
+      param_matrices[[param_name]] <- Matrix::Diagonal(x = as.numeric(transformed_values))
+    }
+    
+    # Create combined list of matrices (parameters first, then fixed matrices)
+    all_matrices <- c(param_matrices, matrices)
+    
+    # Apply matrix combinations according to position
+    for (pos in position) {
       # Start with identity matrix
       term <- Matrix::Diagonal(n)
       
       # Multiply matrices in the combination
       for (idx in pos) {
-        term <- term %*% local_all_matrices[[idx]]
+        if (idx > 0 && idx <= length(all_matrices)) {
+          term <- term %*% all_matrices[[idx]]
+        } else {
+          stop(sprintf("Position index %d is out of bounds (max: %d)", 
+                      idx, length(all_matrices)))
+        }
       }
       
       # Add to K
@@ -254,10 +255,10 @@ generic_ns <- function(
   
   # Create operator
   ngme_operator(
-    model = "generic_ns", 
+    model = model, 
     mesh = mesh,
     K = ngme_as_sparse(update_K(theta_K = flat_theta_K)),
-    generic = TRUE,
+    generic_type = "generic_ns",
     h = h,
     theta_K = flat_theta_K,
     trans = trans,  # Include the original transforms
@@ -269,6 +270,7 @@ generic_ns <- function(
     symmetric = all(sapply(all_matrices, Matrix::isSymmetric)),
     zero_trace = zero_trace,
     param_name = names(theta_K),
-    param_trans = param_trans
+    param_trans = param_trans,
+    ... 
   )
 } 

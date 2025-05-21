@@ -15,6 +15,7 @@
 #'   affects matrix 1 with exp2 transformation, matrix 2 with identity, and doesn't affect matrix 3.
 #'   Available transformations: "identity", "exp", "exp2", "exp4", "sqrt", "square", "log", "tanh"
 #' @param mesh The mesh object
+#' @param model The model type name
 #' @param zero_trace Whether the trace of K should be zero
 #' @param ... Additional arguments (ignored)
 #' 
@@ -79,7 +80,9 @@ generic <- function(
     trans = NULL,
     mesh = NULL,
     zero_trace = FALSE,
-    ...) {
+    model = "generic",
+    ...
+) {
   if (!is.null(mesh)) mesh <- ngme_build_mesh(mesh)
 
   # If theta_K is not provided, initialize it as double(0)
@@ -142,10 +145,10 @@ generic <- function(
   }
 
   ngme_operator(
-    model = "generic",
+    model = model,
     mesh = mesh,
     K = ngme_as_sparse(update_K(theta_K)),
-    generic = TRUE,
+    generic_type = "generic",
     h = h,
     theta_K = theta_K,
     trans = trans,
@@ -154,7 +157,8 @@ generic <- function(
     symmetric = all(sapply(matrices, Matrix::isSymmetric)),
     zero_trace = zero_trace,
     param_name = names(theta_K),
-    param_trans = get_param_trans(trans)
+    param_trans = get_param_trans(trans),
+    ...
   )
 }
 

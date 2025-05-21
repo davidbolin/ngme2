@@ -478,3 +478,4 @@ test_that("get_param_trans correctly extracts transformation functions", {
   expect_equal(result3$y(2), exp(2*2))
   expect_equal(result3$z(9), 9)  # Should use identity
 })
+

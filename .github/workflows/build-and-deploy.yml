@@ -226,14 +226,30 @@ jobs:
           
       - name: Copy docs to gh-pages branch
         run: |
+          # Save docs content to a temporary directory
+          mkdir -p /tmp/docs-content
+          cp -R docs/* /tmp/docs-content/
+          
+          # Fetch and switch to gh-pages branch
           git fetch origin gh-pages
           git checkout gh-pages
-          rm -rf docs/
-          git checkout stable docs/
-          git add docs/
           
+          # Remove all existing files except .git and binary-related directories
+          find . -mindepth 1 -maxdepth 1 \
+            ! -name '.git' \
+            ! -name 'bin' \
+            ! -name 'src' \
+            ! -name 'PACKAGES*' \
+            -exec rm -rf {} +
+          
+          # Copy docs content to root
+          cp -R /tmp/docs-content/* .
+          rm -rf /tmp/docs-content
+          
+          # Commit and push if there are changes
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
           
           if ! git diff --cached --quiet; then
             git commit -m "📚 Update documentation [skip ci]"

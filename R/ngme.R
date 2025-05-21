@@ -331,8 +331,8 @@ update_ngme_est <- function(
     ngme_replicate$models[[i]]$operator$theta_K <-
       ngme_replicate$models[[i]]$theta_K <- theta_K
 
-    new_K <- ngme_replicate$models[[i]]$operator$update_K(theta_K)
-    ngme_replicate$models[[i]]$operator$K <- ngme_as_sparse(new_K)
+    # new_K <- ngme_replicate$models[[i]]$operator$update_K(theta_K)
+    # ngme_replicate$models[[i]]$operator$K <- ngme_as_sparse(new_K)
 
     # update W and noise
     ngme_replicate$models[[i]]$W        <- est_output$models[[i]]$W

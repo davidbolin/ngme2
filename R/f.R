@@ -260,12 +260,12 @@ if (noise[[1]]$noise_type != "normal") {
     "normal_nig", "normal_gal", "nig_gal"
   ))) {
     # update operator matrices M to be diag(M, M)
-    if (operator$generic) {
-      operator$generic_operator$matrices <- lapply(operator$generic_operator$matrices, function(x) {
+    if (operator$generic_type %in% c("generic", "generic_ns")) {
+      operator$matrices <- lapply(operator$matrices, function(x) {
         Matrix::bdiag(x, x)
       })
-      operator$K <- operator$generic_operator$K <- Matrix::bdiag(operator$K, operator$K)
-      operator$h <- operator$generic_operator$h <- c(operator$h, operator$h)
+      operator$K <- operator$K <- Matrix::bdiag(operator$K, operator$K)
+      operator$h <- operator$h <- c(operator$h, operator$h)
     }
     # A <- [A A]
     A <- cbind(A, A)

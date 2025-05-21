@@ -933,7 +933,7 @@ ngme_build_A <- function(model, mesh, map, operator, group, group_levels=NULL) {
   }
 
   if (model == "re") {
-    return (ngme_as_sparse(operator$B_K))
+    return (ngme_as_sparse(operator$B_theta_K))
   }
     
   return (fmesher::fm_basis(mesh, loc = map))

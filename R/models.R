@@ -450,7 +450,7 @@ re <- function(
     mesh = NULL,
     model = "re",
     theta_K = theta_K,
-    K = K,
+    K = ngme_as_sparse(K),
     update_K = update_K,
     h = h,
     B_theta_K = B_theta_K,

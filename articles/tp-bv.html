@@ -6,6 +6,12 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Space-time bivariate model in Ngme2 • ngme2</title>
+<!-- favicons --><link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+<link rel="apple-touch-icon" type="image/png" sizes="180x180" href="../apple-touch-icon.png">
+<link rel="apple-touch-icon" type="image/png" sizes="120x120" href="../apple-touch-icon-120x120.png">
+<link rel="apple-touch-icon" type="image/png" sizes="76x76" href="../apple-touch-icon-76x76.png">
+<link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png">
 <!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script><!-- Bootstrap --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha256-bZLfwXAP04zRMK2BjiO8iu9pf4FbLqX6zitd+tIvLhE=" crossorigin="anonymous">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script><!-- bootstrap-toc --><link rel="stylesheet" href="../bootstrap-toc.css">
 <script src="../bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
@@ -67,6 +73,9 @@
       <a href="../articles/SPDE-model.html">SPDE Matern model</a>
     </li>
     <li>
+      <a href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a>
+    </li>
+    <li>
       <a href="../articles/replicate.html">Ngme replicate feature</a>
     </li>
     <li>
@@ -89,6 +98,9 @@
     </li>
     <li>
       <a href="../articles/cross-validation.html">Cross-validation for the ngme2 models</a>
+    </li>
+    <li>
+      <a href="../articles/generic.html">Using the Generic Model in ngme2</a>
     </li>
   </ul>
 </li>
@@ -125,7 +137,7 @@
       <h1 data-toc-skip>Space-time bivariate model in Ngme2</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/stable/vignettes/tp-bv.Rmd" class="external-link"><code>vignettes/tp-bv.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/HEAD/vignettes/tp-bv.Rmd" class="external-link"><code>vignettes/tp-bv.Rmd</code></a></small>
       <div class="hidden name"><code>tp-bv.Rmd</code></div>
 
     </div>
@@ -380,29 +392,29 @@ process and the second part being the bivariate model.</p>
 <span><span class="co">##       No parameter.</span></span>
 <span><span class="co">##   Noise type: NORMAL</span></span>
 <span><span class="co">##   Noise parameters: </span></span>
-<span><span class="co">##       sigma = 0.876</span></span>
+<span><span class="co">##       sigma = 0.64</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $field2</span></span>
 <span><span class="co">##   Model type: Tensor product</span></span>
 <span><span class="co">##       first: AR(1)</span></span>
-<span><span class="co">##           rho = 0.239</span></span>
+<span><span class="co">##           rho = 0.24</span></span>
 <span><span class="co">##       second: Bivariate model (non-Gaussian noise)</span></span>
-<span><span class="co">##           theta = -0.0499</span></span>
-<span><span class="co">##           rho = 0.0575</span></span>
+<span><span class="co">##           theta = 0.183</span></span>
+<span><span class="co">##           rho = 0.0416</span></span>
 <span><span class="co">##           f1: AR(1)</span></span>
 <span><span class="co">##               rho = 0.242</span></span>
 <span><span class="co">##           f2: AR(1)</span></span>
-<span><span class="co">##               rho = -0.23</span></span>
+<span><span class="co">##               rho = -0.231</span></span>
 <span><span class="co">##   Noise type: NIG</span></span>
 <span><span class="co">##   Noise parameters: </span></span>
-<span><span class="co">##       mu = -0.462</span></span>
-<span><span class="co">##       sigma = 1.53</span></span>
-<span><span class="co">##       nu = 0.643</span></span>
+<span><span class="co">##       mu = -0.47</span></span>
+<span><span class="co">##       sigma = 1.5</span></span>
+<span><span class="co">##       nu = 0.686</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Measurement noise: </span></span>
 <span><span class="co">##   Noise type: NORMAL</span></span>
 <span><span class="co">##   Noise parameters: </span></span>
-<span><span class="co">##       sigma = 1.31</span></span>
+<span><span class="co">##       sigma = 1.27</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Number of replicates is  1</span></span></code></pre>
@@ -411,7 +423,7 @@ process and the second part being the bivariate model.</p>
 <p><img src="tp-bv_files/figure-html/unnamed-chunk-4-1.png" width="700"></p>
 <pre><code><span><span class="co">## Last estimates:</span></span>
 <span><span class="co">## $sigma</span></span>
-<span><span class="co">## [1] 0.9167779</span></span></code></pre>
+<span><span class="co">## [1] 0.6745554</span></span></code></pre>
 <p>Here we can see, we get the simulated parameter correctly.</p>
 </div>
   </div>
@@ -431,7 +443,7 @@ process and the second part being the bivariate model.</p>
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.2.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
 </div>
 
       </footer>

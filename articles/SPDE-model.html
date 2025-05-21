@@ -6,6 +6,12 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ngme2 Matern SPDE model • ngme2</title>
+<!-- favicons --><link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+<link rel="apple-touch-icon" type="image/png" sizes="180x180" href="../apple-touch-icon.png">
+<link rel="apple-touch-icon" type="image/png" sizes="120x120" href="../apple-touch-icon-120x120.png">
+<link rel="apple-touch-icon" type="image/png" sizes="76x76" href="../apple-touch-icon-76x76.png">
+<link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png">
 <!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script><!-- Bootstrap --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha256-bZLfwXAP04zRMK2BjiO8iu9pf4FbLqX6zitd+tIvLhE=" crossorigin="anonymous">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script><!-- bootstrap-toc --><link rel="stylesheet" href="../bootstrap-toc.css">
 <script src="../bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
@@ -67,6 +73,9 @@
       <a href="../articles/SPDE-model.html">SPDE Matern model</a>
     </li>
     <li>
+      <a href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a>
+    </li>
+    <li>
       <a href="../articles/replicate.html">Ngme replicate feature</a>
     </li>
     <li>
@@ -89,6 +98,9 @@
     </li>
     <li>
       <a href="../articles/cross-validation.html">Cross-validation for the ngme2 models</a>
+    </li>
+    <li>
+      <a href="../articles/generic.html">Using the Generic Model in ngme2</a>
     </li>
   </ul>
 </li>
@@ -125,7 +137,7 @@
       <h1 data-toc-skip>Ngme2 Matern SPDE model</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/stable/vignettes/SPDE-model.Rmd" class="external-link"><code>vignettes/SPDE-model.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/HEAD/vignettes/SPDE-model.Rmd" class="external-link"><code>vignettes/SPDE-model.Rmd</code></a></small>
       <div class="hidden name"><code>SPDE-model.Rmd</code></div>
 
     </div>
@@ -365,14 +377,14 @@ code to specify the SPDE Matérn model in 1d case with NIG noise:</p>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://sjmgarnier.github.io/viridis/" class="external-link">viridis</a></span><span class="op">)</span></span>
 <span><span class="co">#&gt; Loading required package: viridisLite</span></span>
-<span><span class="va">pl01</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span> <span class="op">*</span> <span class="fl">10</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">0</span><span class="op">)</span> <span class="op">*</span> <span class="fl">5</span><span class="op">)</span></span>
+<span><span class="va">pl01</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span> <span class="op">*</span> <span class="fl">10</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">0</span><span class="op">)</span> <span class="op">*</span> <span class="fl">5</span><span class="op">)</span></span>
 <span><span class="va">mesh</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://inlabru-org.github.io/fmesher/reference/fm_mesh_2d.html" class="external-link">fm_mesh_2d</a></span><span class="op">(</span></span>
 <span>  loc.domain <span class="op">=</span> <span class="va">pl01</span>, cutoff <span class="op">=</span> <span class="fl">0.1</span>,</span>
 <span>  max.edge <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.3</span>, <span class="fl">10</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">n_obs</span> <span class="op">&lt;-</span> <span class="fl">1000</span></span>
-<span><span class="va">loc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n_obs</span>, <span class="fl">0</span>, <span class="fl">10</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n_obs</span>, <span class="fl">0</span>, <span class="fl">5</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">loc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n_obs</span>, <span class="fl">0</span>, <span class="fl">10</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n_obs</span>, <span class="fl">0</span>, <span class="fl">5</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># define the simulated model</span></span>
 <span><span class="va">true_noise</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span>mu<span class="op">=</span><span class="op">-</span><span class="fl">2</span>, sigma<span class="op">=</span><span class="fl">1</span>, nu<span class="op">=</span><span class="fl">0.5</span><span class="op">)</span></span>
@@ -427,39 +439,39 @@ code to specify the SPDE Matérn model in 1d case with NIG noise:</p>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $spde</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
-<span><span class="co">#&gt;       kappa = 2.91</span></span>
+<span><span class="co">#&gt;       kappa = 2.86</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -0.959</span></span>
-<span><span class="co">#&gt;       sigma = 0.877</span></span>
-<span><span class="co">#&gt;       nu = 0.527</span></span>
+<span><span class="co">#&gt;       mu = -0.00655</span></span>
+<span><span class="co">#&gt;       sigma = 0.641</span></span>
+<span><span class="co">#&gt;       nu = 1.02</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.486</span></span>
+<span><span class="co">#&gt;       sigma = 0.51</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span>
 <span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">out</span>, <span class="st">"spde"</span>, hline<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4</span>, <span class="op">-</span><span class="fl">2</span>, <span class="fl">1</span>, <span class="fl">0.5</span><span class="op">)</span><span class="op">)</span> <span class="co"># compare with true parameters</span></span></code></pre></div>
 <p><img src="SPDE-model_files/figure-html/unnamed-chunk-3-2.png" width="700"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
-<span><span class="co">#&gt; $kappa</span></span>
-<span><span class="co">#&gt; [1] 2.913608</span></span>
+<span><span class="co">#&gt; $theta_K</span></span>
+<span><span class="co">#&gt; [1] 8.186722</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $mu</span></span>
-<span><span class="co">#&gt; [1] -0.9592403</span></span>
+<span><span class="co">#&gt; [1] -0.006619945</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 0.8773414</span></span>
+<span><span class="co">#&gt; [1] 0.6411686</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nu</span></span>
-<span><span class="co">#&gt; [1] 0.5296872</span></span>
+<span><span class="co">#&gt; [1] 1.020621</span></span>
 <span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">out</span>, hline<span class="op">=</span><span class="fl">0.5</span><span class="op">)</span> </span></code></pre>
 <p><img src="SPDE-model_files/figure-html/unnamed-chunk-3-3.png" width="700"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 0.4857866</span></span>
+<span><span class="co">#&gt; [1] 0.5102722</span></span>
 <span></span>
 <span><span class="co"># Compare with the true density </span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">true_noise</span>,</span>
@@ -486,7 +498,7 @@ SPDE Matérn model in <code>ngme2</code>.</p>
 <span></span>
 <span><span class="va">max.edge</span>    <span class="op">&lt;-</span> <span class="fl">1</span></span>
 <span><span class="va">bound.outer</span> <span class="op">&lt;-</span> <span class="fl">5</span></span>
-<span><span class="va">loc_2d</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">argo_float</span><span class="op">$</span><span class="va">lon</span>, <span class="va">argo_float</span><span class="op">$</span><span class="va">lat</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">loc_2d</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">argo_float</span><span class="op">$</span><span class="va">lon</span>, <span class="va">argo_float</span><span class="op">$</span><span class="va">lat</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co"># nrow(loc) == nrow(dat) no replicate</span></span>
 <span><span class="va">argo_mesh</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://inlabru-org.github.io/fmesher/reference/fm_mesh_2d.html" class="external-link">fm_mesh_2d</a></span><span class="op">(</span>loc <span class="op">=</span> <span class="va">loc_2d</span>,</span>
 <span>                    <span class="co"># the inner edge and outer edge</span></span>
@@ -551,24 +563,24 @@ First we explore the how the data look like:</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt; (Intercept)         sal </span></span>
-<span><span class="co">#&gt;        1.42        8.40 </span></span>
+<span><span class="co">#&gt;       0.604       8.174 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $spde</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
-<span><span class="co">#&gt;       kappa = 0.428</span></span>
+<span><span class="co">#&gt;       kappa = 0.72</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = 0.0987</span></span>
-<span><span class="co">#&gt;       sigma = 1.68</span></span>
-<span><span class="co">#&gt;       nu = 0.449</span></span>
+<span><span class="co">#&gt;       mu = -0.0776</span></span>
+<span><span class="co">#&gt;       sigma = 1.9</span></span>
+<span><span class="co">#&gt;       nu = 0.74</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -0.011</span></span>
-<span><span class="co">#&gt;       sigma = 0.717</span></span>
-<span><span class="co">#&gt;       nu = 0.0709</span></span>
+<span><span class="co">#&gt;       mu = -0.11</span></span>
+<span><span class="co">#&gt;       sigma = 0.67</span></span>
+<span><span class="co">#&gt;       nu = 0.0668</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span>
@@ -576,34 +588,34 @@ First we explore the how the data look like:</p>
 <span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">out</span>, <span class="st">"spde"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="SPDE-model_files/figure-html/ngme-estimation-1.png" width="700"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
-<span><span class="co">#&gt; $kappa</span></span>
-<span><span class="co">#&gt; [1] 0.4811256</span></span>
+<span><span class="co">#&gt; $theta_K</span></span>
+<span><span class="co">#&gt; [1] 0.7066422</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $mu</span></span>
-<span><span class="co">#&gt; [1] 0.09725324</span></span>
+<span><span class="co">#&gt; [1] -0.07304259</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 1.719848</span></span>
+<span><span class="co">#&gt; [1] 1.9345</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nu</span></span>
-<span><span class="co">#&gt; [1] 0.4703111</span></span>
+<span><span class="co">#&gt; [1] 0.7556106</span></span>
 <span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">out</span><span class="op">)</span></span></code></pre>
 <p><img src="SPDE-model_files/figure-html/ngme-estimation-2.png" width="700"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $mu</span></span>
-<span><span class="co">#&gt; [1] 0.02882165</span></span>
+<span><span class="co">#&gt; [1] -0.04205437</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 0.7076245</span></span>
+<span><span class="co">#&gt; [1] 0.6947924</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nu</span></span>
-<span><span class="co">#&gt; [1] 0.07169923</span></span>
+<span><span class="co">#&gt; [1] 0.06801908</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`fixed effect 1`</span></span>
-<span><span class="co">#&gt; [1] 1.419277</span></span>
+<span><span class="co">#&gt; [1] 0.6117249</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`fixed effect 2`</span></span>
-<span><span class="co">#&gt; [1] 8.385454</span></span></code></pre>
+<span><span class="co">#&gt; [1] 8.164293</span></span></code></pre>
 <!-- ### Prediction
 The `ngme` function firstly will estimate the model using the known data.
 After the estimation, the estimaed value and the samples given by gibbs sampler will be used to give a linear predictor.
@@ -642,7 +654,7 @@ is the basis matrix user provide.</p>
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.2.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
 </div>
 
       </footer>

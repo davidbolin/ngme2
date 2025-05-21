@@ -6,6 +6,12 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ngme2 AR(1) model • ngme2</title>
+<!-- favicons --><link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+<link rel="apple-touch-icon" type="image/png" sizes="180x180" href="../apple-touch-icon.png">
+<link rel="apple-touch-icon" type="image/png" sizes="120x120" href="../apple-touch-icon-120x120.png">
+<link rel="apple-touch-icon" type="image/png" sizes="76x76" href="../apple-touch-icon-76x76.png">
+<link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png">
 <!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script><!-- Bootstrap --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha256-bZLfwXAP04zRMK2BjiO8iu9pf4FbLqX6zitd+tIvLhE=" crossorigin="anonymous">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script><!-- bootstrap-toc --><link rel="stylesheet" href="../bootstrap-toc.css">
 <script src="../bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
@@ -67,6 +73,9 @@
       <a href="../articles/SPDE-model.html">SPDE Matern model</a>
     </li>
     <li>
+      <a href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a>
+    </li>
+    <li>
       <a href="../articles/replicate.html">Ngme replicate feature</a>
     </li>
     <li>
@@ -89,6 +98,9 @@
     </li>
     <li>
       <a href="../articles/cross-validation.html">Cross-validation for the ngme2 models</a>
+    </li>
+    <li>
+      <a href="../articles/generic.html">Using the Generic Model in ngme2</a>
     </li>
   </ul>
 </li>
@@ -125,7 +137,7 @@
       <h1 data-toc-skip>Ngme2 AR(1) model</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/stable/vignettes/AR1-model.Rmd" class="external-link"><code>vignettes/AR1-model.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/HEAD/vignettes/AR1-model.Rmd" class="external-link"><code>vignettes/AR1-model.Rmd</code></a></small>
       <div class="hidden name"><code>AR1-model.Rmd</code></div>
 
     </div>
@@ -269,22 +281,22 @@ optioins.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt;     x1     x2 </span></span>
-<span><span class="co">#&gt; -0.908  2.250 </span></span>
+<span><span class="co">#&gt; -0.924  2.258 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $my_ar</span></span>
 <span><span class="co">#&gt;   Model type: AR(1)</span></span>
-<span><span class="co">#&gt;       rho = 0.466</span></span>
+<span><span class="co">#&gt;       rho = 0.464</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -2.59</span></span>
-<span><span class="co">#&gt;       sigma = 4.06</span></span>
-<span><span class="co">#&gt;       nu = 0.31</span></span>
+<span><span class="co">#&gt;       mu = -2.62</span></span>
+<span><span class="co">#&gt;       sigma = 4.15</span></span>
+<span><span class="co">#&gt;       nu = 0.331</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 2.1</span></span>
+<span><span class="co">#&gt;       sigma = 2.04</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span>
@@ -294,29 +306,29 @@ optioins.</p>
 <p><img src="AR1-model_files/figure-html/ar-estimation-1.png" width="700" style="display: block; margin: auto;"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 2.09405</span></span>
+<span><span class="co">#&gt; [1] 2.024426</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`fixed effect 1`</span></span>
-<span><span class="co">#&gt; [1] -0.8968304</span></span>
+<span><span class="co">#&gt; [1] -0.9136889</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`fixed effect 2`</span></span>
-<span><span class="co">#&gt; [1] 2.24937</span></span>
+<span><span class="co">#&gt; [1] 2.257538</span></span>
 <span></span>
 <span><span class="co"># traceplot of ar1 model</span></span>
 <span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">ngme_out</span>, <span class="st">"my_ar"</span>, hline<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="op">-</span><span class="fl">3</span>, <span class="fl">4</span>, <span class="fl">0.4</span><span class="op">)</span><span class="op">)</span></span></code></pre>
 <p><img src="AR1-model_files/figure-html/ar-estimation-2.png" width="700" style="display: block; margin: auto;"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $rho</span></span>
-<span><span class="co">#&gt; [1] 0.4659072</span></span>
+<span><span class="co">#&gt; [1] 0.4641864</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $mu</span></span>
-<span><span class="co">#&gt; [1] -2.586214</span></span>
+<span><span class="co">#&gt; [1] -2.616359</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 4.057838</span></span>
+<span><span class="co">#&gt; [1] 4.151816</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nu</span></span>
-<span><span class="co">#&gt; [1] 0.310375</span></span>
+<span><span class="co">#&gt; [1] 0.3309696</span></span>
 <span></span>
 <span><span class="co"># Use ngme_result to extract the latent part</span></span>
 <span></span>
@@ -343,7 +355,7 @@ optioins.</p>
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.2.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
 </div>
 
       </footer>

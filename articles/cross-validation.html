@@ -6,6 +6,12 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cross-validation for the ngme2 models • ngme2</title>
+<!-- favicons --><link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+<link rel="apple-touch-icon" type="image/png" sizes="180x180" href="../apple-touch-icon.png">
+<link rel="apple-touch-icon" type="image/png" sizes="120x120" href="../apple-touch-icon-120x120.png">
+<link rel="apple-touch-icon" type="image/png" sizes="76x76" href="../apple-touch-icon-76x76.png">
+<link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png">
 <!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script><!-- Bootstrap --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha256-bZLfwXAP04zRMK2BjiO8iu9pf4FbLqX6zitd+tIvLhE=" crossorigin="anonymous">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script><!-- bootstrap-toc --><link rel="stylesheet" href="../bootstrap-toc.css">
 <script src="../bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
@@ -67,6 +73,9 @@
       <a href="../articles/SPDE-model.html">SPDE Matern model</a>
     </li>
     <li>
+      <a href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a>
+    </li>
+    <li>
       <a href="../articles/replicate.html">Ngme replicate feature</a>
     </li>
     <li>
@@ -89,6 +98,9 @@
     </li>
     <li>
       <a href="../articles/cross-validation.html">Cross-validation for the ngme2 models</a>
+    </li>
+    <li>
+      <a href="../articles/generic.html">Using the Generic Model in ngme2</a>
     </li>
   </ul>
 </li>
@@ -124,9 +136,9 @@
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Cross-validation for the ngme2 models</h1>
             
-            <h4 data-toc-skip class="date">2025-04-29</h4>
+            <h4 data-toc-skip class="date">2025-05-21</h4>
       
-      <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/stable/vignettes/cross-validation.Rmd" class="external-link"><code>vignettes/cross-validation.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/HEAD/vignettes/cross-validation.Rmd" class="external-link"><code>vignettes/cross-validation.Rmd</code></a></small>
       <div class="hidden name"><code>cross-validation.Rmd</code></div>
 
     </div>
@@ -214,15 +226,15 @@ Then, we will perform cross-validation using the
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $field1</span></span>
 <span><span class="co">#&gt;   Model type: AR(1)</span></span>
-<span><span class="co">#&gt;       rho = 0.23</span></span>
+<span><span class="co">#&gt;       rho = 0.237</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.767</span></span>
+<span><span class="co">#&gt;       sigma = 0.894</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.72</span></span>
+<span><span class="co">#&gt;       sigma = 0.718</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span>
@@ -252,15 +264,15 @@ Then, we will perform cross-validation using the
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $field1</span></span>
 <span><span class="co">#&gt;   Model type: AR(1)</span></span>
-<span><span class="co">#&gt;       rho = 0.356</span></span>
+<span><span class="co">#&gt;       rho = 0.345</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.862</span></span>
+<span><span class="co">#&gt;       sigma = 1.14</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.555</span></span>
+<span><span class="co">#&gt;       sigma = 0.186</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span>
@@ -286,13 +298,13 @@ Then, we will perform cross-validation using the
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt; (Intercept)           x </span></span>
-<span><span class="co">#&gt;    0.034500    0.000769 </span></span>
+<span><span class="co">#&gt;     0.19644    -0.00811 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 1.15</span></span>
+<span><span class="co">#&gt;       sigma = 1.16</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Number of replicates is  1</span></span>
@@ -315,9 +327,9 @@ Then, we will perform cross-validation using the
 <span><span class="op">)</span></span>
 <span><span class="va">cv1</span><span class="op">$</span><span class="va">mean.scores</span></span>
 <span><span class="co">#&gt;                MAE      MSE  neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; linear   0.9436967 1.320184 0.6559997  1.137901</span></span>
-<span><span class="co">#&gt; ar1_poor 0.9185450 1.247122 0.6347051  1.121251</span></span>
-<span><span class="co">#&gt; ar1      0.9064703 1.250091 0.6319776  1.120137</span></span>
+<span><span class="co">#&gt; linear   0.9645375 1.420942 0.6698047  1.149884</span></span>
+<span><span class="co">#&gt; ar1_poor 0.9494843 1.343339 0.6574034  1.139960</span></span>
+<span><span class="co">#&gt; ar1      0.9061845 1.283619 0.6456951  1.130843</span></span>
 <span></span>
 <span><span class="co"># Leave-percent-out cross-validation (20%) with 5 repetitions</span></span>
 <span><span class="va">cv2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cross_validation.html">cross_validation</a></span><span class="op">(</span></span>
@@ -334,9 +346,9 @@ Then, we will perform cross-validation using the
 <span><span class="op">)</span></span>
 <span><span class="va">cv2</span><span class="op">$</span><span class="va">mean.scores</span></span>
 <span><span class="co">#&gt;                MAE      MSE  neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; linear   0.9728977 1.363944 0.6743296  1.152416</span></span>
-<span><span class="co">#&gt; ar1_poor 0.9413003 1.271807 0.6442092  1.129668</span></span>
-<span><span class="co">#&gt; ar1      0.9158491 1.224459 0.6280627  1.116096</span></span></code></pre></div>
+<span><span class="co">#&gt; linear   0.8815093 1.206985 0.6163757  1.107715</span></span>
+<span><span class="co">#&gt; ar1_poor 0.9091096 1.176382 0.6172860  1.107267</span></span>
+<span><span class="co">#&gt; ar1      0.8837367 1.193896 0.6174697  1.107063</span></span></code></pre></div>
 </div>
   </div>
 
@@ -355,7 +367,7 @@ Then, we will perform cross-validation using the
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.2.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
 </div>
 
       </footer>

@@ -6,6 +6,12 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Comparing Ngme2 with R-INLA • ngme2</title>
+<!-- favicons --><link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+<link rel="apple-touch-icon" type="image/png" sizes="180x180" href="../apple-touch-icon.png">
+<link rel="apple-touch-icon" type="image/png" sizes="120x120" href="../apple-touch-icon-120x120.png">
+<link rel="apple-touch-icon" type="image/png" sizes="76x76" href="../apple-touch-icon-76x76.png">
+<link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png">
 <!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script><!-- Bootstrap --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha256-bZLfwXAP04zRMK2BjiO8iu9pf4FbLqX6zitd+tIvLhE=" crossorigin="anonymous">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script><!-- bootstrap-toc --><link rel="stylesheet" href="../bootstrap-toc.css">
 <script src="../bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
@@ -67,6 +73,9 @@
       <a href="../articles/SPDE-model.html">SPDE Matern model</a>
     </li>
     <li>
+      <a href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a>
+    </li>
+    <li>
       <a href="../articles/replicate.html">Ngme replicate feature</a>
     </li>
     <li>
@@ -89,6 +98,9 @@
     </li>
     <li>
       <a href="../articles/cross-validation.html">Cross-validation for the ngme2 models</a>
+    </li>
+    <li>
+      <a href="../articles/generic.html">Using the Generic Model in ngme2</a>
     </li>
   </ul>
 </li>
@@ -125,7 +137,7 @@
       <h1 data-toc-skip>Comparing Ngme2 with R-INLA</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/stable/vignettes/inla_compare.Rmd" class="external-link"><code>vignettes/inla_compare.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/HEAD/vignettes/inla_compare.Rmd" class="external-link"><code>vignettes/inla_compare.Rmd</code></a></small>
       <div class="hidden name"><code>inla_compare.Rmd</code></div>
 
     </div>
@@ -203,7 +215,7 @@ maximum edge length.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">post_mode_kappa</span></span>
 <span><span class="co">#&gt;         x </span></span>
-<span><span class="co">#&gt; 0.2027117</span></span>
+<span><span class="co">#&gt; 0.1957168</span></span>
 <span></span>
 <span><span class="co"># posterior mode of tau</span></span>
 <span><span class="va">post_mode_tau</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="va">spde_res</span><span class="op">$</span><span class="va">marginals.tau</span>,</span>
@@ -214,7 +226,7 @@ maximum edge length.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fl">1</span> <span class="op">/</span> <span class="va">post_mode_tau</span> <span class="co"># for comparison with Ngme2 (same as sigma parameter in Ngme2)</span></span>
 <span><span class="co">#&gt;        x </span></span>
-<span><span class="co">#&gt; 10.40637</span></span></code></pre></div>
+<span><span class="co">#&gt; 10.23944</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="fit-1d-spde-model-with-ngme2">Fit 1d SPDE model with Ngme2<a class="anchor" aria-label="anchor" href="#fit-1d-spde-model-with-ngme2"></a>
@@ -245,10 +257,10 @@ maximum edge length.</p>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $myspde</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
-<span><span class="co">#&gt;       kappa = 0.237</span></span>
+<span><span class="co">#&gt;       kappa = 0.236</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 6.21</span></span>
+<span><span class="co">#&gt;       sigma = 6.22</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
@@ -270,12 +282,12 @@ as shown in the result.</p>
 <span><span class="co"># by dafult, predict() returns a bunch of statistics at the given location</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">pred_W</span><span class="op">)</span></span>
 <span><span class="co">#&gt; List of 6</span></span>
-<span><span class="co">#&gt;  $ mean      : num [1:94] -1.017 -1.024 -0.862 -0.976 -1.119 ...</span></span>
-<span><span class="co">#&gt;  $ sd        : num [1:94] 9.23 9.16 8.37 7.89 7.54 ...</span></span>
-<span><span class="co">#&gt;  $ 5quantile : num [1:94] -12.6 -12.9 -13 -13.7 -12.5 ...</span></span>
-<span><span class="co">#&gt;  $ 95quantile: num [1:94] 13.8 13.6 13.6 12.5 11.7 ...</span></span>
-<span><span class="co">#&gt;  $ median    : num [1:94] -1.77 -1.74 -1.13 -1.14 -1.1 ...</span></span>
-<span><span class="co">#&gt;  $ mode      : num [1:94] -11 -9 -1 -3 1 -1 -5 -5 3 -3 ...</span></span>
+<span><span class="co">#&gt;  $ mean      : num [1:94] -2.58 -2.54 -2.24 -1.98 -1.64 ...</span></span>
+<span><span class="co">#&gt;  $ sd        : num [1:94] 9.15 9.14 8.76 8.47 8.07 ...</span></span>
+<span><span class="co">#&gt;  $ 5quantile : num [1:94] -16.1 -15.9 -15.4 -14.6 -14.7 ...</span></span>
+<span><span class="co">#&gt;  $ 95quantile: num [1:94] 14.9 14.9 13.9 12.9 11.5 ...</span></span>
+<span><span class="co">#&gt;  $ median    : num [1:94] -3.05 -2.67 -2.34 -2.14 -1.54 ...</span></span>
+<span><span class="co">#&gt;  $ mode      : num [1:94] -7 -3 -5 -7 3 -5 -3 -3 -3 -1 ...</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines</a></span><span class="op">(</span><span class="va">mesh</span><span class="op">$</span><span class="va">loc</span>, <span class="va">pred_W</span><span class="op">[[</span><span class="st">"mean"</span><span class="op">]</span><span class="op">]</span>, col<span class="op">=</span><span class="fl">3</span>, lwd<span class="op">=</span><span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/title.html" class="external-link">title</a></span><span class="op">(</span><span class="st">"Posterior mean with Ngme2 and INLA"</span><span class="op">)</span></span>
 <span><span class="co"># One can add some quantile band to the plot using Ngme2</span></span>
@@ -320,12 +332,12 @@ easily extend the model to non-Gaussian case by changing the
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $myspde</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
-<span><span class="co">#&gt;       kappa = 0.282</span></span>
+<span><span class="co">#&gt;       kappa = 0.279</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -1.67</span></span>
-<span><span class="co">#&gt;       sigma = 9.17</span></span>
-<span><span class="co">#&gt;       nu = 0.15</span></span>
+<span><span class="co">#&gt;       mu = -1.65</span></span>
+<span><span class="co">#&gt;       sigma = 8.88</span></span>
+<span><span class="co">#&gt;       nu = 0.14</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
@@ -337,17 +349,17 @@ easily extend the model to non-Gaussian case by changing the
 <span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">result_ngme2</span>, <span class="st">"myspde"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="inla_compare_files/figure-html/unnamed-chunk-8-1.png" width="700"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
-<span><span class="co">#&gt; $kappa</span></span>
-<span><span class="co">#&gt; [1] 0.2816453</span></span>
+<span><span class="co">#&gt; $theta_K</span></span>
+<span><span class="co">#&gt; [1] 0.07804476</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $mu</span></span>
-<span><span class="co">#&gt; [1] -1.666326</span></span>
+<span><span class="co">#&gt; [1] -1.651608</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 9.172798</span></span>
+<span><span class="co">#&gt; [1] 8.880557</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nu</span></span>
-<span><span class="co">#&gt; [1] 0.1501046</span></span>
+<span><span class="co">#&gt; [1] 0.1402085</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">result_ngme2</span><span class="op">$</span><span class="va">replicates</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">models</span><span class="op">[[</span><span class="st">"myspde"</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">noise</span><span class="op">)</span></span></code></pre>
 <p><img src="inla_compare_files/figure-html/unnamed-chunk-8-2.png" width="700"></p>
 </div>
@@ -391,7 +403,7 @@ model).</p>
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.2.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
 </div>
 
       </footer>

@@ -1,14 +1,16 @@
-pandoc: 3.1.11
-pkgdown: 2.1.2
+pandoc: 3.1.9
+pkgdown: 2.1.1
 pkgdown_sha: ~
 articles:
   AR1-model: AR1-model.html
   bivariate: bivariate.html
   cross-validation: cross-validation.html
+  generic: generic.html
   inla_compare: inla_compare.html
   Installation_and_configuration: Installation_and_configuration.html
   matern-on-graph: matern-on-graph.html
   ngme2: ngme2.html
+  normal-nig-noise: normal-nig-noise.html
   pred_and_est: pred_and_est.html
   random-effect: random-effect.html
   replicate: replicate.html
@@ -16,7 +18,7 @@ articles:
   SPDE-model: SPDE-model.html
   tensor_product: tensor_product.html
   tp-bv: tp-bv.html
-last_built: 2025-04-29T13:10Z
+last_built: 2025-05-21T08:12Z
 urls:
   reference: https://davidbolin.github.io/ngme2/reference
   article: https://davidbolin.github.io/ngme2/articles

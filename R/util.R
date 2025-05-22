@@ -385,7 +385,7 @@ mean_list <- function(lls, weights=NULL) {
 }
 
 # helper functions
-# ar1 alpha (0~1) to theta_K
+# ar1 alpha (-1~1) to theta_K
 ar1_a2th <- function(a) {
   log((-1 - a) / (-1 + a))
 }

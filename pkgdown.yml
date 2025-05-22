@@ -18,7 +18,7 @@ articles:
   SPDE-model: SPDE-model.html
   tensor_product: tensor_product.html
   tp-bv: tp-bv.html
-last_built: 2025-05-21T08:12Z
+last_built: 2025-05-22T13:35Z
 urls:
   reference: https://davidbolin.github.io/ngme2/reference
   article: https://davidbolin.github.io/ngme2/articles

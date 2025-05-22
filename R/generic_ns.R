@@ -99,6 +99,8 @@ generic_ns <- function(
     trans = NULL,
     mesh = NULL,
     zero_trace = FALSE,
+    param_name = NULL,
+    param_trans = NULL,
     ...
 ) {
   if (!is.null(mesh)) mesh <- ngme_build_mesh(mesh)
@@ -118,8 +120,8 @@ generic_ns <- function(
   # Initialize transformations if not provided
   if (is.null(trans)) {
     trans <- list()
-    for (param_name in names(theta_K)) {
-      trans[[param_name]] <- "identity"
+    for (theta_K_name in names(theta_K)) {
+      trans[[theta_K_name]] <- "identity"
     }
   }
   
@@ -133,10 +135,10 @@ generic_ns <- function(
   if (is.null(B_theta_K)) {
     B_theta_K <- list()
     n <- nrow(matrices[[1]])
-    for (param_name in names(theta_K)) {
+    for (theta_K_name in names(theta_K)) {
       # Create a matrix of 1s with appropriate dimensions
       # Use a single column matrix since most parameters are scalar
-      B_theta_K[[param_name]] <- matrix(1, nrow = n, ncol = 1)
+      B_theta_K[[theta_K_name]] <- matrix(1, nrow = n, ncol = 1)
     }
   }
   
@@ -148,25 +150,25 @@ generic_ns <- function(
   
   # Process basis matrices for parameters
   param_matrices <- list()
-  for (param_name in names(B_theta_K)) {
-    B <- B_theta_K[[param_name]]
-    theta <- theta_K[[param_name]]
+  for (theta_K_name in names(B_theta_K)) {
+    B <- B_theta_K[[theta_K_name]]
+    theta <- theta_K[[theta_K_name]]
     
     # Validate dimensions
     if (length(theta) > 1 && ncol(B) != length(theta)) {
-      stop(sprintf("B_theta_K[[%s]] should have ncol matching length of theta_K[[%s]]", param_name, param_name))
+      stop(sprintf("B_theta_K[[%s]] should have ncol matching length of theta_K[[%s]]", theta_K_name, theta_K_name))
     }
     
     # Apply transformation to create parameter matrix
-    trans_type <- trans[[param_name]]
+    trans_type <- trans[[theta_K_name]]
     transformed_value <- name2fun(trans_type)(B %*% theta)
     
     if (trans_type %in% c("identity", "exp", "exp2", "exp4", "sqrt", "square", "log", "tanh")) {
       # For element-wise transformations, create diagonal matrix
-      param_matrices[[param_name]] <- Matrix::Diagonal(x = as.numeric(transformed_value))
+      param_matrices[[theta_K_name]] <- Matrix::Diagonal(x = as.numeric(transformed_value))
     } else {
       # For other transformations (like tanh for correlations), create the matrix directly
-      param_matrices[[param_name]] <- transformed_value
+      param_matrices[[theta_K_name]] <- transformed_value
     }
   }
   
@@ -178,18 +180,23 @@ generic_ns <- function(
   param_map <- list()
   idx <- 1
   
-  for (param_name in names(theta_K)) {
-    param_len <- length(theta_K[[param_name]])
-    param_map[[param_name]] <- idx:(idx + param_len - 1)
-    flat_theta_K <- c(flat_theta_K, theta_K[[param_name]])
-    idx <- idx + param_len
+  for (theta_K_name in names(theta_K)) {
+    theta_K_len <- length(theta_K[[theta_K_name]])
+    param_map[[theta_K_name]] <- idx:(idx + theta_K_len - 1)
+    flat_theta_K <- c(flat_theta_K, theta_K[[theta_K_name]])
+    idx <- idx + theta_K_len
   }
   names(flat_theta_K) <- rep(names(theta_K), sapply(theta_K, length))
   
   # Extract parameter transformation functions
-  param_trans <- list()
-  for (param_name in names(trans)) {
-    param_trans[[param_name]] <- name2fun(trans[[param_name]])
+  if (is.null(param_trans)) {
+    param_trans <- list()
+    for (theta_K_name in names(trans)) {
+      param_trans[[theta_K_name]] <- name2fun(trans[[theta_K_name]])
+    }
+  }
+  if (is.null(param_name)) {
+    param_name <- names(theta_K)
   }
   
   # Helper function to compute K (theta_K is a flat vector)
@@ -203,12 +210,12 @@ generic_ns <- function(
     all_matrices <- list()
     
     # First, create parameter matrices
-    for (param_name in names(param_map)) {
-      indices <- param_map[[param_name]]
+    for (theta_K_name in names(param_map)) {
+      indices <- param_map[[theta_K_name]]
       
       # Get basis matrix
-      B <- if (!is.null(B_theta_K[[param_name]])) {
-        B_theta_K[[param_name]]
+      B <- if (!is.null(B_theta_K[[theta_K_name]])) {
+        B_theta_K[[theta_K_name]]
       } else {
         # Default to matrix of ones (1 column)
         Matrix::Matrix(1, nrow = n, ncol = 1)
@@ -221,11 +228,11 @@ generic_ns <- function(
       expanded_values <- as.vector(B %*% param_values)
       
       # Apply transformation
-      trans_type <- if (!is.null(trans[[param_name]])) trans[[param_name]] else "identity"
+      trans_type <- if (!is.null(trans[[theta_K_name]])) trans[[theta_K_name]] else "identity"
       transformed_values <- name2fun(trans_type)(expanded_values)
       
       # Create diagonal matrix from expanded values
-      param_matrices[[param_name]] <- Matrix::Diagonal(x = as.numeric(transformed_values))
+      param_matrices[[theta_K_name]] <- Matrix::Diagonal(x = as.numeric(transformed_values))
     }
     
     # Create combined list of matrices (parameters first, then fixed matrices)
@@ -269,7 +276,7 @@ generic_ns <- function(
     update_K_func = update_K,
     symmetric = all(sapply(all_matrices, Matrix::isSymmetric)),
     zero_trace = zero_trace,
-    param_name = names(theta_K),
+    param_name = param_name,
     param_trans = param_trans,
     ... 
   )

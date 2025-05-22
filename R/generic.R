@@ -81,6 +81,8 @@ generic <- function(
     mesh = NULL,
     zero_trace = FALSE,
     model = "generic",
+    param_name = NULL,
+    param_trans = NULL,
     ...
 ) {
   if (!is.null(mesh)) mesh <- ngme_build_mesh(mesh)
@@ -114,20 +116,20 @@ generic <- function(
     old_trans <- trans
     trans <- list()
     for (i in seq_along(theta_K)) {
-      param_name <- names(theta_K)[i]
-      trans[[param_name]] <- rep("null", length(matrices))
-      trans[[param_name]][i] <- old_trans[i]
+      theta_K_name <- names(theta_K)[i]
+      trans[[theta_K_name]] <- rep("null", length(matrices))
+      trans[[theta_K_name]][i] <- old_trans[i]
     }
   }
 
   # Validate the structure of trans
   if (length(theta_K) > 0) {
     # Only validate trans if we have parameters
-    for (param_name in names(trans)) {
-      if (length(trans[[param_name]]) != length(matrices)) {
+    for (theta_K_name in names(trans)) {
+      if (length(trans[[theta_K_name]]) != length(matrices)) {
         stop(sprintf(
           "For parameter '%s', the transformation vector length (%d) must match the number of matrices (%d)",
-          param_name, length(trans[[param_name]]), length(matrices)
+          theta_K_name, length(trans[[theta_K_name]]), length(matrices)
         ))
       }
     }
@@ -144,6 +146,13 @@ generic <- function(
     return(K)
   }
 
+  if (is.null(param_trans)) {
+    param_trans <- get_param_trans(trans)
+  }
+  if (is.null(param_name)) {
+    param_name <- names(theta_K)
+  }
+
   ngme_operator(
     model = model,
     mesh = mesh,
@@ -156,8 +165,8 @@ generic <- function(
     matrices = sapply(matrices, ngme_as_sparse),
     symmetric = all(sapply(matrices, Matrix::isSymmetric)),
     zero_trace = zero_trace,
-    param_name = names(theta_K),
-    param_trans = get_param_trans(trans),
+    param_name = param_name,
+    param_trans = param_trans,
     ...
   )
 }

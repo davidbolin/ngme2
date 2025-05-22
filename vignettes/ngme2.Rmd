@@ -412,7 +412,7 @@ ggplot() +
 ```{r fit-parana, cache=TRUE}
 # Define the control options
 control = control_opt(
-  iterations = 2000,
+  iterations = 5000,
   n_slope_check = 4,
   stop_points = 10,
   std_lim = 0.1,
@@ -540,7 +540,7 @@ cv <- cross_validation(
   ), 
   type = "k-fold", 
   k = 10,
-  n_gibbs_samples = 3000,
+  n_gibbs_samples = 1000,
   n_burnin = 200,
   seed = 20
 )

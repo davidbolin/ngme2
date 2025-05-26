@@ -576,6 +576,7 @@ bv_matern_nig <- function(
 #' @param theta_gamma_x The x component of the advection term: `gamma_x = B_gamma_x %*% theta_gamma_x`.
 #' @param theta_gamma_y The y component of the advection term: `gamma_y = B_gamma_y %*% theta_gamma_y`.
 # ' @param theta_gamma_t The t component of the advection term: `gamma_t = B_gamma_t %*% theta_gamma_t`.
+#' @param shared_theta_gamma TRUE if share the same theta_gamma for all time nodes. (theta_gamma_x and theta_gamma_y will be the same)
 #' @param B_gamma_x The design matrix for the x component of the advection term.
 #' @param B_gamma_y The design matrix for the y component of the advection term.
 #' @param B_gamma_x_list A list of design matrices for the x component of the advection term on every time node, length(B_gamma_x_list) == nt-1.
@@ -595,6 +596,7 @@ spacetime <- function(
   fix_gamma = FALSE,
   theta_gamma_x = 0, 
   theta_gamma_y = 0, 
+  shared_theta_gamma = FALSE,
   # theta_gamma_t = 0, 
   B_gamma_x = matrix(1, nrow = mesh[[2]]$n, ncol = 1),
   B_gamma_y = matrix(1, nrow = mesh[[2]]$n, ncol = 1),
@@ -621,6 +623,17 @@ spacetime <- function(
       fmesher::fm_manifold_dim(mesh_s) == 2,
     "require package rSPDE" = requireNamespace("rSPDE", quietly = TRUE)
   )
+  
+  # Additional validation for shared_theta_gamma
+  if (shared_theta_gamma && !fix_gamma) {
+    if (!all(theta_gamma_x == theta_gamma_y)) {
+      warning("When shared_theta_gamma = TRUE, theta_gamma_x and theta_gamma_y should be the same. Using theta_gamma_x.")
+    }
+    # Check that B_gamma_x and B_gamma_y have the same number of columns when shared
+    if (ncol(B_gamma_x) != ncol(B_gamma_y)) {
+      stop("When shared_theta_gamma = TRUE, B_gamma_x and B_gamma_y must have the same number of columns.")
+    }
+  }
 
   if (!is.null(B_gamma_x_list) && !is.null(B_gamma_y_list)) {
     stopifnot(
@@ -633,6 +646,14 @@ spacetime <- function(
       "The ncol of items in B_gamma_y_list should be the same as the length of theta_gamma_y" = 
         all(sapply(B_gamma_y_list, ncol) == length(theta_gamma_y))
     )
+    
+    # Additional validation for shared_theta_gamma with lists
+    if (shared_theta_gamma && !fix_gamma) {
+      # Check that all matrices in B_gamma_x_list and B_gamma_y_list have the same number of columns
+      if (!all(sapply(B_gamma_x_list, ncol) == sapply(B_gamma_y_list, ncol))) {
+        stop("When shared_theta_gamma = TRUE, all matrices in B_gamma_x_list and B_gamma_y_list must have the same number of columns.")
+      }
+    }
   } else {
     # Use B_gamma_x and B_gamma_y
     stopifnot(
@@ -688,16 +709,27 @@ spacetime <- function(
   Bx = fem2d$Bx; By = fem2d$By
   Hxx = fem2d$Hxx; Hyy = fem2d$Hyy; Hxy = fem2d$Hxy; Hyx = fem2d$Hyx
 
-  theta_K <- if (fix_gamma) c(log(cc), log(kappa)) else 
+  theta_K <- if (fix_gamma) {
+    c(log(cc), log(kappa))
+  } else if (shared_theta_gamma) {
+    c(log(cc), log(kappa), theta_gamma_x)
+  } else {
     c(log(cc), log(kappa), theta_gamma_x, theta_gamma_y)
+  }
   n_theta_gamma_x <- if (fix_gamma) 0 else ncol(B_gamma_x)
-  n_theta_gamma_y <- if (fix_gamma) 0 else ncol(B_gamma_y)
+  n_theta_gamma_y <- if (fix_gamma) 0 else if (shared_theta_gamma) 0 else ncol(B_gamma_y)
 
   # gamma_x <- B_gamma_x %*% theta_gamma_x
   # gamma_y <- B_gamma_y %*% theta_gamma_y
 
-  gamma_x_list <- lapply(1:(nt-1), function(i) B_gamma_x_list[[i]] %*% theta_gamma_x)
-  gamma_y_list <- lapply(1:(nt-1), function(i) B_gamma_y_list[[i]] %*% theta_gamma_y)
+  if (shared_theta_gamma) {
+    # Use theta_gamma_x for both x and y components
+    gamma_x_list <- lapply(1:(nt-1), function(i) B_gamma_x_list[[i]] %*% theta_gamma_x)
+    gamma_y_list <- lapply(1:(nt-1), function(i) B_gamma_y_list[[i]] %*% theta_gamma_x)
+  } else {
+    gamma_x_list <- lapply(1:(nt-1), function(i) B_gamma_x_list[[i]] %*% theta_gamma_x)
+    gamma_y_list <- lapply(1:(nt-1), function(i) B_gamma_y_list[[i]] %*% theta_gamma_y)
+  }
   # gamma_t <- B_gamma_t %*% theta_gamma_t
   build_Bs <- function(gamma_x, gamma_y) {
     Dx = Matrix::Diagonal(x = gamma_x) 
@@ -733,8 +765,14 @@ spacetime <- function(
   update_K <- function(theta_K) {
     cc <- exp(theta_K[1])
     kappa <- exp(theta_K[2])
-    theta_gamma_x <- if (length(theta_K) > 2) theta_K[3:(2 + n_theta_gamma_x)] else double(0)
-    theta_gamma_y <- if (length(theta_K) > 2) theta_K[(3 + n_theta_gamma_x):length(theta_K)] else double(0)
+    
+    if (shared_theta_gamma) {
+      theta_gamma_x <- if (length(theta_K) > 2) theta_K[3:(2 + n_theta_gamma_x)] else double(0)
+      theta_gamma_y <- theta_gamma_x  # Use same parameter for both x and y
+    } else {
+      theta_gamma_x <- if (length(theta_K) > 2) theta_K[3:(2 + n_theta_gamma_x)] else double(0)
+      theta_gamma_y <- if (length(theta_K) > 2) theta_K[(3 + n_theta_gamma_x):length(theta_K)] else double(0)
+    }
 
     # gamma_x <- as.vector(B_gamma_x %*% theta_gamma_x)
     # gamma_y <- as.vector(B_gamma_y %*% theta_gamma_y)
@@ -804,6 +842,7 @@ spacetime <- function(
     theta_gamma_x = theta_gamma_x,
     theta_gamma_y = theta_gamma_y,
     fix_gamma = fix_gamma,
+    shared_theta_gamma = shared_theta_gamma,
     lambda = lambda,
     nt = nt,
     # B_gamma_x = B_gamma_x,
@@ -835,9 +874,13 @@ spacetime <- function(
     symmetric = FALSE,
     zero_trace = FALSE,
     param_name =
-      c("cc", "kappa", if (!fix_gamma) c("theta_gamma_x", "theta_gamma_y") else NULL),
+      c("cc", "kappa", if (!fix_gamma) {
+        if (shared_theta_gamma) "theta_gamma" else c("theta_gamma_x", "theta_gamma_y")
+      } else NULL),
     param_trans =
-      c(exp, exp, if (!fix_gamma) c(identity, identity) else NULL)
+      c(exp, exp, if (!fix_gamma) {
+        if (shared_theta_gamma) identity else c(identity, identity)
+      } else NULL)
   )
 }
 

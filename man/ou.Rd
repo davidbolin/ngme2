@@ -4,14 +4,14 @@
 \alias{ou}
 \title{ngme Ornstein–Uhlenbeck process specification}
 \usage{
-ou(mesh, theta_K = 0, B_K = NULL, ...)
+ou(mesh, theta_K = 0, B_theta_K = NULL, ...)
 }
 \arguments{
 \item{mesh}{mesh for build the model}
 
-\item{theta_K}{initial value for theta_K, kappa = exp(B_K * theta_K)}
+\item{theta_K}{initial value for theta_K, kappa = exp(B_theta_K * theta_K)}
 
-\item{B_K}{bases for theta_K}
+\item{B_theta_K}{bases for theta_K}
 
 \item{...}{ignore}
 }

@@ -9,10 +9,13 @@ generic_ns(
   matrices,
   position,
   h,
+  model = "generic_ns",
   B_theta_K = NULL,
   trans = NULL,
   mesh = NULL,
   zero_trace = FALSE,
+  param_name = NULL,
+  param_trans = NULL,
   ...
 )
 }

@@ -93,6 +93,7 @@ Spacetime::Spacetime(const Rcpp::List& operator_list):
   method (Rcpp::as<string> (operator_list["method"])),
   stabilization (Rcpp::as<bool> (operator_list["stabilization"])),
   fix_gamma (Rcpp::as<bool> (operator_list["fix_gamma"])),
+  shared_theta_gamma (Rcpp::as<bool> (operator_list["shared_theta_gamma"])),
   nt (Rcpp::as<int> (operator_list["nt"])),
   B_gamma_x_list (nt-1),
   B_gamma_y_list (nt-1)
@@ -112,8 +113,13 @@ void Spacetime::update_K(const VectorXd& theta_K) {
   double kappa = exp(theta_K[1]);
 
   if (!fix_gamma) {
-    theta_gamma_x = theta_K.segment(2, n_theta_gamma_x);
-    theta_gamma_y = theta_K.segment(2 + n_theta_gamma_x, n_theta_gamma_y);
+    if (shared_theta_gamma) {
+      theta_gamma_x = theta_K.segment(2, n_theta_gamma_x);
+      theta_gamma_y = theta_gamma_x;  // Use same parameter for both x and y
+    } else {
+      theta_gamma_x = theta_K.segment(2, n_theta_gamma_x);
+      theta_gamma_y = theta_K.segment(2 + n_theta_gamma_x, n_theta_gamma_y);
+    }
   
     std::vector<VectorXd> gamma_x_list (nt-1);
     std::vector<VectorXd> gamma_y_list (nt-1);

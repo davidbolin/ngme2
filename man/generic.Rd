@@ -11,6 +11,9 @@ generic(
   trans = NULL,
   mesh = NULL,
   zero_trace = FALSE,
+  model = "generic",
+  param_name = NULL,
+  param_trans = NULL,
   ...
 )
 }
@@ -30,6 +33,8 @@ Available transformations: "identity", "exp", "exp2", "exp4", "sqrt", "square", 
 \item{mesh}{The mesh object}
 
 \item{zero_trace}{Whether the trace of K should be zero}
+
+\item{model}{The model type name}
 
 \item{...}{Additional arguments (ignored)}
 }

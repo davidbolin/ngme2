@@ -124,7 +124,7 @@ private:
   int n_theta_gamma_x, n_theta_gamma_y;
   double lambda, alpha;
   string method; // galerkin, backward Euler
-  bool stabilization, fix_gamma;
+  bool stabilization, fix_gamma, shared_theta_gamma;
   int nt;
   std::vector<MatrixXd> B_gamma_x_list, B_gamma_y_list;
 public:

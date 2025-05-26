@@ -13,6 +13,7 @@ spacetime(
   fix_gamma = FALSE,
   theta_gamma_x = 0,
   theta_gamma_y = 0,
+  shared_theta_gamma = FALSE,
   B_gamma_x = matrix(1, nrow = mesh[[2]]$n, ncol = 1),
   B_gamma_y = matrix(1, nrow = mesh[[2]]$n, ncol = 1),
   B_gamma_x_list = NULL,
@@ -41,6 +42,8 @@ spacetime(
 \item{theta_gamma_x}{The x component of the advection term: `gamma_x = B_gamma_x %*% theta_gamma_x`.}
 
 \item{theta_gamma_y}{The y component of the advection term: `gamma_y = B_gamma_y %*% theta_gamma_y`.}
+
+\item{shared_theta_gamma}{TRUE if share the same theta_gamma for all time nodes. (theta_gamma_x and theta_gamma_y will be the same)}
 
 \item{B_gamma_x}{The design matrix for the x component of the advection term.}
 

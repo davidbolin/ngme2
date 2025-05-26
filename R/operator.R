@@ -129,10 +129,17 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
     spacetime = {
       cat(pad_add4_space); cat("alpha =", format(alpha, digits=2), "(fixed)", "\n", sep=" ")
       if (!fix_gamma) {
-        theta_gamma_x <- theta_K[3:(2+n_theta_gamma_x)]
-        theta_gamma_y <- theta_K[(3+n_theta_gamma_x):(2+n_theta_gamma_x+n_theta_gamma_y)]
-        cat(pad_add4_space); cat("theta_gamma_x =", format(theta_gamma_x, digits=2), "\n", sep=" ")
-        cat(pad_add4_space); cat("theta_gamma_y =", format(theta_gamma_y, digits=2), "\n", sep=" ")
+        if (shared_theta_gamma) {
+          # When shared_theta_gamma = TRUE, only extract theta_gamma_x and use it for both
+          theta_gamma_shared <- theta_K[3:(2+n_theta_gamma_x)]
+          cat(pad_add4_space); cat("theta_gamma (x and y) =", format(theta_gamma_shared, digits=2), "\n", sep=" ")
+        } else {
+          # When shared_theta_gamma = FALSE, extract both separately
+          theta_gamma_x <- theta_K[3:(2+n_theta_gamma_x)]
+          theta_gamma_y <- theta_K[(3+n_theta_gamma_x):(2+n_theta_gamma_x+n_theta_gamma_y)]
+          cat(pad_add4_space); cat("theta_gamma_x =", format(theta_gamma_x, digits=2), "\n", sep=" ")
+          cat(pad_add4_space); cat("theta_gamma_y =", format(theta_gamma_y, digits=2), "\n", sep=" ")
+        }
       } else {
         cat(pad_add4_space); cat("theta_gamma_x =", format(theta_gamma_x, digits=2), "(fixed)", "\n", sep=" ")
         cat(pad_add4_space); cat("theta_gamma_y =", format(theta_gamma_y, digits=2), "(fixed)", "\n", sep=" ")

@@ -1,5 +1,6 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://davidbolin.github.io/ngme2/404.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/CHANGES_SUMMARY.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/LICENSE-text.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/AR1-model.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/Installation_and_configuration.html</loc></url>
@@ -91,6 +92,7 @@
 <url><loc>https://davidbolin.github.io/ngme2/reference/simulate.ngme_model.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/simulate.ngme_noise.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/spacetime.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/reference/srft_data.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/summary.ngme.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/test_ngme.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/tp.html</loc></url>

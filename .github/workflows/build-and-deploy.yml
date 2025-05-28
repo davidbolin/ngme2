@@ -40,13 +40,20 @@ jobs:
       - name: Install LLVM & libomp (macOS)
         if: matrix.os == 'macos-latest'
         run: |
-          # Install LLVM@18 and libomp
-          brew install llvm@18 libomp
+          # Install LLVM@18, libomp, and gcc
+          brew install llvm@18 libomp gcc
           
           # Set environment variables
           LLVM_PREFIX=$(brew --prefix llvm@18)
           LIBOMP_PREFIX=$(brew --prefix libomp)
           GCC_PREFIX=$(brew --prefix gcc)
+          
+          # Find the actual GCC lib directory
+          GCC_LIB_DIR=$(find $GCC_PREFIX/lib/gcc -name "*" -type d | head -1)
+          if [ -z "$GCC_LIB_DIR" ]; then
+            echo "Warning: GCC lib directory not found, using system paths"
+            GCC_LIB_DIR="/usr/local/lib"
+          fi
           
           echo "PATH=$LLVM_PREFIX/bin:$PATH" >> $GITHUB_ENV
           echo "CC=$LLVM_PREFIX/bin/clang" >> $GITHUB_ENV
@@ -70,8 +77,8 @@ jobs:
           # Use -rpath with @rpath notation for better portability
           LDFLAGS += -L$LLVM_PREFIX/lib -L$LLVM_PREFIX/lib/c++ -L$LIBOMP_PREFIX/lib -Wl,-rpath,@loader_path/Resources/lib -lomp
           
-          # Set Fortran libs
-          FLIBS = -L$GCC_PREFIX/lib/gcc/current -lgfortran -lquadmath
+          # Set Fortran libs - use actual GCC lib directory
+          FLIBS = -L$GCC_LIB_DIR -lgfortran -lquadmath
           EOF
           
           # For debugging
@@ -81,6 +88,13 @@ jobs:
           echo "LLVM_PREFIX: $LLVM_PREFIX"
           echo "LIBOMP_PREFIX: $LIBOMP_PREFIX"
           echo "GCC_PREFIX: $GCC_PREFIX"
+          echo "GCC_LIB_DIR: $GCC_LIB_DIR"
+          
+          # Verify libraries exist
+          echo "Checking for required libraries:"
+          ls -la $LLVM_PREFIX/lib/libomp.dylib || ls -la $LIBOMP_PREFIX/lib/libomp.dylib || echo "libomp.dylib not found"
+          ls -la $GCC_LIB_DIR/libgfortran.* || echo "libgfortran not found in $GCC_LIB_DIR"
+          ls -la $GCC_LIB_DIR/libquadmath.* || echo "libquadmath not found in $GCC_LIB_DIR"
 
       # ───── build source package ─────
       - name: Build source package
@@ -97,14 +111,23 @@ jobs:
           GCC_PREFIX=$(brew --prefix gcc)
           R_HOME=$(R RHOME)
           
+          # Find the actual GCC lib directory
+          GCC_LIB_DIR=$(find $GCC_PREFIX/lib/gcc -name "*" -type d | head -1)
+          if [ -z "$GCC_LIB_DIR" ]; then
+            echo "Warning: GCC lib directory not found, using system paths"
+            GCC_LIB_DIR="/usr/local/lib"
+          fi
+          
+          echo "Using GCC_LIB_DIR: $GCC_LIB_DIR"
+          
           # Set environment variables for the build
           export PATH="$LLVM_PREFIX/bin:$PATH"
           export CC="$LLVM_PREFIX/bin/clang"
           export CXX="$LLVM_PREFIX/bin/clang++"
           export CFLAGS="-fopenmp -I$LLVM_PREFIX/include -I$LIBOMP_PREFIX/include"
           export CXXFLAGS="-fopenmp -I$LLVM_PREFIX/include -I$LIBOMP_PREFIX/include"
-          export LDFLAGS="-L$LLVM_PREFIX/lib -L$LIBOMP_PREFIX/lib -L$GCC_PREFIX/lib/gcc/current -lomp -Wl,-rpath,@loader_path/Resources/lib"
-          export DYLD_FALLBACK_LIBRARY_PATH="$LIBOMP_PREFIX/lib:$LLVM_PREFIX/lib:$R_HOME/lib:$GCC_PREFIX/lib/gcc/current:/usr/local/lib:/usr/lib"
+          export LDFLAGS="-L$LLVM_PREFIX/lib -L$LIBOMP_PREFIX/lib -L$GCC_LIB_DIR -lomp -Wl,-rpath,@loader_path/Resources/lib"
+          export DYLD_FALLBACK_LIBRARY_PATH="$LIBOMP_PREFIX/lib:$LLVM_PREFIX/lib:$R_HOME/lib:$GCC_LIB_DIR:/usr/local/lib:/usr/lib"
           
           # Build the binary package
           R CMD INSTALL --build --no-build-vignettes --no-docs --no-html --no-multiarch *.tar.gz
@@ -133,16 +156,28 @@ jobs:
             install_name_tool -change "$LIBOMP_PREFIX/lib/libomp.dylib" "@rpath/libomp.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libomp path"
             install_name_tool -change "$R_HOME/lib/libomp.dylib" "@rpath/libomp.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch R libomp path"
             install_name_tool -change "/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/lib/libomp.dylib" "@rpath/libomp.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch R libomp path"
-            install_name_tool -change "$GCC_PREFIX/lib/gcc/current/libgfortran.5.dylib" "@rpath/libgfortran.5.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libgfortran path"
-            install_name_tool -change "$GCC_PREFIX/lib/gcc/current/libquadmath.0.dylib" "@rpath/libquadmath.0.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libquadmath path"
+            
+            # Fix Fortran library paths - use actual paths
+            LIBGFORTRAN_PATH=$(find $GCC_LIB_DIR -name "libgfortran.*.dylib" | head -1)
+            LIBQUADMATH_PATH=$(find $GCC_LIB_DIR -name "libquadmath.*.dylib" | head -1)
+            
+            if [ -n "$LIBGFORTRAN_PATH" ]; then
+              LIBGFORTRAN_NAME=$(basename "$LIBGFORTRAN_PATH")
+              install_name_tool -change "$LIBGFORTRAN_PATH" "@rpath/$LIBGFORTRAN_NAME" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libgfortran path"
+              cp "$LIBGFORTRAN_PATH" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy $LIBGFORTRAN_NAME"
+            fi
+            
+            if [ -n "$LIBQUADMATH_PATH" ]; then
+              LIBQUADMATH_NAME=$(basename "$LIBQUADMATH_PATH")
+              install_name_tool -change "$LIBQUADMATH_PATH" "@rpath/$LIBQUADMATH_NAME" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libquadmath path"
+              cp "$LIBQUADMATH_PATH" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy $LIBQUADMATH_NAME"
+            fi
             
             # Copy required libraries
             cp "$LLVM_PREFIX/lib/c++/libc++.1.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libc++.1.dylib"
             cp "$LLVM_PREFIX/lib/libunwind.1.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libunwind.1.dylib"
             cp "$LLVM_PREFIX/lib/c++/libc++abi.1.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libc++abi.1.dylib"
             cp "$LIBOMP_PREFIX/lib/libomp.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libomp.dylib"
-            cp "$GCC_PREFIX/lib/gcc/current/libgfortran.5.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libgfortran.5.dylib"
-            cp "$GCC_PREFIX/lib/gcc/current/libquadmath.0.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libquadmath.0.dylib"
             
             # Fix paths within the copied libraries
             install_name_tool -change "$LLVM_PREFIX/lib/c++/libc++abi.1.dylib" "@rpath/libc++abi.1.dylib" check_pkg/ngme2/libs/Resources/lib/libc++.1.dylib || echo "Failed to patch libc++abi path in libc++.1.dylib"

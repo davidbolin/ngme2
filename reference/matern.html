@@ -114,7 +114,7 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">matern</span><span class="op">(</span><span class="va">mesh</span>, alpha <span class="op">=</span> <span class="fl">2</span>, kappa <span class="op">=</span> <span class="cn">NULL</span>, theta_K <span class="op">=</span> <span class="cn">NULL</span>, B_K <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">matern</span><span class="op">(</span><span class="va">mesh</span>, alpha <span class="op">=</span> <span class="fl">2</span>, kappa <span class="op">=</span> <span class="cn">NULL</span>, theta_K <span class="op">=</span> <span class="cn">NULL</span>, B_theta_K <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -134,10 +134,10 @@
 
 
 <dt id="arg-theta-k">theta_K<a class="anchor" aria-label="anchor" href="#arg-theta-k"></a></dt>
-<dd><p>kappa = exp(B_K * theta_K), for the non-stationary model, it is the range parameter</p></dd>
+<dd><p>kappa = exp(B_theta_K * theta_K), for the non-stationary model, it is the range parameter</p></dd>
 
 
-<dt id="arg-b-k">B_K<a class="anchor" aria-label="anchor" href="#arg-b-k"></a></dt>
+<dt id="arg-b-theta-k">B_theta_K<a class="anchor" aria-label="anchor" href="#arg-b-theta-k"></a></dt>
 <dd><p>bases for theta_K, ignore if use the stationary model</p></dd>
 
 

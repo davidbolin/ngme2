@@ -201,19 +201,70 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          path: .
+          path: artifacts
+
+      - name: Move artifacts to correct directories
+        run: |
+          # Move source packages
+          find artifacts -name "source-*" -type d | while read dir; do
+            find "$dir" -name "*.tar.gz" -exec cp {} src/contrib/ \;
+          done
+          
+          # Move Windows binaries
+          find artifacts -name "windows-*" -type d | while read dir; do
+            find "$dir" -name "*.zip" -exec cp {} bin/windows/contrib/ \;
+          done
+          
+          # Move macOS binaries
+          find artifacts -name "macos-*" -type d | while read dir; do
+            find "$dir" -name "*.tgz" -exec cp {} bin/macosx/contrib/ \;
+          done
+          
+          # List what we have
+          echo "Source packages:"
+          ls -la src/contrib/ || echo "No source packages"
+          echo "Windows packages:"
+          ls -la bin/windows/contrib/ || echo "No Windows packages"
+          echo "macOS packages:"
+          ls -la bin/macosx/contrib/ || echo "No macOS packages"
 
       - name: Generate PACKAGES indices
         run: |
-          Rscript -e 'tools::write_PACKAGES("src/contrib", type="source")'
-          Rscript -e 'tools::write_PACKAGES("bin/windows/contrib",    type="win.binary")'
-          Rscript -e 'tools::write_PACKAGES("bin/macosx/contrib",    type="mac.binary")'
+          # Only generate PACKAGES if there are files in the directory
+          if [ "$(ls -A src/contrib/)" ]; then
+            echo "Generating PACKAGES for source packages..."
+            Rscript -e 'tools::write_PACKAGES("src/contrib", type="source")'
+          else
+            echo "No source packages found, skipping PACKAGES generation"
+          fi
+          
+          if [ "$(ls -A bin/windows/contrib/)" ]; then
+            echo "Generating PACKAGES for Windows packages..."
+            Rscript -e 'tools::write_PACKAGES("bin/windows/contrib", type="win.binary")'
+          else
+            echo "No Windows packages found, skipping PACKAGES generation"
+          fi
+          
+          if [ "$(ls -A bin/macosx/contrib/)" ]; then
+            echo "Generating PACKAGES for macOS packages..."
+            Rscript -e 'tools::write_PACKAGES("bin/macosx/contrib", type="mac.binary")'
+          else
+            echo "No macOS packages found, skipping PACKAGES generation"
+          fi
 
       - name: Commit & Push binaries
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add bin/ src/ PACKAGES*
+          
+          # Add directories and any PACKAGES files that exist
+          git add bin/ src/
+          
+          # Add PACKAGES files if they exist
+          find . -name "PACKAGES*" -type f | while read file; do
+            git add "$file"
+          done
+          
           if ! git diff --cached --quiet; then
             git commit -m "📦 Update binaries [skip ci]"
             git push origin gh-pages

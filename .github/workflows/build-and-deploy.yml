@@ -48,10 +48,26 @@ jobs:
           LIBOMP_PREFIX=$(brew --prefix libomp)
           GCC_PREFIX=$(brew --prefix gcc)
           
-          # Find the actual GCC lib directory
-          GCC_LIB_DIR=$(find $GCC_PREFIX/lib/gcc -name "*" -type d | head -1)
+          # Find the actual GCC lib directory with version
+          echo "Looking for GCC libraries in: $GCC_PREFIX/lib/gcc"
+          ls -la $GCC_PREFIX/lib/gcc/ || echo "GCC lib/gcc directory not found"
+          
+          # Find the version-specific directory
+          GCC_LIB_DIR=$(find $GCC_PREFIX/lib/gcc -maxdepth 1 -type d -name "*" | grep -v "^$GCC_PREFIX/lib/gcc$" | head -1)
           if [ -z "$GCC_LIB_DIR" ]; then
-            echo "Warning: GCC lib directory not found, using system paths"
+            echo "Warning: GCC version directory not found, trying alternative paths"
+            # Try to find libgfortran in common locations
+            for path in "$GCC_PREFIX/lib" "/usr/local/lib" "/opt/homebrew/lib"; do
+              if [ -f "$path/libgfortran.dylib" ] || [ -f "$path/libgfortran.a" ]; then
+                GCC_LIB_DIR="$path"
+                echo "Found Fortran libraries in: $GCC_LIB_DIR"
+                break
+              fi
+            done
+          fi
+          
+          if [ -z "$GCC_LIB_DIR" ]; then
+            echo "Error: Could not find GCC/Fortran libraries"
             GCC_LIB_DIR="/usr/local/lib"
           fi
           
@@ -77,8 +93,8 @@ jobs:
           # Use -rpath with @rpath notation for better portability
           LDFLAGS += -L$LLVM_PREFIX/lib -L$LLVM_PREFIX/lib/c++ -L$LIBOMP_PREFIX/lib -Wl,-rpath,@loader_path/Resources/lib -lomp
           
-          # Set Fortran libs - use actual GCC lib directory
-          FLIBS = -L$GCC_LIB_DIR -lgfortran -lquadmath
+          # Try multiple paths for Fortran libraries
+          FLIBS = -L$GCC_LIB_DIR -L$GCC_PREFIX/lib -lgfortran -lquadmath
           EOF
           
           # For debugging
@@ -93,8 +109,17 @@ jobs:
           # Verify libraries exist
           echo "Checking for required libraries:"
           ls -la $LLVM_PREFIX/lib/libomp.dylib || ls -la $LIBOMP_PREFIX/lib/libomp.dylib || echo "libomp.dylib not found"
-          ls -la $GCC_LIB_DIR/libgfortran.* || echo "libgfortran not found in $GCC_LIB_DIR"
-          ls -la $GCC_LIB_DIR/libquadmath.* || echo "libquadmath not found in $GCC_LIB_DIR"
+          find $GCC_LIB_DIR -name "libgfortran*" -type f || echo "libgfortran not found in $GCC_LIB_DIR"
+          find $GCC_LIB_DIR -name "libquadmath*" -type f || echo "libquadmath not found in $GCC_LIB_DIR"
+          
+          # Also check system-wide
+          echo "System-wide library search:"
+          find /opt/homebrew -name "libgfortran*" -type f 2>/dev/null | head -5 || echo "No libgfortran found in /opt/homebrew"
+          
+          # Try to locate libraries with different methods
+          echo "Alternative library search methods:"
+          gfortran --print-file-name=libgfortran.dylib 2>/dev/null || echo "gfortran command not available"
+          find $GCC_PREFIX -name "libgfortran*" -type f 2>/dev/null | head -3 || echo "No libgfortran in GCC_PREFIX"
 
       # ───── build source package ─────
       - name: Build source package
@@ -111,14 +136,34 @@ jobs:
           GCC_PREFIX=$(brew --prefix gcc)
           R_HOME=$(R RHOME)
           
-          # Find the actual GCC lib directory
-          GCC_LIB_DIR=$(find $GCC_PREFIX/lib/gcc -name "*" -type d | head -1)
+          # Find the actual GCC lib directory with version (same logic as setup step)
+          echo "Looking for GCC libraries in: $GCC_PREFIX/lib/gcc"
+          ls -la $GCC_PREFIX/lib/gcc/ || echo "GCC lib/gcc directory not found"
+          
+          # Find the version-specific directory
+          GCC_LIB_DIR=$(find $GCC_PREFIX/lib/gcc -maxdepth 1 -type d -name "*" | grep -v "^$GCC_PREFIX/lib/gcc$" | head -1)
           if [ -z "$GCC_LIB_DIR" ]; then
-            echo "Warning: GCC lib directory not found, using system paths"
+            echo "Warning: GCC version directory not found, trying alternative paths"
+            # Try to find libgfortran in common locations
+            for path in "$GCC_PREFIX/lib" "/usr/local/lib" "/opt/homebrew/lib"; do
+              if [ -f "$path/libgfortran.dylib" ] || [ -f "$path/libgfortran.a" ]; then
+                GCC_LIB_DIR="$path"
+                echo "Found Fortran libraries in: $GCC_LIB_DIR"
+                break
+              fi
+            done
+          fi
+          
+          if [ -z "$GCC_LIB_DIR" ]; then
+            echo "Error: Could not find GCC/Fortran libraries"
             GCC_LIB_DIR="/usr/local/lib"
           fi
           
           echo "Using GCC_LIB_DIR: $GCC_LIB_DIR"
+          
+          # List what's actually in the GCC lib directory
+          echo "Contents of GCC_LIB_DIR:"
+          ls -la "$GCC_LIB_DIR" | grep -E "(gfortran|quadmath)" || echo "No Fortran libraries found"
           
           # Set environment variables for the build
           export PATH="$LLVM_PREFIX/bin:$PATH"
@@ -126,8 +171,8 @@ jobs:
           export CXX="$LLVM_PREFIX/bin/clang++"
           export CFLAGS="-fopenmp -I$LLVM_PREFIX/include -I$LIBOMP_PREFIX/include"
           export CXXFLAGS="-fopenmp -I$LLVM_PREFIX/include -I$LIBOMP_PREFIX/include"
-          export LDFLAGS="-L$LLVM_PREFIX/lib -L$LIBOMP_PREFIX/lib -L$GCC_LIB_DIR -lomp -Wl,-rpath,@loader_path/Resources/lib"
-          export DYLD_FALLBACK_LIBRARY_PATH="$LIBOMP_PREFIX/lib:$LLVM_PREFIX/lib:$R_HOME/lib:$GCC_LIB_DIR:/usr/local/lib:/usr/lib"
+          export LDFLAGS="-L$LLVM_PREFIX/lib -L$LIBOMP_PREFIX/lib -L$GCC_LIB_DIR -L$GCC_PREFIX/lib -lomp -Wl,-rpath,@loader_path/Resources/lib"
+          export DYLD_FALLBACK_LIBRARY_PATH="$LIBOMP_PREFIX/lib:$LLVM_PREFIX/lib:$R_HOME/lib:$GCC_LIB_DIR:$GCC_PREFIX/lib:/usr/local/lib:/usr/lib"
           
           # Build the binary package
           R CMD INSTALL --build --no-build-vignettes --no-docs --no-html --no-multiarch *.tar.gz

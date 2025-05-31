@@ -181,6 +181,10 @@ jobs:
           BUILT_PKG=$(ls -t *.tgz | head -n 1)
           echo "Created binary package: $BUILT_PKG"
           
+          # Get system architecture for proper naming
+          ARCH=$(uname -m)
+          echo "System architecture: $ARCH"
+          
           # Extract and check the .so file
           mkdir -p check_pkg
           tar -xzf "$BUILT_PKG" -C check_pkg
@@ -233,6 +237,7 @@ jobs:
             cd ..
             
             echo "Final package created: $BUILT_PKG"
+            echo "Package architecture: $ARCH (detected from $(file check_pkg/ngme2/libs/ngme2.so))"
           fi
         shell: bash
       - name: Upload macOS binary
@@ -274,8 +279,17 @@ jobs:
 
       - name: Create binary dirs
         run: |
-          mkdir -p bin/windows/contrib \
-                   bin/macosx/contrib \
+          # Create architecture-specific directories for macOS
+          # Apple Silicon (arm64) uses big-sur-arm64, Intel uses contrib directly
+          mkdir -p bin/windows/contrib/4.3 \
+                   bin/windows/contrib/4.4 \
+                   bin/windows/contrib/4.5 \
+                   bin/macosx/big-sur-arm64/contrib/4.3 \
+                   bin/macosx/big-sur-arm64/contrib/4.4 \
+                   bin/macosx/big-sur-arm64/contrib/4.5 \
+                   bin/macosx/contrib/4.3 \
+                   bin/macosx/contrib/4.4 \
+                   bin/macosx/contrib/4.5 \
                    src/contrib
 
       - name: Download artifacts
@@ -290,27 +304,67 @@ jobs:
             find "$dir" -name "*.tar.gz" -exec cp {} src/contrib/ \;
           done
           
-          # Move Windows binaries
+          # Move Windows binaries to R version-specific directories
           find artifacts -name "windows-*" -type d | while read dir; do
-            find "$dir" -name "*.zip" -exec cp {} bin/windows/contrib/ \;
+            # Extract R version from directory name (e.g., windows-4.3)
+            r_version=$(basename "$dir" | sed 's/windows-//')
+            echo "Processing Windows R version: $r_version"
+            find "$dir" -name "*.zip" -exec cp {} "bin/windows/contrib/$r_version/" \;
           done
           
-          # Move macOS binaries
+          # Move macOS binaries to architecture and R version-specific directories
           find artifacts -name "macos-*" -type d | while read dir; do
-            find "$dir" -name "*.tgz" -exec cp {} bin/macosx/contrib/ \;
+            # Extract R version from directory name (e.g., macos-4.3)
+            r_version=$(basename "$dir" | sed 's/macos-//')
+            echo "Processing macOS R version: $r_version"
+            
+            # Check each .tgz file to determine architecture
+            find "$dir" -name "*.tgz" | while read pkg; do
+              # Extract the package to check architecture
+              temp_dir=$(mktemp -d)
+              tar -xzf "$pkg" -C "$temp_dir" 2>/dev/null || continue
+              
+              # Look for .so files to determine architecture
+              so_file=$(find "$temp_dir" -name "*.so" | head -1)
+              if [ -n "$so_file" ]; then
+                # Use file command to determine architecture
+                arch_info=$(file "$so_file" 2>/dev/null)
+                
+                if echo "$arch_info" | grep -q "arm64"; then
+                  # Apple Silicon (ARM64)
+                  echo "Detected ARM64 architecture for $pkg"
+                  cp "$pkg" "bin/macosx/big-sur-arm64/contrib/$r_version/"
+                elif echo "$arch_info" | grep -q "x86_64"; then
+                  # Intel (x86_64)
+                  echo "Detected x86_64 architecture for $pkg"
+                  cp "$pkg" "bin/macosx/contrib/$r_version/"
+                else
+                  # Fallback: assume ARM64 since GitHub Actions macos-latest is ARM64
+                  echo "Could not determine architecture for $pkg, assuming ARM64"
+                  cp "$pkg" "bin/macosx/big-sur-arm64/contrib/$r_version/"
+                fi
+              else
+                # No .so file found, fallback to ARM64
+                echo "No .so file found in $pkg, assuming ARM64"
+                cp "$pkg" "bin/macosx/big-sur-arm64/contrib/$r_version/"
+              fi
+              
+              # Clean up
+              rm -rf "$temp_dir"
+            done
           done
           
           # List what we have
           echo "Source packages:"
           ls -la src/contrib/ || echo "No source packages"
           echo "Windows packages:"
-          ls -la bin/windows/contrib/ || echo "No Windows packages"
+          find bin/windows/contrib/ -name "*.zip" -ls 2>/dev/null || echo "No Windows packages"
           echo "macOS packages:"
-          ls -la bin/macosx/contrib/ || echo "No macOS packages"
+          find bin/macosx/ -name "*.tgz" -ls 2>/dev/null || echo "No macOS packages"
 
       - name: Generate PACKAGES indices
         run: |
-          # Only generate PACKAGES if there are files in the directory
+          # Generate PACKAGES for source packages
           if [ "$(ls -A src/contrib/)" ]; then
             echo "Generating PACKAGES for source packages..."
             Rscript -e 'tools::write_PACKAGES("src/contrib", type="source")'
@@ -318,19 +372,37 @@ jobs:
             echo "No source packages found, skipping PACKAGES generation"
           fi
           
-          if [ "$(ls -A bin/windows/contrib/)" ]; then
-            echo "Generating PACKAGES for Windows packages..."
-            Rscript -e 'tools::write_PACKAGES("bin/windows/contrib", type="win.binary")'
-          else
-            echo "No Windows packages found, skipping PACKAGES generation"
-          fi
+          # Generate PACKAGES for Windows packages (for each R version)
+          for r_ver in 4.3 4.4 4.5; do
+            win_dir="bin/windows/contrib/$r_ver"
+            if [ -d "$win_dir" ] && [ "$(ls -A "$win_dir")" ]; then
+              echo "Generating PACKAGES for Windows R $r_ver packages..."
+              Rscript -e "tools::write_PACKAGES('$win_dir', type='win.binary')"
+            else
+              echo "No Windows packages found for R $r_ver, skipping PACKAGES generation"
+            fi
+          done
           
-          if [ "$(ls -A bin/macosx/contrib/)" ]; then
-            echo "Generating PACKAGES for macOS packages..."
-            Rscript -e 'tools::write_PACKAGES("bin/macosx/contrib", type="mac.binary")'
-          else
-            echo "No macOS packages found, skipping PACKAGES generation"
-          fi
+          # Generate PACKAGES for macOS packages (for each R version and architecture)
+          for r_ver in 4.3 4.4 4.5; do
+            # ARM64 (Apple Silicon)
+            arm_dir="bin/macosx/big-sur-arm64/contrib/$r_ver"
+            if [ -d "$arm_dir" ] && [ "$(ls -A "$arm_dir")" ]; then
+              echo "Generating PACKAGES for macOS ARM64 R $r_ver packages..."
+              Rscript -e "tools::write_PACKAGES('$arm_dir', type='mac.binary')"
+            else
+              echo "No macOS ARM64 packages found for R $r_ver, skipping PACKAGES generation"
+            fi
+            
+            # Intel (x86_64)
+            intel_dir="bin/macosx/contrib/$r_ver"
+            if [ -d "$intel_dir" ] && [ "$(ls -A "$intel_dir")" ]; then
+              echo "Generating PACKAGES for macOS Intel R $r_ver packages..."
+              Rscript -e "tools::write_PACKAGES('$intel_dir', type='mac.binary')"
+            else
+              echo "No macOS Intel packages found for R $r_ver, skipping PACKAGES generation"
+            fi
+          done
 
       - name: Commit & Push binaries
         run: |

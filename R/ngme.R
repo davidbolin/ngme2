@@ -501,6 +501,20 @@ ngme_parse_formula <- function(
   levels <- levels(replicate)
   blocks_rep <- list() # of length n_repl
 
+  # Validate mesh lists if any f() calls use them
+  for (tmp in pre_model) {
+    if (!is.null(tmp$mesh) && is.list(tmp$mesh) && !inherits(tmp$mesh, c("inla.mesh.1d", "inla.mesh", "fm_mesh_1d", "fm_mesh_2d", "metric_graph"))) {
+      n_meshes <- length(tmp$mesh)
+      n_repls <- length(levels)
+      if (n_meshes < n_repls) {
+        stop(paste("Insufficient meshes provided for field '", tmp$name, "'. ",
+                   "Expected ", n_repls, " meshes for ", n_repls, " replicates, ",
+                   "but only ", n_meshes, " meshes were provided.",
+                   sep = ""))
+      }
+    }
+  }
+
   noise_new <- update_noise(noise, n = length(ngme_response))
   if (noise_new$corr_measurement) {
       stopifnot("Please make sure the len(index_corr) == observations" =
@@ -517,7 +531,34 @@ ngme_parse_formula <- function(
     models_rep <- list();
     for (tmp in pre_model) {
       tmp$subset <- idx
+      
+      # Evaluate mesh parameter to get actual value
+      actual_mesh <- if(is.null(tmp$mesh)) NULL else eval(tmp$mesh, envir = data, enclos = global_env_first)
+      
+      # Handle mesh selection for different replicates
+      if (!is.null(actual_mesh) && is.list(actual_mesh) && !inherits(actual_mesh, c("inla.mesh.1d", "inla.mesh", "fm_mesh_1d", "fm_mesh_2d", "metric_graph"))) {
+        # mesh is a list of meshes for different replicates
+        mesh_list <- actual_mesh
+        
+        # Convert level to numeric index if needed
+        replicate_idx <- which(levels == level)
+        
+        # Check if we have enough meshes for this replicate
+        if (replicate_idx <= length(mesh_list)) {
+          selected_mesh <- mesh_list[[replicate_idx]]
+        } else {
+          stop(paste("Not enough meshes provided for replicate", level, ". Expected at least", replicate_idx, "meshes, but only", length(mesh_list), "provided."))
+        }
+        
+        # Replace the mesh parameter in the call with the selected mesh
+        tmp$mesh <- selected_mesh
+        
+        # Force A matrix to be NULL so it gets rebuilt with the correct mesh
+        tmp$A <- NULL
+      }
+      
       model_eval <- eval(tmp, envir = data, enclos = global_env_first)
+      
       models_rep[[model_eval$name]] <- model_eval
       if (all(model_eval$noise$noise_type != "normal")) all_gaussian <- FALSE
     }

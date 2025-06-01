@@ -8,7 +8,9 @@
 #' @param map  symbol or numerical value: index or covariates to build index
 #' @param model  string, model type, see ngme_model_types()
 #' @param noise  ngme_noise object, noise_nig() or noise_gal()
-#' @param mesh   mesh for the model, if not provided, will be built from map, can be a list of meshs for different replicates
+#' @param mesh   mesh for the model, if not provided, will be built from map. 
+#'   Can be a single mesh object or a list of mesh objects for different replicates.
+#'   When using replicates, provide mesh as a list where mesh[[i]] corresponds to replicate i.
 #' @param control  control variables for latent model
 #' @param name   name of the field, for later use, if not provided, will be "field1" etc.
 #' @param data      specifed or inherit from ngme() function
@@ -23,6 +25,10 @@
 #' @param subset    subset of the model
 #' @param ...       additional arguments (e.g. parameters for model)
 #'  inherit the data from ngme function
+#'
+#' @details When using different meshes for different replicates, provide the mesh parameter
+#' as a list of mesh objects. The number of meshes should match the number of replicates.
+#' For example: \code{mesh = list(mesh1, mesh2, mesh3)} for 3 replicates.
 #'
 #' @return a list for constructing latent model, e.g. A, h, C, G,
 #' which also has
@@ -116,8 +122,22 @@ f <- function(
       = class(prior_theta_K) == "ngme_prior"
   )
 
+  # Validate mesh input - can be single mesh, list of meshes, or NULL
+  mesh_list <- NULL
+  if (!is.null(mesh)) {
+    if (is.list(mesh) && !inherits(mesh, c("inla.mesh.1d", "inla.mesh", "fm_mesh_1d", "fm_mesh_2d", "metric_graph"))) {
+      # mesh is a list of meshes for different replicates
+      mesh_list <- mesh
+      mesh <- NULL  # Set to NULL to defer mesh selection to parsing stage
+      stopifnot(
+        "All elements in mesh list must be valid mesh objects" =
+        all(sapply(mesh_list, function(m) inherits(m, c("inla.mesh.1d", "inla.mesh", "fm_mesh_1d", "fm_mesh_2d", "metric_graph"))))
+      )
+    }
+  }
+
   # 0. build mesh if not specified
-  if (is.null(mesh) && is.null(A)) {
+  if (is.null(mesh) && is.null(A) && is.null(mesh_list)) {
     mesh <- ngme_build_mesh(sub_map(map, subset), model)
   }
 
@@ -125,6 +145,14 @@ f <- function(
   f_args <- Filter(Negate(is.null),  as.list(environment()))
   # add arguments in ...
   f_args <- c(f_args, list(...))
+
+  # Remove mesh_list from f_args since it's not needed for operator building
+  f_args$mesh_list <- NULL
+  
+  # If we have mesh_list, remove mesh from f_args so operator building doesn't fail
+  if (!is.null(mesh_list)) {
+    f_args$mesh <- NULL
+  }
 
   # if (model %in% c("tp", "spacetime")) {
   if (model %in% c("tp")) {
@@ -166,15 +194,28 @@ f <- function(
   }
 
   # build the operator
-  operator <- build_operator(model, f_args)
-
-  A <- if (is.null(A)) ngme_build_A(model, mesh, map, operator, group)
-        else ngme_as_sparse(A)
+  if (!is.null(mesh_list)) {
+    # Use the first mesh as a template for building the operator
+    # The correct mesh will be set during parsing stage
+    temp_mesh <- mesh_list[[1]]
+    f_args$mesh <- temp_mesh
+    operator <- build_operator(model, f_args)
+    
+    # Defer A matrix construction to parsing stage since we used wrong mesh
+    A <- NULL
+  } else {
+    operator <- build_operator(model, f_args)
+    
+    # Build A matrix 
+    A <- if (is.null(A)) ngme_build_A(model, mesh, map, operator, group)
+          else ngme_as_sparse(A)
+    
+    # subset the A matrix only if it was built
+    if (!is.null(A) && !all(subset)) {
+      A <- A[subset, , drop = FALSE]
+    }
+  }
   
-  # subset the A matrix
-  # if (!all(subset)) A[!subset, ] <- 0
-  if (!all(subset)) A <- A[subset, , drop = FALSE]
-
   # 2. build noise given operator
   # bivariate noise
   if (model %in% c("bv", "bv_matern_normal", "bv_normal", "bv_matern_nig")) {
@@ -283,6 +324,7 @@ if (noise[[1]]$noise_type != "normal") {
     control   = control,
     map       = map,
     mesh      = mesh,
+    mesh_list = mesh_list,
     n_map     = length_map(map),
     W         = W,
     fix_W      = fix_W,

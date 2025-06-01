@@ -40,13 +40,36 @@ jobs:
       - name: Install LLVM & libomp (macOS)
         if: matrix.os == 'macos-latest'
         run: |
-          # Install LLVM@18 and libomp
-          brew install llvm@18 libomp
+          # Install LLVM@18, libomp, and gcc
+          brew install llvm@18 libomp gcc
           
           # Set environment variables
           LLVM_PREFIX=$(brew --prefix llvm@18)
           LIBOMP_PREFIX=$(brew --prefix libomp)
           GCC_PREFIX=$(brew --prefix gcc)
+          
+          # Find the actual GCC lib directory with version
+          echo "Looking for GCC libraries in: $GCC_PREFIX/lib/gcc"
+          ls -la $GCC_PREFIX/lib/gcc/ || echo "GCC lib/gcc directory not found"
+          
+          # Find the version-specific directory
+          GCC_LIB_DIR=$(find $GCC_PREFIX/lib/gcc -maxdepth 1 -type d -name "*" | grep -v "^$GCC_PREFIX/lib/gcc$" | head -1)
+          if [ -z "$GCC_LIB_DIR" ]; then
+            echo "Warning: GCC version directory not found, trying alternative paths"
+            # Try to find libgfortran in common locations
+            for path in "$GCC_PREFIX/lib" "/usr/local/lib" "/opt/homebrew/lib"; do
+              if [ -f "$path/libgfortran.dylib" ] || [ -f "$path/libgfortran.a" ]; then
+                GCC_LIB_DIR="$path"
+                echo "Found Fortran libraries in: $GCC_LIB_DIR"
+                break
+              fi
+            done
+          fi
+          
+          if [ -z "$GCC_LIB_DIR" ]; then
+            echo "Error: Could not find GCC/Fortran libraries"
+            GCC_LIB_DIR="/usr/local/lib"
+          fi
           
           echo "PATH=$LLVM_PREFIX/bin:$PATH" >> $GITHUB_ENV
           echo "CC=$LLVM_PREFIX/bin/clang" >> $GITHUB_ENV
@@ -70,8 +93,8 @@ jobs:
           # Use -rpath with @rpath notation for better portability
           LDFLAGS += -L$LLVM_PREFIX/lib -L$LLVM_PREFIX/lib/c++ -L$LIBOMP_PREFIX/lib -Wl,-rpath,@loader_path/Resources/lib -lomp
           
-          # Set Fortran libs
-          FLIBS = -L$GCC_PREFIX/lib/gcc/current -lgfortran -lquadmath
+          # Try multiple paths for Fortran libraries
+          FLIBS = -L$GCC_LIB_DIR -L$GCC_PREFIX/lib -lgfortran -lquadmath
           EOF
           
           # For debugging
@@ -81,6 +104,22 @@ jobs:
           echo "LLVM_PREFIX: $LLVM_PREFIX"
           echo "LIBOMP_PREFIX: $LIBOMP_PREFIX"
           echo "GCC_PREFIX: $GCC_PREFIX"
+          echo "GCC_LIB_DIR: $GCC_LIB_DIR"
+          
+          # Verify libraries exist
+          echo "Checking for required libraries:"
+          ls -la $LLVM_PREFIX/lib/libomp.dylib || ls -la $LIBOMP_PREFIX/lib/libomp.dylib || echo "libomp.dylib not found"
+          find $GCC_LIB_DIR -name "libgfortran*" -type f || echo "libgfortran not found in $GCC_LIB_DIR"
+          find $GCC_LIB_DIR -name "libquadmath*" -type f || echo "libquadmath not found in $GCC_LIB_DIR"
+          
+          # Also check system-wide
+          echo "System-wide library search:"
+          find /opt/homebrew -name "libgfortran*" -type f 2>/dev/null | head -5 || echo "No libgfortran found in /opt/homebrew"
+          
+          # Try to locate libraries with different methods
+          echo "Alternative library search methods:"
+          gfortran --print-file-name=libgfortran.dylib 2>/dev/null || echo "gfortran command not available"
+          find $GCC_PREFIX -name "libgfortran*" -type f 2>/dev/null | head -3 || echo "No libgfortran in GCC_PREFIX"
 
       # ───── build source package ─────
       - name: Build source package
@@ -97,14 +136,43 @@ jobs:
           GCC_PREFIX=$(brew --prefix gcc)
           R_HOME=$(R RHOME)
           
+          # Find the actual GCC lib directory with version (same logic as setup step)
+          echo "Looking for GCC libraries in: $GCC_PREFIX/lib/gcc"
+          ls -la $GCC_PREFIX/lib/gcc/ || echo "GCC lib/gcc directory not found"
+          
+          # Find the version-specific directory
+          GCC_LIB_DIR=$(find $GCC_PREFIX/lib/gcc -maxdepth 1 -type d -name "*" | grep -v "^$GCC_PREFIX/lib/gcc$" | head -1)
+          if [ -z "$GCC_LIB_DIR" ]; then
+            echo "Warning: GCC version directory not found, trying alternative paths"
+            # Try to find libgfortran in common locations
+            for path in "$GCC_PREFIX/lib" "/usr/local/lib" "/opt/homebrew/lib"; do
+              if [ -f "$path/libgfortran.dylib" ] || [ -f "$path/libgfortran.a" ]; then
+                GCC_LIB_DIR="$path"
+                echo "Found Fortran libraries in: $GCC_LIB_DIR"
+                break
+              fi
+            done
+          fi
+          
+          if [ -z "$GCC_LIB_DIR" ]; then
+            echo "Error: Could not find GCC/Fortran libraries"
+            GCC_LIB_DIR="/usr/local/lib"
+          fi
+          
+          echo "Using GCC_LIB_DIR: $GCC_LIB_DIR"
+          
+          # List what's actually in the GCC lib directory
+          echo "Contents of GCC_LIB_DIR:"
+          ls -la "$GCC_LIB_DIR" | grep -E "(gfortran|quadmath)" || echo "No Fortran libraries found"
+          
           # Set environment variables for the build
           export PATH="$LLVM_PREFIX/bin:$PATH"
           export CC="$LLVM_PREFIX/bin/clang"
           export CXX="$LLVM_PREFIX/bin/clang++"
           export CFLAGS="-fopenmp -I$LLVM_PREFIX/include -I$LIBOMP_PREFIX/include"
           export CXXFLAGS="-fopenmp -I$LLVM_PREFIX/include -I$LIBOMP_PREFIX/include"
-          export LDFLAGS="-L$LLVM_PREFIX/lib -L$LIBOMP_PREFIX/lib -L$GCC_PREFIX/lib/gcc/current -lomp -Wl,-rpath,@loader_path/Resources/lib"
-          export DYLD_FALLBACK_LIBRARY_PATH="$LIBOMP_PREFIX/lib:$LLVM_PREFIX/lib:$R_HOME/lib:$GCC_PREFIX/lib/gcc/current:/usr/local/lib:/usr/lib"
+          export LDFLAGS="-L$LLVM_PREFIX/lib -L$LIBOMP_PREFIX/lib -L$GCC_LIB_DIR -L$GCC_PREFIX/lib -lomp -Wl,-rpath,@loader_path/Resources/lib"
+          export DYLD_FALLBACK_LIBRARY_PATH="$LIBOMP_PREFIX/lib:$LLVM_PREFIX/lib:$R_HOME/lib:$GCC_LIB_DIR:$GCC_PREFIX/lib:/usr/local/lib:/usr/lib"
           
           # Build the binary package
           R CMD INSTALL --build --no-build-vignettes --no-docs --no-html --no-multiarch *.tar.gz
@@ -112,6 +180,10 @@ jobs:
           # Post-process the binary to make it portable
           BUILT_PKG=$(ls -t *.tgz | head -n 1)
           echo "Created binary package: $BUILT_PKG"
+          
+          # Get system architecture for proper naming
+          ARCH=$(uname -m)
+          echo "System architecture: $ARCH"
           
           # Extract and check the .so file
           mkdir -p check_pkg
@@ -133,16 +205,28 @@ jobs:
             install_name_tool -change "$LIBOMP_PREFIX/lib/libomp.dylib" "@rpath/libomp.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libomp path"
             install_name_tool -change "$R_HOME/lib/libomp.dylib" "@rpath/libomp.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch R libomp path"
             install_name_tool -change "/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/lib/libomp.dylib" "@rpath/libomp.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch R libomp path"
-            install_name_tool -change "$GCC_PREFIX/lib/gcc/current/libgfortran.5.dylib" "@rpath/libgfortran.5.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libgfortran path"
-            install_name_tool -change "$GCC_PREFIX/lib/gcc/current/libquadmath.0.dylib" "@rpath/libquadmath.0.dylib" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libquadmath path"
+            
+            # Fix Fortran library paths - use actual paths
+            LIBGFORTRAN_PATH=$(find $GCC_LIB_DIR -name "libgfortran.*.dylib" | head -1)
+            LIBQUADMATH_PATH=$(find $GCC_LIB_DIR -name "libquadmath.*.dylib" | head -1)
+            
+            if [ -n "$LIBGFORTRAN_PATH" ]; then
+              LIBGFORTRAN_NAME=$(basename "$LIBGFORTRAN_PATH")
+              install_name_tool -change "$LIBGFORTRAN_PATH" "@rpath/$LIBGFORTRAN_NAME" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libgfortran path"
+              cp "$LIBGFORTRAN_PATH" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy $LIBGFORTRAN_NAME"
+            fi
+            
+            if [ -n "$LIBQUADMATH_PATH" ]; then
+              LIBQUADMATH_NAME=$(basename "$LIBQUADMATH_PATH")
+              install_name_tool -change "$LIBQUADMATH_PATH" "@rpath/$LIBQUADMATH_NAME" check_pkg/ngme2/libs/ngme2.so || echo "Failed to patch libquadmath path"
+              cp "$LIBQUADMATH_PATH" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy $LIBQUADMATH_NAME"
+            fi
             
             # Copy required libraries
             cp "$LLVM_PREFIX/lib/c++/libc++.1.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libc++.1.dylib"
             cp "$LLVM_PREFIX/lib/libunwind.1.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libunwind.1.dylib"
             cp "$LLVM_PREFIX/lib/c++/libc++abi.1.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libc++abi.1.dylib"
             cp "$LIBOMP_PREFIX/lib/libomp.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libomp.dylib"
-            cp "$GCC_PREFIX/lib/gcc/current/libgfortran.5.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libgfortran.5.dylib"
-            cp "$GCC_PREFIX/lib/gcc/current/libquadmath.0.dylib" check_pkg/ngme2/libs/Resources/lib/ || echo "Failed to copy libquadmath.0.dylib"
             
             # Fix paths within the copied libraries
             install_name_tool -change "$LLVM_PREFIX/lib/c++/libc++abi.1.dylib" "@rpath/libc++abi.1.dylib" check_pkg/ngme2/libs/Resources/lib/libc++.1.dylib || echo "Failed to patch libc++abi path in libc++.1.dylib"
@@ -153,6 +237,7 @@ jobs:
             cd ..
             
             echo "Final package created: $BUILT_PKG"
+            echo "Package architecture: $ARCH (detected from $(file check_pkg/ngme2/libs/ngme2.so))"
           fi
         shell: bash
       - name: Upload macOS binary
@@ -194,8 +279,17 @@ jobs:
 
       - name: Create binary dirs
         run: |
-          mkdir -p bin/windows/contrib \
-                   bin/macosx/contrib \
+          # Create architecture-specific directories for macOS
+          # Apple Silicon (arm64) uses big-sur-arm64, Intel uses contrib directly
+          mkdir -p bin/windows/contrib/4.3 \
+                   bin/windows/contrib/4.4 \
+                   bin/windows/contrib/4.5 \
+                   bin/macosx/big-sur-arm64/contrib/4.3 \
+                   bin/macosx/big-sur-arm64/contrib/4.4 \
+                   bin/macosx/big-sur-arm64/contrib/4.5 \
+                   bin/macosx/contrib/4.3 \
+                   bin/macosx/contrib/4.4 \
+                   bin/macosx/contrib/4.5 \
                    src/contrib
 
       - name: Download artifacts
@@ -210,27 +304,67 @@ jobs:
             find "$dir" -name "*.tar.gz" -exec cp {} src/contrib/ \;
           done
           
-          # Move Windows binaries
+          # Move Windows binaries to R version-specific directories
           find artifacts -name "windows-*" -type d | while read dir; do
-            find "$dir" -name "*.zip" -exec cp {} bin/windows/contrib/ \;
+            # Extract R version from directory name (e.g., windows-4.3)
+            r_version=$(basename "$dir" | sed 's/windows-//')
+            echo "Processing Windows R version: $r_version"
+            find "$dir" -name "*.zip" -exec cp {} "bin/windows/contrib/$r_version/" \;
           done
           
-          # Move macOS binaries
+          # Move macOS binaries to architecture and R version-specific directories
           find artifacts -name "macos-*" -type d | while read dir; do
-            find "$dir" -name "*.tgz" -exec cp {} bin/macosx/contrib/ \;
+            # Extract R version from directory name (e.g., macos-4.3)
+            r_version=$(basename "$dir" | sed 's/macos-//')
+            echo "Processing macOS R version: $r_version"
+            
+            # Check each .tgz file to determine architecture
+            find "$dir" -name "*.tgz" | while read pkg; do
+              # Extract the package to check architecture
+              temp_dir=$(mktemp -d)
+              tar -xzf "$pkg" -C "$temp_dir" 2>/dev/null || continue
+              
+              # Look for .so files to determine architecture
+              so_file=$(find "$temp_dir" -name "*.so" | head -1)
+              if [ -n "$so_file" ]; then
+                # Use file command to determine architecture
+                arch_info=$(file "$so_file" 2>/dev/null)
+                
+                if echo "$arch_info" | grep -q "arm64"; then
+                  # Apple Silicon (ARM64)
+                  echo "Detected ARM64 architecture for $pkg"
+                  cp "$pkg" "bin/macosx/big-sur-arm64/contrib/$r_version/"
+                elif echo "$arch_info" | grep -q "x86_64"; then
+                  # Intel (x86_64)
+                  echo "Detected x86_64 architecture for $pkg"
+                  cp "$pkg" "bin/macosx/contrib/$r_version/"
+                else
+                  # Fallback: assume ARM64 since GitHub Actions macos-latest is ARM64
+                  echo "Could not determine architecture for $pkg, assuming ARM64"
+                  cp "$pkg" "bin/macosx/big-sur-arm64/contrib/$r_version/"
+                fi
+              else
+                # No .so file found, fallback to ARM64
+                echo "No .so file found in $pkg, assuming ARM64"
+                cp "$pkg" "bin/macosx/big-sur-arm64/contrib/$r_version/"
+              fi
+              
+              # Clean up
+              rm -rf "$temp_dir"
+            done
           done
           
           # List what we have
           echo "Source packages:"
           ls -la src/contrib/ || echo "No source packages"
           echo "Windows packages:"
-          ls -la bin/windows/contrib/ || echo "No Windows packages"
+          find bin/windows/contrib/ -name "*.zip" -ls 2>/dev/null || echo "No Windows packages"
           echo "macOS packages:"
-          ls -la bin/macosx/contrib/ || echo "No macOS packages"
+          find bin/macosx/ -name "*.tgz" -ls 2>/dev/null || echo "No macOS packages"
 
       - name: Generate PACKAGES indices
         run: |
-          # Only generate PACKAGES if there are files in the directory
+          # Generate PACKAGES for source packages
           if [ "$(ls -A src/contrib/)" ]; then
             echo "Generating PACKAGES for source packages..."
             Rscript -e 'tools::write_PACKAGES("src/contrib", type="source")'
@@ -238,19 +372,37 @@ jobs:
             echo "No source packages found, skipping PACKAGES generation"
           fi
           
-          if [ "$(ls -A bin/windows/contrib/)" ]; then
-            echo "Generating PACKAGES for Windows packages..."
-            Rscript -e 'tools::write_PACKAGES("bin/windows/contrib", type="win.binary")'
-          else
-            echo "No Windows packages found, skipping PACKAGES generation"
-          fi
+          # Generate PACKAGES for Windows packages (for each R version)
+          for r_ver in 4.3 4.4 4.5; do
+            win_dir="bin/windows/contrib/$r_ver"
+            if [ -d "$win_dir" ] && [ "$(ls -A "$win_dir")" ]; then
+              echo "Generating PACKAGES for Windows R $r_ver packages..."
+              Rscript -e "tools::write_PACKAGES('$win_dir', type='win.binary')"
+            else
+              echo "No Windows packages found for R $r_ver, skipping PACKAGES generation"
+            fi
+          done
           
-          if [ "$(ls -A bin/macosx/contrib/)" ]; then
-            echo "Generating PACKAGES for macOS packages..."
-            Rscript -e 'tools::write_PACKAGES("bin/macosx/contrib", type="mac.binary")'
-          else
-            echo "No macOS packages found, skipping PACKAGES generation"
-          fi
+          # Generate PACKAGES for macOS packages (for each R version and architecture)
+          for r_ver in 4.3 4.4 4.5; do
+            # ARM64 (Apple Silicon)
+            arm_dir="bin/macosx/big-sur-arm64/contrib/$r_ver"
+            if [ -d "$arm_dir" ] && [ "$(ls -A "$arm_dir")" ]; then
+              echo "Generating PACKAGES for macOS ARM64 R $r_ver packages..."
+              Rscript -e "tools::write_PACKAGES('$arm_dir', type='mac.binary')"
+            else
+              echo "No macOS ARM64 packages found for R $r_ver, skipping PACKAGES generation"
+            fi
+            
+            # Intel (x86_64)
+            intel_dir="bin/macosx/contrib/$r_ver"
+            if [ -d "$intel_dir" ] && [ "$(ls -A "$intel_dir")" ]; then
+              echo "Generating PACKAGES for macOS Intel R $r_ver packages..."
+              Rscript -e "tools::write_PACKAGES('$intel_dir', type='mac.binary')"
+            else
+              echo "No macOS Intel packages found for R $r_ver, skipping PACKAGES generation"
+            fi
+          done
 
       - name: Commit & Push binaries
         run: |

@@ -28,6 +28,8 @@
 #' @param cores_layer2 integer, number of cores for the second layer (over computing scores for N_sim simulations)
 #' @param merge_groups logical, if TRUE, merge groups as vector components (e.g., for vector-valued wind data with north_wind, east_wind). 
 #' MAE becomes Euclidean distance, MSE becomes squared Euclidean distance, etc.
+#' @param merged_group_name character, name for the merged group when merge_groups=TRUE. 
+#' If NULL, uses "group1_group2" format (default: NULL)
 #' @return A list containing:
 #'   \itemize{
 #'     \item mean.scores - mean of N_sim estimations of 4 criterions: MSE, MAE, CRPS, sCRPS
@@ -54,7 +56,8 @@ cross_validation <- function(
   # merge_replicates = FALSE, # remove this option
   cores_layer1 = if (parallel) min(parallel::detectCores(), 2) else 1,  # Limit to 2 cores for safety
   cores_layer2 = if (parallel) min(parallel::detectCores(), 2) else 1,   # Limit to 2 cores for safety
-  merge_groups = FALSE  # New parameter for merging bivariate groups
+  merge_groups = FALSE,  # New parameter for merging bivariate groups
+  merged_group_name = NULL  # New parameter for custom merged group name
 ) {
   merge_replicates = FALSE
 
@@ -77,11 +80,16 @@ cross_validation <- function(
 
   # 1. compute indices of tartget and train if not custom type
   if (type == "k-fold") {
-    # split idx into k
-    idx <- seq_len(n_data)
-    folds <- cut(sample(idx), breaks = k, label = FALSE)
-    test_idx <- lapply(1:k, function(x) {which(folds == x, arr.ind = TRUE)})
-    train_idx <- lapply(1:k, function(x) {which(folds != x, arr.ind = TRUE)})
+    # Check if we should use paired CV splits for grouped data
+    if (merge_groups && !is.null(ngme[[1]]$group)) {
+      stop("Paired CV splits are not supported for grouped data. Please use custom type. Check ?create_paired_cv_splits for more details.")
+    } else {
+      # Regular k-fold split
+      idx <- seq_len(n_data)
+      folds <- cut(sample(idx), breaks = k, label = FALSE)
+      test_idx <- lapply(1:k, function(x) {which(folds == x, arr.ind = TRUE)})
+      train_idx <- lapply(1:k, function(x) {which(folds != x, arr.ind = TRUE)})
+    }
   } else if (type == "loo") {
     return(cross_validation(ngme, "k-fold", k = n_data, seed=seed))
   } else if (type == "lpo") {
@@ -146,7 +154,8 @@ cross_validation <- function(
                 transform = transform,
                 num_cores = cores_layer2,
                 thining_gap = thining_gap,
-                merge_groups = merge_groups
+                merge_groups = merge_groups,
+                merged_group_name = merged_group_name
               )
               if (print) {
                 cat(paste("In test batch", i, ": \n"))
@@ -193,7 +202,8 @@ cross_validation <- function(
             parallel = FALSE,
             transform = transform,
             thining_gap = thining_gap,
-            merge_groups = merge_groups
+            merge_groups = merge_groups,
+            merged_group_name = merged_group_name
           )
           scores[[i]] <- result$scores
           sd_scores[[i]] <- result$sd_scores
@@ -289,7 +299,8 @@ compute_err_merged_reps <- function(
   transform = identity,
   num_cores = 1,
   thining_gap = 0,
-  merge_groups = FALSE
+  merge_groups = FALSE,
+  merged_group_name = NULL
 ) {
   if (is.null(seed)) seed <- Sys.time()
   stopifnot("Not a ngme object." = inherits(ngme, "ngme"))
@@ -320,14 +331,16 @@ compute_err_merged_reps <- function(
       ret$test_X, 
       transform,
       thining_gap = thining_gap,
-      merge_groups = merge_groups
+      merge_groups = merge_groups,
+      merged_group_name = merged_group_name
     )
   }
 
   # compute mean and sd of scores
-  n_group = length(levels(ret$test_group))
+  n_result_rows <- nrow(scores[[1]])
+  n_cols <- ncol(scores[[1]])
   array_3d <- array(unlist(scores), 
-    dim = c(n_group, 4, length(scores)))
+    dim = c(n_result_rows, n_cols, length(scores)))
 
   mean_array <- apply(array_3d, c(1, 2), mean)
   sd_array <- apply(array_3d, c(1, 2), sd)
@@ -357,7 +370,8 @@ compute_err_reps <- function(
   transform = identity,
   num_cores = 1,
   thining_gap = 1,
-  merge_groups = FALSE
+  merge_groups = FALSE,
+  merged_group_name = NULL
 ) {
   test_idx <- sort(test_idx)
   stopifnot("Not a ngme object." = inherits(ngme, "ngme"))
@@ -391,7 +405,8 @@ compute_err_reps <- function(
       transform = transform,
       num_cores = num_cores,
       thining_gap = thining_gap,
-      merge_groups = merge_groups
+      merge_groups = merge_groups,
+      merged_group_name = merged_group_name
     )
     scores[[n_scores]] <- result_1rep$mean_scores
     sd_scores[[n_scores]] <- result_1rep$sd_scores
@@ -437,7 +452,8 @@ compute_err_1rep <- function(
   transform = identity,
   num_cores = 1,  # Default to 1 core to avoid potential issues
   thining_gap = 1,
-  merge_groups = FALSE
+  merge_groups = FALSE,
+  merged_group_name = NULL
 ) {
   stopifnot(
     "bool_<..>_idx should be a logical vector" =
@@ -486,7 +502,7 @@ compute_err_1rep <- function(
   if (parallel && requireNamespace("parallel", quietly = TRUE)) {
     scores = parallel::mclapply(1:N_sim, function(nn) {
       s <- compute_scores(
-        ngme_1rep, n_gibbs_samples, n_burnin, seed+nn, A_pred_block, noise_test_idx, y_data, group_data, X_pred, transform, thining_gap, merge_groups
+        ngme_1rep, n_gibbs_samples, n_burnin, seed+nn, A_pred_block, noise_test_idx, y_data, group_data, X_pred, transform, thining_gap, merge_groups, merged_group_name
       )
       s
     }, mc.cores = num_cores)
@@ -495,7 +511,7 @@ compute_err_1rep <- function(
       tryCatch({
         scores[[nn]] <- compute_scores(
           ngme_1rep, n_gibbs_samples, n_burnin, seed+nn, A_pred_block, 
-          noise_test_idx, y_data, group_data, X_pred, transform, thining_gap, merge_groups
+          noise_test_idx, y_data, group_data, X_pred, transform, thining_gap, merge_groups, merged_group_name
         )
       }, error = function(e) {
         warning(paste("Error in sequential computation:", e$message))
@@ -517,10 +533,14 @@ compute_err_1rep <- function(
     Y_1 <- tmp$Y_N_1; Y_2 <- tmp$Y_N_2
   }
 
-  n_group = length(levels(group_data))
+  # Use the actual number of rows returned by scores instead of original group count
+  # This handles the case where merge_groups=TRUE reduces 2 groups to 1 result
+  n_result_rows <- nrow(scores[[1]])
+  n_cols <- ncol(scores[[1]])
+  
   # compute mean and sd
   array_3d <- array(unlist(scores), 
-    dim = c(n_group, 4, length(scores)))
+    dim = c(n_result_rows, n_cols, length(scores)))
 
   mean_array <- apply(array_3d, c(1, 2), mean)
   sd_array <- apply(array_3d, c(1, 2), sd)
@@ -559,7 +579,8 @@ compute_scores <- function(
   X_pred, 
   transform,
   thining_gap,
-  merge_groups = FALSE
+  merge_groups = FALSE,
+  merged_group_name = NULL
 ) {
   # Add error handling for the C++ sampling_cpp call
   tryCatch({
@@ -660,7 +681,8 @@ compute_scores <- function(
       transform(Y_N_1_thin), transform(Y_N_2_thin), # for CRPS, sCRPS
       transform(y_data), 
       group_data,
-      merge_groups = merge_groups
+      merge_groups = merge_groups,
+      merged_group_name = merged_group_name
     )
   }, error = function(e) {
     warning(paste("Error in compute_scores:", e$message))
@@ -752,7 +774,8 @@ compute_score_given_pred <- function(
   pred_N_1, pred_N_2, 
   Y_N_1_thin, Y_N_2_thin,
   y_data, group_data,
-  merge_groups = FALSE
+  merge_groups = FALSE,
+  merged_group_name = NULL
 ) {
   # Use ensemble prediction
   pred <- 0.5*(rowMeans(as.matrix(pred_N_1)) + rowMeans(as.matrix(pred_N_2)))
@@ -816,7 +839,13 @@ compute_score_given_pred <- function(
         neg.CRPS = -mean(CRPS_thin),
         neg.sCRPS = -mean(sCRPS_thin)
       )
-      rownames(scores) <- paste(groups, collapse = "_")
+      
+      # Use custom name if provided, otherwise use default "group1_group2" format
+      if (!is.null(merged_group_name)) {
+        rownames(scores) <- merged_group_name
+      } else {
+        rownames(scores) <- paste(groups, collapse = "_")
+      }
       
       return(scores)
     }
@@ -939,4 +968,103 @@ merge_replicates <- function(
     test_A_block = test_A_block,
     test_group = test_group
   ))
+}
+
+#' Create paired indices for bivariate cross-validation
+#' Ensures that paired observations (e.g., u_wind and v_wind at same location) 
+#' are kept together in the same fold
+#'
+#' @param data data frame containing the observations
+#' @param loc_col character vector of column names defining locations (e.g., c("lon", "lat") or c("x", "y"))
+#' @param group character, name of the group column (e.g., "direction" for wind data)
+#' @param k number of folds
+#' @param seed random seed
+#' @return list with test_idx and train_idx, each containing k lists of indices
+#' @export
+#' @examples
+#' # Example with wind data
+#' data_long <- data.frame(
+#'   lon = rep(c(1, 2, 3, 4), 2),
+#'   lat = rep(c(1, 1, 2, 2), 2), 
+#'   direction = rep(c("u_wind", "v_wind"), each = 4),
+#'   wind = rnorm(8)
+#' )
+#' splits <- create_paired_cv_splits(data_long, c("lon", "lat"), "direction", k = 2)
+create_paired_cv_splits <- function(data, loc_col, group, k, seed = NULL) {
+  if (!is.null(seed)) set.seed(seed)
+  
+  # Validate inputs
+  stopifnot(
+    "data must be a data frame" = is.data.frame(data),
+    "loc_col must be character vector" = is.character(loc_col),
+    "group must be character" = is.character(group) && length(group) == 1,
+    "k must be positive integer" = k > 0,
+    "location columns must exist in data" = all(loc_col %in% names(data)),
+    "group column must exist in data" = group %in% names(data)
+  )
+  
+  # Create location identifier by pasting location columns together
+  data$location_id <- do.call(paste, c(data[loc_col], sep = "_"))
+  
+  # Get unique locations
+  unique_locations <- unique(data$location_id)
+  n_locations <- length(unique_locations)
+  
+  # Check that each location has observations for all groups
+  groups_per_location <- aggregate(data[[group]], 
+                                   by = list(location = data$location_id), 
+                                   FUN = function(x) length(unique(x)))
+  unique_groups <- unique(data[[group]])
+  n_groups <- length(unique_groups)
+  
+  # Verify that all locations have the same number of groups
+  if (!all(groups_per_location$x == n_groups)) {
+    incomplete_locs <- groups_per_location$location[groups_per_location$x != n_groups]
+    warning(paste("Some locations don't have observations for all groups:", 
+                  paste(head(incomplete_locs), collapse = ", ")))
+  }
+  
+  # Create folds based on unique locations
+  if (n_locations < k) {
+    warning(paste("Number of unique locations (", n_locations, 
+                  ") is less than k (", k, "). Some folds will be empty."))
+    k <- min(k, n_locations)
+  }
+  
+  # Assign locations to folds
+  if (k == 1) {
+    # Special case: all locations go to fold 1
+    location_folds <- rep(1, n_locations)
+    names(location_folds) <- unique_locations
+  } else {
+    location_folds <- cut(sample(1:n_locations), breaks = k, label = FALSE)
+    names(location_folds) <- unique_locations
+  }
+  
+  # Create test and train indices
+  test_idx <- list()
+  train_idx <- list()
+  
+  for (i in 1:k) {
+    # Get locations assigned to this fold
+    test_locations <- unique_locations[location_folds == i]
+    train_locations <- unique_locations[location_folds != i]
+    
+    # Get all observation indices for these locations (across all groups)
+    test_idx[[i]] <- which(data$location_id %in% test_locations)
+    train_idx[[i]] <- which(data$location_id %in% train_locations)
+    
+    # Sort indices to maintain order
+    test_idx[[i]] <- sort(test_idx[[i]])
+    train_idx[[i]] <- sort(train_idx[[i]])
+  }
+  
+  # Add some diagnostic information
+  attr(test_idx, "n_locations") <- n_locations
+  attr(test_idx, "n_groups") <- n_groups
+  attr(test_idx, "unique_groups") <- unique_groups
+  attr(test_idx, "loc_col") <- loc_col
+  attr(test_idx, "group_col") <- group
+  
+  return(list(test_idx = test_idx, train_idx = train_idx))
 }

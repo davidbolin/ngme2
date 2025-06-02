@@ -25,7 +25,8 @@ cross_validation(
   thining_gap = 1,
   cores_layer1 = if (parallel) min(parallel::detectCores(), 2) else 1,
   cores_layer2 = if (parallel) min(parallel::detectCores(), 2) else 1,
-  merge_groups = FALSE
+  merge_groups = FALSE,
+  merged_group_name = NULL
 )
 }
 \arguments{
@@ -70,8 +71,11 @@ e.g., the MAE will be computed as |transform(Y) - transform(Y_pred)|}
 
 \item{cores_layer2}{integer, number of cores for the second layer (over computing scores for N_sim simulations)}
 
-\item{merge_groups}{logical, if TRUE, merge groups as vector components (e.g., for wind data with u_wind, v_wind). 
+\item{merge_groups}{logical, if TRUE, merge groups as vector components (e.g., for vector-valued wind data with north_wind, east_wind). 
 MAE becomes Euclidean distance, MSE becomes squared Euclidean distance, etc.}
+
+\item{merged_group_name}{character, name for the merged group when merge_groups=TRUE. 
+If NULL, uses "group1_group2" format (default: NULL)}
 }
 \value{
 A list containing:

@@ -11,7 +11,8 @@ compute_score_given_pred(
   Y_N_2_thin,
   y_data,
   group_data,
-  merge_groups = FALSE
+  merge_groups = FALSE,
+  merged_group_name = NULL
 )
 }
 \arguments{

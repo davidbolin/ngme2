@@ -153,6 +153,7 @@ reference:
     - merge_replicates
     - get_trajectories
     - name2fun
+    - create_paired_cv_splits
   - title: Distributions
     contents:
     - ig

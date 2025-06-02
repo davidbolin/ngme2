@@ -1,8 +1,8 @@
 ---
-title: "Ngme2 replicates feature"
+title: "Models with replicates"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Ngme2 replicates feature}
+  %\VignetteIndexEntry{Models with replicates}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

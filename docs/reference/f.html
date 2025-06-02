@@ -130,6 +130,7 @@ The function is a wrapper function for specific submodels.
 <span>  data <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  group <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  which_group <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  replicate <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  A <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  W <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  fix_W <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -158,7 +159,9 @@ The function is a wrapper function for specific submodels.
 
 
 <dt id="arg-mesh">mesh<a class="anchor" aria-label="anchor" href="#arg-mesh"></a></dt>
-<dd><p>mesh for the model, if not provided, will be built from map, can be a list of meshs for different replicates</p></dd>
+<dd><p>mesh for the model, if not provided, will be built from map.
+Can be a single mesh object or a list of mesh objects for different replicates.
+When using replicates, provide mesh as a list where mesh[[i]] corresponds to replicate i.</p></dd>
 
 
 <dt id="arg-control">control<a class="anchor" aria-label="anchor" href="#arg-control"></a></dt>
@@ -174,11 +177,16 @@ The function is a wrapper function for specific submodels.
 
 
 <dt id="arg-group">group<a class="anchor" aria-label="anchor" href="#arg-group"></a></dt>
-<dd><p>group factor indicate resposne variable, can be inherited from ngme() function</p></dd>
+<dd><p>group factor indicate resposne variable, can be inherited from ngme() function, (used for bivariate model)</p></dd>
 
 
 <dt id="arg-which-group">which_group<a class="anchor" aria-label="anchor" href="#arg-which-group"></a></dt>
 <dd><p>belong to which group</p></dd>
+
+
+<dt id="arg-replicate">replicate<a class="anchor" aria-label="anchor" href="#arg-replicate"></a></dt>
+<dd><p>factor indicating replicate structure for INLA-style replicates.
+When provided, operators and A matrices will be block-diagonalized across replicates.</p></dd>
 
 
 <dt id="arg-a">A<a class="anchor" aria-label="anchor" href="#arg-a"></a></dt>
@@ -221,6 +229,17 @@ which also has
 1. Information about K matrix
 2. Information about noise
 3. Control variables</p>
+    </div>
+    <div id="details">
+    <h2>Details</h2>
+    <p>When using different meshes for different replicates, provide the mesh parameter
+as a list of mesh objects. The number of meshes should match the number of replicates.
+For example: <code>mesh = list(mesh1, mesh2, mesh3)</code> for 3 replicates.</p>
+<p>When using the `replicate` argument, the operator matrices will be block-diagonalized.
+For a generic operator K = param1 * Matrix1 + param2 * Matrix2, with 2 replicates,
+the resulting operator becomes:
+K = param1 * bdiag(Matrix1_rep1, Matrix1_rep2) + param2 * bdiag(Matrix2_rep1, Matrix2_rep2)
+Similarly, the A matrix will be block-diagonalized as bdiag(A_rep1, A_rep2, ...).</p>
     </div>
 
   </div>

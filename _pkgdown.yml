@@ -30,7 +30,7 @@ navbar:
         href: articles/SPDE-model.html
       - text: Models with Combined Gaussian and NIG Noise 
         href: articles/normal-nig-noise.html
-      - text: Ngme replicate feature
+      - text: Models with replicates
         href: articles/replicate.html
       - text: Model estimation and prediction
         href: articles/pred_and_est.html

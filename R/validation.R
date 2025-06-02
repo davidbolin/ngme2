@@ -26,6 +26,8 @@
 #' @param parallel logical, run in parallel mode
 #' @param cores_layer1 integer, number of cores for the first layer (over testing samples)
 #' @param cores_layer2 integer, number of cores for the second layer (over computing scores for N_sim simulations)
+#' @param merge_groups logical, if TRUE, merge groups as vector components (e.g., for vector-valued wind data with north_wind, east_wind). 
+#' MAE becomes Euclidean distance, MSE becomes squared Euclidean distance, etc.
 #' @return A list containing:
 #'   \itemize{
 #'     \item mean.scores - mean of N_sim estimations of 4 criterions: MSE, MAE, CRPS, sCRPS
@@ -51,7 +53,8 @@ cross_validation <- function(
   thining_gap = 1, # Used for computing CRPS, sCRPS, the gap between samples for thinning, if 0, then no thinning, if 1, then keep 50% of the samples for CRPS, sCRPS, etc.
   # merge_replicates = FALSE, # remove this option
   cores_layer1 = if (parallel) min(parallel::detectCores(), 2) else 1,  # Limit to 2 cores for safety
-  cores_layer2 = if (parallel) min(parallel::detectCores(), 2) else 1   # Limit to 2 cores for safety
+  cores_layer2 = if (parallel) min(parallel::detectCores(), 2) else 1,   # Limit to 2 cores for safety
+  merge_groups = FALSE  # New parameter for merging bivariate groups
 ) {
   merge_replicates = FALSE
 
@@ -142,7 +145,8 @@ cross_validation <- function(
                 parallel = TRUE,
                 transform = transform,
                 num_cores = cores_layer2,
-                thining_gap = thining_gap
+                thining_gap = thining_gap,
+                merge_groups = merge_groups
               )
               if (print) {
                 cat(paste("In test batch", i, ": \n"))
@@ -188,7 +192,8 @@ cross_validation <- function(
             keep_pred=keep_pred,
             parallel = FALSE,
             transform = transform,
-            thining_gap = thining_gap
+            thining_gap = thining_gap,
+            merge_groups = merge_groups
           )
           scores[[i]] <- result$scores
           sd_scores[[i]] <- result$sd_scores
@@ -223,16 +228,32 @@ cross_validation <- function(
   final_mean <- do.call(rbind, final_mean)
   final_sd <- do.call(rbind, final_sd)
 
-  if (nrow(scores[[1]]) == 1) {
-    # univariate model
+  # Check if merging actually succeeded by looking at the number of rows
+  # If merge_groups=TRUE but merging failed, we'll have 2 rows per model instead of 1
+  n_models <- length(ngme)
+  merging_succeeded <- merge_groups && (nrow(final_mean) == n_models)
+  
+  if (merging_succeeded) {
+    # For successfully merged groups, use simplified naming
+    rownames(final_mean) <- names(ngme)
+    rownames(final_sd) <- names(ngme)
+  } else if (nrow(final_mean) == n_models) {
+    # univariate model (1 row per model)
     rownames(final_mean) <- names(ngme) 
+    rownames(final_sd) <- names(ngme)
   } else {
-    # bivariate model
-    names_list = lapply(names(ngme), function(x) paste(x, rownames(final_mean)[1:2], sep = "_"))
-    rownames(final_mean) <- do.call(c, names_list)
+    # bivariate model (2 rows per model)
+    if (nrow(final_mean) > 0) {
+      n_groups_per_model <- nrow(final_mean) / n_models
+      if (n_groups_per_model == 2) {
+        # Extract group names from the first set of results
+        group_names <- rownames(final_mean)[1:2]
+        names_list <- lapply(names(ngme), function(x) paste(x, group_names, sep = "_"))
+        rownames(final_mean) <- do.call(c, names_list)
+        rownames(final_sd) <- rownames(final_mean)
+      }
+    }
   }
-
-  rownames(final_sd) <- rownames(final_mean)
 
   ret = list(
     mean.scores = final_mean,
@@ -267,7 +288,8 @@ compute_err_merged_reps <- function(
   parallel = TRUE,
   transform = identity,
   num_cores = 1,
-  thining_gap = 0
+  thining_gap = 0,
+  merge_groups = FALSE
 ) {
   if (is.null(seed)) seed <- Sys.time()
   stopifnot("Not a ngme object." = inherits(ngme, "ngme"))
@@ -297,7 +319,8 @@ compute_err_merged_reps <- function(
       ret$test_group, 
       ret$test_X, 
       transform,
-      thining_gap = thining_gap
+      thining_gap = thining_gap,
+      merge_groups = merge_groups
     )
   }
 
@@ -333,7 +356,8 @@ compute_err_reps <- function(
   parallel = TRUE,
   transform = identity,
   num_cores = 1,
-  thining_gap = 1
+  thining_gap = 1,
+  merge_groups = FALSE
 ) {
   test_idx <- sort(test_idx)
   stopifnot("Not a ngme object." = inherits(ngme, "ngme"))
@@ -366,7 +390,8 @@ compute_err_reps <- function(
       parallel = parallel,
       transform = transform,
       num_cores = num_cores,
-      thining_gap = thining_gap
+      thining_gap = thining_gap,
+      merge_groups = merge_groups
     )
     scores[[n_scores]] <- result_1rep$mean_scores
     sd_scores[[n_scores]] <- result_1rep$sd_scores
@@ -411,7 +436,8 @@ compute_err_1rep <- function(
   parallel = TRUE,
   transform = identity,
   num_cores = 1,  # Default to 1 core to avoid potential issues
-  thining_gap = 1
+  thining_gap = 1,
+  merge_groups = FALSE
 ) {
   stopifnot(
     "bool_<..>_idx should be a logical vector" =
@@ -460,7 +486,7 @@ compute_err_1rep <- function(
   if (parallel && requireNamespace("parallel", quietly = TRUE)) {
     scores = parallel::mclapply(1:N_sim, function(nn) {
       s <- compute_scores(
-        ngme_1rep, n_gibbs_samples, n_burnin, seed+nn, A_pred_block, noise_test_idx, y_data, group_data, X_pred, transform, thining_gap
+        ngme_1rep, n_gibbs_samples, n_burnin, seed+nn, A_pred_block, noise_test_idx, y_data, group_data, X_pred, transform, thining_gap, merge_groups
       )
       s
     }, mc.cores = num_cores)
@@ -469,7 +495,7 @@ compute_err_1rep <- function(
       tryCatch({
         scores[[nn]] <- compute_scores(
           ngme_1rep, n_gibbs_samples, n_burnin, seed+nn, A_pred_block, 
-          noise_test_idx, y_data, group_data, X_pred, transform, thining_gap
+          noise_test_idx, y_data, group_data, X_pred, transform, thining_gap, merge_groups
         )
       }, error = function(e) {
         warning(paste("Error in sequential computation:", e$message))
@@ -532,7 +558,8 @@ compute_scores <- function(
   group_data, 
   X_pred, 
   transform,
-  thining_gap # keep 50% of the thinning samples for CRPS, sCRPS
+  thining_gap,
+  merge_groups = FALSE
 ) {
   # Add error handling for the C++ sampling_cpp call
   tryCatch({
@@ -632,7 +659,8 @@ compute_scores <- function(
       transform(pred_N_1), transform(pred_N_2),  # for MAE, MSE
       transform(Y_N_1_thin), transform(Y_N_2_thin), # for CRPS, sCRPS
       transform(y_data), 
-      group_data
+      group_data,
+      merge_groups = merge_groups
     )
   }, error = function(e) {
     warning(paste("Error in compute_scores:", e$message))
@@ -723,16 +751,78 @@ compute_pred_N <- function(
 compute_score_given_pred <- function(
   pred_N_1, pred_N_2, 
   Y_N_1_thin, Y_N_2_thin,
-  y_data, group_data
+  y_data, group_data,
+  merge_groups = FALSE
 ) {
-  # Use ensemble prediction (buggy)
+  # Use ensemble prediction
   pred <- 0.5*(rowMeans(as.matrix(pred_N_1)) + rowMeans(as.matrix(pred_N_2)))
-
-  # Use only 1 realization
-  # pred <- pred_N_1[, 1] 
 
   # Now Y is of dim n_obs * N
   n_obs <- length(y_data)
+  
+  if (merge_groups && length(levels(group_data)) == 2) {
+    # Handle merged groups for bivariate data (e.g., wind components)
+    groups <- levels(group_data)
+    group1_idx <- which(group_data == groups[1])
+    group2_idx <- which(group_data == groups[2])
+    
+    # Check if we have matching observations for both groups
+    if (length(group1_idx) != length(group2_idx)) {
+      warning("Unequal number of observations for the two groups. Cannot merge.")
+      # Fall through to original computation instead of setting merge_groups = FALSE
+      # This ensures consistent return structure
+    } else {
+      # Organize data by groups
+      pred_group1 <- pred[group1_idx]
+      pred_group2 <- pred[group2_idx]
+      y_data_group1 <- y_data[group1_idx]
+      y_data_group2 <- y_data[group2_idx]
+      
+      # Compute vector-based metrics
+      # MAE as Euclidean distance, MSE as squared Euclidean distance
+      vec_mae <- sqrt((pred_group1 - y_data_group1)^2 + (pred_group2 - y_data_group2)^2)
+      vec_mse <- (pred_group1 - y_data_group1)^2 + (pred_group2 - y_data_group2)^2
+      
+      # For CRPS and sCRPS, we need to work with the simulation arrays
+      n_thin <- ncol(Y_N_1_thin)
+      E_sim_data_thin <- E_sim_sim_thin <- double(length(group1_idx))
+      
+      for (i in 1:length(group1_idx)) {
+        # Get simulation data for both components
+        y_sim1_thin_comp1 <- as.numeric(Y_N_1_thin[group1_idx[i], ])
+        y_sim2_thin_comp1 <- as.numeric(Y_N_2_thin[group1_idx[i], ])
+        y_sim1_thin_comp2 <- as.numeric(Y_N_1_thin[group2_idx[i], ])
+        y_sim2_thin_comp2 <- as.numeric(Y_N_2_thin[group2_idx[i], ])
+        
+        # Compute vector distances for CRPS
+        obs_vec <- c(y_data_group1[i], y_data_group2[i])
+        
+        # E(||X_i - y_data||) where X_i ~ predictive distribution
+        vec_dist_sim_data <- sqrt((y_sim1_thin_comp1 - obs_vec[1])^2 + (y_sim1_thin_comp2 - obs_vec[2])^2)
+        E_sim_data_thin[i] <- mean(vec_dist_sim_data)
+        
+        # E(||X_i - Y_i||) where X_i, Y_i ~ predictive distribution
+        vec_dist_sim_sim <- sqrt((y_sim1_thin_comp1 - y_sim2_thin_comp1)^2 + (y_sim1_thin_comp2 - y_sim2_thin_comp2)^2)
+        E_sim_sim_thin[i] <- mean(vec_dist_sim_sim)
+      }
+      
+      CRPS_thin <- 0.5 * E_sim_sim_thin - E_sim_data_thin
+      sCRPS_thin <- -E_sim_data_thin / E_sim_sim_thin - 0.5 * log(E_sim_sim_thin)
+      
+      # Create merged results
+      scores <- data.frame(
+        MAE = mean(vec_mae),
+        MSE = mean(vec_mse),
+        neg.CRPS = -mean(CRPS_thin),
+        neg.sCRPS = -mean(sCRPS_thin)
+      )
+      rownames(scores) <- paste(groups, collapse = "_")
+      
+      return(scores)
+    }
+  }
+  
+  # Original computation for non-merged groups
   E_sim_data_thin <- E_sim_sim_thin <- double(length(y_data))
   
   for (i in 1:n_obs) {

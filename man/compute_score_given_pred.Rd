@@ -10,7 +10,8 @@ compute_score_given_pred(
   Y_N_1_thin,
   Y_N_2_thin,
   y_data,
-  group_data
+  group_data,
+  merge_groups = FALSE
 )
 }
 \arguments{

@@ -14,8 +14,10 @@
 #' @param control  control variables for latent model
 #' @param name   name of the field, for later use, if not provided, will be "field1" etc.
 #' @param data      specifed or inherit from ngme() function
-#' @param group   group factor indicate resposne variable, can be inherited from ngme() function
+#' @param group   group factor indicate resposne variable, can be inherited from ngme() function, (used for bivariate model)
 #' @param which_group  belong to which group
+#' @param replicate factor indicating replicate structure for INLA-style replicates. 
+#'   When provided, operators and A matrices will be block-diagonalized across replicates.
 #' @param A  observation matrix, automatically computed given map and model except for Bayesian regression
 #' @param W      starting value of the process
 #' @param fix_W  stop sampling for W
@@ -29,6 +31,12 @@
 #' @details When using different meshes for different replicates, provide the mesh parameter
 #' as a list of mesh objects. The number of meshes should match the number of replicates.
 #' For example: \code{mesh = list(mesh1, mesh2, mesh3)} for 3 replicates.
+#' 
+#' When using the `replicate` argument, the operator matrices will be block-diagonalized.
+#' For a generic operator K = param1 * Matrix1 + param2 * Matrix2, with 2 replicates, 
+#' the resulting operator becomes:
+#' K = param1 * bdiag(Matrix1_rep1, Matrix1_rep2) + param2 * bdiag(Matrix2_rep1, Matrix2_rep2)
+#' Similarly, the A matrix will be block-diagonalized as bdiag(A_rep1, A_rep2, ...).
 #'
 #' @return a list for constructing latent model, e.g. A, h, C, G,
 #' which also has
@@ -47,6 +55,7 @@ f <- function(
   data        = NULL,
   group       = NULL,
   which_group = NULL,
+  replicate   = NULL,
   A           = NULL,
   W           = NULL,
   fix_W       = FALSE,
@@ -106,6 +115,23 @@ f <- function(
   }
 
   group <- validate_rep_or_group(group, data)
+  
+  # Validate and process replicate argument
+  if (!is.null(replicate)) {
+    replicate <- validate_rep_or_group(replicate, data)
+    if (!is.null(data)) {
+      stopifnot(
+        "Length of replicate must match number of observations" = 
+        length(replicate) == nrow(data)
+      )
+    } else {
+      stopifnot(
+        "Length of replicate must match length of map" = 
+        length(replicate) == length_map(map)
+      )
+    }
+  }
+  
   # set the subset if provide group and which_group
   if (!is.null(which_group)) {
     stopifnot(
@@ -148,6 +174,8 @@ f <- function(
 
   # Remove mesh_list from f_args since it's not needed for operator building
   f_args$mesh_list <- NULL
+  # Remove replicate from f_args for now since individual operators don't handle it
+  f_args$replicate <- NULL
   
   # If we have mesh_list, remove mesh from f_args so operator building doesn't fail
   if (!is.null(mesh_list)) {
@@ -213,6 +241,146 @@ f <- function(
     # subset the A matrix only if it was built
     if (!is.null(A) && !all(subset)) {
       A <- A[subset, , drop = FALSE]
+    }
+  }
+  
+  # Handle replicates: block-diagonalize operator matrices and A matrix
+  if (!is.null(replicate)) {
+    n_repl <- length(levels(replicate))
+    
+    # If we have mesh_list, we need to build operators and A matrices for each replicate separately
+    if (!is.null(mesh_list)) {
+      # Build separate operators for each replicate using their respective meshes
+      operator_list <- list()
+      A_list <- list()
+      h_total <- NULL
+      
+      for (i in 1:n_repl) {
+        # Get indices for this replicate
+        repl_idx <- which(replicate == levels(replicate)[i])
+        
+        # Get map for this replicate
+        if (model %in% c("tp", "spacetime")) {
+          map_repl <- list(map[[1]][repl_idx], map[[2]][repl_idx])
+        } else {
+          map_repl <- sub_map(map, repl_idx)
+        }
+        
+        # Get mesh for this replicate
+        mesh_repl <- if (length(mesh_list) >= i) mesh_list[[i]] else mesh_list[[1]]
+        
+        # Build operator for this replicate with its specific mesh
+        f_args_repl <- f_args
+        f_args_repl$mesh <- mesh_repl
+        f_args_repl$map <- map_repl
+        operator_repl <- build_operator(model, f_args_repl)
+        operator_list[[i]] <- operator_repl
+        
+        # Build A matrix for this replicate
+        if (is.null(A)) {
+          A_repl <- ngme_build_A(model, mesh_repl, map_repl, operator_repl, 
+                                if (!is.null(group)) group[repl_idx] else NULL)
+          A_list[[i]] <- A_repl
+        }
+        
+        # Accumulate h vectors
+        h_total <- c(h_total, operator_repl$h)
+      }
+      
+      # Create block-diagonal operator matrices
+      if (operator_list[[1]]$generic_type %in% c("generic", "generic_ns")) {
+        # For generic operators, block-diagonalize each matrix type
+        n_matrices <- length(operator_list[[1]]$matrices)
+        combined_matrices <- list()
+        
+        for (j in 1:n_matrices) {
+          matrix_list <- lapply(operator_list, function(op) op$matrices[[j]])
+          combined_matrices[[j]] <- do.call(Matrix::bdiag, matrix_list)
+        }
+        
+        operator$matrices <- combined_matrices
+        
+        # Update K matrix using the new block-diagonal matrices
+        if (!is.null(operator$update_K)) {
+          operator$K <- operator$update_K(operator$theta_K)
+        } else {
+          # Block-diagonalize K matrices
+          K_list <- lapply(operator_list, function(op) op$K)
+          operator$K <- do.call(Matrix::bdiag, K_list)
+        }
+      } else {
+        # For non-generic operators, block-diagonalize K directly
+        K_list <- lapply(operator_list, function(op) op$K)
+        operator$K <- do.call(Matrix::bdiag, K_list)
+      }
+      
+      # Update h vector
+      operator$h <- h_total
+      
+      # Block-diagonalize A matrices if they were built
+      if (!is.null(A_list) && length(A_list) > 0) {
+        A <- do.call(Matrix::bdiag, A_list)
+      }
+      
+    } else {
+      # Original logic for same mesh across replicates
+      # Block-diagonalize operator matrices if it's a generic operator
+      if (operator$generic_type %in% c("generic", "generic_ns")) {
+        # Create block-diagonal versions of all matrices
+        operator$matrices <- lapply(operator$matrices, function(mat) {
+          # Create list of matrices for each replicate
+          mat_list <- replicate(n_repl, mat, simplify = FALSE)
+          # Block diagonalize
+          do.call(Matrix::bdiag, mat_list)
+        })
+        
+        # Upda simple cases, just block-diagonalize K directly
+        K_list <- replicate(n_repl, operator$K, simplify = FALSE)
+        operator$K <- do.call(Matrix::bdiag, K_list)
+        # Update h vector (concatenate for each replicate)
+        operator$h <- rep(operator$h, n_repl)
+      } else {
+        stop("Not implemented replicate for non-generic operators yet.")
+        # For non-generic operators, block-diagonalize K directly
+        K_list <- replicate(n_repl, operator$K, simplify = FALSE)
+        operator$K <- do.call(Matrix::bdiag, K_list)
+        operator$h <- rep(operator$h, n_repl)
+      }
+      
+      # Block-diagonalize A matrix if it exists
+      if (!is.null(A)) {
+        # Build A matrix for each replicate
+        A_list <- list()
+        for (i in 1:n_repl) {
+          # Get indices for this replicate
+          repl_idx <- which(replicate == levels(replicate)[i])
+          
+          # Get map for this replicate
+          if (model %in% c("tp", "spacetime")) {
+            map_repl <- list(map[[1]][repl_idx], map[[2]][repl_idx])
+          } else {
+            map_repl <- sub_map(map, repl_idx)
+          }
+          
+          # Build A matrix for this replicate using the same mesh
+          A_repl <- ngme_build_A(model, mesh, map_repl, operator, 
+                                if (!is.null(group)) group[repl_idx] else NULL)
+          A_list[[i]] <- A_repl
+        }
+        
+        # Block-diagonalize A matrices
+        A <- do.call(Matrix::bdiag, A_list)
+      }
+    }
+    
+    # Apply subset if needed
+    if (!is.null(A) && !all(subset)) {
+      A <- A[subset, , drop = FALSE]
+    }
+    
+    # Update W if provided (replicate for each replicate)
+    if (!is.null(W)) {
+      W <- rep(W, n_repl)
     }
   }
   
@@ -331,7 +499,8 @@ if (noise[[1]]$noise_type != "normal") {
     name      = name,
     debug     = debug,
     fix_theta_K = fix_theta_K,
-    prior_theta_K = prior_theta_K
+    prior_theta_K = prior_theta_K,
+    replicate = replicate
   )
 }
 
@@ -357,11 +526,7 @@ build_operator <- function(model_name, args_list) {
     spacetime = do.call(spacetime, args_list),
     generic = do.call(generic, args_list),
     generic_ns = do.call(generic_ns, args_list),
-    iid = {
-      if (is.null(args_list$n))
-        args_list$n <- length_map(args_list$map)
-      do.call(iid, args_list)
-    },
+    iid = do.call(iid, args_list),
     stop("Unknown models, please check if model name is in ngme_model_types()")
   )
 }
@@ -410,7 +575,8 @@ ngme_build_mesh <- function(
 
   if (!is.null(model)) {
     if (model %in% c("re", "tp")) return(NULL)
-    if (model == "ar1") {
+    if (model == "iid") loc <- as.integer(as.factor(loc))
+    if (model %in% c("ar1")) {
       stopifnot("The map should be integers."
         = is.numeric(loc) && all(loc == round(loc)))
       return (fmesher::fm_mesh_1d(loc = min(loc):max(loc)))

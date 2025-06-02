@@ -2,15 +2,16 @@
 
 #' ngme iid model specification
 #'
-#' @param n integer, number of iid model
+#' @param map integer or factor, index to build the mesh
 #' @param ... ignore
 #'
 #' @return ngme_operator object
 #' @export
 #'
 iid <- function(
-  n, ...
+  map, ...
 ) {
+  n <- length(levels(as.factor(map)))
   K <- ngme_as_sparse(Matrix::Diagonal(n))
 
   ngme_operator(

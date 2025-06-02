@@ -4,10 +4,10 @@
 \alias{iid}
 \title{ngme iid model specification}
 \usage{
-iid(n, ...)
+iid(map, ...)
 }
 \arguments{
-\item{n}{integer, number of iid model}
+\item{map}{integer or factor, index to build the mesh}
 
 \item{...}{ignore}
 }

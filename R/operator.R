@@ -250,9 +250,21 @@ ngme_model <- function(
 #' @export
 print.ngme_model <- function(x, padding = 0, ...) {
   model <- x
+  pad_space <- paste(rep(" ", padding), collapse = "")
+  
+  # Print operator information
   print.ngme_operator(model$operator, padding = padding)
+  
+  # Print replicate information if replicates are used
+  if (!is.null(model$replicate)) {
+    n_replicates <- length(levels(model$replicate))
+    cat(pad_space, "Number of replicates: ", n_replicates, "\n\n", sep="")
+  }
+  
+  # Print noise information
   suppress_sigma <- if (model$model == "re") TRUE else FALSE
   print.ngme_noise(model$noise, padding = padding, suppress_sigma=suppress_sigma)
+  
   invisible(model)
 }
 

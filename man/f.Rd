@@ -14,6 +14,7 @@ f(
   data = NULL,
   group = NULL,
   which_group = NULL,
+  replicate = NULL,
   A = NULL,
   W = NULL,
   fix_W = FALSE,
@@ -31,7 +32,9 @@ f(
 
 \item{noise}{ngme_noise object, noise_nig() or noise_gal()}
 
-\item{mesh}{mesh for the model, if not provided, will be built from map, can be a list of meshs for different replicates}
+\item{mesh}{mesh for the model, if not provided, will be built from map. 
+Can be a single mesh object or a list of mesh objects for different replicates.
+When using replicates, provide mesh as a list where mesh[[i]] corresponds to replicate i.}
 
 \item{control}{control variables for latent model}
 
@@ -39,9 +42,12 @@ f(
 
 \item{data}{specifed or inherit from ngme() function}
 
-\item{group}{group factor indicate resposne variable, can be inherited from ngme() function}
+\item{group}{group factor indicate resposne variable, can be inherited from ngme() function, (used for bivariate model)}
 
 \item{which_group}{belong to which group}
+
+\item{replicate}{factor indicating replicate structure for INLA-style replicates. 
+When provided, operators and A matrices will be block-diagonalized across replicates.}
 
 \item{A}{observation matrix, automatically computed given map and model except for Bayesian regression}
 
@@ -72,4 +78,15 @@ Function used for defining of smooth and spatial terms
 within ngme model formulae.
 The function is a wrapper function for specific submodels.
 (see ngme_models_types() for available models).
+}
+\details{
+When using different meshes for different replicates, provide the mesh parameter
+as a list of mesh objects. The number of meshes should match the number of replicates.
+For example: \code{mesh = list(mesh1, mesh2, mesh3)} for 3 replicates.
+
+When using the `replicate` argument, the operator matrices will be block-diagonalized.
+For a generic operator K = param1 * Matrix1 + param2 * Matrix2, with 2 replicates, 
+the resulting operator becomes:
+K = param1 * bdiag(Matrix1_rep1, Matrix1_rep2) + param2 * bdiag(Matrix2_rep1, Matrix2_rep2)
+Similarly, the A matrix will be block-diagonalized as bdiag(A_rep1, A_rep2, ...).
 }

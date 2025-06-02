@@ -386,7 +386,9 @@ update_ngme_est <- function(
 #' @export
 print.ngme <- function(x, ...) {
   print(x$replicates[[1]])
-  cat("Number of replicates is ", x$n_repls, "\n");
+  if (x$n_repls > 1) {
+    cat("Number of global replicates is", x$n_repls, "\n");
+  }
 }
 
 ######

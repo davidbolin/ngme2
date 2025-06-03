@@ -559,9 +559,17 @@ bv_matern_nig <- function(
 
 
 
-#' ngme space-time non-separable model specification
+#' Ngme space-time non-separable model specification
 #'
-#' Given a spatial and temporal model, build a non-separable space-time model.
+#' Implements a non-separable space-time model based on the advection-diffusion SPDE with first-order derivative in time.
+#' The model combines temporal and spatial components through a finite difference method (implicit Euler) for temporal discretization
+#' and finite element method (continuous Galerkin) for spatial discretization. When advection dominates diffusion,
+#' the "Streamline Diffusion" stabilization technique is applied.
+#'
+#' The model is particularly useful for large space-time datasets in environmental science, offering computationally
+#' efficient methods for parameter estimation, kriging prediction, and conditional simulations.
+#'
+#' For details, see \url{https://www.sciencedirect.com/science/article/pii/S2211675324000381}
 #'
 #' @param mesh A list of two objects:
 #'   \itemize{
@@ -575,7 +583,6 @@ bv_matern_nig <- function(
 #' @param fix_gamma TRUE if fix gamma (advection term), FALSE if estimate gamma.
 #' @param theta_gamma_x The x component of the advection term: `gamma_x = B_gamma_x %*% theta_gamma_x`.
 #' @param theta_gamma_y The y component of the advection term: `gamma_y = B_gamma_y %*% theta_gamma_y`.
-# ' @param theta_gamma_t The t component of the advection term: `gamma_t = B_gamma_t %*% theta_gamma_t`.
 #' @param shared_theta_gamma TRUE if share the same theta_gamma for all time nodes. (theta_gamma_x and theta_gamma_y will be the same)
 #' @param B_gamma_x The design matrix for the x component of the advection term.
 #' @param B_gamma_y The design matrix for the y component of the advection term.

@@ -345,17 +345,21 @@ update_ngme_est <- function(
       n1 <- ngme_replicate$models[[i]]$operator$first$n_theta_K
       n2 <- ngme_replicate$models[[i]]$operator$second$n_theta_K
       ngme_replicate$models[[i]]$operator$first$theta_K <- ngme_replicate$models[[i]]$theta_K[1:n1]
-      ngme_replicate$models[[i]]$operator$second$theta_K <- ngme_replicate$models[[i]]$theta_K[(n1+1):(n1+n2)]
+      ngme_replicate$models[[i]]$operator$second$theta_K <- ngme_replicate$models[[i]]$theta_K[(n1+1):(n1+n2)] 
 
       # update output for tp-bv model
       lat <- ngme_replicate$models[[i]]
-      if (lat$operator$second$model  %in% c("bv", "bv_normal")) {
+      if (lat$operator$second$model  %in% c("bv", "bv_normal", "bv_matern_normal", "bv_matern_nig")) {
         bv = lat$operator$second
+        # theta_K = (theta_K_tp_first, theta_K_bv)
+        # notice that theta_K_bv is already updated
 
+        # (skip rotation parameter in normal case)
+        if (lat$operator$second$model %in% c("bv_normal", "bv_matern_normal")) n0 = 3 else n0 = 4
         n1 = bv$first$n_theta_K
         n2 = bv$second$n_theta_K
-        bv$first$theta_K = bv$theta_K[3:(n1+2)]
-        bv$second$theta_K = bv$theta_K[(n1+3):(2+n1+n2)]
+        bv$first$theta_K = bv$theta_K[(n0+1):(n0+n1)]
+        bv$second$theta_K = bv$theta_K[(n0+n1+1):(n0+n1+n2)]
 
         ngme_replicate$models[[i]]$operator$second <- bv
       }

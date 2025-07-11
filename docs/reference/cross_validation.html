@@ -53,7 +53,7 @@
       <a href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a>
     </li>
     <li>
-      <a href="../articles/replicate.html">Ngme replicate feature</a>
+      <a href="../articles/replicate.html">Models with replicates</a>
     </li>
     <li>
       <a href="../articles/pred_and_est.html">Model estimation and prediction</a>
@@ -131,7 +131,9 @@
 <span>  parallel <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  thining_gap <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  cores_layer1 <span class="op">=</span> <span class="kw">if</span> <span class="op">(</span><span class="va">parallel</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fu">parallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">detectCores</a></span><span class="op">(</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span> <span class="kw">else</span> <span class="fl">1</span>,</span>
-<span>  cores_layer2 <span class="op">=</span> <span class="kw">if</span> <span class="op">(</span><span class="va">parallel</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fu">parallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">detectCores</a></span><span class="op">(</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span> <span class="kw">else</span> <span class="fl">1</span></span>
+<span>  cores_layer2 <span class="op">=</span> <span class="kw">if</span> <span class="op">(</span><span class="va">parallel</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fu">parallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">detectCores</a></span><span class="op">(</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span> <span class="kw">else</span> <span class="fl">1</span>,</span>
+<span>  merge_groups <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  merged_group_name <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -207,7 +209,11 @@ e.g., the MAE will be computed as |transform(Y) - transform(Y_pred)|</p></dd>
 <dt id="arg-thining-gap">thining_gap<a class="anchor" aria-label="anchor" href="#arg-thining-gap"></a></dt>
 <dd><p>integer, the gap between samples for thinning, if 0, then no thinning, if 1, then keep 50<!-- % of the samples for CRPS, sCRPS, etc.} --></p>
 <p>cores_layer1integer, number of cores for the first layer (over testing samples)</p>
-<p>cores_layer2integer, number of cores for the second layer (over computing scores for N_sim simulations)</p></dd>
+<p>cores_layer2integer, number of cores for the second layer (over computing scores for N_sim simulations)</p>
+<p>merge_groupslogical, if TRUE, merge groups as vector components (e.g., for vector-valued wind data with north_wind, east_wind).
+MAE becomes Euclidean distance, MSE becomes squared Euclidean distance, etc.</p>
+<p>merged_group_namecharacter, name for the merged group when merge_groups=TRUE.
+If NULL, uses "group1_group2" format (default: NULL)</p></dd>
 
 </dl><p>A list containing:
   </p><ul><li><p>mean.scores - mean of N_sim estimations of 4 criterions: MSE, MAE, CRPS, sCRPS</p></li>

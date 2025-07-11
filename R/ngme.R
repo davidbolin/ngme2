@@ -719,30 +719,97 @@ summary.ngme <- function(
   result
 }
 
-#' ngme fit result
-#' @param ngme_object a ngme model
-#' @param name name of the latent model to be summarized (if NULL, will print all)
-#' @param replicate replicate number
+#' Access the result of a ngme fitted model
+#' @param ngme_object a ngme fitted model object
+#' @param model latent model name to filter by (e.g., "my_ar1", "my_matern", "my_rw1", etc.), "data" for fixed effects and measurement noise, if NULL, return all models
+#' @param transformed logical, if TRUE (default) return transformed parameters, if FALSE return raw parameters
 #'
-#' @return a list of summary
+#' @return a list of parameters for the specified model, or all models if model is NULL
 #' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Fit a simple AR(1) model
+#' Y <- 1:10; n_obs <- length(Y)
+#' x1 <- runif(n_obs)
+#' x2 <- rexp(n_obs)
+#' 
+#' ngme_out <- ngme(
+#'   Y ~ x1 + x2 + f(
+#'     1:n_obs,
+#'     name = "my_ar",
+#'     model = "ar1",
+#'     rho = 0.5,
+#'     noise = noise_nig(mu=2, sigma=3, nu=1)
+#'   ),
+#'   data = data.frame(x1=x1, x2=x2, Y=Y)
+#' )
+#' 
+#' # Get all model parameters (transformed)
+#' all_params <- ngme_result(ngme_out)
+#' # Returns: list(my_ar = list(rho = 0.5, mu = 2, sigma = 3, nu = 1),
+#' #               data = list(fixed_effects = c(...), sigma = 0.5))
+#' 
+#' # Get parameters for specific latent model
+#' ar_params <- ngme_result(ngme_out, model = "my_ar")
+#' # Returns: list(rho = 0.5, mu = 2, sigma = 3, nu = 1)
+#' 
+#' # Get raw (untransformed) parameters
+#' ar_raw <- ngme_result(ngme_out, model = "my_ar", transformed = FALSE)
+#' # Returns: list(theta_rho = 1.099, mu = 2, sigma = 3, nu = 1)
+#' 
+#' # Get fixed effects and measurement noise
+#' data_params <- ngme_result(ngme_out, model = "data")
+#' # Returns: list(fixed_effects = c(...), sigma = 0.5, ...)
+#' 
+#' # For models with multiple latent processes
+#' ngme_out2 <- ngme(
+#'   Y ~ x1 + x2 + f(
+#'     1:n_obs,
+#'     name = "my_ar",
+#'     model = "ar1",
+#'     noise = noise_nig(mu=2, sigma=3, nu=1)
+#'   ) + f(
+#'     1:n_obs,
+#'     name = "my_ou",
+#'     model = "ou",
+#'     noise = noise_normal(sigma=1)
+#'   ),
+#'   data = data.frame(x1=x1, x2=x2, Y=Y)
+#' )
+#' 
+#' # Get all models
+#' all_models <- ngme_result(ngme_out2)
+#' # Returns: list(my_ar = list(...), my_ou = list(...), data = list(...))
+#' 
+#' # Get specific model
+#' ou_params <- ngme_result(ngme_out2, model = "my_ou")
+#' # Returns: list(theta_K1 = 0.5, sigma = 1)
+#' }
+#' 
+#' @seealso \code{\link{extract_parameters}} for the underlying function
 ngme_result <- function(
   ngme_object,
-  name = NULL,
-  replicate = 1
+  model = NULL,
+  transformed = TRUE
 ) {
   stopifnot(inherits(ngme_object, "ngme"))
-  result <- ngme_object$replicates[[replicate]]
-
-  if (!is.null(name)) {
-    names <- sapply(result$models, function(x) x$name)
+  
+  # Extract all parameters using extract_parameters
+  all_params <- extract_parameters(ngme_object)
+  
+  # Choose transformed or raw parameters
+  params <- if (transformed) all_params$transformed else all_params$raw
+  
+  # Return specific model or all models
+  if (is.null(model)) {
+    return(params)
+  } else {
     stopifnot(
-      "Please provide only one name" = length(name) == 1,
-      "Please provide the correct name of the model" =
-      name %in% names
+      "Please provide the correct model name" = model %in% names(params)
     )
-    result <- result$models[[name]]
+    return(params[[model]])
   }
-
-  result
 }
+
+

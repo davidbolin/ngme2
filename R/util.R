@@ -1006,3 +1006,101 @@ get_trajectories <- function(
 
   return (ret)
 }
+
+
+
+
+#' @title get the parameters of the noise
+#' @description
+#' Get the parameters of the noise
+#'
+#' @param noise noise object
+#' @param prefix prefix of the parameter
+#' @return a list with parameter name as key and parameter value as value
+get_noise_param <- function(noise, prefix) {
+  B      <- noise[[paste0("B_", prefix)]]
+  theta  <- noise[[paste0("theta_", prefix)]]
+  if (length(theta) == 0) return (NULL)
+
+  if (is_stationary(B)) {
+    value <- if (prefix == "mu") theta else exp(theta)
+  } else {
+    value <- theta
+  }
+
+  name <- if (is_stationary(B)) prefix else paste0("theta_", prefix)
+  result <- list()
+  result[[name]] <- value
+  result
+}
+
+
+
+# extract parameters from all models in ngme object
+extract_parameters <- function(ngme_object) {
+  stopifnot(inherits(ngme_object, "ngme"))
+  ngme_1rep <- ngme_object$replicates[[1]]
+  result_transformed <- list() # transformed parameters (user friendly)
+  result_raw <- list() # raw parameters (for optimizer)
+
+  # LATENT MODELS
+  models <- ngme_1rep$models
+  model_names <- names(models)
+
+  for (j in seq_along(models)) {
+    names <- models[[j]]$operator$param_name
+    trans <- models[[j]]$operator$param_trans
+    result_model_transformed <- list()
+    result_model_raw <- list()
+    for (i in seq_along(names)) {
+      result_model_transformed[[names[i]]] <- trans[[i]](models[[j]]$operator$theta_K[[i]])
+      if (is.function(trans[[i]]) && trans[[i]](3) == 3) {
+        raw_name <- names[i]
+      } else {
+        raw_name <- paste0("theta_", names[i])
+      }
+      result_model_raw[[raw_name]] <- models[[j]]$operator$theta_K[[i]]
+    }
+
+    # Use get_noise_param for noise parameters
+    noise <- models[[j]]$noise
+    noise_params_transformed <- list()
+    noise_params_raw <- list()
+    for (p in c("mu", "sigma", "nu")) {
+      noise_param <- get_noise_param(noise, p)
+      if (!is.null(noise_param)) {
+        noise_params_transformed <- c(noise_params_transformed, noise_param)
+        noise_params_raw <- c(noise_params_raw, noise_param)
+      }
+    }
+
+    result_model_transformed <- c(result_model_transformed, noise_params_transformed)
+    result_model_raw <- c(result_model_raw, noise_params_raw)
+
+    result_transformed[[model_names[j]]] <- result_model_transformed
+    result_raw[[model_names[j]]] <- result_model_raw
+  }
+
+  # FIXED EFFECTS and MEASUREMENT NOISE
+  fixed_effects <- ngme_1rep$feff
+  result_transformed$data$fixed_effects <- fixed_effects
+  result_raw$data$fixed_effects <- fixed_effects
+
+  m_noise <- ngme_1rep$noise
+  m_noise_params_transformed <- list()
+  m_noise_params_raw <- list()
+  for (p in c("mu", "sigma", "nu")) {
+    noise_param <- get_noise_param(m_noise, p)
+    if (!is.null(noise_param)) {
+      m_noise_params_transformed <- c(m_noise_params_transformed, noise_param)
+      m_noise_params_raw <- c(m_noise_params_raw, noise_param)
+    }
+  }
+
+  result_transformed$data <- c(result_transformed$data, m_noise_params_transformed)
+  result_raw$data <- c(result_raw$data, m_noise_params_raw)
+
+  list(transformed = result_transformed, raw = result_raw)
+}
+
+

@@ -2,20 +2,84 @@
 % Please edit documentation in R/ngme.R
 \name{ngme_result}
 \alias{ngme_result}
-\title{ngme fit result}
+\title{Access the result of a ngme fitted model}
 \usage{
-ngme_result(ngme_object, name = NULL, replicate = 1)
+ngme_result(ngme_object, model = NULL, transformed = TRUE)
 }
 \arguments{
-\item{ngme_object}{a ngme model}
+\item{ngme_object}{a ngme fitted model object}
 
-\item{name}{name of the latent model to be summarized (if NULL, will print all)}
+\item{model}{latent model name to filter by (e.g., "my_ar1", "my_matern", "my_rw1", etc.), "data" for fixed effects and measurement noise, if NULL, return all models}
 
-\item{replicate}{replicate number}
+\item{transformed}{logical, if TRUE (default) return transformed parameters, if FALSE return raw parameters}
 }
 \value{
-a list of summary
+a list of parameters for the specified model, or all models if model is NULL
 }
 \description{
-ngme fit result
+Access the result of a ngme fitted model
+}
+\examples{
+\dontrun{
+# Fit a simple AR(1) model
+Y <- 1:10; n_obs <- length(Y)
+x1 <- runif(n_obs)
+x2 <- rexp(n_obs)
+
+ngme_out <- ngme(
+  Y ~ x1 + x2 + f(
+    1:n_obs,
+    name = "my_ar",
+    model = "ar1",
+    rho = 0.5,
+    noise = noise_nig(mu=2, sigma=3, nu=1)
+  ),
+  data = data.frame(x1=x1, x2=x2, Y=Y)
+)
+
+# Get all model parameters (transformed)
+all_params <- ngme_result(ngme_out)
+# Returns: list(my_ar = list(rho = 0.5, mu = 2, sigma = 3, nu = 1),
+#               data = list(fixed_effects = c(...), sigma = 0.5))
+
+# Get parameters for specific latent model
+ar_params <- ngme_result(ngme_out, model = "my_ar")
+# Returns: list(rho = 0.5, mu = 2, sigma = 3, nu = 1)
+
+# Get raw (untransformed) parameters
+ar_raw <- ngme_result(ngme_out, model = "my_ar", transformed = FALSE)
+# Returns: list(theta_rho = 1.099, mu = 2, sigma = 3, nu = 1)
+
+# Get fixed effects and measurement noise
+data_params <- ngme_result(ngme_out, model = "data")
+# Returns: list(fixed_effects = c(...), sigma = 0.5, ...)
+
+# For models with multiple latent processes
+ngme_out2 <- ngme(
+  Y ~ x1 + x2 + f(
+    1:n_obs,
+    name = "my_ar",
+    model = "ar1",
+    noise = noise_nig(mu=2, sigma=3, nu=1)
+  ) + f(
+    1:n_obs,
+    name = "my_ou",
+    model = "ou",
+    noise = noise_normal(sigma=1)
+  ),
+  data = data.frame(x1=x1, x2=x2, Y=Y)
+)
+
+# Get all models
+all_models <- ngme_result(ngme_out2)
+# Returns: list(my_ar = list(...), my_ou = list(...), data = list(...))
+
+# Get specific model
+ou_params <- ngme_result(ngme_out2, model = "my_ou")
+# Returns: list(theta_K1 = 0.5, sigma = 1)
+}
+
+}
+\seealso{
+\code{\link{extract_parameters}} for the underlying function
 }

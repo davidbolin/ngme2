@@ -55,7 +55,7 @@ K = sum_i f_i(theta) * matrices_i, where f_i depends on the parameter transforma
       <a href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a>
     </li>
     <li>
-      <a href="../articles/replicate.html">Ngme replicate feature</a>
+      <a href="../articles/replicate.html">Models with replicates</a>
     </li>
     <li>
       <a href="../articles/pred_and_est.html">Model estimation and prediction</a>
@@ -202,7 +202,7 @@ existing matrices with transformed parameters. Here's how it works:</p>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Matern model with kappa = 2</span></span></span>
-<span class="r-in"><span><span class="va">mesh</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/fmesher/man/fm_mesh_1d.html" class="external-link">fm_mesh_1d</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, length.out <span class="op">=</span> <span class="fl">10</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">mesh</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://inlabru-org.github.io/fmesher/reference/fm_mesh_1d.html" class="external-link">fm_mesh_1d</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, length.out <span class="op">=</span> <span class="fl">10</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">matern_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="matern.html">matern</a></span><span class="op">(</span><span class="va">mesh</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">log_kappa</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">generic_matern</span> <span class="op">&lt;-</span> <span class="fu">generic</span><span class="op">(</span></span></span>
@@ -213,7 +213,7 @@ existing matrices with transformed parameters. Here's how it works:</p>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Matern model with alpha = 4 and kappa = 2</span></span></span>
-<span class="r-in"><span><span class="va">mesh</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/fmesher/man/fm_mesh_2d.html" class="external-link">fm_mesh_2d</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">20</span><span class="op">)</span>, y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">20</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">mesh</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://inlabru-org.github.io/fmesher/reference/fm_mesh_2d.html" class="external-link">fm_mesh_2d</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">20</span><span class="op">)</span>, y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">20</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">matern_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="matern.html">matern</a></span><span class="op">(</span><span class="va">mesh</span>, alpha <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">C</span> <span class="op">&lt;-</span> <span class="va">matern_obj</span><span class="op">$</span><span class="va">C</span></span></span>
 <span class="r-in"><span><span class="va">G</span> <span class="op">&lt;-</span> <span class="va">matern_obj</span><span class="op">$</span><span class="va">G</span></span></span>

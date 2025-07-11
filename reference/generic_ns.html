@@ -55,7 +55,7 @@ spatially varying parameters through basis expansions."><meta property="og:image
       <a href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a>
     </li>
     <li>
-      <a href="../articles/replicate.html">Ngme replicate feature</a>
+      <a href="../articles/replicate.html">Models with replicates</a>
     </li>
     <li>
       <a href="../articles/pred_and_est.html">Model estimation and prediction</a>
@@ -225,7 +225,7 @@ spatially varying parameters through basis expansions.</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Spatially varying Matern model</span></span></span>
 <span class="r-in"><span><span class="co"># Create a simple 1D mesh</span></span></span>
-<span class="r-in"><span><span class="va">mesh</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/fmesher/man/fm_mesh_1d.html" class="external-link">fm_mesh_1d</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, length.out <span class="op">=</span> <span class="fl">10</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">mesh</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://inlabru-org.github.io/fmesher/reference/fm_mesh_1d.html" class="external-link">fm_mesh_1d</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, length.out <span class="op">=</span> <span class="fl">10</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Create basis for spatially-varying kappa</span></span></span>
 <span class="r-in"><span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">10</span></span></span>

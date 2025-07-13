@@ -1095,8 +1095,8 @@ results:</p>
 will use the built-in <code>traceplot</code> function from
 <code>ngme2</code> to examine the convergence of our parameters:</p>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span>  <span class="co"># Trace plot for sigma and fixed effects (blue lines indicate true value)</span></span>
-<span>  <span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">ngme_out</span>, hline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>,<span class="op">-</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">0.5</span><span class="op">)</span>, moving_window <span class="op">=</span> <span class="fl">20</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="co"># Trace plot for sigma and fixed effects (blue lines indicate true value)</span></span>
+<span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">ngme_out</span>, hline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>,<span class="op">-</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">0.5</span><span class="op">)</span>, moving_window <span class="op">=</span> <span class="fl">20</span><span class="op">)</span></span></code></pre></div>
 <p><img src="AR1-model_files/figure-html/convergence-diagnostics-1.png" width="100%"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $sigma</span></span>
@@ -1113,8 +1113,8 @@ will use the built-in <code>traceplot</code> function from
 <p>Now let us examine the convergence of the AR(1) process
 parameters:</p>
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span>  <span class="co"># Trace plots for AR(1) parameters (blue lines indicate true value)</span></span>
-<span>  <span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">ngme_out</span>, <span class="st">"my_ar"</span>, hline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="op">-</span><span class="fl">3</span>, <span class="fl">4</span>, <span class="fl">0.4</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="co"># Trace plots for AR(1) parameters (blue lines indicate true value)</span></span>
+<span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">ngme_out</span>, <span class="st">"my_ar"</span>, hline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="op">-</span><span class="fl">3</span>, <span class="fl">4</span>, <span class="fl">0.4</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="AR1-model_files/figure-html/convergence-ar-process-1.png" width="100%"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $rho</span></span>
@@ -1135,14 +1135,14 @@ parameters:</p>
 <p>Let us examine the final parameter estimates and compare them with
 the true values using the <code><a href="../reference/ngme_result.html">ngme_result()</a></code> function:</p>
 <div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Parameter Comparison Table</span></span>
-<span><span class="va">all_params</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme_result.html">ngme_result</a></span><span class="op">(</span><span class="va">ngme_out</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># Parameter Estimates for Fixed Effects and Measurement Noise</span></span>
+<span><span class="va">params_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme_result.html">ngme_result</a></span><span class="op">(</span><span class="va">ngme_out</span>, <span class="st">"data"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Fixed Effects</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  Truth <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">0.5</span><span class="op">)</span>,</span>
-<span>  Estimates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">all_params</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">fixed_effects</span><span class="op">)</span>,</span>
-<span>  row.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">all_params</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">fixed_effects</span><span class="op">)</span></span>
+<span>  Estimates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">params_data</span><span class="op">$</span><span class="va">fixed_effects</span><span class="op">)</span>,</span>
+<span>  row.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">params_data</span><span class="op">$</span><span class="va">fixed_effects</span><span class="op">)</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    Truth  Estimates</span></span>
 <span><span class="co">#&gt; x1  -1.0 -0.9276886</span></span>
@@ -1150,15 +1150,17 @@ the true values using the <code><a href="../reference/ngme_result.html">ngme_res
 <span><span class="co">#&gt; x3   0.5  0.5188674</span></span>
 <span></span>
 <span><span class="co"># Measurement Noise</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Truth <span class="op">=</span> <span class="fl">2.0</span>, Estimate <span class="op">=</span> <span class="va">all_params</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">sigma</span>, row.names <span class="op">=</span> <span class="st">"sigma"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Truth <span class="op">=</span> <span class="fl">2.0</span>, Estimate <span class="op">=</span> <span class="va">params_data</span><span class="op">$</span><span class="va">sigma</span>, row.names <span class="op">=</span> <span class="st">"sigma"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;       Truth Estimate</span></span>
 <span><span class="co">#&gt; sigma     2 2.027015</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># AR(1) Process Parameters:</span></span>
+<span><span class="co"># AR(1) Process Parameters</span></span>
+<span><span class="va">params_ar1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme_result.html">ngme_result</a></span><span class="op">(</span><span class="va">ngme_out</span>, <span class="st">"my_ar"</span><span class="op">)</span></span>
+<span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  Truth <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>rho <span class="op">=</span> <span class="fl">0.5</span>, mu <span class="op">=</span> <span class="op">-</span><span class="fl">3.0</span>, sigma <span class="op">=</span> <span class="fl">4.0</span>, nu <span class="op">=</span> <span class="fl">0.4</span><span class="op">)</span>,</span>
-<span>  Estimates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">all_params</span><span class="op">$</span><span class="va">my_ar</span><span class="op">)</span></span>
+<span>  Estimates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">params_ar1</span><span class="op">)</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;       Truth  Estimates</span></span>
 <span><span class="co">#&gt; rho     0.5  0.4832092</span></span>
@@ -1170,13 +1172,17 @@ the true values using the <code><a href="../reference/ngme_result.html">ngme_res
 <h3 id="model-validation">Model Validation<a class="anchor" aria-label="anchor" href="#model-validation"></a>
 </h3>
 <p>Finally, let us validate our model by comparing the estimated noise
-distribution with the true distribution:</p>
+distribution with the true distribution by plotting the estimated noise
+distribution against the true noise distribution:</p>
 <div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Extract the estimated AR(1) model and create validation plot</span></span>
-<span><span class="va">ar1_estimated</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme_result.html">ngme_result</a></span><span class="op">(</span><span class="va">ngme_out</span>, <span class="st">"my_ar"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Distribution Validation: Fitted vs. True NIG Noise Model</span></span>
-<span><span class="co"># plot(ar1_estimated$noise, noise_nig(mu = -3, sigma = 4, nu = 0.4))</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="co"># Distribution Validation: Fitted vs. True NIG Noise Model</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="va">params_ar1</span>, <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span>mu <span class="op">=</span> <span class="va">mu</span>, sigma <span class="op">=</span> <span class="va">sigma</span>, nu <span class="op">=</span> <span class="va">nu</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span>mu <span class="op">=</span> <span class="op">-</span><span class="fl">3</span>, sigma <span class="op">=</span> <span class="fl">4</span>, nu <span class="op">=</span> <span class="fl">0.4</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<p><img src="AR1-model_files/figure-html/model-validation-1.png" width="100%"></p>
 </div>
 <div class="section level3">
 <h3 id="summary">Summary<a class="anchor" aria-label="anchor" href="#summary"></a>

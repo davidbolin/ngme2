@@ -635,15 +635,15 @@ ngme_out
 Assessing convergence is crucial for reliable parameter estimates. We will use the built-in `traceplot` function from `ngme2` to examine the convergence of our parameters:
 
 ```{r convergence-diagnostics, fig.height=5, fig.width=7}
-  # Trace plot for sigma and fixed effects (blue lines indicate true value)
-  traceplot(ngme_out, hline = c(2,-1, 2, 0.5), moving_window = 20)
+# Trace plot for sigma and fixed effects (blue lines indicate true value)
+traceplot(ngme_out, hline = c(2,-1, 2, 0.5), moving_window = 20)
 ```
 
 Now let us examine the convergence of the AR(1) process parameters:
 
 ```{r convergence-ar-process, fig.height=5, fig.width=7}
-  # Trace plots for AR(1) parameters (blue lines indicate true value)
-  traceplot(ngme_out, "my_ar", hline = c(0.5, -3, 4, 0.4))
+# Trace plots for AR(1) parameters (blue lines indicate true value)
+traceplot(ngme_out, "my_ar", hline = c(0.5, -3, 4, 0.4))
 ```
 
 ### Parameter Estimates Summary
@@ -651,37 +651,41 @@ Now let us examine the convergence of the AR(1) process parameters:
 Let us examine the final parameter estimates and compare them with the true values using the `ngme_result()` function:
 
 ```{r parameter-summary}
-# Parameter Comparison Table
-all_params <- ngme_result(ngme_out)
+# Parameter Estimates for Fixed Effects and Measurement Noise
+params_data <- ngme_result(ngme_out, "data")
 
 # Fixed Effects
 print(data.frame(
   Truth = c(-1, 2, 0.5),
-  Estimates = as.numeric(all_params$data$fixed_effects),
-  row.names = names(all_params$data$fixed_effects)
+  Estimates = as.numeric(params_data$fixed_effects),
+  row.names = names(params_data$fixed_effects)
 ))
 
 # Measurement Noise
-print(data.frame(Truth = 2.0, Estimate = all_params$data$sigma, row.names = "sigma"))
+print(data.frame(Truth = 2.0, Estimate = params_data$sigma, row.names = "sigma"))
 cat("\n")
 
-# AR(1) Process Parameters:
+# AR(1) Process Parameters
+params_ar1 <- ngme_result(ngme_out, "my_ar")
+
 print(data.frame(
   Truth = c(rho = 0.5, mu = -3.0, sigma = 4.0, nu = 0.4),
-  Estimates = unlist(all_params$my_ar)
+  Estimates = unlist(params_ar1)
 ))
 ```
 
 ### Model Validation
 
-Finally, let us validate our model by comparing the estimated noise distribution with the true distribution:
+Finally, let us validate our model by comparing the estimated noise distribution with the true distribution by plotting the estimated noise distribution against the true noise distribution:
 
 ```{r model-validation, fig.height=5, fig.width=7}
-# Extract the estimated AR(1) model and create validation plot
-ar1_estimated <- ngme_result(ngme_out, "my_ar")
-
 # Distribution Validation: Fitted vs. True NIG Noise Model
-# plot(ar1_estimated$noise, noise_nig(mu = -3, sigma = 4, nu = 0.4))
+with(params_ar1, {
+  plot(
+    noise_nig(mu = mu, sigma = sigma, nu = nu),
+    noise_nig(mu = -3, sigma = 4, nu = 0.4)
+  )
+})
 ```
 
 ### Summary

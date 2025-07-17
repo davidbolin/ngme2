@@ -231,55 +231,138 @@ traceplot <- function(
 
 
 
-#' plot the density of noise (for stationary)
+#' Plot the density of one or more stationary noise objects
 #'
-#' @param x ngme_noise
-#' @param y another ngme_noise
-#' @param ... ...
+#' This function plots the probability density function for one or more stationary noise objects
+#' (e.g., NIG, GAL, or normal noise). Multiple noise objects can be compared on the same plot.
 #'
-#' @return plot
+#' @param x An ngme_noise object (required).
+#' @param ... Additional ngme_noise objects to plot, or plotting parameters such as \code{xlim}.
+#'   Named arguments will be used as legend labels.
+#'
+#' @return A ggplot object showing the density curves for the provided noise objects.
 #' @export
 #'
 #' @examples
 #' plot(noise_nig(mu=1, sigma=2, nu=1))
-plot.ngme_noise <- function(x, y = NULL, ...) {
-  noise <- x; noise2 <- y
-  mu <- noise$theta_mu
-  sigma <- exp(noise$theta_sigma)
-  nu <- exp(noise$theta_nu)
-  stopifnot("only implemented for stationary mu" = 
-    length(mu) == 1 || noise$noise_type == "normal")
-  stopifnot("only implemented for stationary sigma" = length(sigma) == 1)
-  stopifnot("only implemented for stationary nu" = 
-    length(nu) == 1 || noise$noise_type == "normal")
-
-  xlim <- if (!is.null(list(...)$xlim)) list(...)$xlim else c(-10, 10)
-
+#' plot(n1 = noise_nig(mu=0, sigma=1, nu=1), n2 = noise_nig(mu=1, sigma=1.5, nu=0.5))
+plot.ngme_noise <- function(x = NULL, ...) {
+  # Get all arguments including the first one
+  call_args <- as.list(match.call())[-1]  # Remove function name
+  all_args <- c(if(!is.null(x)) list(x), list(...))
+  
+  # Get names from the call
+  call_names <- names(call_args)
+  if (is.null(call_names)) {
+    call_names <- rep("", length(call_args))
+  }
+  
+  # Helper function to check if an object is a noise object
+  is_noise_object <- function(obj) {
+    is.list(obj) && 
+    !is.null(obj$theta_mu) && 
+    !is.null(obj$theta_sigma) && 
+    !is.null(obj$noise_type)
+  }
+  
+  # Initialize noise objects list
+  noise_objects <- list()
+  
+  # Extract plotting parameters and noise objects
+  plot_params <- c("xlim", "ylim", "main", "xlab", "ylab")
+  xlim <- NULL
+  unnamed_count <- 1
+  
+  for (i in seq_along(all_args)) {
+    arg <- all_args[[i]]
+    arg_name <- call_names[i]
+    
+    if (arg_name %in% plot_params) {
+      # This is a plotting parameter
+      if (arg_name == "xlim") xlim <- arg
+    } else if (is_noise_object(arg)) {
+      # This is a noise object
+      if (is.null(arg_name) || arg_name == "") {
+        # Unnamed argument
+        noise_name <- paste0("noise_", unnamed_count)
+        unnamed_count <- unnamed_count + 1
+      } else {
+        # Named argument
+        noise_name <- arg_name
+      }
+      noise_objects[[noise_name]] <- arg
+    }
+  }
+  
+  # Check that we have at least one noise object
+  if (length(noise_objects) == 0) {
+    stop("No noise objects provided")
+  }
+  
+  # Set default xlim if not provided
+  if (is.null(xlim)) xlim <- c(-10, 10)
+  
   xx <- seq(xlim[[1]], xlim[[2]], length = 400)
-  switch(noise$noise_type,
-    "nig"     = dd <- dnig(xx, -mu, mu, nu, sigma),
-    "gal"     = dd <- dgal(xx, -mu, mu, nu, sigma),
-    "normal"  = dd <- dnorm(xx, sd = sigma),
-    stop("Plot for this type is not implemented")
-  )
-
-  gg <- ggplot2::ggplot() +
-    ggplot2::geom_line(ggplot2::aes(x = xx, y = dd))
-
-  if (!is.null(noise2)) {
-    mu <- noise2$theta_mu
-    sigma <- exp(noise2$theta_sigma)
+  
+  # Define colors for multiple lines
+  colors <- c("black", "red", "blue", "green", "purple", "orange", "brown", "pink", "gray", "cyan")
+  
+  # Initialize plot data
+  plot_data <- data.frame()
+  
+  # Process each noise object
+  for (i in seq_along(noise_objects)) {
+    noise <- noise_objects[[i]]
+    mu <- noise$theta_mu
+    sigma <- exp(noise$theta_sigma)
     nu <- exp(noise$theta_nu)
-    switch(noise2$noise_type,
-      "nig"     = dd2 <- dnig(xx, -mu, mu, nu, sigma),
-      "gal"     = dd2 <- dgal(xx, -mu, mu, nu, sigma),
-      "normal"  = dd2 <- dnorm(xx, sd = sigma),
+    
+    stopifnot("only implemented for stationary mu" = 
+      length(mu) == 1 || noise$noise_type == "normal")
+    stopifnot("only implemented for stationary sigma" = length(sigma) == 1)
+    stopifnot("only implemented for stationary nu" = 
+      length(nu) == 1 || noise$noise_type == "normal")
+    
+    switch(noise$noise_type,
+      "nig"     = dd <- dnig(xx, -mu, mu, nu, sigma),
+      "gal"     = dd <- dgal(xx, -mu, mu, nu, sigma),
+      "normal"  = dd <- dnorm(xx, sd = sigma),
       stop("Plot for this type is not implemented")
     )
-    gg <- gg + ggplot2::geom_line(ggplot2::aes(x = xx, y = dd2), col = "red")
+    
+    # Create data frame for this noise object
+    noise_name <- names(noise_objects)[i]
+    if (is.null(noise_name) || noise_name == "") {
+      noise_name <- paste("noise", i)
+    }
+    
+    temp_data <- data.frame(
+      x = xx,
+      y = dd,
+      noise = noise_name,
+      stringsAsFactors = FALSE
+    )
+    
+    plot_data <- rbind(plot_data, temp_data)
   }
-
-  gg + ggplot2::labs(title = "Density Plot")
+  
+  
+  # Create the plot
+  gg <- ggplot2::ggplot(plot_data, ggplot2::aes(x = x, y = y, color = noise)) +
+    ggplot2::geom_line() +
+    ggplot2::labs(title = "Noise Density Plot") +
+    ggplot2::theme_minimal()
+  
+  # Add color scale and legend handling
+  if (length(noise_objects) > 1) {
+    gg <- gg + 
+      ggplot2::scale_color_manual(values = colors[1:length(noise_objects)]) +
+      ggplot2::labs(color = "Noise Objects")
+  } else {
+    gg <- gg + ggplot2::theme(legend.position = "none")
+  }
+  
+  gg
 }
 
 
@@ -302,4 +385,156 @@ compare_traceplot <- function(l1, l2) {
   }
 
   do.call(gridExtra::grid.arrange, ps)
+}
+
+
+#' Compare noise objects using Kullback-Leibler divergence
+#'
+#' This function compares multiple noise objects by calculating the KLD 
+#' of each noise against the first noise object (reference).
+#'
+#' @param x first noise object (reference)
+#' @param ... additional noise objects to compare, and optional parameters
+#' @param xlim x-axis range for evaluation (default: c(-10, 10))
+#' @param n_points number of evaluation points (default: 1000)
+#'
+#' @return named vector of KLD values
+#' @export
+#'
+#' @examples
+#' n1 <- noise_nig(mu=0, sigma=1, nu=1)
+#' n2 <- noise_nig(mu=0.5, sigma=1.2, nu=0.8)
+#' compare_noise_kld(n1, method2=n2)
+compare_noise_kld <- function(x = NULL, ..., xlim = c(-10, 10), n_points = 1000) {
+  # Get all arguments including the first one
+  call_args <- as.list(match.call())[-1]  # Remove function name
+  all_args <- c(if(!is.null(x)) list(x), list(...))
+  
+  # Get names from the call
+  call_names <- names(call_args)
+  if (is.null(call_names)) {
+    call_names <- rep("", length(call_args))
+  }
+  
+  # Helper function to check if an object is a noise object
+  is_noise_object <- function(obj) {
+    is.list(obj) && 
+    !is.null(obj$theta_mu) && 
+    !is.null(obj$theta_sigma) && 
+    !is.null(obj$noise_type)
+  }
+  
+  # Initialize noise objects list
+  noise_objects <- list()
+  
+  # Extract parameters and noise objects
+  param_names <- c("xlim", "n_points")
+  unnamed_count <- 1
+  
+  for (i in seq_along(all_args)) {
+    arg <- all_args[[i]]
+    arg_name <- call_names[i]
+    
+    if (arg_name %in% param_names) {
+      # This is a function parameter - already handled by function signature
+      next
+    } else if (is_noise_object(arg)) {
+      # This is a noise object
+      if (is.null(arg_name) || arg_name == "") {
+        # Unnamed argument
+        noise_name <- paste0("noise_", unnamed_count)
+        unnamed_count <- unnamed_count + 1
+      } else {
+        # Named argument
+        noise_name <- arg_name
+      }
+      noise_objects[[noise_name]] <- arg
+    }
+  }
+  
+  # Check that we have at least two noise objects
+  if (length(noise_objects) < 2) {
+    stop("Need at least two noise objects to compare")
+  }
+  
+  # Generate evaluation points
+  xx <- seq(xlim[[1]], xlim[[2]], length = n_points)
+  
+  # Calculate densities for all noise objects
+  densities <- list()
+  for (i in seq_along(noise_objects)) {
+    noise <- noise_objects[[i]]
+    mu <- noise$theta_mu
+    sigma <- exp(noise$theta_sigma)
+    nu <- exp(noise$theta_nu)
+    
+    stopifnot("only implemented for stationary mu" = 
+      length(mu) == 1 || noise$noise_type == "normal")
+    stopifnot("only implemented for stationary sigma" = length(sigma) == 1)
+    stopifnot("only implemented for stationary nu" = 
+      length(nu) == 1 || noise$noise_type == "normal")
+    
+    switch(noise$noise_type,
+      "nig"     = dd <- dnig(xx, -mu, mu, nu, sigma),
+      "gal"     = dd <- dgal(xx, -mu, mu, nu, sigma),
+      "normal"  = dd <- dnorm(xx, sd = sigma),
+      stop("KLD comparison for this noise type is not implemented")
+    )
+    
+    densities[[i]] <- dd
+  }
+  
+  # Calculate KLD of each noise against the first one (reference)
+  reference_density <- densities[[1]]
+  kld_values <- numeric(length(noise_objects) - 1)
+  names(kld_values) <- names(noise_objects)[-1]
+  
+  for (i in 2:length(noise_objects)) {
+    comparison_density <- densities[[i]]
+    
+    # Add small epsilon to avoid log(0) and division by 0
+    epsilon <- 1e-10
+    p <- pmax(reference_density, epsilon)
+    q <- pmax(comparison_density, epsilon)
+    
+    # Calculate KLD: sum(p * log(p/q)) * dx
+    # Since we're using discrete points, we need to multiply by dx
+    dx <- (xlim[2] - xlim[1]) / (n_points - 1)
+    kld_values[i-1] <- sum(p * log(p/q)) * dx
+  }
+  
+  # Create results
+  result <- list(
+    kld_values = kld_values,
+    reference = names(noise_objects)[1],
+    n_comparisons = length(kld_values),
+    closest = names(kld_values)[which.min(kld_values)]
+  )
+  
+  class(result) <- "noise_kld_comparison"
+  return(result)
+}
+
+
+#' Print method for noise_kld_comparison
+#' @param x noise_kld_comparison object
+#' @param ... additional arguments
+#' @export
+print.noise_kld_comparison <- function(x, ...) {
+  cat("Noise KLD Comparison\n")
+  cat("===================\n")
+  cat("Reference:", x$reference, "\n\n")
+  cat("KLD values (lower is closer to reference):\n")
+  
+  # Sort by KLD value for better display
+  sorted_kld <- sort(x$kld_values)
+  for (i in seq_along(sorted_kld)) {
+    cat(sprintf("  %s: %.6f", names(sorted_kld)[i], sorted_kld[i]))
+    if (names(sorted_kld)[i] == x$closest) {
+      cat(" <- CLOSEST")
+    }
+    cat("\n")
+  }
+  
+  cat("\nClosest to reference:", x$closest, "\n")
 }

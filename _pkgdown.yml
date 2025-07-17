@@ -104,6 +104,8 @@ reference:
     - noise_nig
     - noise_normal
     - noise_normal_nig
+    - compare_noise_kld
+    - print.noise_kld_comparison
   - title: ngme2 optimization methods
     contents:
     - precond_sgd

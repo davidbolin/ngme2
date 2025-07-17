@@ -2,23 +2,24 @@
 % Please edit documentation in R/plot.ngme.R
 \name{plot.ngme_noise}
 \alias{plot.ngme_noise}
-\title{plot the density of noise (for stationary)}
+\title{Plot the density of one or more stationary noise objects}
 \usage{
-\method{plot}{ngme_noise}(x, y = NULL, ...)
+\method{plot}{ngme_noise}(x = NULL, ...)
 }
 \arguments{
-\item{x}{ngme_noise}
+\item{x}{An ngme_noise object (required).}
 
-\item{y}{another ngme_noise}
-
-\item{...}{...}
+\item{...}{Additional ngme_noise objects to plot, or plotting parameters such as \code{xlim}.
+Named arguments will be used as legend labels.}
 }
 \value{
-plot
+A ggplot object showing the density curves for the provided noise objects.
 }
 \description{
-plot the density of noise (for stationary)
+This function plots the probability density function for one or more stationary noise objects
+(e.g., NIG, GAL, or normal noise). Multiple noise objects can be compared on the same plot.
 }
 \examples{
 plot(noise_nig(mu=1, sigma=2, nu=1))
+plot(n1 = noise_nig(mu=0, sigma=1, nu=1), n2 = noise_nig(mu=1, sigma=1.5, nu=0.5))
 }

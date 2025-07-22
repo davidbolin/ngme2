@@ -517,6 +517,7 @@ build_operator <- function(model_name, args_list) {
     bv_normal = do.call(bv_normal, args_list),
     bv_matern_normal = do.call(bv_matern_normal, args_list),
     bv_matern_nig = do.call(bv_matern_nig, args_list),
+    ar  = do.call(ar, args_list),
     ar1 = do.call(ar1, args_list),
     rw1 = do.call(rw1, args_list),
     rw2 = do.call(rw2, args_list),
@@ -576,7 +577,7 @@ ngme_build_mesh <- function(
   if (!is.null(model)) {
     if (model %in% c("re", "tp")) return(NULL)
     if (model == "iid") loc <- as.integer(as.factor(loc))
-    if (model %in% c("ar1")) {
+    if (model %in% c("ar", "ar1")) {
       stopifnot("The map should be integers."
         = is.numeric(loc) && all(loc == round(loc)))
       return (fmesher::fm_mesh_1d(loc = min(loc):max(loc)))

@@ -58,7 +58,15 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
     re  = "Random effect",
     generic = "Generic",
     spacetime = if (operator$method == "galerkin") "Space-time (Galerkin)" else "Space-time (Implicit Euler)",
-    "Unknown"
+    {
+      # Handle general AR models (ar2, ar3, etc.)
+      if (grepl("^ar[0-9]+$", operator$model)) {
+        p <- as.numeric(gsub("^ar([0-9]+)$", "\\1", operator$model))
+        paste0("AR(", p, ")")
+      } else {
+        "Unknown"
+      }
+    }
   )
 
   model_name <- paste(prefix, ": ", model_name, "\n", sep = "")
@@ -155,7 +163,17 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
         cat(pad_add4_space, operator$param_name[i], "=", format(t, digits=3), "\n", sep=" ")
       }
     },
-    cat(pad_add4_space, "No parameter.", "\n", sep="")
+    # Handle general AR models (ar2, ar3, etc.) or default case
+    {
+      if (grepl("^ar[0-9]+$", operator$model)) {
+        # Print all rho parameters for general AR models
+        for (i in seq_along(theta_K)) {
+          cat(pad_add4_space, "rho", i, " = ", format(theta_K[i], digits=3), "\n", sep="")
+        }
+      } else {
+        cat(pad_add4_space, "No parameter.", "\n", sep="")
+      }
+    }
   ))
 
   invisible(operator)

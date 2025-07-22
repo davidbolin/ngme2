@@ -83,6 +83,154 @@ ar1 <- function(
   )
 }
 
+#' Helper function to compute AR(p) autocovariance
+#' 
+#' @param rho vector of AR coefficients
+#' @param p AR order
+#' @return vector of autocovariances from lag 0 to lag p-1
+ARcov <- function(rho, p) {
+  # Solve Yule-Walker equations for autocovariances
+  # gamma(0), gamma(1), ..., gamma(p-1)
+  
+  # Create the coefficient matrix A
+  A <- matrix(0, p, p)
+  for (i in 1:p) {
+    for (j in 1:p) {
+      lag <- abs(i - j)
+      if (lag == 0) {
+        A[i, j] <- 1
+      } else {
+        A[i, j] <- -rho[lag]
+      }
+    }
+  }
+  
+  # Right hand side vector b
+  b <- c(1, rep(0, p-1))
+  
+  # Solve A * gamma = b
+  gamma <- solve(A, b)
+  
+  return(gamma)
+}
+
+#' ngme AR(p) model specification
+#'
+#' @param mesh integer vector or inla.mesh.1d object, index to build the mesh
+#' @param rho vector of AR coefficients of length p (should satisfy stationarity conditions)
+#' @param order integer, the AR order p. If provided and rho is not specified, rho will be initialized as rep(0, p)
+#' @param ... ignore
+#'
+#' @return ngme_operator object
+#' @export
+#'
+#' @examples
+#' # AR(2) model with specified coefficients
+#' ar(c(1:10), rho = c(0.5, -0.3))
+#' # AR(3) model with specified coefficients 
+#' ar(c(1:10), rho = c(0.4, 0.2, -0.1))
+#' # AR(2) model with default coefficients (zeros)
+#' ar(c(1:10), order = 2)
+#' # AR(3) model with specified order and coefficients
+#' ar(c(1:10), order = 3, rho = c(0.4, 0.2, -0.1))
+ar <- function(
+  mesh, rho = NULL, order = NULL, ...
+) {
+  # Determine p and rho based on input parameters
+  if (is.null(order) && is.null(rho)) {
+    stop("Either 'rho' or 'order' must be provided")
+  } else if (is.null(order) && !is.null(rho)) {
+    # Infer order from rho length
+    p <- length(rho)
+  } else if (!is.null(order) && is.null(rho)) {
+    # Use specified order and initialize rho as zeros
+    p <- order
+    rho <- rep(0, p)
+  } else {
+    # Both order and rho provided - check consistency
+    p <- order
+    stopifnot("Length of rho must match the specified order" = length(rho) == p)
+  }
+  
+  stopifnot("p should be >= 1" = p >= 1)
+  
+  # Check stationarity conditions for AR(p)
+  # For now, we'll do a simple check for AR(2)
+  if (p == 2) {
+    stopifnot("AR(2) stationarity conditions violated" = 
+              rho[1] + rho[2] < 1 && 
+              rho[2] - rho[1] < 1 && 
+              abs(rho[2]) < 1)
+  } else if (p > 2) {
+    # For higher order AR, we check if all roots of characteristic polynomial 
+    # are outside unit circle (simplified check)
+    char_poly <- c(1, -rho)
+    roots <- polyroot(char_poly)
+    if (any(abs(roots) <= 1.001)) {  # small tolerance for numerical errors
+      warning("AR(p) model may not be stationary")
+    }
+  }
+
+  mesh <- ngme_build_mesh(mesh)
+  n <- mesh$n
+  h <- c(diff(mesh$loc), 1)
+  
+  stopifnot("The mesh should be 1d and has gap 1." = all(h[1:(n-1)] == 1))
+  stopifnot("n should be >= p" = n >= p)
+
+  # Construct C1, ..., Cp and G matrices
+  Cs <- vector("list", p)
+  for (j in 1:p) {
+    # Cj: for lag j, put -1 at (t, t-j) for t = (j+1):n
+    # The first p rows should be all 0, so we only fill from row (p+1) to n
+    Cs[[j]] <- Matrix::sparseMatrix(
+      i = (p+1):n,
+      j = (p+1-j):(n-j),
+      x = rep(-1, n-p),
+      dims = c(n, n)
+    )
+  }
+  # G: identity matrix
+  G <- Matrix::Diagonal(n)
+  G <- ngme_as_sparse(G)
+
+  # Create transformation functions
+  rho_trans <- rep(list(ar1_th2a), p)
+  names(rho_trans) <- paste0("rho", 1:p)
+  trans <- setNames(rep("tanh", p), paste0("rho", 1:p))
+
+  # Initial theta_K values (no transformation for now)
+  theta_K <- rho
+  names(theta_K) <- paste0("rho", 1:p)
+
+  # update_K: sum_j rho[j] * Cj + G
+  update_K <- function(theta_K) {
+    K <- G
+    for (j in 1:p) {
+      K <- K + theta_K[j] * Cs[[j]]
+    }
+    K
+  }
+
+  K <- ngme_as_sparse(update_K(theta_K))
+
+  ngme_operator(
+    mesh = mesh,
+    model = paste0("ar", p),
+    theta_K = theta_K,
+    trans = trans,
+    matrices = c(Cs, list(G)),
+    h = h,
+    update_K = update_K,
+    K = K,
+    symmetric = FALSE,
+    zero_trace = FALSE,
+    param_name = paste0("rho", 1:p),
+    param_trans = rho_trans,
+    generic_type = "generic"
+  )
+}
+
 #' ngme random walk model of order 1
 #'
 #' @param mesh numerical vector or inla.mesh.1d object, index to build the mesh

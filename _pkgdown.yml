@@ -81,6 +81,7 @@ reference:
     contents:
     - ngme_model_types
     - f
+    - ar
     - ar1
     - matern
     - rw1

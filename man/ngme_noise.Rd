@@ -4,6 +4,8 @@
 \alias{ngme_noise}
 \alias{noise_nig}
 \alias{noise_normal}
+\alias{noise_t}
+\alias{noise_skew_t}
 \alias{noise_gal}
 \alias{noise_normal_nig}
 \title{ngme noise specification}
@@ -85,6 +87,32 @@ noise_gal(
   ...
 )
 
+noise_skew_t(
+  mu = NULL,
+  sigma = NULL,
+  nu = NULL,
+  theta_mu = NULL,
+  theta_sigma = NULL,
+  theta_nu = NULL,
+  nu_lower_bound = 0.01,
+  B_mu = matrix(1),
+  B_sigma = matrix(1),
+  B_nu = matrix(1),
+  corr_measurement = FALSE,
+  index_corr = NULL,
+  ...
+)
+
+noise_t(
+  nu = NULL,
+  theta_nu = NULL,
+  nu_lower_bound = 0.01,
+  B_nu = matrix(1),
+  corr_measurement = FALSE,
+  index_corr = NULL,
+  ...
+)
+
 noise_normal_nig(
   sigma_normal = NULL,
   mu = NULL,
@@ -105,7 +133,7 @@ noise_normal_nig(
 )
 }
 \arguments{
-\item{noise_type}{type of noise, "nig", "normal"}
+\item{noise_type}{type of noise, "normal", "nig", "gal", "t", "skew_t"}
 
 \item{mu}{specify the NIG noise parameter mu, see \code{?nig}}
 
@@ -193,4 +221,6 @@ for specifying non-stationary mu and sigma, nu
 noise_normal(sigma = 2)
 noise_nig(mu = 1, sigma = 2, nu = 1)
 noise_gal(mu = 1, sigma = 2, nu = 1)
+noise_t(mu = 0, sigma = 1, nu = 5)
+noise_t(mu = 0, sigma = 1, nu = 5)
 }

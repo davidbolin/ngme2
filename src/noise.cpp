@@ -24,6 +24,12 @@ void NoiseUtil::update_gig(
             a = nu.cwiseProduct(h.cwiseInverse());
             b = nu.cwiseProduct(h);
         }
+    } else if (noise_type == "t" || noise_type == "skew_t") {
+        // t-distribution uses inverse gamma for auxiliary variable V
+        // V_i ~ InverseGamma(nu/2, nu/2), i.e., GIG(-nu/2, 0, nu)
+        p = VectorXd::Constant(n, -nu(0)/2);
+        a = VectorXd::Constant(n, 1e-14);
+        b = VectorXd::Constant(n, nu(0));
     }
 }
 
@@ -55,6 +61,16 @@ VectorXd NoiseUtil::grad_theta_nu(
                 - h.cwiseProduct(pg);
             
             grad = B_nu.transpose() * tmp.cwiseProduct(nu);
+        } else if (noise_type == "t" || noise_type == "skew_t") {
+            // t-distribution: df/dnu = (-1 + x - x Log[2 x] + x Log[nu] - x PolyGamma[0, nu/2])/(2 x)
+            // df/d(log nu) = df/dnu * nu
+            VectorXd tmp(n);
+            for (int j=0; j < n; j++) {
+                double nu_j = nu[j];
+                double x = V[j];
+                tmp(j) = (-1.0 + x - x * log(2.0 * x) + x * log(nu_j) - x * R::digamma(nu_j/2.0)) / (2.0 * x);
+            }
+            grad = B_nu.transpose() * tmp.cwiseProduct(nu);
         } else {
             // type == nig or normal+nig
             // df/dnu = 0.5 (2h + 1/nu - h^2/V - V)
@@ -74,6 +90,12 @@ VectorXd NoiseUtil::grad_theta_nu(
         } else if (noise_type == "gal") {
             // theV ~ Gam(nu, nu)
             throw std::runtime_error("Not implemented");
+        } else if (noise_type == "t") {
+            // theV ~ IG(nu/2, nu/2)
+            double theV = V(0) / h(0);
+            double nu_val = nu(0);
+            grad(0) = - 0.5 * (R::digamma((nu_val + 1)/2) - R::digamma(nu_val/2) 
+                             - 1/nu_val - log(theV) + theV) * nu_val;
         }
     }
     // grad /= n;
@@ -88,7 +110,7 @@ double NoiseUtil::log_density(
     const VectorXd& theta_nu,
     bool single_V
 ) {
-    if (noise_type != "nig" && noise_type != "gal") return 0;
+    if (noise_type != "nig" && noise_type != "gal" && noise_type != "t") return 0;
 
     VectorXd nu = (B_nu * theta_nu).array().exp();
     assert(V.size() == h.size());
@@ -106,6 +128,11 @@ double NoiseUtil::log_density(
             double alpha = h(i) * nu(i);
             double beta = nu(i);
             logd += pow(beta, alpha) / R::gammafn(alpha) * pow(x, alpha-1) * exp(-beta*x);
+        } else if (noise_type == "t") {
+            // V_i ~ IG(nu/2, nu/2) for t-distribution auxiliary variable
+            double alpha = nu(i) / 2;
+            double beta = nu(i) / 2;
+            logd += alpha * log(beta) - R::lgammafn(alpha) - (alpha + 1) * log(x) - beta / x;
         }
     }
 

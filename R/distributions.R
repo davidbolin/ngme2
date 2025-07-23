@@ -648,7 +648,7 @@ qig <- function(p, a, b, lower.tail = TRUE, log.p = FALSE){
 #' The length of the result is determined by \code{n} for rig.
 #' @details The inverse-Gamma distribution has density given
 #' by
-#'  \deqn{f(x; a, b) = \frac{b^a}{\Gamma(a)}x^{a-1}\exp(
+#'  \deqn{f(x; a, b) = \frac{b^a}{\Gamma(a)}x^{-a-1}\exp(
 #'  -\frac{b}{x}),}
 #'  where \eqn{x>0} and \eqn{a,b>0}.
 #'

@@ -3,7 +3,7 @@
 #' @return available types for noise
 #' @export
 ngme_noise_types <- function() {
-    c("normal", "nig", "gal", "normal_nig")
+    c("normal", "nig", "gal", "t", "skew_t", "normal_nig")
 }
 
 #' Show ngme model types

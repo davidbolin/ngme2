@@ -1,7 +1,7 @@
 # This file contains ngme noise specifications
 
 #' @title ngme noise specification
-#' @aliases noise_nig noise_normal
+#' @aliases noise_nig noise_normal noise_t noise_skew_t
 #' @description Function for specifying ngme noise.
 #' Please use \code{noise_nig} and \code{noise_normal} for simpler usage.
 #' Use \code{ngme_noise_types()} to check all the available types.
@@ -12,7 +12,7 @@
 #' \deqn{\sigma = \exp (B_{\sigma} \theta_{\sigma}),}
 #' \deqn{\nu = \exp (B_{\nu} \theta_{\nu}).}
 #'
-#' @param noise_type    type of noise, "nig", "normal"
+#' @param noise_type    type of noise, "normal", "nig", "gal", "t", "skew_t"
 #' @param mu          specify the NIG noise parameter mu, see \code{?nig}
 #' @param sigma       specify the noise parameter sigma, see \code{?nig}
 #' @param V             start value for V
@@ -114,6 +114,11 @@ ngme_noise <- function(
     B_mu <- matrix(ncol=0, nrow=nrow(B_mu))
     theta_nu <- double(0)
     B_nu <- matrix(ncol=0, nrow=nrow(B_nu))
+  }
+
+  if (all(noise_type == "t")) {
+    theta_mu <- double(0)
+    B_mu <- matrix(ncol=0, nrow=nrow(B_mu))
   }
 
   if (all(noise_type != "normal_nig")) {
@@ -319,6 +324,89 @@ noise_gal <- gal <- function(
   )
 }
 
+#' @rdname ngme_noise
+#' @export
+#' @examples
+#' noise_t(mu = 0, sigma = 1, nu = 5)
+noise_skew_t <- skew_t_noise <- function(
+  mu            = NULL,
+  sigma         = NULL,
+  nu            = NULL,
+  theta_mu      = NULL,
+  theta_sigma   = NULL,
+  theta_nu      = NULL,
+  nu_lower_bound = 0.01,
+  B_mu          = matrix(1),
+  B_sigma       = matrix(1),
+  B_nu          = matrix(1),
+  corr_measurement = FALSE,
+  index_corr      = NULL,
+  ...
+) {
+  # if nothing, then fill with default
+  stopifnot("Please use theta_mu for non-stationary mu." = length(mu) < 2)
+  if (is.null(mu) && is.null(theta_mu)) theta_mu <- 0
+  if (is.null(sigma) && is.null(theta_sigma)) theta_sigma <- 0
+  if (is.null(nu) && is.null(theta_nu)) theta_nu <- log(5) # default to 5 degrees of freedom
+
+  if (!is.null(nu) && nu <= 0) stop("ngme_noise: nu (degrees of freedom) should be positive.")
+  if (!is.null(sigma) && sigma <= 0) stop("ngme_noise: sigma should be positive.")
+
+  if (!is.null(mu))     theta_mu <- mu
+  if (!is.null(sigma))  theta_sigma <- log(sigma)
+  if (!is.null(nu))     theta_nu <- log(nu)
+
+  ngme_noise(
+    noise_type = "skew_t",
+    theta_mu = theta_mu,
+    theta_sigma = theta_sigma,
+    theta_nu = theta_nu,
+    nu_lower_bound = nu_lower_bound,
+    B_mu = B_mu,
+    B_sigma = B_sigma,
+    B_nu = B_nu,
+    corr_measurement = corr_measurement,
+    index_corr      = index_corr,
+    ...
+  )
+}
+
+
+#' @rdname ngme_noise
+#' @export
+#' @examples
+#' noise_t(mu = 0, sigma = 1, nu = 5)
+noise_t <- t_noise <- function(
+  nu            = NULL,
+  theta_nu      = NULL,
+  nu_lower_bound = 0.01,
+  B_nu          = matrix(1),
+  corr_measurement = FALSE,
+  index_corr      = NULL,
+  ...
+) {
+  # if nothing, then fill with default
+  if (is.null(nu) && is.null(theta_nu)) theta_nu <- log(5) # default to 5 degrees of freedom
+
+  if (!is.null(nu) && nu <= 0) stop("ngme_noise: nu (degrees of freedom) should be positive.")
+
+  if (!is.null(nu))     theta_nu <- log(nu)
+
+  ngme_noise(
+    noise_type = "t",
+    theta_sigma = 0,
+    theta_nu = theta_nu,
+    nu_lower_bound = nu_lower_bound,
+    B_sigma = matrix(1),
+    B_nu = B_nu,
+    fix_theta_sigma = TRUE,
+    corr_measurement = corr_measurement,
+    index_corr      = index_corr,
+    ...
+  )
+}
+
+
 # update noise
 update_noise <- function(noise, n=NULL, new_noise=NULL) {
   # update with length n
@@ -502,6 +590,10 @@ print.ngme_noise <- function(x, padding = 0, prefix = "Noise type", suppress_sig
                         "\n", pad_add4_space, ngme_format("sigma", theta_sigma),
                         "\n", pad_add4_space, ngme_format("nu", theta_nu)),
             "gal"    = paste0(pad_add4_space, ngme_format("mu", theta_mu),
+                        "\n", pad_add4_space, ngme_format("sigma", theta_sigma),
+                        "\n", pad_add4_space, ngme_format("nu", theta_nu)),
+            "t"      = paste0(pad_add4_space, ngme_format("nu", theta_nu)),
+            "skew_t" = paste0(pad_add4_space, ngme_format("mu", theta_mu),
                         "\n", pad_add4_space, ngme_format("sigma", theta_sigma),
                         "\n", pad_add4_space, ngme_format("nu", theta_nu)),
             "normal_nig" = paste0(pad_add4_space, ngme_format("mu", theta_mu),

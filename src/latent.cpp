@@ -469,6 +469,8 @@ void Latent::sample_uncond_V() {
                 v = rGIG_cpp(-0.5, nu[i], nu[i], latent_rng());
             else if (noise_type[i] == "gal")
                 v = rGIG_cpp(h[i] * nu[i], 2*nu[i], 1e-14, latent_rng());
+            else if (noise_type[i] == "t")
+                v = rGIG_cpp(-nu[i]/2, 1e-14, nu[i], latent_rng());
             V.segment(i*n, n) = v * h.segment(i*n, n);
         }
     } else {

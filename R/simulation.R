@@ -11,6 +11,7 @@
 #' @examples
 #' simulate(f(1:10, model="ar1", rho = 0.4, noise = noise_nig()))
 #' simulate(f(rnorm(10), model="rw1", noise = noise_normal()))
+#' simulate(f(1:10, model="ar1", rho = 0.4, noise = noise_t(nu = 5)))
 simulate.ngme_model <- function(
   object,
   nsim = 1,
@@ -89,6 +90,10 @@ simulate_noise <- function(
   } else if (noise_type == "gal") {
     V <- if (single_V) h_vec * rgamma(1, nu_vec[1], nu_vec[1])
       else rgamma(n, shape = h_vec * nu_vec, rate = nu_vec)
+  } else if (noise_type == "t" || noise_type == "skew_t") {
+    # For t-distribution, auxiliary variable V ~ InverseGamma(nu/2, nu/2)
+    V <- if (single_V) h_vec * ngme2::rigam(1, a=nu_vec[1]/2, b=nu_vec[1]/2)
+      else ngme2::rigam(n, a=nu_vec/2, b=nu_vec/2)
   } else {
     stop("unknown noise to simulate")
   }

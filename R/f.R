@@ -445,7 +445,17 @@ if (noise[[1]]$noise_type != "normal") {
       V = if (!is.null(noise$V)) noise$V else NULL
     )
   } else {
-    noise <- update_noise(noise, n = length(operator$h))
+    n <- length(operator$h)
+    if (model %in% c("rw1", "rw2") && operator$cyclic) {
+      # Compensate the constraint for cyclic rw1/rw2 (we introduce lagrange in definition)
+      if (nrow(noise$B_sigma) > 1)   # user-defined B_sigma
+        noise$B_sigma <- rbind(0, noise$B_sigma)
+      if (nrow(noise$B_mu) > 1)   # user-defined B_mu
+        noise$B_mu <- rbind(0, noise$B_mu)
+      if (nrow(noise$B_nu) > 1)   # user-defined B_nu
+        noise$B_nu <- rbind(0, noise$B_nu)
+    }
+    noise <- update_noise(noise, n = n)
   }
 
   if (noise$share_V && 
@@ -462,6 +472,29 @@ if (noise[[1]]$noise_type != "normal") {
       noise$bv_noises[[1]]$fix_theta_sigma <- TRUE
       noise$bv_noises[[2]]$fix_theta_sigma <- TRUE
     }
+  }
+
+  if (model %in% c("rw1", "rw2")) {
+    # force the constrain (e.g. fixed the 1st position to be 0)
+    theta_sigma <- c(-10, noise$theta_sigma)
+    fix_theta_sigma <- c(TRUE, noise$fix_theta_sigma)
+    B_sigma <- cbind(0, noise$B_sigma); 
+    B_sigma[1, 1] <- 1; noise$B_sigma[1, -1] <- 0
+    if (any(abs(eigen(t(B_sigma) %*% B_sigma)$values) < 1e-10)) {
+      # cannot apply transformation
+      stop("Do not fix the 1st position of sigma for non-cyclic rw1")
+    } else {
+      noise$B_sigma <- B_sigma
+      noise$theta_sigma <- theta_sigma
+      noise$fix_theta_sigma <- fix_theta_sigma
+    }
+
+    if (model == "rw2" && !operator$cyclic) {
+      noise$B_sigma[2, 1] <- 1; noise$B_sigma[2, -1] <- 0
+      noise$theta_sigma[1] <- -6  # set larger for numerical stability
+    }
+
+    if (operator$cyclic) A <- cbind(0, A) # ignore the 1st auxiliary element
   }
 
   # Reshape the noise structure for normal_nig

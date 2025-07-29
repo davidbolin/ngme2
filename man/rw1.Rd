@@ -2,24 +2,62 @@
 % Please edit documentation in R/models.R
 \name{rw1}
 \alias{rw1}
-\title{ngme random walk model of order 1}
+\title{Random Walk Model of Order 1 (RW1)}
 \usage{
-rw1(mesh, cyclic = FALSE, ...)
+rw1(mesh, cyclic = FALSE, constr = TRUE, ...)
 }
 \arguments{
-\item{mesh}{mesh for build the model}
+\item{mesh}{numerical vector or inla.mesh.1d object, locations to build the mesh.
+For numerical vectors, assumes equally spaced locations.}
 
-\item{cyclic}{whether the mesh is circular, i.e. the first one is connected to the last
-if it is circular, we will treat the 1st location and the last location as neigbour, with distance of average distance.}
+\item{cyclic}{logical, whether the mesh is circular. If TRUE, the first and last
+locations are treated as neighbors. Cannot be FALSE when constr = TRUE.}
 
-\item{...}{additional arguments}
+\item{constr}{logical, whether to enforce the sum-to-zero constraint 
+\eqn{\sum_{i=1}^n h_i W_i = 0}. If FALSE, fixes the first element \eqn{W_1 = 0}.
+Must be TRUE for cyclic models.}
+
+\item{...}{additional arguments (currently unused)}
 }
 \value{
-a list
+An `ngme_operator` object containing the precision matrix and related
+  components for the RW1 model.
 }
 \description{
-ngme random walk model of order 1
+Constructs a first-order random walk model for spatial or temporal processes.
+The RW1 model assumes that first-order differences \eqn{\Delta W_i = W_i - W_{i-1}}
+are independent and identically distributed Gaussian variables.
+}
+\details{
+The RW1 model is defined by the precision matrix \eqn{K} that penalizes 
+first-order differences. The model has different structures depending on the
+constraints:
+
+**Non-cyclic, constrained (default)**: The first row of \eqn{K} enforces the 
+constraint \eqn{\sum_{i=1}^n h_i W_i = 0}, where \eqn{h_i} are the mesh weights.
+
+**Non-cyclic, unconstrained**: The first element is fixed at 0 (\eqn{W_1 = 0}).
+
+**Cyclic**: Treats the domain as circular, connecting the first and last locations
+as neighbors. The constraint \eqn{\sum_{i=1}^n h_i W_i = 0} is always enforced.
+The precision matrix is expanded to size \eqn{(n+1) \times (n+1)} to handle
+the constraint properly.
 }
 \examples{
-r1 <- rw1(1:7, cyclic = TRUE); r1$K
+# Non-cyclic constrained RW1 (default)
+rw1_default <- rw1(1:5)
+print(rw1_default$K)
+
+# Non-cyclic unconstrained RW1 (fixes first element to 0)
+rw1_fixed <- rw1(1:5, constr = FALSE)
+print(rw1_fixed$K)
+
+# Cyclic RW1 (connects first and last locations)
+rw1_cyclic <- rw1(1:5, cyclic = TRUE)
+print(rw1_cyclic$K)
+
+# Using with unequally spaced locations
+locations <- c(0, 1, 3, 6, 10)
+rw1_unequal <- rw1(locations)
+print(rw1_unequal$K)
 }

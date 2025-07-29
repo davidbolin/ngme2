@@ -337,7 +337,8 @@ update_ngme_est <- function(
     # update W and noise
     ngme_replicate$models[[i]]$W        <- est_output$models[[i]]$W
     ngme_replicate$models[[i]]$noise    <- update_noise(
-      ngme_replicate$models[[i]]$noise, new_noise = est_output$models[[i]]
+      ngme_replicate$models[[i]]$noise, 
+      new_noise = est_output$models[[i]]
     )
 
     # tedious special case

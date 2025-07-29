@@ -30,7 +30,9 @@ get_noise_info <- function(noise) {
       name_sigma <- c(name_sigma_nig, name_sigma_normal)
       trans_sigma <- c(trans_sigma_nig, trans_sigma_normal)
     } else {
-      if (is_stationary(noise$B_sigma)) {
+      if (is_stationary(noise$B_sigma) ||
+        (ncol(noise$B_sigma) == 2 && noise$B_sigma[1,1] == 1 && all(noise$B_sigma[-1, 1] == 0)) # RW1 pattern 
+      ) {
         name_sigma <- "sigma"
         trans_sigma <- list(exp)
       } else {
@@ -51,7 +53,9 @@ get_noise_info <- function(noise) {
     }
 
 if (noise$fix_theta_mu) name_mu <- trans_mu <- NULL
-if (noise$fix_theta_sigma) name_sigma <- trans_sigma <- NULL
+if (all(noise$fix_theta_sigma)) {
+  name_sigma <- trans_sigma <- NULL
+}
 if (noise$fix_theta_nu) name_nu <- trans_nu <- NULL
 
     ts <- list(

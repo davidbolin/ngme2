@@ -280,8 +280,12 @@ print.ngme_model <- function(x, padding = 0, ...) {
   }
   
   # Print noise information
-  suppress_sigma <- if (model$model == "re") TRUE else FALSE
-  print.ngme_noise(model$noise, padding = padding, suppress_sigma=suppress_sigma)
+  model_type <- model$model
+  print.ngme_noise(
+    model$noise, 
+    padding = padding, 
+    model_type=model_type
+  )
   
   invisible(model)
 }

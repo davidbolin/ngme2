@@ -931,11 +931,15 @@ if (debug) std::cout << "start compute trace" << std::endl;
       }
     }
 
-    // compute for sigma: tr(Q^-1 K B_sigma.col(j)/SV K^T)
+    // compute for sigma: tr(Q^-1 K B_sigma.col(j)/SV K^T) for non-fixed theta_sigma
+    vector<bool> fix_theta_sigma_vec = latents[i]->get_theta_unfixed_sigma();
+    int pos=0;
     for (int j=0; j < latents[i]->get_n_theta_sigma(); j++) {
+      if (fix_theta_sigma_vec[pos]) pos += 1; // find non-fixed theta_sigma position
+
       // build B_sigma_col_j (consider all latents)
       VectorXd BSigma_col_over_SV = VectorXd::Zero(V_sizes);
-      BSigma_col_over_SV.segment(n, latents[i]->get_V_size()) = latents[i]->get_BSigma_col(j);
+      BSigma_col_over_SV.segment(n, latents[i]->get_V_size()) = latents[i]->get_BSigma_col(pos);
       BSigma_col_over_SV = BSigma_col_over_SV.cwiseProduct(inv_SV);
 
       SparseMatrix<double> T = K.transpose() * BSigma_col_over_SV.asDiagonal() * K;
@@ -944,6 +948,7 @@ if (debug) std::cout << "start compute trace" << std::endl;
       } else {
         rb_trace_sigma[j] = chol_QQ.trace_num(T, rng());
       }
+      pos += 1;
     }
 
     latents[i]->set_rb_trace(rb_trace_K, rb_trace_sigma);

@@ -24,7 +24,9 @@
 #' @param nu_lower_bound specify the lower bound of parameter nu
 #' @param B_nu          Basis matrix for nu (if non-stationary)
 #' @param fix_theta_mu     fix the parameter of theta_mu
-#' @param fix_theta_sigma  fix the parameter of theta_sigma
+#' @param fix_theta_sigma  fix the parameter of theta_sigma, can be a single 
+#'   logical value or a vector of logical values with length equal to 
+#'   length(theta_sigma)
 #' @param fix_theta_nu     fix the parameter of nu
 #' @param fix_theta_sigma_normal  fix the parameter of sigma_normal, used in noise_normal_nig()
 #' @param fix_rho    fix the parameter of rho
@@ -95,12 +97,21 @@ ngme_noise <- function(
   if (is.null(B_sigma)) B_sigma <- as.matrix(1)
   if (is.null(B_nu)) B_nu <- as.matrix(1)
 
+  # Validate fix_theta_sigma parameter
+  if (length(fix_theta_sigma) == 1) {
+    # If single logical value, replicate for all theta_sigma parameters
+    fix_theta_sigma <- rep(fix_theta_sigma, length(theta_sigma))
+  } else if (length(fix_theta_sigma) != length(theta_sigma)) {
+    stop("fix_theta_sigma must be either a single logical value or a vector of length equal to length(theta_sigma)")
+  }
+  
   stopifnot(
     "Please input B_mu as a matrix." = is.matrix(B_mu),
     "Please input B_sigma as a matrix." = is.matrix(B_sigma),
     "Please make sure ncol(B_mu) == length(theta_mu)." = ncol(B_mu) == length(theta_mu),
     "Please make sure ncol(B_sigma) == length(theta_sigma)." = ncol(B_sigma) == length(theta_sigma),
     "Please make sure ncol(B_nu) == length(theta_nu)." = ncol(B_nu) == length(theta_nu),
+    "fix_theta_sigma must be logical" = is.logical(fix_theta_sigma),
     "prior_mu is not specified properly, please use ngme_prior(..)"
       = class(prior_mu) == "ngme_prior",
     "prior_sigma is not specified properly, please use ngme_prior(..)"
@@ -132,7 +143,7 @@ ngme_noise <- function(
   }
 
   n_theta_mu    <- if (fix_theta_mu) 0 else length(theta_mu)
-  n_theta_sigma <- if (fix_theta_sigma) 0 else length(theta_sigma)
+  n_theta_sigma <- sum(!fix_theta_sigma)  # Count parameters that are NOT fixed
   n_theta_nu    <- if (fix_theta_nu) 0 else length(theta_nu)
   n_rho         <- if (fix_rho) 0 else length(rho)
   n_theta_sigma_normal <- if (fix_theta_sigma_normal) 0 else length(theta_sigma_normal)
@@ -542,12 +553,18 @@ noise_normal_nig <- normal_nig <- function(
 #' @param x noise object
 #' @param padding number of white space padding in front
 #' @param prefix prefix
-#' @param suppress_sigma suppress printing sigma
+#' @param model_type model type
 #' @param ... ...
 #'
 #' @return a list (noise specifications)
 #' @export
-print.ngme_noise <- function(x, padding = 0, prefix = "Noise type", suppress_sigma=FALSE, ...) {
+print.ngme_noise <- function(
+  x, 
+  padding = 0, 
+  prefix = "Noise type", 
+  model_type = NULL, 
+  ...
+) {
   noise <- x
   pad_space <- paste(rep(" ", padding), collapse = "")
   pad_add4_space <- paste(rep(" ", padding + 4), collapse = "")
@@ -575,15 +592,19 @@ print.ngme_noise <- function(x, padding = 0, prefix = "Noise type", suppress_sig
       # single noise
       cat(pad_space); cat(prefix); cat(": "); cat(toupper(noise$noise_type)); cat("\n")
 
-      if (suppress_sigma && noise$noise_type == "normal") {
+      known_type <- !is.null(model_type)
+      if ((known_type && model_type=="re") && noise$noise_type == "normal") {
         # skip
-      } else if (suppress_sigma) {
+      } else if (known_type && model_type=="re") {
         # only print mu and nu
         cat(paste0(pad_add4_space, ngme_format("mu", noise$theta_mu), "\n",
           pad_add4_space, ngme_format("nu", noise$theta_nu)))
       } else {
         cat(pad_space); cat("Noise parameters: \n")
         params <- with(noise, {
+          if (known_type && model_type %in% c("rw1", "rw2")) {
+            theta_sigma <- theta_sigma[-1]  # suppress the first fixed parameter
+          }
           switch(noise_type,
             "normal" = paste0(pad_add4_space, ngme_format("sigma", theta_sigma)),
             "nig"    = paste0(pad_add4_space, ngme_format("mu", theta_mu),

@@ -157,7 +157,9 @@ noise_normal_nig(
 
 \item{fix_theta_mu}{fix the parameter of theta_mu}
 
-\item{fix_theta_sigma}{fix the parameter of theta_sigma}
+\item{fix_theta_sigma}{fix the parameter of theta_sigma, can be a single 
+logical value or a vector of logical values with length equal to 
+length(theta_sigma)}
 
 \item{fix_rho}{fix the parameter of rho}
 

@@ -1068,6 +1068,15 @@ extract_parameters <- function(ngme_object) {
     noise_params_raw <- list()
     for (p in c("mu", "sigma", "nu")) {
       noise_param <- get_noise_param(noise, p)
+      
+      # special case for rw1 and rw2
+      if (models[[j]]$model %in% c("rw1", "rw2") && p == "sigma") {
+        noise_param$theta_sigma <- noise_param$theta_sigma[-1]
+        if (length(noise_param$theta_sigma) == 1) {
+          noise_param <- list(sigma = exp(noise_param$theta_sigma))
+        }
+      }
+
       if (!is.null(noise_param)) {
         noise_params_transformed <- c(noise_params_transformed, noise_param)
         noise_params_raw <- c(noise_params_raw, noise_param)

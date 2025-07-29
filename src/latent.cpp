@@ -1,6 +1,40 @@
 #include "latent.h"
 #include "prior.h"
 #include "num_diff.h"
+#include <algorithm>
+
+// get theta[unfixed]
+VectorXd get_parameter_unfixed(const VectorXd& theta, const vector<bool>& fix_theta) {
+    // Count number of unfixed parameters
+    int n_unfixed = 0;
+    for (size_t i = 0; i < fix_theta.size(); i++) {
+        if (!fix_theta[i]) n_unfixed++;
+    }
+
+    // Create vector of unfixed parameters
+    VectorXd unfixed = VectorXd::Zero(n_unfixed);
+    int j = 0;
+    for (size_t i = 0; i < fix_theta.size(); i++) {
+        if (!fix_theta[i]) {
+            unfixed(j++) = theta(i);
+        }
+    }
+    return unfixed;
+}
+
+// set theta[unfixed] = new_theta
+void set_parameter_unfixed(
+    VectorXd& theta, 
+    const vector<bool>& fix_theta, 
+    const VectorXd& new_theta
+) {
+    int j = 0;
+    for (size_t i = 0; i < fix_theta.size(); i++) {
+        if (!fix_theta[i]) {
+            theta(i) = new_theta(j++);
+        }
+    }
+}
 
 // Define the constant for minimum W size threshold
 const int MIN_W_SIZE = 5;
@@ -57,7 +91,9 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
     fix_flag[latent_fix_theta_K]     = Rcpp::as<bool>  (model_list["fix_theta_K"]);
     Rcpp::List noise_in = Rcpp::as<Rcpp::List> (model_list["noise"]);
         fix_flag[latent_fix_theta_mu]     = Rcpp::as<bool>  (noise_in["fix_theta_mu"]);
-        fix_flag[latent_fix_theta_sigma]  = Rcpp::as<bool>  (noise_in["fix_theta_sigma"]);
+        // Handle vector-based fix_theta_sigma
+        Rcpp::LogicalVector fix_theta_sigma_r = Rcpp::as<Rcpp::LogicalVector>(noise_in["fix_theta_sigma"]);
+        fix_theta_sigma_vec = std::vector<bool>(fix_theta_sigma_r.begin(), fix_theta_sigma_r.end());
         fix_flag[latent_fix_theta_nu]     = noise_in.containsElementNamed("fix_theta_nu") ? Rcpp::as<bool> (noise_in["fix_theta_nu"]) : false;
 
         single_V = Rcpp::as<bool> (noise_in["single_V"]);
@@ -179,7 +215,10 @@ VectorXd Latent::grad_theta_sigma(bool rao_blackwell) {
     VectorXd WW = (rao_blackwell) ? cond_W : W;
 
     VectorXd grad = VectorXd::Zero(n_theta_sigma);
-    if (fix_flag[latent_fix_theta_sigma]) return grad;
+    // Early return if all parameters are fixed
+    if (std::all_of(fix_theta_sigma_vec.begin(), fix_theta_sigma_vec.end(), [](bool b) { return b; })) {
+        return grad;
+    }
 
     // std::cout << "W = " << W << std::endl;
     VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
@@ -189,11 +228,22 @@ VectorXd Latent::grad_theta_sigma(bool rao_blackwell) {
     // (KW-mu(V-h)) / (sigma^2 V)
     VectorXd tmp = (getK()*WW - mu.cwiseProduct(V_minus_h)).array().pow(2).matrix().cwiseQuotient(SV);
     // grad = Bi(tmp * sigma ^ -2 - 1)
-    grad = B_sigma.transpose() * (tmp - VectorXd::Ones(tmp.size()));
+    VectorXd all_grad = B_sigma.transpose() * (tmp - VectorXd::Ones(tmp.size()));
+    
+    // grad = all_grad[non-fixed]
+    int j = 0;
+    for (int i = 0; i < all_grad.size(); i++) {
+        if (!fix_theta_sigma_vec[i]) {
+            grad(j++) = all_grad(i);
+        }
+    }
 
-    // add prior
+    // add prior and apply fixing mask
+    j = 0;
     for (int l=0; l < n_theta_sigma; l++) {
-        grad(l) += PriorUtil::d_log_dens(prior_sigma_type, prior_sigma_param, theta_sigma(l));
+        if (!fix_theta_sigma_vec[l]) {
+            grad(j++) += PriorUtil::d_log_dens(prior_sigma_type, prior_sigma_param, theta_sigma(l));
+        } 
     }
 
     if (rao_blackwell) grad += rb_trace_sigma;
@@ -332,8 +382,6 @@ Rcpp::List Latent::output() const {
 
 const VectorXd Latent::get_parameter() {
 if (debug) std::cout << "Start latent get parameter"<< std::endl;
-if (debug) std::cout << "fix_theta_sigma = " << 
-    fix_flag[latent_fix_theta_sigma] << std::endl;
 
     VectorXd parameter = VectorXd::Zero(n_params);
 
@@ -341,10 +389,10 @@ if (debug) std::cout << "fix_theta_sigma = " <<
         parameter.segment(0, n_theta_K) = theta_K;
     if (!fix_flag[latent_fix_theta_mu])
         parameter.segment(n_theta_K, n_theta_mu) = theta_mu;
-    if (!fix_flag[latent_fix_theta_sigma])
-        parameter.segment(n_theta_K+n_theta_mu, n_theta_sigma) = theta_sigma;
+    // Handle vector-based fixing for theta_sigma
+    parameter.segment(n_theta_K + n_theta_mu, n_theta_sigma) = get_parameter_unfixed(theta_sigma, fix_theta_sigma_vec);
     if (!fix_flag[latent_fix_theta_nu])
-        parameter.segment(n_theta_K+n_theta_mu+n_theta_sigma,n_theta_nu) = theta_nu;
+        parameter.segment(n_theta_K + n_theta_mu + n_theta_sigma, n_theta_nu) = theta_nu;
 
 
 // if (debug) std::cout << "End latent get parameter"<< std::endl;
@@ -366,10 +414,10 @@ if (debug) std::cout << "Start latent get grad"<< std::endl;
         grad.segment(0, n_theta_K) = grad_theta_K(rao_blackwell);
     if (!fix_flag[latent_fix_theta_mu])
         grad.segment(n_theta_K, n_theta_mu) = grad_theta_mu(rao_blackwell);
-    if (!fix_flag[latent_fix_theta_sigma])
-        grad.segment(n_theta_K+n_theta_mu, n_theta_sigma) = grad_theta_sigma(rao_blackwell);
+    // Handle vector-based fixing for theta_sigma gradient
+    grad.segment(n_theta_K + n_theta_mu, n_theta_sigma) = grad_theta_sigma(rao_blackwell);
     if (!fix_flag[latent_fix_theta_nu])
-        grad.segment(n_theta_K+n_theta_mu+n_theta_sigma,n_theta_nu)  = grad_theta_nu();
+        grad.segment(n_theta_K + n_theta_mu + n_theta_sigma, n_theta_nu) = grad_theta_nu();
 
 // std::cout << "grad = " << grad.transpose() << std::endl;
 if (debug) std::cout << "finish latent gradient"<< std::endl;
@@ -384,10 +432,10 @@ void Latent::set_parameter(const VectorXd& theta, bool update_dK) {
         theta_K = theta.segment(0, n_theta_K);
     if (!fix_flag[latent_fix_theta_mu])
         theta_mu = theta.segment(n_theta_K, n_theta_mu);
-    if (!fix_flag[latent_fix_theta_sigma])
-        theta_sigma = theta.segment(n_theta_K+n_theta_mu, n_theta_sigma);
+    // Handle vector-based fixing for theta_sigma setting
+    set_parameter_unfixed(theta_sigma, fix_theta_sigma_vec, theta.segment(n_theta_K + n_theta_mu, n_theta_sigma));
     if (!fix_flag[latent_fix_theta_nu])
-        theta_nu = theta.segment(n_theta_K+n_theta_mu+n_theta_sigma, n_theta_nu);
+        theta_nu = theta.segment(n_theta_K + n_theta_mu + n_theta_sigma, n_theta_nu);
     
 
     update_each_iter(false, update_dK);
@@ -567,44 +615,49 @@ if (debug) std::cout << "update_each_iter" << std::endl;
 if (debug) std::cout << "finish update_each_iter" << std::endl;
 }
 
-// for compute hessian
+// for compute hessian 
+// here parameter are all unfixed parameters
 double Latent::log_density(const VectorXd& parameter, bool precond_K) {
+if (debug) std::cout << "start latent log_density" << std::endl;
     double logd_W = 0;
 
-    VectorXd theta_K, theta_mu, theta_sigma, tmp_mu, tmp_sigma;
+    VectorXd tmp_theta_K (theta_K), tmp_theta_mu (theta_mu), tmp_theta_sigma (theta_sigma), tmp_mu, tmp_sigma;
+    
+    bool all_fixed_sigma = std::all_of(fix_theta_sigma_vec.begin(), fix_theta_sigma_vec.end(), [](bool b) { return b; });
+
     if (precond_K) {
         // 1. pi(W|V)
         if (!fix_flag[latent_fix_theta_K])
-            theta_K = parameter.head(n_theta_K);
+            tmp_theta_K = parameter.head(n_theta_K);
 
         if (!fix_flag[latent_fix_theta_mu]) {
-            theta_mu = parameter.segment(n_theta_K, n_theta_mu);
-            tmp_mu = B_mu * theta_mu;
+            tmp_theta_mu = parameter.segment(n_theta_K, n_theta_mu);
+            tmp_mu = B_mu * tmp_theta_mu;
         } else {
             tmp_mu = mu;
         }
-
-        if (!fix_flag[latent_fix_theta_sigma]) {
-            theta_sigma = parameter.segment(n_theta_K + n_theta_mu, n_theta_sigma);
-            tmp_sigma = (B_sigma * theta_sigma).array().exp();
+        
+        if (!all_fixed_sigma) {
+            set_parameter_unfixed(tmp_theta_sigma, fix_theta_sigma_vec, parameter.segment(n_theta_K + n_theta_mu, n_theta_sigma));
+            tmp_sigma = (B_sigma * tmp_theta_sigma).array().exp();
         } else {
             tmp_sigma = sigma;
         }
 
-        ope_precond->update_K(theta_K);
+        ope_precond->update_K(tmp_theta_K);
         SparseMatrix<double> K = ope_precond->getK();
         logd_W = logd_W_given_V(W, K, tmp_mu, tmp_sigma, prevV);
     } else {
         if (!fix_flag[latent_fix_theta_mu]) {
-            theta_mu = parameter.head(n_theta_mu);
-            tmp_mu = B_mu * theta_mu;
+            tmp_theta_mu = parameter.head(n_theta_mu);
+            tmp_mu = B_mu * tmp_theta_mu;
         } else {
             tmp_mu = mu;
         }
 
-        if (!fix_flag[latent_fix_theta_sigma]) {
-            theta_sigma = parameter.segment(n_theta_mu, n_theta_sigma);
-            tmp_sigma = (B_sigma * theta_sigma).array().exp();
+        if (!all_fixed_sigma) {
+            set_parameter_unfixed(tmp_theta_sigma, fix_theta_sigma_vec, parameter.segment(n_theta_K + n_theta_mu, n_theta_sigma));
+            tmp_sigma = (B_sigma * tmp_theta_sigma).array().exp();
         } else {
             tmp_sigma = sigma;
         }
@@ -659,6 +712,7 @@ double Latent::logd_KW_given_V(const VectorXd& mu, const VectorXd& sigma, const 
 
 // Numerical hessian
 MatrixXd Latent::precond(bool precond_K, double eps) {
+if (debug) std::cout << "start latent precond" << std::endl;
     double numerical_eps = eps;
 
     VectorXd v;
@@ -666,13 +720,17 @@ MatrixXd Latent::precond(bool precond_K, double eps) {
         v = VectorXd::Zero(n_theta_mu + n_theta_sigma);
         // v << theta_mu, theta_sigma;
         if (!fix_flag[latent_fix_theta_mu]) v.head(n_theta_mu) = theta_mu;
-        if (!fix_flag[latent_fix_theta_sigma]) v.tail(n_theta_sigma) = theta_sigma;
+        
+        // Handle vector-based fixing for theta_sigma in precond
+        v.segment(n_theta_mu, n_theta_sigma) = get_parameter_unfixed(theta_sigma, fix_theta_sigma_vec);
     } else {
         v = VectorXd::Zero(n_params - n_theta_nu);
         // v << theta_K, theta_mu, theta_sigma;
         if (!fix_flag[latent_fix_theta_K]) v.head(n_theta_K) = theta_K;
         if (!fix_flag[latent_fix_theta_mu]) v.segment(n_theta_K, n_theta_mu) = theta_mu;
-        if (!fix_flag[latent_fix_theta_sigma]) v.segment(n_theta_K+n_theta_mu, n_theta_sigma) = theta_sigma;
+        
+        // Handle vector-based fixing for theta_sigma in precond (full case)
+        v.segment(n_theta_K + n_theta_mu, n_theta_sigma) = get_parameter_unfixed(theta_sigma, fix_theta_sigma_vec);
     }
 
     int n = v.size();

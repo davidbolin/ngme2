@@ -2,24 +2,56 @@
 % Please edit documentation in R/models.R
 \name{rw2}
 \alias{rw2}
-\title{ngme random walk model of order 2}
+\title{Random Walk Model of Order 2 (RW2)}
 \usage{
 rw2(mesh, cyclic = FALSE, ...)
 }
 \arguments{
-\item{mesh}{mesh for build the model}
+\item{mesh}{numerical vector or inla.mesh.1d object, locations to build the mesh.
+For numerical vectors, assumes equally spaced locations. Must have at least 3 locations.}
 
-\item{cyclic}{whether the mesh is circular, i.e. the first one is connected to the last
-if it is circular, we will treat the 1st location and the last location as neigbour, with distance of average distance.}
+\item{cyclic}{logical, whether the mesh is circular. If TRUE, the first and last
+locations are treated as neighbors with second-order differences computed
+across the boundary.}
 
-\item{...}{additional arguments}
+\item{...}{additional arguments (currently unused)}
 }
 \value{
-a list
+An `ngme_operator` object containing the precision matrix and related
+  components for the RW2 model.
 }
 \description{
-generate K matrix of size (n-2) x n (non-cyclic case), where n is size of map
+Constructs a second-order random walk model for spatial or temporal processes.
+The RW2 model assumes that second-order differences 
+\eqn{\Delta^2 W_i = W_i - 2W_{i-1} + W_{i-2}} are independent and identically 
+distributed Gaussian variables.
+}
+\details{
+The RW2 model is defined by the precision matrix \eqn{K} that penalizes 
+second-order differences, making it smoother than RW1. The model enforces
+constraints to ensure identifiability:
+
+**Non-cyclic (default)**: The first two rows of \eqn{K} enforce constraints:
+the first row implements \eqn{\sum_{i=1}^n h_i W_i = 0} (sum-to-zero), 
+and the second row implements \eqn{\sum_{i=1}^n h_i \cdot i \cdot W_i = 0} 
+(removes linear trend). The remaining rows penalize second-order differences.
+
+**Cyclic**: Treats the domain as circular, connecting the first and last locations
+as neighbors. The constraint \eqn{\sum_{i=1}^n h_i W_i = 0} is enforced.
+The precision matrix is expanded to size \eqn{(n+1) \times (n+1)} to handle
+the constraint and circular structure properly.
 }
 \examples{
-r2 <- rw2(1:7); r2$K
+# Non-cyclic RW2 with constraints (default)
+rw2_default <- rw2(1:6)
+print(rw2_default$K)
+
+# Cyclic RW2 (connects first and last locations)
+rw2_cyclic <- rw2(1:6, cyclic = TRUE)
+print(rw2_cyclic$K)
+
+# Using with unequally spaced locations
+locations <- c(0, 1, 3, 6, 10, 15)
+rw2_unequal <- rw2(locations)
+print(rw2_unequal$K)
 }

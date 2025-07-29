@@ -23,3 +23,25 @@ test_that("noise_normal() works", {
     n = 10
   )
 })
+
+test_that("fix_theta_sigma works in noise_normal()", {
+  B_sigma <- matrix(c(1,0,0,1), nrow=2)
+  
+  # Test vector fixing
+  n1 <- noise_normal(
+    theta_sigma = c(0, 1),
+    B_sigma = B_sigma,
+    fix_theta_sigma = c(TRUE, FALSE)
+  )
+  expect_equal(n1$n_theta_sigma, 1)
+  expect_equal(n1$fix_theta_sigma, c(TRUE, FALSE))
+  
+  # Test single value expansion
+  n2 <- noise_normal(
+    theta_sigma = c(0, 1),
+    B_sigma = B_sigma,
+    fix_theta_sigma = FALSE
+  )
+  expect_equal(n2$n_theta_sigma, 2)
+  expect_equal(n2$fix_theta_sigma, c(FALSE, FALSE))
+})

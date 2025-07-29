@@ -231,42 +231,93 @@ ar <- function(
   )
 }
 
-#' ngme random walk model of order 1
+#' Random Walk Model of Order 1 (RW1)
 #'
-#' @param mesh numerical vector or inla.mesh.1d object, index to build the mesh
-#' @param cyclic  whether the mesh is circular, i.e. the first one is connected to the last
-#'   if it is circular, we will treat the 1st location and the last location as neigbour, with distance of average distance.
-#' @param mesh mesh for build the model
-#' @param ...       additional arguments
+#' Constructs a first-order random walk model for spatial or temporal processes.
+#' The RW1 model assumes that first-order differences \eqn{\Delta W_i = W_i - W_{i-1}}
+#' are independent and identically distributed Gaussian variables.
 #'
-#' @return a list
+#' @details
+#' The RW1 model is defined by the precision matrix \eqn{K} that penalizes 
+#' first-order differences. The model has different structures depending on the
+#' constraints:
+#' 
+#' **Non-cyclic, constrained (default)**: The first row of \eqn{K} enforces the 
+#' constraint \eqn{\sum_{i=1}^n h_i W_i = 0}, where \eqn{h_i} are the mesh weights.
+#' 
+#' **Non-cyclic, unconstrained**: The first element is fixed at 0 (\eqn{W_1 = 0}).
+#' 
+#' **Cyclic**: Treats the domain as circular, connecting the first and last locations
+#' as neighbors. The constraint \eqn{\sum_{i=1}^n h_i W_i = 0} is always enforced.
+#' The precision matrix is expanded to size \eqn{(n+1) \times (n+1)} to handle
+#' the constraint properly.
+#'
+#' @param mesh numerical vector or inla.mesh.1d object, locations to build the mesh.
+#'   For numerical vectors, assumes equally spaced locations.
+#' @param cyclic logical, whether the mesh is circular. If TRUE, the first and last
+#'   locations are treated as neighbors. Cannot be FALSE when constr = TRUE.
+#' @param constr logical, whether to enforce the sum-to-zero constraint 
+#'   \eqn{\sum_{i=1}^n h_i W_i = 0}. If FALSE, fixes the first element \eqn{W_1 = 0}.
+#'   Must be TRUE for cyclic models.
+#' @param ... additional arguments (currently unused)
+#'
+#' @return An `ngme_operator` object containing the precision matrix and related
+#'   components for the RW1 model.
 #' @export
 #'
 #' @examples
-#' r1 <- rw1(1:7, cyclic = TRUE); r1$K
+#' # Non-cyclic constrained RW1 (default)
+#' rw1_default <- rw1(1:5)
+#' print(rw1_default$K)
+#' 
+#' # Non-cyclic unconstrained RW1 (fixes first element to 0)
+#' rw1_fixed <- rw1(1:5, constr = FALSE)
+#' print(rw1_fixed$K)
+#' 
+#' # Cyclic RW1 (connects first and last locations)
+#' rw1_cyclic <- rw1(1:5, cyclic = TRUE)
+#' print(rw1_cyclic$K)
+#' 
+#' # Using with unequally spaced locations
+#' locations <- c(0, 1, 3, 6, 10)
+#' rw1_unequal <- rw1(locations)
+#' print(rw1_unequal$K)
 rw1 <- function(
   mesh,
   cyclic    = FALSE,
+  constr    = TRUE,
   ...
 ) {
   mesh <- ngme_build_mesh(mesh)
 
   n <- mesh$n
-  h <- diff(mesh$loc);
+  h_left <- c(0, diff(mesh$loc))
+  h_right <- c(diff(mesh$loc), 0)
+  h <- 0.5 * (h_left + h_right)
+
   if (!cyclic) {
     C <- Matrix::sparseMatrix(i = 1:n, j=1:n, x=1, dims=c(n,n))
     G <- Matrix::sparseMatrix(i = 2:n, j=1:(n-1), x=-1, dims=c(n,n))
-    h <- c(0.01, h) # assume first point fixed to 0
+    K_mat <- C + G
+    if (constr) K_mat[1, ] <- h else K_mat[1, 1] <- 1
+    K = ngme_as_sparse(K_mat)
   } else {
+    stopifnot("constraint cannot be false for cyclic case" = constr)
     stopifnot("Too less data point" = length(h) >= 3)
     C <- Matrix::Diagonal(n)
     G <- Matrix::sparseMatrix(i = 1:n, j=c(2:n, 1), x=-1, dims=c(n,n))
-    h <- c(h, mean(h))
+    K_mat <- C + G
+    # expand K to be (0 1 1 K)
+    K_mat <- rbind(0, K_mat)
+    K_mat <- cbind(0, K_mat)
+    K_mat[1, -1] <- h; K_mat[-1, 1] <- h
+    K = ngme_as_sparse(K_mat)
+    h <- c(1, h)
   }
-  K = ngme_as_sparse(C + G)
 
   ngme_operator(
     mesh = mesh,
+    cyclic = cyclic,
     matrices = list(K),
     model = "rw1",
     generic_type = "generic",
@@ -280,21 +331,52 @@ rw1 <- function(
   )
 }
 
-#' ngme random walk model of order 2
+#' Random Walk Model of Order 2 (RW2)
 #'
-#' generate K matrix of size (n-2) x n (non-cyclic case), where n is size of map
+#' Constructs a second-order random walk model for spatial or temporal processes.
+#' The RW2 model assumes that second-order differences 
+#' \eqn{\Delta^2 W_i = W_i - 2W_{i-1} + W_{i-2}} are independent and identically 
+#' distributed Gaussian variables.
 #'
-#' @param mesh numerical vector or inla.mesh.1d object, index to build the mesh
-#' @param mesh mesh for build the model
-#' @param cyclic  whether the mesh is circular, i.e. the first one is connected to the last
-#'   if it is circular, we will treat the 1st location and the last location as neigbour, with distance of average distance.
-#' @param ...       additional arguments
+#' @details
+#' The RW2 model is defined by the precision matrix \eqn{K} that penalizes 
+#' second-order differences, making it smoother than RW1. The model enforces
+#' constraints to ensure identifiability:
+#' 
+#' **Non-cyclic (default)**: The first two rows of \eqn{K} enforce constraints:
+#' the first row implements \eqn{\sum_{i=1}^n h_i W_i = 0} (sum-to-zero), 
+#' and the second row implements \eqn{\sum_{i=1}^n h_i \cdot i \cdot W_i = 0} 
+#' (removes linear trend). The remaining rows penalize second-order differences.
+#' 
+#' **Cyclic**: Treats the domain as circular, connecting the first and last locations
+#' as neighbors. The constraint \eqn{\sum_{i=1}^n h_i W_i = 0} is enforced.
+#' The precision matrix is expanded to size \eqn{(n+1) \times (n+1)} to handle
+#' the constraint and circular structure properly.
 #'
-#' @return a list
+#' @param mesh numerical vector or inla.mesh.1d object, locations to build the mesh.
+#'   For numerical vectors, assumes equally spaced locations. Must have at least 3 locations.
+#' @param cyclic logical, whether the mesh is circular. If TRUE, the first and last
+#'   locations are treated as neighbors with second-order differences computed
+#'   across the boundary.
+#' @param ... additional arguments (currently unused)
+#'
+#' @return An `ngme_operator` object containing the precision matrix and related
+#'   components for the RW2 model.
 #' @export
 #'
 #' @examples
-#' r2 <- rw2(1:7); r2$K
+#' # Non-cyclic RW2 with constraints (default)
+#' rw2_default <- rw2(1:6)
+#' print(rw2_default$K)
+#' 
+#' # Cyclic RW2 (connects first and last locations)
+#' rw2_cyclic <- rw2(1:6, cyclic = TRUE)
+#' print(rw2_cyclic$K)
+#' 
+#' # Using with unequally spaced locations
+#' locations <- c(0, 1, 3, 6, 10, 15)
+#' rw2_unequal <- rw2(locations)
+#' print(rw2_unequal$K)
 rw2 <- function(
   mesh,
   cyclic = FALSE,
@@ -304,25 +386,35 @@ rw2 <- function(
 
   stopifnot("Mesh should be inla.mesh.1d." = inherits(mesh, c("inla.mesh.1d")))
   n <- mesh$n
+  h_left <- c(0, diff(mesh$loc))
+  h_right <- c(diff(mesh$loc), 0)
+  h <- 0.5 * (h_left + h_right)
   stopifnot("mesh too small" = n >= 3)
 
-  h <- diff(mesh$loc)
   if (!cyclic) {
     C <- Matrix::sparseMatrix(i = 3:n, j=2:(n-1), x=-2, dims=c(n,n))
     G <- Matrix::sparseMatrix(i = c(1:n, 3:n), j=c(1:n, 1:(n-2)), x=1, dims=c(n,n))
-    h <- c(0.01, h)
+    K <- as.matrix(C + G)
+    K[1, ] <- h
+    K[2, ] <- h*(1:n)
+    K <- ngme_as_sparse(K)
   } else {
     C <- Matrix::sparseMatrix(i = 1:n, j=c(2:n,1), x=-2, dims=c(n,n))
     G <- Matrix::sparseMatrix(i = rep(1:n,2), j=c(1:n, 3:n, 1, 2), x=1, dims=c(n,n))
-    h <- c(h, mean(h))
+    K <- as.matrix(C + G)
+    K <- rbind(0, K)
+    K <- cbind(0, K)
+    K[1, -1] <- h; K[-1, 1] <- h
+    K = ngme_as_sparse(K)
+    h <- c(1, h)
+    K <- ngme_as_sparse(K)
   }
-
-  K <- ngme_as_sparse(C + G)
 
   ngme_operator(
     mesh = mesh,
     model = "rw2",
     generic_type = "generic",
+    cyclic = cyclic,
     matrices = list(K),
     theta_K = double(0),
     update_K = function(theta_K) {K},

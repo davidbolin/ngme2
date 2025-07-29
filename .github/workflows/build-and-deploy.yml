@@ -33,12 +33,6 @@ jobs:
           r-version: ${{ matrix.r-version }}
           extra-repositories: "https://inla.r-inla-download.org/R/testing"
 
-      # ───── reuse Install R deps Composite Action ─────
-      - name: Prepare R environment
-        uses: ./.github/actions/install-r-deps
-        with:
-          r-version: ${{ matrix.r-version }}
-
       # ───── macOS extra configuration OpenMP ─────
       - name: Install LLVM & libomp (macOS)
         if: matrix.os == 'macos-latest'
@@ -123,6 +117,12 @@ jobs:
           echo "Alternative library search methods:"
           gfortran --print-file-name=libgfortran.dylib 2>/dev/null || echo "gfortran command not available"
           find $GCC_PREFIX -name "libgfortran*" -type f 2>/dev/null | head -3 || echo "No libgfortran in GCC_PREFIX"
+
+      # ───── reuse Install R deps Composite Action ─────
+      - name: Prepare R environment
+        uses: ./.github/actions/install-r-deps
+        with:
+          r-version: ${{ matrix.r-version }}
 
       # ───── build source package ─────
       - name: Build source package

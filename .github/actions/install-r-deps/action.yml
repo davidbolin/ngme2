@@ -1,15 +1,29 @@
 name: 'Install R dependencies'
 description: 'Cache R packages + install system libs + install R deps'
+inputs:
+  r-version:
+    description: 'R version for cache key'
+    required: true
 runs:
   using: 'composite'
   steps:
+    # On macOS, we need different cache keys to account for custom LLVM/OpenMP setup
+    - name: Set cache key suffix
+      shell: bash
+      run: |
+        if [[ "${{ runner.os }}" == "macOS" ]]; then
+          echo "CACHE_SUFFIX=-llvm18-omp" >> $GITHUB_ENV
+        else
+          echo "CACHE_SUFFIX=" >> $GITHUB_ENV
+        fi
+
     - name: Cache R packages
       uses: actions/cache@v3
       with:
         path: ${{ env.R_LIBS_USER }}
-        key: ${{ runner.os }}-r-${{ inputs.r-version }}-${{ hashFiles('**/DESCRIPTION') }}
+        key: ${{ runner.os }}-r-${{ inputs.r-version }}${{ env.CACHE_SUFFIX }}-${{ hashFiles('**/DESCRIPTION') }}
         restore-keys: |
-          ${{ runner.os }}-r-
+          ${{ runner.os }}-r-${{ inputs.r-version }}${{ env.CACHE_SUFFIX }}-
 
     - name: Install system libs (Linux)
       if: runner.os == 'Linux'
@@ -30,14 +44,41 @@ runs:
         echo 'options(repos = c(INLA = "https://inla.r-inla-download.org/R/testing", CRAN = "https://cloud.r-project.org"))' > ~/.Rprofile
         Rscript -e 'cat("Available repositories:", paste(names(getOption("repos")), collapse=", "), "\n")'
 
+    # Force reinstallation of compiled packages on macOS with custom compiler setup
+    - name: Force reinstall critical compiled packages (macOS)
+      if: runner.os == 'macOS'
+      shell: bash
+      run: |
+        echo "Forcing reinstallation of critical compiled packages for macOS LLVM setup..."
+        Rscript -e '
+        # Safely remove existing Rcpp and RcppEigen installations if they exist
+        for (pkg in c("Rcpp", "RcppEigen")) {
+          if (pkg %in% rownames(installed.packages())) {
+            cat("Removing existing", pkg, "installation\n")
+            try(remove.packages(pkg, lib = .libPaths()[1]), silent = TRUE)
+          }
+        }
+        
+        # Install from source to ensure compatibility with current compiler setup
+        cat("Installing Rcpp and RcppEigen from source...\n")
+        install.packages(c("Rcpp", "RcppEigen"), 
+                        repos = "https://cloud.r-project.org", 
+                        type = "source",
+                        dependencies = FALSE)
+        
+        # Verify installation
+        cat("Verifying installations:\n")
+        for (pkg in c("Rcpp", "RcppEigen")) {
+          if (require(pkg, character.only = TRUE, quietly = TRUE)) {
+            cat(pkg, "successfully installed and loaded\n")
+          } else {
+            stop("Failed to install or load ", pkg)
+          }
+        }
+        '
+
     - name: Install R package dependencies
       shell: bash
       run: |
         echo "Installing all package dependencies..."
-        Rscript -e 'remotes::install_deps(dependencies = TRUE, upgrade = "never")'
-
-
-inputs:
-  r-version:
-    description: 'R version for cache key'
-    required: true 
+        Rscript -e 'remotes::install_deps(dependencies = TRUE, upgrade = "never")' 

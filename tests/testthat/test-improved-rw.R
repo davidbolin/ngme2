@@ -9,9 +9,11 @@ test_that("Check K for all cases", {
   print(rw1_cyc$K)
 
   # rw2
-  rw2_constr <- rw2(1:n)
+  rw2_constr <- rw2(1:n, constr = TRUE) # default
+  rw2_start_0_0 <- rw2(1:n, constr = FALSE)
   rw2_cyc <- rw2(1:n, cyclic = TRUE)
   print(rw2_constr$K)
+  print(rw2_start_0_0$K)
   print(rw2_cyc$K)
 })
 
@@ -73,6 +75,7 @@ test_that("test RW1 constraint (cyclic)", {
   m1 <- f(x, model="rw1", cyclic = TRUE)
   h <- m1$operator$h
   w <- simulate(m1, nsim = 1)[[1]]
+  plot(x, w, type="l")
   # Notice that len(h) == len(y) + 1
   length(h); length(w);
   expect_true(abs(sum(h[-1]*w)) < 1e-4)
@@ -93,7 +96,7 @@ test_that("test RW1 constraint (cyclic)", {
 })
 
 
-test_that("test RW2 (non-cyclic)", {
+test_that("test RW2 constraint (non-cyclic)", {
   set.seed(123)
   n <- 500
   x <- 1:n
@@ -103,7 +106,8 @@ test_that("test RW2 (non-cyclic)", {
 
   # default constraint (constr=TRUE)
   expect_true(abs(sum(m1$operator$h*w)) < 1e-2)
-  expect_true(abs(sum(x*m1$operator$h*w)) < 1e-2)
+  cumsum_h <- cumsum(m1$operator$h) - m1$operator$h[1]
+  expect_true(abs(sum(cumsum_h*w)) < 1e-2)
 
   y <- w + rnorm(n, sd=0.5)
   fit <- ngme(
@@ -121,6 +125,33 @@ test_that("test RW2 (non-cyclic)", {
   expect_true(abs(ngme_result(fit, "data")$sigma - 0.5) < 0.3)
 })
 
+test_that("test RW2 start at 0 (non-cyclic)", {
+  set.seed(123)
+  n <- 500
+  x <- 1:n
+  m1 <- f(x, model="rw2", constr = FALSE)
+  w <- simulate(m1, nsim = 1)[[1]]
+  plot(x, w, type="l")
+
+  # default constraint (constr=TRUE)
+  expect_true(abs(w[1]) < 1e-2)
+  expect_true(abs(w[2]) < 1e-2)
+
+  y <- w + rnorm(n, sd=0.5)
+  fit <- ngme(
+    y ~ 0+f(x, model="rw2", constr = FALSE, noise=noise_normal()),
+    data = data.frame(x=x, y=y),
+    control_opt=control_opt(
+      rao_blackwell=TRUE,
+      optimizer = precond_sgd(),
+      iterations=100
+    )
+  )
+  fit
+  traceplot(fit, "field1")
+  expect_true(abs(ngme_result(fit, "field1")$sigma - 1) < 0.2)
+  expect_true(abs(ngme_result(fit, "data")$sigma - 0.5) < 0.3)
+})
 
 test_that("test RW2 (cyclic)", {
   set.seed(123)

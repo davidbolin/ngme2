@@ -310,8 +310,9 @@ rw1 <- function(
     K_mat <- C + G
     # expand K to be (0 1 1 K)
     K_mat <- rbind(0, K_mat)
-    K_mat <- cbind(0, K_mat)
-    K_mat[1, -1] <- h; K_mat[-1, 1] <- h
+    K_mat <- cbind(1, K_mat)
+    K_mat[1, -1] <- h; 
+    K_mat[1, 1] <- 0
     K = ngme_as_sparse(K_mat)
     h <- c(1, h)
   }
@@ -356,6 +357,9 @@ rw1 <- function(
 #'
 #' @param mesh numerical vector or inla.mesh.1d object, locations to build the mesh.
 #'   For numerical vectors, assumes equally spaced locations. Must have at least 3 locations.
+#' @param constr logical, whether to enforce the sum-to-zero constraint \eqn{\sum_{i=1}^n h_i W_i = 0}
+#'   and the linear trend constraint \eqn{\sum_{i=1}^n (\sum_{j=1}^i h_j - h_1) \cdot i \cdot W_i = 0}.
+#'   If FALSE, fixes the first and second elements \eqn{W_1 = 0} and \eqn{W_2 = 0}.
 #' @param cyclic logical, whether the mesh is circular. If TRUE, the first and last
 #'   locations are treated as neighbors with second-order differences computed
 #'   across the boundary.
@@ -381,6 +385,7 @@ rw1 <- function(
 rw2 <- function(
   mesh,
   cyclic = FALSE,
+  constr = TRUE,
   ...
 ) {
   mesh <- ngme_build_mesh(mesh)
@@ -396,16 +401,22 @@ rw2 <- function(
     C <- Matrix::sparseMatrix(i = 3:n, j=2:(n-1), x=-2, dims=c(n,n))
     G <- Matrix::sparseMatrix(i = c(1:n, 3:n), j=c(1:n, 1:(n-2)), x=1, dims=c(n,n))
     K <- as.matrix(C + G)
-    K[1, ] <- h
-    K[2, ] <- h*(1:n)
+    if (constr) {
+      K[1, ] <- h
+      K[2, ] <- cumsum(h) - h[1]
+    } else {
+      K[1, 1] <- 1
+      K[2, 2] <- 1
+    }
     K <- ngme_as_sparse(K)
   } else {
     C <- Matrix::sparseMatrix(i = 1:n, j=c(2:n,1), x=-2, dims=c(n,n))
     G <- Matrix::sparseMatrix(i = rep(1:n,2), j=c(1:n, 3:n, 1, 2), x=1, dims=c(n,n))
     K <- as.matrix(C + G)
     K <- rbind(0, K)
-    K <- cbind(0, K)
-    K[1, -1] <- h; K[-1, 1] <- h
+    K <- cbind(1, K)
+    K[1, -1] <- h;
+    K[1, 1] <- 0
     K = ngme_as_sparse(K)
     h <- c(1, h)
     K <- ngme_as_sparse(K)

@@ -152,6 +152,10 @@
         </td>
         <td><p>Specifying a latent process model (wrapper function for each model)</p></td>
       </tr><tr><td>
+          <p><code><a href="ar.html">ar()</a></code> </p>
+        </td>
+        <td><p>ngme AR(p) model specification</p></td>
+      </tr><tr><td>
           <p><code><a href="ar1.html">ar1()</a></code> </p>
         </td>
         <td><p>ngme AR(1) model specification</p></td>
@@ -162,11 +166,11 @@
       </tr><tr><td>
           <p><code><a href="rw1.html">rw1()</a></code> </p>
         </td>
-        <td><p>ngme random walk model of order 1</p></td>
+        <td><p>Random Walk Model of Order 1 (RW1)</p></td>
       </tr><tr><td>
           <p><code><a href="rw2.html">rw2()</a></code> </p>
         </td>
-        <td><p>ngme random walk model of order 2</p></td>
+        <td><p>Random Walk Model of Order 2 (RW2)</p></td>
       </tr><tr><td>
           <p><code><a href="ou.html">ou()</a></code> </p>
         </td>
@@ -220,13 +224,21 @@
           <p class="section-desc"></p>
         </th>
       </tr></tbody><tbody><tr><td>
-          <p><code><a href="ngme_noise.html">ngme_noise()</a></code> <code><a href="ngme_noise.html">noise_normal()</a></code> <code><a href="ngme_noise.html">noise_nig()</a></code> <code><a href="ngme_noise.html">noise_gal()</a></code> <code><a href="ngme_noise.html">noise_normal_nig()</a></code> </p>
+          <p><code><a href="ngme_noise.html">ngme_noise()</a></code> <code><a href="ngme_noise.html">noise_normal()</a></code> <code><a href="ngme_noise.html">noise_nig()</a></code> <code><a href="ngme_noise.html">noise_gal()</a></code> <code><a href="ngme_noise.html">noise_skew_t()</a></code> <code><a href="ngme_noise.html">noise_t()</a></code> <code><a href="ngme_noise.html">noise_normal_nig()</a></code> </p>
         </td>
         <td><p>ngme noise specification</p></td>
       </tr><tr><td>
           <p><code><a href="ngme_noise_types.html">ngme_noise_types()</a></code> </p>
         </td>
         <td><p>Show ngme noise types</p></td>
+      </tr><tr><td>
+          <p><code><a href="compare_noise_kld.html">compare_noise_kld()</a></code> </p>
+        </td>
+        <td><p>Compare noise objects using Kullback-Leibler divergence</p></td>
+      </tr><tr><td>
+          <p><code><a href="print.noise_kld_comparison.html">print(<i>&lt;noise_kld_comparison&gt;</i>)</a></code> </p>
+        </td>
+        <td><p>Print method for noise_kld_comparison</p></td>
       </tr></tbody><tbody><tr><th colspan="2">
           <h2 id="ngme-optimization-methods">ngme2 optimization methods <a href="#ngme-optimization-methods" class="anchor" aria-hidden="true"></a></h2>
           <p class="section-desc"></p>
@@ -282,7 +294,7 @@
       </tr></tbody><tbody><tr><td>
           <p><code><a href="plot.ngme_noise.html">plot(<i>&lt;ngme_noise&gt;</i>)</a></code> </p>
         </td>
-        <td><p>plot the density of noise (for stationary)</p></td>
+        <td><p>Plot the density of one or more stationary noise objects</p></td>
       </tr><tr><td>
           <p><code><a href="traceplot.html">traceplot()</a></code> </p>
         </td>

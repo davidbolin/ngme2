@@ -76,7 +76,7 @@
       <a href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a>
     </li>
     <li>
-      <a href="../articles/replicate.html">Ngme replicate feature</a>
+      <a href="../articles/replicate.html">Models with replicates</a>
     </li>
     <li>
       <a href="../articles/pred_and_est.html">Model estimation and prediction</a>
@@ -159,9 +159,14 @@ model as the second part of the tensor product model.</p>
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://davidbolin.github.io/ngme2/">ngme2</a></span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## This is ngme2 of version 0.7.0</span></span>
 <span><span class="co">## - See our homepage: https://davidbolin.github.io/ngme2 for more details.</span></span></code></pre>
+<pre><code><span><span class="co">## </span></span>
+<span><span class="co">## Attaching package: 'ngme2'</span></span></code></pre>
+<pre><code><span><span class="co">## The following object is masked from 'package:stats':</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">##     ar</span></span></code></pre>
 <p>First we specify the two indices for the space-time model. We have 20
 time points and 40 mesh locations for space.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">time_len</span> <span class="op">=</span> <span class="fl">20</span></span>
 <span><span class="va">half_bv_len</span> <span class="op">=</span> <span class="fl">50</span></span>
 <span></span>
@@ -173,7 +178,7 @@ time points and 40 mesh locations for space.</p>
 <span><span class="va">group</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"f1"</span>, <span class="st">"f2"</span><span class="op">)</span>, each<span class="op">=</span><span class="va">half_bv_len</span><span class="op">)</span>,<span class="va">time_len</span><span class="op">)</span></span></code></pre></div>
 <p>Next, we specify the bivariate model using a list, here we consider a
 bivariate model with two AR(1) processes.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">bv_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  model<span class="op">=</span><span class="st">"bv"</span>,</span>
 <span>  sub_models <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
@@ -240,7 +245,7 @@ bivariate model with two AR(1) processes.</p>
 <span><span class="co">##     mu = -2</span></span>
 <span><span class="co">##     sigma = 1</span></span>
 <span><span class="co">##     nu = 2</span></span></code></pre>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">bv_matern_nig_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  model<span class="op">=</span><span class="st">"bv_matern_nig"</span>,</span>
 <span>  mesh <span class="op">=</span> <span class="va">mesh_s</span>,</span>
@@ -297,7 +302,7 @@ bivariate model with two AR(1) processes.</p>
 <p>Then we specify the full model using the <code>f</code> function,
 which is a tensor product model with the first part being an AR(1)
 process and the second part being the bivariate model.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">f_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
 <span>  map<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    <span class="va">time_idx</span>,</span>
@@ -331,7 +336,7 @@ process and the second part being the bivariate model.</p>
 <span><span class="co">##     mu = -2</span></span>
 <span><span class="co">##     sigma = 1</span></span>
 <span><span class="co">##     nu = 2</span></span></code></pre>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Simulate the latent fields</span></span>
 <span><span class="va">W</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="va">f_model</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
 <span></span>
@@ -342,7 +347,7 @@ process and the second part being the bivariate model.</p>
 <h2 id="estimation">Estimation<a class="anchor" aria-label="anchor" href="#estimation"></a>
 </h2>
 <p>Now we turn to estimate the model using simulated data.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">bv_list_2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  model<span class="op">=</span><span class="st">"bv"</span>,</span>
 <span>  sub_models <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
@@ -379,7 +384,7 @@ process and the second part being the bivariate model.</p>
 <span><span class="co">## Note:</span></span>
 <span><span class="co">##       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
 <span><span class="co">##       2. Use ngme_result(..) to access different latent models.</span></span></code></pre>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit0</span></span></code></pre></div>
 <pre><code><span><span class="co">## *** Ngme object ***</span></span>
 <span><span class="co">## </span></span>
@@ -392,38 +397,35 @@ process and the second part being the bivariate model.</p>
 <span><span class="co">##       No parameter.</span></span>
 <span><span class="co">##   Noise type: NORMAL</span></span>
 <span><span class="co">##   Noise parameters: </span></span>
-<span><span class="co">##       sigma = 0.635</span></span>
+<span><span class="co">##       sigma = 0.704</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $field2</span></span>
 <span><span class="co">##   Model type: Tensor product</span></span>
 <span><span class="co">##       first: AR(1)</span></span>
-<span><span class="co">##           rho = 0.241</span></span>
+<span><span class="co">##           rho = 0.24</span></span>
 <span><span class="co">##       second: Bivariate model (non-Gaussian noise)</span></span>
-<span><span class="co">##           theta = 0.116</span></span>
-<span><span class="co">##           rho = 0.0337</span></span>
+<span><span class="co">##           theta = 0.0192</span></span>
+<span><span class="co">##           rho = 0.101</span></span>
 <span><span class="co">##           f1: AR(1)</span></span>
-<span><span class="co">##               rho = 0.239</span></span>
+<span><span class="co">##               rho = NA</span></span>
 <span><span class="co">##           f2: AR(1)</span></span>
-<span><span class="co">##               rho = -0.23</span></span>
+<span><span class="co">##               rho = NA</span></span>
 <span><span class="co">##   Noise type: NIG</span></span>
 <span><span class="co">##   Noise parameters: </span></span>
-<span><span class="co">##       mu = -0.466</span></span>
-<span><span class="co">##       sigma = 1.49</span></span>
-<span><span class="co">##       nu = 0.763</span></span>
+<span><span class="co">##       mu = -0.48</span></span>
+<span><span class="co">##       sigma = 1.5</span></span>
+<span><span class="co">##       nu = 0.744</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Measurement noise: </span></span>
 <span><span class="co">##   Noise type: NORMAL</span></span>
 <span><span class="co">##   Noise parameters: </span></span>
-<span><span class="co">##       sigma = 1.24</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Number of replicates is  1</span></span></code></pre>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<span><span class="co">##       sigma = 1.3</span></span></code></pre>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">fit0</span>, <span class="st">"field1"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tp-bv_files/figure-html/unnamed-chunk-4-1.png" width="700"></p>
 <pre><code><span><span class="co">## Last estimates:</span></span>
 <span><span class="co">## $sigma</span></span>
-<span><span class="co">## [1] 0.6689711</span></span></code></pre>
+<span><span class="co">## [1] 0.7395642</span></span></code></pre>
 <p>Here we can see, we get the simulated parameter correctly.</p>
 </div>
   </div>

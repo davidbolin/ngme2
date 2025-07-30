@@ -1,8 +1,13 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://davidbolin.github.io/ngme2/404.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/CHANGES_SUMMARY.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/CLAUDE.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/IMPROVED_PAIRED_CV.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/LICENSE-text.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/MERGE_GROUPS_FEATURE.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/MESH_LIST_IMPLEMENTATION.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/README_GENERIC_MODELS.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/README_SEGFAULT_FIX.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/AR1-model.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/Installation_and_configuration.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/RW-model.html</loc></url>
@@ -23,10 +28,12 @@
 <url><loc>https://davidbolin.github.io/ngme2/authors.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/index.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/news/index.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/reference/ARcov.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/adagrad.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/adam.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/adamW.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/adaptive_gd.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/reference/ar.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/ar1.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/argo_float.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/bfgs.html</loc></url>
@@ -36,16 +43,19 @@
 <url><loc>https://davidbolin.github.io/ngme2/reference/bv_normal.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/cienaga.border.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/cienaga.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/reference/compare_noise_kld.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/compute_index_corr_from_map.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/compute_score_given_pred.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/control_f.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/control_ngme.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/control_opt.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/reference/create_paired_cv_splits.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/cross_validation.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/f.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/gal.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/generic.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/generic_ns.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/reference/get_noise_param.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/get_trajectories.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/gig.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/ig.html</loc></url>
@@ -85,6 +95,7 @@
 <url><loc>https://davidbolin.github.io/ngme2/reference/print.ngme_noise.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/print.ngme_operator.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/print.ngme_replicate.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/reference/print.noise_kld_comparison.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/re.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/rmsprop.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/rw1.html</loc></url>

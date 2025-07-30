@@ -76,7 +76,7 @@
       <a href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a>
     </li>
     <li>
-      <a href="../articles/replicate.html">Ngme replicate feature</a>
+      <a href="../articles/replicate.html">Models with replicates</a>
     </li>
     <li>
       <a href="../articles/pred_and_est.html">Model estimation and prediction</a>
@@ -137,7 +137,7 @@
       <h1 data-toc-skip>Ngme2 - A new Flexible R Package for Latent
 non-Gaussian Models</h1>
             
-            <h4 data-toc-skip class="date">2025-05-28</h4>
+            <h4 data-toc-skip class="date">2025-07-29</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/HEAD/vignettes/ngme2.Rmd" class="external-link"><code>vignettes/ngme2.Rmd</code></a></small>
       <div class="hidden name"><code>ngme2.Rmd</code></div>
@@ -318,6 +318,11 @@ where
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://davidbolin.github.io/ngme2/">ngme2</a></span><span class="op">)</span></span>
 <span><span class="co">#&gt; This is ngme2 of version 0.7.0</span></span>
 <span><span class="co">#&gt; - See our homepage: https://davidbolin.github.io/ngme2 for more details.</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Attaching package: 'ngme2'</span></span>
+<span><span class="co">#&gt; The following object is masked from 'package:stats':</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;     ar</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://had.co.nz/plyr" class="external-link">plyr</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
@@ -527,10 +532,7 @@ function:</p>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.5</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre></div>
+<span><span class="co">#&gt;       sigma = 0.5</span></span></code></pre></div>
 <p>It gives the <code>ngme</code> object, which has three parts:</p>
 <ol style="list-style-type: decimal">
 <li>Fixed effects (intercept and x1)</li>
@@ -638,10 +640,7 @@ K =
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.503</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Number of replicates is  1</span></span></code></pre></div>
+<span><span class="co">#&gt;       sigma = 0.503</span></span></code></pre></div>
 <p>As we can see, the model converges in 350 iterations. The estimation
 results are close to the real parameter.</p>
 <p>We can also use the <code>traceplot</code> function to see the
@@ -691,7 +690,7 @@ estimation.</p>
 <span><span class="co">#&gt;  - See www.r-inla.org/contact-us for how to get help.</span></span>
 <span><span class="co">#&gt;  - List available models/likelihoods/etc with inla.list.models()</span></span>
 <span><span class="co">#&gt;  - Use inla.doc(&lt;NAME&gt;) to access documentation</span></span>
-<span><span class="co">#&gt;  - Consider upgrading R-INLA to testing[25.05.26] or stable[24.12.11] (require R-4.5)</span></span>
+<span><span class="co">#&gt;  - Consider upgrading R-INLA to testing[25.06.22-1] or stable[25.06.07] (require R-4.5)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Attaching package: 'INLA'</span></span>
 <span><span class="co">#&gt; The following object is masked from 'package:ngme2':</span></span>
@@ -702,8 +701,8 @@ estimation.</p>
 <span></span>
 <span><span class="co"># Create mesh</span></span>
 <span><span class="va">coords</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">PRprec</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="va">prdomain</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/fmesher/man/fm_nonconvex_hull.html" class="external-link">fm_nonconvex_hull</a></span><span class="op">(</span><span class="va">coords</span>, <span class="op">-</span><span class="fl">0.03</span>, <span class="op">-</span><span class="fl">0.05</span>, resolution <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">100</span>, <span class="fl">100</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">prmesh</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/fmesher/man/fm_mesh_2d.html" class="external-link">fm_mesh_2d</a></span><span class="op">(</span>boundary <span class="op">=</span> <span class="va">prdomain</span>, max.edge <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.45</span>, <span class="fl">1</span><span class="op">)</span>, cutoff <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span></span>
+<span><span class="va">prdomain</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://inlabru-org.github.io/fmesher/reference/fm_nonconvex_hull.html" class="external-link">fm_nonconvex_hull</a></span><span class="op">(</span><span class="va">coords</span>, <span class="op">-</span><span class="fl">0.03</span>, <span class="op">-</span><span class="fl">0.05</span>, resolution <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">100</span>, <span class="fl">100</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">prmesh</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://inlabru-org.github.io/fmesher/reference/fm_mesh_2d.html" class="external-link">fm_mesh_2d</a></span><span class="op">(</span>boundary <span class="op">=</span> <span class="va">prdomain</span>, max.edge <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.45</span>, <span class="fl">1</span><span class="op">)</span>, cutoff <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># monthly mean at each location</span></span>
 <span><span class="va">Y</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums-methods.html" class="external-link">rowMeans</a></span><span class="op">(</span><span class="va">PRprec</span><span class="op">[</span>, <span class="fl">12</span> <span class="op">+</span> <span class="fl">1</span><span class="op">:</span><span class="fl">31</span><span class="op">]</span><span class="op">)</span> <span class="co"># 2 + Octobor</span></span>
@@ -711,7 +710,7 @@ estimation.</p>
 <span><span class="va">ind</span> <span class="op">&lt;-</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">Y</span><span class="op">)</span> <span class="co"># non-NA index</span></span>
 <span><span class="va">Y</span> <span class="op">&lt;-</span> <span class="va">Y_mean</span> <span class="op">&lt;-</span> <span class="va">Y</span><span class="op">[</span><span class="va">ind</span><span class="op">]</span></span>
 <span><span class="va">coords</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">PRprec</span><span class="op">[</span><span class="va">ind</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="va">seaDist</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/sp/man/spDistsN1.html" class="external-link">spDists</a></span><span class="op">(</span><span class="va">coords</span>, <span class="va">PRborder</span><span class="op">[</span><span class="fl">1034</span><span class="op">:</span><span class="fl">1078</span>, <span class="op">]</span>,</span>
+<span><span class="va">seaDist</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="fu"><a href="https://edzer.github.io/sp/reference/spDistsN1.html" class="external-link">spDists</a></span><span class="op">(</span><span class="va">coords</span>, <span class="va">PRborder</span><span class="op">[</span><span class="fl">1034</span><span class="op">:</span><span class="fl">1078</span>, <span class="op">]</span>,</span>
 <span>  longlat <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span>, <span class="fl">1</span>, <span class="va">min</span><span class="op">)</span></span></code></pre></div>
 <p>Plot the data:</p>
@@ -752,7 +751,7 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt; (Intercept) </span></span>
-<span><span class="co">#&gt;        12.6 </span></span>
+<span><span class="co">#&gt;        8.77 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $rw1</span></span>
@@ -760,24 +759,21 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <span><span class="co">#&gt;       No parameter.</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.143</span></span>
+<span><span class="co">#&gt;       sigma = 0.155</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $spde</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
-<span><span class="co">#&gt;       kappa = 25.2</span></span>
+<span><span class="co">#&gt;       kappa = 31.4</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 399</span></span>
+<span><span class="co">#&gt;       sigma = 606</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = 0.411</span></span>
+<span><span class="co">#&gt;       mu = 0.434</span></span>
 <span><span class="co">#&gt;       sigma = 1.96</span></span>
-<span><span class="co">#&gt;       nu = 1.49</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Number of replicates is  1</span></span>
+<span><span class="co">#&gt;       nu = 1.53</span></span>
 <span></span>
 <span><span class="co"># traceplots</span></span>
 <span><span class="co">## fixed effects and measurement error</span></span>
@@ -785,41 +781,41 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <p><img src="ngme2_files/figure-html/fit-parana-1.png" width="700"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $mu</span></span>
-<span><span class="co">#&gt; [1] 0.4193648</span></span>
+<span><span class="co">#&gt; [1] 0.4405591</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 1.969777</span></span>
+<span><span class="co">#&gt; [1] 1.95535</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nu</span></span>
-<span><span class="co">#&gt; [1] 1.512455</span></span>
+<span><span class="co">#&gt; [1] 1.541247</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`fixed effect 1`</span></span>
-<span><span class="co">#&gt; [1] 12.60238</span></span>
+<span><span class="co">#&gt; [1] 8.771377</span></span>
 <span></span>
 <span><span class="co">## spde model</span></span>
 <span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">m_gauss_nig</span>, <span class="st">"spde"</span><span class="op">)</span></span></code></pre>
 <p><img src="ngme2_files/figure-html/fit-parana-2.png" width="700"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $kappa</span></span>
-<span><span class="co">#&gt; [1] 25.28406</span></span>
+<span><span class="co">#&gt; [1] 31.3967</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 399.5193</span></span></code></pre>
+<span><span class="co">#&gt; [1] 605.8377</span></span></code></pre>
 <p>Parameter estimation results:</p>
+<pre><code><span><span class="co">#&gt; Warning in data.frame(intercept = format(m_gauss_nig$replicates[[1]]$feff, :</span></span>
+<span><span class="co">#&gt; row names were found from a short variable and have been discarded</span></span></code></pre>
 <table style="width:100%;" class="table">
 <caption>Estimations for the model</caption>
 <colgroup>
-<col width="15%">
-<col width="12%">
-<col width="11%">
-<col width="15%">
-<col width="11%">
-<col width="11%">
-<col width="11%">
-<col width="11%">
+<col width="14%">
+<col width="13%">
+<col width="17%">
+<col width="13%">
+<col width="13%">
+<col width="13%">
+<col width="13%">
 </colgroup>
 <thead><tr class="header">
-<th align="left"></th>
 <th align="left">intercept</th>
 <th align="left">noise_mu</th>
 <th align="left">noise_sigma</th>
@@ -828,19 +824,29 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <th align="left">ma_kappa</th>
 <th align="left">ma_sigma</th>
 </tr></thead>
-<tbody><tr class="odd">
-<td align="left">(Intercept)</td>
-<td align="left">12.6</td>
-<td align="left">0.411</td>
+<tbody>
+<tr class="odd">
+<td align="left">8.77</td>
+<td align="left">0.434</td>
 <td align="left">1.96</td>
-<td align="left">1.49</td>
-<td align="left">-1.95</td>
-<td align="left">25.2</td>
-<td align="left">399</td>
-</tr></tbody>
+<td align="left">1.53</td>
+<td align="left">-10.00</td>
+<td align="left">31.4</td>
+<td align="left">606</td>
+</tr>
+<tr class="even">
+<td align="left">8.77</td>
+<td align="left">0.434</td>
+<td align="left">1.96</td>
+<td align="left">1.53</td>
+<td align="left">-1.87</td>
+<td align="left">31.4</td>
+<td align="left">606</td>
+</tr>
+</tbody>
 </table>
 <p>Similarily, we can fit some different models:</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">m_gauss_gauss</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
 <span>  formula <span class="op">=</span> <span class="va">Y</span> <span class="op">~</span> <span class="fl">1</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="va">seaDist</span>, name<span class="op">=</span><span class="st">"rw1"</span>, model <span class="op">=</span> <span class="st">"rw1"</span>, noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
@@ -891,23 +897,23 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <div class="section level3">
 <h3 id="prediction">Prediction<a class="anchor" aria-label="anchor" href="#prediction"></a>
 </h3>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">nxy</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">150</span>, <span class="fl">100</span><span class="op">)</span></span>
-<span><span class="va">projgrid</span> <span class="op">&lt;-</span> <span class="fu">rSPDE</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/rSPDE/man/rspde.mesh.project.html" class="external-link">rspde.mesh.projector</a></span><span class="op">(</span><span class="va">prmesh</span>,</span>
+<span><span class="va">projgrid</span> <span class="op">&lt;-</span> <span class="fu">rSPDE</span><span class="fu">::</span><span class="fu"><a href="https://davidbolin.github.io/rSPDE/reference/rspde.mesh.project.html" class="external-link">rspde.mesh.projector</a></span><span class="op">(</span><span class="va">prmesh</span>,</span>
 <span>  xlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="va">PRborder</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span><span class="op">)</span>,</span>
 <span>  ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="va">PRborder</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span><span class="op">)</span>, dims <span class="op">=</span> <span class="va">nxy</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">xy.in</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rsbivand.github.io/splancs/reference/inout.html" class="external-link">inout</a></span><span class="op">(</span><span class="va">projgrid</span><span class="op">$</span><span class="va">lattice</span><span class="op">$</span><span class="va">loc</span>, <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">PRborder</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, <span class="va">PRborder</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">xy.in</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rsbivand.github.io/splancs/reference/inout.html" class="external-link">inout</a></span><span class="op">(</span><span class="va">projgrid</span><span class="op">$</span><span class="va">lattice</span><span class="op">$</span><span class="va">loc</span>, <span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">PRborder</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, <span class="va">PRborder</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">coord.prd</span> <span class="op">&lt;-</span> <span class="va">projgrid</span><span class="op">$</span><span class="va">lattice</span><span class="op">$</span><span class="va">loc</span><span class="op">[</span><span class="va">xy.in</span>, <span class="op">]</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">coord.prd</span>, type <span class="op">=</span> <span class="st">"p"</span>, cex <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines</a></span><span class="op">(</span><span class="va">PRborder</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/points.html" class="external-link">points</a></span><span class="op">(</span><span class="va">coords</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, <span class="va">coords</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span>, pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.5</span>, col <span class="op">=</span> <span class="st">"red"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ngme2_files/figure-html/predict-1.png" width="700"></p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
-<span><span class="va">seaDist.prd</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/sp/man/spDistsN1.html" class="external-link">spDists</a></span><span class="op">(</span><span class="va">coord.prd</span>,</span>
+<span><span class="va">seaDist.prd</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="fu"><a href="https://edzer.github.io/sp/reference/spDistsN1.html" class="external-link">spDists</a></span><span class="op">(</span><span class="va">coord.prd</span>,</span>
 <span>  <span class="va">PRborder</span><span class="op">[</span><span class="fl">1034</span><span class="op">:</span><span class="fl">1078</span>, <span class="op">]</span>,</span>
 <span>  longlat <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span>, <span class="fl">1</span>, <span class="va">min</span><span class="op">)</span></span>
@@ -915,18 +921,18 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <span><span class="co"># doing prediction by giving the predict location</span></span>
 <span><span class="va">pds</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">m_gauss_nig</span>, map<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>rw1<span class="op">=</span><span class="va">seaDist.prd</span>, spde<span class="op">=</span><span class="va">coord.prd</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">lp</span> <span class="op">&lt;-</span> <span class="va">pds</span><span class="op">$</span><span class="va">mean</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/aes.html" class="external-link">aes</a></span><span class="op">(</span></span>
+<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span></span>
 <span>    x <span class="op">=</span> <span class="va">coord.prd</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, y <span class="op">=</span> <span class="va">coord.prd</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span>,</span>
 <span>    colour <span class="op">=</span> <span class="va">lp</span></span>
 <span>  <span class="op">)</span>, size <span class="op">=</span> <span class="fl">2</span>, alpha <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/aes.html" class="external-link">aes</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span></span>
 <span>    x <span class="op">=</span> <span class="va">coords</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, y <span class="op">=</span> <span class="va">coords</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span>,</span>
 <span>    colour <span class="op">=</span> <span class="va">Y_mean</span></span>
 <span>  <span class="op">)</span>, size <span class="op">=</span> <span class="fl">2</span>, alpha <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/scale_gradient.html" class="external-link">scale_color_gradientn</a></span><span class="op">(</span>colours <span class="op">=</span> <span class="fu"><a href="https://sjmgarnier.github.io/viridisLite/reference/viridis.html" class="external-link">viridis</a></span><span class="op">(</span><span class="fl">100</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/geom_path.html" class="external-link">geom_path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">PRborder</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, y <span class="op">=</span> <span class="va">PRborder</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/geom_path.html" class="external-link">geom_path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">PRborder</span><span class="op">[</span><span class="fl">1034</span><span class="op">:</span><span class="fl">1078</span>, <span class="fl">1</span><span class="op">]</span>, y <span class="op">=</span> <span class="va">PRborder</span><span class="op">[</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_gradient.html" class="external-link">scale_color_gradientn</a></span><span class="op">(</span>colours <span class="op">=</span> <span class="fu"><a href="https://sjmgarnier.github.io/viridisLite/reference/viridis.html" class="external-link">viridis</a></span><span class="op">(</span><span class="fl">100</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_path</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">PRborder</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, y <span class="op">=</span> <span class="va">PRborder</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_path</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">PRborder</span><span class="op">[</span><span class="fl">1034</span><span class="op">:</span><span class="fl">1078</span>, <span class="fl">1</span><span class="op">]</span>, y <span class="op">=</span> <span class="va">PRborder</span><span class="op">[</span></span>
 <span>    <span class="fl">1034</span><span class="op">:</span><span class="fl">1078</span>,</span>
 <span>    <span class="fl">2</span></span>
 <span>  <span class="op">]</span><span class="op">)</span>, colour <span class="op">=</span> <span class="st">"red"</span><span class="op">)</span></span></code></pre></div>
@@ -937,7 +943,7 @@ Mean of the rainfall in Octobor 2012 in Paraná
 </h3>
 <p>We can further validate our model by using cross-validation
 method.</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cross_validation.html">cross_validation</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    gauss_gauss <span class="op">=</span> <span class="va">m_gauss_gauss</span>,</span>
@@ -975,24 +981,24 @@ method.</p>
 </tr>
 <tr class="even">
 <td align="left">gauss_nig</td>
-<td align="right">1.732305</td>
-<td align="right">5.085076</td>
-<td align="right">1.237624</td>
-<td align="right">1.452165</td>
+<td align="right">1.730894</td>
+<td align="right">5.072879</td>
+<td align="right">1.237540</td>
+<td align="right">1.451879</td>
 </tr>
 <tr class="odd">
 <td align="left">nig_gauss</td>
-<td align="right">1.745531</td>
-<td align="right">5.147224</td>
-<td align="right">1.249924</td>
-<td align="right">1.457534</td>
+<td align="right">1.737343</td>
+<td align="right">5.103335</td>
+<td align="right">1.244486</td>
+<td align="right">1.455521</td>
 </tr>
 <tr class="even">
 <td align="left">nig_nig</td>
-<td align="right">1.777657</td>
-<td align="right">5.560290</td>
-<td align="right">1.270850</td>
-<td align="right">1.458886</td>
+<td align="right">1.781279</td>
+<td align="right">5.634463</td>
+<td align="right">1.280065</td>
+<td align="right">1.461403</td>
 </tr>
 </tbody>
 </table>

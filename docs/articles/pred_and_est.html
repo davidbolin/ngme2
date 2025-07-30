@@ -76,7 +76,7 @@
       <a href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a>
     </li>
     <li>
-      <a href="../articles/replicate.html">Ngme replicate feature</a>
+      <a href="../articles/replicate.html">Models with replicates</a>
     </li>
     <li>
       <a href="../articles/pred_and_est.html">Model estimation and prediction</a>
@@ -709,21 +709,21 @@ during the sampling.</p>
 <code class="sourceCode R"><span><span class="va">V</span></span>
 <span><span class="co">#&gt; NULL</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums-methods.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">V_1</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] 0.04494728 0.05278344 0.04937173 0.05066123 0.06839060 0.07084620</span></span>
-<span><span class="co">#&gt;  [7] 0.06720385 0.08090049 0.09323330 0.03797476</span></span>
+<span><span class="co">#&gt;  [1] 0.03815134 0.05729801 0.04946921 0.07321691 0.07248643 0.08080027</span></span>
+<span><span class="co">#&gt;  [7] 0.07536066 0.07466057 0.08333253 0.02730569</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums-methods.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">V_2</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] 0.03095959 0.05708964 0.06579223 0.05478728 0.07100671 0.06994385</span></span>
-<span><span class="co">#&gt;  [7] 0.07298821 0.09896542 0.07832306 0.04480106</span></span>
+<span><span class="co">#&gt;  [1] 0.03068501 0.06867286 0.06028425 0.05782485 0.05821044 0.07243135</span></span>
+<span><span class="co">#&gt;  [7] 0.09546292 0.07707867 0.07391775 0.02351349</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="va">W</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  [1]  0.029985516  0.048025393  0.059415769  0.072248733  0.045016944</span></span>
 <span><span class="co">#&gt;  [6]  0.030076087  0.011708335  0.005539407 -0.012462080 -0.016644480</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums-methods.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">W_1</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] -0.3148936 -0.3155842 -0.3136579 -0.3083286 -0.3014507 -0.2937922</span></span>
-<span><span class="co">#&gt;  [7] -0.2879005 -0.2821825 -0.2763815 -0.2753468</span></span>
+<span><span class="co">#&gt;  [1] -0.3087970 -0.3082511 -0.3060758 -0.3011248 -0.2950177 -0.2877347</span></span>
+<span><span class="co">#&gt;  [7] -0.2818752 -0.2779357 -0.2745761 -0.2750123</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums-methods.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">W_2</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] -0.3483536 -0.3467433 -0.3421796 -0.3367971 -0.3288235 -0.3206500</span></span>
-<span><span class="co">#&gt;  [7] -0.3122115 -0.3043698 -0.3021737 -0.3008210</span></span></code></pre></div>
+<span><span class="co">#&gt;  [1] -0.3432524 -0.3409944 -0.3374173 -0.3324977 -0.3259532 -0.3184637</span></span>
+<span><span class="co">#&gt;  [7] -0.3119523 -0.3084419 -0.3075394 -0.3082949</span></span></code></pre></div>
 <p>Let us begin by building traceplots for
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>V</mi><annotation encoding="application/x-tex">V</annotation></semantics></math>:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">

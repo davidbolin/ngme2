@@ -473,7 +473,7 @@ stopifnot("n / nrow(B_sigma) not integer" = abs(n/nrow(B_sigma) - round(n/nrow(B
         noise$bv_noises[[1]]$theta_mu    <- head(noise$theta_mu, n_theta_mu1)
         noise$bv_noises[[2]]$theta_mu    <- tail(noise$theta_mu, n_theta_mu2)
       }
-      if (!noise$fix_theta_sigma) {
+      if (!all(noise$fix_theta_sigma)) {
         noise$bv_noises[[1]]$theta_sigma <- head(noise$theta_sigma, n_theta_sigma1)
         noise$bv_noises[[2]]$theta_sigma <- tail(noise$theta_sigma, n_theta_sigma2)
       }

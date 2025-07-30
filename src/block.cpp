@@ -100,7 +100,11 @@ if (debug) std::cout << "After set block K" << std::endl;
   // 5. Init measurement noise (consider corr_measure)
   Rcpp::List noise_in   = block_model["noise"];
     fix_flag[block_fix_theta_mu]     = Rcpp::as<bool> (noise_in["fix_theta_mu"]);
-    fix_flag[block_fix_theta_sigma]  = Rcpp::as<bool> (noise_in["fix_theta_sigma"]);
+    
+    // Handle vector-based fix_theta_sigma - simplified for block model
+    Rcpp::LogicalVector fix_theta_sigma_r = Rcpp::as<Rcpp::LogicalVector>(noise_in["fix_theta_sigma"]);
+    fix_flag[block_fix_theta_sigma] = std::all_of(fix_theta_sigma_r.begin(), fix_theta_sigma_r.end(), [](bool x) { return x; });
+
     fix_flag[blcok_fix_V]            = Rcpp::as<bool> (noise_in["fix_V"]);
     fix_flag[block_fix_theta_nu]     = noise_in.containsElementNamed("fix_theta_nu") ? Rcpp::as<bool> (noise_in["fix_theta_nu"]) : false;
     fix_flag[block_fix_rho]          = noise_in.containsElementNamed("fix_rho") ? Rcpp::as<bool> (noise_in["fix_rho"]) : false;

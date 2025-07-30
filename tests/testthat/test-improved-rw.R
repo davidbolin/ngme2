@@ -78,7 +78,6 @@ test_that("test RW1 constraint (cyclic)", {
   expect_true(abs(sum(h[-1]*w)) < 1e-4)
 
   y <- w + rnorm(n, sd=0.5)
-  load_all()
   fit <- ngme(
     y ~ 0+f(x, model="rw1", cyclic = TRUE, noise=noise_normal()),
     data = data.frame(x=x, y=y),
@@ -166,7 +165,6 @@ test_that("test RW1 with fix_theta_sigma", {
   set.seed(42)
   y <- cumsum(rnorm(n, 0, 0.1)) + rnorm(n, 0, 0.3)
   
-  load_all()
   fit <- ngme(
     y ~ 0 + f(x, 
       model = "rw1", 

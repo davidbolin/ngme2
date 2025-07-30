@@ -656,7 +656,7 @@ if (debug) std::cout << "start latent log_density" << std::endl;
         }
 
         if (!all_fixed_sigma) {
-            set_parameter_unfixed(tmp_theta_sigma, fix_theta_sigma_vec, parameter.segment(n_theta_K + n_theta_mu, n_theta_sigma));
+            set_parameter_unfixed(tmp_theta_sigma, fix_theta_sigma_vec, parameter.segment(n_theta_mu, n_theta_sigma));
             tmp_sigma = (B_sigma * tmp_theta_sigma).array().exp();
         } else {
             tmp_sigma = sigma;

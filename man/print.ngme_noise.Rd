@@ -4,7 +4,7 @@
 \alias{print.ngme_noise}
 \title{Print ngme noise}
 \usage{
-\method{print}{ngme_noise}(x, padding = 0, prefix = "Noise type", suppress_sigma = FALSE, ...)
+\method{print}{ngme_noise}(x, padding = 0, prefix = "Noise type", model_type = NULL, ...)
 }
 \arguments{
 \item{x}{noise object}
@@ -13,7 +13,7 @@
 
 \item{prefix}{prefix}
 
-\item{suppress_sigma}{suppress printing sigma}
+\item{model_type}{model type}
 
 \item{...}{...}
 }

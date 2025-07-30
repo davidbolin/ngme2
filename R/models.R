@@ -88,6 +88,7 @@ ar1 <- function(
 #' @param rho vector of AR coefficients
 #' @param p AR order
 #' @return vector of autocovariances from lag 0 to lag p-1
+#' @keywords internal
 ARcov <- function(rho, p) {
   # Solve Yule-Walker equations for autocovariances
   # gamma(0), gamma(1), ..., gamma(p-1)
@@ -156,20 +157,20 @@ ar <- function(
   
   # Check stationarity conditions for AR(p)
   # For now, we'll do a simple check for AR(2)
-  if (p == 2) {
-    stopifnot("AR(2) stationarity conditions violated" = 
-              rho[1] + rho[2] < 1 && 
-              rho[2] - rho[1] < 1 && 
-              abs(rho[2]) < 1)
-  } else if (p > 2) {
-    # For higher order AR, we check if all roots of characteristic polynomial 
-    # are outside unit circle (simplified check)
-    char_poly <- c(1, -rho)
-    roots <- polyroot(char_poly)
-    if (any(abs(roots) <= 1.001)) {  # small tolerance for numerical errors
-      warning("AR(p) model may not be stationary")
-    }
-  }
+  # if (p == 2) {
+  #   stopifnot("AR(2) stationarity conditions violated" = 
+  #             rho[1] + rho[2] < 1 && 
+  #             rho[2] - rho[1] < 1 && 
+  #             abs(rho[2]) < 1)
+  # } else if (p > 2) {
+  #   # For higher order AR, we check if all roots of characteristic polynomial 
+  #   # are outside unit circle (simplified check)
+  #   char_poly <- c(1, -rho)
+  #   roots <- polyroot(char_poly)
+  #   if (any(abs(roots) <= 1.001)) {  # small tolerance for numerical errors
+  #     warning("AR(p) model may not be stationary")
+  #   }
+  # }
 
   mesh <- ngme_build_mesh(mesh)
   n <- mesh$n
@@ -195,7 +196,7 @@ ar <- function(
   G <- ngme_as_sparse(G)
 
   # Create transformation functions
-  rho_trans <- rep(list(ar1_th2a), p)
+  rho_trans <- rep(list(identity), p)
   names(rho_trans) <- paste0("rho", 1:p)
   trans <- setNames(rep("tanh", p), paste0("rho", 1:p))
 

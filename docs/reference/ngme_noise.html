@@ -195,6 +195,32 @@ Use <code><a href="ngme_noise_types.html">ngme_noise_types()</a></code> to check
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span>
 <span></span>
+<span><span class="fu">noise_skew_t</span><span class="op">(</span></span>
+<span>  mu <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  sigma <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  nu <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  theta_mu <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  theta_sigma <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  theta_nu <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  nu_lower_bound <span class="op">=</span> <span class="fl">0.01</span>,</span>
+<span>  B_mu <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,</span>
+<span>  B_sigma <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,</span>
+<span>  B_nu <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,</span>
+<span>  corr_measurement <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  index_corr <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">noise_t</span><span class="op">(</span></span>
+<span>  nu <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  theta_nu <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  nu_lower_bound <span class="op">=</span> <span class="fl">0.01</span>,</span>
+<span>  B_nu <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,</span>
+<span>  corr_measurement <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  index_corr <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span>
+<span></span>
 <span><span class="fu">noise_normal_nig</span><span class="op">(</span></span>
 <span>  sigma_normal <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  mu <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -220,7 +246,7 @@ Use <code><a href="ngme_noise_types.html">ngme_noise_types()</a></code> to check
 
 
 <dl><dt id="arg-noise-type">noise_type<a class="anchor" aria-label="anchor" href="#arg-noise-type"></a></dt>
-<dd><p>type of noise, "nig", "normal"</p></dd>
+<dd><p>type of noise, "normal", "nig", "gal", "t", "skew_t"</p></dd>
 
 
 <dt id="arg-mu">mu<a class="anchor" aria-label="anchor" href="#arg-mu"></a></dt>
@@ -268,7 +294,9 @@ Use <code><a href="ngme_noise_types.html">ngme_noise_types()</a></code> to check
 
 
 <dt id="arg-fix-theta-sigma">fix_theta_sigma<a class="anchor" aria-label="anchor" href="#arg-fix-theta-sigma"></a></dt>
-<dd><p>fix the parameter of theta_sigma</p></dd>
+<dd><p>fix the parameter of theta_sigma, can be a single
+logical value or a vector of logical values with length equal to
+length(theta_sigma)</p></dd>
 
 
 <dt id="arg-fix-rho">fix_rho<a class="anchor" aria-label="anchor" href="#arg-fix-rho"></a></dt>
@@ -387,6 +415,14 @@ $$\nu = \exp (B_{\nu} \theta_{\nu}).$$</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     mu = 1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     sigma = 2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     nu = 1</span>
+<span class="r-in"><span><span class="fu">noise_t</span><span class="op">(</span>mu <span class="op">=</span> <span class="fl">0</span>, sigma <span class="op">=</span> <span class="fl">1</span>, nu <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Noise type: T</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Noise parameters: </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     nu = 5</span>
+<span class="r-in"><span><span class="fu">noise_t</span><span class="op">(</span>mu <span class="op">=</span> <span class="fl">0</span>, sigma <span class="op">=</span> <span class="fl">1</span>, nu <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Noise type: T</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Noise parameters: </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     nu = 5</span>
 </code></pre></div>
     </div>
   </div>

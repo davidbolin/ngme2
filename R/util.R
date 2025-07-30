@@ -1017,6 +1017,7 @@ get_trajectories <- function(
 #' @param noise noise object
 #' @param prefix prefix of the parameter
 #' @return a list with parameter name as key and parameter value as value
+#' @keywords internal
 get_noise_param <- function(noise, prefix) {
   B      <- noise[[paste0("B_", prefix)]]
   theta  <- noise[[paste0("theta_", prefix)]]

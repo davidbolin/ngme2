@@ -65,6 +65,7 @@ protected:
     double eps {1e-5};
 
     bool fix_flag[LATENT_FIX_FLAG_SIZE] {0}, numer_grad {false}, improve_hessian {false}, use_iterative_solver {false};
+    
     vector<bool> fix_theta_sigma_vec;  // Vector-based fixing for theta_sigma parameters
 
     vector<std::shared_ptr<Operator>> ope_add_eps;

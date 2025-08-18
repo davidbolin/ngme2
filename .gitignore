@@ -56,3 +56,4 @@ tests/scripts/
 
 # SuiteSparse library files
 src/SuiteSparse/**/*.a
+.aider*

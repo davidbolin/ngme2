@@ -71,12 +71,6 @@ auto timer = std::chrono::steady_clock::now();
     omp_set_max_active_levels(2);
     omp_set_num_threads(num_threads[0] * num_threads[1]);
 
-    // set in R
-    // if (n_chains == 1) {
-    //     precond_by_diff_chain = false;
-    //     compute_precond_each_iter = true;
-    // }
-
     // init model and optimizer
     vector<std::shared_ptr<Ngme>> ngmes;
     vector<Ngme_optimizer> opt_vec;
@@ -131,15 +125,43 @@ auto timer = std::chrono::steady_clock::now();
         }
 
         if (n_chains > 1) {
-            // if (precond_by_diff_chain) {
-            //     // set the preconditioner by other chains
-            //     MatrixXd precond_sum = MatrixXd::Zero(n_params, n_params);
-            //     for (int i=0; i < n_chains; i++)
-            //         precond_sum += opt_vec[i].get_preconditioner();
-            //     for (int i=0; i < n_chains; i++)
-            //         // opt_vec[i].set_preconditioner((precond_sum - opt_vec[i].get_preconditioner()) / (n_chains - 1));
-            //         opt_vec[i].set_preconditioner((precond_sum) / (n_chains));
-            // }
+            if (precond_by_diff_chain) {
+                // set the preconditioner by other chains
+                // Version 1: Average of all other chains' preconditioners
+                MatrixXd precond_sum = MatrixXd::Zero(n_params, n_params);
+                for (int i=0; i < n_chains; i++)
+                    precond_sum += opt_vec[i].get_preconditioner();
+
+                // average of the other preconditioners
+                for (int i=0; i < n_chains; i++)
+                    opt_vec[i].set_preconditioner((precond_sum - opt_vec[i].get_preconditioner()) / (n_chains - 1));
+                
+                // Version 2: Circular assignment - each chain uses the previous chain's preconditioner
+                // Store all current preconditioners first
+                // std::vector<MatrixXd> current_preconds(n_chains);
+                // for (int i=0; i < n_chains; i++)
+                //     current_preconds[i] = opt_vec[i].get_preconditioner();
+                
+                // // Print all preconditioners for debugging
+                // std::cout << "=== Preconditioners before circular assignment (batch " << curr_batch << ") ===" << std::endl;
+                // for (int i=0; i < n_chains; i++) {
+                //     std::cout << "Chain " << i << " preconditioner:" << std::endl;
+                //     std::cout << current_preconds[i] << std::endl << std::endl;
+                // }
+                
+                // // Assign preconditioners in circular fashion
+                // for (int i=0; i < n_chains; i++) {
+                //     int prev_chain = (i == 0) ? n_chains - 1 : i - 1;
+                //     opt_vec[i].set_preconditioner(current_preconds[prev_chain]);
+                // }
+                
+                // // Print all preconditioners after assignment for debugging
+                // std::cout << "=== Preconditioners after circular assignment ===" << std::endl;
+                // for (int i=0; i < n_chains; i++) {
+                //     std::cout << "Chain " << i << " now has preconditioner from chain " << ((i == 0) ? n_chains - 1 : i - 1) << ":" << std::endl;
+                //     std::cout << opt_vec[i].get_preconditioner() << std::endl << std::endl;
+                // }
+            }
 
             // exchange VW
             if (exchange_VW) {

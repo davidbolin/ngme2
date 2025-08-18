@@ -657,7 +657,7 @@ matern <- function(
       if (stationary) "kappa"
       else paste("theta_K", seq_len(length(theta_K)), sep = " "),
     param_trans =
-      if (stationary) exp
+      if (stationary) list(exp)
       else rep(list(identity), length(theta_K))
   )
 }

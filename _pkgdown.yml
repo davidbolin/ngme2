@@ -148,6 +148,11 @@ reference:
     - print.ngme_operator
     - print.ngme_replicate
     - print.ngme_noise
+    - print.ngme_trajectories
+    - print.parameter_distance
+    - get_parameter_distance
+    - get_trace_trajectories
+    - plot.parameter_distance
     - ngme_prior
     - ngme_prior_types
     - test_ngme

@@ -101,6 +101,9 @@ protected:
     bool all_gaussian, rao_blackwell, shared_sigma, use_iterative_solver; // No need for gibbs sampling
     std::string par_string;
     VectorXd rb_trace_noise_sigma;
+    
+    // Gradient covariance matrix storage
+    MatrixXd grad_covariance;
 
     // priors
     string prior_mu_type, prior_sigma_type, prior_nu_type;
@@ -159,6 +162,7 @@ public:
 
     VectorXd             grad();
     MatrixXd             precond(int strategy=0, double eps=1e-5);
+    MatrixXd             get_grad_covariance() const {return grad_covariance;}
 
     void                 examine_gradient();
     void                 sampleW_V();

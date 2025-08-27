@@ -254,6 +254,10 @@ if (debug) std::cout << "After init solver && before sampleW_V" << std::endl;
       }
     }
   }
+  
+  // Initialize gradient covariance matrix
+  grad_covariance = MatrixXd::Zero(n_params, n_params);
+  
 if (debug) std::cout << "End Block Constructor" << std::endl;
 }
 
@@ -405,6 +409,9 @@ long long time_sample_w = 0;
       noise_grad.tail(n_feff) += grad_beta();
     }
   } else { // Running Gibbs sampling
+    // Matrix to store all gradient samples for covariance calculation
+    MatrixXd grad_samples(n_params, n_gibbs);
+    
     for (int i=0; i < n_gibbs; i++) {
 // std::chrono::steady_clock::time_point startTime, endTime; startTime = std::chrono::steady_clock::now();
       // bool QQ_update = (i==0) || family != "normal";
@@ -413,19 +420,45 @@ long long time_sample_w = 0;
       sample_cond_noise_V();
       if (rao_blackwell) compute_rb_trace();
 
+      // Compute gradient for this sample
+      VectorXd current_grad = VectorXd::Zero(n_params);
+      
       int pos = 0;
       for (std::vector<std::shared_ptr<Latent>>::const_iterator it = latents.begin(); it != latents.end(); it++) {
         int theta_len = (*it)->get_n_params();
-        latent_grad.segment(pos, theta_len) += (*it)->get_grad(rao_blackwell);
+        VectorXd latent_g = (*it)->get_grad(rao_blackwell);
+        current_grad.segment(pos, theta_len) = latent_g;
+        latent_grad.segment(pos, theta_len) += latent_g;
         pos += theta_len;
       }
 
-// endTime = std::chrono::steady_clock::now(); sampling_time += std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);std::cout << "!!sampling time (ms): " << std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count() << std::endl;
-      noise_grad.head(n_merr) += grad_theta_merr();
+      VectorXd noise_g = grad_theta_merr();
+      current_grad.segment(n_la_params, n_merr) = noise_g;
+      noise_grad.head(n_merr) += noise_g;
+      
       if (!fix_flag[block_fix_beta]) {
-        noise_grad.tail(n_feff) += grad_beta();
+        VectorXd beta_g = grad_beta();
+        current_grad.segment(n_la_params + n_merr, n_feff) = beta_g;
+        noise_grad.tail(n_feff) += beta_g;
       }
+
+// endTime = std::chrono::steady_clock::now(); sampling_time += std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);std::cout << "!!sampling time (ms): " << std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count() << std::endl;
+      
+      // Store the gradient sample
+      grad_samples.col(i) = current_grad;
     }
+    
+    // Compute sample covariance matrix: Cov(s) = 1/(N-1) * G_c^T * G_c
+    // where G_c = G - 1*g_bar^T (centered gradients)
+    if (n_gibbs == 1) {
+      // Cannot compute covariance with only 1 sample, set to zero matrix
+      grad_covariance = MatrixXd::Zero(n_params, n_params);
+    } else {
+      VectorXd grad_mean = grad_samples.rowwise().mean();
+      MatrixXd centered_grads = grad_samples.colwise() - grad_mean;
+      grad_covariance = (1.0 / (n_gibbs - 1)) * centered_grads * centered_grads.transpose();
+    }
+    
     noise_grad  = (1.0/n_gibbs) * noise_grad;
     latent_grad = (1.0/n_gibbs) * latent_grad;
   }
@@ -836,7 +869,10 @@ if (debug) std::cout << "after latents precond"<< std::endl;
   // add small eps to diagonal
   precond += VectorXd::Constant(n_params, 1e-5).asDiagonal();
 
-  return precond;
+  // std::cout << "precond = \n" << precond << std::endl;
+  // std::cout << "grad_covariance = \n" << grad_covariance << std::endl;
+  // return precond;
+  return precond + grad_covariance;
 }
 
 // precond_fast: numerical hessian for c(theta_mu, theta_sigma, nu, rho, feff)

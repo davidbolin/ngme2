@@ -14,8 +14,7 @@
 #' "full" means compute numerical hessian as preconditioner
 #' "fast" means compute numerical hessian except for the parameter of K matrix (for speed reason) 
 #' @param numerical_eps   numerical, the gap used for estimate preconditioner, default is 1e-5
-#' @param precond_by_diff_chain logical, if TRUE, use different chains to estimate preconditioner (only computed at check points), if FALSE, use the same chain to estimate preconditioner (computed at each iteration)
-#' @param compute_precond_each_iter logical, if TRUE, compute preconditioner at each iteration, if FALSE, only compute preconditioner at check points (if has only 1 chain running, it will be set TRUE)
+#' @param precond_by_diff_chain logical, compute preconditioner only at stop points and switch to use the preconditioner of the other chains. If FALSE, preconditioner will be computed at each iteration.
 #'
 #' @return a list of control variables for optimization 
 #' (used in \code{control_opt} function)
@@ -25,8 +24,7 @@ precond_sgd <- function(
   # preconditioner related
   preconditioner    = "fast",
   numerical_eps       = 1e-5,
-  precond_by_diff_chain = FALSE,
-  compute_precond_each_iter = FALSE
+  precond_by_diff_chain = FALSE
 ) {
 
   ret <- list(
@@ -37,8 +35,7 @@ precond_sgd <- function(
     # preconditioner related
     preconditioner  = preconditioner,
     numerical_eps     = numerical_eps,
-    precond_by_diff_chain = precond_by_diff_chain,
-    compute_precond_each_iter = compute_precond_each_iter
+    precond_by_diff_chain = precond_by_diff_chain
   )
   class(ret) <- "ngme_optimizer"
   ret

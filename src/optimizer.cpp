@@ -232,6 +232,130 @@ std::cout << "---------------------------" << std::endl;
     return x;
 }
 
+// Step 1: Compute gradient only
+void Ngme_optimizer::sgd_compute_gradient() {
+    // Record trajectory
+    trajs.push_back(x);
+
+    // Compute gradient
+    if (method != "bfgs") {
+        grad = model->grad();
+    } else {
+        grad = numerical_grad(x);
+        if (grad.norm() < converge_eps) {
+            std::cout << "grad.norm() < " << converge_eps << ", reach convergence" << std::endl;
+            return;
+        }
+    }
+}
+
+// Step 2: Compute preconditioner only at stop points
+void Ngme_optimizer::sgd_compute_preconditioner() {
+    // Only compute preconditioner for precond_sgd method
+    if (method == "precond_sgd") { 
+        // if compute_precond_each_iter set true, already computed in every step..
+        preconditioner = model->precond(precond_strategy, numerical_eps);
+    }
+}
+
+// Step 4: Apply preconditioner to gradient and take step
+VectorXd Ngme_optimizer::sgd_compute_and_take_step(
+    double eps,
+    double max_relative_step,
+    double max_absolute_step,
+    bool compute_precond_each_iter
+) {
+    VectorXd one_step;
+
+    if (method == "adam") {
+        m = beta1 * m + (1 - beta1) * grad;
+        v = beta2 * v + (1 - beta2) * grad.cwiseProduct(grad);
+        VectorXd m_hat = m / (1 - pow(beta1, curr_iter+1));
+        VectorXd v_hat = v / (1 - pow(beta2, curr_iter+1));
+        one_step = model->get_stepsizes().cwiseProduct(
+            m_hat.cwiseQuotient(v_hat.cwiseSqrt() + VectorXd::Constant(v_hat.size(), eps_hat)));
+    } else if (method == "adamW") {
+        m = beta1 * m + (1 - beta1) * grad;
+        v = beta2 * v + (1 - beta2) * grad.cwiseProduct(grad);
+        VectorXd m_hat = m / (1 - pow(beta1, curr_iter+1));
+        VectorXd v_hat = v / (1 - pow(beta2, curr_iter+1));
+        one_step = model->get_stepsizes().cwiseProduct(
+            lambda * x +
+            m_hat.cwiseQuotient(v_hat.cwiseSqrt() + VectorXd::Constant(v_hat.size(), eps_hat)));
+    } else if (method == "momentum") {
+        m = beta1 * m + beta2 * grad;
+        one_step = model->get_stepsizes().cwiseProduct(m);
+    } else if (method == "adagrad") {
+        v = v + grad.cwiseProduct(grad);
+        one_step = model->get_stepsizes().cwiseProduct(grad.cwiseQuotient(v.cwiseSqrt() + VectorXd::Constant(v.size(), eps_hat)));
+    } else if (method == "rmsprop") {
+        v = beta1 * v + (1-beta1) * grad.cwiseProduct(grad);
+        one_step = model->get_stepsizes().cwiseProduct(grad.cwiseQuotient(v.cwiseSqrt() + VectorXd::Constant(v.size(), eps_hat)));
+    } else if (method == "bfgs" && curr_iter > 0) {
+        VectorXd s = x - prev_x;
+        VectorXd y = grad - prev_grad;
+        double rho = 1.0 / y.dot(s);
+        H = (MatrixXd::Identity(H.rows(), H.cols()) - rho * s * y.transpose()) * H * (MatrixXd::Identity(H.rows(), H.cols()) - rho * y * s.transpose()) + rho * s * s.transpose();
+        one_step = - H * grad;
+
+        if (grad.dot(one_step) > 0) { one_step = - one_step; }
+        
+        double curr_loglik = model->log_likelihood();
+        double alpha = line_search(
+            line_search_method,
+            x, one_step, curr_loglik, grad.dot(one_step),
+            1e-4, 0.9, 1.1
+        );
+        
+        one_step = - alpha * one_step;
+        prev_x = x; prev_grad = grad;
+    } else {
+        // precond_sgd: Apply preconditioner to gradient and compute step
+        VectorXd preconditioned_grad = grad;
+        
+        if (compute_precond_each_iter) {
+            // If compute_precond_each_iter set true, we need compute the preconditioner here.
+            // Otherwise it's called at stop points.
+            preconditioner = model->precond(precond_strategy, numerical_eps);
+        }
+        
+        if (precond_strategy > 0) {
+            preconditioned_grad = preconditioner.llt().solve(grad);
+        }
+        one_step = model->get_stepsizes().cwiseProduct(preconditioned_grad);
+    }
+
+    // Check for NaN
+    if (std::isnan(one_step(one_step.size()-1))) {
+        std::cout << "grad.norm() = " << grad.norm() << std::endl;
+        std::cout << "one_step ISNAN = " << one_step << std::endl;
+        return x;
+    }
+
+    // Apply step size limits
+    for (int j = 0; j < one_step.size(); j++) {
+        double sign = one_step(j) > 0 ? 1.0 : -1.0;
+        if (abs(one_step(j)) > max_absolute_step) {
+            one_step(j) = sign * max_absolute_step;
+        }
+    }
+
+    // Update parameter
+    x = x - one_step;
+
+    if (verbose) {
+        std::cout << "iteration = : " << curr_iter+1 << std::endl;
+        std::cout << "grad.norm() = " << grad.norm() << std::endl;
+        std::cout << "one step = " << one_step << std::endl;
+        std::cout << "---------------------------" << std::endl; 
+    }
+
+    model->set_parameter(x);
+    curr_iter += 1;
+
+    return x;
+}
+
 // line_search algo for BFGS
 // Algorithm 3.5 in Nocedal and Wright
 double Ngme_optimizer::line_search_wolfe(

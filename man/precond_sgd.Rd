@@ -22,9 +22,9 @@ precond_sgd(
 
 \item{numerical_eps}{numerical, the gap used for estimate preconditioner, default is 1e-5}
 
-\item{precond_by_diff_chain}{logical, if TRUE, use different chains to estimate preconditioner (only computed at check points), if FALSE, use the same chain to estimate preconditioner (computed at each iteration)}
+\item{precond_by_diff_chain}{logical, compute preconditioner only at stop points and switch to use the preconditioner of the other chains.}
 
-\item{compute_precond_each_iter}{logical, if TRUE, compute preconditioner at each iteration, if FALSE, only compute preconditioner at check points (if has only 1 chain running, it will be set TRUE)}
+\item{compute_precond_each_iter}{logical, computer preconditioner at each iteration (It cannot be set TRUE if precond_by_diff_chain is TRUE)}
 }
 \value{
 a list of control variables for optimization 

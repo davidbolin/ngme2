@@ -42,7 +42,8 @@ Rcpp::List estimate_cpp(const Rcpp::List& R_ngme, const Rcpp::List& control_opt)
     const double max_relative_step = control_opt["max_relative_step"];
     const double max_absolute_step = control_opt["max_absolute_step"];
     const int sampling_strategy = control_opt["sampling_strategy"];
-    bool compute_precond_each_iter = control_opt["compute_precond_each_iter"];
+    const bool precond_by_diff_chain = control_opt["precond_by_diff_chain"];
+    const bool compute_precond_each_iter = !precond_by_diff_chain;
     const int n_repls = R_ngme["n_repls"];
 
     Rcpp::List output = R_NilValue;
@@ -55,7 +56,6 @@ auto timer = std::chrono::steady_clock::now();
 #ifdef _OPENMP
     const int burnin = control_opt["burnin"];
     const bool exchange_VW = control_opt["exchange_VW"];
-    const bool precond_by_diff_chain = control_opt["precond_by_diff_chain"];
 
     int n_slope_check = (control_opt["n_slope_check"]);
     double std_lim = (control_opt["std_lim"]);
@@ -101,20 +101,68 @@ auto timer = std::chrono::steady_clock::now();
 
     while (steps < iterations && !all_converge) {
         MatrixXd mat (n_chains, n_params);
-        #pragma omp parallel for schedule(static) num_threads(n_threads_chain)
-        for (i=0; i < n_chains; i++) {
-            VectorXd param = opt_vec[i].sgd(
-                0.1,
-                batch_steps,
-                max_relative_step,
-                max_absolute_step,
-                compute_precond_each_iter
-            );
 
-// compute preconditoner
-// update A1.precond = 1/3 (A2.precond + A3.precond + A4.precond)
-            #pragma omp critical
-            mat.row(i) = param;
+        // Run batch_steps iterations using the new 4-step interface
+        for (int step = 0; step < batch_steps; step++) {
+            // Step 1: Compute gradients for all chains
+            #pragma omp parallel for schedule(static) num_threads(n_threads_chain)
+            for (i=0; i < n_chains; i++) {
+                opt_vec[i].sgd_compute_gradient();
+            }
+
+            // It will be skipped if compute_precond_each_iter is true
+            if (n_chains > 1 && precond_by_diff_chain) {
+                // Step 2: Compute preconditioners for all chains
+                #pragma omp parallel for schedule(static) num_threads(n_threads_chain)
+                for (i=0; i < n_chains; i++) {
+                    opt_vec[i].sgd_compute_preconditioner();
+                }
+
+                // Step 3 (Option 1): Circular shift preconditioners
+                // Save the preconditioner of the last chain to use it in the circular shift
+                // MatrixXd last_precond = opt_vec[n_chains - 1].get_preconditioner();
+
+                // // Circularly shift preconditioners
+                // for (int i = n_chains - 1; i > 0; i--) {
+                //     opt_vec[i].set_preconditioner(opt_vec[i - 1].get_preconditioner());
+                // }
+
+                // // Set the first chain's preconditioner to the last chain's original preconditioner
+                // opt_vec[0].set_preconditioner(last_precond);
+                
+                // // Step 3 (Option 2): Exchange preconditioners between chains using a average approach
+                // First, save all original preconditioners
+                std::vector<MatrixXd> original_preconds(n_chains);
+                for (int i=0; i < n_chains; i++)
+                    original_preconds[i] = opt_vec[i].get_preconditioner();
+
+                // Compute the sum of all preconditioners
+                MatrixXd precond_sum = MatrixXd::Zero(n_params, n_params);
+                for (int i=0; i < n_chains; i++)
+                    precond_sum += original_preconds[i];
+
+                // Set each chain's preconditioner to the average of all OTHER chains
+                for (int i=0; i < n_chains; i++)
+                    opt_vec[i].set_preconditioner((precond_sum - original_preconds[i]) / (n_chains - 1));
+            }
+
+
+            // Step 4: Apply preconditioners and take steps
+            #pragma omp parallel for schedule(static) num_threads(n_threads_chain)
+            for (i=0; i < n_chains; i++) {
+                VectorXd param = opt_vec[i].sgd_compute_and_take_step(
+                    0.1,
+                    max_relative_step,
+                    max_absolute_step,
+                    compute_precond_each_iter
+                );
+
+                // Store final parameters only after last step
+                if (step == batch_steps - 1) {
+                    #pragma omp critical
+                    mat.row(i) = param;
+                }
+            }
         }
         steps += batch_steps;
 
@@ -125,44 +173,6 @@ auto timer = std::chrono::steady_clock::now();
         }
 
         if (n_chains > 1) {
-            if (precond_by_diff_chain) {
-                // set the preconditioner by other chains
-                // Version 1: Average of all other chains' preconditioners
-                MatrixXd precond_sum = MatrixXd::Zero(n_params, n_params);
-                for (int i=0; i < n_chains; i++)
-                    precond_sum += opt_vec[i].get_preconditioner();
-
-                // average of the other preconditioners
-                for (int i=0; i < n_chains; i++)
-                    opt_vec[i].set_preconditioner((precond_sum - opt_vec[i].get_preconditioner()) / (n_chains - 1));
-                
-                // Version 2: Circular assignment - each chain uses the previous chain's preconditioner
-                // Store all current preconditioners first
-                // std::vector<MatrixXd> current_preconds(n_chains);
-                // for (int i=0; i < n_chains; i++)
-                //     current_preconds[i] = opt_vec[i].get_preconditioner();
-                
-                // // Print all preconditioners for debugging
-                // std::cout << "=== Preconditioners before circular assignment (batch " << curr_batch << ") ===" << std::endl;
-                // for (int i=0; i < n_chains; i++) {
-                //     std::cout << "Chain " << i << " preconditioner:" << std::endl;
-                //     std::cout << current_preconds[i] << std::endl << std::endl;
-                // }
-                
-                // // Assign preconditioners in circular fashion
-                // for (int i=0; i < n_chains; i++) {
-                //     int prev_chain = (i == 0) ? n_chains - 1 : i - 1;
-                //     opt_vec[i].set_preconditioner(current_preconds[prev_chain]);
-                // }
-                
-                // // Print all preconditioners after assignment for debugging
-                // std::cout << "=== Preconditioners after circular assignment ===" << std::endl;
-                // for (int i=0; i < n_chains; i++) {
-                //     std::cout << "Chain " << i << " now has preconditioner from chain " << ((i == 0) ? n_chains - 1 : i - 1) << ":" << std::endl;
-                //     std::cout << opt_vec[i].get_preconditioner() << std::endl << std::endl;
-                // }
-            }
-
             // exchange VW
             if (exchange_VW) {
                 vector<vector<VectorXd>> tmp = ngmes[0]->get_VW();

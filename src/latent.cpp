@@ -86,6 +86,7 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
         eps             = Rcpp::as<double>      (control_f["eps"]) ;
         improve_hessian = control_f.containsElementNamed("improve_hessian") ? Rcpp::as<bool> (control_f["improve_hessian"]) : false;
         use_iterative_solver = control_f.containsElementNamed("iterative_solver") ? Rcpp::as<bool> (control_f["iterative_solver"]) : false;
+        use_same_V = control_f.containsElementNamed("use_same_V") ? Rcpp::as<bool> (control_f["use_same_V"]) : false;
 
     // construct from ngme_noise
     fix_flag[latent_fix_theta_K]     = Rcpp::as<bool>  (model_list["fix_theta_K"]);
@@ -437,14 +438,12 @@ void Latent::set_parameter(const VectorXd& theta, bool update_dK) {
     if (!fix_flag[latent_fix_theta_nu])
         theta_nu = theta.segment(n_theta_K + n_theta_mu + n_theta_sigma, n_theta_nu);
     
-
     update_each_iter(false, update_dK);
 if (debug) std::cout << "Finish latent set parameter"<< std::endl;
 }
 
 void Latent::sample_cond_V() {
     if (fix_flag[latent_fix_V]) return;
-    prevV = V;
 
     // update b_inc (p,a_inc already built)
     b_inc = (getK() * W + mu.cwiseProduct(h)).cwiseQuotient(sigma).array().pow(2);
@@ -502,6 +501,8 @@ void Latent::sample_cond_V() {
             }
         }
     }
+
+    if (use_same_V) { prevV = V; } // always update prevV
 }
 
 void Latent::sample_uncond_V() {
@@ -555,7 +556,6 @@ if (debug) std::cout << "update_each_iter" << std::endl;
 
         // update p_vec, a_vec, b_vec
         NoiseUtil::update_gig(noise_type[i], nu, p_vec, a_vec, b_vec, h, single_V);
-        V = rGIG_cpp(p_vec, a_vec, b_vec, latent_rng());
 
         // update p_inc, a_inc
         p_inc = VectorXd::Constant(V_size, -0.5 * dim);
@@ -613,6 +613,9 @@ if (debug) std::cout << "update_each_iter" << std::endl;
         }
     }
 if (debug) std::cout << "finish update_each_iter" << std::endl;
+
+    prevV = V;
+    prevW = W;
 }
 
 // for compute hessian 
@@ -646,7 +649,7 @@ if (debug) std::cout << "start latent log_density" << std::endl;
 
         ope_precond->update_K(tmp_theta_K);
         SparseMatrix<double> K = ope_precond->getK();
-        logd_W = logd_W_given_V(W, K, tmp_mu, tmp_sigma, prevV);
+        logd_W = logd_W_given_V(prevW, K, tmp_mu, tmp_sigma, prevV);
     } else {
         if (!fix_flag[latent_fix_theta_mu]) {
             tmp_theta_mu = parameter.head(n_theta_mu);

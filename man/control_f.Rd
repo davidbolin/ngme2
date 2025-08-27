@@ -4,7 +4,12 @@
 \alias{control_f}
 \title{Generate control specifications for \code{f} function}
 \usage{
-control_f(numer_grad = TRUE, improve_hessian = TRUE, eps = 1e-04)
+control_f(
+  numer_grad = TRUE,
+  improve_hessian = TRUE,
+  eps = 1e-04,
+  use_same_V = FALSE
+)
 }
 \arguments{
 \item{numer_grad}{whether to use numerical gradient}
@@ -13,6 +18,8 @@ control_f(numer_grad = TRUE, improve_hessian = TRUE, eps = 1e-04)
 default is forward difference estimation (O(eps) error)}
 
 \item{eps}{eps for computing numerical gradient}
+
+\item{use_same_V}{use the same V for preconditioning in the same chain}
 }
 \value{
 list of control variables

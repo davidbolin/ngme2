@@ -53,6 +53,22 @@ public:
         bool compute_precond_each_iter = false
     );
 
+    // Fine-grained SGD split for precise preconditioner exchange control
+    // Step 1: Compute gradient only
+    void sgd_compute_gradient();
+    
+    // Step 2: Compute preconditioner only  
+    void sgd_compute_preconditioner();
+    
+    // Step 3: (External) Exchange preconditioners between chains
+    // Step 4: Apply preconditioner to gradient and take step
+    Eigen::VectorXd sgd_compute_and_take_step(
+        double eps,
+        double max_relative_step,
+        double max_absolute_step,
+        bool compute_precond_each_iter = false
+    );
+
     std::vector<VectorXd> get_trajs() const { return trajs; }
 
     // getter and setter of preconditioner

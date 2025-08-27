@@ -207,20 +207,23 @@ control_opt <- function(
 #' @param improve_hessian  improve numerical hessian by using central difference estimation (O(eps^2) error)
 #' default is forward difference estimation (O(eps) error)
 #' @param eps           eps for computing numerical gradient
+#' @param use_same_V    use the same V for preconditioning in the same chain
 #'
 #' @return list of control variables
 #' @export
 control_f <- function(
   numer_grad       = TRUE,
   improve_hessian  = TRUE,
-  eps              = 0.0001
+  eps              = 0.0001,
+  use_same_V       = FALSE 
   # iterative_solver = FALSE
   ) {
 
   control <- list(
     numer_grad       = numer_grad,
     improve_hessian  = improve_hessian,
-    eps              = eps
+    eps              = eps,
+    use_same_V       = use_same_V
     # iterative_solver = iterative_solver
   )
 

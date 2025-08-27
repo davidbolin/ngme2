@@ -457,7 +457,10 @@ ou <- function(
   mesh <- ngme_build_mesh(mesh)
   n <- mesh$n
 
-  h <- diff(mesh$loc); h <- c(h, mean(h))
+  # h <- diff(mesh$loc); h <- c(h, mean(h))
+  h_left <- c(0, diff(mesh$loc))
+  h_right <- c(diff(mesh$loc), 0)
+  h <- 0.5 * (h_left + h_right)
 
   if (is.null(B_theta_K)) B_theta_K <- matrix(1, nrow = length_map(mesh$loc), ncol = 1)
   stopifnot("B_theta_K is a matrix" = is.matrix(B_theta_K))

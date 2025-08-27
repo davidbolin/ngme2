@@ -64,7 +64,7 @@ protected:
     VectorXd rb_trace_K, rb_trace_sigma;
     double eps {1e-5};
 
-    bool fix_flag[LATENT_FIX_FLAG_SIZE] {0}, numer_grad {false}, improve_hessian {false}, use_iterative_solver {false};
+    bool fix_flag[LATENT_FIX_FLAG_SIZE] {0}, numer_grad {false}, improve_hessian {false}, use_iterative_solver {false}, use_same_V {false};
     
     vector<bool> fix_theta_sigma_vec;  // Vector-based fixing for theta_sigma parameters
 
@@ -129,9 +129,8 @@ public:
     }
 
     void setW(const VectorXd& newW) {
-        if (!fix_flag[latent_fix_W]) {
-            prevW = W; W = newW;
-        }
+        if (!fix_flag[latent_fix_W]) { W = newW; }
+        if (use_same_V) { prevW = W; } // always update prevW
     }
 
     const VectorXd& get_cond_W() const { return cond_W; }

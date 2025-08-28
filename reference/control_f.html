@@ -114,7 +114,12 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">control_f</span><span class="op">(</span>numer_grad <span class="op">=</span> <span class="cn">TRUE</span>, improve_hessian <span class="op">=</span> <span class="cn">TRUE</span>, eps <span class="op">=</span> <span class="fl">1e-04</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">control_f</span><span class="op">(</span></span>
+<span>  numer_grad <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  improve_hessian <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  eps <span class="op">=</span> <span class="fl">1e-04</span>,</span>
+<span>  use_same_V <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -132,6 +137,10 @@ default is forward difference estimation (O(eps) error)</p></dd>
 
 <dt id="arg-eps">eps<a class="anchor" aria-label="anchor" href="#arg-eps"></a></dt>
 <dd><p>eps for computing numerical gradient</p></dd>
+
+
+<dt id="arg-use-same-v">use_same_V<a class="anchor" aria-label="anchor" href="#arg-use-same-v"></a></dt>
+<dd><p>use the same V for preconditioning in the same chain</p></dd>
 
 </dl></div>
     <div id="value">

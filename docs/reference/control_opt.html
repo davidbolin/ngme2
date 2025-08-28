@@ -125,6 +125,7 @@ optimization process.</p>
 <span>  stop_points <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>  iters_per_check <span class="op">=</span> <span class="va">iterations</span><span class="op">/</span><span class="va">stop_points</span>,</span>
 <span>  optimizer <span class="op">=</span> <span class="fu"><a href="adam.html">adam</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  start_sd <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fl">5</span><span class="op">)</span>,</span>
 <span>  n_parallel_chain <span class="op">=</span> <span class="fl">4</span>,</span>
 <span>  max_num_threads <span class="op">=</span> <span class="va">n_parallel_chain</span>,</span>
 <span>  exchange_VW <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -179,6 +180,10 @@ optimization process.</p>
 <dd><p>choose different sgd optimization method,
 currently support "precond_sgd", "momentum", "adagrad", "rmsprop", "adam", "adamW"
 see precond_sgd, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW</p></dd>
+
+
+<dt id="arg-start-sd">start_sd<a class="anchor" aria-label="anchor" href="#arg-start-sd"></a></dt>
+<dd><p>standard deviation of the initial parameter (1st chain fixed, other chains random), set 0 to be fixed for all chains</p></dd>
 
 
 <dt id="arg-n-parallel-chain">n_parallel_chain<a class="anchor" aria-label="anchor" href="#arg-n-parallel-chain"></a></dt>

@@ -171,7 +171,7 @@ std::cout << "grad.norm() < " << converge_eps << ", reach convergence" << std::e
         } else {
             // precond_sgd
             if (compute_precond_each_iter) {
-                preconditioner = model->precond(precond_strategy, numerical_eps);
+                preconditioner = model->precond_with_gibbs_samples(precond_strategy, numerical_eps);
             }
             
             if (precond_strategy > 0) {
@@ -227,7 +227,7 @@ std::cout << "---------------------------" << std::endl;
 
     // update preconditioner if not computed
     if (!compute_precond_each_iter && precond_strategy > 0 && method == "precond_sgd") 
-        preconditioner = model->precond(precond_strategy, numerical_eps);
+        preconditioner = model->precond_with_gibbs_samples(precond_strategy, numerical_eps);
 
     return x;
 }
@@ -254,7 +254,8 @@ void Ngme_optimizer::sgd_compute_preconditioner() {
     // Only compute preconditioner for precond_sgd method
     if (method == "precond_sgd") { 
         // if compute_precond_each_iter set true, already computed in every step..
-        preconditioner = model->precond(precond_strategy, numerical_eps);
+        // Use Gibbs samples-based preconditioner if available
+        preconditioner = model->precond_with_gibbs_samples(precond_strategy, numerical_eps);
     }
 }
 
@@ -316,7 +317,8 @@ VectorXd Ngme_optimizer::sgd_compute_and_take_step(
         if (compute_precond_each_iter) {
             // If compute_precond_each_iter set true, we need compute the preconditioner here.
             // Otherwise it's called at stop points.
-            preconditioner = model->precond(precond_strategy, numerical_eps);
+            // Use Gibbs samples-based preconditioner if available
+            preconditioner = model->precond_with_gibbs_samples(precond_strategy, numerical_eps);
         }
         
         if (precond_strategy > 0) {

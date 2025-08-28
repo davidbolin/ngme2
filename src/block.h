@@ -162,6 +162,7 @@ public:
 
     VectorXd             grad();
     MatrixXd             precond(int strategy=0, double eps=1e-5);
+    MatrixXd             precond_with_gibbs_samples(int strategy=0, double eps=1e-5);
     MatrixXd             get_grad_covariance() const {return grad_covariance;}
 
     void                 examine_gradient();
@@ -297,6 +298,19 @@ public:
         noise_prevV = VW[0];
         setPrevV(VW[1]);
         setPrevW(VW[2]);
+    }
+    
+    // Methods for managing Gibbs samples for preconditioner
+    void clear_gibbs_samples() {
+        for (auto& latent : latents) {
+            latent->clear_gibbs_samples();
+        }
+    }
+    
+    void store_gibbs_samples() {
+        for (auto& latent : latents) {
+            latent->store_gibbs_sample();
+        }
     }
 
 

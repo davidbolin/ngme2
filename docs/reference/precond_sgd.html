@@ -118,8 +118,7 @@
 <span>  stepsize <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>  preconditioner <span class="op">=</span> <span class="st">"fast"</span>,</span>
 <span>  numerical_eps <span class="op">=</span> <span class="fl">1e-05</span>,</span>
-<span>  precond_by_diff_chain <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  compute_precond_each_iter <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  precond_by_diff_chain <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -143,11 +142,7 @@
 
 
 <dt id="arg-precond-by-diff-chain">precond_by_diff_chain<a class="anchor" aria-label="anchor" href="#arg-precond-by-diff-chain"></a></dt>
-<dd><p>logical, if TRUE, use different chains to estimate preconditioner (only computed at check points), if FALSE, use the same chain to estimate preconditioner (computed at each iteration)</p></dd>
-
-
-<dt id="arg-compute-precond-each-iter">compute_precond_each_iter<a class="anchor" aria-label="anchor" href="#arg-compute-precond-each-iter"></a></dt>
-<dd><p>logical, if TRUE, compute preconditioner at each iteration, if FALSE, only compute preconditioner at check points (if has only 1 chain running, it will be set TRUE)</p></dd>
+<dd><p>logical, compute preconditioner only at stop points and switch to use the preconditioner of the other chains. If FALSE, preconditioner will be computed at each iteration.</p></dd>
 
 </dl></div>
     <div id="value">

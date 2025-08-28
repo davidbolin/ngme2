@@ -8,7 +8,7 @@
 #endif
 
 // --------------- Ngme class ----------------
-Ngme::Ngme(const Rcpp::List& R_ngme, unsigned long seed, int sampling_strategy, int num_threads_repl) :
+Ngme::Ngme(const Rcpp::List& R_ngme, unsigned long seed, int sampling_strategy, int num_threads_repl, double start_sd) :
   n_params          (Rcpp::as<int> (R_ngme["n_params"])),
   sampling_strategy (sampling_strategy),
   num_threads_repl  (num_threads_repl),
@@ -32,6 +32,13 @@ Ngme::Ngme(const Rcpp::List& R_ngme, unsigned long seed, int sampling_strategy, 
 
   // Init the random number generator
   weighted_sampler = std::discrete_distribution<int>(num_each_repl.begin(), num_each_repl.end());
+
+  VectorXd p = ngme_repls[0]->get_parameter();
+  std::normal_distribution<double> distribution(0.0, start_sd);
+  for (int i = 0; i < p.size(); ++i) {
+      p[i] += distribution(gen);
+  }
+  ngme_repls[0]->set_parameter(p);
 }
 
 MatrixXd Ngme::precond(int strategy, double eps) {
@@ -51,6 +58,23 @@ MatrixXd Ngme::precond(int strategy, double eps) {
   }
 
 // std::cout << "precond in ngme class = \n" << precond << std::endl;
+  return precond;
+}
+
+MatrixXd Ngme::precond_with_gibbs_samples(int strategy, double eps) {
+  MatrixXd precond = MatrixXd::Zero(n_params, n_params);
+
+  if (sampling_strategy == Strategy::all) {
+    #pragma omp parallel for schedule(static) reduction(mat_plus:precond) num_threads(num_threads_repl)
+    for (int i=0; i < n_repl; i++) {
+      precond += ngme_repls[i]->precond_with_gibbs_samples(strategy, eps);
+    }
+  } else if (sampling_strategy == Strategy::ws) {
+    // weighted sampling (WS) for each replicate
+    int idx = weighted_sampler(gen);
+    precond = ngme_repls[idx]->precond_with_gibbs_samples(strategy, eps);
+  }
+
   return precond;
 }
 

@@ -24,6 +24,7 @@
 #' @param std_lim         maximum allowed standard deviation
 #' @param trend_lim       maximum allowed slope
 #' @param print_check_info print the convergence information
+#' @param start_sd        standard deviation of the initial parameter (1st chain fixed, other chains random), set 0 to be fixed for all chains
 #' @param optimizer choose different sgd optimization method, 
 #' currently support "precond_sgd", "momentum", "adagrad", "rmsprop", "adam", "adamW"
 #' see precond_sgd, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW
@@ -59,6 +60,7 @@ control_opt <- function(
   iters_per_check   = iterations / stop_points,
 
   optimizer         = adam(),
+  start_sd          = 0.5,
   
   # parallel options
   n_parallel_chain  = 4,
@@ -149,6 +151,7 @@ control_opt <- function(
 
   control <- list(
     seed              = seed,
+    start_sd          = start_sd,
     burnin            = burnin,
     iterations        = iterations,
     estimation        = estimation,

@@ -63,6 +63,7 @@ auto timer = std::chrono::steady_clock::now();
 
     int n_chains = (control_opt["n_parallel_chain"]);
     int n_batch = (control_opt["stop_points"]);
+    double start_sd = (control_opt["start_sd"]);
     double print_check_info = (control_opt["print_check_info"]);
 
     VectorXi num_threads = Rcpp::as<VectorXi>(control_opt["num_threads"]);
@@ -76,8 +77,10 @@ auto timer = std::chrono::steady_clock::now();
     vector<Ngme_optimizer> opt_vec;
     int i = 0;
     for (i=0; i < n_chains; i++) {
+        double sd = (i == 0) ? 0 : start_sd;
+
         // Not thread-safe using Rcpp::List to init optimizer
-        ngmes.push_back(std::make_shared<Ngme>(R_ngme, seed + i, sampling_strategy, num_threads[1]));
+        ngmes.push_back(std::make_shared<Ngme>(R_ngme, seed + i, sampling_strategy, num_threads[1], sd));
         opt_vec.push_back(Ngme_optimizer(control_opt, ngmes[i]));
     }
 
@@ -174,14 +177,14 @@ auto timer = std::chrono::steady_clock::now();
 
         if (n_chains > 1) {
             // exchange VW
-            if (exchange_VW) {
-                vector<vector<VectorXd>> tmp = ngmes[0]->get_VW();
-                for (int i = 0; i < n_chains - 1; i++) {
-                    vector<vector<VectorXd>> VW = ngmes[i+1]->get_VW();
-                    ngmes[i]->set_prev_VW(VW);
-                }
-                ngmes[n_chains - 1]->set_prev_VW(tmp);
-            }
+            // if (exchange_VW) {
+            //     vector<vector<VectorXd>> tmp = ngmes[0]->get_VW();
+            //     for (int i = 0; i < n_chains - 1; i++) {
+            //         vector<vector<VectorXd>> VW = ngmes[i+1]->get_VW();
+            //         ngmes[i]->set_prev_VW(VW);
+            //     }
+            //     ngmes[n_chains - 1]->set_prev_VW(tmp);
+            // }
 
             // 2. convergence check
             if (n_slope_check <= curr_batch + 1)

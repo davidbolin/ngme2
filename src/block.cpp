@@ -409,6 +409,9 @@ long long time_sample_w = 0;
       noise_grad.tail(n_feff) += grad_beta();
     }
   } else { // Running Gibbs sampling
+    // Clear previous Gibbs samples before starting new sampling
+    clear_gibbs_samples();
+    
     // Matrix to store all gradient samples for covariance calculation
     MatrixXd grad_samples(n_params, n_gibbs);
     
@@ -419,6 +422,9 @@ long long time_sample_w = 0;
       sampleW_VY(false);
       sample_cond_noise_V();
       if (rao_blackwell) compute_rb_trace();
+      
+      // Store current W and V samples for use in preconditioner
+      store_gibbs_samples();
 
       // Compute gradient for this sample
       VectorXd current_grad = VectorXd::Zero(n_params);
@@ -869,9 +875,54 @@ if (debug) std::cout << "after latents precond"<< std::endl;
   // add small eps to diagonal
   precond += VectorXd::Constant(n_params, 1e-5).asDiagonal();
 
-  // std::cout << "precond = \n" << precond << std::endl;
-  // std::cout << "grad_covariance = \n" << grad_covariance << std::endl;
   // return precond;
+  return precond + grad_covariance;
+}
+
+MatrixXd BlockModel::precond_with_gibbs_samples(int strategy, double eps) {
+if (debug) std::cout << "start precond with Gibbs samples" << std::endl;
+  MatrixXd precond = MatrixXd::Zero(n_params, n_params);
+
+  // 1. Preconditioner for Latents using Gibbs samples
+  int index_params = 0;
+  for (int i=0; i < n_latent; i++) {
+    int n_la = latents[i]->get_n_params();
+ 
+    if (strategy == 0) {
+      // No preconditioner
+      precond.block(index_params, index_params, n_la, n_la) =
+        VectorXd::Constant(n_la, latents[i]->get_V_size()).asDiagonal();
+    } else if (strategy == 1) {
+      // Fast preconditioner using Gibbs samples
+      precond.block(index_params, index_params, n_la, n_la) = latents[i]->precond_with_gibbs_samples(false, eps);
+    } else if (strategy == 2) {
+      // Full preconditioner using Gibbs samples
+      precond.block(index_params, index_params, n_la, n_la) = latents[i]->precond_with_gibbs_samples(true, eps);
+    }
+    index_params += n_la;
+  }
+
+if (debug) std::cout << "after latents precond with Gibbs samples" << std::endl;
+  // 2. Preconditioner for fixed effects and measurement error (unchanged)
+  if (strategy == 0) {
+    // No preconditioner (or the 1st iteration)
+    precond.bottomRightCorner(n_merr + n_feff, n_merr + n_feff) = VectorXd::Constant(n_merr + n_feff, n_obs).asDiagonal();
+  } else {
+    // have preconditioner
+    VectorXd v (n_merr + n_feff);
+    VectorXd th_rho = rho.unaryExpr(std::ref(rho2th));
+    if (!fix_flag[block_fix_theta_mu])     v.segment(0, n_theta_mu) = theta_mu;
+    if (!fix_flag[block_fix_theta_sigma])  v.segment(n_theta_mu, n_theta_sigma) = theta_sigma;
+    if (!fix_flag[block_fix_theta_nu])     v.segment(n_theta_mu + n_theta_sigma, n_theta_nu) = theta_nu;
+    if (corr_measure && !fix_flag[block_fix_rho]) v(n_merr-1) = th_rho(0);
+    if (!fix_flag[block_fix_beta])         v.tail(n_feff) = beta;
+
+    MatrixXd hess_merr_feff = num_h_no_latent(v, eps);
+    precond.bottomRightCorner(n_merr + n_feff, n_merr + n_feff) = hess_merr_feff;
+  }
+  // add small eps to diagonal
+  precond += VectorXd::Constant(n_params, 1e-5).asDiagonal();
+
   return precond + grad_covariance;
 }
 

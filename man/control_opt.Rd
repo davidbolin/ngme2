@@ -13,6 +13,7 @@ control_opt(
   stop_points = 10,
   iters_per_check = iterations/stop_points,
   optimizer = adam(),
+  start_sd = sqrt(5),
   n_parallel_chain = 4,
   max_num_threads = n_parallel_chain,
   exchange_VW = TRUE,
@@ -48,6 +49,8 @@ control_opt(
 \item{optimizer}{choose different sgd optimization method, 
 currently support "precond_sgd", "momentum", "adagrad", "rmsprop", "adam", "adamW"
 see precond_sgd, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW}
+
+\item{start_sd}{standard deviation of the initial parameter (1st chain fixed, other chains random), set 0 to be fixed for all chains}
 
 \item{n_parallel_chain}{number of parallel chains}
 

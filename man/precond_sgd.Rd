@@ -8,8 +8,7 @@ precond_sgd(
   stepsize = 0.5,
   preconditioner = "fast",
   numerical_eps = 1e-05,
-  precond_by_diff_chain = FALSE,
-  compute_precond_each_iter = FALSE
+  precond_by_diff_chain = FALSE
 )
 }
 \arguments{
@@ -22,9 +21,7 @@ precond_sgd(
 
 \item{numerical_eps}{numerical, the gap used for estimate preconditioner, default is 1e-5}
 
-\item{precond_by_diff_chain}{logical, compute preconditioner only at stop points and switch to use the preconditioner of the other chains.}
-
-\item{compute_precond_each_iter}{logical, computer preconditioner at each iteration (It cannot be set TRUE if precond_by_diff_chain is TRUE)}
+\item{precond_by_diff_chain}{logical, compute preconditioner only at stop points and switch to use the preconditioner of the other chains. If FALSE, preconditioner will be computed at each iteration.}
 }
 \value{
 a list of control variables for optimization 

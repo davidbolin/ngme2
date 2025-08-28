@@ -553,16 +553,16 @@ optimizer_list_matern <- list(
   # adam = adam()
 )
 
-seeds = 1:10
-n_obss = c(100)
-n_gibbs_samples = c(1, 4)
+seeds = 30
+n_obss = c(500)
+n_gibbs_samples = c(4)
 for (seed in seeds) {
   for (n_obs in n_obss) {
     for (n_gibbs_samples in n_gibbs_samples) {
       results_matern <- compare_optimizers_matern(
         optimizer_list = optimizer_list_matern,
         n_obs = n_obs,
-        iterations = 500,
+        iterations = 300,
         seed = seed,
         show_traceplots = TRUE,
         plot_filename = paste0("matern_obs_", n_obs, "_gibbs_", n_gibbs_samples, "_", seed, ".png"),

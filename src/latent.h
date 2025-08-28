@@ -86,6 +86,9 @@ protected:
     // for numerical gradient.
     VectorXd W, prevW, cond_W, V, prevV;
     SparseMatrix<double,0,int> A;
+    
+    // Storage for n_gibbs samples of W and V for preconditioner computation
+    vector<VectorXd> gibbs_W_samples, gibbs_V_samples;
 
     int dim {1}; // noise dimension
     VectorXd p_vec, a_vec, b_vec;
@@ -158,6 +161,25 @@ public:
     void setPrevV(const VectorXd& V) {
         prevV = V;
     }
+    
+    // Methods for managing Gibbs samples
+    void clear_gibbs_samples() {
+        gibbs_W_samples.clear();
+        gibbs_V_samples.clear();
+    }
+    
+    void store_gibbs_sample() {
+        gibbs_W_samples.push_back(W);
+        gibbs_V_samples.push_back(V);
+    }
+    
+    const vector<VectorXd>& get_gibbs_W_samples() const {
+        return gibbs_W_samples;
+    }
+    
+    const vector<VectorXd>& get_gibbs_V_samples() const {
+        return gibbs_V_samples;
+    }
 
     void update_each_iter(bool initialization=false, bool update_dK=false);
     void sample_cond_V();
@@ -175,6 +197,9 @@ public:
     // pi(W|V) * pi(V)
     double log_density(const VectorXd& parameter, bool precond_K = false);
     MatrixXd precond(bool precond_K = false, double eps = 1e-5);
+    
+    // Preconditioner using stored Gibbs samples
+    MatrixXd precond_with_gibbs_samples(bool precond_K = false, double eps = 1e-5);
 
     /*  3 Operator component   */
     const SparseMatrix<double, 0, int>& getK()  {

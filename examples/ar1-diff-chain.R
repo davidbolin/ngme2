@@ -1,4 +1,4 @@
-load_all()
+library(ngme2)
 
 seed <- 500
 set.seed(seed)
@@ -32,65 +32,38 @@ plot(Y, type="l")
 
 # fit the non-Gaussian model
 control_same <- control_opt(
-  optimizer = precond_sgd(),
+  optimizer = precond_sgd(
+    preconditioner="full"
+  ),
+  # optimizer = adam(),
   burnin = 100,
   # estimation = FALSE,
   iterations = 100,
-  n_parallel_chain = 4,
+  n_parallel_chain = 1,
   verbose = FALSE,
   rao_blackwellization = TRUE,
   seed = seed,
   print_check_info = TRUE,
   std_lim = 0.01,
   trend_lim = 0.01,
-  n_slope_check = 3
+  n_slope_check = 3,
+  start_sd = 0.5
 )
 
-ret_nig_same <- ngme(
-  Y ~ 0 + f(
-    1:n_obs,
-    rho = 0.5,
-    name = "my_ar",
-    model = "ar1",
-    noise = noise_nig(),
-  ),
-  data = data.frame(Y=Y),
-  control_opt = control_same
-)
+system.time({
+  ret_nig_same <- ngme(
+    Y ~ 0 + f(
+      1:n_obs,
+      rho = 0.5,
+      name = "my_ar",
+      model = "ar1",
+      noise = noise_nig(),
+    ),
+    data = data.frame(Y=Y),
+    control_opt = control_same
+  )
+})
+
 
 ret_nig_same
-traceplot(ret_nig_same, "my_ar", hline=c(0.5, mu, sigma, nu))
-
-
-# ------------------------------------------------------------
-control_diff <- control_opt(
-  optimizer = precond_sgd(
-    precond_by_diff_chain = TRUE
-  ),
-  burnin = 100,
-  # estimation = FALSE,
-  iterations = 100,
-  n_parallel_chain = 4,
-  verbose = FALSE,
-  rao_blackwellization = TRUE,
-  seed = seed,
-  print_check_info = TRUE,
-  std_lim = 0.01,
-  trend_lim = 0.01,
-  n_slope_check = 3
-)
-
-ret_nig_diff <- ngme(
-  Y ~ 0 + f(
-    1:n_obs,
-    rho = 0.5,
-    name = "my_ar",
-    model = "ar1",
-    noise = noise_nig(),
-  ),
-  data = data.frame(Y=Y),
-  control_opt = control_diff
-)
-
-ret_nig_diff
-traceplot(ret_nig_diff, "my_ar", hline=c(0.5, mu, sigma, nu))
+# traceplot(ret_nig_same, "my_ar", hline=c(0.5, mu, sigma, nu))

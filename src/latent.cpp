@@ -857,3 +857,96 @@ double Latent::logd_W_V() {
 
     return logd_W_given_V(W, getK(), mu, sigma, V) + logd_V;
 }
+
+// Preconditioner using stored Gibbs samples
+MatrixXd Latent::precond_with_gibbs_samples(bool precond_K, double eps) {
+if (debug) std::cout << "start latent precond with Gibbs samples" << std::endl;
+    
+    if (gibbs_W_samples.empty() || gibbs_V_samples.empty()) {
+        // Fallback to regular preconditioner if no samples available
+        return precond(precond_K, eps);
+    }
+    
+    int n_samples = gibbs_W_samples.size();
+    double numerical_eps = eps;
+    
+    VectorXd v;
+    if (!precond_K) {
+        v = VectorXd::Zero(n_theta_mu + n_theta_sigma);
+        if (!fix_flag[latent_fix_theta_mu]) v.head(n_theta_mu) = theta_mu;
+        v.segment(n_theta_mu, n_theta_sigma) = get_parameter_unfixed(theta_sigma, fix_theta_sigma_vec);
+    } else {
+        v = VectorXd::Zero(n_params - n_theta_nu);
+        if (!fix_flag[latent_fix_theta_K]) v.head(n_theta_K) = theta_K;
+        if (!fix_flag[latent_fix_theta_mu]) v.segment(n_theta_K, n_theta_mu) = theta_mu;
+        v.segment(n_theta_K + n_theta_mu, n_theta_sigma) = get_parameter_unfixed(theta_sigma, fix_theta_sigma_vec);
+    }
+
+    int n = v.size();
+    MatrixXd num_hess_no_nu = VectorXd::Constant(n, 1.0).asDiagonal();
+    
+    // Store current W and V to restore later
+    VectorXd original_W = W;
+    VectorXd original_V = V;
+    
+    // Average over all Gibbs samples
+    for (int sample = 0; sample < n_samples; sample++) {
+        // Set current sample
+        W = gibbs_W_samples[sample];
+        V = gibbs_V_samples[sample];
+        
+        // Compute Hessian for this sample using forward differences
+        double original_val = log_density(v, precond_K);
+        VectorXd f_v(n);
+        for (int i = 0; i < n; i++) {
+            VectorXd tmp_v = v; 
+            tmp_v(i) += numerical_eps;
+            f_v(i) = log_density(tmp_v, precond_K);
+        }
+        
+        // Compute second derivatives
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j <= i; j++) {
+                VectorXd tmp_vij = v; 
+                tmp_vij(i) += numerical_eps; 
+                tmp_vij(j) += numerical_eps;
+                double f_vij = log_density(tmp_vij, precond_K);
+                
+                double hess_ij = (f_vij - f_v(i) - f_v(j) + original_val) / (numerical_eps * numerical_eps);
+                num_hess_no_nu(i, j) += hess_ij / n_samples;  // Average over samples
+            }
+        }
+    }
+    
+    // Restore original W and V
+    W = original_W;
+    V = original_V;
+    
+    // Fill in the lower triangular part
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < i; j++) {
+            num_hess_no_nu(j, i) = num_hess_no_nu(i, j);
+        }
+    }
+
+    MatrixXd precond_full = MatrixXd::Zero(n_params, n_params);
+    if (precond_K) {
+        precond_full.topLeftCorner(n_params - n_theta_nu, n_params - n_theta_nu) = num_hess_no_nu;
+    } else {
+        // fill K part as diag(1)
+        precond_full.topLeftCorner(n_theta_K, n_theta_K) =
+            VectorXd::Constant(n_theta_K, V_size).asDiagonal();
+        // fill the rest
+        precond_full.block(n_theta_K, n_theta_K, n_theta_mu + n_theta_sigma, n_theta_mu + n_theta_sigma) = num_hess_no_nu;
+    }
+
+    // compute numerical hessian for theta_nu
+    if (fix_flag[latent_fix_theta_nu]) {
+        precond_full.bottomRightCorner(n_theta_nu, n_theta_nu) = V_size * MatrixXd::Identity(n_theta_nu, n_theta_nu);
+    } else {
+        precond_full.bottomRightCorner(n_theta_nu, n_theta_nu) = V_size * MatrixXd::Identity(n_theta_nu, n_theta_nu);
+    }
+
+if (debug) std::cout << "finish latent precond with Gibbs samples" << std::endl;
+    return precond_full;
+}

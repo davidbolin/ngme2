@@ -120,7 +120,7 @@ distributed Gaussian variables.</p>
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">rw2</span><span class="op">(</span><span class="va">mesh</span>, cyclic <span class="op">=</span> <span class="cn">FALSE</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">rw2</span><span class="op">(</span><span class="va">mesh</span>, cyclic <span class="op">=</span> <span class="cn">FALSE</span>, constr <span class="op">=</span> <span class="cn">TRUE</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -136,6 +136,12 @@ For numerical vectors, assumes equally spaced locations. Must have at least 3 lo
 <dd><p>logical, whether the mesh is circular. If TRUE, the first and last
 locations are treated as neighbors with second-order differences computed
 across the boundary.</p></dd>
+
+
+<dt id="arg-constr">constr<a class="anchor" aria-label="anchor" href="#arg-constr"></a></dt>
+<dd><p>logical, whether to enforce the sum-to-zero constraint \(\sum_{i=1}^n h_i W_i = 0\)
+and the linear trend constraint \(\sum_{i=1}^n (\sum_{j=1}^i h_j - h_1) \cdot i \cdot W_i = 0\).
+If FALSE, fixes the first and second elements \(W_1 = 0\) and \(W_2 = 0\).</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
@@ -170,7 +176,7 @@ the constraint and circular structure properly.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 6 x 6 sparse Matrix of class "dgCMatrix"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                         </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1,] 0.5  1  1  1  1 0.5</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [2,] 0.5  2  3  4  5 3.0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [2,] .    1  2  3  4 4.5</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [3,] 1.0 -2  1  .  . .  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [4,] .    1 -2  1  . .  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [5,] .    .  1 -2  1 .  </span>
@@ -180,14 +186,14 @@ the constraint and circular structure properly.</p>
 <span class="r-in"><span><span class="va">rw2_cyclic</span> <span class="op">&lt;-</span> <span class="fu">rw2</span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">6</span>, cyclic <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">rw2_cyclic</span><span class="op">$</span><span class="va">K</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 7 x 7 sparse Matrix of class "dgCMatrix"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                               </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1,] .    0.5  1  1  1  1  0.5</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [2,] 0.5  1.0 -2  1  .  .  .  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [3,] 1.0  .    1 -2  1  .  .  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [4,] 1.0  .    .  1 -2  1  .  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [5,] 1.0  .    .  .  1 -2  1.0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [6,] 1.0  1.0  .  .  .  1 -2.0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [7,] 0.5 -2.0  1  .  .  .  1.0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1,] .  0.5  1  1  1  1  0.5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [2,] 1  1.0 -2  1  .  .  .  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [3,] 1  .    1 -2  1  .  .  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [4,] 1  .    .  1 -2  1  .  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [5,] 1  .    .  .  1 -2  1.0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [6,] 1  1.0  .  .  .  1 -2.0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [7,] 1 -2.0  1  .  .  .  1.0</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Using with unequally spaced locations</span></span></span>
 <span class="r-in"><span><span class="va">locations</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">3</span>, <span class="fl">6</span>, <span class="fl">10</span>, <span class="fl">15</span><span class="op">)</span></span></span>
@@ -196,7 +202,7 @@ the constraint and circular structure properly.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 6 x 6 sparse Matrix of class "dgCMatrix"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                                  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1,] 0.5  1.5  2.5  3.5  4.5  2.5</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [2,] 0.5  3.0  7.5 14.0 22.5 15.0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [2,] .    1.5  4.0  7.5 12.0 14.5</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [3,] 1.0 -2.0  1.0  .    .    .  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [4,] .    1.0 -2.0  1.0  .    .  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [5,] .    .    1.0 -2.0  1.0  .  </span>

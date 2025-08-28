@@ -43,7 +43,8 @@ public:
     const Rcpp::List& list_ngmes,
     unsigned long seed,
     int sampling_strategy,
-    int num_threads_repl=4
+    int num_threads_repl=4,
+    double start_sd=0
   );
 
   VectorXd get_parameter() override;
@@ -53,6 +54,7 @@ public:
   }
 
   MatrixXd precond(int strategy=0, double eps=1e-5) override;
+  MatrixXd precond_with_gibbs_samples(int strategy=0, double eps=1e-5);
   VectorXd grad() override;
   // add subsampling for some ngme_repls (SGD-IS sample only 1 replicate each time, according to the weights)
 

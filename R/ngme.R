@@ -218,8 +218,11 @@ if (debug) {print(str(ngme_model$replicates[[1]]))}
       df_W <- data.frame(res$W)
       colnames(df_W) <- paste0("sample_", 1:ncol(df_W))
       ngme_model$replicates[[i]]$post_W <- df_W
+
+      sd_W <- mean(sapply(res$W, sd))
     }
     cat("Posterior sampling done! \n")
+    cat("Average standard deviation of the posterior W: ", sd_W, "\n")
     cat("Note:
       1. Use ngme_post_samples(..) to access the posterior samples.
       2. Use ngme_result(..) to access different latent models. \n"

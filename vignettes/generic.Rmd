@@ -29,7 +29,7 @@ The generic model in ngme2 provides a flexible framework for creating custom spa
 2. Combine different models or extend them with new components
 3. Develop entirely new models tailored to your specific needs
 
-At its core, the generic model builds a precision matrix K as a weighted sum of matrices:
+At its core, the generic model builds a operator matrix K as a weighted sum of matrices:
 
 $$K = \sum_{i=1}^m f_i(\theta) \cdot M_i$$
 
@@ -74,7 +74,7 @@ In this example:
 - Parameter `c` affects matrix C with identity transformation
 - Matrix D has a fixed coefficient of 1
 
-The resulting precision matrix is:
+The resulting operator matrix is:
 
 $$K = a \cdot A + e^b \cdot B + c \cdot C + D$$
 
@@ -244,8 +244,6 @@ $$K = (a + e^b) \cdot A + a \cdot B + b \cdot C$$
 
 3. **Use named parameters**: Always provide names for theta_K parameters
 
-4. **Ensure positive definiteness**: For valid precision matrices, make sure the resulting K is positive definite
-
 ### Custom Transformations
 
 If the provided transformations are not sufficient, you can add more to the `name2fun` function:
@@ -279,7 +277,20 @@ This flexibility makes the generic model a valuable tool for researchers and pra
 
 ## Non-Stationary Extension with generic_ns
 
-The `generic_ns` model extends the `generic` model by allowing for non-stationary, spatially-varying parameters. While the standard `generic` model creates a precision matrix as a weighted sum of matrices, `generic_ns` enables parameter values to vary across space or time.
+The `generic_ns` model extends the `generic` model by allowing for non-stationary, spatially-varying parameters. While the standard `generic` model creates a operator matrix as a weighted sum of matrices, `generic_ns` enables parameter values to vary across space or time.
+
+At its core, the `generic_ns` model builds a operator matrix K using spatially-varying parameters:
+
+$$K = \sum_{j=1}^p \left( \prod_{k \in S_j} \text{diag}(f_k(B_k \boldsymbol{\theta}_k)) \right) \cdot \left( \prod_{l \in F_j} M_l \right)$$
+
+where:
+- $B_k$ are basis expansion matrices for parameter $k$
+- $\boldsymbol{\theta}_k$ are coefficient vectors for the basis expansions
+- $f_k$ are transformation functions applied element-wise
+- $\text{diag}(\cdot)$ creates diagonal matrices from vectors
+- $S_j$ are sets of parameter indices for term $j$
+- $F_j$ are sets of fixed matrix indices for term $j$
+- $M_l$ are fixed matrices
 
 ### Key Features
 
@@ -321,7 +332,7 @@ ns_model <- generic_ns(
 
 In this example:
 - `alpha` varies between two regions (value 0.5 in the first half, 2 in the second half)
-- The precision matrix is constructed as D_alpha * A + B, where D_alpha is a diagonal matrix
+- The operator matrix is constructed as D_alpha * A + B, where D_alpha is a diagonal matrix
 
 ### Non-Stationary Matérn Example
 
@@ -356,15 +367,17 @@ This creates a Matérn model where the range parameter varies across space.
 
 ### Matrix Positions Explained
 
-The `position` parameter in `generic_ns` controls how matrices are combined:
+The `position` parameter in `generic_ns` controls how matrices are combined, corresponding to the terms in the formula above:
 
-- Each element in the list represents a term in the sum
+- Each element in the list represents a term $j$ in the sum
 - Each vector contains indices specifying which matrices to multiply together
-- Parameter matrices (diagonal matrices) are listed first, followed by fixed matrices
+- Parameter matrices (diagonal matrices from transformed basis expansions) are listed first, followed by fixed matrices
 
 For example, with `position = list(c(1, 2), c(3))`:
-- The first term multiplies parameter matrix 1 with fixed matrix 1 (indices 1 and 2)
-- The second term is just fixed matrix 2 (index 3)
+- The first term ($j=1$) multiplies diagonal parameter matrix 1 with fixed matrix 1: $\text{diag}(f_1(B_1 \boldsymbol{\theta}_1)) \cdot M_1$
+- The second term ($j=2$) is just fixed matrix 2: $M_2$
+
+This creates: $K = \text{diag}(f_1(B_1 \boldsymbol{\theta}_1)) \cdot M_1 + M_2$
 
 ### Best Practices
 

@@ -1,5 +1,3 @@
-# This file contains function related to model predict function
-
 #' Predict function of ngme2
 #' predict using ngme after estimation
 #'
@@ -19,6 +17,9 @@
 #' @param burnin_size size of posterior burnin
 #' @param seed random seed
 #' @param q quantile if using "quantile"
+#' @param train_idx optional vector of training indices to use for posterior sampling.
+#'   If provided, only these indices from the original data will be used for training,
+#'   similar to cross-validation. If NULL, uses all original training data.
 #' @param ... extra argument from 0 to 1 if using "quantile"
 #'
 #' @return a list of outputs contains estimation of operator paramters, noise parameters
@@ -34,6 +35,7 @@ predict.ngme <- function(
   burnin_size = 100,
   q = NULL,
   seed = Sys.time(),
+  train_idx = NULL,
   ...
 ) {
   fm <- attr(object, "fit")$formula
@@ -43,11 +45,32 @@ predict.ngme <- function(
     "Make sure the object is of class 'ngme'." = inherits(object, "ngme")
   )
   
+  # If train_idx is provided, subset the data for posterior sampling
+  if (!is.null(train_idx)) {
+    # Validate train_idx
+    n_data <- attr(object, "fit")$n_data
+    if (any(train_idx > n_data) || any(train_idx < 1)) {
+      stop("train_idx out of bounds. Data has ", n_data, " observations.")
+    }
+    
+    # Subset training data (similar to cross-validation logic)
+    ngme$X <- ngme$X[train_idx, , drop = FALSE]
+    ngme$Y <- ngme$Y[train_idx]
+    ngme$noise <- subset_noise(
+      ngme$noise, sub_idx = train_idx, compute_corr = TRUE
+    )
+    
+    # Subset A matrices for training data
+    for (i in seq_along(ngme$models)) {
+      ngme$models[[i]]$A <- ngme$models[[i]]$A[train_idx, , drop = FALSE]
+    }
+  }
+  
   samples_W <- sampling_cpp(ngme, 
     n = sampling_size, 
     n_burnin = burnin_size, 
-    posterior=TRUE, 
-    seed=seed
+    posterior = TRUE, 
+    seed = seed
   )[["W"]]
 
   ret <- NULL

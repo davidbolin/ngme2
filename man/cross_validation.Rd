@@ -54,7 +54,7 @@ custom is user-defined group, provide \code{target} and \code{data}}
 
 \item{times}{how many test cases (only for lpo type)}
 
-\item{transform}{a function to transform the data (e.g., log, exp, ...)
+\item{transform}{a function or a list of functions (length equal to number of models) to map predictions and observations to the comparison scale (e.g., identity for original scale, exp if the model is on log scale).
 e.g., the MAE will be computed as |transform(Y) - transform(Y_pred)|}
 
 \item{test_idx}{a list of indices of the data (which data points to be predicted) (only for custom type)}

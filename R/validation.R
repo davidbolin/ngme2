@@ -15,8 +15,8 @@
 #' @param print print information during computation
 #' @param percent how many percent for testing? from 0 to 1 (for lpo type)
 #' @param times how many test cases (only for lpo type)
-#' @param transform a function to transform the data (e.g., log, exp, ...)
-#' e.g., the MAE will be computed as |transform(Y) - transform(Y_pred)|
+ #' @param transform a function or a list of functions (length equal to number of models) to map predictions and observations to the comparison scale (e.g., identity for original scale, exp if the model is on log scale).
+ #' e.g., the MAE will be computed as |transform(Y) - transform(Y_pred)|
 #' @param n_gibbs_samples number of gibbs samples of latent process, used for computing CRPS, sCRPS
 #' @param n_burnin number of burnin
 #' @param test_idx a list of indices of the data (which data points to be predicted) (only for custom type)
@@ -68,6 +68,16 @@ cross_validation <- function(
   
   if (inherits(ngme, "ngme")) ngme <- list(ngme)
   if (is.null(names(ngme))) names(ngme) <- paste("model", seq_along(ngme), sep = "_" )
+
+  # Handle transform: allow function or list of functions (one per model)
+  if (is.list(transform)) {
+    if (length(transform) != length(ngme)) {
+      stop("If transform is a list, its length must equal number of models (length(ngme)).")
+    }
+  } else {
+    # Wrap single function into list of repeated functions for each model
+    transform <- rep(list(transform), length(ngme))
+  }
 
   n_data <- attr(ngme[[1]], "fit")$n_data
   if (is.null(n_data)) stop("Please provide ngme object or a list of ngme object")
@@ -132,7 +142,6 @@ cross_validation <- function(
       
       ngme_list <- list()
       for (i in 1:length(test_idx)) {
-        # ngme_list[[i]] <- rlang::duplicate(ngme[[idx]])
         ngme_list[[i]] <- ngme[[idx]]
       }
 
@@ -151,7 +160,7 @@ cross_validation <- function(
                 seed=seed,
                 keep_pred=keep_pred,
                 parallel = TRUE,
-                transform = transform,
+                transform = transform[[idx]],
                 num_cores = cores_layer2,
                 thining_gap = thining_gap,
                 merge_groups = merge_groups,
@@ -200,7 +209,7 @@ cross_validation <- function(
             seed=seed,
             keep_pred=keep_pred,
             parallel = FALSE,
-            transform = transform,
+            transform = transform[[idx]],
             thining_gap = thining_gap,
             merge_groups = merge_groups,
             merged_group_name = merged_group_name
@@ -439,6 +448,9 @@ compute_err_reps <- function(
 
 # helper function to compute MSE, MAE, ... for each subset of target / data
 # assume test_idx and train_idx belongs to same replicate
+##'
+#' @param transform function to apply to predictions and observations before scoring (e.g., identity for original scale, exp for back-transforming log-scale predictions)
+#' This function is applied to both predictions and y_data before computing MAE, MSE, CRPS, sCRPS.
 compute_err_1rep <- function(
   ngme_1rep,
   bool_test_idx,
@@ -777,8 +789,10 @@ compute_score_given_pred <- function(
   merge_groups = FALSE,
   merged_group_name = NULL
 ) {
-  # Use ensemble prediction
-  pred <- 0.5*(rowMeans(as.matrix(pred_N_1)) + rowMeans(as.matrix(pred_N_2)))
+  # For MAE/MSE: use posterior predictive mean (including measurement noise)
+  # pred_N_1 and pred_N_2 are latent predictions; Y_N_1_thin and Y_N_2_thin are posterior predictive samples (with measurement noise)
+  # We use the mean of Y_N_1_thin and Y_N_2_thin, as in sCRPS/CRPS calculation
+  pred <- 0.5 * (rowMeans(as.matrix(Y_N_1_thin)) + rowMeans(as.matrix(Y_N_2_thin)))
 
   # Now Y is of dim n_obs * N
   n_obs <- length(y_data)
@@ -829,8 +843,9 @@ compute_score_given_pred <- function(
         E_sim_sim_thin[i] <- mean(vec_dist_sim_sim)
       }
       
-      CRPS_thin <- 0.5 * E_sim_sim_thin - E_sim_data_thin
-      sCRPS_thin <- -E_sim_data_thin / E_sim_sim_thin - 0.5 * log(E_sim_sim_thin)
+      denom <- pmax(E_sim_sim_thin, .Machine$double.eps)
+      CRPS_thin <- 0.5 * denom - E_sim_data_thin
+      sCRPS_thin <- -E_sim_data_thin / denom - 0.5 * log(denom)
       
       # Create merged results
       scores <- data.frame(
@@ -870,9 +885,10 @@ compute_score_given_pred <- function(
   pred_each_group   <- split(pred, group_data)
   y_data_each_group <- split(y_data, group_data)
 
-  CRPS_thin <- split(0.5 * E_sim_sim_thin - E_sim_data_thin, group_data)
+  denom <- pmax(E_sim_sim_thin, .Machine$double.eps)
+  CRPS_thin <- split(0.5 * denom - E_sim_data_thin, group_data)
   sCRPS_thin <- split(
-    -E_sim_data_thin / E_sim_sim_thin - 0.5 * log(E_sim_sim_thin),
+    -E_sim_data_thin / denom - 0.5 * log(denom),
     group_data
   )
 

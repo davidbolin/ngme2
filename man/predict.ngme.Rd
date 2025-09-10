@@ -11,11 +11,11 @@ predict using ngme after estimation}
   data = NULL,
   type = "lp",
   group = NULL,
-  estimator = c("mean", "sd", "5quantile", "95quantile", "median", "mode"),
+  estimator = c("mean", "sd", "0.05q", "0.95q", "median", "mode"),
   sampling_size = 100,
   burnin_size = 100,
-  q = NULL,
   seed = Sys.time(),
+  train_idx = NULL,
   ...
 )
 }
@@ -36,17 +36,21 @@ vector or matrix (n * 2) for spatial coords}
 \item{group}{which filed to predict 
 (used for bivariate model, should be of same length as map)}
 
-\item{estimator}{what type of estimator, c("mean", "median", "mode", "quantile")}
+\item{estimator}{what type of estimator. Options include:
+- "mean", "median", "mode", "sd": standard estimators
+- "0.XXXq": any quantile specified as probability (e.g., "0.025q", "0.5q", "0.975q")}
 
 \item{sampling_size}{size of posterior sampling}
 
 \item{burnin_size}{size of posterior burnin}
 
-\item{q}{quantile if using "quantile"}
-
 \item{seed}{random seed}
 
-\item{...}{extra argument from 0 to 1 if using "quantile"}
+\item{train_idx}{optional vector of training indices to use for posterior sampling.
+If provided, only these indices from the original data will be used for training,
+similar to cross-validation. If NULL, uses all original training data.}
+
+\item{...}{additional arguments (currently unused)}
 }
 \value{
 a list of outputs contains estimation of operator paramters, noise parameters

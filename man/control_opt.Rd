@@ -13,7 +13,7 @@ control_opt(
   stop_points = 10,
   iters_per_check = iterations/stop_points,
   optimizer = adam(),
-  start_sd = sqrt(5),
+  start_sd = 0.5,
   n_parallel_chain = 4,
   max_num_threads = n_parallel_chain,
   exchange_VW = TRUE,

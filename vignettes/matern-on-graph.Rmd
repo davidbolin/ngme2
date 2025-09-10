@@ -215,18 +215,18 @@ for(i in 1:graph$nE) {
                    cbind(rep(i,obs.per.edge), runif(obs.per.edge)))
 }
 n.obs <- obs.per.edge*graph$nE
+head(obs.loc)
 A <- graph$fem_basis(obs.loc)
 
 # using the model for inference
 sigma.e <- 0.1
 x1 <- obs.loc[,1]
-x2 <- obs.loc[,2]
 
-Y <- 2*x1 - 3*x2 + as.vector(A %*% W + sigma.e * rnorm(n.obs))
+Y <- 2*x1 + as.vector(A %*% W + sigma.e * rnorm(n.obs))
 
 df_data <- data.frame(y = Y, edge_number = obs.loc[,1],
                     distance_on_edge = obs.loc[,2],
-                    x1 = x1, x2 = x2)
+                    x1 = x1)
 
 graph$clear_observations()
 graph$add_observations(data = df_data, normalized = TRUE)
@@ -238,12 +238,14 @@ Next we estimate the model using ngme2:
 
 ```{r model-fit, cache=TRUE, fig.align="center", echo=TRUE}
 fit_nig <- ngme(
-  y ~ 0 + x1 + x2 +
+  y ~ 0 + x1 +
     f(model="matern", mesh=graph, name="graph", noise=noise_nig()),
   data = graph$get_data(),
   control_opt = control_opt(
-    iterations = 1000,
-    iters_per_check = 100,
+    optimizer = precond_sgd(
+      preconditioner = "full"
+    ),
+    iterations = 4000,
     rao_blackwellization = TRUE,
     n_parallel_chain = 4,
     # verbose = TRUE,
@@ -252,8 +254,8 @@ fit_nig <- ngme(
 )
 
 fit_nig
-traceplot(fit_nig, "graph")
-traceplot(fit_nig)
+traceplot(fit_nig, "graph", hline=c(6, -10, 30, 0.5))
+traceplot(fit_nig, hline=c(0.1, 2))
 ```
 
 # Graph model with replicates

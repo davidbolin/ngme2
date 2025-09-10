@@ -12,15 +12,16 @@
 #' "lp" is linear predictor (including fixed effect and all sub-models)
 #' @param group which filed to predict 
 #'   (used for bivariate model, should be of same length as map)
-#' @param estimator what type of estimator, c("mean", "median", "mode", "quantile")
+#' @param estimator what type of estimator. Options include:
+#'   - "mean", "median", "mode", "sd": standard estimators
+#'   - "0.XXXq": any quantile specified as probability (e.g., "0.025q", "0.5q", "0.975q")
 #' @param sampling_size size of posterior sampling
 #' @param burnin_size size of posterior burnin
 #' @param seed random seed
-#' @param q quantile if using "quantile"
 #' @param train_idx optional vector of training indices to use for posterior sampling.
 #'   If provided, only these indices from the original data will be used for training,
 #'   similar to cross-validation. If NULL, uses all original training data.
-#' @param ... extra argument from 0 to 1 if using "quantile"
+#' @param ... additional arguments (currently unused)
 #'
 #' @return a list of outputs contains estimation of operator paramters, noise parameters
 #' @export
@@ -30,10 +31,9 @@ predict.ngme <- function(
   data = NULL,
   type = "lp",
   group = NULL,
-  estimator = c("mean", "sd", "5quantile", "95quantile", "median", "mode"),
+  estimator = c("mean", "sd", "0.05q", "0.95q", "median", "mode"),
   sampling_size = 100,
   burnin_size = 100,
-  q = NULL,
   seed = Sys.time(),
   train_idx = NULL,
   ...
@@ -75,20 +75,24 @@ predict.ngme <- function(
 
   ret <- NULL
   for (estimator in estimator) {
-    post_W <- switch(estimator,
-      "mean"      = mean_list(samples_W),
-      "median"    = apply(as.data.frame(samples_W), 1, median),
-      "sd"        = apply(as.data.frame(samples_W), 1, sd),
-      "mode"      = apply(as.data.frame(samples_W), 1, emprical_mode),
-      "5quantile" = apply(as.data.frame(samples_W), 1, function(x) {quantile(x, 0.05)}),
-      "95quantile" = apply(as.data.frame(samples_W), 1, function(x) {quantile(x, 0.95)}),
-      "quantile"  = {
-        stopifnot("please provide quantile argument q between 0 to 1"
-          = !is.null(q) && length(q) == 1 && q > 0 && q < 1)
-        apply(as.data.frame(samples_W), 1, function(x) {quantile(x, q)})
-      },
-      stop("No such estimator available")
-    )
+    # Check if estimator matches pattern like "0.025q", "0.975q", etc.
+    if (grepl("^0\\.[0-9]*[1-9][0-9]*q$", estimator)) {
+      # Extract the probability from the estimator string
+      quantile_prob <- as.numeric(gsub("q$", "", estimator))
+      # Validate the quantile probability (should be between 0 and 1, exclusive)
+      if (quantile_prob <= 0 || quantile_prob >= 1) {
+        stop("Quantile probability should be between 0 and 1 (exclusive). Got: ", quantile_prob)
+      }
+      post_W <- apply(as.data.frame(samples_W), 1, function(x) {quantile(x, quantile_prob)})
+    } else {
+      post_W <- switch(estimator,
+        "mean"      = mean_list(samples_W),
+        "median"    = apply(as.data.frame(samples_W), 1, median),
+        "sd"        = apply(as.data.frame(samples_W), 1, sd),
+        "mode"      = apply(as.data.frame(samples_W), 1, emprical_mode),
+        stop("No such estimator available: ", estimator)
+      )
+    }
 
     # update post W (notice here W is concated)
     j <- 1
@@ -165,5 +169,6 @@ if (!is.null(data) && nrow(X_pred) < nrow(data))
     }
     ret[[estimator]] <- preds
   }
+  attr(ret, "samples") <- samples_W
   ret
 }

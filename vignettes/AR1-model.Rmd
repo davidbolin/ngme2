@@ -174,6 +174,7 @@ ar1_model <- f(time_points,
 ```
 
 The `ngme2` package constructs several important matrices internally. We can examine the matrix $\mathbf{K}$ structure that relates the AR(1) process to the independent noise terms:
+
 ```{r}
 # Examine the K matrix structure
 K_matrix <- ar1_model$operator$K
@@ -207,7 +208,7 @@ print(Q_matrix)
 
 This matrix formulation provides several computational benefits, particularly in terms of memory efficiency and processing speed. Let us examine the sparsity of the precision matrix in the illustration above where we have 7 time grid points (year spanning from 2001 to 2007) associated to our 4 irregularly spaced observed time points:
 
-```{r, fig.height=4, fig.width=5, out.width="80%", fig.align='center'}
+```{r, fig.height=4, fig.width=5, out.width="80%", fig.align='center', echo=FALSE, message=FALSE}
 # Load required libraries
 library(ggplot2)
 library(reshape2)
@@ -346,7 +347,7 @@ pacf_data <- data.frame(
 
 Now we will visualize the simulated process and its correlation structure. The time series plot shows the temporal evolution of the process, while the ACF and PACF plots reveal the characteristic patterns that confirm our AR(1) model specification:
 
-```{r gaussian-ar-plots, fig.height=5, fig.width=7}
+```{r gaussian-ar-plots, fig.height=5, fig.width=7, echo=FALSE}
 # Create time series plot
 p1 <- ggplot(gaussian_data, aes(x = time, y = value)) +
   geom_line(color = "#2E86AB", alpha = 0.8, linewidth = 0.3) +
@@ -452,7 +453,7 @@ pacf_nig_data <- data.frame(
 
 Next, we visualize the NIG AR(1) process and its correlation functions. These plots will demonstrate that while the innovation distribution is non-Gaussian, the temporal correlation structure remains consistent with AR(1) theory, showing the robustness of the autoregressive framework across different noise distributions:
 
-```{r nig-ar-plots, fig.height=5, fig.width=7}
+```{r nig-ar-plots, fig.height=5, fig.width=7, echo=FALSE}
 # Create time series plot for NIG
 p4 <- ggplot(nig_data, aes(x = time, y = value)) +
   geom_line(color = "#A23B72", alpha = 0.8, linewidth = 0.3) +
@@ -523,11 +524,12 @@ comparison_data <- data.frame(
 
 Now we create comparative visualizations to examine the distributional differences between the two AR(1) processes. The histogram shows the overall shape and asymmetry, while the box plots highlight differences in central tendency, spread, and the presence of outliers:
 
-```{r distribution-comparison, fig.height=5, fig.width=7}
+```{r distribution-comparison, fig.height=5, fig.width=7, echo=FALSE}
 # Create comparison plots
 p7 <- ggplot(comparison_data, aes(x = value, fill = type)) +
   geom_histogram(alpha = 0.6, bins = 50, position = "identity") +
   scale_fill_manual(values = c("Gaussian" = "#2E86AB", "NIG" = "#A23B72")) +
+  guides(fill = guide_legend(override.aes = list(fill = NA, color = c("#2E86AB", "#A23B72")))) +
   labs(
     title = "Distribution Comparison",
     x = "Value",
@@ -586,7 +588,7 @@ model_data <- data.frame(x1 = x1, x2 = x2, x3 = x3, Y = Y)
 
 We specify our model using the `ngme` function, incorporating both fixed effects and the latent AR(1) process. The `ngme()` function follows R's standard modeling approach by accepting a formula object that defines the relationship between the response variable and both fixed and latent effects:
 
-```{r model-fitting, cache=TRUE, results='hide'}
+```{r model-fitting,results='hide'}
 # Fit the model
 ngme_out <- ngme(
   Y ~ 0 + x1 + x2 + x3 + f(
@@ -635,15 +637,15 @@ ngme_out
 Assessing convergence is crucial for reliable parameter estimates. We will use the built-in `traceplot` function from `ngme2` to examine the convergence of our parameters:
 
 ```{r convergence-diagnostics, fig.height=5, fig.width=7}
-# Trace plot for sigma and fixed effects (blue lines indicate true value)
-traceplot(ngme_out, hline = c(2,-1, 2, 0.5), moving_window = 20)
+  # Trace plot for sigma and fixed effects (blue lines indicate true value)
+  traceplot(ngme_out, hline = c(2,-1, 2, 0.5), moving_window = 20)
 ```
 
 Now let us examine the convergence of the AR(1) process parameters:
 
 ```{r convergence-ar-process, fig.height=5, fig.width=7}
-# Trace plots for AR(1) parameters (blue lines indicate true value)
-traceplot(ngme_out, "my_ar", hline = c(0.5, -3, 4, 0.4))
+  # Trace plots for AR(1) parameters (blue lines indicate true value)
+  traceplot(ngme_out, "my_ar", hline = c(0.5, -3, 4, 0.4))
 ```
 
 ### Parameter Estimates Summary
@@ -676,7 +678,7 @@ print(data.frame(
 
 ### Model Validation
 
-Finally, let us validate our model by comparing the estimated noise distribution with the true distribution by plotting the estimated noise distribution against the true noise distribution:
+Let us validate our model by comparing the estimated noise distribution with the true distribution:
 
 ```{r model-validation, fig.height=5, fig.width=7}
 # Distribution Validation: Fitted vs. True NIG Noise Model
@@ -688,12 +690,613 @@ with(params_ar1, {
 })
 ```
 
-### Summary
+## Prediction
 
-The estimation results demonstrate the effectiveness of the `ngme2` framework for fitting complex AR(1) models with non-Gaussian innovations. Key findings include:
+Once we have fitted an AR(1) model using `ngme2`, we can use it to make predictions for new observations. The `predict()` method provides flexible prediction capabilities, allowing us to forecast future values, interpolate missing observations, or predict at new covariate combinations.
 
-- **Parameter Recovery**: The estimated parameters closely match the true values used in simulation
-- **Convergence**: The trace plots show good mixing and convergence behavior
-- **Distribution Fit**: The estimated NIG distribution captures the true noise characteristics
+### Hold-out Validation Procedure
 
-This validation confirms that the estimation procedure successfully recovered the underlying model parameters, providing confidence in the methodology for real-world applications where the true parameters are unknown.
+Hold-out validation demonstrates the technical procedure for temporal prediction by splitting the data into training and testing portions. This approach tests the model's ability to predict beyond the fitted time period while maintaining proper temporal ordering.
+
+We begin by configuring the data split, reserving a small number of observations at the end of the time series for testing:
+
+```{r holdout-validation-setup}
+# Configuration for hold-out validation
+n_holdout <- 5
+n_train <- n_obs - n_holdout
+
+# Split data maintaining temporal order
+model_data_train <- model_data[1:n_train, ]
+model_data_test <- model_data[(n_train+1):n_obs, ]
+Y_true_test <- Y[(n_train+1):n_obs]
+
+cat("Training:", n_train, "observations\n")
+cat("Testing:", n_holdout, "observations\n")
+```
+
+#### Fitting Model on Training Data
+
+The model is fitted using only the training portion of the data. The time index in the `f()` function must correspond exactly to the training data size to maintain proper temporal structure. But we also need to be careful to include the test locations in the training model. To this end, we will first create a model object with:
+
+```{r holdout-part1}
+ar1_train <- f(
+    1:n_train,
+    name = "my_ar",
+    model = "ar1",
+    noise = noise_nig(),
+    control = control_f(numer_grad = TRUE, improve_hessian = FALSE)
+  )
+```
+
+We now need to extract the training locations, which are in `ar1_train$operator$mesh$loc`. Next, we create a mesh object with all training and test locations. We will need to load the `fmesher` package to create the mesh object.
+
+```{r, message=FALSE}
+library(fmesher)
+loc_train <- ar1_train$operator$mesh$loc
+loc_test <- (n_train+1):n_obs
+loc_full <- c(loc_train, loc_test)
+mesh_full <- fm_mesh_1d(loc_full)
+```
+
+Then, we fit the model, and in the `f()` object we include the training and test locations by passing the `mesh` argument.
+
+```{r holdout-model-fit, results='hide'}
+ngme_out_train <- ngme(
+  Y ~ 0 + x1 + x2 + x3 + f(
+    1:n_train,
+    name = "my_ar",
+    model = "ar1",
+    mesh = mesh_full,
+    noise = noise_nig(),
+    control = control_f(numer_grad = TRUE, improve_hessian = FALSE)
+  ),
+  data = model_data_train,
+  control_opt = control_opt(
+    optimizer = adam(),
+    burnin = 100,
+    iterations = 1000,
+    std_lim = 0.01,
+    n_parallel_chain = 4,
+    stop_points = 10,
+    verbose = FALSE,
+    print_check_info = FALSE,
+    seed = 3
+  )
+)
+```
+
+#### Making Hold-out Predictions
+
+The `predict()` function requires careful specification of the `map` argument, which must be a named list where each name corresponds to a latent model in the fitted object. The time indices should match the prediction period, and covariate data must be supplied for the fixed effects. Note also that we set `type = "lp"`, which stands for *linear predictor*. In this case, the function returns the linear predictor, that is, the sum of the fixed and random effects, thereby providing a prediction for the response variable.
+
+```{r holdout-predictions}
+predictions_holdout <- predict(
+  ngme_out_train,
+  map = list(my_ar = (n_train + 1):n_obs),
+  data = model_data_test,
+  type = "lp",
+  estimator = c("mean", "sd", "5quantile", "95quantile"),
+  sampling_size = 1000,
+  seed = 42
+)
+
+pred_mean_holdout <- predictions_holdout$mean
+pred_sd_holdout <- predictions_holdout$sd
+pred_lower_holdout <- predictions_holdout$`5quantile`
+pred_upper_holdout <- predictions_holdout$`95quantile`
+```
+
+#### Technical Prediction Results
+
+The prediction results can be evaluated using standard time series forecasting metrics. These provide quantitative measures of prediction accuracy and uncertainty calibration:
+
+```{r holdout-evaluation}
+pred_errors_holdout <- pred_mean_holdout - Y_true_test
+rmse_holdout <- sqrt(mean(pred_errors_holdout^2))
+mae_holdout <- mean(abs(pred_errors_holdout))
+correlation_holdout <- cor(pred_mean_holdout, Y_true_test)
+in_interval_90 <- (Y_true_test >= pred_lower_holdout) & (Y_true_test <= pred_upper_holdout)
+coverage_90 <- mean(in_interval_90)
+
+cat("RMSE:", round(rmse_holdout, 3), "\n")
+cat("MAE:", round(mae_holdout, 3), "\n")
+cat("Correlation:", round(correlation_holdout, 3), "\n")
+cat("90% Interval Coverage:", round(coverage_90 * 100, 1), "%\n")
+
+print(data.frame(
+  Time = (n_train + 1):n_obs,
+  Observed = round(Y_true_test, 2),
+  Predicted = round(pred_mean_holdout, 2),
+  Lower_90 = round(pred_lower_holdout, 2),
+  Upper_90 = round(pred_upper_holdout, 2)
+))
+```
+
+### Visualizing Prediction Results
+
+Visualization of the hold-out results provides insight into the temporal behavior of predictions. The plot shows the training data context, observed test values, predictions, and uncertainty intervals:
+
+```{r holdout-visualization, fig.height=6, fig.width=8, echo=FALSE}
+context_start <- max(1, n_train - 50)
+data_context <- data.frame(
+  time = context_start:n_obs,
+  value = Y[context_start:n_obs]
+)
+
+test_data_viz <- data.frame(
+  time = (n_train + 1):n_obs,
+  observed = Y_true_test,
+  predicted = pred_mean_holdout,
+  pred_lower = pred_lower_holdout,
+  pred_upper = pred_upper_holdout
+)
+
+p_holdout <- ggplot() +
+  geom_line(data = data_context, aes(x = time, y = value, color = "Observed"), 
+            alpha = 0.6, linewidth = 0.4) +
+  geom_line(data = test_data_viz, aes(x = time, y = observed, color = "Observed"), 
+            alpha = 0.6, linewidth = 0.4) +
+  geom_point(data = test_data_viz, aes(x = time, y = observed, color = "Observed"), 
+             size = 0.7, alpha = 0.6) +
+  geom_line(data = test_data_viz, aes(x = time, y = predicted, color = "Predicted"), 
+            alpha = 0.6, linewidth = 0.4) +
+  geom_point(data = test_data_viz, aes(x = time, y = predicted, color = "Predicted"), 
+             size = 0.7, alpha = 0.6) +
+  geom_ribbon(data = test_data_viz, 
+              aes(x = time, ymin = pred_lower, ymax = pred_upper), 
+              fill = "#A23B72", alpha = 0.1) +
+  geom_vline(xintercept = n_train + 0.5, linetype = "dashed", 
+             color = "gray50", alpha = 0.6) +
+  scale_color_manual(values = c("Observed" = "#2E86AB", "Predicted" = "#A23B72")) +
+  labs(
+    title = "Hold-out Prediction Results: AR(1) Model with NIG Innovations",
+    subtitle = paste("Predictions for", n_holdout, "observations beyond training period"),
+    x = "Time",
+    y = "Value",
+    color = ""
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    panel.grid.minor = element_blank(),
+    legend.position = "top"
+  )
+
+print(p_holdout)
+```
+
+#### Alternative approach to hold-out validation
+
+In this case, we know the response variable at the test data, there is an easier way to do the hold-out validation. First, we need to fit the model with the complete dataset, which we have already done and is stored in the `ngme_out` object.
+
+Next, we perform prediction using the `ngme_out` object, and passing the indices of the training dataset in the `train_idx` argument:
+```{r holdout-predictions-alt}
+predictions_holdout_alt <- predict(
+  ngme_out,
+  map = list(my_ar = (n_train + 1):n_obs),
+  data = model_data_test,
+  type = "lp",
+  train_idx = 1:n_train,
+  estimator = c("mean", "sd", "5quantile", "95quantile"),
+  sampling_size = 1000,
+  seed = 42
+)
+
+pred_mean_holdout_alt <- predictions_holdout_alt$mean
+pred_sd_holdout_alt <- predictions_holdout_alt$sd
+pred_lower_holdout_alt <- predictions_holdout_alt$`5quantile`
+pred_upper_holdout_alt <- predictions_holdout_alt$`95quantile`
+```
+
+Let us check the prediction results. Observe the estimates are slightly different from the ones obtained above. This is due to the fact that this prediction was obtained using the fitted parameters from the complete model, thus, doing a pseudo holdout-validation.
+
+```{r holdout-evaluation-alt}
+pred_errors_holdout_alt <- pred_mean_holdout_alt - Y_true_test
+rmse_holdout_alt <- sqrt(mean(pred_errors_holdout_alt^2))
+mae_holdout_alt <- mean(abs(pred_errors_holdout_alt))
+correlation_holdout_alt <- cor(pred_mean_holdout_alt, Y_true_test)
+in_interval_90_alt <- (Y_true_test >= pred_lower_holdout_alt) & 
+                      (Y_true_test <= pred_upper_holdout_alt)
+coverage_90_alt <- mean(in_interval_90_alt)
+
+cat("RMSE:", round(rmse_holdout_alt, 3), "\n")
+cat("MAE:", round(mae_holdout_alt, 3), "\n")
+cat("Correlation:", round(correlation_holdout_alt, 3), "\n")
+cat("90% Interval Coverage:", round(coverage_90_alt * 100, 1), "%\n")
+
+print(data.frame(
+  Time = (n_train + 1):n_obs,
+  Observed = round(Y_true_test, 2),
+  Predicted = round(pred_mean_holdout_alt, 2),
+  Lower_90 = round(pred_lower_holdout_alt, 2),
+  Upper_90 = round(pred_upper_holdout_alt, 2)
+))
+```
+
+
+### Interpolation for Missing Values
+
+AR(1) models are well suited for interpolating missing values because they exploit the temporal dependence between neighboring observations. This makes them especially useful when dealing with irregular sampling or short gaps caused by sensor outages in time series data.  
+
+To illustrate this, we introduce artificial gaps at different points in the series and use the AR(1) model to reconstruct the missing values:
+
+```{r interpolation-setup}
+gap1_indices <- 601:605
+gap2_indices <- 1000:1005 
+gap3_indices <- 2100:2106
+all_gap_indices <- c(gap1_indices, gap2_indices, gap3_indices)
+
+Y_true_gaps <- Y[all_gap_indices]
+train_indices_interp <- setdiff(1:n_obs, all_gap_indices)
+model_data_train_interp <- model_data[train_indices_interp, ]
+Y_train_vector <- Y[train_indices_interp]
+
+cat("Total gaps to interpolate:", length(all_gap_indices), "\n")
+cat("Training observations:", length(train_indices_interp), "\n")
+```
+
+#### Fitting Model for Interpolation
+
+The interpolation model is fitted using only the non-gap observations. The time indices in the `f()` function correspond to the actual observation times, allowing the model to handle irregular time grids naturally:
+
+```{r interpolation-model-fit, results='hide'}
+ngme_out_interp <- ngme(
+  Y_train_vector ~ 0 + x1 + x2 + x3 + f(
+    train_indices_interp,
+    name = "my_ar_interp",
+    model = "ar1", 
+    noise = noise_nig(),
+    control = control_f(numer_grad = TRUE, improve_hessian = FALSE)
+  ),
+  data = model_data_train_interp,
+  control_opt = control_opt(
+    optimizer = adam(),
+    burnin = 100,
+    iterations = 1000,
+    std_lim = 0.01,
+    n_parallel_chain = 4,
+    stop_points = 10,
+    verbose = FALSE,
+    print_check_info = FALSE,
+    seed = 42
+  )
+)
+```
+
+#### Making Interpolation Predictions
+
+The interpolation predictions are generated for the gap locations using the corresponding covariate values. The model leverages temporal correlation from neighboring observed points to estimate the missing values:
+
+```{r interpolation-predictions}
+gap_covariates <- data.frame(
+  x1 = x1[all_gap_indices],
+  x2 = x2[all_gap_indices], 
+  x3 = x3[all_gap_indices]
+)
+
+interpolation_pred <- predict(
+  ngme_out_interp,
+  map = list(my_ar_interp = all_gap_indices),
+  data = gap_covariates,
+  type = "lp",
+  estimator = c("mean", "sd", "5quantile", "95quantile"),
+  sampling_size = 1000,
+  seed = 42
+)
+
+interp_mean <- interpolation_pred$mean
+interp_sd <- interpolation_pred$sd  
+interp_lower <- interpolation_pred[["5quantile"]]
+interp_upper <- interpolation_pred[["95quantile"]]
+```
+
+#### Technical Interpolation Results
+
+The interpolation performance can be assessed by comparing predicted values with the true (known) values at gap locations. These metrics demonstrate the effectiveness of temporal correlation for missing value estimation:
+
+```{r interpolation-evaluation}
+interp_errors <- interp_mean - Y_true_gaps
+rmse_interp <- sqrt(mean(interp_errors^2))
+mae_interp <- mean(abs(interp_errors))
+correlation_interp <- cor(interp_mean, Y_true_gaps)
+in_interval_90_interp <- (Y_true_gaps >= interp_lower) & (Y_true_gaps <= interp_upper)
+coverage_90_interp <- mean(in_interval_90_interp)
+
+cat("RMSE:", round(rmse_interp, 3), "\n")
+cat("MAE:", round(mae_interp, 3), "\n") 
+cat("Correlation:", round(correlation_interp, 3), "\n")
+cat("90% Interval Coverage:", round(coverage_90_interp * 100, 1), "%\n")
+
+print(data.frame(
+  Time = all_gap_indices[1:10],
+  Observed = round(Y_true_gaps[1:10], 2),
+  Interpolated = round(interp_mean[1:10], 2),
+  Lower_90 = round(interp_lower[1:10], 2),
+  Upper_90 = round(interp_upper[1:10], 2)
+))
+```
+
+### Visualizing Interpolation Results
+
+The interpolation visualization shows how the model fills gaps across different time periods. Each subplot focuses on a specific gap region with surrounding temporal context to illustrate the bidirectional information flow:
+
+```{r interpolation-visualization, fig.height=8, fig.width=8,echo=FALSE}
+gap_info <- list(
+  list(indices = gap1_indices, name = "Gap 1 (Early)", center = mean(gap1_indices)),
+  list(indices = gap2_indices, name = "Gap 2 (Middle)", center = mean(gap2_indices)),
+  list(indices = gap3_indices, name = "Gap 3 (Late)", center = mean(gap3_indices))
+)
+
+plot_list <- list()
+context_length <- 80
+
+for(i in 1:3) {
+  gap <- gap_info[[i]]
+  context_start <- round(max(1, gap$center - context_length/2))
+  context_end <- round(min(n_obs, gap$center + context_length/2))
+  context_range <- context_start:context_end
+  
+  # Complete time series data within the context window
+  all_context_data <- data.frame(
+    time = context_range,
+    value = Y[context_range],
+    is_gap = context_range %in% gap$indices
+  )
+  
+  # Extract data points within the gap for highlighting
+  gap_data <- data.frame(
+    time = gap$indices,
+    value = Y[gap$indices]
+  )
+  
+  # Interpolated values with uncertainty bounds
+  interp_mask <- all_gap_indices %in% gap$indices
+  interp_gap_data <- data.frame(
+    time = gap$indices,
+    value = interp_mean[interp_mask],
+    lower = interp_lower[interp_mask],
+    upper = interp_upper[interp_mask]
+  )
+  
+  p <- ggplot() +
+    # Continuous blue line representing the complete observed time series
+    geom_line(data = all_context_data, aes(x = time, y = value), 
+              color = "#2E86AB", alpha = 0.6, linewidth = 0.4) +
+    
+    # Blue points highlighting the true values within the gap
+    geom_point(data = gap_data, aes(x = time, y = value), 
+               color = "#2E86AB", size = 1.2, alpha = 0.8) +
+    
+    # Uncertainty ribbon for interpolated predictions
+    geom_ribbon(data = interp_gap_data, 
+                aes(x = time, ymin = lower, ymax = upper), 
+                fill = "#A23B72", alpha = 0.2) +
+    
+    # Purple line connecting the interpolated values
+    geom_line(data = interp_gap_data, aes(x = time, y = value), 
+              color = "#A23B72", linewidth = 0.4) +
+    
+    # Purple points showing interpolated predictions
+    geom_point(data = interp_gap_data, aes(x = time, y = value), 
+               color = "#A23B72", size = 1.2, alpha = 0.8) +
+    
+    # Vertical dashed lines marking gap boundaries
+    geom_vline(xintercept = c(min(gap$indices), max(gap$indices)), 
+               linetype = "dashed", color = "gray50", alpha = 0.6) +
+    
+    labs(title = paste(gap$name, "- AR(1) Interpolation"), 
+         x = "Time", y = "Value") +
+    theme_minimal() +
+    theme(plot.title = element_text(size = 11, face = "bold"), 
+          panel.grid.minor = element_blank())
+  
+  plot_list[[i]] <- p
+}
+
+library(gridExtra)
+grid.arrange(plot_list[[1]], plot_list[[2]], plot_list[[3]], ncol = 1,
+             top = "AR(1) Model Interpolation Across Multiple Time Periods")
+```
+
+## Posterior Simulation
+
+After fitting and validating our AR(1) model, we can generate posterior samples to quantify uncertainty in both the latent process and the response predictions. This Bayesian approach provides comprehensive uncertainty characterization beyond simple point estimates.
+
+### Generating Posterior Samples
+
+The `ngme2` package provides functionality to generate posterior samples through the `ngme_post_samples()` function. These samples represent different plausible realizations of the latent AR(1) process given the observed data and estimated parameters:
+
+```{r posterior-sampling}
+posterior_samples <- ngme_post_samples(ngme_out)
+
+cat("Number of time points:", nrow(posterior_samples), "\n")
+cat("Number of posterior samples:", ncol(posterior_samples), "\n")
+cat("Sample names:", names(posterior_samples)[1:5], "...\n")
+```
+
+### Latent Process Posterior Analysis
+
+We first analyze the posterior uncertainty in the latent AR(1) process (W). The posterior samples allow us to quantify how well we can recover the underlying temporal structure:
+
+```{r posterior-analysis}
+W_posterior_mean <- apply(posterior_samples, 1, mean)
+W_posterior_sd <- apply(posterior_samples, 1, sd)
+W_posterior_q025 <- apply(posterior_samples, 1, function(x) quantile(x, 0.025))
+W_posterior_q975 <- apply(posterior_samples, 1, function(x) quantile(x, 0.975))
+
+comparison_data <- data.frame(
+  time = 1:n_obs,
+  true_W = W_nig,
+  posterior_mean = W_posterior_mean,
+  posterior_lower = W_posterior_q025,
+  posterior_upper = W_posterior_q975
+)
+
+cat("Mean absolute difference from true values:", 
+    round(mean(abs(W_posterior_mean - W_nig)), 3), "\n")
+cat("Average posterior standard deviation:", 
+    round(mean(W_posterior_sd), 3), "\n")
+```
+
+### Latent Process Uncertainty Visualization
+
+This visualization shows how well the model recovers the underlying latent AR(1) process by comparing the posterior estimates with the true latent values:
+
+```{r posterior-visualization, fig.height=6, fig.width=8, echo=FALSE}
+viz_range <- 2000:2200
+viz_data <- comparison_data[viz_range, ]
+
+p_posterior <- ggplot(viz_data, aes(x = time)) +
+  geom_ribbon(aes(ymin = posterior_lower, ymax = posterior_upper), 
+              fill = "#A23B72", alpha = 0.3) +
+  geom_line(aes(y = true_W, color = "True Latent Process"), 
+            linewidth = 0.4, alpha = 0.8) +
+  geom_line(aes(y = posterior_mean, color = "Posterior Mean"), 
+            linewidth = 0.4, alpha = 0.9) +
+  scale_color_manual(values = c("True Latent Process" = "#2E86AB", 
+                               "Posterior Mean" = "#A23B72")) +
+  labs(
+    title = "Posterior Uncertainty in AR(1) Latent Process",
+    subtitle = "95% Posterior Credible Intervals with True vs Estimated Process",
+    x = "Time", 
+    y = "Latent Process Value (W)", 
+    color = ""
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    legend.position = "top", 
+    panel.grid.minor = element_blank()
+  )
+
+print(p_posterior)
+```
+
+### Response Variable Posterior Predictive Check
+
+We now assess model adequacy by generating posterior predictive samples for the response variable (Y) and comparing them with the observed data:
+
+```{r posterior-predictive-check, fig.height=6, fig.width=8, echo=FALSE}
+n_sims <- 300
+
+# Generate posterior predictive samples for Y using simulate()
+Y_sim <- simulate(ngme_out, posterior=TRUE, m_noise=TRUE, nsim = n_sims)
+
+# Convert to matrix for easier handling
+Y_sim_matrix <- as.matrix(Y_sim)
+
+# Compare observed vs simulated Y values
+par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
+
+# 1. Scatter plot: Observed vs Posterior Mean (much clearer visualization)
+y_mean <- rowMeans(Y_sim_matrix)
+y_lower <- apply(Y_sim_matrix, 1, quantile, 0.025)
+y_upper <- apply(Y_sim_matrix, 1, quantile, 0.975)
+plot(y_mean, Y, pch = 16, col = rgb(0.3, 0.3, 0.3, 0.6), cex = 0.8,
+     main = "Observed vs Posterior Mean", 
+     xlab = "Posterior Mean", ylab = "Observed Y",
+     xlim = range(c(y_mean, Y)), ylim = range(c(y_mean, Y)))
+
+# Add 1:1 reference line
+abline(0, 1, col = "red", lwd = 1, lty = 2)
+
+segments(y_mean, y_lower, 
+         y_mean, y_upper, 
+         col = rgb(0.64, 0.23, 0.45, 0.1), lwd = 1)
+
+# Calculate and display correlation
+correlation <- cor(Y, y_mean)
+mtext(paste("Correlation =", round(correlation, 3)), side = 3, line = 0.2, cex = 0.9)
+
+legend("topleft", legend = c("Data points", "Perfect fit", "95% CI"), 
+       col = c(rgb(0.3, 0.3, 0.3, 0.6), "red", rgb(0.64, 0.23, 0.45, 0.4)), 
+       pch = c(16, NA, NA), lty = c(NA, 2, 1), lwd = c(NA, 1, 1), bty = "n")
+
+# 2. Histogram comparison
+hist(Y, breaks = 40, col = rgb(0.18, 0.53, 0.67, 0.7), 
+     main = "Distribution Comparison", xlab = "Y values", 
+     freq = FALSE, border = "white")
+hist(unlist(Y_sim), breaks = 40, col = rgb(0.64, 0.23, 0.45, 0.7), 
+     add = TRUE, freq = FALSE, border = "white")
+legend("topleft", legend = c("Observed", "Simulated"), 
+       fill = c(rgb(0.18, 0.53, 0.67, 0.7), rgb(0.64, 0.23, 0.45, 0.7)), 
+       bty = "n")
+
+# 3. Q-Q plot
+qqplot(Y, unlist(Y_sim), main = "Q-Q Plot", 
+       xlab = "Observed Y quantiles", ylab = "Simulated Y quantiles",
+       pch = 16, col = rgb(0.3, 0.3, 0.3, 0.6))
+abline(0, 1, col = "red", lwd = 1)
+
+# 4. Posterior predictive distribution comparison using density plots
+d_observed <- density(Y)
+d_simulated <- density(unlist(Y_sim))
+
+plot(d_observed, col = "#2E86AB", lwd = 1, 
+     main = "Density Comparison", 
+     xlab = "Y values", ylab = "Density",
+     xlim = range(c(d_observed$x, d_simulated$x)),
+     ylim = range(c(d_observed$y, d_simulated$y)))
+lines(d_simulated, col = rgb(0.64, 0.23, 0.45, 0.8), lwd = 1)
+
+# Add some key statistics as vertical lines
+abline(v = mean(Y), col = "#2E86AB", lty = 2, lwd = 1)
+abline(v = mean(unlist(Y_sim)), col = rgb(0.64, 0.23, 0.45, 0.8), lty = 2, lwd = 2)
+
+legend("topleft", 
+       legend = c("Observed", "Simulated", "Obs. mean", "Sim. mean"), 
+       col = c("#2E86AB", rgb(0.64, 0.23, 0.45, 0.8), "#2E86AB", rgb(0.64, 0.23, 0.45, 0.8)), 
+       lty = c(1, 1, 2, 2), lwd = c(1, 1, 1, 1), bty = "n")
+```
+
+### Response Variable Prediction Intervals
+
+Finally, we assess the calibration of our prediction intervals by examining how well the posterior predictive samples capture the observed data:
+
+```{r uncertainty-bands, fig.height=5, fig.width=8, echo=FALSE}
+# Calculate prediction intervals from posterior samples
+y_quantiles <- apply(Y_sim_matrix, 1, quantile, probs = c(0.025, 0.25, 0.5, 0.75, 0.975))
+
+# Sort by observed values for better visualization
+sort_idx <- order(Y)
+Y_sorted <- Y[sort_idx]
+y_quantiles_sorted <- y_quantiles[, sort_idx]
+
+par(mfrow = c(1, 2), mar = c(4, 4, 3, 1))
+
+# 1. Uncertainty bands plot
+plot(1:length(Y_sorted), Y_sorted, type = "l", col = "#2E86AB", lwd = 2,
+     main = "Posterior Prediction Intervals", 
+     xlab = "Sorted Index", ylab = "Y values",
+     ylim = range(y_quantiles_sorted))
+
+# Add uncertainty bands
+polygon(c(1:length(Y_sorted), rev(1:length(Y_sorted))), 
+         c(y_quantiles_sorted[1,], rev(y_quantiles_sorted[5,])), 
+         col = rgb(0.64, 0.23, 0.45, 0.2), border = NA)
+polygon(c(1:length(Y_sorted), rev(1:length(Y_sorted))), 
+         c(y_quantiles_sorted[2,], rev(y_quantiles_sorted[4,])), 
+         col = rgb(0.64, 0.23, 0.45, 0.3), border = NA)
+
+lines(1:length(Y_sorted), y_quantiles_sorted[3,], col = rgb(0.64, 0.23, 0.45, 0.8), lwd = 1)
+lines(1:length(Y_sorted), Y_sorted, col = "#2E86AB", lwd = 1)
+
+legend("topleft", legend = c("Observed", "Median prediction", "50% interval", "95% interval"), 
+       col = c("#2E86AB", rgb(0.64, 0.23, 0.45, 0.8), rgb(0.64, 0.23, 0.45, 0.3), rgb(0.64, 0.23, 0.45, 0.2)), 
+       lwd = c(2, 2, 8, 8), bty = "n")
+
+# 2. Coverage assessment
+coverage_50 <- mean(Y >= y_quantiles[2,] & Y <= y_quantiles[4,])
+coverage_95 <- mean(Y >= y_quantiles[1,] & Y <= y_quantiles[5,])
+
+barplot(c(coverage_50, coverage_95), 
+        names.arg = c("50% Interval", "95% Interval"),
+        main = "Prediction Interval Coverage",
+        ylab = "Empirical Coverage",
+        col = c(rgb(0.64, 0.23, 0.45, 0.6), rgb(0.64, 0.23, 0.45, 0.8)),
+        ylim = c(0, 1))
+abline(h = c(0.5, 0.95), lty = 2, col = "red")
+```
+

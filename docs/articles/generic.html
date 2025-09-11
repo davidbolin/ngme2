@@ -159,7 +159,7 @@ framework</li>
 <li>Combine different models or extend them with new components</li>
 <li>Develop entirely new models tailored to your specific needs</li>
 </ol>
-<p>At its core, the generic model builds a precision matrix K as a
+<p>At its core, the generic model builds a operator matrix K as a
 weighted sum of matrices:</p>
 <p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>K</mi><mo>=</mo><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>m</mi></munderover><msub><mi>f</mi><mi>i</mi></msub><mrow><mo stretchy="true" form="prefix">(</mo><mi>θ</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>⋅</mo><msub><mi>M</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">K = \sum_{i=1}^m f_i(\theta) \cdot M_i</annotation></semantics></math></p>
 <p>where
@@ -211,7 +211,7 @@ parameters</li>
 identity transformation - Parameter <code>b</code> affects matrix B with
 exponential transformation - Parameter <code>c</code> affects matrix C
 with identity transformation - Matrix D has a fixed coefficient of 1</p>
-<p>The resulting precision matrix is:</p>
+<p>The resulting operator matrix is:</p>
 <p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>K</mi><mo>=</mo><mi>a</mi><mo>⋅</mo><mi>A</mi><mo>+</mo><msup><mi>e</mi><mi>b</mi></msup><mo>⋅</mo><mi>B</mi><mo>+</mo><mi>c</mi><mo>⋅</mo><mi>C</mi><mo>+</mo><mi>D</mi></mrow><annotation encoding="application/x-tex">K = a \cdot A + e^b \cdot B + c \cdot C + D</annotation></semantics></math></p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># View the resulting K matrix</span></span>
@@ -430,9 +430,6 @@ parameter, the length of the transformation vector must match the number
 of matrices</p></li>
 <li><p><strong>Use named parameters</strong>: Always provide names for
 theta_K parameters</p></li>
-<li><p><strong>Ensure positive definiteness</strong>: For valid
-precision matrices, make sure the resulting K is positive
-definite</p></li>
 </ol>
 </div>
 <div class="section level3">
@@ -479,9 +476,33 @@ data.</p>
 </h2>
 <p>The <code>generic_ns</code> model extends the <code>generic</code>
 model by allowing for non-stationary, spatially-varying parameters.
-While the standard <code>generic</code> model creates a precision matrix
+While the standard <code>generic</code> model creates a operator matrix
 as a weighted sum of matrices, <code>generic_ns</code> enables parameter
 values to vary across space or time.</p>
+<p>At its core, the <code>generic_ns</code> model builds a operator
+matrix K using spatially-varying parameters:</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>K</mi><mo>=</mo><munderover><mo>∑</mo><mrow><mi>j</mi><mo>=</mo><mn>1</mn></mrow><mi>p</mi></munderover><mrow><mo stretchy="true" form="prefix">(</mo><munder><mo>∏</mo><mrow><mi>k</mi><mo>∈</mo><msub><mi>S</mi><mi>j</mi></msub></mrow></munder><mtext mathvariant="normal">diag</mtext><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>f</mi><mi>k</mi></msub><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>B</mi><mi>k</mi></msub><msub><mi>𝛉</mi><mi>k</mi></msub><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">)</mo></mrow><mo>⋅</mo><mrow><mo stretchy="true" form="prefix">(</mo><munder><mo>∏</mo><mrow><mi>l</mi><mo>∈</mo><msub><mi>F</mi><mi>j</mi></msub></mrow></munder><msub><mi>M</mi><mi>l</mi></msub><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">K = \sum_{j=1}^p \left( \prod_{k \in S_j} \text{diag}(f_k(B_k \boldsymbol{\theta}_k)) \right) \cdot \left( \prod_{l \in F_j} M_l \right)</annotation></semantics></math></p>
+<p>where: -
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>B</mi><mi>k</mi></msub><annotation encoding="application/x-tex">B_k</annotation></semantics></math>
+are basis expansion matrices for parameter
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>
+-
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>𝛉</mi><mi>k</mi></msub><annotation encoding="application/x-tex">\boldsymbol{\theta}_k</annotation></semantics></math>
+are coefficient vectors for the basis expansions -
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>f</mi><mi>k</mi></msub><annotation encoding="application/x-tex">f_k</annotation></semantics></math>
+are transformation functions applied element-wise -
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">diag</mtext><mrow><mo stretchy="true" form="prefix">(</mo><mo>⋅</mo><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\text{diag}(\cdot)</annotation></semantics></math>
+creates diagonal matrices from vectors -
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>S</mi><mi>j</mi></msub><annotation encoding="application/x-tex">S_j</annotation></semantics></math>
+are sets of parameter indices for term
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>j</mi><annotation encoding="application/x-tex">j</annotation></semantics></math>
+-
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>F</mi><mi>j</mi></msub><annotation encoding="application/x-tex">F_j</annotation></semantics></math>
+are sets of fixed matrix indices for term
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>j</mi><annotation encoding="application/x-tex">j</annotation></semantics></math>
+-
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>M</mi><mi>l</mi></msub><annotation encoding="application/x-tex">M_l</annotation></semantics></math>
+are fixed matrices</p>
 <div class="section level3">
 <h3 id="key-features">Key Features<a class="anchor" aria-label="anchor" href="#key-features"></a>
 </h3>
@@ -528,7 +549,7 @@ instructions on how matrices are combined</li>
 <span>  mesh <span class="op">=</span> <span class="va">mesh</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>In this example: - <code>alpha</code> varies between two regions
-(value 0.5 in the first half, 2 in the second half) - The precision
+(value 0.5 in the first half, 2 in the second half) - The operator
 matrix is constructed as D_alpha * A + B, where D_alpha is a diagonal
 matrix</p>
 </div>
@@ -567,17 +588,28 @@ space.</p>
 <h3 id="matrix-positions-explained">Matrix Positions Explained<a class="anchor" aria-label="anchor" href="#matrix-positions-explained"></a>
 </h3>
 <p>The <code>position</code> parameter in <code>generic_ns</code>
-controls how matrices are combined:</p>
+controls how matrices are combined, corresponding to the terms in the
+formula above:</p>
 <ul>
-<li>Each element in the list represents a term in the sum</li>
+<li>Each element in the list represents a term
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>j</mi><annotation encoding="application/x-tex">j</annotation></semantics></math>
+in the sum</li>
 <li>Each vector contains indices specifying which matrices to multiply
 together</li>
-<li>Parameter matrices (diagonal matrices) are listed first, followed by
-fixed matrices</li>
+<li>Parameter matrices (diagonal matrices from transformed basis
+expansions) are listed first, followed by fixed matrices</li>
 </ul>
 <p>For example, with <code>position = list(c(1, 2), c(3))</code>: - The
-first term multiplies parameter matrix 1 with fixed matrix 1 (indices 1
-and 2) - The second term is just fixed matrix 2 (index 3)</p>
+first term
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>j</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">j=1</annotation></semantics></math>)
+multiplies diagonal parameter matrix 1 with fixed matrix 1:
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">diag</mtext><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>f</mi><mn>1</mn></msub><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>B</mi><mn>1</mn></msub><msub><mi>𝛉</mi><mn>1</mn></msub><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">)</mo></mrow><mo>⋅</mo><msub><mi>M</mi><mn>1</mn></msub></mrow><annotation encoding="application/x-tex">\text{diag}(f_1(B_1 \boldsymbol{\theta}_1)) \cdot M_1</annotation></semantics></math>
+- The second term
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>j</mi><mo>=</mo><mn>2</mn></mrow><annotation encoding="application/x-tex">j=2</annotation></semantics></math>)
+is just fixed matrix 2:
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>M</mi><mn>2</mn></msub><annotation encoding="application/x-tex">M_2</annotation></semantics></math></p>
+<p>This creates:
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>K</mi><mo>=</mo><mtext mathvariant="normal">diag</mtext><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>f</mi><mn>1</mn></msub><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>B</mi><mn>1</mn></msub><msub><mi>𝛉</mi><mn>1</mn></msub><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">)</mo></mrow><mo>⋅</mo><msub><mi>M</mi><mn>1</mn></msub><mo>+</mo><msub><mi>M</mi><mn>2</mn></msub></mrow><annotation encoding="application/x-tex">K = \text{diag}(f_1(B_1 \boldsymbol{\theta}_1)) \cdot M_1 + M_2</annotation></semantics></math></p>
 </div>
 <div class="section level3">
 <h3 id="best-practices">Best Practices<a class="anchor" aria-label="anchor" href="#best-practices"></a>

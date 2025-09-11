@@ -335,7 +335,7 @@ public:
         return sampling(n, n_burnin, posterior, A);
     }
 
-    Rcpp::List output() const;
+    Rcpp::List output();
     std::string get_par_string() const {return par_string;}
 
     static double th2rho(double th) {return (-1 + 2*exp(th) / (1+exp(th)));}

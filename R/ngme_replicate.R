@@ -6,6 +6,7 @@ ngme_replicate <- function(
   models       = list(),
   control_ngme = control_ngme(),
   standardize  = TRUE,
+  log_likelihood = NULL,
   ...
 ) {
   # compute W_sizes and V_sizes
@@ -45,6 +46,7 @@ ngme_replicate <- function(
       n_params          = n_params,
       n_la_params       = n_la_params,
       standardize       = standardize,
+      log_likelihood    = log_likelihood,
       ...
     ),
     class = c("ngme_replicate", "list")
@@ -82,4 +84,8 @@ print.ngme_replicate <- function(x, ...) {
 
   cat("Measurement noise: \n");
   print(ngme_rep$noise, padding = 2); cat("\n\n")
+
+  if (ngme_rep$all_gaussian && !is.null(ngme_rep$log_likelihood)) {
+    cat("Log likelihood: "); cat(ngme_rep$log_likelihood); cat("\n\n")
+  }
 }

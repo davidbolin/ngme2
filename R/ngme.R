@@ -309,6 +309,7 @@ update_ngme_est <- function(
   # Fixed effects
   names(est_output$feff) <- names(ngme_replicate$feff)
   ngme_replicate$feff <- est_output$feff
+  ngme_replicate$log_likelihood <- est_output$log_likelihood
 
   if (ngme_replicate$standardize) {
     # standardize feff (transform back)
@@ -322,7 +323,6 @@ update_ngme_est <- function(
     nrow_one_repl = nrow(ngme_replicate$X)
     ngme_replicate$X <- X[1:nrow_one_repl, ]
   }
-
 
   ngme_replicate$noise <- update_noise(ngme_replicate$noise, new_noise = est_output$noise)
   for (i in seq_along(ngme_replicate$models)) {

@@ -1076,7 +1076,7 @@ void BlockModel::assemble_dK() {
 // std::cout << "-----" << std::endl;
 
 // generate output to R
-Rcpp::List BlockModel::output() const {
+Rcpp::List BlockModel::output() {
   Rcpp::List latents_output;
   for (int i=0; i < n_latent; i++) {
     latents_output.push_back((*latents[i]).output());
@@ -1093,7 +1093,8 @@ Rcpp::List BlockModel::output() const {
     ),
     Rcpp::Named("feff")            = beta,
     // Rcpp::Named("sampling_time")   = sampling_time.count(),
-    Rcpp::Named("models")          = latents_output
+    Rcpp::Named("models")          = latents_output,
+    Rcpp::Named("log_likelihood")  = all_gaussian ? -log_likelihood() : 0
   );
 
   return out;
@@ -1141,10 +1142,6 @@ double BlockModel::log_likelihood() {
       log_like -= 2 * noise_sigma.array().log().sum();
     } else {
       chol_Q_eps.compute(Q_eps);
-  // std::cout << "rho = " << rho << std::endl;
-  // std::cout << "Q_eps = " << Q_eps << std::endl;
-  // std::cout << "logdet = " << chol_Q_eps.logdet() << std::endl;
-  // std::cout << "logdet 2 = " << logdet_Q_eps << std::endl;
       log_like += chol_Q_eps.logdet();
     }
     log_like -= chol_QQ.logdet();

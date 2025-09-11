@@ -12,7 +12,7 @@ predict using ngme after estimation}
   type = "lp",
   group = NULL,
   estimator = c("mean", "sd", "0.05q", "0.95q", "median", "mode"),
-  sampling_size = 100,
+  sampling_size = 500,
   burnin_size = 100,
   seed = Sys.time(),
   train_idx = NULL,

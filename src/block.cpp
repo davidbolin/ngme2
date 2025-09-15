@@ -1076,7 +1076,7 @@ void BlockModel::assemble_dK() {
 // std::cout << "-----" << std::endl;
 
 // generate output to R
-Rcpp::List BlockModel::output() {
+Rcpp::List BlockModel::output() const {
   Rcpp::List latents_output;
   for (int i=0; i < n_latent; i++) {
     latents_output.push_back((*latents[i]).output());
@@ -1093,8 +1093,8 @@ Rcpp::List BlockModel::output() {
     ),
     Rcpp::Named("feff")            = beta,
     // Rcpp::Named("sampling_time")   = sampling_time.count(),
-    Rcpp::Named("models")          = latents_output,
-    Rcpp::Named("log_likelihood")  = all_gaussian ? -log_likelihood() : 0
+    Rcpp::Named("models")          = latents_output
+    // Rcpp::Named("log_likelihood")  = all_gaussian ? -log_likelihood() : 0
   );
 
   return out;

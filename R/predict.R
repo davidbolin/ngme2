@@ -114,7 +114,9 @@ predict.ngme <- function(
       for (i in seq_along(ngme$models)) {
         loc <- map[[ngme$models[[i]]$name]]
     if (is.null(loc)) stop("The loction for model ", ngme$models[[i]]$name, " is not provided")
-        if (ngme$models[[i]]$model != "tp")
+        if (inherits(ngme$models[[i]]$operator$mesh, "metric_graph")) {
+          loc <- as.data.frame(loc)
+        } else if (ngme$models[[i]]$model != "tp")
           loc <- as.matrix(loc)
         else {
           stopifnot(

@@ -619,9 +619,9 @@ matern <- function(
     trans = list(theta_K=c("exp4", "exp2", "null"))
     position = NULL
   } else if (alpha == 2) {
-    theta_K = list(theta=theta_K)
-    trans = list(theta=c("exp"))
-    B_theta_K = list(theta = B_theta_K)
+    theta_K = list(theta_K=theta_K)
+    trans = list(theta_K=c("exp"))
+    B_theta_K = list(theta_K = B_theta_K)
     matrices = list(C, G, Cinv)
     position = list(
       c(1, 2, 1), 

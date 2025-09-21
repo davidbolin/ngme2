@@ -162,10 +162,11 @@ time_new <- sample(2001:2004, n_new, replace = TRUE)
 loc_new <- cbind(runif(n_new), runif(n_new)) * 10
 
 # For the tp model (model name we give), we need two arguments to do the prediction.
-predict(ngme_fit, map=list(tp=list(
+pd <- predict(ngme_fit, map=list(tp=list(
   year=time_new,
   pos=loc_new
 )))
+str(pd)
 ```
 
 

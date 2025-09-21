@@ -29,5 +29,5 @@ double compute_log_like_cpp(const Rcpp::List& R_ngme) {
         total_log_like += block.log_likelihood();
     }
 
-    return total_log_like;
+    return -total_log_like;
 }

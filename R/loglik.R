@@ -8,9 +8,9 @@
 #' @export
 compute_log_like <- function(ngme_model) {
   stopifnot(inherits(ngme_model, "ngme"))
-  was_estimated <- any(vapply(ngme_model$replicates, function(rep) !is.null(rep$log_likelihood), logical(1)))
-  if (!was_estimated) {
-    warning("Model has not been estimated yet. Run ngme() with control_opt$estimation = TRUE first.")
+  estimation_enabled <- attr(ngme_model, "estimation_enabled")
+  if (!is.null(estimation_enabled) && !isTRUE(estimation_enabled)) {
+    warning("Model was created with control_opt$estimation = FALSE; fit the model before computing log-likelihood.")
     return(NA_real_)
   }
 

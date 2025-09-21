@@ -358,7 +358,7 @@ rw1 <- function(
 #' @param mesh numerical vector or inla.mesh.1d object, locations to build the mesh.
 #'   For numerical vectors, assumes equally spaced locations. Must have at least 3 locations.
 #' @param constr logical, whether to enforce the sum-to-zero constraint \eqn{\sum_{i=1}^n h_i W_i = 0}
-#'   and the linear trend constraint \eqn{\sum_{i=1}^n (\sum_{j=1}^i h_j - h_1) \cdot i \cdot W_i = 0}.
+#'   and the linear trend constraint \eqn{\sum_{i=1}^n (\sum_{j=1}^i h_j - h_1) \cdot W_i = 0}.
 #'   If FALSE, fixes the first and second elements \eqn{W_1 = 0} and \eqn{W_2 = 0}.
 #' @param cyclic logical, whether the mesh is circular. If TRUE, the first and last
 #'   locations are treated as neighbors with second-order differences computed

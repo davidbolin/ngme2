@@ -42,6 +42,18 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
   operator <- x
   pad_space <- paste(rep(" ", padding), collapse = "")
   pad_add4_space <- paste(rep(" ", padding + 4), collapse = "")
+  pad_add8_space <- paste(rep(" ", padding + 8), collapse = "")
+
+  limited_format <- function(values, digits = 3, max_items = 6) {
+    if (length(values) == 0) {
+      return("<none>")
+    }
+    formatted <- format(values, digits = digits)
+    if (length(values) > max_items) {
+      formatted <- c(formatted[seq_len(max_items)], "...")
+    }
+    paste(formatted, collapse = ", ")
+  }
 
   model_name <- switch(operator$model,
     ar1 = "AR(1)",
@@ -57,6 +69,7 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
     ou  = "Ornstein-Uhlenbeck",
     re  = "Random effect",
     generic = "Generic",
+    generic_ns = "Generic (non-stationary)",
     spacetime = if (operator$method == "galerkin") "Space-time (Galerkin)" else "Space-time (Implicit Euler)",
     {
       # Handle general AR models (ar2, ar3, etc.)
@@ -158,9 +171,96 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
       cat(pad_add4_space); cat("kappa =", format(exp(theta_K[2]), digits=2), "\n", sep=" ")
     },
     generic = {
-      for (i in seq_along(operator$param_name)) {
-        t <- operator$theta_K[i]
-        cat(pad_add4_space, operator$param_name[i], "=", format(t, digits=3), "\n", sep=" ")
+      theta_vals <- operator$theta_K
+      theta_names <- names(theta_vals)
+      param_names <- operator$param_name
+      trans_list <- operator$trans
+      trans_names <- names(trans_list)
+
+      get_label <- function(idx) {
+        if (!is.null(param_names) && length(param_names) >= idx &&
+            !is.na(param_names[idx]) && nzchar(param_names[idx])) {
+          return(param_names[idx])
+        }
+        if (!is.null(theta_names) && length(theta_names) >= idx &&
+            !is.na(theta_names[idx]) && nzchar(theta_names[idx])) {
+          return(theta_names[idx])
+        }
+        paste0("theta_", idx)
+      }
+
+      if (length(theta_vals) > 0) {
+        cat(pad_add4_space, "Parameters:\n", sep = "")
+        for (i in seq_along(theta_vals)) {
+          label <- get_label(i)
+          cat(pad_add8_space, label, " raw: ", limited_format(theta_vals[i]), "\n", sep = "")
+
+          trans_key <- NULL
+          if (!is.null(theta_names) && length(theta_names) >= i &&
+              !is.na(theta_names[i]) && nzchar(theta_names[i]) &&
+              !is.null(trans_names) && theta_names[i] %in% trans_names) {
+            trans_key <- theta_names[i]
+          } else if (!is.null(param_names) && length(param_names) >= i &&
+              !is.na(param_names[i]) && nzchar(param_names[i]) &&
+              !is.null(trans_names) && param_names[i] %in% trans_names) {
+            trans_key <- param_names[i]
+          }
+
+          if (!is.null(trans_key)) {
+            mapping <- trans_list[[trans_key]]
+            active_idx <- which(mapping != "null")
+            if (length(active_idx) > 0) {
+              combo <- paste0("#", active_idx, ": ", mapping[active_idx])
+              cat(pad_add8_space, "matrix transforms: ", paste(combo, collapse = ", "), "\n", sep = "")
+            }
+          }
+        }
+      } else {
+        cat(pad_add4_space, "Parameters: none\n", sep = "")
+      }
+
+      if (!is.null(operator$matrices)) {
+        dims <- tryCatch(dim(operator$K), error = function(...) NULL)
+        size_info <- if (!is.null(dims)) paste0(dims[1], " x ", dims[2]) else "unknown size"
+        cat(pad_add4_space, "Stored matrices: ", length(operator$matrices), " (", size_info, ")\n", sep = "")
+      }
+    },
+    generic_ns = {
+      param_map <- operator$param_map
+      param_names <- names(param_map)
+
+      if (length(param_map) > 0) {
+        cat(pad_add4_space, "Parameters:\n", sep = "")
+        for (name in param_names) {
+          indices <- param_map[[name]]
+          coeff <- operator$theta_K[indices]
+          cat(pad_add8_space, name, " coefficients: ", limited_format(coeff), "\n", sep = "")
+
+          if (!is.null(operator$trans) && !is.null(operator$trans[[name]])) {
+            cat(pad_add8_space, "transform: ", operator$trans[[name]], "\n", sep = "")
+          }
+
+          if (!is.null(operator$B_theta_K) && !is.null(operator$B_theta_K[[name]])) {
+            basis <- operator$B_theta_K[[name]]
+            cat(pad_add8_space, "basis dim: ", nrow(basis), " x ", ncol(basis), "\n", sep = "")
+          }
+        }
+      } else {
+        cat(pad_add4_space, "Parameters: none\n", sep = "")
+      }
+
+      if (!is.null(operator$position) && length(operator$position) > 0) {
+        cat(pad_add4_space, "Matrix combinations (position indices):\n", sep = "")
+        for (i in seq_along(operator$position)) {
+          combo <- operator$position[[i]]
+          cat(pad_add8_space, "#", i, ": ", paste(combo, collapse = " -> "), "\n", sep = "")
+        }
+      }
+
+      if (!is.null(operator$matrices)) {
+        dims <- tryCatch(dim(operator$K), error = function(...) NULL)
+        size_info <- if (!is.null(dims)) paste0(dims[1], " x ", dims[2]) else "unknown size"
+        cat(pad_add4_space, "Stored matrices: ", length(operator$matrices), " (", size_info, ")\n", sep = "")
       }
     },
     # Handle general AR models (ar2, ar3, etc.) or default case
@@ -289,4 +389,3 @@ print.ngme_model <- function(x, padding = 0, ...) {
   
   invisible(model)
 }
-

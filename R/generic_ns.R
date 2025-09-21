@@ -188,15 +188,70 @@ generic_ns <- function(
   }
   names(flat_theta_K) <- rep(names(theta_K), sapply(theta_K, length))
   
-  # Extract parameter transformation functions
-  if (is.null(param_trans)) {
-    param_trans <- list()
-    for (theta_K_name in names(trans)) {
-      param_trans[[theta_K_name]] <- name2fun(trans[[theta_K_name]])
+  flat_names <- names(flat_theta_K)
+
+  # Build parameter names for each flattened coefficient
+  expand_group_labels <- function(labels) {
+    expanded <- character(0)
+    for (group_idx in seq_along(param_map)) {
+      group_name <- trimws(labels[group_idx])
+      if (is.na(group_name) || !nzchar(group_name)) {
+        group_name <- paste0("theta_K_group", group_idx)
+      }
+      indices <- param_map[[group_idx]]
+      if (length(indices) == 1) {
+        expanded <- c(expanded, group_name)
+      } else {
+        tokens <- strsplit(group_name, "\\s+")[[1]]
+        last_token <- tail(tokens, 1)
+        if (length(tokens) > 1 && grepl("^[0-9]+$", last_token)) {
+          base <- trimws(paste(tokens[-length(tokens)], collapse = " "))
+          start_idx <- as.integer(last_token)
+        } else {
+          base <- group_name
+          start_idx <- 1
+        }
+        new_labels <- paste(base, start_idx + seq_along(indices) - 1)
+        expanded <- c(expanded, trimws(new_labels))
+      }
     }
+    expanded
   }
+
   if (is.null(param_name)) {
-    param_name <- names(theta_K)
+    if (!is.null(flat_names) && length(flat_names) == length(flat_theta_K) && all(nzchar(flat_names))) {
+      param_name <- make.unique(flat_names)
+    } else {
+      param_name <- paste0("theta_K", seq_along(flat_theta_K))
+    }
+  } else if (length(param_name) == length(param_map) && length(flat_theta_K) != length(param_name)) {
+    param_name <- expand_group_labels(param_name)
+  }
+
+  # Extract parameter transformation functions for each coefficient in flat_theta_K
+  if (is.null(param_trans)) {
+    param_trans <- vector("list", length(flat_theta_K))
+    if (length(flat_theta_K) > 0) {
+      for (theta_K_name in names(param_map)) {
+        indices <- param_map[[theta_K_name]]
+        trans_fun <- name2fun(trans[[theta_K_name]])
+        param_trans[indices] <- replicate(length(indices), trans_fun, simplify = FALSE)
+      }
+    }
+  } else if (length(param_trans) == length(param_map) && length(flat_theta_K) != length(param_trans)) {
+    expanded <- vector("list", length(flat_theta_K))
+    for (group_idx in seq_along(param_map)) {
+      indices <- param_map[[group_idx]]
+      trans_fun <- param_trans[[group_idx]]
+      expanded[indices] <- replicate(length(indices), trans_fun, simplify = FALSE)
+    }
+    param_trans <- expanded
+  } else if (length(param_trans) != length(flat_theta_K)) {
+    stop("param_trans should have the same length as the flattened theta_K vector or the number of parameter groups")
+  }
+
+  if (length(param_trans) > 0 && is.null(names(param_trans))) {
+    names(param_trans) <- param_name
   }
   
   # Helper function to compute K (theta_K is a flat vector)

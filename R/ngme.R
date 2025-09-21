@@ -105,6 +105,7 @@ ngme <- function(
       length(levels(group)) == 2)
   }
   attr(ngme_model, "fit") <- fit
+  attr(ngme_model, "estimation_enabled") <- control_opt$estimation
   
   # Check if using bfgs for non-Gaussian model
   if (control_opt$sgd_method == "bfgs") {
@@ -815,5 +816,4 @@ ngme_result <- function(
     return(params[[model]])
   }
 }
-
 

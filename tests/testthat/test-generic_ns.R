@@ -256,9 +256,8 @@ test_that("generic_ns model == AR1 model", {
   )
   fit_ar1
 
-  est_rho_ar1 <- ar1_th2a(ngme_result(fit_ar1, "my_ar")$operator$theta_K)
+  est_rho_ar1 <- ar1_th2a(ngme_result(fit_ar1, "my_ar")$rho)
   print(est_rho_ar1)
-  traceplot(fit_ar1, "my_ar")
 
   print(generic_ar1$K)
   generic_ar1$param_map
@@ -279,12 +278,10 @@ test_that("generic_ns model == AR1 model", {
   )
   fit_generic
 
-  est_rho_generic <- ar1_th2a(ngme_result(fit_generic, "generic")$operator$theta_K)
+  est_rho_generic <- ar1_th2a(ngme_result(fit_generic, "generic")$rho)
   print(est_rho_generic)
-  traceplot(fit_generic, "generic")
 
   expect_equal(est_rho_generic[[1]][1], est_rho_ar1[[1]][1])
-  mesh_1d <- fmesher::fm_mesh_1d(1:n_obs)
 })
 
 
@@ -356,7 +353,7 @@ test_that("generic model == Matern model (alpha == 2 or 4)", {
     control_opt = control
   )
   fit_matern_2
-  est_theta_matern_2 <- ngme_result(fit_matern_2, "field1")$operator$theta_K
+  est_theta_matern_2 <- ngme_result(fit_matern_2, "field1")$kappa
   est_theta_matern_2[[1]]
 
   fit_generic_2 <- ngme(
@@ -379,7 +376,7 @@ test_that("generic model == Matern model (alpha == 2 or 4)", {
     control_opt = control
   )
   fit_generic_2
-  est_theta_generic_2 <- ngme_result(fit_generic_2, "generic")$operator$theta_K
+  est_theta_generic_2 <- ngme_result(fit_generic_2, "generic")$theta
   expect_equal(est_theta_generic_2[[1]], est_theta_matern_2[[1]], tolerance = 1e-4)
   
   fit_matern_4 <- ngme(
@@ -511,4 +508,48 @@ test_that("generic_ns model == bv_matern_nig model", {
     debug = FALSE
   )
   out_cor
+})
+
+
+test_that("Simulation and fitting", {
+  n <- 5
+  A <- matrix(1, n, n)
+  B <- matrix(2, n, n)
+  A
+  B
+  alpha <- 0.4
+  
+  model <- generic_ns(
+    theta_K = list(alpha = c(1, 1), beta = 3),
+    B_theta_K = list(alpha = matrix(1, n, 2)),
+    matrices = list(A, B),
+    position = list(c(1, 3), c(2, 4)),
+    h = rep(1, n)
+  )
+  model
+  model$K # (2A+3B)
+
+  mesh <- fmesher::fm_mesh_1d(1:n)
+  y <- 1:5
+  fit <- ngme(
+    y ~ 0 + f(
+      1:n,
+      mesh = mesh,
+      model = "generic_ns",
+      theta_K = list(alpha = c(1, 1)),
+      B_theta_K = list(alpha = matrix(1, n, 2)),
+      matrices = list(A, B),
+      position = list(c(1, 2), c(3)),  # D_alpha * A + B
+      h = rep(1, n)
+    ),
+    data = data.frame(y),
+    control_opt = control_opt(
+      iterations = 10
+    )
+  )
+  fit$replicates[[1]]$models[[1]]$operator$param_name
+  traceplot(fit, "field1")
+  traceplot(fit)
+  fit
+  model
 })

@@ -448,9 +448,9 @@ compute_err_reps <- function(
 
 # helper function to compute MSE, MAE, ... for each subset of target / data
 # assume test_idx and train_idx belongs to same replicate
-##'
-#' @param transform function to apply to predictions and observations before scoring (e.g., identity for original scale, exp for back-transforming log-scale predictions)
-#' This function is applied to both predictions and y_data before computing MAE, MSE, CRPS, sCRPS.
+##
+# transform function to apply to predictions and observations before scoring (e.g., identity for original scale, exp for back-transforming log-scale predictions)
+# This function is applied to both predictions and y_data before computing MAE, MSE, CRPS, sCRPS.
 compute_err_1rep <- function(
   ngme_1rep,
   bool_test_idx,

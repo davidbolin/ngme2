@@ -99,7 +99,7 @@ UTILS = util/num_diff.o util/GIG.o util/rgig.o util/MatrixAlgebra.o util/solver.
 LATENTS = latents/matern.o latents/tensorprod.o latents/randeff.o latents/bivar.o latents/generic.o latents/generic_ns.o
 # $(wildcard latents/*.o)
 
-OBJECTS = $(sslib) RcppExports.o prior.o noise.o sample_rGIG.o estimate.o optimizer.o block.o latent.o ngme.o \
+OBJECTS = $(sslib) RcppExports.o prior.o noise.o sample_rGIG.o estimate.o optimizer.o block.o latent.o ngme.o loglikelihood.o \
    $(UTILS) $(TESTS) $(LATENTS)
 
 

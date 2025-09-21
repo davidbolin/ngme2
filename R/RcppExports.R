@@ -9,6 +9,10 @@ sampling_cpp <- function(ngme_replicate, n, n_burnin, posterior, seed) {
     .Call(`_ngme2_sampling_cpp`, ngme_replicate, n, n_burnin, posterior, seed)
 }
 
+compute_log_like_cpp <- function(R_ngme) {
+    .Call(`_ngme2_compute_log_like_cpp`, R_ngme)
+}
+
 rGIG_cpp <- function(p, a, b, seed) {
     .Call(`_ngme2_rGIG_cpp`, p, a, b, seed)
 }

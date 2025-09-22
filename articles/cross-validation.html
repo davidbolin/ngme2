@@ -38,7 +38,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">ngme2</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.1</span>
       </span>
     </div>
 
@@ -136,7 +136,7 @@
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Cross-validation for the ngme2 models</h1>
             
-            <h4 data-toc-skip class="date">2025-09-10</h4>
+            <h4 data-toc-skip class="date">2025-09-21</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/HEAD/vignettes/cross-validation.Rmd" class="external-link"><code>vignettes/cross-validation.Rmd</code></a></small>
       <div class="hidden name"><code>cross-validation.Rmd</code></div>
@@ -214,7 +214,7 @@ Then, we will perform cross-validation using the
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Starting posterior sampling... </span></span>
 <span><span class="co">#&gt; Posterior sampling done! </span></span>
-<span><span class="co">#&gt; Average standard deviation of the posterior W:  0.9902728 </span></span>
+<span><span class="co">#&gt; Average standard deviation of the posterior W:  0.8667599 </span></span>
 <span><span class="co">#&gt; Note:</span></span>
 <span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
 <span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
@@ -227,15 +227,15 @@ Then, we will perform cross-validation using the
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $field1</span></span>
 <span><span class="co">#&gt;   Model type: AR(1)</span></span>
-<span><span class="co">#&gt;       rho = 0.293</span></span>
+<span><span class="co">#&gt;       rho = 0.154</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.899</span></span>
+<span><span class="co">#&gt;       sigma = 0.84</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.829</span></span>
+<span><span class="co">#&gt;       sigma = 0.784</span></span>
 <span></span>
 <span><span class="co"># 2. Good estimation (500 iterations)</span></span>
 <span><span class="va">fit_ar</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
@@ -250,7 +250,7 @@ Then, we will perform cross-validation using the
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Starting posterior sampling... </span></span>
 <span><span class="co">#&gt; Posterior sampling done! </span></span>
-<span><span class="co">#&gt; Average standard deviation of the posterior W:  1.239303 </span></span>
+<span><span class="co">#&gt; Average standard deviation of the posterior W:  0.6292361 </span></span>
 <span><span class="co">#&gt; Note:</span></span>
 <span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
 <span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
@@ -263,15 +263,15 @@ Then, we will perform cross-validation using the
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $field1</span></span>
 <span><span class="co">#&gt;   Model type: AR(1)</span></span>
-<span><span class="co">#&gt;       rho = 0.502</span></span>
+<span><span class="co">#&gt;       rho = 0.883</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 1.1</span></span>
+<span><span class="co">#&gt;       sigma = 0.32</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.299</span></span>
+<span><span class="co">#&gt;       sigma = 0.988</span></span>
 <span></span>
 <span><span class="co"># 3. Linear model</span></span>
 <span><span class="va">fit_linear</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
@@ -295,13 +295,13 @@ Then, we will perform cross-validation using the
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt; (Intercept)           x </span></span>
-<span><span class="co">#&gt;     0.20447    -0.00996 </span></span>
+<span><span class="co">#&gt;     0.23023    -0.00896 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 1.18</span></span>
+<span><span class="co">#&gt;       sigma = 1.09</span></span>
 <span></span>
 <span></span>
 <span><span class="co"># Doing Cross-validation</span></span>
@@ -321,9 +321,9 @@ Then, we will perform cross-validation using the
 <span><span class="op">)</span></span>
 <span><span class="va">cv1</span><span class="op">$</span><span class="va">mean.scores</span></span>
 <span><span class="co">#&gt;                MAE      MSE  neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; linear   0.9880079 1.545695 0.7007433  1.172654</span></span>
-<span><span class="co">#&gt; ar1_poor 0.9163723 1.317941 0.6497976  1.133809</span></span>
-<span><span class="co">#&gt; ar1      0.8933696 1.166277 0.6164484  1.107705</span></span>
+<span><span class="co">#&gt; linear   0.8786941 1.290225 0.6261189  1.114475</span></span>
+<span><span class="co">#&gt; ar1_poor 0.8904806 1.312230 0.6370634  1.121721</span></span>
+<span><span class="co">#&gt; ar1      0.8100731 1.174195 0.5972672  1.090313</span></span>
 <span></span>
 <span><span class="co"># Leave-percent-out cross-validation (20%) with 5 repetitions</span></span>
 <span><span class="va">cv2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cross_validation.html">cross_validation</a></span><span class="op">(</span></span>
@@ -340,9 +340,9 @@ Then, we will perform cross-validation using the
 <span><span class="op">)</span></span>
 <span><span class="va">cv2</span><span class="op">$</span><span class="va">mean.scores</span></span>
 <span><span class="co">#&gt;                MAE      MSE  neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; linear   1.0224046 1.601917 0.7192237  1.184741</span></span>
-<span><span class="co">#&gt; ar1_poor 0.9721339 1.440957 0.6884495  1.160941</span></span>
-<span><span class="co">#&gt; ar1      0.9099324 1.212808 0.6346109  1.120413</span></span></code></pre></div>
+<span><span class="co">#&gt; linear   0.8452693 1.210815 0.6131620  1.103575</span></span>
+<span><span class="co">#&gt; ar1_poor 0.8341960 1.139393 0.6036732  1.096370</span></span>
+<span><span class="co">#&gt; ar1      0.7625284 1.011465 0.5580228  1.055255</span></span></code></pre></div>
 </div>
   </div>
 

@@ -38,7 +38,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">ngme2</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.1</span>
       </span>
     </div>
 
@@ -618,7 +618,7 @@ measurement noise<a class="anchor" aria-label="anchor" href="#ex1--fixed-effects
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Starting posterior sampling... </span></span>
 <span><span class="co">#&gt; Posterior sampling done! </span></span>
-<span><span class="co">#&gt; Average standard deviation of the posterior W:  1.160688 </span></span>
+<span><span class="co">#&gt; Average standard deviation of the posterior W:  1.233103 </span></span>
 <span><span class="co">#&gt; Note:</span></span>
 <span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
 <span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
@@ -627,19 +627,19 @@ measurement noise<a class="anchor" aria-label="anchor" href="#ex1--fixed-effects
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt;    x1    x2 </span></span>
-<span><span class="co">#&gt; -2.97  1.49 </span></span>
+<span><span class="co">#&gt; -3.06  1.51 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $bv</span></span>
 <span><span class="co">#&gt;   Model type: Bivariate model 2 (normal noise)</span></span>
 <span><span class="co">#&gt;       theta = 0(fixed) </span></span>
-<span><span class="co">#&gt;       rho = 2.53</span></span>
-<span><span class="co">#&gt;       c1 = 1.04</span></span>
-<span><span class="co">#&gt;       c2 = 1.04</span></span>
+<span><span class="co">#&gt;       rho = 2.25</span></span>
+<span><span class="co">#&gt;       c1 = 0.975</span></span>
+<span><span class="co">#&gt;       c2 = 0.895</span></span>
 <span><span class="co">#&gt;       W1: AR(1)</span></span>
-<span><span class="co">#&gt;           rho = 0.614</span></span>
+<span><span class="co">#&gt;           rho = 0.6</span></span>
 <span><span class="co">#&gt;       W2: AR(1)</span></span>
-<span><span class="co">#&gt;           rho = -0.407</span></span>
+<span><span class="co">#&gt;           rho = -0.322</span></span>
 <span><span class="co">#&gt;    Bivariate type-G4 noise:</span></span>
 <span><span class="co">#&gt;       W1: NORMAL</span></span>
 <span><span class="co">#&gt;       Noise parameters: </span></span>
@@ -652,43 +652,43 @@ measurement noise<a class="anchor" aria-label="anchor" href="#ex1--fixed-effects
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       theta_sigma = -0.4270, -0.0812</span></span>
-<span><span class="co">#&gt;       correlation(rho) = 0.953</span></span>
+<span><span class="co">#&gt;       theta_sigma = -0.579, -0.216</span></span>
+<span><span class="co">#&gt;       correlation(rho) = 0.915</span></span>
 <span><span class="co"># Compare the estimated value with the simulated value</span></span>
 <span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">bvar_cor</span>, <span class="st">"bv"</span>, hline<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3</span>,<span class="fl">1</span>,<span class="fl">1</span>,<span class="fl">0.6</span>,<span class="op">-</span><span class="fl">0.4</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="bivariate_files/figure-html/unnamed-chunk-2-1.png" width="700"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $rho</span></span>
-<span><span class="co">#&gt; [1] 2.526495</span></span>
+<span><span class="co">#&gt; [1] 2.249225</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $c1</span></span>
-<span><span class="co">#&gt; [1] 1.046867</span></span>
+<span><span class="co">#&gt; [1] 0.9770131</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $c2</span></span>
-<span><span class="co">#&gt; [1] 1.039649</span></span>
+<span><span class="co">#&gt; [1] 0.894936</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`rho (1st)`</span></span>
-<span><span class="co">#&gt; [1] 0.6134399</span></span>
+<span><span class="co">#&gt; [1] 0.600001</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`rho (2nd)`</span></span>
-<span><span class="co">#&gt; [1] -0.4069212</span></span>
+<span><span class="co">#&gt; [1] -0.3215553</span></span>
 <span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">bvar_cor</span>, hline<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="va">sd_1</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="va">sd_2</span><span class="op">)</span>, <span class="va">rho_e</span>, <span class="op">-</span><span class="fl">3</span>, <span class="fl">1.5</span><span class="op">)</span><span class="op">)</span></span></code></pre>
 <p><img src="bivariate_files/figure-html/unnamed-chunk-2-2.png" width="700"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $`theta_sigma 1`</span></span>
-<span><span class="co">#&gt; [1] -0.4267748</span></span>
+<span><span class="co">#&gt; [1] -0.5786618</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`theta_sigma 2`</span></span>
-<span><span class="co">#&gt; [1] -0.08016661</span></span>
+<span><span class="co">#&gt; [1] -0.2149861</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`rho(measurement)`</span></span>
-<span><span class="co">#&gt; [1] 0.9528842</span></span>
+<span><span class="co">#&gt; [1] 0.9153591</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`fixed effect 1`</span></span>
-<span><span class="co">#&gt; [1] -2.968662</span></span>
+<span><span class="co">#&gt; [1] -3.062741</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`fixed effect 2`</span></span>
-<span><span class="co">#&gt; [1] 1.494904</span></span></code></pre>
+<span><span class="co">#&gt; [1] 1.509011</span></span></code></pre>
 </div>
 <div class="section level3">
 <h3 id="ex2--fixed-effects-bivariate-model-ar1-nig-correlated-measurement-noise">Ex2. Fixed effects + Bivariate model (AR1, NIG) + Correlated
@@ -957,7 +957,7 @@ that the parameterization matches with the paper.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Starting posterior sampling... </span></span>
 <span><span class="co">#&gt; Posterior sampling done! </span></span>
-<span><span class="co">#&gt; Average standard deviation of the posterior W:  1.249239 </span></span>
+<span><span class="co">#&gt; Average standard deviation of the posterior W:  1.075821 </span></span>
 <span><span class="co">#&gt; Note:</span></span>
 <span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
 <span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
@@ -966,37 +966,37 @@ that the parameterization matches with the paper.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt;    x1    x2 </span></span>
-<span><span class="co">#&gt; -2.97  1.44 </span></span>
+<span><span class="co">#&gt; -3.01  1.53 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $bv</span></span>
 <span><span class="co">#&gt;   Model type: Bivariate Matern model (NIG noise)</span></span>
-<span><span class="co">#&gt;       theta = 0.28</span></span>
-<span><span class="co">#&gt;       rho = 1.76</span></span>
-<span><span class="co">#&gt;       sd1 = 6.19</span></span>
-<span><span class="co">#&gt;       sd2 = 0.0926</span></span>
+<span><span class="co">#&gt;       theta = -1.09</span></span>
+<span><span class="co">#&gt;       rho = 1.32</span></span>
+<span><span class="co">#&gt;       sd1 = 0.2</span></span>
+<span><span class="co">#&gt;       sd2 = 1.52</span></span>
 <span><span class="co">#&gt;       W1: Matern</span></span>
-<span><span class="co">#&gt;           kappa = 7.63</span></span>
+<span><span class="co">#&gt;           kappa = 1.91</span></span>
 <span><span class="co">#&gt;       W2: Matern</span></span>
-<span><span class="co">#&gt;           kappa = 0.187</span></span>
+<span><span class="co">#&gt;           kappa = 1.47</span></span>
 <span><span class="co">#&gt;    Bivariate type-G4 noise:</span></span>
 <span><span class="co">#&gt;       W1: NIG</span></span>
 <span><span class="co">#&gt;       Noise parameters: </span></span>
-<span><span class="co">#&gt;           mu = 0.158</span></span>
+<span><span class="co">#&gt;           mu = 0.0758</span></span>
 <span><span class="co">#&gt;           sigma = 1</span></span>
-<span><span class="co">#&gt;           nu = 1.89e-09</span></span>
+<span><span class="co">#&gt;           nu = 1.36e-05</span></span>
 <span><span class="co">#&gt;       W2: NIG</span></span>
 <span><span class="co">#&gt;       Noise parameters: </span></span>
-<span><span class="co">#&gt;           mu = 0.196</span></span>
+<span><span class="co">#&gt;           mu = -0.811</span></span>
 <span><span class="co">#&gt;           sigma = 1</span></span>
-<span><span class="co">#&gt;           nu = 4.89e-10</span></span>
+<span><span class="co">#&gt;           nu = 0.00663</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       theta_sigma = -0.550, -0.165</span></span>
-<span><span class="co">#&gt;       correlation(rho) = 0.89</span></span>
+<span><span class="co">#&gt;       theta_sigma = -0.388, -0.038</span></span>
+<span><span class="co">#&gt;       correlation(rho) = 0.906</span></span>
 <span></span>
 <span><span class="co"># comparing with simulated value</span></span>
 <span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span></span>
@@ -1006,34 +1006,34 @@ that the parameterization matches with the paper.</p>
 <p><img src="bivariate_files/figure-html/spatial-2.png" width="700"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $theta</span></span>
-<span><span class="co">#&gt; [1] -0.2848599</span></span>
+<span><span class="co">#&gt; [1] -0.4254218</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $rho</span></span>
-<span><span class="co">#&gt; [1] 1.75918</span></span>
+<span><span class="co">#&gt; [1] 1.316701</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sd1</span></span>
-<span><span class="co">#&gt; [1] 27.13759</span></span>
+<span><span class="co">#&gt; [1] 0.4484202</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sd2</span></span>
-<span><span class="co">#&gt; [1] 0.5204743</span></span>
+<span><span class="co">#&gt; [1] 12.50126</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`kappa (1st)`</span></span>
-<span><span class="co">#&gt; [1] 16.28419</span></span>
+<span><span class="co">#&gt; [1] 11.05181</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`kappa (2nd)`</span></span>
-<span><span class="co">#&gt; [1] 1.38447</span></span>
+<span><span class="co">#&gt; [1] 1.956513</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`mu (1st)`</span></span>
-<span><span class="co">#&gt; [1] 0.1585676</span></span>
+<span><span class="co">#&gt; [1] 0.07370532</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`mu (2nd)`</span></span>
-<span><span class="co">#&gt; [1] 0.1976194</span></span>
+<span><span class="co">#&gt; [1] -0.8139137</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`nu (1st)`</span></span>
-<span><span class="co">#&gt; [1] 0.04268787</span></span>
+<span><span class="co">#&gt; [1] 0.2445024</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`nu (2nd)`</span></span>
-<span><span class="co">#&gt; [1] 0.2231071</span></span>
+<span><span class="co">#&gt; [1] 3.536614</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span></span>
 <span>  <span class="va">out_cor</span>,</span>
@@ -1042,19 +1042,19 @@ that the parameterization matches with the paper.</p>
 <p><img src="bivariate_files/figure-html/spatial-3.png" width="700"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $`theta_sigma 1`</span></span>
-<span><span class="co">#&gt; [1] -0.5513031</span></span>
+<span><span class="co">#&gt; [1] -0.3878764</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`theta_sigma 2`</span></span>
-<span><span class="co">#&gt; [1] -0.164899</span></span>
+<span><span class="co">#&gt; [1] -0.03630138</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`rho(measurement)`</span></span>
-<span><span class="co">#&gt; [1] 0.8903815</span></span>
+<span><span class="co">#&gt; [1] 0.9060593</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`fixed effect 1`</span></span>
-<span><span class="co">#&gt; [1] -2.971702</span></span>
+<span><span class="co">#&gt; [1] -3.013956</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`fixed effect 2`</span></span>
-<span><span class="co">#&gt; [1] 1.442885</span></span></code></pre>
+<span><span class="co">#&gt; [1] 1.526153</span></span></code></pre>
 </div>
 </div>
 <div class="section level2">
@@ -1090,12 +1090,12 @@ using the <code>cross_validation</code> function.</p>
 <span><span class="op">)</span></span>
 <span><span class="va">cv1</span><span class="op">$</span><span class="va">mean.scores</span></span>
 <span><span class="co">#&gt;                  MAE       MSE  neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; model_1_W1 0.6642391 0.6968898 0.4554492 0.9619746</span></span>
-<span><span class="co">#&gt; model_1_W2 0.8445138 1.1367965 0.5862375 1.0926607</span></span>
+<span><span class="co">#&gt; model_1_W1 0.5962332 0.5840296 0.4122557 0.9168016</span></span>
+<span><span class="co">#&gt; model_1_W2 0.7783644 0.9792232 0.5334206 1.0466093</span></span>
 <span><span class="va">cv1</span><span class="op">$</span><span class="va">sd.scores</span></span>
-<span><span class="co">#&gt;                    MAE         MSE    neg.CRPS   neg.sCRPS</span></span>
-<span><span class="co">#&gt; model_1_W1 0.006133943 0.009648097 0.006716891 0.008730548</span></span>
-<span><span class="co">#&gt; model_1_W2 0.003933362 0.011798619 0.005745814 0.004128678</span></span></code></pre></div>
+<span><span class="co">#&gt;                    MAE        MSE    neg.CRPS   neg.sCRPS</span></span>
+<span><span class="co">#&gt; model_1_W1 0.006963341 0.01030677 0.006562453 0.007083878</span></span>
+<span><span class="co">#&gt; model_1_W2 0.006591186 0.01196709 0.008656835 0.009583534</span></span></code></pre></div>
 </div>
   </div>
 

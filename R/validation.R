@@ -15,8 +15,12 @@
 #' @param print print information during computation
 #' @param percent how many percent for testing? from 0 to 1 (for lpo type)
 #' @param times how many test cases (only for lpo type)
- #' @param transform a function or a list of functions (length equal to number of models) to map predictions and observations to the comparison scale (e.g., identity for original scale, exp if the model is on log scale).
- #' e.g., the MAE will be computed as |transform(Y) - transform(Y_pred)|
+#' @param metric Optional function or list of functions (one per model) that maps the group-wise observations/predictions for a single location to the quantity that should be scored.
+#'   The function receives a list containing at least `y` (named numeric vector of group values) and may optionally use `samples1`/`samples2` (matrices with rows named by group and columns indexing posterior draws).
+#'   The function must return either a numeric scalar (optionally named) or a list with components `y` (scalar), and optionally `samples1`/`samples2` (numeric vectors matching the posterior draw count) and `label` (character).
+#'   When `NULL`, the original per-group scores are computed.
+#'   For example, to compare a linear combination of two fields you can use
+#'   `metric = function(data) { res <- 2 * data$y["A"] + data$y["B"]; names(res) <- "combo"; res }`. To simply sum all group values, return `sum(data$y)`.
 #' @param n_gibbs_samples number of gibbs samples of latent process, used for computing CRPS, sCRPS
 #' @param n_burnin number of burnin
 #' @param test_idx a list of indices of the data (which data points to be predicted) (only for custom type)
@@ -47,7 +51,7 @@ cross_validation <- function(
   k = 5,
   percent = 0.2,
   times = 10,
-  transform = identity,
+  metric = NULL,
   test_idx = NULL,
   train_idx = NULL,
   keep_pred = FALSE,
@@ -69,14 +73,22 @@ cross_validation <- function(
   if (inherits(ngme, "ngme")) ngme <- list(ngme)
   if (is.null(names(ngme))) names(ngme) <- paste("model", seq_along(ngme), sep = "_" )
 
-  # Handle transform: allow function or list of functions (one per model)
-  if (is.list(transform)) {
-    if (length(transform) != length(ngme)) {
-      stop("If transform is a list, its length must equal number of models (length(ngme)).")
+  # Handle metric argument: allow NULL, function, or list of functions (one per model)
+  if (is.null(metric)) {
+    metric <- vector("list", length(ngme))
+  } else if (is.list(metric)) {
+    if (length(metric) != length(ngme)) {
+      stop("If metric is a list, its length must equal number of models (length(ngme)).")
     }
+  } else if (is.function(metric)) {
+    metric <- rep(list(metric), length(ngme))
   } else {
-    # Wrap single function into list of repeated functions for each model
-    transform <- rep(list(transform), length(ngme))
+    stop("metric must be NULL, a function, or a list of functions")
+  }
+
+  metric_supplied <- any(vapply(metric, function(fun) !is.null(fun), logical(1)))
+  if (metric_supplied && merge_groups) {
+    stop("merge_groups cannot be used together with a custom metric; please encode the aggregation inside the metric function.")
   }
 
   n_data <- attr(ngme[[1]], "fit")$n_data
@@ -160,7 +172,7 @@ cross_validation <- function(
                 seed=seed,
                 keep_pred=keep_pred,
                 parallel = TRUE,
-                transform = transform[[idx]],
+                metric = metric[[idx]],
                 num_cores = cores_layer2,
                 thining_gap = thining_gap,
                 merge_groups = merge_groups,
@@ -209,7 +221,7 @@ cross_validation <- function(
             seed=seed,
             keep_pred=keep_pred,
             parallel = FALSE,
-            transform = transform[[idx]],
+            metric = metric[[idx]],
             thining_gap = thining_gap,
             merge_groups = merge_groups,
             merged_group_name = merged_group_name
@@ -305,7 +317,7 @@ compute_err_merged_reps <- function(
   seed = NULL,
   keep_pred = FALSE,
   parallel = TRUE,
-  transform = identity,
+  metric = NULL,
   num_cores = 1,
   thining_gap = 0,
   merge_groups = FALSE,
@@ -338,7 +350,7 @@ compute_err_merged_reps <- function(
       ret$test_Y, 
       ret$test_group, 
       ret$test_X, 
-      transform,
+      metric,
       thining_gap = thining_gap,
       merge_groups = merge_groups,
       merged_group_name = merged_group_name
@@ -376,7 +388,7 @@ compute_err_reps <- function(
   seed = NULL,
   keep_pred = FALSE,
   parallel = TRUE,
-  transform = identity,
+  metric = NULL,
   num_cores = 1,
   thining_gap = 1,
   merge_groups = FALSE,
@@ -411,7 +423,7 @@ compute_err_reps <- function(
       seed=seed,
       keep_pred=keep_pred,
       parallel = parallel,
-      transform = transform,
+      metric = metric,
       num_cores = num_cores,
       thining_gap = thining_gap,
       merge_groups = merge_groups,
@@ -449,8 +461,7 @@ compute_err_reps <- function(
 # helper function to compute MSE, MAE, ... for each subset of target / data
 # assume test_idx and train_idx belongs to same replicate
 ##
-# transform function to apply to predictions and observations before scoring (e.g., identity for original scale, exp for back-transforming log-scale predictions)
-# This function is applied to both predictions and y_data before computing MAE, MSE, CRPS, sCRPS.
+# A custom metric function can be supplied to combine group-wise observations and predictions into a single quantity before scoring.
 compute_err_1rep <- function(
   ngme_1rep,
   bool_test_idx,
@@ -461,7 +472,7 @@ compute_err_1rep <- function(
   seed = NULL,
   keep_pred = FALSE,
   parallel = TRUE,
-  transform = identity,
+  metric = NULL,
   num_cores = 1,  # Default to 1 core to avoid potential issues
   thining_gap = 1,
   merge_groups = FALSE,
@@ -514,7 +525,7 @@ compute_err_1rep <- function(
   if (parallel && requireNamespace("parallel", quietly = TRUE)) {
     scores = parallel::mclapply(1:N_sim, function(nn) {
       s <- compute_scores(
-        ngme_1rep, n_gibbs_samples, n_burnin, seed+nn, A_pred_block, noise_test_idx, y_data, group_data, X_pred, transform, thining_gap, merge_groups, merged_group_name
+        ngme_1rep, n_gibbs_samples, n_burnin, seed+nn, A_pred_block, noise_test_idx, y_data, group_data, X_pred, metric, thining_gap, merge_groups, merged_group_name
       )
       s
     }, mc.cores = num_cores)
@@ -523,7 +534,7 @@ compute_err_1rep <- function(
       tryCatch({
         scores[[nn]] <- compute_scores(
           ngme_1rep, n_gibbs_samples, n_burnin, seed+nn, A_pred_block, 
-          noise_test_idx, y_data, group_data, X_pred, transform, thining_gap, merge_groups, merged_group_name
+          noise_test_idx, y_data, group_data, X_pred, metric, thining_gap, merge_groups, merged_group_name
         )
       }, error = function(e) {
         warning(paste("Error in sequential computation:", e$message))
@@ -589,7 +600,7 @@ compute_scores <- function(
   y_data, 
   group_data, 
   X_pred, 
-  transform,
+  metric,
   thining_gap,
   merge_groups = FALSE,
   merged_group_name = NULL
@@ -689,14 +700,17 @@ compute_scores <- function(
     Y_N_2_thin <- pred_N_2_thin + mn_N_2
     
     compute_score_given_pred(
-      transform(pred_N_1), transform(pred_N_2),  # for MAE, MSE
-      transform(Y_N_1_thin), transform(Y_N_2_thin), # for CRPS, sCRPS
-      transform(y_data), 
+      Y_N_1_thin, Y_N_2_thin,
+      y_data, 
       group_data,
       merge_groups = merge_groups,
-      merged_group_name = merged_group_name
+      merged_group_name = merged_group_name,
+      metric = metric
     )
   }, error = function(e) {
+    if (inherits(e, "invalid_metric_error")) {
+      stop(e)
+    }
     warning(paste("Error in compute_scores:", e$message))
     # Return a default score structure with NAs
     n_group <- length(levels(group_data))
@@ -776,27 +790,29 @@ compute_pred_N <- function(
 
 #' Compute the scores given the prediction
 #'
-#' @param pred_N_1 a matrix of n_obs * N
-#' @param pred_N_2 a matrix of n_obs * N
-#' @param Y_N_1 a matrix of n_obs * N
-#' @param Y_N_2 a matrix of n_obs * N
+#' @param Y_N_1_thin posterior predictive draws (rows = observations, columns = samples)
+#' @param Y_N_2_thin posterior predictive draws (rows = observations, columns = samples)
 #' @param y_data a vector of length n_obs
 #' @param group_data a vector of length n_obs
+#' @param metric optional custom metric function used to combine group-wise values before scoring
 compute_score_given_pred <- function(
-  pred_N_1, pred_N_2, 
   Y_N_1_thin, Y_N_2_thin,
   y_data, group_data,
   merge_groups = FALSE,
-  merged_group_name = NULL
+  merged_group_name = NULL,
+  metric = NULL
 ) {
-  # For MAE/MSE: use posterior predictive mean (including measurement noise)
-  # pred_N_1 and pred_N_2 are latent predictions; Y_N_1_thin and Y_N_2_thin are posterior predictive samples (with measurement noise)
-  # We use the mean of Y_N_1_thin and Y_N_2_thin, as in sCRPS/CRPS calculation
-  pred <- 0.5 * (rowMeans(as.matrix(Y_N_1_thin)) + rowMeans(as.matrix(Y_N_2_thin)))
+  metric_data <- prepare_metric_data(metric, y_data, Y_N_1_thin, Y_N_2_thin, group_data)
+
+  y_data <- metric_data$y
+  group_data <- metric_data$group
+  Y_N_1_thin <- metric_data$samples1
+  Y_N_2_thin <- metric_data$samples2
+  pred <- metric_data$pred
 
   # Now Y is of dim n_obs * N
   n_obs <- length(y_data)
-  
+
   if (merge_groups && length(levels(group_data)) == 2) {
     # Handle merged groups for bivariate data (e.g., wind components)
     groups <- levels(group_data)
@@ -907,6 +923,249 @@ compute_score_given_pred <- function(
   )
 
   scores
+}
+
+
+prepare_metric_data <- function(metric, y_data, Y_N_1_thin, Y_N_2_thin, group_data) {
+  samples1 <- as.matrix(Y_N_1_thin)
+  samples2 <- as.matrix(Y_N_2_thin)
+  pred_default <- 0.5 * (rowMeans(samples1) + rowMeans(samples2))
+
+  group_factor <- if (is.factor(group_data)) droplevels(group_data) else factor(group_data)
+
+  if (is.null(metric)) {
+    return(list(
+      y = as.numeric(y_data),
+      pred = pred_default,
+      samples1 = samples1,
+      samples2 = samples2,
+      group = group_factor
+    ))
+  }
+
+  if (!is.function(metric)) {
+    stop("Custom metric must be provided as a function.")
+  }
+
+  groups <- levels(group_factor)
+  idx_list <- split(seq_along(group_factor), group_factor)
+  counts <- lengths(idx_list)
+  if (length(unique(counts)) != 1) {
+    abort_invalid_metric(
+      paste0(
+        "Custom metric requires the same number of observations for each group within a fold. ",
+        "Consider supplying paired splits via `type = \"custom\"`. Available groups: ",
+        paste(groups, collapse = ", "),
+        "."
+      )
+    )
+  }
+
+  n_locations <- counts[[1]]
+  n_thin <- ncol(samples1)
+
+  metric_y <- numeric(n_locations)
+  metric_samples1 <- matrix(NA_real_, n_locations, n_thin)
+  metric_samples2 <- matrix(NA_real_, n_locations, n_thin)
+  label <- NULL
+
+  for (i in seq_len(n_locations)) {
+    obs_vec <- setNames(vapply(groups, function(g) as.numeric(y_data[idx_list[[g]][i]]), numeric(1)), groups)
+    sample1_mat <- do.call(rbind, lapply(groups, function(g) samples1[idx_list[[g]][i], , drop = FALSE]))
+    rownames(sample1_mat) <- groups
+    sample2_mat <- do.call(rbind, lapply(groups, function(g) samples2[idx_list[[g]][i], , drop = FALSE]))
+    rownames(sample2_mat) <- groups
+
+    metric_input <- list(
+      y = obs_vec,
+      samples1 = sample1_mat,
+      samples2 = sample2_mat,
+      group = groups
+    )
+
+    metric_output <- metric(metric_input)
+    parsed <- parse_metric_output(
+      metric_output,
+      expected_length = n_thin,
+      available_groups = groups
+    )
+
+    metric_y[i] <- parsed$value
+    if (is.null(label) && !is.null(parsed$label) && parsed$label != "") {
+      label <- parsed$label
+    }
+
+    samples1_values <- parsed$samples1
+    if (is.null(samples1_values)) {
+      samples1_values <- compute_metric_samples(metric, sample1_mat, groups)
+    }
+    if (length(samples1_values) != n_thin) {
+      abort_invalid_metric(
+        "`samples1` returned by the custom metric must match the number of posterior draws."
+      )
+    }
+
+    samples2_values <- parsed$samples2
+    if (is.null(samples2_values)) {
+      samples2_values <- compute_metric_samples(metric, sample2_mat, groups)
+    }
+    if (length(samples2_values) != n_thin) {
+      abort_invalid_metric(
+        "`samples2` returned by the custom metric must match the number of posterior draws."
+      )
+    }
+
+    metric_samples1[i, ] <- samples1_values
+    metric_samples2[i, ] <- samples2_values
+  }
+
+  metric_pred <- 0.5 * (rowMeans(metric_samples1) + rowMeans(metric_samples2))
+  if (is.null(label) || label == "") {
+    label <- "metric"
+  }
+
+  list(
+    y = metric_y,
+    pred = metric_pred,
+    samples1 = metric_samples1,
+    samples2 = metric_samples2,
+    group = factor(rep(label, n_locations), levels = label)
+  )
+}
+
+
+parse_metric_output <- function(result, expected_length = NULL, available_groups = NULL) {
+  label <- NULL
+  samples1 <- NULL
+  samples2 <- NULL
+  value <- NULL
+
+  if (is.list(result)) {
+    if (!is.null(result$label)) {
+      label <- as.character(result$label)[1]
+    }
+
+    if (!is.null(result$y)) {
+      value <- result$y
+    } else if (!is.null(result$value)) {
+      value <- result$value
+    } else if (!is.null(result$result)) {
+      value <- result$result
+    } else if (length(result) == 1 && is.numeric(result[[1]])) {
+      value <- result[[1]]
+    }
+
+    if (is.null(value)) {
+      abort_invalid_metric(
+        build_metric_message(
+          "Custom metric must return a numeric value via `y` (or `value`).",
+          available_groups
+        )
+      )
+    }
+
+    if (!is.null(names(value)) && length(value) == 1 && is.null(label)) {
+      label <- names(value)[1]
+    }
+
+    value <- as.numeric(value)
+    if (length(value) != 1 || !is.finite(value)) {
+      abort_invalid_metric(
+        build_metric_message(
+          "Custom metric must provide a finite numeric scalar for `y`.",
+          available_groups
+        )
+      )
+    }
+
+    if (!is.null(result$samples1)) {
+      samples1 <- as.numeric(result$samples1)
+    }
+    if (!is.null(result$samples2)) {
+      samples2 <- as.numeric(result$samples2)
+    }
+  } else if (is.numeric(result)) {
+    value <- as.numeric(result)
+    if (length(value) != 1 || !is.finite(value)) {
+      abort_invalid_metric(
+        build_metric_message(
+          "Custom metric must return a scalar numeric value.",
+          available_groups
+        )
+      )
+    }
+    if (!is.null(names(result))) {
+      label <- names(result)[1]
+    }
+  } else {
+    abort_invalid_metric(
+      build_metric_message(
+        "Custom metric must return either a numeric scalar or a list.",
+        available_groups
+      )
+    )
+  }
+
+  if (!is.null(expected_length)) {
+    if (!is.null(samples1) && length(samples1) > 0 && length(samples1) != expected_length) {
+      abort_invalid_metric(
+        "`samples1` returned by the custom metric must match the number of posterior draws."
+      )
+    }
+    if (!is.null(samples2) && length(samples2) > 0 && length(samples2) != expected_length) {
+      abort_invalid_metric(
+        "`samples2` returned by the custom metric must match the number of posterior draws."
+      )
+    }
+  }
+
+  if (!is.null(samples1) && any(!is.finite(samples1))) {
+    abort_invalid_metric("`samples1` returned by the custom metric must be finite.")
+  }
+  if (!is.null(samples2) && any(!is.finite(samples2))) {
+    abort_invalid_metric("`samples2` returned by the custom metric must be finite.")
+  }
+
+  list(value = value, label = label, samples1 = samples1, samples2 = samples2)
+}
+
+
+compute_metric_samples <- function(metric, sample_mat, groups) {
+  if (ncol(sample_mat) == 0) {
+    return(numeric(0))
+  }
+
+  apply(sample_mat, 2, function(col) {
+    sample_input <- list(y = setNames(as.numeric(col), groups), group = groups)
+    parsed <- parse_metric_output(
+      metric(sample_input),
+      available_groups = groups
+    )
+    parsed$value
+  })
+}
+
+
+abort_invalid_metric <- function(message) {
+  stop(
+    structure(
+      list(message = message, call = sys.call(-1)),
+      class = c("invalid_metric_error", "error", "condition")
+    )
+  )
+}
+
+
+build_metric_message <- function(message, available_groups = NULL) {
+  if (is.null(available_groups) || length(available_groups) == 0) {
+    return(message)
+  }
+  paste0(
+    message,
+    " Available groups: ",
+    paste(available_groups, collapse = ", "),
+    "."
+  )
 }
 
 

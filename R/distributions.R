@@ -119,11 +119,14 @@ dgig <- function(x, p, a ,b, log=FALSE){
       dens <- ifelse(log, -Inf,0)
       return(dens)
     } else{
-      l = 0.5 * p_new[i]*(log(a_new[i]) - log(b_new[i]))
-      l = l + (p_new[i]-1) * log(x[i])
-      l = l - log(2) - log(besselK(sqrt(a_new[i]*b_new[i]),p_new[i]))
-      l = l - 0.5*(a_new[i]*x[i] + b_new[i]/x[i])
-      dens <- ifelse(log, l, exp(l))
+      z <- sqrt(a_new[i] * b_new[i])
+      logcoef <- (p_new[i]/2) * (log(a_new[i]) - log(b_new[i])) - log(2)
+      bk_scaled <- besselK(z, nu = p_new[i], expon.scaled = TRUE)
+      if (any(is.na(bk_scaled))) stop("besselK returned NA; parameters out of range for this routine.")
+      logK <- ifelse(bk_scaled > 0, log(bk_scaled) - z, -Inf)
+      lx <- (p_new[i] - 1) * log(x[i]) - (a_new[i] * x[i] + b_new[i] / x[i]) / 2
+      logf <- logcoef - logK + lx
+      dens <- ifelse(log, logf, exp(logf))
       return(dens)
     }
   })

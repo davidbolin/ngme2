@@ -547,7 +547,12 @@ ngme_parse_formula <- function(
       actual_mesh <- if(is.null(tmp$mesh)) NULL else eval(tmp$mesh, envir = data, enclos = global_env_first)
       
       # Handle mesh selection for different replicates
-      if (!is.null(actual_mesh) && is.list(actual_mesh) && !inherits(actual_mesh, c("inla.mesh.1d", "inla.mesh", "fm_mesh_1d", "fm_mesh_2d", "metric_graph"))) {
+      if (
+        tmp$model != "spacetime" &&
+        !is.null(actual_mesh) &&
+        is.list(actual_mesh) &&
+        !inherits(actual_mesh, c("inla.mesh.1d", "inla.mesh", "fm_mesh_1d", "fm_mesh_2d", "metric_graph"))
+      ) {
         # mesh is a list of meshes for different replicates
         mesh_list <- actual_mesh
         
@@ -816,4 +821,3 @@ ngme_result <- function(
     return(params[[model]])
   }
 }
-

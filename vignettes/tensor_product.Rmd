@@ -130,8 +130,8 @@ ngme_fit <- ngme(
   control_opt = control_opt(
     iterations = 1000,
     n_parallel_chain = 4,
-    optimizer = adamW(),
-    rao_blackwellization = TRUE
+    optimizer = adamW()
+    # rao_blackwellization = TRUE
   ),
   debug = FALSE
 )
@@ -166,7 +166,7 @@ pd <- predict(ngme_fit, map=list(tp=list(
   year=time_new,
   pos=loc_new
 )))
-str(pd)
+head(pd)
 ```
 
 

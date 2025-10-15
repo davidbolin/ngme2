@@ -37,6 +37,8 @@ private:
 
     // keep trajs
     std::vector<VectorXd> trajs;
+
+    void log_verbose_message(const std::string& msg) const;
 public:
     Ngme_optimizer(
         const Rcpp::List& control_opt,
@@ -68,6 +70,9 @@ public:
         double max_absolute_step,
         bool compute_precond_each_iter = false
     );
+
+    void set_verbose(bool value) { verbose = value; }
+    bool is_verbose() const { return verbose; }
 
     std::vector<VectorXd> get_trajs() const { return trajs; }
 

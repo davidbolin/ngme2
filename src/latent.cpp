@@ -570,8 +570,7 @@ if (debug) std::cout << "update_each_iter" << std::endl;
             if (!zero_trace) {
                 if (!symmetricK) {
                     if (W_size > MIN_W_SIZE) {
-                        lu_solver_K.compute_LU(getK());
-                        // lu_solver_K.compute_KTK(getK());
+                        lu_solver_K.compute(getK());
                         for (int i=0; i < n_theta_K; i++){
                             trace[i] = lu_solver_K.trace_num(ope->get_dK()[i], latent_rng());
                         }

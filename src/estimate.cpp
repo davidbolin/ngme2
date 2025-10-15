@@ -66,6 +66,8 @@ auto timer = std::chrono::steady_clock::now();
     double start_sd = (control_opt["start_sd"]);
     double print_check_info = (control_opt["print_check_info"]);
 
+    const bool verbose_enabled = control_opt["verbose"];
+
     VectorXi num_threads = Rcpp::as<VectorXi>(control_opt["num_threads"]);
     int n_threads_chain = num_threads[0];
 
@@ -82,6 +84,9 @@ auto timer = std::chrono::steady_clock::now();
         // Not thread-safe using Rcpp::List to init optimizer
         ngmes.push_back(std::make_shared<Ngme>(R_ngme, seed + i, sampling_strategy, num_threads[1], sd));
         opt_vec.push_back(Ngme_optimizer(control_opt, ngmes[i]));
+        if (verbose_enabled && i > 0) {
+            opt_vec.back().set_verbose(false);
+        }
     }
 
     std::string par_string = ngmes[0]->get_par_string();

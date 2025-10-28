@@ -44,7 +44,7 @@ cross_validation <- function(
   ngme,
   type = "k-fold",
   seed = NULL,
-  print = FALSE,
+  print = TRUE,
   N_sim = 5,
   n_gibbs_samples = 500,
   n_burnin = 100,

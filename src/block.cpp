@@ -1024,9 +1024,15 @@ if (debug) std::cout << "start compute trace" << std::endl;
 
     // compute for sigma: tr(Q^-1 K B_sigma.col(j)/SV K^T) for non-fixed theta_sigma
     vector<bool> fix_theta_sigma_vec = latents[i]->get_theta_unfixed_sigma();
-    int pos=0;
+    int pos = 0;
     for (int j=0; j < latents[i]->get_n_theta_sigma(); j++) {
-      if (fix_theta_sigma_vec[pos]) pos += 1; // find non-fixed theta_sigma position
+      while (pos < static_cast<int>(fix_theta_sigma_vec.size()) && fix_theta_sigma_vec[pos]) {
+        ++pos;
+      }
+      if (pos >= static_cast<int>(fix_theta_sigma_vec.size())) {
+        rb_trace_sigma[j] = 0.0;
+        continue;
+      }
 
       // build B_sigma_col_j (consider all latents)
       VectorXd BSigma_col_over_SV = VectorXd::Zero(V_sizes);

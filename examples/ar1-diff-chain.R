@@ -38,8 +38,8 @@ control_same <- control_opt(
   # optimizer = adam(),
   burnin = 100,
   # estimation = FALSE,
-  iterations = 100,
-  n_parallel_chain = 1,
+  iterations = 1000,
+  n_parallel_chain = 4,
   verbose = FALSE,
   rao_blackwellization = TRUE,
   seed = seed,
@@ -66,4 +66,4 @@ system.time({
 
 
 ret_nig_same
-# traceplot(ret_nig_same, "my_ar", hline=c(0.5, mu, sigma, nu))
+traceplot(ret_nig_same, "my_ar", hline=c(0.5, mu, sigma, nu))

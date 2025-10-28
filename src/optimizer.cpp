@@ -24,7 +24,9 @@ Ngme_optimizer::Ngme_optimizer(
     v(VectorXd::Zero(ngme->get_n_params())),
     preconditioner(ngme->precond(0, numerical_eps)),
     grad(VectorXd::Zero(ngme->get_n_params())),
-    x(ngme->get_parameter())
+    x(ngme->get_parameter()),
+    record_traj(control_opt.containsElementNamed("store_traj") ? 
+        Rcpp::as<bool>(control_opt["store_traj"]) : true)
 {
     if (method != "precond_sgd" && method != "bfgs") {
         sgd_parameters = (Rcpp::as<VectorXd>(control_opt["sgd_parameters"]));
@@ -93,7 +95,9 @@ VectorXd Ngme_optimizer::sgd(
 
 // auto timer_grad = std::chrono::steady_clock::now();
     for (int i = 0; i < iterations; i++) {
-        trajs.push_back(x);
+        if (record_traj) {
+            trajs.push_back(x);
+        }
 
         if (method != "bfgs") {
             // stochastic gradient descent
@@ -253,7 +257,9 @@ if (verbose) {
 // Step 1: Compute gradient only
 void Ngme_optimizer::sgd_compute_gradient() {
     // Record trajectory
-    trajs.push_back(x);
+    if (record_traj) {
+        trajs.push_back(x);
+    }
 
     // Compute gradient
     if (method != "bfgs") {

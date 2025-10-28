@@ -39,6 +39,7 @@
 #' @param n_trace_iter  use how many iterations to approximate the trace (Hutchinson’s trick)
 #'
 #' @param verbose print estimation
+#' @param store_traj store the optimizer trajectory for diagnostics (set FALSE to reduce memory)
 #' @param sampling_strategy subsampling method of replicates of model, c("all", "is")
 #' "all" means using all replicates in each iteration,
 #' "ws" means weighted sampling (each iteration use 1 replicate to compute the gradient, the sample probability is proption to its number of observations)
@@ -82,7 +83,8 @@ control_opt <- function(
   solver_type       = if (Sys.info()["sysname"] == "Darwin") "accelerate" else "supernodal",
 
   # opt print
-  verbose           = FALSE
+  verbose           = FALSE,
+  store_traj        = TRUE
 ) {
   strategy_list <- c("all", "ws")
   preconditioner_list <- c("none", "fast", "full")
@@ -172,6 +174,7 @@ control_opt <- function(
     n_trace_iter      = n_trace_iter,
     print_check_info  = print_check_info,
     verbose           = verbose,
+    store_traj        = store_traj,
     sampling_strategy = which(strategy_list == sampling_strategy) - 1, # start from 0,
 
     max_relative_step = max_relative_step,

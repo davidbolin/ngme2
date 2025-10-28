@@ -45,6 +45,8 @@ Rcpp::List estimate_cpp(const Rcpp::List& R_ngme, const Rcpp::List& control_opt)
     const bool precond_by_diff_chain = control_opt["precond_by_diff_chain"];
     const bool compute_precond_each_iter = !precond_by_diff_chain;
     const int n_repls = R_ngme["n_repls"];
+    const bool store_traj = control_opt.containsElementNamed("store_traj") ?
+        Rcpp::as<bool>(control_opt["store_traj"]) : true;
 
     Rcpp::List output = R_NilValue;
 
@@ -219,7 +221,9 @@ auto timer = std::chrono::steady_clock::now();
     // generate outputs
     for (i=0; i < n_chains; i++) {
         outputs.push_back(ngmes[i]->output());
-        trajs_chains.push_back(opt_vec[i].get_trajs());
+        if (store_traj) {
+            trajs_chains.push_back(opt_vec[i].get_trajs());
+        }
     }
     if (all_converge)
         std::cout << "Reach convergence in " << steps << " iterations." << std::endl;
@@ -236,13 +240,19 @@ auto timer = std::chrono::steady_clock::now();
     // estimation done, posterior sampling
     // ngme.sampling(10, true);
     outputs.push_back(ngme.output());
-    trajs_chains.push_back(opt.get_trajs());
+    if (store_traj) {
+        trajs_chains.push_back(opt.get_trajs());
+    }
 #endif
 
 std::cout << "Estimation ends." << std::endl;
 std::cout << "Total time of the estimation is (s): " << since(timer).count() / 1000 << std::endl;
 
-    outputs.attr("opt_traj") = trajs_chains;
+    if (store_traj) {
+        outputs.attr("opt_traj") = trajs_chains;
+    } else {
+        outputs.attr("opt_traj") = R_NilValue;
+    }
     return outputs;
 }
 

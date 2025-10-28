@@ -28,7 +28,8 @@ control_opt(
   n_trace_iter = 10,
   sampling_strategy = "all",
   solver_type = if (Sys.info()["sysname"] == "Darwin") "accelerate" else "supernodal",
-  verbose = FALSE
+  verbose = FALSE,
+  store_traj = TRUE
 )
 }
 \arguments{
@@ -88,6 +89,8 @@ If it is more than n_parallel_chain, the rest will be used to parallel different
 "pardiso" means using pardiso solver}
 
 \item{verbose}{print estimation}
+
+\item{store_traj}{store the optimizer trajectory for diagnostics (set \code{FALSE} to reduce memory)}
 }
 \value{
 list of control variables

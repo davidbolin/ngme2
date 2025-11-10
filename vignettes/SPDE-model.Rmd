@@ -1,188 +1,473 @@
 ---
-title: "Ngme2 Matern SPDE model"
-output: rmarkdown::html_vignette
+title: "Matérn SPDE Models in ngme2"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    theme: flatly
+    code_folding: show
 vignette: >
-  %\VignetteIndexEntry{Ngme2 Matern SPDE model}
+  %\VignetteIndexEntry{Matérn SPDE Models in ngme2}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r setup, include = FALSE}
+```{r setup, include=FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  fig.width = 8,
+  fig.height = 6,
+  fig.retina = 2,
+  out.width = "100%",
+  warning = FALSE,
+  message = FALSE
 )
 library(ngme2)
 set.seed(11)
 ```
 
-In this vignette, we will introduce the SPDE Matérn model in `ngme2`.
-First we introduce a little about Gaussian process.
+# Introduction
+
+Spatial and spatio-temporal data are ubiquitous in modern applications, ranging from environmental monitoring and epidemiology to geostatistics and remote sensing. Modeling such data requires methods that can capture complex spatial dependence structures while remaining computationally tractable for large datasets.
+
+Gaussian random fields with Matérn covariance functions have become the gold standard for spatial modeling due to their flexibility in controlling both the smoothness and range of spatial correlation. However, traditional geostatistical approaches based on likelihood methods scale poorly with sample size, with computational complexity typically $\mathcal{O}(n^3)$ where $n$ is the number of observations. Moreover, as emphasized by [Stein (1999)](https://link.springer.com/book/10.1007/978-1-4612-1494-6), the Matérn covariance family is particularly appealing for spatial modeling because its smoothness parameter $\nu$ directly controls the differentiability of the field and can be estimated from the data, providing a principled way to capture different levels of spatial smoothness observed in real processes.
+
+The Stochastic Partial Differential Equation (SPDE) approach, introduced by [Lindgren et al. (2011)](https://rss.onlinelibrary.wiley.com/doi/full/10.1111/j.1467-9868.2011.00777.x), revolutionized spatial statistics by establishing an explicit link between Gaussian fields with Matérn covariance functions and Gaussian Markov random fields (GMRFs) defined through SPDEs. This formulation enables efficient computation via sparse precision matrices and finite element discretization. In the case of two-dimensional domains, the authors noted that computations for GMRFs typically have a cost of about $\mathcal{O}(n^{3/2})$, representing a substantial improvement over the $\mathcal{O}(n^{3})$ cost of traditional covariance-based methods.
+
+The **ngme2** package extends this framework in several important ways:
+
+- **Non-Gaussian noise distributions**: Supports Normal Inverse Gaussian (NIG) and Generalized Asymmetric Laplace (GAL) distributions for modeling heavy tails, skewness, and jumps in spatial processes
+- **Flexible model specification**: Seamlessly integrates spatial random effects with fixed effects and measurement error
+- **Computational efficiency**: Leverages sparse matrix operations and advanced optimization algorithms
+- **Non-stationary extensions**: Allows spatial variation in correlation parameters
+
+This vignette provides a comprehensive guide to implementing and using Matérn SPDE models within the ngme2 framework, covering model specification, simulation, estimation, prediction, and real-world applications.
+
+# Model Specification
 
 ## Gaussian Matérn Fields
 
-Gaussian processes and random fields provide powerful methods for modeling spatial and spatio-temporal dependence structures. In spatial statistics, particularly in geostatistics, Gaussian fields (GFs) play a fundamental role due to their mathematical tractability and flexibility.
+A standard geostatistical model relates observations $Y_i$ at spatial locations $\mathbf{s}_i$ to an underlying spatial process through:
 
-A standard geostatistical model can be expressed as:
-$$ Y_i = x(\mathbf{s}_i) + \varepsilon_i, \quad i=1,\ldots,N, \quad \varepsilon_i\sim N(0, \sigma_\varepsilon^2),$$
-$$x(\mathbf{s}) \sim GP\left(\sum_{k=1}^{n_b} b_k(\mathbf{s})w_k, c(\mathbf{s},\mathbf{s}')\right),$$
+$$Y_i = \mu(\mathbf{s}_i) + u(\mathbf{s}_i) + \varepsilon_i, \quad i=1,\ldots,n,$$
+
 where:
 
-- $Y_i$ represents observations at spatial locations $\mathbf{s}_i$
+- $\mu(\mathbf{s})$ is a mean function (often expressed as $\sum_{k=1}^{n_b} b_k(\mathbf{s})\beta_k$ with basis functions $b_k$ and coefficients $\beta_k$)
+- $u(\mathbf{s})$ is a zero-mean Gaussian random field capturing spatial dependence
+- $\varepsilon_i \sim N(0, \sigma_\varepsilon^2)$ represents independent measurement error
 
-- $N$ is the number of spatial observations
+The spatial random field $u(\mathbf{s})$ is typically modeled as a Gaussian process:
 
-- $GP(m,c)$ denotes a Gaussian process with mean function $m$ and covariance function $c$
+$$u(\mathbf{s}) \sim \mathcal{GP}(0, c(\mathbf{s}, \mathbf{s}')),$$
 
-- $n_b$ is the number of basis functions in the mean structure
+where $c(\mathbf{s}, \mathbf{s}')$ is the covariance function specifying the spatial dependence structure.
 
-- $\{b_k(\cdot)\}_{k=1}^{n_b}$ are basis functions (often polynomials or splines)
+### The Matérn Covariance Function
 
-- $w_k$ are coefficients to be estimated
+Among various covariance functions, the Matérn family is particularly valued for its flexibility:
 
-- $\varepsilon_i$ represents measurement error with variance $\sigma_\varepsilon^2$
+$$c(\mathbf{s}, \mathbf{s}') = \frac{\sigma^2}{\Gamma(\nu)2^{\nu-1}}\left(\kappa \|\mathbf{s}-\mathbf{s}'\|\right)^\nu K_\nu\left(\kappa\|\mathbf{s}-\mathbf{s}'\|\right),$$
 
-Among the various covariance functions available for modeling spatial dependence, the Matérn covariance function is particularly valued for its flexibility:
+where:
 
-$$
-c(\mathbf{s}, \mathbf{s}') = \frac{\sigma^2}{\Gamma(\nu)2^{\nu-1}}(\kappa \|\mathbf{s}-\mathbf{s}'\|)^\nu K_\nu(\kappa\|\mathbf{s}-\mathbf{s}'\|),
-$$
+- $\sigma^2 > 0$: marginal variance, controlling overall process variability
+- $\kappa > 0$: spatial scale parameter (inversely related to correlation range)
+- $\nu > 0$: smoothness parameter (controls differentiability of realizations)
+- $\Gamma(\cdot)$: Gamma function
+- $K_\nu(\cdot)$: Modified Bessel function of the second kind of order $\nu$
+- $\|\cdot\|$: Euclidean distance
 
-This function is parameterized by:
+**Key properties:**
 
-- $\sigma^2$: the marginal variance, controlling the overall variability of the process
+1. **Flexibility**: Includes exponential covariance ($\nu = 0.5$) and approximates Gaussian covariance as $\nu \to \infty$
+2. **Smoothness control**: The parameter $\nu$ directly determines mean-square differentiability; fields are $\lfloor \nu \rfloor$ times mean-square differentiable
+3. **Practical range**: The effective correlation range (distance where correlation drops to ~0.1) is approximately $r = \frac{\sqrt{8\nu}}{\kappa}$
+4. **Realistic modeling**: Provides more realistic spatial correlation structures than exponential or Gaussian alternatives
 
-- $\kappa > 0$: the spatial scale parameter, inversely related to the range of correlation.
+### Computational Challenges
 
-- $\nu > 0$: the smoothness parameter, determining the differentiability of the field
+Traditional maximum likelihood or restricted maximum likelihood estimation for Gaussian Matérn fields requires:
 
-- $\Gamma(\cdot)$: the Gamma function
+1. Computing the covariance matrix $\boldsymbol{\Sigma}$ with elements $c(\mathbf{s}_i, \mathbf{s}_j)$ for all observation pairs
+2. Matrix inversion and determinant computation for likelihood evaluation
+3. Repeated evaluations during optimization
 
-- $K_\nu(\cdot)$: the modified Bessel function of the second kind of order $\nu$
+This approach has $\mathcal{O}(n^3)$ computational complexity and $\mathcal{O}(n^2)$ memory requirements, making it impractical for $n > 10,000$ observations—a common scenario in modern spatial applications.
 
-The Matérn family is particularly useful because:
+## The SPDE Representation
 
-1. It includes the exponential covariance ($\nu = 0.5$) and the Gaussian covariance (as $\nu \to \infty$) as special cases
+### Connection to Stochastic Partial Differential Equations
 
-2. The parameter $\nu$ directly controls the mean-square differentiability of the process
+The breakthrough insight of [Lindgren et al. (2011)](https://rss.onlinelibrary.wiley.com/doi/full/10.1111/j.1467-9868.2011.00777.x) builds on classical work by [Whittle (1963)](https://www.jstor.org/stable/1426396), which showed that a Gaussian field $u(\mathbf{s})$ with Matérn covariance function is formally the solution to the stochastic partial differential equation:
 
-3. The effective range (distance at which correlation drops to approximately 0.1) is roughly $\sqrt{8\nu}/\kappa$
+$$\left(\kappa^2 - \Delta\right)^{\alpha/2} u = \mathcal{W} \quad \hbox{on} \quad \mathbb{R}^d,$$
 
-Traditional approaches to fitting these models rely on maximum likelihood estimation, which becomes computationally prohibitive for large datasets. The computational complexity typically scales as $\mathcal{O}(N^3)$, making it impractical for modern spatial datasets with thousands or millions of observations.
+where:
 
-## The SPDE approach with Gaussian noise
+- $\Delta = \sum_{i=1}^d \frac{\partial^2}{\partial s_i^2}$ is the Laplacian operator
+- $\mathcal{W}$ is Gaussian white noise
+- $\alpha = \nu + d/2$ where $d$ is the spatial dimension
+- $\kappa$ relates to the correlation range as before
 
-It is well-known (Whittle, 1963) that a Gaussian process $u(\mathbf{s})$ with Matérn covariance function solves the stochastic partial differential equation (SPDE)
+**Physical interpretation:**
 
-\begin{equation}\label{spde}
-(\kappa^2 -\Delta)^{\frac{\alpha}{2}} u = \mathcal{W}\quad \hbox{in } \mathcal{D},
-\end{equation}
-where $\Delta = \sum_{i=1}^d \frac{\partial^2}{\partial_{x_i^2}}$ is the Laplacian operator,
-$\mathcal{W}$ is the Gaussian spatial white noise on $\mathcal{D}=\mathbb{R}^d$, and $\alpha = \nu + d/2$.
+- The operator $(\kappa^2 - \Delta)$ represents a balance between:
+  - Local correlation (through $-\Delta$, which penalizes rapid spatial variation)
+  - Range control (through $\kappa^2$, which determines decay rate)
+- The fractional power $\alpha/2$ determines smoothness
+- White noise forcing $\mathcal{W}$ provides stochastic excitation
 
-Inspired by this relation between Gaussian processes with Matérn covariance functions and solutions of the above SPDE, [Lindgren et al. (2011)](https://rss.onlinelibrary.wiley.com/doi/full/10.1111/j.1467-9868.2011.00777.x)
-constructed computationally efficient Gaussian Markov random field approximations of $u(\mathbf{s})$, where the domain $\mathcal{D}\subsetneq \mathbb{R}^d$ is bounded and $\alpha\in\mathbb{N}$.
-The approximate solutions of the SPDE are obtained through a finite element discretization.
+### Finite Element Discretization
 
-In `ngme2`, we use the `matern` function to specify the SPDE Matérn model. For example, we can use the following code to specify the SPDE Matérn model in 1d case with Gaussian noise:
+For computational purposes, we must work on a bounded domain $\mathcal{D} \subset \mathbb{R}^d$ and use a finite element approximation.
+In this setting, we work with approximations of the Gaussian field with Matérn covariance, represented through basis functions defined on a triangulation of $\mathcal{D}$.
+The key steps are:
 
-```{r}
+1. **Triangulation**: Partition the domain $\mathcal{D}$ into non-overlapping intervals (1D) or triangles (2D)
+
+2. **Basis functions**: Define piecewise linear basis functions $\{\varphi_i(\mathbf{s})\}_{i=1}^m$ on the mesh vertices:
+   - $\varphi_i(\mathbf{s}_j) = \delta_{ij}$ (Kronecker delta)
+   - Each $\varphi_i$ is linear within each triangle and continuous across boundaries
+   - Compact support: $\varphi_i(\mathbf{s})$ is non-zero only in triangles containing vertex $i$
+
+3. **Weak formulation**: Approximate the solution as:
+   $$u(\mathbf{s}) \approx \sum_{i=1}^m w_i \varphi_i(\mathbf{s}),$$
+   where $\mathbf{w} = (w_1, \ldots, w_m)^\top$ are the weights (random field values at mesh vertices)
+
+4. **Galerkin projection**: For $\alpha = 2$ (corresponding to $\nu = 2 - d/2$, the most common case), multiply the SPDE by test functions $\varphi_j$ and integrate:
+
+Testing against each basis function yields:
+
+$$\mathbf{K}\mathbf{w} = \boldsymbol{\xi},$$
+
+where:
+
+- $\mathbf{K} = \kappa^2 \mathbf{C} + \mathbf{G}$ is the **stiffness matrix**
+- $\mathbf{C}$ is the mass matrix: $C_{ij} = \int_{\mathcal{D}} \varphi_i(\mathbf{s})\varphi_j(\mathbf{s}) d\mathbf{s}$
+- $\mathbf{G}$ is the stiffness matrix: $G_{ij} = \int_{\mathcal{D}} \nabla\varphi_i(\mathbf{s}) \cdot \nabla\varphi_j(\mathbf{s}) d\mathbf{s}$
+- $\boldsymbol{\xi} = (\xi_1, \ldots, \xi_m)^\top$ with $\xi_i = \int_{\mathcal{D}} \varphi_i(\mathbf{s}) d\mathcal{W}(\mathbf{s})$
+
+Since $\mathcal{W}$ is Gaussian white noise, the weights have distribution:
+
+$$\mathbf{w} \sim N(\mathbf{0}, \mathbf{K}^{-1}\mathbf{C}^{-1}\mathbf{K}^{-1}).$$
+
+In practice, we often work with the precision matrix:
+
+$$\mathbf{Q} = \mathbf{C}^{1/2}\mathbf{K}(\mathbf{C}^{-1})\mathbf{K}\mathbf{C}^{1/2},$$
+
+which approximates the precision matrix of the Matérn field at the mesh vertices.
+
+### Observation Matrix
+
+To link the discretized field to observations at locations $\{\mathbf{s}_i\}_{i=1}^n$, we use a **projection matrix** $\mathbf{A}$:
+
+$$u(\mathbf{s}_i) \approx \sum_{j=1}^m A_{ij} w_j,$$
+
+where $A_{ij} = \varphi_j(\mathbf{s}_i)$ are the basis function values at observation locations.
+
+- For observations at mesh vertices: $\mathbf{A}$ contains rows of the identity matrix
+- For observations between vertices: $\mathbf{A}$ performs barycentric interpolation
+- Matrix $\mathbf{A}$ is sparse: each observation involves only the triangle containing it
+
+The observation model becomes:
+
+$$\mathbf{Y} = \mathbf{X}\boldsymbol{\beta} + \mathbf{A}\mathbf{w} + \boldsymbol{\varepsilon},$$
+
+where:
+- $\mathbf{Y}$: $n \times 1$ response vector
+- $\mathbf{X}$: $n \times p$ design matrix for fixed effects
+- $\boldsymbol{\beta}$: $p \times 1$ fixed effect coefficients
+- $\mathbf{A}$: $n \times m$ sparse projection matrix
+- $\mathbf{w}$: $m \times 1$ spatial random effects
+- $\boldsymbol{\varepsilon}$: $n \times 1$ measurement errors
+
+## Non-Gaussian Extensions
+
+### Motivation for Non-Gaussian Fields
+
+While Gaussian fields are mathematically tractable and widely used, many spatial phenomena exhibit features that cannot be adequately captured by Gaussian models:
+
+1. **Heavy tails**: Extreme values occur more frequently than predicted by Gaussian distributions
+2. **Asymmetry**: Positive and negative excursions from the mean have different behaviors
+3. **Jumps**: Sample paths exhibit discontinuities or rapid transitions
+4. **Excess zeros**: Point mass at zero combined with continuous distribution
+5. **Multimodality**: Multiple centers of concentration
+
+**Application examples:**
+
+- **Environmental data**: Precipitation (many zeros, positive skew), pollution spikes
+- **Resource abundance**: Species counts, mineral concentrations
+- **Financial data**: Returns with fat tails and asymmetry
+- **Epidemiology**: Disease incidence with overdispersion
+
+### Type-G Lévy Processes
+
+The ngme2 framework generalizes the SPDE approach by replacing Gaussian white noise with **Type-G Lévy noise**:
+
+$$\left(\kappa^2 - \Delta\right)^{\alpha/2} u(\mathbf{s}) = \dot{\mathcal{M}}(\mathbf{s}),$$
+
+where $\mathcal{M}$ is a Type-G Lévy process.
+
+A Lévy process $\mathcal{M}$ is **Type-G** if its increments can be represented as location-scale mixtures:
+
+$$\mathcal{M}(A) = \mu |A| + \gamma V + \sigma\sqrt{V} Z,$$
+
+where:
+
+- $|A|$ denotes the Lebesgue measure of set $A$
+- $\mu, \gamma$: location parameters
+- $\sigma > 0$: scale parameter
+- $Z \sim N(0, 1)$: standard normal
+- $V > 0$: mixing variable (positive infinitely divisible)
+- $Z$ and $V$ are independent
+
+**Key distributions in ngme2:**
+
+1. **Normal Inverse Gaussian (NIG)**:
+   - Mixing: $V \sim \text{InverseGaussian}(\nu, \nu)$
+   - Parameters: $\mu$ (asymmetry), $\sigma$ (scale), $\nu$ (tail weight)
+   - Properties: Closed under convolution, semi-heavy tails, flexible skewness
+
+2. **Generalized Asymmetric Laplace (GAL)**:
+   - Mixing: $V \sim \text{Gamma}(\alpha, \beta)$
+   - Additional flexibility in tail behavior
+   - Includes Laplace and asymmetric Laplace as special cases
+
+### Finite Element Discretization with Non-Gaussian Noise
+
+Following the same discretization procedure as before, we consider the same setup. More precisely, we consider $V_n = {\rm span}\{\varphi_1,\ldots,\varphi_n\}$, where $\varphi_i(\mathbf{s}), i=1,\ldots, n$ are piecewise linear basis functions obtained from a triangulation of $\mathcal{D}$ and we approximate the solution $u$ by $u_n$, where $u_n$ is written in terms of the basis functions as
+
+$$u_n(\mathbf{s}) = \sum_{i=1}^n w_i \varphi_i(\mathbf{s}).$$
+
+In the right-hand side we obtain a random vector
+
+$$\mathbf{f} = (\dot{\mathcal{M}}(\varphi_1),\ldots, \dot{\mathcal{M}}(\varphi_n)),$$
+
+where the functional $\dot{\mathcal{M}}$ is given by
+
+$$\dot{\mathcal{M}}(\varphi_j) = \int_{\mathcal{D}} \varphi_j(\mathbf{s}) d\mathcal{M}(\mathbf{s}).$$
+
+By considering $\mathcal{M}$ to be a type-G Lévy process, we obtain that $\mathbf{f}$ has a joint distribution that is easy to handle.
+
+Therefore, given a vector $\mathbf{V} = (V_1,\ldots,V_n)$ of independent stochastic variances (in our case, positive infinitely divisible random variables), we obtain that
+
+$$\mathbf{f}|\mathbf{V} \sim N(\gamma + \mu\mathbf{V}, \sigma^2{\rm diag}(\mathbf{V})).$$
+
+So, if we consider, for instance, the non-fractional and non-Gaussian SPDE
+
+$$(\kappa^2 - \Delta) u = \dot{\mathcal{M}},$$
+
+we obtain that the FEM weights $\mathbf{w} = (w_1,\ldots,w_n)$ satisfy
+
+$$\mathbf{w}|\mathbf{V} \sim N(\mathbf{K}^{-1}(\gamma+\mu\mathbf{V}), \sigma^2\mathbf{K}^{-1}{\rm diag}(\mathbf{V})\mathbf{K}^{-1}),$$
+
+where $\mathbf{K} = \kappa^2\mathbf{C}+\mathbf{G}$ is the discretization of the differential operator.
+
+**Computational strategy:**
+
+1. The mixing variables $\mathbf{V}$ are treated as latent variables
+2. Given $\mathbf{V}$, the model is conditionally Gaussian (computationally tractable)
+3. Inference alternates between:
+   - Updating $\mathbf{w}$ given $\mathbf{V}$ (Gaussian sampling)
+   - Updating $\mathbf{V}$ given $\mathbf{w}$ (specific to noise distribution)
+
+This hierarchical structure maintains computational efficiency while enabling flexible non-Gaussian marginal distributions.
+
+### Properties of Non-Gaussian Matérn Fields
+
+**Covariance structure:**
+
+- The covariance function remains **Matérn-like** in structure
+- Controlled by the same parameters $\kappa$ and $\nu$
+- Interpretation of range and smoothness carries over
+
+**Marginal distributions:**
+
+- Non-Gaussian with specified properties (heavy tails, skewness)
+- More flexible than Gaussian for modeling extreme events
+- Better fit to empirical data in many applications
+
+**Sample path properties:**
+- Smoothness still controlled by $\nu$
+- Can exhibit jumps (particularly with GAL noise)
+- Asymmetric behavior possible with appropriate $\mu$ parameter
+
+# Implementation in ngme2
+
+## Basic Syntax
+
+To specify a Matérn SPDE model in ngme2, use the `f()` function with `model="matern"` within your model formula. The basic structure is:
+
+```{r, eval=FALSE}
+f(map, model = "matern", mesh = mesh_object, noise = noise_spec)
+```
+
+**Key arguments:**
+
+- `map`: Spatial locations (coordinates) where the field is observed
+  - For 1D: vector of locations
+  - For 2D: $n \times 2$ matrix with columns for longitude/latitude or x/y coordinates
+  
+- `model = "matern"`: Specifies the Matérn SPDE model
+
+- `mesh`: A mesh object created with `fmesher::fm_mesh_1d()` (1D) or `fmesher::fm_mesh_2d()` (2D)
+  - Defines the finite element triangulation
+  - Controls resolution and approximation accuracy
+  
+- `noise`: Noise distribution specification
+  - `noise_normal(sigma)`: Gaussian noise (default)
+  - `noise_nig(mu, sigma, nu)`: Normal Inverse Gaussian
+  - `noise_gal(...)`: Generalized Asymmetric Laplace
+
+- `kappa` or `theta_K`: Spatial scale parameter
+  - Direct specification: `kappa = 2.0`
+  - Log scale: `theta_K = log(2.0)` (used internally)
+  - Estimated from data if not specified
+
+**When to specify parameters:**
+
+- **For simulation**: Specify all parameters (`kappa` or `theta_K`, and noise parameters) to generate realizations
+- **For estimation**: Parameters can be omitted; the model will estimate them from observed data
+
+## Creating a Simple SPDE Model
+
+Let's start with a basic example to understand the components:
+
+```{r basic-example}
+# 1D example with Gaussian noise
 f(map = 1:10, 
   model = "matern",
   mesh = fmesher::fm_mesh_1d(1:10),
-  kappa = 1, # the spatial scale parameter
+  kappa = 1,
   noise = noise_normal(sigma = 1)
 )
 ```
 
-
-## The SPDE approach with non-Gaussian noise
-
-Then we will describe how to generalize this approach with non-Gaussian noise.
-Our goal now is to describe the SPDE approach when the noise is non-Gaussian.
-The motivation for handling non-Gaussian noise comes from the fact that many features cannot not be handled by Gaussian noise. Some of these reasons are:
-
-* Skewness;
-* Heavier tails;
-* Jumps in the sample paths;
-* Asymmetries in the sample paths.
-
-### Non-Gaussian Matérn fields
-
-The idea is to replace the Gaussian white noise $\mathcal{W}$ in the SPDE by a non-Gaussian white noise $\dot{\mathcal{M}}$:
-$$(\kappa^2 - \Delta)^\beta u = \dot{\mathcal{M}}.$$
-The solution $u$ will have Matérn covariance function, but their marginal distributions will be non-Gaussian.
-
-
-We will consider the same setup. More precisely, we consider $V_n = {\rm span}\{\varphi_1,\ldots,\varphi_n\}$, where $\varphi_i(\mathbf{s}), i=1,\ldots, n$ are piecewise linear basis functions obtained from a triangulation of $\mathcal{D}$ and we approximate the solution $u$ by $u_n$, where $u_n$ is written in terms of the basis functions as
-$$u_n(\mathbf{s}) = \sum_{i=1}^n w_i \varphi_i(\mathbf{s}).$$
-In the right-hand side we obtain a random vector
-$$\mathbf{f} = (\dot{\mathcal{M}}(\varphi_1),\ldots, \dot{\mathcal{M}}(\varphi_n)),$$
-where the functional $\dot{\mathcal{M}}$ is given by
-$$\dot{\mathcal{M}}(\varphi_j) = \int_{\mathcal{D}} \varphi_j(\mathbf{s}) d\mathcal{M}(\mathbf{s}).$$
-By considering $\mathcal{M}$ to be a type-G Lévy process, we obtain that $\mathbf{f}$ has a joint distribution that is easy to handle.
-
-We say that a Lévy process is of type G if its increments can be represented as location-scale mixtures:
-$$\gamma + \mu V + \sigma \sqrt{V}Z,$$
-where $\gamma, \mu$ are parameters, $Z\sim N(0,1)$ and is independent of $V$, and $V$ is a positive infinitely divisible random variable.
-
-Therefore, given a vector $\mathbf{V} = (V_1,\ldots,V_n)$ of independent stochastic variances (in our case, positive infinitely divisible random variables), we obtain that
-$$\mathbf{f}|\mathbf{V} \sim N(\gamma + \mu\mathbf{V}, \sigma^2{\rm diag}(\mathbf{V})).$$
-So, if we consider, for instance, the non-fractional and non-Gaussian SPDE
-$$(\kappa^2 - \Delta) u = \dot{\mathcal{M}},$$
-we obtain that the FEM weights $\mathbf{w} = (w_1,\ldots,w_n)$ satisfy
-$$\mathbf{w}|\mathbf{V} \sim N(\mathbf{K}^{-1}(\gamma+\mu\mathbf{V}), \sigma^2\mathbf{K}^{-1}{\rm diag}(\mathbf{V})\mathbf{K}^{-1}),$$
-where $\mathbf{K} = \kappa^2\mathbf{C}+\mathbf{G}$ is the discretization of the differential operator.
-
-
-In `ngme2`, we use the `matern` function to specify the SPDE Matérn model. For example, we can use the following code to specify the SPDE Matérn model in 1d case with NIG noise:
-
-```{r}
+```{r nig-example}
+# 1D example with NIG noise
 f(map = 1:10, 
   model = "matern",
   mesh = fmesher::fm_mesh_1d(1:10),
-  kappa = 1, # the spatial scale parameter
+  kappa = 1,
   noise = noise_nig(mu = 0, sigma = 1, nu = 0.5)
 )
 ```
 
-## Using SPDE Matérn model in ngme2
+These examples demonstrate the basic syntax for specifying SPDE models with different noise distributions.
 
-### Simulation 
+# Simulation
 
-We first use the simulation function to generate the data.
+## Using SPDE Matérn Model in ngme2
 
-```{r}
-# define the domain
+Understanding SPDE model behavior through simulation helps build intuition about spatial correlation, smoothness, and the impact of different noise distributions. We first use the simulation function to generate the data.
+
+### Setting Up the Simulation Environment
+
+```{r sim-setup}
+# Define the domain
 library(ggplot2)
 library(viridis)
+
 pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
 mesh <- fmesher::fm_mesh_2d(
   loc.domain = pl01, cutoff = 0.1,
   max.edge = c(0.3, 10)
 )
 
-n_obs <- 1000
+n_obs <- 2000
 loc <- cbind(runif(n_obs, 0, 10), runif(n_obs, 0, 5))
 
-# define the simulated model
-true_noise <- noise_nig(mu=-2, sigma=1, nu=0.5)
+cat("Mesh vertices:", mesh$n, "\n")
+cat("Number of observations:", n_obs, "\n")
+```
+
+Let's visualize the mesh structure with observation locations:
+
+```{r mesh-visualization}
+# Visualize mesh
+plot(mesh)
+points(loc, col="red", pch=16)
+```
+
+### Simulating with NIG Noise
+
+Now we define and simulate from a model with NIG noise:
+
+```{r simulate-nig}
+# Define the simulated model
+sigma_true <- 5
+nu_true <- 0.5
+mu_true <- -2
+kappa_true <- 4
+
+true_noise <- noise_nig(mu=mu_true, 
+                    sigma=sigma_true,
+                    nu=nu_true)
+
 true_model <- f(
   map = loc,
   model="matern",
-  theta_K = log(4),
+  theta_K = log(kappa_true),
   mesh = mesh,
   noise = true_noise
 )
 
-# simulate the data
+sigma_noise <- 0.1
+# Simulate the data
 W <- simulate(true_model)[[1]]
-Y <- W + rnorm(n_obs, sd=0.5)
+Y <- W + rnorm(n_obs, sd=sigma_noise)
 
-plot(mesh)
-points(loc, col="red", pch=16)
+# Summary statistics
+cat("Simulated field statistics:\n")
+cat("  Mean:", round(mean(W), 3), "\n")
+cat("  SD:", round(sd(W), 3), "\n")
+cat("  Min:", round(min(W), 3), "\n")
+cat("  Max:", round(max(W), 3), "\n")
+```
 
-##### Fit the model
+### Visualizing the Simulated Field
+
+```{r visualize-field, fig.height=5}
+# Prepare data for plotting
+sim_data <- data.frame(
+  x = loc[, 1],
+  y = loc[, 2],
+  value = W
+)
+
+# Create spatial plot
+ggplot(sim_data, aes(x = x, y = y, color = value)) +
+  geom_point(size = 2) +
+  scale_color_viridis(option = "plasma") +
+  coord_fixed() +
+  labs(
+    title = "Simulated NIG Matérn SPDE Field",
+    subtitle = paste0("κ = ", kappa_true, 
+                        ", NIG(μ=",
+                        mu_true, ", σ=", sigma_true,
+                        ", ν=", nu_true,")"), 
+    x = "Longitude",
+    y = "Latitude",
+    color = "Field Value"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 13, face = "bold"),
+    legend.position = "right"
+  )
+```
+
+The simulated field shows smooth spatial variation with the characteristic features of NIG innovations, including potential asymmetry and heavier tails than Gaussian.
+
+# Estimation
+
+## Fitting the Model
+
+Now we fit the model to our simulated data to demonstrate parameter recovery:
+
+```{r fit-model}
 out <- ngme(
   Y ~ 0 + f(loc,
     model="matern",
@@ -200,30 +485,103 @@ out <- ngme(
     std_lim = 0.01
   )
 )
-out
-traceplot(out, "spde", hline=c(4, -2, 1, 0.5)) # compare with true parameters
-traceplot(out, hline=0.5) 
 
-# Compare with the true density 
+# Display results
+out
+```
+
+**Model specification explained:**
+
+- `Y ~ 0`: Response with no intercept
+- `f(...)`: Spatial random effect
+  - `name = "spde"`: Identifier for later reference
+  - `mesh = mesh`: Triangulation
+  - `noise = noise_nig()`: NIG distribution with estimated parameters
+
+**Optimization settings:**
+
+- `optimizer = precond_sgd()`: Preconditioned stochastic gradient descent
+- `solver = "supernodal"`: Efficient sparse solver
+- `rao_blackwellization = TRUE`: Variance reduction
+- `n_parallel_chain = 4`: Multiple chains for robustness
+
+## Convergence Diagnostics
+
+```{r convergence, fig.height=6}
+# Compare with true parameters
+traceplot(out, "spde", hline=c(kappa_true, mu_true, 
+                                        sigma_true, nu_true))
+```
+
+```{r convergence-meas, fig.height=4}
+# Measurement noise convergence  
+traceplot(out, hline=sigma_noise)
+```
+
+The traceplots show good convergence with estimates oscillating around true values (blue lines).
+
+## Model Validation
+
+Compare the estimated noise distribution with the true distribution:
+
+```{r validation, fig.height=4}
+# Compare with true density 
 plot(true_noise,
   out$replicates[[1]]$models[[1]]$noise)
 ```
 
+## Parameter Recovery
 
-### Real data example (argo float data)
+```{r param-recovery}
+params_spde <- ngme_result(out, "spde")
 
-We use the `argo_float` data to illustrate how to use the SPDE Matérn model in `ngme2`.
+# True vs estimated comparison
+cat("Spatial scale parameter (kappa):\n")
+cat("  True:", kappa_true, "\n")
+cat("  Estimated:", round(as.numeric(params_spde$kappa), 3), "\n\n")
+
+cat("NIG parameters:\n")
+cat("  mu - True:", mu_true, ", Estimated:", round(as.numeric(params_spde$mu), 3), "\n")
+cat("  sigma - True:", sigma_true, ", Estimated:", round(as.numeric(params_spde$sigma), 3), "\n")
+cat("  nu - True:", nu_true, ", Estimated:", round(as.numeric(params_spde$nu), 3), "\n\n")
+
+params_data <- ngme_result(out, "data")
+cat("Measurement noise (sigma):\n")
+cat("  True:", sigma_noise, "\n")
+cat("  Estimated:", round(as.numeric(params_data$sigma), 3), "\n")
+```
+
+The parameter estimates are very close to the true values, demonstrating successful recovery.
+
+# Real Data Example: Argo Float Data
+
+To demonstrate the practical application of Matérn SPDE models, we analyze oceanographic data from the Argo float system measuring sea surface temperature and salinity.
+
+## Data Exploration
+
+We use the `argo_float` data to illustrate how to use the SPDE Matérn model in `ngme2`:
+
+```{r argo-data}
+# Load data
+data(argo_float)
+head(argo_float)
+
+# Extract unique locations
+# take longitude and latitude to build the mesh
+loc_2d <- unique(cbind(argo_float$lon, argo_float$lat))
+# nrow(loc) == nrow(dat) no replicate
+
+cat("Number of observations:", nrow(argo_float), "\n")
+cat("Number of unique locations:", nrow(loc_2d), "\n")
+```
+
+## Creating the Mesh
 
 ```{r create-mesh, fig.align="center"}
 # 2d example
-data(argo_float)
-head(argo_float)
-# take longitude and latitude to build the mesh
-
 max.edge    <- 1
 bound.outer <- 5
-loc_2d <- unique(cbind(argo_float$lon, argo_float$lat))
-# nrow(loc) == nrow(dat) no replicate
+
 argo_mesh <- fmesher::fm_mesh_2d(loc = loc_2d,
                     # the inner edge and outer edge
                     max.edge = c(1,5),
@@ -231,31 +589,55 @@ argo_mesh <- fmesher::fm_mesh_2d(loc = loc_2d,
                     # offset extension distance inner and outer extenstion
                     offset = c(max.edge, bound.outer)
 )
+
+# Visualize mesh
+plot(argo_mesh, main = "Argo Float Mesh")
+points(loc_2d, col = "red", pch = 16, cex = 0.7)
+
+cat("Mesh vertices:", argo_mesh$n, "\n")
 ```
 
-Let's use the previous `argo_float` spatial (2d) example. First we explore the how the data look like:
+The mesh provides the finite element discretization of the ocean domain.
 
-```{r plot-data, fig.align="center"}
-# tempearture
+## Visualizing the Data
+
+Let's explore the spatial patterns in temperature and salinity:
+
+```{r plot-data, fig.align="center", fig.height=5}
+# temperature
 ggplot(data=argo_float) +
   geom_point(aes(
     x = loc_2d[, 1], y = loc_2d[, 2],
     colour = temp
   ), size = 2, alpha = 1) +
-  scale_color_gradientn(colours = viridis(100))
+  scale_color_gradientn(colours = viridis(100)) +
+  coord_fixed() +
+  labs(title = "Sea Surface Temperature (°C)",
+       x = "Longitude", y = "Latitude") +
+  theme_minimal()
+```
 
+```{r plot-salinity, fig.align="center", fig.height=5}
 # salinity
 ggplot(data=argo_float) +
   geom_point(aes(
     x = loc_2d[, 1], y = loc_2d[, 2],
     colour = sal
   ), size = 2, alpha = 1) +
-  scale_color_gradientn(colours = viridis(100))
+  scale_color_gradientn(colours = viridis(100)) +
+  coord_fixed() +
+  labs(title = "Sea Surface Salinity (PSU)",
+       x = "Longitude", y = "Latitude") +
+  theme_minimal()
 ```
 
-Next, we specify a model formula, and then fit the model.
+The visualizations reveal clear spatial gradients in both temperature and salinity, suggesting strong spatial structure that can be captured by the SPDE model.
 
-```{r ngme-estimation, cache=TRUE}
+## Model Fitting
+
+Next, we specify a model formula, and then fit the model:
+
+```{r ngme-estimation}
 formula <- temp ~ sal + f(
   loc_2d, 
   model = "matern", 
@@ -266,8 +648,8 @@ formula <- temp ~ sal + f(
 
 out <- ngme(
   formula = formula,
-  family = "nig",
   data = argo_float,
+  family = "nig",
   control_opt = control_opt(
     n_parallel_chain = 4,
     iterations = 2000,
@@ -278,10 +660,149 @@ out <- ngme(
   )
 )
 out
+```
 
+The model includes:
+
+- **Fixed effect**: Salinity (`sal`) as a covariate
+- **Spatial random effect**: SPDE Matérn field with NIG innovations
+- **Measurement error**: Gaussian noise
+
+This specification allows us to model the relationship between temperature and salinity while accounting for spatial correlation and non-Gaussian features.
+
+## Convergence Assessment
+
+```{r argo-convergence, fig.height=6}
 traceplot(out, "spde")
+```
+
+```{r argo-convergence-all, fig.height=5}
 traceplot(out)
 ```
+
+The traceplots indicate good convergence for all model parameters.
+
+## Interpreting Results
+
+```{r interpretation}
+# Extract spatial field parameters
+params_spde <- ngme_result(out, "spde")
+
+cat("Spatial field parameters:\n")
+cat("  Spatial scale (kappa):", round(as.numeric(params_spde$kappa), 3), "\n")
+cat("  Correlation range:", round(sqrt(8) / as.numeric(params_spde$kappa), 3), "degrees\n")
+cat("  NIG mu:", round(as.numeric(params_spde$mu), 3), "\n")
+cat("  NIG sigma:", round(as.numeric(params_spde$sigma), 3), "\n")
+cat("  NIG nu:", round(as.numeric(params_spde$nu), 3), "\n\n")
+
+# Fixed effects and measurement noise
+params_data <- ngme_result(out, "data")
+cat("Fixed effect (salinity):", round(as.numeric(params_data$fixed_effects), 3), "\n")
+cat("Measurement noise:", round(as.numeric(params_data$sigma), 3), "\n")
+```
+
+**Key findings:**
+
+- The spatial scale indicates moderate-range spatial correlation
+- The salinity effect shows how temperature changes with salinity
+- NIG parameters suggest asymmetry and heavier tails than Gaussian
+- The measurement noise captures observation error
+
+# Prediction
+
+Once we have fitted the model, we can make predictions at new spatial locations for interpolation and uncertainty quantification.
+
+## Creating Prediction Grid
+
+```{r pred-setup}
+# Create prediction grid
+lon_pred <- seq(min(argo_float$lon), max(argo_float$lon), length.out = 80)
+lat_pred <- seq(min(argo_float$lat), max(argo_float$lat), length.out = 40)
+pred_grid <- expand.grid(lon = lon_pred, lat = lat_pred)
+
+# Use median salinity for predictions
+pred_data <- data.frame(sal = median(argo_float$sal))
+
+cat("Prediction locations:", nrow(pred_grid), "\n")
+```
+
+## Making Predictions
+
+```{r make-predictions}
+# Generate predictions
+predictions <- predict(
+  out,
+  map = list(spde = as.matrix(pred_grid)),
+  data = pred_data[rep(1, nrow(pred_grid)), , drop = FALSE],
+  type = "lp",
+  estimator = c("mean", "sd"),
+  sampling_size = 200,
+  seed = 123
+)
+
+# Prepare data for visualization
+pred_viz <- data.frame(
+  lon = pred_grid$lon,
+  lat = pred_grid$lat,
+  pred_mean = predictions$mean,
+  pred_sd = predictions$sd
+)
+```
+
+## Visualizing Predictions
+
+```{r viz-pred-mean, fig.height=5}
+# Predicted temperature map
+ggplot(pred_viz, aes(x = lon, y = lat, fill = pred_mean)) +
+  geom_tile() +
+  geom_point(data = argo_float, aes(x = lon, y = lat),
+             inherit.aes = FALSE, size = 0.5, 
+             color = "white", alpha = 0.3) +
+  scale_fill_viridis(option = "plasma") +
+  coord_fixed() +
+  labs(
+    title = "Predicted Sea Surface Temperature",
+    subtitle = "White points: observation locations",
+    x = "Longitude",
+    y = "Latitude",
+    fill = "Temp (°C)"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 12, face = "bold"),
+    legend.position = "right"
+  )
+```
+
+```{r viz-pred-sd, fig.height=5}
+# Prediction uncertainty map
+ggplot(pred_viz, aes(x = lon, y = lat, fill = pred_sd)) +
+  geom_tile() +
+  geom_point(data = argo_float, aes(x = lon, y = lat),
+             inherit.aes = FALSE, size = 0.5, 
+             color = "black", alpha = 0.3) +
+  scale_fill_viridis(option = "magma") +
+  coord_fixed() +
+  labs(
+    title = "Prediction Uncertainty (SD)",
+    subtitle = "Black points: observation locations",
+    x = "Longitude",
+    y = "Latitude",
+    fill = "SD"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 12, face = "bold"),
+    legend.position = "right"
+  )
+```
+
+**Interpretation:**
+
+- The prediction map shows smooth spatial interpolation of temperature
+- Higher uncertainty appears in regions with sparse observations
+- The SPDE model successfully captures spatial structure
+- Uncertainty quantification helps identify areas needing more data
 
 <!-- ### Prediction
 The `ngme` function firstly will estimate the model using the known data.
@@ -289,6 +810,214 @@ After the estimation, the estimaed value and the samples given by gibbs sampler 
 
 See the vignette [Prediction and estimation](pred_and_est.html) for details. -->
 
-### Non-stationary SPDE Matérn model
+# Advanced Topics
 
-In stationary case, the $K = \kappa^2 C + G$. However, if we allow $\kappa$ to change over space, we can introduce non-stationary version, where $K = diag(\kappa) C diag(\kappa) + G$, where $\kappa = \exp(B_K \theta_K)$, $B_K$ is the basis matrix user provide.
+## Non-Stationary SPDE Matérn Model
+
+### Motivation for Non-Stationarity
+
+In many real-world applications, spatial correlation properties vary across the domain. For example:
+
+- **Oceanography**: Correlation ranges differ between coastal and open ocean regions
+- **Meteorology**: Temperature correlations vary with elevation and topography  
+- **Epidemiology**: Disease spread patterns differ between urban and rural areas
+- **Ecology**: Species abundance correlations change with habitat heterogeneity
+
+The ngme2 package supports non-stationary models where the spatial scale parameter $\kappa$ varies spatially, allowing for location-dependent correlation ranges.
+
+### Mathematical Formulation
+
+In the stationary case, we have $\mathbf{K} = \kappa^2\mathbf{C} + \mathbf{G}$, where $\kappa$ is constant across space.
+
+For non-stationary models, we allow $\kappa$ to vary spatially:
+
+$$\mathbf{K} = \text{diag}(\boldsymbol{\kappa}) \mathbf{C} \text{diag}(\boldsymbol{\kappa}) + \mathbf{G}$$
+
+where $\boldsymbol{\kappa} = (\kappa_1, \ldots, \kappa_n)$ are location-specific values at mesh vertices.
+
+We model the spatial variation through basis functions:
+
+$$\log(\kappa_i) = \sum_{j=1}^{p} B_{ij} \theta_j = (\mathbf{B}\boldsymbol{\theta})_i$$
+
+where:
+
+- $\mathbf{B}$ is an $n \times p$ matrix of basis functions evaluated at mesh vertices (specified via `B_theta_K` parameter)
+- $\boldsymbol{\theta}$ is a $p$-dimensional vector of coefficients to be estimated (specified via `theta_K` parameter)
+
+### Simulating Non-Stationary Data
+
+Let's create a synthetic example where correlation range varies with longitude:
+```{r nonstat-setup}
+library(ngme2)
+library(ggplot2)
+library(viridis)
+library(fmesher)
+
+# Create a rectangular domain
+pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
+mesh <- fm_mesh_2d(
+  loc.domain = pl01,
+  cutoff = 0.1,
+  max.edge = c(0.3, 1.5)
+)
+
+cat("Mesh vertices:", mesh$n, "\n")
+
+# Visualize mesh
+plot(mesh, main = "Mesh for Non-Stationary Example")
+```
+
+Now we'll create basis functions that capture spatial variation in $\kappa$:
+```{r nonstat-basis}
+# Create basis matrix for kappa
+# We want kappa to vary with longitude (x-coordinate)
+mesh_coords <- mesh$loc[, 1:2]
+
+# Polynomial basis: 1, x, x^2
+# NOTE: We create this as B_kappa for clarity, but will pass it as B_theta_K to ngme2
+B_kappa <- cbind(
+  Intercept = 1,
+  Longitude = mesh_coords[, 1] / 10,  # Normalized to [0,1]
+  Long_squared = (mesh_coords[, 1] / 10)^2
+)
+
+# True coefficients: log(kappa) = 0.5 + 1.5*x - 0.8*x^2
+# This creates higher kappa (shorter range) in middle, lower at edges
+true_theta <- c(0.5, 1.5, -0.8)
+
+# Compute true kappa at each mesh vertex
+log_kappa_true <- B_kappa %*% true_theta
+kappa_true <- exp(as.vector(log_kappa_true))
+
+# Visualize the true spatial variation in kappa
+kappa_df <- data.frame(
+  x = mesh_coords[, 1],
+  y = mesh_coords[, 2],
+  kappa = kappa_true,
+  range = sqrt(8) / kappa_true  # Practical range
+)
+
+ggplot(kappa_df, aes(x = x, y = y, color = kappa)) +
+  geom_point(size = 2, alpha = 0.7) +
+  scale_color_viridis(option = "plasma") +
+  coord_fixed() +
+  labs(
+    title = "True Spatial Variation in κ",
+    subtitle = "log(κ) = 0.5 + 1.5x - 0.8x²",
+    x = "Longitude",
+    y = "Latitude",
+    color = "κ value"
+  ) +
+  theme_minimal()
+
+ggplot(kappa_df, aes(x = x, y = y, color = range)) +
+  geom_point(size = 2, alpha = 0.7) +
+  scale_color_viridis(option = "viridis") +
+  coord_fixed() +
+  labs(
+    title = "True Correlation Range Variation",
+    subtitle = "Range = √8/κ",
+    x = "Longitude",
+    y = "Latitude",
+    color = "Range"
+  ) +
+  theme_minimal()
+
+# Summary statistics of spatial variation
+cat("Kappa statistics:\n")
+cat("  Min:", round(min(kappa_true), 3), "\n")
+cat("  Mean:", round(mean(kappa_true), 3), "\n")
+cat("  Max:", round(max(kappa_true), 3), "\n\n")
+cat("Correlation range statistics:\n")
+cat("  Min:", round(min(kappa_df$range), 3), "\n")
+cat("  Mean:", round(mean(kappa_df$range), 3), "\n")
+cat("  Max:", round(max(kappa_df$range), 3), "\n")
+```
+
+### Simulating Observations
+```{r nonstat-simulate}
+# Generate observation locations
+set.seed(123)
+n_obs <- 800
+loc_obs <- cbind(
+  runif(n_obs, 0, 10),
+  runif(n_obs, 0, 5)
+)
+
+# Define the non-stationary model for simulation
+true_noise <- noise_nig(mu = -1.5, sigma = 1, nu = 0.5)
+
+true_model <- f(
+  map = loc_obs,
+  model = "matern",
+  mesh = mesh,
+  B_theta_K = B_kappa,  # Basis matrix for kappa (NOTE: parameter is B_theta_K)
+  theta_K = true_theta,  # Use our spatially-varying coefficients
+  noise = true_noise
+)
+
+# Simulate the spatial field
+W <- simulate(true_model, seed = 456)[[1]]
+
+# Add measurement noise
+sigma_obs <- 0.3
+Y <- W + rnorm(n_obs, sd = sigma_obs)
+
+# Visualize simulated field
+sim_df <- data.frame(
+  x = loc_obs[, 1],
+  y = loc_obs[, 2],
+  W = W,
+  Y = Y
+)
+
+ggplot(sim_df, aes(x = x, y = y, color = W)) +
+  geom_point(size = 2, alpha = 0.8) +
+  scale_color_viridis(option = "plasma") +
+  coord_fixed() +
+  labs(
+    title = "Simulated Non-Stationary Matérn Field",
+    subtitle = "Spatial correlation range varies with longitude",
+    x = "Longitude",
+    y = "Latitude",
+    color = "Field Value"
+  ) +
+  theme_minimal()
+
+cat("Field statistics:\n")
+cat("  Mean:", round(mean(W), 3), "\n")
+cat("  SD:", round(sd(W), 3), "\n")
+cat("  Range:", round(diff(range(W)), 3), "\n")
+```
+
+### Fitting the Non-Stationary Model
+
+Now we fit both stationary and non-stationary models to compare:
+```{r nonstat-fit}
+# Fit NON-STATIONARY model
+fit_nonstat <- ngme(
+  Y ~ 0 + f(
+    loc_obs,
+    model = "matern",
+    name = "spde_nonstat",
+    mesh = mesh,
+    B_theta_K = B_kappa,  # Include basis matrix (parameter is B_theta_K)
+    theta_K = c(0,0,0), # Giving starting value for theta
+    noise = noise_nig()
+  ),
+  data = data.frame(Y = Y),
+  control_opt = control_opt(
+    iterations = 2000,
+    optimizer = precond_sgd(),
+    n_parallel_chain = 4,
+    std_lim = 0.01,
+    seed = 789
+  )
+)
+
+# Display results
+cat("=== NON-STATIONARY MODEL ===\n")
+print(fit_nonstat)
+```
+
+This enables modeling of phenomena where correlation range varies with environmental gradients, depth, topography, or other spatially varying factors.

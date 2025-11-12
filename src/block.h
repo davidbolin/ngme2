@@ -133,13 +133,11 @@ public:
     
     bool is_all_gaussian() const { return all_gaussian; }
 
-    void sample_cond_V(bool update_Q = true) {
+    void sample_cond_V() {
       if(n_latent > 0){
         for (unsigned i=0; i < n_latent; i++) {
             (*latents[i]).sample_cond_V();
         }
-        
-        if (update_Q) update_QQ();
       }
     }
 

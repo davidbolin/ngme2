@@ -244,7 +244,6 @@ if (debug) std::cout << "Start latent get grad"<< std::endl;
     if (n_theta_sigma > 0) grad.segment(n_theta_K + n_theta_mu, n_theta_sigma) = deriv_cache.grad_theta_sigma;
     if (need_nu) grad.segment(n_theta_K + n_theta_mu + n_theta_sigma, n_theta_nu) = deriv_cache.grad_theta_nu;
 
-// std::cout << "grad = " << grad.transpose() << std::endl;
 if (debug) std::cout << "finish latent gradient"<< std::endl;
     return grad;
 }
@@ -359,8 +358,6 @@ void Latent::sample_uncond_V() {
     }
     invalidate_derivatives();
 }
-
-// removed latent-level preconditioner accumulation; Block handles aggregation.
 
 void Latent::update_derivatives(
     bool need_grad_theta_K,

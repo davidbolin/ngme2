@@ -245,7 +245,7 @@ if (debug) std::cout << "End Block Constructor" << std::endl;
 
   void BlockModel::burn_in(int iterations) {
       for (int i=0; i < iterations; i++) {
-          sample_cond_V(false);
+          sample_cond_V();
           sampleW_VY(true);
           sample_cond_noise_V();
       }
@@ -600,7 +600,7 @@ Rcpp::List BlockModel::sampling(
 
   for (int i=0; i < n; i++) {
     if (posterior) {
-      if (!all_gaussian) sample_cond_V(false);
+      if (!all_gaussian) sample_cond_V();
       sampleW_VY();
       sample_cond_noise_V(true);
     } else {
@@ -697,6 +697,7 @@ if (debug) std::cout << "Start compute_grad_and_hessian"<< std::endl;
   MatrixXd grad_samples(n_params, std::max(1, n_pass));
 
   for (int i=0; i<n_pass; ++i) {
+    // Gibbs sampler
     if (rb_all_gauss) {
       if (i==0) {
         auto t_sw = std::chrono::steady_clock::now();
@@ -709,7 +710,7 @@ if (debug) std::cout << "Start compute_grad_and_hessian"<< std::endl;
     } else {
       auto t_sv = std::chrono::steady_clock::now();
       // Avoid duplicating QQ factorization here; sampleW_VY() updates QQ
-      sample_cond_V(false);
+      sample_cond_V();
       t_sampleV_ms += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t_sv).count();
       auto t_sw = std::chrono::steady_clock::now();
       sampleW_VY(false);

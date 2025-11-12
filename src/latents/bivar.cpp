@@ -14,7 +14,7 @@ Bivar::Bivar(const Rcpp::List& operator_list):
   fix_bv_theta (Rcpp::as<bool> (operator_list["fix_bv_theta"]))
 {}
 
-void Bivar::update_K(const VectorXd& theta_K) {
+void Bivar::build_KZ(const VectorXd& theta_K) {
   double eta = theta_K(0);
   double theta = std::atan(eta);
   if (fix_bv_theta) { theta = 0; }
@@ -23,8 +23,8 @@ void Bivar::update_K(const VectorXd& theta_K) {
   VectorXd theta_K1 = theta_K.segment(2, n_theta_1);
   VectorXd theta_K2 = theta_K.segment(2 + n_theta_1, n_theta_2);
   Matrix2d D = getD(theta, rho);
-  first->update_K(theta_K1);
-  second->update_K(theta_K2);
+  first->build_KZ(theta_K1);
+  second->build_KZ(theta_K2);
 
   SparseMatrix<double> K00 = VectorXd::Constant(n, D(0,0)).asDiagonal() * first->getK();
   SparseMatrix<double> K01 = VectorXd::Constant(n, D(0,1)).asDiagonal() * second->getK();
@@ -38,7 +38,7 @@ void Bivar::update_K(const VectorXd& theta_K) {
 }
 
 // assume K is updated!!!
-void Bivar::update_dK(const VectorXd& theta_K) {
+bool Bivar::update_dKdZ(const VectorXd& theta_K) {
   double eta = theta_K(0);
   double theta = std::atan(eta);
   if (fix_bv_theta) { theta = 0; }
@@ -49,8 +49,8 @@ void Bivar::update_dK(const VectorXd& theta_K) {
 
   // first->update_K(theta_K1);
   // second->update_K(theta_K2);
-  first->update_dK(theta_K1);
-  second->update_dK(theta_K2);
+  first->update_dKdZ(theta_K1);
+  second->update_dKdZ(theta_K2);
 
   for (int index=0; index < n_theta_K; index++) {
     dK[index].setZero();
@@ -81,23 +81,23 @@ void Bivar::update_dK(const VectorXd& theta_K) {
 // std::cout << "dK[" << index << "] = " << dK[index] << std::endl;
     } else if (!share_param && index < 2 + n_theta_1) {
       Matrix2d D = getD(theta, rho);
-      SparseMatrix<double> dK00 = VectorXd::Constant(n, D(0,0)).asDiagonal() * first->get_dK()[index-2];
-      SparseMatrix<double> dK10 = VectorXd::Constant(n, D(1,0)).asDiagonal() * first->get_dK()[index-2];
+      SparseMatrix<double> dK00 = VectorXd::Constant(n, D(0,0)).asDiagonal() * first->get_dK(index-2);
+      SparseMatrix<double> dK10 = VectorXd::Constant(n, D(1,0)).asDiagonal() * first->get_dK(index-2);
       setSparseBlock(&dK[index], 0, 0, dK00);
       setSparseBlock(&dK[index], n, 0, dK10);
     } else if (!share_param) {
       Matrix2d D = getD(theta, rho);
       int index_in_second = index - 2 - n_theta_1;
-      SparseMatrix<double> dK01 = VectorXd::Constant(n, D(0,1)).asDiagonal() * second->get_dK()[index_in_second];
-      SparseMatrix<double> dK11 = VectorXd::Constant(n, D(1,1)).asDiagonal() * second->get_dK()[index_in_second];
+      SparseMatrix<double> dK01 = VectorXd::Constant(n, D(0,1)).asDiagonal() * second->get_dK(index_in_second);
+      SparseMatrix<double> dK11 = VectorXd::Constant(n, D(1,1)).asDiagonal() * second->get_dK(index_in_second);
       setSparseBlock(&dK[index], 0, n, dK01);
       setSparseBlock(&dK[index], n, n, dK11);
     } else {
       // share param case
       Matrix2d D = getD(theta, rho);
-      SparseMatrix<double> dK00 = VectorXd::Constant(n, D(0,0)).asDiagonal() * first->get_dK()[index-2];
-      SparseMatrix<double> dK10 = VectorXd::Constant(n, D(1,0)).asDiagonal() * first->get_dK()[index-2];
-      SparseMatrix<double> dK2 = second->get_dK()[index-2];
+      SparseMatrix<double> dK00 = VectorXd::Constant(n, D(0,0)).asDiagonal() * first->get_dK(index-2);
+      SparseMatrix<double> dK10 = VectorXd::Constant(n, D(1,0)).asDiagonal() * first->get_dK(index-2);
+      SparseMatrix<double> dK2 = second->get_dK(index-2);
       SparseMatrix<double> dK01 = VectorXd::Constant(n, D(0,1)).asDiagonal() * dK2;
       SparseMatrix<double> dK11 = VectorXd::Constant(n, D(1,1)).asDiagonal() * dK2;
 
@@ -107,6 +107,7 @@ void Bivar::update_dK(const VectorXd& theta_K) {
       setSparseBlock(&dK[index], n, n, dK11);
     }
   }
+  return true;
 }
 
 Matrix2d Bivar::getD(double theta, double rho) const {
@@ -169,15 +170,15 @@ Bivar_normal_ope::Bivar_normal_ope(const Rcpp::List& operator_list):
   fix_bv_theta (Rcpp::as<bool> (operator_list["fix_bv_theta"]))
 {}
 
-void Bivar_normal_ope::update_K(const VectorXd& theta_K) {
+void Bivar_normal_ope::build_KZ(const VectorXd& theta_K) {
   double rho = theta_K(0);
   double c1 = exp(theta_K(1));
   double c2 = exp(theta_K(2));
   VectorXd theta_K1 = theta_K.segment(3, n_theta_1);
   VectorXd theta_K2 = theta_K.segment(3 + n_theta_1, n_theta_2);
   Matrix2d D = getD(0, rho);
-  first->update_K(theta_K1);
-  second->update_K(theta_K2);
+  first->build_KZ(theta_K1);
+  second->build_KZ(theta_K2);
 
   SparseMatrix<double> K00 = c1 * VectorXd::Constant(n, D(0,0)).asDiagonal() * first->getK();
   SparseMatrix<double> K01 = c2 * VectorXd::Constant(n, D(0,1)).asDiagonal() * second->getK();
@@ -191,15 +192,15 @@ void Bivar_normal_ope::update_K(const VectorXd& theta_K) {
 }
 
 // assume K is updated!!!
-void Bivar_normal_ope::update_dK(const VectorXd& theta_K) {
+bool Bivar_normal_ope::update_dKdZ(const VectorXd& theta_K) {
   double rho = theta_K(0);
   VectorXd theta_K1 = theta_K.segment(1, n_theta_1);
   VectorXd theta_K2 = theta_K.segment(1 + n_theta_1, n_theta_2);
 
   // first->update_K(theta_K1);
   // second->update_K(theta_K2);
-  first->update_dK(theta_K1);
-  second->update_dK(theta_K2);
+  first->update_dKdZ(theta_K1);
+  second->update_dKdZ(theta_K2);
 
   for (int index=0; index < n_theta_K; index++) {
     dK[index].setZero();
@@ -222,23 +223,23 @@ void Bivar_normal_ope::update_dK(const VectorXd& theta_K) {
 
     } else if (!share_param && index < 1 + n_theta_1) {
       Matrix2d D = getD(0, rho);
-      SparseMatrix<double> dK00 = VectorXd::Constant(n, D(0,0)).asDiagonal() * first->get_dK()[index-1];
-      SparseMatrix<double> dK10 = VectorXd::Constant(n, D(1,0)).asDiagonal() * first->get_dK()[index-1];
+      SparseMatrix<double> dK00 = VectorXd::Constant(n, D(0,0)).asDiagonal() * first->get_dK(index-1);
+      SparseMatrix<double> dK10 = VectorXd::Constant(n, D(1,0)).asDiagonal() * first->get_dK(index-1);  
       setSparseBlock(&dK[index], 0, 0, dK00);
       setSparseBlock(&dK[index], n, 0, dK10);
     } else if (!share_param) {
       Matrix2d D = getD(0, rho);
       int index_in_second = index - 1 - n_theta_1;
-      SparseMatrix<double> dK01 = VectorXd::Constant(n, D(0,1)).asDiagonal() * second->get_dK()[index_in_second];
-      SparseMatrix<double> dK11 = VectorXd::Constant(n, D(1,1)).asDiagonal() * second->get_dK()[index_in_second];
+      SparseMatrix<double> dK01 = VectorXd::Constant(n, D(0,1)).asDiagonal() * second->get_dK(index_in_second);
+      SparseMatrix<double> dK11 = VectorXd::Constant(n, D(1,1)).asDiagonal() * second->get_dK(index_in_second);
       setSparseBlock(&dK[index], 0, n, dK01);
       setSparseBlock(&dK[index], n, n, dK11);
     } else {
       // share param case
       Matrix2d D = getD(0, rho);
-      SparseMatrix<double> dK00 = VectorXd::Constant(n, D(0,0)).asDiagonal() * first->get_dK()[index-1];
-      SparseMatrix<double> dK10 = VectorXd::Constant(n, D(1,0)).asDiagonal() * first->get_dK()[index-1];
-      SparseMatrix<double> dK2 = second->get_dK()[index-1];
+      SparseMatrix<double> dK00 = VectorXd::Constant(n, D(0,0)).asDiagonal() * first->get_dK(index-1);
+      SparseMatrix<double> dK10 = VectorXd::Constant(n, D(1,0)).asDiagonal() * first->get_dK(index-1);
+      SparseMatrix<double> dK2 = second->get_dK(index-1);
       SparseMatrix<double> dK01 = VectorXd::Constant(n, D(0,1)).asDiagonal() * dK2;
       SparseMatrix<double> dK11 = VectorXd::Constant(n, D(1,1)).asDiagonal() * dK2;
 
@@ -248,6 +249,7 @@ void Bivar_normal_ope::update_dK(const VectorXd& theta_K) {
       setSparseBlock(&dK[index], n, n, dK11);
     }
   }
+  return true;
 }
 
 Matrix2d Bivar_normal_ope::getD(double theta, double rho) const {
@@ -316,15 +318,15 @@ bv_matern_normal::bv_matern_normal(const Rcpp::List& operator_list):
   nu2 (alpha2 - 0.5*dim)
 {}
 
-void bv_matern_normal::update_K(const VectorXd& theta_K) {
+void bv_matern_normal::build_KZ(const VectorXd& theta_K) {
   double rho = theta_K(0);
   double sd1 = exp(theta_K(1));
   double sd2 = exp(theta_K(2));
   VectorXd theta_K1 = theta_K.segment(3, n_theta_1);
   VectorXd theta_K2 = theta_K.segment(3 + n_theta_1, n_theta_2);
   Matrix2d D = getD(0, rho);
-  first->update_K(theta_K1);
-  second->update_K(theta_K2);
+  first->build_KZ(theta_K1);
+  second->build_KZ(theta_K2);
 
   double kappa1 = exp(theta_K1[0]);
   double kappa2 = exp(theta_K2[0]);
@@ -343,10 +345,6 @@ void bv_matern_normal::update_K(const VectorXd& theta_K) {
   setSparseBlock(&K, 0, n, K01);
   setSparseBlock(&K, n, 0, K10);
   setSparseBlock(&K, n, n, K11);
-}
-
-void bv_matern_normal::update_dK(const VectorXd& theta_K) {
-  // no supported
 }
 
 Matrix2d bv_matern_normal::getD(double theta, double rho) const {
@@ -416,7 +414,7 @@ bv_matern_nig::bv_matern_nig(const Rcpp::List& operator_list):
   bv_theta (Rcpp::as<double> (operator_list["bv_theta"]))
 {}
 
-void bv_matern_nig::update_K(const VectorXd& theta_K) {
+void bv_matern_nig::build_KZ(const VectorXd& theta_K) {
   double theta;
   if (!fix_bv_theta) {
     theta = atan(theta_K(0));
@@ -429,8 +427,8 @@ void bv_matern_nig::update_K(const VectorXd& theta_K) {
   VectorXd theta_K1 = theta_K.segment(4 - fix_bv_theta, n_theta_1);
   VectorXd theta_K2 = theta_K.segment(4 - fix_bv_theta + n_theta_1, n_theta_2);
   Matrix2d D = getD(theta, rho);
-  first->update_K(theta_K1);
-  second->update_K(theta_K2);
+  first->build_KZ(theta_K1);
+  second->build_KZ(theta_K2);
 
   double kappa1 = exp(theta_K1[0]);
   double kappa2 = exp(theta_K2[0]);
@@ -449,10 +447,6 @@ void bv_matern_nig::update_K(const VectorXd& theta_K) {
   setSparseBlock(&K, 0, n, K01);
   setSparseBlock(&K, n, 0, K10);
   setSparseBlock(&K, n, n, K11);
-}
-
-void bv_matern_nig::update_dK(const VectorXd& theta_K) {
-  // no supported
 }
 
 Matrix2d bv_matern_nig::getD(double theta, double rho) const {
@@ -501,6 +495,5 @@ Matrix2d bv_matern_nig::get_dD2_rho(double theta, double rho) const {
   Drho2(1,1) -= cos(theta)*pow(rho,2)*pow(1+pow(rho,2),-1.5);
   return Drho2;
 }
-
 
 

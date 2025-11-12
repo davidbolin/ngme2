@@ -595,8 +595,7 @@ ngme_out <- ngme(
     1:n_obs,
     name = "my_ar",
     model = "ar1",
-    noise = noise_nig(),
-    control = control_f(numer_grad = TRUE, improve_hessian = FALSE)
+    noise = noise_nig()
   ),
   data = model_data,
   control_opt = control_opt(
@@ -723,8 +722,7 @@ ar1_train <- f(
     1:n_train,
     name = "my_ar",
     model = "ar1",
-    noise = noise_nig(),
-    control = control_f(numer_grad = TRUE, improve_hessian = FALSE)
+    noise = noise_nig()
   )
 ```
 
@@ -747,8 +745,7 @@ ngme_out_train <- ngme(
     name = "my_ar",
     model = "ar1",
     mesh = mesh_full,
-    noise = noise_nig(),
-    control = control_f(numer_grad = TRUE, improve_hessian = FALSE)
+    noise = noise_nig()
   ),
   data = model_data_train,
   control_opt = control_opt(
@@ -946,8 +943,7 @@ ngme_out_interp <- ngme(
     train_indices_interp,
     name = "my_ar_interp",
     model = "ar1", 
-    noise = noise_nig(),
-    control = control_f(numer_grad = TRUE, improve_hessian = FALSE)
+    noise = noise_nig()
   ),
   data = model_data_train_interp,
   control_opt = control_opt(

@@ -115,14 +115,13 @@
 
     <div id="ref-usage">
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">compute_score_given_pred</span><span class="op">(</span></span>
-<span>  <span class="va">pred_N_1</span>,</span>
-<span>  <span class="va">pred_N_2</span>,</span>
 <span>  <span class="va">Y_N_1_thin</span>,</span>
 <span>  <span class="va">Y_N_2_thin</span>,</span>
 <span>  <span class="va">y_data</span>,</span>
 <span>  <span class="va">group_data</span>,</span>
 <span>  merge_groups <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  merged_group_name <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  merged_group_name <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  metric <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -130,12 +129,12 @@
     <h2>Arguments</h2>
 
 
-<dl><dt id="arg-pred-n-">pred_N_1<a class="anchor" aria-label="anchor" href="#arg-pred-n-"></a></dt>
-<dd><p>a matrix of n_obs * N</p></dd>
+<dl><dt id="arg-y-n-thin">Y_N_1_thin<a class="anchor" aria-label="anchor" href="#arg-y-n-thin"></a></dt>
+<dd><p>posterior predictive draws (rows = observations, columns = samples)</p></dd>
 
 
-<dt id="arg-pred-n-">pred_N_2<a class="anchor" aria-label="anchor" href="#arg-pred-n-"></a></dt>
-<dd><p>a matrix of n_obs * N</p></dd>
+<dt id="arg-y-n-thin">Y_N_2_thin<a class="anchor" aria-label="anchor" href="#arg-y-n-thin"></a></dt>
+<dd><p>posterior predictive draws (rows = observations, columns = samples)</p></dd>
 
 
 <dt id="arg-y-data">y_data<a class="anchor" aria-label="anchor" href="#arg-y-data"></a></dt>
@@ -146,12 +145,8 @@
 <dd><p>a vector of length n_obs</p></dd>
 
 
-<dt id="arg-y-n-">Y_N_1<a class="anchor" aria-label="anchor" href="#arg-y-n-"></a></dt>
-<dd><p>a matrix of n_obs * N</p></dd>
-
-
-<dt id="arg-y-n-">Y_N_2<a class="anchor" aria-label="anchor" href="#arg-y-n-"></a></dt>
-<dd><p>a matrix of n_obs * N</p></dd>
+<dt id="arg-metric">metric<a class="anchor" aria-label="anchor" href="#arg-metric"></a></dt>
+<dd><p>optional custom metric function used to combine group-wise values before scoring</p></dd>
 
 </dl></div>
 

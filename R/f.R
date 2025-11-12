@@ -11,7 +11,6 @@
 #' @param mesh   mesh for the model, if not provided, will be built from map. 
 #'   Can be a single mesh object or a list of mesh objects for different replicates.
 #'   When using replicates, provide mesh as a list where mesh[[i]] corresponds to replicate i.
-#' @param control  control variables for latent model
 #' @param name   name of the field, for later use, if not provided, will be "field1" etc.
 #' @param data      specifed or inherit from ngme() function
 #' @param group   group factor indicate resposne variable, can be inherited from ngme() function, (used for bivariate model)
@@ -50,7 +49,6 @@ f <- function(
   model,
   noise       = noise_normal(),
   mesh        = NULL,
-  control     = control_f(),
   name        = "field",
   data        = NULL,
   group       = NULL,
@@ -65,13 +63,6 @@ f <- function(
   debug       = FALSE,
   ...
 ) {
-  # examine control_f
-  if (!control$numer_grad) {
-    if (model %in% c("bv_matern_normal", "bv_normal", "bv_matern_nig", "spacetime")) {
-      stop("Not support for non-numerical gradient for bivariate model")
-    }
-  }
-
   # examine the noise 
   if (is.list(noise) && !inherits(noise, "ngme_noise")) {
     noise <- convert_noise_list_to_normal_nig(noise)
@@ -245,6 +236,15 @@ f <- function(
     # subset the A matrix only if it was built
     if (!is.null(A) && !all(subset)) {
       A <- A[subset, , drop = FALSE]
+    }
+  }
+
+  # Sanity warning for ARMA with fixed W and free MA/AR params
+  if (model == "arma" && isTRUE(fix_W)) {
+    ar_mask <- if (!is.null(operator$fix_rho)) operator$fix_rho else logical(0)
+    ma_mask <- if (!is.null(operator$fix_phi)) operator$fix_phi else logical(0)
+    if ((length(ar_mask)==0 || !all(ar_mask)) || (length(ma_mask)==0 || !all(ma_mask))) {
+      warning("For ARMA with fix_W=TRUE, ar/ma determine Z and W=P^{-1}x; fixing W while estimating ar/ma leads to mismatch. Either (i) set fix_ar/fix_ma=TRUE and pass W=P^{-1}x, or (ii) allow W to be estimated.")
     }
   }
   
@@ -526,7 +526,6 @@ if (noise[[1]]$noise_type != "normal") {
     W_size    = ncol(operator$K),
     V_size    = nrow(operator$K),
     A         = A,
-    control   = control,
     map       = map,
     mesh      = mesh,
     mesh_list = mesh_list,
@@ -555,6 +554,7 @@ build_operator <- function(model_name, args_list) {
     bv_matern_normal = do.call(bv_matern_normal, args_list),
     bv_matern_nig = do.call(bv_matern_nig, args_list),
     ar  = do.call(ar, args_list),
+    arma = do.call(arma, args_list),
     ar1 = do.call(ar1, args_list),
     rw1 = do.call(rw1, args_list),
     rw2 = do.call(rw2, args_list),
@@ -615,7 +615,7 @@ ngme_build_mesh <- function(
   if (!is.null(model)) {
     if (model %in% c("re", "tp")) return(NULL)
     if (model == "iid") loc <- as.integer(as.factor(loc))
-    if (model %in% c("ar", "ar1")) {
+    if (model %in% c("ar", "ar1", "arma")) {
       stopifnot("The map should be integers."
         = is.numeric(loc) && all(loc == round(loc)))
       return (fmesher::fm_mesh_1d(loc = min(loc):max(loc)))

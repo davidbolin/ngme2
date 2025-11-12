@@ -41,61 +41,53 @@ Ngme::Ngme(const Rcpp::List& R_ngme, unsigned long seed, int sampling_strategy, 
   ngme_repls[0]->set_parameter(p);
 }
 
-MatrixXd Ngme::precond(int strategy, double eps) {
-  MatrixXd precond = MatrixXd::Zero(n_params, n_params);
-
-  if (sampling_strategy == Strategy::all) {
-    #pragma omp parallel for schedule(static) reduction(mat_plus:precond) num_threads(num_threads_repl)
-    for (int i=0; i < n_repl; i++) {
-      // precond += (num_each_repl[i] / sum_num_each_repl) * ngme_repls[i]->precond(strategy, eps);
-      precond += ngme_repls[i]->precond(strategy, eps);
-    }
-  } else if (sampling_strategy == Strategy::ws) {
-    // weighted sampling (WS) for each replicate
-    int idx = weighted_sampler(gen);
-    // precond = (num_each_repl[idx] / sum_num_each_repl) * ngme_repls[idx]->precond(strategy, eps);
-    precond = ngme_repls[idx]->precond(strategy, eps);
+void Ngme::compute(bool with_precond, double eps) {
+  // Aggregate over replicates
+  last_grad_ = VectorXd::Zero(n_params);
+  // If with_precond=true, also compute and cache preconditioner for current strategy
+  if (with_precond) {
+    last_precond_ = MatrixXd::Zero(n_params, n_params);
+    precond_valid_ = false;
   }
-
-// std::cout << "precond in ngme class = \n" << precond << std::endl;
-  return precond;
+  if (sampling_strategy == Strategy::all) {
+    for (int i=0; i < n_repl; i++) {
+      if (with_precond) ngme_repls[i]->set_precond_strategy(curr_precond_strategy_);
+      ngme_repls[i]->compute_grad_and_hessian(with_precond, eps);
+      last_grad_ += ngme_repls[i]->get_grad_with_gibbs_samples();
+      if (with_precond) last_precond_ += ngme_repls[i]->get_preconditioner(curr_precond_strategy_, eps);
+    }
+  } else { // ws
+    int idx = weighted_sampler(gen);
+    if (with_precond) ngme_repls[idx]->set_precond_strategy(curr_precond_strategy_);
+    ngme_repls[idx]->compute_grad_and_hessian(with_precond, eps);
+    last_grad_ = ngme_repls[idx]->get_grad_with_gibbs_samples();
+    if (with_precond) last_precond_ = ngme_repls[idx]->get_preconditioner(curr_precond_strategy_, eps);
+  }
+  grad_valid_ = true;
+  if (with_precond) {
+    last_precond_eps_ = eps;
+    last_precond_strategy_ = curr_precond_strategy_;
+    precond_valid_ = true;
+  }
 }
 
-MatrixXd Ngme::precond_with_gibbs_samples(int strategy, double eps) {
-  MatrixXd precond = MatrixXd::Zero(n_params, n_params);
-
-  if (sampling_strategy == Strategy::all) {
-    #pragma omp parallel for schedule(static) reduction(mat_plus:precond) num_threads(num_threads_repl)
-    for (int i=0; i < n_repl; i++) {
-      precond += ngme_repls[i]->precond_with_gibbs_samples(strategy, eps);
-    }
-  } else if (sampling_strategy == Strategy::ws) {
-    // weighted sampling (WS) for each replicate
-    int idx = weighted_sampler(gen);
-    precond = ngme_repls[idx]->precond_with_gibbs_samples(strategy, eps);
+MatrixXd Ngme::precond(double eps) {
+  // Pure getter: return cached preconditioner if computed for current strategy
+  if (!precond_valid_ || std::abs(eps - last_precond_eps_) > 1e-12) {
+    // fallback: identity-like
+    return VectorXd::Constant(n_params, 1e-5).asDiagonal();
   }
-
-  return precond;
+  return last_precond_;
 }
 
 VectorXd Ngme::grad() {
-  VectorXd g = VectorXd::Zero(n_params);
-  // weighted averge over all replicates
-  if (sampling_strategy == Strategy::all) {
-    #pragma omp parallel for schedule(static) reduction(vec_plus:g) num_threads(num_threads_repl)
-    for (int i=0; i < n_repl; i++) {
-      // g += (num_each_repl[i] / sum_num_each_repl) * ngme_repls[i]->grad();
-      g += ngme_repls[i]->grad();
-    }
-  } else if (sampling_strategy == Strategy::ws) {
-    // weighted sampling (WS) for each replicate
-    int idx = weighted_sampler(gen);
-    g = ngme_repls[idx]->grad();
+  if (!grad_valid_) {
+    // fallback: compute gradients only
+    compute(false, 1e-5);
   }
-
-// if (debug) std::cout << "g in grad() in ngme class = " << g << std::endl;
-  return g;
+  return last_grad_;
 }
+
 
 void Ngme::burn_in(int iterations) {
   #pragma omp parallel for schedule(static) num_threads(num_threads_repl)
@@ -106,7 +98,6 @@ void Ngme::burn_in(int iterations) {
 
 VectorXd Ngme::get_parameter() {
   VectorXd p = ngme_repls[0]->get_parameter();
-if (debug) std::cout << "p in get_parameter() in ngme class = " << p << std::endl;
   return p;
 }
 
@@ -120,4 +111,7 @@ void Ngme::set_parameter(const VectorXd& p) {
 
   // set the different parameter for each random effect
   if (debug) std::cout << "set_parameter() in ngme class" << std::endl;
+  // Invalidate caches
+  grad_valid_ = false;
+  precond_valid_ = false;
 }

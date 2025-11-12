@@ -83,6 +83,188 @@ ar1 <- function(
   )
 }
 
+#' ngme ARMA(p, q) model specification
+#'
+#' General ARMA(p, q) latent operator under AZW: K W = Z eps,
+#' where K encodes the AR part and Z encodes the MA part.
+#'
+#' @param mesh Integer vector or `inla.mesh.1d` object.
+#' @param ar_order Integer p (0, 1, or 2).
+#' @param ma_order Integer q (0, 1, or 2).
+#' @param ar Numeric length-p vector of AR coefficients in (-1, 1). Defaults to zeros.
+#' @param ma Numeric length-q vector of MA coefficients in (-1, 1). Defaults to zeros.
+#' @param fix_ar Logical or length-p logical vector to fix AR coefficients.
+#' @param fix_ma Logical or length-q logical vector to fix MA coefficients.
+#' @param ... Passed to lower-level operator constructor.
+#'
+#' @details
+#' - Supports p, q <= 2. The user provides standard AR/MA coefficients (ar, ma).
+#'   For estimation, these are transformed in R into an unbounded parameter vector
+#'   `theta_K` via PACF-style mappings so optimizers (e.g., Adam/SGD) operate on
+#'   unconstrained variables while K and Z remain valid:
+#'   - AR(1): phi1 = tanh(raw1/2). AR(2): pi1=tanh(raw1/2), pi2=tanh(raw2/2),
+#'     phi2 = pi2, phi1 = pi1 * (1 - pi2).
+#'   - MA(1): theta1 = tanh(raw1/2). MA(2): psi1=tanh(raw1/2), psi2=tanh(raw2/2),
+#'     theta2 = psi2, theta1 = psi1 * (1 - psi2).
+#' - The returned operator includes both K (AR part) and Z (MA part). During
+#'   estimation the backend updates Z synchronously every time `theta_K` changes.
+#'
+#' @return An `ngme_operator` describing the ARMA(p, q) latent model.
+#'
+#' @examples
+#' mesh <- 1:10
+#' op <- arma(mesh, ar_order = 2, ma_order = 2, ar = c(0.5, 0.3), ma = c(0.6, 0.4))
+#'
+#' @export
+arma <- function(
+  mesh,
+  ar_order = 1,
+  ma_order = 1,
+  ar = NULL,    # AR coefficients (friendly scale)
+  ma = NULL,    # MA coefficients (friendly scale)
+  fix_ar = FALSE,
+  fix_ma = FALSE,
+  ...
+) {
+  p <- as.integer(ar_order); q <- as.integer(ma_order)
+  stopifnot("ar_order >= 0" = p >= 0, "ma_order >= 0" = q >= 0)
+
+  if (is.null(ar)) ar <- rep(0, p) else stopifnot(length(ar) == p)
+  if (is.null(ma)) ma <- rep(0, q) else stopifnot(length(ma) == q)
+
+  mesh <- ngme_build_mesh(mesh)
+  n <- mesh$n
+  h <- c(diff(mesh$loc), 1)
+  stopifnot("The mesh should be 1d and has gap 1." = all(h[1:(n-1)] == 1))
+
+  # Build AR bases for placeholder K printing (Cj and G)
+  Cs <- vector("list", max(1, p))
+  if (p > 0) {
+    for (j in 1:p) {
+      Cs[[j]] <- Matrix::sparseMatrix(i=(p+1):n, j=(p+1-j):(n-j), x=-1, dims=c(n,n))
+    }
+  } else {
+    Cs[[1]] <- Matrix::sparseMatrix(i=1, j=1, x=0, dims=c(n,n))
+  }
+  G <- Matrix::Diagonal(n)
+  Cs <- lapply(Cs, ngme_as_sparse)
+  G  <- ngme_as_sparse(G)
+
+  # Helper mappings (friendly <-> raw via AR1 transforms)
+  clamp_unit <- function(x) pmax(-1 + 1e-8, pmin(1 - 1e-8, x))
+  to_raw_vec <- function(coef, order) {
+    if (order == 0) return(numeric(0))
+    coef <- clamp_unit(coef)
+    if (order == 1) {
+      return(ar1_a2th(coef[1]))
+    } else if (order == 2) {
+      u2 <- coef[2]
+      u1 <- coef[1] / (1 - u2)
+      # clamp derived PACF before transform
+      u1 <- clamp_unit(u1); u2 <- clamp_unit(u2)
+      return(c(ar1_a2th(u1), ar1_a2th(u2)))
+    } else {
+      stop("Only order <= 2 supported")
+    }
+  }
+  from_raw_vec <- function(raw, order) {
+    if (order == 0) return(numeric(0))
+    if (order == 1) {
+      v1 <- ar1_th2a(raw[1])
+      return(v1)
+    } else if (order == 2) {
+      t1 <- ar1_th2a(raw[1]); t2 <- ar1_th2a(raw[2])
+      v2 <- t2; v1 <- t1 * (1 - t2)
+      return(c(v1, v2))
+    } else {
+      stop("Only order <= 2 supported")
+    }
+  }
+
+  # Build raw theta_K from friendly ar/ma
+  theta_ar_raw <- to_raw_vec(ar, p)
+  theta_ma_raw <- to_raw_vec(ma, q)
+  theta_K <- c(theta_ar_raw, theta_ma_raw)
+  names(theta_K) <- c(if (p>0) paste0("ar", 1:p), if (q>0) paste0("ma", 1:q))
+
+  # placeholder K using friendly AR coefficients (printing)
+  K0 <- G
+  if (p > 0) {
+    for (j in 1:p) K0 <- K0 + ar[j] * Cs[[j]]
+  }
+  K0 <- ngme_as_sparse(K0)
+
+  # Attach spec for MA part (names for MA params now 'ma1..ma_q')
+  Z_spec <- list(type = "ma", order = q, param = paste0("ma", 1:q))
+
+  # Build MA shift matrices L^k = -Cs[[k]] (since Cs has -1 on sub-diagonal positions)
+  Ls <- vector("list", max(1, q))
+  if (q > 0) {
+    for (j in 1:q) Ls[[j]] <- -Cs[[j]]
+  } else {
+    Ls[[1]] <- Matrix::sparseMatrix(i=1, j=1, x=0, dims=c(n,n))
+  }
+
+  # placeholder Z using friendly MA coefficients: Z = I + sum theta_j L^j
+  Z0 <- G
+  if (q > 0) {
+    for (j in 1:q) Z0 <- Z0 + ma[j] * Ls[[j]]
+  }
+  Z0 <- ngme_as_sparse(Z0)
+
+  # Build per-parameter transforms mapping raw -> user-friendly proxy.
+  # Note: for order 2, transforms map to PACF components (tanh(raw/2)),
+  # because ar1 depends on both raw1 and raw2 and cannot be reconstructed
+  # element-wise. The print method shows true AR/MA; traceplot will display PACF
+  # unless we add grouped transforms (can be added on request).
+  make_trans_list <- function(p, q) {
+    trans <- list()
+    if (p > 0) trans <- c(trans, rep(list(ar1_th2a), p))
+    if (q > 0) trans <- c(trans, rep(list(ar1_th2a), q))
+    trans
+  }
+
+  ngme_operator(
+    mesh = mesh,
+    model = "arma",
+    theta_K = theta_K,
+    # param_space omitted: R passes raw theta_K now
+    matrices = c(Cs, list(G)),
+    h = h,
+    K = K0,
+    Z = Z0,
+    symmetric = FALSE,
+    zero_trace = FALSE,
+    param_name = names(theta_K),
+    param_trans = make_trans_list(p, q),
+    Z_spec = Z_spec,
+    fix_rho = rep(as.logical(fix_ar), p),
+    fix_phi = rep(as.logical(fix_ma), q),
+    p = p, q = q,
+    generic_type = "none"
+  )
+}
+
+#' Convenience wrapper for ARMA(1,1)
+#' @export
+arma11 <- function(
+  mesh,
+  ar = 0,
+  ma = 0,
+  fix_ar = FALSE,
+  fix_ma = FALSE,
+  ...
+) {
+  arma(mesh,
+        ar_order = 1,
+        ma_order = 1,
+        ar = ar,
+        ma = ma,
+        fix_ar = fix_ar,
+        fix_ma = fix_ma,
+        ...)
+}
+
 #' Helper function to compute AR(p) autocovariance
 #' 
 #' @param rho vector of AR coefficients
@@ -506,9 +688,12 @@ ou <- function(
 #' ngme Matern SPDE model specification
 #'
 #' @param mesh an fmesher::fm_mesh_2d object, mesh for build the SPDE model
-#' @param alpha 2 or 4, SPDE smoothness parameter
+#' @param alpha SPDE smoothness parameter (alpha = 2beta) 2 or 4 for integer case, otherwise for fractional case
 #' @param kappa the range parameter, for the stationary model, it is the range parameter
-#' @param theta_K kappa = exp(B_theta_K * theta_K), for the non-stationary model, it is the range parameter
+#' @param theta_kappa kappa = exp(B_theta_K * theta_K), for the non-stationary model, it is the range parameter 
+#' @param theta_K kappa = exp(B_theta_K * theta_K), for the non-stationary model, it is the range parameter (same as theta_kappa, deprecated)
+#' @param fix_alpha if FALSE, enable fractional modeling
+#' @param rational_order order of rational approximation for fractional operators (default: 2)
 #' @param B_theta_K bases for theta_K, ignore if use the stationary model
 #' @param ... ignore
 #'
@@ -517,152 +702,142 @@ ou <- function(
 matern <- function(
   mesh,
   alpha = 2,
+  fix_alpha = TRUE,
   kappa = NULL,
   theta_K = NULL,
+  theta_kappa = NULL,
+  rational_order = 2,
   B_theta_K = NULL,
   ...
 ) {
   mesh <- ngme_build_mesh(mesh)
-  stopifnot("alpha should be 2 or 4" = alpha == 2 || alpha == 4)
+  if (fix_alpha && alpha != 2 && alpha != 4) {
+    if (!requireNamespace("rSPDE", quietly = TRUE)) {
+      stop("For fixed alpha values not equal to 2 or 4, the 'rSPDE' package is required. Please install it with: install.packages('rSPDE')")
+    }
+  }
+
+  # Prefer new front-end name theta_kappa if provided
+  if (!is.null(theta_kappa)) {
+    theta_K <- theta_kappa
+  }
 
   if (is.null(kappa)) {
-    if (is.null(theta_K)) {
-      theta_K <- 0
-    }
+    if (is.null(theta_K)) theta_K <- 0
   } else {
     stopifnot("kappa should be a single value" = length(kappa) == 1)
     theta_K <- log(kappa)
   }
 
   if (inherits(mesh, "metric_graph")) {
-    if (is.null(mesh$mesh$C)) {
-      mesh$compute_fem()
-    }
-    C <- mesh$mesh$C
-    G <- mesh$mesh$G
-    h <- mesh$mesh$weights
-    d <- 0
+    if (is.null(mesh$mesh$C)) mesh$compute_fem()
+    C <- mesh$mesh$C; G <- mesh$mesh$G; h <- mesh$mesh$weights; d <- 0
   } else {
     d <- get_inla_mesh_dimension(mesh)
-    if (d == 1) {
-      fem <- fmesher::fm_fem(mesh, order = alpha)
-      C <- fem$c0
-      G <- fem$g1
-      h <- Matrix::diag(fem$c0)
-    } else if (d == 2) {
-      # including S2 mesh
-      fem <- fmesher::fm_fem(mesh, order = alpha)
-      C <- fem$c0  # diag
-      G <- fem$g1
-      h <- Matrix::diag(fem$c0)
-    }
-  }
-  Cinv <- C;
-  diag(Cinv) <- 1 / Matrix::diag(C)
-
-  if (is.null(theta_K)) {
-    if (inherits(mesh, "metric_graph"))
-      theta_K = 0
-    else {
-      # loc <- if (d == 1) mesh$loc else mesh$loc[, c(1,2)]
-      # dist_mat <- as.matrix(dist(loc))
-      # max_dist <- max(dist_mat[lower.tri(dist_mat)])
-      # range = max(4*min(h), max_dist)
-      # theta_K = log(sqrt(8*3/2)/(0.2*range))
-      theta_K = 0
-    }
+    fem <- fmesher::fm_fem(mesh, order = alpha)
+    C <- fem$c0; G <- fem$g1; h <- Matrix::diag(fem$c0)
   }
 
   mesh_n <- length(h)
-  if (is.null(B_theta_K) && length(theta_K) == 1)
-    B_theta_K <- matrix(1, nrow = mesh_n, ncol = 1)
-  else if (is.null(B_theta_K) && length(theta_K) > 1)
-    stop("Please provide B_theta_K for non-stationary case.")
+  if (is.null(B_theta_K) && length(theta_K) == 1) B_theta_K <- matrix(1, nrow = mesh_n, ncol = 1)
+  else if (is.null(B_theta_K) && length(theta_K) > 1) stop("Please provide B_theta_K for non-stationary case.")
 
   stationary <- is_stationary(B_theta_K)
-  update_K <- function(theta_K) {
-    kappas <- as.numeric(exp(B_theta_K %*% theta_K))
-    if (stationary) {
-      if (alpha == 2) {
-        kappas[1]^2 * C + G
-      } else {
-        Cinv <- C;
-        diag(Cinv) <- 1 / Matrix::diag(C)
-        (G + kappas[1]^2 * C) %*% Cinv %*% (G + kappas[1]^2 * C)
-        # same as kappa^4 C + 2 kappa^2 G + G Cinv G
-      }
-    } else {
-      GpKCK <- diag(kappas) %*% C %*% diag(kappas) + G
-      if (alpha == 2)
-        GpKCK
-      else {
-        Cinv <- C;
-        diag(Cinv) <- 1 / Matrix::diag(C)
-        (GpKCK) %*% Cinv %*% GpKCK
+  # Build parameter vector
+  L <- d/2
+  alpha_clamped <- max(L + 1e-6, min(4 - 1e-6, alpha))
+  if (fix_alpha) {
+    # Do not include alpha in theta when fixed; only pass kappa params
+    theta_vec <- if (stationary) c(theta_K) else c(as.numeric(theta_K))
+  } else {
+    eta_alpha <- qlogis((alpha_clamped - L)/(4 - L))
+    theta_vec <- if (stationary) c(eta_alpha, theta_K) else c(eta_alpha, as.numeric(theta_K))
+  }
+
+  C <- ngme_as_sparse(C); G <- ngme_as_sparse(G)
+  B_K <- if (stationary) NULL else B_theta_K
+
+  # Placeholder K for printing; real K is built in C++
+  if (stationary) {
+    K <- exp(if (fix_alpha) theta_K[1] else theta_K[2])^2 * C + G
+  } else {
+    kappas <- exp(as.numeric(B_K %*% (if (fix_alpha) theta_K else theta_K[-1])))
+    K <- Matrix::Diagonal(x=kappas^2) %*% C + G
+  }
+
+  # If alpha is fractional and rational_order>0, try to fetch roots from rSPDE
+  rb <- rc <- NULL; roots_factor <- 1
+  fractional <- !(abs(alpha - 2) < 1e-8 || abs(alpha - 4) < 1e-8)
+  if (fractional && rational_order > 0) {
+    get_roots_fun <- NULL
+    if (requireNamespace("rSPDE", quietly = TRUE)) {
+      # Non-exported utility in rSPDE
+      if (exists("get.roots", envir = asNamespace("rSPDE"), inherits = FALSE)) {
+        get_roots_fun <- get("get.roots", envir = asNamespace("rSPDE"))
       }
     }
-  }
-  K <- update_K(theta_K)
-
-  C <- ngme_as_sparse(C)
-  G <- ngme_as_sparse(G)
-  Cinv <- ngme_as_sparse(Cinv)
-
-  if (stationary && alpha == 2) {
-    matrices = list(C, G)
-    theta_K = c(theta_K = theta_K)
-    trans = c(theta_K = "exp2")
-    position = NULL
-  } else if (stationary && alpha == 4) {
-    matrices = list(C, 2*G, G %*% Cinv %*% G)
-    theta_K = c(theta_K=theta_K)
-    trans = list(theta_K=c("exp4", "exp2", "null"))
-    position = NULL
-  } else if (alpha == 2) {
-    theta_K = list(theta_K=theta_K)
-    trans = list(theta_K=c("exp"))
-    B_theta_K = list(theta_K = B_theta_K)
-    matrices = list(C, G, Cinv)
-    position = list(
-      c(1, 2, 1), 
-      c(3) 
-    )
-  } else if (alpha == 4) {
-    theta_K = list(theta_K=theta_K)
-    trans = list(theta_K=c("exp"))
-    B_theta_K = list(theta_K = B_theta_K)
-    matrices = list(C, G, Cinv)
-    position = list(
-      c(1, 2, 1, 4, 1, 2, 1), 
-      c(1, 2, 1, 4, 3), 
-      c(3, 4, 1, 2, 1), 
-      c(3, 4, 3)
-    )
+    if (!is.null(get_roots_fun)) {
+      beta <- alpha/2
+      roots <- tryCatch(get_roots_fun(rational_order, beta), error = function(e) NULL)
+      if (!is.null(roots)) {
+        rb <- roots$rb; rc <- roots$rc; roots_factor <- roots$factor
+      } else {
+        warning("Failed to fetch fractional roots from rSPDE; falling back to rational_order=0 (Z=I).")
+        rational_order <- 0
+      }
+    } else {
+      warning("Package 'rSPDE' not available; falling back to rational_order=0 (Z=I).")
+      rational_order <- 0
+    }
   }
 
-  if (stationary) g <- generic else g <- generic_ns
-
-  g(
-    model = "matern",
+  # Build operator args and conditionally include roots and param meta
+  op_args <- list(
     mesh = mesh,
-    alpha = alpha,
-    theta_K = theta_K,
-    trans = trans,
-    matrices = matrices,
-    position = position,
-    B_theta_K = B_theta_K,
+    model = "matern",
+    K = ngme_as_sparse(K),
+    h = h,
+    theta_K = theta_vec,
+    generic_type = "none",
     C = C,
     G = G,
-    # update_K = update_K,
-    h = h,
+    B_K = B_K,
+    alpha = alpha,
+    fix_alpha = fix_alpha,
+    spatial_dim = d,
+    symmetric = TRUE,
     stationary = stationary,
-    param_name =
-      if (stationary) "kappa"
-      else paste("theta_K", seq_len(length(theta_K)), sep = " "),
-    param_trans =
-      if (stationary) list(exp)
-      else rep(list(identity), length(theta_K))
+    m = rational_order,
+    param_name = NULL,
+    param_trans = NULL
   )
+  # Parameter names/transforms for traceplot
+  if (fix_alpha) {
+    if (stationary) {
+      op_args$param_name  <- c("kappa")
+      op_args$param_trans <- list(exp)
+    } else {
+      p <- ncol(B_theta_K)
+      op_args$param_name  <- paste0("theta_kappa", seq_len(p))
+      op_args$param_trans <- rep(list(identity), p)
+    }
+  } else {
+    L <- d/2
+    alpha_trans <- function(eta) L + (4 - L) * (1/(1+exp(-eta)))
+    if (stationary) {
+      op_args$param_name  <- c("alpha", "kappa")
+      op_args$param_trans <- list(alpha_trans, exp)
+    } else {
+      p <- ncol(B_theta_K)
+      op_args$param_name  <- c("alpha", paste0("theta_kappa", seq_len(p)))
+      op_args$param_trans <- c(list(alpha_trans), rep(list(identity), p))
+    }
+  }
+  # Only attach roots if fetched
+  if (!is.null(rb)) {
+    op_args$rb <- rb; op_args$rc <- rc; op_args$roots_factor <- roots_factor
+  }
+  do.call(ngme_operator, op_args)
 }
 
 #' ngme random effect model

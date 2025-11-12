@@ -22,7 +22,7 @@ Ngme_optimizer::Ngme_optimizer(
     method(Rcpp::as<std::string>(control_opt["sgd_method"])),
     m(VectorXd::Zero(ngme->get_n_params())),
     v(VectorXd::Zero(ngme->get_n_params())),
-    preconditioner(ngme->precond(0, numerical_eps)),
+    preconditioner(MatrixXd::Identity(ngme->get_n_params(), ngme->get_n_params())),
     grad(VectorXd::Zero(ngme->get_n_params())),
     x(ngme->get_parameter())
 {
@@ -54,6 +54,10 @@ Ngme_optimizer::Ngme_optimizer(
     } else {
         // precond_sgd
     }
+
+    // Do not initialize preconditioner here; build it on-demand inside sgd loop
+    // Preconditioner strategy is constant during fitting: set it once here.
+    model->set_precond_strategy(precond_strategy);
 
     grad = model->grad();
     prev_grad = grad;
@@ -96,7 +100,9 @@ VectorXd Ngme_optimizer::sgd(
         trajs.push_back(x);
 
         if (method != "bfgs") {
-            // stochastic gradient descent
+            // Unified compute → then get
+            // compute gradients only
+            model->compute(false, numerical_eps);
             grad = model->grad();
         } else {
             grad = numerical_grad(x);
@@ -184,11 +190,13 @@ VectorXd Ngme_optimizer::sgd(
             prev_x = x; prev_grad = grad;
         } else {
             // precond_sgd
-            if (compute_precond_each_iter) {
-                preconditioner = model->precond_with_gibbs_samples(precond_strategy, numerical_eps);
-            }
-            
             if (precond_strategy > 0) {
+                // Ensure we have a preconditioner ready when needed
+                if (compute_precond_each_iter || curr_iter == 0) {
+                    model->compute(true, numerical_eps);
+                    preconditioner = model->precond(numerical_eps);
+                }
+                // Apply current preconditioner (must be computed at least once)
                 grad = preconditioner.llt().solve(grad);
             }
             one_step = model->get_stepsizes().cwiseProduct(grad);
@@ -243,9 +251,11 @@ if (verbose) {
         curr_iter += 1;
     }
 
-    // update preconditioner if not computed
-    if (!compute_precond_each_iter && precond_strategy > 0 && method == "precond_sgd") 
-        preconditioner = model->precond_with_gibbs_samples(precond_strategy, numerical_eps);
+    // Optionally refresh preconditioner after loop when not computed each iteration
+    if (!compute_precond_each_iter && precond_strategy > 0 && method == "precond_sgd") {
+        model->compute(true, numerical_eps);
+        preconditioner = model->precond(numerical_eps);
+    }
 
     return x;
 }
@@ -273,9 +283,9 @@ void Ngme_optimizer::sgd_compute_gradient() {
 void Ngme_optimizer::sgd_compute_preconditioner() {
     // Only compute preconditioner for precond_sgd method
     if (method == "precond_sgd") { 
-        // if compute_precond_each_iter set true, already computed in every step..
-        // Use Gibbs samples-based preconditioner if available
-        preconditioner = model->precond_with_gibbs_samples(precond_strategy, numerical_eps);
+        // Build requested preconditioner at stop points: set strategy, compute(with_precond=true), then get
+        model->compute(true, numerical_eps);
+        preconditioner = model->precond(numerical_eps);
     }
 }
 
@@ -333,15 +343,13 @@ VectorXd Ngme_optimizer::sgd_compute_and_take_step(
     } else {
         // precond_sgd: Apply preconditioner to gradient and compute step
         VectorXd preconditioned_grad = grad;
-        
-        if (compute_precond_each_iter) {
-            // If compute_precond_each_iter set true, we need compute the preconditioner here.
-            // Otherwise it's called at stop points.
-            // Use Gibbs samples-based preconditioner if available
-            preconditioner = model->precond_with_gibbs_samples(precond_strategy, numerical_eps);
-        }
-        
+
         if (precond_strategy > 0) {
+            // When using per-iteration preconditioner updates, build it here
+            if (compute_precond_each_iter || curr_iter == 0) {
+                model->compute(true, numerical_eps);
+                preconditioner = model->precond(numerical_eps);
+            }
             preconditioned_grad = preconditioner.llt().solve(grad);
         }
         one_step = model->get_stepsizes().cwiseProduct(preconditioned_grad);
@@ -415,7 +423,6 @@ double Ngme_optimizer::line_search_wolfe(
 
         if (phi_alpha_i > phi_0 + c1 * alpha_i * phi_prime_0 
         || (phi_alpha_i >= prev_phi_alpha_i && i > 1)) {
-// std::cout << "zoom in 1" << std::endl;
             return zoom(
                 x, p, alpha_i - 0.5 * alpha_max, alpha_i, c1, c2, // prev_alpha_i, alpha_i
                 phi_0, phi_prime_0
@@ -427,7 +434,6 @@ double Ngme_optimizer::line_search_wolfe(
             return alpha_i;
         }
         if (phi_prime_alpha_i >= 0) {
-// std::cout << "zoom in 2" << std::endl;
             return zoom(
                 x, p, alpha_i, alpha_i - 0.5 * alpha_max, c1, c2,
                 phi_0, phi_prime_0

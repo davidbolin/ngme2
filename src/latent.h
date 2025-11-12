@@ -15,6 +15,7 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
+#include <limits>
 #include <Eigen/SparseLU>
 #include <Eigen/Dense>
 #include <random>
@@ -58,18 +59,46 @@ protected:
     std::shared_ptr<Operator> ope, ope_precond, ope_addeps;
     VectorXd h, theta_K;
     int n_theta_K;
-    bool symmetricK, zero_trace, use_num_dK {false};
+    bool symmetricK, zero_trace;
+
+    struct DerivativeCache {
+        bool initialized {false};
+        bool rao_blackwell {false};
+        VectorXd grad_theta_K;
+        VectorXd grad_theta_mu;
+        VectorXd grad_theta_sigma;
+        VectorXd grad_theta_nu;
+        bool grad_K_ready {false};
+        bool grad_mu_ready {false};
+        bool grad_sigma_ready {false};
+        bool grad_nu_ready {false};
+    } deriv_cache;
+
+    struct HessianCache {
+        bool ready {false};
+        // Diagonal blocks
+        MatrixXd H_K;      // n_theta_K x n_theta_K
+        MatrixXd H_mu;     // n_theta_mu x n_theta_mu
+        MatrixXd H_sigma;  // n_theta_sigma x n_theta_sigma
+        MatrixXd H_nu;     // n_theta_nu x n_theta_nu (no cross terms with others)
+        // Cross blocks (upper-right by convention)
+        MatrixXd H_K_mu;       // n_theta_K x n_theta_mu
+        MatrixXd H_K_sigma;    // n_theta_K x n_theta_sigma
+        MatrixXd H_mu_sigma;   // n_theta_mu x n_theta_sigma
+    } hess_cache;
 
     vector<double> trace;
     VectorXd rb_trace_K, rb_trace_sigma;
     double eps {1e-5};
 
-    bool fix_flag[LATENT_FIX_FLAG_SIZE] {0}, numer_grad {false}, improve_hessian {false}, use_iterative_solver {false}, use_same_V {false};
+    bool fix_flag[LATENT_FIX_FLAG_SIZE] {0}, numer_grad {false}, use_iterative_solver {false}, use_same_V {false};
     
     vector<bool> fix_theta_sigma_vec;  // Vector-based fixing for theta_sigma parameters
 
     vector<std::shared_ptr<Operator>> ope_add_eps;
     vector<SparseMatrix<double>> num_dK;
+    // Observation score s = A^T D r passed from Block for Z chain rule
+    VectorXd obs_score;
 
     // mu and sigma, and sigma_normal (special case when using nig_normal case)
     MatrixXd B_mu, B_sigma, B_nu;
@@ -83,22 +112,23 @@ protected:
 
     double nu_lower_bound {1e-3};
 
-    // for numerical gradient.
+    // for numerical gradient and observation mapping
     VectorXd W, prevW, cond_W, V, prevV;
     SparseMatrix<double,0,int> A;
     
-    // Storage for n_gibbs samples of W and V for preconditioner computation
-    vector<VectorXd> gibbs_W_samples, gibbs_V_samples;
 
     int dim {1}; // noise dimension
     VectorXd p_vec, a_vec, b_vec;
     VectorXd p_inc, a_inc, b_inc;
     bool single_V {false}, share_V {false};
 
-    // solver
-    sparse_llt_solver chol_solver_K, chol_solver_Q;
-    iterative_solver iterative_solver_K;
-    lu_sparse_solver lu_solver_K;
+    // Solver controls propagated from control_opt via Block/Latent constructor
+    int solver_type_ {0};
+    int n_trace_iter_ {8};
+
+    // Short-lived cache for K * W within a Gibbs pass
+    Eigen::VectorXd KW_cache_;
+    bool KW_valid_ {false};
 
     // priors
     string prior_K_type, prior_mu_type, prior_sigma_type, prior_nu_type;
@@ -122,6 +152,9 @@ public:
     const VectorXd& get_theta_K() const {return theta_K; }
 
     SparseMatrix<double, 0, int>& getA()  {return A;}
+    const SparseMatrix<double, 0, int>& getZ() const { return ope->getZ(); }
+    // Set observation score for Z-chain gradient
+    void set_obs_score(const VectorXd& s) { obs_score = s; }
 
     const VectorXd& getW() const {
         return W;
@@ -134,11 +167,13 @@ public:
     void setW(const VectorXd& newW) {
         if (!fix_flag[latent_fix_W]) { W = newW; }
         if (use_same_V) { prevW = W; } // always update prevW
+        invalidate_derivatives();
+        invalidate_KW_cache();
     }
 
     const VectorXd& get_cond_W() const { return cond_W; }
-    void set_cond_W(const VectorXd& W) { cond_W = W; }
-    void setPrevW(const VectorXd& W) { prevW = W; }
+    void set_cond_W(const VectorXd& W) { cond_W = W; invalidate_derivatives(); }
+    void setPrevW(const VectorXd& W) { prevW = W; invalidate_derivatives(); }
 
     // used in block model
     VectorXd getMean() const {
@@ -160,57 +195,52 @@ public:
     }
     void setPrevV(const VectorXd& V) {
         prevV = V;
+        invalidate_derivatives();
     }
     
-    // Methods for managing Gibbs samples
-    void clear_gibbs_samples() {
-        gibbs_W_samples.clear();
-        gibbs_V_samples.clear();
-    }
-    
-    void store_gibbs_sample() {
-        gibbs_W_samples.push_back(W);
-        gibbs_V_samples.push_back(V);
-    }
-    
-    const vector<VectorXd>& get_gibbs_W_samples() const {
-        return gibbs_W_samples;
-    }
-    
-    const vector<VectorXd>& get_gibbs_V_samples() const {
-        return gibbs_V_samples;
-    }
-
-    void update_each_iter(bool initialization=false, bool update_dK=false);
+    void update_each_iter();
     void sample_cond_V();
     void sample_uncond_V();
 
-    // pi(W|V)
-    double logd_W_given_V(const VectorXd& W, const SparseMatrix<double>& K, const VectorXd& mu, const VectorXd& sigma, const VectorXd& V);
-    double logd_W_given_V_without_logdet(const VectorXd& W, const SparseMatrix<double>& K, const VectorXd& mu, const VectorXd& sigma, const VectorXd& V);
-    // pi(KW|V) fix K
-    double logd_KW_given_V(const VectorXd& mu, const VectorXd& sigma, const VectorXd& V);
-    
-    // return log(pi(KW|V)) + log(pi(V))
-    double logd_W_V();
-    
-    // pi(W|V) * pi(V)
-    double log_density(const VectorXd& parameter, bool precond_K = false);
-    MatrixXd precond(bool precond_K = false, double eps = 1e-5);
-    
+    void invalidate_derivatives();
+    void update_derivatives(
+        bool need_grad_theta_K,
+        bool need_grad_theta_mu,
+        bool need_grad_theta_sigma,
+        bool need_grad_theta_nu,
+        bool rao_blackwell
+    );
+
+    void compute_theta_K(bool need_grad, bool rao_blackwell);
+    void compute_theta_mu(bool need_grad, bool rao_blackwell);
+    void compute_theta_sigma(bool need_grad, bool rao_blackwell);
+    void compute_theta_nu(bool need_grad);
+
+    // Compute analytic Hessian blocks (skeleton, placeholder implementation for now)
+    void compute_hessian_blocks(bool rao_blackwell);
+
     // Preconditioner using stored Gibbs samples
-    MatrixXd precond_with_gibbs_samples(bool precond_K = false, double eps = 1e-5);
+    MatrixXd preconditioner();
+
+    // Cached K*W accessor (invalidated when W or K changes)
+    const Eigen::VectorXd& get_KW_cached();
+    inline void invalidate_KW_cache() { KW_valid_ = false; }
 
     /*  3 Operator component   */
     const SparseMatrix<double, 0, int>& getK()  {
         return ope->getK();
     }
 
-    const SparseMatrix<double, 0, int>& get_dK(int i);
+    const SparseMatrix<double, 0, int>& get_dK(int i) {
+        return ope->get_dK(i);
+    }
 
     const VectorXd get_BSigma_col(int i)  {
         return B_sigma.col(i);
     }
+
+    // Expose dZ and compute numerical dZ via operator
+    const SparseMatrix<double,0,int>& get_dZ(int i) { return ope->get_dZ(i); }
 
     void set_rb_trace(const VectorXd& rb_trace_K, const VectorXd& rb_trace_sigma) {
         this->rb_trace_K = rb_trace_K;
@@ -223,12 +253,6 @@ public:
     void           set_parameter(const VectorXd&, bool update_dK=FALSE);
     void           finishOpt(int i) {fix_flag[i] = 0; }
 
-    VectorXd grad_theta_K(bool rao_blackwell=FALSE);
-    VectorXd grad_theta_mu(bool rao_blackwell=FALSE);
-    VectorXd grad_theta_sigma(bool rao_blackwell=FALSE);
-    VectorXd grad_theta_nu();
-
-    
 
     Rcpp::List output() const;
 };

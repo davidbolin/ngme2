@@ -9,7 +9,6 @@ f(
   model,
   noise = noise_normal(),
   mesh = NULL,
-  control = control_f(),
   name = "field",
   data = NULL,
   group = NULL,
@@ -35,8 +34,6 @@ f(
 \item{mesh}{mesh for the model, if not provided, will be built from map. 
 Can be a single mesh object or a list of mesh objects for different replicates.
 When using replicates, provide mesh as a list where mesh[[i]] corresponds to replicate i.}
-
-\item{control}{control variables for latent model}
 
 \item{name}{name of the field, for later use, if not provided, will be "field1" etc.}
 

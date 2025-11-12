@@ -114,7 +114,17 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">matern</span><span class="op">(</span><span class="va">mesh</span>, alpha <span class="op">=</span> <span class="fl">2</span>, kappa <span class="op">=</span> <span class="cn">NULL</span>, theta_K <span class="op">=</span> <span class="cn">NULL</span>, B_theta_K <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">matern</span><span class="op">(</span></span>
+<span>  <span class="va">mesh</span>,</span>
+<span>  alpha <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  fix_alpha <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  kappa <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  theta_K <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  theta_kappa <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  rational_order <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  B_theta_K <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -126,7 +136,11 @@
 
 
 <dt id="arg-alpha">alpha<a class="anchor" aria-label="anchor" href="#arg-alpha"></a></dt>
-<dd><p>2 or 4, SPDE smoothness parameter</p></dd>
+<dd><p>SPDE smoothness parameter (alpha = 2beta) 2 or 4 for integer case, otherwise for fractional case</p></dd>
+
+
+<dt id="arg-fix-alpha">fix_alpha<a class="anchor" aria-label="anchor" href="#arg-fix-alpha"></a></dt>
+<dd><p>if FALSE, enable fractional modeling</p></dd>
 
 
 <dt id="arg-kappa">kappa<a class="anchor" aria-label="anchor" href="#arg-kappa"></a></dt>
@@ -134,7 +148,15 @@
 
 
 <dt id="arg-theta-k">theta_K<a class="anchor" aria-label="anchor" href="#arg-theta-k"></a></dt>
+<dd><p>kappa = exp(B_theta_K * theta_K), for the non-stationary model, it is the range parameter (same as theta_kappa, deprecated)</p></dd>
+
+
+<dt id="arg-theta-kappa">theta_kappa<a class="anchor" aria-label="anchor" href="#arg-theta-kappa"></a></dt>
 <dd><p>kappa = exp(B_theta_K * theta_K), for the non-stationary model, it is the range parameter</p></dd>
+
+
+<dt id="arg-rational-order">rational_order<a class="anchor" aria-label="anchor" href="#arg-rational-order"></a></dt>
+<dd><p>order of rational approximation for fractional operators (default: 2)</p></dd>
 
 
 <dt id="arg-b-theta-k">B_theta_K<a class="anchor" aria-label="anchor" href="#arg-b-theta-k"></a></dt>

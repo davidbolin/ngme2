@@ -14,8 +14,13 @@ public:
         return VectorXd::Ones(get_parameter().size());
     };
     virtual void                 set_parameter(const VectorXd&)=0;
+    // Unified compute entry: perform all heavy computations (Gibbs/RB) here.
+    // with_precond=true computes preconditioner caches in addition to gradients.
+    virtual void                 compute(bool with_precond=false, double eps=1e-5)=0;
+    // Accessors: return the last computed results
     virtual VectorXd             grad()=0;
-    virtual MatrixXd             precond(int strategy=0, double eps=1e-5)=0;
+    // Preconditioner getter: strategy is set via model->set_precond_strategy(...)
+    virtual MatrixXd             precond(double eps=1e-5)=0;
 
     virtual int                  get_n_params() const = 0;
     virtual ~Model() = default;
@@ -31,6 +36,10 @@ friend class Optimizer;
 private:
     Eigen::VectorXd x;
     Eigen::MatrixXd H;
+    Eigen::VectorXd last_grad;
+    bool grad_valid{false};
+    Eigen::MatrixXd last_prec;
+    bool prec_valid{false};
 public:
     SomeFun()
     : x(2), H(2, 2) {
@@ -51,21 +60,35 @@ public:
         return 2;
     }
 
-    // gradient of f(x, y)
-    VectorXd grad() override {
-        VectorXd g (2);
-        g(0) = 6 * x(0) + 1;
-        g(1) = 4 * x(1) + 3;
-        return g;
+    void compute(bool with_precond=false, double eps=1e-5) override {
+        (void)eps;
+        last_grad.resize(2);
+        last_grad(0) = 6 * x(0) + 1;
+        last_grad(1) = 4 * x(1) + 3;
+        grad_valid = true;
+        if (with_precond) {
+            last_prec = H;
+            prec_valid = true;
+        }
     }
 
-    // hessian of f(x, y)
-    MatrixXd precond(int strategy, double eps) override {
-        return H;
-    };
+    // gradient accessor
+    VectorXd grad() override {
+        if (!grad_valid) compute(false);
+        return last_grad;
+    }
+
+    // hessian accessor
+    MatrixXd precond(double eps) override {
+        (void)eps;
+        if (!prec_valid) compute(true);
+        return last_prec;
+    }
 
     void set_parameter(const VectorXd& x) override {
         (*this).x = x;
+        grad_valid = false;
+        prec_valid = false;
     }
 
     VectorXd get_parameter() override {

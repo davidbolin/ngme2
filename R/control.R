@@ -204,36 +204,6 @@ control_opt <- function(
   control
 }
 
-#' Generate control specifications for \code{f} function
-#'
-#' @param numer_grad    whether to use numerical gradient
-#' @param improve_hessian  improve numerical hessian by using central difference estimation (O(eps^2) error)
-#' default is forward difference estimation (O(eps) error)
-#' @param eps           eps for computing numerical gradient
-#' @param use_same_V    use the same V for preconditioning in the same chain
-#'
-#' @return list of control variables
-#' @export
-control_f <- function(
-  numer_grad       = TRUE,
-  improve_hessian  = TRUE,
-  eps              = 0.0001,
-  use_same_V       = FALSE 
-  # iterative_solver = FALSE
-  ) {
-
-  control <- list(
-    numer_grad       = numer_grad,
-    improve_hessian  = improve_hessian,
-    eps              = eps,
-    use_same_V       = use_same_V
-    # iterative_solver = iterative_solver
-  )
-
-  class(control) <- "control_f"
-  control
-}
-
 
 #' Generate control specifications for the ngme general model
 #'
@@ -252,7 +222,6 @@ control_ngme <- function(
   n_post_samples = 100,
   feff = NULL,
   debug = FALSE
-  # iterative_solver = FALSE
 ) {
   control <- list(
     init_sample_W = init_sample_W,
@@ -261,7 +230,6 @@ control_ngme <- function(
     feff = feff,
     n_post_samples = n_post_samples,
     debug = debug
-    # iterative_solver = iterative_solver
   )
 
   class(control) <- "control_ngme"

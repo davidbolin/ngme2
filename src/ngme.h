@@ -47,15 +47,20 @@ public:
     double start_sd=0
   );
 
+  // Unified compute entry
+  void compute(bool with_precond=false, double eps=1e-5) override;
+
   VectorXd get_parameter() override;
   void set_parameter(const VectorXd& p) override;
   VectorXd get_stepsizes() override {
     return stepsize;
   }
 
-  MatrixXd precond(int strategy=0, double eps=1e-5) override;
-  MatrixXd precond_with_gibbs_samples(int strategy=0, double eps=1e-5);
+  MatrixXd precond(double eps=1e-5) override;
   VectorXd grad() override;
+  void set_precond_strategy(int s) {
+    curr_precond_strategy_ = s;
+  }
   // add subsampling for some ngme_repls (SGD-IS sample only 1 replicate each time, according to the weights)
 
   std::string get_par_string() const {
@@ -98,10 +103,16 @@ public:
     return ll;
   }
 
-  // for test only, after estimation
-  void test_in_the_end() {
-    ngme_repls[0]->test_in_the_end();
-  }
+private:
+  // Caches for aggregated results
+  Eigen::VectorXd last_grad_;
+  bool grad_valid_ {false};
+
+  Eigen::MatrixXd last_precond_;
+  double last_precond_eps_ {1e-5};
+  bool precond_valid_ {false};
+  int last_precond_strategy_ {0};
+  int curr_precond_strategy_ {1};
 };
 
 #endif

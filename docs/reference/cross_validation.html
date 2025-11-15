@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">ngme2</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.1</span>
       </span>
     </div>
 
@@ -186,7 +186,7 @@ custom is user-defined group, provide <code>target</code> and <code>data</code><
 
 
 <dt id="arg-transform">transform<a class="anchor" aria-label="anchor" href="#arg-transform"></a></dt>
-<dd><p>a function to transform the data (e.g., log, exp, ...)
+<dd><p>a function or a list of functions (length equal to number of models) to map predictions and observations to the comparison scale (e.g., identity for original scale, exp if the model is on log scale).
 e.g., the MAE will be computed as |transform(Y) - transform(Y_pred)|</p></dd>
 
 

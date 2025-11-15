@@ -2,6 +2,7 @@
 #include <Eigen/Dense>
 
 #include "include/timer.h"
+#include <sstream>
 #include "optimizer.h"
 
 using std::vector;
@@ -23,7 +24,9 @@ Ngme_optimizer::Ngme_optimizer(
     v(VectorXd::Zero(ngme->get_n_params())),
     preconditioner(ngme->precond(0, numerical_eps)),
     grad(VectorXd::Zero(ngme->get_n_params())),
-    x(ngme->get_parameter())
+    x(ngme->get_parameter()),
+    record_traj(control_opt.containsElementNamed("store_traj") ? 
+        Rcpp::as<bool>(control_opt["store_traj"]) : true)
 {
     if (method != "precond_sgd" && method != "bfgs") {
         sgd_parameters = (Rcpp::as<VectorXd>(control_opt["sgd_parameters"]));
@@ -63,6 +66,17 @@ Ngme_optimizer::Ngme_optimizer(
     model->set_parameter(x);
 }
 
+void Ngme_optimizer::log_verbose_message(const std::string& msg) const {
+#ifdef _OPENMP
+#pragma omp critical(ngme_verbose_print)
+  {
+    Rcpp::Rcout << msg;
+  }
+#else
+  Rcpp::Rcout << msg;
+#endif
+}
+
 // x <- x - model->stepsize() * model->grad()
 // return the parameter after sgd
 VectorXd Ngme_optimizer::sgd(
@@ -81,7 +95,9 @@ VectorXd Ngme_optimizer::sgd(
 
 // auto timer_grad = std::chrono::steady_clock::now();
     for (int i = 0; i < iterations; i++) {
-        trajs.push_back(x);
+        if (record_traj) {
+            trajs.push_back(x);
+        }
 
         if (method != "bfgs") {
             // stochastic gradient descent
@@ -89,7 +105,9 @@ VectorXd Ngme_optimizer::sgd(
         } else {
             grad = numerical_grad(x);
             if (grad.norm() < converge_eps) {
-std::cout << "grad.norm() < " << converge_eps << ", reach convergence" << std::endl;
+                std::ostringstream oss;
+                oss << "grad.norm() < " << converge_eps << ", reach convergence\n";
+                log_verbose_message(oss.str());
                 break;
             }
         }
@@ -182,9 +200,11 @@ std::cout << "grad.norm() < " << converge_eps << ", reach convergence" << std::e
 
 // Test if one_step is NAN
 if (std::isnan(one_step(one_step.size()-1))) {
-    std::cout << "grad.norm() = " << grad.norm() << std::endl;
-    std::cout << " H = " << H << std::endl;
-    std::cout << "one_step ISNAN = " << one_step << std::endl;
+    std::ostringstream oss;
+    oss << "grad.norm() = " << grad.norm() << '\n';
+    oss << " H = " << H << '\n';
+    oss << "one_step ISNAN = " << one_step << '\n';
+    log_verbose_message(oss.str());
     return x;
 }
 
@@ -213,12 +233,14 @@ if (std::isnan(one_step(one_step.size()-1))) {
 
 
 if (verbose) {
-std::cout << "iteration = : " << curr_iter+1 << std::endl;
-std::cout << "grad.norm() = " << grad.norm() << std::endl;
-std::cout << "one step = " << one_step << std::endl;
-// std::cout << "parameter = : " << x << std::endl;
-// std::cout << "marginal likelihood := " <<  -model->log_likelihood() << std::endl;
-std::cout << "---------------------------" << std::endl; 
+    std::ostringstream oss;
+    oss << "iteration = : " << curr_iter+1 << '\n';
+    oss << "grad.norm() = " << grad.norm() << '\n';
+    oss << "one step = " << one_step << '\n';
+    // oss << "parameter = : " << x << '\n';
+    // oss << "marginal likelihood := " <<  -model->log_likelihood() << '\n';
+    oss << "---------------------------\n";
+    log_verbose_message(oss.str());
 }
 
         model->set_parameter(x);
@@ -235,7 +257,9 @@ std::cout << "---------------------------" << std::endl;
 // Step 1: Compute gradient only
 void Ngme_optimizer::sgd_compute_gradient() {
     // Record trajectory
-    trajs.push_back(x);
+    if (record_traj) {
+        trajs.push_back(x);
+    }
 
     // Compute gradient
     if (method != "bfgs") {
@@ -243,7 +267,9 @@ void Ngme_optimizer::sgd_compute_gradient() {
     } else {
         grad = numerical_grad(x);
         if (grad.norm() < converge_eps) {
-            std::cout << "grad.norm() < " << converge_eps << ", reach convergence" << std::endl;
+            std::ostringstream oss;
+            oss << "grad.norm() < " << converge_eps << ", reach convergence\n";
+            log_verbose_message(oss.str());
             return;
         }
     }
@@ -329,8 +355,10 @@ VectorXd Ngme_optimizer::sgd_compute_and_take_step(
 
     // Check for NaN
     if (std::isnan(one_step(one_step.size()-1))) {
-        std::cout << "grad.norm() = " << grad.norm() << std::endl;
-        std::cout << "one_step ISNAN = " << one_step << std::endl;
+        std::ostringstream oss;
+        oss << "grad.norm() = " << grad.norm() << '\n';
+        oss << "one_step ISNAN = " << one_step << '\n';
+        log_verbose_message(oss.str());
         return x;
     }
 
@@ -346,10 +374,12 @@ VectorXd Ngme_optimizer::sgd_compute_and_take_step(
     x = x - one_step;
 
     if (verbose) {
-        std::cout << "iteration = : " << curr_iter+1 << std::endl;
-        std::cout << "grad.norm() = " << grad.norm() << std::endl;
-        std::cout << "one step = " << one_step << std::endl;
-        std::cout << "---------------------------" << std::endl; 
+        std::ostringstream oss;
+        oss << "iteration = : " << curr_iter+1 << '\n';
+        oss << "grad.norm() = " << grad.norm() << '\n';
+        oss << "one step = " << one_step << '\n';
+        oss << "---------------------------\n";
+        log_verbose_message(oss.str());
     }
 
     model->set_parameter(x);

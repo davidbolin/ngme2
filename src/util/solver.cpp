@@ -266,7 +266,6 @@ void lu_sparse_solver::compute(
     std::cout << ", K = " << K.rows() << " * " << K.cols() << std::endl;
   }
 
-  LU_K.factorize(K);
   L_KKt.factorize(K.transpose() * K); // KTK
   KKtinv_computed = 0;
   QU_computed = 0;
@@ -288,24 +287,6 @@ void lu_sparse_solver::compute_KTK(const SparseMatrix<double, 0, int> &K_in)
 
   L_KKt.factorize(K.transpose() * K);
   KKtinv_computed = 0;
-}
-
-void lu_sparse_solver::compute_LU(const SparseMatrix<double, 0, int> &K_in)
-{
-  K = K_in;
-
-  if (K.isCompressed() == 0)
-    K.makeCompressed();
-
-  if (K.rows() != n)
-  {
-    std::cout << "incorrect matrix size: n= " << n;
-    std::cout << ", K = " << K.rows() << " * " << K.cols() << std::endl;
-  }
-
-  LU_K.factorize(K);
-  KKtinv_computed = 0;
-  QU_computed = 0;
 }
 
 // Solve trace(K^-1 M)
@@ -350,7 +331,7 @@ double lu_sparse_solver::trace_num(const SparseMatrix<double, 0, int> &M, unsign
     }
     U = U.unaryExpr(std::ref(myround));
     for(int i=0; i<N; i++){
-      QU.col(i) = LU_K.solve(U.col(i));
+      QU.col(i) = solve(U.col(i));
     }
     QU_computed = 1;
   }
@@ -380,7 +361,6 @@ void lu_sparse_solver::analyze(const Eigen::SparseMatrix<double, 0, int> &M)
 {
   // if (M.isCompressed() == 0) M.makeCompressed();
   L_KKt.analyzePattern(M.transpose() * M);
-  LU_K.analyzePattern(M);
   n=M.cols();
   U.resize(n, N);
   QU.resize(n, N);

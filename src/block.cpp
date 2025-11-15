@@ -1024,9 +1024,15 @@ if (debug) std::cout << "start compute trace" << std::endl;
 
     // compute for sigma: tr(Q^-1 K B_sigma.col(j)/SV K^T) for non-fixed theta_sigma
     vector<bool> fix_theta_sigma_vec = latents[i]->get_theta_unfixed_sigma();
-    int pos=0;
+    int pos = 0;
     for (int j=0; j < latents[i]->get_n_theta_sigma(); j++) {
-      if (fix_theta_sigma_vec[pos]) pos += 1; // find non-fixed theta_sigma position
+      while (pos < static_cast<int>(fix_theta_sigma_vec.size()) && fix_theta_sigma_vec[pos]) {
+        ++pos;
+      }
+      if (pos >= static_cast<int>(fix_theta_sigma_vec.size())) {
+        rb_trace_sigma[j] = 0.0;
+        continue;
+      }
 
       // build B_sigma_col_j (consider all latents)
       VectorXd BSigma_col_over_SV = VectorXd::Zero(V_sizes);
@@ -1094,6 +1100,7 @@ Rcpp::List BlockModel::output() const {
     Rcpp::Named("feff")            = beta,
     // Rcpp::Named("sampling_time")   = sampling_time.count(),
     Rcpp::Named("models")          = latents_output
+    // Rcpp::Named("log_likelihood")  = all_gaussian ? -log_likelihood() : 0
   );
 
   return out;
@@ -1141,10 +1148,6 @@ double BlockModel::log_likelihood() {
       log_like -= 2 * noise_sigma.array().log().sum();
     } else {
       chol_Q_eps.compute(Q_eps);
-  // std::cout << "rho = " << rho << std::endl;
-  // std::cout << "Q_eps = " << Q_eps << std::endl;
-  // std::cout << "logdet = " << chol_Q_eps.logdet() << std::endl;
-  // std::cout << "logdet 2 = " << logdet_Q_eps << std::endl;
       log_like += chol_Q_eps.logdet();
     }
     log_like -= chol_QQ.logdet();

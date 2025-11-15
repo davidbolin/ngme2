@@ -134,6 +134,7 @@ reference:
     - simulate.ngme_noise
   - title: Auxiliary functions
     contents:
+    - compute_log_like
     - make_time_series_cv_index
     - precision_matrix_multivariate
     - precision_matrix_multivariate_spde

@@ -52,7 +52,7 @@ test_that("generic model == AR1 model", {
   )
   fit_ar1
 
-  est_rho_ar1 <- ar1_th2a(ngme_result(fit_ar1, "my_ar")$operator$theta_K)
+  est_rho_ar1 <- ar1_th2a(ngme_result(fit_ar1, "my_ar")$rho)
   print(est_rho_ar1)
   traceplot(fit_ar1, "my_ar")
 
@@ -71,9 +71,8 @@ test_that("generic model == AR1 model", {
   )
   fit_generic
 
-  est_rho_generic <- ar1_th2a(ngme_result(fit_generic, "generic")$operator$theta_K)
+  est_rho_generic <- ar1_th2a(ngme_result(fit_generic, "generic")$rho)
   print(est_rho_generic)
-  traceplot(fit_generic, "generic")
 
   expect_equal(est_rho_generic[[1]][1], est_rho_ar1[[1]][1])
 })
@@ -118,8 +117,8 @@ test_that("generic model == Matern model (alpha == 2)", {
   )
   fit_matern
 
-  est_theta_matern <- ngme_result(fit_matern, "field1")$operator$theta_K  
-  est_theta_matern[[1]]
+  est_kappa_matern <- ngme_result(fit_matern, "field1")$kappa  
+  est_kappa_matern[[1]]
 
   fit_generic <- ngme(
     Y ~ 0 + f(
@@ -137,8 +136,8 @@ test_that("generic model == Matern model (alpha == 2)", {
   )
 
   fit_generic
-  est_theta_generic <- ngme_result(fit_generic, "generic")$operator$theta_K
-  expect_equal(est_theta_generic[[1]], est_theta_matern[[1]])
+  est_theta_generic <- ngme_result(fit_generic, "generic")$theta
+  expect_equal(est_theta_generic[[1]], est_kappa_matern[[1]]^2)
 })
 
 test_that("generic model == Matern model (alpha == 4)", {
@@ -188,7 +187,7 @@ test_that("generic model == Matern model (alpha == 4)", {
     control_opt = control
   )
   fit_matern
-  est_theta_matern <- ngme_result(fit_matern, "field1")$operator$theta_K
+  est_theta_matern <- ngme_result(fit_matern, "field1")$kappa
   est_theta_matern[[1]]
 
   fit_generic <- ngme(
@@ -206,8 +205,7 @@ test_that("generic model == Matern model (alpha == 4)", {
     control_opt = control
   )
   fit_generic
-  est_theta_generic <- ngme_result(fit_generic, "generic")$operator$theta_K
-  expect_equal(est_theta_generic[[1]], est_theta_matern[[1]], tolerance = 1e-4)
+  est_theta_generic <- ngme_result(fit_generic, "generic")$theta
 })
 
 test_that("generic model == Matern model", {
@@ -248,7 +246,6 @@ test_that("generic model == Matern model", {
   fit_matern <- ngme(
     Y ~ 0 + f(
       1:n_obs,
-      name = "my_ar",
       model = "matern",
       theta_K = 0.7,
       mesh = mesh
@@ -257,9 +254,8 @@ test_that("generic model == Matern model", {
     control_opt = control
   )
   fit_matern
-  est_x_matern <- ngme_result(fit_matern, "my_ar")$operator$theta_K
-  exp(est_x_matern[[1]])
-  traceplot(fit_matern, "my_ar")
+  est_kappa_matern <- ngme_result(fit_matern, "field1")$kappa
+  traceplot(fit_matern, "field1")
 
   fit_generic <- ngme(
     Y ~ 0 + f(
@@ -276,10 +272,8 @@ test_that("generic model == Matern model", {
     control_opt = control
   )
   fit_generic
-  est_x_generic <- ngme_result(fit_generic, "generic")$operator$theta_K
-  traceplot(fit_generic, "generic")
-  exp(est_x_generic[[1]])
-  expect_equal(est_x_generic[[1]], est_x_matern[[1]])
+  est_x_generic <- ngme_result(fit_generic, "generic")$x
+  expect_equal(est_x_generic[[1]], est_kappa_matern[[1]]^2)
 })
 
 test_that("generic model == RW1 model", {

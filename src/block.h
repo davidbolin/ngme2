@@ -127,6 +127,8 @@ public:
     
     double log_likelihood();
 
+    bool is_all_gaussian() const { return all_gaussian; }
+
     void sample_cond_V(bool update_Q = true) {
       if(n_latent > 0){
         for (unsigned i=0; i < n_latent; i++) {

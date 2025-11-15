@@ -105,6 +105,7 @@ ngme <- function(
       length(levels(group)) == 2)
   }
   attr(ngme_model, "fit") <- fit
+  attr(ngme_model, "estimation_enabled") <- control_opt$estimation
   
   # Check if using bfgs for non-Gaussian model
   if (control_opt$sgd_method == "bfgs") {
@@ -232,43 +233,47 @@ if (debug) {print(str(ngme_model$replicates[[1]]))}
     # if (length(mn_nu) > 1 && mn_nu > 100)
     #   cat("The parameter nu for measurement noise is too big, consider using family=normal instead. \n")
 
-    # Transform trajectory
-    traj_df_chains <- transform_traj(attr(outputs, "opt_traj"))
-    # dispatch trajs to each latent and block
-      idx <- 0;
-      for (i in seq_along(ngme_model$replicates[[1]]$models)) {
-        n_params <- ngme_model$replicates[[1]]$models[[i]]$n_params
-        lat_traj_chains = list()
-        for (j in seq_along(traj_df_chains))
-          lat_traj_chains[[j]] <- traj_df_chains[[j]][idx + 1:n_params, ]
+    if (isTRUE(control_opt$store_traj)) {
+      # Transform trajectory
+      traj_df_chains <- transform_traj(attr(outputs, "opt_traj"))
+      # dispatch trajs to each latent and block
+        idx <- 0;
+        for (i in seq_along(ngme_model$replicates[[1]]$models)) {
+          n_params <- ngme_model$replicates[[1]]$models[[i]]$n_params
+          lat_traj_chains = list()
+          for (j in seq_along(traj_df_chains))
+            lat_traj_chains[[j]] <- traj_df_chains[[j]][idx + 1:n_params, ]
 
-        attr(ngme_model$replicates[[1]]$models[[i]], "lat_traj") <- lat_traj_chains
-        idx <- idx + n_params
-      }
-
-      # measurement noise and feff
-      block_traj <- list()
-      n_feff <- length(ngme_model$replicates[[1]]$feff)
-      n_chains <- length(traj_df_chains)
-      for (j in seq_len(n_chains)) {
-        block_traj[[j]] <- traj_df_chains[[j]][(idx + 1):ngme_model$replicates[[1]]$n_params, ]
-      }
-
-      n_block_params <- nrow(block_traj[[1]])
-      # update feff (if using svd)
-      if (ngme_model$replicates[[1]]$standardize) {
-        svd <- ngme_model$replicates[[1]]$svd
-        # loop over num. of chains
-        for (i in seq_along(block_traj)) {
-          # last n_feff rows are fixed effects
-          feff_idx <- (n_block_params - n_feff + 1):n_block_params
-          betas = as.matrix(block_traj[[i]][feff_idx, ])
-          block_traj[[i]][feff_idx,] = svd$v %*% diag(1/svd$d) %*% betas
+          attr(ngme_model$replicates[[1]]$models[[i]], "lat_traj") <- lat_traj_chains
+          idx <- idx + n_params
         }
-      }
 
-      attr(ngme_model$replicates[[1]], "block_traj") <- block_traj
+        # measurement noise and feff
+        block_traj <- list()
+        n_feff <- length(ngme_model$replicates[[1]]$feff)
+        n_chains <- length(traj_df_chains)
+        for (j in seq_len(n_chains)) {
+          block_traj[[j]] <- traj_df_chains[[j]][(idx + 1):ngme_model$replicates[[1]]$n_params, ]
+        }
+
+        n_block_params <- nrow(block_traj[[1]])
+        # update feff (if using svd)
+        if (ngme_model$replicates[[1]]$standardize) {
+          svd <- ngme_model$replicates[[1]]$svd
+          # loop over num. of chains
+          for (i in seq_along(block_traj)) {
+            # last n_feff rows are fixed effects
+            feff_idx <- (n_block_params - n_feff + 1):n_block_params
+            betas = as.matrix(block_traj[[i]][feff_idx, ])
+            block_traj[[i]][feff_idx,] = svd$v %*% diag(1/svd$d) %*% betas
+          }
+        }
+
+        attr(ngme_model$replicates[[1]], "block_traj") <- block_traj
+        attr(outputs, "opt_traj") <- NULL
+    } else {
       attr(outputs, "opt_traj") <- NULL
+    }
   }
   ngme_model
 }
@@ -309,6 +314,7 @@ update_ngme_est <- function(
   # Fixed effects
   names(est_output$feff) <- names(ngme_replicate$feff)
   ngme_replicate$feff <- est_output$feff
+  ngme_replicate$log_likelihood <- est_output$log_likelihood
 
   if (ngme_replicate$standardize) {
     # standardize feff (transform back)
@@ -322,7 +328,6 @@ update_ngme_est <- function(
     nrow_one_repl = nrow(ngme_replicate$X)
     ngme_replicate$X <- X[1:nrow_one_repl, ]
   }
-
 
   ngme_replicate$noise <- update_noise(ngme_replicate$noise, new_noise = est_output$noise)
   for (i in seq_along(ngme_replicate$models)) {
@@ -546,7 +551,12 @@ ngme_parse_formula <- function(
       actual_mesh <- if(is.null(tmp$mesh)) NULL else eval(tmp$mesh, envir = data, enclos = global_env_first)
       
       # Handle mesh selection for different replicates
-      if (!is.null(actual_mesh) && is.list(actual_mesh) && !inherits(actual_mesh, c("inla.mesh.1d", "inla.mesh", "fm_mesh_1d", "fm_mesh_2d", "metric_graph"))) {
+      if (
+        tmp$model != "spacetime" &&
+        !is.null(actual_mesh) &&
+        is.list(actual_mesh) &&
+        !inherits(actual_mesh, c("inla.mesh.1d", "inla.mesh", "fm_mesh_1d", "fm_mesh_2d", "metric_graph"))
+      ) {
         # mesh is a list of meshes for different replicates
         mesh_list <- actual_mesh
         
@@ -815,5 +825,3 @@ ngme_result <- function(
     return(params[[model]])
   }
 }
-
-

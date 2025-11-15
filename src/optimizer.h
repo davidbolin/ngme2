@@ -37,6 +37,9 @@ private:
 
     // keep trajs
     std::vector<VectorXd> trajs;
+    bool record_traj {true};
+
+    void log_verbose_message(const std::string& msg) const;
 public:
     Ngme_optimizer(
         const Rcpp::List& control_opt,
@@ -69,6 +72,14 @@ public:
         bool compute_precond_each_iter = false
     );
 
+    void set_verbose(bool value) { verbose = value; }
+    bool is_verbose() const { return verbose; }
+
+    void set_store_traj(bool value) { 
+        record_traj = value; 
+        if (!record_traj) trajs.clear(); 
+    }
+    bool stores_traj() const { return record_traj; }
     std::vector<VectorXd> get_trajs() const { return trajs; }
 
     // getter and setter of preconditioner

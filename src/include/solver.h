@@ -147,7 +147,6 @@ private:
   int n;
   Eigen::SparseMatrix<double, 0, int> KKtinv;
   Eigen::SparseMatrix<double, 0, int> K;
-  Eigen::SparseLU<Eigen::SparseMatrix<double, 0, int> > LU_K;
   Eigen::SimplicialLLT<Eigen::SparseMatrix<double, 0, int> > L_KKt;
   int KKtinv_computed, QU_computed;
   Eigen::MatrixXd U, QU;
@@ -160,17 +159,21 @@ public:
   void analyze(const Eigen::SparseMatrix<double, 0, int> &);
   void compute(const Eigen::SparseMatrix<double, 0, int> &);
   void compute_KTK(const Eigen::SparseMatrix<double, 0, int> &);
-  void compute_LU(const Eigen::SparseMatrix<double, 0, int> &);
   double trace(const Eigen::MatrixXd &);
   double trace(const Eigen::SparseMatrix<double, 0, int> &);
   double trace2(const SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &);
   double trace_num(const Eigen::SparseMatrix<double, 0, int> &, unsigned int seed = 0);
 
   double trace0(Eigen::SparseMatrix<double, 0, int> &);
-  inline Eigen::VectorXd solve(Eigen::VectorXd &v, Eigen::VectorXd &x) { return LU_K.solve(v); }
-  inline Eigen::VectorXd solve(Eigen::VectorXd &v) { return LU_K.solve(v); }
-  inline Eigen::VectorXd solve(Eigen::VectorXd v) { return LU_K.solve(v); }
+  inline Eigen::VectorXd solve(Eigen::VectorXd &v, Eigen::VectorXd &x) { return solve_internal(v); }
+  inline Eigen::VectorXd solve(Eigen::VectorXd &v) { return solve_internal(v); }
+  inline Eigen::VectorXd solve(Eigen::VectorXd v) { return solve_internal(v); }
   double logdet();
+
+private:
+  inline Eigen::VectorXd solve_internal(const Eigen::VectorXd &v) {
+    return L_KKt.solve(K.transpose() * v);
+  }
 };
 
 

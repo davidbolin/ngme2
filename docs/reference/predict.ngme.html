@@ -18,7 +18,7 @@ predict using ngme after estimation"><meta property="og:image" content="https://
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">ngme2</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.1</span>
       </span>
     </div>
 
@@ -123,11 +123,11 @@ predict using ngme after estimation</p>
 <span>  data <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  type <span class="op">=</span> <span class="st">"lp"</span>,</span>
 <span>  group <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  estimator <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mean"</span>, <span class="st">"sd"</span>, <span class="st">"5quantile"</span>, <span class="st">"95quantile"</span>, <span class="st">"median"</span>, <span class="st">"mode"</span><span class="op">)</span>,</span>
-<span>  sampling_size <span class="op">=</span> <span class="fl">100</span>,</span>
+<span>  estimator <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mean"</span>, <span class="st">"sd"</span>, <span class="st">"0.05q"</span>, <span class="st">"0.95q"</span>, <span class="st">"median"</span>, <span class="st">"mode"</span><span class="op">)</span>,</span>
+<span>  sampling_size <span class="op">=</span> <span class="fl">500</span>,</span>
 <span>  burnin_size <span class="op">=</span> <span class="fl">100</span>,</span>
-<span>  q <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  seed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  train_idx <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -163,7 +163,9 @@ vector or matrix (n * 2) for spatial coords</p></dd>
 
 
 <dt id="arg-estimator">estimator<a class="anchor" aria-label="anchor" href="#arg-estimator"></a></dt>
-<dd><p>what type of estimator, c("mean", "median", "mode", "quantile")</p></dd>
+<dd><p>what type of estimator. Options include:
+- "mean", "median", "mode", "sd": standard estimators
+- "0.XXXq": any quantile specified as probability (e.g., "0.025q", "0.5q", "0.975q")</p></dd>
 
 
 <dt id="arg-sampling-size">sampling_size<a class="anchor" aria-label="anchor" href="#arg-sampling-size"></a></dt>
@@ -174,16 +176,18 @@ vector or matrix (n * 2) for spatial coords</p></dd>
 <dd><p>size of posterior burnin</p></dd>
 
 
-<dt id="arg-q">q<a class="anchor" aria-label="anchor" href="#arg-q"></a></dt>
-<dd><p>quantile if using "quantile"</p></dd>
-
-
 <dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>
 <dd><p>random seed</p></dd>
 
 
+<dt id="arg-train-idx">train_idx<a class="anchor" aria-label="anchor" href="#arg-train-idx"></a></dt>
+<dd><p>optional vector of training indices to use for posterior sampling.
+If provided, only these indices from the original data will be used for training,
+similar to cross-validation. If NULL, uses all original training data.</p></dd>
+
+
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>extra argument from 0 to 1 if using "quantile"</p></dd>
+<dd><p>additional arguments (currently unused)</p></dd>
 
 </dl></div>
     <div id="value">

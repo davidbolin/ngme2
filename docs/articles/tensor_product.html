@@ -6,12 +6,6 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Space-time (tensor product) model in Ngme2 • ngme2</title>
-<!-- favicons --><link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
-<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
-<link rel="apple-touch-icon" type="image/png" sizes="180x180" href="../apple-touch-icon.png">
-<link rel="apple-touch-icon" type="image/png" sizes="120x120" href="../apple-touch-icon-120x120.png">
-<link rel="apple-touch-icon" type="image/png" sizes="76x76" href="../apple-touch-icon-76x76.png">
-<link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png">
 <!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script><!-- Bootstrap --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha256-bZLfwXAP04zRMK2BjiO8iu9pf4FbLqX6zitd+tIvLhE=" crossorigin="anonymous">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script><!-- bootstrap-toc --><link rel="stylesheet" href="../bootstrap-toc.css">
 <script src="../bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
@@ -38,7 +32,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">ngme2</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.1</span>
       </span>
     </div>
 
@@ -199,7 +193,7 @@ the time index (year).</p>
 <span><span class="co"># generate time randomly of length n</span></span>
 <span><span class="va">time</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fl">2001</span><span class="op">:</span><span class="fl">2004</span>, <span class="va">n</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co"># generate 2d location randomly of length n</span></span>
-<span><span class="va">loc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span><span class="op">)</span> <span class="op">*</span> <span class="fl">10</span></span>
+<span><span class="va">loc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span><span class="op">)</span> <span class="op">*</span> <span class="fl">10</span></span>
 <span></span>
 <span><span class="co"># show the time and loc</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">loc</span><span class="op">)</span></span>
@@ -218,7 +212,7 @@ the time index (year).</p>
 <span></span>
 <span><span class="co"># create the mesh for space (2d location)</span></span>
 <span><span class="va">mesh</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://inlabru-org.github.io/fmesher/reference/fm_mesh_2d.html" class="external-link">fm_mesh_2d</a></span><span class="op">(</span></span>
-<span>  loc.domain <span class="op">=</span> <span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span> <span class="op">*</span> <span class="fl">10</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">0</span><span class="op">)</span> <span class="op">*</span> <span class="fl">5</span><span class="op">)</span>,</span>
+<span>  loc.domain <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span> <span class="op">*</span> <span class="fl">10</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">0</span><span class="op">)</span> <span class="op">*</span> <span class="fl">5</span><span class="op">)</span>,</span>
 <span>  max.edge <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">10</span><span class="op">)</span>,</span>
 <span>  cutoff <span class="op">=</span> <span class="fl">0.1</span></span>
 <span><span class="op">)</span></span>
@@ -252,7 +246,7 @@ the time index (year).</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">##############################  simulation</span></span>
 <span><span class="va">mesh2d</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://inlabru-org.github.io/fmesher/reference/fm_mesh_2d.html" class="external-link">fm_mesh_2d</a></span><span class="op">(</span></span>
-<span>  loc.domain <span class="op">=</span> <span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span> <span class="op">*</span> <span class="fl">10</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">0</span><span class="op">)</span> <span class="op">*</span> <span class="fl">5</span><span class="op">)</span>,</span>
+<span>  loc.domain <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span> <span class="op">*</span> <span class="fl">10</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">0</span><span class="op">)</span> <span class="op">*</span> <span class="fl">5</span><span class="op">)</span>,</span>
 <span>  max.edge <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">10</span><span class="op">)</span>,</span>
 <span>  cutoff <span class="op">=</span> <span class="fl">0.1</span></span>
 <span><span class="op">)</span></span>
@@ -297,8 +291,8 @@ the time index (year).</p>
 <span>  control_opt <span class="op">=</span> <span class="fu"><a href="../reference/control_opt.html">control_opt</a></span><span class="op">(</span></span>
 <span>    iterations <span class="op">=</span> <span class="fl">1000</span>,</span>
 <span>    n_parallel_chain <span class="op">=</span> <span class="fl">4</span>,</span>
-<span>    optimizer <span class="op">=</span> <span class="fu"><a href="../reference/adamW.html">adamW</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>    rao_blackwellization <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>    optimizer <span class="op">=</span> <span class="fu"><a href="../reference/adamW.html">adamW</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>    <span class="co"># rao_blackwellization = TRUE</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  debug <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
@@ -306,6 +300,7 @@ the time index (year).</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Starting posterior sampling... </span></span>
 <span><span class="co">#&gt; Posterior sampling done! </span></span>
+<span><span class="co">#&gt; Average standard deviation of the posterior W:  0.614065 </span></span>
 <span><span class="co">#&gt; Note:</span></span>
 <span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
 <span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
@@ -320,19 +315,19 @@ the time index (year).</p>
 <span><span class="co">#&gt; $tp</span></span>
 <span><span class="co">#&gt;   Model type: Tensor product</span></span>
 <span><span class="co">#&gt;       first: AR(1)</span></span>
-<span><span class="co">#&gt;           rho = 0.335</span></span>
+<span><span class="co">#&gt;           rho = 0.393</span></span>
 <span><span class="co">#&gt;       second: Matern</span></span>
-<span><span class="co">#&gt;           kappa = 1.62</span></span>
+<span><span class="co">#&gt;           kappa = 0.79</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -1.05</span></span>
-<span><span class="co">#&gt;       sigma = 2.96</span></span>
-<span><span class="co">#&gt;       nu = 0.85</span></span>
+<span><span class="co">#&gt;       mu = -1.54</span></span>
+<span><span class="co">#&gt;       sigma = 0.406</span></span>
+<span><span class="co">#&gt;       nu = 1.31</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.475</span></span></code></pre></div>
+<span><span class="co">#&gt;       sigma = 0.484</span></span></code></pre></div>
 <p>To see the results of estimation, we can use <code>traceplot</code>
 function.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
@@ -340,19 +335,19 @@ function.</p>
 <p><img src="tensor_product_files/figure-html/unnamed-chunk-3-1.png" width="700"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $rho</span></span>
-<span><span class="co">#&gt; [1] 0.3367022</span></span>
+<span><span class="co">#&gt; [1] 0.368578</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $kappa</span></span>
-<span><span class="co">#&gt; [1] 1.641196</span></span>
+<span><span class="co">#&gt; [1] 0.795146</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $mu</span></span>
-<span><span class="co">#&gt; [1] -1.051717</span></span>
+<span><span class="co">#&gt; [1] -1.543945</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 3.018913</span></span>
+<span><span class="co">#&gt; [1] 0.454738</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nu</span></span>
-<span><span class="co">#&gt; [1] 0.9812962</span></span>
+<span><span class="co">#&gt; [1] 1.456951</span></span>
 <span><span class="co"># compare noise density</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span>mu<span class="op">=</span><span class="op">-</span><span class="fl">2</span>, sigma<span class="op">=</span><span class="fl">1</span>, nu<span class="op">=</span><span class="fl">2</span><span class="op">)</span>, <span class="fu"><a href="../reference/ngme_result.html">ngme_result</a></span><span class="op">(</span><span class="va">ngme_fit</span>, <span class="st">"tp"</span><span class="op">)</span><span class="op">$</span><span class="va">noise</span><span class="op">)</span></span></code></pre>
 <p><img src="tensor_product_files/figure-html/unnamed-chunk-3-2.png" width="700"></p>
@@ -370,36 +365,37 @@ location.</p>
 <span><span class="co"># generate time randomly of length n</span></span>
 <span><span class="va">time_new</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fl">2001</span><span class="op">:</span><span class="fl">2004</span>, <span class="va">n_new</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co"># generate 2d location randomly of length n</span></span>
-<span><span class="va">loc_new</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n_new</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n_new</span><span class="op">)</span><span class="op">)</span> <span class="op">*</span> <span class="fl">10</span></span>
+<span><span class="va">loc_new</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n_new</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n_new</span><span class="op">)</span><span class="op">)</span> <span class="op">*</span> <span class="fl">10</span></span>
 <span></span>
 <span><span class="co"># For the tp model (model name we give), we need two arguments to do the prediction.</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">ngme_fit</span>, map<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>tp<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span><span class="va">pd</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">ngme_fit</span>, map<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>tp<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  year<span class="op">=</span><span class="va">time_new</span>,</span>
 <span>  pos<span class="op">=</span><span class="va">loc_new</span></span>
 <span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">pd</span><span class="op">)</span></span>
 <span><span class="co">#&gt; $mean</span></span>
-<span><span class="co">#&gt;  [1]  0.00000000  0.32079780  0.43848779  0.62651356 -0.08929428  0.07114755</span></span>
-<span><span class="co">#&gt;  [7]  0.00000000  0.01816933  0.21187522  0.00000000</span></span>
+<span><span class="co">#&gt;  [1]  0.39575614 -0.89271305  0.01622907  0.28586548  0.06282132  0.33569592</span></span>
+<span><span class="co">#&gt;  [7]  0.08182618  0.00000000  0.04033962 -0.91512267</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sd</span></span>
-<span><span class="co">#&gt;  [1] 0.0000000 0.3386097 0.4736669 0.5308450 0.5058338 0.4836468 0.0000000</span></span>
-<span><span class="co">#&gt;  [8] 0.5312918 0.3088451 0.0000000</span></span>
+<span><span class="co">#&gt;  [1] 0.3415866 0.4713553 0.3653255 0.3937367 0.2121533 0.3390735 0.2363070</span></span>
+<span><span class="co">#&gt;  [8] 0.0000000 0.1934200 0.3406784</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $`5quantile`</span></span>
-<span><span class="co">#&gt;  [1]  0.000000000 -0.278717045 -0.301809404 -0.007666995 -0.940840250</span></span>
-<span><span class="co">#&gt;  [6] -0.749098144  0.000000000 -0.867055912 -0.238881590  0.000000000</span></span>
+<span><span class="co">#&gt; $`0.05q`</span></span>
+<span><span class="co">#&gt;  [1] -0.1815658 -1.7473698 -0.5662457 -0.4778345 -0.3264473 -0.2587674</span></span>
+<span><span class="co">#&gt;  [7] -0.3689481  0.0000000 -0.2911713 -1.4961883</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $`95quantile`</span></span>
-<span><span class="co">#&gt;  [1] 0.0000000 0.8151508 1.2302745 1.4796546 0.7187770 0.8982563 0.0000000</span></span>
-<span><span class="co">#&gt;  [8] 0.8640048 0.7077224 0.0000000</span></span>
+<span><span class="co">#&gt; $`0.95q`</span></span>
+<span><span class="co">#&gt;  [1]  0.8580689 -0.2619931  0.6130286  0.8182632  0.3640016  0.8520269</span></span>
+<span><span class="co">#&gt;  [7]  0.4250076  0.0000000  0.3339397 -0.3983097</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $median</span></span>
-<span><span class="co">#&gt;  [1]  0.00000000  0.34887611  0.45054601  0.54102164 -0.06348332  0.06022463</span></span>
-<span><span class="co">#&gt;  [7]  0.00000000  0.06214194  0.19732059  0.00000000</span></span>
+<span><span class="co">#&gt;  [1]  0.41545900 -0.81132308  0.03443021  0.35508068  0.09272731  0.36196914</span></span>
+<span><span class="co">#&gt;  [7]  0.10888361  0.00000000  0.05804622 -0.88064731</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $mode</span></span>
-<span><span class="co">#&gt;  [1] 0.0000000 0.3435494 0.4922411 0.4743480 0.2334077 0.1441246 0.0000000</span></span>
-<span><span class="co">#&gt;  [8] 0.2267007 0.1660783 0.0000000</span></span></code></pre></div>
+<span><span class="co">#&gt;  [1]  0.35000000 -0.45949608  0.18210392  0.43353745  0.15521835  0.37519348</span></span>
+<span><span class="co">#&gt;  [7]  0.17509467  0.00000000  0.08801994 -0.85803729</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>

@@ -151,7 +151,11 @@ f <- function(
   # Validate mesh input - can be single mesh, list of meshes, or NULL
   mesh_list <- NULL
   if (!is.null(mesh)) {
-    if (is.list(mesh) && !inherits(mesh, c("inla.mesh.1d", "inla.mesh", "fm_mesh_1d", "fm_mesh_2d", "metric_graph"))) {
+    if (
+      model != "spacetime" &&
+      is.list(mesh) &&
+      !inherits(mesh, c("inla.mesh.1d", "inla.mesh", "fm_mesh_1d", "fm_mesh_2d", "metric_graph"))
+    ) {
       # mesh is a list of meshes for different replicates
       mesh_list <- mesh
       mesh <- NULL  # Set to NULL to defer mesh selection to parsing stage

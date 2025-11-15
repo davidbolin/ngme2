@@ -570,8 +570,7 @@ if (debug) std::cout << "update_each_iter" << std::endl;
             if (!zero_trace) {
                 if (!symmetricK) {
                     if (W_size > MIN_W_SIZE) {
-                        lu_solver_K.compute_LU(getK());
-                        // lu_solver_K.compute_KTK(getK());
+                        lu_solver_K.compute(getK());
                         for (int i=0; i < n_theta_K; i++){
                             trace[i] = lu_solver_K.trace_num(ope->get_dK()[i], latent_rng());
                         }
@@ -737,7 +736,7 @@ if (debug) std::cout << "start latent precond" << std::endl;
     }
 
     int n = v.size();
-    MatrixXd num_hess_no_nu = VectorXd::Constant(n, 1.0).asDiagonal();
+    MatrixXd num_hess_no_nu = MatrixXd::Zero(n, n);
 
 // which version of hessian to compute
 if (!improve_hessian) {
@@ -913,7 +912,7 @@ if (debug) std::cout << "start latent precond with Gibbs samples" << std::endl;
                 double f_vij = log_density(tmp_vij, precond_K);
                 
                 double hess_ij = (f_vij - f_v(i) - f_v(j) + original_val) / (numerical_eps * numerical_eps);
-                num_hess_no_nu(i, j) += hess_ij / n_samples;  // Average over samples
+                num_hess_no_nu(i, j) += hess_ij;
             }
         }
     }
@@ -922,10 +921,13 @@ if (debug) std::cout << "start latent precond with Gibbs samples" << std::endl;
     W = original_W;
     V = original_V;
     
-    // Fill in the lower triangular part
+    // Average over samples and enforce symmetry
     for (int i = 0; i < n; i++) {
+        num_hess_no_nu(i, i) /= n_samples;
         for (int j = 0; j < i; j++) {
-            num_hess_no_nu(j, i) = num_hess_no_nu(i, j);
+            double avg = num_hess_no_nu(i, j) / n_samples;
+            num_hess_no_nu(i, j) = avg;
+            num_hess_no_nu(j, i) = avg;
         }
     }
 

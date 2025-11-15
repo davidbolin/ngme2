@@ -17,7 +17,7 @@ cross_validation(
   k = 5,
   percent = 0.2,
   times = 10,
-  transform = identity,
+  metric = NULL,
   test_idx = NULL,
   train_idx = NULL,
   keep_pred = FALSE,
@@ -54,8 +54,11 @@ custom is user-defined group, provide \code{target} and \code{data}}
 
 \item{times}{how many test cases (only for lpo type)}
 
-\item{transform}{a function to transform the data (e.g., log, exp, ...)
-e.g., the MAE will be computed as |transform(Y) - transform(Y_pred)|}
+\item{metric}{Optional function or list of functions (one per model) that maps the group-wise observations/predictions for a single location to the quantity that should be scored.
+The function receives a list containing at least \code{y} (named numeric vector of group values) and may optionally use \code{samples1}/\code{samples2} (matrices with rows named by group and columns indexing posterior draws).
+It must return either a numeric scalar (optionally named) or a list with components \code{y} (scalar), and optionally \code{samples1}/\code{samples2} (numeric vectors matching the posterior draw count) and \code{label} (character).
+When \code{NULL}, the original per-group scores are computed.
+For example, \code{function(data) \{ res <- 2 * data$y["A"] + data$y["B"]; names(res) <- "combo"; res \}} compares a weighted sum of two fields, while \code{function(data) sum(data$y)} scores the total across all groups.}
 
 \item{test_idx}{a list of indices of the data (which data points to be predicted) (only for custom type)}
 

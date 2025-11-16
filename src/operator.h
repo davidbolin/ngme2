@@ -43,6 +43,7 @@ struct UpdateOptions {
     bool compute_dZ {false};
     bool compute_d2K {false};
     bool compute_d2Z {false};
+    bool compute_HK_trace {false};
     bool prefer_analytic_dK {true};
     bool prefer_analytic_dZ {true};
     bool prefer_analytic_d2K {false};
@@ -81,6 +82,8 @@ protected:
     bool              analyzed_cholK {false};
     VectorXd          trace_vals;      // size n_theta_K; tr(K^-1 dK) or NormalEq variant
     bool              trace_ready {false};
+    MatrixXd          HK_trace;        // n_theta_K x n_theta_K; H_K trace block
+    bool              HK_trace_ready {false};
 public:
     Operator(const Rcpp::List& operator_list) :
         h (Rcpp::as<VectorXd> (operator_list["h"])),
@@ -115,6 +118,7 @@ public:
     const SparseMatrix<double,0,int>& get_dZ(int i) const { return dZ[i]; }
     const SparseMatrix<double,0,int>& get_d2K(int i, int j) const { return d2K[i][j]; }
     const SparseMatrix<double,0,int>& get_d2Z(int i, int j) const { return d2Z[i][j]; }
+    const MatrixXd& get_HK_trace() const { return HK_trace; }
 
     // Core builders for K and Z
     // New unified builder: preferred override in subclasses

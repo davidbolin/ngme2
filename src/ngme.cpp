@@ -51,41 +51,31 @@ void Ngme::compute(bool with_precond, double eps) {
   }
   if (sampling_strategy == Strategy::all) {
     for (int i=0; i < n_repl; i++) {
-      if (with_precond) ngme_repls[i]->set_precond_strategy(curr_precond_strategy_);
       ngme_repls[i]->compute_grad_and_hessian(with_precond, eps);
-      last_grad_ += ngme_repls[i]->get_grad_with_gibbs_samples();
-      if (with_precond) last_precond_ += ngme_repls[i]->get_preconditioner(curr_precond_strategy_, eps);
+      last_grad_ += ngme_repls[i]->get_gradient();
+      if (with_precond) last_precond_ += ngme_repls[i]->get_preconditioner();
     }
   } else { // ws
     int idx = weighted_sampler(gen);
-    if (with_precond) ngme_repls[idx]->set_precond_strategy(curr_precond_strategy_);
     ngme_repls[idx]->compute_grad_and_hessian(with_precond, eps);
-    last_grad_ = ngme_repls[idx]->get_grad_with_gibbs_samples();
-    if (with_precond) last_precond_ = ngme_repls[idx]->get_preconditioner(curr_precond_strategy_, eps);
+    last_grad_ = ngme_repls[idx]->get_gradient();
+    if (with_precond) last_precond_ = ngme_repls[idx]->get_preconditioner();
   }
   grad_valid_ = true;
   if (with_precond) {
-    last_precond_eps_ = eps;
-    last_precond_strategy_ = curr_precond_strategy_;
     precond_valid_ = true;
   }
+  mark_computed();
 }
 
-MatrixXd Ngme::precond(double eps) {
-  // Pure getter: return cached preconditioner if computed for current strategy
-  if (!precond_valid_ || std::abs(eps - last_precond_eps_) > 1e-12) {
-    // fallback: identity-like
-    return VectorXd::Constant(n_params, 1e-5).asDiagonal();
-  }
-  return last_precond_;
+MatrixXd Ngme::precond() {
+  if (!grad_valid_) throw std::runtime_error("precond() called before compute()");
+  return -last_precond_;
 }
 
 VectorXd Ngme::grad() {
-  if (!grad_valid_) {
-    // fallback: compute gradients only
-    compute(false, 1e-5);
-  }
-  return last_grad_;
+  if (!grad_valid_) throw std::runtime_error("grad() called before compute()");
+  return -last_grad_;
 }
 
 
@@ -114,4 +104,5 @@ void Ngme::set_parameter(const VectorXd& p) {
   // Invalidate caches
   grad_valid_ = false;
   precond_valid_ = false;
+  reset_computed();
 }

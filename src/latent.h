@@ -56,7 +56,7 @@ protected:
     int n_noise, W_size, V_size, n_params, n_var {1}; // n_params=n_theta_K + n_theta_mu + n_theta_sigma + n_var
 
     // operator (for compute K, for compute numerical gradient, for preconditioner)
-    std::shared_ptr<Operator> ope, ope_precond, ope_addeps;
+    std::shared_ptr<Operator> ope;
     VectorXd h, theta_K;
     int n_theta_K;
     bool symmetricK, zero_trace;
@@ -88,17 +88,11 @@ protected:
     } hess_cache;
 
     vector<double> trace;
-    VectorXd rb_trace_K, rb_trace_sigma;
     double eps {1e-5};
 
     bool fix_flag[LATENT_FIX_FLAG_SIZE] {0}, numer_grad {false}, use_iterative_solver {false}, use_same_V {false};
     
     vector<bool> fix_theta_sigma_vec;  // Vector-based fixing for theta_sigma parameters
-
-    vector<std::shared_ptr<Operator>> ope_add_eps;
-    vector<SparseMatrix<double>> num_dK;
-    // Observation score s = A^T D r passed from Block for Z chain rule
-    VectorXd obs_score;
 
     // mu and sigma, and sigma_normal (special case when using nig_normal case)
     MatrixXd B_mu, B_sigma, B_nu;
@@ -115,7 +109,6 @@ protected:
     // for numerical gradient and observation mapping
     VectorXd W, prevW, cond_W, V, prevV;
     SparseMatrix<double,0,int> A;
-    
 
     int dim {1}; // noise dimension
     VectorXd p_vec, a_vec, b_vec;
@@ -146,6 +139,8 @@ public:
     int get_n_params() const           {return n_params; }
     int get_n_theta_K() const          {return n_theta_K; }
     int get_n_theta_sigma() const      {return n_theta_sigma; }
+    int get_n_theta_mu() const         {return n_theta_mu; }
+    int get_n_theta_nu() const         {return n_theta_nu; }
     
     vector<bool> get_theta_unfixed_sigma() const {return fix_theta_sigma_vec; }
 
@@ -153,8 +148,6 @@ public:
 
     SparseMatrix<double, 0, int>& getA()  {return A;}
     const SparseMatrix<double, 0, int>& getZ() const { return ope->getZ(); }
-    // Set observation score for Z-chain gradient
-    void set_obs_score(const VectorXd& s) { obs_score = s; }
 
     const VectorXd& getW() const {
         return W;
@@ -242,17 +235,11 @@ public:
     // Expose dZ and compute numerical dZ via operator
     const SparseMatrix<double,0,int>& get_dZ(int i) { return ope->get_dZ(i); }
 
-    void set_rb_trace(const VectorXd& rb_trace_K, const VectorXd& rb_trace_sigma) {
-        this->rb_trace_K = rb_trace_K;
-        this->rb_trace_sigma = rb_trace_sigma;
-    }
-
     /* 4 for optimizer */
     const VectorXd get_parameter();
     const VectorXd get_grad(bool rao_blackwell=FALSE);
     void           set_parameter(const VectorXd&, bool update_dK=FALSE);
     void           finishOpt(int i) {fix_flag[i] = 0; }
-
 
     Rcpp::List output() const;
 };

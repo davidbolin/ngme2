@@ -26,8 +26,8 @@
 #' @param print_check_info print the convergence information
 #' @param start_sd        standard deviation of the initial parameter (1st chain fixed, other chains random), set 0 to be fixed for all chains
 #' @param optimizer choose different sgd optimization method, 
-#' currently support "precond_sgd", "momentum", "adagrad", "rmsprop", "adam", "adamW"
-#' see precond_sgd, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW
+#' currently support "sgd", "precond_sgd", "momentum", "adagrad", "rmsprop", "adam", "adamW"
+#' see ?sgd, ?precond_sgd, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW
 #'
 #' @param max_num_threads maximum number of threads used for parallel computing, by default will be set same as n_parallel_chain.
 #' If it is more than n_parallel_chain, the rest will be used to parallel different replicates of the model.
@@ -120,20 +120,6 @@ control_opt <- function(
     "solver_type should be in (eigen, cholmod, supernodal, accelerate, pardiso)"
       = solver_type %in% solver_type_list
   )
-
-  if (solver_type %in% c("pardiso", "accelerate") && preconditioner != "none") {
-    message("Preconditioner is not supported with Pardiso or Accelerate solver, switching to supernodal solver")
-    solver_type <- "supernodal"
-  }
-  
-  if (Sys.info()["sysname"] != "Darwin" && solver_type == "accelerate") {
-    warning("accelerate solver is not supported on MacOS, switch to default eigen solver")
-    solver_type <- "eigen"
-  }
-  if (Sys.info()["sysname"] == "Darwin" && solver_type == "pardiso") {
-    warning("pardiso solver is not supported on MacOS, switch to default eigen solver")
-    solver_type <- "eigen"
-  }
 
   if (n_parallel_chain == 1) {
     precond_by_diff_chain <- FALSE

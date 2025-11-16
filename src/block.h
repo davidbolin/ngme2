@@ -88,9 +88,12 @@ protected:
     VectorXd indicate_threshold, steps_to_threshold;
     int curr_iter; // how many times set is called.
 
-    bool all_gaussian, rao_blackwell, shared_sigma, use_iterative_solver; // No need for gibbs sampling
+    bool all_gaussian, rao_blackwell, use_iterative_solver; // No need for gibbs sampling
     std::string par_string;
     VectorXd rb_trace_noise_sigma;
+    // Store per-latent RB trace terms at Block level
+    std::vector<Eigen::VectorXd> rb_trace_K_latent;
+    std::vector<Eigen::VectorXd> rb_trace_sigma_latent;
     // Option: use conditional mean of W instead of sampling when estimating
     bool use_cond_W {false};
     
@@ -100,10 +103,6 @@ protected:
     // Cached preconditioners (averages from the most recent grad loop)
     MatrixXd last_precond;       // cached preconditioner for last strategy
     bool     last_precond_valid {false};
-    double   last_precond_eps {1e-5};
-    int      last_precond_strategy {0};
-
-    int  precond_strategy_ {1}; // 1: fast, 2: full
 
     // Cached gradient from the last compute pass
     Eigen::VectorXd last_gradient;
@@ -165,14 +164,17 @@ public:
     void                 set_parameter(const VectorXd&);
 
     // Accessors after compute
-    MatrixXd             get_preconditioner(int strategy=0, double eps=1e-5);
-    const VectorXd&      get_grad_with_gibbs_samples() const { return last_gradient; }
+    MatrixXd             get_preconditioner();
+    const VectorXd&      get_gradient() const { 
+        if (!last_grad_valid) {
+            throw std::runtime_error("last_gradient is not valid");
+        }
+        return last_gradient; 
+    }
     MatrixXd             get_grad_covariance() const {return grad_covariance;}
 
     // Unified compute for both gradient and (optionally) preconditioner
     void compute_grad_and_hessian(bool with_precond, double eps);
-    const Eigen::VectorXd& get_last_gradient() const { return last_gradient; }
-    void set_precond_strategy(int s) { precond_strategy_ = s; }
 
     /* Aseemble */
     void assemble() {

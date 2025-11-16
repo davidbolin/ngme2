@@ -56,11 +56,8 @@ public:
     return stepsize;
   }
 
-  MatrixXd precond(double eps=1e-5) override;
+  MatrixXd precond() override;
   VectorXd grad() override;
-  void set_precond_strategy(int s) {
-    curr_precond_strategy_ = s;
-  }
   // add subsampling for some ngme_repls (SGD-IS sample only 1 replicate each time, according to the weights)
 
   std::string get_par_string() const {
@@ -111,8 +108,6 @@ private:
   Eigen::MatrixXd last_precond_;
   double last_precond_eps_ {1e-5};
   bool precond_valid_ {false};
-  int last_precond_strategy_ {0};
-  int curr_precond_strategy_ {1};
 };
 
 #endif

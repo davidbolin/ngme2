@@ -8,6 +8,8 @@ using Eigen::VectorXd;
 using Eigen::Triplet;
 
 class Model {
+protected:
+    bool computed_{false};
 public:
     virtual VectorXd             get_parameter()=0;
     virtual VectorXd             get_stepsizes() {
@@ -20,10 +22,15 @@ public:
     // Accessors: return the last computed results
     virtual VectorXd             grad()=0;
     // Preconditioner getter: strategy is set via model->set_precond_strategy(...)
-    virtual MatrixXd             precond(double eps=1e-5)=0;
+    virtual MatrixXd             precond()=0;
 
     virtual int                  get_n_params() const = 0;
     virtual ~Model() = default;
+    // Cache state helpers
+    bool is_computed() const { return computed_; }
+protected:
+    void mark_computed() { computed_ = true; }
+    void reset_computed() { computed_ = false; }
 };
 
 
@@ -70,6 +77,7 @@ public:
             last_prec = H;
             prec_valid = true;
         }
+        mark_computed();
     }
 
     // gradient accessor
@@ -79,8 +87,7 @@ public:
     }
 
     // hessian accessor
-    MatrixXd precond(double eps) override {
-        (void)eps;
+    MatrixXd precond() override {
         if (!prec_valid) compute(true);
         return last_prec;
     }
@@ -89,6 +96,7 @@ public:
         (*this).x = x;
         grad_valid = false;
         prec_valid = false;
+        reset_computed();
     }
 
     VectorXd get_parameter() override {

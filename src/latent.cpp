@@ -37,9 +37,6 @@ void set_parameter_unfixed(
     }
 }
 
-// Define the constant for minimum W size threshold
-const int MIN_W_SIZE = 5;
-
 // K is V_size * W_size matrix
 Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
     latent_rng    (seed),
@@ -53,8 +50,6 @@ Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
 
     // operator
     ope           (OperatorFactory::create(Rcpp::as<Rcpp::List> (model_list["operator"]))),
-    ope_precond   (OperatorFactory::create(Rcpp::as<Rcpp::List> (model_list["operator"]))),
-    ope_addeps    (OperatorFactory::create(Rcpp::as<Rcpp::List> (model_list["operator"]))),
     h             (ope->get_h()),
     theta_K       (Rcpp::as<VectorXd>  (model_list["theta_K"])),
     n_theta_K     (theta_K.size()),
@@ -64,9 +59,7 @@ Latent::Latent(const Rcpp::List& model_list, unsigned long seed) :
     // K             (V_size, W_size),
     // dK            (n_theta_K),
     trace         (n_theta_K, 0.0),
-    rb_trace_K    (n_theta_K),
     eps           (0.001),
-    num_dK        (n_theta_K, SparseMatrix<double>(V_size, W_size)),
 
     W             (W_size),
     prevW         (W_size),
@@ -101,8 +94,6 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
         n_theta_sigma = Rcpp::as< int > (noise_in["n_theta_sigma"]);
         n_theta_nu    = Rcpp::as< int > (noise_in["n_theta_nu"]);
         nu_lower_bound  = noise_in.containsElementNamed("nu_lower_bound") ? Rcpp::as< double > (noise_in["nu_lower_bound"]) : 0.0;
-
-        rb_trace_sigma = VectorXd::Zero(n_theta_sigma);
 
         theta_mu    = Rcpp::as< VectorXd > (noise_in["theta_mu"]);
         theta_sigma = Rcpp::as< VectorXd > (noise_in["theta_sigma"]);
@@ -146,8 +137,6 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
         uopts.compute_Z = true;
         uopts.compute_dK = true;
         uopts.compute_dZ = true;
-        uopts.diff_dZ_mode = DiffMode::Central;
-        uopts.eps_dZ = eps; // use model/control eps for stable dZ
         uopts.n_trace_iter = n_trace_iter_;
         uopts.solver_type  = solver_type_;
         ope->update_all(theta_K, uopts);
@@ -187,7 +176,6 @@ const VectorXd& Latent::get_KW_cached() {
     if (!KW_valid_) {
         KW_cache_ = getK() * W;
         KW_valid_ = true;
-        KW_valid_ = false; // debug
     }
     return KW_cache_;
 }
@@ -217,8 +205,6 @@ const VectorXd Latent::get_parameter() {
     if (!fix_flag[latent_fix_theta_nu])
         parameter.segment(n_theta_K + n_theta_mu + n_theta_sigma, n_theta_nu) = theta_nu;
 
-
-// if (debug) std::cout << "End latent get parameter"<< std::endl;
 if (debug) {
     if (std::isnan(parameter(0))||std::isnan(-parameter(0)))
         throw std::runtime_error("isnan");
@@ -249,8 +235,6 @@ if (debug) std::cout << "finish latent gradient"<< std::endl;
 }
 
 void Latent::set_parameter(const VectorXd& theta, bool update_dK) {
-// if (debug) std::cout << "Start latent set parameter"<< std::endl;
-
     // nig, gal and normal+nig
     if (!fix_flag[latent_fix_theta_K])
         theta_K = theta.segment(0, n_theta_K);
@@ -262,7 +246,6 @@ void Latent::set_parameter(const VectorXd& theta, bool update_dK) {
         theta_nu = theta.segment(n_theta_K + n_theta_mu + n_theta_sigma, n_theta_nu);
     
     update_each_iter();
-// if (debug) std::cout << "Finish latent set parameter"<< std::endl;
 }
 
 void Latent::sample_cond_V() {
@@ -393,21 +376,6 @@ void Latent::compute_theta_K(bool need_grad, bool rao_blackwell) {
                 grad(j) = trace[j] - (get_dK(j) * WW).cwiseProduct(SV.cwiseInverse()).dot(tmp);
             }
 
-            // Chain rule through Z in measurement likelihood: + (dZ_j * W)^T s, where s = A^T D r
-            auto t_chain_start = std::chrono::steady_clock::now();
-            if (obs_score.size() == W_size) {
-                for (int j=0; j<n_theta_K; ++j) {
-                    const auto& dZ_j = ope->get_dZ(j);
-                    if (dZ_j.rows() == W_size && dZ_j.cols() == W_size) {
-                        VectorXd dZ_W = dZ_j * WW;
-                        grad(j) += dZ_W.dot(obs_score);
-                    }
-                }
-            }
-            t_chain_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t_chain_start).count();
-
-            if (rao_blackwell) grad -= rb_trace_K;
-
             for (int l=0; l < n_theta_K; l++) {
                 grad(l) += PriorUtil::d_log_dens(prior_K_type, prior_K_param, theta_K(l));
             }
@@ -423,7 +391,7 @@ void Latent::compute_theta_K(bool need_grad, bool rao_blackwell) {
             std::cout << "[latent] compute_theta_K timing (ms): total=" << t_total_ms
                       << ", Z-chain=" << t_chain_ms << std::endl;
         }
-    deriv_cache.grad_theta_K = -grad;
+    deriv_cache.grad_theta_K = grad;
     deriv_cache.grad_K_ready = true;
 }
 
@@ -442,7 +410,6 @@ void Latent::compute_theta_mu(bool need_grad, bool rao_blackwell) {
                 grad(l) = (V-h).cwiseProduct(B_mu.col(l).cwiseQuotient(SV)).dot(getK()*WW - mu.cwiseProduct(V-h));
                 grad(l) += PriorUtil::d_log_dens(prior_mu_type, prior_mu_param, theta_mu(l));
             }
-            grad = -grad;
         }
     }
 
@@ -473,8 +440,6 @@ void Latent::compute_theta_sigma(bool need_grad, bool rao_blackwell) {
                 grad(j++) += PriorUtil::d_log_dens(prior_sigma_type, prior_sigma_param, theta_sigma(l));
             }
         }
-        if (rao_blackwell) grad += rb_trace_sigma;
-        grad = -grad;
     }
 
     deriv_cache.grad_theta_sigma = grad;
@@ -504,7 +469,7 @@ void Latent::compute_theta_nu(bool need_grad) {
         }
     }
 
-    deriv_cache.grad_theta_nu = grad;
+    deriv_cache.grad_theta_nu = -grad;
     deriv_cache.grad_nu_ready = true;
 }
 
@@ -512,15 +477,13 @@ void Latent::compute_theta_nu(bool need_grad) {
 // at init, and after each set parameter
 void Latent::update_each_iter() {
     auto t_total_start = std::chrono::steady_clock::now();
-    long long t_noise_ms = 0, t_numdk_ms = 0, t_trace_ms = 0;
+    long long t_noise_ms = 0, t_trace_ms = 0;
 
     UpdateOptions uopts;
     uopts.compute_K = true;
     uopts.compute_Z = true;
     uopts.compute_dK = true; // prefer analytic dK when available
     uopts.compute_dZ = true;
-    uopts.diff_dZ_mode = DiffMode::Central;
-    uopts.eps_dZ = eps;
     uopts.compute_d2K = false; // only compute when preconditioner is requested
     uopts.compute_d2Z = false;
     uopts.n_trace_iter = n_trace_iter_;
@@ -565,7 +528,6 @@ void Latent::update_each_iter() {
         auto t_total_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t_total_start).count();
         std::cout << "[latent] update_each_iter timing (ms): total=" << t_total_ms
                   << ", noise_update=" << t_noise_ms
-                  << ", num_dK=" << t_numdk_ms
                   << ", trace=" << t_trace_ms << std::endl;
     }
 }
@@ -588,7 +550,7 @@ void Latent::compute_hessian_blocks(bool rao_blackwell) {
     VectorXd m = mu.cwiseProduct(V - h);
     VectorXd r = get_KW_cached() - m;
 
-    // H_K: W|V contribution exact, trace terms TODO; Y|W part handled in Block
+    // H_K: W|V contribution exact; add operator-side trace terms later; Y|W handled in Block
     if (n_theta_K > 0) {
         std::vector<VectorXd> KjW(n_theta_K);
         for (int j=0; j<n_theta_K; ++j) KjW[j] = get_dK(j) * W;
@@ -603,6 +565,11 @@ void Latent::compute_hessian_blocks(bool rao_blackwell) {
                 hess_cache.H_K(j,k) = term_vec;
                 if (j!=k) hess_cache.H_K(k,j) = term_vec;
             }
+        }
+        // Add operator-side trace terms if available
+        const MatrixXd& HKtr = ope->get_HK_trace();
+        if (HKtr.rows()==n_theta_K && HKtr.cols()==n_theta_K) {
+            hess_cache.H_K += HKtr;
         }
         hess_cache.H_K.diagonal().array() += 1e-9; // small regularization
     }
@@ -683,7 +650,7 @@ MatrixXd Latent::preconditioner() {
 // Preconditioner contribution for the current latent state (single sample)
     auto t_start = std::chrono::steady_clock::now();
 
-    // Ensure second derivatives are available (compute on-demand)
+    // Ensure second derivatives and H_K trace terms are available (compute on-demand)
     {
         UpdateOptions uopts;
         uopts.compute_K  = false;
@@ -692,6 +659,7 @@ MatrixXd Latent::preconditioner() {
         uopts.compute_dZ = false;
         uopts.compute_d2K = true;
         uopts.compute_d2Z = false; // H_K uses d2K only
+        uopts.compute_HK_trace = !zero_trace;
         uopts.n_trace_iter = n_trace_iter_;
         uopts.solver_type  = solver_type_;
         uopts.fix_mask_thetaK = ope->get_fix_mask_K();
@@ -732,5 +700,5 @@ MatrixXd Latent::preconditioner() {
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t_start).count();
         std::cout << "[latent] compute_precond_matrix (analytic skeleton) timing (ms): total=" << ms << std::endl;
     }
-    return -precond_full;
+    return precond_full;
 }

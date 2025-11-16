@@ -26,11 +26,6 @@ BlockModel::BlockModel(
   n_feff            (beta.size()),
   n_merr            (Rcpp::as<int>           (block_model["n_merr"])),
   n_repl            (Rcpp::as<int>           (block_model["n_repl"])),
-  // corr_measure      (Rcpp::as<bool>          (block_model["corr_measure"])),
-  // cor_rows          (),
-  // cor_cols          (),
-  // has_correlation   (),
-  // n_corr_pairs      (0),
   Q_eps             (n_obs, n_obs),
   dQ_eps            (n_obs, n_obs),
   n_params          (n_la_params + n_feff + n_merr),
@@ -41,7 +36,6 @@ BlockModel::BlockModel(
   Q                 (W_sizes, W_sizes),
   QQ                (W_sizes, W_sizes),
 
-  // var               (Var(Rcpp::as<Rcpp::List> (block_model["noise"]), rng())),
   p_vec             (n_obs),
   a_vec             (n_obs),
   b_vec             (n_obs),
@@ -105,7 +99,7 @@ if (debug) std::cout << "After set block K" << std::endl;
     fix_flag[blcok_fix_V]            = Rcpp::as<bool> (noise_in["fix_V"]);
     fix_flag[block_fix_theta_nu]     = noise_in.containsElementNamed("fix_theta_nu") ? Rcpp::as<bool> (noise_in["fix_theta_nu"]) : false;
     fix_flag[block_fix_rho]          = noise_in.containsElementNamed("fix_rho") ? Rcpp::as<bool> (noise_in["fix_rho"]) : false;
-    shared_sigma = noise_in.containsElementNamed("shared_sigma") ? Rcpp::as<bool> (noise_in["shared_sigma"]) : false;
+    // shared_sigma has been removed; always use standard scaling with sigma^2 and V
 
     B_mu          = (Rcpp::as<MatrixXd>      (noise_in["B_mu"])),
     theta_mu      = (Rcpp::as<VectorXd>      (noise_in["theta_mu"])),
@@ -150,12 +144,6 @@ if (debug) std::cout << "After set block K" << std::endl;
       cor_cols = Rcpp::as<vector<int>> (noise_in["cor_cols"]);
       cor_rows = Rcpp::as<vector<int>> (noise_in["cor_rows"]);
       has_correlation = Rcpp::as<vector<bool>> (noise_in["has_correlation"]);
-
-// print has_correlation
-// std::cout << "has_correlation = ";
-// for (int i=0; i < has_correlation.size(); i++) {
-//   std::cout << has_correlation[i] << " ";
-// }
 
       n_corr_pairs = Rcpp::as<int> (noise_in["n_corr_pairs"]);
       vector<Triplet<double>> Q_eps_triplet, dQ_eps_triplet;
@@ -204,9 +192,7 @@ if (debug) std::cout << "After assemble" << std::endl;
       setSparseBlock(&AZ, 0, col0, AiZi);
       col0 += latents[li]->get_W_size();
     }
-    if (!corr_measure && shared_sigma) {
-      QQ = Q + AZ.transpose() * noise_V.cwiseInverse().asDiagonal() * AZ;
-    } else if (!corr_measure) {
+    if (!corr_measure) {
       QQ = Q + AZ.transpose() * noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V).asDiagonal() * AZ;
     } else{
       QQ = Q + AZ.transpose() * Q_eps * AZ;
@@ -297,22 +283,7 @@ void BlockModel::sampleW_VY(bool burn_in) {
   // M = K' * inv(SV) * mean + Z'^ A'^ inv(Sigma) * (Y - X * beta - (1 - V) mu)
   VectorXd M = K.transpose() * inv_SV.asDiagonal() * getMean();
 
-  if (!corr_measure && shared_sigma) {
-    // special case of shared_sigma, replace Y by Y/sigma_e
-    // add Z'^A' * (Y/sigma - X beta - (1-V)mu)
-    VectorXd rhs = get_residual_part() - Y + Y.cwiseQuotient(noise_sigma);
-    // rhs = Y/sigma - X beta - (1-V)mu
-    // Build AZ and apply
-    SparseMatrix<double> AZ(n_obs, W_sizes);
-    int col = 0;
-    for (int li=0; li<n_latent; ++li) {
-      SparseMatrix<double> AiZi = latents[li]->getA() * latents[li]->getZ();
-      setSparseBlock(&AZ, 0, col, AiZi);
-      col += latents[li]->get_W_size();
-    }
-    M += AZ.transpose() * rhs;
-  }
-  else if (!corr_measure) {
+  if (!corr_measure) {
     SparseMatrix<double> AZ(n_obs, W_sizes);
     int col = 0;
     for (int li=0; li<n_latent; ++li) {
@@ -410,11 +381,7 @@ VectorXd BlockModel::grad_beta() {
   VectorXd residual = get_residual(rao_blackwell); // + X * beta;
   VectorXd grads = X.transpose() * noise_inv_SV.asDiagonal() * residual;
 
-// special case
-if (shared_sigma) {
-  residual = residual - Y + Y.cwiseQuotient(noise_sigma); // replace Y by Y/sigma_e
-  grads = X.transpose() * residual;
-}
+// shared_sigma removed: keep generic form only
   //  * residual.cwiseQuotient(noise_sigma);
 
   // MatrixXd hess = X.transpose() * noise_inv_SV.asDiagonal() * X;
@@ -422,13 +389,11 @@ if (shared_sigma) {
   // grads = hess.ldlt().solve(grads);
 
   // std::cout << "grads of beta=" << grads << std::endl;
-    return -grads;
+    return grads;
 }
 
 VectorXd BlockModel::grad_theta_mu() {
   VectorXd noise_SV = noise_V.cwiseProduct(noise_sigma.array().pow(2).matrix());
-
-  if (shared_sigma) {noise_SV = noise_V;}
   VectorXd residual = get_residual(rao_blackwell);
   VectorXd grad = VectorXd::Zero(n_theta_mu);
   for (int l=0; l < n_theta_mu; l++) {
@@ -436,7 +401,7 @@ VectorXd BlockModel::grad_theta_mu() {
       // add prior
       // grad(l) += PriorUtil::d_log_dens(prior_mu_type, prior_mu_param, theta_mu(l));
   }
-  return -grad;
+  return grad;
 }
 
 VectorXd BlockModel::grad_theta_sigma() {
@@ -448,14 +413,7 @@ VectorXd BlockModel::grad_theta_sigma() {
   VectorXd tmp1 = vsq - VectorXd::Ones(n_obs);
   grad = B_sigma.transpose() * tmp1; // dℓ/dθ for generic case
 
-  // Special case: Y|W ~ N(sigma_e (Xβ + A Z W), sigma_e)
-  // dsigma_e/d theta contribution in log-lik form under log-σ paramization
-  if (shared_sigma) {
-    VectorXd mean = - get_residual(false) + Y;  // AW+Xβ
-    VectorXd Y_by_sigma = Y.cwiseQuotient(noise_sigma);
-    VectorXd Y_by_sigma_sq = Y_by_sigma.array().pow(2);
-    grad = B_sigma.transpose() * (- VectorXd::Ones(n_obs) + Y_by_sigma_sq - Y_by_sigma.cwiseProduct(mean));
-  }
+  // shared_sigma branch removed; keep generic gradient form
 
   // Rao-Blackwell term from log|QQ|: keep sign consistent with theta_K path
   // theta_K: grad_accum -= rb_trace_K; then return -grad_accum
@@ -468,7 +426,7 @@ VectorXd BlockModel::grad_theta_sigma() {
   // }
 
   // Return gradient of negative log-likelihood
-  return -grad;
+  return grad;
 }
 
 VectorXd BlockModel::get_theta_merr() const {
@@ -493,7 +451,7 @@ VectorXd BlockModel::grad_theta_merr() {
   if (!fix_flag[block_fix_theta_mu])     grad.segment(0, n_theta_mu) = grad_theta_mu();
   if (!fix_flag[block_fix_theta_sigma])  grad.segment(n_theta_mu, n_theta_sigma) = grad_theta_sigma();
   if (!fix_flag[block_fix_theta_nu]) {
-    grad.segment(n_theta_mu + n_theta_sigma, n_theta_nu) = NoiseUtil::grad_theta_nu(family, B_nu, noise_nu, noise_V, noise_prevV);
+    grad.segment(n_theta_mu + n_theta_sigma, n_theta_nu) = - NoiseUtil::grad_theta_nu(family, B_nu, noise_nu, noise_V, noise_prevV);
     // add prior
     // grad(n_theta_mu + n_theta_sigma) -= PriorUtil::d_log_dens(prior_nu_type, prior_nu_param, noise_nu);
   }
@@ -505,7 +463,7 @@ VectorXd BlockModel::grad_theta_merr() {
     VectorXd res = get_residual();
     double drhs = -0.5 * (res).dot(dQ_eps * res);
     grad(n_merr-1) = trace + drhs;
-    grad(n_merr-1) *= -dtheta_th(rho(0));
+    grad(n_merr-1) *= dtheta_th(rho(0));
 // std::cout << "drhs = " << drhs << std::endl;
 // std::cout << "trace = " << trace << std::endl;
 // std::cout << "grad of rho=" << grad(n_merr-1) << std::endl;
@@ -657,13 +615,11 @@ Rcpp::List BlockModel::sampling(
 //   }
 // }
 
-MatrixXd BlockModel::get_preconditioner(int strategy, double eps) {
-  // Return cached preconditioner if available; do not compute here
-  if (last_precond_valid && std::abs(eps - last_precond_eps) <= 1e-12 && strategy == last_precond_strategy) {
-    return last_precond;
+MatrixXd BlockModel::get_preconditioner() {
+  if (!last_precond_valid) {
+    throw std::runtime_error("last_precond_valid is false, return identity matrix");
   }
-  // Not computed/mismatch: identity-like fallback (caller should call compute_grad_and_hessian with with_precond=true)
-  return VectorXd::Constant(n_params, 1e-5).asDiagonal();
+  return last_precond;
 }
 
 // Main function for computing
@@ -728,12 +684,7 @@ if (debug) std::cout << "Start compute_grad_and_hessian"<< std::endl;
     // Build observation score s = A^T D r for Z-chain
     auto t_bs = std::chrono::steady_clock::now();
     VectorXd s_full;
-    if (!corr_measure && shared_sigma) {
-      // D = diag(1 / sigma^2) when sigma is shared; use full residual
-      VectorXd residual = get_residual(use_condW);
-      VectorXd inv_sigma2 = noise_sigma.array().pow(-2).matrix();
-      s_full = A.transpose() * inv_sigma2.asDiagonal() * residual;
-    } else if (!corr_measure) {
+    if (!corr_measure) {
       VectorXd residual = get_residual(use_condW);
       VectorXd inv_noise_SV = noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V);
       s_full = A.transpose() * inv_noise_SV.asDiagonal() * residual;
@@ -743,26 +694,45 @@ if (debug) std::cout << "Start compute_grad_and_hessian"<< std::endl;
     }
     t_build_s_ms += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t_bs).count();
 
-    // Dispatch s to latents; compute dZ
-    auto t_sets = std::chrono::steady_clock::now();
-    int woff = 0;
-    for (int li=0; li<n_latent; ++li) {
-      int wi = latents[li]->get_W_size();
-      latents[li]->set_obs_score(s_full.segment(woff, wi));
-      woff += wi;
-    }
-    t_set_s_ms += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t_sets).count();
-
-    // Aggregate gradients
+    // Aggregate gradients (latent + measurement Z-chain)
     auto t_g = std::chrono::steady_clock::now();
     VectorXd current_grad = VectorXd::Zero(n_params);
-    int pos = 0;
-    for (auto it = latents.begin(); it != latents.end(); ++it) {
-      int theta_len = (*it)->get_n_params();
-      VectorXd gi = (*it)->get_grad(rao_blackwell);
+    int pos = 0;     // parameter offset
+    int woff2 = 0;   // W-slice offset for s_full
+    for (int li = 0; li < n_latent; ++li) {
+      auto & L = latents[li];
+      int theta_len = L->get_n_params();
+      VectorXd gi = L->get_grad(rao_blackwell); // excludes Z-chain measurement term; RB compensated below
+      // RB compensation at Block level
+      if (rao_blackwell) {
+        int n_k = L->get_n_theta_K();
+        if (n_k > 0 && li < (int)rb_trace_K_latent.size() && rb_trace_K_latent[li].size() == n_k) {
+          gi.head(n_k) += rb_trace_K_latent[li];
+        }
+        int n_mu = L->get_n_theta_mu();
+        int n_sig = L->get_n_theta_sigma();
+        if (n_sig > 0 && li < (int)rb_trace_sigma_latent.size() && rb_trace_sigma_latent[li].size() == n_sig) {
+          gi.segment(n_k + n_mu, n_sig) += rb_trace_sigma_latent[li];
+        }
+      }
+      // Add measurement Z-chain gradient: g_Z(j) = (dZ_j W_i)^T s_i
+      int n_k = L->get_n_theta_K();
+      if (n_k > 0) {
+        VectorXd Wi_loc = use_condW ? L->get_cond_W() : L->getW();
+        VectorXd s_i = s_full.segment(woff2, Wi_loc.size());
+        for (int j=0; j<n_k; ++j) {
+          const auto& dZ_j = L->get_dZ(j);
+          if (dZ_j.rows()==Wi_loc.size() && dZ_j.cols()==Wi_loc.size() && dZ_j.nonZeros()>0) {
+            VectorXd gvec = dZ_j * Wi_loc;
+            double gZ = gvec.dot(s_i);
+            gi(j) += gZ;
+          }
+        }
+      }
       current_grad.segment(pos, theta_len) = gi;
       latent_grad .segment(pos, theta_len) += gi;
       pos += theta_len;
+      woff2 += L->get_W_size();
     }
     VectorXd noise_g = grad_theta_merr();
     current_grad.segment(n_la_params, n_merr) = noise_g;
@@ -782,6 +752,15 @@ if (debug) std::cout << "Start compute_grad_and_hessian"<< std::endl;
       // per-latent block preconditioners
       auto t_pl = std::chrono::steady_clock::now();
       int pos2 = 0;
+      // Precompute u = Sigma^{-1} e for cross terms with theta_sigma (uncorrelated cases only)
+      VectorXd residual_ct = get_residual(use_condW);
+      VectorXd u_vec;
+      bool can_cross_sigma = !corr_measure; // current formula assumes diagonal Sigma
+      if (can_cross_sigma) {
+        // u_i = e_i / (sigma_i^2 V_i')
+        u_vec = residual_ct.cwiseQuotient(noise_sigma.array().square().matrix().cwiseProduct(noise_V));
+      }
+
       for (int li=0; li<n_latent; ++li) {
         int theta_len = latents[li]->get_n_params();
         MatrixXd Pi;
@@ -795,14 +774,15 @@ if (debug) std::cout << "Start compute_grad_and_hessian"<< std::endl;
       }
       t_prec_latent_ms += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t_pl).count();
 
-      // Z Gauss–Newton diagonal terms per latent (always diagonal wrt theta_K)
+      // Z-chain Hessian (measurement part):
+      // H_{jk} = (Z_{jk} W)^T A^T D e  - (dZ_k W)^T A^T D A (dZ_j W)
+      // We add the full (j,k) matrix per latent. If Z_{jk} is unavailable, we fall back to
+      // the Gauss–Newton term (second term only). This replaces the older diagonal-only GN.
       auto t_pz = std::chrono::steady_clock::now();
       for (int li=0; li<n_latent; ++li) {
         SparseMatrix<double> ADA_i;
         const auto& Ai = latents[li]->getA();
-        if (!corr_measure && shared_sigma) {
-          ADA_i = Ai.transpose() * noise_V.cwiseInverse().asDiagonal() * Ai;
-        } else if (!corr_measure) {
+        if (!corr_measure) {
           VectorXd inv_noise_SV = noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V);
           ADA_i = Ai.transpose() * inv_noise_SV.asDiagonal() * Ai;
         } else {
@@ -813,14 +793,84 @@ if (debug) std::cout << "Start compute_grad_and_hessian"<< std::endl;
             ADA_i = Ai.transpose() * Q_eps * Ai;
           }
         }
-        int base = 0; for (int k=0; k<li; ++k) base += latents[k]->get_n_params();
+        // Compute parameter and W offsets up to latent li
+        int pbase = 0, woff_local = 0;
+        for (int k=0; k<li; ++k) {
+          pbase     += latents[k]->get_n_params();
+          woff_local += latents[k]->get_W_size();
+        }
         VectorXd Wi_loc = use_condW ? latents[li]->get_cond_W() : latents[li]->getW();
-        for (int j=0; j<latents[li]->get_n_theta_K(); ++j) {
-          const auto& dZ_j = latents[li]->get_dZ(j);
-          if (dZ_j.rows()==0 || dZ_j.cols()==0) continue;
-          VectorXd g = dZ_j * Wi_loc;
-          double hjj = g.transpose() * (ADA_i * g);
-          precond_sum(base + j, base + j) += hjj;
+        VectorXd s_i = s_full.segment(woff_local, Wi_loc.size());
+        int n_k = latents[li]->get_n_theta_K();
+        if (n_k > 0) {
+          MatrixXd HZ = MatrixXd::Zero(n_k, n_k);
+          // Precompute dZ_j W vectors
+          std::vector<VectorXd> dZW(n_k);
+          for (int j=0; j<n_k; ++j) {
+            const auto& dZ_j = latents[li]->get_dZ(j);
+            if (dZ_j.rows()==Wi_loc.size() && dZ_j.cols()==Wi_loc.size() && dZ_j.nonZeros()>0)
+              dZW[j] = dZ_j * Wi_loc;
+            else
+              dZW[j] = VectorXd::Zero(Wi_loc.size());
+          }
+          // Build HZ
+          for (int j=0; j<n_k; ++j) {
+            for (int k=0; k<n_k; ++k) {
+              // Second-derivative term: (Z_{jk} W)^T s_i ; not available by default -> 0
+              double t1 = 0.0;
+              // If later we expose d2Z, plug it here:
+              // const auto& d2Z_jk = latents[li]->get_d2Z(j,k);
+              // if (d2Z_jk.rows()==Wi_loc.size()) t1 = (d2Z_jk * Wi_loc).dot(s_i);
+              // GN term: − (dZ_k W)^T A^T D A (dZ_j W)
+              double t2 = 0.0;
+              if (dZW[k].size()>0 && dZW[j].size()>0) t2 = dZW[k].dot(ADA_i * dZW[j]);
+              HZ(j,k) += (t1 - t2);
+            }
+          }
+          // Accumulate Z Hessian into global preconditioner
+          if (pbase + n_k <= n_params) {
+            precond_sum.block(pbase, pbase, n_k, n_k) += HZ;
+          }
+
+          // Cross-term with theta_sigma: H_{theta,sigma} = -2 J_theta^T diag(u) B_sigma
+          if (can_cross_sigma && n_theta_sigma > 0 && !fix_flag[block_fix_theta_sigma]) {
+            int sigma_col0 = n_la_params + n_theta_mu;
+            for (int j=0; j<n_k; ++j) {
+              // AZ_j W
+              VectorXd AZWj = Ai * dZW[j];
+              if (AZWj.size()==n_obs) {
+                VectorXd w = u_vec.cwiseProduct(AZWj);
+                // row j: -2 * (B_sigma^T * w)^T
+                VectorXd row = -2.0 * (B_sigma.transpose() * w);
+                if (pbase + j < n_params && sigma_col0 + n_theta_sigma <= n_params) {
+                  precond_sum.block(pbase + j, sigma_col0, 1, n_theta_sigma) += row.transpose();
+                  precond_sum.block(sigma_col0, pbase + j, n_theta_sigma, 1) += row;
+                }
+              }
+            }
+          }
+
+          // Cross-term with theta_mu (noise mean):
+          // H_{theta,mu} = - J_theta^T diag(w_mu) B_mu,
+          //   where w_mu = (V'-1)/(V' sigma^2) for uncorrelated
+          if (n_theta_mu > 0 && !fix_flag[block_fix_theta_mu]) {
+            int mu_col0 = n_la_params; // mu block starts the measurement part
+            // Build w_mu per observation
+            VectorXd w_mu = (noise_V.array() - 1.0).matrix().cwiseQuotient(noise_V);
+            // include 1/sigma^2 factor (uncorrelated case uses diag(1/(sigma^2 V)))
+            w_mu = w_mu.cwiseQuotient(noise_sigma.array().square().matrix());
+            for (int j=0; j<n_k; ++j) {
+              VectorXd AZWj = Ai * dZW[j];
+              if (AZWj.size()==n_obs) {
+                VectorXd w = w_mu.cwiseProduct(AZWj);
+                VectorXd row = - (B_mu.transpose() * w); // 1 x n_theta_mu (as column)
+                if (pbase + j < n_params && mu_col0 + n_theta_mu <= n_params) {
+                  precond_sum.block(pbase + j, mu_col0, 1, n_theta_mu) += row.transpose();
+                  precond_sum.block(mu_col0, pbase + j, n_theta_mu, 1) += row;
+                }
+              }
+            }
+          }
         }
       }
       t_prec_ZGN_ms += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t_pz).count();
@@ -829,28 +879,23 @@ if (debug) std::cout << "Start compute_grad_and_hessian"<< std::endl;
       auto t_pm = std::chrono::steady_clock::now();
       // 1) Analytic Hessian for measurement mu (noise mean) block:
       // H_mu = - B_mu^T diag(w) B_mu, with
-      //   w_i = ((V_i - 1)^2) / V_i / sigma_i^2  (or / V_i if shared_sigma)
+      //   w_i = ((V_i - 1)^2) / (V_i * sigma_i^2)
       if (n_theta_mu > 0 && !fix_flag[block_fix_theta_mu]) {
-        VectorXd w;
-        if (shared_sigma) {
-          w = (noise_V.array() - 1.0).square().matrix().cwiseQuotient(noise_V);
-        } else {
-          VectorXd noise_SV = noise_sigma.array().square().matrix().cwiseProduct(noise_V);
-          w = (noise_V.array() - 1.0).square().matrix().cwiseQuotient(noise_SV);
-        }
-        MatrixXd Hmu = (B_mu.transpose() * w.asDiagonal() * B_mu);
+        VectorXd noise_SV = noise_sigma.array().square().matrix().cwiseProduct(noise_V);
+        VectorXd w = (noise_V.array() - 1.0).square().matrix().cwiseQuotient(noise_SV);
+        MatrixXd Hmu = - (B_mu.transpose() * w.asDiagonal() * B_mu);
         // Place analytic H_mu at the top-left of the (merr+feff) block
         precond_sum.block(n_la_params + 0, n_la_params + 0, n_theta_mu, n_theta_mu) += Hmu;
       }
 
-      // 1b) Analytic Hessian for measurement sigma and mu-sigma cross (when not shared_sigma)
-      if (!shared_sigma && n_theta_sigma > 0 && !fix_flag[block_fix_theta_sigma]) {
+      // 1b) Analytic Hessian for measurement sigma and mu-sigma cross
+      if (n_theta_sigma > 0 && !fix_flag[block_fix_theta_sigma]) {
         // e = residual = Y - mu' (V-1) - A Z W - X beta
         VectorXd e = get_residual(use_condW);
         // H_sigma = -2 B_sigma^T diag(e^2 / (sigma^2 V)) B_sigma
         VectorXd wsig = 2.0 * e.array().square().matrix()
                           .cwiseQuotient(noise_sigma.array().square().matrix().cwiseProduct(noise_V));
-        MatrixXd Hsigma = (B_sigma.transpose() * wsig.asDiagonal() * B_sigma);
+        MatrixXd Hsigma = - (B_sigma.transpose() * wsig.asDiagonal() * B_sigma);
         // Place H_sigma just after the mu block within measurement corner
         precond_sum.block(n_la_params + n_theta_mu,
                           n_la_params + n_theta_mu,
@@ -861,7 +906,7 @@ if (debug) std::cout << "Start compute_grad_and_hessian"<< std::endl;
           VectorXd wms = 2.0 * (noise_V - VectorXd::Ones(n_obs))
                                .cwiseProduct(e)
                                .cwiseQuotient(noise_sigma.array().square().matrix().cwiseProduct(noise_V));
-          MatrixXd Hmu_sigma = (B_mu.transpose() * wms.asDiagonal() * B_sigma);
+          MatrixXd Hmu_sigma = - (B_mu.transpose() * wms.asDiagonal() * B_sigma);
           precond_sum.block(n_la_params + 0,
                             n_la_params + n_theta_mu,
                             n_theta_mu,
@@ -878,7 +923,7 @@ if (debug) std::cout << "Start compute_grad_and_hessian"<< std::endl;
         if (family != "normal") {
           // Use the same analytic form as latent: H_nu = - B_nu^T diag(nu ⊙ c) B_nu for NIG,
           // and the appropriate GAL/t variants handled inside NoiseUtil.
-          MatrixXd Hnu = NoiseUtil::hess_theta_nu(family, B_nu, noise_nu, noise_V);
+          MatrixXd Hnu = - NoiseUtil::hess_theta_nu(family, B_nu, noise_nu, noise_V);
           precond_sum.block(n_la_params + n_theta_mu + n_theta_sigma,
                             n_la_params + n_theta_mu + n_theta_sigma,
                             n_theta_nu,
@@ -887,16 +932,12 @@ if (debug) std::cout << "Start compute_grad_and_hessian"<< std::endl;
       }
 
       // Analytic cross-terms with beta
-      // H_{mu,beta} = - B_mu^T diag((V-1)/(sigma^2 ∘ V)) X  (shared_sigma: drop sigma^2)
+      // H_{mu,beta} = - B_mu^T diag((V-1)/(sigma^2 ∘ V)) X
       // if (n_theta_mu > 0 && n_feff > 0 && !fix_flag[block_fix_theta_mu] && !fix_flag[block_fix_beta]) {
       //   VectorXd wmb;
-      //   if (shared_sigma) {
-      //     wmb = (noise_V.array() - 1.0).matrix().cwiseQuotient(noise_V);
-      //   } else {
-      //     VectorXd noise_SV = noise_sigma.array().square().matrix().cwiseProduct(noise_V);
-      //     wmb = (noise_V.array() - 1.0).matrix().cwiseQuotient(noise_SV);
-      //   }
-      //   MatrixXd Hmu_beta = (B_mu.transpose() * wmb.asDiagonal() * X);
+      //   VectorXd noise_SV = noise_sigma.array().square().matrix().cwiseProduct(noise_V);
+      //   wmb = (noise_V.array() - 1.0).matrix().cwiseQuotient(noise_SV);
+      //   MatrixXd Hmu_beta = - (B_mu.transpose() * wmb.asDiagonal() * X);
       //   // Place [mu,beta] and its transpose
       //   precond_sum.block(n_la_params + 0,
       //                     n_la_params + n_merr,
@@ -908,11 +949,11 @@ if (debug) std::cout << "Start compute_grad_and_hessian"<< std::endl;
       //                     n_theta_mu) += Hmu_beta.transpose();
       // }
 
-      // H_{sigma,beta} = -2 B_sigma^T diag(e/(sigma^2 ∘ V)) X (only for non-shared sigma)
-      // if (!shared_sigma && n_theta_sigma > 0 && n_feff > 0 && !fix_flag[block_fix_theta_sigma] && !fix_flag[block_fix_beta]) {
+      // H_{sigma,beta} = -2 B_sigma^T diag(e/(sigma^2 ∘ V)) X
+      // if (n_theta_sigma > 0 && n_feff > 0 && !fix_flag[block_fix_theta_sigma] && !fix_flag[block_fix_beta]) {
       //   VectorXd e_sb = get_residual(use_condW);
       //   VectorXd wsb = 2.0 * e_sb.cwiseQuotient(noise_sigma.array().square().matrix().cwiseProduct(noise_V));
-      //   MatrixXd Hsigma_beta = (B_sigma.transpose() * wsb.asDiagonal() * X);
+      //   MatrixXd Hsigma_beta = - (B_sigma.transpose() * wsb.asDiagonal() * X);
       //   precond_sum.block(n_la_params + n_theta_mu,
       //                     n_la_params + n_merr,
       //                     n_theta_sigma,
@@ -926,14 +967,9 @@ if (debug) std::cout << "Start compute_grad_and_hessian"<< std::endl;
       // 1d) Analytic Hessian for beta (fixed effects): H_beta = - X^T Sigma^{-1} X
       if (n_feff > 0 && !fix_flag[block_fix_beta]) {
         MatrixXd Hbeta;
-        // if (shared_sigma) {
-        //   // Sigma^{-1} = I in the transformed residual form used by grad_beta()
-        //   Hbeta = (X.transpose() * X);
-        // } else {
-        //   VectorXd inv_noise_SV = noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V);
-        //   Hbeta = (X.transpose() * inv_noise_SV.asDiagonal() * X);
-        // }
-        Hbeta = MatrixXd::Identity(n_feff, n_feff) * n_obs;
+        // VectorXd inv_noise_SV = noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V);
+        // Hbeta = - (X.transpose() * inv_noise_SV.asDiagonal() * X);
+        Hbeta = - MatrixXd::Identity(n_feff, n_feff) * n_obs;
         precond_sum.block(n_la_params + n_merr,
                           n_la_params + n_merr,
                           n_feff,
@@ -970,8 +1006,6 @@ if (debug) std::cout << "Start compute_grad_and_hessian"<< std::endl;
       last_precond = (1.0 / precond_count) * precond_sum;
       last_precond += VectorXd::Constant(n_params, 1e-5).asDiagonal();
       last_precond_valid = true;
-      last_precond_eps = eps_use;
-      last_precond_strategy = precond_strategy_;
     } else {
       last_precond_valid = false;
     }
@@ -1004,6 +1038,10 @@ if (debug) std::cout << "start compute trace" << std::endl;
   int n = 0;
   int woff = 0; // offset in W-space for embedding latent-local pieces
   VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
+  // Ensure storage is sized for all latents
+  rb_trace_K_latent.resize(n_latent);
+  rb_trace_sigma_latent.resize(n_latent);
+
   for (int i=0; i < n_latent; i++) {
     VectorXd rb_trace_K (latents[i]->get_n_theta_K());
     VectorXd rb_trace_sigma (latents[i]->get_n_theta_sigma());
@@ -1011,7 +1049,7 @@ if (debug) std::cout << "start compute trace" << std::endl;
     // compute for K: tr(QQ^-1 dK^T diag(1/SV) K)
     for (int j=0; j < latents[i]->get_n_theta_K(); j++) {
       SparseMatrix<double> T = block_dK[i][j].transpose() * inv_SV.asDiagonal() * K;
-      rb_trace_K[j] = chol_QQ.trace(T, rng());
+      rb_trace_K[j] = - chol_QQ.trace(T, rng());
     }
 
     // compute for sigma: tr(Q^-1 K B_sigma.col(j)/SV K^T) for non-fixed theta_sigma
@@ -1038,10 +1076,7 @@ if (debug) std::cout << "start compute trace" << std::endl;
     SparseMatrix<double> ADA_i;
     {
       const auto& Ai = latents[i]->getA();
-      if (!corr_measure && shared_sigma) {
-        // D = diag(1 / V)
-        ADA_i = Ai.transpose() * noise_V.cwiseInverse().asDiagonal() * Ai;
-      } else if (!corr_measure) {
+      if (!corr_measure) {
         // D = diag(1 / (sigma^2 V))
         VectorXd inv_noise_SV = noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V);
         ADA_i = Ai.transpose() * inv_noise_SV.asDiagonal() * Ai;
@@ -1061,11 +1096,13 @@ if (debug) std::cout << "start compute trace" << std::endl;
       // Embed into full W-space
       SparseMatrix<double> T(W_sizes, W_sizes);
       setSparseBlock(&T, woff, woff, Tloc);
-      // Accumulate into rb_trace_K (same sign as K-term; latent subtracts rb_trace_K later)
-      rb_trace_K[j] += chol_QQ.trace(T, rng());
+      // Accumulate into rb_trace_K (same sign as K-term; Block compensates later)
+      rb_trace_K[j] -= chol_QQ.trace(T, rng());
     }
 
-    latents[i]->set_rb_trace(rb_trace_K, rb_trace_sigma);
+    // Save per-latent RB traces at Block level for later gradient compensation
+    rb_trace_K_latent[i] = rb_trace_K;
+    rb_trace_sigma_latent[i] = rb_trace_sigma;
     n += latents[i]->get_V_size();
     woff += latents[i]->get_W_size();
   }
@@ -1129,17 +1166,7 @@ Rcpp::List BlockModel::output() const {
 
 SparseMatrix<double> BlockModel::get_sqrt_AtSVA() const {
   VectorXd inv_noise_SV = noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V);  
-  if (!corr_measure && shared_sigma) {
-    // H = sqrt(Sigma^{-1}) * A Z
-    SparseMatrix<double> AZ(n_obs, W_sizes);
-    int col = 0;
-    for (int li=0; li<n_latent; ++li) {
-      SparseMatrix<double> AiZi = latents[li]->getA() * latents[li]->getZ();
-      setSparseBlock(&AZ, 0, col, AiZi);
-      col += latents[li]->get_W_size();
-    }
-    return noise_V.cwiseSqrt().cwiseInverse().asDiagonal() * AZ;
-  } else if (!corr_measure) {
+  if (!corr_measure) {
     SparseMatrix<double> AZ(n_obs, W_sizes);
     int col = 0;
     for (int li=0; li<n_latent; ++li) {
@@ -1234,11 +1261,7 @@ void BlockModel::update_QQ() {
     setSparseBlock(&AZ, 0, col, AiZi);
     col += latents[li]->get_W_size();
   }
-  if (!corr_measure && shared_sigma) {
-    // D = diag(1 / V)
-    SparseMatrix<double> H = noise_V.cwiseSqrt().cwiseInverse().asDiagonal() * AZ;
-    QQ = Q + H.transpose() * H;
-  } else if (!corr_measure) {
+  if (!corr_measure) {
     // D = diag(1 / (sigma^2 V))
     VectorXd inv_noise_SV = noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V);
     SparseMatrix<double> H = inv_noise_SV.cwiseSqrt().asDiagonal() * AZ;

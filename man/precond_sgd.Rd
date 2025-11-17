@@ -4,7 +4,7 @@
 \alias{precond_sgd}
 \title{Preconditioner SGD optimization}
 \usage{
-precond_sgd(stepsize = 0.5, numerical_eps = 1e-05)
+precond_sgd(stepsize = 1, numerical_eps = 1e-05)
 }
 \arguments{
 \item{stepsize}{stepsize for SGD}
@@ -17,4 +17,7 @@ a list of control variables for optimization
 }
 \description{
 Preconditioner SGD optimization
+}
+\details{
+Preconditioner SGD is using fisher information matrix as preconditioner (natural gradient descent).
 }

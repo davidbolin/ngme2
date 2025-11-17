@@ -95,7 +95,7 @@ public:
     );
 
     double log_likelihood(const VectorXd& x) { 
-        model->set_parameter(x); 
+        model->set_parameter_and_update(x, false); 
         return model->log_likelihood(); 
     }
     

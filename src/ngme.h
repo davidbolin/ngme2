@@ -51,7 +51,7 @@ public:
   void compute(bool with_precond=false, double eps=1e-5) override;
 
   VectorXd get_parameter() override;
-  void set_parameter(const VectorXd& p) override;
+  void set_parameter_and_update(const VectorXd& p, bool with_precond) override;
   VectorXd get_stepsizes() override {
     return stepsize;
   }

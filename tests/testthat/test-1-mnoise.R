@@ -64,7 +64,7 @@ test_that("test ar1 + normal noise", {
       rao_blackwellization = TRUE,
       iterations = 500,
       optimizer = sgd(),
-      verbose=TRUE,
+      # verbose=TRUE,
       n_parallel_chain = 4,
       n_slope_check = 10
   ))
@@ -104,7 +104,7 @@ test_that("test ar1 (normal) + NIG noise", {
       n_parallel_chain = 4,
       # optimizer = precond_sgd(),
       n_slope_check = 10,
-      verbose=TRUE
+      # verbose=TRUE
   ))
   out
   traceplot(out, "field1", hline=c(rho, sigma_ar))

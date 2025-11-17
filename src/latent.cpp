@@ -1,8 +1,8 @@
 #include "latent.h"
 #include "prior.h"
-#include "num_diff.h"
 #include <chrono>
 #include <algorithm>
+#include <stdexcept>
 
 // get theta[unfixed]
 VectorXd get_parameter_unfixed(const VectorXd& theta, const vector<bool>& fix_theta) {
@@ -131,18 +131,6 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
     n_trace_iter_ = n_trace_iter;
     solver_type_  = solver_type;
 
-    {
-        UpdateOptions uopts;
-        uopts.compute_K = true;
-        uopts.compute_Z = true;
-        uopts.compute_dK = true;
-        uopts.compute_dZ = true;
-        uopts.n_trace_iter = n_trace_iter_;
-        uopts.solver_type  = solver_type_;
-        ope->update_all(theta_K, uopts);
-    }
-
-
     // build mu, sigma, compute trace, ...
     update_each_iter();
 
@@ -161,6 +149,8 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
     }
 
 if (debug) std::cout << "End constructor of latent" << std::endl;
+    last_gradient_ = VectorXd::Zero(n_params);
+    last_precond_ = MatrixXd::Zero(n_params, n_params);
     invalidate_derivatives();
     invalidate_KW_cache();
 }
@@ -170,6 +160,8 @@ void Latent::invalidate_derivatives() {
     deriv_cache.grad_K_ready = deriv_cache.grad_mu_ready = false;
     deriv_cache.grad_sigma_ready = deriv_cache.grad_nu_ready = false;
     hess_cache.ready = false;
+    grad_cache_valid_ = false;
+    precond_cache_valid_ = false;
 }
 
 const VectorXd& Latent::get_KW_cached() {
@@ -214,27 +206,90 @@ if (debug) {
     return parameter;
 }
 
-const VectorXd Latent::get_grad(bool rao_blackwell) {
-if (debug) std::cout << "Start latent get grad"<< std::endl;
-    VectorXd grad = VectorXd::Zero(n_params);
-
-    bool need_K = !fix_flag[latent_fix_theta_K];
-    bool need_mu = (n_theta_mu > 0) && !fix_flag[latent_fix_theta_mu];
-    bool need_sigma = n_theta_sigma > 0;
-    bool need_nu = !fix_flag[latent_fix_theta_nu];
-
-    update_derivatives(need_K, need_mu, need_sigma, need_nu, rao_blackwell);
-
-    if (need_K) grad.segment(0, n_theta_K) = deriv_cache.grad_theta_K;
-    if (need_mu) grad.segment(n_theta_K, n_theta_mu) = deriv_cache.grad_theta_mu;
-    if (n_theta_sigma > 0) grad.segment(n_theta_K + n_theta_mu, n_theta_sigma) = deriv_cache.grad_theta_sigma;
-    if (need_nu) grad.segment(n_theta_K + n_theta_mu + n_theta_sigma, n_theta_nu) = deriv_cache.grad_theta_nu;
-
-if (debug) std::cout << "finish latent gradient"<< std::endl;
-    return grad;
+const VectorXd Latent::get_grad() {
+    if (!grad_cache_valid_) {
+        throw std::runtime_error("Latent::get_grad() called before compute_grad_and_hessian()");
+    }
+    return last_gradient_;
 }
 
-void Latent::set_parameter(const VectorXd& theta, bool update_dK) {
+void Latent::compute_grad_and_hessian(bool rao_blackwell, bool with_precond) {
+    if (!state_ready_) {
+        throw std::runtime_error("Latent::compute_grad_and_hessian() called before update_each_iter()");
+    }
+    if (with_precond && !state_has_precond_terms_) {
+        throw std::runtime_error("Latent preconditioner requested but second-order terms not prepared; call update_each_iter(true)");
+    }
+    bool need_grad = (!grad_cache_valid_) || (grad_cache_rb_mode_ != rao_blackwell);
+    bool need_precond = with_precond && !precond_cache_valid_;
+    if (!need_grad && !need_precond) return;
+
+    if (need_grad) {
+        if (debug) std::cout << "Start latent gradient compute" << std::endl;
+        VectorXd grad = VectorXd::Zero(n_params);
+
+        bool need_K = !fix_flag[latent_fix_theta_K];
+        bool need_mu = (n_theta_mu > 0) && !fix_flag[latent_fix_theta_mu];
+        bool need_sigma = n_theta_sigma > 0;
+        bool need_nu = !fix_flag[latent_fix_theta_nu];
+
+        update_derivatives(need_K, need_mu, need_sigma, need_nu, rao_blackwell);
+
+        if (need_K) grad.segment(0, n_theta_K) = deriv_cache.grad_theta_K;
+        if (need_mu) grad.segment(n_theta_K, n_theta_mu) = deriv_cache.grad_theta_mu;
+        if (n_theta_sigma > 0) grad.segment(n_theta_K + n_theta_mu, n_theta_sigma) = deriv_cache.grad_theta_sigma;
+        if (need_nu) grad.segment(n_theta_K + n_theta_mu + n_theta_sigma, n_theta_nu) = deriv_cache.grad_theta_nu;
+
+        last_gradient_ = grad;
+        grad_cache_valid_ = true;
+        grad_cache_rb_mode_ = rao_blackwell;
+        if (debug) std::cout << "finish latent gradient" << std::endl;
+    }
+
+    if (need_precond) {
+        auto t_start = std::chrono::steady_clock::now();
+
+        // Build analytic Hessian blocks (state already contains necessary derivatives)
+        compute_hessian_blocks(false);
+
+        MatrixXd precond_full = MatrixXd::Zero(n_params, n_params);
+        const int off_K = 0;
+        const int off_mu = n_theta_K;
+        const int off_sigma = n_theta_K + n_theta_mu;
+        const int off_nu = n_theta_K + n_theta_mu + n_theta_sigma;
+
+        if (n_theta_K > 0)
+            precond_full.block(off_K, off_K, n_theta_K, n_theta_K) = hess_cache.H_K;
+        if (n_theta_K > 0 && n_theta_mu > 0)
+            precond_full.block(off_K, off_mu, n_theta_K, n_theta_mu) = hess_cache.H_K_mu,
+            precond_full.block(off_mu, off_K, n_theta_mu, n_theta_K) = hess_cache.H_K_mu.transpose();
+        if (n_theta_K > 0 && n_theta_sigma > 0)
+            precond_full.block(off_K, off_sigma, n_theta_K, n_theta_sigma) = hess_cache.H_K_sigma,
+            precond_full.block(off_sigma, off_K, n_theta_sigma, n_theta_K) = hess_cache.H_K_sigma.transpose();
+        if (n_theta_mu > 0)
+            precond_full.block(off_mu, off_mu, n_theta_mu, n_theta_mu) = hess_cache.H_mu;
+        if (n_theta_sigma > 0)
+            precond_full.block(off_sigma, off_sigma, n_theta_sigma, n_theta_sigma) = hess_cache.H_sigma;
+        if (n_theta_mu > 0 && n_theta_sigma > 0)
+            precond_full.block(off_mu, off_sigma, n_theta_mu, n_theta_sigma) = hess_cache.H_mu_sigma,
+            precond_full.block(off_sigma, off_mu, n_theta_sigma, n_theta_mu) = hess_cache.H_mu_sigma.transpose();
+        if (n_theta_nu > 0)
+            precond_full.block(off_nu, off_nu, n_theta_nu, n_theta_nu) = hess_cache.H_nu;
+
+        // Jitter to ensure PD in placeholder form
+        precond_full.diagonal().array() += 1e-5;
+
+        last_precond_ = precond_full;
+        precond_cache_valid_ = true;
+
+        if (debug) {
+            auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t_start).count();
+            std::cout << "[latent] compute_precond_matrix (analytic skeleton) timing (ms): total=" << ms << std::endl;
+        }
+    }
+}
+
+void Latent::set_parameter_and_update(const VectorXd& theta, bool with_precond) {
     // nig, gal and normal+nig
     if (!fix_flag[latent_fix_theta_K])
         theta_K = theta.segment(0, n_theta_K);
@@ -244,8 +299,13 @@ void Latent::set_parameter(const VectorXd& theta, bool update_dK) {
     set_parameter_unfixed(theta_sigma, fix_theta_sigma_vec, theta.segment(n_theta_K + n_theta_mu, n_theta_sigma));
     if (!fix_flag[latent_fix_theta_nu])
         theta_nu = theta.segment(n_theta_K + n_theta_mu + n_theta_sigma, n_theta_nu);
-    
-    update_each_iter();
+
+    state_ready_ = false;
+    state_has_precond_terms_ = false;
+    invalidate_derivatives();
+    invalidate_KW_cache();
+
+    update_each_iter(with_precond);
 }
 
 void Latent::sample_cond_V() {
@@ -474,8 +534,14 @@ void Latent::compute_theta_nu(bool need_grad) {
 }
 
 
-// at init, and after each set parameter
-void Latent::update_each_iter() {
+// at init, and after each set parameter. need_precond toggles whether to build
+// costly second-derivative information for preconditioning.
+void Latent::update_each_iter(bool need_precond) {
+    bool need_full_update = !state_ready_;
+    bool need_upgrade = need_precond && !state_has_precond_terms_;
+    if (!need_full_update && !need_upgrade) {
+        return;
+    }
     auto t_total_start = std::chrono::steady_clock::now();
     long long t_noise_ms = 0, t_trace_ms = 0;
 
@@ -484,8 +550,9 @@ void Latent::update_each_iter() {
     uopts.compute_Z = true;
     uopts.compute_dK = true; // prefer analytic dK when available
     uopts.compute_dZ = true;
-    uopts.compute_d2K = false; // only compute when preconditioner is requested
-    uopts.compute_d2Z = false;
+    uopts.compute_d2K = need_precond;
+    uopts.compute_d2Z = need_precond;
+    uopts.compute_HK_trace = need_precond && !zero_trace;
     uopts.n_trace_iter = n_trace_iter_;
     uopts.solver_type  = solver_type_;
     uopts.fix_mask_thetaK = ope->get_fix_mask_K();
@@ -523,6 +590,8 @@ void Latent::update_each_iter() {
 
     prevV = V;
     prevW = W;
+    state_ready_ = true;
+    state_has_precond_terms_ = need_precond;
     invalidate_derivatives();
     if (debug) {
         auto t_total_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t_total_start).count();
@@ -646,59 +715,9 @@ void Latent::compute_hessian_blocks(bool rao_blackwell) {
     hess_cache.ready = true;
 }
 
-MatrixXd Latent::preconditioner() {
-// Preconditioner contribution for the current latent state (single sample)
-    auto t_start = std::chrono::steady_clock::now();
-
-    // Ensure second derivatives and H_K trace terms are available (compute on-demand)
-    {
-        UpdateOptions uopts;
-        uopts.compute_K  = false;
-        uopts.compute_Z  = false;
-        uopts.compute_dK = false;
-        uopts.compute_dZ = false;
-        uopts.compute_d2K = true;
-        uopts.compute_d2Z = false; // H_K uses d2K only
-        uopts.compute_HK_trace = !zero_trace;
-        uopts.n_trace_iter = n_trace_iter_;
-        uopts.solver_type  = solver_type_;
-        uopts.fix_mask_thetaK = ope->get_fix_mask_K();
-        ope->update_all(theta_K, uopts);
+MatrixXd Latent::preconditioner() const {
+    if (!precond_cache_valid_) {
+        throw std::runtime_error("Latent::preconditioner() called before compute_grad_and_hessian()");
     }
-
-    // Build analytic Hessian blocks
-    compute_hessian_blocks(false);
-
-    MatrixXd precond_full = MatrixXd::Zero(n_params, n_params);
-    const int off_K = 0;
-    const int off_mu = n_theta_K;
-    const int off_sigma = n_theta_K + n_theta_mu;
-    const int off_nu = n_theta_K + n_theta_mu + n_theta_sigma;
-
-    if (n_theta_K > 0)
-        precond_full.block(off_K, off_K, n_theta_K, n_theta_K) = hess_cache.H_K;
-    if (n_theta_K > 0 && n_theta_mu > 0)
-        precond_full.block(off_K, off_mu, n_theta_K, n_theta_mu) = hess_cache.H_K_mu,
-        precond_full.block(off_mu, off_K, n_theta_mu, n_theta_K) = hess_cache.H_K_mu.transpose();
-    if (n_theta_K > 0 && n_theta_sigma > 0)
-        precond_full.block(off_K, off_sigma, n_theta_K, n_theta_sigma) = hess_cache.H_K_sigma,
-        precond_full.block(off_sigma, off_K, n_theta_sigma, n_theta_K) = hess_cache.H_K_sigma.transpose();
-    if (n_theta_mu > 0)
-        precond_full.block(off_mu, off_mu, n_theta_mu, n_theta_mu) = hess_cache.H_mu;
-    if (n_theta_sigma > 0)
-        precond_full.block(off_sigma, off_sigma, n_theta_sigma, n_theta_sigma) = hess_cache.H_sigma;
-    if (n_theta_mu > 0 && n_theta_sigma > 0)
-        precond_full.block(off_mu, off_sigma, n_theta_mu, n_theta_sigma) = hess_cache.H_mu_sigma,
-        precond_full.block(off_sigma, off_mu, n_theta_sigma, n_theta_mu) = hess_cache.H_mu_sigma.transpose();
-    if (n_theta_nu > 0)
-        precond_full.block(off_nu, off_nu, n_theta_nu, n_theta_nu) = hess_cache.H_nu;
-
-    // Jitter to ensure PD in placeholder form
-    precond_full.diagonal().array() += 1e-5;
-
-    if (debug) {
-        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t_start).count();
-        std::cout << "[latent] compute_precond_matrix (analytic skeleton) timing (ms): total=" << ms << std::endl;
-    }
-    return precond_full;
+    return last_precond_;
 }

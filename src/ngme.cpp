@@ -38,7 +38,7 @@ Ngme::Ngme(const Rcpp::List& R_ngme, unsigned long seed, int sampling_strategy, 
   for (int i = 0; i < p.size(); ++i) {
       p[i] += distribution(gen);
   }
-  ngme_repls[0]->set_parameter(p);
+  ngme_repls[0]->set_parameter_and_update(p, true);
 }
 
 void Ngme::compute(bool with_precond, double eps) {
@@ -91,12 +91,12 @@ VectorXd Ngme::get_parameter() {
   return p;
 }
 
-void Ngme::set_parameter(const VectorXd& p) {
+void Ngme::set_parameter_and_update(const VectorXd& p, bool with_precond) {
   // set the same parameter for all latent
 // std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
   #pragma omp parallel for schedule(static) num_threads(num_threads_repl)
   for (int i=0; i < n_repl; i++) {
-    ngme_repls[i]->set_parameter(p);
+    ngme_repls[i]->set_parameter_and_update(p, with_precond);
   }
 
   // set the different parameter for each random effect

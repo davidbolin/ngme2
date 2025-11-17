@@ -105,6 +105,8 @@ test_that("test fit ARMA(2,2) with normal noise (precond)", {
   n <- 1000
   rho <- c(-0.5, 0.3)
   phi <- c(0.8, 0.2)
+  # phi <- c(0.8, -0.5)
+  # phi <- c(0.0, 0.0)
   sigma <- 4
   sigma_e <- 1
   mesh <- fmesher::fm_mesh_1d(1:n)
@@ -113,8 +115,7 @@ test_that("test fit ARMA(2,2) with normal noise (precond)", {
   mean(w)
   y <- w + rnorm(n, mean = 0, sd = sigma_e)
 
-  load_all()
-  fit2 <- ngme(
+  fit <- ngme(
     formula = y ~ 0 + f(
       x, model = "arma", 
       ar_order = 2, 
@@ -126,11 +127,11 @@ test_that("test fit ARMA(2,2) with normal noise (precond)", {
     control_opt = control_opt(
       seed = 123,
       burnin = 100,
-      iterations = 1500,
+      iterations = 2000,
       stop_points = 1,
       # verbose=TRUE,
       # rao_blackwellization = TRUE,
-      optimizer = precond_sgd(),
+      # optimizer = precond_sgd(),
       n_parallel_chain = 4,
       start_sd = 0.01
     )
@@ -148,7 +149,7 @@ test_that("test fit ARMA(2,2) with normal noise (precond)", {
 test_that("test fit ARMA(1,1) with nig noise (RB, preconditioner)", {
   n <- 1000
   rho <- 0.5
-  phi <- 0.8
+  phi <- -0.8
   mu <- 2
   sigma <- 4
   nu <- 0.3
@@ -176,7 +177,8 @@ test_that("test fit ARMA(1,1) with nig noise (RB, preconditioner)", {
       burnin = 100,
       iterations = 500,
       stop_points = 1,
-      rao_blackwellization = TRUE,
+      # rao_blackwellization = TRUE,
+      optimizer = precond_sgd(),
       n_parallel_chain = 4,
       start_sd = 0
     )

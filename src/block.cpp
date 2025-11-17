@@ -348,14 +348,14 @@ if (debug) std::cout << "Finish block get_parameter"<< std::endl;
     return thetas;
 }
 
-void BlockModel::set_parameter(const VectorXd& Theta) {
+void BlockModel::set_parameter_and_update(const VectorXd& Theta, bool with_precond) {
 // if (debug) std::cout << "Start block set_parameter"<< std::endl;
 // std::chrono::steady_clock::time_point startTime, endTime; startTime = std::chrono::steady_clock::now();
   int pos = 0;
   for (std::vector<std::shared_ptr<Latent>>::iterator it = latents.begin(); it != latents.end(); it++) {
     int theta_len = (*it)->get_n_params();
     VectorXd theta = Theta.segment(pos, theta_len);
-    (*it)->set_parameter(theta, rao_blackwell);
+    (*it)->set_parameter_and_update(theta, with_precond);
     pos += theta_len;
   }
 
@@ -701,8 +701,9 @@ if (debug) std::cout << "Start compute_grad_and_hessian"<< std::endl;
     int woff2 = 0;   // W-slice offset for s_full
     for (int li = 0; li < n_latent; ++li) {
       auto & L = latents[li];
+      L->compute_grad_and_hessian(rao_blackwell, do_precond);
       int theta_len = L->get_n_params();
-      VectorXd gi = L->get_grad(rao_blackwell); // excludes Z-chain measurement term; RB compensated below
+      VectorXd gi = L->get_grad(); // excludes Z-chain measurement term; RB compensated below
       // RB compensation at Block level
       if (rao_blackwell) {
         int n_k = L->get_n_theta_K();
@@ -816,11 +817,10 @@ if (debug) std::cout << "Start compute_grad_and_hessian"<< std::endl;
           // Build HZ
           for (int j=0; j<n_k; ++j) {
             for (int k=0; k<n_k; ++k) {
-              // Second-derivative term: (Z_{jk} W)^T s_i ; not available by default -> 0
+              // Second-derivative term: (Z_{jk} W)^T s_i ;
               double t1 = 0.0;
-              // If later we expose d2Z, plug it here:
-              // const auto& d2Z_jk = latents[li]->get_d2Z(j,k);
-              // if (d2Z_jk.rows()==Wi_loc.size()) t1 = (d2Z_jk * Wi_loc).dot(s_i);
+              const auto& d2Z_jk = latents[li]->get_d2Z(j,k);
+              if (d2Z_jk.rows()==Wi_loc.size()) t1 = (d2Z_jk * Wi_loc).dot(s_i);
               // GN term: − (dZ_k W)^T A^T D A (dZ_j W)
               double t2 = 0.0;
               if (dZW[k].size()>0 && dZW[j].size()>0) t2 = dZW[k].dot(ADA_i * dZW[j]);

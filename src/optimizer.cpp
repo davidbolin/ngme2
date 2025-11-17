@@ -63,7 +63,7 @@ Ngme_optimizer::Ngme_optimizer(
     prev_x = x;
     
     // some initialization
-    model->set_parameter(x);
+    model->set_parameter_and_update(x, compute_precond);
 }
 
 void Ngme_optimizer::log_verbose_message(const std::string& msg) const {
@@ -241,7 +241,7 @@ if (verbose) {
     log_verbose_message(oss.str());
 }
 
-        model->set_parameter(x);
+        model->set_parameter_and_update(x, compute_precond);
         curr_iter += 1;
     }
 

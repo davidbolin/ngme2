@@ -15,7 +15,7 @@ public:
     virtual VectorXd             get_stepsizes() {
         return VectorXd::Ones(get_parameter().size());
     };
-    virtual void                 set_parameter(const VectorXd&)=0;
+    virtual void                 set_parameter_and_update(const VectorXd&, bool with_precond)=0;
     // Unified compute entry: perform all heavy computations (Gibbs/RB) here.
     // with_precond=true computes preconditioner caches in addition to gradients.
     virtual void                 compute(bool with_precond=false, double eps=1e-5)=0;
@@ -92,7 +92,7 @@ public:
         return last_prec;
     }
 
-    void set_parameter(const VectorXd& x) override {
+    void set_parameter_and_update(const VectorXd& x, bool with_precond) override {
         (*this).x = x;
         grad_valid = false;
         prec_valid = false;

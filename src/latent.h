@@ -87,6 +87,15 @@ protected:
         MatrixXd H_mu_sigma;   // n_theta_mu x n_theta_sigma
     } hess_cache;
 
+    // Cached gradient and preconditioner data
+    VectorXd last_gradient_;
+    bool     grad_cache_valid_ {false};
+    bool     grad_cache_rb_mode_ {false};
+    MatrixXd last_precond_;
+    bool     precond_cache_valid_ {false};
+    bool     state_ready_ {false};
+    bool     state_has_precond_terms_ {false};
+
     vector<double> trace;
     double eps {1e-5};
 
@@ -191,7 +200,7 @@ public:
         invalidate_derivatives();
     }
     
-    void update_each_iter();
+    void update_each_iter(bool need_precond = false);
     void sample_cond_V();
     void sample_uncond_V();
 
@@ -213,7 +222,7 @@ public:
     void compute_hessian_blocks(bool rao_blackwell);
 
     // Preconditioner using stored Gibbs samples
-    MatrixXd preconditioner();
+    MatrixXd preconditioner() const;
 
     // Cached K*W accessor (invalidated when W or K changes)
     const Eigen::VectorXd& get_KW_cached();
@@ -234,11 +243,13 @@ public:
 
     // Expose dZ and compute numerical dZ via operator
     const SparseMatrix<double,0,int>& get_dZ(int i) { return ope->get_dZ(i); }
+    const SparseMatrix<double,0,int>& get_d2Z(int i, int j) const { return ope->get_d2Z(i,j); }
 
     /* 4 for optimizer */
     const VectorXd get_parameter();
-    const VectorXd get_grad(bool rao_blackwell=FALSE);
-    void           set_parameter(const VectorXd&, bool update_dK=FALSE);
+    const VectorXd get_grad();
+    void           compute_grad_and_hessian(bool rao_blackwell, bool with_precond);
+    void           set_parameter_and_update(const VectorXd&, bool with_precond);
     void           finishOpt(int i) {fix_flag[i] = 0; }
 
     Rcpp::List output() const;

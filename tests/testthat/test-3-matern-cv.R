@@ -42,9 +42,10 @@ test_that("test fit matern", {
     Y ~ 0 + f(loc,
       model="matern",
       name="spde",
+      kappa = 2.3,
       mesh=mesh,
       # fix_alpha=FALSE,
-      alpha=2.00,
+      alpha=2.001,
       # debug=TRUE,
       noise=noise_nig()
     ),

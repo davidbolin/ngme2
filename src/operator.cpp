@@ -73,14 +73,14 @@ void Operator::update_all(const VectorXd& theta, const UpdateOptions& opts) {
                 double hk = step_for(theta(k));
                 VectorXd th_pp = theta; th_pp(j) += hj; th_pp(k) += hk; build_KZ(th_pp); auto Kpp = K; auto Zpp = Z;
                 VectorXd th_pm = theta; th_pm(j) += hj; th_pm(k) -= hk; build_KZ(th_pm); auto Kpm = K; auto Zpm = Z;
-                VectorXd th_mp = theta; th_mp(j) -= hj; th_mp(k) += hk; build_KZ(th_mp); auto Kmp = K; auto Zmp2 = Z;
+                VectorXd th_mp = theta; th_mp(j) -= hj; th_mp(k) += hk; build_KZ(th_mp); auto Kmp = K; auto Zmp = Z;
                 VectorXd th_mm = theta; th_mm(j) -= hj; th_mm(k) -= hk; build_KZ(th_mm); auto Kmm = K; auto Zmm = Z;
                 if (opts.compute_d2K) {
                     d2K[j][k] = (Kpp - Kpm - Kmp + Kmm) * (1.0/(4.0*hj*hk));
                     d2K[k][j] = d2K[j][k];
                 }
                 if (opts.compute_d2Z) {
-                    auto Zmix = (Zpp - Zpm - Zmp2 + Zmm) * (1.0/(4.0*hj*hk));
+                    auto Zmix = (Zpp - Zpm - Zmp + Zmm) * (1.0/(4.0*hj*hk));
                     d2Z[j][k] = Zmix; d2Z[k][j] = Zmix;
                 }
             }

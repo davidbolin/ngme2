@@ -161,7 +161,7 @@ public:
     int                  get_n_params() const {return n_params;}
 
     VectorXd             get_parameter();
-    void                 set_parameter(const VectorXd&);
+    void                 set_parameter_and_update(const VectorXd&, bool with_precond);
 
     // Accessors after compute
     MatrixXd             get_preconditioner();

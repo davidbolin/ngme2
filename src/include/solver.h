@@ -125,6 +125,25 @@ public:
     QU.resize(n, N_iter);
   }
 
+  inline Eigen::ComputationInfo factorization_info() const {
+    switch (solver_type) {
+      case 0: return R_eigen.info();
+      case 1: return R_simplicial.info();
+      case 2: return R_supernodal.info();
+#ifdef __APPLE__
+      case 3: return R_accelerate.info();
+#endif
+#ifdef USEMKL
+      case 4: return R_pardiso.info();
+#endif
+      default: return Eigen::InvalidInput;
+    }
+  }
+
+  inline bool factorization_success() const {
+    return factorization_info() == Eigen::Success;
+  }
+
   // sample from N(Q^-1 mu, Q^-1), Q = G^T G + H^T H
   inline Eigen::VectorXd rMVN(
     SparseMatrix<double, 0, int> & G,

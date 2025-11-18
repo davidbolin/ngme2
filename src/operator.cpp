@@ -97,6 +97,9 @@ void Operator::update_all(const VectorXd& theta, const UpdateOptions& opts) {
     }
     if (!analyzed_cholK) { cholK_solver.analyze(K); analyzed_cholK = true; }
     cholK_solver.compute(K);
+    // if (!cholK_solver.factorization_success()) {
+    //     throw std::runtime_error("Latent operator factorization failed: K is not SPD");
+    // }
 
     // 4) Traces (only if dK available)
     trace_ready = false;

@@ -128,10 +128,6 @@ protected:
     int solver_type_ {0};
     int n_trace_iter_ {8};
 
-    // Short-lived cache for K * W within a Gibbs pass
-    Eigen::VectorXd KW_cache_;
-    bool KW_valid_ {false};
-
     // priors
     string prior_K_type, prior_mu_type, prior_sigma_type, prior_nu_type;
     VectorXd prior_K_param, prior_mu_param, prior_sigma_param, prior_nu_param;
@@ -170,7 +166,6 @@ public:
         if (!fix_flag[latent_fix_W]) { W = newW; }
         if (use_same_V) { prevW = W; } // always update prevW
         invalidate_derivatives();
-        invalidate_KW_cache();
     }
 
     const VectorXd& get_cond_W() const { return cond_W; }
@@ -223,10 +218,6 @@ public:
 
     // Preconditioner using stored Gibbs samples
     MatrixXd preconditioner() const;
-
-    // Cached K*W accessor (invalidated when W or K changes)
-    const Eigen::VectorXd& get_KW_cached();
-    inline void invalidate_KW_cache() { KW_valid_ = false; }
 
     /*  3 Operator component   */
     const SparseMatrix<double, 0, int>& getK()  {

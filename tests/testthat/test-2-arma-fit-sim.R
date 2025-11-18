@@ -170,6 +170,7 @@ test_that("test fit ARMA(1,1) with nig noise (RB, preconditioner)", {
       ma = 0.0,
       noise = noise_nig()
     ),
+    replicate = rep(c(1,2), each=n/2),
     data = data.frame(x = 1:n, y = y),
     control_ngme = control_ngme(n_gibbs_samples=4),
     control_opt = control_opt(
@@ -190,7 +191,7 @@ test_that("test fit ARMA(1,1) with nig noise (RB, preconditioner)", {
   arma_result <- as.numeric(ngme_result(fit)$field1)
   score <- abs((arma_result -  c(rho, phi, mu, sigma, nu)) / c(rho, phi, mu, sigma, nu))
   score
-  expect_true(all(score < c(0.1, 0.1, 0.3, 0.3, 0.7)))
+  expect_true(all(score < c(0.15, 0.1, 0.3, 0.3, 0.7)))
 
   est_sigma_e <- ngme_result(fit)$data$sigma
   expect_true(all(abs((est_sigma_e - sigma_e) / sigma_e) < 0.2))

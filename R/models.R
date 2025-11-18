@@ -732,6 +732,8 @@ matern <- function(
   if (inherits(mesh, "metric_graph")) {
     if (is.null(mesh$mesh$C)) mesh$compute_fem()
     C <- mesh$mesh$C; G <- mesh$mesh$G; h <- mesh$mesh$weights; d <- 0
+    # C is not mass lumped..
+    C <- Matrix::Diagonal(nrow(C), Matrix::rowSums(C))
   } else {
     d <- get_inla_mesh_dimension(mesh)
     fem <- fmesher::fm_fem(mesh, order = alpha)

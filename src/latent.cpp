@@ -152,7 +152,6 @@ if (debug) std::cout << "End constructor of latent" << std::endl;
     last_gradient_ = VectorXd::Zero(n_params);
     last_precond_ = MatrixXd::Zero(n_params, n_params);
     invalidate_derivatives();
-    invalidate_KW_cache();
 }
 
 void Latent::invalidate_derivatives() {
@@ -162,14 +161,6 @@ void Latent::invalidate_derivatives() {
     hess_cache.ready = false;
     grad_cache_valid_ = false;
     precond_cache_valid_ = false;
-}
-
-const VectorXd& Latent::get_KW_cached() {
-    if (!KW_valid_) {
-        KW_cache_ = getK() * W;
-        KW_valid_ = true;
-    }
-    return KW_cache_;
 }
 
 Rcpp::List Latent::output() const {
@@ -303,7 +294,6 @@ void Latent::set_parameter_and_update(const VectorXd& theta, bool with_precond) 
     state_ready_ = false;
     state_has_precond_terms_ = false;
     invalidate_derivatives();
-    invalidate_KW_cache();
 
     update_each_iter(with_precond);
 }
@@ -312,7 +302,7 @@ void Latent::sample_cond_V() {
     if (fix_flag[latent_fix_V]) return;
 
     // update b_inc (p,a_inc already built)
-    b_inc = (get_KW_cached() + mu.cwiseProduct(h)).cwiseQuotient(sigma).array().pow(2);
+    b_inc = (getK() * W + mu.cwiseProduct(h)).cwiseQuotient(sigma).array().pow(2);
 
     int n = V_size / n_noise; // n is equal to h_size (of each mesh)
     // sample conditional V
@@ -425,32 +415,32 @@ void Latent::update_derivatives(
 
 void Latent::compute_theta_K(bool need_grad, bool rao_blackwell) {
     if (!need_grad || deriv_cache.grad_K_ready) return;
-        auto t_total_start = std::chrono::steady_clock::now();
-        long long t_chain_ms = 0;
-        VectorXd grad = VectorXd::Zero(n_theta_K);
-        if (!fix_flag[latent_fix_theta_K]) {
-            VectorXd WW = (rao_blackwell) ? cond_W : W;
-            VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
-            VectorXd tmp = (rao_blackwell ? (getK() * WW) : get_KW_cached()) - mu.cwiseProduct(V-h);
-            for (int j=0; j < n_theta_K; j++) {
-                grad(j) = trace[j] - (get_dK(j) * WW).cwiseProduct(SV.cwiseInverse()).dot(tmp);
-            }
-
-            for (int l=0; l < n_theta_K; l++) {
-                grad(l) += PriorUtil::d_log_dens(prior_K_type, prior_K_param, theta_K(l));
-            }
-
-            // apply per-parameter fixing mask from operator (if provided)
-            std::vector<bool> kfix = ope->get_fix_mask_K();
-            if ((int)kfix.size() == n_theta_K) {
-                for (int i=0; i<n_theta_K; ++i) if (kfix[i]) grad(i) = 0.0;
-            }
+    auto t_total_start = std::chrono::steady_clock::now();
+    long long t_chain_ms = 0;
+    VectorXd grad = VectorXd::Zero(n_theta_K);
+    if (!fix_flag[latent_fix_theta_K]) {
+        VectorXd WW = (rao_blackwell) ? cond_W : W;
+        VectorXd SV = sigma.array().pow(2).matrix().cwiseProduct(V);
+        VectorXd tmp = (getK() * WW) - mu.cwiseProduct(V-h);
+        for (int j=0; j < n_theta_K; j++) {
+            grad(j) = trace[j] - (get_dK(j) * WW).cwiseProduct(SV.cwiseInverse()).dot(tmp);
         }
-        if (debug) {
-            auto t_total_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t_total_start).count();
-            std::cout << "[latent] compute_theta_K timing (ms): total=" << t_total_ms
-                      << ", Z-chain=" << t_chain_ms << std::endl;
+
+        for (int l=0; l < n_theta_K; l++) {
+            grad(l) += PriorUtil::d_log_dens(prior_K_type, prior_K_param, theta_K(l));
         }
+
+        // apply per-parameter fixing mask from operator (if provided)
+        std::vector<bool> kfix = ope->get_fix_mask_K();
+        if ((int)kfix.size() == n_theta_K) {
+            for (int i=0; i<n_theta_K; ++i) if (kfix[i]) grad(i) = 0.0;
+        }
+    }
+    if (debug) {
+        auto t_total_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t_total_start).count();
+        std::cout << "[latent] compute_theta_K timing (ms): total=" << t_total_ms
+                    << ", Z-chain=" << t_chain_ms << std::endl;
+    }
     deriv_cache.grad_theta_K = grad;
     deriv_cache.grad_K_ready = true;
 }
@@ -557,7 +547,6 @@ void Latent::update_each_iter(bool need_precond) {
     uopts.solver_type  = solver_type_;
     uopts.fix_mask_thetaK = ope->get_fix_mask_K();
     ope->update_all(theta_K, uopts);
-    invalidate_KW_cache();
 
     mu = B_mu * theta_mu;
     sigma = (B_sigma * theta_sigma).array().exp();
@@ -616,7 +605,7 @@ void Latent::compute_hessian_blocks(bool rao_blackwell) {
     // Common terms
     VectorXd Dinv = (sigma.array().square().matrix().cwiseProduct(V)).cwiseInverse();
     VectorXd m = mu.cwiseProduct(V - h);
-    VectorXd r = get_KW_cached() - m;
+    VectorXd r = getK() * W - m;
 
     // H_K: W|V contribution exact; add operator-side trace terms later; Y|W handled in Block
     if (n_theta_K > 0) {

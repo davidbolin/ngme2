@@ -142,7 +142,7 @@ public:
 
 class Matern : public Operator {
 private:
-  SparseMatrix<double, 0, int> G, C;
+  SparseMatrix<double, 0, int> G, C, Ci;
   double alpha;
   VectorXd Cdiag;
   bool fix_alpha {true};

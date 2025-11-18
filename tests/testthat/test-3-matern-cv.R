@@ -20,7 +20,6 @@ test_that("test fit matern", {
     noise = true_noise
   )
   # true_model$operator$K
-  true_model
 
   W <- simulate(true_model)[[1]]
   Y <- W + rnorm(n_obs, sd=0.5)

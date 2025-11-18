@@ -737,6 +737,7 @@ matern <- function(
     fem <- fmesher::fm_fem(mesh, order = alpha)
     C <- fem$c0; G <- fem$g1; h <- Matrix::diag(fem$c0)
   }
+  Ci <- Matrix::Diagonal(x=1/Matrix::diag(C))
 
   mesh_n <- length(h)
   if (is.null(B_theta_K) && length(theta_K) == 1) B_theta_K <- matrix(1, nrow = mesh_n, ncol = 1)
@@ -754,7 +755,9 @@ matern <- function(
     theta_vec <- if (stationary) c(eta_alpha, theta_K) else c(eta_alpha, as.numeric(theta_K))
   }
 
-  C <- ngme_as_sparse(C); G <- ngme_as_sparse(G)
+  C <- ngme_as_sparse(C); 
+  G <- ngme_as_sparse(G)
+  Ci <- ngme_as_sparse(Ci)
   B_K <- if (stationary) NULL else B_theta_K
 
   # Placeholder K for printing; real K is built in C++
@@ -763,32 +766,6 @@ matern <- function(
   } else {
     kappas <- exp(as.numeric(B_K %*% (if (fix_alpha) theta_K else theta_K[-1])))
     K <- Matrix::Diagonal(x=kappas^2) %*% C + G
-  }
-
-  # If alpha is fractional and rational_order>0, try to fetch roots from rSPDE
-  rb <- rc <- NULL; roots_factor <- 1
-  fractional <- !(abs(alpha - 2) < 1e-8 || abs(alpha - 4) < 1e-8)
-  if (fractional && rational_order > 0) {
-    get_roots_fun <- NULL
-    if (requireNamespace("rSPDE", quietly = TRUE)) {
-      # Non-exported utility in rSPDE
-      if (exists("get.roots", envir = asNamespace("rSPDE"), inherits = FALSE)) {
-        get_roots_fun <- get("get.roots", envir = asNamespace("rSPDE"))
-      }
-    }
-    if (!is.null(get_roots_fun)) {
-      beta <- alpha/2
-      roots <- tryCatch(get_roots_fun(rational_order, beta), error = function(e) NULL)
-      if (!is.null(roots)) {
-        rb <- roots$rb; rc <- roots$rc; roots_factor <- roots$factor
-      } else {
-        warning("Failed to fetch fractional roots from rSPDE; falling back to rational_order=0 (Z=I).")
-        rational_order <- 0
-      }
-    } else {
-      warning("Package 'rSPDE' not available; falling back to rational_order=0 (Z=I).")
-      rational_order <- 0
-    }
   }
 
   # Build operator args and conditionally include roots and param meta
@@ -800,6 +777,7 @@ matern <- function(
     theta_K = theta_vec,
     generic_type = "none",
     C = C,
+    Ci = Ci,
     G = G,
     B_K = B_K,
     alpha = alpha,
@@ -832,10 +810,6 @@ matern <- function(
       op_args$param_name  <- c("alpha", paste0("theta_kappa", seq_len(p)))
       op_args$param_trans <- c(list(alpha_trans), rep(list(identity), p))
     }
-  }
-  # Only attach roots if fetched
-  if (!is.null(rb)) {
-    op_args$rb <- rb; op_args$rc <- rc; op_args$roots_factor <- roots_factor
   }
   do.call(ngme_operator, op_args)
 }

@@ -12,6 +12,7 @@ Matern::Matern(const Rcpp::List& operator_list):
     Operator(operator_list),
     G           (Rcpp::as< SparseMatrix<double,0,int> > (operator_list["G"])),
     C           (Rcpp::as< SparseMatrix<double,0,int> > (operator_list["C"])),
+    Ci          (Rcpp::as< SparseMatrix<double,0,int> > (operator_list["Ci"])),
     alpha       (Rcpp::as<double> (operator_list["alpha"])),
     Cdiag       (C.diagonal())
 {
@@ -19,13 +20,6 @@ Matern::Matern(const Rcpp::List& operator_list):
     fix_alpha = operator_list.containsElementNamed("fix_alpha") ? Rcpp::as<bool>(operator_list["fix_alpha"]) : true;
     m = operator_list.containsElementNamed("m") ? Rcpp::as<int>(operator_list["m"]) : 0;
     dim = operator_list.containsElementNamed("spatial_dim") ? Rcpp::as<int>(operator_list["spatial_dim"]) : 2;
-    // Optional roots for fractional approximation
-    if (operator_list.containsElementNamed("rb") && operator_list.containsElementNamed("rc") && operator_list.containsElementNamed("roots_factor")) {
-        rb = Rcpp::as<std::vector<double>>(operator_list["rb"]);
-        rc = Rcpp::as<std::vector<double>>(operator_list["rc"]);
-        roots_factor = Rcpp::as<double>(operator_list["roots_factor"]);
-        have_roots = !rb.empty();
-    }
 }
 
 void Matern::build_KZ(const VectorXd& theta_K) {
@@ -67,11 +61,7 @@ void Matern::build_KZ(const VectorXd& theta_K) {
     } else {
         double beta = alpha / 2.0;
         std::pair<rspde_cpp::SpMat, rspde_cpp::SpMat> pairKZ;
-        if (m > 0 && have_roots) {
-            pairKZ = compute_fractional_operators_with_roots(C, G, Cdiag, beta, m, tau, theta, Bk, rb, rc, roots_factor);
-        } else {
-            pairKZ = compute_fractional_operators(C, G, Cdiag, beta, 0, tau, theta, Bk);
-        }
+        pairKZ = compute_fractional_operators(C, Ci, G, beta, m, tau, theta, Bk);
         K = pairKZ.first;  // Pl
         Z = pairKZ.second; // Pr
     }

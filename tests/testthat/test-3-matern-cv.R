@@ -25,7 +25,7 @@ test_that("test fit matern", {
   Y <- W + rnorm(n_obs, sd=0.5)
 
   control_opt <- control_opt(
-    iterations = 500,
+    iterations = 50,
     n_parallel_chain = 4,
     print_check_info = F,
     stop_points = 1,
@@ -33,7 +33,7 @@ test_that("test fit matern", {
     # rao_blackwellization = TRUE,
     start_sd = 0.01,
     # optimizer = adam(),
-    optimizer = precond_sgd(),
+    # optimizer = precond_sgd(),
     std_lim = 0.01
   )
 
@@ -43,7 +43,7 @@ test_that("test fit matern", {
       name="spde",
       kappa = 2.3,
       mesh=mesh,
-      # fix_alpha=FALSE,
+      fix_alpha=FALSE,
       alpha=2.001,
       # debug=TRUE,
       noise=noise_nig()
@@ -57,7 +57,7 @@ test_that("test fit matern", {
   traceplot(m_nig_gauss, "spde", hline = c(kappa, -2, 1, 0.5))
   traceplot(m_nig_gauss, hline = 0.5)
 
-  # traceplot(m_nig_gauss, "spde", hline = c(2,0.3, -2, 1, 0.5))
+  traceplot(m_nig_gauss, "spde", hline = c(2,kappa, -2, 1, 0.5))
 
 # m_nig_gauss_2 <- ngme(
 #   Y ~ 0 + f(loc,

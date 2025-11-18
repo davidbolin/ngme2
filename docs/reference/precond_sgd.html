@@ -114,12 +114,7 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">precond_sgd</span><span class="op">(</span></span>
-<span>  stepsize <span class="op">=</span> <span class="fl">0.5</span>,</span>
-<span>  preconditioner <span class="op">=</span> <span class="st">"fast"</span>,</span>
-<span>  numerical_eps <span class="op">=</span> <span class="fl">1e-05</span>,</span>
-<span>  precond_by_diff_chain <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">precond_sgd</span><span class="op">(</span>stepsize <span class="op">=</span> <span class="fl">1</span>, numerical_eps <span class="op">=</span> <span class="fl">1e-05</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -130,25 +125,18 @@
 <dd><p>stepsize for SGD</p></dd>
 
 
-<dt id="arg-preconditioner">preconditioner<a class="anchor" aria-label="anchor" href="#arg-preconditioner"></a></dt>
-<dd><p>preconditioner, can be c("none", "fast", "full")
-"none" means no preconditioner, i.e., vanilla SGD,
-"full" means compute numerical hessian as preconditioner
-"fast" means compute numerical hessian except for the parameter of K matrix (for speed reason)</p></dd>
-
-
 <dt id="arg-numerical-eps">numerical_eps<a class="anchor" aria-label="anchor" href="#arg-numerical-eps"></a></dt>
 <dd><p>numerical, the gap used for estimate preconditioner, default is 1e-5</p></dd>
-
-
-<dt id="arg-precond-by-diff-chain">precond_by_diff_chain<a class="anchor" aria-label="anchor" href="#arg-precond-by-diff-chain"></a></dt>
-<dd><p>logical, compute preconditioner only at stop points and switch to use the preconditioner of the other chains. If FALSE, preconditioner will be computed at each iteration.</p></dd>
 
 </dl></div>
     <div id="value">
     <h2>Value</h2>
     <p>a list of control variables for optimization
 (used in <code>control_opt</code> function)</p>
+    </div>
+    <div id="details">
+    <h2>Details</h2>
+    <p>Preconditioner SGD is using fisher information matrix as preconditioner (natural gradient descent).</p>
     </div>
 
   </div>

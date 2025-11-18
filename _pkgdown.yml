@@ -111,6 +111,7 @@ reference:
     - print.noise_kld_comparison
   - title: ngme2 optimization methods
     contents:
+    - sgd
     - precond_sgd
     - momentum
     - adagrad
@@ -143,7 +144,6 @@ reference:
     - ngme_as_sparse
     - control_opt
     - control_ngme
-    - control_f
     - ngme_parse_formula
     - ngme_ts_make_A
     - print.ngme

@@ -125,7 +125,6 @@ The function is a wrapper function for specific submodels.
 <span>  <span class="va">model</span>,</span>
 <span>  noise <span class="op">=</span> <span class="fu"><a href="ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  mesh <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  control <span class="op">=</span> <span class="fu"><a href="control_f.html">control_f</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  name <span class="op">=</span> <span class="st">"field"</span>,</span>
 <span>  data <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  group <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -162,10 +161,6 @@ The function is a wrapper function for specific submodels.
 <dd><p>mesh for the model, if not provided, will be built from map.
 Can be a single mesh object or a list of mesh objects for different replicates.
 When using replicates, provide mesh as a list where mesh[[i]] corresponds to replicate i.</p></dd>
-
-
-<dt id="arg-control">control<a class="anchor" aria-label="anchor" href="#arg-control"></a></dt>
-<dd><p>control variables for latent model</p></dd>
 
 
 <dt id="arg-name">name<a class="anchor" aria-label="anchor" href="#arg-name"></a></dt>

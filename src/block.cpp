@@ -761,6 +761,11 @@ if (debug) std::cout << "Start compute_grad_and_hessian"<< std::endl;
         // u_i = e_i / (sigma_i^2 V_i')
         u_vec = residual_ct.cwiseQuotient(noise_sigma.array().square().matrix().cwiseProduct(noise_V));
       }
+      bool need_beta_cross = (n_feff > 0 && !fix_flag[block_fix_beta]);
+      VectorXd inv_noise_SV_beta;
+      if (need_beta_cross) {
+        inv_noise_SV_beta = noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V);
+      }
 
       for (int li=0; li<n_latent; ++li) {
         int theta_len = latents[li]->get_n_params();
@@ -805,14 +810,18 @@ if (debug) std::cout << "Start compute_grad_and_hessian"<< std::endl;
         int n_k = latents[li]->get_n_theta_K();
         if (n_k > 0) {
           MatrixXd HZ = MatrixXd::Zero(n_k, n_k);
-          // Precompute dZ_j W vectors
+          // Precompute dZ_j W and A dZ_j W vectors
           std::vector<VectorXd> dZW(n_k);
+          std::vector<VectorXd> AZdZW(n_k);
           for (int j=0; j<n_k; ++j) {
             const auto& dZ_j = latents[li]->get_dZ(j);
-            if (dZ_j.rows()==Wi_loc.size() && dZ_j.cols()==Wi_loc.size() && dZ_j.nonZeros()>0)
+            if (dZ_j.rows()==Wi_loc.size() && dZ_j.cols()==Wi_loc.size() && dZ_j.nonZeros()>0) {
               dZW[j] = dZ_j * Wi_loc;
-            else
+              AZdZW[j] = Ai * dZW[j];
+            } else {
               dZW[j] = VectorXd::Zero(Wi_loc.size());
+              AZdZW[j] = VectorXd::Zero(Ai.rows());
+            }
           }
           // Build HZ
           for (int j=0; j<n_k; ++j) {
@@ -837,7 +846,7 @@ if (debug) std::cout << "Start compute_grad_and_hessian"<< std::endl;
             int sigma_col0 = n_la_params + n_theta_mu;
             for (int j=0; j<n_k; ++j) {
               // AZ_j W
-              VectorXd AZWj = Ai * dZW[j];
+              const VectorXd& AZWj = AZdZW[j];
               if (AZWj.size()==n_obs) {
                 VectorXd w = u_vec.cwiseProduct(AZWj);
                 // row j: -2 * (B_sigma^T * w)^T
@@ -860,13 +869,29 @@ if (debug) std::cout << "Start compute_grad_and_hessian"<< std::endl;
             // include 1/sigma^2 factor (uncorrelated case uses diag(1/(sigma^2 V)))
             w_mu = w_mu.cwiseQuotient(noise_sigma.array().square().matrix());
             for (int j=0; j<n_k; ++j) {
-              VectorXd AZWj = Ai * dZW[j];
+              const VectorXd& AZWj = AZdZW[j];
               if (AZWj.size()==n_obs) {
                 VectorXd w = w_mu.cwiseProduct(AZWj);
                 VectorXd row = - (B_mu.transpose() * w); // 1 x n_theta_mu (as column)
                 if (pbase + j < n_params && mu_col0 + n_theta_mu <= n_params) {
                   precond_sum.block(pbase + j, mu_col0, 1, n_theta_mu) += row.transpose();
                   precond_sum.block(mu_col0, pbase + j, n_theta_mu, 1) += row;
+                }
+              }
+            }
+          }
+
+          // Cross-term with beta: H_{theta,beta} = - J_theta^T Sigma^{-1} X
+          if (need_beta_cross) {
+            int beta_col0 = n_la_params + n_merr;
+            for (int j=0; j<n_k; ++j) {
+              const VectorXd& AZWj = AZdZW[j];
+              if (AZWj.size()==n_obs) {
+                VectorXd weighted = inv_noise_SV_beta.cwiseProduct(AZWj);
+                VectorXd row = - (X.transpose() * weighted);
+                if (pbase + j < n_params && beta_col0 + n_feff <= n_params) {
+                  precond_sum.block(pbase + j, beta_col0, 1, n_feff) += row.transpose();
+                  precond_sum.block(beta_col0, pbase + j, n_feff, 1) += row;
                 }
               }
             }
@@ -933,43 +958,42 @@ if (debug) std::cout << "Start compute_grad_and_hessian"<< std::endl;
 
       // Analytic cross-terms with beta
       // H_{mu,beta} = - B_mu^T diag((V-1)/(sigma^2 ∘ V)) X
-      // if (n_theta_mu > 0 && n_feff > 0 && !fix_flag[block_fix_theta_mu] && !fix_flag[block_fix_beta]) {
-      //   VectorXd wmb;
-      //   VectorXd noise_SV = noise_sigma.array().square().matrix().cwiseProduct(noise_V);
-      //   wmb = (noise_V.array() - 1.0).matrix().cwiseQuotient(noise_SV);
-      //   MatrixXd Hmu_beta = - (B_mu.transpose() * wmb.asDiagonal() * X);
-      //   // Place [mu,beta] and its transpose
-      //   precond_sum.block(n_la_params + 0,
-      //                     n_la_params + n_merr,
-      //                     n_theta_mu,
-      //                     n_feff) += Hmu_beta;
-      //   precond_sum.block(n_la_params + n_merr,
-      //                     n_la_params + 0,
-      //                     n_feff,
-      //                     n_theta_mu) += Hmu_beta.transpose();
-      // }
+      if (n_theta_mu > 0 && n_feff > 0 && !fix_flag[block_fix_theta_mu] && !fix_flag[block_fix_beta]) {
+        VectorXd wmb;
+        VectorXd noise_SV = noise_sigma.array().square().matrix().cwiseProduct(noise_V);
+        wmb = (noise_V.array() - 1.0).matrix().cwiseQuotient(noise_SV);
+        MatrixXd Hmu_beta = - (B_mu.transpose() * wmb.asDiagonal() * X);
+        // Place [mu,beta] and its transpose
+        precond_sum.block(n_la_params + 0,
+                          n_la_params + n_merr,
+                          n_theta_mu,
+                          n_feff) += Hmu_beta;
+        precond_sum.block(n_la_params + n_merr,
+                          n_la_params + 0,
+                          n_feff,
+                          n_theta_mu) += Hmu_beta.transpose();
+      }
 
       // H_{sigma,beta} = -2 B_sigma^T diag(e/(sigma^2 ∘ V)) X
-      // if (n_theta_sigma > 0 && n_feff > 0 && !fix_flag[block_fix_theta_sigma] && !fix_flag[block_fix_beta]) {
-      //   VectorXd e_sb = get_residual(use_condW);
-      //   VectorXd wsb = 2.0 * e_sb.cwiseQuotient(noise_sigma.array().square().matrix().cwiseProduct(noise_V));
-      //   MatrixXd Hsigma_beta = - (B_sigma.transpose() * wsb.asDiagonal() * X);
-      //   precond_sum.block(n_la_params + n_theta_mu,
-      //                     n_la_params + n_merr,
-      //                     n_theta_sigma,
-      //                     n_feff) += Hsigma_beta;
-      //   precond_sum.block(n_la_params + n_merr,
-      //                     n_la_params + n_theta_mu,
-      //                     n_feff,
-      //                     n_theta_sigma) += Hsigma_beta.transpose();
-      // }
+      if (n_theta_sigma > 0 && n_feff > 0 && !fix_flag[block_fix_theta_sigma] && !fix_flag[block_fix_beta]) {
+        VectorXd e_sb = get_residual(use_condW);
+        VectorXd wsb = 2.0 * e_sb.cwiseQuotient(noise_sigma.array().square().matrix().cwiseProduct(noise_V));
+        MatrixXd Hsigma_beta = - (B_sigma.transpose() * wsb.asDiagonal() * X);
+        precond_sum.block(n_la_params + n_theta_mu,
+                          n_la_params + n_merr,
+                          n_theta_sigma,
+                          n_feff) += Hsigma_beta;
+        precond_sum.block(n_la_params + n_merr,
+                          n_la_params + n_theta_mu,
+                          n_feff,
+                          n_theta_sigma) += Hsigma_beta.transpose();
+      }
 
       // 1d) Analytic Hessian for beta (fixed effects): H_beta = - X^T Sigma^{-1} X
       if (n_feff > 0 && !fix_flag[block_fix_beta]) {
         MatrixXd Hbeta;
-        // VectorXd inv_noise_SV = noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V);
-        // Hbeta = - (X.transpose() * inv_noise_SV.asDiagonal() * X);
-        Hbeta = - MatrixXd::Identity(n_feff, n_feff) * n_obs;
+        VectorXd inv_noise_SV = noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V);
+        Hbeta = - (X.transpose() * inv_noise_SV.asDiagonal() * X);
         precond_sum.block(n_la_params + n_merr,
                           n_la_params + n_merr,
                           n_feff,
@@ -1004,6 +1028,8 @@ if (debug) std::cout << "Start compute_grad_and_hessian"<< std::endl;
   if (do_precond) {
     if (precond_count > 0) {
       last_precond = (1.0 / precond_count) * precond_sum;
+      // Louis identity: observed info = complete info + grad covariance
+      // last_precond += grad_covariance;
       last_precond += VectorXd::Constant(n_params, 1e-5).asDiagonal();
       last_precond_valid = true;
     } else {

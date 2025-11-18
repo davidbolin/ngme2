@@ -146,41 +146,41 @@
     <div id="ref-examples">
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="fu"><a href="f.html">f</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span>, model<span class="op">=</span><span class="st">"ar1"</span>, rho <span class="op">=</span> <span class="fl">0.4</span>, noise <span class="op">=</span> <span class="fu"><a href="ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>          sim_1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1  -1.19705890</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2  -0.34468023</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3   1.48349704</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4  -0.79859227</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5   2.27339519</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6   1.52357168</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7   1.07203996</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8   0.97695519</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9   0.01631154</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10 -1.93181679</span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="fu"><a href="f.html">f</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">10</span><span class="op">)</span>, model<span class="op">=</span><span class="st">"rw1"</span>, noise <span class="op">=</span> <span class="fu"><a href="ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         sim_1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1  -0.5241646</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2   0.3360888</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3   0.3335279</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4  -1.3372217</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5  -0.5215810</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6  -0.4731098</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7   0.1182553</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8   1.1590788</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9  -0.1884766</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10 -0.0284036</span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="fu"><a href="f.html">f</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span>, model<span class="op">=</span><span class="st">"ar1"</span>, rho <span class="op">=</span> <span class="fl">0.4</span>, noise <span class="op">=</span> <span class="fu"><a href="ngme_noise.html">noise_t</a></span><span class="op">(</span>nu <span class="op">=</span> <span class="fl">5</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1   0.6858348</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2   0.6966622</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3   1.1054677</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4   1.2050844</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5   1.4617857</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6   0.3290905</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7   1.2310721</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8  -0.1537240</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9   0.1108833</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10 -1.0378154</span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="fu"><a href="f.html">f</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">10</span><span class="op">)</span>, model<span class="op">=</span><span class="st">"rw1"</span>, noise <span class="op">=</span> <span class="fu"><a href="ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>          sim_1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1  -2.42169215</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2   0.94516166</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3   4.32695153</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4   0.78543189</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5   1.52199165</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6   1.11946932</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7   0.32787757</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8  -1.44337653</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9   0.80316587</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10 -0.04017735</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1   0.83781138</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2  -1.45518665</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3   0.06474715</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4   0.56885726</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5  -1.13327540</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6   0.29143718</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7  -0.30679718</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8   0.65822208</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9   0.55957662</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10 -0.06121650</span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="fu"><a href="f.html">f</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span>, model<span class="op">=</span><span class="st">"ar1"</span>, rho <span class="op">=</span> <span class="fl">0.4</span>, noise <span class="op">=</span> <span class="fu"><a href="ngme_noise.html">noise_t</a></span><span class="op">(</span>nu <span class="op">=</span> <span class="fl">5</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         sim_1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1   0.5828225</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2  -0.6646446</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3   0.8830174</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4   0.7478193</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5   1.4925346</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6   1.8704609</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7   0.7850815</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8  -1.0643646</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9   0.7957889</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10 -3.8055568</span>
 </code></pre></div>
     </div>
   </div>

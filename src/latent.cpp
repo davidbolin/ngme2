@@ -132,7 +132,7 @@ if (debug) std::cout << "begin constructor of latent" << std::endl;
     solver_type_  = solver_type;
 
     // build mu, sigma, compute trace, ...
-    update_each_iter();
+    update_each_iter(true);
 
     // Initialize V
     if (!Rf_isNull(noise_in["V"])) {
@@ -614,7 +614,6 @@ void Latent::compute_hessian_blocks(bool rao_blackwell) {
     if (n_theta_mu > 0 && n_theta_sigma > 0) { hess_cache.H_mu_sigma = MatrixXd::Zero(n_theta_mu, n_theta_sigma); }
 
     // Common terms
-    const SparseMatrix<double>& Kmat = getK();
     VectorXd Dinv = (sigma.array().square().matrix().cwiseProduct(V)).cwiseInverse();
     VectorXd m = mu.cwiseProduct(V - h);
     VectorXd r = get_KW_cached() - m;

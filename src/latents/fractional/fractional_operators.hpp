@@ -11,6 +11,7 @@ namespace rspde_cpp {
 
 using SpMat = Eigen::SparseMatrix<double>;
 using VectorXd = Eigen::VectorXd;
+using MatrixXd = Eigen::MatrixXd;
 
 // Optional structure for rational-approximation roots
 struct Roots {
@@ -31,7 +32,7 @@ std::pair<SpMat, SpMat> compute_fractional_operators_with_roots(
     int m,
     const VectorXd &tau,
     const VectorXd &theta_kappa,
-    const SpMat &B_kappa,
+    const MatrixXd &B_kappa,
     const std::vector<double> &rb,
     const std::vector<double> &rc,
     double roots_factor);
@@ -45,6 +46,6 @@ std::pair<SpMat, SpMat> compute_fractional_operators(
     int m,
     const VectorXd &tau,
     const VectorXd &theta_kappa,
-    const SpMat &B_kappa);
+    const MatrixXd &B_kappa);
 
 } // namespace rspde_cpp

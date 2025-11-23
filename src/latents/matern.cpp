@@ -1,37 +1,49 @@
 /*
-    Matern model with stationary kappa:
+    Matern model (stationary or non-stationary kappa):
+        kappa(s) = exp(B_theta_K * theta_K)
         alpha is the smoothness parameter
-        parameter_K(0) = kappa
-        K = kappa^2 * C + G
+        K = kappa^2 * C + G for integer alpha (with optional fractional case)
 */
 
 #include "../operator.h"
 #include "fractional/fractional_operators.hpp"
+#include <stdexcept>
 
 Matern::Matern(const Rcpp::List &operator_list)
     : Operator(operator_list),
       G(Rcpp::as<SparseMatrix<double, 0, int>>(operator_list["G"])),
       C(Rcpp::as<SparseMatrix<double, 0, int>>(operator_list["C"])),
       Ci(Rcpp::as<SparseMatrix<double, 0, int>>(operator_list["Ci"])),
+      Bk_dense(Rcpp::as<MatrixXd>(operator_list["B_K"])),
       alpha(Rcpp::as<double>(operator_list["alpha"])), Cdiag(C.diagonal()) {
+  // Stationarity flag and basis matrix for log kappa (dense)
+  stationary = operator_list.containsElementNamed("stationary")
+                   ? Rcpp::as<bool>(operator_list["stationary"])
+                   : true;
+
   // Optional fractional controls
   fix_alpha = operator_list.containsElementNamed("fix_alpha")
                   ? Rcpp::as<bool>(operator_list["fix_alpha"])
                   : true;
-  m = operator_list.containsElementNamed("m")
-          ? Rcpp::as<int>(operator_list["m"])
+  m = operator_list.containsElementNamed("rational_order")
+          ? Rcpp::as<int>(operator_list["rational_order"])
           : 0;
   dim = operator_list.containsElementNamed("spatial_dim")
             ? Rcpp::as<int>(operator_list["spatial_dim"])
             : 2;
+
+  const int n = G.rows();
+  if (Bk_dense.rows() != n) {
+    Rcpp::stop("B_K has %d rows but expected %d",
+               static_cast<int>(Bk_dense.rows()), n);
+  }
 }
 
 void Matern::build_KZ(const VectorXd &theta_K) {
   using namespace rspde_cpp;
-  const int n = G.rows();
   // theta_K layout:
-  //   if (!fix_alpha): [eta_alpha, log_kappa]
-  //   if ( fix_alpha): [log_kappa]
+  //   if (!fix_alpha): [eta_alpha, theta_K ...]
+  //   if ( fix_alpha): [theta_K ...]
   int offset = 0;
   if (!fix_alpha) {
     double eta_alpha = theta_K(0);
@@ -40,36 +52,42 @@ void Matern::build_KZ(const VectorXd &theta_K) {
     alpha = L + (4.0 - L) * sig; // (L,4)
     offset = 1;
   }
-  Eigen::SparseMatrix<double> Bk(n, 1);
-  Bk.reserve(n);
-  for (int i = 0; i < n; ++i)
-    Bk.insert(i, 0) = 1.0;
-  Bk.makeCompressed();
-  VectorXd theta(1);
-  theta(0) = (theta_K.size() > offset) ? theta_K(offset) : 0.0; // log kappa
-  // tau defaults to 1
-  VectorXd tau(1);
-  tau(0) = 1.0;
+
+  const int n_kappa = static_cast<int>(theta_K.size()) - offset;
+  if (n_kappa <= 0) {
+    throw std::invalid_argument("theta_K must contain kappa coefficients");
+  }
+  if (Bk_dense.cols() != n_kappa) {
+    Rcpp::stop("Length of theta_K (%d) does not match B_K columns (%d)",
+               n_kappa, static_cast<int>(Bk_dense.cols()));
+  }
+  VectorXd theta_kappa = theta_K.segment(offset, n_kappa);
+
+  // kappa(s) = exp(B_theta_K * theta_kappa)
+  VectorXd log_kappa = Bk_dense * theta_kappa;
+  VectorXd kappa = log_kappa.array().exp();
+  VectorXd kappa2 = kappa.array().square();
 
   bool is_integer = std::abs(alpha - std::round(alpha)) < 1e-6;
   if (is_integer) {
-    double kappa = std::exp(theta(0));
-    SparseMatrix<double> KCK = kappa * kappa * C;
+    // K = G + C * diag(kappa^2)
+    SparseMatrix<double> KCK = (C * kappa2.asDiagonal()).eval();
     int ialpha = static_cast<int>(std::round(alpha));
     if (ialpha == 2) {
       K = (G + KCK);
     } else if (ialpha == 4) {
       K = (G + KCK) * Cdiag.cwiseInverse().asDiagonal() * (G + KCK);
     } else {
-      throw("alpha not equal to 2 or 4 is not implemented");
+      throw std::runtime_error("alpha not equal to 2 or 4 is not implemented");
     }
     Z.setIdentity();
   } else {
     double beta = alpha / 2.0;
-    std::pair<rspde_cpp::SpMat, rspde_cpp::SpMat> pairKZ;
-    std::cout << " beta = " << beta << std::endl;
-    std::cout << " theta = " << theta << std::endl;
-    pairKZ = compute_fractional_operators(C, Ci, G, beta, 1, tau, theta, Bk);
+    // tau defaults to 1 for now
+    VectorXd tau(1);
+    tau(0) = 1.0;
+    auto pairKZ = compute_fractional_operators(C, Ci, G, beta, m, tau,
+                                               theta_kappa, Bk_dense);
     K = pairKZ.first;  // Pl
     Z = pairKZ.second; // Pr
   }

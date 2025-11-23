@@ -61,17 +61,20 @@ f <- function(
     prior_theta_K = ngme_prior("normal", param = c(0, 0.001)),
     subset = rep(TRUE, length_map(map)),
     debug = FALSE,
-    ma = NULL,
     ...) {
   # examine the noise
   if (is.list(noise) && !inherits(noise, "ngme_noise")) {
     noise <- convert_noise_list_to_normal_nig(noise)
   }
 
+  if (is.character(model)) {
+    message("Using character strings for 'model' is not recommended (will be deprecated in the future). Please consider using operator functions like matern(), ar1(), etc. (e.g., model = matern()).")
+  }
+
   stopifnot(
     "Please provide noise as ngme_noise object" =
-      model %in% c("bv", "bv_normal", "bv_matern_normal", "bv_matern_nig") ||
-        inherits(noise, "ngme_noise")
+      inherits(noise, "ngme_noise") ||
+        (is.character(model) && model %in% c("bv", "bv_normal", "bv_matern_normal", "bv_matern_nig"))
   )
 
   if ((missing(map) || (is.null(map))) && inherits(mesh, "metric_graph")) {
@@ -99,15 +102,20 @@ f <- function(
   }
 
   if (!is.null(data) && is.null(A)) {
-    if (!model %in% c("tp", "spacetime")) {
+    # check if model is a string or an object
+    model_name <- if (inherits(model, "ngme_operator")) model$model else if (inherits(model, "ngme_operator_def")) model$model else model
+
+    if (!model_name %in% c("tp", "spacetime")) {
       stopifnot(
         "Please make sure length of map is same as nrow(data) in f()" =
           length_map(map) == nrow(data)
       )
     } else {
-      "Please make sure length of map is same as nrow(data) in f()" <-
-        length_map(map[[1]]) == nrow(data) &&
-          length_map(map[[2]]) == nrow(data)
+      stopifnot(
+        "Please make sure length of map is same as nrow(data) in f()" =
+          length_map(map[[1]]) == nrow(data) &&
+            length_map(map[[2]]) == nrow(data)
+      )
     }
   }
 
@@ -140,15 +148,16 @@ f <- function(
 
   stopifnot(
     "Please provide model from ngme_model_types():" = !is.null(model),
-    "Please specify model as character" = is.character(model),
+    "Please specify model as character or ngme_operator" = is.character(model) || inherits(model, "ngme_operator") || inherits(model, "ngme_operator_def"),
     "prior_theta_K is not specified properly, please use ngme_prior(..)" = class(prior_theta_K) == "ngme_prior"
   )
 
   # Validate mesh input - can be single mesh, list of meshes, or NULL
   mesh_list <- NULL
   if (!is.null(mesh)) {
+    model_name <- if (inherits(model, "ngme_operator")) model$model else if (inherits(model, "ngme_operator_def")) model$model else model
     if (
-      model != "spacetime" &&
+      model_name != "spacetime" &&
         is.list(mesh) &&
         !inherits(mesh, c("inla.mesh.1d", "inla.mesh", "fm_mesh_1d", "fm_mesh_2d", "metric_graph"))
     ) {
@@ -164,7 +173,13 @@ f <- function(
 
   # 0. build mesh if not specified
   if (is.null(mesh) && is.null(A) && is.null(mesh_list)) {
-    mesh <- ngme_build_mesh(sub_map(map, subset), model)
+    if (inherits(model, "ngme_operator") && !is.null(model$mesh)) {
+      mesh <- model$mesh
+    } else {
+      # For ngme_operator_def, we build the mesh here using the model name
+      model_name <- if (inherits(model, "ngme_operator_def")) model$model else model
+      mesh <- ngme_build_mesh(sub_map(map, subset), model_name)
+    }
   }
 
   # remove NULL in arguments
@@ -183,7 +198,8 @@ f <- function(
   }
 
   # if (model %in% c("tp", "spacetime")) {
-  if (model %in% c("tp")) {
+  model_name <- if (inherits(model, "ngme_operator")) model$model else if (inherits(model, "ngme_operator_def")) model$model else model
+  if (model_name %in% c("tp")) {
     stopifnot(
       "Please specify map as a list of length two (for 2 sub-models)" =
         is.list(map) && length(map) == 2
@@ -232,12 +248,27 @@ f <- function(
     # The correct mesh will be set during parsing stage
     temp_mesh <- mesh_list[[1]]
     f_args$mesh <- temp_mesh
-    operator <- build_operator(model, f_args)
+
+    if (inherits(model, "ngme_operator")) {
+      operator <- model
+    } else {
+      operator <- build_operator(model, f_args)
+    }
 
     # Defer A matrix construction to parsing stage since we used wrong mesh
     A <- NULL
   } else {
-    operator <- build_operator(model, f_args)
+    if (inherits(model, "ngme_operator")) {
+      operator <- model
+      # update the model name
+      model <- operator$model
+    } else if (inherits(model, "ngme_operator_def")) {
+      # Instantiate the operator using the definition and the built mesh
+      operator <- do.call(model$model, c(list(mesh = mesh), model$args))
+      model <- operator$model
+    } else {
+      operator <- build_operator(model, f_args)
+    }
 
     # Build A matrix
     A <- if (is.null(A)) {
@@ -636,11 +667,12 @@ ngme_build_mesh <- function(
   }
 
   if (!is.null(model)) {
-    if (model %in% c("re", "tp")) {
+    model_name <- if (inherits(model, "ngme_operator")) model$model else model
+    if (model_name %in% c("re", "tp")) {
       return(NULL)
     }
-    if (model == "iid") loc <- as.integer(as.factor(loc))
-    if (model %in% c("ar", "ar1", "arma")) {
+    if (model_name == "iid") loc <- as.integer(as.factor(loc))
+    if (model_name %in% c("ar", "ar1", "arma")) {
       stopifnot(
         "The map should be integers." = is.numeric(loc) && all(loc == round(loc))
       )

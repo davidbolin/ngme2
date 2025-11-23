@@ -143,15 +143,14 @@ public:
 class Matern : public Operator {
 private:
   SparseMatrix<double, 0, int> G, C, Ci;
+  // Basis for log kappa: dense in R (used directly in fractional routines)
+  MatrixXd Bk_dense;
+  bool stationary {true};
   double alpha;
   VectorXd Cdiag;
   bool fix_alpha {true};
   int m {0}; // rational approximation order (0 = none)
   int dim {2};
-  // Optional roots for fractional approximation
-  std::vector<double> rb, rc;
-  double roots_factor {1.0};
-  bool have_roots {false};
 public:
   Matern(const Rcpp::List&);
 

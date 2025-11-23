@@ -8,8 +8,10 @@
 #' @return ngme_operator object
 #' @export
 #'
-iid <- function(
-    map, ...) {
+iid <- function(map = NULL, ...) {
+  if (is.null(map)) {
+    return(structure(list(model = "iid", args = list(...)), class = "ngme_operator_def"))
+  }
   n <- length(levels(as.factor(map)))
   K <- ngme_as_sparse(Matrix::Diagonal(n))
 
@@ -41,9 +43,11 @@ iid <- function(
 #' @export
 #'
 #' @examples
-#' ar1(c(1:3, 1:3))
-ar1 <- function(
-    mesh, rho = 0, ...) {
+#' ar1(1:10)
+ar1 <- function(mesh = NULL, rho = 0, ...) {
+  if (is.null(mesh)) {
+    return(structure(list(model = "ar1", args = list(rho = rho, ...)), class = "ngme_operator_def"))
+  }
   stopifnot("rho should be between -1 and 1" = rho >= -1 && rho <= 1)
 
   mesh <- ngme_build_mesh(mesh)
@@ -120,7 +124,7 @@ ar1 <- function(
 #'
 #' @export
 arma <- function(
-    mesh,
+    mesh = NULL,
     ar_order = 1,
     ma_order = 1,
     ar = NULL, # AR coefficients (friendly scale)
@@ -128,6 +132,12 @@ arma <- function(
     fix_ar = FALSE,
     fix_ma = FALSE,
     ...) {
+  if (is.null(mesh)) {
+    return(structure(list(model = "arma", args = list(
+      ar_order = ar_order, ma_order = ma_order,
+      ar = ar, ma = ma, fix_ar = fix_ar, fix_ma = fix_ma, ...
+    )), class = "ngme_operator_def"))
+  }
   p <- as.integer(ar_order)
   q <- as.integer(ma_order)
   stopifnot("ar_order >= 0" = p >= 0, "ma_order >= 0" = q >= 0)
@@ -258,7 +268,7 @@ arma <- function(
 #' Convenience wrapper for ARMA(1,1)
 #' @export
 arma11 <- function(
-    mesh,
+    mesh = NULL,
     ar = 0,
     ma = 0,
     fix_ar = FALSE,
@@ -327,7 +337,10 @@ ARcov <- function(rho, p) {
 #' # AR(3) model with specified order and coefficients
 #' ar(c(1:10), order = 3, rho = c(0.4, 0.2, -0.1))
 ar <- function(
-    mesh, rho = NULL, order = NULL, ...) {
+    mesh = NULL, rho = NULL, order = NULL, ...) {
+  if (is.null(mesh)) {
+    return(structure(list(model = "ar", args = list(rho = rho, order = order, ...)), class = "ngme_operator_def"))
+  }
   # Determine p and rho based on input parameters
   if (is.null(order) && is.null(rho)) {
     stop("Either 'rho' or 'order' must be provided")
@@ -475,10 +488,13 @@ ar <- function(
 #' rw1_unequal <- rw1(locations)
 #' print(rw1_unequal$K)
 rw1 <- function(
-    mesh,
+    mesh = NULL,
     cyclic = FALSE,
     constr = TRUE,
     ...) {
+  if (is.null(mesh)) {
+    return(structure(list(model = "rw1", args = list(cyclic = cyclic, constr = constr, ...)), class = "ngme_operator_def"))
+  }
   mesh <- ngme_build_mesh(mesh)
 
   n <- mesh$n
@@ -575,10 +591,13 @@ rw1 <- function(
 #' rw2_unequal <- rw2(locations)
 #' print(rw2_unequal$K)
 rw2 <- function(
-    mesh,
+    mesh = NULL,
     cyclic = FALSE,
     constr = TRUE,
     ...) {
+  if (is.null(mesh)) {
+    return(structure(list(model = "rw2", args = list(cyclic = cyclic, constr = constr, ...)), class = "ngme_operator_def"))
+  }
   mesh <- ngme_build_mesh(mesh)
 
   stopifnot("Mesh should be inla.mesh.1d." = inherits(mesh, c("inla.mesh.1d")))
@@ -642,10 +661,13 @@ rw2 <- function(
 #' @return ngme_operator object
 #' @export
 ou <- function(
-    mesh,
+    mesh = NULL,
     theta_K = 0,
     B_theta_K = NULL,
     ...) {
+  if (is.null(mesh)) {
+    return(structure(list(model = "ou", args = list(theta_K = theta_K, B_theta_K = B_theta_K, ...)), class = "ngme_operator_def"))
+  }
   mesh <- ngme_build_mesh(mesh)
   n <- mesh$n
 
@@ -701,7 +723,6 @@ ou <- function(
 #' @param alpha SPDE smoothness parameter (alpha = 2beta) 2 or 4 for integer case, otherwise for fractional case
 #' @param kappa the range parameter, for the stationary model, it is the range parameter
 #' @param theta_kappa kappa = exp(B_theta_K * theta_K), for the non-stationary model, it is the range parameter
-#' @param theta_K kappa = exp(B_theta_K * theta_K), for the non-stationary model, it is the range parameter (same as theta_kappa, deprecated)
 #' @param fix_alpha if FALSE, enable fractional modeling
 #' @param rational_order order of rational approximation for fractional operators (default: 2)
 #' @param B_theta_K bases for theta_K, ignore if use the stationary model
@@ -710,15 +731,21 @@ ou <- function(
 #' @return ngme_operator object
 #' @export
 matern <- function(
-    mesh,
+    mesh = NULL,
     alpha = 2,
     fix_alpha = TRUE,
-    kappa = NULL,
-    theta_K = NULL,
+    kappa = 1,
     theta_kappa = NULL,
     rational_order = 2,
     B_theta_K = NULL,
     ...) {
+  if (is.null(mesh)) {
+    return(structure(list(model = "matern", args = list(
+      alpha = alpha, fix_alpha = fix_alpha, kappa = kappa,
+      theta_kappa = theta_kappa, rational_order = rational_order,
+      B_theta_K = B_theta_K, ...
+    )), class = "ngme_operator_def"))
+  }
   mesh <- ngme_build_mesh(mesh)
   if (fix_alpha && alpha != 2 && alpha != 4) {
     if (!requireNamespace("rSPDE", quietly = TRUE)) {
@@ -775,7 +802,7 @@ matern <- function(
   C <- ngme_as_sparse(C)
   G <- ngme_as_sparse(G)
   Ci <- ngme_as_sparse(Ci)
-  B_K <- if (stationary) NULL else B_theta_K
+  B_K <- if (stationary) matrix(1, nrow = mesh_n, ncol = 1) else B_theta_K
 
   # Placeholder K for printing; real K is built in C++
   if (stationary) {
@@ -802,7 +829,7 @@ matern <- function(
     spatial_dim = d,
     symmetric = TRUE,
     stationary = stationary,
-    m = rational_order,
+    rational_order = rational_order,
     param_name = NULL,
     param_trans = NULL
   )

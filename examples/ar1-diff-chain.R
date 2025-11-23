@@ -36,14 +36,13 @@ Y <- process + rnorm(n_obs, sd = sigma_eps)
 
 # fit the non-Gaussian model
 control_same <- control_opt(
-  # optimizer = adam(),
   optimizer = precond_sgd(),
   burnin = 100,
-  iterations = 500,
+  iterations = 100,
   stop_points = 1,
   n_parallel_chain = 4,
   verbose = TRUE,
-  # rao_blackwellization = TRUE,
+  rao_blackwellization = TRUE,
   seed = seed,
   print_check_info = TRUE,
   std_lim = 0.01,
@@ -58,16 +57,12 @@ system.time({
   ret_nig_same <- ngme(
     Y ~ 0 + f(
       1:n_obs,
-      rho = 0.5,
       name = "my_ar",
-      model = "ar1",
-      # debug = TRUE,
-      # W = trueW, fix_W = TRUE,
+      model = ar1(),
       noise = noise_nig()
     ),
     family = noise_normal(),
     data = data.frame(Y = Y),
-    # debug = TRUE,
     control_opt = control_same
   )
 })

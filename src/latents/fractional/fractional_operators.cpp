@@ -8,8 +8,8 @@
 //  - tau: vector of tau values (Eigen::VectorXd). Can be length 1 (constant) or
 //  length n.
 //  - theta_kappa: parameter vector (Eigen::VectorXd)
-//  - B_kappa: design matrix for log-kappa (Eigen::SparseMatrix<double>), so
-//  kappa(s) = exp(B_kappa * theta_kappa)
+//  - B_kappa: design matrix for log-kappa (dense Eigen::MatrixXd), so
+//    kappa(s) = exp(B_kappa * theta_kappa)
 //
 // Outputs:
 //  - Pl, Pr: assembled sparse operators as Eigen::SparseMatrix<double>
@@ -387,7 +387,7 @@ inline SpMat build_Phi(Index n, const VectorXd &tau) {
 // Core implementation, fractional beta requires rb/rc/factor.
 std::pair<SpMat, SpMat> compute_fractional_operators_with_roots(
     const SpMat &C_in, const SpMat &Ci_in, const SpMat &G, double beta, int m,
-    const VectorXd &tau, const VectorXd &theta_kappa, const SpMat &B_kappa,
+    const VectorXd &tau, const VectorXd &theta_kappa, const MatrixXd &B_kappa,
     const std::vector<double> &rb, // size m+1 (only used if beta not integer)
     const std::vector<double> &rc, // size m   (only used if beta not integer)
     double roots_factor            // (only used if beta not integer)
@@ -518,7 +518,7 @@ std::pair<SpMat, SpMat> compute_fractional_operators_with_roots(
 // Convenience wrapper that tries to use get_roots() when beta is fractional.
 std::pair<SpMat, SpMat> compute_fractional_operators(
     const SpMat &C_in, const SpMat &Ci_in, const SpMat &G, double beta, int m,
-    const VectorXd &tau, const VectorXd &theta_kappa, const SpMat &B_kappa) {
+    const VectorXd &tau, const VectorXd &theta_kappa, const MatrixXd &B_kappa) {
 
   // Determine if beta is fractional
   double beta_round = std::round(beta);

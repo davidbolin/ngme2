@@ -5,18 +5,15 @@ test_that("test fit matern", {
     loc.domain = pl01, cutoff = 0.1,
     max.edge = c(0.3, 10)
   )
-  mesh$n
 
   n_obs <- 1000
   loc <- cbind(runif(n_obs, 0, 10), runif(n_obs, 0, 5))
   true_noise <- noise_nig(mu = -2, sigma = 1, nu = 0.5)
 
-  kappa <- 2
+  kappa <- 0.3
   true_model <- f(
     map = loc,
-    model = "matern",
-    kappa = kappa,
-    mesh = mesh,
+    model = matern(mesh, rational_order = 1, fix_alpha = TRUE),
     noise = true_noise
   )
 
@@ -24,7 +21,7 @@ test_that("test fit matern", {
   Y <- W + rnorm(n_obs, sd = 0.5)
 
   control_opt <- control_opt(
-    iterations = 500,
+    iterations = 100,
     n_parallel_chain = 4,
     print_check_info = F,
     stop_points = 1,
@@ -38,16 +35,14 @@ test_that("test fit matern", {
 
   m_nig_gauss <- ngme(
     Y ~ 0 + f(loc,
-      model = "matern",
-      name = "spde",
-      # kappa = kappa,
-      # fix_theta_K = TRUE,
-      mesh = mesh,
-      alpha = 2.01,
-      # debug=TRUE,
+      model = matern(
+        mesh,
+        rational_order = 1,
+        fix_alpha = TRUE,
+        alpha = 2.01
+      ),
       noise = noise_nig()
     ),
-    # debug=TRUE,
     data = data.frame(Y = Y),
     control_opt = control_opt
   )

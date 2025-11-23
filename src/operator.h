@@ -33,8 +33,29 @@ using Eigen::VectorXd;
 using std::vector;
 
 
-// subclasses
-enum Type {ar, ou, matern_ns};
+// New enums and options for unified K/Z updates and traces
+enum class DiffMode   { Forward = 0, Central = 1 };
+
+struct UpdateOptions {
+    bool compute_K  {true};
+    bool compute_Z  {true};
+    bool compute_dK {false};
+    bool compute_dZ {false};
+    bool compute_d2K {false};
+    bool compute_d2Z {false};
+    bool compute_HK_trace {false};
+    bool prefer_analytic_dK {true};
+    bool prefer_analytic_dZ {true};
+    bool prefer_analytic_d2K {false};
+    bool prefer_analytic_d2Z {false};
+    int n_trace_iter {8};
+    int solver_type {0};
+    double eps_dK {1e-4};
+    double eps_dZ {1e-4};
+    DiffMode diff_dK_mode {DiffMode::Forward};
+    DiffMode diff_dZ_mode {DiffMode::Forward};
+    std::vector<bool> fix_mask_thetaK; // optional; size = n_theta_K
+};
 
 class Operator {
 protected:
@@ -45,6 +66,24 @@ protected:
 
     SparseMatrix<double> K;
     vector<SparseMatrix<double>> dK;
+    std::vector<std::vector<SparseMatrix<double>>> d2K; // p x p second derivatives
+    // Observation-side linear transform Z and its parameter derivatives
+    SparseMatrix<double, 0, int> Z;
+    vector<SparseMatrix<double, 0, int>> dZ;
+    std::vector<std::vector<SparseMatrix<double,0,int>>> d2Z; // p x p second derivatives
+    // Optional: per-parameter fixing mask (K-parameters)
+    std::vector<bool> fix_mask_K;
+
+    // Internal solvers for K factorizations
+    sparse_llt_solver cholK_solver;    // for K or K^T K
+    bool              llt_inited {false};
+
+    // Global modes (fixed at construction)
+    bool              analyzed_cholK {false};
+    VectorXd          trace_vals;      // size n_theta_K; tr(K^-1 dK) or NormalEq variant
+    bool              trace_ready {false};
+    MatrixXd          HK_trace;        // n_theta_K x n_theta_K; H_K trace block
+    bool              HK_trace_ready {false};
 public:
     Operator(const Rcpp::List& operator_list) :
         h (Rcpp::as<VectorXd> (operator_list["h"])),
@@ -60,8 +99,13 @@ public:
         dK[i].resize(h.size(), h.size());
         dK[i].setZero();
       }
+      // Initialize Z and dZ
+      Z.resize(h.size(), h.size());
+      Z.setIdentity();
+      dZ.resize(n_theta_K);
+      for (int i=0; i<n_theta_K; ++i) { dZ[i].resize(h.size(), h.size()); dZ[i].setZero(); }
     }
-    virtual ~Operator() = default;
+    virtual ~Operator();
 
     int get_n_theta_K() const {return n_theta_K;}
     const VectorXd& get_h() const {return h;}
@@ -69,38 +113,76 @@ public:
     bool is_zero_trace() const {return zero_trace;}
 
     const SparseMatrix<double>& getK() const {return K;}
-    const vector<SparseMatrix<double>>& get_dK() const {return dK;}
+    const SparseMatrix<double,0,int>& get_dK(int i) const { return dK[i]; }
+    const SparseMatrix<double,0,int>& getZ() const { return Z; }
+    const SparseMatrix<double,0,int>& get_dZ(int i) const { return dZ[i]; }
+    const SparseMatrix<double,0,int>& get_d2K(int i, int j) const { return d2K[i][j]; }
+    const SparseMatrix<double,0,int>& get_d2Z(int i, int j) const { return d2Z[i][j]; }
+    const MatrixXd& get_HK_trace() const { return HK_trace; }
 
-    virtual void update_K(const VectorXd&) = 0;
-    virtual void update_dK(const VectorXd&) = 0;
+    // Core builders for K and Z
+    // New unified builder: preferred override in subclasses
+    virtual void build_KZ(const VectorXd& theta) = 0;
+
+    // Optional analytic derivatives: return true if both dK and/or dZ were set
+    virtual bool update_dKdZ(const VectorXd&) { return false; }    // default: no analytic
+    // Optional: analytic second derivatives
+    virtual bool update_d2Kd2Z(const VectorXd&) { return false; }
+
+    // Optional: per-parameter fixing mask for theta_K (default: none fixed)
+    virtual std::vector<bool> get_fix_mask_K() const { return std::vector<bool>(n_theta_K, false); }
+
+    // Unified updater: update K, Z, (optionally) dK, dZ, factorization, and traces
+    virtual void update_all(const VectorXd& theta, const UpdateOptions& opts);
+
+    // Accessors for traces
+    const VectorXd& get_trace_trK() const { return trace_vals; }
+    bool traces_ready() const { return trace_ready; }
 };
 
 class Matern : public Operator {
 private:
-    SparseMatrix<double, 0, int> G, C;
-    int alpha;
-    VectorXd Cdiag;
+  SparseMatrix<double, 0, int> G, C, Ci;
+  double alpha;
+  VectorXd Cdiag;
+  bool fix_alpha {true};
+  int m {0}; // rational approximation order (0 = none)
+  int dim {2};
+  // Optional roots for fractional approximation
+  std::vector<double> rb, rc;
+  double roots_factor {1.0};
+  bool have_roots {false};
 public:
-    Matern(const Rcpp::List&);
+  Matern(const Rcpp::List&);
 
-    void update_K(const VectorXd&);
-    void update_dK(const VectorXd&);
-
-    int get_alpha() const {return alpha;}
+  void build_KZ(const VectorXd&) override;
+  int get_alpha() const {return alpha;}
 };
 
-class Matern_ns : public Operator {
+// ARMA(p,q) operator: K = G + sum_j phi_j C_j; Z = I + sum_k theta_k L^k
+class Arma : public Operator {
 private:
-    Type type;
-    SparseMatrix<double, 0, int> G, C;
-    int alpha;
-    MatrixXd Bkappa;
-    VectorXd Cdiag;
+  int n;
+  int p; // AR order
+  int q; // MA order
+  // Bases
+  std::vector<SparseMatrix<double,0,int>> Cj; // lag j bases for AR
+  SparseMatrix<double,0,int> G;               // identity
+  SparseMatrix<double,0,int> L;               // 1-step lag/shift (subdiagonal 1)
+  std::vector<SparseMatrix<double,0,int>> Lpow; // powers of L
+  // fixing masks
+  std::vector<bool> fix_phi_mask;   // size p
+  std::vector<bool> fix_theta_mask; // size q
+  // parameter split: first p are phi, last q are theta
 public:
-    Matern_ns(const Rcpp::List&, Type);
-
-    void update_K(const VectorXd&);
-    void update_dK(const VectorXd&);
+  Arma(const Rcpp::List&);
+  void build_KZ(const VectorXd&) override;
+  std::vector<bool> get_fix_mask_K() const override {
+    std::vector<bool> mask(n_theta_K, false);
+    for (int j=0; j<p; ++j) mask[j] = (fix_phi_mask.size()==(size_t)p) ? fix_phi_mask[j] : false;
+    for (int k=0; k<q; ++k) mask[p+k] = (fix_theta_mask.size()==(size_t)q) ? fix_theta_mask[k] : false;
+    return mask;
+  }
 };
 
 class Tensor_prod : public Operator {
@@ -110,8 +192,8 @@ private:
 public:
   Tensor_prod(const Rcpp::List&);
 
-  void update_K(const VectorXd&);
-  void update_dK(const VectorXd&);
+  void build_KZ(const VectorXd&) override;
+  bool update_dKdZ(const VectorXd&) override;
 };
 
 class Spacetime : public Operator {
@@ -130,7 +212,7 @@ private:
 public:
   Spacetime(const Rcpp::List&);
 
-  void update_K(const VectorXd&);
+  void build_KZ(const VectorXd&);
   void update_dK(const VectorXd&);
 };
 
@@ -144,8 +226,8 @@ private:
 public:
     Bivar(const Rcpp::List&);
 
-    void update_K(const VectorXd&);
-    void update_dK(const VectorXd&);
+    void build_KZ(const VectorXd&) override;
+    bool update_dKdZ(const VectorXd&) override;
 
     Matrix2d getD(double, double) const;
     Matrix2d get_dD_theta(double, double) const;
@@ -162,9 +244,7 @@ private:
 public:
     Generic(const Rcpp::List&);
 
-    void update_K(const VectorXd& theta_K);
-    void update_dK(const VectorXd& theta_K);
-
+    void build_KZ(const VectorXd& theta_K);
     double apply_transform(double value, const string& trans_type) const;
 };
 
@@ -188,32 +268,9 @@ private:
 public:
     generic_ns(const Rcpp::List&);
     
-    void update_K(const VectorXd& theta_K);
-    void update_dK(const VectorXd& theta_K);
-    
+    void build_KZ(const VectorXd& theta_K);
     double apply_transform(double value, const string& trans_type) const;
 };
-
-// Bivar_normal
-// class Bivar_normal : public Operator {
-// private:
-//     std::shared_ptr<Operator> first, second;
-//     int n_theta_1, n_theta_2;
-//     int n; // dim of K1 and K2 (same)
-//     bool share_param, fix_bv_theta;
-// public:
-//     Bivar_normal(const Rcpp::List&);
-
-//     void update_K(const VectorXd&);
-//     void update_dK(const VectorXd&);
-
-//     Matrix2d getD(double, double) const;
-//     Matrix2d get_dD_theta(double, double) const;
-//     Matrix2d get_dD_rho(double, double) const;
-//     Matrix2d get_dD2_theta(double, double) const;
-//     Matrix2d get_dD2_rho(double, double) const;
-// };
-
 
 // Bivar_normal_ope (theta=0)
 class Bivar_normal_ope : public Operator {
@@ -225,8 +282,8 @@ private:
 public:
     Bivar_normal_ope(const Rcpp::List&);
 
-    void update_K(const VectorXd&);
-    void update_dK(const VectorXd&);
+    void build_KZ(const VectorXd&) override;
+    bool update_dKdZ(const VectorXd&) override;
 
     Matrix2d getD(double, double) const;
     Matrix2d get_dD_theta(double, double) const;
@@ -246,8 +303,7 @@ private:
 public:
     bv_matern_normal(const Rcpp::List&);
 
-    void update_K(const VectorXd&);
-    void update_dK(const VectorXd&);
+    void build_KZ(const VectorXd&) override;
 
     Matrix2d getD(double, double) const;
     Matrix2d get_dD_theta(double, double) const;
@@ -266,8 +322,7 @@ private:
 public:
     bv_matern_nig(const Rcpp::List&);
 
-    void update_K(const VectorXd&);
-    void update_dK(const VectorXd&);
+    void build_KZ(const VectorXd&) override;
 
     Matrix2d getD(double, double) const;
     Matrix2d get_dD_theta(double, double) const;
@@ -285,8 +340,8 @@ class Randeff : public Operator{
   public:
     Randeff(const Rcpp::List&);
 
-    void update_K(const VectorXd& theta_K);
-    void update_dK(const VectorXd& theta_K);
+    void build_KZ(const VectorXd& theta_K) override;
+    bool update_dKdZ(const VectorXd& theta_K) override;
 };
 
 // for initialize Latent models
@@ -294,44 +349,7 @@ class OperatorFactory {
 public:
   static std::shared_ptr<Operator> create(
     const Rcpp::List& operator_in
-  ) {
-    string model_type = Rcpp::as<string> (operator_in["model"]);
-    VectorXd theta_K = Rcpp::as<VectorXd> (operator_in["theta_K"]);
-    string generic_type = Rcpp::as<string> (operator_in["generic_type"]);
-    int n_theta_K = theta_K.size();
-
-    if (model_type == "generic") {
-      return std::make_shared<Generic>(operator_in);
-    } else if (model_type == "generic_ns") {
-      return std::make_shared<generic_ns>(operator_in);
-    } else if (generic_type == "generic") {
-      return std::make_shared<Generic>(operator_in);
-    } else if (generic_type == "generic_ns") {
-      return std::make_shared<generic_ns>(operator_in);
-    } else if (model_type == "tp") {
-      return std::make_shared<Tensor_prod>(operator_in);
-    } else if (model_type == "spacetime") {
-      return std::make_shared<Spacetime>(operator_in);
-    } else if (model_type == "ou") {
-      return std::make_shared<Matern_ns>(operator_in, Type::ou);
-    } else if (model_type == "matern" && n_theta_K > 1) {
-      return std::make_shared<Matern_ns>(operator_in, Type::matern_ns);
-    } else if (model_type == "matern" && n_theta_K == 1) {
-      return std::make_shared<Matern>(operator_in);
-    } else if (model_type == "re") {
-      return std::make_shared<Randeff>(operator_in);
-    } else if (model_type == "bv") {
-      return std::make_shared<Bivar>(operator_in);
-    } else if (model_type == "bv_normal") {
-      return std::make_shared<Bivar_normal_ope>(operator_in);
-    } else if (model_type == "bv_matern_normal") {
-      return std::make_shared<bv_matern_normal>(operator_in);
-    } else if (model_type == "bv_matern_nig") {
-      return std::make_shared<bv_matern_nig>(operator_in);
-    } else {
-      throw std::runtime_error("Unknown model.");
-    }
-  }
+  );
 };
 
 #endif

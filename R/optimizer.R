@@ -1,4 +1,5 @@
 # different methods for SGD
+# sgd (vanilla)
 # preconditioner_sgd
 # momentum
 # adagrad
@@ -8,23 +9,19 @@
 
 #' Preconditioner SGD optimization
 #'
+#' @details
+#' Preconditioner SGD is using fisher information matrix as preconditioner (natural gradient descent).
+#'
 #' @param stepsize stepsize for SGD
-#' @param preconditioner  preconditioner, can be c("none", "fast", "full")
-#' "none" means no preconditioner, i.e., vanilla SGD,
-#' "full" means compute numerical hessian as preconditioner
-#' "fast" means compute numerical hessian except for the parameter of K matrix (for speed reason) 
 #' @param numerical_eps   numerical, the gap used for estimate preconditioner, default is 1e-5
-#' @param precond_by_diff_chain logical, compute preconditioner only at stop points and switch to use the preconditioner of the other chains. If FALSE, preconditioner will be computed at each iteration.
 #'
 #' @return a list of control variables for optimization 
 #' (used in \code{control_opt} function)
 #' @export
 precond_sgd <- function(
-  stepsize = 0.5,
-  # preconditioner related
-  preconditioner    = "fast",
-  numerical_eps       = 1e-5,
-  precond_by_diff_chain = FALSE
+  stepsize = 1,
+  numerical_eps       = 1e-5
+  # precond_by_diff_chain = FALSE
 ) {
 
   ret <- list(
@@ -32,10 +29,28 @@ precond_sgd <- function(
     method         = "precond_sgd",
     stepsize       = stepsize,
     sgd_parameters = NULL,
-    # preconditioner related
-    preconditioner  = preconditioner,
-    numerical_eps     = numerical_eps,
-    precond_by_diff_chain = precond_by_diff_chain
+    numerical_eps     = numerical_eps
+  )
+  class(ret) <- "ngme_optimizer"
+  ret
+}
+
+#' Vanilla SGD optimization
+#'
+#' Simple stochastic gradient descent without momentum or preconditioning.
+#'
+#' @param stepsize stepsize for SGD
+#'
+#' @return a list of control variables for optimization
+#' (used in \code{control_opt} function)
+#' @export
+sgd <- function(
+  stepsize = 0.001
+) {
+  ret <- list(
+    method         = "sgd",
+    stepsize       = stepsize,
+    sgd_parameters = double(0)
   )
   class(ret) <- "ngme_optimizer"
   ret

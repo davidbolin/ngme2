@@ -48,8 +48,8 @@ control_opt(
 \item{iters_per_check}{run how many iterations between each check point (or specify stop_points)}
 
 \item{optimizer}{choose different sgd optimization method, 
-currently support "precond_sgd", "momentum", "adagrad", "rmsprop", "adam", "adamW"
-see precond_sgd, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW}
+currently support "sgd", "precond_sgd", "momentum", "adagrad", "rmsprop", "adam", "adamW"
+see ?sgd, ?precond_sgd, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW}
 
 \item{start_sd}{standard deviation of the initial parameter (1st chain fixed, other chains random), set 0 to be fixed for all chains}
 

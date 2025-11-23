@@ -4,16 +4,32 @@
 \alias{matern}
 \title{ngme Matern SPDE model specification}
 \usage{
-matern(mesh, alpha = 2, kappa = NULL, theta_K = NULL, B_theta_K = NULL, ...)
+matern(
+  mesh,
+  alpha = 2,
+  fix_alpha = TRUE,
+  kappa = NULL,
+  theta_K = NULL,
+  theta_kappa = NULL,
+  rational_order = 2,
+  B_theta_K = NULL,
+  ...
+)
 }
 \arguments{
 \item{mesh}{an fmesher::fm_mesh_2d object, mesh for build the SPDE model}
 
-\item{alpha}{2 or 4, SPDE smoothness parameter}
+\item{alpha}{SPDE smoothness parameter (alpha = 2beta) 2 or 4 for integer case, otherwise for fractional case}
+
+\item{fix_alpha}{if FALSE, enable fractional modeling}
 
 \item{kappa}{the range parameter, for the stationary model, it is the range parameter}
 
-\item{theta_K}{kappa = exp(B_theta_K * theta_K), for the non-stationary model, it is the range parameter}
+\item{theta_K}{kappa = exp(B_theta_K * theta_K), for the non-stationary model, it is the range parameter (same as theta_kappa, deprecated)}
+
+\item{theta_kappa}{kappa = exp(B_theta_K * theta_K), for the non-stationary model, it is the range parameter}
+
+\item{rational_order}{order of rational approximation for fractional operators (default: 2)}
 
 \item{B_theta_K}{bases for theta_K, ignore if use the stationary model}
 

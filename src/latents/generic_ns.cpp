@@ -83,7 +83,7 @@ generic_ns::generic_ns(const Rcpp::List& operator_list) :
     }
 }
 
-void generic_ns::update_K(const VectorXd& theta_K) {
+void generic_ns::build_KZ(const VectorXd& theta_K) {
     int n = matrices[0].rows();
     
     // Create parameter matrices using basis expansions
@@ -171,21 +171,6 @@ void generic_ns::update_K(const VectorXd& theta_K) {
         // Add to K
         K += term;
     }
-}
-
-void generic_ns::update_dK(const VectorXd& theta_K) {
-    // This would need to be implemented for gradient-based optimization
-    // For now, just initialize empty matrices
-    int n = matrices[0].rows();
-    
-    // Initialize dK matrices for each parameter
-    for (int i = 0; i < n_theta_K; i++) {
-        dK[i].resize(n, n);
-        dK[i].setZero();
-    }
-    
-    // NOTE: A proper implementation would calculate derivatives of K 
-    // with respect to each parameter in theta_K
 }
 
 double generic_ns::apply_transform(double value, const std::string& trans_type) const {

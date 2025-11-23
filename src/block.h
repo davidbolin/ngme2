@@ -88,22 +88,25 @@ protected:
     VectorXd indicate_threshold, steps_to_threshold;
     int curr_iter; // how many times set is called.
 
-    // solvers
-    // SimplicialLLT<SparseMatrix<double, Lower>> Q_eps_solver;
-    iterative_solver iterative_QQ;
-    cholesky_solver chol_Q, chol_Q_eps;
-
-    sparse_llt_solver chol_QQ;
-
-    SparseLU<SparseMatrix<double>> LU_K;
-    double logdet_Q_eps;
-
-    bool all_gaussian, rao_blackwell, shared_sigma, use_iterative_solver; // No need for gibbs sampling
+    bool all_gaussian, rao_blackwell, use_iterative_solver; // No need for gibbs sampling
     std::string par_string;
     VectorXd rb_trace_noise_sigma;
+    // Store per-latent RB trace terms at Block level
+    std::vector<Eigen::VectorXd> rb_trace_K_latent;
+    std::vector<Eigen::VectorXd> rb_trace_sigma_latent;
+    // Option: use conditional mean of W instead of sampling when estimating
+    bool use_cond_W {false};
     
     // Gradient covariance matrix storage
     MatrixXd grad_covariance;
+    
+    // Cached preconditioners (averages from the most recent grad loop)
+    MatrixXd last_precond;       // cached preconditioner for last strategy
+    bool     last_precond_valid {false};
+
+    // Cached gradient from the last compute pass
+    Eigen::VectorXd last_gradient;
+    bool            last_grad_valid {false};
 
     // priors
     string prior_mu_type, prior_sigma_type, prior_nu_type;
@@ -111,6 +114,8 @@ protected:
 
     // For computing RB gradient_K
     vector<vector<SparseMatrix<double>>> block_dK;
+
+    sparse_llt_solver chol_QQ;
 
     // clock
     std::chrono::milliseconds sampling_time {0}, update_time {0};
@@ -125,17 +130,13 @@ public:
     int get_n_obs() const {return n_obs;}
     void sampleW_VY(bool burn_in = false);
     
-    double log_likelihood();
-
     bool is_all_gaussian() const { return all_gaussian; }
 
-    void sample_cond_V(bool update_Q = true) {
+    void sample_cond_V() {
       if(n_latent > 0){
         for (unsigned i=0; i < n_latent; i++) {
             (*latents[i]).sample_cond_V();
         }
-        
-        if (update_Q) update_QQ();
       }
     }
 
@@ -160,15 +161,20 @@ public:
     int                  get_n_params() const {return n_params;}
 
     VectorXd             get_parameter();
-    void                 set_parameter(const VectorXd&);
+    void                 set_parameter_and_update(const VectorXd&, bool with_precond);
 
-    VectorXd             grad();
-    MatrixXd             precond(int strategy=0, double eps=1e-5);
-    MatrixXd             precond_with_gibbs_samples(int strategy=0, double eps=1e-5);
+    // Accessors after compute
+    MatrixXd             get_preconditioner();
+    const VectorXd&      get_gradient() const { 
+        if (!last_grad_valid) {
+            throw std::runtime_error("last_gradient is not valid");
+        }
+        return last_gradient; 
+    }
     MatrixXd             get_grad_covariance() const {return grad_covariance;}
 
-    void                 examine_gradient();
-    void                 sampleW_V();
+    // Unified compute for both gradient and (optionally) preconditioner
+    void compute_grad_and_hessian(bool with_precond, double eps);
 
     /* Aseemble */
     void assemble() {
@@ -271,10 +277,16 @@ public:
     }
 
     VectorXd get_residual(bool rao_blackwell=false) const {
-      if (n_latent > 0 && !rao_blackwell) {
-        return Y - A * getW() - X * beta - (-VectorXd::Ones(n_obs) + noise_V).cwiseProduct(noise_mu);
-      } else if (n_latent > 0 && rao_blackwell) {
-        return Y - A * get_cond_W() - X * beta - (-VectorXd::Ones(n_obs) + noise_V).cwiseProduct(noise_mu);
+      // Compute sum_i A_i * Z_i * W_i (or cond_W_i) across latents
+      if (n_latent > 0) {
+        VectorXd AZW = VectorXd::Zero(n_obs);
+        for (int i = 0; i < n_latent; ++i) {
+          const auto& Ai = latents[i]->getA();
+          const auto& Zi = latents[i]->getZ();
+          VectorXd Wi = rao_blackwell ? latents[i]->get_cond_W() : latents[i]->getW();
+          AZW.noalias() += Ai * (Zi * Wi);
+        }
+        return Y - AZW - X * beta - (-VectorXd::Ones(n_obs) + noise_V).cwiseProduct(noise_mu);
       } else {
         return Y  - X * beta - (-VectorXd::Ones(n_obs) + noise_V).cwiseProduct(noise_mu);
       }
@@ -303,19 +315,6 @@ public:
     }
     
     // Methods for managing Gibbs samples for preconditioner
-    void clear_gibbs_samples() {
-        for (auto& latent : latents) {
-            latent->clear_gibbs_samples();
-        }
-    }
-    
-    void store_gibbs_samples() {
-        for (auto& latent : latents) {
-            latent->store_gibbs_sample();
-        }
-    }
-
-
     // --------- Fixed effects and Measurement error  ------------
     VectorXd grad_beta();
 
@@ -347,11 +346,9 @@ public:
     // double dtheta_rho(double th) const {return 2 * exp(th) / pow(1+exp(th), 2);}
     static double dtheta_th(double rho) {return (1-rho*rho) / 2;}
 
-    // compute numerical hessian for theta = c(beta, theta_mu, theta_sigma, nu)
-    MatrixXd num_h_no_latent(const VectorXd& v, double eps = 1e-5);
-    double logd_no_latent(const VectorXd& v);
-
-    void test_in_the_end();
+    // numerical Hessian path removed; all measurement/fixed-effects Hessians are analytic now
+    
+    double log_likelihood() {return 0.0;}
 };
 
 #endif

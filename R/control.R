@@ -26,8 +26,8 @@
 #' @param print_check_info print the convergence information
 #' @param start_sd        standard deviation of the initial parameter (1st chain fixed, other chains random), set 0 to be fixed for all chains
 #' @param optimizer choose different sgd optimization method, 
-#' currently support "precond_sgd", "momentum", "adagrad", "rmsprop", "adam", "adamW"
-#' see precond_sgd, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW
+#' currently support "sgd", "precond_sgd", "momentum", "adagrad", "rmsprop", "adam", "adamW"
+#' see ?sgd, ?precond_sgd, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW
 #'
 #' @param max_num_threads maximum number of threads used for parallel computing, by default will be set same as n_parallel_chain.
 #' If it is more than n_parallel_chain, the rest will be used to parallel different replicates of the model.
@@ -123,20 +123,6 @@ control_opt <- function(
       = solver_type %in% solver_type_list
   )
 
-  if (solver_type %in% c("pardiso", "accelerate") && preconditioner != "none") {
-    message("Preconditioner is not supported with Pardiso or Accelerate solver, switching to supernodal solver")
-    solver_type <- "supernodal"
-  }
-  
-  if (Sys.info()["sysname"] != "Darwin" && solver_type == "accelerate") {
-    warning("accelerate solver is not supported on MacOS, switch to default eigen solver")
-    solver_type <- "eigen"
-  }
-  if (Sys.info()["sysname"] == "Darwin" && solver_type == "pardiso") {
-    warning("pardiso solver is not supported on MacOS, switch to default eigen solver")
-    solver_type <- "eigen"
-  }
-
   if (n_parallel_chain == 1) {
     precond_by_diff_chain <- FALSE
   }
@@ -207,36 +193,6 @@ control_opt <- function(
   control
 }
 
-#' Generate control specifications for \code{f} function
-#'
-#' @param numer_grad    whether to use numerical gradient
-#' @param improve_hessian  improve numerical hessian by using central difference estimation (O(eps^2) error)
-#' default is forward difference estimation (O(eps) error)
-#' @param eps           eps for computing numerical gradient
-#' @param use_same_V    use the same V for preconditioning in the same chain
-#'
-#' @return list of control variables
-#' @export
-control_f <- function(
-  numer_grad       = TRUE,
-  improve_hessian  = TRUE,
-  eps              = 0.0001,
-  use_same_V       = FALSE 
-  # iterative_solver = FALSE
-  ) {
-
-  control <- list(
-    numer_grad       = numer_grad,
-    improve_hessian  = improve_hessian,
-    eps              = eps,
-    use_same_V       = use_same_V
-    # iterative_solver = iterative_solver
-  )
-
-  class(control) <- "control_f"
-  control
-}
-
 
 #' Generate control specifications for the ngme general model
 #'
@@ -255,7 +211,6 @@ control_ngme <- function(
   n_post_samples = 100,
   feff = NULL,
   debug = FALSE
-  # iterative_solver = FALSE
 ) {
   control <- list(
     init_sample_W = init_sample_W,
@@ -264,7 +219,6 @@ control_ngme <- function(
     feff = feff,
     n_post_samples = n_post_samples,
     debug = debug
-    # iterative_solver = iterative_solver
   )
 
   class(control) <- "control_ngme"

@@ -17,14 +17,14 @@ Tensor_prod::Tensor_prod(const Rcpp::List& operator_list):
   n_theta_2 (second->get_n_theta_K())
 {}
 
-void Tensor_prod::update_K(const VectorXd& theta_K) {
+void Tensor_prod::build_KZ(const VectorXd& theta_K) {
   // report the time for this function
 double time = 0;
 auto timer_computeg = std::chrono::steady_clock::now();
 // std::cout << "update K now" << std::endl;
-  first->update_K(theta_K.segment(0, n_theta_1));
+  first->build_KZ(theta_K.segment(0, n_theta_1));
 // std::cout << "update K now1" << std::endl;
-  second->update_K(theta_K.segment(n_theta_1, n_theta_2));
+  second->build_KZ(theta_K.segment(n_theta_1, n_theta_2));
 // std::cout << "new K size = " << first->getK().rows() * second->getK().rows() << " " << first->getK().cols() * second->getK().cols() << std::endl;
 
   // use Eigen kronecker product
@@ -35,30 +35,28 @@ auto timer_computeg = std::chrono::steady_clock::now();
 
 time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - timer_computeg).count();
 // std::cout << "size and time for kronecker product is " << K.rows() << " " << K.cols() << " " << time << std::endl;
+  // Z remains identity (set once in Operator base)
 }
 
-void Tensor_prod::update_dK(const VectorXd& theta_K) {
+bool Tensor_prod::update_dKdZ(const VectorXd& theta_K) {
   VectorXd theta_K_1 = theta_K.segment(0, n_theta_1);
   VectorXd theta_K_2 = theta_K.segment(n_theta_1, n_theta_2);
   // assume K is already updated!!
-  first->update_dK(theta_K_1);
-  second->update_dK(theta_K_2);
+  first->update_dKdZ(theta_K_1);
+  second->update_dKdZ(theta_K_2);
   for (int index=0; index < n_theta_1 + n_theta_2; index++) {
     if (index < n_theta_1) {
       // return kroneckerEigen(dK_1, K_2);
-      KroneckerProductSparse<SparseMatrix<double>, SparseMatrix<double> > kroneckerEigen(first->get_dK()[index], second->getK());
+      KroneckerProductSparse<SparseMatrix<double>, SparseMatrix<double> > kroneckerEigen(first->get_dK(index), second->getK());
       kroneckerEigen.evalTo(dK[index]);
     } else {
       // return kroneckerEigen(K_1, dK_2);
-      KroneckerProductSparse<SparseMatrix<double>, SparseMatrix<double> > kroneckerEigen(first->getK(), second->get_dK()[index - n_theta_1]);
+      KroneckerProductSparse<SparseMatrix<double>, SparseMatrix<double> > kroneckerEigen(first->getK(), second->get_dK(index - n_theta_1));
       kroneckerEigen.evalTo(dK[index]);
     }
   }
+  return true;
 }
-
-
-
-
 
 
 
@@ -107,7 +105,7 @@ Spacetime::Spacetime(const Rcpp::List& operator_list):
   }
 }
 
-void Spacetime::update_K(const VectorXd& theta_K) {
+void Spacetime::build_KZ(const VectorXd& theta_K) {
   K.setZero();
   double c = exp(theta_K[0]);
   double kappa = exp(theta_K[1]);
@@ -216,4 +214,3 @@ void Spacetime::update_K(const VectorXd& theta_K) {
 
 void Spacetime::update_dK(const VectorXd& theta_K) {
 }
-

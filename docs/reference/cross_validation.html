@@ -124,7 +124,7 @@
 <span>  k <span class="op">=</span> <span class="fl">5</span>,</span>
 <span>  percent <span class="op">=</span> <span class="fl">0.2</span>,</span>
 <span>  times <span class="op">=</span> <span class="fl">10</span>,</span>
-<span>  transform <span class="op">=</span> <span class="va">identity</span>,</span>
+<span>  metric <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  test_idx <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  train_idx <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  keep_pred <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -185,9 +185,13 @@ custom is user-defined group, provide <code>target</code> and <code>data</code><
 <dd><p>how many test cases (only for lpo type)</p></dd>
 
 
-<dt id="arg-transform">transform<a class="anchor" aria-label="anchor" href="#arg-transform"></a></dt>
-<dd><p>a function or a list of functions (length equal to number of models) to map predictions and observations to the comparison scale (e.g., identity for original scale, exp if the model is on log scale).
-e.g., the MAE will be computed as |transform(Y) - transform(Y_pred)|</p></dd>
+<dt id="arg-metric">metric<a class="anchor" aria-label="anchor" href="#arg-metric"></a></dt>
+<dd><p>Optional function or list of functions (one per model) that maps the group-wise observations/predictions for a single location to the quantity that should be scored.
+The function receives a list containing at least `y` (named numeric vector of group values) and may optionally use `samples1`/`samples2` (matrices with rows named by group and columns indexing posterior draws).
+The function must return either a numeric scalar (optionally named) or a list with components `y` (scalar), and optionally `samples1`/`samples2` (numeric vectors matching the posterior draw count) and `label` (character).
+When `NULL`, the original per-group scores are computed.
+For example, to compare a linear combination of two fields you can use
+`metric = function(data)  res &lt;- 2 * data$y["A"] + data$y["B"]; names(res) &lt;- "combo"; res `. To simply sum all group values, return `sum(data$y)`.</p></dd>
 
 
 <dt id="arg-test-idx">test_idx<a class="anchor" aria-label="anchor" href="#arg-test-idx"></a></dt>

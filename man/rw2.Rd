@@ -26,18 +26,18 @@ An `ngme_operator` object containing the precision matrix and related
 }
 \description{
 Constructs a second-order random walk model for spatial or temporal processes.
-The RW2 model assumes that second-order differences 
-\eqn{\Delta^2 W_i = W_i - 2W_{i-1} + W_{i-2}} are independent and identically 
+The RW2 model assumes that second-order differences
+\eqn{\Delta^2 W_i = W_i - 2W_{i-1} + W_{i-2}} are independent and identically
 distributed Gaussian variables.
 }
 \details{
-The RW2 model is defined by the precision matrix \eqn{K} that penalizes 
+The RW2 model is defined by the precision matrix \eqn{K} that penalizes
 second-order differences, making it smoother than RW1. The model enforces
 constraints to ensure identifiability:
 
 **Non-cyclic (default)**: The first two rows of \eqn{K} enforce constraints:
-the first row implements \eqn{\sum_{i=1}^n h_i W_i = 0} (sum-to-zero), 
-and the second row implements \eqn{\sum_{i=1}^n h_i \cdot i \cdot W_i = 0} 
+the first row implements \eqn{\sum_{i=1}^n h_i W_i = 0} (sum-to-zero),
+and the second row implements \eqn{\sum_{i=1}^n h_i \cdot i \cdot W_i = 0}
 (removes linear trend). The remaining rows penalize second-order differences.
 
 **Cyclic**: Treats the domain as circular, connecting the first and last locations

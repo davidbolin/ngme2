@@ -24,7 +24,7 @@ ngme AR(p) model specification
 \examples{
 # AR(2) model with specified coefficients
 ar(c(1:10), rho = c(0.5, -0.3))
-# AR(3) model with specified coefficients 
+# AR(3) model with specified coefficients
 ar(c(1:10), rho = c(0.4, 0.2, -0.1))
 # AR(2) model with default coefficients (zeros)
 ar(c(1:10), order = 2)

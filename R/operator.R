@@ -3,6 +3,7 @@ ngme_operator <- function(
   model,
   K,
   h,
+  Z = NULL,
   theta_K = NULL,
   zero_trace = FALSE,
   symmetric = FALSE,
@@ -10,6 +11,8 @@ ngme_operator <- function(
   ...
 ) {
   if (is.null(K)) stop("K is NULL.")
+  if (nrow(K) != ncol(K)) stop("K is not a square matrix.")
+  if (is.null(Z)) Z <- diag(nrow(K))
 
   structure(
     list(
@@ -17,6 +20,7 @@ ngme_operator <- function(
       model = model,
       K = K,
       h = h,
+      Z = Z,
       theta_K = theta_K,
       n_theta_K = length(theta_K),
       zero_trace = zero_trace,
@@ -57,6 +61,7 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
 
   model_name <- switch(operator$model,
     ar1 = "AR(1)",
+    arma = "ARMA",
     matern = "Matern",
     tp  = "Tensor product",
     bv  = "Bivariate model (non-Gaussian noise)",
@@ -86,10 +91,79 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
   cat(pad_space, model_name, sep="")
 
   parameter <- with(operator, switch(model,
+    arma = {
+      # Compute friendly AR/MA from raw theta_K for p,q<=2
+      get_ar_from_raw <- function(raw, p) {
+        if (p <= 0) return(numeric(0))
+        if (p == 1) return(ar1_th2a(raw[1]))
+        if (p == 2) {
+          t1 <- ar1_th2a(raw[1]); t2 <- ar1_th2a(raw[2])
+          return(c(t1 * (1 - t2), t2))
+        }
+        numeric(0)
+      }
+      get_ma_from_raw <- function(raw, q) {
+        if (q <= 0) return(numeric(0))
+        if (q == 1) return(ar1_th2a(raw[1]))
+        if (q == 2) {
+          t1 <- ar1_th2a(raw[1]); t2 <- ar1_th2a(raw[2])
+          return(c(t1 * (1 - t2), t2))
+        }
+        numeric(0)
+      }
+      pp <- if (!is.null(p)) p else sum(startsWith(names(theta_K), "ar"))
+      qq <- if (!is.null(q)) q else sum(startsWith(names(theta_K), "ma"))
+      raw_ar <- if (pp>0) theta_K[seq_len(pp)] else numeric(0)
+      raw_ma <- if (qq>0) theta_K[pp + seq_len(qq)] else numeric(0)
+      ar_vals <- get_ar_from_raw(raw_ar, pp)
+      ma_vals <- get_ma_from_raw(raw_ma, qq)
+      if (length(ar_vals) > 0) {
+        cat(pad_add4_space, "ar = ", limited_format(ar_vals, digits=3), "\n", sep="")
+      } else {
+        cat(pad_add4_space, "ar = <none>\n", sep="")
+      }
+      if (length(ma_vals) > 0) {
+        cat(pad_add4_space, "ma = ", limited_format(ma_vals, digits=3), "\n", sep="")
+      } else {
+        cat(pad_add4_space, "ma = <none>\n", sep="")
+      }
+    },
     ar1 = cat(pad_add4_space, "rho = ", format(ar1_th2a(theta_K), digits=3), "\n", sep=""),
-    matern = if (length(theta_K) > 1)
-      cat(pad_add4_space, "theta_K = ", format(theta_K, digits=3), "\n", sep=" ") else
-      cat(pad_add4_space, "kappa = ", format(exp(theta_K), digits=3), "\n", sep=""),
+    matern = {
+      # Print alpha from operator$alpha when available; fixed/free from operator$fix_alpha
+      d <- if (!is.null(operator$spatial_dim)) operator$spatial_dim else 2
+      L <- d/2
+      alpha_fixed <- isTRUE(operator$fix_alpha)
+      if (!is.null(operator$alpha)) {
+        alpha_val <- operator$alpha
+      } else if (length(theta_K) >= 1 && !alpha_fixed) {
+        # Fall back: derive from eta_alpha in theta_K[1]
+        eta_alpha <- theta_K[1]
+        alpha_val <- L + (4 - L) * (1/(1+exp(-eta_alpha)))
+      } else {
+        alpha_val <- NA
+      }
+      alpha_status <- if (alpha_fixed) "(fixed)" else "(free)"
+      cat(pad_add4_space, "alpha = ", format(alpha_val, digits=3), " ", alpha_status, "\n", sep="")
+
+      stationary <- isTRUE(operator$stationary)
+      # theta_K layout:
+      #   if fix_alpha:      [theta_kappa...]
+      #   else (not fixed):  [eta_alpha, theta_kappa...]
+      offset <- if (alpha_fixed) 0 else 1
+      if (stationary) {
+        if (length(theta_K) >= 1) {
+          idx <- 1 + 0*offset  # stationary has single kappa
+          kappa <- exp(theta_K[idx])
+          cat(pad_add4_space, "kappa = ", format(kappa, digits=3), "\n", sep="")
+        }
+      } else {
+        if (length(theta_K) > offset) {
+          theta_kappa <- theta_K[(1+offset):length(theta_K)]
+          cat(pad_add4_space, "theta_kappa = ", limited_format(theta_kappa, digits=3), "\n", sep=" ")
+        }
+      }
+    },
     tp = {
       print(operator$first,  padding = padding + 4, prefix = "first")
       print(operator$second, padding = padding + 4, prefix = "second")
@@ -291,7 +365,6 @@ ngme_model <- function(
   W           = NULL,
   fix_W       = FALSE,
   A           = NULL,
-  control     = control_f(),
   V_size      = NULL,
   debug       = FALSE,
   n_params    = NULL,
@@ -343,7 +416,6 @@ ngme_model <- function(
       W             = W,
       fix_W         = fix_W,
       V_size        = V_size,
-      control       = control,
       n_params      = n_params,
       debug         = debug,
       par_string    = par_string,
@@ -371,7 +443,38 @@ print.ngme_model <- function(x, padding = 0, ...) {
   pad_space <- paste(rep(" ", padding), collapse = "")
   
   # Print operator information
-  print.ngme_operator(model$operator, padding = padding)
+  # If we have trajectory attached (from fitting), prefer the last estimates
+  op <- model$operator
+  traj <- attr(model, "lat_traj")
+  if (!is.null(traj) && length(traj) > 0 && is.list(traj)) {
+    n_theta_K <- length(op$theta_K)
+    # collect last column from each chain
+    last_mat <- tryCatch({
+      do.call(cbind, lapply(traj, function(m) m[, ncol(m), drop=FALSE]))
+    }, error = function(e) NULL)
+    if (!is.null(last_mat) && nrow(last_mat) >= n_theta_K) {
+      last_avg <- rowMeans(last_mat)
+      theta_last_raw <- as.numeric(last_avg[seq_len(n_theta_K)])
+      op2 <- op
+      op2$theta_K <- theta_last_raw
+      # For matern with free alpha, update printable alpha from raw eta
+      if (identical(model$model, "matern")) {
+        d <- if (!is.null(op$spatial_dim)) op$spatial_dim else 2
+        L <- d/2
+        if (isTRUE(op$fix_alpha)) {
+          # keep op$alpha as provided
+        } else if (length(theta_last_raw) >= 1) {
+          eta_alpha <- theta_last_raw[1]
+          op2$alpha <- L + (4 - L) * (1/(1+exp(-eta_alpha)))
+        }
+      }
+      print.ngme_operator(op2, padding = padding)
+    } else {
+      print.ngme_operator(op, padding = padding)
+    }
+  } else {
+    print.ngme_operator(op, padding = padding)
+  }
   
   # Print replicate information if replicates are used
   if (!is.null(model$replicate)) {

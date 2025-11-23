@@ -10,7 +10,6 @@ private:
     std::shared_ptr<Ngme> model;
 
     bool verbose {false};
-    int precond_strategy; // 0 for none, 1 for fast, 2 for full
     double numerical_eps;
     double converge_eps;
     int curr_iter;
@@ -19,7 +18,6 @@ private:
     double max_relative_step;
     double max_absolute_step;
     double stepsize;
-
 
     std::string method, line_search_method;
     VectorXd sgd_parameters;
@@ -30,6 +28,7 @@ private:
 
     // store the preconditioner
     MatrixXd preconditioner;
+    bool compute_precond {false};
     
     // bfgs: H approximates the inverse of Hessian 
     MatrixXd H;
@@ -51,22 +50,6 @@ public:
      Eigen::VectorXd sgd(
         double eps,
         int iterations,
-        double max_relative_step,
-        double max_absolute_step,
-        bool compute_precond_each_iter = false
-    );
-
-    // Fine-grained SGD split for precise preconditioner exchange control
-    // Step 1: Compute gradient only
-    void sgd_compute_gradient();
-    
-    // Step 2: Compute preconditioner only  
-    void sgd_compute_preconditioner();
-    
-    // Step 3: (External) Exchange preconditioners between chains
-    // Step 4: Apply preconditioner to gradient and take step
-    Eigen::VectorXd sgd_compute_and_take_step(
-        double eps,
         double max_relative_step,
         double max_absolute_step,
         bool compute_precond_each_iter = false
@@ -118,7 +101,7 @@ public:
     );
 
     double log_likelihood(const VectorXd& x) { 
-        model->set_parameter(x); 
+        model->set_parameter_and_update(x, false); 
         return model->log_likelihood(); 
     }
     

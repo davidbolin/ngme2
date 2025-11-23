@@ -42,8 +42,7 @@ Rcpp::List estimate_cpp(const Rcpp::List& R_ngme, const Rcpp::List& control_opt)
     const double max_relative_step = control_opt["max_relative_step"];
     const double max_absolute_step = control_opt["max_absolute_step"];
     const int sampling_strategy = control_opt["sampling_strategy"];
-    const bool precond_by_diff_chain = control_opt["precond_by_diff_chain"];
-    const bool compute_precond_each_iter = !precond_by_diff_chain;
+    const bool compute_precond_each_iter = true;
     const int n_repls = R_ngme["n_repls"];
     const bool store_traj = control_opt.containsElementNamed("store_traj") ?
         Rcpp::as<bool>(control_opt["store_traj"]) : true;
@@ -112,62 +111,19 @@ auto timer = std::chrono::steady_clock::now();
     while (steps < iterations && !all_converge) {
         MatrixXd mat (n_chains, n_params);
 
-        // Run batch_steps iterations using the new 4-step interface
+        // Run batch_steps iterations using unified SGD step (computes grad and, optionally, precond)
         for (int step = 0; step < batch_steps; step++) {
-            // Step 1: Compute gradients for all chains
             #pragma omp parallel for schedule(static) num_threads(n_threads_chain)
             for (i=0; i < n_chains; i++) {
-                opt_vec[i].sgd_compute_gradient();
-            }
-
-            // It will be skipped if compute_precond_each_iter is true
-            if (n_chains > 1 && precond_by_diff_chain) {
-                // Step 2: Compute preconditioners for all chains
-                #pragma omp parallel for schedule(static) num_threads(n_threads_chain)
-                for (i=0; i < n_chains; i++) {
-                    opt_vec[i].sgd_compute_preconditioner();
-                }
-
-                // Step 3 (Option 1): Circular shift preconditioners
-                // Save the preconditioner of the last chain to use it in the circular shift
-                // MatrixXd last_precond = opt_vec[n_chains - 1].get_preconditioner();
-
-                // // Circularly shift preconditioners
-                // for (int i = n_chains - 1; i > 0; i--) {
-                //     opt_vec[i].set_preconditioner(opt_vec[i - 1].get_preconditioner());
-                // }
-
-                // // Set the first chain's preconditioner to the last chain's original preconditioner
-                // opt_vec[0].set_preconditioner(last_precond);
-                
-                // // Step 3 (Option 2): Exchange preconditioners between chains using a average approach
-                // First, save all original preconditioners
-                std::vector<MatrixXd> original_preconds(n_chains);
-                for (int i=0; i < n_chains; i++)
-                    original_preconds[i] = opt_vec[i].get_preconditioner();
-
-                // Compute the sum of all preconditioners
-                MatrixXd precond_sum = MatrixXd::Zero(n_params, n_params);
-                for (int i=0; i < n_chains; i++)
-                    precond_sum += original_preconds[i];
-
-                // Set each chain's preconditioner to the average of all OTHER chains
-                for (int i=0; i < n_chains; i++)
-                    opt_vec[i].set_preconditioner((precond_sum - original_preconds[i]) / (n_chains - 1));
-            }
-
-
-            // Step 4: Apply preconditioners and take steps
-            #pragma omp parallel for schedule(static) num_threads(n_threads_chain)
-            for (i=0; i < n_chains; i++) {
-                VectorXd param = opt_vec[i].sgd_compute_and_take_step(
-                    0.1,
+                // Compute one SGD step; decide whether to compute preconditioner this iter
+                // We compute it every iter if compute_precond_each_iter, else let the optimizer refresh at needed cadence
+                VectorXd param = opt_vec[i].sgd(
+                    0.1,              // eps
+                    1,                 // one step per loop
                     max_relative_step,
                     max_absolute_step,
                     compute_precond_each_iter
                 );
-
-                // Store final parameters only after last step
                 if (step == batch_steps - 1) {
                     #pragma omp critical
                     mat.row(i) = param;

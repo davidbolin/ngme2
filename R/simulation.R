@@ -48,7 +48,7 @@ simulate.ngme_model <- function(
       e <- simulate_noise(noise$noise_type, h, mu, sigma, nu, seed+3, noise$single_V)
     }
 
-    W <- as.numeric(solve(model$operator$K, e))
+    W <- as.numeric(solve(model$operator$K, model$operator$Z %*% e))
 
     # Need to map W and V to data by A matrix!!!
     if (is.null(model$A)) {

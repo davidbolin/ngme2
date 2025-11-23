@@ -24,7 +24,7 @@ Randeff::Randeff(const Rcpp::List& operator_list):
 //     }
 
 // K^T K = Sigma^-1
-void Randeff::update_K(const VectorXd& theta_K) {
+void Randeff::build_KZ(const VectorXd& theta_K) {
     VectorXd diag = theta_K.head(n_reff).array().exp();
     VectorXd offdiag = theta_K.tail(n_reff * (n_reff+1) / 2 - n_reff);
 
@@ -42,7 +42,7 @@ void Randeff::update_K(const VectorXd& theta_K) {
     // std::cout << "K \n" << K << std::endl;
 }
 
-void Randeff::update_dK(const VectorXd& theta_K) {
+bool Randeff::update_dKdZ(const VectorXd& theta_K) {
     // std::cout << "Start update_dK" << std::endl;
     for (int index=0; index < n_theta_K; index++) {
         if (index < n_reff) {
@@ -62,7 +62,7 @@ void Randeff::update_dK(const VectorXd& theta_K) {
         }
     // std::cout << "dK[" << index << "] \n" << dK[index] << std::endl;
     }
-    // std::cout << "end update_dK" << std::endl;
+    return true;
 }
 
 // SparseMatrix<double> Randeff::get_dK(int index, const VectorXd& alpha) const {

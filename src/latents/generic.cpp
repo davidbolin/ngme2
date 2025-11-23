@@ -33,7 +33,7 @@ Generic::Generic(const Rcpp::List& operator_list):
     }
 }
 
-void Generic::update_K(const VectorXd& theta_K) {
+void Generic::build_KZ(const VectorXd& theta_K) {
     // Default coefficients: all ones
     VectorXd coef = VectorXd::Ones(matrices.size());
     
@@ -65,11 +65,6 @@ void Generic::update_K(const VectorXd& theta_K) {
     for (int i = 0; i < matrices.size(); i++) {
         K += coef[i] * matrices[i];
     }
-}
-
-void Generic::update_dK(const VectorXd& theta_K) {
-    // This would need to be implemented to calculate derivatives
-    // for parameter estimation
 }
 
 double Generic::apply_transform(double value, const std::string& trans_type) const {

@@ -7,19 +7,22 @@ set.seed(seed)
 n_obs <- 500
 day <- 1:n_obs
 sigma_eps <- 0.5
-mu = 2; delta = -mu
+mu <- 2
+delta <- -mu
 sigma <- 3
 nu <- 1
 rho <- 0.5
 
-ar1_model <- f(day, model="ar1", rho = rho,
-  noise = noise_nig(mu = mu, sigma = sigma, nu=nu))
-  # noise = noise_normal(sigma = sigma))
+ar1_model <- f(day,
+  model = "ar1", rho = rho,
+  noise = noise_nig(mu = mu, sigma = sigma, nu = nu)
+)
+# noise = noise_normal(sigma = sigma))
 
 # ar1_model <- f(day, model="ar1", rho = 0.5,
 #   noise = noise_normal())
 
-process <- simulate(ar1_model, seed = seed, nsim=1)[[1]]
+process <- simulate(ar1_model, seed = seed, nsim = 1)[[1]]
 Y <- process + rnorm(n_obs, sd = sigma_eps)
 
 # # First we generate V. V_i follows inverse Gaussian distribution
@@ -46,7 +49,7 @@ control_same <- control_opt(
   std_lim = 0.01,
   trend_lim = 0.01,
   n_slope_check = 3,
-  n_trace_iter=30,
+  n_trace_iter = 30,
   start_sd = 0.0
 )
 
@@ -63,12 +66,12 @@ system.time({
       noise = noise_nig()
     ),
     family = noise_normal(),
-    data = data.frame(Y=Y),
+    data = data.frame(Y = Y),
     # debug = TRUE,
     control_opt = control_same
   )
 })
 
 ret_nig_same
-traceplot(ret_nig_same, "my_ar", hline=c(rho, mu, sigma, nu))
-traceplot(ret_nig_same, hline=c(sigma_eps))
+traceplot(ret_nig_same, "my_ar", hline = c(rho, mu, sigma, nu))
+traceplot(ret_nig_same, hline = c(sigma_eps))

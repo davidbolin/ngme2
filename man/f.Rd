@@ -21,6 +21,7 @@ f(
   prior_theta_K = ngme_prior("normal", param = c(0, 0.001)),
   subset = rep(TRUE, length_map(map)),
   debug = FALSE,
+  ma = NULL,
   ...
 )
 }
@@ -31,7 +32,7 @@ f(
 
 \item{noise}{ngme_noise object, noise_nig() or noise_gal()}
 
-\item{mesh}{mesh for the model, if not provided, will be built from map. 
+\item{mesh}{mesh for the model, if not provided, will be built from map.
 Can be a single mesh object or a list of mesh objects for different replicates.
 When using replicates, provide mesh as a list where mesh[[i]] corresponds to replicate i.}
 
@@ -43,7 +44,7 @@ When using replicates, provide mesh as a list where mesh[[i]] corresponds to rep
 
 \item{which_group}{belong to which group}
 
-\item{replicate}{factor indicating replicate structure for INLA-style replicates. 
+\item{replicate}{factor indicating replicate structure for INLA-style replicates.
 When provided, operators and A matrices will be block-diagonalized across replicates.}
 
 \item{A}{observation matrix, automatically computed given map and model except for Bayesian regression}
@@ -82,7 +83,7 @@ as a list of mesh objects. The number of meshes should match the number of repli
 For example: \code{mesh = list(mesh1, mesh2, mesh3)} for 3 replicates.
 
 When using the `replicate` argument, the operator matrices will be block-diagonalized.
-For a generic operator K = param1 * Matrix1 + param2 * Matrix2, with 2 replicates, 
+For a generic operator K = param1 * Matrix1 + param2 * Matrix2, with 2 replicates,
 the resulting operator becomes:
 K = param1 * bdiag(Matrix1_rep1, Matrix1_rep2) + param2 * bdiag(Matrix2_rep1, Matrix2_rep2)
 Similarly, the A matrix will be block-diagonalized as bdiag(A_rep1, A_rep2, ...).

@@ -5,42 +5,48 @@
 //  - C, Ci, G: FEM matrices (Eigen::SparseMatrix<double>)
 //  - beta: fractional power (double)
 //  - m: order of the rational approximation (int)
-//  - tau: vector of tau values (Eigen::VectorXd). Can be length 1 (constant) or length n.
+//  - tau: vector of tau values (Eigen::VectorXd). Can be length 1 (constant) or
+//  length n.
 //  - theta_kappa: parameter vector (Eigen::VectorXd)
-//  - B_kappa: design matrix for log-kappa (Eigen::SparseMatrix<double>), so kappa(s) = exp(B_kappa * theta_kappa)
+//  - B_kappa: design matrix for log-kappa (Eigen::SparseMatrix<double>), so
+//  kappa(s) = exp(B_kappa * theta_kappa)
 //
 // Outputs:
 //  - Pl, Pr: assembled sparse operators as Eigen::SparseMatrix<double>
 //
 // Notes:
 //  - This function follows the same scaling strategy as fractional.operators:
-//      L <- (G + C * diag(kappa^2)) / c, with c = min(kappa)^2, and A := Ci * L.
-//    The final Pl is multiplied by c^beta so that the scaling cancels analytically
-//    while improving numerical conditioning during assembly.
+//      L <- (G + C * diag(kappa^2)) / c, with c = min(kappa)^2, and A := Ci *
+//      L.
+//    The final Pl is multiplied by c^beta so that the scaling cancels
+//    analytically while improving numerical conditioning during assembly.
 //  - For integer beta, no rational roots are needed.
-//  - For fractional beta, the construction requires rational approximation roots
-//    rb (length m+1), rc (length m) and a scaling factor. These are provided in rSPDE
-//    via internal tables (sysdata.rda) and accessed through get.roots().
-//    In this standalone C++ implementation, users must supply those roots via the
-//    optional overload or integrate a table-backed get_roots(). See get_roots() stub below.
+//  - For fractional beta, the construction requires rational approximation
+//  roots
+//    rb (length m+1), rc (length m) and a scaling factor. These are provided in
+//    rSPDE via internal tables (sysdata.rda) and accessed through get.roots().
+//    In this standalone C++ implementation, users must supply those roots via
+//    the optional overload or integrate a table-backed get_roots(). See
+//    get_roots() stub below.
 
-#include <Eigen/Sparse>
+#include "fractional_operators.hpp"
+#include "roots_tables.hpp"
 #include <Eigen/Dense>
-#include <utility>
-#include <vector>
-#include <stdexcept>
-#include <limits>
+#include <Eigen/Sparse>
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <iostream>
+#include <limits>
+#include <stdexcept>
 #include <string>
-#include "fractional_operators.hpp"
-#include "roots_tables.hpp"
+#include <utility>
+#include <vector>
 
+using Eigen::Index;
+using Eigen::MatrixXd;
 using Eigen::SparseMatrix;
 using Eigen::VectorXd;
-using Eigen::MatrixXd;
-using Eigen::Index;
 
 namespace rspde_cpp {
 
@@ -62,46 +68,42 @@ struct TableView {
 
 const TableView &table_for_order(int order) {
   using namespace detail;
-  static const TableView table1{
-      m1_beta,
-      m1_factor,
-      {m1_rc, nullptr, nullptr, nullptr},
-      {m1_rb_1, m1_rb_2, nullptr, nullptr, nullptr},
-      1,
-      2,
-      m1_size,
-      m1_beta[0],
-      m1_beta[m1_size - 1]};
-  static const TableView table2{
-      m2_beta,
-      m2_factor,
-      {m2_rc_1, m2_rc_2, nullptr, nullptr},
-      {m2_rb_1, m2_rb_2, m2_rb_3, nullptr, nullptr},
-      2,
-      3,
-      m2_size,
-      m2_beta[0],
-      m2_beta[m2_size - 1]};
-  static const TableView table3{
-      m3_beta,
-      m3_factor,
-      {m3_rc_1, m3_rc_2, m3_rc_3, nullptr},
-      {m3_rb_1, m3_rb_2, m3_rb_3, m3_rb_4, nullptr},
-      3,
-      4,
-      m3_size,
-      m3_beta[0],
-      m3_beta[m3_size - 1]};
-  static const TableView table4{
-      m4_beta,
-      m4_factor,
-      {m4_rc_1, m4_rc_2, m4_rc_3, m4_rc_4},
-      {m4_rb_1, m4_rb_2, m4_rb_3, m4_rb_4, m4_rb_5},
-      4,
-      5,
-      m4_size,
-      m4_beta[0],
-      m4_beta[m4_size - 1]};
+  static const TableView table1{m1_beta,
+                                m1_factor,
+                                {m1_rc, nullptr, nullptr, nullptr},
+                                {m1_rb_1, m1_rb_2, nullptr, nullptr, nullptr},
+                                1,
+                                2,
+                                m1_size,
+                                m1_beta[0],
+                                m1_beta[m1_size - 1]};
+  static const TableView table2{m2_beta,
+                                m2_factor,
+                                {m2_rc_1, m2_rc_2, nullptr, nullptr},
+                                {m2_rb_1, m2_rb_2, m2_rb_3, nullptr, nullptr},
+                                2,
+                                3,
+                                m2_size,
+                                m2_beta[0],
+                                m2_beta[m2_size - 1]};
+  static const TableView table3{m3_beta,
+                                m3_factor,
+                                {m3_rc_1, m3_rc_2, m3_rc_3, nullptr},
+                                {m3_rb_1, m3_rb_2, m3_rb_3, m3_rb_4, nullptr},
+                                3,
+                                4,
+                                m3_size,
+                                m3_beta[0],
+                                m3_beta[m3_size - 1]};
+  static const TableView table4{m4_beta,
+                                m4_factor,
+                                {m4_rc_1, m4_rc_2, m4_rc_3, m4_rc_4},
+                                {m4_rb_1, m4_rb_2, m4_rb_3, m4_rb_4, m4_rb_5},
+                                4,
+                                5,
+                                m4_size,
+                                m4_beta[0],
+                                m4_beta[m4_size - 1]};
 
   switch (order) {
   case 1:
@@ -124,7 +126,8 @@ InterpType parse_interp(const std::string &type) {
   if (type == "spline") {
     return InterpType::Spline;
   }
-  throw std::invalid_argument("type_interp must be either 'linear' or 'spline'");
+  throw std::invalid_argument(
+      "type_interp must be either 'linear' or 'spline'");
 }
 
 double clamp_beta(const TableView &tbl, double beta) {
@@ -137,7 +140,8 @@ double clamp_beta(const TableView &tbl, double beta) {
   return beta;
 }
 
-double linear_interp(const double *x, const double *y, std::size_t n, double xout) {
+double linear_interp(const double *x, const double *y, std::size_t n,
+                     double xout) {
   if (n == 0) {
     throw std::invalid_argument("table has zero length");
   }
@@ -172,7 +176,8 @@ struct CubicCoeffs {
   std::vector<double> d;
 };
 
-CubicCoeffs compute_fmm_coeffs(const double *x, const double *y, std::size_t n) {
+CubicCoeffs compute_fmm_coeffs(const double *x, const double *y,
+                               std::size_t n) {
   if (n < 2) {
     throw std::invalid_argument("need at least two support points");
   }
@@ -213,8 +218,8 @@ CubicCoeffs compute_fmm_coeffs(const double *x, const double *y, std::size_t n) 
     rhs[nm1] = rhs[nm1 - 1] / (x[nm1] - x[nm1 - 2]) -
                rhs[nm1 - 2] / (x[nm1 - 1] - x[nm1 - 3]);
     rhs[0] = rhs[0] * offdiag[0] * offdiag[0] / (x[3] - x[0]);
-    rhs[nm1] = -rhs[nm1] * offdiag[nm1 - 1] * offdiag[nm1 - 1] /
-               (x[nm1] - x[nm1 - 3]);
+    rhs[nm1] =
+        -rhs[nm1] * offdiag[nm1 - 1] * offdiag[nm1 - 1] / (x[nm1] - x[nm1 - 3]);
   }
 
   for (std::size_t i = 1; i < n; ++i) {
@@ -229,7 +234,7 @@ CubicCoeffs compute_fmm_coeffs(const double *x, const double *y, std::size_t n) 
   }
 
   coeffs.b[nm1] = (y[nm1] - y[nm1 - 1]) / offdiag[nm1 - 1] +
-                   offdiag[nm1 - 1] * (rhs[nm1 - 1] + 2.0 * rhs[nm1]);
+                  offdiag[nm1 - 1] * (rhs[nm1 - 1] + 2.0 * rhs[nm1]);
   for (std::size_t i = 0; i < nm1; ++i) {
     coeffs.b[i] = (y[i + 1] - y[i]) / offdiag[i] -
                   offdiag[i] * (rhs[i + 1] + 2.0 * rhs[i]);
@@ -242,10 +247,8 @@ CubicCoeffs compute_fmm_coeffs(const double *x, const double *y, std::size_t n) 
 }
 
 double eval_cubic(const double *x, const double *y,
-                  const std::vector<double> &b,
-                  const std::vector<double> &c,
-                  const std::vector<double> &d,
-                  std::size_t n, double xout) {
+                  const std::vector<double> &b, const std::vector<double> &c,
+                  const std::vector<double> &d, std::size_t n, double xout) {
   if (n == 0) {
     throw std::invalid_argument("table has zero length");
   }
@@ -273,13 +276,14 @@ double eval_cubic(const double *x, const double *y,
   return y[i] + dx * (b[i] + dx * (c[i] + dx * tmp));
 }
 
-double spline_interp(const double *x, const double *y, std::size_t n, double xout) {
+double spline_interp(const double *x, const double *y, std::size_t n,
+                     double xout) {
   CubicCoeffs coeffs = compute_fmm_coeffs(x, y, n);
   return eval_cubic(x, y, coeffs.b, coeffs.c, coeffs.d, n, xout);
 }
 
-double interpolate_column(const TableView &tbl, const double *column, double beta,
-                          InterpType mode) {
+double interpolate_column(const TableView &tbl, const double *column,
+                          double beta, InterpType mode) {
   switch (mode) {
   case InterpType::Linear:
     return linear_interp(tbl.beta, column, tbl.size, beta);
@@ -307,17 +311,16 @@ Roots get_roots(int m, double beta, const std::string &type_interp) {
   r.factor = interpolate_column(tbl, tbl.factor, beta_eval, mode);
   r.rb.resize(static_cast<std::size_t>(tbl.rb_count));
   for (int i = 0; i < tbl.rb_count; ++i) {
-    r.rb[static_cast<std::size_t>(i)] =
-        interpolate_column(tbl, tbl.rb_cols[static_cast<std::size_t>(i)], beta_eval, mode);
+    r.rb[static_cast<std::size_t>(i)] = interpolate_column(
+        tbl, tbl.rb_cols[static_cast<std::size_t>(i)], beta_eval, mode);
   }
   r.rc.resize(static_cast<std::size_t>(tbl.rc_count));
   for (int i = 0; i < tbl.rc_count; ++i) {
-    r.rc[static_cast<std::size_t>(i)] =
-        interpolate_column(tbl, tbl.rc_cols[static_cast<std::size_t>(i)], beta_eval, mode);
+    r.rc[static_cast<std::size_t>(i)] = interpolate_column(
+        tbl, tbl.rc_cols[static_cast<std::size_t>(i)], beta_eval, mode);
   }
   return r;
 }
-
 
 // Create a sparse identity matrix of size n
 inline SpMat speye(Index n) {
@@ -339,13 +342,13 @@ inline SpMat spdiag(const VectorXd &d) {
 }
 
 // Multiply a sparse matrix by a scalar (in place)
-inline void smat_scale_inplace(SpMat &M, double s) {
-  M *= s;
-}
+inline void smat_scale_inplace(SpMat &M, double s) { M *= s; }
 
 // Compute product prod_i (I - alpha[i] * A) for a sparse A.
-// Returns a new sparse matrix. Order is left-to-right as in R code: start with (I - a1 A), then multiply by (I - a2 A), etc.
-inline SpMat product_linear_factors(const SpMat &A, const std::vector<double> &alpha) {
+// Returns a new sparse matrix. Order is left-to-right as in R code: start with
+// (I - a1 A), then multiply by (I - a2 A), etc.
+inline SpMat product_linear_factors(const SpMat &A,
+                                    const std::vector<double> &alpha) {
   const Index n = A.rows();
   SpMat P = speye(n) - (A * alpha.front());
   for (size_t i = 1; i < alpha.size(); ++i) {
@@ -383,24 +386,21 @@ inline SpMat build_Phi(Index n, const VectorXd &tau) {
 
 // Core implementation, fractional beta requires rb/rc/factor.
 std::pair<SpMat, SpMat> compute_fractional_operators_with_roots(
-    const SpMat &C_in,
-    const SpMat &Ci_in,
-    const SpMat &G,
-    double beta,
-    int m,
-    const VectorXd &tau,
-    const VectorXd &theta_kappa,
-    const SpMat &B_kappa,
-    const std::vector<double> &rb,   // size m+1 (only used if beta not integer)
-    const std::vector<double> &rc,   // size m   (only used if beta not integer)
-    double roots_factor               // (only used if beta not integer)
+    const SpMat &C_in, const SpMat &Ci_in, const SpMat &G, double beta, int m,
+    const VectorXd &tau, const VectorXd &theta_kappa, const SpMat &B_kappa,
+    const std::vector<double> &rb, // size m+1 (only used if beta not integer)
+    const std::vector<double> &rc, // size m   (only used if beta not integer)
+    double roots_factor            // (only used if beta not integer)
 ) {
   if (m < 0) {
     throw std::invalid_argument("m must be a non-negative integer");
   }
   const Index n = C_in.rows();
-  if (C_in.cols() != n || Ci_in.rows() != n || Ci_in.cols() != n || G.rows() != n || G.cols() != n || B_kappa.rows() != n) {
-    throw std::invalid_argument("Dimension mismatch in inputs (C, Ci, G, B_kappa must be n x n (except B_kappa which is n x p))");
+  if (C_in.cols() != n || Ci_in.rows() != n || Ci_in.cols() != n ||
+      G.rows() != n || G.cols() != n || B_kappa.rows() != n) {
+    throw std::invalid_argument(
+        "Dimension mismatch in inputs (C, Ci, G, B_kappa must be n x n (except "
+        "B_kappa which is n x p))");
   }
 
   SpMat C_lump = C_in;
@@ -450,9 +450,11 @@ std::pair<SpMat, SpMat> compute_fractional_operators_with_roots(
   SpMat Pl, Pr;
 
   if (beta_is_int) {
-    // Integer beta: Pr = I; Pl = L_scaled * A^(beta-1); then scale by scale_factor^beta
+    // Integer beta: Pr = I; Pl = L_scaled * A^(beta-1); then scale by
+    // scale_factor^beta
     int ibeta = static_cast<int>(beta_round);
-    Pr = I; // no Phi multiplication in integer case in R until the very end (Phi applies regardless)
+    Pr = I; // no Phi multiplication in integer case in R until the very end
+            // (Phi applies regardless)
     if (ibeta <= 0) {
       // beta should be positive, but guard anyway
       Pl = I; // degenerate
@@ -475,15 +477,19 @@ std::pair<SpMat, SpMat> compute_fractional_operators_with_roots(
     if (m == 0) {
       // No rational factors, fall back to integer-like path with m_beta only
       int m_beta = std::max(1, static_cast<int>(std::floor(beta)));
-      SpMat Lp = C_lump * smat_power(A, m_beta - 1); // when m_beta==1, this is just C_lump
-      Pl = Lp; // no (I - rb*A) factors if m==0
+      SpMat Lp =
+          C_lump *
+          smat_power(A, m_beta - 1); // when m_beta==1, this is just C_lump
+      Pl = Lp;                       // no (I - rb*A) factors if m==0
       // scaling
       double s = std::pow(scale_factor, beta);
       smat_scale_inplace(Pl, s);
       Pr = Phi * speye(n);
     } else {
-      if (static_cast<int>(rb.size()) != m + 1 || static_cast<int>(rc.size()) != m) {
-        throw std::invalid_argument("rb and rc must have sizes m+1 and m, respectively, for fractional beta");
+      if (static_cast<int>(rb.size()) != m + 1 ||
+          static_cast<int>(rc.size()) != m) {
+        throw std::invalid_argument("rb and rc must have sizes m+1 and m, "
+                                    "respectively, for fractional beta");
       }
       int m_beta = std::max(1, static_cast<int>(std::floor(beta)));
 
@@ -503,19 +509,16 @@ std::pair<SpMat, SpMat> compute_fractional_operators_with_roots(
     }
   }
 
+  // debug
+  // std::cout << "norm of Pl is " << Pl.norm() << std::endl;
+  // std::cout << "norm of Pr is " << Pr.norm() << std::endl;
   return {Pl, Pr};
 }
 
 // Convenience wrapper that tries to use get_roots() when beta is fractional.
 std::pair<SpMat, SpMat> compute_fractional_operators(
-    const SpMat &C_in,
-    const SpMat &Ci_in,
-    const SpMat &G,
-    double beta,
-    int m,
-    const VectorXd &tau,
-    const VectorXd &theta_kappa,
-    const SpMat &B_kappa) {
+    const SpMat &C_in, const SpMat &Ci_in, const SpMat &G, double beta, int m,
+    const VectorXd &tau, const VectorXd &theta_kappa, const SpMat &B_kappa) {
 
   // Determine if beta is fractional
   double beta_round = std::round(beta);
@@ -524,11 +527,14 @@ std::pair<SpMat, SpMat> compute_fractional_operators(
   if (beta_is_int || m == 0) {
     // No roots needed
     static const std::vector<double> empty;
-    return compute_fractional_operators_with_roots(C_in, Ci_in, G, beta, m, tau, theta_kappa, B_kappa, empty, empty, 1.0);
+    return compute_fractional_operators_with_roots(
+        C_in, Ci_in, G, beta, m, tau, theta_kappa, B_kappa, empty, empty, 1.0);
   } else {
     // Fetch roots via stub (must be implemented with embedded tables)
     Roots r = get_roots(m, beta);
-    return compute_fractional_operators_with_roots(C_in, Ci_in, G, beta, m, tau, theta_kappa, B_kappa, r.rb, r.rc, r.factor);
+    return compute_fractional_operators_with_roots(C_in, Ci_in, G, beta, m, tau,
+                                                   theta_kappa, B_kappa, r.rb,
+                                                   r.rc, r.factor);
   }
 }
 
@@ -543,7 +549,8 @@ Example usage:
   double beta = 0.9;
   int m = 2;
 
-  auto [Pl, Pr] = compute_fractional_operators(C, Ci, G, beta, m, tau, theta, Bk);
+  auto [Pl, Pr] = compute_fractional_operators(C, Ci, G, beta, m, tau, theta,
+Bk);
 
 For fractional beta, implement get_roots(m,beta) using the internal tables
 from rSPDE (util.R:get.roots). Alternatively, call the ..._with_roots overload

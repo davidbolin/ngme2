@@ -806,9 +806,9 @@ matern <- function(
 
   # Placeholder K for printing; real K is built in C++
   if (stationary) {
-    K <- exp(if (fix_alpha) theta_K[1] else theta_K[2])^2 * C + G
+    K <- exp(if (fix_alpha) theta_vec[1] else theta_vec[2])^2 * C + G
   } else {
-    kappas <- exp(as.numeric(B_K %*% (if (fix_alpha) theta_K else theta_K[-1])))
+    kappas <- exp(as.numeric(B_K %*% (if (fix_alpha) theta_vec else theta_vec[-1])))
     K <- Matrix::Diagonal(x = kappas^2) %*% C + G
   }
 

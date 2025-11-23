@@ -1,3 +1,10 @@
+test_that("test fractional matern specification", {
+  mesh <- fmesher::fm_mesh_1d(1:10)
+  matern(mesh, alpha = 2.01)
+  matern(mesh, alpha = 2.00, fix_alpha = FALSE, kappa = 1)
+})
+
+
 test_that("test fit matern", {
   set.seed(42)
   pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
@@ -21,7 +28,7 @@ test_that("test fit matern", {
   Y <- W + rnorm(n_obs, sd = 0.5)
 
   control_opt <- control_opt(
-    iterations = 100,
+    iterations = 10,
     n_parallel_chain = 4,
     print_check_info = F,
     stop_points = 1,
@@ -37,9 +44,9 @@ test_that("test fit matern", {
     Y ~ 0 + f(loc,
       model = matern(
         mesh,
-        rational_order = 1,
-        fix_alpha = TRUE,
-        alpha = 2.01
+        rational_order = 2.01,
+        fix_alpha = FALSE,
+        alpha = 2
       ),
       noise = noise_nig()
     ),

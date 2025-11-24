@@ -29,7 +29,9 @@ control_opt(
   sampling_strategy = "all",
   solver_type = if (Sys.info()["sysname"] == "Darwin") "accelerate" else "supernodal",
   verbose = FALSE,
-  store_traj = TRUE
+  store_traj = TRUE,
+  robust = FALSE,
+  max_R_hat = 1.1
 )
 }
 \arguments{
@@ -47,7 +49,7 @@ control_opt(
 
 \item{iters_per_check}{run how many iterations between each check point (or specify stop_points)}
 
-\item{optimizer}{choose different sgd optimization method, 
+\item{optimizer}{choose different sgd optimization method,
 currently support "sgd", "precond_sgd", "momentum", "adagrad", "rmsprop", "adam", "adamW"
 see ?sgd, ?precond_sgd, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW}
 

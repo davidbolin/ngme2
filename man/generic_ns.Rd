@@ -39,7 +39,7 @@ generic_ns(
 \item{...}{Additional arguments (ignored)}
 }
 \description{
-Creates a flexible non-stationary precision matrix K by allowing both linear combinations 
+Creates a flexible non-stationary precision matrix K by allowing both linear combinations
 and matrix multiplications with parameter-dependent diagonal matrices. This enables modeling
 spatially varying parameters through basis expansions.
 }
@@ -77,7 +77,7 @@ alpha <- 0.4
 model <- generic_ns(
   theta_K = list(alpha = c(alpha)),
   matrices = list(A, B),
-  position = list(c(1, 2), c(3)),  # D_alpha * A + B
+  position = list(c(1, 2), c(3)), # D_alpha * A + B
   h = rep(1, n)
 )
 
@@ -85,10 +85,10 @@ model <- generic_ns(
 ar1_obj <- ar1(1:10, rho = 0.5)
 g <- name2fun("tanh", inv = TRUE)
 generic_ar1 <- generic_ns(
-  theta_K = list(x = c(g(0.5))),  # Transform from real scale
-  trans = list(x = "tanh"),        # Apply tanh transformation
+  theta_K = list(x = c(g(0.5))), # Transform from real scale
+  trans = list(x = "tanh"), # Apply tanh transformation
   matrices = list(ar1_obj$C, ar1_obj$G),
-  position = list(c(1, 2), c(3)),  # D_rho * C + G
+  position = list(c(1, 2), c(3)), # D_rho * C + G
   h = ar1_obj$h,
   mesh = 1:10
 )
@@ -100,20 +100,20 @@ mesh <- fmesher::fm_mesh_1d(seq(0, 1, length.out = 10))
 # Create basis for spatially-varying kappa
 n <- 10
 B_kappa <- matrix(0, n, 2)
-B_kappa[1:(n/2), 1] <- 1  # First half of the domain
-B_kappa[(n/2 + 1):n, 2] <- 1  # Second half of the domain
+B_kappa[1:(n / 2), 1] <- 1 # First half of the domain
+B_kappa[(n / 2 + 1):n, 2] <- 1 # Second half of the domain
 
 # Create standard Matern components
 matern_model <- matern(mesh)
 
 # Create model with space-varying kappa
 ns_model <- generic_ns(
-  theta_K = list(kappa = c(log(1), log(2))),  # Different values for each region
+  theta_K = list(kappa = c(log(1), log(2))), # Different values for each region
   matrices = list(matern_model$C, matern_model$G),
   B_theta_K = list(kappa = B_kappa),
-  trans = list(kappa = "exp2"),  # kappa^2 transformation for C
+  trans = list(kappa = "exp2"), # kappa^2 transformation for C
   h = matern_model$h,
-  position = list(c(1, 2), c(3)),  # D_kappa * C + G
+  position = list(c(1, 2), c(3)), # D_kappa * C + G
   mesh = mesh
 )
 }

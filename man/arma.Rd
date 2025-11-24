@@ -5,7 +5,7 @@
 \title{ngme ARMA(p, q) model specification}
 \usage{
 arma(
-  mesh,
+  mesh = NULL,
   ar_order = 1,
   ma_order = 1,
   ar = NULL,

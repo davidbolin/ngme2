@@ -21,7 +21,6 @@ f(
   prior_theta_K = ngme_prior("normal", param = c(0, 0.001)),
   subset = rep(TRUE, length_map(map)),
   debug = FALSE,
-  ma = NULL,
   ...
 )
 }

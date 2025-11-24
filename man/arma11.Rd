@@ -4,7 +4,7 @@
 \alias{arma11}
 \title{Convenience wrapper for ARMA(1,1)}
 \usage{
-arma11(mesh, ar = 0, ma = 0, fix_ar = FALSE, fix_ma = FALSE, ...)
+arma11(mesh = NULL, ar = 0, ma = 0, fix_ar = FALSE, fix_ma = FALSE, ...)
 }
 \description{
 Convenience wrapper for ARMA(1,1)

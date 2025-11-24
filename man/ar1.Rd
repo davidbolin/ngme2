@@ -4,7 +4,7 @@
 \alias{ar1}
 \title{ngme AR(1) model specification}
 \usage{
-ar1(mesh, rho = 0, ...)
+ar1(mesh = NULL, rho = 0, ...)
 }
 \arguments{
 \item{mesh}{integer vector or inla.mesh.1d object, index to build the mesh}
@@ -20,5 +20,5 @@ ngme_operator object
 ngme AR(1) model specification
 }
 \examples{
-ar1(c(1:3, 1:3))
+ar1(1:10)
 }

@@ -5,11 +5,10 @@
 \title{ngme Matern SPDE model specification}
 \usage{
 matern(
-  mesh,
+  mesh = NULL,
   alpha = 2,
   fix_alpha = TRUE,
-  kappa = NULL,
-  theta_K = NULL,
+  kappa = 1,
   theta_kappa = NULL,
   rational_order = 2,
   B_theta_K = NULL,
@@ -24,8 +23,6 @@ matern(
 \item{fix_alpha}{if FALSE, enable fractional modeling}
 
 \item{kappa}{the range parameter, for the stationary model, it is the range parameter}
-
-\item{theta_K}{kappa = exp(B_theta_K * theta_K), for the non-stationary model, it is the range parameter (same as theta_kappa, deprecated)}
 
 \item{theta_kappa}{kappa = exp(B_theta_K * theta_K), for the non-stationary model, it is the range parameter}
 

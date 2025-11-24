@@ -4,7 +4,7 @@
 \alias{rw2}
 \title{Random Walk Model of Order 2 (RW2)}
 \usage{
-rw2(mesh, cyclic = FALSE, constr = TRUE, ...)
+rw2(mesh = NULL, cyclic = FALSE, constr = TRUE, ...)
 }
 \arguments{
 \item{mesh}{numerical vector or inla.mesh.1d object, locations to build the mesh.

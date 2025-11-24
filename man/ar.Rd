@@ -4,7 +4,7 @@
 \alias{ar}
 \title{ngme AR(p) model specification}
 \usage{
-ar(mesh, rho = NULL, order = NULL, ...)
+ar(mesh = NULL, rho = NULL, order = NULL, ...)
 }
 \arguments{
 \item{mesh}{integer vector or inla.mesh.1d object, index to build the mesh}

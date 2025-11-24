@@ -38,10 +38,9 @@ Y <- process + rnorm(n_obs, sd = sigma_eps)
 control_same <- control_opt(
   optimizer = precond_sgd(),
   burnin = 100,
-  iterations = 100,
-  stop_points = 1,
+  iterations = 1000,
   n_parallel_chain = 4,
-  verbose = TRUE,
+  # verbose = TRUE,
   rao_blackwellization = TRUE,
   seed = seed,
   print_check_info = TRUE,
@@ -49,7 +48,8 @@ control_same <- control_opt(
   trend_lim = 0.01,
   n_slope_check = 3,
   n_trace_iter = 30,
-  start_sd = 0.0
+  start_sd = 0.0,
+  max_R_hat = 1.3
 )
 
 load_all()

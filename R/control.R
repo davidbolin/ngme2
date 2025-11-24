@@ -78,7 +78,8 @@ control_opt <- function(
     # opt print
     verbose = FALSE,
     store_traj = TRUE,
-    robust = FALSE) {
+    robust = FALSE,
+    max_R_hat = 1.1) {
   strategy_list <- c("all", "ws")
   preconditioner_list <- c("none", "fast", "full")
   solver_type_list <- c("eigen", "cholmod", "supernodal", "accelerate", "pardiso")
@@ -179,7 +180,8 @@ control_opt <- function(
     reduce_power = reduce_power,
     threshold = threshold,
     window_size = window_size,
-    robust = robust
+    robust = robust,
+    max_R_hat = max_R_hat
   )
 
   class(control) <- "control_opt"

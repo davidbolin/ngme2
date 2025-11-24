@@ -9,7 +9,9 @@ articles:
   inla_compare: inla_compare.html
   Installation_and_configuration: Installation_and_configuration.html
   matern-on-graph: matern-on-graph.html
+  ngme2_ou_vignette: ngme2_ou_vignette.html
   ngme2: ngme2.html
+  non-separable_model: non-separable_model.html
   normal-nig-noise: normal-nig-noise.html
   pred_and_est: pred_and_est.html
   random-effect: random-effect.html
@@ -18,7 +20,7 @@ articles:
   SPDE-model: SPDE-model.html
   tensor_product: tensor_product.html
   tp-bv: tp-bv.html
-last_built: 2025-11-23T07:25Z
+last_built: 2025-11-24T06:50Z
 urls:
   reference: https://davidbolin.github.io/ngme2/reference
   article: https://davidbolin.github.io/ngme2/articles

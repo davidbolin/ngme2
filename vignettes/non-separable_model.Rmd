@@ -158,16 +158,16 @@ The SPDE approach requires discretizing both space and time using finite element
 ```{r create-meshes}
 # Construct spatial mesh using constrained Delaunay triangulation
 mesh_spatial <- fmesher::fm_mesh_2d(
-  loc.domain = domain,           # Mesh boundary
-  max.edge = c(0.5, 2),          # Max triangle edge: inner/outer
-  cutoff = 0.2,                  # Minimum distance between vertices
-  offset = c(0.5, 1.5)           # Domain extension for boundary effects
+  loc.domain = domain, # Mesh boundary
+  max.edge = c(0.5, 2), # Max triangle edge: inner/outer
+  cutoff = 0.2, # Minimum distance between vertices
+  offset = c(0.5, 1.5) # Domain extension for boundary effects
 )
 
 # Construct temporal mesh (one-dimensional)
 # Including 2007 for forecasting purposes
 n_time <- length(unique(obs_data$time_index))
-mesh_temporal <- fmesher::fm_mesh_1d(1:(n_time + 1))  # +1 to include 2007
+mesh_temporal <- fmesher::fm_mesh_1d(1:(n_time + 1)) # +1 to include 2007
 ```
 
 The resulting mesh discretization provides the basis functions for the SPDE approximation:
@@ -205,26 +205,28 @@ We now specify the true advection-diffusion parameters and generate synthetic ob
 
 ```{r true-parameters}
 # Define true SPDE parameters
-true_kappa <- 1                    # Spatial range parameter κ
-true_cc <- 15                      # Temporal range parameter
-true_alpha <- 2                    # Spatial smoothness (α=2 → ν=1)
-true_theta_gamma_x <- 2            # Eastward advection velocity
-true_theta_gamma_y <- 0            # Northward advection velocity  
-true_lambda <- 0.1                 # Spatial damping parameter
+true_kappa <- 1 # Spatial range parameter κ
+true_cc <- 15 # Temporal range parameter
+true_alpha <- 2 # Spatial smoothness (α=2 → ν=1)
+true_theta_gamma_x <- 2 # Eastward advection velocity
+true_theta_gamma_y <- 0 # Northward advection velocity
+true_lambda <- 0.1 # Spatial damping parameter
 
 # Calculate derived quantities
-true_nu <- true_alpha - 1          # Smoothness parameter ν = α - 1
-true_range <- sqrt(8 * true_nu) / true_kappa  # Practical correlation range
+true_nu <- true_alpha - 1 # Smoothness parameter ν = α - 1
+true_range <- sqrt(8 * true_nu) / true_kappa # Practical correlation range
 true_transport_speed <- sqrt(true_theta_gamma_x^2 + true_theta_gamma_y^2)
-true_transport_direction <- atan2(true_theta_gamma_y, true_theta_gamma_x) * 180/pi
+true_transport_direction <- atan2(true_theta_gamma_y, true_theta_gamma_x) * 180 / pi
 ```
 
 The true parameters used for simulation are summarized below:
 ```{r parameters-summary, echo=FALSE}
 knitr::kable(
   data.frame(
-    Parameter = c("κ (kappa)", "α (alpha)", "ν (nu)", "Practical range", 
-                  "Advection velocity", "Transport speed", "Transport direction"),
+    Parameter = c(
+      "κ (kappa)", "α (alpha)", "ν (nu)", "Practical range",
+      "Advection velocity", "Transport speed", "Transport direction"
+    ),
     Value = c(
       sprintf("%.3f", true_kappa),
       sprintf("%.1f", true_alpha),
@@ -266,7 +268,7 @@ true_model <- f(
   kappa = true_kappa,
   cc = true_cc,
   lambda = true_lambda,
-  noise = noise_nig(mu = 1, sigma = 4, nu = 20)  # Non-Gaussian innovations
+  noise = noise_nig(mu = 1, sigma = 4, nu = 20) # Non-Gaussian innovations
 )
 
 # Generate latent field realizations
@@ -321,7 +323,7 @@ model_nonsep <- ngme(
     mesh = list(mesh_temporal, mesh_spatial)
   ),
   data = obs_data,
-  family = "normal",  # Observation distribution
+  family = "normal", # Observation distribution
   control_opt = control_opt(
     iterations = 500,
     optimizer = adamW(),
@@ -418,15 +420,17 @@ pred_data <- expand.grid(
   x = x_pred,
   y = y_pred
 )
-pred_data$year <- pred_data$time_index + 2000  # Convert to calendar years
+pred_data$year <- pred_data$time_index + 2000 # Convert to calendar years
 ```
 
 The prediction grid provides comprehensive coverage for visualization:
 ```{r prediction-grid-summary, echo=FALSE}
 knitr::kable(
   data.frame(
-    Dimension = c("Spatial grid (x)", "Spatial grid (y)", "Total spatial locations", 
-                  "Temporal points", "Total space-time points"),
+    Dimension = c(
+      "Spatial grid (x)", "Spatial grid (y)", "Total spatial locations",
+      "Temporal points", "Total space-time points"
+    ),
     Value = c(
       sprintf("%d", length(x_pred)),
       sprintf("%d", length(y_pred)),
@@ -490,10 +494,10 @@ We create a multi-panel visualization showing the field evolution across all 6 y
 library(viridis)
 
 ggplot(pred_data, aes(x = x, y = y, fill = mean)) +
-  
+
   # smooth continuous raster
   geom_raster(interpolate = TRUE) +
-  
+
   # continuous perceptually uniform colour scale
   scale_fill_viridis(
     option = "C",
@@ -501,15 +505,12 @@ ggplot(pred_data, aes(x = x, y = y, fill = mean)) +
     limits = range(pred_data$mean, na.rm = TRUE),
     oob = scales::squish
   ) +
-
-  facet_wrap(~ year, ncol = 3) +
-
+  facet_wrap(~year, ncol = 3) +
   labs(
     title = "Predicted values",
     x = "X coordinate",
     y = "Y coordinate"
   ) +
-
   theme_minimal(base_size = 14) +
   theme(
     plot.title = element_text(face = "bold", hjust = 0.5),

@@ -834,15 +834,15 @@ predictions_holdout_alt <- predict(
   data = model_data_test,
   type = "lp",
   train_idx = 1:n_train,
-  estimator = c("mean", "sd", "5quantile", "95quantile"),
+  estimator = c("mean", "sd", "0.05q", "0.95q"),
   sampling_size = 1000,
   seed = 42
 )
 
 pred_mean_holdout_alt <- predictions_holdout_alt$mean
 pred_sd_holdout_alt <- predictions_holdout_alt$sd
-pred_lower_holdout_alt <- predictions_holdout_alt$`5quantile`
-pred_upper_holdout_alt <- predictions_holdout_alt$`95quantile`
+pred_lower_holdout_alt <- predictions_holdout_alt$`0.05q`
+pred_upper_holdout_alt <- predictions_holdout_alt$`0.95q`
 ```
 
 Let's check the prediction results. Observe the estimates are slightly different from the ones obtained above. This is due to the fact that this prediction was obtained using the fitted parameters from the complete model, thus performing a pseudo hold-out validation:
@@ -943,15 +943,15 @@ interpolation_pred <- predict(
   map = list(my_ou_interp = gap_times),
   data = gap_covariates,
   type = "lp",
-  estimator = c("mean", "sd", "5quantile", "95quantile"),
+  estimator = c("mean", "sd", "0.05q", "0.95q"),
   sampling_size = 1000,
   seed = 42
 )
 
 interp_mean <- interpolation_pred$mean
 interp_sd <- interpolation_pred$sd
-interp_lower <- interpolation_pred[["5quantile"]]
-interp_upper <- interpolation_pred[["95quantile"]]
+interp_lower <- interpolation_pred[["0.05q"]]
+interp_upper <- interpolation_pred[["0.95q"]]
 ```
 
 ### Evaluating Interpolation Results

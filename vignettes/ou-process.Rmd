@@ -158,14 +158,14 @@ set.seed(16)
 time_points <- c(0, 1.5, 3.2, 4.8, 7.5)
 
 # Define OU model parameters
-theta_val <- 0.8  # Mean reversion rate
-sigma_val <- 2.0  # Diffusion coefficient
+theta_val <- 0.8 # Mean reversion rate
+sigma_val <- 2.0 # Diffusion coefficient
 
 # Define OU model with Gaussian noise (centered at zero)
 ou_model <- f(time_points,
-              model = "ou",
-              theta = theta_val,
-              noise = noise_normal(sigma = sigma_val))
+  model = ou(theta = theta_val),
+  noise = noise_normal(sigma = sigma_val)
+)
 ```
 
 Notice that in ngme2, it is possible to have gaps in the time grid, and the time points can be provided in any order. For example, observations at times 2.0, 4.0, 6.0, etc. might be missing. The OU model will still maintain the mean-reverting dependence structure across these gaps, automatically adjusting the autocorrelation based on the actual time intervals $\Delta t_i$. Internally, ngme2 automatically constructs the sorted time grid and computes the appropriate $\rho_i$ values for each interval.
@@ -217,7 +217,7 @@ library(Matrix)
 
 H <- sigma_val^2 * diag(ou_model$operator$h)
 
-Q_matrix <- t(K_matrix) %*% solve(H, K_matrix)
+Q_matrix <- Matrix::t(K_matrix) %*% solve(H, K_matrix)
 
 print("OU Precision Matrix:")
 print(Q_matrix)
@@ -246,11 +246,11 @@ set.seed(456)
 
 # Define simulation parameters
 n_obs <- 2500
-time_index <- seq(0, 25, length.out = n_obs)  # Time from 0 to 25
+time_index <- seq(0, 25, length.out = n_obs) # Time from 0 to 25
 
 # OU process parameters (centered at zero)
-theta_sim <- 0.5   # Mean reversion rate
-sigma_sim <- 3.0   # Diffusion coefficient
+theta_sim <- 0.5 # Mean reversion rate
+sigma_sim <- 3.0 # Diffusion coefficient
 ```
 
 ## Gaussian OU Simulation
@@ -259,10 +259,10 @@ We begin with the traditional Gaussian OU model, which assumes normally distribu
 
 ```{r gaussian_simulation}
 # Define OU model with Gaussian noise (centered at zero)
-ou_gaussian <- f(time_index, 
-                 model = "ou", 
-                 theta = theta_sim,
-                 noise = noise_normal(sigma = sigma_sim))
+ou_gaussian <- f(time_index,
+  model = ou(theta = theta_sim),
+  noise = noise_normal(sigma = sigma_sim)
+)
 
 # Generate realization from the OU model
 W_gaussian <- simulate(ou_gaussian, seed = 456, nsim = 1)[[1]]
@@ -282,10 +282,14 @@ gaussian_data <- data.frame(
 # Create time series plot
 p1 <- ggplot(gaussian_data, aes(x = time, y = value)) +
   geom_line(color = "#2E86AB", alpha = 0.8, linewidth = 0.4) +
-  geom_hline(yintercept = 0, linetype = "dashed", 
-             color = "#F18F01", linewidth = 0.8) +
-  annotate("text", x = max(time_index) * 0.9, y = 1, 
-           label = "mean = 0", color = "#F18F01", size = 4) +
+  geom_hline(
+    yintercept = 0, linetype = "dashed",
+    color = "#F18F01", linewidth = 0.8
+  ) +
+  annotate("text",
+    x = max(time_index) * 0.9, y = 1,
+    label = "mean = 0", color = "#F18F01", size = 4
+  ) +
   labs(
     title = "Gaussian Ornstein-Uhlenbeck Process (Centered)",
     subtitle = paste("θ =", theta_sim, ", σ =", sigma_sim),
@@ -301,12 +305,16 @@ p1 <- ggplot(gaussian_data, aes(x = time, y = value)) +
 print(p1)
 
 # Calculate and display empirical statistics
-cat("Empirical mean:", round(mean(W_gaussian), 2), 
-    "(theoretical: 0)\n")
+cat(
+  "Empirical mean:", round(mean(W_gaussian), 2),
+  "(theoretical: 0)\n"
+)
 
 theoretical_var <- sigma_sim^2 / (2 * theta_sim)
-cat("Empirical variance:", round(var(W_gaussian), 2), 
-    "(theoretical:", round(theoretical_var, 2), ")\n")
+cat(
+  "Empirical variance:", round(var(W_gaussian), 2),
+  "(theoretical:", round(theoretical_var, 2), ")\n"
+)
 ```
 
 The plot clearly shows the mean-reverting behavior, with the process fluctuating around zero.
@@ -317,10 +325,10 @@ Now let's explore the flexibility of non-Gaussian innovations using the Normal I
 
 ```{r nig_simulation}
 # Define OU model with NIG noise (centered process)
-ou_nig <- f(time_index, 
-            model = "ou", 
-            theta = theta_sim,
-            noise = noise_nig(mu = -3, sigma = 4, nu = 0.4))
+ou_nig <- f(time_index,
+  model = ou(theta = theta_sim),
+  noise = noise_nig(mu = -3, sigma = 4, nu = 0.4)
+)
 
 # Generate realization from the NIG OU model
 W_nig <- simulate(ou_nig, seed = 16, nsim = 1)[[1]]
@@ -346,14 +354,20 @@ nig_data <- data.frame(
 # Create time series plot for NIG
 p3 <- ggplot(nig_data, aes(x = time, y = value)) +
   geom_line(color = "#A23B72", alpha = 0.8, linewidth = 0.4) +
-  geom_hline(yintercept = 0, linetype = "dashed", 
-             color = "#F18F01", linewidth = 0.8) +
-  annotate("text", x = max(time_index) * 0.9, y = 2, 
-           label = "mean = 0", color = "#F18F01", size = 4) +
+  geom_hline(
+    yintercept = 0, linetype = "dashed",
+    color = "#F18F01", linewidth = 0.8
+  ) +
+  annotate("text",
+    x = max(time_index) * 0.9, y = 2,
+    label = "mean = 0", color = "#F18F01", size = 4
+  ) +
   labs(
     title = "NIG Ornstein-Uhlenbeck Process (Centered)",
-    subtitle = paste("θ =", theta_sim, ", σ =", sigma_sim, 
-                     ", NIG innovations: μ=-3, σ=4, ν=0.4"),
+    subtitle = paste(
+      "θ =", theta_sim, ", σ =", sigma_sim,
+      ", NIG innovations: μ=-3, σ=4, ν=0.4"
+    ),
     x = "Time",
     y = "Value"
   ) +
@@ -387,8 +401,10 @@ comparison_data <- data.frame(
 p4 <- ggplot(comparison_data, aes(x = value, fill = type)) +
   geom_histogram(alpha = 0.6, bins = 50, position = "identity") +
   scale_fill_manual(values = c("Gaussian" = "#2E86AB", "NIG" = "#A23B72")) +
-  geom_vline(xintercept = 0, linetype = "dashed", 
-             color = "#F18F01", linewidth = 0.8) +
+  geom_vline(
+    xintercept = 0, linetype = "dashed",
+    color = "#F18F01", linewidth = 0.8
+  ) +
   labs(
     title = "Distribution Comparison: Gaussian vs NIG OU",
     x = "Value",
@@ -404,8 +420,10 @@ p4 <- ggplot(comparison_data, aes(x = value, fill = type)) +
 # Box plot comparison
 p5 <- ggplot(comparison_data, aes(x = type, y = value, fill = type)) +
   geom_boxplot(alpha = 0.6, outlier.alpha = 0.5) +
-  geom_hline(yintercept = 0, linetype = "dashed", 
-             color = "#F18F01", linewidth = 0.8) +
+  geom_hline(
+    yintercept = 0, linetype = "dashed",
+    color = "#F18F01", linewidth = 0.8
+  ) +
   scale_fill_manual(values = c("Gaussian" = "#2E86AB", "NIG" = "#A23B72")) +
   labs(
     title = "Distribution Comparison (Box Plots)",
@@ -429,17 +447,17 @@ To better understand how the mean reversion rate $\theta$ affects the process be
 
 ```{r theta_comparison_plot, fig.width=10, fig.height=6}
 # Generate OU processes with different mean reversion rates
-theta_values <- c(0.1, 0.5, 2.0)  # Slow, medium, fast
+theta_values <- c(0.1, 0.5, 2.0) # Slow, medium, fast
 ou_comparison_data <- data.frame()
 
-for(theta_test in theta_values) {
-  ou_temp <- f(time_index, 
-               model = "ou", 
-               theta = theta_test,
-               noise = noise_normal(sigma = sigma_sim))
-  
+for (theta_test in theta_values) {
+  ou_temp <- f(time_index,
+    model = ou(theta = theta_test),
+    noise = noise_normal(sigma = sigma_sim)
+  )
+
   W_temp <- simulate(ou_temp, seed = 123, nsim = 1)[[1]]
-  
+
   ou_comparison_data <- rbind(
     ou_comparison_data,
     data.frame(
@@ -452,11 +470,15 @@ for(theta_test in theta_values) {
 }
 
 # Create comparison plot
-p_theta_comparison <- ggplot(ou_comparison_data, 
-                             aes(x = time, y = value, color = theta)) +
+p_theta_comparison <- ggplot(
+  ou_comparison_data,
+  aes(x = time, y = value, color = theta)
+) +
   geom_line(alpha = 0.7, linewidth = 0.4) +
-  geom_hline(yintercept = 0, linetype = "dashed", 
-             color = "black", linewidth = 0.6) +
+  geom_hline(
+    yintercept = 0, linetype = "dashed",
+    color = "black", linewidth = 0.6
+  ) +
   scale_color_manual(values = c("#2E86AB", "#F18F01", "#C73E1D")) +
   labs(
     title = "OU Processes with Different Mean Reversion Rates",
@@ -486,10 +508,10 @@ Let's create a realistic dataset with fixed effects, latent OU structure, and me
 
 ```{r estimation_data}
 # Define OU model with NIG noise (centered process)
-ou_nig <- f(time_index, 
-            model = "ou", 
-            theta = 0.6,
-            noise = noise_nig(mu = -3, sigma = 4, nu = 0.4))
+ou_nig <- f(time_index,
+  model = ou(theta = 0.6),
+  noise = noise_nig(mu = -3, sigma = 4, nu = 0.4)
+)
 
 # Generate realization from the NIG OU model
 W_nig <- simulate(ou_nig, seed = 16, nsim = 1)[[1]]
@@ -497,7 +519,7 @@ W_nig <- simulate(ou_nig, seed = 16, nsim = 1)[[1]]
 # Define fixed effects and covariates
 feff <- c(-1, 2, 0.5)
 x1 <- runif(n_obs, 0, 10)
-x2 <- rexp(n_obs, 1/5)
+x2 <- rexp(n_obs, 1 / 5)
 x3 <- rnorm(n_obs, mean = 5, sd = 1)
 X <- model.matrix(~ 0 + x1 + x2 + x3)
 
@@ -518,10 +540,8 @@ ngme_out <- ngme(
   Y ~ 0 + x1 + x2 + x3 + f(
     time_index,
     name = "my_ou",
-    model = "ou",
-    theta = theta_sim,  # Initial value for theta
-    noise = noise_nig(),
-    control = control_f(numer_grad = TRUE, improve_hessian = FALSE)
+    model = ou(theta = theta_sim), # Initial value for theta
+    noise = noise_nig()
   ),
   data = model_data,
   control_opt = control_opt(
@@ -648,11 +668,11 @@ n_train <- n_obs - n_holdout
 
 # Split data maintaining temporal order
 model_data_train <- model_data[1:n_train, ]
-model_data_test <- model_data[(n_train+1):n_obs, ]
-Y_true_test <- Y[(n_train+1):n_obs]
+model_data_test <- model_data[(n_train + 1):n_obs, ]
+Y_true_test <- Y[(n_train + 1):n_obs]
 
 time_train <- time_index[1:n_train]
-time_test <- time_index[(n_train+1):n_obs]
+time_test <- time_index[(n_train + 1):n_obs]
 
 cat("Training:", n_train, "observations\n")
 cat("Testing:", n_holdout, "observations\n")
@@ -673,11 +693,8 @@ ngme_out_train <- ngme(
   Y ~ 0 + x1 + x2 + x3 + f(
     time_train,
     name = "my_ou",
-    model = "ou",
-    mesh = mesh_full,
-    theta = theta_sim,
-    noise = noise_nig(),
-    control = control_f(numer_grad = TRUE, improve_hessian = FALSE)
+    model = ou(mesh_full, theta = theta_sim),
+    noise = noise_nig()
   ),
   data = model_data_train,
   control_opt = control_opt(
@@ -727,7 +744,7 @@ mae_holdout <- mean(abs(pred_errors_holdout))
 correlation_holdout <- cor(pred_mean_holdout, Y_true_test)
 
 in_interval_90 <- (Y_true_test >= pred_lower_holdout) &
-                  (Y_true_test <= pred_upper_holdout)
+  (Y_true_test <= pred_upper_holdout)
 coverage_90 <- mean(in_interval_90)
 
 cat("RMSE:", round(rmse_holdout, 3), "\n")
@@ -770,15 +787,23 @@ pred_data <- data.frame(
 )
 
 p_holdout <- ggplot() +
-  geom_line(data = viz_data, aes(x = time, y = value, color = type), 
-            linewidth = 0.4, alpha = 0.7) +
-  geom_ribbon(data = pred_data, 
-              aes(x = time, ymin = lower, ymax = upper),
-              fill = "#A23B72", alpha = 0.2) +
-  geom_line(data = pred_data, aes(x = time, y = pred),
-            color = "#A23B72", linewidth = 0.6) +
-  geom_point(data = pred_data, aes(x = time, y = pred),
-             color = "#A23B72", size = 1.5) +
+  geom_line(
+    data = viz_data, aes(x = time, y = value, color = type),
+    linewidth = 0.4, alpha = 0.7
+  ) +
+  geom_ribbon(
+    data = pred_data,
+    aes(x = time, ymin = lower, ymax = upper),
+    fill = "#A23B72", alpha = 0.2
+  ) +
+  geom_line(
+    data = pred_data, aes(x = time, y = pred),
+    color = "#A23B72", linewidth = 0.6
+  ) +
+  geom_point(
+    data = pred_data, aes(x = time, y = pred),
+    color = "#A23B72", size = 1.5
+  ) +
   scale_color_manual(values = c("Train" = "#2E86AB", "Test" = "#F18F01")) +
   labs(
     title = "OU Model Hold-out Validation",
@@ -830,7 +855,7 @@ mae_holdout_alt <- mean(abs(pred_errors_holdout_alt))
 correlation_holdout_alt <- cor(pred_mean_holdout_alt, Y_true_test)
 
 in_interval_90_alt <- (Y_true_test >= pred_lower_holdout_alt) &
-                      (Y_true_test <= pred_upper_holdout_alt)
+  (Y_true_test <= pred_upper_holdout_alt)
 coverage_90_alt <- mean(in_interval_90_alt)
 
 cat("RMSE:", round(rmse_holdout_alt, 3), "\n")
@@ -857,9 +882,9 @@ Let's introduce artificial gaps at different points in the series to demonstrate
 
 ```{r interpolation_setup}
 # Create gaps at different locations
-gap1_indices <- 500:504        # Early gap
-gap2_indices <- 1200:1207      # Middle gap (longer)
-gap3_indices <- 2000:2003      # Late gap
+gap1_indices <- 500:504 # Early gap
+gap2_indices <- 1200:1207 # Middle gap (longer)
+gap3_indices <- 2000:2003 # Late gap
 
 all_gap_indices <- c(gap1_indices, gap2_indices, gap3_indices)
 Y_true_gaps <- Y[all_gap_indices]
@@ -882,10 +907,8 @@ ngme_out_interp <- ngme(
   Y_train_vector ~ 0 + x1 + x2 + x3 + f(
     time_train_interp,
     name = "my_ou_interp",
-    model = "ou",
-    theta = theta_sim,
-    noise = noise_nig(),
-    control = control_f(numer_grad = TRUE, improve_hessian = FALSE)
+    model = ou(theta = theta_sim),
+    noise = noise_nig()
   ),
   data = model_data_train_interp,
   control_opt = control_opt(
@@ -943,7 +966,7 @@ mae_interp <- mean(abs(interp_errors))
 correlation_interp <- cor(interp_mean, Y_true_gaps)
 
 in_interval_90_interp <- (Y_true_gaps >= interp_lower) &
-                         (Y_true_gaps <= interp_upper)
+  (Y_true_gaps <= interp_upper)
 coverage_90_interp <- mean(in_interval_90_interp)
 
 cat("RMSE:", round(rmse_interp, 3), "\n")
@@ -975,19 +998,19 @@ gap_info <- list(
 plot_list <- list()
 context_n <- 50
 
-for(i in 1:3) {
+for (i in 1:3) {
   gap <- gap_info[[i]]
   gap_center <- median(gap$indices)
   context_start <- max(1, gap_center - context_n)
   context_end <- min(n_obs, gap_center + context_n)
   context_range <- context_start:context_end
-  
+
   all_context_data <- data.frame(
     time = time_index[context_range],
     value = Y[context_range],
     is_gap = context_range %in% gap$indices
   )
-  
+
   gap_mask <- all_gap_indices %in% gap$indices
   interp_gap_data <- data.frame(
     time = time_index[gap$indices],
@@ -995,26 +1018,38 @@ for(i in 1:3) {
     lower = interp_lower[gap_mask],
     upper = interp_upper[gap_mask]
   )
-  
+
   gap_true_data <- data.frame(
     time = time_index[gap$indices],
     value = Y[gap$indices]
   )
-  
+
   p <- ggplot() +
-    geom_line(data = all_context_data, aes(x = time, y = value),
-              color = "#2E86AB", alpha = 0.6, linewidth = 0.4) +
-    geom_point(data = gap_true_data, aes(x = time, y = value),
-               color = "#2E86AB", size = 1.2, alpha = 0.8) +
-    geom_ribbon(data = interp_gap_data,
-                aes(x = time, ymin = lower, ymax = upper),
-                fill = "#A23B72", alpha = 0.2) +
-    geom_line(data = interp_gap_data, aes(x = time, y = value),
-              color = "#A23B72", linewidth = 0.5) +
-    geom_point(data = interp_gap_data, aes(x = time, y = value),
-               color = "#A23B72", size = 1.2, alpha = 0.8) +
-    geom_vline(xintercept = time_index[c(min(gap$indices), max(gap$indices))],
-               linetype = "dashed", color = "gray50", alpha = 0.6) +
+    geom_line(
+      data = all_context_data, aes(x = time, y = value),
+      color = "#2E86AB", alpha = 0.6, linewidth = 0.4
+    ) +
+    geom_point(
+      data = gap_true_data, aes(x = time, y = value),
+      color = "#2E86AB", size = 1.2, alpha = 0.8
+    ) +
+    geom_ribbon(
+      data = interp_gap_data,
+      aes(x = time, ymin = lower, ymax = upper),
+      fill = "#A23B72", alpha = 0.2
+    ) +
+    geom_line(
+      data = interp_gap_data, aes(x = time, y = value),
+      color = "#A23B72", linewidth = 0.5
+    ) +
+    geom_point(
+      data = interp_gap_data, aes(x = time, y = value),
+      color = "#A23B72", size = 1.2, alpha = 0.8
+    ) +
+    geom_vline(
+      xintercept = time_index[c(min(gap$indices), max(gap$indices))],
+      linetype = "dashed", color = "gray50", alpha = 0.6
+    ) +
     labs(
       title = paste(gap$name, "- OU Interpolation"),
       x = "Time",
@@ -1025,12 +1060,14 @@ for(i in 1:3) {
       plot.title = element_text(size = 12, face = "bold"),
       panel.grid.minor = element_blank()
     )
-  
+
   plot_list[[i]] <- p
 }
 
-grid.arrange(plot_list[[1]], plot_list[[2]], plot_list[[3]], ncol = 1,
-             top = "OU Model Interpolation Across Multiple Time Periods")
+grid.arrange(plot_list[[1]], plot_list[[2]], plot_list[[3]],
+  ncol = 1,
+  top = "OU Model Interpolation Across Multiple Time Periods"
+)
 ```
 
 # Posterior Simulation
@@ -1066,10 +1103,14 @@ comparison_data <- data.frame(
   posterior_upper = W_posterior_q975
 )
 
-cat("Mean absolute difference from true values:",
-    round(mean(abs(W_posterior_mean - W_nig)), 3), "\n")
-cat("Average posterior standard deviation:",
-    round(mean(W_posterior_sd), 3), "\n")
+cat(
+  "Mean absolute difference from true values:",
+  round(mean(abs(W_posterior_mean - W_nig)), 3), "\n"
+)
+cat(
+  "Average posterior standard deviation:",
+  round(mean(W_posterior_sd), 3), "\n"
+)
 ```
 
 ### Latent Process Uncertainty Visualization
@@ -1083,15 +1124,22 @@ viz_data <- comparison_data[viz_range, ]
 
 p_posterior <- ggplot(viz_data, aes(x = time)) +
   geom_ribbon(aes(ymin = posterior_lower, ymax = posterior_upper),
-              fill = "#A23B72", alpha = 0.3) +
+    fill = "#A23B72", alpha = 0.3
+  ) +
   geom_line(aes(y = true_W, color = "True Latent Process"),
-            linewidth = 0.5, alpha = 0.8) +
+    linewidth = 0.5, alpha = 0.8
+  ) +
   geom_line(aes(y = posterior_mean, color = "Posterior Mean"),
-            linewidth = 0.5, alpha = 0.9) +
-  geom_hline(yintercept = 0, linetype = "dashed",
-             color = "#F18F01", linewidth = 0.7) +
-  scale_color_manual(values = c("True Latent Process" = "#2E86AB",
-                                "Posterior Mean" = "#A23B72")) +
+    linewidth = 0.5, alpha = 0.9
+  ) +
+  geom_hline(
+    yintercept = 0, linetype = "dashed",
+    color = "#F18F01", linewidth = 0.7
+  ) +
+  scale_color_manual(values = c(
+    "True Latent Process" = "#2E86AB",
+    "Posterior Mean" = "#A23B72"
+  )) +
   labs(
     title = "Posterior Uncertainty in OU Latent Process",
     subtitle = "95% Posterior Credible Intervals with True vs Estimated Process",
@@ -1129,58 +1177,77 @@ y_mean <- rowMeans(Y_sim_matrix)
 y_lower <- apply(Y_sim_matrix, 1, quantile, 0.025)
 y_upper <- apply(Y_sim_matrix, 1, quantile, 0.975)
 
-plot(y_mean, Y, pch = 16, col = rgb(0.3, 0.3, 0.3, 0.6), cex = 0.8,
-     main = "Observed vs Posterior Mean",
-     xlab = "Posterior Mean", ylab = "Observed Y",
-     xlim = range(c(y_mean, Y)), ylim = range(c(y_mean, Y)))
+plot(y_mean, Y,
+  pch = 16, col = rgb(0.3, 0.3, 0.3, 0.6), cex = 0.8,
+  main = "Observed vs Posterior Mean",
+  xlab = "Posterior Mean", ylab = "Observed Y",
+  xlim = range(c(y_mean, Y)), ylim = range(c(y_mean, Y))
+)
 abline(0, 1, col = "red", lwd = 1, lty = 2)
 segments(y_mean, y_lower, y_mean, y_upper,
-         col = rgb(0.64, 0.23, 0.45, 0.1), lwd = 1)
+  col = rgb(0.64, 0.23, 0.45, 0.1), lwd = 1
+)
 
 correlation <- cor(Y, y_mean)
-mtext(paste("Correlation =", round(correlation, 3)), 
-      side = 3, line = 0.2, cex = 0.9)
+mtext(paste("Correlation =", round(correlation, 3)),
+  side = 3, line = 0.2, cex = 0.9
+)
 
-legend("topleft", legend = c("Data points", "Perfect fit", "95% CI"),
-       col = c(rgb(0.3, 0.3, 0.3, 0.6), "red", rgb(0.64, 0.23, 0.45, 0.4)),
-       pch = c(16, NA, NA), lty = c(NA, 2, 1), lwd = c(NA, 1, 1), bty = "n")
+legend("topleft",
+  legend = c("Data points", "Perfect fit", "95% CI"),
+  col = c(rgb(0.3, 0.3, 0.3, 0.6), "red", rgb(0.64, 0.23, 0.45, 0.4)),
+  pch = c(16, NA, NA), lty = c(NA, 2, 1), lwd = c(NA, 1, 1), bty = "n"
+)
 
 # 2. Histogram comparison
-hist(Y, breaks = 40, col = rgb(0.18, 0.53, 0.67, 0.7),
-     main = "Distribution Comparison", xlab = "Y values",
-     freq = FALSE, border = "white")
-hist(unlist(Y_sim), breaks = 40, col = rgb(0.64, 0.23, 0.45, 0.7),
-     add = TRUE, freq = FALSE, border = "white")
+hist(Y,
+  breaks = 40, col = rgb(0.18, 0.53, 0.67, 0.7),
+  main = "Distribution Comparison", xlab = "Y values",
+  freq = FALSE, border = "white"
+)
+hist(unlist(Y_sim),
+  breaks = 40, col = rgb(0.64, 0.23, 0.45, 0.7),
+  add = TRUE, freq = FALSE, border = "white"
+)
 
-legend("topleft", legend = c("Observed", "Simulated"),
-       fill = c(rgb(0.18, 0.53, 0.67, 0.7), rgb(0.64, 0.23, 0.45, 0.7)),
-       bty = "n")
+legend("topleft",
+  legend = c("Observed", "Simulated"),
+  fill = c(rgb(0.18, 0.53, 0.67, 0.7), rgb(0.64, 0.23, 0.45, 0.7)),
+  bty = "n"
+)
 
 # 3. Q-Q plot
-qqplot(Y, unlist(Y_sim), main = "Q-Q Plot",
-       xlab = "Observed Y quantiles", ylab = "Simulated Y quantiles",
-       pch = 16, col = rgb(0.3, 0.3, 0.3, 0.6))
+qqplot(Y, unlist(Y_sim),
+  main = "Q-Q Plot",
+  xlab = "Observed Y quantiles", ylab = "Simulated Y quantiles",
+  pch = 16, col = rgb(0.3, 0.3, 0.3, 0.6)
+)
 abline(0, 1, col = "red", lwd = 1)
 
 # 4. Density comparison
 d_observed <- density(Y)
 d_simulated <- density(unlist(Y_sim))
 
-plot(d_observed, col = "#2E86AB", lwd = 1,
-     main = "Density Comparison",
-     xlab = "Y values", ylab = "Density",
-     xlim = range(c(d_observed$x, d_simulated$x)),
-     ylim = range(c(d_observed$y, d_simulated$y)))
+plot(d_observed,
+  col = "#2E86AB", lwd = 1,
+  main = "Density Comparison",
+  xlab = "Y values", ylab = "Density",
+  xlim = range(c(d_observed$x, d_simulated$x)),
+  ylim = range(c(d_observed$y, d_simulated$y))
+)
 lines(d_simulated, col = rgb(0.64, 0.23, 0.45, 0.8), lwd = 1)
 
 abline(v = mean(Y), col = "#2E86AB", lty = 2, lwd = 1)
 abline(v = mean(unlist(Y_sim)), col = rgb(0.64, 0.23, 0.45, 0.8), lty = 2, lwd = 2)
 
 legend("topleft",
-       legend = c("Observed", "Simulated", "Obs. mean", "Sim. mean"),
-       col = c("#2E86AB", rgb(0.64, 0.23, 0.45, 0.8), "#2E86AB", 
-               rgb(0.64, 0.23, 0.45, 0.8)),
-       lty = c(1, 1, 2, 2), lwd = c(1, 1, 1, 1), bty = "n")
+  legend = c("Observed", "Simulated", "Obs. mean", "Sim. mean"),
+  col = c(
+    "#2E86AB", rgb(0.64, 0.23, 0.45, 0.8), "#2E86AB",
+    rgb(0.64, 0.23, 0.45, 0.8)
+  ),
+  lty = c(1, 1, 2, 2), lwd = c(1, 1, 1, 1), bty = "n"
+)
 ```
 
 ## Response Variable Prediction Intervals
@@ -1189,8 +1256,9 @@ Let's assess the calibration of our prediction intervals. Proper calibration mea
 
 ```{r prediction_intervals, fig.width=10, fig.height=5}
 # Calculate prediction intervals
-y_quantiles <- apply(Y_sim_matrix, 1, quantile, 
-                     probs = c(0.025, 0.25, 0.5, 0.75, 0.975))
+y_quantiles <- apply(Y_sim_matrix, 1, quantile,
+  probs = c(0.025, 0.25, 0.5, 0.75, 0.975)
+)
 
 # Sort by observed values
 sort_idx <- order(Y)
@@ -1200,44 +1268,56 @@ y_quantiles_sorted <- y_quantiles[, sort_idx]
 par(mfrow = c(1, 2), mar = c(4, 4, 3, 1))
 
 # 1. Uncertainty bands plot
-plot(1:length(Y_sorted), Y_sorted, type = "l", col = "#2E86AB", lwd = 2,
-     main = "Posterior Prediction Intervals",
-     xlab = "Sorted Index", ylab = "Y values",
-     ylim = range(y_quantiles_sorted))
+plot(1:length(Y_sorted), Y_sorted,
+  type = "l", col = "#2E86AB", lwd = 2,
+  main = "Posterior Prediction Intervals",
+  xlab = "Sorted Index", ylab = "Y values",
+  ylim = range(y_quantiles_sorted)
+)
 
 polygon(c(1:length(Y_sorted), rev(1:length(Y_sorted))),
-        c(y_quantiles_sorted[1,], rev(y_quantiles_sorted[5,])),
-        col = rgb(0.64, 0.23, 0.45, 0.2), border = NA)
+  c(y_quantiles_sorted[1, ], rev(y_quantiles_sorted[5, ])),
+  col = rgb(0.64, 0.23, 0.45, 0.2), border = NA
+)
 polygon(c(1:length(Y_sorted), rev(1:length(Y_sorted))),
-        c(y_quantiles_sorted[2,], rev(y_quantiles_sorted[4,])),
-        col = rgb(0.64, 0.23, 0.45, 0.3), border = NA)
+  c(y_quantiles_sorted[2, ], rev(y_quantiles_sorted[4, ])),
+  col = rgb(0.64, 0.23, 0.45, 0.3), border = NA
+)
 
-lines(1:length(Y_sorted), y_quantiles_sorted[3,], 
-      col = rgb(0.64, 0.23, 0.45, 0.8), lwd = 1)
+lines(1:length(Y_sorted), y_quantiles_sorted[3, ],
+  col = rgb(0.64, 0.23, 0.45, 0.8), lwd = 1
+)
 lines(1:length(Y_sorted), Y_sorted, col = "#2E86AB", lwd = 1)
 
-legend("topleft", 
-       legend = c("Observed", "Median prediction", "50% interval", "95% interval"),
-       col = c("#2E86AB", rgb(0.64, 0.23, 0.45, 0.8), 
-               rgb(0.64, 0.23, 0.45, 0.3), rgb(0.64, 0.23, 0.45, 0.2)),
-       lwd = c(2, 2, 8, 8), bty = "n")
+legend("topleft",
+  legend = c("Observed", "Median prediction", "50% interval", "95% interval"),
+  col = c(
+    "#2E86AB", rgb(0.64, 0.23, 0.45, 0.8),
+    rgb(0.64, 0.23, 0.45, 0.3), rgb(0.64, 0.23, 0.45, 0.2)
+  ),
+  lwd = c(2, 2, 8, 8), bty = "n"
+)
 
 # 2. Coverage assessment
-coverage_50 <- mean(Y >= y_quantiles[2,] & Y <= y_quantiles[4,])
-coverage_95 <- mean(Y >= y_quantiles[1,] & Y <= y_quantiles[5,])
+coverage_50 <- mean(Y >= y_quantiles[2, ] & Y <= y_quantiles[4, ])
+coverage_95 <- mean(Y >= y_quantiles[1, ] & Y <= y_quantiles[5, ])
 
 barplot(c(coverage_50, coverage_95),
-        names.arg = c("50% Interval", "95% Interval"),
-        main = "Prediction Interval Coverage",
-        ylab = "Empirical Coverage",
-        col = c(rgb(0.64, 0.23, 0.45, 0.6), rgb(0.64, 0.23, 0.45, 0.8)),
-        ylim = c(0, 1))
+  names.arg = c("50% Interval", "95% Interval"),
+  main = "Prediction Interval Coverage",
+  ylab = "Empirical Coverage",
+  col = c(rgb(0.64, 0.23, 0.45, 0.6), rgb(0.64, 0.23, 0.45, 0.8)),
+  ylim = c(0, 1)
+)
 abline(h = c(0.5, 0.95), lty = 2, col = "red")
 
-text(c(0.7, 1.9), c(0.55, 1.0), 
-     labels = c(paste(round(coverage_50*100, 1), "%"),
-                paste(round(coverage_95*100, 1), "%")),
-     pos = 3, cex = 0.9)
+text(c(0.7, 1.9), c(0.55, 1.0),
+  labels = c(
+    paste(round(coverage_50 * 100, 1), "%"),
+    paste(round(coverage_95 * 100, 1), "%")
+  ),
+  pos = 3, cex = 0.9
+)
 ```
 
 The prediction intervals demonstrate good calibration, with empirical coverage rates close to the nominal levels, confirming that the model adequately captures the uncertainty in both the latent OU process and the response variable.

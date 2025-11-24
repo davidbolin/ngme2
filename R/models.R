@@ -650,70 +650,163 @@ rw2 <- function(
   )
 }
 
-#' ngme Ornstein–Uhlenbeck process specification
+#' Ornstein-Uhlenbeck Process Model
 #'
-#' @param mesh numerical vector or inla.mesh.1d object, index to build the mesh
-#' @param mesh mesh for build the model
-#' @param theta_K initial value for theta_K, kappa = exp(B_theta_K * theta_K)
-#' @param B_theta_K bases for theta_K
-#' @param ... ignore
+#' Implements the exact discrete-time representation of the continuous
+#' Ornstein-Uhlenbeck (OU) process using a matrix formulation
+#' \eqn{\mathbf{K}\mathbf{X} = \boldsymbol{\delta}}.
 #'
-#' @return ngme_operator object
+#' @details
+#'
+#' The OU process is defined by the stochastic differential equation (SDE):
+#'
+#' \deqn{dX_t = -\theta X_t dt + \sigma dW_t}
+#'
+#' where \eqn{\theta > 0} is the mean-reversion rate (stiffness) and
+#' \eqn{\sigma} is the volatility (diffusion coefficient).
+#'
+#' ## Exact Discretization
+#'
+#' Unlike Euler-Maruyama approximations, the OU process has an exact solution
+#' between time points \eqn{t_i} and \eqn{t_{i+1}} with step size \eqn{\Delta t_i}:
+#'
+#' \deqn{X_{i+1} = X_i e^{-\theta \Delta t_i} + \epsilon_i}
+#'
+#' This is an AR(1) form with autoregressive coefficient:
+#'
+#' \deqn{\rho_i = e^{-\theta \Delta t_i}}
+#'
+#' and Gaussian noise:
+#'
+#' \deqn{\epsilon_i \sim \mathcal{N}\left(0, \frac{\sigma^2}{2\theta}(1 - \rho_i^2)\right)}
+#'
+#' ## Matrix Representation
+#'
+#' The precision matrix \eqn{\mathbf{K}} for the linear system
+#' \eqn{\mathbf{K}\mathbf{X} = \boldsymbol{\delta}} is constructed as:
+#'
+#' \deqn{\mathbf{K} = \begin{bmatrix}
+#' \sqrt{1-\rho_1^2} & 0 & 0 & \cdots & 0 \\
+#' -\rho_1 & 1 & 0 & \cdots & 0 \\
+#' 0 & -\rho_2 & 1 & \cdots & 0 \\
+#' \vdots & \vdots & \ddots & \ddots & \vdots \\
+#' 0 & 0 & \cdots & -\rho_{n-1} & 1
+#' \end{bmatrix}}
+#'
+#' where \eqn{\rho_i = \exp(-\theta \Delta t_i)} with \eqn{\Delta t_i = t_{i+1} - t_i}.
+#'
+#' **Why the \eqn{\sqrt{1-\rho_1^2}} term?** The first row ensures that \eqn{X_1}
+#' is drawn from the stationary distribution \eqn{\mathcal{N}(0, \sigma^2/(2\theta))}.
+#' This scaling factor matches the variance of the first component of
+#' \eqn{\boldsymbol{\delta}} with the transition noise variance in subsequent steps.
+#'
+#' ## Non-uniform Mesh
+#'
+#' For non-uniform meshes, each \eqn{\rho_i} is computed locally based on the
+#' varying time step \eqn{\Delta t_i}, allowing the model to naturally handle
+#' irregularly spaced observations.
+#'
+#' ## The \eqn{h} vector
+#'
+#' The \eqn{h} vector represents integration weights for the mass matrix.
+#' For the OU model, it is set as:
+#'
+#' \deqn{h = [\Delta t_1, \Delta t_2, \ldots, \Delta t_{n-1}, \Delta t_{n-1}]}
+#'
+#' where the last element is duplicated. This ensures proper weighting in the
+#' finite element formulation.
+#'
+#' ## The \eqn{\boldsymbol{\delta}} vector
+#'
+#' In the equation \eqn{\mathbf{K}\mathbf{X} = \boldsymbol{\delta}}, the vector
+#' \eqn{\boldsymbol{\delta}} contains independent identically distributed (i.i.d.)
+#' random variables with unit variance. The precision matrix \eqn{\mathbf{K}}
+#' is constructed such that the resulting process \eqn{\mathbf{X}} has the
+#' correct OU covariance structure.
+#'
+#' @param mesh numerical vector or `inla.mesh.1d` object giving the ordered
+#'   time locations. Must be strictly increasing.
+#' @param theta positive mean-reversion rate (stiffness parameter). Internally
+#'   stored on the log scale so optimization remains unconstrained.
+#' @param ... additional arguments (currently unused).
+#'
+#' @return An `ngme_operator` object containing:
+#' \itemize{
+#'   \item `K`: the precision matrix
+#'   \item `h`: integration weights
+#'   \item `theta_K`: log-transformed theta for unconstrained optimization
+#'   \item `mesh`: the mesh object
+#' }
+#'
+#' @references
+#' Uhlenbeck, G. E., & Ornstein, L. S. (1930). On the theory of the Brownian motion.
+#' Physical review, 36(5), 823.
+#'
 #' @export
+#' @examples
+#' # Uniform mesh
+#' mesh_uniform <- seq(0, 10, by = 0.5)
+#' ou_uniform <- ou(mesh = mesh_uniform, theta = 0.5)
+#' print(ou_uniform)
+#'
+#' # Non-uniform mesh
+#' mesh_nonuniform <- c(0, 1, 2.5, 3.5, 5, 8, 11)
+#' ou_nonunif <- ou(mesh = mesh_nonuniform, theta = 0.8)
+#' print(ou_nonunif)
 ou <- function(
     mesh = NULL,
-    theta_K = 0,
-    B_theta_K = NULL,
+    theta = 1,
     ...) {
   if (is.null(mesh)) {
-    return(structure(list(model = "ou", args = list(theta_K = theta_K, B_theta_K = B_theta_K, ...)), class = "ngme_operator_def"))
+    return(structure(list(model = "ou", args = list(theta = theta, ...)), class = "ngme_operator_def"))
   }
+
   mesh <- ngme_build_mesh(mesh)
+  stopifnot("Mesh should be inla.mesh.1d." = inherits(mesh, c("inla.mesh.1d")))
+
   n <- mesh$n
+  stopifnot("mesh should have at least two locations" = n >= 2)
 
-  # h <- diff(mesh$loc); h <- c(h, mean(h))
-  h_left <- c(0, diff(mesh$loc))
-  h_right <- c(diff(mesh$loc), 0)
-  h <- 0.5 * (h_left + h_right)
+  dt <- diff(mesh$loc)
+  stopifnot("mesh locations must be strictly increasing" = all(dt > 0))
 
-  if (is.null(B_theta_K)) B_theta_K <- matrix(1, nrow = length_map(mesh$loc), ncol = 1)
-  stopifnot("B_theta_K is a matrix" = is.matrix(B_theta_K))
-  stopifnot(
-    "ncol(B_theta_K) == length(theta_K)" = ncol(B_theta_K) == length(theta_K)
-  )
+  theta_raw <- log(theta)
+  stopifnot("theta must be a single positive value" = length(theta) == 1 && is.finite(theta) && theta > 0)
 
-  G <- Matrix::bandSparse(n = n, m = n, k = c(-1, 0), diagonals = cbind(-rep(1, n), rep(1, n)))
-  C <- Ce <- Matrix::bandSparse(n = n, m = n, k = c(-1, 0), diagonals = cbind(0.5 * c(h[-1], 0), 0.5 * h))
-  Ci <- Matrix::sparseMatrix(i = 1:n, j = 1:n, x = 1 / h, dims = c(n, n))
+  build_K <- function(theta_val) {
+    rho <- exp(-theta_val * dt)
+    stopifnot("All rho values must lie in (0, 1)" = all(rho > 0 & rho < 1))
 
-  kappas <- exp(as.numeric(B_theta_K %*% theta_K))
-  K <- Matrix::Diagonal(x = kappas) %*% C + G
+    diag_main <- c(sqrt(pmax(0, 1 - rho[1]^2)), rep(1, n - 1))
+    sub_diag <- -rho
+
+    Matrix::bandSparse(
+      n = n,
+      k = c(0, -1),
+      diagonals = list(diag_main, sub_diag)
+    )
+  }
 
   update_K <- function(theta_K) {
-    kappas <- exp(as.numeric(B_theta_K %*% theta_K))
-    Matrix::Diagonal(x = kappas) %*% C + G
+    ngme_as_sparse(build_K(exp(theta_K)))
   }
 
-  C <- ngme_as_sparse(C)
-  G <- ngme_as_sparse(G)
-  K <- ngme_as_sparse(K)
+  K <- update_K(theta_raw)
+  h <- c(dt, utils::tail(dt, 1))
 
-  generic_ns(
+  ngme_operator(
+    mesh = mesh,
     model = "ou",
-    C = C,
-    G = G,
-    param_name = paste("theta_K", seq_len(length(theta_K)), sep = ""),
-    param_trans = rep(list(identity), length(theta_K)),
-    matrices = list(C, G),
-    theta_K = list(theta_K = theta_K),
-    trans = list(theta_K = "exp"),
-    B_theta_K = list(theta_K = B_theta_K),
-    position = list(
-      c(1, 2),
-      c(3)
-    ),
+    theta_K = c(theta = theta_raw),
+    trans = c(theta = "exp"),
+    update_K = update_K,
+    K = K,
     h = h,
-    mesh = mesh
+    symmetric = FALSE,
+    zero_trace = FALSE,
+    param_name = "theta",
+    param_trans = list(exp),
+    generic_type = "none"
   )
 }
 

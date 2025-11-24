@@ -223,8 +223,8 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
       print(operator$second, padding = padding + 4, prefix = model_names[[2]])
     },
     ou = {
-      cat(pad_add4_space)
-      cat("theta_K = ", format(theta_K, digits = 2), "\n", sep = " ")
+      theta <- exp(theta_K)
+      cat(pad_add4_space, "theta = ", format(theta, digits = 3), "\n", sep = "")
     },
     re = {
       cat(pad_add4_space, "Covariance matrix (Sigma): \n")

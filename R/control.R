@@ -18,7 +18,6 @@
 #' @param n_parallel_chain number of parallel chains
 #' @param stop_points     number of stop points for convergence check (or specify iters_per_check)
 #' @param iters_per_check run how many iterations between each check point (or specify stop_points)
-#' @param exchange_VW     exchange last V and W in each chian
 #' @param n_slope_check   number of stop points for regression
 #' @param std_lim         maximum allowed standard deviation
 #' @param trend_lim       maximum allowed slope
@@ -63,7 +62,6 @@ control_opt <- function(
     # parallel options
     n_parallel_chain = 4,
     max_num_threads = n_parallel_chain,
-    exchange_VW = TRUE,
     n_slope_check = 3,
     std_lim = 0.01,
     trend_lim = 0.01,
@@ -141,7 +139,6 @@ control_opt <- function(
     standardize_fixed = standardize_fixed,
     n_parallel_chain = n_parallel_chain,
     stop_points = stop_points,
-    exchange_VW = exchange_VW,
     n_slope_check = n_slope_check, # how many on regression check
     std_lim = std_lim,
     trend_lim = trend_lim,

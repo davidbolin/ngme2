@@ -721,15 +721,15 @@ predictions_holdout <- predict(
   map = list(my_ou = time_test),
   data = model_data_test,
   type = "lp",
-  estimator = c("mean", "sd", "5quantile", "95quantile"),
+  estimator = c("mean", "sd", "0.05q", "0.95q"),
   sampling_size = 1000,
   seed = 42
 )
 
 pred_mean_holdout <- predictions_holdout$mean
 pred_sd_holdout <- predictions_holdout$sd
-pred_lower_holdout <- predictions_holdout$`5quantile`
-pred_upper_holdout <- predictions_holdout$`95quantile`
+pred_lower_holdout <- predictions_holdout$`0.05q`
+pred_upper_holdout <- predictions_holdout$`0.95q`
 ```
 
 ### Evaluating Prediction Results

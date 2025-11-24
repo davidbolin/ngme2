@@ -16,7 +16,6 @@ control_opt(
   start_sd = 0.5,
   n_parallel_chain = 4,
   max_num_threads = n_parallel_chain,
-  exchange_VW = TRUE,
   n_slope_check = 3,
   std_lim = 0.01,
   trend_lim = 0.01,
@@ -59,8 +58,6 @@ see ?sgd, ?precond_sgd, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW}
 
 \item{max_num_threads}{maximum number of threads used for parallel computing, by default will be set same as n_parallel_chain.
 If it is more than n_parallel_chain, the rest will be used to parallel different replicates of the model.}
-
-\item{exchange_VW}{exchange last V and W in each chian}
 
 \item{n_slope_check}{number of stop points for regression}
 

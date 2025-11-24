@@ -243,12 +243,8 @@ OperatorFactory::create(const Rcpp::List &operator_in) {
     return std::make_shared<Randeff>(operator_in);
   } else if (model_type == "bv") {
     return std::shared_ptr<Operator>(new Bivar(operator_in));
-  } else if (model_type == "bv_normal") {
-    return std::shared_ptr<Operator>(new Bivar_normal_ope(operator_in));
-  } else if (model_type == "bv_matern_normal") {
-    return std::shared_ptr<Operator>(new bv_matern_normal(operator_in));
-  } else if (model_type == "bv_matern_nig") {
-    return std::shared_ptr<Operator>(new bv_matern_nig(operator_in));
+  } else if (model_type == "bv_matern") {
+    return std::shared_ptr<Operator>(new bv_matern(operator_in));
   } else {
     throw std::runtime_error("Unknown model.");
   }

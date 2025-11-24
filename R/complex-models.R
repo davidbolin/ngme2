@@ -1,6 +1,6 @@
 #' Ngme bivariate model specification
 #'
-#' Giving 2 sub_models, build a correlated bivaraite operator based on K = D(theta, eta) %*% diag(K_1, K_2)
+#' Giving 2 sub_models, build a correlated bivariate operator based on K = D(theta, rho) %*% diag(c1*K_1, c2*K_2)
 #' \deqn{D(\theta, \rho) = \begin{pmatrix}
 #'   \cos(\theta) + \rho \sin(\theta) & -\sin(\theta) \sqrt{1+\rho^2} \\
 #'   \sin(\theta) - \rho \cos(\theta) & \cos(\theta) \sqrt{1+\rho^2}
@@ -8,74 +8,70 @@
 #'
 #' @param mesh the mesh where model is defined
 #' @param sub_models a list of sub_models (total 2 sub_models)
-#' @param mesh mesh for build the model
-#' @param group group vector, can be inherited from ngme() function
-#' @param theta the rotation parameter (starting point should
-#'   from -pi/4 to pi/4)
+#' @param theta the rotation parameter (starting point should be from -pi/4 to pi/4)
 #' @param rho the parameter related to correlation
+#' @param c1 scaling factor for the first sub-model (default: 1)
+#' @param c2 scaling factor for the second sub-model (default: 1)
 #' @param share_param TRUE if share the same parameter for 2 sub_models (of same type)
-#' @param ... ignore
+#' @param fix_theta TRUE if fix the theta of bv model
+#' @param use_c_param TRUE to estimate c1 and c2 as parameters, FALSE to fix them at specified values (default: FALSE)
 #'
-#' @return a list of specification of model
+#' @details
+#' The bivariate model combines two sub-models with a rotation matrix D and optional scaling factors c1 and c2.
+#' When \code{use_c_param = TRUE}, c1 and c2 are estimated as parameters (on log scale).
+#' When \code{use_c_param = FALSE} (default), c1 and c2 are fixed at their specified values (both default to 1).
+#'
+#' @return a ngme_operator of bivariate model
 #' @export
 bv <- function(
-  mesh,
-  sub_models,
-  theta = 0,
-  rho = 0,
-  group = NULL,
-  share_param = FALSE,
-  fix_bv_theta = FALSE,
-  ...
-) {
+    mesh,
+    sub_models,
+    theta = 0,
+    rho = 0,
+    c1 = 1,
+    c2 = 1,
+    share_param = FALSE,
+    fix_theta = FALSE,
+    use_c_param = FALSE) {
   mesh <- ngme_build_mesh(mesh)
   model_names <- sort(names(sub_models))
 
-  # read group argument from parent frame
-  if (is.null(group) &&
-      exists("group", parent.frame())){
-    group = get("group", parent.frame())
-  }
-
   stopifnot(
     "Please provide names for sub_models" = !is.null(model_names),
-    "Please provide group argument to indicate different fields"
-      = !is.null(group),
-    "Length of sub_models should be 2" = length(sub_models) == 2,
-    "Name of sub_models should be in group"
-    = all(model_names %in% levels(as.factor(group)))
+    "Length of sub_models should be 2" = length(sub_models) == 2
   )
-  group <- factor(group, levels = model_names)
 
-  # build 2 sub_models (pass environment to sub_models)
-  # delete theta and rho in env_args (to avoid sub_models use them)
-  env_args <- as.list(environment())
-  env_args$theta <- NULL; env_args$rho <- NULL
-  arg1 <- sub_models[[model_names[1]]]
-  if (!is.list(arg1)) {
-    first <- build_operator(arg1, env_args)
-  } else {
-    stopifnot("Please provide model=.. in the list" = !is.null(arg1$model))
-    first <- build_operator(arg1$model, modifyList(env_args, arg1))
+  # Inject mesh if sub_models are def
+  first <- sub_models[[model_names[1]]]
+  if (inherits(first, "ngme_operator_def")) {
+    model_name <- first$model
+    args <- first$args
+    args$mesh <- mesh
+    first <- do.call(model_name, args)
   }
-  arg2 <- sub_models[[model_names[2]]]
-  if (!is.list(arg2)) {
-    second <- build_operator(arg2, env_args)
-  } else {
-    stopifnot("Please provide model=.. in the list" = !is.null(arg2$model))
-    second <- build_operator(arg2$model, modifyList(env_args, arg2))
+  second <- sub_models[[model_names[2]]]
+  if (inherits(second, "ngme_operator_def")) {
+    model_name <- second$model
+    args <- second$args
+    args$mesh <- mesh
+    second <- do.call(model_name, args)
   }
 
   stopifnot(
-    "the theta should be in (-pi/2, pi/2)"
-      = theta >= -pi/2 & theta <= pi/2
+    "the theta should be in (-pi/2, pi/2)" = theta >= -pi / 2 & theta <= pi / 2
   )
   eta <- tan(theta)
-  theta_K <- c(eta, rho, first$theta_K, second$theta_K)
+
+  theta_K <- c()
+  if (!fix_theta) theta_K <- c(theta_K, eta)
+  theta_K <- c(theta_K, rho)
+  if (use_c_param) theta_K <- c(theta_K, log(c1), log(c2))
+  theta_K <- c(theta_K, first$theta_K, second$theta_K)
 
   # pass the theta_K to first and second
-  first$theta_K <- theta_K[3:(2 + first$n_theta_K)]
-  second$theta_K <- theta_K[(3 + first$n_theta_K):length(theta_K)]
+  n_bv <- (if (!fix_theta) 1 else 0) + 1 + (if (use_c_param) 2 else 0)
+  first$theta_K <- theta_K[(n_bv + 1):(n_bv + first$n_theta_K)]
+  second$theta_K <- theta_K[(n_bv + first$n_theta_K + 1):length(theta_K)]
 
   D <- build_D(theta, rho)
   bigD <- kronecker(D, Matrix::Diagonal(nrow(first$K)))
@@ -86,37 +82,67 @@ bv <- function(
   eta_to_theta <- function(eta) atan(eta)
 
   update_K <- function(theta_K) {
-    eta <- theta_K[1]
-    rho <- theta_K[2]
-    theta <- atan(eta)
+    idx <- 1
+    if (!fix_theta) {
+      eta <- theta_K[idx]
+      theta <- atan(eta)
+      idx <- idx + 1
+    } else {
+      theta <- 0 # fixed theta
+    }
+    rho <- theta_K[idx]
+    idx <- idx + 1
+
+    c1 <- 1
+    c2 <- 1
+    if (use_c_param) {
+      c1 <- exp(theta_K[idx])
+      c2 <- exp(theta_K[idx + 1])
+      idx <- idx + 2
+    }
+
     D <- build_D(theta, rho)
     bigD <- kronecker(D, Matrix::Diagonal(nrow(first$K)))
-    theta_K1 <- theta_K[3:(2 + first$n_theta_K)]
-    theta_K2 <- theta_K[(3 + first$n_theta_K):length(theta_K)]
+
+    theta_K1 <- theta_K[idx:(idx + first$n_theta_K - 1)]
+    idx <- idx + first$n_theta_K
+    theta_K2 <- theta_K[idx:length(theta_K)]
+
     first$K <- first$update_K(theta_K1)
     second$K <- second$update_K(theta_K2)
-    bigD %*% Matrix::bdiag(first$K, second$K)
+    bigD %*% Matrix::bdiag(c1 * first$K, c2 * second$K)
   }
 
   ngme_operator(
-    mesh        = mesh,
-    model       = "bv",
-    first        = first,
-    second      = second,
-    theta_K     = theta_K,
-    update_K    = update_K,
-    K           = bigD %*% Matrix::bdiag(first$K, second$K),
-    h           = c(first$h, second$h),
-    symmetric   = FALSE,
-    zero_trace  = FALSE,
+    mesh = mesh,
+    model = "bv",
+    first = first,
+    second = second,
+    theta_K = theta_K,
+    update_K = update_K,
+    K = update_K(theta_K),
+    h = c(first$h, second$h),
+    symmetric = FALSE,
+    zero_trace = FALSE,
     model_names = model_names,
     share_param = share_param,
-    fix_bv_theta = fix_bv_theta,
-    param_name  = c("theta", "rho",
+    fix_theta = fix_theta,
+    bv_theta = theta,
+    use_c_param = use_c_param,
+    param_name = c(
+      if (!fix_theta) "theta" else NULL,
+      "rho",
+      if (use_c_param) c("c1", "c2") else NULL,
       if (!is.null(first$param_name)) paste(first$param_name, "(1st)") else NULL,
       if (!is.null(second$param_name)) paste(second$param_name, "(2nd)") else NULL
     ),
-    param_trans = c(list(eta_to_theta, identity), first$param_trans, second$param_trans)
+    param_trans = c(
+      if (!fix_theta) list(eta_to_theta) else NULL,
+      list(identity),
+      if (use_c_param) list(exp, exp) else NULL,
+      first$param_trans,
+      second$param_trans
+    )
   )
 }
 
@@ -132,10 +158,9 @@ bv <- function(
 #' @return a list of specification of model
 #' @export
 tp <- function(
-  first,
-  second,
-  ...
-) {
+    first,
+    second,
+    ...) {
   stopifnot(
     inherits(first, "ngme_operator"),
     inherits(second, "ngme_operator")
@@ -164,252 +189,9 @@ tp <- function(
 }
 
 
-#' Ngme bivariate model specification on operator (theta=0)
-#'
-#' Giving 2 sub_models, build a correlated bivaraite operator based on K = D(theta, eta) %*% diag(K_1, K_2)
-#' \deqn{D(\theta, \rho) = \begin{pmatrix}
-#'   \cos(\theta) + \rho \sin(\theta) & -\sin(\theta) \sqrt{1+\rho^2} \\
-#'   \sin(\theta) - \rho \cos(\theta) & \cos(\theta) \sqrt{1+\rho^2}
-#' \end{pmatrix}}
-#' Exact same implementation as in paper.
-#' Fix noise sd=1.
-#'
-#' @param mesh the mesh where model is defined
-#' @param sub_models a list of sub_models (total 2 sub_models)
-#' @param mesh mesh for build the model
-#' @param group group vector, can be inherited from ngme() function
-#' @param rho the parameter related to correlation
-#' @param c1 the noise sd for 1st sub_model
-#' @param c2 the noise sd for 2nd sub_model
-#' @param share_param TRUE if share the same parameter for 2 sub_models (of same type)
-#' @param ... ignore
-#'
-#' @return a list of specification of model
-#' @export
-bv_normal <- function(
-  mesh,
-  sub_models,
-  rho = 0,
-  c1 = 1, 
-  c2 = 1,
-  group = NULL,
-  share_param = FALSE,
-  fix_bv_theta = FALSE,
-  ...
-) {
-  mesh <- ngme_build_mesh(mesh)
-  model_names <- sort(names(sub_models))
-
-  # read group argument from parent frame
-  if (is.null(group) &&
-      exists("group", parent.frame())){
-    group = get("group", parent.frame())
-  }
-
-  stopifnot(
-    "Please provide names for sub_models" = !is.null(model_names),
-    "Please provide group argument to indicate different fields"
-      = !is.null(group),
-    "Length of sub_models should be 2" = length(sub_models) == 2,
-    "Name of sub_models should be in group"
-    = all(model_names %in% levels(as.factor(group)))
-  )
-  group <- factor(group, levels = model_names)
-
-  # build 2 sub_models (pass environment to sub_models)
-  # delete theta and rho in env_args (to avoid sub_models use them)
-  env_args <- as.list(environment())
-  env_args$theta <- NULL;
-  env_args$rho <- NULL
-  arg1 <- sub_models[[model_names[1]]]
-  if (!is.list(arg1)) {
-    first <- build_operator(arg1, env_args)
-  } else {
-    stopifnot("Please provide model=.. in the list" = !is.null(arg1$model))
-    first <- build_operator(arg1$model, modifyList(env_args, arg1))
-  }
-  arg2 <- sub_models[[model_names[2]]]
-  if (!is.list(arg2)) {
-    second <- build_operator(arg2, env_args)
-  } else {
-    stopifnot("Please provide model=.. in the list" = !is.null(arg2$model))
-    second <- build_operator(arg2$model, modifyList(env_args, arg2))
-  }
-
-  stopifnot(c1 > 0, c2 > 0)
-  theta_K <- c(rho, log(c1), log(c2), first$theta_K, second$theta_K)
-
-  update_K <- function(theta_K) {
-    rho <- theta_K[1]
-    c1 <- exp(theta_K[2])
-    c2 <- exp(theta_K[3])
-
-    D <- build_D(0, rho)
-    bigD <- kronecker(D, Matrix::Diagonal(nrow(first$K)))
-
-    # pass the theta_K to first and second
-    first$theta_K <- theta_K[4:(3 + first$n_theta_K)]
-    second$theta_K <- theta_K[(4 + first$n_theta_K):length(theta_K)]
-
-    first$K <- first$update_K(first$theta_K)
-    second$K <- second$update_K(second$theta_K)
-
-    bigD %*% Matrix::bdiag(c1 * first$K, c2 * second$K)
-  }
-
-  ngme_operator(
-    mesh        = mesh,
-    model       = "bv_normal",
-    first        = first,
-    second      = second,
-    theta_K     = theta_K,
-    update_K    = update_K,
-    K           = update_K(theta_K),
-    h           = c(first$h, second$h),
-    symmetric   = FALSE,
-    zero_trace  = FALSE,
-    model_names = model_names,
-    share_param = share_param,
-    fix_bv_theta = fix_bv_theta,
-    param_name  = c("rho",
-      "c1",
-      "c2",
-      if (!is.null(first$param_name)) paste(first$param_name, "(1st)") else NULL,
-      if (!is.null(second$param_name)) paste(second$param_name, "(2nd)") else NULL
-    ),
-    param_trans = c(identity, exp, exp, first$param_trans, second$param_trans)
-  )
-}
 
 
-#' Ngme bivariate model specification (theta=0)
-#'
-#' Does not fit noise sd.
-#' 
-#' Giving 2 sub_models, build a correlated bivaraite operator based on K = D(theta, eta) %*% diag(K_1, K_2)
-#' \deqn{D(\theta, \rho) = \begin{pmatrix}
-#'   \cos(\theta) + \rho \sin(\theta) & -\sin(\theta) \sqrt{1+\rho^2} \\
-#'   \sin(\theta) - \rho \cos(\theta) & \cos(\theta) \sqrt{1+\rho^2}
-#' \end{pmatrix}}
-#'
-#' @param mesh the mesh where model is defined
-#' @param sub_models a list of sub_models (should be two matern models)
-#' @param mesh mesh for build the model
-#' @param group group vector, can be inherited from ngme() function
-#' @param rho the parameter related to correlation
-#' @param share_param TRUE if share the same parameter for 2 sub_models (of same type)
-#' @param ... ignore
-#'
-#' @return a list of specification of model
-#' @export
-bv_matern_normal <- function(
-  mesh,
-  sub_models,
-  rho = 0,
-  sd1=1, sd2=1,
-  group = NULL,
-  share_param = FALSE,
-  fix_bv_theta = FALSE,
-  ...
-) {
-  mesh <- ngme_build_mesh(mesh)
-  d <- switch(mesh$manifold, 
-    "R1" = 1,
-    "R2" = 2,
-    stop("manifold not supported")
-  )
-
-  # sort the sub_models
-  model_names <- sort(names(sub_models))
-
-  # read group argument from parent frame
-  if (is.null(group) &&
-      exists("group", parent.frame())){
-    group = get("group", parent.frame())
-  }
-
-  stopifnot(
-    "Please provide names for sub_models" = !is.null(model_names),
-    "Please provide group argument to indicate different fields"
-      = !is.null(group),
-    "Length of sub_models should be 2" = length(sub_models) == 2,
-    "Name of sub_models should be in group"
-    = all(model_names %in% levels(as.factor(group))),
-    "sd1 and sd2 should be positive" = sd1 > 0 & sd2 > 0
-  )
-  group <- factor(group, levels = model_names)
-
-  # build 2 sub_models (pass environment to sub_models)
-  # delete theta and rho in env_args (to avoid sub_models use them)
-  env_args <- as.list(environment())
-  env_args$theta <- NULL;
-  env_args$rho <- NULL
-  arg1 <- sub_models[[model_names[1]]]
-  if (!is.list(arg1)) {
-    first <- build_operator(arg1, env_args)
-  } else {
-    stopifnot("Please provide model=.. in the list" = !is.null(arg1$model))
-    first <- build_operator(arg1$model, modifyList(env_args, arg1))
-  }
-  arg2 <- sub_models[[model_names[2]]]
-  if (!is.list(arg2)) {
-    second <- build_operator(arg2, env_args)
-  } else {
-    stopifnot("Please provide model=.. in the list" = !is.null(arg2$model))
-    second <- build_operator(arg2$model, modifyList(env_args, arg2))
-  }
-
-  theta_K <- c(
-    rho, log(sd1), log(sd2),
-    first$theta_K, second$theta_K
-  )
-
-  update_K <- function(theta_K) {
-    theta <- 0
-    rho <- theta_K[1]
-    sd1 <- exp(theta_K[2])
-    sd2 <- exp(theta_K[3])
-    theta_K1 <- theta_K[4:(3 + first$n_theta_K)]
-    theta_K2 <- theta_K[(4 + first$n_theta_K):length(theta_K)]
-    
-    alpha1 <- first$alpha; alpha2 <- second$alpha
-    kappa1 <- exp(first$theta_K); kappa2 <- exp(second$theta_K)
-
-    nu1 = alpha1 - d/2; nu2 = alpha2 - d/2
-    c1 = sqrt(gamma(nu1) / (gamma(alpha1))) / (kappa1^(nu1) * (4*pi)^(d/4) * sd1)
-    c2 = sqrt(gamma(nu2) / (gamma(alpha2))) / (kappa2^(nu2) * (4*pi)^(d/4) * sd2)
-
-    D <- build_D(theta, rho)
-    bigD <- kronecker(D, Matrix::Diagonal(nrow(first$K)))
-    first$K <- first$update_K(theta_K1)
-    second$K <- second$update_K(theta_K2)
-    bigD %*% Matrix::bdiag(c1 * first$K, c2 * second$K)
-  }
-
-  ngme_operator(
-    mesh        = mesh,
-    model       = "bv_matern_normal",
-    first        = first,
-    second      = second,
-    theta_K     = theta_K,
-    update_K    = update_K,
-    K           = update_K(theta_K),
-    h           = c(first$h, second$h),
-    dim         = d,
-    symmetric   = FALSE,
-    zero_trace  = FALSE,
-    model_names = model_names,
-    share_param = share_param,
-    fix_bv_theta = fix_bv_theta,
-    param_name  = c("rho", "sd1", "sd2",
-      if (!is.null(first$param_name)) paste(first$param_name, "(1st)") else NULL,
-      if (!is.null(second$param_name)) paste(second$param_name, "(2nd)") else NULL
-    ),
-    param_trans = c(identity, exp, exp, first$param_trans, second$param_trans)
-  )
-}
-
-#' Ngme bivariate model with NIG noise
+#' Ngme bivariate model with Matern sub_models
 #'
 #' Giving 2 sub_models, build a correlated bivaraite operator based on K = D(theta, eta) %*% diag(K_1, K_2)
 #' \deqn{D(\theta, \rho) = \begin{pmatrix}
@@ -428,19 +210,18 @@ bv_matern_normal <- function(
 #'
 #' @return a list of specification of model
 #' @export
-bv_matern_nig <- function(
-  mesh,
-  sub_models,
-  theta = 0,
-  rho = 0,
-  sd1=1, sd2=1,
-  group = NULL,
-  share_param = FALSE,
-  fix_bv_theta = FALSE,
-  ...
-) {
+bv_matern <- function(
+    mesh,
+    sub_models,
+    theta = 0,
+    rho = 0,
+    sd1 = 1, sd2 = 1,
+    group = NULL,
+    share_param = FALSE,
+    fix_theta = FALSE,
+    ...) {
   mesh <- ngme_build_mesh(mesh)
-  d <- switch(mesh$manifold, 
+  d <- switch(mesh$manifold,
     "R1" = 1,
     "R2" = 2,
     stop("manifold not supported")
@@ -451,18 +232,16 @@ bv_matern_nig <- function(
 
   # read group argument from parent frame
   if (is.null(group) &&
-      exists("group", parent.frame())){
-    group = get("group", parent.frame())
+    exists("group", parent.frame())) {
+    group <- get("group", parent.frame())
   }
 
   stopifnot(
-    "theta should be within (-pi/2, pi/2)" = theta > -pi/2 & theta < pi/2,
+    "theta should be within (-pi/2, pi/2)" = theta > -pi / 2 & theta < pi / 2,
     "Please provide names for sub_models" = !is.null(model_names),
-    "Please provide group argument to indicate different fields"
-      = !is.null(group),
+    "Please provide group argument to indicate different fields" = !is.null(group),
     "Length of sub_models should be 2" = length(sub_models) == 2,
-    "Name of sub_models should be in group"
-    = all(model_names %in% levels(as.factor(group))),
+    "Name of sub_models should be in group" = all(model_names %in% levels(as.factor(group))),
     "sd1 and sd2 should be positive" = sd1 > 0 & sd2 > 0
   )
   group <- factor(group, levels = model_names)
@@ -470,7 +249,7 @@ bv_matern_nig <- function(
   # build 2 sub_models (pass environment to sub_models)
   # delete theta and rho in env_args (to avoid sub_models use them)
   env_args <- as.list(environment())
-  env_args$theta <- NULL;
+  env_args$theta <- NULL
   env_args$rho <- NULL
   arg1 <- sub_models[[model_names[1]]]
   if (!is.list(arg1)) {
@@ -488,7 +267,7 @@ bv_matern_nig <- function(
   }
 
   eta <- tan(theta)
-  if (!fix_bv_theta) {
+  if (!fix_theta) {
     theta_K <- c(
       eta, rho, log(sd1), log(sd2),
       first$theta_K, second$theta_K
@@ -501,8 +280,8 @@ bv_matern_nig <- function(
   }
 
   update_K <- function(theta_K) {
-    if (!fix_bv_theta) {
-      theta <- atan(theta_K[1]) 
+    if (!fix_theta) {
+      theta <- atan(theta_K[1])
       rho <- theta_K[2]
       sd1 <- exp(theta_K[3])
       sd2 <- exp(theta_K[4])
@@ -515,13 +294,16 @@ bv_matern_nig <- function(
       theta_K1 <- theta_K[4:(3 + first$n_theta_K)]
       theta_K2 <- theta_K[(4 + first$n_theta_K):length(theta_K)]
     }
-  
-    alpha1 <- first$alpha; alpha2 <- second$alpha
-    kappa1 <- exp(first$theta_K); kappa2 <- exp(second$theta_K)
 
-    nu1 = alpha1 - d/2; nu2 = alpha2 - d/2
-    c1 = sqrt(gamma(nu1) / (gamma(alpha1))) / (kappa1^(nu1) * (4*pi)^(d/4) * sd1)
-    c2 = sqrt(gamma(nu2) / (gamma(alpha2))) / (kappa2^(nu2) * (4*pi)^(d/4) * sd2)
+    alpha1 <- first$alpha
+    alpha2 <- second$alpha
+    kappa1 <- exp(first$theta_K)
+    kappa2 <- exp(second$theta_K)
+
+    nu1 <- alpha1 - d / 2
+    nu2 <- alpha2 - d / 2
+    c1 <- sqrt(gamma(nu1) / (gamma(alpha1))) / (kappa1^(nu1) * (4 * pi)^(d / 4) * sd1)
+    c2 <- sqrt(gamma(nu2) / (gamma(alpha2))) / (kappa2^(nu2) * (4 * pi)^(d / 4) * sd2)
 
     D <- build_D(theta, rho)
     bigD <- kronecker(D, Matrix::Diagonal(nrow(first$K)))
@@ -529,29 +311,30 @@ bv_matern_nig <- function(
     second$K <- second$update_K(theta_K2)
     bigD %*% Matrix::bdiag(c1 * first$K, c2 * second$K)
   }
-  
+
   eta_to_theta <- function(eta) atan(eta)
   ngme_operator(
-    mesh        = mesh,
-    model       = "bv_matern_nig",
-    first        = first,
-    second      = second,
-    theta_K     = theta_K,
-    update_K    = update_K,
-    K           = update_K(theta_K),
-    h           = c(first$h, second$h),
-    dim         = d,
-    symmetric   = FALSE,
-    zero_trace  = FALSE,
+    mesh = mesh,
+    model = "bv_matern",
+    first = first,
+    second = second,
+    theta_K = theta_K,
+    update_K = update_K,
+    K = update_K(theta_K),
+    h = c(first$h, second$h),
+    dim = d,
+    symmetric = FALSE,
+    zero_trace = FALSE,
     model_names = model_names,
     share_param = share_param,
-    fix_bv_theta = fix_bv_theta,
-    bv_theta    = theta,
-    param_name  = c(if (!fix_bv_theta) "theta" else NULL, "rho", "sd1", "sd2",
+    fix_theta = fix_theta,
+    bv_theta = theta,
+    param_name = c(
+      if (!fix_theta) "theta" else NULL, "rho", "sd1", "sd2",
       if (!is.null(first$param_name)) paste(first$param_name, "(1st)") else NULL,
       if (!is.null(second$param_name)) paste(second$param_name, "(2nd)") else NULL
     ),
-    param_trans = c(if (!fix_bv_theta) eta_to_theta else NULL, identity, exp, exp, first$param_trans, second$param_trans)
+    param_trans = c(if (!fix_theta) eta_to_theta else NULL, identity, exp, exp, first$param_trans, second$param_trans)
   )
 }
 
@@ -590,37 +373,38 @@ bv_matern_nig <- function(
 #' @param B_gamma_y_list A list of design matrices for the y component of the advection term on every time node, length(B_gamma_y_list) == nt-1.
 #' @param stabilization TRUE if using a stabilization term (for implicit Euler).
 #' @param ... Additional arguments (ignored).
-#' 
+#'
 #' @return ngme_operator object.
 #' @export
 spacetime <- function(
-  mesh,
-  lambda = 1, # fixed
-  alpha = 2, # alpha = 2, 4, fixed
-  cc = 1,
-  kappa = 1,
-  # advection term
-  fix_gamma = FALSE,
-  theta_gamma_x = 0, 
-  theta_gamma_y = 0, 
-  shared_theta_gamma = FALSE,
-  # theta_gamma_t = 0, 
-  B_gamma_x = matrix(1, nrow = mesh[[2]]$n, ncol = 1),
-  B_gamma_y = matrix(1, nrow = mesh[[2]]$n, ncol = 1),
-  # or, a list of B_gamma_x, B_gamma_y on every time node.
-  B_gamma_x_list = NULL,
-  B_gamma_y_list = NULL,
-  # B_gamma_t = matrix(1, nrow = mesh[[1]]$n, ncol = 1),
-  stabilization = TRUE,
-  ...
-) {
-  method = "euler" # for now only support implicit euler
+    mesh,
+    lambda = 1, # fixed
+    alpha = 2, # alpha = 2, 4, fixed
+    cc = 1,
+    kappa = 1,
+    # advection term
+    fix_gamma = FALSE,
+    theta_gamma_x = 0,
+    theta_gamma_y = 0,
+    shared_theta_gamma = FALSE,
+    # theta_gamma_t = 0,
+    B_gamma_x = matrix(1, nrow = mesh[[2]]$n, ncol = 1),
+    B_gamma_y = matrix(1, nrow = mesh[[2]]$n, ncol = 1),
+    # or, a list of B_gamma_x, B_gamma_y on every time node.
+    B_gamma_x_list = NULL,
+    B_gamma_y_list = NULL,
+    # B_gamma_t = matrix(1, nrow = mesh[[1]]$n, ncol = 1),
+    stabilization = TRUE,
+    ...) {
+  method <- "euler" # for now only support implicit euler
   if (theta_gamma_x == 0 && theta_gamma_y == 0 && fix_gamma) {
-    stabilization = FALSE
+    stabilization <- FALSE
   }
 
-  mesh_t <- mesh[[1]]; nt <- mesh_t$n
-  mesh_s <- mesh[[2]]; ns <- mesh_s$n
+  mesh_t <- mesh[[1]]
+  nt <- mesh_t$n
+  mesh_s <- mesh[[2]]
+  ns <- mesh_s$n
   stopifnot(
     "Please provide mesh as a list of length 2" = length(mesh) == 2,
     "alpha should be 2 or 4" = alpha == 2 || alpha == 4,
@@ -630,7 +414,7 @@ spacetime <- function(
       fmesher::fm_manifold_dim(mesh_s) == 2,
     "require package rSPDE" = requireNamespace("rSPDE", quietly = TRUE)
   )
-  
+
   # Additional validation for shared_theta_gamma
   if (shared_theta_gamma && !fix_gamma) {
     if (!all(theta_gamma_x == theta_gamma_y)) {
@@ -644,16 +428,16 @@ spacetime <- function(
 
   if (!is.null(B_gamma_x_list) && !is.null(B_gamma_y_list)) {
     stopifnot(
-      "B_gamma_x_list and B_gamma_y_list should have the same length" = 
+      "B_gamma_x_list and B_gamma_y_list should have the same length" =
         length(B_gamma_x_list) == length(B_gamma_y_list),
-      "The number of time nodes should be the same as the length of B_gamma_x_list and B_gamma_y_list" = 
-        nt-1 == length(B_gamma_x_list),
-      "The ncol of items in B_gamma_x_list should be the same as the length of theta_gamma_x" = 
+      "The number of time nodes should be the same as the length of B_gamma_x_list and B_gamma_y_list" =
+        nt - 1 == length(B_gamma_x_list),
+      "The ncol of items in B_gamma_x_list should be the same as the length of theta_gamma_x" =
         all(sapply(B_gamma_x_list, ncol) == length(theta_gamma_x)),
-      "The ncol of items in B_gamma_y_list should be the same as the length of theta_gamma_y" = 
+      "The ncol of items in B_gamma_y_list should be the same as the length of theta_gamma_y" =
         all(sapply(B_gamma_y_list, ncol) == length(theta_gamma_y))
     )
-    
+
     # Additional validation for shared_theta_gamma with lists
     if (shared_theta_gamma && !fix_gamma) {
       # Check that all matrices in B_gamma_x_list and B_gamma_y_list have the same number of columns
@@ -664,57 +448,63 @@ spacetime <- function(
   } else {
     # Use B_gamma_x and B_gamma_y
     stopifnot(
-      "B_gamma_x and B_gamma_y should have the same number of rows as the spatial mesh" = 
+      "B_gamma_x and B_gamma_y should have the same number of rows as the spatial mesh" =
         nrow(B_gamma_x) == ns && nrow(B_gamma_y) == ns,
       "theta_gamma_x should be of length ncol(B_gamma_x)" =
         length(theta_gamma_x) == ncol(B_gamma_x),
       "theta_gamma_y should be of length ncol(B_gamma_y)" =
         length(theta_gamma_y) == ncol(B_gamma_y)
     )
-    
+
     # turn it into a list
-    B_gamma_x_list <- lapply(1:(nt-1), function(i) B_gamma_x)
-    B_gamma_y_list <- lapply(1:(nt-1), function(i) B_gamma_y)
+    B_gamma_x_list <- lapply(1:(nt - 1), function(i) B_gamma_x)
+    B_gamma_y_list <- lapply(1:(nt - 1), function(i) B_gamma_y)
   }
 
-##### temporal FEM #####
+  ##### temporal FEM #####
   fem_t <- fmesher::fm_fem(mesh_t, order = 2)
   Ct <- fem_t$c0
   Gt <- fem_t$g1
-  
+
   # Build Bt
-  Bt <- Matrix::bandSparse(n = nt, m = nt, k = c(-1, 0, 1),
-                   diagonals = cbind(rep(0.5,nt), rep(0,nt), rep(-0.5,nt)))
-  Bt[1,1] = -0.5
-  Bt[nt,nt] = 0.5
+  Bt <- Matrix::bandSparse(
+    n = nt, m = nt, k = c(-1, 0, 1),
+    diagonals = cbind(rep(0.5, nt), rep(0, nt), rep(-0.5, nt))
+  )
+  Bt[1, 1] <- -0.5
+  Bt[nt, nt] <- 0.5
 
-# Bt
-# [1,] -0.5 -0.5  .    .    .  
-# [2,]  0.5  .   -0.5  .    .  
-# [3,]  .    0.5  .   -0.5  .  
-# [4,]  .    .    0.5  .   -0.5
-# [5,]  .    .    .    0.5  0.5
+  # Bt
+  # [1,] -0.5 -0.5  .    .    .
+  # [2,]  0.5  .   -0.5  .    .
+  # [3,]  .    0.5  .   -0.5  .
+  # [4,]  .    .    0.5  .   -0.5
+  # [5,]  .    .    .    0.5  0.5
 
 
-##### space FEM #####
+  ##### space FEM #####
   fem_s <- fmesher::fm_fem(mesh_s, order = alpha)
   Cs <- fem_s$c0
   Gs <- fem_s$g1
-  
+
   # compute h
-  if (method == "galerkin"){
+  if (method == "galerkin") {
     h <- Matrix::diag(Ct) %x% Matrix::diag(Cs)
   } else {
     # implicit euler
-    dt =c(1, diff(mesh_t$loc))
+    dt <- c(1, diff(mesh_t$loc))
     h <- dt %x% Matrix::diag(Cs) / cc
   }
 
-  FV = mesh_s$graph$tv
-  P <- sf::st_coordinates(fmesher::fm_vertices(mesh_s))[,1:2]
+  FV <- mesh_s$graph$tv
+  P <- sf::st_coordinates(fmesher::fm_vertices(mesh_s))[, 1:2]
   fem2d <- rSPDE::rSPDE.fem2d(FV = FV, P = P)
-  Bx = fem2d$Bx; By = fem2d$By
-  Hxx = fem2d$Hxx; Hyy = fem2d$Hyy; Hxy = fem2d$Hxy; Hyx = fem2d$Hyx
+  Bx <- fem2d$Bx
+  By <- fem2d$By
+  Hxx <- fem2d$Hxx
+  Hyy <- fem2d$Hyy
+  Hxy <- fem2d$Hxy
+  Hyx <- fem2d$Hyx
 
   theta_K <- if (fix_gamma) {
     c(log(cc), log(kappa))
@@ -731,51 +521,51 @@ spacetime <- function(
 
   if (shared_theta_gamma) {
     # Use theta_gamma_x for both x and y components
-    gamma_x_list <- lapply(1:(nt-1), function(i) B_gamma_x_list[[i]] %*% theta_gamma_x)
-    gamma_y_list <- lapply(1:(nt-1), function(i) B_gamma_y_list[[i]] %*% theta_gamma_x)
+    gamma_x_list <- lapply(1:(nt - 1), function(i) B_gamma_x_list[[i]] %*% theta_gamma_x)
+    gamma_y_list <- lapply(1:(nt - 1), function(i) B_gamma_y_list[[i]] %*% theta_gamma_x)
   } else {
-    gamma_x_list <- lapply(1:(nt-1), function(i) B_gamma_x_list[[i]] %*% theta_gamma_x)
-    gamma_y_list <- lapply(1:(nt-1), function(i) B_gamma_y_list[[i]] %*% theta_gamma_y)
+    gamma_x_list <- lapply(1:(nt - 1), function(i) B_gamma_x_list[[i]] %*% theta_gamma_x)
+    gamma_y_list <- lapply(1:(nt - 1), function(i) B_gamma_y_list[[i]] %*% theta_gamma_y)
   }
   # gamma_t <- B_gamma_t %*% theta_gamma_t
   build_Bs <- function(gamma_x, gamma_y) {
-    Dx = Matrix::Diagonal(x = gamma_x) 
-    Dy = Matrix::Diagonal(x = gamma_y)
+    Dx <- Matrix::Diagonal(x = gamma_x)
+    Dy <- Matrix::Diagonal(x = gamma_y)
     Dx %*% Bx %*% Dx + Dy %*% By %*% Dy
   }
 
   build_Bs_list <- function(gamma_x_list, gamma_y_list) {
-    lapply(1:(nt-1), function(i) build_Bs(gamma_x_list[[i]], gamma_y_list[[i]]))
+    lapply(1:(nt - 1), function(i) build_Bs(gamma_x_list[[i]], gamma_y_list[[i]]))
   }
 
   build_S <- function(gamma_x, gamma_y) {
     # if gamma_x and gamma_y are 0, then S = 0
     if (sum(gamma_x^2 + gamma_y^2) < 1e-8) {
-      return (Matrix::Diagonal(n = ns, x = 0))
+      return(Matrix::Diagonal(n = ns, x = 0))
     }
-    gamma_xx = gamma_x^2
-    gamma_yy = gamma_y^2
-    gamma_xy = gamma_x * gamma_y
-    Dxx = Matrix::Diagonal(x = gamma_xx)
-    Dyy = Matrix::Diagonal(x = gamma_yy)
-    Dxy = Matrix::Diagonal(x = gamma_xy)
-    tmp = Dxx %*% Hxx %*% Dxx + Dyy %*% Hyy %*% Dyy + Dxy %*% (Hxy + Hyx) %*% Dxy
-    gamma_norm = sqrt(sum(gamma_x^2 + gamma_y^2))
+    gamma_xx <- gamma_x^2
+    gamma_yy <- gamma_y^2
+    gamma_xy <- gamma_x * gamma_y
+    Dxx <- Matrix::Diagonal(x = gamma_xx)
+    Dyy <- Matrix::Diagonal(x = gamma_yy)
+    Dxy <- Matrix::Diagonal(x = gamma_xy)
+    tmp <- Dxx %*% Hxx %*% Dxx + Dyy %*% Hyy %*% Dyy + Dxy %*% (Hxy + Hyx) %*% Dxy
+    gamma_norm <- sqrt(sum(gamma_x^2 + gamma_y^2))
     Cs %*% tmp / gamma_norm
   }
 
   build_S_list <- function(gamma_x_list, gamma_y_list) {
-    lapply(1:(nt-1), function(i) build_S(gamma_x_list[[i]], gamma_y_list[[i]]))
+    lapply(1:(nt - 1), function(i) build_S(gamma_x_list[[i]], gamma_y_list[[i]]))
   }
-    
+
   # compute L_s
   update_K <- function(theta_K) {
     cc <- exp(theta_K[1])
     kappa <- exp(theta_K[2])
-    
+
     if (shared_theta_gamma) {
       theta_gamma_x <- if (length(theta_K) > 2) theta_K[3:(2 + n_theta_gamma_x)] else double(0)
-      theta_gamma_y <- theta_gamma_x  # Use same parameter for both x and y
+      theta_gamma_y <- theta_gamma_x # Use same parameter for both x and y
     } else {
       theta_gamma_x <- if (length(theta_K) > 2) theta_K[3:(2 + n_theta_gamma_x)] else double(0)
       theta_gamma_y <- if (length(theta_K) > 2) theta_K[(3 + n_theta_gamma_x):length(theta_K)] else double(0)
@@ -783,64 +573,67 @@ spacetime <- function(
 
     # gamma_x <- as.vector(B_gamma_x %*% theta_gamma_x)
     # gamma_y <- as.vector(B_gamma_y %*% theta_gamma_y)
-    gamma_x_list <- lapply(1:(nt-1), function(i) as.vector(B_gamma_x_list[[i]] %*% theta_gamma_x))
-    gamma_y_list <- lapply(1:(nt-1), function(i) as.vector(B_gamma_y_list[[i]] %*% theta_gamma_y))
+    gamma_x_list <- lapply(1:(nt - 1), function(i) as.vector(B_gamma_x_list[[i]] %*% theta_gamma_x))
+    gamma_y_list <- lapply(1:(nt - 1), function(i) as.vector(B_gamma_y_list[[i]] %*% theta_gamma_y))
 
     if (!fix_gamma) {
       # Bs = build_Bs(gamma_x, gamma_y)
       # S = build_S(gamma_x, gamma_y)
-      Bs_list = build_Bs_list(gamma_x_list, gamma_y_list)
-      S_list = build_S_list(gamma_x_list, gamma_y_list)
+      Bs_list <- build_Bs_list(gamma_x_list, gamma_y_list)
+      S_list <- build_S_list(gamma_x_list, gamma_y_list)
     }
 
     # compute L_s
     # Turn L into a list
     # L = kappa^2 * Cs + lambda * Gs + Bs
-    L_list = lapply(1:(nt-1), function(i) kappa^2 * Cs + lambda * Gs + Bs_list[[i]])
+    L_list <- lapply(1:(nt - 1), function(i) kappa^2 * Cs + lambda * Gs + Bs_list[[i]])
 
-    Cs_inv <- Matrix::Diagonal(n = ns, x = 1/Matrix::diag(Cs))
-    
-  # watch-out! make sure which t
-    if (alpha == 4) L = L %*% Cs_inv %*% Matrix::t(L)
-    
+    Cs_inv <- Matrix::Diagonal(n = ns, x = 1 / Matrix::diag(Cs))
+
+    # watch-out! make sure which t
+    if (alpha == 4) L <- L %*% Cs_inv %*% Matrix::t(L)
+
     if (method == "galerkin") {
       # not used
-      K <- Bt %x% Cs + 1/cc * Ct %x% L
+      K <- Bt %x% Cs + 1 / cc * Ct %x% L
     } else if (method == "euler") {
       # implicit euler
       null_matrix <- Matrix::Diagonal(n = ns, x = 0)
-      
+
       if (stabilization) {
         # L = L + S
-        L_list = lapply(1:(nt-1), function(i) L_list[[i]] + S_list[[i]])
+        L_list <- lapply(1:(nt - 1), function(i) L_list[[i]] + S_list[[i]])
       }
-      
+
       # diagonalize the list of L
       # diag_L <- Matrix::bdiag(
       #   lapply(1:(nt-1), function(i) L)
       # )
 
       diag_L_list <- Matrix::bdiag(
-        lapply(1:(nt-1), function(i) L_list[[i]])
+        lapply(1:(nt - 1), function(i) L_list[[i]])
       )
 
       # K <- rw1(1:nt)$K %x% Cs + 1/cc *
       #   Matrix::bdiag(null_matrix, diag_L)
-      
-      K <- rw1(1:nt)$K %x% Cs + 1/cc *
+
+      K <- rw1(1:nt)$K %x% Cs + 1 / cc *
         Matrix::bdiag(null_matrix, diag_L_list)
-      
+
       K <- sqrt(cc) * K
     }
-    return (K)
+    return(K)
   }
 
-  Bs_list = build_Bs_list(gamma_x_list, gamma_y_list)
-  S_list = build_S_list(gamma_x_list, gamma_y_list)
+  Bs_list <- build_Bs_list(gamma_x_list, gamma_y_list)
+  S_list <- build_S_list(gamma_x_list, gamma_y_list)
   K <- update_K(theta_K)
 
-  BtCs = if (method == "galerkin") ngme_as_sparse(Bt %x% Cs) 
-    else ngme_as_sparse(rw1(1:nt)$K %x% Cs)
+  BtCs <- if (method == "galerkin") {
+    ngme_as_sparse(Bt %x% Cs)
+  } else {
+    ngme_as_sparse(rw1(1:nt)$K %x% Cs)
+  }
 
   ngme_operator(
     model = "spacetime",
@@ -883,13 +676,14 @@ spacetime <- function(
     param_name =
       c("cc", "kappa", if (!fix_gamma) {
         if (shared_theta_gamma) "theta_gamma" else c("theta_gamma_x", "theta_gamma_y")
-      } else NULL),
+      } else {
+        NULL
+      }),
     param_trans =
       c(exp, exp, if (!fix_gamma) {
         if (shared_theta_gamma) identity else c(identity, identity)
-      } else NULL)
+      } else {
+        NULL
+      })
   )
 }
-
-
-

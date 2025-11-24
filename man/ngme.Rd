@@ -54,19 +54,19 @@ See \code{ngme_model_types()} for available models.
 }
 \examples{
 ngme(
- formula = Y ~ x1 + f(
-   x2,
-   model = "ar1",
-   noise = noise_nig(),
-   rho = 0.5
- ) + f(x1,
-   model = "rw1",
-   noise = noise_normal(),
- ),
- family = noise_normal(sd = 0.5),
- data = data.frame(Y = 1:5, x1 = 2:6, x2 = 3:7),
- control_opt = control_opt(
-   estimation = FALSE
- )
+  formula = Y ~ x1 + f(
+    x2,
+    model = "ar1",
+    noise = noise_nig(),
+    rho = 0.5
+  ) + f(x1,
+    model = "rw1",
+    noise = noise_normal(),
+  ),
+  family = noise_normal(sd = 0.5),
+  data = data.frame(Y = 1:5, x1 = 2:6, x2 = 3:7),
+  control_opt = control_opt(
+    estimation = FALSE
+  )
 )
 }

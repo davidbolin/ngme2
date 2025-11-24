@@ -73,14 +73,14 @@ data
 
 Next we need to specify the model using `f()` function. Notice the way to specify 2 sub-models, and also 2 types of noises for each sub-model.
 
-Notice that if we choose the Gaussian noise, we need to specify the model type as "bv_normal" so that the rotation is fixed to 0 (no rotation). If we choose the non-Gaussian noise, we can use "bv" model type.
+Notice that if we choose the Gaussian noise, we need to specify the model type as "bv2" so that the rotation is fixed to 0 (no rotation). If we choose the non-Gaussian noise, we can use "bv" model type.
 
 ```{r toy-model}
 # 1st way: simply put model types, using both c() and list() are ok
-# Choose model="bv_normal" if use Gaussian noise,
+# Choose model="bv2" if use Gaussian noise,
 bv1 <- f(
   year,
-  model = "bv_normal",
+  model = "bv2",
   theta = pi / 8, rho = 0.5,
   sub_models = list(precip = "ar1", temp = "rw1"),
   group = labels, # can be inherited from ngme() function
@@ -92,7 +92,7 @@ bv1 <- f(
 bv1
 
 # 2nd way: allow more argument for sub_models
-bv_normal <- f(
+bv2 <- f(
   year,
   model = "bv",
   sub_models = list(
@@ -226,13 +226,15 @@ reorder_loc <- sample(1:n_each)
 reorder_loc <- 1:n_each
 
 sim_fields <- simulate(
-  f(rep(reorder_loc, each = 2),
-    model = "bv_normal",
-    rho = 3,
-    c1 = 1, c2 = 1,
-    sub_models = list(
-      W1 = list(model = "ar1", rho = 0.6),
-      W2 = list(model = "ar1", rho = -0.4)
+  f(
+    c(reorder_loc, reorder_loc),
+    model = bv(
+      mesh = reorder_loc,
+      theta = 0.5, rho = 0.8,
+      sub_models = list(
+        W1 = ar1(rho = 0.6),
+        W2 = ar1(rho = -0.4)
+      )
     ),
     group = group,
     noise = list(
@@ -280,10 +282,16 @@ B_sigma[group == "W2", 2] <- 1
 
 bvar_cor <- ngme(
   Y ~ 0 + x1 + x2 +
-    f(rep(reorder_loc, each = 2),
-      model = "bv_normal",
+    f(
+      c(reorder_loc, reorder_loc),
       name = "bv",
-      sub_models = list(W1 = "ar1", W2 = "ar1"),
+      model = bv(
+        mesh = reorder_loc,
+        sub_models = list(
+          W1 = ar1(),
+          W2 = ar1()
+        )
+      ),
       noise = list(
         W1 = noise_normal(),
         W2 = noise_normal()
@@ -308,6 +316,7 @@ bvar_cor <- ngme(
     seed = 7
   )
 )
+
 bvar_cor
 # Compare the estimated value with the simulated value
 traceplot(bvar_cor, "bv", hline = c(3, 1, 1, 0.6, -0.4))

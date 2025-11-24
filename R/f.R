@@ -67,15 +67,45 @@ f <- function(
     noise <- convert_noise_list_to_normal_nig(noise)
   }
 
+  # helper: check whether all provided noises are normal
+  is_noise_all_normal <- function(noise_obj) {
+    if (inherits(noise_obj, "ngme_noise")) {
+      return(noise_obj$noise_type == "normal")
+    }
+    if (is.list(noise_obj) && length(noise_obj) > 0) {
+      return(all(vapply(noise_obj, function(x) inherits(x, "ngme_noise") && x$noise_type == "normal", logical(1))))
+    }
+    FALSE
+  }
+
+  noise_all_normal <- is_noise_all_normal(noise)
+
+  # If the user builds a bv/bv2/bv_matern model inline and all noises are normal,
+  # ensure fix_theta = TRUE in that model call.
+  model_expr <- substitute(model)
+  if (noise_all_normal && is.call(model_expr) &&
+    as.character(model_expr[[1]]) %in% c("bv", "bv2", "bv_matern")) {
+    model_list <- as.list(model_expr)
+    name_vec <- names(model_list)
+    idx <- which(name_vec %in% "fix_theta")
+
+    if (length(idx) > 0 && isFALSE(model_list[[idx]])) {
+      stop("For bv/bv2/bv_matern models with all normal noises, fix_theta must be TRUE. Please set fix_theta = TRUE.")
+    } else if (length(idx) == 0) {
+      model_list <- c(model_list, list(fix_theta = TRUE))
+      model_expr <- as.call(model_list)
+    } else { # fix_theta is present and not FALSE (e.g., TRUE or some other expression)
+      model_list[[idx]] <- TRUE # Ensure it's TRUE
+      model_expr <- as.call(model_list)
+    }
+  }
+
+  # Evaluate model expression (promises are forced here so we can inspect it consistently)
+  model <- eval(model_expr, envir = parent.frame())
+
   if (is.character(model)) {
     message("Using character strings for 'model' is not recommended (will be deprecated in the future). Please consider using operator functions like matern(), ar1(), etc. (e.g., model = matern()).")
   }
-
-  stopifnot(
-    "Please provide noise as ngme_noise object" =
-      inherits(noise, "ngme_noise") ||
-        (is.character(model) && model %in% c("bv", "bv_normal", "bv_matern_normal", "bv_matern_nig"))
-  )
 
   if ((missing(map) || (is.null(map))) && inherits(mesh, "metric_graph")) {
     stopifnot(
@@ -94,7 +124,8 @@ f <- function(
   map <- eval(substitute(map), envir = data, enclos = parent.frame())
 
   if (inherits(map, "formula")) {
-    if (model == "re") {
+    model_for_formula <- if (inherits(model, "ngme_operator")) model$model else if (inherits(model, "ngme_operator_def")) model$model else model
+    if (model_for_formula == "bv_matern") {
       map <- model.matrix(map, data)
     } else {
       map <- model.matrix(map, data)[, -1]
@@ -191,14 +222,24 @@ f <- function(
   f_args$mesh_list <- NULL
   # Remove replicate from f_args for now since individual operators don't handle it
   f_args$replicate <- NULL
+  # Remove internal helper variables not meant for operator constructors
+  f_args$is_noise_all_normal <- NULL
+  f_args$noise_all_normal <- NULL
+  f_args$model_expr <- NULL
+  f_args$model_for_formula <- NULL
 
   # If we have mesh_list, remove mesh from f_args so operator building doesn't fail
   if (!is.null(mesh_list)) {
     f_args$mesh <- NULL
   }
 
-  # if (model %in% c("tp", "spacetime")) {
   model_name <- if (inherits(model, "ngme_operator")) model$model else if (inherits(model, "ngme_operator_def")) model$model else model
+
+  # For bv/bv_matern, if noise is normal, fix theta
+  if (model_name %in% c("bv", "bv2", "bv_matern") && noise_all_normal) {
+    f_args$fix_theta <- TRUE
+  }
+
   if (model_name %in% c("tp")) {
     stopifnot(
       "Please specify map as a list of length two (for 2 sub-models)" =
@@ -212,34 +253,6 @@ f <- function(
         x
       }
     })
-
-    # examine argument for tp model
-    first <- list(...)$first
-    second <- list(...)$second
-    stopifnot(
-      "The length of map of 2 sub_models should be same" = length_map(map[[1]]) == length_map(map[[2]]),
-      "Please provide f(first = ..., second = ...), see ?tp." = !is.null(first) && !is.null(second),
-      "Please make sure first is a list and second is a list" = is.list(first) && is.list(second),
-      "Please provide the model argument in first and second" = !is.null(first$model) && !is.null(second$model),
-      "Please provide mesh individually for first and second" = is.null(mesh)
-    )
-
-    if (is.null(first$mesh)) first$mesh <- ngme_build_mesh(map[[1]], model = first$model)
-    if (is.null(second$mesh)) {
-      second$mesh <- ngme_build_mesh(map[[2]],
-        model = second$model
-      )
-    }
-    f_args$first <- if (inherits(first, "ngme_operator")) {
-      first
-    } else {
-      build_operator(first$model, first)
-    }
-    f_args$second <- if (inherits(second, "ngme_operator")) {
-      second
-    } else {
-      build_operator(second$model, second)
-    }
   }
 
   # build the operator
@@ -437,7 +450,9 @@ f <- function(
 
   # 2. build noise given operator
   # bivariate noise
-  if (model %in% c("bv", "bv_matern_normal", "bv_normal", "bv_matern_nig")) {
+  # 2. build noise given operator
+  # bivariate noise
+  if (model %in% c("bv", "bv_matern_normal", "bv2", "bv_matern_nig")) {
     stopifnot(
       "Please specify noise for each field" = length(noise) >= 2,
       "Input: noise=list(a=<noise>,b=<noise>)" = inherits(noise[[1]], "ngme_noise"),
@@ -447,19 +462,6 @@ f <- function(
       "Two noise should be the same type" = noise[[1]]$noise_type == noise[[2]]$noise_type
     )
 
-    # make sure the noise is in the same order as the model_names
-    if (noise[[1]]$noise_type == "normal") {
-      stopifnot(
-        "Please use model=bv_normal/bv_matern_normal for Gaussian noise (then rotation is fixed)" = model %in% c("bv_normal", "bv_matern_normal")
-      )
-    }
-
-    if (noise[[1]]$noise_type != "normal") {
-      stopifnot(
-        "Please use model=bv for non-Gaussian noise" =
-          model %in% c("bv", "bv_matern_nig")
-      )
-    }
     noise1 <- update_noise(noise[[operator$model_names[[1]]]],
       n = length(operator$h) / 2
     )
@@ -511,20 +513,8 @@ f <- function(
   }
 
   if (noise$share_V &&
-    !(model %in% c("bv", "bv_normal", "bv_matern_normal", "bv_matern_nig"))) {
+    !(model %in% c("bv", "bv2", "bv_matern_normal", "bv_matern_nig"))) {
     stop("Not allow for share_V for univariate model")
-  }
-
-  if (model %in% c("re", "bv_normal", "bv_matern_normal", "bv_matern_nig")) {
-    noise$fix_theta_sigma <- TRUE
-    noise$n_params <- noise$n_params - noise$n_theta_sigma
-    noise$n_theta_sigma <- 0
-
-    # for printing to ignore sigma
-    if (model != "re") {
-      noise$bv_noises[[1]]$fix_theta_sigma <- TRUE
-      noise$bv_noises[[2]]$fix_theta_sigma <- TRUE
-    }
   }
 
   if (model %in% c("rw1", "rw2")) {
@@ -601,9 +591,9 @@ build_operator <- function(model_name, args_list) {
   switch(model_name,
     tp = do.call(tp, args_list),
     bv = do.call(bv, args_list),
-    bv_normal = do.call(bv_normal, args_list),
+    bv2 = do.call(bv2, args_list),
     bv_matern_normal = do.call(bv_matern_normal, args_list),
-    bv_matern_nig = do.call(bv_matern_nig, args_list),
+    bv_matern = do.call(bv_matern, args_list),
     ar = do.call(ar, args_list),
     arma = do.call(arma, args_list),
     ar1 = do.call(ar1, args_list),

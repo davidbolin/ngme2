@@ -259,15 +259,16 @@ Now we create the model object and simulate observations:
 # Specify the true generative model
 true_model <- f(
   map = list(obs_data$time_index, cbind(obs_data$x, obs_data$y)),
-  model = "spacetime",
   name = "advection_field",
-  mesh = list(mesh_temporal, mesh_spatial),
-  alpha = true_alpha,
-  theta_gamma_x = true_theta_gamma_x,
-  theta_gamma_y = true_theta_gamma_y,
-  kappa = true_kappa,
-  cc = true_cc,
-  lambda = true_lambda,
+  model = spacetime(
+    mesh = list(mesh_temporal, mesh_spatial),
+    alpha = true_alpha,
+    theta_gamma_x = true_theta_gamma_x,
+    theta_gamma_y = true_theta_gamma_y,
+    kappa = true_kappa,
+    cc = true_cc,
+    lambda = true_lambda,
+  ),
   noise = noise_nig(mu = 1, sigma = 4, nu = 20) # Non-Gaussian innovations
 )
 
@@ -318,9 +319,10 @@ The `ngme()` function performs maximum likelihood estimation (or penalized likel
 model_nonsep <- ngme(
   formula = value ~ 0 + f(
     map = list(time_index, cbind(x, y)),
-    model = "spacetime",
+    model = spacetime(
+      mesh = list(mesh_temporal, mesh_spatial)
+    ),
     name = "advection_field",
-    mesh = list(mesh_temporal, mesh_spatial)
   ),
   data = obs_data,
   family = "normal", # Observation distribution

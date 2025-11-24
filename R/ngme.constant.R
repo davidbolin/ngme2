@@ -11,8 +11,10 @@ ngme_noise_types <- function() {
 #' @return available types for models
 #' @export
 ngme_model_types <- function() {
-    c("ar1", "matern", "rw", "ou", "tp", "iid", "re", 
-        "bv", "bv_matern_normal", "bv_normal", "spacetime")
+    c(
+        "ar1", "matern", "rw", "ou", "tp", "iid", "re",
+        "bv2", "bv_matern", "spacetime"
+    )
 }
 
 #' Show ngme priors
@@ -22,4 +24,3 @@ ngme_model_types <- function() {
 ngme_prior_types <- function() {
     c("none", "normal", "pc.sd", "half.cauchy", "jeffery")
 }
-

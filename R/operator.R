@@ -63,10 +63,9 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
     arma = "ARMA",
     matern = "Matern",
     tp = "Tensor product",
-    bv = "Bivariate model (non-Gaussian noise)",
-    bv_matern_normal = "Bivariate Matern model (normal noise)",
-    bv_matern_nig = "Bivariate Matern model (NIG noise)",
-    bv_normal = "Bivariate model 2 (normal noise)",
+    bv = "Bivariate model",
+    bv_matern = "Bivariate Matern model",
+    bv2 = "Bivariate model (v2)",
     iid = "IID model",
     rw1 = "Random walk (order 1)",
     rw2 = "Random walk (order 2)",
@@ -178,14 +177,38 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
       print(operator$second, padding = padding + 4, prefix = "second")
     },
     bv = {
-      theta <- operator$param_trans[[1]](theta_K[1])
-      rho <- operator$param_trans[[2]](theta_K[2])
-      cat(pad_add4_space, "theta = ", format(theta, digits = 3), "\n", sep = "")
+      model_names <- operator$model_names
+      fix_theta <- isTRUE(operator$fix_theta)
+      use_c_param <- isTRUE(operator$use_c_param)
+
+      idx <- 1
+      if (fix_theta) {
+        theta <- operator$bv_theta
+      } else {
+        theta <- operator$param_trans[[idx]](theta_K[idx])
+        idx <- idx + 1
+      }
+      rho <- operator$param_trans[[idx]](theta_K[idx])
+      idx <- idx + 1
+
+      cat(pad_add4_space, "theta = ", format(theta, digits = 3),
+        if (fix_theta) " (fixed)" else "", "\n",
+        sep = ""
+      )
       cat(pad_add4_space, "rho = ", format(rho, digits = 3), "\n", sep = "")
+
+      if (use_c_param) {
+        c1 <- operator$param_trans[[idx]](theta_K[idx])
+        idx <- idx + 1
+        c2 <- operator$param_trans[[idx]](theta_K[idx])
+        cat(pad_add4_space, "c1 = ", format(c1, digits = 3), "\n", sep = "")
+        cat(pad_add4_space, "c2 = ", format(c2, digits = 3), "\n", sep = "")
+      }
+
       print(operator$first, padding = padding + 4, prefix = model_names[[1]])
       print(operator$second, padding = padding + 4, prefix = model_names[[2]])
     },
-    bv_normal = {
+    bv2 = {
       theta <- 0
       rho <- operator$param_trans[[1]](theta_K[1])
       c1 <- operator$param_trans[[2]](theta_K[2])
@@ -210,7 +233,7 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
       print(operator$second, padding = padding + 4, prefix = model_names[[2]])
     },
     bv_matern_nig = {
-      fix_theta <- operator$fix_bv_theta
+      fix_theta <- operator$fix_theta
       theta <- if (fix_theta) operator$bv_theta else operator$param_trans[[1]](theta_K[1])
       rho <- operator$param_trans[[2 - fix_theta]](theta_K[2 - fix_theta])
       sd1 <- operator$param_trans[[3 - fix_theta]](theta_K[3 - fix_theta])
@@ -404,20 +427,16 @@ ngme_model <- function(
   #   rw1     = paste0(" ignored")
   # )
 
-  # make it str with each parameter name contain 8 digits (right aligned)
+  # Create vector of parameter names instead of concatenated string
   ope_params <- operator$param_name
-  ope_str <- sapply(ope_params, function(x) sprintf("%8s", x))
   mu_params <- paste0("mu_", seq_along(noise$theta_mu))
-  mu_str <- sapply(mu_params, function(x) sprintf("%8s", x))
   sigma_params <- paste0("sigma_", seq_along(noise$theta_sigma))
-  sigma_str <- sapply(sigma_params, function(x) sprintf("%8s", x))
   nu_params <- paste0("nu_", seq_along(noise$nu))
-  nu_str <- sapply(nu_params, function(x) sprintf("%8s", x))
 
   if (all(noise$noise_type == "normal")) {
-    par_string <- paste0(ope_str, sigma_str)
+    par_names <- c(ope_params, sigma_params)
   } else {
-    par_string <- paste0(ope_str, mu_str, sigma_str, nu_str)
+    par_names <- c(ope_params, mu_params, sigma_params, nu_params)
   }
 
   if (is.null(n_params)) n_params <- length(operator$theta_K) + with(noise, n_params)
@@ -436,7 +455,7 @@ ngme_model <- function(
       V_size        = V_size,
       n_params      = n_params,
       debug         = debug,
-      par_string    = par_string,
+      par_names     = par_names,
       name          = name,
       mesh          = mesh,
       map           = map,

@@ -251,7 +251,8 @@ private:
   std::shared_ptr<Operator> first, second;
   int n_theta_1, n_theta_2;
   int n; // dim of K1 and K2 (same)
-  bool share_param, fix_bv_theta;
+  bool share_param, fix_theta, use_c_param;
+  double bv_theta;
 
 public:
   Bivar(const Rcpp::List &);
@@ -304,56 +305,16 @@ public:
 };
 
 // Bivar_normal_ope (theta=0)
-class Bivar_normal_ope : public Operator {
-private:
-  std::shared_ptr<Operator> first, second;
-  int n_theta_1, n_theta_2;
-  int n; // dim of K1 and K2 (same)
-  bool share_param, fix_bv_theta;
-
-public:
-  Bivar_normal_ope(const Rcpp::List &);
-
-  void build_KZ(const VectorXd &) override;
-  bool update_dKdZ(const VectorXd &) override;
-
-  Matrix2d getD(double, double) const;
-  Matrix2d get_dD_theta(double, double) const;
-  Matrix2d get_dD_rho(double, double) const;
-  Matrix2d get_dD2_theta(double, double) const;
-  Matrix2d get_dD2_rho(double, double) const;
-};
-
-class bv_matern_normal : public Operator {
+class bv_matern : public Operator {
 private:
   std::shared_ptr<Matern> first, second;
   int n_theta_1, n_theta_2;
   int n; // dim of K1 and K2 (same)
-  bool share_param, fix_bv_theta;
-  double dim, alpha1, alpha2, nu1, nu2;
-
-public:
-  bv_matern_normal(const Rcpp::List &);
-
-  void build_KZ(const VectorXd &) override;
-
-  Matrix2d getD(double, double) const;
-  Matrix2d get_dD_theta(double, double) const;
-  Matrix2d get_dD_rho(double, double) const;
-  Matrix2d get_dD2_theta(double, double) const;
-  Matrix2d get_dD2_rho(double, double) const;
-};
-
-class bv_matern_nig : public Operator {
-private:
-  std::shared_ptr<Matern> first, second;
-  int n_theta_1, n_theta_2;
-  int n; // dim of K1 and K2 (same)
-  bool share_param, fix_bv_theta;
+  bool share_param, fix_theta;
   double dim, alpha1, alpha2, nu1, nu2, bv_theta;
 
 public:
-  bv_matern_nig(const Rcpp::List &);
+  bv_matern(const Rcpp::List &);
 
   void build_KZ(const VectorXd &) override;
 

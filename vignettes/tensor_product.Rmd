@@ -155,8 +155,8 @@ loc <- cbind(runif(n), runif(n)) * 10
 data.frame(
   observation = 1:n,
   time = time,
-  x = round(loc[,1], 2),
-  y = round(loc[,2], 2)
+  x = round(loc[, 1], 2),
+  y = round(loc[, 2], 2)
 )
 ```
 
@@ -176,12 +176,12 @@ Key mesh parameters:
 # Create spatial mesh
 mesh_spatial <- fmesher::fm_mesh_2d(
   loc.domain = cbind(
-    c(0, 10, 10, 0, 0),      # x range: 0 to 10
-    c(0, 0, 10, 10, 0)       # y range: 0 to 10 (to cover all points)
+    c(0, 10, 10, 0, 0), # x range: 0 to 10
+    c(0, 0, 10, 10, 0) # y range: 0 to 10 (to cover all points)
   ),
   max.edge = c(1, 10),
   cutoff = 0.1,
-  offset = c(0.5, 2)         # Offset to ensure boundary coverage
+  offset = c(0.5, 2) # Offset to ensure boundary coverage
 )
 
 # Visualize the mesh
@@ -202,11 +202,11 @@ Now we combine temporal and spatial components using the tensor product structur
 ```{r basic-model}
 # Define tensor product model
 tp_model <- f(
-  map = list(time, loc),           # Data: time index and 2D locations
-  model = "tp",                     # Tensor product structure
-  first = list(model = "ar1"),     # Temporal: AR(1) process
-  second = list(                    # Spatial: Matérn field
-    model = "matern", 
+  map = list(time, loc), # Data: time index and 2D locations
+  model = "tp", # Tensor product structure
+  first = list(model = "ar1"), # Temporal: AR(1) process
+  second = list( # Spatial: Matérn field
+    model = "matern",
     mesh = mesh_spatial
   )
 )
@@ -238,12 +238,12 @@ set.seed(2024)
 # Important: Define mesh boundaries based on data generation range
 mesh2d <- fmesher::fm_mesh_2d(
   loc.domain = cbind(
-    c(0, 10, 10, 0, 0),      # x boundaries: 0 to 10
-    c(0, 0, 5, 5, 0)         # y boundaries: 0 to 5
+    c(0, 10, 10, 0, 0), # x boundaries: 0 to 10
+    c(0, 0, 5, 5, 0) # y boundaries: 0 to 5
   ),
   max.edge = c(1, 10),
   cutoff = 0.1,
-  offset = c(0.5, 2)          # Add offset to ensure all points are inside
+  offset = c(0.5, 2) # Add offset to ensure all points are inside
 )
 
 cat("Spatial mesh has", mesh2d$n, "vertices\n")
@@ -274,7 +274,7 @@ obs_df <- data.frame(year = year, x = x, y = y)
 # Visualize spatial distribution by year
 ggplot(obs_df, aes(x = x, y = y, color = factor(year))) +
   geom_point(alpha = 0.6, size = 1.5) +
-  facet_wrap(~ year, ncol = 3) +
+  facet_wrap(~year, ncol = 3) +
   scale_color_brewer(palette = "Set2", guide = "none") +
   coord_fixed() +
   labs(
@@ -309,16 +309,16 @@ true_model <- f(
   model = "tp",
   first = list(
     model = "ar1",
-    rho = 0.5                # Temporal correlation
+    rho = 0.5 # Temporal correlation
   ),
   second = list(
     model = "matern",
     mesh = mesh2d
   ),
-  noise = noise_nig(          # Non-Gaussian innovations
-    mu = -2,                  # Skewness parameter
-    sigma = 1,                # Scale parameter
-    nu = 2                    # Tail weight parameter
+  noise = noise_nig( # Non-Gaussian innovations
+    mu = -2, # Skewness parameter
+    sigma = 1, # Scale parameter
+    nu = 2 # Tail weight parameter
   )
 )
 
@@ -350,7 +350,7 @@ data_sim <- data.frame(
   x = x,
   y = y,
   Y_obs = Y_obs,
-  W_true = W_sim  # Keep for validation
+  W_true = W_sim # Keep for validation
 )
 
 # Summary statistics
@@ -381,7 +381,7 @@ ggplot() +
     width = 0.5, height = 0.3
   ) +
   scale_fill_viridis_c(option = "plasma", name = "Y_obs") +
-  facet_wrap(~ year, ncol = 2) +
+  facet_wrap(~year, ncol = 2) +
   coord_fixed() +
   labs(
     title = "Simulated Space-Time Field",
@@ -410,8 +410,10 @@ Let's examine the marginal distribution of observations to see the non-Gaussian 
 ```{r simulation-hist}
 # Histogram with density overlay
 ggplot(data_sim, aes(x = Y_obs)) +
-  geom_histogram(aes(y = after_stat(density)), bins = 40, 
-                 fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_histogram(aes(y = after_stat(density)),
+    bins = 40,
+    fill = "skyblue", color = "black", alpha = 0.7
+  ) +
   geom_density(color = "darkred", linewidth = 1) +
   labs(
     title = "Distribution of Observed Values",
@@ -472,10 +474,10 @@ fit_tp <- ngme(
       model = "matern",
       mesh = mesh2d
     ),
-    noise = noise_nig()  # Estimate NIG parameters
+    noise = noise_nig() # Estimate NIG parameters
   ),
   data = data_sim,
-  family = "normal",     # Gaussian measurement noise
+  family = "normal", # Gaussian measurement noise
   control_opt = control_opt(
     iterations = 1000,
     n_parallel_chain = 4,
@@ -535,8 +537,10 @@ names(est_vals) <- names(true_vals)
 
 # Create comparison table
 param_table <- data.frame(
-  Parameter = c("rho (temporal)", "kappa (spatial)", "mu (skewness)", 
-                "sigma (scale)", "nu (tail weight)", "sigma_eps (meas. noise)"),
+  Parameter = c(
+    "rho (temporal)", "kappa (spatial)", "mu (skewness)",
+    "sigma (scale)", "nu (tail weight)", "sigma_eps (meas. noise)"
+  ),
   True_Value = true_vals,
   Estimated = est_vals,
   Absolute_Error = abs(true_vals - est_vals),
@@ -547,8 +551,10 @@ knitr::kable(
   param_table,
   digits = 3,
   row.names = FALSE,
-  col.names = c("Parameter", "True Value", "Estimated", 
-                "Absolute Error", "Relative Error (%)"),
+  col.names = c(
+    "Parameter", "True Value", "Estimated",
+    "Absolute Error", "Relative Error (%)"
+  ),
   caption = "Parameter Estimation Results"
 )
 ```
@@ -723,8 +729,10 @@ knitr::kable(
   temporal_interp_results[temporal_interp_results$Location == 1, ],
   digits = 3,
   row.names = FALSE,
-  col.names = c("Location", "Year", "X", "Y", "Mean", "SD", 
-                "Lower 90%", "Upper 90%"),
+  col.names = c(
+    "Location", "Year", "X", "Y", "Mean", "SD",
+    "Lower 90%", "Upper 90%"
+  ),
   caption = "Temporal Interpolation Results (Example: Location 1 across all years)"
 )
 ```
@@ -733,8 +741,10 @@ knitr::kable(
 # Get actual observed values for these locations
 obs_locations <- data_sim[sample_idx, ]
 obs_temporal <- data.frame(
-  Location = match(paste(obs_locations$x, obs_locations$y),
-                   paste(temporal_interp_locs[,1], temporal_interp_locs[,2])),
+  Location = match(
+    paste(obs_locations$x, obs_locations$y),
+    paste(temporal_interp_locs[, 1], temporal_interp_locs[, 2])
+  ),
   Year = obs_locations$year,
   Y_obs = obs_locations$Y_obs,
   X = obs_locations$x,
@@ -743,14 +753,19 @@ obs_temporal <- data.frame(
 
 # Plot temporal trajectories for first 6 locations
 plot_locs <- 1:6
-ggplot(temporal_interp_results[temporal_interp_results$Location %in% plot_locs, ],
-       aes(x = Year, y = Mean, color = factor(Location), group = Location)) +
+ggplot(
+  temporal_interp_results[temporal_interp_results$Location %in% plot_locs, ],
+  aes(x = Year, y = Mean, color = factor(Location), group = Location)
+) +
   geom_line(linewidth = 1) +
   geom_ribbon(aes(ymin = Lower_90, ymax = Upper_90, fill = factor(Location)),
-              alpha = 0.2, color = NA) +
-  geom_point(data = obs_temporal[obs_temporal$Location %in% plot_locs, ],
-             aes(x = Year, y = Y_obs, color = factor(Location)),
-             size = 3, shape = 21, fill = "white", stroke = 1.5) +
+    alpha = 0.2, color = NA
+  ) +
+  geom_point(
+    data = obs_temporal[obs_temporal$Location %in% plot_locs, ],
+    aes(x = Year, y = Y_obs, color = factor(Location)),
+    size = 3, shape = 21, fill = "white", stroke = 1.5
+  ) +
   scale_color_brewer(palette = "Set2", name = "Location") +
   scale_fill_brewer(palette = "Set2", name = "Location") +
   labs(
@@ -811,10 +826,14 @@ obs_year <- data_sim[data_sim$year == interp_year, c("x", "y", "Y_obs")]
 p1 <- ggplot(grid_interp_data, aes(x = x, y = y)) +
   geom_tile(aes(fill = predicted_mean)) +
   scale_fill_viridis_c(option = "plasma", name = "Value") +
-  geom_point(data = obs_year, aes(x = x, y = y), 
-             color = "white", size = 3, alpha = 0.8) +
-  geom_point(data = obs_year, aes(x = x, y = y, color = Y_obs), 
-             size = 2) +
+  geom_point(
+    data = obs_year, aes(x = x, y = y),
+    color = "white", size = 3, alpha = 0.8
+  ) +
+  geom_point(
+    data = obs_year, aes(x = x, y = y, color = Y_obs),
+    size = 2
+  ) +
   scale_color_viridis_c(option = "plasma", name = "Value") +
   labs(
     title = paste("Interpolated Field and Observations for Year", interp_year),
@@ -829,8 +848,10 @@ p1 <- ggplot(grid_interp_data, aes(x = x, y = y)) +
 p2 <- ggplot(grid_interp_data, aes(x = x, y = y)) +
   geom_tile(aes(fill = predicted_sd)) +
   scale_fill_viridis_c(option = "magma", name = "Prediction\nSD") +
-  geom_point(data = obs_year, aes(x = x, y = y), 
-             color = "white", size = 1, alpha = 0.5) +
+  geom_point(
+    data = obs_year, aes(x = x, y = y),
+    color = "white", size = 1, alpha = 0.5
+  ) +
   labs(
     title = "Interpolation Uncertainty",
     subtitle = "White points: observation locations",
@@ -864,8 +885,10 @@ test_year <- 2006
 data_train <- data_sim[data_sim$year %in% train_years, ]
 data_test <- data_sim[data_sim$year == test_year, ]
 
-cat("Training observations:", nrow(data_train), 
-    "years", paste(train_years, collapse = "-"), "\n")
+cat(
+  "Training observations:", nrow(data_train),
+  "years", paste(train_years, collapse = "-"), "\n"
+)
 cat("Test observations:", nrow(data_test), "year", test_year, "\n")
 ```
 
@@ -951,7 +974,7 @@ mae_forecast <- mean(abs(forecast_errors))
 correlation_forecast <- cor(forecast_results$mean, data_test$Y_obs)
 
 in_interval_90 <- (data_test$Y_obs >= forecast_results$`5quantile`) &
-                  (data_test$Y_obs <= forecast_results$`95quantile`)
+  (data_test$Y_obs <= forecast_results$`95quantile`)
 coverage_90 <- mean(in_interval_90)
 
 cat("RMSE:", round(rmse_forecast, 3), "\n")
@@ -1002,22 +1025,30 @@ temporal_forecast_complete <- data.frame(
 
 # Add forecast indicator
 temporal_forecast_complete$Type <- ifelse(temporal_forecast_complete$Year < test_year,
-                                          "Training Period",
-                                          "Forecast")
+  "Training Period",
+  "Forecast"
+)
 
 # Plot temporal evolution
-ggplot(temporal_forecast_complete, aes(x = Year, y = Mean,
-                                       color = factor(Location),
-                                       group = Location)) +
+ggplot(temporal_forecast_complete, aes(
+  x = Year, y = Mean,
+  color = factor(Location),
+  group = Location
+)) +
   geom_line(linewidth = 1) +
   geom_point(aes(shape = Type), size = 2.5) +
   geom_ribbon(aes(ymin = Lower, ymax = Upper, fill = factor(Location)),
-              alpha = 0.2, color = NA) +
+    alpha = 0.2, color = NA
+  ) +
   geom_vline(xintercept = test_year - 0.5, linetype = "dashed", color = "gray40") +
-  annotate("text", x = 2004, y = max(temporal_forecast_complete$Upper),
-           label = "Training", size = 3.5, color = "gray30") +
-  annotate("text", x = test_year, y = max(temporal_forecast_complete$Upper),
-           label = "Forecast", size = 3.5, color = "gray30") +
+  annotate("text",
+    x = 2004, y = max(temporal_forecast_complete$Upper),
+    label = "Training", size = 3.5, color = "gray30"
+  ) +
+  annotate("text",
+    x = test_year, y = max(temporal_forecast_complete$Upper),
+    label = "Forecast", size = 3.5, color = "gray30"
+  ) +
   scale_color_brewer(palette = "Set2", name = "Location") +
   scale_fill_brewer(palette = "Set2", name = "Location") +
   scale_shape_manual(values = c(16, 17)) +
@@ -1067,8 +1098,10 @@ grid_forecast_data <- data.frame(
 p1 <- ggplot(grid_forecast_data, aes(x = x, y = y)) +
   geom_tile(aes(fill = predicted_mean)) +
   scale_fill_viridis_c(option = "plasma", name = "Forecast\nMean") +
-  geom_point(data = data_test, aes(x = x, y = y),
-             color = "white", size = 1, alpha = 0.5) +
+  geom_point(
+    data = data_test, aes(x = x, y = y),
+    color = "white", size = 1, alpha = 0.5
+  ) +
   labs(
     title = paste("Forecast Spatial Field for Year", test_year),
     subtitle = "White points: test observation locations",
@@ -1085,8 +1118,10 @@ p1 <- ggplot(grid_forecast_data, aes(x = x, y = y)) +
 p2 <- ggplot(grid_forecast_data, aes(x = x, y = y)) +
   geom_tile(aes(fill = predicted_sd)) +
   scale_fill_viridis_c(option = "magma", name = "Forecast\nSD") +
-  geom_point(data = data_test, aes(x = x, y = y),
-             color = "white", size = 1, alpha = 0.5) +
+  geom_point(
+    data = data_test, aes(x = x, y = y),
+    color = "white", size = 1, alpha = 0.5
+  ) +
   labs(
     title = "Forecast Uncertainty",
     subtitle = "Higher uncertainty due to temporal extrapolation",
@@ -1218,7 +1253,8 @@ obs_pred_data$x_bin <- cut(obs_pred_data$x, breaks = 20)
 obs_pred_data$y_bin <- cut(obs_pred_data$y, breaks = 10)
 
 spatial_residuals <- aggregate(residual ~ x_bin + y_bin,
-                                data = obs_pred_data, FUN = mean)
+  data = obs_pred_data, FUN = mean
+)
 
 # Get bin midpoints for plotting
 spatial_residuals$x_mid <- as.numeric(sub("\\((.+),.*", "\\1", spatial_residuals$x_bin)) + 0.25
@@ -1226,8 +1262,10 @@ spatial_residuals$y_mid <- as.numeric(sub("\\((.+),.*", "\\1", spatial_residuals
 
 ggplot(spatial_residuals, aes(x = x_mid, y = y_mid, fill = residual)) +
   geom_tile() +
-  scale_fill_gradient2(low = "blue", mid = "white", high = "red",
-                       midpoint = 0, name = "Mean\nResidual") +
+  scale_fill_gradient2(
+    low = "blue", mid = "white", high = "red",
+    midpoint = 0, name = "Mean\nResidual"
+  ) +
   labs(
     title = "Spatial Pattern of Residuals",
     subtitle = "Averaged over spatial bins - No strong patterns indicate good spatial correlation",
@@ -1247,11 +1285,17 @@ We examine residuals over time to assess temporal correlation:
 
 ```{r residual-temporal, fig.height=5}
 # Calculate statistics by year
-temporal_stats <- aggregate(residual ~ year, data = obs_pred_data,
-                            FUN = function(x) c(mean = mean(x),
-                                               sd = sd(x),
-                                               lower = quantile(x, 0.05),
-                                               upper = quantile(x, 0.95)))
+temporal_stats <- aggregate(residual ~ year,
+  data = obs_pred_data,
+  FUN = function(x) {
+    c(
+      mean = mean(x),
+      sd = sd(x),
+      lower = quantile(x, 0.05),
+      upper = quantile(x, 0.95)
+    )
+  }
+)
 
 temporal_stats <- do.call(data.frame, temporal_stats)
 names(temporal_stats) <- c("year", "mean", "sd", "lower", "upper")

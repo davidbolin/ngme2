@@ -96,7 +96,7 @@ protected:
 
   bool all_gaussian, rao_blackwell,
       use_iterative_solver; // No need for gibbs sampling
-  std::string par_string;
+  std::vector<std::string> par_names;
   VectorXd rb_trace_noise_sigma;
   // Store per-latent RB trace terms at Block level
   std::vector<Eigen::VectorXd> rb_trace_K_latent;
@@ -354,7 +354,7 @@ public:
   }
 
   Rcpp::List output() const;
-  std::string get_par_string() const { return par_string; }
+  std::vector<std::string> get_par_names() const { return par_names; }
 
   static double th2rho(double th) { return (-1 + 2 * exp(th) / (1 + exp(th))); }
   static double rho2th(double r) { return (log((-1 - r) / (-1 + r))); }

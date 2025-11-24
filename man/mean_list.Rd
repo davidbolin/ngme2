@@ -19,9 +19,9 @@ taking mean over a list of nested lists
 }
 \examples{
 ls <- list(
-  list(a=1, b=2, t="nig", ll=list(a=1,b=2, w="ab")),
-  list(a=3, b=5, t="nig", ll=list(a=1,b=6, w="ab")),
-  list(a=5, b=5, t="nig", ll=list(a=4,b=2, w="ab"))
+  list(a = 1, b = 2, t = "nig", ll = list(a = 1, b = 2, w = "ab")),
+  list(a = 3, b = 5, t = "nig", ll = list(a = 1, b = 6, w = "ab")),
+  list(a = 5, b = 5, t = "nig", ll = list(a = 4, b = 2, w = "ab"))
 )
 mean_list(ls)
 }

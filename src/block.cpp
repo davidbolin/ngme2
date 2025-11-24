@@ -30,14 +30,14 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
       noise_prevV(VectorXd::Ones(n_obs)),
 
       curr_iter(0), all_gaussian(Rcpp::as<bool>(block_model["all_gaussian"])),
-      par_string(Rcpp::as<string>(block_model["par_string"])) {
+      rao_blackwell(Rcpp::as<bool>(Rcpp::as<Rcpp::List>(
+          block_model["control_ngme"])["rao_blackwellization"])),
+      par_names(Rcpp::as<std::vector<std::string>>(block_model["par_names"])) {
   // 1. Init controls
   Rcpp::List control_ngme = block_model["control_ngme"];
   // const double stepsize = control_ngme["stepsize"];
   bool init_sample_W = Rcpp::as<bool>(control_ngme["init_sample_W"]);
   n_gibbs = Rcpp::as<int>(control_ngme["n_gibbs_samples"]);
-  debug = Rcpp::as<bool>(control_ngme["debug"]);
-  rao_blackwell = Rcpp::as<bool>(control_ngme["rao_blackwellization"]);
   int n_trace_iter = Rcpp::as<int>(control_ngme["n_trace_iter"]);
   int solver_type = control_ngme.containsElementNamed("solver_type")
                         ? Rcpp::as<int>(control_ngme["solver_type"])

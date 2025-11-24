@@ -17,6 +17,7 @@
 
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
+#include <iomanip>
 #include <iostream>
 #include <memory>
 #include <random>
@@ -30,8 +31,8 @@ using std::vector;
 using namespace Rcpp;
 
 std::vector<bool> check_conv(const MatrixXd &, const MatrixXd &, int, int,
-                             double, double, std::string, bool, int, double,
-                             const VectorXd &);
+                             double, double, const std::vector<std::string> &,
+                             bool, int, double, const VectorXd &);
 
 // [[Rcpp::plugins(openmp)]]
 // [[Rcpp::export]]
@@ -60,7 +61,6 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   Rcpp::List outputs;
 #ifdef _OPENMP
   const int burnin = control_opt["burnin"];
-  const bool exchange_VW = control_opt["exchange_VW"];
 
   int n_slope_check = (control_opt["n_slope_check"]);
   double std_lim = (control_opt["std_lim"]);
@@ -96,7 +96,7 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
     }
   }
 
-  std::string par_string = ngmes[0]->get_par_string();
+  std::vector<std::string> par_names = ngmes[0]->get_par_names();
 
 // burn in period
 #pragma omp parallel for schedule(static) num_threads(n_threads_chain)
@@ -108,6 +108,7 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   MatrixXd vars(n_batch, n_params);
 
   // for Gelman-Rubin statistic
+  std::cout << "n_params = " << n_params << std::endl;
   MatrixXd batch_sum(n_chains, n_params);
   MatrixXd batch_sq_sum(n_chains, n_params);
 
@@ -156,17 +157,7 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
     }
 
     if (n_chains > 1) {
-      // exchange VW
-      // if (exchange_VW) {
-      //     vector<vector<VectorXd>> tmp = ngmes[0]->get_VW();
-      //     for (int i = 0; i < n_chains - 1; i++) {
-      //         vector<vector<VectorXd>> VW = ngmes[i+1]->get_VW();
-      //         ngmes[i]->set_prev_VW(VW);
-      //     }
-      //     ngmes[n_chains - 1]->set_prev_VW(tmp);
-      // }
-
-      // 2. convergence            // Compute R_hat
+      // convergence            // Compute R_hat
       VectorXd R_hat(n_params);
       int n = batch_steps;
       int m = n_chains;
@@ -203,12 +194,12 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
 
       if (n_slope_check <= curr_batch + 1)
         converge = check_conv(means, vars, curr_batch, n_slope_check, std_lim,
-                              trend_lim, par_string, print_check_info,
+                              trend_lim, par_names, print_check_info,
                               batch_steps, max_R_hat, R_hat);
       all_converge =
           std::find(begin(converge), end(converge), false) == end(converge);
 
-      // 3. if some parameter converge, stop compute gradient, or slow down the
+      // 2. if some parameter converge, stop compute gradient, or slow down the
       // gradient. if (auto_stop)
       //     for (int i=0; i < n_chains; i++) {
       //         ngmes[i]->check_converge(converge);
@@ -287,91 +278,49 @@ Rcpp::List sampling_cpp(const Rcpp::List &ngme_replicate, int n, int n_burnin,
 */
 std::vector<bool> check_conv(const MatrixXd &means, const MatrixXd &vars,
                              int curr_batch, int n_slope_check, double std_lim,
-                             double trend_lim, std::string par_string,
+                             double trend_lim,
+                             const std::vector<std::string> &par_names,
                              bool print_check_info, int batch_steps,
                              double max_R_hat, const VectorXd &R_hat) {
   int n_params = means.cols();
   std::vector<bool> conv(n_params, true);
 
-  // std::string std_line = "  < std_lim:  ";
-  // std::string trend_line = " < trend_lim: ";
-  std::string r_hat_line = " R_hat:        ";
+  if (print_check_info) {
+    std::cout << "\nstop " << curr_batch + 1 << ":\n";
 
-  // 0. Gelman-Rubin statistic
-  for (int i = 0; i < n_params; i++) {
-    if (R_hat(i) > max_R_hat) {
-      conv[i] = false;
+    // Calculate dynamic line width
+    // "Param:   " is 9 chars
+    // Each param is setw(9) + 1 space = 10 chars
+    int line_width = 9 + n_params * 10;
+
+    // Print separator line
+    std::cout << std::string(line_width, '-') << "\n";
+
+    // Print parameter names
+    std::cout << "Param:   ";
+    for (const auto &name : par_names) {
+      std::cout << std::setw(9) << std::left << name << " ";
     }
-    char buffer[50];
-    sprintf(buffer, "   %.3f", R_hat(i));
-    r_hat_line += buffer;
+    std::cout << "\n";
+
+    // Print separator line
+    std::cout << std::string(line_width, '-') << "\n";
+
+    // Print R-hat values with proper alignment
+    std::cout << "R_hat:   ";
+    for (int i = 0; i < n_params; i++) {
+      if (R_hat(i) > max_R_hat) {
+        conv[i] = false;
+      }
+      std::cout << std::setw(9) << std::fixed << std::setprecision(3)
+                << std::left << R_hat(i) << " ";
+    }
+    std::cout << "\n";
+
+    // Print separator line
+    std::cout << std::string(line_width, '-') << "\n\n";
   }
-  // 1. check coef. of var. of every parameter < std_lim
-  // for (int i = 0; i < n_params; i++) {
-  //   // std::cout << "i = " << i << std::endl;
-  //   // std::cout << "std_lim ratio = " << sqrt(vars(curr_batch, i)) /
-  //   // (abs(means(curr_batch, i)) + pow(10,-5)) / std_lim << std::endl;
-  //   if (sqrt(vars(curr_batch, i)) / (abs(means(curr_batch, i)) + pow(10, -5))
-  //   >
-  //       std_lim) {
-  //     conv[i] = false;
-  //     std_line += "   false"; // of length 8
-  //   } else {
-  //     std_line += "    true";
-  //   }
-  // }
 
-  // 2. check the slope of every para < threshold
-  // MatrixXd B(n_slope_check, 2); // B is the design matrix
-  // B.col(0) = VectorXd::Ones(n_slope_check);
-  // for (int i = 0; i < n_slope_check; i++)
-  //   B(i, 1) = i;
-  // // B(i, 1) = i * batch_steps;
-
-  // for (int i = 0; i < n_params; i++) {
-  //   // VectorXd mean = means.col(i)(Eigen::seq(curr_batch - n_slope_check +
-  //   1,
-  //   // curr_batch)); // Eigen 3.4 Eigen::seq
-  //   VectorXd mean = means.block(curr_batch - n_slope_check + 1, i,
-  //                               n_slope_check, 1); // Eigen block API
-  //   VectorXd Sigma_inv =
-  //       vars.block(curr_batch - n_slope_check + 1, i, n_slope_check, 1)
-  //           .cwiseInverse();
-
-  //   MatrixXd Q = B.transpose() * Sigma_inv.asDiagonal() * B;
-  //   Vector2d beta =
-  //       Q.llt().solve(B.transpose() * Sigma_inv.asDiagonal() * mean);
-  //   // MatrixXd Q = B.transpose() * B;
-  //   // Vector2d beta = Q.llt().solve(B.transpose() * mean);
-
-  //   // check the criterion
-  //   // std::cout << "i = " << i << std::endl;
-  //   // std::cout << "beta(1)/trend = " << abs(beta(1))/trend_lim <<
-  //   std::endl;
-  //   // std::cout << "Q = \n" << Q << std::endl;
-  //   // std::cout << "-------" << std::endl;
-
-  //   // Q(1,1) is way too big
-  //   // if (abs(beta(1)) - 2 * sqrt(Q(1, 1)) > trend_lim * abs(beta(0))) {
-
-  //   if (abs(beta(1)) > trend_lim) {
-  //     conv[i] = false;
-  //     trend_line += "   false";
-  //   } else {
-  //     trend_line += "    true";
-  //   }
-  //   // std::cout << "mean here = " << mean << std::endl;
-  //   // std::cout << "Q here = " << Q << std::endl;
-  //   // std::cout << "beta here = " << Q << std::endl;
-  // }
-
-  if (print_check_info)
-    std::cout << "stop " << curr_batch + 1 << ": \n"
-              << par_string
-              << "\n"
-              // << std_line << "\n"
-              // << trend_line << "\n"
-              << r_hat_line << "\n\n";
   return conv;
 }
 

@@ -427,17 +427,34 @@ ngme_model <- function(
   #   rw1     = paste0(" ignored")
   # )
 
-  # Create vector of parameter names instead of concatenated string
+  # Create vector of parameter names that align with free (unfixed) parameters
   ope_params <- operator$param_name
-  mu_params <- paste0("mu_", seq_along(noise$theta_mu))
-  sigma_params <- paste0("sigma_", seq_along(noise$theta_sigma))
-  nu_params <- paste0("nu_", seq_along(noise$nu))
 
-  if (all(noise$noise_type == "normal")) {
-    par_names <- c(ope_params, sigma_params)
+  mu_params <- if (length(noise$theta_mu) == 0 || isTRUE(noise$fix_theta_mu)) {
+    character(0)
   } else {
-    par_names <- c(ope_params, mu_params, sigma_params, nu_params)
+    paste0("mu_", seq_along(noise$theta_mu))
   }
+
+  sigma_params <- {
+    sigma_idx <- if (length(noise$theta_sigma) == 0) integer(0) else which(!noise$fix_theta_sigma)
+    if (length(sigma_idx) == 0) character(0) else paste0("sigma_", sigma_idx)
+  }
+
+  nu_params <- if (length(noise$theta_nu) == 0 || isTRUE(noise$fix_theta_nu)) {
+    character(0)
+  } else {
+    paste0("nu_", seq_along(noise$theta_nu))
+  }
+
+  rho_params <- if (length(noise$rho) == 0 || isTRUE(noise$fix_rho)) {
+    character(0)
+  } else {
+    paste0("rho_", seq_along(noise$rho))
+  }
+
+  # Order matches the underlying parameter vector: operator -> mu -> sigma -> nu -> rho
+  par_names <- c(ope_params, mu_params, sigma_params, nu_params, rho_params)
 
   if (is.null(n_params)) n_params <- length(operator$theta_K) + with(noise, n_params)
 

@@ -258,7 +258,6 @@ public:
   Bivar(const Rcpp::List &);
 
   void build_KZ(const VectorXd &) override;
-  bool update_dKdZ(const VectorXd &) override;
 
   Matrix2d getD(double, double) const;
   Matrix2d get_dD_theta(double, double) const;

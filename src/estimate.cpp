@@ -108,7 +108,6 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   MatrixXd vars(n_batch, n_params);
 
   // for Gelman-Rubin statistic
-  std::cout << "n_params = " << n_params << std::endl;
   MatrixXd batch_sum(n_chains, n_params);
   MatrixXd batch_sq_sum(n_chains, n_params);
 

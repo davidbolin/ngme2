@@ -32,15 +32,32 @@ ngme_replicate <- function(
     par_names <- c(par_names, paste0("feff_", seq_along(feff)))
   }
 
-  # Add measurement error parameter names
-  merr_names <- switch(noise$noise_type,
-    normal = paste0("sigma_", seq_along(noise$theta_sigma)),
-    nig = c(
-      paste0("mu_", seq_along(noise$theta_mu)),
-      paste0("sigma_", seq_along(noise$theta_sigma)),
-      paste0("nu_", seq_along(noise$nu))
-    )
-  )
+  # Add measurement error parameter names (free parameters only)
+  merr_names <- {
+    mu_params <- if (length(noise$theta_mu) == 0 || isTRUE(noise$fix_theta_mu)) {
+      character(0)
+    } else {
+      paste0("mu_", seq_along(noise$theta_mu))
+    }
+
+    sigma_idx <- if (length(noise$theta_sigma) == 0) integer(0) else which(!noise$fix_theta_sigma)
+    sigma_params <- if (length(sigma_idx) == 0) character(0) else
+      paste0("sigma_", sigma_idx)
+
+    nu_params <- if (length(noise$theta_nu) == 0 || isTRUE(noise$fix_theta_nu)) {
+      character(0)
+    } else {
+      paste0("nu_", seq_along(noise$theta_nu))
+    }
+
+    rho_params <- if (length(noise$rho) == 0 || isTRUE(noise$fix_rho)) {
+      character(0)
+    } else {
+      paste0("rho_", seq_along(noise$rho))
+    }
+
+    c(mu_params, sigma_params, nu_params, rho_params)
+  }
   par_names <- c(par_names, merr_names)
 
   n_params <- n_feff + n_la_params + noise$n_params

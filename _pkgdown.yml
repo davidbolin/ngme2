@@ -1,8 +1,8 @@
 url: https://davidbolin.github.io/ngme2/
 
 template:
-  bootstrap: 5
   bootswatch: flatly
+  theme: arrow-light
   bslib:
     heading_font: {google: "Roboto Slab"}
 
@@ -26,8 +26,6 @@ navbar:
         href: articles/AR1-model.html
       - text: Random walk model
         href: articles/RW-model.html
-      - text: Ornstein-Uhlenbeck process
-        href: article/ngme2_ou_vignette.html
       - text: SPDE Matern model
         href: articles/SPDE-model.html
       - text: Models with Combined Gaussian and NIG Noise 

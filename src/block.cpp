@@ -42,6 +42,9 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
   int solver_type = control_ngme.containsElementNamed("solver_type")
                         ? Rcpp::as<int>(control_ngme["solver_type"])
                         : 0;
+  robust = control_ngme.containsElementNamed("robust")
+               ? Rcpp::as<bool>(control_ngme["robust"])
+               : false;
 
   // reduce_var    =  Rcpp::as<bool>   (control_ngme["reduce_var"]);
   // reduce_power  =  Rcpp::as<double> (control_ngme["reduce_power"]);
@@ -1440,41 +1443,16 @@ void BlockModel::update_QQ() {
         noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V);
     SparseMatrix<double> H = inv_noise_SV.cwiseSqrt().asDiagonal() * AZ;
     QQ = Q + H.transpose() * H;
-    SparseMatrix<double> Zi = latents[0]->getZ();
-
-    // debug
-    sparse_llt_solver Q_solver(0, Zi.cols(), 10, true);
-    Q_solver.analyze(Zi.transpose() * Zi);
-    Q_solver.compute(Zi.transpose() * Zi);
-    if (!Q_solver.factorization_success()) {
-      throw std::runtime_error("Z^T Z is not SPD");
-    }
-
-    sparse_llt_solver Q_solver2(0, Q.cols(), 10, true);
-    Q_solver2.analyze(K.transpose() * K);
-    Q_solver2.compute(K.transpose() * K);
-    if (!Q_solver2.factorization_success()) {
-      std::cout << "Norm of K: " << K.norm() << std::endl;
-      throw std::runtime_error("KtK is not SPD");
-    }
-
-    sparse_llt_solver Q_solver3(0, Q.cols(), 10, true);
-    Q_solver3.analyze(Q);
-    Q_solver3.compute(Q);
-    if (!Q_solver3.factorization_success()) {
-      std::cout << "Norm of Q: " << Q.norm() << std::endl;
-      std::cout << "min inv_SV = " << inv_SV.minCoeff() << std::endl;
-      std::cout << "max inv_SV = " << inv_SV.maxCoeff() << std::endl;
-      throw std::runtime_error("Q is not SPD");
-    }
   } else {
     // Correlated case: D = Q_eps
     QQ = Q + AZ.transpose() * Q_eps * AZ;
   }
+  if (robust) {
+    QQ.diagonal().array() += 1e-8;
+    chol_QQ.analyze(QQ);
+  }
   chol_QQ.compute(QQ);
   if (!chol_QQ.factorization_success()) {
-    std::cout << "min inv_SV = " << inv_SV.minCoeff() << std::endl;
-    std::cout << "max inv_SV = " << inv_SV.maxCoeff() << std::endl;
     throw std::runtime_error("Measurement precision QQ is not SPD");
   }
 }

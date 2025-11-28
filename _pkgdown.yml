@@ -25,7 +25,7 @@ navbar:
       - text: Random walk model
         href: articles/RW-model.html
       - text: Ornstein-Uhlenbeck process
-        href: article/ou-process.html
+        href: articles/ou-process.html
       - text: SPDE Matern model
         href: articles/SPDE-model.html
       - text: Models with Combined Gaussian and NIG Noise 
@@ -46,6 +46,8 @@ navbar:
         href: articles/cross-validation.html
       - text: Using the Generic Model in ngme2
         href: articles/generic.html
+      exclude:
+        - AGENTS.md
     github:
       icon: fa-github
       href: https://github.com/davidbolin/ngme2

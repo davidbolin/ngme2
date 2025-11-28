@@ -66,7 +66,14 @@ $(sslib7):
 # macOS uses Accelerate, Linux uses system BLAS/LAPACK or MKL
 ifeq ($(UNAME), Darwin)
   # Use Homebrew's gfortran installation directly
-  HOMEBREW_PREFIX := $(shell brew --prefix)
+  HOMEBREW_PREFIX := $(shell brew --prefix 2>/dev/null)
+  ifeq ($(HOMEBREW_PREFIX),)
+    ifneq ($(wildcard /opt/homebrew/bin/brew),)
+      HOMEBREW_PREFIX := /opt/homebrew
+    else
+      HOMEBREW_PREFIX := /usr/local
+    endif
+  endif
   GFORTRAN_LIB := $(HOMEBREW_PREFIX)/lib/gcc/current
   
   # Set the correct fortran library paths - remove emutls_w reference
@@ -74,7 +81,7 @@ ifeq ($(UNAME), Darwin)
   
   # Add Accelerate framework for BLAS/LAPACK
   PKG_LIBS += -framework Accelerate
-	PKG_LIBS += /opt/homebrew/opt/libomp/lib/libomp.dylib -Wl,-rpath,/opt/homebrew/opt/libomp/lib
+  PKG_LIBS += $(HOMEBREW_PREFIX)/opt/libomp/lib/libomp.dylib -Wl,-rpath,$(HOMEBREW_PREFIX)/opt/libomp/lib
 endif
 
 # MKLROOT = /opt/intel/mkl

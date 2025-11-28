@@ -337,20 +337,24 @@ Let's start with a basic example to understand the components:
 
 ```{r basic-example}
 # 1D example with Gaussian noise
-f(map = 1:10, 
-  model = "matern",
-  mesh = fmesher::fm_mesh_1d(1:10),
-  kappa = 1,
+f(
+  map = 1:10,
+  model = matern(
+    mesh = fmesher::fm_mesh_1d(1:10),
+    kappa = 1
+  ),
   noise = noise_normal(sigma = 1)
 )
 ```
 
 ```{r nig-example}
 # 1D example with NIG noise
-f(map = 1:10, 
-  model = "matern",
-  mesh = fmesher::fm_mesh_1d(1:10),
-  kappa = 1,
+f(
+  map = 1:10,
+  model = matern(
+    mesh = fmesher::fm_mesh_1d(1:10),
+    kappa = 1
+  ),
   noise = noise_nig(mu = 0, sigma = 1, nu = 0.5)
 )
 ```
@@ -388,7 +392,7 @@ Let's visualize the mesh structure with observation locations:
 ```{r mesh-visualization}
 # Visualize mesh
 plot(mesh)
-points(loc, col="red", pch=16)
+points(loc, col = "red", pch = 16)
 ```
 
 ### Simulating with NIG Noise
@@ -402,22 +406,25 @@ nu_true <- 0.5
 mu_true <- -2
 kappa_true <- 4
 
-true_noise <- noise_nig(mu=mu_true, 
-                    sigma=sigma_true,
-                    nu=nu_true)
+true_noise <- noise_nig(
+  mu = mu_true,
+  sigma = sigma_true,
+  nu = nu_true
+)
 
 true_model <- f(
   map = loc,
-  model="matern",
-  theta_K = log(kappa_true),
-  mesh = mesh,
+  model = matern(
+    mesh = mesh,
+    kappa = kappa_true
+  ),
   noise = true_noise
 )
 
 sigma_noise <- 0.1
 # Simulate the data
 W <- simulate(true_model)[[1]]
-Y <- W + rnorm(n_obs, sd=sigma_noise)
+Y <- W + rnorm(n_obs, sd = sigma_noise)
 
 # Summary statistics
 cat("Simulated field statistics:\n")
@@ -444,10 +451,12 @@ ggplot(sim_data, aes(x = x, y = y, color = value)) +
   coord_fixed() +
   labs(
     title = "Simulated NIG Matérn SPDE Field",
-    subtitle = paste0("κ = ", kappa_true, 
-                        ", NIG(μ=",
-                        mu_true, ", σ=", sigma_true,
-                        ", ν=", nu_true,")"), 
+    subtitle = paste0(
+      "κ = ", kappa_true,
+      ", NIG(μ=",
+      mu_true, ", σ=", sigma_true,
+      ", ν=", nu_true, ")"
+    ),
     x = "Longitude",
     y = "Latitude",
     color = "Field Value"
@@ -470,10 +479,11 @@ Now we fit the model to our simulated data to demonstrate parameter recovery:
 ```{r fit-model}
 out <- ngme(
   Y ~ 0 + f(loc,
-    model="matern",
-    name="spde",
-    mesh = mesh,
-    noise=noise_nig(),
+    model = matern(
+      mesh = mesh
+    ),
+    name = "spde",
+    noise = noise_nig(),
   ),
   data = data.frame(Y = Y),
   control_opt = control_opt(
@@ -509,13 +519,15 @@ out
 
 ```{r convergence, fig.height=6}
 # Compare with true parameters
-traceplot(out, "spde", hline=c(kappa_true, mu_true, 
-                                        sigma_true, nu_true))
+traceplot(out, "spde", hline = c(
+  kappa_true, mu_true,
+  sigma_true, nu_true
+))
 ```
 
 ```{r convergence-meas, fig.height=4}
-# Measurement noise convergence  
-traceplot(out, hline=sigma_noise)
+# Measurement noise convergence
+traceplot(out, hline = sigma_noise)
 ```
 
 The traceplots show good convergence with estimates oscillating around true values (blue lines).
@@ -525,9 +537,11 @@ The traceplots show good convergence with estimates oscillating around true valu
 Compare the estimated noise distribution with the true distribution:
 
 ```{r validation, fig.height=4}
-# Compare with true density 
-plot(true_noise,
-  out$replicates[[1]]$models[[1]]$noise)
+# Compare with true density
+plot(
+  true_noise,
+  out$replicates[[1]]$models[[1]]$noise
+)
 ```
 
 ## Parameter Recovery
@@ -579,15 +593,16 @@ cat("Number of unique locations:", nrow(loc_2d), "\n")
 
 ```{r create-mesh, fig.align="center"}
 # 2d example
-max.edge    <- 1
+max.edge <- 1
 bound.outer <- 5
 
-argo_mesh <- fmesher::fm_mesh_2d(loc = loc_2d,
-                    # the inner edge and outer edge
-                    max.edge = c(1,5),
-                    cutoff = 0.3,
-                    # offset extension distance inner and outer extenstion
-                    offset = c(max.edge, bound.outer)
+argo_mesh <- fmesher::fm_mesh_2d(
+  loc = loc_2d,
+  # the inner edge and outer edge
+  max.edge = c(1, 5),
+  cutoff = 0.3,
+  # offset extension distance inner and outer extenstion
+  offset = c(max.edge, bound.outer)
 )
 
 # Visualize mesh
@@ -605,29 +620,33 @@ Let's explore the spatial patterns in temperature and salinity:
 
 ```{r plot-data, fig.align="center", fig.height=5}
 # temperature
-ggplot(data=argo_float) +
+ggplot(data = argo_float) +
   geom_point(aes(
     x = loc_2d[, 1], y = loc_2d[, 2],
     colour = temp
   ), size = 2, alpha = 1) +
   scale_color_gradientn(colours = viridis(100)) +
   coord_fixed() +
-  labs(title = "Sea Surface Temperature (°C)",
-       x = "Longitude", y = "Latitude") +
+  labs(
+    title = "Sea Surface Temperature (°C)",
+    x = "Longitude", y = "Latitude"
+  ) +
   theme_minimal()
 ```
 
 ```{r plot-salinity, fig.align="center", fig.height=5}
 # salinity
-ggplot(data=argo_float) +
+ggplot(data = argo_float) +
   geom_point(aes(
     x = loc_2d[, 1], y = loc_2d[, 2],
     colour = sal
   ), size = 2, alpha = 1) +
   scale_color_gradientn(colours = viridis(100)) +
   coord_fixed() +
-  labs(title = "Sea Surface Salinity (PSU)",
-       x = "Longitude", y = "Latitude") +
+  labs(
+    title = "Sea Surface Salinity (PSU)",
+    x = "Longitude", y = "Latitude"
+  ) +
   theme_minimal()
 ```
 
@@ -639,10 +658,11 @@ Next, we specify a model formula, and then fit the model:
 
 ```{r ngme-estimation}
 formula <- temp ~ sal + f(
-  loc_2d, 
-  model = "matern", 
+  loc_2d,
+  model = matern(
+    mesh = argo_mesh
+  ),
   name = "spde",
-  mesh=argo_mesh, 
   noise = noise_nig()
 )
 
@@ -755,9 +775,11 @@ pred_viz <- data.frame(
 # Predicted temperature map
 ggplot(pred_viz, aes(x = lon, y = lat, fill = pred_mean)) +
   geom_tile() +
-  geom_point(data = argo_float, aes(x = lon, y = lat),
-             inherit.aes = FALSE, size = 0.5, 
-             color = "white", alpha = 0.3) +
+  geom_point(
+    data = argo_float, aes(x = lon, y = lat),
+    inherit.aes = FALSE, size = 0.5,
+    color = "white", alpha = 0.3
+  ) +
   scale_fill_viridis(option = "plasma") +
   coord_fixed() +
   labs(
@@ -778,9 +800,11 @@ ggplot(pred_viz, aes(x = lon, y = lat, fill = pred_mean)) +
 # Prediction uncertainty map
 ggplot(pred_viz, aes(x = lon, y = lat, fill = pred_sd)) +
   geom_tile() +
-  geom_point(data = argo_float, aes(x = lon, y = lat),
-             inherit.aes = FALSE, size = 0.5, 
-             color = "black", alpha = 0.3) +
+  geom_point(
+    data = argo_float, aes(x = lon, y = lat),
+    inherit.aes = FALSE, size = 0.5,
+    color = "black", alpha = 0.3
+  ) +
   scale_fill_viridis(option = "magma") +
   coord_fixed() +
   labs(
@@ -877,7 +901,7 @@ mesh_coords <- mesh$loc[, 1:2]
 # NOTE: We create this as B_kappa for clarity, but will pass it as B_theta_K to ngme2
 B_kappa <- cbind(
   Intercept = 1,
-  Longitude = mesh_coords[, 1] / 10,  # Normalized to [0,1]
+  Longitude = mesh_coords[, 1] / 10, # Normalized to [0,1]
   Long_squared = (mesh_coords[, 1] / 10)^2
 )
 
@@ -894,7 +918,7 @@ kappa_df <- data.frame(
   x = mesh_coords[, 1],
   y = mesh_coords[, 2],
   kappa = kappa_true,
-  range = sqrt(8) / kappa_true  # Practical range
+  range = sqrt(8) / kappa_true # Practical range
 )
 
 ggplot(kappa_df, aes(x = x, y = y, color = kappa)) +
@@ -949,10 +973,10 @@ true_noise <- noise_nig(mu = -1.5, sigma = 1, nu = 0.5)
 
 true_model <- f(
   map = loc_obs,
-  model = "matern",
-  mesh = mesh,
-  B_theta_K = B_kappa,  # Basis matrix for kappa (NOTE: parameter is B_theta_K)
-  theta_K = true_theta,  # Use our spatially-varying coefficients
+  model = matern(
+    mesh = mesh,
+    B_kappa = B_kappa
+  ),
   noise = true_noise
 )
 
@@ -998,11 +1022,11 @@ Now we fit both stationary and non-stationary models to compare:
 fit_nonstat <- ngme(
   Y ~ 0 + f(
     loc_obs,
-    model = "matern",
+    model = matern(
+      mesh = mesh,
+      B_kappa = B_kappa
+    ),
     name = "spde_nonstat",
-    mesh = mesh,
-    B_theta_K = B_kappa,  # Include basis matrix (parameter is B_theta_K)
-    theta_K = c(0,0,0), # Giving starting value for theta
     noise = noise_nig()
   ),
   data = data.frame(Y = Y),

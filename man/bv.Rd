@@ -36,7 +36,7 @@ bv(
 \item{use_c_param}{TRUE to estimate c1 and c2 as parameters, FALSE to fix them at specified values (default: FALSE)}
 }
 \value{
-a list of specification of model
+a ngme_operator of bivariate model
 }
 \description{
 Giving 2 sub_models, build a correlated bivariate operator based on K = D(theta, rho) %*% diag(c1*K_1, c2*K_2)
@@ -49,6 +49,4 @@ Giving 2 sub_models, build a correlated bivariate operator based on K = D(theta,
 The bivariate model combines two sub-models with a rotation matrix D and optional scaling factors c1 and c2.
 When \code{use_c_param = TRUE}, c1 and c2 are estimated as parameters (on log scale).
 When \code{use_c_param = FALSE} (default), c1 and c2 are fixed at their specified values (both default to 1).
-This allows the model to be equivalent to the previous bv model (with c1=c2=1) for backward compatibility,
-or to the deprecated bv2 model when c1 and c2 are estimated.
 }

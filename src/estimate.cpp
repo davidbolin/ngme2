@@ -110,6 +110,8 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   // for Gelman-Rubin statistic
   MatrixXd batch_sum(n_chains, n_params);
   MatrixXd batch_sq_sum(n_chains, n_params);
+  VectorXd final_R_hat(n_params);
+  final_R_hat.setZero();
 
   std::vector<bool> converge(n_params, false);
   bool all_converge = false;
@@ -190,6 +192,7 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
 
       Eigen::RowVectorXd var_hat = ((double)(n - 1) / n) * W + (1.0 / n) * B;
       R_hat = (var_hat.array() / W.array()).sqrt().transpose();
+      final_R_hat = R_hat;
 
       if (n_slope_check <= curr_batch + 1)
         converge = check_conv(means, vars, curr_batch, n_slope_check, std_lim,
@@ -251,6 +254,8 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   } else {
     outputs.attr("opt_traj") = R_NilValue;
   }
+  if (n_chains > 1)
+    outputs.attr("R_hat") = final_R_hat;
   return outputs;
 }
 
@@ -308,9 +313,6 @@ std::vector<bool> check_conv(const MatrixXd &means, const MatrixXd &vars,
     // Print R-hat values with proper alignment
     std::cout << "R_hat:   ";
     for (int i = 0; i < n_params; i++) {
-      if (R_hat(i) > max_R_hat) {
-        conv[i] = false;
-      }
       std::cout << std::setw(9) << std::fixed << std::setprecision(3)
                 << std::left << R_hat(i) << " ";
     }
@@ -318,6 +320,12 @@ std::vector<bool> check_conv(const MatrixXd &means, const MatrixXd &vars,
 
     // Print separator line
     std::cout << std::string(line_width, '-') << "\n\n";
+  }
+
+  for (int i = 0; i < n_params; i++) {
+    if (R_hat(i) > max_R_hat) {
+      conv[i] = false;
+    }
   }
 
   return conv;

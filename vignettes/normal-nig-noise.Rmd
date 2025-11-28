@@ -63,42 +63,48 @@ Let's simulate a dataset that exhibits both Gaussian and NIG noise components. W
 ```{r simulate_data}
 # Set parameters
 n_obs <- 1000
-sigma_eps <- 0.5  # Measurement noise (observation error)
-alpha <- 0.5      # AR(1) coefficient
-mu <- 2           # NIG parameter mu
-delta <- -mu      # NIG parameter delta (typically set to -mu)
-sigma_nig <- 3    # NIG noise scale
-nu <- 1           # NIG shape parameter
-sigma_normal <- 2  # Normal noise standard deviation
+sigma_eps <- 0.5 # Measurement noise (observation error)
+alpha <- 0.5 # AR(1) coefficient
+mu <- 2 # NIG parameter mu
+delta <- -mu # NIG parameter delta (typically set to -mu)
+sigma_nig <- 3 # NIG noise scale
+nu <- 1 # NIG shape parameter
+sigma_normal <- 2 # Normal noise standard deviation
 
 # First we generate V. V_i follows inverse Gaussian distribution
 trueV <- ngme2::rig(n_obs, nu, nu, seed = 10)
 
 # Generate the NIG noise component
-nig_noise <- delta + mu*trueV + sigma_nig * sqrt(trueV) * rnorm(n_obs)
+nig_noise <- delta + mu * trueV + sigma_nig * sqrt(trueV) * rnorm(n_obs)
 
 # Add normal noise component
-mixed_noise <- nig_noise + rnorm(n_obs, mean=0, sd=sigma_normal)
+mixed_noise <- nig_noise + rnorm(n_obs, mean = 0, sd = sigma_normal)
 
 # Generate the AR(1) process
-trueW <- Reduce(function(x,y){y + alpha*x}, mixed_noise, accumulate = TRUE)
+trueW <- Reduce(function(x, y) {
+  y + alpha * x
+}, mixed_noise, accumulate = TRUE)
 
 # Add measurement noise to get observations
-Y <- trueW + rnorm(n_obs, mean=0, sd=sigma_eps)
+Y <- trueW + rnorm(n_obs, mean = 0, sd = sigma_eps)
 
 # Add some fixed effects
 x1 <- runif(n_obs)
 x2 <- rexp(n_obs)
 beta <- c(-3, -1, 2)
-X <- model.matrix(~x1 + x2)  # design matrix
+X <- model.matrix(~ x1 + x2) # design matrix
 Y <- as.numeric(Y + X %*% beta)
 
 # Plot the simulated data
-par(mfrow=c(2,1), mar=c(4,4,2,1))
-plot(Y, type="l", main="Simulated observations with Normal-NIG noise", 
-     xlab="Time", ylab="Value")
-plot(mixed_noise, type="l", main="Underlying Normal-NIG noise", 
-     xlab="Time", ylab="Value")
+par(mfrow = c(2, 1), mar = c(4, 4, 2, 1))
+plot(Y,
+  type = "l", main = "Simulated observations with Normal-NIG noise",
+  xlab = "Time", ylab = "Value"
+)
+plot(mixed_noise,
+  type = "l", main = "Underlying Normal-NIG noise",
+  xlab = "Time", ylab = "Value"
+)
 ```
 
 ## Fitting Models with Normal-NIG Noise
@@ -111,14 +117,15 @@ ngme_out <- ngme(
   Y ~ x1 + x2 + f(
     1:n_obs,
     name = "my_ar",
-    model = "ar1",
+    model = ar1(),
     # noise = noise_normal_nig()  # This specifies the combined noise model
-    noise = list(noise_nig(mu=2, sigma_nig=3, nu=1), noise_normal(sigma_normal=1))
+    noise = list(noise_nig(mu = 2, sigma_nig = 3, nu = 1), noise_normal(sigma_normal = 1))
   ),
-  data = data.frame(x1=x1, x2=x2, Y=Y),
+  data = data.frame(x1 = x1, x2 = x2, Y = Y),
   control_opt = control_opt(
     burnin = 100,
-    iterations = 5000,
+    iterations = 500,
+    print_check_info = TRUE,
     std_lim = 0.4,
     n_parallel_chain = 4,
     seed = 3
@@ -131,7 +138,7 @@ summary(ngme_out)
 
 ```{r}
 traceplot(ngme_out, hline = c(sigma_eps, beta))
-traceplot(ngme_out, "my_ar", hline=c(alpha, mu, sigma_nig, sigma_normal, nu))
+traceplot(ngme_out, "my_ar", hline = c(alpha, mu, sigma_nig, sigma_normal, nu))
 ```
 
 ## Visualizing the Results
@@ -140,10 +147,10 @@ We can use the `traceplot()` function to see the estimated parameters trajectori
 
 ```{r plot_results, eval=FALSE}
 # Plot traces for fixed effects
-traceplot(ngme_out, hline=c(sigma_eps, beta))
+traceplot(ngme_out, hline = c(sigma_eps, beta))
 
 # Plot traces for AR(1) component
-traceplot(ngme_out, "my_ar", hline=c(alpha, mu, sigma_nig, nu, sigma_normal))
+traceplot(ngme_out, "my_ar", hline = c(alpha, mu, sigma_nig, nu, sigma_normal))
 ```
 
 
@@ -154,10 +161,10 @@ The `noise_normal_nig()` function provides several customization options:
 ```{r customize_noise, eval=FALSE}
 # Specifying initial values for parameters
 custom_noise <- noise_normal_nig(
-  mu = 2,             # Initial value for mu
-  sigma_nig = 3,      # Initial value for NIG sigma
-  nu = 1,             # Initial value for nu
-  sigma_normal = 0.8  # Initial value for normal sigma
+  mu = 2, # Initial value for mu
+  sigma_nig = 3, # Initial value for NIG sigma
+  nu = 1, # Initial value for nu
+  sigma_normal = 0.8 # Initial value for normal sigma
 )
 ```
 

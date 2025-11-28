@@ -8,11 +8,10 @@ matern(
   mesh = NULL,
   alpha = 2,
   fix_alpha = TRUE,
-  kappa = 1,
+  kappa = NULL,
   theta_kappa = NULL,
   rational_order = 2,
-  B_theta_K = NULL,
-  ...
+  B_kappa = NULL
 )
 }
 \arguments{
@@ -24,13 +23,11 @@ matern(
 
 \item{kappa}{the range parameter, for the stationary model, it is the range parameter}
 
-\item{theta_kappa}{kappa = exp(B_theta_K * theta_K), for the non-stationary model, it is the range parameter}
+\item{theta_kappa}{kappa = exp(B_kappa * theta_kappa), for the non-stationary model, it is the range parameter}
 
 \item{rational_order}{order of rational approximation for fractional operators (default: 2)}
 
-\item{B_theta_K}{bases for theta_K, ignore if use the stationary model}
-
-\item{...}{ignore}
+\item{B_kappa}{bases for theta_kappa, ignore if use the stationary model}
 }
 \value{
 ngme_operator object

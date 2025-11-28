@@ -17,9 +17,7 @@ Pre-built binaries are available for Windows and macOS with R versions 4.2, 4.3,
 
 ```r
 # Install ngme2 package from pre-built binaries
-install.packages("ngme2", 
-                 repos = "https://davidbolin.github.io/ngme2/.binaries",
-                 type = "binary")
+install.packages("ngme2", repos = "https://davidbolin.github.io/ngme2/")
 ```
 
 The installation process will automatically detect your R version and operating system, and install the appropriate binary package.
@@ -49,9 +47,7 @@ install_ngme2 <- function() {
   message("Installing ngme2 for R ", r_version, " from repository")
   
   # Install the package
-  install.packages("ngme2", 
-                  repos = "https://davidbolin.github.io/ngme2/.binaries", 
-                  type = "binary")
+  install.packages("ngme2", repos = "https://davidbolin.github.io/ngme2/")
 }
 
 # Run the function to install

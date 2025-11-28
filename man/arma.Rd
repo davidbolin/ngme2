@@ -11,8 +11,7 @@ arma(
   ar = NULL,
   ma = NULL,
   fix_ar = FALSE,
-  fix_ma = FALSE,
-  ...
+  fix_ma = FALSE
 )
 }
 \arguments{
@@ -29,8 +28,6 @@ arma(
 \item{fix_ar}{Logical or length-p logical vector to fix AR coefficients.}
 
 \item{fix_ma}{Logical or length-q logical vector to fix MA coefficients.}
-
-\item{...}{Passed to lower-level operator constructor.}
 }
 \value{
 An `ngme_operator` describing the ARMA(p, q) latent model.

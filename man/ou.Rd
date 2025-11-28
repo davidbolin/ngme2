@@ -4,7 +4,7 @@
 \alias{ou}
 \title{Ornstein-Uhlenbeck Process Model}
 \usage{
-ou(mesh = NULL, theta = 1, ...)
+ou(mesh = NULL, theta = 1)
 }
 \arguments{
 \item{mesh}{numerical vector or `inla.mesh.1d` object giving the ordered
@@ -12,8 +12,6 @@ time locations. Must be strictly increasing.}
 
 \item{theta}{positive mean-reversion rate (stiffness parameter). Internally
 stored on the log scale so optimization remains unconstrained.}
-
-\item{...}{additional arguments (currently unused).}
 }
 \value{
 An `ngme_operator` object containing:

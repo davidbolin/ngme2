@@ -20,14 +20,12 @@ navbar:
       menu:
       - text: Installation and configuration (using OpenMP)
         href: articles/Installation_and_configuration.html
-      - text: Comparison with R-INLA
-        href: articles/inla_compare.html
       - text: AR(1) model
         href: articles/AR1-model.html
       - text: Random walk model
         href: articles/RW-model.html
       - text: Ornstein-Uhlenbeck process
-        href: article/ngme2_ou_vignette.html
+        href: article/ou-process.html
       - text: SPDE Matern model
         href: articles/SPDE-model.html
       - text: Models with Combined Gaussian and NIG Noise 
@@ -35,15 +33,13 @@ navbar:
       - text: Models with replicates
         href: articles/replicate.html
       - text: Model estimation and prediction
-        href: articles/pred_and_est.html
+        href: articles/pred-and-est.html
       - text: Bivariate models in Ngme2
         href: articles/bivariate.html
-      - text: Space-time bivariate model in Ngme2
-        href: articles/tp-bv.html
       - text: Random effects model in Ngme2
         href: articles/random-effect.html
       - text: Space-time (tensor product) model in Ngme2
-        href: articles/tensor_product.html
+        href: articles/tensor-product.html
       - text: Matern SPDE model on Metric Graph
         href: articles/matern-on-graph.html
       - text: Cross-validation for the ngme2 models
@@ -94,9 +90,7 @@ reference:
     - iid
     - tp
     - bv
-    - bv_normal
-    - bv_matern_normal
-    - bv_matern_nig
+    - bv_matern
     - compute_score_given_pred
     - re
     - spacetime
@@ -137,6 +131,9 @@ reference:
     - simulate.ngme_noise
   - title: Auxiliary functions
     contents:
+    - ngme_update
+    - ngme_optimizers
+    - get_data_from_formula
     - compute_log_like
     - make_time_series_cv_index
     - precision_matrix_multivariate

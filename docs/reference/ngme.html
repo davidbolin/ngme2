@@ -145,20 +145,20 @@ See <code><a href="ngme_model_types.html">ngme_model_types()</a></code> for avai
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">ngme</span><span class="op">(</span></span></span>
-<span class="r-in"><span> formula <span class="op">=</span> <span class="va">Y</span> <span class="op">~</span> <span class="va">x1</span> <span class="op">+</span> <span class="fu"><a href="f.html">f</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>   <span class="va">x2</span>,</span></span>
-<span class="r-in"><span>   model <span class="op">=</span> <span class="st">"ar1"</span>,</span></span>
-<span class="r-in"><span>   noise <span class="op">=</span> <span class="fu"><a href="ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>   rho <span class="op">=</span> <span class="fl">0.5</span></span></span>
-<span class="r-in"><span> <span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="f.html">f</a></span><span class="op">(</span><span class="va">x1</span>,</span></span>
-<span class="r-in"><span>   model <span class="op">=</span> <span class="st">"rw1"</span>,</span></span>
-<span class="r-in"><span>   noise <span class="op">=</span> <span class="fu"><a href="ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span> <span class="op">)</span>,</span></span>
-<span class="r-in"><span> family <span class="op">=</span> <span class="fu"><a href="ngme_noise.html">noise_normal</a></span><span class="op">(</span>sd <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span> data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Y <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, x1 <span class="op">=</span> <span class="fl">2</span><span class="op">:</span><span class="fl">6</span>, x2 <span class="op">=</span> <span class="fl">3</span><span class="op">:</span><span class="fl">7</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span> control_opt <span class="op">=</span> <span class="fu"><a href="control_opt.html">control_opt</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>   estimation <span class="op">=</span> <span class="cn">FALSE</span></span></span>
-<span class="r-in"><span> <span class="op">)</span></span></span>
+<span class="r-in"><span>  formula <span class="op">=</span> <span class="va">Y</span> <span class="op">~</span> <span class="va">x1</span> <span class="op">+</span> <span class="fu"><a href="f.html">f</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    <span class="va">x2</span>,</span></span>
+<span class="r-in"><span>    model <span class="op">=</span> <span class="st">"ar1"</span>,</span></span>
+<span class="r-in"><span>    noise <span class="op">=</span> <span class="fu"><a href="ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>    rho <span class="op">=</span> <span class="fl">0.5</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="f.html">f</a></span><span class="op">(</span><span class="va">x1</span>,</span></span>
+<span class="r-in"><span>    model <span class="op">=</span> <span class="st">"rw1"</span>,</span></span>
+<span class="r-in"><span>    noise <span class="op">=</span> <span class="fu"><a href="ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  <span class="op">)</span>,</span></span>
+<span class="r-in"><span>  family <span class="op">=</span> <span class="fu"><a href="ngme_noise.html">noise_normal</a></span><span class="op">(</span>sd <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Y <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, x1 <span class="op">=</span> <span class="fl">2</span><span class="op">:</span><span class="fl">6</span>, x2 <span class="op">=</span> <span class="fl">3</span><span class="op">:</span><span class="fl">7</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  control_opt <span class="op">=</span> <span class="fu"><a href="control_opt.html">control_opt</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    estimation <span class="op">=</span> <span class="cn">FALSE</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Using character strings for 'model' is not recommended (will be deprecated in the future). Please consider using operator functions like matern(), ar1(), etc. (e.g., model = matern()).</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Using character strings for 'model' is not recommended (will be deprecated in the future). Please consider using operator functions like matern(), ar1(), etc. (e.g., model = matern()).</span>

@@ -77,27 +77,16 @@ Notice that if we choose the Gaussian noise, we need to specify the model type a
 
 ```{r toy-model}
 # 1st way: simply put model types, using both c() and list() are ok
-# Choose model="bv2" if use Gaussian noise,
 bv1 <- f(
   year,
-  model = "bv2",
-  theta = pi / 8, rho = 0.5,
-  sub_models = list(precip = "ar1", temp = "rw1"),
-  group = labels, # can be inherited from ngme() function
-  noise = list(
-    precip = noise_normal(),
-    temp = noise_normal()
-  )
-)
-bv1
-
-# 2nd way: allow more argument for sub_models
-bv2 <- f(
-  year,
-  model = "bv",
-  sub_models = list(
-    precip = list(model = "ar1", rho = 0.5), # specify correlation parameter for ar1 model
-    temp = list(model = "rw1")
+  model = bv(
+    mesh = year,
+    theta = pi / 8,
+    rho = 0.5,
+    sub_models = list(
+      precip = ar1(),
+      temp = rw1()
+    )
   ),
   group = labels,
   noise = list(
@@ -105,7 +94,7 @@ bv2 <- f(
     temp = noise_nig()
   )
 )
-bv_normal
+bv1
 ```
 
 ## Four increasing construction of noise
@@ -125,8 +114,13 @@ We can specify the type of noise by the following:
 ```{r type-G}
 t1 <- f(
   year,
-  model = "bv",
-  sub_models = list(precip = "ar1", temp = "rw1"),
+  model = bv(
+    mesh = year,
+    sub_models = list(
+      precip = ar1(),
+      temp = rw1()
+    )
+  ),
   group = labels,
   noise = list(
     precip = noise_nig(single_V = TRUE),
@@ -138,8 +132,13 @@ t1
 
 t2 <- f(
   year,
-  model = "bv",
-  sub_models = list(precip = "ar1", temp = "rw1"),
+  model = bv(
+    mesh = year,
+    sub_models = list(
+      precip = ar1(),
+      temp = rw1()
+    )
+  ),
   group = labels,
   noise = list(
     precip = noise_nig(single_V = TRUE),
@@ -150,8 +149,13 @@ t2
 
 t3 <- f(
   year,
-  model = "bv",
-  sub_models = list(precip = "ar1", temp = "rw1"),
+  model = bv(
+    mesh = year,
+    sub_models = list(
+      precip = ar1(),
+      temp = rw1()
+    )
+  ),
   group = labels,
   noise = list(
     precip = noise_nig(),
@@ -163,8 +167,13 @@ t3
 
 t4 <- f(
   year,
-  model = "bv",
-  sub_models = list(precip = "ar1", temp = "rw1"),
+  model = bv(
+    mesh = year,
+    sub_models = list(
+      precip = ar1(),
+      temp = rw1()
+    )
+  ),
   group = labels,
   noise = list(
     precip = noise_nig(),
@@ -184,10 +193,12 @@ Here is one example, we have different fixed effects on different fields (Interc
 m1 <- ngme(
   y ~ 0 + fe(~1, which_group = "temp") +
     fe(~ 1 + x1, which_group = "precip") +
-    f(year, model = "rw1", which_group = "temp") +
+    f(year, model = rw1(), which_group = "temp") +
     f(year,
-      model = "bv",
-      sub_models = list(precip = "ar1", temp = "rw1"),
+      model = bv(
+        mesh = year,
+        sub_models = list(precip = ar1(), temp = rw1()),
+      ),
       noise = list(
         precip = noise_nig(),
         temp = noise_nig()
@@ -223,23 +234,27 @@ n_each <- n_obs / 2
 group <- rep(c("W1", "W2"), n_each)
 
 reorder_loc <- sample(1:n_each)
-reorder_loc <- 1:n_each
 
+rho <- 0.8
+rho1 <- 0.6
+rho2 <- -0.4
+sigma1 <- 2
+sigma2 <- 3
 sim_fields <- simulate(
   f(
     c(reorder_loc, reorder_loc),
     model = bv(
       mesh = reorder_loc,
-      theta = 0.5, rho = 0.8,
+      rho = rho,
       sub_models = list(
-        W1 = ar1(rho = 0.6),
-        W2 = ar1(rho = -0.4)
+        W1 = ar1(rho = rho1),
+        W2 = ar1(rho = rho2)
       )
     ),
     group = group,
     noise = list(
-      W1 = noise_normal(sigma = 1),
-      W2 = noise_normal(sigma = 1)
+      W1 = noise_normal(sigma = sigma1),
+      W2 = noise_normal(sigma = sigma2)
     )
   )
 )[[1]]
@@ -308,7 +323,7 @@ bvar_cor <- ngme(
   data = data.frame(Y, x1, x2),
   control_opt = control_opt(
     n_parallel_chain = 4,
-    optimizer = adam(stepsize = 0.01),
+    optimizer = sgd(stepsize = 1 / n_obs),
     std_lim = 1e-3,
     iterations = 1000,
     iters_per_check = 100,
@@ -319,7 +334,7 @@ bvar_cor <- ngme(
 
 bvar_cor
 # Compare the estimated value with the simulated value
-traceplot(bvar_cor, "bv", hline = c(3, 1, 1, 0.6, -0.4))
+traceplot(bvar_cor, "bv", hline = c(rho, rho1, rho2, sigma1, sigma2))
 traceplot(bvar_cor, hline = c(log(sd_1), log(sd_2), rho_e, -3, 1.5))
 ```
 
@@ -345,12 +360,14 @@ nu_2 <- 0.5
 reorder_loc <- sample(1:n_each)
 sim_fields <- simulate(
   f(c(reorder_loc, reorder_loc),
-    model = "bv",
-    theta = theta,
-    rho = rho,
-    sub_models = list(
-      W1 = list(model = "ar1", rho = rho_1),
-      W2 = list(model = "ar1", rho = rho_2)
+    model = bv(
+      mesh = reorder_loc,
+      theta = theta,
+      rho = rho,
+      sub_models = list(
+        W1 = ar1(rho = rho_1),
+        W2 = ar1(rho = rho_2)
+      )
     ),
     group = group,
     noise = list(
@@ -378,9 +395,16 @@ Y <- sim_fields + x1 * feff[1] + x2 * feff[2] + as.numeric(e)
 out <- ngme(
   Y ~ 0 + x1 + x2 +
     f(c(reorder_loc, reorder_loc),
-      model = "bv",
+      model = bv(
+        theta = theta,
+        rho = rho,
+        mesh = reorder_loc,
+        sub_models = list(
+          W1 = ar1(rho = rho_1),
+          W2 = ar1(rho = rho_2)
+        )
+      ),
       name = "bv",
-      sub_models = list(W1 = "ar1", W2 = "ar1"),
       noise = list(
         W1 = noise_nig(),
         W2 = noise_nig()
@@ -411,134 +435,6 @@ traceplot(
 )
 ```
 
-### Ex3. Fixed effects + Bivariate model (Matérn, NIG) + Correlated measurement noise
-
-Next, we consider a spatial bivariate Matérn model with correlated noise.
-The `model="bv_matern_normal"` can be used specifically only for bivariate model with Gaussian driven noise, so that the parameterization matches with the paper.
-
-
-```{r spatial}
-pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
-mesh <- fmesher::fm_mesh_2d(
-  loc.domain = pl01,
-  cutoff = 0.2,
-  max.edge = c(0.5, 10)
-)
-mesh$n
-n_obs <- 1000
-
-# generate random locations (same for two fields)
-long <- runif(n_obs / 2, 0, 10)
-lat <- runif(n_obs / 2, 0, 5)
-long <- c(long, long)
-lat <- c(lat, lat)
-group <- c(rep("W1", n_obs / 2), rep("W2", n_obs / 2))
-
-# plot the mesh
-plot(mesh)
-points(long, lat)
-
-# parameters of the bivariate model
-theta <- 0
-rho <- 1
-theta_K_1 <- log(2)
-theta_K_2 <- log(5)
-mu_1 <- -2
-sigma_1 <- 0.5
-nu_1 <- 1
-mu_2 <- 2
-sigma_2 <- 0.3
-nu_2 <- 0.5
-
-true_model <- f(
-  ~ long + lat,
-  theta = theta,
-  rho = rho,
-  mesh = mesh,
-  sd1 = sigma_1, sd2 = sigma_2,
-  model = "bv_matern_nig",
-  sub_models = list(
-    W1 = list(model = "matern", theta_K = theta_K_1),
-    W2 = list(model = "matern", theta_K = theta_K_2)
-  ),
-  group = group,
-  noise = list(
-    W1 = noise_nig(),
-    W2 = noise_nig()
-  )
-)
-
-sim_fields <- simulate(true_model)[[1]]
-
-sd_1 <- 0.6
-sd_2 <- 0.9
-rho_e <- 0.9
-Cov_same_idx <- matrix(c(sd_1^2, rho_e * sd_1 * sd_2, rho_e * sd_1 * sd_2, sd_2^2), nrow = 2)
-
-Cov_measurement <- Cov_same_idx %x% diag(n_obs / 2)
-
-# e ~ N(0, Cov_measurement)
-L <- t(chol(Cov_measurement))
-e <- L %*% rnorm(n_obs)
-
-# fixed effects
-x1 <- rexp(n_obs)
-x2 <- rnorm(n_obs)
-feff <- c(-3, 1.5)
-
-Y <- sim_fields + x1 * feff[1] + x2 * feff[2] + as.numeric(e)
-
-B_sigma <- matrix(0, nrow = n_obs, ncol = 2)
-B_sigma[group == "W1", 1] <- 1
-B_sigma[group == "W2", 2] <- 1
-
-out_cor <- ngme(
-  Y ~ 0 + x1 + x2 + f(
-    ~ long + lat,
-    mesh = mesh,
-    model = "bv_matern_nig",
-    name = "bv",
-    sub_models = list(
-      W1 = list(model = "matern"),
-      W2 = list(model = "matern")
-    ),
-    # debug=T,
-    noise = list(
-      W1 = noise_nig(),
-      W2 = noise_nig()
-    )
-  ),
-  group = group,
-  family = noise_normal(
-    corr_measurement = TRUE,
-    index_corr = c(1:(n_obs / 2), 1:(n_obs / 2)),
-    B_sigma = B_sigma,
-    theta_sigma = c(0, 0)
-  ),
-  data = data.frame(Y, long, lat),
-  control_opt = control_opt(
-    iterations = 1000,
-    n_parallel_chain = 4,
-    rao_blackwellization = TRUE,
-    # verbose = TRUE,
-    print_check_info = FALSE,
-    seed = 50
-  ),
-  debug = FALSE
-)
-out_cor
-
-# comparing with simulated value
-traceplot(
-  out_cor, "bv",
-  # hline=c(rho, sigma_1, sigma_2, exp(theta_K_1), exp(theta_K_2))
-)
-
-traceplot(
-  out_cor,
-  hline = c(log(sd_1), log(sd_2), rho_e, feff)
-)
-```
 
 ## Helper tool to build correlation index between two fields
 
@@ -556,19 +452,5 @@ coords <- data.frame(x_coord, y_coord)
 
 # here we can see 2 pairs (1 and 3, 5 and 6) of observations are close enough
 compute_index_corr_from_map(coords, eps = 0.1)
-```
-
-
-## Cross-validation for the bivariate model
-
-Let's run a more complex example using the bivariate model. We will generate some data and fit the bivariate model using the `ngme2` function. Then, we will perform cross-validation using the `cross_validation` function.
-
-```{r}
-cv1 <- cross_validation(
-  bvar_cor,
-  k = 5, N = 3, n_gibbs_samples = 50
-)
-cv1$mean.scores
-cv1$sd.scores
 ```
 

@@ -60,15 +60,13 @@
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">matern</span><span class="op">(</span></span>
-<span>  <span class="va">mesh</span>,</span>
+<span>  mesh <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  alpha <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  fix_alpha <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  kappa <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  theta_K <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  theta_kappa <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  rational_order <span class="op">=</span> <span class="fl">2</span>,</span>
-<span>  B_theta_K <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  <span class="va">...</span></span>
+<span>  B_kappa <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -92,24 +90,16 @@
 <dd><p>the range parameter, for the stationary model, it is the range parameter</p></dd>
 
 
-<dt id="arg-theta-k">theta_K<a class="anchor" aria-label="anchor" href="#arg-theta-k"></a></dt>
-<dd><p>kappa = exp(B_theta_K * theta_K), for the non-stationary model, it is the range parameter (same as theta_kappa, deprecated)</p></dd>
-
-
 <dt id="arg-theta-kappa">theta_kappa<a class="anchor" aria-label="anchor" href="#arg-theta-kappa"></a></dt>
-<dd><p>kappa = exp(B_theta_K * theta_K), for the non-stationary model, it is the range parameter</p></dd>
+<dd><p>kappa = exp(B_kappa * theta_kappa), for the non-stationary model, it is the range parameter</p></dd>
 
 
 <dt id="arg-rational-order">rational_order<a class="anchor" aria-label="anchor" href="#arg-rational-order"></a></dt>
 <dd><p>order of rational approximation for fractional operators (default: 2)</p></dd>
 
 
-<dt id="arg-b-theta-k">B_theta_K<a class="anchor" aria-label="anchor" href="#arg-b-theta-k"></a></dt>
-<dd><p>bases for theta_K, ignore if use the stationary model</p></dd>
-
-
-<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>ignore</p></dd>
+<dt id="arg-b-kappa">B_kappa<a class="anchor" aria-label="anchor" href="#arg-b-kappa"></a></dt>
+<dd><p>bases for theta_kappa, ignore if use the stationary model</p></dd>
 
 </dl></div>
     <div class="section level2">

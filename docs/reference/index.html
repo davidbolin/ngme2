@@ -20,18 +20,16 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-vignettes" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Vignettes</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-vignettes"><li><a class="dropdown-item" href="../articles/Installation_and_configuration.html">Installation and configuration (using OpenMP)</a></li>
-    <li><a class="dropdown-item" href="../articles/inla_compare.html">Comparison with R-INLA</a></li>
     <li><a class="dropdown-item" href="../articles/AR1-model.html">AR(1) model</a></li>
     <li><a class="dropdown-item" href="../articles/RW-model.html">Random walk model</a></li>
-    <li><a class="dropdown-item" href="../article/ngme2_ou_vignette.html">Ornstein-Uhlenbeck process</a></li>
+    <li><a class="dropdown-item" href="../article/ou-process.html">Ornstein-Uhlenbeck process</a></li>
     <li><a class="dropdown-item" href="../articles/SPDE-model.html">SPDE Matern model</a></li>
     <li><a class="dropdown-item" href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a></li>
     <li><a class="dropdown-item" href="../articles/replicate.html">Models with replicates</a></li>
-    <li><a class="dropdown-item" href="../articles/pred_and_est.html">Model estimation and prediction</a></li>
+    <li><a class="dropdown-item" href="../articles/pred-and-est.html">Model estimation and prediction</a></li>
     <li><a class="dropdown-item" href="../articles/bivariate.html">Bivariate models in Ngme2</a></li>
-    <li><a class="dropdown-item" href="../articles/tp-bv.html">Space-time bivariate model in Ngme2</a></li>
     <li><a class="dropdown-item" href="../articles/random-effect.html">Random effects model in Ngme2</a></li>
-    <li><a class="dropdown-item" href="../articles/tensor_product.html">Space-time (tensor product) model in Ngme2</a></li>
+    <li><a class="dropdown-item" href="../articles/tensor-product.html">Space-time (tensor product) model in Ngme2</a></li>
     <li><a class="dropdown-item" href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a></li>
     <li><a class="dropdown-item" href="../articles/cross-validation.html">Cross-validation for the ngme2 models</a></li>
     <li><a class="dropdown-item" href="../articles/generic.html">Using the Generic Model in ngme2</a></li>
@@ -179,7 +177,7 @@
           <code><a href="ou.html">ou()</a></code>
 
         </dt>
-        <dd>ngme Ornstein–Uhlenbeck process specification</dd>
+        <dd>Ornstein-Uhlenbeck Process Model</dd>
       </dl><dl><dt>
 
           <code><a href="iid.html">iid()</a></code>
@@ -200,22 +198,10 @@
         <dd>Ngme bivariate model specification</dd>
       </dl><dl><dt>
 
-          <code><a href="bv_normal.html">bv_normal()</a></code>
+          <code><a href="bv_matern.html">bv_matern()</a></code>
 
         </dt>
-        <dd>Ngme bivariate model specification on operator (theta=0)</dd>
-      </dl><dl><dt>
-
-          <code><a href="bv_matern_normal.html">bv_matern_normal()</a></code>
-
-        </dt>
-        <dd>Ngme bivariate model specification (theta=0)</dd>
-      </dl><dl><dt>
-
-          <code><a href="bv_matern_nig.html">bv_matern_nig()</a></code>
-
-        </dt>
-        <dd>Ngme bivariate model with NIG noise</dd>
+        <dd>Ngme bivariate model with Matern sub_models</dd>
       </dl><dl><dt>
 
           <code><a href="compute_score_given_pred.html">compute_score_given_pred()</a></code>
@@ -433,6 +419,24 @@
 
 
       <dl><dt>
+
+          <code><a href="ngme_update.html">ngme_update()</a></code>
+
+        </dt>
+        <dd>Update ngme2 to the latest stable version</dd>
+      </dl><dl><dt>
+
+          <code><a href="ngme_optimizers.html">ngme_optimizers()</a></code>
+
+        </dt>
+        <dd>List supported optimizers</dd>
+      </dl><dl><dt>
+
+          <code><a href="get_data_from_formula.html">get_data_from_formula()</a></code>
+
+        </dt>
+        <dd>Extracts design matrix from a formula and data.</dd>
+      </dl><dl><dt>
 
           <code><a href="compute_log_like.html">compute_log_like()</a></code>
 

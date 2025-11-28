@@ -64,7 +64,7 @@ set.seed(123)
 
 # Define OU parameters
 n_obs <- 200
-theta_true <- 0.15   # Mean-reversion parameter
+theta_true <- 0.15 # Mean-reversion parameter
 
 # NIG noise parameters
 mu_true <- 0.5
@@ -80,8 +80,7 @@ time_mesh <- fmesher::fm_mesh_1d(
 # Create OU model specification for simulation with NIG noise
 ou_spec <- f(
   map = 1:n_obs,
-  model = "ou",
-  theta_mu = theta_true,
+  model = ou(theta_mu = theta_true),
   noise = noise_nig(mu = mu_true, sigma = sigma_true, nu = nu_true)
 )
 
@@ -104,16 +103,22 @@ plot_data <- data.frame(
 )
 
 ggplot(plot_data, aes(x = time)) +
-  geom_line(aes(y = latent, color = "True Latent OU Process"), 
-            linewidth = 0.6, alpha = 0.7) +
-  geom_line(aes(y = observed, color = "Observed Data"), 
-            linewidth = 0.4, alpha = 0.8) +
-  scale_color_manual(values = c("True Latent OU Process" = "#2E86AB", 
-                                 "Observed Data" = "#A23B72")) +
+  geom_line(aes(y = latent, color = "True Latent OU Process"),
+    linewidth = 0.6, alpha = 0.7
+  ) +
+  geom_line(aes(y = observed, color = "Observed Data"),
+    linewidth = 0.4, alpha = 0.8
+  ) +
+  scale_color_manual(values = c(
+    "True Latent OU Process" = "#2E86AB",
+    "Observed Data" = "#A23B72"
+  )) +
   labs(
     title = "Simulated OU Time Series with NIG Noise",
-    subtitle = sprintf("θ = %.2f, NIG(μ=%.1f, σ=%.1f, ν=%.1f)", 
-                      theta_true, mu_true, sigma_true, nu_true),
+    subtitle = sprintf(
+      "θ = %.2f, NIG(μ=%.1f, σ=%.1f, ν=%.1f)",
+      theta_true, mu_true, sigma_true, nu_true
+    ),
     x = "Time",
     y = "Value",
     color = ""
@@ -157,25 +162,25 @@ We create indices for both expanding and sliding window approaches:
 ```{r make_cv_indices}
 # Create indices using the EXPANDING WINDOW approach
 cv_indices_expanding <- make_time_series_cv_index(
-  time_idx = 1:n_obs,       # Time indices: 1 to 1000
-  train_length = NULL,      # NULL = expanding window
-  test_length = 10,         # Predict 10 steps ahead in each fold
-  gap = 0                   # No gap between train and test
+  time_idx = 1:n_obs, # Time indices: 1 to 1000
+  train_length = NULL, # NULL = expanding window
+  test_length = 10, # Predict 10 steps ahead in each fold
+  gap = 0 # No gap between train and test
 )
 
 # Subsetting to have at least 150 observations in training test
 min_obs_train <- 150
 total_train_test <- length(cv_indices_expanding$train)
 
-cv_indices_expanding$train <- 
-    cv_indices_expanding$train[min_obs_train:total_train_test]
-cv_indices_expanding$test <- 
-    cv_indices_expanding$test[min_obs_train:total_train_test]
+cv_indices_expanding$train <-
+  cv_indices_expanding$train[min_obs_train:total_train_test]
+cv_indices_expanding$test <-
+  cv_indices_expanding$test[min_obs_train:total_train_test]
 
 # Create indices using the SLIDING WINDOW approach for comparison
 cv_indices_sliding <- make_time_series_cv_index(
   time_idx = 1:n_obs,
-  train_length = 50,        # Fixed training window of 50 observations
+  train_length = 50, # Fixed training window of 50 observations
   test_length = 10,
   gap = 0
 )
@@ -184,10 +189,10 @@ cv_indices_sliding <- make_time_series_cv_index(
 min_idx_train <- 100
 total_train_test <- length(cv_indices_sliding$train)
 
-cv_indices_sliding$train <- 
-    cv_indices_sliding$train[min_idx_train:total_train_test]
-cv_indices_sliding$test <- 
-    cv_indices_sliding$test[min_idx_train:total_train_test]
+cv_indices_sliding$train <-
+  cv_indices_sliding$train[min_idx_train:total_train_test]
+cv_indices_sliding$test <-
+  cv_indices_sliding$test[min_idx_train:total_train_test]
 
 # We'll use the expanding window for our analysis
 cv_indices <- cv_indices_expanding
@@ -199,8 +204,10 @@ The structure of the created folds is summarized below:
 knitr::kable(
   data.frame(
     Approach = c("Expanding Window", "Expanding Window", "Sliding Window", "Sliding Window"),
-    Characteristic = c("Number of folds", "Fold 3 training size", 
-                       "Number of folds", "Fold 3 training size"),
+    Characteristic = c(
+      "Number of folds", "Fold 3 training size",
+      "Number of folds", "Fold 3 training size"
+    ),
     Value = c(
       length(cv_indices_expanding$train),
       length(cv_indices_expanding$train[[3]]),
@@ -230,14 +237,14 @@ for (i in 1:length(cv_indices$train)) {
     fold = i,
     set_type = "Training"
   )
-  
+
   # Add testing points
   test_df <- data.frame(
     time = cv_indices$test[[i]],
     fold = i,
     set_type = "Testing"
   )
-  
+
   folds_viz <- rbind(folds_viz, train_df, test_df)
 }
 
@@ -272,21 +279,20 @@ For comparison, here is the sliding window approach:
 folds_viz_sliding <- data.frame()
 
 for (i in 1:length(cv_indices_sliding$train)) {
-  
   # Training
   train_df <- data.frame(
     time = cv_indices_sliding$train[[i]],
     fold = i,
     set_type = "Training"
   )
-  
+
   # Testing
   test_df <- data.frame(
     time = cv_indices_sliding$test[[i]],
     fold = i,
     set_type = "Testing"
   )
-  
+
   folds_viz_sliding <- rbind(folds_viz_sliding, train_df, test_df)
 }
 
@@ -324,7 +330,7 @@ data_df <- data.frame(y = y, time_idx = 1:n_obs)
 
 # Fit OU model with NIG noise (the true model)
 fit_ou <- ngme(
-  y ~ 0 + f(time_idx, model = "ou", noise = noise_nig()),
+  y ~ 0 + f(time_idx, model = ou(), noise = noise_nig()),
   data = data_df,
   control_opt = control_opt(
     iterations = 2000,
@@ -342,8 +348,10 @@ fit_ou <- ngme(
 fit_matern <- ngme(
   y ~ 0 + f(
     time_idx,
-    model = "matern",
-    mesh = time_mesh,
+    model = matern(
+      mesh = time_mesh,
+      alpha = 2
+    ),
     noise = noise_nig()
   ),
   data = data_df,
@@ -370,8 +378,8 @@ cv_results <- cross_validation(
   type = "custom",
   train_idx = cv_indices$train,
   test_idx = cv_indices$test,
-  N_sim = 5,               # Number of simulations for each fold
-  n_gibbs_samples = 500,   # Gibbs samples for CRPS computation
+  N_sim = 5, # Number of simulations for each fold
+  n_gibbs_samples = 500, # Gibbs samples for CRPS computation
   seed = 123
 )
 ```
@@ -426,7 +434,7 @@ Assumes a constant range parameter \(\kappa(s) = \kappa\). The spatial field the
 **Non stationary SPDE Matérn model**  
 Allows the range parameter to vary spatially via
 \[
-\log \kappa(s) = B(s)\,\theta_K,
+\log \kappa(s) = B(s)\,\theta_kappa,
 \]
 where \(B(s)\) contains spatial basis functions. This allows the model to capture heterogeneous spatial scales, with shorter ranges where \(\kappa(s)\) is large and smoother behavior where \(\kappa(s)\) is small.
 
@@ -444,14 +452,16 @@ First, we construct a triangulation mesh for the SPDE approach.
 ```{r spatial_setup}
 # Define a rectangular domain
 set.seed(42)
-domain_boundary <- cbind(c(0, 10, 10, 0, 0),
-                         c(0, 0, 5, 5, 0))
+domain_boundary <- cbind(
+  c(0, 10, 10, 0, 0),
+  c(0, 0, 5, 5, 0)
+)
 
 # Create mesh with fmesher
 mesh <- fm_mesh_2d(
   loc.domain = domain_boundary,
-  cutoff = 0.15,          # Minimum distance between points
-  max.edge = c(0.4, 1.5)  # Maximum triangle edge length
+  cutoff = 0.15, # Minimum distance between points
+  max.edge = c(0.4, 1.5) # Maximum triangle edge length
 )
 ```
 
@@ -498,10 +508,10 @@ B_kappa <- cbind(
 )
 
 # True coefficients for log(kappa)
-true_theta_K <- c(3, 1, -1)
+true_theta_kappa <- c(3, 1, -1)
 
 # Compute kappa(s)
-log_kappa_true <- B_kappa %*% true_theta_K
+log_kappa_true <- B_kappa %*% true_theta_kappa
 kappa_true <- exp(as.vector(log_kappa_true))
 
 # ------------------------------------------------------
@@ -534,9 +544,9 @@ The spatial variation in \(\kappa(s)\) and \(\sigma(s)\) is summarised below.
 knitr::kable(
   data.frame(
     Parameter = c("kappa", "sigma"),
-    Min  = sprintf("%.3f", c(min(kappa_true),  min(sigma_true))),
+    Min = sprintf("%.3f", c(min(kappa_true), min(sigma_true))),
     Mean = sprintf("%.3f", c(mean(kappa_true), mean(sigma_true))),
-    Max  = sprintf("%.3f", c(max(kappa_true),  max(sigma_true)))
+    Max = sprintf("%.3f", c(max(kappa_true), max(sigma_true)))
   ),
   caption = "Spatial variation in kappa and sigma",
   align = c("l", "r", "r", "r")
@@ -595,10 +605,12 @@ true_noise <- noise_nig(
 # Full non-stationary SPDE model
 true_model <- f(
   map = loc_obs,
-  model = "matern",
-  mesh = mesh,
-  B_theta_K = B_kappa,
-  theta_K = true_theta_K,
+  model = matern(
+    alpha = 2,
+    mesh = mesh,
+    B_kappa = B_kappa,
+    theta_kappa = true_theta_kappa
+  ),
   noise = true_noise
 )
 
@@ -674,10 +686,11 @@ We now fit two competing models to these simulated data.
 fit_stationary <- ngme(
   Y ~ 0 + f(
     loc_obs,
-    model = "matern",
     name = "spde_stationary",
-    mesh = mesh,
-    noise = noise_nig() 
+    model = matern(
+      mesh = mesh
+    ),
+    noise = noise_nig()
   ),
   data = data.frame(Y = Y_spatial),
   control_opt = control_opt(
@@ -696,13 +709,16 @@ fit_stationary <- ngme(
 fit_nonstationary <- ngme(
   Y ~ 0 + f(
     loc_obs,
-    model = "matern",
     name = "spde_nonstationary",
-    mesh = mesh,
-    B_theta_K = B_kappa,          # Basis for kappa variation
-    theta_K = c(2,0,0), # Starting values of kappa
-    noise = noise_nig(B_sigma = B_sigma, # Basis for sigma variation
-                      theta_sigma = c(4,0,0)) # Starting values of sigma
+    model = matern(
+      mesh = mesh,
+      B_kappa = B_kappa, # Basis for kappa variation
+      theta_kappa = c(2, 0, 0), # Starting values of kappa
+    ),
+    noise = noise_nig(
+      B_sigma = B_sigma, # Basis for sigma variation
+      theta_sigma = c(4, 0, 0)
+    ) # Starting values of sigma
   ),
   data = data.frame(Y = Y_spatial),
   control_opt = control_opt(
@@ -839,16 +855,16 @@ This makes LPO with a small training fraction a strong diagnostic tool.
 set.seed(707)
 
 percent_train <- 0.30
-percent_test  <- 0.70
+percent_test <- 0.70
 n_reps <- 5
 n_data <- nrow(loc_obs)
 
 train_idx_lpo <- vector("list", n_reps)
-test_idx_lpo  <- vector("list", n_reps)
+test_idx_lpo <- vector("list", n_reps)
 
 for (i in 1:n_reps) {
   train_idx_lpo[[i]] <- sample(1:n_data, size = floor(percent_train * n_data))
-  test_idx_lpo[[i]]  <- setdiff(1:n_data, train_idx_lpo[[i]])
+  test_idx_lpo[[i]] <- setdiff(1:n_data, train_idx_lpo[[i]])
 }
 ```
 
@@ -859,7 +875,8 @@ df_lpo <- data.frame(
   x = loc_obs[, 1],
   y = loc_obs[, 2],
   set_type = ifelse(1:n_data %in% train_idx_lpo[[1]],
-                    "Train (30%)", "Test (70%)")
+    "Train (30%)", "Test (70%)"
+  )
 )
 
 ggplot(df_lpo, aes(x = x, y = y, colour = set_type, size = set_type)) +
@@ -902,6 +919,6 @@ cv_spatial_lpo <- cross_validation(
 knitr::kable(
   round(cv_spatial_lpo$mean.scores, 4),
   caption = "Leave-percentage-out spatial cross-validation (30% train, 70% test, 5 repetitions)",
-  align = c("r","r","r","r")
+  align = c("r", "r", "r", "r")
 )
 ```

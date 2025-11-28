@@ -1143,3 +1143,71 @@ extract_parameters <- function(ngme_object) {
 
   list(transformed = result_transformed, raw = result_raw)
 }
+
+
+
+
+#' Extracts design matrix from a formula and data.
+#'
+#' This function takes a formula and a data frame, and returns a design matrix
+#' based on the right-hand side of the formula. If the formula is `~.`, it treats
+#' all columns in the data as the design matrix. Otherwise, it constructs a
+#' design matrix without an intercept based on the specified formula.
+#'
+#' @param form A formula object, e.g., `~ x1 + x2` or `~.`.
+#' @param data A data frame or matrix from which to extract the design matrix.
+#' @return A numeric matrix representing the design matrix.
+#' @examples
+#' data(mtcars)
+#' # Extract a design matrix for 'mpg' and 'cyl'
+#' X1 <- get_data_from_formula(~ mpg + cyl, mtcars)
+#' # Extract a design matrix for all columns
+#' X2 <- get_data_from_formula(~., mtcars)
+#' # Extract a design matrix for 'hp'
+#' X3 <- get_data_from_formula(~hp, mtcars)
+get_data_from_formula <- function(form, data) {
+  form <- as.formula(form)
+
+  if (identical(form, ~.)) {
+    return(as.matrix(data))
+  }
+
+  rhs <- deparse(form[[2]])
+  form_no_intercept <- as.formula(paste("~ 0 +", rhs))
+
+  mf <- model.frame(form_no_intercept, data = data)
+
+  X <- model.matrix(form_no_intercept, data = mf)
+
+  return(X)
+}
+
+#' Update ngme2 to the latest stable version
+#'
+#' @return void
+#' @export
+ngme_update <- function() {
+  local_version <- utils::packageVersion("ngme2")
+  repos <- "https://davidbolin.github.io/ngme2/"
+
+  # Check available version in the repository
+  available <- tryCatch(
+    utils::available.packages(repos = repos),
+    error = function(e) NULL
+  )
+
+  if (is.null(available) || !"ngme2" %in% rownames(available)) {
+    message("Could not check for updates. Please check your internet connection or the repository URL.")
+    return(invisible(NULL))
+  }
+
+  remote_version <- available["ngme2", "Version"]
+
+  if (utils::compareVersion(as.character(remote_version), as.character(local_version)) > 0) {
+    message(paste0("New stable version available: ", remote_version, " (local: ", local_version, ")"))
+    message("Installing...")
+    utils::install.packages("ngme2", repos = repos)
+  } else {
+    message(paste0("ngme2 is up to date (version ", local_version, ")"))
+  }
+}

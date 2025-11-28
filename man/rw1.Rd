@@ -4,7 +4,7 @@
 \alias{rw1}
 \title{Random Walk Model of Order 1 (RW1)}
 \usage{
-rw1(mesh = NULL, cyclic = FALSE, constr = TRUE, ...)
+rw1(mesh = NULL, cyclic = FALSE, constr = TRUE)
 }
 \arguments{
 \item{mesh}{numerical vector or inla.mesh.1d object, locations to build the mesh.
@@ -16,8 +16,6 @@ locations are treated as neighbors. Cannot be FALSE when constr = TRUE.}
 \item{constr}{logical, whether to enforce the sum-to-zero constraint
 \eqn{\sum_{i=1}^n h_i W_i = 0}. If FALSE, fixes the first element \eqn{W_1 = 0}.
 Must be TRUE for cyclic models.}
-
-\item{...}{additional arguments (currently unused)}
 }
 \value{
 An `ngme_operator` object containing the precision matrix and related

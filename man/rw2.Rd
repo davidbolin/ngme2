@@ -4,7 +4,7 @@
 \alias{rw2}
 \title{Random Walk Model of Order 2 (RW2)}
 \usage{
-rw2(mesh = NULL, cyclic = FALSE, constr = TRUE, ...)
+rw2(mesh = NULL, cyclic = FALSE, constr = TRUE)
 }
 \arguments{
 \item{mesh}{numerical vector or inla.mesh.1d object, locations to build the mesh.
@@ -17,8 +17,6 @@ across the boundary.}
 \item{constr}{logical, whether to enforce the sum-to-zero constraint \eqn{\sum_{i=1}^n h_i W_i = 0}
 and the linear trend constraint \eqn{\sum_{i=1}^n (\sum_{j=1}^i h_j - h_1) \cdot W_i = 0}.
 If FALSE, fixes the first and second elements \eqn{W_1 = 0} and \eqn{W_2 = 0}.}
-
-\item{...}{additional arguments (currently unused)}
 }
 \value{
 An `ngme_operator` object containing the precision matrix and related

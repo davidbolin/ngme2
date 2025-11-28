@@ -257,3 +257,11 @@ adaptive_gd <- function(
   class(ret) <- "ngme_optimizer"
   ret
 }
+
+#' List supported optimizers
+#'
+#' @return a list of supported optimizers
+#' @export
+ngme_optimizers <- function() {
+  c("sgd", "precond_sgd", "momentum", "adagrad", "rmsprop", "adam", "adamW", "bfgs", "adaptive_gd")
+}

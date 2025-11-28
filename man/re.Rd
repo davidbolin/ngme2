@@ -4,14 +4,12 @@
 \alias{re}
 \title{ngme random effect model}
 \usage{
-re(map, theta_K = NULL, ...)
+re(map, theta_K = NULL)
 }
 \arguments{
 \item{map}{numerical vector, covariates to build index for the process (can be formula, provided data)}
 
 \item{theta_K}{initial value for theta_K (build covariance matrix)}
-
-\item{...}{ignore}
 }
 \value{
 ngme_operator object

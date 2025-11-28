@@ -1,8 +1,8 @@
 ---
-title: "Ngme2 AR(1) model"
+title: "AR(1) model in ngme2"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Ngme2 AR(1) model}
+  %\VignetteIndexEntry{AR(1) model in ngme2}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -142,8 +142,8 @@ This matrix formulation not only establishes a direct connection to the precisio
 
 ### Basic Syntax
 
-To specify an AR(1) model in `ngme2`, use the `f()` function with the `model="ar1"` argument within your model formula:
-`f(time_index, model="ar1")`.
+To specify an AR(1) model in `ngme2`, use the `f()` function with the `model=ar1()` argument within your model formula:
+`f(time_index, model=ar1())`.
 When not specifying the `noise` argument in `f()`, the process defaults to Gaussian noise. For simulation purposes, it is important to define the `sigma` parameter in the `noise` specification, as this controls the variance of the innovations. For estimation, however, specifying `sigma` is optional since the model will automatically estimate this parameter from the observed data.
 
 ### Basic Usage Example
@@ -611,7 +611,7 @@ ngme_out <- ngme(
 )
 ```
 
-The formula `Y ~ 0 + x1 + x2 + x3 + f(...)` specifies that the response variable `Y` depends on three fixed effects (`x1`, `x2`, `x3`) with no intercept (the `0` term), plus a latent AR(1) process defined through the `f()` function. The latent model is specified with `f(1:n_obs, name = "my_ar", model = "ar1", noise = noise_nig())`, where we assign a name to the process for later reference and specify NIG innovations without fixing the parameters (allowing them to be estimated).
+The formula `Y ~ 0 + x1 + x2 + x3 + f(...)` specifies that the response variable `Y` depends on three fixed effects (`x1`, `x2`, `x3`) with no intercept (the `0` term), plus a latent AR(1) process defined through the `f()` function. The latent model is specified with `f(1:n_obs, name = "my_ar", model = ar1(), noise = noise_nig())`, where we assign a name to the process for later reference and specify NIG innovations without fixing the parameters (allowing them to be estimated).
 
 The `control_opt()` function manages the optimization process through several key parameters:
 
@@ -720,7 +720,7 @@ The model is fitted using only the training portion of the data. The time index 
 ar1_train <- f(
   1:n_train,
   name = "my_ar",
-  model = "ar1",
+  model = ar1(),
   noise = noise_nig()
 )
 ```

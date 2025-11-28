@@ -4,21 +4,16 @@
 \alias{ar1}
 \title{ngme AR(1) model specification}
 \usage{
-ar1(mesh = NULL, rho = 0, ...)
+ar1(mesh = NULL, rho = 0)
 }
 \arguments{
 \item{mesh}{integer vector or inla.mesh.1d object, index to build the mesh}
 
 \item{rho}{the correlation parameter (between -1 and 1)}
-
-\item{...}{ignore}
 }
 \value{
 ngme_operator object
 }
 \description{
 ngme AR(1) model specification
-}
-\examples{
-ar1(1:10)
 }

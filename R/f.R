@@ -107,29 +107,19 @@ f <- function(
     message("Using character strings for 'model' is not recommended (will be deprecated in the future). Please consider using operator functions like matern(), ar1(), etc. (e.g., model = matern()).")
   }
 
-  if ((missing(map) || (is.null(map))) && inherits(mesh, "metric_graph")) {
-    stopifnot(
-      "To use metric graph model, please install MetricGraph package" = rlang::is_installed("MetricGraph")
-    )
-
-    # extract the map
-    graph_data <- (tryCatch(mesh$get_data(), error = function(e) NULL))
-    map <- if (is.null(graph_data)) {
-      NULL
-    } else {
-      with(graph_data, cbind(`.edge_number`, `.distance_on_edge`))
-    }
-  }
-
   map <- eval(substitute(map), envir = data, enclos = parent.frame())
 
+  # Evaluate map expression (promises are forced here so we can inspect it consistently)
   if (inherits(map, "formula")) {
-    model_for_formula <- if (inherits(model, "ngme_operator")) model$model else if (inherits(model, "ngme_operator_def")) model$model else model
-    if (model_for_formula == "bv_matern") {
-      map <- model.matrix(map, data)
-    } else {
-      map <- model.matrix(map, data)[, -1]
-    }
+    map <- get_data_from_formula(map, data)
+  } else if (is.list(map)) {
+    map <- lapply(map, function(m) {
+      if (inherits(m, "formula")) {
+        get_data_from_formula(m, data)
+      } else {
+        m
+      }
+    })
   }
 
   if (!is.null(data) && is.null(A)) {

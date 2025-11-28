@@ -237,6 +237,13 @@ ngme <- function(
     }
     cat("Posterior sampling done! \n")
     cat("Average standard deviation of the posterior W: ", sd_W, "\n")
+
+    # print R_hat
+    # if (!is.null(attr(outputs, "R_hat"))) {
+    #   cat("R_hat: \n")
+    #   print(attr(outputs, "R_hat"))
+    # }
+
     cat("Note:
       1. Use ngme_post_samples(..) to access the posterior samples.
       2. Use ngme_result(..) to access different latent models. \n")

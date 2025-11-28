@@ -9,43 +9,50 @@
 #' @export
 #'
 #' @examples
-#' simulate(f(1:10, model="ar1", rho = 0.4, noise = noise_nig()))
-#' simulate(f(rnorm(10), model="rw1", noise = noise_normal()))
-#' simulate(f(1:10, model="ar1", rho = 0.4, noise = noise_t(nu = 5)))
+#' simulate(f(1:10, model = "ar1", rho = 0.4, noise = noise_nig()))
+#' simulate(f(rnorm(10), model = "rw1", noise = noise_normal()))
+#' simulate(f(1:10, model = "ar1", rho = 0.4, noise = noise_t(nu = 5)))
 simulate.ngme_model <- function(
-  object,
-  nsim = 1,
-  seed = NULL,
-  ...
-) {
+    object,
+    nsim = 1,
+    seed = NULL,
+    ...) {
   if (is.null(seed)) seed <- Sys.time()
   model <- object
   noise <- model$noise
 
-  sims <- list(); V_sim <- list(); W_sim <- list()
+  sims <- list()
+  V_sim <- list()
+  W_sim <- list()
   for (nn in 1:nsim) {
     seed <- seed + nn
     # simulate noise
     h <- model$operator$h
-    mu    <- as.numeric(noise$B_mu %*% noise$theta_mu)
+    mu <- as.numeric(noise$B_mu %*% noise$theta_mu)
     sigma <- as.numeric(exp(noise$B_sigma %*% noise$theta_sigma))
-    nu    <- as.numeric(exp(noise$B_nu %*% noise$theta_nu))
+    nu <- as.numeric(exp(noise$B_nu %*% noise$theta_nu))
     n <- length(mu)
 
     if (length(noise$noise_type) == 2) {
       # bivariate noise
-      e1 <- simulate_noise(noise$noise_type[[1]],
-        head(h, n/2), head(mu, n/2), head(sigma, n/2), head(nu, n/2),
-        seed+1000, noise$single_V)
-      if (noise$share_V)
+      e1 <- simulate_noise(
+        noise$noise_type[[1]],
+        head(h, n / 2), head(mu, n / 2), head(sigma, n / 2), head(nu, n / 2),
+        seed + 1000, noise$single_V
+      )
+      if (noise$share_V) {
         e2 <- e1
-      else e2 <- simulate_noise(noise$noise_type[[2]],
-        tail(h, n/2), tail(mu, n/2), tail(sigma, n/2), tail(nu, n/2),
-        seed+2000, noise$single_V)
-      e <- c(e1, e2);
+      } else {
+        e2 <- simulate_noise(
+          noise$noise_type[[2]],
+          tail(h, n / 2), tail(mu, n / 2), tail(sigma, n / 2), tail(nu, n / 2),
+          seed + 2000, noise$single_V
+        )
+      }
+      e <- c(e1, e2)
       attr(e, "V") <- c(attr(e1, "V"), attr(e2, "V"))
     } else {
-      e <- simulate_noise(noise$noise_type, h, mu, sigma, nu, seed+3, noise$single_V)
+      e <- simulate_noise(noise$noise_type, h, mu, sigma, nu, seed + 3, noise$single_V)
     }
 
     W <- as.numeric(solve(model$operator$K, model$operator$Z %*% e))
@@ -53,7 +60,7 @@ simulate.ngme_model <- function(
     # Need to map W and V to data by A matrix!!!
     if (is.null(model$A)) {
       # model does not contain A matrix, e.g., Matern graph model!
-      sims[[paste0("sim_", nn)]] <-  W
+      sims[[paste0("sim_", nn)]] <- W
       V_sim[[paste0("sim_", nn)]] <- attr(e, "V")
       W_sim[[paste0("sim_", nn)]] <- W
     } else {
@@ -72,8 +79,7 @@ simulate.ngme_model <- function(
 }
 
 simulate_noise <- function(
-  noise_type, h_vec, mu_vec, sigma_vec, nu_vec, seed, single_V
-) {
+    noise_type, h_vec, mu_vec, sigma_vec, nu_vec, seed, single_V) {
   set.seed(seed)
   stopifnot(
     length(mu_vec) == length(sigma_vec),
@@ -85,15 +91,24 @@ simulate_noise <- function(
   if (noise_type == "normal") {
     V <- h_vec
   } else if (noise_type == "nig" || noise_type == "normal_nig") {
-    V <- if (single_V) h_vec * ngme2::rig(1, a=nu_vec[1], b=nu_vec[1], seed=seed)
-      else ngme2::rig(n, a=nu_vec, b=nu_vec * (h_vec)^2, seed = seed)
+    V <- if (single_V) {
+      h_vec * ngme2::rig(1, a = nu_vec[1], b = nu_vec[1], seed = seed)
+    } else {
+      ngme2::rig(n, a = nu_vec, b = nu_vec * (h_vec)^2, seed = seed)
+    }
   } else if (noise_type == "gal") {
-    V <- if (single_V) h_vec * rgamma(1, nu_vec[1], nu_vec[1])
-      else rgamma(n, shape = h_vec * nu_vec, rate = nu_vec)
+    V <- if (single_V) {
+      h_vec * rgamma(1, nu_vec[1], nu_vec[1])
+    } else {
+      rgamma(n, shape = h_vec * nu_vec, rate = nu_vec)
+    }
   } else if (noise_type == "t" || noise_type == "skew_t") {
     # For t-distribution, auxiliary variable V ~ InverseGamma(nu/2, nu/2)
-    V <- if (single_V) h_vec * ngme2::rigam(1, a=nu_vec[1]/2, b=nu_vec[1]/2)
-      else ngme2::rigam(n, a=nu_vec/2, b=nu_vec/2)
+    V <- if (single_V) {
+      h_vec * ngme2::rigam(1, a = nu_vec[1] / 2, b = nu_vec[1] / 2)
+    } else {
+      ngme2::rigam(n, a = nu_vec / 2, b = nu_vec / 2)
+    }
   } else {
     stop("unknown noise to simulate")
   }
@@ -114,12 +129,11 @@ simulate_noise <- function(
 #' @return data.frame (each col is a realization)
 #' @export
 simulate.ngme_noise <- function(
-  object,
-  nsim = 1,
-  seed = NULL,
-  h = NULL,
-  ...
-) {
+    object,
+    nsim = 1,
+    seed = NULL,
+    h = NULL,
+    ...) {
   n_noise <- max(nrow(object$B_mu), nrow(object$B_sigma), nrow(object$B_nu))
   if (is.null(seed)) seed <- Sys.time()
   if (is.null(h)) h <- rep(1, n_noise)
@@ -129,9 +143,9 @@ simulate.ngme_noise <- function(
   sims <- list()
   for (nn in 1:nsim) {
     seed <- seed + nn
-    sims[[paste0("sim_", nn)]] <-  with(object, {
+    sims[[paste0("sim_", nn)]] <- with(object, {
       res <- numeric(n_noise)
-      mu_vec    <- as.numeric(B_mu %*% theta_mu)
+      mu_vec <- as.numeric(B_mu %*% theta_mu)
       sigma_vec <- as.numeric(exp(B_sigma %*% theta_sigma))
       nu_vec <- as.numeric(exp(B_nu %*% theta_nu))
       if (length(mu_vec) == 1) mu_vec <- rep(mu_vec, n_noise)
@@ -146,20 +160,24 @@ simulate.ngme_noise <- function(
           is.numeric(object$index_corr),
           "index_corr must be non-decreasing" = all(diff(object$index_corr) >= 0)
         )
-        i = 1;
+        i <- 1
         while (i <= n_noise) {
-          if (i==n_noise || index_corr[[i]] != index_corr[[i+1]]) {
+          if (i == n_noise || index_corr[[i]] != index_corr[[i + 1]]) {
             res[i] <- simulate_noise(noise_type, h[i], mu_vec[i], sigma_vec[i], nu_vec[i], seed + i, single_V)
-            i = i + 1
+            i <- i + 1
           } else {
             # simulate a pair correlated noise
             if (noise_type == "normal") {
               set.seed(seed + i)
-              cov_mat <- matrix(c(sigma_vec[i]^2, sigma_vec[i]*sigma_vec[i+1]*rho,
-                                  sigma_vec[i]*sigma_vec[i+1]*rho, sigma_vec[i+1]^2),
-                                nrow=2)
-              res[i:(i+1)] <- mvtnorm::rmvnorm(1, rep(0, 2), cov_mat)
-              i = i + 2
+              cov_mat <- matrix(
+                c(
+                  sigma_vec[i]^2, sigma_vec[i] * sigma_vec[i + 1] * rho,
+                  sigma_vec[i] * sigma_vec[i + 1] * rho, sigma_vec[i + 1]^2
+                ),
+                nrow = 2
+              )
+              res[i:(i + 1)] <- mvtnorm::rmvnorm(1, rep(0, 2), cov_mat)
+              i <- i + 2
             } else {
               stop("Simulation of correlated NIG and GAL is not implemented yet, return only 0 for now.")
             }
@@ -188,13 +206,12 @@ simulate.ngme_noise <- function(
 #' @return a realization of ngme object
 #' @export
 simulate.ngme <- function(
-  object,
-  posterior = TRUE,
-  m_noise = TRUE,
-  nsim = 1,
-  seed = NULL,
-  ...
-) {
+    object,
+    posterior = TRUE,
+    m_noise = TRUE,
+    nsim = 1,
+    seed = NULL,
+    ...) {
   if (is.null(seed)) seed <- Sys.time()
   attr <- attributes(object)
   sims <- list()
@@ -209,13 +226,13 @@ simulate.ngme <- function(
       this_repl <- object$replicate[[repl]]
       Y[repl_idx] <- simulate_1rep(this_repl, posterior, seed)
 
-      sim_noise <- simulate(this_repl$noise, nsim=1, seed=seed)[[1]]
+      sim_noise <- simulate(this_repl$noise, nsim = 1, seed = seed)[[1]]
       # add measurement noise
       if (m_noise) Y[repl_idx] <- Y[repl_idx] + sim_noise
     }
-    
+
     # If Y is correlated, we need to re-order the simulated Y to match the original Y
-    corr = object$replicates[[1]]$noise$corr_measurement
+    corr <- object$replicates[[1]]$noise$corr_measurement
     if (corr) {
       Y <- Y[order(object$repls_ngme)]
       data_dix <- c()
@@ -232,16 +249,16 @@ simulate.ngme <- function(
 }
 
 # simulate from one replicate
-simulate_1rep <- function(ngme_1rep, posterior=TRUE, seed=NULL) {
+simulate_1rep <- function(ngme_1rep, posterior = TRUE, seed = NULL) {
   # extract A and cbind!
-  As <- list();
+  As <- list()
   for (i in seq_along(ngme_1rep$models)) {
     As[[i]] <- ngme_1rep$models[[i]]$A
   }
   A_block <- Reduce(cbind, x = As)
 
   if (is.null(seed)) seed <- Sys.time()
-  Ws <- sampling_cpp(ngme_1rep, n=1, n_burnin = 1, posterior=posterior, seed=seed)[["W"]] [[1]]
+  Ws <- sampling_cpp(ngme_1rep, n = 1, n_burnin = 1, posterior = posterior, seed = seed)[["W"]][[1]]
 
   # return A W + X beta
   if (!is.null(A_block)) {

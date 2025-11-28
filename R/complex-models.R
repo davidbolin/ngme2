@@ -153,17 +153,15 @@ bv <- function(
 #'
 #' @param first ngme_operator, left side of kronecker model (usually a temporal or iid model)
 #' @param second ngme_operator, right side of kronecker model (ususally a temporal or spatial model)
-#' @param ... ignore
 #'
 #' @return a list of specification of model
 #' @export
 tp <- function(
     first,
-    second,
-    ...) {
+    second) {
   stopifnot(
-    inherits(first, "ngme_operator"),
-    inherits(second, "ngme_operator")
+    "Please provide ngme_operator for first" = inherits(first, "ngme_operator"),
+    "Please provide ngme_operator for second" = inherits(second, "ngme_operator")
   )
 
   theta_K <- c(first$theta_K, second$theta_K)
@@ -213,7 +211,8 @@ bv_matern <- function(
     sub_models,
     theta = 0,
     rho = 0,
-    sd1 = 1, sd2 = 1,
+    sd1 = 1,
+    sd2 = 1,
     group = NULL,
     share_param = FALSE,
     fix_theta = FALSE,
@@ -244,24 +243,20 @@ bv_matern <- function(
   )
   group <- factor(group, levels = model_names)
 
-  # build 2 sub_models (pass environment to sub_models)
-  # delete theta and rho in env_args (to avoid sub_models use them)
-  env_args <- as.list(environment())
-  env_args$theta <- NULL
-  env_args$rho <- NULL
-  arg1 <- sub_models[[model_names[1]]]
-  if (!is.list(arg1)) {
-    first <- build_operator(arg1, env_args)
-  } else {
-    stopifnot("Please provide model=.. in the list" = !is.null(arg1$model))
-    first <- build_operator(arg1$model, modifyList(env_args, arg1))
+  # Inject mesh if sub_models are def
+  first <- sub_models[[model_names[1]]]
+  if (inherits(first, "ngme_operator_def")) {
+    model_name <- first$model
+    args <- first$args
+    args$mesh <- mesh
+    first <- do.call(model_name, args)
   }
-  arg2 <- sub_models[[model_names[2]]]
-  if (!is.list(arg2)) {
-    second <- build_operator(arg2, env_args)
-  } else {
-    stopifnot("Please provide model=.. in the list" = !is.null(arg2$model))
-    second <- build_operator(arg2$model, modifyList(env_args, arg2))
+  second <- sub_models[[model_names[2]]]
+  if (inherits(second, "ngme_operator_def")) {
+    model_name <- second$model
+    args <- second$args
+    args$mesh <- mesh
+    second <- do.call(model_name, args)
   }
 
   eta <- tan(theta)
@@ -370,7 +365,6 @@ bv_matern <- function(
 #' @param B_gamma_x_list A list of design matrices for the x component of the advection term on every time node, length(B_gamma_x_list) == nt-1.
 #' @param B_gamma_y_list A list of design matrices for the y component of the advection term on every time node, length(B_gamma_y_list) == nt-1.
 #' @param stabilization TRUE if using a stabilization term (for implicit Euler).
-#' @param ... Additional arguments (ignored).
 #'
 #' @return ngme_operator object.
 #' @export
@@ -392,8 +386,7 @@ spacetime <- function(
     B_gamma_x_list = NULL,
     B_gamma_y_list = NULL,
     # B_gamma_t = matrix(1, nrow = mesh[[1]]$n, ncol = 1),
-    stabilization = TRUE,
-    ...) {
+    stabilization = TRUE) {
   method <- "euler" # for now only support implicit euler
   if (theta_gamma_x == 0 && theta_gamma_y == 0 && fix_gamma) {
     stabilization <- FALSE

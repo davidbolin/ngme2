@@ -220,10 +220,14 @@ Fixes the first element at zero ($W_1 = 0$) as a reference point.
 
 ```{r unconstrained-models}
 # Unconstrained models (reference point approach)
-rw1_unconstrained <- f(locations, model = "rw1", constr = FALSE,
-                       noise = noise_normal(sigma = 1.0))
-rw2_unconstrained <- f(locations, model = "rw2", constr = FALSE,
-                       noise = noise_normal(sigma = 0.5))
+rw1_unconstrained <- f(locations,
+  model = "rw1", constr = FALSE,
+  noise = noise_normal(sigma = 1.0)
+)
+rw2_unconstrained <- f(locations,
+  model = "rw2", constr = FALSE,
+  noise = noise_normal(sigma = 0.5)
+)
 ```
 
 ### Approach 3: Cyclic Models
@@ -245,10 +249,14 @@ Treats the domain as circular, connecting first and last locations as neighbors.
 
 ```{r cyclic-models}
 # Cyclic models for periodic data
-rw1_cyclic <- f(locations, model = "rw1", cyclic = TRUE,
-                noise = noise_normal(sigma = 1.0))
-rw2_cyclic <- f(locations, model = "rw2", cyclic = TRUE,
-                noise = noise_normal(sigma = 0.5))
+rw1_cyclic <- f(locations,
+  model = "rw1", cyclic = TRUE,
+  noise = noise_normal(sigma = 1.0)
+)
+rw2_cyclic <- f(locations,
+  model = "rw2", cyclic = TRUE,
+  noise = noise_normal(sigma = 0.5)
+)
 ```
 
 ### Model Variant Comparison
@@ -296,9 +304,9 @@ library(Matrix)
 set.seed(16)
 
 # Define different grid configurations
-regular_points <- 1:5          # Simple regular grid
-irregular_points <- c(1, 3, 7, 10, 15)  # Grid with gaps
-larger_grid <- 1:15            # Larger grid for matrix demonstrations
+regular_points <- 1:5 # Simple regular grid
+irregular_points <- c(1, 3, 7, 10, 15) # Grid with gaps
+larger_grid <- 1:15 # Larger grid for matrix demonstrations
 ```
 
 Notice that the irregular grid has gaps at positions 2, 4, 5, 6, 8, 9, 11, 12, 13, and 14. The `ngme2` package handles these gaps seamlessly by constructing the appropriate precision matrix structure internally.
@@ -330,7 +338,7 @@ rw1_cyclic <- f(regular_points,
 
 # Second-order random walk for comparison
 rw2_model <- f(regular_points,
-  model = "rw2", 
+  model = "rw2",
   noise = noise_normal(sigma = 0.8)
 )
 ```
@@ -342,7 +350,7 @@ The different constraint approaches result in different operator matrix structur
 ```{r operator-examination}
 # Compare operator matrix dimensions
 cat("RW1 constrained K matrix:", dim(rw1_constrained$operator$K), "\n")
-cat("RW1 unconstrained K matrix:", dim(rw1_unconstrained$operator$K), "\n") 
+cat("RW1 unconstrained K matrix:", dim(rw1_unconstrained$operator$K), "\n")
 cat("RW1 cyclic K matrix:", dim(rw1_cyclic$operator$K), "\n")
 cat("RW2 constrained K matrix:", dim(rw2_model$operator$K), "\n")
 
@@ -369,9 +377,10 @@ One of `ngme2`'s strengths is seamless handling of irregular observation pattern
 
 ```{r irregular-grid-handling}
 # Create model on irregular grid
-rw1_irregular <- f(irregular_points, 
-                   model = "rw1", 
-                   noise = noise_normal(sigma = 1.0))
+rw1_irregular <- f(irregular_points,
+  model = "rw1",
+  noise = noise_normal(sigma = 1.0)
+)
 
 # Examine the mapping between observed and internal grid
 print("User-specified locations:")
@@ -393,9 +402,9 @@ This matrix formulation provides several computational benefits, particularly in
 library(Matrix)
 
 # Create unconstrained model to show classic sparse structure
-rw1_sparse <- f(1:10,  # Use 10 points for clear demonstration
+rw1_sparse <- f(1:10, # Use 10 points for clear demonstration
   model = "rw1",
-  constr = FALSE,  # Unconstrained for classic tridiagonal sparsity
+  constr = FALSE, # Unconstrained for classic tridiagonal sparsity
   noise = noise_normal(sigma = 1.0)
 )
 
@@ -420,7 +429,7 @@ names(Q_melted) <- c("Row", "Column", "Value")
 # Create a binary sparsity indicator
 Q_melted$Sparsity <- ifelse(abs(Q_melted$Value) < 1e-10, "Zero", "Non-zero")
 
-# Simple binary sparsity pattern 
+# Simple binary sparsity pattern
 p_sparsity_simple <- ggplot(Q_melted, aes(x = Column, y = rev(Row), fill = Sparsity)) +
   geom_tile(color = "white", linewidth = 0.1) +
   scale_fill_manual(values = c("Zero" = "white", "Non-zero" = "#2E86AB")) +
@@ -445,7 +454,7 @@ p_sparsity_simple <- ggplot(Q_melted, aes(x = Column, y = rev(Row), fill = Spars
   ) +
   coord_fixed()
 
-print(p_sparsity_simple)   
+print(p_sparsity_simple)
 ```
 
 Now let us examine the sparsity pattern of the precision matrix, which is crucial for computational efficiency:
@@ -466,11 +475,13 @@ Finally, let us demonstrate how different error variances affect the precision m
 ```{r variance-scaling}
 # Demonstrate how different error variances affect the precision matrix
 sigma2_values <- c(0.5, 2.0, 4.0)
-for(sigma2_test in sigma2_values) {
+for (sigma2_test in sigma2_values) {
   Q_scaled <- (t(rw1_sparse$operator$K) %*% rw1_sparse$operator$K) / sigma2_test
-  print(paste("With sigma^2 =", sigma2_test, 
-              ", Q[1,1] =", round(Q_scaled[1,1], 3),
-              "(scaled by factor 1/", sigma2_test, ")"))
+  print(paste(
+    "With sigma^2 =", sigma2_test,
+    ", Q[1,1] =", round(Q_scaled[1, 1], 3),
+    "(scaled by factor 1/", sigma2_test, ")"
+  ))
 }
 ```
 
@@ -509,14 +520,14 @@ First, we create the random walk model objects using the `f()` function, which s
 
 ```{r gaussian-rw-setup-model}
 # Define RW1 model with Gaussian noise
-rw1_gaussian <- f(time_index, 
-  model = "rw1", 
+rw1_gaussian <- f(time_index,
+  model = "rw1",
   noise = noise_normal(sigma = 2.0)
 )
 
 # Define RW2 model with Gaussian noise (smaller sigma for comparison)
-rw2_gaussian <- f(time_index, 
-  model = "rw2", 
+rw2_gaussian <- f(time_index,
+  model = "rw2",
   noise = noise_normal(sigma = 0.6)
 )
 ```
@@ -546,7 +557,7 @@ gaussian_data <- data.frame(
 # Create separate plots with independent scales
 p1 <- ggplot(gaussian_data, aes(x = time, y = value, color = model)) +
   geom_line(alpha = 0.8, linewidth = 0.3) +
-  facet_wrap(~ model, scales = "free_y", ncol = 1) +
+  facet_wrap(~model, scales = "free_y", ncol = 1) +
   scale_color_manual(values = c("RW1" = "#2E86AB", "RW2" = "#F18F01")) +
   labs(
     title = "Gaussian Random Walks Comparison",
@@ -558,7 +569,7 @@ p1 <- ggplot(gaussian_data, aes(x = time, y = value, color = model)) +
   theme_minimal() +
   theme(
     plot.title = element_text(size = 12, face = "bold"),
-    legend.position = "none",  # Remove legend since facet labels show model type
+    legend.position = "none", # Remove legend since facet labels show model type
     strip.text = element_text(size = 10, face = "bold")
   )
 
@@ -571,15 +582,15 @@ Now let us explore the flexibility of non-Gaussian innovations using the Normal 
 
 ```{r nig-rw-setup-model}
 # Define RW1 model with NIG noise
-rw1_nig <- f(time_index, 
-  model = "rw1", 
+rw1_nig <- f(time_index,
+  model = "rw1",
   rho = 0.5,
   noise = noise_nig(mu = -3, sigma = 4, nu = 0.4)
 )
 
 # Define RW2 model with NIG noise
-rw2_nig <- f(time_index, 
-  model = "rw2", 
+rw2_nig <- f(time_index,
+  model = "rw2",
   noise = noise_nig(mu = -3, sigma = 1.5, nu = 0.4)
 )
 ```
@@ -605,7 +616,7 @@ nig_data <- data.frame(
 # Create separate plots with independent scales (stacked vertically)
 p3 <- ggplot(nig_data, aes(x = time, y = value, color = model)) +
   geom_line(alpha = 0.8, linewidth = 0.3) +
-  facet_wrap(~ model, scales = "free_y", ncol = 1) +
+  facet_wrap(~model, scales = "free_y", ncol = 1) +
   scale_color_manual(values = c("RW1 (NIG)" = "#A23B72", "RW2 (NIG)" = "#C73E1D")) +
   labs(
     title = "NIG Random Walks Comparison",
@@ -617,7 +628,7 @@ p3 <- ggplot(nig_data, aes(x = time, y = value, color = model)) +
   theme_minimal() +
   theme(
     plot.title = element_text(size = 12, face = "bold"),
-    legend.position = "none",  # Remove legend since facet labels show model type
+    legend.position = "none", # Remove legend since facet labels show model type
     strip.text = element_text(size = 10, face = "bold")
   )
 
@@ -687,7 +698,7 @@ Let us create a realistic dataset with fixed effects, latent RW2 structure, and 
 # Define fixed effects and covariates
 feff <- c(-1, 2, 0.5)
 x1 <- runif(n_obs, 0, 10)
-x2 <- rexp(n_obs, 1/10)
+x2 <- rexp(n_obs, 1 / 10)
 x3 <- rnorm(n_obs, mean = 10, sd = 0.5)
 X <- model.matrix(~ 0 + x1 + x2 + x3)
 
@@ -709,8 +720,7 @@ ngme_out <- ngme(
     1:n_obs,
     name = "my_rw",
     model = "rw1",
-    noise = noise_nig(),
-    control = control_f(numer_grad = TRUE, improve_hessian = FALSE)
+    noise = noise_nig()
   ),
   data = model_data,
   control_opt = control_opt(
@@ -751,15 +761,15 @@ ngme_out
 Assessing convergence is crucial for reliable parameter estimates. We will use the built-in `traceplot` function from `ngme2` to examine the convergence of our parameters:
 
 ```{r convergence-diagnostics, fig.height=5, fig.width=7}
-  # Trace plot for sigma and fixed effects (blue lines indicate true value)
-  traceplot(ngme_out, hline = c(2,-1, 2, 0.5), moving_window = 20)
+# Trace plot for sigma and fixed effects (blue lines indicate true value)
+traceplot(ngme_out, hline = c(2, -1, 2, 0.5), moving_window = 20)
 ```
 
 Now let us examine the convergence of the RW1 process parameters:
 
 ```{r convergence-rw-process, fig.height=5, fig.width=7}
-  # Trace plots for RW1 parameters (blue lines indicate true value)
-  traceplot(ngme_out, "my_rw", hline = c(-3, 4, 0.4))
+# Trace plots for RW1 parameters (blue lines indicate true value)
+traceplot(ngme_out, "my_rw", hline = c(-3, 4, 0.4))
 ```
 
 ## Parameter Estimates Summary
@@ -815,9 +825,9 @@ Random walk models are well suited for interpolating missing values because they
 To illustrate this, we introduce artificial gaps at different points in the series and use the RW1 model to reconstruct the missing values:
 
 ```{r interpolation-setup}
-gap1_indices <- 151:155      # Early gap (around 30% of series)
-gap2_indices <- 250:254      # Middle gap (around 50% of series) 
-gap3_indices <- 420:424      # Late gap (around 85% of series)
+gap1_indices <- 151:155 # Early gap (around 30% of series)
+gap2_indices <- 250:254 # Middle gap (around 50% of series)
+gap3_indices <- 420:424 # Late gap (around 85% of series)
 all_gap_indices <- c(gap1_indices, gap2_indices, gap3_indices)
 
 Y_true_gaps <- Y[all_gap_indices]
@@ -838,9 +848,8 @@ ngme_out_interp <- ngme(
   Y_train_vector ~ 0 + x1 + x2 + x3 + f(
     train_indices_interp,
     name = "my_rw_interp",
-    model = "rw1", 
-    noise = noise_nig(),
-    control = control_f(numer_grad = TRUE, improve_hessian = FALSE)
+    model = "rw1",
+    noise = noise_nig()
   ),
   data = model_data_train_interp,
   control_opt = control_opt(
@@ -864,7 +873,7 @@ The interpolation predictions are generated for the gap locations using the corr
 ```{r interpolation-predictions}
 gap_covariates <- data.frame(
   x1 = x1[all_gap_indices],
-  x2 = x2[all_gap_indices], 
+  x2 = x2[all_gap_indices],
   x3 = x3[all_gap_indices]
 )
 
@@ -873,15 +882,15 @@ interpolation_pred <- predict(
   map = list(my_rw_interp = all_gap_indices),
   data = gap_covariates,
   type = "lp",
-  estimator = c("mean", "sd", "5quantile", "95quantile"),
+  estimator = c("mean", "sd", "0.5q", "0.95q"),
   sampling_size = 1000,
   seed = 42
 )
 
 interp_mean <- interpolation_pred$mean
-interp_sd <- interpolation_pred$sd  
-interp_lower <- interpolation_pred[["5quantile"]]
-interp_upper <- interpolation_pred[["95quantile"]]
+interp_sd <- interpolation_pred$sd
+interp_lower <- interpolation_pred[["0.5q"]]
+interp_upper <- interpolation_pred[["0.95q"]]
 ```
 
 ### Technical Interpolation Results
@@ -897,7 +906,7 @@ in_interval_90_interp <- (Y_true_gaps >= interp_lower) & (Y_true_gaps <= interp_
 coverage_90_interp <- mean(in_interval_90_interp)
 
 cat("RMSE:", round(rmse_interp, 3), "\n")
-cat("MAE:", round(mae_interp, 3), "\n") 
+cat("MAE:", round(mae_interp, 3), "\n")
 cat("Correlation:", round(correlation_interp, 3), "\n")
 cat("90% Interval Coverage:", round(coverage_90_interp * 100, 1), "%\n")
 
@@ -924,25 +933,25 @@ gap_info <- list(
 plot_list <- list()
 context_length <- 40
 
-for(i in 1:3) {
+for (i in 1:3) {
   gap <- gap_info[[i]]
-  context_start <- round(max(1, gap$center - context_length/2))
-  context_end <- round(min(n_obs, gap$center + context_length/2))
+  context_start <- round(max(1, gap$center - context_length / 2))
+  context_end <- round(min(n_obs, gap$center + context_length / 2))
   context_range <- context_start:context_end
-  
+
   # Complete time series data within the context window
   all_context_data <- data.frame(
     time = context_range,
     value = Y[context_range],
     is_gap = context_range %in% gap$indices
   )
-  
+
   # Extract data points within the gap for highlighting
   gap_data <- data.frame(
     time = gap$indices,
     value = Y[gap$indices]
   )
-  
+
   # Interpolated values with uncertainty bounds
   interp_mask <- all_gap_indices %in% gap$indices
   interp_gap_data <- data.frame(
@@ -951,47 +960,64 @@ for(i in 1:3) {
     lower = interp_lower[interp_mask],
     upper = interp_upper[interp_mask]
   )
-  
+
   p <- ggplot() +
     # Continuous blue line representing the complete observed time series
-    geom_line(data = all_context_data, aes(x = time, y = value), 
-              color = "#2E86AB", alpha = 0.6, linewidth = 0.4) +
-    
+    geom_line(
+      data = all_context_data, aes(x = time, y = value),
+      color = "#2E86AB", alpha = 0.6, linewidth = 0.4
+    ) +
+
     # Blue points highlighting the true values within the gap
-    geom_point(data = gap_data, aes(x = time, y = value), 
-               color = "#2E86AB", size = 1.2, alpha = 0.8) +
-    
+    geom_point(
+      data = gap_data, aes(x = time, y = value),
+      color = "#2E86AB", size = 1.2, alpha = 0.8
+    ) +
+
     # Uncertainty ribbon for interpolated predictions
-    geom_ribbon(data = interp_gap_data, 
-                aes(x = time, ymin = lower, ymax = upper), 
-                fill = "#A23B72", alpha = 0.2) +
-    
+    geom_ribbon(
+      data = interp_gap_data,
+      aes(x = time, ymin = lower, ymax = upper),
+      fill = "#A23B72", alpha = 0.2
+    ) +
+
     # Purple line connecting the interpolated values
-    geom_line(data = interp_gap_data, aes(x = time, y = value), 
-              color = "#A23B72", linewidth = 0.4) +
-    
+    geom_line(
+      data = interp_gap_data, aes(x = time, y = value),
+      color = "#A23B72", linewidth = 0.4
+    ) +
+
     # Purple points showing interpolated predictions
-    geom_point(data = interp_gap_data, aes(x = time, y = value), 
-               color = "#A23B72", size = 1.2, alpha = 0.8) +
-    
+    geom_point(
+      data = interp_gap_data, aes(x = time, y = value),
+      color = "#A23B72", size = 1.2, alpha = 0.8
+    ) +
+
     # Vertical dashed lines marking gap boundaries
-    geom_vline(xintercept = c(min(gap$indices), max(gap$indices)), 
-               linetype = "dashed", color = "gray50", alpha = 0.6) +
-    
-    labs(title = paste(gap$name, "- RW1 Interpolation"), 
-         x = "Time", y = "Value") +
+    geom_vline(
+      xintercept = c(min(gap$indices), max(gap$indices)),
+      linetype = "dashed", color = "gray50", alpha = 0.6
+    ) +
+    labs(
+      title = paste(gap$name, "- RW1 Interpolation"),
+      x = "Time", y = "Value"
+    ) +
     theme_minimal() +
-    theme(plot.title = element_text(size = 11, face = "bold"), 
-          panel.grid.minor = element_blank())
-  
+    theme(
+      plot.title = element_text(size = 11, face = "bold"),
+      panel.grid.minor = element_blank()
+    )
+
   plot_list[[i]] <- p
 }
 
 library(gridExtra)
 library(grid)
 
-grid.arrange(plot_list[[1]], plot_list[[2]], plot_list[[3]], ncol = 1,
-             top = textGrob("RW1 Model Interpolation Across Multiple Time Periods", gp = gpar(fontface = "bold", fontsize = 14)))
+grid.arrange(plot_list[[1]], plot_list[[2]], plot_list[[3]],
+  ncol = 1,
+  top = textGrob("RW1 Model Interpolation Across Multiple Time Periods", gp = gpar(fontface = "bold", fontsize = 14))
+)
 ```
 
 # Posterior Simulation
@@ -1028,10 +1054,14 @@ comparison_data <- data.frame(
   posterior_upper = W_posterior_q975
 )
 
-cat("Mean absolute difference from true values:", 
-    round(mean(abs(W_posterior_mean - W1_nig)), 3), "\n")
-cat("Average posterior standard deviation:", 
-    round(mean(W_posterior_sd), 3), "\n")
+cat(
+  "Mean absolute difference from true values:",
+  round(mean(abs(W_posterior_mean - W1_nig)), 3), "\n"
+)
+cat(
+  "Average posterior standard deviation:",
+  round(mean(W_posterior_sd), 3), "\n"
+)
 ```
 
 ## Latent Process Uncertainty Visualization
@@ -1043,26 +1073,31 @@ viz_range <- 200:300
 viz_data <- comparison_data[viz_range, ]
 
 p_posterior <- ggplot(viz_data, aes(x = time)) +
-  geom_ribbon(aes(ymin = posterior_lower, ymax = posterior_upper), 
-              fill = "#A23B72", alpha = 0.3) +
-  geom_line(aes(y = true_W, color = "True Latent Process"), 
-            linewidth = 0.4, alpha = 0.8) +
-  geom_line(aes(y = posterior_mean, color = "Posterior Mean"), 
-            linewidth = 0.4, alpha = 0.9) +
-  scale_color_manual(values = c("True Latent Process" = "#2E86AB", 
-                               "Posterior Mean" = "#A23B72")) +
+  geom_ribbon(aes(ymin = posterior_lower, ymax = posterior_upper),
+    fill = "#A23B72", alpha = 0.3
+  ) +
+  geom_line(aes(y = true_W, color = "True Latent Process"),
+    linewidth = 0.4, alpha = 0.8
+  ) +
+  geom_line(aes(y = posterior_mean, color = "Posterior Mean"),
+    linewidth = 0.4, alpha = 0.9
+  ) +
+  scale_color_manual(values = c(
+    "True Latent Process" = "#2E86AB",
+    "Posterior Mean" = "#A23B72"
+  )) +
   labs(
     title = "Posterior Uncertainty in RW1 Latent Process",
     subtitle = "95% Posterior Credible Intervals with True vs Estimated Process",
-    x = "Time", 
-    y = "Latent Process Value (W)", 
+    x = "Time",
+    y = "Latent Process Value (W)",
     color = ""
   ) +
   theme_minimal() +
   theme(
     plot.title = element_text(size = 14, face = "bold"),
     plot.subtitle = element_text(size = 12),
-    legend.position = "top", 
+    legend.position = "top",
     panel.grid.minor = element_blank()
   )
 
@@ -1077,7 +1112,7 @@ We now assess model adequacy by generating posterior predictive samples for the 
 n_sims <- 300
 
 # Generate posterior predictive samples for Y using simulate()
-Y_sim <- simulate(ngme_out, posterior=TRUE, m_noise=TRUE, nsim = n_sims)
+Y_sim <- simulate(ngme_out, posterior = TRUE, m_noise = TRUE, nsim = n_sims)
 
 # Convert to matrix for easier handling
 Y_sim_matrix <- as.matrix(Y_sim)
@@ -1090,61 +1125,77 @@ par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
 y_mean <- rowMeans(Y_sim_matrix)
 y_lower <- apply(Y_sim_matrix, 1, quantile, 0.025)
 y_upper <- apply(Y_sim_matrix, 1, quantile, 0.975)
-plot(y_mean, Y, pch = 16, col = rgb(0.3, 0.3, 0.3, 0.6), cex = 0.8,
-     main = "Observed vs Posterior Mean", 
-     xlab = "Posterior Mean", ylab = "Observed Y",
-     xlim = range(c(y_mean, Y)), ylim = range(c(y_mean, Y)))
+plot(y_mean, Y,
+  pch = 16, col = rgb(0.3, 0.3, 0.3, 0.6), cex = 0.8,
+  main = "Observed vs Posterior Mean",
+  xlab = "Posterior Mean", ylab = "Observed Y",
+  xlim = range(c(y_mean, Y)), ylim = range(c(y_mean, Y))
+)
 
 # Add 1:1 reference line
 abline(0, 1, col = "red", lwd = 1, lty = 2)
 
-segments(y_mean, y_lower, 
-         y_mean, y_upper, 
-         col = rgb(0.64, 0.23, 0.45, 0.1), lwd = 1)
+segments(y_mean, y_lower,
+  y_mean, y_upper,
+  col = rgb(0.64, 0.23, 0.45, 0.1), lwd = 1
+)
 
 # Calculate and display correlation
 correlation <- cor(Y, y_mean)
 mtext(paste("Correlation =", round(correlation, 3)), side = 3, line = 0.2, cex = 0.9)
 
-legend("topleft", legend = c("Data points", "Perfect fit", "95% CI"), 
-       col = c(rgb(0.3, 0.3, 0.3, 0.6), "red", rgb(0.64, 0.23, 0.45, 0.4)), 
-       pch = c(16, NA, NA), lty = c(NA, 2, 1), lwd = c(NA, 1, 1), bty = "n")
+legend("topleft",
+  legend = c("Data points", "Perfect fit", "95% CI"),
+  col = c(rgb(0.3, 0.3, 0.3, 0.6), "red", rgb(0.64, 0.23, 0.45, 0.4)),
+  pch = c(16, NA, NA), lty = c(NA, 2, 1), lwd = c(NA, 1, 1), bty = "n"
+)
 
 # 2. Histogram comparison
-hist(Y, breaks = 40, col = rgb(0.18, 0.53, 0.67, 0.7), 
-     main = "Distribution Comparison", xlab = "Y values", 
-     freq = FALSE, border = "white")
-hist(unlist(Y_sim), breaks = 40, col = rgb(0.64, 0.23, 0.45, 0.7), 
-     add = TRUE, freq = FALSE, border = "white")
-legend("topleft", legend = c("Observed", "Simulated"), 
-       fill = c(rgb(0.18, 0.53, 0.67, 0.7), rgb(0.64, 0.23, 0.45, 0.7)), 
-       bty = "n")
+hist(Y,
+  breaks = 40, col = rgb(0.18, 0.53, 0.67, 0.7),
+  main = "Distribution Comparison", xlab = "Y values",
+  freq = FALSE, border = "white"
+)
+hist(unlist(Y_sim),
+  breaks = 40, col = rgb(0.64, 0.23, 0.45, 0.7),
+  add = TRUE, freq = FALSE, border = "white"
+)
+legend("topleft",
+  legend = c("Observed", "Simulated"),
+  fill = c(rgb(0.18, 0.53, 0.67, 0.7), rgb(0.64, 0.23, 0.45, 0.7)),
+  bty = "n"
+)
 
 # 3. Q-Q plot
-qqplot(Y, unlist(Y_sim), main = "Q-Q Plot", 
-       xlab = "Observed Y quantiles", ylab = "Simulated Y quantiles",
-       pch = 16, col = rgb(0.3, 0.3, 0.3, 0.6))
+qqplot(Y, unlist(Y_sim),
+  main = "Q-Q Plot",
+  xlab = "Observed Y quantiles", ylab = "Simulated Y quantiles",
+  pch = 16, col = rgb(0.3, 0.3, 0.3, 0.6)
+)
 abline(0, 1, col = "red", lwd = 1)
 
 # 4. Posterior predictive distribution comparison using density plots
 d_observed <- density(Y)
 d_simulated <- density(unlist(Y_sim))
 
-plot(d_observed, col = "#2E86AB", lwd = 1, 
-     main = "Density Comparison", 
-     xlab = "Y values", ylab = "Density",
-     xlim = range(c(d_observed$x, d_simulated$x)),
-     ylim = range(c(d_observed$y, d_simulated$y)))
+plot(d_observed,
+  col = "#2E86AB", lwd = 1,
+  main = "Density Comparison",
+  xlab = "Y values", ylab = "Density",
+  xlim = range(c(d_observed$x, d_simulated$x)),
+  ylim = range(c(d_observed$y, d_simulated$y))
+)
 lines(d_simulated, col = rgb(0.64, 0.23, 0.45, 0.8), lwd = 1)
 
 # Add some key statistics as vertical lines
 abline(v = mean(Y), col = "#2E86AB", lty = 2, lwd = 1)
 abline(v = mean(unlist(Y_sim)), col = rgb(0.64, 0.23, 0.45, 0.8), lty = 2, lwd = 2)
 
-legend("topleft", 
-       legend = c("Observed", "Simulated", "Obs. mean", "Sim. mean"), 
-       col = c("#2E86AB", rgb(0.64, 0.23, 0.45, 0.8), "#2E86AB", rgb(0.64, 0.23, 0.45, 0.8)), 
-       lty = c(1, 1, 2, 2), lwd = c(1, 1, 1, 1), bty = "n")
+legend("topleft",
+  legend = c("Observed", "Simulated", "Obs. mean", "Sim. mean"),
+  col = c("#2E86AB", rgb(0.64, 0.23, 0.45, 0.8), "#2E86AB", rgb(0.64, 0.23, 0.45, 0.8)),
+  lty = c(1, 1, 2, 2), lwd = c(1, 1, 1, 1), bty = "n"
+)
 ```
 
 <!-- ## Response Variable Prediction Intervals -->
@@ -1163,35 +1214,42 @@ y_quantiles_sorted <- y_quantiles[, sort_idx]
 par(mfrow = c(1, 2), mar = c(4, 4, 3, 1))
 
 # 1. Uncertainty bands plot
-plot(1:length(Y_sorted), Y_sorted, type = "l", col = "#2E86AB", lwd = 2,
-     main = "Posterior Prediction Intervals", 
-     xlab = "Sorted Index", ylab = "Y values",
-     ylim = range(y_quantiles_sorted))
+plot(1:length(Y_sorted), Y_sorted,
+  type = "l", col = "#2E86AB", lwd = 2,
+  main = "Posterior Prediction Intervals",
+  xlab = "Sorted Index", ylab = "Y values",
+  ylim = range(y_quantiles_sorted)
+)
 
 # Add uncertainty bands
-polygon(c(1:length(Y_sorted), rev(1:length(Y_sorted))), 
-         c(y_quantiles_sorted[1,], rev(y_quantiles_sorted[5,])), 
-         col = rgb(0.64, 0.23, 0.45, 0.2), border = NA)
-polygon(c(1:length(Y_sorted), rev(1:length(Y_sorted))), 
-         c(y_quantiles_sorted[2,], rev(y_quantiles_sorted[4,])), 
-         col = rgb(0.64, 0.23, 0.45, 0.3), border = NA)
+polygon(c(1:length(Y_sorted), rev(1:length(Y_sorted))),
+  c(y_quantiles_sorted[1, ], rev(y_quantiles_sorted[5, ])),
+  col = rgb(0.64, 0.23, 0.45, 0.2), border = NA
+)
+polygon(c(1:length(Y_sorted), rev(1:length(Y_sorted))),
+  c(y_quantiles_sorted[2, ], rev(y_quantiles_sorted[4, ])),
+  col = rgb(0.64, 0.23, 0.45, 0.3), border = NA
+)
 
-lines(1:length(Y_sorted), y_quantiles_sorted[3,], col = rgb(0.64, 0.23, 0.45, 0.8), lwd = 1)
+lines(1:length(Y_sorted), y_quantiles_sorted[3, ], col = rgb(0.64, 0.23, 0.45, 0.8), lwd = 1)
 lines(1:length(Y_sorted), Y_sorted, col = "#2E86AB", lwd = 1)
 
-legend("topleft", legend = c("Observed", "Median prediction", "50% interval", "95% interval"), 
-       col = c("#2E86AB", rgb(0.64, 0.23, 0.45, 0.8), rgb(0.64, 0.23, 0.45, 0.3), rgb(0.64, 0.23, 0.45, 0.2)), 
-       lwd = c(2, 2, 8, 8), bty = "n")
+legend("topleft",
+  legend = c("Observed", "Median prediction", "50% interval", "95% interval"),
+  col = c("#2E86AB", rgb(0.64, 0.23, 0.45, 0.8), rgb(0.64, 0.23, 0.45, 0.3), rgb(0.64, 0.23, 0.45, 0.2)),
+  lwd = c(2, 2, 8, 8), bty = "n"
+)
 
 # 2. Coverage assessment
-coverage_50 <- mean(Y >= y_quantiles[2,] & Y <= y_quantiles[4,])
-coverage_95 <- mean(Y >= y_quantiles[1,] & Y <= y_quantiles[5,])
+coverage_50 <- mean(Y >= y_quantiles[2, ] & Y <= y_quantiles[4, ])
+coverage_95 <- mean(Y >= y_quantiles[1, ] & Y <= y_quantiles[5, ])
 
-barplot(c(coverage_50, coverage_95), 
-        names.arg = c("50% Interval", "95% Interval"),
-        main = "Prediction Interval Coverage",
-        ylab = "Empirical Coverage",
-        col = c(rgb(0.64, 0.23, 0.45, 0.6), rgb(0.64, 0.23, 0.45, 0.8)),
-        ylim = c(0, 1))
+barplot(c(coverage_50, coverage_95),
+  names.arg = c("50% Interval", "95% Interval"),
+  main = "Prediction Interval Coverage",
+  ylab = "Empirical Coverage",
+  col = c(rgb(0.64, 0.23, 0.45, 0.6), rgb(0.64, 0.23, 0.45, 0.8)),
+  ylim = c(0, 1)
+)
 abline(h = c(0.5, 0.95), lty = 2, col = "red")
 ```

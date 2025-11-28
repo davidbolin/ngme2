@@ -1,3 +1,8 @@
+# ngme2 0.8.0
+* Update to use model() instead of string for model definition
+* Refactor on the codebase
+* Add more vignettes
+
 # ngme2 0.7.1
 * Documentation updates
 * Add print log likelihood for Gaussian models

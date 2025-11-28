@@ -80,7 +80,7 @@ time_mesh <- fmesher::fm_mesh_1d(
 # Create OU model specification for simulation with NIG noise
 ou_spec <- f(
   map = 1:n_obs,
-  model = ou(theta_mu = theta_true),
+  model = ou(theta = theta_true),
   noise = noise_nig(mu = mu_true, sigma = sigma_true, nu = nu_true)
 )
 

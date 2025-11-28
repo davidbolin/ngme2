@@ -380,6 +380,55 @@ traceplot <- function(
     stopifnot("Please run ngme() to estimate the model before using traceplot()"
       = !is.null(traj))
     ts <- get_latent_info(ngme$models[[name]])
+
+    # Special handling for ARMA(p,q<=2): convert raw (PACF) to AR/MA coefficients
+    latent_obj <- ngme$models[[name]]
+    if (!is.null(latent_obj$operator) && identical(latent_obj$operator$model, "arma")) {
+      p <- latent_obj$operator$p %||% 0L
+      q <- latent_obj$operator$q %||% 0L
+      if (p <= 2 && q <= 2) {
+        # Helper: map raw -> coeff per time column
+        map_ar_coeff <- function(raw_ar) {
+          if (length(raw_ar) == 0) return(numeric(0))
+          if (length(raw_ar) == 1) {
+            t1 <- ar1_th2a(raw_ar[1]); return(c(t1))
+          }
+          t1 <- ar1_th2a(raw_ar[1]); t2 <- ar1_th2a(raw_ar[2])
+          c(t1*(1 - t2), t2)
+        }
+        map_ma_coeff <- function(raw_ma) {
+          if (length(raw_ma) == 0) return(numeric(0))
+          if (length(raw_ma) == 1) {
+            s1 <- ar1_th2a(raw_ma[1]); return(c(s1))
+          }
+          s1 <- ar1_th2a(raw_ma[1]); s2 <- ar1_th2a(raw_ma[2])
+          c(s1*(1 - s2), s2)
+        }
+        # Rewrite trajectories per chain
+        traj <- lapply(traj, function(M) {
+          M <- as.matrix(M)
+          if ((p+q) > 0 && nrow(M) >= (p+q)) {
+            ar_idx <- if (p>0) seq_len(p) else integer(0)
+            ma_idx <- if (q>0) (p + seq_len(q)) else integer(0)
+            for (col in seq_len(ncol(M))) {
+              if (p>0) {
+                phi <- map_ar_coeff(M[ar_idx, col])
+                M[seq_len(length(phi)), col] <- phi
+              }
+              if (q>0) {
+                theta <- map_ma_coeff(M[ma_idx, col])
+                M[p + seq_len(length(theta)), col] <- theta
+              }
+            }
+            M
+          } else M
+        })
+        # Replace transforms for AR/MA with identity since we already mapped
+        if ((p+q) > 0 && length(ts$trans) >= (p+q)) {
+          ts$trans[seq_len(p+q)] <- replicate(p+q, identity, simplify = FALSE)
+        }
+      }
+    }
   } else {
     # Plot trajectory of parameters of the noise
     traj <- attr(ngme, "block_traj")

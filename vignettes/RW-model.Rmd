@@ -1,146 +1,1255 @@
 ---
-title: "Ngme2 random walk model"
-output: rmarkdown::html_vignette
+title: "Random Walk Models in ngme2"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    theme: flatly
+    code_folding: show
 vignette: >
-  %\VignetteIndexEntry{Ngme2 random walk model}
+  %\VignetteIndexEntry{Random Walk Models in ngme2}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include = FALSE}
+```{r setup, include=FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  fig.width = 8,
+  fig.height = 6,
+  fig.retina = 2,
+  out.width = "100%",
+  warning = FALSE,
+  message = FALSE
+)
+
+# Load required libraries
+library(ngme2)
+library(ggplot2)
+library(gridExtra)
+```
+
+# Introduction
+
+Random walk models are fundamental stochastic processes widely used in time series analysis, spatial statistics, and Bayesian smoothing applications. They provide a flexible framework for modeling data where consecutive observations are correlated and the underlying trend varies smoothly over time or space.
+
+The **random walk models** in `ngme2` extend traditional implementations by allowing for non-Gaussian noise, particularly the Normal Inverse Gaussian (NIG) and Generalized Asymmetric Laplace (GAL) distributions. This flexibility enables modeling of data with asymmetric behavior, heavy tails, and complex dependence structures commonly observed in real-world applications.
+
+This vignette provides a comprehensive guide to implementing and using random walk models within the `ngme2` framework, covering both first-order (RW1) and second-order (RW2) specifications, along with their cyclic variants and different constraint approaches.
+
+# Model Specification
+
+## Random Walk Process Definition
+
+Random walk models belong to the class of **intrinsic Gaussian Markov random fields (GMRFs)**, defined by **finite-difference operators** rather than explicit covariance functions. The unified framework in `ngme2` represents all latent models as:
+
+$$\mathbf{K} \mathbf{W} = \boldsymbol{\delta}$$
+
+where $\mathbf{K}$ is the **operator matrix** that defines the model structure, $\mathbf{W}$ is the latent process vector, and $\boldsymbol{\delta}$ represents the innovation terms.
+
+### First-Order Random Walk (RW1)
+
+The **first-order random walk** models the increments between consecutive observations as independent innovations. For a sequence of locations $\mathbf{x} = (x_1, x_2, \ldots, x_n)$, the RW1 process is defined as:
+
+$$\Delta W_i = W_{i+1} - W_i = \delta_i, \quad i = 1, 2, \ldots, n-1$$
+
+where $\delta_i$ are independent innovations with variance $\sigma^2 h_i$, and $h_i = x_{i+1} - x_i$ represents the mesh weights (spacing between consecutive locations).
+
+**Key characteristics:**
+
+- **Moderate smoothness**: Provides piecewise-linear behavior
+- **Mesh weight scaling**: Innovation variance $\sigma^2 h_i$ adapts to local spacing
+- **Irregular grid support**: Handles both regular and irregular spatial or temporal grids
+
+### Second-Order Random Walk (RW2)
+
+The **second-order random walk** models the second-order differences (curvature) as independent innovations. Assuming a regular grid, we have the following dynamics:
+
+$$\Delta^2 W_i = W_{i+2} - 2W_{i+1} + W_i = \delta_i, \quad i = 1, 2, \ldots, n-2$$
+
+where $\delta_i$ are independent innovations with variance $\sigma^2h$, where $h$ is the (constant) distance between consecutive locations.
+
+**Key characteristics:**
+
+- **Enhanced smoothness**: Provides smoother trajectories than RW1, ideal for curve fitting
+- **Curvature control**: Models second-order differences for controlled smoothness
+- **Minimum requirement**: Needs at least 3 locations due to second-order structure
+
+## Properties
+
+**Intrinsic Nature**: Random walk models are **intrinsic processes** defined by their difference structure rather than explicit covariance functions. This leads to:
+
+- Rank-deficient precision matrices for non-cyclic models
+- Invariance under polynomial trends (constants for RW1, linear trends for RW2)
+- Need for constraints to achieve proper identification
+
+**Smoothness and Dependencies**:
+
+- **RW1**: Moderate smoothness with local linear behavior
+- **RW2**: High smoothness with controlled curvature
+- **Markov property**: Local dependence leads to sparse precision matrices
+- **Boundary conditions**: Open (free endpoints) or cyclic (periodic)
+
+**Noise Distributions**: Innovation terms $\delta_i$ can follow:
+
+- **Gaussian**: Traditional symmetric, light-tailed errors
+- **Normal Inverse Gaussian (NIG)**: Flexible distribution with skewness and heavy tails
+- **Generalized Asymmetric Laplace (GAL)**: Accommodates peakedness and asymmetry
+
+## Mesh Weights and Irregular Grids
+
+The mesh weight system $h_i$ enables `ngme2` to handle both regular and irregular grids for the RW1 model:
+
+**For regular grids** (equally spaced): $h_i = h$ (constant), giving standard random walk behavior.
+
+**For irregular grids** (varying spacing): $h_i = x_{i+1} - x_i$ reflects local spacing, with innovation variance $\sigma^2 h_i$ adapting to local density.
+
+**Mathematical consequences for RW1:**
+
+- **Scale invariance**: Proper scaling across different sampling densities
+- **Local adaptation**: Model responds to irregular sampling patterns
+- **Computational stability**: Preserves numerical properties across grid types
+
+**Note**: The RW2 model in this vignette is demonstrated with regular grids only.
+
+## Matrix Representation
+
+The random walk process can be expressed in matrix form as $\mathbf{KW} = \boldsymbol{\delta}$.
+
+### RW1 Operator Matrix
+
+The operator matrix $\mathbf{K}_{\text{RW1}}$ has dimension $(n-1) \times n$:
+
+$$\mathbf{K}_{\text{RW1}} = \begin{bmatrix}
+-1 & 1 & 0 & \cdots & 0 \\
+0 & -1 & 1 & \cdots & 0 \\
+\vdots & \vdots & \ddots & \ddots & \vdots \\
+0 & 0 & \cdots & -1 & 1
+\end{bmatrix}$$
+
+This matrix computes first-order differences: $\mathbf{K}_{\text{RW1}}\mathbf{w} = (\Delta w_1, \Delta w_2, \ldots, \Delta w_{n-1})^T$.
+
+### RW2 Operator Matrix
+
+The operator matrix $\mathbf{K}_{\text{RW2}}$ has dimension $(n-2) \times n$:
+
+$$\mathbf{K}_{\text{RW2}} = \begin{bmatrix}
+1 & -2 & 1 & 0 & \cdots & 0 \\
+0 & 1 & -2 & 1 & \cdots & 0 \\
+\vdots & \vdots & \vdots & \ddots & \ddots & \vdots \\
+0 & 0 & \cdots & 1 & -2 & 1
+\end{bmatrix}$$
+
+This matrix computes second-order differences: $\mathbf{K}_{\text{RW2}}\mathbf{w} = (\Delta^2 w_1, \Delta^2 w_2, \ldots, \Delta^2 w_{n-2})^T$.
+
+## Precision Matrix
+
+For random walk processes with operator matrix $\mathbf{K}$ and mesh weights $h_i$, the precision matrix is:
+
+$$\mathbf{Q} = \mathbf{K}^T \mathbf{H}^{-1} \mathbf{K}$$
+
+where $\mathbf{H} = \text{diag}(\sigma^2 h_1, \sigma^2 h_2, \ldots)$ contains the scaled mesh weights.
+
+For equally spaced locations ($h_i = h$), this simplifies to: $\mathbf{Q} = \mathbf{K}^T \mathbf{K} / (\sigma^2 h)$.
+
+**Important properties:**
+
+- **RW1**: Tri-diagonal precision matrix (sparse structure)
+- **RW2**: Penta-diagonal precision matrix (sparse structure)
+- **Rank deficiency**: Non-cyclic models have singular precision matrices
+- **Mesh adaptation**: Automatic adjustment to irregular grids (for RW1)
+
+<!-- ## Identifiability and Model Variants
+
+Random walk models face identifiability challenges due to null spaces in their precision matrices. The `ngme2` package provides three approaches to handle these issues.
+
+### The Identifiability Problem
+
+**RW1 null space**: Any constant vector $(c, c, \ldots, c)$ satisfies $\mathbf{Q} \cdot \mathbf{c} = \mathbf{0}$
+
+**RW2 null space**: Both constant and linear trend vectors lie in the null space
+
+This makes the precision matrix singular, requiring constraints for proper estimation.
+
+### Approach 1: Constrained Models (Default)
+
+**Default behavior** when using `f(locations, model="rw1")` or `f(locations, model="rw2")`.
+
+**Mathematical approach:**
+
+- **RW1**: Enforces weighted sum-to-zero constraint $\sum_{i=1}^n h_i W_i = 0$
+- **RW2**: Enforces both $\sum_{i=1}^n h_i W_i = 0$ and $\sum_{i=1}^n h_i \cdot x_i \cdot W_i = 0$
+
+**Implementation**: The constraint appears as the **first row** of the augmented operator matrix:
+
+$$\widetilde{\mathbf{K}}_{\text{RW1}} = \begin{pmatrix} \mathbf{h}^T \\ \mathbf{K}_{\text{RW1}} \end{pmatrix}, \quad \widetilde{\mathbf{K}}_{\text{RW2}} = \begin{pmatrix} \mathbf{h}^T \\ \mathbf{h_x}^T \\ \mathbf{K}_{\text{RW2}} \end{pmatrix}$$
+
+where $\mathbf{h}^T = (h_1, h_2, \ldots, h_n)$ and $\mathbf{h_x}^T = (h_1 x_1, h_2 x_2, \ldots, h_n x_n)$.
+
+**When to use:**
+
+- Mixed models with intercepts (most common)
+- Irregular sampling requiring proper weighting
+- When random walk represents deviations around a global mean
+
+```{r constrained-models}
+library(ngme2)
+locations <- 1:10
+
+# Default constrained models
+rw1_constrained <- f(locations, model = "rw1", noise = noise_normal(sigma = 1.0))
+rw2_constrained <- f(locations, model = "rw2", noise = noise_normal(sigma = 0.5))
+```
+
+### Approach 2: Unconstrained Models
+
+Fixes the first element at zero ($W_1 = 0$) as a reference point.
+
+**Mathematical approach:**
+
+- No constraint equations needed
+- First location serves as baseline reference
+- Precision matrix becomes full rank by parameter fixing
+
+**When to use:**
+
+- Simpler theoretical setup without constraint handling  
+- Applications where first location has special meaning
+- When constraints cause numerical issues
+
+```{r unconstrained-models}
+# Unconstrained models (reference point approach)
+rw1_unconstrained <- f(locations,
+  model = "rw1", constr = FALSE,
+  noise = noise_normal(sigma = 1.0)
+)
+rw2_unconstrained <- f(locations,
+  model = "rw2", constr = FALSE,
+  noise = noise_normal(sigma = 0.5)
 )
 ```
 
-In this vignette, we will briefly introduce the random walk model in `ngme2`.
+### Approach 3: Cyclic Models
 
-## Description
+Treats the domain as circular, connecting first and last locations as neighbors.
 
-In `ngme2`, we currently support random walk model of the first-order and the second order.
+**Mathematical approach:**
 
-Remeber in `ngme2`, all the models has the same form:
-$$K \mathbf{W} = \boldsymbol{\epsilon},$$
-where $K$ is the operator matrix, $\epsilon$ is the random noise (maybe non-Gaussian),
-$\mathbf{W}$ is the random vector we want to model.
+- First and last locations are adjacent
+- Always enforces $\sum_{i=1}^n h_i W_i = 0$ constraint
+- Uses expanded $(n+1) \times (n+1)$ precision matrix internally
+- **RW2 advantage**: Eliminates linear null space (better identifiability)
 
-### The first-order random walk (RW(1))
+**When to use:**
 
-The **first-order random walk** is constructed assuming independent increments given data
-$\mathbf{x}$ (use as location, sorted) of length $n$:
+- Temporal data with seasonal patterns
+- Spatial data with circular coordinates  
+- Any naturally periodic domain
 
-1. When $\epsilon$ follows the NIG distribution:
-$$
-\begin{align}
-\Delta w_i &= -\mu + \mu V_i + \sigma \sqrt{V_i} Z , \; n=1, \dots, n-1 \\
-V_i &\sim IG(\nu, \nu (\Delta x_i)^2), \\
-Z_i &\sim N(0, 1),
-\end{align}
-$$
-
-2. When $\epsilon$ follows the normal distribution:
-$$
-\begin{align}
-\Delta w_i &= \epsilon_i , \; n=1, \dots, n-1 \\
-\epsilon_i &\sim N(0, \sigma^2 \Delta x_i), \\
-\end{align}
-$$
-
-where $\Delta w_i := w_{i+1} - w_{i}$, $\Delta x_i := x_{i+1} - x_{i}$.
-
-The operator matrix $K$ of dimension $(n-1 \times n)$ is
-
-$$
-K =
-  \begin{bmatrix}
-    -1 & 1 \\
-      & -1 & 1 \\
-      & & \ddots & \ddots \\
-      & & & -1 & 1
-  \end{bmatrix}.
-$$
-
-We also provide the special case of **circular random walk**, which the 1st element and n-th element is connected.
-In the **circular** RW(1) case, the operator matrix $K$ of dimension $(n-1 \times n-1)$ is
-
-$$
-K =
-  \begin{bmatrix}
-    -1 & 1 \\
-      & \ddots & \ddots \\
-      &  & -1 & 1 \\
-       1 & & & -1
-  \end{bmatrix}.
-$$
-
-### The second-order random walk (RW(2))
-
-Similarily, the **second-order random walk** is constructed assuming the second order difference is independent:
-
-1. When $\epsilon$ follows the NIG distribution:
-$$
-\begin{align}
-\Delta^2 w_i &= -\mu + \mu V_i + \sigma \sqrt{V_i} Z , \; n=1, \dots, n-2 \\
-V_i &\sim IG(\nu, \nu (\Delta x_i)^2), \\
-Z_i &\sim N(0, 1),
-\end{align}
-$$
-
-2. When $\epsilon$ follows the normal distribution:
-$$
-\begin{align}
-\Delta^2 w_i &= \epsilon_i , \; n=1, \dots, n-2 \\
-\epsilon_i &\sim N(0, \sigma^2 \Delta x_i), \\
-\end{align}
-$$
-
-where $\Delta^2 w_i := w_{i+2} - 2w_{i+1} - w_{i}$, $\Delta x_i := x_{i+1} - x_{i}$.
-
-The operator matrix $K$ of dimension $(n-2 \times n)$ is
-
-$$
-K =
-  \begin{bmatrix}
-    1 & -2 & 1 \\
-      & 1 & -2 & 1 \\
-      & & \ddots & \ddots & \ddots \\
-      & & & 1 & -2 & 1
-  \end{bmatrix}.
-$$
-
-In the **circular** RW(2) case, the operator matrix $K$ of dimension $(n-2 \times n-2)$ is
-
-$$
-K =
-  \begin{bmatrix}
-    1 & -2 & 1 \\
-      & 1 & -2 & 1 \\
-      & & \ddots & \ddots & \ddots \\
-      1 & & & 1 & -2 \\
-      -2 & 1 & & & 1
-  \end{bmatrix}.
-$$
-
-
-## Usage
-
-Use the `f(model = "rw1")` or `f(model = "rw2")` (in formula) to specify a random walk model.
-
-```{r rw-usage}
-library(ngme2)
-set.seed(16)
-m1 <- f(rexp(5), model="rw1", noise = noise_normal())
-m1$operator$K
-
-m2 <- f(rnorm(6), model="rw2", cyclic = TRUE)
-m2$operator$K
+```{r cyclic-models}
+# Cyclic models for periodic data
+rw1_cyclic <- f(locations,
+  model = "rw1", cyclic = TRUE,
+  noise = noise_normal(sigma = 1.0)
+)
+rw2_cyclic <- f(locations,
+  model = "rw2", cyclic = TRUE,
+  noise = noise_normal(sigma = 0.5)
+)
 ```
 
-## Simulation
+### Model Variant Comparison
 
-Doing the simulation is simple, just pass the corresponding model into `simulate` function.
+| Approach | RW1 Constraint | RW2 Constraint | Best For | Advantages |
+|----------|----------------|----------------|----------|------------|
+| **Constrained** | $\sum h_i W_i = 0$ | $\sum h_i W_i = 0$, $\sum h_i x_i W_i = 0$ | Mixed models | Handles irregular grids (RW1), works with intercepts |
+| **Unconstrained** | $W_1 = 0$ | $W_1 = 0$ | Reference point models | Simpler mathematics |
+| **Cyclic** | $\sum h_i W_i = 0$ | $\sum h_i W_i = 0$ | Periodic data | Natural boundaries, better RW2 identifiability |
 
-```{r rw-simulate}
-simulate(m1)
+### Decision Guide
+
+1. **Is your domain naturally periodic?** → Use **Cyclic**
+2. **Do you need an intercept in your model?** → Use **Constrained** (default)
+3. **Do you want a simple reference point?** → Use **Unconstrained**
+
+Most applications should start with the default constrained approach. -->
+
+## Matrix Relationships Summary
+
+- **Operator matrix** $\mathbf{K}$: Maps correlated random walk process to independent innovations
+- **Precision matrix**: $\mathbf{Q} = \mathbf{K}^T \mathbf{H}^{-1} \mathbf{K}$ for unconstrained models. For constrained models, $\mathbf{Q}$ is derived from the augmented matrix $\widetilde{\mathbf{K}}$ that includes constraint rows  
+- **Sparsity**: Tri-diagonal (RW1) or penta-diagonal (RW2) structure enables efficient computation
+- **Mesh adaptation**: Automatic handling of irregular grids through $\mathbf{H}$ matrix (for RW1)
+
+This matrix formulation provides computational advantages through sparse operations while maintaining flexibility for irregular sampling patterns in RW1 models and integrates seamlessly with other `ngme2` components.
+
+# Implementation in `ngme2`
+
+## Basic Syntax
+
+To specify a random walk model in `ngme2`, use the `f()` function with the `model="rw1"` or `model="rw2"` argument within your model formula. When not specifying the `noise` argument in `f()`, the process defaults to Gaussian noise. For simulation purposes, it is important to define the `sigma` parameter in the `noise` specification, as this controls the variance of the innovations. For estimation, however, specifying `sigma` is optional since the model will automatically estimate this parameter from the observed data.
+
+## Basic Usage Example
+
+The `ngme2` package provides flexible random walk implementations that accommodate both regular and irregular observation grids for RW1 models. This flexibility is essential for real-world applications where data may have missing observations, irregular sampling intervals, or complex temporal patterns. RW2 models in this vignette are demonstrated with regular grids.
+
+### Setting Up Random Walk Models
+
+Let's begin by exploring how to specify different types of random walk models. We'll work with both small examples for clarity and larger examples to demonstrate computational properties:
+
+```{r rw-basic-setup}
+library(ngme2)
+library(Matrix)
+set.seed(16)
+
+# Define different grid configurations
+regular_points <- 1:5 # Simple regular grid
+irregular_points <- c(1, 3, 7, 10, 15) # Grid with gaps
+larger_grid <- 1:15 # Larger grid for matrix demonstrations
+```
+
+Notice that the irregular grid has gaps at positions 2, 4, 5, 6, 8, 9, 11, 12, 13, and 14. The `ngme2` package handles these gaps seamlessly by constructing the appropriate precision matrix structure internally.
+
+### Model Specification with Different Constraints
+
+Random walk models require constraints to handle their intrinsic nature (rank-deficient precision matrices). Let's explore the three main approaches available in `ngme2`:
+
+```{r rw-model-specifications}
+# Constrained approach (default): uses sum-to-zero constraint
+rw1_constrained <- f(regular_points,
+  model = "rw1",
+  noise = noise_normal(sigma = 1.5)
+)
+
+# Unconstrained approach: fixes first element as reference point
+rw1_unconstrained <- f(regular_points,
+  model = "rw1",
+  constr = FALSE,
+  noise = noise_normal(sigma = 1.5)
+)
+
+# Cyclic approach: treats boundaries as connected (periodic)
+rw1_cyclic <- f(regular_points,
+  model = "rw1",
+  cyclic = TRUE,
+  noise = noise_normal(sigma = 1.5)
+)
+
+# Second-order random walk for comparison
+rw2_model <- f(regular_points,
+  model = "rw2",
+  noise = noise_normal(sigma = 0.8)
+)
+```
+
+### Understanding the Operator Matrix Structure
+
+The different constraint approaches result in different operator matrix structures. Let's examine how these translate into the mathematical formulation:
+
+```{r operator-examination}
+# Compare operator matrix dimensions
+cat("RW1 constrained K matrix:", dim(rw1_constrained$operator$K), "\n")
+cat("RW1 unconstrained K matrix:", dim(rw1_unconstrained$operator$K), "\n")
+cat("RW1 cyclic K matrix:", dim(rw1_cyclic$operator$K), "\n")
+cat("RW2 constrained K matrix:", dim(rw2_model$operator$K), "\n")
+
+# Examine the K matrix patterns
+print("RW1 Constrained - K matrix structure:")
+print(as.matrix(rw1_constrained$operator$K))
+
+print("RW1 Unconstrained - K matrix structure:")
+print(as.matrix(rw1_unconstrained$operator$K))
+
+print("RW1 Cyclic - K matrix structure:")
+print(as.matrix(rw1_cyclic$operator$K))
+```
+
+Each constraint type creates a distinct pattern:
+
+- **Constrained**: First row contains sum-to-zero constraint weights, subsequent rows are difference operators
+- **Unconstrained**: First row fixes the reference point (W₁ = 0), subsequent rows are standard differences  
+- **Cyclic**: Constraint row spans all locations, differences connect endpoints to create periodic structure
+
+### Handling Irregular Grids
+
+One of `ngme2`'s strengths is seamless handling of irregular observation patterns through internal mapping:
+
+```{r irregular-grid-handling}
+# Create model on irregular grid
+rw1_irregular <- f(irregular_points,
+  model = "rw1",
+  noise = noise_normal(sigma = 1.0)
+)
+
+# Examine the mapping between observed and internal grid
+print("User-specified locations:")
+print(irregular_points)
+print("Internal mesh locations:")
+print(rw1_irregular$operator$mesh$loc)
+print("Mapping matrix dimensions:")
+print(dim(rw1_irregular$A))
+```
+
+The mapping matrix A bridges the gap between the irregular observations and the complete internal grid structure required for the random walk formulation.
+
+### Matrix Structure and Computational Efficiency
+
+This matrix formulation provides several computational benefits, particularly in terms of memory efficiency and processing speed. To better demonstrate the sparsity characteristics of random walk models, let's examine the unconstrained approach which shows the classic tridiagonal structure:
+
+```{r precision-matrix-sparsity}
+# Load Matrix package for sparse matrix operations
+library(Matrix)
+
+# Create unconstrained model to show classic sparse structure
+rw1_sparse <- f(1:10, # Use 10 points for clear demonstration
+  model = "rw1",
+  constr = FALSE, # Unconstrained for classic tridiagonal sparsity
+  noise = noise_normal(sigma = 1.0)
+)
+
+# The precision matrix is computed as Q = (K^T K) / sigma^2
+sigma2 <- 1.0
+Q_matrix <- (t(rw1_sparse$operator$K) %*% rw1_sparse$operator$K) / sigma2
+print("RW1 Unconstrained Precision Matrix:")
+print(Q_matrix)
+```
+
+Now let us examine the sparsity pattern of the precision matrix, which is crucial for computational efficiency:
+
+```{r, fig.height=4, fig.width=5, out.width="80%", fig.align='center', echo=FALSE, message=FALSE}
+# Load required libraries
+library(ggplot2)
+library(reshape2)
+
+# Convert the precision matrix to long format for ggplot2
+Q_melted <- melt(as.matrix(Q_matrix))
+names(Q_melted) <- c("Row", "Column", "Value")
+
+# Create a binary sparsity indicator
+Q_melted$Sparsity <- ifelse(abs(Q_melted$Value) < 1e-10, "Zero", "Non-zero")
+
+# Simple binary sparsity pattern
+p_sparsity_simple <- ggplot(Q_melted, aes(x = Column, y = rev(Row), fill = Sparsity)) +
+  geom_tile(color = "white", linewidth = 0.1) +
+  scale_fill_manual(values = c("Zero" = "white", "Non-zero" = "#2E86AB")) +
+  scale_x_continuous(breaks = 1:ncol(Q_matrix), expand = c(0, 0)) +
+  scale_y_continuous(breaks = 1:nrow(Q_matrix), labels = nrow(Q_matrix):1, expand = c(0, 0)) +
+  labs(
+    title = "Sparsity Pattern of RW1 Precision Matrix",
+    x = "Column Index",
+    y = "Row Index",
+    fill = "Elements"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 10, face = "bold"),
+    axis.text = element_text(size = 7),
+    axis.title = element_text(size = 8),
+    legend.position = "right",
+    legend.title = element_text(size = 8),
+    legend.text = element_text(size = 7),
+    panel.grid = element_blank(),
+    aspect.ratio = 1
+  ) +
+  coord_fixed()
+
+print(p_sparsity_simple)
+```
+
+Now let us examine the sparsity pattern of the precision matrix, which is crucial for computational efficiency:
+
+```{r sparsity-analysis}
+# Check sparsity (important for computational efficiency)
+Q_dense <- as.matrix(Q_matrix)
+total_elements <- nrow(Q_matrix) * ncol(Q_matrix)
+zero_elements <- sum(abs(Q_dense) < 1e-10)
+sparsity <- zero_elements / total_elements
+print(paste("Sparsity of precision matrix:", round(sparsity * 100, 1), "%"))
+```
+
+The unconstrained RW1 model shows clear tridiagonal sparsity structure, with most elements being zero. This sparsity becomes even more pronounced for longer series, making random walk models computationally efficient for large-scale applications.
+
+Finally, let us demonstrate how different error variances affect the precision matrix:
+
+```{r variance-scaling}
+# Demonstrate how different error variances affect the precision matrix
+sigma2_values <- c(0.5, 2.0, 4.0)
+for (sigma2_test in sigma2_values) {
+  Q_scaled <- (t(rw1_sparse$operator$K) %*% rw1_sparse$operator$K) / sigma2_test
+  print(paste(
+    "With sigma^2 =", sigma2_test,
+    ", Q[1,1] =", round(Q_scaled[1, 1], 3),
+    "(scaled by factor 1/", sigma2_test, ")"
+  ))
+}
+```
+
+**Key Takeaways:**
+
+- **Unconstrained models** exhibit classic tridiagonal sparse structure ideal for computational efficiency
+- **Constrained models** sacrifice some sparsity for theoretical identifiability properties
+- **Sparsity increases** with series length, making random walk models scalable to large datasets
+- The `ngme2` package automatically handles sparse matrix operations for all constraint types
+
+The resulting precision matrix $\mathbf{Q} = \mathbf{K}^T \mathbf{K}/\sigma^2$ exhibits clear tridiagonal sparsity structure characteristic of unconstrained random walk models. This sparsity reflects the local dependency structure inherent in random walk processes and enables efficient computation and storage, making `ngme2` practical for large-scale spatial and temporal modeling.
+
+# Simulation
+
+Understanding random walk model behavior through simulation helps build intuition about smoothness properties and the impact of different noise distributions. The `ngme2` package provides straightforward simulation capabilities that allow us to explore these characteristics systematically.
+
+## Setting Up the Simulation Environment
+
+First, let us prepare our environment and define the basic parameters for our simulations:
+
+```{r setup-simulation, message=FALSE}
+library(ngme2)
+library(ggplot2)
+library(gridExtra)
+set.seed(456)
+
+# Define simulation parameters
+n_obs <- 500
+time_index <- 1:n_obs
+```
+
+## Gaussian Random Walk Simulation
+
+We begin with the traditional Gaussian random walk model, which assumes normally distributed innovations. This serves as our baseline for comparison.
+First, we create the random walk model objects using the `f()` function, which specifies the model structure, parameters, and noise distribution. The `f()` function returns a model object that contains all the necessary information for simulation and estimation, including the spatial dependence structure and the Gaussian noise specification.
+
+```{r gaussian-rw-setup-model}
+# Define RW1 model with Gaussian noise
+rw1_gaussian <- f(time_index,
+  model = "rw1",
+  noise = noise_normal(sigma = 2.0)
+)
+
+# Define RW2 model with Gaussian noise (smaller sigma for comparison)
+rw2_gaussian <- f(time_index,
+  model = "rw2",
+  noise = noise_normal(sigma = 0.6)
+)
+```
+
+In the second step, we obtain sample realizations from these models using the `simulate()` method, which generates random samples according to the specified random walk process. The `simulate()` method takes the model object as input along with optional arguments such as the random seed (`seed = 456`) for reproducibility and the number of simulations (`nsim = 1`). This two-step approach separates model specification from sample generation, providing flexibility for multiple simulations or parameter exploration.
+
+```{r gaussian-rw-setup-simulate}
+# Generate realizations from the random walk models
+W1_gaussian <- simulate(rw1_gaussian, seed = 456, nsim = 1)[[1]]
+W2_gaussian <- simulate(rw2_gaussian, seed = 456, nsim = 1)[[1]]
+```
+
+Let us visualize the simulated Gaussian random walk processes and examine their characteristics:
+
+```{r gaussian-rw-plots, fig.height=5, fig.width=7, echo=FALSE}
+# Load required libraries
+library(ggplot2)
+library(gridExtra)
+
+# Prepare data for plotting
+gaussian_data <- data.frame(
+  time = rep(time_index, 2),
+  value = c(W1_gaussian, W2_gaussian),
+  model = rep(c("RW1", "RW2"), each = n_obs)
+)
+
+# Create separate plots with independent scales
+p1 <- ggplot(gaussian_data, aes(x = time, y = value, color = model)) +
+  geom_line(alpha = 0.8, linewidth = 0.3) +
+  facet_wrap(~model, scales = "free_y", ncol = 1) +
+  scale_color_manual(values = c("RW1" = "#2E86AB", "RW2" = "#F18F01")) +
+  labs(
+    title = "Gaussian Random Walks Comparison",
+    subtitle = "RW1 (sigma = 2.0) vs RW2 (sigma = 0.6) - Independent Scales",
+    x = "Time",
+    y = "Value",
+    color = "Model"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 12, face = "bold"),
+    legend.position = "none", # Remove legend since facet labels show model type
+    strip.text = element_text(size = 10, face = "bold")
+  )
+
+print(p1)
+```
+
+## NIG Random Walk Simulation
+
+Now let us explore the flexibility of non-Gaussian innovations using the Normal Inverse Gaussian (NIG) distribution, which can capture asymmetry and heavy tails. Here we create random walk model objects with NIG innovations using the `f()` function. The NIG distribution is specified through `noise_nig()` with three parameters: `mu = -3` (location parameter introducing asymmetry), `sigma = 4` (scale parameter controlling spread), and `nu = 0.4` (shape parameter governing tail heaviness).
+
+```{r nig-rw-setup-model}
+# Define RW1 model with NIG noise
+rw1_nig <- f(time_index,
+  model = "rw1",
+  rho = 0.5,
+  noise = noise_nig(mu = -3, sigma = 4, nu = 0.4)
+)
+
+# Define RW2 model with NIG noise
+rw2_nig <- f(time_index,
+  model = "rw2",
+  noise = noise_nig(mu = -3, sigma = 1.5, nu = 0.4)
+)
+```
+
+We then generate sample realizations using the `simulate()` method with a different random seed (`seed = 16`) to ensure independent samples from our Gaussian example. The resulting series will exhibit the characteristic features of NIG innovations while maintaining the random walk spatial correlation structure.
+
+```{r nig-rw-setup-simulate}
+# Generate realizations from the NIG random walk models
+W1_nig <- simulate(rw1_nig, seed = 16, nsim = 1)[[1]]
+W2_nig <- simulate(rw2_nig, seed = 16, nsim = 1)[[1]]
+```
+
+Next, we visualize the NIG random walk processes and their characteristics:
+
+```{r nig-rw-plots, fig.height=5, fig.width=7, echo=FALSE}
+# Prepare data for NIG plots
+nig_data <- data.frame(
+  time = rep(time_index, 2),
+  value = c(W1_nig, W2_nig),
+  model = rep(c("RW1 (NIG)", "RW2 (NIG)"), each = n_obs)
+)
+
+# Create separate plots with independent scales (stacked vertically)
+p3 <- ggplot(nig_data, aes(x = time, y = value, color = model)) +
+  geom_line(alpha = 0.8, linewidth = 0.3) +
+  facet_wrap(~model, scales = "free_y", ncol = 1) +
+  scale_color_manual(values = c("RW1 (NIG)" = "#A23B72", "RW2 (NIG)" = "#C73E1D")) +
+  labs(
+    title = "NIG Random Walks Comparison",
+    subtitle = "RW1 vs RW2 with NIG(μ = -3, σ = 4/1.5, ν = 0.4) - Independent Scales",
+    x = "Time",
+    y = "Value",
+    color = "Model"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 12, face = "bold"),
+    legend.position = "none", # Remove legend since facet labels show model type
+    strip.text = element_text(size = 10, face = "bold")
+  )
+
+print(p3)
+```
+
+## Comparing Distributions
+
+A key advantage of the NIG distribution is its ability to model asymmetric and heavy-tailed behavior. To better understand the differences between Gaussian and NIG innovations, we will prepare the data for a direct comparison of the marginal distributions. This analysis will highlight how the choice of noise distribution affects the overall behavior of the random walk process:
+
+```{r distribution-data-preparation}
+# Combine data for comparison
+comparison_data <- data.frame(
+  value = c(W1_gaussian, W1_nig),
+  type = rep(c("Gaussian", "NIG"), each = n_obs)
+)
+```
+
+Now we create comparative visualizations to examine the distributional differences between the two random walk processes:
+
+```{r distribution-comparison, fig.height=5, fig.width=8, echo=FALSE}
+# Create comparison plots
+p7 <- ggplot(comparison_data, aes(x = value, fill = type)) +
+  geom_histogram(alpha = 0.6, bins = 50, position = "identity") +
+  scale_fill_manual(values = c("Gaussian" = "#2E86AB", "NIG" = "#A23B72")) +
+  labs(
+    title = "Distribution Comparison: Gaussian vs NIG RW1",
+    x = "Value",
+    y = "Frequency",
+    fill = "Noise Type"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 12, face = "bold"),
+    legend.position = "top"
+  )
+
+# Box plot comparison
+p8 <- ggplot(comparison_data, aes(x = type, y = value, fill = type)) +
+  geom_boxplot(alpha = 0.6, outlier.alpha = 0.5) +
+  scale_fill_manual(values = c("Gaussian" = "#2E86AB", "NIG" = "#A23B72")) +
+  labs(
+    title = "Distribution Comparison (Box Plots)",
+    x = "Noise Type",
+    y = "Value"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 12, face = "bold"),
+    legend.position = "none"
+  )
+
+grid.arrange(p7, p8, ncol = 2)
+```
+
+The comparison reveals how the NIG distribution captures different tail behavior and potential asymmetry compared to the Gaussian case, while maintaining the overall random walk structure.
+
+# Estimation
+
+Model estimation in `ngme2` involves fitting random walk models to observed data using advanced optimization techniques. We'll demonstrate this process using our simulated NIG data combined with fixed effects and measurement noise.
+
+## Preparing the Data
+
+Let us create a realistic dataset with fixed effects, latent RW2 structure, and measurement noise:
+
+```{r data-preparation}
+# Define fixed effects and covariates
+feff <- c(-1, 2, 0.5)
+x1 <- runif(n_obs, 0, 10)
+x2 <- rexp(n_obs, 1 / 10)
+x3 <- rnorm(n_obs, mean = 10, sd = 0.5)
+X <- model.matrix(~ 0 + x1 + x2 + x3)
+
+# Create response variable with fixed effects, latent process, and measurement noise
+Y <- as.numeric(X %*% feff) + W1_nig + rnorm(n_obs, sd = 2)
+
+# Prepare data frame
+model_data <- data.frame(x1 = x1, x2 = x2, x3 = x3, Y = Y)
+```
+
+## Model Specification and Fitting
+
+We specify our model using the `ngme` function, incorporating both fixed effects and the latent random walk process. The `ngme()` function follows R's standard modeling approach by accepting a formula object that defines the relationship between the response variable and both fixed and latent effects:
+
+```{r model-fitting,results='hide'}
+# Fit the model
+ngme_out <- ngme(
+  Y ~ 0 + x1 + x2 + x3 + f(
+    1:n_obs,
+    name = "my_rw",
+    model = "rw1",
+    noise = noise_nig()
+  ),
+  data = model_data,
+  control_opt = control_opt(
+    optimizer = adam(),
+    burnin = 100,
+    iterations = 2000,
+    std_lim = 0.02,
+    n_parallel_chain = 4,
+    stop_points = 5,
+    verbose = FALSE,
+    print_check_info = FALSE,
+    seed = 3
+  )
+)
+```
+
+The formula `Y ~ 0 + x1 + x2 + x3 + f(...)` specifies that the response variable `Y` depends on three fixed effects (`x1`, `x2`, `x3`) with no intercept (the `0` term), plus a latent RW1 process defined through the `f()` function. The latent model is specified with `f(1:n_obs, name = "my_rw", model = "rw1", noise = noise_nig())`, where we assign a name to the process for later reference and specify NIG innovations without fixing the parameters (allowing them to be estimated).
+
+The `control_opt()` function manages the optimization process through several key parameters:
+
+- **`optimizer = adam()`**: Uses the Adam optimizer, an adaptive gradient-based algorithm well-suited for complex likelihood surfaces
+- **`iterations = 1000`**: Sets the maximum number of optimization iterations
+- **`burnin = 100`**: Specifies initial iterations for algorithm stabilization before convergence assessment
+- **`n_parallel_chain = 4`**: Runs 4 parallel optimization chains to improve convergence reliability and parameter estimation robustness
+- **`std_lim = 0.01`**: Sets the convergence criterion based on parameter standard deviation across chains
+- **`stop_points = 10`**: Number of intermediate convergence checks during optimization
+- **`seed = 3`**: Ensures reproducible results across runs
+
+This optimization setup balances computational efficiency with estimation reliability, particularly important for complex models with non-Gaussian latent processes. Let us examine the fitted model results:
+
+```{r model-summary}
+# Display model summary
+ngme_out
+```
+
+## Convergence Diagnostics
+
+Assessing convergence is crucial for reliable parameter estimates. We will use the built-in `traceplot` function from `ngme2` to examine the convergence of our parameters:
+
+```{r convergence-diagnostics, fig.height=5, fig.width=7}
+# Trace plot for sigma and fixed effects (blue lines indicate true value)
+traceplot(ngme_out, hline = c(2, -1, 2, 0.5), moving_window = 20)
+```
+
+Now let us examine the convergence of the RW1 process parameters:
+
+```{r convergence-rw-process, fig.height=5, fig.width=7}
+# Trace plots for RW1 parameters (blue lines indicate true value)
+traceplot(ngme_out, "my_rw", hline = c(-3, 4, 0.4))
+```
+
+## Parameter Estimates Summary
+
+Let us examine the final parameter estimates and compare them with the true values using the `ngme_result()` function:
+
+```{r parameter-summary}
+# Parameter Estimates for Fixed Effects and Measurement Noise
+params_data <- ngme_result(ngme_out, "data")
+
+# Fixed Effects
+print(data.frame(
+  Truth = c(-1, 2, 0.5),
+  Estimates = as.numeric(params_data$fixed_effects),
+  row.names = names(params_data$fixed_effects)
+))
+
+# Measurement Noise
+print(data.frame(Truth = 2.0, Estimate = params_data$sigma, row.names = "sigma"))
+cat("\n")
+
+# RW1 Process Parameters
+params_rw1 <- ngme_result(ngme_out, "my_rw")
+
+print(data.frame(
+  Truth = c(mu = -3.0, sigma = 4.0, nu = 0.4),
+  Estimates = unlist(params_rw1)
+))
+```
+
+## Model Validation
+
+Let us validate our model by comparing the estimated noise distribution with the true distribution:
+
+```{r model-validation, fig.height=5, fig.width=7}
+# Distribution Validation: Fitted vs. True NIG Noise Model
+with(params_rw1, {
+  plot(
+    noise_nig(mu = mu, sigma = sigma, nu = nu),
+    noise_nig(mu = -3, sigma = 4, nu = 0.4)
+  )
+})
+```
+
+# Interpolation
+
+Once we have fitted a random walk model using `ngme2`, we can use it for interpolating missing observations. Random walk models are particularly well-suited for interpolation tasks because they exploit the spatial/temporal smoothness of the underlying process, making them effective when dealing with irregular sampling or gaps in the observation grid.
+
+## Interpolation for Missing Values
+
+Random walk models are well suited for interpolating missing values because they exploit the spatial dependence between neighboring observations. This makes them especially useful when dealing with irregular sampling or short gaps in spatial or temporal data.  
+
+To illustrate this, we introduce artificial gaps at different points in the series and use the RW1 model to reconstruct the missing values:
+
+```{r interpolation-setup}
+gap1_indices <- 151:155 # Early gap (around 30% of series)
+gap2_indices <- 250:254 # Middle gap (around 50% of series)
+gap3_indices <- 420:424 # Late gap (around 85% of series)
+all_gap_indices <- c(gap1_indices, gap2_indices, gap3_indices)
+
+Y_true_gaps <- Y[all_gap_indices]
+train_indices_interp <- setdiff(1:n_obs, all_gap_indices)
+model_data_train_interp <- model_data[train_indices_interp, ]
+Y_train_vector <- Y[train_indices_interp]
+
+cat("Total gaps to interpolate:", length(all_gap_indices), "\n")
+cat("Training observations:", length(train_indices_interp), "\n")
+```
+
+### Fitting Model for Interpolation
+
+The interpolation model is fitted using only the non-gap observations. The indices in the `f()` function correspond to the actual observation locations, allowing the model to handle irregular grids naturally:
+
+```{r interpolation-model-fit, results='hide'}
+ngme_out_interp <- ngme(
+  Y_train_vector ~ 0 + x1 + x2 + x3 + f(
+    train_indices_interp,
+    name = "my_rw_interp",
+    model = "rw1",
+    noise = noise_nig()
+  ),
+  data = model_data_train_interp,
+  control_opt = control_opt(
+    optimizer = adam(),
+    burnin = 100,
+    iterations = 1000,
+    std_lim = 0.01,
+    n_parallel_chain = 4,
+    stop_points = 10,
+    verbose = FALSE,
+    print_check_info = FALSE,
+    seed = 42
+  )
+)
+```
+
+### Making Interpolation Predictions
+
+The interpolation predictions are generated for the gap locations using the corresponding covariate values. The model leverages spatial correlation from neighboring observed points to estimate the missing values:
+
+```{r interpolation-predictions}
+gap_covariates <- data.frame(
+  x1 = x1[all_gap_indices],
+  x2 = x2[all_gap_indices],
+  x3 = x3[all_gap_indices]
+)
+
+interpolation_pred <- predict(
+  ngme_out_interp,
+  map = list(my_rw_interp = all_gap_indices),
+  data = gap_covariates,
+  type = "lp",
+  estimator = c("mean", "sd", "0.5q", "0.95q"),
+  sampling_size = 1000,
+  seed = 42
+)
+
+interp_mean <- interpolation_pred$mean
+interp_sd <- interpolation_pred$sd
+interp_lower <- interpolation_pred[["0.5q"]]
+interp_upper <- interpolation_pred[["0.95q"]]
+```
+
+### Technical Interpolation Results
+
+The interpolation performance can be assessed by comparing predicted values with the true (known) values at gap locations. These metrics demonstrate the effectiveness of spatial correlation for missing value estimation:
+
+```{r interpolation-evaluation}
+interp_errors <- interp_mean - Y_true_gaps
+rmse_interp <- sqrt(mean(interp_errors^2))
+mae_interp <- mean(abs(interp_errors))
+correlation_interp <- cor(interp_mean, Y_true_gaps)
+in_interval_90_interp <- (Y_true_gaps >= interp_lower) & (Y_true_gaps <= interp_upper)
+coverage_90_interp <- mean(in_interval_90_interp)
+
+cat("RMSE:", round(rmse_interp, 3), "\n")
+cat("MAE:", round(mae_interp, 3), "\n")
+cat("Correlation:", round(correlation_interp, 3), "\n")
+cat("90% Interval Coverage:", round(coverage_90_interp * 100, 1), "%\n")
+
+print(data.frame(
+  Time = all_gap_indices[1:10],
+  Observed = round(Y_true_gaps[1:10], 2),
+  Interpolated = round(interp_mean[1:10], 2),
+  Lower_90 = round(interp_lower[1:10], 2),
+  Upper_90 = round(interp_upper[1:10], 2)
+))
+```
+
+## Visualizing Interpolation Results
+
+The interpolation visualization shows how the model fills gaps across different time periods. Each subplot focuses on a specific gap region with surrounding temporal context to illustrate the information flow:
+
+```{r interpolation-visualization, fig.height=8, fig.width=8, echo=FALSE}
+gap_info <- list(
+  list(indices = gap1_indices, name = "Gap 1 (Early)", center = mean(gap1_indices)),
+  list(indices = gap2_indices, name = "Gap 2 (Middle)", center = mean(gap2_indices)),
+  list(indices = gap3_indices, name = "Gap 3 (Late)", center = mean(gap3_indices))
+)
+
+plot_list <- list()
+context_length <- 40
+
+for (i in 1:3) {
+  gap <- gap_info[[i]]
+  context_start <- round(max(1, gap$center - context_length / 2))
+  context_end <- round(min(n_obs, gap$center + context_length / 2))
+  context_range <- context_start:context_end
+
+  # Complete time series data within the context window
+  all_context_data <- data.frame(
+    time = context_range,
+    value = Y[context_range],
+    is_gap = context_range %in% gap$indices
+  )
+
+  # Extract data points within the gap for highlighting
+  gap_data <- data.frame(
+    time = gap$indices,
+    value = Y[gap$indices]
+  )
+
+  # Interpolated values with uncertainty bounds
+  interp_mask <- all_gap_indices %in% gap$indices
+  interp_gap_data <- data.frame(
+    time = gap$indices,
+    value = interp_mean[interp_mask],
+    lower = interp_lower[interp_mask],
+    upper = interp_upper[interp_mask]
+  )
+
+  p <- ggplot() +
+    # Continuous blue line representing the complete observed time series
+    geom_line(
+      data = all_context_data, aes(x = time, y = value),
+      color = "#2E86AB", alpha = 0.6, linewidth = 0.4
+    ) +
+
+    # Blue points highlighting the true values within the gap
+    geom_point(
+      data = gap_data, aes(x = time, y = value),
+      color = "#2E86AB", size = 1.2, alpha = 0.8
+    ) +
+
+    # Uncertainty ribbon for interpolated predictions
+    geom_ribbon(
+      data = interp_gap_data,
+      aes(x = time, ymin = lower, ymax = upper),
+      fill = "#A23B72", alpha = 0.2
+    ) +
+
+    # Purple line connecting the interpolated values
+    geom_line(
+      data = interp_gap_data, aes(x = time, y = value),
+      color = "#A23B72", linewidth = 0.4
+    ) +
+
+    # Purple points showing interpolated predictions
+    geom_point(
+      data = interp_gap_data, aes(x = time, y = value),
+      color = "#A23B72", size = 1.2, alpha = 0.8
+    ) +
+
+    # Vertical dashed lines marking gap boundaries
+    geom_vline(
+      xintercept = c(min(gap$indices), max(gap$indices)),
+      linetype = "dashed", color = "gray50", alpha = 0.6
+    ) +
+    labs(
+      title = paste(gap$name, "- RW1 Interpolation"),
+      x = "Time", y = "Value"
+    ) +
+    theme_minimal() +
+    theme(
+      plot.title = element_text(size = 11, face = "bold"),
+      panel.grid.minor = element_blank()
+    )
+
+  plot_list[[i]] <- p
+}
+
+library(gridExtra)
+library(grid)
+
+grid.arrange(plot_list[[1]], plot_list[[2]], plot_list[[3]],
+  ncol = 1,
+  top = textGrob("RW1 Model Interpolation Across Multiple Time Periods", gp = gpar(fontface = "bold", fontsize = 14))
+)
+```
+
+# Posterior Simulation
+
+After fitting and validating our random walk model, we can generate posterior samples to quantify uncertainty in both the latent process and the response predictions. This Bayesian approach provides comprehensive uncertainty characterization beyond simple point estimates.
+
+## Generating Posterior Samples
+
+The `ngme2` package provides functionality to generate posterior samples through the `ngme_post_samples()` function. These samples represent different plausible realizations of the latent random walk process given the observed data and estimated parameters:
+
+```{r posterior-sampling}
+posterior_samples <- ngme_post_samples(ngme_out)
+
+cat("Number of time points:", nrow(posterior_samples), "\n")
+cat("Number of posterior samples:", ncol(posterior_samples), "\n")
+cat("Sample names:", names(posterior_samples)[1:5], "...\n")
+```
+
+## Latent Process Posterior Analysis
+
+We first analyze the posterior uncertainty in the latent random walk process (W). The posterior samples allow us to quantify how well we can recover the underlying spatial structure:
+
+```{r posterior-analysis}
+W_posterior_mean <- apply(posterior_samples, 1, mean)
+W_posterior_sd <- apply(posterior_samples, 1, sd)
+W_posterior_q025 <- apply(posterior_samples, 1, function(x) quantile(x, 0.025))
+W_posterior_q975 <- apply(posterior_samples, 1, function(x) quantile(x, 0.975))
+
+comparison_data <- data.frame(
+  time = 1:n_obs,
+  true_W = W1_nig,
+  posterior_mean = W_posterior_mean,
+  posterior_lower = W_posterior_q025,
+  posterior_upper = W_posterior_q975
+)
+
+cat(
+  "Mean absolute difference from true values:",
+  round(mean(abs(W_posterior_mean - W1_nig)), 3), "\n"
+)
+cat(
+  "Average posterior standard deviation:",
+  round(mean(W_posterior_sd), 3), "\n"
+)
+```
+
+## Latent Process Uncertainty Visualization
+
+This visualization shows how well the model recovers the underlying latent random walk process by comparing the posterior estimates with the true latent values:
+
+```{r posterior-visualization, fig.height=6, fig.width=8, echo=FALSE}
+viz_range <- 200:300
+viz_data <- comparison_data[viz_range, ]
+
+p_posterior <- ggplot(viz_data, aes(x = time)) +
+  geom_ribbon(aes(ymin = posterior_lower, ymax = posterior_upper),
+    fill = "#A23B72", alpha = 0.3
+  ) +
+  geom_line(aes(y = true_W, color = "True Latent Process"),
+    linewidth = 0.4, alpha = 0.8
+  ) +
+  geom_line(aes(y = posterior_mean, color = "Posterior Mean"),
+    linewidth = 0.4, alpha = 0.9
+  ) +
+  scale_color_manual(values = c(
+    "True Latent Process" = "#2E86AB",
+    "Posterior Mean" = "#A23B72"
+  )) +
+  labs(
+    title = "Posterior Uncertainty in RW1 Latent Process",
+    subtitle = "95% Posterior Credible Intervals with True vs Estimated Process",
+    x = "Time",
+    y = "Latent Process Value (W)",
+    color = ""
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    legend.position = "top",
+    panel.grid.minor = element_blank()
+  )
+
+print(p_posterior)
+```
+
+## Response Variable Posterior Predictive Check
+
+We now assess model adequacy by generating posterior predictive samples for the response variable (Y) and comparing them with the observed data:
+
+```{r}
+n_sims <- 300
+
+# Generate posterior predictive samples for Y using simulate()
+Y_sim <- simulate(ngme_out, posterior = TRUE, m_noise = TRUE, nsim = n_sims)
+
+# Convert to matrix for easier handling
+Y_sim_matrix <- as.matrix(Y_sim)
+```
+```{r posterior-predictive-check, fig.height=6, fig.width=8, echo=FALSE}
+# Compare observed vs simulated Y values
+par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
+
+# 1. Scatter plot: Observed vs Posterior Mean (much clearer visualization)
+y_mean <- rowMeans(Y_sim_matrix)
+y_lower <- apply(Y_sim_matrix, 1, quantile, 0.025)
+y_upper <- apply(Y_sim_matrix, 1, quantile, 0.975)
+plot(y_mean, Y,
+  pch = 16, col = rgb(0.3, 0.3, 0.3, 0.6), cex = 0.8,
+  main = "Observed vs Posterior Mean",
+  xlab = "Posterior Mean", ylab = "Observed Y",
+  xlim = range(c(y_mean, Y)), ylim = range(c(y_mean, Y))
+)
+
+# Add 1:1 reference line
+abline(0, 1, col = "red", lwd = 1, lty = 2)
+
+segments(y_mean, y_lower,
+  y_mean, y_upper,
+  col = rgb(0.64, 0.23, 0.45, 0.1), lwd = 1
+)
+
+# Calculate and display correlation
+correlation <- cor(Y, y_mean)
+mtext(paste("Correlation =", round(correlation, 3)), side = 3, line = 0.2, cex = 0.9)
+
+legend("topleft",
+  legend = c("Data points", "Perfect fit", "95% CI"),
+  col = c(rgb(0.3, 0.3, 0.3, 0.6), "red", rgb(0.64, 0.23, 0.45, 0.4)),
+  pch = c(16, NA, NA), lty = c(NA, 2, 1), lwd = c(NA, 1, 1), bty = "n"
+)
+
+# 2. Histogram comparison
+hist(Y,
+  breaks = 40, col = rgb(0.18, 0.53, 0.67, 0.7),
+  main = "Distribution Comparison", xlab = "Y values",
+  freq = FALSE, border = "white"
+)
+hist(unlist(Y_sim),
+  breaks = 40, col = rgb(0.64, 0.23, 0.45, 0.7),
+  add = TRUE, freq = FALSE, border = "white"
+)
+legend("topleft",
+  legend = c("Observed", "Simulated"),
+  fill = c(rgb(0.18, 0.53, 0.67, 0.7), rgb(0.64, 0.23, 0.45, 0.7)),
+  bty = "n"
+)
+
+# 3. Q-Q plot
+qqplot(Y, unlist(Y_sim),
+  main = "Q-Q Plot",
+  xlab = "Observed Y quantiles", ylab = "Simulated Y quantiles",
+  pch = 16, col = rgb(0.3, 0.3, 0.3, 0.6)
+)
+abline(0, 1, col = "red", lwd = 1)
+
+# 4. Posterior predictive distribution comparison using density plots
+d_observed <- density(Y)
+d_simulated <- density(unlist(Y_sim))
+
+plot(d_observed,
+  col = "#2E86AB", lwd = 1,
+  main = "Density Comparison",
+  xlab = "Y values", ylab = "Density",
+  xlim = range(c(d_observed$x, d_simulated$x)),
+  ylim = range(c(d_observed$y, d_simulated$y))
+)
+lines(d_simulated, col = rgb(0.64, 0.23, 0.45, 0.8), lwd = 1)
+
+# Add some key statistics as vertical lines
+abline(v = mean(Y), col = "#2E86AB", lty = 2, lwd = 1)
+abline(v = mean(unlist(Y_sim)), col = rgb(0.64, 0.23, 0.45, 0.8), lty = 2, lwd = 2)
+
+legend("topleft",
+  legend = c("Observed", "Simulated", "Obs. mean", "Sim. mean"),
+  col = c("#2E86AB", rgb(0.64, 0.23, 0.45, 0.8), "#2E86AB", rgb(0.64, 0.23, 0.45, 0.8)),
+  lty = c(1, 1, 2, 2), lwd = c(1, 1, 1, 1), bty = "n"
+)
+```
+
+<!-- ## Response Variable Prediction Intervals -->
+
+Finally, we assess the calibration of our prediction intervals by examining how well the posterior predictive samples capture the observed data:
+
+```{r uncertainty-bands, fig.height=5, fig.width=8, echo=FALSE}
+# Calculate prediction intervals from posterior samples
+y_quantiles <- apply(Y_sim_matrix, 1, quantile, probs = c(0.025, 0.25, 0.5, 0.75, 0.975))
+
+# Sort by observed values for better visualization
+sort_idx <- order(Y)
+Y_sorted <- Y[sort_idx]
+y_quantiles_sorted <- y_quantiles[, sort_idx]
+
+par(mfrow = c(1, 2), mar = c(4, 4, 3, 1))
+
+# 1. Uncertainty bands plot
+plot(1:length(Y_sorted), Y_sorted,
+  type = "l", col = "#2E86AB", lwd = 2,
+  main = "Posterior Prediction Intervals",
+  xlab = "Sorted Index", ylab = "Y values",
+  ylim = range(y_quantiles_sorted)
+)
+
+# Add uncertainty bands
+polygon(c(1:length(Y_sorted), rev(1:length(Y_sorted))),
+  c(y_quantiles_sorted[1, ], rev(y_quantiles_sorted[5, ])),
+  col = rgb(0.64, 0.23, 0.45, 0.2), border = NA
+)
+polygon(c(1:length(Y_sorted), rev(1:length(Y_sorted))),
+  c(y_quantiles_sorted[2, ], rev(y_quantiles_sorted[4, ])),
+  col = rgb(0.64, 0.23, 0.45, 0.3), border = NA
+)
+
+lines(1:length(Y_sorted), y_quantiles_sorted[3, ], col = rgb(0.64, 0.23, 0.45, 0.8), lwd = 1)
+lines(1:length(Y_sorted), Y_sorted, col = "#2E86AB", lwd = 1)
+
+legend("topleft",
+  legend = c("Observed", "Median prediction", "50% interval", "95% interval"),
+  col = c("#2E86AB", rgb(0.64, 0.23, 0.45, 0.8), rgb(0.64, 0.23, 0.45, 0.3), rgb(0.64, 0.23, 0.45, 0.2)),
+  lwd = c(2, 2, 8, 8), bty = "n"
+)
+
+# 2. Coverage assessment
+coverage_50 <- mean(Y >= y_quantiles[2, ] & Y <= y_quantiles[4, ])
+coverage_95 <- mean(Y >= y_quantiles[1, ] & Y <= y_quantiles[5, ])
+
+barplot(c(coverage_50, coverage_95),
+  names.arg = c("50% Interval", "95% Interval"),
+  main = "Prediction Interval Coverage",
+  ylab = "Empirical Coverage",
+  col = c(rgb(0.64, 0.23, 0.45, 0.6), rgb(0.64, 0.23, 0.45, 0.8)),
+  ylim = c(0, 1)
+)
+abline(h = c(0.5, 0.95), lty = 2, col = "red")
 ```

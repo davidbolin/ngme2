@@ -33,7 +33,7 @@ vector or matrix (n * 2) for spatial coords}
 <model_name> is prediction of a specific model
 "lp" is linear predictor (including fixed effect and all sub-models)}
 
-\item{group}{which filed to predict 
+\item{group}{which filed to predict
 (used for bivariate model, should be of same length as map)}
 
 \item{estimator}{what type of estimator. Options include:

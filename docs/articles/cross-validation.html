@@ -4,143 +4,86 @@
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cross-validation for the ngme2 models • ngme2</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<title>Cross-validation in ngme2 • ngme2</title>
 <!-- favicons --><link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
 <link rel="apple-touch-icon" type="image/png" sizes="180x180" href="../apple-touch-icon.png">
 <link rel="apple-touch-icon" type="image/png" sizes="120x120" href="../apple-touch-icon-120x120.png">
 <link rel="apple-touch-icon" type="image/png" sizes="76x76" href="../apple-touch-icon-76x76.png">
 <link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png">
-<!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script><!-- Bootstrap --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha256-bZLfwXAP04zRMK2BjiO8iu9pf4FbLqX6zitd+tIvLhE=" crossorigin="anonymous">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script><!-- bootstrap-toc --><link rel="stylesheet" href="../bootstrap-toc.css">
-<script src="../bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
-<!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
-<script src="../pkgdown.js"></script><meta property="og:title" content="Cross-validation for the ngme2 models">
-<!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
-<script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
-<script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-<![endif]-->
+<script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Roboto_Slab-0.4.10/font.css" rel="stylesheet">
+<link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Cross-validation in ngme2">
 </head>
-<body data-spy="scroll" data-target="#toc">
+<body>
+    <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <div class="container template-article">
-      <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
-  <div class="container">
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false">
-        <span class="sr-only">Toggle navigation</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <span class="navbar-brand">
-        <a class="navbar-link" href="../index.html">ngme2</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.1</span>
-      </span>
-    </div>
+    <nav class="navbar navbar-expand-lg fixed-top bg-primary" data-bs-theme="dark" aria-label="Site navigation"><div class="container">
 
-    <div id="navbar" class="navbar-collapse collapse">
-      <ul class="nav navbar-nav">
-<li>
-  <a href="../articles/ngme2.html">Get started</a>
-</li>
-<li>
-  <a href="../reference/index.html">Functions</a>
-</li>
-<li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Vignettes
+    <a class="navbar-brand me-2" href="../index.html">ngme2</a>
 
-    <span class="caret"></span>
-  </a>
-  <ul class="dropdown-menu" role="menu">
-<li>
-      <a href="../articles/Installation_and_configuration.html">Installation and configuration (using OpenMP)</a>
-    </li>
-    <li>
-      <a href="../articles/inla_compare.html">Comparison with R-INLA</a>
-    </li>
-    <li>
-      <a href="../articles/AR1-model.html">AR(1) model</a>
-    </li>
-    <li>
-      <a href="../articles/RW-model.html">Random walk model</a>
-    </li>
-    <li>
-      <a href="../articles/SPDE-model.html">SPDE Matern model</a>
-    </li>
-    <li>
-      <a href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a>
-    </li>
-    <li>
-      <a href="../articles/replicate.html">Models with replicates</a>
-    </li>
-    <li>
-      <a href="../articles/pred_and_est.html">Model estimation and prediction</a>
-    </li>
-    <li>
-      <a href="../articles/bivariate.html">Bivariate models in Ngme2</a>
-    </li>
-    <li>
-      <a href="../articles/tp-bv.html">Space-time bivariate model in Ngme2</a>
-    </li>
-    <li>
-      <a href="../articles/random-effect.html">Random effects model in Ngme2</a>
-    </li>
-    <li>
-      <a href="../articles/tensor_product.html">Space-time (tensor product) model in Ngme2</a>
-    </li>
-    <li>
-      <a href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a>
-    </li>
-    <li>
-      <a href="../articles/cross-validation.html">Cross-validation for the ngme2 models</a>
-    </li>
-    <li>
-      <a href="../articles/generic.html">Using the Generic Model in ngme2</a>
-    </li>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.0</small>
+
+
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div id="navbar" class="collapse navbar-collapse ms-3">
+      <ul class="navbar-nav me-auto">
+<li class="nav-item"><a class="nav-link" href="../articles/ngme2.html">Get started</a></li>
+<li class="nav-item"><a class="nav-link" href="../reference/index.html">Functions</a></li>
+<li class="active nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-vignettes" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Vignettes</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-vignettes">
+<li><a class="dropdown-item" href="../articles/Installation_and_configuration.html">Installation and configuration (using OpenMP)</a></li>
+    <li><a class="dropdown-item" href="../articles/inla_compare.html">Comparison with R-INLA</a></li>
+    <li><a class="dropdown-item" href="../articles/AR1-model.html">AR(1) model</a></li>
+    <li><a class="dropdown-item" href="../articles/RW-model.html">Random walk model</a></li>
+    <li><a class="dropdown-item" href="../article/ngme2_ou_vignette.html">Ornstein-Uhlenbeck process</a></li>
+    <li><a class="dropdown-item" href="../articles/SPDE-model.html">SPDE Matern model</a></li>
+    <li><a class="dropdown-item" href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a></li>
+    <li><a class="dropdown-item" href="../articles/replicate.html">Models with replicates</a></li>
+    <li><a class="dropdown-item" href="../articles/pred_and_est.html">Model estimation and prediction</a></li>
+    <li><a class="dropdown-item" href="../articles/bivariate.html">Bivariate models in Ngme2</a></li>
+    <li><a class="dropdown-item" href="../articles/tp-bv.html">Space-time bivariate model in Ngme2</a></li>
+    <li><a class="dropdown-item" href="../articles/random-effect.html">Random effects model in Ngme2</a></li>
+    <li><a class="dropdown-item" href="../articles/tensor_product.html">Space-time (tensor product) model in Ngme2</a></li>
+    <li><a class="dropdown-item" href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a></li>
+    <li><a class="dropdown-item" href="../articles/cross-validation.html">Cross-validation for the ngme2 models</a></li>
+    <li><a class="dropdown-item" href="../articles/generic.html">Using the Generic Model in ngme2</a></li>
   </ul>
 </li>
-<li>
-  <a href="../news/index.html">Changelog</a>
-</li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
-<ul class="nav navbar-nav navbar-right">
-<li>
-  <a href="https://github.com/davidbolin/ngme2" class="external-link">
-    <span class="fa fa-github"></span>
-
-  </a>
-</li>
-<li>
-  <a href="https://twitter.com/jdavidbolin" class="external-link">
-    <span class="fa fa-twitter"></span>
-
-  </a>
-</li>
+<ul class="navbar-nav">
+<li class="nav-item"><form class="form-inline" role="search">
+ <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
+</form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/davidbolin/ngme2" aria-label="Github"><span class="fa fa-github"></span></a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://twitter.com/jdavidbolin" aria-label="Twitter"><span class="fa fa-twitter"></span></a></li>
       </ul>
 </div>
-<!--/.nav-collapse -->
+
+
   </div>
-<!--/.container -->
-</div>
-<!--/.navbar -->
+</nav><div class="container template-article">
 
 
 
-      </header><div class="row">
-  <div class="col-md-9 contents">
-    <div class="page-header toc-ignore">
-      <h1 data-toc-skip>Cross-validation for the ngme2 models</h1>
+
+<div class="row">
+  <main id="main" class="col-md-9"><div class="page-header">
+      <img src="../logo.png" class="logo" alt=""><h1>Cross-validation in ngme2</h1>
             
-            <h4 data-toc-skip class="date">2025-09-21</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/HEAD/vignettes/cross-validation.Rmd" class="external-link"><code>vignettes/cross-validation.Rmd</code></a></small>
-      <div class="hidden name"><code>cross-validation.Rmd</code></div>
-
+      <div class="d-none name"><code>cross-validation.Rmd</code></div>
     </div>
 
     
@@ -148,225 +91,1192 @@
 <div class="section level2">
 <h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
-<p>Cross-validation is a statistical method used to evaluate and improve
-the performance of machine learning models by testing them on different
-subsets of the data. The goal is to ensure that the model generalizes
-well to unseen data and doesn’t just perform well on the training
-set.</p>
-<p>Since in the <code>ngme2</code> package we can fit high flexible
-models using Gaussian driven noise and non-Gaussian driven noise (or
-mixture), we need to evaluate the performance of the model using
-cross-validation. In this vignette, we will show how to perform
-cross-validation for the <code>ngme2</code> models.</p>
-<p>Doing cross-validation in the <code>ngme2</code> package is
-straightforward. We can use the <code>cross_validation</code> function
-to perform cross-validation for the <code>ngme2</code> models. The
-function has the following key arguments: 1. <code>model</code>: the
-model to be fitted via <code>ngme2</code> function. 2.
-<code>type</code>: the type of cross-validation to be performed. It can
-be either <code>k-fold</code>, <code>loo</code> (leave-one-out),
-<code>lpo</code> (leave-percent-out), or <code>custom</code>
-(user-defined training and testing sets). 3. <code>k</code> (optional):
-the number of folds for <code>k-fold</code> cross-validation. 4.
-<code>percent</code> (optional): the percentage of data to be left out
-for <code>lpo</code> cross-validation. 5. <code>times</code> (optional):
-the number of times to repeat for <code>lpo</code> cross-validation. 6.
-<code>train_idx</code> (optional): the training set for
-<code>custom</code> cross-validation. 7. <code>test_idx</code>
-(optional): the testing set for <code>custom</code> cross-validation. 8.
-<code>n_burnin</code>: the number of burn-in samples to be discarded. 9.
-<code>n_gibbs_samples</code>: After burn-in period, the number of
-posterior Gibbs samples to be drawn. The prediction is based on drawing
-<code>n_gibbs_samples</code> samples from the posterior distribution.
-10. <code>N</code>: Do it <code>N</code> multiple times to get more
-accurate results.</p>
+<p>Cross-validation is a fundamental tool for model selection and
+assessment, allowing us to evaluate how well different model
+specifications generalize to unseen data. In the context of spatial and
+temporal models, proper cross-validation requires careful attention to
+the structure of dependence in the data.</p>
+<p>This vignette demonstrates cross-validation approaches for both:</p>
+<ol style="list-style-type: decimal">
+<li>
+<strong>Time series models</strong>: where temporal ordering must be
+respected, comparing Ornstein-Uhlenbeck and Whittle-Matérn processes
+with <strong>NIG noise</strong>.</li>
+<li>
+<strong>Spatial models</strong>: where the spatial correlation
+structure must be preserved, using SPDE Matérn models with <strong>NIG
+noise</strong> and spatial scales governed either by a stationary range
+parameter or by a nonstationary, spatially varying range parameter.</li>
+</ol>
+<p>We use the <code>ngme2</code> package’s flexible cross-validation
+framework, which supports custom splitting strategies that honor the
+dependence structure inherent in spatial and temporal data. A key
+feature is the use of the <strong>Whittle-Matérn SPDE framework with
+non-Gaussian Type-G Lévy noise</strong> (NIG, GAL), which provides a
+unified approach to modeling both temporal (1D) and spatial (2D)
+correlation structures with heavy tails, skewness, and jumps through
+stochastic partial differential equations.</p>
 </div>
 <div class="section level2">
-<h2 id="ar1-example">AR(1) Example<a class="anchor" aria-label="anchor" href="#ar1-example"></a>
+<h2 id="time-series-cross-validation">Time Series Cross-validation<a class="anchor" aria-label="anchor" href="#time-series-cross-validation"></a>
 </h2>
-<p>Let’s run a simple example using the AR(1) model. We will generate
-some data and fit the AR(1) model using the <code>ngme2</code> function.
-Then, we will perform cross-validation using the
-<code>cross_validation</code> function.</p>
+<div class="section level3">
+<h3 id="temporal-process-models">Temporal Process Models<a class="anchor" aria-label="anchor" href="#temporal-process-models"></a>
+</h3>
+<p>The <code>ngme2</code> package supports several temporal process
+models with <strong>non-Gaussian Type-G Lévy noise</strong>. In this
+vignette, we compare two approaches:</p>
+<p><strong>Ornstein-Uhlenbeck (OU) Process</strong>: A continuous-time
+mean-reverting process driven by the SDE
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi><mi>X</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>t</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mo>−</mo><mi>θ</mi><mi>X</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>t</mi><mo stretchy="true" form="postfix">)</mo></mrow><mi>d</mi><mi>t</mi><mo>+</mo><mi>σ</mi><mi>d</mi><mi>ℳ</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>t</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">dX(t) = -\theta X(t)dt + \sigma d\mathcal{M}(t)</annotation></semantics></math>,
+where
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ℳ</mi><annotation encoding="application/x-tex">\mathcal{M}</annotation></semantics></math>
+is a Type-G Lévy process (NIG, GAL). See the <a href="https://davidbolin.github.io/ngme2/articles/ngme2_ou_vignette.html">OU
+vignette</a> for details.</p>
+<p><strong>Whittle-Matérn Process</strong>: Based on the SPDE
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mrow><mo stretchy="true" form="prefix">(</mo><msup><mi>κ</mi><mn>2</mn></msup><mo>−</mo><mfrac><msup><mi>d</mi><mn>2</mn></msup><mrow><mi>d</mi><msup><mi>t</mi><mn>2</mn></msup></mrow></mfrac><mo stretchy="true" form="postfix">)</mo></mrow><mrow><mi>α</mi><mi>/</mi><mn>2</mn></mrow></msup><mi>X</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>t</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mover><mi>ℳ</mi><mo accent="true">̇</mo></mover><mrow><mo stretchy="true" form="prefix">(</mo><mi>t</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">(\kappa^2 - \frac{d^2}{dt^2})^{\alpha/2} X(t) = \dot{\mathcal{M}}(t)</annotation></semantics></math>
+on a bounded domain, where
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mover><mi>ℳ</mi><mo accent="true">̇</mo></mover><annotation encoding="application/x-tex">\dot{\mathcal{M}}</annotation></semantics></math>
+is Type-G Lévy noise. For
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>α</mi><mo>=</mo><mn>2</mn></mrow><annotation encoding="application/x-tex">\alpha = 2</annotation></semantics></math>
+in 1D, this approximates a Matérn covariance structure with smoothness
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>ν</mi><mo>=</mo><mn>1.5</mn></mrow><annotation encoding="application/x-tex">\nu = 1.5</annotation></semantics></math>.
+See the <a href="https://davidbolin.github.io/ngme2/articles/SPDE-model.html">SPDE
+vignette</a> for details.</p>
+<p><strong>Key distinction</strong>: The OU process corresponds to
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>ν</mi><mo>=</mo><mn>0.5</mn></mrow><annotation encoding="application/x-tex">\nu = 0.5</annotation></semantics></math>
+(rougher paths), while the Whittle-Matérn with
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>α</mi><mo>=</mo><mn>2</mn></mrow><annotation encoding="application/x-tex">\alpha=2</annotation></semantics></math>
+corresponds to
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>ν</mi><mo>=</mo><mn>1.5</mn></mrow><annotation encoding="application/x-tex">\nu = 1.5</annotation></semantics></math>
+(smoother paths). Both are driven by non-Gaussian NIG noise in this
+example.</p>
+<p>For additional time series models available in <code>ngme2</code>,
+see the <a href="https://davidbolin.github.io/ngme2/articles/AR1-model.html">AR1
+model</a> and <a href="https://davidbolin.github.io/ngme2/articles/RW-model.html">Random
+Walk model</a> vignettes.</p>
+</div>
+<div class="section level3">
+<h3 id="generating-simulated-ou-data">Generating Simulated OU Data<a class="anchor" aria-label="anchor" href="#generating-simulated-ou-data"></a>
+</h3>
+<p>We begin by simulating a time series from an OU process with NIG
+noise.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://davidbolin.github.io/ngme2/">ngme2</a></span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">10</span><span class="op">)</span></span>
-<span><span class="va">n_obs</span> <span class="op">=</span> <span class="fl">100</span></span>
-<span><span class="va">ar1_model</span> <span class="op">=</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="va">n_obs</span>, model<span class="op">=</span><span class="st">"ar1"</span>, rho<span class="op">=</span><span class="fl">0.5</span><span class="op">)</span></span>
-<span><span class="va">sim_fields</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="va">ar1_model</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sim_fields</span>, type<span class="op">=</span><span class="st">"l"</span>, col<span class="op">=</span><span class="st">"blue"</span>, lwd<span class="op">=</span><span class="fl">2</span>, xlab<span class="op">=</span><span class="st">"Time"</span>, ylab<span class="op">=</span><span class="st">"Value"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="cross-validation_files/figure-html/ar1-1.png" width="700"></p>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Define OU parameters</span></span>
+<span><span class="va">n_obs</span> <span class="op">&lt;-</span> <span class="fl">200</span></span>
+<span><span class="va">theta_true</span> <span class="op">&lt;-</span> <span class="fl">0.15</span> <span class="co"># Mean-reversion parameter</span></span>
+<span></span>
+<span><span class="co"># NIG noise parameters</span></span>
+<span><span class="va">mu_true</span> <span class="op">&lt;-</span> <span class="fl">0.5</span></span>
+<span><span class="va">sigma_true</span> <span class="op">&lt;-</span> <span class="fl">2.0</span></span>
+<span><span class="va">nu_true</span> <span class="op">&lt;-</span> <span class="fl">1.0</span></span>
+<span></span>
+<span><span class="co"># Create mesh for time series (required for SPDE models)</span></span>
+<span><span class="va">time_mesh</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://inlabru-org.github.io/fmesher/reference/fm_mesh_1d.html" class="external-link">fm_mesh_1d</a></span><span class="op">(</span></span>
+<span>  loc <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="va">n_obs</span>,</span>
+<span>  boundary <span class="op">=</span> <span class="st">"free"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Create OU model specification for simulation with NIG noise</span></span>
+<span><span class="va">ou_spec</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
+<span>  map <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="va">n_obs</span>,</span>
+<span>  model <span class="op">=</span> <span class="fu"><a href="../reference/ou.html">ou</a></span><span class="op">(</span>theta_mu <span class="op">=</span> <span class="va">theta_true</span><span class="op">)</span>,</span>
+<span>  noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span>mu <span class="op">=</span> <span class="va">mu_true</span>, sigma <span class="op">=</span> <span class="va">sigma_true</span>, nu <span class="op">=</span> <span class="va">nu_true</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Simulate the latent OU process</span></span>
+<span><span class="va">sim_ou</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="va">ou_spec</span>, seed <span class="op">=</span> <span class="fl">123</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
+<span></span>
+<span><span class="co"># Add measurement noise to create observations</span></span>
+<span><span class="va">measurement_sd</span> <span class="op">&lt;-</span> <span class="fl">0.5</span></span>
+<span><span class="va">y</span> <span class="op">&lt;-</span> <span class="va">sim_ou</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_obs</span>, mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="va">measurement_sd</span><span class="op">)</span></span></code></pre></div>
+<p>Now we visualize the simulated time series:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">y</span> <span class="op">&lt;-</span> <span class="va">sim_fields</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_obs</span>, <span class="fl">0</span>, <span class="fl">0.5</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Let's estimate the model in 3 ways</span></span>
-<span></span>
-<span><span class="co"># 1. Poor estimation (only 10 iterations)</span></span>
-<span><span class="va">fit_ar_poor</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
-<span>  <span class="va">y</span> <span class="op">~</span> <span class="fl">0</span> <span class="op">+</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="va">n_obs</span>, model<span class="op">=</span><span class="st">"ar1"</span><span class="op">)</span>,</span>
-<span>  data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>,</span>
-<span>  family <span class="op">=</span> <span class="st">"normal"</span>,</span>
-<span>  control_opt <span class="op">=</span> <span class="fu"><a href="../reference/control_opt.html">control_opt</a></span><span class="op">(</span></span>
-<span>    iterations <span class="op">=</span> <span class="fl">10</span></span>
-<span>  <span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># Prepare visualization data</span></span>
+<span><span class="va">plot_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  time <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="va">n_obs</span>,</span>
+<span>  observed <span class="op">=</span> <span class="va">y</span>,</span>
+<span>  latent <span class="op">=</span> <span class="va">sim_ou</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Starting estimation... </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Starting posterior sampling... </span></span>
-<span><span class="co">#&gt; Posterior sampling done! </span></span>
-<span><span class="co">#&gt; Average standard deviation of the posterior W:  0.8667599 </span></span>
-<span><span class="co">#&gt; Note:</span></span>
-<span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
-<span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
-<span><span class="va">fit_ar_poor</span></span>
-<span><span class="co">#&gt; *** Ngme object ***</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Fixed effects: </span></span>
-<span><span class="co">#&gt;   None</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Models: </span></span>
-<span><span class="co">#&gt; $field1</span></span>
-<span><span class="co">#&gt;   Model type: AR(1)</span></span>
-<span><span class="co">#&gt;       rho = 0.154</span></span>
-<span><span class="co">#&gt;   Noise type: NORMAL</span></span>
-<span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.84</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Measurement noise: </span></span>
-<span><span class="co">#&gt;   Noise type: NORMAL</span></span>
-<span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.784</span></span>
 <span></span>
-<span><span class="co"># 2. Good estimation (500 iterations)</span></span>
-<span><span class="va">fit_ar</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
-<span>  <span class="va">y</span> <span class="op">~</span> <span class="fl">0</span> <span class="op">+</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="va">n_obs</span>, model<span class="op">=</span><span class="st">"ar1"</span><span class="op">)</span>,</span>
-<span>  data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>,</span>
-<span>  family <span class="op">=</span> <span class="st">"normal"</span>,</span>
-<span>  control_opt <span class="op">=</span> <span class="fu"><a href="../reference/control_opt.html">control_opt</a></span><span class="op">(</span></span>
-<span>    iterations <span class="op">=</span> <span class="fl">500</span></span>
-<span>  <span class="op">)</span></span>
+<span><span class="fu">ggplot</span><span class="op">(</span><span class="va">plot_data</span>, <span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">time</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">geom_line</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>y <span class="op">=</span> <span class="va">latent</span>, color <span class="op">=</span> <span class="st">"True Latent OU Process"</span><span class="op">)</span>,</span>
+<span>    linewidth <span class="op">=</span> <span class="fl">0.6</span>, alpha <span class="op">=</span> <span class="fl">0.7</span></span>
+<span>  <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">geom_line</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>y <span class="op">=</span> <span class="va">observed</span>, color <span class="op">=</span> <span class="st">"Observed Data"</span><span class="op">)</span>,</span>
+<span>    linewidth <span class="op">=</span> <span class="fl">0.4</span>, alpha <span class="op">=</span> <span class="fl">0.8</span></span>
+<span>  <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">scale_color_manual</span><span class="op">(</span>values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="st">"True Latent OU Process"</span> <span class="op">=</span> <span class="st">"#2E86AB"</span>,</span>
+<span>    <span class="st">"Observed Data"</span> <span class="op">=</span> <span class="st">"#A23B72"</span></span>
+<span>  <span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">labs</span><span class="op">(</span></span>
+<span>    title <span class="op">=</span> <span class="st">"Simulated OU Time Series with NIG Noise"</span>,</span>
+<span>    subtitle <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span></span>
+<span>      <span class="st">"θ = %.2f, NIG(μ=%.1f, σ=%.1f, ν=%.1f)"</span>,</span>
+<span>      <span class="va">theta_true</span>, <span class="va">mu_true</span>, <span class="va">sigma_true</span>, <span class="va">nu_true</span></span>
+<span>    <span class="op">)</span>,</span>
+<span>    x <span class="op">=</span> <span class="st">"Time"</span>,</span>
+<span>    y <span class="op">=</span> <span class="st">"Value"</span>,</span>
+<span>    color <span class="op">=</span> <span class="st">""</span></span>
+<span>  <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">theme_minimal</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">theme</span><span class="op">(</span></span>
+<span>    plot.title <span class="op">=</span> <span class="fu">element_text</span><span class="op">(</span>size <span class="op">=</span> <span class="fl">14</span>, face <span class="op">=</span> <span class="st">"bold"</span><span class="op">)</span>,</span>
+<span>    plot.subtitle <span class="op">=</span> <span class="fu">element_text</span><span class="op">(</span>size <span class="op">=</span> <span class="fl">11</span><span class="op">)</span>,</span>
+<span>    legend.position <span class="op">=</span> <span class="st">"top"</span></span>
+<span>  <span class="op">)</span></span></code></pre></div>
+<p><img src="cross-validation_files/figure-html/plot_simulated_ou-1.png" width="100%"></p>
+</div>
+<div class="section level3">
+<h3 id="the-make_time_series_cv_index-function">The <code>make_time_series_cv_index()</code> Function<a class="anchor" aria-label="anchor" href="#the-make_time_series_cv_index-function"></a>
+</h3>
+<p>The <code>ngme2</code> package provides the
+<code><a href="../reference/make_time_series_cv_index.html">make_time_series_cv_index()</a></code> function to create training and
+testing indices that respect temporal ordering. This function is
+essential for proper time series cross-validation.</p>
+<div class="section level4">
+<h4 id="function-arguments">Function Arguments<a class="anchor" aria-label="anchor" href="#function-arguments"></a>
+</h4>
+<p>The main arguments of <code><a href="../reference/make_time_series_cv_index.html">make_time_series_cv_index()</a></code>
+are:</p>
+<ul>
+<li>
+<strong><code>time_idx</code></strong>: A numeric vector of time
+indices in ascending order (e.g., <code>1:n_obs</code>)</li>
+<li>
+<strong><code>train_length</code></strong>: Fixed length of training
+sets
+<ul>
+<li>If <code>NULL</code> (default): uses <strong>expanding
+window</strong> approach (training set grows)</li>
+<li>If specified (e.g., <code>50</code>): uses <strong>sliding
+window</strong> approach (fixed training size)</li>
+</ul>
+</li>
+<li>
+<strong><code>test_length</code></strong>: Number of observations in
+each test set (forecast horizon). Default is 1</li>
+<li>
+<strong><code>gap</code></strong>: Gap between training and test
+sets. Default is 0 (test starts immediately after training)</li>
+<li>
+<strong><code>replicate</code></strong>: Optional vector for
+grouping observations that should stay together</li>
+</ul>
+</div>
+<div class="section level4">
+<h4 id="understanding-expanding-vs-sliding-windows">Understanding Expanding vs Sliding Windows<a class="anchor" aria-label="anchor" href="#understanding-expanding-vs-sliding-windows"></a>
+</h4>
+<p><strong>Expanding Window (train_length = NULL)</strong>:<br>
+The training set continuously grows, incorporating all available
+historical data. Each fold trains on all past data up to that point.
+This approach is appropriate when all past observations are equally
+relevant for prediction.</p>
+<p><strong>Sliding Window (train_length = fixed value)</strong>:<br>
+The training window size remains constant at the specified value. As
+time progresses, old observations are dropped and new ones are added.
+This is useful when recent data is more relevant than distant past
+observations, or when the data-generating process may change over
+time.</p>
+</div>
+<div class="section level4">
+<h4 id="creating-cross-validation-indices">Creating Cross-validation Indices<a class="anchor" aria-label="anchor" href="#creating-cross-validation-indices"></a>
+</h4>
+<p>We create indices for both expanding and sliding window
+approaches:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Create indices using the EXPANDING WINDOW approach</span></span>
+<span><span class="va">cv_indices_expanding</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/make_time_series_cv_index.html">make_time_series_cv_index</a></span><span class="op">(</span></span>
+<span>  time_idx <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="va">n_obs</span>, <span class="co"># Time indices: 1 to 1000</span></span>
+<span>  train_length <span class="op">=</span> <span class="cn">NULL</span>, <span class="co"># NULL = expanding window</span></span>
+<span>  test_length <span class="op">=</span> <span class="fl">10</span>, <span class="co"># Predict 10 steps ahead in each fold</span></span>
+<span>  gap <span class="op">=</span> <span class="fl">0</span> <span class="co"># No gap between train and test</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Starting estimation... </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Starting posterior sampling... </span></span>
-<span><span class="co">#&gt; Posterior sampling done! </span></span>
-<span><span class="co">#&gt; Average standard deviation of the posterior W:  0.6292361 </span></span>
-<span><span class="co">#&gt; Note:</span></span>
-<span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
-<span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
-<span><span class="va">fit_ar</span></span>
-<span><span class="co">#&gt; *** Ngme object ***</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Fixed effects: </span></span>
-<span><span class="co">#&gt;   None</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Models: </span></span>
-<span><span class="co">#&gt; $field1</span></span>
-<span><span class="co">#&gt;   Model type: AR(1)</span></span>
-<span><span class="co">#&gt;       rho = 0.883</span></span>
-<span><span class="co">#&gt;   Noise type: NORMAL</span></span>
-<span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.32</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Measurement noise: </span></span>
-<span><span class="co">#&gt;   Noise type: NORMAL</span></span>
-<span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.988</span></span>
 <span></span>
-<span><span class="co"># 3. Linear model</span></span>
-<span><span class="va">fit_linear</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
-<span>  <span class="va">y</span> <span class="op">~</span> <span class="fl">1</span> <span class="op">+</span> <span class="va">x</span>,</span>
-<span>  data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>y<span class="op">=</span><span class="va">y</span>, x<span class="op">=</span><span class="fl">1</span><span class="op">:</span><span class="va">n_obs</span><span class="op">)</span>,</span>
-<span>  family <span class="op">=</span> <span class="st">"normal"</span>,</span>
-<span>  control_opt <span class="op">=</span> <span class="fu"><a href="../reference/control_opt.html">control_opt</a></span><span class="op">(</span></span>
-<span>    iterations <span class="op">=</span> <span class="fl">10</span></span>
-<span>  <span class="op">)</span></span>
+<span><span class="co"># Subsetting to have at least 150 observations in training test</span></span>
+<span><span class="va">min_obs_train</span> <span class="op">&lt;-</span> <span class="fl">150</span></span>
+<span><span class="va">total_train_test</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">cv_indices_expanding</span><span class="op">$</span><span class="va">train</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">cv_indices_expanding</span><span class="op">$</span><span class="va">train</span> <span class="op">&lt;-</span></span>
+<span>  <span class="va">cv_indices_expanding</span><span class="op">$</span><span class="va">train</span><span class="op">[</span><span class="va">min_obs_train</span><span class="op">:</span><span class="va">total_train_test</span><span class="op">]</span></span>
+<span><span class="va">cv_indices_expanding</span><span class="op">$</span><span class="va">test</span> <span class="op">&lt;-</span></span>
+<span>  <span class="va">cv_indices_expanding</span><span class="op">$</span><span class="va">test</span><span class="op">[</span><span class="va">min_obs_train</span><span class="op">:</span><span class="va">total_train_test</span><span class="op">]</span></span>
+<span></span>
+<span><span class="co"># Create indices using the SLIDING WINDOW approach for comparison</span></span>
+<span><span class="va">cv_indices_sliding</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/make_time_series_cv_index.html">make_time_series_cv_index</a></span><span class="op">(</span></span>
+<span>  time_idx <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="va">n_obs</span>,</span>
+<span>  train_length <span class="op">=</span> <span class="fl">50</span>, <span class="co"># Fixed training window of 50 observations</span></span>
+<span>  test_length <span class="op">=</span> <span class="fl">10</span>,</span>
+<span>  gap <span class="op">=</span> <span class="fl">0</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Starting estimation... </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Starting posterior sampling... </span></span>
-<span><span class="co">#&gt; Posterior sampling done! </span></span>
-<span><span class="co">#&gt; Average standard deviation of the posterior W:  NA </span></span>
-<span><span class="co">#&gt; Note:</span></span>
-<span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
-<span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
-<span><span class="va">fit_linear</span></span>
-<span><span class="co">#&gt; *** Ngme object ***</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Fixed effects: </span></span>
-<span><span class="co">#&gt; (Intercept)           x </span></span>
-<span><span class="co">#&gt;     0.23023    -0.00896 </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Models: </span></span>
-<span><span class="co">#&gt; Measurement noise: </span></span>
-<span><span class="co">#&gt;   Noise type: NORMAL</span></span>
-<span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 1.09</span></span>
 <span></span>
+<span><span class="co"># Subsetting to only consider the last 100 splits</span></span>
+<span><span class="va">min_idx_train</span> <span class="op">&lt;-</span> <span class="fl">100</span></span>
+<span><span class="va">total_train_test</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">cv_indices_sliding</span><span class="op">$</span><span class="va">train</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Doing Cross-validation</span></span>
+<span><span class="va">cv_indices_sliding</span><span class="op">$</span><span class="va">train</span> <span class="op">&lt;-</span></span>
+<span>  <span class="va">cv_indices_sliding</span><span class="op">$</span><span class="va">train</span><span class="op">[</span><span class="va">min_idx_train</span><span class="op">:</span><span class="va">total_train_test</span><span class="op">]</span></span>
+<span><span class="va">cv_indices_sliding</span><span class="op">$</span><span class="va">test</span> <span class="op">&lt;-</span></span>
+<span>  <span class="va">cv_indices_sliding</span><span class="op">$</span><span class="va">test</span><span class="op">[</span><span class="va">min_idx_train</span><span class="op">:</span><span class="va">total_train_test</span><span class="op">]</span></span>
 <span></span>
-<span><span class="co"># 10-fold cross-validation</span></span>
-<span><span class="va">cv1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cross_validation.html">cross_validation</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    linear <span class="op">=</span> <span class="va">fit_linear</span>,</span>
-<span>    ar1_poor <span class="op">=</span> <span class="va">fit_ar_poor</span>,</span>
-<span>    ar1 <span class="op">=</span> <span class="va">fit_ar</span></span>
+<span><span class="co"># We'll use the expanding window for our analysis</span></span>
+<span><span class="va">cv_indices</span> <span class="op">&lt;-</span> <span class="va">cv_indices_expanding</span></span></code></pre></div>
+<p>The structure of the created folds is summarized below:</p>
+<table class="table">
+<caption>Comparison of expanding vs sliding window
+cross-validation</caption>
+<thead><tr class="header">
+<th align="left">Approach</th>
+<th align="left">Characteristic</th>
+<th align="right">Value</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">Expanding Window</td>
+<td align="left">Number of folds</td>
+<td align="right">41</td>
+</tr>
+<tr class="even">
+<td align="left">Expanding Window</td>
+<td align="left">Fold 3 training size</td>
+<td align="right">152</td>
+</tr>
+<tr class="odd">
+<td align="left">Sliding Window</td>
+<td align="left">Number of folds</td>
+<td align="right">42</td>
+</tr>
+<tr class="even">
+<td align="left">Sliding Window</td>
+<td align="left">Fold 3 training size</td>
+<td align="right">50</td>
+</tr>
+</tbody>
+</table>
+<p>Notice how the expanding window accumulates more data with each fold,
+while the sliding window maintains a constant training set size. The
+expanding window approach typically provides more stable predictions as
+it uses all available historical information.</p>
+</div>
+</div>
+<div class="section level3">
+<h3 id="visualizing-training-and-testing-sets">Visualizing Training and Testing Sets<a class="anchor" aria-label="anchor" href="#visualizing-training-and-testing-sets"></a>
+</h3>
+<p>To understand how time series cross-validation works, let’s visualize
+the training (blue) and testing (orange) sets for each fold:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Create visualization data frame</span></span>
+<span><span class="va">folds_viz</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">cv_indices</span><span class="op">$</span><span class="va">train</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="co"># Add training points</span></span>
+<span>  <span class="va">train_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>    time <span class="op">=</span> <span class="va">cv_indices</span><span class="op">$</span><span class="va">train</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span>,</span>
+<span>    fold <span class="op">=</span> <span class="va">i</span>,</span>
+<span>    set_type <span class="op">=</span> <span class="st">"Training"</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span>  <span class="co"># Add testing points</span></span>
+<span>  <span class="va">test_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>    time <span class="op">=</span> <span class="va">cv_indices</span><span class="op">$</span><span class="va">test</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span>,</span>
+<span>    fold <span class="op">=</span> <span class="va">i</span>,</span>
+<span>    set_type <span class="op">=</span> <span class="st">"Testing"</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span>  <span class="va">folds_viz</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">folds_viz</span>, <span class="va">train_df</span>, <span class="va">test_df</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="co"># Create visualization</span></span>
+<span><span class="fu">ggplot</span><span class="op">(</span><span class="va">folds_viz</span>, <span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">time</span>, y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">fold</span><span class="op">)</span>, color <span class="op">=</span> <span class="va">set_type</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">geom_point</span><span class="op">(</span>size <span class="op">=</span> <span class="fl">1.5</span>, alpha <span class="op">=</span> <span class="fl">0.7</span>, shape <span class="op">=</span> <span class="fl">15</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">scale_color_manual</span><span class="op">(</span></span>
+<span>    values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Training"</span> <span class="op">=</span> <span class="st">"#2E86AB"</span>, <span class="st">"Testing"</span> <span class="op">=</span> <span class="st">"#F18F01"</span><span class="op">)</span>,</span>
+<span>    name <span class="op">=</span> <span class="st">"Set Type"</span></span>
+<span>  <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">labs</span><span class="op">(</span></span>
+<span>    title <span class="op">=</span> <span class="st">"Time Series Cross-validation: Expanding Window Approach"</span>,</span>
+<span>    subtitle <span class="op">=</span> <span class="st">"Training set expands over time, always predicting future observations"</span>,</span>
+<span>    x <span class="op">=</span> <span class="st">"Time Index"</span>,</span>
+<span>    y <span class="op">=</span> <span class="st">"Fold Number"</span></span>
+<span>  <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">theme_minimal</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">theme</span><span class="op">(</span></span>
+<span>    plot.title <span class="op">=</span> <span class="fu">element_text</span><span class="op">(</span>size <span class="op">=</span> <span class="fl">14</span>, face <span class="op">=</span> <span class="st">"bold"</span><span class="op">)</span>,</span>
+<span>    plot.subtitle <span class="op">=</span> <span class="fu">element_text</span><span class="op">(</span>size <span class="op">=</span> <span class="fl">11</span><span class="op">)</span>,</span>
+<span>    legend.position <span class="op">=</span> <span class="st">"top"</span>,</span>
+<span>    panel.grid.minor <span class="op">=</span> <span class="fu">element_blank</span><span class="op">(</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span></code></pre></div>
+<p><img src="cross-validation_files/figure-html/visualize_folds-1.png" width="100%"></p>
+<p>This visualization clearly shows the fundamental principle:
+<strong>training data always precedes testing data</strong>, mimicking
+real forecasting scenarios.</p>
+<p>For comparison, here is the sliding window approach:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Build visualization data for the sliding window</span></span>
+<span><span class="va">folds_viz_sliding</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">cv_indices_sliding</span><span class="op">$</span><span class="va">train</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="co"># Training</span></span>
+<span>  <span class="va">train_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>    time <span class="op">=</span> <span class="va">cv_indices_sliding</span><span class="op">$</span><span class="va">train</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span>,</span>
+<span>    fold <span class="op">=</span> <span class="va">i</span>,</span>
+<span>    set_type <span class="op">=</span> <span class="st">"Training"</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span>  <span class="co"># Testing</span></span>
+<span>  <span class="va">test_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>    time <span class="op">=</span> <span class="va">cv_indices_sliding</span><span class="op">$</span><span class="va">test</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span>,</span>
+<span>    fold <span class="op">=</span> <span class="va">i</span>,</span>
+<span>    set_type <span class="op">=</span> <span class="st">"Testing"</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span>  <span class="va">folds_viz_sliding</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">folds_viz_sliding</span>, <span class="va">train_df</span>, <span class="va">test_df</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="co"># Plot sliding window</span></span>
+<span><span class="fu">ggplot</span><span class="op">(</span><span class="va">folds_viz_sliding</span>, <span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">time</span>, y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">fold</span><span class="op">)</span>, color <span class="op">=</span> <span class="va">set_type</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">geom_point</span><span class="op">(</span>size <span class="op">=</span> <span class="fl">1.5</span>, alpha <span class="op">=</span> <span class="fl">0.7</span>, shape <span class="op">=</span> <span class="fl">15</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">scale_color_manual</span><span class="op">(</span></span>
+<span>    values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Training"</span> <span class="op">=</span> <span class="st">"#2E86AB"</span>, <span class="st">"Testing"</span> <span class="op">=</span> <span class="st">"#F18F01"</span><span class="op">)</span>,</span>
+<span>    name <span class="op">=</span> <span class="st">"Set Type"</span></span>
+<span>  <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">labs</span><span class="op">(</span></span>
+<span>    title <span class="op">=</span> <span class="st">"Time Series Cross-validation: Sliding Window Approach"</span>,</span>
+<span>    subtitle <span class="op">=</span> <span class="st">"Training set has fixed width, model always trained on the most recent history"</span>,</span>
+<span>    x <span class="op">=</span> <span class="st">"Time Index"</span>,</span>
+<span>    y <span class="op">=</span> <span class="st">"Fold Number"</span></span>
+<span>  <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">theme_minimal</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">theme</span><span class="op">(</span></span>
+<span>    plot.title <span class="op">=</span> <span class="fu">element_text</span><span class="op">(</span>size <span class="op">=</span> <span class="fl">14</span>, face <span class="op">=</span> <span class="st">"bold"</span><span class="op">)</span>,</span>
+<span>    plot.subtitle <span class="op">=</span> <span class="fu">element_text</span><span class="op">(</span>size <span class="op">=</span> <span class="fl">11</span><span class="op">)</span>,</span>
+<span>    legend.position <span class="op">=</span> <span class="st">"top"</span>,</span>
+<span>    panel.grid.minor <span class="op">=</span> <span class="fu">element_blank</span><span class="op">(</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span></code></pre></div>
+<p><img src="cross-validation_files/figure-html/visualize_sliding_window-1.png" width="100%"></p>
+</div>
+<div class="section level3">
+<h3 id="fitting-competing-models">Fitting Competing Models<a class="anchor" aria-label="anchor" href="#fitting-competing-models"></a>
+</h3>
+<p>We compare two temporal process models, both with NIG noise:</p>
+<div class="section level4">
+<h4 id="model-1-ou-process-true-model">Model 1: OU Process (True Model)<a class="anchor" aria-label="anchor" href="#model-1-ou-process-true-model"></a>
+</h4>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Prepare data</span></span>
+<span><span class="va">data_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">y</span>, time_idx <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="va">n_obs</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Fit OU model with NIG noise (the true model)</span></span>
+<span><span class="va">fit_ou</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
+<span>  <span class="va">y</span> <span class="op">~</span> <span class="fl">0</span> <span class="op">+</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="va">time_idx</span>, model <span class="op">=</span> <span class="fu"><a href="../reference/ou.html">ou</a></span><span class="op">(</span><span class="op">)</span>, noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  data <span class="op">=</span> <span class="va">data_df</span>,</span>
+<span>  control_opt <span class="op">=</span> <span class="fu"><a href="../reference/control_opt.html">control_opt</a></span><span class="op">(</span></span>
+<span>    iterations <span class="op">=</span> <span class="fl">2000</span>,</span>
+<span>    n_parallel_chain <span class="op">=</span> <span class="fl">4</span>,</span>
+<span>    std_lim <span class="op">=</span> <span class="fl">0.01</span>,</span>
+<span>    seed <span class="op">=</span> <span class="fl">123</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level4">
+<h4 id="model-2-whittle-matérn-with-α-2">Model 2: Whittle-Matérn with α = 2<a class="anchor" aria-label="anchor" href="#model-2-whittle-mat%C3%A9rn-with-%CE%B1-2"></a>
+</h4>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Fit Whittle-Matérn model with alpha = 2 and NIG noise</span></span>
+<span><span class="va">fit_matern</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
+<span>  <span class="va">y</span> <span class="op">~</span> <span class="fl">0</span> <span class="op">+</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
+<span>    <span class="va">time_idx</span>,</span>
+<span>    model <span class="op">=</span> <span class="fu"><a href="../reference/matern.html">matern</a></span><span class="op">(</span></span>
+<span>      mesh <span class="op">=</span> <span class="va">time_mesh</span>,</span>
+<span>      alpha <span class="op">=</span> <span class="fl">2</span></span>
+<span>    <span class="op">)</span>,</span>
+<span>    noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>  <span class="op">)</span>,</span>
-<span>  type <span class="op">=</span> <span class="st">"k-fold"</span>,</span>
-<span>  k <span class="op">=</span> <span class="fl">10</span>,</span>
-<span>  n_gibbs_samples <span class="op">=</span> <span class="fl">500</span>,</span>
-<span>  N <span class="op">=</span> <span class="fl">5</span>,</span>
-<span>  seed <span class="op">=</span> <span class="fl">10</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">cv1</span><span class="op">$</span><span class="va">mean.scores</span></span>
-<span><span class="co">#&gt;                MAE      MSE  neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; linear   0.8786941 1.290225 0.6261189  1.114475</span></span>
-<span><span class="co">#&gt; ar1_poor 0.8904806 1.312230 0.6370634  1.121721</span></span>
-<span><span class="co">#&gt; ar1      0.8100731 1.174195 0.5972672  1.090313</span></span>
-<span></span>
-<span><span class="co"># Leave-percent-out cross-validation (20%) with 5 repetitions</span></span>
-<span><span class="va">cv2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cross_validation.html">cross_validation</a></span><span class="op">(</span></span>
+<span>  data <span class="op">=</span> <span class="va">data_df</span>,</span>
+<span>  control_opt <span class="op">=</span> <span class="fu"><a href="../reference/control_opt.html">control_opt</a></span><span class="op">(</span></span>
+<span>    iterations <span class="op">=</span> <span class="fl">2000</span>,</span>
+<span>    n_parallel_chain <span class="op">=</span> <span class="fl">4</span>,</span>
+<span>    std_lim <span class="op">=</span> <span class="fl">0.01</span>,</span>
+<span>    seed <span class="op">=</span> <span class="fl">456</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+</div>
+</div>
+<div class="section level3">
+<h3 id="performing-time-series-cross-validation">Performing Time Series Cross-validation<a class="anchor" aria-label="anchor" href="#performing-time-series-cross-validation"></a>
+</h3>
+<p>Now we perform cross-validation using the indices from
+<code><a href="../reference/make_time_series_cv_index.html">make_time_series_cv_index()</a></code>. For each fold, both models are
+fitted on the training set and evaluated on the test set:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Perform cross-validation</span></span>
+<span><span class="va">cv_results</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cross_validation.html">cross_validation</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    linear <span class="op">=</span> <span class="va">fit_linear</span>,</span>
-<span>    ar1_poor <span class="op">=</span> <span class="va">fit_ar_poor</span>,</span>
-<span>    ar1 <span class="op">=</span> <span class="va">fit_ar</span></span>
+<span>    <span class="st">"OU Process (ν=0.5)"</span> <span class="op">=</span> <span class="va">fit_ou</span>,</span>
+<span>    <span class="st">"Whittle-Matérn (ν=1.5)"</span> <span class="op">=</span> <span class="va">fit_matern</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  type <span class="op">=</span> <span class="st">"custom"</span>,</span>
+<span>  train_idx <span class="op">=</span> <span class="va">cv_indices</span><span class="op">$</span><span class="va">train</span>,</span>
+<span>  test_idx <span class="op">=</span> <span class="va">cv_indices</span><span class="op">$</span><span class="va">test</span>,</span>
+<span>  N_sim <span class="op">=</span> <span class="fl">5</span>, <span class="co"># Number of simulations for each fold</span></span>
+<span>  n_gibbs_samples <span class="op">=</span> <span class="fl">500</span>, <span class="co"># Gibbs samples for CRPS computation</span></span>
+<span>  seed <span class="op">=</span> <span class="fl">123</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>The cross-validation results are presented below:</p>
+<table class="table">
+<caption>Time series cross-validation results (expanding
+window)</caption>
+<thead><tr class="header">
+<th align="left"></th>
+<th align="right">MAE</th>
+<th align="right">MSE</th>
+<th align="right">neg.CRPS</th>
+<th align="right">neg.sCRPS</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">OU Process (ν=0.5)</td>
+<td align="right">1.6985</td>
+<td align="right">5.2524</td>
+<td align="right">1.2191</td>
+<td align="right">1.4476</td>
+</tr>
+<tr class="even">
+<td align="left">Whittle-Matérn (ν=1.5)</td>
+<td align="right">1.6914</td>
+<td align="right">5.2233</td>
+<td align="right">1.3378</td>
+<td align="right">1.7951</td>
+</tr>
+</tbody>
+</table>
+<div class="section level4">
+<h4 id="understanding-the-performance-metrics">Understanding the Performance Metrics<a class="anchor" aria-label="anchor" href="#understanding-the-performance-metrics"></a>
+</h4>
+<p><strong>MAE (Mean Absolute Error)</strong>: Average absolute
+difference between predictions and observations. Interpretable in
+original units and robust to outliers.</p>
+<p><strong>MSE (Mean Squared Error)</strong>: Average squared
+difference. Penalizes large errors more heavily than MAE.</p>
+<p><strong>Negative CRPS (Continuous Ranked Probability Score)</strong>:
+Proper scoring rule evaluating the entire predictive distribution (<a href="https://doi.org/10.1198/016214506000001437" class="external-link">Gneiting &amp;
+Raftery, 2007</a>). More negative values are better.</p>
+<p><strong>Negative Scaled CRPS</strong>: A variant of CRPS designed to
+be locally scale invariant, meaning observations with different levels
+of predictive uncertainty contribute comparably to the average
+score.</p>
+</div>
+<div class="section level4">
+<h4 id="cross-validation-conclusions">Cross-validation Conclusions<a class="anchor" aria-label="anchor" href="#cross-validation-conclusions"></a>
+</h4>
+<p>The results demonstrate that:</p>
+<ol style="list-style-type: decimal">
+<li><p><strong>OU achieves best performance</strong>: The true
+data-generating model shows lower errors across all metrics, validating
+the cross-validation approach.</p></li>
+<li><p><strong>Smoothness matters</strong>: The OU process (less smooth)
+better matches the true process compared to the smoother Whittle-Matérn
+specification.</p></li>
+<li><p><strong>All metrics agree</strong>: MAE, MSE, CRPS, and sCRPS
+provide consistent model rankings.</p></li>
+</ol>
+<p><strong>Key principle</strong>: Cross-validation respecting temporal
+structure successfully identifies models that best capture temporal
+correlation and smoothness properties.</p>
+</div>
+</div>
+</div>
+<div class="section level2">
+<h2 id="spatial-cross-validation-with-spde-models">Spatial Cross-validation with SPDE Models<a class="anchor" aria-label="anchor" href="#spatial-cross-validation-with-spde-models"></a>
+</h2>
+<div class="section level3">
+<h3 id="spatial-spde-matérn-models">Spatial SPDE Matérn Models<a class="anchor" aria-label="anchor" href="#spatial-spde-mat%C3%A9rn-models"></a>
+</h3>
+<p>The <code>ngme2</code> package supports spatial Matérn models through
+a non Gaussian extension of the SPDE approach of <a href="https://doi.org/10.1111/j.1467-9868.2011.00777.x" class="external-link">Lindgren et
+al. (2011)</a>, which represents a Matérn field as the solution of
+<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mrow><mo stretchy="true" form="prefix">(</mo><mi>κ</mi><msup><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mo stretchy="true" form="postfix">)</mo></mrow><mn>2</mn></msup><mo>−</mo><mi>Δ</mi><mo stretchy="true" form="postfix">)</mo></mrow><mrow><mi>α</mi><mi>/</mi><mn>2</mn></mrow></msup><mi>X</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mover><mi>ℳ</mi><mo accent="true">̇</mo></mover><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo></mrow><annotation encoding="application/x-tex">
+(\kappa(s)^2 - \Delta)^{\alpha/2} X(s) = \dot{\mathcal{M}}(s),
+</annotation></semantics></math> with
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>ℳ</mi><mo accent="true">̇</mo></mover><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\dot{\mathcal{M}}(s)</annotation></semantics></math>
+a Type G Lévy noise input (NIG or GAL). This formulation yields sparse
+precision matrices and scalable inference. See the full <a href="https://davidbolin.github.io/ngme2/articles/SPDE-model.html">SPDE
+vignette</a> for details.</p>
+<p><strong>Stationary SPDE Matérn model</strong><br>
+Assumes a constant range parameter
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>κ</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mi>κ</mi></mrow><annotation encoding="application/x-tex">\kappa(s) = \kappa</annotation></semantics></math>.
+The spatial field then has homogeneous smoothness and correlation range
+across the domain. This is the simplest and most commonly used
+specification.</p>
+<p><strong>Non stationary SPDE Matérn model</strong><br>
+Allows the range parameter to vary spatially via
+<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>log</mo><mi>κ</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mi>B</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mo stretchy="true" form="postfix">)</mo></mrow><mspace width="0.167em"></mspace><msub><mi>θ</mi><mi>k</mi></msub><mi>a</mi><mi>p</mi><mi>p</mi><mi>a</mi><mo>,</mo></mrow><annotation encoding="application/x-tex">
+\log \kappa(s) = B(s)\,\theta_kappa,
+</annotation></semantics></math> where
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>B</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">B(s)</annotation></semantics></math>
+contains spatial basis functions. This allows the model to capture
+heterogeneous spatial scales, with shorter ranges where
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>κ</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\kappa(s)</annotation></semantics></math>
+is large and smoother behavior where
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>κ</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\kappa(s)</annotation></semantics></math>
+is small.</p>
+<p><strong>Key distinction</strong><br>
+The stationary model uses one global range parameter, while the non
+stationary model estimates spatially varying ranges through basis
+functions. Both models can be driven by non Gaussian Type G noise,
+allowing heavy tails and asymmetry in the spatial field.</p>
+</div>
+<div class="section level3">
+<h3 id="generating-simulated-spatial-data">Generating Simulated Spatial Data<a class="anchor" aria-label="anchor" href="#generating-simulated-spatial-data"></a>
+</h3>
+<p>We now turn to spatial data and SPDE models. To demonstrate the
+importance of proper model specification, we generate data from a non
+stationary spatial process where the correlation range varies spatially,
+then compare stationary and non stationary models.</p>
+<div class="section level4">
+<h4 id="creating-the-spatial-mesh">Creating the spatial mesh<a class="anchor" aria-label="anchor" href="#creating-the-spatial-mesh"></a>
+</h4>
+<p>First, we construct a triangulation mesh for the SPDE approach.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Define a rectangular domain</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
+<span><span class="va">domain_boundary</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">10</span>, <span class="fl">10</span>, <span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">5</span>, <span class="fl">5</span>, <span class="fl">0</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Create mesh with fmesher</span></span>
+<span><span class="va">mesh</span> <span class="op">&lt;-</span> <span class="fu">fm_mesh_2d</span><span class="op">(</span></span>
+<span>  loc.domain <span class="op">=</span> <span class="va">domain_boundary</span>,</span>
+<span>  cutoff <span class="op">=</span> <span class="fl">0.15</span>, <span class="co"># Minimum distance between points</span></span>
+<span>  max.edge <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.4</span>, <span class="fl">1.5</span><span class="op">)</span> <span class="co"># Maximum triangle edge length</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>The mesh properties are summarised below.</p>
+<table class="table">
+<caption>Spatial mesh properties</caption>
+<thead><tr class="header">
+<th align="left">Property</th>
+<th align="right">Value</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">Number of vertices</td>
+<td align="right">1236</td>
+</tr>
+<tr class="even">
+<td align="left">Number of triangles</td>
+<td align="right">2419</td>
+</tr>
+</tbody>
+</table>
+<p>We can visualise the mesh structure.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">mesh</span>, main <span class="op">=</span> <span class="st">"Spatial mesh for SPDE model"</span>, asp <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/points.html" class="external-link">points</a></span><span class="op">(</span><span class="va">domain_boundary</span>, type <span class="op">=</span> <span class="st">"l"</span>, col <span class="op">=</span> <span class="st">"red"</span>, lwd <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
+<p><img src="cross-validation_files/figure-html/plot_mesh-1.png" width="100%"></p>
+</div>
+<div class="section level4">
+<h4 id="defining-spatially-varying-parameters">Defining spatially varying parameters<a class="anchor" aria-label="anchor" href="#defining-spatially-varying-parameters"></a>
+</h4>
+<p>We now create a non-stationary scenario where <strong>both</strong>
+the spatial range parameter<br><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>κ</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\kappa(s)</annotation></semantics></math>
+and the dispersion parameter
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>σ</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\sigma(s)</annotation></semantics></math>
+of the NIG noise vary across space.<br>
+Larger values of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>κ</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\kappa(s)</annotation></semantics></math>
+correspond to shorter correlation ranges, while
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>σ</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\sigma(s)</annotation></semantics></math>
+controls the<br>
+local dispersion of the non-Gaussian noise (although it is not a
+standard deviation).<br>
+The variation is introduced through basis expansions for
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>log</mo><mi>κ</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\log \kappa(s)</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>log</mo><mi>σ</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\log \sigma(s)</annotation></semantics></math>,<br>
+each with its own set of coefficients.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Extract mesh coordinates</span></span>
+<span><span class="va">mesh_coords</span> <span class="op">&lt;-</span> <span class="va">mesh</span><span class="op">$</span><span class="va">loc</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span></span>
+<span></span>
+<span><span class="co"># ------------------------------------------------------</span></span>
+<span><span class="co"># Basis functions for spatially varying kappa</span></span>
+<span><span class="co"># ------------------------------------------------------</span></span>
+<span><span class="va">B_kappa</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span></span>
+<span>  Intercept <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  Longitude <span class="op">=</span> <span class="va">mesh_coords</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span> <span class="op">/</span> <span class="fl">10</span>,</span>
+<span>  Long_squared <span class="op">=</span> <span class="op">(</span><span class="va">mesh_coords</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span> <span class="op">/</span> <span class="fl">10</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># True coefficients for log(kappa)</span></span>
+<span><span class="va">true_theta_kappa</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fl">1</span>, <span class="op">-</span><span class="fl">1</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Compute kappa(s)</span></span>
+<span><span class="va">log_kappa_true</span> <span class="op">&lt;-</span> <span class="va">B_kappa</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="va">true_theta_kappa</span></span>
+<span><span class="va">kappa_true</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="va">log_kappa_true</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># ------------------------------------------------------</span></span>
+<span><span class="co"># Basis functions for spatially varying sigma</span></span>
+<span><span class="co"># ------------------------------------------------------</span></span>
+<span><span class="va">B_sigma</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span></span>
+<span>  Intercept <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  Latitude <span class="op">=</span> <span class="va">mesh_coords</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span> <span class="op">/</span> <span class="fl">5</span>,</span>
+<span>  Lat_squared <span class="op">=</span> <span class="op">(</span><span class="va">mesh_coords</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span> <span class="op">/</span> <span class="fl">5</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># True coefficients for log(sigma)</span></span>
+<span><span class="va">true_theta_sigma</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">6</span>, <span class="fl">0.5</span>, <span class="op">-</span><span class="fl">0.5</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">log_sigma_true</span> <span class="op">&lt;-</span> <span class="va">B_sigma</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="va">true_theta_sigma</span></span>
+<span><span class="va">sigma_true</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="va">log_sigma_true</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Data frame for plotting</span></span>
+<span><span class="va">param_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  x <span class="op">=</span> <span class="va">mesh_coords</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>,</span>
+<span>  y <span class="op">=</span> <span class="va">mesh_coords</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span>,</span>
+<span>  kappa <span class="op">=</span> <span class="va">kappa_true</span>,</span>
+<span>  sigma <span class="op">=</span> <span class="va">sigma_true</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>The spatial variation in
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>κ</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\kappa(s)</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>σ</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\sigma(s)</annotation></semantics></math>
+is summarised below.</p>
+<table class="table">
+<caption>Spatial variation in kappa and sigma</caption>
+<thead><tr class="header">
+<th align="left">Parameter</th>
+<th align="right">Min</th>
+<th align="right">Mean</th>
+<th align="right">Max</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">kappa</td>
+<td align="right">14.970</td>
+<td align="right">22.952</td>
+<td align="right">25.790</td>
+</tr>
+<tr class="even">
+<td align="left">sigma</td>
+<td align="right">284.182</td>
+<td align="right">421.158</td>
+<td align="right">457.145</td>
+</tr>
+</tbody>
+</table>
+<p>We now visualise the spatial variation in both parameters.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">p_kappa</span> <span class="op">&lt;-</span> <span class="fu">ggplot</span><span class="op">(</span><span class="va">param_df</span>, <span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">x</span>, y <span class="op">=</span> <span class="va">y</span>, colour <span class="op">=</span> <span class="va">kappa</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">geom_point</span><span class="op">(</span>size <span class="op">=</span> <span class="fl">2</span>, alpha <span class="op">=</span> <span class="fl">0.7</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">scale_color_viridis</span><span class="op">(</span>option <span class="op">=</span> <span class="st">"plasma"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">coord_fixed</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">labs</span><span class="op">(</span></span>
+<span>    title <span class="op">=</span> <span class="st">"Spatial variation in kappa"</span>,</span>
+<span>    subtitle <span class="op">=</span> <span class="st">"Larger kappa → shorter correlation range"</span>,</span>
+<span>    x <span class="op">=</span> <span class="st">"Longitude"</span>, y <span class="op">=</span> <span class="st">"Latitude"</span>, colour <span class="op">=</span> <span class="st">"kappa"</span></span>
+<span>  <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">theme_minimal</span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">p_sigma</span> <span class="op">&lt;-</span> <span class="fu">ggplot</span><span class="op">(</span><span class="va">param_df</span>, <span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">x</span>, y <span class="op">=</span> <span class="va">y</span>, colour <span class="op">=</span> <span class="va">sigma</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">geom_point</span><span class="op">(</span>size <span class="op">=</span> <span class="fl">2</span>, alpha <span class="op">=</span> <span class="fl">0.7</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">scale_color_viridis</span><span class="op">(</span>option <span class="op">=</span> <span class="st">"magma"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">coord_fixed</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">labs</span><span class="op">(</span></span>
+<span>    title <span class="op">=</span> <span class="st">"Spatial variation in sigma"</span>,</span>
+<span>    subtitle <span class="op">=</span> <span class="st">"Dispersion parameter of NIG noise (not a standard deviation)"</span>,</span>
+<span>    x <span class="op">=</span> <span class="st">"Longitude"</span>, y <span class="op">=</span> <span class="st">"Latitude"</span>, colour <span class="op">=</span> <span class="st">"sigma"</span></span>
+<span>  <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">theme_minimal</span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">p_kappa</span></span></code></pre></div>
+<p><img src="cross-validation_files/figure-html/plot_param_variation-1.png" width="100%"></p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">p_sigma</span></span></code></pre></div>
+<p><img src="cross-validation_files/figure-html/plot_param_variation-2.png" width="100%"></p>
+</div>
+<div class="section level4">
+<h4 id="simulating-observations-from-the-non-stationary-model">Simulating observations from the non-stationary model<a class="anchor" aria-label="anchor" href="#simulating-observations-from-the-non-stationary-model"></a>
+</h4>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">789</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Observation locations</span></span>
+<span><span class="va">n_obs</span> <span class="op">&lt;-</span> <span class="fl">600</span></span>
+<span><span class="va">loc_obs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n_obs</span>, <span class="fl">0</span>, <span class="fl">10</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n_obs</span>, <span class="fl">0</span>, <span class="fl">5</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Noise with spatially varying sigma</span></span>
+<span><span class="va">true_noise</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span></span>
+<span>  mu <span class="op">=</span> <span class="op">-</span><span class="fl">2.5</span>,</span>
+<span>  B_sigma <span class="op">=</span> <span class="va">B_sigma</span>,</span>
+<span>  theta_sigma <span class="op">=</span> <span class="va">true_theta_sigma</span>,</span>
+<span>  nu <span class="op">=</span> <span class="fl">4</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Full non-stationary SPDE model</span></span>
+<span><span class="va">true_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
+<span>  map <span class="op">=</span> <span class="va">loc_obs</span>,</span>
+<span>  model <span class="op">=</span> <span class="fu"><a href="../reference/matern.html">matern</a></span><span class="op">(</span></span>
+<span>    alpha <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>    mesh <span class="op">=</span> <span class="va">mesh</span>,</span>
+<span>    B_kappa <span class="op">=</span> <span class="va">B_kappa</span>,</span>
+<span>    theta_kappa <span class="op">=</span> <span class="va">true_theta_kappa</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  noise <span class="op">=</span> <span class="va">true_noise</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Simulate latent field</span></span>
+<span><span class="va">W_true</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="va">true_model</span>, seed <span class="op">=</span> <span class="fl">456</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
+<span></span>
+<span><span class="co"># Standard deviation of the simulated field</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">W_true</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 1.950052</span></span>
+<span></span>
+<span><span class="co"># Add measurement noise</span></span>
+<span><span class="va">sigma_obs</span> <span class="op">&lt;-</span> <span class="fl">0.3</span></span>
+<span><span class="va">Y_spatial</span> <span class="op">&lt;-</span> <span class="va">W_true</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_obs</span>, sd <span class="op">=</span> <span class="va">sigma_obs</span><span class="op">)</span></span></code></pre></div>
+<p>Summary statistics for the simulated field.</p>
+<table class="table">
+<caption>Simulated spatial field statistics</caption>
+<thead><tr class="header">
+<th align="left">Statistic</th>
+<th align="right">Value</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">Mean</td>
+<td align="right">0.054</td>
+</tr>
+<tr class="even">
+<td align="left">Standard deviation</td>
+<td align="right">1.950</td>
+</tr>
+<tr class="odd">
+<td align="left">Range (max minus min)</td>
+<td align="right">21.569</td>
+</tr>
+</tbody>
+</table>
+<p>We visualise the simulated non stationary spatial field.</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sim_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  x <span class="op">=</span> <span class="va">loc_obs</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>,</span>
+<span>  y <span class="op">=</span> <span class="va">loc_obs</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span>,</span>
+<span>  W <span class="op">=</span> <span class="va">W_true</span>,</span>
+<span>  Y <span class="op">=</span> <span class="va">Y_spatial</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">p_field</span> <span class="op">&lt;-</span> <span class="fu">ggplot</span><span class="op">(</span><span class="va">sim_df</span>, <span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">x</span>, y <span class="op">=</span> <span class="va">y</span>, colour <span class="op">=</span> <span class="va">W</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">geom_point</span><span class="op">(</span>size <span class="op">=</span> <span class="fl">2.5</span>, alpha <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">scale_color_gradient2</span><span class="op">(</span></span>
+<span>    low <span class="op">=</span> <span class="st">"#2E86AB"</span>,</span>
+<span>    mid <span class="op">=</span> <span class="st">"#FFFFFF"</span>,</span>
+<span>    high <span class="op">=</span> <span class="st">"#A23B72"</span>,</span>
+<span>    midpoint <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>    name <span class="op">=</span> <span class="st">"Field\nvalue"</span></span>
+<span>  <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">coord_fixed</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">labs</span><span class="op">(</span></span>
+<span>    title <span class="op">=</span> <span class="st">"Simulated non stationary spatial field"</span>,</span>
+<span>    subtitle <span class="op">=</span> <span class="st">"True model: Matérn SPDE with spatially varying correlation range"</span>,</span>
+<span>    x <span class="op">=</span> <span class="st">"X coordinate"</span>,</span>
+<span>    y <span class="op">=</span> <span class="st">"Y coordinate"</span></span>
+<span>  <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">theme_minimal</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">theme</span><span class="op">(</span></span>
+<span>    plot.title <span class="op">=</span> <span class="fu">element_text</span><span class="op">(</span>size <span class="op">=</span> <span class="fl">13</span>, face <span class="op">=</span> <span class="st">"bold"</span><span class="op">)</span>,</span>
+<span>    plot.subtitle <span class="op">=</span> <span class="fu">element_text</span><span class="op">(</span>size <span class="op">=</span> <span class="fl">11</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span><span class="va">p_field</span></span></code></pre></div>
+<p><img src="cross-validation_files/figure-html/plot_spatial_field-1.png" width="100%"></p>
+</div>
+</div>
+<div class="section level3">
+<h3 id="fitting-competing-spatial-spde-models">Fitting competing spatial SPDE models<a class="anchor" aria-label="anchor" href="#fitting-competing-spatial-spde-models"></a>
+</h3>
+<p>We now fit two competing models to these simulated data.</p>
+<ul>
+<li>
+<strong>Model A</strong>: stationary SPDE Matérn, which assumes a
+single global range parameter.<br>
+</li>
+<li>
+<strong>Model B</strong>: non stationary SPDE Matérn, which allows
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>κ</mi><annotation encoding="application/x-tex">\kappa</annotation></semantics></math>
+to vary in space using the same basis as in the simulation.</li>
+</ul>
+<div class="section level4">
+<h4 id="model-a-stationary-spde-matérn">Model A: stationary SPDE Matérn<a class="anchor" aria-label="anchor" href="#model-a-stationary-spde-mat%C3%A9rn"></a>
+</h4>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit_stationary</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
+<span>  <span class="va">Y</span> <span class="op">~</span> <span class="fl">0</span> <span class="op">+</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
+<span>    <span class="va">loc_obs</span>,</span>
+<span>    name <span class="op">=</span> <span class="st">"spde_stationary"</span>,</span>
+<span>    model <span class="op">=</span> <span class="fu"><a href="../reference/matern.html">matern</a></span><span class="op">(</span></span>
+<span>      mesh <span class="op">=</span> <span class="va">mesh</span></span>
+<span>    <span class="op">)</span>,</span>
+<span>    noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Y <span class="op">=</span> <span class="va">Y_spatial</span><span class="op">)</span>,</span>
+<span>  control_opt <span class="op">=</span> <span class="fu"><a href="../reference/control_opt.html">control_opt</a></span><span class="op">(</span></span>
+<span>    iterations <span class="op">=</span> <span class="fl">2000</span>,</span>
+<span>    optimizer <span class="op">=</span> <span class="fu"><a href="../reference/precond_sgd.html">precond_sgd</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>    n_parallel_chain <span class="op">=</span> <span class="fl">4</span>,</span>
+<span>    std_lim <span class="op">=</span> <span class="fl">0.01</span>,</span>
+<span>    seed <span class="op">=</span> <span class="fl">111</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level4">
+<h4 id="model-b-non-stationary-spde-matérn">Model B: non stationary SPDE Matérn<a class="anchor" aria-label="anchor" href="#model-b-non-stationary-spde-mat%C3%A9rn"></a>
+</h4>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit_nonstationary</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
+<span>  <span class="va">Y</span> <span class="op">~</span> <span class="fl">0</span> <span class="op">+</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
+<span>    <span class="va">loc_obs</span>,</span>
+<span>    name <span class="op">=</span> <span class="st">"spde_nonstationary"</span>,</span>
+<span>    model <span class="op">=</span> <span class="fu"><a href="../reference/matern.html">matern</a></span><span class="op">(</span></span>
+<span>      mesh <span class="op">=</span> <span class="va">mesh</span>,</span>
+<span>      B_kappa <span class="op">=</span> <span class="va">B_kappa</span>, <span class="co"># Basis for kappa variation</span></span>
+<span>      theta_kappa <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span>, <span class="co"># Starting values of kappa</span></span>
+<span>    <span class="op">)</span>,</span>
+<span>    noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span></span>
+<span>      B_sigma <span class="op">=</span> <span class="va">B_sigma</span>, <span class="co"># Basis for sigma variation</span></span>
+<span>      theta_sigma <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4</span>, <span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span></span>
+<span>    <span class="op">)</span> <span class="co"># Starting values of sigma</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Y <span class="op">=</span> <span class="va">Y_spatial</span><span class="op">)</span>,</span>
+<span>  control_opt <span class="op">=</span> <span class="fu"><a href="../reference/control_opt.html">control_opt</a></span><span class="op">(</span></span>
+<span>    iterations <span class="op">=</span> <span class="fl">2000</span>,</span>
+<span>    optimizer <span class="op">=</span> <span class="fu"><a href="../reference/precond_sgd.html">precond_sgd</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>    n_parallel_chain <span class="op">=</span> <span class="fl">4</span>,</span>
+<span>    std_lim <span class="op">=</span> <span class="fl">0.01</span>,</span>
+<span>    seed <span class="op">=</span> <span class="fl">222</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>Both spatial models have been successfully fitted. The stationary
+model estimates a single global value of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>κ</mi><annotation encoding="application/x-tex">\kappa</annotation></semantics></math>,
+while the non stationary model estimates spatially varying
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>κ</mi><annotation encoding="application/x-tex">\kappa</annotation></semantics></math>
+through the coefficients of the basis functions defined above.</p>
+</div>
+</div>
+</div>
+<div class="section level2">
+<h2 id="spatial-cross-validation">Spatial cross-validation<a class="anchor" aria-label="anchor" href="#spatial-cross-validation"></a>
+</h2>
+<p>Cross-validation in spatial models must account for the fact that
+observations are not independent, and that prediction performance
+depends strongly on the spatial configuration of the training and
+testing sets. The <code>ngme2</code> framework supports several
+cross-validation strategies, including <strong>K-fold</strong>,
+<strong>leave-percentage-out</strong>, and fully custom splits. In this
+vignette, we illustrate both approaches but <strong>only the
+leave-percentage-out (LPO)</strong> method is used when computing the
+actual cross-validation scores.</p>
+<p>K-fold is included purely to show how spatial folds are created and
+how they look when visualized, which helps build intuition about
+training/testing partitions in non-lattice spatial data.</p>
+<div class="section level3">
+<h3 id="k-fold-spatial-cross-validation-illustration-only">K-fold spatial cross-validation (illustration only)<a class="anchor" aria-label="anchor" href="#k-fold-spatial-cross-validation-illustration-only"></a>
+</h3>
+<div class="section level4">
+<h4 id="understanding-k-fold-spatial-cross-validation">Understanding K-fold spatial cross-validation<a class="anchor" aria-label="anchor" href="#understanding-k-fold-spatial-cross-validation"></a>
+</h4>
+<p>In K-fold cross-validation, the observations are randomly divided
+into K approximately equal-sized subsets:</p>
+<ul>
+<li>The data are partitioned at random into
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>
+folds.<br>
+</li>
+<li>For each fold
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>i</mi><annotation encoding="application/x-tex">i</annotation></semantics></math>:
+<ul>
+<li>The <strong>testing set</strong> corresponds to all observations in
+fold
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>i</mi><annotation encoding="application/x-tex">i</annotation></semantics></math>.<br>
+</li>
+<li>The <strong>training set</strong> corresponds to all remaining
+observations.<br>
+</li>
+</ul>
+</li>
+<li>The procedure is repeated K times, using each fold as the test set
+exactly once.</li>
+</ul>
+<p>Although widely used, K-fold has some limitations for spatial
+data:</p>
+<ul>
+<li>Spatially close observations may fall into different folds,
+violating the idea of “held-out regions”.<br>
+</li>
+<li>Test sets are often too small to evaluate large-scale prediction
+behavior.<br>
+</li>
+<li>Training coverage remains high (typically
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1</mn><mo>−</mo><mn>1</mn><mi>/</mi><mi>K</mi></mrow><annotation encoding="application/x-tex">1 - 1/K</annotation></semantics></math>),
+leading to relatively easy prediction tasks.</li>
+</ul>
+<p>In this vignette K-fold is presented as it is a common
+cross-validation option and is available in the
+<code><a href="../reference/cross_validation.html">cross_validation()</a></code> function.</p>
+</div>
+<div class="section level4">
+<h4 id="creating-k-fold-partitions">Creating K-fold partitions<a class="anchor" aria-label="anchor" href="#creating-k-fold-partitions"></a>
+</h4>
+<p>We follow the same splitting logic used internally by the
+<code><a href="../reference/cross_validation.html">cross_validation()</a></code> function.</p>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">888</span><span class="op">)</span></span>
+<span><span class="va">k_folds</span> <span class="op">&lt;-</span> <span class="fl">5</span></span>
+<span><span class="va">n_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">loc_obs</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Index sequence</span></span>
+<span><span class="va">idx</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">n_data</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Random fold assignment</span></span>
+<span><span class="va">folds</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cut.html" class="external-link">cut</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="va">idx</span><span class="op">)</span>, breaks <span class="op">=</span> <span class="va">k_folds</span>, label <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Build index lists</span></span>
+<span><span class="va">test_idx_kfold</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="va">k_folds</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/which.html" class="external-link">which</a></span><span class="op">(</span><span class="va">folds</span> <span class="op">==</span> <span class="va">x</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">train_idx_kfold</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="va">k_folds</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/which.html" class="external-link">which</a></span><span class="op">(</span><span class="va">folds</span> <span class="op">!=</span> <span class="va">x</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>Distribution of the number of observations per fold:</p>
+<table class="table">
+<caption>Spatial K-fold sizes (illustration only)</caption>
+<thead><tr class="header">
+<th align="center">Fold</th>
+<th align="right">Number_of_locations</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="center">1</td>
+<td align="right">120</td>
+</tr>
+<tr class="even">
+<td align="center">2</td>
+<td align="right">120</td>
+</tr>
+<tr class="odd">
+<td align="center">3</td>
+<td align="right">120</td>
+</tr>
+<tr class="even">
+<td align="center">4</td>
+<td align="right">120</td>
+</tr>
+<tr class="odd">
+<td align="center">5</td>
+<td align="right">120</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section level4">
+<h4 id="visualising-the-spatial-k-fold-split">Visualising the spatial K-fold split<a class="anchor" aria-label="anchor" href="#visualising-the-spatial-k-fold-split"></a>
+</h4>
+<p>The figure below shows how observations are distributed across the K
+folds.<br>
+The folds are not spatially contiguous, which is typical in randomly
+assigned K-fold for point-referenced spatial data.</p>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">df_folds</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  x <span class="op">=</span> <span class="va">loc_obs</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>,</span>
+<span>  y <span class="op">=</span> <span class="va">loc_obs</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span>,</span>
+<span>  fold <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">folds</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">ggplot</span><span class="op">(</span><span class="va">df_folds</span>, <span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">x</span>, y <span class="op">=</span> <span class="va">y</span>, colour <span class="op">=</span> <span class="va">fold</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">geom_point</span><span class="op">(</span>size <span class="op">=</span> <span class="fl">2.5</span>, alpha <span class="op">=</span> <span class="fl">0.7</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">scale_color_viridis_d</span><span class="op">(</span>option <span class="op">=</span> <span class="st">"plasma"</span>, name <span class="op">=</span> <span class="st">"Fold"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">coord_fixed</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">labs</span><span class="op">(</span></span>
+<span>    title <span class="op">=</span> <span class="st">"K-fold spatial cross-validation (illustration)"</span>,</span>
+<span>    subtitle <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">"Observations randomly divided into %d folds"</span>, <span class="va">k_folds</span><span class="op">)</span>,</span>
+<span>    x <span class="op">=</span> <span class="st">"X coordinate"</span>, y <span class="op">=</span> <span class="st">"Y coordinate"</span></span>
+<span>  <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">theme_minimal</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p><img src="cross-validation_files/figure-html/plot_spatial_folds-1.png" width="100%"></p>
+<p>K-fold is therefore useful as a reference point, but
+<strong>not</strong> the scheme used for computing cross-validation
+scores in this vignette.</p>
+<hr>
+</div>
+</div>
+</div>
+<div class="section level2">
+<h2 id="leave-percentage-out-lpo-spatial-cross-validation">Leave-percentage-out (LPO) spatial cross-validation<a class="anchor" aria-label="anchor" href="#leave-percentage-out-lpo-spatial-cross-validation"></a>
+</h2>
+<div class="section level4">
+<h4 id="main-evaluation-method-30-percent-for-training-70-percent-for-testing">
+<em>Main evaluation method: 30 percent for training, 70 percent for
+testing</em><a class="anchor" aria-label="anchor" href="#main-evaluation-method-30-percent-for-training-70-percent-for-testing"></a>
+</h4>
+</div>
+<div class="section level4">
+<h4 id="understanding-leave-percentage-out-cross-validation">Understanding leave-percentage-out cross-validation<a class="anchor" aria-label="anchor" href="#understanding-leave-percentage-out-cross-validation"></a>
+</h4>
+<p>Leave-percentage-out (LPO) is often more appropriate for spatial
+models because it allows the size of training and test sets to be
+controlled directly.</p>
+<p>Key features of LPO:</p>
+<ul>
+<li>You specify the proportion of data to <strong>train</strong> on
+(here 30 percent).<br>
+</li>
+<li>The remaining data serve as the <strong>test</strong> set (here 70
+percent).<br>
+</li>
+<li>The split is repeated multiple times (here, to reduce computational
+cost, 5 repetitions).<br>
+</li>
+<li>Each repetition creates a new random partition.</li>
+</ul>
+<p>This produces a more difficult prediction task, especially when the
+training fraction is small, and therefore yields a realistic evaluation
+of extrapolation ability.</p>
+</div>
+<div class="section level4">
+<h4 id="choosing-30-percent-training-and-70-percent-testing">Choosing 30 percent training and 70 percent testing<a class="anchor" aria-label="anchor" href="#choosing-30-percent-training-and-70-percent-testing"></a>
+</h4>
+<p>Using only <strong>30 percent</strong> of the observations for
+training ensures a deliberately challenging scenario:</p>
+<ul>
+<li>Training data form a sparse set of locations across the
+domain.<br>
+</li>
+<li>Testing data cover most of the spatial region (70 percent),
+including areas far from training points.<br>
+</li>
+<li>Stationary models tend to struggle with such extrapolation, whereas
+non-stationary SPDE models can adapt via spatially varying range or
+dispersion.</li>
+</ul>
+<p>This makes LPO with a small training fraction a strong diagnostic
+tool.</p>
+<hr>
+</div>
+<div class="section level3">
+<h3 id="creating-lpo-partitions">Creating LPO partitions<a class="anchor" aria-label="anchor" href="#creating-lpo-partitions"></a>
+</h3>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">707</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">percent_train</span> <span class="op">&lt;-</span> <span class="fl">0.30</span></span>
+<span><span class="va">percent_test</span> <span class="op">&lt;-</span> <span class="fl">0.70</span></span>
+<span><span class="va">n_reps</span> <span class="op">&lt;-</span> <span class="fl">5</span></span>
+<span><span class="va">n_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">loc_obs</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">train_idx_lpo</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">vector</a></span><span class="op">(</span><span class="st">"list"</span>, <span class="va">n_reps</span><span class="op">)</span></span>
+<span><span class="va">test_idx_lpo</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">vector</a></span><span class="op">(</span><span class="st">"list"</span>, <span class="va">n_reps</span><span class="op">)</span></span>
+<span></span>
+<span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">n_reps</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">train_idx_lpo</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="va">n_data</span>, size <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">floor</a></span><span class="op">(</span><span class="va">percent_train</span> <span class="op">*</span> <span class="va">n_data</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="va">test_idx_lpo</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">setdiff</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="va">n_data</span>, <span class="va">train_idx_lpo</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<div class="section level4">
+<h4 id="example-lpo-split-30-train-70-test">Example LPO split (30% train, 70% test)<a class="anchor" aria-label="anchor" href="#example-lpo-split-30-train-70-test"></a>
+</h4>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">df_lpo</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  x <span class="op">=</span> <span class="va">loc_obs</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>,</span>
+<span>  y <span class="op">=</span> <span class="va">loc_obs</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span>,</span>
+<span>  set_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="va">n_data</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">train_idx_lpo</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>,</span>
+<span>    <span class="st">"Train (30%)"</span>, <span class="st">"Test (70%)"</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">ggplot</span><span class="op">(</span><span class="va">df_lpo</span>, <span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">x</span>, y <span class="op">=</span> <span class="va">y</span>, colour <span class="op">=</span> <span class="va">set_type</span>, size <span class="op">=</span> <span class="va">set_type</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">geom_point</span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0.6</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">scale_color_manual</span><span class="op">(</span></span>
+<span>    values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Train (30%)"</span> <span class="op">=</span> <span class="st">"#2E86AB"</span>, <span class="st">"Test (70%)"</span> <span class="op">=</span> <span class="st">"#F18F01"</span><span class="op">)</span>,</span>
+<span>    name <span class="op">=</span> <span class="st">"Set type"</span></span>
+<span>  <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">scale_size_manual</span><span class="op">(</span>values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Train (30%)"</span> <span class="op">=</span> <span class="fl">2</span>, <span class="st">"Test (70%)"</span> <span class="op">=</span> <span class="fl">3</span><span class="op">)</span>, guide <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">coord_fixed</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">labs</span><span class="op">(</span></span>
+<span>    title <span class="op">=</span> <span class="st">"Example leave-percentage-out partition"</span>,</span>
+<span>    subtitle <span class="op">=</span> <span class="st">"30% training, 70% testing"</span>,</span>
+<span>    x <span class="op">=</span> <span class="st">"X coordinate"</span>, y <span class="op">=</span> <span class="st">"Y coordinate"</span></span>
+<span>  <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">theme_minimal</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p><img src="cross-validation_files/figure-html/plot_lpo_partition-1.png" width="100%"></p>
+<hr>
+</div>
+</div>
+<div class="section level3">
+<h3 id="performing-lpo-cross-validation-main-results">Performing LPO cross-validation (main results)<a class="anchor" aria-label="anchor" href="#performing-lpo-cross-validation-main-results"></a>
+</h3>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">cv_spatial_lpo</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cross_validation.html">cross_validation</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    <span class="st">"Stationary SPDE"</span>     <span class="op">=</span> <span class="va">fit_stationary</span>,</span>
+<span>    <span class="st">"Non-stationary SPDE"</span> <span class="op">=</span> <span class="va">fit_nonstationary</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  type <span class="op">=</span> <span class="st">"lpo"</span>,</span>
-<span>  percent <span class="op">=</span> <span class="fl">0.2</span>,</span>
-<span>  times <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>  percent <span class="op">=</span> <span class="va">percent_test</span>,</span>
+<span>  times <span class="op">=</span> <span class="va">n_reps</span>,</span>
 <span>  n_gibbs_samples <span class="op">=</span> <span class="fl">500</span>,</span>
-<span>  seed <span class="op">=</span> <span class="fl">10</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">cv2</span><span class="op">$</span><span class="va">mean.scores</span></span>
-<span><span class="co">#&gt;                MAE      MSE  neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; linear   0.8452693 1.210815 0.6131620  1.103575</span></span>
-<span><span class="co">#&gt; ar1_poor 0.8341960 1.139393 0.6036732  1.096370</span></span>
-<span><span class="co">#&gt; ar1      0.7625284 1.011465 0.5580228  1.055255</span></span></code></pre></div>
+<span>  seed <span class="op">=</span> <span class="fl">2025</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<div class="section level4">
+<h4 id="lpo-results-5-repetitions-30-percent-training">LPO results: 5 repetitions, 30 percent training<a class="anchor" aria-label="anchor" href="#lpo-results-5-repetitions-30-percent-training"></a>
+</h4>
+<table class="table">
+<caption>Leave-percentage-out spatial cross-validation (30% train, 70%
+test, 5 repetitions)</caption>
+<thead><tr class="header">
+<th align="left"></th>
+<th align="right">MAE</th>
+<th align="right">MSE</th>
+<th align="right">neg.CRPS</th>
+<th align="right">neg.sCRPS</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">Stationary SPDE</td>
+<td align="right">1.3969</td>
+<td align="right">3.9638</td>
+<td align="right">1.0895</td>
+<td align="right">1.5702</td>
+</tr>
+<tr class="even">
+<td align="left">Non-stationary SPDE</td>
+<td align="right">1.3959</td>
+<td align="right">3.9620</td>
+<td align="right">1.2197</td>
+<td align="right">2.9245</td>
+</tr>
+</tbody>
+</table>
 </div>
-  </div>
-
-  <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
-
-      </div>
-
+</div>
+</div>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside>
 </div>
 
 
 
-      <footer><div class="copyright">
-  <p></p>
-<p>Developed by David Bolin, Xiaotian Jin, Alexandre Simas, Jonas Wallin.</p>
+    <footer><div class="pkgdown-footer-left">
+  <p>Developed by David Bolin, Xiaotian Jin, Alexandre Simas, Jonas Wallin.</p>
 </div>
 
-<div class="pkgdown">
-  <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+<div class="pkgdown-footer-right">
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
 </div>
 
-      </footer>
+    </footer>
 </div>
-
 
 
 

@@ -15,7 +15,7 @@ make_time_series_cv_index(
 \arguments{
 \item{time_idx}{A numeric vector of time indices in ascending order}
 
-\item{train_length}{An integer specifying the fixed length of training sets. 
+\item{train_length}{An integer specifying the fixed length of training sets.
 If NULL (default), an expanding window approach is used.}
 
 \item{test_length}{An integer specifying the number of observations to include in each test set.
@@ -45,15 +45,15 @@ handle replicated observations.
 Time series cross-validation requires respecting the temporal order of observations.
 This function implements two common approaches:
 
-1. Expanding window (when train_length = NULL): The training set grows with each fold, 
+1. Expanding window (when train_length = NULL): The training set grows with each fold,
    starting with a minimal set and expanding to include all but the test data.
 
-2. Sliding window (when train_length is specified): Uses a fixed-length window 
+2. Sliding window (when train_length is specified): Uses a fixed-length window
    that slides through the time series, maintaining the same training size across folds.
 
 The test_length parameter allows for multi-step forecasting evaluation.
 
-When replicate is provided, the function ensures that all observations with the same 
+When replicate is provided, the function ensures that all observations with the same
 replicate value are kept together, either all in the training set or all in the test set.
 This is useful for scenarios where multiple observations at the same time point should
 be treated as a group.

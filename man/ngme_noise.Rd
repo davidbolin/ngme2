@@ -36,7 +36,6 @@ ngme_noise(
   index_corr = NULL,
   map_corr = NULL,
   nu_lower_bound = 0.01,
-  shared_sigma = FALSE,
   rho = double(0),
   prior_mu = ngme_prior("normal", param = c(0, 0.01)),
   prior_sigma = ngme_prior("normal", param = c(0, 0.01)),
@@ -169,7 +168,8 @@ length(theta_sigma)}
 
 \item{V}{start value for V}
 
-\item{fix_V}{fix the sampling of V}
+\item{fix_V}{fix the sampling of V
+gives Y|W ~ N(mean * sigma, sigma^2)}
 
 \item{single_V}{TRUE if V is a single number}
 
@@ -182,9 +182,6 @@ length(theta_sigma)}
 \item{map_corr}{1d, 2d, or formula, used when corr_measurement=TRUE, specify use which covariate to infer the index_corr.}
 
 \item{nu_lower_bound}{specify the lower bound of parameter nu}
-
-\item{shared_sigma}{allow only in measurement noise,
-gives Y|W ~ N(mean * sigma, sigma^2)}
 
 \item{rho}{used when corr_measurement=TRUE, starting point for correlation}
 

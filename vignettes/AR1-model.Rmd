@@ -1,8 +1,8 @@
 ---
-title: "Ngme2 AR(1) model"
+title: "AR(1) model in ngme2"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Ngme2 AR(1) model}
+  %\VignetteIndexEntry{AR(1) model in ngme2}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -142,8 +142,8 @@ This matrix formulation not only establishes a direct connection to the precisio
 
 ### Basic Syntax
 
-To specify an AR(1) model in `ngme2`, use the `f()` function with the `model="ar1"` argument within your model formula:
-`f(time_index, model="ar1")`.
+To specify an AR(1) model in `ngme2`, use the `f()` function with the `model=ar1()` argument within your model formula:
+`f(time_index, model=ar1())`.
 When not specifying the `noise` argument in `f()`, the process defaults to Gaussian noise. For simulation purposes, it is important to define the `sigma` parameter in the `noise` specification, as this controls the variance of the innovations. For estimation, however, specifying `sigma` is optional since the model will automatically estimate this parameter from the observed data.
 
 ### Basic Usage Example
@@ -167,9 +167,8 @@ Now we will specify the AR(1) model with a negative autocorrelation parameter, w
 ```{r}
 # Define AR(1) model with negative autocorrelation
 ar1_model <- f(time_points,
-  model = "ar1",
-  rho = -0.5,            # Negative correlation creates oscillating behavior
-  noise = noise_normal(sigma = 1.0)    # Gaussian innovations with sigma = 1
+  model = ar1(rho = -0.5), # rho = -0.5 creates oscillating behavior
+  noise = noise_normal(sigma = 1.0) # Gaussian innovations with sigma = 1
 )
 ```
 
@@ -200,7 +199,7 @@ The mapping matrix $\mathbf{A}$ serves as a crucial bridge between the observed 
 library(Matrix)
 
 # The precision matrix is computed as Q = (K^T K) / sigma^2
-sigma2 <- 1.0  # Error variance from the model definition
+sigma2 <- 1.0 # Error variance from the model definition
 
 Q_matrix <- (t(K_matrix) %*% K_matrix) / sigma2
 print(Q_matrix)
@@ -221,7 +220,7 @@ names(Q_melted) <- c("Row", "Column", "Value")
 # Create a binary sparsity indicator
 Q_melted$Sparsity <- ifelse(abs(Q_melted$Value) < 1e-10, "Zero", "Non-zero")
 
-# Simple binary sparsity pattern 
+# Simple binary sparsity pattern
 p_sparsity_simple <- ggplot(Q_melted, aes(x = Column, y = rev(Row), fill = Sparsity)) +
   geom_tile(color = "white", linewidth = 0.1) +
   scale_fill_manual(values = c("Zero" = "white", "Non-zero" = "#2E86AB")) +
@@ -246,7 +245,7 @@ p_sparsity_simple <- ggplot(Q_melted, aes(x = Column, y = rev(Row), fill = Spars
   ) +
   coord_fixed()
 
-print(p_sparsity_simple)   
+print(p_sparsity_simple)
 ```
 
 
@@ -271,11 +270,13 @@ Finally, let us demonstrate how different error variances affect the precision m
 ```{r}
 # Demonstrate how different error variances affect the precision matrix
 sigma2_values <- c(0.5, 2.0, 4.0)
-for(sigma2_test in sigma2_values) {
+for (sigma2_test in sigma2_values) {
   Q_scaled <- (t(K_matrix) %*% K_matrix) / sigma2_test
-  print(paste("With sigma^2 =", sigma2_test, 
-              ", Q[1,1] =", round(Q_scaled[1,1], 3),
-              "(scaled by factor 1/", sigma2_test, ")"))
+  print(paste(
+    "With sigma^2 =", sigma2_test,
+    ", Q[1,1] =", round(Q_scaled[1, 1], 3),
+    "(scaled by factor 1/", sigma2_test, ")"
+  ))
 }
 ```
 
@@ -307,9 +308,8 @@ First, we create the AR(1) model object using the `f()` function, which specifie
 
 ```{r gaussian-ar-setup-model}
 # Define AR(1) model with Gaussian noise
-ar1_gaussian <- f(time_index, 
-  model = "ar1", 
-  rho = 0.7,
+ar1_gaussian <- f(time_index,
+  model = ar1(rho = 0.7),
   noise = noise_normal(sigma = 2.0)
 )
 ```
@@ -377,7 +377,7 @@ p2 <- ggplot(acf_data, aes(x = lag, y = acf)) +
   ) +
   theme_minimal() +
   theme(
-    plot.title = element_text(size = 12, face = "bold"),   
+    plot.title = element_text(size = 12, face = "bold"),
     panel.grid.minor = element_blank()
   )
 
@@ -394,7 +394,7 @@ p3 <- ggplot(pacf_data, aes(x = lag, y = pacf)) +
   ) +
   theme_minimal() +
   theme(
-    plot.title = element_text(size = 12, face = "bold"),   
+    plot.title = element_text(size = 12, face = "bold"),
     panel.grid.minor = element_blank()
   )
 
@@ -413,9 +413,8 @@ Now let us explore the flexibility of non-Gaussian innovations using the Normal 
 
 ```{r nig-ar-setup-model}
 # Define AR(1) model with NIG noise
-ar1_nig <- f(time_index, 
-  model = "ar1", 
-  rho = 0.5,
+ar1_nig <- f(time_index,
+  model = ar1(rho = 0.5),
   noise = noise_nig(mu = -3, sigma = 4, nu = 0.4)
 )
 ```
@@ -594,9 +593,8 @@ ngme_out <- ngme(
   Y ~ 0 + x1 + x2 + x3 + f(
     1:n_obs,
     name = "my_ar",
-    model = "ar1",
-    noise = noise_nig(),
-    control = control_f(numer_grad = TRUE, improve_hessian = FALSE)
+    model = ar1(),
+    noise = noise_nig()
   ),
   data = model_data,
   control_opt = control_opt(
@@ -613,7 +611,7 @@ ngme_out <- ngme(
 )
 ```
 
-The formula `Y ~ 0 + x1 + x2 + x3 + f(...)` specifies that the response variable `Y` depends on three fixed effects (`x1`, `x2`, `x3`) with no intercept (the `0` term), plus a latent AR(1) process defined through the `f()` function. The latent model is specified with `f(1:n_obs, name = "my_ar", model = "ar1", noise = noise_nig())`, where we assign a name to the process for later reference and specify NIG innovations without fixing the parameters (allowing them to be estimated).
+The formula `Y ~ 0 + x1 + x2 + x3 + f(...)` specifies that the response variable `Y` depends on three fixed effects (`x1`, `x2`, `x3`) with no intercept (the `0` term), plus a latent AR(1) process defined through the `f()` function. The latent model is specified with `f(1:n_obs, name = "my_ar", model = ar1(), noise = noise_nig())`, where we assign a name to the process for later reference and specify NIG innovations without fixing the parameters (allowing them to be estimated).
 
 The `control_opt()` function manages the optimization process through several key parameters:
 
@@ -637,15 +635,15 @@ ngme_out
 Assessing convergence is crucial for reliable parameter estimates. We will use the built-in `traceplot` function from `ngme2` to examine the convergence of our parameters:
 
 ```{r convergence-diagnostics, fig.height=5, fig.width=7}
-  # Trace plot for sigma and fixed effects (blue lines indicate true value)
-  traceplot(ngme_out, hline = c(2,-1, 2, 0.5), moving_window = 20)
+# Trace plot for sigma and fixed effects (blue lines indicate true value)
+traceplot(ngme_out, hline = c(2, -1, 2, 0.5), moving_window = 20)
 ```
 
 Now let us examine the convergence of the AR(1) process parameters:
 
 ```{r convergence-ar-process, fig.height=5, fig.width=7}
-  # Trace plots for AR(1) parameters (blue lines indicate true value)
-  traceplot(ngme_out, "my_ar", hline = c(0.5, -3, 4, 0.4))
+# Trace plots for AR(1) parameters (blue lines indicate true value)
+traceplot(ngme_out, "my_ar", hline = c(0.5, -3, 4, 0.4))
 ```
 
 ### Parameter Estimates Summary
@@ -707,8 +705,8 @@ n_train <- n_obs - n_holdout
 
 # Split data maintaining temporal order
 model_data_train <- model_data[1:n_train, ]
-model_data_test <- model_data[(n_train+1):n_obs, ]
-Y_true_test <- Y[(n_train+1):n_obs]
+model_data_test <- model_data[(n_train + 1):n_obs, ]
+Y_true_test <- Y[(n_train + 1):n_obs]
 
 cat("Training:", n_train, "observations\n")
 cat("Testing:", n_holdout, "observations\n")
@@ -720,12 +718,11 @@ The model is fitted using only the training portion of the data. The time index 
 
 ```{r holdout-part1}
 ar1_train <- f(
-    1:n_train,
-    name = "my_ar",
-    model = "ar1",
-    noise = noise_nig(),
-    control = control_f(numer_grad = TRUE, improve_hessian = FALSE)
-  )
+  1:n_train,
+  name = "my_ar",
+  model = ar1(),
+  noise = noise_nig()
+)
 ```
 
 We now need to extract the training locations, which are in `ar1_train$operator$mesh$loc`. Next, we create a mesh object with all training and test locations. We will need to load the `fmesher` package to create the mesh object.
@@ -733,7 +730,7 @@ We now need to extract the training locations, which are in `ar1_train$operator$
 ```{r, message=FALSE}
 library(fmesher)
 loc_train <- ar1_train$operator$mesh$loc
-loc_test <- (n_train+1):n_obs
+loc_test <- (n_train + 1):n_obs
 loc_full <- c(loc_train, loc_test)
 mesh_full <- fm_mesh_1d(loc_full)
 ```
@@ -745,10 +742,9 @@ ngme_out_train <- ngme(
   Y ~ 0 + x1 + x2 + x3 + f(
     1:n_train,
     name = "my_ar",
-    model = "ar1",
+    model = ar1(),
     mesh = mesh_full,
-    noise = noise_nig(),
-    control = control_f(numer_grad = TRUE, improve_hessian = FALSE)
+    noise = noise_nig()
   ),
   data = model_data_train,
   control_opt = control_opt(
@@ -832,21 +828,35 @@ test_data_viz <- data.frame(
 )
 
 p_holdout <- ggplot() +
-  geom_line(data = data_context, aes(x = time, y = value, color = "Observed"), 
-            alpha = 0.6, linewidth = 0.4) +
-  geom_line(data = test_data_viz, aes(x = time, y = observed, color = "Observed"), 
-            alpha = 0.6, linewidth = 0.4) +
-  geom_point(data = test_data_viz, aes(x = time, y = observed, color = "Observed"), 
-             size = 0.7, alpha = 0.6) +
-  geom_line(data = test_data_viz, aes(x = time, y = predicted, color = "Predicted"), 
-            alpha = 0.6, linewidth = 0.4) +
-  geom_point(data = test_data_viz, aes(x = time, y = predicted, color = "Predicted"), 
-             size = 0.7, alpha = 0.6) +
-  geom_ribbon(data = test_data_viz, 
-              aes(x = time, ymin = pred_lower, ymax = pred_upper), 
-              fill = "#A23B72", alpha = 0.1) +
-  geom_vline(xintercept = n_train + 0.5, linetype = "dashed", 
-             color = "gray50", alpha = 0.6) +
+  geom_line(
+    data = data_context, aes(x = time, y = value, color = "Observed"),
+    alpha = 0.6, linewidth = 0.4
+  ) +
+  geom_line(
+    data = test_data_viz, aes(x = time, y = observed, color = "Observed"),
+    alpha = 0.6, linewidth = 0.4
+  ) +
+  geom_point(
+    data = test_data_viz, aes(x = time, y = observed, color = "Observed"),
+    size = 0.7, alpha = 0.6
+  ) +
+  geom_line(
+    data = test_data_viz, aes(x = time, y = predicted, color = "Predicted"),
+    alpha = 0.6, linewidth = 0.4
+  ) +
+  geom_point(
+    data = test_data_viz, aes(x = time, y = predicted, color = "Predicted"),
+    size = 0.7, alpha = 0.6
+  ) +
+  geom_ribbon(
+    data = test_data_viz,
+    aes(x = time, ymin = pred_lower, ymax = pred_upper),
+    fill = "#A23B72", alpha = 0.1
+  ) +
+  geom_vline(
+    xintercept = n_train + 0.5, linetype = "dashed",
+    color = "gray50", alpha = 0.6
+  ) +
   scale_color_manual(values = c("Observed" = "#2E86AB", "Predicted" = "#A23B72")) +
   labs(
     title = "Hold-out Prediction Results: AR(1) Model with NIG Innovations",
@@ -896,8 +906,8 @@ pred_errors_holdout_alt <- pred_mean_holdout_alt - Y_true_test
 rmse_holdout_alt <- sqrt(mean(pred_errors_holdout_alt^2))
 mae_holdout_alt <- mean(abs(pred_errors_holdout_alt))
 correlation_holdout_alt <- cor(pred_mean_holdout_alt, Y_true_test)
-in_interval_90_alt <- (Y_true_test >= pred_lower_holdout_alt) & 
-                      (Y_true_test <= pred_upper_holdout_alt)
+in_interval_90_alt <- (Y_true_test >= pred_lower_holdout_alt) &
+  (Y_true_test <= pred_upper_holdout_alt)
 coverage_90_alt <- mean(in_interval_90_alt)
 
 cat("RMSE:", round(rmse_holdout_alt, 3), "\n")
@@ -923,7 +933,7 @@ To illustrate this, we introduce artificial gaps at different points in the seri
 
 ```{r interpolation-setup}
 gap1_indices <- 601:605
-gap2_indices <- 1000:1005 
+gap2_indices <- 1000:1005
 gap3_indices <- 2100:2106
 all_gap_indices <- c(gap1_indices, gap2_indices, gap3_indices)
 
@@ -945,9 +955,8 @@ ngme_out_interp <- ngme(
   Y_train_vector ~ 0 + x1 + x2 + x3 + f(
     train_indices_interp,
     name = "my_ar_interp",
-    model = "ar1", 
-    noise = noise_nig(),
-    control = control_f(numer_grad = TRUE, improve_hessian = FALSE)
+    model = ar1(),
+    noise = noise_nig()
   ),
   data = model_data_train_interp,
   control_opt = control_opt(
@@ -971,7 +980,7 @@ The interpolation predictions are generated for the gap locations using the corr
 ```{r interpolation-predictions}
 gap_covariates <- data.frame(
   x1 = x1[all_gap_indices],
-  x2 = x2[all_gap_indices], 
+  x2 = x2[all_gap_indices],
   x3 = x3[all_gap_indices]
 )
 
@@ -986,7 +995,7 @@ interpolation_pred <- predict(
 )
 
 interp_mean <- interpolation_pred$mean
-interp_sd <- interpolation_pred$sd  
+interp_sd <- interpolation_pred$sd
 interp_lower <- interpolation_pred[["0.05q"]]
 interp_upper <- interpolation_pred[["0.95q"]]
 ```
@@ -1004,7 +1013,7 @@ in_interval_90_interp <- (Y_true_gaps >= interp_lower) & (Y_true_gaps <= interp_
 coverage_90_interp <- mean(in_interval_90_interp)
 
 cat("RMSE:", round(rmse_interp, 3), "\n")
-cat("MAE:", round(mae_interp, 3), "\n") 
+cat("MAE:", round(mae_interp, 3), "\n")
 cat("Correlation:", round(correlation_interp, 3), "\n")
 cat("90% Interval Coverage:", round(coverage_90_interp * 100, 1), "%\n")
 
@@ -1031,25 +1040,25 @@ gap_info <- list(
 plot_list <- list()
 context_length <- 80
 
-for(i in 1:3) {
+for (i in 1:3) {
   gap <- gap_info[[i]]
-  context_start <- round(max(1, gap$center - context_length/2))
-  context_end <- round(min(n_obs, gap$center + context_length/2))
+  context_start <- round(max(1, gap$center - context_length / 2))
+  context_end <- round(min(n_obs, gap$center + context_length / 2))
   context_range <- context_start:context_end
-  
+
   # Complete time series data within the context window
   all_context_data <- data.frame(
     time = context_range,
     value = Y[context_range],
     is_gap = context_range %in% gap$indices
   )
-  
+
   # Extract data points within the gap for highlighting
   gap_data <- data.frame(
     time = gap$indices,
     value = Y[gap$indices]
   )
-  
+
   # Interpolated values with uncertainty bounds
   interp_mask <- all_gap_indices %in% gap$indices
   interp_gap_data <- data.frame(
@@ -1058,45 +1067,62 @@ for(i in 1:3) {
     lower = interp_lower[interp_mask],
     upper = interp_upper[interp_mask]
   )
-  
+
   p <- ggplot() +
     # Continuous blue line representing the complete observed time series
-    geom_line(data = all_context_data, aes(x = time, y = value), 
-              color = "#2E86AB", alpha = 0.6, linewidth = 0.4) +
-    
+    geom_line(
+      data = all_context_data, aes(x = time, y = value),
+      color = "#2E86AB", alpha = 0.6, linewidth = 0.4
+    ) +
+
     # Blue points highlighting the true values within the gap
-    geom_point(data = gap_data, aes(x = time, y = value), 
-               color = "#2E86AB", size = 1.2, alpha = 0.8) +
-    
+    geom_point(
+      data = gap_data, aes(x = time, y = value),
+      color = "#2E86AB", size = 1.2, alpha = 0.8
+    ) +
+
     # Uncertainty ribbon for interpolated predictions
-    geom_ribbon(data = interp_gap_data, 
-                aes(x = time, ymin = lower, ymax = upper), 
-                fill = "#A23B72", alpha = 0.2) +
-    
+    geom_ribbon(
+      data = interp_gap_data,
+      aes(x = time, ymin = lower, ymax = upper),
+      fill = "#A23B72", alpha = 0.2
+    ) +
+
     # Purple line connecting the interpolated values
-    geom_line(data = interp_gap_data, aes(x = time, y = value), 
-              color = "#A23B72", linewidth = 0.4) +
-    
+    geom_line(
+      data = interp_gap_data, aes(x = time, y = value),
+      color = "#A23B72", linewidth = 0.4
+    ) +
+
     # Purple points showing interpolated predictions
-    geom_point(data = interp_gap_data, aes(x = time, y = value), 
-               color = "#A23B72", size = 1.2, alpha = 0.8) +
-    
+    geom_point(
+      data = interp_gap_data, aes(x = time, y = value),
+      color = "#A23B72", size = 1.2, alpha = 0.8
+    ) +
+
     # Vertical dashed lines marking gap boundaries
-    geom_vline(xintercept = c(min(gap$indices), max(gap$indices)), 
-               linetype = "dashed", color = "gray50", alpha = 0.6) +
-    
-    labs(title = paste(gap$name, "- AR(1) Interpolation"), 
-         x = "Time", y = "Value") +
+    geom_vline(
+      xintercept = c(min(gap$indices), max(gap$indices)),
+      linetype = "dashed", color = "gray50", alpha = 0.6
+    ) +
+    labs(
+      title = paste(gap$name, "- AR(1) Interpolation"),
+      x = "Time", y = "Value"
+    ) +
     theme_minimal() +
-    theme(plot.title = element_text(size = 11, face = "bold"), 
-          panel.grid.minor = element_blank())
-  
+    theme(
+      plot.title = element_text(size = 11, face = "bold"),
+      panel.grid.minor = element_blank()
+    )
+
   plot_list[[i]] <- p
 }
 
 library(gridExtra)
-grid.arrange(plot_list[[1]], plot_list[[2]], plot_list[[3]], ncol = 1,
-             top = "AR(1) Model Interpolation Across Multiple Time Periods")
+grid.arrange(plot_list[[1]], plot_list[[2]], plot_list[[3]],
+  ncol = 1,
+  top = "AR(1) Model Interpolation Across Multiple Time Periods"
+)
 ```
 
 ## Posterior Simulation
@@ -1133,10 +1159,14 @@ comparison_data <- data.frame(
   posterior_upper = W_posterior_q975
 )
 
-cat("Mean absolute difference from true values:", 
-    round(mean(abs(W_posterior_mean - W_nig)), 3), "\n")
-cat("Average posterior standard deviation:", 
-    round(mean(W_posterior_sd), 3), "\n")
+cat(
+  "Mean absolute difference from true values:",
+  round(mean(abs(W_posterior_mean - W_nig)), 3), "\n"
+)
+cat(
+  "Average posterior standard deviation:",
+  round(mean(W_posterior_sd), 3), "\n"
+)
 ```
 
 ### Latent Process Uncertainty Visualization
@@ -1148,26 +1178,31 @@ viz_range <- 2000:2200
 viz_data <- comparison_data[viz_range, ]
 
 p_posterior <- ggplot(viz_data, aes(x = time)) +
-  geom_ribbon(aes(ymin = posterior_lower, ymax = posterior_upper), 
-              fill = "#A23B72", alpha = 0.3) +
-  geom_line(aes(y = true_W, color = "True Latent Process"), 
-            linewidth = 0.4, alpha = 0.8) +
-  geom_line(aes(y = posterior_mean, color = "Posterior Mean"), 
-            linewidth = 0.4, alpha = 0.9) +
-  scale_color_manual(values = c("True Latent Process" = "#2E86AB", 
-                               "Posterior Mean" = "#A23B72")) +
+  geom_ribbon(aes(ymin = posterior_lower, ymax = posterior_upper),
+    fill = "#A23B72", alpha = 0.3
+  ) +
+  geom_line(aes(y = true_W, color = "True Latent Process"),
+    linewidth = 0.4, alpha = 0.8
+  ) +
+  geom_line(aes(y = posterior_mean, color = "Posterior Mean"),
+    linewidth = 0.4, alpha = 0.9
+  ) +
+  scale_color_manual(values = c(
+    "True Latent Process" = "#2E86AB",
+    "Posterior Mean" = "#A23B72"
+  )) +
   labs(
     title = "Posterior Uncertainty in AR(1) Latent Process",
     subtitle = "95% Posterior Credible Intervals with True vs Estimated Process",
-    x = "Time", 
-    y = "Latent Process Value (W)", 
+    x = "Time",
+    y = "Latent Process Value (W)",
     color = ""
   ) +
   theme_minimal() +
   theme(
     plot.title = element_text(size = 14, face = "bold"),
     plot.subtitle = element_text(size = 12),
-    legend.position = "top", 
+    legend.position = "top",
     panel.grid.minor = element_blank()
   )
 
@@ -1182,7 +1217,7 @@ We now assess model adequacy by generating posterior predictive samples for the 
 n_sims <- 300
 
 # Generate posterior predictive samples for Y using simulate()
-Y_sim <- simulate(ngme_out, posterior=TRUE, m_noise=TRUE, nsim = n_sims)
+Y_sim <- simulate(ngme_out, posterior = TRUE, m_noise = TRUE, nsim = n_sims)
 
 # Convert to matrix for easier handling
 Y_sim_matrix <- as.matrix(Y_sim)
@@ -1194,61 +1229,77 @@ par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
 y_mean <- rowMeans(Y_sim_matrix)
 y_lower <- apply(Y_sim_matrix, 1, quantile, 0.025)
 y_upper <- apply(Y_sim_matrix, 1, quantile, 0.975)
-plot(y_mean, Y, pch = 16, col = rgb(0.3, 0.3, 0.3, 0.6), cex = 0.8,
-     main = "Observed vs Posterior Mean", 
-     xlab = "Posterior Mean", ylab = "Observed Y",
-     xlim = range(c(y_mean, Y)), ylim = range(c(y_mean, Y)))
+plot(y_mean, Y,
+  pch = 16, col = rgb(0.3, 0.3, 0.3, 0.6), cex = 0.8,
+  main = "Observed vs Posterior Mean",
+  xlab = "Posterior Mean", ylab = "Observed Y",
+  xlim = range(c(y_mean, Y)), ylim = range(c(y_mean, Y))
+)
 
 # Add 1:1 reference line
 abline(0, 1, col = "red", lwd = 1, lty = 2)
 
-segments(y_mean, y_lower, 
-         y_mean, y_upper, 
-         col = rgb(0.64, 0.23, 0.45, 0.1), lwd = 1)
+segments(y_mean, y_lower,
+  y_mean, y_upper,
+  col = rgb(0.64, 0.23, 0.45, 0.1), lwd = 1
+)
 
 # Calculate and display correlation
 correlation <- cor(Y, y_mean)
 mtext(paste("Correlation =", round(correlation, 3)), side = 3, line = 0.2, cex = 0.9)
 
-legend("topleft", legend = c("Data points", "Perfect fit", "95% CI"), 
-       col = c(rgb(0.3, 0.3, 0.3, 0.6), "red", rgb(0.64, 0.23, 0.45, 0.4)), 
-       pch = c(16, NA, NA), lty = c(NA, 2, 1), lwd = c(NA, 1, 1), bty = "n")
+legend("topleft",
+  legend = c("Data points", "Perfect fit", "95% CI"),
+  col = c(rgb(0.3, 0.3, 0.3, 0.6), "red", rgb(0.64, 0.23, 0.45, 0.4)),
+  pch = c(16, NA, NA), lty = c(NA, 2, 1), lwd = c(NA, 1, 1), bty = "n"
+)
 
 # 2. Histogram comparison
-hist(Y, breaks = 40, col = rgb(0.18, 0.53, 0.67, 0.7), 
-     main = "Distribution Comparison", xlab = "Y values", 
-     freq = FALSE, border = "white")
-hist(unlist(Y_sim), breaks = 40, col = rgb(0.64, 0.23, 0.45, 0.7), 
-     add = TRUE, freq = FALSE, border = "white")
-legend("topleft", legend = c("Observed", "Simulated"), 
-       fill = c(rgb(0.18, 0.53, 0.67, 0.7), rgb(0.64, 0.23, 0.45, 0.7)), 
-       bty = "n")
+hist(Y,
+  breaks = 40, col = rgb(0.18, 0.53, 0.67, 0.7),
+  main = "Distribution Comparison", xlab = "Y values",
+  freq = FALSE, border = "white"
+)
+hist(unlist(Y_sim),
+  breaks = 40, col = rgb(0.64, 0.23, 0.45, 0.7),
+  add = TRUE, freq = FALSE, border = "white"
+)
+legend("topleft",
+  legend = c("Observed", "Simulated"),
+  fill = c(rgb(0.18, 0.53, 0.67, 0.7), rgb(0.64, 0.23, 0.45, 0.7)),
+  bty = "n"
+)
 
 # 3. Q-Q plot
-qqplot(Y, unlist(Y_sim), main = "Q-Q Plot", 
-       xlab = "Observed Y quantiles", ylab = "Simulated Y quantiles",
-       pch = 16, col = rgb(0.3, 0.3, 0.3, 0.6))
+qqplot(Y, unlist(Y_sim),
+  main = "Q-Q Plot",
+  xlab = "Observed Y quantiles", ylab = "Simulated Y quantiles",
+  pch = 16, col = rgb(0.3, 0.3, 0.3, 0.6)
+)
 abline(0, 1, col = "red", lwd = 1)
 
 # 4. Posterior predictive distribution comparison using density plots
 d_observed <- density(Y)
 d_simulated <- density(unlist(Y_sim))
 
-plot(d_observed, col = "#2E86AB", lwd = 1, 
-     main = "Density Comparison", 
-     xlab = "Y values", ylab = "Density",
-     xlim = range(c(d_observed$x, d_simulated$x)),
-     ylim = range(c(d_observed$y, d_simulated$y)))
+plot(d_observed,
+  col = "#2E86AB", lwd = 1,
+  main = "Density Comparison",
+  xlab = "Y values", ylab = "Density",
+  xlim = range(c(d_observed$x, d_simulated$x)),
+  ylim = range(c(d_observed$y, d_simulated$y))
+)
 lines(d_simulated, col = rgb(0.64, 0.23, 0.45, 0.8), lwd = 1)
 
 # Add some key statistics as vertical lines
 abline(v = mean(Y), col = "#2E86AB", lty = 2, lwd = 1)
 abline(v = mean(unlist(Y_sim)), col = rgb(0.64, 0.23, 0.45, 0.8), lty = 2, lwd = 2)
 
-legend("topleft", 
-       legend = c("Observed", "Simulated", "Obs. mean", "Sim. mean"), 
-       col = c("#2E86AB", rgb(0.64, 0.23, 0.45, 0.8), "#2E86AB", rgb(0.64, 0.23, 0.45, 0.8)), 
-       lty = c(1, 1, 2, 2), lwd = c(1, 1, 1, 1), bty = "n")
+legend("topleft",
+  legend = c("Observed", "Simulated", "Obs. mean", "Sim. mean"),
+  col = c("#2E86AB", rgb(0.64, 0.23, 0.45, 0.8), "#2E86AB", rgb(0.64, 0.23, 0.45, 0.8)),
+  lty = c(1, 1, 2, 2), lwd = c(1, 1, 1, 1), bty = "n"
+)
 ```
 
 ### Response Variable Prediction Intervals
@@ -1267,36 +1318,43 @@ y_quantiles_sorted <- y_quantiles[, sort_idx]
 par(mfrow = c(1, 2), mar = c(4, 4, 3, 1))
 
 # 1. Uncertainty bands plot
-plot(1:length(Y_sorted), Y_sorted, type = "l", col = "#2E86AB", lwd = 2,
-     main = "Posterior Prediction Intervals", 
-     xlab = "Sorted Index", ylab = "Y values",
-     ylim = range(y_quantiles_sorted))
+plot(1:length(Y_sorted), Y_sorted,
+  type = "l", col = "#2E86AB", lwd = 2,
+  main = "Posterior Prediction Intervals",
+  xlab = "Sorted Index", ylab = "Y values",
+  ylim = range(y_quantiles_sorted)
+)
 
 # Add uncertainty bands
-polygon(c(1:length(Y_sorted), rev(1:length(Y_sorted))), 
-         c(y_quantiles_sorted[1,], rev(y_quantiles_sorted[5,])), 
-         col = rgb(0.64, 0.23, 0.45, 0.2), border = NA)
-polygon(c(1:length(Y_sorted), rev(1:length(Y_sorted))), 
-         c(y_quantiles_sorted[2,], rev(y_quantiles_sorted[4,])), 
-         col = rgb(0.64, 0.23, 0.45, 0.3), border = NA)
+polygon(c(1:length(Y_sorted), rev(1:length(Y_sorted))),
+  c(y_quantiles_sorted[1, ], rev(y_quantiles_sorted[5, ])),
+  col = rgb(0.64, 0.23, 0.45, 0.2), border = NA
+)
+polygon(c(1:length(Y_sorted), rev(1:length(Y_sorted))),
+  c(y_quantiles_sorted[2, ], rev(y_quantiles_sorted[4, ])),
+  col = rgb(0.64, 0.23, 0.45, 0.3), border = NA
+)
 
-lines(1:length(Y_sorted), y_quantiles_sorted[3,], col = rgb(0.64, 0.23, 0.45, 0.8), lwd = 1)
+lines(1:length(Y_sorted), y_quantiles_sorted[3, ], col = rgb(0.64, 0.23, 0.45, 0.8), lwd = 1)
 lines(1:length(Y_sorted), Y_sorted, col = "#2E86AB", lwd = 1)
 
-legend("topleft", legend = c("Observed", "Median prediction", "50% interval", "95% interval"), 
-       col = c("#2E86AB", rgb(0.64, 0.23, 0.45, 0.8), rgb(0.64, 0.23, 0.45, 0.3), rgb(0.64, 0.23, 0.45, 0.2)), 
-       lwd = c(2, 2, 8, 8), bty = "n")
+legend("topleft",
+  legend = c("Observed", "Median prediction", "50% interval", "95% interval"),
+  col = c("#2E86AB", rgb(0.64, 0.23, 0.45, 0.8), rgb(0.64, 0.23, 0.45, 0.3), rgb(0.64, 0.23, 0.45, 0.2)),
+  lwd = c(2, 2, 8, 8), bty = "n"
+)
 
 # 2. Coverage assessment
-coverage_50 <- mean(Y >= y_quantiles[2,] & Y <= y_quantiles[4,])
-coverage_95 <- mean(Y >= y_quantiles[1,] & Y <= y_quantiles[5,])
+coverage_50 <- mean(Y >= y_quantiles[2, ] & Y <= y_quantiles[4, ])
+coverage_95 <- mean(Y >= y_quantiles[1, ] & Y <= y_quantiles[5, ])
 
-barplot(c(coverage_50, coverage_95), 
-        names.arg = c("50% Interval", "95% Interval"),
-        main = "Prediction Interval Coverage",
-        ylab = "Empirical Coverage",
-        col = c(rgb(0.64, 0.23, 0.45, 0.6), rgb(0.64, 0.23, 0.45, 0.8)),
-        ylim = c(0, 1))
+barplot(c(coverage_50, coverage_95),
+  names.arg = c("50% Interval", "95% Interval"),
+  main = "Prediction Interval Coverage",
+  ylab = "Empirical Coverage",
+  col = c(rgb(0.64, 0.23, 0.45, 0.6), rgb(0.64, 0.23, 0.45, 0.8)),
+  ylim = c(0, 1)
+)
 abline(h = c(0.5, 0.95), lty = 2, col = "red")
 ```
 

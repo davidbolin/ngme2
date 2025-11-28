@@ -1,138 +1,94 @@
 /*
-    Matern model with stationary kappa:
+    Matern model (stationary or non-stationary kappa):
+        kappa(s) = exp(B_theta_K * theta_K)
         alpha is the smoothness parameter
-        parameter_K(0) = kappa
-        K = kappa^2 * C + G
+        K = kappa^2 * C + G for integer alpha (with optional fractional case)
 */
 
 #include "../operator.h"
+#include "fractional/fractional_operators.hpp"
+#include <stdexcept>
 
-Matern::Matern(const Rcpp::List& operator_list):
-    Operator(operator_list),
-    G           (Rcpp::as< SparseMatrix<double,0,int> > (operator_list["G"])),
-    C           (Rcpp::as< SparseMatrix<double,0,int> > (operator_list["C"])),
-    alpha       (Rcpp::as<int> (operator_list["alpha"])),
-    Cdiag       (C.diagonal())
-{}
+Matern::Matern(const Rcpp::List &operator_list)
+    : Operator(operator_list),
+      G(Rcpp::as<SparseMatrix<double, 0, int>>(operator_list["G"])),
+      C(Rcpp::as<SparseMatrix<double, 0, int>>(operator_list["C"])),
+      Ci(Rcpp::as<SparseMatrix<double, 0, int>>(operator_list["Ci"])),
+      Bk_dense(Rcpp::as<MatrixXd>(operator_list["B_K"])),
+      alpha(Rcpp::as<double>(operator_list["alpha"])), Cdiag(C.diagonal()) {
+  // Stationarity flag and basis matrix for log kappa (dense)
+  stationary = operator_list.containsElementNamed("stationary")
+                   ? Rcpp::as<bool>(operator_list["stationary"])
+                   : true;
 
-void Matern::update_K(const VectorXd& theta_K) {
-    double kappa = exp(theta_K(0));
-    int W_size = G.rows();
-    SparseMatrix<double> KCK = kappa * kappa * C;
+  // Optional fractional controls
+  fix_alpha = operator_list.containsElementNamed("fix_alpha")
+                  ? Rcpp::as<bool>(operator_list["fix_alpha"])
+                  : true;
+  m = operator_list.containsElementNamed("rational_order")
+          ? Rcpp::as<int>(operator_list["rational_order"])
+          : 0;
+  dim = operator_list.containsElementNamed("spatial_dim")
+            ? Rcpp::as<int>(operator_list["spatial_dim"])
+            : 2;
 
-    // for test old ngme model parameterization
-    // if (theta_K.size() == 1 && alpha == 2) {
-    //     // stationary
-    //     K = 0.5 * (pow(kappa, -1.5) * G + pow(kappa, 0.5) * C);
-    // } else
-    if (alpha==2) {
-        // K_a = T (G + KCK) C^(-1/2) -> Actually, K_a = C^{-1/2} (G+KCK), since Q = K^T K.
-        K = (G + KCK);
-    } else if (alpha==4) {
-        // K_a = T (G + KCK) C^(-1) (G+KCK) C^(-1/2) -> Actually, K_a = C^{-1/2} (G + KCK) C^(-1) (G+KCK), since Q = K^T K.
-        K = (G + KCK) *
-            Cdiag.cwiseInverse().asDiagonal() * (G + KCK);
+  const int n = G.rows();
+  if (Bk_dense.rows() != n) {
+    Rcpp::stop("B_K has %d rows but expected %d",
+               static_cast<int>(Bk_dense.rows()), n);
+  }
+}
+
+void Matern::build_KZ(const VectorXd &theta_K) {
+  using namespace rspde_cpp;
+  // theta_K layout:
+  //   if (!fix_alpha): [eta_alpha, theta_K ...]
+  //   if ( fix_alpha): [theta_K ...]
+  int offset = 0;
+  if (!fix_alpha) {
+    double eta_alpha = theta_K(0);
+    double L = 0.5 * static_cast<double>(dim);
+    double sig = 1.0 / (1.0 + std::exp(-eta_alpha));
+    alpha = L + (4.0 - L) * sig; // (L,4)
+    offset = 1;
+  }
+
+  const int n_kappa = static_cast<int>(theta_K.size()) - offset;
+  if (n_kappa <= 0) {
+    throw std::invalid_argument("theta_K must contain kappa coefficients");
+  }
+  if (Bk_dense.cols() != n_kappa) {
+    Rcpp::stop("Length of theta_K (%d) does not match B_K columns (%d)",
+               n_kappa, static_cast<int>(Bk_dense.cols()));
+  }
+  VectorXd theta_kappa = theta_K.segment(offset, n_kappa);
+
+  // kappa(s) = exp(B_theta_K * theta_kappa)
+  VectorXd log_kappa = Bk_dense * theta_kappa;
+  VectorXd kappa = log_kappa.array().exp();
+  VectorXd kappa2 = kappa.array().square();
+
+  bool is_integer = std::abs(alpha - std::round(alpha)) < 1e-6;
+  if (is_integer) {
+    // K = G + C * diag(kappa^2)
+    SparseMatrix<double> KCK = (C * kappa2.asDiagonal()).eval();
+    int ialpha = static_cast<int>(std::round(alpha));
+    if (ialpha == 2) {
+      K = (G + KCK);
+    } else if (ialpha == 4) {
+      K = (G + KCK) * Cdiag.cwiseInverse().asDiagonal() * (G + KCK);
     } else {
-        throw("alpha not equal to 2 or 4 is not implemented");
+      throw std::runtime_error("alpha not equal to 2 or 4 is not implemented");
     }
-// std::cout << " K = " << K << std::endl;
-}
-
-void Matern::update_dK(const VectorXd& theta_K) {
-    // assert(theta_K.size()==1);
-    // double kappa = exp(theta_K(0));
-    // int W_size = G.rows();
-
-    // if (alpha==2)
-    //     dK[0] = 2.0*kappa*C;
-    // else if (alpha==4)
-    //     dK[0] = 4.0*kappa*C * G + 4.0* pow(kappa, 3) * C;
-    // else
-    //     throw("alpha != 2 or 4");
-
-    // // dkappa / dtheta = kappa
-    // dK[0] = kappa * dK[0];
-}
-
-// ---------------------------- Matern_ns ----------------------------
-
-/*
-    Matern model with non-stationary kappa:
-        alpha is the smoothness parameter
-        parameter_K(0) = theta.kappa
-        kappas =  exp(Bkappa * theta.kappa)
-        K = kappa^2 * C + G
-*/
-Matern_ns::Matern_ns(const Rcpp::List& operator_list, Type type):
-    Operator(operator_list),
-    type        (type),
-    G           (Rcpp::as< SparseMatrix<double,0,int> > (operator_list["G"])),
-    C           (Rcpp::as< SparseMatrix<double,0,int> > (operator_list["C"])),
-    alpha       (Rcpp::as<int> (operator_list["alpha"])),
-    Bkappa      (Rcpp::as<MatrixXd> (operator_list["B_K"])),
-    Cdiag       (C.diagonal())
-{
-//  std::cout << "constructor of matern ns" << std::endl;
-}
-
-// inherit get_K_parameter, grad_K_parameter, set_K_parameter
-void Matern_ns::update_K(const VectorXd& theta_kappa) {
-    VectorXd kappas = (Bkappa * theta_kappa).array().exp();
-    // std::cout <<  "theta_kappa here = " << theta_kappa << std::endl;
-
-    int n_dim = G.rows();
-    if (type == Type::matern_ns) {
-        SparseMatrix<double> KCK (n_dim, n_dim);
-            KCK = kappas.cwiseProduct(kappas).cwiseProduct(Cdiag).asDiagonal();
-        if (alpha==2) {
-            // K_a = T (G + KCK) C^(-1/2)
-            // Actually, K_a = C^{-1/2} (G+KCK), since Q = K^T K.
-            K = (G + KCK);
-        } else if (alpha==4) {
-            // K = T (G + KCK) C^(-1) (G+KCK) C^(-1/2)
-            // Actually, K = C^{-1/2} (G + KCK) C^(-1) (G+KCK), since Q = K^T K.
-            K = (G + KCK) * Cdiag.cwiseInverse().asDiagonal() *
-            (G + KCK);
-        } else {
-            throw("alpha not equal to 2 or 4 is not implemented");
-        }
-    } else if (type == Type::ou) {
-        K = kappas.asDiagonal() * C + G;
-    }
-}
-
-// dK wrt. theta_K[index]
-void Matern_ns::update_dK(const VectorXd& theta_K) {
-// std::cout << "update_dK matern" << std::endl;
-    // VectorXd kappas = (Bkappa * theta_K).array().exp();
-    // int n_dim = G.rows();
-
-    // for (int index = 0; index < n_theta_K; index++) {
-    //     if (type == Type::matern_ns) {
-    //         // dKCK
-    //         SparseMatrix<double> CK(n_dim, n_dim);
-    //         // CK = kappas.cwiseProduct(Cdiag).asDiagonal();
-
-    //         SparseMatrix<double> dKCK(n_dim, n_dim);
-    //         //  dKCK = 2*kappas.cwiseProduct(Bkappa.col(index)).asDiagonal() * CK;
-    //         // kappas * (Bkappa * CK + CK * Bkappa).sparseView();
-    //             VectorXd kappas2 = kappas.cwiseProduct(kappas);
-    //             dKCK = 2*kappas2.cwiseProduct(Cdiag).cwiseProduct(Bkappa.col(index)).asDiagonal();
-    //         if (alpha == 2) {
-    //             dK[index] = dKCK;
-    //         }
-    //         else if (alpha == 4) {
-    //             SparseMatrix<double> KCK(n_dim, n_dim);
-    //             KCK = kappas.cwiseProduct(kappas).cwiseProduct(Cdiag).asDiagonal();
-    //             SparseMatrix<double> tmp = Cdiag.cwiseInverse().asDiagonal() * (G + KCK);
-    //             dK[index] = dKCK * tmp + tmp * dKCK;
-    //         }
-    //         else {
-    //             throw("alpha not equal to 2 or 4 is not implemented");
-    //         }
-    //     } else {
-    //         // check
-    //         dK[index] = kappas.cwiseProduct(Bkappa.col(index)).asDiagonal() * C;
-    //     }
-    // }
+    Z.setIdentity();
+  } else {
+    double beta = alpha / 2.0;
+    // tau defaults to 1 for now
+    VectorXd tau(1);
+    tau(0) = 1.0;
+    auto pairKZ = compute_fractional_operators(C, Ci, G, beta, m, tau,
+                                               theta_kappa, Bk_dense);
+    K = pairKZ.first;  // Pl
+    Z = pairKZ.second; // Pr
+  }
 }

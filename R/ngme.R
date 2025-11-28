@@ -25,34 +25,33 @@
 #'
 #' @examples
 #' ngme(
-#'  formula = Y ~ x1 + f(
-#'    x2,
-#'    model = "ar1",
-#'    noise = noise_nig(),
-#'    rho = 0.5
-#'  ) + f(x1,
-#'    model = "rw1",
-#'    noise = noise_normal(),
-#'  ),
-#'  family = noise_normal(sd = 0.5),
-#'  data = data.frame(Y = 1:5, x1 = 2:6, x2 = 3:7),
-#'  control_opt = control_opt(
-#'    estimation = FALSE
-#'  )
-#')
+#'   formula = Y ~ x1 + f(
+#'     x2,
+#'     model = "ar1",
+#'     noise = noise_nig(),
+#'     rho = 0.5
+#'   ) + f(x1,
+#'     model = "rw1",
+#'     noise = noise_normal(),
+#'   ),
+#'   family = noise_normal(sd = 0.5),
+#'   data = data.frame(Y = 1:5, x1 = 2:6, x2 = 3:7),
+#'   control_opt = control_opt(
+#'     estimation = FALSE
+#'   )
+#' )
 ngme <- function(
-  formula,
-  data,
-  family        = "normal",
-  control_opt   = NULL,
-  control_ngme  = NULL,
-  group         = NULL,
-  replicate     = NULL,
-  start         = NULL,
-  moving_window = 1, # return the average estimation of last .. iterations
-  debug         = FALSE
-) {
-   # -------------  CHECK INPUT ---------------
+    formula,
+    data,
+    family = "normal",
+    control_opt = NULL,
+    control_ngme = NULL,
+    group = NULL,
+    replicate = NULL,
+    start = NULL,
+    moving_window = 1, # return the average estimation of last .. iterations
+    debug = FALSE) {
+  # -------------  CHECK INPUT ---------------
   if (is.null(data)) {
     stop("Missing data.frame/list `data'. Leaving `data' empty might lead to\n\t\tuncontrolled behaviour, therefore is it required.")
   }
@@ -62,12 +61,12 @@ ngme <- function(
 
   # configure control parameters
   if (is.null(control_ngme)) control_ngme <- control_ngme()
-  if (is.null(control_opt))  control_opt <- control_opt()
+  if (is.null(control_opt)) control_opt <- control_opt()
   stopifnot(
     inherits(control_ngme, "control_ngme"),
     inherits(control_opt, "control_opt"),
     "data provide should be of the same length" =
-    all(diff(sapply(data, length)) == 0)
+      all(diff(sapply(data, length)) == 0)
   )
   control_ngme <- update_control_ngme(control_ngme, control_opt)
 
@@ -85,12 +84,16 @@ ngme <- function(
   )
   if (debug) control_ngme$debug <- TRUE
 
-  noise <- if (is.character(family)) switch(family,
-    "normal" = noise_normal(),
-    "gaussian" = noise_normal(),
-    "nig"    = noise_nig(),
-    stop("Unknown family!")
-  ) else family # ngme noise object
+  noise <- if (is.character(family)) {
+    switch(family,
+      "normal" = noise_normal(),
+      "gaussian" = noise_normal(),
+      "nig" = noise_nig(),
+      stop("Unknown family!")
+    )
+  } else {
+    family
+  } # ngme noise object
 
   stopifnot(class(noise) == "ngme_noise")
 
@@ -99,26 +102,29 @@ ngme <- function(
     formula, data, control_ngme, noise, group, replicate,
     control_opt$standardize_fixed # convert fixed effects
   )
-  
+
   if (contain_bv_model(ngme_model)) {
-    stopifnot("Please supply `group` argument in ngme() function, not in f()." =
-      length(levels(group)) == 2)
+    stopifnot(
+      "Please supply `group` argument in ngme() function, not in f()." =
+        length(levels(group)) == 2
+    )
   }
   attr(ngme_model, "fit") <- fit
   attr(ngme_model, "estimation_enabled") <- control_opt$estimation
-  
+
   # Check if using bfgs for non-Gaussian model
   if (control_opt$sgd_method == "bfgs") {
     stopifnot(
       "Please use other optimizer for non-Gaussian model, BFGS is used for optimizing Gaussian model likelihood." =
-      ngme_model$replicates[[1]]$all_gaussian &&
-      noise$noise_type == "normal"
+        ngme_model$replicates[[1]]$all_gaussian &&
+          noise$noise_type == "normal"
     )
   }
 
   ####### Use Last_fit ngme object to update Rcpp_list
-  if (!is.null(start) && !inherits(start, "ngme"))
-   stop("start should be an ngme object.")
+  if (!is.null(start) && !inherits(start, "ngme")) {
+    stop("start should be an ngme object.")
+  }
 
   # update with start (list of ngmes)
   if (inherits(start, "ngme")) {
@@ -127,68 +133,74 @@ ngme <- function(
         # check if feff is the same, then overwrite the feff
         same_feff <- all(dim(X) == dim(start$replicates[[i]]$X))
         if (same_feff) {
-          if (!ngme_model$replicates[[i]]$standardize)
+          if (!ngme_model$replicates[[i]]$standardize) {
             feff <- start$replicates[[i]]$feff
-          else {
+          } else {
             # notice that the SVD effects
             svd <- start$replicates[[i]]$svd
             feff <- as.numeric(t(svd$v) %*% start$replicates[[i]]$feff) * svd$d
           }
         }
-        
+
         noise <- update_noise(noise, new_noise = start$replicates[[i]]$noise)
         for (j in seq_along(start$replicates[[i]]$models)) {
-          prev_model_type <- 
+          prev_model_type <-
             start$replicates[[i]]$models[[j]]$model
-          prev_model_ope <- 
+          prev_model_ope <-
             start$replicates[[i]]$models[[j]]$operator
-          
+
           # update parameter of K
-          if (models[[j]]$model == "bv_matern_nig" && prev_model_type == "bv_matern_normal") {
+          if (models[[j]]$model == "bv_matern" && prev_model_type == "bv_matern") {
             # update theta_K
-            if (!models[[j]]$operator$fix_bv_theta) {
-              models[[j]]$theta_K <- models[[j]]$operator$theta_K <- 
+            if (!models[[j]]$operator$fix_theta) {
+              models[[j]]$theta_K <- models[[j]]$operator$theta_K <-
                 c(0, prev_model_ope$theta_K)
             } else {
-              models[[j]]$theta_K <- models[[j]]$operator$theta_K <- 
+              models[[j]]$theta_K <- models[[j]]$operator$theta_K <-
                 prev_model_ope$theta_K
             }
-            
+
             # for printing
             models[[j]]$operator$first <- prev_model_ope$first
             models[[j]]$operator$second <- prev_model_ope$second
           } else {
             stopifnot(
               "Please make sure model type are the same" =
-              models[[j]]$model == prev_model_type)
+                models[[j]]$model == prev_model_type
+            )
             # default case
             # update operator representation
             models[[j]]$operator <- prev_model_ope
 
-            models[[j]]$theta_K  <- models[[j]]$operator$theta_K
+            models[[j]]$theta_K <- models[[j]]$operator$theta_K
           }
 
-stopifnot(
-  "length of W should be the same" =
-  models[[j]]$W_size == length(start$replicates[[i]]$models[[j]]$W))
-stopifnot(
-  "length of V should be the same" =
-  models[[j]]$V_size == length(start$replicates[[i]]$models[[j]]$noise$V))
+          stopifnot(
+            "length of W should be the same" =
+              models[[j]]$W_size == length(start$replicates[[i]]$models[[j]]$W)
+          )
+          stopifnot(
+            "length of V should be the same" =
+              models[[j]]$V_size == length(start$replicates[[i]]$models[[j]]$noise$V)
+          )
           # update the rest
-          models[[j]]$W        <- start$replicates[[i]]$models[[j]]$W
-          models[[j]]$noise$V  <- start$replicates[[i]]$models[[j]]$noise$V
-          models[[j]]$noise    <- update_noise(
-            models[[j]]$noise, new_noise = start$replicates[[i]]$models[[j]]$noise
+          models[[j]]$W <- start$replicates[[i]]$models[[j]]$W
+          models[[j]]$noise$V <- start$replicates[[i]]$models[[j]]$noise$V
+          models[[j]]$noise <- update_noise(
+            models[[j]]$noise,
+            new_noise = start$replicates[[i]]$models[[j]]$noise
           )
         }
       })
     }
   }
-if (debug) {print(str(ngme_model$replicates[[1]]))}
+  if (debug) {
+    print(str(ngme_model$replicates[[1]]))
+  }
 
-# configuration of controls
+  # configuration of controls
 
-# check all f has the same replicate
+  # check all f has the same replicate
   ################# Run CPP ####################
   check_dim(ngme_model)
   if (control_opt$estimation) {
@@ -196,10 +208,11 @@ if (debug) {print(str(ngme_model$replicates[[1]]))}
     outputs <- estimate_cpp(ngme_model, control_opt)
     cat("\n")
 
-  ################# Update the estimates ####################
+    ################# Update the estimates ####################
     est_output <- mean_list(outputs)
-    for (i in seq_along(ngme_model$replicates))
+    for (i in seq_along(ngme_model$replicates)) {
       ngme_model$replicates[[i]] <- update_ngme_est(ngme_model$replicates[[i]], est_output[[i]])
+    }
 
     # return posterior samples of W and V
     cat("Starting posterior sampling... \n")
@@ -224,24 +237,32 @@ if (debug) {print(str(ngme_model$replicates[[1]]))}
     }
     cat("Posterior sampling done! \n")
     cat("Average standard deviation of the posterior W: ", sd_W, "\n")
+
+    # print R_hat
+    # if (!is.null(attr(outputs, "R_hat"))) {
+    #   cat("R_hat: \n")
+    #   print(attr(outputs, "R_hat"))
+    # }
+
     cat("Note:
       1. Use ngme_post_samples(..) to access the posterior samples.
-      2. Use ngme_result(..) to access different latent models. \n"
-    )
+      2. Use ngme_result(..) to access different latent models. \n")
 
     # mn_nu <- ngme_model$replicates[[1]]$noise$nu
     # if (length(mn_nu) > 1 && mn_nu > 100)
     #   cat("The parameter nu for measurement noise is too big, consider using family=normal instead. \n")
 
-    # Transform trajectory
-    traj_df_chains <- transform_traj(attr(outputs, "opt_traj"))
-    # dispatch trajs to each latent and block
-      idx <- 0;
+    if (isTRUE(control_opt$store_traj)) {
+      # Transform trajectory
+      traj_df_chains <- transform_traj(attr(outputs, "opt_traj"))
+      # dispatch trajs to each latent and block
+      idx <- 0
       for (i in seq_along(ngme_model$replicates[[1]]$models)) {
         n_params <- ngme_model$replicates[[1]]$models[[i]]$n_params
-        lat_traj_chains = list()
-        for (j in seq_along(traj_df_chains))
+        lat_traj_chains <- list()
+        for (j in seq_along(traj_df_chains)) {
           lat_traj_chains[[j]] <- traj_df_chains[[j]][idx + 1:n_params, ]
+        }
 
         attr(ngme_model$replicates[[1]]$models[[i]], "lat_traj") <- lat_traj_chains
         idx <- idx + n_params
@@ -263,13 +284,16 @@ if (debug) {print(str(ngme_model$replicates[[1]]))}
         for (i in seq_along(block_traj)) {
           # last n_feff rows are fixed effects
           feff_idx <- (n_block_params - n_feff + 1):n_block_params
-          betas = as.matrix(block_traj[[i]][feff_idx, ])
-          block_traj[[i]][feff_idx,] = svd$v %*% diag(1/svd$d) %*% betas
+          betas <- as.matrix(block_traj[[i]][feff_idx, ])
+          block_traj[[i]][feff_idx, ] <- svd$v %*% diag(1 / svd$d) %*% betas
         }
       }
 
       attr(ngme_model$replicates[[1]], "block_traj") <- block_traj
       attr(outputs, "opt_traj") <- NULL
+    } else {
+      attr(outputs, "opt_traj") <- NULL
+    }
   }
   ngme_model
 }
@@ -305,8 +329,7 @@ transform_traj <- function(traj) {
 
 # use estimate result to update ngme object
 update_ngme_est <- function(
-  ngme_replicate, est_output
-) {
+    ngme_replicate, est_output) {
   # Fixed effects
   names(est_output$feff) <- names(ngme_replicate$feff)
   ngme_replicate$feff <- est_output$feff
@@ -314,14 +337,14 @@ update_ngme_est <- function(
 
   if (ngme_replicate$standardize) {
     # standardize feff (transform back)
-    feff = as.numeric(ngme_replicate$svd$v %*% (1/ngme_replicate$svd$d * ngme_replicate$feff))
+    feff <- as.numeric(ngme_replicate$svd$v %*% (1 / ngme_replicate$svd$d * ngme_replicate$feff))
     names(feff) <- names(ngme_replicate$feff)
     ngme_replicate$feff <- feff
 
     # convert U back to UDV^t
     X <- ngme_replicate$svd$u %*% diag(ngme_replicate$svd$d) %*% t(ngme_replicate$svd$v)
     colnames(X) <- colnames(ngme_replicate$X)
-    nrow_one_repl = nrow(ngme_replicate$X)
+    nrow_one_repl <- nrow(ngme_replicate$X)
     ngme_replicate$X <- X[1:nrow_one_repl, ]
   }
 
@@ -339,9 +362,9 @@ update_ngme_est <- function(
     # ngme_replicate$models[[i]]$operator$K <- ngme_as_sparse(new_K)
 
     # update W and noise
-    ngme_replicate$models[[i]]$W        <- est_output$models[[i]]$W
-    ngme_replicate$models[[i]]$noise    <- update_noise(
-      ngme_replicate$models[[i]]$noise, 
+    ngme_replicate$models[[i]]$W <- est_output$models[[i]]$W
+    ngme_replicate$models[[i]]$noise <- update_noise(
+      ngme_replicate$models[[i]]$noise,
       new_noise = est_output$models[[i]]
     )
 
@@ -350,37 +373,37 @@ update_ngme_est <- function(
       n1 <- ngme_replicate$models[[i]]$operator$first$n_theta_K
       n2 <- ngme_replicate$models[[i]]$operator$second$n_theta_K
       ngme_replicate$models[[i]]$operator$first$theta_K <- ngme_replicate$models[[i]]$theta_K[1:n1]
-      ngme_replicate$models[[i]]$operator$second$theta_K <- ngme_replicate$models[[i]]$theta_K[(n1+1):(n1+n2)] 
+      ngme_replicate$models[[i]]$operator$second$theta_K <- ngme_replicate$models[[i]]$theta_K[(n1 + 1):(n1 + n2)]
 
       # update output for tp-bv model
       lat <- ngme_replicate$models[[i]]
-      if (lat$operator$second$model  %in% c("bv", "bv_normal", "bv_matern_normal", "bv_matern_nig")) {
-        bv = lat$operator$second
+      if (lat$operator$second$model %in% c("bv", "bv2", "bv_matern")) {
+        bv <- lat$operator$second
         # theta_K = (theta_K_tp_first, theta_K_bv)
         # notice that theta_K_bv is already updated
 
         # (skip rotation parameter in normal case)
-        if (lat$operator$second$model %in% c("bv_normal", "bv_matern_normal")) n0 = 3 else n0 = 4
-        n1 = bv$first$n_theta_K
-        n2 = bv$second$n_theta_K
-        bv$first$theta_K = bv$theta_K[(n0+1):(n0+n1)]
-        bv$second$theta_K = bv$theta_K[(n0+n1+1):(n0+n1+n2)]
+        if (lat$operator$second$model %in% c("bv2")) n0 <- 3 else n0 <- 4
+        n1 <- bv$first$n_theta_K
+        n2 <- bv$second$n_theta_K
+        bv$first$theta_K <- bv$theta_K[(n0 + 1):(n0 + n1)]
+        bv$second$theta_K <- bv$theta_K[(n0 + n1 + 1):(n0 + n1 + n2)]
 
         ngme_replicate$models[[i]]$operator$second <- bv
       }
     }
 
-    if (ngme_replicate$models[[i]]$model %in% c("bv", "bv_normal", "bv_matern_normal", "bv_matern_nig")) {
+    if (ngme_replicate$models[[i]]$model %in% c("bv", "bv_matern")) {
       n1 <- ngme_replicate$models[[i]]$operator$first$n_theta_K
       n2 <- ngme_replicate$models[[i]]$operator$second$n_theta_K
 
-      n_param_bv <- switch(ngme_replicate$models[[i]]$model, 
-        "bv" = 2,
-        "bv_matern_nig" = 4 - ngme_replicate$models[[i]]$operator$fix_bv_theta,
-        3
-      )
-      ngme_replicate$models[[i]]$operator$first$theta_K <- ngme_replicate$models[[i]]$theta_K[(n_param_bv+1) : (n1+n_param_bv)]
-      ngme_replicate$models[[i]]$operator$second$theta_K <- ngme_replicate$models[[i]]$theta_K[(n1+n_param_bv+1) : (n1+n2+n_param_bv)]
+      n_param_bv <- if (ngme_replicate$models[[i]]$model == "bv") {
+        (if (!isTRUE(ngme_replicate$models[[i]]$operator$fix_theta)) 1 else 0) + 1 + (if (isTRUE(ngme_replicate$models[[i]]$operator$use_c_param)) 2 else 0)
+      } else {
+        4 - isTRUE(ngme_replicate$models[[i]]$operator$fix_theta)
+      }
+      ngme_replicate$models[[i]]$operator$first$theta_K <- ngme_replicate$models[[i]]$theta_K[(n_param_bv + 1):(n1 + n_param_bv)]
+      ngme_replicate$models[[i]]$operator$second$theta_K <- ngme_replicate$models[[i]]$theta_K[(n1 + n_param_bv + 1):(n1 + n2 + n_param_bv)]
     }
   }
   ngme_replicate
@@ -396,7 +419,7 @@ update_ngme_est <- function(
 print.ngme <- function(x, ...) {
   print(x$replicates[[1]])
   if (x$n_repls > 1) {
-    cat("Number of global replicates is", x$n_repls, "\n");
+    cat("Number of global replicates is", x$n_repls, "\n")
   }
 }
 
@@ -407,15 +430,15 @@ check_dim <- function(ngme_model) {
       stop("The number of columns of X is not equal to the length of feff")
     }
     for (latent in ngme$models) {
-        # ncol(A) = W_size
-        if (ncol(latent[["A"]]) != latent$W_size) {
-          stop("The number of columns of A is not equal to the W_size of the latent model")
-        }
+      # ncol(A) = W_size
+      if (ncol(latent[["A"]]) != latent$W_size) {
+        stop("The number of columns of A is not equal to the W_size of the latent model")
+      }
 
-        stopifnot(
-          nrow(latent$noise$B_sigma) == latent$V_size,
-          nrow(latent$noise$B_mu) == latent$V_size
-        )
+      stopifnot(
+        nrow(latent$noise$B_sigma) == latent$V_size,
+        nrow(latent$noise$B_mu) == latent$V_size
+      )
     }
   }
 }
@@ -431,14 +454,13 @@ check_dim <- function(ngme_model) {
 #'
 #' @return a list (replicate) of ngme_replicate models
 ngme_parse_formula <- function(
-  fm,
-  data,
-  control_ngme,
-  noise,
-  group,
-  replicate,
-  standardize
-) {
+    fm,
+    data,
+    control_ngme,
+    noise,
+    group,
+    replicate,
+    standardize) {
   enclos_env <- list2env(as.list(parent.frame()), parent = parent.frame(2))
   global_env_first <- list2env(as.list(parent.frame(2)), parent = parent.frame())
 
@@ -474,7 +496,7 @@ ngme_parse_formula <- function(
 
   if (standardize) {
     colnames(svd$u) <- colnames(X_full)
-    X_full <- svd$u  # do regression wrt U
+    X_full <- svd$u # do regression wrt U
   }
 
   # adding fixed effect (fe() syntax used for bivariate model..)
@@ -492,8 +514,10 @@ ngme_parse_formula <- function(
   }
 
   ########## parse models terms
-  pre_model <- list(); all_gaussian <- noise$noise_type == "normal"
-  idx_effect = 1; idx_field = 1; # for setting names
+  pre_model <- list()
+  all_gaussian <- noise$noise_type == "normal"
+  idx_effect <- 1
+  idx_field <- 1 # for setting names
   for (i in f_order) {
     str <- gsub("^f\\(", "ngme2::f(", terms[i])
     lang <- str2lang(str)
@@ -501,10 +525,14 @@ ngme_parse_formula <- function(
     # pass extra argument into f
     if (is.null(lang$data)) lang$data <- data
     if (is.null(lang$group)) lang$group <- group
-    if (is.null(lang$name) && lang$model == "re")
-      {lang$name <- paste0("effect", idx_effect); idx_effect <- idx_effect + 1}
-    if (is.null(lang$name))
-      {lang$name <- paste0("field", idx_field); idx_field <- idx_field + 1}
+    if (is.null(lang$name) && lang$model == "re") {
+      lang$name <- paste0("effect", idx_effect)
+      idx_effect <- idx_effect + 1
+    }
+    if (is.null(lang$name)) {
+      lang$name <- paste0("field", idx_field)
+      idx_field <- idx_field + 1
+    }
 
     pre_model[[lang$name]] <- lang
   }
@@ -519,17 +547,20 @@ ngme_parse_formula <- function(
       n_repls <- length(levels)
       if (n_meshes < n_repls) {
         stop(paste("Insufficient meshes provided for field '", tmp$name, "'. ",
-                   "Expected ", n_repls, " meshes for ", n_repls, " replicates, ",
-                   "but only ", n_meshes, " meshes were provided.",
-                   sep = ""))
+          "Expected ", n_repls, " meshes for ", n_repls, " replicates, ",
+          "but only ", n_meshes, " meshes were provided.",
+          sep = ""
+        ))
       }
     }
   }
 
   noise_new <- update_noise(noise, n = length(ngme_response))
   if (noise_new$corr_measurement) {
-      stopifnot("Please make sure the len(index_corr) == observations" =
-        length(ngme_response) == length(noise_new$index_corr))
+    stopifnot(
+      "Please make sure the len(index_corr) == observations" =
+        length(ngme_response) == length(noise_new$index_corr)
+    )
   }
   for (level in levels) {
     idx <- replicate == level
@@ -539,37 +570,42 @@ ngme_parse_formula <- function(
     X <- X_full[idx, , drop = FALSE]
 
     # re-evaluate each f model using idx
-    models_rep <- list();
+    models_rep <- list()
     for (tmp in pre_model) {
       tmp$subset <- idx
-      
+
       # Evaluate mesh parameter to get actual value
-      actual_mesh <- if(is.null(tmp$mesh)) NULL else eval(tmp$mesh, envir = data, enclos = global_env_first)
-      
+      actual_mesh <- if (is.null(tmp$mesh)) NULL else eval(tmp$mesh, envir = data, enclos = global_env_first)
+
       # Handle mesh selection for different replicates
-      if (!is.null(actual_mesh) && is.list(actual_mesh) && !inherits(actual_mesh, c("inla.mesh.1d", "inla.mesh", "fm_mesh_1d", "fm_mesh_2d", "metric_graph"))) {
+      if (
+        tmp$model != "spacetime" &&
+          !is.null(actual_mesh) &&
+          is.list(actual_mesh) &&
+          !inherits(actual_mesh, c("inla.mesh.1d", "inla.mesh", "fm_mesh_1d", "fm_mesh_2d", "metric_graph"))
+      ) {
         # mesh is a list of meshes for different replicates
         mesh_list <- actual_mesh
-        
+
         # Convert level to numeric index if needed
         replicate_idx <- which(levels == level)
-        
+
         # Check if we have enough meshes for this replicate
         if (replicate_idx <= length(mesh_list)) {
           selected_mesh <- mesh_list[[replicate_idx]]
         } else {
           stop(paste("Not enough meshes provided for replicate", level, ". Expected at least", replicate_idx, "meshes, but only", length(mesh_list), "provided."))
         }
-        
+
         # Replace the mesh parameter in the call with the selected mesh
         tmp$mesh <- selected_mesh
-        
+
         # Force A matrix to be NULL so it gets rebuilt with the correct mesh
         tmp$A <- NULL
       }
-      
+
       model_eval <- eval(tmp, envir = data, enclos = global_env_first)
-      
+
       models_rep[[model_eval$name]] <- model_eval
       if (all(model_eval$noise$noise_type != "normal")) all_gaussian <- FALSE
     }
@@ -577,21 +613,19 @@ ngme_parse_formula <- function(
     lm.model <- stats::lm.fit(X_full, ngme_response)
     if (is.null(control_ngme$feff)) control_ngme$feff <- lm.model$coeff
     if (is.null(noise$theta_sigma)) noise$theta_sigma <- log(sd(lm.model$residuals))
-    noise_rep <- subset_noise(noise_new, sub_idx=idx, compute_corr=FALSE)
+    noise_rep <- subset_noise(noise_new, sub_idx = idx, compute_corr = FALSE)
     group_rep <- group[idx]
 
     # Re-order according to index_corr!
     # s.t. noise$index_corr=1,1,2,2,3,4,4,....
-    
+
     # p_oder is the order after permutation
     # original is just 1 2 3, ...
     p_order <- seq_along(Y)
     if (noise$corr_measurement) {
       stopifnot(
-        "The length of noise$index_corr should be the same as the number of observations"
-          = length(noise_rep$index_corr) == sum(idx),
-        "Now more than 2 locations are correlated in 1 replicate is not allowed"
-          = !any(table(noise_rep$index_corr) > 2)
+        "The length of noise$index_corr should be the same as the number of observations" = length(noise_rep$index_corr) == sum(idx),
+        "Now more than 2 locations are correlated in 1 replicate is not allowed" = !any(table(noise_rep$index_corr) > 2)
       )
       p_order <- order(noise_rep$index_corr)
       data_idx <- data_idx[p_order]
@@ -600,8 +634,9 @@ ngme_parse_formula <- function(
       if (standardize) svd$u <- svd$u[p_order, , drop = FALSE]
 
       group_rep <- group_rep[p_order]
-      for (j in seq_along(models_rep))
+      for (j in seq_along(models_rep)) {
         models_rep[[j]]$A <- models_rep[[j]]$A[p_order, , drop = FALSE]
+      }
 
       # update noise, consider index_corr
       noise_rep <- subset_noise(noise_rep, sub_idx = p_order, compute_corr = TRUE)
@@ -622,7 +657,7 @@ ngme_parse_formula <- function(
     )
   }
 
-  n_repls  <- length(blocks_rep)
+  n_repls <- length(blocks_rep)
   n_params <- blocks_rep[[1]]$n_params
 
   structure(
@@ -646,16 +681,20 @@ ngme_parse_formula <- function(
 #' @examples
 #' x_coord <- c(1.11, 1.12, 2, 1.3, 1.3)
 #' y_coord <- c(2.11, 2.11, 2, 3.3, 3.3)
-#' coord = data.frame(x_coord, y_coord)
+#' coord <- data.frame(x_coord, y_coord)
 #' compute_index_corr_from_map(map = coord, 0.1)
 #' @export
-compute_index_corr_from_map <- function(map, eps=0.1) {
-  if (is.null(map)) return(NULL)
+compute_index_corr_from_map <- function(map, eps = 0.1) {
+  if (is.null(map)) {
+    return(NULL)
+  }
 
   index_corr <- 1:length_map(map)
-  if (length(index_corr) == 1) return(index_corr)
+  if (length(index_corr) == 1) {
+    return(index_corr)
+  }
   for (i in 2:length_map(map)) {
-    for (j in 1:(i-1)) {
+    for (j in 1:(i - 1)) {
       # compute dist of i and j entry
       d <- dist(sub_map(map, c(i, j)))
       if (d < eps) {
@@ -679,10 +718,11 @@ compute_corr_index <- function(idx) {
   for (i in seq_along(unique_idx)) {
     idx_i <- which(idx == unique_idx[i])
     if (length(idx_i) == 1) next
-    stopifnot("Now we don't accept measurement noise over 2 places are correlated"
-      = length(idx_i) == 2)
-    rows[n+count] <- max(idx_i)
-    cols[n+count] <- min(idx_i)
+    stopifnot(
+      "Now we don't accept measurement noise over 2 places are correlated" = length(idx_i) == 2
+    )
+    rows[n + count] <- max(idx_i)
+    cols[n + count] <- min(idx_i)
     count <- count + 1
     has_correlation[idx_i] <- TRUE
   }
@@ -704,10 +744,9 @@ compute_corr_index <- function(idx) {
 #' @return a list of summary
 #' @export
 summary.ngme <- function(
-  object,
-  name = NULL,
-  ...
-) {
+    object,
+    name = NULL,
+    ...) {
   stopifnot(inherits(object, "ngme"))
 
   result <- object
@@ -716,7 +755,7 @@ summary.ngme <- function(
     ngme_rep <- result$replicates[[1]]
     stopifnot(
       "Please provide the correct name of the model" =
-      name %in% names(ngme_rep$models)
+        name %in% names(ngme_rep$models)
     )
     result <- ngme_rep$models[[name]]
   }
@@ -735,77 +774,77 @@ summary.ngme <- function(
 #' @examples
 #' \dontrun{
 #' # Fit a simple AR(1) model
-#' Y <- 1:10; n_obs <- length(Y)
+#' Y <- 1:10
+#' n_obs <- length(Y)
 #' x1 <- runif(n_obs)
 #' x2 <- rexp(n_obs)
-#' 
+#'
 #' ngme_out <- ngme(
 #'   Y ~ x1 + x2 + f(
 #'     1:n_obs,
 #'     name = "my_ar",
 #'     model = "ar1",
 #'     rho = 0.5,
-#'     noise = noise_nig(mu=2, sigma=3, nu=1)
+#'     noise = noise_nig(mu = 2, sigma = 3, nu = 1)
 #'   ),
-#'   data = data.frame(x1=x1, x2=x2, Y=Y)
+#'   data = data.frame(x1 = x1, x2 = x2, Y = Y)
 #' )
-#' 
+#'
 #' # Get all model parameters (transformed)
 #' all_params <- ngme_result(ngme_out)
 #' # Returns: list(my_ar = list(rho = 0.5, mu = 2, sigma = 3, nu = 1),
 #' #               data = list(fixed_effects = c(...), sigma = 0.5))
-#' 
+#'
 #' # Get parameters for specific latent model
 #' ar_params <- ngme_result(ngme_out, model = "my_ar")
 #' # Returns: list(rho = 0.5, mu = 2, sigma = 3, nu = 1)
-#' 
+#'
 #' # Get raw (untransformed) parameters
 #' ar_raw <- ngme_result(ngme_out, model = "my_ar", transformed = FALSE)
 #' # Returns: list(theta_rho = 1.099, mu = 2, sigma = 3, nu = 1)
-#' 
+#'
 #' # Get fixed effects and measurement noise
 #' data_params <- ngme_result(ngme_out, model = "data")
 #' # Returns: list(fixed_effects = c(...), sigma = 0.5, ...)
-#' 
+#'
 #' # For models with multiple latent processes
 #' ngme_out2 <- ngme(
 #'   Y ~ x1 + x2 + f(
 #'     1:n_obs,
 #'     name = "my_ar",
 #'     model = "ar1",
-#'     noise = noise_nig(mu=2, sigma=3, nu=1)
+#'     noise = noise_nig(mu = 2, sigma = 3, nu = 1)
 #'   ) + f(
 #'     1:n_obs,
 #'     name = "my_ou",
 #'     model = "ou",
-#'     noise = noise_normal(sigma=1)
+#'     noise = noise_normal(sigma = 1)
 #'   ),
-#'   data = data.frame(x1=x1, x2=x2, Y=Y)
+#'   data = data.frame(x1 = x1, x2 = x2, Y = Y)
 #' )
-#' 
+#'
 #' # Get all models
 #' all_models <- ngme_result(ngme_out2)
 #' # Returns: list(my_ar = list(...), my_ou = list(...), data = list(...))
-#' 
+#'
 #' # Get specific model
 #' ou_params <- ngme_result(ngme_out2, model = "my_ou")
 #' # Returns: list(theta_K1 = 0.5, sigma = 1)
 #' }
-#' 
+#'
 #' @seealso \code{\link{extract_parameters}} for the underlying function
 ngme_result <- function(
-  ngme_object,
-  model = NULL,
-  transformed = TRUE
-) {
+    ngme_object,
+    model = NULL,
+    transformed = TRUE) {
   stopifnot(inherits(ngme_object, "ngme"))
-  
+
   # Extract all parameters using extract_parameters
   all_params <- extract_parameters(ngme_object)
-  
+
   # Choose transformed or raw parameters
   params <- if (transformed) all_params$transformed else all_params$raw
-  
+
   # Return specific model or all models
   if (is.null(model)) {
     return(params)
@@ -816,4 +855,3 @@ ngme_result <- function(
     return(params[[model]])
   }
 }
-

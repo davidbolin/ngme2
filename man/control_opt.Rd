@@ -16,7 +16,6 @@ control_opt(
   start_sd = 0.5,
   n_parallel_chain = 4,
   max_num_threads = n_parallel_chain,
-  exchange_VW = TRUE,
   n_slope_check = 3,
   std_lim = 0.01,
   trend_lim = 0.01,
@@ -28,7 +27,10 @@ control_opt(
   n_trace_iter = 10,
   sampling_strategy = "all",
   solver_type = if (Sys.info()["sysname"] == "Darwin") "accelerate" else "supernodal",
-  verbose = FALSE
+  verbose = FALSE,
+  store_traj = TRUE,
+  robust = FALSE,
+  max_R_hat = 1.1
 )
 }
 \arguments{
@@ -46,9 +48,9 @@ control_opt(
 
 \item{iters_per_check}{run how many iterations between each check point (or specify stop_points)}
 
-\item{optimizer}{choose different sgd optimization method, 
-currently support "precond_sgd", "momentum", "adagrad", "rmsprop", "adam", "adamW"
-see precond_sgd, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW}
+\item{optimizer}{choose different sgd optimization method,
+currently support "sgd", "precond_sgd", "momentum", "adagrad", "rmsprop", "adam", "adamW"
+see ?sgd, ?precond_sgd, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW}
 
 \item{start_sd}{standard deviation of the initial parameter (1st chain fixed, other chains random), set 0 to be fixed for all chains}
 
@@ -56,8 +58,6 @@ see precond_sgd, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW}
 
 \item{max_num_threads}{maximum number of threads used for parallel computing, by default will be set same as n_parallel_chain.
 If it is more than n_parallel_chain, the rest will be used to parallel different replicates of the model.}
-
-\item{exchange_VW}{exchange last V and W in each chian}
 
 \item{n_slope_check}{number of stop points for regression}
 
@@ -88,6 +88,8 @@ If it is more than n_parallel_chain, the rest will be used to parallel different
 "pardiso" means using pardiso solver}
 
 \item{verbose}{print estimation}
+
+\item{store_traj}{store the optimizer trajectory for diagnostics (set FALSE to reduce memory)}
 }
 \value{
 list of control variables

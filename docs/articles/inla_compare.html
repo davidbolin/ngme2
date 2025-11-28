@@ -4,7 +4,7 @@
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Comparing Ngme2 with R-INLA • ngme2</title>
 <!-- favicons --><link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
@@ -12,134 +12,78 @@
 <link rel="apple-touch-icon" type="image/png" sizes="120x120" href="../apple-touch-icon-120x120.png">
 <link rel="apple-touch-icon" type="image/png" sizes="76x76" href="../apple-touch-icon-76x76.png">
 <link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png">
-<!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script><!-- Bootstrap --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha256-bZLfwXAP04zRMK2BjiO8iu9pf4FbLqX6zitd+tIvLhE=" crossorigin="anonymous">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script><!-- bootstrap-toc --><link rel="stylesheet" href="../bootstrap-toc.css">
-<script src="../bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
-<!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
-<script src="../pkgdown.js"></script><meta property="og:title" content="Comparing Ngme2 with R-INLA">
-<!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
-<script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
-<script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-<![endif]-->
+<script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Roboto_Slab-0.4.10/font.css" rel="stylesheet">
+<link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Comparing Ngme2 with R-INLA">
 </head>
-<body data-spy="scroll" data-target="#toc">
+<body>
+    <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <div class="container template-article">
-      <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
-  <div class="container">
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false">
-        <span class="sr-only">Toggle navigation</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <span class="navbar-brand">
-        <a class="navbar-link" href="../index.html">ngme2</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.1</span>
-      </span>
-    </div>
+    <nav class="navbar navbar-expand-lg fixed-top bg-primary" data-bs-theme="dark" aria-label="Site navigation"><div class="container">
 
-    <div id="navbar" class="navbar-collapse collapse">
-      <ul class="nav navbar-nav">
-<li>
-  <a href="../articles/ngme2.html">Get started</a>
-</li>
-<li>
-  <a href="../reference/index.html">Functions</a>
-</li>
-<li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Vignettes
+    <a class="navbar-brand me-2" href="../index.html">ngme2</a>
 
-    <span class="caret"></span>
-  </a>
-  <ul class="dropdown-menu" role="menu">
-<li>
-      <a href="../articles/Installation_and_configuration.html">Installation and configuration (using OpenMP)</a>
-    </li>
-    <li>
-      <a href="../articles/inla_compare.html">Comparison with R-INLA</a>
-    </li>
-    <li>
-      <a href="../articles/AR1-model.html">AR(1) model</a>
-    </li>
-    <li>
-      <a href="../articles/RW-model.html">Random walk model</a>
-    </li>
-    <li>
-      <a href="../articles/SPDE-model.html">SPDE Matern model</a>
-    </li>
-    <li>
-      <a href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a>
-    </li>
-    <li>
-      <a href="../articles/replicate.html">Models with replicates</a>
-    </li>
-    <li>
-      <a href="../articles/pred_and_est.html">Model estimation and prediction</a>
-    </li>
-    <li>
-      <a href="../articles/bivariate.html">Bivariate models in Ngme2</a>
-    </li>
-    <li>
-      <a href="../articles/tp-bv.html">Space-time bivariate model in Ngme2</a>
-    </li>
-    <li>
-      <a href="../articles/random-effect.html">Random effects model in Ngme2</a>
-    </li>
-    <li>
-      <a href="../articles/tensor_product.html">Space-time (tensor product) model in Ngme2</a>
-    </li>
-    <li>
-      <a href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a>
-    </li>
-    <li>
-      <a href="../articles/cross-validation.html">Cross-validation for the ngme2 models</a>
-    </li>
-    <li>
-      <a href="../articles/generic.html">Using the Generic Model in ngme2</a>
-    </li>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.0</small>
+
+
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div id="navbar" class="collapse navbar-collapse ms-3">
+      <ul class="navbar-nav me-auto">
+<li class="nav-item"><a class="nav-link" href="../articles/ngme2.html">Get started</a></li>
+<li class="nav-item"><a class="nav-link" href="../reference/index.html">Functions</a></li>
+<li class="active nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-vignettes" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Vignettes</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-vignettes">
+<li><a class="dropdown-item" href="../articles/Installation_and_configuration.html">Installation and configuration (using OpenMP)</a></li>
+    <li><a class="dropdown-item" href="../articles/inla_compare.html">Comparison with R-INLA</a></li>
+    <li><a class="dropdown-item" href="../articles/AR1-model.html">AR(1) model</a></li>
+    <li><a class="dropdown-item" href="../articles/RW-model.html">Random walk model</a></li>
+    <li><a class="dropdown-item" href="../article/ngme2_ou_vignette.html">Ornstein-Uhlenbeck process</a></li>
+    <li><a class="dropdown-item" href="../articles/SPDE-model.html">SPDE Matern model</a></li>
+    <li><a class="dropdown-item" href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a></li>
+    <li><a class="dropdown-item" href="../articles/replicate.html">Models with replicates</a></li>
+    <li><a class="dropdown-item" href="../articles/pred_and_est.html">Model estimation and prediction</a></li>
+    <li><a class="dropdown-item" href="../articles/bivariate.html">Bivariate models in Ngme2</a></li>
+    <li><a class="dropdown-item" href="../articles/tp-bv.html">Space-time bivariate model in Ngme2</a></li>
+    <li><a class="dropdown-item" href="../articles/random-effect.html">Random effects model in Ngme2</a></li>
+    <li><a class="dropdown-item" href="../articles/tensor_product.html">Space-time (tensor product) model in Ngme2</a></li>
+    <li><a class="dropdown-item" href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a></li>
+    <li><a class="dropdown-item" href="../articles/cross-validation.html">Cross-validation for the ngme2 models</a></li>
+    <li><a class="dropdown-item" href="../articles/generic.html">Using the Generic Model in ngme2</a></li>
   </ul>
 </li>
-<li>
-  <a href="../news/index.html">Changelog</a>
-</li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
-<ul class="nav navbar-nav navbar-right">
-<li>
-  <a href="https://github.com/davidbolin/ngme2" class="external-link">
-    <span class="fa fa-github"></span>
-
-  </a>
-</li>
-<li>
-  <a href="https://twitter.com/jdavidbolin" class="external-link">
-    <span class="fa fa-twitter"></span>
-
-  </a>
-</li>
+<ul class="navbar-nav">
+<li class="nav-item"><form class="form-inline" role="search">
+ <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
+</form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/davidbolin/ngme2" aria-label="Github"><span class="fa fa-github"></span></a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://twitter.com/jdavidbolin" aria-label="Twitter"><span class="fa fa-twitter"></span></a></li>
       </ul>
 </div>
-<!--/.nav-collapse -->
+
+
   </div>
-<!--/.container -->
-</div>
-<!--/.navbar -->
+</nav><div class="container template-article">
 
 
 
-      </header><div class="row">
-  <div class="col-md-9 contents">
-    <div class="page-header toc-ignore">
-      <h1 data-toc-skip>Comparing Ngme2 with R-INLA</h1>
+
+<div class="row">
+  <main id="main" class="col-md-9"><div class="page-header">
+      <img src="../logo.png" class="logo" alt=""><h1>Comparing Ngme2 with R-INLA</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/HEAD/vignettes/inla_compare.Rmd" class="external-link"><code>vignettes/inla_compare.Rmd</code></a></small>
-      <div class="hidden name"><code>inla_compare.Rmd</code></div>
-
+      <div class="d-none name"><code>inla_compare.Rmd</code></div>
     </div>
 
     
@@ -215,7 +159,7 @@ maximum edge length.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">post_mode_kappa</span></span>
 <span><span class="co">#&gt;         x </span></span>
-<span><span class="co">#&gt; 0.2042818</span></span>
+<span><span class="co">#&gt; 0.2056516</span></span>
 <span></span>
 <span><span class="co"># posterior mode of tau</span></span>
 <span><span class="va">post_mode_tau</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="va">spde_res</span><span class="op">$</span><span class="va">marginals.tau</span>,</span>
@@ -226,7 +170,7 @@ maximum edge length.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fl">1</span> <span class="op">/</span> <span class="va">post_mode_tau</span> <span class="co"># for comparison with Ngme2 (same as sigma parameter in Ngme2)</span></span>
 <span><span class="co">#&gt;        x </span></span>
-<span><span class="co">#&gt; 10.34785</span></span></code></pre></div>
+<span><span class="co">#&gt; 10.57479</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="fit-1d-spde-model-with-ngme2">Fit 1d SPDE model with Ngme2<a class="anchor" aria-label="anchor" href="#fit-1d-spde-model-with-ngme2"></a>
@@ -241,11 +185,12 @@ maximum edge length.</p>
 <span>    iterations <span class="op">=</span> <span class="fl">1000</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
+<span><span class="co">#&gt; Using character strings for 'model' is not recommended (will be deprecated in the future). Please consider using operator functions like matern(), ar1(), etc. (e.g., model = matern()).</span></span>
 <span><span class="co">#&gt; Starting estimation... </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Starting posterior sampling... </span></span>
 <span><span class="co">#&gt; Posterior sampling done! </span></span>
-<span><span class="co">#&gt; Average standard deviation of the posterior W:  44.42424 </span></span>
+<span><span class="co">#&gt; Average standard deviation of the posterior W:  43.48521 </span></span>
 <span><span class="co">#&gt; Note:</span></span>
 <span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
 <span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
@@ -258,15 +203,16 @@ maximum edge length.</p>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $myspde</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
-<span><span class="co">#&gt;       kappa = 0.308</span></span>
+<span><span class="co">#&gt;       alpha = 2 (fixed)</span></span>
+<span><span class="co">#&gt;       kappa = 0.372</span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 10.4</span></span>
+<span><span class="co">#&gt;       sigma = 5.73</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 18.1</span></span></code></pre></div>
+<span><span class="co">#&gt;       sigma = 9.76</span></span></code></pre></div>
 <p>Here, we can directly read the estimation of kappa and sigma (1/tau)
 as shown in the result.</p>
 </div>
@@ -280,112 +226,112 @@ as shown in the result.</p>
 <span><span class="co"># by dafult, predict() returns a bunch of statistics at the given location</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">pred_W</span><span class="op">)</span></span>
 <span><span class="co">#&gt; List of 6</span></span>
-<span><span class="co">#&gt;  $ mean  : num [1:94] -0.957 -0.983 -1.029 -1.177 -1.29 ...</span></span>
-<span><span class="co">#&gt;  $ sd    : num [1:94] 9.25 9.13 8.33 8.02 8.44 ...</span></span>
-<span><span class="co">#&gt;  $ 0.05q : num [1:94] -15.5 -15.4 -14.8 -14 -15.8 ...</span></span>
-<span><span class="co">#&gt;  $ 0.95q : num [1:94] 13.4 13.3 12.4 11.8 12.5 ...</span></span>
-<span><span class="co">#&gt;  $ median: num [1:94] -0.65 -0.769 -0.958 -1.106 -1.034 ...</span></span>
-<span><span class="co">#&gt;  $ mode  : num [1:94] 3 1 -1 -1 1 -1 -1 1 -1 -3 ...</span></span>
+<span><span class="co">#&gt;  $ mean  : num [1:94] -1.01 -1.01 -1.16 -1.28 -1.34 ...</span></span>
+<span><span class="co">#&gt;  $ sd    : num [1:94] 4.8 4.76 4.43 4.34 4.56 ...</span></span>
+<span><span class="co">#&gt;  $ 0.05q : num [1:94] -8.82 -9.04 -8.31 -8.35 -8.43 ...</span></span>
+<span><span class="co">#&gt;  $ 0.95q : num [1:94] 6.86 6.63 6.18 5.88 6.05 ...</span></span>
+<span><span class="co">#&gt;  $ median: num [1:94] -1.1 -1.03 -1.02 -1.34 -1.47 ...</span></span>
+<span><span class="co">#&gt;  $ mode  : num [1:94] 1 1 -0.5 -1.5 -1.5 -1.5 -0.5 -2.5 -2.5 -1.5 ...</span></span>
 <span><span class="co">#&gt;  - attr(*, "samples")=List of 500</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 2.7469 3.3185 1.8545 0.0131 -3.4487 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 13.4 13.8 13.7 14.3 14.9 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -13.2 -12.5 -11.3 -12.8 -12.6 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -11.57 -11.32 -10.61 -10.59 -6.64 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 1.99 1.17 1.74 4.41 7.6 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -7.86 -6.45 -1.73 3.33 7.23 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -6.34 -5.29 -7.05 -12.58 -18.49 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 11.51 10.05 7.39 4.71 1.66 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -11.52 -11.95 -5.95 0.64 3.23 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -6.94 -7.14 -6.38 -8.63 -12.57 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 11.99 11.45 11.65 7.85 3.61 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 10.7 10.8 10.4 14.3 17.8 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 0.899 1.706 -0.279 3.808 3.768 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 4.82 5.4 6.82 8.26 13.46 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 12.57 11.79 8.16 6.85 4.19 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 3.51 2.53 -3.37 -5.43 -7.05 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 17.9 18.8 16.4 14.1 10.7 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -32.7 -32.5 -21.4 -15.2 -13.1 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 16.55 17.07 13.67 11.15 9.07 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -3.16 -3.25 -5.3 -6.35 -8.44 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 10 10.24 9.96 10.62 10.26 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -1.337 -1.723 -1.293 0.364 -2.439 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -3.97 -3.6 -6.89 -9.3 -9.93 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 1.506 1.209 -1.772 -1.195 0.529 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 14.57 13.67 5.05 5.6 3.96 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 3.28 2.7 5.43 6.6 6.73 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 7.75 7 6.39 1.85 4.16 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -7.151 -5.829 2.534 0.377 -0.771 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 2.97 3.14 -1.6 -2.14 3.37 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 8.84 9.05 7.81 7.17 2.42 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 10.13 9.754 2.163 -0.911 -0.991 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 9.174 8.374 4.926 0.891 0.468 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -1.87 -1.75 2.39 3.6 6.1 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -1.74 -0.318 4.93 10.988 15.539 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 6 5.434 1.716 -1.102 -0.747 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 6.1 6.73 16.47 15.8 11.32 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 10.32 11.19 10.33 8.05 4.7 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 9.03 8.56 4.17 2.21 -2.71 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 6.75 6.73 7.85 7.59 9.08 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 3.28 3.42 2.07 2.84 5.57 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 5.43 5.34 5.27 6.16 6.82 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -15 -14.3 -12.3 -11.5 -8.1 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 6.72 5.18 5.66 8.75 13 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 7.6 6.94 2.35 -1.44 -5.85 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -2.68 -3.337 -1.268 -0.744 1.872 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 5.24 4.32 2.78 -1.11 -4.39 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -8.17 -8.73 -5.54 -4.36 -7.26 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -7.09 -7.37 -10.65 -13.95 -18.8 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -0.471 -0.772 1.018 0.495 -1.589 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 3.81 4.48 6.66 1.74 3.56 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -14.86 -15.37 -16.15 -12.51 -5.23 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -0.823 -1.413 -3.396 -1.21 -2.524 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -2.558 -2.514 0.349 0.973 3.288 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 8.926 8.976 8.631 4.368 0.722 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 7.241 7.885 7.956 5.072 0.569 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 2.8 3.44 -1.15 -3.75 -6.12 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -5.61 -4.98 -1.84 2.63 5.73 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 5.16 4.07 1.58 -1.63 0.4 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -5.93 -6.09 -6.79 -2.85 2.24 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 12.997 12.541 6.493 -0.152 -2.199 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -5.4288 -5.4568 -5.0305 -3.0515 -0.0754 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 0.272 -0.757 -2.114 -3.983 -7.854 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 9.671 10.203 6.164 -0.368 -5.712 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 18.9 18.1 15.4 12.9 12.4 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -13.25 -13.33 -8.14 -5.49 -5.99 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 0.265 0.208 -0.798 -6.577 -6.562 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 11.65 11.27 5.56 1.3 -4.3 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 2.19 2.54 2.11 -1.99 -6.26 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -8.13 -8.63 -6.6 -6.12 -7.99 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -20.1 -19.8 -16.6 -12.2 -10.4 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 6.19 6.69 6.97 5.87 2.46 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -4.53 -5.13 -2.07 -3.42 -5.89 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -9.92 -9.62 -6.07 -4.16 -1.93 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -8.64 -9.46 -8.57 -10.04 -12.58 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -12.62 -12.09 -10.03 -8.15 -4.98 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -1.28 -1.59 -4.01 -4.31 -5.97 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -0.675 -0.352 -0.56 -4.094 -7.219 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -5.12 -5.62 -7.58 -7.88 -7.11 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 14.6 14.1 13.6 11.5 10.8 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -0.624 -0.359 5.056 9.17 13.874 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 2.4 1.27 -3.98 -12.03 -19.9 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 9.11 9.95 12.19 9.98 6.61 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 0.2049 -0.0205 3.7202 7.4578 9.4938 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 4.64 5.22 7.83 10.4 13.08 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 2.79 3.51 6.11 7.71 9 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 3.26 3.702 2.927 2.909 0.709 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -0.186 0.174 1.848 1.564 1.37 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 10.7 10.7 14.9 13.9 11.5 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 7.75 7.28 10.62 8.43 1.72 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -7.57 -6.85 -1.6 1.79 6.11 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -1.201 -0.71 -1.315 -0.647 -1.69 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -12.02 -11.99 -12.6 -9.79 -7.14 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 1.722 1.555 0.418 -3.608 -8.263 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 2.524 2.296 2.089 0.992 -1.462 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -3.94 -3.7 -13.79 -16.97 -19.74 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -12.44 -12.3 -6.81 -1.49 1.37 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] -22.7 -21.78 -13.93 -10.97 -9.59 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 14.9 14.9 12.5 13 11.6 ...</span></span>
-<span><span class="co">#&gt;   ..$ : num [1:94] 2.599 2.247 -0.305 -0.616 0.391 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 4.816 4.215 -0.281 -2.639 -3.564 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -0.275 -0.851 -4.079 -4.775 -6.007 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -3.21 -3.13 -5.18 -4.8 -6.94 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 3.72 3.06 4.15 5.36 3.23 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 2.102 1.716 3.953 2.114 -0.406 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -3.5 -3.75 -2.51 -1.35 1.38 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -4.33 -4.21 -1.13 -1.31 1.23 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -5.64 -5.33 -4.24 -4.27 -5.49 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -0.385 -0.843 -0.443 0.798 3.027 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -7.57 -7.28 -3.23 -3.04 -4.5 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -10.27 -10.25 -7.31 -4.99 -3.58 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -2.33 -2.63 -1.81 -3.31 -5.74 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -7.8 -7.65 -5.5 -4.98 -5.84 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 11.09 11.59 11.1 9.25 5.8 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 9.67 9.88 10.45 10.21 8.47 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 3.81 4.32 3.3 1.94 3.46 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -5.13 -4.78 -4.4 -5.66 -6.56 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 2.76 2.25 -0.79 -1.61 -2.35 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 0.394 0.323 -2.443 -2.796 -2.552 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -1.646 -1.459 -0.487 0.486 0.432 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 2.99 2.88 1.44 1.43 1.15 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -0.069 -0.0493 -0.3723 0.841 -0.3829 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -7.99 -8.06 -5.93 -3.97 -4.74 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -3.55 -3.66 -6.68 -8.03 -8.63 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 1.572 1.819 -0.067 -0.946 -2.366 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -10.6 -10.1 -11.2 -11.9 -13.2 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -0.00418 0.2916 2.72304 5.39486 7.84808 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 1.678 1.77 2.431 -0.137 -2.681 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -3.6 -3.58 -4.47 -3.19 -3 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -4.592 -4.441 -1.897 -0.667 0.639 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -4.92 -4.82 -4.67 -2.3 -1.3 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 0.37 0.292 -1.895 -2.644 -3.643 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -1.216 -1.303 -0.452 -0.461 -1.547 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -1.75 -2.24 -3.59 -4.04 -1.64 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -5.45 -5.87 -5.64 -3.99 -3.78 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -6.41 -5.97 -5.04 -3.81 -5.79 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 1.47 1.61 1.67 2.75 5.93 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -0.0401 -0.1191 0.1836 -0.2052 -1.6995 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 1.66 1.44 2.1 2.8 3.99 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -1.78 -2.108 -0.476 0.156 1.258 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 5.28 5.36 4.94 6.12 5.92 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -1.346 -1.133 -0.152 -1.722 -3.156 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -1.84 -2.64 -3.28 -3.18 -3.54 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 4.1514 3.6047 0.749 -0.0429 -2.1479 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 3.37 2.99 4.72 4.25 3.9 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 1.553 1.686 1.157 0.993 2.01 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -7.636 -7.083 -5.823 -2.737 0.715 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 7.81 7.81 4.49 3 2.32 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -1.97 -1.68 -1.4 -2.24 -2.69 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -9.58 -10.09 -8.5 -8.88 -8.32 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 0.647 0.953 1.868 2.105 1.794 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 4.065 4.074 3.964 1.345 0.194 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -0.942 -0.949 -0.7 0.8 1.763 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 14.4 14.4 13.5 12.5 11.7 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -3.68 -3.68 -3.08 -3.19 -2.63 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 3.216 2.577 -0.699 -1.675 -1.659 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 1.774 1.668 0.513 -1.46 -2.848 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -6.15 -6.44 -7.64 -7.62 -8.12 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -6.03 -5.716 -3.12 0.773 3.194 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -4.848 -4.864 -2.669 -2.545 -0.901 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -6.66 -6.42 -7.24 -8.02 -8.31 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -13.6 -13.7 -13.6 -12.8 -13.5 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 0.365 0.354 -1.885 -2.545 -4.567 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -5.03 -5.02 -5.04 -5.27 -4.54 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -2.22 -2.05 1.5 2.02 2.51 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -6.4 -6.32 -3.87 -1.83 -2.57 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -5.64 -6.05 -6.66 -6.98 -6.37 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 5.42 5.174 2.19 1.736 0.966 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 2.51 2.46 2.68 1.38 3.43 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 5.54 5.1 2.58 0.3 -2.24 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -6.94 -7.67 -8.31 -8.54 -8.74 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 1.13 1.45 2.64 1.94 2.39 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -0.103 -0.328 -1.596 -2.206 -3.056 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 4.252 4.155 2.147 -0.753 -2.242 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 0.667 0.94 3.794 4.854 4.897 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 0.141 0.433 0.601 -0.604 -1.061 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -5.19 -4.78 -4.96 -3.85 -3.98 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -3.8 -3.85 -2.5 -1.67 -1.47 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -1.89 -1.76 -2.49 -1.07 0.45 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 3.74 4.05 4.37 4.15 3.58 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -2.06 -2.01 -3.36 -3.37 -3.87 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -2.39 -1.77 1.05 1.64 2.82 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 7.78 7.6 6.8 5.76 5.35 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -4.72 -4.47 -2.3 -2.41 -1.62 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -0.55 -0.165 -2.043 -1.438 -0.545 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 6.89 7.11 7.3 6.66 5.84 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -1.86 -1.38 -4.26 -3.69 -2.22 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -1.17 -1.13 -3.86 -7.04 -7.94 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 0.979 1.242 -0.636 0.253 0.412 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 0.437 0.799 0.711 3.181 3.808 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 3.14 2.65 1.96 1.28 -1.2 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -6.06 -5.78 -3.66 -3.16 -2.84 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -10.6 -11 -13.7 -13.5 -13.9 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -1.303 -1.248 0.607 -1.239 -4.417 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -9.1 -9.24 -9.07 -7.78 -5.46 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] 0.356 0.684 3.136 5.804 7.319 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -5.954 -5.705 -2.662 -0.245 3.571 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -6.62 -6.61 -7.71 -7.27 -8.27 ...</span></span>
+<span><span class="co">#&gt;   ..$ : num [1:94] -4.46 -4.62 -6.59 -8.18 -7.92 ...</span></span>
 <span><span class="co">#&gt;   .. [list output truncated]</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines</a></span><span class="op">(</span><span class="va">mesh</span><span class="op">$</span><span class="va">loc</span>, <span class="va">pred_W</span><span class="op">[[</span><span class="st">"mean"</span><span class="op">]</span><span class="op">]</span>, col<span class="op">=</span><span class="fl">3</span>, lwd<span class="op">=</span><span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/title.html" class="external-link">title</a></span><span class="op">(</span><span class="st">"Posterior mean with Ngme2 and INLA"</span><span class="op">)</span></span>
@@ -415,11 +361,12 @@ easily extend the model to non-Gaussian case by changing the
 <span>    iterations <span class="op">=</span> <span class="fl">2000</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
+<span><span class="co">#&gt; Using character strings for 'model' is not recommended (will be deprecated in the future). Please consider using operator functions like matern(), ar1(), etc. (e.g., model = matern()).</span></span>
 <span><span class="co">#&gt; Starting estimation... </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Starting posterior sampling... </span></span>
 <span><span class="co">#&gt; Posterior sampling done! </span></span>
-<span><span class="co">#&gt; Average standard deviation of the posterior W:  45.23264 </span></span>
+<span><span class="co">#&gt; Average standard deviation of the posterior W:  45.42802 </span></span>
 <span><span class="co">#&gt; Note:</span></span>
 <span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
 <span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
@@ -432,31 +379,32 @@ easily extend the model to non-Gaussian case by changing the
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $myspde</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
-<span><span class="co">#&gt;       kappa = 0.312</span></span>
+<span><span class="co">#&gt;       alpha = 2 (fixed)</span></span>
+<span><span class="co">#&gt;       kappa = 0.424</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -0.905</span></span>
-<span><span class="co">#&gt;       sigma = 14.7</span></span>
-<span><span class="co">#&gt;       nu = 0.0625</span></span>
+<span><span class="co">#&gt;       mu = -0.621</span></span>
+<span><span class="co">#&gt;       sigma = 19.5</span></span>
+<span><span class="co">#&gt;       nu = 0.09</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 21.7</span></span>
+<span><span class="co">#&gt;       sigma = 14.7</span></span>
 <span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">result_ngme2</span>, <span class="st">"myspde"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="inla_compare_files/figure-html/unnamed-chunk-8-1.png" width="700"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $kappa</span></span>
-<span><span class="co">#&gt; [1] 0.3181744</span></span>
+<span><span class="co">#&gt; [1] 0.4429042</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $mu</span></span>
-<span><span class="co">#&gt; [1] -0.9082761</span></span>
+<span><span class="co">#&gt; [1] -0.6197382</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 16.96383</span></span>
+<span><span class="co">#&gt; [1] 22.14955</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nu</span></span>
-<span><span class="co">#&gt; [1] 0.07320219</span></span>
+<span><span class="co">#&gt; [1] 0.1043408</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">result_ngme2</span><span class="op">$</span><span class="va">replicates</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">models</span><span class="op">[[</span><span class="st">"myspde"</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">noise</span><span class="op">)</span></span></code></pre>
 <p><img src="inla_compare_files/figure-html/unnamed-chunk-8-2.png" width="700"></p>
 </div>
@@ -483,29 +431,22 @@ model).</p>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/title.html" class="external-link">title</a></span><span class="op">(</span><span class="st">"Prediction at unknown locations"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="inla_compare_files/figure-html/unnamed-chunk-10-1.png" width="700"></p>
 </div>
-  </div>
-
-  <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
-
-      </div>
-
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside>
 </div>
 
 
 
-      <footer><div class="copyright">
-  <p></p>
-<p>Developed by David Bolin, Xiaotian Jin, Alexandre Simas, Jonas Wallin.</p>
+    <footer><div class="pkgdown-footer-left">
+  <p>Developed by David Bolin, Xiaotian Jin, Alexandre Simas, Jonas Wallin.</p>
 </div>
 
-<div class="pkgdown">
-  <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+<div class="pkgdown-footer-right">
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
 </div>
 
-      </footer>
+    </footer>
 </div>
-
 
 
 

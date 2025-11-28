@@ -10,7 +10,7 @@
 #' "fe" is fixed effect prediction
 #' <model_name> is prediction of a specific model
 #' "lp" is linear predictor (including fixed effect and all sub-models)
-#' @param group which filed to predict 
+#' @param group which filed to predict
 #'   (used for bivariate model, should be of same length as map)
 #' @param estimator what type of estimator. Options include:
 #'   - "mean", "median", "mode", "sd": standard estimators
@@ -26,25 +26,24 @@
 #' @return a list of outputs contains estimation of operator paramters, noise parameters
 #' @export
 predict.ngme <- function(
-  object,
-  map,
-  data = NULL,
-  type = "lp",
-  group = NULL,
-  estimator = c("mean", "sd", "0.05q", "0.95q", "median", "mode"),
-  sampling_size = 500,
-  burnin_size = 100,
-  seed = Sys.time(),
-  train_idx = NULL,
-  ...
-) {
+    object,
+    map,
+    data = NULL,
+    type = "lp",
+    group = NULL,
+    estimator = c("mean", "sd", "0.05q", "0.95q", "median", "mode"),
+    sampling_size = 500,
+    burnin_size = 100,
+    seed = Sys.time(),
+    train_idx = NULL,
+    ...) {
   fm <- attr(object, "fit")$formula
   ngme <- object$replicate[[1]]
   stopifnot(
     sampling_size > 0,
     "Make sure the object is of class 'ngme'." = inherits(object, "ngme")
   )
-  
+
   # If train_idx is provided, subset the data for posterior sampling
   if (!is.null(train_idx)) {
     # Validate train_idx
@@ -52,24 +51,25 @@ predict.ngme <- function(
     if (any(train_idx > n_data) || any(train_idx < 1)) {
       stop("train_idx out of bounds. Data has ", n_data, " observations.")
     }
-    
+
     # Subset training data (similar to cross-validation logic)
     ngme$X <- ngme$X[train_idx, , drop = FALSE]
     ngme$Y <- ngme$Y[train_idx]
     ngme$noise <- subset_noise(
-      ngme$noise, sub_idx = train_idx, compute_corr = TRUE
+      ngme$noise,
+      sub_idx = train_idx, compute_corr = TRUE
     )
-    
+
     # Subset A matrices for training data
     for (i in seq_along(ngme$models)) {
       ngme$models[[i]]$A <- ngme$models[[i]]$A[train_idx, , drop = FALSE]
     }
   }
-  
-  samples_W <- sampling_cpp(ngme, 
-    n = sampling_size, 
-    n_burnin = burnin_size, 
-    posterior = TRUE, 
+
+  samples_W <- sampling_cpp(ngme,
+    n = sampling_size,
+    n_burnin = burnin_size,
+    posterior = TRUE,
     seed = seed
   )[["W"]]
 
@@ -83,7 +83,9 @@ predict.ngme <- function(
       if (quantile_prob <= 0 || quantile_prob >= 1) {
         stop("Quantile probability should be between 0 and 1 (exclusive). Got: ", quantile_prob)
       }
-      post_W <- apply(as.data.frame(samples_W), 1, function(x) {quantile(x, quantile_prob)})
+      post_W <- apply(as.data.frame(samples_W), 1, function(x) {
+        quantile(x, quantile_prob)
+      })
     } else {
       post_W <- switch(estimator,
         "mean"      = mean_list(samples_W),
@@ -104,8 +106,7 @@ predict.ngme <- function(
 
     if (!is.null(map)) {
       stopifnot(
-        "map should be a named list (name for each model)"
-          = is.list(map) && !is.null(names(map))
+        "map should be a named list (name for each model)" = is.list(map) && !is.null(names(map))
       )
       names <- names(map)
       stopifnot(length(names) == length(ngme$models))
@@ -113,12 +114,12 @@ predict.ngme <- function(
       AW <- list()
       for (i in seq_along(ngme$models)) {
         loc <- map[[ngme$models[[i]]$name]]
-    if (is.null(loc)) stop("The loction for model ", ngme$models[[i]]$name, " is not provided")
+        if (is.null(loc)) stop("The loction for model ", ngme$models[[i]]$name, " is not provided")
         if (inherits(ngme$models[[i]]$operator$mesh, "metric_graph")) {
           loc <- as.data.frame(loc)
-        } else if (ngme$models[[i]]$model != "tp")
+        } else if (ngme$models[[i]]$model != "tp") {
           loc <- as.matrix(loc)
-        else {
+        } else {
           stopifnot(
             length(loc) == 2, # map 1 and map 2
             length_map(loc[[1]]) == length_map(loc[[2]])
@@ -136,7 +137,7 @@ predict.ngme <- function(
           group,
           group_levels = levels(ngme$group)
         )
-        
+
         AW[[ngme$models[[i]]$name]] <- as.numeric(A %*% W)
       }
     }
@@ -148,23 +149,24 @@ predict.ngme <- function(
     for (i in seq_along(type_names)) {
       name <- type_names[[i]]
       if (name == "fe" && length(ngme$feff) > 0) {
-          X_pred <- if (is.null(data) && attr(terms(fm), "intercept")) {
-            matrix(1, nrow = length(AW[[1]]), ncol = 1)
-          } else {
-            stopifnot("Please provide covariates for predictions" = !is.null(data))
-            # build plain_fm
-            tf <- terms.formula(fm, specials = c("f"))
-            terms <- attr(tf, "term.labels")
-            intercept <- attr(tf, "intercept")
-            spec_order <- attr(tf, "specials")$f - 1
-            fixf <- if (length(spec_order) == 0) terms else terms[-spec_order]
-            plain_fm_str <- paste("~", intercept, paste(c("", fixf), collapse = " + "))
-            plain_fm <- formula(plain_fm_str)
-            model.matrix(plain_fm, data = data)
-          }
-if (!is.null(data) && nrow(X_pred) < nrow(data)) 
-  stop("The data has NA values in the covariates.")
-          preds <- preds + as.numeric(X_pred %*% ngme$feff)
+        X_pred <- if (is.null(data) && attr(terms(fm), "intercept")) {
+          matrix(1, nrow = length(AW[[1]]), ncol = 1)
+        } else {
+          stopifnot("Please provide covariates for predictions" = !is.null(data))
+          # build plain_fm
+          tf <- terms.formula(fm, specials = c("f"))
+          terms <- attr(tf, "term.labels")
+          intercept <- attr(tf, "intercept")
+          spec_order <- attr(tf, "specials")$f - 1
+          fixf <- if (length(spec_order) == 0) terms else terms[-spec_order]
+          plain_fm_str <- paste("~", intercept, paste(c("", fixf), collapse = " + "))
+          plain_fm <- formula(plain_fm_str)
+          model.matrix(plain_fm, data = data)
+        }
+        if (!is.null(data) && nrow(X_pred) < nrow(data)) {
+          stop("The data has NA values in the covariates.")
+        }
+        preds <- preds + as.numeric(X_pred %*% ngme$feff)
       } else if (name %in% names(ngme$models)) {
         preds <- preds + AW[[name]]
       }

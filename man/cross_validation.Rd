@@ -10,14 +10,14 @@ cross_validation(
   ngme,
   type = "k-fold",
   seed = NULL,
-  print = FALSE,
+  print = TRUE,
   N_sim = 5,
   n_gibbs_samples = 500,
   n_burnin = 100,
   k = 5,
   percent = 0.2,
   times = 10,
-  transform = identity,
+  metric = NULL,
   test_idx = NULL,
   train_idx = NULL,
   keep_pred = FALSE,
@@ -54,8 +54,12 @@ custom is user-defined group, provide \code{target} and \code{data}}
 
 \item{times}{how many test cases (only for lpo type)}
 
-\item{transform}{a function or a list of functions (length equal to number of models) to map predictions and observations to the comparison scale (e.g., identity for original scale, exp if the model is on log scale).
-e.g., the MAE will be computed as |transform(Y) - transform(Y_pred)|}
+\item{metric}{Optional function or list of functions (one per model) that maps the group-wise observations/predictions for a single location to the quantity that should be scored.
+The function receives a list containing at least `y` (named numeric vector of group values) and may optionally use `samples1`/`samples2` (matrices with rows named by group and columns indexing posterior draws).
+The function must return either a numeric scalar (optionally named) or a list with components `y` (scalar), and optionally `samples1`/`samples2` (numeric vectors matching the posterior draw count) and `label` (character).
+When `NULL`, the original per-group scores are computed.
+For example, to compare a linear combination of two fields you can use
+`metric = function(data) { res <- 2 * data$y["A"] + data$y["B"]; names(res) <- "combo"; res }`. To simply sum all group values, return `sum(data$y)`.}
 
 \item{test_idx}{a list of indices of the data (which data points to be predicted) (only for custom type)}
 

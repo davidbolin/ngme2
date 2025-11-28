@@ -4,14 +4,12 @@
 \alias{tp}
 \title{ngme tensor-product model specification}
 \usage{
-tp(first, second, ...)
+tp(first, second)
 }
 \arguments{
 \item{first}{ngme_operator, left side of kronecker model (usually a temporal or iid model)}
 
 \item{second}{ngme_operator, right side of kronecker model (ususally a temporal or spatial model)}
-
-\item{...}{ignore}
 }
 \value{
 a list of specification of model

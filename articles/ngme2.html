@@ -4,219 +4,185 @@
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ngme2 - A new Flexible R Package for Latent non-Gaussian Models • ngme2</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<title>Ngme2 - A Unified, Efficient, and Flexible non-Gaussian Modeling Framework • ngme2</title>
 <!-- favicons --><link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
 <link rel="apple-touch-icon" type="image/png" sizes="180x180" href="../apple-touch-icon.png">
 <link rel="apple-touch-icon" type="image/png" sizes="120x120" href="../apple-touch-icon-120x120.png">
 <link rel="apple-touch-icon" type="image/png" sizes="76x76" href="../apple-touch-icon-76x76.png">
 <link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png">
-<!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script><!-- Bootstrap --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha256-bZLfwXAP04zRMK2BjiO8iu9pf4FbLqX6zitd+tIvLhE=" crossorigin="anonymous">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script><!-- bootstrap-toc --><link rel="stylesheet" href="../bootstrap-toc.css">
-<script src="../bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
-<!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
-<script src="../pkgdown.js"></script><meta property="og:title" content="Ngme2 - A new Flexible R Package for Latent non-Gaussian Models">
-<!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
-<script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
-<script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-<![endif]-->
+<script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Roboto_Slab-0.4.10/font.css" rel="stylesheet">
+<link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Ngme2 - A Unified, Efficient, and Flexible non-Gaussian Modeling Framework">
 </head>
-<body data-spy="scroll" data-target="#toc">
+<body>
+    <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <div class="container template-article">
-      <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
-  <div class="container">
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false">
-        <span class="sr-only">Toggle navigation</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <span class="navbar-brand">
-        <a class="navbar-link" href="../index.html">ngme2</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.1</span>
-      </span>
-    </div>
+    <nav class="navbar navbar-expand-lg fixed-top bg-primary" data-bs-theme="dark" aria-label="Site navigation"><div class="container">
 
-    <div id="navbar" class="navbar-collapse collapse">
-      <ul class="nav navbar-nav">
-<li>
-  <a href="../articles/ngme2.html">Get started</a>
-</li>
-<li>
-  <a href="../reference/index.html">Functions</a>
-</li>
-<li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Vignettes
+    <a class="navbar-brand me-2" href="../index.html">ngme2</a>
 
-    <span class="caret"></span>
-  </a>
-  <ul class="dropdown-menu" role="menu">
-<li>
-      <a href="../articles/Installation_and_configuration.html">Installation and configuration (using OpenMP)</a>
-    </li>
-    <li>
-      <a href="../articles/inla_compare.html">Comparison with R-INLA</a>
-    </li>
-    <li>
-      <a href="../articles/AR1-model.html">AR(1) model</a>
-    </li>
-    <li>
-      <a href="../articles/RW-model.html">Random walk model</a>
-    </li>
-    <li>
-      <a href="../articles/SPDE-model.html">SPDE Matern model</a>
-    </li>
-    <li>
-      <a href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a>
-    </li>
-    <li>
-      <a href="../articles/replicate.html">Models with replicates</a>
-    </li>
-    <li>
-      <a href="../articles/pred_and_est.html">Model estimation and prediction</a>
-    </li>
-    <li>
-      <a href="../articles/bivariate.html">Bivariate models in Ngme2</a>
-    </li>
-    <li>
-      <a href="../articles/tp-bv.html">Space-time bivariate model in Ngme2</a>
-    </li>
-    <li>
-      <a href="../articles/random-effect.html">Random effects model in Ngme2</a>
-    </li>
-    <li>
-      <a href="../articles/tensor_product.html">Space-time (tensor product) model in Ngme2</a>
-    </li>
-    <li>
-      <a href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a>
-    </li>
-    <li>
-      <a href="../articles/cross-validation.html">Cross-validation for the ngme2 models</a>
-    </li>
-    <li>
-      <a href="../articles/generic.html">Using the Generic Model in ngme2</a>
-    </li>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.0</small>
+
+
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div id="navbar" class="collapse navbar-collapse ms-3">
+      <ul class="navbar-nav me-auto">
+<li class="active nav-item"><a class="nav-link" href="../articles/ngme2.html">Get started</a></li>
+<li class="nav-item"><a class="nav-link" href="../reference/index.html">Functions</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-vignettes" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Vignettes</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-vignettes">
+<li><a class="dropdown-item" href="../articles/Installation_and_configuration.html">Installation and configuration (using OpenMP)</a></li>
+    <li><a class="dropdown-item" href="../articles/AR1-model.html">AR(1) model</a></li>
+    <li><a class="dropdown-item" href="../articles/RW-model.html">Random walk model</a></li>
+    <li><a class="dropdown-item" href="../article/ou-process.html">Ornstein-Uhlenbeck process</a></li>
+    <li><a class="dropdown-item" href="../articles/SPDE-model.html">SPDE Matern model</a></li>
+    <li><a class="dropdown-item" href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a></li>
+    <li><a class="dropdown-item" href="../articles/replicate.html">Models with replicates</a></li>
+    <li><a class="dropdown-item" href="../articles/pred-and-est.html">Model estimation and prediction</a></li>
+    <li><a class="dropdown-item" href="../articles/bivariate.html">Bivariate models in Ngme2</a></li>
+    <li><a class="dropdown-item" href="../articles/random-effect.html">Random effects model in Ngme2</a></li>
+    <li><a class="dropdown-item" href="../articles/tensor-product.html">Space-time (tensor product) model in Ngme2</a></li>
+    <li><a class="dropdown-item" href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a></li>
+    <li><a class="dropdown-item" href="../articles/cross-validation.html">Cross-validation for the ngme2 models</a></li>
+    <li><a class="dropdown-item" href="../articles/generic.html">Using the Generic Model in ngme2</a></li>
   </ul>
 </li>
-<li>
-  <a href="../news/index.html">Changelog</a>
-</li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
-<ul class="nav navbar-nav navbar-right">
-<li>
-  <a href="https://github.com/davidbolin/ngme2" class="external-link">
-    <span class="fa fa-github"></span>
-
-  </a>
-</li>
-<li>
-  <a href="https://twitter.com/jdavidbolin" class="external-link">
-    <span class="fa fa-twitter"></span>
-
-  </a>
-</li>
+<ul class="navbar-nav">
+<li class="nav-item"><form class="form-inline" role="search">
+ <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
+</form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/davidbolin/ngme2" aria-label="Github"><span class="fa fa-github"></span></a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://twitter.com/jdavidbolin" aria-label="Twitter"><span class="fa fa-twitter"></span></a></li>
       </ul>
 </div>
-<!--/.nav-collapse -->
+
+
   </div>
-<!--/.container -->
-</div>
-<!--/.navbar -->
+</nav><div class="container template-article">
 
 
 
-      </header><div class="row">
-  <div class="col-md-9 contents">
-    <div class="page-header toc-ignore">
-      <h1 data-toc-skip>Ngme2 - A new Flexible R Package for Latent
-non-Gaussian Models</h1>
+
+<div class="row">
+  <main id="main" class="col-md-9"><div class="page-header">
+      <img src="../logo.png" class="logo" alt=""><h1>Ngme2 - A Unified, Efficient, and Flexible non-Gaussian Modeling Framework</h1>
             
-            <h4 data-toc-skip class="date">2025-09-21</h4>
+            <h4 data-toc-skip class="date">2025-11-27</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/HEAD/vignettes/ngme2.Rmd" class="external-link"><code>vignettes/ngme2.Rmd</code></a></small>
-      <div class="hidden name"><code>ngme2.Rmd</code></div>
-
+      <div class="d-none name"><code>ngme2.Rmd</code></div>
     </div>
 
     
     
-<div class="section level2">
-<h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
-</h2>
-<p>In this vignette we provide a brief introduction to the
-<code>ngme2</code> package.</p>
-<p><code>Ngme2</code> (<a href="https://github.com/davidbolin/ngme2" class="external-link uri">https://github.com/davidbolin/ngme2</a>) is the updated
-version of <code>Ngme</code>, a package for estimating latent
-non-Gaussian models for repeated measurement data. <code>Ngme2</code>
-follows a hierachical structure, differnet components (latent processes,
-different types of noises) are flexible to change and combine.</p>
 <div class="section level3">
-<h3 id="features">1 Features<a class="anchor" aria-label="anchor" href="#features"></a>
+<h3 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h3>
+<p>Latent Gaussian models (LGMs) have emerged as a cornerstone of modern
+statistical inference, providing a powerful framework for modeling
+hierarchical dependencies in data.</p>
+<p>Despite their versatility, LGMs encounter fundamental limitations
+when applied to data exhibiting non-Gaussian characteristics. The
+Gaussian assumption imposes inherent constraints that may be overly
+restrictive for many real-world phenomena. Some common non-Gaussian
+features exhibited by real world data include asymmetry, heavy tails,
+and non-smoothness.</p>
+<p><a href="https://github.com/davidbolin/ngme2" class="external-link"><code>ngme2</code></a>
+R package is a unified, efficient, and flexible modeling software for
+modeling non-Gaussian data. It is the updated version of <a href="https://github.com/davidbolin/ngme" class="external-link"><code>ngme</code></a>, which
+was first introduced in <span class="citation">(Asar et al.
+2020)</span></p>
+<div class="section level4">
+<h4 id="features">Features<a class="anchor" aria-label="anchor" href="#features"></a>
+</h4>
 <ol style="list-style-type: decimal">
 <li>Support temporal models like <strong>AR(1)</strong>,
 <strong>Ornstein−Uhlenbeck</strong> and <strong>random walk</strong>
 processes, and spatial models like <strong>Matern</strong> fields.</li>
-<li>Support latent processes constructed by <strong>non-Gaussian
+<li>Support latent processes driven by <strong>non-Gaussian
 noises</strong> (normal inverse Gaussian(NIG), generalized asymmetric
-Laplace (GAL)).</li>
+Laplace (GAL), etc).</li>
 <li>Support non-Gaussian, and correlated <strong>measurement
 noises</strong>.</li>
-<li>Support doing <strong>prediction</strong> at unknown locations.</li>
+<li>Support kriging <strong>prediction</strong> at unknown
+locations.</li>
 <li>Support latent processes and random-effects model for
 <strong>longitudinal data</strong>.</li>
-<li>Support the bivariate type-G model, which can model 2 non-Gaussian
-fields jointly (Bolin 2020).</li>
-<li>Support the separable space-time model.</li>
+<li>Support the <strong>bivariate</strong> type-G model, which can model
+2 non-Gaussian fields jointly <span class="citation">(Bolin and Wallin
+2019)</span>.</li>
+<li>Support the separable <strong>space-time</strong> model, and
+non-separable space-time model.</li>
+<li>Support the user-defined model via “generic” and “generic_ns”
+functions.</li>
+<li>Provide estimation diagnostics, and
+<strong>cross-validation</strong> for model selection.</li>
 </ol>
 </div>
-<div class="section level3">
-<h3 id="model-framework">2 Model Framework<a class="anchor" aria-label="anchor" href="#model-framework"></a>
-</h3>
-<p>The package <code>Ngme2</code> provides methods for mixed effect
-models in the following form:</p>
-<p><span class="math display">$$
-{\bf Y}_{ij} = {\bf X}^T_{ij} {\bf \beta} + {\bf D}^T_{ij} {\bf U}_i +
-W_i(t_{ij}) + \epsilon_{ij},
-\qquad j=1 \ldots n_i, i=1,\ldots,m
-$$</span></p>
-<ul>
-<li>
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>m</mi><annotation encoding="application/x-tex">m</annotation></semantics></math>
-is the number of subjects,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>n</mi><mi>i</mi></msub><annotation encoding="application/x-tex">n_i</annotation></semantics></math>
-is the number of observations for each subject,</li>
-<li>
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>Y</mi><annotation encoding="application/x-tex">Y</annotation></semantics></math>
-is the response variable,</li>
-<li>
-<span class="math inline">${\bf X}$</span> is the matrix of fixed
-effects explanatory variables,</li>
-<li>
-<span class="math inline">${\bf \beta}$</span> is the fixed
-effects,</li>
-<li>
-<span class="math inline">${\bf D}$</span> is the matrix of random
-effects explanatory variables,</li>
-<li>
-<span class="math inline">$\bf U$</span> is the random effects,</li>
-<li>
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>W</mi><mi>i</mi></msub><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>t</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">W_i(t_{ij})</annotation></semantics></math>
-is a stochastic process driven by Gaussian or non-Gaussian noise,</li>
-<li>
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ϵ</mi><annotation encoding="application/x-tex">\epsilon</annotation></semantics></math>
-is measurement error.</li>
-</ul>
+<div class="section level4">
+<h4 id="model-framework">Model Framework<a class="anchor" aria-label="anchor" href="#model-framework"></a>
+</h4>
+<p>The package <code>Ngme2</code> implements the latent linear
+non-Gaussian model (LLnGM) framework, which uses flexible operator
+formulations to describe data, latent processes, and noise in a unified
+way:</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mtable><mtr><mtd columnalign="right" style="text-align: right"><mtext mathvariant="normal">Data:</mtext><mspace width="1.0em"></mspace></mtd><mtd columnalign="left" style="text-align: left"><mi>𝐘</mi><mo>=</mo><mi>𝐀</mi><mi>𝐖</mi><mo>+</mo><mi>𝐗</mi><mi>𝛃</mi><mo>+</mo><msup><mi>𝛜</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo stretchy="true" form="postfix">)</mo></mrow></msup></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right"><mtext mathvariant="normal">Process:</mtext><mspace width="1.0em"></mspace></mtd><mtd columnalign="left" style="text-align: left"><mi>𝐊</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>𝛉</mi><mo stretchy="true" form="postfix">)</mo></mrow><mi>𝐖</mi><mo>=</mo><msup><mi>𝛜</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>2</mn><mo stretchy="true" form="postfix">)</mo></mrow></msup></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right"><mtext mathvariant="normal">Noise:</mtext><mspace width="1.0em"></mspace></mtd><mtd columnalign="left" style="text-align: left"><msup><mi>𝛜</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>i</mi><mo stretchy="true" form="postfix">)</mo></mrow></msup><mo stretchy="false" form="prefix">|</mo><msup><mi>𝐕</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>i</mi><mo stretchy="true" form="postfix">)</mo></mrow></msup><mo>∼</mo><mi>𝒩</mi><mrow><mo stretchy="true" form="prefix">(</mo><msup><mi>𝐦</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>i</mi><mo stretchy="true" form="postfix">)</mo></mrow></msup><mo>,</mo><msup><mi>𝚺</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>i</mi><mo stretchy="true" form="postfix">)</mo></mrow></msup><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mspace width="1.0em"></mspace><mi>i</mi><mo>=</mo><mn>1</mn><mo>,</mo><mn>2</mn></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right"></mtd><mtd columnalign="left" style="text-align: left"><msup><mi>𝐦</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>i</mi><mo stretchy="true" form="postfix">)</mo></mrow></msup><mo>=</mo><msup><mi>𝛍</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>i</mi><mo stretchy="true" form="postfix">)</mo></mrow></msup><mrow><mo stretchy="true" form="prefix">(</mo><mi>𝛉</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>⊙</mo><mrow><mo stretchy="true" form="prefix">(</mo><msup><mi>𝐕</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>i</mi><mo stretchy="true" form="postfix">)</mo></mrow></msup><mo>−</mo><msup><mi>𝐡</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>i</mi><mo stretchy="true" form="postfix">)</mo></mrow></msup><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right"></mtd><mtd columnalign="left" style="text-align: left"><msup><mi>𝚺</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>i</mi><mo stretchy="true" form="postfix">)</mo></mrow></msup><mo>=</mo><mtext mathvariant="normal">diag</mtext><mrow><mo stretchy="true" form="prefix">(</mo><msup><mi>𝛔</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>i</mi><mo stretchy="true" form="postfix">)</mo></mrow></msup><mrow><mo stretchy="true" form="prefix">(</mo><mi>𝛉</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>⊙</mo><msup><mi>𝛔</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>i</mi><mo stretchy="true" form="postfix">)</mo></mrow></msup><mrow><mo stretchy="true" form="prefix">(</mo><mi>𝛉</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>⊙</mo><msup><mi>𝐕</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>i</mi><mo stretchy="true" form="postfix">)</mo></mrow></msup><mo stretchy="true" form="postfix">)</mo></mrow></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right"><mtext mathvariant="normal">Distribution:</mtext><mspace width="1.0em"></mspace></mtd><mtd columnalign="left" style="text-align: left"><msubsup><mi>𝐕</mi><mi>j</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>i</mi><mo stretchy="true" form="postfix">)</mo></mrow></msubsup><mover><mo>∼</mo><mtext mathvariant="normal">iid</mtext></mover><mtext mathvariant="normal">GIG</mtext><mrow><mo stretchy="true" form="prefix">(</mo><msubsup><mi>𝐩</mi><mi>j</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>i</mi><mo stretchy="true" form="postfix">)</mo></mrow></msubsup><mrow><mo stretchy="true" form="prefix">(</mo><mi>𝛉</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><msubsup><mi>𝐚</mi><mi>j</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>i</mi><mo stretchy="true" form="postfix">)</mo></mrow></msubsup><mrow><mo stretchy="true" form="prefix">(</mo><mi>𝛉</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><msubsup><mi>𝐛</mi><mi>j</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>i</mi><mo stretchy="true" form="postfix">)</mo></mrow></msubsup><mrow><mo stretchy="true" form="prefix">(</mo><mi>𝛉</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">)</mo></mrow><mspace width="1.0em"></mspace><mi>i</mi><mo>=</mo><mn>1</mn><mo>,</mo><mn>2</mn><mo>,</mo><mspace width="1.0em"></mspace><mi>j</mi><mo>=</mo><mn>1</mn><mo>,</mo><mi>…</mi><mo>,</mo><msub><mi>n</mi><mi>i</mi></msub></mtd></mtr></mtable><annotation encoding="application/x-tex">\begin{align}
+\text{Data:} \quad &amp; \mathbf{Y} = \mathbf{A}\mathbf{W} + \mathbf{X}\boldsymbol{\beta} + \boldsymbol{\epsilon}^{(1)} \tag{eq:data}\\
+\text{Process:} \quad &amp; \mathbf{K}(\boldsymbol{\theta})\mathbf{W} = \boldsymbol{\epsilon}^{(2)} \tag{eq:process}\\
+\text{Noise:} \quad &amp; \boldsymbol{\epsilon}^{(i)} | \mathbf{V}^{(i)} \sim \mathcal{N}(\mathbf{m}^{(i)}, \boldsymbol{\Sigma}^{(i)}), \quad i = 1, 2 \tag{eq:noise} \\
+&amp; \mathbf{m}^{(i)} = \boldsymbol{\mu}^{(i)}({\boldsymbol{\theta}}) \odot \left( \mathbf{V}^{(i)} - \mathbf{h}^{(i)} \right),  \\
+&amp; \boldsymbol{\Sigma}^{(i)} = \text{diag}(\boldsymbol{\sigma}^{(i)}({\boldsymbol{\theta}}) \odot \boldsymbol{\sigma}^{(i)}({\boldsymbol{\theta}}) \odot \mathbf{V}^{(i)}) \\
+\text{Distribution:} \quad &amp; \mathbf{V}_j^{(i)} \overset{\text{iid}}{\sim} \text{GIG}(\mathbf{p}_j^{(i)}(\boldsymbol{\theta}), \mathbf{a}_j^{(i)}(\boldsymbol{\theta}), \mathbf{b}_j^{(i)}(\boldsymbol{\theta})) \tag{eq:distribution} \quad i = 1, 2, \quad j = 1, \ldots, n_i
+\end{align}</annotation></semantics></math></p>
+<p>The data model links observations
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>𝐘</mi><mo>∈</mo><msup><mi>ℝ</mi><msub><mi>n</mi><mn>1</mn></msub></msup></mrow><annotation encoding="application/x-tex">\mathbf{Y} \in \mathbb{R}^{n_1}</annotation></semantics></math>
+to the latent process
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>𝐖</mi><mo>∈</mo><msup><mi>ℝ</mi><msub><mi>n</mi><mn>2</mn></msub></msup></mrow><annotation encoding="application/x-tex">\mathbf{W} \in \mathbb{R}^{n_2}</annotation></semantics></math>
+through the observation matrix
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>𝐀</mi><mo>∈</mo><msup><mi>ℝ</mi><mrow><msub><mi>n</mi><mn>1</mn></msub><mo>×</mo><msub><mi>n</mi><mn>2</mn></msub></mrow></msup></mrow><annotation encoding="application/x-tex">\mathbf{A} \in \mathbb{R}^{n_1 \times n_2}</annotation></semantics></math>,
+adds fixed effects
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>𝐗</mi><mi>𝛃</mi></mrow><annotation encoding="application/x-tex">\mathbf{X}\boldsymbol{\beta}</annotation></semantics></math>,
+and allows non-Gaussian measurement noise
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>𝛜</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo stretchy="true" form="postfix">)</mo></mrow></msup><mo>∈</mo><msup><mi>ℝ</mi><msub><mi>n</mi><mn>1</mn></msub></msup></mrow><annotation encoding="application/x-tex">\boldsymbol{\epsilon}^{(1)} \in \mathbb{R}^{n_1}</annotation></semantics></math>.</p>
+<p>The process model specifies the core dependency structure of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>𝐖</mi><annotation encoding="application/x-tex">\mathbf{W}</annotation></semantics></math>
+via the operator matrix
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>𝐊</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>𝛉</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>∈</mo><msup><mi>ℝ</mi><mrow><msub><mi>n</mi><mn>2</mn></msub><mo>×</mo><msub><mi>n</mi><mn>2</mn></msub></mrow></msup></mrow><annotation encoding="application/x-tex">\mathbf{K}(\boldsymbol{\theta}) \in \mathbb{R}^{n_2 \times n_2}</annotation></semantics></math>,
+which is driven by potentially non-Gaussian noise
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>𝛜</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>2</mn><mo stretchy="true" form="postfix">)</mo></mrow></msup><mo>∈</mo><msup><mi>ℝ</mi><msub><mi>n</mi><mn>2</mn></msub></msup></mrow><annotation encoding="application/x-tex">\boldsymbol{\epsilon}^{(2)} \in \mathbb{R}^{n_2}</annotation></semantics></math>.
+This operator-based formulation unifies a wide spectrum of model
+structures, from simple random effects to complex spatio-temporal
+patterns.</p>
+<p>Here
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>⊙</mo><annotation encoding="application/x-tex">\odot</annotation></semantics></math>
+denotes element-wise multiplication. The noise model defines
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>𝛜</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo stretchy="true" form="postfix">)</mo></mrow></msup><annotation encoding="application/x-tex">\boldsymbol{\epsilon}^{(1)}</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>𝛜</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>2</mn><mo stretchy="true" form="postfix">)</mo></mrow></msup><annotation encoding="application/x-tex">\boldsymbol{\epsilon}^{(2)}</annotation></semantics></math>
+through normal mean-variance mixtures conditioned on the GIG mixing
+vectors
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>𝐕</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo stretchy="true" form="postfix">)</mo></mrow></msup><mo>∈</mo><msup><mi>ℝ</mi><msub><mi>n</mi><mn>1</mn></msub></msup></mrow><annotation encoding="application/x-tex">\mathbf{V}^{(1)} \in \mathbb{R}^{n_1}</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>𝐕</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>2</mn><mo stretchy="true" form="postfix">)</mo></mrow></msup><mo>∈</mo><msup><mi>ℝ</mi><msub><mi>n</mi><mn>2</mn></msub></msup></mrow><annotation encoding="application/x-tex">\mathbf{V}^{(2)} \in \mathbb{R}^{n_2}</annotation></semantics></math>.
+The parameter vector
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>𝛉</mi><annotation encoding="application/x-tex">\boldsymbol{\theta}</annotation></semantics></math>
+collects all model parameters.</p>
 <p>Here is a simple template for using the core function
 <code>ngme</code> to model the single response:</p>
 <pre><code><span><span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
-<span>  formula<span class="op">=</span><span class="va">Y</span> <span class="op">~</span> <span class="va">x1</span> <span class="op">+</span> <span class="va">x2</span> <span class="op">+</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="va">index</span>, model<span class="op">=</span><span class="st">"ar"</span>, noise<span class="op">=</span><span class="st">"nig"</span><span class="op">)</span>,</span>
+<span>  formula<span class="op">=</span><span class="va">Y</span> <span class="op">~</span> <span class="va">x1</span> <span class="op">+</span> <span class="va">x2</span> <span class="op">+</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="va">index</span>, model<span class="op">=</span><span class="fu"><a href="../reference/ar1.html">ar1</a></span><span class="op">(</span><span class="va">mesh_1d</span><span class="op">)</span>, noise<span class="op">=</span><span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  data<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Y<span class="op">=</span><span class="va">Y</span>, x1<span class="op">=</span><span class="va">x1</span>, x2<span class="op">=</span><span class="va">x2</span>, index<span class="op">=</span><span class="va">index</span><span class="op">)</span>,</span>
 <span>  noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre>
@@ -225,9 +191,9 @@ W with Gaussian or non-Gaussian noise, we will discuss this later.
 <code>noise</code> stands for the measurement noise distribution. In
 this case, the model will have a Gaussian likelihood.</p>
 </div>
-<div class="section level3">
-<h3 id="non-gaussian-model">3 Non-Gaussian Model<a class="anchor" aria-label="anchor" href="#non-gaussian-model"></a>
-</h3>
+<div class="section level4">
+<h4 id="non-gaussian-model">Non-Gaussian Model<a class="anchor" aria-label="anchor" href="#non-gaussian-model"></a>
+</h4>
 <p>Here we assume the non-Gaussian process is a type-G Lévy process,
 whose increments can be represented as location-scale mixtures:
 <math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>γ</mi><mo>+</mo><mi>μ</mi><mi>V</mi><mo>+</mo><mi>σ</mi><msqrt><mi>V</mi></msqrt><mi>Z</mi><mo>,</mo></mrow><annotation encoding="application/x-tex">\gamma + \mu V + \sigma \sqrt{V}Z,</annotation></semantics></math>
@@ -313,60 +279,42 @@ and
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>η</mi><msubsup><mi>h</mi><mi>i</mi><mn>2</mn></msubsup></mrow><annotation encoding="application/x-tex">\eta h_i^2</annotation></semantics></math>,
 where
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>h</mi><mi>i</mi></msub><mo>=</mo><msub><mo>∫</mo><mi>𝒟</mi></msub><msub><mi>φ</mi><mi>i</mi></msub><mrow><mo stretchy="true" form="prefix">(</mo><mi>𝐬</mi><mo stretchy="true" form="postfix">)</mo></mrow><mi>d</mi><mi>𝐬</mi><mi>.</mi></mrow><annotation encoding="application/x-tex">h_i = \int_{\mathcal{D}} \varphi_i(\mathbf{s}) d\mathbf{s}.</annotation></semantics></math></p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://inlabru-org.github.io/fmesher/" class="external-link">fmesher</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://davidbolin.github.io/ngme2/">ngme2</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; This is ngme2 of version 0.7.1</span></span>
-<span><span class="co">#&gt; - See our homepage: https://davidbolin.github.io/ngme2 for more details.</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Attaching package: 'ngme2'</span></span>
-<span><span class="co">#&gt; The following object is masked from 'package:stats':</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;     ar</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://had.co.nz/plyr" class="external-link">plyr</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Attaching package: 'dplyr'</span></span>
-<span><span class="co">#&gt; The following objects are masked from 'package:plyr':</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;     arrange, count, desc, failwith, id, mutate, rename, summarise,</span></span>
-<span><span class="co">#&gt;     summarize</span></span>
-<span><span class="co">#&gt; The following objects are masked from 'package:stats':</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;     filter, lag</span></span>
-<span><span class="co">#&gt; The following objects are masked from 'package:base':</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;     intersect, setdiff, setequal, union</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://sjmgarnier.github.io/viridis/" class="external-link">viridis</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; Loading required package: viridisLite</span></span></code></pre></div>
+<p>The following figure shows the density of NIG distribution with
+different parameters.</p>
 <p><img src="ngme2_files/figure-html/nig-1.png" width="672"></p>
 </div>
-<div class="section level3">
-<h3 id="parameter-estimation">4 Parameter Estimation<a class="anchor" aria-label="anchor" href="#parameter-estimation"></a>
-</h3>
+<div class="section level4">
+<h4 id="parameter-estimation">Parameter Estimation<a class="anchor" aria-label="anchor" href="#parameter-estimation"></a>
+</h4>
 <ol style="list-style-type: decimal">
 <li>Ngme2 does maximum likelihood estimation through preconditioned
 stochastic gradient descent.</li>
 <li>Multiple chains are run in parallel for better convergence
 checks.</li>
 </ol>
+<p>Optimizer options can be set through <code>control_opt</code>. The
+supported optimizers are listed in <code>ngme_optimizers</code>.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ngme_optimizers.html">ngme_optimizers</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "sgd"         "precond_sgd" "momentum"    "adagrad"     "rmsprop"    </span></span>
+<span><span class="co">#&gt; [6] "adam"        "adamW"       "bfgs"        "adaptive_gd"</span></span>
+<span><span class="co"># For details about optimizer options, see e.g. help(adam)</span></span></code></pre></div>
 <p>See <a href="pred_and_est.html">Model estimation and prediction</a>
 for more details.</p>
 </div>
 </div>
-<div class="section level2">
-<h2 id="ngme-model-structure">Ngme Model Structure<a class="anchor" aria-label="anchor" href="#ngme-model-structure"></a>
-</h2>
 <div class="section level3">
-<h3 id="specify-the-driven-noise">Specify the driven noise<a class="anchor" aria-label="anchor" href="#specify-the-driven-noise"></a>
+<h3 id="ngme-model-structure">Ngme Model Structure<a class="anchor" aria-label="anchor" href="#ngme-model-structure"></a>
 </h3>
+<div class="section level4">
+<h4 id="specify-the-driven-noise">Specify the driven noise<a class="anchor" aria-label="anchor" href="#specify-the-driven-noise"></a>
+</h4>
 <p>There are 2 types of common noise involved in the model, one is the
 innovation noise of a stochastic process, one is the measurement noise
 of the observations. They can be both specified by
 <code>noise_&lt;type&gt;</code> function.</p>
-<p>For now we support <strong>normal</strong>, <strong>NIG</strong>, and
-<strong>GAL</strong> noises.</p>
+<p>For now we support <strong>normal</strong>, <strong>skew_t</strong>,
+<strong>NIG</strong>, and <strong>GAL</strong> noises.</p>
 <p>The R class <code>ngme_noise</code> has the following interface:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://inlabru-org.github.io/fmesher/" class="external-link">fmesher</a></span><span class="op">)</span></span>
@@ -378,7 +326,7 @@ of the observations. They can be both specified by
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://sjmgarnier.github.io/viridis/" class="external-link">viridis</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://davidbolin.github.io/ngme2/">ngme2</a></span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span>sigma <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>              <span class="co"># normal noise</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span>sigma <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="co"># normal noise</span></span>
 <span><span class="co">#&gt; Noise type: NORMAL</span></span>
 <span><span class="co">#&gt; Noise parameters: </span></span>
 <span><span class="co">#&gt;     sigma = 1</span></span>
@@ -388,25 +336,51 @@ of the observations. They can be both specified by
 <span><span class="co">#&gt;     mu = 1</span></span>
 <span><span class="co">#&gt;     sigma = 2</span></span>
 <span><span class="co">#&gt;     nu = 1</span></span>
-<span><span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span>            <span class="co"># non-stationary nig noise</span></span>
-<span>  B_mu<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">)</span>, ncol<span class="op">=</span><span class="fl">2</span><span class="op">)</span>,</span>
+<span><span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span> <span class="co"># non-stationary nig noise</span></span>
+<span>  B_mu <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>,</span>
 <span>  theta_mu <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span>,</span>
-<span>  B_sigma<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">)</span>, ncol<span class="op">=</span><span class="fl">2</span><span class="op">)</span>,</span>
-<span>  theta_sigma <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">)</span>,</span>
-<span>  nu <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span>  B_sigma <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>,</span>
+<span>  theta_sigma <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span>,</span>
+<span>  nu <span class="op">=</span> <span class="fl">1</span></span>
+<span><span class="op">)</span></span>
 <span><span class="co">#&gt; Noise type: NIG</span></span>
 <span><span class="co">#&gt; Noise parameters: </span></span>
 <span><span class="co">#&gt;     theta_mu = 1, 2</span></span>
 <span><span class="co">#&gt;     theta_sigma = 1, 2</span></span>
+<span><span class="co">#&gt;     nu = 1</span></span>
+<span><span class="fu"><a href="../reference/ngme_noise.html">noise_skew_t</a></span><span class="op">(</span>mu <span class="op">=</span> <span class="fl">1</span>, sigma <span class="op">=</span> <span class="fl">2</span>, nu <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="co"># skew_t noise</span></span>
+<span><span class="co">#&gt; Noise type: SKEW_T</span></span>
+<span><span class="co">#&gt; Noise parameters: </span></span>
+<span><span class="co">#&gt;     mu = 1</span></span>
+<span><span class="co">#&gt;     sigma = 2</span></span>
 <span><span class="co">#&gt;     nu = 1</span></span></code></pre></div>
+<p>Notice that the 3rd example is defined for non-stationary NIG noise.
+In general, we can define non-stationary noise by the following: where
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>μ</mi><mo>=</mo><msub><mi>𝐁</mi><mi>μ</mi></msub><msub><mi>𝛉</mi><mi>μ</mi></msub></mrow><annotation encoding="application/x-tex">\mu = \mathbf{B}_{\mu} \mathbf{\theta}_{\mu}</annotation></semantics></math>,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>σ</mi><mo>=</mo><mo>exp</mo><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>𝐁</mi><mi>σ</mi></msub><msub><mi>𝛉</mi><mi>σ</mi></msub><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\sigma = \exp(\mathbf{B}_{\sigma} \mathbf{\theta}_{\sigma})</annotation></semantics></math>,
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>ν</mi><mo>=</mo><mo>exp</mo><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>𝐁</mi><mi>ν</mi></msub><msub><mi>𝛉</mi><mi>ν</mi></msub><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\nu = \exp(\mathbf{B}_{\nu} \mathbf{\theta}_{\nu})</annotation></semantics></math></p>
+<pre><code><span><span class="fu"><a href="../reference/ngme_noise.html">ngme_noise</a></span><span class="op">(</span></span>
+<span>  <span class="va">type</span>,           <span class="co"># the type of noise</span></span>
+<span>  <span class="va">theta_mu</span>,       <span class="co"># mu parameter</span></span>
+<span>  <span class="va">theta_sigma</span>,    <span class="co"># sigma parameter</span></span>
+<span>  <span class="va">theta_nu</span>,       <span class="co"># nu parameter</span></span>
+<span>  <span class="va">B_mu</span>,           <span class="co"># basis matrix for non-stationary mu</span></span>
+<span>  <span class="va">B_sigma</span>,        <span class="co"># basis matrix for non-stationary sigma</span></span>
+<span>  <span class="va">B_nu</span>            <span class="co"># basis matrix for non-stationary nu</span></span>
+<span><span class="op">)</span></span></code></pre>
+<p>It will construct the following noise structure:</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>−</mo><mi>𝛍</mi><mo>+</mo><mi>𝛍</mi><mi>V</mi><mo>+</mo><mi>𝛔</mi><msqrt><mi>V</mi></msqrt><mi>Z</mi></mrow><annotation encoding="application/x-tex">
+  - \mathbf{\mu} + \mathbf{\mu} V + \mathbf{\sigma} \sqrt{V} Z
+</annotation></semantics></math></p>
 <p>Additionally, <code>ngme2</code> provides a special combined noise
 model that merges both Gaussian and NIG noise components:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ngme_noise.html">noise_normal_nig</a></span><span class="op">(</span></span>
-<span>  mu <span class="op">=</span> <span class="fl">2</span>,             <span class="co"># NIG parameter mu</span></span>
-<span>  sigma_nig <span class="op">=</span> <span class="fl">3</span>,      <span class="co"># NIG noise scale</span></span>
-<span>  nu <span class="op">=</span> <span class="fl">1</span>,             <span class="co"># NIG shape parameter</span></span>
-<span>  sigma_normal <span class="op">=</span> <span class="fl">0.8</span>  <span class="co"># Normal noise standard deviation</span></span>
+<span>  mu <span class="op">=</span> <span class="fl">2</span>, <span class="co"># NIG parameter mu</span></span>
+<span>  sigma_nig <span class="op">=</span> <span class="fl">3</span>, <span class="co"># NIG noise scale</span></span>
+<span>  nu <span class="op">=</span> <span class="fl">1</span>, <span class="co"># NIG shape parameter</span></span>
+<span>  sigma_normal <span class="op">=</span> <span class="fl">0.8</span> <span class="co"># Normal noise standard deviation</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; Noise type: NORMAL_NIG</span></span>
 <span><span class="co">#&gt; Noise parameters: </span></span>
@@ -418,31 +392,10 @@ model that merges both Gaussian and NIG noise components:</p>
 processes where both normal variations and heavy-tailed events occur.
 For more details, see the dedicated vignette:
 <code><a href="../articles/normal-nig-noise.html">vignette("normal-nig-noise", package = "ngme2")</a></code>.</p>
-<p>The 3rd example is the non-stationary NIG noise, where <span class="math inline">$\mu = \bf B_{\mu} \bf \theta_{\mu}$</span>, and
-<span class="math inline">$\sigma = \exp(\bf B_{\sigma} \bf
-\theta_{\sigma})$</span>.</p>
-<pre><code><span><span class="fu"><a href="../reference/ngme_noise.html">ngme_noise</a></span><span class="op">(</span></span>
-<span>  <span class="va">type</span>,           <span class="co"># the type of noise</span></span>
-<span>  <span class="va">theta_mu</span>,       <span class="co"># mu parameter</span></span>
-<span>  <span class="va">theta_sigma</span>,    <span class="co"># sigma parameter</span></span>
-<span>  <span class="va">nu</span>,        <span class="co"># nu parameter</span></span>
-<span>  <span class="va">B_mu</span>,           <span class="co"># basis matrix for non-stationary mu</span></span>
-<span>  <span class="va">B_sigma</span>         <span class="co"># basis matrix for non-stationary sigma</span></span>
-<span><span class="op">)</span></span></code></pre>
-<p>It will construct the following noise structure:</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>−</mo><mi>𝛍</mi><mo>+</mo><mi>𝛍</mi><mi>V</mi><mo>+</mo><mi>𝛔</mi><msqrt><mi>V</mi></msqrt><mi>Z</mi></mrow><annotation encoding="application/x-tex">
-  - \mathbf{\mu} + \mathbf{\mu} V + \mathbf{\sigma} \sqrt{V} Z
-</annotation></semantics></math></p>
-<p>where <span class="math inline">$\mu = \bf B_{\mu} \bf
-\theta_{\mu}$</span>, and <span class="math inline">$\sigma = \exp(\bf
-B_{\sigma} \bf \theta_{\sigma})$</span>. In this case, we can recover
-gaussian noise by setting <strong>type=“normal</strong> and ignoring
-<strong>theta_mu</strong> and <strong>nu</strong>. Or we can simply use
-helper function <code>noise_normal(sd=1)</code>.</p>
 </div>
-<div class="section level3">
-<h3 id="specify-stochastic-process-with-f-function">Specify stochastic process with <code>f</code> function<a class="anchor" aria-label="anchor" href="#specify-stochastic-process-with-f-function"></a>
-</h3>
+<div class="section level4">
+<h4 id="specify-stochastic-process-with-f-function">Specify stochastic process with <code>f</code> function<a class="anchor" aria-label="anchor" href="#specify-stochastic-process-with-f-function"></a>
+</h4>
 <p>The middle layer is the stochastic process, in R interface, it is
 represented as a <code>f</code> function. The process can be specified
 by different noise structure. See <code>?ngme_model_types()</code> for
@@ -450,7 +403,7 @@ more details.</p>
 <p>Some examples of using <code>f</code> function to specify
 <code>ngme_model</code>:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">ngme2</span><span class="fu">::</span><span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span>, model <span class="op">=</span> <span class="st">"ar1"</span>, noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span>, model <span class="op">=</span> <span class="fu"><a href="../reference/ar1.html">ar1</a></span><span class="op">(</span><span class="op">)</span>, noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Model type: AR(1)</span></span>
 <span><span class="co">#&gt;     rho = 0</span></span>
 <span><span class="co">#&gt; Noise type: NIG</span></span>
@@ -461,9 +414,9 @@ more details.</p>
 <p>One useful model would be the SPDE model with Gaussian or
 non-Gaussian noise, see the vignette for details.</p>
 </div>
-<div class="section level3">
-<h3 id="specifying-latent-models-with-formula-in-ngme">Specifying latent models with formula in <code>ngme</code><a class="anchor" aria-label="anchor" href="#specifying-latent-models-with-formula-in-ngme"></a>
-</h3>
+<div class="section level4">
+<h4 id="specifying-latent-models-with-formula-in-ngme">Specifying latent models with formula in <code>ngme</code><a class="anchor" aria-label="anchor" href="#specifying-latent-models-with-formula-in-ngme"></a>
+</h4>
 <p>The latent model can be specified additively as a
 <strong>formula</strong> argument in <code>ngme</code> function together
 with <strong>fixed effects</strong>.</p>
@@ -472,15 +425,14 @@ model using <code>f</code> within the formula.</p>
 <p>For example, the following formula</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">formula</span> <span class="op">&lt;-</span> <span class="va">Y</span> <span class="op">~</span> <span class="va">x1</span> <span class="op">+</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
-<span>    <span class="va">x2</span>,</span>
-<span>    model <span class="op">=</span> <span class="st">"ar1"</span>,</span>
-<span>    noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>    theta_K <span class="op">=</span> <span class="fl">0.5</span></span>
-<span>  <span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>,</span>
-<span>    model <span class="op">=</span> <span class="st">"rw1"</span>,</span>
-<span>    circular <span class="op">=</span> <span class="cn">T</span>,</span>
-<span>    noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span></span>
-<span>  <span class="op">)</span></span></code></pre></div>
+<span>  <span class="va">x2</span>,</span>
+<span>  model <span class="op">=</span> <span class="fu"><a href="../reference/ar1.html">ar1</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  theta_K <span class="op">=</span> <span class="fl">0.5</span></span>
+<span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="va">x3</span>,</span>
+<span>  model <span class="op">=</span> <span class="fu"><a href="../reference/rw1.html">rw1</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 <p>corresponds to the model</p>
 <p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Y</mi><mo>=</mo><msub><mi>β</mi><mn>0</mn></msub><mo>+</mo><msub><mi>β</mi><mn>1</mn></msub><msub><mi>x</mi><mn>1</mn></msub><mo>+</mo><msub><mi>W</mi><mn>1</mn></msub><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>x</mi><mn>2</mn></msub><mo stretchy="true" form="postfix">)</mo></mrow><mo>+</mo><msub><mi>W</mi><mn>2</mn></msub><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>x</mi><mn>3</mn></msub><mo stretchy="true" form="postfix">)</mo></mrow><mo>+</mo><mi>ϵ</mi><mo>,</mo></mrow><annotation encoding="application/x-tex">
 Y = \beta_0 + \beta_1 x_1 + W_1(x_2) + W_2(x_3) + \epsilon,
@@ -501,7 +453,7 @@ function:</p>
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
 <span>  formula <span class="op">=</span> <span class="va">formula</span>,</span>
 <span>  family <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span>sigma <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span>,</span>
-<span>  data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Y <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, x1 <span class="op">=</span> <span class="fl">2</span><span class="op">:</span><span class="fl">6</span>, x2 <span class="op">=</span> <span class="fl">3</span><span class="op">:</span><span class="fl">7</span><span class="op">)</span>,</span>
+<span>  data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Y <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, x1 <span class="op">=</span> <span class="fl">2</span><span class="op">:</span><span class="fl">6</span>, x2 <span class="op">=</span> <span class="fl">3</span><span class="op">:</span><span class="fl">7</span>, x3 <span class="op">=</span> <span class="fl">4</span><span class="op">:</span><span class="fl">8</span><span class="op">)</span>,</span>
 <span>  control_opt <span class="op">=</span> <span class="fu"><a href="../reference/control_opt.html">control_opt</a></span><span class="op">(</span></span>
 <span>    estimation <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span>  <span class="op">)</span></span>
@@ -543,9 +495,9 @@ function:</p>
 the model.</p>
 </div>
 </div>
-<div class="section level2">
-<h2 id="a-simple-example---ar1-process-with-nig-noise">A simple example - AR1 process with nig noise<a class="anchor" aria-label="anchor" href="#a-simple-example---ar1-process-with-nig-noise"></a>
-</h2>
+<div class="section level3">
+<h3 id="a-simple-example---ar1-process-with-nig-noise">A simple example - AR1 process with nig noise<a class="anchor" aria-label="anchor" href="#a-simple-example---ar1-process-with-nig-noise"></a>
+</h3>
 <p>Now let’s see an example of an AR1 process with nig noise. The
 process is defined as</p>
 <p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>W</mi><mi>i</mi></msub><mo>=</mo><mi>ρ</mi><msub><mi>W</mi><mrow><mi>i</mi><mo>−</mo><mn>1</mn></mrow></msub><mo>+</mo><msub><mi>ϵ</mi><mi>i</mi></msub><mo>,</mo></mrow><annotation encoding="application/x-tex">
@@ -553,7 +505,7 @@ W_i = \rho W_{i-1} + \epsilon_i,
 </annotation></semantics></math> Here,
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>ϵ</mi><mn>1</mn></msub><mo>,</mo><mi>.</mi><mi>.</mi><mo>,</mo><msub><mi>ϵ</mi><mi>n</mi></msub></mrow><annotation encoding="application/x-tex">\epsilon_1, ..,\epsilon_n</annotation></semantics></math>
 is the iid <strong>NIG</strong> noise. And, it is easy to verify that
-<span class="math display">$$ K{\bf W} = \boldsymbol\epsilon,$$</span>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>K</mi><mi>𝐖</mi><mo>=</mo><mi>𝛜</mi></mrow><annotation encoding="application/x-tex">K\mathbf{W} = \boldsymbol\epsilon</annotation></semantics></math>,
 where
 <math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>K</mi><mo>=</mo><mrow><mo stretchy="true" form="prefix">[</mo><mtable><mtr><mtd columnalign="center" style="text-align: center"><msqrt><mrow><mn>1</mn><mo>−</mo><msup><mi>ρ</mi><mn>2</mn></msup></mrow></msqrt></mtd></mtr><mtr><mtd columnalign="center" style="text-align: center"><mo>−</mo><mi>ρ</mi></mtd><mtd columnalign="center" style="text-align: center"><mn>1</mn></mtd></mtr><mtr><mtd columnalign="center" style="text-align: center"></mtd><mtd columnalign="center" style="text-align: center"><mo>⋱</mo></mtd><mtd columnalign="center" style="text-align: center"><mo>⋱</mo></mtd></mtr><mtr><mtd columnalign="center" style="text-align: center"></mtd><mtd columnalign="center" style="text-align: center"></mtd><mtd columnalign="center" style="text-align: center"><mo>−</mo><mi>ρ</mi></mtd><mtd columnalign="center" style="text-align: center"><mn>1</mn></mtd></mtr></mtable><mo stretchy="true" form="postfix">]</mo></mrow></mrow><annotation encoding="application/x-tex">
 K =
@@ -567,8 +519,9 @@ K =
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">n_obs</span> <span class="op">&lt;-</span> <span class="fl">500</span></span>
 <span><span class="va">sigma_eps</span> <span class="op">&lt;-</span> <span class="fl">0.5</span></span>
-<span><span class="va">alpha</span> <span class="op">&lt;-</span> <span class="fl">0.5</span></span>
-<span><span class="va">mu</span> <span class="op">=</span> <span class="fl">2</span>; <span class="va">delta</span> <span class="op">=</span> <span class="op">-</span><span class="va">mu</span></span>
+<span><span class="va">rho</span> <span class="op">&lt;-</span> <span class="fl">0.5</span></span>
+<span><span class="va">mu</span> <span class="op">&lt;-</span> <span class="fl">2</span></span>
+<span><span class="va">delta</span> <span class="op">&lt;-</span> <span class="op">-</span><span class="va">mu</span></span>
 <span><span class="va">sigma</span> <span class="op">&lt;-</span> <span class="fl">3</span></span>
 <span><span class="va">nu</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
 <span></span>
@@ -576,77 +529,75 @@ K =
 <span><span class="va">trueV</span> <span class="op">&lt;-</span> <span class="fu">ngme2</span><span class="fu">::</span><span class="fu"><a href="../reference/ig.html">rig</a></span><span class="op">(</span><span class="va">n_obs</span>, <span class="va">nu</span>, <span class="va">nu</span>, seed <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Then generate the nig noise</span></span>
-<span><span class="va">mynoise</span> <span class="op">&lt;-</span> <span class="va">delta</span> <span class="op">+</span> <span class="va">mu</span><span class="op">*</span><span class="va">trueV</span> <span class="op">+</span> <span class="va">sigma</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="va">trueV</span><span class="op">)</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_obs</span><span class="op">)</span></span>
-<span><span class="va">trueW</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/funprog.html" class="external-link">Reduce</a></span><span class="op">(</span><span class="kw">function</span><span class="op">(</span><span class="va">x</span>,<span class="va">y</span><span class="op">)</span><span class="op">{</span><span class="va">y</span> <span class="op">+</span> <span class="va">alpha</span><span class="op">*</span><span class="va">x</span><span class="op">}</span>, <span class="va">mynoise</span>, accumulate <span class="op">=</span> <span class="cn">T</span><span class="op">)</span></span>
-<span><span class="va">Y</span> <span class="op">=</span> <span class="va">trueW</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_obs</span>, mean<span class="op">=</span><span class="fl">0</span>, sd<span class="op">=</span><span class="va">sigma_eps</span><span class="op">)</span></span>
+<span><span class="va">mynoise</span> <span class="op">&lt;-</span> <span class="va">delta</span> <span class="op">+</span> <span class="va">mu</span> <span class="op">*</span> <span class="va">trueV</span> <span class="op">+</span> <span class="va">sigma</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="va">trueV</span><span class="op">)</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_obs</span><span class="op">)</span></span>
+<span><span class="va">trueW</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/funprog.html" class="external-link">Reduce</a></span><span class="op">(</span><span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">y</span> <span class="op">+</span> <span class="va">rho</span> <span class="op">*</span> <span class="va">x</span></span>
+<span><span class="op">}</span>, <span class="va">mynoise</span>, accumulate <span class="op">=</span> <span class="cn">T</span><span class="op">)</span></span>
+<span><span class="va">Y</span> <span class="op">&lt;-</span> <span class="va">trueW</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_obs</span>, mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="va">sigma_eps</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Add some fixed effects</span></span>
-<span><span class="va">x1</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n_obs</span><span class="op">)</span></span>
-<span><span class="va">x2</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Exponential.html" class="external-link">rexp</a></span><span class="op">(</span><span class="va">n_obs</span><span class="op">)</span></span>
+<span><span class="va">x1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n_obs</span><span class="op">)</span></span>
+<span><span class="va">x2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Exponential.html" class="external-link">rexp</a></span><span class="op">(</span><span class="va">n_obs</span><span class="op">)</span></span>
 <span><span class="va">beta</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">3</span>, <span class="op">-</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="va">X</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/model.matrix.html" class="external-link">model.matrix</a></span><span class="op">(</span><span class="va">Y</span> <span class="op">~</span> <span class="va">x1</span> <span class="op">+</span> <span class="va">x2</span><span class="op">)</span><span class="op">)</span>  <span class="co"># design matrix</span></span>
-<span><span class="va">Y</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">Y</span> <span class="op">+</span> <span class="va">X</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="va">beta</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">X</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/model.matrix.html" class="external-link">model.matrix</a></span><span class="op">(</span><span class="va">Y</span> <span class="op">~</span> <span class="va">x1</span> <span class="op">+</span> <span class="va">x2</span><span class="op">)</span><span class="op">)</span> <span class="co"># design matrix</span></span>
+<span><span class="va">Y</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">Y</span> <span class="op">+</span> <span class="va">X</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="va">beta</span><span class="op">)</span></span></code></pre></div>
 <p>Now let’s fit the model using <code>ngme</code>. Here we can use
 <code>control_opt</code> to modify the control variables for the
 <code>ngme</code>. See <code><a href="../reference/control_opt.html">?control_opt</a></code> for more optioins.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># # Fit the model with the AR1 model</span></span>
-<span><span class="va">ngme_out</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
+<span><span class="va">fit_nig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
 <span>  <span class="va">Y</span> <span class="op">~</span> <span class="va">x1</span> <span class="op">+</span> <span class="va">x2</span> <span class="op">+</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
 <span>    <span class="fl">1</span><span class="op">:</span><span class="va">n_obs</span>,</span>
 <span>    name <span class="op">=</span> <span class="st">"my_ar"</span>,</span>
-<span>    model <span class="op">=</span> <span class="st">"ar1"</span>,</span>
+<span>    model <span class="op">=</span> <span class="fu"><a href="../reference/ar1.html">ar1</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>    noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>  <span class="op">)</span>,</span>
-<span>  data<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x1<span class="op">=</span><span class="va">x1</span>, x2<span class="op">=</span><span class="va">x2</span>, Y<span class="op">=</span><span class="va">Y</span><span class="op">)</span>,</span>
+<span>  data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x1 <span class="op">=</span> <span class="va">x1</span>, x2 <span class="op">=</span> <span class="va">x2</span>, Y <span class="op">=</span> <span class="va">Y</span><span class="op">)</span>,</span>
 <span>  control_opt <span class="op">=</span> <span class="fu"><a href="../reference/control_opt.html">control_opt</a></span><span class="op">(</span></span>
 <span>    burnin <span class="op">=</span> <span class="fl">100</span>,</span>
-<span>    iterations <span class="op">=</span> <span class="fl">1000</span>,</span>
-<span>    std_lim <span class="op">=</span> <span class="fl">0.4</span>,</span>
+<span>    iterations <span class="op">=</span> <span class="fl">3000</span>,</span>
 <span>    n_parallel_chain <span class="op">=</span> <span class="fl">4</span>,</span>
-<span>    stop_points <span class="op">=</span> <span class="fl">10</span>,</span>
-<span>    print_check_info <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>    seed <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>    sampling_strategy <span class="op">=</span> <span class="st">"ws"</span></span>
-<span>    <span class="co"># verbose = T</span></span>
+<span>    seed <span class="op">=</span> <span class="fl">3</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; Starting estimation... </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Starting posterior sampling... </span></span>
 <span><span class="co">#&gt; Posterior sampling done! </span></span>
+<span><span class="co">#&gt; Average standard deviation of the posterior W:  4.334425 </span></span>
 <span><span class="co">#&gt; Note:</span></span>
 <span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
 <span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span></code></pre></div>
 <p>Next we can read the result directly from the object.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ngme_out</span></span>
+<code class="sourceCode R"><span><span class="va">fit_nig</span></span>
 <span><span class="co">#&gt; *** Ngme object ***</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt; (Intercept)          x1          x2 </span></span>
-<span><span class="co">#&gt;       -2.89       -1.33        2.02 </span></span>
+<span><span class="co">#&gt;       -2.84       -1.36        2.02 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $my_ar</span></span>
 <span><span class="co">#&gt;   Model type: AR(1)</span></span>
-<span><span class="co">#&gt;       rho = 0.565</span></span>
+<span><span class="co">#&gt;       rho = 0.569</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = 1.95</span></span>
-<span><span class="co">#&gt;       sigma = 2.99</span></span>
-<span><span class="co">#&gt;       nu = 0.929</span></span>
+<span><span class="co">#&gt;       mu = 1.9</span></span>
+<span><span class="co">#&gt;       sigma = 2.98</span></span>
+<span><span class="co">#&gt;       nu = 0.9</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.503</span></span></code></pre></div>
+<span><span class="co">#&gt;       sigma = 0.518</span></span></code></pre></div>
 <p>As we can see, the model converges in 350 iterations. The estimation
 results are close to the real parameter.</p>
 <p>We can also use the <code>traceplot</code> function to see the
 estimation traceplot.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">ngme_out</span>, <span class="st">"my_ar"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">fit_nig</span>, <span class="st">"my_ar"</span>, hline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">rho</span>, <span class="va">mu</span>, <span class="va">sigma</span>, <span class="va">nu</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <div class="figure" style="text-align: center">
 <img src="ngme2_files/figure-html/traceplot-1.png" alt="Parameters of the AR1 model" width="576"><p class="caption">
 Parameters of the AR1 model
@@ -654,29 +605,29 @@ Parameters of the AR1 model
 </div>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $rho</span></span>
-<span><span class="co">#&gt; [1] 0.5647597</span></span>
+<span><span class="co">#&gt; [1] 0.5694271</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $mu</span></span>
-<span><span class="co">#&gt; [1] 1.951176</span></span>
+<span><span class="co">#&gt; [1] 1.900084</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 2.989668</span></span>
+<span><span class="co">#&gt; [1] 2.981219</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nu</span></span>
-<span><span class="co">#&gt; [1] 0.9351831</span></span></code></pre>
+<span><span class="co">#&gt; [1] 0.9186725</span></span></code></pre>
 <p>We can also do a density comparison with the estimated noise and the
-true NIG noise:</p>
+true NIG noise, we can see they are very close:</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># ngme_out$replicates[[1]] means for the 1st replicate</span></span>
+<code class="sourceCode R"><span><span class="co"># fit_nig$replicates[[1]] means for the 1st replicate</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span></span>
-<span>  <span class="va">ngme_out</span><span class="op">$</span><span class="va">replicates</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">models</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">noise</span>,</span>
+<span>  <span class="va">fit_nig</span><span class="op">$</span><span class="va">replicates</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">models</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">noise</span>,</span>
 <span>  <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span>mu <span class="op">=</span> <span class="va">mu</span>, sigma <span class="op">=</span> <span class="va">sigma</span>, nu <span class="op">=</span> <span class="va">nu</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p><img src="ngme2_files/figure-html/compare-density-1.png" width="700"></p>
 </div>
-<div class="section level2">
-<h2 id="paraná-dataset">Paraná dataset<a class="anchor" aria-label="anchor" href="#paran%C3%A1-dataset"></a>
-</h2>
+<div class="section level3">
+<h3 id="paraná-dataset">Paraná dataset<a class="anchor" aria-label="anchor" href="#paran%C3%A1-dataset"></a>
+</h3>
 <p>The rainfall data from Paraná (Brazil) is collected by the National
 Water Agency in Brazil (Agencia Nacional de Águas, ANA, in Portuguese).
 ANA collects data from many locations over Brazil, and all these data
@@ -686,10 +637,11 @@ estimation.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">INLA</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Loading required package: Matrix</span></span>
-<span><span class="co">#&gt; This is INLA_24.12.11 built 2024-12-11 20:07:43 UTC.</span></span>
+<span><span class="co">#&gt; This is INLA_25.04.16 built 2025-04-16 08:17:54 UTC.</span></span>
 <span><span class="co">#&gt;  - See www.r-inla.org/contact-us for how to get help.</span></span>
 <span><span class="co">#&gt;  - List available models/likelihoods/etc with inla.list.models()</span></span>
 <span><span class="co">#&gt;  - Use inla.doc(&lt;NAME&gt;) to access documentation</span></span>
+<span><span class="co">#&gt;  - Consider upgrading R-INLA to testing[25.11.22] or stable[25.10.19] (require R-4.5)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Attaching package: 'INLA'</span></span>
 <span><span class="co">#&gt; The following object is masked from 'package:ngme2':</span></span>
@@ -720,182 +672,87 @@ Mean of the rainfall in Octobor 2012 in Paraná
 </div>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Define the control options</span></span>
-<span><span class="va">control</span> <span class="op">=</span> <span class="fu"><a href="../reference/control_opt.html">control_opt</a></span><span class="op">(</span></span>
-<span>  iterations <span class="op">=</span> <span class="fl">5000</span>,</span>
+<span><span class="va">control</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/control_opt.html">control_opt</a></span><span class="op">(</span></span>
+<span>  iterations <span class="op">=</span> <span class="fl">2000</span>,</span>
 <span>  n_slope_check <span class="op">=</span> <span class="fl">4</span>,</span>
 <span>  stop_points <span class="op">=</span> <span class="fl">10</span>,</span>
-<span>  std_lim <span class="op">=</span> <span class="fl">0.1</span>,</span>
 <span>  n_parallel_chain <span class="op">=</span> <span class="fl">4</span>,</span>
+<span>  optimizer <span class="op">=</span> <span class="fu"><a href="../reference/precond_sgd.html">precond_sgd</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  print_check_info <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  seed <span class="op">=</span> <span class="fl">16</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">m_gauss_nig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
+<span><span class="va">parana_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
 <span>  formula <span class="op">=</span> <span class="va">Y</span> <span class="op">~</span> <span class="fl">1</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="va">seaDist</span>, name<span class="op">=</span><span class="st">"rw1"</span>, model <span class="op">=</span> <span class="st">"rw1"</span>, noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="va">coords</span>, model <span class="op">=</span> <span class="st">"matern"</span>, mesh <span class="op">=</span> <span class="va">prmesh</span>, name<span class="op">=</span><span class="st">"spde"</span>, noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="va">coords</span>,</span>
+<span>      model <span class="op">=</span> <span class="fu"><a href="../reference/matern.html">matern</a></span><span class="op">(</span></span>
+<span>        mesh <span class="op">=</span> <span class="va">prmesh</span>,</span>
+<span>      <span class="op">)</span>,</span>
+<span>      noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>      name <span class="op">=</span> <span class="st">"spde"</span></span>
+<span>    <span class="op">)</span>,</span>
 <span>  data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Y <span class="op">=</span> <span class="va">Y</span><span class="op">)</span>,</span>
-<span>  family <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  family <span class="op">=</span> <span class="st">"normal"</span>,</span>
 <span>  control_opt <span class="op">=</span> <span class="va">control</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; Starting estimation... </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Starting posterior sampling... </span></span>
 <span><span class="co">#&gt; Posterior sampling done! </span></span>
-<span><span class="co">#&gt; Note:</span></span>
-<span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
-<span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
-<span><span class="va">m_gauss_nig</span></span>
-<span><span class="co">#&gt; *** Ngme object ***</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Fixed effects: </span></span>
-<span><span class="co">#&gt; (Intercept) </span></span>
-<span><span class="co">#&gt;        8.77 </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Models: </span></span>
-<span><span class="co">#&gt; $rw1</span></span>
-<span><span class="co">#&gt;   Model type: Random walk (order 1)</span></span>
-<span><span class="co">#&gt;       No parameter.</span></span>
-<span><span class="co">#&gt;   Noise type: NORMAL</span></span>
-<span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.155</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $spde</span></span>
-<span><span class="co">#&gt;   Model type: Matern</span></span>
-<span><span class="co">#&gt;       kappa = 31.4</span></span>
-<span><span class="co">#&gt;   Noise type: NORMAL</span></span>
-<span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 606</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Measurement noise: </span></span>
-<span><span class="co">#&gt;   Noise type: NIG</span></span>
-<span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = 0.434</span></span>
-<span><span class="co">#&gt;       sigma = 1.96</span></span>
-<span><span class="co">#&gt;       nu = 1.53</span></span>
-<span></span>
-<span><span class="co"># traceplots</span></span>
-<span><span class="co">## fixed effects and measurement error</span></span>
-<span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">m_gauss_nig</span><span class="op">)</span></span></code></pre></div>
-<p><img src="ngme2_files/figure-html/fit-parana-1.png" width="700"></p>
-<pre><code><span><span class="co">#&gt; Last estimates:</span></span>
-<span><span class="co">#&gt; $mu</span></span>
-<span><span class="co">#&gt; [1] 0.4405591</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 1.95535</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $nu</span></span>
-<span><span class="co">#&gt; [1] 1.541247</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $`fixed effect 1`</span></span>
-<span><span class="co">#&gt; [1] 8.771377</span></span>
-<span></span>
-<span><span class="co">## spde model</span></span>
-<span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">m_gauss_nig</span>, <span class="st">"spde"</span><span class="op">)</span></span></code></pre>
-<p><img src="ngme2_files/figure-html/fit-parana-2.png" width="700"></p>
-<pre><code><span><span class="co">#&gt; Last estimates:</span></span>
-<span><span class="co">#&gt; $kappa</span></span>
-<span><span class="co">#&gt; [1] 31.3967</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 605.8377</span></span></code></pre>
-<p>Parameter estimation results:</p>
-<pre><code><span><span class="co">#&gt; Warning in data.frame(intercept = format(m_gauss_nig$replicates[[1]]$feff, :</span></span>
-<span><span class="co">#&gt; row names were found from a short variable and have been discarded</span></span></code></pre>
-<table style="width:100%;" class="table">
-<caption>Estimations for the model</caption>
-<colgroup>
-<col width="14%">
-<col width="13%">
-<col width="17%">
-<col width="13%">
-<col width="13%">
-<col width="13%">
-<col width="13%">
-</colgroup>
-<thead><tr class="header">
-<th align="left">intercept</th>
-<th align="left">noise_mu</th>
-<th align="left">noise_sigma</th>
-<th align="left">noise_nu</th>
-<th align="left">rw_sigma</th>
-<th align="left">ma_kappa</th>
-<th align="left">ma_sigma</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">8.77</td>
-<td align="left">0.434</td>
-<td align="left">1.96</td>
-<td align="left">1.53</td>
-<td align="left">-10.00</td>
-<td align="left">31.4</td>
-<td align="left">606</td>
-</tr>
-<tr class="even">
-<td align="left">8.77</td>
-<td align="left">0.434</td>
-<td align="left">1.96</td>
-<td align="left">1.53</td>
-<td align="left">-1.87</td>
-<td align="left">31.4</td>
-<td align="left">606</td>
-</tr>
-</tbody>
-</table>
-<p>Similarily, we can fit some different models:</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">m_gauss_gauss</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
-<span>  formula <span class="op">=</span> <span class="va">Y</span> <span class="op">~</span> <span class="fl">1</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="va">seaDist</span>, name<span class="op">=</span><span class="st">"rw1"</span>, model <span class="op">=</span> <span class="st">"rw1"</span>, noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="va">coords</span>, model <span class="op">=</span> <span class="st">"matern"</span>, mesh <span class="op">=</span> <span class="va">prmesh</span>, name<span class="op">=</span><span class="st">"spde"</span>, noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Y <span class="op">=</span> <span class="va">Y</span><span class="op">)</span>,</span>
-<span>  family <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  control_opt <span class="op">=</span> <span class="va">control</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co">#&gt; Starting estimation... </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Starting posterior sampling... </span></span>
-<span><span class="co">#&gt; Posterior sampling done! </span></span>
-<span><span class="co">#&gt; Note:</span></span>
-<span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
-<span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
-<span></span>
-<span><span class="va">m_nig_gauss</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
-<span>  formula <span class="op">=</span> <span class="va">Y</span> <span class="op">~</span> <span class="fl">1</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="va">seaDist</span>, name<span class="op">=</span><span class="st">"rw1"</span>, model <span class="op">=</span> <span class="st">"rw1"</span>, noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="va">coords</span>, model <span class="op">=</span> <span class="st">"matern"</span>, mesh <span class="op">=</span> <span class="va">prmesh</span>, name<span class="op">=</span><span class="st">"spde"</span>, noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Y <span class="op">=</span> <span class="va">Y</span><span class="op">)</span>,</span>
-<span>  family <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  control_opt <span class="op">=</span> <span class="va">control</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co">#&gt; Starting estimation... </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Starting posterior sampling... </span></span>
-<span><span class="co">#&gt; Posterior sampling done! </span></span>
-<span><span class="co">#&gt; Note:</span></span>
-<span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
-<span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
-<span></span>
-<span><span class="va">m_nig_nig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
-<span>  formula <span class="op">=</span> <span class="va">Y</span> <span class="op">~</span> <span class="fl">1</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="va">seaDist</span>, name<span class="op">=</span><span class="st">"rw1"</span>, model <span class="op">=</span> <span class="st">"rw1"</span>, noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="va">coords</span>, model <span class="op">=</span> <span class="st">"matern"</span>, mesh <span class="op">=</span> <span class="va">prmesh</span>, name<span class="op">=</span><span class="st">"spde"</span>, noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Y <span class="op">=</span> <span class="va">Y</span><span class="op">)</span>,</span>
-<span>  family <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  control_opt <span class="op">=</span> <span class="va">control</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co">#&gt; Starting estimation... </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Starting posterior sampling... </span></span>
-<span><span class="co">#&gt; Posterior sampling done! </span></span>
+<span><span class="co">#&gt; Average standard deviation of the posterior W:  2.90812 </span></span>
 <span><span class="co">#&gt; Note:</span></span>
 <span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
 <span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span></code></pre></div>
-<div class="section level3">
-<h3 id="prediction">Prediction<a class="anchor" aria-label="anchor" href="#prediction"></a>
-</h3>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># traceplots</span></span>
+<span><span class="co">## fixed effects and measurement error</span></span>
+<span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">parana_fit</span><span class="op">)</span></span></code></pre></div>
+<p><img src="ngme2_files/figure-html/unnamed-chunk-3-1.png" width="700"></p>
+<pre><code><span><span class="co">#&gt; Last estimates:</span></span>
+<span><span class="co">#&gt; $sigma</span></span>
+<span><span class="co">#&gt; [1] 2.041463</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $`fixed effect 1`</span></span>
+<span><span class="co">#&gt; [1] 8.297845</span></span>
+<span></span>
+<span><span class="co">## spde model</span></span>
+<span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">parana_fit</span>, <span class="st">"spde"</span><span class="op">)</span></span></code></pre>
+<p><img src="ngme2_files/figure-html/unnamed-chunk-3-2.png" width="700"></p>
+<pre><code><span><span class="co">#&gt; Last estimates:</span></span>
+<span><span class="co">#&gt; $kappa</span></span>
+<span><span class="co">#&gt; [1] 4.151433</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $mu</span></span>
+<span><span class="co">#&gt; [1] 18.65193</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $sigma</span></span>
+<span><span class="co">#&gt; [1] 29.36339</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $nu</span></span>
+<span><span class="co">#&gt; [1] 1.110852</span></span></code></pre>
+<p>Parameter estimation results:</p>
+<pre><code><span><span class="co">#&gt; $fixed_effects</span></span>
+<span><span class="co">#&gt; (Intercept) </span></span>
+<span><span class="co">#&gt;    8.297917 </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $sigma</span></span>
+<span><span class="co">#&gt; [1] 2.042622</span></span>
+<span><span class="co">#&gt; $kappa</span></span>
+<span><span class="co">#&gt; [1] 4.120075</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $mu</span></span>
+<span><span class="co">#&gt; [1] 18.75537</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $sigma</span></span>
+<span><span class="co">#&gt; [1] 28.90908</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $nu</span></span>
+<span><span class="co">#&gt; [1] 1.119443</span></span></code></pre>
+<div class="section level4">
+<h4 id="prediction">Prediction<a class="anchor" aria-label="anchor" href="#prediction"></a>
+</h4>
+<p>Now we can use the fitted model to do prediction by generating the
+prediction grid and giving the predict location.</p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">nxy</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">150</span>, <span class="fl">100</span><span class="op">)</span></span>
 <span><span class="va">projgrid</span> <span class="op">&lt;-</span> <span class="fu">rSPDE</span><span class="fu">::</span><span class="fu"><a href="https://davidbolin.github.io/rSPDE/reference/rspde.mesh.project.html" class="external-link">rspde.mesh.projector</a></span><span class="op">(</span><span class="va">prmesh</span>,</span>
@@ -903,7 +760,7 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <span>  ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="va">PRborder</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span><span class="op">)</span>, dims <span class="op">=</span> <span class="va">nxy</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">xy.in</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rsbivand.github.io/splancs/reference/inout.html" class="external-link">inout</a></span><span class="op">(</span><span class="va">projgrid</span><span class="op">$</span><span class="va">lattice</span><span class="op">$</span><span class="va">loc</span>, <span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">PRborder</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, <span class="va">PRborder</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">xy.in</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rsbivand.github.io/splancs/reference/inout.html" class="external-link">inout</a></span><span class="op">(</span><span class="va">projgrid</span><span class="op">$</span><span class="va">lattice</span><span class="op">$</span><span class="va">loc</span>, <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">PRborder</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, <span class="va">PRborder</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">coord.prd</span> <span class="op">&lt;-</span> <span class="va">projgrid</span><span class="op">$</span><span class="va">lattice</span><span class="op">$</span><span class="va">loc</span><span class="op">[</span><span class="va">xy.in</span>, <span class="op">]</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">coord.prd</span>, type <span class="op">=</span> <span class="st">"p"</span>, cex <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span></span>
@@ -912,13 +769,8 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <p><img src="ngme2_files/figure-html/predict-1.png" width="700"></p>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
-<span><span class="va">seaDist.prd</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="fu"><a href="https://edzer.github.io/sp/reference/spDistsN1.html" class="external-link">spDists</a></span><span class="op">(</span><span class="va">coord.prd</span>,</span>
-<span>  <span class="va">PRborder</span><span class="op">[</span><span class="fl">1034</span><span class="op">:</span><span class="fl">1078</span>, <span class="op">]</span>,</span>
-<span>  longlat <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span>, <span class="fl">1</span>, <span class="va">min</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># doing prediction by giving the predict location</span></span>
-<span><span class="va">pds</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">m_gauss_nig</span>, map<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>rw1<span class="op">=</span><span class="va">seaDist.prd</span>, spde<span class="op">=</span><span class="va">coord.prd</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co"># Doing prediction by giving the predict location</span></span>
+<span><span class="va">pds</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">parana_fit</span>, map <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>spde <span class="op">=</span> <span class="va">coord.prd</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">lp</span> <span class="op">&lt;-</span> <span class="va">pds</span><span class="op">$</span><span class="va">mean</span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span></span>
@@ -937,97 +789,93 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <span>  <span class="op">]</span><span class="op">)</span>, colour <span class="op">=</span> <span class="st">"red"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ngme2_files/figure-html/predict-2.png" width="700"></p>
 </div>
-<div class="section level3">
-<h3 id="cross-validation">Cross-validation<a class="anchor" aria-label="anchor" href="#cross-validation"></a>
-</h3>
-<p>We can further validate our model by using cross-validation
-method.</p>
+<div class="section level4">
+<h4 id="model-comparison-with-latent-gaussian-model-via-cross-validation">Model comparison with latent Gaussian model via
+cross-validation<a class="anchor" aria-label="anchor" href="#model-comparison-with-latent-gaussian-model-via-cross-validation"></a>
+</h4>
+<p>We can also fit a latent Gaussian model and compare it with the NIG
+model via cross-validation. The following code shows how to do it.</p>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">parana_fit_gauss</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
+<span>  formula <span class="op">=</span> <span class="va">Y</span> <span class="op">~</span> <span class="fl">1</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="va">coords</span>,</span>
+<span>      model <span class="op">=</span> <span class="fu"><a href="../reference/matern.html">matern</a></span><span class="op">(</span></span>
+<span>        mesh <span class="op">=</span> <span class="va">prmesh</span>,</span>
+<span>      <span class="op">)</span>,</span>
+<span>      noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>      name <span class="op">=</span> <span class="st">"spde"</span></span>
+<span>    <span class="op">)</span>,</span>
+<span>  data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Y <span class="op">=</span> <span class="va">Y</span><span class="op">)</span>,</span>
+<span>  family <span class="op">=</span> <span class="st">"normal"</span>,</span>
+<span>  control_opt <span class="op">=</span> <span class="va">control</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; Starting estimation... </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Starting posterior sampling... </span></span>
+<span><span class="co">#&gt; Posterior sampling done! </span></span>
+<span><span class="co">#&gt; Average standard deviation of the posterior W:  2.533153 </span></span>
+<span><span class="co">#&gt; Note:</span></span>
+<span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
+<span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span></code></pre></div>
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cross_validation.html">cross_validation</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    gauss_gauss <span class="op">=</span> <span class="va">m_gauss_gauss</span>,</span>
-<span>    gauss_nig <span class="op">=</span> <span class="va">m_gauss_nig</span>,</span>
-<span>    nig_gauss <span class="op">=</span> <span class="va">m_nig_gauss</span>,</span>
-<span>    nig_nig <span class="op">=</span> <span class="va">m_nig_nig</span></span>
-<span>  <span class="op">)</span>, </span>
-<span>  type <span class="op">=</span> <span class="st">"k-fold"</span>, </span>
+<span>    gauss <span class="op">=</span> <span class="va">parana_fit_gauss</span>,</span>
+<span>    nig <span class="op">=</span> <span class="va">parana_fit</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  type <span class="op">=</span> <span class="st">"k-fold"</span>,</span>
+<span>  seed <span class="op">=</span> <span class="fl">13</span>,</span>
+<span>  n_gibbs_samples <span class="op">=</span> <span class="fl">2000</span>,</span>
+<span>  n_burnin <span class="op">=</span> <span class="fl">100</span>,</span>
 <span>  k <span class="op">=</span> <span class="fl">10</span>,</span>
-<span>  n_gibbs_samples <span class="op">=</span> <span class="fl">1000</span>,</span>
-<span>  n_burnin <span class="op">=</span> <span class="fl">200</span>,</span>
-<span>  seed <span class="op">=</span> <span class="fl">20</span></span>
+<span>  print <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Create a basic table with knitr</span></span>
-<span><span class="va">cv_table</span> <span class="op">&lt;-</span> <span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">cv</span><span class="op">$</span><span class="va">mean.scores</span>, caption <span class="op">=</span> <span class="st">"Cross-validation results"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">cv_table</span></span></code></pre></div>
-<table class="table">
-<caption>Cross-validation results</caption>
-<thead><tr class="header">
-<th align="left"></th>
-<th align="right">MAE</th>
-<th align="right">MSE</th>
-<th align="right">neg.CRPS</th>
-<th align="right">neg.sCRPS</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">gauss_gauss</td>
-<td align="right">1.726098</td>
-<td align="right">5.025762</td>
-<td align="right">1.233343</td>
-<td align="right">1.451464</td>
-</tr>
-<tr class="even">
-<td align="left">gauss_nig</td>
-<td align="right">1.730894</td>
-<td align="right">5.072879</td>
-<td align="right">1.237540</td>
-<td align="right">1.451879</td>
-</tr>
-<tr class="odd">
-<td align="left">nig_gauss</td>
-<td align="right">1.737343</td>
-<td align="right">5.103335</td>
-<td align="right">1.244486</td>
-<td align="right">1.455521</td>
-</tr>
-<tr class="even">
-<td align="left">nig_nig</td>
-<td align="right">1.781279</td>
-<td align="right">5.634463</td>
-<td align="right">1.280065</td>
-<td align="right">1.461403</td>
-</tr>
-</tbody>
-</table>
-<p>As we can see, the NIG-Gaussian model performs the best in most of
-the metrics.</p>
+<span><span class="va">cv</span></span>
+<span><span class="co">#&gt; $mean.scores</span></span>
+<span><span class="co">#&gt;            MAE     MSE neg.CRPS neg.sCRPS</span></span>
+<span><span class="co">#&gt; gauss 1.741200 5.23556 1.247451  1.457584</span></span>
+<span><span class="co">#&gt; nig   1.731045 5.20822 1.245195  1.453929</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $sd.scores</span></span>
+<span><span class="co">#&gt;               MAE        MSE    neg.CRPS   neg.sCRPS</span></span>
+<span><span class="co">#&gt; gauss 0.002599346 0.01329710 0.003355939 0.001551408</span></span>
+<span><span class="co">#&gt; nig   0.002889866 0.01657978 0.003168377 0.001538119</span></span></code></pre></div>
 </div>
 </div>
-  </div>
-
-  <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
-
-      </div>
-
+<div class="section level2">
+<h2 class="unnumbered" id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
+</h2>
+<div id="refs" class="references csl-bib-body hanging-indent" entry-spacing="0">
+<div id="ref-Asar2020" class="csl-entry">
+Asar, Özgür, David Bolin, Peter J. Diggle, and Jonas Wallin. 2020.
+<span>“Linear Mixed Effects Models for Non-Gaussian Continuous Repeated
+Measurement Data.”</span> <em>Journal of the Royal Statistical Society
+Series C: Applied Statistics</em> 69 (5): 1015–65. <a href="https://doi.org/10.1111/rssc.12405" class="external-link">https://doi.org/10.1111/rssc.12405</a>.
+</div>
+<div id="ref-Bolin2019" class="csl-entry">
+Bolin, David, and Jonas Wallin. 2019. <span>“Multivariate Type G Matérn
+Stochastic Partial Differential Equation Random Fields.”</span>
+<em>Journal of the Royal Statistical Society Series B: Statistical
+Methodology</em>. <a href="https://doi.org/10.1111/rssb.12351" class="external-link">https://doi.org/10.1111/rssb.12351</a>.
+</div>
+</div>
+</div>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside>
 </div>
 
 
 
-      <footer><div class="copyright">
-  <p></p>
-<p>Developed by David Bolin, Xiaotian Jin, Alexandre Simas, Jonas Wallin.</p>
+    <footer><div class="pkgdown-footer-left">
+  <p>Developed by David Bolin, Xiaotian Jin, Alexandre Simas, Jonas Wallin.</p>
 </div>
 
-<div class="pkgdown">
-  <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+<div class="pkgdown-footer-right">
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
 </div>
 
-      </footer>
+    </footer>
 </div>
-
 
 
 

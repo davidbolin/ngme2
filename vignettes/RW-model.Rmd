@@ -198,8 +198,8 @@ library(ngme2)
 locations <- 1:10
 
 # Default constrained models
-rw1_constrained <- f(locations, model = "rw1", noise = noise_normal(sigma = 1.0))
-rw2_constrained <- f(locations, model = "rw2", noise = noise_normal(sigma = 0.5))
+rw1_constrained <- f(locations, model = rw1(), noise = noise_normal(sigma = 1.0))
+rw2_constrained <- f(locations, model = rw2(), noise = noise_normal(sigma = 0.5))
 ```
 
 ### Approach 2: Unconstrained Models
@@ -221,11 +221,11 @@ Fixes the first element at zero ($W_1 = 0$) as a reference point.
 ```{r unconstrained-models}
 # Unconstrained models (reference point approach)
 rw1_unconstrained <- f(locations,
-  model = "rw1", constr = FALSE,
+  model = rw1(constr = FALSE),
   noise = noise_normal(sigma = 1.0)
 )
 rw2_unconstrained <- f(locations,
-  model = "rw2", constr = FALSE,
+  model = rw2(constr = FALSE),
   noise = noise_normal(sigma = 0.5)
 )
 ```
@@ -250,11 +250,11 @@ Treats the domain as circular, connecting first and last locations as neighbors.
 ```{r cyclic-models}
 # Cyclic models for periodic data
 rw1_cyclic <- f(locations,
-  model = "rw1", cyclic = TRUE,
+  model = rw1(cyclic = TRUE),
   noise = noise_normal(sigma = 1.0)
 )
 rw2_cyclic <- f(locations,
-  model = "rw2", cyclic = TRUE,
+  model = rw2(cyclic = TRUE),
   noise = noise_normal(sigma = 0.5)
 )
 ```
@@ -318,27 +318,25 @@ Random walk models require constraints to handle their intrinsic nature (rank-de
 ```{r rw-model-specifications}
 # Constrained approach (default): uses sum-to-zero constraint
 rw1_constrained <- f(regular_points,
-  model = "rw1",
+  model = rw1(),
   noise = noise_normal(sigma = 1.5)
 )
 
 # Unconstrained approach: fixes first element as reference point
 rw1_unconstrained <- f(regular_points,
-  model = "rw1",
-  constr = FALSE,
+  model = rw1(constr = FALSE),
   noise = noise_normal(sigma = 1.5)
 )
 
 # Cyclic approach: treats boundaries as connected (periodic)
 rw1_cyclic <- f(regular_points,
-  model = "rw1",
-  cyclic = TRUE,
+  model = rw1(cyclic = TRUE),
   noise = noise_normal(sigma = 1.5)
 )
 
 # Second-order random walk for comparison
 rw2_model <- f(regular_points,
-  model = "rw2",
+  model = rw2(),
   noise = noise_normal(sigma = 0.8)
 )
 ```
@@ -378,7 +376,7 @@ One of `ngme2`'s strengths is seamless handling of irregular observation pattern
 ```{r irregular-grid-handling}
 # Create model on irregular grid
 rw1_irregular <- f(irregular_points,
-  model = "rw1",
+  model = rw1(),
   noise = noise_normal(sigma = 1.0)
 )
 
@@ -403,8 +401,7 @@ library(Matrix)
 
 # Create unconstrained model to show classic sparse structure
 rw1_sparse <- f(1:10, # Use 10 points for clear demonstration
-  model = "rw1",
-  constr = FALSE, # Unconstrained for classic tridiagonal sparsity
+  model = rw1(constr = FALSE), # Unconstrained for classic tridiagonal sparsity
   noise = noise_normal(sigma = 1.0)
 )
 
@@ -521,13 +518,13 @@ First, we create the random walk model objects using the `f()` function, which s
 ```{r gaussian-rw-setup-model}
 # Define RW1 model with Gaussian noise
 rw1_gaussian <- f(time_index,
-  model = "rw1",
+  model = rw1(),
   noise = noise_normal(sigma = 2.0)
 )
 
 # Define RW2 model with Gaussian noise (smaller sigma for comparison)
 rw2_gaussian <- f(time_index,
-  model = "rw2",
+  model = rw2(),
   noise = noise_normal(sigma = 0.6)
 )
 ```
@@ -583,14 +580,13 @@ Now let us explore the flexibility of non-Gaussian innovations using the Normal 
 ```{r nig-rw-setup-model}
 # Define RW1 model with NIG noise
 rw1_nig <- f(time_index,
-  model = "rw1",
-  rho = 0.5,
+  model = rw1(),
   noise = noise_nig(mu = -3, sigma = 4, nu = 0.4)
 )
 
 # Define RW2 model with NIG noise
 rw2_nig <- f(time_index,
-  model = "rw2",
+  model = rw2(),
   noise = noise_nig(mu = -3, sigma = 1.5, nu = 0.4)
 )
 ```
@@ -719,7 +715,7 @@ ngme_out <- ngme(
   Y ~ 0 + x1 + x2 + x3 + f(
     1:n_obs,
     name = "my_rw",
-    model = "rw1",
+    model = rw1(),
     noise = noise_nig()
   ),
   data = model_data,
@@ -848,7 +844,7 @@ ngme_out_interp <- ngme(
   Y_train_vector ~ 0 + x1 + x2 + x3 + f(
     train_indices_interp,
     name = "my_rw_interp",
-    model = "rw1",
+    model = rw1(),
     noise = noise_nig()
   ),
   data = model_data_train_interp,

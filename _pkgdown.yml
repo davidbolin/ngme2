@@ -46,8 +46,6 @@ navbar:
         href: articles/cross-validation.html
       - text: Using the Generic Model in ngme2
         href: articles/generic.html
-      exclude:
-        - AGENTS.md
     github:
       icon: fa-github
       href: https://github.com/davidbolin/ngme2

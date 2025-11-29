@@ -35,6 +35,7 @@ ssenv = \
 PKG_CPPFLAGS = -I"$(ssdir)/SuiteSparse_config"
 PKG_CFLAGS = $(C_VISIBILITY)
 PKG_LIBS = $(sslib) $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
+PKG_LIBS += $(SHLIB_OPENMP_CXXFLAGS)
 # PKG_LIBS += $(sslib1)
 
 PKG_CPPFLAGS += -Iinclude -I../inst/include # -DNDEBUG -DDEBUG

@@ -2,7 +2,6 @@
 
 # Compile Suitesparse
 ssdir = SuiteSparse
-sslib = $(sslib1) $(sslib2) $(sslib3) $(sslib4) $(sslib5) $(sslib6) $(sslib7)
 sslib1 = $(ssdir)/CHOLMOD/CHOLMOD.a
 sslib2 = $(ssdir)/CCOLAMD/CCOLAMD.a
 sslib3 = $(ssdir)/CAMD/CAMD.a
@@ -10,6 +9,7 @@ sslib4 = $(ssdir)/COLAMD/COLAMD.a
 sslib5 = $(ssdir)/AMD/AMD.a
 sslib6 = $(ssdir)/CXSparse/CXSparse.a
 sslib7 = $(ssdir)/SuiteSparse_config/SuiteSparse_config.a
+sslib = $(sslib1) $(sslib2) $(sslib3) $(sslib4) $(sslib5) $(sslib6) $(sslib7)
 
 ssenv = \
 	CC="$(CC)" \
@@ -22,8 +22,9 @@ PKG_CPPFLAGS = -I"$(ssdir)/SuiteSparse_config" -Iinclude -I../inst/include
 PKG_CFLAGS = $(C_VISIBILITY)
 
 # Add OpenMP flags
+# Use -fopenmp and -lgomp explicitly for Windows Rtools
 PKG_CXXFLAGS = -std=gnu++17 -fopenmp $(SHLIB_OPENMP_CXXFLAGS)
-PKG_LIBS = $(sslib) $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) -fopenmp
+PKG_LIBS = $(sslib) $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) -fopenmp -lgomp $(SHLIB_OPENMP_CXXFLAGS)
 
 ## NB: INSTALL does not clean subdirectories between subarchitectures
 $(sslib1):
@@ -46,6 +47,9 @@ $(sslib6):
 
 $(sslib7):
 	cd $(@D) && $(MAKE) clean all $(ssenv)
+
+# Explicitly define the shared library target to ensure dependencies are built
+$(SHLIB): $(OBJECTS)
 
 UTILS = util/GIG.o util/rgig.o util/MatrixAlgebra.o util/solver.o
 

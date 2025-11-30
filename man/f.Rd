@@ -8,7 +8,6 @@ f(
   map,
   model,
   noise = noise_normal(),
-  mesh = NULL,
   name = "field",
   data = NULL,
   group = NULL,
@@ -20,8 +19,7 @@ f(
   fix_theta_K = FALSE,
   prior_theta_K = ngme_prior("normal", param = c(0, 0.001)),
   subset = rep(TRUE, length_map(map)),
-  debug = FALSE,
-  ...
+  debug = FALSE
 )
 }
 \arguments{
@@ -30,10 +28,6 @@ f(
 \item{model}{string, model type, see ngme_model_types()}
 
 \item{noise}{ngme_noise object, noise_nig() or noise_gal()}
-
-\item{mesh}{mesh for the model, if not provided, will be built from map.
-Can be a single mesh object or a list of mesh objects for different replicates.
-When using replicates, provide mesh as a list where mesh[[i]] corresponds to replicate i.}
 
 \item{name}{name of the field, for later use, if not provided, will be "field1" etc.}
 
@@ -46,7 +40,7 @@ When using replicates, provide mesh as a list where mesh[[i]] corresponds to rep
 \item{replicate}{factor indicating replicate structure for INLA-style replicates.
 When provided, operators and A matrices will be block-diagonalized across replicates.}
 
-\item{A}{observation matrix, automatically computed given map and model except for Bayesian regression}
+\item{A}{observation matrix, automatically computed given map and model}
 
 \item{W}{starting value of the process}
 
@@ -60,8 +54,9 @@ When provided, operators and A matrices will be block-diagonalized across replic
 
 \item{debug}{debug mode}
 
-\item{...}{additional arguments (e.g. parameters for model)
-inherit the data from ngme function}
+\item{mesh}{mesh for the model, if not provided, will be built from map.
+Can be a single mesh object or a list of mesh objects for different replicates.
+When using replicates, provide mesh as a list where mesh[[i]] corresponds to replicate i.}
 }
 \value{
 a list for constructing latent model, e.g. A, h, C, G,

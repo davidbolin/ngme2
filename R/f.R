@@ -8,9 +8,6 @@
 #' @param map  symbol or numerical value: index or covariates to build index
 #' @param model  string, model type, see ngme_model_types()
 #' @param noise  ngme_noise object, noise_nig() or noise_gal()
-#' @param mesh   mesh for the model, if not provided, will be built from map.
-#'   Can be a single mesh object or a list of mesh objects for different replicates.
-#'   When using replicates, provide mesh as a list where mesh[[i]] corresponds to replicate i.
 #' @param name   name of the field, for later use, if not provided, will be "field1" etc.
 #' @param data      specifed or inherit from ngme() function
 #' @param group   group factor indicate resposne variable, can be inherited from ngme() function, (used for bivariate model)
@@ -20,8 +17,6 @@
 #' @param A  observation matrix, automatically computed given map and model
 #' @param W      starting value of the process
 #' @param fix_W  stop sampling for W
-#' @param fix_theta_K fix the estimation for theta_K.
-#' @param prior_theta_K prior for theta_K
 #' @param debug     debug mode
 #' @param subset    subset of the model
 #'
@@ -54,8 +49,6 @@ f <- function(
     A = NULL,
     W = NULL,
     fix_W = FALSE,
-    fix_theta_K = FALSE,
-    prior_theta_K = ngme_prior("normal", param = c(0, 0.001)),
     subset = rep(TRUE, length_map(map)),
     debug = FALSE) {
   # examine the noise
@@ -162,8 +155,7 @@ f <- function(
 
   stopifnot(
     "Please provide model from ngme_model_types():" = !is.null(model),
-    "Please specify model as ngme_operator or ngme_operator_def" = inherits(model, "ngme_operator") || inherits(model, "ngme_operator_def"),
-    "prior_theta_K is not specified properly, please use ngme_prior(..)" = class(prior_theta_K) == "ngme_prior"
+    "Please specify model as ngme_operator or ngme_operator_def" = inherits(model, "ngme_operator") || inherits(model, "ngme_operator_def")
   )
 
   # 1. Extract or build mesh
@@ -526,8 +518,6 @@ f <- function(
     fix_W = fix_W,
     name = name,
     debug = debug,
-    fix_theta_K = fix_theta_K,
-    prior_theta_K = prior_theta_K,
     replicate = replicate
   )
 }

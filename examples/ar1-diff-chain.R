@@ -36,11 +36,11 @@ Y <- process + rnorm(n_obs, sd = sigma_eps)
 
 # fit the non-Gaussian model
 control_same <- control_opt(
-  optimizer = precond_sgd(),
+  # optimizer = precond_sgd(),
   burnin = 100,
-  iterations = 100,
+  iterations = 2000,
   n_parallel_chain = 4,
-  # verbose = TRUE,
+  verbose = TRUE,
   rao_blackwellization = TRUE,
   seed = seed,
   print_check_info = TRUE,
@@ -49,7 +49,8 @@ control_same <- control_opt(
   n_slope_check = 3,
   n_trace_iter = 30,
   start_sd = 0.0,
-  max_R_hat = 1.3
+  max_R_hat = 1.3,
+  pflug_conv_check = TRUE
 )
 
 load_all()

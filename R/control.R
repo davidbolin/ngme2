@@ -31,8 +31,6 @@
 #' If it is more than n_parallel_chain, the rest will be used to parallel different replicates of the model.
 #' @param max_relative_step   max relative step allowed in 1 iteration
 #' @param max_absolute_step   max absolute step allowed in 1 iteration
-#' @param converge_eps        convergence threshold, test if grad.norm() < converge_eps
-#'
 #' @param rao_blackwellization  use rao_blackwellization
 #' @param n_trace_iter  use how many iterations to approximate the trace (Hutchinson’s trick)
 #'
@@ -47,6 +45,9 @@
 #' "supernodal" means using supernodal solver
 #' "accelerate" means using accelerate solver
 #' "pardiso" means using pardiso solver
+#' @param pflug_conv_check use pflug diagnostic for convergence check
+#' @param max_R_hat_conv_check use max_R_hat for convergence check
+#' @param max_R_hat maximum allowed R_hat
 #' @return list of control variables
 #' @export
 control_opt <- function(
@@ -62,13 +63,9 @@ control_opt <- function(
     # parallel options
     n_parallel_chain = 4,
     max_num_threads = n_parallel_chain,
-    n_slope_check = 3,
-    std_lim = 0.01,
-    trend_lim = 0.01,
     print_check_info = FALSE,
     max_relative_step = 0.5,
     max_absolute_step = 0.5,
-    converge_eps = 1e-5,
     rao_blackwellization = FALSE,
     n_trace_iter = 10,
     sampling_strategy = "all",
@@ -77,7 +74,13 @@ control_opt <- function(
     verbose = FALSE,
     store_traj = TRUE,
     robust = FALSE,
-    max_R_hat = 1.1) {
+    n_slope_check = 3,
+    trend_std_conv_check = TRUE,
+    std_lim = 0.01,
+    trend_lim = 0.01,
+    R_hat_conv_check = TRUE,
+    max_R_hat = 1.1,
+    pflug_conv_check = TRUE) {
   strategy_list <- c("all", "ws")
   preconditioner_list <- c("none", "fast", "full")
   solver_type_list <- c("eigen", "cholmod", "supernodal", "accelerate", "pardiso")
@@ -155,7 +158,6 @@ control_opt <- function(
 
     max_relative_step = max_relative_step,
     max_absolute_step = max_absolute_step,
-    converge_eps = converge_eps,
 
     # preconditioner related
     numerical_eps = numerical_eps,
@@ -178,7 +180,9 @@ control_opt <- function(
     threshold = threshold,
     window_size = window_size,
     robust = robust,
-    max_R_hat = max_R_hat
+    R_hat_conv_check = R_hat_conv_check,
+    max_R_hat = max_R_hat,
+    pflug_conv_check = pflug_conv_check
   )
 
   class(control) <- "control_opt"

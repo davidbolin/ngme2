@@ -51,6 +51,10 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   const bool store_traj = control_opt.containsElementNamed("store_traj")
                               ? Rcpp::as<bool>(control_opt["store_traj"])
                               : true;
+  const bool pflug_conv_check =
+      control_opt.containsElementNamed("pflug_conv_check")
+          ? Rcpp::as<bool>(control_opt["pflug_conv_check"])
+          : false;
 
   Rcpp::List output = R_NilValue;
 
@@ -91,6 +95,7 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
     ngmes.push_back(std::make_shared<Ngme>(R_ngme, seed + i, sampling_strategy,
                                            num_threads[1], sd));
     opt_vec.push_back(Ngme_optimizer(control_opt, ngmes[i]));
+    opt_vec.back().set_pflug_conv_check(pflug_conv_check);
     if (verbose_enabled && i > 0) {
       opt_vec.back().set_verbose(false);
     }
@@ -124,6 +129,14 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
     MatrixXd mat(n_chains, n_params);
     batch_sum.setZero();
     batch_sq_sum.setZero();
+
+    // Store max_pflug_sum before batch
+    std::vector<double> max_pflug_sum_before(n_chains);
+    if (pflug_conv_check) {
+      for (int i = 0; i < n_chains; i++) {
+        max_pflug_sum_before[i] = opt_vec[i].get_max_pflug_sum();
+      }
+    }
 
     // Run batch_steps iterations using unified SGD step (computes grad and,
     // optionally, precond)
@@ -206,6 +219,24 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
       //     for (int i=0; i < n_chains; i++) {
       //         ngmes[i]->check_converge(converge);
       //     }
+      // Pflug diagnostic check for parallel chains
+      if (pflug_conv_check) {
+        bool pflug_converged = true;
+        for (int i = 0; i < n_chains; i++) {
+          // Check if max_pflug_sum has increased
+          if (opt_vec[i].get_max_pflug_sum() > max_pflug_sum_before[i]) {
+            pflug_converged = false;
+            break;
+          }
+        }
+        if (pflug_converged) {
+          all_converge = true;
+          if (verbose_enabled)
+            Rcpp::Rcout << "Pflug diagnostic satisfied: max_pflug_sum did not "
+                           "increase in this batch for all chains."
+                        << std::endl;
+        }
+      }
     }
 
     curr_batch++;
@@ -236,6 +267,7 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
 #else // No parallel chain
   Ngme ngme(R_ngme, seed, sampling_strategy);
   Ngme_optimizer opt(control_opt, std::make_shared<Ngme>(ngme));
+  opt.set_pflug_conv_check(pflug_conv_check);
   opt.sgd(0.1, iterations, max_relative_step, max_absolute_step,
           compute_precond_each_iter);
   // estimation done, posterior sampling
@@ -262,8 +294,8 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
 }
 
 // A is the horizontal concat version of latent A
-// Rcpp::List sampling_cpp_given_A(const Rcpp::List& ngme_replicate, int n, bool
-// posterior, unsigned long seed, const Eigen::SparseMatrix<double>& A) {
+// Rcpp::List sampling_cpp_given_A(const Rcpp::List& ngme_replicate, int n,
+// bool posterior, unsigned long seed, const Eigen::SparseMatrix<double>& A) {
 //     std::mt19937 rng (seed);
 //     BlockModel block (ngme_replicate, rng());
 //     return block.sampling(n, posterior, A);
@@ -347,8 +379,9 @@ std::vector<bool> check_conv(const MatrixXd &means, const MatrixXd &vars,
 //         Sigma <- diag(sigma2[(N-n.points+1):N,i])
 //         Q <- solve(t(B)%*%solve(Sigma,B))
 //         beta <- Q%*%(t(B)%*%solve(Sigma,m[(N-n.points+1):N,i]))
-//         slope.satisfied <- abs(beta[2])-2*sqrt(Q[2,2])<trend.lim*abs(beta[1])
-//         #no significant trend output[i] = std.satisfied&slope.satisfied
+//         slope.satisfied <-
+//         abs(beta[2])-2*sqrt(Q[2,2])<trend.lim*abs(beta[1]) #no significant
+//         trend output[i] = std.satisfied&slope.satisfied
 //       }
 //     }
 //     return(output)

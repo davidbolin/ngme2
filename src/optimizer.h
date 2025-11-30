@@ -10,7 +10,6 @@ private:
 
   bool verbose{false};
   double numerical_eps;
-  double converge_eps;
   int curr_iter;
 
   int max_iter;
@@ -37,6 +36,11 @@ private:
   std::vector<VectorXd> trajs;
   bool record_traj{true};
 
+  // Pflug diagnostic
+  bool pflug_conv_check{false};
+  double pflug_sum{0.0};
+  double max_pflug_sum{0.0};
+
   void log_verbose_message(const std::string &msg) const;
 
 public:
@@ -50,6 +54,11 @@ public:
 
   void set_verbose(bool value) { verbose = value; }
   bool is_verbose() const { return verbose; }
+
+  void set_pflug_conv_check(bool value) { pflug_conv_check = value; }
+  bool get_pflug_conv_check() const { return pflug_conv_check; }
+  double get_pflug_sum() const { return pflug_sum; }
+  double get_max_pflug_sum() const { return max_pflug_sum; }
 
   void set_store_traj(bool value) {
     record_traj = value;

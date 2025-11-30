@@ -12,8 +12,7 @@ using std::vector;
 Ngme_optimizer::Ngme_optimizer(const Rcpp::List &control_opt,
                                std::shared_ptr<Ngme> ngme)
     : model(ngme), verbose(control_opt["verbose"]),
-      numerical_eps(control_opt["numerical_eps"]),
-      converge_eps(control_opt["converge_eps"]), curr_iter(0),
+      numerical_eps(control_opt["numerical_eps"]), curr_iter(0),
 
       method(Rcpp::as<std::string>(control_opt["sgd_method"])),
       m(VectorXd::Zero(ngme->get_n_params())),
@@ -94,12 +93,13 @@ VectorXd Ngme_optimizer::sgd(double eps, int iterations,
       grad = model->grad();
     } else {
       grad = numerical_grad(x);
-      if (grad.norm() < converge_eps) {
-        std::ostringstream oss;
-        oss << "grad.norm() < " << converge_eps << ", reach convergence\n";
-        log_verbose_message(oss.str());
-        break;
-      }
+    }
+
+    // Pflug diagnostic
+    if (pflug_conv_check && curr_iter > 0) {
+      double inner_prod = grad.dot(prev_grad);
+      pflug_sum += inner_prod;
+      max_pflug_sum = std::max(max_pflug_sum, pflug_sum);
     }
 
     // which SGD step
@@ -235,11 +235,16 @@ VectorXd Ngme_optimizer::sgd(double eps, int iterations,
       oss << "one step = " << one_step << '\n';
       // oss << "parameter = : " << x << '\n';
       // oss << "marginal likelihood := " <<  -model->log_likelihood() << '\n';
+      if (pflug_conv_check) {
+        oss << "pflug_sum = " << pflug_sum
+            << ", max_pflug_sum = " << max_pflug_sum << '\n';
+      }
       oss << "---------------------------\n";
       log_verbose_message(oss.str());
     }
 
     model->set_parameter_and_update(x, compute_precond);
+    prev_grad = grad;
     curr_iter += 1;
   }
 

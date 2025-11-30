@@ -836,8 +836,8 @@ results:</p>
 <span><span class="co">#&gt; *** Ngme object ***</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
-<span><span class="co">#&gt;     x1     x2     x3 </span></span>
-<span><span class="co">#&gt; -0.924  2.043  0.512 </span></span>
+<span><span class="co">#&gt;    x1    x2    x3 </span></span>
+<span><span class="co">#&gt; -0.92  2.04  0.51 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $my_ar</span></span>
@@ -845,9 +845,9 @@ results:</p>
 <span><span class="co">#&gt;       rho = 0.483</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -2.91</span></span>
-<span><span class="co">#&gt;       sigma = 3.86</span></span>
-<span><span class="co">#&gt;       nu = 0.428</span></span>
+<span><span class="co">#&gt;       mu = -2.89</span></span>
+<span><span class="co">#&gt;       sigma = 3.9</span></span>
+<span><span class="co">#&gt;       nu = 0.425</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
@@ -911,14 +911,14 @@ the true values using the <code><a href="../reference/ngme_result.html">ngme_res
 <span>  row.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">params_data</span><span class="op">$</span><span class="va">fixed_effects</span><span class="op">)</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    Truth  Estimates</span></span>
-<span><span class="co">#&gt; x1  -1.0 -0.9240074</span></span>
-<span><span class="co">#&gt; x2   2.0  2.0434422</span></span>
-<span><span class="co">#&gt; x3   0.5  0.5121821</span></span>
+<span><span class="co">#&gt; x1  -1.0 -0.9202161</span></span>
+<span><span class="co">#&gt; x2   2.0  2.0447112</span></span>
+<span><span class="co">#&gt; x3   0.5  0.5099348</span></span>
 <span></span>
 <span><span class="co"># Measurement Noise</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Truth <span class="op">=</span> <span class="fl">2.0</span>, Estimate <span class="op">=</span> <span class="va">params_data</span><span class="op">$</span><span class="va">sigma</span>, row.names <span class="op">=</span> <span class="st">"sigma"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;       Truth Estimate</span></span>
-<span><span class="co">#&gt; sigma     2 1.993023</span></span>
+<span><span class="co">#&gt; sigma     2 1.989364</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># AR(1) Process Parameters</span></span>
@@ -929,10 +929,10 @@ the true values using the <code><a href="../reference/ngme_result.html">ngme_res
 <span>  Estimates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">params_ar1</span><span class="op">)</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;       Truth  Estimates</span></span>
-<span><span class="co">#&gt; rho     0.5  0.4826245</span></span>
-<span><span class="co">#&gt; mu     -3.0 -2.9149407</span></span>
-<span><span class="co">#&gt; sigma   4.0  3.8641206</span></span>
-<span><span class="co">#&gt; nu      0.4  0.4281493</span></span></code></pre></div>
+<span><span class="co">#&gt; rho     0.5  0.4833661</span></span>
+<span><span class="co">#&gt; mu     -3.0 -2.8909761</span></span>
+<span><span class="co">#&gt; sigma   4.0  3.8963090</span></span>
+<span><span class="co">#&gt; nu      0.4  0.4245428</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="model-validation">Model Validation<a class="anchor" aria-label="anchor" href="#model-validation"></a>
@@ -1074,11 +1074,11 @@ accuracy and uncertainty calibration:</p>
 <span><span class="va">coverage_90</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">in_interval_90</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"RMSE:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">rmse_holdout</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; RMSE: 4.752</span></span>
+<span><span class="co">#&gt; RMSE: 4.673</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"MAE:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">mae_holdout</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; MAE: 4.598</span></span>
+<span><span class="co">#&gt; MAE: 4.576</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Correlation:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">correlation_holdout</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Correlation: 0.241</span></span>
+<span><span class="co">#&gt; Correlation: 0.314</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"90% Interval Coverage:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">coverage_90</span> <span class="op">*</span> <span class="fl">100</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"%\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; 90% Interval Coverage: 80 %</span></span>
 <span></span>
@@ -1090,11 +1090,11 @@ accuracy and uncertainty calibration:</p>
 <span>  Upper_90 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">pred_upper_holdout</span>, <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   Time Observed Predicted Lower_90 Upper_90</span></span>
-<span><span class="co">#&gt; 1 2496     8.64      2.20    -9.22     8.62</span></span>
-<span><span class="co">#&gt; 2 2497     3.45      0.52   -10.56     6.92</span></span>
-<span><span class="co">#&gt; 3 2498    -4.73      0.08   -11.50     6.80</span></span>
-<span><span class="co">#&gt; 4 2499    -3.21      1.87   -14.42     9.67</span></span>
-<span><span class="co">#&gt; 5 2500     0.94      4.68   -10.55    13.06</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 2496     8.64      2.73    -7.55     8.55</span></span>
+<span><span class="co">#&gt; 2 2497     3.45     -0.07   -12.72     6.92</span></span>
+<span><span class="co">#&gt; 3 2498    -4.73     -1.01   -15.16     6.90</span></span>
+<span><span class="co">#&gt; 4 2499    -3.21      2.26   -11.94     9.70</span></span>
+<span><span class="co">#&gt; 5 2500     0.94      5.21    -6.29    13.12</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level3">
@@ -1145,11 +1145,11 @@ complete model, thus, doing a pseudo holdout-validation.</p>
 <span><span class="va">coverage_90_alt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">in_interval_90_alt</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"RMSE:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">rmse_holdout_alt</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; RMSE: 4.826</span></span>
+<span><span class="co">#&gt; RMSE: 4.773</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"MAE:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">mae_holdout_alt</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; MAE: 4.706</span></span>
+<span><span class="co">#&gt; MAE: 4.673</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Correlation:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">correlation_holdout_alt</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Correlation: 0.221</span></span>
+<span><span class="co">#&gt; Correlation: 0.291</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"90% Interval Coverage:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">coverage_90_alt</span> <span class="op">*</span> <span class="fl">100</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"%\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; 90% Interval Coverage: 80 %</span></span>
 <span></span>
@@ -1161,11 +1161,11 @@ complete model, thus, doing a pseudo holdout-validation.</p>
 <span>  Upper_90 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">pred_upper_holdout_alt</span>, <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   Time Observed Predicted Lower_90 Upper_90</span></span>
-<span><span class="co">#&gt; 1 2496     8.64      2.12   -10.85     8.44</span></span>
-<span><span class="co">#&gt; 2 2497     3.45      0.26   -12.41     6.71</span></span>
-<span><span class="co">#&gt; 3 2498    -4.73     -0.10   -11.59     6.85</span></span>
-<span><span class="co">#&gt; 4 2499    -3.21      1.60   -13.57     9.69</span></span>
-<span><span class="co">#&gt; 5 2500     0.94      5.34    -7.95    13.03</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 2496     8.64      2.80    -6.92     8.53</span></span>
+<span><span class="co">#&gt; 2 2497     3.45      0.32   -11.93     6.97</span></span>
+<span><span class="co">#&gt; 3 2498    -4.73     -0.54   -14.77     6.97</span></span>
+<span><span class="co">#&gt; 4 2499    -3.21      2.32    -9.83     9.66</span></span>
+<span><span class="co">#&gt; 5 2500     0.94      5.63    -5.89    12.91</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level3">
@@ -1267,11 +1267,11 @@ estimation:</p>
 <span><span class="va">coverage_90_interp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">in_interval_90_interp</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"RMSE:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">rmse_interp</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; RMSE: 7.762</span></span>
+<span><span class="co">#&gt; RMSE: 7.698</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"MAE:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">mae_interp</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; MAE: 3.952</span></span>
+<span><span class="co">#&gt; MAE: 3.944</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Correlation:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">correlation_interp</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Correlation: 0.217</span></span>
+<span><span class="co">#&gt; Correlation: 0.224</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"90% Interval Coverage:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">coverage_90_interp</span> <span class="op">*</span> <span class="fl">100</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"%\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; 90% Interval Coverage: 88.9 %</span></span>
 <span></span>
@@ -1283,16 +1283,16 @@ estimation:</p>
 <span>  Upper_90 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">interp_upper</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">]</span>, <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    Time Observed Interpolated Lower_90 Upper_90</span></span>
-<span><span class="co">#&gt; 1   601     2.74        -2.77   -15.94     3.41</span></span>
-<span><span class="co">#&gt; 2   602     0.82        -2.86   -15.14     3.83</span></span>
-<span><span class="co">#&gt; 3   603     1.54        -0.75   -12.55     6.14</span></span>
-<span><span class="co">#&gt; 4   604     1.57         1.66    -7.91     8.32</span></span>
-<span><span class="co">#&gt; 5   605     6.94         1.82    -5.72     7.64</span></span>
-<span><span class="co">#&gt; 6  1000     1.76         1.52    -8.18     7.06</span></span>
-<span><span class="co">#&gt; 7  1001    -0.06         0.41   -11.51     6.67</span></span>
-<span><span class="co">#&gt; 8  1002     0.31         0.68   -11.46     7.38</span></span>
-<span><span class="co">#&gt; 9  1003     2.91         3.71    -6.13    10.42</span></span>
-<span><span class="co">#&gt; 10 1004     7.54         2.62    -4.93     8.29</span></span></code></pre></div>
+<span><span class="co">#&gt; 1   601     2.74        -2.52   -12.12     3.51</span></span>
+<span><span class="co">#&gt; 2   602     0.82        -2.69   -15.17     3.71</span></span>
+<span><span class="co">#&gt; 3   603     1.54        -0.74   -14.45     6.19</span></span>
+<span><span class="co">#&gt; 4   604     1.57         1.02   -11.71     8.05</span></span>
+<span><span class="co">#&gt; 5   605     6.94         1.63    -6.06     7.52</span></span>
+<span><span class="co">#&gt; 6  1000     1.76         1.77    -7.64     7.16</span></span>
+<span><span class="co">#&gt; 7  1001    -0.06         0.24   -12.22     6.69</span></span>
+<span><span class="co">#&gt; 8  1002     0.31         0.69   -10.04     7.38</span></span>
+<span><span class="co">#&gt; 9  1003     2.91         3.67    -6.55    10.34</span></span>
+<span><span class="co">#&gt; 10 1004     7.54         2.67    -5.63     8.40</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level3">
@@ -1353,7 +1353,7 @@ recover the underlying temporal structure:</p>
 <span>  <span class="st">"Mean absolute difference from true values:"</span>,</span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">W_posterior_mean</span> <span class="op">-</span> <span class="va">W_nig</span><span class="op">)</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Mean absolute difference from true values: 1.357</span></span>
+<span><span class="co">#&gt; Mean absolute difference from true values: 1.355</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span></span>
 <span>  <span class="st">"Average posterior standard deviation:"</span>,</span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">W_posterior_sd</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span></span>

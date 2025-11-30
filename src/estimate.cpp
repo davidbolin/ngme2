@@ -385,8 +385,10 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   } else {
     outputs.attr("opt_traj") = R_NilValue;
   }
+#ifdef _OPENMP
   if (n_chains > 1)
     outputs.attr("R_hat") = final_R_hat;
+#endif
   return outputs;
 }
 
@@ -512,8 +514,8 @@ check_conv(const MatrixXd &means, const MatrixXd &vars, int curr_batch,
   if (print_check_info) {
     std::cout << "\nstop " << curr_batch + 1 << ":\n";
 
-    const int label_width = 11;  // width for the row label (e.g., "R_hat:")
-    const int col_width = 10;    // width for each value/parameter name
+    const int label_width = 11; // width for the row label (e.g., "R_hat:")
+    const int col_width = 10;   // width for each value/parameter name
     int line_width = label_width + n_params * (col_width + 1);
 
     auto print_separator = [&]() {

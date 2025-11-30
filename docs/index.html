@@ -80,27 +80,55 @@
 <img src="logo.png" class="logo" alt=""><h1 id="the-ngme2-package-">The <code>ngme2</code> Package <a class="anchor" aria-label="anchor" href="#the-ngme2-package-"></a>
 </h1>
 </div>
-<p><code>ngme2</code> is an R package used for fitting non-gaussian mixed effects models. These models are fitted using maximum likelihood estimation and preconditioned stochastic gradient descent.</p>
-<p>Basic statistical operations such as likelihood evaluations and kriging predictions are also implemented.</p>
+<p><code>ngme2</code> is a unified, efficient, and flexible framework for fitting latent <strong>non-Gaussian</strong> models in R. It extends the SPDE-based Gaussian modeling toolkit to handle skewness, heavy tails, and non-smooth behavior while keeping familiar workflows for estimation, prediction, and model assessment.</p>
 <div class="section level2">
-<h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
+<h2 id="what-you-get">What you get<a class="anchor" aria-label="anchor" href="#what-you-get"></a>
 </h2>
-<p>Several popular Gaussian random field models can be represented as solutions to stochastic partial differential equations (SPDEs) of the form <math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>L</mi><mi>β</mi></msup><mrow><mo stretchy="true" form="prefix">(</mo><mi>τ</mi><mi>u</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mi>𝒲</mi><mi>.</mi></mrow><annotation encoding="application/x-tex">
-L^\beta (\tau u) = \mathcal{W}.
-</annotation></semantics></math> Here <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>𝒲</mi><annotation encoding="application/x-tex">\mathcal{W}</annotation></semantics></math> is a Gaussian white noise, <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>L</mi><annotation encoding="application/x-tex">L</annotation></semantics></math> is a second-order differential operator, the fractional power <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>β</mi><mo>&gt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\beta &gt; 0</annotation></semantics></math> determines the smoothness of u. See <a href="https://rss.onlinelibrary.wiley.com/doi/full/10.1111/j.1467-9868.2011.00777.x" class="external-link">An explicit link between Gaussian fields and Gaussian Markov random fields: the stochastic partial differential equation approach</a> for further details.</p>
-<p>This package aims to address the non-Gaussian extension to the SPDE approach model by replacing the driven noise <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>𝒲</mi><annotation encoding="application/x-tex">\mathcal{W}</annotation></semantics></math> to be a non-Gaussian noise <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ℳ</mi><annotation encoding="application/x-tex">\mathcal{M}</annotation></semantics></math>. More specificly, a type-G Lévy process.</p>
-<p>The increment of a type-G Lévy process can be represented as <math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>γ</mi><mo>+</mo><mi>μ</mi><mi>V</mi><mo>+</mo><mi>σ</mi><msqrt><mi>V</mi></msqrt><mi>Z</mi><mo>,</mo></mrow><annotation encoding="application/x-tex">
-\gamma + \mu V + \sigma \sqrt{V}Z,
-</annotation></semantics></math> where <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>γ</mi><mo>,</mo><mi>μ</mi></mrow><annotation encoding="application/x-tex">\gamma, \mu</annotation></semantics></math> are parameters, <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Z</mi><mo>∼</mo><mi>N</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">Z\sim N(0,1)</annotation></semantics></math> and is independent of <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>V</mi><annotation encoding="application/x-tex">V</annotation></semantics></math>, and <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>V</mi><annotation encoding="application/x-tex">V</annotation></semantics></math> is a positive infinitely divisible random variable.</p>
-<p>One example is the normal inverse Gaussian (NIG) noise. (See <code>vignette("SPDE-approach", package = "ngme2")</code> for more details)</p>
+<ul>
+<li>Temporal processes: AR(1), Ornstein–Uhlenbeck, random walks.</li>
+<li>Spatial processes: Matérn fields (including graph-based meshes) and separable/non-separable space–time variants.</li>
+<li>Non-Gaussian driven noise: NIG, generalized asymmetric Laplace, skew-(t); non-Gaussian measurement noise is also supported.</li>
+<li>Joint and custom structures: bivariate type-G fields, longitudinal random-effects models, and user-defined operators via <code>generic</code> / <code>generic_ns</code>.</li>
+<li>Practical tools: kriging-style prediction, cross-validation helpers, and diagnostics for convergence/fit quality.</li>
+</ul>
 </div>
 <div class="section level2">
-<h2 id="installation-instructions">Installation instructions<a class="anchor" aria-label="anchor" href="#installation-instructions"></a>
+<h2 id="model-framework-in-a-sentence">Model framework in a sentence<a class="anchor" aria-label="anchor" href="#model-framework-in-a-sentence"></a>
 </h2>
-<p>The stable version of <code>ngme2</code> can be installed using the command:</p>
+<p>Data (Y) are linked to a latent process (W) through an observation matrix (A) and fixed effects (X), while both the process and measurement errors are modeled as normal mean–variance mixtures with generalized inverse Gaussian mixing. An operator (K()) encodes spatial/temporal structure, letting the same template describe everything from simple random effects to rich spatio-temporal fields.</p>
+</div>
+<div class="section level2">
+<h2 id="quick-start">Quick start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
+</h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://davidbolin.github.io/ngme2/">ngme2</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/ngme.html">ngme</a></span><span class="op">(</span></span>
+<span>  formula <span class="op">=</span> <span class="va">Y</span> <span class="op">~</span> <span class="va">x1</span> <span class="op">+</span> <span class="va">x2</span> <span class="op">+</span> <span class="fu"><a href="reference/f.html">f</a></span><span class="op">(</span><span class="va">index</span>, model <span class="op">=</span> <span class="fu"><a href="reference/ar1.html">ar1</a></span><span class="op">(</span><span class="va">mesh_1d</span><span class="op">)</span>, noise <span class="op">=</span> <span class="fu"><a href="reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  data    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Y <span class="op">=</span> <span class="va">Y</span>, x1 <span class="op">=</span> <span class="va">x1</span>, x2 <span class="op">=</span> <span class="va">x2</span>, index <span class="op">=</span> <span class="va">index</span><span class="op">)</span>,</span>
+<span>  noise   <span class="op">=</span> <span class="fu"><a href="reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span>   <span class="co"># measurement noise</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>Use <code><a href="reference/ngme_optimizers.html">ngme_optimizers()</a></code> to see available optimizers and configure stochastic gradient settings via <code>control_opt</code>.</p>
+</div>
+<div class="section level2">
+<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
+</h2>
+<p>The stable version can be installed with:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"ngme2"</span>, repos <span class="op">=</span> <span class="st">"https://davidbolin.github.io/ngme2/"</span><span class="op">)</span></span></code></pre></div>
-<p>See also the <a href="https://davidbolin.github.io/ngme2/articles/Installation_and_configuration.html" title="Installation and Configuration">Installation and Configuration</a> vignette.</p>
+<p>See the <a href="https://davidbolin.github.io/ngme2/articles/Installation_and_configuration.html" title="Installation and Configuration">Installation and Configuration</a> vignette if compilation tools are needed.</p>
+</div>
+<div class="section level2">
+<h2 id="learn-more">Learn more<a class="anchor" aria-label="anchor" href="#learn-more"></a>
+</h2>
+<ul>
+<li>
+<code><a href="articles/ngme2.html">vignette("ngme2")</a></code> for a guided tour of the modeling framework.</li>
+<li>
+<code><a href="articles/pred-and-est.html">vignette("pred-and-est")</a></code> for estimation and prediction details.</li>
+<li>
+<code><a href="articles/cross-validation.html">vignette("cross-validation")</a></code> for model comparison workflows.</li>
+</ul>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">

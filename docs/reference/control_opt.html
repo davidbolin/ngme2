@@ -119,11 +119,11 @@ optimization process.</p>
 
 
 <dt id="arg-n-batch">n_batch<a class="anchor" aria-label="anchor" href="#arg-n-batch"></a></dt>
-<dd><p>number of batches for convergence check (divide iterations into n_batch)</p></dd>
+<dd><p>number of checkpoints; optimization is split into <code>n_batch</code> equal batches</p></dd>
 
 
 <dt id="arg-iters-per-check">iters_per_check<a class="anchor" aria-label="anchor" href="#arg-iters-per-check"></a></dt>
-<dd><p>run how many iterations between each check point (or specify n_batch)</p></dd>
+<dd><p>run how many iterations between each check point (or specify <code>n_batch</code>)</p></dd>
 
 
 <dt id="arg-optimizer">optimizer<a class="anchor" aria-label="anchor" href="#arg-optimizer"></a></dt>
@@ -188,15 +188,15 @@ If it is more than n_parallel_chain, the rest will be used to parallel different
 
 
 <dt id="arg-n-min-batch">n_min_batch<a class="anchor" aria-label="anchor" href="#arg-n-min-batch"></a></dt>
-<dd><p>minimum batches to run before any convergence check</p></dd>
+<dd><p>minimum number of checkpoints before any convergence diagnostic is attempted</p></dd>
 
 
 <dt id="arg-n-slope-check">n_slope_check<a class="anchor" aria-label="anchor" href="#arg-n-slope-check"></a></dt>
-<dd><p>number of batches used for trend regression window</p></dd>
+<dd><p>number of checkpoints used as the regression window for the trend test</p></dd>
 
 
 <dt id="arg-trend-std-conv-check">trend_std_conv_check<a class="anchor" aria-label="anchor" href="#arg-trend-std-conv-check"></a></dt>
-<dd><p>use trend/std diagnostic for convergence check</p></dd>
+<dd><p>enable the trend/std diagnostic (uses <code>std_lim</code>, <code>trend_lim</code>, <code>n_slope_check</code>)</p></dd>
 
 
 <dt id="arg-std-lim">std_lim<a class="anchor" aria-label="anchor" href="#arg-std-lim"></a></dt>
@@ -212,11 +212,11 @@ If it is more than n_parallel_chain, the rest will be used to parallel different
 
 
 <dt id="arg-pflug-conv-check">pflug_conv_check<a class="anchor" aria-label="anchor" href="#arg-pflug-conv-check"></a></dt>
-<dd><p>use pflug diagnostic for convergence check</p></dd>
+<dd><p>use Pflug diagnostic for convergence check</p></dd>
 
 
 <dt id="arg-pflug-alpha">pflug_alpha<a class="anchor" aria-label="anchor" href="#arg-pflug-alpha"></a></dt>
-<dd><p>scaling factor (0-1] for Pflug criterion: require pflug_sum &lt; pflug_alpha * max_pflug_sum</p></dd>
+<dd><p>scaling factor (0-1] for Pflug criterion: require <code>pflug_sum &lt; pflug_alpha * max_pflug_sum</code></p></dd>
 
 
 <dt id="arg-max-r-hat-conv-check">max_R_hat_conv_check<a class="anchor" aria-label="anchor" href="#arg-max-r-hat-conv-check"></a></dt>
@@ -229,11 +229,16 @@ If it is more than n_parallel_chain, the rest will be used to parallel different
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>To enable convergence check, we need multiple chains running.
- We compare the trend of the estimated parameter of length
- <code>n_slope_check</code> (linear regression) with <code>trend_lim</code>.
- We compare the standard devation of estimated parameters (in different chains)
- with std_lim.</p>
+    <p>Convergence diagnostics (multi-chain):
+* R-hat: per-parameter Gelman–Rubin statistic; passes if <code>R_hat &lt;= max_R_hat</code>.
+* Trend/Std: uses the last <code>n_slope_check</code> checkpoints after at least <code>n_min_batch</code> batches.
+  Passes when both the relative std (<code>sqrt(var)/|mean| &lt;= std_lim</code>) and linear trend
+  of the means (<code>|slope| &lt;= trend_lim</code>) satisfy their thresholds.
+* Pflug: per-chain criterion <code>pflug_sum &lt; pflug_alpha * max_pflug_sum</code> in the latest batch;
+  if all chains satisfy it, overall convergence is declared.
+Checks are evaluated every <code>iters_per_check = iterations / n_batch</code>. A parameter is marked
+converged if any enabled parameter-level diagnostic (R-hat or Trend/Std) passes; the run stops
+when all parameters converge or when the Pflug diagnostic triggers.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

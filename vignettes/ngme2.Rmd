@@ -158,18 +158,11 @@ ggplot(nig_par, mapping = aes(x = x, y = dnig, colour = factor(sigma))) +
 
 ### Parameter Estimation
 
-1. Ngme2 does maximum likelihood estimation through preconditioned stochastic gradient descent.
-2. Multiple chains are run in parallel for better convergence checks.
+1. Ngme2 does maximum likelihood estimation through preconditioned stochastic gradient descent. See [Model estimation and prediction](pred_and_est.html) for more details.
+2. Multiple chains are supported for better convergence checks. 
+3. Different stochastic optimization algorithms can be used for the optimization process. See `?ngme_optimizers` for more details.
+4. Different convergence checks are supported.
 
-Optimizer options can be set through `control_opt`. The supported optimizers are listed in `ngme_optimizers`. 
-
-```{r}
-ngme_optimizers()
-# For details about optimizer options, see e.g. help(adam)
-```
-
-
-See [Model estimation and prediction](pred_and_est.html) for more details.
 
 ## Ngme Model Structure
 
@@ -307,14 +300,6 @@ It gives the `ngme` object, which has three parts:
 
 We can turn the `estimation = TRUE` to start estimating the model.
 
-## Optimization options
-
-The optimization process is controlled by the `control_opt` argument.
-
-Different stochastic optimization algorithms can be used for the optimization process.
-See `?ngme_optimizers` for more details.
-
-
 ## Convergence check methods
 
 `ngme2` can monitor convergence with three optional diagnostics. They all run at each checkpoint (every `iters_per_check` iterations, default `iterations / n_batch`). Checks only begin after `n_min_batch` checkpoints have accumulated.
@@ -424,18 +409,20 @@ fit_nig <- ngme(
     burnin = 100,
     iterations = 2000,
     n_parallel_chain = 4,
-    seed = 3
+    seed = 3,
+    pflug_conv_check = TRUE,
+    pflug_alpha = 1
   )
 )
 ```
 
+As we can see, the model converges in 800 iterations by Pflug diagnostic.
 Next we can read the result directly from the object.
 
 ```{r out}
 fit_nig
 ```
 
-As we can see, the model converges in 350 iterations.
 The estimation results are close to the real parameter.
 
 We can also use the `traceplot` function to see the estimation traceplot.

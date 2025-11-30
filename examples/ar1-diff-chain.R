@@ -14,7 +14,7 @@ nu <- 1
 rho <- 0.5
 
 ar1_model <- f(day,
-  model = "ar1", rho = rho,
+  model = ar1(rho = rho),
   noise = noise_nig(mu = mu, sigma = sigma, nu = nu)
 )
 # noise = noise_normal(sigma = sigma))
@@ -38,7 +38,7 @@ Y <- process + rnorm(n_obs, sd = sigma_eps)
 control_same <- control_opt(
   optimizer = precond_sgd(),
   burnin = 100,
-  iterations = 1000,
+  iterations = 100,
   n_parallel_chain = 4,
   # verbose = TRUE,
   rao_blackwellization = TRUE,

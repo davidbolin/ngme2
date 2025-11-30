@@ -66,19 +66,15 @@ optimization process.</p>
 <span>  iterations <span class="op">=</span> <span class="fl">500</span>,</span>
 <span>  estimation <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  standardize_fixed <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  stop_points <span class="op">=</span> <span class="fl">10</span>,</span>
-<span>  iters_per_check <span class="op">=</span> <span class="va">iterations</span><span class="op">/</span><span class="va">stop_points</span>,</span>
+<span>  n_batch <span class="op">=</span> <span class="fl">10</span>,</span>
+<span>  iters_per_check <span class="op">=</span> <span class="va">iterations</span><span class="op">/</span><span class="va">n_batch</span>,</span>
 <span>  optimizer <span class="op">=</span> <span class="fu"><a href="adam.html">adam</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  start_sd <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>  n_parallel_chain <span class="op">=</span> <span class="fl">4</span>,</span>
 <span>  max_num_threads <span class="op">=</span> <span class="va">n_parallel_chain</span>,</span>
-<span>  n_slope_check <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  std_lim <span class="op">=</span> <span class="fl">0.01</span>,</span>
-<span>  trend_lim <span class="op">=</span> <span class="fl">0.01</span>,</span>
 <span>  print_check_info <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  max_relative_step <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>  max_absolute_step <span class="op">=</span> <span class="fl">0.5</span>,</span>
-<span>  converge_eps <span class="op">=</span> <span class="fl">1e-05</span>,</span>
 <span>  rao_blackwellization <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  n_trace_iter <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>  sampling_strategy <span class="op">=</span> <span class="st">"all"</span>,</span>
@@ -86,7 +82,15 @@ optimization process.</p>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  store_traj <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  robust <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  max_R_hat <span class="op">=</span> <span class="fl">1.1</span></span>
+<span>  n_min_batch <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>  n_slope_check <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>  trend_std_conv_check <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  std_lim <span class="op">=</span> <span class="fl">0.01</span>,</span>
+<span>  trend_lim <span class="op">=</span> <span class="fl">0.01</span>,</span>
+<span>  R_hat_conv_check <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  max_R_hat <span class="op">=</span> <span class="fl">1.1</span>,</span>
+<span>  pflug_conv_check <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  pflug_alpha <span class="op">=</span> <span class="fl">0.9</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -114,12 +118,12 @@ optimization process.</p>
 <dd><p>whether or not standardize the fixed effect</p></dd>
 
 
-<dt id="arg-stop-points">stop_points<a class="anchor" aria-label="anchor" href="#arg-stop-points"></a></dt>
-<dd><p>number of stop points for convergence check (or specify iters_per_check)</p></dd>
+<dt id="arg-n-batch">n_batch<a class="anchor" aria-label="anchor" href="#arg-n-batch"></a></dt>
+<dd><p>number of batches for convergence check (divide iterations into n_batch)</p></dd>
 
 
 <dt id="arg-iters-per-check">iters_per_check<a class="anchor" aria-label="anchor" href="#arg-iters-per-check"></a></dt>
-<dd><p>run how many iterations between each check point (or specify stop_points)</p></dd>
+<dd><p>run how many iterations between each check point (or specify n_batch)</p></dd>
 
 
 <dt id="arg-optimizer">optimizer<a class="anchor" aria-label="anchor" href="#arg-optimizer"></a></dt>
@@ -141,18 +145,6 @@ see ?sgd, ?precond_sgd, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW</p></dd>
 If it is more than n_parallel_chain, the rest will be used to parallel different replicates of the model.</p></dd>
 
 
-<dt id="arg-n-slope-check">n_slope_check<a class="anchor" aria-label="anchor" href="#arg-n-slope-check"></a></dt>
-<dd><p>number of stop points for regression</p></dd>
-
-
-<dt id="arg-std-lim">std_lim<a class="anchor" aria-label="anchor" href="#arg-std-lim"></a></dt>
-<dd><p>maximum allowed standard deviation</p></dd>
-
-
-<dt id="arg-trend-lim">trend_lim<a class="anchor" aria-label="anchor" href="#arg-trend-lim"></a></dt>
-<dd><p>maximum allowed slope</p></dd>
-
-
 <dt id="arg-print-check-info">print_check_info<a class="anchor" aria-label="anchor" href="#arg-print-check-info"></a></dt>
 <dd><p>print the convergence information</p></dd>
 
@@ -163,10 +155,6 @@ If it is more than n_parallel_chain, the rest will be used to parallel different
 
 <dt id="arg-max-absolute-step">max_absolute_step<a class="anchor" aria-label="anchor" href="#arg-max-absolute-step"></a></dt>
 <dd><p>max absolute step allowed in 1 iteration</p></dd>
-
-
-<dt id="arg-converge-eps">converge_eps<a class="anchor" aria-label="anchor" href="#arg-converge-eps"></a></dt>
-<dd><p>convergence threshold, test if grad.norm() &lt; converge_eps</p></dd>
 
 
 <dt id="arg-rao-blackwellization">rao_blackwellization<a class="anchor" aria-label="anchor" href="#arg-rao-blackwellization"></a></dt>
@@ -197,6 +185,42 @@ If it is more than n_parallel_chain, the rest will be used to parallel different
 
 <dt id="arg-store-traj">store_traj<a class="anchor" aria-label="anchor" href="#arg-store-traj"></a></dt>
 <dd><p>store the optimizer trajectory for diagnostics (set FALSE to reduce memory)</p></dd>
+
+
+<dt id="arg-n-min-batch">n_min_batch<a class="anchor" aria-label="anchor" href="#arg-n-min-batch"></a></dt>
+<dd><p>minimum batches to run before any convergence check</p></dd>
+
+
+<dt id="arg-n-slope-check">n_slope_check<a class="anchor" aria-label="anchor" href="#arg-n-slope-check"></a></dt>
+<dd><p>number of batches used for trend regression window</p></dd>
+
+
+<dt id="arg-trend-std-conv-check">trend_std_conv_check<a class="anchor" aria-label="anchor" href="#arg-trend-std-conv-check"></a></dt>
+<dd><p>use trend/std diagnostic for convergence check</p></dd>
+
+
+<dt id="arg-std-lim">std_lim<a class="anchor" aria-label="anchor" href="#arg-std-lim"></a></dt>
+<dd><p>maximum allowed standard deviation</p></dd>
+
+
+<dt id="arg-trend-lim">trend_lim<a class="anchor" aria-label="anchor" href="#arg-trend-lim"></a></dt>
+<dd><p>maximum allowed slope</p></dd>
+
+
+<dt id="arg-max-r-hat">max_R_hat<a class="anchor" aria-label="anchor" href="#arg-max-r-hat"></a></dt>
+<dd><p>maximum allowed R_hat</p></dd>
+
+
+<dt id="arg-pflug-conv-check">pflug_conv_check<a class="anchor" aria-label="anchor" href="#arg-pflug-conv-check"></a></dt>
+<dd><p>use pflug diagnostic for convergence check</p></dd>
+
+
+<dt id="arg-pflug-alpha">pflug_alpha<a class="anchor" aria-label="anchor" href="#arg-pflug-alpha"></a></dt>
+<dd><p>scaling factor (0-1] for Pflug criterion: require pflug_sum &lt; pflug_alpha * max_pflug_sum</p></dd>
+
+
+<dt id="arg-max-r-hat-conv-check">max_R_hat_conv_check<a class="anchor" aria-label="anchor" href="#arg-max-r-hat-conv-check"></a></dt>
+<dd><p>use max_R_hat for convergence check</p></dd>
 
 </dl></div>
     <div class="section level2">

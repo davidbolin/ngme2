@@ -909,7 +909,7 @@ response variable and both fixed and latent effects:</p>
 <span>    iterations <span class="op">=</span> <span class="fl">2000</span>,</span>
 <span>    std_lim <span class="op">=</span> <span class="fl">0.02</span>,</span>
 <span>    n_parallel_chain <span class="op">=</span> <span class="fl">4</span>,</span>
-<span>    stop_points <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>    n_batch <span class="op">=</span> <span class="fl">5</span>,</span>
 <span>    verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>    print_check_info <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>    seed <span class="op">=</span> <span class="fl">3</span></span>
@@ -946,8 +946,8 @@ estimation robustness</li>
 <strong><code>std_lim = 0.01</code></strong>: Sets the convergence
 criterion based on parameter standard deviation across chains</li>
 <li>
-<strong><code>stop_points = 10</code></strong>: Number of
-intermediate convergence checks during optimization</li>
+<strong><code>n_batch = 10</code></strong>: Number of intermediate
+convergence checks during optimization</li>
 <li>
 <strong><code>seed = 3</code></strong>: Ensures reproducible results
 across runs</li>
@@ -963,7 +963,7 @@ results:</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt;     x1     x2     x3 </span></span>
-<span><span class="co">#&gt; -0.963  2.005  0.471 </span></span>
+<span><span class="co">#&gt; -0.964  2.005  0.471 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $my_rw</span></span>
@@ -971,14 +971,14 @@ results:</p>
 <span><span class="co">#&gt;       No parameter.</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -3.21</span></span>
-<span><span class="co">#&gt;       sigma = 3.71</span></span>
-<span><span class="co">#&gt;       nu = 0.521</span></span>
+<span><span class="co">#&gt;       mu = -3.14</span></span>
+<span><span class="co">#&gt;       sigma = 3.76</span></span>
+<span><span class="co">#&gt;       nu = 0.504</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 2.23</span></span></code></pre></div>
+<span><span class="co">#&gt;       sigma = 2.18</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="convergence-diagnostics">Convergence Diagnostics<a class="anchor" aria-label="anchor" href="#convergence-diagnostics"></a>
@@ -992,16 +992,16 @@ will use the built-in <code>traceplot</code> function from
 <p><img src="RW-model_files/figure-html/convergence-diagnostics-1.png" width="100%"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 2.201553</span></span>
+<span><span class="co">#&gt; [1] 2.203924</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`fixed effect 1`</span></span>
-<span><span class="co">#&gt; [1] -0.9627772</span></span>
+<span><span class="co">#&gt; [1] -0.9627802</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`fixed effect 2`</span></span>
-<span><span class="co">#&gt; [1] 2.004792</span></span>
+<span><span class="co">#&gt; [1] 2.00478</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`fixed effect 3`</span></span>
-<span><span class="co">#&gt; [1] 0.4708141</span></span></code></pre>
+<span><span class="co">#&gt; [1] 0.4708321</span></span></code></pre>
 <p>Now let us examine the convergence of the RW1 process parameters:</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Trace plots for RW1 parameters (blue lines indicate true value)</span></span>
@@ -1009,13 +1009,13 @@ will use the built-in <code>traceplot</code> function from
 <p><img src="RW-model_files/figure-html/convergence-rw-process-1.png" width="100%"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $mu</span></span>
-<span><span class="co">#&gt; [1] -3.209374</span></span>
+<span><span class="co">#&gt; [1] -3.213978</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 3.697005</span></span>
+<span><span class="co">#&gt; [1] 3.706449</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nu</span></span>
-<span><span class="co">#&gt; [1] 0.5210412</span></span></code></pre>
+<span><span class="co">#&gt; [1] 0.5217923</span></span></code></pre>
 </div>
 <div class="section level3">
 <h3 id="parameter-estimates-summary">Parameter Estimates Summary<a class="anchor" aria-label="anchor" href="#parameter-estimates-summary"></a>
@@ -1033,14 +1033,14 @@ the true values using the <code><a href="../reference/ngme_result.html">ngme_res
 <span>  row.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">params_data</span><span class="op">$</span><span class="va">fixed_effects</span><span class="op">)</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    Truth  Estimates</span></span>
-<span><span class="co">#&gt; x1  -1.0 -0.9630700</span></span>
-<span><span class="co">#&gt; x2   2.0  2.0047949</span></span>
-<span><span class="co">#&gt; x3   0.5  0.4710528</span></span>
+<span><span class="co">#&gt; x1  -1.0 -0.9636315</span></span>
+<span><span class="co">#&gt; x2   2.0  2.0053521</span></span>
+<span><span class="co">#&gt; x3   0.5  0.4707930</span></span>
 <span></span>
 <span><span class="co"># Measurement Noise</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Truth <span class="op">=</span> <span class="fl">2.0</span>, Estimate <span class="op">=</span> <span class="va">params_data</span><span class="op">$</span><span class="va">sigma</span>, row.names <span class="op">=</span> <span class="st">"sigma"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;       Truth Estimate</span></span>
-<span><span class="co">#&gt; sigma     2 2.231313</span></span>
+<span><span class="co">#&gt; sigma     2 2.177419</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># RW1 Process Parameters</span></span>
@@ -1051,9 +1051,9 @@ the true values using the <code><a href="../reference/ngme_result.html">ngme_res
 <span>  Estimates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">params_rw1</span><span class="op">)</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;       Truth  Estimates</span></span>
-<span><span class="co">#&gt; mu     -3.0 -3.2139780</span></span>
-<span><span class="co">#&gt; sigma   4.0  3.7060626</span></span>
-<span><span class="co">#&gt; nu      0.4  0.5212606</span></span></code></pre></div>
+<span><span class="co">#&gt; mu     -3.0 -3.1422387</span></span>
+<span><span class="co">#&gt; sigma   4.0  3.7629014</span></span>
+<span><span class="co">#&gt; nu      0.4  0.5036924</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="model-validation">Model Validation<a class="anchor" aria-label="anchor" href="#model-validation"></a>
@@ -1127,7 +1127,7 @@ grids naturally:</p>
 <span>    iterations <span class="op">=</span> <span class="fl">1000</span>,</span>
 <span>    std_lim <span class="op">=</span> <span class="fl">0.01</span>,</span>
 <span>    n_parallel_chain <span class="op">=</span> <span class="fl">4</span>,</span>
-<span>    stop_points <span class="op">=</span> <span class="fl">10</span>,</span>
+<span>    n_batch <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>    verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>    print_check_info <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>    seed <span class="op">=</span> <span class="fl">42</span></span>
@@ -1179,9 +1179,9 @@ estimation:</p>
 <span><span class="va">coverage_90_interp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">in_interval_90_interp</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"RMSE:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">rmse_interp</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; RMSE: 3.639</span></span>
+<span><span class="co">#&gt; RMSE: 3.642</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"MAE:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">mae_interp</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; MAE: 3.122</span></span>
+<span><span class="co">#&gt; MAE: 3.126</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Correlation:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">correlation_interp</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Correlation: 0.993</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"90% Interval Coverage:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">coverage_90_interp</span> <span class="op">*</span> <span class="fl">100</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"%\n"</span><span class="op">)</span></span>
@@ -1195,16 +1195,16 @@ estimation:</p>
 <span>  Upper_90 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">interp_upper</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">]</span>, <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    Time Observed Interpolated Lower_90 Upper_90</span></span>
-<span><span class="co">#&gt; 1   151   -14.39       -16.56   -16.49   -13.65</span></span>
-<span><span class="co">#&gt; 2   152   -16.94       -14.61   -14.58   -11.72</span></span>
-<span><span class="co">#&gt; 3   153   -16.52       -14.13   -14.13   -11.26</span></span>
-<span><span class="co">#&gt; 4   154   -17.10       -15.03   -15.06   -12.19</span></span>
-<span><span class="co">#&gt; 5   155     7.52         5.34     5.28     8.17</span></span>
-<span><span class="co">#&gt; 6   250    68.17        62.19    62.18    65.43</span></span>
-<span><span class="co">#&gt; 7   251    43.51        37.33    37.30    40.56</span></span>
-<span><span class="co">#&gt; 8   252    43.77        48.49    48.43    51.71</span></span>
-<span><span class="co">#&gt; 9   253    39.76        45.69    45.62    48.90</span></span>
-<span><span class="co">#&gt; 10  254    86.37        83.45    83.36    86.64</span></span></code></pre></div>
+<span><span class="co">#&gt; 1   151   -14.39       -16.58   -16.53   -13.67</span></span>
+<span><span class="co">#&gt; 2   152   -16.94       -14.63   -14.60   -11.71</span></span>
+<span><span class="co">#&gt; 3   153   -16.52       -14.12   -14.12   -11.19</span></span>
+<span><span class="co">#&gt; 4   154   -17.10       -15.01   -15.04   -12.07</span></span>
+<span><span class="co">#&gt; 5   155     7.52         5.38     5.32     8.33</span></span>
+<span><span class="co">#&gt; 6   250    68.17        62.21    62.21    65.38</span></span>
+<span><span class="co">#&gt; 7   251    43.51        37.33    37.31    40.47</span></span>
+<span><span class="co">#&gt; 8   252    43.77        48.48    48.45    51.60</span></span>
+<span><span class="co">#&gt; 9   253    39.76        45.69    45.64    48.78</span></span>
+<span><span class="co">#&gt; 10  254    86.37        83.44    83.38    86.50</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level3">
@@ -1266,12 +1266,12 @@ recover the underlying spatial structure:</p>
 <span>  <span class="st">"Mean absolute difference from true values:"</span>,</span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">W_posterior_mean</span> <span class="op">-</span> <span class="va">W1_nig</span><span class="op">)</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Mean absolute difference from true values: 1.256</span></span>
+<span><span class="co">#&gt; Mean absolute difference from true values: 1.263</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span></span>
 <span>  <span class="st">"Average posterior standard deviation:"</span>,</span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">W_posterior_sd</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Average posterior standard deviation: 1.74</span></span></code></pre></div>
+<span><span class="co">#&gt; Average posterior standard deviation: 1.709</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="latent-process-uncertainty-visualization">Latent Process Uncertainty Visualization<a class="anchor" aria-label="anchor" href="#latent-process-uncertainty-visualization"></a>

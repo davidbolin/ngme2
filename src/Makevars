@@ -82,7 +82,11 @@ ifeq ($(UNAME), Darwin)
   
   # Add Accelerate framework for BLAS/LAPACK
   PKG_LIBS += -framework Accelerate
-  PKG_LIBS += $(HOMEBREW_PREFIX)/opt/libomp/lib/libomp.dylib -Wl,-rpath,$(HOMEBREW_PREFIX)/opt/libomp/lib
+  
+  # Only link libomp if not skipped (CI usually links it via LDFLAGS)
+  ifndef NGME_SKIP_LIBOMP_LINK
+    PKG_LIBS += $(HOMEBREW_PREFIX)/opt/libomp/lib/libomp.dylib -Wl,-rpath,$(HOMEBREW_PREFIX)/opt/libomp/lib
+  endif
 endif
 
 # MKLROOT = /opt/intel/mkl

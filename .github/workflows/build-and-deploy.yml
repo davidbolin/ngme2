@@ -3,6 +3,7 @@ name: Build & Deploy R binaries and pkgdown
 on:
   push:
     branches: [stable]
+    tags: ['v*']
 
 permissions:
   contents: write
@@ -176,6 +177,8 @@ jobs:
           export CXXFLAGS="-fopenmp -I$LLVM_PREFIX/include -I$LIBOMP_PREFIX/include"
           export LDFLAGS="-L$LLVM_PREFIX/lib -L$LIBOMP_PREFIX/lib -L$GCC_LIB_DIR -L$GCC_PREFIX/lib -lomp -Wl,-rpath,@loader_path/Resources/lib"
           export DYLD_FALLBACK_LIBRARY_PATH="$LIBOMP_PREFIX/lib:$LLVM_PREFIX/lib:$R_HOME/lib:$GCC_LIB_DIR:$GCC_PREFIX/lib:/usr/local/lib:/usr/lib"
+          # Skip explicit linking in Makevars to avoid duplicate dylib error
+          export NGME_SKIP_LIBOMP_LINK=1
           
           # Build the binary package
           R CMD INSTALL --build --no-build-vignettes --no-docs --no-html --no-multiarch *.tar.gz
@@ -268,6 +271,32 @@ jobs:
         with:
           name: source-${{ matrix.r-version }}
           path: "*.tar.gz"
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release_assets
+          find artifacts -type f \( -name "*.tgz" -o -name "*.zip" -o -name "*.tar.gz" \) -exec cp {} release_assets/ \;
+          ls -la release_assets/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: release_assets/*
+          draft: false
+          prerelease: false
+          generate_release_notes: true
 
   deploy-binaries:
     needs: [build]

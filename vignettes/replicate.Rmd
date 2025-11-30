@@ -86,7 +86,7 @@ library(ggplot2)
 
 # creating ar1 process
 n <- 500
-myar <- ngme2::f(1:n, model = "ar1", rho = .75, noise = noise_nig())
+myar <- ngme2::f(1:n, model = ar1(rho = .75), noise = noise_nig())
 
 W1 <- simulate(myar, seed = 314)[[1]] # simulating one realization of the process
 W2 <- simulate(myar, seed = 159)[[1]] # simulating another realization of the process
@@ -137,13 +137,12 @@ to illustrate the difference between treating the data as a single process vs. r
 
 ```{r}
 # No replicates: treats as single AR(1) process with 6 time points
-no_replicates <- ngme2::f(1:6, model = "ar1", rho = .5, noise = noise_normal())
+no_replicates <- ngme2::f(1:6, model = ar1(rho = .5), noise = noise_normal())
 
 # With replicates in f(): 2 replicates, each with 3 time points
 with_replicates_f <- ngme2::f(
   rep(1:3, 2),
-  model = "ar1",
-  rho = .5,
+  model = ar1(rho = .5),
   replicate = rep(1:2, each = 3),
   noise = noise_normal()
 )
@@ -167,7 +166,7 @@ Note how in the replicate version, the $\mathbf{K}_{4,3}$ entry is zero, meaning
 mod_replicates_global <- ngme(
   formula = Y ~ f(
     c(1:n, 1:n),
-    model = "ar1",
+    model = ar1(),
     noise = noise_nig()
   ),
   replicate = df$group,
@@ -186,7 +185,7 @@ mod_replicates_global
 mod_replicates_flexible <- ngme(
   formula = Y ~ f(
     rep(1:n, 2),
-    model = "ar1",
+    model = ar1(),
     replicate = df$group,
     noise = noise_nig()
   ),
@@ -294,8 +293,11 @@ cienaga$temp <- scale(cienaga$temp)
 fit_global <- ngme(
   formula = temp ~ 1 +
     f(as.matrix(cienaga[, c("East_scale", "North_scale")]),
-      model = "matern", mesh = mesh,
-      name = "spde", noise = noise_nig()
+      model = matern(
+        mesh = mesh
+      ),
+      name = "spde",
+      noise = noise_nig()
     ),
   data = cienaga,
   replicate = cienaga$measurement,
@@ -317,8 +319,9 @@ fit_global <- ngme(
 fit_flexible <- ngme(
   formula = temp ~ 1 +
     f(as.matrix(cienaga[, c("East_scale", "North_scale")]),
-      model = "matern",
-      mesh = mesh,
+      model = matern(
+        mesh = mesh,
+      ),
       replicate = cienaga$measurement,
       name = "spde",
       noise = noise_nig()
@@ -351,8 +354,9 @@ mesh2 <- fmesher::fm_mesh_2d(coords2, cutoff = 0.1)
 fit_multi_mesh <- ngme(
   formula = temp ~ 1 +
     f(as.matrix(cienaga[, c("East_scale", "North_scale")]),
-      model = "matern",
-      mesh = list(mesh1, mesh2), # List of meshes
+      model = matern(
+        mesh = list(mesh1, mesh2), # List of meshes
+      ),
       replicate = cienaga$measurement,
       name = "spde",
       noise = noise_nig()
@@ -374,7 +378,7 @@ replicates <- factor(rep(1:3, each = length(base_locations)))
 
 rw1_replicates <- f(
   map = locations,
-  model = "rw1",
+  model = rw1(),
   replicate = replicates,
   noise = noise_normal()
 )

@@ -30,16 +30,14 @@ test_that("test fit matern", {
   Y <- W + rnorm(n_obs, sd = 0.5)
 
   control_opt <- control_opt(
-    optimizer = sgd(),
-    iterations = 500,
-    # rao_blackwellization = TRUE,
+    n_min_batch = 1,
+    optimizer = adam(),
+    iterations = 1000,
     n_parallel_chain = 4,
-    print_check_info = F,
-    n_batch = 1,
+    print_check_info = TRUE,
+    n_batch = 10,
     robust = TRUE,
-    verbose = TRUE,
-    start_sd = 0.01,
-    std_lim = 0.01
+    verbose = TRUE
   )
 
   m_nig_gauss <- ngme(

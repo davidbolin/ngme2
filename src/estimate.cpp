@@ -300,6 +300,10 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
 
   // generate outputs
   for (i = 0; i < n_chains; i++) {
+    // use last batch average parameter instead of last step value
+    Eigen::VectorXd avg_param = (batch_sum.row(i) / batch_steps).transpose();
+    ngmes[i]->set_parameter_and_update(avg_param, false);
+
     outputs.push_back(ngmes[i]->output());
     if (store_traj) {
       opt_vec[i].record_current_state();
@@ -508,45 +512,51 @@ check_conv(const MatrixXd &means, const MatrixXd &vars, int curr_batch,
   if (print_check_info) {
     std::cout << "\nstop " << curr_batch + 1 << ":\n";
 
-    // Calculate dynamic line width
-    int line_width = 9 + n_params * 10;
+    const int label_width = 11;  // width for the row label (e.g., "R_hat:")
+    const int col_width = 10;    // width for each value/parameter name
+    int line_width = label_width + n_params * (col_width + 1);
 
-    std::cout << std::string(line_width, '-') << "\n";
+    auto print_separator = [&]() {
+      std::cout << std::string(line_width, '-') << "\n";
+    };
 
-    std::cout << "Param:   ";
+    print_separator();
+
+    std::cout << std::setw(label_width) << std::left << "Param:";
     for (const auto &name : par_names) {
-      std::cout << std::setw(9) << std::left << name << " ";
+      std::cout << " " << std::setw(col_width) << std::left << name;
     }
     std::cout << "\n";
 
-    std::cout << std::string(line_width, '-') << "\n";
+    print_separator();
 
     if (R_hat_conv_check) {
-      std::cout << "R_hat:   ";
+      std::cout << std::setw(label_width) << std::left << "R_hat:";
       for (int i = 0; i < n_params; i++) {
-        std::cout << std::setw(9) << std::fixed << std::setprecision(3)
-                  << std::left << R_hat(i) << " ";
+        std::cout << " " << std::setw(col_width) << std::fixed
+                  << std::setprecision(3) << std::left << R_hat(i);
       }
       std::cout << "\n";
     }
 
     if (trend_std_conv_check && trend_ready) {
-      std::cout << "std/mean:";
+      std::cout << std::setw(label_width) << std::left << "std/mean:";
       for (int i = 0; i < n_params; i++) {
-        std::cout << " " << std::setw(8) << std::fixed << std::setprecision(3)
-                  << std::left << std_ratio[i];
+        std::cout << " " << std::setw(col_width) << std::fixed
+                  << std::setprecision(3) << std::left << std_ratio[i];
       }
       std::cout << "\n";
 
-      std::cout << "trend:  ";
+      std::cout << std::setw(label_width) << std::left << "trend:";
       for (int i = 0; i < n_params; i++) {
-        std::cout << " " << std::setw(8) << std::fixed << std::setprecision(3)
-                  << std::left << slopes[i];
+        std::cout << " " << std::setw(col_width) << std::fixed
+                  << std::setprecision(3) << std::left << slopes[i];
       }
       std::cout << "\n";
     }
 
-    std::cout << std::string(line_width, '-') << "\n\n";
+    print_separator();
+    std::cout << "\n";
   }
 
   return conv;

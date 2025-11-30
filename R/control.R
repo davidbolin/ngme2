@@ -123,8 +123,10 @@ control_opt <- function(
     is.numeric(max_num_threads) && length(max_num_threads) == 1,
     iterations > 0 && n_batch > 0,
     "iterations should be multiple of n_batch" = iterations %% n_batch == 0,
-    is.numeric(n_min_batch) && length(n_min_batch) == 1 && n_min_batch > 0 &&
-      n_min_batch <= n_batch,
+    "n_min_batch must be numeric" = is.numeric(n_min_batch),
+    "n_min_batch must be a single value" = length(n_min_batch) == 1,
+    "n_min_batch must be greater than 0" = n_min_batch > 0,
+    "n_min_batch cannot be greater than n_batch" = n_min_batch <= n_batch,
     is.numeric(n_slope_check) && length(n_slope_check) == 1 &&
       n_slope_check > 0 && n_slope_check <= n_batch,
     inherits(optimizer, "ngme_optimizer"),

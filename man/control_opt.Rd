@@ -48,9 +48,9 @@ control_opt(
 
 \item{standardize_fixed}{whether or not standardize the fixed effect}
 
-\item{n_batch}{number of batches for convergence check (divide iterations into n_batch)}
+\item{n_batch}{number of checkpoints; optimization is split into \code{n_batch} equal batches}
 
-\item{iters_per_check}{run how many iterations between each check point (or specify n_batch)}
+\item{iters_per_check}{run how many iterations between each check point (or specify \code{n_batch})}
 
 \item{optimizer}{choose different sgd optimization method,
 currently support "sgd", "precond_sgd", "momentum", "adagrad", "rmsprop", "adam", "adamW"
@@ -87,11 +87,11 @@ If it is more than n_parallel_chain, the rest will be used to parallel different
 
 \item{store_traj}{store the optimizer trajectory for diagnostics (set FALSE to reduce memory)}
 
-\item{n_min_batch}{minimum batches to run before any convergence check}
+\item{n_min_batch}{minimum number of checkpoints before any convergence diagnostic is attempted}
 
-\item{n_slope_check}{number of batches used for trend regression window}
+\item{n_slope_check}{number of checkpoints used as the regression window for the trend test}
 
-\item{trend_std_conv_check}{use trend/std diagnostic for convergence check}
+\item{trend_std_conv_check}{enable the trend/std diagnostic (uses \code{std_lim}, \code{trend_lim}, \code{n_slope_check})}
 
 \item{std_lim}{maximum allowed standard deviation}
 
@@ -99,9 +99,9 @@ If it is more than n_parallel_chain, the rest will be used to parallel different
 
 \item{max_R_hat}{maximum allowed R_hat}
 
-\item{pflug_conv_check}{use pflug diagnostic for convergence check}
+\item{pflug_conv_check}{use Pflug diagnostic for convergence check}
 
-\item{pflug_alpha}{scaling factor (0-1] for Pflug criterion: require pflug_sum < pflug_alpha * max_pflug_sum}
+\item{pflug_alpha}{scaling factor (0-1] for Pflug criterion: require \code{pflug_sum < pflug_alpha * max_pflug_sum}}
 
 \item{max_R_hat_conv_check}{use max_R_hat for convergence check}
 }
@@ -113,9 +113,14 @@ These are configurations for \code{ngme}
 optimization process.
 }
 \details{
-To enable convergence check, we need multiple chains running.
- We compare the trend of the estimated parameter of length
- \code{n_slope_check} (linear regression) with \code{trend_lim}.
- We compare the standard devation of estimated parameters (in different chains)
- with std_lim.
+Convergence diagnostics (multi-chain):
+* R-hat: per-parameter Gelman–Rubin statistic; passes if \code{R_hat <= max_R_hat}.
+* Trend/Std: uses the last \code{n_slope_check} checkpoints after at least \code{n_min_batch} batches.
+  Passes when both the relative std (\code{sqrt(var)/|mean| <= std_lim}) and linear trend
+  of the means (\code{|slope| <= trend_lim}) satisfy their thresholds.
+* Pflug: per-chain criterion \code{pflug_sum < pflug_alpha * max_pflug_sum} in the latest batch;
+  if all chains satisfy it, overall convergence is declared.
+Checks are evaluated every \code{iters_per_check = iterations / n_batch}. A parameter is marked
+converged if any enabled parameter-level diagnostic (R-hat or Trend/Std) passes; the run stops
+when all parameters converge or when the Pflug diagnostic triggers.
 }

@@ -17,15 +17,13 @@
 #' @param which_group  belong to which group
 #' @param replicate factor indicating replicate structure for INLA-style replicates.
 #'   When provided, operators and A matrices will be block-diagonalized across replicates.
-#' @param A  observation matrix, automatically computed given map and model except for Bayesian regression
+#' @param A  observation matrix, automatically computed given map and model
 #' @param W      starting value of the process
 #' @param fix_W  stop sampling for W
 #' @param fix_theta_K fix the estimation for theta_K.
 #' @param prior_theta_K prior for theta_K
 #' @param debug     debug mode
 #' @param subset    subset of the model
-#' @param ...       additional arguments (e.g. parameters for model)
-#'  inherit the data from ngme function
 #'
 #' @details When using different meshes for different replicates, provide the mesh parameter
 #' as a list of mesh objects. The number of meshes should match the number of replicates.
@@ -48,7 +46,6 @@ f <- function(
     map,
     model,
     noise = noise_normal(),
-    mesh = NULL,
     name = "field",
     data = NULL,
     group = NULL,
@@ -60,8 +57,7 @@ f <- function(
     fix_theta_K = FALSE,
     prior_theta_K = ngme_prior("normal", param = c(0, 0.001)),
     subset = rep(TRUE, length_map(map)),
-    debug = FALSE,
-    ...) {
+    debug = FALSE) {
   # examine the noise
   if (is.list(noise) && !inherits(noise, "ngme_noise")) {
     noise <- convert_noise_list_to_normal_nig(noise)
@@ -79,27 +75,11 @@ f <- function(
   }
 
   noise_all_normal <- is_noise_all_normal(noise)
-
   # If the user builds a bv/bv2/bv_matern model inline and all noises are normal,
   # ensure fix_theta = TRUE in that model call.
   model_expr <- substitute(model)
   # Check if model is a call to bv/bv2/bv_matern
   if (noise_all_normal && is.call(model_expr)) {
-    # We need to check the function name being called
-    # This is a bit heuristic, assuming the user calls bv(...) directly
-    # If model is passed as an object, this check might be skipped or need different handling
-    # But for now, let's keep it if it helps with inline calls like f(model = bv(...))
-
-    # Actually, if model is an object, we can check it after evaluation.
-    # But the original code was trying to inject fix_theta into the call.
-    # If we only accept objects, the user should have constructed it.
-    # However, f(model = bv(...)) means bv(...) is evaluated.
-    # If we want to enforce fix_theta, we might need to do it after evaluation or warn.
-    # The original code modifies the call expression.
-
-    # Let's preserve the logic for now but adapt it if needed.
-    # The original code checks as.character(model_expr[[1]])
-
     op_name <- tryCatch(as.character(model_expr[[1]]), error = function(e) "")
     if (op_name %in% c("bv", "bv2", "bv_matern")) {
       model_list <- as.list(model_expr)
@@ -120,7 +100,7 @@ f <- function(
 
   # Evaluate model expression (promises are forced here so we can inspect it consistently)
   model <- eval(model_expr, envir = parent.frame())
-
+  model_type <- model$model
   map <- eval(substitute(map), envir = data, enclos = parent.frame())
 
   # Evaluate map expression (promises are forced here so we can inspect it consistently)
@@ -138,9 +118,8 @@ f <- function(
 
   if (!is.null(data) && is.null(A)) {
     # check if model is a string or an object
-    model_name <- if (inherits(model, "ngme_operator")) model$model else if (inherits(model, "ngme_operator_def")) model$model else model
 
-    if (!model_name %in% c("tp", "spacetime")) {
+    if (!model_type %in% c("tp", "spacetime")) {
       stopifnot(
         "Please make sure length of map is same as nrow(data) in f()" =
           length_map(map) == nrow(data)
@@ -187,114 +166,66 @@ f <- function(
     "prior_theta_K is not specified properly, please use ngme_prior(..)" = class(prior_theta_K) == "ngme_prior"
   )
 
-  # Validate mesh input - can be single mesh, list of meshes, or NULL
+  # 1. Extract or build mesh
+  mesh <- NULL
   mesh_list <- NULL
-  if (!is.null(mesh)) {
-    model_name <- if (inherits(model, "ngme_operator")) model$model else if (inherits(model, "ngme_operator_def")) model$model else model
-    if (
-      model_name != "spacetime" &&
-        is.list(mesh) &&
-        !inherits(mesh, c("inla.mesh.1d", "inla.mesh", "fm_mesh_1d", "fm_mesh_2d", "metric_graph"))
-    ) {
-      # mesh is a list of meshes for different replicates
-      mesh_list <- mesh
-      mesh <- NULL # Set to NULL to defer mesh selection to parsing stage
-      stopifnot(
-        "All elements in mesh list must be valid mesh objects" =
-          all(sapply(mesh_list, function(m) inherits(m, c("inla.mesh.1d", "inla.mesh", "fm_mesh_1d", "fm_mesh_2d", "metric_graph"))))
-      )
-    }
-  }
 
-  # 0. build mesh if not specified
-  if (is.null(mesh) && is.null(A) && is.null(mesh_list)) {
-    if (inherits(model, "ngme_operator") && !is.null(model$mesh)) {
-      mesh <- model$mesh
+  if (inherits(model, "ngme_operator")) {
+    mesh <- model$mesh
+  } else if (inherits(model, "ngme_operator_def")) {
+    if (!is.null(model$args$mesh)) {
+      mesh <- model$args$mesh
     } else {
-      # For ngme_operator_def, we build the mesh here using the model name
-      model_name <- if (inherits(model, "ngme_operator_def")) model$model else model
-      mesh <- ngme_build_mesh(sub_map(map, subset), model_name)
+      # Build mesh from map if not provided
+      mesh <- ngme_build_mesh(sub_map(map, subset), model$model)
+      model$args$mesh <- mesh
     }
-  }
-
-
-
-  model_name <- if (inherits(model, "ngme_operator")) model$model else if (inherits(model, "ngme_operator_def")) model$model else model
-
-  # For bv/bv_matern, if noise is normal, fix theta
-  if (model_name %in% c("bv", "bv2", "bv_matern") && noise_all_normal) {
-    # We can't easily modify the operator object here if it's already built,
-    # but we can check if it respects the condition.
-    # If model is ngme_operator, it has fix_theta_K (or similar).
-    # However, the previous logic (lines 85-101) handled the creation time.
-    # If we are here, model is an object.
-    # Let's assume the user or the creation logic handled it.
-  }
-
-  if (model_name %in% c("tp")) {
-    stopifnot(
-      "Please specify map as a list of length two (for 2 sub-models)" =
-        is.list(map) && length(map) == 2
-    )
-
-    map <- lapply(map, function(x) {
-      if (inherits(x, "formula")) {
-        model.matrix(x, data)[, -1]
-      } else {
-        x
-      }
-    })
-  }
-
-  # build the operator
-  if (!is.null(mesh_list)) {
-    # Use the first mesh as a template for building the operator
-    # The correct mesh will be set during parsing stage
-    temp_mesh <- mesh_list[[1]]
-    f_args$mesh <- temp_mesh
-
-    if (inherits(model, "ngme_operator")) {
-      operator <- model
-    } else {
-      stop("Model must be an ngme_operator when using mesh_list (replicates with different meshes).")
-    }
-
-    # Defer A matrix construction to parsing stage since we used wrong mesh
-    A <- NULL
   } else {
-    if (inherits(model, "ngme_operator")) {
-      operator <- model
-      # update the model name
-      model <- operator$model
-    } else if (inherits(model, "ngme_operator_def")) {
-      # Instantiate the operator using the definition and the built mesh
-      # We need to pass any extra arguments from ... to the constructor if they weren't captured in the def
-      # But ngme_operator_def usually contains args.
-      # The original code passed f_args which included ...
-      # If we want to support passing args to f() that go to the model, we need to handle it.
-      # But the user said "remove logic that gathers arguments from f() to pass to model constructor".
-      # So we rely on what's in the def.
-      operator <- do.call(model$model, c(list(mesh = mesh), model$args))
-      model <- operator$model
-    } else {
-      stop("Model must be ngme_operator or ngme_operator_def.")
-    }
+    stop("Model must be ngme_operator or ngme_operator_def")
+  }
 
-    # Build A matrix
-    A <- if (is.null(A)) {
-      ngme_build_A(model, mesh, map, operator, group)
-    } else {
-      ngme_as_sparse(A)
-    }
+  # 2. Check if mesh is a list (for replicates)
+  if (is.list(mesh) && !inherits(mesh, c("inla.mesh.1d", "inla.mesh", "fm_mesh_1d", "fm_mesh_2d", "metric_graph"))) {
+    mesh_list <- mesh
+    # Use the first mesh as a template for building the operator
+    mesh <- mesh_list[[1]]
 
-    # subset the A matrix only if it was built
-    if (!is.null(A) && !all(subset)) {
-      A <- A[subset, , drop = FALSE]
+    # Update model definition to use the template mesh
+    if (inherits(model, "ngme_operator_def")) {
+      model$args$mesh <- mesh
     }
+  }
+
+  # 3. Convert ngme_operator_def to ngme_operator
+  if (inherits(model, "ngme_operator_def")) {
+    operator <- do.call(model$model, model$args)
+  } else {
+    operator <- model
+  }
+  model_name <- operator$model
+
+  # At this point, 'operator' is an ngme_operator object (possibly a template)
+  # and 'model' is the model name string.
+
+  # Build A matrix
+  A <- if (is.null(A)) {
+    # If mesh_list is present, we defer A matrix construction for replicates
+    if (!is.null(mesh_list)) {
+      NULL
+    } else {
+      ngme_build_A(model_name, mesh, map, operator, group)
+    }
+  } else {
+    ngme_as_sparse(A)
+  }
+
+  # subset the A matrix only if it was built
+  if (!is.null(A) && !all(subset)) {
+    A <- A[subset, , drop = FALSE]
   }
 
   # Sanity warning for ARMA with fixed W and free MA/AR params
-  if (model == "arma" && isTRUE(fix_W)) {
+  if (model_name == "arma" && isTRUE(fix_W)) {
     ar_mask <- if (!is.null(operator$fix_rho)) operator$fix_rho else logical(0)
     ma_mask <- if (!is.null(operator$fix_phi)) operator$fix_phi else logical(0)
     if ((length(ar_mask) == 0 || !all(ar_mask)) || (length(ma_mask) == 0 || !all(ma_mask))) {
@@ -306,9 +237,8 @@ f <- function(
   if (!is.null(replicate)) {
     n_repl <- length(levels(replicate))
 
-    # If we have mesh_list, we need to build operators and A matrices for each replicate separately
+    # Build separate operators for each replicate using their respective meshes
     if (!is.null(mesh_list)) {
-      # Build separate operators for each replicate using their respective meshes
       operator_list <- list()
       A_list <- list()
       h_total <- NULL
@@ -318,7 +248,7 @@ f <- function(
         repl_idx <- which(replicate == levels(replicate)[i])
 
         # Get map for this replicate
-        if (model %in% c("tp", "spacetime")) {
+        if (model_name %in% c("tp", "spacetime")) {
           map_repl <- list(map[[1]][repl_idx], map[[2]][repl_idx])
         } else {
           map_repl <- sub_map(map, repl_idx)
@@ -349,7 +279,9 @@ f <- function(
 
           warning("Using a pre-built ngme_operator with replicate and different meshes. The mesh in the operator will be replaced, but internal matrices might not update if they depend on the mesh during construction. Consider using ngme_operator_def (e.g. ar1(..., mesh=NULL)) instead.")
         } else if (inherits(model, "ngme_operator_def")) {
-          operator_repl <- do.call(model$model, c(list(mesh = mesh_repl), model$args))
+          args <- model$args
+          args$mesh <- NULL
+          operator_repl <- do.call(model$model, c(list(mesh = mesh_repl), args))
         } else {
           stop("Model must be ngme_operator or ngme_operator_def.")
         }
@@ -359,7 +291,7 @@ f <- function(
         # Build A matrix for this replicate
         if (is.null(A)) {
           A_repl <- ngme_build_A(
-            model, mesh_repl, map_repl, operator_repl,
+            model_name, mesh_repl, map_repl, operator_repl,
             if (!is.null(group)) group[repl_idx] else NULL
           )
           A_list[[i]] <- A_repl
@@ -437,7 +369,7 @@ f <- function(
           repl_idx <- which(replicate == levels(replicate)[i])
 
           # Get map for this replicate
-          if (model %in% c("tp", "spacetime")) {
+          if (model_name %in% c("tp", "spacetime")) {
             map_repl <- list(map[[1]][repl_idx], map[[2]][repl_idx])
           } else {
             map_repl <- sub_map(map, repl_idx)
@@ -445,7 +377,7 @@ f <- function(
 
           # Build A matrix for this replicate using the same mesh
           A_repl <- ngme_build_A(
-            model, mesh, map_repl, operator,
+            model_name, mesh, map_repl, operator,
             if (!is.null(group)) group[repl_idx] else NULL
           )
           A_list[[i]] <- A_repl
@@ -471,7 +403,7 @@ f <- function(
   # bivariate noise
   # 2. build noise given operator
   # bivariate noise
-  if (model %in% c("bv", "bv_matern_normal", "bv2", "bv_matern_nig")) {
+  if (model_name %in% c("bv", "bv_matern_normal", "bv2", "bv_matern_nig")) {
     stopifnot(
       "Please specify noise for each field" = length(noise) >= 2,
       "Input: noise=list(a=<noise>,b=<noise>)" = inherits(noise[[1]], "ngme_noise"),
@@ -516,7 +448,7 @@ f <- function(
     )
   } else {
     n <- length(operator$h)
-    if (model %in% c("rw1", "rw2") && operator$cyclic) {
+    if (model_name %in% c("rw1", "rw2") && operator$cyclic) {
       # Compensate the constraint for cyclic rw1/rw2 (we introduce lagrange in definition)
       if (nrow(noise$B_sigma) > 1) { # user-defined B_sigma
         noise$B_sigma <- rbind(0, noise$B_sigma)
@@ -532,11 +464,11 @@ f <- function(
   }
 
   if (noise$share_V &&
-    !(model %in% c("bv", "bv2", "bv_matern_normal", "bv_matern_nig"))) {
+    !(model_name %in% c("bv", "bv2", "bv_matern_normal", "bv_matern_nig"))) {
     stop("Not allow for share_V for univariate model")
   }
 
-  if (model %in% c("rw1", "rw2")) {
+  if (model_name %in% c("rw1", "rw2")) {
     # force the constrain (e.g. fixed the 1st position to be 0)
     theta_sigma <- c(-10, noise$theta_sigma)
     fix_theta_sigma <- c(TRUE, noise$fix_theta_sigma)
@@ -552,7 +484,7 @@ f <- function(
       noise$fix_theta_sigma <- fix_theta_sigma
     }
 
-    if (model == "rw2" && !operator$cyclic) {
+    if (model_name == "rw2" && !operator$cyclic) {
       noise$B_sigma[2, 1] <- 1
       noise$B_sigma[2, -1] <- 0
       noise$theta_sigma[1] <- -6 # set larger for numerical stability
@@ -580,7 +512,7 @@ f <- function(
   }
 
   ngme_model(
-    model = model,
+    model = model_name,
     operator = operator,
     noise = noise,
     W_size = ncol(operator$K),
@@ -646,6 +578,11 @@ ngme_build_mesh <- function(
     model = NULL,
     ...) {
   if (inherits(loc, c("inla.mesh.1d", "inla.mesh", "fm_mesh_1d", "fm_mesh_2d", "metric_graph"))) {
+    return(loc)
+  }
+
+  # Check if loc is a list of meshes
+  if (is.list(loc) && length(loc) > 0 && all(vapply(loc, function(x) inherits(x, c("inla.mesh.1d", "inla.mesh", "fm_mesh_1d", "fm_mesh_2d", "metric_graph")), logical(1)))) {
     return(loc)
   }
 

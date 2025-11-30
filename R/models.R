@@ -41,8 +41,8 @@ iid <- function(map = NULL) {
 #' @export
 #'
 ar1 <- function(mesh = NULL, rho = 0) {
-  if (is.null(mesh)) {
-    return(structure(list(model = "ar1", args = list(rho = rho)), class = "ngme_operator_def"))
+  if (is.null(mesh) || (is.list(mesh) && !inherits(mesh, "inla.mesh.1d"))) {
+    return(structure(list(model = "ar1", args = as.list(environment())), class = "ngme_operator_def"))
   }
   stopifnot("rho should be between -1 and 1" = rho >= -1 && rho <= 1)
 
@@ -126,11 +126,8 @@ arma <- function(
     ma = NULL, # MA coefficients (friendly scale)
     fix_ar = FALSE,
     fix_ma = FALSE) {
-  if (is.null(mesh)) {
-    return(structure(list(model = "arma", args = list(
-      ar_order = ar_order, ma_order = ma_order,
-      ar = ar, ma = ma, fix_ar = fix_ar, fix_ma = fix_ma
-    )), class = "ngme_operator_def"))
+  if (is.null(mesh) || (is.list(mesh) && !inherits(mesh, "inla.mesh.1d"))) {
+    return(structure(list(model = "arma", args = as.list(environment())), class = "ngme_operator_def"))
   }
   p <- as.integer(ar_order)
   q <- as.integer(ma_order)
@@ -329,8 +326,8 @@ ARcov <- function(rho, p) {
 #' ar(c(1:10), order = 3, rho = c(0.4, 0.2, -0.1))
 ar <- function(
     mesh = NULL, rho = NULL, order = NULL) {
-  if (is.null(mesh)) {
-    return(structure(list(model = "ar", args = list(rho = rho, order = order)), class = "ngme_operator_def"))
+  if (is.null(mesh) || (is.list(mesh) && !inherits(mesh, "inla.mesh.1d"))) {
+    return(structure(list(model = "ar", args = as.list(environment())), class = "ngme_operator_def"))
   }
   # Determine p and rho based on input parameters
   if (is.null(order) && is.null(rho)) {
@@ -481,8 +478,8 @@ rw1 <- function(
     mesh = NULL,
     cyclic = FALSE,
     constr = TRUE) {
-  if (is.null(mesh)) {
-    return(structure(list(model = "rw1", args = list(cyclic = cyclic, constr = constr)), class = "ngme_operator_def"))
+  if (is.null(mesh) || (is.list(mesh) && !inherits(mesh, "inla.mesh.1d"))) {
+    return(structure(list(model = "rw1", args = as.list(environment())), class = "ngme_operator_def"))
   }
   mesh <- ngme_build_mesh(mesh)
 
@@ -582,8 +579,8 @@ rw2 <- function(
     mesh = NULL,
     cyclic = FALSE,
     constr = TRUE) {
-  if (is.null(mesh)) {
-    return(structure(list(model = "rw2", args = list(cyclic = cyclic, constr = constr)), class = "ngme_operator_def"))
+  if (is.null(mesh) || (is.list(mesh) && !inherits(mesh, "inla.mesh.1d"))) {
+    return(structure(list(model = "rw2", args = as.list(environment())), class = "ngme_operator_def"))
   }
   mesh <- ngme_build_mesh(mesh)
 
@@ -742,8 +739,8 @@ rw2 <- function(
 ou <- function(
     mesh = NULL,
     theta = 1) {
-  if (is.null(mesh)) {
-    return(structure(list(model = "ou", args = list(theta = theta)), class = "ngme_operator_def"))
+  if (is.null(mesh) || (is.list(mesh) && !inherits(mesh, "inla.mesh.1d"))) {
+    return(structure(list(model = "ou", args = as.list(environment())), class = "ngme_operator_def"))
   }
 
   mesh <- ngme_build_mesh(mesh)
@@ -815,12 +812,8 @@ matern <- function(
     theta_kappa = NULL,
     rational_order = 2,
     B_kappa = NULL) {
-  if (is.null(mesh)) {
-    return(structure(list(model = "matern", args = list(
-      alpha = alpha, fix_alpha = fix_alpha, kappa = kappa,
-      theta_kappa = theta_kappa, rational_order = rational_order,
-      B_kappa = B_kappa,
-    )), class = "ngme_operator_def"))
+  if (is.null(mesh) || (is.list(mesh) && !inherits(mesh, c("inla.mesh.1d", "inla.mesh", "fm_mesh_1d", "fm_mesh_2d", "metric_graph")))) {
+    return(structure(list(model = "matern", args = as.list(environment())), class = "ngme_operator_def"))
   }
   mesh <- ngme_build_mesh(mesh)
   if (fix_alpha && alpha != 2 && alpha != 4) {

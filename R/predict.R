@@ -73,6 +73,11 @@ predict.ngme <- function(
     seed = seed
   )[["W"]]
 
+  # Convert samples_W from list to matrix
+  if (is.list(samples_W)) {
+    samples_W <- do.call(cbind, samples_W)
+  }
+
   ret <- NULL
   for (estimator in estimator) {
     # Check if estimator matches pattern like "0.025q", "0.975q", etc.
@@ -83,15 +88,15 @@ predict.ngme <- function(
       if (quantile_prob <= 0 || quantile_prob >= 1) {
         stop("Quantile probability should be between 0 and 1 (exclusive). Got: ", quantile_prob)
       }
-      post_W <- apply(as.data.frame(samples_W), 1, function(x) {
+      post_W <- apply(samples_W, 1, function(x) {
         quantile(x, quantile_prob)
       })
     } else {
       post_W <- switch(estimator,
-        "mean"      = mean_list(samples_W),
-        "median"    = apply(as.data.frame(samples_W), 1, median),
-        "sd"        = apply(as.data.frame(samples_W), 1, sd),
-        "mode"      = apply(as.data.frame(samples_W), 1, emprical_mode),
+        "mean"      = apply(samples_W, 1, mean),
+        "median"    = apply(samples_W, 1, median),
+        "sd"        = apply(samples_W, 1, sd),
+        "mode"      = apply(samples_W, 1, emprical_mode),
         stop("No such estimator available: ", estimator)
       )
     }

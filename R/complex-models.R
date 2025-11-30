@@ -33,6 +33,9 @@ bv <- function(
     share_param = FALSE,
     fix_theta = FALSE,
     use_c_param = FALSE) {
+  if (is.list(mesh) && !inherits(mesh, c("inla.mesh.1d", "inla.mesh", "fm_mesh_1d", "fm_mesh_2d", "metric_graph"))) {
+    return(structure(list(model = "bv", args = as.list(environment())), class = "ngme_operator_def"))
+  }
   mesh <- ngme_build_mesh(mesh)
   model_names <- sort(names(sub_models))
 
@@ -217,6 +220,9 @@ bv_matern <- function(
     share_param = FALSE,
     fix_theta = FALSE,
     ...) {
+  if (is.list(mesh) && !inherits(mesh, c("inla.mesh.1d", "inla.mesh", "fm_mesh_1d", "fm_mesh_2d", "metric_graph"))) {
+    return(structure(list(model = "bv_matern", args = as.list(environment())), class = "ngme_operator_def"))
+  }
   mesh <- ngme_build_mesh(mesh)
   d <- switch(mesh$manifold,
     "R1" = 1,
@@ -387,6 +393,9 @@ spacetime <- function(
     B_gamma_y_list = NULL,
     # B_gamma_t = matrix(1, nrow = mesh[[1]]$n, ncol = 1),
     stabilization = TRUE) {
+  if (is.list(mesh) && length(mesh) > 0 && is.list(mesh[[1]]) && !inherits(mesh[[1]], c("inla.mesh.1d", "inla.mesh", "fm_mesh_1d", "fm_mesh_2d", "metric_graph"))) {
+    return(structure(list(model = "spacetime", args = as.list(environment())), class = "ngme_operator_def"))
+  }
   method <- "euler" # for now only support implicit euler
   if (theta_gamma_x == 0 && theta_gamma_y == 0 && fix_gamma) {
     stabilization <- FALSE

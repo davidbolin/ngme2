@@ -402,6 +402,7 @@ ngme_model <- function(
     operator,
     noise = noise_normal(),
     theta_K = NULL,
+    fix_K = FALSE,
     W_size = NULL,
     W = NULL,
     fix_W = FALSE,
@@ -420,14 +421,6 @@ ngme_model <- function(
   stopifnot(inherits(operator, "ngme_operator"))
   stopifnot(inherits(noise, "ngme_noise"))
 
-  # generate string (8 digits)
-  # K_str     <- switch(model,
-  #   ar1     = "   alpha",
-  #   matern  = paste0(" kappa_", seq_along(theta_K)),
-  #   rw1     = paste0(" ignored")
-  # )
-
-  # Create vector of parameter names that align with free (unfixed) parameters
   ope_params <- operator$param_name
 
   mu_params <- if (length(noise$theta_mu) == 0 || isTRUE(noise$fix_theta_mu)) {
@@ -460,24 +453,25 @@ ngme_model <- function(
 
   structure(
     list(
-      model         = model,
-      operator      = operator,
-      theta_K       = operator$theta_K,
-      noise_type    = noise$noise_type,
-      W_size        = W_size,
-      A             = A,
-      noise         = noise,
-      W             = W,
-      fix_W         = fix_W,
-      V_size        = V_size,
-      n_params      = n_params,
-      debug         = debug,
-      par_names     = par_names,
-      name          = name,
-      mesh          = mesh,
-      map           = map,
-      n_map         = length_map(map),
-      group         = group,
+      model = model,
+      operator = operator,
+      theta_K = operator$theta_K,
+      noise_type = noise$noise_type,
+      W_size = W_size,
+      A = A,
+      noise = noise,
+      W = W,
+      fix_theta_K = fix_K,
+      fix_W = fix_W,
+      V_size = V_size,
+      n_params = n_params,
+      debug = debug,
+      par_names = par_names,
+      name = name,
+      mesh = mesh,
+      map = map,
+      n_map = length_map(map),
+      group = group,
       ...
     ),
     class = "ngme_model"

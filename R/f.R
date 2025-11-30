@@ -16,6 +16,8 @@
 #'   When provided, operators and A matrices will be block-diagonalized across replicates.
 #' @param A  observation matrix, automatically computed given map and model
 #' @param W      starting value of the process
+#' @param fix_K  fix the estimation of parameter of K
+#' @param prior_theta_K prior for theta_K
 #' @param fix_W  stop sampling for W
 #' @param debug     debug mode
 #' @param subset    subset of the model
@@ -49,6 +51,8 @@ f <- function(
     A = NULL,
     W = NULL,
     fix_W = FALSE,
+    fix_K = FALSE,
+    prior_theta_K = ngme_prior("normal", param = c(0, 0.001)),
     subset = rep(TRUE, length_map(map)),
     debug = FALSE) {
   # examine the noise
@@ -517,6 +521,8 @@ f <- function(
     W = W,
     fix_W = fix_W,
     name = name,
+    fix_K = fix_K,
+    prior_theta_K = prior_theta_K,
     debug = debug,
     replicate = replicate
   )

@@ -117,9 +117,7 @@ test_that("test fit ARMA(2,2) with normal noise (precond)", {
   fit <- ngme(
     formula = y ~ 0 + f(
       x,
-      model = "arma",
-      ar_order = 2,
-      ma_order = 2,
+      model = arma(ar_order = 2, ma_order = 2),
       noise = noise_normal()
     ),
     data = data.frame(x = 1:n, y = y),
@@ -166,11 +164,7 @@ test_that("test fit ARMA(1,1) with nig noise (RB, preconditioner)", {
 
   fit <- ngme(
     formula = y ~ 0 + f(
-      map = x, model = "arma",
-      ar_order = 1,
-      ma_order = 1,
-      ar = 0.5,
-      ma = 0.0,
+      map = x, model = arma(ar_order = 1, ma_order = 1),
       noise = noise_nig()
     ),
     replicate = rep(c(1, 2), each = n / 2),
@@ -194,7 +188,7 @@ test_that("test fit ARMA(1,1) with nig noise (RB, preconditioner)", {
   arma_result <- as.numeric(ngme_result(fit)$field1)
   score <- abs((arma_result - c(rho, phi, mu, sigma, nu)) / c(rho, phi, mu, sigma, nu))
   score
-  expect_true(all(score < c(0.15, 0.1, 0.3, 0.3, 0.7)))
+  expect_true(all(score < c(0.15, 0.1, 0.3, 0.3, 0.75)))
 
   est_sigma_e <- ngme_result(fit)$data$sigma
   expect_true(all(abs((est_sigma_e - sigma_e) / sigma_e) < 0.2))

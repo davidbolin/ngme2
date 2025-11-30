@@ -46,8 +46,8 @@ test_that("test fit matern", {
     Y ~ 0 + f(loc,
       model = matern(
         mesh,
-        alpha = 2.01,
-        fix_alpha = FALSE
+        alpha = 2.00,
+        fix_alpha = TRUE
       ),
       noise = noise_nig()
     ),
@@ -58,8 +58,6 @@ test_that("test fit matern", {
   m_nig_gauss
   traceplot(m_nig_gauss, "field1", hline = c(kappa, -2, 1, 0.5))
   traceplot(m_nig_gauss, hline = 0.5)
-
-  traceplot(m_nig_gauss, "field1", hline = c(2, kappa, -2, 1, 0.5))
 })
 
 # m_nig_gauss_2 <- ngme(

@@ -225,6 +225,7 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   for (i = 0; i < n_chains; i++) {
     outputs.push_back(ngmes[i]->output());
     if (store_traj) {
+      opt_vec[i].record_current_state();
       trajs_chains.push_back(opt_vec[i].get_trajs());
     }
   }
@@ -241,6 +242,7 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   // ngme.sampling(10, true);
   outputs.push_back(ngme.output());
   if (store_traj) {
+    opt.record_current_state();
     trajs_chains.push_back(opt.get_trajs());
   }
 #endif

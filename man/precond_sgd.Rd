@@ -12,7 +12,7 @@ precond_sgd(stepsize = 1, numerical_eps = 1e-05)
 \item{numerical_eps}{numerical, the gap used for estimate preconditioner, default is 1e-5}
 }
 \value{
-a list of control variables for optimization 
+a list of control variables for optimization
 (used in \code{control_opt} function)
 }
 \description{

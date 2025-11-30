@@ -16,7 +16,7 @@ f(
   A = NULL,
   W = NULL,
   fix_W = FALSE,
-  fix_theta_K = FALSE,
+  fix_K = FALSE,
   prior_theta_K = ngme_prior("normal", param = c(0, 0.001)),
   subset = rep(TRUE, length_map(map)),
   debug = FALSE
@@ -46,17 +46,13 @@ When provided, operators and A matrices will be block-diagonalized across replic
 
 \item{fix_W}{stop sampling for W}
 
-\item{fix_theta_K}{fix the estimation for theta_K.}
+\item{fix_K}{fix the estimation of parameter of K}
 
 \item{prior_theta_K}{prior for theta_K}
 
 \item{subset}{subset of the model}
 
 \item{debug}{debug mode}
-
-\item{mesh}{mesh for the model, if not provided, will be built from map.
-Can be a single mesh object or a list of mesh objects for different replicates.
-When using replicates, provide mesh as a list where mesh[[i]] corresponds to replicate i.}
 }
 \value{
 a list for constructing latent model, e.g. A, h, C, G,

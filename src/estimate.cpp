@@ -17,6 +17,8 @@
 
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
+#include <algorithm>
+#include <cmath>
 #include <iomanip>
 #include <iostream>
 #include <memory>
@@ -32,7 +34,12 @@ using namespace Rcpp;
 
 std::vector<bool> check_conv(const MatrixXd &, const MatrixXd &, int, int,
                              double, double, const std::vector<std::string> &,
-                             bool, int, double, const VectorXd &);
+                             bool, int, double, const VectorXd &, bool, bool,
+                             std::vector<bool> *conv_rhat_out,
+                             std::vector<bool> *conv_trend_std_out,
+                             std::vector<double> *std_ratio_out,
+                             std::vector<double> *slopes_out,
+                             bool *trend_ready_out);
 
 // [[Rcpp::plugins(openmp)]]
 // [[Rcpp::export]]
@@ -55,6 +62,9 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
       control_opt.containsElementNamed("pflug_conv_check")
           ? Rcpp::as<bool>(control_opt["pflug_conv_check"])
           : false;
+  const double pflug_alpha = control_opt.containsElementNamed("pflug_alpha")
+                                 ? Rcpp::as<double>(control_opt["pflug_alpha"])
+                                 : 1.0;
 
   Rcpp::List output = R_NilValue;
 
@@ -66,15 +76,24 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
 #ifdef _OPENMP
   const int burnin = control_opt["burnin"];
 
+  int n_min_batch = (control_opt["n_min_batch"]);
   int n_slope_check = (control_opt["n_slope_check"]);
   double std_lim = (control_opt["std_lim"]);
   double trend_lim = (control_opt["trend_lim"]);
+  const bool trend_std_conv_check =
+      control_opt.containsElementNamed("trend_std_conv_check")
+          ? Rcpp::as<bool>(control_opt["trend_std_conv_check"])
+          : true;
 
   int n_chains = (control_opt["n_parallel_chain"]);
-  int n_batch = (control_opt["stop_points"]);
+  int n_batch = (control_opt["n_batch"]);
   double start_sd = (control_opt["start_sd"]);
   double print_check_info = (control_opt["print_check_info"]);
   double max_R_hat = (control_opt["max_R_hat"]);
+  const bool R_hat_conv_check =
+      control_opt.containsElementNamed("R_hat_conv_check")
+          ? Rcpp::as<bool>(control_opt["R_hat_conv_check"])
+          : true;
 
   const bool verbose_enabled = control_opt["verbose"];
 
@@ -117,6 +136,16 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   MatrixXd batch_sq_sum(n_chains, n_params);
   VectorXd final_R_hat(n_params);
   final_R_hat.setZero();
+  // keep last-diagnostics for reporting
+  std::vector<bool> last_conv_rhat(n_params, false);
+  std::vector<bool> last_conv_trend_std(n_params, false);
+  std::vector<double> last_std_ratio(n_params, 0.0);
+  std::vector<double> last_slopes(n_params, 0.0);
+  bool last_trend_ready = false;
+  bool pflug_triggered = false;
+  bool converged_by_param = false;
+  std::vector<double> last_pflug_sum(n_chains, 0.0);
+  std::vector<double> last_pflug_max(n_chains, 0.0);
 
   std::vector<bool> converge(n_params, false);
   bool all_converge = false;
@@ -207,12 +236,20 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
       R_hat = (var_hat.array() / W.array()).sqrt().transpose();
       final_R_hat = R_hat;
 
-      if (n_slope_check <= curr_batch + 1)
-        converge = check_conv(means, vars, curr_batch, n_slope_check, std_lim,
-                              trend_lim, par_names, print_check_info,
-                              batch_steps, max_R_hat, R_hat);
-      all_converge =
-          std::find(begin(converge), end(converge), false) == end(converge);
+      if (curr_batch + 1 >= n_min_batch) {
+        converge =
+            check_conv(means, vars, curr_batch, n_slope_check, std_lim,
+                       trend_lim, par_names, print_check_info, batch_steps,
+                       max_R_hat, R_hat, trend_std_conv_check, R_hat_conv_check,
+                       &last_conv_rhat, &last_conv_trend_std, &last_std_ratio,
+                       &last_slopes, &last_trend_ready);
+        all_converge =
+            std::find(begin(converge), end(converge), false) == end(converge);
+        if (all_converge)
+          converged_by_param = true;
+      } else {
+        all_converge = false;
+      }
 
       // 2. if some parameter converge, stop compute gradient, or slow down the
       // gradient. if (auto_stop)
@@ -220,20 +257,29 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
       //         ngmes[i]->check_converge(converge);
       //     }
       // Pflug diagnostic check for parallel chains
-      if (pflug_conv_check) {
+      if (pflug_conv_check && curr_batch + 1 >= n_min_batch) {
         bool pflug_converged = true;
         for (int i = 0; i < n_chains; i++) {
-          // Check if max_pflug_sum has increased
-          if (opt_vec[i].get_max_pflug_sum() > max_pflug_sum_before[i]) {
+          last_pflug_sum[i] = opt_vec[i].get_pflug_sum();
+          last_pflug_max[i] = opt_vec[i].get_max_pflug_sum();
+        }
+        for (int i = 0; i < n_chains; i++) {
+          double curr_sum = opt_vec[i].get_pflug_sum();
+          double curr_max = opt_vec[i].get_max_pflug_sum();
+          double threshold = pflug_alpha * curr_max;
+          // Require curr_sum < threshold; if curr_max == 0, treat as not yet
+          // converged
+          if (curr_max <= 0 || curr_sum >= threshold) {
             pflug_converged = false;
             break;
           }
         }
         if (pflug_converged) {
           all_converge = true;
+          pflug_triggered = true;
           if (verbose_enabled)
-            Rcpp::Rcout << "Pflug diagnostic satisfied: max_pflug_sum did not "
-                           "increase in this batch for all chains."
+            Rcpp::Rcout << "Pflug diagnostic satisfied: pflug_sum < "
+                        << pflug_alpha << " * max_pflug_sum for all chains.\n"
                         << std::endl;
         }
       }
@@ -263,6 +309,53 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   if (all_converge)
     std::cout << "Reach convergence in " << steps << " iterations."
               << std::endl;
+
+  if (all_converge && n_chains > 1) {
+    bool converged_by_pflug_only = pflug_triggered && !converged_by_param;
+    std::cout << "Convergence criteria summary:\n";
+
+    if (converged_by_pflug_only) {
+      std::cout << "  - Pflug diagnostic satisfied (pflug_sum < " << pflug_alpha
+                << " * max_pflug_sum for all chains)\n";
+      std::cout << "  Per-chain Pflug stats (sum / max):\n";
+      for (int i = 0; i < n_chains; i++) {
+        std::cout << "    * chain " << i + 1 << ": " << std::fixed
+                  << std::setprecision(4) << last_pflug_sum[i] << " / "
+                  << last_pflug_max[i] << "\n";
+      }
+    } else {
+      if (R_hat_conv_check) {
+        std::cout << "  - R_hat threshold: max_R_hat = " << max_R_hat << "\n";
+      }
+      if (trend_std_conv_check) {
+        std::cout << "  - Trend/Std thresholds: std_lim = " << std_lim
+                  << ", trend_lim = " << trend_lim
+                  << ", window (stop points) = " << n_slope_check << "\n";
+      }
+
+      std::cout << "  Per-parameter status (R_hat | std/mean | slope):\n";
+      for (int i = 0; i < n_params; i++) {
+        std::cout << "    * " << par_names[i] << ": ";
+        bool printed_any = false;
+        if (R_hat_conv_check) {
+          std::cout << "R_hat=" << std::fixed << std::setprecision(3)
+                    << final_R_hat(i)
+                    << (last_conv_rhat[i] ? " (ok)" : " (fail)");
+          printed_any = true;
+        }
+        if (trend_std_conv_check && last_trend_ready) {
+          if (printed_any)
+            std::cout << "; ";
+          std::cout << "std/mean=" << std::setprecision(3) << last_std_ratio[i]
+                    << (last_conv_trend_std[i] ? " (ok)" : " (fail)") << ", ";
+          std::cout << "slope=" << std::setprecision(3) << last_slopes[i]
+                    << (std::abs(last_slopes[i]) <= trend_lim ? " (ok)"
+                                                              : " (fail)");
+        }
+        std::cout << "\n";
+      }
+    }
+  }
 
 #else // No parallel chain
   Ngme ngme(R_ngme, seed, sampling_strategy);
@@ -314,52 +407,146 @@ Rcpp::List sampling_cpp(const Rcpp::List &ngme_replicate, int n, int n_burnin,
     For checking convergence of parallel chains
     data is n_iters () * n_params (how many params in total)
 */
-std::vector<bool> check_conv(const MatrixXd &means, const MatrixXd &vars,
-                             int curr_batch, int n_slope_check, double std_lim,
-                             double trend_lim,
-                             const std::vector<std::string> &par_names,
-                             bool print_check_info, int batch_steps,
-                             double max_R_hat, const VectorXd &R_hat) {
+std::vector<bool>
+check_conv(const MatrixXd &means, const MatrixXd &vars, int curr_batch,
+           int n_slope_check, double std_lim, double trend_lim,
+           const std::vector<std::string> &par_names, bool print_check_info,
+           int batch_steps, double max_R_hat, const VectorXd &R_hat,
+           bool trend_std_conv_check, bool R_hat_conv_check,
+           std::vector<bool> *conv_rhat_out,
+           std::vector<bool> *conv_trend_std_out,
+           std::vector<double> *std_ratio_out, std::vector<double> *slopes_out,
+           bool *trend_ready_out) {
   int n_params = means.cols();
-  std::vector<bool> conv(n_params, true);
+  std::vector<bool> conv(n_params, false);
+
+  std::vector<bool> conv_rhat(n_params, true);
+  std::vector<bool> conv_trend_std(n_params, true);
+  std::vector<double> std_ratio(n_params, 0.0);
+  std::vector<double> slopes(n_params, 0.0);
+
+  bool trend_ready = (curr_batch + 1 >= n_slope_check);
+
+  (void)batch_steps; // currently unused but kept for signature stability
+
+  if (!trend_std_conv_check && !R_hat_conv_check) {
+    std::fill(conv.begin(), conv.end(), true);
+    if (conv_rhat_out)
+      *conv_rhat_out = conv_rhat;
+    if (conv_trend_std_out)
+      *conv_trend_std_out = conv_trend_std;
+    if (std_ratio_out)
+      *std_ratio_out = std_ratio;
+    if (slopes_out)
+      *slopes_out = slopes;
+    if (trend_ready_out)
+      *trend_ready_out = trend_ready;
+    return conv;
+  }
+
+  if (R_hat_conv_check) {
+    for (int i = 0; i < n_params; i++) {
+      conv_rhat[i] = (R_hat(i) <= max_R_hat);
+    }
+  }
+
+  if (trend_std_conv_check && trend_ready) {
+    for (int i = 0; i < n_params; i++) {
+      std_ratio[i] = std::sqrt(vars(curr_batch, i)) /
+                     (std::abs(means(curr_batch, i)) + 1e-5);
+      if (std_ratio[i] > std_lim) {
+        conv_trend_std[i] = false;
+      }
+    }
+
+    // Build design matrix once
+    MatrixXd B(n_slope_check, 2);
+    B.col(0) = VectorXd::Ones(n_slope_check);
+    for (int i = 0; i < n_slope_check; i++) {
+      B(i, 1) = i;
+    }
+
+    for (int i = 0; i < n_params; i++) {
+      VectorXd mean =
+          means.block(curr_batch - n_slope_check + 1, i, n_slope_check, 1);
+      VectorXd Sigma_inv =
+          vars.block(curr_batch - n_slope_check + 1, i, n_slope_check, 1)
+              .cwiseInverse();
+
+      MatrixXd Q = B.transpose() * Sigma_inv.asDiagonal() * B;
+      Vector2d beta =
+          Q.llt().solve(B.transpose() * Sigma_inv.asDiagonal() * mean);
+
+      slopes[i] = beta(1);
+      if (std::abs(beta(1)) > trend_lim) {
+        conv_trend_std[i] = false;
+      }
+    }
+  }
+
+  for (int i = 0; i < n_params; i++) {
+    bool passed = false;
+    if (trend_std_conv_check && trend_ready && conv_trend_std[i])
+      passed = true;
+    if (R_hat_conv_check && conv_rhat[i])
+      passed = true;
+    conv[i] = passed;
+  }
+
+  // copy out results for reporting
+  if (conv_rhat_out)
+    *conv_rhat_out = conv_rhat;
+  if (conv_trend_std_out)
+    *conv_trend_std_out = conv_trend_std;
+  if (std_ratio_out)
+    *std_ratio_out = std_ratio;
+  if (slopes_out)
+    *slopes_out = slopes;
+  if (trend_ready_out)
+    *trend_ready_out = trend_ready;
 
   if (print_check_info) {
     std::cout << "\nstop " << curr_batch + 1 << ":\n";
 
     // Calculate dynamic line width
-    // "Param:   " is 9 chars
-    // Each param is setw(9) + 1 space = 10 chars
     int line_width = 9 + n_params * 10;
 
-    // Print separator line
     std::cout << std::string(line_width, '-') << "\n";
 
-    // Print parameter names
     std::cout << "Param:   ";
     for (const auto &name : par_names) {
       std::cout << std::setw(9) << std::left << name << " ";
     }
     std::cout << "\n";
 
-    // Print separator line
     std::cout << std::string(line_width, '-') << "\n";
 
-    // Print R-hat values with proper alignment
-    std::cout << "R_hat:   ";
-    for (int i = 0; i < n_params; i++) {
-      std::cout << std::setw(9) << std::fixed << std::setprecision(3)
-                << std::left << R_hat(i) << " ";
+    if (R_hat_conv_check) {
+      std::cout << "R_hat:   ";
+      for (int i = 0; i < n_params; i++) {
+        std::cout << std::setw(9) << std::fixed << std::setprecision(3)
+                  << std::left << R_hat(i) << " ";
+      }
+      std::cout << "\n";
     }
-    std::cout << "\n";
 
-    // Print separator line
+    if (trend_std_conv_check && trend_ready) {
+      std::cout << "std/mean:";
+      for (int i = 0; i < n_params; i++) {
+        std::cout << " " << std::setw(8) << std::fixed << std::setprecision(3)
+                  << std::left << std_ratio[i];
+      }
+      std::cout << "\n";
+
+      std::cout << "trend:  ";
+      for (int i = 0; i < n_params; i++) {
+        std::cout << " " << std::setw(8) << std::fixed << std::setprecision(3)
+                  << std::left << slopes[i];
+      }
+      std::cout << "\n";
+    }
+
     std::cout << std::string(line_width, '-') << "\n\n";
-  }
-
-  for (int i = 0; i < n_params; i++) {
-    if (R_hat(i) > max_R_hat) {
-      conv[i] = false;
-    }
   }
 
   return conv;

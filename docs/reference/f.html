@@ -70,7 +70,6 @@ The function is a wrapper function for specific submodels.
 <span>  <span class="va">map</span>,</span>
 <span>  <span class="va">model</span>,</span>
 <span>  noise <span class="op">=</span> <span class="fu"><a href="ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  mesh <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  name <span class="op">=</span> <span class="st">"field"</span>,</span>
 <span>  data <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  group <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -79,11 +78,10 @@ The function is a wrapper function for specific submodels.
 <span>  A <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  W <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  fix_W <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  fix_theta_K <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  fix_K <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  prior_theta_K <span class="op">=</span> <span class="fu"><a href="ngme_prior.html">ngme_prior</a></span><span class="op">(</span><span class="st">"normal"</span>, param <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.001</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  subset <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="cn">TRUE</span>, <span class="fu">length_map</span><span class="op">(</span><span class="va">map</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  debug <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  <span class="va">...</span></span>
+<span>  debug <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -101,12 +99,6 @@ The function is a wrapper function for specific submodels.
 
 <dt id="arg-noise">noise<a class="anchor" aria-label="anchor" href="#arg-noise"></a></dt>
 <dd><p>ngme_noise object, noise_nig() or noise_gal()</p></dd>
-
-
-<dt id="arg-mesh">mesh<a class="anchor" aria-label="anchor" href="#arg-mesh"></a></dt>
-<dd><p>mesh for the model, if not provided, will be built from map.
-Can be a single mesh object or a list of mesh objects for different replicates.
-When using replicates, provide mesh as a list where mesh[[i]] corresponds to replicate i.</p></dd>
 
 
 <dt id="arg-name">name<a class="anchor" aria-label="anchor" href="#arg-name"></a></dt>
@@ -131,7 +123,7 @@ When provided, operators and A matrices will be block-diagonalized across replic
 
 
 <dt id="arg-a">A<a class="anchor" aria-label="anchor" href="#arg-a"></a></dt>
-<dd><p>observation matrix, automatically computed given map and model except for Bayesian regression</p></dd>
+<dd><p>observation matrix, automatically computed given map and model</p></dd>
 
 
 <dt id="arg-w">W<a class="anchor" aria-label="anchor" href="#arg-w"></a></dt>
@@ -142,8 +134,8 @@ When provided, operators and A matrices will be block-diagonalized across replic
 <dd><p>stop sampling for W</p></dd>
 
 
-<dt id="arg-fix-theta-k">fix_theta_K<a class="anchor" aria-label="anchor" href="#arg-fix-theta-k"></a></dt>
-<dd><p>fix the estimation for theta_K.</p></dd>
+<dt id="arg-fix-k">fix_K<a class="anchor" aria-label="anchor" href="#arg-fix-k"></a></dt>
+<dd><p>fix the estimation of parameter of K</p></dd>
 
 
 <dt id="arg-prior-theta-k">prior_theta_K<a class="anchor" aria-label="anchor" href="#arg-prior-theta-k"></a></dt>
@@ -156,11 +148,6 @@ When provided, operators and A matrices will be block-diagonalized across replic
 
 <dt id="arg-debug">debug<a class="anchor" aria-label="anchor" href="#arg-debug"></a></dt>
 <dd><p>debug mode</p></dd>
-
-
-<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>additional arguments (e.g. parameters for model)
-inherit the data from ngme function</p></dd>
 
 </dl></div>
     <div class="section level2">

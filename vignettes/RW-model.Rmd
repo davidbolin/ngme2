@@ -725,7 +725,7 @@ ngme_out <- ngme(
     iterations = 2000,
     std_lim = 0.02,
     n_parallel_chain = 4,
-    stop_points = 5,
+    n_batch = 5,
     verbose = FALSE,
     print_check_info = FALSE,
     seed = 3
@@ -742,7 +742,7 @@ The `control_opt()` function manages the optimization process through several ke
 - **`burnin = 100`**: Specifies initial iterations for algorithm stabilization before convergence assessment
 - **`n_parallel_chain = 4`**: Runs 4 parallel optimization chains to improve convergence reliability and parameter estimation robustness
 - **`std_lim = 0.01`**: Sets the convergence criterion based on parameter standard deviation across chains
-- **`stop_points = 10`**: Number of intermediate convergence checks during optimization
+- **`n_batch = 10`**: Number of intermediate convergence checks during optimization
 - **`seed = 3`**: Ensures reproducible results across runs
 
 This optimization setup balances computational efficiency with estimation reliability, particularly important for complex models with non-Gaussian latent processes. Let us examine the fitted model results:
@@ -854,7 +854,7 @@ ngme_out_interp <- ngme(
     iterations = 1000,
     std_lim = 0.01,
     n_parallel_chain = 4,
-    stop_points = 10,
+    n_batch = 10,
     verbose = FALSE,
     print_check_info = FALSE,
     seed = 42

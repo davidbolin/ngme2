@@ -4,11 +4,16 @@
 #' optimization process.
 #'
 #' @details
-#'  To enable convergence check, we need multiple chains running.
-#'  We compare the trend of the estimated parameter of length
-#'  \code{n_slope_check} (linear regression) with \code{trend_lim}.
-#'  We compare the standard devation of estimated parameters (in different chains)
-#'  with std_lim.
+#' Convergence diagnostics (multi-chain):
+#' * R-hat: per-parameter Gelman–Rubin statistic; passes if \code{R_hat <= max_R_hat}.
+#' * Trend/Std: uses the last \code{n_slope_check} checkpoints after at least \code{n_min_batch} batches.
+#'   Passes when both the relative std (\code{sqrt(var)/|mean| <= std_lim}) and linear trend
+#'   of the means (\code{|slope| <= trend_lim}) satisfy their thresholds.
+#' * Pflug: per-chain criterion \code{pflug_sum < pflug_alpha * max_pflug_sum} in the latest batch;
+#'   if all chains satisfy it, overall convergence is declared.
+#' Checks are evaluated every \code{iters_per_check = iterations / n_batch}. A parameter is marked
+#' converged if any enabled parameter-level diagnostic (R-hat or Trend/Std) passes; the run stops
+#' when all parameters converge or when the Pflug diagnostic triggers.
 #' @param seed  set the seed for pesudo random number generator
 #' @param burnin          interations for burn-in periods (before optimization)
 #' @param iterations      optimization iterations
@@ -16,9 +21,10 @@
 #' @param standardize_fixed  whether or not standardize the fixed effect
 #'
 #' @param n_parallel_chain number of parallel chains
-#' @param stop_points     number of stop points for convergence check (or specify iters_per_check)
-#' @param iters_per_check run how many iterations between each check point (or specify stop_points)
-#' @param n_slope_check   number of stop points for regression
+#' @param n_batch     number of checkpoints; optimization is split into \code{n_batch} equal batches
+#' @param iters_per_check run how many iterations between each check point (or specify \code{n_batch})
+#' @param n_min_batch   minimum number of checkpoints before any convergence diagnostic is attempted
+#' @param n_slope_check number of checkpoints used as the regression window for the trend test
 #' @param std_lim         maximum allowed standard deviation
 #' @param trend_lim       maximum allowed slope
 #' @param print_check_info print the convergence information
@@ -31,6 +37,7 @@
 #' If it is more than n_parallel_chain, the rest will be used to parallel different replicates of the model.
 #' @param max_relative_step   max relative step allowed in 1 iteration
 #' @param max_absolute_step   max absolute step allowed in 1 iteration
+#' @param trend_std_conv_check enable the trend/std diagnostic (uses \code{std_lim}, \code{trend_lim}, \code{n_slope_check})
 #' @param rao_blackwellization  use rao_blackwellization
 #' @param n_trace_iter  use how many iterations to approximate the trace (Hutchinson’s trick)
 #'
@@ -45,7 +52,8 @@
 #' "supernodal" means using supernodal solver
 #' "accelerate" means using accelerate solver
 #' "pardiso" means using pardiso solver
-#' @param pflug_conv_check use pflug diagnostic for convergence check
+#' @param pflug_conv_check use Pflug diagnostic for convergence check
+#' @param pflug_alpha scaling factor (0-1] for Pflug criterion: require \code{pflug_sum < pflug_alpha * max_pflug_sum}
 #' @param max_R_hat_conv_check use max_R_hat for convergence check
 #' @param max_R_hat maximum allowed R_hat
 #' @return list of control variables
@@ -56,8 +64,8 @@ control_opt <- function(
     iterations = 500,
     estimation = TRUE,
     standardize_fixed = TRUE,
-    stop_points = 10,
-    iters_per_check = iterations / stop_points,
+    n_batch = 10,
+    iters_per_check = iterations / n_batch,
     optimizer = adam(),
     start_sd = 0.5,
     # parallel options
@@ -74,13 +82,15 @@ control_opt <- function(
     verbose = FALSE,
     store_traj = TRUE,
     robust = FALSE,
+    n_min_batch = 3,
     n_slope_check = 3,
     trend_std_conv_check = TRUE,
     std_lim = 0.01,
     trend_lim = 0.01,
     R_hat_conv_check = TRUE,
     max_R_hat = 1.1,
-    pflug_conv_check = TRUE) {
+    pflug_conv_check = TRUE,
+    pflug_alpha = 0.9) {
   strategy_list <- c("all", "ws")
   preconditioner_list <- c("none", "fast", "full")
   solver_type_list <- c("eigen", "cholmod", "supernodal", "accelerate", "pardiso")
@@ -98,23 +108,28 @@ control_opt <- function(
   }
 
   # if user inputs iters_per_check
-  if (!missing(iters_per_check) && !missing(stop_points)) {
-    stop("Specify only one of iters_per_check and stop_points")
+  if (!missing(iters_per_check) && !missing(n_batch)) {
+    stop("Specify only one of iters_per_check and n_batch")
   } else if (!missing(iters_per_check)) {
     stopifnot(
       "iterations should be multiple of iters_per_check" = iterations %% iters_per_check == 0
     )
-    stop_points <- iterations / iters_per_check
+    n_batch <- iterations / iters_per_check
   }
 
   stopifnot(
     sampling_strategy %in% strategy_list,
     preconditioner %in% preconditioner_list,
     is.numeric(max_num_threads) && length(max_num_threads) == 1,
-    iterations > 0 && stop_points > 0,
-    "iterations should be multiple of stop_points" = iterations %% stop_points == 0,
+    iterations > 0 && n_batch > 0,
+    "iterations should be multiple of n_batch" = iterations %% n_batch == 0,
+    is.numeric(n_min_batch) && length(n_min_batch) == 1 && n_min_batch > 0 &&
+      n_min_batch <= n_batch,
+    is.numeric(n_slope_check) && length(n_slope_check) == 1 &&
+      n_slope_check > 0 && n_slope_check <= n_batch,
     inherits(optimizer, "ngme_optimizer"),
-    "solver_type should be in (eigen, cholmod, supernodal, accelerate, pardiso)" = solver_type %in% solver_type_list
+    "solver_type should be in (eigen, cholmod, supernodal, accelerate, pardiso)" = solver_type %in% solver_type_list,
+    is.numeric(pflug_alpha) && length(pflug_alpha) == 1 && pflug_alpha > 0 && pflug_alpha <= 1
   )
 
   if (n_parallel_chain == 1) {
@@ -141,8 +156,9 @@ control_opt <- function(
     estimation = estimation,
     standardize_fixed = standardize_fixed,
     n_parallel_chain = n_parallel_chain,
-    stop_points = stop_points,
-    n_slope_check = n_slope_check, # how many on regression check
+    n_batch = n_batch,
+    n_min_batch = n_min_batch, # minimum batches before checking
+    n_slope_check = n_slope_check, # window for trend regression
     std_lim = std_lim,
     trend_lim = trend_lim,
     num_threads = c(
@@ -158,6 +174,7 @@ control_opt <- function(
 
     max_relative_step = max_relative_step,
     max_absolute_step = max_absolute_step,
+    trend_std_conv_check = trend_std_conv_check,
 
     # preconditioner related
     numerical_eps = numerical_eps,
@@ -182,7 +199,8 @@ control_opt <- function(
     robust = robust,
     R_hat_conv_check = R_hat_conv_check,
     max_R_hat = max_R_hat,
-    pflug_conv_check = pflug_conv_check
+    pflug_conv_check = pflug_conv_check,
+    pflug_alpha = pflug_alpha
   )
 
   class(control) <- "control_opt"

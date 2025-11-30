@@ -39,7 +39,7 @@ test_that("test basic mn", {
     control_opt = control_opt(
       iterations = 100,
       n_parallel_chain = 4,
-      n_slope_check = 10,
+      n_min_batch = 10,
       optimizer = precond_sgd(),
       print_check_info = FALSE
     )
@@ -78,7 +78,7 @@ test_that("test ar1 + normal measurement noise", {
       optimizer = sgd(),
       # verbose=TRUE,
       n_parallel_chain = 4,
-      n_slope_check = 10
+      n_min_batch = 10
     )
   )
   fit
@@ -129,7 +129,7 @@ test_that("test ar1 (normal) + NIG noise", {
       iterations = 1000,
       n_parallel_chain = 4,
       # optimizer = precond_sgd(),
-      n_slope_check = 10,
+      n_min_batch = 10,
       # verbose=TRUE
     )
   )

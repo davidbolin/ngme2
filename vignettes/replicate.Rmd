@@ -12,8 +12,8 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   fig.align = "center",
-  fig.width=7, #not sure about width and height
-  fig.height=7
+  fig.width = 7, # not sure about width and height
+  fig.height = 7
 )
 ```
 
@@ -86,7 +86,7 @@ library(ggplot2)
 
 # creating ar1 process
 n <- 500
-myar <- ngme2::f(1:n, model="ar1", rho = .75, noise = noise_nig())
+myar <- ngme2::f(1:n, model = "ar1", rho = .75, noise = noise_nig())
 
 W1 <- simulate(myar, seed = 314)[[1]] # simulating one realization of the process
 W2 <- simulate(myar, seed = 159)[[1]] # simulating another realization of the process
@@ -137,7 +137,7 @@ to illustrate the difference between treating the data as a single process vs. r
 
 ```{r}
 # No replicates: treats as single AR(1) process with 6 time points
-no_replicates <- ngme2::f(1:6, model="ar1", rho = .5, noise = noise_normal())
+no_replicates <- ngme2::f(1:6, model = "ar1", rho = .5, noise = noise_normal())
 
 # With replicates in f(): 2 replicates, each with 3 time points
 with_replicates_f <- ngme2::f(
@@ -234,7 +234,7 @@ cienaga$measurement <- rep(1:2, each = (n <- nrow(cienaga) / 2))
 
 ```{r echo=F}
 ggplot(data = cienaga[cienaga$measurement == 1, ]) +
-  geom_point(aes(East_scale, North_scale,color = temp)) +
+  geom_point(aes(East_scale, North_scale, color = temp)) +
   geom_path(data = cienaga.border, aes(East, North)) +
   labs(
     color = "Temperature [°C]",
@@ -249,7 +249,7 @@ ggplot(data = cienaga[cienaga$measurement == 1, ]) +
   viridis::scale_color_viridis()
 
 ggplot(data = cienaga[cienaga$measurement == 2, ]) +
-  geom_point(aes(East_scale, North_scale,color = temp)) +
+  geom_point(aes(East_scale, North_scale, color = temp)) +
   geom_path(data = cienaga.border, aes(East, North)) +
   labs(
     color = "Temperature [°C]",
@@ -293,15 +293,16 @@ cienaga$temp <- scale(cienaga$temp)
 # Global replicate approach
 fit_global <- ngme(
   formula = temp ~ 1 +
-    f(as.matrix(cienaga[, c("East_scale", "North_scale")]), 
+    f(as.matrix(cienaga[, c("East_scale", "North_scale")]),
       model = "matern", mesh = mesh,
-      name = "spde", noise = noise_nig()),
+      name = "spde", noise = noise_nig()
+    ),
   data = cienaga,
   replicate = cienaga$measurement,
   control_opt = control_opt(
     estimation = TRUE,
     iterations = 500,
-    n_slope_check = 10,
+    n_min_batch = 10,
     n_parallel_chain = 4,
     print_check_info = FALSE
   ),
@@ -315,17 +316,18 @@ fit_global <- ngme(
 # Flexible replicate approach
 fit_flexible <- ngme(
   formula = temp ~ 1 +
-    f(as.matrix(cienaga[, c("East_scale", "North_scale")]), 
-      model = "matern", 
+    f(as.matrix(cienaga[, c("East_scale", "North_scale")]),
+      model = "matern",
       mesh = mesh,
       replicate = cienaga$measurement,
-      name = "spde", 
-      noise = noise_nig()),
+      name = "spde",
+      noise = noise_nig()
+    ),
   data = cienaga,
   control_opt = control_opt(
     estimation = TRUE,
     iterations = 500,
-    n_slope_check = 10,
+    n_min_batch = 10,
     n_parallel_chain = 4,
     print_check_info = FALSE
   ),
@@ -348,14 +350,15 @@ mesh2 <- fmesher::fm_mesh_2d(coords2, cutoff = 0.1)
 # Use different meshes for different replicates (only possible with flexible approach)
 fit_multi_mesh <- ngme(
   formula = temp ~ 1 +
-    f(as.matrix(cienaga[, c("East_scale", "North_scale")]), 
-      model = "matern", 
-      mesh = list(mesh1, mesh2),  # List of meshes
+    f(as.matrix(cienaga[, c("East_scale", "North_scale")]),
+      model = "matern",
+      mesh = list(mesh1, mesh2), # List of meshes
       replicate = cienaga$measurement,
-      name = "spde", 
-      noise = noise_nig()),
+      name = "spde",
+      noise = noise_nig()
+    ),
   data = cienaga,
-  control_opt = control_opt(estimation = FALSE)  # Just for structure
+  control_opt = control_opt(estimation = FALSE) # Just for structure
 )
 ```
 
@@ -379,7 +382,7 @@ rw1_replicates <- f(
 cat("RW1 with 3 replicates:\n")
 cat("- Base length:", length(base_locations), "\n")
 cat("- Number of replicates:", 3, "\n")
-cat("- K matrix size:", paste(dim(rw1_replicates$operator$K), collapse=" x "), "\n")
+cat("- K matrix size:", paste(dim(rw1_replicates$operator$K), collapse = " x "), "\n")
 cat("- h vector length:", length(rw1_replicates$operator$h), "\n")
 ```
 
@@ -388,7 +391,7 @@ The K matrix is automatically block-diagonalized:
 ```{r}
 # Show the structure of the precision matrix for RW1 replicates
 K_structure <- as.matrix(rw1_replicates$operator$K)
-K_structure[K_structure != 0] <- 1  # Show only the sparsity pattern
+K_structure[K_structure != 0] <- 1 # Show only the sparsity pattern
 
 # Display first few rows and columns to show block structure
 print(K_structure[1:15, 1:15])

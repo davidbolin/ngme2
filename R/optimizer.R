@@ -15,21 +15,20 @@
 #' @param stepsize stepsize for SGD
 #' @param numerical_eps   numerical, the gap used for estimate preconditioner, default is 1e-5
 #'
-#' @return a list of control variables for optimization 
+#' @return a list of control variables for optimization
 #' (used in \code{control_opt} function)
 #' @export
 precond_sgd <- function(
-  stepsize = 1,
-  numerical_eps       = 1e-5
-  # precond_by_diff_chain = FALSE
-) {
-
+    stepsize = 1,
+    numerical_eps = 1e-5
+    # precond_by_diff_chain = FALSE
+    ) {
   ret <- list(
     # sgd related
-    method         = "precond_sgd",
-    stepsize       = stepsize,
+    method = "precond_sgd",
+    stepsize = stepsize,
     sgd_parameters = NULL,
-    numerical_eps     = numerical_eps
+    numerical_eps = numerical_eps
   )
   class(ret) <- "ngme_optimizer"
   ret
@@ -45,8 +44,7 @@ precond_sgd <- function(
 #' (used in \code{control_opt} function)
 #' @export
 sgd <- function(
-  stepsize = 0.001
-) {
+    stepsize = 0.001) {
   ret <- list(
     method         = "sgd",
     stepsize       = stepsize,
@@ -67,14 +65,13 @@ sgd <- function(
 #' @param beta1 beta1 for momentum
 #' @param beta2 beta2 for momentum
 #'
-#' @return a list of control variables for optimization 
+#' @return a list of control variables for optimization
 #' (used in \code{control_opt} function)
 #' @export
 momentum <- function(
-  stepsize = 0.05,
-  beta1 = 0.9,
-  beta2 = 1 - beta1
-) {
+    stepsize = 0.05,
+    beta1 = 0.9,
+    beta2 = 1 - beta1) {
   ret <- list(
     method         = "momentum",
     stepsize       = stepsize,
@@ -99,9 +96,8 @@ momentum <- function(
 #' (used in \code{control_opt} function)
 #' @export
 adagrad <- function(
-  stepsize = 0.05,
-  epsilon = 1e-8
-) {
+    stepsize = 0.05,
+    epsilon = 1e-8) {
   ret <- list(
     method         = "adagrad",
     stepsize       = stepsize,
@@ -127,10 +123,9 @@ adagrad <- function(
 #' (used in \code{control_opt} function)
 #' @export
 rmsprop <- function(
-  stepsize = 0.05,
-  beta1 = 0.9,
-  epsilon = 1e-8
-) {
+    stepsize = 0.05,
+    beta1 = 0.9,
+    epsilon = 1e-8) {
   ret <- list(
     method         = "rmsprop",
     stepsize       = stepsize,
@@ -149,21 +144,20 @@ rmsprop <- function(
 #' \deqn{\hat{m_t} = m_t / (1 - \beta_1^t)}
 #' \deqn{\hat{v_t} = v_t / (1 - \beta_2^t)}
 #' \deqn{x_{t+1} = x_t - \text{stepsize} * \frac{\hat{m_t}}{\sqrt{\hat{v_t}} + \epsilon}}
-#' 
+#'
 #' @param stepsize stepsize for SGD
 #' @param beta1 beta1 for Adam
 #' @param beta2 beta2 for Adam
 #' @param epsilon epsilon for numerical stability
 #'
-#' @return a list of control variables for optimization 
+#' @return a list of control variables for optimization
 #' (used in \code{control_opt} function)
 #' @export
 adam <- function(
-  stepsize = 0.05,
-  beta1 = 0.9,
-  beta2 = 0.999,
-  epsilon = 1e-8
-) {
+    stepsize = 0.05,
+    beta1 = 0.9,
+    beta2 = 0.999,
+    epsilon = 1e-8) {
   ret <- list(
     method         = "adam",
     stepsize       = stepsize,
@@ -193,12 +187,11 @@ adam <- function(
 #' (used in \code{control_opt} function)
 #' @export
 adamW <- function(
-  stepsize = 0.05,
-  beta1 = 0.9,
-  beta2 = 0.999,
-  lambda = 0.01,
-  epsilon = 1e-8
-) {
+    stepsize = 0.05,
+    beta1 = 0.9,
+    beta2 = 0.999,
+    lambda = 0.01,
+    epsilon = 1e-8) {
   ret <- list(
     method         = "adamW",
     stepsize       = stepsize,
@@ -220,8 +213,7 @@ adamW <- function(
 #' (used in \code{control_opt} function)
 #' @export
 bfgs <- function(
-  line_search = "wolfe"
-) {
+    line_search = "wolfe") {
   stopifnot(line_search %in% c("backtracking", "wolfe"))
 
   ret <- list(
@@ -240,15 +232,14 @@ bfgs <- function(
 #' \deqn{\lambda_k = \min(\sqrt{1 + \theta_{k-1}} \lambda_{k-1}, \frac{||x_k - x_{k-1}||}{2 ||\nabla f(x_k) - \nabla f(x_{k-1})||} )}
 #' \deqn{x_{k+1} = x_k - \lambda_k \nabla f(x_k)}
 #' \deqn{\theta_k = \lambda_k / \lambda_{k-1}}
-#'  
+#'
 #' @param stepsize initial stepsize for SGD
 #'
 #' @return a list of control variables for optimization
 #' (used in \code{control_opt} function)
 #' @export
 adaptive_gd <- function(
-  stepsize = 0.01
-) {
+    stepsize = 0.01) {
   ret <- list(
     method         = "adaptive_gd",
     stepsize       = stepsize,
@@ -260,7 +251,16 @@ adaptive_gd <- function(
 
 #' List supported optimizers
 #'
-#' @return a list of supported optimizers
+#' @description
+#' This function returns a list of supported optimizers in the \code{ngme} package.
+#' The optimizers are categorized into three groups:
+#' \itemize{
+#' \item \strong{Gradient descent}: \code{"sgd"}, \code{"momentum"}, \code{"adaptive_gd"}
+#' \item \strong{Adaptive learning rate}: \code{"adagrad"}, \code{"rmsprop"}, \code{"adam"}, \code{"adamW"}
+#' \item \strong{Preconditioner}: \code{"precond_sgd"}, \code{"bfgs"}
+#' }
+#'
+#' @return a character vector of supported optimizers
 #' @export
 ngme_optimizers <- function() {
   c("sgd", "precond_sgd", "momentum", "adagrad", "rmsprop", "adam", "adamW", "bfgs", "adaptive_gd")

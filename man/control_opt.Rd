@@ -10,15 +10,12 @@ control_opt(
   iterations = 500,
   estimation = TRUE,
   standardize_fixed = TRUE,
-  stop_points = 10,
-  iters_per_check = iterations/stop_points,
+  n_batch = 10,
+  iters_per_check = iterations/n_batch,
   optimizer = adam(),
   start_sd = 0.5,
   n_parallel_chain = 4,
   max_num_threads = n_parallel_chain,
-  n_slope_check = 3,
-  std_lim = 0.01,
-  trend_lim = 0.01,
   print_check_info = FALSE,
   max_relative_step = 0.5,
   max_absolute_step = 0.5,
@@ -29,7 +26,15 @@ control_opt(
   verbose = FALSE,
   store_traj = TRUE,
   robust = FALSE,
-  max_R_hat = 1.1
+  n_min_batch = 3,
+  n_slope_check = 3,
+  trend_std_conv_check = TRUE,
+  std_lim = 0.01,
+  trend_lim = 0.01,
+  R_hat_conv_check = TRUE,
+  max_R_hat = 1.1,
+  pflug_conv_check = TRUE,
+  pflug_alpha = 0.9
 )
 }
 \arguments{
@@ -43,9 +48,9 @@ control_opt(
 
 \item{standardize_fixed}{whether or not standardize the fixed effect}
 
-\item{stop_points}{number of stop points for convergence check (or specify iters_per_check)}
+\item{n_batch}{number of batches for convergence check (divide iterations into n_batch)}
 
-\item{iters_per_check}{run how many iterations between each check point (or specify stop_points)}
+\item{iters_per_check}{run how many iterations between each check point (or specify n_batch)}
 
 \item{optimizer}{choose different sgd optimization method,
 currently support "sgd", "precond_sgd", "momentum", "adagrad", "rmsprop", "adam", "adamW"
@@ -57,12 +62,6 @@ see ?sgd, ?precond_sgd, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW}
 
 \item{max_num_threads}{maximum number of threads used for parallel computing, by default will be set same as n_parallel_chain.
 If it is more than n_parallel_chain, the rest will be used to parallel different replicates of the model.}
-
-\item{n_slope_check}{number of stop points for regression}
-
-\item{std_lim}{maximum allowed standard deviation}
-
-\item{trend_lim}{maximum allowed slope}
 
 \item{print_check_info}{print the convergence information}
 
@@ -87,6 +86,24 @@ If it is more than n_parallel_chain, the rest will be used to parallel different
 \item{verbose}{print estimation}
 
 \item{store_traj}{store the optimizer trajectory for diagnostics (set FALSE to reduce memory)}
+
+\item{n_min_batch}{minimum batches to run before any convergence check}
+
+\item{n_slope_check}{number of batches used for trend regression window}
+
+\item{trend_std_conv_check}{use trend/std diagnostic for convergence check}
+
+\item{std_lim}{maximum allowed standard deviation}
+
+\item{trend_lim}{maximum allowed slope}
+
+\item{max_R_hat}{maximum allowed R_hat}
+
+\item{pflug_conv_check}{use pflug diagnostic for convergence check}
+
+\item{pflug_alpha}{scaling factor (0-1] for Pflug criterion: require pflug_sum < pflug_alpha * max_pflug_sum}
+
+\item{max_R_hat_conv_check}{use max_R_hat for convergence check}
 }
 \value{
 list of control variables

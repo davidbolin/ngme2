@@ -550,7 +550,7 @@ ngme_out <- ngme(
     iterations = 2000,
     std_lim = 0.02,
     n_parallel_chain = 4,
-    stop_points = 5,
+    n_batch = 5,
     verbose = FALSE,
     print_check_info = FALSE,
     seed = 3
@@ -576,7 +576,7 @@ The `control_opt()` function manages the optimization process through several ke
 - `burnin = 100`: Initial iterations for algorithm stabilization
 - `n_parallel_chain = 4`: Runs 4 parallel optimization chains
 - `std_lim = 0.02`: Convergence criterion based on parameter standard deviation
-- `stop_points = 5`: Number of intermediate convergence checks
+- `n_batch = 5`: Number of intermediate convergence checks
 
 ## Convergence Diagnostics
 
@@ -703,7 +703,7 @@ ngme_out_train <- ngme(
     iterations = 1600,
     std_lim = 0.015,
     n_parallel_chain = 4,
-    stop_points = 8,
+    n_batch = 8,
     verbose = FALSE,
     print_check_info = FALSE,
     seed = 42
@@ -917,7 +917,7 @@ ngme_out_interp <- ngme(
     iterations = 1600,
     std_lim = 0.015,
     n_parallel_chain = 4,
-    stop_points = 8,
+    n_batch = 8,
     verbose = FALSE,
     print_check_info = FALSE,
     seed = 42

@@ -35,7 +35,7 @@ test_that("test fit matern", {
     # rao_blackwellization = TRUE,
     n_parallel_chain = 4,
     print_check_info = F,
-    stop_points = 1,
+    n_batch = 1,
     robust = TRUE,
     verbose = TRUE,
     start_sd = 0.01,

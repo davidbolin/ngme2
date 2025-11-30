@@ -269,8 +269,7 @@ For example, the following formula
 formula <- Y ~ x1 + f(
   x2,
   model = ar1(),
-  noise = noise_nig(),
-  theta_K = 0.5
+  noise = noise_nig()
 ) + f(x3,
   model = rw1(),
   noise = noise_normal()
@@ -307,6 +306,57 @@ It gives the `ngme` object, which has three parts:
 3. Latent models (contains 2 models, ar1 and rw1)
 
 We can turn the `estimation = TRUE` to start estimating the model.
+
+## Optimization options
+
+The optimization process is controlled by the `control_opt` argument.
+
+Different stochastic optimization algorithms can be used for the optimization process.
+See `?ngme_optimizers` for more details.
+
+
+## Convergence check methods
+
+`ngme2` can monitor convergence with three optional diagnostics. They all run at each checkpoint (every `iters_per_check` iterations, default `iterations / n_batch`). Checks only begin after `n_min_batch` checkpoints have accumulated.
+
+- **Gelman–Rubin R̂ (`R_hat_conv_check`, `max_R_hat`)**  
+  Compares between- and within-chain variance for each parameter; pass if `R_hat <= max_R_hat` (default 1.1). Requires at least 2 chains (`n_parallel_chain >= 2`).
+
+- **Trend/Std diagnostic (`trend_std_conv_check`)**  
+  Uses the last `n_slope_check` checkpoints (default 3). Passes when both hold for each parameter:
+  - `sqrt(var) / |mean| <= std_lim` (default 0.01)  
+  - |linear slope over last `n_slope_check` means| `<= trend_lim` (default 0.01).
+
+- **Pflug diagnostic (`pflug_conv_check`, `pflug_alpha`)**  
+  For each chain, checks `pflug_sum < pflug_alpha * max_pflug_sum` in the latest batch (default `pflug_alpha = 1`). If all chains satisfy this, convergence is declared regardless of the other two checks.
+
+Combination rule:
+- A parameter is considered converged if **any** enabled diagnostic passes for it (R̂ or Trend/Std).  
+- Overall convergence is reached when all parameters are converged, or when the Pflug diagnostic passes for all chains.
+
+Key control knobs (set via `control_opt()`):
+
+```r
+ctrl <- control_opt(
+  n_batch = 10,               # number of checkpoints
+  n_min_batch = 3,            # don't check before this many checkpoints
+  n_slope_check = 3,          # window for trend regression
+  R_hat_conv_check = TRUE,
+  max_R_hat = 1.1,
+  trend_std_conv_check = TRUE,
+  std_lim = 0.01,
+  trend_lim = 0.01,
+  pflug_conv_check = TRUE,
+  pflug_alpha = 1,
+  print_check_info = TRUE     # print per-check diagnostics
+)
+```
+
+Recommendations:
+- Use at least two chains for R̂; with one chain only Trend/Std and Pflug can run.
+- If checks trigger too early, increase `n_min_batch` or loosen `std_lim` / `trend_lim`.
+- Pflug is inexpensive; keep it on unless it yields false positives in your model.
+
 
 ## A simple example - AR1 process with nig noise
 
@@ -372,7 +422,7 @@ fit_nig <- ngme(
   data = data.frame(x1 = x1, x2 = x2, Y = Y),
   control_opt = control_opt(
     burnin = 100,
-    iterations = 3000,
+    iterations = 2000,
     n_parallel_chain = 4,
     seed = 3
   )
@@ -459,8 +509,8 @@ ggplot() +
 # Define the control options
 control <- control_opt(
   iterations = 2000,
-  n_slope_check = 4,
-  stop_points = 10,
+  n_min_batch = 4,
+  n_batch = 10,
   n_parallel_chain = 4,
   optimizer = precond_sgd(),
   print_check_info = FALSE,

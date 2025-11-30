@@ -4,18 +4,21 @@ set.seed(seed)
 n_obs <- 800
 day <- 1:n_obs
 sigma_eps <- 0.5
-mu = 2; delta = -mu
+mu <- 2
+delta <- -mu
 sigma <- 3
 nu <- 1
 rho <- 0.5
 
-ar1_model <- f(day, model="ar1", rho = 0.5,
-  noise = noise_nig(mu = mu, sigma = sigma, nu=nu))
+ar1_model <- f(day,
+  model = "ar1", rho = 0.5,
+  noise = noise_nig(mu = mu, sigma = sigma, nu = nu)
+)
 
 # ar1_model <- f(day, model="ar1", rho = 0.5,
 #   noise = noise_normal())
 
-W <- simulate(ar1_model, seed = seed, nsim=1)[[1]]
+W <- simulate(ar1_model, seed = seed, nsim = 1)[[1]]
 Y <- W + rnorm(n_obs, sd = 1)
 Y <- 1:n_obs
 
@@ -23,9 +26,11 @@ Y <- 1:n_obs
 trueV <- ngme2::rig(n_obs, nu, nu, seed = 10)
 
 # Then generate the nig noise
-mynoise <- delta + mu*trueV + sigma * sqrt(trueV) * rnorm(n_obs)
-trueW <- Reduce(function(x,y){y + rho*x}, mynoise, accumulate = T)
-Y = trueW + rnorm(n_obs, mean=0, sd=sigma_eps)
+mynoise <- delta + mu * trueV + sigma * sqrt(trueV) * rnorm(n_obs)
+trueW <- Reduce(function(x, y) {
+  y + rho * x
+}, mynoise, accumulate = T)
+Y <- trueW + rnorm(n_obs, mean = 0, sd = sigma_eps)
 
 # fit the Gaussian model
 ret_gauss <- ngme(
@@ -37,7 +42,7 @@ ret_gauss <- ngme(
     noise = noise_normal(),
     control = control_f(numer_grad = TRUE, improve_hessian = FALSE)
   ),
-  data = data.frame(Y=Y),
+  data = data.frame(Y = Y),
   control_opt = control_opt(
     burnin = 100,
     iterations = 1000,
@@ -45,11 +50,10 @@ ret_gauss <- ngme(
     verbose = FALSE,
     seed = seed,
     rao_blackwellization = TRUE,
-    
     print_check_info = TRUE,
     std_lim = 0.01,
     trend_lim = 0.01,
-    n_slope_check = 10
+    n_min_batch = 10
   )
 )
 ret_gauss
@@ -65,10 +69,10 @@ ret_nig <- ngme(
     rho = 0.5,
     name = "my_ar",
     model = "ar1",
-    noise = noise_nig(mu = mu, sigma = sigma, nu=nu),
+    noise = noise_nig(mu = mu, sigma = sigma, nu = nu),
     control = control_f(numer_grad = TRUE, improve_hessian = FALSE)
   ),
-  data = data.frame(Y=Y),
+  data = data.frame(Y = Y),
   # family = noise_normal(sigma=2),
   control_opt = control_opt(
     burnin = 100,
@@ -81,53 +85,53 @@ ret_nig <- ngme(
     print_check_info = TRUE,
     std_lim = 0.01,
     trend_lim = 0.01,
-    n_slope_check = 3
+    n_min_batch = 3
   )
   # , start = ret_nig
 )
 ret_nig
 
-traceplot(ret_nig, "my_ar", hline=c(0.5, 2, 3, 1))
+traceplot(ret_nig, "my_ar", hline = c(0.5, 2, 3, 1))
 saveRDS(ret_nig, "examples/models/ret_nig.rds")
 ret_nig <- readRDS("examples/models/ret_nig.rds")
 ret_nig_real <- readRDS("examples/models/ret_nig.rds")
-traceplot(ret_nig, "my_ar", hline=c(0.5, mu, sigma, nu))
+traceplot(ret_nig, "my_ar", hline = c(0.5, mu, sigma, nu))
 
 load_all()
 seed <- 500
 
-tmp <- make_time_series_cv_index(1:n_obs, train_length=10, test_length=1)
+tmp <- make_time_series_cv_index(1:n_obs, train_length = 10, test_length = 1)
 train_idx <- tmp$train
 test_idx <- tmp$test
 
 cv <- cross_validation(
   list(
-    gauss=ret_gauss,
-    nig=ret_nig
+    gauss = ret_gauss,
+    nig = ret_nig
   ),
-  type="custom",
+  type = "custom",
   # k=10,
-  parallel=TRUE,
-  n_burnin=100,
-  n_gibbs_samples=100,
-  train_idx=train_idx,
-  test_idx=test_idx,
-  print=TRUE,
-  N_sim=1,
-  seed=seed+50
+  parallel = TRUE,
+  n_burnin = 100,
+  n_gibbs_samples = 100,
+  train_idx = train_idx,
+  test_idx = test_idx,
+  print = TRUE,
+  N_sim = 1,
+  seed = seed + 50
 )
 cv
 
-plot(y_data, type="l")
-lines(AW_N_2[, 100], col="red")
-lines(AW_N_1[, 100], col="blue")
+plot(y_data, type = "l")
+lines(AW_N_2[, 100], col = "red")
+lines(AW_N_1[, 100], col = "blue")
 
-lines(pred_N_1[, 1], col="red")
-lines(pred_N_2[, 1], col="blue")
-lines(pred, col="green")
+lines(pred_N_1[, 1], col = "red")
+lines(pred_N_2[, 1], col = "blue")
+lines(pred, col = "green")
 
 
-sum(ngme_1rep$models[[i]]$A )
+sum(ngme_1rep$models[[i]]$A)
 cv
 cv_500
 cv_1000
@@ -173,9 +177,9 @@ for (i in seq_along(idx)) {
 }
 
 {
-  plot(Y[idx],type="l")
-  lines(pred_gauss, col="red")
-  lines(pred_nig, col="blue")
+  plot(Y[idx], type = "l")
+  lines(pred_gauss, col = "red")
+  lines(pred_nig, col = "blue")
 }
 
 {
@@ -199,24 +203,24 @@ load_all()
 seed <- 50
 cv <- cross_validation(
   list(
-    gauss=ret_gauss, 
-    nig=ret_nig
+    gauss = ret_gauss,
+    nig = ret_nig
   ),
-  k=20,
-  parallel=FALSE,
-  n_burnin=100,
+  k = 20,
+  parallel = FALSE,
+  n_burnin = 100,
   # n_gibbs_samples=10000,
-  print=TRUE,
-  N_sim=1,
-  seed=seed+50
+  print = TRUE,
+  N_sim = 1,
+  seed = seed + 50
 )
 cv
 dim(pred_N_1)
-plot(y_data, type="l", lty=2, col="blue")
+plot(y_data, type = "l", lty = 2, col = "blue")
 for (i in 1:100) {
   print(i)
-  lines(pred_N_1[, i], type="l")
+  lines(pred_N_1[, i], type = "l")
 }
-lines(y_data, type="l", col="blue")
+lines(y_data, type = "l", col = "blue")
 pred <- rowMeans(as.matrix(pred_N_1))
-lines(pred, type="l", col="red")
+lines(pred, type = "l", col = "red")

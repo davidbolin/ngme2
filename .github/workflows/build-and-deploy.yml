@@ -23,9 +23,6 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         r-version: ["4.3", "4.4", "4.5"]
-        exclude:
-          - os: macos-latest
-            r-version: "4.3"
     steps:
       # ───── public preamble ─────
       - uses: actions/checkout@v3

@@ -1097,7 +1097,7 @@ values:</p>
 <span><span class="va">all_gap_indices</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">gap1_indices</span>, <span class="va">gap2_indices</span>, <span class="va">gap3_indices</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">Y_true_gaps</span> <span class="op">&lt;-</span> <span class="va">Y</span><span class="op">[</span><span class="va">all_gap_indices</span><span class="op">]</span></span>
-<span><span class="va">train_indices_interp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">setdiff</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="va">n_obs</span>, <span class="va">all_gap_indices</span><span class="op">)</span></span>
+<span><span class="va">train_indices_interp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/setops.html" class="external-link">setdiff</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="va">n_obs</span>, <span class="va">all_gap_indices</span><span class="op">)</span></span>
 <span><span class="va">model_data_train_interp</span> <span class="op">&lt;-</span> <span class="va">model_data</span><span class="op">[</span><span class="va">train_indices_interp</span>, <span class="op">]</span></span>
 <span><span class="va">Y_train_vector</span> <span class="op">&lt;-</span> <span class="va">Y</span><span class="op">[</span><span class="va">train_indices_interp</span><span class="op">]</span></span>
 <span></span>

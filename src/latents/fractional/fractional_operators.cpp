@@ -531,7 +531,7 @@ std::pair<SpMat, SpMat> compute_fractional_operators(
         C_in, Ci_in, G, beta, m, tau, theta_kappa, B_kappa, empty, empty, 1.0);
   } else {
     // Fetch roots via stub (must be implemented with embedded tables)
-    Roots r = get_roots(m, beta);
+    Roots r = get_roots(m, beta, "linear");
     return compute_fractional_operators_with_roots(C_in, Ci_in, G, beta, m, tau,
                                                    theta_kappa, B_kappa, r.rb,
                                                    r.rc, r.factor);

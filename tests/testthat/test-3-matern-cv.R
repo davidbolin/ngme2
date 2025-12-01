@@ -31,7 +31,7 @@ test_that("test fit matern", {
 
   control_opt <- control_opt(
     n_min_batch = 1,
-    optimizer = adam(),
+    optimizer = precond_sgd(),
     iterations = 1000,
     n_parallel_chain = 4,
     print_check_info = TRUE,
@@ -44,8 +44,8 @@ test_that("test fit matern", {
     Y ~ 0 + f(loc,
       model = matern(
         mesh,
-        alpha = 2.00,
-        fix_alpha = TRUE
+        alpha = 2.00
+        # fix_alpha = FALSE
       ),
       noise = noise_nig()
     ),
@@ -55,6 +55,7 @@ test_that("test fit matern", {
 
   m_nig_gauss
   traceplot(m_nig_gauss, "field1", hline = c(kappa, -2, 1, 0.5))
+  # traceplot(m_nig_gauss, "field1", hline = c(2, kappa, -2, 1, 0.5))
   traceplot(m_nig_gauss, hline = 0.5)
 })
 

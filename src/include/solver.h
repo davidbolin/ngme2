@@ -23,6 +23,7 @@
 class sparse_llt_solver {
 private:
   Eigen::SimplicialLLT<Eigen::SparseMatrix<double, 0, int> > R_eigen;
+  Eigen::SimplicialLDLT<Eigen::SparseMatrix<double, 0, int> > R_ldlt;
   Eigen::CholmodSimplicialLLT<Eigen::SparseMatrix<double, 0, int> > R_simplicial;
   Eigen::CholmodSupernodalLLT<Eigen::SparseMatrix<double, 0, int> > R_supernodal;
 #ifdef __APPLE__
@@ -60,6 +61,10 @@ public:
         if (isSymmetric) { R_eigen.analyzePattern(M); }
         else { R_eigen.analyzePattern(M.transpose() * M); }
         break;
+      case 5:
+        if (isSymmetric) { R_ldlt.analyzePattern(M); }
+        else { R_ldlt.analyzePattern(M.transpose() * M); }
+        break;
       case 1:
         if (isSymmetric) { R_simplicial.analyzePattern(M); }
         else { R_simplicial.analyzePattern(M.transpose() * M); }
@@ -95,6 +100,10 @@ public:
         if (isSymmetric) { R_eigen.factorize(M); }
         else { K_last = M; R_eigen.factorize(M.transpose() * M); }
         break;
+      case 5:
+        if (isSymmetric) { R_ldlt.factorize(M); }
+        else { K_last = M; R_ldlt.factorize(M.transpose() * M); }
+        break;
       case 1:
         if (isSymmetric) { R_simplicial.factorize(M); }
         else { K_last = M; R_simplicial.factorize(M.transpose() * M); }
@@ -128,6 +137,7 @@ public:
   inline Eigen::ComputationInfo factorization_info() const {
     switch (solver_type) {
       case 0: return R_eigen.info();
+      case 5: return R_ldlt.info();
       case 1: return R_simplicial.info();
       case 2: return R_supernodal.info();
 #ifdef __APPLE__
@@ -169,6 +179,8 @@ public:
     switch (solver_type) {
       case 0:
         return R_eigen.solve(rhs);
+      case 5:
+        return R_ldlt.solve(rhs);
       case 1:
         return R_simplicial.solve(rhs);
       case 2:
@@ -198,6 +210,8 @@ public:
     switch (solver_type) {
       case 0:
         return R_eigen.solve(rhs);
+      case 5:
+        return R_ldlt.solve(rhs);
       case 1:
         return R_simplicial.solve(rhs);
       case 2:
@@ -227,6 +241,8 @@ public:
     switch (solver_type) {
       case 0:
         return R_eigen.solve(rhs);
+      case 5:
+        return R_ldlt.solve(rhs);
       case 1:
         return R_simplicial.solve(rhs);
       case 2:
@@ -256,6 +272,8 @@ public:
     switch (solver_type) {
       case 0:
         return log(R_eigen.determinant());
+      case 5:
+        return R_ldlt.vectorD().array().log().sum();
       case 1:
         return R_simplicial.logDeterminant();
       case 2:

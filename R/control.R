@@ -47,11 +47,12 @@
 #' "all" means using all replicates in each iteration,
 #' "ws" means weighted sampling (each iteration use 1 replicate to compute the gradient, the sample probability is proption to its number of observations)
 #' @param solver_type
-#' "eigen" means using eigen solver
-#' "cholmod" means using cholmod solver
-#' "supernodal" means using supernodal solver
-#' "accelerate" means using accelerate solver
-#' "pardiso" means using pardiso solver
+#' "eigen" means using Eigen LLT solver (SimplicialLLT)
+#' "cholmod" means using cholmod LLT solver (CholmodSimplicialLLT)
+#' "supernodal" means using supernodal solver (CholmodSupernodalLLT)
+#' "accelerate" means using accelerate solver (AccelerateLLT)
+#' "pardiso" means using pardiso solver (PardisoLLT)
+#' "ldlt" means using Eigen LDLT solver (SimplicialLDLT)
 #' @param pflug_conv_check use Pflug diagnostic for convergence check
 #' @param pflug_alpha scaling factor (0-1] for Pflug criterion: require \code{pflug_sum < pflug_alpha * max_pflug_sum}
 #' @param max_R_hat_conv_check use max_R_hat for convergence check
@@ -93,7 +94,7 @@ control_opt <- function(
     pflug_alpha = 0.9) {
   strategy_list <- c("all", "ws")
   preconditioner_list <- c("none", "fast", "full")
-  solver_type_list <- c("eigen", "cholmod", "supernodal", "accelerate", "pardiso")
+  solver_type_list <- c("eigen", "cholmod", "supernodal", "accelerate", "pardiso", "ldlt")
 
   # read preconditioner from optimizer
   preconditioner <- "none"
@@ -130,7 +131,7 @@ control_opt <- function(
     is.numeric(n_slope_check) && length(n_slope_check) == 1 &&
       n_slope_check > 0 && n_slope_check <= n_batch,
     inherits(optimizer, "ngme_optimizer"),
-    "solver_type should be in (eigen, cholmod, supernodal, accelerate, pardiso)" = solver_type %in% solver_type_list,
+    "solver_type should be in (eigen, cholmod, supernodal, accelerate, pardiso, ldlt)" = solver_type %in% solver_type_list,
     is.numeric(pflug_alpha) && length(pflug_alpha) == 1 && pflug_alpha > 0 && pflug_alpha <= 1
   )
 

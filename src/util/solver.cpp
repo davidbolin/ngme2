@@ -26,6 +26,7 @@ double sparse_llt_solver::trace(const SparseMatrix<double, 0, int> &M, unsigned 
     } else {
       // For non-symmetric mode, factorization is on Q = K^T K; we need Q^{-1} U (no K^T RHS)
       if (solver_type == 0) QU = R_eigen.solve(U);
+      else if (solver_type == 5) QU = R_ldlt.solve(U);
       else if (solver_type == 1) QU = R_simplicial.solve(U);
       else if (solver_type == 2) QU = R_supernodal.solve(U);
 #ifdef __APPLE__
@@ -79,6 +80,7 @@ double sparse_llt_solver::trace2(const SparseMatrix<double, 0, int> &A,
     } else {
       // For non-symmetric mode, QU = (K^T K)^{-1} U (no K^T on RHS here)
       if (solver_type == 0) QU = R_eigen.solve(U);
+      else if (solver_type == 5) QU = R_ldlt.solve(U);
       else if (solver_type == 1) QU = R_simplicial.solve(U);
       else if (solver_type == 2) QU = R_supernodal.solve(U);
 #ifdef __APPLE__

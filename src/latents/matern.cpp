@@ -68,20 +68,19 @@ void Matern::build_KZ(const VectorXd &theta_K) {
   VectorXd kappa = log_kappa.array().exp();
   VectorXd kappa2 = kappa.array().square();
 
-  bool is_integer = std::abs(alpha - std::round(alpha)) < 1e-6;
-  if (is_integer) {
+  if (std::abs(alpha - 2) < 1e-6) {
+    // Integer case alpha = 2
     // K = G + C * diag(kappa^2)
     SparseMatrix<double> KCK = (C * kappa2.asDiagonal()).eval();
-    int ialpha = static_cast<int>(std::round(alpha));
-    if (ialpha == 2) {
-      K = (G + KCK);
-    } else if (ialpha == 4) {
-      K = (G + KCK) * Cdiag.cwiseInverse().asDiagonal() * (G + KCK);
-    } else {
-      throw std::runtime_error("alpha not equal to 2 or 4 is not implemented");
-    }
+    K = (G + KCK);
+    Z.setIdentity();
+  } else if (std::abs(alpha - 4) < 1e-6) {
+    // Integer case alpha = 4
+    SparseMatrix<double> KCK = (C * kappa2.asDiagonal()).eval();
+    K = (G + KCK) * Cdiag.cwiseInverse().asDiagonal() * (G + KCK);
     Z.setIdentity();
   } else {
+    // Fractional case
     double beta = alpha / 2.0;
     // tau defaults to 1 for now
     VectorXd tau(1);

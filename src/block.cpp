@@ -36,7 +36,7 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
   // 1. Init controls
   Rcpp::List control_ngme = block_model["control_ngme"];
   // const double stepsize = control_ngme["stepsize"];
-  bool init_sample_W = Rcpp::as<bool>(control_ngme["init_sample_W"]);
+  // bool init_sample_W = Rcpp::as<bool>(control_ngme["init_sample_W"]);
   n_gibbs = Rcpp::as<int>(control_ngme["n_gibbs_samples"]);
   int n_trace_iter = Rcpp::as<int>(control_ngme["n_trace_iter"]);
   int solver_type = control_ngme.containsElementNamed("solver_type")
@@ -710,7 +710,6 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
 
   bool do_precond = with_precond;
   // Use the eps provided by the caller to keep caches consistent across layers
-  double eps_use = eps;
 
   VectorXd latent_grad = VectorXd::Zero(n_la_params);
   VectorXd noise_grad = VectorXd::Zero(n_params - n_la_params);
@@ -1405,26 +1404,26 @@ void BlockModel::update_Q_eps(double rho) {
     }
   }
 
-  // compute logdet of Q_eps
+  // compute logdet of Q_eps (not needed)
   // lhs = Q_eps.logdet();
-  VectorXd SV = noise_sigma.array().pow(2).matrix().cwiseProduct(noise_prevV);
-  double lhs = 0;
-  int i = 0;
-  while (i < n_obs) {
-    if (has_correlation[i]) {
-      lhs += -log((1 - rho * rho) * SV[i] * SV[i + 1]);
-      i += 2;
-    } else {
-      lhs += -log(SV[i]);
-      i += 1;
-    }
-  }
-  VectorXd res = get_residual();
-  double rhs = res.dot(Q_eps * res);
+  // VectorXd SV =
+  // noise_sigma.array().pow(2).matrix().cwiseProduct(noise_prevV); double lhs =
+  // 0; int i = 0; while (i < n_obs) {
+  //   if (has_correlation[i]) {
+  //     lhs += -log((1 - rho * rho) * SV[i] * SV[i + 1]);
+  //     i += 2;
+  //   } else {
+  //     lhs += -log(SV[i]);
+  //     i += 1;
+  //   }
+  // }
+  // VectorXd res = get_residual();
+  // double rhs = res.dot(Q_eps * res);
 }
 
 void BlockModel::update_QQ() {
   VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
+  inv_SV = inv_SV.cwiseMax(1e-8);
 
   // update Q and QQ
   Q = K.transpose() * inv_SV.asDiagonal() * K;
@@ -1448,7 +1447,11 @@ void BlockModel::update_QQ() {
     QQ = Q + AZ.transpose() * Q_eps * AZ;
   }
   if (robust) {
-    QQ.diagonal().array() += 1e-8;
+    QQ = 0.5 * (QQ + SparseMatrix<double>(QQ.transpose()));
+    // double mean_diag = QQ.diagonal().mean();
+    // double jitter = std::max(1e-8, 1e-3 * mean_diag);
+    double jitter = 1e-8;
+    QQ.diagonal().array() += jitter;
     chol_QQ.analyze(QQ);
   }
   chol_QQ.compute(QQ);

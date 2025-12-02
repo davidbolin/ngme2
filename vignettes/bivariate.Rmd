@@ -208,7 +208,7 @@ We build a complete model demonstrating how to specify distinct fixed effects fo
 
 ```{r fixed-effect}
 m1 <- ngme(
-  y ~ 0 + 
+  y ~ 0 +
     fe(~1, which_group = "temp") +
     fe(~ 1 + x1, which_group = "precip") +
     f(year, model = rw1(), which_group = "temp") +
@@ -295,8 +295,8 @@ We add fixed effects and measurement noise to the simulated fields to create the
 x1 <- rnorm(n_obs)
 x2 <- runif(n_obs)
 beta <- c(-1, 2)
-sigma_meas <- 0.5
-epsilon <- rnorm(n_obs, 0, sigma_meas)
+sigma_eps <- 0.5
+epsilon <- rnorm(n_obs, 0, sigma_eps)
 Y <- W + x1 * beta[1] + x2 * beta[2] + epsilon
 ```
 
@@ -338,8 +338,8 @@ fit_ex1 <- ngme(
   group = data_ex1$group,
   family = noise_normal(),
   control_opt = control_opt(
-    iterations = 10,
-    n_parallel_chain = 2,
+    iterations = 1000,
+    n_parallel_chain = 1,
     rao_blackwellization = TRUE,
     seed = 42
   )
@@ -351,7 +351,8 @@ fit_ex1
 We create trace plots to visualize the convergence of the chains and assess the quality of the fit.
 
 ```{r ex1-traceplot, fig.height=8}
-traceplot(fit_ex1)
+traceplot(fit_ex1, hline = c(sigma_eps, beta))
+traceplot(fit_ex1, "field1", hline = c(rho, rho1, rho2, sigma1, sigma2))
 ```
 
 ## Example 2: AR(1) with NIG Noise
@@ -657,8 +658,10 @@ locations <- cbind(
 
 # Create space-time indices for bivariate data
 time_idx <- rep(1:n_time, each = n_loc * 2)
-spatial_coords <- do.call(rbind, replicate(n_time, 
-  rbind(locations, locations), simplify = FALSE))
+spatial_coords <- do.call(rbind, replicate(n_time,
+  rbind(locations, locations),
+  simplify = FALSE
+))
 group <- rep(rep(c("field1", "field2"), each = n_loc), n_time)
 
 cat("Total observations:", length(time_idx), "\n")
@@ -670,7 +673,7 @@ We simulate a space-time bivariate process using tensor products with shared tem
 ```{r spacetime-simulation}
 # True parameters
 true_rho_time <- 0.7
-true_theta <- pi/8
+true_theta <- pi / 8
 
 # Simulate space-time bivariate process
 sim_model <- f(
@@ -708,8 +711,8 @@ We organize the space-time data into a data frame containing temporal indices, s
 data_st <- data.frame(
   Y = Y,
   time = time_idx,
-  x = spatial_coords[,1],
-  y = spatial_coords[,2],
+  x = spatial_coords[, 1],
+  y = spatial_coords[, 2],
   x1 = x1,
   x2 = x2,
   group = group
@@ -738,8 +741,8 @@ fit_st <- ngme(
   group = data_st$group,
   family = noise_normal(),
   control_opt = control_opt(
-    iterations = 10,
-    n_parallel_chain = 2,
+    iterations = 500,
+    n_parallel_chain = 1,
     rao_blackwellization = TRUE,
     seed = 42
   )

@@ -1,6 +1,6 @@
 # The `ngme2` Package  <img src="man/figures/logo.png" align="right" width="80" height="80" />
 
-`ngme2` is a unified, efficient, and flexible framework for fitting latent **non-Gaussian** models in R. It extends the SPDE-based Gaussian modeling toolkit to handle skewness, heavy tails, and non-smooth behavior while keeping familiar workflows for estimation, prediction, and model assessment.
+`ngme2` (https://davidbolin.github.io/ngme2/) is a unified, efficient, and flexible framework for fitting latent **non-Gaussian** models in R. It extends the SPDE-based Gaussian modeling toolkit to handle skewness, heavy tails, and non-smooth behavior while keeping familiar workflows for estimation, prediction, and model assessment.
 
 ## What you get
 - Temporal processes: AR(1), Ornstein–Uhlenbeck, random walks, and ARMA models.
@@ -10,7 +10,7 @@
 - Practical tools: kriging-style prediction, cross-validation helpers, and diagnostics for convergence/fit quality.
 
 ## Model framework in a sentence
-Data \(Y\) are linked to a latent process \(W\) through an observation matrix \(A\) and fixed effects \(X\beta\), while both the process and measurement errors are modeled as normal mean–variance mixtures with generalized inverse Gaussian mixing. An operator \(K(\theta)\) encodes spatial/temporal structure, letting the same template describe everything from simple random effects to rich spatio-temporal fields.
+Data \(Y\) are linked to a latent process \(W\) through an observation matrix \(A\) and fixed effects \(X\beta\), while both the process and measurement errors are modeled as normal mean–variance mixtures with generalized inverse Gaussian mixing. An operator \(K\) encodes spatial/temporal structure, letting the same template describe everything from simple random effects to rich spatio-temporal fields.
 
 ## Quick start
 ```r
@@ -30,11 +30,9 @@ The stable version can be installed with:
 ```r
 install.packages("ngme2", repos = "https://davidbolin.github.io/ngme2/")
 ```
-See the [Installation and Configuration][install] vignette if compilation tools are needed.
+See the [Installation and Configuration](https://davidbolin.github.io/ngme2/articles/Installation.html) vignette if compilation tools are needed.
 
 ## Learn more
-- `vignette("ngme2")` for a guided tour of the modeling framework.
-- `vignette("pred-and-est")` for estimation and prediction details.
-- `vignette("cross-validation")` for model comparison workflows.
-
-[install]: https://davidbolin.github.io/ngme2/articles/Installation_and_configuration.html "Installation and Configuration"
+- [Get Started](https://davidbolin.github.io/ngme2/articles/ngme2.html): for a guided tour of the modeling framework.
+- [Online vignettes](https://davidbolin.github.io/ngme2/articles/)
+- [Online documentations](https://davidbolin.github.io/ngme2/reference/index.html)

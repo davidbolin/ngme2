@@ -388,8 +388,13 @@ update_ngme_est <- function(
         # theta_K = (theta_K_tp_first, theta_K_bv)
         # notice that theta_K_bv is already updated
 
-        # (skip rotation parameter in normal case)
-        if (lat$operator$second$model %in% c("bv2")) n0 <- 3 else n0 <- 4
+        # number of bv-specific parameters before sub-model params
+        n0 <- switch(bv$model,
+          "bv" = (if (!isTRUE(bv$fix_theta)) 1 else 0) + 1 + (if (isTRUE(bv$use_c_param)) 2 else 0),
+          "bv2" = 3,
+          "bv_matern" = 4 - isTRUE(bv$fix_theta),
+          0
+        )
         n1 <- bv$first$n_theta_K
         n2 <- bv$second$n_theta_K
         bv$first$theta_K <- bv$theta_K[(n0 + 1):(n0 + n1)]

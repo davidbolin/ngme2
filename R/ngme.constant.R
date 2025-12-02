@@ -12,8 +12,14 @@ ngme_noise_types <- function() {
 #' @export
 ngme_model_types <- function() {
     c(
-        "ar1", "matern", "rw", "ou", "tp", "iid", "re",
-        "bv2", "bv_matern", "spacetime"
+        "iid", "re",
+        "ar1", "ar", "arma",
+        "rw1", "rw2",
+        "ou", "matern",
+        "tp",
+        "bv", "bv2", "bv_matern",
+        "spacetime",
+        "generic", "generic_ns"
     )
 }
 

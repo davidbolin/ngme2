@@ -9,7 +9,7 @@ optimization process."><meta property="og:image" content="https://davidbolin.git
 
     <a class="navbar-brand me-2" href="../index.html">ngme2</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -78,7 +78,8 @@ optimization process.</p>
 <span>  rao_blackwellization <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  n_trace_iter <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>  sampling_strategy <span class="op">=</span> <span class="st">"all"</span>,</span>
-<span>  solver_type <span class="op">=</span> <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Sys.info.html" class="external-link">Sys.info</a></span><span class="op">(</span><span class="op">)</span><span class="op">[</span><span class="st">"sysname"</span><span class="op">]</span> <span class="op">==</span> <span class="st">"Darwin"</span><span class="op">)</span> <span class="st">"accelerate"</span> <span class="kw">else</span> <span class="st">"supernodal"</span>,</span>
+<span>  solver_backend <span class="op">=</span> <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Sys.info.html" class="external-link">Sys.info</a></span><span class="op">(</span><span class="op">)</span><span class="op">[</span><span class="st">"sysname"</span><span class="op">]</span> <span class="op">==</span> <span class="st">"Darwin"</span><span class="op">)</span> <span class="st">"accelerate"</span> <span class="kw">else</span> <span class="st">"cholmod"</span>,</span>
+<span>  solver_type <span class="op">=</span> <span class="st">"llt"</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  store_traj <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  robust <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -171,13 +172,12 @@ If it is more than n_parallel_chain, the rest will be used to parallel different
 "ws" means weighted sampling (each iteration use 1 replicate to compute the gradient, the sample probability is proption to its number of observations)</p></dd>
 
 
+<dt id="arg-solver-backend">solver_backend<a class="anchor" aria-label="anchor" href="#arg-solver-backend"></a></dt>
+<dd><p>backend in ("eigen", "cholmod", "accelerate", "pardiso")</p></dd>
+
+
 <dt id="arg-solver-type">solver_type<a class="anchor" aria-label="anchor" href="#arg-solver-type"></a></dt>
-<dd><p>"eigen" means using Eigen LLT solver (SimplicialLLT)
-"cholmod" means using cholmod LLT solver (CholmodSimplicialLLT)
-"supernodal" means using supernodal solver (CholmodSupernodalLLT)
-"accelerate" means using accelerate solver (AccelerateLLT)
-"pardiso" means using pardiso solver (PardisoLLT)
-"ldlt" means using Eigen LDLT solver (SimplicialLDLT)</p></dd>
+<dd><p>factorization type: "llt" or "ldlt"</p></dd>
 
 
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>

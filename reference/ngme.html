@@ -19,7 +19,7 @@ See ngme_model_types() for available models."><meta property="og:image" content=
 
     <a class="navbar-brand me-2" href="../index.html">ngme2</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,20 +31,20 @@ See ngme_model_types() for available models."><meta property="og:image" content=
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Functions</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-vignettes" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Vignettes</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-vignettes"><li><a class="dropdown-item" href="../articles/Installation_and_configuration.html">Installation and configuration (using OpenMP)</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-vignettes"><li><a class="dropdown-item" href="../articles/Installation.html">Installation and configuration (using OpenMP)</a></li>
     <li><a class="dropdown-item" href="../articles/AR1-model.html">AR(1) model</a></li>
     <li><a class="dropdown-item" href="../articles/RW-model.html">Random walk model</a></li>
     <li><a class="dropdown-item" href="../articles/ou-process.html">Ornstein-Uhlenbeck process</a></li>
+    <li><a class="dropdown-item" href="../articles/cross-validation.html">Cross-validation for ngme2 models</a></li>
     <li><a class="dropdown-item" href="../articles/SPDE-model.html">SPDE Matern model</a></li>
-    <li><a class="dropdown-item" href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a></li>
+    <li><a class="dropdown-item" href="../articles/tensor-product.html">Space-time (tensor product) model in ngme2</a></li>
     <li><a class="dropdown-item" href="../articles/replicate.html">Models with replicates</a></li>
+    <li><a class="dropdown-item" href="../articles/bivariate.html">Bivariate models in ngme2</a></li>
     <li><a class="dropdown-item" href="../articles/pred-and-est.html">Model estimation and prediction</a></li>
-    <li><a class="dropdown-item" href="../articles/bivariate.html">Bivariate models in Ngme2</a></li>
-    <li><a class="dropdown-item" href="../articles/random-effect.html">Random effects model in Ngme2</a></li>
-    <li><a class="dropdown-item" href="../articles/tensor-product.html">Space-time (tensor product) model in Ngme2</a></li>
     <li><a class="dropdown-item" href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a></li>
-    <li><a class="dropdown-item" href="../articles/cross-validation.html">Cross-validation for the ngme2 models</a></li>
     <li><a class="dropdown-item" href="../articles/generic.html">Using the Generic Model in ngme2</a></li>
+    <li><a class="dropdown-item" href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a></li>
+    <li><a class="dropdown-item" href="../articles/random-effect.html">Random effects model in ngme2</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -104,7 +104,9 @@ See <code><a href="ngme_model_types.html">ngme_model_types()</a></code> for avai
 
 
 <dt id="arg-family">family<a class="anchor" aria-label="anchor" href="#arg-family"></a></dt>
-<dd><p>likelihood type, same as measurement noise specification, 1. string 2. ngme noise obejct</p></dd>
+<dd><p>likelihood type, same as measurement noise specification. It can be provided as:</p><ol><li><p>a string, e.g., <code>"normal"</code>, <code>"nig"</code>, <code>"t"</code>.</p></li>
+<li><p>an ngme noise object, e.g., <code><a href="ngme_noise.html">noise_normal()</a></code>, <code>noise_nig(mu = 0, sigma = 1, nu = 1)</code>, <code>noise_t(nu=5)</code>.</p></li>
+</ol></dd>
 
 
 <dt id="arg-control-opt">control_opt<a class="anchor" aria-label="anchor" href="#arg-control-opt"></a></dt>
@@ -158,9 +160,7 @@ See <code><a href="ngme_model_types.html">ngme_model_types()</a></code> for avai
 <span class="r-in"><span>    estimation <span class="op">=</span> <span class="cn">FALSE</span></span></span>
 <span class="r-in"><span>  <span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Using character strings for 'model' is not recommended (will be deprecated in the future). Please consider using operator functions like matern(), ar1(), etc. (e.g., model = matern()).</span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in (function (mesh = NULL, rho = 0) {    if (is.null(mesh)) {        return(structure(list(model = "ar1", args = list(rho = rho)),             class = "ngme_operator_def"))    }    stopifnot(`rho should be between -1 and 1` = rho &gt;= -1 &amp;&amp;         rho &lt;= 1)    mesh &lt;- ngme_build_mesh(mesh)    n &lt;- mesh$n    h &lt;- c(diff(mesh$loc), 1)    G &lt;- Matrix::Diagonal(n)    G[1, 1] &lt;- sqrt(1 - rho^2)    C &lt;- Matrix::sparseMatrix(j = 1:(n - 1), i = 2:n, x = -1,         dims = c(n, n))    G &lt;- ngme_as_sparse(G)    C &lt;- ngme_as_sparse(C)    stopifnot(`The mesh should be 1d and has gap 1.` = all(h ==         1))    theta_K &lt;- ar1_a2th(rho)    stopifnot(`The length of rho(theta_K) should be 1.` = length(theta_K) ==         1)    update_K &lt;- function(theta_K) {        ar1_th2a(theta_K) * C + G    }    g &lt;- name2fun("tanh", inv = TRUE)    ngme_operator(mesh = mesh, model = "ar1", theta_K = c(rho = g(rho)),         trans = c(rho = "tanh"), matrices = list(C, G), h = h,         C = C, G = G, update_K = update_K, K = ngme_as_sparse(update_K(theta_K)),         symmetric = FALSE, zero_trace = FALSE, param_name = "rho",         param_trans = list(ar1_th2a), generic_type = "generic")})(model_name = "ar1", map = 3:7, model = "ar1", noise = structure(list(    noise_type = "nig", V = NULL, theta_mu = 0, theta_sigma = 0,     theta_sigma_normal = numeric(0), theta_nu = 0, B_mu = structure(1, dim = c(1L,     1L)), B_sigma = structure(1, dim = c(1L, 1L)), B_sigma_normal = structure(logical(0), dim = 1:0),     B_nu = structure(1, dim = c(1L, 1L)), n_theta_mu = 1L, n_theta_sigma = 1L,     n_theta_nu = 1L, n_rho = 0L, n_theta_sigma_normal = 0L, fix_theta_mu = FALSE,     fix_theta_sigma = FALSE, fix_theta_nu = FALSE, nu_lower_bound = 0.01,     fix_V = FALSE, fix_rho = FALSE, fix_theta_sigma_normal = FALSE,     n_params = 3L, single_V = FALSE, share_V = FALSE, corr_measurement = FALSE,     index_corr = NULL, map_corr = NULL, rho = numeric(0), prior_mu = structure(list(        type = "normal", param = c(0, 0.01)), class = "ngme_prior"),     prior_sigma = structure(list(type = "normal", param = c(0,     0.01)), class = "ngme_prior"), prior_nu = structure(list(        type = "normal", param = c(0, 0.01)), class = "ngme_prior")), class = "ngme_noise"),     mesh = structure(list(n = 5L, m = 5, loc = 3:7, mid = 3:7,         interval = c(3L, 7L), boundary = c("neumann", "neumann"        ), cyclic = FALSE, manifold = "R1", degree = 1, free.clamped = c(FALSE,         FALSE), idx = list(loc = 1:5)), class = c("fm_mesh_1d",     "inla.mesh.1d")), name = "field1", data = structure(list(        Y = 1:5, x1 = 2:6, x2 = 3:7), class = "data.frame", row.names = c(NA,     -5L)), group = structure(c(1L, 1L, 1L, 1L, 1L), levels = "1", class = "factor"),     fix_W = FALSE, fix_theta_K = FALSE, prior_theta_K = structure(list(        type = "normal", param = c(0, 0.001)), class = "ngme_prior"),     subset = c(TRUE, TRUE, TRUE, TRUE, TRUE), debug = FALSE,     rho = 0.5):</span> unused arguments (model_name = "ar1", map = 3:7, model = "ar1", noise = list("nig", NULL, 0, 0, numeric(0), 0, 1, 1, logical(0), 1, 1, 1, 1, 0, 0, FALSE, FALSE, FALSE, 0.01, FALSE, FALSE, FALSE, 3, FALSE, FALSE, FALSE, NULL, NULL, numeric(0), list("normal", c(0, 0.01)), list("normal", c(0, 0.01)), list("normal", c(0, 0.01))), name = "field1", data = list(1:5, 2:6, 3:7), group = c(1, 1, 1, 1, 1), fix_W = FALSE, fix_theta_K = FALSE, prior_theta_K = list("normal", c(0, 0.001)), subset = c(TRUE, TRUE, TRUE, TRUE, </span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> TRUE), debug = FALSE)</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in ngme2::f(x2, model = "ar1", noise = noise_nig(), rho = 0.5, data = structure(list(    Y = 1:5, x1 = 2:6, x2 = 3:7), class = "data.frame", row.names = c(NA, -5L)), group = structure(c(1L, 1L, 1L, 1L, 1L), levels = "1", class = "factor"),     name = "field1", subset = c(TRUE, TRUE, TRUE, TRUE, TRUE)):</span> unused argument (rho = 0.5)</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

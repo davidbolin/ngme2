@@ -27,7 +27,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">ngme2</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,7 +41,7 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-vignettes" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Vignettes</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-vignettes">
-<li><a class="dropdown-item" href="../articles/Installation_and_configuration.html">Installation and configuration (using OpenMP)</a></li>
+<li><a class="dropdown-item" href="../articles/Installation.html">Installation and configuration (using OpenMP)</a></li>
     <li><a class="dropdown-item" href="../articles/AR1-model.html">AR(1) model</a></li>
     <li><a class="dropdown-item" href="../articles/RW-model.html">Random walk model</a></li>
     <li><a class="dropdown-item" href="../articles/ou-process.html">Ornstein-Uhlenbeck process</a></li>
@@ -658,21 +658,21 @@ during the sampling.</p>
 <code class="sourceCode R"><span><span class="va">V</span></span>
 <span><span class="co">#&gt; NULL</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums-methods.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">V_1</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] 0.03709608 0.06126259 0.05806829 0.06444997 0.06165641 0.06704902</span></span>
-<span><span class="co">#&gt;  [7] 0.06725763 0.06882328 0.09323905 0.03326812</span></span>
+<span><span class="co">#&gt;  [1] 0.02969582 0.07110545 0.06855322 0.09228439 0.07833023 0.06764131</span></span>
+<span><span class="co">#&gt;  [7] 0.06761546 0.07932295 0.06849654 0.03288778</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums-methods.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">V_2</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] 0.02693834 0.05751383 0.05141882 0.06712580 0.07282258 0.09158593</span></span>
-<span><span class="co">#&gt;  [7] 0.05903115 0.08000358 0.08455838 0.05345069</span></span>
+<span><span class="co">#&gt;  [1] 0.02398173 0.07171019 0.06043209 0.05569735 0.06797676 0.07465230</span></span>
+<span><span class="co">#&gt;  [7] 0.04652149 0.08404039 0.06705629 0.03526071</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="va">W</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  [1]  0.029985516  0.048025393  0.059415769  0.072248733  0.045016944</span></span>
 <span><span class="co">#&gt;  [6]  0.030076087  0.011708335  0.005539407 -0.012462080 -0.016644480</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums-methods.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">W_1</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] -0.3119351 -0.3114950 -0.3091420 -0.3045069 -0.2981226 -0.2910255</span></span>
-<span><span class="co">#&gt;  [7] -0.2843359 -0.2787390 -0.2741174 -0.2735593</span></span>
+<span><span class="co">#&gt;  [1] -0.3137699 -0.3114821 -0.3081869 -0.3025279 -0.2979442 -0.2940818</span></span>
+<span><span class="co">#&gt;  [7] -0.2908493 -0.2875138 -0.2849110 -0.2843904</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums-methods.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">W_2</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] -0.3395079 -0.3375824 -0.3338440 -0.3270851 -0.3198480 -0.3117916</span></span>
-<span><span class="co">#&gt;  [7] -0.3064576 -0.3010843 -0.2975440 -0.2960367</span></span></code></pre></div>
+<span><span class="co">#&gt;  [1] -0.3468080 -0.3450244 -0.3423992 -0.3396974 -0.3343885 -0.3298757</span></span>
+<span><span class="co">#&gt;  [7] -0.3267497 -0.3224122 -0.3209246 -0.3196849</span></span></code></pre></div>
 <p>Let us begin by building traceplots for
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>V</mi><annotation encoding="application/x-tex">V</annotation></semantics></math>:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">

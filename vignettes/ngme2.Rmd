@@ -396,7 +396,7 @@ Now let's fit the model using `ngme`. Here we can use `control_opt` to modify th
 control variables for the `ngme`. See `?control_opt` for more optioins.
 
 ```{r fit_ar1}
-# # Fit the model with the AR1 model
+# Fit the model with the AR1 model
 fit_nig <- ngme(
   Y ~ x1 + x2 + f(
     1:n_obs,

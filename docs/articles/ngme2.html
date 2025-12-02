@@ -45,16 +45,16 @@
     <li><a class="dropdown-item" href="../articles/AR1-model.html">AR(1) model</a></li>
     <li><a class="dropdown-item" href="../articles/RW-model.html">Random walk model</a></li>
     <li><a class="dropdown-item" href="../articles/ou-process.html">Ornstein-Uhlenbeck process</a></li>
-    <li><a class="dropdown-item" href="../articles/cross-validation.html">Cross-validation for ngme2 models</a></li>
     <li><a class="dropdown-item" href="../articles/SPDE-model.html">SPDE Matern model</a></li>
-    <li><a class="dropdown-item" href="../articles/tensor-product.html">Space-time (tensor product) model in ngme2</a></li>
+    <li><a class="dropdown-item" href="../articles/tensor-product.html">Space-time (tensor product) model</a></li>
+    <li><a class="dropdown-item" href="../articles/non-separable-model.html">Non-Separable Space-Time Models(Advection-Diffusion)</a></li>
+    <li><a class="dropdown-item" href="../articles/cross-validation.html">Cross-validation for ngme2 models</a></li>
     <li><a class="dropdown-item" href="../articles/replicate.html">Models with replicates</a></li>
-    <li><a class="dropdown-item" href="../articles/bivariate.html">Bivariate models in ngme2</a></li>
+    <li><a class="dropdown-item" href="../articles/bivariate.html">Bivariate type-G models</a></li>
     <li><a class="dropdown-item" href="../articles/pred-and-est.html">Model estimation and prediction</a></li>
     <li><a class="dropdown-item" href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a></li>
     <li><a class="dropdown-item" href="../articles/generic.html">Using the Generic Model in ngme2</a></li>
     <li><a class="dropdown-item" href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a></li>
-    <li><a class="dropdown-item" href="../articles/random-effect.html">Random effects model in ngme2</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -600,7 +600,7 @@ K =
 <code>control_opt</code> to modify the control variables for the
 <code>ngme</code>. See <code><a href="../reference/control_opt.html">?control_opt</a></code> for more optioins.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># # Fit the model with the AR1 model</span></span>
+<code class="sourceCode R"><span><span class="co"># Fit the model with the AR1 model</span></span>
 <span><span class="va">fit_nig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
 <span>  <span class="va">Y</span> <span class="op">~</span> <span class="va">x1</span> <span class="op">+</span> <span class="va">x2</span> <span class="op">+</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
 <span>    <span class="fl">1</span><span class="op">:</span><span class="va">n_obs</span>,</span>
@@ -755,7 +755,7 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Starting posterior sampling... </span></span>
 <span><span class="co">#&gt; Posterior sampling done! </span></span>
-<span><span class="co">#&gt; Average standard deviation of the posterior W:  2.90812 </span></span>
+<span><span class="co">#&gt; Average standard deviation of the posterior W:  2.87084 </span></span>
 <span><span class="co">#&gt; Note:</span></span>
 <span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
 <span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span></code></pre></div>
@@ -789,21 +789,21 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <p>Parameter estimation results:</p>
 <pre><code><span><span class="co">#&gt; $fixed_effects</span></span>
 <span><span class="co">#&gt; (Intercept) </span></span>
-<span><span class="co">#&gt;    8.297917 </span></span>
+<span><span class="co">#&gt;    8.241518 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 2.042622</span></span>
+<span><span class="co">#&gt; [1] 2.027681</span></span>
 <span><span class="co">#&gt; $kappa</span></span>
-<span><span class="co">#&gt; [1] 4.120075</span></span>
+<span><span class="co">#&gt; [1] 4.100826</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $mu</span></span>
-<span><span class="co">#&gt; [1] 18.75537</span></span>
+<span><span class="co">#&gt; [1] 19.20593</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 28.90908</span></span>
+<span><span class="co">#&gt; [1] 28.8247</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nu</span></span>
-<span><span class="co">#&gt; [1] 1.119443</span></span></code></pre>
+<span><span class="co">#&gt; [1] 1.084761</span></span></code></pre>
 <div class="section level4">
 <h4 id="prediction">Prediction<a class="anchor" aria-label="anchor" href="#prediction"></a>
 </h4>
@@ -870,7 +870,7 @@ the details of the cross-validation, see the <a href="articles/cross-validation.
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Starting posterior sampling... </span></span>
 <span><span class="co">#&gt; Posterior sampling done! </span></span>
-<span><span class="co">#&gt; Average standard deviation of the posterior W:  2.533153 </span></span>
+<span><span class="co">#&gt; Average standard deviation of the posterior W:  2.572308 </span></span>
 <span><span class="co">#&gt; Note:</span></span>
 <span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
 <span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span></code></pre></div>
@@ -889,14 +889,14 @@ the details of the cross-validation, see the <a href="articles/cross-validation.
 <span><span class="op">)</span></span>
 <span><span class="va">cv</span></span>
 <span><span class="co">#&gt; $mean.scores</span></span>
-<span><span class="co">#&gt;            MAE     MSE neg.CRPS neg.sCRPS</span></span>
-<span><span class="co">#&gt; gauss 1.741200 5.23556 1.247451  1.457584</span></span>
-<span><span class="co">#&gt; nig   1.731045 5.20822 1.245195  1.453929</span></span>
+<span><span class="co">#&gt;            MAE      MSE neg.CRPS neg.sCRPS</span></span>
+<span><span class="co">#&gt; gauss 1.740767 5.230700 1.247329  1.457489</span></span>
+<span><span class="co">#&gt; nig   1.730342 5.209617 1.244528  1.453643</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sd.scores</span></span>
 <span><span class="co">#&gt;               MAE        MSE    neg.CRPS   neg.sCRPS</span></span>
-<span><span class="co">#&gt; gauss 0.002599346 0.01329710 0.003355939 0.001551408</span></span>
-<span><span class="co">#&gt; nig   0.002889866 0.01657978 0.003168377 0.001538119</span></span></code></pre></div>
+<span><span class="co">#&gt; gauss 0.002581289 0.01328677 0.003350892 0.001549784</span></span>
+<span><span class="co">#&gt; nig   0.003524973 0.02285076 0.003478937 0.001643864</span></span></code></pre></div>
 <p>As we can see, the NIG model has a slightly better cross-validation
 performance in most metrics.</p>
 </div>

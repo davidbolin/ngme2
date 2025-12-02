@@ -159,9 +159,7 @@ To verify that OpenMP is working correctly with `ngme2`, you can run a simple te
 library(ngme2)
 
 # Check OpenMP capabilities
-cat("OpenMP threads available:", ngme2:::openmp_test(), "\n")
-
-# If the function returns a number greater than 1, OpenMP is working
+openmp_test()
 ```
 
 ## Troubleshooting

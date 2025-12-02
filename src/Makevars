@@ -89,16 +89,17 @@ ifeq ($(UNAME), Darwin)
   endif
 endif
 
-# MKLROOT = /opt/intel/mkl
-# ifdef MKLROOT
-#   PKG_CPPFLAGS += -DUSEMKL -I$(MKLROOT)/include
-#   # If MKL is installed, use MKL libraries
-#   PKG_LIBS += -L$(MKLROOT)/lib/intel64 \
-#              -lmkl_rt -lmkl_gnu_thread -lmkl_core \
-#              -lgomp -lpthread -lm -ldl
-#   PKG_LIBS += -Wl,-rpath,$(MKLROOT)/lib/intel64
-#   $(info MKL detected, using MKL libraries.)
-# endif
+# Enable MKL/Pardiso when MKLROOT is provided (e.g., oneAPI) on non-macOS
+ifneq ($(UNAME), Darwin)
+  ifdef MKLROOT
+    PKG_CPPFLAGS += -DUSEMKL -I$(MKLROOT)/include
+    PKG_LIBS += -L$(MKLROOT)/lib/intel64 \
+               -lmkl_rt -lmkl_gnu_thread -lmkl_core \
+               -lgomp -lpthread -lm -ldl
+    PKG_LIBS += -Wl,-rpath,$(MKLROOT)/lib/intel64
+    $(info MKL detected, enabling Pardiso.)
+  endif
+endif
 
 R_XTRA_CPPFLAGS =  -I$(R_INCLUDE_DIR)
 # PKG_LIBS += $(SHLIB_OPENMP_CXXFLAGS)

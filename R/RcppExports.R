@@ -13,6 +13,10 @@ get_openmp_threads <- function() {
     .Call(`_ngme2_get_openmp_threads`)
 }
 
+has_pardiso <- function() {
+    .Call(`_ngme2_has_pardiso`)
+}
+
 compute_log_like_cpp <- function(R_ngme) {
     .Call(`_ngme2_compute_log_like_cpp`, R_ngme)
 }

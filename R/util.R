@@ -1228,6 +1228,6 @@ openmp_test <- function() {
   if (num_threads == 0) {
     print("OpenMP not available.")
   } else {
-    print(paste("OpenMP is available, the default thread number is", num_threads, "."))
+    print(paste0("OpenMP is available, the default thread number is ", num_threads, "."))
   }
 }

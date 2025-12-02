@@ -593,3 +593,12 @@ int get_openmp_threads() {
   return 0;
 #endif
 }
+
+// [[Rcpp::export]]
+bool has_pardiso() {
+#ifdef USEMKL
+  return true;
+#else
+  return false;
+#endif
+}

@@ -47,7 +47,8 @@ double sparse_llt_solver::trace(const SparseMatrix<double, 0, int> &M,
         QU = R_pardiso_ldlt.solve(U);
 #endif
       else
-        throw;
+        throw std::runtime_error("Pardiso solver not available (recompile with "
+                                 "USEMKL) or invalid solver_type");
     }
     QU_computed = 1;
   }
@@ -111,7 +112,8 @@ double sparse_llt_solver::trace2(const SparseMatrix<double, 0, int> &A,
         QU = R_pardiso_ldlt.solve(U);
 #endif
       else
-        throw;
+        throw std::runtime_error("Pardiso solver not available (recompile with "
+                                 "USEMKL) or invalid solver_type");
     }
     QU_computed = 1;
   }

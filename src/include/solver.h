@@ -8,10 +8,11 @@
 #include "MatrixAlgebra.h"
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
+#include <cholmod.h>
 #include <iostream>
+#include <stdexcept>
 #include <string.h>
 
-#include <cholmod.h>
 #include <Eigen/CholmodSupport>
 #ifdef __APPLE__
 #include <Eigen/AccelerateSupport>
@@ -131,7 +132,8 @@ public:
       break;
 #endif
     default:
-      throw;
+      throw std::runtime_error("Pardiso solver not available (recompile with "
+                               "USEMKL) or invalid solver_type");
     }
     QU_computed = false;
     n = isSymmetric ? M.rows() : M.cols();
@@ -212,7 +214,8 @@ public:
       break;
 #endif
     default:
-      throw;
+      throw std::runtime_error("Pardiso solver not available (recompile with "
+                               "USEMKL) or invalid solver_type");
     }
     Qi_computed = false;
     QU_computed = false;
@@ -292,7 +295,8 @@ public:
       return R_pardiso_ldlt.solve(rhs);
 #endif
     default:
-      throw;
+      throw std::runtime_error("Pardiso solver not available (recompile with "
+                               "USEMKL) or invalid solver_type");
     }
   }
 
@@ -327,7 +331,8 @@ public:
       return R_pardiso_ldlt.solve(rhs);
 #endif
     default:
-      throw;
+      throw std::runtime_error("Pardiso solver not available (recompile with "
+                               "USEMKL) or invalid solver_type");
     }
   }
 
@@ -364,7 +369,8 @@ public:
       return R_pardiso_ldlt.solve(rhs);
 #endif
     default:
-      throw;
+      throw std::runtime_error("Pardiso solver not available (recompile with "
+                               "USEMKL) or invalid solver_type");
     }
   }
 
@@ -389,18 +395,19 @@ public:
       return R_cholmod_ldlt.logDeterminant();
 #ifdef __APPLE__
     case 4:
-      throw;
+      throw std::runtime_error("Accelerate solver not available");
     case 5:
-      throw;
+      throw std::runtime_error("Accelerate LDLT solver not available");
 #endif
 #ifdef USEMKL
     case 6:
-      throw;
+      throw std::runtime_error("Pardiso solver logdet not implemented");
     case 7:
-      throw;
+      throw std::runtime_error("Pardiso LDLT solver logdet not implemented");
 #endif
     default:
-      throw;
+      throw std::runtime_error("Pardiso solver not available (recompile with "
+                               "USEMKL) or invalid solver_type");
     }
   }
 };

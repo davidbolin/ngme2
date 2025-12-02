@@ -8,6 +8,7 @@
 #include <cmath>
 #include <iterator>
 #include <random>
+#include <stdexcept>
 
 using std::pow;
 
@@ -39,9 +40,28 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
   // bool init_sample_W = Rcpp::as<bool>(control_ngme["init_sample_W"]);
   n_gibbs = Rcpp::as<int>(control_ngme["n_gibbs_samples"]);
   int n_trace_iter = Rcpp::as<int>(control_ngme["n_trace_iter"]);
-  int solver_type = control_ngme.containsElementNamed("solver_type")
-                        ? Rcpp::as<int>(control_ngme["solver_type"])
-                        : 0;
+  auto map_solver_type = [](int backend, int factor) {
+    switch (backend) {
+    case 0: // eigen
+      return factor == 0 ? 0 : 1;
+    case 1: // cholmod
+      return factor == 0 ? 2 /*LLT (supernodal)*/ : 3 /*LDLT via CholmodDecomposition*/;
+    case 2: // accelerate
+      return factor == 0 ? 4 : 5;
+    case 3: // pardiso
+      return factor == 0 ? 6 : 7;
+    default:
+      throw std::invalid_argument("solver_backend out of range (expected 0-3)");
+    }
+  };
+
+  int solver_backend = control_ngme.containsElementNamed("solver_backend")
+                           ? Rcpp::as<int>(control_ngme["solver_backend"])
+                           : 0;
+  int solver_factor = control_ngme.containsElementNamed("solver_factor")
+                          ? Rcpp::as<int>(control_ngme["solver_factor"])
+                          : 0;
+  int solver_type = map_solver_type(solver_backend, solver_factor);
   robust = control_ngme.containsElementNamed("robust")
                ? Rcpp::as<bool>(control_ngme["robust"])
                : false;

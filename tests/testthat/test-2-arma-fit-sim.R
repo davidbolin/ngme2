@@ -125,7 +125,6 @@ test_that("test fit ARMA(2,2) with normal noise (precond)", {
     control_opt = control_opt(
       seed = 123,
       burnin = 100,
-      solver_type = "supernodal",
       iterations = 2000,
       n_batch = 1,
       # verbose=TRUE,

@@ -2,17 +2,17 @@
 #include <random>
 
 using namespace Eigen;
-double myround(double x){
-	if(x > 0){
-		return -1.0;
-	} else {
-		return 1.0;
-	}
+double myround(double x) {
+  if (x > 0) {
+    return -1.0;
+  } else {
+    return 1.0;
+  }
 }
 
-double sparse_llt_solver::trace(const SparseMatrix<double, 0, int> &M, unsigned int seed)
-{
-  if (QU_computed==0){
+double sparse_llt_solver::trace(const SparseMatrix<double, 0, int> &M,
+                                unsigned int seed) {
+  if (QU_computed == 0) {
     std::mt19937 rng(seed);
     std::uniform_real_distribution<double> dist(-1.0, 1.0);
     for (int i = 0; i < n; ++i) {
@@ -24,33 +24,45 @@ double sparse_llt_solver::trace(const SparseMatrix<double, 0, int> &M, unsigned 
     if (isSymmetric) {
       QU = solve(U);
     } else {
-      // For non-symmetric mode, factorization is on Q = K^T K; we need Q^{-1} U (no K^T RHS)
-      if (solver_type == 0) QU = R_eigen.solve(U);
-      else if (solver_type == 5) QU = R_ldlt.solve(U);
-      else if (solver_type == 1) QU = R_simplicial.solve(U);
-      else if (solver_type == 2) QU = R_supernodal.solve(U);
+      // For non-symmetric mode, factorization is on Q = K^T K; we need Q^{-1} U
+      // (no K^T RHS)
+      if (solver_type == 0)
+        QU = R_eigen.solve(U);
+      else if (solver_type == 1)
+        QU = R_ldlt.solve(U);
+      else if (solver_type == 2)
+        QU = R_supernodal.solve(U);
+      else if (solver_type == 3)
+        QU = R_cholmod_ldlt.solve(U);
 #ifdef __APPLE__
-      else if (solver_type == 3) QU = R_accelerate.solve(U);
+      else if (solver_type == 4)
+        QU = R_accelerate.solve(U);
+      else if (solver_type == 5)
+        QU = R_accelerate_ldlt.solve(U);
 #endif
 #ifdef USEMKL
-      else if (solver_type == 4) QU = R_pardiso.solve(U);
+      else if (solver_type == 6)
+        QU = R_pardiso.solve(U);
+      else if (solver_type == 7)
+        QU = R_pardiso_ldlt.solve(U);
 #endif
-      else throw;
+      else
+        throw;
     }
     QU_computed = 1;
   }
 
   Eigen::MatrixXd MQU;
-  if (isSymmetric || K_last.rows()==0) {
+  if (isSymmetric || K_last.rows() == 0) {
     MQU = M * QU;
   } else {
     MQU = (K_last.transpose() * M) * QU;
   }
   double t = 0;
-  for(int i=0;i<N_iter;i++){
+  for (int i = 0; i < N_iter; i++) {
     t += U.col(i).dot(MQU.col(i));
   }
-  return t/N_iter;
+  return t / N_iter;
 }
 
 // Hutchinson estimator for tr(K^{-1} A K^{-1} B).
@@ -63,8 +75,7 @@ double sparse_llt_solver::trace(const SparseMatrix<double, 0, int> &M, unsigned 
 //   tr(B Q^{-1} K^T A Q^{-1}) = tr((K^T K)^{-1} K^T A (K^T K)^{-1} B).
 double sparse_llt_solver::trace2(const SparseMatrix<double, 0, int> &A,
                                  const SparseMatrix<double, 0, int> &B,
-                                 unsigned int seed)
-{
+                                 unsigned int seed) {
   // Prepare Hutchinson vectors and their Q^{-1} images
   if (QU_computed == 0) {
     std::mt19937 rng(seed);
@@ -79,26 +90,37 @@ double sparse_llt_solver::trace2(const SparseMatrix<double, 0, int> &A,
       QU = solve(U); // Q^{-1} U where Q=K
     } else {
       // For non-symmetric mode, QU = (K^T K)^{-1} U (no K^T on RHS here)
-      if (solver_type == 0) QU = R_eigen.solve(U);
-      else if (solver_type == 5) QU = R_ldlt.solve(U);
-      else if (solver_type == 1) QU = R_simplicial.solve(U);
-      else if (solver_type == 2) QU = R_supernodal.solve(U);
+      if (solver_type == 0)
+        QU = R_eigen.solve(U);
+      else if (solver_type == 1)
+        QU = R_ldlt.solve(U);
+      else if (solver_type == 2)
+        QU = R_supernodal.solve(U);
+      else if (solver_type == 3)
+        QU = R_cholmod_ldlt.solve(U);
 #ifdef __APPLE__
-      else if (solver_type == 3) QU = R_accelerate.solve(U);
+      else if (solver_type == 4)
+        QU = R_accelerate.solve(U);
+      else if (solver_type == 5)
+        QU = R_accelerate_ldlt.solve(U);
 #endif
 #ifdef USEMKL
-      else if (solver_type == 4) QU = R_pardiso.solve(U);
+      else if (solver_type == 6)
+        QU = R_pardiso.solve(U);
+      else if (solver_type == 7)
+        QU = R_pardiso_ldlt.solve(U);
 #endif
-      else throw;
+      else
+        throw;
     }
     QU_computed = 1;
   }
 
   // First apply A to QU, then one more Q^{-1} using solve().
   // In the non-symmetric case, solve() internally applies K^T to the RHS.
-  Eigen::MatrixXd A_QU = A * QU;                 // n x N_iter
-  Eigen::MatrixXd S    = solve(A_QU);            // Q^{-1} A_eff Q^{-1} U
-  Eigen::MatrixXd BS   = B * S;                  // n x N_iter
+  Eigen::MatrixXd A_QU = A * QU;   // n x N_iter
+  Eigen::MatrixXd S = solve(A_QU); // Q^{-1} A_eff Q^{-1} U
+  Eigen::MatrixXd BS = B * S;      // n x N_iter
 
   double t = 0.0;
   for (int i = 0; i < N_iter; ++i) {

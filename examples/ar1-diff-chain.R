@@ -1,5 +1,3 @@
-# load_all()
-
 library(ngme2)
 seed <- 500
 set.seed(seed)
@@ -56,7 +54,6 @@ control_same <- control_opt(
   pflug_alpha = 1
 )
 
-# load_all()
 system.time({
   ret_nig_same <- ngme(
     Y ~ 0 + f(

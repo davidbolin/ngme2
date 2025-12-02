@@ -38,6 +38,8 @@
 #' @param max_relative_step   max relative step allowed in 1 iteration
 #' @param max_absolute_step   max absolute step allowed in 1 iteration
 #' @param trend_std_conv_check enable the trend/std diagnostic (uses \code{std_lim}, \code{trend_lim}, \code{n_slope_check})
+#' @param solver_backend backend in ("eigen", "cholmod", "accelerate", "pardiso")
+#' @param solver_type factorization type: "llt" or "ldlt"
 #' @param rao_blackwellization  use rao_blackwellization
 #' @param n_trace_iter  use how many iterations to approximate the trace (Hutchinson’s trick)
 #'
@@ -46,13 +48,6 @@
 #' @param sampling_strategy subsampling method of replicates of model, c("all", "is")
 #' "all" means using all replicates in each iteration,
 #' "ws" means weighted sampling (each iteration use 1 replicate to compute the gradient, the sample probability is proption to its number of observations)
-#' @param solver_type
-#' "eigen" means using Eigen LLT solver (SimplicialLLT)
-#' "cholmod" means using cholmod LLT solver (CholmodSimplicialLLT)
-#' "supernodal" means using supernodal solver (CholmodSupernodalLLT)
-#' "accelerate" means using accelerate solver (AccelerateLLT)
-#' "pardiso" means using pardiso solver (PardisoLLT)
-#' "ldlt" means using Eigen LDLT solver (SimplicialLDLT)
 #' @param pflug_conv_check use Pflug diagnostic for convergence check
 #' @param pflug_alpha scaling factor (0-1] for Pflug criterion: require \code{pflug_sum < pflug_alpha * max_pflug_sum}
 #' @param max_R_hat_conv_check use max_R_hat for convergence check
@@ -78,7 +73,8 @@ control_opt <- function(
     rao_blackwellization = FALSE,
     n_trace_iter = 10,
     sampling_strategy = "all",
-    solver_type = if (Sys.info()["sysname"] == "Darwin") "accelerate" else "supernodal",
+    solver_backend = if (Sys.info()["sysname"] == "Darwin") "accelerate" else "cholmod",
+    solver_type = "llt",
     # opt print
     verbose = FALSE,
     store_traj = TRUE,
@@ -94,7 +90,8 @@ control_opt <- function(
     pflug_alpha = 0.9) {
   strategy_list <- c("all", "ws")
   preconditioner_list <- c("none", "fast", "full")
-  solver_type_list <- c("eigen", "cholmod", "supernodal", "accelerate", "pardiso", "ldlt")
+  solver_backend_list <- c("eigen", "cholmod", "accelerate", "pardiso")
+  solver_factor_list <- c("llt", "ldlt")
 
   # read preconditioner from optimizer
   preconditioner <- "none"
@@ -118,6 +115,21 @@ control_opt <- function(
     n_batch <- iterations / iters_per_check
   }
 
+  # resolve solver backend + factorization; send both to C++ and let it map
+  solver_backend <- match.arg(solver_backend, solver_backend_list)
+  solver_factor <- match.arg(solver_type, solver_factor_list)
+  solver_backend_idx <- match(solver_backend, solver_backend_list) - 1L
+  solver_factor_idx <- match(solver_factor, solver_factor_list) - 1L
+
+  # platform guard: accelerate only on macOS; pardiso disabled on macOS builds without MKL
+  is_mac <- Sys.info()["sysname"] == "Darwin"
+  if (is_mac && solver_backend == "pardiso") {
+    stop("solver_backend 'pardiso' is not available on macOS builds")
+  }
+  if (!is_mac && solver_backend == "accelerate") {
+    stop("solver_backend 'accelerate' is only available on macOS")
+  }
+
   stopifnot(
     sampling_strategy %in% strategy_list,
     preconditioner %in% preconditioner_list,
@@ -131,7 +143,8 @@ control_opt <- function(
     is.numeric(n_slope_check) && length(n_slope_check) == 1 &&
       n_slope_check > 0 && n_slope_check <= n_batch,
     inherits(optimizer, "ngme_optimizer"),
-    "solver_type should be in (eigen, cholmod, supernodal, accelerate, pardiso, ldlt)" = solver_type %in% solver_type_list,
+    "solver backend must map to 0:3" = solver_backend_idx %in% 0:3,
+    "solver factor must be 0 (llt) or 1 (ldlt)" = solver_factor_idx %in% 0:1,
     is.numeric(pflug_alpha) && length(pflug_alpha) == 1 && pflug_alpha > 0 && pflug_alpha <= 1
   )
 
@@ -192,7 +205,8 @@ control_opt <- function(
     line_search = optimizer$line_search,
 
     # solver related
-    solver_type = which(solver_type_list == solver_type) - 1, # start from 0
+    solver_backend = solver_backend_idx,
+    solver_factor = solver_factor_idx,
 
     # variance reduction (not used for now)
     reduce_var = reduce_var,
@@ -245,7 +259,8 @@ update_control_ngme <- function(control_ngme, control_opt) {
   control_ngme$rao_blackwellization <- control_opt$rao_blackwellization
   control_ngme$n_trace_iter <- control_opt$n_trace_iter
   control_ngme$stepsize <- control_opt$stepsize
-  control_ngme$solver_type <- control_opt$solver_type
+  control_ngme$solver_backend <- control_opt$solver_backend
+  control_ngme$solver_factor <- control_opt$solver_factor
   control_ngme$robust <- control_opt$robust
 
   control_ngme

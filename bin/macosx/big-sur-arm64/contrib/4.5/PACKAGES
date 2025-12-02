@@ -1,5 +1,5 @@
 Package: ngme2
-Version: 0.8.1
+Version: 0.8.2
 Depends: R (>= 3.50)
 Imports: Matrix, Rcpp, methods, rlang, ggplot2, graphics, fmesher,
         stats, gridExtra
@@ -9,4 +9,4 @@ Suggests: knitr, rmarkdown, INLA, dplyr, plyr, MASS, grid, testthat (>=
         lme4, plotly, usethis, devtools, MetricGraph (>= 1.1.2), zoo,
         mvtnorm, kableExtra
 License: GPL (>= 3) | file LICENSE
-MD5sum: a886a40345daaecff8ec157e18823345
+MD5sum: 323be5e94bb1fbc28519c5924a92a650

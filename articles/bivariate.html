@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Bivariate type-G models in Ngme2 • ngme2</title>
+<title>Bivariate Type-G Models in ngme2 • ngme2</title>
 <!-- favicons --><link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
 <link rel="apple-touch-icon" type="image/png" sizes="180x180" href="../apple-touch-icon.png">
@@ -17,7 +17,7 @@
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Roboto_Slab-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Bivariate type-G models in Ngme2">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Bivariate Type-G Models in ngme2">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -45,16 +45,16 @@
     <li><a class="dropdown-item" href="../articles/AR1-model.html">AR(1) model</a></li>
     <li><a class="dropdown-item" href="../articles/RW-model.html">Random walk model</a></li>
     <li><a class="dropdown-item" href="../articles/ou-process.html">Ornstein-Uhlenbeck process</a></li>
-    <li><a class="dropdown-item" href="../articles/cross-validation.html">Cross-validation for ngme2 models</a></li>
     <li><a class="dropdown-item" href="../articles/SPDE-model.html">SPDE Matern model</a></li>
-    <li><a class="dropdown-item" href="../articles/tensor-product.html">Space-time (tensor product) model in ngme2</a></li>
+    <li><a class="dropdown-item" href="../articles/tensor-product.html">Space-time (tensor product) model</a></li>
+    <li><a class="dropdown-item" href="../articles/non-separable-model.html">Non-Separable Space-Time Models(Advection-Diffusion)</a></li>
+    <li><a class="dropdown-item" href="../articles/cross-validation.html">Cross-validation for ngme2 models</a></li>
     <li><a class="dropdown-item" href="../articles/replicate.html">Models with replicates</a></li>
-    <li><a class="dropdown-item" href="../articles/bivariate.html">Bivariate models in ngme2</a></li>
+    <li><a class="dropdown-item" href="../articles/bivariate.html">Bivariate type-G models</a></li>
     <li><a class="dropdown-item" href="../articles/pred-and-est.html">Model estimation and prediction</a></li>
     <li><a class="dropdown-item" href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a></li>
     <li><a class="dropdown-item" href="../articles/generic.html">Using the Generic Model in ngme2</a></li>
     <li><a class="dropdown-item" href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a></li>
-    <li><a class="dropdown-item" href="../articles/random-effect.html">Random effects model in ngme2</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -77,7 +77,7 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-      <img src="../logo.png" class="logo" alt=""><h1>Bivariate type-G models in Ngme2</h1>
+      <img src="../logo.png" class="logo" alt=""><h1>Bivariate Type-G Models in ngme2</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/HEAD/vignettes/bivariate.Rmd" class="external-link"><code>vignettes/bivariate.Rmd</code></a></small>
@@ -90,85 +90,106 @@
 <h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
 <p>For many applications, we need to deal with multivariate data. In
-this vignette, we will introduce the bivariate model which supports
-modeling two (non-Gaussian) fields and their correlation jointly. The
-main reference is Bolin and Wallin (2020) <a href="https://doi.org/10.1111/rssb.12351" class="external-link">Multivariate Type G Matérn
+this vignette, we introduce the bivariate model which supports modeling
+two (non-Gaussian) fields and their correlation jointly. The main
+reference is Bolin and Wallin (2020) <a href="https://doi.org/10.1111/rssb.12351" class="external-link">Multivariate Type G Matérn
 Stochastic Partial Differential Equation Random Fields</a>.</p>
-<p>The <code>f</code> function specification is similar to ordinary
-model (See e.g. <a href="AR1-model.html">Ngme2 AR(1) model</a>), but
-with two more fields to help identify the variables. Extra arguments for
-the <code>f</code> are:</p>
+<p>Modeling two processes jointly rather than separately offers several
+advantages:</p>
+<ul>
+<li>
+<strong>Improved inference</strong>: Borrowing strength across
+related processes leads to more precise parameter estimates</li>
+<li>
+<strong>Capturing dependence</strong>: Explicitly modeling
+cross-correlation enables inference about relationships between
+processes</li>
+<li>
+<strong>Enhanced prediction</strong>: Joint modeling can improve
+predictions, especially when data are sparse for one process</li>
+<li>
+<strong>Scientific insight</strong>: Estimated cross-correlation
+parameters quantify the strength of relationships</li>
+</ul>
+<p>The <code><a href="../reference/f.html">f()</a></code> function specification is similar to ordinary
+models (See e.g. <a href="AR1-model.html">Ngme2 AR(1) model</a>), but
+with two additional arguments to identify the variables:</p>
 <ol style="list-style-type: decimal">
-<li><p><code>group</code>: a vector of labels to indicate the group of
-different observations. For example,
-<code>group = c("field1", "field1", "field2", "field2", "field2)</code>.
+<li><p><strong><code>group</code></strong>: a vector of labels to
+indicate the group of different observations. For example,
+<code>group = c("field1", "field1", "field2", "field2", "field2")</code>.
 If <code>group</code> is provided in <code><a href="../reference/ngme.html">ngme()</a></code> function, no
 need to provide in <code><a href="../reference/f.html">f()</a></code> function again.</p></li>
-<li><p><code>sub_models</code>: characters of length 2 with names equal
+<li><p><strong><code>sub_models</code></strong>: a list with names equal
 to one of the labels in <code>group</code>, specifying the sub-models
 for the two fields.
-e.g. <code>sub_models=c(field1="rw1", field2="ar1")</code>.</p></li>
+e.g. <code>sub_models = list(field1 = rw1(), field2 = ar1())</code>.</p></li>
 </ol>
-<p>We will see more examples in the following.</p>
 </div>
 <div class="section level2">
-<h2 id="model-structure">Model structure<a class="anchor" aria-label="anchor" href="#model-structure"></a>
+<h2 id="model-structure">Model Structure<a class="anchor" aria-label="anchor" href="#model-structure"></a>
 </h2>
 <p>The bivariate model can model two fields
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>𝐗</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>X</mi><mn>1</mn></msub><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><msub><mi>X</mi><mn>2</mn></msub><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\mathbf{X}(s) = (X_1(s), X_2(s))</annotation></semantics></math>
-jointly. To model their correlation, we use dependence matrix
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>D</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>θ</mi><mo>,</mo><mi>ρ</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">D(\theta, \rho)</annotation></semantics></math>
+jointly. To model their correlation, we use a dependence matrix
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>𝐃</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>θ</mi><mo>,</mo><mi>ρ</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\mathbf{D}(\theta, \rho)</annotation></semantics></math>
 to correlate them (See Bolin and Wallin, 2020, section 2.2).</p>
-<p>Remember that, for the univariate model, it can be written as:
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>ℒ</mi><mi>𝐗</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mi>ℳ</mi><mo>,</mo></mrow><annotation encoding="application/x-tex"> \mathcal{L} \mathbf{X}(s) = \mathcal{M},</annotation></semantics></math>
+<p>For the univariate model, we have:
+<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>ℒ</mi><mi>𝐗</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mi>ℳ</mi><mo>,</mo></mrow><annotation encoding="application/x-tex">\mathcal{L} \mathbf{X}(s) = \mathcal{M},</annotation></semantics></math>
 where
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ℒ</mi><annotation encoding="application/x-tex">\mathcal{L}</annotation></semantics></math>
-is some operator,
+is some operator, and
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ℳ</mi><annotation encoding="application/x-tex">\mathcal{M}</annotation></semantics></math>
 represents the noise (Gaussian or non-Gaussian).</p>
-<p>The bivariate model is similar, but with one more term to correlate
-the two fields:
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mi>𝐃</mi><mrow><mo stretchy="true" form="prefix" mathvariant="bold">(</mo><mi>𝛉</mi><mo mathvariant="bold">,</mo><mi>𝛒</mi><mo stretchy="true" form="postfix" mathvariant="bold">)</mo></mrow></mrow><mi>d</mi><mi>i</mi><mi>a</mi><mi>g</mi><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>ℒ</mi><mn mathvariant="script">1</mn></msub><mo>,</mo><msub><mi>ℒ</mi><mn mathvariant="script">2</mn></msub><mo stretchy="true" form="postfix">)</mo></mrow><mi>𝐗</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mi>ℳ</mi><mo>,</mo></mrow><annotation encoding="application/x-tex"> \mathbf{D(\theta, \rho)} diag(\mathcal{L_1}, \mathcal{L_2}) \mathbf{X}(s) = \mathcal{M},</annotation></semantics></math>
+<p>The bivariate model extends this with a dependence matrix:
+<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>𝐃</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>θ</mi><mo>,</mo><mi>ρ</mi><mo stretchy="true" form="postfix">)</mo></mrow><mtext mathvariant="normal">diag</mtext><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>ℒ</mi><mn>1</mn></msub><mo>,</mo><msub><mi>ℒ</mi><mn>2</mn></msub><mo stretchy="true" form="postfix">)</mo></mrow><mi>𝐗</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mi>ℳ</mi><mo>,</mo></mrow><annotation encoding="application/x-tex">\mathbf{D}(\theta, \rho) \text{diag}(\mathcal{L}_1, \mathcal{L}_2) \mathbf{X}(s) = \mathcal{M},</annotation></semantics></math>
 where
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>𝐃</mi><annotation encoding="application/x-tex">\mathbf{D}</annotation></semantics></math>
-is the dependence matrix. The noise can be classified into 4 types by
-their complexity, we will discuss them later.</p>
-<p>The dependence matrix is defined as
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>D</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>θ</mi><mo>,</mo><mi>ρ</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mrow><mo stretchy="true" form="prefix">(</mo><mtable><mtr><mtd columnalign="center" style="text-align: center"><mo>cos</mo><mrow><mo stretchy="true" form="prefix">(</mo><mi>θ</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>+</mo><mi>ρ</mi><mo>sin</mo><mrow><mo stretchy="true" form="prefix">(</mo><mi>θ</mi><mo stretchy="true" form="postfix">)</mo></mrow></mtd><mtd columnalign="center" style="text-align: center"><mo>−</mo><mo>sin</mo><mrow><mo stretchy="true" form="prefix">(</mo><mi>θ</mi><mo stretchy="true" form="postfix">)</mo></mrow><msqrt><mrow><mn>1</mn><mo>+</mo><msup><mi>ρ</mi><mn>2</mn></msup></mrow></msqrt></mtd></mtr><mtr><mtd columnalign="center" style="text-align: center"><mo>sin</mo><mrow><mo stretchy="true" form="prefix">(</mo><mi>θ</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>−</mo><mi>ρ</mi><mo>cos</mo><mrow><mo stretchy="true" form="prefix">(</mo><mi>θ</mi><mo stretchy="true" form="postfix">)</mo></mrow></mtd><mtd columnalign="center" style="text-align: center"><mo>cos</mo><mrow><mo stretchy="true" form="prefix">(</mo><mi>θ</mi><mo stretchy="true" form="postfix">)</mo></mrow><msqrt><mrow><mn>1</mn><mo>+</mo><msup><mi>ρ</mi><mn>2</mn></msup></mrow></msqrt></mtd></mtr></mtable><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo></mrow><annotation encoding="application/x-tex">
-D(\theta, \rho) = \begin{pmatrix}
+is the dependence matrix, and the noise can be classified into 4 types
+by their complexity.</p>
+<div class="section level3">
+<h3 id="the-dependence-matrix">The Dependence Matrix<a class="anchor" aria-label="anchor" href="#the-dependence-matrix"></a>
+</h3>
+<p>The dependence matrix is defined as:
+<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>𝐃</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>θ</mi><mo>,</mo><mi>ρ</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mrow><mo stretchy="true" form="prefix">(</mo><mtable><mtr><mtd columnalign="center" style="text-align: center"><mo>cos</mo><mrow><mo stretchy="true" form="prefix">(</mo><mi>θ</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>+</mo><mi>ρ</mi><mo>sin</mo><mrow><mo stretchy="true" form="prefix">(</mo><mi>θ</mi><mo stretchy="true" form="postfix">)</mo></mrow></mtd><mtd columnalign="center" style="text-align: center"><mo>−</mo><mo>sin</mo><mrow><mo stretchy="true" form="prefix">(</mo><mi>θ</mi><mo stretchy="true" form="postfix">)</mo></mrow><msqrt><mrow><mn>1</mn><mo>+</mo><msup><mi>ρ</mi><mn>2</mn></msup></mrow></msqrt></mtd></mtr><mtr><mtd columnalign="center" style="text-align: center"><mo>sin</mo><mrow><mo stretchy="true" form="prefix">(</mo><mi>θ</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>−</mo><mi>ρ</mi><mo>cos</mo><mrow><mo stretchy="true" form="prefix">(</mo><mi>θ</mi><mo stretchy="true" form="postfix">)</mo></mrow></mtd><mtd columnalign="center" style="text-align: center"><mo>cos</mo><mrow><mo stretchy="true" form="prefix">(</mo><mi>θ</mi><mo stretchy="true" form="postfix">)</mo></mrow><msqrt><mrow><mn>1</mn><mo>+</mo><msup><mi>ρ</mi><mn>2</mn></msup></mrow></msqrt></mtd></mtr></mtable><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">
+\mathbf{D}(\theta, \rho) = \begin{pmatrix}
   \cos(\theta) + \rho \sin(\theta) &amp; -\sin(\theta) \sqrt{1+\rho^2} \\
   \sin(\theta) - \rho \cos(\theta) &amp; \cos(\theta) \sqrt{1+\rho^2}
-\end{pmatrix},
-</annotation></semantics></math> where
+\end{pmatrix}
+</annotation></semantics></math></p>
+<p>where:</p>
+<ul>
+<li>
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>θ</mi><mo>∈</mo><mrow><mo stretchy="true" form="prefix">[</mo><mo>−</mo><mi>π</mi><mi>/</mi><mn>4</mn><mo>,</mo><mi>π</mi><mi>/</mi><mn>4</mn><mo stretchy="true" form="postfix">]</mo></mrow></mrow><annotation encoding="application/x-tex">\theta \in [-\pi/4, \pi/4]</annotation></semantics></math>
-and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>ρ</mi><mo>∈</mo><mi>ℝ</mi></mrow><annotation encoding="application/x-tex">\rho \in \mathbb{R}</annotation></semantics></math>.
-The
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>θ</mi><annotation encoding="application/x-tex">\theta</annotation></semantics></math>
-controls the angle (rotation) of the bivariate model, and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ρ</mi><annotation encoding="application/x-tex">\rho</annotation></semantics></math>
-represents the cross-correlation between the two fields.</p>
+controls the <strong>angle (rotation)</strong> of the bivariate
+model</li>
+<li>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>ρ</mi><mo>∈</mo><mi>ℝ</mi></mrow><annotation encoding="application/x-tex">\rho \in \mathbb{R}</annotation></semantics></math>
+represents the <strong>cross-correlation</strong> between the two
+fields</li>
+</ul>
+</div>
 </div>
 <div class="section level2">
-<h2 id="one-simple-example">One simple example<a class="anchor" aria-label="anchor" href="#one-simple-example"></a>
+<h2 id="one-simple-example">One Simple Example<a class="anchor" aria-label="anchor" href="#one-simple-example"></a>
 </h2>
-<p>It’s eaiser to understand with one exmaple. Say we have a time series
-model over 5 year from 2001 to 2005, with 2 fields <em>temperature</em>
-and <em>precipitation</em>. You want to model the two fields jointly.
-The data look like the following:</p>
+<p>Let’s start with a simple time series example. We have data over 5
+years (2001-2005) with 2 fields: <strong>temperature</strong> and
+<strong>precipitation</strong>. We want to model these two fields
+jointly.</p>
+<p>We create a synthetic dataset with temperature and precipitation
+observations over several years, combining them into a single vector
+with group labels.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://inlabru-org.github.io/fmesher/" class="external-link">fmesher</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://davidbolin.github.io/ngme2/">ngme2</a></span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">temp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">32</span>, <span class="fl">33</span>, <span class="fl">35.5</span>, <span class="fl">36</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">temp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">32</span>, <span class="fl">33</span>, <span class="fl">35.5</span>, <span class="fl">36</span><span class="op">)</span></span>
 <span><span class="va">year_temp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2001</span>, <span class="fl">2002</span>, <span class="fl">2003</span>, <span class="fl">2004</span><span class="op">)</span></span>
 <span><span class="va">precip</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.1</span>, <span class="fl">0.2</span>, <span class="fl">0.5</span>, <span class="fl">1</span>, <span class="fl">0.2</span><span class="op">)</span></span>
 <span><span class="va">year_pre</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2001</span>, <span class="fl">2002</span>, <span class="fl">2003</span>, <span class="fl">2004</span>, <span class="fl">2005</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># bind 2 fields in one vector, and make labels for them</span></span>
+<span><span class="co"># Bind 2 fields in one vector, and make labels for them</span></span>
 <span><span class="va">y</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">temp</span>, <span class="va">precip</span><span class="op">)</span></span>
 <span><span class="va">year</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">year_temp</span>, <span class="va">year_pre</span><span class="op">)</span></span>
-<span><span class="va">labels</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="st">"temp"</span>, <span class="fl">4</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="st">"precip"</span>, <span class="fl">5</span><span class="op">)</span><span class="op">)</span> <span class="co"># group is label for 2 fields</span></span>
+<span><span class="va">labels</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="st">"temp"</span>, <span class="fl">4</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="st">"precip"</span>, <span class="fl">5</span><span class="op">)</span><span class="op">)</span> <span class="co"># group labels for 2 fields</span></span>
 <span></span>
 <span><span class="va">x1</span> <span class="op">&lt;-</span> <span class="fl">1</span><span class="op">:</span><span class="fl">9</span></span>
 <span><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">y</span>, <span class="va">year</span>, <span class="va">x1</span>, <span class="va">labels</span><span class="op">)</span></span>
@@ -183,14 +204,14 @@ The data look like the following:</p>
 <span><span class="co">#&gt; 7  0.5 2003  7 precip</span></span>
 <span><span class="co">#&gt; 8  1.0 2004  8 precip</span></span>
 <span><span class="co">#&gt; 9  0.2 2005  9 precip</span></span></code></pre></div>
-<p>Next we need to specify the model using <code><a href="../reference/f.html">f()</a></code> function.
-Notice the way to specify 2 sub-models, and also 2 types of noises for
-each sub-model.</p>
-<p>Notice that if we choose the Gaussian noise, we need to specify the
-model type as “bv2” so that the rotation is fixed to 0 (no rotation). If
-we choose the non-Gaussian noise, we can use “bv” model type.</p>
+<p>Now we specify the model using the <code><a href="../reference/f.html">f()</a></code> function. Notice
+how we specify 2 sub-models and 2 types of noises for each
+sub-model.</p>
+<p>We specify a bivariate model with distinct sub-models for each field
+(AR(1) for precipitation and RW(1) for temperature), including
+non-Gaussian noise structures for both.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># 1st way: simply put model types, using both c() and list() are ok</span></span>
+<code class="sourceCode R"><span><span class="co"># Specify bivariate model with two sub-models</span></span>
 <span><span class="va">bv1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
 <span>  <span class="va">year</span>,</span>
 <span>  model <span class="op">=</span> <span class="fu"><a href="../reference/bv.html">bv</a></span><span class="op">(</span></span>
@@ -229,28 +250,45 @@ we choose the non-Gaussian noise, we can use “bv” model type.</p>
 <span><span class="co">#&gt;         nu = 1</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="four-increasing-construction-of-noise">Four increasing construction of noise<a class="anchor" aria-label="anchor" href="#four-increasing-construction-of-noise"></a>
+<h2 id="four-types-of-non-gaussian-noise">Four Types of Non-Gaussian Noise<a class="anchor" aria-label="anchor" href="#four-types-of-non-gaussian-noise"></a>
 </h2>
-<p>In bivariate models, we can have more detailed control over the noise
-of the model. The noise can be classified into 4 category (See Bolin and
-Wallin, 2020, section 3.1 for details):</p>
+<p>In bivariate models, we can have detailed control over the noise
+structure. The noise can be classified into 4 categories (See Bolin and
+Wallin, 2020, section 3.1):</p>
 <ul>
-<li><p>Type-G1: single mixing variable V, share V over 2
-fileds.</p></li>
-<li><p>Type-G2: single V, different V for each field.</p></li>
-<li><p>Type-G3: general V, share V.</p></li>
-<li><p>Type-G4: general V, different V.</p></li>
+<li>
+<strong>Type-G1</strong>: Single mixing variable
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>V</mi><annotation encoding="application/x-tex">V</annotation></semantics></math>,
+shared over 2 fields</li>
+<li>
+<strong>Type-G2</strong>: Single
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>V</mi><annotation encoding="application/x-tex">V</annotation></semantics></math>,
+different
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>V</mi><annotation encoding="application/x-tex">V</annotation></semantics></math>
+for each field</li>
+<li>
+<strong>Type-G3</strong>: General
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>V</mi><annotation encoding="application/x-tex">V</annotation></semantics></math>,
+shared over 2 fields</li>
+<li>
+<strong>Type-G4</strong>: General
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>V</mi><annotation encoding="application/x-tex">V</annotation></semantics></math>,
+different
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>V</mi><annotation encoding="application/x-tex">V</annotation></semantics></math>
+for each field (most flexible)</li>
 </ul>
-<p>We can specify the type of noise by the following:</p>
+<p>We specify the type through the <code>single_V</code> and
+<code>share_V</code> arguments:</p>
+<p>We demonstrate the four types of non-Gaussian noise structures
+available in bivariate models, varying between single or general mixing
+variable, and shared or separate between fields.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">t1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="co"># Type-G1: Single V, shared</span></span>
+<span><span class="va">t1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
 <span>  <span class="va">year</span>,</span>
 <span>  model <span class="op">=</span> <span class="fu"><a href="../reference/bv.html">bv</a></span><span class="op">(</span></span>
 <span>    mesh <span class="op">=</span> <span class="va">year</span>,</span>
-<span>    sub_models <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>      precip <span class="op">=</span> <span class="fu"><a href="../reference/ar1.html">ar1</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>      temp <span class="op">=</span> <span class="fu"><a href="../reference/rw1.html">rw1</a></span><span class="op">(</span><span class="op">)</span></span>
-<span>    <span class="op">)</span></span>
+<span>    sub_models <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>precip <span class="op">=</span> <span class="fu"><a href="../reference/ar1.html">ar1</a></span><span class="op">(</span><span class="op">)</span>, temp <span class="op">=</span> <span class="fu"><a href="../reference/rw1.html">rw1</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  group <span class="op">=</span> <span class="va">labels</span>,</span>
 <span>  noise <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
@@ -279,14 +317,12 @@ fileds.</p></li>
 <span><span class="co">#&gt;         sigma = 1</span></span>
 <span><span class="co">#&gt;         nu = 1</span></span>
 <span></span>
+<span><span class="co"># Type-G2: Single V, different</span></span>
 <span><span class="va">t2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
 <span>  <span class="va">year</span>,</span>
 <span>  model <span class="op">=</span> <span class="fu"><a href="../reference/bv.html">bv</a></span><span class="op">(</span></span>
 <span>    mesh <span class="op">=</span> <span class="va">year</span>,</span>
-<span>    sub_models <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>      precip <span class="op">=</span> <span class="fu"><a href="../reference/ar1.html">ar1</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>      temp <span class="op">=</span> <span class="fu"><a href="../reference/rw1.html">rw1</a></span><span class="op">(</span><span class="op">)</span></span>
-<span>    <span class="op">)</span></span>
+<span>    sub_models <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>precip <span class="op">=</span> <span class="fu"><a href="../reference/ar1.html">ar1</a></span><span class="op">(</span><span class="op">)</span>, temp <span class="op">=</span> <span class="fu"><a href="../reference/rw1.html">rw1</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  group <span class="op">=</span> <span class="va">labels</span>,</span>
 <span>  noise <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
@@ -314,14 +350,12 @@ fileds.</p></li>
 <span><span class="co">#&gt;         sigma = 1</span></span>
 <span><span class="co">#&gt;         nu = 1</span></span>
 <span></span>
+<span><span class="co"># Type-G3: General V, shared</span></span>
 <span><span class="va">t3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
 <span>  <span class="va">year</span>,</span>
 <span>  model <span class="op">=</span> <span class="fu"><a href="../reference/bv.html">bv</a></span><span class="op">(</span></span>
 <span>    mesh <span class="op">=</span> <span class="va">year</span>,</span>
-<span>    sub_models <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>      precip <span class="op">=</span> <span class="fu"><a href="../reference/ar1.html">ar1</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>      temp <span class="op">=</span> <span class="fu"><a href="../reference/rw1.html">rw1</a></span><span class="op">(</span><span class="op">)</span></span>
-<span>    <span class="op">)</span></span>
+<span>    sub_models <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>precip <span class="op">=</span> <span class="fu"><a href="../reference/ar1.html">ar1</a></span><span class="op">(</span><span class="op">)</span>, temp <span class="op">=</span> <span class="fu"><a href="../reference/rw1.html">rw1</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  group <span class="op">=</span> <span class="va">labels</span>,</span>
 <span>  noise <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
@@ -350,14 +384,12 @@ fileds.</p></li>
 <span><span class="co">#&gt;         sigma = 1</span></span>
 <span><span class="co">#&gt;         nu = 1</span></span>
 <span></span>
+<span><span class="co"># Type-G4: General V, different (most flexible)</span></span>
 <span><span class="va">t4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
 <span>  <span class="va">year</span>,</span>
 <span>  model <span class="op">=</span> <span class="fu"><a href="../reference/bv.html">bv</a></span><span class="op">(</span></span>
 <span>    mesh <span class="op">=</span> <span class="va">year</span>,</span>
-<span>    sub_models <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>      precip <span class="op">=</span> <span class="fu"><a href="../reference/ar1.html">ar1</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>      temp <span class="op">=</span> <span class="fu"><a href="../reference/rw1.html">rw1</a></span><span class="op">(</span><span class="op">)</span></span>
-<span>    <span class="op">)</span></span>
+<span>    sub_models <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>precip <span class="op">=</span> <span class="fu"><a href="../reference/ar1.html">ar1</a></span><span class="op">(</span><span class="op">)</span>, temp <span class="op">=</span> <span class="fu"><a href="../reference/rw1.html">rw1</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  group <span class="op">=</span> <span class="va">labels</span>,</span>
 <span>  noise <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
@@ -386,26 +418,28 @@ fileds.</p></li>
 <span><span class="co">#&gt;         nu = 1</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="interaction-with-other-fields-e-g--fixed-effects">Interaction with other fields (e.g. fixed effects)<a class="anchor" aria-label="anchor" href="#interaction-with-other-fields-e-g--fixed-effects"></a>
+<h2 id="interaction-with-other-fields">Interaction with Other Fields<a class="anchor" aria-label="anchor" href="#interaction-with-other-fields"></a>
 </h2>
-<p>When it involves more than one field, things get complicated. When we
-have fixed effects but only for 1 field, we can use the special syntax
+<p>When working with multiple fields, we can have different fixed
+effects for each field using the special syntax
 <code>fe(&lt;formula&gt;, which_group=&lt;group_name&gt;)</code>. The
-argument <code>which_group</code> will tell which field we have fixed
-effects on. It works similar for modeling using <code><a href="../reference/f.html">f()</a></code>
+<code>which_group</code> argument specifies which field the fixed
+effects apply to. This works similarly for the <code><a href="../reference/f.html">f()</a></code>
 function.</p>
-<p>Here is one example, we have different fixed effects on different
-fields (Intercept for both fields, and <em>x1</em> for only
-<em>precip</em> field).</p>
+<p>Here’s an example with different fixed effects for each field:</p>
+<p>We build a complete model demonstrating how to specify distinct fixed
+effects for each field using <code>which_group</code>, in addition to
+including both separate and bivariate random effects.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">m1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
-<span>  <span class="va">y</span> <span class="op">~</span> <span class="fl">0</span> <span class="op">+</span> <span class="fu">fe</span><span class="op">(</span><span class="op">~</span><span class="fl">1</span>, which_group <span class="op">=</span> <span class="st">"temp"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="va">y</span> <span class="op">~</span> <span class="fl">0</span> <span class="op">+</span></span>
+<span>    <span class="fu">fe</span><span class="op">(</span><span class="op">~</span><span class="fl">1</span>, which_group <span class="op">=</span> <span class="st">"temp"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu">fe</span><span class="op">(</span><span class="op">~</span> <span class="fl">1</span> <span class="op">+</span> <span class="va">x1</span>, which_group <span class="op">=</span> <span class="st">"precip"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="va">year</span>, model <span class="op">=</span> <span class="fu"><a href="../reference/rw1.html">rw1</a></span><span class="op">(</span><span class="op">)</span>, which_group <span class="op">=</span> <span class="st">"temp"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="va">year</span>,</span>
 <span>      model <span class="op">=</span> <span class="fu"><a href="../reference/bv.html">bv</a></span><span class="op">(</span></span>
 <span>        mesh <span class="op">=</span> <span class="va">year</span>,</span>
-<span>        sub_models <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>precip <span class="op">=</span> <span class="fu"><a href="../reference/ar1.html">ar1</a></span><span class="op">(</span><span class="op">)</span>, temp <span class="op">=</span> <span class="fu"><a href="../reference/rw1.html">rw1</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>        sub_models <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>precip <span class="op">=</span> <span class="fu"><a href="../reference/ar1.html">ar1</a></span><span class="op">(</span><span class="op">)</span>, temp <span class="op">=</span> <span class="fu"><a href="../reference/rw1.html">rw1</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span>      <span class="op">)</span>,</span>
 <span>      noise <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>        precip <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span>,</span>
@@ -416,7 +450,8 @@ fields (Intercept for both fields, and <em>x1</em> for only
 <span>  group <span class="op">=</span> <span class="va">data</span><span class="op">$</span><span class="va">labels</span>,</span>
 <span>  control_opt <span class="op">=</span> <span class="fu"><a href="../reference/control_opt.html">control_opt</a></span><span class="op">(</span>estimation <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co"># examine the design matrix</span></span>
+<span></span>
+<span><span class="co"># Examine the design matrix</span></span>
 <span><span class="va">m1</span><span class="op">$</span><span class="va">replicates</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">X</span></span>
 <span><span class="co">#&gt;   (Intercept)_temp (Intercept)_precip x1_precip</span></span>
 <span><span class="co">#&gt; 1                1                  0         0</span></span>
@@ -430,54 +465,53 @@ fields (Intercept for both fields, and <em>x1</em> for only
 <span><span class="co">#&gt; 9                0                  1         9</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="the-correlated-measurement-noise">The correlated measurement noise<a class="anchor" aria-label="anchor" href="#the-correlated-measurement-noise"></a>
+<h2 id="correlated-measurement-noise">Correlated Measurement Noise<a class="anchor" aria-label="anchor" href="#correlated-measurement-noise"></a>
 </h2>
-<p>Now since we are taking measures of 2 different fields, there is some
-situation that we might want to assume the measurement of 2 fields have
-some correlation.</p>
-<p>It can be written as
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Y</mi><mo>=</mo><mi>X</mi><mi>β</mi><mo>+</mo><mi>A</mi><mi>W</mi><mo>+</mo><mi>ϵ</mi></mrow><annotation encoding="application/x-tex">Y = X \beta + A W + \epsilon</annotation></semantics></math>,
-here
+<p>When measuring 2 different fields, we may want to assume that the
+measurements have correlated errors. This can be written as:</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Y</mi><mo>=</mo><mi>X</mi><mi>β</mi><mo>+</mo><mi>A</mi><mi>W</mi><mo>+</mo><mi>ϵ</mi></mrow><annotation encoding="application/x-tex">Y = X\beta + AW + \epsilon</annotation></semantics></math></p>
+<p>where
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>W</mi><annotation encoding="application/x-tex">W</annotation></semantics></math>
 is the bivariate model, and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>ϵ</mi><mo stretchy="false" form="prefix">|</mo><msub><mi>V</mi><mi>ϵ</mi></msub><mo>∼</mo><mi>N</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>0</mn><mo>,</mo><mi>Σ</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\epsilon | V_{\epsilon} \sim N(0, \Sigma)</annotation></semantics></math>,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>Σ</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo>≠</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\Sigma_{i j} \neq 0</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>ϵ</mi><mo stretchy="false" form="prefix">|</mo><msub><mi>V</mi><mi>ϵ</mi></msub><mo>∼</mo><mi>𝒩</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>0</mn><mo>,</mo><mi>Σ</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\epsilon | V_{\epsilon} \sim \mathcal{N}(0, \Sigma)</annotation></semantics></math>
+with
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>Σ</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo>≠</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\Sigma_{ij} \neq 0</annotation></semantics></math>
 if
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>Y</mi><mi>i</mi></msub><annotation encoding="application/x-tex">Y_i</annotation></semantics></math>
 and
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>Y</mi><mi>j</mi></msub><annotation encoding="application/x-tex">Y_j</annotation></semantics></math>
-are 2 different fields but measured at same location.</p>
-<p>Now we need to modify the <code>family</code> argument in
-<code>ngme</code> function, we need to set <code>corr_measurement</code>
-and give the <code>index_corr</code> to indicate which observations are
+are measurements from different fields at the same location.</p>
+<p>To model this, we use the <code>family</code> argument in
+<code><a href="../reference/ngme.html">ngme()</a></code> with <code>corr_measurement = TRUE</code> and
+provide <code>index_corr</code> to indicate which observations are
 correlated.</p>
-<p>We will see how to estimate it in the next example.</p>
 </div>
 <div class="section level2">
-<h2 id="put-it-all-together-simulation-estimation-example">Put it all together (Simulation + Estimation example)<a class="anchor" aria-label="anchor" href="#put-it-all-together-simulation-estimation-example"></a>
+<h2 id="complete-examples-simulation-estimation">Complete Examples: Simulation + Estimation<a class="anchor" aria-label="anchor" href="#complete-examples-simulation-estimation"></a>
 </h2>
-<p>In this example, we will first use <code>simulate</code> function to
-simulate the hidden bivariate process. Notice that we need to provide
-the labels for the 2 fields. Then we will generate the measurement noise
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ϵ</mi><annotation encoding="application/x-tex">\epsilon</annotation></semantics></math>
-with some correlation. Finally, we will use the <code>ngme</code>
-function to estimate the model.</p>
 <div class="section level3">
-<h3 id="ex1--fixed-effects-bivariate-model-ar1-normal-correlated-measurement-noise">Ex1. Fixed effects + Bivariate model (AR1, Normal) + Correlated
-measurement noise<a class="anchor" aria-label="anchor" href="#ex1--fixed-effects-bivariate-model-ar1-normal-correlated-measurement-noise"></a>
+<h3 id="example-1-ar1-with-normal-noise">Example 1: AR(1) with Normal Noise<a class="anchor" aria-label="anchor" href="#example-1-ar1-with-normal-noise"></a>
 </h3>
+<p>We set up the parameters for simulation, including sample size, group
+labels, and resampling of locations to demonstrate the model’s
+flexibility.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">n_obs</span> <span class="op">&lt;-</span> <span class="fl">2000</span></span>
 <span><span class="va">n_each</span> <span class="op">&lt;-</span> <span class="va">n_obs</span> <span class="op">/</span> <span class="fl">2</span></span>
 <span><span class="va">group</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"W1"</span>, <span class="st">"W2"</span><span class="op">)</span>, <span class="va">n_each</span><span class="op">)</span></span>
-<span></span>
 <span><span class="va">reorder_loc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="va">n_each</span><span class="op">)</span></span>
 <span></span>
+<span><span class="co"># True parameters</span></span>
 <span><span class="va">rho</span> <span class="op">&lt;-</span> <span class="fl">0.8</span></span>
 <span><span class="va">rho1</span> <span class="op">&lt;-</span> <span class="fl">0.6</span></span>
 <span><span class="va">rho2</span> <span class="op">&lt;-</span> <span class="op">-</span><span class="fl">0.4</span></span>
 <span><span class="va">sigma1</span> <span class="op">&lt;-</span> <span class="fl">2</span></span>
-<span><span class="va">sigma2</span> <span class="op">&lt;-</span> <span class="fl">3</span></span>
+<span><span class="va">sigma2</span> <span class="op">&lt;-</span> <span class="fl">3</span></span></code></pre></div>
+<p>We simulate bivariate fields using AR(1) processes with different
+autocorrelation coefficients for each field, plus a cross-correlation
+between them.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Simulate bivariate fields</span></span>
 <span><span class="va">sim_fields</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">reorder_loc</span>, <span class="va">reorder_loc</span><span class="op">)</span>,</span>
@@ -494,54 +528,40 @@ measurement noise<a class="anchor" aria-label="anchor" href="#ex1--fixed-effects
 <span>      W1 <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span>sigma <span class="op">=</span> <span class="va">sigma1</span><span class="op">)</span>,</span>
 <span>      W2 <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span>sigma <span class="op">=</span> <span class="va">sigma2</span><span class="op">)</span></span>
 <span>    <span class="op">)</span></span>
-<span>  <span class="op">)</span></span>
-<span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  nsim <span class="op">=</span> <span class="fl">1</span></span>
+<span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Check the correlation of the simulated fields</span></span>
-<span><span class="co"># acf(sim_fields[group=="W1"])</span></span>
-<span><span class="co"># acf(sim_fields[group=="W2"])</span></span>
-<span></span>
-<span><span class="co"># Here we assume fields W1 and W2 have positive correlated measurement error</span></span>
-<span><span class="co"># if they are measured at same index.</span></span>
-<span><span class="co"># Meaning Y(i) and Y(j) have correlated measurement noise</span></span>
-<span><span class="co"># if they represent underlying W1(index=k) and W2(index=k)</span></span>
-<span></span>
-<span><span class="co"># Generate covariance matrix for measurement noise</span></span>
-<span><span class="va">sd_1</span> <span class="op">&lt;-</span> <span class="fl">0.6</span></span>
-<span><span class="va">sd_2</span> <span class="op">&lt;-</span> <span class="fl">0.9</span></span>
-<span><span class="va">rho_e</span> <span class="op">&lt;-</span> <span class="fl">0.9</span></span>
-<span><span class="va">Cov_same_idx</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">sd_1</span><span class="op">^</span><span class="fl">2</span>, <span class="va">rho_e</span> <span class="op">*</span> <span class="va">sd_1</span> <span class="op">*</span> <span class="va">sd_2</span>, <span class="va">rho_e</span> <span class="op">*</span> <span class="va">sd_1</span> <span class="op">*</span> <span class="va">sd_2</span>, <span class="va">sd_2</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="st">"The covariance matrix for 2 correlated fields: "</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "The covariance matrix for 2 correlated fields: "</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">Cov_same_idx</span><span class="op">)</span></span>
-<span><span class="co">#&gt;       [,1]  [,2]</span></span>
-<span><span class="co">#&gt; [1,] 0.360 0.486</span></span>
-<span><span class="co">#&gt; [2,] 0.486 0.810</span></span>
-<span></span>
-<span><span class="va">tmp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">replicate</a></span><span class="op">(</span><span class="va">n_each</span>, <span class="va">Cov_same_idx</span>, simplify <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">Cov_measurement</span> <span class="op">&lt;-</span> <span class="fu">Matrix</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/bdiag.html" class="external-link">bdiag</a></span><span class="op">(</span><span class="va">tmp</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># e ~ N(0, Cov_measurement)</span></span>
-<span><span class="va">L</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/chol.html" class="external-link">chol</a></span><span class="op">(</span><span class="va">Cov_measurement</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">e</span> <span class="op">&lt;-</span> <span class="va">L</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_obs</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># fixed effects</span></span>
-<span><span class="va">x1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Exponential.html" class="external-link">rexp</a></span><span class="op">(</span><span class="va">n_obs</span><span class="op">)</span></span>
-<span><span class="va">x2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_obs</span><span class="op">)</span></span>
-<span><span class="va">feff</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">3</span>, <span class="fl">1.5</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">Y</span> <span class="op">&lt;-</span> <span class="va">sim_fields</span> <span class="op">+</span> <span class="va">x1</span> <span class="op">*</span> <span class="va">feff</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">x2</span> <span class="op">*</span> <span class="va">feff</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">e</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">B_sigma</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">0</span>, nrow <span class="op">=</span> <span class="va">n_obs</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="va">B_sigma</span><span class="op">[</span><span class="va">group</span> <span class="op">==</span> <span class="st">"W1"</span>, <span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
-<span><span class="va">B_sigma</span><span class="op">[</span><span class="va">group</span> <span class="op">==</span> <span class="st">"W2"</span>, <span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
-<span></span>
-<span><span class="va">bvar_cor</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
+<span><span class="va">W</span> <span class="op">&lt;-</span> <span class="va">sim_fields</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span></code></pre></div>
+<p>We add fixed effects and measurement noise to the simulated fields to
+create the observed response variable.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Add fixed effects and measurement noise</span></span>
+<span><span class="va">x1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_obs</span><span class="op">)</span></span>
+<span><span class="va">x2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n_obs</span><span class="op">)</span></span>
+<span><span class="va">beta</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="va">sigma_eps</span> <span class="op">&lt;-</span> <span class="fl">0.5</span></span>
+<span><span class="va">epsilon</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_obs</span>, <span class="fl">0</span>, <span class="va">sigma_eps</span><span class="op">)</span></span>
+<span><span class="va">Y</span> <span class="op">&lt;-</span> <span class="va">W</span> <span class="op">+</span> <span class="va">x1</span> <span class="op">*</span> <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">x2</span> <span class="op">*</span> <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">+</span> <span class="va">epsilon</span></span></code></pre></div>
+<p>We prepare the dataset for estimation, organizing all necessary
+variables in a data frame.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Prepare data</span></span>
+<span><span class="va">data_ex1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  Y <span class="op">=</span> <span class="va">Y</span>,</span>
+<span>  index <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">reorder_loc</span>, <span class="va">reorder_loc</span><span class="op">)</span>,</span>
+<span>  x1 <span class="op">=</span> <span class="va">x1</span>,</span>
+<span>  x2 <span class="op">=</span> <span class="va">x2</span>,</span>
+<span>  group <span class="op">=</span> <span class="va">group</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>We fit the bivariate model to the simulated data using
+<code><a href="../reference/ngme.html">ngme()</a></code> with appropriate optimization settings.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Fit bivariate model</span></span>
+<span><span class="va">fit_ex1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
 <span>  <span class="va">Y</span> <span class="op">~</span> <span class="fl">0</span> <span class="op">+</span> <span class="va">x1</span> <span class="op">+</span> <span class="va">x2</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
-<span>      <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">reorder_loc</span>, <span class="va">reorder_loc</span><span class="op">)</span>,</span>
-<span>      name <span class="op">=</span> <span class="st">"bv"</span>,</span>
+<span>      <span class="va">index</span>,</span>
 <span>      model <span class="op">=</span> <span class="fu"><a href="../reference/bv.html">bv</a></span><span class="op">(</span></span>
 <span>        mesh <span class="op">=</span> <span class="va">reorder_loc</span>,</span>
 <span>        sub_models <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
@@ -549,115 +569,105 @@ measurement noise<a class="anchor" aria-label="anchor" href="#ex1--fixed-effects
 <span>          W2 <span class="op">=</span> <span class="fu"><a href="../reference/ar1.html">ar1</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>        <span class="op">)</span></span>
 <span>      <span class="op">)</span>,</span>
+<span>      group <span class="op">=</span> <span class="va">group</span>,</span>
 <span>      noise <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>        W1 <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>        W2 <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>      <span class="op">)</span></span>
 <span>    <span class="op">)</span>,</span>
-<span>  group <span class="op">=</span> <span class="va">group</span>,</span>
-<span>  family <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span></span>
-<span>    corr_measurement <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>    index_corr <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="va">n_each</span>, each <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>,</span>
-<span>    rho <span class="op">=</span> <span class="fl">0.5</span>,</span>
-<span>    B_sigma <span class="op">=</span> <span class="va">B_sigma</span>,</span>
-<span>    theta_sigma <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span></span>
-<span>  <span class="op">)</span>,</span>
-<span>  data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">Y</span>, <span class="va">x1</span>, <span class="va">x2</span><span class="op">)</span>,</span>
+<span>  data <span class="op">=</span> <span class="va">data_ex1</span>,</span>
+<span>  group <span class="op">=</span> <span class="va">data_ex1</span><span class="op">$</span><span class="va">group</span>,</span>
+<span>  family <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  control_opt <span class="op">=</span> <span class="fu"><a href="../reference/control_opt.html">control_opt</a></span><span class="op">(</span></span>
-<span>    n_parallel_chain <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>    optimizer <span class="op">=</span> <span class="fu"><a href="../reference/sgd.html">sgd</a></span><span class="op">(</span>stepsize <span class="op">=</span> <span class="fl">1</span> <span class="op">/</span> <span class="va">n_obs</span><span class="op">)</span>,</span>
-<span>    std_lim <span class="op">=</span> <span class="fl">1e-3</span>,</span>
 <span>    iterations <span class="op">=</span> <span class="fl">1000</span>,</span>
-<span>    iters_per_check <span class="op">=</span> <span class="fl">100</span>,</span>
+<span>    n_parallel_chain <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>    rao_blackwellization <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>    seed <span class="op">=</span> <span class="fl">7</span></span>
+<span>    seed <span class="op">=</span> <span class="fl">42</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; Starting estimation... </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Starting posterior sampling... </span></span>
 <span><span class="co">#&gt; Posterior sampling done! </span></span>
-<span><span class="co">#&gt; Average standard deviation of the posterior W:  2.575552 </span></span>
+<span><span class="co">#&gt; Average standard deviation of the posterior W:  2.613106 </span></span>
 <span><span class="co">#&gt; Note:</span></span>
 <span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
 <span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
 <span></span>
-<span><span class="va">bvar_cor</span></span>
+<span><span class="va">fit_ex1</span></span>
 <span><span class="co">#&gt; *** Ngme object ***</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
-<span><span class="co">#&gt;    x1    x2 </span></span>
-<span><span class="co">#&gt; -3.07  1.58 </span></span>
+<span><span class="co">#&gt;     x1     x2 </span></span>
+<span><span class="co">#&gt; -0.996  1.934 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
-<span><span class="co">#&gt; $bv</span></span>
+<span><span class="co">#&gt; $field1</span></span>
 <span><span class="co">#&gt;   Model type: Bivariate model</span></span>
 <span><span class="co">#&gt;       theta = 0 (fixed)</span></span>
-<span><span class="co">#&gt;       rho = 1.13</span></span>
+<span><span class="co">#&gt;       rho = 2.51</span></span>
 <span><span class="co">#&gt;       W1: AR(1)</span></span>
-<span><span class="co">#&gt;           rho = 0.57</span></span>
+<span><span class="co">#&gt;           rho = 0.639</span></span>
 <span><span class="co">#&gt;       W2: AR(1)</span></span>
-<span><span class="co">#&gt;           rho = -0.321</span></span>
+<span><span class="co">#&gt;           rho = -0.303</span></span>
 <span><span class="co">#&gt;    Bivariate type-G4 noise:</span></span>
 <span><span class="co">#&gt;       W1: NORMAL</span></span>
 <span><span class="co">#&gt;       Noise parameters: </span></span>
-<span><span class="co">#&gt;           sigma = 2.06</span></span>
+<span><span class="co">#&gt;           sigma = 1.83</span></span>
 <span><span class="co">#&gt;       W2: NORMAL</span></span>
 <span><span class="co">#&gt;       Noise parameters: </span></span>
-<span><span class="co">#&gt;           sigma = 3.04</span></span>
+<span><span class="co">#&gt;           sigma = 5.4</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       theta_sigma = -0.511, -0.110</span></span>
-<span><span class="co">#&gt;       correlation(rho) = 0.891</span></span>
-<span><span class="co"># Compare the estimated value with the simulated value</span></span>
-<span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">bvar_cor</span>, <span class="st">"bv"</span>, hline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">rho</span>, <span class="va">rho1</span>, <span class="va">rho2</span>, <span class="va">sigma1</span>, <span class="va">sigma2</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="bivariate_files/figure-html/unnamed-chunk-2-1.png" width="700"></p>
+<span><span class="co">#&gt;       sigma = 0.504</span></span></code></pre></div>
+<p>We create trace plots to visualize the convergence of the chains and
+assess the quality of the fit.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">fit_ex1</span>, hline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">sigma_eps</span>, <span class="va">beta</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p><img src="bivariate_files/figure-html/ex1-traceplot-1.png" width="100%"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
-<span><span class="co">#&gt; $rho</span></span>
-<span><span class="co">#&gt; [1] 1.133052</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $`rho (1st)`</span></span>
-<span><span class="co">#&gt; [1] 0.5706719</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $`rho (2nd)`</span></span>
-<span><span class="co">#&gt; [1] -0.3221846</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $`sigma (1st)`</span></span>
-<span><span class="co">#&gt; [1] 2.056259</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $`sigma (2nd)`</span></span>
-<span><span class="co">#&gt; [1] 3.029187</span></span>
-<span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">bvar_cor</span>, hline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="va">sd_1</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="va">sd_2</span><span class="op">)</span>, <span class="va">rho_e</span>, <span class="op">-</span><span class="fl">3</span>, <span class="fl">1.5</span><span class="op">)</span><span class="op">)</span></span></code></pre>
-<p><img src="bivariate_files/figure-html/unnamed-chunk-2-2.png" width="700"></p>
-<pre><code><span><span class="co">#&gt; Last estimates:</span></span>
-<span><span class="co">#&gt; $`theta_sigma 1`</span></span>
-<span><span class="co">#&gt; [1] -0.5117054</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $`theta_sigma 2`</span></span>
-<span><span class="co">#&gt; [1] -0.1016924</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $`rho(measurement)`</span></span>
-<span><span class="co">#&gt; [1] 0.8924188</span></span>
+<span><span class="co">#&gt; $sigma</span></span>
+<span><span class="co">#&gt; [1] 0.5040307</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`fixed effect 1`</span></span>
-<span><span class="co">#&gt; [1] -3.067538</span></span>
+<span><span class="co">#&gt; [1] -0.99627</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`fixed effect 2`</span></span>
-<span><span class="co">#&gt; [1] 1.579973</span></span></code></pre>
+<span><span class="co">#&gt; [1] 1.934173</span></span>
+<span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">fit_ex1</span>, <span class="st">"field1"</span>, hline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">rho</span>, <span class="va">rho1</span>, <span class="va">rho2</span>, <span class="va">sigma1</span>, <span class="va">sigma2</span><span class="op">)</span><span class="op">)</span></span></code></pre>
+<p><img src="bivariate_files/figure-html/ex1-traceplot-2.png" width="100%"></p>
+<pre><code><span><span class="co">#&gt; Last estimates:</span></span>
+<span><span class="co">#&gt; $rho</span></span>
+<span><span class="co">#&gt; [1] 2.510282</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $`rho (1st)`</span></span>
+<span><span class="co">#&gt; [1] 0.6373661</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $`rho (2nd)`</span></span>
+<span><span class="co">#&gt; [1] -0.2994726</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $`sigma (1st)`</span></span>
+<span><span class="co">#&gt; [1] 1.840045</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $`sigma (2nd)`</span></span>
+<span><span class="co">#&gt; [1] 5.683373</span></span></code></pre>
 </div>
 <div class="section level3">
-<h3 id="ex2--fixed-effects-bivariate-model-ar1-nig-correlated-measurement-noise">Ex2. Fixed effects + Bivariate model (AR1, NIG) + Correlated
-measurement noise<a class="anchor" aria-label="anchor" href="#ex2--fixed-effects-bivariate-model-ar1-nig-correlated-measurement-noise"></a>
+<h3 id="example-2-ar1-with-nig-noise">Example 2: AR(1) with NIG Noise<a class="anchor" aria-label="anchor" href="#example-2-ar1-with-nig-noise"></a>
 </h3>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<p>We define the initial experiment setup, including sample size, group
+labels, and the true parameters of the bivariate model with NIG
+noise.</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">169</span><span class="op">)</span></span>
 <span><span class="va">n_obs</span> <span class="op">&lt;-</span> <span class="fl">1000</span></span>
 <span><span class="va">n_each</span> <span class="op">&lt;-</span> <span class="va">n_obs</span> <span class="op">/</span> <span class="fl">2</span></span>
 <span><span class="va">group</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="st">"W1"</span>, <span class="va">n_each</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="st">"W2"</span>, <span class="va">n_each</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
+<span><span class="co"># True parameters</span></span>
 <span><span class="va">theta</span> <span class="op">&lt;-</span> <span class="va">pi</span> <span class="op">/</span> <span class="fl">8</span></span>
 <span><span class="va">rho</span> <span class="op">&lt;-</span> <span class="fl">2</span></span>
 <span><span class="va">rho_1</span> <span class="op">&lt;-</span> <span class="fl">0.6</span></span>
@@ -670,8 +680,11 @@ measurement noise<a class="anchor" aria-label="anchor" href="#ex2--fixed-effects
 <span><span class="va">nu_2</span> <span class="op">&lt;-</span> <span class="fl">0.5</span></span>
 <span></span>
 <span><span class="va">reorder_loc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="va">n_each</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Simulate bivariate NIG fields</span></span>
 <span><span class="va">sim_fields</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">reorder_loc</span>, <span class="va">reorder_loc</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">reorder_loc</span>, <span class="va">reorder_loc</span><span class="op">)</span>,</span>
 <span>    model <span class="op">=</span> <span class="fu"><a href="../reference/bv.html">bv</a></span><span class="op">(</span></span>
 <span>      mesh <span class="op">=</span> <span class="va">reorder_loc</span>,</span>
 <span>      theta <span class="op">=</span> <span class="va">theta</span>,</span>
@@ -689,24 +702,24 @@ measurement noise<a class="anchor" aria-label="anchor" href="#ex2--fixed-effects
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
 <span></span>
-<span><span class="co"># Same as previous</span></span>
+<span><span class="co"># Correlated measurement noise</span></span>
 <span><span class="va">Cov_same_idx</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0.7</span>, <span class="fl">0.7</span>, <span class="fl">1</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="va">Cov_measurement</span> <span class="op">&lt;-</span> <span class="va">Cov_same_idx</span> <span class="op"><a href="https://rdrr.io/r/base/kronecker.html" class="external-link">%x%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="va">n_obs</span> <span class="op">/</span> <span class="fl">2</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># e ~ N(0, Cov_measurement)</span></span>
 <span><span class="va">L</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/chol.html" class="external-link">chol</a></span><span class="op">(</span><span class="va">Cov_measurement</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">e</span> <span class="op">&lt;-</span> <span class="va">L</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_obs</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># fixed effects</span></span>
+<span><span class="co"># Fixed effects</span></span>
 <span><span class="va">x1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Exponential.html" class="external-link">rexp</a></span><span class="op">(</span><span class="va">n_obs</span><span class="op">)</span></span>
 <span><span class="va">x2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_obs</span><span class="op">)</span></span>
 <span><span class="va">feff</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">3</span>, <span class="fl">1.5</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">Y</span> <span class="op">&lt;-</span> <span class="va">sim_fields</span> <span class="op">+</span> <span class="va">x1</span> <span class="op">*</span> <span class="va">feff</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">x2</span> <span class="op">*</span> <span class="va">feff</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">e</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
+<span><span class="va">Y</span> <span class="op">&lt;-</span> <span class="va">sim_fields</span> <span class="op">+</span> <span class="va">x1</span> <span class="op">*</span> <span class="va">feff</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">x2</span> <span class="op">*</span> <span class="va">feff</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">e</span><span class="op">)</span></span></code></pre></div>
+<p>We fit the bivariate model with NIG noise to the simulated data,
+including the correlation structure in the measurement noise.</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
 <span>  <span class="va">Y</span> <span class="op">~</span> <span class="fl">0</span> <span class="op">+</span> <span class="va">x1</span> <span class="op">+</span> <span class="va">x2</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">reorder_loc</span>, <span class="va">reorder_loc</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
+<span>      <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">reorder_loc</span>, <span class="va">reorder_loc</span><span class="op">)</span>,</span>
 <span>      model <span class="op">=</span> <span class="fu"><a href="../reference/bv.html">bv</a></span><span class="op">(</span></span>
 <span>        theta <span class="op">=</span> <span class="va">theta</span>,</span>
 <span>        rho <span class="op">=</span> <span class="va">rho</span>,</span>
@@ -717,10 +730,7 @@ measurement noise<a class="anchor" aria-label="anchor" href="#ex2--fixed-effects
 <span>        <span class="op">)</span></span>
 <span>      <span class="op">)</span>,</span>
 <span>      name <span class="op">=</span> <span class="st">"bv"</span>,</span>
-<span>      noise <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>        W1 <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>        W2 <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span></span>
-<span>      <span class="op">)</span></span>
+<span>      noise <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>W1 <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span>, W2 <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span>    <span class="op">)</span>,</span>
 <span>  group <span class="op">=</span> <span class="va">group</span>,</span>
 <span>  family <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span></span>
@@ -739,103 +749,565 @@ measurement noise<a class="anchor" aria-label="anchor" href="#ex2--fixed-effects
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Starting posterior sampling... </span></span>
 <span><span class="co">#&gt; Posterior sampling done! </span></span>
-<span><span class="co">#&gt; Average standard deviation of the posterior W:  3.281096 </span></span>
+<span><span class="co">#&gt; Average standard deviation of the posterior W:  3.10495 </span></span>
 <span><span class="co">#&gt; Note:</span></span>
 <span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
 <span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
+<span></span>
 <span><span class="va">out</span></span>
 <span><span class="co">#&gt; *** Ngme object ***</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt;    x1    x2 </span></span>
-<span><span class="co">#&gt; -3.06  1.52 </span></span>
+<span><span class="co">#&gt; -3.03  1.55 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $bv</span></span>
 <span><span class="co">#&gt;   Model type: Bivariate model</span></span>
-<span><span class="co">#&gt;       theta = 0.394</span></span>
-<span><span class="co">#&gt;       rho = 2.07</span></span>
+<span><span class="co">#&gt;       theta = 0.438</span></span>
+<span><span class="co">#&gt;       rho = 2.04</span></span>
 <span><span class="co">#&gt;       W1: AR(1)</span></span>
-<span><span class="co">#&gt;           rho = 0.622</span></span>
+<span><span class="co">#&gt;           rho = 0.596</span></span>
 <span><span class="co">#&gt;       W2: AR(1)</span></span>
-<span><span class="co">#&gt;           rho = 0.434</span></span>
+<span><span class="co">#&gt;           rho = 0.438</span></span>
 <span><span class="co">#&gt;    Bivariate type-G4 noise:</span></span>
 <span><span class="co">#&gt;       W1: NIG</span></span>
 <span><span class="co">#&gt;       Noise parameters: </span></span>
-<span><span class="co">#&gt;           mu = -1.74</span></span>
-<span><span class="co">#&gt;           sigma = 1.2</span></span>
-<span><span class="co">#&gt;           nu = 0.63</span></span>
+<span><span class="co">#&gt;           mu = -1.87</span></span>
+<span><span class="co">#&gt;           sigma = 0.672</span></span>
+<span><span class="co">#&gt;           nu = 0.733</span></span>
 <span><span class="co">#&gt;       W2: NIG</span></span>
 <span><span class="co">#&gt;       Noise parameters: </span></span>
-<span><span class="co">#&gt;           mu = 2.04</span></span>
-<span><span class="co">#&gt;           sigma = 1.82</span></span>
-<span><span class="co">#&gt;           nu = 0.522</span></span>
+<span><span class="co">#&gt;           mu = 2.32</span></span>
+<span><span class="co">#&gt;           sigma = 1.43</span></span>
+<span><span class="co">#&gt;           nu = 0.468</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 1.11</span></span>
-<span><span class="co">#&gt;       correlation(rho) = 0.697</span></span>
-<span></span>
-<span><span class="co"># comparing with simulated value</span></span>
-<span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span></span>
+<span><span class="co">#&gt;       sigma = 1.14</span></span>
+<span><span class="co">#&gt;       correlation(rho) = 0.737</span></span></code></pre></div>
+<p>We visualize the trace plots for all model parameters, comparing them
+with the true values.</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span></span>
 <span>  <span class="va">out</span>, <span class="st">"bv"</span>,</span>
-<span>  hline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
-<span>    <span class="va">theta</span>, <span class="va">rho</span>, <span class="va">rho_1</span>, <span class="va">rho_2</span>,</span>
-<span>    <span class="va">mu_1</span>, <span class="va">mu_2</span>, <span class="va">sigma_1</span>, <span class="va">sigma_2</span>, <span class="va">nu_1</span>, <span class="va">nu_2</span></span>
-<span>  <span class="op">)</span></span>
+<span>  hline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">theta</span>, <span class="va">rho</span>, <span class="va">rho_1</span>, <span class="va">rho_2</span>, <span class="va">mu_1</span>, <span class="va">mu_2</span>, <span class="va">sigma_1</span>, <span class="va">sigma_2</span>, <span class="va">nu_1</span>, <span class="va">nu_2</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="bivariate_files/figure-html/corr-measurement-1.png" width="700"></p>
+<p><img src="bivariate_files/figure-html/ex2-traceplot-1.png" width="100%"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $theta</span></span>
-<span><span class="co">#&gt; [1] 0.3938333</span></span>
+<span><span class="co">#&gt; [1] 0.4376033</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $rho</span></span>
-<span><span class="co">#&gt; [1] 2.074931</span></span>
+<span><span class="co">#&gt; [1] 2.03974</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`rho (1st)`</span></span>
-<span><span class="co">#&gt; [1] 0.617381</span></span>
+<span><span class="co">#&gt; [1] 0.5841126</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`rho (2nd)`</span></span>
-<span><span class="co">#&gt; [1] 0.4447369</span></span>
+<span><span class="co">#&gt; [1] 0.4455189</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`mu (1st)`</span></span>
-<span><span class="co">#&gt; [1] -1.838908</span></span>
+<span><span class="co">#&gt; [1] -2.047159</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`mu (2nd)`</span></span>
-<span><span class="co">#&gt; [1] 2.37552</span></span>
+<span><span class="co">#&gt; [1] 2.371061</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`sigma (1st)`</span></span>
-<span><span class="co">#&gt; [1] 1.161017</span></span>
+<span><span class="co">#&gt; [1] 0.5814059</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`sigma (2nd)`</span></span>
-<span><span class="co">#&gt; [1] 1.619688</span></span>
+<span><span class="co">#&gt; [1] 1.538205</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`nu (1st)`</span></span>
-<span><span class="co">#&gt; [1] 0.7270453</span></span>
+<span><span class="co">#&gt; [1] 0.8736139</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`nu (2nd)`</span></span>
-<span><span class="co">#&gt; [1] 0.76699</span></span></code></pre>
+<span><span class="co">#&gt; [1] 0.5906478</span></span></code></pre>
 </div>
 </div>
 <div class="section level2">
-<h2 id="helper-tool-to-build-correlation-index-between-two-fields">Helper tool to build correlation index between two fields<a class="anchor" aria-label="anchor" href="#helper-tool-to-build-correlation-index-between-two-fields"></a>
+<h2 id="space-time-bivariate-models">Space-Time Bivariate Models<a class="anchor" aria-label="anchor" href="#space-time-bivariate-models"></a>
 </h2>
-<p>Sometimes it’s tedious to provide to <code>index_corr</code> argument
-to indicate which observations are correlated, we can use the helper
-function <code>compute_index_corr_from_map</code> to reduce the
-work.</p>
-<p>It can helps to compute the distance (both 1d or 2d distance) given
-the location we want to use. If some of them are close enough, then we
-will correlate them.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># provide the x,y coordinate (2d locations)</span></span>
+<p>Space-time bivariate models extend the framework to data collected
+over both space and time. These models use a <strong>tensor product
+structure</strong> to efficiently model processes that evolve jointly
+across spatial and temporal dimensions.</p>
+<div class="section level3">
+<h3 id="when-to-use-space-time-bivariate-models">When to Use Space-Time Bivariate Models<a class="anchor" aria-label="anchor" href="#when-to-use-space-time-bivariate-models"></a>
+</h3>
+<p>Space-time bivariate models are appropriate when:</p>
+<ul>
+<li>You have <strong>two response variables</strong> measured at
+multiple <strong>locations</strong> over <strong>time</strong>
+</li>
+<li>The processes exhibit <strong>spatial correlation</strong>,
+<strong>temporal correlation</strong>, and <strong>cross-variable
+correlation</strong>
+</li>
+<li>
+<strong>Separability</strong> is reasonable (temporal dynamics can
+be factored from spatial structure)</li>
+</ul>
+<p>Examples include joint modeling of temperature and precipitation from
+weather stations, or multiple pollutant concentrations from monitoring
+networks over time.</p>
+</div>
+</div>
+<div class="section level2">
+<h2 id="space-time-bivariate-models-with-tensor-products">Space-Time Bivariate Models with Tensor Products<a class="anchor" aria-label="anchor" href="#space-time-bivariate-models-with-tensor-products"></a>
+</h2>
+<p>When modeling <strong>space-time bivariate processes</strong>, we
+have two main approaches depending on whether the temporal dynamics are
+shared or different between the two variables.</p>
+<div class="section level3">
+<h3 id="two-approaches-for-space-time-bivariate-models">Two Approaches for Space-Time Bivariate Models<a class="anchor" aria-label="anchor" href="#two-approaches-for-space-time-bivariate-models"></a>
+</h3>
+<div class="section level4">
+<h4 id="approach-1-shared-temporal-dynamics-used-in-this-vignette">Approach 1: Shared Temporal Dynamics (Used in This Vignette)<a class="anchor" aria-label="anchor" href="#approach-1-shared-temporal-dynamics-used-in-this-vignette"></a>
+</h4>
+<p><strong>Structure</strong>:
+<code>TP(AR1, BV(Matérn, Matérn))</code></p>
+<p>This approach assumes both variables share the same temporal
+correlation structure but can have different spatial ranges and
+cross-correlation patterns. This is achieved by placing the temporal
+model (AR(1)) as the <strong>first</strong> component of the tensor
+product and the bivariate spatial model as the <strong>second</strong>
+component.</p>
+<p><strong>Mathematical representation</strong>:
+<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mo stretchy="true" form="prefix">(</mo><mtable><mtr><mtd columnalign="center" style="text-align: center"><msub><mi>W</mi><mn>1</mn></msub><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mo>,</mo><mi>t</mi><mo stretchy="true" form="postfix">)</mo></mrow></mtd></mtr><mtr><mtd columnalign="center" style="text-align: center"><msub><mi>W</mi><mn>2</mn></msub><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mo>,</mo><mi>t</mi><mo stretchy="true" form="postfix">)</mo></mrow></mtd></mtr></mtable><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mtext mathvariant="normal">TP</mtext><mrow><mo stretchy="true" form="prefix">(</mo><msub><mtext mathvariant="normal">AR1</mtext><mtext mathvariant="normal">time</mtext></msub><mo>,</mo><mtext mathvariant="normal">BV</mtext><mrow><mo stretchy="true" form="prefix">(</mo><msub><mtext mathvariant="normal">Matérn</mtext><mn>1</mn></msub><mo>,</mo><msub><mtext mathvariant="normal">Matérn</mtext><mn>2</mn></msub><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\begin{pmatrix} W_1(s,t) \\ W_2(s,t) \end{pmatrix} = \text{TP}(\text{AR1}_{\text{time}}, \text{BV}(\text{Matérn}_1, \text{Matérn}_2))</annotation></semantics></math></p>
+<p>where both
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>W</mi><mn>1</mn></msub><annotation encoding="application/x-tex">W_1</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>W</mi><mn>2</mn></msub><annotation encoding="application/x-tex">W_2</annotation></semantics></math>
+share the same
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ρ</mi><annotation encoding="application/x-tex">\rho</annotation></semantics></math>
+for temporal persistence.</p>
+<p><strong>When to use</strong>: - Variables are expected to have
+similar temporal evolution - You have moderate sample sizes - Examples:
+temperature and humidity, soil moisture at different depths</p>
+</div>
+<div class="section level4">
+<h4 id="approach-2-different-temporal-dynamics-more-flexible">Approach 2: Different Temporal Dynamics (More Flexible)<a class="anchor" aria-label="anchor" href="#approach-2-different-temporal-dynamics-more-flexible"></a>
+</h4>
+<p><strong>Structure</strong>:
+<code>BV(TP(AR1, Matérn), TP(AR1, Matérn))</code></p>
+<p>This approach allows each variable to have its own temporal
+correlation structure. This is achieved by placing the bivariate model
+at the <strong>top level</strong> and using complete tensor products for
+each sub-model.</p>
+<p><strong>Mathematical representation</strong>:
+<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mo stretchy="true" form="prefix">(</mo><mtable><mtr><mtd columnalign="center" style="text-align: center"><msub><mi>W</mi><mn>1</mn></msub><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mo>,</mo><mi>t</mi><mo stretchy="true" form="postfix">)</mo></mrow></mtd></mtr><mtr><mtd columnalign="center" style="text-align: center"><msub><mi>W</mi><mn>2</mn></msub><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mo>,</mo><mi>t</mi><mo stretchy="true" form="postfix">)</mo></mrow></mtd></mtr></mtable><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mtext mathvariant="normal">BV</mtext><mrow><mo stretchy="true" form="prefix">(</mo><mtext mathvariant="normal">TP</mtext><mrow><mo stretchy="true" form="prefix">(</mo><msub><mtext mathvariant="normal">AR1</mtext><mn>1</mn></msub><mo>,</mo><msub><mtext mathvariant="normal">Matérn</mtext><mn>1</mn></msub><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mtext mathvariant="normal">TP</mtext><mrow><mo stretchy="true" form="prefix">(</mo><msub><mtext mathvariant="normal">AR1</mtext><mn>2</mn></msub><mo>,</mo><msub><mtext mathvariant="normal">Matérn</mtext><mn>2</mn></msub><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\begin{pmatrix} W_1(s,t) \\ W_2(s,t) \end{pmatrix} = \text{BV}\left(\text{TP}(\text{AR1}_1, \text{Matérn}_1), \text{TP}(\text{AR1}_2, \text{Matérn}_2)\right)</annotation></semantics></math></p>
+<p>where
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>W</mi><mn>1</mn></msub><annotation encoding="application/x-tex">W_1</annotation></semantics></math>
+has temporal parameter
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ρ</mi><mn>1</mn></msub><annotation encoding="application/x-tex">\rho_1</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>W</mi><mn>2</mn></msub><annotation encoding="application/x-tex">W_2</annotation></semantics></math>
+has temporal parameter
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ρ</mi><mn>2</mn></msub><annotation encoding="application/x-tex">\rho_2</annotation></semantics></math>
+(potentially different).</p>
+<p><strong>When to use</strong>: - Variables have different temporal
+persistence patterns - You have large sample sizes - Examples: u-wind
+and v-wind components (which can have different temporal dynamics due to
+atmospheric circulation patterns)</p>
+<p>Here’s how you would specify the model (without running
+estimation):</p>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Example: Wind components with different temporal persistence</span></span>
+<span><span class="co"># This is just model specification - not run in vignette</span></span>
+<span></span>
+<span><span class="co"># Setup (same as Approach 1)</span></span>
+<span><span class="va">n_time</span> <span class="op">&lt;-</span> <span class="fl">15</span></span>
+<span><span class="va">n_loc</span> <span class="op">&lt;-</span> <span class="fl">40</span></span>
+<span><span class="va">mesh_spatial</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://inlabru-org.github.io/fmesher/reference/fm_mesh_2d.html" class="external-link">fm_mesh_2d</a></span><span class="op">(</span><span class="va">...</span><span class="op">)</span></span>
+<span><span class="va">mesh_temporal</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://inlabru-org.github.io/fmesher/reference/fm_mesh_1d.html" class="external-link">fm_mesh_1d</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="va">n_time</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Create indices</span></span>
+<span><span class="va">time_idx</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="va">n_time</span>, each <span class="op">=</span> <span class="va">n_loc</span> <span class="op">*</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="va">locations_expanded</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">locations</span>, <span class="va">locations</span><span class="op">)</span></span>
+<span><span class="va">locations_full</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">replicate</a></span><span class="op">(</span><span class="va">n_time</span>, <span class="va">locations_expanded</span>, simplify <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">group</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"u_wind"</span>, <span class="st">"v_wind"</span><span class="op">)</span>, each <span class="op">=</span> <span class="va">n_loc</span><span class="op">)</span>, <span class="va">n_time</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Approach 2 model specification</span></span>
+<span><span class="va">model_approach2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
+<span>  <span class="va">Y</span> <span class="op">~</span> <span class="fl">0</span> <span class="op">+</span> <span class="va">x1</span> <span class="op">+</span> <span class="va">x2</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
+<span>      map <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span>,        <span class="co"># Spatial coordinates</span></span>
+<span>      model <span class="op">=</span> <span class="fu"><a href="../reference/bv.html">bv</a></span><span class="op">(</span>               <span class="co"># Bivariate at top level</span></span>
+<span>        mesh <span class="op">=</span> <span class="va">mesh_spatial</span>,</span>
+<span>        sub_models <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>          u_wind <span class="op">=</span> <span class="fu"><a href="../reference/tp.html">tp</a></span><span class="op">(</span>           <span class="co"># Complete TP for u-wind</span></span>
+<span>            mesh_first <span class="op">=</span> <span class="va">mesh_temporal</span>,</span>
+<span>            mesh_second <span class="op">=</span> <span class="va">mesh_spatial</span>,</span>
+<span>            first <span class="op">=</span> <span class="fu"><a href="../reference/ar1.html">ar1</a></span><span class="op">(</span><span class="op">)</span>,       <span class="co"># ρ_u (estimated separately)</span></span>
+<span>            second <span class="op">=</span> <span class="fu"><a href="../reference/matern.html">matern</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>          <span class="op">)</span>,</span>
+<span>          v_wind <span class="op">=</span> <span class="fu"><a href="../reference/tp.html">tp</a></span><span class="op">(</span>           <span class="co"># Complete TP for v-wind</span></span>
+<span>            mesh_first <span class="op">=</span> <span class="va">mesh_temporal</span>,</span>
+<span>            mesh_second <span class="op">=</span> <span class="va">mesh_spatial</span>,</span>
+<span>            first <span class="op">=</span> <span class="fu"><a href="../reference/ar1.html">ar1</a></span><span class="op">(</span><span class="op">)</span>,       <span class="co"># ρ_v (can differ from ρ_u!)</span></span>
+<span>            second <span class="op">=</span> <span class="fu"><a href="../reference/matern.html">matern</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>          <span class="op">)</span></span>
+<span>        <span class="op">)</span></span>
+<span>      <span class="op">)</span>,</span>
+<span>      group <span class="op">=</span> <span class="va">group</span>,</span>
+<span>      noise <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>        u_wind <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>        v_wind <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>      <span class="op">)</span></span>
+<span>    <span class="op">)</span>,</span>
+<span>  data <span class="op">=</span> <span class="va">data</span>,</span>
+<span>  group <span class="op">=</span> <span class="va">group</span>,</span>
+<span>  family <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><strong>Note</strong>: This example is not evaluated in the vignette
+to keep compilation time reasonable. Use Approach 2 only when you have
+strong evidence that temporal dynamics differ between variables.</p>
+</div>
+</div>
+<div class="section level3">
+<h3 id="separability-what-does-it-mean">Separability: What Does It Mean?<a class="anchor" aria-label="anchor" href="#separability-what-does-it-mean"></a>
+</h3>
+<p>The <strong>separability assumption</strong> in Approach 1 means the
+covariance structure can be written as:</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">Cov</mtext><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>W</mi><mi>k</mi></msub><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>s</mi><mn>1</mn></msub><mo>,</mo><msub><mi>t</mi><mn>1</mn></msub><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><msub><mi>W</mi><mi>j</mi></msub><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>s</mi><mn>2</mn></msub><mo>,</mo><msub><mi>t</mi><mn>2</mn></msub><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><msub><mi>C</mi><mtext mathvariant="normal">time</mtext></msub><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>t</mi><mn>1</mn></msub><mo>,</mo><msub><mi>t</mi><mn>2</mn></msub><mo stretchy="true" form="postfix">)</mo></mrow><mo>×</mo><msubsup><mi>C</mi><mtext mathvariant="normal">spatial</mtext><mrow><mi>k</mi><mo>,</mo><mi>j</mi></mrow></msubsup><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>s</mi><mn>1</mn></msub><mo>,</mo><msub><mi>s</mi><mn>2</mn></msub><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\text{Cov}(W_k(s_1, t_1), W_j(s_2, t_2)) = C_{\text{time}}(t_1, t_2) \times C_{\text{spatial}}^{k,j}(s_1, s_2)</annotation></semantics></math></p>
+<p>where
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>k</mi><mo>,</mo><mi>j</mi><mo>∈</mo><mo stretchy="false" form="prefix">{</mo><mn>1</mn><mo>,</mo><mn>2</mn><mo stretchy="false" form="postfix">}</mo></mrow><annotation encoding="application/x-tex">k, j \in \{1, 2\}</annotation></semantics></math>
+index the two variables.</p>
+<p><strong>Key implication</strong>: Both variables share the same
+temporal correlation structure (same AR(1)
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ρ</mi><annotation encoding="application/x-tex">\rho</annotation></semantics></math>),
+but can have different spatial ranges and different cross-correlation
+patterns through
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>𝐃</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>θ</mi><mo>,</mo><mi>ρ</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\mathbf{D}(\theta, \rho)</annotation></semantics></math>.</p>
+</div>
+<div class="section level3">
+<h3 id="summary-choosing-between-approaches">Summary: Choosing Between Approaches<a class="anchor" aria-label="anchor" href="#summary-choosing-between-approaches"></a>
+</h3>
+<table class="table">
+<colgroup>
+<col width="14%">
+<col width="42%">
+<col width="42%">
+</colgroup>
+<thead><tr class="header">
+<th>Aspect</th>
+<th>Approach 1 (Used Here)</th>
+<th>Approach 2</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><strong>Structure</strong></td>
+<td><code>TP(AR1, BV(Matérn, Matérn))</code></td>
+<td><code>BV(TP(AR1, Matérn), TP(AR1, Matérn))</code></td>
+</tr>
+<tr class="even">
+<td><strong>Temporal</strong></td>
+<td>Shared
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>ρ</mi><mn>1</mn></msub><mo>=</mo><msub><mi>ρ</mi><mn>2</mn></msub></mrow><annotation encoding="application/x-tex">\rho_1 = \rho_2</annotation></semantics></math>)</td>
+<td>Different
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>ρ</mi><mn>1</mn></msub><mo>≠</mo><msub><mi>ρ</mi><mn>2</mn></msub></mrow><annotation encoding="application/x-tex">\rho_1 \neq \rho_2</annotation></semantics></math>)</td>
+</tr>
+<tr class="odd">
+<td><strong>Top-level model</strong></td>
+<td><code>model = tp()</code></td>
+<td><code>model = bv()</code></td>
+</tr>
+<tr class="even">
+<td><strong>Sub-models</strong></td>
+<td>Each field: <code><a href="../reference/matern.html">matern()</a></code>
+</td>
+<td>Each field: <code>tp(ar1(), matern())</code>
+</td>
+</tr>
+<tr class="odd">
+<td><strong>Parameters</strong></td>
+<td>Fewer (1 temporal
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ρ</mi><annotation encoding="application/x-tex">\rho</annotation></semantics></math>)</td>
+<td>More (2 temporal
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ρ</mi><annotation encoding="application/x-tex">\rho</annotation></semantics></math>s)</td>
+</tr>
+<tr class="even">
+<td><strong>Flexibility</strong></td>
+<td>Less</td>
+<td>More</td>
+</tr>
+<tr class="odd">
+<td><strong>Data required</strong></td>
+<td>Less</td>
+<td>More</td>
+</tr>
+<tr class="even">
+<td><strong>Use when</strong></td>
+<td>Variables evolve similarly in time</td>
+<td>Variables have different temporal dynamics</td>
+</tr>
+<tr class="odd">
+<td><strong>Examples</strong></td>
+<td>Temp/humidity</td>
+<td>u-wind/v-wind</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Validation strategy</strong>: 1. Start with Approach 1
+(simpler, shown in this vignette) 2. If you suspect different temporal
+dynamics, fit Approach 2 3. Compare models using cross-validation 4. If
+temporal parameters
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>ρ</mi><mn>1</mn></msub><mo>≈</mo><msub><mi>ρ</mi><mn>2</mn></msub></mrow><annotation encoding="application/x-tex">\rho_1 \approx \rho_2</annotation></semantics></math>,
+Approach 1 is justified 5. If
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ρ</mi><mn>1</mn></msub><annotation encoding="application/x-tex">\rho_1</annotation></semantics></math>
+substantially differs from
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ρ</mi><mn>2</mn></msub><annotation encoding="application/x-tex">\rho_2</annotation></semantics></math>,
+use Approach 2</p>
+</div>
+<div class="section level3">
+<h3 id="model-structure-in-ngme2">Model Structure in ngme2<a class="anchor" aria-label="anchor" href="#model-structure-in-ngme2"></a>
+</h3>
+<p>Using <strong>Approach 1</strong> (shared temporal dynamics), the
+model is specified as:</p>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
+<span>  map <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">time_index</span>, <span class="va">spatial_coords</span><span class="op">)</span>,</span>
+<span>  model <span class="op">=</span> <span class="fu"><a href="../reference/tp.html">tp</a></span><span class="op">(</span></span>
+<span>    first <span class="op">=</span> <span class="fu"><a href="../reference/ar1.html">ar1</a></span><span class="op">(</span>mesh <span class="op">=</span> <span class="va">time_mesh</span><span class="op">)</span>,           <span class="co"># Temporal component (shared)</span></span>
+<span>    second <span class="op">=</span> <span class="fu"><a href="../reference/bv.html">bv</a></span><span class="op">(</span>                             <span class="co"># Bivariate spatial component</span></span>
+<span>      mesh <span class="op">=</span> <span class="va">spatial_mesh</span>,</span>
+<span>      sub_models <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>        field1 <span class="op">=</span> <span class="fu"><a href="../reference/matern.html">matern</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>        field2 <span class="op">=</span> <span class="fu"><a href="../reference/matern.html">matern</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>      <span class="op">)</span></span>
+<span>    <span class="op">)</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  group <span class="op">=</span> <span class="va">group_labels</span>,</span>
+<span>  noise <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    field1 <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>    field2 <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>Key components:</p>
+<ul>
+<li>
+<strong>First component</strong>: Temporal dynamics (e.g., AR(1),
+random walk) shared across both variables</li>
+<li>
+<strong>Second component</strong>: Bivariate spatial structure with
+potentially different spatial ranges for each field</li>
+<li>
+<strong>Group labels</strong>: Identify which observations belong to
+which variable</li>
+</ul>
+</div>
+<div class="section level3">
+<h3 id="example-space-time-bivariate">Example: Space-Time Bivariate<a class="anchor" aria-label="anchor" href="#example-space-time-bivariate"></a>
+</h3>
+<p>We set up the spatial domain, spatial mesh, temporal mesh, and
+generate observation locations for a complete space-time bivariate model
+example.</p>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Spatial domain and mesh</span></span>
+<span><span class="va">domain</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span></span>
+<span>  x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">10</span>, <span class="fl">10</span>, <span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span>,</span>
+<span>  y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">5</span>, <span class="fl">5</span>, <span class="fl">0</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">mesh_spatial</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://inlabru-org.github.io/fmesher/reference/fm_mesh_2d.html" class="external-link">fm_mesh_2d</a></span><span class="op">(</span></span>
+<span>  loc.domain <span class="op">=</span> <span class="va">domain</span>,</span>
+<span>  max.edge <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1.0</span>, <span class="fl">2</span><span class="op">)</span>,</span>
+<span>  cutoff <span class="op">=</span> <span class="fl">0.5</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Temporal setup</span></span>
+<span><span class="va">n_time</span> <span class="op">&lt;-</span> <span class="fl">15</span></span>
+<span><span class="va">n_loc</span> <span class="op">&lt;-</span> <span class="fl">40</span></span>
+<span><span class="va">mesh_temporal</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://inlabru-org.github.io/fmesher/reference/fm_mesh_1d.html" class="external-link">fm_mesh_1d</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="va">n_time</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Generate observation locations</span></span>
+<span><span class="va">locations</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span></span>
+<span>  x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n_loc</span>, <span class="fl">0.5</span>, <span class="fl">9.5</span><span class="op">)</span>,</span>
+<span>  y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n_loc</span>, <span class="fl">0.5</span>, <span class="fl">4.5</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Create space-time indices for bivariate data</span></span>
+<span><span class="va">time_idx</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="va">n_time</span>, each <span class="op">=</span> <span class="va">n_loc</span> <span class="op">*</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="va">spatial_coords</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">replicate</a></span><span class="op">(</span><span class="va">n_time</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">locations</span>, <span class="va">locations</span><span class="op">)</span>,</span>
+<span>  simplify <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">group</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"field1"</span>, <span class="st">"field2"</span><span class="op">)</span>, each <span class="op">=</span> <span class="va">n_loc</span><span class="op">)</span>, <span class="va">n_time</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Total observations:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">time_idx</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Total observations: 1200</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Observations per variable:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">group</span> <span class="op">==</span> <span class="st">"field1"</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Observations per variable: 600</span></span></code></pre></div>
+<p>We simulate a space-time bivariate process using tensor products with
+shared temporal dynamics (AR(1)) and bivariate spatial structure with
+different ranges for each field.</p>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># True parameters</span></span>
+<span><span class="va">true_rho_time</span> <span class="op">&lt;-</span> <span class="fl">0.7</span></span>
+<span><span class="va">true_theta</span> <span class="op">&lt;-</span> <span class="va">pi</span> <span class="op">/</span> <span class="fl">8</span></span>
+<span></span>
+<span><span class="co"># Simulate space-time bivariate process</span></span>
+<span><span class="va">sim_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
+<span>  map <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">time_idx</span>, <span class="va">spatial_coords</span><span class="op">)</span>,</span>
+<span>  model <span class="op">=</span> <span class="fu"><a href="../reference/tp.html">tp</a></span><span class="op">(</span></span>
+<span>    first <span class="op">=</span> <span class="fu"><a href="../reference/ar1.html">ar1</a></span><span class="op">(</span>mesh <span class="op">=</span> <span class="va">mesh_temporal</span>, rho <span class="op">=</span> <span class="va">true_rho_time</span><span class="op">)</span>,</span>
+<span>    second <span class="op">=</span> <span class="fu"><a href="../reference/bv.html">bv</a></span><span class="op">(</span></span>
+<span>      mesh <span class="op">=</span> <span class="va">mesh_spatial</span>,</span>
+<span>      theta <span class="op">=</span> <span class="va">true_theta</span>,</span>
+<span>      sub_models <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>        field1 <span class="op">=</span> <span class="fu"><a href="../reference/matern.html">matern</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>        field2 <span class="op">=</span> <span class="fu"><a href="../reference/matern.html">matern</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>      <span class="op">)</span></span>
+<span>    <span class="op">)</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  group <span class="op">=</span> <span class="va">group</span>,</span>
+<span>  noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span>mu <span class="op">=</span> <span class="fl">0</span>, sigma <span class="op">=</span> <span class="fl">1</span>, nu <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">W_sim</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="va">sim_model</span>, nsim <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
+<span></span>
+<span><span class="co"># Add fixed effects and measurement noise</span></span>
+<span><span class="va">x1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">W_sim</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">x2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">W_sim</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">beta</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="va">sigma_meas</span> <span class="op">&lt;-</span> <span class="fl">0.5</span></span>
+<span><span class="va">epsilon</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">W_sim</span><span class="op">)</span>, <span class="fl">0</span>, <span class="va">sigma_meas</span><span class="op">)</span></span>
+<span><span class="va">Y</span> <span class="op">&lt;-</span> <span class="va">W_sim</span> <span class="op">+</span> <span class="va">x1</span> <span class="op">*</span> <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">x2</span> <span class="op">*</span> <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">+</span> <span class="va">epsilon</span></span></code></pre></div>
+<p>We organize the space-time data into a data frame containing temporal
+indices, spatial coordinates, covariates, and group labels.</p>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Prepare data</span></span>
+<span><span class="va">data_st</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  Y <span class="op">=</span> <span class="va">Y</span>,</span>
+<span>  time <span class="op">=</span> <span class="va">time_idx</span>,</span>
+<span>  x <span class="op">=</span> <span class="va">spatial_coords</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>,</span>
+<span>  y <span class="op">=</span> <span class="va">spatial_coords</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span>,</span>
+<span>  x1 <span class="op">=</span> <span class="va">x1</span>,</span>
+<span>  x2 <span class="op">=</span> <span class="va">x2</span>,</span>
+<span>  group <span class="op">=</span> <span class="va">group</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Fit space-time bivariate model</span></span>
+<span><span class="va">fit_st</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
+<span>  <span class="va">Y</span> <span class="op">~</span> <span class="fl">0</span> <span class="op">+</span> <span class="va">x1</span> <span class="op">+</span> <span class="va">x2</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
+<span>      map <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">time</span>, <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>      name <span class="op">=</span> <span class="st">"spacetime_bv"</span>,</span>
+<span>      model <span class="op">=</span> <span class="fu"><a href="../reference/tp.html">tp</a></span><span class="op">(</span></span>
+<span>        first <span class="op">=</span> <span class="fu"><a href="../reference/ar1.html">ar1</a></span><span class="op">(</span>mesh <span class="op">=</span> <span class="va">mesh_temporal</span><span class="op">)</span>,</span>
+<span>        second <span class="op">=</span> <span class="fu"><a href="../reference/bv.html">bv</a></span><span class="op">(</span></span>
+<span>          mesh <span class="op">=</span> <span class="va">mesh_spatial</span>,</span>
+<span>          sub_models <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>            field1 <span class="op">=</span> <span class="fu"><a href="../reference/matern.html">matern</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>            field2 <span class="op">=</span> <span class="fu"><a href="../reference/matern.html">matern</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>          <span class="op">)</span></span>
+<span>        <span class="op">)</span></span>
+<span>      <span class="op">)</span>,</span>
+<span>      group <span class="op">=</span> <span class="va">group</span>,</span>
+<span>      noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>    <span class="op">)</span>,</span>
+<span>  data <span class="op">=</span> <span class="va">data_st</span>,</span>
+<span>  group <span class="op">=</span> <span class="va">data_st</span><span class="op">$</span><span class="va">group</span>,</span>
+<span>  family <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  control_opt <span class="op">=</span> <span class="fu"><a href="../reference/control_opt.html">control_opt</a></span><span class="op">(</span></span>
+<span>    iterations <span class="op">=</span> <span class="fl">500</span>,</span>
+<span>    n_parallel_chain <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>    rao_blackwellization <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>    seed <span class="op">=</span> <span class="fl">42</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; Starting estimation... </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Starting posterior sampling... </span></span>
+<span><span class="co">#&gt; Posterior sampling done! </span></span>
+<span><span class="co">#&gt; Average standard deviation of the posterior W:  0.1920877 </span></span>
+<span><span class="co">#&gt; Note:</span></span>
+<span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
+<span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
+<span></span>
+<span><span class="va">fit_st</span></span>
+<span><span class="co">#&gt; *** Ngme object ***</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Fixed effects: </span></span>
+<span><span class="co">#&gt;     x1     x2 </span></span>
+<span><span class="co">#&gt; -0.974  1.901 </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Models: </span></span>
+<span><span class="co">#&gt; $spacetime_bv</span></span>
+<span><span class="co">#&gt;   Model type: Tensor product</span></span>
+<span><span class="co">#&gt;       first: AR(1)</span></span>
+<span><span class="co">#&gt;           rho = 0.984</span></span>
+<span><span class="co">#&gt;       second: Bivariate model</span></span>
+<span><span class="co">#&gt;           theta = 1.47</span></span>
+<span><span class="co">#&gt;           rho = -8.33</span></span>
+<span><span class="co">#&gt;           field1: Matern</span></span>
+<span><span class="co">#&gt;               alpha = 2 (fixed)</span></span>
+<span><span class="co">#&gt;               kappa = 0.00157</span></span>
+<span><span class="co">#&gt;           field2: Matern</span></span>
+<span><span class="co">#&gt;               alpha = 2 (fixed)</span></span>
+<span><span class="co">#&gt;               kappa = 2.17</span></span>
+<span><span class="co">#&gt;   Noise type: NIG</span></span>
+<span><span class="co">#&gt;   Noise parameters: </span></span>
+<span><span class="co">#&gt;       mu = 0.877</span></span>
+<span><span class="co">#&gt;       sigma = 0.00129</span></span>
+<span><span class="co">#&gt;       nu = 172</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Measurement noise: </span></span>
+<span><span class="co">#&gt;   Noise type: NORMAL</span></span>
+<span><span class="co">#&gt;   Noise parameters: </span></span>
+<span><span class="co">#&gt;       sigma = 0.603</span></span></code></pre></div>
+<p>We visualize the convergence of MCMC chains for the space-time
+bivariate model.</p>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">fit_st</span>, <span class="st">"spacetime_bv"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="bivariate_files/figure-html/spacetime-traceplot-1.png" width="100%"></p>
+<pre><code><span><span class="co">#&gt; Last estimates:</span></span>
+<span><span class="co">#&gt; $rho</span></span>
+<span><span class="co">#&gt; [1] -8.338834</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $theta</span></span>
+<span><span class="co">#&gt; [1] 1.471076</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $`kappa (1st)`</span></span>
+<span><span class="co">#&gt; [1] 0.001526479</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $`kappa (2nd)`</span></span>
+<span><span class="co">#&gt; [1] 2.287918</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $mu</span></span>
+<span><span class="co">#&gt; [1] 0.8665154</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $sigma</span></span>
+<span><span class="co">#&gt; [1] 0.00129667</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $nu</span></span>
+<span><span class="co">#&gt; [1] 290.7237</span></span></code></pre>
+</div>
+</div>
+<div class="section level2">
+<h2 id="helper-tool">Helper Tool<a class="anchor" aria-label="anchor" href="#helper-tool"></a>
+</h2>
+<p>Sometimes it’s tedious to provide the <code>index_corr</code>
+argument. The helper function <code><a href="../reference/compute_index_corr_from_map.html">compute_index_corr_from_map()</a></code>
+can compute distances and automatically determine which observations
+should be correlated:</p>
+<p>We demonstrate the use of the helper function that automatically
+identifies pairs of correlated observations based on their spatial
+proximity.</p>
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Provide 2D coordinates</span></span>
 <span><span class="va">x_coord</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1.11</span>, <span class="fl">2.5</span>, <span class="fl">1.12</span>, <span class="fl">2</span>, <span class="fl">1.3</span>, <span class="fl">1.31</span><span class="op">)</span></span>
 <span><span class="va">y_coord</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1.11</span>, <span class="fl">3.3</span>, <span class="fl">1.11</span>, <span class="fl">2</span>, <span class="fl">1.3</span>, <span class="fl">1.3</span><span class="op">)</span></span>
 <span><span class="va">coords</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">x_coord</span>, <span class="va">y_coord</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># here we can see 2 pairs (1 and 3, 5 and 6) of observations are close enough</span></span>
+<span><span class="co"># Observations within eps distance are correlated</span></span>
+<span><span class="co"># Here pairs (1,3) and (5,6) are close enough</span></span>
 <span><span class="fu"><a href="../reference/compute_index_corr_from_map.html">compute_index_corr_from_map</a></span><span class="op">(</span><span class="va">coords</span>, eps <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 2 1 2 3 4 4</span></span></code></pre></div>
 </div>

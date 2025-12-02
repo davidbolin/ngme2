@@ -156,8 +156,8 @@ noise_normal_nig(
 
 \item{fix_theta_mu}{fix the parameter of theta_mu}
 
-\item{fix_theta_sigma}{fix the parameter of theta_sigma, can be a single 
-logical value or a vector of logical values with length equal to 
+\item{fix_theta_sigma}{fix the parameter of theta_sigma, can be a single
+logical value or a vector of logical values with length equal to
 length(theta_sigma)}
 
 \item{fix_rho}{fix the parameter of rho}
@@ -220,6 +220,6 @@ for specifying non-stationary mu and sigma, nu
 noise_normal(sigma = 2)
 noise_nig(mu = 1, sigma = 2, nu = 1)
 noise_gal(mu = 1, sigma = 2, nu = 1)
-noise_t(mu = 0, sigma = 1, nu = 5)
-noise_t(mu = 0, sigma = 1, nu = 5)
+noise_skew_t(mu = 0, sigma = 1, nu = 5)
+noise_t(nu = 5)
 }

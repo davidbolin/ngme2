@@ -2,10 +2,9 @@
 % Please edit documentation in R/control.R
 \name{control_ngme}
 \alias{control_ngme}
-\title{Generate control specifications for the ngme general model}
+\title{Generate control specifications for the ngme model}
 \usage{
 control_ngme(
-  init_sample_W = TRUE,
   n_gibbs_samples = 5,
   fix_feff = FALSE,
   n_post_samples = 100,
@@ -14,11 +13,9 @@ control_ngme(
 )
 }
 \arguments{
-\item{init_sample_W}{sample W|V at the beginning of each chain}
+\item{n_gibbs_samples}{number of gibbs samples at each iteration}
 
-\item{n_gibbs_samples}{number of gibbs sampels}
-
-\item{fix_feff}{logical, fix fixed effect}
+\item{fix_feff}{logical, fix fixed effect estimation}
 
 \item{n_post_samples}{number of posterior samples, see ?ngme_post_samples()}
 
@@ -27,8 +24,8 @@ control_ngme(
 \item{debug}{debug mode}
 }
 \value{
-a list of control variables for block model
+a list of control variables for ngme
 }
 \description{
-Generate control specifications for the ngme general model
+Generate control specifications for the ngme model
 }

@@ -395,7 +395,7 @@ Y <- as.numeric(Y + X %*% beta)
 Now let's fit the model using `ngme`. Here we can use `control_opt` to modify the
 control variables for the `ngme`. See `?control_opt` for more optioins.
 
-```{r fit_ar1, cache=TRUE}
+```{r fit_ar1}
 # # Fit the model with the AR1 model
 fit_nig <- ngme(
   Y ~ x1 + x2 + f(
@@ -416,7 +416,6 @@ fit_nig <- ngme(
 )
 ```
 
-As we can see, the model converges in 800 iterations by Pflug diagnostic.
 Next we can read the result directly from the object.
 
 ```{r out}
@@ -576,7 +575,7 @@ ggplot() +
 ### Model comparison with latent Gaussian model via cross-validation
 
 We can also fit a latent Gaussian model and compare it with the NIG model via cross-validation.
-The following code shows how to do it.
+The following code shows how to do it. For the details of the cross-validation, see the [cross-validation vignette](articles/cross-validation.html).
 
 ```{r fit-gauss, cache=TRUE}
 parana_fit_gauss <- ngme(
@@ -609,5 +608,7 @@ cv <- cross_validation(
 )
 cv
 ```
+
+As we can see, the NIG model has a slightly better cross-validation performance in most metrics.
 
 # References {-}

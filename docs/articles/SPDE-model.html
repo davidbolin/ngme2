@@ -41,7 +41,7 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-vignettes" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Vignettes</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-vignettes">
-<li><a class="dropdown-item" href="../articles/Installation_and.html">Installation and configuration (using OpenMP)</a></li>
+<li><a class="dropdown-item" href="../articles/Installation.html">Installation and configuration (using OpenMP)</a></li>
     <li><a class="dropdown-item" href="../articles/AR1-model.html">AR(1) model</a></li>
     <li><a class="dropdown-item" href="../articles/RW-model.html">Random walk model</a></li>
     <li><a class="dropdown-item" href="../articles/ou-process.html">Ornstein-Uhlenbeck process</a></li>
@@ -272,9 +272,7 @@ showed that a Gaussian field
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>u</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>𝐬</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">u(\mathbf{s})</annotation></semantics></math>
 with Matérn covariance function is formally the solution to the
 stochastic partial differential equation:</p>
-<p><span class="math display">$$\left(\kappa^2 -
-\Delta\right)^{\alpha/2} u = \mathcal{W} \quad \hbox{on} \quad
-\mathbb{R}^d,$$</span></p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mrow><mo stretchy="true" form="prefix">(</mo><msup><mi>κ</mi><mn>2</mn></msup><mo>−</mo><mi>Δ</mi><mo stretchy="true" form="postfix">)</mo></mrow><mrow><mi>α</mi><mi>/</mi><mn>2</mn></mrow></msup><mi>u</mi><mo>=</mo><mi>𝒲</mi><mspace width="1.0em"></mspace><mtext mathvariant="normal">on</mtext><mspace width="1.0em"></mspace><msup><mi>ℝ</mi><mi>d</mi></msup><mo>,</mo></mrow><annotation encoding="application/x-tex">\left(\kappa^2 - \Delta\right)^{\alpha/2} u = \mathcal{W} \quad \text{on} \quad \mathbb{R}^d,</annotation></semantics></math></p>
 <p>where:</p>
 <ul>
 <li>
@@ -835,13 +833,13 @@ generate the data.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Simulated field statistics:\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Simulated field statistics:</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Mean:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">W</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Mean: -0.035</span></span>
+<span><span class="co">#&gt;   Mean: -0.025</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  SD:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">W</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   SD: 0.518</span></span>
+<span><span class="co">#&gt;   SD: 0.368</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Min:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="va">W</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Min: -6.665</span></span>
+<span><span class="co">#&gt;   Min: -6.481</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Max:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">W</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Max: 2.724</span></span></code></pre></div>
+<span><span class="co">#&gt;   Max: 2.013</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="visualizing-the-simulated-field">Visualizing the Simulated Field<a class="anchor" aria-label="anchor" href="#visualizing-the-simulated-field"></a>
@@ -913,7 +911,7 @@ recovery:</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Starting posterior sampling... </span></span>
 <span><span class="co">#&gt; Posterior sampling done! </span></span>
-<span><span class="co">#&gt; Average standard deviation of the posterior W:  0.523956 </span></span>
+<span><span class="co">#&gt; Average standard deviation of the posterior W:  0.4413523 </span></span>
 <span><span class="co">#&gt; Note:</span></span>
 <span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
 <span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
@@ -929,12 +927,12 @@ recovery:</p>
 <span><span class="co">#&gt; $spde</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
 <span><span class="co">#&gt;       alpha = 2 (fixed)</span></span>
-<span><span class="co">#&gt;       kappa = 3.75</span></span>
+<span><span class="co">#&gt;       kappa = 3.83</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -1.63</span></span>
-<span><span class="co">#&gt;       sigma = 5.54</span></span>
-<span><span class="co">#&gt;       nu = 0.225</span></span>
+<span><span class="co">#&gt;       mu = -1.47</span></span>
+<span><span class="co">#&gt;       sigma = 4.6</span></span>
+<span><span class="co">#&gt;       nu = 0.544</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
@@ -981,23 +979,23 @@ robustness</li>
 <p><img src="SPDE-model_files/figure-html/convergence-1.png" width="100%"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $kappa</span></span>
-<span><span class="co">#&gt; [1] 3.748682</span></span>
+<span><span class="co">#&gt; [1] 3.826142</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $mu</span></span>
-<span><span class="co">#&gt; [1] -1.601921</span></span>
+<span><span class="co">#&gt; [1] -1.495222</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 5.628379</span></span>
+<span><span class="co">#&gt; [1] 4.537075</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nu</span></span>
-<span><span class="co">#&gt; [1] 0.2086151</span></span></code></pre>
+<span><span class="co">#&gt; [1] 0.557072</span></span></code></pre>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Measurement noise convergence</span></span>
 <span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">out</span>, hline <span class="op">=</span> <span class="va">sigma_noise</span><span class="op">)</span></span></code></pre></div>
 <p><img src="SPDE-model_files/figure-html/convergence-meas-1.png" width="100%"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 0.1015811</span></span></code></pre>
+<span><span class="co">#&gt; [1] 0.1010073</span></span></code></pre>
 <p>The traceplots show good convergence with estimates oscillating
 around true values (blue lines).</p>
 </div>
@@ -1026,16 +1024,16 @@ distribution:</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  True:"</span>, <span class="va">kappa_true</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   True: 4</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Estimated:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">params_spde</span><span class="op">$</span><span class="va">kappa</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Estimated: 3.759</span></span>
+<span><span class="co">#&gt;   Estimated: 3.832</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"NIG parameters:\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; NIG parameters:</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  mu - True:"</span>, <span class="va">mu_true</span>, <span class="st">", Estimated:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">params_spde</span><span class="op">$</span><span class="va">mu</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   mu - True: -2 , Estimated: -1.63</span></span>
+<span><span class="co">#&gt;   mu - True: -2 , Estimated: -1.467</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  sigma - True:"</span>, <span class="va">sigma_true</span>, <span class="st">", Estimated:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">params_spde</span><span class="op">$</span><span class="va">sigma</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   sigma - True: 5 , Estimated: 5.544</span></span>
+<span><span class="co">#&gt;   sigma - True: 5 , Estimated: 4.595</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  nu - True:"</span>, <span class="va">nu_true</span>, <span class="st">", Estimated:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">params_spde</span><span class="op">$</span><span class="va">nu</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   nu - True: 0.5 , Estimated: 0.225</span></span>
+<span><span class="co">#&gt;   nu - True: 0.5 , Estimated: 0.544</span></span>
 <span></span>
 <span><span class="va">params_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme_result.html">ngme_result</a></span><span class="op">(</span><span class="va">out</span>, <span class="st">"data"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Measurement noise (sigma):\n"</span><span class="op">)</span></span>
@@ -1177,7 +1175,7 @@ by the SPDE model.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Starting posterior sampling... </span></span>
 <span><span class="co">#&gt; Posterior sampling done! </span></span>
-<span><span class="co">#&gt; Average standard deviation of the posterior W:  0.6736079 </span></span>
+<span><span class="co">#&gt; Average standard deviation of the posterior W:  0.6529659 </span></span>
 <span><span class="co">#&gt; Note:</span></span>
 <span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
 <span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
@@ -1186,25 +1184,25 @@ by the SPDE model.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt; (Intercept)         sal </span></span>
-<span><span class="co">#&gt;      0.0335      8.0952 </span></span>
+<span><span class="co">#&gt;      0.0427      8.0472 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $spde</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
 <span><span class="co">#&gt;       alpha = 2 (fixed)</span></span>
-<span><span class="co">#&gt;       kappa = 1.73</span></span>
+<span><span class="co">#&gt;       kappa = 1.71</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -0.385</span></span>
-<span><span class="co">#&gt;       sigma = 3.67</span></span>
-<span><span class="co">#&gt;       nu = 0.735</span></span>
+<span><span class="co">#&gt;       mu = -0.274</span></span>
+<span><span class="co">#&gt;       sigma = 3.72</span></span>
+<span><span class="co">#&gt;       nu = 0.852</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -0.197</span></span>
-<span><span class="co">#&gt;       sigma = 0.0437</span></span>
-<span><span class="co">#&gt;       nu = 0.532</span></span></code></pre></div>
+<span><span class="co">#&gt;       mu = -0.226</span></span>
+<span><span class="co">#&gt;       sigma = 0.0322</span></span>
+<span><span class="co">#&gt;       nu = 0.648</span></span></code></pre></div>
 <p>The model includes:</p>
 <ul>
 <li>
@@ -1228,34 +1226,34 @@ non-Gaussian features.</p>
 <p><img src="SPDE-model_files/figure-html/argo-convergence-1.png" width="100%"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $kappa</span></span>
-<span><span class="co">#&gt; [1] 1.752337</span></span>
+<span><span class="co">#&gt; [1] 1.725887</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $mu</span></span>
-<span><span class="co">#&gt; [1] -0.6423929</span></span>
+<span><span class="co">#&gt; [1] -0.4934063</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 3.767791</span></span>
+<span><span class="co">#&gt; [1] 3.606783</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nu</span></span>
-<span><span class="co">#&gt; [1] 0.8778137</span></span></code></pre>
+<span><span class="co">#&gt; [1] 1.004371</span></span></code></pre>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">out</span><span class="op">)</span></span></code></pre></div>
 <p><img src="SPDE-model_files/figure-html/argo-convergence-all-1.png" width="100%"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $mu</span></span>
-<span><span class="co">#&gt; [1] -0.1805072</span></span>
+<span><span class="co">#&gt; [1] -0.2244152</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 0.03608727</span></span>
+<span><span class="co">#&gt; [1] 0.02674545</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nu</span></span>
-<span><span class="co">#&gt; [1] 0.5456552</span></span>
+<span><span class="co">#&gt; [1] 0.6629067</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`fixed effect 1`</span></span>
-<span><span class="co">#&gt; [1] 0.03735979</span></span>
+<span><span class="co">#&gt; [1] 0.03759695</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`fixed effect 2`</span></span>
-<span><span class="co">#&gt; [1] 8.101696</span></span></code></pre>
+<span><span class="co">#&gt; [1] 8.070166</span></span></code></pre>
 <p>The traceplots indicate good convergence for all model
 parameters.</p>
 </div>
@@ -1269,22 +1267,22 @@ parameters.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Spatial field parameters:\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Spatial field parameters:</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Spatial scale (kappa):"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">params_spde</span><span class="op">$</span><span class="va">kappa</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Spatial scale (kappa): 1.743</span></span>
+<span><span class="co">#&gt;   Spatial scale (kappa): 1.79</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Correlation range:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fl">8</span><span class="op">)</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">params_spde</span><span class="op">$</span><span class="va">kappa</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"degrees\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Correlation range: 1.623 degrees</span></span>
+<span><span class="co">#&gt;   Correlation range: 1.58 degrees</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  NIG mu:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">params_spde</span><span class="op">$</span><span class="va">mu</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   NIG mu: -0.385</span></span>
+<span><span class="co">#&gt;   NIG mu: -0.274</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  NIG sigma:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">params_spde</span><span class="op">$</span><span class="va">sigma</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   NIG sigma: 3.673</span></span>
+<span><span class="co">#&gt;   NIG sigma: 3.717</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  NIG nu:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">params_spde</span><span class="op">$</span><span class="va">nu</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   NIG nu: 0.735</span></span>
+<span><span class="co">#&gt;   NIG nu: 0.852</span></span>
 <span></span>
 <span><span class="co"># Fixed effects and measurement noise</span></span>
 <span><span class="va">params_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme_result.html">ngme_result</a></span><span class="op">(</span><span class="va">out</span>, <span class="st">"data"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Fixed effect (salinity):"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">params_data</span><span class="op">$</span><span class="va">fixed_effects</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Fixed effect (salinity): 0.033 8.095</span></span>
+<span><span class="co">#&gt; Fixed effect (salinity): 0.043 8.047</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Measurement noise:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">params_data</span><span class="op">$</span><span class="va">sigma</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Measurement noise: 0.044</span></span></code></pre></div>
+<span><span class="co">#&gt; Measurement noise: 0.032</span></span></code></pre></div>
 <p><strong>Key findings:</strong></p>
 <ul>
 <li>The spatial scale indicates moderate-range spatial correlation</li>
@@ -1666,7 +1664,7 @@ longitude:</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Starting posterior sampling... </span></span>
 <span><span class="co">#&gt; Posterior sampling done! </span></span>
-<span><span class="co">#&gt; Average standard deviation of the posterior W:  0.5683028 </span></span>
+<span><span class="co">#&gt; Average standard deviation of the posterior W:  0.5699948 </span></span>
 <span><span class="co">#&gt; Note:</span></span>
 <span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
 <span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
@@ -1684,17 +1682,17 @@ longitude:</p>
 <span><span class="co">#&gt; $spde_nonstat</span></span>
 <span><span class="co">#&gt;   Model type: Matern</span></span>
 <span><span class="co">#&gt;       alpha = 2 (fixed)</span></span>
-<span><span class="co">#&gt;        theta_kappa =   0.0917,  0.1252, -0.4327 </span></span>
+<span><span class="co">#&gt;        theta_kappa =   0.0582,  0.2554, -0.5523 </span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -1.89</span></span>
-<span><span class="co">#&gt;       sigma = 0.372</span></span>
-<span><span class="co">#&gt;       nu = 0.919</span></span>
+<span><span class="co">#&gt;       mu = -1.98</span></span>
+<span><span class="co">#&gt;       sigma = 0.357</span></span>
+<span><span class="co">#&gt;       nu = 1.02</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.289</span></span></code></pre></div>
+<span><span class="co">#&gt;       sigma = 0.288</span></span></code></pre></div>
 <p>This enables modeling of phenomena where correlation range varies
 with environmental gradients, depth, topography, or other spatially
 varying factors.</p>

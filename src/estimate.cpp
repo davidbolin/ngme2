@@ -584,3 +584,12 @@ check_conv(const MatrixXd &means, const MatrixXd &vars, int curr_batch,
 //       }
 //     }
 //     return(output)
+
+// [[Rcpp::export]]
+int get_openmp_threads() {
+#ifdef _OPENMP
+  return omp_get_max_threads();
+#else
+  return 0;
+#endif
+}

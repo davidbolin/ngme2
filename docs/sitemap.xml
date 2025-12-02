@@ -10,6 +10,7 @@
 <url><loc>https://davidbolin.github.io/ngme2/MESH_LIST_IMPLEMENTATION.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/README_GENERIC_MODELS.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/AR1-model.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/articles/Installation.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/Installation_and_configuration.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/RW-model.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/SPDE-model.html</loc></url>
@@ -100,6 +101,7 @@
 <url><loc>https://davidbolin.github.io/ngme2/reference/ngme_ts_make_A.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/ngme_update.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/nig.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/reference/openmp_test.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/ou.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/plot.ngme_noise.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/plot.parameter_distance.html</loc></url>

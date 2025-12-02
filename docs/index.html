@@ -44,20 +44,20 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-vignettes" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Vignettes</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-vignettes">
-<li><a class="dropdown-item" href="articles/Installation_and_configuration.html">Installation and configuration (using OpenMP)</a></li>
+<li><a class="dropdown-item" href="articles/Installation.html">Installation and configuration (using OpenMP)</a></li>
     <li><a class="dropdown-item" href="articles/AR1-model.html">AR(1) model</a></li>
     <li><a class="dropdown-item" href="articles/RW-model.html">Random walk model</a></li>
     <li><a class="dropdown-item" href="articles/ou-process.html">Ornstein-Uhlenbeck process</a></li>
     <li><a class="dropdown-item" href="articles/SPDE-model.html">SPDE Matern model</a></li>
-    <li><a class="dropdown-item" href="articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a></li>
+    <li><a class="dropdown-item" href="articles/tensor-product.html">Space-time (tensor product) model</a></li>
+    <li><a class="dropdown-item" href="articles/non-separable-model.html">Non-Separable Space-Time Models(Advection-Diffusion)</a></li>
+    <li><a class="dropdown-item" href="articles/cross-validation.html">Cross-validation for ngme2 models</a></li>
     <li><a class="dropdown-item" href="articles/replicate.html">Models with replicates</a></li>
+    <li><a class="dropdown-item" href="articles/bivariate.html">Bivariate type-G models</a></li>
     <li><a class="dropdown-item" href="articles/pred-and-est.html">Model estimation and prediction</a></li>
-    <li><a class="dropdown-item" href="articles/bivariate.html">Bivariate models in Ngme2</a></li>
-    <li><a class="dropdown-item" href="articles/random-effect.html">Random effects model in Ngme2</a></li>
-    <li><a class="dropdown-item" href="articles/tensor-product.html">Space-time (tensor product) model in Ngme2</a></li>
     <li><a class="dropdown-item" href="articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a></li>
-    <li><a class="dropdown-item" href="articles/cross-validation.html">Cross-validation for the ngme2 models</a></li>
     <li><a class="dropdown-item" href="articles/generic.html">Using the Generic Model in ngme2</a></li>
+    <li><a class="dropdown-item" href="articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
@@ -80,12 +80,12 @@
 <img src="logo.png" class="logo" alt=""><h1 id="the-ngme2-package-">The <code>ngme2</code> Package <a class="anchor" aria-label="anchor" href="#the-ngme2-package-"></a>
 </h1>
 </div>
-<p><code>ngme2</code> is a unified, efficient, and flexible framework for fitting latent <strong>non-Gaussian</strong> models in R. It extends the SPDE-based Gaussian modeling toolkit to handle skewness, heavy tails, and non-smooth behavior while keeping familiar workflows for estimation, prediction, and model assessment.</p>
+<p><code>ngme2</code> (<a href="https://davidbolin.github.io/ngme2/" class="uri">https://davidbolin.github.io/ngme2/</a>) is a unified, efficient, and flexible framework for fitting latent <strong>non-Gaussian</strong> models in R. It extends the SPDE-based Gaussian modeling toolkit to handle skewness, heavy tails, and non-smooth behavior while keeping familiar workflows for estimation, prediction, and model assessment.</p>
 <div class="section level2">
 <h2 id="what-you-get">What you get<a class="anchor" aria-label="anchor" href="#what-you-get"></a>
 </h2>
 <ul>
-<li>Temporal processes: AR(1), Ornstein–Uhlenbeck, random walks.</li>
+<li>Temporal processes: AR(1), Ornstein–Uhlenbeck, random walks, and ARMA models.</li>
 <li>Spatial processes: Matérn fields (including graph-based meshes) and separable/non-separable space–time variants.</li>
 <li>Non-Gaussian driven noise: NIG, generalized asymmetric Laplace, skew-(t); non-Gaussian measurement noise is also supported.</li>
 <li>Joint and custom structures: bivariate type-G fields, longitudinal random-effects models, and user-defined operators via <code>generic</code> / <code>generic_ns</code>.</li>
@@ -95,7 +95,7 @@
 <div class="section level2">
 <h2 id="model-framework-in-a-sentence">Model framework in a sentence<a class="anchor" aria-label="anchor" href="#model-framework-in-a-sentence"></a>
 </h2>
-<p>Data (Y) are linked to a latent process (W) through an observation matrix (A) and fixed effects (X), while both the process and measurement errors are modeled as normal mean–variance mixtures with generalized inverse Gaussian mixing. An operator (K()) encodes spatial/temporal structure, letting the same template describe everything from simple random effects to rich spatio-temporal fields.</p>
+<p>Data (Y) are linked to a latent process (W) through an observation matrix (A) and fixed effects (X), while both the process and measurement errors are modeled as normal mean–variance mixtures with generalized inverse Gaussian mixing. An operator (K) encodes spatial/temporal structure, letting the same template describe everything from simple random effects to rich spatio-temporal fields.</p>
 </div>
 <div class="section level2">
 <h2 id="quick-start">Quick start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
@@ -106,7 +106,7 @@
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/ngme.html">ngme</a></span><span class="op">(</span></span>
 <span>  formula <span class="op">=</span> <span class="va">Y</span> <span class="op">~</span> <span class="va">x1</span> <span class="op">+</span> <span class="va">x2</span> <span class="op">+</span> <span class="fu"><a href="reference/f.html">f</a></span><span class="op">(</span><span class="va">index</span>, model <span class="op">=</span> <span class="fu"><a href="reference/ar1.html">ar1</a></span><span class="op">(</span><span class="va">mesh_1d</span><span class="op">)</span>, noise <span class="op">=</span> <span class="fu"><a href="reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  data    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Y <span class="op">=</span> <span class="va">Y</span>, x1 <span class="op">=</span> <span class="va">x1</span>, x2 <span class="op">=</span> <span class="va">x2</span>, index <span class="op">=</span> <span class="va">index</span><span class="op">)</span>,</span>
-<span>  noise   <span class="op">=</span> <span class="fu"><a href="reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span>   <span class="co"># measurement noise</span></span>
+<span>  family  <span class="op">=</span> <span class="st">"normal"</span>   <span class="co"># likelihood family</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>Use <code><a href="reference/ngme_optimizers.html">ngme_optimizers()</a></code> to see available optimizers and configure stochastic gradient settings via <code>control_opt</code>.</p>
 </div>
@@ -116,18 +116,16 @@
 <p>The stable version can be installed with:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"ngme2"</span>, repos <span class="op">=</span> <span class="st">"https://davidbolin.github.io/ngme2/"</span><span class="op">)</span></span></code></pre></div>
-<p>See the <a href="https://davidbolin.github.io/ngme2/articles/Installation_and_configuration.html" title="Installation and Configuration">Installation and Configuration</a> vignette if compilation tools are needed.</p>
+<p>See the <a href="https://davidbolin.github.io/ngme2/articles/Installation.html">Installation and Configuration</a> vignette if compilation tools are needed.</p>
 </div>
 <div class="section level2">
 <h2 id="learn-more">Learn more<a class="anchor" aria-label="anchor" href="#learn-more"></a>
 </h2>
 <ul>
 <li>
-<code><a href="articles/ngme2.html">vignette("ngme2")</a></code> for a guided tour of the modeling framework.</li>
-<li>
-<code><a href="articles/pred-and-est.html">vignette("pred-and-est")</a></code> for estimation and prediction details.</li>
-<li>
-<code><a href="articles/cross-validation.html">vignette("cross-validation")</a></code> for model comparison workflows.</li>
+<a href="https://davidbolin.github.io/ngme2/articles/ngme2.html">Get Started</a>: for a guided tour of the modeling framework.</li>
+<li><a href="https://davidbolin.github.io/ngme2/articles/">Online vignettes</a></li>
+<li><a href="https://davidbolin.github.io/ngme2/reference/index.html">Online documentations</a></li>
 </ul>
 </div>
 </div>
@@ -135,8 +133,6 @@
 <h2 data-toc-skip>Links</h2>
 <ul class="list-unstyled">
 <li><a href="https://github.com/davidbolin/ngme2/" class="external-link">Browse source code</a></li>
-<li><a href="https://github.com/davidbolin/ngme2/issues" class="external-link">Report a bug</a></li>
-<li><a href="https://github.com/davidbolin/ngme2" class="external-link">Browse source code</a></li>
 <li><a href="https://github.com/davidbolin/ngme2/issues" class="external-link">Report a bug</a></li>
 <li><a href="http://stochproc.kaust.edu.sa/" class="external-link">Our research group</a></li>
 </ul>

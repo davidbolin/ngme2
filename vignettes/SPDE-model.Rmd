@@ -102,7 +102,7 @@ This approach has $\mathcal{O}(n^3)$ computational complexity and $\mathcal{O}(n
 
 The breakthrough insight of [Lindgren et al. (2011)](https://rss.onlinelibrary.wiley.com/doi/full/10.1111/j.1467-9868.2011.00777.x) builds on classical work by [Whittle (1963)](https://www.jstor.org/stable/1426396), which showed that a Gaussian field $u(\mathbf{s})$ with Matérn covariance function is formally the solution to the stochastic partial differential equation:
 
-$$\left(\kappa^2 - \Delta\right)^{\alpha/2} u = \mathcal{W} \quad \hbox{on} \quad \mathbb{R}^d,$$
+$$\left(\kappa^2 - \Delta\right)^{\alpha/2} u = \mathcal{W} \quad \text{on} \quad \mathbb{R}^d,$$
 
 where:
 

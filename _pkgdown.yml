@@ -19,7 +19,7 @@ navbar:
       text: Vignettes
       menu:
       - text: Installation and configuration (using OpenMP)
-        href: articles/Installation_and.html
+        href: articles/Installation.html
       - text: AR(1) model
         href: articles/AR1-model.html
       - text: Random walk model
@@ -28,24 +28,24 @@ navbar:
         href: articles/ou-process.html
       - text: SPDE Matern model
         href: articles/SPDE-model.html
-      - text: Models with Combined Gaussian and NIG Noise 
-        href: articles/normal-nig-noise.html
+      - text: Space-time (tensor product) model
+        href: articles/tensor-product.html
+      - text: Non-Separable Space-Time Models(Advection-Diffusion)
+        href: articles/non-separable-model.html
+      - text: Cross-validation for ngme2 models
+        href: articles/cross-validation.html
       - text: Models with replicates
         href: articles/replicate.html
+      - text: Bivariate type-G models
+        href: articles/bivariate.html
       - text: Model estimation and prediction
         href: articles/pred-and-est.html
-      - text: Bivariate models in Ngme2
-        href: articles/bivariate.html
-      - text: Random effects model in Ngme2
-        href: articles/random-effect.html
-      - text: Space-time (tensor product) model in Ngme2
-        href: articles/tensor-product.html
       - text: Matern SPDE model on Metric Graph
         href: articles/matern-on-graph.html
-      - text: Cross-validation for the ngme2 models
-        href: articles/cross-validation.html
       - text: Using the Generic Model in ngme2
         href: articles/generic.html
+      - text: Models with Combined Gaussian and NIG Noise 
+        href: articles/normal-nig-noise.html
     github:
       icon: fa-github
       href: https://github.com/davidbolin/ngme2
@@ -57,10 +57,6 @@ navbar:
 
 home:
   links:
-  - text: Browse source code
-    href: https://github.com/davidbolin/ngme2
-  - text: Report a bug
-    href: https://github.com/davidbolin/ngme2/issues
   - text: Our research group
     href: http://stochproc.kaust.edu.sa/
 
@@ -164,6 +160,7 @@ reference:
     - get_trajectories
     - name2fun
     - create_paired_cv_splits
+    - openmp_test
   - title: Distributions
     contents:
     - ig

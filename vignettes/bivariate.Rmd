@@ -322,7 +322,7 @@ bvar_cor <- ngme(
   ),
   data = data.frame(Y, x1, x2),
   control_opt = control_opt(
-    n_parallel_chain = 4,
+    n_parallel_chain = 1,
     optimizer = sgd(stepsize = 1 / n_obs),
     std_lim = 1e-3,
     iterations = 1000,
@@ -419,7 +419,7 @@ out <- ngme(
   control_opt = control_opt(
     optimizer = adam(),
     iterations = 1000,
-    n_parallel_chain = 4,
+    n_parallel_chain = 1,
     seed = 113
   )
 )

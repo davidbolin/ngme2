@@ -1211,3 +1211,23 @@ ngme_update <- function() {
     message(paste0("ngme2 is up to date (version ", local_version, ")"))
   }
 }
+
+
+#' Test OpenMP availability and report the number of threads.
+#'
+#' This function checks if OpenMP is available in the current R environment
+#' and, if so, reports the number of OpenMP threads detected.
+#' If OpenMP is not available, it prints a corresponding message.
+#' It relies on an internal or external function `get_openmp_threads()`
+#' which is assumed to return the number of threads or 0 if unavailable.
+#'
+#' @return Invisible NULL. This function is called for its side effects (printing messages).
+#' @export
+openmp_test <- function() {
+  num_threads <- get_openmp_threads()
+  if (num_threads == 0) {
+    print("OpenMP not available.")
+  } else {
+    print(paste("OpenMP is available, the default thread number is", num_threads, "."))
+  }
+}

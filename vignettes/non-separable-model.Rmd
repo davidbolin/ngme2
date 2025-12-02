@@ -258,7 +258,10 @@ Now we create the model object and simulate observations:
 ```{r simulate-data}
 # Specify the true generative model
 true_model <- f(
-  map = list(obs_data$time_index, cbind(obs_data$x, obs_data$y)),
+  map = list(
+    obs_data$time_index,
+    cbind(obs_data$x, obs_data$y)
+  ),
   name = "advection_field",
   model = spacetime(
     mesh = list(mesh_temporal, mesh_spatial),
@@ -271,6 +274,7 @@ true_model <- f(
   ),
   noise = noise_nig(mu = 1, sigma = 4, nu = 20) # Non-Gaussian innovations
 )
+true_model$A
 
 # Generate latent field realizations
 sim_result <- simulate(true_model, seed = 2024)

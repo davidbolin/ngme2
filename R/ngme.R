@@ -15,7 +15,11 @@
 #' @param control_ngme control for ngme model. by default it is \code{control_ngme()}. See \code{?control_ngme} for details.
 #' @param replicate factor, used for divide data into different replicates
 #' @param group factor, used for bivariate model, indicating which group the observation belongs to
-#' @param family likelihood type, same as measurement noise specification, 1. string 2. ngme noise obejct
+#' @param family likelihood type, same as measurement noise specification. It can be provided as:
+#'   \enumerate{
+#'     \item a string, e.g., \code{"normal"}, \code{"nig"}, \code{"t"}.
+#'     \item an ngme noise object, e.g., \code{noise_normal()}, \code{noise_nig(mu = 0, sigma = 1, nu = 1)}, \code{noise_t(nu=5)}.
+#'   }
 #' @param start  starting ngme object (usually object from last fit)
 #' @param moving_window number of iterations to average the estimation
 #' @param debug  toggle debug mode
@@ -89,6 +93,8 @@ ngme <- function(
       "normal" = noise_normal(),
       "gaussian" = noise_normal(),
       "nig" = noise_nig(),
+      "t" = noise_t(),
+      "skew_t" = noise_skew_t(),
       stop("Unknown family!")
     )
   } else {

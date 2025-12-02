@@ -225,25 +225,22 @@ control_opt <- function(
 }
 
 
-#' Generate control specifications for the ngme general model
+#' Generate control specifications for the ngme model
 #'
-#' @param init_sample_W  sample W|V at the beginning of each chain
-#' @param n_gibbs_samples    number of gibbs sampels
-#' @param fix_feff       logical, fix fixed effect
-#' @param n_post_samples number of posterior samples, see ?ngme_post_samples()
+#' @param n_gibbs_samples    number of gibbs samples at each iteration
+#' @param fix_feff       logical, fix fixed effect estimation
 #' @param feff           fixed effect value
+#' @param n_post_samples number of posterior samples, see ?ngme_post_samples()
 #' @param debug          debug mode
-#' @return a list of control variables for block model
+#' @return a list of control variables for ngme
 #' @export
 control_ngme <- function(
-    init_sample_W = TRUE,
     n_gibbs_samples = 5,
     fix_feff = FALSE,
     n_post_samples = 100,
     feff = NULL,
     debug = FALSE) {
   control <- list(
-    init_sample_W = init_sample_W,
     n_gibbs_samples = n_gibbs_samples,
     fix_feff = fix_feff,
     feff = feff,

@@ -959,7 +959,11 @@ matern <- function(
 #' @export
 re <- function(
     map,
-    theta_K = NULL) {
+    theta_K = NULL,
+    ...) {
+  if (missing(map) || is.null(map)) {
+    return(structure(list(model = "re", args = list(theta_K = theta_K, ...)), class = "ngme_operator_def"))
+  }
   if (inherits(map, "formula")) {
     map <- model.matrix(map)
   } else {

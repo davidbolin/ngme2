@@ -57,7 +57,7 @@ D <- matrix(4, 3, 3)
 
 # Create a generic model with fixed parameters
 model <- generic(
-  theta_K = c(a=1, b=2, c=3),
+  theta_K = c(a = 1, b = 2, c = 3),
   trans = list(
     a = c("identity", "null", "null", "null"),
     b = c("null", "exp", "null", "null"),
@@ -110,7 +110,7 @@ For example:
 ```{r}
 # More complex parameter structure
 complex_model <- generic(
-  theta_K = c(a=1, b=2),
+  theta_K = c(a = 1, b = 2),
   trans = list(
     a = c("identity", "exp", "null", "null"),
     b = c("null", "identity", "exp2", "null")
@@ -133,15 +133,15 @@ The generic model can recreate standard models within ngme2. This is useful for 
 ```{r}
 # Create an AR1 model with rho=0.5
 x <- 1:10
-ar1_model <- ar1(x, rho=0.5)
+ar1_model <- ar1(x, rho = 0.5)
 
 # Get the inverse transformation of 0.5 for AR1
-g <- name2fun("tanh", inv=TRUE)
+g <- name2fun("tanh", inv = TRUE)
 
 # Recreate the AR1 model using generic
 generic_ar1 <- generic(
-  theta_K = c(rho=g(0.5)),
-  trans = list(rho=c("tanh", "null")),
+  theta_K = c(rho = g(0.5)),
+  trans = list(rho = c("tanh", "null")),
   matrices = list(ar1_model$C, ar1_model$G),
   h = ar1_model$h,
   mesh = x
@@ -155,15 +155,15 @@ all.equal(ar1_model$K, generic_ar1$K)
 
 ```{r}
 # Create a mesh for the Matérn model
-mesh <- fmesher::fm_mesh_1d(seq(0, 1, length.out=10))
+mesh <- fmesher::fm_mesh_1d(seq(0, 1, length.out = 10))
 
 # Create a Matérn model with kappa = exp(0.7)
-matern_model <- matern(mesh, theta_K=0.7)
+matern_model <- matern(mesh, theta_kappa = 0.7)
 
 # Recreate the Matérn model using generic
 generic_matern <- generic(
-  theta_K = c(kappa=0.7),
-  trans = list(kappa=c("exp2", "null")),
+  theta_K = c(kappa = 0.7),
+  trans = list(kappa = c("exp2", "null")),
   matrices = list(matern_model$C, matern_model$G),
   h = matern_model$h,
   mesh = mesh
@@ -183,12 +183,12 @@ Let's create a model that combines AR1 temporal dependence with Matérn spatial 
 
 ```{r, eval=FALSE}
 # Generate spatial mesh and temporal points
-spatial_mesh <- fmesher::fm_mesh_1d(seq(0, 1, length.out=10))
+spatial_mesh <- fmesher::fm_mesh_1d(seq(0, 1, length.out = 10))
 temporal_points <- 1:5
 
 # Create base models
-matern_base <- matern(spatial_mesh, theta_K=0.5)
-ar1_base <- ar1(temporal_points, rho=0.7)
+matern_base <- matern(spatial_mesh, theta_kappa = 0.5)
+ar1_base <- ar1(temporal_points, rho = 0.7)
 
 # Extract matrices
 C_space <- matern_base$C
@@ -198,14 +198,14 @@ G_time <- ar1_base$G
 
 # Create combined matrices for a separable space-time model
 # Using Kronecker products for separable structure
-M1 <- kronecker(C_space, C_time)  # Space C × Time C
-M2 <- kronecker(C_space, G_time)  # Space C × Time G
-M3 <- kronecker(G_space, C_time)  # Space G × Time C
-M4 <- kronecker(G_space, G_time)  # Space G × Time G
+M1 <- kronecker(C_space, C_time) # Space C × Time C
+M2 <- kronecker(C_space, G_time) # Space C × Time G
+M3 <- kronecker(G_space, C_time) # Space G × Time C
+M4 <- kronecker(G_space, G_time) # Space G × Time G
 
 # Create the combined model
 spacetime_model <- generic(
-  theta_K = c(kappa=0.5, rho=name2fun("tanh", inv=TRUE)(0.7)),
+  theta_K = c(kappa = 0.5, rho = name2fun("tanh", inv = TRUE)(0.7)),
   trans = list(
     kappa = c("exp2", "exp2", "null", "null"),
     rho = c("null", "tanh", "tanh", "null")
@@ -223,7 +223,7 @@ You can have multiple parameters affect the same matrix:
 
 ```{r}
 model_multi_param <- generic(
-  theta_K = c(a=1, b=2),
+  theta_K = c(a = 1, b = 2),
   trans = list(
     a = c("identity", "identity", "null"),
     b = c("exp", "null", "identity")
@@ -258,7 +258,7 @@ sqrt_trans <- list(
 
 # Then you could use it in your models
 model_sqrt <- generic(
-  theta_K = c(a=4),
+  theta_K = c(a = 4),
   trans = list(a = c("sqrt", "null")),
   matrices = list(A, B),
   h = c(1, 1, 1)
@@ -306,7 +306,7 @@ A simple example of the non-stationary model:
 
 ```{r, eval=FALSE}
 # Create a simple 1D mesh
-mesh <- fmesher::fm_mesh_1d(seq(0, 1, length.out=10))
+mesh <- fmesher::fm_mesh_1d(seq(0, 1, length.out = 10))
 n <- 10
 
 # Create two simple matrices
@@ -315,16 +315,16 @@ B <- matrix(2, n, n)
 
 # Create a basis for a spatially-varying parameter
 B_alpha <- matrix(0, n, 2)
-B_alpha[1:(n/2), 1] <- 1      # First half of the domain
-B_alpha[(n/2+1):n, 2] <- 1    # Second half of the domain
+B_alpha[1:(n / 2), 1] <- 1 # First half of the domain
+B_alpha[(n / 2 + 1):n, 2] <- 1 # Second half of the domain
 
 # Create a non-stationary model with space-varying alpha
 ns_model <- generic_ns(
-  theta_K = list(alpha = c(0.5, 2)),  # Different values for each region
+  theta_K = list(alpha = c(0.5, 2)), # Different values for each region
   matrices = list(A, B),
-  B_theta_K = list(alpha = B_alpha),  # Basis expansion for alpha
-  trans = list(alpha = "exp"),        # Exponential transformation
-  position = list(c(1, 2), c(3)),     # D_alpha * A + B
+  B_theta_K = list(alpha = B_alpha), # Basis expansion for alpha
+  trans = list(alpha = "exp"), # Exponential transformation
+  position = list(c(1, 2), c(3)), # D_alpha * A + B
   h = rep(1, n),
   mesh = mesh
 )
@@ -340,7 +340,7 @@ A more practical example is creating a Matérn model with spatially-varying kapp
 
 ```{r, eval=FALSE}
 # Create a 1D mesh
-mesh <- fmesher::fm_mesh_1d(seq(0, 1, length.out=10))
+mesh <- fmesher::fm_mesh_1d(seq(0, 1, length.out = 10))
 n <- 10
 
 # Create standard Matérn components
@@ -348,16 +348,16 @@ matern_model <- matern(mesh)
 
 # Create basis for spatially-varying kappa
 B_kappa <- matrix(0, n, 2)
-B_kappa[1:(n/2), 1] <- 1      # First half of the domain
-B_kappa[(n/2+1):n, 2] <- 1    # Second half of the domain
+B_kappa[1:(n / 2), 1] <- 1 # First half of the domain
+B_kappa[(n / 2 + 1):n, 2] <- 1 # Second half of the domain
 
 # Create model with space-varying kappa
 ns_matern <- generic_ns(
-  theta_K = list(kappa = c(log(1), log(2))),  # Different kappa values
+  theta_K = list(kappa = c(log(1), log(2))), # Different kappa values
   matrices = list(matern_model$C, matern_model$G),
   B_theta_K = list(kappa = B_kappa),
-  trans = list(kappa = "exp2"),  # kappa^2 transformation
-  position = list(c(1, 2), c(3)),  # D_kappa^2 * C + G
+  trans = list(kappa = "exp2"), # kappa^2 transformation
+  position = list(c(1, 2), c(3)), # D_kappa^2 * C + G
   h = matern_model$h,
   mesh = mesh
 )

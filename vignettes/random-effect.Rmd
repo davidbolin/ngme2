@@ -39,9 +39,11 @@ Next is one simple specification of random effect model.
 library(ngme2)
 
 # random effect model accepts formula argument, as the design matrix
-ngme2::f(~1 + x, model = "re", noise = noise_nig(),
+ngme2::f(~ 1 + x,
+  model = re(), noise = noise_nig(),
   # data can be inherited from ngme() function
-  data = data.frame(x = 1:7))
+  data = data.frame(x = 1:7)
+)
 ```
 
 ## Simulation
@@ -53,11 +55,11 @@ set.seed(32)
 group <- 100
 # the covariance matrix
 Sigma <- matrix(c(20, 10, 10, 30), 2, 2)
-U <- MASS::mvrnorm(group, mu=c(0,0), Sigma=Sigma)
+U <- MASS::mvrnorm(group, mu = c(0, 0), Sigma = Sigma)
 
 # generate replicate vector (indicate which replicate the observation belongs to)
 each_obs <- 20
-repl <- rep(1:group, each=each_obs)
+repl <- rep(1:group, each = each_obs)
 
 # generate data for both fixed and random effects
 beta <- c(3, 2)
@@ -68,10 +70,10 @@ z1 <- rnorm(group * each_obs)
 # simulate observations
 Y <- double(group * each_obs)
 for (i in 1:group) {
-  group_idx <- ((i-1)*each_obs+1):(i*each_obs)
+  group_idx <- ((i - 1) * each_obs + 1):(i * each_obs)
   Y[group_idx] <-
-    beta[1] * x1[group_idx] + beta[2] * x2[group_idx] +  # fixed effects
-    U[i, 1] * 1             + U[i, 2] * z1[group_idx] + # random effects
+    beta[1] * x1[group_idx] + beta[2] * x2[group_idx] + # fixed effects
+    U[i, 1] * 1 + U[i, 2] * z1[group_idx] + # random effects
     rnorm(each_obs)
 }
 ```
@@ -89,21 +91,20 @@ library(lme4)
 
 out <- ngme(
   formula = Y ~ 0 + x2 + x1 +
-    f(~1+z1, model="re",
-      noise=noise_normal()
+    f(~ 1 + z1,
+      model = re(),
+      noise = noise_normal(fix_theta_sigma = TRUE)
     ),
-  replicate=repl,
-  data=data.frame(x1=x1, x2=x2, z1=z1),
+  replicate = repl,
+  data = data.frame(x1 = x1, x2 = x2, z1 = z1),
   control_opt = control_opt(
     iterations = 300,
-    std_lim = 0.01,
-    verbose = FALSE,
     seed = 3
   )
 )
 
 out
-traceplot(out, "effect1")
+traceplot(out, "field1")
 ```
 
 The final result is very close to the lme4 package.
@@ -114,45 +115,49 @@ The final result is very close to the lme4 package.
 
 ```{r eval=FALSE, echo=FALSE}
 # simulate Y
-group <- 500; mu = -5; nu = 1;
+group <- 500
+mu <- -5
+nu <- 1
 Sigma <- matrix(c(4), 1, 1)
 V <- rig(group, nu, nu)
 
 U <- double(group)
-mean <- mu * (V-1)
+mean <- mu * (V - 1)
 for (i in 1:group) {
-  U[i] = MASS::mvrnorm(1, mu=mean[[i]], Sigma = V[[i]] * Sigma)
+  U[i] <- MASS::mvrnorm(1, mu = mean[[i]], Sigma = V[[i]] * Sigma)
 }
 mean(U)
 var(U)
 
 # another way to simulate
 each_obs <- 10
-repl <- rep(1:group, each=each_obs)
+repl <- rep(1:group, each = each_obs)
 z1 <- rnorm(group * each_obs, 0, 1)
-AA <- cbind(1, z1); t(AA) %*% AA
+AA <- cbind(1, z1)
+t(AA) %*% AA
 x1 <- rexp(group * each_obs)
 # simulate Y
 Y <- double(group * each_obs)
 for (i in 1:group) {
-  group_idx <- ((i-1)*each_obs+1):(i*each_obs)
+  group_idx <- ((i - 1) * each_obs + 1):(i * each_obs)
   Y[group_idx] <-
-    0 + x1[group_idx] +  # fixed effects
-    U[i]*z1[group_idx] + # random effects
+    0 + x1[group_idx] + # fixed effects
+    U[i] * z1[group_idx] + # random effects
     rnorm(each_obs)
 }
 
 out <- ngme(
   formula = Y ~ 1 + x1 +
-    f(~0+z1, model="re", effect_type=noise_nig(
-      # nu = 1, fix_nu = T,
-      # V = V, fix_V = T
+    f(~ 0 + z1,
+      model = re(), noise = noise_nig(
+        # nu = 1, fix_nu = T,
+        # V = V, fix_V = T
+      ),
+      # W = U, fix_W = TRUE,
+      # fix_theta_K = T,
     ),
-    # W = U, fix_W = TRUE,
-    # fix_theta_K = T,
-  ),
-  replicate=repl,
-  data=data.frame(Y=Y, x1=x1, z1=z1, repl=repl),
+  replicate = repl,
+  data = data.frame(Y = Y, x1 = x1, z1 = z1, repl = repl),
   control_ngme = control_ngme(
     n_gibbs_samples = 5
     # beta = c(0, 0)
@@ -172,32 +177,39 @@ out
 
 ```{r eval=FALSE, echo=FALSE}
 # simulate random effects
-group <- 500; mu = -5; nu = 1;
+group <- 500
+mu <- -5
+nu <- 1
 Sigma <- matrix(c(20, 5, 5, 10), 2, 2)
 V <- rig(group, nu, nu)
-K = t(chol(solve(Sigma))); K
+K <- t(chol(solve(Sigma)))
+K
 
-U <- matrix(group * 2, nrow=group, ncol=2)
-mean <- mu * (V-1)
+U <- matrix(group * 2, nrow = group, ncol = 2)
+mean <- mu * (V - 1)
 for (i in 1:group) {
-  U[i, ] = MASS::mvrnorm(1, mu=rep(mean[[i]],2), Sigma = V[[i]] * Sigma)
+  U[i, ] <- MASS::mvrnorm(1, mu = rep(mean[[i]], 2), Sigma = V[[i]] * Sigma)
 }
 colMeans(U)
 cov(U)
 
 # -----
 # simulate random effects
-group <- 500;mu = -5; nu = 2;sigma=1
+group <- 500
+mu <- -5
+nu <- 2
+sigma <- 1
 Sigma <- matrix(c(20, 5, 5, 10), 2, 2)
-K = t(chol(solve(Sigma))); K
-theta_K = c(log(diag(K)), K[2,1])
+K <- t(chol(solve(Sigma)))
+K
+theta_K <- c(log(diag(K)), K[2, 1])
 # K <- diag(2) ;
 
 V <- rig(group, nu, nu)
-U <- matrix(group * 2, nrow=group, ncol=2)
+U <- matrix(group * 2, nrow = group, ncol = 2)
 
 for (i in 1:group) {
-  eps <- (-mu + mu*V[i]) * rep(1, 2) + sigma * sqrt(V[i]) * rnorm(2)
+  eps <- (-mu + mu * V[i]) * rep(1, 2) + sigma * sqrt(V[i]) * rnorm(2)
   U[i, ] <- as.numeric(solve(K, eps))
 }
 
@@ -206,16 +218,17 @@ cov(U)
 
 # simulate Y
 each_obs <- 10
-repl <- rep(1:group, each=each_obs)
+repl <- rep(1:group, each = each_obs)
 z1 <- rnorm(group * each_obs, 0, 1)
-AA <- cbind(1, z1); t(AA) %*% AA
+AA <- cbind(1, z1)
+t(AA) %*% AA
 x1 <- rexp(group * each_obs)
 # simulate Y
 Y <- double(group * each_obs)
 for (i in 1:group) {
-  group_idx <- ((i-1)*each_obs+1):(i*each_obs)
+  group_idx <- ((i - 1) * each_obs + 1):(i * each_obs)
   Y[group_idx] <-
-    0 + x1[group_idx] +  # fixed effects
+    0 + x1[group_idx] + # fixed effects
     U[i, 1] + z1[group_idx] * U[i, 2] + # random effects
     rnorm(each_obs)
 }
@@ -224,7 +237,7 @@ library(ngme)
 ngme::ngme(
   fixed = Y ~ 0 + x1,
   random = ~ z1 | repl,
-  data=data.frame(Y=Y, x1=x1, z1=z1, repl=repl),
+  data = data.frame(Y = Y, x1 = x1, z1 = z1, repl = repl),
   reffects = "NIG",
   error = "Normal"
 )
@@ -232,19 +245,13 @@ ngme::ngme(
 # ngme2
 out_corr_nig <- ngme2::ngme(
   formula = Y ~ 0 + x1 +
-    f(~1+z1, model="re", effect_type=noise_nig(
-      # nu=1, fix_nu=T,
-      # V=V, fix_V = TRUE,
-      # fix_theta_mu = TRUE, mu = -5,
-      control=control_f(numer_grad = F)
+    f(~ 1 + z1,
+      model = "re",
+      noise = noise_nig()
     ),
-    # fix_theta_K = T, theta_K = theta_K,
-    # W = t(U), fix_W = T,
-    debug=F),
-  replicate=repl,
-  data=data.frame(Y=Y, x1=x1, z1=z1, repl=repl),
+  replicate = repl,
+  data = data.frame(Y = Y, x1 = x1, z1 = z1, repl = repl),
   control_ngme = control_ngme(
-    # beta = c(0, 0)
     n_gibbs_samples = 5
   ),
   control_opt = control_opt(
@@ -270,12 +277,13 @@ out_corr_nig
 ```{r eval=FALSE, echo=FALSE}
 # convergence of fixed effects
 # simulate Y = 4 x + 1 + e
-x1 <- rnorm(100); x2 <- rnorm(100)
-y <- 5 + 4*x1 -3*x2 + rnorm(100)
+x1 <- rnorm(100)
+x2 <- rnorm(100)
+y <- 5 + 4 * x1 - 3 * x2 + rnorm(100)
 
-out = ngme(
-  y ~ 1+x1 + x2,
-  data = data.frame(y=y, x1=x1, x2=x2),
+out <- ngme(
+  y ~ 1 + x1 + x2,
+  data = data.frame(y = y, x1 = x1, x2 = x2),
   control_ngme = control_ngme(
     # beta = c(0,0, 0)
   ),

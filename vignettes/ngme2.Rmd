@@ -66,7 +66,7 @@ Some common non-Gaussian features exhibited by real world data include asymmetry
 5. Support latent processes and random-effects model for **longitudinal data**.
 6. Support the **bivariate** type-G model, which can model 2 non-Gaussian fields jointly [@Bolin2019].
 7. Support the separable **space-time** model, and non-separable space-time model.
-8. Support the user-defined model via "generic" and "generic_ns" functions.
+8. Support the user-defined model via `generic` and `generic_ns` functions.
 9. Provide estimation diagnostics, and **cross-validation** for model selection.
 
 ### Model Framework
@@ -93,7 +93,7 @@ Here is a simple template for using the core function `ngme` to model the single
     ngme(
       formula=Y ~ x1 + x2 + f(index, model=ar1(mesh_1d), noise=noise_nig()),
       data=data.frame(Y=Y, x1=x1, x2=x2, index=index),
-      noise = noise_normal()
+      family = "normal"
     )
 
 Here, function `f` is for modeling the stochastic process W with Gaussian or non-Gaussian noise,

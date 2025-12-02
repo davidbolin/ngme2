@@ -489,7 +489,6 @@ out <- ngme(
   control_opt = control_opt(
     iterations = 2000,
     optimizer = precond_sgd(),
-    solver = "supernodal",
     rao_blackwellization = TRUE,
     n_parallel_chain = 4,
     std_lim = 0.01
@@ -511,7 +510,6 @@ out
 **Optimization settings:**
 
 - `optimizer = precond_sgd()`: Preconditioned stochastic gradient descent
-- `solver = "supernodal"`: Efficient sparse solver
 - `rao_blackwellization = TRUE`: Variance reduction
 - `n_parallel_chain = 4`: Multiple chains for robustness
 
@@ -671,11 +669,10 @@ out <- ngme(
   data = argo_float,
   family = "nig",
   control_opt = control_opt(
+    optimizer = precond_sgd(),
     n_parallel_chain = 4,
     iterations = 2000,
     seed = 7,
-    optimizer = precond_sgd(),
-    solver = "supernodal",
     print_check_info = FALSE
   )
 )

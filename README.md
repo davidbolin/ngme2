@@ -3,7 +3,7 @@
 `ngme2` is a unified, efficient, and flexible framework for fitting latent **non-Gaussian** models in R. It extends the SPDE-based Gaussian modeling toolkit to handle skewness, heavy tails, and non-smooth behavior while keeping familiar workflows for estimation, prediction, and model assessment.
 
 ## What you get
-- Temporal processes: AR(1), Ornstein–Uhlenbeck, random walks.
+- Temporal processes: AR(1), Ornstein–Uhlenbeck, random walks, and ARMA models.
 - Spatial processes: Matérn fields (including graph-based meshes) and separable/non-separable space–time variants.
 - Non-Gaussian driven noise: NIG, generalized asymmetric Laplace, skew-\(t\); non-Gaussian measurement noise is also supported.
 - Joint and custom structures: bivariate type-G fields, longitudinal random-effects models, and user-defined operators via `generic` / `generic_ns`.
@@ -19,9 +19,10 @@ library(ngme2)
 fit <- ngme(
   formula = Y ~ x1 + x2 + f(index, model = ar1(mesh_1d), noise = noise_nig()),
   data    = data.frame(Y = Y, x1 = x1, x2 = x2, index = index),
-  noise   = noise_normal()   # measurement noise
+  family  = "normal"   # likelihood family
 )
 ```
+
 Use `ngme_optimizers()` to see available optimizers and configure stochastic gradient settings via `control_opt`.
 
 ## Installation

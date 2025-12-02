@@ -11,7 +11,7 @@ random generation for the generalised inverse-Gaussian distribution
 
     <a class="navbar-brand me-2" href="../index.html">ngme2</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -24,18 +24,16 @@ random generation for the generalised inverse-Gaussian distribution
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-vignettes" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Vignettes</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-vignettes"><li><a class="dropdown-item" href="../articles/Installation_and_configuration.html">Installation and configuration (using OpenMP)</a></li>
-    <li><a class="dropdown-item" href="../articles/inla_compare.html">Comparison with R-INLA</a></li>
     <li><a class="dropdown-item" href="../articles/AR1-model.html">AR(1) model</a></li>
     <li><a class="dropdown-item" href="../articles/RW-model.html">Random walk model</a></li>
-    <li><a class="dropdown-item" href="../article/ngme2_ou_vignette.html">Ornstein-Uhlenbeck process</a></li>
+    <li><a class="dropdown-item" href="../articles/ou-process.html">Ornstein-Uhlenbeck process</a></li>
     <li><a class="dropdown-item" href="../articles/SPDE-model.html">SPDE Matern model</a></li>
     <li><a class="dropdown-item" href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a></li>
     <li><a class="dropdown-item" href="../articles/replicate.html">Models with replicates</a></li>
-    <li><a class="dropdown-item" href="../articles/pred_and_est.html">Model estimation and prediction</a></li>
+    <li><a class="dropdown-item" href="../articles/pred-and-est.html">Model estimation and prediction</a></li>
     <li><a class="dropdown-item" href="../articles/bivariate.html">Bivariate models in Ngme2</a></li>
-    <li><a class="dropdown-item" href="../articles/tp-bv.html">Space-time bivariate model in Ngme2</a></li>
     <li><a class="dropdown-item" href="../articles/random-effect.html">Random effects model in Ngme2</a></li>
-    <li><a class="dropdown-item" href="../articles/tensor_product.html">Space-time (tensor product) model in Ngme2</a></li>
+    <li><a class="dropdown-item" href="../articles/tensor-product.html">Space-time (tensor product) model in Ngme2</a></li>
     <li><a class="dropdown-item" href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a></li>
     <li><a class="dropdown-item" href="../articles/cross-validation.html">Cross-validation for the ngme2 models</a></li>
     <li><a class="dropdown-item" href="../articles/generic.html">Using the Generic Model in ngme2</a></li>
@@ -142,9 +140,9 @@ New York–Berlin: Springer-Verlag. <a href="https://doi.org/10.1007/978-1-4612-
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">rgig</span><span class="op">(</span><span class="fl">20</span>, p <span class="op">=</span> <span class="fl">1</span>, a <span class="op">=</span> <span class="fl">1</span>, b <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [1] 6.0360342 2.7680406 1.2446433 1.8164989 4.2199461 0.9256897 2.5485750</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [8] 4.1796061 4.4931090 1.6413108 1.4070168 0.5768820 5.1379708 1.2032753</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [15] 3.9331280 2.9996986 3.1635311 1.6948292 0.3848175 0.5930800</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [1] 0.8371749 4.2583339 3.3348899 3.3637128 2.6043964 3.4143659 1.9964603</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [8] 7.5728501 1.2962493 1.9688975 0.2980122 2.2294513 1.7538838 3.0586088</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [15] 1.2440944 0.1941158 6.2979916 4.8480040 0.1793622 2.8950139</span>
 <span class="r-in"><span><span class="fu">pgig</span><span class="op">(</span><span class="fl">0.4</span>, p <span class="op">=</span> <span class="fl">1</span>, a <span class="op">=</span> <span class="fl">1</span>, b <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.02956016</span>
 <span class="r-in"><span><span class="fu">qgig</span><span class="op">(</span><span class="fl">0.8</span>, p <span class="op">=</span> <span class="fl">1</span>, a <span class="op">=</span> <span class="fl">1</span>, b <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>

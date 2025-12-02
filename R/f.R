@@ -169,7 +169,10 @@ f <- function(
   if (inherits(model, "ngme_operator")) {
     mesh <- model$mesh
   } else if (inherits(model, "ngme_operator_def")) {
-    if (!is.null(model$args$mesh)) {
+    if (model$model == "re") {
+      model$args$map <- map
+      mesh <- NULL
+    } else if (!is.null(model$args$mesh)) {
       mesh <- model$args$mesh
     } else {
       # Build mesh from map if not provided
@@ -181,7 +184,16 @@ f <- function(
   }
 
   # 2. Check if mesh is a list (for replicates)
-  if (is.list(mesh) && !inherits(mesh, c("inla.mesh.1d", "inla.mesh", "fm_mesh_1d", "fm_mesh_2d", "metric_graph"))) {
+  is_replicate_mesh <- is.list(mesh) && !inherits(mesh, c("inla.mesh.1d", "inla.mesh", "fm_mesh_1d", "fm_mesh_2d", "metric_graph"))
+
+  if (is_replicate_mesh && model_type %in% c("tp", "spacetime")) {
+    # Check if it is a list of meshes for the model itself (not replicates)
+    if (inherits(mesh[[1]], c("inla.mesh.1d", "inla.mesh", "fm_mesh_1d", "fm_mesh_2d", "metric_graph"))) {
+      is_replicate_mesh <- FALSE
+    }
+  }
+
+  if (is_replicate_mesh) {
     mesh_list <- mesh
     # Use the first mesh as a template for building the operator
     mesh <- mesh_list[[1]]

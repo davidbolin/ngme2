@@ -19,7 +19,7 @@ navbar:
       text: Vignettes
       menu:
       - text: Installation and configuration (using OpenMP)
-        href: articles/Installation_and_configuration.html
+        href: articles/Installation_and.html
       - text: AR(1) model
         href: articles/AR1-model.html
       - text: Random walk model

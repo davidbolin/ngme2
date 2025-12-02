@@ -38,6 +38,16 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// get_openmp_threads
+int get_openmp_threads();
+RcppExport SEXP _ngme2_get_openmp_threads() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(get_openmp_threads());
+    return rcpp_result_gen;
+END_RCPP
+}
 // compute_log_like_cpp
 double compute_log_like_cpp(const Rcpp::List& R_ngme);
 RcppExport SEXP _ngme2_compute_log_like_cpp(SEXP R_ngmeSEXP) {
@@ -67,6 +77,7 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_ngme2_estimate_cpp", (DL_FUNC) &_ngme2_estimate_cpp, 2},
     {"_ngme2_sampling_cpp", (DL_FUNC) &_ngme2_sampling_cpp, 5},
+    {"_ngme2_get_openmp_threads", (DL_FUNC) &_ngme2_get_openmp_threads, 0},
     {"_ngme2_compute_log_like_cpp", (DL_FUNC) &_ngme2_compute_log_like_cpp, 1},
     {"_ngme2_rGIG_cpp", (DL_FUNC) &_ngme2_rGIG_cpp, 4},
     {NULL, NULL, 0}

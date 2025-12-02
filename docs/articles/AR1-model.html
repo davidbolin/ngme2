@@ -4,136 +4,84 @@
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ngme2 AR(1) model • ngme2</title>
-<!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script><!-- Bootstrap --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha256-bZLfwXAP04zRMK2BjiO8iu9pf4FbLqX6zitd+tIvLhE=" crossorigin="anonymous">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script><!-- bootstrap-toc --><link rel="stylesheet" href="../bootstrap-toc.css">
-<script src="../bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
-<!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
-<script src="../pkgdown.js"></script><meta property="og:title" content="Ngme2 AR(1) model">
-<!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
-<script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
-<script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-<![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<title>AR(1) model in ngme2 • ngme2</title>
+<!-- favicons --><link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+<link rel="apple-touch-icon" type="image/png" sizes="180x180" href="../apple-touch-icon.png">
+<link rel="apple-touch-icon" type="image/png" sizes="120x120" href="../apple-touch-icon-120x120.png">
+<link rel="apple-touch-icon" type="image/png" sizes="76x76" href="../apple-touch-icon-76x76.png">
+<link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png">
+<script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Roboto_Slab-0.4.10/font.css" rel="stylesheet">
+<link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="AR(1) model in ngme2">
 </head>
-<body data-spy="scroll" data-target="#toc">
+<body>
+    <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <div class="container template-article">
-      <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
-  <div class="container">
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false">
-        <span class="sr-only">Toggle navigation</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <span class="navbar-brand">
-        <a class="navbar-link" href="../index.html">ngme2</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.7.1</span>
-      </span>
-    </div>
+    <nav class="navbar navbar-expand-lg fixed-top bg-primary" data-bs-theme="dark" aria-label="Site navigation"><div class="container">
 
-    <div id="navbar" class="navbar-collapse collapse">
-      <ul class="nav navbar-nav">
-<li>
-  <a href="../articles/ngme2.html">Get started</a>
-</li>
-<li>
-  <a href="../reference/index.html">Functions</a>
-</li>
-<li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Vignettes
+    <a class="navbar-brand me-2" href="../index.html">ngme2</a>
 
-    <span class="caret"></span>
-  </a>
-  <ul class="dropdown-menu" role="menu">
-<li>
-      <a href="../articles/Installation_and_configuration.html">Installation and configuration (using OpenMP)</a>
-    </li>
-    <li>
-      <a href="../articles/inla_compare.html">Comparison with R-INLA</a>
-    </li>
-    <li>
-      <a href="../articles/AR1-model.html">AR(1) model</a>
-    </li>
-    <li>
-      <a href="../articles/RW-model.html">Random walk model</a>
-    </li>
-    <li>
-      <a href="../articles/SPDE-model.html">SPDE Matern model</a>
-    </li>
-    <li>
-      <a href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a>
-    </li>
-    <li>
-      <a href="../articles/replicate.html">Models with replicates</a>
-    </li>
-    <li>
-      <a href="../articles/pred_and_est.html">Model estimation and prediction</a>
-    </li>
-    <li>
-      <a href="../articles/bivariate.html">Bivariate models in Ngme2</a>
-    </li>
-    <li>
-      <a href="../articles/tp-bv.html">Space-time bivariate model in Ngme2</a>
-    </li>
-    <li>
-      <a href="../articles/random-effect.html">Random effects model in Ngme2</a>
-    </li>
-    <li>
-      <a href="../articles/tensor_product.html">Space-time (tensor product) model in Ngme2</a>
-    </li>
-    <li>
-      <a href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a>
-    </li>
-    <li>
-      <a href="../articles/cross-validation.html">Cross-validation for the ngme2 models</a>
-    </li>
-    <li>
-      <a href="../articles/generic.html">Using the Generic Model in ngme2</a>
-    </li>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.2</small>
+
+
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div id="navbar" class="collapse navbar-collapse ms-3">
+      <ul class="navbar-nav me-auto">
+<li class="nav-item"><a class="nav-link" href="../articles/ngme2.html">Get started</a></li>
+<li class="nav-item"><a class="nav-link" href="../reference/index.html">Functions</a></li>
+<li class="active nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-vignettes" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Vignettes</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-vignettes">
+<li><a class="dropdown-item" href="../articles/Installation_and_configuration.html">Installation and configuration (using OpenMP)</a></li>
+    <li><a class="dropdown-item" href="../articles/AR1-model.html">AR(1) model</a></li>
+    <li><a class="dropdown-item" href="../articles/RW-model.html">Random walk model</a></li>
+    <li><a class="dropdown-item" href="../articles/ou-process.html">Ornstein-Uhlenbeck process</a></li>
+    <li><a class="dropdown-item" href="../articles/SPDE-model.html">SPDE Matern model</a></li>
+    <li><a class="dropdown-item" href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a></li>
+    <li><a class="dropdown-item" href="../articles/replicate.html">Models with replicates</a></li>
+    <li><a class="dropdown-item" href="../articles/pred-and-est.html">Model estimation and prediction</a></li>
+    <li><a class="dropdown-item" href="../articles/bivariate.html">Bivariate models in Ngme2</a></li>
+    <li><a class="dropdown-item" href="../articles/random-effect.html">Random effects model in Ngme2</a></li>
+    <li><a class="dropdown-item" href="../articles/tensor-product.html">Space-time (tensor product) model in Ngme2</a></li>
+    <li><a class="dropdown-item" href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a></li>
+    <li><a class="dropdown-item" href="../articles/cross-validation.html">Cross-validation for the ngme2 models</a></li>
+    <li><a class="dropdown-item" href="../articles/generic.html">Using the Generic Model in ngme2</a></li>
   </ul>
 </li>
-<li>
-  <a href="../news/index.html">Changelog</a>
-</li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
-<ul class="nav navbar-nav navbar-right">
-<li>
-  <a href="https://github.com/davidbolin/ngme2" class="external-link">
-    <span class="fa fa-github"></span>
-
-  </a>
-</li>
-<li>
-  <a href="https://twitter.com/jdavidbolin" class="external-link">
-    <span class="fa fa-twitter"></span>
-
-  </a>
-</li>
+<ul class="navbar-nav">
+<li class="nav-item"><form class="form-inline" role="search">
+ <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
+</form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/davidbolin/ngme2" aria-label="Github"><span class="fa fa-github"></span></a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://twitter.com/jdavidbolin" aria-label="Twitter"><span class="fa fa-twitter"></span></a></li>
       </ul>
 </div>
-<!--/.nav-collapse -->
+
+
   </div>
-<!--/.container -->
-</div>
-<!--/.navbar -->
+</nav><div class="container template-article">
 
 
 
-      </header><div class="row">
-  <div class="col-md-9 contents">
-    <div class="page-header toc-ignore">
-      <h1 data-toc-skip>Ngme2 AR(1) model</h1>
+
+<div class="row">
+  <main id="main" class="col-md-9"><div class="page-header">
+      <img src="../logo.png" class="logo" alt=""><h1>AR(1) model in ngme2</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/HEAD/vignettes/AR1-model.Rmd" class="external-link"><code>vignettes/AR1-model.Rmd</code></a></small>
-      <div class="hidden name"><code>AR1-model.Rmd</code></div>
-
+      <div class="d-none name"><code>AR1-model.Rmd</code></div>
     </div>
 
     
@@ -417,8 +365,8 @@ the general structure of the latent models supported by the
 <h3 id="basic-syntax">Basic Syntax<a class="anchor" aria-label="anchor" href="#basic-syntax"></a>
 </h3>
 <p>To specify an AR(1) model in <code>ngme2</code>, use the
-<code><a href="../reference/f.html">f()</a></code> function with the <code>model="ar1"</code> argument
-within your model formula: <code>f(time_index, model="ar1")</code>. When
+<code><a href="../reference/f.html">f()</a></code> function with the <code>model=ar1()</code> argument
+within your model formula: <code>f(time_index, model=ar1())</code>. When
 not specifying the <code>noise</code> argument in <code><a href="../reference/f.html">f()</a></code>, the
 process defaults to Gaussian noise. For simulation purposes, it is
 important to define the <code>sigma</code> parameter in the
@@ -440,7 +388,7 @@ time grid with integer years. This demonstrates how <code>ngme2</code>
 handles non-consecutive time points:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://davidbolin.github.io/ngme2/">ngme2</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; This is ngme2 of version 0.7.1</span></span>
+<span><span class="co">#&gt; This is ngme2 of version 0.8.2</span></span>
 <span><span class="co">#&gt; - See our homepage: https://davidbolin.github.io/ngme2 for more details.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Attaching package: 'ngme2'</span></span>
@@ -468,9 +416,8 @@ tend to be followed by low values:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Define AR(1) model with negative autocorrelation</span></span>
 <span><span class="va">ar1_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="va">time_points</span>,</span>
-<span>  model <span class="op">=</span> <span class="st">"ar1"</span>,</span>
-<span>  rho <span class="op">=</span> <span class="op">-</span><span class="fl">0.5</span>,            <span class="co"># Negative correlation creates oscillating behavior</span></span>
-<span>  noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span>sigma <span class="op">=</span> <span class="fl">1.0</span><span class="op">)</span>    <span class="co"># Gaussian innovations with sigma = 1</span></span>
+<span>  model <span class="op">=</span> <span class="fu"><a href="../reference/ar1.html">ar1</a></span><span class="op">(</span>rho <span class="op">=</span> <span class="op">-</span><span class="fl">0.5</span><span class="op">)</span>, <span class="co"># rho = -0.5 creates oscillating behavior</span></span>
+<span>  noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span>sigma <span class="op">=</span> <span class="fl">1.0</span><span class="op">)</span> <span class="co"># Gaussian innovations with sigma = 1</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>The <code>ngme2</code> package constructs several important matrices
 internally. We can examine the matrix
@@ -480,7 +427,7 @@ terms:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Examine the K matrix structure</span></span>
 <span><span class="va">K_matrix</span> <span class="op">&lt;-</span> <span class="va">ar1_model</span><span class="op">$</span><span class="va">operator</span><span class="op">$</span><span class="va">K</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">K_matrix</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/spam/man/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">K_matrix</span><span class="op">)</span></span>
 <span><span class="co">#&gt; 7 x 7 sparse Matrix of class "dgCMatrix"</span></span>
 <span><span class="co">#&gt;                                     </span></span>
 <span><span class="co">#&gt; [1,] 0.8660254 .   .   .   .   .   .</span></span>
@@ -508,7 +455,7 @@ time points:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Check the mapping matrix A</span></span>
 <span><span class="va">mapping_matrix</span> <span class="op">&lt;-</span> <span class="va">ar1_model</span><span class="op">$</span><span class="va">A</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">mapping_matrix</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/spam/man/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">mapping_matrix</span><span class="op">)</span></span>
 <span><span class="co">#&gt; 4 x 7 sparse Matrix of class "dgCMatrix"</span></span>
 <span><span class="co">#&gt;                   </span></span>
 <span><span class="co">#&gt; [1,] 1 0 . . . . .</span></span>
@@ -533,10 +480,10 @@ patterns without compromising the fundamental AR(1) structure.</p>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://Matrix.R-forge.R-project.org" class="external-link">Matrix</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># The precision matrix is computed as Q = (K^T K) / sigma^2</span></span>
-<span><span class="va">sigma2</span> <span class="op">&lt;-</span> <span class="fl">1.0</span>  <span class="co"># Error variance from the model definition</span></span>
+<span><span class="va">sigma2</span> <span class="op">&lt;-</span> <span class="fl">1.0</span> <span class="co"># Error variance from the model definition</span></span>
 <span></span>
 <span><span class="va">Q_matrix</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="va">K_matrix</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="va">K_matrix</span><span class="op">)</span> <span class="op">/</span> <span class="va">sigma2</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">Q_matrix</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/spam/man/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">Q_matrix</span><span class="op">)</span></span>
 <span><span class="co">#&gt; 7 x 7 sparse Matrix of class "dgCMatrix"</span></span>
 <span><span class="co">#&gt;                                      </span></span>
 <span><span class="co">#&gt; [1,] 1.0 0.50 .    .    .    .    .  </span></span>
@@ -560,7 +507,7 @@ which is crucial for computational efficiency:</p>
 <span><span class="va">total_elements</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">Q_matrix</span><span class="op">)</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">Q_matrix</span><span class="op">)</span></span>
 <span><span class="va">zero_elements</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">Q_dense</span><span class="op">)</span> <span class="op">&lt;</span> <span class="fl">1e-10</span><span class="op">)</span></span>
 <span><span class="va">sparsity</span> <span class="op">&lt;-</span> <span class="va">zero_elements</span> <span class="op">/</span> <span class="va">total_elements</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Sparsity of precision matrix:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">sparsity</span> <span class="op">*</span> <span class="fl">100</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"%"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/spam/man/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Sparsity of precision matrix:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">sparsity</span> <span class="op">*</span> <span class="fl">100</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"%"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "Sparsity of precision matrix: 61.2 %"</span></span></code></pre></div>
 <p>The resulting precision matrix maintains its characteristic
 tri-diagonal structure (with modification in the first row due to the
@@ -582,11 +529,13 @@ precision matrix:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Demonstrate how different error variances affect the precision matrix</span></span>
 <span><span class="va">sigma2_values</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fl">2.0</span>, <span class="fl">4.0</span><span class="op">)</span></span>
-<span><span class="kw">for</span><span class="op">(</span><span class="va">sigma2_test</span> <span class="kw">in</span> <span class="va">sigma2_values</span><span class="op">)</span> <span class="op">{</span></span>
+<span><span class="kw">for</span> <span class="op">(</span><span class="va">sigma2_test</span> <span class="kw">in</span> <span class="va">sigma2_values</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">Q_scaled</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="va">K_matrix</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="va">K_matrix</span><span class="op">)</span> <span class="op">/</span> <span class="va">sigma2_test</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"With sigma^2 ="</span>, <span class="va">sigma2_test</span>, </span>
-<span>              <span class="st">", Q[1,1] ="</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">Q_scaled</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span>, <span class="fl">3</span><span class="op">)</span>,</span>
-<span>              <span class="st">"(scaled by factor 1/"</span>, <span class="va">sigma2_test</span>, <span class="st">")"</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/pkg/spam/man/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span></span>
+<span>    <span class="st">"With sigma^2 ="</span>, <span class="va">sigma2_test</span>,</span>
+<span>    <span class="st">", Q[1,1] ="</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">Q_scaled</span><span class="op">[</span><span class="fl">1</span>, <span class="fl">1</span><span class="op">]</span>, <span class="fl">3</span><span class="op">)</span>,</span>
+<span>    <span class="st">"(scaled by factor 1/"</span>, <span class="va">sigma2_test</span>, <span class="st">")"</span></span>
+<span>  <span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span><span class="co">#&gt; [1] "With sigma^2 = 0.5 , Q[1,1] = 2 (scaled by factor 1/ 0.5 )"</span></span>
 <span><span class="co">#&gt; [1] "With sigma^2 = 2 , Q[1,1] = 0.5 (scaled by factor 1/ 2 )"</span></span>
@@ -643,9 +592,8 @@ simulation and estimation, including the temporal dependence structure
 (ρ = 0.7) and the Gaussian noise specification (σ = 2.0).</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Define AR(1) model with Gaussian noise</span></span>
-<span><span class="va">ar1_gaussian</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="va">time_index</span>, </span>
-<span>  model <span class="op">=</span> <span class="st">"ar1"</span>, </span>
-<span>  rho <span class="op">=</span> <span class="fl">0.7</span>,</span>
+<span><span class="va">ar1_gaussian</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="va">time_index</span>,</span>
+<span>  model <span class="op">=</span> <span class="fu"><a href="../reference/ar1.html">ar1</a></span><span class="op">(</span>rho <span class="op">=</span> <span class="fl">0.7</span><span class="op">)</span>,</span>
 <span>  noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span>sigma <span class="op">=</span> <span class="fl">2.0</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>In the second step, we obtain sample realizations from this model
@@ -709,9 +657,8 @@ specified through <code><a href="../reference/ngme_noise.html">noise_nig()</a></
 <code>nu = 0.4</code> (shape parameter governing tail heaviness).</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Define AR(1) model with NIG noise</span></span>
-<span><span class="va">ar1_nig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="va">time_index</span>, </span>
-<span>  model <span class="op">=</span> <span class="st">"ar1"</span>, </span>
-<span>  rho <span class="op">=</span> <span class="fl">0.5</span>,</span>
+<span><span class="va">ar1_nig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="va">time_index</span>,</span>
+<span>  model <span class="op">=</span> <span class="fu"><a href="../reference/ar1.html">ar1</a></span><span class="op">(</span>rho <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span>,</span>
 <span>  noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span>mu <span class="op">=</span> <span class="op">-</span><span class="fl">3</span>, sigma <span class="op">=</span> <span class="fl">4</span>, nu <span class="op">=</span> <span class="fl">0.4</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>We then generate a sample realization using the
@@ -826,9 +773,8 @@ response variable and both fixed and latent effects:</p>
 <span>  <span class="va">Y</span> <span class="op">~</span> <span class="fl">0</span> <span class="op">+</span> <span class="va">x1</span> <span class="op">+</span> <span class="va">x2</span> <span class="op">+</span> <span class="va">x3</span> <span class="op">+</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
 <span>    <span class="fl">1</span><span class="op">:</span><span class="va">n_obs</span>,</span>
 <span>    name <span class="op">=</span> <span class="st">"my_ar"</span>,</span>
-<span>    model <span class="op">=</span> <span class="st">"ar1"</span>,</span>
-<span>    noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>    control <span class="op">=</span> <span class="fu"><a href="../reference/control_f.html">control_f</a></span><span class="op">(</span>numer_grad <span class="op">=</span> <span class="cn">TRUE</span>, improve_hessian <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span>    model <span class="op">=</span> <span class="fu"><a href="../reference/ar1.html">ar1</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>    noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  data <span class="op">=</span> <span class="va">model_data</span>,</span>
 <span>  control_opt <span class="op">=</span> <span class="fu"><a href="../reference/control_opt.html">control_opt</a></span><span class="op">(</span></span>
@@ -837,7 +783,7 @@ response variable and both fixed and latent effects:</p>
 <span>    iterations <span class="op">=</span> <span class="fl">1000</span>,</span>
 <span>    std_lim <span class="op">=</span> <span class="fl">0.01</span>,</span>
 <span>    n_parallel_chain <span class="op">=</span> <span class="fl">4</span>,</span>
-<span>    stop_points <span class="op">=</span> <span class="fl">10</span>,</span>
+<span>    n_batch <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>    verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>    print_check_info <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>    seed <span class="op">=</span> <span class="fl">3</span></span>
@@ -848,7 +794,7 @@ the response variable <code>Y</code> depends on three fixed effects
 (<code>x1</code>, <code>x2</code>, <code>x3</code>) with no intercept
 (the <code>0</code> term), plus a latent AR(1) process defined through
 the <code><a href="../reference/f.html">f()</a></code> function. The latent model is specified with
-<code>f(1:n_obs, name = "my_ar", model = "ar1", noise = noise_nig())</code>,
+<code>f(1:n_obs, name = "my_ar", model = ar1(), noise = noise_nig())</code>,
 where we assign a name to the process for later reference and specify
 NIG innovations without fixing the parameters (allowing them to be
 estimated).</p>
@@ -874,8 +820,8 @@ estimation robustness</li>
 <strong><code>std_lim = 0.01</code></strong>: Sets the convergence
 criterion based on parameter standard deviation across chains</li>
 <li>
-<strong><code>stop_points = 10</code></strong>: Number of
-intermediate convergence checks during optimization</li>
+<strong><code>n_batch = 10</code></strong>: Number of intermediate
+convergence checks during optimization</li>
 <li>
 <strong><code>seed = 3</code></strong>: Ensures reproducible results
 across runs</li>
@@ -890,23 +836,23 @@ results:</p>
 <span><span class="co">#&gt; *** Ngme object ***</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
-<span><span class="co">#&gt;     x1     x2     x3 </span></span>
-<span><span class="co">#&gt; -0.926  2.042  0.513 </span></span>
+<span><span class="co">#&gt;    x1    x2    x3 </span></span>
+<span><span class="co">#&gt; -0.92  2.04  0.51 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $my_ar</span></span>
 <span><span class="co">#&gt;   Model type: AR(1)</span></span>
-<span><span class="co">#&gt;       rho = 0.481</span></span>
+<span><span class="co">#&gt;       rho = 0.483</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -2.9</span></span>
-<span><span class="co">#&gt;       sigma = 3.93</span></span>
-<span><span class="co">#&gt;       nu = 0.409</span></span>
+<span><span class="co">#&gt;       mu = -2.89</span></span>
+<span><span class="co">#&gt;       sigma = 3.9</span></span>
+<span><span class="co">#&gt;       nu = 0.425</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 2.01</span></span></code></pre></div>
+<span><span class="co">#&gt;       sigma = 1.99</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="convergence-diagnostics">Convergence Diagnostics<a class="anchor" aria-label="anchor" href="#convergence-diagnostics"></a>
@@ -915,39 +861,39 @@ results:</p>
 will use the built-in <code>traceplot</code> function from
 <code>ngme2</code> to examine the convergence of our parameters:</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span>  <span class="co"># Trace plot for sigma and fixed effects (blue lines indicate true value)</span></span>
-<span>  <span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">ngme_out</span>, hline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>,<span class="op">-</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">0.5</span><span class="op">)</span>, moving_window <span class="op">=</span> <span class="fl">20</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="co"># Trace plot for sigma and fixed effects (blue lines indicate true value)</span></span>
+<span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">ngme_out</span>, hline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="op">-</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">0.5</span><span class="op">)</span>, moving_window <span class="op">=</span> <span class="fl">20</span><span class="op">)</span></span></code></pre></div>
 <p><img src="AR1-model_files/figure-html/convergence-diagnostics-1.png" width="100%"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 1.981825</span></span>
+<span><span class="co">#&gt; [1] 1.978975</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`fixed effect 1`</span></span>
-<span><span class="co">#&gt; [1] -0.9254609</span></span>
+<span><span class="co">#&gt; [1] -0.9232876</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`fixed effect 2`</span></span>
-<span><span class="co">#&gt; [1] 2.042302</span></span>
+<span><span class="co">#&gt; [1] 2.044159</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`fixed effect 3`</span></span>
-<span><span class="co">#&gt; [1] 0.5131561</span></span></code></pre>
+<span><span class="co">#&gt; [1] 0.5113808</span></span></code></pre>
 <p>Now let us examine the convergence of the AR(1) process
 parameters:</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span>  <span class="co"># Trace plots for AR(1) parameters (blue lines indicate true value)</span></span>
-<span>  <span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">ngme_out</span>, <span class="st">"my_ar"</span>, hline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="op">-</span><span class="fl">3</span>, <span class="fl">4</span>, <span class="fl">0.4</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="co"># Trace plots for AR(1) parameters (blue lines indicate true value)</span></span>
+<span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">ngme_out</span>, <span class="st">"my_ar"</span>, hline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="op">-</span><span class="fl">3</span>, <span class="fl">4</span>, <span class="fl">0.4</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="AR1-model_files/figure-html/convergence-ar-process-1.png" width="100%"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $rho</span></span>
-<span><span class="co">#&gt; [1] 0.4805299</span></span>
+<span><span class="co">#&gt; [1] 0.482615</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $mu</span></span>
-<span><span class="co">#&gt; [1] -2.899516</span></span>
+<span><span class="co">#&gt; [1] -2.914941</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 3.939029</span></span>
+<span><span class="co">#&gt; [1] 3.864524</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nu</span></span>
-<span><span class="co">#&gt; [1] 0.410303</span></span></code></pre>
+<span><span class="co">#&gt; [1] 0.4287143</span></span></code></pre>
 </div>
 <div class="section level3">
 <h3 id="parameter-estimates-summary">Parameter Estimates Summary<a class="anchor" aria-label="anchor" href="#parameter-estimates-summary"></a>
@@ -959,34 +905,34 @@ the true values using the <code><a href="../reference/ngme_result.html">ngme_res
 <span><span class="va">params_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme_result.html">ngme_result</a></span><span class="op">(</span><span class="va">ngme_out</span>, <span class="st">"data"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Fixed Effects</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/spam/man/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  Truth <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">0.5</span><span class="op">)</span>,</span>
 <span>  Estimates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">params_data</span><span class="op">$</span><span class="va">fixed_effects</span><span class="op">)</span>,</span>
 <span>  row.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">params_data</span><span class="op">$</span><span class="va">fixed_effects</span><span class="op">)</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    Truth  Estimates</span></span>
-<span><span class="co">#&gt; x1  -1.0 -0.9258435</span></span>
-<span><span class="co">#&gt; x2   2.0  2.0423156</span></span>
-<span><span class="co">#&gt; x3   0.5  0.5129309</span></span>
+<span><span class="co">#&gt; x1  -1.0 -0.9202161</span></span>
+<span><span class="co">#&gt; x2   2.0  2.0447112</span></span>
+<span><span class="co">#&gt; x3   0.5  0.5099348</span></span>
 <span></span>
 <span><span class="co"># Measurement Noise</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Truth <span class="op">=</span> <span class="fl">2.0</span>, Estimate <span class="op">=</span> <span class="va">params_data</span><span class="op">$</span><span class="va">sigma</span>, row.names <span class="op">=</span> <span class="st">"sigma"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/spam/man/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Truth <span class="op">=</span> <span class="fl">2.0</span>, Estimate <span class="op">=</span> <span class="va">params_data</span><span class="op">$</span><span class="va">sigma</span>, row.names <span class="op">=</span> <span class="st">"sigma"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;       Truth Estimate</span></span>
-<span><span class="co">#&gt; sigma     2 2.007037</span></span>
+<span><span class="co">#&gt; sigma     2 1.989364</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># AR(1) Process Parameters</span></span>
 <span><span class="va">params_ar1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme_result.html">ngme_result</a></span><span class="op">(</span><span class="va">ngme_out</span>, <span class="st">"my_ar"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/spam/man/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  Truth <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>rho <span class="op">=</span> <span class="fl">0.5</span>, mu <span class="op">=</span> <span class="op">-</span><span class="fl">3.0</span>, sigma <span class="op">=</span> <span class="fl">4.0</span>, nu <span class="op">=</span> <span class="fl">0.4</span><span class="op">)</span>,</span>
 <span>  Estimates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">params_ar1</span><span class="op">)</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;       Truth  Estimates</span></span>
-<span><span class="co">#&gt; rho     0.5  0.4812054</span></span>
-<span><span class="co">#&gt; mu     -3.0 -2.8967196</span></span>
-<span><span class="co">#&gt; sigma   4.0  3.9349919</span></span>
-<span><span class="co">#&gt; nu      0.4  0.4090970</span></span></code></pre></div>
+<span><span class="co">#&gt; rho     0.5  0.4833661</span></span>
+<span><span class="co">#&gt; mu     -3.0 -2.8909761</span></span>
+<span><span class="co">#&gt; sigma   4.0  3.8963090</span></span>
+<span><span class="co">#&gt; nu      0.4  0.4245428</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="model-validation">Model Validation<a class="anchor" aria-label="anchor" href="#model-validation"></a>
@@ -1028,8 +974,8 @@ observations at the end of the time series for testing:</p>
 <span></span>
 <span><span class="co"># Split data maintaining temporal order</span></span>
 <span><span class="va">model_data_train</span> <span class="op">&lt;-</span> <span class="va">model_data</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="va">n_train</span>, <span class="op">]</span></span>
-<span><span class="va">model_data_test</span> <span class="op">&lt;-</span> <span class="va">model_data</span><span class="op">[</span><span class="op">(</span><span class="va">n_train</span><span class="op">+</span><span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="va">n_obs</span>, <span class="op">]</span></span>
-<span><span class="va">Y_true_test</span> <span class="op">&lt;-</span> <span class="va">Y</span><span class="op">[</span><span class="op">(</span><span class="va">n_train</span><span class="op">+</span><span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="va">n_obs</span><span class="op">]</span></span>
+<span><span class="va">model_data_test</span> <span class="op">&lt;-</span> <span class="va">model_data</span><span class="op">[</span><span class="op">(</span><span class="va">n_train</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="va">n_obs</span>, <span class="op">]</span></span>
+<span><span class="va">Y_true_test</span> <span class="op">&lt;-</span> <span class="va">Y</span><span class="op">[</span><span class="op">(</span><span class="va">n_train</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="va">n_obs</span><span class="op">]</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Training:"</span>, <span class="va">n_train</span>, <span class="st">"observations\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Training: 2495 observations</span></span>
@@ -1045,12 +991,11 @@ also need to be careful to include the test locations in the training
 model. To this end, we will first create a model object with:</p>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ar1_train</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
-<span>    <span class="fl">1</span><span class="op">:</span><span class="va">n_train</span>,</span>
-<span>    name <span class="op">=</span> <span class="st">"my_ar"</span>,</span>
-<span>    model <span class="op">=</span> <span class="st">"ar1"</span>,</span>
-<span>    noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>    control <span class="op">=</span> <span class="fu"><a href="../reference/control_f.html">control_f</a></span><span class="op">(</span>numer_grad <span class="op">=</span> <span class="cn">TRUE</span>, improve_hessian <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span>  <span class="op">)</span></span></code></pre></div>
+<span>  <span class="fl">1</span><span class="op">:</span><span class="va">n_train</span>,</span>
+<span>  name <span class="op">=</span> <span class="st">"my_ar"</span>,</span>
+<span>  model <span class="op">=</span> <span class="fu"><a href="../reference/ar1.html">ar1</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 <p>We now need to extract the training locations, which are in
 <code>ar1_train$operator$mesh$loc</code>. Next, we create a mesh object
 with all training and test locations. We will need to load the
@@ -1058,7 +1003,7 @@ with all training and test locations. We will need to load the
 <div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://inlabru-org.github.io/fmesher/" class="external-link">fmesher</a></span><span class="op">)</span></span>
 <span><span class="va">loc_train</span> <span class="op">&lt;-</span> <span class="va">ar1_train</span><span class="op">$</span><span class="va">operator</span><span class="op">$</span><span class="va">mesh</span><span class="op">$</span><span class="va">loc</span></span>
-<span><span class="va">loc_test</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">n_train</span><span class="op">+</span><span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="va">n_obs</span></span>
+<span><span class="va">loc_test</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">n_train</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="va">n_obs</span></span>
 <span><span class="va">loc_full</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">loc_train</span>, <span class="va">loc_test</span><span class="op">)</span></span>
 <span><span class="va">mesh_full</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://inlabru-org.github.io/fmesher/reference/fm_mesh_1d.html" class="external-link">fm_mesh_1d</a></span><span class="op">(</span><span class="va">loc_full</span><span class="op">)</span></span></code></pre></div>
 <p>Then, we fit the model, and in the <code><a href="../reference/f.html">f()</a></code> object we include
@@ -1069,10 +1014,8 @@ argument.</p>
 <span>  <span class="va">Y</span> <span class="op">~</span> <span class="fl">0</span> <span class="op">+</span> <span class="va">x1</span> <span class="op">+</span> <span class="va">x2</span> <span class="op">+</span> <span class="va">x3</span> <span class="op">+</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
 <span>    <span class="fl">1</span><span class="op">:</span><span class="va">n_train</span>,</span>
 <span>    name <span class="op">=</span> <span class="st">"my_ar"</span>,</span>
-<span>    model <span class="op">=</span> <span class="st">"ar1"</span>,</span>
-<span>    mesh <span class="op">=</span> <span class="va">mesh_full</span>,</span>
-<span>    noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>    control <span class="op">=</span> <span class="fu"><a href="../reference/control_f.html">control_f</a></span><span class="op">(</span>numer_grad <span class="op">=</span> <span class="cn">TRUE</span>, improve_hessian <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span>    model <span class="op">=</span> <span class="fu"><a href="../reference/ar1.html">ar1</a></span><span class="op">(</span>mesh <span class="op">=</span> <span class="va">mesh_full</span>, <span class="op">)</span>,</span>
+<span>    noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  data <span class="op">=</span> <span class="va">model_data_train</span>,</span>
 <span>  control_opt <span class="op">=</span> <span class="fu"><a href="../reference/control_opt.html">control_opt</a></span><span class="op">(</span></span>
@@ -1081,7 +1024,7 @@ argument.</p>
 <span>    iterations <span class="op">=</span> <span class="fl">1000</span>,</span>
 <span>    std_lim <span class="op">=</span> <span class="fl">0.01</span>,</span>
 <span>    n_parallel_chain <span class="op">=</span> <span class="fl">4</span>,</span>
-<span>    stop_points <span class="op">=</span> <span class="fl">10</span>,</span>
+<span>    n_batch <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>    verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>    print_check_info <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>    seed <span class="op">=</span> <span class="fl">3</span></span>
@@ -1131,15 +1074,15 @@ accuracy and uncertainty calibration:</p>
 <span><span class="va">coverage_90</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">in_interval_90</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"RMSE:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">rmse_holdout</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; RMSE: 5.193</span></span>
+<span><span class="co">#&gt; RMSE: 4.673</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"MAE:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">mae_holdout</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; MAE: 5.048</span></span>
+<span><span class="co">#&gt; MAE: 4.576</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Correlation:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">correlation_holdout</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Correlation: 0.12</span></span>
+<span><span class="co">#&gt; Correlation: 0.314</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"90% Interval Coverage:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">coverage_90</span> <span class="op">*</span> <span class="fl">100</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"%\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 90% Interval Coverage: 100 %</span></span>
+<span><span class="co">#&gt; 90% Interval Coverage: 80 %</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/spam/man/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  Time <span class="op">=</span> <span class="op">(</span><span class="va">n_train</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="va">n_obs</span>,</span>
 <span>  Observed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">Y_true_test</span>, <span class="fl">2</span><span class="op">)</span>,</span>
 <span>  Predicted <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">pred_mean_holdout</span>, <span class="fl">2</span><span class="op">)</span>,</span>
@@ -1147,11 +1090,11 @@ accuracy and uncertainty calibration:</p>
 <span>  Upper_90 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">pred_upper_holdout</span>, <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   Time Observed Predicted Lower_90 Upper_90</span></span>
-<span><span class="co">#&gt; 1 2496     8.64      2.61    -8.05     8.98</span></span>
-<span><span class="co">#&gt; 2 2497     3.45      0.62   -10.78     7.47</span></span>
-<span><span class="co">#&gt; 3 2498    -4.73      0.39   -10.28     6.73</span></span>
-<span><span class="co">#&gt; 4 2499    -3.21      3.07    -8.08     9.81</span></span>
-<span><span class="co">#&gt; 5 2500     0.94      5.94    -4.76    12.57</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 2496     8.64      2.73    -7.55     8.55</span></span>
+<span><span class="co">#&gt; 2 2497     3.45     -0.07   -12.72     6.92</span></span>
+<span><span class="co">#&gt; 3 2498    -4.73     -1.01   -15.16     6.90</span></span>
+<span><span class="co">#&gt; 4 2499    -3.21      2.26   -11.94     9.70</span></span>
+<span><span class="co">#&gt; 5 2500     0.94      5.21    -6.29    13.12</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level3">
@@ -1197,20 +1140,20 @@ complete model, thus, doing a pseudo holdout-validation.</p>
 <span><span class="va">rmse_holdout_alt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">pred_errors_holdout_alt</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">mae_holdout_alt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">pred_errors_holdout_alt</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">correlation_holdout_alt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">pred_mean_holdout_alt</span>, <span class="va">Y_true_test</span><span class="op">)</span></span>
-<span><span class="va">in_interval_90_alt</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">Y_true_test</span> <span class="op">&gt;=</span> <span class="va">pred_lower_holdout_alt</span><span class="op">)</span> <span class="op">&amp;</span> </span>
-<span>                      <span class="op">(</span><span class="va">Y_true_test</span> <span class="op">&lt;=</span> <span class="va">pred_upper_holdout_alt</span><span class="op">)</span></span>
+<span><span class="va">in_interval_90_alt</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">Y_true_test</span> <span class="op">&gt;=</span> <span class="va">pred_lower_holdout_alt</span><span class="op">)</span> <span class="op">&amp;</span></span>
+<span>  <span class="op">(</span><span class="va">Y_true_test</span> <span class="op">&lt;=</span> <span class="va">pred_upper_holdout_alt</span><span class="op">)</span></span>
 <span><span class="va">coverage_90_alt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">in_interval_90_alt</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"RMSE:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">rmse_holdout_alt</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; RMSE: 5.118</span></span>
+<span><span class="co">#&gt; RMSE: 4.773</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"MAE:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">mae_holdout_alt</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; MAE: 4.915</span></span>
+<span><span class="co">#&gt; MAE: 4.673</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Correlation:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">correlation_holdout_alt</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Correlation: 0.07</span></span>
+<span><span class="co">#&gt; Correlation: 0.291</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"90% Interval Coverage:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">coverage_90_alt</span> <span class="op">*</span> <span class="fl">100</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"%\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 90% Interval Coverage: 100 %</span></span>
+<span><span class="co">#&gt; 90% Interval Coverage: 80 %</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/spam/man/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  Time <span class="op">=</span> <span class="op">(</span><span class="va">n_train</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="va">n_obs</span>,</span>
 <span>  Observed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">Y_true_test</span>, <span class="fl">2</span><span class="op">)</span>,</span>
 <span>  Predicted <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">pred_mean_holdout_alt</span>, <span class="fl">2</span><span class="op">)</span>,</span>
@@ -1218,11 +1161,11 @@ complete model, thus, doing a pseudo holdout-validation.</p>
 <span>  Upper_90 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">pred_upper_holdout_alt</span>, <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   Time Observed Predicted Lower_90 Upper_90</span></span>
-<span><span class="co">#&gt; 1 2496     8.64      1.87   -11.81     8.74</span></span>
-<span><span class="co">#&gt; 2 2497     3.45      0.76    -9.45     7.31</span></span>
-<span><span class="co">#&gt; 3 2498    -4.73      0.14   -12.23     6.85</span></span>
-<span><span class="co">#&gt; 4 2499    -3.21      2.84    -9.30     9.71</span></span>
-<span><span class="co">#&gt; 5 2500     0.94      5.15    -8.50    12.71</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 2496     8.64      2.80    -6.92     8.53</span></span>
+<span><span class="co">#&gt; 2 2497     3.45      0.32   -11.93     6.97</span></span>
+<span><span class="co">#&gt; 3 2498    -4.73     -0.54   -14.77     6.97</span></span>
+<span><span class="co">#&gt; 4 2499    -3.21      2.32    -9.83     9.66</span></span>
+<span><span class="co">#&gt; 5 2500     0.94      5.63    -5.89    12.91</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level3">
@@ -1237,7 +1180,7 @@ in the series and use the AR(1) model to reconstruct the missing
 values:</p>
 <div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">gap1_indices</span> <span class="op">&lt;-</span> <span class="fl">601</span><span class="op">:</span><span class="fl">605</span></span>
-<span><span class="va">gap2_indices</span> <span class="op">&lt;-</span> <span class="fl">1000</span><span class="op">:</span><span class="fl">1005</span> </span>
+<span><span class="va">gap2_indices</span> <span class="op">&lt;-</span> <span class="fl">1000</span><span class="op">:</span><span class="fl">1005</span></span>
 <span><span class="va">gap3_indices</span> <span class="op">&lt;-</span> <span class="fl">2100</span><span class="op">:</span><span class="fl">2106</span></span>
 <span><span class="va">all_gap_indices</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">gap1_indices</span>, <span class="va">gap2_indices</span>, <span class="va">gap3_indices</span><span class="op">)</span></span>
 <span></span>
@@ -1262,9 +1205,8 @@ irregular time grids naturally:</p>
 <span>  <span class="va">Y_train_vector</span> <span class="op">~</span> <span class="fl">0</span> <span class="op">+</span> <span class="va">x1</span> <span class="op">+</span> <span class="va">x2</span> <span class="op">+</span> <span class="va">x3</span> <span class="op">+</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
 <span>    <span class="va">train_indices_interp</span>,</span>
 <span>    name <span class="op">=</span> <span class="st">"my_ar_interp"</span>,</span>
-<span>    model <span class="op">=</span> <span class="st">"ar1"</span>, </span>
-<span>    noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>    control <span class="op">=</span> <span class="fu"><a href="../reference/control_f.html">control_f</a></span><span class="op">(</span>numer_grad <span class="op">=</span> <span class="cn">TRUE</span>, improve_hessian <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span>    model <span class="op">=</span> <span class="fu"><a href="../reference/ar1.html">ar1</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>    noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  data <span class="op">=</span> <span class="va">model_data_train_interp</span>,</span>
 <span>  control_opt <span class="op">=</span> <span class="fu"><a href="../reference/control_opt.html">control_opt</a></span><span class="op">(</span></span>
@@ -1273,7 +1215,7 @@ irregular time grids naturally:</p>
 <span>    iterations <span class="op">=</span> <span class="fl">1000</span>,</span>
 <span>    std_lim <span class="op">=</span> <span class="fl">0.01</span>,</span>
 <span>    n_parallel_chain <span class="op">=</span> <span class="fl">4</span>,</span>
-<span>    stop_points <span class="op">=</span> <span class="fl">10</span>,</span>
+<span>    n_batch <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>    verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>    print_check_info <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>    seed <span class="op">=</span> <span class="fl">42</span></span>
@@ -1290,7 +1232,7 @@ values:</p>
 <div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">gap_covariates</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  x1 <span class="op">=</span> <span class="va">x1</span><span class="op">[</span><span class="va">all_gap_indices</span><span class="op">]</span>,</span>
-<span>  x2 <span class="op">=</span> <span class="va">x2</span><span class="op">[</span><span class="va">all_gap_indices</span><span class="op">]</span>, </span>
+<span>  x2 <span class="op">=</span> <span class="va">x2</span><span class="op">[</span><span class="va">all_gap_indices</span><span class="op">]</span>,</span>
 <span>  x3 <span class="op">=</span> <span class="va">x3</span><span class="op">[</span><span class="va">all_gap_indices</span><span class="op">]</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -1305,7 +1247,7 @@ values:</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">interp_mean</span> <span class="op">&lt;-</span> <span class="va">interpolation_pred</span><span class="op">$</span><span class="va">mean</span></span>
-<span><span class="va">interp_sd</span> <span class="op">&lt;-</span> <span class="va">interpolation_pred</span><span class="op">$</span><span class="va">sd</span>  </span>
+<span><span class="va">interp_sd</span> <span class="op">&lt;-</span> <span class="va">interpolation_pred</span><span class="op">$</span><span class="va">sd</span></span>
 <span><span class="va">interp_lower</span> <span class="op">&lt;-</span> <span class="va">interpolation_pred</span><span class="op">[[</span><span class="st">"0.05q"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">interp_upper</span> <span class="op">&lt;-</span> <span class="va">interpolation_pred</span><span class="op">[[</span><span class="st">"0.95q"</span><span class="op">]</span><span class="op">]</span></span></code></pre></div>
 </div>
@@ -1325,15 +1267,15 @@ estimation:</p>
 <span><span class="va">coverage_90_interp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">in_interval_90_interp</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"RMSE:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">rmse_interp</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; RMSE: 7.732</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"MAE:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">mae_interp</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span> </span>
-<span><span class="co">#&gt; MAE: 3.951</span></span>
+<span><span class="co">#&gt; RMSE: 7.698</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"MAE:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">mae_interp</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; MAE: 3.944</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Correlation:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">correlation_interp</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Correlation: 0.224</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"90% Interval Coverage:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">coverage_90_interp</span> <span class="op">*</span> <span class="fl">100</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"%\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; 90% Interval Coverage: 88.9 %</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/spam/man/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  Time <span class="op">=</span> <span class="va">all_gap_indices</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">]</span>,</span>
 <span>  Observed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">Y_true_gaps</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">]</span>, <span class="fl">2</span><span class="op">)</span>,</span>
 <span>  Interpolated <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">interp_mean</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">]</span>, <span class="fl">2</span><span class="op">)</span>,</span>
@@ -1341,16 +1283,16 @@ estimation:</p>
 <span>  Upper_90 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">interp_upper</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">]</span>, <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    Time Observed Interpolated Lower_90 Upper_90</span></span>
-<span><span class="co">#&gt; 1   601     2.74        -2.58   -15.87     3.73</span></span>
-<span><span class="co">#&gt; 2   602     0.82        -2.78   -14.13     4.16</span></span>
-<span><span class="co">#&gt; 3   603     1.54        -0.53   -11.97     6.21</span></span>
-<span><span class="co">#&gt; 4   604     1.57         1.37    -9.98     8.10</span></span>
-<span><span class="co">#&gt; 5   605     6.94         2.01    -5.44     7.37</span></span>
-<span><span class="co">#&gt; 6  1000     1.76         1.34    -8.53     7.44</span></span>
-<span><span class="co">#&gt; 7  1001    -0.06         0.61   -10.92     7.20</span></span>
-<span><span class="co">#&gt; 8  1002     0.31         0.94   -10.39     7.40</span></span>
-<span><span class="co">#&gt; 9  1003     2.91         3.91    -5.49    10.15</span></span>
-<span><span class="co">#&gt; 10 1004     7.54         2.70    -4.38     8.32</span></span></code></pre></div>
+<span><span class="co">#&gt; 1   601     2.74        -2.52   -12.12     3.51</span></span>
+<span><span class="co">#&gt; 2   602     0.82        -2.69   -15.17     3.71</span></span>
+<span><span class="co">#&gt; 3   603     1.54        -0.74   -14.45     6.19</span></span>
+<span><span class="co">#&gt; 4   604     1.57         1.02   -11.71     8.05</span></span>
+<span><span class="co">#&gt; 5   605     6.94         1.63    -6.06     7.52</span></span>
+<span><span class="co">#&gt; 6  1000     1.76         1.77    -7.64     7.16</span></span>
+<span><span class="co">#&gt; 7  1001    -0.06         0.24   -12.22     6.69</span></span>
+<span><span class="co">#&gt; 8  1002     0.31         0.69   -10.04     7.38</span></span>
+<span><span class="co">#&gt; 9  1003     2.91         3.67    -6.55    10.34</span></span>
+<span><span class="co">#&gt; 10 1004     7.54         2.67    -5.63     8.40</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level3">
@@ -1407,12 +1349,16 @@ recover the underlying temporal structure:</p>
 <span>  posterior_upper <span class="op">=</span> <span class="va">W_posterior_q975</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Mean absolute difference from true values:"</span>, </span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">W_posterior_mean</span> <span class="op">-</span> <span class="va">W_nig</span><span class="op">)</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Mean absolute difference from true values: 1.35</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Average posterior standard deviation:"</span>, </span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">W_posterior_sd</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Average posterior standard deviation: 1.679</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span></span>
+<span>  <span class="st">"Mean absolute difference from true values:"</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">W_posterior_mean</span> <span class="op">-</span> <span class="va">W_nig</span><span class="op">)</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; Mean absolute difference from true values: 1.355</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span></span>
+<span>  <span class="st">"Average posterior standard deviation:"</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">W_posterior_sd</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; Average posterior standard deviation: 1.672</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="latent-process-uncertainty-visualization">Latent Process Uncertainty Visualization<a class="anchor" aria-label="anchor" href="#latent-process-uncertainty-visualization"></a>
@@ -1439,29 +1385,22 @@ data:</p>
 <p><img src="AR1-model_files/figure-html/uncertainty-bands-1.png" width="100%"></p>
 </div>
 </div>
-  </div>
-
-  <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
-
-      </div>
-
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside>
 </div>
 
 
 
-      <footer><div class="copyright">
-  <p></p>
-<p>Developed by David Bolin, Xiaotian Jin, Alexandre Simas, Jonas Wallin.</p>
+    <footer><div class="pkgdown-footer-left">
+  <p>Developed by David Bolin, Xiaotian Jin, Alexandre Simas, Jonas Wallin.</p>
 </div>
 
-<div class="pkgdown">
-  <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+<div class="pkgdown-footer-right">
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
 </div>
 
-      </footer>
+    </footer>
 </div>
-
 
 
 

@@ -10,26 +10,32 @@ control_opt(
   iterations = 500,
   estimation = TRUE,
   standardize_fixed = TRUE,
-  stop_points = 10,
-  iters_per_check = iterations/stop_points,
+  n_batch = 10,
+  iters_per_check = iterations/n_batch,
   optimizer = adam(),
   start_sd = 0.5,
   n_parallel_chain = 4,
   max_num_threads = n_parallel_chain,
-  exchange_VW = TRUE,
-  n_slope_check = 3,
-  std_lim = 0.01,
-  trend_lim = 0.01,
   print_check_info = FALSE,
   max_relative_step = 0.5,
   max_absolute_step = 0.5,
-  converge_eps = 1e-05,
   rao_blackwellization = FALSE,
   n_trace_iter = 10,
   sampling_strategy = "all",
-  solver_type = if (Sys.info()["sysname"] == "Darwin") "accelerate" else "supernodal",
+  solver_backend = if (Sys.info()["sysname"] == "Darwin") "accelerate" else "cholmod",
+  solver_type = "llt",
   verbose = FALSE,
-  store_traj = TRUE
+  store_traj = TRUE,
+  robust = FALSE,
+  n_min_batch = 3,
+  n_slope_check = 3,
+  trend_std_conv_check = TRUE,
+  std_lim = 0.01,
+  trend_lim = 0.01,
+  R_hat_conv_check = TRUE,
+  max_R_hat = 1.1,
+  pflug_conv_check = TRUE,
+  pflug_alpha = 0.9
 )
 }
 \arguments{
@@ -43,13 +49,13 @@ control_opt(
 
 \item{standardize_fixed}{whether or not standardize the fixed effect}
 
-\item{stop_points}{number of stop points for convergence check (or specify iters_per_check)}
+\item{n_batch}{number of checkpoints; optimization is split into \code{n_batch} equal batches}
 
-\item{iters_per_check}{run how many iterations between each check point (or specify stop_points)}
+\item{iters_per_check}{run how many iterations between each check point (or specify \code{n_batch})}
 
-\item{optimizer}{choose different sgd optimization method, 
-currently support "precond_sgd", "momentum", "adagrad", "rmsprop", "adam", "adamW"
-see precond_sgd, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW}
+\item{optimizer}{choose different sgd optimization method,
+currently support "sgd", "precond_sgd", "momentum", "adagrad", "rmsprop", "adam", "adamW"
+see ?sgd, ?precond_sgd, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW}
 
 \item{start_sd}{standard deviation of the initial parameter (1st chain fixed, other chains random), set 0 to be fixed for all chains}
 
@@ -58,21 +64,11 @@ see precond_sgd, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW}
 \item{max_num_threads}{maximum number of threads used for parallel computing, by default will be set same as n_parallel_chain.
 If it is more than n_parallel_chain, the rest will be used to parallel different replicates of the model.}
 
-\item{exchange_VW}{exchange last V and W in each chian}
-
-\item{n_slope_check}{number of stop points for regression}
-
-\item{std_lim}{maximum allowed standard deviation}
-
-\item{trend_lim}{maximum allowed slope}
-
 \item{print_check_info}{print the convergence information}
 
 \item{max_relative_step}{max relative step allowed in 1 iteration}
 
 \item{max_absolute_step}{max absolute step allowed in 1 iteration}
-
-\item{converge_eps}{convergence threshold, test if grad.norm() < converge_eps}
 
 \item{rao_blackwellization}{use rao_blackwellization}
 
@@ -82,15 +78,31 @@ If it is more than n_parallel_chain, the rest will be used to parallel different
 "all" means using all replicates in each iteration,
 "ws" means weighted sampling (each iteration use 1 replicate to compute the gradient, the sample probability is proption to its number of observations)}
 
-\item{solver_type}{"eigen" means using eigen solver
-"cholmod" means using cholmod solver
-"supernodal" means using supernodal solver
-"accelerate" means using accelerate solver
-"pardiso" means using pardiso solver}
+\item{solver_backend}{backend in ("eigen", "cholmod", "accelerate", "pardiso")}
+
+\item{solver_type}{factorization type: "llt" or "ldlt"}
 
 \item{verbose}{print estimation}
 
-\item{store_traj}{store the optimizer trajectory for diagnostics (set \code{FALSE} to reduce memory)}
+\item{store_traj}{store the optimizer trajectory for diagnostics (set FALSE to reduce memory)}
+
+\item{n_min_batch}{minimum number of checkpoints before any convergence diagnostic is attempted}
+
+\item{n_slope_check}{number of checkpoints used as the regression window for the trend test}
+
+\item{trend_std_conv_check}{enable the trend/std diagnostic (uses \code{std_lim}, \code{trend_lim}, \code{n_slope_check})}
+
+\item{std_lim}{maximum allowed standard deviation}
+
+\item{trend_lim}{maximum allowed slope}
+
+\item{max_R_hat}{maximum allowed R_hat}
+
+\item{pflug_conv_check}{use Pflug diagnostic for convergence check}
+
+\item{pflug_alpha}{scaling factor (0-1] for Pflug criterion: require \code{pflug_sum < pflug_alpha * max_pflug_sum}}
+
+\item{max_R_hat_conv_check}{use max_R_hat for convergence check}
 }
 \value{
 list of control variables
@@ -100,9 +112,14 @@ These are configurations for \code{ngme}
 optimization process.
 }
 \details{
-To enable convergence check, we need multiple chains running.
- We compare the trend of the estimated parameter of length
- \code{n_slope_check} (linear regression) with \code{trend_lim}.
- We compare the standard devation of estimated parameters (in different chains)
- with std_lim.
+Convergence diagnostics (multi-chain):
+* R-hat: per-parameter Gelman–Rubin statistic; passes if \code{R_hat <= max_R_hat}.
+* Trend/Std: uses the last \code{n_slope_check} checkpoints after at least \code{n_min_batch} batches.
+  Passes when both the relative std (\code{sqrt(var)/|mean| <= std_lim}) and linear trend
+  of the means (\code{|slope| <= trend_lim}) satisfy their thresholds.
+* Pflug: per-chain criterion \code{pflug_sum < pflug_alpha * max_pflug_sum} in the latest batch;
+  if all chains satisfy it, overall convergence is declared.
+Checks are evaluated every \code{iters_per_check = iterations / n_batch}. A parameter is marked
+converged if any enabled parameter-level diagnostic (R-hat or Trend/Std) passes; the run stops
+when all parameters converge or when the Pflug diagnostic triggers.
 }

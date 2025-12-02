@@ -8,8 +8,6 @@ f(
   map,
   model,
   noise = noise_normal(),
-  mesh = NULL,
-  control = control_f(),
   name = "field",
   data = NULL,
   group = NULL,
@@ -18,11 +16,10 @@ f(
   A = NULL,
   W = NULL,
   fix_W = FALSE,
-  fix_theta_K = FALSE,
+  fix_K = FALSE,
   prior_theta_K = ngme_prior("normal", param = c(0, 0.001)),
   subset = rep(TRUE, length_map(map)),
-  debug = FALSE,
-  ...
+  debug = FALSE
 )
 }
 \arguments{
@@ -32,12 +29,6 @@ f(
 
 \item{noise}{ngme_noise object, noise_nig() or noise_gal()}
 
-\item{mesh}{mesh for the model, if not provided, will be built from map. 
-Can be a single mesh object or a list of mesh objects for different replicates.
-When using replicates, provide mesh as a list where mesh[[i]] corresponds to replicate i.}
-
-\item{control}{control variables for latent model}
-
 \item{name}{name of the field, for later use, if not provided, will be "field1" etc.}
 
 \item{data}{specifed or inherit from ngme() function}
@@ -46,25 +37,22 @@ When using replicates, provide mesh as a list where mesh[[i]] corresponds to rep
 
 \item{which_group}{belong to which group}
 
-\item{replicate}{factor indicating replicate structure for INLA-style replicates. 
+\item{replicate}{factor indicating replicate structure for INLA-style replicates.
 When provided, operators and A matrices will be block-diagonalized across replicates.}
 
-\item{A}{observation matrix, automatically computed given map and model except for Bayesian regression}
+\item{A}{observation matrix, automatically computed given map and model}
 
 \item{W}{starting value of the process}
 
 \item{fix_W}{stop sampling for W}
 
-\item{fix_theta_K}{fix the estimation for theta_K.}
+\item{fix_K}{fix the estimation of parameter of K}
 
 \item{prior_theta_K}{prior for theta_K}
 
 \item{subset}{subset of the model}
 
 \item{debug}{debug mode}
-
-\item{...}{additional arguments (e.g. parameters for model)
-inherit the data from ngme function}
 }
 \value{
 a list for constructing latent model, e.g. A, h, C, G,
@@ -85,7 +73,7 @@ as a list of mesh objects. The number of meshes should match the number of repli
 For example: \code{mesh = list(mesh1, mesh2, mesh3)} for 3 replicates.
 
 When using the `replicate` argument, the operator matrices will be block-diagonalized.
-For a generic operator K = param1 * Matrix1 + param2 * Matrix2, with 2 replicates, 
+For a generic operator K = param1 * Matrix1 + param2 * Matrix2, with 2 replicates,
 the resulting operator becomes:
 K = param1 * bdiag(Matrix1_rep1, Matrix1_rep2) + param2 * bdiag(Matrix2_rep1, Matrix2_rep2)
 Similarly, the A matrix will be block-diagonalized as bdiag(A_rep1, A_rep2, ...).

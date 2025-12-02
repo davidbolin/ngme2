@@ -5,206 +5,11 @@
 #include <Rcpp.h>
 #undef COMPLEX
 
+#include "MatrixAlgebra.h"
+#include <Eigen/Dense>
+#include <Eigen/Sparse>
 #include <iostream>
 #include <string.h>
-#include <Eigen/Dense>
-#include <Eigen/LU>
-#include <Eigen/Sparse>
-#include "MatrixAlgebra.h"
-
-
-class solver
-{
-private:
-public:
-  int n;
-  solver(const solver &){};
-  solver(){};
-  virtual ~solver(){};
-  virtual void init(int, int, int, double, int) = 0;
-  // virtual void initFromList(int, Rcpp::List const &) = 0;
-  virtual inline void analyze(const Eigen::SparseMatrix<double, 0, int> &) = 0;
-  virtual void compute(const Eigen::SparseMatrix<double, 0, int> &) = 0;
-  virtual void compute(const Eigen::MatrixXd &) { std::cout << "compute not implimented for MatrixXd\n"; };
-  virtual inline Eigen::VectorXd solve(Eigen::VectorXd &v) = 0;
-  virtual inline Eigen::VectorXd solve(Eigen::VectorXd &v, Eigen::VectorXd &) = 0;
-  virtual double trace(const Eigen::MatrixXd &) = 0;
-  virtual double trace(const Eigen::SparseMatrix<double, 0, int> &) = 0;
-  virtual double trace2(const SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &) = 0;
-  virtual inline double logdet() { return 0.0; }
-  virtual inline Eigen::VectorXd Qinv_diag()
-  {
-    Eigen::VectorXd a;
-    a.setZero(1);
-    return a;
-  }
-  virtual Eigen::VectorXd rMVN(Eigen::VectorXd &, Eigen::VectorXd &) {
-    std::cout << "rMVN not implimented\n";
-    throw;
-  }
-  
-  // sample from N(Q^-1 mu, Q^-1), Q = G^T G + H^T H
-  virtual Eigen::VectorXd rMVN(
-    SparseMatrix<double, 0, int> & G,
-    SparseMatrix<double, 0, int> & H,
-    Eigen::VectorXd & mu, 
-    Eigen::VectorXd & z1, 
-    Eigen::VectorXd & z2
-  ) {
-    Eigen::VectorXd x = G.transpose() * z1 + H.transpose() * z2 + mu;
-    return solve(x);
-  }
-
-  virtual SparseMatrix<double, 0, int> return_Qinv()
-  {
-    SparseMatrix<double, 0, int> a;
-    std::cout << "return_Qinv not implimented for MatrixXd\n";
-    return a;
-  }
-};
-
-
-class cholesky_solver : public virtual solver
-{
-private:
-  bool Qi_computed {false}, QU_computed {false};
-  double ld;
-  Eigen::SimplicialLLT<Eigen::SparseMatrix<double, 0, int> > R;
-  Eigen::SparseMatrix<double, 0, int> Qi;
-  Eigen::MatrixXd U, QU;
-  int N {10};
-  void set_ld();
-
-public:
-  cholesky_solver(const cholesky_solver &){};
-  cholesky_solver(){};
-  ~cholesky_solver(){};
-  void init(int, int, int, double, int);
-  // void initFromList(int, Rcpp::List const &);
-
-  inline void set_N(int n) { N = n; }
-  inline void analyze(const Eigen::SparseMatrix<double, 0, int> &M) {
-    R.analyzePattern(M);
-    QU_computed = false;
-  }
-  void compute(const Eigen::SparseMatrix<double, 0, int> &);
-
-  inline Eigen::VectorXd solve(Eigen::VectorXd &v, Eigen::VectorXd &x) { 
-    return R.solve(v); 
-  }
-
-  inline Eigen::VectorXd solve(Eigen::VectorXd &v) { 
-    return R.solve(v); 
-  }
-
-  inline Eigen::SparseMatrix<double, 0, int> solveMatrix(const Eigen::SparseMatrix<double, 0, int> &v) { return R.solve(v); }
-  double trace(const Eigen::MatrixXd &);
-  double trace(const Eigen::SparseMatrix<double, 0, int> &);
-  double trace_num(const Eigen::SparseMatrix<double, 0, int> &, unsigned int seed = 0);
-  double trace2(const SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &);
-  inline double logdet()
-  {
-    set_ld();
-    return ld;
-  }
-  VectorXd Qinv_diag();
-  Eigen::VectorXd rMVN(Eigen::VectorXd &, Eigen::VectorXd &);
-  Eigen::VectorXd rMVN(
-    SparseMatrix<double, 0, int> & G,
-    SparseMatrix<double, 0, int> & H,
-    Eigen::VectorXd & mu, 
-    Eigen::VectorXd & z1, 
-    Eigen::VectorXd & z2
-  );
-
-  SparseMatrix<double, 0, int> return_Qinv();
-};
-
-
-class lu_solver : public virtual solver
-{
-private:
-  Eigen::MatrixXd Kinv;
-  Eigen::FullPivLU<Eigen::MatrixXd> LU_K;
-  int Kinv_computed;
-
-public:
-  void init(int, int, int, double, int);
-  void initFromList(int, Rcpp::List const &);
-  void analyze(const Eigen::SparseMatrix<double, 0, int> &);
-  void compute(const Eigen::SparseMatrix<double, 0, int> &);
-  void compute(const Eigen::MatrixXd &);
-  Eigen::VectorXd solve(Eigen::VectorXd &v, Eigen::VectorXd &);
-  double trace(const Eigen::MatrixXd &);
-  double trace(const Eigen::SparseMatrix<double, 0, int> &);
-  double trace2(const SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &);
-  double logdet();
-};
-
-class lu_sparse_solver : public virtual solver
-{
-private:
-  int n;
-  Eigen::SparseMatrix<double, 0, int> KKtinv;
-  Eigen::SparseMatrix<double, 0, int> K;
-  Eigen::SimplicialLLT<Eigen::SparseMatrix<double, 0, int> > L_KKt;
-  int KKtinv_computed, QU_computed;
-  Eigen::MatrixXd U, QU;
-  int N {10};
-
-public:
-  inline void set_N(int n) { N = n; }
-  void init(int, int, int, double, int);
-  // void initFromList(int, Rcpp::List const &);
-  void analyze(const Eigen::SparseMatrix<double, 0, int> &);
-  void compute(const Eigen::SparseMatrix<double, 0, int> &);
-  void compute_KTK(const Eigen::SparseMatrix<double, 0, int> &);
-  double trace(const Eigen::MatrixXd &);
-  double trace(const Eigen::SparseMatrix<double, 0, int> &);
-  double trace2(const SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &);
-  double trace_num(const Eigen::SparseMatrix<double, 0, int> &, unsigned int seed = 0);
-
-  double trace0(Eigen::SparseMatrix<double, 0, int> &);
-  inline Eigen::VectorXd solve(Eigen::VectorXd &v, Eigen::VectorXd &x) { return solve_internal(v); }
-  inline Eigen::VectorXd solve(Eigen::VectorXd &v) { return solve_internal(v); }
-  inline Eigen::VectorXd solve(Eigen::VectorXd v) { return solve_internal(v); }
-  double logdet();
-
-private:
-  inline Eigen::VectorXd solve_internal(const Eigen::VectorXd &v) {
-    return L_KKt.solve(K.transpose() * v);
-  }
-};
-
-
-class iterative_solver : public virtual solver
-{
-private:
-  int N;
-  Eigen::MatrixXd U, QU, MQU, MU, prevQU;
-  bool QU_computed;
-  Eigen::ConjugateGradient<Eigen::SparseMatrix<double, 0, int>, Lower, Eigen::IncompleteCholesky<double> > R;
-  // Eigen::ConjugateGradient<Eigen::SparseMatrix<double, 0, int>, Lower|Upper, DiagonalPreconditioner<double> > R;
-  int curr_iter {0};
-public:
-  ~iterative_solver(){};
-  void init(int, int, int, double, int);
-  void initFromList(int, Rcpp::List const &);
-  
-  // Update this line to match the base class signature
-  inline void analyze(const Eigen::SparseMatrix<double, 0, int> &M) override { 
-    R.compute(M);
-    QU_computed = false;
-  }
-  
-  void compute(const Eigen::SparseMatrix<double, 0, int> &);
-  inline Eigen::VectorXd solve(Eigen::VectorXd &v) { return R.solve(v); }
-  inline Eigen::VectorXd solve(Eigen::VectorXd &v, Eigen::VectorXd &x) { return R.solveWithGuess(v, x); }
-  double trace(const Eigen::MatrixXd &);
-  double trace(const Eigen::SparseMatrix<double, 0, int> &);
-  double trace2(const SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &);
-  double trace_num(const SparseMatrix<double, 0, int> &, unsigned int seed = 0);
-};
 
 #include <cholmod.h>
 #include <Eigen/CholmodSupport>
@@ -215,175 +20,387 @@ public:
 #include <Eigen/PardisoSupport>
 #endif
 
-class sparse_llt_solver : public virtual solver {
+class sparse_llt_solver {
 private:
-  Eigen::SimplicialLLT<Eigen::SparseMatrix<double, 0, int> > R_eigen;
-  Eigen::CholmodSimplicialLLT<Eigen::SparseMatrix<double, 0, int> > R_simplicial;
-  Eigen::CholmodSupernodalLLT<Eigen::SparseMatrix<double, 0, int> > R_supernodal;
+  Eigen::SimplicialLLT<Eigen::SparseMatrix<double, 0, int>> R_eigen;
+  Eigen::SimplicialLDLT<Eigen::SparseMatrix<double, 0, int>> R_ldlt;
+  Eigen::CholmodDecomposition<Eigen::SparseMatrix<double, 0, int>>
+      R_cholmod_ldlt;
+  Eigen::CholmodSupernodalLLT<Eigen::SparseMatrix<double, 0, int>> R_supernodal;
 #ifdef __APPLE__
-  Eigen::AccelerateLLT<Eigen::SparseMatrix<double, 0, int> > R_accelerate;
+  Eigen::AccelerateLLT<Eigen::SparseMatrix<double, 0, int>> R_accelerate;
+  Eigen::AccelerateLDLT<Eigen::SparseMatrix<double, 0, int>> R_accelerate_ldlt;
 #endif
 #ifdef USEMKL
-  Eigen::PardisoLLT<Eigen::SparseMatrix<double, 0, int> > R_pardiso;
+  Eigen::PardisoLLT<Eigen::SparseMatrix<double, 0, int>> R_pardiso;
+  Eigen::PardisoLDLT<Eigen::SparseMatrix<double, 0, int>> R_pardiso_ldlt;
 #endif
-
-  int solver_type {0};
-  bool Qi_computed {false}, QU_computed {false}; 
+  int solver_type{0};
+  int n{0}; // dimension of the factorized system (rows of Q)
+  int N_iter{10};
+  bool isSymmetric{true};
   Eigen::SparseMatrix<double, 0, int> Qi;
   Eigen::MatrixXd U, QU;
-  int N {10};
+  bool Qi_computed{false}, QU_computed{false};
+  // For non-symmetric mode we keep the last K to build normal equations and to
+  // apply K^T on RHS when required
+  Eigen::SparseMatrix<double, 0, int> K_last;
+
 public:
-  void init(int, int, int, double, int);
-  void analyze(const Eigen::SparseMatrix<double, 0, int> & M) {
-    switch (solver_type) {
-      case 0:
-        R_eigen.analyzePattern(M);
-        break;
-      case 1:
-        R_simplicial.analyzePattern(M);
-        break;
-      case 2:
-        R_supernodal.analyzePattern(M);
-        break;
-#ifdef __APPLE__
-      case 3:
-        R_accelerate.analyzePattern(M);
-        break;
-#endif
-#ifdef USEMKL
-      case 4:
-        R_pardiso.analyzePattern(M);
-        break;
-#endif
-      default:
-        throw;
-    }
-    QU_computed = false;
+  sparse_llt_solver() = default;
+  sparse_llt_solver(int stype, int nin, int Ntrace, bool symmetric)
+      : solver_type(stype), n(nin), N_iter(Ntrace), isSymmetric(symmetric) {
+    U.resize(n, N_iter);
+    QU.resize(n, N_iter);
   }
 
-  void compute(const Eigen::SparseMatrix<double, 0, int> & M) {
+  // Backward-compatible init plus symmetric toggle
+  inline void init(int nin, int Ntrace, int /*max_iter*/, double /*tol*/,
+                   int stype) {
+    init(nin, Ntrace, /*symmetric*/ true, stype);
+  }
+  inline void init(int nin, int Ntrace, bool symmetric, int stype) {
+    n = nin;
+    N_iter = Ntrace;
+    solver_type = stype;
+    isSymmetric = symmetric;
+    U.resize(n, N_iter);
+    QU.resize(n, N_iter);
+    Qi_computed = QU_computed = false;
+  }
+  void analyze(const Eigen::SparseMatrix<double, 0, int> &M) {
     switch (solver_type) {
-      case 0:
-        R_eigen.factorize(M);
-        break;
-      case 1:
-        R_simplicial.factorize(M);
-        break;
-      case 2:
-        R_supernodal.factorize(M);
-        break;
+    case 0:
+      if (isSymmetric) {
+        R_eigen.analyzePattern(M);
+      } else {
+        R_eigen.analyzePattern(M.transpose() * M);
+      }
+      break;
+    case 1:
+      if (isSymmetric) {
+        R_ldlt.analyzePattern(M);
+      } else {
+        R_ldlt.analyzePattern(M.transpose() * M);
+      }
+      break;
+    case 2:
+      if (isSymmetric) {
+        R_supernodal.analyzePattern(M);
+      } else {
+        R_supernodal.analyzePattern(M.transpose() * M);
+      }
+      break;
+    case 3:
+      if (isSymmetric) {
+        R_cholmod_ldlt.analyzePattern(M);
+      } else {
+        R_cholmod_ldlt.analyzePattern(M.transpose() * M);
+      }
+      break;
 #ifdef __APPLE__
-      case 3:
-        R_accelerate.factorize(M);
-        break;
+    case 4:
+      if (isSymmetric) {
+        R_accelerate.analyzePattern(M);
+      } else {
+        R_accelerate.analyzePattern(M.transpose() * M);
+      }
+      break;
+    case 5:
+      if (isSymmetric) {
+        R_accelerate_ldlt.analyzePattern(M);
+      } else {
+        R_accelerate_ldlt.analyzePattern(M.transpose() * M);
+      }
+      break;
 #endif
 #ifdef USEMKL
-      case 4:
-        R_pardiso.factorize(M);
-        break;
+    case 6:
+      if (isSymmetric) {
+        R_pardiso.analyzePattern(M);
+      } else {
+        R_pardiso.analyzePattern(M.transpose() * M);
+      }
+      break;
+    case 7:
+      if (isSymmetric) {
+        R_pardiso_ldlt.analyzePattern(M);
+      } else {
+        R_pardiso_ldlt.analyzePattern(M.transpose() * M);
+      }
+      break;
 #endif
-      default:
-        throw;
+    default:
+      throw;
+    }
+    QU_computed = false;
+    n = isSymmetric ? M.rows() : M.cols();
+    U.resize(n, N_iter);
+    QU.resize(n, N_iter);
+  }
+
+  void compute(const Eigen::SparseMatrix<double, 0, int> &M) {
+    switch (solver_type) {
+    case 0:
+      if (isSymmetric) {
+        R_eigen.factorize(M);
+      } else {
+        K_last = M;
+        R_eigen.factorize(M.transpose() * M);
+      }
+      break;
+    case 1:
+      if (isSymmetric) {
+        R_ldlt.factorize(M);
+      } else {
+        K_last = M;
+        R_ldlt.factorize(M.transpose() * M);
+      }
+      break;
+    case 2:
+      if (isSymmetric) {
+        R_supernodal.factorize(M);
+      } else {
+        K_last = M;
+        R_supernodal.factorize(M.transpose() * M);
+      }
+      break;
+    case 3:
+      if (isSymmetric) {
+        R_cholmod_ldlt.setMode(Eigen::CholmodLDLt);
+        R_cholmod_ldlt.factorize(M);
+      } else {
+        K_last = M;
+        R_cholmod_ldlt.setMode(Eigen::CholmodLDLt);
+        R_cholmod_ldlt.factorize(M.transpose() * M);
+      }
+      break;
+#ifdef __APPLE__
+    case 4:
+      if (isSymmetric) {
+        R_accelerate.factorize(M);
+      } else {
+        K_last = M;
+        R_accelerate.factorize(M.transpose() * M);
+      }
+      break;
+    case 5:
+      if (isSymmetric) {
+        R_accelerate_ldlt.factorize(M);
+      } else {
+        K_last = M;
+        R_accelerate_ldlt.factorize(M.transpose() * M);
+      }
+      break;
+#endif
+#ifdef USEMKL
+    case 6:
+      if (isSymmetric) {
+        R_pardiso.factorize(M);
+      } else {
+        K_last = M;
+        R_pardiso.factorize(M.transpose() * M);
+      }
+      break;
+    case 7:
+      if (isSymmetric) {
+        R_pardiso_ldlt.factorize(M);
+      } else {
+        K_last = M;
+        R_pardiso_ldlt.factorize(M.transpose() * M);
+      }
+      break;
+#endif
+    default:
+      throw;
     }
     Qi_computed = false;
     QU_computed = false;
+    n = isSymmetric ? M.rows() : M.cols();
+    U.resize(n, N_iter);
+    QU.resize(n, N_iter);
   }
 
-  inline Eigen::VectorXd solve(Eigen::VectorXd &v, Eigen::VectorXd &x) { 
-    return solve(v);
-  }
-
-  inline Eigen::VectorXd solve(Eigen::VectorXd &v) { 
+  inline Eigen::ComputationInfo factorization_info() const {
     switch (solver_type) {
-      case 0:
-        return R_eigen.solve(v);
-      case 1:
-        return R_simplicial.solve(v);
-      case 2:
-        return R_supernodal.solve(v);
+    case 0:
+      return R_eigen.info();
+    case 1:
+      return R_ldlt.info();
+    case 2:
+      return R_supernodal.info();
+    case 3:
+      return R_cholmod_ldlt.info();
 #ifdef __APPLE__
-      case 3:
-        return R_accelerate.solve(v);
+    case 4:
+      return R_accelerate.info();
+    case 5:
+      return R_accelerate_ldlt.info();
 #endif
 #ifdef USEMKL
-      case 4:
-        return R_pardiso.solve(v);
+    case 6:
+      return R_pardiso.info();
+    case 7:
+      return R_pardiso_ldlt.info();
 #endif
-      default:
-        throw;
+    default:
+      return Eigen::InvalidInput;
     }
   }
 
-  inline Eigen::MatrixXd solve(Eigen::MatrixXd &v) { 
+  inline bool factorization_success() const {
+    return factorization_info() == Eigen::Success;
+  }
+
+  // sample from N(Q^-1 mu, Q^-1), Q = G^T G + H^T H
+  inline Eigen::VectorXd rMVN(SparseMatrix<double, 0, int> &G,
+                              SparseMatrix<double, 0, int> &H,
+                              Eigen::VectorXd &mu, Eigen::VectorXd &z1,
+                              Eigen::VectorXd &z2) {
+    Eigen::VectorXd x = G.transpose() * z1 + H.transpose() * z2 + mu;
+    return solve(x);
+  }
+
+  inline Eigen::VectorXd solve(Eigen::VectorXd &v) {
+    if (!isSymmetric && K_last.rows() > 0) {
+      Eigen::VectorXd rhs = K_last.transpose() * v; // solve (K^T K) y = K^T v
+      return solve_raw(rhs);
+    }
+    return solve_raw(v);
+  }
+
+  inline Eigen::VectorXd solve_raw(Eigen::VectorXd &rhs) {
     switch (solver_type) {
-      case 0:
-        // std::cout << "Using eigen solver" << std::endl;
-        return R_eigen.solve(v);
-      case 1:
-        // std::cout << "Using cholmod solver" << std::endl;
-        return R_simplicial.solve(v);
-      case 2:
-        // std::cout << "Using supernodal solver" << std::endl;
-        return R_supernodal.solve(v);
+    case 0:
+      return R_eigen.solve(rhs);
+    case 1:
+      return R_ldlt.solve(rhs);
+    case 2:
+      return R_supernodal.solve(rhs);
+    case 3:
+      return R_cholmod_ldlt.solve(rhs);
 #ifdef __APPLE__
-      case 3:
-        // std::cout << "Using accelerate solver" << std::endl;
-        return R_accelerate.solve(v);
+    case 4:
+      return R_accelerate.solve(rhs);
+    case 5:
+      return R_accelerate_ldlt.solve(rhs);
 #endif
 #ifdef USEMKL
-      case 4:
-        // std::cout << "Using pardiso solver" << std::endl;
-        return R_pardiso.solve(v);
+    case 6:
+      return R_pardiso.solve(rhs);
+    case 7:
+      return R_pardiso_ldlt.solve(rhs);
 #endif
-      default:
-        throw;
+    default:
+      throw;
     }
   }
 
+  inline Eigen::MatrixXd solve(Eigen::MatrixXd &v) {
+    if (!isSymmetric && K_last.rows() > 0) {
+      Eigen::MatrixXd rhs = K_last.transpose() * v;
+      return solve_raw(rhs);
+    }
+    return solve_raw(v);
+  }
 
-  inline Eigen::SparseMatrix<double, 0, int> solveMatrix(const Eigen::SparseMatrix<double, 0, int> &v) { 
+  inline Eigen::MatrixXd solve_raw(Eigen::MatrixXd &rhs) {
     switch (solver_type) {
-      case 0:
-        return R_eigen.solve(v);
-      case 1:
-        return R_simplicial.solve(v);
-      case 2:
-        return R_supernodal.solve(v);
+    case 0:
+      return R_eigen.solve(rhs);
+    case 1:
+      return R_ldlt.solve(rhs);
+    case 2:
+      return R_supernodal.solve(rhs);
+    case 3:
+      return R_cholmod_ldlt.solve(rhs);
 #ifdef __APPLE__
-      case 3:
-        return R_accelerate.solve(v);
+    case 4:
+      return R_accelerate.solve(rhs);
+    case 5:
+      return R_accelerate_ldlt.solve(rhs);
 #endif
 #ifdef USEMKL
-      case 4:
-        return R_pardiso.solve(v);
+    case 6:
+      return R_pardiso.solve(rhs);
+    case 7:
+      return R_pardiso_ldlt.solve(rhs);
 #endif
-      default:
-        throw;
+    default:
+      throw;
     }
   }
-  
-  double trace(const Eigen::MatrixXd &) {return 0.0;}
-  double trace(const Eigen::SparseMatrix<double, 0, int> &) {return 0.0;}
-  double trace2(const SparseMatrix<double, 0, int> &, SparseMatrix<double, 0, int> &) {return 0.0;}
-  double trace_num(const Eigen::SparseMatrix<double, 0, int> &, unsigned int seed = 0);
+
+  inline Eigen::SparseMatrix<double, 0, int>
+  solve(const Eigen::SparseMatrix<double, 0, int> &v) {
+    if (!isSymmetric && K_last.rows() > 0) {
+      Eigen::SparseMatrix<double, 0, int> rhs = K_last.transpose() * v;
+      return solve_raw(rhs);
+    }
+    return solve_raw(v);
+  }
+
+  inline Eigen::SparseMatrix<double, 0, int>
+  solve_raw(const Eigen::SparseMatrix<double, 0, int> &rhs) {
+    switch (solver_type) {
+    case 0:
+      return R_eigen.solve(rhs);
+    case 1:
+      return R_ldlt.solve(rhs);
+    case 2:
+      return R_supernodal.solve(rhs);
+    case 3:
+      return R_cholmod_ldlt.solve(rhs);
+#ifdef __APPLE__
+    case 4:
+      return R_accelerate.solve(rhs);
+    case 5:
+      return R_accelerate_ldlt.solve(rhs);
+#endif
+#ifdef USEMKL
+    case 6:
+      return R_pardiso.solve(rhs);
+    case 7:
+      return R_pardiso_ldlt.solve(rhs);
+#endif
+    default:
+      throw;
+    }
+  }
+
+  // Hutchinson estimator for tr(B Q^{-1} A Q^{-1}).
+  // For symmetric K (Q=K), this equals tr(K^{-1} A K^{-1} B) by cyclicity.
+  // For non-symmetric K (Q=K^T K), we internally use A_eff = K^T A so that
+  //   tr(B Q^{-1} A_eff Q^{-1}) = tr((K^T K)^{-1} K^T A (K^T K)^{-1} B)
+  double trace2(const Eigen::SparseMatrix<double, 0, int> &A,
+                const Eigen::SparseMatrix<double, 0, int> &B,
+                unsigned int seed = 0);
+  double trace(const Eigen::SparseMatrix<double, 0, int> &,
+               unsigned int seed = 0);
   double logdet() {
     switch (solver_type) {
-      case 0:
-        return log(R_eigen.determinant());
-      case 1:
-        return R_simplicial.logDeterminant();
-      case 2:
-        return R_supernodal.logDeterminant();
+    case 0:
+      return log(R_eigen.determinant());
+    case 1:
+      return R_ldlt.vectorD().array().log().sum();
+    case 2:
+      return R_supernodal.logDeterminant();
+    case 3:
+      return R_cholmod_ldlt.logDeterminant();
 #ifdef __APPLE__
-      case 3:
-        throw;
+    case 4:
+      throw;
+    case 5:
+      throw;
 #endif
 #ifdef USEMKL
-      case 4:
-        throw;
+    case 6:
+      throw;
+    case 7:
+      throw;
 #endif
-      default:
-        throw;
+    default:
+      throw;
     }
   }
 };

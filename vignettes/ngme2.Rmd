@@ -1,11 +1,43 @@
 ---
-title: "Ngme2 - A new Flexible R Package for Latent non-Gaussian Models"
+title: "Ngme2 - A Unified, Efficient, and Flexible non-Gaussian Modeling Framework"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Ngme2 - A new Flexible R Package for Latent non-Gaussian Models}
+  %\VignetteIndexEntry{Ngme2 - A Unified, Efficient, and Flexible non-Gaussian Modeling Framework}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+references:
+- id: Asar2020
+  title: "Linear Mixed Effects Models for Non-Gaussian Continuous Repeated Measurement Data"
+  author:
+  - family: Asar
+    given: Özgür
+  - family: Bolin
+    given: David
+  - family: Diggle
+    given: Peter J.
+  - family: Wallin
+    given: Jonas
+  container-title: "Journal of the Royal Statistical Society Series C: Applied Statistics"
+  type: article-journal
+  volume: 69
+  issue: 5
+  page: "1015-1065"
+  issued:
+    year: 2020
+  doi: 10.1111/rssc.12405
+- id: Bolin2019
+  title: "Multivariate type G Matérn stochastic partial differential equation random fields"
+  author:
+  - family: Bolin
+    given: David
+  - family: Wallin
+    given: Jonas
+  container-title: "Journal of the Royal Statistical Society Series B: Statistical Methodology"
+  type: article-journal
+  issued:
+    year: 2019
+  doi: 10.1111/rssb.12351
 ---
 
 ```{r setup, include = FALSE}
@@ -18,52 +50,57 @@ set.seed(10)
 
 ## Introduction
 
-In this vignette we provide a brief introduction to the `ngme2` package.
+Latent Gaussian models (LGMs) have emerged as a cornerstone of modern statistical inference, providing a powerful framework for modeling hierarchical dependencies in data. 
 
-`Ngme2` (https://github.com/davidbolin/ngme2) is the updated version of `Ngme`, a package for estimating latent non-Gaussian models for repeated measurement data.
-`Ngme2` follows a hierachical structure, differnet components (latent processes, different types of noises) are flexible to change and combine.
+Despite their versatility, LGMs encounter fundamental limitations when applied to data exhibiting non-Gaussian characteristics. The Gaussian assumption imposes inherent constraints that may be overly restrictive for many real-world phenomena. 
+Some common non-Gaussian features exhibited by real world data include asymmetry, heavy tails, and non-smoothness. 
 
-### 1 Features
+[`ngme2`](https://github.com/davidbolin/ngme2) R package is a unified, efficient, and flexible modeling software for modeling non-Gaussian data. It is the updated version of [`ngme`](https://github.com/davidbolin/ngme), which was first introduced in [@Asar2020]
+
+### Features
 
 1. Support temporal models like **AR(1)**, **Ornstein−Uhlenbeck** and **random walk** processes, and spatial models like **Matern** fields.
-2. Support latent processes constructed by **non-Gaussian noises** (normal inverse Gaussian(NIG), generalized asymmetric Laplace (GAL)).
+2. Support latent processes driven by **non-Gaussian noises** (normal inverse Gaussian(NIG), generalized asymmetric Laplace (GAL), etc).
 3. Support non-Gaussian, and correlated **measurement noises**.
-4. Support doing **prediction** at unknown locations.
+4. Support kriging **prediction** at unknown locations.
 5. Support latent processes and random-effects model for **longitudinal data**.
-6. Support the bivariate type-G model, which can model 2 non-Gaussian fields jointly (Bolin 2020).
-7. Support the separable space-time model.
+6. Support the **bivariate** type-G model, which can model 2 non-Gaussian fields jointly [@Bolin2019].
+7. Support the separable **space-time** model, and non-separable space-time model.
+8. Support the user-defined model via `generic` and `generic_ns` functions.
+9. Provide estimation diagnostics, and **cross-validation** for model selection.
 
-### 2 Model Framework
+### Model Framework
 
-The package `Ngme2` provides methods for mixed effect models in the following form:
+The package `Ngme2` implements the latent linear non-Gaussian model (LLnGM) framework, which uses flexible operator formulations to describe data, latent processes, and noise in a unified way:
 
-$$
-{\bf Y}_{ij} = {\bf X}^T_{ij} {\bf \beta} + {\bf D}^T_{ij} {\bf U}_i + W_i(t_{ij}) + \epsilon_{ij},
-\qquad j=1 \ldots n_i, i=1,\ldots,m
-$$
+\begin{align}
+\text{Data:} \quad & \mathbf{Y} = \mathbf{A}\mathbf{W} + \mathbf{X}\boldsymbol{\beta} + \boldsymbol{\epsilon}^{(1)} \tag{eq:data}\\
+\text{Process:} \quad & \mathbf{K}(\boldsymbol{\theta})\mathbf{W} = \boldsymbol{\epsilon}^{(2)} \tag{eq:process}\\
+\text{Noise:} \quad & \boldsymbol{\epsilon}^{(i)} | \mathbf{V}^{(i)} \sim \mathcal{N}(\mathbf{m}^{(i)}, \boldsymbol{\Sigma}^{(i)}), \quad i = 1, 2 \tag{eq:noise} \\
+& \mathbf{m}^{(i)} = \boldsymbol{\mu}^{(i)}({\boldsymbol{\theta}}) \odot \left( \mathbf{V}^{(i)} - \mathbf{h}^{(i)} \right),  \\
+& \boldsymbol{\Sigma}^{(i)} = \text{diag}(\boldsymbol{\sigma}^{(i)}({\boldsymbol{\theta}}) \odot \boldsymbol{\sigma}^{(i)}({\boldsymbol{\theta}}) \odot \mathbf{V}^{(i)}) \\
+\text{Distribution:} \quad & \mathbf{V}_j^{(i)} \overset{\text{iid}}{\sim} \text{GIG}(\mathbf{p}_j^{(i)}(\boldsymbol{\theta}), \mathbf{a}_j^{(i)}(\boldsymbol{\theta}), \mathbf{b}_j^{(i)}(\boldsymbol{\theta})) \tag{eq:distribution} \quad i = 1, 2, \quad j = 1, \ldots, n_i
+\end{align}
 
-- $m$ is the number of subjects, $n_i$ is the number of observations for each subject,
-- $Y$ is the response variable,
-- ${\bf X}$ is the matrix of fixed effects explanatory variables,
-- ${\bf \beta}$ is the fixed effects,
-- ${\bf D}$ is the matrix of random effects explanatory variables,
-- $\bf U$ is the random effects,
-- $W_i(t_{ij})$ is a stochastic process driven by Gaussian or non-Gaussian noise,
-- $\epsilon$ is measurement error.
+The data model links observations $\mathbf{Y} \in \mathbb{R}^{n_1}$ to the latent process $\mathbf{W} \in \mathbb{R}^{n_2}$ through the observation matrix $\mathbf{A} \in \mathbb{R}^{n_1 \times n_2}$, adds fixed effects $\mathbf{X}\boldsymbol{\beta}$, and allows non-Gaussian measurement noise $\boldsymbol{\epsilon}^{(1)} \in \mathbb{R}^{n_1}$.
+
+The process model specifies the core dependency structure of $\mathbf{W}$ via the operator matrix $\mathbf{K}(\boldsymbol{\theta}) \in \mathbb{R}^{n_2 \times n_2}$, which is driven by potentially non-Gaussian noise $\boldsymbol{\epsilon}^{(2)} \in \mathbb{R}^{n_2}$. This operator-based formulation unifies a wide spectrum of model structures, from simple random effects to complex spatio-temporal patterns.
+
+Here $\odot$ denotes element-wise multiplication. The noise model defines $\boldsymbol{\epsilon}^{(1)}$ and $\boldsymbol{\epsilon}^{(2)}$ through normal mean-variance mixtures conditioned on the GIG mixing vectors $\mathbf{V}^{(1)} \in \mathbb{R}^{n_1}$ and $\mathbf{V}^{(2)} \in \mathbb{R}^{n_2}$. The parameter vector $\boldsymbol{\theta}$ collects all model parameters.
 
 Here is a simple template for using the core function `ngme` to model the single response:
 
     ngme(
-      formula=Y ~ x1 + x2 + f(index, model="ar", noise="nig"),
+      formula=Y ~ x1 + x2 + f(index, model=ar1(mesh_1d), noise=noise_nig()),
       data=data.frame(Y=Y, x1=x1, x2=x2, index=index),
-      noise = noise_normal()
+      family = "normal"
     )
 
 Here, function `f` is for modeling the stochastic process W with Gaussian or non-Gaussian noise,
 we will discuss this later.
 `noise` stands for the measurement noise distribution. In this case, the model will have a Gaussian likelihood.
 
-### 3 Non-Gaussian Model
+### Non-Gaussian Model
 
 Here we assume the non-Gaussian process is a type-G Lévy process,
 whose increments can be represented as location-scale mixtures:
@@ -89,7 +126,7 @@ where $K_1$ is a modified Bessel function of the third kind. In this form, the N
 
 The NIG model assumes that the stochastic variance $V_i$ follows an inverse Gaussian distribution with parameters $\eta$ and $\eta h_i^2$, where $h_i = \int_{\mathcal{D}} \varphi_i(\mathbf{s}) d\mathbf{s}.$
 
-```{r load-libs}
+```{r load-libs, message=FALSE, echo=FALSE}
 library(fmesher)
 library(ngme2)
 library(ggplot2)
@@ -98,28 +135,34 @@ library(dplyr)
 library(viridis)
 ```
 
+The following figure shows the density of NIG distribution with different parameters.
+
 ```{r nig, echo=FALSE, message=FALSE, fig.width=7, fig.height=15}
-nig_df_fun <-  function(x, sigma, mu){
-  data.frame(x = x, dnig = ngme2::dnig(x=x,
-                                      delta=0,
-                                      mu=mu, nu=1, sigma))
+nig_df_fun <- function(x, sigma, mu) {
+  data.frame(x = x, dnig = ngme2::dnig(
+    x = x,
+    delta = 0,
+    mu = mu, nu = 1, sigma
+  ))
 }
-params <- expand.grid(sigma = c(1, 2, 4, 8), mu = c(-5, 0, 5))
-nig_par <- mdply(params, nig_df_fun, x = seq(-20, 20, length=400))
-nig_par <- nig_par %>% mutate(label = paste0("mu = ",mu))
-ggplot(nig_par, mapping = aes(x = x, y=dnig, colour=factor(sigma)))+
-  facet_wrap(~label,scales="free", nrow=3) +
+params <- expand.grid(sigma = c(1, 2, 4, 8), mu = c(-5, 0))
+nig_par <- mdply(params, nig_df_fun, x = seq(-20, 20, length = 400))
+nig_par <- nig_par %>% mutate(label = paste0("mu = ", mu))
+ggplot(nig_par, mapping = aes(x = x, y = dnig, colour = factor(sigma))) +
+  facet_wrap(~label, scales = "free", nrow = 2) +
   geom_line() +
-  ylab("NIG density") + labs(colour = "sigma")
+  ylab("NIG density") +
+  labs(colour = "sigma")
 ```
 
 
-### 4 Parameter Estimation
+### Parameter Estimation
 
-1. Ngme2 does maximum likelihood estimation through preconditioned stochastic gradient descent.
-2. Multiple chains are run in parallel for better convergence checks.
+1. Ngme2 does maximum likelihood estimation through preconditioned stochastic gradient descent. See [Model estimation and prediction](pred_and_est.html) for more details.
+2. Multiple chains are supported for better convergence checks. 
+3. Different stochastic optimization algorithms can be used for the optimization process. See `?ngme_optimizers` for more details.
+4. Different convergence checks are supported.
 
-See [Model estimation and prediction](pred_and_est.html) for more details.
 
 ## Ngme Model Structure
 
@@ -128,7 +171,7 @@ See [Model estimation and prediction](pred_and_est.html) for more details.
 There are 2 types of common noise involved in the model, one is the innovation noise of a stochastic process, one is the measurement noise of the observations.
 They can be both specified by `noise_<type>` function.
 
-For now we support **normal**, **NIG**, and **GAL** noises.
+For now we support **normal**, **skew_t**, **NIG**, and **GAL** noises.
 
 The R class `ngme_noise` has the following interface:
 
@@ -144,40 +187,31 @@ library(ngme2)
 ```
 
 ```{r noise}
-noise_normal(sigma = 1)              # normal noise
+noise_normal(sigma = 1) # normal noise
 noise_nig(mu = 1, sigma = 2, nu = 1) # nig noise
-noise_nig(            # non-stationary nig noise
-  B_mu=matrix(c(1:10), ncol=2),
+noise_nig( # non-stationary nig noise
+  B_mu = matrix(c(1:10), ncol = 2),
   theta_mu = c(1, 2),
-  B_sigma=matrix(c(1:10), ncol=2),
-  theta_sigma = c(1,2),
-  nu = 1)
-```
-
-Additionally, `ngme2` provides a special combined noise model that merges both Gaussian and NIG noise components:
-
-```{r noise_normal_nig}
-noise_normal_nig(
-  mu = 2,             # NIG parameter mu
-  sigma_nig = 3,      # NIG noise scale
-  nu = 1,             # NIG shape parameter
-  sigma_normal = 0.8  # Normal noise standard deviation
+  B_sigma = matrix(c(1:10), ncol = 2),
+  theta_sigma = c(1, 2),
+  nu = 1
 )
+noise_skew_t(mu = 1, sigma = 2, nu = 1) # skew_t noise
 ```
 
-This combined noise model is particularly useful for complex processes where both normal variations and heavy-tailed events occur. For more details, see the dedicated vignette: `vignette("normal-nig-noise", package = "ngme2")`.
-
-The 3rd example is the non-stationary NIG noise,
-where $\mu = \bf B_{\mu} \bf \theta_{\mu}$, and $\sigma = \exp(\bf B_{\sigma} \bf \theta_{\sigma})$.
+Notice that the 3rd example is defined for non-stationary NIG noise. 
+In general, we can define non-stationary noise by the following:
+where $\mu = \mathbf{B}_{\mu} \mathbf{\theta}_{\mu}$, $\sigma = \exp(\mathbf{B}_{\sigma} \mathbf{\theta}_{\sigma})$, and $\nu = \exp(\mathbf{B}_{\nu} \mathbf{\theta}_{\nu})$
 
 ```
 ngme_noise(
   type,           # the type of noise
   theta_mu,       # mu parameter
   theta_sigma,    # sigma parameter
-  nu,        # nu parameter
+  theta_nu,       # nu parameter
   B_mu,           # basis matrix for non-stationary mu
-  B_sigma         # basis matrix for non-stationary sigma
+  B_sigma,        # basis matrix for non-stationary sigma
+  B_nu            # basis matrix for non-stationary nu
 )
 ```
 It will construct the following noise structure:
@@ -186,9 +220,18 @@ It will construct the following noise structure:
   - \mathbf{\mu} + \mathbf{\mu} V + \mathbf{\sigma} \sqrt{V} Z
 \]
 
-where $\mu = \bf B_{\mu} \bf \theta_{\mu}$, and $\sigma = \exp(\bf B_{\sigma} \bf \theta_{\sigma})$.
-In this case, we can recover gaussian noise by setting **type="normal** and ignoring **theta_mu** and **nu**.
-Or we can simply use helper function `noise_normal(sd=1)`.
+Additionally, `ngme2` provides a special combined noise model that merges both Gaussian and NIG noise components:
+
+```{r noise_normal_nig}
+noise_normal_nig(
+  mu = 2, # NIG parameter mu
+  sigma_nig = 3, # NIG noise scale
+  nu = 1, # NIG shape parameter
+  sigma_normal = 0.8 # Normal noise standard deviation
+)
+```
+
+This combined noise model is particularly useful for complex processes where both normal variations and heavy-tailed events occur. For more details, see the dedicated vignette: `vignette("normal-nig-noise", package = "ngme2")`.
 
 ### Specify stochastic process with `f` function
 
@@ -199,7 +242,7 @@ details.
 Some examples of using `f` function to specify `ngme_model`:
 
 ```{r f_model}
-ngme2::f(1:10, model = "ar1", noise = noise_nig())
+f(1:10, model = ar1(), noise = noise_nig())
 ```
 
 One useful model would be the SPDE model with Gaussian or non-Gaussian noise, see the vignette
@@ -217,15 +260,13 @@ For example, the following formula
 
 ```{r}
 formula <- Y ~ x1 + f(
-    x2,
-    model = "ar1",
-    noise = noise_nig(),
-    theta_K = 0.5
-  ) + f(1:5,
-    model = "rw1",
-    circular = T,
-    noise = noise_normal()
-  )
+  x2,
+  model = ar1(),
+  noise = noise_nig()
+) + f(x3,
+  model = rw1(),
+  noise = noise_normal()
+)
 ```
 
 corresponds to the model
@@ -244,7 +285,7 @@ The entire model can be fitted, along with the specification of the distribution
 ngme(
   formula = formula,
   family = noise_normal(sigma = 0.5),
-  data = data.frame(Y = 1:5, x1 = 2:6, x2 = 3:7),
+  data = data.frame(Y = 1:5, x1 = 2:6, x2 = 3:7, x3 = 4:8),
   control_opt = control_opt(
     estimation = FALSE
   )
@@ -259,6 +300,49 @@ It gives the `ngme` object, which has three parts:
 
 We can turn the `estimation = TRUE` to start estimating the model.
 
+## Convergence check methods
+
+`ngme2` can monitor convergence with three optional diagnostics. They all run at each checkpoint (every `iters_per_check` iterations, default `iterations / n_batch`). Checks only begin after `n_min_batch` checkpoints have accumulated.
+
+- **Gelman–Rubin R̂ (`R_hat_conv_check`, `max_R_hat`)**  
+  Compares between- and within-chain variance for each parameter; pass if `R_hat <= max_R_hat` (default 1.1). Requires at least 2 chains (`n_parallel_chain >= 2`).
+
+- **Trend/Std diagnostic (`trend_std_conv_check`)**  
+  Uses the last `n_slope_check` checkpoints (default 3). Passes when both hold for each parameter:
+  - `sqrt(var) / |mean| <= std_lim` (default 0.01)  
+  - |linear slope over last `n_slope_check` means| `<= trend_lim` (default 0.01).
+
+- **Pflug diagnostic (`pflug_conv_check`, `pflug_alpha`)**  
+  For each chain, checks `pflug_sum < pflug_alpha * max_pflug_sum` in the latest batch (default `pflug_alpha = 1`). If all chains satisfy this, convergence is declared regardless of the other two checks.
+
+Combination rule:
+- A parameter is considered converged if **any** enabled diagnostic passes for it (R̂ or Trend/Std).  
+- Overall convergence is reached when all parameters are converged, or when the Pflug diagnostic passes for all chains.
+
+Key control knobs (set via `control_opt()`):
+
+```r
+ctrl <- control_opt(
+  n_batch = 10,               # number of checkpoints
+  n_min_batch = 3,            # don't check before this many checkpoints
+  n_slope_check = 3,          # window for trend regression
+  R_hat_conv_check = TRUE,
+  max_R_hat = 1.1,
+  trend_std_conv_check = TRUE,
+  std_lim = 0.01,
+  trend_lim = 0.01,
+  pflug_conv_check = TRUE,
+  pflug_alpha = 1,
+  print_check_info = TRUE     # print per-check diagnostics
+)
+```
+
+Recommendations:
+- Use at least two chains for R̂; with one chain only Trend/Std and Pflug can run.
+- If checks trigger too early, increase `n_min_batch` or loosen `std_lim` / `trend_lim`.
+- Pflug is inexpensive; keep it on unless it yields false positives in your model.
+
+
 ## A simple example - AR1 process with nig noise
 
 Now let's see an example of an AR1 process with nig noise.
@@ -269,7 +353,7 @@ W_i = \rho W_{i-1} + \epsilon_i,
 $$
 Here, $\epsilon_1, ..,\epsilon_n$ is the iid **NIG** noise.
 And, it is easy to verify that
-$$ K{\bf W} = \boldsymbol\epsilon,$$
+$K\mathbf{W} = \boldsymbol\epsilon$,
 where
 $$
 K =
@@ -284,8 +368,9 @@ $$
 ```{r simulate_ar1}
 n_obs <- 500
 sigma_eps <- 0.5
-alpha <- 0.5
-mu = 2; delta = -mu
+rho <- 0.5
+mu <- 2
+delta <- -mu
 sigma <- 3
 nu <- 1
 
@@ -293,41 +378,40 @@ nu <- 1
 trueV <- ngme2::rig(n_obs, nu, nu, seed = 10)
 
 # Then generate the nig noise
-mynoise <- delta + mu*trueV + sigma * sqrt(trueV) * rnorm(n_obs)
-trueW <- Reduce(function(x,y){y + alpha*x}, mynoise, accumulate = T)
-Y = trueW + rnorm(n_obs, mean=0, sd=sigma_eps)
+mynoise <- delta + mu * trueV + sigma * sqrt(trueV) * rnorm(n_obs)
+trueW <- Reduce(function(x, y) {
+  y + rho * x
+}, mynoise, accumulate = T)
+Y <- trueW + rnorm(n_obs, mean = 0, sd = sigma_eps)
 
 # Add some fixed effects
-x1 = runif(n_obs)
-x2 = rexp(n_obs)
+x1 <- runif(n_obs)
+x2 <- rexp(n_obs)
 beta <- c(-3, -1, 2)
-X <- (model.matrix(Y ~ x1 + x2))  # design matrix
-Y = as.numeric(Y + X %*% beta)
+X <- (model.matrix(Y ~ x1 + x2)) # design matrix
+Y <- as.numeric(Y + X %*% beta)
 ```
 
 Now let's fit the model using `ngme`. Here we can use `control_opt` to modify the
 control variables for the `ngme`. See `?control_opt` for more optioins.
 
-```{r fit_ar1, cache=TRUE}
+```{r fit_ar1}
 # # Fit the model with the AR1 model
-ngme_out <- ngme(
+fit_nig <- ngme(
   Y ~ x1 + x2 + f(
     1:n_obs,
     name = "my_ar",
-    model = "ar1",
+    model = ar1(),
     noise = noise_nig()
   ),
-  data=data.frame(x1=x1, x2=x2, Y=Y),
+  data = data.frame(x1 = x1, x2 = x2, Y = Y),
   control_opt = control_opt(
     burnin = 100,
-    iterations = 1000,
-    std_lim = 0.4,
+    iterations = 2000,
     n_parallel_chain = 4,
-    stop_points = 10,
-    print_check_info = FALSE,
     seed = 3,
-    sampling_strategy = "ws"
-    # verbose = T
+    pflug_conv_check = TRUE,
+    pflug_alpha = 1
   )
 )
 ```
@@ -335,29 +419,27 @@ ngme_out <- ngme(
 Next we can read the result directly from the object.
 
 ```{r out}
-ngme_out
+fit_nig
 ```
 
-As we can see, the model converges in 350 iterations.
 The estimation results are close to the real parameter.
 
 We can also use the `traceplot` function to see the estimation traceplot.
 ```{r traceplot, fig.align="center", fig.width=6,fig.height=6,  fig.cap="Parameters of the AR1 model"}
-traceplot(ngme_out, "my_ar")
+traceplot(fit_nig, "my_ar", hline = c(rho, mu, sigma, nu))
 ```
 
-We can also do a density comparison with the estimated noise and the true NIG noise:
+We can also do a density comparison with the estimated noise and the true NIG noise, we can see they are very close:
 
 ```{r compare-density}
-# ngme_out$replicates[[1]] means for the 1st replicate
+# fit_nig$replicates[[1]] means for the 1st replicate
 plot(
-  ngme_out$replicates[[1]]$models[[1]]$noise,
+  fit_nig$replicates[[1]]$models[[1]]$noise,
   noise_nig(mu = mu, sigma = sigma, nu = nu)
 )
 ```
 
 ## Paraná dataset
-
 
 The rainfall data from Paraná (Brazil) is collected by the National Water Agency in Brazil (Agencia Nacional de Águas, ANA, in Portuguese).
 ANA collects data from many locations over Brazil, and all these data are freely available from the ANA website (http://www3.ana.gov.br/portal/ANA).
@@ -400,92 +482,61 @@ ggplot() +
     2
   ]), colour = "red") +
   theme(
-    axis.title.x = element_blank(),   # Remove x-axis label
-    axis.title.y = element_blank(),   # Remove y-axis label
-    axis.line = element_blank(),      # Remove axis lines
-    axis.text.x = element_blank(),    # Remove x-axis tick labels
-    axis.text.y = element_blank(),    # Remove y-axis tick labels
+    axis.title.x = element_blank(), # Remove x-axis label
+    axis.title.y = element_blank(), # Remove y-axis label
+    axis.line = element_blank(), # Remove axis lines
+    axis.text.x = element_blank(), # Remove x-axis tick labels
+    axis.text.y = element_blank(), # Remove y-axis tick labels
     legend.title = element_blank()
   )
 ```
 
 ```{r fit-parana, cache=TRUE}
 # Define the control options
-control = control_opt(
-  iterations = 5000,
-  n_slope_check = 4,
-  stop_points = 10,
-  std_lim = 0.1,
+control <- control_opt(
+  iterations = 2000,
+  n_min_batch = 4,
+  n_batch = 10,
   n_parallel_chain = 4,
+  optimizer = precond_sgd(),
   print_check_info = FALSE,
   seed = 16
 )
 
-m_gauss_nig <- ngme(
+parana_fit <- ngme(
   formula = Y ~ 1 +
-    f(seaDist, name="rw1", model = "rw1", noise = noise_normal()) +
-    f(coords, model = "matern", mesh = prmesh, name="spde", noise = noise_normal()),
+    f(coords,
+      model = matern(
+        mesh = prmesh,
+      ),
+      noise = noise_nig(),
+      name = "spde"
+    ),
   data = data.frame(Y = Y),
-  family = noise_nig(),
+  family = "normal",
   control_opt = control
 )
-m_gauss_nig
+```
 
+```{r}
 # traceplots
 ## fixed effects and measurement error
-traceplot(m_gauss_nig)
+traceplot(parana_fit)
 
 ## spde model
-traceplot(m_gauss_nig, "spde")
+traceplot(parana_fit, "spde")
 ```
 
 Parameter estimation results:
 
 ```{r est-result, echo=FALSE}
-res_gauss_nig <- data.frame(
-  intercept    = format(m_gauss_nig$replicates[[1]]$feff, digits=3),
-  noise_mu     = format(m_gauss_nig$replicates[[1]]$noise$theta_mu, digits=3),
-  noise_sigma  = format(exp(m_gauss_nig$replicates[[1]]$noise$theta_sigma), digits=3),
-  noise_nu     = format(exp(m_gauss_nig$replicates[[1]]$noise$theta_nu), digits=3),
-  rw_sigma     = format(m_gauss_nig$replicates[[1]]$models[[1]]$noise$theta_sigma, digits=3),
-  ma_kappa     = format(exp(m_gauss_nig$replicates[[1]]$models[[2]]$theta_K), digits=3),
-  ma_sigma     = format(exp(m_gauss_nig$replicates[[1]]$models[[2]]$noise$theta_sigma), digits=3)
-)
-knitr::kable(res_gauss_nig, caption = "Estimations for the model")
-```
-
-Similarily, we can fit some different models:
-
-```{r fit-different-models, cache=TRUE}
-m_gauss_gauss <- ngme(
-  formula = Y ~ 1 +
-    f(seaDist, name="rw1", model = "rw1", noise = noise_normal()) +
-    f(coords, model = "matern", mesh = prmesh, name="spde", noise = noise_normal()),
-  data = data.frame(Y = Y),
-  family = noise_normal(),
-  control_opt = control
-)
-
-m_nig_gauss <- ngme(
-  formula = Y ~ 1 +
-    f(seaDist, name="rw1", model = "rw1", noise = noise_nig()) +
-    f(coords, model = "matern", mesh = prmesh, name="spde", noise = noise_normal()),
-  data = data.frame(Y = Y),
-  family = noise_normal(),
-  control_opt = control
-)
-
-m_nig_nig <- ngme(
-  formula = Y ~ 1 +
-    f(seaDist, name="rw1", model = "rw1", noise = noise_nig()) +
-    f(coords, model = "matern", mesh = prmesh, name="spde", noise = noise_nig()),
-  data = data.frame(Y = Y),
-  family = noise_nig(),
-  control_opt = control
-)
+ngme_result(parana_fit, "data")
+ngme_result(parana_fit, "spde")
 ```
 
 ### Prediction
+
+Now we can use the fitted model to do prediction by generating the prediction grid and giving the predict location.
 
 ```{r predict, cache=TRUE}
 nxy <- c(150, 100)
@@ -501,13 +552,8 @@ plot(coord.prd, type = "p", cex = 0.1)
 lines(PRborder)
 points(coords[, 1], coords[, 2], pch = 19, cex = 0.5, col = "red")
 
-seaDist.prd <- apply(spDists(coord.prd,
-  PRborder[1034:1078, ],
-  longlat = TRUE
-), 1, min)
-
-# doing prediction by giving the predict location
-pds <- predict(m_gauss_nig, map=list(rw1=seaDist.prd, spde=coord.prd))
+# Doing prediction by giving the predict location
+pds <- predict(parana_fit, map = list(spde = coord.prd))
 lp <- pds$mean
 ggplot() +
   geom_point(aes(
@@ -526,29 +572,43 @@ ggplot() +
   ]), colour = "red")
 ```
 
-### Cross-validation
+### Model comparison with latent Gaussian model via cross-validation
 
-We can further validate our model by using cross-validation method.
+We can also fit a latent Gaussian model and compare it with the NIG model via cross-validation.
+The following code shows how to do it. For the details of the cross-validation, see the [cross-validation vignette](articles/cross-validation.html).
 
-```{r cv, cache=TRUE}
-cv <- cross_validation(
-  list(
-    gauss_gauss = m_gauss_gauss,
-    gauss_nig = m_gauss_nig,
-    nig_gauss = m_nig_gauss,
-    nig_nig = m_nig_nig
-  ), 
-  type = "k-fold", 
-  k = 10,
-  n_gibbs_samples = 1000,
-  n_burnin = 200,
-  seed = 20
+```{r fit-gauss, cache=TRUE}
+parana_fit_gauss <- ngme(
+  formula = Y ~ 1 +
+    f(coords,
+      model = matern(
+        mesh = prmesh,
+      ),
+      noise = noise_normal(),
+      name = "spde"
+    ),
+  data = data.frame(Y = Y),
+  family = "normal",
+  control_opt = control
 )
-
-# Create a basic table with knitr
-cv_table <- knitr::kable(cv$mean.scores, caption = "Cross-validation results")
-
-cv_table
 ```
 
-As we can see, the NIG-Gaussian model performs the best in most of the metrics.
+```{r cv-gauss, cache=TRUE}
+cv <- cross_validation(
+  list(
+    gauss = parana_fit_gauss,
+    nig = parana_fit
+  ),
+  type = "k-fold",
+  seed = 13,
+  n_gibbs_samples = 2000,
+  n_burnin = 100,
+  k = 10,
+  print = FALSE
+)
+cv
+```
+
+As we can see, the NIG model has a slightly better cross-validation performance in most metrics.
+
+# References {-}

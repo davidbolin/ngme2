@@ -1,39 +1,38 @@
 # The `ngme2` Package  <img src="man/figures/logo.png" align="right" width="80" height="80" />
 
-`ngme2` is an R package used for fitting non-gaussian mixed effects models. These models are fitted using maximum likelihood estimation and preconditioned stochastic gradient descent.
+`ngme2` (https://davidbolin.github.io/ngme2/) is a unified, efficient, and flexible framework for fitting latent **non-Gaussian** models in R. It extends the SPDE-based Gaussian modeling toolkit to handle skewness, heavy tails, and non-smooth behavior while keeping familiar workflows for estimation, prediction, and model assessment.
 
-Basic statistical operations such as likelihood evaluations and kriging predictions are also implemented.
+## What you get
+- Temporal processes: AR(1), Ornstein–Uhlenbeck, random walks, and ARMA models.
+- Spatial processes: Matérn fields (including graph-based meshes) and separable/non-separable space–time variants.
+- Non-Gaussian driven noise: NIG, generalized asymmetric Laplace, skew-\(t\); non-Gaussian measurement noise is also supported.
+- Joint and custom structures: bivariate type-G fields, longitudinal random-effects models, and user-defined operators via `generic` / `generic_ns`.
+- Practical tools: kriging-style prediction, cross-validation helpers, and diagnostics for convergence/fit quality.
 
-## Introduction
+## Model framework in a sentence
+Data \(Y\) are linked to a latent process \(W\) through an observation matrix \(A\) and fixed effects \(X\beta\), while both the process and measurement errors are modeled as normal mean–variance mixtures with generalized inverse Gaussian mixing. An operator \(K\) encodes spatial/temporal structure, letting the same template describe everything from simple random effects to rich spatio-temporal fields.
 
-Several popular Gaussian random field models can be represented as solutions to stochastic partial differential equations (SPDEs) of the form
-$$
-L^\beta (\tau u) = \mathcal{W}.
-$$
-Here $\mathcal{W}$ is a Gaussian white noise, $L$ is a second-order differential operator, the fractional power $\beta > 0$ determines the smoothness of u. See [An explicit link between Gaussian fields and Gaussian Markov random fields: the stochastic partial differential equation approach](https://rss.onlinelibrary.wiley.com/doi/full/10.1111/j.1467-9868.2011.00777.x) for further details.
-
-This package aims to address the non-Gaussian extension to the SPDE approach model by replacing the driven noise $\mathcal{W}$ to be a non-Gaussian noise $\mathcal{M}$.
-More specificly, a type-G Lévy process.
-
-The increment of a type-G Lévy process can be represented as
-$$
-\gamma + \mu V + \sigma \sqrt{V}Z,
-$$
-where $\gamma, \mu$ are parameters, $Z\sim N(0,1)$ and is independent of $V$, and $V$ is a positive infinitely divisible random variable.
-
-One example is the normal inverse Gaussian (NIG) noise. (See `vignette("SPDE-approach", package = "ngme2")` for more details)
-
-## Installation instructions #
-The development version of `ngme2` can be installed using the command
+## Quick start
 ```r
-remotes::install_github("davidbolin/ngme2", ref = "devel")
+library(ngme2)
+
+fit <- ngme(
+  formula = Y ~ x1 + x2 + f(index, model = ar1(mesh_1d), noise = noise_nig()),
+  data    = data.frame(Y = Y, x1 = x1, x2 = x2, index = index),
+  family  = "normal"   # likelihood family
+)
 ```
 
-The stable version of `ngme2` can be installed using the command:
+Use `ngme_optimizers()` to see available optimizers and configure stochastic gradient settings via `control_opt`.
+
+## Installation
+The stable version can be installed with:
 ```r
 install.packages("ngme2", repos = "https://davidbolin.github.io/ngme2/")
 ```
+See the [Installation and Configuration](https://davidbolin.github.io/ngme2/articles/Installation.html) vignette if compilation tools are needed.
 
-See also the [Installation and Configuration][ref] vignette.
-
-[ref]: https://davidbolin.github.io/ngme2/articles/Installation_and_configuration.html "Installation and Configuration"
+## Learn more
+- [Get Started](https://davidbolin.github.io/ngme2/articles/ngme2.html): for a guided tour of the modeling framework.
+- [Online vignettes](https://davidbolin.github.io/ngme2/articles/)
+- [Online documentations](https://davidbolin.github.io/ngme2/reference/index.html)

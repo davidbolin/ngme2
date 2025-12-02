@@ -9,35 +9,44 @@ bv(
   sub_models,
   theta = 0,
   rho = 0,
-  group = NULL,
+  c1 = 1,
+  c2 = 1,
   share_param = FALSE,
-  fix_bv_theta = FALSE,
-  ...
+  fix_theta = FALSE,
+  use_c_param = FALSE
 )
 }
 \arguments{
-\item{mesh}{mesh for build the model}
+\item{mesh}{the mesh where model is defined}
 
 \item{sub_models}{a list of sub_models (total 2 sub_models)}
 
-\item{theta}{the rotation parameter (starting point should
-from -pi/4 to pi/4)}
+\item{theta}{the rotation parameter (starting point should be from -pi/4 to pi/4)}
 
 \item{rho}{the parameter related to correlation}
 
-\item{group}{group vector, can be inherited from ngme() function}
+\item{c1}{scaling factor for the first sub-model (default: 1)}
+
+\item{c2}{scaling factor for the second sub-model (default: 1)}
 
 \item{share_param}{TRUE if share the same parameter for 2 sub_models (of same type)}
 
-\item{...}{ignore}
+\item{fix_theta}{TRUE if fix the theta of bv model}
+
+\item{use_c_param}{TRUE to estimate c1 and c2 as parameters, FALSE to fix them at specified values (default: FALSE)}
 }
 \value{
-a list of specification of model
+a ngme_operator of bivariate model
 }
 \description{
-Giving 2 sub_models, build a correlated bivaraite operator based on K = D(theta, eta) %*% diag(K_1, K_2)
+Giving 2 sub_models, build a correlated bivariate operator based on K = D(theta, rho) %*% diag(c1*K_1, c2*K_2)
 \deqn{D(\theta, \rho) = \begin{pmatrix}
   \cos(\theta) + \rho \sin(\theta) & -\sin(\theta) \sqrt{1+\rho^2} \\
   \sin(\theta) - \rho \cos(\theta) & \cos(\theta) \sqrt{1+\rho^2}
 \end{pmatrix}}
+}
+\details{
+The bivariate model combines two sub-models with a rotation matrix D and optional scaling factors c1 and c2.
+When \code{use_c_param = TRUE}, c1 and c2 are estimated as parameters (on log scale).
+When \code{use_c_param = FALSE} (default), c1 and c2 are fixed at their specified values (both default to 1).
 }

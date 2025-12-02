@@ -20,6 +20,6 @@ Helper function to compute the index_corr vector
 \examples{
 x_coord <- c(1.11, 1.12, 2, 1.3, 1.3)
 y_coord <- c(2.11, 2.11, 2, 3.3, 3.3)
-coord = data.frame(x_coord, y_coord)
+coord <- data.frame(x_coord, y_coord)
 compute_index_corr_from_map(map = coord, 0.1)
 }

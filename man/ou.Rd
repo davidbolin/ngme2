@@ -2,22 +2,110 @@
 % Please edit documentation in R/models.R
 \name{ou}
 \alias{ou}
-\title{ngme Ornstein–Uhlenbeck process specification}
+\title{Ornstein-Uhlenbeck Process Model}
 \usage{
-ou(mesh, theta_K = 0, B_theta_K = NULL, ...)
+ou(mesh = NULL, theta = 1)
 }
 \arguments{
-\item{mesh}{mesh for build the model}
+\item{mesh}{numerical vector or `inla.mesh.1d` object giving the ordered
+time locations. Must be strictly increasing.}
 
-\item{theta_K}{initial value for theta_K, kappa = exp(B_theta_K * theta_K)}
-
-\item{B_theta_K}{bases for theta_K}
-
-\item{...}{ignore}
+\item{theta}{positive mean-reversion rate (stiffness parameter). Internally
+stored on the log scale so optimization remains unconstrained.}
 }
 \value{
-ngme_operator object
+An `ngme_operator` object containing:
+\itemize{
+  \item `K`: the precision matrix
+  \item `h`: integration weights
+  \item `theta_K`: log-transformed theta for unconstrained optimization
+  \item `mesh`: the mesh object
+}
 }
 \description{
-ngme Ornstein–Uhlenbeck process specification
+Implements the exact discrete-time representation of the continuous
+Ornstein-Uhlenbeck (OU) process using a matrix formulation
+\eqn{\mathbf{K}\mathbf{X} = \boldsymbol{\delta}}.
+}
+\details{
+The OU process is defined by the stochastic differential equation (SDE):
+
+\deqn{dX_t = -\theta X_t dt + \sigma dW_t}
+
+where \eqn{\theta > 0} is the mean-reversion rate (stiffness) and
+\eqn{\sigma} is the volatility (diffusion coefficient).
+
+## Exact Discretization
+
+Unlike Euler-Maruyama approximations, the OU process has an exact solution
+between time points \eqn{t_i} and \eqn{t_{i+1}} with step size \eqn{\Delta t_i}:
+
+\deqn{X_{i+1} = X_i e^{-\theta \Delta t_i} + \epsilon_i}
+
+This is an AR(1) form with autoregressive coefficient:
+
+\deqn{\rho_i = e^{-\theta \Delta t_i}}
+
+and Gaussian noise:
+
+\deqn{\epsilon_i \sim \mathcal{N}\left(0, \frac{\sigma^2}{2\theta}(1 - \rho_i^2)\right)}
+
+## Matrix Representation
+
+The precision matrix \eqn{\mathbf{K}} for the linear system
+\eqn{\mathbf{K}\mathbf{X} = \boldsymbol{\delta}} is constructed as:
+
+\deqn{\mathbf{K} = \begin{bmatrix}
+\sqrt{1-\rho_1^2} & 0 & 0 & \cdots & 0 \\
+-\rho_1 & 1 & 0 & \cdots & 0 \\
+0 & -\rho_2 & 1 & \cdots & 0 \\
+\vdots & \vdots & \ddots & \ddots & \vdots \\
+0 & 0 & \cdots & -\rho_{n-1} & 1
+\end{bmatrix}}
+
+where \eqn{\rho_i = \exp(-\theta \Delta t_i)} with \eqn{\Delta t_i = t_{i+1} - t_i}.
+
+**Why the \eqn{\sqrt{1-\rho_1^2}} term?** The first row ensures that \eqn{X_1}
+is drawn from the stationary distribution \eqn{\mathcal{N}(0, \sigma^2/(2\theta))}.
+This scaling factor matches the variance of the first component of
+\eqn{\boldsymbol{\delta}} with the transition noise variance in subsequent steps.
+
+## Non-uniform Mesh
+
+For non-uniform meshes, each \eqn{\rho_i} is computed locally based on the
+varying time step \eqn{\Delta t_i}, allowing the model to naturally handle
+irregularly spaced observations.
+
+## The \eqn{h} vector
+
+The \eqn{h} vector represents integration weights for the mass matrix.
+For the OU model, it is set as:
+
+\deqn{h = [\Delta t_1, \Delta t_2, \ldots, \Delta t_{n-1}, \Delta t_{n-1}]}
+
+where the last element is duplicated. This ensures proper weighting in the
+finite element formulation.
+
+## The \eqn{\boldsymbol{\delta}} vector
+
+In the equation \eqn{\mathbf{K}\mathbf{X} = \boldsymbol{\delta}}, the vector
+\eqn{\boldsymbol{\delta}} contains independent identically distributed (i.i.d.)
+random variables with unit variance. The precision matrix \eqn{\mathbf{K}}
+is constructed such that the resulting process \eqn{\mathbf{X}} has the
+correct OU covariance structure.
+}
+\examples{
+# Uniform mesh
+mesh_uniform <- seq(0, 10, by = 0.5)
+ou_uniform <- ou(mesh = mesh_uniform, theta = 0.5)
+print(ou_uniform)
+
+# Non-uniform mesh
+mesh_nonuniform <- c(0, 1, 2.5, 3.5, 5, 8, 11)
+ou_nonunif <- ou(mesh = mesh_nonuniform, theta = 0.8)
+print(ou_nonunif)
+}
+\references{
+Uhlenbeck, G. E., & Ornstein, L. S. (1930). On the theory of the Brownian motion.
+Physical review, 36(5), 823.
 }

@@ -115,10 +115,11 @@
 
     <div id="ref-usage">
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">control_f</span><span class="op">(</span></span>
-<span>  numer_grad <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  improve_hessian <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  eps <span class="op">=</span> <span class="fl">1e-04</span>,</span>
-<span>  use_same_V <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  use_same_V <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  use_num_dK <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  numerical_precond <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -126,11 +127,7 @@
     <h2>Arguments</h2>
 
 
-<dl><dt id="arg-numer-grad">numer_grad<a class="anchor" aria-label="anchor" href="#arg-numer-grad"></a></dt>
-<dd><p>whether to use numerical gradient</p></dd>
-
-
-<dt id="arg-improve-hessian">improve_hessian<a class="anchor" aria-label="anchor" href="#arg-improve-hessian"></a></dt>
+<dl><dt id="arg-improve-hessian">improve_hessian<a class="anchor" aria-label="anchor" href="#arg-improve-hessian"></a></dt>
 <dd><p>improve numerical hessian by using central difference estimation (O(eps^2) error)
 default is forward difference estimation (O(eps) error)</p></dd>
 
@@ -141,6 +138,14 @@ default is forward difference estimation (O(eps) error)</p></dd>
 
 <dt id="arg-use-same-v">use_same_V<a class="anchor" aria-label="anchor" href="#arg-use-same-v"></a></dt>
 <dd><p>use the same V for preconditioning in the same chain</p></dd>
+
+
+<dt id="arg-use-num-dk">use_num_dK<a class="anchor" aria-label="anchor" href="#arg-use-num-dk"></a></dt>
+<dd><p>use finite differences for dK (operator Jacobian) even when using analytic gradients elsewhere. Default TRUE.</p></dd>
+
+
+<dt id="arg-numerical-precond">numerical_precond<a class="anchor" aria-label="anchor" href="#arg-numerical-precond"></a></dt>
+<dd><p>use numerical preconditioner (finite-difference Hessian). If FALSE, use analytical preconditioner for theta_K block. Default TRUE.</p></dd>
 
 </dl></div>
     <div id="value">

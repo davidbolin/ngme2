@@ -16,7 +16,7 @@ adam(stepsize = 0.05, beta1 = 0.9, beta2 = 0.999, epsilon = 1e-08)
 \item{epsilon}{epsilon for numerical stability}
 }
 \value{
-a list of control variables for optimization 
+a list of control variables for optimization
 (used in \code{control_opt} function)
 }
 \description{

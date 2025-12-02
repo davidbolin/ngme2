@@ -5,28 +5,25 @@
 \title{Compute the scores given the prediction}
 \usage{
 compute_score_given_pred(
-  pred_N_1,
-  pred_N_2,
   Y_N_1_thin,
   Y_N_2_thin,
   y_data,
   group_data,
   merge_groups = FALSE,
-  merged_group_name = NULL
+  merged_group_name = NULL,
+  metric = NULL
 )
 }
 \arguments{
-\item{pred_N_1}{a matrix of n_obs * N}
+\item{Y_N_1_thin}{posterior predictive draws (rows = observations, columns = samples)}
 
-\item{pred_N_2}{a matrix of n_obs * N}
+\item{Y_N_2_thin}{posterior predictive draws (rows = observations, columns = samples)}
 
 \item{y_data}{a vector of length n_obs}
 
 \item{group_data}{a vector of length n_obs}
 
-\item{Y_N_1}{a matrix of n_obs * N}
-
-\item{Y_N_2}{a matrix of n_obs * N}
+\item{metric}{optional custom metric function used to combine group-wise values before scoring}
 }
 \description{
 Compute the scores given the prediction

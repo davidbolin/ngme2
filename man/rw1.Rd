@@ -4,7 +4,7 @@
 \alias{rw1}
 \title{Random Walk Model of Order 1 (RW1)}
 \usage{
-rw1(mesh, cyclic = FALSE, constr = TRUE, ...)
+rw1(mesh = NULL, cyclic = FALSE, constr = TRUE)
 }
 \arguments{
 \item{mesh}{numerical vector or inla.mesh.1d object, locations to build the mesh.
@@ -13,11 +13,9 @@ For numerical vectors, assumes equally spaced locations.}
 \item{cyclic}{logical, whether the mesh is circular. If TRUE, the first and last
 locations are treated as neighbors. Cannot be FALSE when constr = TRUE.}
 
-\item{constr}{logical, whether to enforce the sum-to-zero constraint 
+\item{constr}{logical, whether to enforce the sum-to-zero constraint
 \eqn{\sum_{i=1}^n h_i W_i = 0}. If FALSE, fixes the first element \eqn{W_1 = 0}.
 Must be TRUE for cyclic models.}
-
-\item{...}{additional arguments (currently unused)}
 }
 \value{
 An `ngme_operator` object containing the precision matrix and related
@@ -29,11 +27,11 @@ The RW1 model assumes that first-order differences \eqn{\Delta W_i = W_i - W_{i-
 are independent and identically distributed Gaussian variables.
 }
 \details{
-The RW1 model is defined by the precision matrix \eqn{K} that penalizes 
+The RW1 model is defined by the precision matrix \eqn{K} that penalizes
 first-order differences. The model has different structures depending on the
 constraints:
 
-**Non-cyclic, constrained (default)**: The first row of \eqn{K} enforces the 
+**Non-cyclic, constrained (default)**: The first row of \eqn{K} enforces the
 constraint \eqn{\sum_{i=1}^n h_i W_i = 0}, where \eqn{h_i} are the mesh weights.
 
 **Non-cyclic, unconstrained**: The first element is fixed at 0 (\eqn{W_1 = 0}).

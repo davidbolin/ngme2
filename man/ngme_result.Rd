@@ -22,7 +22,8 @@ Access the result of a ngme fitted model
 \examples{
 \dontrun{
 # Fit a simple AR(1) model
-Y <- 1:10; n_obs <- length(Y)
+Y <- 1:10
+n_obs <- length(Y)
 x1 <- runif(n_obs)
 x2 <- rexp(n_obs)
 
@@ -32,9 +33,9 @@ ngme_out <- ngme(
     name = "my_ar",
     model = "ar1",
     rho = 0.5,
-    noise = noise_nig(mu=2, sigma=3, nu=1)
+    noise = noise_nig(mu = 2, sigma = 3, nu = 1)
   ),
-  data = data.frame(x1=x1, x2=x2, Y=Y)
+  data = data.frame(x1 = x1, x2 = x2, Y = Y)
 )
 
 # Get all model parameters (transformed)
@@ -60,14 +61,14 @@ ngme_out2 <- ngme(
     1:n_obs,
     name = "my_ar",
     model = "ar1",
-    noise = noise_nig(mu=2, sigma=3, nu=1)
+    noise = noise_nig(mu = 2, sigma = 3, nu = 1)
   ) + f(
     1:n_obs,
     name = "my_ou",
     model = "ou",
-    noise = noise_normal(sigma=1)
+    noise = noise_normal(sigma = 1)
   ),
-  data = data.frame(x1=x1, x2=x2, Y=Y)
+  data = data.frame(x1 = x1, x2 = x2, Y = Y)
 )
 
 # Get all models

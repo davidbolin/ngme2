@@ -40,6 +40,20 @@ public:
         bool single_V = false
     );
 
+    // Analytic Hessian wrt theta_nu for NIG (and normal_nig) case:
+    // H = B_nu^T diag(nu ⊙ c) B_nu, where
+    //   nu = exp(B_nu theta_nu) (caller supplies as 'nu'),
+    //   c_i = h_i - h_i^2/(2 V_i) - V_i/2.
+    // Returns negative Hessian (matching gradient sign convention).
+    static MatrixXd hess_theta_nu(
+        const string& noise_type,
+        const MatrixXd& B_nu,
+        const VectorXd& nu,
+        const VectorXd& V,
+        const VectorXd& h,
+        bool single_V = false
+    );
+
     // wrapper of sample GIG with extra argument
     static void sample_V(
         Eigen::Ref<Eigen::VectorXd> V,
@@ -100,6 +114,18 @@ public:
     ) {
         VectorXd h = VectorXd::Ones(V.size());
         return grad_theta_nu(noise_type, B_nu, nu, V, prevV, h, single_V);
+    }
+
+    // Convenience overload: Hessian with h = 1 vector
+    static MatrixXd hess_theta_nu(
+        const string& noise_type,
+        const MatrixXd& B_nu,
+        const VectorXd& nu,
+        const VectorXd& V,
+        bool single_V = false
+    ) {
+        VectorXd h = VectorXd::Ones(V.size());
+        return hess_theta_nu(noise_type, B_nu, nu, V, h, single_V);
     }
 
     static VectorXd rnorm_vec(int n, double mu, double sigma, unsigned long seed=0) {

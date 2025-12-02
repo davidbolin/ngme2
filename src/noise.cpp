@@ -102,6 +102,62 @@ VectorXd NoiseUtil::grad_theta_nu(
     return -grad;
 }
 
+// Analytic Hessian for theta_nu under NIG (and normal_nig) prior on V.
+// Returns the negative Hessian, consistent with grad_theta_nu's sign.
+// H = - B^T diag(nu ⊙ c) B, with c_i = h_i - h_i^2/(2 V_i) - V_i/2.
+MatrixXd NoiseUtil::hess_theta_nu(
+    const string& noise_type,
+    const MatrixXd& B_nu,
+    const VectorXd& nu,
+    const VectorXd& V,
+    const VectorXd& h,
+    bool single_V
+) {
+    const int n_theta = B_nu.cols();
+    MatrixXd H = MatrixXd::Zero(n_theta, n_theta);
+
+    // Guard conditions consistent with grad implementation
+    if (nu.size() == 0 || B_nu.cols() == 0) return H;
+    if (nu.mean() > 10000) return H;
+    if (noise_type == "normal") return H; // no contribution
+
+    if (!single_V) {
+        if (noise_type == "nig" || noise_type == "normal_nig") {
+            // c = h - (h^2)/(2V) - V/2
+            VectorXd c = h - 0.5 * h.cwiseProduct(h).cwiseQuotient(V) - 0.5 * V;
+            VectorXd d = nu.cwiseProduct(c); // diag entries
+            H = - (B_nu.transpose() * d.asDiagonal() * B_nu);
+        } else if (noise_type == "gal") {
+            // GAL: V ~ Gamma(h*nu, scale=1/nu)
+            // g_i(nu_i) = h_i log v_i - v_i + h_i (log nu_i + 1) - h_i psi(h_i nu_i)
+            // d_i = nu_i g_i(nu_i) + h_i nu_i - h_i^2 nu_i^2 psi^{(1)}(h_i nu_i)
+            const int n = V.size();
+            VectorXd logV = V.array().log().matrix();
+            VectorXd dig(n), trig(n);
+            for (int i = 0; i < n; ++i) {
+                double hx = h(i) * nu(i);
+                dig(i)  = R::digamma(hx);
+                // trigamma = derivative of digamma = psigamma(x, 1)
+                trig(i) = R::psigamma(hx, 1.0);
+            }
+            VectorXd g = h.cwiseProduct(logV) - V
+                       + h.cwiseProduct(nu.array().log().matrix() + VectorXd::Ones(n))
+                       - h.cwiseProduct(dig);
+            VectorXd d = nu.cwiseProduct(g)
+                       + h.cwiseProduct(nu)
+                       - h.cwiseProduct(h).cwiseProduct(nu.cwiseProduct(nu)).cwiseProduct(trig);
+            H = - (B_nu.transpose() * d.asDiagonal() * B_nu);
+        } else {
+            // GAL / t-skewt not implemented analytically here
+            // Keep zero so numerical path (if used elsewhere) dominates
+        }
+    } else {
+        // Single-V special model uses a different reparam; leave to numeric Hessian
+        // to avoid mismatch with grad's special-case formula.
+    }
+    return H;
+}
+
 double NoiseUtil::log_density(
     const string& noise_type,
     const VectorXd& V,

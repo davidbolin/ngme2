@@ -19,37 +19,33 @@ navbar:
       text: Vignettes
       menu:
       - text: Installation and configuration (using OpenMP)
-        href: articles/Installation_and_configuration.html
-      - text: Comparison with R-INLA
-        href: articles/inla_compare.html
+        href: articles/Installation.html
       - text: AR(1) model
         href: articles/AR1-model.html
       - text: Random walk model
         href: articles/RW-model.html
       - text: Ornstein-Uhlenbeck process
-        href: article/ngme2_ou_vignette.html
+        href: articles/ou-process.html
       - text: SPDE Matern model
         href: articles/SPDE-model.html
-      - text: Models with Combined Gaussian and NIG Noise 
-        href: articles/normal-nig-noise.html
+      - text: Space-time (tensor product) model
+        href: articles/tensor-product.html
+      - text: Non-Separable Space-Time Models(Advection-Diffusion)
+        href: articles/non-separable-model.html
+      - text: Cross-validation for ngme2 models
+        href: articles/cross-validation.html
       - text: Models with replicates
         href: articles/replicate.html
-      - text: Model estimation and prediction
-        href: articles/pred_and_est.html
-      - text: Bivariate models in Ngme2
+      - text: Bivariate type-G models
         href: articles/bivariate.html
-      - text: Space-time bivariate model in Ngme2
-        href: articles/tp-bv.html
-      - text: Random effects model in Ngme2
-        href: articles/random-effect.html
-      - text: Space-time (tensor product) model in Ngme2
-        href: articles/tensor_product.html
+      - text: Model estimation and prediction
+        href: articles/pred-and-est.html
       - text: Matern SPDE model on Metric Graph
         href: articles/matern-on-graph.html
-      - text: Cross-validation for the ngme2 models
-        href: articles/cross-validation.html
       - text: Using the Generic Model in ngme2
         href: articles/generic.html
+      - text: Models with Combined Gaussian and NIG Noise 
+        href: articles/normal-nig-noise.html
     github:
       icon: fa-github
       href: https://github.com/davidbolin/ngme2
@@ -61,10 +57,6 @@ navbar:
 
 home:
   links:
-  - text: Browse source code
-    href: https://github.com/davidbolin/ngme2
-  - text: Report a bug
-    href: https://github.com/davidbolin/ngme2/issues
   - text: Our research group
     href: http://stochproc.kaust.edu.sa/
 
@@ -85,6 +77,8 @@ reference:
     - f
     - ar
     - ar1
+    - arma
+    - arma11
     - matern
     - rw1
     - rw2
@@ -92,9 +86,7 @@ reference:
     - iid
     - tp
     - bv
-    - bv_normal
-    - bv_matern_normal
-    - bv_matern_nig
+    - bv_matern
     - compute_score_given_pred
     - re
     - spacetime
@@ -111,6 +103,7 @@ reference:
     - print.noise_kld_comparison
   - title: ngme2 optimization methods
     contents:
+    - sgd
     - precond_sgd
     - momentum
     - adagrad
@@ -134,6 +127,9 @@ reference:
     - simulate.ngme_noise
   - title: Auxiliary functions
     contents:
+    - ngme_update
+    - ngme_optimizers
+    - get_data_from_formula
     - compute_log_like
     - make_time_series_cv_index
     - precision_matrix_multivariate
@@ -143,7 +139,6 @@ reference:
     - ngme_as_sparse
     - control_opt
     - control_ngme
-    - control_f
     - ngme_parse_formula
     - ngme_ts_make_A
     - print.ngme
@@ -165,6 +160,7 @@ reference:
     - get_trajectories
     - name2fun
     - create_paired_cv_splits
+    - openmp_test
   - title: Distributions
     contents:
     - ig

@@ -24,7 +24,11 @@ ngme(
 (Only response variable can contain \code{NA} value,
  \code{NA} value in other columns will cause problem)}
 
-\item{family}{likelihood type, same as measurement noise specification, 1. string 2. ngme noise obejct}
+\item{family}{likelihood type, same as measurement noise specification. It can be provided as:
+\enumerate{
+  \item a string, e.g., \code{"normal"}, \code{"nig"}, \code{"t"}.
+  \item an ngme noise object, e.g., \code{noise_normal()}, \code{noise_nig(mu = 0, sigma = 1, nu = 1)}, \code{noise_t(nu=5)}.
+}}
 
 \item{control_opt}{control for optimizer. by default it is \code{control_opt()}. See \code{?control_opt} for details.}
 
@@ -54,19 +58,19 @@ See \code{ngme_model_types()} for available models.
 }
 \examples{
 ngme(
- formula = Y ~ x1 + f(
-   x2,
-   model = "ar1",
-   noise = noise_nig(),
-   rho = 0.5
- ) + f(x1,
-   model = "rw1",
-   noise = noise_normal(),
- ),
- family = noise_normal(sd = 0.5),
- data = data.frame(Y = 1:5, x1 = 2:6, x2 = 3:7),
- control_opt = control_opt(
-   estimation = FALSE
- )
+  formula = Y ~ x1 + f(
+    x2,
+    model = "ar1",
+    noise = noise_nig(),
+    rho = 0.5
+  ) + f(x1,
+    model = "rw1",
+    noise = noise_normal(),
+  ),
+  family = noise_normal(sd = 0.5),
+  data = data.frame(Y = 1:5, x1 = 2:6, x2 = 3:7),
+  control_opt = control_opt(
+    estimation = FALSE
+  )
 )
 }

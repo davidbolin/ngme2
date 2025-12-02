@@ -4,7 +4,7 @@
 \alias{ar}
 \title{ngme AR(p) model specification}
 \usage{
-ar(mesh, rho = NULL, order = NULL, ...)
+ar(mesh = NULL, rho = NULL, order = NULL)
 }
 \arguments{
 \item{mesh}{integer vector or inla.mesh.1d object, index to build the mesh}
@@ -12,8 +12,6 @@ ar(mesh, rho = NULL, order = NULL, ...)
 \item{rho}{vector of AR coefficients of length p (should satisfy stationarity conditions)}
 
 \item{order}{integer, the AR order p. If provided and rho is not specified, rho will be initialized as rep(0, p)}
-
-\item{...}{ignore}
 }
 \value{
 ngme_operator object
@@ -24,7 +22,7 @@ ngme AR(p) model specification
 \examples{
 # AR(2) model with specified coefficients
 ar(c(1:10), rho = c(0.5, -0.3))
-# AR(3) model with specified coefficients 
+# AR(3) model with specified coefficients
 ar(c(1:10), rho = c(0.4, 0.2, -0.1))
 # AR(2) model with default coefficients (zeros)
 ar(c(1:10), order = 2)

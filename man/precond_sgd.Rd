@@ -4,29 +4,20 @@
 \alias{precond_sgd}
 \title{Preconditioner SGD optimization}
 \usage{
-precond_sgd(
-  stepsize = 0.5,
-  preconditioner = "fast",
-  numerical_eps = 1e-05,
-  precond_by_diff_chain = FALSE
-)
+precond_sgd(stepsize = 1, numerical_eps = 1e-05)
 }
 \arguments{
 \item{stepsize}{stepsize for SGD}
 
-\item{preconditioner}{preconditioner, can be c("none", "fast", "full")
-"none" means no preconditioner, i.e., vanilla SGD,
-"full" means compute numerical hessian as preconditioner
-"fast" means compute numerical hessian except for the parameter of K matrix (for speed reason)}
-
 \item{numerical_eps}{numerical, the gap used for estimate preconditioner, default is 1e-5}
-
-\item{precond_by_diff_chain}{logical, compute preconditioner only at stop points and switch to use the preconditioner of the other chains. If FALSE, preconditioner will be computed at each iteration.}
 }
 \value{
-a list of control variables for optimization 
+a list of control variables for optimization
 (used in \code{control_opt} function)
 }
 \description{
 Preconditioner SGD optimization
+}
+\details{
+Preconditioner SGD is using fisher information matrix as preconditioner (natural gradient descent).
 }

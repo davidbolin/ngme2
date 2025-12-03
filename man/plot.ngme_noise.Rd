@@ -20,6 +20,6 @@ This function plots the probability density function for one or more stationary 
 (e.g., NIG, GAL, or normal noise). Multiple noise objects can be compared on the same plot.
 }
 \examples{
-plot(noise_nig(mu=1, sigma=2, nu=1))
-plot(n1 = noise_nig(mu=0, sigma=1, nu=1), n2 = noise_nig(mu=1, sigma=1.5, nu=0.5))
+plot(noise_nig(mu = 1, sigma = 2, nu = 1))
+plot(n1 = noise_nig(mu = 0, sigma = 1, nu = 1), n2 = noise_nig(mu = 1, sigma = 1.5, nu = 0.5))
 }

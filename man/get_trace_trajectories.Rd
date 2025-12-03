@@ -26,6 +26,6 @@ list containing:
 }
 \description{
 Extract numerical trajectories of parameters during ngme optimization
-without creating plots. This function provides the underlying data 
+without creating plots. This function provides the underlying data
 used by traceplot().
 }

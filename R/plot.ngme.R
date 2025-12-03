@@ -5,8 +5,7 @@ get_noise_info <- function(noise) {
       name_mu <- NULL
     } else if (noise$n_theta_mu == 1 && is_stationary(noise$B_mu)) {
       name_mu <- "mu"
-    }
-    else {
+    } else {
       name_mu <- paste("theta_mu", seq_len(noise$n_theta_mu))
     }
     trans_mu <- rep(list(identity), noise$n_theta_mu)
@@ -31,7 +30,7 @@ get_noise_info <- function(noise) {
       trans_sigma <- c(trans_sigma_nig, trans_sigma_normal)
     } else {
       if (is_stationary(noise$B_sigma) ||
-        (ncol(noise$B_sigma) == 2 && noise$B_sigma[1,1] == 1 && all(noise$B_sigma[-1, 1] == 0)) # RW1 pattern 
+        (ncol(noise$B_sigma) == 2 && noise$B_sigma[1, 1] == 1 && all(noise$B_sigma[-1, 1] == 0)) # RW1 pattern
       ) {
         name_sigma <- "sigma"
         trans_sigma <- list(exp)
@@ -52,11 +51,11 @@ get_noise_info <- function(noise) {
       trans_nu <- rep(list(identity), noise$n_theta_nu)
     }
 
-if (noise$fix_theta_mu) name_mu <- trans_mu <- NULL
-if (all(noise$fix_theta_sigma)) {
-  name_sigma <- trans_sigma <- NULL
-}
-if (noise$fix_theta_nu) name_nu <- trans_nu <- NULL
+    if (noise$fix_theta_mu) name_mu <- trans_mu <- NULL
+    if (all(noise$fix_theta_sigma)) {
+      name_sigma <- trans_sigma <- NULL
+    }
+    if (noise$fix_theta_nu) name_nu <- trans_nu <- NULL
 
     ts <- list(
       # for bv noise
@@ -81,16 +80,20 @@ if (noise$fix_theta_nu) name_nu <- trans_nu <- NULL
 
     # re-arrange
     ts <- list(
-      name = c(n1$name_mu, n2$name_mu,
+      name = c(
+        n1$name_mu, n2$name_mu,
         n1$name_sigma, n2$name_sigma,
-        n1$name_nu, n2$name_nu),
-      trans = c(n1$trans_mu, n2$trans_mu,
+        n1$name_nu, n2$name_nu
+      ),
+      trans = c(
+        n1$trans_mu, n2$trans_mu,
         n1$trans_sigma, n2$trans_sigma,
-        n1$trans_nu, n2$trans_nu)
+        n1$trans_nu, n2$trans_nu
+      )
     )
   }
   if (noise$corr_measurement) {
-    ts$name <- c(ts$name, "rho(measurement)");
+    ts$name <- c(ts$name, "rho(measurement)")
     ts$trans <- c(ts$trans, list(ar1_th2a))
   }
   ts
@@ -106,7 +109,7 @@ get_latent_info <- function(latent) {
 #' Get trace trajectories from ngme fitting
 #'
 #' Extract numerical trajectories of parameters during ngme optimization
-#' without creating plots. This function provides the underlying data 
+#' without creating plots. This function provides the underlying data
 #' used by traceplot().
 #'
 #' @param ngme ngme object
@@ -125,58 +128,59 @@ get_latent_info <- function(latent) {
 #' @export
 #'
 get_trace_trajectories <- function(
-  ngme, 
-  name="general",
-  apply_transform=TRUE
-) {
+    ngme,
+    name = "general",
+    apply_transform = TRUE) {
   stopifnot(inherits(ngme, "ngme"))
   stopifnot(!is.null(name))
-  
+
   ngme <- ngme$replicates[[1]]
-  
+
   if (name %in% names(ngme$models)) {
     # Get trajectory of parameters of the model
     traj <- attr(ngme$models[[name]], "lat_traj")
-    stopifnot("Please run ngme() to estimate the model before using get_trace_trajectories()"
-      = !is.null(traj))
+    stopifnot(
+      "Please run ngme() to estimate the model before using get_trace_trajectories()" = !is.null(traj)
+    )
     ts <- get_latent_info(ngme$models[[name]])
   } else {
     # Get trajectory of parameters of the noise
     traj <- attr(ngme, "block_traj")
-    stopifnot("Please run ngme() to estimate the model before using get_trace_trajectories()"
-      = !is.null(traj))
+    stopifnot(
+      "Please run ngme() to estimate the model before using get_trace_trajectories()" = !is.null(traj)
+    )
     # get titles
     ts <- get_noise_info(ngme$noise)
-    name_feff <- if (length(ngme$feff)==0) NULL else paste ("fixed effect", seq_len(length(ngme$feff)))
+    name_feff <- if (length(ngme$feff) == 0) NULL else paste("fixed effect", seq_len(length(ngme$feff)))
     trans_feff <- rep(list(identity), length(ngme$feff))
     ts$name <- c(ts$name, name_feff)
     ts$trans <- c(ts$trans, trans_feff)
   }
-  
+
   n_parameters <- nrow(traj[[1]])
   n_chains <- length(traj)
-  
+
   # Get lengths and use minimum if chains have different lengths
   lengths <- sapply(traj, function(x) ncol(x))
   if (length(unique(lengths)) > 1) {
     min_length <- min(lengths)
-    traj <- lapply(traj, function(x) x[, seq_len(min_length), drop=FALSE])
+    traj <- lapply(traj, function(x) x[, seq_len(min_length), drop = FALSE])
     warning("Some chains are of different lengths. Only the minimum length is used.")
   }
   n_iterations <- lengths[1]
-  
+
   # Extract trajectories for each parameter
   trajectories <- list()
-  
+
   for (idx in seq_len(n_parameters)) {
     # Extract the idx-th parameter from each chain
-    param_data <- lapply(traj, function(x) x[idx, , drop=FALSE])
+    param_data <- lapply(traj, function(x) x[idx, , drop = FALSE])
     param_data <- lapply(param_data, as.numeric)
-    
+
     # Combine into matrix: rows = iterations, columns = chains
     param_matrix <- do.call(cbind, param_data)
     colnames(param_matrix) <- paste0("chain_", seq_len(n_chains))
-    
+
     # Apply transformation if requested
     if (apply_transform && !is.null(ts$trans[[idx]])) {
       ff <- ts$trans[[idx]]
@@ -186,10 +190,10 @@ get_trace_trajectories <- function(
         colnames(param_matrix) <- paste0("chain_", seq_len(n_chains))
       }
     }
-    
+
     trajectories[[ts$name[idx]]] <- param_matrix
   }
-  
+
   result <- list(
     trajectories = trajectories,
     parameter_names = ts$name,
@@ -197,7 +201,7 @@ get_trace_trajectories <- function(
     n_chains = n_chains,
     n_iterations = n_iterations
   )
-  
+
   class(result) <- "ngme_trajectories"
   return(result)
 }
@@ -210,14 +214,14 @@ print.ngme_trajectories <- function(x, ...) {
   cat("NGME Parameter Trajectories\n")
   cat("==========================\n")
   cat("Parameters:", length(x$parameter_names), "\n")
-  cat("Chains:", x$n_chains, "\n") 
+  cat("Chains:", x$n_chains, "\n")
   cat("Iterations:", x$n_iterations, "\n\n")
-  
+
   cat("Parameter names:\n")
   for (i in seq_along(x$parameter_names)) {
     cat(sprintf("  [%d] %s\n", i, x$parameter_names[i]))
   }
-  
+
   cat("\nAccess trajectories via $trajectories$parameter_name\n")
   cat("Each trajectory is a matrix: rows = iterations, columns = chains\n")
 }
@@ -236,16 +240,15 @@ print.ngme_trajectories <- function(x, ...) {
 #' @export
 #'
 get_parameter_distance <- function(
-  trajectories, 
-  true_values, 
-  norm_type = "euclidean",
-  chain_summary = "mean"
-) {
+    trajectories,
+    true_values,
+    norm_type = "euclidean",
+    chain_summary = "mean") {
   stopifnot(inherits(trajectories, "ngme_trajectories"))
   stopifnot(is.list(true_values) || is.numeric(true_values))
   stopifnot(norm_type %in% c("euclidean", "manhattan", "max"))
   stopifnot(chain_summary %in% c("mean", "median", "chain1"))
-  
+
   # Match parameter names
   if (is.numeric(true_values) && is.null(names(true_values))) {
     if (length(true_values) != length(trajectories$parameter_names)) {
@@ -253,24 +256,24 @@ get_parameter_distance <- function(
     }
     names(true_values) <- trajectories$parameter_names
   }
-  
+
   # Check all required parameters are provided
   missing_params <- setdiff(trajectories$parameter_names, names(true_values))
   if (length(missing_params) > 0) {
     stop("Missing true values for parameters: ", paste(missing_params, collapse = ", "))
   }
-  
+
   n_iterations <- trajectories$n_iterations
   distances <- numeric(n_iterations)
-  
+
   for (iter in seq_len(n_iterations)) {
     # Extract parameter values for this iteration
     param_values <- numeric(length(trajectories$parameter_names))
-    
+
     for (i in seq_along(trajectories$parameter_names)) {
       param_name <- trajectories$parameter_names[i]
       traj_matrix <- trajectories$trajectories[[param_name]]
-      
+
       # Summarize across chains for this iteration
       iter_values <- traj_matrix[iter, , drop = TRUE]
       param_values[i] <- switch(chain_summary,
@@ -279,24 +282,25 @@ get_parameter_distance <- function(
         "chain1" = iter_values[1]
       )
     }
-    
+
     # Calculate distance to true values
     true_vec <- unname(true_values[trajectories$parameter_names])
     diff_vec <- param_values - true_vec
-    
+
     distances[iter] <- switch(norm_type,
       "euclidean" = sqrt(sum(diff_vec^2)),
       "manhattan" = sum(abs(diff_vec)),
       "max" = max(abs(diff_vec))
     )
   }
-  
-  structure(distances, 
-           norm_type = norm_type,
-           chain_summary = chain_summary,
-           parameter_names = trajectories$parameter_names,
-           true_values = true_values[trajectories$parameter_names],
-           class = c("parameter_distance", "numeric"))
+
+  structure(distances,
+    norm_type = norm_type,
+    chain_summary = chain_summary,
+    parameter_names = trajectories$parameter_names,
+    true_values = true_values[trajectories$parameter_names],
+    class = c("parameter_distance", "numeric")
+  )
 }
 
 #' Print method for parameter_distance
@@ -310,13 +314,13 @@ print.parameter_distance <- function(x, ...) {
   cat("Chain summary:", attr(x, "chain_summary"), "\n")
   cat("Iterations:", length(x), "\n")
   cat("Final distance:", sprintf("%.6f", x[length(x)]), "\n\n")
-  
+
   cat("True parameter values:\n")
   true_vals <- attr(x, "true_values")
   for (name in names(true_vals)) {
     cat(sprintf("  %s: %.4f\n", name, true_vals[[name]]))
   }
-  
+
   cat("\nUse plot() to visualize convergence\n")
 }
 
@@ -328,19 +332,21 @@ plot.parameter_distance <- function(x, ...) {
   if (!requireNamespace("ggplot2", quietly = TRUE)) {
     stop("ggplot2 package is required for plotting")
   }
-  
-  iteration <- distance <- NULL  # avoid R CMD check warnings
-  
+
+  iteration <- distance <- NULL # avoid R CMD check warnings
+
   df <- data.frame(
     iteration = seq_along(x),
     distance = as.numeric(x)
   )
-  
+
   ggplot2::ggplot(df, ggplot2::aes(x = iteration, y = distance)) +
     ggplot2::geom_line() +
     ggplot2::labs(
-      title = paste("Parameter Distance Trajectory (",
-                   attr(x, "norm_type"), "norm )"),
+      title = paste(
+        "Parameter Distance Trajectory (",
+        attr(x, "norm_type"), "norm )"
+      ),
       subtitle = paste("Chain summary:", attr(x, "chain_summary")),
       x = "Iteration",
       y = expression(paste("||", theta, " - ", hat(theta), "||"))
@@ -361,24 +367,26 @@ plot.parameter_distance <- function(x, ...) {
 #' @export
 #'
 traceplot <- function(
-  ngme, 
-  name="general", 
-  moving_window=1,
-  hline=NULL,
-  combine=TRUE
-) {
+    ngme,
+    name = "general",
+    moving_window = 1,
+    hline = NULL,
+    combine = TRUE) {
   stopifnot(inherits(ngme, "ngme"))
   stopifnot(!is.null(name))
-  stopifnot(requireNamespace("dplyr", quietly = TRUE))
-  stopifnot(requireNamespace("tidyr", quietly = TRUE))
+  if (combine && !requireNamespace("gridExtra", quietly = TRUE)) {
+    stop("Package 'gridExtra' is required for combined trace plots. ",
+      "Please install it with install.packages('gridExtra').")
+  }
   ngme <- ngme$replicates[[1]]
   ps <- list()
 
   if (name %in% names(ngme$models)) {
     # Plot trajectory of parameters of the model
     traj <- attr(ngme$models[[name]], "lat_traj")
-    stopifnot("Please run ngme() to estimate the model before using traceplot()"
-      = !is.null(traj))
+    stopifnot(
+      "Please run ngme() to estimate the model before using traceplot()" = !is.null(traj)
+    )
     ts <- get_latent_info(ngme$models[[name]])
 
     # Special handling for ARMA(p,q<=2): convert raw (PACF) to AR/MA coefficients
@@ -389,54 +397,65 @@ traceplot <- function(
       if (p <= 2 && q <= 2) {
         # Helper: map raw -> coeff per time column
         map_ar_coeff <- function(raw_ar) {
-          if (length(raw_ar) == 0) return(numeric(0))
-          if (length(raw_ar) == 1) {
-            t1 <- ar1_th2a(raw_ar[1]); return(c(t1))
+          if (length(raw_ar) == 0) {
+            return(numeric(0))
           }
-          t1 <- ar1_th2a(raw_ar[1]); t2 <- ar1_th2a(raw_ar[2])
-          c(t1*(1 - t2), t2)
+          if (length(raw_ar) == 1) {
+            t1 <- ar1_th2a(raw_ar[1])
+            return(c(t1))
+          }
+          t1 <- ar1_th2a(raw_ar[1])
+          t2 <- ar1_th2a(raw_ar[2])
+          c(t1 * (1 - t2), t2)
         }
         map_ma_coeff <- function(raw_ma) {
-          if (length(raw_ma) == 0) return(numeric(0))
-          if (length(raw_ma) == 1) {
-            s1 <- ar1_th2a(raw_ma[1]); return(c(s1))
+          if (length(raw_ma) == 0) {
+            return(numeric(0))
           }
-          s1 <- ar1_th2a(raw_ma[1]); s2 <- ar1_th2a(raw_ma[2])
-          c(s1*(1 - s2), s2)
+          if (length(raw_ma) == 1) {
+            s1 <- ar1_th2a(raw_ma[1])
+            return(c(s1))
+          }
+          s1 <- ar1_th2a(raw_ma[1])
+          s2 <- ar1_th2a(raw_ma[2])
+          c(s1 * (1 - s2), s2)
         }
         # Rewrite trajectories per chain
         traj <- lapply(traj, function(M) {
           M <- as.matrix(M)
-          if ((p+q) > 0 && nrow(M) >= (p+q)) {
-            ar_idx <- if (p>0) seq_len(p) else integer(0)
-            ma_idx <- if (q>0) (p + seq_len(q)) else integer(0)
+          if ((p + q) > 0 && nrow(M) >= (p + q)) {
+            ar_idx <- if (p > 0) seq_len(p) else integer(0)
+            ma_idx <- if (q > 0) (p + seq_len(q)) else integer(0)
             for (col in seq_len(ncol(M))) {
-              if (p>0) {
+              if (p > 0) {
                 phi <- map_ar_coeff(M[ar_idx, col])
                 M[seq_len(length(phi)), col] <- phi
               }
-              if (q>0) {
+              if (q > 0) {
                 theta <- map_ma_coeff(M[ma_idx, col])
                 M[p + seq_len(length(theta)), col] <- theta
               }
             }
             M
-          } else M
+          } else {
+            M
+          }
         })
         # Replace transforms for AR/MA with identity since we already mapped
-        if ((p+q) > 0 && length(ts$trans) >= (p+q)) {
-          ts$trans[seq_len(p+q)] <- replicate(p+q, identity, simplify = FALSE)
+        if ((p + q) > 0 && length(ts$trans) >= (p + q)) {
+          ts$trans[seq_len(p + q)] <- replicate(p + q, identity, simplify = FALSE)
         }
       }
     }
   } else {
     # Plot trajectory of parameters of the noise
     traj <- attr(ngme, "block_traj")
-    stopifnot("Please run ngme() to estimate the model before using traceplot()"
-      = !is.null(traj))
+    stopifnot(
+      "Please run ngme() to estimate the model before using traceplot()" = !is.null(traj)
+    )
     # get titles
     ts <- get_noise_info(ngme$noise)
-    name_feff <- if (length(ngme$feff)==0) NULL else paste ("fixed effect", seq_len(length(ngme$feff)))
+    name_feff <- if (length(ngme$feff) == 0) NULL else paste("fixed effect", seq_len(length(ngme$feff)))
     trans_feff <- rep(list(identity), length(ngme$feff))
     ts$name <- c(ts$name, name_feff)
     ts$trans <- c(ts$trans, trans_feff)
@@ -448,9 +467,9 @@ traceplot <- function(
   n_parameters <- nrow(traj[[1]]) # number of parameters to draw
   for (idx in seq_len(n_parameters)) {
     # extract the idx-th parameter from each chain
-    df <- lapply(traj, function(x) x[idx, ,drop=F])
+    df <- lapply(traj, function(x) x[idx, , drop = F])
     df <- lapply(df, as.numeric)
-    
+
     # if not all chains are of the same length, use the minimum length
     lengths <- sapply(df, length)
     if (length(unique(lengths)) > 1) {
@@ -460,46 +479,64 @@ traceplot <- function(
     }
 
     df <- as.data.frame(df)
-    df$x <- seq_len(nrow(df)); x <- NULL # get around check note
-    df_long <- tidyr::gather(df, key = "key", value = "value", -x)
+    df$x <- seq_len(nrow(df))
+    x <- NULL # get around check note
+    keys <- setdiff(names(df), "x")
+    df_long <- data.frame(
+      x = rep(df$x, times = length(keys)),
+      key = rep(keys, each = nrow(df)),
+      value = as.numeric(unlist(df[keys], use.names = FALSE)),
+      stringsAsFactors = FALSE
+    )
     ff <- ts$trans[[idx]]
     df_long$value <- ff(df_long$value)
-    
+
     # update df using moving window
-    df_long <- dplyr::group_by(df_long, key)
     if (moving_window > 1) {
       if (!requireNamespace("zoo", quietly = TRUE)) {
         message("Package 'zoo' is not installed. Using original data without moving average.")
         df_long$moving_avg <- df_long$value
       } else {
-        df_long <- dplyr::mutate(df_long, moving_avg = zoo::rollapply(value, width = moving_window, FUN = mean, align = "right", fill = NA))
+        df_long$moving_avg <- df_long$value
+        for (k in keys) {
+          idx_k <- df_long$key == k
+          df_long$moving_avg[idx_k] <- zoo::rollapply(
+            df_long$value[idx_k],
+            width = moving_window,
+            FUN = mean,
+            align = "right",
+            fill = NA
+          )
+        }
       }
     } else {
       df_long$moving_avg <- df_long$value
     }
-    df_long <- na.omit(df_long)
-    
-    df_mean <- dplyr::summarise(
-      dplyr::group_by(df_long, x),
-      mean_moving_avg = mean(moving_avg)
-    )
+    df_long <- df_long[!is.na(df_long$moving_avg), , drop = FALSE]
+
+    df_mean <- aggregate(moving_avg ~ x, data = df_long, FUN = mean)
+    names(df_mean)[names(df_mean) == "moving_avg"] <- "mean_moving_avg"
 
     ps[[idx]] <- ggplot() +
       geom_line(
         data = df_long,
         mapping = aes(
-          x=.data[["x"]],
-          y=.data[["moving_avg"]],
-          group=.data[["key"]]
+          x = .data[["x"]],
+          y = .data[["moving_avg"]],
+          group = .data[["key"]]
         )
-      ) + geom_line(
+      ) +
+      geom_line(
         data = df_mean,
-        aes(x=x, y=mean_moving_avg),
-        col="red"
-      ) + geom_hline(
-        yintercept=hline[[idx]], color="blue"
-      ) + labs(title = ts$name[[idx]]) +
-      xlab(NULL) + ylab(NULL)
+        aes(x = x, y = mean_moving_avg),
+        col = "red"
+      ) +
+      geom_hline(
+        yintercept = hline[[idx]], color = "blue"
+      ) +
+      labs(title = ts$name[[idx]]) +
+      xlab(NULL) +
+      ylab(NULL)
 
     avg_lines[[ts$name[[idx]]]] <- df_mean$mean_moving_avg
   }
@@ -518,7 +555,7 @@ traceplot <- function(
   }
 
   attr(result, "avg_lines") <- avg_lines
-  
+
   # print estimates of last iteration
   cat("Last estimates:\n")
   last_estimates <- lapply(avg_lines, function(x) x[length(x)])
@@ -542,39 +579,39 @@ traceplot <- function(
 #' @export
 #'
 #' @examples
-#' plot(noise_nig(mu=1, sigma=2, nu=1))
-#' plot(n1 = noise_nig(mu=0, sigma=1, nu=1), n2 = noise_nig(mu=1, sigma=1.5, nu=0.5))
+#' plot(noise_nig(mu = 1, sigma = 2, nu = 1))
+#' plot(n1 = noise_nig(mu = 0, sigma = 1, nu = 1), n2 = noise_nig(mu = 1, sigma = 1.5, nu = 0.5))
 plot.ngme_noise <- function(x = NULL, ...) {
   # Get all arguments including the first one
-  call_args <- as.list(match.call())[-1]  # Remove function name
-  all_args <- c(if(!is.null(x)) list(x), list(...))
-  
+  call_args <- as.list(match.call())[-1] # Remove function name
+  all_args <- c(if (!is.null(x)) list(x), list(...))
+
   # Get names from the call
   call_names <- names(call_args)
   if (is.null(call_names)) {
     call_names <- rep("", length(call_args))
   }
-  
+
   # Helper function to check if an object is a noise object
   is_noise_object <- function(obj) {
-    is.list(obj) && 
-    !is.null(obj$theta_mu) && 
-    !is.null(obj$theta_sigma) && 
-    !is.null(obj$noise_type)
+    is.list(obj) &&
+      !is.null(obj$theta_mu) &&
+      !is.null(obj$theta_sigma) &&
+      !is.null(obj$noise_type)
   }
-  
+
   # Initialize noise objects list
   noise_objects <- list()
-  
+
   # Extract plotting parameters and noise objects
   plot_params <- c("xlim", "ylim", "main", "xlab", "ylab")
   xlim <- NULL
   unnamed_count <- 1
-  
+
   for (i in seq_along(all_args)) {
     arg <- all_args[[i]]
     arg_name <- call_names[i]
-    
+
     if (arg_name %in% plot_params) {
       # This is a plotting parameter
       if (arg_name == "xlim") xlim <- arg
@@ -591,95 +628,100 @@ plot.ngme_noise <- function(x = NULL, ...) {
       noise_objects[[noise_name]] <- arg
     }
   }
-  
+
   # Check that we have at least one noise object
   if (length(noise_objects) == 0) {
     stop("No noise objects provided")
   }
-  
+
   # Set default xlim if not provided
   if (is.null(xlim)) xlim <- c(-10, 10)
-  
+
   xx <- seq(xlim[[1]], xlim[[2]], length = 400)
-  
+
   # Define colors for multiple lines
   colors <- c("black", "red", "blue", "green", "purple", "orange", "brown", "pink", "gray", "cyan")
-  
+
   # Initialize plot data
   plot_data <- data.frame()
-  
+
   # Process each noise object
   for (i in seq_along(noise_objects)) {
     noise <- noise_objects[[i]]
     mu <- noise$theta_mu
     sigma <- exp(noise$theta_sigma)
     nu <- exp(noise$theta_nu)
-    
-    stopifnot("only implemented for stationary mu" = 
-      length(mu) == 1 || noise$noise_type == "normal")
+
+    stopifnot(
+      "only implemented for stationary mu" =
+        length(mu) == 1 || noise$noise_type == "normal"
+    )
     stopifnot("only implemented for stationary sigma" = length(sigma) == 1)
-    stopifnot("only implemented for stationary nu" = 
-      length(nu) == 1 || noise$noise_type == "normal")
-    
+    stopifnot(
+      "only implemented for stationary nu" =
+        length(nu) == 1 || noise$noise_type == "normal"
+    )
+
     switch(noise$noise_type,
       "nig"     = dd <- dnig(xx, -mu, mu, nu, sigma),
       "gal"     = dd <- dgal(xx, -mu, mu, nu, sigma),
       "normal"  = dd <- dnorm(xx, sd = sigma),
       stop("Plot for this type is not implemented")
     )
-    
+
     # Create data frame for this noise object
     noise_name <- names(noise_objects)[i]
     if (is.null(noise_name) || noise_name == "") {
       noise_name <- paste("noise", i)
     }
-    
+
     temp_data <- data.frame(
       x = xx,
       y = dd,
       noise = noise_name,
       stringsAsFactors = FALSE
     )
-    
+
     plot_data <- rbind(plot_data, temp_data)
   }
-  
-  
+
+
   # Create the plot
   gg <- ggplot2::ggplot(plot_data, ggplot2::aes(x = x, y = y, color = noise)) +
     ggplot2::geom_line() +
     ggplot2::labs(title = "Noise Density Plot") +
     ggplot2::theme_minimal()
-  
+
   # Add color scale and legend handling
   if (length(noise_objects) > 1) {
-    gg <- gg + 
+    gg <- gg +
       ggplot2::scale_color_manual(values = colors[1:length(noise_objects)]) +
       ggplot2::labs(color = "Noise Objects")
   } else {
     gg <- gg + ggplot2::theme(legend.position = "none")
   }
-  
+
   gg
 }
 
 
 compare_traceplot <- function(l1, l2) {
-  l1 <- as.data.frame(l1);
+  l1 <- as.data.frame(l1)
   l2 <- as.data.frame(l2)
 
   ps <- list()
-  n_plots = length(l1)
-  n_iter = length(l1[[1]])
+  n_plots <- length(l1)
+  n_iter <- length(l1[[1]])
 
   for (i in seq_len(n_plots)) {
     c1 <- c2 <- NULL
-    df <- data.frame(c1 = l1[[i]], c2 = l2[[i]], title=names(l1)[[i]])
-    ps[[i]] <- ggplot(data=df) +
-      geom_line(aes(x=1:n_iter, y=c1), col="1") +
-      geom_line(aes(x=1:n_iter, y=c2), col="2") +
+    df <- data.frame(c1 = l1[[i]], c2 = l2[[i]], title = names(l1)[[i]])
+    ps[[i]] <- ggplot(data = df) +
+      geom_line(aes(x = 1:n_iter, y = c1), col = "1") +
+      geom_line(aes(x = 1:n_iter, y = c2), col = "2") +
       labs(title = df$title) +
-      xlab(NULL) + ylab(NULL)
+      xlab(NULL) +
+      ylab(NULL)
   }
 
   do.call(gridExtra::grid.arrange, ps)
@@ -688,7 +730,7 @@ compare_traceplot <- function(l1, l2) {
 
 #' Compare noise objects using Kullback-Leibler divergence
 #'
-#' This function compares multiple noise objects by calculating the KLD 
+#' This function compares multiple noise objects by calculating the KLD
 #' of each noise against the first noise object (reference).
 #'
 #' @param x first noise object (reference)
@@ -700,39 +742,39 @@ compare_traceplot <- function(l1, l2) {
 #' @export
 #'
 #' @examples
-#' n1 <- noise_nig(mu=0, sigma=1, nu=1)
-#' n2 <- noise_nig(mu=0.5, sigma=1.2, nu=0.8)
-#' compare_noise_kld(n1, method2=n2)
+#' n1 <- noise_nig(mu = 0, sigma = 1, nu = 1)
+#' n2 <- noise_nig(mu = 0.5, sigma = 1.2, nu = 0.8)
+#' compare_noise_kld(n1, method2 = n2)
 compare_noise_kld <- function(x = NULL, ..., xlim = c(-10, 10), n_points = 1000) {
   # Get all arguments including the first one
-  call_args <- as.list(match.call())[-1]  # Remove function name
-  all_args <- c(if(!is.null(x)) list(x), list(...))
-  
+  call_args <- as.list(match.call())[-1] # Remove function name
+  all_args <- c(if (!is.null(x)) list(x), list(...))
+
   # Get names from the call
   call_names <- names(call_args)
   if (is.null(call_names)) {
     call_names <- rep("", length(call_args))
   }
-  
+
   # Helper function to check if an object is a noise object
   is_noise_object <- function(obj) {
-    is.list(obj) && 
-    !is.null(obj$theta_mu) && 
-    !is.null(obj$theta_sigma) && 
-    !is.null(obj$noise_type)
+    is.list(obj) &&
+      !is.null(obj$theta_mu) &&
+      !is.null(obj$theta_sigma) &&
+      !is.null(obj$noise_type)
   }
-  
+
   # Initialize noise objects list
   noise_objects <- list()
-  
+
   # Extract parameters and noise objects
   param_names <- c("xlim", "n_points")
   unnamed_count <- 1
-  
+
   for (i in seq_along(all_args)) {
     arg <- all_args[[i]]
     arg_name <- call_names[i]
-    
+
     if (arg_name %in% param_names) {
       # This is a function parameter - already handled by function signature
       next
@@ -749,15 +791,15 @@ compare_noise_kld <- function(x = NULL, ..., xlim = c(-10, 10), n_points = 1000)
       noise_objects[[noise_name]] <- arg
     }
   }
-  
+
   # Check that we have at least two noise objects
   if (length(noise_objects) < 2) {
     stop("Need at least two noise objects to compare")
   }
-  
+
   # Generate evaluation points
   xx <- seq(xlim[[1]], xlim[[2]], length = n_points)
-  
+
   # Calculate densities for all noise objects
   densities <- list()
   for (i in seq_along(noise_objects)) {
@@ -765,42 +807,46 @@ compare_noise_kld <- function(x = NULL, ..., xlim = c(-10, 10), n_points = 1000)
     mu <- noise$theta_mu
     sigma <- exp(noise$theta_sigma)
     nu <- exp(noise$theta_nu)
-    
-    stopifnot("only implemented for stationary mu" = 
-      length(mu) == 1 || noise$noise_type == "normal")
+
+    stopifnot(
+      "only implemented for stationary mu" =
+        length(mu) == 1 || noise$noise_type == "normal"
+    )
     stopifnot("only implemented for stationary sigma" = length(sigma) == 1)
-    stopifnot("only implemented for stationary nu" = 
-      length(nu) == 1 || noise$noise_type == "normal")
-    
+    stopifnot(
+      "only implemented for stationary nu" =
+        length(nu) == 1 || noise$noise_type == "normal"
+    )
+
     switch(noise$noise_type,
       "nig"     = dd <- dnig(xx, -mu, mu, nu, sigma),
       "gal"     = dd <- dgal(xx, -mu, mu, nu, sigma),
       "normal"  = dd <- dnorm(xx, sd = sigma),
       stop("KLD comparison for this noise type is not implemented")
     )
-    
+
     densities[[i]] <- dd
   }
-  
+
   # Calculate KLD of each noise against the first one (reference)
   reference_density <- densities[[1]]
   kld_values <- numeric(length(noise_objects) - 1)
   names(kld_values) <- names(noise_objects)[-1]
-  
+
   for (i in 2:length(noise_objects)) {
     comparison_density <- densities[[i]]
-    
+
     # Add small epsilon to avoid log(0) and division by 0
     epsilon <- 1e-10
     p <- pmax(reference_density, epsilon)
     q <- pmax(comparison_density, epsilon)
-    
+
     # Calculate KLD: sum(p * log(p/q)) * dx
     # Since we're using discrete points, we need to multiply by dx
     dx <- (xlim[2] - xlim[1]) / (n_points - 1)
-    kld_values[i-1] <- sum(p * log(p/q)) * dx
+    kld_values[i - 1] <- sum(p * log(p / q)) * dx
   }
-  
+
   # Create results
   result <- list(
     kld_values = kld_values,
@@ -808,7 +854,7 @@ compare_noise_kld <- function(x = NULL, ..., xlim = c(-10, 10), n_points = 1000)
     n_comparisons = length(kld_values),
     closest = names(kld_values)[which.min(kld_values)]
   )
-  
+
   class(result) <- "noise_kld_comparison"
   return(result)
 }
@@ -823,7 +869,7 @@ print.noise_kld_comparison <- function(x, ...) {
   cat("===================\n")
   cat("Reference:", x$reference, "\n\n")
   cat("KLD values (lower is closer to reference):\n")
-  
+
   # Sort by KLD value for better display
   sorted_kld <- sort(x$kld_values)
   for (i in seq_along(sorted_kld)) {
@@ -833,6 +879,6 @@ print.noise_kld_comparison <- function(x, ...) {
     }
     cat("\n")
   }
-  
+
   cat("\nClosest to reference:", x$closest, "\n")
 }

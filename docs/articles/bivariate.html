@@ -589,7 +589,7 @@ variables in a data frame.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Starting posterior sampling... </span></span>
 <span><span class="co">#&gt; Posterior sampling done! </span></span>
-<span><span class="co">#&gt; Average standard deviation of the posterior W:  2.613106 </span></span>
+<span><span class="co">#&gt; Average standard deviation of the posterior W:  2.721581 </span></span>
 <span><span class="co">#&gt; Note:</span></span>
 <span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
 <span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
@@ -599,30 +599,30 @@ variables in a data frame.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt;     x1     x2 </span></span>
-<span><span class="co">#&gt; -0.996  1.934 </span></span>
+<span><span class="co">#&gt; -0.992  2.038 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $field1</span></span>
 <span><span class="co">#&gt;   Model type: Bivariate model</span></span>
 <span><span class="co">#&gt;       theta = 0 (fixed)</span></span>
-<span><span class="co">#&gt;       rho = 2.51</span></span>
+<span><span class="co">#&gt;       rho = 4.73</span></span>
 <span><span class="co">#&gt;       W1: AR(1)</span></span>
-<span><span class="co">#&gt;           rho = 0.639</span></span>
+<span><span class="co">#&gt;           rho = 0.647</span></span>
 <span><span class="co">#&gt;       W2: AR(1)</span></span>
-<span><span class="co">#&gt;           rho = -0.303</span></span>
+<span><span class="co">#&gt;           rho = -0.261</span></span>
 <span><span class="co">#&gt;    Bivariate type-G4 noise:</span></span>
 <span><span class="co">#&gt;       W1: NORMAL</span></span>
 <span><span class="co">#&gt;       Noise parameters: </span></span>
-<span><span class="co">#&gt;           sigma = 1.83</span></span>
+<span><span class="co">#&gt;           sigma = 2.09</span></span>
 <span><span class="co">#&gt;       W2: NORMAL</span></span>
 <span><span class="co">#&gt;       Noise parameters: </span></span>
-<span><span class="co">#&gt;           sigma = 5.4</span></span>
+<span><span class="co">#&gt;           sigma = 8.59</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.504</span></span></code></pre></div>
+<span><span class="co">#&gt;       sigma = 0.505</span></span></code></pre></div>
 <p>We create trace plots to visualize the convergence of the chains and
 assess the quality of the fit.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
@@ -630,30 +630,30 @@ assess the quality of the fit.</p>
 <p><img src="bivariate_files/figure-html/ex1-traceplot-1.png" width="100%"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 0.5040307</span></span>
+<span><span class="co">#&gt; [1] 0.5048548</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`fixed effect 1`</span></span>
-<span><span class="co">#&gt; [1] -0.99627</span></span>
+<span><span class="co">#&gt; [1] -0.9922389</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`fixed effect 2`</span></span>
-<span><span class="co">#&gt; [1] 1.934173</span></span>
+<span><span class="co">#&gt; [1] 2.03686</span></span>
 <span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">fit_ex1</span>, <span class="st">"field1"</span>, hline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">rho</span>, <span class="va">rho1</span>, <span class="va">rho2</span>, <span class="va">sigma1</span>, <span class="va">sigma2</span><span class="op">)</span><span class="op">)</span></span></code></pre>
 <p><img src="bivariate_files/figure-html/ex1-traceplot-2.png" width="100%"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $rho</span></span>
-<span><span class="co">#&gt; [1] 2.510282</span></span>
+<span><span class="co">#&gt; [1] 4.733651</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`rho (1st)`</span></span>
-<span><span class="co">#&gt; [1] 0.6373661</span></span>
+<span><span class="co">#&gt; [1] 0.650834</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`rho (2nd)`</span></span>
-<span><span class="co">#&gt; [1] -0.2994726</span></span>
+<span><span class="co">#&gt; [1] -0.2478482</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`sigma (1st)`</span></span>
-<span><span class="co">#&gt; [1] 1.840045</span></span>
+<span><span class="co">#&gt; [1] 2.088468</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`sigma (2nd)`</span></span>
-<span><span class="co">#&gt; [1] 5.683373</span></span></code></pre>
+<span><span class="co">#&gt; [1] 9.141484</span></span></code></pre>
 </div>
 <div class="section level3">
 <h3 id="example-2-ar1-with-nig-noise">Example 2: AR(1) with NIG Noise<a class="anchor" aria-label="anchor" href="#example-2-ar1-with-nig-noise"></a>
@@ -749,7 +749,7 @@ including the correlation structure in the measurement noise.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Starting posterior sampling... </span></span>
 <span><span class="co">#&gt; Posterior sampling done! </span></span>
-<span><span class="co">#&gt; Average standard deviation of the posterior W:  3.10495 </span></span>
+<span><span class="co">#&gt; Average standard deviation of the posterior W:  3.405805 </span></span>
 <span><span class="co">#&gt; Note:</span></span>
 <span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
 <span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
@@ -759,35 +759,35 @@ including the correlation structure in the measurement noise.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt;    x1    x2 </span></span>
-<span><span class="co">#&gt; -3.03  1.55 </span></span>
+<span><span class="co">#&gt; -2.95  1.48 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $bv</span></span>
 <span><span class="co">#&gt;   Model type: Bivariate model</span></span>
-<span><span class="co">#&gt;       theta = 0.438</span></span>
-<span><span class="co">#&gt;       rho = 2.04</span></span>
+<span><span class="co">#&gt;       theta = 0.372</span></span>
+<span><span class="co">#&gt;       rho = 1.9</span></span>
 <span><span class="co">#&gt;       W1: AR(1)</span></span>
-<span><span class="co">#&gt;           rho = 0.596</span></span>
+<span><span class="co">#&gt;           rho = 0.577</span></span>
 <span><span class="co">#&gt;       W2: AR(1)</span></span>
-<span><span class="co">#&gt;           rho = 0.438</span></span>
+<span><span class="co">#&gt;           rho = 0.399</span></span>
 <span><span class="co">#&gt;    Bivariate type-G4 noise:</span></span>
 <span><span class="co">#&gt;       W1: NIG</span></span>
 <span><span class="co">#&gt;       Noise parameters: </span></span>
-<span><span class="co">#&gt;           mu = -1.87</span></span>
-<span><span class="co">#&gt;           sigma = 0.672</span></span>
-<span><span class="co">#&gt;           nu = 0.733</span></span>
+<span><span class="co">#&gt;           mu = -2.44</span></span>
+<span><span class="co">#&gt;           sigma = 0.865</span></span>
+<span><span class="co">#&gt;           nu = 1.29</span></span>
 <span><span class="co">#&gt;       W2: NIG</span></span>
 <span><span class="co">#&gt;       Noise parameters: </span></span>
-<span><span class="co">#&gt;           mu = 2.32</span></span>
-<span><span class="co">#&gt;           sigma = 1.43</span></span>
-<span><span class="co">#&gt;           nu = 0.468</span></span>
+<span><span class="co">#&gt;           mu = 2.43</span></span>
+<span><span class="co">#&gt;           sigma = 1.88</span></span>
+<span><span class="co">#&gt;           nu = 0.729</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 1.14</span></span>
-<span><span class="co">#&gt;       correlation(rho) = 0.737</span></span></code></pre></div>
+<span><span class="co">#&gt;       sigma = 0.887</span></span>
+<span><span class="co">#&gt;       correlation(rho) = 0.616</span></span></code></pre></div>
 <p>We visualize the trace plots for all model parameters, comparing them
 with the true values.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
@@ -798,34 +798,34 @@ with the true values.</p>
 <p><img src="bivariate_files/figure-html/ex2-traceplot-1.png" width="100%"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $theta</span></span>
-<span><span class="co">#&gt; [1] 0.4376033</span></span>
+<span><span class="co">#&gt; [1] 0.3719699</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $rho</span></span>
-<span><span class="co">#&gt; [1] 2.03974</span></span>
+<span><span class="co">#&gt; [1] 1.898407</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`rho (1st)`</span></span>
-<span><span class="co">#&gt; [1] 0.5841126</span></span>
+<span><span class="co">#&gt; [1] 0.5756377</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`rho (2nd)`</span></span>
-<span><span class="co">#&gt; [1] 0.4455189</span></span>
+<span><span class="co">#&gt; [1] 0.4077037</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`mu (1st)`</span></span>
-<span><span class="co">#&gt; [1] -2.047159</span></span>
+<span><span class="co">#&gt; [1] -2.782057</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`mu (2nd)`</span></span>
-<span><span class="co">#&gt; [1] 2.371061</span></span>
+<span><span class="co">#&gt; [1] 2.612155</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`sigma (1st)`</span></span>
-<span><span class="co">#&gt; [1] 0.5814059</span></span>
+<span><span class="co">#&gt; [1] 0.6530802</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`sigma (2nd)`</span></span>
-<span><span class="co">#&gt; [1] 1.538205</span></span>
+<span><span class="co">#&gt; [1] 1.57391</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`nu (1st)`</span></span>
-<span><span class="co">#&gt; [1] 0.8736139</span></span>
+<span><span class="co">#&gt; [1] 1.62722</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`nu (2nd)`</span></span>
-<span><span class="co">#&gt; [1] 0.5906478</span></span></code></pre>
+<span><span class="co">#&gt; [1] 0.7410444</span></span></code></pre>
 </div>
 </div>
 <div class="section level2">
@@ -1226,7 +1226,7 @@ indices, spatial coordinates, covariates, and group labels.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Starting posterior sampling... </span></span>
 <span><span class="co">#&gt; Posterior sampling done! </span></span>
-<span><span class="co">#&gt; Average standard deviation of the posterior W:  0.1920877 </span></span>
+<span><span class="co">#&gt; Average standard deviation of the posterior W:  0.2348692 </span></span>
 <span><span class="co">#&gt; Note:</span></span>
 <span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
 <span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span>
@@ -1235,33 +1235,33 @@ indices, spatial coordinates, covariates, and group labels.</p>
 <span><span class="co">#&gt; *** Ngme object ***</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
-<span><span class="co">#&gt;     x1     x2 </span></span>
-<span><span class="co">#&gt; -0.974  1.901 </span></span>
+<span><span class="co">#&gt;    x1    x2 </span></span>
+<span><span class="co">#&gt; -1.00  2.29 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $spacetime_bv</span></span>
 <span><span class="co">#&gt;   Model type: Tensor product</span></span>
 <span><span class="co">#&gt;       first: AR(1)</span></span>
-<span><span class="co">#&gt;           rho = 0.984</span></span>
+<span><span class="co">#&gt;           rho = 0.996</span></span>
 <span><span class="co">#&gt;       second: Bivariate model</span></span>
-<span><span class="co">#&gt;           theta = 1.47</span></span>
-<span><span class="co">#&gt;           rho = -8.33</span></span>
+<span><span class="co">#&gt;           theta = 1.06</span></span>
+<span><span class="co">#&gt;           rho = -9.71</span></span>
 <span><span class="co">#&gt;           field1: Matern</span></span>
 <span><span class="co">#&gt;               alpha = 2 (fixed)</span></span>
-<span><span class="co">#&gt;               kappa = 0.00157</span></span>
+<span><span class="co">#&gt;               kappa = 1.74e-05</span></span>
 <span><span class="co">#&gt;           field2: Matern</span></span>
 <span><span class="co">#&gt;               alpha = 2 (fixed)</span></span>
-<span><span class="co">#&gt;               kappa = 2.17</span></span>
+<span><span class="co">#&gt;               kappa = 65</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = 0.877</span></span>
-<span><span class="co">#&gt;       sigma = 0.00129</span></span>
-<span><span class="co">#&gt;       nu = 172</span></span>
+<span><span class="co">#&gt;       mu = -0.021</span></span>
+<span><span class="co">#&gt;       sigma = 0.0411</span></span>
+<span><span class="co">#&gt;       nu = 2.26</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.603</span></span></code></pre></div>
+<span><span class="co">#&gt;       sigma = 0.605</span></span></code></pre></div>
 <p>We visualize the convergence of MCMC chains for the space-time
 bivariate model.</p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
@@ -1269,25 +1269,25 @@ bivariate model.</p>
 <p><img src="bivariate_files/figure-html/spacetime-traceplot-1.png" width="100%"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $rho</span></span>
-<span><span class="co">#&gt; [1] -8.338834</span></span>
+<span><span class="co">#&gt; [1] -9.78643</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $theta</span></span>
-<span><span class="co">#&gt; [1] 1.471076</span></span>
+<span><span class="co">#&gt; [1] 1.298642</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`kappa (1st)`</span></span>
-<span><span class="co">#&gt; [1] 0.001526479</span></span>
+<span><span class="co">#&gt; [1] 8.192705e-05</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`kappa (2nd)`</span></span>
-<span><span class="co">#&gt; [1] 2.287918</span></span>
+<span><span class="co">#&gt; [1] 63.82814</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $mu</span></span>
-<span><span class="co">#&gt; [1] 0.8665154</span></span>
+<span><span class="co">#&gt; [1] 0.06834228</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 0.00129667</span></span>
+<span><span class="co">#&gt; [1] 0.03949688</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nu</span></span>
-<span><span class="co">#&gt; [1] 290.7237</span></span></code></pre>
+<span><span class="co">#&gt; [1] 2.109624</span></span></code></pre>
 </div>
 </div>
 <div class="section level2">

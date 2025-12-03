@@ -19,11 +19,11 @@ compare_noise_kld(x = NULL, ..., xlim = c(-10, 10), n_points = 1000)
 named vector of KLD values
 }
 \description{
-This function compares multiple noise objects by calculating the KLD 
+This function compares multiple noise objects by calculating the KLD
 of each noise against the first noise object (reference).
 }
 \examples{
-n1 <- noise_nig(mu=0, sigma=1, nu=1)
-n2 <- noise_nig(mu=0.5, sigma=1.2, nu=0.8)
-compare_noise_kld(n1, method2=n2)
+n1 <- noise_nig(mu = 0, sigma = 1, nu = 1)
+n2 <- noise_nig(mu = 0.5, sigma = 1.2, nu = 0.8)
+compare_noise_kld(n1, method2 = n2)
 }

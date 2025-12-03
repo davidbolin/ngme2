@@ -127,13 +127,12 @@ jobs:
         uses: ./.github/actions/install-r-deps
         with:
           r-version: ${{ matrix.r-version }}
-          cache-version: ${{ env.DEP_CACHE_VERSION }}
         env:
           # Force source builds on Intel macOS to avoid arm64 binaries
           PKG_TYPE: ${{ matrix.os == 'macos-15-intel' && 'source' || '' }}
           R_PKG_TYPE: ${{ matrix.os == 'macos-15-intel' && 'source' || '' }}
           R_DEFAULT_PKG_TYPE: ${{ matrix.os == 'macos-15-intel' && 'source' || '' }}
-          R_LIBS_USER: ${{ matrix.os == 'macos-15-intel' && format('{0}/Rlib-intel', runner.temp) || '' }}
+          R_LIBS_USER: ${{ matrix.os == 'macos-15-intel' && format('{0}/Rlib-intel', runner.temp) || format('{0}/Rlib-{1}-{2}-{3}', runner.temp, runner.os, runner.arch, matrix['r-version']) }}
 
       - name: Print arch info (diagnostic)
         if: startsWith(matrix.os, 'macos')

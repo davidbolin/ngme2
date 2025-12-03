@@ -24,7 +24,6 @@ Imports:
     stats,
     gridExtra
 LinkingTo:
-    testthat,
     Rcpp,
     RcppEigen,
 Suggests:

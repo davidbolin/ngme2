@@ -316,6 +316,9 @@ jobs:
                    bin/macosx/big-sur-arm64/contrib/4.3 \
                    bin/macosx/big-sur-arm64/contrib/4.4 \
                    bin/macosx/big-sur-arm64/contrib/4.5 \
+                   bin/macosx/big-sur-x86_64/contrib/4.3 \
+                   bin/macosx/big-sur-x86_64/contrib/4.4 \
+                   bin/macosx/big-sur-x86_64/contrib/4.5 \
                    bin/macosx/contrib/4.3 \
                    bin/macosx/contrib/4.4 \
                    bin/macosx/contrib/4.5 \
@@ -373,10 +376,12 @@ jobs:
                   # Intel (x86_64)
                   echo "Detected x86_64 architecture for $pkg"
                   cp "$pkg" "bin/macosx/contrib/$r_version/"
+                  cp "$pkg" "bin/macosx/big-sur-x86_64/contrib/$r_version/"
                 else
                   if [ "$arch_hint" = "x86_64" ]; then
                     echo "Could not determine architecture for $pkg, using artifact hint x86_64"
                     cp "$pkg" "bin/macosx/contrib/$r_version/"
+                    cp "$pkg" "bin/macosx/big-sur-x86_64/contrib/$r_version/"
                   else
                     echo "Could not determine architecture for $pkg, assuming ARM64"
                     cp "$pkg" "bin/macosx/big-sur-arm64/contrib/$r_version/"
@@ -433,13 +438,20 @@ jobs:
               echo "No macOS ARM64 packages found for R $r_ver, skipping PACKAGES generation"
             fi
             
-            # Intel (x86_64)
-            intel_dir="bin/macosx/contrib/$r_ver"
-            if [ -d "$intel_dir" ] && [ "$(ls -A "$intel_dir")" ]; then
-              echo "Generating PACKAGES for macOS Intel R $r_ver packages..."
-              Rscript -e "tools::write_PACKAGES('$intel_dir', type='mac.binary')"
+            # Intel (x86_64) - CRAN path uses big-sur-x86_64; keep legacy path too
+            intel_dir_primary="bin/macosx/big-sur-x86_64/contrib/$r_ver"
+            intel_dir_legacy="bin/macosx/contrib/$r_ver"
+            if [ -d "$intel_dir_primary" ] && [ "$(ls -A "$intel_dir_primary")" ]; then
+              echo "Generating PACKAGES for macOS Intel (big-sur-x86_64) R $r_ver packages..."
+              Rscript -e "tools::write_PACKAGES('$intel_dir_primary', type='mac.binary')"
             else
-              echo "No macOS Intel packages found for R $r_ver, skipping PACKAGES generation"
+              echo "No macOS Intel packages found in big-sur-x86_64 for R $r_ver, skipping PACKAGES generation"
+            fi
+            if [ -d "$intel_dir_legacy" ] && [ "$(ls -A "$intel_dir_legacy")" ]; then
+              echo "Generating PACKAGES for macOS Intel (legacy macosx) R $r_ver packages..."
+              Rscript -e "tools::write_PACKAGES('$intel_dir_legacy', type='mac.binary')"
+            else
+              echo "No macOS Intel packages found in legacy macosx for R $r_ver, skipping PACKAGES generation"
             fi
           done
 

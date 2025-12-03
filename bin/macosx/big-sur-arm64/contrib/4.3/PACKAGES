@@ -3,10 +3,10 @@ Version: 0.8.2
 Depends: R (>= 3.50)
 Imports: Matrix, Rcpp, methods, rlang, ggplot2, graphics, fmesher,
         stats, gridExtra
-LinkingTo: testthat, Rcpp, RcppEigen,
+LinkingTo: Rcpp, RcppEigen,
 Suggests: knitr, rmarkdown, INLA, dplyr, plyr, MASS, grid, testthat (>=
         3.0.0), xml2, splancs, lattice, viridis, rSPDE, tidyr, fields,
         lme4, plotly, usethis, devtools, MetricGraph (>= 1.1.2), zoo,
         mvtnorm, kableExtra
 License: GPL (>= 3) | file LICENSE
-MD5sum: a6a73beffe5574b3775207634cc1e765
+MD5sum: fbeb6bc11fc37091627c95fcb3a2be5a

@@ -31,17 +31,6 @@ jobs:
           r-version: ${{ matrix.r-version }}
           extra-repositories: "https://inla.r-inla-download.org/R/testing"
 
-      # ───── Configure macOS Intel environment ─────
-      - name: Configure macOS Intel
-        if: matrix.os == 'macos-15-intel'
-        run: |
-          echo "R_LIBS_USER=${{ runner.temp }}/Rlib-intel" >> $GITHUB_ENV
-          echo "R_ARCH=/x86_64" >> $GITHUB_ENV
-          # Force source installs
-          echo 'options(pkgType = "source")' >> ~/.Rprofile
-          # Create the directory
-          mkdir -p "${{ runner.temp }}/Rlib-intel"
-
       # ───── macOS extra configuration OpenMP ─────
       - name: Install LLVM & libomp (macOS)
         if: startsWith(matrix.os, 'macos')
@@ -258,7 +247,7 @@ jobs:
         if: startsWith(matrix.os, 'macos')
         uses: actions/upload-artifact@v4
         with:
-          name: macos-${{ matrix.r-version }}-${{ runner.arch }}
+          name: ${{ matrix.os == 'macos-15-intel' && format('macos-intel-{0}', matrix.r-version) || format('macos-{0}', matrix.r-version) }}
           path: "*.tgz"
 
       - name: Build & upload binary (Windows)
@@ -355,10 +344,14 @@ jobs:
           # Move macOS binaries to architecture and R version-specific directories
           find artifacts -name "macos-*" -type d | while read dir; do
             base=$(basename "$dir")
-            # Artifact name format: macos-<Rversion>-<ARCH>, e.g., macos-4.4-ARM64
-            r_version=$(echo "$base" | awk -F'-' '{print $(NF-1)}')
-            arch_hint=$(echo "$base" | awk -F'-' '{print tolower($NF)}')
-            echo "Processing macOS R version: $r_version (artifact arch hint: $arch_hint)"
+            if [[ "$base" == macos-intel-* ]]; then
+              r_version=${base#macos-intel-}
+              arch_hint="x86_64"
+            else
+              r_version=${base#macos-}
+              arch_hint=""
+            fi
+            echo "Processing macOS R version: $r_version (artifact hint: ${arch_hint:-none})"
             
             # Check each .tgz file to determine architecture
             find "$dir" -name "*.tgz" | while read pkg; do
@@ -381,12 +374,11 @@ jobs:
                   echo "Detected x86_64 architecture for $pkg"
                   cp "$pkg" "bin/macosx/contrib/$r_version/"
                 else
-                  # Fallback to artifact hint
-                  if [ "$arch_hint" = "x64" ] || [ "$arch_hint" = "x86_64" ]; then
+                  if [ "$arch_hint" = "x86_64" ]; then
                     echo "Could not determine architecture for $pkg, using artifact hint x86_64"
                     cp "$pkg" "bin/macosx/contrib/$r_version/"
                   else
-                    echo "Could not determine architecture for $pkg, defaulting to ARM64"
+                    echo "Could not determine architecture for $pkg, assuming ARM64"
                     cp "$pkg" "bin/macosx/big-sur-arm64/contrib/$r_version/"
                   fi
                 fi

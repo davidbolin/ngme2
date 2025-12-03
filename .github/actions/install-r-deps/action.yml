@@ -12,7 +12,7 @@ runs:
       shell: bash
       run: |
         if [[ "${{ runner.os }}" == "macOS" ]]; then
-          echo "CACHE_SUFFIX=-llvm18-omp" >> $GITHUB_ENV
+          echo "CACHE_SUFFIX=-llvm18-omp-${{ runner.arch }}" >> $GITHUB_ENV
         else
           echo "CACHE_SUFFIX=" >> $GITHUB_ENV
         fi
@@ -21,9 +21,9 @@ runs:
       uses: actions/cache@v3
       with:
         path: ${{ env.R_LIBS_USER }}
-        key: ${{ runner.os }}-${{ runner.arch }}-r-${{ inputs.r-version }}${{ env.CACHE_SUFFIX }}-${{ hashFiles('**/DESCRIPTION') }}
+        key: ${{ runner.os }}-r-${{ inputs.r-version }}${{ env.CACHE_SUFFIX }}-${{ hashFiles('**/DESCRIPTION') }}
         restore-keys: |
-          ${{ runner.os }}-${{ runner.arch }}-r-${{ inputs.r-version }}${{ env.CACHE_SUFFIX }}-
+          ${{ runner.os }}-r-${{ inputs.r-version }}${{ env.CACHE_SUFFIX }}-
 
     - name: Install system libs (Linux)
       if: runner.os == 'Linux'

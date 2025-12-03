@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest, macos-15-intel, windows-latest]
         r-version: ["4.3", "4.4", "4.5"]
     steps:
       # ───── public preamble ─────
@@ -33,7 +33,7 @@ jobs:
 
       # ───── macOS extra configuration OpenMP ─────
       - name: Install LLVM & libomp (macOS)
-        if: matrix.os == 'macos-latest'
+        if: startsWith(matrix.os, 'macos')
         run: |
           # Install LLVM@18, libomp, and gcc
           brew install llvm@18 libomp gcc
@@ -129,7 +129,7 @@ jobs:
 
       # ───── build binary and upload for each platform ─────
       - name: Build & upload binary (macOS)
-        if: matrix.os == 'macos-latest'
+        if: startsWith(matrix.os, 'macos')
         run: |
           # Set paths from Homebrew
           LLVM_PREFIX=$(brew --prefix llvm@18)
@@ -244,10 +244,10 @@ jobs:
           fi
         shell: bash
       - name: Upload macOS binary
-        if: matrix.os == 'macos-latest'
+        if: startsWith(matrix.os, 'macos')
         uses: actions/upload-artifact@v4
         with:
-          name: macos-${{ matrix.r-version }}
+          name: macos-${{ matrix.r-version }}-${{ runner.arch }}
           path: "*.tgz"
 
       - name: Build & upload binary (Windows)
@@ -343,9 +343,11 @@ jobs:
           
           # Move macOS binaries to architecture and R version-specific directories
           find artifacts -name "macos-*" -type d | while read dir; do
-            # Extract R version from directory name (e.g., macos-4.3)
-            r_version=$(basename "$dir" | sed 's/macos-//')
-            echo "Processing macOS R version: $r_version"
+            base=$(basename "$dir")
+            # Artifact name format: macos-<Rversion>-<ARCH>, e.g., macos-4.4-ARM64
+            r_version=$(echo "$base" | awk -F'-' '{print $(NF-1)}')
+            arch_hint=$(echo "$base" | awk -F'-' '{print tolower($NF)}')
+            echo "Processing macOS R version: $r_version (artifact arch hint: $arch_hint)"
             
             # Check each .tgz file to determine architecture
             find "$dir" -name "*.tgz" | while read pkg; do
@@ -368,10 +370,15 @@ jobs:
                   echo "Detected x86_64 architecture for $pkg"
                   cp "$pkg" "bin/macosx/contrib/$r_version/"
                 else
-                  # Fallback: assume ARM64 since GitHub Actions macos-latest is ARM64
-                  echo "Could not determine architecture for $pkg, assuming ARM64"
-                  cp "$pkg" "bin/macosx/big-sur-arm64/contrib/$r_version/"
-                fi
+                  # Fallback to artifact hint
+                  if [ "$arch_hint" = "x64" ] || [ "$arch_hint" = "x86_64" ]; then
+                    echo "Could not determine architecture for $pkg, using artifact hint x86_64"
+                    cp "$pkg" "bin/macosx/contrib/$r_version/"
+                  else
+                    echo "Could not determine architecture for $pkg, defaulting to ARM64"
+                    cp "$pkg" "bin/macosx/big-sur-arm64/contrib/$r_version/"
+                  fi
+              fi
               else
                 # No .so file found, fallback to ARM64
                 echo "No .so file found in $pkg, assuming ARM64"

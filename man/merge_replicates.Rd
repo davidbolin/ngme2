@@ -2,8 +2,8 @@
 % Please edit documentation in R/validation.R
 \name{merge_replicates}
 \alias{merge_replicates}
-\title{Merge model of replicates into model of 1 replicate given train_idx and 
-test_idx, the merged model contains all the information of train_idx from 
+\title{Merge model of replicates into model of 1 replicate given train_idx and
+test_idx, the merged model contains all the information of train_idx from
 different replicates.}
 \usage{
 merge_replicates(ngme, train_idx, test_idx)
@@ -16,7 +16,7 @@ merge_replicates(ngme, train_idx, test_idx)
 \item{test_idx}{a vector of indices of test data}
 }
 \description{
-Merge model of replicates into model of 1 replicate given train_idx and 
-test_idx, the merged model contains all the information of train_idx from 
+Merge model of replicates into model of 1 replicate given train_idx and
+test_idx, the merged model contains all the information of train_idx from
 different replicates.
 }

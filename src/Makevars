@@ -64,28 +64,49 @@ $(sslib7):
 	cd $(@D) && $(MAKE) clean all $(ssenv)
 
 
-# macOS uses Accelerate, Linux uses system BLAS/LAPACK or MKL
+# macOS uses Accelerate by default; on Intel macOS we allow MKL/Pardiso when MKLROOT is set
 ifeq ($(UNAME), Darwin)
-  # Use Homebrew's gfortran installation directly
-  HOMEBREW_PREFIX := $(shell brew --prefix 2>/dev/null)
-  ifeq ($(HOMEBREW_PREFIX),)
-    ifneq ($(wildcard /opt/homebrew/bin/brew),)
-      HOMEBREW_PREFIX := /opt/homebrew
+  ARCH := $(shell uname -m)
+  ifeq ($(ARCH),x86_64)
+    ifdef MKLROOT
+      # Prefer MKL on Intel macOS when available
+      PKG_CPPFLAGS += -DUSEMKL -I$(MKLROOT)/include
+      PKG_LIBS += -L$(MKLROOT)/lib -lmkl_rt -liomp5 -lpthread -lm
+      PKG_LIBS += -Wl,-rpath,$(MKLROOT)/lib
+      $(info MKL detected on Intel macOS, enabling Pardiso.)
     else
-      HOMEBREW_PREFIX := /usr/local
+      # Fallback to Accelerate + libomp on Intel macOS
+      HOMEBREW_PREFIX := $(shell brew --prefix 2>/dev/null)
+      ifeq ($(HOMEBREW_PREFIX),)
+        ifneq ($(wildcard /opt/homebrew/bin/brew),)
+          HOMEBREW_PREFIX := /opt/homebrew
+        else
+          HOMEBREW_PREFIX := /usr/local
+        endif
+      endif
+      GFORTRAN_LIB := $(HOMEBREW_PREFIX)/lib/gcc/current
+      FLIBS = -L$(GFORTRAN_LIB) -lgfortran -lquadmath
+      PKG_LIBS += -framework Accelerate
+      ifndef NGME_SKIP_LIBOMP_LINK
+        PKG_LIBS += $(HOMEBREW_PREFIX)/opt/libomp/lib/libomp.dylib -Wl,-rpath,$(HOMEBREW_PREFIX)/opt/libomp/lib
+      endif
     endif
-  endif
-  GFORTRAN_LIB := $(HOMEBREW_PREFIX)/lib/gcc/current
-  
-  # Set the correct fortran library paths - remove emutls_w reference
-  FLIBS = -L$(GFORTRAN_LIB) -lgfortran -lquadmath
-  
-  # Add Accelerate framework for BLAS/LAPACK
-  PKG_LIBS += -framework Accelerate
-  
-  # Only link libomp if not skipped (CI usually links it via LDFLAGS)
-  ifndef NGME_SKIP_LIBOMP_LINK
-    PKG_LIBS += $(HOMEBREW_PREFIX)/opt/libomp/lib/libomp.dylib -Wl,-rpath,$(HOMEBREW_PREFIX)/opt/libomp/lib
+  else
+    # Apple Silicon (arm64) macOS: use Accelerate + libomp (if present)
+    HOMEBREW_PREFIX := $(shell brew --prefix 2>/dev/null)
+    ifeq ($(HOMEBREW_PREFIX),)
+      ifneq ($(wildcard /opt/homebrew/bin/brew),)
+        HOMEBREW_PREFIX := /opt/homebrew
+      else
+        HOMEBREW_PREFIX := /usr/local
+      endif
+    endif
+    GFORTRAN_LIB := $(HOMEBREW_PREFIX)/lib/gcc/current
+    FLIBS = -L$(GFORTRAN_LIB) -lgfortran -lquadmath
+    PKG_LIBS += -framework Accelerate
+    ifndef NGME_SKIP_LIBOMP_LINK
+      PKG_LIBS += $(HOMEBREW_PREFIX)/opt/libomp/lib/libomp.dylib -Wl,-rpath,$(HOMEBREW_PREFIX)/opt/libomp/lib
+    endif
   endif
 endif
 

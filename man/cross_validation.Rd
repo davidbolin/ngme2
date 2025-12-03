@@ -75,10 +75,10 @@ For example, to compare a linear combination of two fields you can use
 
 \item{cores_layer2}{integer, number of cores for the second layer (over computing scores for N_sim simulations)}
 
-\item{merge_groups}{logical, if TRUE, merge groups as vector components (e.g., for vector-valued wind data with north_wind, east_wind). 
+\item{merge_groups}{logical, if TRUE, merge groups as vector components (e.g., for vector-valued wind data with north_wind, east_wind).
 MAE becomes Euclidean distance, MSE becomes squared Euclidean distance, etc.}
 
-\item{merged_group_name}{character, name for the merged group when merge_groups=TRUE. 
+\item{merged_group_name}{character, name for the merged group when merge_groups=TRUE.
 If NULL, uses "group1_group2" format (default: NULL)}
 }
 \value{

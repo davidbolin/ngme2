@@ -3,7 +3,7 @@
 \name{create_paired_cv_splits}
 \alias{create_paired_cv_splits}
 \title{Create paired indices for bivariate cross-validation
-Ensures that paired observations (e.g., u_wind and v_wind at same location) 
+Ensures that paired observations (e.g., u_wind and v_wind at same location)
 are kept together in the same fold}
 \usage{
 create_paired_cv_splits(data, loc_col, group, k, seed = NULL)
@@ -24,14 +24,14 @@ list with test_idx and train_idx, each containing k lists of indices
 }
 \description{
 Create paired indices for bivariate cross-validation
-Ensures that paired observations (e.g., u_wind and v_wind at same location) 
+Ensures that paired observations (e.g., u_wind and v_wind at same location)
 are kept together in the same fold
 }
 \examples{
 # Example with wind data
 data_long <- data.frame(
   lon = rep(c(1, 2, 3, 4), 2),
-  lat = rep(c(1, 1, 2, 2), 2), 
+  lat = rep(c(1, 1, 2, 2), 2),
   direction = rep(c("u_wind", "v_wind"), each = 4),
   wind = rnorm(8)
 )

@@ -29,5 +29,10 @@ Authors:
   \item Jonas Wallin \email{jonas.wallin81@gmail.com}
 }
 
+Other contributors:
+\itemize{
+  \item Andrea V. Rocha \email{dearocha@yahoo.com} (contributed to many vignettes and examples) [contributor]
+}
+
 }
 \keyword{internal}

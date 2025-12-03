@@ -121,15 +121,14 @@ control_opt <- function(
   solver_backend_idx <- match(solver_backend, solver_backend_list) - 1L
   solver_factor_idx <- match(solver_factor, solver_factor_list) - 1L
 
-  if (solver_backend == "pardiso" && !has_pardiso()) {
-    stop("solver_backend 'pardiso' requires MKL (compiled with USEMKL). ",
-      "Reinstall ngme2 with MKLROOT set so MKL/Pardiso can be enabled.")
-  }
-
   # platform guard: accelerate only on macOS; pardiso disabled on macOS builds without MKL
   is_mac <- Sys.info()["sysname"] == "Darwin"
-  if (is_mac && solver_backend == "pardiso") {
-    stop("solver_backend 'pardiso' is not available on macOS builds")
+  if (solver_backend == "pardiso" && !has_pardiso()) {
+    stop("solver_backend 'pardiso' requires MKL (compiled with USEMKL). ",
+         "Reinstall ngme2 with MKLROOT set so MKL/Pardiso can be enabled.")
+  }
+  if (is_mac && solver_backend == "pardiso" && !has_pardiso()) {
+    stop("solver_backend 'pardiso' is not available on this macOS build; reinstall with MKLROOT to enable Pardiso.")
   }
   if (!is_mac && solver_backend == "accelerate") {
     stop("solver_backend 'accelerate' is only available on macOS")

@@ -6,8 +6,8 @@ Authors@R: c(
     person("David", "Bolin", email = "davidbolin@gmail.com", role = c("aut", "cph")),
     person("Xiaotian", "Jin", email = "xiaotian.jin@kaust.edu.sa", role =c("aut", "cre")),
     person("Alexandre", "Simas", email = "alexandre.impa@gmail.com", role = "aut"),
-    person("Jonas", "Wallin", email = "jonas.wallin81@gmail.com", role = "aut"))
-Author: David Bolin, Xiaotian Jin, Alexandre Simas, Jonas Wallin
+    person("Jonas", "Wallin", email = "jonas.wallin81@gmail.com", role = "aut"),
+    person("Andrea V.", "Rocha", email = "dearocha@yahoo.com", role = "ctb", comment = "contributed to many vignettes and examples"))
 Maintainer: Xiaotian Jin <xiaotian.jin@kaust.edu.sa>
 Description: Inference and prediction for linear mixed effects models with flexible non-Gaussian and Gaussian distributions.
 License: GPL (>= 3) | file LICENSE

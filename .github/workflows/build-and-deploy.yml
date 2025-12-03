@@ -18,6 +18,9 @@ defaults:
 jobs:
   build:
     runs-on: ${{ matrix.os }}
+    env:
+      # Avoid cross-arch cache bleed; set per-arch cache namespace
+      DEP_CACHE_VERSION: ${{ matrix.os == 'macos-15-intel' && 'intel' || 'default' }}
     strategy:
       fail-fast: false
       matrix:
@@ -30,6 +33,9 @@ jobs:
         with:
           r-version: ${{ matrix.r-version }}
           extra-repositories: "https://inla.r-inla-download.org/R/testing"
+        env:
+          # Force x86_64 slice when running under universal R on Intel job
+          R_ARCH: ${{ matrix.os == 'macos-15-intel' && '/x86_64' || '' }}
 
       # ───── macOS extra configuration OpenMP ─────
       - name: Install LLVM & libomp (macOS)
@@ -121,6 +127,37 @@ jobs:
         uses: ./.github/actions/install-r-deps
         with:
           r-version: ${{ matrix.r-version }}
+          cache-version: ${{ env.DEP_CACHE_VERSION }}
+        env:
+          # Force source builds on Intel macOS to avoid arm64 binaries
+          PKG_TYPE: ${{ matrix.os == 'macos-15-intel' && 'source' || '' }}
+          R_PKG_TYPE: ${{ matrix.os == 'macos-15-intel' && 'source' || '' }}
+          R_DEFAULT_PKG_TYPE: ${{ matrix.os == 'macos-15-intel' && 'source' || '' }}
+          R_LIBS_USER: ${{ matrix.os == 'macos-15-intel' && format('{0}/Rlib-intel', runner.temp) || '' }}
+
+      - name: Print arch info (diagnostic)
+        if: startsWith(matrix.os, 'macos')
+        run: |
+          uname -a
+          sysctl -n hw.optional.arm64 || true
+          R -q -e 'cat("R arch:", R.version$arch, "platform:", R.version$platform, "\n"); .libPaths()'
+
+      - name: Reset user library (macOS Intel)
+        if: matrix.os == 'macos-15-intel'
+        run: |
+          rm -rf "$R_LIBS_USER"
+          mkdir -p "$R_LIBS_USER"
+        env:
+          R_LIBS_USER: ${{ format('{0}/Rlib-intel', runner.temp) }}
+
+      - name: Reinstall ALL deps from source (macOS Intel)
+        if: matrix.os == 'macos-15-intel'
+        run: |
+          arch -x86_64 Rscript -e 'options(pkgType="source"); 
+            pkgs <- c("rlang","Matrix","Rcpp","RcppEigen","proxy","e1071","testthat","devtools","remotes","xml2","ggplot2","dplyr"); 
+            install.packages(pkgs, type="source", repos="https://cloud.r-project.org")'
+        env:
+          R_LIBS_USER: ${{ format('{0}/Rlib-intel', runner.temp) }}
 
       # ───── build source package ─────
       - name: Build source package

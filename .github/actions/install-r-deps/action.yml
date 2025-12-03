@@ -21,9 +21,9 @@ runs:
       uses: actions/cache@v3
       with:
         path: ${{ env.R_LIBS_USER }}
-        key: ${{ runner.os }}-r-${{ inputs.r-version }}${{ env.CACHE_SUFFIX }}-${{ hashFiles('**/DESCRIPTION') }}
+        key: ${{ runner.os }}-${{ runner.arch }}-r-${{ inputs.r-version }}${{ env.CACHE_SUFFIX }}-${{ hashFiles('**/DESCRIPTION') }}
         restore-keys: |
-          ${{ runner.os }}-r-${{ inputs.r-version }}${{ env.CACHE_SUFFIX }}-
+          ${{ runner.os }}-${{ runner.arch }}-r-${{ inputs.r-version }}${{ env.CACHE_SUFFIX }}-
 
     - name: Install system libs (Linux)
       if: runner.os == 'Linux'

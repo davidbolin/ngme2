@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest, macos-15-intel, windows-latest]
         r-version: ["4.3", "4.4", "4.5"]
     steps:
       # ───── public preamble ─────
@@ -31,9 +31,20 @@ jobs:
           r-version: ${{ matrix.r-version }}
           extra-repositories: "https://inla.r-inla-download.org/R/testing"
 
+      # ───── Configure macOS Intel environment ─────
+      - name: Configure macOS Intel
+        if: matrix.os == 'macos-15-intel'
+        run: |
+          echo "R_LIBS_USER=${{ runner.temp }}/Rlib-intel" >> $GITHUB_ENV
+          echo "R_ARCH=/x86_64" >> $GITHUB_ENV
+          # Force source installs
+          echo 'options(pkgType = "source")' >> ~/.Rprofile
+          # Create the directory
+          mkdir -p "${{ runner.temp }}/Rlib-intel"
+
       # ───── macOS extra configuration OpenMP ─────
       - name: Install LLVM & libomp (macOS)
-        if: matrix.os == 'macos-latest'
+        if: startsWith(matrix.os, 'macos')
         run: |
           # Install LLVM@18, libomp, and gcc
           brew install llvm@18 libomp gcc
@@ -129,7 +140,7 @@ jobs:
 
       # ───── build binary and upload for each platform ─────
       - name: Build & upload binary (macOS)
-        if: matrix.os == 'macos-latest'
+        if: startsWith(matrix.os, 'macos')
         run: |
           # Set paths from Homebrew
           LLVM_PREFIX=$(brew --prefix llvm@18)
@@ -244,10 +255,10 @@ jobs:
           fi
         shell: bash
       - name: Upload macOS binary
-        if: matrix.os == 'macos-latest'
+        if: startsWith(matrix.os, 'macos')
         uses: actions/upload-artifact@v4
         with:
-          name: macos-${{ matrix.r-version }}
+          name: macos-${{ matrix.r-version }}-${{ runner.arch }}
           path: "*.tgz"
 
       - name: Build & upload binary (Windows)
@@ -268,60 +279,6 @@ jobs:
         with:
           name: source-${{ matrix.r-version }}
           path: "*.tar.gz"
-
-  build-macos-intel:
-    runs-on: macos-13
-    strategy:
-      fail-fast: false
-      matrix:
-        r-version: ["4.3", "4.4", "4.5"]
-    steps:
-      - uses: actions/checkout@v3
-      - uses: r-lib/actions/setup-r@v2
-        with:
-          r-version: ${{ matrix.r-version }}
-          extra-repositories: "https://inla.r-inla-download.org/R/testing"
-      - name: Install LLVM & libomp (Intel macOS)
-        run: |
-          brew install llvm@18 libomp gcc
-          LLVM_PREFIX=$(brew --prefix llvm@18)
-          LIBOMP_PREFIX=$(brew --prefix libomp)
-          echo "PATH=$LLVM_PREFIX/bin:$PATH" >> $GITHUB_ENV
-          echo "CC=$LLVM_PREFIX/bin/clang" >> $GITHUB_ENV
-          echo "CXX=$LLVM_PREFIX/bin/clang++" >> $GITHUB_ENV
-          mkdir -p ~/.R
-          cat > ~/.R/Makevars << EOF
-          CXX17=$LLVM_PREFIX/bin/clang++
-          SHLIB_OPENMP_CFLAGS = -fopenmp
-          SHLIB_OPENMP_CXXFLAGS = -fopenmp
-          SHLIB_OPENMP_FFLAGS = -fopenmp
-          CFLAGS += -I$LLVM_PREFIX/include -I$LIBOMP_PREFIX/include
-          CXXFLAGS += -I$LLVM_PREFIX/include -I$LIBOMP_PREFIX/include
-          LDFLAGS += -L$LLVM_PREFIX/lib -L$LLVM_PREFIX/lib/c++ -L$LIBOMP_PREFIX/lib -Wl,-rpath,@loader_path/Resources/lib -lomp
-          EOF
-      - name: Install deps from source (Intel macOS)
-        env:
-          R_DEFAULT_PKG_TYPE: source
-          R_PKG_TYPE: source
-        run: |
-          Rscript -e 'install.packages(c("devtools","remotes"), repos="https://cloud.r-project.org")'
-          Rscript -e 'remotes::install_deps(dependencies = TRUE, type = "source")'
-      - name: Build source package
-        env:
-          R_DEFAULT_PKG_TYPE: source
-          R_PKG_TYPE: source
-        run: R CMD build --no-build-vignettes --no-manual .
-      - name: Build binary package (Intel macOS)
-        env:
-          R_DEFAULT_PKG_TYPE: source
-          R_PKG_TYPE: source
-        run: |
-          R CMD INSTALL --build --no-build-vignettes --no-docs --no-html --no-multiarch *.tar.gz
-      - name: Upload macOS Intel binary
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-intel-${{ matrix.r-version }}
-          path: "*.tgz"
 
   release:
     needs: build
@@ -395,16 +352,53 @@ jobs:
             find "$dir" -name "*.zip" -exec cp {} "bin/windows/contrib/$r_version/" \;
           done
           
-          # Move macOS binaries (arm64 from macos-latest)
+          # Move macOS binaries to architecture and R version-specific directories
           find artifacts -name "macos-*" -type d | while read dir; do
-            r_version=$(basename "$dir" | sed 's/macos-//')
-            find "$dir" -name "*.tgz" -exec cp {} "bin/macosx/big-sur-arm64/contrib/$r_version/" \;
-          done
-          
-          # Move macOS Intel binaries (from macos15-intel-* artifacts)
-          find artifacts -name "macos15-intel-*" -type d | while read dir; do
-            r_version=$(basename "$dir" | sed 's/macos15-intel-//')
-            find "$dir" -name "*.tgz" -exec cp {} "bin/macosx/contrib/$r_version/" \;
+            base=$(basename "$dir")
+            # Artifact name format: macos-<Rversion>-<ARCH>, e.g., macos-4.4-ARM64
+            r_version=$(echo "$base" | awk -F'-' '{print $(NF-1)}')
+            arch_hint=$(echo "$base" | awk -F'-' '{print tolower($NF)}')
+            echo "Processing macOS R version: $r_version (artifact arch hint: $arch_hint)"
+            
+            # Check each .tgz file to determine architecture
+            find "$dir" -name "*.tgz" | while read pkg; do
+              # Extract the package to check architecture
+              temp_dir=$(mktemp -d)
+              tar -xzf "$pkg" -C "$temp_dir" 2>/dev/null || continue
+              
+              # Look for .so files to determine architecture
+              so_file=$(find "$temp_dir" -name "*.so" | head -1)
+              if [ -n "$so_file" ]; then
+                # Use file command to determine architecture
+                arch_info=$(file "$so_file" 2>/dev/null)
+                
+                if echo "$arch_info" | grep -q "arm64"; then
+                  # Apple Silicon (ARM64)
+                  echo "Detected ARM64 architecture for $pkg"
+                  cp "$pkg" "bin/macosx/big-sur-arm64/contrib/$r_version/"
+                elif echo "$arch_info" | grep -q "x86_64"; then
+                  # Intel (x86_64)
+                  echo "Detected x86_64 architecture for $pkg"
+                  cp "$pkg" "bin/macosx/contrib/$r_version/"
+                else
+                  # Fallback to artifact hint
+                  if [ "$arch_hint" = "x64" ] || [ "$arch_hint" = "x86_64" ]; then
+                    echo "Could not determine architecture for $pkg, using artifact hint x86_64"
+                    cp "$pkg" "bin/macosx/contrib/$r_version/"
+                  else
+                    echo "Could not determine architecture for $pkg, defaulting to ARM64"
+                    cp "$pkg" "bin/macosx/big-sur-arm64/contrib/$r_version/"
+                  fi
+                fi
+              else
+                # No .so file found, fallback to ARM64
+                echo "No .so file found in $pkg, assuming ARM64"
+                cp "$pkg" "bin/macosx/big-sur-arm64/contrib/$r_version/"
+              fi
+              
+              # Clean up
+              rm -rf "$temp_dir"
+            done
           done
           
           # List what we have
@@ -476,59 +470,6 @@ jobs:
           else
             echo "No changes to commit."
           fi
-
-  build-macos-15-intel:
-    runs-on: macos-15-intel
-    strategy:
-      fail-fast: false
-      matrix:
-        r-version: ["4.3", "4.4", "4.5"]
-    env:
-      R_DEFAULT_PKG_TYPE: source
-      R_PKG_TYPE: source
-    steps:
-      - uses: actions/checkout@v3
-      - uses: r-lib/actions/setup-r@v2
-        with:
-          r-version: ${{ matrix.r-version }}
-          extra-repositories: "https://inla.r-inla-download.org/R/testing"
-
-      - name: Install LLVM & libomp (macOS Intel)
-        run: |
-          brew install llvm@18 libomp gcc
-          LLVM_PREFIX=$(brew --prefix llvm@18)
-          LIBOMP_PREFIX=$(brew --prefix libomp)
-          echo "PATH=$LLVM_PREFIX/bin:$PATH" >> $GITHUB_ENV
-          echo "CC=$LLVM_PREFIX/bin/clang" >> $GITHUB_ENV
-          echo "CXX=$LLVM_PREFIX/bin/clang++" >> $GITHUB_ENV
-          mkdir -p ~/.R
-          cat > ~/.R/Makevars << EOF
-          CXX17=$LLVM_PREFIX/bin/clang++
-          SHLIB_OPENMP_CFLAGS = -fopenmp
-          SHLIB_OPENMP_CXXFLAGS = -fopenmp
-          SHLIB_OPENMP_FFLAGS = -fopenmp
-          CFLAGS += -I$LLVM_PREFIX/include -I$LIBOMP_PREFIX/include
-          CXXFLAGS += -I$LLVM_PREFIX/include -I$LIBOMP_PREFIX/include
-          LDFLAGS += -L$LLVM_PREFIX/lib -L$LLVM_PREFIX/lib/c++ -L$LIBOMP_PREFIX/lib -Wl,-rpath,@loader_path/Resources/lib -lomp
-          EOF
-
-      - name: Install deps from source (macOS 15 Intel)
-        run: |
-          Rscript -e 'install.packages(c("devtools","remotes"), repos="https://cloud.r-project.org", type="source")'
-          Rscript -e 'remotes::install_deps(dependencies = TRUE, upgrade = "never", type = "source")'
-
-      - name: Build source package
-        run: R CMD build --no-build-vignettes --no-manual .
-
-      - name: Build binary package (macOS 15 Intel)
-        run: |
-          R CMD INSTALL --build --no-build-vignettes --no-docs --no-html --no-multiarch *.tar.gz
-
-      - name: Upload macOS 15 Intel binary
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos15-intel-${{ matrix.r-version }}
-          path: "*.tgz"
 
   deploy-docs:
     runs-on: ubuntu-latest

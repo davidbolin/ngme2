@@ -102,12 +102,28 @@
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://davidbolin.github.io/ngme2/">ngme2</a></span><span class="op">)</span></span>
+<span><span class="va">time_index</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1000</span>, by <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">time_index</span><span class="op">)</span></span>
 <span></span>
+<span><span class="co"># Define the AR(1) model with NIG driven noise</span></span>
+<span><span class="va">ar1_nig</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/f.html">f</a></span><span class="op">(</span><span class="va">time_index</span>,</span>
+<span>  model <span class="op">=</span> <span class="fu"><a href="reference/ar1.html">ar1</a></span><span class="op">(</span>rho <span class="op">=</span> <span class="fl">0.7</span><span class="op">)</span>,</span>
+<span>  noise <span class="op">=</span> <span class="fu"><a href="reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span>mu <span class="op">=</span> <span class="fl">3</span>, sigma <span class="op">=</span> <span class="fl">2</span>, nu <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Simulate the AR(1) process with NIG driven noise</span></span>
+<span><span class="va">nig_field</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="va">ar1_nig</span>, seed <span class="op">=</span> <span class="fl">123</span>, nsim <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="va">Y</span> <span class="op">&lt;-</span> <span class="va">nig_field</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span>, mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">time_index</span>, <span class="va">nig_field</span>, type <span class="op">=</span> <span class="st">"l"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Fit the model</span></span>
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/ngme.html">ngme</a></span><span class="op">(</span></span>
-<span>  formula <span class="op">=</span> <span class="va">Y</span> <span class="op">~</span> <span class="va">x1</span> <span class="op">+</span> <span class="va">x2</span> <span class="op">+</span> <span class="fu"><a href="reference/f.html">f</a></span><span class="op">(</span><span class="va">index</span>, model <span class="op">=</span> <span class="fu"><a href="reference/ar1.html">ar1</a></span><span class="op">(</span><span class="va">mesh_1d</span><span class="op">)</span>, noise <span class="op">=</span> <span class="fu"><a href="reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  data    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Y <span class="op">=</span> <span class="va">Y</span>, x1 <span class="op">=</span> <span class="va">x1</span>, x2 <span class="op">=</span> <span class="va">x2</span>, index <span class="op">=</span> <span class="va">index</span><span class="op">)</span>,</span>
-<span>  family  <span class="op">=</span> <span class="st">"normal"</span>   <span class="co"># likelihood family</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<span>  formula <span class="op">=</span> <span class="va">Y</span> <span class="op">~</span> <span class="fl">0</span> <span class="op">+</span> <span class="fu"><a href="reference/f.html">f</a></span><span class="op">(</span><span class="va">time_index</span>, model <span class="op">=</span> <span class="fu"><a href="reference/ar1.html">ar1</a></span><span class="op">(</span><span class="op">)</span>, noise <span class="op">=</span> <span class="fu"><a href="reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  data    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Y <span class="op">=</span> <span class="va">Y</span>, time_index <span class="op">=</span> <span class="va">time_index</span><span class="op">)</span>,</span>
+<span>  family  <span class="op">=</span> <span class="st">"normal"</span> <span class="co"># likelihood family</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div>
 <p>Use <code><a href="reference/ngme_optimizers.html">ngme_optimizers()</a></code> to see available optimizers and configure stochastic gradient settings via <code>control_opt</code>.</p>
 </div>
 <div class="section level2">

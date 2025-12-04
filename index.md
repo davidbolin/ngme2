@@ -15,12 +15,29 @@ Data \(Y\) are linked to a latent process \(W\) through an observation matrix \(
 ## Quick start
 ```r
 library(ngme2)
+time_index <- seq(1, 1000, by = 1)
+n <- length(time_index)
 
-fit <- ngme(
-  formula = Y ~ x1 + x2 + f(index, model = ar1(mesh_1d), noise = noise_nig()),
-  data    = data.frame(Y = Y, x1 = x1, x2 = x2, index = index),
-  family  = "normal"   # likelihood family
+# Define the AR(1) model with NIG driven noise
+ar1_nig <- f(time_index,
+  model = ar1(rho = 0.7),
+  noise = noise_nig(mu = 3, sigma = 2, nu = 0.5)
 )
+
+# Simulate the AR(1) process with NIG driven noise
+nig_field <- simulate(ar1_nig, seed = 123, nsim = 1)[[1]]
+Y <- nig_field + rnorm(n, mean = 0, sd = 1)
+plot(time_index, nig_field, type = "l")
+
+# Fit the model
+fit <- ngme(
+  formula = Y ~ 0 + f(time_index, model = ar1(), noise = noise_nig()),
+  data    = data.frame(Y = Y, time_index = time_index),
+  family  = "normal" # likelihood family
+)
+
+summary(fit)
+
 ```
 
 Use `ngme_optimizers()` to see available optimizers and configure stochastic gradient settings via `control_opt`.

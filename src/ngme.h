@@ -61,6 +61,9 @@ public:
     return ngme_repls[0]->get_par_names();
   }
 
+  bool any_latent_nu_at_lower_bound() const;
+  std::vector<std::string> latent_nu_lower_bound_summaries() const;
+
   int get_n_params() const override { return n_params; }
 
   vector<Rcpp::List> output() const {

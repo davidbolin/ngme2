@@ -156,6 +156,9 @@ public:
     }
   }
 
+  bool any_latent_nu_at_lower_bound() const;
+  std::vector<std::string> latent_nu_lower_bound_summaries() const;
+
   void update_QQ();
   void update_Q_eps(double rho);
   SparseMatrix<double> get_sqrt_AtSVA() const;

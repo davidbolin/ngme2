@@ -1,6 +1,8 @@
 // implement the Ngme class and rand effect class
 #include "ngme.h"
 
+#include <sstream>
+
 #ifdef _OPENMP
 #include <omp.h>
 #pragma omp declare reduction(vec_plus : Eigen::VectorXd : omp_out += omp_in)  \
@@ -115,4 +117,30 @@ void Ngme::set_parameter_and_update(const VectorXd &p, bool with_precond) {
   grad_valid_ = false;
   precond_valid_ = false;
   reset_computed();
+}
+
+bool Ngme::any_latent_nu_at_lower_bound() const {
+  for (const auto &repl : ngme_repls) {
+    if (repl->any_latent_nu_at_lower_bound()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+std::vector<std::string> Ngme::latent_nu_lower_bound_summaries() const {
+  std::vector<std::string> summaries;
+  for (size_t i = 0; i < ngme_repls.size(); ++i) {
+    auto repl_summaries = ngme_repls[i]->latent_nu_lower_bound_summaries();
+    for (const auto &s : repl_summaries) {
+      if (n_repl > 1) {
+        std::ostringstream oss;
+        oss << "replicate " << i + 1 << ": " << s;
+        summaries.push_back(oss.str());
+      } else {
+        summaries.push_back(s);
+      }
+    }
+  }
+  return summaries;
 }

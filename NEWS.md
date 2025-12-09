@@ -1,6 +1,7 @@
 # ngme2 0.8.2 (2025-12-02)
 * Add support for different type of ldlt solvers
 * Use solver_type and solver_backend in `control_opt` to specify the solver
+* Give print when hit nu lower bound
 
 # ngme2 0.8.1 (2025-12-01)
 * Add ldlt solver (solver_type = "ldlt")

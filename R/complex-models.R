@@ -486,6 +486,7 @@ spacetime <- function(
   fem_s <- fmesher::fm_fem(mesh_s, order = alpha)
   Cs <- fem_s$c0
   Gs <- fem_s$g1
+  cs_diag <- Matrix::diag(Cs)
 
   # compute h
   if (method == "galerkin") {
@@ -551,7 +552,7 @@ spacetime <- function(
     Dxy <- Matrix::Diagonal(x = gamma_xy)
     tmp <- Dxx %*% Hxx %*% Dxx + Dyy %*% Hyy %*% Dyy + Dxy %*% (Hxy + Hyx) %*% Dxy
     gamma_norm <- sqrt(sum(gamma_x^2 + gamma_y^2))
-    Cs %*% tmp / gamma_norm
+    Matrix::Diagonal(x = cs_diag) %*% tmp / gamma_norm
   }
 
   build_S_list <- function(gamma_x_list, gamma_y_list) {

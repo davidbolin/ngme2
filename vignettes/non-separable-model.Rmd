@@ -257,6 +257,11 @@ Now we create the model object and simulate observations:
 
 ```{r simulate-data}
 # Specify the true generative model
+true_mu <- 1
+true_sigma <- 4
+true_nu <- 20
+true_noise <- noise_nig(mu = true_mu, sigma = true_sigma, nu = true_nu)
+
 true_model <- f(
   map = list(
     obs_data$time_index,
@@ -272,7 +277,7 @@ true_model <- f(
     cc = true_cc,
     lambda = true_lambda,
   ),
-  noise = noise_nig(mu = 1, sigma = 4, nu = 20) # Non-Gaussian innovations
+  noise = true_noise
 )
 
 # Generate latent field realizations
@@ -325,18 +330,28 @@ model_nonsep <- ngme(
     model = spacetime(
       mesh = list(mesh_temporal, mesh_spatial)
     ),
+    noise = noise_nig(),
     name = "advection_field",
   ),
   data = obs_data,
   family = "normal", # Observation distribution
   control_opt = control_opt(
-    iterations = 500,
+    iterations = 1000,
     optimizer = adamW(),
-    n_parallel_chain = 2,
+    n_parallel_chain = 1,
     verbose = FALSE,
     seed = 2024
   )
 )
+model_nonsep
+traceplot(model_nonsep)
+traceplot(model_nonsep, "advection_field", hline = c(
+  true_cc,
+  true_kappa,
+  true_theta_gamma_x,
+  true_theta_gamma_y,
+  true_mu, true_sigma, true_nu
+))
 ```
 
 **Model specification details:**

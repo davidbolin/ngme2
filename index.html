@@ -80,22 +80,21 @@
 <img src="logo.png" class="logo" alt=""><h1 id="the-ngme2-package-">The <code>ngme2</code> Package <a class="anchor" aria-label="anchor" href="#the-ngme2-package-"></a>
 </h1>
 </div>
-<p><code>ngme2</code> (<a href="https://davidbolin.github.io/ngme2/" class="uri">https://davidbolin.github.io/ngme2/</a>) is a unified, efficient, and flexible framework for fitting latent <strong>non-Gaussian</strong> models in R. It extends the SPDE-based Gaussian modeling toolkit to handle skewness, heavy tails, and non-smooth behavior while keeping familiar workflows for estimation, prediction, and model assessment.</p>
 <div class="section level2">
-<h2 id="what-you-get">What you get<a class="anchor" aria-label="anchor" href="#what-you-get"></a>
+<h2 id="description">Description<a class="anchor" aria-label="anchor" href="#description"></a>
+</h2>
+<p><code>ngme2</code> (<a href="https://davidbolin.github.io/ngme2/" class="uri">https://davidbolin.github.io/ngme2/</a>) is a unified, efficient, and flexible framework for fitting latent <strong>non-Gaussian</strong> models in R. It extends the SPDE-based Gaussian modeling toolkit to handle skewness, heavy tails, and non-smooth behavior while keeping familiar workflows for estimation, prediction, and model assessment.</p>
+</div>
+<div class="section level2">
+<h2 id="features">Features<a class="anchor" aria-label="anchor" href="#features"></a>
 </h2>
 <ul>
 <li>Temporal processes: AR(1), Ornstein–Uhlenbeck, random walks, and ARMA models.</li>
 <li>Spatial processes: Matérn fields (including graph-based meshes) and separable/non-separable space–time variants.</li>
 <li>Non-Gaussian driven noise: NIG, generalized asymmetric Laplace, skew-(t); non-Gaussian measurement noise is also supported.</li>
-<li>Joint and custom structures: bivariate type-G fields, longitudinal random-effects models, and user-defined operators via <code>generic</code> / <code>generic_ns</code>.</li>
+<li>Joint and custom structures: bivariate type-G fields, longitudinal random-effects models, and user-defined operators via <code>generic</code> / <code>generic_ns</code>, flexible combinations of different models and driven noise.</li>
 <li>Practical tools: kriging-style prediction, cross-validation helpers, and diagnostics for convergence/fit quality.</li>
 </ul>
-</div>
-<div class="section level2">
-<h2 id="model-framework-in-a-sentence">Model framework in a sentence<a class="anchor" aria-label="anchor" href="#model-framework-in-a-sentence"></a>
-</h2>
-<p>Data (Y) are linked to a latent process (W) through an observation matrix (A) and fixed effects (X), while both the process and measurement errors are modeled as normal mean–variance mixtures with generalized inverse Gaussian mixing. An operator (K) encodes spatial/temporal structure, letting the same template describe everything from simple random effects to rich spatio-temporal fields.</p>
 </div>
 <div class="section level2">
 <h2 id="quick-start">Quick start<a class="anchor" aria-label="anchor" href="#quick-start"></a>

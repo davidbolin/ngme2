@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">ngme2</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -59,10 +59,11 @@
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">control_ngme</span><span class="op">(</span></span>
 <span>  n_gibbs_samples <span class="op">=</span> <span class="fl">5</span>,</span>
-<span>  fix_feff <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  fix_beta <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  n_post_samples <span class="op">=</span> <span class="fl">100</span>,</span>
-<span>  feff <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  debug <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  beta_init <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  debug <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -74,7 +75,7 @@
 <dd><p>number of gibbs samples at each iteration</p></dd>
 
 
-<dt id="arg-fix-feff">fix_feff<a class="anchor" aria-label="anchor" href="#arg-fix-feff"></a></dt>
+<dt id="arg-fix-beta">fix_beta<a class="anchor" aria-label="anchor" href="#arg-fix-beta"></a></dt>
 <dd><p>logical, fix fixed effect estimation</p></dd>
 
 
@@ -82,8 +83,12 @@
 <dd><p>number of posterior samples, see ?ngme_post_samples()</p></dd>
 
 
-<dt id="arg-feff">feff<a class="anchor" aria-label="anchor" href="#arg-feff"></a></dt>
-<dd><p>fixed effect value</p></dd>
+<dt id="arg-beta-init">beta_init<a class="anchor" aria-label="anchor" href="#arg-beta-init"></a></dt>
+<dd><p>fixed effect initial value on the original design
+scale. If <code>control_opt(standardize_fixed = TRUE)</code> (the default), the
+vector is internally rotated/scaled to match the SVD-standardized design
+matrix before being passed to the optimizer. Provide values on the raw
+design scale; no manual rescaling is required.</p></dd>
 
 
 <dt id="arg-debug">debug<a class="anchor" aria-label="anchor" href="#arg-debug"></a></dt>

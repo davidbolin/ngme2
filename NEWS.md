@@ -1,3 +1,8 @@
+# ngme2 0.8.3 (2025-12-10)
+* Allow NULL specification for noise parameter in non-stationary case
+* Update fixed effects initialization
+* Update start=fit logic
+
 # ngme2 0.8.2 (2025-12-02)
 * Add support for different type of ldlt solvers
 * Use solver_type and solver_backend in `control_opt` to specify the solver

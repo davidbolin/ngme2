@@ -114,7 +114,6 @@ protected:
     int n_theta_mu, n_theta_sigma, n_theta_nu;
 
     double nu_lower_bound {1e-3};
-    bool   nu_hit_lower_bound_ {false};
 
     // for numerical gradient and observation mapping
     VectorXd W, prevW, cond_W, V, prevV;
@@ -196,11 +195,6 @@ public:
         prevV = V;
         invalidate_derivatives();
     }
-
-    const VectorXd& get_nu() const { return nu; }
-    double get_nu_lower_bound() const { return nu_lower_bound; }
-    bool nu_hit_lower_bound() const { return nu_hit_lower_bound_; }
-    const std::string& get_model_type() const { return model_type; }
     
     void update_each_iter(bool need_precond = false);
     void sample_cond_V();

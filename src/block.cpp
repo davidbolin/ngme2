@@ -6,10 +6,8 @@
 #include "sample_rGIG.h"
 #include <chrono>
 #include <cmath>
-#include <iomanip>
 #include <iterator>
 #include <random>
-#include <sstream>
 #include <stdexcept>
 
 using std::pow;
@@ -331,35 +329,6 @@ void BlockModel::setPrevV(const VectorXd &V) {
     (*it)->setPrevV(V.segment(pos, size));
     pos += size;
   }
-}
-
-bool BlockModel::any_latent_nu_at_lower_bound() const {
-  for (const auto &lat : latents) {
-    if (lat->nu_hit_lower_bound()) {
-      return true;
-    }
-  }
-  return false;
-}
-
-std::vector<std::string> BlockModel::latent_nu_lower_bound_summaries() const {
-  std::vector<std::string> summaries;
-  for (size_t i = 0; i < latents.size(); ++i) {
-    if (!latents[i]->nu_hit_lower_bound())
-      continue;
-
-    std::ostringstream oss;
-    oss << "latent " << i + 1;
-    const std::string &model = latents[i]->get_model_type();
-    if (!model.empty()) {
-      oss << " (" << model << ")";
-    }
-    double min_nu = latents[i]->get_nu().minCoeff();
-    oss << ": min(nu)=" << std::setprecision(6) << min_nu
-        << " reached lower bound " << latents[i]->get_nu_lower_bound();
-    summaries.push_back(oss.str());
-  }
-  return summaries;
 }
 
 // sample W|VY

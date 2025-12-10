@@ -23,7 +23,6 @@
 #include <iostream>
 #include <memory>
 #include <random>
-#include <sstream>
 #include <string>
 
 using Eigen::MatrixXd;
@@ -72,8 +71,6 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   vector<vector<VectorXd>> trajs_chains;
 
   auto timer = std::chrono::steady_clock::now();
-
-  std::vector<std::string> nu_lb_msgs;
 
   Rcpp::List outputs;
 #ifdef _OPENMP
@@ -312,17 +309,6 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
       opt_vec[i].record_current_state();
       trajs_chains.push_back(opt_vec[i].get_trajs());
     }
-
-    auto chain_msgs = ngmes[i]->latent_nu_lower_bound_summaries();
-    for (const auto &msg : chain_msgs) {
-      if (n_chains > 1) {
-        std::ostringstream oss;
-        oss << "chain " << i + 1 << ": " << msg;
-        nu_lb_msgs.push_back(oss.str());
-      } else {
-        nu_lb_msgs.push_back(msg);
-      }
-    }
   }
   if (all_converge)
     std::cout << "Reach convergence in " << steps << " iterations."
@@ -388,23 +374,11 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
     opt.record_current_state();
     trajs_chains.push_back(opt.get_trajs());
   }
-  nu_lb_msgs = ngme.latent_nu_lower_bound_summaries();
 #endif
 
   std::cout << "Estimation ends." << std::endl;
   std::cout << "Total time of the estimation is (s): "
             << since(timer).count() / 1000 << std::endl;
-
-  if (!nu_lb_msgs.empty()) {
-    std::ostringstream warn;
-    warn << "Some latent nu reached the lower bound:\n";
-    for (const auto &msg : nu_lb_msgs) {
-      warn << "  - " << msg << "\n";
-    }
-    warn << "The estimation of nu may be unreliable; values that hit the"
-         << " bound are clamped to nu_lower_bound.";
-    Rcpp::warning(warn.str());
-  }
 
   if (store_traj) {
     outputs.attr("opt_traj") = trajs_chains;

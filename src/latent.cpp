@@ -611,7 +611,6 @@ void Latent::update_each_iter(bool need_precond) {
   sigma = (B_sigma * theta_sigma).array().exp();
   nu = (B_nu * theta_nu).array().exp();
   nu = nu.cwiseMax(nu_lower_bound);
-  nu_hit_lower_bound_ = (nu.array() <= nu_lower_bound + 1e-12).any();
 
   // update p,a,b, depend on nu, h
   auto t_noise_start = std::chrono::steady_clock::now();

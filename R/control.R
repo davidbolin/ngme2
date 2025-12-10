@@ -18,7 +18,13 @@
 #' @param burnin          interations for burn-in periods (before optimization)
 #' @param iterations      optimization iterations
 #' @param estimation      run the estimation process (call C++ in backend)
-#' @param standardize_fixed  whether or not standardize the fixed effect
+#' @param standardize_fixed  whether or not standardize the fixed effect. When
+#'   \code{TRUE} (default), the design matrix is SVD-standardized internally and
+#'   any user-supplied \code{control_ngme(beta_init = ...)} is automatically
+#'   mapped from the original design scale to that standardized basis. Set to
+#'   \code{FALSE} to keep both the design matrix and any provided
+#'   \code{beta_init} on
+#'   their original scale.
 #'
 #' @param n_parallel_chain number of parallel chains
 #' @param n_batch     number of checkpoints; optimization is split into \code{n_batch} equal batches
@@ -232,22 +238,35 @@ control_opt <- function(
 #' Generate control specifications for the ngme model
 #'
 #' @param n_gibbs_samples    number of gibbs samples at each iteration
-#' @param fix_feff       logical, fix fixed effect estimation
-#' @param feff           fixed effect value
+#' @param fix_beta       logical, fix fixed effect estimation
+#' @param beta_init      fixed effect initial value on the original design
+#'   scale. If \code{control_opt(standardize_fixed = TRUE)} (the default), the
+#'   vector is internally rotated/scaled to match the SVD-standardized design
+#'   matrix before being passed to the optimizer. Provide values on the raw
+#'   design scale; no manual rescaling is required.
 #' @param n_post_samples number of posterior samples, see ?ngme_post_samples()
 #' @param debug          debug mode
 #' @return a list of control variables for ngme
 #' @export
 control_ngme <- function(
     n_gibbs_samples = 5,
-    fix_feff = FALSE,
+    fix_beta = FALSE,
     n_post_samples = 100,
-    feff = NULL,
-    debug = FALSE) {
+    beta_init = NULL,
+    debug = FALSE,
+    ...) {
+  dots <- list(...)
+  # backward compatibility for legacy arguments
+  if (!is.null(dots$feff)) beta_init <- dots$feff
+  if (!is.null(dots$fix_feff)) fix_beta <- dots$fix_feff
+
   control <- list(
     n_gibbs_samples = n_gibbs_samples,
-    fix_feff = fix_feff,
-    feff = feff,
+    fix_beta = fix_beta,
+    beta_init = beta_init,
+    # legacy names preserved for downstream code until fully migrated
+    fix_feff = fix_beta,
+    feff = beta_init,
     n_post_samples = n_post_samples,
     debug = debug
   )

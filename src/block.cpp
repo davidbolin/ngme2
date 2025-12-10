@@ -77,7 +77,10 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
     std::cout << "Begin Block Constructor" << std::endl;
 
   // 2. Init Fixed effects
-  fix_flag[block_fix_beta] = Rcpp::as<bool>(control_ngme["fix_feff"]);
+  bool fix_beta = control_ngme.containsElementNamed("fix_beta")
+                      ? Rcpp::as<bool>(control_ngme["fix_beta"])
+                      : Rcpp::as<bool>(control_ngme["fix_feff"]);
+  fix_flag[block_fix_beta] = fix_beta;
   if (beta.size() == 0)
     fix_flag[block_fix_beta] = true;
 

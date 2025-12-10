@@ -523,6 +523,7 @@ ngme_parse_formula <- function(
   ngme_response <- eval(stats::terms(fm)[[2]], envir = data, enclos = enclos_env)
   stopifnot("Have NA in your response variable" = all(!is.na(ngme_response)))
   X_full <- model.matrix(delete.response(terms(plain_fm)), as.data.frame(data))
+  n_fixed_cols <- ncol(X_full) # columns subject to standardization
 
   # Do SVD if ncol > 1
   if (ncol(X_full) > 1) {
@@ -549,6 +550,22 @@ ngme_parse_formula <- function(
     colnames(X_sub) <- paste0(colnames(X_sub), "_", lang$which)
     X_sub[!mask, ] <- 0
     X_full <- cbind(X_full, X_sub)
+  }
+
+  # If the user supplies beta_init/feff on the original design scale, map it to
+  # the standardized basis used internally (svd$u) while leaving any additional
+  # fe() columns untouched.
+  user_beta <- if (!is.null(control_ngme$beta_init)) control_ngme$beta_init else control_ngme$feff
+  if (standardize && !is.null(user_beta)) {
+    stopifnot(
+      "The length of beta_init must equal the number of fixed-effect columns" =
+        length(user_beta) == ncol(X_full)
+    )
+    beta_fixed <- user_beta[seq_len(n_fixed_cols)]
+    beta_fixed <- as.numeric(svd$d * drop(t(svd$v) %*% beta_fixed))
+    user_beta <- c(beta_fixed, user_beta[-seq_len(n_fixed_cols)])
+    control_ngme$beta_init <- user_beta
+    control_ngme$feff <- user_beta # legacy name retained for downstream code
   }
 
   ########## parse models terms
@@ -649,7 +666,9 @@ ngme_parse_formula <- function(
     }
     # give initial value (whole dataset)
     lm.model <- stats::lm.fit(X_full, ngme_response)
-    if (is.null(control_ngme$feff)) control_ngme$feff <- lm.model$coeff
+    if (is.null(control_ngme$beta_init) && is.null(control_ngme$feff)) {
+      control_ngme$beta_init <- control_ngme$feff <- lm.model$coeff
+    }
     if (is.null(noise$theta_sigma)) noise$theta_sigma <- log(sd(lm.model$residuals))
     noise_rep <- subset_noise(noise_new, sub_idx = idx, compute_corr = FALSE)
     group_rep <- group[idx]

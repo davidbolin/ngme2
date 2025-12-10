@@ -47,7 +47,13 @@ control_opt(
 
 \item{estimation}{run the estimation process (call C++ in backend)}
 
-\item{standardize_fixed}{whether or not standardize the fixed effect}
+\item{standardize_fixed}{whether or not standardize the fixed effect. When
+\code{TRUE} (default), the design matrix is SVD-standardized internally and
+any user-supplied \code{control_ngme(beta_init = ...)} is automatically
+mapped from the original design scale to that standardized basis. Set to
+\code{FALSE} to keep both the design matrix and any provided
+\code{beta_init} on
+their original scale.}
 
 \item{n_batch}{number of checkpoints; optimization is split into \code{n_batch} equal batches}
 

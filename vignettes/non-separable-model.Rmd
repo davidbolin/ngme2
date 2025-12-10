@@ -344,14 +344,6 @@ model_nonsep <- ngme(
   )
 )
 model_nonsep
-traceplot(model_nonsep)
-traceplot(model_nonsep, "advection_field", hline = c(
-  true_cc,
-  true_kappa,
-  true_theta_gamma_x,
-  true_theta_gamma_y,
-  true_mu, true_sigma, true_nu
-))
 ```
 
 **Model specification details:**

@@ -14,7 +14,7 @@ ngme_replicate <- function(
 
   n_la_params <- sum(unlist(lapply(models, function(x) x["n_params"])))
   n_feff <- ncol(X)
-  feff <- control_ngme$feff
+  feff <- if (!is.null(control_ngme$beta_init)) control_ngme$beta_init else control_ngme$feff
   names(feff) <- colnames(X)
 
   # Collect parameter names as a vector (not concatenated string)

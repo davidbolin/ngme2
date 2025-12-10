@@ -6,20 +6,25 @@
 \usage{
 control_ngme(
   n_gibbs_samples = 5,
-  fix_feff = FALSE,
+  fix_beta = FALSE,
   n_post_samples = 100,
-  feff = NULL,
-  debug = FALSE
+  beta_init = NULL,
+  debug = FALSE,
+  ...
 )
 }
 \arguments{
 \item{n_gibbs_samples}{number of gibbs samples at each iteration}
 
-\item{fix_feff}{logical, fix fixed effect estimation}
+\item{fix_beta}{logical, fix fixed effect estimation}
 
 \item{n_post_samples}{number of posterior samples, see ?ngme_post_samples()}
 
-\item{feff}{fixed effect value}
+\item{beta_init}{fixed effect initial value on the original design
+scale. If \code{control_opt(standardize_fixed = TRUE)} (the default), the
+vector is internally rotated/scaled to match the SVD-standardized design
+matrix before being passed to the optimizer. Provide values on the raw
+design scale; no manual rescaling is required.}
 
 \item{debug}{debug mode}
 }

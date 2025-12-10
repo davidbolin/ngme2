@@ -9,8 +9,8 @@
 #include <iomanip>
 #include <iterator>
 #include <random>
-#include <stdexcept>
 #include <sstream>
+#include <stdexcept>
 
 using std::pow;
 
@@ -46,8 +46,9 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
     switch (backend) {
     case 0: // eigen
       return factor == 0 ? 0 : 1;
-    case 1: // cholmod
-      return factor == 0 ? 2 /*LLT (supernodal)*/ : 3 /*LDLT via CholmodDecomposition*/;
+    case 1:                  // cholmod
+      return factor == 0 ? 2 /*LLT (supernodal)*/
+                         : 3 /*LDLT via CholmodDecomposition*/;
     case 2: // accelerate
       return factor == 0 ? 4 : 5;
     case 3: // pardiso
@@ -90,6 +91,7 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
     Rcpp::List latent_in = Rcpp::as<Rcpp::List>(latents_in[i]);
     latent_in["solver_type"] = solver_type;
     latent_in["n_trace_iter"] = n_trace_iter;
+    latent_in["robust"] = robust;
     unsigned long latent_seed = seed + (i + 1) * 1000;
     latents.push_back(std::make_shared<Latent>(latent_in, latent_seed));
   }
@@ -1507,6 +1509,13 @@ void BlockModel::update_QQ() {
   }
   chol_QQ.compute(QQ);
   if (!chol_QQ.factorization_success()) {
+    // Basic diagnostics for SPD failures
+    double min_diag = QQ.diagonal().minCoeff();
+    double asym_norm = (QQ - SparseMatrix<double>(QQ.transpose())).norm();
+    Rcpp::Rcerr << "[QQ SPD fail] iter=" << curr_iter
+                << " min_diag=" << min_diag << " asym_norm=" << asym_norm
+                << std::endl;
+    // [QQ SPD fail] iter=414 min_diag=4.71135e+08 asym_norm=0
     throw std::runtime_error("Measurement precision QQ is not SPD");
   }
 }

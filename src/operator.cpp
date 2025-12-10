@@ -158,7 +158,8 @@ void Operator::update_all(const VectorXd &theta, const UpdateOptions &opts) {
     cholK_solver.init(K.rows(), opts.n_trace_iter, symmetric, opts.solver_type);
     llt_inited = true;
   }
-  if (!analyzed_cholK) {
+  if (opts.robust_reanalyze || !analyzed_cholK) {
+    // Re-run symbolic phase when the sparsity pattern might change with theta
     cholK_solver.analyze(K);
     analyzed_cholK = true;
   }

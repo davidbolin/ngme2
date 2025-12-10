@@ -128,6 +128,7 @@ protected:
     // Solver controls propagated from control_opt via Block/Latent constructor
     int solver_type_ {0};
     int n_trace_iter_ {8};
+    bool robust_ {false};
 
     // priors
     string prior_K_type, prior_mu_type, prior_sigma_type, prior_nu_type;

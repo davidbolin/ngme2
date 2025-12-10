@@ -43,6 +43,8 @@ struct UpdateOptions {
   bool compute_d2K{false};
   bool compute_d2Z{false};
   bool compute_HK_trace{false};
+  // When true, re-run symbolic analyze() before each numeric factorization.
+  bool robust_reanalyze{false};
   bool prefer_analytic_dK{true};
   bool prefer_analytic_dZ{true};
   bool prefer_analytic_d2K{false};

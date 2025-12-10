@@ -125,6 +125,9 @@ Latent::Latent(const Rcpp::List &model_list, unsigned long seed)
   int solver_type = Rcpp::as<int>(model_list["solver_type"]);
   n_trace_iter_ = n_trace_iter;
   solver_type_ = solver_type;
+  robust_ = model_list.containsElementNamed("robust")
+                ? Rcpp::as<bool>(model_list["robust"])
+                : false;
 
   // build mu, sigma, compute trace, ...
   update_each_iter(true);
@@ -598,6 +601,7 @@ void Latent::update_each_iter(bool need_precond) {
   uopts.compute_d2K = need_precond;
   uopts.compute_d2Z = need_precond;
   uopts.compute_HK_trace = need_precond && !zero_trace;
+  uopts.robust_reanalyze = robust_;
   uopts.n_trace_iter = n_trace_iter_;
   uopts.solver_type = solver_type_;
   uopts.fix_mask_thetaK = ope->get_fix_mask_K();

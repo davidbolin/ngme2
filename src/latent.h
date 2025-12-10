@@ -113,7 +113,7 @@ protected:
     VectorXd mu, sigma, nu;
     int n_theta_mu, n_theta_sigma, n_theta_nu;
 
-    double nu_lower_bound {1e-3};
+  double nu_lower_bound {0.0};
 
     // for numerical gradient and observation mapping
     VectorXd W, prevW, cond_W, V, prevV;

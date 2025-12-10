@@ -147,7 +147,7 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
   family = Rcpp::as<string>(noise_in["noise_type"]);
   noise_mu = B_mu * theta_mu;
   noise_sigma = (B_sigma * theta_sigma).array().exp();
-  noise_nu = (B_nu * theta_nu).array().exp();
+  noise_nu = nu_lower_bound + (B_nu * theta_nu).array().exp();
 
   rho = Rcpp::as<VectorXd>(noise_in["rho"]);
   n_rho = noise_in.containsElementNamed("n_rho")
@@ -542,7 +542,8 @@ VectorXd BlockModel::grad_theta_merr() {
     grad.segment(n_theta_mu, n_theta_sigma) = grad_theta_sigma();
   if (!fix_flag[block_fix_theta_nu]) {
     grad.segment(n_theta_mu + n_theta_sigma, n_theta_nu) =
-        -NoiseUtil::grad_theta_nu(family, B_nu, noise_nu, noise_V, noise_prevV);
+        -NoiseUtil::grad_theta_nu(family, B_nu, noise_nu, noise_V, noise_prevV,
+                                  VectorXd::Ones(noise_V.size()), nu_lower_bound);
     // add prior
     // grad(n_theta_mu + n_theta_sigma) -= PriorUtil::d_log_dens(prior_nu_type,
     // prior_nu_param, noise_nu);
@@ -585,8 +586,7 @@ void BlockModel::set_theta_merr(const VectorXd &theta_merr) {
   // update mu, sigma
   noise_mu = (B_mu * theta_mu);
   noise_sigma = (B_sigma * theta_sigma).array().exp();
-  noise_nu = (B_nu * theta_nu).array().exp();
-  noise_nu = noise_nu.cwiseMax(nu_lower_bound);
+  noise_nu = nu_lower_bound + (B_nu * theta_nu).array().exp();
 
   // show the Q construction
   // std::cout << "Q_eps == \n" << Q_eps << std::endl;
@@ -1106,7 +1106,9 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
           // B_nu for NIG, and the appropriate GAL/t variants handled inside
           // NoiseUtil.
           MatrixXd Hnu =
-              -NoiseUtil::hess_theta_nu(family, B_nu, noise_nu, noise_V);
+              -NoiseUtil::hess_theta_nu(family, B_nu, noise_nu, noise_V,
+                                        VectorXd::Ones(noise_V.size()),
+                                        nu_lower_bound);
           precond_sum.block(n_la_params + n_theta_mu + n_theta_sigma,
                             n_la_params + n_theta_mu + n_theta_sigma,
                             n_theta_nu, n_theta_nu) += Hnu;

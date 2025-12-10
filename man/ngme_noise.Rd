@@ -35,7 +35,7 @@ ngme_noise(
   corr_measurement = FALSE,
   index_corr = NULL,
   map_corr = NULL,
-  nu_lower_bound = 0.01,
+  nu_lower_bound = 0,
   rho = double(0),
   prior_mu = ngme_prior("normal", param = c(0, 0.01)),
   prior_sigma = ngme_prior("normal", param = c(0, 0.01)),
@@ -181,7 +181,9 @@ gives Y|W ~ N(mean * sigma, sigma^2)}
 
 \item{map_corr}{1d, 2d, or formula, used when corr_measurement=TRUE, specify use which covariate to infer the index_corr.}
 
-\item{nu_lower_bound}{specify the lower bound of parameter nu}
+\item{nu_lower_bound}{specify the lower bound of parameter nu; effective
+parametrization is \eqn{nu = nu_lower_bound + \exp(B_\nu \theta_\nu)} so
+\code{theta_nu} remains unconstrained. Default 0.}
 
 \item{rho}{used when corr_measurement=TRUE, starting point for correlation}
 
@@ -214,7 +216,7 @@ The parameterization is given in \code{?nig} and \code{?gal}. Moreover,
 for specifying non-stationary mu and sigma, nu
 \deqn{\mu = B_{\mu} \theta_{\mu},} and
 \deqn{\sigma = \exp (B_{\sigma} \theta_{\sigma}),}
-\deqn{\nu = \exp (B_{\nu} \theta_{\nu}).}
+\deqn{\nu = \nu_{\mathrm{lower}} + \exp (B_{\nu} \theta_{\nu}).}
 }
 \examples{
 noise_normal(sigma = 2)

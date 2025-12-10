@@ -30,7 +30,7 @@ simulate.ngme_model <- function(
     h <- model$operator$h
     mu <- as.numeric(noise$B_mu %*% noise$theta_mu)
     sigma <- as.numeric(exp(noise$B_sigma %*% noise$theta_sigma))
-    nu <- as.numeric(exp(noise$B_nu %*% noise$theta_nu))
+    nu <- as.numeric(noise$nu_lower_bound + exp(noise$B_nu %*% noise$theta_nu))
     n <- length(mu)
 
     if (length(noise$noise_type) == 2) {
@@ -147,7 +147,7 @@ simulate.ngme_noise <- function(
       res <- numeric(n_noise)
       mu_vec <- as.numeric(B_mu %*% theta_mu)
       sigma_vec <- as.numeric(exp(B_sigma %*% theta_sigma))
-      nu_vec <- as.numeric(exp(B_nu %*% theta_nu))
+      nu_vec <- as.numeric(nu_lower_bound + exp(B_nu %*% theta_nu))
       if (length(mu_vec) == 1) mu_vec <- rep(mu_vec, n_noise)
       if (length(sigma_vec) == 1) sigma_vec <- rep(sigma_vec, n_noise)
       if (length(nu_vec) == 1) nu_vec <- rep(nu_vec, n_noise)

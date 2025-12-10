@@ -1,4 +1,5 @@
 # ngme2 0.8.3 (2025-12-10)
+* Update nu parameterization to be relative to nu_lower_bound (nu = nu_lower_bound + exp(B_nu * theta_nu))
 * Allow NULL specification for noise parameter in non-stationary case
 * Update fixed effects initialization
 * Update start=fit logic

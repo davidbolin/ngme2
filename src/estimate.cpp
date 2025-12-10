@@ -154,6 +154,10 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
 
   int curr_batch = 0;
 
+  // Enable convergence only when at least one diagnostic is requested.
+  const bool param_conv_check = trend_std_conv_check || R_hat_conv_check;
+  const bool any_conv_check = param_conv_check || pflug_conv_check;
+
   while (steps < iterations && !all_converge) {
     MatrixXd mat(n_chains, n_params);
     batch_sum.setZero();
@@ -200,6 +204,7 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
     }
 
     if (n_chains > 1) {
+      bool batch_converged = false;
       // convergence            // Compute R_hat
       VectorXd R_hat(n_params);
       int n = batch_steps;
@@ -236,19 +241,17 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
       R_hat = (var_hat.array() / W.array()).sqrt().transpose();
       final_R_hat = R_hat;
 
-      if (curr_batch + 1 >= n_min_batch) {
-        converge =
-            check_conv(means, vars, curr_batch, n_slope_check, std_lim,
-                       trend_lim, par_names, print_check_info, batch_steps,
-                       max_R_hat, R_hat, trend_std_conv_check, R_hat_conv_check,
-                       &last_conv_rhat, &last_conv_trend_std, &last_std_ratio,
-                       &last_slopes, &last_trend_ready);
-        all_converge =
+      if (param_conv_check && curr_batch + 1 >= n_min_batch) {
+        converge = check_conv(means, vars, curr_batch, n_slope_check, std_lim,
+                               trend_lim, par_names, print_check_info,
+                               batch_steps, max_R_hat, R_hat,
+                               trend_std_conv_check, R_hat_conv_check,
+                               &last_conv_rhat, &last_conv_trend_std,
+                               &last_std_ratio, &last_slopes, &last_trend_ready);
+        batch_converged =
             std::find(begin(converge), end(converge), false) == end(converge);
-        if (all_converge)
+        if (batch_converged)
           converged_by_param = true;
-      } else {
-        all_converge = false;
       }
 
       // 2. if some parameter converge, stop compute gradient, or slow down the
@@ -275,7 +278,7 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
           }
         }
         if (pflug_converged) {
-          all_converge = true;
+          batch_converged = true;
           pflug_triggered = true;
           if (verbose_enabled)
             Rcpp::Rcout << "Pflug diagnostic satisfied: pflug_sum < "
@@ -283,6 +286,8 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
                         << std::endl;
         }
       }
+      // Only allow early stop when any diagnostic is active.
+      all_converge = any_conv_check && batch_converged;
     }
 
     curr_batch++;

@@ -566,14 +566,15 @@ void Latent::compute_theta_nu(bool need_grad) {
           VectorXd prevV_half = prevV.segment(0, prevV.size() / 2);
           VectorXd h_half = h.segment(0, h.size() / 2);
           grad = NoiseUtil::grad_theta_nu(noise_type[0], B_nu_half, nu_half,
-                                          V_half, prevV_half, h_half, single_V);
+                                          V_half, prevV_half, h_half,
+                                          nu_lower_bound, single_V);
         } else {
           grad = NoiseUtil::grad_theta_nu(noise_type[0], B_nu, nu, V, prevV, h,
-                                          single_V);
+                                          nu_lower_bound, single_V);
         }
       } else {
         grad = NoiseUtil::grad_theta_nu(noise_type[0], B_nu, nu, V, prevV, h,
-                                        single_V);
+                                        nu_lower_bound, single_V);
       }
     }
   }
@@ -609,8 +610,7 @@ void Latent::update_each_iter(bool need_precond) {
 
   mu = B_mu * theta_mu;
   sigma = (B_sigma * theta_sigma).array().exp();
-  nu = (B_nu * theta_nu).array().exp();
-  nu = nu.cwiseMax(nu_lower_bound);
+  nu = nu_lower_bound + (B_nu * theta_nu).array().exp();
 
   // update p,a,b, depend on nu, h
   auto t_noise_start = std::chrono::steady_clock::now();
@@ -774,15 +774,18 @@ void Latent::compute_hessian_blocks(bool rao_blackwell) {
           VectorXd V_half = V.segment(0, V.size() / 2);
           VectorXd h_half = h.segment(0, h.size() / 2);
           hess_cache.H_nu = NoiseUtil::hess_theta_nu(
-              noise_type[0], B_nu_half, nu_half, V_half, h_half, single_V);
+              noise_type[0], B_nu_half, nu_half, V_half, h_half, nu_lower_bound,
+              single_V);
         } else {
           hess_cache.H_nu =
-              NoiseUtil::hess_theta_nu(noise_type[0], B_nu, nu, V, h, single_V);
+              NoiseUtil::hess_theta_nu(noise_type[0], B_nu, nu, V, h,
+                                       nu_lower_bound, single_V);
         }
       } else {
         // Multi-noise: follow gradient path (use primary noise_type[0])
         hess_cache.H_nu =
-            NoiseUtil::hess_theta_nu(noise_type[0], B_nu, nu, V, h, single_V);
+            NoiseUtil::hess_theta_nu(noise_type[0], B_nu, nu, V, h,
+                                     nu_lower_bound, single_V);
       }
       hess_cache.H_nu = -hess_cache.H_nu;
     }

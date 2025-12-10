@@ -6,19 +6,18 @@ articles:
   bivariate: bivariate.html
   cross-validation: cross-validation.html
   generic: generic.html
-  Installation_and_configuration: Installation_and_configuration.html
+  Installation: Installation.html
   matern-on-graph: matern-on-graph.html
   ngme2: ngme2.html
   non-separable-model: non-separable-model.html
   normal-nig-noise: normal-nig-noise.html
   ou-process: ou-process.html
   pred-and-est: pred-and-est.html
-  random-effect: random-effect.html
   replicate: replicate.html
   RW-model: RW-model.html
   SPDE-model: SPDE-model.html
   tensor-product: tensor-product.html
-last_built: 2025-12-02T09:58Z
+last_built: 2025-12-10T18:09Z
 urls:
   reference: https://davidbolin.github.io/ngme2/reference
   article: https://davidbolin.github.io/ngme2/articles

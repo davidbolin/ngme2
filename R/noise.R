@@ -10,7 +10,7 @@
 #' for specifying non-stationary mu and sigma, nu
 #' \deqn{\mu = B_{\mu} \theta_{\mu},} and
 #' \deqn{\sigma = \exp (B_{\sigma} \theta_{\sigma}),}
-#' \deqn{\nu = \exp (B_{\nu} \theta_{\nu}).}
+#' \deqn{\nu = \nu_{\mathrm{lower}} + \exp (B_{\nu} \theta_{\nu}).}
 #'
 #' @param noise_type    type of noise, "normal", "nig", "gal", "t", "skew_t"
 #' @param mu          specify the NIG noise parameter mu, see \code{?nig}
@@ -21,7 +21,9 @@
 #' @param theta_sigma   specify a non-stationary noise using theta_sigma
 #' @param B_sigma       Basis matrix for sigma (if non-stationary)
 #' @param theta_nu      specify a non-stationary noise using theta_nu
-#' @param nu_lower_bound specify the lower bound of parameter nu
+#' @param nu_lower_bound specify the lower bound of parameter nu; effective
+#'   parametrization is \eqn{nu = nu_lower_bound + \exp(B_\nu \theta_\nu)} so
+#'   \code{theta_nu} remains unconstrained. Default 0.
 #' @param B_nu          Basis matrix for nu (if non-stationary)
 #' @param fix_theta_mu     fix the parameter of theta_mu
 #' @param fix_theta_sigma  fix the parameter of theta_sigma, can be a single
@@ -75,7 +77,7 @@ ngme_noise <- function(
     corr_measurement = FALSE,
     index_corr = NULL,
     map_corr = NULL,
-    nu_lower_bound = 0.01,
+    nu_lower_bound = 0,
     rho = double(0),
     prior_mu = ngme_prior("normal", param = c(0, 0.01)),
     prior_sigma = ngme_prior("normal", param = c(0, 0.01)),
@@ -90,7 +92,7 @@ ngme_noise <- function(
     theta_sigma <- if (sigma > 0) log(sigma) else stop("ngme_noise: sigma should be positive.")
   }
   if (is.null(theta_nu)) {
-    theta_nu <- if (nu > 0) log(nu) else stop("ngme_noise: nu should be positive.")
+    theta_nu <- if (nu > nu_lower_bound) log(nu - nu_lower_bound) else stop("ngme_noise: nu must exceed nu_lower_bound.")
   }
 
   stopifnot(
@@ -116,6 +118,7 @@ ngme_noise <- function(
   }
 
   stopifnot(
+    "nu_lower_bound must be non-negative" = nu_lower_bound >= 0,
     "Please input B_mu as a matrix." = is.matrix(B_mu),
     "Please input B_sigma as a matrix." = is.matrix(B_sigma),
     "Please make sure ncol(B_mu) == length(theta_mu)." = ncol(B_mu) == length(theta_mu),
@@ -643,6 +646,11 @@ print.ngme_noise <- function(
             NULL
           )
         })
+        if (noise$nu_lower_bound > 0 && length(noise$theta_nu) > 0) {
+          lb_txt <- paste0(" (lower bound ", format(noise$nu_lower_bound, digits = 3), ")")
+          params <- sub("(nu = [^\\n]+)", paste0("\\1", lb_txt), params)
+          params <- sub("(theta_nu = [^\\n]+)", paste0("\\1", lb_txt), params)
+        }
         cat(params)
       }
     }

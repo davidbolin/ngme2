@@ -41,6 +41,7 @@ VectorXd NoiseUtil::grad_theta_nu(
     const VectorXd& V,
     const VectorXd& prevV,
     const VectorXd& h,
+    double nu_lower_bound,
     bool single_V
 ) {
     int n_theta_nu = B_nu.cols();
@@ -60,7 +61,8 @@ VectorXd NoiseUtil::grad_theta_nu(
                 - h.cwiseProduct(nu.cwiseInverse().array().log().matrix())
                 - h.cwiseProduct(pg);
             
-            grad = B_nu.transpose() * tmp.cwiseProduct(nu);
+            VectorXd jac = nu.array() - nu_lower_bound;
+            grad = B_nu.transpose() * tmp.cwiseProduct(jac);
         } else if (noise_type == "t" || noise_type == "skew_t") {
             // t-distribution: df/dnu = (-1 + x - x Log[2 x] + x Log[nu] - x PolyGamma[0, nu/2])/(2 x)
             // df/d(log nu) = df/dnu * nu
@@ -70,7 +72,8 @@ VectorXd NoiseUtil::grad_theta_nu(
                 double x = V[j];
                 tmp(j) = (-1.0 + x - x * log(2.0 * x) + x * log(nu_j) - x * R::digamma(nu_j/2.0)) / (2.0 * x);
             }
-            grad = B_nu.transpose() * tmp.cwiseProduct(nu);
+            VectorXd jac = nu.array() - nu_lower_bound;
+            grad = B_nu.transpose() * tmp.cwiseProduct(jac);
         } else {
             // type == nig or normal+nig
             // df/dnu = 0.5 (2h + 1/nu - h^2/V - V)
@@ -78,7 +81,8 @@ VectorXd NoiseUtil::grad_theta_nu(
             VectorXd tmp = 0.5 * (2*h + nu.cwiseInverse()
                 - h.cwiseProduct(h).cwiseQuotient(V) - V);
 
-            grad = B_nu.transpose() * tmp.cwiseProduct(nu);
+            VectorXd jac = nu.array() - nu_lower_bound;
+            grad = B_nu.transpose() * tmp.cwiseProduct(jac);
         }
     } else {
         // single V case
@@ -86,7 +90,8 @@ VectorXd NoiseUtil::grad_theta_nu(
             // theV ~ IG(nu, nu)
             // V_i = h_i * theV
             double theV = V(0) / h(0);
-            grad(0) = - 0.1 * (nu(0) - 3*theV - nu(0)*theV*theV)/(2*theV*theV); // remove negative sign
+            double jac = nu(0) - nu_lower_bound;
+            grad(0) = - 0.1 * (nu(0) - 3*theV - nu(0)*theV*theV)/(2*theV*theV) * jac / nu(0);
         } else if (noise_type == "gal") {
             // theV ~ Gam(nu, nu)
             throw std::runtime_error("Not implemented");
@@ -94,8 +99,9 @@ VectorXd NoiseUtil::grad_theta_nu(
             // theV ~ IG(nu/2, nu/2)
             double theV = V(0) / h(0);
             double nu_val = nu(0);
+            double jac = nu_val - nu_lower_bound;
             grad(0) = - 0.5 * (R::digamma((nu_val + 1)/2) - R::digamma(nu_val/2) 
-                             - 1/nu_val - log(theV) + theV) * nu_val;
+                             - 1/nu_val - log(theV) + theV) * jac;
         }
     }
     // grad /= n;
@@ -111,6 +117,7 @@ MatrixXd NoiseUtil::hess_theta_nu(
     const VectorXd& nu,
     const VectorXd& V,
     const VectorXd& h,
+    double nu_lower_bound,
     bool single_V
 ) {
     const int n_theta = B_nu.cols();
@@ -125,7 +132,7 @@ MatrixXd NoiseUtil::hess_theta_nu(
         if (noise_type == "nig" || noise_type == "normal_nig") {
             // c = h - (h^2)/(2V) - V/2
             VectorXd c = h - 0.5 * h.cwiseProduct(h).cwiseQuotient(V) - 0.5 * V;
-            VectorXd d = nu.cwiseProduct(c); // diag entries
+            VectorXd d = (nu.array() - nu_lower_bound).matrix().cwiseProduct(c); // diag entries
             H = - (B_nu.transpose() * d.asDiagonal() * B_nu);
         } else if (noise_type == "gal") {
             // GAL: V ~ Gamma(h*nu, scale=1/nu)

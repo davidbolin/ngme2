@@ -37,6 +37,7 @@ public:
         const VectorXd& V,
         const VectorXd& prevV,
         const VectorXd& h,
+        double nu_lower_bound = 0.0,
         bool single_V = false
     );
 
@@ -51,6 +52,7 @@ public:
         const VectorXd& nu,
         const VectorXd& V,
         const VectorXd& h,
+        double nu_lower_bound = 0.0,
         bool single_V = false
     );
 
@@ -110,10 +112,11 @@ public:
         const VectorXd& nu,
         const VectorXd& V,
         const VectorXd& prevV,
+        double nu_lower_bound = 0.0,
         bool single_V = false
     ) {
         VectorXd h = VectorXd::Ones(V.size());
-        return grad_theta_nu(noise_type, B_nu, nu, V, prevV, h, single_V);
+        return grad_theta_nu(noise_type, B_nu, nu, V, prevV, h, nu_lower_bound, single_V);
     }
 
     // Convenience overload: Hessian with h = 1 vector
@@ -122,10 +125,11 @@ public:
         const MatrixXd& B_nu,
         const VectorXd& nu,
         const VectorXd& V,
+        double nu_lower_bound = 0.0,
         bool single_V = false
     ) {
         VectorXd h = VectorXd::Ones(V.size());
-        return hess_theta_nu(noise_type, B_nu, nu, V, h, single_V);
+        return hess_theta_nu(noise_type, B_nu, nu, V, h, nu_lower_bound, single_V);
     }
 
     static VectorXd rnorm_vec(int n, double mu, double sigma, unsigned long seed=0) {

@@ -257,7 +257,7 @@ noise_nig <- nig <- function(
     theta_mu = NULL,
     theta_sigma = NULL,
     theta_nu = NULL,
-    nu_lower_bound = 0.01,
+    nu_lower_bound = 0,
     B_mu = matrix(1),
     B_sigma = matrix(1),
     B_nu = matrix(1),
@@ -395,7 +395,7 @@ noise_skew_t <- skew_t_noise <- function(
 noise_t <- t_noise <- function(
     nu = NULL,
     theta_nu = NULL,
-    nu_lower_bound = 0.01,
+    nu_lower_bound = 0,
     B_nu = matrix(1),
     corr_measurement = FALSE,
     index_corr = NULL,

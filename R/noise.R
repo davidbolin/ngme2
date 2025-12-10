@@ -81,6 +81,10 @@ ngme_noise <- function(
     prior_sigma = ngme_prior("normal", param = c(0, 0.01)),
     prior_nu = ngme_prior("normal", param = c(0, 0.01)),
     ...) {
+  theta_mu_supplied <- !is.null(theta_mu)
+  theta_sigma_supplied <- !is.null(theta_sigma)
+  theta_nu_supplied <- !is.null(theta_nu)
+
   if (is.null(theta_mu)) theta_mu <- mu
   if (is.null(theta_sigma)) {
     theta_sigma <- if (sigma > 0) log(sigma) else stop("ngme_noise: sigma should be positive.")
@@ -97,6 +101,11 @@ ngme_noise <- function(
   if (is.null(B_mu)) B_mu <- as.matrix(1)
   if (is.null(B_sigma)) B_sigma <- as.matrix(1)
   if (is.null(B_nu)) B_nu <- as.matrix(1)
+
+  # If user supplies basis but omits coefficients, create zero starts that match
+  if (!theta_mu_supplied) theta_mu <- rep(0, ncol(B_mu))
+  if (!theta_sigma_supplied) theta_sigma <- rep(0, ncol(B_sigma))
+  if (!theta_nu_supplied) theta_nu <- rep(0, ncol(B_nu))
 
   # Validate fix_theta_sigma parameter
   if (length(fix_theta_sigma) == 1) {
@@ -217,9 +226,11 @@ noise_normal <- normal <- function(
     theta_sigma <- log(sd)
   }
 
-  stopifnot(
-    "Make sure ncol of B_sigma = length of theta_signa" = ncol(B_sigma) == length(theta_sigma)
-  )
+  if (!is.null(theta_sigma)) {
+    stopifnot(
+      "Make sure ncol of B_sigma = length of theta_sigma" = ncol(B_sigma) == length(theta_sigma)
+    )
+  }
 
   ngme_noise(
     noise_type = "normal",

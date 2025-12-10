@@ -174,11 +174,38 @@ ngme <- function(
               "Please make sure model type are the same" =
                 models[[j]]$model == prev_model_type
             )
-            # default case
-            # update operator representation
-            models[[j]]$operator <- prev_model_ope
+            # default case: seed new operator with previous estimates without
+            # overwriting the new model configuration (e.g., fix_alpha changes)
+            op_new <- models[[j]]$operator
+            op_prev <- prev_model_ope
 
-            models[[j]]$theta_K <- models[[j]]$operator$theta_K
+            # try name-based matching first so we only overwrite shared params
+            if (!is.null(op_new$param_name) && !is.null(op_prev$param_name)) {
+              theta_new <- op_new$theta_K
+              names(theta_new) <- op_new$param_name
+
+              theta_prev <- op_prev$theta_K
+              names(theta_prev) <- op_prev$param_name
+
+              common <- intersect(names(theta_new), names(theta_prev))
+              if (length(common) > 0) {
+                theta_new[common] <- theta_prev[common]
+              }
+
+              op_new$theta_K <- theta_new
+              models[[j]]$theta_K <- theta_new
+            } else if (length(op_new$theta_K) == length(op_prev$theta_K)) {
+              # fall back to position-wise copy when dimensions align
+              op_new$theta_K <- op_prev$theta_K
+              models[[j]]$theta_K <- op_prev$theta_K
+            } else {
+              # keep op_new defaults when shapes differ (e.g., freeing alpha)
+              models[[j]]$theta_K <- op_new$theta_K
+            }
+
+            op_new$K <- op_new$update_K(op_new$theta_K)
+
+            models[[j]]$operator <- op_new
           }
 
           stopifnot(

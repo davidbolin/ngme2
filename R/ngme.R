@@ -327,6 +327,26 @@ ngme <- function(
     } else {
       attr(outputs, "opt_traj") <- NULL
     }
+  } else {
+    # Estimation skipped: if fixed effects were standardized, map them back to
+    # the original design scale so printed/returned coefficients are on the raw
+    # scale (consistent with estimation path).
+    for (i in seq_along(ngme_model$replicates)) {
+      ngme_replicate <- ngme_model$replicates[[i]]
+      if (isTRUE(ngme_replicate$standardize)) {
+        feff <- as.numeric(ngme_replicate$svd$v %*%
+          (1 / ngme_replicate$svd$d * ngme_replicate$feff))
+        names(feff) <- names(ngme_replicate$feff)
+        ngme_replicate$feff <- feff
+
+        X <- ngme_replicate$svd$u %*% diag(ngme_replicate$svd$d) %*%
+          t(ngme_replicate$svd$v)
+        colnames(X) <- colnames(ngme_replicate$X)
+        nrow_one_repl <- nrow(ngme_replicate$X)
+        ngme_replicate$X <- X[1:nrow_one_repl, ]
+        ngme_model$replicates[[i]] <- ngme_replicate
+      }
+    }
   }
   ngme_model
 }

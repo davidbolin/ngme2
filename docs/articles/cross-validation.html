@@ -27,7 +27,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">ngme2</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,20 +41,20 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-vignettes" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Vignettes</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-vignettes">
-<li><a class="dropdown-item" href="../articles/Installation_and_configuration.html">Installation and configuration (using OpenMP)</a></li>
+<li><a class="dropdown-item" href="../articles/Installation.html">Installation and configuration (using OpenMP)</a></li>
     <li><a class="dropdown-item" href="../articles/AR1-model.html">AR(1) model</a></li>
     <li><a class="dropdown-item" href="../articles/RW-model.html">Random walk model</a></li>
     <li><a class="dropdown-item" href="../articles/ou-process.html">Ornstein-Uhlenbeck process</a></li>
     <li><a class="dropdown-item" href="../articles/SPDE-model.html">SPDE Matern model</a></li>
-    <li><a class="dropdown-item" href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a></li>
+    <li><a class="dropdown-item" href="../articles/tensor-product.html">Space-time (tensor product) model</a></li>
+    <li><a class="dropdown-item" href="../articles/non-separable-model.html">Non-Separable Space-Time Models(Advection-Diffusion)</a></li>
+    <li><a class="dropdown-item" href="../articles/cross-validation.html">Cross-validation for ngme2 models</a></li>
     <li><a class="dropdown-item" href="../articles/replicate.html">Models with replicates</a></li>
+    <li><a class="dropdown-item" href="../articles/bivariate.html">Bivariate type-G models</a></li>
     <li><a class="dropdown-item" href="../articles/pred-and-est.html">Model estimation and prediction</a></li>
-    <li><a class="dropdown-item" href="../articles/bivariate.html">Bivariate models in Ngme2</a></li>
-    <li><a class="dropdown-item" href="../articles/random-effect.html">Random effects model in Ngme2</a></li>
-    <li><a class="dropdown-item" href="../articles/tensor-product.html">Space-time (tensor product) model in Ngme2</a></li>
     <li><a class="dropdown-item" href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a></li>
-    <li><a class="dropdown-item" href="../articles/cross-validation.html">Cross-validation for the ngme2 models</a></li>
     <li><a class="dropdown-item" href="../articles/generic.html">Using the Generic Model in ngme2</a></li>
+    <li><a class="dropdown-item" href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -540,14 +540,14 @@ window)</caption>
 <td align="right">2.5949</td>
 <td align="right">11.2821</td>
 <td align="right">1.8346</td>
-<td align="right">1.6420</td>
+<td align="right">1.642</td>
 </tr>
 <tr class="even">
 <td align="left">Whittle-Matérn (ν=1.5)</td>
-<td align="right">5.4258</td>
-<td align="right">51.0274</td>
-<td align="right">3.8047</td>
-<td align="right">1.9919</td>
+<td align="right">5.4638</td>
+<td align="right">51.8733</td>
+<td align="right">3.8706</td>
+<td align="right">1.997</td>
 </tr>
 </tbody>
 </table>
@@ -1244,15 +1244,15 @@ test, 5 repetitions)</caption>
 <td align="left">Stationary SPDE</td>
 <td align="right">1.3966</td>
 <td align="right">3.9631</td>
-<td align="right">1.1182</td>
-<td align="right">1.7385</td>
+<td align="right">1.1184</td>
+<td align="right">1.7393</td>
 </tr>
 <tr class="even">
 <td align="left">Non-stationary SPDE</td>
-<td align="right">1.3958</td>
-<td align="right">3.9618</td>
-<td align="right">1.2528</td>
-<td align="right">3.7385</td>
+<td align="right">1.3961</td>
+<td align="right">3.9623</td>
+<td align="right">1.1859</td>
+<td align="right">2.3799</td>
 </tr>
 </tbody>
 </table>

@@ -1123,9 +1123,9 @@ extract_parameters <- function(ngme_object) {
   }
 
   # FIXED EFFECTS and MEASUREMENT NOISE
-  fixed_effects <- ngme_1rep$feff
-  result_transformed$data$fixed_effects <- fixed_effects
-  result_raw$data$fixed_effects <- fixed_effects
+  beta <- ngme_1rep$feff
+  result_transformed$data$beta <- beta
+  result_raw$data$beta <- beta
 
   m_noise <- ngme_1rep$noise
   m_noise_params_transformed <- list()

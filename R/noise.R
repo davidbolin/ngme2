@@ -217,7 +217,7 @@ noise_normal <- normal <- function(
 
   # both are null, use default value
   if (is.null(sd) && is.null(theta_sigma)) {
-    theta_sigma <- 0
+    theta_sigma <- rep(0, ncol(B_sigma))
   }
 
   if (!is.null(sd)) {
@@ -266,9 +266,9 @@ noise_nig <- nig <- function(
     ...) {
   # if nothing, then fill with default
   stopifnot("Please use theta_mu for non-stationary mu." = length(mu) < 2)
-  if (is.null(mu) && is.null(theta_mu)) theta_mu <- 0
-  if (is.null(sigma) && is.null(theta_sigma)) theta_sigma <- 0
-  if (is.null(nu) && is.null(theta_nu)) theta_nu <- 0
+  if (is.null(mu) && is.null(theta_mu)) theta_mu <- rep(0, ncol(B_mu))
+  if (is.null(sigma) && is.null(theta_sigma)) theta_sigma <- rep(0, ncol(B_sigma))
+  if (is.null(nu) && is.null(theta_nu)) theta_nu <- rep(0, ncol(B_nu))
 
   if (!is.null(nu) && nu <= 0) stop("ngme_nosie: nu should be positive.")
   if (!is.null(sigma) && sigma <= 0) stop("ngme_nosie: sigma should be positive.")
@@ -314,9 +314,9 @@ noise_gal <- gal <- function(
     ...) {
   # if nothing, then fill with default
   stopifnot("Please use theta_mu for non-stationary mu." = length(mu) < 2)
-  if (is.null(mu) && is.null(theta_mu)) theta_mu <- 0
-  if (is.null(sigma) && is.null(theta_sigma)) theta_sigma <- 0
-  if (is.null(nu) && is.null(theta_nu)) theta_nu <- 0
+  if (is.null(mu) && is.null(theta_mu)) theta_mu <- rep(0, ncol(B_mu))
+  if (is.null(sigma) && is.null(theta_sigma)) theta_sigma <- rep(0, ncol(B_sigma))
+  if (is.null(nu) && is.null(theta_nu)) theta_nu <- rep(0, ncol(B_nu))
 
   if (!is.null(nu) && nu <= 0) stop("ngme_nosie: nu should be positive.")
   if (!is.null(sigma) && sigma <= 0) stop("ngme_nosie: sigma should be positive.")
@@ -361,9 +361,9 @@ noise_skew_t <- skew_t_noise <- function(
     ...) {
   # if nothing, then fill with default
   stopifnot("Please use theta_mu for non-stationary mu." = length(mu) < 2)
-  if (is.null(mu) && is.null(theta_mu)) theta_mu <- 0
-  if (is.null(sigma) && is.null(theta_sigma)) theta_sigma <- 0
-  if (is.null(nu) && is.null(theta_nu)) theta_nu <- log(5) # default to 5 degrees of freedom
+  if (is.null(mu) && is.null(theta_mu)) theta_mu <- rep(0, ncol(B_mu))
+  if (is.null(sigma) && is.null(theta_sigma)) theta_sigma <- rep(0, ncol(B_sigma))
+  if (is.null(nu) && is.null(theta_nu)) theta_nu <- rep(log(5), ncol(B_nu)) # default to 5 degrees of freedom
 
   if (!is.null(nu) && nu <= 0) stop("ngme_noise: nu (degrees of freedom) should be positive.")
   if (!is.null(sigma) && sigma <= 0) stop("ngme_noise: sigma should be positive.")
@@ -401,7 +401,7 @@ noise_t <- t_noise <- function(
     index_corr = NULL,
     ...) {
   # if nothing, then fill with default
-  if (is.null(nu) && is.null(theta_nu)) theta_nu <- log(5) # default to 5 degrees of freedom
+  if (is.null(nu) && is.null(theta_nu)) theta_nu <- rep(log(5), ncol(B_nu)) # default to 5 degrees of freedom
 
   if (!is.null(nu) && nu <= 0) stop("ngme_noise: nu (degrees of freedom) should be positive.")
 
@@ -518,10 +518,10 @@ noise_normal_nig <- normal_nig <- function(
     ...) {
   # if nothing, then fill with default
   stopifnot("Please use theta_mu for non-stationary mu." = length(mu) < 2)
-  if (is.null(mu) && is.null(theta_mu)) theta_mu <- 0
-  if (is.null(sigma_nig) && is.null(theta_sigma_nig)) theta_sigma_nig <- 0
-  if (is.null(nu) && is.null(theta_nu)) theta_nu <- 0
-  if (is.null(sigma_normal) && is.null(theta_sigma_normal)) theta_sigma_normal <- 0
+  if (is.null(mu) && is.null(theta_mu)) theta_mu <- rep(0, ncol(B_mu))
+  if (is.null(sigma_nig) && is.null(theta_sigma_nig)) theta_sigma_nig <- rep(0, ncol(B_sigma_nig))
+  if (is.null(nu) && is.null(theta_nu)) theta_nu <- rep(0, ncol(B_nu))
+  if (is.null(sigma_normal) && is.null(theta_sigma_normal)) theta_sigma_normal <- rep(0, ncol(B_sigma_normal))
 
   if (!is.null(nu) && nu <= 0) stop("ngme_nosie: nu should be positive.")
   if (!is.null(sigma_nig) && sigma_nig <= 0) stop("ngme_nosie: sigma_nig should be positive.")
@@ -648,8 +648,9 @@ print.ngme_noise <- function(
         })
         if (noise$nu_lower_bound > 0 && length(noise$theta_nu) > 0) {
           lb_txt <- paste0(" (lower bound ", format(noise$nu_lower_bound, digits = 3), ")")
-          params <- sub("(nu = [^\\n]+)", paste0("\\1", lb_txt), params)
-          params <- sub("(theta_nu = [^\\n]+)", paste0("\\1", lb_txt), params)
+          params <- sub("(nu = [^\\n]+)", paste0("\\1", lb_txt), params, perl = TRUE)
+          params <- sub("(theta_nu = [^\\n]+)", paste0("\\1", lb_txt), params, perl = TRUE)
+          params <- sub("\\(lower bound ([0-9.]+)\\)\\s*\\(lower bound [0-9.]+\\)", "(lower bound \\1)", params, perl = TRUE)
         }
         cat(params)
       }

@@ -543,7 +543,8 @@ VectorXd BlockModel::grad_theta_merr() {
   if (!fix_flag[block_fix_theta_nu]) {
     grad.segment(n_theta_mu + n_theta_sigma, n_theta_nu) =
         -NoiseUtil::grad_theta_nu(family, B_nu, noise_nu, noise_V, noise_prevV,
-                                  VectorXd::Ones(noise_V.size()), nu_lower_bound);
+                                  VectorXd::Ones(noise_V.size()),
+                                  nu_lower_bound);
     // add prior
     // grad(n_theta_mu + n_theta_sigma) -= PriorUtil::d_log_dens(prior_nu_type,
     // prior_nu_param, noise_nu);
@@ -1105,10 +1106,9 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
           // Use the same analytic form as latent: H_nu = - B_nu^T diag(nu ⊙ c)
           // B_nu for NIG, and the appropriate GAL/t variants handled inside
           // NoiseUtil.
-          MatrixXd Hnu =
-              -NoiseUtil::hess_theta_nu(family, B_nu, noise_nu, noise_V,
-                                        VectorXd::Ones(noise_V.size()),
-                                        nu_lower_bound);
+          MatrixXd Hnu = -NoiseUtil::hess_theta_nu(
+              family, B_nu, noise_nu, noise_V, VectorXd::Ones(noise_V.size()),
+              nu_lower_bound);
           precond_sum.block(n_la_params + n_theta_mu + n_theta_sigma,
                             n_la_params + n_theta_mu + n_theta_sigma,
                             n_theta_nu, n_theta_nu) += Hnu;

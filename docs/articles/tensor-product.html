@@ -27,7 +27,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">ngme2</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -46,15 +46,15 @@
     <li><a class="dropdown-item" href="../articles/RW-model.html">Random walk model</a></li>
     <li><a class="dropdown-item" href="../articles/ou-process.html">Ornstein-Uhlenbeck process</a></li>
     <li><a class="dropdown-item" href="../articles/SPDE-model.html">SPDE Matern model</a></li>
-    <li><a class="dropdown-item" href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a></li>
+    <li><a class="dropdown-item" href="../articles/tensor-product.html">Space-time (tensor product) model</a></li>
+    <li><a class="dropdown-item" href="../articles/non-separable-model.html">Non-Separable Space-Time Models(Advection-Diffusion)</a></li>
+    <li><a class="dropdown-item" href="../articles/cross-validation.html">Cross-validation for ngme2 models</a></li>
     <li><a class="dropdown-item" href="../articles/replicate.html">Models with replicates</a></li>
+    <li><a class="dropdown-item" href="../articles/bivariate.html">Bivariate type-G models</a></li>
     <li><a class="dropdown-item" href="../articles/pred-and-est.html">Model estimation and prediction</a></li>
-    <li><a class="dropdown-item" href="../articles/bivariate.html">Bivariate models in Ngme2</a></li>
-    <li><a class="dropdown-item" href="../articles/random-effect.html">Random effects model in Ngme2</a></li>
-    <li><a class="dropdown-item" href="../articles/tensor-product.html">Space-time (tensor product) model in Ngme2</a></li>
     <li><a class="dropdown-item" href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a></li>
-    <li><a class="dropdown-item" href="../articles/cross-validation.html">Cross-validation for the ngme2 models</a></li>
     <li><a class="dropdown-item" href="../articles/generic.html">Using the Generic Model in ngme2</a></li>
+    <li><a class="dropdown-item" href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -322,7 +322,7 @@ years and 2D spatial locations.</p>
 <span><span class="co"># Generate example data</span></span>
 <span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">10</span></span>
 <span><span class="va">time</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fl">2001</span><span class="op">:</span><span class="fl">2004</span>, <span class="va">n</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="va">loc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span><span class="op">)</span> <span class="op">*</span> <span class="fl">10</span></span>
+<span><span class="va">loc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/spam/man/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span><span class="op">)</span> <span class="op">*</span> <span class="fl">10</span></span>
 <span></span>
 <span><span class="co"># Display the space-time observation structure</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
@@ -368,7 +368,7 @@ resolution)</li>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Create spatial mesh</span></span>
 <span><span class="va">mesh_spatial</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://inlabru-org.github.io/fmesher/reference/fm_mesh_2d.html" class="external-link">fm_mesh_2d</a></span><span class="op">(</span></span>
-<span>  loc.domain <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span></span>
+<span>  loc.domain <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/spam/man/cbind.html" class="external-link">cbind</a></span><span class="op">(</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">10</span>, <span class="fl">10</span>, <span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span>, <span class="co"># x range: 0 to 10</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">10</span>, <span class="fl">10</span>, <span class="fl">0</span><span class="op">)</span> <span class="co"># y range: 0 to 10 (to cover all points)</span></span>
 <span>  <span class="op">)</span>,</span>
@@ -463,7 +463,7 @@ locations:</p>
 <span><span class="co"># Create finer spatial mesh for simulation</span></span>
 <span><span class="co"># Important: Define mesh boundaries based on data generation range</span></span>
 <span><span class="va">mesh2d</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://inlabru-org.github.io/fmesher/reference/fm_mesh_2d.html" class="external-link">fm_mesh_2d</a></span><span class="op">(</span></span>
-<span>  loc.domain <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span></span>
+<span>  loc.domain <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/spam/man/cbind.html" class="external-link">cbind</a></span><span class="op">(</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">10</span>, <span class="fl">10</span>, <span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span>, <span class="co"># x boundaries: 0 to 10</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">5</span>, <span class="fl">5</span>, <span class="fl">0</span><span class="op">)</span> <span class="co"># y boundaries: 0 to 5</span></span>
 <span>  <span class="op">)</span>,</span>
@@ -1101,7 +1101,7 @@ observed in the training data:</p>
 <span><span class="va">interp_years</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fl">2001</span><span class="op">:</span><span class="fl">2006</span>, <span class="fl">15</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Generate random spatial locations within the domain</span></span>
-<span><span class="va">interp_locs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span></span>
+<span><span class="va">interp_locs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/spam/man/cbind.html" class="external-link">cbind</a></span><span class="op">(</span></span>
 <span>  x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">15</span><span class="op">)</span> <span class="op">*</span> <span class="fl">10</span>,</span>
 <span>  y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">15</span><span class="op">)</span> <span class="op">*</span> <span class="fl">5</span></span>
 <span><span class="op">)</span></span>
@@ -1158,47 +1158,47 @@ observed years)</caption>
 <td align="right">2005</td>
 <td align="right">6.45</td>
 <td align="right">3.32</td>
-<td align="right">0.285</td>
-<td align="right">0.438</td>
+<td align="right">0.276</td>
+<td align="right">0.385</td>
 </tr>
 <tr class="even">
 <td align="right">2</td>
 <td align="right">2004</td>
 <td align="right">7.70</td>
 <td align="right">2.45</td>
-<td align="right">0.264</td>
-<td align="right">0.230</td>
+<td align="right">0.250</td>
+<td align="right">0.238</td>
 </tr>
 <tr class="odd">
 <td align="right">3</td>
 <td align="right">2004</td>
 <td align="right">1.11</td>
 <td align="right">1.36</td>
-<td align="right">0.518</td>
-<td align="right">0.439</td>
+<td align="right">0.485</td>
+<td align="right">0.440</td>
 </tr>
 <tr class="even">
 <td align="right">4</td>
 <td align="right">2006</td>
 <td align="right">3.44</td>
 <td align="right">2.18</td>
-<td align="right">0.771</td>
-<td align="right">0.301</td>
+<td align="right">0.813</td>
+<td align="right">0.305</td>
 </tr>
 <tr class="odd">
 <td align="right">5</td>
 <td align="right">2002</td>
 <td align="right">4.47</td>
 <td align="right">2.91</td>
-<td align="right">0.258</td>
-<td align="right">0.299</td>
+<td align="right">0.245</td>
+<td align="right">0.311</td>
 </tr>
 <tr class="even">
 <td align="right">6</td>
 <td align="right">2002</td>
 <td align="right">1.58</td>
 <td align="right">1.41</td>
-<td align="right">0.253</td>
+<td align="right">0.203</td>
 <td align="right">0.363</td>
 </tr>
 <tr class="odd">
@@ -1206,72 +1206,72 @@ observed years)</caption>
 <td align="right">2003</td>
 <td align="right">3.03</td>
 <td align="right">1.09</td>
-<td align="right">1.241</td>
-<td align="right">0.298</td>
+<td align="right">1.227</td>
+<td align="right">0.300</td>
 </tr>
 <tr class="even">
 <td align="right">8</td>
 <td align="right">2005</td>
 <td align="right">4.29</td>
 <td align="right">3.71</td>
-<td align="right">0.597</td>
-<td align="right">0.358</td>
+<td align="right">0.584</td>
+<td align="right">0.350</td>
 </tr>
 <tr class="odd">
 <td align="right">9</td>
 <td align="right">2004</td>
 <td align="right">5.17</td>
 <td align="right">1.21</td>
-<td align="right">-0.119</td>
-<td align="right">0.335</td>
+<td align="right">-0.114</td>
+<td align="right">0.330</td>
 </tr>
 <tr class="even">
 <td align="right">10</td>
 <td align="right">2003</td>
 <td align="right">3.13</td>
 <td align="right">3.94</td>
-<td align="right">0.886</td>
-<td align="right">0.357</td>
+<td align="right">0.868</td>
+<td align="right">0.348</td>
 </tr>
 <tr class="odd">
 <td align="right">11</td>
 <td align="right">2003</td>
 <td align="right">4.96</td>
 <td align="right">3.76</td>
-<td align="right">0.714</td>
-<td align="right">0.286</td>
+<td align="right">0.764</td>
+<td align="right">0.281</td>
 </tr>
 <tr class="even">
 <td align="right">12</td>
 <td align="right">2003</td>
 <td align="right">8.23</td>
 <td align="right">4.99</td>
-<td align="right">0.406</td>
-<td align="right">0.384</td>
+<td align="right">0.349</td>
+<td align="right">0.409</td>
 </tr>
 <tr class="odd">
 <td align="right">13</td>
 <td align="right">2006</td>
 <td align="right">5.03</td>
 <td align="right">0.98</td>
-<td align="right">0.570</td>
-<td align="right">0.302</td>
+<td align="right">0.593</td>
+<td align="right">0.317</td>
 </tr>
 <tr class="even">
 <td align="right">14</td>
 <td align="right">2004</td>
 <td align="right">2.19</td>
 <td align="right">0.82</td>
-<td align="right">0.649</td>
-<td align="right">0.344</td>
+<td align="right">0.652</td>
+<td align="right">0.372</td>
 </tr>
 <tr class="odd">
 <td align="right">15</td>
 <td align="right">2001</td>
 <td align="right">2.78</td>
 <td align="right">3.22</td>
-<td align="right">0.274</td>
-<td align="right">0.382</td>
+<td align="right">0.325</td>
+<td align="right">0.397</td>
 </tr>
 </tbody>
 </table>
@@ -1291,7 +1291,7 @@ temporal patterns:</p>
 <span><span class="va">sample_idx</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_sim</span><span class="op">)</span>, <span class="va">n_temporal_interp</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Use their spatial locations</span></span>
-<span><span class="va">temporal_interp_locs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span></span>
+<span><span class="va">temporal_interp_locs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/spam/man/cbind.html" class="external-link">cbind</a></span><span class="op">(</span></span>
 <span>  x <span class="op">=</span> <span class="va">data_sim</span><span class="op">$</span><span class="va">x</span><span class="op">[</span><span class="va">sample_idx</span><span class="op">]</span>,</span>
 <span>  y <span class="op">=</span> <span class="va">data_sim</span><span class="op">$</span><span class="va">y</span><span class="op">[</span><span class="va">sample_idx</span><span class="op">]</span></span>
 <span><span class="op">)</span></span>
@@ -1359,19 +1359,19 @@ years)</caption>
 <td align="right">2001</td>
 <td align="right">8.11</td>
 <td align="right">0.84</td>
-<td align="right">0.145</td>
-<td align="right">0.338</td>
-<td align="right">-0.469</td>
-<td align="right">0.620</td>
+<td align="right">0.126</td>
+<td align="right">0.348</td>
+<td align="right">-0.511</td>
+<td align="right">0.605</td>
 </tr>
 <tr class="even">
 <td align="right">1</td>
 <td align="right">2002</td>
 <td align="right">8.11</td>
 <td align="right">0.84</td>
-<td align="right">0.120</td>
-<td align="right">0.269</td>
-<td align="right">-0.359</td>
+<td align="right">0.111</td>
+<td align="right">0.283</td>
+<td align="right">-0.361</td>
 <td align="right">0.552</td>
 </tr>
 <tr class="odd">
@@ -1379,40 +1379,40 @@ years)</caption>
 <td align="right">2003</td>
 <td align="right">8.11</td>
 <td align="right">0.84</td>
-<td align="right">-0.441</td>
-<td align="right">0.418</td>
-<td align="right">-1.201</td>
-<td align="right">0.126</td>
+<td align="right">-0.428</td>
+<td align="right">0.420</td>
+<td align="right">-1.174</td>
+<td align="right">0.122</td>
 </tr>
 <tr class="even">
 <td align="right">1</td>
 <td align="right">2004</td>
 <td align="right">8.11</td>
 <td align="right">0.84</td>
-<td align="right">0.088</td>
-<td align="right">0.353</td>
-<td align="right">-0.534</td>
-<td align="right">0.619</td>
+<td align="right">0.105</td>
+<td align="right">0.343</td>
+<td align="right">-0.501</td>
+<td align="right">0.615</td>
 </tr>
 <tr class="odd">
 <td align="right">1</td>
 <td align="right">2005</td>
 <td align="right">8.11</td>
 <td align="right">0.84</td>
-<td align="right">0.241</td>
-<td align="right">0.306</td>
-<td align="right">-0.294</td>
-<td align="right">0.695</td>
+<td align="right">0.237</td>
+<td align="right">0.299</td>
+<td align="right">-0.297</td>
+<td align="right">0.683</td>
 </tr>
 <tr class="even">
 <td align="right">1</td>
 <td align="right">2006</td>
 <td align="right">8.11</td>
 <td align="right">0.84</td>
-<td align="right">0.064</td>
-<td align="right">0.417</td>
-<td align="right">-0.700</td>
-<td align="right">0.656</td>
+<td align="right">0.110</td>
+<td align="right">0.398</td>
+<td align="right">-0.623</td>
+<td align="right">0.666</td>
 </tr>
 </tbody>
 </table>
@@ -1616,7 +1616,7 @@ must include the forecast year to enable prediction:</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Starting posterior sampling... </span></span>
 <span><span class="co">#&gt; Posterior sampling done! </span></span>
-<span><span class="co">#&gt; Average standard deviation of the posterior W:  0.8175046 </span></span>
+<span><span class="co">#&gt; Average standard deviation of the posterior W:  0.8133783 </span></span>
 <span><span class="co">#&gt; Note:</span></span>
 <span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
 <span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span></code></pre></div>
@@ -1627,7 +1627,7 @@ must include the forecast year to enable prediction:</p>
 <p>We forecast year 2006 at the observed test locations:</p>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Extract test locations</span></span>
-<span><span class="va">test_locs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">data_test</span><span class="op">$</span><span class="va">x</span>, y <span class="op">=</span> <span class="va">data_test</span><span class="op">$</span><span class="va">y</span><span class="op">)</span></span>
+<span><span class="va">test_locs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/spam/man/cbind.html" class="external-link">cbind</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">data_test</span><span class="op">$</span><span class="va">x</span>, y <span class="op">=</span> <span class="va">data_test</span><span class="op">$</span><span class="va">y</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Forecast at test locations</span></span>
 <span><span class="va">forecast_results</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span></span>
@@ -1691,10 +1691,10 @@ Observations)</caption>
 <td align="right">8.12</td>
 <td align="right">0.85</td>
 <td align="right">-0.868</td>
-<td align="right">0.051</td>
-<td align="right">0.248</td>
-<td align="right">-0.371</td>
-<td align="right">0.445</td>
+<td align="right">0.041</td>
+<td align="right">0.282</td>
+<td align="right">-0.403</td>
+<td align="right">0.502</td>
 </tr>
 <tr class="even">
 <td align="right">2</td>
@@ -1702,10 +1702,10 @@ Observations)</caption>
 <td align="right">3.66</td>
 <td align="right">4.64</td>
 <td align="right">1.085</td>
-<td align="right">0.807</td>
-<td align="right">0.313</td>
-<td align="right">0.286</td>
-<td align="right">1.270</td>
+<td align="right">0.882</td>
+<td align="right">0.306</td>
+<td align="right">0.381</td>
+<td align="right">1.361</td>
 </tr>
 <tr class="odd">
 <td align="right">3</td>
@@ -1713,10 +1713,10 @@ Observations)</caption>
 <td align="right">9.57</td>
 <td align="right">3.96</td>
 <td align="right">0.190</td>
-<td align="right">-0.016</td>
-<td align="right">0.315</td>
-<td align="right">-0.531</td>
-<td align="right">0.518</td>
+<td align="right">-0.046</td>
+<td align="right">0.327</td>
+<td align="right">-0.593</td>
+<td align="right">0.450</td>
 </tr>
 <tr class="even">
 <td align="right">4</td>
@@ -1724,10 +1724,10 @@ Observations)</caption>
 <td align="right">7.02</td>
 <td align="right">3.58</td>
 <td align="right">1.601</td>
-<td align="right">0.576</td>
-<td align="right">0.243</td>
-<td align="right">0.163</td>
-<td align="right">0.948</td>
+<td align="right">0.597</td>
+<td align="right">0.234</td>
+<td align="right">0.210</td>
+<td align="right">0.957</td>
 </tr>
 <tr class="odd">
 <td align="right">5</td>
@@ -1735,10 +1735,10 @@ Observations)</caption>
 <td align="right">7.08</td>
 <td align="right">0.35</td>
 <td align="right">0.039</td>
-<td align="right">-0.364</td>
-<td align="right">0.318</td>
-<td align="right">-0.879</td>
-<td align="right">0.141</td>
+<td align="right">-0.299</td>
+<td align="right">0.336</td>
+<td align="right">-0.845</td>
+<td align="right">0.224</td>
 </tr>
 <tr class="even">
 <td align="right">6</td>
@@ -1746,10 +1746,10 @@ Observations)</caption>
 <td align="right">2.25</td>
 <td align="right">3.74</td>
 <td align="right">0.400</td>
-<td align="right">1.036</td>
-<td align="right">0.230</td>
-<td align="right">0.664</td>
-<td align="right">1.410</td>
+<td align="right">1.017</td>
+<td align="right">0.241</td>
+<td align="right">0.619</td>
+<td align="right">1.395</td>
 </tr>
 <tr class="odd">
 <td align="right">7</td>
@@ -1757,10 +1757,10 @@ Observations)</caption>
 <td align="right">5.76</td>
 <td align="right">3.98</td>
 <td align="right">0.427</td>
-<td align="right">0.465</td>
-<td align="right">0.269</td>
-<td align="right">0.015</td>
-<td align="right">0.833</td>
+<td align="right">0.413</td>
+<td align="right">0.249</td>
+<td align="right">-0.016</td>
+<td align="right">0.786</td>
 </tr>
 <tr class="even">
 <td align="right">8</td>
@@ -1768,9 +1768,9 @@ Observations)</caption>
 <td align="right">0.06</td>
 <td align="right">4.58</td>
 <td align="right">0.161</td>
-<td align="right">0.200</td>
-<td align="right">0.332</td>
-<td align="right">-0.343</td>
+<td align="right">0.181</td>
+<td align="right">0.341</td>
+<td align="right">-0.386</td>
 <td align="right">0.745</td>
 </tr>
 <tr class="odd">
@@ -1779,10 +1779,10 @@ Observations)</caption>
 <td align="right">2.54</td>
 <td align="right">4.69</td>
 <td align="right">1.008</td>
-<td align="right">0.821</td>
-<td align="right">0.335</td>
-<td align="right">0.272</td>
-<td align="right">1.321</td>
+<td align="right">0.937</td>
+<td align="right">0.357</td>
+<td align="right">0.358</td>
+<td align="right">1.518</td>
 </tr>
 <tr class="even">
 <td align="right">10</td>
@@ -1790,10 +1790,10 @@ Observations)</caption>
 <td align="right">7.29</td>
 <td align="right">1.07</td>
 <td align="right">-0.769</td>
-<td align="right">-0.123</td>
-<td align="right">0.253</td>
-<td align="right">-0.559</td>
-<td align="right">0.263</td>
+<td align="right">-0.074</td>
+<td align="right">0.273</td>
+<td align="right">-0.510</td>
+<td align="right">0.377</td>
 </tr>
 </tbody>
 </table>
@@ -1816,11 +1816,11 @@ Observations)</caption>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"RMSE:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">rmse_forecast</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; RMSE: 0.828</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"MAE:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">mae_forecast</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; MAE: 0.637</span></span>
+<span><span class="co">#&gt; MAE: 0.631</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Correlation:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">correlation_forecast</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Correlation: 0.08</span></span>
+<span><span class="co">#&gt; Correlation: 0.086</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"90% Interval Coverage:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">coverage_90</span> <span class="op">*</span> <span class="fl">100</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"%\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 90% Interval Coverage: 46 %</span></span></code></pre></div>
+<span><span class="co">#&gt; 90% Interval Coverage: 45 %</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="temporal-forecast-visualization">Temporal Forecast Visualization<a class="anchor" aria-label="anchor" href="#temporal-forecast-visualization"></a>
@@ -2002,7 +2002,7 @@ dataset:</p>
 <span>  map <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    spacetime_field <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>      year <span class="op">=</span> <span class="va">data_sim</span><span class="op">$</span><span class="va">year</span>,</span>
-<span>      pos <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">data_sim</span><span class="op">$</span><span class="va">x</span>, <span class="va">data_sim</span><span class="op">$</span><span class="va">y</span><span class="op">)</span></span>
+<span>      pos <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/spam/man/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">data_sim</span><span class="op">$</span><span class="va">x</span>, <span class="va">data_sim</span><span class="op">$</span><span class="va">y</span><span class="op">)</span></span>
 <span>    <span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>

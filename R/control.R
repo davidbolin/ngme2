@@ -45,7 +45,8 @@
 #' @param max_absolute_step   max absolute step allowed in 1 iteration
 #' @param trend_std_conv_check enable the trend/std diagnostic (uses \code{std_lim}, \code{trend_lim}, \code{n_slope_check})
 #' @param solver_backend backend in ("eigen", "cholmod", "accelerate", "pardiso")
-#' @param solver_type factorization type: "llt" or "ldlt"
+#' @param solver_type factorization type: "llt", "ldlt", or "qr" (eigen backend only)
+#' @param solver_factor deprecated alias for \code{solver_type}
 #' @param rao_blackwellization  use rao_blackwellization
 #' @param n_trace_iter  use how many iterations to approximate the trace (Hutchinson’s trick)
 #'
@@ -81,6 +82,7 @@ control_opt <- function(
     sampling_strategy = "all",
     solver_backend = if (Sys.info()["sysname"] == "Darwin") "accelerate" else "cholmod",
     solver_type = "llt",
+    solver_factor = NULL,
     # opt print
     verbose = FALSE,
     store_traj = TRUE,
@@ -97,7 +99,17 @@ control_opt <- function(
   strategy_list <- c("all", "ws")
   preconditioner_list <- c("none", "fast", "full")
   solver_backend_list <- c("eigen", "cholmod", "accelerate", "pardiso")
-  solver_factor_list <- c("llt", "ldlt")
+  solver_factor_list <- c("llt", "ldlt", "qr")
+
+  if (!missing(solver_factor) && !is.null(solver_factor)) {
+    if (!missing(solver_type) && solver_type != solver_factor) {
+      stop("Provide only one of solver_type or solver_factor (deprecated).")
+    }
+    solver_type <- solver_factor
+    warning("solver_factor is deprecated; use solver_type instead.",
+      call. = FALSE
+    )
+  }
 
   # read preconditioner from optimizer
   preconditioner <- "none"
@@ -141,6 +153,9 @@ control_opt <- function(
   if (!is_mac && solver_backend == "accelerate") {
     stop("solver_backend 'accelerate' is only available on macOS")
   }
+  if (solver_factor == "qr" && solver_backend != "eigen") {
+    stop("solver_type 'qr' is only supported with solver_backend 'eigen'")
+  }
 
   stopifnot(
     sampling_strategy %in% strategy_list,
@@ -156,7 +171,7 @@ control_opt <- function(
       n_slope_check > 0 && n_slope_check <= n_batch,
     inherits(optimizer, "ngme_optimizer"),
     "solver backend must map to 0:3" = solver_backend_idx %in% 0:3,
-    "solver factor must be 0 (llt) or 1 (ldlt)" = solver_factor_idx %in% 0:1,
+    "solver factor must be 0 (llt), 1 (ldlt), or 2 (qr)" = solver_factor_idx %in% 0:2,
     is.numeric(pflug_alpha) && length(pflug_alpha) == 1 && pflug_alpha > 0 && pflug_alpha <= 1
   )
 

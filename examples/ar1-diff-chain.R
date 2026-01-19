@@ -1,4 +1,5 @@
 library(ngme2)
+load_all()
 seed <- 500
 set.seed(seed)
 
@@ -36,7 +37,7 @@ Y <- process + rnorm(n_obs, sd = sigma_eps)
 control_same <- control_opt(
   optimizer = precond_sgd(),
   burnin = 100,
-  iterations = 2000,
+  iterations = 300,
   n_parallel_chain = 4,
   verbose = TRUE,
   rao_blackwellization = TRUE,
@@ -44,6 +45,8 @@ control_same <- control_opt(
   print_check_info = TRUE,
   n_min_batch = 3,
   n_trace_iter = 30,
+  solver_backend = "eigen",
+  # solver_type = "qr",
   start_sd = 0.0,
   trend_std_conv_check = TRUE,
   std_lim = 0.01,

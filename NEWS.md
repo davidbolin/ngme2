@@ -3,6 +3,7 @@
 * Allow NULL specification for noise parameter in non-stationary case
 * Update fixed effects initialization
 * Update start=fit logic
+* Add Eigen SparseQR backend option (solver_backend = "eigen", solver_type = "qr")
 
 # ngme2 0.8.2 (2025-12-02)
 * Add support for different type of ldlt solvers

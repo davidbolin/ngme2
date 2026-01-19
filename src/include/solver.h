@@ -8,6 +8,7 @@
 #include "MatrixAlgebra.h"
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
+#include <Eigen/SparseQR>
 #include <cholmod.h>
 #include <iostream>
 #include <stdexcept>
@@ -25,6 +26,9 @@ class sparse_llt_solver {
 private:
   Eigen::SimplicialLLT<Eigen::SparseMatrix<double, 0, int>> R_eigen;
   Eigen::SimplicialLDLT<Eigen::SparseMatrix<double, 0, int>> R_ldlt;
+  Eigen::SparseQR<Eigen::SparseMatrix<double, 0, int>,
+                  Eigen::COLAMDOrdering<int>>
+      R_sparseqr;
   Eigen::CholmodDecomposition<Eigen::SparseMatrix<double, 0, int>>
       R_cholmod_ldlt;
   Eigen::CholmodSupernodalLLT<Eigen::SparseMatrix<double, 0, int>> R_supernodal;
@@ -97,6 +101,13 @@ public:
         R_cholmod_ldlt.analyzePattern(M);
       } else {
         R_cholmod_ldlt.analyzePattern(M.transpose() * M);
+      }
+      break;
+    case 8:
+      if (isSymmetric) {
+        R_sparseqr.analyzePattern(M);
+      } else {
+        R_sparseqr.analyzePattern(M.transpose() * M);
       }
       break;
 #ifdef __APPLE__
@@ -177,6 +188,14 @@ public:
         R_cholmod_ldlt.factorize(M.transpose() * M);
       }
       break;
+    case 8:
+      if (isSymmetric) {
+        R_sparseqr.factorize(M);
+      } else {
+        K_last = M;
+        R_sparseqr.factorize(M.transpose() * M);
+      }
+      break;
 #ifdef __APPLE__
     case 4:
       if (isSymmetric) {
@@ -234,6 +253,8 @@ public:
       return R_supernodal.info();
     case 3:
       return R_cholmod_ldlt.info();
+    case 8:
+      return R_sparseqr.info();
 #ifdef __APPLE__
     case 4:
       return R_accelerate.info();
@@ -282,6 +303,8 @@ public:
       return R_supernodal.solve(rhs);
     case 3:
       return R_cholmod_ldlt.solve(rhs);
+    case 8:
+      return R_sparseqr.solve(rhs);
 #ifdef __APPLE__
     case 4:
       return R_accelerate.solve(rhs);
@@ -318,6 +341,8 @@ public:
       return R_supernodal.solve(rhs);
     case 3:
       return R_cholmod_ldlt.solve(rhs);
+    case 8:
+      return R_sparseqr.solve(rhs);
 #ifdef __APPLE__
     case 4:
       return R_accelerate.solve(rhs);
@@ -356,6 +381,10 @@ public:
       return R_supernodal.solve(rhs);
     case 3:
       return R_cholmod_ldlt.solve(rhs);
+    case 8: {
+      Eigen::MatrixXd dense = R_sparseqr.solve(rhs.toDense());
+      return dense.sparseView();
+    }
 #ifdef __APPLE__
     case 4:
       return R_accelerate.solve(rhs);
@@ -393,6 +422,8 @@ public:
       return R_supernodal.logDeterminant();
     case 3:
       return R_cholmod_ldlt.logDeterminant();
+    case 8:
+      throw std::runtime_error("SparseQR logdet not implemented");
 #ifdef __APPLE__
     case 4:
       throw std::runtime_error("Accelerate solver not available");

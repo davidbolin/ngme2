@@ -43,7 +43,13 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
   auto map_solver_type = [](int backend, int factor) {
     switch (backend) {
     case 0: // eigen
-      return factor == 0 ? 0 : 1;
+      if (factor == 0)
+        return 0;
+      if (factor == 1)
+        return 1;
+      if (factor == 2)
+        return 8;
+      break;
     case 1:                  // cholmod
       return factor == 0 ? 2 /*LLT (supernodal)*/
                          : 3 /*LDLT via CholmodDecomposition*/;
@@ -54,6 +60,7 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
     default:
       throw std::invalid_argument("solver_backend out of range (expected 0-3)");
     }
+    throw std::invalid_argument("solver_type out of range for backend");
   };
 
   int solver_backend = control_ngme.containsElementNamed("solver_backend")

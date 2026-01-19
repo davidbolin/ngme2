@@ -24,6 +24,7 @@ control_opt(
   sampling_strategy = "all",
   solver_backend = if (Sys.info()["sysname"] == "Darwin") "accelerate" else "cholmod",
   solver_type = "llt",
+  solver_factor = NULL,
   verbose = FALSE,
   store_traj = TRUE,
   robust = FALSE,
@@ -86,7 +87,9 @@ If it is more than n_parallel_chain, the rest will be used to parallel different
 
 \item{solver_backend}{backend in ("eigen", "cholmod", "accelerate", "pardiso")}
 
-\item{solver_type}{factorization type: "llt" or "ldlt"}
+\item{solver_type}{factorization type: "llt", "ldlt", or "qr" (eigen backend only)}
+
+\item{solver_factor}{deprecated alias for \code{solver_type}}
 
 \item{verbose}{print estimation}
 

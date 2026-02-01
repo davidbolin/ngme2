@@ -9,4 +9,4 @@ Suggests: knitr, rmarkdown, INLA, dplyr, plyr, MASS, grid, testthat (>=
         lme4, plotly, usethis, devtools, MetricGraph (>= 1.1.2), zoo,
         mvtnorm, kableExtra
 License: GPL (>= 3) | file LICENSE
-MD5sum: a4c47777a40b86bb9feb854507ad0b27
+MD5sum: 572a05a407607eab35d63b916a31cddc

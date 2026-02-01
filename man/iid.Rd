@@ -4,10 +4,10 @@
 \alias{iid}
 \title{ngme iid model specification}
 \usage{
-iid(map = NULL)
+iid(mesh = NULL)
 }
 \arguments{
-\item{map}{integer or factor, index to build the mesh}
+\item{mesh}{integer or factor, index to build the mesh}
 }
 \value{
 ngme_operator object

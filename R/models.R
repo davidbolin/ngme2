@@ -2,21 +2,23 @@
 
 #' ngme iid model specification
 #'
-#' @param map integer or factor, index to build the mesh
+#' @param mesh integer or factor, index to build the mesh
 #'
 #' @return ngme_operator object
 #' @export
 #'
-iid <- function(map = NULL) {
-  if (is.null(map)) {
-    return(structure(list(model = "iid", args = list(...)), class = "ngme_operator_def"))
+iid <- function(mesh = NULL) {
+  if (is.null(mesh) || (is.list(mesh) && !inherits(mesh, "inla.mesh.1d"))) {
+    return(structure(list(model = "iid", args = as.list(environment())), class = "ngme_operator_def"))
   }
-  n <- length(levels(as.factor(map)))
+
+  mesh <- ngme_build_mesh(mesh, "iid")
+  n <- mesh$n
   K <- ngme_as_sparse(Matrix::Diagonal(n))
 
   ngme_operator(
     matrices = list(K),
-    mesh = fmesher::fm_mesh_1d(loc = 1:n),
+    mesh = mesh,
     model = "iid",
     theta_K = double(0),
     update_K = function(theta_K) {

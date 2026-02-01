@@ -60,7 +60,7 @@ noise_nig(
   theta_mu = NULL,
   theta_sigma = NULL,
   theta_nu = NULL,
-  nu_lower_bound = 0.01,
+  nu_lower_bound = 0,
   B_mu = matrix(1),
   B_sigma = matrix(1),
   B_nu = matrix(1),
@@ -105,7 +105,7 @@ noise_skew_t(
 noise_t(
   nu = NULL,
   theta_nu = NULL,
-  nu_lower_bound = 0.01,
+  nu_lower_bound = 0,
   B_nu = matrix(1),
   corr_measurement = FALSE,
   index_corr = NULL,

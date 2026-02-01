@@ -334,6 +334,31 @@ f <- function(
         # For non-generic operators, block-diagonalize K directly
         K_list <- lapply(operator_list, function(op) op$K)
         operator$K <- do.call(Matrix::bdiag, K_list)
+
+        # If the operator has component matrices, block-diagonalize them too
+        if (!is.null(operator_list[[1]]$C)) {
+          operator$C <- do.call(Matrix::bdiag, lapply(operator_list, function(op) op$C))
+        }
+        if (!is.null(operator_list[[1]]$G)) {
+          operator$G <- do.call(Matrix::bdiag, lapply(operator_list, function(op) op$G))
+        }
+        if (!is.null(operator_list[[1]]$Ci)) {
+          operator$Ci <- do.call(Matrix::bdiag, lapply(operator_list, function(op) op$Ci))
+        }
+        if (!is.null(operator_list[[1]]$B_K)) {
+          operator$B_K <- do.call(rbind, lapply(operator_list, function(op) op$B_K))
+        }
+        if (!is.null(operator_list[[1]]$Z)) {
+          operator$Z <- do.call(Matrix::bdiag, lapply(operator_list, function(op) op$Z))
+        }
+
+        # Update update_K to return block-diagonal K for shared parameters
+        if (!is.null(operator_list[[1]]$update_K)) {
+          operator$update_K <- function(theta_K) {
+            K_list <- lapply(operator_list, function(op) op$update_K(theta_K))
+            do.call(Matrix::bdiag, K_list)
+          }
+        }
       }
 
       # Update h vector

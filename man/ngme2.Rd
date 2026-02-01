@@ -8,7 +8,7 @@
 \description{
 \if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
 
-Inference and prediction for linear mixed effects models with flexible non-Gaussian and Gaussian distributions.
+Inference and prediction for linear latent non-Gaussian models with flexible non-Gaussian and Gaussian distributions.
 }
 \seealso{
 Useful links:

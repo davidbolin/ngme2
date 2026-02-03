@@ -4,18 +4,13 @@
 \alias{traceplot}
 \title{Trace plot of ngme fitting}
 \usage{
-traceplot(
-  ngme,
-  name = "general",
-  moving_window = 1,
-  hline = NULL,
-  combine = TRUE
-)
+traceplot(ngme, name = "all", moving_window = 1, hline = NULL, combine = TRUE)
 }
 \arguments{
 \item{ngme}{ngme object}
 
-\item{name}{name of latent models, otherwise plot fixed effects and measurement noise
+\item{name}{name of latent models, otherwise plot fixed effects and measurement noise.
+  Use \code{"all"} to plot all latent models plus data parameters in one figure.
 should be in names(ngme$models) or other}
 
 \item{moving_window}{moving window for the traceplot}

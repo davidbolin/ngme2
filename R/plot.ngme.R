@@ -357,7 +357,8 @@ plot.parameter_distance <- function(x, ...) {
 #' Trace plot of ngme fitting
 #'
 #' @param ngme ngme object
-#' @param name name of latent models, otherwise plot fixed effects and measurement noise
+#' @param name name of latent models, otherwise plot fixed effects and measurement noise.
+#'   Use \code{"all"} to plot all latent models plus data parameters in one figure.
 #' should be in names(ngme$models) or other
 #' @param moving_window moving window for the traceplot
 #' @param hline vector, add hline to each plot
@@ -368,29 +369,29 @@ plot.parameter_distance <- function(x, ...) {
 #'
 traceplot <- function(
     ngme,
-    name = "general",
+    name = "all",
     moving_window = 1,
     hline = NULL,
     combine = TRUE) {
   stopifnot(inherits(ngme, "ngme"))
   stopifnot(!is.null(name))
   if (combine && !requireNamespace("gridExtra", quietly = TRUE)) {
-    stop("Package 'gridExtra' is required for combined trace plots. ",
-      "Please install it with install.packages('gridExtra').")
+    stop(
+      "Package 'gridExtra' is required for combined trace plots. ",
+      "Please install it with install.packages('gridExtra')."
+    )
   }
   ngme <- ngme$replicates[[1]]
   ps <- list()
 
-  if (name %in% names(ngme$models)) {
-    # Plot trajectory of parameters of the model
-    traj <- attr(ngme$models[[name]], "lat_traj")
+  get_latent_traj_and_ts <- function(latent_obj, latent_name = NULL) {
+    traj <- attr(latent_obj, "lat_traj")
     stopifnot(
       "Please run ngme() to estimate the model before using traceplot()" = !is.null(traj)
     )
-    ts <- get_latent_info(ngme$models[[name]])
+    ts <- get_latent_info(latent_obj)
 
     # Special handling for ARMA(p,q<=2): convert raw (PACF) to AR/MA coefficients
-    latent_obj <- ngme$models[[name]]
     if (!is.null(latent_obj$operator) && identical(latent_obj$operator$model, "arma")) {
       p <- latent_obj$operator$p %||% 0L
       q <- latent_obj$operator$q %||% 0L
@@ -447,6 +448,80 @@ traceplot <- function(
         }
       }
     }
+
+    if (!is.null(latent_name)) {
+      ts$name <- paste0(ts$name, " (", latent_name, ")")
+    }
+
+    list(traj = traj, ts = ts)
+  }
+
+  if (identical(name, "all")) {
+    latent_names <- names(ngme$models)
+    latent_parts <- lapply(latent_names, function(lat_name) {
+      get_latent_traj_and_ts(ngme$models[[lat_name]], latent_name = lat_name)
+    })
+
+    # Data part (measurement noise + fixed effects)
+    traj_noise <- attr(ngme, "block_traj")
+    stopifnot(
+      "Please run ngme() to estimate the model before using traceplot()" = !is.null(traj_noise)
+    )
+    ts_noise <- get_noise_info(ngme$noise)
+    name_feff <- if (length(ngme$feff) == 0) NULL else paste("fixed effect", seq_len(length(ngme$feff)))
+    trans_feff <- rep(list(identity), length(ngme$feff))
+    ts_noise$name <- c(ts_noise$name, name_feff)
+    ts_noise$trans <- c(ts_noise$trans, trans_feff)
+
+    parts <- c(latent_parts, list(list(traj = traj_noise, ts = ts_noise)))
+
+    n_chains <- length(parts[[1]]$traj)
+    if (any(vapply(parts, function(p) length(p$traj) != n_chains, logical(1)))) {
+      stop("All components must have the same number of chains for name = 'all'.")
+    }
+
+    traj <- lapply(seq_len(n_chains), function(chain_idx) {
+      mats <- lapply(parts, function(p) p$traj[[chain_idx]])
+      mats <- lapply(mats, function(m) {
+        if (is.null(dim(m))) {
+          matrix(m, nrow = 1)
+        } else {
+          as.matrix(m)
+        }
+      })
+
+      ncol_vec <- vapply(mats, ncol, integer(1))
+      nrow_vec <- vapply(mats, nrow, integer(1))
+      expected_iter <- max(ncol_vec)
+      if (max(nrow_vec) > expected_iter) {
+        expected_iter <- max(nrow_vec)
+      }
+
+      mats <- Map(function(m, nc, nr) {
+        if (nc != expected_iter && nr == expected_iter) {
+          m <- t(m)
+        }
+        m
+      }, mats, ncol_vec, nrow_vec)
+
+      lengths <- vapply(mats, ncol, integer(1))
+      if (length(unique(lengths)) > 1) {
+        warning("Some components are of different lengths. Only the minimum length is used.")
+      }
+      min_length <- min(lengths)
+      mats <- lapply(mats, function(m) m[, seq_len(min_length), drop = FALSE])
+      do.call(rbind, mats)
+    })
+
+    ts <- list(
+      name = unlist(lapply(parts, function(p) p$ts$name), use.names = FALSE),
+      trans = do.call(c, lapply(parts, function(p) p$ts$trans))
+    )
+  } else if (name %in% names(ngme$models)) {
+    # Plot trajectory of parameters of the model
+    lt <- get_latent_traj_and_ts(ngme$models[[name]])
+    traj <- lt$traj
+    ts <- lt$ts
   } else {
     # Plot trajectory of parameters of the noise
     traj <- attr(ngme, "block_traj")
@@ -544,8 +619,11 @@ traceplot <- function(
   # Display results based on combine parameter
   result <- NULL
   if (combine) {
-    if (length(ps) > 1) ps["ncol"] <- 2
-    result <- do.call(gridExtra::grid.arrange, ps)
+    if (length(ps) == 0) {
+      stop("No parameters available to plot.")
+    }
+    ncol <- if (length(ps) > 1) 2 else 1
+    result <- gridExtra::grid.arrange(grobs = ps, ncol = ncol)
   } else {
     # Print plots one by one
     for (p in ps) {

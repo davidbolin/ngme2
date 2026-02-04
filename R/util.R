@@ -932,14 +932,13 @@ ngme_build_A <- function(model, mesh, map, operator, group, group_levels = NULL)
         A_expand[row_2nd_field, half_1st] <- 0
       }
 
-      # Re-order (f1 f2 f1 f2 ...)
-      n <- operator$first$mesh$n
-      bv_mesh_size <- operator$second$mesh$n
-
-      idx <- 1:ncol(A_expand)
-      field_1st_idx <- ceiling(idx / bv_mesh_size) %% bv_mesh_size == 1
-      field_2nd_idx <- !field_1st_idx
-      reorder_idx <- c(which(field_1st_idx), which(field_2nd_idx))
+      # Re-order to match K = K_t %x% K_bv (time-major, fields within time)
+      n_t <- operator$first$mesh$n
+      n_s <- operator$second$mesh$n
+      n_ts <- n_t * n_s
+      field1 <- matrix(seq_len(n_ts), nrow = n_s, ncol = n_t)
+      field2 <- field1 + n_ts
+      reorder_idx <- as.vector(rbind(field1, field2))
 
       # return after re-order
       return(ngme_as_sparse(A_expand[, reorder_idx]))

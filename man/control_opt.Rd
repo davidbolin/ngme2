@@ -27,6 +27,12 @@ control_opt(
   verbose = FALSE,
   store_traj = TRUE,
   robust = FALSE,
+  stepsize_decay = c("none", "grad_norm_plateau"),
+  stepsize_decay_patience = 3,
+  stepsize_decay_gamma = 0.5,
+  stepsize_decay_min_delta = 0,
+  stepsize_decay_warmup = 0,
+  stepsize_decay_min_stepsize = 0,
   n_min_batch = min(n_batch, 3),
   n_slope_check = min(n_batch, 3),
   trend_std_conv_check = TRUE,
@@ -91,6 +97,25 @@ If it is more than n_parallel_chain, the rest will be used to parallel different
 \item{verbose}{print estimation}
 
 \item{store_traj}{store the optimizer trajectory for diagnostics (set FALSE to reduce memory)}
+
+\item{stepsize_decay}{stepsize decay strategy. Either a character string
+("none" or "grad_norm_plateau") or an object created by
+\code{stepsize_decay()}.
+decays the stepsize when the mean grad.norm() across chains has not decreased for
+\code{stepsize_decay_patience} consecutive epochs (checked at each checkpoint, i.e.
+every \code{iterations / n_batch} iterations). All chains decay together after trigger
+(after \code{stepsize_decay_warmup} epochs).}
+
+\item{stepsize_decay_patience}{number of consecutive epochs without grad.norm() improvement
+before decaying stepsize.}
+
+\item{stepsize_decay_gamma}{decay factor applied when triggered (0 < gamma < 1).}
+
+\item{stepsize_decay_min_delta}{minimum required decrease in grad.norm() to be counted as improvement.}
+
+\item{stepsize_decay_warmup}{number of initial epochs to skip decay checks.}
+
+\item{stepsize_decay_min_stepsize}{lower bound for stepsize after decay (absolute value).}
 
 \item{n_min_batch}{minimum number of checkpoints before any convergence diagnostic is attempted}
 

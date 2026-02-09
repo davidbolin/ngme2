@@ -112,6 +112,7 @@ reference:
     - adamW
     - bfgs
     - adaptive_gd
+    - stepsize_decay
   - title: Prediction and Cross validation
     contents:
     - predict.ngme

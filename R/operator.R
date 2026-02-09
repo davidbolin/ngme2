@@ -220,6 +220,34 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
       print(operator$first, padding = padding + 4, prefix = model_names[[1]])
       print(operator$second, padding = padding + 4, prefix = model_names[[2]])
     },
+    bv_matern = {
+      model_names <- operator$model_names
+      fix_theta <- isTRUE(operator$fix_theta)
+
+      idx <- 1
+      if (fix_theta) {
+        theta <- operator$bv_theta
+      } else {
+        theta <- operator$param_trans[[idx]](theta_K[idx])
+        idx <- idx + 1
+      }
+      rho <- operator$param_trans[[idx]](theta_K[idx])
+      idx <- idx + 1
+      sd1 <- operator$param_trans[[idx]](theta_K[idx])
+      idx <- idx + 1
+      sd2 <- operator$param_trans[[idx]](theta_K[idx])
+
+      cat(pad_add4_space, "theta = ", format(theta, digits = 3),
+        if (fix_theta) " (fixed)" else "", "\n",
+        sep = ""
+      )
+      cat(pad_add4_space, "rho = ", format(rho, digits = 3), "\n", sep = "")
+      cat(pad_add4_space, "sd1 = ", format(sd1, digits = 3), "\n", sep = "")
+      cat(pad_add4_space, "sd2 = ", format(sd2, digits = 3), "\n", sep = "")
+
+      print(operator$first, padding = padding + 4, prefix = model_names[[1]])
+      print(operator$second, padding = padding + 4, prefix = model_names[[2]])
+    },
     bv_matern_normal = {
       theta <- 0
       rho <- operator$param_trans[[1]](theta_K[1])

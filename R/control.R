@@ -54,6 +54,19 @@
 #' @param sampling_strategy subsampling method of replicates of model, c("all", "is")
 #' "all" means using all replicates in each iteration,
 #' "ws" means weighted sampling (each iteration use 1 replicate to compute the gradient, the sample probability is proption to its number of observations)
+#' @param stepsize_decay stepsize decay strategy. Either a character string
+#'   ("none" or "grad_norm_plateau") or an object created by
+#'   \code{stepsize_decay()}.
+#'   decays the stepsize when the mean grad.norm() across chains has not decreased for
+#'   \code{stepsize_decay_patience} consecutive epochs (checked at each checkpoint, i.e.
+#'   every \code{iterations / n_batch} iterations). All chains decay together after trigger
+#'   (after \code{stepsize_decay_warmup} epochs).
+#' @param stepsize_decay_patience number of consecutive epochs without grad.norm() improvement
+#'   before decaying stepsize.
+#' @param stepsize_decay_gamma decay factor applied when triggered (0 < gamma < 1).
+#' @param stepsize_decay_min_delta minimum required decrease in grad.norm() to be counted as improvement.
+#' @param stepsize_decay_warmup number of initial epochs to skip decay checks.
+#' @param stepsize_decay_min_stepsize lower bound for stepsize after decay (absolute value).
 #' @param pflug_conv_check use Pflug diagnostic for convergence check
 #' @param pflug_alpha scaling factor (0-1] for Pflug criterion: require \code{pflug_sum < pflug_alpha * max_pflug_sum}
 #' @param max_R_hat_conv_check use max_R_hat for convergence check
@@ -85,6 +98,12 @@ control_opt <- function(
     verbose = FALSE,
     store_traj = TRUE,
     robust = FALSE,
+    stepsize_decay = c("none", "grad_norm_plateau"),
+    stepsize_decay_patience = 3,
+    stepsize_decay_gamma = 0.5,
+    stepsize_decay_min_delta = 0,
+    stepsize_decay_warmup = 0,
+    stepsize_decay_min_stepsize = 0,
     n_min_batch = min(n_batch, 3),
     n_slope_check = min(n_batch, 3),
     trend_std_conv_check = TRUE,
@@ -98,6 +117,25 @@ control_opt <- function(
   preconditioner_list <- c("none", "fast", "full")
   solver_backend_list <- c("eigen", "cholmod", "accelerate", "pardiso")
   solver_factor_list <- c("llt", "ldlt")
+  stepsize_decay_list <- c("none", "grad_norm_plateau")
+
+  if (inherits(stepsize_decay, "ngme_stepsize_decay")) {
+    if (!missing(stepsize_decay_patience) || !missing(stepsize_decay_gamma) ||
+        !missing(stepsize_decay_min_delta) || !missing(stepsize_decay_warmup) ||
+        !missing(stepsize_decay_min_stepsize)) {
+      warning(
+        "stepsize_decay_* arguments are ignored when stepsize_decay() is supplied."
+      )
+    }
+    stepsize_decay_method <- stepsize_decay$method
+    stepsize_decay_patience <- stepsize_decay$patience
+    stepsize_decay_gamma <- stepsize_decay$gamma
+    stepsize_decay_min_delta <- stepsize_decay$min_delta
+    stepsize_decay_warmup <- stepsize_decay$warmup
+    stepsize_decay_min_stepsize <- stepsize_decay$min_stepsize
+  } else {
+    stepsize_decay_method <- stepsize_decay
+  }
 
   # read preconditioner from optimizer
   preconditioner <- "none"
@@ -124,6 +162,7 @@ control_opt <- function(
   # resolve solver backend + factorization; send both to C++ and let it map
   solver_backend <- match.arg(solver_backend, solver_backend_list)
   solver_factor <- match.arg(solver_type, solver_factor_list)
+  stepsize_decay_method <- match.arg(stepsize_decay_method, stepsize_decay_list)
   solver_backend_idx <- match(solver_backend, solver_backend_list) - 1L
   solver_factor_idx <- match(solver_factor, solver_factor_list) - 1L
 
@@ -157,7 +196,29 @@ control_opt <- function(
     inherits(optimizer, "ngme_optimizer"),
     "solver backend must map to 0:3" = solver_backend_idx %in% 0:3,
     "solver factor must be 0 (llt) or 1 (ldlt)" = solver_factor_idx %in% 0:1,
-    is.numeric(pflug_alpha) && length(pflug_alpha) == 1 && pflug_alpha > 0 && pflug_alpha <= 1
+    is.numeric(pflug_alpha) && length(pflug_alpha) == 1 && pflug_alpha > 0 && pflug_alpha <= 1,
+    "stepsize_decay must be one of 'none' or 'grad_norm_plateau'" =
+      stepsize_decay_method %in% stepsize_decay_list,
+    "stepsize_decay_patience must be >= 1" =
+      stepsize_decay_method == "none" ||
+        (is.numeric(stepsize_decay_patience) && length(stepsize_decay_patience) == 1 &&
+          stepsize_decay_patience >= 1),
+    "stepsize_decay_gamma must be in (0, 1)" =
+      stepsize_decay_method == "none" ||
+        (is.numeric(stepsize_decay_gamma) && length(stepsize_decay_gamma) == 1 &&
+          stepsize_decay_gamma > 0 && stepsize_decay_gamma < 1),
+    "stepsize_decay_min_delta must be >= 0" =
+      stepsize_decay_method == "none" ||
+        (is.numeric(stepsize_decay_min_delta) &&
+          length(stepsize_decay_min_delta) == 1 && stepsize_decay_min_delta >= 0),
+    "stepsize_decay_warmup must be >= 0" =
+      stepsize_decay_method == "none" ||
+        (is.numeric(stepsize_decay_warmup) && length(stepsize_decay_warmup) == 1 &&
+          stepsize_decay_warmup >= 0),
+    "stepsize_decay_min_stepsize must be >= 0" =
+      stepsize_decay_method == "none" ||
+        (is.numeric(stepsize_decay_min_stepsize) &&
+          length(stepsize_decay_min_stepsize) == 1 && stepsize_decay_min_stepsize >= 0)
   )
 
   if (n_parallel_chain == 1) {
@@ -219,6 +280,14 @@ control_opt <- function(
     # solver related
     solver_backend = solver_backend_idx,
     solver_factor = solver_factor_idx,
+
+    # stepsize decay
+    stepsize_decay = stepsize_decay_method,
+    stepsize_decay_patience = stepsize_decay_patience,
+    stepsize_decay_gamma = stepsize_decay_gamma,
+    stepsize_decay_min_delta = stepsize_decay_min_delta,
+    stepsize_decay_warmup = stepsize_decay_warmup,
+    stepsize_decay_min_stepsize = stepsize_decay_min_stepsize,
 
     # variance reduction (not used for now)
     reduce_var = reduce_var,

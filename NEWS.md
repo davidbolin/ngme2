@@ -1,5 +1,6 @@
 # ngme2 0.8.4 (2026-02-01)
 * Fix iid model using argument mesh instead of map
+* Add grad.norm plateau-based step decay via `control_opt(stepsize_decay = "grad_norm_plateau")` (epoch-level, synchronized across chains)
 
 # ngme2 0.8.3 (2025-12-10)
 * Update nu parameterization to be relative to nu_lower_bound (nu = nu_lower_bound + exp(B_nu * theta_nu))

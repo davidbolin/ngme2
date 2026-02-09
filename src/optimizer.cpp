@@ -53,6 +53,22 @@ Ngme_optimizer::Ngme_optimizer(const Rcpp::List &control_opt,
     // precond_sgd
   }
 
+  // Stepsize decay configuration
+  if (control_opt.containsElementNamed("stepsize_decay")) {
+    std::string decay =
+        Rcpp::as<std::string>(control_opt["stepsize_decay"]);
+    stepsize_decay_enabled = (decay == "grad_norm_plateau");
+  }
+  if (stepsize_decay_enabled) {
+    stepsize_decay_min_stepsize =
+        Rcpp::as<double>(control_opt["stepsize_decay_min_stepsize"]);
+    stepsize_decay_base_stepsize = model->get_stepsizes().mean();
+    // Disable for line-search methods
+    if (method == "bfgs") {
+      stepsize_decay_enabled = false;
+    }
+  }
+
   // Do not initialize preconditioner here; build it on-demand inside sgd loop
   x = model->get_parameter();
   prev_x = x;
@@ -94,6 +110,8 @@ VectorXd Ngme_optimizer::sgd(double eps, int iterations,
     } else {
       grad = numerical_grad(x);
     }
+
+    last_grad_norm = grad.norm();
 
     // Pflug diagnostic
     if (pflug_conv_check && curr_iter > 0) {
@@ -195,6 +213,10 @@ VectorXd Ngme_optimizer::sgd(double eps, int iterations,
       one_step = model->get_stepsizes().cwiseProduct(grad);
     }
 
+    if (stepsize_decay_enabled && method != "bfgs") {
+      one_step *= stepsize_decay_scale;
+    }
+
     // Test if one_step is NAN
     if (std::isnan(one_step(one_step.size() - 1))) {
       std::ostringstream oss;
@@ -232,7 +254,13 @@ VectorXd Ngme_optimizer::sgd(double eps, int iterations,
       std::ostringstream oss;
       oss << "iteration = : " << curr_iter + 1 << '\n';
       oss << "grad.norm() = " << grad.norm() << '\n';
-      oss << "one step = " << one_step << '\n';
+      if (stepsize_decay_enabled) {
+        oss << "stepsize_scale = " << stepsize_decay_scale << '\n';
+        if (stepsize_decay_base_stepsize > 0.0) {
+          oss << "effective_stepsize = "
+              << (stepsize_decay_scale * stepsize_decay_base_stepsize) << '\n';
+        }
+      }
       // oss << "parameter = : " << x << '\n';
       // oss << "marginal likelihood := " <<  -model->log_likelihood() << '\n';
       if (pflug_conv_check) {

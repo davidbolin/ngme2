@@ -21,6 +21,7 @@
 #include <cmath>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <random>
 #include <string>
@@ -73,6 +74,34 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   auto timer = std::chrono::steady_clock::now();
 
   Rcpp::List outputs;
+  const bool verbose_enabled = control_opt["verbose"];
+  const std::string sgd_method =
+      Rcpp::as<std::string>(control_opt["sgd_method"]);
+
+  bool stepsize_decay_enabled = false;
+  int stepsize_decay_patience = 0;
+  double stepsize_decay_gamma = 1.0;
+  double stepsize_decay_min_delta = 0.0;
+  int stepsize_decay_warmup = 0;
+  if (control_opt.containsElementNamed("stepsize_decay")) {
+    std::string decay =
+        Rcpp::as<std::string>(control_opt["stepsize_decay"]);
+    stepsize_decay_enabled = (decay == "grad_norm_plateau");
+  }
+  if (stepsize_decay_enabled) {
+    stepsize_decay_patience =
+        Rcpp::as<int>(control_opt["stepsize_decay_patience"]);
+    stepsize_decay_gamma =
+        Rcpp::as<double>(control_opt["stepsize_decay_gamma"]);
+    stepsize_decay_min_delta =
+        Rcpp::as<double>(control_opt["stepsize_decay_min_delta"]);
+    stepsize_decay_warmup =
+        Rcpp::as<int>(control_opt["stepsize_decay_warmup"]);
+  }
+  if (sgd_method == "bfgs") {
+    stepsize_decay_enabled = false;
+  }
+
 #ifdef _OPENMP
   const int burnin = control_opt["burnin"];
 
@@ -94,8 +123,6 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
       control_opt.containsElementNamed("R_hat_conv_check")
           ? Rcpp::as<bool>(control_opt["R_hat_conv_check"])
           : true;
-
-  const bool verbose_enabled = control_opt["verbose"];
 
   VectorXi num_threads = Rcpp::as<VectorXi>(control_opt["num_threads"]);
   int n_threads_chain = num_threads[0];
@@ -153,6 +180,10 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   int batch_steps = (iterations / n_batch);
 
   int curr_batch = 0;
+  double stepsize_decay_scale = 1.0;
+  double stepsize_decay_prev_norm =
+      std::numeric_limits<double>::infinity();
+  int stepsize_decay_bad_epochs = 0;
 
   // Enable convergence only when at least one diagnostic is requested.
   const bool param_conv_check = trend_std_conv_check || R_hat_conv_check;
@@ -290,6 +321,40 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
       all_converge = any_conv_check && batch_converged;
     }
 
+    if (stepsize_decay_enabled) {
+      double mean_grad_norm = 0.0;
+      for (int i = 0; i < n_chains; i++) {
+        mean_grad_norm += opt_vec[i].get_last_grad_norm();
+      }
+      mean_grad_norm /= std::max(1, n_chains);
+
+      if (curr_batch < stepsize_decay_warmup) {
+        stepsize_decay_prev_norm = mean_grad_norm;
+        stepsize_decay_bad_epochs = 0;
+      } else {
+        if (mean_grad_norm <
+            stepsize_decay_prev_norm - stepsize_decay_min_delta) {
+          stepsize_decay_bad_epochs = 0;
+        } else {
+          stepsize_decay_bad_epochs += 1;
+        }
+        stepsize_decay_prev_norm = mean_grad_norm;
+
+        if (stepsize_decay_bad_epochs >= stepsize_decay_patience) {
+          stepsize_decay_bad_epochs = 0;
+          stepsize_decay_scale *= stepsize_decay_gamma;
+          for (int i = 0; i < n_chains; i++) {
+            opt_vec[i].set_stepsize_decay_scale(stepsize_decay_scale);
+          }
+          if (verbose_enabled) {
+            Rcpp::Rcout << "Stepsize decay applied at epoch "
+                        << (curr_batch + 1) << ": scale = "
+                        << stepsize_decay_scale << "\n";
+          }
+        }
+      }
+    }
+
     curr_batch++;
   }
 
@@ -370,8 +435,38 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   Ngme ngme(R_ngme, seed, sampling_strategy);
   Ngme_optimizer opt(control_opt, std::make_shared<Ngme>(ngme));
   opt.set_pflug_conv_check(pflug_conv_check);
-  opt.sgd(0.1, iterations, max_relative_step, max_absolute_step,
-          compute_precond_each_iter);
+  int n_batch = (control_opt["n_batch"]);
+  int batch_steps = (iterations / n_batch);
+  int curr_batch = 0;
+  double stepsize_decay_scale = 1.0;
+  double stepsize_decay_prev_norm =
+      std::numeric_limits<double>::infinity();
+  int stepsize_decay_bad_epochs = 0;
+  while (curr_batch < n_batch) {
+    opt.sgd(0.1, batch_steps, max_relative_step, max_absolute_step,
+            compute_precond_each_iter);
+    if (stepsize_decay_enabled) {
+      double grad_norm = opt.get_last_grad_norm();
+      if (curr_batch < stepsize_decay_warmup) {
+        stepsize_decay_prev_norm = grad_norm;
+        stepsize_decay_bad_epochs = 0;
+      } else {
+        if (grad_norm <
+            stepsize_decay_prev_norm - stepsize_decay_min_delta) {
+          stepsize_decay_bad_epochs = 0;
+        } else {
+          stepsize_decay_bad_epochs += 1;
+        }
+        stepsize_decay_prev_norm = grad_norm;
+        if (stepsize_decay_bad_epochs >= stepsize_decay_patience) {
+          stepsize_decay_bad_epochs = 0;
+          stepsize_decay_scale *= stepsize_decay_gamma;
+          opt.set_stepsize_decay_scale(stepsize_decay_scale);
+        }
+      }
+    }
+    curr_batch++;
+  }
   // estimation done, posterior sampling
   // ngme.sampling(10, true);
   outputs.push_back(ngme.output());

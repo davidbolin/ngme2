@@ -201,6 +201,44 @@ adamW <- function(
   ret
 }
 
+#' Stepsize decay schedule
+#'
+#' @details
+#' Define a stepsize decay strategy for use in \code{control_opt()}.
+#' Currently supports the plateau-based schedule using grad.norm().
+#'
+#' @param method decay strategy. "none" disables decay; "grad_norm_plateau"
+#'   decays when mean grad.norm() across chains fails to decrease for a number
+#'   of epochs.
+#' @param patience number of consecutive epochs without grad.norm() improvement
+#'   before decaying stepsize.
+#' @param gamma decay factor applied when triggered (0 < gamma < 1).
+#' @param min_delta minimum required decrease in grad.norm() to be counted as improvement.
+#' @param warmup number of initial epochs to skip decay checks.
+#' @param min_stepsize lower bound for stepsize after decay (absolute value).
+#'
+#' @return a list of control variables for stepsize decay (used in \code{control_opt}).
+#' @export
+stepsize_decay <- function(
+    method = c("none", "grad_norm_plateau"),
+    patience = 3,
+    gamma = 0.5,
+    min_delta = 0,
+    warmup = 0,
+    min_stepsize = 0) {
+  method <- match.arg(method)
+  ret <- list(
+    method = method,
+    patience = patience,
+    gamma = gamma,
+    min_delta = min_delta,
+    warmup = warmup,
+    min_stepsize = min_stepsize
+  )
+  class(ret) <- "ngme_stepsize_decay"
+  ret
+}
+
 
 #' BFGS optimization
 #'

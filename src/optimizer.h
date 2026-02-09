@@ -3,6 +3,7 @@
 
 #include "ngme.h"
 #include <memory>
+#include <limits>
 
 class Ngme_optimizer {
 private:
@@ -36,6 +37,13 @@ private:
   std::vector<VectorXd> trajs;
   bool record_traj{true};
 
+  // Stepsize decay (grad.norm plateau) - scale applied to step
+  bool stepsize_decay_enabled{false};
+  double stepsize_decay_min_stepsize{0.0};
+  double stepsize_decay_scale{1.0};
+  double stepsize_decay_base_stepsize{0.0};
+  double last_grad_norm{0.0};
+
   // Pflug diagnostic
   bool pflug_conv_check{false};
   double pflug_sum{0.0};
@@ -59,6 +67,21 @@ public:
   bool get_pflug_conv_check() const { return pflug_conv_check; }
   double get_pflug_sum() const { return pflug_sum; }
   double get_max_pflug_sum() const { return max_pflug_sum; }
+  double get_last_grad_norm() const { return last_grad_norm; }
+  void set_stepsize_decay_scale(double scale) {
+    stepsize_decay_scale = scale;
+    if (stepsize_decay_min_stepsize > 0.0 &&
+        stepsize_decay_base_stepsize > 0.0) {
+      double min_scale =
+          stepsize_decay_min_stepsize / stepsize_decay_base_stepsize;
+      if (min_scale > 1.0) {
+        min_scale = 1.0;
+      }
+      if (stepsize_decay_scale < min_scale) {
+        stepsize_decay_scale = min_scale;
+      }
+    }
+  }
 
   void set_store_traj(bool value) {
     record_traj = value;

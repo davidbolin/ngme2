@@ -34,6 +34,9 @@
 #' MAE becomes Euclidean distance, MSE becomes squared Euclidean distance, etc.
 #' @param merged_group_name character, name for the merged group when merge_groups=TRUE.
 #' If NULL, uses "group1_group2" format (default: NULL)
+#' @param data optional data.frame used to replace the original fitting data before running CV.
+#' If `NULL`, the data stored in `ngme` is used. If provided, the model is rebuilt on `data`
+#' while reusing fitted parameters from `ngme`.
 #' @return A list containing:
 #'   \itemize{
 #'     \item mean.scores - mean of N_sim estimations of 4 criterions: MSE, MAE, CRPS, sCRPS
@@ -61,7 +64,8 @@ cross_validation <- function(
     cores_layer1 = if (parallel) min(parallel::detectCores(), 2) else 1, # Limit to 2 cores for safety
     cores_layer2 = if (parallel) min(parallel::detectCores(), 2) else 1, # Limit to 2 cores for safety
     merge_groups = FALSE, # New parameter for merging bivariate groups
-    merged_group_name = NULL # New parameter for custom merged group name
+    merged_group_name = NULL, # New parameter for custom merged group name
+    data = NULL
     ) {
   merge_replicates <- FALSE
 
@@ -72,6 +76,11 @@ cross_validation <- function(
 
   if (inherits(ngme, "ngme")) ngme <- list(ngme)
   if (is.null(names(ngme))) names(ngme) <- paste("model", seq_along(ngme), sep = "_")
+
+  if (!is.null(data)) {
+    stopifnot("`data` must be a data.frame." = is.data.frame(data))
+    ngme <- lapply(ngme, rebuild_cv_model_with_data, data = data)
+  }
 
   # Handle metric argument: allow NULL, function, or list of functions (one per model)
   if (is.null(metric)) {
@@ -315,6 +324,178 @@ cross_validation <- function(
       Y_2 = Y_2
     )
   }
+}
+
+
+rebuild_cv_model_with_data <- function(ngme_obj, data) {
+  stopifnot("`ngme_obj` must be of class 'ngme'." = inherits(ngme_obj, "ngme"))
+  fit <- attr(ngme_obj, "fit")
+  stopifnot(
+    "Missing fit metadata in `ngme_obj`." = !is.null(fit),
+    "Missing formula in fit metadata." = !is.null(fit$formula)
+  )
+
+  replicate_new <- resolve_cv_partition_for_new_data(
+    old_data = fit$data,
+    old_values = fit$replicate,
+    new_data = data,
+    arg_name = "replicate"
+  )
+
+  group_new <- resolve_cv_partition_for_new_data(
+    old_data = fit$data,
+    old_values = fit$group,
+    new_data = data,
+    arg_name = "group"
+  )
+
+  standardize_fixed <- if (is.null(ngme_obj$replicates[[1]]$standardize)) {
+    TRUE
+  } else {
+    isTRUE(ngme_obj$replicates[[1]]$standardize)
+  }
+
+  build_args <- list(
+    formula = fit$formula,
+    data = data,
+    family = fit$family,
+    control_opt = control_opt(
+      estimation = FALSE,
+      standardize_fixed = standardize_fixed
+    ),
+    control_ngme = ngme_obj$replicates[[1]]$control_ngme,
+    group = group_new,
+    replicate = replicate_new
+  )
+
+  tryCatch(
+    {
+      do.call(ngme, c(build_args, list(start = ngme_obj)))
+    },
+    error = function(e) {
+      if (grepl("length of [WV] should be the same", e$message)) {
+        # Fallback for new data with different latent/noise state dimension:
+        # rebuild without start and transplant only compatible hyperparameters.
+        rebuilt <- do.call(ngme, build_args)
+        rebuilt <- transplant_cv_hyperparameters(rebuilt, ngme_obj)
+        return(rebuilt)
+      }
+      stop(
+        "Failed to rebuild ngme object with supplied `data`: ",
+        e$message,
+        call. = FALSE
+      )
+    }
+  )
+}
+
+
+transplant_cv_hyperparameters <- function(new_obj, old_obj) {
+  stopifnot(
+    inherits(new_obj, "ngme"),
+    inherits(old_obj, "ngme")
+  )
+
+  n_repl <- min(length(new_obj$replicates), length(old_obj$replicates))
+  if (n_repl == 0) return(new_obj)
+
+  for (i in seq_len(n_repl)) {
+    rep_new <- new_obj$replicates[[i]]
+    rep_old <- old_obj$replicates[[i]]
+
+    if (length(rep_new$feff) == length(rep_old$feff)) {
+      rep_new$feff <- as.numeric(rep_old$feff)
+      names(rep_new$feff) <- names(new_obj$replicates[[i]]$feff)
+    }
+
+    rep_new$noise <- transplant_noise_hyperparameters(rep_new$noise, rep_old$noise)
+
+    n_models <- min(length(rep_new$models), length(rep_old$models))
+    if (n_models > 0) {
+      for (j in seq_len(n_models)) {
+        model_new <- rep_new$models[[j]]
+        model_old <- rep_old$models[[j]]
+
+        if (!identical(model_new$model, model_old$model)) next
+
+        theta_new <- model_new$operator$theta_K
+        theta_old <- model_old$operator$theta_K
+
+        if (!is.null(names(theta_new)) && !is.null(names(theta_old))) {
+          common <- intersect(names(theta_new), names(theta_old))
+          if (length(common) > 0) theta_new[common] <- theta_old[common]
+        } else if (length(theta_new) == length(theta_old)) {
+          theta_new <- theta_old
+        }
+
+        model_new$operator$theta_K <- theta_new
+        model_new$theta_K <- theta_new
+        model_new$operator$K <- model_new$operator$update_K(theta_new)
+
+        model_new$noise <- transplant_noise_hyperparameters(model_new$noise, model_old$noise)
+        rep_new$models[[j]] <- model_new
+      }
+    }
+
+    new_obj$replicates[[i]] <- rep_new
+  }
+
+  new_obj
+}
+
+
+transplant_noise_hyperparameters <- function(noise_new, noise_old) {
+  old_no_state <- noise_old
+  old_no_state$V <- NULL
+  update_noise(noise_new, new_noise = old_no_state)
+}
+
+
+resolve_cv_partition_for_new_data <- function(old_data, old_values, new_data, arg_name) {
+  if (is.null(old_values)) return(NULL)
+
+  if (length(old_values) == nrow(new_data)) {
+    return(old_values)
+  }
+
+  source_col <- infer_cv_partition_column(old_data, old_values, arg_name)
+  if (!is.null(source_col) && source_col %in% names(new_data)) {
+    values <- new_data[[source_col]]
+    if (is.factor(old_values)) {
+      values <- factor(values, levels = levels(old_values))
+    }
+    return(values)
+  }
+
+  if (length(unique(as.character(old_values))) == 1) {
+    return(rep(old_values[1], nrow(new_data)))
+  }
+
+  stop(
+    "Unable to infer `", arg_name, "` for supplied `data`. ",
+    "Please include the same `", arg_name, "` column used during fitting."
+  )
+}
+
+
+infer_cv_partition_column <- function(old_data, old_values, arg_name) {
+  if (!is.data.frame(old_data) || nrow(old_data) != length(old_values)) {
+    return(NULL)
+  }
+
+  target <- as.character(old_values)
+
+  if (arg_name %in% names(old_data) &&
+      identical(as.character(old_data[[arg_name]]), target)) {
+    return(arg_name)
+  }
+
+  matched_cols <- names(old_data)[vapply(old_data, function(col) {
+    length(col) == length(target) && identical(as.character(col), target)
+  }, logical(1))]
+
+  if (length(matched_cols) == 0) return(NULL)
+  matched_cols[[1]]
 }
 
 # Compute error with merged 1 replicate using helper function merge_replicates

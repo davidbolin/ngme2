@@ -26,7 +26,8 @@ cross_validation(
   cores_layer1 = if (parallel) min(parallel::detectCores(), 2) else 1,
   cores_layer2 = if (parallel) min(parallel::detectCores(), 2) else 1,
   merge_groups = FALSE,
-  merged_group_name = NULL
+  merged_group_name = NULL,
+  data = NULL
 )
 }
 \arguments{
@@ -80,6 +81,10 @@ MAE becomes Euclidean distance, MSE becomes squared Euclidean distance, etc.}
 
 \item{merged_group_name}{character, name for the merged group when merge_groups=TRUE.
 If NULL, uses "group1_group2" format (default: NULL)}
+
+\item{data}{optional data.frame used to replace the original fitting data before running CV.
+If `NULL`, the data stored in `ngme` is used. If provided, the model is rebuilt on `data`
+while reusing fitted parameters from `ngme`.}
 }
 \value{
 A list containing:

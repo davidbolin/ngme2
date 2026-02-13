@@ -51,7 +51,7 @@
 #'
 #' @param verbose print estimation
 #' @param store_traj store the optimizer trajectory for diagnostics (set FALSE to reduce memory)
-#' @param sampling_strategy subsampling method of replicates of model, c("all", "is")
+#' @param sampling_strategy subsampling method of replicates of model, c("all", "ws")
 #' "all" means using all replicates in each iteration,
 #' "ws" means weighted sampling (each iteration use 1 replicate to compute the gradient, the sample probability is proption to its number of observations)
 #' @param stepsize_decay stepsize decay strategy. Either a character string
@@ -121,8 +121,8 @@ control_opt <- function(
 
   if (inherits(stepsize_decay, "ngme_stepsize_decay")) {
     if (!missing(stepsize_decay_patience) || !missing(stepsize_decay_gamma) ||
-        !missing(stepsize_decay_min_delta) || !missing(stepsize_decay_warmup) ||
-        !missing(stepsize_decay_min_stepsize)) {
+      !missing(stepsize_decay_min_delta) || !missing(stepsize_decay_warmup) ||
+      !missing(stepsize_decay_min_stepsize)) {
       warning(
         "stepsize_decay_* arguments are ignored when stepsize_decay() is supplied."
       )

@@ -86,7 +86,7 @@ If it is more than n_parallel_chain, the rest will be used to parallel different
 
 \item{n_trace_iter}{use how many iterations to approximate the trace (Hutchinson’s trick)}
 
-\item{sampling_strategy}{subsampling method of replicates of model, c("all", "is")
+\item{sampling_strategy}{subsampling method of replicates of model, c("all", "ws")
 "all" means using all replicates in each iteration,
 "ws" means weighted sampling (each iteration use 1 replicate to compute the gradient, the sample probability is proption to its number of observations)}
 

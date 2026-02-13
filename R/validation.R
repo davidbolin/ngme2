@@ -462,7 +462,16 @@ resolve_cv_partition_for_new_data <- function(old_data, old_values, new_data, ar
   if (!is.null(source_col) && source_col %in% names(new_data)) {
     values <- new_data[[source_col]]
     if (is.factor(old_values)) {
-      values <- factor(values, levels = levels(old_values))
+      old_levels <- levels(old_values)
+      new_levels <- unique(as.character(values[!is.na(values)]))
+      ordered_levels <- c(intersect(old_levels, new_levels), setdiff(new_levels, old_levels))
+      values <- factor(values, levels = ordered_levels)
+    }
+    if (anyNA(values)) {
+      stop(
+        "Detected NA while preparing `", arg_name, "` from `data$",
+        source_col, "`. Please ensure there are no missing values."
+      )
     }
     return(values)
   }

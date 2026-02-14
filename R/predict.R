@@ -21,6 +21,12 @@
 #' @param train_idx optional vector of training indices to use for posterior sampling.
 #'   If provided, only these indices from the original data will be used for training,
 #'   similar to cross-validation. If NULL, uses all original training data.
+#' @param chain_combine how to combine multiple optimization chains:
+#'   \itemize{
+#'     \item \code{"param_mean"}: default behavior using the fitted object parameters.
+#'     \item \code{"predictive_average"}: run prediction for each optimization chain and
+#'       average predictions across chains.
+#'   }
 #' @param ... additional arguments (currently unused)
 #'
 #' @return a list of outputs contains estimation of operator paramters, noise parameters
@@ -36,13 +42,74 @@ predict.ngme <- function(
     burnin_size = 100,
     seed = Sys.time(),
     train_idx = NULL,
+    chain_combine = c("param_mean", "predictive_average"),
     ...) {
-  fm <- attr(object, "fit")$formula
-  ngme <- object$replicate[[1]]
+  chain_combine <- match.arg(chain_combine)
   stopifnot(
     sampling_size > 0,
     "Make sure the object is of class 'ngme'." = inherits(object, "ngme")
   )
+
+  if (chain_combine == "predictive_average") {
+    chain_fits <- get_ngme_chain_fits(object)
+    if (length(chain_fits) > 1) {
+      chain_preds <- lapply(seq_along(chain_fits), function(i) {
+        predict_ngme_param_mean(
+          object = chain_fits[[i]],
+          map = map,
+          data = data,
+          type = type,
+          group = group,
+          estimator = estimator,
+          sampling_size = sampling_size,
+          burnin_size = burnin_size,
+          seed = seed + i - 1L,
+          train_idx = train_idx
+        )
+      })
+
+      ret <- list()
+      for (est in names(chain_preds[[1]])) {
+        ret[[est]] <- rowMeans(do.call(cbind, lapply(chain_preds, `[[`, est)))
+      }
+
+      samples_list <- lapply(chain_preds, function(x) attr(x, "samples"))
+      if (all(vapply(samples_list, is.matrix, logical(1)))) {
+        attr(ret, "samples") <- do.call(cbind, samples_list)
+      }
+
+      return(ret)
+    }
+  }
+
+  predict_ngme_param_mean(
+    object = object,
+    map = map,
+    data = data,
+    type = type,
+    group = group,
+    estimator = estimator,
+    sampling_size = sampling_size,
+    burnin_size = burnin_size,
+    seed = seed,
+    train_idx = train_idx
+  )
+}
+
+
+predict_ngme_param_mean <- function(
+    object,
+    map,
+    data = NULL,
+    type = "lp",
+    group = NULL,
+    estimator = c("mean", "sd", "0.05q", "0.95q", "median", "mode"),
+    sampling_size = 500,
+    burnin_size = 100,
+    seed = Sys.time(),
+    train_idx = NULL) {
+  fm <- attr(object, "fit")$formula
+  ngme <- object$replicates[[1]]
 
   # If train_idx is provided, subset the data for posterior sampling
   if (!is.null(train_idx)) {
@@ -113,8 +180,8 @@ predict.ngme <- function(
       stopifnot(
         "map should be a named list (name for each model)" = is.list(map) && !is.null(names(map))
       )
-      names <- names(map)
-      stopifnot(length(names) == length(ngme$models))
+      map_names <- names(map)
+      stopifnot(length(map_names) == length(ngme$models))
 
       AW <- list()
       for (i in seq_along(ngme$models)) {

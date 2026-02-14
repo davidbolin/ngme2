@@ -327,6 +327,12 @@ ngme <- function(
     } else {
       attr(outputs, "opt_traj") <- NULL
     }
+
+    if (is.list(outputs) && length(outputs) > 1) {
+      attr(ngme_model, "chain_outputs") <- outputs
+    } else {
+      attr(ngme_model, "chain_outputs") <- NULL
+    }
   } else {
     # Estimation skipped: if fixed effects were standardized, map them back to
     # the original design scale so printed/returned coefficients are on the raw

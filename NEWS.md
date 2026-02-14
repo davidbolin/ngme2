@@ -4,6 +4,7 @@
 * Update verbose output to include stepsize decay scale and effective stepsize
 * Improve `cross_validation(data = ...)` model rebuild for refit-on-new-data workflows:
   it now resolves external formula symbols (for example `mesh`, `B`, `n_basis`) from the fitted object when needed, and falls back to rebuild-without-start plus hyperparameter transplant if `start` state dimensions differ.
+* Add chain-aware prediction/CV aggregation via `chain_combine = "predictive_average"` in `predict()` and `cross_validation()`, which averages predictions across optimization chains instead of averaging parameters first.
 
 # ngme2 0.8.4 (2026-02-01)
 * Fix iid model using argument mesh instead of map

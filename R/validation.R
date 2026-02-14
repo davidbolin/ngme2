@@ -37,6 +37,10 @@
 #' @param data optional data.frame used to replace the original fitting data before running CV.
 #' If `NULL`, the data stored in `ngme` is used. If provided, the model is rebuilt on `data`
 #' while reusing fitted parameters from `ngme`.
+#' @param chain_combine how to combine multiple optimization chains:
+#'   `"param_mean"` uses the fitted object directly (default), while
+#'   `"predictive_average"` computes predictions from each optimization chain
+#'   and averages at the predictive level.
 #' @return A list containing:
 #'   \itemize{
 #'     \item mean.scores - mean of N_sim estimations of 4 criterions: MSE, MAE, CRPS, sCRPS
@@ -65,8 +69,10 @@ cross_validation <- function(
     cores_layer2 = if (parallel) min(parallel::detectCores(), 2) else 1, # Limit to 2 cores for safety
     merge_groups = FALSE, # New parameter for merging bivariate groups
     merged_group_name = NULL, # New parameter for custom merged group name
-    data = NULL
+    data = NULL,
+    chain_combine = c("param_mean", "predictive_average")
     ) {
+  chain_combine <- match.arg(chain_combine)
   merge_replicates <- FALSE
 
   if (!requireNamespace("parallel", quietly = TRUE)) {
@@ -79,6 +85,19 @@ cross_validation <- function(
 
   if (!is.null(data)) {
     stopifnot("`data` must be a data.frame." = is.data.frame(data))
+  }
+
+  ngme_chain_sets <- NULL
+  if (chain_combine == "predictive_average") {
+    ngme_chain_sets <- lapply(ngme, function(model_fit) {
+      chain_models <- get_ngme_chain_fits(model_fit)
+      if (!is.null(data)) {
+        chain_models <- lapply(chain_models, rebuild_cv_model_with_data, data = data)
+      }
+      chain_models
+    })
+    ngme <- lapply(ngme_chain_sets, function(chain_models) chain_models[[1]])
+  } else if (!is.null(data)) {
     ngme <- lapply(ngme, rebuild_cv_model_with_data, data = data)
   }
 
@@ -125,7 +144,9 @@ cross_validation <- function(
       })
     }
   } else if (type == "loo") {
-    return(cross_validation(ngme, "k-fold", k = n_data, seed = seed))
+    idx <- seq_len(n_data)
+    test_idx <- lapply(idx, function(i) i)
+    train_idx <- lapply(idx, function(i) idx[idx != i])
   } else if (type == "lpo") {
     stopifnot(
       "percent should be between 0 and 1" = percent > 0 && percent < 1,
@@ -158,6 +179,7 @@ cross_validation <- function(
   for (idx in seq_along(ngme)) {
     if (print) cat(paste0("Model ", names(ngme)[[idx]], ": \n\n"))
     scores <- sd_scores <- NULL
+    chain_models <- if (is.null(ngme_chain_sets)) NULL else ngme_chain_sets[[idx]]
 
     # loop over each test_idx and train_idx
     if (parallel && requireNamespace("parallel", quietly = TRUE)) {
@@ -189,7 +211,9 @@ cross_validation <- function(
                     num_cores = cores_layer2,
                     thining_gap = thining_gap,
                     merge_groups = merge_groups,
-                    merged_group_name = merged_group_name
+                    merged_group_name = merged_group_name,
+                    chain_models = chain_models,
+                    chain_combine = chain_combine
                   )
                   if (print) {
                     cat(paste("In test batch", i, ": \n"))
@@ -242,7 +266,9 @@ cross_validation <- function(
               metric = metric[[idx]],
               thining_gap = thining_gap,
               merge_groups = merge_groups,
-              merged_group_name = merged_group_name
+              merged_group_name = merged_group_name,
+              chain_models = chain_models,
+              chain_combine = chain_combine
             )
             scores[[i]] <- result$scores
             sd_scores[[i]] <- result$sd_scores
@@ -571,7 +597,9 @@ compute_err_merged_reps <- function(
     num_cores = 1,
     thining_gap = 0,
     merge_groups = FALSE,
-    merged_group_name = NULL) {
+    merged_group_name = NULL,
+    chain_models = NULL,
+    chain_combine = "param_mean") {
   if (is.null(seed)) seed <- Sys.time()
   stopifnot("Not a ngme object." = inherits(ngme, "ngme"))
 
@@ -604,7 +632,8 @@ compute_err_merged_reps <- function(
       metric,
       thining_gap = thining_gap,
       merge_groups = merge_groups,
-      merged_group_name = merged_group_name
+      merged_group_name = merged_group_name,
+      chain_combine = chain_combine
     )
   }
 
@@ -644,7 +673,9 @@ compute_err_reps <- function(
     num_cores = 1,
     thining_gap = 1,
     merge_groups = FALSE,
-    merged_group_name = NULL) {
+    merged_group_name = NULL,
+    chain_models = NULL,
+    chain_combine = "param_mean") {
   test_idx <- sort(test_idx)
   stopifnot("Not a ngme object." = inherits(ngme, "ngme"))
   repls <- attr(ngme, "fit")$replicate
@@ -667,6 +698,14 @@ compute_err_reps <- function(
     n_scores <- n_scores + 1
 
     ngme_1rep <- ngme$replicates[[i]]
+    ngme_chain_reps <- NULL
+    if (chain_combine == "predictive_average" &&
+        !is.null(chain_models) &&
+        length(chain_models) > 1) {
+      ngme_chain_reps <- lapply(chain_models, function(chain_fit) {
+        chain_fit$replicates[[i]]
+      })
+    }
     result_1rep <- compute_err_1rep(
       ngme_1rep,
       bool_train_idx = bool_train_idx,
@@ -680,7 +719,9 @@ compute_err_reps <- function(
       num_cores = num_cores,
       thining_gap = thining_gap,
       merge_groups = merge_groups,
-      merged_group_name = merged_group_name
+      merged_group_name = merged_group_name,
+      ngme_chain_reps = ngme_chain_reps,
+      chain_combine = chain_combine
     )
     scores[[n_scores]] <- result_1rep$mean_scores
     sd_scores[[n_scores]] <- result_1rep$sd_scores
@@ -729,7 +770,9 @@ compute_err_1rep <- function(
     num_cores = 1, # Default to 1 core to avoid potential issues
     thining_gap = 1,
     merge_groups = FALSE,
-    merged_group_name = NULL) {
+    merged_group_name = NULL,
+    ngme_chain_reps = NULL,
+    chain_combine = "param_mean") {
   stopifnot(
     "bool_<..>_idx should be a logical vector" =
       is.logical(bool_test_idx) && is.logical(bool_train_idx)
@@ -768,6 +811,21 @@ compute_err_1rep <- function(
     ngme_1rep$models[[i]]$A <- ngme_1rep$models[[i]]$A[bool_train_idx, , drop = FALSE]
   }
 
+  if (!is.null(ngme_chain_reps) && length(ngme_chain_reps) > 0) {
+    ngme_chain_reps <- lapply(ngme_chain_reps, function(chain_rep) {
+      chain_rep$X <- chain_rep$X[bool_train_idx, , drop = FALSE]
+      chain_rep$Y <- chain_rep$Y[bool_train_idx]
+      chain_rep$noise <- subset_noise(
+        chain_rep$noise,
+        sub_idx = bool_train_idx, compute_corr = TRUE
+      )
+      for (ii in seq_along(chain_rep$models)) {
+        chain_rep$models[[ii]]$A <- chain_rep$models[[ii]]$A[bool_train_idx, , drop = FALSE]
+      }
+      chain_rep
+    })
+  }
+
   # A_pred_blcok <- [A1_pred .. An_pred]
   # extract A and cbind!
   A_pred_block <- Reduce(cbind, x = A_preds)
@@ -779,7 +837,7 @@ compute_err_1rep <- function(
   if (parallel && requireNamespace("parallel", quietly = TRUE)) {
     scores <- parallel::mclapply(1:N_sim, function(nn) {
       s <- compute_scores(
-        ngme_1rep, n_gibbs_samples, n_burnin, seed + nn, A_pred_block, noise_test_idx, y_data, group_data, X_pred, metric, thining_gap, merge_groups, merged_group_name
+        ngme_1rep, n_gibbs_samples, n_burnin, seed + nn, A_pred_block, noise_test_idx, y_data, group_data, X_pred, metric, thining_gap, merge_groups, merged_group_name, ngme_chain_reps, chain_combine
       )
       s
     }, mc.cores = num_cores)
@@ -789,7 +847,7 @@ compute_err_1rep <- function(
         {
           scores[[nn]] <- compute_scores(
             ngme_1rep, n_gibbs_samples, n_burnin, seed + nn, A_pred_block,
-            noise_test_idx, y_data, group_data, X_pred, metric, thining_gap, merge_groups, merged_group_name
+            noise_test_idx, y_data, group_data, X_pred, metric, thining_gap, merge_groups, merged_group_name, ngme_chain_reps, chain_combine
           )
         },
         error = function(e) {
@@ -849,6 +907,64 @@ compute_err_1rep <- function(
 # 2. partition first, then do CV for each partition (with many replicates), and average
 
 
+build_cv_aw_draws_matrix <- function(A_pred_block, Ws_block, n_obs, has_models) {
+  if (!has_models) {
+    return(matrix(0, nrow = n_obs, ncol = length(Ws_block)))
+  }
+  if (length(Ws_block) == 0) {
+    return(matrix(0, nrow = n_obs, ncol = 0))
+  }
+  do.call(cbind, lapply(Ws_block, function(W) as.numeric(A_pred_block %*% W)))
+}
+
+
+collect_cv_chain_samples <- function(
+    ngme_chain_reps,
+    n_gibbs_samples,
+    n_burnin,
+    seed_int,
+    X_pred) {
+  Ws_block <- list()
+  W2s_block <- list()
+  chain_idx_1 <- integer()
+  chain_idx_2 <- integer()
+  fe_by_chain <- vector("list", length(ngme_chain_reps))
+
+  for (ci in seq_along(ngme_chain_reps)) {
+    chain_rep <- ngme_chain_reps[[ci]]
+    fe_by_chain[[ci]] <- as.numeric(X_pred %*% chain_rep$feff)
+
+    Ws_result <- sampling_cpp(
+      chain_rep,
+      n = n_gibbs_samples * 2,
+      n_burnin = n_burnin,
+      posterior = TRUE,
+      seed = seed_int + ci - 1L
+    )
+    Ws <- Ws_result[["W"]]
+
+    if (is.null(Ws) || length(Ws) == 0) {
+      stop("sampling_cpp returned NULL or empty result for chain ", ci)
+    }
+
+    Ws_1 <- head(Ws, n_gibbs_samples)
+    Ws_2 <- tail(Ws, n_gibbs_samples)
+    Ws_block <- c(Ws_block, Ws_1)
+    W2s_block <- c(W2s_block, Ws_2)
+    chain_idx_1 <- c(chain_idx_1, rep(ci, length(Ws_1)))
+    chain_idx_2 <- c(chain_idx_2, rep(ci, length(Ws_2)))
+  }
+
+  list(
+    Ws_block = Ws_block,
+    W2s_block = W2s_block,
+    chain_idx_1 = chain_idx_1,
+    chain_idx_2 = chain_idx_2,
+    fe_by_chain = fe_by_chain
+  )
+}
+
+
 # helper function to compute the scores
 compute_scores <- function(
     ngme_1rep,
@@ -863,114 +979,92 @@ compute_scores <- function(
     metric,
     thining_gap,
     merge_groups = FALSE,
-    merged_group_name = NULL) {
-  # Add error handling for the C++ sampling_cpp call
+    merged_group_name = NULL,
+    ngme_chain_reps = NULL,
+    chain_combine = "param_mean") {
   tryCatch(
     {
-      # Ensure seed is an integer and within valid range
       seed_int <- as.integer(abs(seed) %% 2147483647)
+      n_obs <- nrow(X_pred)
+      has_models <- length(ngme_1rep$models) > 0
+      use_chain_average <- chain_combine == "predictive_average" &&
+        !is.null(ngme_chain_reps) &&
+        length(ngme_chain_reps) > 1
 
-      # Add diagnostic message
-      # message(sprintf("Calling sampling_cpp with n=%d, n_burnin=%d, seed=%d",
-      #                n_gibbs_samples * 2, n_burnin, seed_int))
+      if (use_chain_average) {
+        sampled <- collect_cv_chain_samples(
+          ngme_chain_reps = ngme_chain_reps,
+          n_gibbs_samples = n_gibbs_samples,
+          n_burnin = n_burnin,
+          seed_int = seed_int,
+          X_pred = X_pred
+        )
 
-      # Call sampling_cpp with error handling
-      Ws_result <- tryCatch(
-        {
-          sampling_cpp(
-            ngme_1rep,
-            n = n_gibbs_samples * 2,
-            n_burnin = n_burnin,
-            posterior = TRUE,
-            seed = seed_int
-          )
-        },
-        error = function(e) {
-          message("Error in sampling_cpp: ", e$message)
-          # Try again with different seed
-          message("Retrying with different seed...")
-          sampling_cpp(
-            ngme_1rep,
-            n = n_gibbs_samples * 2,
-            n_burnin = n_burnin,
-            posterior = TRUE,
-            seed = seed_int
-          )
+        AW_N_1 <- build_cv_aw_draws_matrix(
+          A_pred_block,
+          sampled$Ws_block,
+          n_obs = n_obs,
+          has_models = has_models
+        )
+        AW_N_2 <- build_cv_aw_draws_matrix(
+          A_pred_block,
+          sampled$W2s_block,
+          n_obs = n_obs,
+          has_models = has_models
+        )
+
+        fe_N_1 <- do.call(cbind, lapply(sampled$chain_idx_1, function(ci) sampled$fe_by_chain[[ci]]))
+        fe_N_2 <- do.call(cbind, lapply(sampled$chain_idx_2, function(ci) sampled$fe_by_chain[[ci]]))
+
+        n_draws <- ncol(fe_N_1)
+        thin_idx <- seq(1, n_draws, by = thining_gap + 1)
+
+        pred_N_1_thin <- fe_N_1[, thin_idx, drop = FALSE] + AW_N_1[, thin_idx, drop = FALSE]
+        pred_N_2_thin <- fe_N_2[, thin_idx, drop = FALSE] + AW_N_2[, thin_idx, drop = FALSE]
+      } else {
+        Ws_result <- sampling_cpp(
+          ngme_1rep,
+          n = n_gibbs_samples * 2,
+          n_burnin = n_burnin,
+          posterior = TRUE,
+          seed = seed_int
+        )
+        Ws <- Ws_result[["W"]]
+
+        if (is.null(Ws) || length(Ws) == 0) {
+          stop("sampling_cpp returned NULL or empty result")
         }
-      )
 
-      Ws <- Ws_result[["W"]]
-      # Ws <- Ws_result[["cond_W"]]
+        Ws_block <- head(Ws, n_gibbs_samples)
+        W2s_block <- tail(Ws, n_gibbs_samples)
 
-      if (is.null(Ws) || length(Ws) == 0) {
-        stop("sampling_cpp returned NULL or empty result")
+        AW_N_1 <- build_cv_aw_draws_matrix(
+          A_pred_block,
+          Ws_block,
+          n_obs = n_obs,
+          has_models = has_models
+        )
+        AW_N_2 <- build_cv_aw_draws_matrix(
+          A_pred_block,
+          W2s_block,
+          n_obs = n_obs,
+          has_models = has_models
+        )
+
+        fe <- as.numeric(X_pred %*% ngme_1rep$feff)
+        fe_N <- matrix(rep(fe, n_gibbs_samples), ncol = n_gibbs_samples, byrow = FALSE)
+        thin_idx <- seq(1, n_gibbs_samples, by = thining_gap + 1)
+
+        pred_N_1_thin <- fe_N[, thin_idx, drop = FALSE] + AW_N_1[, thin_idx, drop = FALSE]
+        pred_N_2_thin <- fe_N[, thin_idx, drop = FALSE] + AW_N_2[, thin_idx, drop = FALSE]
       }
 
-      # Rest of the function remains the same
-      Ws_block <- head(Ws, n_gibbs_samples)
-      W2s_block <- tail(Ws, n_gibbs_samples)
+      n_thin <- ncol(pred_N_1_thin)
+      seed_group_1 <- seed_int + seq_len(n_thin)
+      seed_group_2 <- seed_int + seq_len(n_thin) + n_thin
+      mn_N_1 <- sapply(seq_len(n_thin), function(x) simulate(test_noise, seed = seed_group_1[x])[[1]])
+      mn_N_2 <- sapply(seq_len(n_thin), function(x) simulate(test_noise, seed = seed_group_2[x])[[1]])
 
-      # keep 50% of the thinning samples for CRPS, sCRPS
-      Ws_block_thin <- Ws_block[seq(1, n_gibbs_samples, by = thining_gap + 1)]
-      W2s_block_thin <- W2s_block[seq(1, n_gibbs_samples, by = thining_gap + 1)]
-
-      # Note: Ws_block is a list of N realizations of W of current replicate
-      # Note: AW_N_1 is a matrix of n_test * N
-      AW_N_1 <- if (length(ngme_1rep$models) == 0) {
-        0
-      } else {
-        Reduce(cbind, sapply(Ws_block, function(W) A_pred_block %*% W))
-      }
-      AW_N_2 <- if (length(ngme_1rep$models) == 0) {
-        0
-      } else {
-        Reduce(cbind, sapply(W2s_block, function(W) A_pred_block %*% W))
-      }
-
-      AW_N_1_thin <- if (length(ngme_1rep$models) == 0) {
-        0
-      } else {
-        Reduce(cbind, sapply(Ws_block_thin, function(W) A_pred_block %*% W))
-      }
-      AW_N_2_thin <- if (length(ngme_1rep$models) == 0) {
-        0
-      } else {
-        Reduce(cbind, sapply(W2s_block_thin, function(W) A_pred_block %*% W))
-      }
-
-      # sampling Y by, Y = X feff + (block_A %*% block_W) + eps
-      # AW_N_1[[1]] is concat(A1 W1, A2 W2, ..)
-
-      # generate fixed effect
-      fe <- with(ngme_1rep, as.numeric(X_pred %*% feff))
-      fe_N <- matrix(
-        rep(fe, n_gibbs_samples),
-        ncol = n_gibbs_samples,
-        byrow = F
-      )
-
-      n_thin <- length(Ws_block_thin)
-      fe_N_thin <- matrix(
-        rep(fe, n_thin),
-        ncol = n_thin,
-        byrow = F
-      )
-
-      # prediction using all samples
-      pred_N_1 <- fe_N + AW_N_1
-      pred_N_2 <- fe_N + AW_N_2
-
-      # prediction using thinning samples
-      pred_N_1_thin <- fe_N_thin + AW_N_1_thin
-      pred_N_2_thin <- fe_N_thin + AW_N_2_thin
-
-      # simulate measurement noise
-      seed_group_1 <- seed_int + 1:n_thin
-      seed_group_2 <- seed_int + 1:n_thin + n_thin
-      mn_N_1 <- sapply(1:n_thin, function(x) simulate(test_noise, seed = seed_group_1[x])[[1]])
-      mn_N_2 <- sapply(1:n_thin, function(x) simulate(test_noise, seed = seed_group_2[x])[[1]])
-
-      # simulate y using thinning samples
       Y_N_1_thin <- pred_N_1_thin + mn_N_1
       Y_N_2_thin <- pred_N_2_thin + mn_N_2
 
@@ -988,9 +1082,8 @@ compute_scores <- function(
         stop(e)
       }
       warning(paste("Error in compute_scores:", e$message))
-      # Return a default score structure with NAs
       n_group <- length(levels(group_data))
-      if (n_group == 0) n_group <- 1 # Default to 1 if no groups
+      if (n_group == 0) n_group <- 1
 
       scores <- matrix(NA, nrow = n_group, ncol = 4)
       colnames(scores) <- c("MAE", "MSE", "neg.CRPS", "neg.sCRPS")

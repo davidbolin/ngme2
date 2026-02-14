@@ -433,6 +433,8 @@ SparseMatrix<double, 0, int> Qinv(SparseMatrix<double, 0, int> &Q_R)
 	while (i > 0)
 	{
 		--i;
+		const int row_nnz = static_cast<int>(R[i].size());
+		const int n_offdiag = std::max(0, row_nnz - 1);
 		// first find the indices of the non-zero elements
 		for (pos = R[i].begin(), ++pos, j = 0; pos != R[i].end(); ++pos, j++)
 		{
@@ -442,7 +444,7 @@ SparseMatrix<double, 0, int> Qinv(SparseMatrix<double, 0, int> &Q_R)
 		}
 // multiply the row of R with the rows of iQ
 #pragma omp parallel for private(pos)
-		for (int j2 = 0; j2 < (R[i].size() - 1); ++j2)
+		for (int j2 = 0; j2 < n_offdiag; ++j2)
 		{
 			Qvectype::iterator iQpos_tmp = iQpos[j2];
 			Qvectype::iterator iQend = iQ[ii[j2]].end();
@@ -461,7 +463,7 @@ SparseMatrix<double, 0, int> Qinv(SparseMatrix<double, 0, int> &Q_R)
 			diag += s[j] * (pos->second);
 
 		// add the elements to iQ
-		j = R[i].size() - 1;
+		j = row_nnz - 1;
 		while (j > 0)
 		{
 			--j;

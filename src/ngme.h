@@ -2,6 +2,7 @@
 #define NGME_H
 
 #include <iostream>
+#include <algorithm>
 #include <numeric>
 #include <string>
 #include <vector>
@@ -64,6 +65,7 @@ public:
   int get_n_params() const override { return n_params; }
 
   vector<Rcpp::List> output() const {
+    sync_all_repls_if_needed(false);
     vector<Rcpp::List> output;
     for (int i = 0; i < n_repl; i++) {
       output.push_back(ngme_repls[i]->output());
@@ -72,6 +74,7 @@ public:
   }
 
   vector<vector<VectorXd>> get_VW() const {
+    sync_all_repls_if_needed(false);
     vector<vector<VectorXd>> output;
     for (int i = 0; i < n_repl; i++) {
       output.push_back(ngme_repls[i]->get_VW());
@@ -88,6 +91,7 @@ public:
   void burn_in(int iterations);
 
   double log_likelihood() const {
+    sync_all_repls_if_needed(false);
     double ll = 0;
     for (int i = 0; i < n_repl; i++) {
       ll += ngme_repls[i]->log_likelihood();
@@ -103,6 +107,14 @@ private:
   Eigen::MatrixXd last_precond_;
   double last_precond_eps_{1e-5};
   bool precond_valid_{false};
+
+  // Current parameter vector and lazy-sync state for ws strategy.
+  mutable Eigen::VectorXd current_param_;
+  mutable std::vector<unsigned char> repl_dirty_;
+  mutable std::vector<unsigned char> repl_precond_ready_;
+
+  void sync_repl_if_needed(int idx, bool with_precond) const;
+  void sync_all_repls_if_needed(bool with_precond) const;
 };
 
 #endif

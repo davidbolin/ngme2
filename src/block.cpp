@@ -451,9 +451,7 @@ void BlockModel::set_parameter_and_update(const VectorXd &Theta,
   // std::chrono::duration_cast<std::chrono::milliseconds>(endTime -
   // startTime).count() << std::endl;
   curr_iter++;
-  if (n_latent > 0 && family == "normal") {
-    update_QQ();
-  }
+  // QQ is refreshed lazily when sampling W in sampleW_VY().
 }
 
 // --------- Fiexed effects and Measurement Error ---------------

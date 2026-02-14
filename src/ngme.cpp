@@ -43,6 +43,15 @@ Ngme::Ngme(const Rcpp::List &R_ngme, unsigned long seed, int sampling_strategy,
     p[i] += distribution(gen);
   }
   ngme_repls[0]->set_parameter_and_update(p, true);
+  current_param_ = p;
+  repl_dirty_.assign(n_repl, static_cast<unsigned char>(0));
+  repl_precond_ready_.assign(n_repl, static_cast<unsigned char>(0));
+  if (sampling_strategy == Strategy::ws && n_repl > 0) {
+    std::fill(repl_dirty_.begin(), repl_dirty_.end(),
+              static_cast<unsigned char>(1));
+    repl_dirty_[0] = static_cast<unsigned char>(0);
+    repl_precond_ready_[0] = static_cast<unsigned char>(1);
+  }
 }
 
 void Ngme::compute(bool with_precond, double eps) {
@@ -63,6 +72,7 @@ void Ngme::compute(bool with_precond, double eps) {
     }
   } else { // ws
     int idx = weighted_sampler(gen);
+    sync_repl_if_needed(idx, with_precond);
     ngme_repls[idx]->compute_grad_and_hessian(with_precond, eps);
     last_grad_ = ngme_repls[idx]->get_gradient();
     if (with_precond)
@@ -88,6 +98,7 @@ VectorXd Ngme::grad() {
 }
 
 void Ngme::burn_in(int iterations) {
+  sync_all_repls_if_needed(false);
 #pragma omp parallel for schedule(static) num_threads(num_threads_repl)
   for (int i = 0; i < n_repl; i++) {
     ngme_repls[i]->burn_in(iterations);
@@ -100,12 +111,23 @@ VectorXd Ngme::get_parameter() {
 }
 
 void Ngme::set_parameter_and_update(const VectorXd &p, bool with_precond) {
+  current_param_ = p;
+  if (sampling_strategy == Strategy::ws) {
+    std::fill(repl_dirty_.begin(), repl_dirty_.end(),
+              static_cast<unsigned char>(1));
+    std::fill(repl_precond_ready_.begin(), repl_precond_ready_.end(),
+              static_cast<unsigned char>(0));
+  } else {
   // set the same parameter for all latent
   // std::chrono::steady_clock::time_point begin =
   // std::chrono::steady_clock::now();
 #pragma omp parallel for schedule(static) num_threads(num_threads_repl)
-  for (int i = 0; i < n_repl; i++) {
+    for (int i = 0; i < n_repl; i++) {
     ngme_repls[i]->set_parameter_and_update(p, with_precond);
+      repl_dirty_[i] = static_cast<unsigned char>(0);
+      repl_precond_ready_[i] =
+          static_cast<unsigned char>(with_precond ? 1 : 0);
+    }
   }
 
   // set the different parameter for each random effect
@@ -115,4 +137,36 @@ void Ngme::set_parameter_and_update(const VectorXd &p, bool with_precond) {
   grad_valid_ = false;
   precond_valid_ = false;
   reset_computed();
+}
+
+void Ngme::sync_repl_if_needed(int idx, bool with_precond) const {
+  if (sampling_strategy != Strategy::ws || idx < 0 || idx >= n_repl) {
+    return;
+  }
+  const bool need_sync = (repl_dirty_[idx] != 0) ||
+                         (with_precond && repl_precond_ready_[idx] == 0);
+  if (!need_sync) {
+    return;
+  }
+  ngme_repls[idx]->set_parameter_and_update(current_param_, with_precond);
+  repl_dirty_[idx] = static_cast<unsigned char>(0);
+  repl_precond_ready_[idx] = static_cast<unsigned char>(with_precond ? 1 : 0);
+}
+
+void Ngme::sync_all_repls_if_needed(bool with_precond) const {
+  if (sampling_strategy != Strategy::ws) {
+    return;
+  }
+#pragma omp parallel for schedule(static) num_threads(num_threads_repl)
+  for (int i = 0; i < n_repl; i++) {
+    const bool need_sync = (repl_dirty_[i] != 0) ||
+                           (with_precond && repl_precond_ready_[i] == 0);
+    if (!need_sync) {
+      continue;
+    }
+    ngme_repls[i]->set_parameter_and_update(current_param_, with_precond);
+    repl_dirty_[i] = static_cast<unsigned char>(0);
+    repl_precond_ready_[i] =
+        static_cast<unsigned char>(with_precond ? 1 : 0);
+  }
 }

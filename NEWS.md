@@ -2,6 +2,8 @@
 * Add grad.norm plateau-based step decay via `control_opt(stepsize_decay = "grad_norm_plateau")` (epoch-level, synchronized across chains)
 * Add `stepsize_decay()` helper for configuring decay options
 * Update verbose output to include stepsize decay scale and effective stepsize
+* Improve `cross_validation(data = ...)` model rebuild for refit-on-new-data workflows:
+  it now resolves external formula symbols (for example `mesh`, `B`, `n_basis`) from the fitted object when needed, and falls back to rebuild-without-start plus hyperparameter transplant if `start` state dimensions differ.
 
 # ngme2 0.8.4 (2026-02-01)
 * Fix iid model using argument mesh instead of map

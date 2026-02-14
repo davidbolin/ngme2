@@ -367,16 +367,21 @@ rebuild_cv_model_with_data <- function(ngme_obj, data) {
     group = group_new,
     replicate = replicate_new
   )
+  rebuild_env <- build_cv_rebuild_env(
+    formula = fit$formula,
+    ngme_obj = ngme_obj,
+    data = data
+  )
 
   tryCatch(
     {
-      do.call(ngme, c(build_args, list(start = ngme_obj)))
+      do.call("ngme", c(build_args, list(start = ngme_obj)), envir = rebuild_env)
     },
     error = function(e) {
       if (grepl("length of [WV] should be the same", e$message)) {
         # Fallback for new data with different latent/noise state dimension:
         # rebuild without start and transplant only compatible hyperparameters.
-        rebuilt <- do.call(ngme, build_args)
+        rebuilt <- do.call("ngme", build_args, envir = rebuild_env)
         rebuilt <- transplant_cv_hyperparameters(rebuilt, ngme_obj)
         return(rebuilt)
       }
@@ -387,6 +392,50 @@ rebuild_cv_model_with_data <- function(ngme_obj, data) {
       )
     }
   )
+}
+
+
+build_cv_rebuild_env <- function(formula, ngme_obj, data) {
+  env <- new.env(parent = parent.frame())
+  env$ngme <- ngme
+
+  formula_env <- environment(formula)
+  symbols <- setdiff(unique(all.vars(formula)), names(data))
+  if (length(symbols) == 0) return(env)
+  if (length(ngme_obj$replicates) == 0) return(env)
+  if (length(ngme_obj$replicates[[1]]$models) == 0) return(env)
+
+  rep1 <- ngme_obj$replicates[[1]]
+  model1 <- rep1$models[[1]]
+  operator <- model1$operator
+  model_noise <- model1$noise
+
+  for (sym in symbols) {
+    if (exists(sym, envir = env, inherits = TRUE)) next
+    val <- resolve_cv_symbol_binding(
+      sym = sym,
+      formula_env = formula_env,
+      operator = operator,
+      model_noise = model_noise
+    )
+    if (!is.null(val)) assign(sym, val, envir = env)
+  }
+
+  env
+}
+
+
+resolve_cv_symbol_binding <- function(sym, formula_env, operator, model_noise) {
+  if (is.environment(formula_env) && exists(sym, envir = formula_env, inherits = TRUE)) {
+    return(get(sym, envir = formula_env, inherits = TRUE))
+  }
+
+  if (sym == "mesh" && !is.null(operator$mesh)) return(operator$mesh)
+  if (sym %in% c("B", "B_kappa", "B_K") && !is.null(operator$B_K)) return(operator$B_K)
+  if (sym %in% c("B_sigma", "B_mu", "B_nu") && !is.null(model_noise[[sym]])) return(model_noise[[sym]])
+  if (grepl("^n_?basis$", sym) && !is.null(operator$B_K)) return(ncol(operator$B_K))
+
+  NULL
 }
 
 

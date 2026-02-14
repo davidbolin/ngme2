@@ -51,7 +51,7 @@ predict.ngme <- function(
   )
 
   if (chain_combine == "predictive_average") {
-    chain_fits <- get_ngme_chain_fits(object)
+    chain_fits <- resolve_ngme_chain_fits(object)
     if (length(chain_fits) > 1) {
       chain_preds <- lapply(seq_along(chain_fits), function(i) {
         predict_ngme_param_mean(

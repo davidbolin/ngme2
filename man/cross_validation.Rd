@@ -27,7 +27,8 @@ cross_validation(
   cores_layer2 = if (parallel) min(parallel::detectCores(), 2) else 1,
   merge_groups = FALSE,
   merged_group_name = NULL,
-  data = NULL
+  data = NULL,
+  chain_combine = c("param_mean", "predictive_average")
 )
 }
 \arguments{
@@ -85,6 +86,11 @@ If NULL, uses "group1_group2" format (default: NULL)}
 \item{data}{optional data.frame used to replace the original fitting data before running CV.
 If `NULL`, the data stored in `ngme` is used. If provided, the model is rebuilt on `data`
 while reusing fitted parameters from `ngme`.}
+
+\item{chain_combine}{how to combine multiple optimization chains:
+`"param_mean"` uses the fitted object directly (default), while
+`"predictive_average"` computes predictions from each optimization chain
+and averages at the predictive level.}
 }
 \value{
 A list containing:

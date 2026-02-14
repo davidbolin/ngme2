@@ -90,7 +90,7 @@ cross_validation <- function(
   ngme_chain_sets <- NULL
   if (chain_combine == "predictive_average") {
     ngme_chain_sets <- lapply(ngme, function(model_fit) {
-      chain_models <- get_ngme_chain_fits(model_fit)
+      chain_models <- resolve_ngme_chain_fits(model_fit)
       if (!is.null(data)) {
         chain_models <- lapply(chain_models, rebuild_cv_model_with_data, data = data)
       }
@@ -350,6 +350,38 @@ cross_validation <- function(
       Y_2 = Y_2
     )
   }
+}
+
+
+resolve_ngme_chain_fits <- function(object) {
+  stopifnot(inherits(object, "ngme"))
+
+  if (exists("get_ngme_chain_fits", mode = "function", inherits = TRUE)) {
+    return(get_ngme_chain_fits(object))
+  }
+
+  chain_outputs <- attr(object, "chain_outputs")
+  if (!is.list(chain_outputs) || length(chain_outputs) == 0) {
+    return(list(object))
+  }
+
+  lapply(chain_outputs, function(chain_output) {
+    chain_fit <- object
+    if (!is.list(chain_output) || length(chain_fit$replicates) != length(chain_output)) {
+      return(object)
+    }
+
+    for (i in seq_along(chain_fit$replicates)) {
+      chain_fit$replicates[[i]] <- update_ngme_est(
+        chain_fit$replicates[[i]],
+        chain_output[[i]]
+      )
+    }
+
+    attr(chain_fit, "chain_outputs") <- NULL
+    attr(chain_fit, "chain_fits") <- NULL
+    chain_fit
+  })
 }
 
 

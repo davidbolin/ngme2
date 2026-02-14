@@ -16,6 +16,7 @@ predict using ngme after estimation}
   burnin_size = 100,
   seed = Sys.time(),
   train_idx = NULL,
+  chain_combine = c("param_mean", "predictive_average"),
   ...
 )
 }
@@ -49,6 +50,13 @@ vector or matrix (n * 2) for spatial coords}
 \item{train_idx}{optional vector of training indices to use for posterior sampling.
 If provided, only these indices from the original data will be used for training,
 similar to cross-validation. If NULL, uses all original training data.}
+
+\item{chain_combine}{how to combine multiple optimization chains:
+\itemize{
+  \item \code{"param_mean"}: default behavior using the fitted object parameters.
+  \item \code{"predictive_average"}: run prediction for each optimization chain and
+    average predictions across chains.
+}}
 
 \item{...}{additional arguments (currently unused)}
 }

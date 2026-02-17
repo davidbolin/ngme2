@@ -54,19 +54,11 @@
 #' @param sampling_strategy subsampling method of replicates of model, c("all", "ws")
 #' "all" means using all replicates in each iteration,
 #' "ws" means weighted sampling (each iteration use 1 replicate to compute the gradient, the sample probability is proption to its number of observations)
-#' @param stepsize_decay stepsize decay strategy. Either a character string
-#'   ("none" or "grad_norm_plateau") or an object created by
-#'   \code{stepsize_decay()}.
-#'   decays the stepsize when the mean grad.norm() across chains has not decreased for
-#'   \code{stepsize_decay_patience} consecutive epochs (checked at each checkpoint, i.e.
-#'   every \code{iterations / n_batch} iterations). All chains decay together after trigger
-#'   (after \code{stepsize_decay_warmup} epochs).
-#' @param stepsize_decay_patience number of consecutive epochs without grad.norm() improvement
-#'   before decaying stepsize.
-#' @param stepsize_decay_gamma decay factor applied when triggered (0 < gamma < 1).
-#' @param stepsize_decay_min_delta minimum required decrease in grad.norm() to be counted as improvement.
-#' @param stepsize_decay_warmup number of initial epochs to skip decay checks.
-#' @param stepsize_decay_min_stepsize lower bound for stepsize after decay (absolute value).
+#' @param stepsize_control unified stepsize configuration created by
+#'   \code{stepsize_control()}, \code{poly_decay()}, or \code{batch_decay()}.
+#'   For polynomial schedule, \code{poly_decay(..., burnin_iter = B)} keeps
+#'   schedule scale at 1 for the first \code{B} iterations, then starts decay
+#'   with reset local time index.
 #' @param pflug_conv_check use Pflug diagnostic for convergence check
 #' @param pflug_alpha scaling factor (0-1] for Pflug criterion: require \code{pflug_sum < pflug_alpha * max_pflug_sum}
 #' @param max_R_hat_conv_check use max_R_hat for convergence check
@@ -98,12 +90,7 @@ control_opt <- function(
     verbose = FALSE,
     store_traj = TRUE,
     robust = FALSE,
-    stepsize_decay = c("none", "grad_norm_plateau"),
-    stepsize_decay_patience = 3,
-    stepsize_decay_gamma = 0.5,
-    stepsize_decay_min_delta = 0,
-    stepsize_decay_warmup = 0,
-    stepsize_decay_min_stepsize = 0,
+    stepsize_control = NULL,
     n_min_batch = min(n_batch, 3),
     n_slope_check = min(n_batch, 3),
     trend_std_conv_check = TRUE,
@@ -118,24 +105,22 @@ control_opt <- function(
   solver_backend_list <- c("eigen", "cholmod", "accelerate", "pardiso")
   solver_factor_list <- c("llt", "ldlt")
   stepsize_decay_list <- c("none", "grad_norm_plateau")
+  stepsize_schedule_list <- c("constant", "poly")
 
-  if (inherits(stepsize_decay, "ngme_stepsize_decay")) {
-    if (!missing(stepsize_decay_patience) || !missing(stepsize_decay_gamma) ||
-      !missing(stepsize_decay_min_delta) || !missing(stepsize_decay_warmup) ||
-      !missing(stepsize_decay_min_stepsize)) {
-      warning(
-        "stepsize_decay_* arguments are ignored when stepsize_decay() is supplied."
-      )
-    }
-    stepsize_decay_method <- stepsize_decay$method
-    stepsize_decay_patience <- stepsize_decay$patience
-    stepsize_decay_gamma <- stepsize_decay$gamma
-    stepsize_decay_min_delta <- stepsize_decay$min_delta
-    stepsize_decay_warmup <- stepsize_decay$warmup
-    stepsize_decay_min_stepsize <- stepsize_decay$min_stepsize
-  } else {
-    stepsize_decay_method <- stepsize_decay
+  if (is.null(stepsize_control)) {
+    stepsize_control <- .default_stepsize_control()
   }
+  stopifnot(inherits(stepsize_control, "ngme_stepsize_control"))
+  stepsize_decay_method <- stepsize_control$decay$method
+  stepsize_decay_patience <- stepsize_control$decay$patience
+  stepsize_decay_gamma <- stepsize_control$decay$gamma
+  stepsize_decay_min_delta <- stepsize_control$decay$min_delta
+  stepsize_decay_warmup <- stepsize_control$decay$warmup
+  stepsize_decay_min_stepsize <- stepsize_control$decay$min_stepsize
+  stepsize_schedule_method <- stepsize_control$schedule$method
+  stepsize_schedule_alpha <- stepsize_control$schedule$alpha
+  stepsize_schedule_t0 <- stepsize_control$schedule$t0
+  stepsize_schedule_burnin_iter <- stepsize_control$schedule$burnin_iter
 
   # read preconditioner from optimizer
   preconditioner <- "none"
@@ -163,6 +148,7 @@ control_opt <- function(
   solver_backend <- match.arg(solver_backend, solver_backend_list)
   solver_factor <- match.arg(solver_type, solver_factor_list)
   stepsize_decay_method <- match.arg(stepsize_decay_method, stepsize_decay_list)
+  stepsize_schedule_method <- match.arg(stepsize_schedule_method, stepsize_schedule_list)
   solver_backend_idx <- match(solver_backend, solver_backend_list) - 1L
   solver_factor_idx <- match(solver_factor, solver_factor_list) - 1L
 
@@ -218,7 +204,24 @@ control_opt <- function(
     "stepsize_decay_min_stepsize must be >= 0" =
       stepsize_decay_method == "none" ||
         (is.numeric(stepsize_decay_min_stepsize) &&
-          length(stepsize_decay_min_stepsize) == 1 && stepsize_decay_min_stepsize >= 0)
+          length(stepsize_decay_min_stepsize) == 1 && stepsize_decay_min_stepsize >= 0),
+    "stepsize_schedule must be one of 'constant' or 'poly'" =
+      stepsize_schedule_method %in% stepsize_schedule_list,
+    "stepsize_schedule_alpha must be numeric scalar" =
+      is.numeric(stepsize_schedule_alpha) && length(stepsize_schedule_alpha) == 1,
+    "stepsize_schedule_t0 must be a non-negative numeric scalar" =
+      is.numeric(stepsize_schedule_t0) && length(stepsize_schedule_t0) == 1 &&
+        stepsize_schedule_t0 >= 0,
+    "stepsize_schedule_burnin_iter must be a non-negative integer scalar" =
+      is.numeric(stepsize_schedule_burnin_iter) &&
+        length(stepsize_schedule_burnin_iter) == 1 &&
+        is.finite(stepsize_schedule_burnin_iter) &&
+        stepsize_schedule_burnin_iter >= 0 &&
+        abs(stepsize_schedule_burnin_iter - round(stepsize_schedule_burnin_iter)) <
+          sqrt(.Machine$double.eps),
+    "for stepsize_schedule='poly', alpha must satisfy 1/2 < alpha < 1" =
+      stepsize_schedule_method != "poly" ||
+        (stepsize_schedule_alpha > 0.5 && stepsize_schedule_alpha < 1)
   )
 
   if (n_parallel_chain == 1) {
@@ -288,6 +291,10 @@ control_opt <- function(
     stepsize_decay_min_delta = stepsize_decay_min_delta,
     stepsize_decay_warmup = stepsize_decay_warmup,
     stepsize_decay_min_stepsize = stepsize_decay_min_stepsize,
+    stepsize_schedule = stepsize_schedule_method,
+    stepsize_schedule_alpha = stepsize_schedule_alpha,
+    stepsize_schedule_t0 = stepsize_schedule_t0,
+    stepsize_schedule_burnin_iter = as.integer(round(stepsize_schedule_burnin_iter)),
 
     # variance reduction (not used for now)
     reduce_var = reduce_var,
@@ -303,6 +310,68 @@ control_opt <- function(
 
   class(control) <- "control_opt"
   control
+}
+
+#' Generate CI-focused control settings for batch-means inference
+#'
+#' @description
+#' Convenience wrapper for \code{control_opt()} with defaults tailored for
+#' Xi-style batch-means confidence intervals.
+#'
+#' @details
+#' This helper enforces trajectory-friendly defaults:
+#' \itemize{
+#'   \item \code{store_traj = TRUE}
+#'   \item \code{trend_std_conv_check = FALSE}
+#'   \item \code{R_hat_conv_check = FALSE}
+#'   \item \code{pflug_conv_check = FALSE}
+#'   \item \code{stepsize_control = poly_decay(alpha, t0, schedule_burnin_iter)}
+#' }
+#' Any of these can still be overridden through \code{...}.
+#'
+#' @param optimizer optimizer object, default \code{sgd(stepsize = 0.03)}.
+#' @param burnin burn-in iterations before optimization.
+#' @param iterations optimization iterations.
+#' @param n_batch number of checkpoints.
+#' @param n_parallel_chain number of parallel chains.
+#' @param alpha polynomial stepsize exponent for \code{poly_decay(alpha, t0)}.
+#' @param t0 non-negative schedule offset.
+#' @param schedule_burnin_iter non-negative integer. Initial optimization
+#'   iterations where polynomial schedule scaling is disabled.
+#' @param ... additional arguments forwarded to \code{control_opt()} to override
+#'   defaults.
+#'
+#' @return object of class \code{control_opt}.
+#' @export
+control_opt_batch_ci <- function(
+    optimizer = sgd(stepsize = 0.03),
+    burnin = 100,
+    iterations = 2000,
+    n_batch = 20,
+    n_parallel_chain = 4,
+    alpha = 0.501,
+    t0 = 1,
+    schedule_burnin_iter = 0,
+    ...) {
+  defaults <- list(
+    optimizer = optimizer,
+    burnin = burnin,
+    iterations = iterations,
+    n_batch = n_batch,
+    n_parallel_chain = n_parallel_chain,
+    store_traj = TRUE,
+    trend_std_conv_check = FALSE,
+    R_hat_conv_check = FALSE,
+    pflug_conv_check = FALSE,
+    stepsize_control = poly_decay(
+      alpha = alpha,
+      t0 = t0,
+      burnin_iter = schedule_burnin_iter
+    )
+  )
+
+  args <- utils::modifyList(defaults, list(...))
+  do.call(control_opt, args)
 }
 
 

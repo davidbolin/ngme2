@@ -69,6 +69,28 @@ Ngme_optimizer::Ngme_optimizer(const Rcpp::List &control_opt,
     }
   }
 
+  // Stepsize schedule configuration
+  if (control_opt.containsElementNamed("stepsize_schedule")) {
+    stepsize_schedule_method =
+        Rcpp::as<std::string>(control_opt["stepsize_schedule"]);
+  }
+  if (control_opt.containsElementNamed("stepsize_schedule_alpha")) {
+    stepsize_schedule_alpha =
+        Rcpp::as<double>(control_opt["stepsize_schedule_alpha"]);
+  }
+  if (control_opt.containsElementNamed("stepsize_schedule_t0")) {
+    stepsize_schedule_t0 =
+        Rcpp::as<double>(control_opt["stepsize_schedule_t0"]);
+  }
+  if (control_opt.containsElementNamed("stepsize_schedule_burnin_iter")) {
+    stepsize_schedule_burnin_iter =
+        Rcpp::as<int>(control_opt["stepsize_schedule_burnin_iter"]);
+  }
+  stepsize_schedule_enabled = (stepsize_schedule_method == "poly");
+  if (method == "bfgs") {
+    stepsize_schedule_enabled = false;
+  }
+
   // Do not initialize preconditioner here; build it on-demand inside sgd loop
   x = model->get_parameter();
   prev_x = x;
@@ -101,6 +123,7 @@ VectorXd Ngme_optimizer::sgd(double eps, int iterations,
   // auto timer_grad = std::chrono::steady_clock::now();
   for (int i = 0; i < iterations; i++) {
     trajs.push_back(x);
+    double stepsize_schedule_scale = 1.0;
 
     if (method != "bfgs") {
       // Unified compute → then get
@@ -213,6 +236,19 @@ VectorXd Ngme_optimizer::sgd(double eps, int iterations,
       one_step = model->get_stepsizes().cwiseProduct(grad);
     }
 
+    if (stepsize_schedule_enabled && method != "bfgs") {
+      if (curr_iter < stepsize_schedule_burnin_iter) {
+        stepsize_schedule_scale = 1.0;
+      } else {
+        double local_iter =
+            (curr_iter - stepsize_schedule_burnin_iter) + 1.0;
+        stepsize_schedule_scale =
+            std::pow(local_iter + stepsize_schedule_t0,
+                     -stepsize_schedule_alpha);
+      }
+      one_step *= stepsize_schedule_scale;
+    }
+
     if (stepsize_decay_enabled && method != "bfgs") {
       one_step *= stepsize_decay_scale;
     }
@@ -254,11 +290,19 @@ VectorXd Ngme_optimizer::sgd(double eps, int iterations,
       std::ostringstream oss;
       oss << "iteration = : " << curr_iter + 1 << '\n';
       oss << "grad.norm() = " << grad.norm() << '\n';
+      if (stepsize_schedule_enabled) {
+        oss << "stepsize_schedule = " << stepsize_schedule_method
+            << ", schedule_scale = " << stepsize_schedule_scale
+            << ", burnin_iter = " << stepsize_schedule_burnin_iter << '\n';
+      }
       if (stepsize_decay_enabled) {
-        oss << "stepsize_scale = " << stepsize_decay_scale << '\n';
+        oss << "stepsize_decay_scale = " << stepsize_decay_scale << '\n';
+      }
+      if (stepsize_decay_enabled || stepsize_schedule_enabled) {
         if (stepsize_decay_base_stepsize > 0.0) {
+          double total_scale = stepsize_decay_scale * stepsize_schedule_scale;
           oss << "effective_stepsize = "
-              << (stepsize_decay_scale * stepsize_decay_base_stepsize) << '\n';
+              << (total_scale * stepsize_decay_base_stepsize) << '\n';
         }
       }
       // oss << "parameter = : " << x << '\n';

@@ -239,6 +239,167 @@ stepsize_decay <- function(
   ret
 }
 
+#' Stepsize schedule
+#'
+#' @details
+#' Define an iteration-dependent stepsize schedule for use in \code{control_opt()}.
+#' This schedule is independent of \code{stepsize_decay()} and applies a direct
+#' multiplicative scaling by iteration index:
+#' \deqn{\eta_t = \eta_0 (t + t_0)^{-\alpha}}.
+#'
+#' @param method schedule type. "constant" keeps \eqn{\eta_t = \eta_0} and
+#'   "poly" uses polynomial decay.
+#' @param alpha polynomial exponent used when \code{method = "poly"}.
+#'   Must satisfy \eqn{1/2 < \alpha < 1}.
+#' @param t0 non-negative offset in iteration index.
+#' @param burnin_iter non-negative integer. During these initial iterations,
+#'   schedule scaling is fixed to 1. Afterward, polynomial decay is applied
+#'   with reset local time index.
+#'
+#' @return a list of control variables for stepsize schedule
+#' (used in \code{control_opt}).
+#' @export
+stepsize_schedule <- function(
+    method = c("constant", "poly"),
+    alpha = 0.501,
+    t0 = 1,
+    burnin_iter = 0) {
+  method <- match.arg(method)
+
+  stopifnot(
+    is.numeric(alpha),
+    length(alpha) == 1,
+    is.numeric(t0),
+    length(t0) == 1,
+    t0 >= 0,
+    is.numeric(burnin_iter),
+    length(burnin_iter) == 1,
+    is.finite(burnin_iter),
+    burnin_iter >= 0,
+    abs(burnin_iter - round(burnin_iter)) < sqrt(.Machine$double.eps)
+  )
+  if (method == "poly") {
+    stopifnot(alpha > 0.5, alpha < 1)
+  }
+
+  ret <- list(
+    method = method,
+    alpha = alpha,
+    t0 = t0,
+    burnin_iter = as.integer(round(burnin_iter))
+  )
+  class(ret) <- "ngme_stepsize_schedule"
+  ret
+}
+
+.default_stepsize_control <- function() {
+  ret <- list(
+    schedule = stepsize_schedule(method = "constant"),
+    decay = stepsize_decay(method = "none")
+  )
+  class(ret) <- "ngme_stepsize_control"
+  ret
+}
+
+#' Unified stepsize control
+#'
+#' @details
+#' Bundle an iteration schedule (\code{stepsize_schedule}) and an optional
+#' checkpoint-based decay rule (\code{stepsize_decay}) into one object for
+#' \code{control_opt()}.
+#'
+#' @param schedule schedule component. Either an object from
+#'   \code{stepsize_schedule()} or a method string accepted by
+#'   \code{stepsize_schedule()}.
+#' @param decay decay component. Either an object from
+#'   \code{stepsize_decay()} or a method string accepted by
+#'   \code{stepsize_decay()}.
+#'
+#' @return a bundled stepsize-control object for \code{control_opt()}.
+#' @export
+stepsize_control <- function(
+    schedule = stepsize_schedule(method = "constant"),
+    decay = stepsize_decay(method = "none")) {
+  if (is.character(schedule)) {
+    stopifnot(length(schedule) == 1)
+    schedule <- stepsize_schedule(method = schedule)
+  }
+  if (is.character(decay)) {
+    stopifnot(length(decay) == 1)
+    decay <- stepsize_decay(method = decay)
+  }
+
+  stopifnot(
+    inherits(schedule, "ngme_stepsize_schedule"),
+    inherits(decay, "ngme_stepsize_decay")
+  )
+
+  ret <- list(
+    schedule = schedule,
+    decay = decay
+  )
+  class(ret) <- "ngme_stepsize_control"
+  ret
+}
+
+#' Polynomial schedule helper
+#'
+#' @details
+#' Convenience helper that enables polynomial schedule and disables
+#' checkpoint-based decay.
+#'
+#' @param alpha polynomial exponent in \eqn{(1/2,1)}.
+#' @param t0 non-negative schedule offset.
+#' @param burnin_iter non-negative integer. Initial iterations without
+#'   polynomial schedule scaling.
+#'
+#' @return a \code{stepsize_control()} object.
+#' @export
+poly_decay <- function(alpha = 0.501, t0 = 1, burnin_iter = 0) {
+  stepsize_control(
+    schedule = stepsize_schedule(
+      method = "poly",
+      alpha = alpha,
+      t0 = t0,
+      burnin_iter = burnin_iter
+    ),
+    decay = stepsize_decay(method = "none")
+  )
+}
+
+#' Batch/checkpoint decay helper
+#'
+#' @details
+#' Convenience helper that enables grad-norm plateau decay and keeps
+#' iteration schedule constant.
+#'
+#' @param patience number of consecutive checkpoints without improvement before decay.
+#' @param gamma decay factor in \eqn{(0,1)}.
+#' @param min_delta minimum required decrease to count as improvement.
+#' @param warmup number of initial checkpoints to skip.
+#' @param min_stepsize lower bound for absolute stepsize.
+#'
+#' @return a \code{stepsize_control()} object.
+#' @export
+batch_decay <- function(
+    patience = 3,
+    gamma = 0.5,
+    min_delta = 0,
+    warmup = 0,
+    min_stepsize = 0) {
+  stepsize_control(
+    schedule = stepsize_schedule(method = "constant"),
+    decay = stepsize_decay(
+      method = "grad_norm_plateau",
+      patience = patience,
+      gamma = gamma,
+      min_delta = min_delta,
+      warmup = warmup,
+      min_stepsize = min_stepsize
+    )
+  )
+}
+
 
 #' BFGS optimization
 #'

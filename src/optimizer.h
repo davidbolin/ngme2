@@ -42,6 +42,12 @@ private:
   double stepsize_decay_min_stepsize{0.0};
   double stepsize_decay_scale{1.0};
   double stepsize_decay_base_stepsize{0.0};
+  // Stepsize schedule (iteration-based) - e.g. eta_t = eta_0 (t + t0)^(-alpha)
+  bool stepsize_schedule_enabled{false};
+  std::string stepsize_schedule_method{"constant"};
+  double stepsize_schedule_alpha{0.501};
+  double stepsize_schedule_t0{1.0};
+  int stepsize_schedule_burnin_iter{0};
   double last_grad_norm{0.0};
 
   // Pflug diagnostic

@@ -442,8 +442,9 @@ SparseMatrix<double, 0, int> Qinv(SparseMatrix<double, 0, int> &Q_R)
 			s[j] = 0;				   // set values to zero
 			iQpos[j] = iQstart[ii[j]]; // start of each iQ row
 		}
-// multiply the row of R with the rows of iQ
-#pragma omp parallel for private(pos)
+		// multiply the row of R with the rows of iQ
+		// Keep this serial to avoid OpenMP dispatch instability observed
+		// in some libomp builds during intensive CV sampling workloads.
 		for (int j2 = 0; j2 < n_offdiag; ++j2)
 		{
 			Qvectype::iterator iQpos_tmp = iQpos[j2];

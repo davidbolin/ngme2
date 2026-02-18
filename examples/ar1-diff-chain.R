@@ -36,7 +36,7 @@ Y <- process + rnorm(n_obs, sd = sigma_eps)
 control_same <- control_opt(
   optimizer = precond_sgd(),
   burnin = 100,
-  iterations = 2000,
+  iterations = 500,
   n_parallel_chain = 4,
   verbose = TRUE,
   rao_blackwellization = TRUE,
@@ -53,21 +53,33 @@ control_same <- control_opt(
   pflug_conv_check = TRUE,
   pflug_alpha = 1
 )
-
-system.time({
-  ret_nig_same <- ngme(
-    Y ~ 0 + f(
-      1:n_obs,
-      name = "my_ar",
-      model = ar1(),
-      noise = noise_nig()
-    ),
-    family = noise_normal(),
-    data = data.frame(Y = Y),
-    control_opt = control_same
-  )
-})
-
+t <- 1:n_obs
+ret_nig_same <- ngme(
+  Y ~ 1 + t + f(
+    1:n_obs,
+    name = "my_ar",
+    model = ar1(),
+    noise = noise_nig()
+  ),
+  family = noise_normal(),
+  data = data.frame(Y = Y, t = t),
+  control_opt = control_same
+)
 ret_nig_same
-traceplot(ret_nig_same, "my_ar", hline = c(rho, mu, sigma, nu))
-traceplot(ret_nig_same, hline = c(sigma_eps))
+
+
+pred <- predict(
+  ret_nig_same,
+  map = list(my_ar = 1:100),
+  data = data.frame(t = 1:100),
+  estimator = c("mean", "sd", "0.05q", "0.95q", "median", "mode"),
+  sampling_size = 500,
+  burnin_size = 100,
+  seed = seed,
+  train_idx = NULL,
+  # chain_combine = c("predictive_average")
+)
+
+plot(1:100, pred$mean, type = "l")
+lines(1:100, pred$`0.05q`, col = "blue")
+lines(1:100, pred$`0.95q`, col = "blue")

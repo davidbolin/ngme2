@@ -1,0 +1,217 @@
+---
+title: "Batch-means CI for SGD in ngme2"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Batch-means CI for SGD in ngme2}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.retina = 2,
+  out.width = "100%"
+)
+```
+
+## Overview
+
+This vignette documents the batch-means confidence-interval workflow in `ngme2`,
+following Xi et al. (2020)-style inference for SGD trajectories.
+The inference target in this workflow follows Chen et al. (2020), which studies
+statistical inference for SGD model parameters.
+
+New high-level APIs covered here:
+
+- `control_opt_batch_ci()`: recommended optimizer defaults for CI runs
+- `ngme_batch_ci()`: compute CI from stored trajectories
+- `compute_ngme_ci()` / `compute_ngme_CI()`: warm-start from an existing fit,
+  run one SGD stage, then compute CI
+- `summary()` for `ngme_batch_ci`: parameter means, standard errors, CIs, and
+  covariance matrix
+
+## A quick toy example (runs fast)
+
+This example uses synthetic trajectories directly. It is useful for checking
+that CI post-processing and `summary()` work as expected.
+
+```{r}
+library(ngme2)
+
+chain1 <- cbind(theta1 = as.numeric(1:120), theta2 = as.numeric(2:121))
+chain2 <- cbind(theta1 = as.numeric(3:122), theta2 = as.numeric(4:123))
+
+ci_toy <- batch_means_ci(
+  chain_trajectories = list(chain1, chain2),
+  level = 0.95,
+  alpha = 0.6,
+  M = 5
+)
+
+sm_toy <- summary(ci_toy)
+sm_toy$table
+sm_toy$covariance
+```
+
+You can also print the formatted summary:
+
+```{r}
+print(sm_toy)
+```
+
+## Workflow A: fit with SGD and compute CI directly
+
+The workflow below is the recommended path when you plan CI from the start.
+Notice here we need to choose the `sgd` optimizer to ensure the theoretical results hold.
+We can use the helper function `control_opt_batch_ci` to set up the optimizer.
+
+```{r, eval = FALSE}
+library(ngme2)
+
+set.seed(2026)
+n_obs <- 2000
+idx <- 1:n_obs
+
+rho_true <- 0.55
+sigma_latent_true <- 3
+sigma_eps_true <- 0.4
+
+ar1_model <- f(
+  idx,
+  model = ar1(rho = rho_true),
+  noise = noise_normal(sigma = sigma_latent_true)
+)
+latent <- simulate(ar1_model, seed = 2026, nsim = 1)[[1]]
+y <- latent + rnorm(n_obs, sd = sigma_eps_true)
+dat <- data.frame(y = y)
+
+ctl <- control_opt_batch_ci(
+  optimizer = sgd(stepsize = 0.02),
+  burnin = 300,
+  iterations = 10000,
+  n_batch = 10,
+  n_parallel_chain = 1,
+  alpha = 0.51,
+  t0 = 100,
+  schedule_burnin_iter = 1000, # optional
+  start_sd = 0.2,
+  seed = 2026,
+  verbose = TRUE
+)
+
+fit <- ngme(
+  y ~ 0 + f(idx, name = "ar1_field", model = ar1(), noise = noise_normal()),
+  data = dat,
+  family = noise_normal(),
+  control_opt = ctl,
+  control_ngme = control_ngme(n_gibbs_samples = 5)
+)
+
+ci <- ngme_batch_ci(
+  fit,
+  name = "all",
+  level = 0.95,
+  alpha = 0.51,
+  M = 10,
+  burnin_iter = 1000,
+  apply_transform = TRUE
+)
+
+summary(ci)
+```
+
+## Workflow B: start from an existing fit and run CI stage
+
+Use this when your existing model was trained with another optimizer (for
+example `adam`) and you now want Xi-style SGD CI.
+
+```{r, eval = TRUE}
+library(ngme2)
+
+# Existing fit (possibly from non-SGD optimizer)
+fit0 <- ngme(
+  y ~ 0 + f(idx, name = "ar1_field", model = ar1(), noise = noise_normal()),
+  data = dat,
+  family = noise_normal(),
+  control_opt = control_opt(
+    optimizer = adamW(),
+    burnin = 300,
+    iterations = 3000,
+    n_batch = 10,
+    n_parallel_chain = 4,
+    store_traj = FALSE
+  )
+)
+summary(fit0)
+
+# CI stage: warm-start from fit0, run SGD, compute CI
+ci2 <- compute_ngme_CI(
+  fit = fit0,
+  iterations = 8000,
+  alpha = 0.51,
+  optimizer = sgd(stepsize = 0.02),
+  burnin = 300,
+  n_batch = 10,
+  n_parallel_chain = 4,
+  t0 = 100,
+  M = 10,
+  apply_transform = TRUE
+)
+
+sm2 <- summary(ci2)
+sm2$table
+sm2$covariance
+
+# Refit model used for CI stage
+fit_sgd_ci <- ci2$refit
+```
+
+## Parameter semantics and tuning notes
+
+Important distinctions:
+
+- `n_batch` in `control_opt*` is a checkpoint/convergence-check setting for
+  optimization, not Xi's retained batch count.
+- `M` in `ngme_batch_ci()` / `compute_ngme_ci()` is Xi's retained batch count
+  used by batch-means covariance estimation.
+- `alpha` is the Xi exponent and should satisfy `0.5 < alpha < 1`.
+- `t0` controls schedule offset in
+  `eta_t = eta0 * (t + t0)^(-alpha)`.
+- `schedule_burnin_iter` delays polynomial decay in optimizer schedule.
+- `burnin_iter` discards an explicit prefix of stored trajectories before
+  Xi-style batch splitting.
+- In `compute_ngme_ci()` / `compute_ngme_CI()`, only `burnin_iter` is exposed:
+  it is used for both schedule warmup and CI trajectory trimming.
+
+Recommended defaults for many cases:
+
+- `alpha = 0.501` or `0.51`
+- moderate `t0` (for example 50 to 200)
+- nonzero `burnin_iter` when the first part of trajectory is clearly transient
+
+## Transform behavior (important)
+
+If `apply_transform = TRUE`, `ngme2` applies **Post-delta**:
+
+1. compute CI in raw optimization space;
+2. map estimates and covariance to user scale with delta method.
+
+So CI inference remains aligned with the SGD/batch-means theory in raw space.
+When transformed output is requested, summary may include both transformed and
+raw-space summaries.
+
+## Reproducibility tips
+
+- set seeds in both fit and CI stage (`seed = ...`);
+- keep fixed-iteration CI runs (avoid unintended early stopping);
+- for difficult models, increase `iterations`, `burnin_iter`, and tune `eta0`
+  in `sgd(stepsize = eta0)`.
+
+## Reference
+
+Chen, X., Lee, J. D., Tong, X. T., and Zhang, Y. (2020). *Statistical
+inference for model parameters in stochastic gradient descent*. **The Annals of
+Statistics**, 48(1), 251-273. DOI:
+[10.1214/18-AOS1801](https://doi.org/10.1214/18-AOS1801).

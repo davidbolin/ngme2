@@ -4,7 +4,7 @@
 #' increasing-batch construction from Xi et al. (2020).
 #'
 #' @param trajectory numeric matrix with rows = iterations and columns = parameters.
-#' @param alpha stepsize decay exponent in 
+#' @param alpha stepsize decay exponent in
 #'   \eqn{\eta_i = \eta i^{-\alpha}}. Must satisfy \eqn{1/2 < \alpha < 1}.
 #' @param M number of retained batches (excluding burn-in batch 0). If `NULL`,
 #'   use \eqn{\lfloor n^{(1-\alpha)/2} \rfloor}.
@@ -444,8 +444,8 @@ compute_ngme_ci <- function(
   )
 
   if (isTRUE(control_opt$trend_std_conv_check) ||
-      isTRUE(control_opt$R_hat_conv_check) ||
-      isTRUE(control_opt$pflug_conv_check)) {
+    isTRUE(control_opt$R_hat_conv_check) ||
+    isTRUE(control_opt$pflug_conv_check)) {
     warning(
       "Convergence diagnostics are enabled in `control_opt`; early stopping may reduce fixed-iteration Xi-style validity.",
       call. = FALSE
@@ -502,6 +502,386 @@ compute_ngme_ci <- function(
 #' @rdname compute_ngme_ci
 #' @export
 compute_ngme_CI <- compute_ngme_ci
+
+#' Refit an Existing ngme Object with SGLD and Extract Samples
+#'
+#' Run one additional SGLD stage (warm-started from an existing `ngme` fit),
+#' then extract posterior-like samples from stored trajectories.
+#'
+#' @param fit existing fitted `ngme` object (can be obtained with any optimizer).
+#' @param iterations optimization iterations for the SGLD stage.
+#' @param optimizer optimizer for the sampling stage; must be `sgld(...)`.
+#' @param burnin burn-in iterations before optimization.
+#' @param n_batch number of optimization checkpoints.
+#' @param n_parallel_chain number of parallel chains.
+#' @param alpha polynomial schedule exponent used by `poly_decay(alpha, t0)`.
+#' @param t0 non-negative schedule offset.
+#' @param start_sd standard deviation for randomized chain initialization.
+#' @param seed random seed for SGLD stage.
+#' @param verbose logical; print optimization progress.
+#' @param name parameter block to extract: `"all"` (default), latent model name,
+#'   or `"general"`.
+#' @param burnin_iter non-negative integer used both as optimizer schedule
+#'   warmup (`stepsize_schedule_burnin_iter`) and as explicit trajectory
+#'   trimming before sampling.
+#' @param thinning positive integer thinning interval.
+#' @param apply_transform logical; apply parameter transforms to user scale.
+#' @param combine_chains logical; if `TRUE`, return one combined data.frame,
+#'   otherwise return one data.frame per chain.
+#' @param control_opt optional pre-built `control_opt` object for the SGLD
+#'   stage. If supplied, it is used directly (with `store_traj` forced to
+#'   `TRUE`).
+#' @param ... additional arguments forwarded to [control_opt()] when
+#'   `control_opt` is `NULL`.
+#'
+#' @return A data.frame (or list of data.frames) from [ngme_sgld_samples()]
+#' with extra attributes `refit`, `refit_control_opt`, and `refit_source`.
+#' @export
+compute_ngme_sgld_samples <- function(
+    fit,
+    iterations = 4000,
+    optimizer = sgld(stepsize = 0.01, temperature = 1),
+    burnin = 100,
+    n_batch = 20,
+    n_parallel_chain = 4,
+    alpha = 0.6,
+    t0 = 10,
+    start_sd = 0.2,
+    seed = Sys.time(),
+    verbose = FALSE,
+    name = "all",
+    burnin_iter = 0,
+    thinning = 1,
+    apply_transform = TRUE,
+    combine_chains = TRUE,
+    control_opt = NULL,
+    ...) {
+  stopifnot(inherits(fit, "ngme"))
+
+  fit_meta <- attr(fit, "fit")
+  stopifnot(
+    "Missing fit metadata in `fit`; please pass a fitted ngme object from ngme()." =
+      !is.null(fit_meta),
+    "Missing formula in fit metadata." = !is.null(fit_meta$formula),
+    "Missing data in fit metadata." = !is.null(fit_meta$data)
+  )
+
+  dots <- list(...)
+  if ("schedule_burnin_iter" %in% names(dots)) {
+    stop(
+      "In compute_ngme_sgld_samples(), `schedule_burnin_iter` is unified with `burnin_iter`. ",
+      "Please set only `burnin_iter`.",
+      call. = FALSE
+    )
+  }
+
+  if (is.null(control_opt)) {
+    control_opt <- do.call(
+      "control_opt",
+      utils::modifyList(
+        list(
+          optimizer = optimizer,
+          burnin = burnin,
+          iterations = iterations,
+          n_batch = n_batch,
+          n_parallel_chain = n_parallel_chain,
+          store_traj = TRUE,
+          trend_std_conv_check = FALSE,
+          R_hat_conv_check = FALSE,
+          pflug_conv_check = FALSE,
+          stepsize_control = poly_decay(
+            alpha = alpha,
+            t0 = t0,
+            burnin_iter = burnin_iter
+          ),
+          start_sd = start_sd,
+          seed = seed,
+          verbose = verbose
+        ),
+        dots
+      )
+    )
+  } else {
+    stopifnot(
+      inherits(control_opt, "control_opt"),
+      "When `control_opt` is supplied, extra `...` arguments are not used." =
+        length(dots) == 0
+    )
+  }
+
+  stopifnot(
+    "compute_ngme_sgld_samples currently requires optimizer = sgld(...)." =
+      identical(control_opt$sgd_method, "sgld")
+  )
+
+  if (isTRUE(control_opt$trend_std_conv_check) ||
+    isTRUE(control_opt$R_hat_conv_check) ||
+    isTRUE(control_opt$pflug_conv_check)) {
+    warning(
+      "Convergence diagnostics are enabled in `control_opt`; early stopping may reduce fixed-iteration sampling consistency.",
+      call. = FALSE
+    )
+  }
+
+  control_opt$stepsize_schedule_burnin_iter <- as.integer(round(burnin_iter))
+  control_opt$store_traj <- TRUE
+
+  fit_env <- build_cv_rebuild_env(
+    formula = fit_meta$formula,
+    ngme_obj = fit,
+    data = fit_meta$data
+  )
+
+  control_ngme_refit <- fit$replicates[[1]]$control_ngme
+  if (is.null(control_ngme_refit)) {
+    control_ngme_refit <- control_ngme()
+  }
+
+  refit <- do.call(
+    "ngme",
+    list(
+      formula = fit_meta$formula,
+      data = fit_meta$data,
+      family = fit_meta$family,
+      control_opt = control_opt,
+      control_ngme = control_ngme_refit,
+      group = fit_meta$group,
+      replicate = fit_meta$replicate,
+      start = fit
+    ),
+    envir = fit_env
+  )
+
+  ret <- ngme_sgld_samples(
+    ngme = refit,
+    name = name,
+    burnin_iter = burnin_iter,
+    thinning = thinning,
+    apply_transform = apply_transform,
+    combine_chains = combine_chains
+  )
+
+  attr(ret, "refit") <- refit
+  attr(ret, "refit_control_opt") <- control_opt
+  attr(ret, "refit_source") <- fit
+  ret
+}
+
+#' Extract Posterior-like Samples from Stored SGLD Trajectories
+#'
+#' Build posterior-like samples from optimizer trajectories by dropping an
+#' initial burn-in segment and applying thinning.
+#'
+#' @param ngme fitted `ngme` object with `store_traj = TRUE`.
+#' @param name parameter block to extract: `"all"` (default), latent model name,
+#'   or `"general"`.
+#' @param burnin_iter non-negative integer. Number of initial iterations to
+#'   discard before sampling.
+#' @param thinning positive integer thinning interval.
+#' @param apply_transform logical; apply parameter transforms to user scale.
+#' @param combine_chains logical; if `TRUE`, return one combined data.frame,
+#'   otherwise return one data.frame per chain.
+#'
+#' @return A data.frame (or list of data.frames when `combine_chains = FALSE`)
+#' with columns `.chain`, `.draw`, `.iter`, and one column per parameter.
+#' @export
+ngme_sgld_samples <- function(
+    ngme,
+    name = "all",
+    burnin_iter = 0,
+    thinning = 1,
+    apply_transform = TRUE,
+    combine_chains = TRUE) {
+  stopifnot(
+    inherits(ngme, "ngme"),
+    is.character(name),
+    length(name) == 1,
+    is.numeric(burnin_iter),
+    length(burnin_iter) == 1,
+    is.finite(burnin_iter),
+    burnin_iter >= 0,
+    abs(burnin_iter - round(burnin_iter)) < sqrt(.Machine$double.eps),
+    is.numeric(thinning),
+    length(thinning) == 1,
+    is.finite(thinning),
+    thinning >= 1,
+    abs(thinning - round(thinning)) < sqrt(.Machine$double.eps),
+    is.logical(apply_transform),
+    length(apply_transform) == 1,
+    is.logical(combine_chains),
+    length(combine_chains) == 1
+  )
+
+  chain_data <- .ngme_chain_trajectories(
+    ngme = ngme,
+    name = name,
+    apply_transform = apply_transform
+  )
+
+  burnin_iter <- as.integer(round(burnin_iter))
+  thinning <- as.integer(round(thinning))
+
+  n_iter_vec <- vapply(chain_data$chains, nrow, integer(1))
+  n_iter <- min(n_iter_vec)
+  if (length(unique(n_iter_vec)) > 1) {
+    warning(
+      "Chains have different lengths; truncating to the minimum length.",
+      call. = FALSE
+    )
+  }
+
+  stopifnot(
+    "burnin_iter must be smaller than the available trajectory length." =
+      burnin_iter < n_iter
+  )
+
+  keep_iter <- seq.int(burnin_iter + 1L, n_iter, by = thinning)
+  stopifnot(length(keep_iter) >= 1)
+
+  per_chain <- lapply(seq_along(chain_data$chains), function(chain_idx) {
+    mat <- chain_data$chains[[chain_idx]][seq_len(n_iter), , drop = FALSE]
+    mat <- mat[keep_iter, , drop = FALSE]
+    df <- as.data.frame(mat, check.names = FALSE)
+    df$.chain <- chain_idx
+    df$.draw <- seq_len(nrow(df))
+    df$.iter <- keep_iter
+    df <- df[, c(".chain", ".draw", ".iter", colnames(mat)), drop = FALSE]
+    rownames(df) <- NULL
+    df
+  })
+
+  if (isTRUE(combine_chains)) {
+    ret <- do.call(rbind, per_chain)
+    rownames(ret) <- NULL
+  } else {
+    ret <- per_chain
+  }
+
+  attr(ret, "name") <- name
+  attr(ret, "burnin_iter") <- burnin_iter
+  attr(ret, "thinning") <- thinning
+  attr(ret, "apply_transform") <- apply_transform
+  attr(ret, "n_chains") <- length(per_chain)
+  attr(ret, "n_samples_per_chain") <- length(keep_iter)
+  ret
+}
+
+#' Quantile Confidence Intervals from SGLD Samples
+#'
+#' Compute parameter-wise quantile confidence intervals from posterior-like
+#' SGLD samples returned by [ngme_sgld_samples()].
+#'
+#' @param samples data.frame (or list of data.frames) returned by
+#'   [ngme_sgld_samples()].
+#' @param lower lower quantile probability (e.g. 0.025).
+#' @param upper upper quantile probability (e.g. 0.975).
+#'
+#' @return A list with posterior-like point estimates (`estimates`), quantile
+#' intervals (`ci`), and sample covariance matrix (`covariance`).
+#' Class: `ngme_sgld_ci`.
+#' @export
+ngme_sgld_ci <- function(samples, lower = 0.025, upper = 0.975) {
+  stopifnot(
+    is.data.frame(samples) ||
+      (is.list(samples) &&
+        length(samples) >= 1 &&
+        all(vapply(samples, is.data.frame, logical(1)))),
+    is.numeric(lower),
+    length(lower) == 1,
+    is.finite(lower),
+    lower > 0,
+    lower < 1,
+    is.numeric(upper),
+    length(upper) == 1,
+    is.finite(upper),
+    upper > 0,
+    upper < 1,
+    lower < upper
+  )
+
+  if (is.list(samples) && !is.data.frame(samples)) {
+    samples <- do.call(rbind, samples)
+    rownames(samples) <- NULL
+  }
+
+  burnin_iter <- attr(samples, "burnin_iter")
+  thinning <- attr(samples, "thinning")
+  apply_transform <- attr(samples, "apply_transform")
+  name <- attr(samples, "name")
+
+  param_cols <- setdiff(colnames(samples), c(".chain", ".draw", ".iter"))
+  stopifnot(length(param_cols) >= 1)
+  stopifnot(
+    "All parameter columns in `samples` must be numeric." =
+      all(vapply(samples[, param_cols, drop = FALSE], is.numeric, logical(1)))
+  )
+
+  sample_mat <- as.matrix(samples[, param_cols, drop = FALSE])
+  storage.mode(sample_mat) <- "double"
+  colnames(sample_mat) <- param_cols
+
+  estimates <- colMeans(sample_mat)
+  std_error <- if (nrow(sample_mat) > 1) {
+    apply(sample_mat, 2, stats::sd) / sqrt(nrow(sample_mat))
+  } else {
+    setNames(rep(0, ncol(sample_mat)), colnames(sample_mat))
+  }
+
+  qmat <- t(vapply(seq_len(ncol(sample_mat)), function(j) {
+    stats::quantile(
+      sample_mat[, j],
+      probs = c(lower, upper),
+      names = FALSE,
+      na.rm = TRUE
+    )
+  }, numeric(2)))
+  colnames(qmat) <- c("lower", "upper")
+  rownames(qmat) <- colnames(sample_mat)
+
+  cov_mat <- if (nrow(sample_mat) > 1) {
+    stats::cov(sample_mat)
+  } else {
+    matrix(0, ncol(sample_mat), ncol(sample_mat))
+  }
+  dimnames(cov_mat) <- list(colnames(sample_mat), colnames(sample_mat))
+
+  n_chains <- attr(samples, "n_chains")
+  n_samples_per_chain <- attr(samples, "n_samples_per_chain")
+  if (is.null(n_chains)) {
+    n_chains <- if (".chain" %in% colnames(samples)) {
+      length(unique(samples$.chain))
+    } else {
+      1L
+    }
+  }
+  if (is.null(n_samples_per_chain)) {
+    n_samples_per_chain <- if (".chain" %in% colnames(samples)) {
+      as.integer(min(table(samples$.chain)))
+    } else {
+      nrow(samples)
+    }
+  }
+
+  ret <- list(
+    estimates = stats::setNames(estimates, colnames(sample_mat)),
+    std_error = stats::setNames(as.numeric(std_error), colnames(sample_mat)),
+    ci = qmat,
+    covariance = cov_mat,
+    lower = lower,
+    upper = upper,
+    burnin_iter = burnin_iter,
+    thinning = thinning,
+    n_chains = n_chains,
+    n_samples_per_chain = n_samples_per_chain,
+    n_samples = nrow(sample_mat),
+    name = name,
+    apply_transform = apply_transform,
+    samples = samples
+  )
+
+  class(ret) <- "ngme_sgld_ci"
+  ret
+}
 
 #' Summary for Batch-Means CI Results
 #'

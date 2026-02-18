@@ -61,7 +61,7 @@ their original scale.}
 \item{iters_per_check}{run how many iterations between each check point (or specify \code{n_batch})}
 
 \item{optimizer}{choose different sgd optimization method,
-currently support "sgd", "precond_sgd", "momentum", "adagrad", "rmsprop", "adam", "adamW"
+currently support "sgd", "sgld", "precond_sgd", "momentum", "adagrad", "rmsprop", "adam", "adamW"
 see ?sgd, ?precond_sgd, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW}
 
 \item{start_sd}{standard deviation of the initial parameter (1st chain fixed, other chains random), set 0 to be fixed for all chains}

@@ -4,6 +4,7 @@
 #include "ngme.h"
 #include <memory>
 #include <limits>
+#include <random>
 
 class Ngme_optimizer {
 private:
@@ -23,6 +24,7 @@ private:
 
   // variable for different sgd methods
   double beta1{0.1}, beta2{0.99}, eps_hat{1e-8}, lambda{0.1};
+  double sgld_temperature{1.0};
   VectorXd m, v; // momentum, velocity
 
   // store the preconditioner
@@ -54,11 +56,14 @@ private:
   bool pflug_conv_check{false};
   double pflug_sum{0.0};
   double max_pflug_sum{0.0};
+  std::mt19937 sgld_rng;
+  std::normal_distribution<double> sgld_std_normal{0.0, 1.0};
 
   void log_verbose_message(const std::string &msg) const;
 
 public:
-  Ngme_optimizer(const Rcpp::List &control_opt, std::shared_ptr<Ngme> model);
+  Ngme_optimizer(const Rcpp::List &control_opt, std::shared_ptr<Ngme> model,
+                 unsigned long seed = 0);
 
   // provide model.get_stepsizes()
   // works with procond_grad

@@ -46,6 +46,8 @@ navbar:
         href: articles/generic.html
       - text: Models with Combined Gaussian and NIG Noise 
         href: articles/normal-nig-noise.html
+      - text: Batch-means CI for SGD
+        href: articles/batch-means-ci.html
     github:
       icon: fa-github
       href: https://github.com/davidbolin/ngme2
@@ -113,6 +115,19 @@ reference:
     - bfgs
     - adaptive_gd
     - stepsize_decay
+    - stepsize_schedule
+    - stepsize_control
+    - poly_decay
+    - batch_decay
+    - control_opt_batch_ci
+  - title: Batch-means inference
+    contents:
+    - batch_means_estimator
+    - batch_means_ci
+    - ngme_batch_ci
+    - compute_ngme_ci
+    - compute_ngme_CI
+    - summary.ngme_batch_ci
   - title: Prediction and Cross validation
     contents:
     - predict.ngme

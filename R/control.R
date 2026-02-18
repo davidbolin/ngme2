@@ -36,7 +36,7 @@
 #' @param print_check_info print the convergence information
 #' @param start_sd        standard deviation of the initial parameter (1st chain fixed, other chains random), set 0 to be fixed for all chains
 #' @param optimizer choose different sgd optimization method,
-#' currently support "sgd", "precond_sgd", "momentum", "adagrad", "rmsprop", "adam", "adamW"
+#' currently support "sgd", "sgld", "precond_sgd", "momentum", "adagrad", "rmsprop", "adam", "adamW"
 #' see ?sgd, ?precond_sgd, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW
 #'
 #' @param max_num_threads maximum number of threads used for parallel computing, by default will be set same as n_parallel_chain.
@@ -151,6 +151,17 @@ control_opt <- function(
   stepsize_schedule_method <- match.arg(stepsize_schedule_method, stepsize_schedule_list)
   solver_backend_idx <- match(solver_backend, solver_backend_list) - 1L
   solver_factor_idx <- match(solver_factor, solver_factor_list) - 1L
+
+  if (identical(optimizer$method, "sgld") &&
+      identical(stepsize_schedule_method, "constant") &&
+      identical(stepsize_decay_method, "none")) {
+    warning(
+      "optimizer = sgld() is using constant stepsize (no decay). ",
+      "For asymptotically exact SGLD sampling, use diminishing stepsize ",
+      "(e.g., stepsize_control = poly_decay(alpha = 0.6, t0 = 10)).",
+      call. = FALSE
+    )
+  }
 
   # platform guard: accelerate only on macOS; pardiso disabled on macOS builds without MKL
   is_mac <- Sys.info()["sysname"] == "Darwin"

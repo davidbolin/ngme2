@@ -140,7 +140,7 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
     // Not thread-safe using Rcpp::List to init optimizer
     ngmes.push_back(std::make_shared<Ngme>(R_ngme, seed + i, sampling_strategy,
                                            num_threads[1], sd));
-    opt_vec.push_back(Ngme_optimizer(control_opt, ngmes[i]));
+    opt_vec.push_back(Ngme_optimizer(control_opt, ngmes[i], seed + i));
     opt_vec.back().set_pflug_conv_check(pflug_conv_check);
     if (verbose_enabled && i > 0) {
       opt_vec.back().set_verbose(false);
@@ -433,7 +433,7 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
 
 #else // No parallel chain
   Ngme ngme(R_ngme, seed, sampling_strategy);
-  Ngme_optimizer opt(control_opt, std::make_shared<Ngme>(ngme));
+  Ngme_optimizer opt(control_opt, std::make_shared<Ngme>(ngme), seed);
   opt.set_pflug_conv_check(pflug_conv_check);
   int n_batch = (control_opt["n_batch"]);
   int batch_steps = (iterations / n_batch);

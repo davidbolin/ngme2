@@ -10,7 +10,8 @@ using Eigen::VectorXd;
 using std::vector;
 
 Ngme_optimizer::Ngme_optimizer(const Rcpp::List &control_opt,
-                               std::shared_ptr<Ngme> ngme)
+                               std::shared_ptr<Ngme> ngme,
+                               unsigned long seed)
     : model(ngme), verbose(control_opt["verbose"]),
       numerical_eps(control_opt["numerical_eps"]), curr_iter(0),
 
@@ -19,7 +20,8 @@ Ngme_optimizer::Ngme_optimizer(const Rcpp::List &control_opt,
       v(VectorXd::Zero(ngme->get_n_params())),
       preconditioner(
           MatrixXd::Identity(ngme->get_n_params(), ngme->get_n_params())),
-      grad(VectorXd::Zero(ngme->get_n_params())), x(ngme->get_parameter()) {
+      grad(VectorXd::Zero(ngme->get_n_params())), x(ngme->get_parameter()),
+      sgld_rng(seed) {
   compute_precond = (method == "precond_sgd");
   if (method != "precond_sgd" && method != "bfgs") {
     // Parse optimizer-specific parameters if any (none for vanilla sgd)
@@ -43,14 +45,20 @@ Ngme_optimizer::Ngme_optimizer(const Rcpp::List &control_opt,
     beta2 = sgd_parameters(1);
     lambda = sgd_parameters(2);
     eps_hat = sgd_parameters(3);
+  } else if (method == "sgld") {
+    if (sgd_parameters.size() >= 1) {
+      sgld_temperature = std::max(0.0, sgd_parameters(0));
+    }
   } else if (method == "bfgs") {
     // init for BFGS
     H = MatrixXd::Identity(ngme->get_n_params(), ngme->get_n_params()) * 1e-8;
     line_search_method = Rcpp::as<std::string>(control_opt["line_search"]);
   } else if (method == "sgd") {
     // vanilla sgd requires no extra initialization
+  } else if (method == "precond_sgd") {
+    // precond_sgd handled by compute_precond path
   } else {
-    // precond_sgd
+    Rcpp::stop("Unknown optimizer method: " + method);
   }
 
   // Stepsize decay configuration
@@ -124,6 +132,7 @@ VectorXd Ngme_optimizer::sgd(double eps, int iterations,
   for (int i = 0; i < iterations; i++) {
     trajs.push_back(x);
     double stepsize_schedule_scale = 1.0;
+    VectorXd effective_stepsizes = model->get_stepsizes();
 
     if (method != "bfgs") {
       // Unified compute → then get
@@ -151,31 +160,31 @@ VectorXd Ngme_optimizer::sgd(double eps, int iterations,
       v = beta2 * v + (1 - beta2) * grad.cwiseProduct(grad);
       VectorXd m_hat = m / (1 - pow(beta1, curr_iter + 1));
       VectorXd v_hat = v / (1 - pow(beta2, curr_iter + 1));
-      one_step = model->get_stepsizes().cwiseProduct(m_hat.cwiseQuotient(
+      one_step = effective_stepsizes.cwiseProduct(m_hat.cwiseQuotient(
           v_hat.cwiseSqrt() + VectorXd::Constant(v_hat.size(), eps_hat)));
     } else if (method == "adamW") {
       m = beta1 * m + (1 - beta1) * grad;
       v = beta2 * v + (1 - beta2) * grad.cwiseProduct(grad);
       VectorXd m_hat = m / (1 - pow(beta1, curr_iter + 1));
       VectorXd v_hat = v / (1 - pow(beta2, curr_iter + 1));
-      one_step = model->get_stepsizes().cwiseProduct(
+      one_step = effective_stepsizes.cwiseProduct(
           lambda * x + // extra term for generalization
           m_hat.cwiseQuotient(v_hat.cwiseSqrt() +
                               VectorXd::Constant(v_hat.size(), eps_hat)));
     } else if (method == "momentum") {
       m = beta1 * m + beta2 * grad;
-      one_step = model->get_stepsizes().cwiseProduct(m);
+      one_step = effective_stepsizes.cwiseProduct(m);
     } else if (method == "adagrad") {
       //  v_t = v_{t-1} + g_t^2
       //  x_{t+1} = x_t - stepsize * g_t / (sqrt(v_t) + epsilon)
       v = v + grad.cwiseProduct(grad);
-      one_step = model->get_stepsizes().cwiseProduct(grad.cwiseQuotient(
+      one_step = effective_stepsizes.cwiseProduct(grad.cwiseQuotient(
           v.cwiseSqrt() + VectorXd::Constant(v.size(), eps_hat)));
     } else if (method == "rmsprop") {
       //  v_t = beta1 * v_{t-1} + (1-beta1) * g_t^2
       //  x_{t+1} = x_t - stepsize * g_t / (sqrt(v_t) + epsilon)
       v = beta1 * v + (1 - beta1) * grad.cwiseProduct(grad);
-      one_step = model->get_stepsizes().cwiseProduct(grad.cwiseQuotient(
+      one_step = effective_stepsizes.cwiseProduct(grad.cwiseQuotient(
           v.cwiseSqrt() + VectorXd::Constant(v.size(), eps_hat)));
     } else if (method == "adaptive_gd") {
       // adaptive gradient descent
@@ -230,10 +239,13 @@ VectorXd Ngme_optimizer::sgd(double eps, int iterations,
       // Always use full preconditioner for precond_sgd
       preconditioner = model->precond();
       grad = preconditioner.llt().solve(grad);
-      one_step = model->get_stepsizes().cwiseProduct(grad);
+      one_step = effective_stepsizes.cwiseProduct(grad);
+    } else if (method == "sgld") {
+      // SGLD drift term matches vanilla SGD; Langevin noise is added below.
+      one_step = effective_stepsizes.cwiseProduct(grad);
     } else if (method == "sgd") {
       // Vanilla SGD (no preconditioner)
-      one_step = model->get_stepsizes().cwiseProduct(grad);
+      one_step = effective_stepsizes.cwiseProduct(grad);
     }
 
     if (stepsize_schedule_enabled && method != "bfgs") {
@@ -247,10 +259,12 @@ VectorXd Ngme_optimizer::sgd(double eps, int iterations,
                      -stepsize_schedule_alpha);
       }
       one_step *= stepsize_schedule_scale;
+      effective_stepsizes *= stepsize_schedule_scale;
     }
 
     if (stepsize_decay_enabled && method != "bfgs") {
       one_step *= stepsize_decay_scale;
+      effective_stepsizes *= stepsize_decay_scale;
     }
 
     // Test if one_step is NAN
@@ -283,8 +297,20 @@ VectorXd Ngme_optimizer::sgd(double eps, int iterations,
     // variance reduction (not enabled)
     int r = curr_iter - var_reduce_iter;
     double tmp = r > 0 ? (1.0 / r) : 1.0;
-    // x = x - pow(tmp, reduce_power) * one_step;
-    x = x - one_step;
+    (void)tmp;
+    VectorXd sgld_noise = VectorXd::Zero(one_step.size());
+    if (method == "sgld") {
+      const double noise_prefactor = std::sqrt(2.0 * sgld_temperature);
+      for (int j = 0; j < sgld_noise.size(); j++) {
+        double eta_j = std::max(0.0, effective_stepsizes(j));
+        double sd_j = noise_prefactor * std::sqrt(eta_j);
+        sgld_noise(j) = sd_j * sgld_std_normal(sgld_rng);
+      }
+      x = x - one_step + sgld_noise;
+    } else {
+      // x = x - pow(tmp, reduce_power) * one_step;
+      x = x - one_step;
+    }
 
     if (verbose) {
       std::ostringstream oss;
@@ -304,6 +330,9 @@ VectorXd Ngme_optimizer::sgd(double eps, int iterations,
           oss << "effective_stepsize = "
               << (total_scale * stepsize_decay_base_stepsize) << '\n';
         }
+      }
+      if (method == "sgld") {
+        oss << "sgld_temperature = " << sgld_temperature << '\n';
       }
       // oss << "parameter = : " << x << '\n';
       // oss << "marginal likelihood := " <<  -model->log_likelihood() << '\n';

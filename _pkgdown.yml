@@ -48,6 +48,8 @@ navbar:
         href: articles/normal-nig-noise.html
       - text: Batch-means CI for SGD
         href: articles/batch-means-ci.html
+      - text: SGLD posterior-like sampling
+        href: articles/sgld-sampling.html
     github:
       icon: fa-github
       href: https://github.com/davidbolin/ngme2
@@ -128,6 +130,11 @@ reference:
     - compute_ngme_ci
     - compute_ngme_CI
     - summary.ngme_batch_ci
+  - title: SGLD trajectory inference
+    contents:
+    - ngme_sgld_samples
+    - ngme_sgld_ci
+    - compute_ngme_sgld_samples
   - title: Prediction and Cross validation
     contents:
     - predict.ngme

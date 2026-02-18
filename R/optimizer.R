@@ -54,6 +54,43 @@ sgd <- function(
   ret
 }
 
+#' Stochastic Gradient Langevin Dynamics (SGLD) optimization
+#'
+#' @details
+#' SGLD adds Gaussian noise to vanilla SGD updates:
+#' \deqn{x_{t+1} = x_t - \eta_t \nabla U(x_t) + \sqrt{2 T \eta_t}\,\xi_t, \quad \xi_t \sim \mathcal{N}(0, I)}
+#' where \eqn{T} is \code{temperature}. The implementation applies this
+#' component-wise using the current effective stepsize.
+#'
+#' @param stepsize base stepsize
+#' @param temperature non-negative Langevin temperature
+#'
+#' @return a list of control variables for optimization
+#' (used in \code{control_opt} function)
+#' @export
+sgld <- function(
+    stepsize = 0.001,
+    temperature = 1) {
+  stopifnot(
+    is.numeric(stepsize),
+    length(stepsize) == 1,
+    is.finite(stepsize),
+    stepsize > 0,
+    is.numeric(temperature),
+    length(temperature) == 1,
+    is.finite(temperature),
+    temperature >= 0
+  )
+
+  ret <- list(
+    method         = "sgld",
+    stepsize       = stepsize,
+    sgd_parameters = temperature
+  )
+  class(ret) <- "ngme_optimizer"
+  ret
+}
+
 #' Momentum SGD optimization
 #'
 #' @details
@@ -454,7 +491,7 @@ adaptive_gd <- function(
 #' This function returns a list of supported optimizers in the \code{ngme} package.
 #' The optimizers are categorized into three groups:
 #' \itemize{
-#' \item \strong{Gradient descent}: \code{"sgd"}, \code{"momentum"}, \code{"adaptive_gd"}
+#' \item \strong{Gradient descent}: \code{"sgd"}, \code{"sgld"}, \code{"momentum"}, \code{"adaptive_gd"}
 #' \item \strong{Adaptive learning rate}: \code{"adagrad"}, \code{"rmsprop"}, \code{"adam"}, \code{"adamW"}
 #' \item \strong{Preconditioner}: \code{"precond_sgd"}, \code{"bfgs"}
 #' }
@@ -462,5 +499,5 @@ adaptive_gd <- function(
 #' @return a character vector of supported optimizers
 #' @export
 ngme_optimizers <- function() {
-  c("sgd", "precond_sgd", "momentum", "adagrad", "rmsprop", "adam", "adamW", "bfgs", "adaptive_gd")
+  c("sgd", "sgld", "precond_sgd", "momentum", "adagrad", "rmsprop", "adam", "adamW", "bfgs", "adaptive_gd")
 }

@@ -17,7 +17,7 @@ f(
   W = NULL,
   fix_W = FALSE,
   fix_K = FALSE,
-  prior_theta_K = ngme_prior("normal", param = c(0, 0.001)),
+  prior = NULL,
   subset = rep(TRUE, length_map(map)),
   debug = FALSE
 )
@@ -48,7 +48,8 @@ When provided, operators and A matrices will be block-diagonalized across replic
 
 \item{fix_K}{fix the estimation of parameter of K}
 
-\item{prior_theta_K}{prior for theta_K}
+\item{prior}{prior specification created by \code{prior_*()} or
+\code{priors(...)} for operator parameters (\code{theta_K}).}
 
 \item{subset}{subset of the model}
 

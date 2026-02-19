@@ -1,0 +1,333 @@
+---
+title: "Prior Templates for Stationary and Non-Stationary Models"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Prior Templates for Stationary and Non-Stationary Models}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.retina = 2,
+  out.width = "100%"
+)
+```
+
+## Who this is for
+
+This vignette is for users who want to set priors in `ngme2` without reading
+internal implementation code.
+
+You will get:
+
+- a quick mental model for priors in `ngme2`
+- copy-paste templates for stationary and non-stationary settings
+- concrete examples for `ar1` and `matern`
+- a checklist for practical prior calibration
+
+```{r setup}
+library(ngme2)
+set.seed(1)
+```
+
+## Quick start
+
+The prior API has two layers:
+
+- define one prior with `prior_*()`
+- map priors to parameter names with `priors(...)`
+
+```{r}
+prior_normal(mean = 0, sd = 1)
+prior_pc_sd(u = 1, alpha = 0.1)
+prior_half_cauchy(scale = 1)
+prior_none()
+
+priors(
+  mu = prior_normal(0, 1),
+  sigma = prior_normal(0, 1),
+  nu = prior_normal(0, 1)
+)
+```
+
+## Natural scale vs theta scale
+
+Most model parameters are optimized internally on an unconstrained `theta`
+scale.
+
+Typical transformations are:
+
+- `sigma = exp(theta_sigma)`
+- `nu = nu_lower_bound + exp(theta_nu)`
+- `rho = tanh(theta_rho)` in `ar1`
+
+So priors are usually on `theta` (coefficient) scale.
+
+## `target = "coef"` vs `target = "field"`
+
+- `target = "coef"`: prior on coefficients (`theta` parameters)
+- `target = "field"`: prior on linear predictors (`B %*% theta`) for noise
+
+For noise components this means:
+
+- `mu`: prior on `B_mu %*% theta_mu`
+- `sigma`: prior on `B_sigma %*% theta_sigma` (before `exp`)
+- `nu`: prior on `B_nu %*% theta_nu` (before lower-bound + `exp`)
+
+For operator parameters (`theta_K`), use `target = "coef"`.
+
+## Example 1: Stationary AR(1) with explicit priors
+
+Put a prior directly on AR(1) `rho` by naming it in `priors(...)`.
+
+```{r}
+n <- 120
+idx <- 1:n
+
+op_ar1 <- f(
+  map = idx,
+  model = ar1(),
+  noise = noise_normal(),
+  prior = priors(
+    rho = prior_normal(0, 0.6)
+  )
+)
+
+op_ar1$operator$param_name
+op_ar1$prior_theta_K
+```
+
+Global operator prior fallback:
+
+```{r}
+f(
+  map = idx,
+  model = ar1(),
+  noise = noise_normal(),
+  prior = priors(theta = prior_normal(0, 1))
+)$prior_theta_K
+```
+
+## Example 2: Stationary NIG noise priors
+
+```{r}
+noise_stationary <- noise_nig(
+  mu = 0,
+  sigma = 1,
+  nu = 1,
+  prior = priors(
+    mu = prior_normal(0, 1),
+    sigma = prior_normal(0, 1),
+    nu = prior_normal(0, 1)
+  )
+)
+
+noise_stationary$prior_mu
+noise_stationary$prior_sigma
+noise_stationary$prior_nu
+```
+
+## Example 3: Non-stationary noise (`mu`, `sigma`, `nu`)
+
+Use basis matrices and field priors when you want smooth regularization over
+space/time.
+
+```{r}
+n <- 80
+x <- seq(0, 1, length.out = n)
+
+B_mu <- cbind(1, x)
+B_sigma <- cbind(1, x, x^2)
+B_nu <- matrix(1, n, 1)
+
+noise_ns <- noise_nig(
+  theta_mu = rep(0, ncol(B_mu)),
+  B_mu = B_mu,
+  theta_sigma = rep(0, ncol(B_sigma)),
+  B_sigma = B_sigma,
+  theta_nu = rep(0, ncol(B_nu)),
+  B_nu = B_nu,
+  prior = priors(
+    mu = prior_normal(0, 1, target = "field"),
+    sigma = prior_normal(0, 0.7, target = "field"),
+    nu = prior_normal(0, 0.7, target = "coef")
+  )
+)
+
+noise_ns$prior_mu
+noise_ns$prior_sigma
+noise_ns$prior_nu
+```
+
+Recommended non-stationary noise template:
+
+```{r}
+prior_noise_ns_template <- priors(
+  mu = prior_normal(0, 1.0, target = "field"),
+  sigma = prior_normal(0, 0.7, target = "field"),
+  nu = prior_normal(0, 0.7, target = "coef")
+)
+
+prior_noise_ns_template
+```
+
+## Example 4: Non-stationary Matern `kappa`
+
+For non-stationary Matern, names are typically `theta_kappa1`,
+`theta_kappa2`, ...
+
+Use `theta = ...` as fallback, then override selected coefficients.
+
+```{r, eval = FALSE}
+mesh_1d <- fmesher::fm_mesh_1d(seq(0, 1, length.out = 100))
+x <- seq(0, 1, length.out = mesh_1d$n)
+B_kappa <- cbind(1, x, x^2)
+
+model_matern_ns <- f(
+  map = seq(0, 1, length.out = mesh_1d$n),
+  model = matern(
+    mesh = mesh_1d,
+    alpha = 2,
+    fix_alpha = TRUE,
+    B_kappa = B_kappa,
+    theta_kappa = rep(0, ncol(B_kappa))
+  ),
+  noise = noise_normal(),
+  prior = priors(
+    theta = prior_normal(0, 0.5),             # fallback
+    theta_kappa1 = prior_normal(log(2), 0.5)  # override first coefficient
+  )
+)
+
+model_matern_ns$operator$param_name
+model_matern_ns$prior_theta_K
+```
+
+## Example 5: End-to-end fitting script
+
+This chunk is copy-paste ready for user analysis. It is set to `eval=FALSE`
+only to keep package vignette build fast.
+
+```{r, eval = FALSE}
+set.seed(2026)
+n <- 300
+idx <- 1:n
+x1 <- runif(n)
+x2 <- rnorm(n)
+
+latent_model <- f(
+  map = idx,
+  model = ar1(),
+  noise = noise_normal(sigma = 0.7),
+  prior = priors(rho = prior_normal(0, 0.6))
+)
+W <- simulate(latent_model, nsim = 1, seed = 2026)[[1]]
+
+y <- 1.5 * x1 - 0.8 * x2 + W + rnorm(n, sd = 0.4)
+dat <- data.frame(y, x1, x2, idx)
+
+fit <- ngme(
+  y ~ x1 + x2 + f(
+    idx,
+    model = ar1(),
+    noise = noise_normal(
+      prior = priors(sigma = prior_normal(0, 0.7))
+    ),
+    prior = priors(rho = prior_normal(0, 0.6))
+  ),
+  data = dat,
+  control_opt = control_opt(iterations = 2000, burnin = 500)
+)
+
+summary(fit)
+traceplot(fit, name = "rho")
+```
+
+## Copy-paste templates
+
+### A. Stationary AR(1) + normal noise
+
+```{r}
+template_stationary_ar1 <- list(
+  latent_prior = priors(
+    rho = prior_normal(0, 0.6)
+  ),
+  noise_prior = priors(
+    sigma = prior_normal(0, 0.7)
+  )
+)
+
+template_stationary_ar1
+```
+
+### B. Stationary Matern
+
+```{r}
+template_stationary_matern <- list(
+  fixed_alpha = priors(
+    kappa = prior_normal(log(2), 0.5)
+  ),
+  free_alpha = priors(
+    alpha = prior_normal(0, 0.7),
+    kappa = prior_normal(log(2), 0.5)
+  )
+)
+
+template_stationary_matern
+```
+
+### C. Non-stationary noise
+
+```{r}
+template_nonstationary_noise <- priors(
+  mu = prior_normal(0, 1.0, target = "field"),
+  sigma = prior_normal(0, 0.7, target = "field"),
+  nu = prior_normal(0, 0.7, target = "coef")
+)
+
+template_nonstationary_noise
+```
+
+### D. Non-stationary Matern `kappa`
+
+```{r}
+template_nonstationary_kappa <- priors(
+  theta = prior_normal(0, 0.5),
+  theta_kappa1 = prior_normal(log(2), 0.5)
+)
+
+template_nonstationary_kappa
+```
+
+## Troubleshooting
+
+### Error: "Unknown operator prior names"
+
+Check valid names first:
+
+```{r}
+tmp <- f(1:20, model = ar1(), noise = noise_normal())
+tmp$operator$param_name
+```
+
+Then match those names exactly in `priors(...)`.
+
+### Unsure whether to use natural scale or theta scale
+
+Start with `target = "coef"` (theta scale). Use `target = "field"` for
+non-stationary noise when you want to regularize `B %*% theta` directly.
+
+### Unstable estimates
+
+Start tighter (smaller `sd`), then relax gradually.
+
+## Final checklist
+
+1. Start with simple priors and a small model.
+2. Inspect `model$operator$param_name` before naming operator priors.
+3. Use `target = "field"` only for non-stationary noise components.
+4. Prefer one global prior (`theta = ...`) and override only key parameters.
+5. Refit and check `traceplot()` and `summary()` before loosening priors.

@@ -12,6 +12,28 @@
 
 using std::pow;
 
+namespace {
+std::string parse_prior_target(const Rcpp::List &prior_list,
+                               const std::string &default_target = "coef") {
+  std::string target = prior_list.containsElementNamed("target")
+                           ? Rcpp::as<std::string>(prior_list["target"])
+                           : default_target;
+  if (target != "coef" && target != "field") {
+    throw std::invalid_argument("prior target must be 'coef' or 'field'");
+  }
+  return target;
+}
+
+VectorXd prior_score_vec(const std::string &type, const VectorXd &param,
+                         const VectorXd &x) {
+  VectorXd out(x.size());
+  for (int i = 0; i < x.size(); ++i) {
+    out(i) = PriorUtil::d_log_dens(type, param, x(i));
+  }
+  return out;
+}
+} // namespace
+
 // -------------- Block Model class ----------------
 BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
     : rng(seed), X(Rcpp::as<MatrixXd>(block_model["X"])),
@@ -116,6 +138,8 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
   // Handle vector-based fix_theta_sigma - simplified for block model
   Rcpp::LogicalVector fix_theta_sigma_r =
       Rcpp::as<Rcpp::LogicalVector>(noise_in["fix_theta_sigma"]);
+  fix_theta_sigma_vec =
+      std::vector<bool>(fix_theta_sigma_r.begin(), fix_theta_sigma_r.end());
   fix_flag[block_fix_theta_sigma] =
       std::all_of(fix_theta_sigma_r.begin(), fix_theta_sigma_r.end(),
                   [](bool x) { return x; });
@@ -144,6 +168,10 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
 
   rb_trace_noise_sigma = VectorXd::Zero(n_theta_sigma),
 
+  nu_lower_bound = noise_in.containsElementNamed("nu_lower_bound")
+                       ? Rcpp::as<double>(noise_in["nu_lower_bound"])
+                       : 0.0,
+
   family = Rcpp::as<string>(noise_in["noise_type"]);
   noise_mu = B_mu * theta_mu;
   noise_sigma = (B_sigma * theta_sigma).array().exp();
@@ -153,21 +181,21 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
   n_rho = noise_in.containsElementNamed("n_rho")
               ? Rcpp::as<int>(noise_in["n_rho"])
               : 0;
-  nu_lower_bound = noise_in.containsElementNamed("nu_lower_bound")
-                       ? Rcpp::as<double>(noise_in["nu_lower_bound"])
-                       : 0.0;
   corr_measure = Rcpp::as<bool>(noise_in["corr_measurement"]);
 
   // init priors for noise_parameter
   Rcpp::List prior_list = Rcpp::as<Rcpp::List>(noise_in["prior_mu"]);
-  prior_mu_type = Rcpp::as<string>(prior_list[0]);
+  prior_mu_type = Rcpp::as<string>(prior_list["type"]);
   prior_mu_param = Rcpp::as<VectorXd>(prior_list["param"]);
+  prior_mu_target = parse_prior_target(prior_list);
   prior_list = Rcpp::as<Rcpp::List>(noise_in["prior_sigma"]);
   prior_sigma_type = Rcpp::as<string>(prior_list["type"]);
   prior_sigma_param = Rcpp::as<VectorXd>(prior_list["param"]);
+  prior_sigma_target = parse_prior_target(prior_list);
   prior_list = Rcpp::as<Rcpp::List>(noise_in["prior_nu"]);
   prior_nu_type = Rcpp::as<string>(prior_list["type"]);
   prior_nu_param = Rcpp::as<VectorXd>(prior_list["param"]);
+  prior_nu_target = parse_prior_target(prior_list);
 
   if (family != "normal") {
     NoiseUtil::update_gig(family, noise_nu, p_vec, a_vec, b_vec);
@@ -481,9 +509,16 @@ VectorXd BlockModel::grad_theta_mu() {
     grad(l) = (noise_V - VectorXd::Ones(n_obs))
                   .cwiseProduct(B_mu.col(l).cwiseQuotient(noise_SV))
                   .dot(residual);
-    // add prior
-    // grad(l) += PriorUtil::d_log_dens(prior_mu_type, prior_mu_param,
-    // theta_mu(l));
+  }
+
+  if (prior_mu_target == "coef") {
+    for (int l = 0; l < n_theta_mu; l++) {
+      grad(l) += PriorUtil::d_log_dens(prior_mu_type, prior_mu_param,
+                                       theta_mu(l));
+    }
+  } else {
+    grad += B_mu.transpose() *
+            prior_score_vec(prior_mu_type, prior_mu_param, noise_mu);
   }
   return grad;
 }
@@ -495,7 +530,13 @@ VectorXd BlockModel::grad_theta_sigma() {
   VectorXd residual = get_residual(rao_blackwell);
   VectorXd vsq = (residual).array().pow(2).matrix().cwiseQuotient(noise_SV);
   VectorXd tmp1 = vsq - VectorXd::Ones(n_obs);
-  grad = B_sigma.transpose() * tmp1; // dℓ/dθ for generic case
+  VectorXd full_grad = B_sigma.transpose() * tmp1; // dℓ/dθ for generic case
+  int j = 0;
+  for (int i = 0; i < full_grad.size(); ++i) {
+    if (!fix_theta_sigma_vec[i]) {
+      grad(j++) = full_grad(i);
+    }
+  }
 
   // shared_sigma branch removed; keep generic gradient form
 
@@ -505,11 +546,25 @@ VectorXd BlockModel::grad_theta_sigma() {
   if (rao_blackwell)
     grad += rb_trace_noise_sigma;
 
-  // add prior (disabled by default)
-  // for (int l=0; l < n_theta_sigma; l++) {
-  //   grad(l) += PriorUtil::d_log_dens(prior_sigma_type, prior_sigma_param,
-  //   theta_sigma(l));
-  // }
+  if (prior_sigma_target == "coef") {
+    j = 0;
+    for (int l = 0; l < theta_sigma.size(); l++) {
+      if (!fix_theta_sigma_vec[l]) {
+        grad(j++) += PriorUtil::d_log_dens(prior_sigma_type, prior_sigma_param,
+                                           theta_sigma(l));
+      }
+    }
+  } else {
+    VectorXd sigma_lp = B_sigma * theta_sigma;
+    VectorXd full_prior =
+        B_sigma.transpose() * prior_score_vec(prior_sigma_type, prior_sigma_param, sigma_lp);
+    j = 0;
+    for (int l = 0; l < full_prior.size(); l++) {
+      if (!fix_theta_sigma_vec[l]) {
+        grad(j++) += full_prior(l);
+      }
+    }
+  }
 
   // Return gradient of negative log-likelihood
   return grad;
@@ -520,8 +575,15 @@ VectorXd BlockModel::get_theta_merr() const {
 
   if (!fix_flag[block_fix_theta_mu])
     theta_merr.segment(0, n_theta_mu) = theta_mu;
-  if (!fix_flag[block_fix_theta_sigma])
-    theta_merr.segment(n_theta_mu, n_theta_sigma) = theta_sigma;
+  if (!fix_flag[block_fix_theta_sigma]) {
+    int pos = 0;
+    for (int i = 0; i < theta_sigma.size(); ++i) {
+      if (!fix_theta_sigma_vec[i]) {
+        theta_merr(n_theta_mu + pos) = theta_sigma(i);
+        pos += 1;
+      }
+    }
+  }
   if (!fix_flag[block_fix_theta_nu])
     theta_merr.segment(n_theta_mu + n_theta_sigma, n_theta_nu) = theta_nu;
 
@@ -543,9 +605,18 @@ VectorXd BlockModel::grad_theta_merr() {
         -NoiseUtil::grad_theta_nu(family, B_nu, noise_nu, noise_V, noise_prevV,
                                   VectorXd::Ones(noise_V.size()),
                                   nu_lower_bound);
-    // add prior
-    // grad(n_theta_mu + n_theta_sigma) -= PriorUtil::d_log_dens(prior_nu_type,
-    // prior_nu_param, noise_nu);
+    VectorXd prior_grad = VectorXd::Zero(n_theta_nu);
+    if (prior_nu_target == "coef") {
+      for (int l = 0; l < n_theta_nu; ++l) {
+        prior_grad(l) += PriorUtil::d_log_dens(prior_nu_type, prior_nu_param,
+                                               theta_nu(l));
+      }
+    } else {
+      VectorXd nu_lp = B_nu * theta_nu;
+      prior_grad +=
+          B_nu.transpose() * prior_score_vec(prior_nu_type, prior_nu_param, nu_lp);
+    }
+    grad.segment(n_theta_mu + n_theta_sigma, n_theta_nu) += prior_grad;
   }
 
   // grad of theta_rho
@@ -568,8 +639,15 @@ void BlockModel::set_theta_merr(const VectorXd &theta_merr) {
   // if (debug) std::cout << "start set theta_merr" << std::endl;
   if (!fix_flag[block_fix_theta_mu])
     theta_mu = theta_merr.segment(0, n_theta_mu);
-  if (!fix_flag[block_fix_theta_sigma])
-    theta_sigma = theta_merr.segment(n_theta_mu, n_theta_sigma);
+  if (!fix_flag[block_fix_theta_sigma]) {
+    int pos = 0;
+    for (int i = 0; i < theta_sigma.size(); ++i) {
+      if (!fix_theta_sigma_vec[i]) {
+        theta_sigma(i) = theta_merr(n_theta_mu + pos);
+        pos += 1;
+      }
+    }
+  }
   if (!fix_flag[block_fix_theta_nu])
     theta_nu = theta_merr.segment(n_theta_mu + n_theta_sigma, n_theta_nu);
 

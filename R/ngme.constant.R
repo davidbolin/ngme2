@@ -28,5 +28,5 @@ ngme_model_types <- function() {
 #' @return available types of priors
 #' @export
 ngme_prior_types <- function() {
-    c("none", "normal", "pc.sd", "half.cauchy", "jeffery")
+    c("none", "normal", "pc.sd", "half.cauchy")
 }

@@ -50,6 +50,8 @@ navbar:
         href: articles/batch-means-ci.html
       - text: SGLD posterior-like sampling
         href: articles/sgld-sampling.html
+      - text: Prior templates (stationary/non-stationary)
+        href: articles/prior-templates.html
     github:
       icon: fa-github
       href: https://github.com/davidbolin/ngme2
@@ -174,8 +176,12 @@ reference:
     - get_parameter_distance
     - get_trace_trajectories
     - plot.parameter_distance
-    - ngme_prior
     - ngme_prior_types
+    - prior_normal
+    - prior_pc_sd
+    - prior_half_cauchy
+    - prior_none
+    - priors
     - test_ngme
     - ngme_make_mesh_repls
     - merge_noise

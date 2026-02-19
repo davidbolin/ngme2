@@ -75,6 +75,7 @@ protected:
 
   // fix estimation
   bool fix_flag[BLOCK_FIX_FLAG_SIZE]{0};
+  std::vector<bool> fix_theta_sigma_vec;
 
   // controls
   int n_gibbs;
@@ -118,6 +119,8 @@ protected:
   // priors
   string prior_mu_type, prior_sigma_type, prior_nu_type;
   VectorXd prior_mu_param, prior_sigma_param, prior_nu_param;
+  string prior_mu_target{"coef"}, prior_sigma_target{"coef"},
+      prior_nu_target{"coef"};
 
   // For computing RB gradient_K
   vector<vector<SparseMatrix<double>>> block_dK;

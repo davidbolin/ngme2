@@ -1,3 +1,13 @@
+# ngme2 0.9.0 (2026-02-19)
+* Refactor prior API (breaking change):
+  use `prior_normal()`, `prior_pc_sd()`, `prior_half_cauchy()`, `prior_none()`, and `priors(...)`.
+* Update `f()` and `ngme_noise()` to accept unified `prior = ...` inputs
+  (remove `prior_theta_K` and `prior_mu/prior_sigma/prior_nu` arguments).
+* Remove legacy `ngme_prior()` interface and its documentation entry.
+* Add prior target support (`coef`/`field`) for noise parameter priors and
+  per-parameter operator prior compilation.
+* Add user-facing vignette: `Prior Templates for Stationary and Non-Stationary Models`.
+
 # ngme2 0.8.5 (2026-02-11)
 * Add grad.norm plateau-based step decay via `control_opt(stepsize_decay = "grad_norm_plateau")` (epoch-level, synchronized across chains)
 * Add `stepsize_decay()` helper for configuring decay options

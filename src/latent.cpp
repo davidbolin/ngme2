@@ -4,6 +4,35 @@
 #include <chrono>
 #include <stdexcept>
 
+namespace {
+std::string parse_prior_target(const Rcpp::List &prior_list,
+                               const std::string &default_target = "coef") {
+  std::string target = prior_list.containsElementNamed("target")
+                           ? Rcpp::as<std::string>(prior_list["target"])
+                           : default_target;
+  if (target != "coef" && target != "field") {
+    throw std::invalid_argument("prior target must be 'coef' or 'field'");
+  }
+  return target;
+}
+
+VectorXd prior_score_vec(const std::string &type, const VectorXd &param,
+                         const VectorXd &x) {
+  VectorXd out(x.size());
+  for (int i = 0; i < x.size(); ++i) {
+    out(i) = PriorUtil::d_log_dens(type, param, x(i));
+  }
+  return out;
+}
+
+void parse_prior_spec(const Rcpp::List &prior_list, std::string &type,
+                      VectorXd &param, std::string &target) {
+  type = Rcpp::as<std::string>(prior_list["type"]);
+  param = Rcpp::as<VectorXd>(prior_list["param"]);
+  target = parse_prior_target(prior_list);
+}
+} // namespace
+
 // get theta[unfixed]
 VectorXd get_parameter_unfixed(const VectorXd &theta,
                                const vector<bool> &fix_theta) {
@@ -98,18 +127,48 @@ Latent::Latent(const Rcpp::List &model_list, unsigned long seed)
   single_V = Rcpp::as<bool>(noise_in["single_V"]);
 
   // init priors for parameter of K and noise
-  Rcpp::List prior_list = Rcpp::as<Rcpp::List>(model_list["prior_theta_K"]);
-  prior_K_type = Rcpp::as<string>(prior_list["type"]);
-  prior_K_param = Rcpp::as<VectorXd>(prior_list["param"]);
-  prior_list = Rcpp::as<Rcpp::List>(noise_in["prior_mu"]);
-  prior_mu_type = Rcpp::as<string>(prior_list["type"]);
-  prior_mu_param = Rcpp::as<VectorXd>(prior_list["param"]);
+  Rcpp::List prior_k_list = Rcpp::as<Rcpp::List>(model_list["prior_theta_K"]);
+  prior_K_type.resize(n_theta_K, "none");
+  prior_K_param.resize(n_theta_K, VectorXd::Zero(0));
+  prior_K_target.resize(n_theta_K, "coef");
+  if (n_theta_K > 0 && prior_k_list.size() > 0) {
+    if (prior_k_list.containsElementNamed("type")) {
+      std::string t;
+      VectorXd p;
+      std::string target;
+      parse_prior_spec(prior_k_list, t, p, target);
+      for (int i = 0; i < n_theta_K; ++i) {
+        prior_K_type[i] = t;
+        prior_K_param[i] = p;
+        prior_K_target[i] = target;
+      }
+    } else {
+      if (prior_k_list.size() != n_theta_K) {
+        throw std::invalid_argument(
+            "prior_theta_K must have length equal to n_theta_K");
+      }
+      for (int i = 0; i < n_theta_K; ++i) {
+        Rcpp::List one = Rcpp::as<Rcpp::List>(prior_k_list[i]);
+        parse_prior_spec(one, prior_K_type[i], prior_K_param[i],
+                         prior_K_target[i]);
+      }
+    }
+  }
+
+  for (int i = 0; i < n_theta_K; ++i) {
+    if (prior_K_target[i] != "coef") {
+      throw std::invalid_argument(
+          "theta_K prior target='field' is not supported; use target='coef'");
+    }
+  }
+
+  Rcpp::List prior_list = Rcpp::as<Rcpp::List>(noise_in["prior_mu"]);
+  parse_prior_spec(prior_list, prior_mu_type, prior_mu_param, prior_mu_target);
   prior_list = Rcpp::as<Rcpp::List>(noise_in["prior_sigma"]);
-  prior_sigma_type = Rcpp::as<string>(prior_list["type"]);
-  prior_sigma_param = Rcpp::as<VectorXd>(prior_list["param"]);
+  parse_prior_spec(prior_list, prior_sigma_type, prior_sigma_param,
+                   prior_sigma_target);
   prior_list = Rcpp::as<Rcpp::List>(noise_in["prior_nu"]);
-  prior_nu_type = Rcpp::as<string>(prior_list["type"]);
-  prior_nu_param = Rcpp::as<VectorXd>(prior_list["param"]);
+  parse_prior_spec(prior_list, prior_nu_type, prior_nu_param, prior_nu_target);
 
   // init W
   if (model_list["W"] != R_NilValue) {
@@ -465,7 +524,8 @@ void Latent::compute_theta_K(bool need_grad, bool rao_blackwell) {
     }
 
     for (int l = 0; l < n_theta_K; l++) {
-      grad(l) += PriorUtil::d_log_dens(prior_K_type, prior_K_param, theta_K(l));
+      grad(l) +=
+          PriorUtil::d_log_dens(prior_K_type[l], prior_K_param[l], theta_K(l));
     }
 
     // apply per-parameter fixing mask from operator (if provided)
@@ -503,9 +563,15 @@ void Latent::compute_theta_mu(bool need_grad, bool rao_blackwell) {
         grad(l) = (V - h)
                       .cwiseProduct(B_mu.col(l).cwiseQuotient(SV))
                       .dot(getK() * WW - mu.cwiseProduct(V - h));
-        grad(l) +=
-            PriorUtil::d_log_dens(prior_mu_type, prior_mu_param, theta_mu(l));
       }
+    }
+    if (prior_mu_target == "coef") {
+      for (int l = 0; l < n_theta_mu; l++) {
+        grad(l) += PriorUtil::d_log_dens(prior_mu_type, prior_mu_param,
+                                         theta_mu(l));
+      }
+    } else {
+      grad += B_mu.transpose() * prior_score_vec(prior_mu_type, prior_mu_param, mu);
     }
   }
 
@@ -538,11 +604,24 @@ void Latent::compute_theta_sigma(bool need_grad, bool rao_blackwell) {
         grad(j++) = all_grad(i);
       }
     }
-    j = 0;
-    for (int l = 0; l < n_theta_sigma; l++) {
-      if (!fix_theta_sigma_vec[l]) {
-        grad(j++) += PriorUtil::d_log_dens(prior_sigma_type, prior_sigma_param,
-                                           theta_sigma(l));
+    if (prior_sigma_target == "coef") {
+      j = 0;
+      for (int l = 0; l < theta_sigma.size(); l++) {
+        if (!fix_theta_sigma_vec[l]) {
+          grad(j++) += PriorUtil::d_log_dens(prior_sigma_type, prior_sigma_param,
+                                             theta_sigma(l));
+        }
+      }
+    } else {
+      VectorXd sigma_lp = B_sigma * theta_sigma;
+      VectorXd prior_full = B_sigma.transpose() *
+                            prior_score_vec(prior_sigma_type, prior_sigma_param,
+                                            sigma_lp);
+      j = 0;
+      for (int l = 0; l < prior_full.size(); l++) {
+        if (!fix_theta_sigma_vec[l]) {
+          grad(j++) += prior_full(l);
+        }
       }
     }
   }
@@ -579,7 +658,21 @@ void Latent::compute_theta_nu(bool need_grad) {
     }
   }
 
-  deriv_cache.grad_theta_nu = -grad;
+  VectorXd grad_out = -grad;
+  if (n_theta_nu > 0 && !fix_flag[latent_fix_theta_nu]) {
+    if (prior_nu_target == "coef") {
+      for (int l = 0; l < n_theta_nu; ++l) {
+        grad_out(l) +=
+            PriorUtil::d_log_dens(prior_nu_type, prior_nu_param, theta_nu(l));
+      }
+    } else {
+      VectorXd nu_lp = B_nu * theta_nu;
+      grad_out +=
+          B_nu.transpose() * prior_score_vec(prior_nu_type, prior_nu_param, nu_lp);
+    }
+  }
+
+  deriv_cache.grad_theta_nu = grad_out;
   deriv_cache.grad_nu_ready = true;
 }
 

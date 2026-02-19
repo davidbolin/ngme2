@@ -1,43 +1,186 @@
-#' @title ngme prior specification
-#' @description
-#' Prior specification for internal representation of the parameters.
-#' We will list all the available priors here.
-#' Their PDFs can be found in vignette("ngme2-prior").
-#'
-#' none prior with no parameter: \eqn{p(\theta) \propto 1}
-#'
-#' Normal prior with parameter mean \eqn{\mu} and precision \eqn{\tau}: \eqn{\theta \sim N(\mu, 1/ \tau)}
-#'
-#' Half-Cauchy prior with parameter scale \eqn{\tau}: \eqn{\theta \sim HC(0, \tau)}
-#'
-#' Penalized complexity prior with parameter \eqn{\lambda}
-#'
-#'
-#' @param type type of prior, say ngme_prior_types()
-#' @param param parameters of the prior
-#'
-#' @return a list of prior specification
+#' @title Prior Normal
+#' @param mean prior mean
+#' @param sd prior standard deviation
+#' @param target apply prior on coefficient scale (`"coef"`) or field scale (`"field"`)
+#' @return prior specification
 #' @export
-ngme_prior <- function(type, param=double(0)) {
-  stopifnot("Please check if the prior name is in ngme_prior_types()" =
-    type %in% ngme2::ngme_prior_types())
-
-  # check if num. of parameter is correct
-  switch(type,
-    "none" = stopifnot(length(param) == 0),
-    "normal" = stopifnot(length(param) == 2),
-    # internally log precision
-    "pc.sd" = {
-      # lambda
-      # param = - log(alpha) / u
-      stopifnot(length(param) == 1)
-    },
-    "half.cauchy" = stopifnot(length(param) == 1),
-    "pc.cor0" = stopifnot(length(param) == 1)
+prior_normal <- function(mean = 0, sd = 1, target = "coef") {
+  target <- .validate_prior_target(target)
+  stopifnot(
+    is.numeric(mean), length(mean) == 1, is.finite(mean),
+    is.numeric(sd), length(sd) == 1, is.finite(sd), sd > 0
   )
-
   structure(
-    list(type = type, param = param),
-    class = "ngme_prior"
+    list(dist = "normal", hyper = c(mean = mean, sd = sd), target = target),
+    class = "ngme_prior_spec"
   )
+}
+
+#' @title Prior PC-SD
+#' @param u tail event threshold
+#' @param alpha tail probability
+#' @param target apply prior on coefficient scale (`"coef"`) or field scale (`"field"`)
+#' @return prior specification
+#' @export
+prior_pc_sd <- function(u, alpha, target = "coef") {
+  target <- .validate_prior_target(target)
+  stopifnot(
+    is.numeric(u), length(u) == 1, is.finite(u), u > 0,
+    is.numeric(alpha), length(alpha) == 1, is.finite(alpha),
+    alpha > 0, alpha < 1
+  )
+  structure(
+    list(dist = "pc.sd", hyper = c(u = u, alpha = alpha), target = target),
+    class = "ngme_prior_spec"
+  )
+}
+
+#' @title Prior Half-Cauchy
+#' @param scale half-Cauchy scale
+#' @param target apply prior on coefficient scale (`"coef"`) or field scale (`"field"`)
+#' @return prior specification
+#' @export
+prior_half_cauchy <- function(scale = 1, target = "coef") {
+  target <- .validate_prior_target(target)
+  stopifnot(
+    is.numeric(scale), length(scale) == 1, is.finite(scale), scale > 0
+  )
+  structure(
+    list(dist = "half.cauchy", hyper = c(scale = scale), target = target),
+    class = "ngme_prior_spec"
+  )
+}
+
+#' @title Prior None
+#' @param target apply prior on coefficient scale (`"coef"`) or field scale (`"field"`)
+#' @return prior specification
+#' @export
+prior_none <- function(target = "coef") {
+  target <- .validate_prior_target(target)
+  structure(
+    list(dist = "none", hyper = double(0), target = target),
+    class = "ngme_prior_spec"
+  )
+}
+
+#' @title Prior Container
+#' @param ... named prior specifications
+#' @return named prior container
+#' @export
+priors <- function(...) {
+  ps <- list(...)
+  if (length(ps) == 0) {
+    return(structure(ps, class = "ngme_priors"))
+  }
+  nms <- names(ps)
+  stopifnot(
+    "priors(...) requires named entries." = !is.null(nms) &&
+      all(nzchar(nms)) &&
+      length(unique(nms)) == length(nms),
+    "All entries in priors(...) must be prior_*() objects." =
+      all(vapply(ps, inherits, logical(1), what = "ngme_prior_spec"))
+  )
+  structure(ps, class = "ngme_priors")
+}
+
+.validate_prior_target <- function(target) {
+  stopifnot(
+    is.character(target),
+    length(target) == 1,
+    target %in% c("coef", "field")
+  )
+  target
+}
+
+is_prior_spec <- function(x) inherits(x, "ngme_prior_spec")
+is_prior_collection <- function(x) inherits(x, "ngme_priors")
+
+as_internal_prior <- function(prior) {
+  stopifnot("prior must be a prior_*() object." = is_prior_spec(prior))
+
+  target <- .validate_prior_target(prior$target)
+  dist <- prior$dist
+  hyper <- prior$hyper
+  internal <- switch(dist,
+    "none" = list(type = "none", param = double(0), target = target),
+    "normal" = {
+      mean <- as.numeric(hyper["mean"])
+      sd <- as.numeric(hyper["sd"])
+      list(type = "normal", param = c(mean, 1 / (sd * sd)), target = target)
+    },
+    "pc.sd" = {
+      u <- as.numeric(hyper["u"])
+      alpha <- as.numeric(hyper["alpha"])
+      lambda <- -log(alpha) / u
+      list(type = "pc.sd", param = c(lambda), target = target)
+    },
+    "half.cauchy" = {
+      list(type = "half.cauchy", param = c(as.numeric(hyper["scale"])), target = target)
+    },
+    stop("Unknown prior dist: ", dist)
+  )
+  internal
+}
+
+default_noise_priors <- function() {
+  priors(
+    mu = prior_normal(0, 10, target = "coef"),
+    sigma = prior_normal(0, 10, target = "coef"),
+    nu = prior_normal(0, 10, target = "coef")
+  )
+}
+
+default_operator_prior <- function() {
+  prior_normal(0, sqrt(1 / 0.001), target = "coef")
+}
+
+compile_noise_priors <- function(prior) {
+  if (is.null(prior)) prior <- default_noise_priors()
+  if (is_prior_spec(prior)) {
+    prior <- priors(mu = prior, sigma = prior, nu = prior)
+  }
+  stopifnot("noise prior must be priors(...)." = is_prior_collection(prior))
+
+  allowed <- c("mu", "sigma", "nu")
+  bad <- setdiff(names(prior), allowed)
+  if (length(bad) > 0) {
+    stop("Unknown noise prior names: ", paste(bad, collapse = ", "))
+  }
+
+  defaults <- default_noise_priors()
+  for (nm in names(prior)) defaults[[nm]] <- prior[[nm]]
+
+  list(
+    mu = as_internal_prior(defaults$mu),
+    sigma = as_internal_prior(defaults$sigma),
+    nu = as_internal_prior(defaults$nu)
+  )
+}
+
+compile_operator_priors <- function(prior, param_names) {
+  if (is.null(param_names) || length(param_names) == 0) return(list())
+  if (is.null(prior)) {
+    return(rep(list(as_internal_prior(default_operator_prior())), length(param_names)))
+  }
+
+  if (is_prior_spec(prior)) {
+    prior <- priors(theta = prior)
+  }
+  stopifnot("operator prior must be prior_*() or priors(...)." = is_prior_collection(prior))
+
+  unknown <- setdiff(names(prior), c("theta", param_names))
+  if (length(unknown) > 0) {
+    stop("Unknown operator prior names: ", paste(unknown, collapse = ", "))
+  }
+
+  per_param <- rep(list(default_operator_prior()), length(param_names))
+  if ("theta" %in% names(prior)) {
+    per_param <- rep(list(prior$theta), length(param_names))
+  }
+  for (i in seq_along(param_names)) {
+    nm <- param_names[[i]]
+    if (nm %in% names(prior)) per_param[[i]] <- prior[[nm]]
+  }
+
+  lapply(per_param, as_internal_prior)
 }

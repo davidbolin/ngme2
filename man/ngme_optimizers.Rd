@@ -13,7 +13,7 @@ a character vector of supported optimizers
 This function returns a list of supported optimizers in the \code{ngme} package.
 The optimizers are categorized into three groups:
 \itemize{
-\item \strong{Gradient descent}: \code{"sgd"}, \code{"momentum"}, \code{"adaptive_gd"}
+\item \strong{Gradient descent}: \code{"sgd"}, \code{"sgld"}, \code{"momentum"}, \code{"adaptive_gd"}
 \item \strong{Adaptive learning rate}: \code{"adagrad"}, \code{"rmsprop"}, \code{"adam"}, \code{"adamW"}
 \item \strong{Preconditioner}: \code{"precond_sgd"}, \code{"bfgs"}
 }

@@ -46,9 +46,8 @@
 #' @param index_corr used when corr_measurement=TRUE, indicate which observation has correlation
 #' @param map_corr 1d, 2d, or formula, used when corr_measurement=TRUE, specify use which covariate to infer the index_corr.
 #' @param rho used when corr_measurement=TRUE, starting point for correlation
-#' @param prior_mu prior distribution for parameter of mu
-#' @param prior_sigma prior distribution for parameter of sigma
-#' @param prior_nu prior distribution for parameter of nu
+#' @param prior prior specification created by \code{priors(...)}. Supported
+#'   keys are \code{mu}, \code{sigma}, and \code{nu}.
 #' @param ...       additional arguments
 #'
 #' @return a list of specification of noise
@@ -79,9 +78,7 @@ ngme_noise <- function(
     map_corr = NULL,
     nu_lower_bound = 0,
     rho = double(0),
-    prior_mu = ngme_prior("normal", param = c(0, 0.01)),
-    prior_sigma = ngme_prior("normal", param = c(0, 0.01)),
-    prior_nu = ngme_prior("normal", param = c(0, 0.01)),
+    prior = NULL,
     ...) {
   theta_mu_supplied <- !is.null(theta_mu)
   theta_sigma_supplied <- !is.null(theta_sigma)
@@ -124,11 +121,10 @@ ngme_noise <- function(
     "Please make sure ncol(B_mu) == length(theta_mu)." = ncol(B_mu) == length(theta_mu),
     "Please make sure ncol(B_sigma) == length(theta_sigma)." = ncol(B_sigma) == length(theta_sigma),
     "Please make sure ncol(B_nu) == length(theta_nu)." = ncol(B_nu) == length(theta_nu),
-    "fix_theta_sigma must be logical" = is.logical(fix_theta_sigma),
-    "prior_mu is not specified properly, please use ngme_prior(..)" = class(prior_mu) == "ngme_prior",
-    "prior_sigma is not specified properly, please use ngme_prior(..)" = class(prior_sigma) == "ngme_prior",
-    "prior_nu is not specified properly, please use ngme_prior(..)" = class(prior_nu) == "ngme_prior"
+    "fix_theta_sigma must be logical" = is.logical(fix_theta_sigma)
   )
+
+  compiled_prior <- compile_noise_priors(prior)
 
   if (all(noise_type == "normal")) {
     theta_mu <- double(0)
@@ -189,9 +185,9 @@ ngme_noise <- function(
       index_corr = index_corr,
       map_corr = map_corr,
       rho = rho,
-      prior_mu = prior_mu,
-      prior_sigma = prior_sigma,
-      prior_nu = prior_nu,
+      prior_mu = compiled_prior$mu,
+      prior_sigma = compiled_prior$sigma,
+      prior_nu = compiled_prior$nu,
       ...
     ),
     class = "ngme_noise"

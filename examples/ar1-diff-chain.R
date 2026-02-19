@@ -59,13 +59,18 @@ ret_nig_same <- ngme(
     1:n_obs,
     name = "my_ar",
     model = ar1(),
-    noise = noise_nig()
+    noise = noise_nig(
+      prior = priors(
+        nu = prior_normal(0, 0.5)
+      )
+    )
   ),
   family = noise_normal(),
   data = data.frame(Y = Y, t = t),
   control_opt = control_same
 )
-ret_nig_same
+summary(ret_nig_same)
+traceplot(ret_nig_same)
 
 
 pred <- predict(

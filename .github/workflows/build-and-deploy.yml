@@ -476,17 +476,28 @@ jobs:
           fi
 
   deploy-docs:
+    needs: [deploy-binaries]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: stable
+          fetch-depth: 0
+          persist-credentials: true
+          token: ${{ secrets.GITHUB_TOKEN }}
           
       - name: Copy docs to gh-pages branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Save docs content to a temporary directory
           mkdir -p /tmp/docs-content
           cp -R docs/* /tmp/docs-content/
+
+          # Ensure authenticated remote for private/internal repositories
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           
           # Fetch and switch to gh-pages branch
           git fetch origin gh-pages
@@ -511,7 +522,7 @@ jobs:
           
           if ! git diff --cached --quiet; then
             git commit -m "📚 Update documentation [skip ci]"
-            git push origin gh-pages
+            git push origin HEAD:gh-pages
           else
             echo "No changes to docs."
           fi

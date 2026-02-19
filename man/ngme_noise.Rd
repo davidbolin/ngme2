@@ -37,9 +37,7 @@ ngme_noise(
   map_corr = NULL,
   nu_lower_bound = 0,
   rho = double(0),
-  prior_mu = ngme_prior("normal", param = c(0, 0.01)),
-  prior_sigma = ngme_prior("normal", param = c(0, 0.01)),
-  prior_nu = ngme_prior("normal", param = c(0, 0.01)),
+  prior = NULL,
   ...
 )
 
@@ -187,11 +185,8 @@ parametrization is \eqn{nu = nu_lower_bound + \exp(B_\nu \theta_\nu)} so
 
 \item{rho}{used when corr_measurement=TRUE, starting point for correlation}
 
-\item{prior_mu}{prior distribution for parameter of mu}
-
-\item{prior_sigma}{prior distribution for parameter of sigma}
-
-\item{prior_nu}{prior distribution for parameter of nu}
+\item{prior}{prior specification created by \code{priors(...)}. Supported
+keys are \code{mu}, \code{sigma}, and \code{nu}.}
 
 \item{...}{additional arguments}
 

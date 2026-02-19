@@ -17,7 +17,8 @@
 #' @param A  observation matrix, automatically computed given map and model
 #' @param W      starting value of the process
 #' @param fix_K  fix the estimation of parameter of K
-#' @param prior_theta_K prior for theta_K
+#' @param prior prior specification created by \code{prior_*()} or
+#'   \code{priors(...)} for operator parameters (\code{theta_K}).
 #' @param fix_W  stop sampling for W
 #' @param debug     debug mode
 #' @param subset    subset of the model
@@ -52,7 +53,7 @@ f <- function(
     W = NULL,
     fix_W = FALSE,
     fix_K = FALSE,
-    prior_theta_K = ngme_prior("normal", param = c(0, 0.001)),
+    prior = NULL,
     subset = rep(TRUE, length_map(map)),
     debug = FALSE) {
   # examine the noise
@@ -543,6 +544,13 @@ f <- function(
 
     W <- c(W, W)
   }
+
+  operator_prior_names <- operator$param_name
+  if (is.null(operator_prior_names) ||
+      length(operator_prior_names) != length(operator$theta_K)) {
+    operator_prior_names <- paste0("theta", seq_along(operator$theta_K))
+  }
+  prior_theta_K <- compile_operator_priors(prior, operator_prior_names)
 
   ngme_model(
     model = model_name,

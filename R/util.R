@@ -304,11 +304,15 @@ get_inla_mesh_dimension <- function(inla_mesh) {
 ngme_format <- function(param, val, model = NULL, ...) {
   stationary <- (length(val) == 1)
   dne <- (length(val) == 0)
+  dots <- list(...)
+  nu_lower_bound <- if (!is.null(dots$nu_lower_bound)) dots$nu_lower_bound else 0
 
   if (is.null(model)) { # noise
     if (stationary) {
-      val <- if (grepl("sigma", param, fixed = TRUE) || grepl("nu", param, fixed = TRUE)) {
+      val <- if (grepl("sigma", param, fixed = TRUE)) {
         format(exp(val), digits = 3)
+      } else if (grepl("nu", param, fixed = TRUE)) {
+        format(nu_lower_bound + exp(val), digits = 3)
       } else {
         format(val, digits = 3)
       }

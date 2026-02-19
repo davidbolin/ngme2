@@ -266,12 +266,14 @@ noise_nig <- nig <- function(
   if (is.null(sigma) && is.null(theta_sigma)) theta_sigma <- rep(0, ncol(B_sigma))
   if (is.null(nu) && is.null(theta_nu)) theta_nu <- rep(0, ncol(B_nu))
 
-  if (!is.null(nu) && nu <= 0) stop("ngme_nosie: nu should be positive.")
+  if (!is.null(nu) && nu <= nu_lower_bound) {
+    stop("ngme_noise: nu must exceed nu_lower_bound.")
+  }
   if (!is.null(sigma) && sigma <= 0) stop("ngme_nosie: sigma should be positive.")
 
   if (!is.null(mu)) theta_mu <- mu
   if (!is.null(sigma)) theta_sigma <- log(sigma)
-  if (!is.null(nu)) theta_nu <- log(nu)
+  if (!is.null(nu)) theta_nu <- log(nu - nu_lower_bound)
 
   ngme_noise(
     noise_type = "nig",
@@ -314,12 +316,14 @@ noise_gal <- gal <- function(
   if (is.null(sigma) && is.null(theta_sigma)) theta_sigma <- rep(0, ncol(B_sigma))
   if (is.null(nu) && is.null(theta_nu)) theta_nu <- rep(0, ncol(B_nu))
 
-  if (!is.null(nu) && nu <= 0) stop("ngme_nosie: nu should be positive.")
+  if (!is.null(nu) && nu <= nu_lower_bound) {
+    stop("ngme_noise: nu must exceed nu_lower_bound.")
+  }
   if (!is.null(sigma) && sigma <= 0) stop("ngme_nosie: sigma should be positive.")
 
   if (!is.null(mu)) theta_mu <- mu
   if (!is.null(sigma)) theta_sigma <- log(sigma)
-  if (!is.null(nu)) theta_nu <- log(nu)
+  if (!is.null(nu)) theta_nu <- log(nu - nu_lower_bound)
 
   ngme_noise(
     noise_type = "gal",
@@ -359,14 +363,19 @@ noise_skew_t <- skew_t_noise <- function(
   stopifnot("Please use theta_mu for non-stationary mu." = length(mu) < 2)
   if (is.null(mu) && is.null(theta_mu)) theta_mu <- rep(0, ncol(B_mu))
   if (is.null(sigma) && is.null(theta_sigma)) theta_sigma <- rep(0, ncol(B_sigma))
-  if (is.null(nu) && is.null(theta_nu)) theta_nu <- rep(log(5), ncol(B_nu)) # default to 5 degrees of freedom
+  if (is.null(nu) && is.null(theta_nu)) {
+    stopifnot("Default nu=5 must exceed nu_lower_bound." = 5 > nu_lower_bound)
+    theta_nu <- rep(log(5 - nu_lower_bound), ncol(B_nu)) # default to 5 degrees of freedom
+  }
 
-  if (!is.null(nu) && nu <= 0) stop("ngme_noise: nu (degrees of freedom) should be positive.")
+  if (!is.null(nu) && nu <= nu_lower_bound) {
+    stop("ngme_noise: nu (degrees of freedom) must exceed nu_lower_bound.")
+  }
   if (!is.null(sigma) && sigma <= 0) stop("ngme_noise: sigma should be positive.")
 
   if (!is.null(mu)) theta_mu <- mu
   if (!is.null(sigma)) theta_sigma <- log(sigma)
-  if (!is.null(nu)) theta_nu <- log(nu)
+  if (!is.null(nu)) theta_nu <- log(nu - nu_lower_bound)
 
   ngme_noise(
     noise_type = "skew_t",
@@ -397,11 +406,16 @@ noise_t <- t_noise <- function(
     index_corr = NULL,
     ...) {
   # if nothing, then fill with default
-  if (is.null(nu) && is.null(theta_nu)) theta_nu <- rep(log(5), ncol(B_nu)) # default to 5 degrees of freedom
+  if (is.null(nu) && is.null(theta_nu)) {
+    stopifnot("Default nu=5 must exceed nu_lower_bound." = 5 > nu_lower_bound)
+    theta_nu <- rep(log(5 - nu_lower_bound), ncol(B_nu)) # default to 5 degrees of freedom
+  }
 
-  if (!is.null(nu) && nu <= 0) stop("ngme_noise: nu (degrees of freedom) should be positive.")
+  if (!is.null(nu) && nu <= nu_lower_bound) {
+    stop("ngme_noise: nu (degrees of freedom) must exceed nu_lower_bound.")
+  }
 
-  if (!is.null(nu)) theta_nu <- log(nu)
+  if (!is.null(nu)) theta_nu <- log(nu - nu_lower_bound)
 
   ngme_noise(
     noise_type = "t",
@@ -512,6 +526,9 @@ noise_normal_nig <- normal_nig <- function(
     corr_measurement = FALSE,
     index_corr = NULL,
     ...) {
+  dots <- list(...)
+  nu_lower_bound <- if (!is.null(dots$nu_lower_bound)) dots$nu_lower_bound else 0
+
   # if nothing, then fill with default
   stopifnot("Please use theta_mu for non-stationary mu." = length(mu) < 2)
   if (is.null(mu) && is.null(theta_mu)) theta_mu <- rep(0, ncol(B_mu))
@@ -519,14 +536,16 @@ noise_normal_nig <- normal_nig <- function(
   if (is.null(nu) && is.null(theta_nu)) theta_nu <- rep(0, ncol(B_nu))
   if (is.null(sigma_normal) && is.null(theta_sigma_normal)) theta_sigma_normal <- rep(0, ncol(B_sigma_normal))
 
-  if (!is.null(nu) && nu <= 0) stop("ngme_nosie: nu should be positive.")
+  if (!is.null(nu) && nu <= nu_lower_bound) {
+    stop("ngme_noise: nu must exceed nu_lower_bound.")
+  }
   if (!is.null(sigma_nig) && sigma_nig <= 0) stop("ngme_nosie: sigma_nig should be positive.")
   if (!is.null(sigma_normal) && sigma_normal <= 0) stop("ngme_nosie: sigma_nig should be positive.")
 
   if (!is.null(mu)) theta_mu <- mu
   if (!is.null(sigma_nig)) theta_sigma_nig <- log(sigma_nig)
   if (!is.null(sigma_normal)) theta_sigma_normal <- log(sigma_normal)
-  if (!is.null(nu)) theta_nu <- log(nu)
+  if (!is.null(nu)) theta_nu <- log(nu - nu_lower_bound)
 
   ngme_noise(
     noise_type = "normal_nig",
@@ -606,7 +625,7 @@ print.ngme_noise <- function(
         # only print mu and nu
         cat(paste0(
           pad_add4_space, ngme_format("mu", noise$theta_mu), "\n",
-          pad_add4_space, ngme_format("nu", noise$theta_nu)
+          pad_add4_space, ngme_format("nu", noise$theta_nu, nu_lower_bound = noise$nu_lower_bound)
         ))
       } else {
         cat(pad_space)
@@ -620,23 +639,23 @@ print.ngme_noise <- function(
             "nig" = paste0(
               pad_add4_space, ngme_format("mu", theta_mu),
               "\n", pad_add4_space, ngme_format("sigma", theta_sigma),
-              "\n", pad_add4_space, ngme_format("nu", theta_nu)
+              "\n", pad_add4_space, ngme_format("nu", theta_nu, nu_lower_bound = nu_lower_bound)
             ),
             "gal" = paste0(
               pad_add4_space, ngme_format("mu", theta_mu),
               "\n", pad_add4_space, ngme_format("sigma", theta_sigma),
-              "\n", pad_add4_space, ngme_format("nu", theta_nu)
+              "\n", pad_add4_space, ngme_format("nu", theta_nu, nu_lower_bound = nu_lower_bound)
             ),
-            "t" = paste0(pad_add4_space, ngme_format("nu", theta_nu)),
+            "t" = paste0(pad_add4_space, ngme_format("nu", theta_nu, nu_lower_bound = nu_lower_bound)),
             "skew_t" = paste0(
               pad_add4_space, ngme_format("mu", theta_mu),
               "\n", pad_add4_space, ngme_format("sigma", theta_sigma),
-              "\n", pad_add4_space, ngme_format("nu", theta_nu)
+              "\n", pad_add4_space, ngme_format("nu", theta_nu, nu_lower_bound = nu_lower_bound)
             ),
             "normal_nig" = paste0(
               pad_add4_space, ngme_format("mu", theta_mu),
               "\n", pad_add4_space, ngme_format("sigma_nig", theta_sigma_nig),
-              "\n", pad_add4_space, ngme_format("nu", theta_nu),
+              "\n", pad_add4_space, ngme_format("nu", theta_nu, nu_lower_bound = nu_lower_bound),
               "\n", pad_add4_space, ngme_format("sigma_normal", theta_sigma_normal)
             ),
             NULL

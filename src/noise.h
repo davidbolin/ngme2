@@ -43,7 +43,7 @@ public:
 
     // Analytic Hessian wrt theta_nu for NIG (and normal_nig) case:
     // H = B_nu^T diag(nu ⊙ c) B_nu, where
-    //   nu = exp(B_nu theta_nu) (caller supplies as 'nu'),
+    //   nu = nu_lower_bound + exp(B_nu theta_nu) (caller supplies effective 'nu'),
     //   c_i = h_i - h_i^2/(2 V_i) - V_i/2.
     // Returns negative Hessian (matching gradient sign convention).
     static MatrixXd hess_theta_nu(

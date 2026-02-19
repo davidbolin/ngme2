@@ -728,7 +728,8 @@ plot.ngme_noise <- function(x = NULL, ...) {
     noise <- noise_objects[[i]]
     mu <- noise$theta_mu
     sigma <- exp(noise$theta_sigma)
-    nu <- exp(noise$theta_nu)
+    nu_lower_bound <- if (is.null(noise$nu_lower_bound)) 0 else noise$nu_lower_bound
+    nu <- nu_lower_bound + exp(noise$theta_nu)
 
     stopifnot(
       "only implemented for stationary mu" =
@@ -884,7 +885,8 @@ compare_noise_kld <- function(x = NULL, ..., xlim = c(-10, 10), n_points = 1000)
     noise <- noise_objects[[i]]
     mu <- noise$theta_mu
     sigma <- exp(noise$theta_sigma)
-    nu <- exp(noise$theta_nu)
+    nu_lower_bound <- if (is.null(noise$nu_lower_bound)) 0 else noise$nu_lower_bound
+    nu <- nu_lower_bound + exp(noise$theta_nu)
 
     stopifnot(
       "only implemented for stationary mu" =

@@ -109,7 +109,7 @@ protected:
 
     // mu = Bmu * theta_mu
     // sigma = exp(Bsigma * theta_sigma)
-    // nu = exp(Bnu * theta_nu)
+    // nu = nu_lower_bound + exp(Bnu * theta_nu)
     VectorXd mu, sigma, nu;
     int n_theta_mu, n_theta_sigma, n_theta_nu;
 

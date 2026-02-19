@@ -125,13 +125,14 @@ if (debug) std::cout << "After set block K" << std::endl;
     rb_trace_noise_sigma = VectorXd::Zero(n_theta_sigma),
 
     family = Rcpp::as<string>  (noise_in["noise_type"]);
+    nu_lower_bound = noise_in.containsElementNamed("nu_lower_bound") ? Rcpp::as<double> (noise_in["nu_lower_bound"]) : 0.0;
     noise_mu    = B_mu * theta_mu;
     noise_sigma = (B_sigma * theta_sigma).array().exp();
-    noise_nu    = (B_nu * theta_nu).array().exp();
+    noise_nu    = VectorXd::Constant(B_nu.rows(), nu_lower_bound)
+      + (B_nu * theta_nu).array().exp().matrix();
 
-    rho   = Rcpp::as<VectorXd> (noise_in["rho"]); 
+    rho   = Rcpp::as<VectorXd> (noise_in["rho"]);
     n_rho = noise_in.containsElementNamed("n_rho") ? Rcpp::as<int>      (noise_in["n_rho"]) : 0;
-    nu_lower_bound = noise_in.containsElementNamed("nu_lower_bound") ? Rcpp::as<double> (noise_in["nu_lower_bound"]) : 0.0;
     corr_measure = Rcpp::as<bool> (noise_in["corr_measurement"]);
 
     // init priors for noise_parameter
@@ -653,7 +654,7 @@ VectorXd BlockModel::grad_theta_merr() {
   if (!fix_flag[block_fix_theta_mu])     grad.segment(0, n_theta_mu) = grad_theta_mu();
   if (!fix_flag[block_fix_theta_sigma])  grad.segment(n_theta_mu, n_theta_sigma) = grad_theta_sigma();
   if (!fix_flag[block_fix_theta_nu]) {
-    grad.segment(n_theta_mu + n_theta_sigma, n_theta_nu) = NoiseUtil::grad_theta_nu(family, B_nu, noise_nu, noise_V, noise_prevV);
+    grad.segment(n_theta_mu + n_theta_sigma, n_theta_nu) = NoiseUtil::grad_theta_nu(family, B_nu, noise_nu, noise_V, noise_prevV, false, nu_lower_bound);
     // add prior
     // grad(n_theta_mu + n_theta_sigma) -= PriorUtil::d_log_dens(prior_nu_type, prior_nu_param, noise_nu);
   }
@@ -694,8 +695,8 @@ if (debug) std::cout << "start set theta_merr" << std::endl;
   // update mu, sigma
   noise_mu    = (B_mu * theta_mu);
   noise_sigma = (B_sigma * theta_sigma).array().exp();
-  noise_nu    = (B_nu * theta_nu).array().exp();
-  noise_nu    = noise_nu.cwiseMax(nu_lower_bound);
+  noise_nu    = VectorXd::Constant(B_nu.rows(), nu_lower_bound)
+    + (B_nu * theta_nu).array().exp().matrix();
 
 // show the Q construction
 // std::cout << "Q_eps == \n" << Q_eps << std::endl;
@@ -962,7 +963,8 @@ MatrixXd BlockModel::num_h_no_latent(const VectorXd& v, double eps) {
 // residual ~ N(-mu + mu V, .. )
 double BlockModel::logd_no_latent(const VectorXd& v) {
   VectorXd theta_mu, theta_sigma, theta_nu, th_rho, beta;
-  VectorXd tmp_mu, tmp_sigma, tmp_nu;
+  VectorXd tmp_mu, tmp_sigma;
+  VectorXd theta_nu_for_logd;
   if (!fix_flag[block_fix_theta_mu])     theta_mu = v.segment(0, n_theta_mu);
   if (!fix_flag[block_fix_theta_sigma])  theta_sigma = v.segment(n_theta_mu, n_theta_sigma);
   if (!fix_flag[block_fix_theta_nu])     theta_nu = v.segment(n_theta_mu + n_theta_sigma, n_theta_nu);
@@ -973,6 +975,8 @@ double BlockModel::logd_no_latent(const VectorXd& v) {
     else tmp_mu = noise_mu;
   if (!fix_flag[block_fix_theta_sigma]) tmp_sigma = (B_sigma * theta_sigma).array().exp();
     else tmp_sigma = noise_sigma;
+  if (!fix_flag[block_fix_theta_nu]) theta_nu_for_logd = theta_nu;
+    else theta_nu_for_logd = this->theta_nu;
 
   // pi(Y|W, V) (no correction for noise!)
   // residual but using prevV
@@ -997,7 +1001,7 @@ double BlockModel::logd_no_latent(const VectorXd& v) {
   double logd_V = 0;
   VectorXd h = VectorXd::Ones(n_obs);
   if (family != "normal") {
-    logd_V = NoiseUtil::log_density(family, noise_V, h, B_nu, theta_nu, FALSE);
+    logd_V = NoiseUtil::log_density(family, noise_V, h, B_nu, theta_nu_for_logd, FALSE, nu_lower_bound);
   }
 
 // std::cout << "logdet_Q_eps=" << logdet_Q_eps << std::endl;

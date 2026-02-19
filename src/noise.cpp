@@ -1,4 +1,5 @@
 #include "noise.h"
+#include <algorithm>
 
 void NoiseUtil::update_gig(
     const string& noise_type,
@@ -41,7 +42,8 @@ VectorXd NoiseUtil::grad_theta_nu(
     const VectorXd& V,
     const VectorXd& prevV,
     const VectorXd& h,
-    bool single_V
+    bool single_V,
+    double nu_lower_bound
 ) {
     int n_theta_nu = B_nu.cols();
     VectorXd grad = VectorXd::Zero(n_theta_nu);
@@ -50,6 +52,7 @@ VectorXd NoiseUtil::grad_theta_nu(
     if (noise_type == "normal") return grad;
 
     int n = V.size();
+    VectorXd dnu_deta = (nu.array() - nu_lower_bound).matrix().cwiseMax(1e-12);
     if (!single_V) {
         if (noise_type == "gal") {
             VectorXd pg (n);
@@ -60,7 +63,7 @@ VectorXd NoiseUtil::grad_theta_nu(
                 - h.cwiseProduct(nu.cwiseInverse().array().log().matrix())
                 - h.cwiseProduct(pg);
             
-            grad = B_nu.transpose() * tmp.cwiseProduct(nu);
+            grad = B_nu.transpose() * tmp.cwiseProduct(dnu_deta);
         } else if (noise_type == "t" || noise_type == "skew_t") {
             // t-distribution: df/dnu = (-1 + x - x Log[2 x] + x Log[nu] - x PolyGamma[0, nu/2])/(2 x)
             // df/d(log nu) = df/dnu * nu
@@ -70,7 +73,7 @@ VectorXd NoiseUtil::grad_theta_nu(
                 double x = V[j];
                 tmp(j) = (-1.0 + x - x * log(2.0 * x) + x * log(nu_j) - x * R::digamma(nu_j/2.0)) / (2.0 * x);
             }
-            grad = B_nu.transpose() * tmp.cwiseProduct(nu);
+            grad = B_nu.transpose() * tmp.cwiseProduct(dnu_deta);
         } else {
             // type == nig or normal+nig
             // df/dnu = 0.5 (2h + 1/nu - h^2/V - V)
@@ -78,24 +81,28 @@ VectorXd NoiseUtil::grad_theta_nu(
             VectorXd tmp = 0.5 * (2*h + nu.cwiseInverse()
                 - h.cwiseProduct(h).cwiseQuotient(V) - V);
 
-            grad = B_nu.transpose() * tmp.cwiseProduct(nu);
+            grad = B_nu.transpose() * tmp.cwiseProduct(dnu_deta);
         }
     } else {
         // single V case
+        const double nu_val = std::max(nu(0), 1e-12);
+        const double dnu_deta_scalar = std::max(nu_val - nu_lower_bound, 1e-12);
+        const double chain_ratio = dnu_deta_scalar / nu_val;
         if (noise_type == "nig") {
             // theV ~ IG(nu, nu)
             // V_i = h_i * theV
             double theV = V(0) / h(0);
-            grad(0) = - 0.1 * (nu(0) - 3*theV - nu(0)*theV*theV)/(2*theV*theV); // remove negative sign
+            double grad_old = -0.1 * (nu(0) - 3*theV - nu(0)*theV*theV)/(2*theV*theV); // remove negative sign
+            grad(0) = grad_old * chain_ratio;
         } else if (noise_type == "gal") {
             // theV ~ Gam(nu, nu)
             throw std::runtime_error("Not implemented");
         } else if (noise_type == "t") {
             // theV ~ IG(nu/2, nu/2)
             double theV = V(0) / h(0);
-            double nu_val = nu(0);
-            grad(0) = - 0.5 * (R::digamma((nu_val + 1)/2) - R::digamma(nu_val/2) 
-                             - 1/nu_val - log(theV) + theV) * nu_val;
+            double grad_old = -0.5 * (R::digamma((nu_val + 1)/2) - R::digamma(nu_val/2)
+                              - 1/nu_val - log(theV) + theV) * nu_val;
+            grad(0) = grad_old * chain_ratio;
         }
     }
     // grad /= n;
@@ -108,11 +115,13 @@ double NoiseUtil::log_density(
     const VectorXd& h,
     const MatrixXd& B_nu,
     const VectorXd& theta_nu,
-    bool single_V
+    bool single_V,
+    double nu_lower_bound
 ) {
     if (noise_type != "nig" && noise_type != "gal" && noise_type != "t") return 0;
 
-    VectorXd nu = (B_nu * theta_nu).array().exp();
+    VectorXd nu = VectorXd::Constant(B_nu.rows(), nu_lower_bound)
+        + (B_nu * theta_nu).array().exp().matrix();
     assert(V.size() == h.size());
     double logd=0;
     for (int i = 0; i < V.size(); i++) {
@@ -147,7 +156,8 @@ MatrixXd NoiseUtil::precond(
     const VectorXd& h,
     const MatrixXd& B_nu,
     const VectorXd& theta_nu,
-    bool single_V
+    bool single_V,
+    double nu_lower_bound
 ) {
     // (f(x+h) - 2f(x) +f(x-h)) / h^2
     // double f1 = log_density(noise_type, V, h, nu+eps, single_V);
@@ -158,32 +168,31 @@ MatrixXd NoiseUtil::precond(
     int n = theta_nu.size();
     int n_theta_nu = B_nu.cols();
 
-    VectorXd nu = (B_nu * theta_nu).array().exp();
     MatrixXd hessian = MatrixXd::Zero(n_theta_nu, n_theta_nu);
-    double original_val = log_density(noise_type, V, h, B_nu, theta_nu, single_V);
+    double original_val = log_density(noise_type, V, h, B_nu, theta_nu, single_V, nu_lower_bound);
 
-	// compute f_v = log_density(v + eps * e_i)
-	VectorXd f_v (n_theta_nu);
-	for (int i=0; i < n; i++) {
-		VectorXd tmp_v = theta_nu; tmp_v(i) += eps;
-		f_v(i) = log_density(noise_type, V, h, B_nu, tmp_v, single_V);
-	}
+    // compute f_v = log_density(v + eps * e_i)
+    VectorXd f_v (n_theta_nu);
+    for (int i=0; i < n; i++) {
+        VectorXd tmp_v = theta_nu; tmp_v(i) += eps;
+        f_v(i) = log_density(noise_type, V, h, B_nu, tmp_v, single_V, nu_lower_bound);
+    }
 
-	// compute H_ij = d2 f / dxi dxj
-	for (int i=0; i < n; i++) {
-		for (int j=0; j <= i; j++) {
-			VectorXd tmp_vij = theta_nu; tmp_vij(i) += eps; tmp_vij(j) += eps;
-			double f_vij = log_density(noise_type, V, h, B_nu, tmp_vij, single_V);
-			hessian(i, j) = (f_vij - f_v(i) - f_v(j) + original_val) / (eps * eps);
-		}
-	}
+    // compute H_ij = d2 f / dxi dxj
+    for (int i=0; i < n; i++) {
+        for (int j=0; j <= i; j++) {
+            VectorXd tmp_vij = theta_nu; tmp_vij(i) += eps; tmp_vij(j) += eps;
+            double f_vij = log_density(noise_type, V, h, B_nu, tmp_vij, single_V, nu_lower_bound);
+            hessian(i, j) = (f_vij - f_v(i) - f_v(j) + original_val) / (eps * eps);
+        }
+    }
 
-	// fill in the lower triangular part
-	for (int i=0; i < n; i++) {
-		for (int j=0; j < i; j++) {
-			hessian(j, i) = hessian(i, j);
-		}
-	}
+    // fill in the lower triangular part
+    for (int i=0; i < n; i++) {
+        for (int j=0; j < i; j++) {
+            hessian(j, i) = hessian(i, j);
+        }
+    }
 
     return -hessian;
 }

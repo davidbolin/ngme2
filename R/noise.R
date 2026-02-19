@@ -598,7 +598,7 @@ print.ngme_noise <- function(
       } else if (known_type && model_type=="re") {
         # only print mu and nu
         cat(paste0(pad_add4_space, ngme_format("mu", noise$theta_mu), "\n",
-          pad_add4_space, ngme_format("nu", noise$theta_nu)))
+          pad_add4_space, ngme_format("nu", noise$theta_nu, nu_lower_bound = noise$nu_lower_bound)))
       } else {
         cat(pad_space); cat("Noise parameters: \n")
         params <- with(noise, {
@@ -609,17 +609,17 @@ print.ngme_noise <- function(
             "normal" = paste0(pad_add4_space, ngme_format("sigma", theta_sigma)),
             "nig"    = paste0(pad_add4_space, ngme_format("mu", theta_mu),
                         "\n", pad_add4_space, ngme_format("sigma", theta_sigma),
-                        "\n", pad_add4_space, ngme_format("nu", theta_nu)),
+                        "\n", pad_add4_space, ngme_format("nu", theta_nu, nu_lower_bound = nu_lower_bound)),
             "gal"    = paste0(pad_add4_space, ngme_format("mu", theta_mu),
                         "\n", pad_add4_space, ngme_format("sigma", theta_sigma),
-                        "\n", pad_add4_space, ngme_format("nu", theta_nu)),
-            "t"      = paste0(pad_add4_space, ngme_format("nu", theta_nu)),
+                        "\n", pad_add4_space, ngme_format("nu", theta_nu, nu_lower_bound = nu_lower_bound)),
+            "t"      = paste0(pad_add4_space, ngme_format("nu", theta_nu, nu_lower_bound = nu_lower_bound)),
             "skew_t" = paste0(pad_add4_space, ngme_format("mu", theta_mu),
                         "\n", pad_add4_space, ngme_format("sigma", theta_sigma),
-                        "\n", pad_add4_space, ngme_format("nu", theta_nu)),
+                        "\n", pad_add4_space, ngme_format("nu", theta_nu, nu_lower_bound = nu_lower_bound)),
             "normal_nig" = paste0(pad_add4_space, ngme_format("mu", theta_mu),
                         "\n", pad_add4_space, ngme_format("sigma_nig", theta_sigma_nig),
-                        "\n", pad_add4_space, ngme_format("nu", theta_nu),
+                        "\n", pad_add4_space, ngme_format("nu", theta_nu, nu_lower_bound = nu_lower_bound),
                         "\n", pad_add4_space, ngme_format("sigma_normal", theta_sigma_normal)),
             NULL
           )

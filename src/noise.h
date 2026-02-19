@@ -37,7 +37,8 @@ public:
         const VectorXd& V,
         const VectorXd& prevV,
         const VectorXd& h,
-        bool single_V = false
+        bool single_V = false,
+        double nu_lower_bound = 0.0
     );
 
     // wrapper of sample GIG with extra argument
@@ -64,7 +65,8 @@ public:
         const VectorXd& h,
         const MatrixXd& B_nu,
         const VectorXd& theta_nu,
-        bool single_V = false
+        bool single_V = false,
+        double nu_lower_bound = 0.0
     );
 
     static MatrixXd precond(
@@ -74,7 +76,8 @@ public:
         const VectorXd& h,
         const MatrixXd& B_nu,
         const VectorXd& theta_nu,
-        bool single_V = false
+        bool single_V = false,
+        double nu_lower_bound = 0.0
     );
 
     // ---- h = 1 ----
@@ -96,10 +99,11 @@ public:
         const VectorXd& nu,
         const VectorXd& V,
         const VectorXd& prevV,
-        bool single_V = false
+        bool single_V = false,
+        double nu_lower_bound = 0.0
     ) {
         VectorXd h = VectorXd::Ones(V.size());
-        return grad_theta_nu(noise_type, B_nu, nu, V, prevV, h, single_V);
+        return grad_theta_nu(noise_type, B_nu, nu, V, prevV, h, single_V, nu_lower_bound);
     }
 
     static VectorXd rnorm_vec(int n, double mu, double sigma, unsigned long seed=0) {

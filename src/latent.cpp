@@ -266,15 +266,15 @@ VectorXd Latent::grad_theta_nu() {
             VectorXd V_half = V.segment(0, V.size()/2);
             VectorXd prevV_half = prevV.segment(0, prevV.size()/2);
             VectorXd h_half = h.segment(0, h.size()/2);
-            grad = NoiseUtil::grad_theta_nu(noise_type[0], B_nu_half, nu_half, V_half, prevV_half, h_half, single_V);
+            grad = NoiseUtil::grad_theta_nu(noise_type[0], B_nu_half, nu_half, V_half, prevV_half, h_half, single_V, nu_lower_bound);
         } else {
-            grad = NoiseUtil::grad_theta_nu(noise_type[0], B_nu, nu, V, prevV, h, single_V);
+            grad = NoiseUtil::grad_theta_nu(noise_type[0], B_nu, nu, V, prevV, h, single_V, nu_lower_bound);
         }
     } else { // same as single noise case
         // bv noise (does not allow for non-stationary nu)
         // 2 NIG case
         // n_theta_nu == 2 (1 for each field)
-        grad = NoiseUtil::grad_theta_nu(noise_type[0], B_nu, nu, V, prevV, h, single_V);
+        grad = NoiseUtil::grad_theta_nu(noise_type[0], B_nu, nu, V, prevV, h, single_V, nu_lower_bound);
 
         // int n = V_size / 2;
         // grad.head(1) = NoiseUtil::grad_theta_nu(noise_type[0], B_nu.block(0, 0, n, B_nu.cols()), theta_nu.head(1), V.segment(0, n), prevV.segment(0, n), h.segment(0, n), single_V);
@@ -545,8 +545,8 @@ void Latent::update_each_iter(bool initialization, bool update_dK) {
 // std::cout << "t_mu size = " << theta_mu.size() << std::endl;
     mu = B_mu * theta_mu;
     sigma = (B_sigma * theta_sigma).array().exp();
-    nu = (B_nu * theta_nu).array().exp();
-    nu = nu.cwiseMax(nu_lower_bound);
+    nu = VectorXd::Constant(B_nu.rows(), nu_lower_bound)
+        + (B_nu * theta_nu).array().exp().matrix();
 
 if (debug) std::cout << "update_each_iter" << std::endl;
 
@@ -847,10 +847,10 @@ const SparseMatrix<double, 0, int>& Latent::get_dK(int i) {
 double Latent::logd_W_V() {
     double logd_V = 0;
     if (n_noise == 1) {
-        logd_V = NoiseUtil::log_density(noise_type[0], V, h, B_nu, theta_nu, single_V);
+        logd_V = NoiseUtil::log_density(noise_type[0], V, h, B_nu, theta_nu, single_V, nu_lower_bound);
     } else if (n_noise == 2) {
-        double logd_V1 = NoiseUtil::log_density(noise_type[0], V.head(V_size/2), h.head(V_size/2), B_nu.block(0, 0, V_size/2, B_nu.cols()), theta_nu, single_V);
-        double logd_V2 = NoiseUtil::log_density(noise_type[1], V.tail(V_size/2), h.tail(V_size/2), B_nu.block(V_size/2, 0, V_size/2, B_nu.cols()), theta_nu, single_V);
+        double logd_V1 = NoiseUtil::log_density(noise_type[0], V.head(V_size/2), h.head(V_size/2), B_nu.block(0, 0, V_size/2, B_nu.cols()), theta_nu, single_V, nu_lower_bound);
+        double logd_V2 = NoiseUtil::log_density(noise_type[1], V.tail(V_size/2), h.tail(V_size/2), B_nu.block(V_size/2, 0, V_size/2, B_nu.cols()), theta_nu, single_V, nu_lower_bound);
         logd_V = logd_V1 + logd_V2;
     }
 

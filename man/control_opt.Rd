@@ -90,7 +90,7 @@ If it is more than n_parallel_chain, the rest will be used to parallel different
 
 \item{verbose}{print estimation}
 
-\item{store_traj}{store the optimizer trajectory for diagnostics (set \code{FALSE} to reduce memory)}
+\item{store_traj}{store the optimizer trajectory for diagnostics (set FALSE to reduce memory)}
 }
 \value{
 list of control variables

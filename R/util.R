@@ -300,16 +300,25 @@ get_inla_mesh_dimension <- function(inla_mesh) {
 }
 
 # format output
-ngme_format <- function(param, val, model = NULL, ...) {
+ngme_format <- function(param, val, model = NULL, nu_lower_bound = 0, ...) {
   stationary <- (length(val) == 1)
   dne <- (length(val) == 0)
 
   if (is.null(model)) { # noise
-    if (stationary)
-      val <- if (grepl("sigma", param, fixed=TRUE) || grepl("nu", param, fixed=TRUE))
-        format(exp(val), digits = 3) else format(val, digits = 3)
-    else
-      val <-  paste0(format(val, digits = 3), collapse = ", ")
+    if (param == "nu") {
+      nu_val <- nu_lower_bound + exp(val)
+      if (stationary) {
+        val <- format(nu_val, digits = 3)
+      } else {
+        val <- paste0(format(nu_val, digits = 3), collapse = ", ")
+      }
+    } else {
+      if (stationary)
+        val <- if (grepl("sigma", param, fixed=TRUE))
+          format(exp(val), digits = 3) else format(val, digits = 3)
+      else
+        val <-  paste0(format(val, digits = 3), collapse = ", ")
+    }
 
     switch(param,
       "sigma" = if (stationary) paste0("sigma = ", val)
@@ -320,8 +329,7 @@ ngme_format <- function(param, val, model = NULL, ...) {
                 else paste0("theta_sigma_normal = ", val),
       "mu"    = if (stationary) paste0("mu = ", val)
                 else paste0("theta_mu = ", val),
-      "nu"    = if (stationary) paste0("nu = ", val)
-                else paste0("theta_nu = ", val),
+      "nu"    = paste0("nu = ", val, " (nu_lower_bound = ", format(nu_lower_bound, digits = 3), ")"),
       "feff"  = if (dne) "No fixed effects" else paste0("feff = ", val)
     )
   } else { # model
@@ -1112,5 +1120,4 @@ extract_parameters <- function(ngme_object) {
 
   list(transformed = result_transformed, raw = result_raw)
 }
-
 

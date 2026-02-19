@@ -134,6 +134,10 @@ default_operator_prior <- function() {
   prior_normal(0, sqrt(1 / 0.001), target = "coef")
 }
 
+default_beta_prior <- function() {
+  prior_normal(0, 10, target = "coef")
+}
+
 compile_noise_priors <- function(prior) {
   if (is.null(prior)) prior <- default_noise_priors()
   if (is_prior_spec(prior)) {
@@ -183,4 +187,40 @@ compile_operator_priors <- function(prior, param_names) {
   }
 
   lapply(per_param, as_internal_prior)
+}
+
+compile_beta_priors <- function(prior, param_names) {
+  if (is.null(param_names) || length(param_names) == 0) return(list())
+  if (is.null(prior)) {
+    return(rep(list(as_internal_prior(default_beta_prior())), length(param_names)))
+  }
+
+  if (is_prior_spec(prior)) {
+    prior <- priors(beta = prior)
+  }
+  stopifnot("beta prior must be prior_*() or priors(...)." = is_prior_collection(prior))
+
+  index_names <- paste0("feff_", seq_along(param_names))
+  unknown <- setdiff(names(prior), c("beta", param_names, index_names))
+  if (length(unknown) > 0) {
+    stop("Unknown beta prior names: ", paste(unknown, collapse = ", "))
+  }
+
+  per_param <- rep(list(default_beta_prior()), length(param_names))
+  if ("beta" %in% names(prior)) {
+    per_param <- rep(list(prior$beta), length(param_names))
+  }
+  for (i in seq_along(param_names)) {
+    nm <- param_names[[i]]
+    idx_nm <- index_names[[i]]
+    if (idx_nm %in% names(prior)) per_param[[i]] <- prior[[idx_nm]]
+    if (nm %in% names(prior)) per_param[[i]] <- prior[[nm]]
+  }
+
+  internal <- lapply(per_param, as_internal_prior)
+  bad_target <- which(vapply(internal, function(x) x$target != "coef", logical(1)))
+  if (length(bad_target) > 0) {
+    stop("beta prior currently supports target='coef' only.")
+  }
+  internal
 }

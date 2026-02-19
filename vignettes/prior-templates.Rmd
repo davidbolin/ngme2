@@ -130,7 +130,24 @@ noise_stationary$prior_sigma
 noise_stationary$prior_nu
 ```
 
-## Example 3: Non-stationary noise (`mu`, `sigma`, `nu`)
+## Example 3: Fixed-effect (`beta`) priors in `ngme()`
+
+You can now set priors for fixed effects using `prior_beta = ...` in `ngme()`.
+
+```{r, eval = FALSE}
+fit <- ngme(
+  y ~ x1 + x2 + f(idx, model = ar1(), noise = noise_normal()),
+  data = dat,
+  family = noise_normal(),
+  prior_beta = priors(
+    beta = prior_normal(0, 2),   # fallback for all beta coefficients
+    x1 = prior_normal(0, 1),      # override by coefficient name
+    feff_1 = prior_half_cauchy(1) # optional index-based override
+  )
+)
+```
+
+## Example 4: Non-stationary noise (`mu`, `sigma`, `nu`)
 
 Use basis matrices and field priors when you want smooth regularization over
 space/time.
@@ -174,7 +191,7 @@ prior_noise_ns_template <- priors(
 prior_noise_ns_template
 ```
 
-## Example 4: Non-stationary Matern `kappa`
+## Example 5: Non-stationary Matern `kappa`
 
 For non-stationary Matern, names are typically `theta_kappa1`,
 `theta_kappa2`, ...
@@ -206,7 +223,7 @@ model_matern_ns$operator$param_name
 model_matern_ns$prior_theta_K
 ```
 
-## Example 5: End-to-end fitting script
+## Example 6: End-to-end fitting script
 
 This chunk is copy-paste ready for user analysis. It is set to `eval=FALSE`
 only to keep package vignette build fast.

@@ -68,3 +68,50 @@ test_that("f compiles operator priors from new API", {
     "Unknown operator prior names"
   )
 })
+
+test_that("beta prior compilation supports global and named forms", {
+  b <- compile_beta_priors(
+    priors(
+      beta = prior_normal(0, 2),
+      x = prior_half_cauchy(1),
+      feff_3 = prior_normal(1, 0.5)
+    ),
+    c("(Intercept)", "x", "z")
+  )
+
+  expect_equal(length(b), 3)
+  expect_equal(b[[1]]$type, "normal")
+  expect_equal(b[[1]]$param[2], 1 / 4)
+  expect_equal(b[[2]]$type, "half.cauchy")
+  expect_equal(b[[3]]$type, "normal")
+  expect_equal(b[[3]]$param[1], 1)
+
+  expect_error(
+    compile_beta_priors(priors(unknown = prior_normal(0, 1)), c("a", "b")),
+    "Unknown beta prior names"
+  )
+  expect_error(
+    compile_beta_priors(priors(beta = prior_normal(0, 1, target = "field")), c("a")),
+    "target='coef' only"
+  )
+})
+
+test_that("ngme accepts prior_beta and stores compiled priors per replicate", {
+  dat <- data.frame(y = rnorm(20), x = rnorm(20), id = 1:20)
+
+  fit <- ngme(
+    y ~ x + f(id, model = ar1(), noise = noise_normal()),
+    data = dat,
+    family = noise_normal(),
+    prior_beta = priors(
+      beta = prior_normal(0, 2),
+      x = prior_half_cauchy(1)
+    ),
+    control_opt = control_opt(estimation = FALSE)
+  )
+
+  pb <- fit$replicates[[1]]$prior_beta
+  expect_equal(length(pb), ncol(fit$replicates[[1]]$X))
+  expect_equal(pb[[2]]$type, "half.cauchy")
+  expect_equal(pb[[1]]$type, "normal")
+})

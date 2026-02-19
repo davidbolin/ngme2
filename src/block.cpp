@@ -32,6 +32,13 @@ VectorXd prior_score_vec(const std::string &type, const VectorXd &param,
   }
   return out;
 }
+
+void parse_prior_spec(const Rcpp::List &prior_list, std::string &type,
+                      VectorXd &param, std::string &target) {
+  type = Rcpp::as<std::string>(prior_list["type"]);
+  param = Rcpp::as<VectorXd>(prior_list["param"]);
+  target = parse_prior_target(prior_list);
+}
 } // namespace
 
 // -------------- Block Model class ----------------
@@ -103,6 +110,43 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
   fix_flag[block_fix_beta] = fix_beta;
   if (beta.size() == 0)
     fix_flag[block_fix_beta] = true;
+
+  // init priors for fixed effects
+  prior_beta_type.resize(n_feff, "none");
+  prior_beta_param.resize(n_feff, VectorXd::Zero(0));
+  prior_beta_target.resize(n_feff, "coef");
+  if (block_model.containsElementNamed("prior_beta")) {
+    Rcpp::List prior_beta_list = Rcpp::as<Rcpp::List>(block_model["prior_beta"]);
+    if (n_feff > 0 && prior_beta_list.size() > 0) {
+      if (prior_beta_list.containsElementNamed("type")) {
+        std::string t;
+        VectorXd p;
+        std::string target;
+        parse_prior_spec(prior_beta_list, t, p, target);
+        for (int i = 0; i < n_feff; ++i) {
+          prior_beta_type[i] = t;
+          prior_beta_param[i] = p;
+          prior_beta_target[i] = target;
+        }
+      } else {
+        if (prior_beta_list.size() != n_feff) {
+          throw std::invalid_argument(
+              "prior_beta must have length equal to number of fixed effects");
+        }
+        for (int i = 0; i < n_feff; ++i) {
+          Rcpp::List one = Rcpp::as<Rcpp::List>(prior_beta_list[i]);
+          parse_prior_spec(one, prior_beta_type[i], prior_beta_param[i],
+                           prior_beta_target[i]);
+        }
+      }
+    }
+  }
+  for (int i = 0; i < n_feff; ++i) {
+    if (prior_beta_target[i] != "coef") {
+      throw std::invalid_argument(
+          "beta prior target='field' is not supported; use target='coef'");
+    }
+  }
 
   // 4. Init latent models
   Rcpp::List latents_in = block_model["models"];
@@ -185,17 +229,12 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
 
   // init priors for noise_parameter
   Rcpp::List prior_list = Rcpp::as<Rcpp::List>(noise_in["prior_mu"]);
-  prior_mu_type = Rcpp::as<string>(prior_list["type"]);
-  prior_mu_param = Rcpp::as<VectorXd>(prior_list["param"]);
-  prior_mu_target = parse_prior_target(prior_list);
+  parse_prior_spec(prior_list, prior_mu_type, prior_mu_param, prior_mu_target);
   prior_list = Rcpp::as<Rcpp::List>(noise_in["prior_sigma"]);
-  prior_sigma_type = Rcpp::as<string>(prior_list["type"]);
-  prior_sigma_param = Rcpp::as<VectorXd>(prior_list["param"]);
-  prior_sigma_target = parse_prior_target(prior_list);
+  parse_prior_spec(prior_list, prior_sigma_type, prior_sigma_param,
+                   prior_sigma_target);
   prior_list = Rcpp::as<Rcpp::List>(noise_in["prior_nu"]);
-  prior_nu_type = Rcpp::as<string>(prior_list["type"]);
-  prior_nu_param = Rcpp::as<VectorXd>(prior_list["param"]);
-  prior_nu_target = parse_prior_target(prior_list);
+  parse_prior_spec(prior_list, prior_nu_type, prior_nu_param, prior_nu_target);
 
   if (family != "normal") {
     NoiseUtil::update_gig(family, noise_nu, p_vec, a_vec, b_vec);
@@ -489,6 +528,11 @@ VectorXd BlockModel::grad_beta() {
 
   VectorXd residual = get_residual(rao_blackwell); // + X * beta;
   VectorXd grads = X.transpose() * noise_inv_SV.asDiagonal() * residual;
+
+  for (int l = 0; l < n_feff; ++l) {
+    grads(l) +=
+        PriorUtil::d_log_dens(prior_beta_type[l], prior_beta_param[l], beta(l));
+  }
 
   // shared_sigma removed: keep generic form only
   //  * residual.cwiseQuotient(noise_sigma);

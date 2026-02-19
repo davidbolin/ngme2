@@ -117,6 +117,9 @@ protected:
   bool last_grad_valid{false};
 
   // priors
+  std::vector<string> prior_beta_type;
+  std::vector<VectorXd> prior_beta_param;
+  std::vector<string> prior_beta_target;
   string prior_mu_type, prior_sigma_type, prior_nu_type;
   VectorXd prior_mu_param, prior_sigma_param, prior_nu_param;
   string prior_mu_target{"coef"}, prior_sigma_target{"coef"},

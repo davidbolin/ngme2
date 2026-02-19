@@ -6,6 +6,8 @@
 * Remove legacy `ngme_prior()` interface and its documentation entry.
 * Add prior target support (`coef`/`field`) for noise parameter priors and
   per-parameter operator prior compilation.
+* Add fixed-effect prior support via `ngme(..., prior_beta = ...)`, using the
+  same `prior_*()`/`priors(...)` API.
 * Add user-facing vignette: `Prior Templates for Stationary and Non-Stationary Models`.
 
 # ngme2 0.8.5 (2026-02-11)

@@ -20,6 +20,8 @@
 #'     \item a string, e.g., \code{"normal"}, \code{"nig"}, \code{"t"}.
 #'     \item an ngme noise object, e.g., \code{noise_normal()}, \code{noise_nig(mu = 0, sigma = 1, nu = 1)}, \code{noise_t(nu=5)}.
 #'   }
+#' @param prior_beta prior specification for fixed effects (`beta`), created by
+#'   \code{prior_*()} or \code{priors(...)}.
 #' @param start  starting ngme object (usually object from last fit)
 #' @param moving_window number of iterations to average the estimation
 #' @param debug  toggle debug mode
@@ -54,6 +56,7 @@ ngme <- function(
     replicate = NULL,
     start = NULL,
     moving_window = 1, # return the average estimation of last .. iterations
+    prior_beta = NULL,
     debug = FALSE) {
   # -------------  CHECK INPUT ---------------
   if (is.null(data)) {
@@ -105,7 +108,7 @@ ngme <- function(
 
   # parse the formula get a list of ngme_replicate
   ngme_model <- ngme_parse_formula(
-    formula, data, control_ngme, noise, group, replicate,
+    formula, data, control_ngme, noise, group, replicate, prior_beta,
     control_opt$standardize_fixed # convert fixed effects
   )
 
@@ -515,6 +518,8 @@ check_dim <- function(ngme_model) {
 #' @param noise noise
 #' @param group group factor
 #' @param replicate replicate vector
+#' @param prior_beta prior specification for fixed effects
+#' @param standardize logical, whether fixed effects are standardized
 #'
 #' @return a list (replicate) of ngme_replicate models
 ngme_parse_formula <- function(
@@ -524,6 +529,7 @@ ngme_parse_formula <- function(
     noise,
     group,
     replicate,
+    prior_beta,
     standardize) {
   enclos_env <- list2env(as.list(parent.frame()), parent = parent.frame(2))
   global_env_first <- list2env(as.list(parent.frame(2)), parent = parent.frame())
@@ -577,6 +583,8 @@ ngme_parse_formula <- function(
     X_sub[!mask, ] <- 0
     X_full <- cbind(X_full, X_sub)
   }
+
+  prior_beta_compiled <- compile_beta_priors(prior_beta, colnames(X_full))
 
   # If the user supplies beta_init/feff on the original design scale, map it to
   # the standardized basis used internally (svd$u) while leaving any additional
@@ -729,6 +737,7 @@ ngme_parse_formula <- function(
       data_idx = data_idx,
       Y = Y,
       X = X,
+      prior_beta = prior_beta_compiled,
       group = group_rep,
       noise = noise_rep,
       models = models_rep,

@@ -11,6 +11,7 @@ ngme_parse_formula(
   noise,
   group,
   replicate,
+  prior_beta,
   standardize
 )
 }
@@ -26,6 +27,10 @@ ngme_parse_formula(
 \item{group}{group factor}
 
 \item{replicate}{replicate vector}
+
+\item{prior_beta}{prior specification for fixed effects}
+
+\item{standardize}{logical, whether fixed effects are standardized}
 }
 \value{
 a list (replicate) of ngme_replicate models

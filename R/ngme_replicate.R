@@ -2,6 +2,7 @@
 ngme_replicate <- function(
     Y = NULL,
     X = NULL,
+    prior_beta = NULL,
     noise = noise_normal(),
     models = list(),
     control_ngme = control_ngme(),
@@ -16,6 +17,9 @@ ngme_replicate <- function(
   n_feff <- ncol(X)
   feff <- if (!is.null(control_ngme$beta_init)) control_ngme$beta_init else control_ngme$feff
   names(feff) <- colnames(X)
+  if (is.null(prior_beta)) {
+    prior_beta <- compile_beta_priors(NULL, colnames(X))
+  }
 
   # Collect parameter names as a vector (not concatenated string)
   par_names <- character(0)
@@ -66,6 +70,7 @@ ngme_replicate <- function(
       Y                 = Y,
       X                 = X,
       feff              = feff,
+      prior_beta        = prior_beta,
       models            = models,
       noise             = noise,
       control_ngme      = control_ngme,

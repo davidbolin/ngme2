@@ -1,6 +1,8 @@
 // implement the Ngme class and rand effect class
 #include "ngme.h"
 
+#include <atomic>
+
 #ifdef _OPENMP
 #include <omp.h>
 #pragma omp declare reduction(vec_plus : Eigen::VectorXd : omp_out += omp_in)  \
@@ -99,9 +101,35 @@ VectorXd Ngme::grad() {
 
 void Ngme::burn_in(int iterations) {
   sync_all_repls_if_needed(false);
+  std::atomic<bool> burnin_failed(false);
+  std::string burnin_error;
 #pragma omp parallel for schedule(static) num_threads(num_threads_repl)
   for (int i = 0; i < n_repl; i++) {
-    ngme_repls[i]->burn_in(iterations);
+    if (burnin_failed.load(std::memory_order_relaxed)) {
+      continue;
+    }
+    try {
+      ngme_repls[i]->burn_in(iterations);
+    } catch (const std::exception &e) {
+#pragma omp critical(ngme_parallel_exception)
+      {
+        if (!burnin_failed.load(std::memory_order_relaxed)) {
+          burnin_failed.store(true, std::memory_order_relaxed);
+          burnin_error = e.what();
+        }
+      }
+    } catch (...) {
+#pragma omp critical(ngme_parallel_exception)
+      {
+        if (!burnin_failed.load(std::memory_order_relaxed)) {
+          burnin_failed.store(true, std::memory_order_relaxed);
+          burnin_error = "unknown exception";
+        }
+      }
+    }
+  }
+  if (burnin_failed.load(std::memory_order_relaxed)) {
+    Rcpp::stop("C++ exception in replicate burn-in: %s", burnin_error.c_str());
   }
 }
 
@@ -118,15 +146,42 @@ void Ngme::set_parameter_and_update(const VectorXd &p, bool with_precond) {
     std::fill(repl_precond_ready_.begin(), repl_precond_ready_.end(),
               static_cast<unsigned char>(0));
   } else {
-  // set the same parameter for all latent
-  // std::chrono::steady_clock::time_point begin =
-  // std::chrono::steady_clock::now();
+    // set the same parameter for all latent
+    // std::chrono::steady_clock::time_point begin =
+    // std::chrono::steady_clock::now();
+    std::atomic<bool> update_failed(false);
+    std::string update_error;
 #pragma omp parallel for schedule(static) num_threads(num_threads_repl)
     for (int i = 0; i < n_repl; i++) {
-    ngme_repls[i]->set_parameter_and_update(p, with_precond);
-      repl_dirty_[i] = static_cast<unsigned char>(0);
-      repl_precond_ready_[i] =
-          static_cast<unsigned char>(with_precond ? 1 : 0);
+      if (update_failed.load(std::memory_order_relaxed)) {
+        continue;
+      }
+      try {
+        ngme_repls[i]->set_parameter_and_update(p, with_precond);
+        repl_dirty_[i] = static_cast<unsigned char>(0);
+        repl_precond_ready_[i] =
+            static_cast<unsigned char>(with_precond ? 1 : 0);
+      } catch (const std::exception &e) {
+#pragma omp critical(ngme_parallel_exception)
+        {
+          if (!update_failed.load(std::memory_order_relaxed)) {
+            update_failed.store(true, std::memory_order_relaxed);
+            update_error = e.what();
+          }
+        }
+      } catch (...) {
+#pragma omp critical(ngme_parallel_exception)
+        {
+          if (!update_failed.load(std::memory_order_relaxed)) {
+            update_failed.store(true, std::memory_order_relaxed);
+            update_error = "unknown exception";
+          }
+        }
+      }
+    }
+    if (update_failed.load(std::memory_order_relaxed)) {
+      Rcpp::stop("C++ exception while setting parameters: %s",
+                 update_error.c_str());
     }
   }
 
@@ -157,16 +212,43 @@ void Ngme::sync_all_repls_if_needed(bool with_precond) const {
   if (sampling_strategy != Strategy::ws) {
     return;
   }
+  std::atomic<bool> sync_failed(false);
+  std::string sync_error;
 #pragma omp parallel for schedule(static) num_threads(num_threads_repl)
   for (int i = 0; i < n_repl; i++) {
+    if (sync_failed.load(std::memory_order_relaxed)) {
+      continue;
+    }
     const bool need_sync = (repl_dirty_[i] != 0) ||
                            (with_precond && repl_precond_ready_[i] == 0);
     if (!need_sync) {
       continue;
     }
-    ngme_repls[i]->set_parameter_and_update(current_param_, with_precond);
-    repl_dirty_[i] = static_cast<unsigned char>(0);
-    repl_precond_ready_[i] =
-        static_cast<unsigned char>(with_precond ? 1 : 0);
+    try {
+      ngme_repls[i]->set_parameter_and_update(current_param_, with_precond);
+      repl_dirty_[i] = static_cast<unsigned char>(0);
+      repl_precond_ready_[i] =
+          static_cast<unsigned char>(with_precond ? 1 : 0);
+    } catch (const std::exception &e) {
+#pragma omp critical(ngme_parallel_exception)
+      {
+        if (!sync_failed.load(std::memory_order_relaxed)) {
+          sync_failed.store(true, std::memory_order_relaxed);
+          sync_error = e.what();
+        }
+      }
+    } catch (...) {
+#pragma omp critical(ngme_parallel_exception)
+      {
+        if (!sync_failed.load(std::memory_order_relaxed)) {
+          sync_failed.store(true, std::memory_order_relaxed);
+          sync_error = "unknown exception";
+        }
+      }
+    }
+  }
+  if (sync_failed.load(std::memory_order_relaxed)) {
+    Rcpp::stop("C++ exception while syncing replicates: %s",
+               sync_error.c_str());
   }
 }

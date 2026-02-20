@@ -241,7 +241,12 @@ ngme <- function(
   check_dim(ngme_model)
   if (control_opt$estimation) {
     cat("Starting estimation... \n")
-    outputs <- estimate_cpp(ngme_model, control_opt)
+    outputs <- tryCatch(
+      estimate_cpp(ngme_model, control_opt),
+      error = function(err) {
+        stop("C++ estimation failed: ", conditionMessage(err), call. = FALSE)
+      }
+    )
     cat("\n")
 
     ################# Update the estimates ####################
@@ -253,12 +258,21 @@ ngme <- function(
     # return posterior samples of W and V
     cat("Starting posterior sampling... \n")
     for (i in seq_along(ngme_model$replicates)) {
-      res <- sampling_cpp(
-        ngme_model$replicates[[i]],
-        n = control_ngme$n_post_samples,
-        n_burnin = 1,
-        posterior = TRUE,
-        seed = control_opt$seed
+      res <- tryCatch(
+        sampling_cpp(
+          ngme_model$replicates[[i]],
+          n = control_ngme$n_post_samples,
+          n_burnin = 1,
+          posterior = TRUE,
+          seed = control_opt$seed
+        ),
+        error = function(err) {
+          stop(
+            "C++ posterior sampling failed for replicate ", i, ": ",
+            conditionMessage(err),
+            call. = FALSE
+          )
+        }
       )
 
       df_V <- data.frame(res$V)

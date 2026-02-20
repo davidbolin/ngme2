@@ -18,7 +18,9 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <algorithm>
+#include <atomic>
 #include <cmath>
+#include <exception>
 #include <iomanip>
 #include <iostream>
 #include <limits>
@@ -150,9 +152,36 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   std::vector<std::string> par_names = ngmes[0]->get_par_names();
 
 // burn in period
+  std::atomic<bool> burnin_failed(false);
+  std::string burnin_error;
 #pragma omp parallel for schedule(static) num_threads(n_threads_chain)
-  for (i = 0; i < n_chains; i++)
-    (ngmes[i])->burn_in(burnin);
+  for (i = 0; i < n_chains; i++) {
+    if (burnin_failed.load(std::memory_order_relaxed)) {
+      continue;
+    }
+    try {
+      (ngmes[i])->burn_in(burnin);
+    } catch (const std::exception &e) {
+#pragma omp critical(ngme_parallel_exception)
+      {
+        if (!burnin_failed.load(std::memory_order_relaxed)) {
+          burnin_failed.store(true, std::memory_order_relaxed);
+          burnin_error = e.what();
+        }
+      }
+    } catch (...) {
+#pragma omp critical(ngme_parallel_exception)
+      {
+        if (!burnin_failed.load(std::memory_order_relaxed)) {
+          burnin_failed.store(true, std::memory_order_relaxed);
+          burnin_error = "unknown exception";
+        }
+      }
+    }
+  }
+  if (burnin_failed.load(std::memory_order_relaxed)) {
+    Rcpp::stop("C++ exception in parallel burn-in: %s", burnin_error.c_str());
+  }
 
   int n_params = ngmes[0]->get_n_params();
   MatrixXd means(n_batch, n_params);
@@ -204,24 +233,50 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
 
     // Run batch_steps iterations using unified SGD step (computes grad and,
     // optionally, precond)
+    std::atomic<bool> sgd_failed(false);
+    std::string sgd_error;
     for (int step = 0; step < batch_steps; step++) {
 #pragma omp parallel for schedule(static) num_threads(n_threads_chain)
       for (i = 0; i < n_chains; i++) {
-        // Compute one SGD step; decide whether to compute preconditioner this
-        // iter We compute it every iter if compute_precond_each_iter, else let
-        // the optimizer refresh at needed cadence
-        VectorXd param = opt_vec[i].sgd(0.1, // eps
-                                        1,   // one step per loop
-                                        max_relative_step, max_absolute_step,
-                                        compute_precond_each_iter);
-        // if (step == batch_steps - 1) {
-#pragma omp critical
-        {
-          mat.row(i) = param;
-          batch_sum.row(i) += param;
-          batch_sq_sum.row(i) += param.array().square().matrix();
+        if (sgd_failed.load(std::memory_order_relaxed)) {
+          continue;
         }
-        // }
+        try {
+          // Compute one SGD step; decide whether to compute preconditioner this
+          // iter We compute it every iter if compute_precond_each_iter, else
+          // let the optimizer refresh at needed cadence
+          VectorXd param = opt_vec[i].sgd(0.1, // eps
+                                          1,   // one step per loop
+                                          max_relative_step, max_absolute_step,
+                                          compute_precond_each_iter);
+          // if (step == batch_steps - 1) {
+#pragma omp critical
+          {
+            mat.row(i) = param;
+            batch_sum.row(i) += param;
+            batch_sq_sum.row(i) += param.array().square().matrix();
+          }
+          // }
+        } catch (const std::exception &e) {
+#pragma omp critical(ngme_parallel_exception)
+          {
+            if (!sgd_failed.load(std::memory_order_relaxed)) {
+              sgd_failed.store(true, std::memory_order_relaxed);
+              sgd_error = e.what();
+            }
+          }
+        } catch (...) {
+#pragma omp critical(ngme_parallel_exception)
+          {
+            if (!sgd_failed.load(std::memory_order_relaxed)) {
+              sgd_failed.store(true, std::memory_order_relaxed);
+              sgd_error = "unknown exception";
+            }
+          }
+        }
+      }
+      if (sgd_failed.load(std::memory_order_relaxed)) {
+        Rcpp::stop("C++ exception in parallel SGD step: %s", sgd_error.c_str());
       }
     }
     steps += batch_steps;

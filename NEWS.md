@@ -1,3 +1,13 @@
+# ngme2 0.9.1 (2026-02-19)
+* Harden error handling in `ngme()` estimation/sampling path: C++ exceptions
+  are now propagated as R errors (including OpenMP parallel regions) instead of
+  potentially terminating the R session.
+* Fix `nu` initialization in noise helper constructors to respect
+  `nu_lower_bound`, using `theta_nu = log(nu - nu_lower_bound)` and validating
+  `nu > nu_lower_bound`.
+* Align `normal_nig` conversion, printing, and plotting with effective
+  parameterization `nu = nu_lower_bound + exp(theta_nu)`.
+
 # ngme2 0.9.0 (2026-02-19)
 * Refactor prior API (breaking change):
   use `prior_normal()`, `prior_pc_sd()`, `prior_half_cauchy()`, `prior_none()`, and `priors(...)`.

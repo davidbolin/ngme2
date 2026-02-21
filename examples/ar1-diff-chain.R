@@ -36,7 +36,7 @@ Y <- process + rnorm(n_obs, sd = sigma_eps)
 control_same <- control_opt(
   optimizer = precond_sgd(),
   burnin = 100,
-  iterations = 500,
+  iterations = 200,
   n_parallel_chain = 4,
   verbose = TRUE,
   rao_blackwellization = TRUE,
@@ -59,6 +59,9 @@ ret_nig_same <- ngme(
     1:n_obs,
     name = "my_ar",
     model = ar1(),
+    prior = priors(
+      rho = prior_normal(0, 0.5)
+    ),
     noise = noise_nig(
       prior = priors(
         nu = prior_normal(0, 0.5)

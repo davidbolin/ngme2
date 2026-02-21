@@ -46,8 +46,6 @@ navbar:
         href: articles/generic.html
       - text: Models with Combined Gaussian and NIG Noise 
         href: articles/normal-nig-noise.html
-      - text: Batch-means CI for SGD
-        href: articles/batch-means-ci.html
       - text: SGLD posterior-like sampling
         href: articles/sgld-sampling.html
       - text: Prior templates (stationary/non-stationary)
@@ -109,6 +107,7 @@ reference:
     - print.noise_kld_comparison
   - title: ngme2 optimization methods
     contents:
+    - sgld
     - sgd
     - precond_sgd
     - momentum

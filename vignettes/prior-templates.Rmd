@@ -140,8 +140,8 @@ fit <- ngme(
   data = dat,
   family = noise_normal(),
   prior_beta = priors(
-    beta = prior_normal(0, 2),   # fallback for all beta coefficients
-    x1 = prior_normal(0, 1),      # override by coefficient name
+    beta = prior_normal(0, 2), # fallback for all beta coefficients
+    x1 = prior_normal(0, 1), # override by coefficient name
     feff_1 = prior_half_cauchy(1) # optional index-based override
   )
 )
@@ -214,8 +214,8 @@ model_matern_ns <- f(
   ),
   noise = noise_normal(),
   prior = priors(
-    theta = prior_normal(0, 0.5),             # fallback
-    theta_kappa1 = prior_normal(log(2), 0.5)  # override first coefficient
+    theta = prior_normal(0, 0.5), # fallback
+    theta_kappa1 = prior_normal(log(2), 0.5) # override first coefficient
   )
 )
 

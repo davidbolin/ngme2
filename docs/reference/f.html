@@ -13,7 +13,7 @@ The function is a wrapper function for specific submodels.
 
     <a class="navbar-brand me-2" href="../index.html">ngme2</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,6 +39,9 @@ The function is a wrapper function for specific submodels.
     <li><a class="dropdown-item" href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a></li>
     <li><a class="dropdown-item" href="../articles/generic.html">Using the Generic Model in ngme2</a></li>
     <li><a class="dropdown-item" href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a></li>
+    <li><a class="dropdown-item" href="../articles/batch-means-ci.html">Batch-means CI for SGD</a></li>
+    <li><a class="dropdown-item" href="../articles/sgld-sampling.html">SGLD posterior-like sampling</a></li>
+    <li><a class="dropdown-item" href="../articles/prior-templates.html">Prior templates (stationary/non-stationary)</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -79,7 +82,7 @@ The function is a wrapper function for specific submodels.
 <span>  W <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  fix_W <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  fix_K <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  prior_theta_K <span class="op">=</span> <span class="fu"><a href="ngme_prior.html">ngme_prior</a></span><span class="op">(</span><span class="st">"normal"</span>, param <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.001</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  prior <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  subset <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="cn">TRUE</span>, <span class="fu">length_map</span><span class="op">(</span><span class="va">map</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  debug <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -138,8 +141,9 @@ When provided, operators and A matrices will be block-diagonalized across replic
 <dd><p>fix the estimation of parameter of K</p></dd>
 
 
-<dt id="arg-prior-theta-k">prior_theta_K<a class="anchor" aria-label="anchor" href="#arg-prior-theta-k"></a></dt>
-<dd><p>prior for theta_K</p></dd>
+<dt id="arg-prior">prior<a class="anchor" aria-label="anchor" href="#arg-prior"></a></dt>
+<dd><p>prior specification created by <code>prior_*()</code> or
+<code>priors(...)</code> for operator parameters (<code>theta_K</code>).</p></dd>
 
 
 <dt id="arg-subset">subset<a class="anchor" aria-label="anchor" href="#arg-subset"></a></dt>

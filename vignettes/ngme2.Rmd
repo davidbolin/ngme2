@@ -521,7 +521,7 @@ parana_fit <- ngme(
 ```{r}
 # traceplots
 ## fixed effects and measurement error
-traceplot(parana_fit)
+traceplot(parana_fit, "data")
 
 ## spde model
 traceplot(parana_fit, "spde")

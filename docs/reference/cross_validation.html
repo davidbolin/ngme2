@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">ngme2</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,6 +33,9 @@
     <li><a class="dropdown-item" href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a></li>
     <li><a class="dropdown-item" href="../articles/generic.html">Using the Generic Model in ngme2</a></li>
     <li><a class="dropdown-item" href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a></li>
+    <li><a class="dropdown-item" href="../articles/batch-means-ci.html">Batch-means CI for SGD</a></li>
+    <li><a class="dropdown-item" href="../articles/sgld-sampling.html">SGLD posterior-like sampling</a></li>
+    <li><a class="dropdown-item" href="../articles/prior-templates.html">Prior templates (stationary/non-stationary)</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -76,7 +79,9 @@
 <span>  cores_layer1 <span class="op">=</span> <span class="kw">if</span> <span class="op">(</span><span class="va">parallel</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fu">parallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">detectCores</a></span><span class="op">(</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span> <span class="kw">else</span> <span class="fl">1</span>,</span>
 <span>  cores_layer2 <span class="op">=</span> <span class="kw">if</span> <span class="op">(</span><span class="va">parallel</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fu">parallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">detectCores</a></span><span class="op">(</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span> <span class="kw">else</span> <span class="fl">1</span>,</span>
 <span>  merge_groups <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  merged_group_name <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  merged_group_name <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  data <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  chain_combine <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"param_mean"</span>, <span class="st">"predictive_average"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -160,7 +165,14 @@ For example, to compare a linear combination of two fields you can use
 <p>merge_groupslogical, if TRUE, merge groups as vector components (e.g., for vector-valued wind data with north_wind, east_wind).
 MAE becomes Euclidean distance, MSE becomes squared Euclidean distance, etc.</p>
 <p>merged_group_namecharacter, name for the merged group when merge_groups=TRUE.
-If NULL, uses "group1_group2" format (default: NULL)</p></dd>
+If NULL, uses "group1_group2" format (default: NULL)</p>
+<p>dataoptional data.frame used to replace the original fitting data before running CV.
+If `NULL`, the data stored in `ngme` is used. If provided, the model is rebuilt on `data`
+while reusing fitted parameters from `ngme`.</p>
+<p>chain_combinehow to combine multiple optimization chains:
+`"param_mean"` uses the fitted object directly (default), while
+`"predictive_average"` computes predictions from each optimization chain
+and averages at the predictive level.</p></dd>
 
 </dl><p>A list containing:
   </p><ul><li><p>mean.scores - mean of N_sim estimations of 4 criterions: MSE, MAE, CRPS, sCRPS</p></li>

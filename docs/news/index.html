@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">ngme2</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,6 +33,8 @@
     <li><a class="dropdown-item" href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a></li>
     <li><a class="dropdown-item" href="../articles/generic.html">Using the Generic Model in ngme2</a></li>
     <li><a class="dropdown-item" href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a></li>
+    <li><a class="dropdown-item" href="../articles/sgld-sampling.html">SGLD posterior-like sampling</a></li>
+    <li><a class="dropdown-item" href="../articles/prior-templates.html">Prior templates (stationary/non-stationary)</a></li>
   </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -50,6 +52,33 @@
       <small>Source: <a href="https://github.com/davidbolin/ngme2/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.1" id="ngme2-091-2026-02-19">ngme2 0.9.1 (2026-02-19)<a class="anchor" aria-label="anchor" href="#ngme2-091-2026-02-19"></a></h2>
+<ul><li>Harden error handling in <code><a href="../reference/ngme.html">ngme()</a></code> estimation/sampling path: C++ exceptions are now propagated as R errors (including OpenMP parallel regions) instead of potentially terminating the R session.</li>
+<li>Fix <code>nu</code> initialization in noise helper constructors to respect <code>nu_lower_bound</code>, using <code>theta_nu = log(nu - nu_lower_bound)</code> and validating <code>nu &gt; nu_lower_bound</code>.</li>
+<li>Align <code>normal_nig</code> conversion, printing, and plotting with effective parameterization <code>nu = nu_lower_bound + exp(theta_nu)</code>.</li>
+</ul></div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.0" id="ngme2-090-2026-02-19">ngme2 0.9.0 (2026-02-19)<a class="anchor" aria-label="anchor" href="#ngme2-090-2026-02-19"></a></h2>
+<ul><li>Refactor prior API (breaking change): use <code><a href="../reference/prior_normal.html">prior_normal()</a></code>, <code><a href="../reference/prior_pc_sd.html">prior_pc_sd()</a></code>, <code><a href="../reference/prior_half_cauchy.html">prior_half_cauchy()</a></code>, <code><a href="../reference/prior_none.html">prior_none()</a></code>, and <code>priors(...)</code>.</li>
+<li>Update <code><a href="../reference/f.html">f()</a></code> and <code><a href="../reference/ngme_noise.html">ngme_noise()</a></code> to accept unified <code>prior = ...</code> inputs (remove <code>prior_theta_K</code> and <code>prior_mu/prior_sigma/prior_nu</code> arguments).</li>
+<li>Remove legacy <code>ngme_prior()</code> interface and its documentation entry.</li>
+<li>Add prior target support (<code>coef</code>/<code>field</code>) for noise parameter priors and per-parameter operator prior compilation.</li>
+<li>Add fixed-effect prior support via <code>ngme(..., prior_beta = ...)</code>, using the same <code>prior_*()</code>/<code>priors(...)</code> API.</li>
+<li>Add user-facing vignette: <code>Prior Templates for Stationary and Non-Stationary Models</code>.</li>
+</ul></div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.8.5" id="ngme2-085-2026-02-11">ngme2 0.8.5 (2026-02-11)<a class="anchor" aria-label="anchor" href="#ngme2-085-2026-02-11"></a></h2>
+<ul><li>Add grad.norm plateau-based step decay via <code>control_opt(stepsize_decay = "grad_norm_plateau")</code> (epoch-level, synchronized across chains)</li>
+<li>Add <code><a href="../reference/stepsize_decay.html">stepsize_decay()</a></code> helper for configuring decay options</li>
+<li>Update verbose output to include stepsize decay scale and effective stepsize</li>
+<li>Improve <code>cross_validation(data = ...)</code> model rebuild for refit-on-new-data workflows: it now resolves external formula symbols (for example <code>mesh</code>, <code>B</code>, <code>n_basis</code>) from the fitted object when needed, and falls back to rebuild-without-start plus hyperparameter transplant if <code>start</code> state dimensions differ.</li>
+<li>Add chain-aware prediction/CV aggregation via <code>chain_combine = "predictive_average"</code> in <code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code> and <code><a href="../reference/cross_validation.html">cross_validation()</a></code>, which averages predictions across optimization chains instead of averaging parameters first.</li>
+</ul></div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.8.4" id="ngme2-084-2026-02-01">ngme2 0.8.4 (2026-02-01)<a class="anchor" aria-label="anchor" href="#ngme2-084-2026-02-01"></a></h2>
+<ul><li>Fix iid model using argument mesh instead of map</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.8.3" id="ngme2-083-2025-12-10">ngme2 0.8.3 (2025-12-10)<a class="anchor" aria-label="anchor" href="#ngme2-083-2025-12-10"></a></h2>
 <ul><li>Update nu parameterization to be relative to nu_lower_bound (nu = nu_lower_bound + exp(B_nu * theta_nu))</li>

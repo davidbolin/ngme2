@@ -636,7 +636,7 @@ Assessing convergence is crucial for reliable parameter estimates. We will use t
 
 ```{r convergence-diagnostics, fig.height=5, fig.width=7}
 # Trace plot for sigma and fixed effects (blue lines indicate true value)
-traceplot(ngme_out, hline = c(2, -1, 2, 0.5), moving_window = 20)
+traceplot(ngme_out, "data", hline = c(2, -1, 2, 0.5), moving_window = 20)
 ```
 
 Now let us examine the convergence of the AR(1) process parameters:
@@ -657,8 +657,8 @@ params_data <- ngme_result(ngme_out, "data")
 # Fixed Effects
 print(data.frame(
   Truth = c(-1, 2, 0.5),
-  Estimates = as.numeric(params_data$fixed_effects),
-  row.names = names(params_data$fixed_effects)
+  Estimates = as.numeric(params_data$beta),
+  row.names = names(params_data$beta)
 ))
 
 # Measurement Noise

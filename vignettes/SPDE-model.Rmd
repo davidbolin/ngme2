@@ -525,7 +525,7 @@ traceplot(out, "spde", hline = c(
 
 ```{r convergence-meas, fig.height=4}
 # Measurement noise convergence
-traceplot(out, hline = sigma_noise)
+traceplot(out, "data", hline = sigma_noise)
 ```
 
 The traceplots show good convergence with estimates oscillating around true values (blue lines).
@@ -714,7 +714,7 @@ cat("  NIG nu:", round(as.numeric(params_spde$nu), 3), "\n\n")
 
 # Fixed effects and measurement noise
 params_data <- ngme_result(out, "data")
-cat("Fixed effect (salinity):", round(as.numeric(params_data$fixed_effects), 3), "\n")
+cat("Fixed effect (salinity):", round(as.numeric(params_data$beta), 3), "\n")
 cat("Measurement noise:", round(as.numeric(params_data$sigma), 3), "\n")
 ```
 

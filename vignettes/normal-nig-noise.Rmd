@@ -137,7 +137,7 @@ summary(ngme_out)
 ```
 
 ```{r}
-traceplot(ngme_out, hline = c(sigma_eps, beta))
+traceplot(ngme_out, "data", hline = c(sigma_eps, beta))
 traceplot(ngme_out, "my_ar", hline = c(alpha, mu, sigma_nig, sigma_normal, nu))
 ```
 
@@ -147,7 +147,7 @@ We can use the `traceplot()` function to see the estimated parameters trajectori
 
 ```{r plot_results, eval=FALSE}
 # Plot traces for fixed effects
-traceplot(ngme_out, hline = c(sigma_eps, beta))
+traceplot(ngme_out, "data", hline = c(sigma_eps, beta))
 
 # Plot traces for AR(1) component
 traceplot(ngme_out, "my_ar", hline = c(alpha, mu, sigma_nig, nu, sigma_normal))

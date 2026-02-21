@@ -1,6 +1,8 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://davidbolin.github.io/ngme2/404.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/AGENTS.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/BATCH_MEANS_CI_IMPLEMENTATION.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/BATCH_MEANS_XI2020_CODE_MAPPING.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/CHANGES_SUMMARY.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/CLAUDE.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/GEMINI.html</loc></url>
@@ -9,6 +11,7 @@
 <url><loc>https://davidbolin.github.io/ngme2/MERGE_GROUPS_FEATURE.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/MESH_LIST_IMPLEMENTATION.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/README_GENERIC_MODELS.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/SGLD_IMPLEMENTATION.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/AR1-model.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/Installation.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/Installation_and_configuration.html</loc></url>
@@ -26,8 +29,10 @@
 <url><loc>https://davidbolin.github.io/ngme2/articles/ou-process.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/pred-and-est.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/pred_and_est.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/articles/prior-templates.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/random-effect.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/replicate.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/articles/sgld-sampling.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/tensor-product.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/tensor_product.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/tp-bv.html</loc></url>
@@ -46,6 +51,9 @@
 <url><loc>https://davidbolin.github.io/ngme2/reference/argo_float.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/arma.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/arma11.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/reference/batch_decay.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/reference/batch_means_ci.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/reference/batch_means_estimator.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/bfgs.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/bv.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/bv_matern.html</loc></url>
@@ -57,10 +65,13 @@
 <url><loc>https://davidbolin.github.io/ngme2/reference/compare_noise_kld.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/compute_index_corr_from_map.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/compute_log_like.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/reference/compute_ngme_ci.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/reference/compute_ngme_sgld_samples.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/compute_score_given_pred.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/control_f.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/control_ngme.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/control_opt.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/reference/control_opt_batch_ci.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/create_paired_cv_splits.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/cross_validation.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/f.html</loc></url>
@@ -87,6 +98,7 @@
 <url><loc>https://davidbolin.github.io/ngme2/reference/ngme.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/ngme2.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/ngme_as_sparse.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/reference/ngme_batch_ci.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/ngme_cov_matrix.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/ngme_make_mesh_repls.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/ngme_model_types.html</loc></url>
@@ -98,6 +110,8 @@
 <url><loc>https://davidbolin.github.io/ngme2/reference/ngme_prior.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/ngme_prior_types.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/ngme_result.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/reference/ngme_sgld_ci.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/reference/ngme_sgld_samples.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/ngme_ts_make_A.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/ngme_update.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/nig.html</loc></url>
@@ -105,6 +119,7 @@
 <url><loc>https://davidbolin.github.io/ngme2/reference/ou.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/plot.ngme_noise.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/plot.parameter_distance.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/reference/poly_decay.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/precision_matrix_multivariate.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/precision_matrix_multivariate_spde.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/precond_sgd.html</loc></url>
@@ -117,17 +132,27 @@
 <url><loc>https://davidbolin.github.io/ngme2/reference/print.ngme_trajectories.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/print.noise_kld_comparison.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/print.parameter_distance.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/reference/prior_half_cauchy.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/reference/prior_none.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/reference/prior_normal.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/reference/prior_pc_sd.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/reference/priors.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/re.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/rmsprop.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/rw1.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/rw2.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/sgd.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/reference/sgld.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/simulate.ngme.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/simulate.ngme_model.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/simulate.ngme_noise.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/spacetime.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/srft_data.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/reference/stepsize_control.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/reference/stepsize_decay.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/reference/stepsize_schedule.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/summary.ngme.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/reference/summary.ngme_batch_ci.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/test_ngme.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/tp.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/traceplot.html</loc></url>

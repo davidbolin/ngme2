@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">ngme2</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,6 +33,8 @@
     <li><a class="dropdown-item" href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a></li>
     <li><a class="dropdown-item" href="../articles/generic.html">Using the Generic Model in ngme2</a></li>
     <li><a class="dropdown-item" href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a></li>
+    <li><a class="dropdown-item" href="../articles/sgld-sampling.html">SGLD posterior-like sampling</a></li>
+    <li><a class="dropdown-item" href="../articles/prior-templates.html">Prior templates (stationary/non-stationary)</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -280,6 +282,12 @@
 
       <dl><dt>
 
+          <code><a href="sgld.html">sgld()</a></code>
+
+        </dt>
+        <dd>Stochastic Gradient Langevin Dynamics (SGLD) optimization</dd>
+      </dl><dl><dt>
+
           <code><a href="sgd.html">sgd()</a></code>
 
         </dt>
@@ -332,6 +340,112 @@
 
         </dt>
         <dd>Adaptive gradient descent From the paper: https://arxiv.org/pdf/1910.09529 The update rule for adaptive gradient descent is: $$\lambda_k = \min(\sqrt{1 + \theta_{k-1}} \lambda_{k-1}, \frac{||x_k - x_{k-1}||}{2 ||\nabla f(x_k) - \nabla f(x_{k-1})||} )$$ $$x_{k+1} = x_k - \lambda_k \nabla f(x_k)$$ $$\theta_k = \lambda_k / \lambda_{k-1}$$</dd>
+      </dl><dl><dt>
+
+          <code><a href="stepsize_decay.html">stepsize_decay()</a></code>
+
+        </dt>
+        <dd>Stepsize decay schedule</dd>
+      </dl><dl><dt>
+
+          <code><a href="stepsize_schedule.html">stepsize_schedule()</a></code>
+
+        </dt>
+        <dd>Stepsize schedule</dd>
+      </dl><dl><dt>
+
+          <code><a href="stepsize_control.html">stepsize_control()</a></code>
+
+        </dt>
+        <dd>Unified stepsize control</dd>
+      </dl><dl><dt>
+
+          <code><a href="poly_decay.html">poly_decay()</a></code>
+
+        </dt>
+        <dd>Polynomial schedule helper</dd>
+      </dl><dl><dt>
+
+          <code><a href="batch_decay.html">batch_decay()</a></code>
+
+        </dt>
+        <dd>Batch/checkpoint decay helper</dd>
+      </dl><dl><dt>
+
+          <code><a href="control_opt_batch_ci.html">control_opt_batch_ci()</a></code>
+
+        </dt>
+        <dd>Generate CI-focused control settings for batch-means inference</dd>
+      </dl></div><div class="section level2">
+      <h2 id="batch-means-inference">Batch-means inference<a class="anchor" aria-label="anchor" href="#batch-means-inference"></a></h2>
+
+
+
+
+    </div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="batch_means_estimator.html">batch_means_estimator()</a></code>
+
+        </dt>
+        <dd>Batch-Means Covariance Estimator for SGD Trajectories</dd>
+      </dl><dl><dt>
+
+          <code><a href="batch_means_ci.html">batch_means_ci()</a></code>
+
+        </dt>
+        <dd>Pooled Batch-Means Confidence Intervals from Multiple Chains</dd>
+      </dl><dl><dt>
+
+          <code><a href="ngme_batch_ci.html">ngme_batch_ci()</a></code>
+
+        </dt>
+        <dd>Batch-Means Confidence Intervals from an ngme Fit</dd>
+      </dl><dl><dt>
+
+          <code><a href="compute_ngme_ci.html">compute_ngme_ci()</a></code> <code><a href="compute_ngme_ci.html">compute_ngme_CI()</a></code>
+
+        </dt>
+        <dd>Refit an Existing ngme Object with SGD and Compute Batch-Means CI</dd>
+      </dl><dl><dt>
+
+          <code><a href="summary.ngme_batch_ci.html">summary(<i>&lt;ngme_batch_ci&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Summary for Batch-Means CI Results</dd>
+      </dl></div><div class="section level2">
+      <h2 id="sgld-trajectory-inference">SGLD trajectory inference<a class="anchor" aria-label="anchor" href="#sgld-trajectory-inference"></a></h2>
+
+
+
+
+    </div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="ngme_sgld_samples.html">ngme_sgld_samples()</a></code>
+
+        </dt>
+        <dd>Extract Posterior-like Samples from Stored SGLD Trajectories</dd>
+      </dl><dl><dt>
+
+          <code><a href="ngme_sgld_ci.html">ngme_sgld_ci()</a></code>
+
+        </dt>
+        <dd>Quantile Confidence Intervals from SGLD Samples</dd>
+      </dl><dl><dt>
+
+          <code><a href="compute_ngme_sgld_samples.html">compute_ngme_sgld_samples()</a></code>
+
+        </dt>
+        <dd>Refit an Existing ngme Object with SGLD and Extract Samples</dd>
       </dl></div><div class="section level2">
       <h2 id="prediction-and-cross-validation">Prediction and Cross validation<a class="anchor" aria-label="anchor" href="#prediction-and-cross-validation"></a></h2>
 
@@ -564,16 +678,40 @@
         <dd>Plot method for parameter_distance</dd>
       </dl><dl><dt>
 
-          <code><a href="ngme_prior.html">ngme_prior()</a></code>
-
-        </dt>
-        <dd>ngme prior specification</dd>
-      </dl><dl><dt>
-
           <code><a href="ngme_prior_types.html">ngme_prior_types()</a></code>
 
         </dt>
         <dd>Show ngme priors</dd>
+      </dl><dl><dt>
+
+          <code><a href="prior_normal.html">prior_normal()</a></code>
+
+        </dt>
+        <dd>Prior Normal</dd>
+      </dl><dl><dt>
+
+          <code><a href="prior_pc_sd.html">prior_pc_sd()</a></code>
+
+        </dt>
+        <dd>Prior PC-SD</dd>
+      </dl><dl><dt>
+
+          <code><a href="prior_half_cauchy.html">prior_half_cauchy()</a></code>
+
+        </dt>
+        <dd>Prior Half-Cauchy</dd>
+      </dl><dl><dt>
+
+          <code><a href="prior_none.html">prior_none()</a></code>
+
+        </dt>
+        <dd>Prior None</dd>
+      </dl><dl><dt>
+
+          <code><a href="priors.html">priors()</a></code>
+
+        </dt>
+        <dd>Prior Container</dd>
       </dl><dl><dt>
 
           <code><a href="test_ngme.html">test_ngme()</a></code>

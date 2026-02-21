@@ -27,7 +27,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">ngme2</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -55,6 +55,9 @@
     <li><a class="dropdown-item" href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a></li>
     <li><a class="dropdown-item" href="../articles/generic.html">Using the Generic Model in ngme2</a></li>
     <li><a class="dropdown-item" href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a></li>
+    <li><a class="dropdown-item" href="../articles/batch-means-ci.html">Batch-means CI for SGD</a></li>
+    <li><a class="dropdown-item" href="../articles/sgld-sampling.html">SGLD posterior-like sampling</a></li>
+    <li><a class="dropdown-item" href="../articles/prior-templates.html">Prior templates (stationary/non-stationary)</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -79,7 +82,7 @@
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Ngme2 - A Unified, Efficient, and Flexible non-Gaussian Modeling Framework</h1>
             
-            <h4 data-toc-skip class="date">2025-12-10</h4>
+            <h4 data-toc-skip class="date">2026-02-20</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/davidbolin/ngme2/blob/HEAD/vignettes/ngme2.Rmd" class="external-link"><code>vignettes/ngme2.Rmd</code></a></small>
       <div class="d-none name"><code>ngme2.Rmd</code></div>
@@ -348,7 +351,7 @@ of the observations. They can be both specified by
 <span><span class="co">#&gt; Noise parameters: </span></span>
 <span><span class="co">#&gt;     mu = 1</span></span>
 <span><span class="co">#&gt;     sigma = 2</span></span>
-<span><span class="co">#&gt;     nu = 1</span></span></code></pre></div>
+<span><span class="co">#&gt;     nu = 1 (lower bound 0.01)</span></span></code></pre></div>
 <p>Notice that the 3rd example is defined for non-stationary NIG noise.
 In general, we can define non-stationary noise by the following: where
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>μ</mi><mo>=</mo><msub><mi>𝐁</mi><mi>μ</mi></msub><msub><mi>𝛉</mi><mi>μ</mi></msub></mrow><annotation encoding="application/x-tex">\mu = \mathbf{B}_{\mu} \mathbf{\theta}_{\mu}</annotation></semantics></math>,
@@ -456,7 +459,7 @@ function:</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt; (Intercept)          x1 </span></span>
-<span><span class="co">#&gt;       7.365      -0.869 </span></span>
+<span><span class="co">#&gt;          -1           1 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $field1</span></span>
@@ -622,7 +625,7 @@ K =
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Starting posterior sampling... </span></span>
 <span><span class="co">#&gt; Posterior sampling done! </span></span>
-<span><span class="co">#&gt; Average standard deviation of the posterior W:  4.325882 </span></span>
+<span><span class="co">#&gt; Average standard deviation of the posterior W:  4.336205 </span></span>
 <span><span class="co">#&gt; Note:</span></span>
 <span><span class="co">#&gt;       1. Use ngme_post_samples(..) to access the posterior samples.</span></span>
 <span><span class="co">#&gt;       2. Use ngme_result(..) to access different latent models.</span></span></code></pre></div>
@@ -633,22 +636,22 @@ K =
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fixed effects: </span></span>
 <span><span class="co">#&gt; (Intercept)          x1          x2 </span></span>
-<span><span class="co">#&gt;       -2.91       -1.38        2.02 </span></span>
+<span><span class="co">#&gt;       -2.35       -1.25        1.90 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Models: </span></span>
 <span><span class="co">#&gt; $my_ar</span></span>
 <span><span class="co">#&gt;   Model type: AR(1)</span></span>
-<span><span class="co">#&gt;       rho = 0.568</span></span>
+<span><span class="co">#&gt;       rho = 0.578</span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = 1.87</span></span>
-<span><span class="co">#&gt;       sigma = 2.96</span></span>
-<span><span class="co">#&gt;       nu = 0.899</span></span>
+<span><span class="co">#&gt;       mu = 2.06</span></span>
+<span><span class="co">#&gt;       sigma = 3.06</span></span>
+<span><span class="co">#&gt;       nu = 0.873</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.583</span></span></code></pre></div>
+<span><span class="co">#&gt;       sigma = 0.556</span></span></code></pre></div>
 <p>The estimation results are close to the real parameter.</p>
 <p>We can also use the <code>traceplot</code> function to see the
 estimation traceplot.</p>
@@ -661,16 +664,16 @@ Parameters of the AR1 model
 </div>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $rho</span></span>
-<span><span class="co">#&gt; [1] 0.5678771</span></span>
+<span><span class="co">#&gt; [1] 0.5775159</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $mu</span></span>
-<span><span class="co">#&gt; [1] 1.857891</span></span>
+<span><span class="co">#&gt; [1] 2.013075</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
-<span><span class="co">#&gt; [1] 2.995272</span></span>
+<span><span class="co">#&gt; [1] 3.099176</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nu</span></span>
-<span><span class="co">#&gt; [1] 0.9055304</span></span></code></pre>
+<span><span class="co">#&gt; [1] 0.8393953</span></span></code></pre>
 <p>We can also do a density comparison with the estimated noise and the
 true NIG noise, we can see they are very close:</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
@@ -697,7 +700,7 @@ estimation.</p>
 <span><span class="co">#&gt;  - See www.r-inla.org/contact-us for how to get help.</span></span>
 <span><span class="co">#&gt;  - List available models/likelihoods/etc with inla.list.models()</span></span>
 <span><span class="co">#&gt;  - Use inla.doc(&lt;NAME&gt;) to access documentation</span></span>
-<span><span class="co">#&gt;  - Consider upgrading R-INLA to testing[25.12.02] or stable[25.10.19] (require R-4.5)</span></span>
+<span><span class="co">#&gt;  - Consider upgrading R-INLA to testing[26.02.06] or stable[25.10.19] (require R-4.5)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Attaching package: 'INLA'</span></span>
 <span><span class="co">#&gt; The following object is masked from 'package:ngme2':</span></span>
@@ -762,7 +765,7 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># traceplots</span></span>
 <span><span class="co">## fixed effects and measurement error</span></span>
-<span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">parana_fit</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/traceplot.html">traceplot</a></span><span class="op">(</span><span class="va">parana_fit</span>, <span class="st">"data"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ngme2_files/figure-html/unnamed-chunk-2-1.png" width="700"></p>
 <pre><code><span><span class="co">#&gt; Last estimates:</span></span>
 <span><span class="co">#&gt; $sigma</span></span>
@@ -787,7 +790,7 @@ Mean of the rainfall in Octobor 2012 in Paraná
 <span><span class="co">#&gt; $nu</span></span>
 <span><span class="co">#&gt; [1] 1.122146</span></span></code></pre>
 <p>Parameter estimation results:</p>
-<pre><code><span><span class="co">#&gt; $fixed_effects</span></span>
+<pre><code><span><span class="co">#&gt; $beta</span></span>
 <span><span class="co">#&gt; (Intercept) </span></span>
 <span><span class="co">#&gt;    8.241518 </span></span>
 <span><span class="co">#&gt; </span></span>
@@ -816,7 +819,7 @@ prediction grid and giving the predict location.</p>
 <span>  ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="va">PRborder</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span><span class="op">)</span>, dims <span class="op">=</span> <span class="va">nxy</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">xy.in</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rsbivand.github.io/splancs/reference/inout.html" class="external-link">inout</a></span><span class="op">(</span><span class="va">projgrid</span><span class="op">$</span><span class="va">lattice</span><span class="op">$</span><span class="va">loc</span>, <span class="fu"><a href="https://rdrr.io/pkg/spam/man/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">PRborder</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, <span class="va">PRborder</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">xy.in</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rsbivand.github.io/splancs/reference/inout.html" class="external-link">inout</a></span><span class="op">(</span><span class="va">projgrid</span><span class="op">$</span><span class="va">lattice</span><span class="op">$</span><span class="va">loc</span>, <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">PRborder</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, <span class="va">PRborder</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">coord.prd</span> <span class="op">&lt;-</span> <span class="va">projgrid</span><span class="op">$</span><span class="va">lattice</span><span class="op">$</span><span class="va">loc</span><span class="op">[</span><span class="va">xy.in</span>, <span class="op">]</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">coord.prd</span>, type <span class="op">=</span> <span class="st">"p"</span>, cex <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span></span>

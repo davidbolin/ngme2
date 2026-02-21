@@ -9,7 +9,7 @@ optimization process."><meta property="og:image" content="https://davidbolin.git
 
     <a class="navbar-brand me-2" href="../index.html">ngme2</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,9 @@ optimization process."><meta property="og:image" content="https://davidbolin.git
     <li><a class="dropdown-item" href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a></li>
     <li><a class="dropdown-item" href="../articles/generic.html">Using the Generic Model in ngme2</a></li>
     <li><a class="dropdown-item" href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a></li>
+    <li><a class="dropdown-item" href="../articles/batch-means-ci.html">Batch-means CI for SGD</a></li>
+    <li><a class="dropdown-item" href="../articles/sgld-sampling.html">SGLD posterior-like sampling</a></li>
+    <li><a class="dropdown-item" href="../articles/prior-templates.html">Prior templates (stationary/non-stationary)</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -83,8 +86,9 @@ optimization process.</p>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  store_traj <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  robust <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  n_min_batch <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  n_slope_check <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>  stepsize_control <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  n_min_batch <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="va">n_batch</span>, <span class="fl">3</span><span class="op">)</span>,</span>
+<span>  n_slope_check <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="va">n_batch</span>, <span class="fl">3</span><span class="op">)</span>,</span>
 <span>  trend_std_conv_check <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  std_lim <span class="op">=</span> <span class="fl">0.01</span>,</span>
 <span>  trend_lim <span class="op">=</span> <span class="fl">0.01</span>,</span>
@@ -135,7 +139,7 @@ their original scale.</p></dd>
 
 <dt id="arg-optimizer">optimizer<a class="anchor" aria-label="anchor" href="#arg-optimizer"></a></dt>
 <dd><p>choose different sgd optimization method,
-currently support "sgd", "precond_sgd", "momentum", "adagrad", "rmsprop", "adam", "adamW"
+currently support "sgd", "sgld", "precond_sgd", "momentum", "adagrad", "rmsprop", "adam", "adamW"
 see ?sgd, ?precond_sgd, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW</p></dd>
 
 
@@ -173,7 +177,7 @@ If it is more than n_parallel_chain, the rest will be used to parallel different
 
 
 <dt id="arg-sampling-strategy">sampling_strategy<a class="anchor" aria-label="anchor" href="#arg-sampling-strategy"></a></dt>
-<dd><p>subsampling method of replicates of model, c("all", "is")
+<dd><p>subsampling method of replicates of model, c("all", "ws")
 "all" means using all replicates in each iteration,
 "ws" means weighted sampling (each iteration use 1 replicate to compute the gradient, the sample probability is proption to its number of observations)</p></dd>
 
@@ -192,6 +196,14 @@ If it is more than n_parallel_chain, the rest will be used to parallel different
 
 <dt id="arg-store-traj">store_traj<a class="anchor" aria-label="anchor" href="#arg-store-traj"></a></dt>
 <dd><p>store the optimizer trajectory for diagnostics (set FALSE to reduce memory)</p></dd>
+
+
+<dt id="arg-stepsize-control">stepsize_control<a class="anchor" aria-label="anchor" href="#arg-stepsize-control"></a></dt>
+<dd><p>unified stepsize configuration created by
+<code><a href="stepsize_control.html">stepsize_control()</a></code>, <code><a href="poly_decay.html">poly_decay()</a></code>, or <code><a href="batch_decay.html">batch_decay()</a></code>.
+For polynomial schedule, <code>poly_decay(..., burnin_iter = B)</code> keeps
+schedule scale at 1 for the first <code>B</code> iterations, then starts decay
+with reset local time index.</p></dd>
 
 
 <dt id="arg-n-min-batch">n_min_batch<a class="anchor" aria-label="anchor" href="#arg-n-min-batch"></a></dt>

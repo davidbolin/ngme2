@@ -3,6 +3,7 @@ pkgdown: 2.1.1
 pkgdown_sha: ~
 articles:
   AR1-model: AR1-model.html
+  batch-means-ci: batch-means-ci.html
   bivariate: bivariate.html
   cross-validation: cross-validation.html
   generic: generic.html
@@ -13,11 +14,13 @@ articles:
   normal-nig-noise: normal-nig-noise.html
   ou-process: ou-process.html
   pred-and-est: pred-and-est.html
+  prior-templates: prior-templates.html
   replicate: replicate.html
   RW-model: RW-model.html
+  sgld-sampling: sgld-sampling.html
   SPDE-model: SPDE-model.html
   tensor-product: tensor-product.html
-last_built: 2025-12-10T18:09Z
+last_built: 2026-02-19T11:37Z
 urls:
   reference: https://davidbolin.github.io/ngme2/reference
   article: https://davidbolin.github.io/ngme2/articles

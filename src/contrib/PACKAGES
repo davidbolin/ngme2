@@ -9,5 +9,5 @@ Suggests: knitr, rmarkdown, INLA, dplyr, plyr, MASS, grid, testthat (>=
         lme4, plotly, usethis, devtools, MetricGraph (>= 1.1.2), zoo,
         mvtnorm, kableExtra
 License: GPL (>= 3) | file LICENSE
-MD5sum: 858797b2765e3e559457390c01ba85a2
+MD5sum: e2961a5fa10d66d9e9fbda64055ddc7d
 NeedsCompilation: yes

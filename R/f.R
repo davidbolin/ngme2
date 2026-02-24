@@ -72,6 +72,34 @@ f <- function(
     FALSE
   }
 
+  maybe_apply_default_nu_prior <- function(noise_obj, h_vec) {
+    if (isTRUE(noise_obj$fix_theta_nu) || noise_obj$n_theta_nu == 0) {
+      return(noise_obj)
+    }
+    if (isTRUE(noise_obj$prior_nu_user)) {
+      return(noise_obj)
+    }
+    if (!any(noise_obj$noise_type %in% c("nig", "normal_nig"))) {
+      return(noise_obj)
+    }
+
+    h_star <- stats::median(h_vec, na.rm = TRUE)
+    if (!is.finite(h_star) || h_star <= 0) {
+      return(noise_obj)
+    }
+
+    lambda <- log(2) / h_star
+    if (!is.finite(lambda) || lambda <= 0) {
+      return(noise_obj)
+    }
+
+    lower <- if (!is.null(noise_obj$nu_lower_bound)) noise_obj$nu_lower_bound else 0
+    noise_obj$prior_nu <- as_internal_prior(
+      prior_inv_exp(lambda = lambda, lower = lower, target = "coef")
+    )
+    noise_obj
+  }
+
   noise_all_normal <- is_noise_all_normal(noise)
   # If the user builds a bv/bv2/bv_matern model inline and all noises are normal,
   # ensure fix_theta = TRUE in that model call.
@@ -544,6 +572,8 @@ f <- function(
 
     W <- c(W, W)
   }
+
+  noise <- maybe_apply_default_nu_prior(noise, operator$h)
 
   operator_prior_names <- operator$param_name
   if (is.null(operator_prior_names) ||

@@ -1,3 +1,16 @@
+# ngme2 0.9.2 (2026-02-24)
+* Add `prior_inv_exponential(lambda, lower)` for `nu`, implementing
+  `kappa = 1 / nu ~ Exp(lambda)` as a first-class prior option.
+* Add shorthand alias `prior_inv_exp(...)` for the same prior.
+* Add calibration helpers `calibrate_inv_exp_lambda_driven_nig()` and
+  `calibrate_inv_exp_lambda()` for choosing `lambda` from a driven-noise
+  tail-inflation target.
+* Improve calibration robustness for non-monotone `R_c(nu)` curves: the
+  helper now scans for crossings and reports observed `R_c` range when the
+  requested target is unattainable.
+* Update default `nu` prior in `f()` for NIG-driven noise: when `nu` prior is
+  not explicitly set, use `prior_inv_exp(lambda = log(2)/median(h), lower = nu_lower_bound)`.
+
 # ngme2 0.9.1 (2026-02-19)
 * Harden error handling in `ngme()` estimation/sampling path: C++ exceptions
   are now propagated as R errors (including OpenMP parallel regions) instead of

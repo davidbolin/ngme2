@@ -6,11 +6,20 @@ double PriorUtil::log_dens(
   const VectorXd& params,
   double value
 ) {
-  if (type == "normal") {
+  if (type == "none") {
+    return 0.0;
+  } else if (type == "normal") {
     double mu = params(0);
     double prec = params(1);
     double sigma = 1.0 / std::sqrt(prec);
     return R::dnorm(value, mu, sigma, true);
+  } else if (type == "inv.exponential") {
+    double lambda = params(0);
+    double lower = params.size() > 1 ? params(1) : 0.0;
+    // value is theta on unconstrained scale, nu = lower + exp(theta)
+    double exp_value = std::exp(value);
+    double nu = lower + exp_value;
+    return std::log(lambda) - lambda / nu - 2.0 * std::log(nu) + value;
   } else {
     throw std::invalid_argument("Unknown prior type");
   }
@@ -42,6 +51,13 @@ double PriorUtil::d_log_dens(
     double gamma = params(0);
     return (-exp(2*value) + gamma*gamma) / 
       (exp(2*value) + gamma*gamma);
+  } else if (type == "inv.exponential") {
+    double lambda = params(0);
+    double lower = params.size() > 1 ? params(1) : 0.0;
+    // value is theta, nu = lower + exp(theta)
+    double exp_value = std::exp(value);
+    double nu = lower + exp_value;
+    return lambda * exp_value / (nu * nu) - 2.0 * exp_value / nu + 1.0;
   } else {
     throw std::invalid_argument("Unknown prior type");
   }

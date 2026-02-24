@@ -51,6 +51,37 @@ prior_half_cauchy <- function(scale = 1, target = "coef") {
   )
 }
 
+#' @title Prior Inverse-Exponential
+#' @description Prior induced by \eqn{\kappa = 1 / \nu \sim \mathrm{Exp}(\lambda)},
+#' giving \eqn{p(\nu) = \lambda \exp(-\lambda / \nu)\nu^{-2}} for \eqn{\nu > 0}.
+#' Internally this prior is applied to \eqn{\nu = \mathrm{lower} + \exp(\theta)}.
+#' @param lambda exponential rate on \eqn{\kappa = 1/\nu}
+#' @param lower lower shift used in \eqn{\nu = \mathrm{lower} + \exp(\theta)}
+#' @param target apply prior on coefficient scale (`"coef"`) or field scale (`"field"`)
+#' @return prior specification
+#' @export
+prior_inv_exponential <- function(lambda = 1, lower = 0, target = "coef") {
+  target <- .validate_prior_target(target)
+  stopifnot(
+    is.numeric(lambda), length(lambda) == 1, is.finite(lambda), lambda > 0,
+    is.numeric(lower), length(lower) == 1, is.finite(lower), lower >= 0
+  )
+  structure(
+    list(
+      dist = "inv.exponential",
+      hyper = c(lambda = lambda, lower = lower),
+      target = target
+    ),
+    class = "ngme_prior_spec"
+  )
+}
+
+#' @rdname prior_inv_exponential
+#' @export
+prior_inv_exp <- function(lambda = 1, lower = 0, target = "coef") {
+  prior_inv_exponential(lambda = lambda, lower = lower, target = target)
+}
+
 #' @title Prior None
 #' @param target apply prior on coefficient scale (`"coef"`) or field scale (`"field"`)
 #' @return prior specification
@@ -117,6 +148,11 @@ as_internal_prior <- function(prior) {
     "half.cauchy" = {
       list(type = "half.cauchy", param = c(as.numeric(hyper["scale"])), target = target)
     },
+    "inv.exponential" = {
+      lambda <- as.numeric(hyper["lambda"])
+      lower <- as.numeric(hyper["lower"])
+      list(type = "inv.exponential", param = c(lambda, lower), target = target)
+    },
     stop("Unknown prior dist: ", dist)
   )
   internal
@@ -131,7 +167,7 @@ default_noise_priors <- function() {
 }
 
 default_operator_prior <- function() {
-  prior_normal(0, sqrt(1 / 0.001), target = "coef")
+  prior_normal(0, 10, target = "coef")
 }
 
 default_beta_prior <- function() {
@@ -162,7 +198,9 @@ compile_noise_priors <- function(prior) {
 }
 
 compile_operator_priors <- function(prior, param_names) {
-  if (is.null(param_names) || length(param_names) == 0) return(list())
+  if (is.null(param_names) || length(param_names) == 0) {
+    return(list())
+  }
   if (is.null(prior)) {
     return(rep(list(as_internal_prior(default_operator_prior())), length(param_names)))
   }
@@ -190,7 +228,9 @@ compile_operator_priors <- function(prior, param_names) {
 }
 
 compile_beta_priors <- function(prior, param_names) {
-  if (is.null(param_names) || length(param_names) == 0) return(list())
+  if (is.null(param_names) || length(param_names) == 0) {
+    return(list())
+  }
   if (is.null(prior)) {
     return(rep(list(as_internal_prior(default_beta_prior())), length(param_names)))
   }

@@ -105,6 +105,18 @@ reference:
     - noise_normal_nig
     - compare_noise_kld
     - print.noise_kld_comparison
+  - title: Priors
+    contents:
+    - ngme_prior_types
+    - prior_normal
+    - prior_pc_sd
+    - prior_half_cauchy
+    - prior_inv_exponential
+    - prior_inv_exp
+    - prior_none
+    - priors
+    - calibrate_inv_exp_lambda_driven_nig
+    - calibrate_inv_exp_lambda
   - title: ngme2 optimization methods
     contents:
     - sgld
@@ -175,12 +187,6 @@ reference:
     - get_parameter_distance
     - get_trace_trajectories
     - plot.parameter_distance
-    - ngme_prior_types
-    - prior_normal
-    - prior_pc_sd
-    - prior_half_cauchy
-    - prior_none
-    - priors
     - test_ngme
     - ngme_make_mesh_repls
     - merge_noise

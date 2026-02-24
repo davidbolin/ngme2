@@ -44,12 +44,15 @@ The prior API has two layers:
 prior_normal(mean = 0, sd = 1)
 prior_pc_sd(u = 1, alpha = 0.1)
 prior_half_cauchy(scale = 1)
+prior_inv_exponential(lambda = 1, lower = 0)
+# short alias:
+prior_inv_exp(lambda = 1, lower = 0)
 prior_none()
 
 priors(
   mu = prior_normal(0, 1),
-  sigma = prior_normal(0, 1),
-  nu = prior_normal(0, 1)
+  sigma = prior_half_cauchy(1),
+  nu = prior_inv_exponential(1)
 )
 ```
 
@@ -113,6 +116,14 @@ f(
 
 ## Example 2: Stationary NIG noise priors
 
+For positive parameters, avoid symmetric `N(0, 1)` defaults directly on natural
+scale.
+
+- `sigma`: `prior_half_cauchy(...)` is a common weakly-informative option.
+- `nu`: `prior_inv_exponential(...)` corresponds to
+  `kappa = 1 / nu ~ Exp(lambda)`, which can encode preference toward larger
+  `nu` (Gaussian-like behavior).
+
 ```{r}
 noise_stationary <- noise_nig(
   mu = 0,
@@ -120,8 +131,8 @@ noise_stationary <- noise_nig(
   nu = 1,
   prior = priors(
     mu = prior_normal(0, 1),
-    sigma = prior_normal(0, 1),
-    nu = prior_normal(0, 1)
+    sigma = prior_half_cauchy(1),
+    nu = prior_inv_exponential(lambda = 1.5, lower = 0)
   )
 )
 
@@ -184,14 +195,38 @@ Recommended non-stationary noise template:
 ```{r}
 prior_noise_ns_template <- priors(
   mu = prior_normal(0, 1.0, target = "field"),
-  sigma = prior_normal(0, 0.7, target = "field"),
-  nu = prior_normal(0, 0.7, target = "coef")
+  sigma = prior_half_cauchy(1.0, target = "coef"),
+  nu = prior_inv_exponential(lambda = 1.5, lower = 0, target = "coef")
 )
 
 prior_noise_ns_template
 ```
 
-## Example 5: Non-stationary Matern `kappa`
+## Example 5b: Calibrate `prior_inv_exp()` from a tail target
+
+If you want `kappa = 1 / nu ~ Exp(lambda)` to satisfy
+`Pr(R_c(nu) > r_target) = alpha`, use the calibration helper:
+
+```{r}
+cal <- calibrate_inv_exp_lambda_driven_nig(
+  r_target = 2,
+  alpha = 0.1,
+  c = 3,
+  mu = 0,
+  sigma = 1,
+  h = 1,
+  n_samples = 20000,
+  seed = 1
+)
+
+cal$lambda
+
+priors(
+  nu = prior_inv_exp(lambda = cal$lambda)
+)
+```
+
+## Example 6: Non-stationary Matern `kappa`
 
 For non-stationary Matern, names are typically `theta_kappa1`,
 `theta_kappa2`, ...
@@ -223,7 +258,7 @@ model_matern_ns$operator$param_name
 model_matern_ns$prior_theta_K
 ```
 
-## Example 6: End-to-end fitting script
+## Example 7: End-to-end fitting script
 
 This chunk is copy-paste ready for user analysis. It is set to `eval=FALSE`
 only to keep package vignette build fast.

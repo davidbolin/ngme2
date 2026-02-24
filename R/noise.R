@@ -124,6 +124,15 @@ ngme_noise <- function(
     "fix_theta_sigma must be logical" = is.logical(fix_theta_sigma)
   )
 
+  prior_nu_user <- FALSE
+  if (!is.null(prior)) {
+    if (is_prior_spec(prior)) {
+      prior_nu_user <- TRUE
+    } else if (is_prior_collection(prior)) {
+      prior_nu_user <- "nu" %in% names(prior)
+    }
+  }
+
   compiled_prior <- compile_noise_priors(prior)
 
   if (all(noise_type == "normal")) {
@@ -185,6 +194,7 @@ ngme_noise <- function(
       index_corr = index_corr,
       map_corr = map_corr,
       rho = rho,
+      prior_nu_user = prior_nu_user,
       prior_mu = compiled_prior$mu,
       prior_sigma = compiled_prior$sigma,
       prior_nu = compiled_prior$nu,

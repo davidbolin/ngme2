@@ -362,9 +362,11 @@ plot.parameter_distance <- function(x, ...) {
 #' should be in names(ngme$models) or other
 #' @param moving_window moving window for the traceplot
 #' @param hline vector, add hline to each plot
-#' @param combine bool, if TRUE, plot the combination of all plots, otherwise 1 by 1
+#' @param combine bool, if TRUE, return a single faceted ggplot; otherwise return
+#'   a list of ggplot objects and print them one by one.
 #'
-#' @return the traceplot
+#' @return A ggplot object when \code{combine = TRUE}; otherwise a list of ggplot
+#'   objects.
 #' @export
 #'
 traceplot <- function(
@@ -375,12 +377,6 @@ traceplot <- function(
     combine = TRUE) {
   stopifnot(inherits(ngme, "ngme"))
   stopifnot(!is.null(name))
-  if (combine && !requireNamespace("gridExtra", quietly = TRUE)) {
-    stop(
-      "Package 'gridExtra' is required for combined trace plots. ",
-      "Please install it with install.packages('gridExtra')."
-    )
-  }
   ngme <- ngme$replicates[[1]]
   ps <- list()
 
@@ -536,8 +532,11 @@ traceplot <- function(
     ts$trans <- c(ts$trans, trans_feff)
   }
 
-  # record the geom_lines for comparison later
+  # Record mean trajectories for comparison later.
   avg_lines <- NULL
+  plot_data_all <- list()
+  mean_data_all <- list()
+  hline_data_all <- list()
 
   n_parameters <- nrow(traj[[1]]) # number of parameters to draw
   for (idx in seq_len(n_parameters)) {
@@ -591,39 +590,107 @@ traceplot <- function(
 
     df_mean <- aggregate(moving_avg ~ x, data = df_long, FUN = mean)
     names(df_mean)[names(df_mean) == "moving_avg"] <- "mean_moving_avg"
+    parameter_name <- ts$name[[idx]]
+    df_long$parameter <- parameter_name
+    df_mean$parameter <- parameter_name
 
-    ps[[idx]] <- ggplot() +
-      geom_line(
-        data = df_long,
-        mapping = aes(
-          x = .data[["x"]],
-          y = .data[["moving_avg"]],
-          group = .data[["key"]]
+    plot_data_all[[idx]] <- df_long
+    mean_data_all[[idx]] <- df_mean
+
+    hline_idx <- if (length(hline) >= idx) hline[[idx]] else NULL
+    if (!is.null(hline_idx) && length(hline_idx) > 0) {
+      hline_data_all[[idx]] <- data.frame(
+        parameter = rep(parameter_name, length(hline_idx)),
+        yintercept = as.numeric(hline_idx),
+        stringsAsFactors = FALSE
+      )
+    }
+
+    if (!combine) {
+      p <- ggplot2::ggplot() +
+        ggplot2::geom_line(
+          data = df_long,
+          mapping = ggplot2::aes(
+            x = .data[["x"]],
+            y = .data[["moving_avg"]],
+            group = .data[["key"]]
+          )
+        ) +
+        ggplot2::geom_line(
+          data = df_mean,
+          ggplot2::aes(x = x, y = mean_moving_avg),
+          col = "red"
+        ) +
+        ggplot2::labs(title = parameter_name) +
+        ggplot2::xlab(NULL) +
+        ggplot2::ylab(NULL) +
+        ggplot2::theme(
+          plot.title = ggplot2::element_text(size = 14, face = "bold")
         )
-      ) +
-      geom_line(
-        data = df_mean,
-        aes(x = x, y = mean_moving_avg),
-        col = "red"
-      ) +
-      geom_hline(
-        yintercept = hline[[idx]], color = "blue"
-      ) +
-      labs(title = ts$name[[idx]]) +
-      xlab(NULL) +
-      ylab(NULL)
 
-    avg_lines[[ts$name[[idx]]]] <- df_mean$mean_moving_avg
+      if (!is.null(hline_idx) && length(hline_idx) > 0) {
+        p <- p + ggplot2::geom_hline(
+          yintercept = as.numeric(hline_idx),
+          color = "blue"
+        )
+      }
+      ps[[idx]] <- p
+    }
+
+    avg_lines[[parameter_name]] <- df_mean$mean_moving_avg
   }
 
   # Display results based on combine parameter
   result <- NULL
   if (combine) {
-    if (length(ps) == 0) {
+    if (length(plot_data_all) == 0) {
       stop("No parameters available to plot.")
     }
-    ncol <- if (length(ps) > 1) 2 else 1
-    result <- gridExtra::grid.arrange(grobs = ps, ncol = ncol)
+    ncol <- if (length(plot_data_all) > 1) 2 else 1
+    plot_data <- do.call(rbind, plot_data_all)
+    mean_data <- do.call(rbind, mean_data_all)
+    plot_levels <- unique(vapply(plot_data_all, function(x) x$parameter[[1]], character(1)))
+    plot_data$parameter <- factor(plot_data$parameter, levels = plot_levels)
+    mean_data$parameter <- factor(mean_data$parameter, levels = plot_levels)
+    if (length(hline_data_all) > 0) {
+      hline_data <- do.call(rbind, hline_data_all)
+      hline_data$parameter <- factor(hline_data$parameter, levels = plot_levels)
+    } else {
+      hline_data <- NULL
+    }
+
+    result <- ggplot2::ggplot() +
+      ggplot2::geom_line(
+        data = plot_data,
+        mapping = ggplot2::aes(
+          x = .data[["x"]],
+          y = .data[["moving_avg"]],
+          group = .data[["key"]]
+        )
+      ) +
+      ggplot2::geom_line(
+        data = mean_data,
+        mapping = ggplot2::aes(x = .data[["x"]], y = .data[["mean_moving_avg"]]),
+        col = "red"
+      ) +
+      ggplot2::facet_wrap(~parameter, scales = "free_y", ncol = ncol) +
+      ggplot2::xlab(NULL) +
+      ggplot2::ylab(NULL) +
+      ggplot2::theme(
+        strip.text = ggplot2::element_text(size = 14, face = "bold")
+      )
+
+    if (!is.null(hline_data)) {
+      result <- result + ggplot2::geom_hline(
+        data = hline_data,
+        mapping = ggplot2::aes(yintercept = .data[["yintercept"]]),
+        color = "blue",
+        inherit.aes = FALSE
+      )
+    }
+
+    # Keep the historical behavior of drawing a plot when traceplot() is called.
+    print(result)
   } else {
     # Print plots one by one
     for (p in ps) {

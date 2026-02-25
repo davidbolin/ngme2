@@ -545,6 +545,23 @@ ngme_parse_formula <- function(
     replicate,
     prior_beta,
     standardize) {
+  demean_non_intercept_cols <- function(X) {
+    if (ncol(X) == 0) {
+      return(X)
+    }
+    out <- X
+    non_intercept <- !startsWith(colnames(out), "(Intercept)")
+    if (any(non_intercept)) {
+      out[, non_intercept] <- sweep(
+        out[, non_intercept, drop = FALSE],
+        2,
+        colMeans(out[, non_intercept, drop = FALSE]),
+        FUN = "-"
+      )
+    }
+    out
+  }
+
   enclos_env <- list2env(as.list(parent.frame()), parent = parent.frame(2))
   global_env_first <- list2env(as.list(parent.frame(2)), parent = parent.frame())
 
@@ -569,6 +586,7 @@ ngme_parse_formula <- function(
   ngme_response <- eval(stats::terms(fm)[[2]], envir = data, enclos = enclos_env)
   stopifnot("Have NA in your response variable" = all(!is.na(ngme_response)))
   X_full <- model.matrix(delete.response(terms(plain_fm)), as.data.frame(data))
+  X_full <- demean_non_intercept_cols(X_full)
   n_fixed_cols <- ncol(X_full) # columns subject to standardization
 
   # Do SVD if ncol > 1
@@ -595,7 +613,24 @@ ngme_parse_formula <- function(
     X_sub <- model.matrix(as.formula(lang[[2]]), data)
     colnames(X_sub) <- paste0(colnames(X_sub), "_", lang$which)
     X_sub[!mask, ] <- 0
+    X_sub <- demean_non_intercept_cols(X_sub)
     X_full <- cbind(X_full, X_sub)
+  }
+
+  # fe() terms are appended after the initial SVD-based check above.
+  # Re-check rank here so aliased grouped columns fail early with a clear error.
+  if (ncol(X_full) > 0) {
+    qr_X <- qr(X_full)
+    if (qr_X$rank < ncol(X_full)) {
+      dep_cols <- colnames(X_full)[qr_X$pivot[(qr_X$rank + 1):ncol(X_full)]]
+      stop(
+        paste0(
+          "The fixed-effects design matrix is not full rank after fe() expansion. ",
+          "Please remove redundant terms. Non-identifiable columns: ",
+          paste(dep_cols, collapse = ", ")
+        )
+      )
+    }
   }
 
   prior_beta_compiled <- compile_beta_priors(prior_beta, colnames(X_full))

@@ -102,3 +102,38 @@ test_that("grouped fe() regression matches lm.fit and is invariant to SVD standa
   expect_equal(coef_ngme_std["lon_u_wind"], true_coef["lon_u_wind"], tolerance = 1e-10)
   expect_equal(coef_ngme_std["lat_v_wind"], true_coef["lat_v_wind"], tolerance = 1e-10)
 })
+
+test_that("demeaned fixed effects are mapped back to raw parameterization", {
+  withr::local_seed(123)
+
+  df <- data.frame(
+    x1 = rnorm(80),
+    x2 = rnorm(80)
+  )
+  df$y <- 2 - 0.5 * df$x1 + 1.3 * df$x2 + rnorm(80, sd = 0.2)
+
+  fit <- ngme(
+    y ~ x1 + x2,
+    data = df,
+    control_opt = control_opt(
+      estimation = FALSE,
+      standardize_fixed = TRUE
+    )
+  )
+
+  coef_ngme <- fit$replicates[[1]]$feff
+  coef_lm <- stats::lm.fit(model.matrix(~ x1 + x2, data = df), df$y)$coefficients
+  expect_equal(coef_ngme, coef_lm, tolerance = 1e-10)
+
+  beta_init <- c("(Intercept)" = 2, "x1" = -0.5, "x2" = 1.3)
+  fit_init <- ngme(
+    y ~ x1 + x2,
+    data = df,
+    control_ngme = control_ngme(beta = beta_init),
+    control_opt = control_opt(
+      estimation = FALSE,
+      standardize_fixed = TRUE
+    )
+  )
+  expect_equal(fit_init$replicates[[1]]$feff, beta_init, tolerance = 1e-10)
+})

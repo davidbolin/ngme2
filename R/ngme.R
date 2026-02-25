@@ -351,24 +351,11 @@ ngme <- function(
       attr(ngme_model, "chain_outputs") <- NULL
     }
   } else {
-    # Estimation skipped: if fixed effects were standardized, map them back to
-    # the original design scale so printed/returned coefficients are on the raw
-    # scale (consistent with estimation path).
+    # Estimation skipped: map fixed effects and X back to the raw covariate
+    # scale so outputs are comparable to pre-demean runs.
     for (i in seq_along(ngme_model$replicates)) {
       ngme_replicate <- ngme_model$replicates[[i]]
-      if (isTRUE(ngme_replicate$standardize)) {
-        feff <- as.numeric(ngme_replicate$svd$v %*%
-          (1 / ngme_replicate$svd$d * ngme_replicate$feff))
-        names(feff) <- names(ngme_replicate$feff)
-        ngme_replicate$feff <- feff
-
-        X <- ngme_replicate$svd$u %*% diag(ngme_replicate$svd$d) %*%
-          t(ngme_replicate$svd$v)
-        colnames(X) <- colnames(ngme_replicate$X)
-        nrow_one_repl <- nrow(ngme_replicate$X)
-        ngme_replicate$X <- X[1:nrow_one_repl, ]
-        ngme_model$replicates[[i]] <- ngme_replicate
-      }
+      ngme_model$replicates[[i]] <- ngme_restore_fixed_effect_scale(ngme_replicate)
     }
   }
   ngme_model
@@ -411,18 +398,7 @@ update_ngme_est <- function(
   ngme_replicate$feff <- est_output$feff
   ngme_replicate$log_likelihood <- est_output$log_likelihood
 
-  if (ngme_replicate$standardize) {
-    # standardize feff (transform back)
-    feff <- as.numeric(ngme_replicate$svd$v %*% (1 / ngme_replicate$svd$d * ngme_replicate$feff))
-    names(feff) <- names(ngme_replicate$feff)
-    ngme_replicate$feff <- feff
-
-    # convert U back to UDV^t
-    X <- ngme_replicate$svd$u %*% diag(ngme_replicate$svd$d) %*% t(ngme_replicate$svd$v)
-    colnames(X) <- colnames(ngme_replicate$X)
-    nrow_one_repl <- nrow(ngme_replicate$X)
-    ngme_replicate$X <- X[1:nrow_one_repl, ]
-  }
+  ngme_replicate <- ngme_restore_fixed_effect_scale(ngme_replicate)
 
   ngme_replicate$noise <- update_noise(ngme_replicate$noise, new_noise = est_output$noise)
   for (i in seq_along(ngme_replicate$models)) {
@@ -524,6 +500,128 @@ check_dim <- function(ngme_model) {
   }
 }
 
+ngme_center_non_intercept_cols <- function(X) {
+  if (ncol(X) == 0) {
+    return(list(X = X, center = numeric(0)))
+  }
+
+  center <- setNames(numeric(ncol(X)), colnames(X))
+  has_intercept <- any(startsWith(colnames(X), "(Intercept)"))
+  if (!has_intercept) {
+    return(list(X = X, center = center))
+  }
+
+  out <- X
+  non_intercept <- !startsWith(colnames(out), "(Intercept)")
+  if (any(non_intercept)) {
+    center[non_intercept] <- colMeans(out[, non_intercept, drop = FALSE])
+    out[, non_intercept] <- sweep(
+      out[, non_intercept, drop = FALSE],
+      2,
+      center[non_intercept],
+      FUN = "-"
+    )
+  }
+
+  list(X = out, center = center)
+}
+
+ngme_shift_intercepts <- function(beta, delta, direction = c("to_raw", "to_center")) {
+  direction <- match.arg(direction)
+  if (length(beta) == 0 || abs(delta) < 1e-12 || is.null(names(beta))) {
+    return(beta)
+  }
+
+  intercept_idx <- which(startsWith(names(beta), "(Intercept)"))
+  if (length(intercept_idx) == 0) {
+    return(beta)
+  }
+
+  shift <- if (direction == "to_raw") -delta else delta
+  if ("(Intercept)" %in% names(beta)) {
+    idx <- which(names(beta) == "(Intercept)")[1]
+    beta[idx] <- beta[idx] + shift
+  } else {
+    # For grouped intercept columns, each row typically activates exactly one
+    # intercept column, so shifting all by the same amount restores constants.
+    beta[intercept_idx] <- beta[intercept_idx] + shift
+  }
+
+  beta
+}
+
+ngme_beta_center_to_raw <- function(beta_center, center) {
+  if (length(beta_center) == 0) return(beta_center)
+
+  center_beta <- center[names(beta_center)]
+  center_beta[is.na(center_beta)] <- 0
+  delta <- sum(center_beta * beta_center)
+  ngme_shift_intercepts(beta_center, delta, direction = "to_raw")
+}
+
+ngme_beta_raw_to_center <- function(beta_raw, center) {
+  if (length(beta_raw) == 0) return(beta_raw)
+
+  center_beta <- center[names(beta_raw)]
+  center_beta[is.na(center_beta)] <- 0
+  delta <- sum(center_beta * beta_raw)
+  ngme_shift_intercepts(beta_raw, delta, direction = "to_center")
+}
+
+ngme_restore_fixed_effect_scale <- function(ngme_replicate) {
+  center <- ngme_replicate$X_center
+  if (is.null(center) || length(center) == 0 || ncol(ngme_replicate$X) == 0) {
+    return(ngme_replicate)
+  }
+
+  X_centered <- ngme_replicate$X
+  feff_centered <- ngme_replicate$feff
+
+  if (isTRUE(ngme_replicate$standardize) &&
+    !is.null(ngme_replicate$svd) &&
+    length(ngme_replicate$svd$d) > 0) {
+    n_fixed_cols <- length(ngme_replicate$svd$d)
+
+    feff_centered[seq_len(n_fixed_cols)] <- as.numeric(
+      ngme_replicate$svd$v %*%
+        ((1 / ngme_replicate$svd$d) * feff_centered[seq_len(n_fixed_cols)])
+    )
+
+    X_fixed <- ngme_replicate$svd$u %*% diag(ngme_replicate$svd$d) %*% t(ngme_replicate$svd$v)
+    nrow_one_repl <- nrow(ngme_replicate$X)
+    X_fixed <- X_fixed[seq_len(nrow_one_repl), , drop = FALSE]
+
+    if (ncol(ngme_replicate$X) > n_fixed_cols) {
+      X_other <- ngme_replicate$X[, (n_fixed_cols + 1):ncol(ngme_replicate$X), drop = FALSE]
+      X_centered <- cbind(X_fixed, X_other)
+    } else {
+      X_centered <- X_fixed
+    }
+    colnames(X_centered) <- colnames(ngme_replicate$X)
+  }
+
+  center_x <- center[colnames(X_centered)]
+  center_x[is.na(center_x)] <- 0
+
+  X_raw <- X_centered
+  nonzero <- abs(center_x) > 0
+  if (any(nonzero)) {
+    X_raw[, nonzero] <- sweep(
+      X_raw[, nonzero, drop = FALSE],
+      2,
+      center_x[nonzero],
+      FUN = "+"
+    )
+  }
+
+  feff_raw <- ngme_beta_center_to_raw(feff_centered, center)
+  names(feff_raw) <- names(ngme_replicate$feff)
+
+  ngme_replicate$feff <- feff_raw
+  ngme_replicate$X <- X_raw
+  ngme_replicate
+}
+
 #' Parse the formula for ngme function
 #'
 #' @param fm formula
@@ -545,23 +643,6 @@ ngme_parse_formula <- function(
     replicate,
     prior_beta,
     standardize) {
-  demean_non_intercept_cols <- function(X) {
-    if (ncol(X) == 0) {
-      return(X)
-    }
-    out <- X
-    non_intercept <- !startsWith(colnames(out), "(Intercept)")
-    if (any(non_intercept)) {
-      out[, non_intercept] <- sweep(
-        out[, non_intercept, drop = FALSE],
-        2,
-        colMeans(out[, non_intercept, drop = FALSE]),
-        FUN = "-"
-      )
-    }
-    out
-  }
-
   enclos_env <- list2env(as.list(parent.frame()), parent = parent.frame(2))
   global_env_first <- list2env(as.list(parent.frame(2)), parent = parent.frame())
 
@@ -586,7 +667,9 @@ ngme_parse_formula <- function(
   ngme_response <- eval(stats::terms(fm)[[2]], envir = data, enclos = enclos_env)
   stopifnot("Have NA in your response variable" = all(!is.na(ngme_response)))
   X_full <- model.matrix(delete.response(terms(plain_fm)), as.data.frame(data))
-  X_full <- demean_non_intercept_cols(X_full)
+  centered <- ngme_center_non_intercept_cols(X_full)
+  X_full <- centered$X
+  X_center <- centered$center
   n_fixed_cols <- ncol(X_full) # columns subject to standardization
 
   # Do SVD if ncol > 1
@@ -613,7 +696,9 @@ ngme_parse_formula <- function(
     X_sub <- model.matrix(as.formula(lang[[2]]), data)
     colnames(X_sub) <- paste0(colnames(X_sub), "_", lang$which)
     X_sub[!mask, ] <- 0
-    X_sub <- demean_non_intercept_cols(X_sub)
+    centered_sub <- ngme_center_non_intercept_cols(X_sub)
+    X_sub <- centered_sub$X
+    X_center <- c(X_center, centered_sub$center)
     X_full <- cbind(X_full, X_sub)
   }
 
@@ -639,14 +724,24 @@ ngme_parse_formula <- function(
   # the standardized basis used internally (svd$u) while leaving any additional
   # fe() columns untouched.
   user_beta <- if (!is.null(control_ngme$beta_init)) control_ngme$beta_init else control_ngme$feff
-  if (standardize && !is.null(user_beta)) {
+  if (!is.null(user_beta)) {
     stopifnot(
       "The length of beta_init must equal the number of fixed-effect columns" =
         length(user_beta) == ncol(X_full)
     )
+
+    # Internal estimation uses centered covariates; map user-provided beta from
+    # raw scale to centered scale first.
+    user_beta <- ngme_beta_raw_to_center(user_beta, X_center)
+  }
+
+  if (standardize && !is.null(user_beta)) {
     beta_fixed <- user_beta[seq_len(n_fixed_cols)]
     beta_fixed <- as.numeric(svd$d * drop(t(svd$v) %*% beta_fixed))
     user_beta <- c(beta_fixed, user_beta[-seq_len(n_fixed_cols)])
+  }
+
+  if (!is.null(user_beta)) {
     control_ngme$beta_init <- user_beta
     control_ngme$feff <- user_beta # legacy name retained for downstream code
   }
@@ -794,6 +889,7 @@ ngme_parse_formula <- function(
       n_repl = length(levels),
       all_gaussian = all_gaussian,
       standardize = standardize,
+      X_center = X_center,
       svd = svd
     )
   }

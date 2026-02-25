@@ -90,6 +90,18 @@ test_that("grouped fe() regression matches lm.fit and is invariant to SVD standa
   pred_ngme_nosvd <- as.numeric(ngme_rep_nosvd$X %*% coef_ngme_nosvd)
   pred_lm <- as.numeric(ngme_rep_std$X %*% coef_lm)
 
+  # Structural zeros from fe() should remain zeros outside each group.
+  expect_equal(
+    unname(ngme_rep_std$X[direction != "u_wind", "lon_u_wind"]),
+    rep(0, sum(direction != "u_wind")),
+    tolerance = 1e-10
+  )
+  expect_equal(
+    unname(ngme_rep_std$X[direction != "v_wind", "lat_v_wind"]),
+    rep(0, sum(direction != "v_wind")),
+    tolerance = 1e-10
+  )
+
   expect_equal(max(abs(coef_ngme_std - coef_lm)), 0, tolerance = 1e-10)
   expect_equal(max(abs(pred_ngme_std - pred_lm)), 0, tolerance = 1e-10)
   expect_equal(max(abs(pred_ngme_std - wind)), 0, tolerance = 1e-10)
@@ -136,4 +148,65 @@ test_that("demeaned fixed effects are mapped back to raw parameterization", {
     )
   )
   expect_equal(fit_init$replicates[[1]]$feff, beta_init, tolerance = 1e-10)
+})
+
+test_that("no-intercept fixed effects are not centered and keep original semantics", {
+  withr::local_seed(456)
+
+  n <- 100
+  df <- data.frame(
+    x1 = runif(n),
+    x2 = rnorm(n)
+  )
+  beta_true <- c("x1" = 1.8, "x2" = -0.7)
+  X_raw <- model.matrix(~ 0 + x1 + x2, data = df)
+  df$y <- as.numeric(X_raw %*% beta_true) + rnorm(n, sd = 0.1)
+
+  fit <- ngme(
+    y ~ 0 + x1 + x2,
+    data = df,
+    control_opt = control_opt(
+      estimation = FALSE,
+      standardize_fixed = TRUE
+    )
+  )
+
+  rep1 <- fit$replicates[[1]]
+  coef_lm <- stats::lm.fit(X_raw, df$y)$coefficients
+
+  expect_equal(as.numeric(rep1$X), as.numeric(X_raw), tolerance = 1e-10)
+  expect_equal(dim(rep1$X), dim(X_raw))
+  expect_equal(colnames(rep1$X), colnames(X_raw))
+  expect_equal(rep1$feff, coef_lm, tolerance = 1e-10)
+})
+
+test_that("restore uses replicate indices when svd$u is global", {
+  x <- c(0, 1, 2, 10, 11, 12)
+  X_raw <- cbind("(Intercept)" = 1, "x" = x)
+  centered <- ngme2:::ngme_center_non_intercept_cols(X_raw)
+  X_centered <- centered$X
+
+  svd_full <- svd(X_centered)
+  colnames(svd_full$u) <- colnames(X_raw)
+
+  beta_raw <- c("(Intercept)" = 3, "x" = 0.5)
+  beta_centered <- ngme2:::ngme_beta_raw_to_center(beta_raw, centered$center)
+  beta_svd <- as.numeric(svd_full$d * drop(t(svd_full$v) %*% beta_centered))
+  names(beta_svd) <- names(beta_raw)
+
+  idx_rep2 <- 4:6
+  ngme_rep <- list(
+    X = svd_full$u[idx_rep2, , drop = FALSE],
+    feff = beta_svd,
+    X_center = centered$center,
+    X_center_target = centered$center_target,
+    standardize = TRUE,
+    svd = svd_full,
+    data_idx = idx_rep2
+  )
+
+  restored <- ngme2:::ngme_restore_fixed_effect_scale(ngme_rep)
+
+  expect_equal(restored$X, X_raw[idx_rep2, , drop = FALSE], tolerance = 1e-10)
+  expect_equal(restored$feff, beta_raw, tolerance = 1e-10)
 })

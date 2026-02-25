@@ -600,7 +600,7 @@ ngme_out <- ngme(
   control_opt = control_opt(
     optimizer = adam(),
     burnin = 100,
-    iterations = 1000,
+    iterations = 2000,
     std_lim = 0.01,
     n_parallel_chain = 4,
     n_batch = 10,

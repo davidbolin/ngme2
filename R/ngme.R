@@ -500,82 +500,179 @@ check_dim <- function(ngme_model) {
   }
 }
 
-ngme_center_non_intercept_cols <- function(X) {
+ngme_center_non_intercept_cols <- function(X, active_rows = NULL, center_target = NULL) {
   if (ncol(X) == 0) {
-    return(list(X = X, center = numeric(0)))
+    return(list(X = X, center = numeric(0), center_target = character(0)))
+  }
+
+  if (is.null(colnames(X))) {
+    colnames(X) <- as.character(seq_len(ncol(X)))
   }
 
   center <- setNames(numeric(ncol(X)), colnames(X))
+  center_target_vec <- setNames(rep(NA_character_, ncol(X)), colnames(X))
   has_intercept <- any(startsWith(colnames(X), "(Intercept)"))
   if (!has_intercept) {
-    return(list(X = X, center = center))
+    # Keep no-intercept models on their original scale:
+    # centering without an intercept changes the model semantics.
+    return(list(X = X, center = center, center_target = center_target_vec))
+  }
+
+  if (is.null(active_rows)) {
+    active_rows <- rep(TRUE, nrow(X))
+  } else if (length(active_rows) != nrow(X)) {
+    stop("active_rows must have the same length as nrow(X).")
   }
 
   out <- X
   non_intercept <- !startsWith(colnames(out), "(Intercept)")
   if (any(non_intercept)) {
-    center[non_intercept] <- colMeans(out[, non_intercept, drop = FALSE])
-    out[, non_intercept] <- sweep(
-      out[, non_intercept, drop = FALSE],
-      2,
-      center[non_intercept],
-      FUN = "-"
-    )
+    active_idx <- which(active_rows)
+    if (length(active_idx) > 0) {
+      center_vals <- colMeans(out[active_idx, non_intercept, drop = FALSE])
+      center[non_intercept] <- center_vals
+      out[active_idx, non_intercept] <- sweep(
+        out[active_idx, non_intercept, drop = FALSE],
+        2,
+        center_vals,
+        FUN = "-"
+      )
+    }
+
+    default_target <- center_target
+    if (is.null(default_target)) {
+      default_target <- if ("(Intercept)" %in% colnames(out)) "(Intercept)" else NA_character_
+    }
+    center_target_vec[non_intercept] <- default_target
   }
 
-  list(X = out, center = center)
+  list(X = out, center = center, center_target = center_target_vec)
 }
 
-ngme_shift_intercepts <- function(beta, delta, direction = c("to_raw", "to_center")) {
+ngme_guess_intercept_targets <- function(coef_name, intercept_names) {
+  if (length(intercept_names) == 0) {
+    return(character(0))
+  }
+
+  grouped <- setdiff(intercept_names, "(Intercept)")
+  if (length(grouped) > 0) {
+    suffixes <- sub("^\\(Intercept\\)", "", grouped)
+    keep <- nchar(suffixes) > 0
+    if (any(keep)) {
+      grouped <- grouped[keep]
+      suffixes <- suffixes[keep]
+      match_idx <- which(endsWith(coef_name, suffixes))
+      if (length(match_idx) > 0) {
+        # If multiple suffixes match, prefer the most specific (longest).
+        best <- match_idx[which.max(nchar(suffixes[match_idx]))]
+        return(grouped[best])
+      }
+    }
+  }
+
+  if ("(Intercept)" %in% intercept_names) {
+    return("(Intercept)")
+  }
+
+  # Legacy fallback: if no unambiguous mapping exists, use all intercepts.
+  intercept_names
+}
+
+ngme_collect_intercept_shifts <- function(beta, center, center_target = NULL) {
+  if (length(beta) == 0 || is.null(names(beta))) {
+    return(numeric(0))
+  }
+
+  center_beta <- center[names(beta)]
+  center_beta[is.na(center_beta)] <- 0
+  nonzero <- which(abs(center_beta) > 0)
+  if (length(nonzero) == 0) {
+    return(numeric(0))
+  }
+
+  intercept_names <- names(beta)[startsWith(names(beta), "(Intercept)")]
+  if (length(intercept_names) == 0) {
+    return(numeric(0))
+  }
+
+  shifts <- numeric(0)
+  for (idx in nonzero) {
+    coef_name <- names(beta)[idx]
+    delta <- center_beta[idx] * beta[idx]
+    if (abs(delta) < 1e-12) {
+      next
+    }
+
+    targets <- character(0)
+    if (!is.null(center_target)) {
+      explicit <- center_target[coef_name]
+      explicit <- explicit[!is.na(explicit) & nzchar(explicit)]
+      if (length(explicit) > 0) {
+        targets <- explicit[[1]]
+      }
+    }
+    if (length(targets) == 0) {
+      targets <- ngme_guess_intercept_targets(coef_name, intercept_names)
+    }
+    if (length(targets) == 0) {
+      next
+    }
+
+    for (target in targets) {
+      if (!(target %in% names(shifts))) {
+        shifts[target] <- 0
+      }
+      shifts[target] <- shifts[target] + delta
+    }
+  }
+
+  shifts
+}
+
+ngme_shift_intercepts <- function(beta, shifts, direction = c("to_raw", "to_center")) {
   direction <- match.arg(direction)
-  if (length(beta) == 0 || abs(delta) < 1e-12 || is.null(names(beta))) {
+  if (length(beta) == 0 || length(shifts) == 0 || is.null(names(beta))) {
     return(beta)
   }
 
-  intercept_idx <- which(startsWith(names(beta), "(Intercept)"))
-  if (length(intercept_idx) == 0) {
-    return(beta)
-  }
-
-  shift <- if (direction == "to_raw") -delta else delta
-  if ("(Intercept)" %in% names(beta)) {
-    idx <- which(names(beta) == "(Intercept)")[1]
-    beta[idx] <- beta[idx] + shift
-  } else {
-    # For grouped intercept columns, each row typically activates exactly one
-    # intercept column, so shifting all by the same amount restores constants.
-    beta[intercept_idx] <- beta[intercept_idx] + shift
+  sign <- if (direction == "to_raw") -1 else 1
+  for (target in names(shifts)) {
+    if (target %in% names(beta)) {
+      beta[target] <- beta[target] + sign * shifts[target]
+    }
   }
 
   beta
 }
 
-ngme_beta_center_to_raw <- function(beta_center, center) {
-  if (length(beta_center) == 0) return(beta_center)
+ngme_beta_center_to_raw <- function(beta_center, center, center_target = NULL) {
+  if (length(beta_center) == 0) {
+    return(beta_center)
+  }
 
-  center_beta <- center[names(beta_center)]
-  center_beta[is.na(center_beta)] <- 0
-  delta <- sum(center_beta * beta_center)
-  ngme_shift_intercepts(beta_center, delta, direction = "to_raw")
+  shifts <- ngme_collect_intercept_shifts(beta_center, center, center_target)
+  ngme_shift_intercepts(beta_center, shifts, direction = "to_raw")
 }
 
-ngme_beta_raw_to_center <- function(beta_raw, center) {
-  if (length(beta_raw) == 0) return(beta_raw)
+ngme_beta_raw_to_center <- function(beta_raw, center, center_target = NULL) {
+  if (length(beta_raw) == 0) {
+    return(beta_raw)
+  }
 
-  center_beta <- center[names(beta_raw)]
-  center_beta[is.na(center_beta)] <- 0
-  delta <- sum(center_beta * beta_raw)
-  ngme_shift_intercepts(beta_raw, delta, direction = "to_center")
+  shifts <- ngme_collect_intercept_shifts(beta_raw, center, center_target)
+  ngme_shift_intercepts(beta_raw, shifts, direction = "to_center")
 }
 
 ngme_restore_fixed_effect_scale <- function(ngme_replicate) {
   center <- ngme_replicate$X_center
+  center_target <- ngme_replicate$X_center_target
   if (is.null(center) || length(center) == 0 || ncol(ngme_replicate$X) == 0) {
     return(ngme_replicate)
   }
 
   X_centered <- ngme_replicate$X
   feff_centered <- ngme_replicate$feff
+  has_intercept <- any(startsWith(names(feff_centered), "(Intercept)"))
 
   if (isTRUE(ngme_replicate$standardize) &&
     !is.null(ngme_replicate$svd) &&
@@ -587,9 +684,26 @@ ngme_restore_fixed_effect_scale <- function(ngme_replicate) {
         ((1 / ngme_replicate$svd$d) * feff_centered[seq_len(n_fixed_cols)])
     )
 
-    X_fixed <- ngme_replicate$svd$u %*% diag(ngme_replicate$svd$d) %*% t(ngme_replicate$svd$v)
     nrow_one_repl <- nrow(ngme_replicate$X)
-    X_fixed <- X_fixed[seq_len(nrow_one_repl), , drop = FALSE]
+    u_fixed <- ngme_replicate$svd$u
+    if (nrow(u_fixed) != nrow_one_repl) {
+      idx <- ngme_replicate$data_idx
+      if (is.null(idx) || length(idx) != nrow_one_repl) {
+        stop(
+          "Unable to restore standardized fixed effects: replicate row count ",
+          "does not match svd$u and data_idx is unavailable or invalid."
+        )
+      }
+      if (any(idx < 1) || any(idx > nrow(u_fixed))) {
+        stop(
+          "Unable to restore standardized fixed effects: data_idx is out of ",
+          "bounds for svd$u."
+        )
+      }
+      u_fixed <- u_fixed[idx, , drop = FALSE]
+    }
+
+    X_fixed <- u_fixed %*% diag(ngme_replicate$svd$d) %*% t(ngme_replicate$svd$v)
 
     if (ncol(ngme_replicate$X) > n_fixed_cols) {
       X_other <- ngme_replicate$X[, (n_fixed_cols + 1):ncol(ngme_replicate$X), drop = FALSE]
@@ -600,21 +714,43 @@ ngme_restore_fixed_effect_scale <- function(ngme_replicate) {
     colnames(X_centered) <- colnames(ngme_replicate$X)
   }
 
-  center_x <- center[colnames(X_centered)]
-  center_x[is.na(center_x)] <- 0
-
   X_raw <- X_centered
-  nonzero <- abs(center_x) > 0
-  if (any(nonzero)) {
-    X_raw[, nonzero] <- sweep(
-      X_raw[, nonzero, drop = FALSE],
-      2,
-      center_x[nonzero],
-      FUN = "+"
-    )
-  }
+  feff_raw <- feff_centered
+  if (has_intercept) {
+    center_x <- center[colnames(X_centered)]
+    center_x[is.na(center_x)] <- 0
 
-  feff_raw <- ngme_beta_center_to_raw(feff_centered, center)
+    nonzero <- abs(center_x) > 0
+    if (any(nonzero)) {
+      intercept_cols <- colnames(X_centered)[startsWith(colnames(X_centered), "(Intercept)")]
+      for (col_name in names(center_x)[nonzero]) {
+        shift <- center_x[[col_name]]
+
+        target <- NA_character_
+        if (!is.null(center_target)) {
+          explicit <- center_target[col_name]
+          explicit <- explicit[!is.na(explicit) & nzchar(explicit)]
+          if (length(explicit) > 0) {
+            target <- explicit[[1]]
+          }
+        }
+        if (is.na(target) || !nzchar(target) || !(target %in% colnames(X_centered))) {
+          guessed <- ngme_guess_intercept_targets(col_name, intercept_cols)
+          if (length(guessed) == 1 && guessed %in% colnames(X_centered)) {
+            target <- guessed
+          }
+        }
+
+        if (!is.na(target) && nzchar(target) && target %in% colnames(X_centered)) {
+          X_raw[, col_name] <- X_raw[, col_name] + shift * X_centered[, target]
+        } else {
+          X_raw[, col_name] <- X_raw[, col_name] + shift
+        }
+      }
+    }
+
+    feff_raw <- ngme_beta_center_to_raw(feff_centered, center, center_target)
+  }
   names(feff_raw) <- names(ngme_replicate$feff)
 
   ngme_replicate$feff <- feff_raw
@@ -670,9 +806,11 @@ ngme_parse_formula <- function(
   centered <- ngme_center_non_intercept_cols(X_full)
   X_full <- centered$X
   X_center <- centered$center
+  X_center_target <- centered$center_target
   n_fixed_cols <- ncol(X_full) # columns subject to standardization
 
   # Do SVD if ncol > 1
+  svd <- NULL
   if (ncol(X_full) > 1) {
     svd <- svd(X_full)
     if (any((svd$d) < 1e-10)) stop("The design matrix is not full rank.")
@@ -696,9 +834,16 @@ ngme_parse_formula <- function(
     X_sub <- model.matrix(as.formula(lang[[2]]), data)
     colnames(X_sub) <- paste0(colnames(X_sub), "_", lang$which)
     X_sub[!mask, ] <- 0
-    centered_sub <- ngme_center_non_intercept_cols(X_sub)
+    intercept_sub <- colnames(X_sub)[startsWith(colnames(X_sub), "(Intercept)")]
+    center_target_sub <- if (length(intercept_sub) == 1) intercept_sub else NA_character_
+    centered_sub <- ngme_center_non_intercept_cols(
+      X_sub,
+      active_rows = mask,
+      center_target = center_target_sub
+    )
     X_sub <- centered_sub$X
     X_center <- c(X_center, centered_sub$center)
+    X_center_target <- c(X_center_target, centered_sub$center_target)
     X_full <- cbind(X_full, X_sub)
   }
 
@@ -732,7 +877,7 @@ ngme_parse_formula <- function(
 
     # Internal estimation uses centered covariates; map user-provided beta from
     # raw scale to centered scale first.
-    user_beta <- ngme_beta_raw_to_center(user_beta, X_center)
+    user_beta <- ngme_beta_raw_to_center(user_beta, X_center, X_center_target)
   }
 
   if (standardize && !is.null(user_beta)) {
@@ -801,6 +946,14 @@ ngme_parse_formula <- function(
 
     Y <- ngme_response[idx]
     X <- X_full[idx, , drop = FALSE]
+    svd_rep <- NULL
+    if (standardize) {
+      svd_rep <- list(
+        u = svd$u[idx, , drop = FALSE],
+        d = svd$d,
+        v = svd$v
+      )
+    }
 
     # re-evaluate each f model using idx
     models_rep <- list()
@@ -866,7 +1019,7 @@ ngme_parse_formula <- function(
       data_idx <- data_idx[p_order]
       X <- X[p_order, , drop = FALSE]
       Y <- Y[p_order]
-      if (standardize) svd$u <- svd$u[p_order, , drop = FALSE]
+      if (standardize) svd_rep$u <- svd_rep$u[p_order, , drop = FALSE]
 
       group_rep <- group_rep[p_order]
       for (j in seq_along(models_rep)) {
@@ -890,7 +1043,8 @@ ngme_parse_formula <- function(
       all_gaussian = all_gaussian,
       standardize = standardize,
       X_center = X_center,
-      svd = svd
+      X_center_target = X_center_target,
+      svd = svd_rep
     )
   }
 

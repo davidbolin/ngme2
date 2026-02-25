@@ -1,10 +1,11 @@
-library(ngme2)
+# library(ngme2)
+load_all()
 seed <- 500
 set.seed(seed)
 
 n_obs <- 500
 day <- 1:n_obs
-sigma_eps <- 0.5
+sigma_eps <- 0.1
 mu <- 2
 delta <- -mu
 sigma <- 3
@@ -21,7 +22,15 @@ ar1_model <- f(day,
 #   noise = noise_normal())
 
 process <- simulate(ar1_model, seed = seed, nsim = 1)[[1]]
-Y <- process + rnorm(n_obs, sd = sigma_eps)
+
+beta_true <- c("(Intercept)" = 3, "x1" = -1, "x2" = 2, "x3" = 0.5)
+x1 <- runif(n_obs)
+x2 <- rexp(n_obs)
+x3 <- rnorm(n_obs, mean = 1, sd = 0.5)
+X <- model.matrix(~ 1 + x1 + x2 + x3)
+
+# Create response variable with fixed effects, latent process, and measurement noise
+Y <- as.numeric(X %*% beta_true) + process + rnorm(n_obs, sd = sigma_eps)
 
 # # First we generate V. V_i follows inverse Gaussian distribution
 # trueV <- ngme2::rig(n_obs, nu, nu, seed = 10)
@@ -36,7 +45,7 @@ Y <- process + rnorm(n_obs, sd = sigma_eps)
 control_same <- control_opt(
   optimizer = precond_sgd(),
   burnin = 100,
-  iterations = 200,
+  iterations = 500,
   n_parallel_chain = 4,
   verbose = TRUE,
   rao_blackwellization = TRUE,
@@ -53,41 +62,48 @@ control_same <- control_opt(
   pflug_conv_check = TRUE,
   pflug_alpha = 1
 )
-t <- 1:n_obs
+
+data <- data.frame(Y = Y, t = t, x1 = x1, x2 = x2, x3 = x3)
 ret_nig_same <- ngme(
-  Y ~ 1 + t + f(
+  Y ~ 1 + x1 + x2 + x3 + f(
     1:n_obs,
     name = "my_ar",
     model = ar1(),
     prior = priors(
-      rho = prior_normal(0, 0.5)
+      rho = prior_normal(0, 10)
     ),
     noise = noise_nig(
       prior = priors(
-        nu = prior_normal(0, 0.5)
+        nu = prior_normal(0, 10)
       )
     )
   ),
   family = noise_normal(),
-  data = data.frame(Y = Y, t = t),
+  data = data,
   control_opt = control_same
 )
 summary(ret_nig_same)
-traceplot(ret_nig_same)
+traceplot(ret_nig_same, hline = c(rho, mu, sigma, nu, sigma_eps, beta_true))
 
+cat("\nTrue fixed effects:\n")
+print(beta_true)
+cat("\nOLS baseline (ignoring latent process):\n")
+print(coef(lm(Y ~ 1 + x1 + x2 + x3, data = data)))
+cat("\nNGME estimated fixed effects:\n")
+print(ret_nig_same$replicates[[1]]$feff)
 
-pred <- predict(
-  ret_nig_same,
-  map = list(my_ar = 1:100),
-  data = data.frame(t = 1:100),
-  estimator = c("mean", "sd", "0.05q", "0.95q", "median", "mode"),
-  sampling_size = 500,
-  burnin_size = 100,
-  seed = seed,
-  train_idx = NULL,
-  # chain_combine = c("predictive_average")
-)
+# pred <- predict(
+#   ret_nig_same,
+#   map = list(my_ar = 1:100),
+#   data = data.frame(t = 1:100),
+#   estimator = c("mean", "sd", "0.05q", "0.95q", "median", "mode"),
+#   sampling_size = 500,
+#   burnin_size = 100,
+#   seed = seed,
+#   train_idx = NULL,
+#   # chain_combine = c("predictive_average")
+# )
 
-plot(1:100, pred$mean, type = "l")
-lines(1:100, pred$`0.05q`, col = "blue")
-lines(1:100, pred$`0.95q`, col = "blue")
+# plot(1:100, pred$mean, type = "l")
+# lines(1:100, pred$`0.05q`, col = "blue")
+# lines(1:100, pred$`0.95q`, col = "blue")

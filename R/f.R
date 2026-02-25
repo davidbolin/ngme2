@@ -79,6 +79,10 @@ f <- function(
     if (isTRUE(noise_obj$prior_nu_user)) {
       return(noise_obj)
     }
+    # Keep the legacy weakly-informative default for non-stationary nu.
+    if (length(noise_obj$theta_nu) > 1 || ncol(noise_obj$B_nu) > 1) {
+      return(noise_obj)
+    }
     if (!any(noise_obj$noise_type %in% c("nig", "normal_nig"))) {
       return(noise_obj)
     }

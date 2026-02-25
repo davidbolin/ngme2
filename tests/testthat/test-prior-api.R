@@ -106,6 +106,22 @@ test_that("f keeps explicit nu prior and does not override it", {
   expect_equal(fit$noise$prior_nu$param[2], 1 / 4)
 })
 
+test_that("f keeps normal default prior for non-stationary nu", {
+  B_nu <- cbind(1, seq(0, 1, length.out = 20))
+  fit <- f(
+    map = 1:20,
+    model = ar1(),
+    noise = noise_nig(
+      B_nu = B_nu,
+      theta_nu = c(0, 0)
+    )
+  )
+
+  expect_equal(fit$noise$prior_nu$type, "normal")
+  expect_equal(fit$noise$prior_nu$param[1], 0)
+  expect_equal(fit$noise$prior_nu$param[2], 0.01)
+})
+
 test_that("beta prior compilation supports global and named forms", {
   b <- compile_beta_priors(
     priors(

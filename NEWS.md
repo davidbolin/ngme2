@@ -9,7 +9,9 @@
   helper now scans for crossings and reports observed `R_c` range when the
   requested target is unattainable.
 * Update default `nu` prior in `f()` for NIG-driven noise: when `nu` prior is
-  not explicitly set, use `prior_inv_exp(lambda = log(2)/median(h), lower = nu_lower_bound)`.
+  not explicitly set and `nu` is stationary, use
+  `prior_inv_exp(lambda = log(2)/median(h), lower = nu_lower_bound)`.
+  For non-stationary `nu`, keep the legacy `N(0,10)` default prior.
 
 # ngme2 0.9.1 (2026-02-19)
 * Harden error handling in `ngme()` estimation/sampling path: C++ exceptions

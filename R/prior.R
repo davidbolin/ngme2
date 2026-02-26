@@ -174,6 +174,17 @@ default_beta_prior <- function() {
   prior_normal(0, 10, target = "coef")
 }
 
+default_beta_prior_for_param <- function(param_name) {
+  if (!is.null(param_name) && startsWith(param_name, "(Intercept)")) {
+    return(prior_none(target = "coef"))
+  }
+  default_beta_prior()
+}
+
+default_beta_priors <- function(param_names) {
+  lapply(param_names, default_beta_prior_for_param)
+}
+
 compile_noise_priors <- function(prior) {
   if (is.null(prior)) prior <- default_noise_priors()
   if (is_prior_spec(prior)) {
@@ -232,7 +243,7 @@ compile_beta_priors <- function(prior, param_names) {
     return(list())
   }
   if (is.null(prior)) {
-    return(rep(list(as_internal_prior(default_beta_prior())), length(param_names)))
+    return(lapply(default_beta_priors(param_names), as_internal_prior))
   }
 
   if (is_prior_spec(prior)) {
@@ -246,7 +257,7 @@ compile_beta_priors <- function(prior, param_names) {
     stop("Unknown beta prior names: ", paste(unknown, collapse = ", "))
   }
 
-  per_param <- rep(list(default_beta_prior()), length(param_names))
+  per_param <- default_beta_priors(param_names)
   if ("beta" %in% names(prior)) {
     per_param <- rep(list(prior$beta), length(param_names))
   }

@@ -1,3 +1,25 @@
+# ngme2 0.9.3 (2026-02-26)
+* Refine fixed-effect standardization: SVD now applies only to non-intercept
+  columns; intercept columns remain on their original parameterization.
+* Preserve no-intercept model semantics (`~ 0 + ...`): skip fixed-effect
+  centering when no intercept is present.
+* Improve `fe()` centering with structural zeros: grouped `fe()` columns are
+  centered using in-group rows only, so out-of-group structural zeros remain
+  zero.
+* Fix fixed-effect scale restoration for multi-replicate models: when needed,
+  reconstruction now uses replicate row indices (`data_idx`) instead of always
+  taking the first `n` rows.
+* Improve warm-start robustness (`start = previous_fit`) across
+  standardization settings by remapping fixed effects through the current model
+  parameterization.
+* Update default fixed-effect priors: intercept-like columns
+  (`"(Intercept)"*`) now default to `prior_none()`, while non-intercept
+  columns keep the default `N(0,10)` prior.
+* For `standardize_fixed = TRUE`, add prior compatibility handling:
+  isotropic normal priors on standardized columns are transformed to the SVD
+  basis; incompatible custom `prior_beta` specifications now automatically
+  disable fixed-effect standardization with a warning.
+
 # ngme2 0.9.2 (2026-02-24)
 * Add `prior_inv_exponential(lambda, lower)` for `nu`, implementing
   `kappa = 1 / nu ~ Exp(lambda)` as a first-class prior option.

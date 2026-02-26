@@ -149,6 +149,18 @@ test_that("beta prior compilation supports global and named forms", {
   )
 })
 
+test_that("default beta prior leaves intercept unconstrained", {
+  b <- compile_beta_priors(NULL, c("(Intercept)", "x", "(Intercept)_u_wind", "z"))
+
+  expect_equal(length(b), 4)
+  expect_equal(b[[1]]$type, "none")
+  expect_equal(b[[1]]$target, "coef")
+  expect_equal(length(b[[1]]$param), 0)
+  expect_equal(b[[2]]$type, "normal")
+  expect_equal(b[[3]]$type, "none")
+  expect_equal(b[[4]]$type, "normal")
+})
+
 test_that("ngme accepts prior_beta and stores compiled priors per replicate", {
   dat <- data.frame(y = rnorm(20), x = rnorm(20), id = 1:20)
 
@@ -160,7 +172,7 @@ test_that("ngme accepts prior_beta and stores compiled priors per replicate", {
       beta = prior_normal(0, 2),
       x = prior_half_cauchy(1)
     ),
-    control_opt = control_opt(estimation = FALSE)
+    control_opt = control_opt(estimation = FALSE, standardize_fixed = FALSE)
   )
 
   pb <- fit$replicates[[1]]$prior_beta

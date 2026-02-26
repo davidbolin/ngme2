@@ -158,11 +158,12 @@ ngme <- function(
             # start_feff is on the raw scale after restoration; map it to the
             # current centered + SVD-standardized parameterization.
             feff_center <- ngme_beta_raw_to_center(start_feff, X_center, X_center_target)
-            n_fixed_cols <- if (!is.null(svd) && !is.null(svd$d)) length(svd$d) else 0
-            if (n_fixed_cols > 0) {
-              beta_fixed <- feff_center[seq_len(n_fixed_cols)]
+            svd_idx <- if (!is.null(svd) && !is.null(svd$idx)) svd$idx else integer(0)
+            if (length(svd_idx) > 0) {
+              beta_fixed <- feff_center[svd_idx]
               beta_fixed <- as.numeric(svd$d * drop(t(svd$v) %*% beta_fixed))
-              feff <- c(beta_fixed, feff_center[-seq_len(n_fixed_cols)])
+              feff_center[svd_idx] <- beta_fixed
+              feff <- feff_center
             } else {
               feff <- feff_center
             }
@@ -349,12 +350,14 @@ ngme <- function(
       # update feff (if using svd)
       if (ngme_model$replicates[[1]]$standardize) {
         svd <- ngme_model$replicates[[1]]$svd
+        svd_idx <- if (!is.null(svd$idx)) svd$idx else seq_len(length(svd$d))
         # loop over num. of chains
         for (i in seq_along(block_traj)) {
           # last n_feff rows are fixed effects
           feff_idx <- (n_block_params - n_feff + 1):n_block_params
-          betas <- as.matrix(block_traj[[i]][feff_idx, ])
-          block_traj[[i]][feff_idx, ] <- svd$v %*% diag(1 / svd$d) %*% betas
+          feff_svd_idx <- feff_idx[svd_idx]
+          betas <- as.matrix(block_traj[[i]][feff_svd_idx, , drop = FALSE])
+          block_traj[[i]][feff_svd_idx, ] <- svd$v %*% diag(1 / svd$d) %*% betas
         }
       }
 
@@ -682,15 +685,15 @@ ngme_beta_raw_to_center <- function(beta_raw, center, center_target = NULL) {
   ngme_shift_intercepts(beta_raw, shifts, direction = "to_center")
 }
 
-ngme_check_isotropic_normal_beta_prior <- function(prior_beta, n_fixed_cols, tol = 1e-10) {
-  if (n_fixed_cols <= 0) {
+ngme_check_isotropic_normal_beta_prior <- function(prior_beta, idx_svd, tol = 1e-10) {
+  if (length(idx_svd) == 0) {
     return(list(ok = TRUE, reason = NULL))
   }
-  if (length(prior_beta) < n_fixed_cols) {
+  if (length(prior_beta) < max(idx_svd)) {
     return(list(ok = FALSE, reason = "invalid prior length"))
   }
 
-  priors_fixed <- prior_beta[seq_len(n_fixed_cols)]
+  priors_fixed <- prior_beta[idx_svd]
   is_normal_coef <- vapply(priors_fixed, function(p) {
     identical(p$type, "normal") && identical(p$target, "coef")
   }, logical(1))
@@ -714,7 +717,7 @@ ngme_check_isotropic_normal_beta_prior <- function(prior_beta, n_fixed_cols, tol
 
   ref_precision <- precision[[1]]
   if (!all(abs(precision - ref_precision) <= tol * max(1, abs(ref_precision)))) {
-    return(list(ok = FALSE, reason = "requires same variance across fixed effects"))
+    return(list(ok = FALSE, reason = "requires same variance across standardized fixed effects"))
   }
 
   list(ok = TRUE, reason = NULL)
@@ -722,13 +725,13 @@ ngme_check_isotropic_normal_beta_prior <- function(prior_beta, n_fixed_cols, tol
 
 # Map isotropic normal priors from raw fixed-effect coefficients (X basis)
 # to the internal SVD basis (U basis): beta* = D V^T beta.
-# Only the first n_fixed_cols (the SVD-standardized block) are transformed.
-ngme_map_isotropic_normal_priors_to_svd <- function(prior_beta, svd, n_fixed_cols, tol = 1e-10) {
-  if (is.null(svd) || n_fixed_cols <= 0 || length(prior_beta) < n_fixed_cols) {
+# Only columns indexed by idx_svd (the SVD-standardized block) are transformed.
+ngme_map_isotropic_normal_priors_to_svd <- function(prior_beta, svd, idx_svd, tol = 1e-10) {
+  if (is.null(svd) || length(idx_svd) == 0 || length(prior_beta) < max(idx_svd)) {
     return(prior_beta)
   }
 
-  priors_fixed <- prior_beta[seq_len(n_fixed_cols)]
+  priors_fixed <- prior_beta[idx_svd]
   is_normal_coef <- vapply(priors_fixed, function(p) {
     identical(p$type, "normal") && identical(p$target, "coef")
   }, logical(1))
@@ -757,12 +760,12 @@ ngme_map_isotropic_normal_priors_to_svd <- function(prior_beta, svd, n_fixed_col
     return(prior_beta)
   }
 
-  d_fixed <- svd$d[seq_len(n_fixed_cols)]
+  d_fixed <- svd$d
   mean_svd <- as.numeric(d_fixed * drop(t(svd$v) %*% mean_raw))
   precision_svd <- ref_precision / (d_fixed^2)
 
-  for (i in seq_len(n_fixed_cols)) {
-    prior_beta[[i]]$param <- c(mean = mean_svd[[i]], precision = precision_svd[[i]])
+  for (i in seq_along(idx_svd)) {
+    prior_beta[[idx_svd[[i]]]]$param <- c(mean = mean_svd[[i]], precision = precision_svd[[i]])
   }
 
   prior_beta
@@ -782,11 +785,15 @@ ngme_restore_fixed_effect_scale <- function(ngme_replicate) {
   if (isTRUE(ngme_replicate$standardize) &&
     !is.null(ngme_replicate$svd) &&
     length(ngme_replicate$svd$d) > 0) {
-    n_fixed_cols <- length(ngme_replicate$svd$d)
+    svd_idx <- ngme_replicate$svd$idx
+    if (is.null(svd_idx)) {
+      svd_idx <- seq_len(length(ngme_replicate$svd$d))
+    }
+    stopifnot(length(svd_idx) == length(ngme_replicate$svd$d))
 
-    feff_centered[seq_len(n_fixed_cols)] <- as.numeric(
+    feff_centered[svd_idx] <- as.numeric(
       ngme_replicate$svd$v %*%
-        ((1 / ngme_replicate$svd$d) * feff_centered[seq_len(n_fixed_cols)])
+        ((1 / ngme_replicate$svd$d) * feff_centered[svd_idx])
     )
 
     nrow_one_repl <- nrow(ngme_replicate$X)
@@ -809,14 +816,7 @@ ngme_restore_fixed_effect_scale <- function(ngme_replicate) {
     }
 
     X_fixed <- u_fixed %*% diag(ngme_replicate$svd$d) %*% t(ngme_replicate$svd$v)
-
-    if (ncol(ngme_replicate$X) > n_fixed_cols) {
-      X_other <- ngme_replicate$X[, (n_fixed_cols + 1):ncol(ngme_replicate$X), drop = FALSE]
-      X_centered <- cbind(X_fixed, X_other)
-    } else {
-      X_centered <- X_fixed
-    }
-    colnames(X_centered) <- colnames(ngme_replicate$X)
+    X_centered[, svd_idx] <- X_fixed
   }
 
   X_raw <- X_centered
@@ -912,12 +912,19 @@ ngme_parse_formula <- function(
   X_full <- centered$X
   X_center <- centered$center
   X_center_target <- centered$center_target
-  n_fixed_cols <- ncol(X_full) # columns subject to standardization
+  if (ncol(X_full) == 0) {
+    idx_svd <- integer(0)
+  } else {
+    if (is.null(colnames(X_full))) {
+      colnames(X_full) <- as.character(seq_len(ncol(X_full)))
+    }
+    idx_svd <- which(!startsWith(colnames(X_full), "(Intercept)"))
+  }
 
-  # Do SVD if ncol > 1
+  # SVD-standardize only non-intercept fixed effects.
   svd <- NULL
-  if (ncol(X_full) > 1) {
-    svd <- svd(X_full)
+  if (length(idx_svd) >= 1) {
+    svd <- svd(X_full[, idx_svd, drop = FALSE])
     if (any((svd$d) < 1e-10)) stop("The design matrix is not full rank.")
   } else {
     standardize <- FALSE
@@ -967,7 +974,7 @@ ngme_parse_formula <- function(
   if (standardize && !is.null(prior_beta)) {
     prior_check <- ngme_check_isotropic_normal_beta_prior(
       prior_beta = prior_beta_compiled,
-      n_fixed_cols = n_fixed_cols
+      idx_svd = idx_svd
     )
     if (!isTRUE(prior_check$ok)) {
       warning(
@@ -984,13 +991,14 @@ ngme_parse_formula <- function(
   }
 
   if (standardize) {
-    colnames(svd$u) <- colnames(X_full)[seq_len(n_fixed_cols)]
-    X_full[, seq_len(n_fixed_cols)] <- svd$u
+    colnames(svd$u) <- colnames(X_full)[idx_svd]
+    X_full[, idx_svd] <- svd$u
     prior_beta_compiled <- ngme_map_isotropic_normal_priors_to_svd(
       prior_beta = prior_beta_compiled,
       svd = svd,
-      n_fixed_cols = n_fixed_cols
+      idx_svd = idx_svd
     )
+    svd$idx <- idx_svd
   }
 
   # If the user supplies beta_init/feff on the original design scale, map it to
@@ -1009,9 +1017,9 @@ ngme_parse_formula <- function(
   }
 
   if (standardize && !is.null(user_beta)) {
-    beta_fixed <- user_beta[seq_len(n_fixed_cols)]
+    beta_fixed <- user_beta[idx_svd]
     beta_fixed <- as.numeric(svd$d * drop(t(svd$v) %*% beta_fixed))
-    user_beta <- c(beta_fixed, user_beta[-seq_len(n_fixed_cols)])
+    user_beta[idx_svd] <- beta_fixed
   }
 
   if (!is.null(user_beta)) {
@@ -1079,7 +1087,8 @@ ngme_parse_formula <- function(
       svd_rep <- list(
         u = svd$u[idx, , drop = FALSE],
         d = svd$d,
-        v = svd$v
+        v = svd$v,
+        idx = svd$idx
       )
     }
 

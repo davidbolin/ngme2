@@ -180,6 +180,33 @@ test_that("no-intercept fixed effects are not centered and keep original semanti
   expect_equal(rep1$feff, coef_lm, tolerance = 1e-10)
 })
 
+test_that("fixed-effect standardization excludes intercept columns", {
+  withr::local_seed(789)
+
+  n <- 120
+  df <- data.frame(
+    x1 = rnorm(n),
+    x2 = runif(n)
+  )
+  df$y <- 1.5 + 0.7 * df$x1 - 0.3 * df$x2 + rnorm(n, sd = 0.2)
+
+  fit <- ngme(
+    y ~ x1 + x2,
+    data = df,
+    control_opt = control_opt(
+      estimation = FALSE,
+      standardize_fixed = TRUE
+    )
+  )
+
+  rep1 <- fit$replicates[[1]]
+  X_raw <- model.matrix(~ x1 + x2, data = df)
+  expect_true(rep1$standardize)
+  expect_equal(rep1$svd$idx, which(!startsWith(colnames(X_raw), "(Intercept)")))
+  expect_equal(colnames(rep1$svd$u), colnames(X_raw)[rep1$svd$idx])
+  expect_equal(as.numeric(rep1$X), as.numeric(X_raw), tolerance = 1e-10)
+})
+
 test_that("restore uses replicate indices when svd$u is global", {
   x <- c(0, 1, 2, 10, 11, 12)
   X_raw <- cbind("(Intercept)" = 1, "x" = x)

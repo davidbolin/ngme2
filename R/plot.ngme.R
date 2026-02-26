@@ -120,6 +120,13 @@ get_feff_plot_names <- function(feff) {
   feff_names
 }
 
+disambiguate_trace_param_names <- function(param_names) {
+  if (length(param_names) == 0) {
+    return(param_names)
+  }
+  make.unique(as.character(param_names))
+}
+
 #' Get trace trajectories from ngme fitting
 #'
 #' Extract numerical trajectories of parameters during ngme optimization
@@ -170,6 +177,7 @@ get_trace_trajectories <- function(
     ts$name <- c(ts$name, name_feff)
     ts$trans <- c(ts$trans, trans_feff)
   }
+  ts$name <- disambiguate_trace_param_names(ts$name)
 
   n_parameters <- nrow(traj[[1]])
   n_chains <- length(traj)
@@ -545,6 +553,7 @@ traceplot <- function(
     ts$name <- c(ts$name, name_feff)
     ts$trans <- c(ts$trans, trans_feff)
   }
+  ts$name <- disambiguate_trace_param_names(ts$name)
 
   # Record mean trajectories for comparison later.
   avg_lines <- NULL

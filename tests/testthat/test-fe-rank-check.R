@@ -311,6 +311,42 @@ test_that("trace trajectories use fixed-effect variable names when available", {
   expect_equal(utils::tail(traj$parameter_names, length(fe_names)), fe_names)
 })
 
+test_that("trace trajectories disambiguate duplicated latent parameter names", {
+  fake_latent <- structure(
+    list(
+      operator = list(
+        param_name = c("rho", "rho"),
+        param_trans = list(identity, identity)
+      ),
+      noise = noise_normal(fix_theta_sigma = TRUE)
+    ),
+    class = "ngme_model"
+  )
+  attr(fake_latent, "lat_traj") <- list(matrix(
+    c(0.10, 0.20, 0.30,
+      0.60, 0.70, 0.80),
+    nrow = 2,
+    byrow = TRUE
+  ))
+
+  fake_ngme <- structure(
+    list(
+      replicates = list(
+        list(
+          models = list(field1 = fake_latent),
+          feff = numeric(0)
+        )
+      )
+    ),
+    class = "ngme"
+  )
+
+  traj <- get_trace_trajectories(fake_ngme, name = "field1", apply_transform = FALSE)
+  expect_equal(length(traj$parameter_names), 2)
+  expect_equal(length(unique(traj$parameter_names)), 2)
+  expect_equal(sort(names(traj$trajectories)), sort(traj$parameter_names))
+})
+
 test_that("isotropic normal beta prior is invariant to fixed-effect standardization", {
   withr::local_seed(20260226)
 

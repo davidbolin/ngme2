@@ -238,6 +238,79 @@ test_that("restore uses replicate indices when svd$u is global", {
   expect_equal(restored$feff, beta_raw, tolerance = 1e-10)
 })
 
+test_that("stored fixed-effect trajectories are on raw scale (intercept included)", {
+  withr::local_seed(20260226)
+
+  n <- 80
+  df <- data.frame(
+    x1 = runif(n),
+    x2 = rexp(n)
+  )
+  beta_true <- c("(Intercept)" = 3.0, "x1" = -1.2, "x2" = 1.8)
+  X <- model.matrix(~ x1 + x2, data = df)
+  df$y <- as.numeric(X %*% beta_true) + rnorm(n, sd = 0.2)
+
+  fit <- ngme(
+    y ~ x1 + x2,
+    data = df,
+    family = noise_normal(),
+    control_opt = control_opt(
+      optimizer = sgd(),
+      iterations = 60,
+      burnin = 10,
+      n_parallel_chain = 1,
+      standardize_fixed = FALSE,
+      store_traj = TRUE,
+      verbose = FALSE,
+      print_check_info = FALSE,
+      seed = 20260226
+    )
+  )
+
+  rep1 <- fit$replicates[[1]]
+  block_traj <- attr(rep1, "block_traj")
+  expect_true(length(block_traj) == 1)
+
+  n_feff <- length(rep1$feff)
+  feff_idx <- (nrow(block_traj[[1]]) - n_feff + 1):nrow(block_traj[[1]])
+  last_feff <- unlist(block_traj[[1]][feff_idx, ncol(block_traj[[1]]), drop = FALSE], use.names = FALSE)
+  names(last_feff) <- names(rep1$feff)
+
+  expect_equal(last_feff, rep1$feff, tolerance = 1e-3)
+})
+
+test_that("trace trajectories use fixed-effect variable names when available", {
+  withr::local_seed(20260226)
+
+  n <- 60
+  df <- data.frame(
+    x1 = runif(n),
+    x2 = rnorm(n)
+  )
+  df$y <- 2.5 - 0.8 * df$x1 + 1.1 * df$x2 + rnorm(n, sd = 0.2)
+
+  fit <- ngme(
+    y ~ x1 + x2,
+    data = df,
+    family = noise_normal(),
+    control_opt = control_opt(
+      optimizer = sgd(),
+      iterations = 40,
+      burnin = 10,
+      n_parallel_chain = 1,
+      standardize_fixed = FALSE,
+      store_traj = TRUE,
+      verbose = FALSE,
+      print_check_info = FALSE,
+      seed = 20260226
+    )
+  )
+
+  traj <- get_trace_trajectories(fit, name = "data", apply_transform = FALSE)
+  fe_names <- names(fit$replicates[[1]]$feff)
+  expect_equal(utils::tail(traj$parameter_names, length(fe_names)), fe_names)
+})
+
 test_that("isotropic normal beta prior is invariant to fixed-effect standardization", {
   withr::local_seed(20260226)
 

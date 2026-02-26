@@ -106,6 +106,20 @@ get_latent_info <- function(latent) {
   ts
 }
 
+get_feff_plot_names <- function(feff) {
+  n_feff <- length(feff)
+  if (n_feff == 0) {
+    return(NULL)
+  }
+
+  feff_names <- names(feff)
+  if (is.null(feff_names) || anyNA(feff_names) || any(!nzchar(feff_names))) {
+    return(paste("fixed effect", seq_len(n_feff)))
+  }
+
+  feff_names
+}
+
 #' Get trace trajectories from ngme fitting
 #'
 #' Extract numerical trajectories of parameters during ngme optimization
@@ -151,7 +165,7 @@ get_trace_trajectories <- function(
     )
     # get titles
     ts <- get_noise_info(ngme$noise)
-    name_feff <- if (length(ngme$feff) == 0) NULL else paste("fixed effect", seq_len(length(ngme$feff)))
+    name_feff <- get_feff_plot_names(ngme$feff)
     trans_feff <- rep(list(identity), length(ngme$feff))
     ts$name <- c(ts$name, name_feff)
     ts$trans <- c(ts$trans, trans_feff)
@@ -464,7 +478,7 @@ traceplot <- function(
       "Please run ngme() to estimate the model before using traceplot()" = !is.null(traj_noise)
     )
     ts_noise <- get_noise_info(ngme$noise)
-    name_feff <- if (length(ngme$feff) == 0) NULL else paste("fixed effect", seq_len(length(ngme$feff)))
+    name_feff <- get_feff_plot_names(ngme$feff)
     trans_feff <- rep(list(identity), length(ngme$feff))
     ts_noise$name <- c(ts_noise$name, name_feff)
     ts_noise$trans <- c(ts_noise$trans, trans_feff)
@@ -526,7 +540,7 @@ traceplot <- function(
     )
     # get titles
     ts <- get_noise_info(ngme$noise)
-    name_feff <- if (length(ngme$feff) == 0) NULL else paste("fixed effect", seq_len(length(ngme$feff)))
+    name_feff <- get_feff_plot_names(ngme$feff)
     trans_feff <- rep(list(identity), length(ngme$feff))
     ts$name <- c(ts$name, name_feff)
     ts$trans <- c(ts$trans, trans_feff)

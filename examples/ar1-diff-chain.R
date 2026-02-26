@@ -1,5 +1,4 @@
-# library(ngme2)
-load_all()
+library(ngme2)
 seed <- 500
 set.seed(seed)
 
@@ -23,11 +22,10 @@ ar1_model <- f(day,
 
 process <- simulate(ar1_model, seed = seed, nsim = 1)[[1]]
 
-beta_true <- c("(Intercept)" = 3, "x1" = -1, "x2" = 2, "x3" = 0.5)
+beta_true <- c("(Intercept)" = 3, "x1" = -1, "x2" = 2)
 x1 <- runif(n_obs)
 x2 <- rexp(n_obs)
-x3 <- rnorm(n_obs, mean = 1, sd = 0.5)
-X <- model.matrix(~ 1 + x1 + x2 + x3)
+X <- model.matrix(~ 1 + x1 + x2)
 
 # Create response variable with fixed effects, latent process, and measurement noise
 Y <- as.numeric(X %*% beta_true) + process + rnorm(n_obs, sd = sigma_eps)
@@ -44,6 +42,7 @@ Y <- as.numeric(X %*% beta_true) + process + rnorm(n_obs, sd = sigma_eps)
 # fit the non-Gaussian model
 control_same <- control_opt(
   optimizer = precond_sgd(),
+  # standardize_fixed = FALSE,
   burnin = 100,
   iterations = 500,
   n_parallel_chain = 4,
@@ -63,19 +62,15 @@ control_same <- control_opt(
   pflug_alpha = 1
 )
 
-data <- data.frame(Y = Y, t = t, x1 = x1, x2 = x2, x3 = x3)
+data <- data.frame(Y = Y, x1 = x1, x2 = x2)
 ret_nig_same <- ngme(
-  Y ~ 1 + x1 + x2 + x3 + f(
+  Y ~ 1 + x1 + x2 + f(
     1:n_obs,
     name = "my_ar",
     model = ar1(),
-    prior = priors(
-      rho = prior_normal(0, 10)
-    ),
+    prior = priors(),
     noise = noise_nig(
-      prior = priors(
-        nu = prior_normal(0, 10)
-      )
+      prior = priors()
     )
   ),
   family = noise_normal(),
@@ -88,7 +83,7 @@ traceplot(ret_nig_same, hline = c(rho, mu, sigma, nu, sigma_eps, beta_true))
 cat("\nTrue fixed effects:\n")
 print(beta_true)
 cat("\nOLS baseline (ignoring latent process):\n")
-print(coef(lm(Y ~ 1 + x1 + x2 + x3, data = data)))
+print(coef(lm(Y ~ 1 + x1 + x2, data = data)))
 cat("\nNGME estimated fixed effects:\n")
 print(ret_nig_same$replicates[[1]]$feff)
 

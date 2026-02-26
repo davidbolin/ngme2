@@ -1104,6 +1104,10 @@ print.summary.ngme_batch_ci <- function(x, ...) {
   ts_block <- get_noise_info(ngme_rep$noise)
   fe_names <- if (length(ngme_rep$feff) == 0) {
     NULL
+  } else if (!is.null(names(ngme_rep$feff)) &&
+    all(!is.na(names(ngme_rep$feff))) &&
+    all(nzchar(names(ngme_rep$feff)))) {
+    names(ngme_rep$feff)
   } else {
     paste("fixed effect", seq_len(length(ngme_rep$feff)))
   }

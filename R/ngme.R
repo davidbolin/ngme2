@@ -347,17 +347,34 @@ ngme <- function(
       }
 
       n_block_params <- nrow(block_traj[[1]])
-      # update feff (if using svd)
-      if (ngme_model$replicates[[1]]$standardize) {
-        svd <- ngme_model$replicates[[1]]$svd
-        svd_idx <- if (!is.null(svd$idx)) svd$idx else seq_len(length(svd$d))
-        # loop over num. of chains
+      # Map fixed-effects trajectories back to raw parameterization so traceplot
+      # is comparable with ngme_result()/printed feff.
+      if (n_feff > 0) {
+        rep1 <- ngme_model$replicates[[1]]
+        feff_idx <- (n_block_params - n_feff + 1):n_block_params
+        feff_names <- names(rep1$feff)
+
         for (i in seq_along(block_traj)) {
-          # last n_feff rows are fixed effects
-          feff_idx <- (n_block_params - n_feff + 1):n_block_params
-          feff_svd_idx <- feff_idx[svd_idx]
-          betas <- as.matrix(block_traj[[i]][feff_svd_idx, , drop = FALSE])
-          block_traj[[i]][feff_svd_idx, ] <- svd$v %*% ngme_diag_vec(1 / svd$d) %*% betas
+          betas <- as.matrix(block_traj[[i]][feff_idx, , drop = FALSE])
+
+          # 1) Undo SVD standardization on the standardized subset.
+          if (isTRUE(rep1$standardize) && !is.null(rep1$svd) && length(rep1$svd$d) > 0) {
+            svd <- rep1$svd
+            svd_idx <- if (!is.null(svd$idx)) svd$idx else seq_len(length(svd$d))
+            betas[svd_idx, ] <- svd$v %*% ngme_diag_vec(1 / svd$d) %*% betas[svd_idx, , drop = FALSE]
+          }
+
+          # 2) Undo demeaning shift (centered beta -> raw beta), per iteration.
+          if (!is.null(rep1$X_center) && length(rep1$X_center) > 0) {
+            for (k in seq_len(ncol(betas))) {
+              beta_k <- betas[, k]
+              names(beta_k) <- feff_names
+              beta_k <- ngme_beta_center_to_raw(beta_k, rep1$X_center, rep1$X_center_target)
+              betas[, k] <- as.numeric(beta_k)
+            }
+          }
+
+          block_traj[[i]][feff_idx, ] <- betas
         }
       }
 

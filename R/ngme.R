@@ -357,7 +357,7 @@ ngme <- function(
           feff_idx <- (n_block_params - n_feff + 1):n_block_params
           feff_svd_idx <- feff_idx[svd_idx]
           betas <- as.matrix(block_traj[[i]][feff_svd_idx, , drop = FALSE])
-          block_traj[[i]][feff_svd_idx, ] <- svd$v %*% diag(1 / svd$d) %*% betas
+          block_traj[[i]][feff_svd_idx, ] <- svd$v %*% ngme_diag_vec(1 / svd$d) %*% betas
         }
       }
 
@@ -410,6 +410,14 @@ transform_traj <- function(traj) {
     dfs[[i]] <- df
   }
   dfs
+}
+
+ngme_diag_vec <- function(x) {
+  x <- as.numeric(x)
+  if (length(x) == 0) {
+    return(matrix(numeric(0), nrow = 0, ncol = 0))
+  }
+  diag(x, nrow = length(x), ncol = length(x))
 }
 
 # use estimate result to update ngme object
@@ -815,7 +823,7 @@ ngme_restore_fixed_effect_scale <- function(ngme_replicate) {
       u_fixed <- u_fixed[idx, , drop = FALSE]
     }
 
-    X_fixed <- u_fixed %*% diag(ngme_replicate$svd$d) %*% t(ngme_replicate$svd$v)
+    X_fixed <- u_fixed %*% ngme_diag_vec(ngme_replicate$svd$d) %*% t(ngme_replicate$svd$v)
     X_centered[, svd_idx] <- X_fixed
   }
 

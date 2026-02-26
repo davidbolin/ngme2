@@ -210,3 +210,138 @@ test_that("restore uses replicate indices when svd$u is global", {
   expect_equal(restored$X, X_raw[idx_rep2, , drop = FALSE], tolerance = 1e-10)
   expect_equal(restored$feff, beta_raw, tolerance = 1e-10)
 })
+
+test_that("isotropic normal beta prior is invariant to fixed-effect standardization", {
+  withr::local_seed(20260226)
+
+  n <- 80
+  df <- data.frame(
+    x1 = rnorm(n),
+    x2 = rnorm(n)
+  )
+  df$y <- 1.2 + 0.8 * df$x1 - 1.5 * df$x2 + rnorm(n, sd = 0.4)
+
+  beta_prior <- priors(beta = prior_normal(mean = 0, sd = 0.3))
+
+  fit_std <- ngme(
+    y ~ x1 + x2,
+    data = df,
+    prior_beta = beta_prior,
+    control_opt = control_opt(
+      optimizer = adam(),
+      burnin = 100,
+      iterations = 400,
+      n_parallel_chain = 1,
+      seed = 101,
+      standardize_fixed = TRUE,
+      verbose = FALSE,
+      print_check_info = FALSE
+    )
+  )
+
+  fit_raw <- ngme(
+    y ~ x1 + x2,
+    data = df,
+    prior_beta = beta_prior,
+    control_opt = control_opt(
+      optimizer = adam(),
+      burnin = 100,
+      iterations = 400,
+      n_parallel_chain = 1,
+      seed = 101,
+      standardize_fixed = FALSE,
+      verbose = FALSE,
+      print_check_info = FALSE
+    )
+  )
+
+  coef_std <- fit_std$replicates[[1]]$feff
+  coef_raw <- fit_raw$replicates[[1]]$feff
+
+  expect_equal(coef_std, coef_raw, tolerance = 1e-5)
+})
+
+test_that("incompatible custom beta prior disables fixed-effect standardization", {
+  withr::local_seed(20260226)
+
+  n <- 40
+  df <- data.frame(
+    x1 = rnorm(n),
+    x2 = rnorm(n)
+  )
+  df$y <- 0.5 + 1.1 * df$x1 - 0.7 * df$x2 + rnorm(n, sd = 0.2)
+
+  # Different variances across fixed effects => not isotropic normal.
+  prior_bad <- priors(
+    "(Intercept)" = prior_normal(mean = 0, sd = 1.0),
+    x1 = prior_normal(mean = 0, sd = 0.3),
+    x2 = prior_normal(mean = 0, sd = 0.8)
+  )
+
+  expect_warning(
+    fit <- ngme(
+      y ~ x1 + x2,
+      data = df,
+      prior_beta = prior_bad,
+      control_opt = control_opt(
+        estimation = FALSE,
+        standardize_fixed = TRUE
+      )
+    ),
+    "standardize_fixed = TRUE\\) was disabled"
+  )
+
+  rep1 <- fit$replicates[[1]]
+  X_raw <- model.matrix(~ x1 + x2, data = df)
+
+  expect_false(rep1$standardize)
+  expect_equal(as.numeric(rep1$X), as.numeric(X_raw), tolerance = 1e-10)
+  expect_equal(dim(rep1$X), dim(X_raw))
+  expect_equal(colnames(rep1$X), colnames(X_raw))
+})
+
+test_that("start works when previous fit disabled fixed-effect standardization", {
+  withr::local_seed(20260226)
+
+  n <- 40
+  df <- data.frame(
+    x1 = rnorm(n),
+    x2 = rnorm(n)
+  )
+  df$y <- 0.8 + 1.2 * df$x1 - 0.4 * df$x2 + rnorm(n, sd = 0.2)
+
+  prior_bad <- priors(
+    "(Intercept)" = prior_normal(mean = 0, sd = 1.0),
+    x1 = prior_normal(mean = 0, sd = 0.3),
+    x2 = prior_normal(mean = 0, sd = 0.8)
+  )
+
+  expect_warning(
+    fit_prev <- ngme(
+      y ~ x1 + x2,
+      data = df,
+      prior_beta = prior_bad,
+      control_opt = control_opt(
+        estimation = FALSE,
+        standardize_fixed = TRUE
+      )
+    ),
+    "standardize_fixed = TRUE\\) was disabled"
+  )
+  expect_false(fit_prev$replicates[[1]]$standardize)
+
+  expect_error(
+    fit_next <- ngme(
+      y ~ x1 + x2,
+      data = df,
+      start = fit_prev,
+      control_opt = control_opt(
+        estimation = FALSE,
+        standardize_fixed = TRUE
+      )
+    ),
+    NA
+  )
+
+  expect_true(fit_next$replicates[[1]]$standardize)
+})

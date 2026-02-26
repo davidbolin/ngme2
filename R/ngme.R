@@ -140,15 +140,34 @@ ngme <- function(
     for (i in seq_along(ngme_model$replicates)) {
       ngme_model$replicates[[i]] <- within(ngme_model$replicates[[i]], {
         # check if feff is the same, then overwrite the feff
-        same_feff <- all(dim(X) == dim(start$replicates[[i]]$X))
+        same_feff <- ncol(X) == ncol(start$replicates[[i]]$X)
+        if (!is.null(colnames(X)) && !is.null(colnames(start$replicates[[i]]$X))) {
+          same_feff <- same_feff && identical(colnames(X), colnames(start$replicates[[i]]$X))
+        }
         if (same_feff) {
-          if (!ngme_model$replicates[[i]]$standardize) {
-            feff <- start$replicates[[i]]$feff
-          } else {
-            # notice that the SVD effects
-            svd <- start$replicates[[i]]$svd
-            feff <- as.numeric(t(svd$v) %*% start$replicates[[i]]$feff) * svd$d
+          start_feff <- start$replicates[[i]]$feff
+          if (!is.null(names(start_feff)) &&
+            !is.null(colnames(X)) &&
+            all(colnames(X) %in% names(start_feff))) {
+            start_feff <- start_feff[colnames(X)]
           }
+
+          if (!ngme_model$replicates[[i]]$standardize) {
+            feff <- as.numeric(start_feff)
+          } else {
+            # start_feff is on the raw scale after restoration; map it to the
+            # current centered + SVD-standardized parameterization.
+            feff_center <- ngme_beta_raw_to_center(start_feff, X_center, X_center_target)
+            n_fixed_cols <- if (!is.null(svd) && !is.null(svd$d)) length(svd$d) else 0
+            if (n_fixed_cols > 0) {
+              beta_fixed <- feff_center[seq_len(n_fixed_cols)]
+              beta_fixed <- as.numeric(svd$d * drop(t(svd$v) %*% beta_fixed))
+              feff <- c(beta_fixed, feff_center[-seq_len(n_fixed_cols)])
+            } else {
+              feff <- feff_center
+            }
+          }
+          names(feff) <- colnames(X)
         }
 
         noise <- update_noise(noise, new_noise = start$replicates[[i]]$noise)
@@ -663,6 +682,92 @@ ngme_beta_raw_to_center <- function(beta_raw, center, center_target = NULL) {
   ngme_shift_intercepts(beta_raw, shifts, direction = "to_center")
 }
 
+ngme_check_isotropic_normal_beta_prior <- function(prior_beta, n_fixed_cols, tol = 1e-10) {
+  if (n_fixed_cols <= 0) {
+    return(list(ok = TRUE, reason = NULL))
+  }
+  if (length(prior_beta) < n_fixed_cols) {
+    return(list(ok = FALSE, reason = "invalid prior length"))
+  }
+
+  priors_fixed <- prior_beta[seq_len(n_fixed_cols)]
+  is_normal_coef <- vapply(priors_fixed, function(p) {
+    identical(p$type, "normal") && identical(p$target, "coef")
+  }, logical(1))
+  if (!all(is_normal_coef)) {
+    return(list(ok = FALSE, reason = "requires target='coef' normal priors"))
+  }
+
+  params <- lapply(priors_fixed, function(p) p$param)
+  valid_param <- vapply(params, function(x) {
+    is.numeric(x) && length(x) >= 2 &&
+      all(is.finite(as.numeric(x[1:2])))
+  }, logical(1))
+  if (!all(valid_param)) {
+    return(list(ok = FALSE, reason = "invalid normal prior parameters"))
+  }
+
+  precision <- as.numeric(vapply(params, function(x) x[[2]], numeric(1)))
+  if (any(precision <= 0)) {
+    return(list(ok = FALSE, reason = "normal prior precision must be positive"))
+  }
+
+  ref_precision <- precision[[1]]
+  if (!all(abs(precision - ref_precision) <= tol * max(1, abs(ref_precision)))) {
+    return(list(ok = FALSE, reason = "requires same variance across fixed effects"))
+  }
+
+  list(ok = TRUE, reason = NULL)
+}
+
+# Map isotropic normal priors from raw fixed-effect coefficients (X basis)
+# to the internal SVD basis (U basis): beta* = D V^T beta.
+# Only the first n_fixed_cols (the SVD-standardized block) are transformed.
+ngme_map_isotropic_normal_priors_to_svd <- function(prior_beta, svd, n_fixed_cols, tol = 1e-10) {
+  if (is.null(svd) || n_fixed_cols <= 0 || length(prior_beta) < n_fixed_cols) {
+    return(prior_beta)
+  }
+
+  priors_fixed <- prior_beta[seq_len(n_fixed_cols)]
+  is_normal_coef <- vapply(priors_fixed, function(p) {
+    identical(p$type, "normal") && identical(p$target, "coef")
+  }, logical(1))
+  if (!all(is_normal_coef)) {
+    return(prior_beta)
+  }
+
+  params <- lapply(priors_fixed, function(p) p$param)
+  valid_param <- vapply(params, function(x) {
+    is.numeric(x) && length(x) >= 2 &&
+      all(is.finite(as.numeric(x[1:2])))
+  }, logical(1))
+  if (!all(valid_param)) {
+    return(prior_beta)
+  }
+
+  mean_raw <- as.numeric(vapply(params, function(x) x[[1]], numeric(1)))
+  precision_raw <- as.numeric(vapply(params, function(x) x[[2]], numeric(1)))
+  if (any(precision_raw <= 0)) {
+    return(prior_beta)
+  }
+
+  ref_precision <- precision_raw[[1]]
+  if (!all(abs(precision_raw - ref_precision) <= tol * max(1, abs(ref_precision)))) {
+    # Only isotropic (same variance) normal priors are mapped.
+    return(prior_beta)
+  }
+
+  d_fixed <- svd$d[seq_len(n_fixed_cols)]
+  mean_svd <- as.numeric(d_fixed * drop(t(svd$v) %*% mean_raw))
+  precision_svd <- ref_precision / (d_fixed^2)
+
+  for (i in seq_len(n_fixed_cols)) {
+    prior_beta[[i]]$param <- c(mean = mean_svd[[i]], precision = precision_svd[[i]])
+  }
+
+  prior_beta
+}
+
 ngme_restore_fixed_effect_scale <- function(ngme_replicate) {
   center <- ngme_replicate$X_center
   center_target <- ngme_replicate$X_center_target
@@ -818,11 +923,6 @@ ngme_parse_formula <- function(
     standardize <- FALSE
   }
 
-  if (standardize) {
-    colnames(svd$u) <- colnames(X_full)
-    X_full <- svd$u # do regression wrt U
-  }
-
   # adding fixed effect (fe() syntax used for bivariate model..)
   for (i in fe_order) {
     lang <- str2lang(terms[i])
@@ -864,6 +964,34 @@ ngme_parse_formula <- function(
   }
 
   prior_beta_compiled <- compile_beta_priors(prior_beta, colnames(X_full))
+  if (standardize && !is.null(prior_beta)) {
+    prior_check <- ngme_check_isotropic_normal_beta_prior(
+      prior_beta = prior_beta_compiled,
+      n_fixed_cols = n_fixed_cols
+    )
+    if (!isTRUE(prior_check$ok)) {
+      warning(
+        paste0(
+          "control_opt(standardize_fixed = TRUE) was disabled because custom ",
+          "prior_beta on standardized fixed effects is not isotropic normal (",
+          prior_check$reason,
+          ")."
+        ),
+        call. = FALSE
+      )
+      standardize <- FALSE
+    }
+  }
+
+  if (standardize) {
+    colnames(svd$u) <- colnames(X_full)[seq_len(n_fixed_cols)]
+    X_full[, seq_len(n_fixed_cols)] <- svd$u
+    prior_beta_compiled <- ngme_map_isotropic_normal_priors_to_svd(
+      prior_beta = prior_beta_compiled,
+      svd = svd,
+      n_fixed_cols = n_fixed_cols
+    )
+  }
 
   # If the user supplies beta_init/feff on the original design scale, map it to
   # the standardized basis used internally (svd$u) while leaving any additional

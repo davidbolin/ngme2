@@ -17,10 +17,12 @@ should be in names(ngme$models) or other}
 
 \item{hline}{vector, add hline to each plot}
 
-\item{combine}{bool, if TRUE, plot the combination of all plots, otherwise 1 by 1}
+\item{combine}{bool, if TRUE, return a single faceted ggplot; otherwise return
+a list of ggplot objects and print them one by one.}
 }
 \value{
-the traceplot
+A ggplot object when \code{combine = TRUE}; otherwise a list of ggplot
+  objects.
 }
 \description{
 Trace plot of ngme fitting

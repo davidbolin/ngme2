@@ -347,6 +347,46 @@ test_that("trace trajectories disambiguate duplicated latent parameter names", {
   expect_equal(sort(names(traj$trajectories)), sort(traj$parameter_names))
 })
 
+test_that("traceplot supports configurable facet columns via ncol", {
+  fake_latent <- structure(
+    list(
+      operator = list(
+        param_name = c("rho", "rho"),
+        param_trans = list(identity, identity)
+      ),
+      noise = noise_normal(fix_theta_sigma = TRUE)
+    ),
+    class = "ngme_model"
+  )
+  attr(fake_latent, "lat_traj") <- list(matrix(
+    c(0.10, 0.20, 0.30,
+      0.60, 0.70, 0.80),
+    nrow = 2,
+    byrow = TRUE
+  ))
+
+  fake_ngme <- structure(
+    list(
+      replicates = list(
+        list(
+          models = list(field1 = fake_latent),
+          feff = numeric(0)
+        )
+      )
+    ),
+    class = "ngme"
+  )
+
+  p <- traceplot(fake_ngme, name = "field1", combine = TRUE, ncol = 1)
+  expect_true(inherits(p, "ggplot"))
+  expect_equal(p$facet$params$ncol, 1)
+
+  expect_error(
+    traceplot(fake_ngme, name = "field1", combine = TRUE, ncol = 0),
+    "`ncol` must be a positive integer or NULL."
+  )
+})
+
 test_that("isotropic normal beta prior is invariant to fixed-effect standardization", {
   withr::local_seed(20260226)
 

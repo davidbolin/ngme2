@@ -44,8 +44,12 @@ get_noise_info <- function(noise) {
     if (noise$n_theta_nu == 0) {
       name_nu <- trans_nu <- NULL
     } else if (is_stationary(noise$B_nu)) {
+      nu_lower_bound <- if (is.null(noise$nu_lower_bound)) 0 else noise$nu_lower_bound
+      nu_trans <- function(theta_nu) {
+        nu_lower_bound + exp(theta_nu)
+      }
       name_nu <- "nu"
-      trans_nu <- list(exp)
+      trans_nu <- list(nu_trans)
     } else {
       name_nu <- paste("theta_nu", seq_len(noise$n_theta_nu))
       trans_nu <- rep(list(identity), noise$n_theta_nu)
@@ -386,6 +390,8 @@ plot.parameter_distance <- function(x, ...) {
 #' @param hline vector, add hline to each plot
 #' @param combine bool, if TRUE, return a single faceted ggplot; otherwise return
 #'   a list of ggplot objects and print them one by one.
+#' @param ncol number of facet columns when \code{combine = TRUE}. If \code{NULL}
+#'   (default), use 2 columns for multi-parameter plots and 1 for single-parameter plots.
 #'
 #' @return A ggplot object when \code{combine = TRUE}; otherwise a list of ggplot
 #'   objects.
@@ -396,7 +402,8 @@ traceplot <- function(
     name = "all",
     moving_window = 1,
     hline = NULL,
-    combine = TRUE) {
+    combine = TRUE,
+    ncol = NULL) {
   stopifnot(inherits(ngme, "ngme"))
   stopifnot(!is.null(name))
   ngme <- ngme$replicates[[1]]
@@ -669,7 +676,14 @@ traceplot <- function(
     if (length(plot_data_all) == 0) {
       stop("No parameters available to plot.")
     }
-    ncol <- if (length(plot_data_all) > 1) 2 else 1
+    facet_ncol <- if (is.null(ncol)) {
+      if (length(plot_data_all) > 1) 2 else 1
+    } else {
+      if (!is.numeric(ncol) || length(ncol) != 1 || is.na(ncol) || ncol < 1 || abs(ncol - round(ncol)) > 0) {
+        stop("`ncol` must be a positive integer or NULL.")
+      }
+      as.integer(ncol)
+    }
     plot_data <- do.call(rbind, plot_data_all)
     mean_data <- do.call(rbind, mean_data_all)
     plot_levels <- unique(vapply(plot_data_all, function(x) x$parameter[[1]], character(1)))
@@ -696,7 +710,7 @@ traceplot <- function(
         mapping = ggplot2::aes(x = .data[["x"]], y = .data[["mean_moving_avg"]]),
         col = "red"
       ) +
-      ggplot2::facet_wrap(~parameter, scales = "free_y", ncol = ncol) +
+      ggplot2::facet_wrap(~parameter, scales = "free_y", ncol = facet_ncol) +
       ggplot2::xlab(NULL) +
       ggplot2::ylab(NULL) +
       ggplot2::theme(

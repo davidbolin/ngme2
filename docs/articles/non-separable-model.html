@@ -27,7 +27,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">ngme2</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -55,6 +55,8 @@
     <li><a class="dropdown-item" href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a></li>
     <li><a class="dropdown-item" href="../articles/generic.html">Using the Generic Model in ngme2</a></li>
     <li><a class="dropdown-item" href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a></li>
+    <li><a class="dropdown-item" href="../articles/sgld-sampling.html">SGLD posterior-like sampling</a></li>
+    <li><a class="dropdown-item" href="../articles/prior-templates.html">Prior templates (stationary/non-stationary)</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -265,7 +267,7 @@ sensors are irregularly distributed across the study region.</p>
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">2024</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Define rectangular spatial domain</span></span>
-<span><span class="va">domain</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/spam/man/cbind.html" class="external-link">cbind</a></span><span class="op">(</span></span>
+<span><span class="va">domain</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/cbind.html" class="external-link">cbind</a></span><span class="op">(</span></span>
 <span>  x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">10</span>, <span class="fl">10</span>, <span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span>,</span>
 <span>  y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">5</span>, <span class="fl">5</span>, <span class="fl">0</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
@@ -481,7 +483,7 @@ have correlation around 0.13 under the Matérn model with
 <span><span class="va">true_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
 <span>  map <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    <span class="va">obs_data</span><span class="op">$</span><span class="va">time_index</span>,</span>
-<span>    <span class="fu"><a href="https://rdrr.io/pkg/spam/man/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">obs_data</span><span class="op">$</span><span class="va">x</span>, <span class="va">obs_data</span><span class="op">$</span><span class="va">y</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">obs_data</span><span class="op">$</span><span class="va">x</span>, <span class="va">obs_data</span><span class="op">$</span><span class="va">y</span><span class="op">)</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  name <span class="op">=</span> <span class="st">"advection_field"</span>,</span>
 <span>  model <span class="op">=</span> <span class="fu"><a href="../reference/spacetime.html">spacetime</a></span><span class="op">(</span></span>
@@ -573,7 +575,7 @@ high-dimensional parameter spaces.</p>
 <code class="sourceCode R"><span><span class="co"># Fit non-separable advection-diffusion model</span></span>
 <span><span class="va">model_nonsep</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme.html">ngme</a></span><span class="op">(</span></span>
 <span>  formula <span class="op">=</span> <span class="va">value</span> <span class="op">~</span> <span class="fl">0</span> <span class="op">+</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
-<span>    map <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">time_index</span>, <span class="fu"><a href="https://rdrr.io/pkg/spam/man/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    map <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">time_index</span>, <span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>    model <span class="op">=</span> <span class="fu"><a href="../reference/spacetime.html">spacetime</a></span><span class="op">(</span></span>
 <span>      mesh <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">mesh_temporal</span>, <span class="va">mesh_spatial</span><span class="op">)</span></span>
 <span>    <span class="op">)</span>,</span>
@@ -620,20 +622,20 @@ starting points to avoid local optima</li>
 <span><span class="co">#&gt; $advection_field</span></span>
 <span><span class="co">#&gt;   Model type: Space-time (Implicit Euler)</span></span>
 <span><span class="co">#&gt;       alpha = 2 (fixed) </span></span>
-<span><span class="co">#&gt;       theta_gamma_x = 2.1 </span></span>
-<span><span class="co">#&gt;       theta_gamma_y = 2.3 </span></span>
-<span><span class="co">#&gt;       cc = 0.84 </span></span>
-<span><span class="co">#&gt;       kappa = 0.26 </span></span>
+<span><span class="co">#&gt;       theta_gamma_x = 2 </span></span>
+<span><span class="co">#&gt;       theta_gamma_y = -3.6 </span></span>
+<span><span class="co">#&gt;       cc = 5.4 </span></span>
+<span><span class="co">#&gt;       kappa = 0.56 </span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -0.19</span></span>
-<span><span class="co">#&gt;       sigma = 1.45</span></span>
-<span><span class="co">#&gt;       nu = 0.0344</span></span>
+<span><span class="co">#&gt;       mu = -0.835</span></span>
+<span><span class="co">#&gt;       sigma = 2.4</span></span>
+<span><span class="co">#&gt;       nu = 0.206</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.407</span></span></code></pre></div>
+<span><span class="co">#&gt;       sigma = 0.276</span></span></code></pre></div>
 <p>The summary output shows the estimated parameters along with standard
 errors (if computed). Key quantities include the likelihood value,
 convergence status, and parameter estimates with uncertainty
@@ -664,22 +666,22 @@ to the true values used in simulation:</p>
 <tbody>
 <tr class="odd">
 <td align="left">κ (kappa)</td>
-<td align="right">-0.1772</td>
+<td align="right">1.7256</td>
 <td align="right">1.000</td>
 </tr>
 <tr class="even">
 <td align="left">c (time scale)</td>
-<td align="right">-1.3671</td>
+<td align="right">-0.5980</td>
 <td align="right">15.0</td>
 </tr>
 <tr class="odd">
 <td align="left">γ_x (velocity x)</td>
-<td align="right">2.1725</td>
+<td align="right">2.0006</td>
 <td align="right">2.0</td>
 </tr>
 <tr class="even">
 <td align="left">γ_y (velocity y)</td>
-<td align="right">2.2584</td>
+<td align="right">-3.6898</td>
 <td align="right">0.0</td>
 </tr>
 </tbody>
@@ -784,7 +786,7 @@ parameters:</p>
 <span>  map <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    advection_field <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>      time_index <span class="op">=</span> <span class="va">pred_data</span><span class="op">$</span><span class="va">time_index</span>,</span>
-<span>      pos <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/spam/man/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">pred_data</span><span class="op">$</span><span class="va">x</span>, <span class="va">pred_data</span><span class="op">$</span><span class="va">y</span><span class="op">)</span></span>
+<span>      pos <span class="op">=</span> <span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">pred_data</span><span class="op">$</span><span class="va">x</span>, <span class="va">pred_data</span><span class="op">$</span><span class="va">y</span><span class="op">)</span></span>
 <span>    <span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
@@ -803,19 +805,19 @@ domain:</p>
 <tbody>
 <tr class="odd">
 <td align="left">Mean (minimum)</td>
-<td align="right">-23.10</td>
+<td align="right">-9.45</td>
 </tr>
 <tr class="even">
 <td align="left">Mean (maximum)</td>
-<td align="right">31.21</td>
+<td align="right">11.16</td>
 </tr>
 <tr class="odd">
 <td align="left">Std. dev. (minimum)</td>
-<td align="right">0.07</td>
+<td align="right">0.13</td>
 </tr>
 <tr class="even">
 <td align="left">Std. dev. (maximum)</td>
-<td align="right">70.00</td>
+<td align="right">19.56</td>
 </tr>
 </tbody>
 </table>
@@ -894,7 +896,7 @@ by predicting the field in year 2007, using only data from
 <span>  map <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    advection_field <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>      time_index <span class="op">=</span> <span class="va">forecast_data</span><span class="op">$</span><span class="va">time_index</span>,</span>
-<span>      pos <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/spam/man/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">forecast_data</span><span class="op">$</span><span class="va">x</span>, <span class="va">forecast_data</span><span class="op">$</span><span class="va">y</span><span class="op">)</span></span>
+<span>      pos <span class="op">=</span> <span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">forecast_data</span><span class="op">$</span><span class="va">x</span>, <span class="va">forecast_data</span><span class="op">$</span><span class="va">y</span><span class="op">)</span></span>
 <span>    <span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
@@ -911,15 +913,15 @@ by predicting the field in year 2007, using only data from
 <tbody>
 <tr class="odd">
 <td align="left">Mean (minimum)</td>
-<td align="right">-0.05</td>
+<td align="right">-0.29</td>
 </tr>
 <tr class="even">
 <td align="left">Mean (maximum)</td>
-<td align="right">0.17</td>
+<td align="right">0.51</td>
 </tr>
 <tr class="odd">
 <td align="left">Average uncertainty (SD)</td>
-<td align="right">0.20</td>
+<td align="right">0.47</td>
 </tr>
 </tbody>
 </table>

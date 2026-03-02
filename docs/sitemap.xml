@@ -60,6 +60,7 @@
 <url><loc>https://davidbolin.github.io/ngme2/reference/bv_matern_nig.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/bv_matern_normal.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/bv_normal.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/reference/calibrate_inv_exp_lambda_driven_nig.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/cienaga.border.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/cienaga.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/compare_noise_kld.html</loc></url>
@@ -133,6 +134,7 @@
 <url><loc>https://davidbolin.github.io/ngme2/reference/print.noise_kld_comparison.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/print.parameter_distance.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/prior_half_cauchy.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/reference/prior_inv_exponential.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/prior_none.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/prior_normal.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/prior_pc_sd.html</loc></url>

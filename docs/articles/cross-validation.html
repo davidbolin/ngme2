@@ -27,7 +27,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">ngme2</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -55,6 +55,8 @@
     <li><a class="dropdown-item" href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a></li>
     <li><a class="dropdown-item" href="../articles/generic.html">Using the Generic Model in ngme2</a></li>
     <li><a class="dropdown-item" href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a></li>
+    <li><a class="dropdown-item" href="../articles/sgld-sampling.html">SGLD posterior-like sampling</a></li>
+    <li><a class="dropdown-item" href="../articles/prior-templates.html">Prior templates (stationary/non-stationary)</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -384,7 +386,7 @@ the training (blue) and testing (orange) sets for each fold:</p>
 <span>    set_type <span class="op">=</span> <span class="st">"Testing"</span></span>
 <span>  <span class="op">)</span></span>
 <span></span>
-<span>  <span class="va">folds_viz</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/spam/man/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">folds_viz</span>, <span class="va">train_df</span>, <span class="va">test_df</span><span class="op">)</span></span>
+<span>  <span class="va">folds_viz</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">folds_viz</span>, <span class="va">train_df</span>, <span class="va">test_df</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
 <span><span class="co"># Create visualization</span></span>
@@ -431,7 +433,7 @@ real forecasting scenarios.</p>
 <span>    set_type <span class="op">=</span> <span class="st">"Testing"</span></span>
 <span>  <span class="op">)</span></span>
 <span></span>
-<span>  <span class="va">folds_viz_sliding</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/spam/man/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">folds_viz_sliding</span>, <span class="va">train_df</span>, <span class="va">test_df</span><span class="op">)</span></span>
+<span>  <span class="va">folds_viz_sliding</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">folds_viz_sliding</span>, <span class="va">train_df</span>, <span class="va">test_df</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
 <span><span class="co"># Plot sliding window</span></span>
@@ -537,17 +539,17 @@ window)</caption>
 <tbody>
 <tr class="odd">
 <td align="left">OU Process (ν=0.5)</td>
-<td align="right">2.5949</td>
-<td align="right">11.2821</td>
-<td align="right">1.8346</td>
-<td align="right">1.642</td>
+<td align="right">2.6000</td>
+<td align="right">11.3053</td>
+<td align="right">1.8369</td>
+<td align="right">1.6432</td>
 </tr>
 <tr class="even">
 <td align="left">Whittle-Matérn (ν=1.5)</td>
-<td align="right">5.4638</td>
-<td align="right">51.8733</td>
-<td align="right">3.8706</td>
-<td align="right">1.997</td>
+<td align="right">5.6068</td>
+<td align="right">55.7933</td>
+<td align="right">3.9731</td>
+<td align="right">2.0079</td>
 </tr>
 </tbody>
 </table>
@@ -641,7 +643,7 @@ then compare stationary and non stationary models.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Define a rectangular domain</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
-<span><span class="va">domain_boundary</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/spam/man/cbind.html" class="external-link">cbind</a></span><span class="op">(</span></span>
+<span><span class="va">domain_boundary</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/cbind.html" class="external-link">cbind</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">10</span>, <span class="fl">10</span>, <span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span>,</span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">5</span>, <span class="fl">5</span>, <span class="fl">0</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
@@ -703,7 +705,7 @@ each with its own set of coefficients.</p>
 <span><span class="co"># ------------------------------------------------------</span></span>
 <span><span class="co"># Basis functions for spatially varying kappa</span></span>
 <span><span class="co"># ------------------------------------------------------</span></span>
-<span><span class="va">B_kappa</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/spam/man/cbind.html" class="external-link">cbind</a></span><span class="op">(</span></span>
+<span><span class="va">B_kappa</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/cbind.html" class="external-link">cbind</a></span><span class="op">(</span></span>
 <span>  Intercept <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  Longitude <span class="op">=</span> <span class="va">mesh_coords</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span> <span class="op">/</span> <span class="fl">10</span>,</span>
 <span>  Long_squared <span class="op">=</span> <span class="op">(</span><span class="va">mesh_coords</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span> <span class="op">/</span> <span class="fl">10</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span></span>
@@ -719,7 +721,7 @@ each with its own set of coefficients.</p>
 <span><span class="co"># ------------------------------------------------------</span></span>
 <span><span class="co"># Basis functions for spatially varying sigma</span></span>
 <span><span class="co"># ------------------------------------------------------</span></span>
-<span><span class="va">B_sigma</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/spam/man/cbind.html" class="external-link">cbind</a></span><span class="op">(</span></span>
+<span><span class="va">B_sigma</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/cbind.html" class="external-link">cbind</a></span><span class="op">(</span></span>
 <span>  Intercept <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  Latitude <span class="op">=</span> <span class="va">mesh_coords</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span> <span class="op">/</span> <span class="fl">5</span>,</span>
 <span>  Lat_squared <span class="op">=</span> <span class="op">(</span><span class="va">mesh_coords</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span> <span class="op">/</span> <span class="fl">5</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span></span>
@@ -804,7 +806,7 @@ is summarised below.</p>
 <span></span>
 <span><span class="co"># Observation locations</span></span>
 <span><span class="va">n_obs</span> <span class="op">&lt;-</span> <span class="fl">600</span></span>
-<span><span class="va">loc_obs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/spam/man/cbind.html" class="external-link">cbind</a></span><span class="op">(</span></span>
+<span><span class="va">loc_obs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/cbind.html" class="external-link">cbind</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n_obs</span>, <span class="fl">0</span>, <span class="fl">10</span><span class="op">)</span>,</span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n_obs</span>, <span class="fl">0</span>, <span class="fl">5</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
@@ -1243,16 +1245,16 @@ test, 5 repetitions)</caption>
 <tr class="odd">
 <td align="left">Stationary SPDE</td>
 <td align="right">1.3966</td>
-<td align="right">3.9631</td>
-<td align="right">1.1184</td>
-<td align="right">1.7393</td>
+<td align="right">3.9633</td>
+<td align="right">1.1109</td>
+<td align="right">1.6913</td>
 </tr>
 <tr class="even">
 <td align="left">Non-stationary SPDE</td>
-<td align="right">1.3961</td>
-<td align="right">3.9623</td>
-<td align="right">1.1859</td>
-<td align="right">2.3799</td>
+<td align="right">1.3958</td>
+<td align="right">3.9618</td>
+<td align="right">1.2516</td>
+<td align="right">3.7036</td>
 </tr>
 </tbody>
 </table>

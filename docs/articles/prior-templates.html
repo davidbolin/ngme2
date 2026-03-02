@@ -27,7 +27,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">ngme2</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -55,7 +55,6 @@
     <li><a class="dropdown-item" href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a></li>
     <li><a class="dropdown-item" href="../articles/generic.html">Using the Generic Model in ngme2</a></li>
     <li><a class="dropdown-item" href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a></li>
-    <li><a class="dropdown-item" href="../articles/batch-means-ci.html">Batch-means CI for SGD</a></li>
     <li><a class="dropdown-item" href="../articles/sgld-sampling.html">SGLD posterior-like sampling</a></li>
     <li><a class="dropdown-item" href="../articles/prior-templates.html">Prior templates (stationary/non-stationary)</a></li>
   </ul>
@@ -105,7 +104,7 @@
 </ul>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://davidbolin.github.io/ngme2/">ngme2</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; This is ngme2 of version 0.9.1</span></span>
+<span><span class="co">#&gt; This is ngme2 of version 0.9.3</span></span>
 <span><span class="co">#&gt; - See our homepage: https://davidbolin.github.io/ngme2 for more details.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Attaching package: 'ngme2'</span></span>
@@ -164,6 +163,33 @@
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; attr(,"class")</span></span>
 <span><span class="co">#&gt; [1] "ngme_prior_spec"</span></span>
+<span><span class="fu"><a href="../reference/prior_inv_exponential.html">prior_inv_exponential</a></span><span class="op">(</span>lambda <span class="op">=</span> <span class="fl">1</span>, lower <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span>
+<span><span class="co">#&gt; $dist</span></span>
+<span><span class="co">#&gt; [1] "inv.exponential"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $hyper</span></span>
+<span><span class="co">#&gt; lambda  lower </span></span>
+<span><span class="co">#&gt;      1      0 </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $target</span></span>
+<span><span class="co">#&gt; [1] "coef"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; attr(,"class")</span></span>
+<span><span class="co">#&gt; [1] "ngme_prior_spec"</span></span>
+<span><span class="co"># short alias:</span></span>
+<span><span class="fu"><a href="../reference/prior_inv_exponential.html">prior_inv_exp</a></span><span class="op">(</span>lambda <span class="op">=</span> <span class="fl">1</span>, lower <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span>
+<span><span class="co">#&gt; $dist</span></span>
+<span><span class="co">#&gt; [1] "inv.exponential"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $hyper</span></span>
+<span><span class="co">#&gt; lambda  lower </span></span>
+<span><span class="co">#&gt;      1      0 </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $target</span></span>
+<span><span class="co">#&gt; [1] "coef"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; attr(,"class")</span></span>
+<span><span class="co">#&gt; [1] "ngme_prior_spec"</span></span>
 <span><span class="fu"><a href="../reference/prior_none.html">prior_none</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt; $dist</span></span>
 <span><span class="co">#&gt; [1] "none"</span></span>
@@ -179,8 +205,8 @@
 <span></span>
 <span><span class="fu"><a href="../reference/priors.html">priors</a></span><span class="op">(</span></span>
 <span>  mu <span class="op">=</span> <span class="fu"><a href="../reference/prior_normal.html">prior_normal</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span>,</span>
-<span>  sigma <span class="op">=</span> <span class="fu"><a href="../reference/prior_normal.html">prior_normal</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span>,</span>
-<span>  nu <span class="op">=</span> <span class="fu"><a href="../reference/prior_normal.html">prior_normal</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span></span>
+<span>  sigma <span class="op">=</span> <span class="fu"><a href="../reference/prior_half_cauchy.html">prior_half_cauchy</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,</span>
+<span>  nu <span class="op">=</span> <span class="fu"><a href="../reference/prior_inv_exponential.html">prior_inv_exponential</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; $mu</span></span>
 <span><span class="co">#&gt; $dist</span></span>
@@ -198,11 +224,11 @@
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
 <span><span class="co">#&gt; $dist</span></span>
-<span><span class="co">#&gt; [1] "normal"</span></span>
+<span><span class="co">#&gt; [1] "half.cauchy"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $hyper</span></span>
-<span><span class="co">#&gt; mean   sd </span></span>
-<span><span class="co">#&gt;    0    1 </span></span>
+<span><span class="co">#&gt; scale </span></span>
+<span><span class="co">#&gt;     1 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $target</span></span>
 <span><span class="co">#&gt; [1] "coef"</span></span>
@@ -212,11 +238,11 @@
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nu</span></span>
 <span><span class="co">#&gt; $dist</span></span>
-<span><span class="co">#&gt; [1] "normal"</span></span>
+<span><span class="co">#&gt; [1] "inv.exponential"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $hyper</span></span>
-<span><span class="co">#&gt; mean   sd </span></span>
-<span><span class="co">#&gt;    0    1 </span></span>
+<span><span class="co">#&gt; lambda  lower </span></span>
+<span><span class="co">#&gt;      1      0 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $target</span></span>
 <span><span class="co">#&gt; [1] "coef"</span></span>
@@ -320,6 +346,17 @@ lower-bound + <code>exp</code>)</li>
 <div class="section level2">
 <h2 id="example-2-stationary-nig-noise-priors">Example 2: Stationary NIG noise priors<a class="anchor" aria-label="anchor" href="#example-2-stationary-nig-noise-priors"></a>
 </h2>
+<p>For positive parameters, avoid symmetric <code>N(0, 1)</code>
+defaults directly on natural scale.</p>
+<ul>
+<li>
+<code>sigma</code>: <code>prior_half_cauchy(...)</code> is a common
+weakly-informative option.</li>
+<li>
+<code>nu</code>: <code>prior_inv_exponential(...)</code> corresponds
+to <code>kappa = 1 / nu ~ Exp(lambda)</code>, which can encode
+preference toward larger <code>nu</code> (Gaussian-like behavior).</li>
+</ul>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">noise_stationary</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span></span>
 <span>  mu <span class="op">=</span> <span class="fl">0</span>,</span>
@@ -327,8 +364,8 @@ lower-bound + <code>exp</code>)</li>
 <span>  nu <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  prior <span class="op">=</span> <span class="fu"><a href="../reference/priors.html">priors</a></span><span class="op">(</span></span>
 <span>    mu <span class="op">=</span> <span class="fu"><a href="../reference/prior_normal.html">prior_normal</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span>,</span>
-<span>    sigma <span class="op">=</span> <span class="fu"><a href="../reference/prior_normal.html">prior_normal</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span>,</span>
-<span>    nu <span class="op">=</span> <span class="fu"><a href="../reference/prior_normal.html">prior_normal</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span></span>
+<span>    sigma <span class="op">=</span> <span class="fu"><a href="../reference/prior_half_cauchy.html">prior_half_cauchy</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,</span>
+<span>    nu <span class="op">=</span> <span class="fu"><a href="../reference/prior_inv_exponential.html">prior_inv_exponential</a></span><span class="op">(</span>lambda <span class="op">=</span> <span class="fl">1.5</span>, lower <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -343,19 +380,19 @@ lower-bound + <code>exp</code>)</li>
 <span><span class="co">#&gt; [1] "coef"</span></span>
 <span><span class="va">noise_stationary</span><span class="op">$</span><span class="va">prior_sigma</span></span>
 <span><span class="co">#&gt; $type</span></span>
-<span><span class="co">#&gt; [1] "normal"</span></span>
+<span><span class="co">#&gt; [1] "half.cauchy"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $param</span></span>
-<span><span class="co">#&gt; [1] 0 1</span></span>
+<span><span class="co">#&gt; [1] 1</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $target</span></span>
 <span><span class="co">#&gt; [1] "coef"</span></span>
 <span><span class="va">noise_stationary</span><span class="op">$</span><span class="va">prior_nu</span></span>
 <span><span class="co">#&gt; $type</span></span>
-<span><span class="co">#&gt; [1] "normal"</span></span>
+<span><span class="co">#&gt; [1] "inv.exponential"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $param</span></span>
-<span><span class="co">#&gt; [1] 0 1</span></span>
+<span><span class="co">#&gt; [1] 1.5 0.0</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $target</span></span>
 <span><span class="co">#&gt; [1] "coef"</span></span></code></pre></div>
@@ -388,8 +425,8 @@ regularization over space/time.</p>
 <code class="sourceCode R"><span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">80</span></span>
 <span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, length.out <span class="op">=</span> <span class="va">n</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">B_mu</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">x</span><span class="op">)</span></span>
-<span><span class="va">B_sigma</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">x</span>, <span class="va">x</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span></span>
+<span><span class="va">B_mu</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">x</span><span class="op">)</span></span>
+<span><span class="va">B_sigma</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">x</span>, <span class="va">x</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span></span>
 <span><span class="va">B_nu</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">n</span>, <span class="fl">1</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">noise_ns</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_nig</a></span><span class="op">(</span></span>
@@ -437,8 +474,8 @@ regularization over space/time.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">prior_noise_ns_template</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/priors.html">priors</a></span><span class="op">(</span></span>
 <span>  mu <span class="op">=</span> <span class="fu"><a href="../reference/prior_normal.html">prior_normal</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1.0</span>, target <span class="op">=</span> <span class="st">"field"</span><span class="op">)</span>,</span>
-<span>  sigma <span class="op">=</span> <span class="fu"><a href="../reference/prior_normal.html">prior_normal</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.7</span>, target <span class="op">=</span> <span class="st">"field"</span><span class="op">)</span>,</span>
-<span>  nu <span class="op">=</span> <span class="fu"><a href="../reference/prior_normal.html">prior_normal</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.7</span>, target <span class="op">=</span> <span class="st">"coef"</span><span class="op">)</span></span>
+<span>  sigma <span class="op">=</span> <span class="fu"><a href="../reference/prior_half_cauchy.html">prior_half_cauchy</a></span><span class="op">(</span><span class="fl">1.0</span>, target <span class="op">=</span> <span class="st">"coef"</span><span class="op">)</span>,</span>
+<span>  nu <span class="op">=</span> <span class="fu"><a href="../reference/prior_inv_exponential.html">prior_inv_exponential</a></span><span class="op">(</span>lambda <span class="op">=</span> <span class="fl">1.5</span>, lower <span class="op">=</span> <span class="fl">0</span>, target <span class="op">=</span> <span class="st">"coef"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">prior_noise_ns_template</span></span>
@@ -458,25 +495,25 @@ regularization over space/time.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma</span></span>
 <span><span class="co">#&gt; $dist</span></span>
-<span><span class="co">#&gt; [1] "normal"</span></span>
+<span><span class="co">#&gt; [1] "half.cauchy"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $hyper</span></span>
-<span><span class="co">#&gt; mean   sd </span></span>
-<span><span class="co">#&gt;  0.0  0.7 </span></span>
+<span><span class="co">#&gt; scale </span></span>
+<span><span class="co">#&gt;     1 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $target</span></span>
-<span><span class="co">#&gt; [1] "field"</span></span>
+<span><span class="co">#&gt; [1] "coef"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; attr(,"class")</span></span>
 <span><span class="co">#&gt; [1] "ngme_prior_spec"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nu</span></span>
 <span><span class="co">#&gt; $dist</span></span>
-<span><span class="co">#&gt; [1] "normal"</span></span>
+<span><span class="co">#&gt; [1] "inv.exponential"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $hyper</span></span>
-<span><span class="co">#&gt; mean   sd </span></span>
-<span><span class="co">#&gt;  0.0  0.7 </span></span>
+<span><span class="co">#&gt; lambda  lower </span></span>
+<span><span class="co">#&gt;    1.5    0.0 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $target</span></span>
 <span><span class="co">#&gt; [1] "coef"</span></span>
@@ -488,16 +525,58 @@ regularization over space/time.</p>
 <span><span class="co">#&gt; [1] "ngme_priors"</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="example-5-non-stationary-matern-kappa">Example 5: Non-stationary Matern <code>kappa</code><a class="anchor" aria-label="anchor" href="#example-5-non-stationary-matern-kappa"></a>
+<h2 id="example-5b-calibrate-prior_inv_exp-from-a-tail-target">Example 5b: Calibrate <code>prior_inv_exp()</code> from a tail
+target<a class="anchor" aria-label="anchor" href="#example-5b-calibrate-prior_inv_exp-from-a-tail-target"></a>
+</h2>
+<p>If you want <code>kappa = 1 / nu ~ Exp(lambda)</code> to satisfy
+<code>Pr(R_c(nu) &gt; r_target) = alpha</code>, use the calibration
+helper:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">cal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calibrate_inv_exp_lambda_driven_nig.html">calibrate_inv_exp_lambda_driven_nig</a></span><span class="op">(</span></span>
+<span>  r_target <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  alpha <span class="op">=</span> <span class="fl">0.1</span>,</span>
+<span>  c <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>  mu <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  sigma <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  h <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  n_samples <span class="op">=</span> <span class="fl">20000</span>,</span>
+<span>  seed <span class="op">=</span> <span class="fl">1</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">cal</span><span class="op">$</span><span class="va">lambda</span></span>
+<span><span class="co">#&gt; [1] 11.70754</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/priors.html">priors</a></span><span class="op">(</span></span>
+<span>  nu <span class="op">=</span> <span class="fu"><a href="../reference/prior_inv_exponential.html">prior_inv_exp</a></span><span class="op">(</span>lambda <span class="op">=</span> <span class="va">cal</span><span class="op">$</span><span class="va">lambda</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; $nu</span></span>
+<span><span class="co">#&gt; $dist</span></span>
+<span><span class="co">#&gt; [1] "inv.exponential"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $hyper</span></span>
+<span><span class="co">#&gt;   lambda    lower </span></span>
+<span><span class="co">#&gt; 11.70754  0.00000 </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $target</span></span>
+<span><span class="co">#&gt; [1] "coef"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; attr(,"class")</span></span>
+<span><span class="co">#&gt; [1] "ngme_prior_spec"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; attr(,"class")</span></span>
+<span><span class="co">#&gt; [1] "ngme_priors"</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="example-6-non-stationary-matern-kappa">Example 6: Non-stationary Matern <code>kappa</code><a class="anchor" aria-label="anchor" href="#example-6-non-stationary-matern-kappa"></a>
 </h2>
 <p>For non-stationary Matern, names are typically
 <code>theta_kappa1</code>, <code>theta_kappa2</code>, …</p>
 <p>Use <code>theta = ...</code> as fallback, then override selected
 coefficients.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mesh_1d</span> <span class="op">&lt;-</span> <span class="fu">fmesher</span><span class="fu">::</span><span class="fu"><a href="https://inlabru-org.github.io/fmesher/reference/fm_mesh_1d.html" class="external-link">fm_mesh_1d</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, length.out <span class="op">=</span> <span class="fl">100</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, length.out <span class="op">=</span> <span class="va">mesh_1d</span><span class="op">$</span><span class="va">n</span><span class="op">)</span></span>
-<span><span class="va">B_kappa</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">x</span>, <span class="va">x</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span></span>
+<span><span class="va">B_kappa</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">x</span>, <span class="va">x</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">model_matern_ns</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span></span>
 <span>  map <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, length.out <span class="op">=</span> <span class="va">mesh_1d</span><span class="op">$</span><span class="va">n</span><span class="op">)</span>,</span>
@@ -519,11 +598,11 @@ coefficients.</p>
 <span><span class="va">model_matern_ns</span><span class="op">$</span><span class="va">prior_theta_K</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="example-6-end-to-end-fitting-script">Example 6: End-to-end fitting script<a class="anchor" aria-label="anchor" href="#example-6-end-to-end-fitting-script"></a>
+<h2 id="example-7-end-to-end-fitting-script">Example 7: End-to-end fitting script<a class="anchor" aria-label="anchor" href="#example-7-end-to-end-fitting-script"></a>
 </h2>
 <p>This chunk is copy-paste ready for user analysis. It is set to
 <code>eval=FALSE</code> only to keep package vignette build fast.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">2026</span><span class="op">)</span></span>
 <span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">300</span></span>
 <span><span class="va">idx</span> <span class="op">&lt;-</span> <span class="fl">1</span><span class="op">:</span><span class="va">n</span></span>
@@ -563,7 +642,7 @@ coefficients.</p>
 <div class="section level3">
 <h3 id="a--stationary-ar1-normal-noise">A. Stationary AR(1) + normal noise<a class="anchor" aria-label="anchor" href="#a--stationary-ar1-normal-noise"></a>
 </h3>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">template_stationary_ar1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  latent_prior <span class="op">=</span> <span class="fu"><a href="../reference/priors.html">priors</a></span><span class="op">(</span></span>
 <span>    rho <span class="op">=</span> <span class="fu"><a href="../reference/prior_normal.html">prior_normal</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.6</span><span class="op">)</span></span>
@@ -613,7 +692,7 @@ coefficients.</p>
 <div class="section level3">
 <h3 id="b--stationary-matern">B. Stationary Matern<a class="anchor" aria-label="anchor" href="#b--stationary-matern"></a>
 </h3>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">template_stationary_matern</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  fixed_alpha <span class="op">=</span> <span class="fu"><a href="../reference/priors.html">priors</a></span><span class="op">(</span></span>
 <span>    kappa <span class="op">=</span> <span class="fu"><a href="../reference/prior_normal.html">prior_normal</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>, <span class="fl">0.5</span><span class="op">)</span></span>
@@ -678,7 +757,7 @@ coefficients.</p>
 <div class="section level3">
 <h3 id="c--non-stationary-noise">C. Non-stationary noise<a class="anchor" aria-label="anchor" href="#c--non-stationary-noise"></a>
 </h3>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">template_nonstationary_noise</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/priors.html">priors</a></span><span class="op">(</span></span>
 <span>  mu <span class="op">=</span> <span class="fu"><a href="../reference/prior_normal.html">prior_normal</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1.0</span>, target <span class="op">=</span> <span class="st">"field"</span><span class="op">)</span>,</span>
 <span>  sigma <span class="op">=</span> <span class="fu"><a href="../reference/prior_normal.html">prior_normal</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.7</span>, target <span class="op">=</span> <span class="st">"field"</span><span class="op">)</span>,</span>
@@ -734,7 +813,7 @@ coefficients.</p>
 <div class="section level3">
 <h3 id="d--non-stationary-matern-kappa">D. Non-stationary Matern <code>kappa</code><a class="anchor" aria-label="anchor" href="#d--non-stationary-matern-kappa"></a>
 </h3>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">template_nonstationary_kappa</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/priors.html">priors</a></span><span class="op">(</span></span>
 <span>  theta <span class="op">=</span> <span class="fu"><a href="../reference/prior_normal.html">prior_normal</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.5</span><span class="op">)</span>,</span>
 <span>  theta_kappa1 <span class="op">=</span> <span class="fu"><a href="../reference/prior_normal.html">prior_normal</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>, <span class="fl">0.5</span><span class="op">)</span></span>
@@ -780,7 +859,7 @@ coefficients.</p>
 <h3 id="error-unknown-operator-prior-names">Error: “Unknown operator prior names”<a class="anchor" aria-label="anchor" href="#error-unknown-operator-prior-names"></a>
 </h3>
 <p>Check valid names first:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tmp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/f.html">f</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">20</span>, model <span class="op">=</span> <span class="fu"><a href="../reference/ar1.html">ar1</a></span><span class="op">(</span><span class="op">)</span>, noise <span class="op">=</span> <span class="fu"><a href="../reference/ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">tmp</span><span class="op">$</span><span class="va">operator</span><span class="op">$</span><span class="va">param_name</span></span>
 <span><span class="co">#&gt; [1] "rho"</span></span></code></pre></div>

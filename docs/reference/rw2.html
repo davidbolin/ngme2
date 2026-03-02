@@ -13,7 +13,7 @@ distributed Gaussian variables."><meta property="og:image" content="https://davi
 
     <a class="navbar-brand me-2" href="../index.html">ngme2</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,7 +39,6 @@ distributed Gaussian variables."><meta property="og:image" content="https://davi
     <li><a class="dropdown-item" href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a></li>
     <li><a class="dropdown-item" href="../articles/generic.html">Using the Generic Model in ngme2</a></li>
     <li><a class="dropdown-item" href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a></li>
-    <li><a class="dropdown-item" href="../articles/batch-means-ci.html">Batch-means CI for SGD</a></li>
     <li><a class="dropdown-item" href="../articles/sgld-sampling.html">SGLD posterior-like sampling</a></li>
     <li><a class="dropdown-item" href="../articles/prior-templates.html">Prior templates (stationary/non-stationary)</a></li>
   </ul></li>
@@ -117,7 +116,7 @@ the constraint and circular structure properly.</p>
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Non-cyclic RW2 with constraints (default)</span></span></span>
 <span class="r-in"><span><span class="va">rw2_default</span> <span class="op">&lt;-</span> <span class="fu">rw2</span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/pkg/spam/man/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">rw2_default</span><span class="op">$</span><span class="va">K</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">rw2_default</span><span class="op">$</span><span class="va">K</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 6 x 6 sparse Matrix of class "dgCMatrix"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                         </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1,] 0.5  1  1  1  1 0.5</span>
@@ -129,7 +128,7 @@ the constraint and circular structure properly.</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Cyclic RW2 (connects first and last locations)</span></span></span>
 <span class="r-in"><span><span class="va">rw2_cyclic</span> <span class="op">&lt;-</span> <span class="fu">rw2</span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">6</span>, cyclic <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/pkg/spam/man/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">rw2_cyclic</span><span class="op">$</span><span class="va">K</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">rw2_cyclic</span><span class="op">$</span><span class="va">K</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 7 x 7 sparse Matrix of class "dgCMatrix"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1,] .  0.5  1  1  1  1  0.5</span>
@@ -143,7 +142,7 @@ the constraint and circular structure properly.</p>
 <span class="r-in"><span><span class="co"># Using with unequally spaced locations</span></span></span>
 <span class="r-in"><span><span class="va">locations</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">3</span>, <span class="fl">6</span>, <span class="fl">10</span>, <span class="fl">15</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">rw2_unequal</span> <span class="op">&lt;-</span> <span class="fu">rw2</span><span class="op">(</span><span class="va">locations</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/pkg/spam/man/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">rw2_unequal</span><span class="op">$</span><span class="va">K</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">rw2_unequal</span><span class="op">$</span><span class="va">K</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 6 x 6 sparse Matrix of class "dgCMatrix"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                                  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1,] 0.5  1.5  2.5  3.5  4.5  2.5</span>

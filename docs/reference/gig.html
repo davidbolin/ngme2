@@ -11,7 +11,7 @@ random generation for the generalised inverse-Gaussian distribution
 
     <a class="navbar-brand me-2" href="../index.html">ngme2</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -37,7 +37,6 @@ random generation for the generalised inverse-Gaussian distribution
     <li><a class="dropdown-item" href="../articles/matern-on-graph.html">Matern SPDE model on Metric Graph</a></li>
     <li><a class="dropdown-item" href="../articles/generic.html">Using the Generic Model in ngme2</a></li>
     <li><a class="dropdown-item" href="../articles/normal-nig-noise.html">Models with Combined Gaussian and NIG Noise</a></li>
-    <li><a class="dropdown-item" href="../articles/batch-means-ci.html">Batch-means CI for SGD</a></li>
     <li><a class="dropdown-item" href="../articles/sgld-sampling.html">SGLD posterior-like sampling</a></li>
     <li><a class="dropdown-item" href="../articles/prior-templates.html">Prior templates (stationary/non-stationary)</a></li>
   </ul></li>
@@ -143,9 +142,9 @@ New York–Berlin: Springer-Verlag. <a href="https://doi.org/10.1007/978-1-4612-
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">rgig</span><span class="op">(</span><span class="fl">20</span>, p <span class="op">=</span> <span class="fl">1</span>, a <span class="op">=</span> <span class="fl">1</span>, b <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [1] 0.4496802 2.3308175 1.7915492 1.1865296 0.8388874 1.3571720 9.1217276</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [8] 2.8925653 1.8672689 2.4159710 3.7301160 4.4847956 1.6242797 2.3345901</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [15] 1.4637679 0.3917779 2.7102990 1.3371901 5.4158283 2.7460736</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [1] 0.3590514 0.5308754 8.6023836 0.6866921 1.8426298 0.3550824 4.5832879</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [8] 2.0689968 1.7926593 2.0826139 1.4574639 2.2048746 6.0908737 5.4966062</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [15] 3.6379702 0.5835810 3.4501723 0.9950979 4.1956488 0.7322039</span>
 <span class="r-in"><span><span class="fu">pgig</span><span class="op">(</span><span class="fl">0.4</span>, p <span class="op">=</span> <span class="fl">1</span>, a <span class="op">=</span> <span class="fl">1</span>, b <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.02956016</span>
 <span class="r-in"><span><span class="fu">qgig</span><span class="op">(</span><span class="fl">0.8</span>, p <span class="op">=</span> <span class="fl">1</span>, a <span class="op">=</span> <span class="fl">1</span>, b <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>

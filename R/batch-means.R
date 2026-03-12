@@ -525,6 +525,9 @@ compute_ngme_CI <- compute_ngme_ci
 #'   warmup (`stepsize_schedule_burnin_iter`) and as explicit trajectory
 #'   trimming before sampling.
 #' @param thinning positive integer thinning interval.
+#' @param n_gibbs_samples optional positive integer. If supplied, override
+#'   `control_ngme$n_gibbs_samples` for the SGLD refit stage only; otherwise
+#'   inherit the value from `fit`.
 #' @param apply_transform logical; apply parameter transforms to user scale.
 #' @param combine_chains logical; if `TRUE`, return one combined data.frame,
 #'   otherwise return one data.frame per chain.
@@ -552,11 +555,21 @@ compute_ngme_sgld_samples <- function(
     name = "all",
     burnin_iter = 0,
     thinning = 1,
+    n_gibbs_samples = NULL,
     apply_transform = TRUE,
     combine_chains = TRUE,
     control_opt = NULL,
     ...) {
   stopifnot(inherits(fit, "ngme"))
+  stopifnot(
+    is.null(n_gibbs_samples) || (
+      is.numeric(n_gibbs_samples) &&
+        length(n_gibbs_samples) == 1 &&
+        is.finite(n_gibbs_samples) &&
+        n_gibbs_samples > 0 &&
+        abs(n_gibbs_samples - round(n_gibbs_samples)) < sqrt(.Machine$double.eps)
+    )
+  )
 
   fit_meta <- attr(fit, "fit")
   stopifnot(
@@ -635,6 +648,9 @@ compute_ngme_sgld_samples <- function(
   control_ngme_refit <- fit$replicates[[1]]$control_ngme
   if (is.null(control_ngme_refit)) {
     control_ngme_refit <- control_ngme()
+  }
+  if (!is.null(n_gibbs_samples)) {
+    control_ngme_refit$n_gibbs_samples <- as.integer(round(n_gibbs_samples))
   }
 
   refit <- do.call(

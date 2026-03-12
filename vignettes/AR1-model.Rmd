@@ -688,6 +688,119 @@ with(params_ar1, {
 })
 ```
 
+## SGLD Posterior Credible Intervals
+
+Point estimates from the Adam optimiser summarise the mode of the
+parameter distribution, but do not quantify uncertainty. Stochastic
+Gradient Langevin Dynamics (SGLD) extends SGD by injecting Gaussian
+noise at each step:
+
+$$\theta_{t+1} = \theta_t - \eta_t\,\nabla U(\theta_t) + \sqrt{2T\eta_t}\,\xi_t, \quad \xi_t \sim \mathcal{N}(0, I),$$
+
+so that, with a suitably decaying step-size $\eta_t$ and temperature
+$T = 1$, the iterates explore the posterior distribution.  We
+warm-start the SGLD run from the already fitted model `ngme_out`,
+which means only a modest number of additional iterations is needed.
+
+### Running SGLD from the Existing Fit
+
+`compute_ngme_sgld_samples()` refits the model with SGLD (initialised
+from `ngme_out`), stores the full parameter trajectory, discards an
+initial burn-in segment, applies thinning, and returns a tidy
+data frame of posterior-like samples:
+
+```{r sgld-fit, eval=FALSE}
+samp <- compute_ngme_sgld_samples(
+  fit = ngme_out,
+  iterations = 3000,
+  optimizer = sgld(stepsize = 0.01, temperature = 1),
+  burnin = 100,
+  n_batch = 20,
+  # verbose = TRUE,
+  n_parallel_chain = 2,
+  alpha = 0.6, # poly_decay exponent
+  t0 = 10, # poly_decay offset
+  burnin_iter = 500, # discard first 500 stored iterates
+  thinning = 10, # keep every 10th iterate
+  name = "all", # all latent + noise + fixed-effect parameters
+  apply_transform = TRUE # return parameters on the user scale
+)
+
+head(samp)
+```
+
+The returned data frame has columns `.chain`, `.draw`, `.iter`, and
+one column per parameter on the interpretable (transformed) scale.
+
+### Computing 95% Credible Intervals
+
+`ngme_sgld_ci()` computes parameter-wise quantile credible intervals
+directly from the sample data frame:
+
+```{r sgld-ci, eval=FALSE}
+ci <- ngme_sgld_ci(
+  samples = samp,
+  lower   = 0.025,
+  upper   = 0.975
+)
+
+# Point estimates (posterior mean)
+ci$estimates
+
+# 95% credible intervals
+ci$ci
+```
+
+### Posterior Distribution Plots
+
+To inspect the full marginal posterior shape rather than only the
+interval endpoints, use `posterior_plot()` (or equivalently
+`plot(ci)`) on the SGLD output. The example below plots the first few
+parameters, colors densities by chain, and overlays the posterior mean
+and equal-tail credible interval:
+
+```{r sgld-posterior-plot, eval=FALSE, fig.height=6, fig.width=8}
+plot(
+  ci,
+  parameters = head(names(ci$estimates), 4),
+  by_chain = FALSE,
+  ncol = 2
+)
+```
+
+This plot is useful for diagnosing skewness, heavy tails, multi-modality,
+and possible discrepancies between chains that are not obvious from a
+summary table alone.
+
+### Posterior Summary Table
+
+For a concise overview of the posterior distribution for each
+parameter, we can compute the mean and 95% CI in a single data frame:
+
+```{r sgld-summary, eval=FALSE}
+param_cols <- setdiff(colnames(samp), c(".chain", ".draw", ".iter"))
+
+summary_df <- do.call(rbind, lapply(param_cols, function(p) {
+  x <- samp[[p]]
+  data.frame(
+    parameter = p,
+    mean = mean(x),
+    lower = as.numeric(stats::quantile(x, 0.025)),
+    upper = as.numeric(stats::quantile(x, 0.975)),
+    row.names = NULL
+  )
+}))
+
+print(summary_df, row.names = FALSE)
+```
+
+The table lists, for every estimated parameter, the posterior mean
+alongside the lower and upper 2.5% quantiles that form the 95%
+credible interval.  Parameters whose intervals exclude zero (or,
+for scale parameters such as $\sigma$, exclude one) are those for
+which the data provide strong evidence.
+
+
 ## Prediction
 
 Once we have fitted an AR(1) model using `ngme2`, we can use it to make predictions for new observations. The `predict()` method provides flexible prediction capabilities, allowing us to forecast future values, interpolate missing observations, or predict at new covariate combinations.
@@ -1356,4 +1469,3 @@ barplot(c(coverage_50, coverage_95),
 )
 abline(h = c(0.5, 0.95), lty = 2, col = "red")
 ```
-

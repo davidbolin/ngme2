@@ -13,6 +13,7 @@ control_opt(
   n_batch = 10,
   iters_per_check = iterations/n_batch,
   optimizer = adam(),
+  start = NULL,
   start_sd = 0.5,
   n_parallel_chain = 4,
   max_num_threads = n_parallel_chain,
@@ -63,6 +64,9 @@ their original scale.}
 \item{optimizer}{choose different sgd optimization method,
 currently support "sgd", "sgld", "precond_sgd", "momentum", "adagrad", "rmsprop", "adam", "adamW"
 see ?sgd, ?precond_sgd, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW}
+
+\item{start}{deprecated guard argument. Do not pass model starts through
+\code{control_opt()}; use \code{ngme(..., start = previous_fit)} instead.}
 
 \item{start_sd}{standard deviation of the initial parameter (1st chain fixed, other chains random), set 0 to be fixed for all chains}
 

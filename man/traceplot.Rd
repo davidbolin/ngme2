@@ -4,7 +4,14 @@
 \alias{traceplot}
 \title{Trace plot of ngme fitting}
 \usage{
-traceplot(ngme, name = "all", moving_window = 1, hline = NULL, combine = TRUE)
+traceplot(
+  ngme,
+  name = "all",
+  moving_window = 1,
+  hline = NULL,
+  combine = TRUE,
+  ncol = NULL
+)
 }
 \arguments{
 \item{ngme}{ngme object}
@@ -19,6 +26,9 @@ should be in names(ngme$models) or other}
 
 \item{combine}{bool, if TRUE, return a single faceted ggplot; otherwise return
 a list of ggplot objects and print them one by one.}
+
+\item{ncol}{number of facet columns when \code{combine = TRUE}. If \code{NULL}
+(default), use 2 columns for multi-parameter plots and 1 for single-parameter plots.}
 }
 \value{
 A ggplot object when \code{combine = TRUE}; otherwise a list of ggplot

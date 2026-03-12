@@ -1,3 +1,9 @@
+# ngme2 0.9.4 (2026-03-12)
+* Add posterior distribution plotting for SGLD samples via
+  `posterior_plot()`.
+* Add `plot()` support for `ngme_sgld_ci` objects, reusing stored SGLD
+  samples to visualize marginal posterior distributions.
+
 # ngme2 0.9.3 (2026-02-26)
 * Refine fixed-effect standardization: SVD now applies only to non-intercept
   columns; intercept columns remain on their original parameterization.

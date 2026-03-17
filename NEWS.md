@@ -1,3 +1,23 @@
+# ngme2 0.9.5 (2026-03-17)
+
+## New feature: VAR(1) bivariate latent model
+
+* Add `var1()` — a Vector Autoregressive order-1 latent field for bivariate
+  time series modelling.
+* Stationarity is **guaranteed by construction** via the Cayley reparameterization:
+  four unconstrained parameters $(p_1, p_2, p_3, p_4)$ are mapped to a $2\times2$
+  VAR coefficient matrix $A$ with spectral radius $\rho(A) < 1$ at every iteration.
+* The C++ backend implements the Cayley transform natively (class `RCallback` in
+  `src/latents/rcallback.cpp`).
+* Supports all `ngme2` noise distributions (NIG, GAL, normal) as a single
+  shared innovation noise.
+* `print()` method displays the recovered $A$ matrix, its spectral radius, and
+  the raw $(p_1, p_2, p_3, p_4)$ values.
+* Add vignette *"VAR(1) Bivariate Model in ngme2"* (`vignettes/var1-model.Rmd`)
+  covering: model specification, Cayley reparameterization, simulation study
+  with parameter recovery, convergence trace plots, and NIG vs Gaussian
+  model comparison.
+
 # ngme2 0.9.4 (2026-03-12)
 * Add posterior distribution plotting for SGLD samples via
   `posterior_plot()`.

@@ -8,6 +8,7 @@
 #include "MatrixAlgebra.h"
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
+#include <Eigen/SparseLU>
 #include <cholmod.h>
 #include <iostream>
 #include <stdexcept>
@@ -25,6 +26,9 @@ class sparse_llt_solver {
 private:
   Eigen::SimplicialLLT<Eigen::SparseMatrix<double, 0, int>> R_eigen;
   Eigen::SimplicialLDLT<Eigen::SparseMatrix<double, 0, int>> R_ldlt;
+  Eigen::SparseLU<Eigen::SparseMatrix<double, 0, int>,
+                  Eigen::COLAMDOrdering<int>>
+      R_lu;
   Eigen::CholmodDecomposition<Eigen::SparseMatrix<double, 0, int>>
       R_cholmod_ldlt;
   Eigen::CholmodSupernodalLLT<Eigen::SparseMatrix<double, 0, int>> R_supernodal;
@@ -97,6 +101,13 @@ public:
         R_cholmod_ldlt.analyzePattern(M);
       } else {
         R_cholmod_ldlt.analyzePattern(M.transpose() * M);
+      }
+      break;
+    case 8:
+      if (isSymmetric) {
+        R_eigen.analyzePattern(M);
+      } else {
+        R_lu.analyzePattern(M);
       }
       break;
 #ifdef __APPLE__
@@ -177,6 +188,14 @@ public:
         R_cholmod_ldlt.factorize(M.transpose() * M);
       }
       break;
+    case 8:
+      if (isSymmetric) {
+        R_eigen.factorize(M);
+      } else {
+        K_last = M;
+        R_lu.factorize(M);
+      }
+      break;
 #ifdef __APPLE__
     case 4:
       if (isSymmetric) {
@@ -234,6 +253,8 @@ public:
       return R_supernodal.info();
     case 3:
       return R_cholmod_ldlt.info();
+    case 8:
+      return isSymmetric ? R_eigen.info() : R_lu.info();
 #ifdef __APPLE__
     case 4:
       return R_accelerate.info();
@@ -265,7 +286,7 @@ public:
   }
 
   inline Eigen::VectorXd solve(Eigen::VectorXd &v) {
-    if (!isSymmetric && K_last.rows() > 0) {
+    if (!isSymmetric && K_last.rows() > 0 && solver_type != 8) {
       Eigen::VectorXd rhs = K_last.transpose() * v; // solve (K^T K) y = K^T v
       return solve_raw(rhs);
     }
@@ -282,6 +303,8 @@ public:
       return R_supernodal.solve(rhs);
     case 3:
       return R_cholmod_ldlt.solve(rhs);
+    case 8:
+      return isSymmetric ? R_eigen.solve(rhs) : R_lu.solve(rhs);
 #ifdef __APPLE__
     case 4:
       return R_accelerate.solve(rhs);
@@ -301,7 +324,7 @@ public:
   }
 
   inline Eigen::MatrixXd solve(Eigen::MatrixXd &v) {
-    if (!isSymmetric && K_last.rows() > 0) {
+    if (!isSymmetric && K_last.rows() > 0 && solver_type != 8) {
       Eigen::MatrixXd rhs = K_last.transpose() * v;
       return solve_raw(rhs);
     }
@@ -318,6 +341,8 @@ public:
       return R_supernodal.solve(rhs);
     case 3:
       return R_cholmod_ldlt.solve(rhs);
+    case 8:
+      return isSymmetric ? R_eigen.solve(rhs) : R_lu.solve(rhs);
 #ifdef __APPLE__
     case 4:
       return R_accelerate.solve(rhs);
@@ -338,7 +363,7 @@ public:
 
   inline Eigen::SparseMatrix<double, 0, int>
   solve(const Eigen::SparseMatrix<double, 0, int> &v) {
-    if (!isSymmetric && K_last.rows() > 0) {
+    if (!isSymmetric && K_last.rows() > 0 && solver_type != 8) {
       Eigen::SparseMatrix<double, 0, int> rhs = K_last.transpose() * v;
       return solve_raw(rhs);
     }
@@ -356,6 +381,13 @@ public:
       return R_supernodal.solve(rhs);
     case 3:
       return R_cholmod_ldlt.solve(rhs);
+    case 8:
+      if (isSymmetric) {
+        return R_eigen.solve(rhs);
+      } else {
+        Eigen::MatrixXd solved = R_lu.solve(Eigen::MatrixXd(rhs));
+        return solved.sparseView();
+      }
 #ifdef __APPLE__
     case 4:
       return R_accelerate.solve(rhs);
@@ -393,6 +425,12 @@ public:
       return R_supernodal.logDeterminant();
     case 3:
       return R_cholmod_ldlt.logDeterminant();
+    case 8:
+      if (isSymmetric) {
+        return log(R_eigen.determinant());
+      } else {
+        return R_lu.matrixU().diagonal().array().abs().log().sum();
+      }
 #ifdef __APPLE__
     case 4:
       throw std::runtime_error("Accelerate solver not available");

@@ -70,6 +70,9 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
   n_gibbs = Rcpp::as<int>(control_ngme["n_gibbs_samples"]);
   int n_trace_iter = Rcpp::as<int>(control_ngme["n_trace_iter"]);
   auto map_solver_type = [](int backend, int factor) {
+    if (factor == 2) {
+      return 8; // LU path for non-symmetric K; symmetric K falls back to LLT.
+    }
     switch (backend) {
     case 0: // eigen
       return factor == 0 ? 0 : 1;

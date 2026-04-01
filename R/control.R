@@ -47,7 +47,10 @@
 #' @param max_absolute_step   max absolute step allowed in 1 iteration
 #' @param trend_std_conv_check enable the trend/std diagnostic (uses \code{std_lim}, \code{trend_lim}, \code{n_slope_check})
 #' @param solver_backend backend in ("eigen", "cholmod", "accelerate", "pardiso")
-#' @param solver_type factorization type: "llt" or "ldlt"
+#' @param solver_type factorization type: "llt", "ldlt", or "lu". The
+#'   \code{"lu"} option is intended for non-symmetric latent operators and uses
+#'   a direct LU factorization of \code{K}; symmetric operators continue to use
+#'   the standard LLT path.
 #' @param rao_blackwellization  use rao_blackwellization
 #' @param n_trace_iter  use how many iterations to approximate the trace (Hutchinson’s trick)
 #'
@@ -106,7 +109,7 @@ control_opt <- function(
   strategy_list <- c("all", "ws")
   preconditioner_list <- c("none", "fast", "full")
   solver_backend_list <- c("eigen", "cholmod", "accelerate", "pardiso")
-  solver_factor_list <- c("llt", "ldlt")
+  solver_factor_list <- c("llt", "ldlt", "lu")
   stepsize_decay_list <- c("none", "grad_norm_plateau")
   stepsize_schedule_list <- c("constant", "poly")
 
@@ -205,7 +208,8 @@ control_opt <- function(
       n_slope_check > 0 && n_slope_check <= n_batch,
     inherits(optimizer, "ngme_optimizer"),
     "solver backend must map to 0:3" = solver_backend_idx %in% 0:3,
-    "solver factor must be 0 (llt) or 1 (ldlt)" = solver_factor_idx %in% 0:1,
+    "solver factor must be 0 (llt), 1 (ldlt), or 2 (lu)" =
+      solver_factor_idx %in% 0:2,
     is.numeric(pflug_alpha) && length(pflug_alpha) == 1 && pflug_alpha > 0 && pflug_alpha <= 1,
     "stepsize_decay must be one of 'none' or 'grad_norm_plateau'" =
       stepsize_decay_method %in% stepsize_decay_list,

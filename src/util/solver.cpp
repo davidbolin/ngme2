@@ -24,8 +24,8 @@ double sparse_llt_solver::trace(const SparseMatrix<double, 0, int> &M,
     if (isSymmetric) {
       QU = solve(U);
     } else {
-      // For non-symmetric mode, factorization is on Q = K^T K; we need Q^{-1} U
-      // (no K^T RHS)
+      // The LU path solves K x = u directly; the LLT/LDLT paths factorize
+      // normal equations Q = K^T K and therefore need Q^{-1} u here.
       if (solver_type == 0)
         QU = R_eigen.solve(U);
       else if (solver_type == 1)
@@ -34,6 +34,8 @@ double sparse_llt_solver::trace(const SparseMatrix<double, 0, int> &M,
         QU = R_supernodal.solve(U);
       else if (solver_type == 3)
         QU = R_cholmod_ldlt.solve(U);
+      else if (solver_type == 8)
+        QU = R_lu.solve(U);
 #ifdef __APPLE__
       else if (solver_type == 4)
         QU = R_accelerate.solve(U);
@@ -54,7 +56,7 @@ double sparse_llt_solver::trace(const SparseMatrix<double, 0, int> &M,
   }
 
   Eigen::MatrixXd MQU;
-  if (isSymmetric || K_last.rows() == 0) {
+  if (isSymmetric || K_last.rows() == 0 || solver_type == 8) {
     MQU = M * QU;
   } else {
     MQU = (K_last.transpose() * M) * QU;
@@ -90,7 +92,8 @@ double sparse_llt_solver::trace2(const SparseMatrix<double, 0, int> &A,
     if (isSymmetric) {
       QU = solve(U); // Q^{-1} U where Q=K
     } else {
-      // For non-symmetric mode, QU = (K^T K)^{-1} U (no K^T on RHS here)
+      // The LU path solves K x = u directly; the LLT/LDLT paths factorize
+      // normal equations Q = K^T K and therefore need Q^{-1} u here.
       if (solver_type == 0)
         QU = R_eigen.solve(U);
       else if (solver_type == 1)
@@ -99,6 +102,8 @@ double sparse_llt_solver::trace2(const SparseMatrix<double, 0, int> &A,
         QU = R_supernodal.solve(U);
       else if (solver_type == 3)
         QU = R_cholmod_ldlt.solve(U);
+      else if (solver_type == 8)
+        QU = R_lu.solve(U);
 #ifdef __APPLE__
       else if (solver_type == 4)
         QU = R_accelerate.solve(U);
@@ -119,7 +124,8 @@ double sparse_llt_solver::trace2(const SparseMatrix<double, 0, int> &A,
   }
 
   // First apply A to QU, then one more Q^{-1} using solve().
-  // In the non-symmetric case, solve() internally applies K^T to the RHS.
+  // For LU on a non-symmetric K, solve() applies K^{-1} directly.
+  // For the LLT/LDLT paths, solve() internally applies K^T to the RHS.
   Eigen::MatrixXd A_QU = A * QU;   // n x N_iter
   Eigen::MatrixXd S = solve(A_QU); // Q^{-1} A_eff Q^{-1} U
   Eigen::MatrixXd BS = B * S;      // n x N_iter

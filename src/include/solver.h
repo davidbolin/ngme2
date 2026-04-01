@@ -304,7 +304,10 @@ public:
     case 3:
       return R_cholmod_ldlt.solve(rhs);
     case 8:
-      return isSymmetric ? R_eigen.solve(rhs) : R_lu.solve(rhs);
+      if (isSymmetric) {
+        return R_eigen.solve(rhs);
+      }
+      return R_lu.solve(rhs);
 #ifdef __APPLE__
     case 4:
       return R_accelerate.solve(rhs);
@@ -342,7 +345,10 @@ public:
     case 3:
       return R_cholmod_ldlt.solve(rhs);
     case 8:
-      return isSymmetric ? R_eigen.solve(rhs) : R_lu.solve(rhs);
+      if (isSymmetric) {
+        return R_eigen.solve(rhs);
+      }
+      return R_lu.solve(rhs);
 #ifdef __APPLE__
     case 4:
       return R_accelerate.solve(rhs);
@@ -425,12 +431,12 @@ public:
       return R_supernodal.logDeterminant();
     case 3:
       return R_cholmod_ldlt.logDeterminant();
-    case 8:
+    case 8: {
       if (isSymmetric) {
         return log(R_eigen.determinant());
-      } else {
-        return R_lu.matrixU().diagonal().array().abs().log().sum();
       }
+      return std::log(std::abs(R_lu.determinant()));
+    }
 #ifdef __APPLE__
     case 4:
       throw std::runtime_error("Accelerate solver not available");

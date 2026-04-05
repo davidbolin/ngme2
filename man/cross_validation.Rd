@@ -61,7 +61,7 @@ The function receives a list containing at least `y` (named numeric vector of gr
 The function must return either a numeric scalar (optionally named) or a list with components `y` (scalar), and optionally `samples1`/`samples2` (numeric vectors matching the posterior draw count) and `label` (character).
 When `NULL`, the original per-group scores are computed.
 For example, to compare a linear combination of two fields you can use
-`metric = function(data) { res <- 2 * data$y["A"] + data$y["B"]; names(res) <- "combo"; res }`. To simply sum all group values, return `sum(data$y)`.}
+\code{metric = function(data) \{ res <- 2 * data$y["A"] + data$y["B"]; res \}}. To simply sum all group values, return \code{sum(data$y)}.}
 
 \item{test_idx}{a list of indices of the data (which data points to be predicted) (only for custom type)}
 

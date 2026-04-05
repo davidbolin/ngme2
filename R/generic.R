@@ -229,14 +229,14 @@ compute_coef_new <- function(theta_K, trans, n_matrices) {
 #' Convertion is from original scale to real scale by default.
 #' Available transformations:
 #' \itemize{
-#'   \item \code{exp4}: $\exp(4x)$, inverse is $\log(x)/4$
-#'   \item \code{exp2}: $\exp(2x)$, inverse is $\log(x)/2$
+#'   \item \code{exp4}: \eqn{exp(4x)}, inverse is \eqn{log(x)/4}
+#'   \item \code{exp2}: \eqn{exp(2x)}, inverse is \eqn{log(x)/2}
 #'   \item \code{tanh}: Hyperbolic tangent transformation used for AR1 parameter, uses ar1_th2a and ar1_a2th
 #'   \item \code{identity}: Identity function, no transformation
-#'   \item \code{exp}: $\exp(x)$, inverse is $\log(x)$
-#'   \item \code{sqrt}: $\sqrt(x)$, inverse is $x^2$
-#'   \item \code{square}: $x^2$, inverse is $\sqrt(x)$
-#'   \item \code{log}: $\log(x)$, inverse is $\exp(x)$
+#'   \item \code{exp}: \eqn{exp(x)}, inverse is \eqn{log(x)}
+#'   \item \code{sqrt}: \eqn{sqrt(x)}, inverse is \eqn{x^2}
+#'   \item \code{square}: \eqn{x^2}, inverse is \eqn{sqrt(x)}
+#'   \item \code{log}: \eqn{log(x)}, inverse is \eqn{exp(x)}
 #' }
 #'
 #' @param trans Character string specifying the transformation type from original scale to real scale

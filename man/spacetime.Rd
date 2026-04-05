@@ -38,9 +38,9 @@ spacetime(
 
 \item{fix_gamma}{TRUE if fix gamma (advection term), FALSE if estimate gamma.}
 
-\item{theta_gamma_x}{The x component of the advection term: `gamma_x = B_gamma_x %*% theta_gamma_x`.}
+\item{theta_gamma_x}{The x component of the advection term: \code{gamma_x = B_gamma_x \%*\% theta_gamma_x}.}
 
-\item{theta_gamma_y}{The y component of the advection term: `gamma_y = B_gamma_y %*% theta_gamma_y`.}
+\item{theta_gamma_y}{The y component of the advection term: \code{gamma_y = B_gamma_y \%*\% theta_gamma_y}.}
 
 \item{shared_theta_gamma}{TRUE if share the same theta_gamma for all time nodes. (theta_gamma_x and theta_gamma_y will be the same)}
 

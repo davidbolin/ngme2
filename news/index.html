@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">ngme2</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -52,6 +52,24 @@
       <small>Source: <a href="https://github.com/davidbolin/ngme2/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.5" id="ngme2-095-2026-03-17">ngme2 0.9.5 (2026-03-17)<a class="anchor" aria-label="anchor" href="#ngme2-095-2026-03-17"></a></h2>
+<div class="section level3">
+<h3 id="new-feature-var1-bivariate-latent-model-0-9-5">New feature: VAR(1) bivariate latent model<a class="anchor" aria-label="anchor" href="#new-feature-var1-bivariate-latent-model-0-9-5"></a></h3>
+<ul><li>Add <code><a href="../reference/var1.html">var1()</a></code> — a Vector Autoregressive order-1 latent field for bivariate time series modelling.</li>
+<li>Stationarity is <strong>guaranteed by construction</strong> via the Cayley reparameterization: four unconstrained parameters <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>p</mi><mn>1</mn></msub><mo>,</mo><msub><mi>p</mi><mn>2</mn></msub><mo>,</mo><msub><mi>p</mi><mn>3</mn></msub><mo>,</mo><msub><mi>p</mi><mn>4</mn></msub><mo stretchy="true" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(p_1, p_2, p_3, p_4)</annotation></semantics></math> are mapped to a <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>2</mn><mo>×</mo><mn>2</mn></mrow><annotation encoding="application/x-tex">2\times2</annotation></semantics></math> VAR coefficient matrix <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>A</mi><annotation encoding="application/x-tex">A</annotation></semantics></math> with spectral radius <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>ρ</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>A</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>&lt;</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\rho(A) &lt; 1</annotation></semantics></math> at every iteration.</li>
+<li>The C++ backend implements the Cayley transform natively (class <code>RCallback</code> in <code>src/latents/rcallback.cpp</code>).</li>
+<li>Supports all <code>ngme2</code> noise distributions (NIG, GAL, normal) as a single shared innovation noise.</li>
+<li>
+<code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> method displays the recovered <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>A</mi><annotation encoding="application/x-tex">A</annotation></semantics></math> matrix, its spectral radius, and the raw <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>p</mi><mn>1</mn></msub><mo>,</mo><msub><mi>p</mi><mn>2</mn></msub><mo>,</mo><msub><mi>p</mi><mn>3</mn></msub><mo>,</mo><msub><mi>p</mi><mn>4</mn></msub><mo stretchy="true" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(p_1, p_2, p_3, p_4)</annotation></semantics></math> values.</li>
+<li>Add vignette <em>“VAR(1) Bivariate Model in ngme2”</em> (<code>vignettes/var1-model.Rmd</code>) covering: model specification, Cayley reparameterization, simulation study with parameter recovery, convergence trace plots, and NIG vs Gaussian model comparison.</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.4" id="ngme2-094-2026-03-12">ngme2 0.9.4 (2026-03-12)<a class="anchor" aria-label="anchor" href="#ngme2-094-2026-03-12"></a></h2>
+<ul><li>Add posterior distribution plotting for SGLD samples via <code><a href="../reference/posterior_plot.html">posterior_plot()</a></code>.</li>
+<li>Add <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> support for <code>ngme_sgld_ci</code> objects, reusing stored SGLD samples to visualize marginal posterior distributions.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.3" id="ngme2-093-2026-02-26">ngme2 0.9.3 (2026-02-26)<a class="anchor" aria-label="anchor" href="#ngme2-093-2026-02-26"></a></h2>
 <ul><li>Refine fixed-effect standardization: SVD now applies only to non-intercept columns; intercept columns remain on their original parameterization.</li>

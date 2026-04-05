@@ -72,7 +72,6 @@ ifeq ($(UNAME), Darwin)
       # Prefer MKL on Intel macOS when available
       PKG_CPPFLAGS += -DUSEMKL -I$(MKLROOT)/include
       PKG_LIBS += -L$(MKLROOT)/lib -lmkl_rt -liomp5 -lpthread -lm
-      PKG_LIBS += -Wl,-rpath,$(MKLROOT)/lib
       $(info MKL detected on Intel macOS, enabling Pardiso.)
     else
       # Fallback to Accelerate + libomp on Intel macOS
@@ -88,7 +87,7 @@ ifeq ($(UNAME), Darwin)
       FLIBS = -L$(GFORTRAN_LIB) -lgfortran -lquadmath
       PKG_LIBS += -framework Accelerate
       ifndef NGME_SKIP_LIBOMP_LINK
-        PKG_LIBS += $(HOMEBREW_PREFIX)/opt/libomp/lib/libomp.dylib -Wl,-rpath,$(HOMEBREW_PREFIX)/opt/libomp/lib
+        PKG_LIBS += -L$(HOMEBREW_PREFIX)/opt/libomp/lib -lomp
       endif
     endif
   else
@@ -105,7 +104,7 @@ ifeq ($(UNAME), Darwin)
     FLIBS = -L$(GFORTRAN_LIB) -lgfortran -lquadmath
     PKG_LIBS += -framework Accelerate
     ifndef NGME_SKIP_LIBOMP_LINK
-      PKG_LIBS += $(HOMEBREW_PREFIX)/opt/libomp/lib/libomp.dylib -Wl,-rpath,$(HOMEBREW_PREFIX)/opt/libomp/lib
+      PKG_LIBS += -L$(HOMEBREW_PREFIX)/opt/libomp/lib -lomp
     endif
   endif
 endif
@@ -117,7 +116,6 @@ ifneq ($(UNAME), Darwin)
     PKG_LIBS += -L$(MKLROOT)/lib/intel64 \
                -lmkl_rt -lmkl_gnu_thread -lmkl_core \
                -lgomp -lpthread -lm -ldl
-    PKG_LIBS += -Wl,-rpath,$(MKLROOT)/lib/intel64
     $(info MKL detected, enabling Pardiso.)
   endif
 endif

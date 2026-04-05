@@ -49,7 +49,7 @@ control_same <- control_opt(
   verbose = TRUE,
   rao_blackwellization = TRUE,
   seed = seed,
-  solver_type = "lu",
+  solver_type = "llt",
   print_check_info = TRUE,
   n_min_batch = 3,
   n_trace_iter = 30,
@@ -73,13 +73,29 @@ ret_nig_same <- ngme(
     noise = noise_nig(
       prior = priors()
     )
+  ) + f(
+    1:n_obs,
+    name = "my_rw",
+    model = rw1()
   ),
   family = noise_normal(),
   data = data,
   control_opt = control_same
 )
 summary(ret_nig_same)
-traceplot(ret_nig_same, hline = c(rho, mu, sigma, nu, sigma_eps, beta_true))
+traceplot(ret_nig_same)
+
+predict(
+  ret_nig_same,
+  map = list(my_rw = 1:100),
+  data = data.frame(t = 1:100),
+  type = "my_rw",
+  estimator = c("mean", "sd", "0.5q", "0.95q"),
+  sampling_size = 1000,
+  seed = 42
+)
+
+
 
 cat("\nTrue fixed effects:\n")
 print(beta_true)

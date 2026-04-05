@@ -1,9 +1,19 @@
 This package is licensed under the GNU General Public License version 3 (GPL-3).
 
-The package also includes portions of the Eigen library, which is licensed under the Mozilla Public License 2.0 (MPL-2.0). These portions are located in the `inst/include/Eigen/` directory.
+The package also includes the following third-party components:
+
+1. Eigen (inst/include/Eigen/):
+   Mozilla Public License 2.0 (MPL-2.0)
+   https://www.mozilla.org/MPL/2.0/
+
+2. SuiteSparse components (src/SuiteSparse/):
+   - AMD, CAMD, CCOLAMD, COLAMD, SuiteSparse_config: BSD-3-Clause
+   - CXSparse: LGPL-2.1+
+   - CHOLMOD (Check, Cholesky, Utility, Partition): LGPL-2.1+
+   - CHOLMOD (Modify, Supernodal, MatrixOps): GPL-2.0+
+   - CHOLMOD headers (cholmod.h): Apache-2.0
+   All SuiteSparse components are Copyright (c) Timothy A. Davis and contributors.
+   See https://github.com/DrTimothyAldenDavis/SuiteSparse for details.
 
 The full text of the GPL-3 license can be found at:
 https://www.gnu.org/licenses/gpl-3.0.en.html
-
-The full text of the MPL-2.0 license can be found at:
-https://www.mozilla.org/MPL/2.0/

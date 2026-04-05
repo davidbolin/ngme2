@@ -119,6 +119,8 @@ predict_ngme_param_mean <- function(
   fm <- attr(object, "fit")$formula
   ngme <- object$replicates[[1]]
   seed_int <- as.integer(abs(seed) %% 2147483647)
+  type_names <- prediction_type_names(type, ngme)
+  requested_model_names <- prediction_requested_model_names(type_names, ngme)
 
   # If train_idx is provided, subset the data for posterior sampling
   if (!is.null(train_idx)) {
@@ -218,20 +220,16 @@ predict_ngme_param_mean <- function(
       j <- j + sz
     }
 
-    if (!is.null(map)) {
-      stopifnot(
-        "map should be a named list (name for each model)" = is.list(map) && !is.null(names(map))
-      )
-      map_names <- names(map)
-      stopifnot(length(map_names) == length(ngme$models))
+    AW <- list()
+    if (length(requested_model_names) > 0) {
+      validate_prediction_map(map, requested_model_names)
 
-      AW <- list()
-      for (i in seq_along(ngme$models)) {
-        loc <- map[[ngme$models[[i]]$name]]
-        if (is.null(loc)) stop("The loction for model ", ngme$models[[i]]$name, " is not provided")
-        if (inherits(ngme$models[[i]]$operator$mesh, "metric_graph")) {
+      for (model_name in requested_model_names) {
+        model <- ngme$models[[model_name]]
+        loc <- map[[model_name]]
+        if (inherits(model$operator$mesh, "metric_graph")) {
           loc <- as.data.frame(loc)
-        } else if (ngme$models[[i]]$model != "tp") {
+        } else if (model$model != "tp") {
           loc <- as.matrix(loc)
         } else {
           stopifnot(
@@ -240,24 +238,18 @@ predict_ngme_param_mean <- function(
           )
         }
 
-        mesh <- ngme$models[[i]]$operator$mesh
-        W <- ngme$models[[i]][[estimator]]
-
         A <- ngme_build_A(
-          ngme$models[[i]]$model,
-          mesh,
+          model$model,
+          model$operator$mesh,
           loc,
-          ngme$models[[i]]$operator,
+          model$operator,
           group,
           group_levels = levels(ngme$group)
         )
 
-        AW[[ngme$models[[i]]$name]] <- as.numeric(A %*% W)
+        AW[[model_name]] <- as.numeric(A %*% model[[estimator]])
       }
     }
-    # lp case is just fe + A1 * W1 + A2 * W2
-    # e.g. names <- c("fe", "field1", "field2")
-    type_names <- if (type == "lp") c("fe", names(ngme$models)) else type
 
     preds <- 0
     for (i in seq_along(type_names)) {
@@ -302,14 +294,12 @@ build_prediction_output_samples <- function(
     samples_W) {
   n_samp <- ncol(samples_W)
 
-  type_names <- if (type %in% c("lp", "response")) c("fe", names(ngme$models)) else type
-  needs_map <- any(type_names %in% names(ngme$models))
+  type_names <- prediction_type_names(type, ngme)
+  requested_model_names <- prediction_requested_model_names(type_names, ngme)
+  needs_map <- length(requested_model_names) > 0
 
   if (needs_map) {
-    stopifnot(
-      "map should be a named list (name for each model)" = is.list(map) && !is.null(names(map))
-    )
-    stopifnot(length(names(map)) == length(ngme$models))
+    validate_prediction_map(map, requested_model_names)
   }
 
   fixed_effect <- NULL
@@ -319,7 +309,11 @@ build_prediction_output_samples <- function(
       fm = fm,
       ngme = ngme,
       data = data,
-      n_pred = if (!is.null(data)) nrow(data) else NULL
+      n_pred = if (!is.null(data)) {
+        nrow(data)
+      } else {
+        prediction_map_size(map, requested_model_names)
+      }
     )
     fixed_effect <- as.numeric(X_pred %*% ngme$feff)
     n_pred <- length(fixed_effect)
@@ -331,31 +325,32 @@ build_prediction_output_samples <- function(
     for (i in seq_along(ngme$models)) {
       model <- ngme$models[[i]]
       sz <- model$W_size
-      loc <- map[[model$name]]
-      if (is.null(loc)) stop("The loction for model ", model$name, " is not provided")
-      if (inherits(model$operator$mesh, "metric_graph")) {
-        loc <- as.data.frame(loc)
-      } else if (model$model != "tp") {
-        loc <- as.matrix(loc)
-      } else {
-        stopifnot(
-          length(loc) == 2,
-          length_map(loc[[1]]) == length_map(loc[[2]])
+      if (model$name %in% requested_model_names) {
+        loc <- map[[model$name]]
+        if (inherits(model$operator$mesh, "metric_graph")) {
+          loc <- as.data.frame(loc)
+        } else if (model$model != "tp") {
+          loc <- as.matrix(loc)
+        } else {
+          stopifnot(
+            length(loc) == 2,
+            length_map(loc[[1]]) == length_map(loc[[2]])
+          )
+        }
+
+        A <- ngme_build_A(
+          model$model,
+          model$operator$mesh,
+          loc,
+          model$operator,
+          group,
+          group_levels = levels(ngme$group)
         )
+
+        model_draws[[model$name]] <- A %*% samples_W[j:(j + sz - 1), , drop = FALSE]
+        if (is.null(n_pred)) n_pred <- nrow(model_draws[[model$name]])
       }
-
-      A <- ngme_build_A(
-        model$model,
-        model$operator$mesh,
-        loc,
-        model$operator,
-        group,
-        group_levels = levels(ngme$group)
-      )
-
-      model_draws[[model$name]] <- A %*% samples_W[j:(j + sz - 1), , drop = FALSE]
       j <- j + sz
-      if (is.null(n_pred)) n_pred <- nrow(model_draws[[model$name]])
     }
   }
 
@@ -441,6 +436,61 @@ ensure_prediction_sample_matrix <- function(samples) {
 }
 
 
+prediction_type_names <- function(type, ngme) {
+  if (type %in% c("lp", "response")) c("fe", names(ngme$models)) else type
+}
+
+
+prediction_requested_model_names <- function(type_names, ngme) {
+  intersect(type_names, names(ngme$models))
+}
+
+
+validate_prediction_map <- function(map, required_model_names) {
+  if (length(required_model_names) == 0) {
+    return(invisible(NULL))
+  }
+
+  stopifnot(
+    "map should be a named list (name for each model)" = is.list(map) && !is.null(names(map))
+  )
+
+  missing_names <- setdiff(required_model_names, names(map))
+  if (length(missing_names) > 0) {
+    stop(
+      "The loction for model ",
+      paste(missing_names, collapse = ", "),
+      " is not provided"
+    )
+  }
+
+  invisible(NULL)
+}
+
+
+prediction_map_size <- function(map, model_names = names(map)) {
+  if (is.null(map) || length(model_names) == 0) {
+    return(NULL)
+  }
+
+  first_name <- model_names[[1]]
+  loc <- map[[first_name]]
+  if (is.null(loc)) {
+    return(NULL)
+  }
+
+  if (is.list(loc) && !inherits(loc, c("data.frame", "matrix"))) {
+    stopifnot(
+      length(loc) == 2,
+      length_map(loc[[1]]) == length_map(loc[[2]])
+    )
+    return(length_map(loc[[1]]))
+  }
+
+  length_map(loc)
+}
+
+
 simulate_predictive_noise_draws <- function(noise, n_pred, n_samp, seed) {
   if (length(noise$noise_type) == 2) {
     stop("type = 'response' does not currently support bivariate measurement noise.")
@@ -475,7 +525,7 @@ simulate_predictive_noise_draws <- function(noise, n_pred, n_samp, seed) {
     )
   }, numeric(n_pred))
 
-  as.matrix(noise_draws)
+  matrix(noise_draws, nrow = n_pred, ncol = n_samp)
 }
 
 

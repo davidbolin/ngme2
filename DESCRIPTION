@@ -27,31 +27,13 @@ LinkingTo:
     Rcpp,
     RcppEigen,
 Suggests:
-    knitr,
-    rmarkdown,
-    INLA,
-    dplyr,
-    plyr,
-    MASS,
-    grid,
+    R.rsp,
     testthat (>= 3.0.0),
-    xml2,
-    splancs,
-    lattice,
-    viridis,
-    rSPDE,
-    tidyr,
-    fields,
-    lme4,
-    plotly,
-    usethis,
-    devtools,
-    MetricGraph (>= 1.1.2),
+    MASS,
+    dplyr,
     zoo,
-    mvtnorm,
-    kableExtra
-Additional_repositories: https://inla.r-inla-download.org/R/testing
-VignetteBuilder: knitr
+    mvtnorm
+VignetteBuilder: R.rsp
 RoxygenNote: 7.3.2
 Config/testthat/edition: 3
 URL: https://davidbolin.github.io/ngme2/, https://github.com/davidbolin/ngme2

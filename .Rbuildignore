@@ -11,3 +11,7 @@
 ^cran-comments\.md$
 ^CRAN-SUBMISSION$
 ^LICENSE\.md$
+^vignettes/.*\.Rmd$
+^vignettes/(?!ngme2-documentation).*\.html$
+^vignettes/.*_cache$
+^vignettes/.*_files$

@@ -49,6 +49,7 @@ control_same <- control_opt(
   verbose = TRUE,
   rao_blackwellization = TRUE,
   seed = seed,
+  solver_type = "lu",
   print_check_info = TRUE,
   n_min_batch = 3,
   n_trace_iter = 30,

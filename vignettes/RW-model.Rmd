@@ -1202,33 +1202,33 @@ Finally, we assess the calibration of our prediction intervals by examining how 
 # Calculate prediction intervals from posterior samples
 y_quantiles <- apply(Y_sim_matrix, 1, quantile, probs = c(0.025, 0.25, 0.5, 0.75, 0.975))
 
-# Sort by observed values for better visualization
-sort_idx <- order(Y)
-Y_sorted <- Y[sort_idx]
-y_quantiles_sorted <- y_quantiles[, sort_idx]
+obs_idx <- seq_along(Y)
 
 par(mfrow = c(1, 2), mar = c(4, 4, 3, 1))
 
 # 1. Uncertainty bands plot
-plot(1:length(Y_sorted), Y_sorted,
+# Keep the original observation order. Sorting by Y makes the observed line
+# monotone by construction and can create a misleading visual mismatch with the
+# pointwise posterior predictive intervals.
+plot(obs_idx, Y,
   type = "l", col = "#2E86AB", lwd = 2,
   main = "Posterior Prediction Intervals",
-  xlab = "Sorted Index", ylab = "Y values",
-  ylim = range(y_quantiles_sorted)
+  xlab = "Observation Index", ylab = "Y values",
+  ylim = range(c(Y, y_quantiles))
 )
 
 # Add uncertainty bands
-polygon(c(1:length(Y_sorted), rev(1:length(Y_sorted))),
-  c(y_quantiles_sorted[1, ], rev(y_quantiles_sorted[5, ])),
+polygon(c(obs_idx, rev(obs_idx)),
+  c(y_quantiles[1, ], rev(y_quantiles[5, ])),
   col = rgb(0.64, 0.23, 0.45, 0.2), border = NA
 )
-polygon(c(1:length(Y_sorted), rev(1:length(Y_sorted))),
-  c(y_quantiles_sorted[2, ], rev(y_quantiles_sorted[4, ])),
+polygon(c(obs_idx, rev(obs_idx)),
+  c(y_quantiles[2, ], rev(y_quantiles[4, ])),
   col = rgb(0.64, 0.23, 0.45, 0.3), border = NA
 )
 
-lines(1:length(Y_sorted), y_quantiles_sorted[3, ], col = rgb(0.64, 0.23, 0.45, 0.8), lwd = 1)
-lines(1:length(Y_sorted), Y_sorted, col = "#2E86AB", lwd = 1)
+lines(obs_idx, y_quantiles[3, ], col = rgb(0.64, 0.23, 0.45, 0.8), lwd = 1)
+lines(obs_idx, Y, col = "#2E86AB", lwd = 1)
 
 legend("topleft",
   legend = c("Observed", "Median prediction", "50% interval", "95% interval"),

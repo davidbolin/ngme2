@@ -17,6 +17,7 @@ predict using ngme after estimation}
   seed = Sys.time(),
   train_idx = NULL,
   chain_combine = c("param_mean", "predictive_average"),
+  return_samples = FALSE,
   ...
 )
 }
@@ -32,7 +33,8 @@ vector or matrix (n * 2) for spatial coords}
 \item{type}{what type of prediction, c("fe", "lp", <model_name>)
 "fe" is fixed effect prediction
 <model_name> is prediction of a specific model
-"lp" is linear predictor (including fixed effect and all sub-models)}
+"lp" is linear predictor (including fixed effect and all sub-models)
+"response" is the linear predictor plus a fresh measurement-noise draw}
 
 \item{group}{which filed to predict
 (used for bivariate model, should be of same length as map)}
@@ -57,6 +59,10 @@ similar to cross-validation. If NULL, uses all original training data.}
   \item \code{"predictive_average"}: run prediction for each optimization chain and
     average predictions across chains.
 }}
+
+\item{return_samples}{logical; when `TRUE`, attach sample draws for the
+requested output in `attr(ret, "samples")`. For `type = "response"`, the
+attached samples are response predictive draws.}
 
 \item{...}{additional arguments (currently unused)}
 }

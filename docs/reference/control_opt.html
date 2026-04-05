@@ -9,7 +9,7 @@ optimization process."><meta property="og:image" content="https://davidbolin.git
 
     <a class="navbar-brand me-2" href="../index.html">ngme2</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -71,6 +71,7 @@ optimization process.</p>
 <span>  n_batch <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>  iters_per_check <span class="op">=</span> <span class="va">iterations</span><span class="op">/</span><span class="va">n_batch</span>,</span>
 <span>  optimizer <span class="op">=</span> <span class="fu"><a href="adam.html">adam</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  start <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  start_sd <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>  n_parallel_chain <span class="op">=</span> <span class="fl">4</span>,</span>
 <span>  max_num_threads <span class="op">=</span> <span class="va">n_parallel_chain</span>,</span>
@@ -140,6 +141,11 @@ their original scale.</p></dd>
 <dd><p>choose different sgd optimization method,
 currently support "sgd", "sgld", "precond_sgd", "momentum", "adagrad", "rmsprop", "adam", "adamW"
 see ?sgd, ?precond_sgd, ?momentum, ?adagrad, ?rmsprop, ?adam, ?adamW</p></dd>
+
+
+<dt id="arg-start">start<a class="anchor" aria-label="anchor" href="#arg-start"></a></dt>
+<dd><p>deprecated guard argument. Do not pass model starts through
+<code>control_opt()</code>; use <code>ngme(..., start = previous_fit)</code> instead.</p></dd>
 
 
 <dt id="arg-start-sd">start_sd<a class="anchor" aria-label="anchor" href="#arg-start-sd"></a></dt>

@@ -38,6 +38,7 @@ vignettes/*.pdf
 # R Environment Variables
 .Renviron
 *.o
+*.o.tmp
 *.so
 src/test/.DS_Store
 .DS_Store

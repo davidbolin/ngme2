@@ -326,6 +326,22 @@ public:
   Matrix2d get_dD2_rho(double, double) const;
 };
 
+// ---- VAR(1) bivariate operator with Cayley reparameterization ----
+// theta_K = (p1, p2, p3, p4): four unconstrained parameters.
+// A = Cayley(J, L) guarantees spectral radius < 1.
+// K = M0 + a11*M11 + a22*M22 + a12*M12 + a21*M21.
+// Numerical dK is computed automatically by update_all(). Thread-safe.
+class RCallback : public Operator {
+private:
+  using SM = SparseMatrix<double, 0, int>;
+  SM M0, M11, M22, M12, M21;
+  double eps_cayley;
+
+public:
+  RCallback(const Rcpp::List &);
+  void build_KZ(const VectorXd &theta_K) override;
+};
+
 // ---- Structure for random effects ----
 // U|V ~ N(0, Sigma)
 class Randeff : public Operator {

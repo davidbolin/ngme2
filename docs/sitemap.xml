@@ -14,28 +14,23 @@
 <url><loc>https://davidbolin.github.io/ngme2/SGLD_IMPLEMENTATION.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/AR1-model.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/Installation.html</loc></url>
-<url><loc>https://davidbolin.github.io/ngme2/articles/Installation_and_configuration.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/RW-model.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/SPDE-model.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/bivariate.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/cross-validation.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/generic.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/index.html</loc></url>
-<url><loc>https://davidbolin.github.io/ngme2/articles/inla_compare.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/matern-on-graph.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/ngme2.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/non-separable-model.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/normal-nig-noise.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/ou-process.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/pred-and-est.html</loc></url>
-<url><loc>https://davidbolin.github.io/ngme2/articles/pred_and_est.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/prior-templates.html</loc></url>
-<url><loc>https://davidbolin.github.io/ngme2/articles/random-effect.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/replicate.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/sgld-sampling.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/articles/tensor-product.html</loc></url>
-<url><loc>https://davidbolin.github.io/ngme2/articles/tensor_product.html</loc></url>
-<url><loc>https://davidbolin.github.io/ngme2/articles/tp-bv.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/articles/var1-model.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/authors.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/convergence_diagnostics.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/index.html</loc></url>
@@ -121,6 +116,7 @@
 <url><loc>https://davidbolin.github.io/ngme2/reference/plot.ngme_noise.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/plot.parameter_distance.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/poly_decay.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/reference/posterior_plot.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/precision_matrix_multivariate.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/precision_matrix_multivariate_spde.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/precond_sgd.html</loc></url>
@@ -158,5 +154,6 @@
 <url><loc>https://davidbolin.github.io/ngme2/reference/test_ngme.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/tp.html</loc></url>
 <url><loc>https://davidbolin.github.io/ngme2/reference/traceplot.html</loc></url>
+<url><loc>https://davidbolin.github.io/ngme2/reference/var1.html</loc></url>
 </urlset>
 

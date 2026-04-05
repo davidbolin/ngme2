@@ -223,7 +223,7 @@ simulate.ngme <- function(
     replicate <- attr$fit$replicate
     for (repl in levels(replicate)) {
       repl_idx <- replicate == repl
-      this_repl <- object$replicate[[repl]]
+      this_repl <- object$replicates[[repl]]
       Y[repl_idx] <- simulate_1rep(this_repl, posterior, seed)
 
       sim_noise <- simulate(this_repl$noise, nsim = 1, seed = seed)[[1]]
@@ -235,11 +235,11 @@ simulate.ngme <- function(
     corr <- object$replicates[[1]]$noise$corr_measurement
     if (corr) {
       Y <- Y[order(object$repls_ngme)]
-      data_dix <- c()
+      data_idx <- c()
       for (repl in levels(replicate)) {
-        data_dix <- c(data_dix, object$replicate[[repl]]$data_idx)
+        data_idx <- c(data_idx, object$replicates[[repl]]$data_idx)
       }
-      Y <- Y[order(data_dix)]
+      Y <- Y[order(data_idx)]
     }
 
     sims[[paste0("sim_", nn)]] <- Y

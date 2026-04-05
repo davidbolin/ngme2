@@ -951,8 +951,8 @@ ngme_build_A <- function(model, mesh, map, operator, group, group_levels = NULL)
     }
   }
 
-  # bivariate model
-  if (model %in% c("bv", "bv2", "bv_matern")) {
+  # bivariate model (including VAR(1))
+  if (model %in% c("bv", "bv2", "bv_matern", "var1")) {
     # check if group is valid
     if (length(group) == 0) stop("Please provide the `group` argument.")
     all(group %in% group_levels) || stop("The group is not valid.")

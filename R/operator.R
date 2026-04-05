@@ -73,6 +73,7 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
     re = "Random effect",
     generic = "Generic",
     generic_ns = "Generic (non-stationary)",
+    var1 = "VAR(1) bivariate model",
     spacetime = if (operator$method == "galerkin") "Space-time (Galerkin)" else "Space-time (Implicit Euler)",
     {
       # Handle general AR models (ar2, ar3, etc.)
@@ -276,6 +277,16 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
     ou = {
       theta <- exp(theta_K)
       cat(pad_add4_space, "theta = ", format(theta, digits = 3), "\n", sep = "")
+    },
+    var1 = {
+      A  <- cayley_to_A(theta_K)
+      sr <- max(abs(eigen(A, only.values = TRUE)$values))
+      cat(pad_add4_space, "A (VAR coefficient matrix, Cayley reparameterization):\n", sep = "")
+      cat(pad_add4_space, sprintf("  [[ %6.3f,  %6.3f ],\n",  A[1, 1], A[1, 2]), sep = "")
+      cat(pad_add4_space, sprintf("   [  %6.3f,  %6.3f ]]\n", A[2, 1], A[2, 2]), sep = "")
+      cat(pad_add4_space, "spectral radius = ", format(sr, digits = 4), "\n", sep = "")
+      cat(pad_add4_space, "unconstrained (p1, p2, p3, p4) = ",
+          limited_format(theta_K, digits = 4), "\n", sep = "")
     },
     re = {
       cat(pad_add4_space, "Covariance matrix (Sigma): \n")

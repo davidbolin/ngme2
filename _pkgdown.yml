@@ -83,6 +83,7 @@ reference:
     - ar1
     - arma
     - arma11
+    - var1
     - matern
     - rw1
     - rw2
@@ -186,6 +187,7 @@ reference:
     - print.parameter_distance
     - get_parameter_distance
     - get_trace_trajectories
+    - posterior_plot
     - plot.parameter_distance
     - test_ngme
     - ngme_make_mesh_repls

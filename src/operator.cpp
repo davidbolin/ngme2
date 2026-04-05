@@ -246,6 +246,10 @@ OperatorFactory::create(const Rcpp::List &operator_in) {
     return std::shared_ptr<Operator>(new Bivar(operator_in));
   } else if (model_type == "bv_matern") {
     return std::shared_ptr<Operator>(new bv_matern(operator_in));
+  } else if (model_type == "var1") {
+    // VAR(1) bivariate with Cayley reparameterization.
+    // Fully implemented in C++; numerical dK via update_all().
+    return std::make_shared<RCallback>(operator_in);
   } else {
     throw std::runtime_error("Unknown model.");
   }

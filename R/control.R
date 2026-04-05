@@ -34,6 +34,8 @@
 #' @param std_lim         maximum allowed standard deviation
 #' @param trend_lim       maximum allowed slope
 #' @param print_check_info print the convergence information
+#' @param start deprecated guard argument. Do not pass model starts through
+#'   \code{control_opt()}; use \code{ngme(..., start = previous_fit)} instead.
 #' @param start_sd        standard deviation of the initial parameter (1st chain fixed, other chains random), set 0 to be fixed for all chains
 #' @param optimizer choose different sgd optimization method,
 #' currently support "sgd", "sgld", "precond_sgd", "momentum", "adagrad", "rmsprop", "adam", "adamW"
@@ -74,6 +76,7 @@ control_opt <- function(
     n_batch = 10,
     iters_per_check = iterations / n_batch,
     optimizer = adam(),
+    start = NULL,
     start_sd = 0.5,
     # parallel options
     n_parallel_chain = 4,
@@ -106,6 +109,14 @@ control_opt <- function(
   solver_factor_list <- c("llt", "ldlt")
   stepsize_decay_list <- c("none", "grad_norm_plateau")
   stepsize_schedule_list <- c("constant", "poly")
+
+  if (!is.null(start)) {
+    stop(
+      "`start` is not a `control_opt()` argument. ",
+      "Pass previous fits via `ngme(..., start = previous_fit)` instead.",
+      call. = FALSE
+    )
+  }
 
   if (is.null(stepsize_control)) {
     stepsize_control <- .default_stepsize_control()
@@ -181,6 +192,8 @@ control_opt <- function(
   stopifnot(
     sampling_strategy %in% strategy_list,
     preconditioner %in% preconditioner_list,
+    "start_sd must be a numeric scalar" =
+      is.numeric(start_sd) && length(start_sd) == 1 && is.finite(start_sd),
     is.numeric(max_num_threads) && length(max_num_threads) == 1,
     iterations > 0 && n_batch > 0,
     "iterations should be multiple of n_batch" = iterations %% n_batch == 0,

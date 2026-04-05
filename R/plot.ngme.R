@@ -746,6 +746,267 @@ traceplot <- function(
   invisible(result)
 }
 
+#' Plot Posterior Distributions from SGLD Samples
+#'
+#' Visualize marginal posterior distributions of parameters extracted from
+#' [ngme_sgld_samples()] or summarized by [ngme_sgld_ci()].
+#'
+#' @param x a data.frame (or list of data.frames) returned by
+#'   [ngme_sgld_samples()], or an object of class `ngme_sgld_ci`.
+#' @param parameters optional character vector of parameter names to plot.
+#'   Defaults to all parameter columns.
+#' @param type character; `"density"` (default) or `"histogram"`.
+#' @param by_chain logical; if `TRUE`, color distributions by chain when a
+#'   `.chain` column is available.
+#' @param show_estimate logical; add a vertical line at the posterior mean.
+#' @param show_interval logical; add vertical lines for the equal-tail interval.
+#' @param lower lower quantile probability used for intervals. If `x` is an
+#'   `ngme_sgld_ci` object, the stored value is used by default.
+#' @param upper upper quantile probability used for intervals. If `x` is an
+#'   `ngme_sgld_ci` object, the stored value is used by default.
+#' @param bins number of bins for histograms.
+#' @param ncol number of facet columns. If `NULL`, use 2 columns for multiple
+#'   parameters and 1 for a single parameter.
+#' @param ... unused.
+#'
+#' @return A faceted ggplot object.
+#' @export
+posterior_plot <- function(
+    x,
+    parameters = NULL,
+    type = c("density", "histogram"),
+    by_chain = FALSE,
+    show_estimate = TRUE,
+    show_interval = TRUE,
+    lower = NULL,
+    upper = NULL,
+    bins = 30,
+    ncol = NULL,
+    ...) {
+  if (!requireNamespace("ggplot2", quietly = TRUE)) {
+    stop("ggplot2 package is required for plotting")
+  }
+
+  type <- match.arg(type)
+
+  if (inherits(x, "ngme_sgld_ci")) {
+    samples <- x$samples
+    if (is.null(lower)) lower <- x$lower
+    if (is.null(upper)) upper <- x$upper
+    estimate_map <- x$estimates
+    interval_map <- x$ci
+  } else if (is.data.frame(x)) {
+    samples <- x
+    estimate_map <- NULL
+    interval_map <- NULL
+  } else if (is.list(x) &&
+    length(x) >= 1 &&
+    all(vapply(x, is.data.frame, logical(1)))) {
+    samples <- do.call(rbind, x)
+    rownames(samples) <- NULL
+    estimate_map <- NULL
+    interval_map <- NULL
+  } else {
+    stop(
+      "`x` must be an `ngme_sgld_ci` object or a data.frame/list returned by `ngme_sgld_samples()`."
+    )
+  }
+
+  if (is.null(lower)) lower <- 0.025
+  if (is.null(upper)) upper <- 0.975
+
+  stopifnot(
+    is.numeric(lower),
+    length(lower) == 1,
+    is.finite(lower),
+    lower > 0,
+    lower < 1,
+    is.numeric(upper),
+    length(upper) == 1,
+    is.finite(upper),
+    upper > 0,
+    upper < 1,
+    lower < upper,
+    is.logical(by_chain),
+    length(by_chain) == 1,
+    is.logical(show_estimate),
+    length(show_estimate) == 1,
+    is.logical(show_interval),
+    length(show_interval) == 1,
+    is.numeric(bins),
+    length(bins) == 1,
+    is.finite(bins),
+    bins >= 1,
+    abs(bins - round(bins)) < sqrt(.Machine$double.eps)
+  )
+
+  param_cols <- setdiff(colnames(samples), c(".chain", ".draw", ".iter"))
+  stopifnot(length(param_cols) >= 1)
+  stopifnot(
+    "All parameter columns in `x` must be numeric." =
+      all(vapply(samples[, param_cols, drop = FALSE], is.numeric, logical(1)))
+  )
+
+  if (!is.null(parameters)) {
+    stopifnot(is.character(parameters))
+    missing_params <- setdiff(parameters, param_cols)
+    if (length(missing_params) > 0) {
+      stop(
+        "Unknown parameter(s): ",
+        paste(missing_params, collapse = ", ")
+      )
+    }
+    param_cols <- parameters
+  }
+
+  facet_ncol <- if (is.null(ncol)) {
+    if (length(param_cols) > 1) 2L else 1L
+  } else {
+    if (!is.numeric(ncol) || length(ncol) != 1 || is.na(ncol) ||
+      ncol < 1 || abs(ncol - round(ncol)) > 0) {
+      stop("`ncol` must be a positive integer or NULL.")
+    }
+    as.integer(ncol)
+  }
+
+  long_df <- data.frame(
+    parameter = rep(param_cols, each = nrow(samples)),
+    value = as.numeric(unlist(samples[, param_cols, drop = FALSE], use.names = FALSE)),
+    stringsAsFactors = FALSE
+  )
+  if (".chain" %in% colnames(samples)) {
+    long_df$.chain <- rep(samples$.chain, times = length(param_cols))
+  }
+
+  summary_df <- data.frame(
+    parameter = param_cols,
+    estimate = numeric(length(param_cols)),
+    lower = numeric(length(param_cols)),
+    upper = numeric(length(param_cols)),
+    stringsAsFactors = FALSE
+  )
+
+  for (idx in seq_along(param_cols)) {
+    param_name <- param_cols[[idx]]
+    vals <- samples[[param_name]]
+
+    if (!is.null(estimate_map) && !is.null(names(estimate_map)) &&
+      param_name %in% names(estimate_map)) {
+      summary_df$estimate[idx] <- estimate_map[[param_name]]
+    } else {
+      summary_df$estimate[idx] <- mean(vals, na.rm = TRUE)
+    }
+
+    if (!is.null(interval_map) && is.matrix(interval_map) &&
+      param_name %in% rownames(interval_map)) {
+      summary_df$lower[idx] <- interval_map[param_name, "lower"]
+      summary_df$upper[idx] <- interval_map[param_name, "upper"]
+    } else {
+      qq <- stats::quantile(vals, probs = c(lower, upper), na.rm = TRUE, names = FALSE)
+      summary_df$lower[idx] <- qq[[1]]
+      summary_df$upper[idx] <- qq[[2]]
+    }
+  }
+
+  long_df$parameter <- factor(long_df$parameter, levels = param_cols)
+  summary_df$parameter <- factor(summary_df$parameter, levels = param_cols)
+
+  p <- ggplot2::ggplot(long_df, ggplot2::aes(x = .data[["value"]]))
+
+  if (identical(type, "density")) {
+    if (isTRUE(by_chain) && ".chain" %in% colnames(long_df)) {
+      p <- p + ggplot2::geom_density(
+        ggplot2::aes(
+          color = factor(.data[[".chain"]]),
+          fill = factor(.data[[".chain"]])
+        ),
+        alpha = 0.2
+      ) +
+        ggplot2::labs(color = "Chain", fill = "Chain")
+    } else {
+      p <- p + ggplot2::geom_density(fill = "grey70", alpha = 0.5)
+    }
+  } else {
+    if (isTRUE(by_chain) && ".chain" %in% colnames(long_df)) {
+      p <- p + ggplot2::geom_histogram(
+        ggplot2::aes(
+          y = ggplot2::after_stat(density),
+          fill = factor(.data[[".chain"]])
+        ),
+        bins = as.integer(bins),
+        alpha = 0.4,
+        position = "identity"
+      ) +
+        ggplot2::labs(fill = "Chain")
+    } else {
+      p <- p + ggplot2::geom_histogram(
+        ggplot2::aes(y = ggplot2::after_stat(density)),
+        bins = as.integer(bins),
+        fill = "grey70",
+        color = "white"
+      )
+    }
+  }
+
+  if (isTRUE(show_interval)) {
+    p <- p +
+      ggplot2::geom_vline(
+        data = summary_df,
+        ggplot2::aes(xintercept = .data[["lower"]]),
+        color = "firebrick",
+        linetype = "dashed",
+        inherit.aes = FALSE
+      ) +
+      ggplot2::geom_vline(
+        data = summary_df,
+        ggplot2::aes(xintercept = .data[["upper"]]),
+        color = "firebrick",
+        linetype = "dashed",
+        inherit.aes = FALSE
+      )
+  }
+
+  if (isTRUE(show_estimate)) {
+    p <- p + ggplot2::geom_vline(
+      data = summary_df,
+      ggplot2::aes(xintercept = .data[["estimate"]]),
+      color = "royalblue",
+      inherit.aes = FALSE
+    )
+  }
+
+  plot_name <- attr(samples, "name")
+  plot_title <- "Posterior parameter distributions"
+  if (!is.null(plot_name) && nzchar(plot_name)) {
+    plot_title <- paste0(plot_title, " (", plot_name, ")")
+  }
+
+  p +
+    ggplot2::facet_wrap(~parameter, scales = "free", ncol = facet_ncol) +
+    ggplot2::labs(
+      title = plot_title,
+      subtitle = paste0(
+        "Intervals: ",
+        formatC(lower, format = "f", digits = 3),
+        " to ",
+        formatC(upper, format = "f", digits = 3)
+      ),
+      x = "Value",
+      y = "Density"
+    ) +
+    ggplot2::theme_minimal() +
+    ggplot2::theme(
+      strip.text = ggplot2::element_text(size = 12, face = "bold"),
+      plot.title = ggplot2::element_text(size = 14, face = "bold")
+    )
+}
+
+#' @rdname posterior_plot
+#' @export
+plot.ngme_sgld_ci <- function(x, ...) {
+  posterior_plot(x, ...)
+}
+
 
 
 #' Plot the density of one or more stationary noise objects

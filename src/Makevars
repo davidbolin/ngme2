@@ -131,7 +131,7 @@ R_XTRA_CPPFLAGS =  -I$(R_INCLUDE_DIR)
 UTILS = util/GIG.o util/rgig.o util/MatrixAlgebra.o util/solver.o
 # $(wildcard util/*.o)
 
-LATENTS = latents/ou.o latents/matern.o latents/tensorprod.o latents/randeff.o latents/bivar.o latents/generic.o latents/generic_ns.o latents/arma.o latents/fractional/fractional_operators.o
+LATENTS = latents/ou.o latents/matern.o latents/tensorprod.o latents/randeff.o latents/bivar.o latents/generic.o latents/generic_ns.o latents/arma.o latents/rcallback.o latents/fractional/fractional_operators.o
 # $(wildcard latents/*.o)
 
 OBJECTS = $(sslib) RcppExports.o prior.o noise.o sample_rGIG.o estimate.o optimizer.o block.o latent.o ngme.o loglikelihood.o operator.o \

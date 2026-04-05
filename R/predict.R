@@ -10,6 +10,7 @@
 #' "fe" is fixed effect prediction
 #' <model_name> is prediction of a specific model
 #' "lp" is linear predictor (including fixed effect and all sub-models)
+#' "response" is the linear predictor plus a fresh measurement-noise draw
 #' @param group which filed to predict
 #'   (used for bivariate model, should be of same length as map)
 #' @param estimator what type of estimator. Options include:
@@ -27,6 +28,9 @@
 #'     \item \code{"predictive_average"}: run prediction for each optimization chain and
 #'       average predictions across chains.
 #'   }
+#' @param return_samples logical; when `TRUE`, attach sample draws for the
+#'   requested output in `attr(ret, "samples")`. For `type = "response"`, the
+#'   attached samples are response predictive draws.
 #' @param ... additional arguments (currently unused)
 #'
 #' @return a list of outputs contains estimation of operator paramters, noise parameters
@@ -43,6 +47,7 @@ predict.ngme <- function(
     seed = Sys.time(),
     train_idx = NULL,
     chain_combine = c("param_mean", "predictive_average"),
+    return_samples = FALSE,
     ...) {
   chain_combine <- match.arg(chain_combine)
   stopifnot(
@@ -64,7 +69,8 @@ predict.ngme <- function(
           sampling_size = sampling_size,
           burnin_size = burnin_size,
           seed = seed + i - 1L,
-          train_idx = train_idx
+          train_idx = train_idx,
+          return_samples = return_samples
         )
       })
 
@@ -92,7 +98,8 @@ predict.ngme <- function(
     sampling_size = sampling_size,
     burnin_size = burnin_size,
     seed = seed,
-    train_idx = train_idx
+    train_idx = train_idx,
+    return_samples = return_samples
   )
 }
 
@@ -107,9 +114,11 @@ predict_ngme_param_mean <- function(
     sampling_size = 500,
     burnin_size = 100,
     seed = Sys.time(),
-    train_idx = NULL) {
+    train_idx = NULL,
+    return_samples = FALSE) {
   fm <- attr(object, "fit")$formula
   ngme <- object$replicates[[1]]
+  seed_int <- as.integer(abs(seed) %% 2147483647)
 
   # If train_idx is provided, subset the data for posterior sampling
   if (!is.null(train_idx)) {
@@ -137,12 +146,45 @@ predict_ngme_param_mean <- function(
     n = sampling_size,
     n_burnin = burnin_size,
     posterior = TRUE,
-    seed = seed
+    seed = seed_int
   )[["W"]]
 
   # Convert samples_W from list to matrix
   if (is.list(samples_W)) {
     samples_W <- do.call(cbind, samples_W)
+  }
+
+  use_output_samples <- identical(type, "response") || isTRUE(return_samples)
+
+  if (use_output_samples) {
+    output_samples <- build_prediction_output_samples(
+      ngme = ngme,
+      fm = fm,
+      map = map,
+      data = data,
+      type = type,
+      group = group,
+      samples_W = samples_W
+    )
+
+    if (identical(type, "response")) {
+      if (isTRUE(ngme$noise$corr_measurement)) {
+        stop("type = 'response' does not currently support correlated measurement noise.")
+      }
+
+      noise_draws <- simulate_predictive_noise_draws(
+        noise = ngme$noise,
+        n_pred = nrow(output_samples),
+        n_samp = ncol(output_samples),
+        seed = seed_int + 100000L
+      )
+      output_samples <- ensure_prediction_sample_matrix(output_samples + noise_draws)
+    }
+
+    ret <- summarize_prediction_samples(output_samples, estimator)
+    attr(ret, "samples") <- output_samples
+    attr(ret, "latent_samples") <- samples_W
+    return(ret)
   }
 
   ret <- NULL
@@ -247,4 +289,212 @@ predict_ngme_param_mean <- function(
   }
   attr(ret, "samples") <- samples_W
   ret
+}
+
+
+build_prediction_output_samples <- function(
+    ngme,
+    fm,
+    map,
+    data,
+    type,
+    group,
+    samples_W) {
+  n_samp <- ncol(samples_W)
+
+  type_names <- if (type %in% c("lp", "response")) c("fe", names(ngme$models)) else type
+  needs_map <- any(type_names %in% names(ngme$models))
+
+  if (needs_map) {
+    stopifnot(
+      "map should be a named list (name for each model)" = is.list(map) && !is.null(names(map))
+    )
+    stopifnot(length(names(map)) == length(ngme$models))
+  }
+
+  fixed_effect <- NULL
+  n_pred <- NULL
+  if ("fe" %in% type_names && length(ngme$feff) > 0) {
+    X_pred <- build_predict_model_matrix(
+      fm = fm,
+      ngme = ngme,
+      data = data,
+      n_pred = if (!is.null(data)) nrow(data) else NULL
+    )
+    fixed_effect <- as.numeric(X_pred %*% ngme$feff)
+    n_pred <- length(fixed_effect)
+  }
+
+  model_draws <- list()
+  if (needs_map) {
+    j <- 1
+    for (i in seq_along(ngme$models)) {
+      model <- ngme$models[[i]]
+      sz <- model$W_size
+      loc <- map[[model$name]]
+      if (is.null(loc)) stop("The loction for model ", model$name, " is not provided")
+      if (inherits(model$operator$mesh, "metric_graph")) {
+        loc <- as.data.frame(loc)
+      } else if (model$model != "tp") {
+        loc <- as.matrix(loc)
+      } else {
+        stopifnot(
+          length(loc) == 2,
+          length_map(loc[[1]]) == length_map(loc[[2]])
+        )
+      }
+
+      A <- ngme_build_A(
+        model$model,
+        model$operator$mesh,
+        loc,
+        model$operator,
+        group,
+        group_levels = levels(ngme$group)
+      )
+
+      model_draws[[model$name]] <- A %*% samples_W[j:(j + sz - 1), , drop = FALSE]
+      j <- j + sz
+      if (is.null(n_pred)) n_pred <- nrow(model_draws[[model$name]])
+    }
+  }
+
+  if (is.null(n_pred)) {
+    stop("Could not determine prediction size. Please provide either `map` or `data`.")
+  }
+
+  output_samples <- matrix(0, nrow = n_pred, ncol = n_samp)
+
+  for (name in type_names) {
+    if (name == "fe" && !is.null(fixed_effect)) {
+      output_samples <- output_samples +
+        matrix(rep(fixed_effect, n_samp), nrow = n_pred, ncol = n_samp)
+    } else if (name %in% names(model_draws)) {
+      output_samples <- output_samples + model_draws[[name]]
+    }
+  }
+
+  ensure_prediction_sample_matrix(output_samples)
+}
+
+
+build_predict_model_matrix <- function(fm, ngme, data, n_pred = NULL) {
+  if (is.null(data) && attr(terms(fm), "intercept")) {
+    if (is.null(n_pred)) stop("Please provide covariates for predictions")
+    return(matrix(1, nrow = n_pred, ncol = 1))
+  }
+
+  stopifnot("Please provide covariates for predictions" = !is.null(data))
+  tf <- terms.formula(fm, specials = c("f"))
+  terms <- attr(tf, "term.labels")
+  intercept <- attr(tf, "intercept")
+  spec_order <- attr(tf, "specials")$f - 1
+  fixf <- if (length(spec_order) == 0) terms else terms[-spec_order]
+  plain_fm_str <- paste("~", intercept, paste(c("", fixf), collapse = " + "))
+  plain_fm <- formula(plain_fm_str)
+  X_pred <- model.matrix(plain_fm, data = data)
+  if (!is.null(data) && nrow(X_pred) < nrow(data)) {
+    stop("The data has NA values in the covariates.")
+  }
+  X_pred
+}
+
+
+summarize_prediction_samples <- function(samples, estimator) {
+  samples <- ensure_prediction_sample_matrix(samples)
+  ret <- list()
+  for (est in estimator) {
+    if (grepl("^0\\.[0-9]*[1-9][0-9]*q$", est)) {
+      quantile_prob <- as.numeric(gsub("q$", "", est))
+      if (quantile_prob <= 0 || quantile_prob >= 1) {
+        stop("Quantile probability should be between 0 and 1 (exclusive). Got: ", quantile_prob)
+      }
+      ret[[est]] <- apply(samples, 1, quantile, quantile_prob)
+    } else {
+      ret[[est]] <- switch(est,
+        "mean" = rowMeans(samples),
+        "median" = apply(samples, 1, median),
+        "sd" = apply(samples, 1, sd),
+        "mode" = apply(samples, 1, emprical_mode),
+        stop("No such estimator available: ", est)
+      )
+    }
+  }
+  ret
+}
+
+
+ensure_prediction_sample_matrix <- function(samples) {
+  if (is.matrix(samples)) {
+    return(samples)
+  }
+
+  if (inherits(samples, "Matrix")) {
+    return(as.matrix(samples))
+  }
+
+  if (is.null(dim(samples))) {
+    return(matrix(samples, ncol = 1))
+  }
+
+  as.matrix(samples)
+}
+
+
+simulate_predictive_noise_draws <- function(noise, n_pred, n_samp, seed) {
+  if (length(noise$noise_type) == 2) {
+    stop("type = 'response' does not currently support bivariate measurement noise.")
+  }
+
+  h_vec <- rep(1, n_pred)
+  mu_vec <- recycle_predictive_noise_param(
+    as.numeric(noise$B_mu %*% noise$theta_mu),
+    n_pred = n_pred,
+    param_name = "mu"
+  )
+  sigma_vec <- recycle_predictive_noise_param(
+    as.numeric(exp(noise$B_sigma %*% noise$theta_sigma)),
+    n_pred = n_pred,
+    param_name = "sigma"
+  )
+  nu_vec <- recycle_predictive_noise_param(
+    as.numeric(noise$nu_lower_bound + exp(noise$B_nu %*% noise$theta_nu)),
+    n_pred = n_pred,
+    param_name = "nu"
+  )
+
+  noise_draws <- vapply(seq_len(n_samp), function(i) {
+    simulate_noise(
+      noise_type = noise$noise_type,
+      h_vec = h_vec,
+      mu_vec = mu_vec,
+      sigma_vec = sigma_vec,
+      nu_vec = nu_vec,
+      seed = seed + i,
+      single_V = noise$single_V
+    )
+  }, numeric(n_pred))
+
+  as.matrix(noise_draws)
+}
+
+
+recycle_predictive_noise_param <- function(param_vec, n_pred, param_name) {
+  if (length(param_vec) == n_pred) {
+    return(param_vec)
+  }
+
+  if (length(param_vec) == 1) {
+    return(rep(param_vec, n_pred))
+  }
+
+  if (all(isTRUE(all.equal(param_vec, rep(param_vec[[1]], length(param_vec)))))) {
+    return(rep(param_vec[[1]], n_pred))
+  }
+
+  stop(
+    "type = 'response' requires measurement-noise ", param_name,
+    " to be scalar or already match prediction length. Got length ",
+    length(param_vec), " for ", n_pred, " prediction locations."
+  )
 }

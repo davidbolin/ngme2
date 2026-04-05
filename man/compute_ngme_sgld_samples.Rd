@@ -19,6 +19,7 @@ compute_ngme_sgld_samples(
   name = "all",
   burnin_iter = 0,
   thinning = 1,
+  n_gibbs_samples = NULL,
   apply_transform = TRUE,
   combine_chains = TRUE,
   control_opt = NULL,
@@ -56,6 +57,10 @@ warmup (`stepsize_schedule_burnin_iter`) and as explicit trajectory
 trimming before sampling.}
 
 \item{thinning}{positive integer thinning interval.}
+
+\item{n_gibbs_samples}{optional positive integer. If supplied, override
+`control_ngme$n_gibbs_samples` for the SGLD refit stage only; otherwise
+inherit the value from `fit`.}
 
 \item{apply_transform}{logical; apply parameter transforms to user scale.}
 

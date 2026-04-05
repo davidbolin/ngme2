@@ -688,3 +688,156 @@ spacetime <- function(
       })
   )
 }
+
+
+#' ngme VAR(1) bivariate model specification (Cayley re-parameterization)
+#'
+#' Builds a Vector Autoregressive order-1 (VAR(1)) operator for bivariate
+#' time-series data.  The model follows:
+#' \deqn{Y_t = A\,Y_{t-1} + \varepsilon_t, \quad
+#'   A = \begin{pmatrix} a_{11} & a_{12} \\ a_{21} & a_{22} \end{pmatrix}}
+#'
+#' @section Cayley re-parameterization:
+#' To guarantee stationarity (\eqn{\rho(A) < 1}) at every SGD step, the
+#' \eqn{2 \times 2} coefficient matrix \eqn{A} is obtained via the
+#' \emph{Cayley transform}:
+#' \deqn{A = (I + S)(I - S)^{-1}}
+#' where \eqn{S} is constructed from four unconstrained real parameters
+#' \eqn{(p_1, p_2, p_3, p_4) \in \mathbb{R}^4} as \eqn{S = J - R}:
+#' \describe{
+#'   \item{Skew-symmetric part (rotation):}{
+#'     \eqn{J = \begin{pmatrix} 0 & p_1 \\ -p_1 & 0 \end{pmatrix}}}
+#'   \item{Positive-definite part (contraction):}{
+#'     \eqn{R = L L^{\top} + \varepsilon I}, where
+#'     \eqn{L = \begin{pmatrix} p_2 & 0 \\ p_3 & p_4 \end{pmatrix}}
+#'     and \eqn{\varepsilon = 10^{-5}}.}
+#' }
+#' Because \eqn{S + S^{\top} = -2R} is negative definite, all eigenvalues of
+#' \eqn{S} have strictly negative real parts, and the Cayley transform then
+#' guarantees \eqn{|\lambda_i(A)| < 1} for every \eqn{i}.
+#'
+#' The default values \eqn{(p_1, p_2, p_3, p_4) = (0, 1, 0, 1)} give
+#' \eqn{A \approx 0} (no auto-regression at initialization).
+#'
+#' @section Precision operator:
+#' The 2T x 2T precision operator is:
+#' \deqn{K = M_0 + a_{11}\,M_{11} + a_{22}\,M_{22}
+#'          + a_{12}\,M_{12} + a_{21}\,M_{21}}
+#' where the \eqn{M_{ij}} are fixed sparse block matrices constructed from the
+#' \eqn{T \times T} first-order difference matrix \eqn{C_T}.
+#'
+#' @param mesh Integer vector or \code{inla.mesh.1d} object for the time mesh
+#'   (length \eqn{T}).  Pass \code{NULL} for deferred construction.
+#' @param p1 Unconstrained skew-symmetric parameter (\eqn{\in \mathbb{R}});
+#'   controls the rotation part of the Cayley mapping.  Default \code{0}.
+#' @param p2,p3,p4 Unconstrained lower-triangular Cholesky parameters
+#'   (\eqn{\in \mathbb{R}}); control the contraction (positive-definite) part.
+#'   Defaults \code{p2 = 1}, \code{p3 = 0}, \code{p4 = 1}.
+#'
+#' @return An \code{ngme_operator} (or \code{ngme_operator_def} when
+#'   \code{mesh = NULL}) suitable for use inside \code{f()}.
+#'
+#' @examples
+#' \dontrun{
+#' n_obs <- 200
+#' dat <- data.frame(
+#'   y     = c(y1_series, y2_series),
+#'   idx   = rep(seq_len(n_obs), 2),
+#'   group = factor(rep(c("y1", "y2"), each = n_obs))
+#' )
+#'
+#' fit <- ngme(
+#'   y ~ 0 + f(idx, model = var1(mesh = 1:n_obs), group = group,
+#'             noise = noise_nig()),
+#'   data    = dat,
+#'   family  = noise_normal(sigma = 0.01, fix_sigma = TRUE),
+#'   control_opt = control_opt(iterations = 1000, n_parallel_chain = 4)
+#' )
+#' print(fit)
+#' }
+#'
+#' @export
+var1 <- function(mesh = NULL, p1 = 0, p2 = 1, p3 = 0, p4 = 1) {
+  # Deferred construction (mesh not yet available)
+  if (is.null(mesh) ||
+    (is.list(mesh) && !inherits(mesh, c("inla.mesh.1d", "inla.mesh",
+                                        "fm_mesh_1d", "fm_mesh_2d")))) {
+    return(structure(list(model = "var1", args = as.list(environment())),
+                     class = "ngme_operator_def"))
+  }
+
+  mesh <- ngme_build_mesh(mesh)
+  n    <- mesh$n       # number of time points T per series
+  eps  <- 1e-5         # small regulariser for positive definiteness
+
+  # ---- Cayley transform: (p1, p2, p3, p4) -> 2x2 stationary matrix A ----
+  #
+  # Constructs S = J - R where:
+  #   J = [[0, p1], [-p1, 0]]              (skew-symmetric, purely imaginary ev)
+  #   R = L L^T + eps I,  L = [[p2, 0], [p3, p4]]   (positive definite)
+  #
+  # S + S^T = -2R  =>  all eigenvalues of S have Re < 0
+  # Cayley:  A = (I + S)(I - S)^{-1}  =>  |eigenvalue(A)| < 1  (stationarity)
+  #
+  # Note: (I+S) and (I-S) commute  =>  solve(I-S, I+S) = (I+S)(I-S)^{-1}
+  cayley_to_A <- function(p) {
+    p1 <- p[1]; p2 <- p[2]; p3 <- p[3]; p4 <- p[4]
+    I2 <- diag(2)
+
+    # Skew-symmetric rotation part
+    J  <- matrix(c(0, -p1, p1, 0), nrow = 2)      # J[1,2]=p1, J[2,1]=-p1
+
+    # Positive-definite contraction part  (lower triangular Cholesky)
+    L  <- matrix(c(p2, p3, 0, p4), nrow = 2)       # L[1,1]=p2, L[2,1]=p3, L[2,2]=p4
+    R  <- L %*% t(L) + eps * I2
+
+    # Stable matrix: all eigenvalues have negative real parts
+    S  <- J - R
+
+    # Cayley transform: spectral radius of A is strictly < 1
+    solve(I2 - S, I2 + S)
+  }
+
+  # ---- Build T x T base matrices ----
+  G      <- Matrix::Diagonal(n)                                  # identity
+  C      <- Matrix::sparseMatrix(                                # C[t, t-1] = -1
+    i = 2:n, j = 1:(n - 1), x = -1, dims = c(n, n)
+  )
+  zero_n <- Matrix::Diagonal(n, x = 0)
+
+  # ---- Build 2T x 2T block matrices ----
+  M0  <- Matrix::bdiag(G, G)                                    # base
+  M11 <- Matrix::bdiag(C, zero_n)                               # own-lag y1
+  M22 <- Matrix::bdiag(zero_n, C)                               # own-lag y2
+  M12 <- rbind(cbind(zero_n, C),      cbind(zero_n, zero_n))   # cross-lag y1 <- y2
+  M21 <- rbind(cbind(zero_n, zero_n), cbind(C,      zero_n))   # cross-lag y2 <- y1
+
+  # ---- update_K: called by the optimizer at every gradient step ----
+  update_K <- function(theta_K) {
+    A   <- cayley_to_A(theta_K)
+    a11 <- A[1, 1]; a12 <- A[1, 2]
+    a21 <- A[2, 1]; a22 <- A[2, 2]
+    ngme_as_sparse(M0 + a11 * M11 + a22 * M22 + a12 * M12 + a21 * M21)
+  }
+
+  theta_K <- c(p1 = p1, p2 = p2, p3 = p3, p4 = p4)
+
+  ngme_operator(
+    mesh         = mesh,
+    model        = "var1",
+    theta_K      = theta_K,
+    K            = ngme_as_sparse(update_K(theta_K)),
+    h            = rep(1, 2 * n),
+    update_K     = update_K,
+    cayley_to_A  = cayley_to_A,           # stored for print / tests
+    matrices     = list(
+      ngme_as_sparse(M0),  ngme_as_sparse(M11), ngme_as_sparse(M22),
+      ngme_as_sparse(M12), ngme_as_sparse(M21)
+    ),
+    symmetric    = FALSE,
+    zero_trace   = FALSE,
+    generic_type = "none",   # Cayley is nonlinear; numerical gradient used
+    param_name   = c("p1", "p2", "p3", "p4"),
+    param_trans  = list(identity, identity, identity, identity)
+  )
+}

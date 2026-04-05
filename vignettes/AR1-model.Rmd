@@ -688,6 +688,119 @@ with(params_ar1, {
 })
 ```
 
+## SGLD Posterior Credible Intervals
+
+Point estimates from the Adam optimiser summarise the mode of the
+parameter distribution, but do not quantify uncertainty. Stochastic
+Gradient Langevin Dynamics (SGLD) extends SGD by injecting Gaussian
+noise at each step:
+
+$$\theta_{t+1} = \theta_t - \eta_t\,\nabla U(\theta_t) + \sqrt{2T\eta_t}\,\xi_t, \quad \xi_t \sim \mathcal{N}(0, I),$$
+
+so that, with a suitably decaying step-size $\eta_t$ and temperature
+$T = 1$, the iterates explore the posterior distribution.  We
+warm-start the SGLD run from the already fitted model `ngme_out`,
+which means only a modest number of additional iterations is needed.
+
+### Running SGLD from the Existing Fit
+
+`compute_ngme_sgld_samples()` refits the model with SGLD (initialised
+from `ngme_out`), stores the full parameter trajectory, discards an
+initial burn-in segment, applies thinning, and returns a tidy
+data frame of posterior-like samples:
+
+```{r sgld-fit, eval=FALSE}
+samp <- compute_ngme_sgld_samples(
+  fit = ngme_out,
+  iterations = 3000,
+  optimizer = sgld(stepsize = 0.01, temperature = 1),
+  burnin = 100,
+  n_batch = 20,
+  # verbose = TRUE,
+  n_parallel_chain = 2,
+  alpha = 0.6, # poly_decay exponent
+  t0 = 10, # poly_decay offset
+  burnin_iter = 500, # discard first 500 stored iterates
+  thinning = 10, # keep every 10th iterate
+  name = "all", # all latent + noise + fixed-effect parameters
+  apply_transform = TRUE # return parameters on the user scale
+)
+
+head(samp)
+```
+
+The returned data frame has columns `.chain`, `.draw`, `.iter`, and
+one column per parameter on the interpretable (transformed) scale.
+
+### Computing 95% Credible Intervals
+
+`ngme_sgld_ci()` computes parameter-wise quantile credible intervals
+directly from the sample data frame:
+
+```{r sgld-ci, eval=FALSE}
+ci <- ngme_sgld_ci(
+  samples = samp,
+  lower   = 0.025,
+  upper   = 0.975
+)
+
+# Point estimates (posterior mean)
+ci$estimates
+
+# 95% credible intervals
+ci$ci
+```
+
+### Posterior Distribution Plots
+
+To inspect the full marginal posterior shape rather than only the
+interval endpoints, use `posterior_plot()` (or equivalently
+`plot(ci)`) on the SGLD output. The example below plots the first few
+parameters, colors densities by chain, and overlays the posterior mean
+and equal-tail credible interval:
+
+```{r sgld-posterior-plot, eval=FALSE, fig.height=6, fig.width=8}
+plot(
+  ci,
+  parameters = head(names(ci$estimates), 4),
+  by_chain = FALSE,
+  ncol = 2
+)
+```
+
+This plot is useful for diagnosing skewness, heavy tails, multi-modality,
+and possible discrepancies between chains that are not obvious from a
+summary table alone.
+
+### Posterior Summary Table
+
+For a concise overview of the posterior distribution for each
+parameter, we can compute the mean and 95% CI in a single data frame:
+
+```{r sgld-summary, eval=FALSE}
+param_cols <- setdiff(colnames(samp), c(".chain", ".draw", ".iter"))
+
+summary_df <- do.call(rbind, lapply(param_cols, function(p) {
+  x <- samp[[p]]
+  data.frame(
+    parameter = p,
+    mean = mean(x),
+    lower = as.numeric(stats::quantile(x, 0.025)),
+    upper = as.numeric(stats::quantile(x, 0.975)),
+    row.names = NULL
+  )
+}))
+
+print(summary_df, row.names = FALSE)
+```
+
+The table lists, for every estimated parameter, the posterior mean
+alongside the lower and upper 2.5% quantiles that form the 95%
+credible interval.  Parameters whose intervals exclude zero (or,
+for scale parameters such as $\sigma$, exclude one) are those for
+which the data provide strong evidence.
+
+
 ## Prediction
 
 Once we have fitted an AR(1) model using `ngme2`, we can use it to make predictions for new observations. The `predict()` method provides flexible prediction capabilities, allowing us to forecast future values, interpolate missing observations, or predict at new covariate combinations.
@@ -1208,152 +1321,232 @@ p_posterior <- ggplot(viz_data, aes(x = time)) +
 print(p_posterior)
 ```
 
-### Response Variable Posterior Predictive Check
+### Plug-in Simulation Check
 
-We now assess model adequacy by generating posterior predictive samples for the response variable (Y) and comparing them with the observed data:
+To assess the calibration of prediction intervals without conditioning on the
+same realized response, we now switch to a *plug-in parametric simulation*
+experiment. We use the fitted parameter values as if they were the true
+parameters, simulate new response trajectories from that fitted model, and
+construct pointwise 50% and 95% intervals from those simulated trajectories.
 
-```{r posterior-predictive-check, fig.height=6, fig.width=8, echo=FALSE}
+To benchmark this plug-in construction, we also generate the corresponding
+intervals from the known true data-generating mechanism used to simulate the
+example.
+
+```{r posterior-predictive-check, echo=TRUE}
 n_sims <- 300
+sigma_eps_true <- 2
 
-# Generate posterior predictive samples for Y using simulate()
-Y_sim <- simulate(ngme_out, posterior = TRUE, m_noise = TRUE, nsim = n_sims)
+beta_hat <- as.numeric(params_data$beta)
+sigma_eps_hat <- as.numeric(params_data$sigma)
 
-# Convert to matrix for easier handling
-Y_sim_matrix <- as.matrix(Y_sim)
-
-# Compare observed vs simulated Y values
-par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
-
-# 1. Scatter plot: Observed vs Posterior Mean (much clearer visualization)
-y_mean <- rowMeans(Y_sim_matrix)
-y_lower <- apply(Y_sim_matrix, 1, quantile, 0.025)
-y_upper <- apply(Y_sim_matrix, 1, quantile, 0.975)
-plot(y_mean, Y,
-  pch = 16, col = rgb(0.3, 0.3, 0.3, 0.6), cex = 0.8,
-  main = "Observed vs Posterior Mean",
-  xlab = "Posterior Mean", ylab = "Observed Y",
-  xlim = range(c(y_mean, Y)), ylim = range(c(y_mean, Y))
+ar1_model_fitted <- f(
+  time_index,
+  model = ar1(rho = params_ar1$rho),
+  noise = noise_nig(mu = params_ar1$mu, sigma = params_ar1$sigma, nu = params_ar1$nu)
 )
 
-# Add 1:1 reference line
-abline(0, 1, col = "red", lwd = 1, lty = 2)
+X_beta_true <- as.numeric(X %*% feff)
+X_beta_hat <- as.numeric(X %*% beta_hat)
 
-segments(y_mean, y_lower,
-  y_mean, y_upper,
-  col = rgb(0.64, 0.23, 0.45, 0.1), lwd = 1
-)
+W_fitted_sim <- as.matrix(simulate(ar1_model_fitted, nsim = n_sims, seed = 710))
+W_true_sim <- as.matrix(simulate(ar1_nig, nsim = n_sims, seed = 1710))
 
-# Calculate and display correlation
-correlation <- cor(Y, y_mean)
-mtext(paste("Correlation =", round(correlation, 3)), side = 3, line = 0.2, cex = 0.9)
+eps_fitted <- matrix(rnorm(n_obs * n_sims, sd = sigma_eps_hat), nrow = n_obs, ncol = n_sims)
+eps_true <- matrix(rnorm(n_obs * n_sims, sd = sigma_eps_true), nrow = n_obs, ncol = n_sims)
 
-legend("topleft",
-  legend = c("Data points", "Perfect fit", "95% CI"),
-  col = c(rgb(0.3, 0.3, 0.3, 0.6), "red", rgb(0.64, 0.23, 0.45, 0.4)),
-  pch = c(16, NA, NA), lty = c(NA, 2, 1), lwd = c(NA, 1, 1), bty = "n"
-)
-
-# 2. Histogram comparison
-hist(Y,
-  breaks = 40, col = rgb(0.18, 0.53, 0.67, 0.7),
-  main = "Distribution Comparison", xlab = "Y values",
-  freq = FALSE, border = "white"
-)
-hist(unlist(Y_sim),
-  breaks = 40, col = rgb(0.64, 0.23, 0.45, 0.7),
-  add = TRUE, freq = FALSE, border = "white"
-)
-legend("topleft",
-  legend = c("Observed", "Simulated"),
-  fill = c(rgb(0.18, 0.53, 0.67, 0.7), rgb(0.64, 0.23, 0.45, 0.7)),
-  bty = "n"
-)
-
-# 3. Q-Q plot
-qqplot(Y, unlist(Y_sim),
-  main = "Q-Q Plot",
-  xlab = "Observed Y quantiles", ylab = "Simulated Y quantiles",
-  pch = 16, col = rgb(0.3, 0.3, 0.3, 0.6)
-)
-abline(0, 1, col = "red", lwd = 1)
-
-# 4. Posterior predictive distribution comparison using density plots
-d_observed <- density(Y)
-d_simulated <- density(unlist(Y_sim))
-
-plot(d_observed,
-  col = "#2E86AB", lwd = 1,
-  main = "Density Comparison",
-  xlab = "Y values", ylab = "Density",
-  xlim = range(c(d_observed$x, d_simulated$x)),
-  ylim = range(c(d_observed$y, d_simulated$y))
-)
-lines(d_simulated, col = rgb(0.64, 0.23, 0.45, 0.8), lwd = 1)
-
-# Add some key statistics as vertical lines
-abline(v = mean(Y), col = "#2E86AB", lty = 2, lwd = 1)
-abline(v = mean(unlist(Y_sim)), col = rgb(0.64, 0.23, 0.45, 0.8), lty = 2, lwd = 2)
-
-legend("topleft",
-  legend = c("Observed", "Simulated", "Obs. mean", "Sim. mean"),
-  col = c("#2E86AB", rgb(0.64, 0.23, 0.45, 0.8), "#2E86AB", rgb(0.64, 0.23, 0.45, 0.8)),
-  lty = c(1, 1, 2, 2), lwd = c(1, 1, 1, 1), bty = "n"
-)
+Y_fitted_sim_matrix <- W_fitted_sim + X_beta_hat + eps_fitted
+Y_true_sim_matrix <- W_true_sim + X_beta_true + eps_true
 ```
 
-### Response Variable Prediction Intervals
+### Prediction Interval Calibration
 
-Finally, we assess the calibration of our prediction intervals by examining how well the posterior predictive samples capture the observed data:
+We now compare two interval constructions:
+
+1. **Plug-in fitted intervals**, obtained by simulating responses from the
+   fitted AR(1) and noise parameters.
+2. **Oracle true intervals**, obtained by simulating responses from the known
+   true data-generating mechanism used in this vignette.
+
+For each construction, we evaluate coverage using fresh response trajectories
+generated from the true mechanism. This avoids reusing the same realized
+response for both fitting and coverage assessment.
 
 ```{r uncertainty-bands, fig.height=5, fig.width=8, echo=FALSE}
-# Calculate prediction intervals from posterior samples
-y_quantiles <- apply(Y_sim_matrix, 1, quantile, probs = c(0.025, 0.25, 0.5, 0.75, 0.975))
+fitted_quantiles <- apply(
+  Y_fitted_sim_matrix, 1, quantile,
+  probs = c(0.025, 0.25, 0.5, 0.75, 0.975)
+)
+true_quantiles <- apply(
+  Y_true_sim_matrix, 1, quantile,
+  probs = c(0.025, 0.25, 0.5, 0.75, 0.975)
+)
 
-# Sort by observed values for better visualization
-sort_idx <- order(Y)
-Y_sorted <- Y[sort_idx]
-y_quantiles_sorted <- y_quantiles[, sort_idx]
+K_eval <- 100
+coverage_50_fitted <- numeric(K_eval)
+coverage_95_fitted <- numeric(K_eval)
+coverage_50_true <- numeric(K_eval)
+coverage_95_true <- numeric(K_eval)
+
+for (k in seq_len(K_eval)) {
+  W_new_k <- simulate(ar1_nig, seed = 2500 + k, nsim = 1)[[1]]
+  Y_new_k <- X_beta_true + W_new_k + rnorm(n_obs, sd = sigma_eps_true)
+
+  coverage_50_fitted[k] <- mean(Y_new_k >= fitted_quantiles[2, ] & Y_new_k <= fitted_quantiles[4, ])
+  coverage_95_fitted[k] <- mean(Y_new_k >= fitted_quantiles[1, ] & Y_new_k <= fitted_quantiles[5, ])
+  coverage_50_true[k] <- mean(Y_new_k >= true_quantiles[2, ] & Y_new_k <= true_quantiles[4, ])
+  coverage_95_true[k] <- mean(Y_new_k >= true_quantiles[1, ] & Y_new_k <= true_quantiles[5, ])
+}
+
+W_new_plot <- simulate(ar1_nig, seed = 9999, nsim = 1)[[1]]
+Y_new_plot <- X_beta_true + W_new_plot + rnorm(n_obs, sd = sigma_eps_true)
+obs_idx <- seq_along(Y_new_plot)
 
 par(mfrow = c(1, 2), mar = c(4, 4, 3, 1))
 
-# 1. Uncertainty bands plot
-plot(1:length(Y_sorted), Y_sorted,
+plot(obs_idx, Y_new_plot,
   type = "l", col = "#2E86AB", lwd = 2,
-  main = "Posterior Prediction Intervals",
-  xlab = "Sorted Index", ylab = "Y values",
-  ylim = range(y_quantiles_sorted)
+  main = "Plug-in Fitted Intervals",
+  xlab = "Observation Index", ylab = "Y values",
+  ylim = range(c(Y_new_plot, fitted_quantiles))
 )
-
-# Add uncertainty bands
-polygon(c(1:length(Y_sorted), rev(1:length(Y_sorted))),
-  c(y_quantiles_sorted[1, ], rev(y_quantiles_sorted[5, ])),
+polygon(c(obs_idx, rev(obs_idx)),
+  c(fitted_quantiles[1, ], rev(fitted_quantiles[5, ])),
   col = rgb(0.64, 0.23, 0.45, 0.2), border = NA
 )
-polygon(c(1:length(Y_sorted), rev(1:length(Y_sorted))),
-  c(y_quantiles_sorted[2, ], rev(y_quantiles_sorted[4, ])),
+polygon(c(obs_idx, rev(obs_idx)),
+  c(fitted_quantiles[2, ], rev(fitted_quantiles[4, ])),
   col = rgb(0.64, 0.23, 0.45, 0.3), border = NA
 )
+lines(obs_idx, fitted_quantiles[3, ], col = rgb(0.64, 0.23, 0.45, 0.8), lwd = 1)
+lines(obs_idx, Y_new_plot, col = "#2E86AB", lwd = 1)
 
-lines(1:length(Y_sorted), y_quantiles_sorted[3, ], col = rgb(0.64, 0.23, 0.45, 0.8), lwd = 1)
-lines(1:length(Y_sorted), Y_sorted, col = "#2E86AB", lwd = 1)
-
-legend("topleft",
-  legend = c("Observed", "Median prediction", "50% interval", "95% interval"),
+legend("bottomleft",
+  legend = c("New true realization", "Median prediction", "50% interval", "95% interval"),
   col = c("#2E86AB", rgb(0.64, 0.23, 0.45, 0.8), rgb(0.64, 0.23, 0.45, 0.3), rgb(0.64, 0.23, 0.45, 0.2)),
   lwd = c(2, 2, 8, 8), bty = "n"
 )
 
-# 2. Coverage assessment
-coverage_50 <- mean(Y >= y_quantiles[2, ] & Y <= y_quantiles[4, ])
-coverage_95 <- mean(Y >= y_quantiles[1, ] & Y <= y_quantiles[5, ])
-
-barplot(c(coverage_50, coverage_95),
-  names.arg = c("50% Interval", "95% Interval"),
-  main = "Prediction Interval Coverage",
+barplot(
+  c(
+    mean(coverage_50_fitted), mean(coverage_95_fitted),
+    mean(coverage_50_true), mean(coverage_95_true)
+  ),
+  names.arg = c("Fitted 50%", "Fitted 95%", "True 50%", "True 95%"),
+  main = "Monte Carlo Coverage",
   ylab = "Empirical Coverage",
-  col = c(rgb(0.64, 0.23, 0.45, 0.6), rgb(0.64, 0.23, 0.45, 0.8)),
+  col = c(
+    rgb(0.64, 0.23, 0.45, 0.6),
+    rgb(0.64, 0.23, 0.45, 0.8),
+    rgb(0.23, 0.49, 0.23, 0.6),
+    rgb(0.23, 0.49, 0.23, 0.8)
+  ),
   ylim = c(0, 1)
 )
 abline(h = c(0.5, 0.95), lty = 2, col = "red")
 ```
 
+### Middle-Block Prediction
+
+As a final predictive experiment, we fit a new model using only the two outer
+segments of the series and predict the missing middle block. Specifically, we
+use observations `1:200` and `801:1000` for fitting, and then predict the
+held-out block `201:800`.
+
+We use the response-level prediction interface directly via
+`predict(..., type = "response", return_samples = TRUE)`, so that the returned
+quantiles and predictive draws already include fresh measurement-noise
+simulation.
+
+```{r middle-block-prediction, fig.height=7, fig.width=9, echo=TRUE}
+train_idx_middle <- c(1:200, 801:1000)
+test_idx_middle <- 201:800
+
+model_data_idx <- data.frame(model_data, idx = time_index)
+model_data_train_middle <- model_data_idx[train_idx_middle, , drop = FALSE]
+model_data_test_middle <- model_data_idx[test_idx_middle, , drop = FALSE]
+
+fit_middle <- ngme(
+  Y ~ 0 + x1 + x2 + x3 + f(
+    idx,
+    name = "my_ar",
+    model = ar1(),
+    noise = noise_nig()
+  ),
+  family = noise_normal(),
+  data = model_data_train_middle,
+  control_opt = control_opt(
+    optimizer = adam(),
+    burnin = 100,
+    iterations = 1000,
+    std_lim = 0.01,
+    n_parallel_chain = 4,
+    n_batch = 10,
+    verbose = FALSE,
+    print_check_info = FALSE,
+    seed = 2025
+  )
+)
+
+pred_middle <- predict(
+  fit_middle,
+  map = list(my_ar = test_idx_middle),
+  data = model_data_test_middle,
+  type = "response",
+  estimator = c("mean", "0.25q", "0.75q", "0.025q", "0.975q"),
+  sampling_size = 1000,
+  burnin_size = 200,
+  seed = 2026,
+  return_samples = TRUE
+)
+
+response_samples_middle <- attr(pred_middle, "samples")
+
+pred_mean_middle <- pred_middle$mean
+pred_lower_50_middle <- pred_middle$`0.25q`
+pred_upper_50_middle <- pred_middle$`0.75q`
+pred_lower_95_middle <- pred_middle$`0.025q`
+pred_upper_95_middle <- pred_middle$`0.975q`
+
+Y_middle <- model_data_test_middle$Y
+
+coverage_50_middle <- mean(Y_middle >= pred_lower_50_middle & Y_middle <= pred_upper_50_middle)
+coverage_95_middle <- mean(Y_middle >= pred_lower_95_middle & Y_middle <= pred_upper_95_middle)
+
+par(mfrow = c(2, 1), mar = c(4, 4, 3, 1))
+
+# 1. Prediction intervals on the held-out block
+plot(test_idx_middle, Y_middle,
+  type = "l", col = "#2E86AB", lwd = 1.5,
+  main = "Prediction Intervals for 201:800",
+  xlab = "Observation Index", ylab = "Y",
+  ylim = range(c(Y_middle, pred_lower_95_middle, pred_upper_95_middle))
+)
+polygon(c(test_idx_middle, rev(test_idx_middle)),
+  c(pred_lower_95_middle, rev(pred_upper_95_middle)),
+  col = rgb(0.64, 0.23, 0.45, 0.2), border = NA
+)
+polygon(c(test_idx_middle, rev(test_idx_middle)),
+  c(pred_lower_50_middle, rev(pred_upper_50_middle)),
+  col = rgb(0.64, 0.23, 0.45, 0.35), border = NA
+)
+lines(test_idx_middle, pred_mean_middle, col = "#A23B72", lwd = 1)
+lines(test_idx_middle, Y_middle, col = "#2E86AB", lwd = 1)
+legend("bottomleft",
+  legend = c("Observed", "Predicted mean", "50% PI", "95% PI"),
+  col = c("#2E86AB", "#A23B72", rgb(0.64, 0.23, 0.45, 0.35), rgb(0.64, 0.23, 0.45, 0.2)),
+  lwd = c(1.5, 1, 8, 8), bty = "n"
+)
+
+# 2. Coverage summary
+barplot(
+  c(coverage_50_middle, coverage_95_middle),
+  names.arg = c("50% PI", "95% PI"),
+  main = "Held-Out Block Coverage",
+  xlab = "Empirical Coverage",
+  col = c(rgb(0.64, 0.23, 0.45, 0.6), rgb(0.64, 0.23, 0.45, 0.8)),
+  xlim = c(0, 1),
+  horiz = TRUE
+)
+abline(v = c(0.5, 0.95), lty = 2, col = "red")
+```

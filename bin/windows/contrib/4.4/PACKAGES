@@ -1,6 +1,6 @@
 Package: ngme2
 Version: 0.9.5
-Depends: R (>= 3.50)
+Depends: R (>= 3.5.0)
 Imports: Matrix, Rcpp, methods, rlang, ggplot2, graphics, fmesher,
         stats, gridExtra
 LinkingTo: Rcpp, RcppEigen,

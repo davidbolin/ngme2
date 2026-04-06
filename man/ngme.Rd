@@ -64,11 +64,11 @@ See \code{ngme_model_types()} for available models.
 ngme(
   formula = Y ~ x1 + f(
     x2,
-    model = "ar1",
+    model = ar1(),
     noise = noise_nig(),
     rho = 0.5
   ) + f(x1,
-    model = "rw1",
+    model = rw1(),
     noise = noise_normal(),
   ),
   family = noise_normal(sd = 0.5),

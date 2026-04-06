@@ -25,7 +25,8 @@ f(
 \arguments{
 \item{map}{symbol or numerical value: index or covariates to build index}
 
-\item{model}{string, model type, see ngme_model_types()}
+\item{model}{an \code{ngme_operator} or \code{ngme_operator_def} created by
+model constructors such as \code{ar1()}, \code{matern()}, \code{bv()}, etc.}
 
 \item{noise}{ngme_noise object, noise_nig() or noise_gal()}
 

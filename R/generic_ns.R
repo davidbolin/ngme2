@@ -233,7 +233,13 @@ generic_ns <- function(
     if (length(flat_theta_K) > 0) {
       for (theta_K_name in names(param_map)) {
         indices <- param_map[[theta_K_name]]
-        trans_fun <- name2fun(trans[[theta_K_name]])
+        # Basis coefficients live on the optimizer scale; only scalar parameters
+        # get the model-space transform in ngme_result().
+        trans_fun <- if (length(indices) == 1) {
+          name2fun(trans[[theta_K_name]])
+        } else {
+          identity
+        }
         param_trans[indices] <- replicate(length(indices), trans_fun, simplify = FALSE)
       }
     }

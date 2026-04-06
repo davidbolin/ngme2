@@ -6,7 +6,8 @@
 #' (see ngme_models_types() for available models).
 #'
 #' @param map  symbol or numerical value: index or covariates to build index
-#' @param model  string, model type, see ngme_model_types()
+#' @param model  an \code{ngme_operator} or \code{ngme_operator_def} created by
+#'   model constructors such as \code{ar1()}, \code{matern()}, \code{bv()}, etc.
 #' @param noise  ngme_noise object, noise_nig() or noise_gal()
 #' @param name   name of the field, for later use, if not provided, will be "field1" etc.
 #' @param data      specifed or inherit from ngme() function
@@ -56,6 +57,7 @@ f <- function(
     prior = NULL,
     subset = rep(TRUE, length_map(map)),
     debug = FALSE) {
+
   # examine the noise
   if (is.list(noise) && !inherits(noise, "ngme_noise")) {
     noise <- convert_noise_list_to_normal_nig(noise)
@@ -105,6 +107,7 @@ f <- function(
   }
 
   noise_all_normal <- is_noise_all_normal(noise)
+
   # If the user builds a bv/bv2/bv_matern model inline and all noises are normal,
   # ensure fix_theta = TRUE in that model call.
   model_expr <- substitute(model)
@@ -130,16 +133,20 @@ f <- function(
 
   # Evaluate model expression (promises are forced here so we can inspect it consistently)
   model <- eval(model_expr, envir = parent.frame())
+  stopifnot(
+    "`model` must evaluate to an ngme_operator or ngme_operator_def. String model names are not supported." =
+      inherits(model, c("ngme_operator", "ngme_operator_def"))
+  )
   model_type <- model$model
   map <- eval(substitute(map), envir = data, enclos = parent.frame())
 
   # Evaluate map expression (promises are forced here so we can inspect it consistently)
   if (inherits(map, "formula")) {
-    map <- get_data_from_formula(map, data)
+    map <- get_data_from_formula(map, if (is.null(data)) parent.frame() else data)
   } else if (is.list(map)) {
     map <- lapply(map, function(m) {
       if (inherits(m, "formula")) {
-        get_data_from_formula(m, data)
+        get_data_from_formula(m, if (is.null(data)) parent.frame() else data)
       } else {
         m
       }
@@ -147,8 +154,6 @@ f <- function(
   }
 
   if (!is.null(data) && is.null(A)) {
-    # check if model is a string or an object
-
     if (!model_type %in% c("tp", "spacetime")) {
       stopifnot(
         "Please make sure length of map is same as nrow(data) in f()" =
@@ -189,11 +194,6 @@ f <- function(
     )
     subset <- group %in% which_group
   }
-
-  stopifnot(
-    "Please provide model from ngme_model_types():" = !is.null(model),
-    "Please specify model as ngme_operator or ngme_operator_def" = inherits(model, "ngme_operator") || inherits(model, "ngme_operator_def")
-  )
 
   # 1. Extract or build mesh
   mesh <- NULL
@@ -244,6 +244,11 @@ f <- function(
     operator <- model
   }
   model_name <- operator$model
+
+  if (is.null(mesh) && model_type != "re") {
+    mesh <- ngme_build_mesh(sub_map(map, subset), model_name)
+    operator$mesh <- mesh
+  }
 
   # At this point, 'operator' is an ngme_operator object (possibly a template)
   # and 'model' is the model name string.
@@ -469,7 +474,7 @@ f <- function(
   # bivariate noise
   # 2. build noise given operator
   # bivariate noise
-  if (model_name %in% c("bv", "bv_matern_normal", "bv2", "bv_matern_nig")) {
+  if (model_name %in% c("bv", "bv_matern", "bv_matern_normal", "bv2", "bv_matern_nig")) {
     stopifnot(
       "Please specify noise for each field" = length(noise) >= 2,
       "Input: noise=list(a=<noise>,b=<noise>)" = inherits(noise[[1]], "ngme_noise"),
@@ -530,7 +535,7 @@ f <- function(
   }
 
   if (noise$share_V &&
-    !(model_name %in% c("bv", "bv2", "bv_matern_normal", "bv_matern_nig"))) {
+    !(model_name %in% c("bv", "bv2", "bv_matern", "bv_matern_normal", "bv_matern_nig"))) {
     stop("Not allow for share_V for univariate model")
   }
 

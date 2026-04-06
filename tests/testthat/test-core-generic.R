@@ -152,7 +152,7 @@ test_that("generic model == Matern model (alpha == 4)", {
   mesh <- fmesher::fm_mesh_2d(cbind(x, y))
 
   kappa <- exp(0.7)
-  matern <- matern(mesh, alpha = 4, theta_K = log(kappa))
+  matern <- matern(mesh, alpha = 4, theta_kappa = log(kappa))
   matern_2 <- matern(mesh, alpha = 4, kappa = kappa)
 
   # Build Cinv
@@ -186,9 +186,7 @@ test_that("generic model == Matern model (alpha == 4)", {
   fit_matern <- ngme(
     Y ~ 0 + f(
       cbind(x, y),
-      mesh = mesh,
-      model = "matern",
-      alpha = 4,
+      model = matern(mesh = mesh, alpha = 4)
     ),
     data = data.frame(Y = Y),
     control_opt = control
@@ -200,13 +198,14 @@ test_that("generic model == Matern model (alpha == 4)", {
   fit_generic <- ngme(
     Y ~ 0 + f(
       cbind(x, y),
-      mesh = mesh,
-      model = "generic",
       name = "generic",
-      theta_K = c(theta = 0),
-      trans = list(theta = c("exp4", "exp2", "null")),
-      matrices = list(C, 2 * G, G %*% Cinv %*% G),
-      h = matern$h
+      model = generic(
+        mesh = mesh,
+        theta_K = c(theta = 0),
+        trans = list(theta = c("exp4", "exp2", "null")),
+        matrices = list(C, 2 * G, G %*% Cinv %*% G),
+        h = matern$h
+      )
     ),
     data = data.frame(Y = Y),
     control_opt = control
@@ -223,7 +222,7 @@ test_that("generic model == Matern model", {
 
   matern <- matern(
     mesh,
-    theta_K = 0.7
+    theta_kappa = 0.7
   )
   g <- name2fun("exp2", inv = TRUE)
   matern$symmetric
@@ -256,9 +255,7 @@ test_that("generic model == Matern model", {
   fit_matern <- ngme(
     Y ~ 0 + f(
       1:n_obs,
-      model = "matern",
-      theta_K = 0.7,
-      mesh = mesh
+      model = matern(mesh = mesh, theta_kappa = 0.7)
     ),
     data = data.frame(Y = Y),
     control_opt = control
@@ -270,13 +267,14 @@ test_that("generic model == Matern model", {
   fit_generic <- ngme(
     Y ~ 0 + f(
       1:n_obs,
-      model = "generic",
       name = "generic",
-      theta_K = c(x = 0.7),
-      trans = c(x = "exp2"),
-      matrices = list(matern$C, matern$G),
-      h = matern$h,
-      mesh = mesh
+      model = generic(
+        theta_K = c(x = 0.7),
+        trans = c(x = "exp2"),
+        matrices = list(matern$C, matern$G),
+        h = matern$h,
+        mesh = mesh
+      )
     ),
     data = data.frame(Y = Y),
     control_opt = control
@@ -314,7 +312,7 @@ test_that("generic model == RW1 model", {
     Y ~ 0 + f(
       1:n_obs,
       name = "my_rw1",
-      model = "rw1",
+      model = rw1(),
     ),
     data = data.frame(Y = Y),
     control_opt = control
@@ -325,10 +323,11 @@ test_that("generic model == RW1 model", {
   fit_generic <- ngme(
     Y ~ 0 + f(
       1:n_obs,
-      model = "generic",
       name = "generic",
-      matrices = list(rw1$K),
-      h = rw1$h
+      model = generic(
+        matrices = list(rw1$K),
+        h = rw1$h
+      )
     ),
     data = data.frame(Y = Y),
     control_opt = control

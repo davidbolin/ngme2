@@ -27,7 +27,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">ngme2</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -623,19 +623,19 @@ starting points to avoid local optima</li>
 <span><span class="co">#&gt;   Model type: Space-time (Implicit Euler)</span></span>
 <span><span class="co">#&gt;       alpha = 2 (fixed) </span></span>
 <span><span class="co">#&gt;       theta_gamma_x = 2 </span></span>
-<span><span class="co">#&gt;       theta_gamma_y = -3.6 </span></span>
-<span><span class="co">#&gt;       cc = 5.4 </span></span>
-<span><span class="co">#&gt;       kappa = 0.56 </span></span>
+<span><span class="co">#&gt;       theta_gamma_y = -2.5 </span></span>
+<span><span class="co">#&gt;       cc = 1.1 </span></span>
+<span><span class="co">#&gt;       kappa = 0.31 </span></span>
 <span><span class="co">#&gt;   Noise type: NIG</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       mu = -0.835</span></span>
-<span><span class="co">#&gt;       sigma = 2.4</span></span>
-<span><span class="co">#&gt;       nu = 0.206</span></span>
+<span><span class="co">#&gt;       mu = 0.0907</span></span>
+<span><span class="co">#&gt;       sigma = 1.05</span></span>
+<span><span class="co">#&gt;       nu = 0.155</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Measurement noise: </span></span>
 <span><span class="co">#&gt;   Noise type: NORMAL</span></span>
 <span><span class="co">#&gt;   Noise parameters: </span></span>
-<span><span class="co">#&gt;       sigma = 0.276</span></span></code></pre></div>
+<span><span class="co">#&gt;       sigma = 0.412</span></span></code></pre></div>
 <p>The summary output shows the estimated parameters along with standard
 errors (if computed). Key quantities include the likelihood value,
 convergence status, and parameter estimates with uncertainty
@@ -666,22 +666,22 @@ to the true values used in simulation:</p>
 <tbody>
 <tr class="odd">
 <td align="left">κ (kappa)</td>
-<td align="right">1.7256</td>
+<td align="right">0.1577</td>
 <td align="right">1.000</td>
 </tr>
 <tr class="even">
 <td align="left">c (time scale)</td>
-<td align="right">-0.5980</td>
+<td align="right">-1.1311</td>
 <td align="right">15.0</td>
 </tr>
 <tr class="odd">
 <td align="left">γ_x (velocity x)</td>
-<td align="right">2.0006</td>
+<td align="right">2.0168</td>
 <td align="right">2.0</td>
 </tr>
 <tr class="even">
 <td align="left">γ_y (velocity y)</td>
-<td align="right">-3.6898</td>
+<td align="right">-2.5827</td>
 <td align="right">0.0</td>
 </tr>
 </tbody>
@@ -805,19 +805,19 @@ domain:</p>
 <tbody>
 <tr class="odd">
 <td align="left">Mean (minimum)</td>
-<td align="right">-9.45</td>
+<td align="right">-6.27</td>
 </tr>
 <tr class="even">
 <td align="left">Mean (maximum)</td>
-<td align="right">11.16</td>
+<td align="right">14.77</td>
 </tr>
 <tr class="odd">
 <td align="left">Std. dev. (minimum)</td>
-<td align="right">0.13</td>
+<td align="right">0.08</td>
 </tr>
 <tr class="even">
 <td align="left">Std. dev. (maximum)</td>
-<td align="right">19.56</td>
+<td align="right">20.57</td>
 </tr>
 </tbody>
 </table>
@@ -913,15 +913,15 @@ by predicting the field in year 2007, using only data from
 <tbody>
 <tr class="odd">
 <td align="left">Mean (minimum)</td>
-<td align="right">-0.29</td>
+<td align="right">-0.14</td>
 </tr>
 <tr class="even">
 <td align="left">Mean (maximum)</td>
-<td align="right">0.51</td>
+<td align="right">0.08</td>
 </tr>
 <tr class="odd">
 <td align="left">Average uncertainty (SD)</td>
-<td align="right">0.47</td>
+<td align="right">0.17</td>
 </tr>
 </tbody>
 </table>

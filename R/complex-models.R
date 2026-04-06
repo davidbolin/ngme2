@@ -1,3 +1,18 @@
+coerce_sub_model <- function(sub_model, mesh) {
+  if (inherits(sub_model, "ngme_operator")) {
+    return(sub_model)
+  }
+
+  if (inherits(sub_model, "ngme_operator_def")) {
+    model_name <- sub_model$model
+    args <- sub_model$args
+    args$mesh <- mesh
+    return(do.call(model_name, args))
+  }
+
+  stop("Each sub-model must be an ngme_operator or ngme_operator_def.")
+}
+
 #' Ngme bivariate model specification
 #'
 #' Giving 2 sub_models, build a correlated bivariate operator based on K = D(theta, rho) %*% diag(c1*K_1, c2*K_2)
@@ -45,20 +60,8 @@ bv <- function(
   )
 
   # Inject mesh if sub_models are def
-  first <- sub_models[[model_names[1]]]
-  if (inherits(first, "ngme_operator_def")) {
-    model_name <- first$model
-    args <- first$args
-    args$mesh <- mesh
-    first <- do.call(model_name, args)
-  }
-  second <- sub_models[[model_names[2]]]
-  if (inherits(second, "ngme_operator_def")) {
-    model_name <- second$model
-    args <- second$args
-    args$mesh <- mesh
-    second <- do.call(model_name, args)
-  }
+  first <- coerce_sub_model(sub_models[[model_names[1]]], mesh)
+  second <- coerce_sub_model(sub_models[[model_names[2]]], mesh)
 
   stopifnot(
     "the theta should be in (-pi/2, pi/2)" = theta >= -pi / 2 & theta <= pi / 2
@@ -250,20 +253,8 @@ bv_matern <- function(
   group <- factor(group, levels = model_names)
 
   # Inject mesh if sub_models are def
-  first <- sub_models[[model_names[1]]]
-  if (inherits(first, "ngme_operator_def")) {
-    model_name <- first$model
-    args <- first$args
-    args$mesh <- mesh
-    first <- do.call(model_name, args)
-  }
-  second <- sub_models[[model_names[2]]]
-  if (inherits(second, "ngme_operator_def")) {
-    model_name <- second$model
-    args <- second$args
-    args$mesh <- mesh
-    second <- do.call(model_name, args)
-  }
+  first <- coerce_sub_model(sub_models[[model_names[1]]], mesh)
+  second <- coerce_sub_model(sub_models[[model_names[2]]], mesh)
 
   eta <- tan(theta)
   if (!fix_theta) {

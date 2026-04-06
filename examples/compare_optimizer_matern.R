@@ -1,5 +1,4 @@
-load_all()
-# library(ngme2)
+library(ngme2)
 
 # Helper function to create comparison plot
 create_comparison_plot <- function(log_like_trajectories, filename, true_likelihood = NULL) {

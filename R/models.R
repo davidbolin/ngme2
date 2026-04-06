@@ -817,6 +817,7 @@ matern <- function(
   if (is.null(mesh) || (is.list(mesh) && !inherits(mesh, c("inla.mesh.1d", "inla.mesh", "fm_mesh_1d", "fm_mesh_2d", "metric_graph")))) {
     return(structure(list(model = "matern", args = as.list(environment())), class = "ngme_operator_def"))
   }
+
   mesh <- ngme_build_mesh(mesh)
   if (fix_alpha && alpha != 2 && alpha != 4) {
     if (!requireNamespace("rSPDE", quietly = TRUE)) {
@@ -896,8 +897,22 @@ matern <- function(
 
   # Placeholder K for printing; real K is built in C++
   update_K <- function(theta_K) {
-    if (stationary) {
+    if (stationary && fix_alpha && alpha == 4) {
+      kappa_sq <- exp(2 * theta_K[1])
+      K <- kappa_sq^2 * C + 2 * kappa_sq * G + G %*% Ci %*% G
+    } else if (stationary) {
       K <- exp(if (fix_alpha) theta_K[1] else theta_K[2])^2 * C + G
+    } else if (fix_alpha && alpha == 4) {
+      kappas <- exp(as.numeric(B_K %*% theta_K))
+      D_kappa <- Matrix::Diagonal(x = kappas)
+      K <- D_kappa %*% C %*% D_kappa %*% Ci %*% D_kappa %*% C %*% D_kappa +
+        D_kappa %*% C %*% D_kappa %*% Ci %*% G +
+        G %*% Ci %*% D_kappa %*% C %*% D_kappa +
+        G %*% Ci %*% G
+    } else if (fix_alpha && alpha == 2) {
+      kappas <- exp(as.numeric(B_K %*% theta_K))
+      D_kappa <- Matrix::Diagonal(x = kappas)
+      K <- D_kappa %*% C %*% D_kappa + G
     } else {
       kappas <- exp(as.numeric(B_K %*% (if (fix_alpha) theta_K else theta_K[-1])))
       K <- Matrix::Diagonal(x = kappas^2) %*% C + G
@@ -934,7 +949,7 @@ matern <- function(
       op_args$param_trans <- list(exp)
     } else {
       p <- ncol(B_kappa)
-      op_args$param_name <- paste0("theta_kappa", seq_len(p))
+      op_args$param_name <- make.unique(rep("kappa", p))
       op_args$param_trans <- rep(list(identity), p)
     }
   } else {
@@ -945,7 +960,7 @@ matern <- function(
       op_args$param_trans <- list(alpha_trans, exp)
     } else {
       p <- ncol(B_kappa)
-      op_args$param_name <- c("alpha", paste0("theta_kappa", seq_len(p)))
+      op_args$param_name <- c("alpha", make.unique(rep("kappa", p)))
       op_args$param_trans <- c(list(alpha_trans), rep(list(identity), p))
     }
   }
@@ -1238,7 +1253,12 @@ precision_matrix_multivariate_spde <- function(
 
   operator_list <- NULL
   for (i in 1:p) {
-    operator_list[[i]] <- matern(mesh, alpha_list[[i]], theta_K_list[[i]], B_K_list[[i]])
+    operator_list[[i]] <- matern(
+      mesh = mesh,
+      alpha = alpha_list[[i]],
+      theta_kappa = theta_K_list[[i]],
+      B_kappa = B_K_list[[i]]
+    )
   }
   if (is.null(theta)) {
     theta <- rep(0, (p - 1) * p / 2)

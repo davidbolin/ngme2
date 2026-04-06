@@ -101,6 +101,7 @@ simulate_armapq <- function(
 
 
 test_that("test fit ARMA(2,2) with normal noise (precond)", {
+  skip_on_cran()
   n <- 1000
   rho <- c(-0.5, 0.3)
   phi <- c(0.8, 0.2)
@@ -145,6 +146,7 @@ test_that("test fit ARMA(2,2) with normal noise (precond)", {
 
 
 test_that("test fit ARMA(1,1) with nig noise (RB, preconditioner)", {
+  skip_on_cran()
   n <- 1000
   rho <- 0.5
   phi <- -0.8
@@ -173,7 +175,7 @@ test_that("test fit ARMA(1,1) with nig noise (RB, preconditioner)", {
       seed = 123,
       burnin = 100,
       iterations = 500,
-      n_batch = 1,
+      n_batch = 10,
       # rao_blackwellization = TRUE,
       optimizer = precond_sgd(),
       n_parallel_chain = 4,
@@ -181,7 +183,6 @@ test_that("test fit ARMA(1,1) with nig noise (RB, preconditioner)", {
     )
   )
   fit
-  traceplot(fit, hline = sigma_e)
   traceplot(fit, "field1", hline = c(rho, phi, mu, sigma, nu))
 
   arma_result <- as.numeric(ngme_result(fit)$field1)

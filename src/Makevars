@@ -36,7 +36,6 @@ PKG_CPPFLAGS = -I"$(ssdir)/SuiteSparse_config"
 PKG_CFLAGS = $(C_VISIBILITY)
 PKG_LIBS = $(sslib) $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
 PKG_LIBS += $(SHLIB_OPENMP_CXXFLAGS)
-# PKG_LIBS += $(sslib1)
 
 PKG_CPPFLAGS += -Iinclude -I../inst/include # -DNDEBUG -DDEBUG
 PKG_CXXFLAGS += $(SHLIB_OPENMP_CXXFLAGS)
@@ -64,47 +63,44 @@ $(sslib7):
 	cd $(@D) && $(MAKE) clean all $(ssenv)
 
 
-# macOS uses Accelerate by default; on Intel macOS we allow MKL/Pardiso when MKLROOT is set
+# macOS configuration
 ifeq ($(UNAME), Darwin)
+  # Detect Homebrew prefix
+  HOMEBREW_PREFIX := $(shell brew --prefix 2>/dev/null)
+  ifeq ($(HOMEBREW_PREFIX),)
+    ifneq ($(wildcard /opt/homebrew/bin/brew),)
+      HOMEBREW_PREFIX := /opt/homebrew
+    else
+      HOMEBREW_PREFIX := /usr/local
+    endif
+  endif
+
+  # Override FLIBS only if Homebrew gfortran is available
+  GFORTRAN_LIB := $(HOMEBREW_PREFIX)/lib/gcc/current
+  ifneq ($(wildcard $(GFORTRAN_LIB)/libgfortran*),)
+    FLIBS = -L$(GFORTRAN_LIB) -lgfortran -lquadmath
+  endif
+
   ARCH := $(shell uname -m)
   ifeq ($(ARCH),x86_64)
     ifdef MKLROOT
-      # Prefer MKL on Intel macOS when available
+      # Intel macOS with MKL: use MKL (includes Intel OpenMP via -liomp5)
       PKG_CPPFLAGS += -DUSEMKL -I$(MKLROOT)/include
       PKG_LIBS += -L$(MKLROOT)/lib -lmkl_rt -liomp5 -lpthread -lm
       $(info MKL detected on Intel macOS, enabling Pardiso.)
-    else
-      # Fallback to Accelerate + libomp on Intel macOS
-      HOMEBREW_PREFIX := $(shell brew --prefix 2>/dev/null)
-      ifeq ($(HOMEBREW_PREFIX),)
-        ifneq ($(wildcard /opt/homebrew/bin/brew),)
-          HOMEBREW_PREFIX := /opt/homebrew
-        else
-          HOMEBREW_PREFIX := /usr/local
-        endif
-      endif
-      GFORTRAN_LIB := $(HOMEBREW_PREFIX)/lib/gcc/current
-      FLIBS = -L$(GFORTRAN_LIB) -lgfortran -lquadmath
-      PKG_LIBS += -framework Accelerate
-      ifndef NGME_SKIP_LIBOMP_LINK
-        PKG_LIBS += -L$(HOMEBREW_PREFIX)/opt/libomp/lib -lomp
-      endif
     endif
-  else
-    # Apple Silicon (arm64) macOS: use Accelerate + libomp (if present)
-    HOMEBREW_PREFIX := $(shell brew --prefix 2>/dev/null)
-    ifeq ($(HOMEBREW_PREFIX),)
-      ifneq ($(wildcard /opt/homebrew/bin/brew),)
-        HOMEBREW_PREFIX := /opt/homebrew
-      else
-        HOMEBREW_PREFIX := /usr/local
+  endif
+
+  # OpenMP on macOS: link Homebrew libomp by full path (if installed).
+  # Uses full path to avoid picking up R's potentially outdated bundled libomp.
+  # If libomp is not installed, OpenMP is silently disabled (#pragma omp ignored).
+  ifndef NGME_SKIP_LIBOMP_LINK
+    LIBOMP_DYLIB := $(HOMEBREW_PREFIX)/opt/libomp/lib/libomp.dylib
+    ifneq ($(wildcard $(LIBOMP_DYLIB)),)
+      ifeq ($(SHLIB_OPENMP_CXXFLAGS),)
+        PKG_CXXFLAGS += -Xclang -fopenmp
       endif
-    endif
-    GFORTRAN_LIB := $(HOMEBREW_PREFIX)/lib/gcc/current
-    FLIBS = -L$(GFORTRAN_LIB) -lgfortran -lquadmath
-    PKG_LIBS += -framework Accelerate
-    ifndef NGME_SKIP_LIBOMP_LINK
-      PKG_LIBS += -L$(HOMEBREW_PREFIX)/opt/libomp/lib -lomp
+      PKG_LIBS += $(LIBOMP_DYLIB)
     endif
   endif
 endif
@@ -119,11 +115,6 @@ ifneq ($(UNAME), Darwin)
     $(info MKL detected, enabling Pardiso.)
   endif
 endif
-
-R_XTRA_CPPFLAGS =  -I$(R_INCLUDE_DIR)
-# PKG_LIBS += $(SHLIB_OPENMP_CXXFLAGS)
-
-# PKG_LIBS =  ${LAPACK_LIBS} ${BLAS_LIBS} ${FLIBS}  -L/opt/intel/mkl/lib/intel64 -Wl,--no-as-needed,-rpath,'/opt/intel/mkl/lib/intel64' -lmkl_intel_lp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl
 
 # TESTS = test/test-algebra.o  test/test-opt.o
 UTILS = util/GIG.o util/rgig.o util/MatrixAlgebra.o util/solver.o

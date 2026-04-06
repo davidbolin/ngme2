@@ -279,14 +279,16 @@ print.ngme_operator <- function(x, padding = 0, prefix = "Model type", ...) {
       cat(pad_add4_space, "theta = ", format(theta, digits = 3), "\n", sep = "")
     },
     var1 = {
-      A  <- cayley_to_A(theta_K)
+      A <- cayley_to_A(theta_K)
       sr <- max(abs(eigen(A, only.values = TRUE)$values))
       cat(pad_add4_space, "A (VAR coefficient matrix, Cayley reparameterization):\n", sep = "")
-      cat(pad_add4_space, sprintf("  [[ %6.3f,  %6.3f ],\n",  A[1, 1], A[1, 2]), sep = "")
+      cat(pad_add4_space, sprintf("  [[ %6.3f,  %6.3f ],\n", A[1, 1], A[1, 2]), sep = "")
       cat(pad_add4_space, sprintf("   [  %6.3f,  %6.3f ]]\n", A[2, 1], A[2, 2]), sep = "")
       cat(pad_add4_space, "spectral radius = ", format(sr, digits = 4), "\n", sep = "")
       cat(pad_add4_space, "unconstrained (p1, p2, p3, p4) = ",
-          limited_format(theta_K, digits = 4), "\n", sep = "")
+        limited_format(theta_K, digits = 4), "\n",
+        sep = ""
+      )
     },
     re = {
       cat(pad_add4_space, "Covariance matrix (Sigma): \n")
@@ -529,42 +531,9 @@ print.ngme_model <- function(x, padding = 0, ...) {
   model <- x
   pad_space <- paste(rep(" ", padding), collapse = "")
 
-  # Print operator information
-  # If we have trajectory attached (from fitting), prefer the last estimates
+  # Print operator information using the fitted parameters stored on the object.
   op <- model$operator
-  traj <- attr(model, "lat_traj")
-  if (!is.null(traj) && length(traj) > 0 && is.list(traj)) {
-    n_theta_K <- length(op$theta_K)
-    # collect last column from each chain
-    last_mat <- tryCatch(
-      {
-        do.call(cbind, lapply(traj, function(m) m[, ncol(m), drop = FALSE]))
-      },
-      error = function(e) NULL
-    )
-    if (!is.null(last_mat) && nrow(last_mat) >= n_theta_K) {
-      last_avg <- rowMeans(last_mat)
-      theta_last_raw <- as.numeric(last_avg[seq_len(n_theta_K)])
-      op2 <- op
-      op2$theta_K <- theta_last_raw
-      # For matern with free alpha, update printable alpha from raw eta
-      if (identical(model$model, "matern")) {
-        d <- if (!is.null(op$spatial_dim)) op$spatial_dim else 2
-        L <- d / 2
-        if (isTRUE(op$fix_alpha)) {
-          # keep op$alpha as provided
-        } else if (length(theta_last_raw) >= 1) {
-          eta_alpha <- theta_last_raw[1]
-          op2$alpha <- L + (4 - L) * (1 / (1 + exp(-eta_alpha)))
-        }
-      }
-      print.ngme_operator(op2, padding = padding)
-    } else {
-      print.ngme_operator(op, padding = padding)
-    }
-  } else {
-    print.ngme_operator(op, padding = padding)
-  }
+  print.ngme_operator(op, padding = padding)
 
   # Print replicate information if replicates are used
   if (!is.null(model$replicate)) {

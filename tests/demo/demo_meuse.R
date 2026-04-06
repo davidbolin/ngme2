@@ -3,7 +3,7 @@ library(sp)
 data(meuse)
 head(meuse)
 str(meuse)
-coordinates(meuse) <- ~x + y
+coordinates(meuse) <- ~ x + y
 class(meuse)
 summary(meuse)
 
@@ -26,18 +26,18 @@ title("grid")
 data(meuse.riv)
 meuse.lst <- list(Polygons(list(Polygon(meuse.riv)), "meuse.riv"))
 meuse.pol <- SpatialPolygons(meuse.lst)
-plot(meuse.pol, col="grey")
+plot(meuse.pol, col = "grey")
 
 
 image(meuse.grid, col = "lightgrey")
 plot(meuse.grid, col = "lightgrey", add = TRUE)
-plot(meuse.pol, col="grey", add = TRUE)
+plot(meuse.pol, col = "grey", add = TRUE)
 plot(meuse, add = TRUE)
 
 ##############################
 # create mesh
 library(INLA)
-mesh <- fmesher::fm_mesh_2d(loc=meuse@coords, max.n=200, max.edge = c(1,2))
+mesh <- fmesher::fm_mesh_2d(loc = meuse@coords, max.n = 200, max.edge = c(1, 2))
 plot(mesh)
 mesh$n
 
@@ -53,21 +53,20 @@ plot(prmesh)
 
 ##############################
 # fit using ngme
-load_all()
 bubble(meuse, "copper")
 
-spde <- model_matern(loc = meuse@coords, mesh=mesh)
+spde <- model_matern(loc = meuse@coords, mesh = mesh)
 
 out1 <- ngme(
   zinc ~ 1 # + f(dist.m, model="rw1", noise=noise_normal(), name="rw")
-    + f(model=spde, name="spde", noise=noise_nig()),
+    + f(model = spde, name = "spde", noise = noise_nig()),
   data = meuse@data,
   control = control_opt(
     iterations = 100,
     n_parallel_chain = 4,
     print_check_info = TRUE
   ),
-  debug=TRUE
+  debug = TRUE
 )
 
 out1$models[[1]]$h
@@ -83,12 +82,12 @@ library(INLA)
 n_meuse <- nrow(meuse)
 spde_inla <- inla.spde2.matern(mesh = prmesh, loc = meuse@coords)
 res_inla <- inla(
-  formula = zinc ~ 0  +
+  formula = zinc ~ 0 +
     f(dist.m, model = "rw1") +
     f(i, model = spde_inla),
   data = list(dist.m = meuse$dist.m, i = 1:spde_inla$n.spde, zinc = meuse$zinc),
   family = "gaussian",
-  control.predictor = list(1, A = inla.spde.make.A(mesh=prmesh, loc=meuse@coords))
+  control.predictor = list(1, A = inla.spde.make.A(mesh = prmesh, loc = meuse@coords))
 )
 list(dist.m = meuse$dist.m, i = 1:spde_inla$n.spde, zinc = meuse$zinc)
 summary(res_inla)

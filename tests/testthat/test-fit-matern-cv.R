@@ -6,6 +6,7 @@ test_that("test fractional matern specification", {
 
 
 test_that("test fit matern", {
+  skip_on_cran()
   set.seed(42)
   pl01 <- cbind(c(0, 1, 1, 0, 0) * 10, c(0, 0, 1, 1, 0) * 5)
   mesh <- fmesher::fm_mesh_2d(

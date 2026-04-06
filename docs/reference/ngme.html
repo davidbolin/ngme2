@@ -19,7 +19,7 @@ See ngme_model_types() for available models."><meta property="og:image" content=
 
     <a class="navbar-brand me-2" href="../index.html">ngme2</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -155,11 +155,11 @@ See <code><a href="ngme_model_types.html">ngme_model_types()</a></code> for avai
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">ngme</span><span class="op">(</span></span></span>
 <span class="r-in"><span>  formula <span class="op">=</span> <span class="va">Y</span> <span class="op">~</span> <span class="va">x1</span> <span class="op">+</span> <span class="fu"><a href="f.html">f</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>    <span class="va">x2</span>,</span></span>
-<span class="r-in"><span>    model <span class="op">=</span> <span class="st">"ar1"</span>,</span></span>
+<span class="r-in"><span>    model <span class="op">=</span> <span class="fu"><a href="ar1.html">ar1</a></span><span class="op">(</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>    noise <span class="op">=</span> <span class="fu"><a href="ngme_noise.html">noise_nig</a></span><span class="op">(</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>    rho <span class="op">=</span> <span class="fl">0.5</span></span></span>
 <span class="r-in"><span>  <span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="f.html">f</a></span><span class="op">(</span><span class="va">x1</span>,</span></span>
-<span class="r-in"><span>    model <span class="op">=</span> <span class="st">"rw1"</span>,</span></span>
+<span class="r-in"><span>    model <span class="op">=</span> <span class="fu"><a href="rw1.html">rw1</a></span><span class="op">(</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>    noise <span class="op">=</span> <span class="fu"><a href="ngme_noise.html">noise_normal</a></span><span class="op">(</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  <span class="op">)</span>,</span></span>
 <span class="r-in"><span>  family <span class="op">=</span> <span class="fu"><a href="ngme_noise.html">noise_normal</a></span><span class="op">(</span>sd <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span>,</span></span>
@@ -168,7 +168,7 @@ See <code><a href="ngme_model_types.html">ngme_model_types()</a></code> for avai
 <span class="r-in"><span>    estimation <span class="op">=</span> <span class="cn">FALSE</span></span></span>
 <span class="r-in"><span>  <span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in ngme2::f(x2, model = "ar1", noise = noise_nig(), rho = 0.5, data = structure(list(    Y = 1:5, x1 = 2:6, x2 = 3:7), class = "data.frame", row.names = c(NA, -5L)), group = structure(c(1L, 1L, 1L, 1L, 1L), levels = "1", class = "factor"),     name = "field1", subset = c(TRUE, TRUE, TRUE, TRUE, TRUE)):</span> unused argument (rho = 0.5)</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in ngme2::f(x2, model = ar1(), noise = noise_nig(), rho = 0.5, data = structure(list(    Y = 1:5, x1 = 2:6, x2 = 3:7), class = "data.frame", row.names = c(NA, -5L)), group = structure(c(1L, 1L, 1L, 1L, 1L), levels = "1", class = "factor"),     name = "field1", subset = c(TRUE, TRUE, TRUE, TRUE, TRUE)):</span> unused argument (rho = 0.5)</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

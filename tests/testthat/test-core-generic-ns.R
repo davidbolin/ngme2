@@ -251,8 +251,7 @@ test_that("generic_ns model == AR1 model", {
     Y ~ 0 + f(
       1:n_obs,
       name = "my_ar",
-      model = "ar1",
-      rho = 0.5,
+      model = ar1(rho = 0.5)
     ),
     data = data.frame(Y = Y),
     control_opt = control
@@ -268,13 +267,14 @@ test_that("generic_ns model == AR1 model", {
   fit_generic <- ngme(
     Y ~ 0 + f(
       1:n_obs,
-      model = "generic_ns",
       name = "generic",
-      theta_K = list(rho = g(0.5)),
-      trans = list(rho = "tanh"),
-      matrices = list(ar1$C, ar1$G),
-      h = ar1$h,
-      position = list(c(1, 2), c(3))
+      model = generic_ns(
+        theta_K = list(rho = g(0.5)),
+        trans = list(rho = "tanh"),
+        matrices = list(ar1$C, ar1$G),
+        h = ar1$h,
+        position = list(c(1, 2), c(3))
+      )
     ),
     data = data.frame(Y = Y),
     control_opt = control
@@ -299,8 +299,8 @@ test_that("generic model == Matern model (alpha == 2 or 4)", {
   matern <- matern(
     mesh,
     alpha = 4,
-    theta_K = theta_kappa,
-    B_theta_K = B_kappa
+    theta_kappa = theta_kappa,
+    B_kappa = B_kappa
   )
   kappas <- as.numeric(exp(B_kappa %*% theta_kappa))
   D_kappa <- Matrix::Diagonal(x = kappas)
@@ -348,11 +348,12 @@ test_that("generic model == Matern model (alpha == 2 or 4)", {
   fit_matern_2 <- ngme(
     Y ~ 0 + f(
       cbind(x, y),
-      mesh = mesh,
-      theta_K = theta_kappa,
-      B_theta_K = B_kappa,
-      model = "matern",
-      alpha = 2,
+      model = matern(
+        mesh = mesh,
+        theta_kappa = theta_kappa,
+        B_kappa = B_kappa,
+        alpha = 2
+      )
     ),
     data = data.frame(Y = Y),
     control_opt = control
@@ -364,18 +365,19 @@ test_that("generic model == Matern model (alpha == 2 or 4)", {
   fit_generic_2 <- ngme(
     Y ~ 0 + f(
       cbind(x, y),
-      mesh = mesh,
-      model = "generic_ns",
       name = "generic",
-      theta_K = list(theta = theta_kappa),
-      trans = list(theta = c("exp")),
-      B_theta_K = list(theta = B_kappa),
-      matrices = list(C, G),
-      position = list(
-        c(1, 2, 1),
-        c(3)
-      ),
-      h = matern$h
+      model = generic_ns(
+        mesh = mesh,
+        theta_K = list(theta = theta_kappa),
+        trans = list(theta = c("exp")),
+        B_theta_K = list(theta = B_kappa),
+        matrices = list(C, G),
+        position = list(
+          c(1, 2, 1),
+          c(3)
+        ),
+        h = matern$h
+      )
     ),
     data = data.frame(Y = Y),
     control_opt = control
@@ -387,11 +389,12 @@ test_that("generic model == Matern model (alpha == 2 or 4)", {
   fit_matern_4 <- ngme(
     Y ~ 0 + f(
       cbind(x, y),
-      mesh = mesh,
-      theta_K = theta_kappa,
-      B_theta_K = B_kappa,
-      model = "matern",
-      alpha = 4,
+      model = matern(
+        mesh = mesh,
+        theta_kappa = theta_kappa,
+        B_kappa = B_kappa,
+        alpha = 4
+      )
     ),
     data = data.frame(Y = Y),
     control_opt = control
@@ -403,20 +406,21 @@ test_that("generic model == Matern model (alpha == 2 or 4)", {
   fit_generic_alpha_4 <- ngme(
     Y ~ 0 + f(
       cbind(x, y),
-      mesh = mesh,
-      model = "generic_ns",
       name = "generic",
-      theta_K = list(theta = theta_kappa),
-      trans = list(theta = c("exp")),
-      B_theta_K = list(theta = B_kappa),
-      matrices = list(C, G, Cinv),
-      position = list(
-        c(1, 2, 1, 4, 1, 2, 1),
-        c(1, 2, 1, 4, 3),
-        c(3, 4, 1, 2, 1),
-        c(3, 4, 3)
-      ),
-      h = matern$h
+      model = generic_ns(
+        mesh = mesh,
+        theta_K = list(theta = theta_kappa),
+        trans = list(theta = c("exp")),
+        B_theta_K = list(theta = B_kappa),
+        matrices = list(C, G, Cinv),
+        position = list(
+          c(1, 2, 1, 4, 1, 2, 1),
+          c(1, 2, 1, 4, 3),
+          c(3, 4, 1, 2, 1),
+          c(3, 4, 3)
+        ),
+        h = matern$h
+      )
     ),
     data = data.frame(Y = Y),
     control_opt = control
@@ -429,11 +433,13 @@ test_that("generic model == Matern model (alpha == 2 or 4)", {
 test_that("ou (generic) equals rho*C + G on uniform mesh", {
   mesh <- 1:8
   rho <- 0.3
+  theta <- -log(rho)
 
-  op <- ou(mesh = mesh, rho = rho)
+  op <- ou(mesh = mesh, theta = theta)
 
   C <- Matrix::sparseMatrix(j = 1:(length(mesh) - 1), i = 2:length(mesh), x = -1, dims = c(length(mesh), length(mesh)))
   G <- Matrix::Diagonal(length(mesh))
+  G[1, 1] <- sqrt(1 - rho^2)
   expected <- rho * C + G
 
   expect_equal(as.matrix(op$K), as.matrix(expected))
@@ -465,12 +471,13 @@ test_that("generic_ns model == bv_matern_nig model", {
   out_cor <- ngme(
     Y ~ 0 + f(
       ~ long + lat,
-      mesh = mesh,
-      model = "bv_matern_nig",
       name = "bv",
-      sub_models = list(
-        W1 = list(model = "matern"),
-        W2 = list(model = "matern")
+      model = bv_matern(
+        mesh = mesh,
+        sub_models = list(
+          W1 = matern(),
+          W2 = matern()
+        )
       ),
       # debug=T,
       noise = list(
@@ -523,13 +530,14 @@ test_that("Simulation and fitting", {
   fit <- ngme(
     y ~ 0 + f(
       1:n,
-      mesh = mesh,
-      model = "generic_ns",
-      theta_K = list(alpha = c(1, 1)),
-      B_theta_K = list(alpha = matrix(1, n, 2)),
-      matrices = list(A, B),
-      position = list(c(1, 2), c(3)), # D_alpha * A + B
-      h = rep(1, n)
+      model = generic_ns(
+        mesh = mesh,
+        theta_K = list(alpha = c(1, 1)),
+        B_theta_K = list(alpha = matrix(1, n, 2)),
+        matrices = list(A, B),
+        position = list(c(1, 2), c(3)), # D_alpha * A + B
+        h = rep(1, n)
+      )
     ),
     data = data.frame(y),
     control_opt = control_opt(

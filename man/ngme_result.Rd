@@ -31,7 +31,7 @@ ngme_out <- ngme(
   Y ~ x1 + x2 + f(
     1:n_obs,
     name = "my_ar",
-    model = "ar1",
+    model = ar1(),
     rho = 0.5,
     noise = noise_nig(mu = 2, sigma = 3, nu = 1)
   ),
@@ -60,12 +60,12 @@ ngme_out2 <- ngme(
   Y ~ x1 + x2 + f(
     1:n_obs,
     name = "my_ar",
-    model = "ar1",
+    model = ar1(),
     noise = noise_nig(mu = 2, sigma = 3, nu = 1)
   ) + f(
     1:n_obs,
     name = "my_ou",
-    model = "ou",
+    model = ou(),
     noise = noise_normal(sigma = 1)
   ),
   data = data.frame(x1 = x1, x2 = x2, Y = Y)

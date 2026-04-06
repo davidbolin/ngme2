@@ -401,8 +401,8 @@ Now we define and simulate from a model with NIG noise:
 
 ```{r simulate-nig}
 # Define the simulated model
-sigma_true <- 5
-nu_true <- 0.5
+sigma_true <- 4
+nu_true <- 1
 mu_true <- -2
 kappa_true <- 4
 

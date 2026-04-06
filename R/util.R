@@ -959,7 +959,7 @@ ngme_build_A <- function(model, mesh, map, operator, group, group_levels = NULL)
     length(group) == length_map(map) || stop("The length of group should be equal to the length of map.")
 
     blk_group <- as.integer(as.factor(group))
-    blk <- fmesher::fm_block(blk_group)
+    blk <- fmesher::fm_block(blk_group, n_block = length(group_levels))
     basis <- fmesher::fm_basis(mesh, loc = map)
     A <- fmesher::fm_row_kron(Matrix::t(blk), basis)
     return(ngme_as_sparse(A))

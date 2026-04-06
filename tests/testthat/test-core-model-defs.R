@@ -88,7 +88,6 @@ test_that("test bivariate (bv)", {
   x1 <- 1:9
   data <- data.frame(y, year, x1, labels)
 
-  load_all()
   bv_model <- bv(
     year,
     theta = pi / 8,

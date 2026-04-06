@@ -22,7 +22,7 @@ a realization of latent model
 Simulate latent process with noise
 }
 \examples{
-simulate(f(1:10, model = "ar1", rho = 0.4, noise = noise_nig()))
-simulate(f(rnorm(10), model = "rw1", noise = noise_normal()))
-simulate(f(1:10, model = "ar1", rho = 0.4, noise = noise_t(nu = 5)))
+simulate(f(1:10, model = ar1(rho = 0.4), noise = noise_nig()))
+simulate(f(rnorm(10), model = rw1(), noise = noise_normal()))
+simulate(f(1:10, model = ar1(rho = 0.4), noise = noise_t(nu = 5)))
 }

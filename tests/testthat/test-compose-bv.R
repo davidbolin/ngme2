@@ -119,13 +119,14 @@ test_that("test on bv(matern, matern)", {
 
   true_model <- f(
     map = rbind(loc1, loc2),
-    model = "bv",
-    sub_models = list(
-      A = list(model = "matern", theta_K = log(1)),
-      B = list(model = "matern", theta_K = log(3))
+    model = bv(
+      mesh = mesh,
+      sub_models = list(
+        A = matern(theta_kappa = log(1)),
+        B = matern(theta_kappa = log(3))
+      )
     ),
     group = c(rep("A", 300), rep("B", 400)),
-    mesh = mesh,
     noise = list(A = noise_nig(), B = noise_nig())
   )
 
@@ -137,12 +138,13 @@ test_that("test on bv(matern, matern)", {
   out <- ngme(
     Y ~ 0 + f(
       map = rbind(loc1, loc2),
-      model = "bv",
-      sub_models = list(
-        A = list(model = "matern"),
-        B = list(model = "matern")
+      model = bv(
+        mesh = mesh,
+        sub_models = list(
+          A = matern(),
+          B = matern()
+        )
       ),
-      mesh = mesh,
       noise = list(A = noise_nig(), B = noise_nig())
     ),
     group = c(rep("A", 300), rep("B", 400)),
@@ -204,14 +206,16 @@ test_that("test on bv matern NIG", {
 
   true_model <- f(
     ~ long + lat,
-    theta = theta,
-    rho = rho,
-    mesh = mesh,
-    sd1 = sigma_1, sd2 = sigma_2,
-    model = "bv_matern_nig",
-    sub_models = list(
-      W1 = list(model = "matern", theta_K = theta_K_1),
-      W2 = list(model = "matern", theta_K = theta_K_2)
+    model = bv_matern(
+      mesh = mesh,
+      theta = theta,
+      rho = rho,
+      sd1 = sigma_1,
+      sd2 = sigma_2,
+      sub_models = list(
+        W1 = matern(theta_kappa = theta_K_1),
+        W2 = matern(theta_kappa = theta_K_2)
+      )
     ),
     group = group,
     noise = list(
@@ -249,12 +253,13 @@ test_that("test on bv matern NIG", {
   out_cor_gauss <- ngme(
     Y ~ 0 + x1 + x2 + f(
       ~ long + lat,
-      mesh = mesh,
-      model = "bv_matern_normal",
       name = "bv",
-      sub_models = list(
-        W1 = list(model = "matern"),
-        W2 = list(model = "matern")
+      model = bv_matern(
+        mesh = mesh,
+        sub_models = list(
+          W1 = matern(),
+          W2 = matern()
+        )
       ),
       # debug=T,
       noise = list(
@@ -284,14 +289,15 @@ test_that("test on bv matern NIG", {
   out_cor_nig <- ngme(
     Y ~ 0 + x1 + x2 + f(
       ~ long + lat,
-      mesh = mesh,
-      model = "bv_matern_nig",
       name = "bv",
-      theta = pi / 4,
-      fix_theta = TRUE,
-      sub_models = list(
-        W1 = list(model = "matern"),
-        W2 = list(model = "matern")
+      model = bv_matern(
+        mesh = mesh,
+        theta = pi / 4,
+        fix_theta = TRUE,
+        sub_models = list(
+          W1 = matern(),
+          W2 = matern()
+        )
       ),
       # debug=T,
       noise = list(

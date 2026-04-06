@@ -1,4 +1,3 @@
-# load_all()
 library(ngme2)
 
 # Complete log-likelihood function

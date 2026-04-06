@@ -97,7 +97,6 @@ ret_nig <- readRDS("examples/models/ret_nig.rds")
 ret_nig_real <- readRDS("examples/models/ret_nig.rds")
 traceplot(ret_nig, "my_ar", hline = c(0.5, mu, sigma, nu))
 
-load_all()
 seed <- 500
 
 tmp <- make_time_series_cv_index(1:n_obs, train_length = 10, test_length = 1)
@@ -149,7 +148,6 @@ idx <- 1:100
 
 pred_gauss <- double(length = length(idx))
 pred_nig <- double(length = length(idx))
-load_all()
 for (i in seq_along(idx)) {
   print(i)
   ret_gauss_loo <- ret_gauss$replicates[[1]]
@@ -198,8 +196,6 @@ for (i in seq_along(idx)) {
 
 
 
-
-load_all()
 seed <- 50
 cv <- cross_validation(
   list(

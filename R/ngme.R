@@ -33,11 +33,11 @@
 #' ngme(
 #'   formula = Y ~ x1 + f(
 #'     x2,
-#'     model = "ar1",
+#'     model = ar1(),
 #'     noise = noise_nig(),
 #'     rho = 0.5
 #'   ) + f(x1,
-#'     model = "rw1",
+#'     model = rw1(),
 #'     noise = noise_normal(),
 #'   ),
 #'   family = noise_normal(sd = 0.5),
@@ -77,6 +77,7 @@ ngme <- function(
   )
   control_ngme <- update_control_ngme(control_ngme, control_opt)
 
+  group_supplied <- !is.null(group)
   group <- validate_rep_or_group(group, data)
   replicate <- validate_rep_or_group(replicate, data)
 
@@ -112,7 +113,7 @@ ngme <- function(
     control_opt$standardize_fixed # convert fixed effects
   )
 
-  if (contain_bv_model(ngme_model)) {
+  if (contain_bv_model(ngme_model) && group_supplied) {
     stopifnot(
       "Please supply `group` argument in ngme() function, not in f()." =
         length(levels(group)) == 2
@@ -928,11 +929,41 @@ ngme_parse_formula <- function(
   response <- deparse(attr(tf, "variables")[[2]])
   plain_fm_str <- paste(response, "~", intercept, paste(c("", fixf), collapse = " + "))
   plain_fm <- formula(plain_fm_str)
+  data_eval <- as.data.frame(data)
+
+  needed_vars <- all.vars(plain_fm)
+  if (length(fe_order) > 0) {
+    for (i in fe_order) {
+      lang <- str2lang(terms[i])
+      needed_vars <- c(needed_vars, all.vars(as.formula(lang[[2]])))
+    }
+  }
+  needed_vars <- setdiff(unique(needed_vars), names(data_eval))
+  if (length(needed_vars) > 0) {
+    n_data <- nrow(data_eval)
+    for (var_name in needed_vars) {
+      if (!exists(var_name, envir = enclos_env, inherits = TRUE)) {
+        next
+      }
+      value <- get(var_name, envir = enclos_env, inherits = TRUE)
+      if (is.matrix(value) || is.data.frame(value)) {
+        if (NROW(value) == n_data && NCOL(value) == 1) {
+          value <- value[, 1, drop = TRUE]
+        } else {
+          next
+        }
+      }
+      if (length(value) %in% c(1, n_data)) {
+        data_eval[[var_name]] <- rep_len(value, n_data)
+      }
+    }
+  }
+  data_mask <- list2env(as.list(data_eval), parent = enclos_env)
 
   # eval the data
-  ngme_response <- eval(stats::terms(fm)[[2]], envir = data, enclos = enclos_env)
+  ngme_response <- eval(stats::terms(fm)[[2]], envir = data_mask, enclos = enclos_env)
   stopifnot("Have NA in your response variable" = all(!is.na(ngme_response)))
-  X_full <- model.matrix(delete.response(terms(plain_fm)), as.data.frame(data))
+  X_full <- model.matrix(delete.response(terms(plain_fm)), data = data_eval)
   centered <- ngme_center_non_intercept_cols(X_full)
   X_full <- centered$X
   X_center <- centered$center
@@ -963,7 +994,7 @@ ngme_parse_formula <- function(
       "Please make sure <group_name> is in group" = lang$which %in% levels(group)
     )
     mask <- group == lang$which
-    X_sub <- model.matrix(as.formula(lang[[2]]), data)
+    X_sub <- model.matrix(as.formula(lang[[2]]), data = data_eval)
     colnames(X_sub) <- paste0(colnames(X_sub), "_", lang$which)
     X_sub[!mask, ] <- 0
     intercept_sub <- colnames(X_sub)[startsWith(colnames(X_sub), "(Intercept)")]
@@ -1336,7 +1367,7 @@ summary.ngme <- function(
 #'   Y ~ x1 + x2 + f(
 #'     1:n_obs,
 #'     name = "my_ar",
-#'     model = "ar1",
+#'     model = ar1(),
 #'     rho = 0.5,
 #'     noise = noise_nig(mu = 2, sigma = 3, nu = 1)
 #'   ),
@@ -1365,12 +1396,12 @@ summary.ngme <- function(
 #'   Y ~ x1 + x2 + f(
 #'     1:n_obs,
 #'     name = "my_ar",
-#'     model = "ar1",
+#'     model = ar1(),
 #'     noise = noise_nig(mu = 2, sigma = 3, nu = 1)
 #'   ) + f(
 #'     1:n_obs,
 #'     name = "my_ou",
-#'     model = "ou",
+#'     model = ou(),
 #'     noise = noise_normal(sigma = 1)
 #'   ),
 #'   data = data.frame(x1 = x1, x2 = x2, Y = Y)

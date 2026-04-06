@@ -70,14 +70,26 @@ void Matern::build_KZ(const VectorXd &theta_K) {
 
   if (std::abs(alpha - 2) < 1e-6) {
     // Integer case alpha = 2
-    // K = G + C * diag(kappa^2)
-    SparseMatrix<double> KCK = (C * kappa2.asDiagonal()).eval();
-    K = (G + KCK);
+    if (stationary) {
+      SparseMatrix<double> KCK = (C * kappa2.asDiagonal()).eval();
+      K = (G + KCK);
+    } else {
+      SparseMatrix<double> Dk(kappa.size(), kappa.size());
+      Dk = kappa.asDiagonal();
+      K = (Dk * C * Dk + G).eval();
+    }
     Z.setIdentity();
   } else if (std::abs(alpha - 4) < 1e-6) {
     // Integer case alpha = 4
-    SparseMatrix<double> KCK = (C * kappa2.asDiagonal()).eval();
-    K = (G + KCK) * Cdiag.cwiseInverse().asDiagonal() * (G + KCK);
+    if (stationary) {
+      SparseMatrix<double> KCK = (C * kappa2.asDiagonal()).eval();
+      K = (G + KCK) * Cdiag.cwiseInverse().asDiagonal() * (G + KCK);
+    } else {
+      SparseMatrix<double> Dk(kappa.size(), kappa.size());
+      Dk = kappa.asDiagonal();
+      SparseMatrix<double> L = (Dk * C * Dk + G).eval();
+      K = (L * Cdiag.cwiseInverse().asDiagonal() * L).eval();
+    }
     Z.setIdentity();
   } else {
     // Fractional case

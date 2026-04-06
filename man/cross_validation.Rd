@@ -56,12 +56,17 @@ custom is user-defined group, provide \code{target} and \code{data}}
 
 \item{times}{how many test cases (only for lpo type)}
 
-\item{metric}{Optional function or list of functions (one per model) that maps the group-wise observations/predictions for a single location to the quantity that should be scored.
-The function receives a list containing at least `y` (named numeric vector of group values) and may optionally use `samples1`/`samples2` (matrices with rows named by group and columns indexing posterior draws).
-The function must return either a numeric scalar (optionally named) or a list with components `y` (scalar), and optionally `samples1`/`samples2` (numeric vectors matching the posterior draw count) and `label` (character).
-When `NULL`, the original per-group scores are computed.
-For example, to compare a linear combination of two fields you can use
-\code{metric = function(data) \{ res <- 2 * data$y["A"] + data$y["B"]; res \}}. To simply sum all group values, return \code{sum(data$y)}.}
+\item{metric}{Optional function or list of functions (one per model) that maps
+the group-wise observations/predictions for a single location to the quantity
+that should be scored. The function receives a list containing at least
+\code{y} (a named numeric vector of group values) and may optionally use
+\code{samples1} and \code{samples2} (matrices with rows named by group and
+columns indexing posterior draws). The function must return either a numeric
+scalar (optionally named), or a list with component \code{y} and optional
+components \code{samples1}, \code{samples2}, and \code{label}. When
+\code{NULL}, the original per-group scores are computed. Example:
+\code{metric = function(data) 2 * data$y["A"] + data$y["B"]}. To sum all
+groups, return \code{sum(data$y)}.}
 
 \item{test_idx}{a list of indices of the data (which data points to be predicted) (only for custom type)}
 
@@ -71,7 +76,7 @@ For example, to compare a linear combination of two fields you can use
 
 \item{parallel}{logical, run in parallel mode}
 
-\item{thining_gap}{integer, the gap between samples for thinning, if 0, then no thinning, if 1, then keep 50% of the samples for CRPS, sCRPS, etc.}
+\item{thining_gap}{integer, the gap between samples for thinning, if 0, then no thinning, if 1, then keep 50\% of the samples for CRPS, sCRPS, etc.}
 
 \item{cores_layer1}{integer, number of cores for the first layer (over testing samples)}
 
@@ -93,10 +98,12 @@ while reusing fitted parameters from `ngme`.}
 and averages at the predictive level.}
 }
 \value{
-A list containing:
-  \itemize{
-    \item mean.scores - mean of N_sim estimations of 4 criterions: MSE, MAE, CRPS, sCRPS
-    \item sd.scores - standard deviation of N_sim estimations of 4 criterions: MSE, MAE, CRPS, sCRPS
+A list with components:
+  \describe{
+    \item{mean.scores}{Mean of the \code{N_sim} estimates for MSE, MAE, CRPS,
+      and sCRPS.}
+    \item{sd.scores}{Standard deviation of the \code{N_sim} estimates for MSE,
+      MAE, CRPS, and sCRPS.}
   }
 }
 \description{

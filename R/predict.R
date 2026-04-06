@@ -118,7 +118,7 @@ predict_ngme_param_mean <- function(
     return_samples = FALSE) {
   fm <- attr(object, "fit")$formula
   ngme <- object$replicates[[1]]
-  seed_int <- as.integer(abs(seed) %% 2147483647)
+  seed_int <- normalize_prediction_seed(seed)
   type_names <- prediction_type_names(type, ngme)
   requested_model_names <- prediction_requested_model_names(type_names, ngme)
 
@@ -227,6 +227,7 @@ predict_ngme_param_mean <- function(
       for (model_name in requested_model_names) {
         model <- ngme$models[[model_name]]
         loc <- map[[model_name]]
+        group_use <- group
         if (inherits(model$operator$mesh, "metric_graph")) {
           loc <- as.data.frame(loc)
         } else if (model$model != "tp") {
@@ -238,12 +239,16 @@ predict_ngme_param_mean <- function(
           )
         }
 
+        if (model$model %in% c("bv", "bv2", "bv_matern") && !is.null(group_use)) {
+          group_use <- rep(group_use, length.out = length_map(loc))
+        }
+
         A <- ngme_build_A(
           model$model,
           model$operator$mesh,
           loc,
           model$operator,
-          group,
+          group_use,
           group_levels = levels(ngme$group)
         )
 
@@ -281,6 +286,19 @@ predict_ngme_param_mean <- function(
   }
   attr(ret, "samples") <- samples_W
   ret
+}
+
+normalize_prediction_seed <- function(seed) {
+  if (inherits(seed, "POSIXt")) {
+    seed <- as.numeric(seed)
+  }
+
+  seed <- as.numeric(seed)[1]
+  if (!is.finite(seed)) {
+    stop("seed must be coercible to a finite numeric value.")
+  }
+
+  as.integer(abs(seed) %% 2147483647)
 }
 
 

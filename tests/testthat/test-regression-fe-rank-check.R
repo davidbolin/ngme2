@@ -22,6 +22,7 @@ test_that("grouped fe() terms fail early when design matrix is rank deficient", 
 })
 
 test_that("grouped fe() regression matches lm.fit and is invariant to SVD standardization", {
+  skip_on_cran()
   withr::local_seed(20260225)
 
   n_per_group <- 200

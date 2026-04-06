@@ -9,9 +9,9 @@
 #' @export
 #'
 #' @examples
-#' simulate(f(1:10, model = "ar1", rho = 0.4, noise = noise_nig()))
-#' simulate(f(rnorm(10), model = "rw1", noise = noise_normal()))
-#' simulate(f(1:10, model = "ar1", rho = 0.4, noise = noise_t(nu = 5)))
+#' simulate(f(1:10, model = ar1(rho = 0.4), noise = noise_nig()))
+#' simulate(f(rnorm(10), model = rw1(), noise = noise_normal()))
+#' simulate(f(1:10, model = ar1(rho = 0.4), noise = noise_t(nu = 5)))
 simulate.ngme_model <- function(
     object,
     nsim = 1,

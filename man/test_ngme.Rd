@@ -62,3 +62,4 @@ test_ngme(
 \description{
 Test ngme function for different models
 }
+\keyword{internal}

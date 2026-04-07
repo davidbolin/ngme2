@@ -64,9 +64,8 @@ See \code{ngme_model_types()} for available models.
 ngme(
   formula = Y ~ x1 + f(
     x2,
-    model = ar1(),
-    noise = noise_nig(),
-    rho = 0.5
+    model = ar1(rho = 0.5),
+    noise = noise_nig()
   ) + f(x1,
     model = rw1(),
     noise = noise_normal(),

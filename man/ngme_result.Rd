@@ -31,8 +31,7 @@ ngme_out <- ngme(
   Y ~ x1 + x2 + f(
     1:n_obs,
     name = "my_ar",
-    model = ar1(),
-    rho = 0.5,
+    model = ar1(rho = 0.5),
     noise = noise_nig(mu = 2, sigma = 3, nu = 1)
   ),
   data = data.frame(x1 = x1, x2 = x2, Y = Y)
@@ -60,7 +59,7 @@ ngme_out2 <- ngme(
   Y ~ x1 + x2 + f(
     1:n_obs,
     name = "my_ar",
-    model = ar1(),
+    model = ar1(rho = 0.5),
     noise = noise_nig(mu = 2, sigma = 3, nu = 1)
   ) + f(
     1:n_obs,
@@ -79,8 +78,4 @@ all_models <- ngme_result(ngme_out2)
 ou_params <- ngme_result(ngme_out2, model = "my_ou")
 # Returns: list(theta_K1 = 0.5, sigma = 1)
 }
-
-}
-\seealso{
-\code{\link{extract_parameters}} for the underlying function
 }

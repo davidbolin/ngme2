@@ -28,12 +28,18 @@ LinkingTo:
     RcppEigen,
 Suggests:
     R.rsp,
+    knitr,
+    rmarkdown,
     testthat (>= 3.0.0),
     MASS,
     dplyr,
+    inlabru,
+    rSPDE,
+    sf,
+    withr,
     zoo,
     mvtnorm
-VignetteBuilder: R.rsp
+VignetteBuilder: knitr
 RoxygenNote: 7.3.2
 Config/testthat/edition: 3
 URL: https://davidbolin.github.io/ngme2/, https://github.com/davidbolin/ngme2

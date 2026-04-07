@@ -1,4 +1,5 @@
 #include "../include/MatrixAlgebra.h"
+#include <stdexcept>
 
 typedef Eigen::Triplet<double> T;
 using namespace Eigen;
@@ -22,7 +23,7 @@ void get_submatrix(const MatrixXd &M, const VectorXi &ind, MatrixXd &Msub)
 {
 	if (ind.size() != M.rows())
 	{
-		std::cout << "get_submatrix:: number of rows in M does not match length of index vector\n";
+		throw std::invalid_argument("get_submatrix: number of rows in M does not match length of index vector");
 	}
 	Msub.setZero(ind.sum(), M.cols());
 	int k = 0;
@@ -38,7 +39,7 @@ MatrixXd get_submatrix(const MatrixXd &M, const VectorXi &ind)
 {
 	if (ind.size() != M.rows())
 	{
-		std::cout << "get_submatrix:: number of rows in M does not match length of index vector\n";
+		throw std::invalid_argument("get_submatrix: number of rows in M does not match length of index vector");
 	}
 	MatrixXd Msub(ind.sum(), M.cols());
 	int k = 0;
@@ -54,7 +55,7 @@ MatrixXi get_submatrix(const MatrixXi &M, const VectorXi &ind)
 {
 	if (ind.size() != M.rows())
 	{
-		std::cout << "get_submatrix:: number of rows in M does not match length of index vector\n";
+		throw std::invalid_argument("get_submatrix: number of rows in M does not match length of index vector");
 	}
 	MatrixXi Msub(ind.sum(), M.cols());
 	int k = 0;
@@ -73,7 +74,7 @@ void get_submatrix(SparseMatrix<double, 0, int> &M, const VectorXi &ind, SparseM
 {
 	if (ind.size() != M.rows())
 	{
-		std::cout << "get_submatrix:: number of rows in M does not match length of index vector\n";
+		throw std::invalid_argument("get_submatrix: number of rows in M does not match length of index vector");
 	}
 	Msub->resize(ind.sum(), M.cols());
 	// create vector with row indices for Msub
@@ -100,7 +101,7 @@ void get_subvector(const VectorXd &Y, const VectorXi &ind, VectorXd &Ysub)
 	Ysub.resize(ind.sum());
 	if (ind.size() != Y.size())
 	{
-		std::cout << "get_subvector:: number of rows in Y does not match length of index vector\n";
+		throw std::invalid_argument("get_subvector: number of rows in Y does not match length of index vector");
 	}
 	int k = 0;
 	for (int i = 0; i < Y.size(); i++)
@@ -116,7 +117,7 @@ void set_submatrix(MatrixXd &M, const MatrixXd &Msub, const VectorXi &ind)
 	int k = 0;
 	if (ind.size() != M.rows())
 	{
-		std::cout << "set_submatrix:: number of rows in M does not match length of index vector\n";
+		throw std::invalid_argument("set_submatrix: number of rows in M does not match length of index vector");
 	}
 	for (int i = 0; i < ind.size(); i++)
 	{
@@ -132,7 +133,7 @@ void set_submatrix(MatrixXi &M, const MatrixXi &Msub, const VectorXi &ind)
 {
 	if (ind.size() != M.rows())
 	{
-		std::cout << "set_submatrix:: number of rows in M does not match length of index vector\n";
+		throw std::invalid_argument("set_submatrix: number of rows in M does not match length of index vector");
 	}
 	int k = 0;
 	for (int i = 0; i < ind.size(); i++)
@@ -150,7 +151,7 @@ void set_subcol(MatrixXd &M, const int r, const VectorXi &ind, const VectorXd &v
 	int k = 0;
 	if (ind.size() != M.rows())
 	{
-		std::cout << "set_subcol:: number of rows in M does not match length of index vector\n";
+		throw std::invalid_argument("set_subcol: number of rows in M does not match length of index vector");
 	}
 	for (int i = 0; i < ind.size(); i++)
 	{
@@ -168,7 +169,7 @@ void add_submatrix(MatrixXd &M, const MatrixXd &Msub, const VectorXi &ind)
 	int k = 0;
 	if (ind.size() != M.rows())
 	{
-		std::cout << "add_submatrix:: number of rows in M does not match length of index vector\n";
+		throw std::invalid_argument("add_submatrix: number of rows in M does not match length of index vector");
 	}
 	for (int i = 0; i < ind.size(); i++)
 	{
@@ -214,7 +215,7 @@ MatrixXd veci(VectorXd &v, int n, int m)
 {
 	if (v.size() != n * m)
 	{
-		std::cout << "Wrong dimensions in reshape: " << v.size() << " (" << n << "," << m << ")" << std::endl;
+		throw std::invalid_argument("veci: wrong dimensions in reshape");
 	}
 	MatrixXd M;
 	M.setZero(n, m);

@@ -21,8 +21,6 @@
 #include <atomic>
 #include <cmath>
 #include <exception>
-#include <iomanip>
-#include <iostream>
 #include <limits>
 #include <memory>
 #include <random>
@@ -435,57 +433,6 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
       trajs_chains.push_back(opt_vec[i].get_trajs());
     }
   }
-  if (all_converge)
-    std::cout << "Reach convergence in " << steps << " iterations."
-              << std::endl;
-
-  if (all_converge && n_chains > 1) {
-    bool converged_by_pflug_only = pflug_triggered && !converged_by_param;
-    std::cout << "Convergence criteria summary:\n";
-
-    if (converged_by_pflug_only) {
-      std::cout << "  - Pflug diagnostic satisfied (pflug_sum < " << pflug_alpha
-                << " * max_pflug_sum for all chains)\n";
-      std::cout << "  Per-chain Pflug stats (sum / max):\n";
-      for (int i = 0; i < n_chains; i++) {
-        std::cout << "    * chain " << i + 1 << ": " << std::fixed
-                  << std::setprecision(4) << last_pflug_sum[i] << " / "
-                  << last_pflug_max[i] << "\n";
-      }
-    } else {
-      if (R_hat_conv_check) {
-        std::cout << "  - R_hat threshold: max_R_hat = " << max_R_hat << "\n";
-      }
-      if (trend_std_conv_check) {
-        std::cout << "  - Trend/Std thresholds: std_lim = " << std_lim
-                  << ", trend_lim = " << trend_lim
-                  << ", window (stop points) = " << n_slope_check << "\n";
-      }
-
-      std::cout << "  Per-parameter status (R_hat | std/mean | slope):\n";
-      for (int i = 0; i < n_params; i++) {
-        std::cout << "    * " << par_names[i] << ": ";
-        bool printed_any = false;
-        if (R_hat_conv_check) {
-          std::cout << "R_hat=" << std::fixed << std::setprecision(3)
-                    << final_R_hat(i)
-                    << (last_conv_rhat[i] ? " (ok)" : " (fail)");
-          printed_any = true;
-        }
-        if (trend_std_conv_check && last_trend_ready) {
-          if (printed_any)
-            std::cout << "; ";
-          std::cout << "std/mean=" << std::setprecision(3) << last_std_ratio[i]
-                    << (last_conv_trend_std[i] ? " (ok)" : " (fail)") << ", ";
-          std::cout << "slope=" << std::setprecision(3) << last_slopes[i]
-                    << (std::abs(last_slopes[i]) <= trend_lim ? " (ok)"
-                                                              : " (fail)");
-        }
-        std::cout << "\n";
-      }
-    }
-  }
-
 #else // No parallel chain
   Ngme ngme(R_ngme, seed, sampling_strategy);
   Ngme_optimizer opt(control_opt, std::make_shared<Ngme>(ngme), seed);
@@ -530,10 +477,6 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
     trajs_chains.push_back(opt.get_trajs());
   }
 #endif
-
-  std::cout << "Estimation ends." << std::endl;
-  std::cout << "Total time of the estimation is (s): "
-            << since(timer).count() / 1000 << std::endl;
 
   if (store_traj) {
     outputs.attr("opt_traj") = trajs_chains;
@@ -666,55 +609,7 @@ check_conv(const MatrixXd &means, const MatrixXd &vars, int curr_batch,
   if (trend_ready_out)
     *trend_ready_out = trend_ready;
 
-  if (print_check_info) {
-    std::cout << "\nstop " << curr_batch + 1 << ":\n";
-
-    const int label_width = 11; // width for the row label (e.g., "R_hat:")
-    const int col_width = 10;   // width for each value/parameter name
-    int line_width = label_width + n_params * (col_width + 1);
-
-    auto print_separator = [&]() {
-      std::cout << std::string(line_width, '-') << "\n";
-    };
-
-    print_separator();
-
-    std::cout << std::setw(label_width) << std::left << "Param:";
-    for (const auto &name : par_names) {
-      std::cout << " " << std::setw(col_width) << std::left << name;
-    }
-    std::cout << "\n";
-
-    print_separator();
-
-    if (R_hat_conv_check) {
-      std::cout << std::setw(label_width) << std::left << "R_hat:";
-      for (int i = 0; i < n_params; i++) {
-        std::cout << " " << std::setw(col_width) << std::fixed
-                  << std::setprecision(3) << std::left << R_hat(i);
-      }
-      std::cout << "\n";
-    }
-
-    if (trend_std_conv_check && trend_ready) {
-      std::cout << std::setw(label_width) << std::left << "std/mean:";
-      for (int i = 0; i < n_params; i++) {
-        std::cout << " " << std::setw(col_width) << std::fixed
-                  << std::setprecision(3) << std::left << std_ratio[i];
-      }
-      std::cout << "\n";
-
-      std::cout << std::setw(label_width) << std::left << "trend:";
-      for (int i = 0; i < n_params; i++) {
-        std::cout << " " << std::setw(col_width) << std::fixed
-                  << std::setprecision(3) << std::left << slopes[i];
-      }
-      std::cout << "\n";
-    }
-
-    print_separator();
-    std::cout << "\n";
-  }
+  (void)print_check_info;
 
   return conv;
 }

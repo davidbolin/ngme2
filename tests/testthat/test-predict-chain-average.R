@@ -15,7 +15,7 @@ test_that("predict and cross_validation support predictive_average over chains",
       n_min_batch = 1,
       verbose = FALSE,
       print_check_info = FALSE,
-      store_traj = FALSE,
+      # store_traj = FALSE,
       seed = 1
     )
   )

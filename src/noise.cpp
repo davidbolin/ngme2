@@ -176,7 +176,9 @@ double NoiseUtil::log_density(
     if (noise_type != "nig" && noise_type != "gal" && noise_type != "t") return 0;
 
     VectorXd nu = (B_nu * theta_nu).array().exp();
-    assert(V.size() == h.size());
+    if (V.size() != h.size()) {
+        throw std::invalid_argument("NoiseUtil::log_density: V and h must have the same length");
+    }
     double logd=0;
     for (int i = 0; i < V.size(); i++) {
         double x = V(i);

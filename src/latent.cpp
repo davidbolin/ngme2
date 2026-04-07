@@ -89,9 +89,9 @@ Latent::Latent(const Rcpp::List &model_list, unsigned long seed)
       A(Rcpp::as<SparseMatrix<double, 0, int>>(model_list["A"])),
 
       p_vec(V_size), a_vec(V_size), b_vec(V_size) {
-  if (debug)
-    std::cout << "begin constructor of latent" << std::endl;
-  assert(W_size == V_size);
+  if (W_size != V_size) {
+    throw std::invalid_argument("Latent: W_size must equal V_size");
+  }
 
   // construct from ngme_noise
   fix_flag[latent_fix_theta_K] = Rcpp::as<bool>(model_list["fix_theta_K"]);
@@ -206,8 +206,6 @@ Latent::Latent(const Rcpp::List &model_list, unsigned long seed)
     }
   }
 
-  if (debug)
-    std::cout << "End constructor of latent" << std::endl;
   last_gradient_ = VectorXd::Zero(n_params);
   last_precond_ = MatrixXd::Zero(n_params, n_params);
   invalidate_derivatives();
@@ -246,10 +244,9 @@ const VectorXd Latent::get_parameter() {
     parameter.segment(n_theta_K + n_theta_mu + n_theta_sigma, n_theta_nu) =
         theta_nu;
 
-  if (debug) {
-    if (std::isnan(parameter(0)) || std::isnan(-parameter(0)))
-      throw std::runtime_error("isnan");
-    std::cout << "parameter= " << parameter << std::endl;
+  if (debug && parameter.size() > 0 &&
+      (std::isnan(parameter(0)) || std::isnan(-parameter(0)))) {
+    throw std::runtime_error("isnan");
   }
 
   return parameter;
@@ -279,8 +276,6 @@ void Latent::compute_grad_and_hessian(bool rao_blackwell, bool with_precond) {
     return;
 
   if (need_grad) {
-    if (debug)
-      std::cout << "Start latent gradient compute" << std::endl;
     VectorXd grad = VectorXd::Zero(n_params);
 
     bool need_K = !fix_flag[latent_fix_theta_K];
@@ -304,8 +299,6 @@ void Latent::compute_grad_and_hessian(bool rao_blackwell, bool with_precond) {
     last_gradient_ = grad;
     grad_cache_valid_ = true;
     grad_cache_rb_mode_ = rao_blackwell;
-    if (debug)
-      std::cout << "finish latent gradient" << std::endl;
   }
 
   if (need_precond) {
@@ -357,14 +350,7 @@ void Latent::compute_grad_and_hessian(bool rao_blackwell, bool with_precond) {
     last_precond_ = precond_full;
     precond_cache_valid_ = true;
 
-    if (debug) {
-      auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                    std::chrono::steady_clock::now() - t_start)
-                    .count();
-      std::cout << "[latent] compute_precond_matrix (analytic skeleton) timing "
-                   "(ms): total="
-                << ms << std::endl;
-    }
+    (void)t_start;
   }
 }
 
@@ -511,8 +497,6 @@ void Latent::update_derivatives(bool need_grad_theta_K, bool need_grad_theta_mu,
 void Latent::compute_theta_K(bool need_grad, bool rao_blackwell) {
   if (!need_grad || deriv_cache.grad_K_ready)
     return;
-  auto t_total_start = std::chrono::steady_clock::now();
-  long long t_chain_ms = 0;
   VectorXd grad = VectorXd::Zero(n_theta_K);
   if (!fix_flag[latent_fix_theta_K]) {
     VectorXd WW = (rao_blackwell) ? cond_W : W;
@@ -535,13 +519,6 @@ void Latent::compute_theta_K(bool need_grad, bool rao_blackwell) {
         if (kfix[i])
           grad(i) = 0.0;
     }
-  }
-  if (debug) {
-    auto t_total_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                          std::chrono::steady_clock::now() - t_total_start)
-                          .count();
-    std::cout << "[latent] compute_theta_K timing (ms): total=" << t_total_ms
-              << ", Z-chain=" << t_chain_ms << std::endl;
   }
   deriv_cache.grad_theta_K = grad;
   deriv_cache.grad_K_ready = true;
@@ -684,9 +661,6 @@ void Latent::update_each_iter(bool need_precond) {
   if (!need_full_update && !need_upgrade) {
     return;
   }
-  auto t_total_start = std::chrono::steady_clock::now();
-  long long t_noise_ms = 0, t_trace_ms = 0;
-
   UpdateOptions uopts;
   uopts.compute_K = true;
   uopts.compute_Z = true;
@@ -706,7 +680,6 @@ void Latent::update_each_iter(bool need_precond) {
   nu = nu_lower_bound + (B_nu * theta_nu).array().exp();
 
   // update p,a,b, depend on nu, h
-  auto t_noise_start = std::chrono::steady_clock::now();
   for (int i = 0; i < n_noise; i++) {
     if (noise_type[i] == "normal")
       continue;
@@ -718,21 +691,13 @@ void Latent::update_each_iter(bool need_precond) {
     p_inc = VectorXd::Constant(V_size, -0.5 * dim);
     a_inc = mu.cwiseQuotient(sigma).array().pow(2);
   }
-  t_noise_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                   std::chrono::steady_clock::now() - t_noise_start)
-                   .count();
-
   // Update traces (pulled from operator)
   if (!fix_flag[latent_fix_theta_K] && !zero_trace) {
-    auto t_trace_start = std::chrono::steady_clock::now();
     VectorXd tv = ope->get_trace_trK();
     if (tv.size() == n_theta_K) {
       for (int i = 0; i < n_theta_K; ++i)
         trace[i] = tv(i);
     }
-    t_trace_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                     std::chrono::steady_clock::now() - t_trace_start)
-                     .count();
   }
 
   prevV = V;
@@ -740,14 +705,6 @@ void Latent::update_each_iter(bool need_precond) {
   state_ready_ = true;
   state_has_precond_terms_ = need_precond;
   invalidate_derivatives();
-  if (debug) {
-    auto t_total_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                          std::chrono::steady_clock::now() - t_total_start)
-                          .count();
-    std::cout << "[latent] update_each_iter timing (ms): total=" << t_total_ms
-              << ", noise_update=" << t_noise_ms << ", trace=" << t_trace_ms
-              << std::endl;
-  }
 }
 
 // main function for computing analytic Hessian blocks

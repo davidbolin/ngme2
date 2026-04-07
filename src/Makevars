@@ -32,13 +32,11 @@ ssenv = \
 	RANLIB="$(RANLIB)"
 
 
-PKG_CPPFLAGS = -I"$(ssdir)/SuiteSparse_config"
+PKG_CPPFLAGS = -I"$(ssdir)/SuiteSparse_config" -DNDEBUG -DEIGEN_NO_DEBUG
 PKG_CFLAGS = $(C_VISIBILITY)
 PKG_LIBS = $(sslib) $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
-PKG_LIBS += $(SHLIB_OPENMP_CXXFLAGS)
 
 PKG_CPPFLAGS += -Iinclude -I../inst/include # -DNDEBUG -DDEBUG
-PKG_CXXFLAGS += $(SHLIB_OPENMP_CXXFLAGS)
 
 ## NB: INSTALL does not clean subdirectories between subarchitectures
 $(sslib1):
@@ -91,18 +89,6 @@ ifeq ($(UNAME), Darwin)
     endif
   endif
 
-  # OpenMP on macOS: link Homebrew libomp by full path (if installed).
-  # Uses full path to avoid picking up R's potentially outdated bundled libomp.
-  # If libomp is not installed, OpenMP is silently disabled (#pragma omp ignored).
-  ifndef NGME_SKIP_LIBOMP_LINK
-    LIBOMP_DYLIB := $(HOMEBREW_PREFIX)/opt/libomp/lib/libomp.dylib
-    ifneq ($(wildcard $(LIBOMP_DYLIB)),)
-      ifeq ($(SHLIB_OPENMP_CXXFLAGS),)
-        PKG_CXXFLAGS += -Xclang -fopenmp
-      endif
-      PKG_LIBS += $(LIBOMP_DYLIB)
-    endif
-  endif
 endif
 
 # Enable MKL/Pardiso when MKLROOT is provided (e.g., oneAPI) on non-macOS

@@ -100,9 +100,6 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
   // reduce_power  =  Rcpp::as<double> (control_ngme["reduce_power"]);
   // threshold   =  Rcpp::as<double> (control_ngme["threshold"]);
 
-  if (debug)
-    std::cout << "Begin Block Constructor" << std::endl;
-
   // 2. Init Fixed effects
   bool fix_beta = control_ngme.containsElementNamed("fix_beta")
                       ? Rcpp::as<bool>(control_ngme["fix_beta"])
@@ -163,8 +160,6 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
     latents.push_back(std::make_shared<Latent>(latent_in, latent_seed));
   }
 
-  if (debug)
-    std::cout << "before set block A" << std::endl;
   /* Init A */
   int n = 0;
   for (std::vector<std::shared_ptr<Latent>>::iterator it = latents.begin();
@@ -172,9 +167,6 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
     setSparseBlock(&A, 0, n, (*it)->getA());
     n += (*it)->get_W_size();
   }
-  if (debug)
-    std::cout << "After set block K" << std::endl;
-
   // 5. Init measurement noise (consider corr_measure)
   Rcpp::List noise_in = block_model["noise"];
   fix_flag[block_fix_theta_mu] = Rcpp::as<bool>(noise_in["fix_theta_mu"]);
@@ -271,9 +263,6 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
     // std::cout << "Init Q_eps: \n" << Q_eps << std::endl;
   }
 
-  if (debug)
-    std::cout << "After block construct noise" << std::endl;
-
   // 6. Fix V and init V
   if (noise_in.containsElementNamed("V") && !Rf_isNull(noise_in["V"])) {
     noise_V = Rcpp::as<VectorXd>(noise_in["V"]);
@@ -282,9 +271,6 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
 
   // 7. Init solvers
   assemble();
-  if (debug)
-    std::cout << "After assemble" << std::endl;
-
   if (n_latent > 0) {
     VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
     Q = K.transpose() * inv_SV.asDiagonal() * K;
@@ -337,21 +323,14 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
   // Initialize gradient covariance matrix
   grad_covariance = MatrixXd::Zero(n_params, n_params);
 
-  if (debug)
-    std::cout << "End Block Constructor" << std::endl;
 }
 
 void BlockModel::burn_in(int iterations) {
-  if (debug)
-    std::cout << "Start burn-in for " << iterations << " iterations of burn-in"
-              << std::endl;
   for (int i = 0; i < iterations; i++) {
     sample_cond_V();
     sampleW_VY(true);
     sample_cond_noise_V();
   }
-  if (debug)
-    std::cout << "End burn-in" << std::endl;
 }
 
 void BlockModel::setW(const VectorXd &W) {
@@ -465,8 +444,6 @@ void BlockModel::sampleW_VY(bool burn_in) {
 // ---------------- get, set update gradient ------------------
 // order is Latent, merr, feff
 VectorXd BlockModel::get_parameter() {
-  if (debug)
-    std::cout << "Start block get_parameter" << std::endl;
   VectorXd thetas(n_params);
   int pos = 0;
   for (std::vector<std::shared_ptr<Latent>>::const_iterator it =
@@ -481,15 +458,11 @@ VectorXd BlockModel::get_parameter() {
   if (!fix_flag[block_fix_beta])
     thetas.segment(n_la_params + n_merr, n_feff) = beta;
 
-  if (debug)
-    std::cout << "Finish block get_parameter" << std::endl;
   return thetas;
 }
 
 void BlockModel::set_parameter_and_update(const VectorXd &Theta,
                                           bool with_precond) {
-  if (debug)
-    std::cout << "Start block set_parameter" << std::endl;
   // std::chrono::steady_clock::time_point startTime, endTime; startTime =
   // std::chrono::steady_clock::now();
   int pos = 0;
@@ -847,8 +820,6 @@ MatrixXd BlockModel::get_preconditioner() {
 
 // Main function for computing
 void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
-  if (debug)
-    std::cout << "Start compute_grad_and_hessian" << std::endl;
   auto t_total_start = std::chrono::steady_clock::now();
   long long t_sampleV_ms = 0, t_sampleW_ms = 0, t_rbtrace_ms = 0;
   long long t_build_s_ms = 0, t_set_s_ms = 0, t_dZ_ms = 0, t_grad_ms = 0;
@@ -1318,25 +1289,21 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
 
   last_gradient = avg_gradient;
   last_grad_valid = true;
+  (void)t_total_start;
+  (void)t_sampleV_ms;
+  (void)t_sampleW_ms;
+  (void)t_rbtrace_ms;
+  (void)t_build_s_ms;
+  (void)t_set_s_ms;
+  (void)t_dZ_ms;
+  (void)t_grad_ms;
+  (void)t_prec_latent_ms;
+  (void)t_prec_ZGN_ms;
+  (void)t_prec_merr_ms;
 
-  if (debug) {
-    auto total_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                        std::chrono::steady_clock::now() - t_total_start)
-                        .count();
-    std::cout << "[block] compute_grad_and_hessian timing (ms): total="
-              << total_ms << ", sampleV=" << t_sampleV_ms
-              << ", sampleW=" << t_sampleW_ms << ", rb_trace=" << t_rbtrace_ms
-              << ", build_s=" << t_build_s_ms << ", set_s=" << t_set_s_ms
-              << ", dZ=" << t_dZ_ms << ", grad=" << t_grad_ms
-              << ", prec_latent=" << t_prec_latent_ms
-              << ", prec_ZGN=" << t_prec_ZGN_ms
-              << ", prec_merr=" << t_prec_merr_ms << std::endl;
-  }
 }
 
 void BlockModel::compute_rb_trace() {
-  if (debug)
-    std::cout << "start compute trace" << std::endl;
   auto t_start = std::chrono::steady_clock::now();
   int n = 0;
   int woff = 0; // offset in W-space for embedding latent-local pieces
@@ -1434,12 +1401,7 @@ void BlockModel::compute_rb_trace() {
         AZ;
     rb_trace_noise_sigma[j] = chol_QQ.trace(T, rng());
   }
-  if (debug) {
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                  std::chrono::steady_clock::now() - t_start)
-                  .count();
-    std::cout << "after compute trace (" << ms << " ms)" << std::endl;
-  }
+  (void)t_start;
 }
 
 void BlockModel::assemble_dK() {

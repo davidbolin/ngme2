@@ -186,8 +186,6 @@ void Ngme::set_parameter_and_update(const VectorXd &p, bool with_precond) {
   }
 
   // set the different parameter for each random effect
-  if (debug)
-    std::cout << "set_parameter() in ngme class" << std::endl;
   // Invalidate caches
   grad_valid_ = false;
   precond_valid_ = false;

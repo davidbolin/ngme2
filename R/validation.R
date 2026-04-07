@@ -1142,6 +1142,7 @@ compute_scores <- function(
 compute_pred_N <- function(
     ngme_1rep, n_gibbs_samples, n_burnin, seed, A_pred_block, noise_test_idx, y_data, group_data, X_pred) {
   seed_int <- as.integer(abs(seed) %% 2147483647)
+  test_noise <- noise_test_idx
 
   Ws <- sampling_cpp(
     ngme_1rep,
@@ -1183,6 +1184,7 @@ compute_pred_N <- function(
   pred_N_2 <- fe_N + AW_N_2
 
   # simulate measurement noise
+  n_thin <- ncol(pred_N_1)
   seed_group_1 <- seed_int + 1:n_thin
   seed_group_2 <- seed_int + 1:n_thin + n_thin
   mn_N_1 <- sapply(1:n_thin, function(x) simulate(test_noise, seed = seed_group_1[x])[[1]])

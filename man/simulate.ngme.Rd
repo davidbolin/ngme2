@@ -4,20 +4,18 @@
 \alias{simulate.ngme}
 \title{Simulate from a ngme object (possibly with replicates)}
 \usage{
-\method{simulate}{ngme}(object, posterior = TRUE, m_noise = TRUE, nsim = 1, seed = NULL, ...)
+\method{simulate}{ngme}(object, nsim = 1, seed = NULL, ...)
 }
 \arguments{
 \item{object}{ngme object}
-
-\item{posterior}{whether to simulate from posterior sampling of latent fields}
-
-\item{m_noise}{whether to add the measurement noise}
 
 \item{nsim}{number of simulations}
 
 \item{seed}{seed}
 
-\item{...}{ignored}
+\item{...}{optional arguments. Supported names are \code{posterior}
+(whether to simulate from posterior sampling of latent fields) and
+\code{m_noise} (whether to add the measurement noise).}
 }
 \value{
 a realization of ngme object

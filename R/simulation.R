@@ -197,21 +197,23 @@ simulate.ngme_noise <- function(
 #' Simulate from a ngme object (possibly with replicates)
 #'
 #' @param object  ngme object
-#' @param posterior whether to simulate from posterior sampling of latent fields
-#' @param m_noise whether to add the measurement noise
 #' @param nsim number of simulations
 #' @param seed seed
-#' @param ... ignored
+#' @param ... optional arguments. Supported names are \code{posterior}
+#'   (whether to simulate from posterior sampling of latent fields) and
+#'   \code{m_noise} (whether to add the measurement noise).
 #'
 #' @return a realization of ngme object
 #' @export
 simulate.ngme <- function(
     object,
-    posterior = TRUE,
-    m_noise = TRUE,
     nsim = 1,
     seed = NULL,
     ...) {
+  dots <- list(...)
+  posterior <- if (!is.null(dots$posterior)) dots$posterior else TRUE
+  m_noise <- if (!is.null(dots$m_noise)) dots$m_noise else TRUE
+
   if (is.null(seed)) seed <- Sys.time()
   attr <- attributes(object)
   sims <- list()

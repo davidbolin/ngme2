@@ -21,8 +21,6 @@
 #include <atomic>
 #include <cmath>
 #include <exception>
-#include <iomanip>
-#include <iostream>
 #include <limits>
 #include <memory>
 #include <random>
@@ -86,8 +84,7 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   double stepsize_decay_min_delta = 0.0;
   int stepsize_decay_warmup = 0;
   if (control_opt.containsElementNamed("stepsize_decay")) {
-    std::string decay =
-        Rcpp::as<std::string>(control_opt["stepsize_decay"]);
+    std::string decay = Rcpp::as<std::string>(control_opt["stepsize_decay"]);
     stepsize_decay_enabled = (decay == "grad_norm_plateau");
   }
   if (stepsize_decay_enabled) {
@@ -97,14 +94,12 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
         Rcpp::as<double>(control_opt["stepsize_decay_gamma"]);
     stepsize_decay_min_delta =
         Rcpp::as<double>(control_opt["stepsize_decay_min_delta"]);
-    stepsize_decay_warmup =
-        Rcpp::as<int>(control_opt["stepsize_decay_warmup"]);
+    stepsize_decay_warmup = Rcpp::as<int>(control_opt["stepsize_decay_warmup"]);
   }
   if (sgd_method == "bfgs") {
     stepsize_decay_enabled = false;
   }
 
-#ifdef _OPENMP
   const int burnin = control_opt["burnin"];
 
   int n_min_batch = (control_opt["n_min_batch"]);
@@ -127,10 +122,14 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
           : true;
 
   VectorXi num_threads = Rcpp::as<VectorXi>(control_opt["num_threads"]);
-  int n_threads_chain = num_threads[0];
+  int n_threads_chain = std::max(1, static_cast<int>(num_threads[0]));
 
+#ifdef _OPENMP
   omp_set_max_active_levels(2);
   omp_set_num_threads(num_threads[0] * num_threads[1]);
+#else
+  (void)n_threads_chain;
+#endif
 
   // init model and optimizer
   vector<std::shared_ptr<Ngme>> ngmes;
@@ -151,10 +150,12 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
 
   std::vector<std::string> par_names = ngmes[0]->get_par_names();
 
-// burn in period
+  // burn in period
   std::atomic<bool> burnin_failed(false);
   std::string burnin_error;
+#ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(n_threads_chain)
+#endif
   for (i = 0; i < n_chains; i++) {
     if (burnin_failed.load(std::memory_order_relaxed)) {
       continue;
@@ -162,7 +163,9 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
     try {
       (ngmes[i])->burn_in(burnin);
     } catch (const std::exception &e) {
+#ifdef _OPENMP
 #pragma omp critical(ngme_parallel_exception)
+#endif
       {
         if (!burnin_failed.load(std::memory_order_relaxed)) {
           burnin_failed.store(true, std::memory_order_relaxed);
@@ -170,7 +173,9 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
         }
       }
     } catch (...) {
+#ifdef _OPENMP
 #pragma omp critical(ngme_parallel_exception)
+#endif
       {
         if (!burnin_failed.load(std::memory_order_relaxed)) {
           burnin_failed.store(true, std::memory_order_relaxed);
@@ -210,8 +215,7 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
 
   int curr_batch = 0;
   double stepsize_decay_scale = 1.0;
-  double stepsize_decay_prev_norm =
-      std::numeric_limits<double>::infinity();
+  double stepsize_decay_prev_norm = std::numeric_limits<double>::infinity();
   int stepsize_decay_bad_epochs = 0;
 
   // Enable convergence only when at least one diagnostic is requested.
@@ -236,7 +240,9 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
     std::atomic<bool> sgd_failed(false);
     std::string sgd_error;
     for (int step = 0; step < batch_steps; step++) {
+#ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(n_threads_chain)
+#endif
       for (i = 0; i < n_chains; i++) {
         if (sgd_failed.load(std::memory_order_relaxed)) {
           continue;
@@ -250,7 +256,9 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
                                           max_relative_step, max_absolute_step,
                                           compute_precond_each_iter);
           // if (step == batch_steps - 1) {
+#ifdef _OPENMP
 #pragma omp critical
+#endif
           {
             mat.row(i) = param;
             batch_sum.row(i) += param;
@@ -258,7 +266,9 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
           }
           // }
         } catch (const std::exception &e) {
+#ifdef _OPENMP
 #pragma omp critical(ngme_parallel_exception)
+#endif
           {
             if (!sgd_failed.load(std::memory_order_relaxed)) {
               sgd_failed.store(true, std::memory_order_relaxed);
@@ -266,7 +276,9 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
             }
           }
         } catch (...) {
+#ifdef _OPENMP
 #pragma omp critical(ngme_parallel_exception)
+#endif
           {
             if (!sgd_failed.load(std::memory_order_relaxed)) {
               sgd_failed.store(true, std::memory_order_relaxed);
@@ -284,9 +296,13 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
     // compute mean and variance
     means.row(curr_batch) = mat.colwise().mean();
     for (int k = 0; k < n_params; k++) {
-      vars(curr_batch, k) =
-          (mat.col(k).array() - means(curr_batch, k)).square().sum() /
-          (n_chains - 1);
+      if (n_chains > 1) {
+        vars(curr_batch, k) =
+            (mat.col(k).array() - means(curr_batch, k)).square().sum() /
+            (n_chains - 1);
+      } else {
+        vars(curr_batch, k) = 0.0;
+      }
     }
 
     if (n_chains > 1) {
@@ -328,12 +344,12 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
       final_R_hat = R_hat;
 
       if (param_conv_check && curr_batch + 1 >= n_min_batch) {
-        converge = check_conv(means, vars, curr_batch, n_slope_check, std_lim,
-                               trend_lim, par_names, print_check_info,
-                               batch_steps, max_R_hat, R_hat,
-                               trend_std_conv_check, R_hat_conv_check,
-                               &last_conv_rhat, &last_conv_trend_std,
-                               &last_std_ratio, &last_slopes, &last_trend_ready);
+        converge =
+            check_conv(means, vars, curr_batch, n_slope_check, std_lim,
+                       trend_lim, par_names, print_check_info, batch_steps,
+                       max_R_hat, R_hat, trend_std_conv_check, R_hat_conv_check,
+                       &last_conv_rhat, &last_conv_trend_std, &last_std_ratio,
+                       &last_slopes, &last_trend_ready);
         batch_converged =
             std::find(begin(converge), end(converge), false) == end(converge);
         if (batch_converged)
@@ -403,8 +419,8 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
           }
           if (verbose_enabled) {
             Rcpp::Rcout << "Stepsize decay applied at epoch "
-                        << (curr_batch + 1) << ": scale = "
-                        << stepsize_decay_scale << "\n";
+                        << (curr_batch + 1)
+                        << ": scale = " << stepsize_decay_scale << "\n";
           }
         }
       }
@@ -486,64 +502,13 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
     }
   }
 
-#else // No parallel chain
-  Ngme ngme(R_ngme, seed, sampling_strategy);
-  Ngme_optimizer opt(control_opt, std::make_shared<Ngme>(ngme), seed);
-  opt.set_pflug_conv_check(pflug_conv_check);
-  int n_batch = (control_opt["n_batch"]);
-  int batch_steps = (iterations / n_batch);
-  int curr_batch = 0;
-  double stepsize_decay_scale = 1.0;
-  double stepsize_decay_prev_norm =
-      std::numeric_limits<double>::infinity();
-  int stepsize_decay_bad_epochs = 0;
-  while (curr_batch < n_batch) {
-    opt.sgd(0.1, batch_steps, max_relative_step, max_absolute_step,
-            compute_precond_each_iter);
-    if (stepsize_decay_enabled) {
-      double grad_norm = opt.get_last_grad_norm();
-      if (curr_batch < stepsize_decay_warmup) {
-        stepsize_decay_prev_norm = grad_norm;
-        stepsize_decay_bad_epochs = 0;
-      } else {
-        if (grad_norm <
-            stepsize_decay_prev_norm - stepsize_decay_min_delta) {
-          stepsize_decay_bad_epochs = 0;
-        } else {
-          stepsize_decay_bad_epochs += 1;
-        }
-        stepsize_decay_prev_norm = grad_norm;
-        if (stepsize_decay_bad_epochs >= stepsize_decay_patience) {
-          stepsize_decay_bad_epochs = 0;
-          stepsize_decay_scale *= stepsize_decay_gamma;
-          opt.set_stepsize_decay_scale(stepsize_decay_scale);
-        }
-      }
-    }
-    curr_batch++;
-  }
-  // estimation done, posterior sampling
-  // ngme.sampling(10, true);
-  outputs.push_back(ngme.output());
-  if (store_traj) {
-    opt.record_current_state();
-    trajs_chains.push_back(opt.get_trajs());
-  }
-#endif
-
-  std::cout << "Estimation ends." << std::endl;
-  std::cout << "Total time of the estimation is (s): "
-            << since(timer).count() / 1000 << std::endl;
-
   if (store_traj) {
     outputs.attr("opt_traj") = trajs_chains;
   } else {
     outputs.attr("opt_traj") = R_NilValue;
   }
-#ifdef _OPENMP
   if (n_chains > 1)
     outputs.attr("R_hat") = final_R_hat;
-#endif
   return outputs;
 }
 

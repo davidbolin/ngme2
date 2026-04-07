@@ -27,6 +27,10 @@ matrix before being passed to the optimizer. Provide values on the raw
 design scale; no manual rescaling is required.}
 
 \item{debug}{debug mode}
+
+\item{...}{additional arguments. Legacy aliases \code{feff} and
+\code{fix_feff} are still recognized and mapped to \code{beta_init} and
+\code{fix_beta}.}
 }
 \value{
 a list of control variables for ngme

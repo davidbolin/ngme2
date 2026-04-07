@@ -136,6 +136,8 @@ noise_normal_nig(
 
 \item{sigma}{specify the noise parameter sigma, see \code{?nig}}
 
+\item{nu}{specify the noise parameter nu, see \code{?nig} and \code{?gal}}
+
 \item{B_mu}{Basis matrix for mu (if non-stationary)}
 
 \item{theta_mu}{specify a non-stationary noise using theta_mu}

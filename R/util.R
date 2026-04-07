@@ -827,7 +827,7 @@ ngme_post_samples <- function(
 #' @description
 #' Compute the variance of the data or the latent field
 #'
-#' @param ngme ngme_model
+#' @param ngme_object ngme_model
 #' @param model_name
 #'   if model_name = "data", then return the covariance matrix of the data (without measurement noise)
 #'   if the model_name is the name or index of the latent, then return the covariance matrix of the latent field

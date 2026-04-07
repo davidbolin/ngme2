@@ -23,6 +23,11 @@ compute_score_given_pred(
 
 \item{group_data}{a vector of length n_obs}
 
+\item{merge_groups}{logical, if TRUE and there are exactly two groups,
+combine them into a vector-valued score}
+
+\item{merged_group_name}{optional label for the merged group}
+
 \item{metric}{optional custom metric function used to combine group-wise values before scoring}
 }
 \description{

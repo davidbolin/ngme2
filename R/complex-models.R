@@ -203,11 +203,13 @@ tp <- function(
 #'
 #' @param mesh the mesh where model is defined
 #' @param sub_models a list of sub_models (should be two matern models)
-#' @param mesh mesh for build the model
-#' @param group group vector, can be inherited from ngme() function
 #' @param theta the parameter related to rotation
 #' @param rho the parameter related to correlation
+#' @param sd1 scaling parameter for the first sub-model
+#' @param sd2 scaling parameter for the second sub-model
+#' @param group group vector, can be inherited from ngme() function
 #' @param share_param TRUE if share the same parameter for 2 sub_models (of same type)
+#' @param fix_theta TRUE if the rotation parameter is fixed
 #' @param ... ignore
 #'
 #' @return a list of specification of model

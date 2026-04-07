@@ -97,6 +97,8 @@ If it is more than n_parallel_chain, the rest will be used to parallel different
 
 \item{store_traj}{store the optimizer trajectory for diagnostics (set FALSE to reduce memory)}
 
+\item{robust}{use robust mode in the backend optimizer/model updates}
+
 \item{stepsize_control}{unified stepsize configuration created by
 \code{stepsize_control()}, \code{poly_decay()}, or \code{batch_decay()}.
 For polynomial schedule, \code{poly_decay(..., burnin_iter = B)} keeps
@@ -113,13 +115,13 @@ with reset local time index.}
 
 \item{trend_lim}{maximum allowed slope}
 
+\item{R_hat_conv_check}{use the R-hat diagnostic for convergence checking}
+
 \item{max_R_hat}{maximum allowed R_hat}
 
 \item{pflug_conv_check}{use Pflug diagnostic for convergence check}
 
 \item{pflug_alpha}{scaling factor (0-1] for Pflug criterion: require \code{pflug_sum < pflug_alpha * max_pflug_sum}}
-
-\item{max_R_hat_conv_check}{use max_R_hat for convergence check}
 }
 \value{
 list of control variables

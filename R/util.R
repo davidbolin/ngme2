@@ -1160,6 +1160,7 @@ extract_parameters <- function(ngme_object) {
 #' @param form A formula object, e.g., `~ x1 + x2` or `~.`.
 #' @param data A data frame or matrix from which to extract the design matrix.
 #' @return A numeric matrix representing the design matrix.
+#' @export
 #' @examples
 #' data(mtcars)
 #' # Extract a design matrix for 'mpg' and 'cyl'

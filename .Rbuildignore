@@ -3,6 +3,16 @@
 ^_pkgdown\.yml$
 ^docs$
 ^pkgdown$
+^AGENTS\.md$
+^CLAUDE\.md$
+^GEMINI\.md$
+^application$
+^application/.*
+^build-pkgdown\.sh$
+^examples$
+^examples/.*
+^Figures$
+^Figures/.*
 ^\.github$
 ^\.vscode$
 ^index\.md$
@@ -19,6 +29,8 @@
 ^jss-ngme2/.*
 ^tests/archive$
 ^tmp_files$
+^application/.*\.(o|so|a)$
+^src/.*\.(o|so|a)$
 ^\.aider\.chat\.history\.md$
 ^\.aider\.input\.history$
 ^\.aider\.tags\.cache\.v4$

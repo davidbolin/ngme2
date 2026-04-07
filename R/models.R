@@ -259,6 +259,8 @@ arma <- function(
 }
 
 #' Convenience wrapper for ARMA(1,1)
+#'
+#' @inheritParams arma
 #' @export
 arma11 <- function(
     mesh = NULL,
@@ -971,6 +973,7 @@ matern <- function(
 #'
 #' @param map numerical vector, covariates to build index for the process (can be formula, provided data)
 #' @param theta_K initial value for theta_K (build covariance matrix)
+#' @param ... currently ignored
 #'
 #' @return ngme_operator object
 #' @export

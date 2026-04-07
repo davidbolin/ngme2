@@ -13,10 +13,13 @@
 #' @param matrices List of fixed matrices to be used in the model
 #' @param position List of vectors specifying matrix combinations (required)
 #' @param h The integration weights vector
+#' @param model The model type name stored on the returned operator
 #' @param B_theta_K List of basis matrices for parameters, defaults to matrices of 1s if not provided
 #' @param trans List of transformations for each parameter (one transformation per parameter)
 #' @param mesh The mesh object
 #' @param zero_trace Whether the trace of K should be zero
+#' @param param_name Optional parameter names stored on the returned operator for diagnostics
+#' @param param_trans Optional parameter transformations stored on the returned operator for diagnostics
 #' @param ... Additional arguments (ignored)
 #'
 #' @details

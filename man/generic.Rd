@@ -36,6 +36,10 @@ Available transformations: "identity", "exp", "exp2", "exp4", "sqrt", "square", 
 
 \item{model}{The model type name}
 
+\item{param_name}{Optional parameter names stored on the returned operator for diagnostics}
+
+\item{param_trans}{Optional parameter transformations stored on the returned operator for diagnostics}
+
 \item{...}{Additional arguments (ignored)}
 }
 \description{

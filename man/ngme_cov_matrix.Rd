@@ -7,12 +7,12 @@
 ngme_cov_matrix(ngme_object, model_name = "data", replicate = 1)
 }
 \arguments{
+\item{ngme_object}{ngme_model}
+
 \item{model_name}{if model_name = "data", then return the covariance matrix of the data (without measurement noise)
 if the model_name is the name or index of the latent, then return the covariance matrix of the latent field}
 
 \item{replicate}{which replicate (default = 1)}
-
-\item{ngme}{ngme_model}
 }
 \value{
 a data.frame of posterior samples (mesh_size * n_post_samples)

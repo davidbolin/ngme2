@@ -49,6 +49,8 @@ calibrate_inv_exp_lambda(...)
 \item{max_expand}{maximum bracket expansion steps on each side}
 
 \item{seed}{optional integer seed for reproducible calibration}
+
+\item{...}{arguments forwarded to \code{calibrate_inv_exp_lambda_driven_nig()}}
 }
 \value{
 A list with calibrated `lambda`, solved `nu_r`, achieved `rc_nu_r`,

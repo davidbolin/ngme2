@@ -18,7 +18,7 @@ bv_matern(
 )
 }
 \arguments{
-\item{mesh}{mesh for build the model}
+\item{mesh}{the mesh where model is defined}
 
 \item{sub_models}{a list of sub_models (should be two matern models)}
 
@@ -26,9 +26,15 @@ bv_matern(
 
 \item{rho}{the parameter related to correlation}
 
+\item{sd1}{scaling parameter for the first sub-model}
+
+\item{sd2}{scaling parameter for the second sub-model}
+
 \item{group}{group vector, can be inherited from ngme() function}
 
 \item{share_param}{TRUE if share the same parameter for 2 sub_models (of same type)}
+
+\item{fix_theta}{TRUE if the rotation parameter is fixed}
 
 \item{...}{ignore}
 }

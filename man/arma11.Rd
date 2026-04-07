@@ -6,6 +6,17 @@
 \usage{
 arma11(mesh = NULL, ar = 0, ma = 0, fix_ar = FALSE, fix_ma = FALSE)
 }
+\arguments{
+\item{mesh}{Integer vector or `inla.mesh.1d` object.}
+
+\item{ar}{Numeric length-p vector of AR coefficients in (-1, 1). Defaults to zeros.}
+
+\item{ma}{Numeric length-q vector of MA coefficients in (-1, 1). Defaults to zeros.}
+
+\item{fix_ar}{Logical or length-p logical vector to fix AR coefficients.}
+
+\item{fix_ma}{Logical or length-q logical vector to fix MA coefficients.}
+}
 \description{
 Convenience wrapper for ARMA(1,1)
 }

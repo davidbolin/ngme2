@@ -1208,6 +1208,9 @@ compute_pred_N <- function(
 #' @param Y_N_2_thin posterior predictive draws (rows = observations, columns = samples)
 #' @param y_data a vector of length n_obs
 #' @param group_data a vector of length n_obs
+#' @param merge_groups logical, if TRUE and there are exactly two groups,
+#'   combine them into a vector-valued score
+#' @param merged_group_name optional label for the merged group
 #' @param metric optional custom metric function used to combine group-wise values before scoring
 compute_score_given_pred <- function(
     Y_N_1_thin, Y_N_2_thin,

@@ -17,6 +17,8 @@
 #' @param mesh The mesh object
 #' @param model The model type name
 #' @param zero_trace Whether the trace of K should be zero
+#' @param param_name Optional parameter names stored on the returned operator for diagnostics
+#' @param param_trans Optional parameter transformations stored on the returned operator for diagnostics
 #' @param ... Additional arguments (ignored)
 #' 
 #' @details 

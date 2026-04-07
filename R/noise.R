@@ -15,6 +15,7 @@
 #' @param noise_type    type of noise, "normal", "nig", "gal", "t", "skew_t"
 #' @param mu          specify the NIG noise parameter mu, see \code{?nig}
 #' @param sigma       specify the noise parameter sigma, see \code{?nig}
+#' @param nu          specify the noise parameter nu, see \code{?nig} and \code{?gal}
 #' @param V             start value for V
 #' @param theta_mu      specify a non-stationary noise using theta_mu
 #' @param B_mu          Basis matrix for mu (if non-stationary)

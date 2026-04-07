@@ -61,9 +61,10 @@
 #'   For polynomial schedule, \code{poly_decay(..., burnin_iter = B)} keeps
 #'   schedule scale at 1 for the first \code{B} iterations, then starts decay
 #'   with reset local time index.
+#' @param robust use robust mode in the backend optimizer/model updates
+#' @param R_hat_conv_check use the R-hat diagnostic for convergence checking
 #' @param pflug_conv_check use Pflug diagnostic for convergence check
 #' @param pflug_alpha scaling factor (0-1] for Pflug criterion: require \code{pflug_sum < pflug_alpha * max_pflug_sum}
-#' @param max_R_hat_conv_check use max_R_hat for convergence check
 #' @param max_R_hat maximum allowed R_hat
 #' @return list of control variables
 #' @export
@@ -410,6 +411,9 @@ control_opt_batch_ci <- function(
 #'   design scale; no manual rescaling is required.
 #' @param n_post_samples number of posterior samples, see ?ngme_post_samples()
 #' @param debug          debug mode
+#' @param ... additional arguments. Legacy aliases \code{feff} and
+#'   \code{fix_feff} are still recognized and mapped to \code{beta_init} and
+#'   \code{fix_beta}.
 #' @return a list of control variables for ngme
 #' @export
 control_ngme <- function(

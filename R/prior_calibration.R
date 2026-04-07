@@ -28,6 +28,7 @@
 #' @param max_iter maximum number of bisection iterations
 #' @param max_expand maximum bracket expansion steps on each side
 #' @param seed optional integer seed for reproducible calibration
+#' @param ... arguments forwarded to \code{calibrate_inv_exp_lambda_driven_nig()}
 #'
 #' @return A list with calibrated `lambda`, solved `nu_r`, achieved `rc_nu_r`,
 #'   and diagnostics.

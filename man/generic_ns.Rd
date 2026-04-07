@@ -28,6 +28,8 @@ generic_ns(
 
 \item{h}{The integration weights vector}
 
+\item{model}{The model type name stored on the returned operator}
+
 \item{B_theta_K}{List of basis matrices for parameters, defaults to matrices of 1s if not provided}
 
 \item{trans}{List of transformations for each parameter (one transformation per parameter)}
@@ -35,6 +37,10 @@ generic_ns(
 \item{mesh}{The mesh object}
 
 \item{zero_trace}{Whether the trace of K should be zero}
+
+\item{param_name}{Optional parameter names stored on the returned operator for diagnostics}
+
+\item{param_trans}{Optional parameter transformations stored on the returned operator for diagnostics}
 
 \item{...}{Additional arguments (ignored)}
 }

@@ -648,7 +648,7 @@ traceplot <- function(
         ) +
         ggplot2::geom_line(
           data = df_mean,
-          ggplot2::aes(x = x, y = mean_moving_avg),
+          ggplot2::aes(x = .data[["x"]], y = .data[["mean_moving_avg"]]),
           col = "red"
         ) +
         ggplot2::labs(title = parameter_name) +
@@ -1131,7 +1131,14 @@ plot.ngme_noise <- function(x = NULL, ...) {
 
 
   # Create the plot
-  gg <- ggplot2::ggplot(plot_data, ggplot2::aes(x = x, y = y, color = noise)) +
+  gg <- ggplot2::ggplot(
+    plot_data,
+    ggplot2::aes(
+      x = .data[["x"]],
+      y = .data[["y"]],
+      color = .data[["noise"]]
+    )
+  ) +
     ggplot2::geom_line() +
     ggplot2::labs(title = "Noise Density Plot") +
     ggplot2::theme_minimal()

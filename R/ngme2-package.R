@@ -5,17 +5,19 @@
 "_PACKAGE"
 #' @import Rcpp
 #' @importFrom Rcpp evalCpp
-#' @importFrom stats simulate delete.response dnorm formula model.matrix rnorm sd terms terms.formula
+#' @importFrom stats aggregate as.formula delete.response density dgamma dnorm formula median model.frame model.matrix qgamma qlogis quantile rnorm rgamma sd setNames simulate terms terms.formula
 #' @importFrom methods as
 #' @importFrom utils str head tail modifyList
 #' @importFrom ggplot2 ggplot aes geom_line xlab ylab guides labs geom_hline
 #' @importFrom rlang .data
 #' @importFrom fmesher fm_mesh_1d fm_mesh_2d fm_basis fm_fem
 #' @importFrom graphics hist
-#' @importFrom stats median quantile as.formula dist
+#' @importFrom stats dist
 #' @useDynLib ngme2, .registration = TRUE
 #' @name ngme2
 NULL
+
+utils::globalVariables(c("density", "mean_moving_avg"))
 
 .onAttach <- function(libname, pkgname) {
   version <- utils::packageVersion("ngme2")

@@ -1,4 +1,8 @@
 test_that("test fractional model", {
+  skip_if_not_installed("fmesher")
+  skip_if_not_installed("rSPDE")
+  skip_if_not_installed("inlabru")
+  skip_if_not_installed("sf")
   library(fmesher)
   library(rSPDE)
   n_loc <- 1000

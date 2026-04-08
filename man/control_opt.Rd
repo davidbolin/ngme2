@@ -23,7 +23,7 @@ control_opt(
   rao_blackwellization = FALSE,
   n_trace_iter = 10,
   sampling_strategy = "all",
-  solver_backend = if (Sys.info()["sysname"] == "Darwin") "accelerate" else "cholmod",
+  solver_backend = "cholmod",
   solver_type = "llt",
   verbose = FALSE,
   store_traj = TRUE,
@@ -89,7 +89,7 @@ If it is more than n_parallel_chain, the rest will be used to parallel different
 "all" means using all replicates in each iteration,
 "ws" means weighted sampling (each iteration use 1 replicate to compute the gradient, the sample probability is proption to its number of observations)}
 
-\item{solver_backend}{backend in ("eigen", "cholmod", "accelerate", "pardiso")}
+\item{solver_backend}{backend in ("eigen", "cholmod", "pardiso")}
 
 \item{solver_type}{factorization type: "llt" or "ldlt"}
 

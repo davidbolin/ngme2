@@ -3,40 +3,34 @@
 This R package contains code licensed under different licenses. Below is a list of included components and their respective licenses:
 
 1. **ngme2 package code**:
-   - License: GPL-3
+   - License: GPL-3+
    - Copyright (C) 2024 David Bolin, Xiaotian Jin, Alexandre Simas, Jonas Wallin.
 
-2. **Eigen Library** (`inst/include/Eigen/`):
-   - License: Mozilla Public License 2.0 (MPL-2.0)
-   - Copyright (C) 2008-2023, Eigen contributors
-   - For more information, visit: https://eigen.tuxfamily.org
-   - Full license text: https://www.mozilla.org/MPL/2.0/
-
-3. **AMD** (`src/SuiteSparse/AMD/`):
+2. **AMD** (`src/SuiteSparse/AMD/`):
    - License: BSD-3-Clause
    - Copyright (c) 1996-2023, Timothy A. Davis, Patrick R. Amestoy, and Iain S. Duff. All Rights Reserved.
 
-4. **CAMD** (`src/SuiteSparse/CAMD/`):
+3. **CAMD** (`src/SuiteSparse/CAMD/`):
    - License: BSD-3-Clause
    - Copyright (c) 2007-2023, Timothy A. Davis, Yanqing Chen, Patrick R. Amestoy, and Iain S. Duff. All Rights Reserved.
 
-5. **CCOLAMD** (`src/SuiteSparse/CCOLAMD/`):
+4. **CCOLAMD** (`src/SuiteSparse/CCOLAMD/`):
    - License: BSD-3-Clause
    - Copyright (c) 1996-2024, Timothy A. Davis, Sivasankaran Rajamanickam, and Stefan Larimore. All Rights Reserved.
 
-6. **COLAMD** (`src/SuiteSparse/COLAMD/`):
+5. **COLAMD** (`src/SuiteSparse/COLAMD/`):
    - License: BSD-3-Clause
    - Copyright (c) 1998-2024, Timothy A. Davis and Stefan Larimore. All Rights Reserved.
 
-7. **SuiteSparse_config** (`src/SuiteSparse/SuiteSparse_config/`):
+6. **SuiteSparse_config** (`src/SuiteSparse/SuiteSparse_config/`):
    - License: BSD-3-Clause
    - Copyright (c) 2012-2023, Timothy A. Davis. All Rights Reserved.
 
-8. **CXSparse** (`src/SuiteSparse/CXSparse/`):
+7. **CXSparse** (`src/SuiteSparse/CXSparse/`):
    - License: LGPL-2.1+
    - Copyright (c) 2006-2024, Timothy A. Davis. All Rights Reserved.
 
-9. **CHOLMOD** (`src/SuiteSparse/CHOLMOD/`):
+8. **CHOLMOD** (`src/SuiteSparse/CHOLMOD/`):
    - License: mixed (see below), Copyright (C) 2005-2023, Timothy A. Davis. All Rights Reserved.
    - CHOLMOD/Check, Cholesky, Utility, Partition: LGPL-2.1+
    - CHOLMOD/Modify, Supernodal, MatrixOps: GPL-2.0+

@@ -34,12 +34,6 @@ double sparse_llt_solver::trace(const SparseMatrix<double, 0, int> &M,
         QU = R_supernodal.solve(U);
       else if (solver_type == 3)
         QU = R_cholmod_ldlt.solve(U);
-#ifdef __APPLE__
-      else if (solver_type == 4)
-        QU = R_accelerate.solve(U);
-      else if (solver_type == 5)
-        QU = R_accelerate_ldlt.solve(U);
-#endif
 #ifdef USEMKL
       else if (solver_type == 6)
         QU = R_pardiso.solve(U);
@@ -99,12 +93,6 @@ double sparse_llt_solver::trace2(const SparseMatrix<double, 0, int> &A,
         QU = R_supernodal.solve(U);
       else if (solver_type == 3)
         QU = R_cholmod_ldlt.solve(U);
-#ifdef __APPLE__
-      else if (solver_type == 4)
-        QU = R_accelerate.solve(U);
-      else if (solver_type == 5)
-        QU = R_accelerate_ldlt.solve(U);
-#endif
 #ifdef USEMKL
       else if (solver_type == 6)
         QU = R_pardiso.solve(U);

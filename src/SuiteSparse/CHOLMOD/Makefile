@@ -1,7 +1,4 @@
 sources = \
-	Check/cholmod_check.c Check/cholmod_l_check.c \
-	Check/cholmod_read.c  Check/cholmod_l_read.c \
-	Check/cholmod_write.c Check/cholmod_l_write.c \
 	Cholesky/cholmod_amd.c          Cholesky/cholmod_l_amd.c \
 	Cholesky/cholmod_analyze.c      Cholesky/cholmod_l_analyze.c \
 	Cholesky/cholmod_colamd.c       Cholesky/cholmod_l_colamd.c \
@@ -55,7 +52,6 @@ sources = \
 	Utility/cholmod_hypot.c              Utility/cholmod_l_hypot.c \
 	Utility/cholmod_malloc.c             Utility/cholmod_l_malloc.c \
 	Utility/cholmod_maxrank.c            Utility/cholmod_l_maxrank.c \
-	Utility/cholmod_memdebug.c \
 	Utility/cholmod_mult_size_t.c        Utility/cholmod_l_mult_size_t.c \
 	Utility/cholmod_mult_uint64_t.c \
 	Utility/cholmod_nnz.c                Utility/cholmod_l_nnz.c \

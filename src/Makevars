@@ -1,119 +1,48 @@
-# Set UNAME to detect the operating system
-UNAME := $(shell uname)
+$(SHLIB): $(OBJECTS)
 
-# # Target to check if BLAS and LAPACK are installed
-# check_libs:
-# 	@echo "Checking for BLAS and LAPACK..."
-# 	@echo "int main() { return 0; }" > conftest.c
-# 	@$(CXX) conftest.c -o conftest $(BLAS_LIB) $(LAPACK_LIB) $(FLIBS) > /dev/null 2>&1 || \
-# 	(echo "Error: BLAS and/or LAPACK and/or FLIBS not found. Please install them or set the correct paths."; exit 1)
-# 	@rm -f conftest.c conftest
-# 	@echo "BLAS and LAPACK and FLIBS found."
-
-# Make the shared object
-$(SHLIB): $(OBJECTS) 
-
-# Compile Suitesparse
 ssdir = SuiteSparse
-sslib = $(sslib1) $(sslib2) $(sslib3) $(sslib4) $(sslib5) $(sslib6) $(sslib7)
 sslib1 = $(ssdir)/CHOLMOD/CHOLMOD.a
 sslib2 = $(ssdir)/CCOLAMD/CCOLAMD.a
 sslib3 = $(ssdir)/CAMD/CAMD.a
 sslib4 = $(ssdir)/COLAMD/COLAMD.a
 sslib5 = $(ssdir)/AMD/AMD.a
-sslib6 = $(ssdir)/CXSparse/CXSparse.a
 sslib7 = $(ssdir)/SuiteSparse_config/SuiteSparse_config.a
+sslib = $(sslib1) $(sslib2) $(sslib3) $(sslib4) $(sslib5) $(sslib7)
 
 ssenv = \
 	CC="$(CC)" \
-	CPPFLAGS="$(CPPFLAGS) -I\"$(R_INCLUDE_DIR)\" -DNDEBUG -DNPRINT -DNTIMER" \
+	CPPFLAGS="$(CPPFLAGS) -I\"$(R_INCLUDE_DIR)\" -DNDEBUG -DNPRINT -DNTIMER -DNPARTITION" \
 	CFLAGS="$(CFLAGS) $(CPICFLAGS) $(C_VISIBILITY)" \
 	AR="$(AR)" \
 	RANLIB="$(RANLIB)"
 
-
-PKG_CPPFLAGS = -I"$(ssdir)/SuiteSparse_config" -DNDEBUG -DEIGEN_NO_DEBUG
+PKG_CPPFLAGS = -I"$(ssdir)/SuiteSparse_config" -DNDEBUG -DEIGEN_NO_DEBUG -Iinclude -I../inst/include
 PKG_CFLAGS = $(C_VISIBILITY)
 PKG_LIBS = $(sslib) $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
 
-PKG_CPPFLAGS += -Iinclude -I../inst/include # -DNDEBUG -DDEBUG
-
-## NB: INSTALL does not clean subdirectories between subarchitectures
 $(sslib1):
-	cd $(@D) && $(MAKE) clean all $(ssenv)
+	cd SuiteSparse/CHOLMOD && $(MAKE) clean all $(ssenv)
 
 $(sslib2):
-	cd $(@D) && $(MAKE) clean all $(ssenv)
+	cd SuiteSparse/CCOLAMD && $(MAKE) clean all $(ssenv)
 
 $(sslib3):
-	cd $(@D) && $(MAKE) clean all $(ssenv)
+	cd SuiteSparse/CAMD && $(MAKE) clean all $(ssenv)
 
 $(sslib4):
-	cd $(@D) && $(MAKE) clean all $(ssenv)
+	cd SuiteSparse/COLAMD && $(MAKE) clean all $(ssenv)
 
 $(sslib5):
-	cd $(@D) && $(MAKE) clean all $(ssenv)
-
-$(sslib6):
-	cd $(@D) && $(MAKE) clean all $(ssenv)
+	cd SuiteSparse/AMD && $(MAKE) clean all $(ssenv)
 
 $(sslib7):
-	cd $(@D) && $(MAKE) clean all $(ssenv)
+	cd SuiteSparse/SuiteSparse_config && $(MAKE) clean all $(ssenv)
 
-
-# macOS configuration
-ifeq ($(UNAME), Darwin)
-  # Detect Homebrew prefix
-  HOMEBREW_PREFIX := $(shell brew --prefix 2>/dev/null)
-  ifeq ($(HOMEBREW_PREFIX),)
-    ifneq ($(wildcard /opt/homebrew/bin/brew),)
-      HOMEBREW_PREFIX := /opt/homebrew
-    else
-      HOMEBREW_PREFIX := /usr/local
-    endif
-  endif
-
-  # Override FLIBS only if Homebrew gfortran is available
-  GFORTRAN_LIB := $(HOMEBREW_PREFIX)/lib/gcc/current
-  ifneq ($(wildcard $(GFORTRAN_LIB)/libgfortran*),)
-    FLIBS = -L$(GFORTRAN_LIB) -lgfortran -lquadmath
-  endif
-
-  ARCH := $(shell uname -m)
-  ifeq ($(ARCH),x86_64)
-    ifdef MKLROOT
-      # Intel macOS with MKL: use MKL (includes Intel OpenMP via -liomp5)
-      PKG_CPPFLAGS += -DUSEMKL -I$(MKLROOT)/include
-      PKG_LIBS += -L$(MKLROOT)/lib -lmkl_rt -liomp5 -lpthread -lm
-      $(info MKL detected on Intel macOS, enabling Pardiso.)
-    endif
-  endif
-
-endif
-
-# Enable MKL/Pardiso when MKLROOT is provided (e.g., oneAPI) on non-macOS
-ifneq ($(UNAME), Darwin)
-  ifdef MKLROOT
-    PKG_CPPFLAGS += -DUSEMKL -I$(MKLROOT)/include
-    PKG_LIBS += -L$(MKLROOT)/lib/intel64 \
-               -lmkl_rt -lmkl_gnu_thread -lmkl_core \
-               -lgomp -lpthread -lm -ldl
-    $(info MKL detected, enabling Pardiso.)
-  endif
-endif
-
-# TESTS = test/test-algebra.o  test/test-opt.o
 UTILS = util/GIG.o util/rgig.o util/MatrixAlgebra.o util/solver.o
-# $(wildcard util/*.o)
-
 LATENTS = latents/ou.o latents/matern.o latents/tensorprod.o latents/randeff.o latents/bivar.o latents/generic.o latents/generic_ns.o latents/arma.o latents/rcallback.o latents/fractional/fractional_operators.o
-# $(wildcard latents/*.o)
 
-OBJECTS = $(sslib) RcppExports.o prior.o noise.o sample_rGIG.o estimate.o optimizer.o block.o latent.o ngme.o loglikelihood.o operator.o \
-   $(UTILS) $(TESTS) $(LATENTS)
+OBJECTS = $(sslib) RcppExports.o prior.o noise.o sample_rGIG.o estimate.o optimizer.o block.o latent.o ngme.o loglikelihood.o operator.o $(UTILS) $(TESTS) $(LATENTS)
 
-
-# Provide recipe to remove all objects
 clean:
 	@rm -f *.o util/*.o latents/*.o
 

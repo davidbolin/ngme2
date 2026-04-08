@@ -1891,7 +1891,6 @@ void CAMD_2
      * ordered via minimum degree and following the constraints. */
 
     CAMD_DEBUG1 (("before dense/empty, k = "ID"\n", k)) ;
-    fflush (stdout) ;
     ASSERT (k + ndense_or_null == n) ;
 
     if (ndense_or_null > 0)
@@ -1922,7 +1921,6 @@ void CAMD_2
 	    {
 		CAMD_DEBUG1 (("Dense/empty node: "ID" : "ID" "ID"\n", j,
 		    Pe [j], Elen [j])) ;
-		fflush (stdout) ;
 		ASSERT (Pe [j] == n && Elen [j] == EMPTY) ;
 		i++ ;
 		Bucket [C [j]]++ ;

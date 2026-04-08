@@ -1,12 +1,9 @@
-This package is licensed under the GNU General Public License version 3 (GPL-3).
+This package is licensed under the GNU General Public License, version 3 or
+later (GPL-3+).
 
 The package also includes the following third-party components:
 
-1. Eigen (inst/include/Eigen/):
-   Mozilla Public License 2.0 (MPL-2.0)
-   https://www.mozilla.org/MPL/2.0/
-
-2. SuiteSparse components (src/SuiteSparse/):
+1. SuiteSparse components (src/SuiteSparse/):
    - AMD, CAMD, CCOLAMD, COLAMD, SuiteSparse_config: BSD-3-Clause
    - CXSparse: LGPL-2.1+
    - CHOLMOD (Check, Cholesky, Utility, Partition): LGPL-2.1+
@@ -15,5 +12,5 @@ The package also includes the following third-party components:
    All SuiteSparse components are Copyright (c) Timothy A. Davis and contributors.
    See https://github.com/DrTimothyAldenDavis/SuiteSparse for details.
 
-The full text of the GPL-3 license can be found at:
+The full text of the GPL-3+ license can be found at:
 https://www.gnu.org/licenses/gpl-3.0.en.html

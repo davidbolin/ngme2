@@ -46,7 +46,7 @@
 #' @param max_relative_step   max relative step allowed in 1 iteration
 #' @param max_absolute_step   max absolute step allowed in 1 iteration
 #' @param trend_std_conv_check enable the trend/std diagnostic (uses \code{std_lim}, \code{trend_lim}, \code{n_slope_check})
-#' @param solver_backend backend in ("eigen", "cholmod", "accelerate", "pardiso")
+#' @param solver_backend backend in ("eigen", "cholmod", "pardiso")
 #' @param solver_type factorization type: "llt" or "ldlt"
 #' @param rao_blackwellization  use rao_blackwellization
 #' @param n_trace_iter  use how many iterations to approximate the trace (Hutchinson’s trick)
@@ -88,7 +88,7 @@ control_opt <- function(
     rao_blackwellization = FALSE,
     n_trace_iter = 10,
     sampling_strategy = "all",
-    solver_backend = if (Sys.info()["sysname"] == "Darwin") "accelerate" else "cholmod",
+    solver_backend = "cholmod",
     solver_type = "llt",
     # opt print
     verbose = FALSE,
@@ -106,7 +106,7 @@ control_opt <- function(
     pflug_alpha = 0.9) {
   strategy_list <- c("all", "ws")
   preconditioner_list <- c("none", "fast", "full")
-  solver_backend_list <- c("eigen", "cholmod", "accelerate", "pardiso")
+  solver_backend_list <- c("eigen", "cholmod", "pardiso")
   solver_factor_list <- c("llt", "ldlt")
   stepsize_decay_list <- c("none", "grad_norm_plateau")
   stepsize_schedule_list <- c("constant", "poly")
@@ -175,7 +175,7 @@ control_opt <- function(
     )
   }
 
-  # platform guard: accelerate only on macOS; pardiso disabled on macOS builds without MKL
+  # platform guard: pardiso disabled on builds without MKL
   is_mac <- Sys.info()["sysname"] == "Darwin"
   if (solver_backend == "pardiso" && !has_pardiso()) {
     stop(
@@ -186,10 +186,6 @@ control_opt <- function(
   if (is_mac && solver_backend == "pardiso" && !has_pardiso()) {
     stop("solver_backend 'pardiso' is not available on this macOS build; reinstall with MKLROOT to enable Pardiso.")
   }
-  if (!is_mac && solver_backend == "accelerate") {
-    stop("solver_backend 'accelerate' is only available on macOS")
-  }
-
   stopifnot(
     sampling_strategy %in% strategy_list,
     preconditioner %in% preconditioner_list,
@@ -205,7 +201,7 @@ control_opt <- function(
     is.numeric(n_slope_check) && length(n_slope_check) == 1 &&
       n_slope_check > 0 && n_slope_check <= n_batch,
     inherits(optimizer, "ngme_optimizer"),
-    "solver backend must map to 0:3" = solver_backend_idx %in% 0:3,
+    "solver backend must map to 0:2" = solver_backend_idx %in% 0:2,
     "solver factor must be 0 (llt) or 1 (ldlt)" = solver_factor_idx %in% 0:1,
     is.numeric(pflug_alpha) && length(pflug_alpha) == 1 && pflug_alpha > 0 && pflug_alpha <= 1,
     "stepsize_decay must be one of 'none' or 'grad_norm_plateau'" =

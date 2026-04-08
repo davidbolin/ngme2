@@ -76,12 +76,10 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
     case 1:                  // cholmod
       return factor == 0 ? 2 /*LLT (supernodal)*/
                          : 3 /*LDLT via CholmodDecomposition*/;
-    case 2: // accelerate
-      return factor == 0 ? 4 : 5;
-    case 3: // pardiso
+    case 2: // pardiso
       return factor == 0 ? 6 : 7;
     default:
-      throw std::invalid_argument("solver_backend out of range (expected 0-3)");
+      throw std::invalid_argument("solver_backend out of range (expected 0-2)");
     }
   };
 

@@ -14,9 +14,6 @@
 #include <string.h>
 
 #include <Eigen/CholmodSupport>
-#ifdef __APPLE__
-#include <Eigen/AccelerateSupport>
-#endif
 #ifdef USEMKL
 #include <Eigen/PardisoSupport>
 #endif
@@ -28,10 +25,6 @@ private:
   Eigen::CholmodDecomposition<Eigen::SparseMatrix<double, 0, int>>
       R_cholmod_ldlt;
   Eigen::CholmodSupernodalLLT<Eigen::SparseMatrix<double, 0, int>> R_supernodal;
-#ifdef __APPLE__
-  Eigen::AccelerateLLT<Eigen::SparseMatrix<double, 0, int>> R_accelerate;
-  Eigen::AccelerateLDLT<Eigen::SparseMatrix<double, 0, int>> R_accelerate_ldlt;
-#endif
 #ifdef USEMKL
   Eigen::PardisoLLT<Eigen::SparseMatrix<double, 0, int>> R_pardiso;
   Eigen::PardisoLDLT<Eigen::SparseMatrix<double, 0, int>> R_pardiso_ldlt;
@@ -99,22 +92,6 @@ public:
         R_cholmod_ldlt.analyzePattern(M.transpose() * M);
       }
       break;
-#ifdef __APPLE__
-    case 4:
-      if (isSymmetric) {
-        R_accelerate.analyzePattern(M);
-      } else {
-        R_accelerate.analyzePattern(M.transpose() * M);
-      }
-      break;
-    case 5:
-      if (isSymmetric) {
-        R_accelerate_ldlt.analyzePattern(M);
-      } else {
-        R_accelerate_ldlt.analyzePattern(M.transpose() * M);
-      }
-      break;
-#endif
 #ifdef USEMKL
     case 6:
       if (isSymmetric) {
@@ -177,24 +154,6 @@ public:
         R_cholmod_ldlt.factorize(M.transpose() * M);
       }
       break;
-#ifdef __APPLE__
-    case 4:
-      if (isSymmetric) {
-        R_accelerate.factorize(M);
-      } else {
-        K_last = M;
-        R_accelerate.factorize(M.transpose() * M);
-      }
-      break;
-    case 5:
-      if (isSymmetric) {
-        R_accelerate_ldlt.factorize(M);
-      } else {
-        K_last = M;
-        R_accelerate_ldlt.factorize(M.transpose() * M);
-      }
-      break;
-#endif
 #ifdef USEMKL
     case 6:
       if (isSymmetric) {
@@ -234,12 +193,6 @@ public:
       return R_supernodal.info();
     case 3:
       return R_cholmod_ldlt.info();
-#ifdef __APPLE__
-    case 4:
-      return R_accelerate.info();
-    case 5:
-      return R_accelerate_ldlt.info();
-#endif
 #ifdef USEMKL
     case 6:
       return R_pardiso.info();
@@ -282,12 +235,6 @@ public:
       return R_supernodal.solve(rhs);
     case 3:
       return R_cholmod_ldlt.solve(rhs);
-#ifdef __APPLE__
-    case 4:
-      return R_accelerate.solve(rhs);
-    case 5:
-      return R_accelerate_ldlt.solve(rhs);
-#endif
 #ifdef USEMKL
     case 6:
       return R_pardiso.solve(rhs);
@@ -318,12 +265,6 @@ public:
       return R_supernodal.solve(rhs);
     case 3:
       return R_cholmod_ldlt.solve(rhs);
-#ifdef __APPLE__
-    case 4:
-      return R_accelerate.solve(rhs);
-    case 5:
-      return R_accelerate_ldlt.solve(rhs);
-#endif
 #ifdef USEMKL
     case 6:
       return R_pardiso.solve(rhs);
@@ -356,12 +297,6 @@ public:
       return R_supernodal.solve(rhs);
     case 3:
       return R_cholmod_ldlt.solve(rhs);
-#ifdef __APPLE__
-    case 4:
-      return R_accelerate.solve(rhs);
-    case 5:
-      return R_accelerate_ldlt.solve(rhs);
-#endif
 #ifdef USEMKL
     case 6:
       return R_pardiso.solve(rhs);
@@ -393,12 +328,6 @@ public:
       return R_supernodal.logDeterminant();
     case 3:
       return R_cholmod_ldlt.logDeterminant();
-#ifdef __APPLE__
-    case 4:
-      throw std::runtime_error("Accelerate solver not available");
-    case 5:
-      throw std::runtime_error("Accelerate LDLT solver not available");
-#endif
 #ifdef USEMKL
     case 6:
       throw std::runtime_error("Pardiso solver logdet not implemented");

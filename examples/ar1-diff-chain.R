@@ -73,10 +73,6 @@ ret_nig_same <- ngme(
     noise = noise_nig(
       prior = priors()
     )
-  ) + f(
-    1:n_obs,
-    name = "my_rw",
-    model = rw1()
   ),
   family = noise_normal(),
   data = data,

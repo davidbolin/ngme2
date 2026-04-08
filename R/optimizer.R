@@ -463,7 +463,13 @@ bfgs <- function(
 }
 
 #' Adaptive gradient descent
-#' From the paper: https://arxiv.org/pdf/1910.09529
+#'
+#' @description
+#' Adaptive gradient descent optimizer.
+#'
+#' @details
+#' Based on the method described in
+#' \url{https://arxiv.org/pdf/1910.09529}.
 #' The update rule for adaptive gradient descent is:
 #' \deqn{\lambda_k = \min(\sqrt{1 + \theta_{k-1}} \lambda_{k-1}, \frac{||x_k - x_{k-1}||}{2 ||\nabla f(x_k) - \nabla f(x_{k-1})||} )}
 #' \deqn{x_{k+1} = x_k - \lambda_k \nabla f(x_k)}

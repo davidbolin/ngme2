@@ -67,5 +67,5 @@ the "Streamline Diffusion" stabilization technique is applied.
 The model is particularly useful for large space-time datasets in environmental science, offering computationally
 efficient methods for parameter estimation, kriging prediction, and conditional simulations.
 
-For details, see \url{https://www.sciencedirect.com/science/article/pii/S2211675324000381}
+For details, see \doi{10.1016/j.spasta.2024.100847}
 }

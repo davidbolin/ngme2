@@ -8,7 +8,7 @@
 \description{
 \if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
 
-Inference and prediction for linear latent non-Gaussian models with flexible non-Gaussian and Gaussian distributions.
+Fits and analyzes linear latent non-Gaussian models for temporal, spatial, and space-time data. The package provides model components for autoregressive and Ornstein-Uhlenbeck processes, random walks, Matern fields based on stochastic partial differential equations, separable and non-separable space-time models, graph-based Matern models, bivariate type-G fields, and user-defined sparse operators. Latent fields and observation models can use Gaussian and non-Gaussian noise distributions, including normal inverse Gaussian, generalized asymmetric Laplace, and skew-t distributions. Functions are included for simulation, likelihood-based estimation, prediction, cross-validation, convergence diagnostics, stochastic gradient optimization, batch-means confidence intervals, and posterior-like sampling. The modeling framework is described in Bolin, Jin, Simas and Wallin (2026) "A Unified and Computationally Efficient Non-Gaussian Statistical Modeling Framework" \doi{10.48550/arXiv.2602.23987}.
 }
 \seealso{
 Useful links:
@@ -32,6 +32,20 @@ Authors:
 Other contributors:
 \itemize{
   \item Andrea V. Rocha \email{dearocha@yahoo.com} (contributed to many vignettes and examples) [contributor]
+  \item Timothy A. Davis (SuiteSparse components) [contributor, copyright holder]
+  \item Patrick R. Amestoy (SuiteSparse AMD and CAMD components) [contributor, copyright holder]
+  \item Iain S. Duff (SuiteSparse AMD and CAMD components) [contributor, copyright holder]
+  \item John K. Reid (SuiteSparse AMD-derived code) [contributor, copyright holder]
+  \item Yanqing Chen (SuiteSparse CAMD components) [contributor, copyright holder]
+  \item Sivasankaran Rajamanickam (SuiteSparse CCOLAMD components) [contributor, copyright holder]
+  \item Stefan Larimore (SuiteSparse CCOLAMD and COLAMD components) [contributor, copyright holder]
+  \item William W. Hager (SuiteSparse CHOLMOD Modify components) [contributor, copyright holder]
+  \item University of Florida (SuiteSparse CHOLMOD and CCOLAMD components) [copyright holder]
+  \item Regents of the University of Minnesota (METIS/GKlib components bundled with SuiteSparse) [copyright holder]
+  \item Free Software Foundation, Inc. (GKlib regex/getopt code bundled with SuiteSparse) [copyright holder]
+  \item Makoto Matsumoto (Mersenne Twister code bundled with SuiteSparse) [contributor, copyright holder]
+  \item Takuji Nishimura (Mersenne Twister code bundled with SuiteSparse) [contributor, copyright holder]
+  \item Alexander Chemeris (MS integer headers bundled with SuiteSparse) [contributor, copyright holder]
 }
 
 }

@@ -11,6 +11,12 @@
 
 \item{...}{additional arguments}
 }
+\value{
+Invisibly returns \code{x}, an \code{ngme_trajectories} object. The
+  method is called for its side effect of printing a summary of stored
+  parameter trajectory matrices, including parameter names, chain count, and
+  iteration count.
+}
 \description{
 Print method for ngme_trajectories
 }

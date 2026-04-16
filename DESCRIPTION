@@ -7,10 +7,38 @@ Authors@R: c(
     person("Xiaotian", "Jin", email = "xiaotian.jin@kaust.edu.sa", role =c("aut", "cre")),
     person("Alexandre", "Simas", email = "alexandre.impa@gmail.com", role = "aut"),
     person("Jonas", "Wallin", email = "jonas.wallin81@gmail.com", role = "aut"),
-    person("Andrea V.", "Rocha", email = "dearocha@yahoo.com", role = "ctb", comment = "contributed to many vignettes and examples"))
+    person("Andrea V.", "Rocha", email = "dearocha@yahoo.com", role = "ctb", comment = "contributed to many vignettes and examples"),
+    person("Timothy A.", "Davis", role = c("ctb", "cph"), comment = "SuiteSparse components"),
+    person("Patrick R.", "Amestoy", role = c("ctb", "cph"), comment = "SuiteSparse AMD and CAMD components"),
+    person("Iain S.", "Duff", role = c("ctb", "cph"), comment = "SuiteSparse AMD and CAMD components"),
+    person("John K.", "Reid", role = c("ctb", "cph"), comment = "SuiteSparse AMD-derived code"),
+    person("Yanqing", "Chen", role = c("ctb", "cph"), comment = "SuiteSparse CAMD components"),
+    person("Sivasankaran", "Rajamanickam", role = c("ctb", "cph"), comment = "SuiteSparse CCOLAMD components"),
+    person("Stefan", "Larimore", role = c("ctb", "cph"), comment = "SuiteSparse CCOLAMD and COLAMD components"),
+    person("William W.", "Hager", role = c("ctb", "cph"), comment = "SuiteSparse CHOLMOD Modify components"),
+    person("University of Florida", role = "cph", comment = "SuiteSparse CHOLMOD and CCOLAMD components"),
+    person("Regents of the University of Minnesota", role = "cph", comment = "METIS/GKlib components bundled with SuiteSparse"),
+    person("Free Software Foundation, Inc.", role = "cph", comment = "GKlib regex/getopt code bundled with SuiteSparse"),
+    person("Makoto", "Matsumoto", role = c("ctb", "cph"), comment = "Mersenne Twister code bundled with SuiteSparse"),
+    person("Takuji", "Nishimura", role = c("ctb", "cph"), comment = "Mersenne Twister code bundled with SuiteSparse"),
+    person("Alexander", "Chemeris", role = c("ctb", "cph"), comment = "MS integer headers bundled with SuiteSparse"))
 Maintainer: Xiaotian Jin <xiaotian.jin@kaust.edu.sa>
-Description: Inference and prediction for linear latent non-Gaussian models with flexible non-Gaussian and Gaussian distributions.
-License: GPL (>= 3) | file LICENSE
+Description: Fits and analyzes linear latent non-Gaussian models for
+    temporal, spatial, and space-time data. The package provides model
+    components for autoregressive and Ornstein-Uhlenbeck processes, random
+    walks, Matern fields based on stochastic partial differential equations,
+    separable and non-separable space-time models, graph-based Matern models,
+    bivariate type-G fields, and user-defined sparse operators. Latent fields
+    and observation models can use Gaussian and non-Gaussian noise
+    distributions, including normal inverse Gaussian, generalized asymmetric
+    Laplace, and skew-t distributions. Functions are included for simulation,
+    likelihood-based estimation, prediction, cross-validation, convergence
+    diagnostics, stochastic gradient optimization, batch-means confidence
+    intervals, and posterior-like sampling. The modeling framework is described
+    in Bolin, Jin, Simas and Wallin (2026) "A Unified and Computationally
+    Efficient Non-Gaussian Statistical Modeling Framework"
+    <doi:10.48550/arXiv.2602.23987>.
+License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true
 Imports:
@@ -48,4 +76,4 @@ URL: https://davidbolin.github.io/ngme2/, https://github.com/davidbolin/ngme2
 Depends:
     R (>= 3.5.0)
 BugReports: https://github.com/davidbolin/ngme2/issues
-Copyright: The R package and code, and the main programs, were written by and are Copyright by David Bolin, Xiaotian Jin, Alexandre Simas, and Jonas Wallin, and are redistributable under the GNU Public License, version 3 or later. The package also includes bundled SuiteSparse components. For details see the COPYRIGHTS file.
+Copyright: The R package and code, and the main programs, were written by and are Copyright by David Bolin, Xiaotian Jin, Alexandre Simas, and Jonas Wallin, and are redistributable under the GNU Public License, version 3 or later. The package also includes bundled SuiteSparse components. For details see inst/COPYRIGHTS.

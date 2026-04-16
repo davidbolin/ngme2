@@ -251,7 +251,7 @@ ngme <- function(
     }
   }
   if (debug) {
-    print(str(ngme_model$replicates[[1]]))
+    message(paste(capture.output(str(ngme_model$replicates[[1]])), collapse = "\n"))
   }
 
   # configuration of controls
@@ -260,14 +260,15 @@ ngme <- function(
   ################# Run CPP ####################
   check_dim(ngme_model)
   if (control_opt$estimation) {
-    cat("Starting estimation... \n")
+    if (isTRUE(control_opt$verbose)) {
+      message("Starting estimation...")
+    }
     outputs <- tryCatch(
       estimate_cpp(ngme_model, control_opt),
       error = function(err) {
         stop("C++ estimation failed: ", conditionMessage(err), call. = FALSE)
       }
     )
-    cat("\n")
 
     ################# Update the estimates ####################
     est_output <- mean_list(outputs)
@@ -276,7 +277,9 @@ ngme <- function(
     }
 
     # return posterior samples of W and V
-    cat("Starting posterior sampling... \n")
+    if (isTRUE(control_opt$verbose)) {
+      message("Starting posterior sampling...")
+    }
     for (i in seq_along(ngme_model$replicates)) {
       res <- tryCatch(
         sampling_cpp(
@@ -305,8 +308,10 @@ ngme <- function(
 
       sd_W <- mean(sapply(res$W, sd))
     }
-    cat("Posterior sampling done! \n")
-    cat("Average standard deviation of the posterior W: ", sd_W, "\n")
+    if (isTRUE(control_opt$verbose)) {
+      message("Posterior sampling done.")
+      message("Average standard deviation of the posterior W: ", sd_W)
+    }
 
     # print R_hat
     # if (!is.null(attr(outputs, "R_hat"))) {
@@ -314,9 +319,12 @@ ngme <- function(
     #   print(attr(outputs, "R_hat"))
     # }
 
-    cat("Note:
-      1. Use ngme_post_samples(..) to access the posterior samples.
-      2. Use ngme_result(..) to access different latent models. \n")
+    if (isTRUE(control_opt$verbose)) {
+      message(
+        "Use ngme_post_samples() to access posterior samples and ",
+        "ngme_result() to access latent model parameters."
+      )
+    }
 
     # mn_nu <- ngme_model$replicates[[1]]$noise$nu
     # if (length(mn_nu) > 1 && mn_nu > 100)
@@ -518,13 +526,15 @@ update_ngme_est <- function(
 #' @param x ngme model object
 #' @param ... ...
 #'
-#' @return a list (model specifications)
+#' @return Invisibly returns \code{x}, an \code{ngme} object. The method is
+#'   called for its side effect of printing a model summary.
 #' @export
 print.ngme <- function(x, ...) {
   print(x$replicates[[1]])
   if (x$n_repls > 1) {
     cat("Number of global replicates is", x$n_repls, "\n")
   }
+  invisible(x)
 }
 
 ######
@@ -1355,12 +1365,12 @@ summary.ngme <- function(
 #' @export
 #'
 #' @examples
-#' \dontrun{
 #' # Fit a simple AR(1) model
+#' set.seed(1)
 #' Y <- 1:10
 #' n_obs <- length(Y)
-#' x1 <- runif(n_obs)
-#' x2 <- rexp(n_obs)
+#' x1 <- rnorm(n_obs)
+#' x2 <- runif(n_obs)
 #'
 #' ngme_out <- ngme(
 #'   Y ~ x1 + x2 + f(
@@ -1369,7 +1379,8 @@ summary.ngme <- function(
 #'     model = ar1(rho = 0.5),
 #'     noise = noise_nig(mu = 2, sigma = 3, nu = 1)
 #'   ),
-#'   data = data.frame(x1 = x1, x2 = x2, Y = Y)
+#'   data = data.frame(x1 = x1, x2 = x2, Y = Y),
+#'   control_opt = control_opt(estimation = FALSE)
 #' )
 #'
 #' # Get all model parameters (transformed)
@@ -1402,7 +1413,8 @@ summary.ngme <- function(
 #'     model = ou(),
 #'     noise = noise_normal(sigma = 1)
 #'   ),
-#'   data = data.frame(x1 = x1, x2 = x2, Y = Y)
+#'   data = data.frame(x1 = x1, x2 = x2, Y = Y),
+#'   control_opt = control_opt(estimation = FALSE)
 #' )
 #'
 #' # Get all models
@@ -1412,7 +1424,6 @@ summary.ngme <- function(
 #' # Get specific model
 #' ou_params <- ngme_result(ngme_out2, model = "my_ou")
 #' # Returns: list(theta_K1 = 0.5, sigma = 1)
-#' }
 ngme_result <- function(
     ngme_object,
     model = NULL,

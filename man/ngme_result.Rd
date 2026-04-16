@@ -20,12 +20,12 @@ a list of parameters for the specified model, or all models if model is NULL
 Access the result of a ngme fitted model
 }
 \examples{
-\dontrun{
 # Fit a simple AR(1) model
+set.seed(1)
 Y <- 1:10
 n_obs <- length(Y)
-x1 <- runif(n_obs)
-x2 <- rexp(n_obs)
+x1 <- rnorm(n_obs)
+x2 <- runif(n_obs)
 
 ngme_out <- ngme(
   Y ~ x1 + x2 + f(
@@ -34,7 +34,8 @@ ngme_out <- ngme(
     model = ar1(rho = 0.5),
     noise = noise_nig(mu = 2, sigma = 3, nu = 1)
   ),
-  data = data.frame(x1 = x1, x2 = x2, Y = Y)
+  data = data.frame(x1 = x1, x2 = x2, Y = Y),
+  control_opt = control_opt(estimation = FALSE)
 )
 
 # Get all model parameters (transformed)
@@ -67,7 +68,8 @@ ngme_out2 <- ngme(
     model = ou(),
     noise = noise_normal(sigma = 1)
   ),
-  data = data.frame(x1 = x1, x2 = x2, Y = Y)
+  data = data.frame(x1 = x1, x2 = x2, Y = Y),
+  control_opt = control_opt(estimation = FALSE)
 )
 
 # Get all models
@@ -77,5 +79,4 @@ all_models <- ngme_result(ngme_out2)
 # Get specific model
 ou_params <- ngme_result(ngme_out2, model = "my_ou")
 # Returns: list(theta_K1 = 0.5, sigma = 1)
-}
 }

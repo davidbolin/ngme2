@@ -7,12 +7,13 @@
 openmp_test()
 }
 \value{
-Invisible NULL. This function is called for its side effects (printing messages).
+Invisibly returns the detected number of OpenMP threads. A value of
+  zero means OpenMP is not available.
 }
 \description{
 This function checks if OpenMP is available in the current R environment
 and, if so, reports the number of OpenMP threads detected.
-If OpenMP is not available, it prints a corresponding message.
+If OpenMP is not available, it reports a corresponding message.
 It relies on an internal or external function `get_openmp_threads()`
 which is assumed to return the number of threads or 0 if unavailable.
 }

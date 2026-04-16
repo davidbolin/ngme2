@@ -182,15 +182,25 @@ cross_validation <- function(
   Y_2 <- list()
 
   compute_err <- if (merge_replicates) compute_err_merged_reps else compute_err_reps
+  cv_message <- function(...) {
+    if (isTRUE(print)) {
+      message(...)
+    }
+  }
+  cv_message_table <- function(x) {
+    if (isTRUE(print)) {
+      message(paste(capture.output(base::print(as.data.frame(x))), collapse = "\n"))
+    }
+  }
 
   for (idx in seq_along(ngme)) {
-    if (print) cat(paste0("Model ", names(ngme)[[idx]], ": \n\n"))
+    cv_message("Model ", names(ngme)[[idx]], ":")
     scores <- sd_scores <- NULL
     chain_models <- if (is.null(ngme_chain_sets)) NULL else ngme_chain_sets[[idx]]
 
     # loop over each test_idx and train_idx
     if (parallel && requireNamespace("parallel", quietly = TRUE)) {
-      if (print) cat("Running in parallel mode. \n")
+      cv_message("Running in parallel mode.")
 
       ngme_list <- list()
       for (i in 1:length(test_idx)) {
@@ -222,11 +232,8 @@ cross_validation <- function(
                     chain_models = chain_models,
                     chain_combine = chain_combine
                   )
-                  if (print) {
-                    cat(paste("In test batch", i, ": \n"))
-                    print(as.data.frame(result$scores))
-                    cat("\n")
-                  }
+                  cv_message("In test batch ", i, ":")
+                  cv_message_table(result$scores)
                   result
                 },
                 error = function(e) {
@@ -280,11 +287,8 @@ cross_validation <- function(
             scores[[i]] <- result$scores
             sd_scores[[i]] <- result$sd_scores
 
-            if (print) {
-              cat(paste("In test batch", i, ": \n"))
-              print(as.data.frame(scores[[i]]))
-              cat("\n")
-            }
+            cv_message("In test batch ", i, ":")
+            cv_message_table(scores[[i]])
           },
           error = function(e) {
             warning(paste("Error in sequential computation for test batch", i, ":", e$message))

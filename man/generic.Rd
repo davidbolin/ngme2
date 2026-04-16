@@ -42,6 +42,14 @@ Available transformations: "identity", "exp", "exp2", "exp4", "sqrt", "square", 
 
 \item{...}{Additional arguments (ignored)}
 }
+\value{
+An object of class \code{ngme_operator}. The object stores the sparse
+  precision matrix \code{K}, integration weights \code{h}, parameter vector
+  \code{theta_K}, base \code{matrices}, transformation specification
+  \code{trans}, and an \code{update_K} function that rebuilds \code{K} for new
+  parameter values. It is intended for use as the latent \code{model} inside
+  \code{f()}.
+}
 \description{
 Creates a flexible precision matrix K by allowing linear combinations of base matrices
 with parameter-dependent coefficients. The model follows the form:
@@ -66,7 +74,6 @@ Common use cases:
 - **Matern (alpha=4)**: K = kappa^4 * C + 2*kappa^2 * G + G * Cinv * G
 }
 \examples{
-\dontrun{
 # AR1 model with rho = 0.5
 ar1_obj <- ar1(1:10, rho = 0.5)
 g <- name2fun("tanh", inv = TRUE)
@@ -89,6 +96,7 @@ generic_matern <- generic(
 )
 
 # Matern model with alpha = 4 and kappa = 2
+set.seed(1)
 mesh <- fmesher::fm_mesh_2d(cbind(x = runif(20), y = runif(20)))
 matern_obj <- matern(mesh, alpha = 4)
 C <- matern_obj$C
@@ -101,6 +109,5 @@ generic_matern4 <- generic(
   matrices = list(C, 2*G, G \%*\% Cinv \%*\% G),
   h = matern_obj$h
 )
-}
 
 }

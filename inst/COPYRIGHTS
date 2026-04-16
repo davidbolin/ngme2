@@ -8,7 +8,7 @@ This R package contains code licensed under different licenses. Below is a list 
 
 2. **AMD** (`src/SuiteSparse/AMD/`):
    - License: BSD-3-Clause
-   - Copyright (c) 1996-2023, Timothy A. Davis, Patrick R. Amestoy, and Iain S. Duff. All Rights Reserved.
+   - Copyright (c) 1996-2023, Timothy A. Davis, Patrick R. Amestoy, Iain S. Duff, and John K. Reid. All Rights Reserved.
 
 3. **CAMD** (`src/SuiteSparse/CAMD/`):
    - License: BSD-3-Clause
@@ -35,3 +35,12 @@ This R package contains code licensed under different licenses. Below is a list 
    - CHOLMOD/Check, Cholesky, Utility, Partition: LGPL-2.1+
    - CHOLMOD/Modify, Supernodal, MatrixOps: GPL-2.0+
    - CHOLMOD/Include (cholmod.h): Apache-2.0
+   - CHOLMOD/Modify is co-authored by William W. Hager.
+   - Some CHOLMOD/Partition and CCOLAMD files are Copyright (C) University of Florida.
+
+9. **METIS/GKlib sources bundled with CHOLMOD** (`src/SuiteSparse/CHOLMOD/SuiteSparse_metis/`):
+   - License: see the license notices preserved in the corresponding source files.
+   - Copyright (c) Regents of the University of Minnesota.
+   - Selected files include code Copyright (C) Free Software Foundation, Inc.
+   - Selected files include Mersenne Twister code Copyright (C) 2004, Makoto Matsumoto and Takuji Nishimura.
+   - Selected Microsoft integer headers are Copyright (c) 2006, Alexander Chemeris.

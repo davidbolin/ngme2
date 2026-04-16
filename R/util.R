@@ -1190,9 +1190,13 @@ get_data_from_formula <- function(form, data) {
   return(X)
 }
 
-#' Update ngme2 to the latest stable version
+#' Check whether a newer stable version of ngme2 is available
 #'
-#' @return void
+#' This function checks the package repository for the latest available ngme2
+#' version. It does not install or update packages.
+#'
+#' @return Invisibly returns a list with the local version, remote version,
+#'   repository URL, and a logical \code{update_available} flag.
 #' @export
 ngme_update <- function() {
   local_version <- utils::packageVersion("ngme2")
@@ -1206,18 +1210,30 @@ ngme_update <- function() {
 
   if (is.null(available) || !"ngme2" %in% rownames(available)) {
     message("Could not check for updates. Please check your internet connection or the repository URL.")
-    return(invisible(NULL))
+    return(invisible(list(
+      local_version = as.character(local_version),
+      remote_version = NA_character_,
+      repository = repos,
+      update_available = NA
+    )))
   }
 
   remote_version <- available["ngme2", "Version"]
+  update_available <- utils::compareVersion(as.character(remote_version), as.character(local_version)) > 0
 
-  if (utils::compareVersion(as.character(remote_version), as.character(local_version)) > 0) {
+  if (update_available) {
     message(paste0("New stable version available: ", remote_version, " (local: ", local_version, ")"))
-    message("Installing...")
-    utils::install.packages("ngme2", repos = repos)
+    message("Install it manually from repository: ", repos)
   } else {
     message(paste0("ngme2 is up to date (version ", local_version, ")"))
   }
+
+  invisible(list(
+    local_version = as.character(local_version),
+    remote_version = as.character(remote_version),
+    repository = repos,
+    update_available = update_available
+  ))
 }
 
 

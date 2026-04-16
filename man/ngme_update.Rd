@@ -2,13 +2,15 @@
 % Please edit documentation in R/util.R
 \name{ngme_update}
 \alias{ngme_update}
-\title{Update ngme2 to the latest stable version}
+\title{Check whether a newer stable version of ngme2 is available}
 \usage{
 ngme_update()
 }
 \value{
-void
+Invisibly returns a list with the local version, remote version,
+  repository URL, and a logical \code{update_available} flag.
 }
 \description{
-Update ngme2 to the latest stable version
+This function checks the package repository for the latest available ngme2
+version. It does not install or update packages.
 }

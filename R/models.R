@@ -829,7 +829,7 @@ matern <- function(
   mesh <- ngme_build_mesh(mesh)
   if (fix_alpha && alpha != 2 && alpha != 4) {
     if (!requireNamespace("rSPDE", quietly = TRUE)) {
-      stop("For fixed alpha values not equal to 2 or 4, the 'rSPDE' package is required. Please install it with: install.packages('rSPDE')")
+      stop("For fixed alpha values not equal to 2 or 4, the 'rSPDE' package is required. Please install it before using this option.")
     }
   }
 

@@ -261,6 +261,12 @@ arma <- function(
 #' Convenience wrapper for ARMA(1,1)
 #'
 #' @inheritParams arma
+#' @return An \code{ngme_operator} object describing an ARMA(1,1) latent
+#'   operator. The object contains the AR precision component \code{K}, the MA
+#'   filter component \code{Z}, integration weights \code{h}, and the
+#'   unconstrained AR and MA parameters used by the optimizer. If \code{mesh} is
+#'   \code{NULL}, returns an \code{ngme_operator_def} specification for delayed
+#'   construction inside \code{f()}.
 #' @export
 arma11 <- function(
     mesh = NULL,
@@ -1192,6 +1198,7 @@ precision_matrix_multivariate <- function(p,
 #'
 #' proj <- fm_evaluator(mesh)
 #'
+#' oldpar <- par(no.readonly = TRUE)
 #' par(mfrow = c(3, 3))
 #' image.plot(fm_evaluate(proj, r11), main = "Cov(X_1(s0),X_1(s)")
 #' plot.new()
@@ -1202,6 +1209,7 @@ precision_matrix_multivariate <- function(p,
 #' image.plot(fm_evaluate(proj, r13), main = "Cov(X_1(s0),X_3(s)")
 #' image.plot(fm_evaluate(proj, r23), main = "Cov(X_2(s0),X_3(s)")
 #' image.plot(fm_evaluate(proj, r33), main = "Cov(X_3(s0),X_3(s)")
+#' par(oldpar)
 precision_matrix_multivariate_spde <- function(
     p,
     mesh,

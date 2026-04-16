@@ -11,6 +11,12 @@
 
 \item{...}{additional arguments}
 }
+\value{
+Invisibly returns \code{x}, a numeric vector with class
+  \code{parameter_distance}. The method is called for its side effect of
+  printing the norm type, chain summary, number of iterations, final distance,
+  and true parameter values.
+}
 \description{
 Print method for parameter_distance
 }

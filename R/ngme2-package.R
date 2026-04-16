@@ -7,7 +7,7 @@
 #' @importFrom Rcpp evalCpp
 #' @importFrom stats aggregate as.formula delete.response density dgamma dnorm formula median model.frame model.matrix qgamma qlogis quantile rnorm rgamma sd setNames simulate terms terms.formula
 #' @importFrom methods as
-#' @importFrom utils str head tail modifyList
+#' @importFrom utils capture.output str head tail modifyList
 #' @importFrom ggplot2 ggplot aes geom_line xlab ylab guides labs geom_hline
 #' @importFrom rlang .data
 #' @importFrom fmesher fm_mesh_1d fm_mesh_2d fm_basis fm_fem

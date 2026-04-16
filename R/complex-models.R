@@ -731,10 +731,10 @@ spacetime <- function(
 #'   \code{mesh = NULL}) suitable for use inside \code{f()}.
 #'
 #' @examples
-#' \dontrun{
-#' n_obs <- 200
+#' set.seed(1)
+#' n_obs <- 10
 #' dat <- data.frame(
-#'   y     = c(y1_series, y2_series),
+#'   y     = rnorm(2 * n_obs),
 #'   idx   = rep(seq_len(n_obs), 2),
 #'   group = factor(rep(c("y1", "y2"), each = n_obs))
 #' )
@@ -744,10 +744,9 @@ spacetime <- function(
 #'             noise = noise_nig()),
 #'   data    = dat,
 #'   family  = noise_normal(sigma = 0.01, fix_sigma = TRUE),
-#'   control_opt = control_opt(iterations = 1000, n_parallel_chain = 4)
+#'   control_opt = control_opt(estimation = FALSE)
 #' )
 #' print(fit)
-#' }
 #'
 #' @export
 var1 <- function(mesh = NULL, p1 = 0, p2 = 1, p3 = 0, p4 = 1) {

@@ -235,6 +235,10 @@ get_trace_trajectories <- function(
 #' Print method for ngme_trajectories
 #' @param x ngme_trajectories object
 #' @param ... additional arguments
+#' @return Invisibly returns \code{x}, an \code{ngme_trajectories} object. The
+#'   method is called for its side effect of printing a summary of stored
+#'   parameter trajectory matrices, including parameter names, chain count, and
+#'   iteration count.
 #' @export
 print.ngme_trajectories <- function(x, ...) {
   cat("NGME Parameter Trajectories\n")
@@ -250,6 +254,7 @@ print.ngme_trajectories <- function(x, ...) {
 
   cat("\nAccess trajectories via $trajectories$parameter_name\n")
   cat("Each trajectory is a matrix: rows = iterations, columns = chains\n")
+  invisible(x)
 }
 
 #' Calculate parameter distance from true values
@@ -332,6 +337,10 @@ get_parameter_distance <- function(
 #' Print method for parameter_distance
 #' @param x parameter_distance object
 #' @param ... additional arguments
+#' @return Invisibly returns \code{x}, a numeric vector with class
+#'   \code{parameter_distance}. The method is called for its side effect of
+#'   printing the norm type, chain summary, number of iterations, final distance,
+#'   and true parameter values.
 #' @export
 print.parameter_distance <- function(x, ...) {
   cat("Parameter Distance Trajectory\n")
@@ -348,11 +357,16 @@ print.parameter_distance <- function(x, ...) {
   }
 
   cat("\nUse plot() to visualize convergence\n")
+  invisible(x)
 }
 
 #' Plot method for parameter_distance
 #' @param x parameter_distance object
 #' @param ... additional arguments for ggplot
+#' @return A \code{ggplot} object showing the parameter-distance trajectory over
+#'   optimization iterations. The y-axis is the stored distance
+#'   \eqn{||theta - \hat{theta}||}; plot annotations report the norm and
+#'   across-chain summary used when \code{x} was computed.
 #' @export
 plot.parameter_distance <- function(x, ...) {
   if (!requireNamespace("ggplot2", quietly = TRUE)) {
@@ -394,7 +408,8 @@ plot.parameter_distance <- function(x, ...) {
 #'   (default), use 2 columns for multi-parameter plots and 1 for single-parameter plots.
 #'
 #' @return A ggplot object when \code{combine = TRUE}; otherwise a list of ggplot
-#'   objects.
+#'   objects. The mean parameter trajectories are stored in the \code{avg_lines}
+#'   attribute of the returned object.
 #' @export
 #'
 traceplot <- function(
@@ -737,11 +752,6 @@ traceplot <- function(
   }
 
   attr(result, "avg_lines") <- avg_lines
-
-  # print estimates of last iteration
-  cat("Last estimates:\n")
-  last_estimates <- lapply(avg_lines, function(x) x[length(x)])
-  print(last_estimates)
 
   invisible(result)
 }
@@ -1315,6 +1325,10 @@ compare_noise_kld <- function(x = NULL, ..., xlim = c(-10, 10), n_points = 1000)
 #' Print method for noise_kld_comparison
 #' @param x noise_kld_comparison object
 #' @param ... additional arguments
+#' @return Invisibly returns \code{x}, a \code{noise_kld_comparison} object. The
+#'   method is called for its side effect of printing the reference noise object,
+#'   the Kullback-Leibler divergence values for each comparison noise, and the
+#'   closest comparison.
 #' @export
 print.noise_kld_comparison <- function(x, ...) {
   cat("Noise KLD Comparison\n")
@@ -1333,4 +1347,5 @@ print.noise_kld_comparison <- function(x, ...) {
   }
 
   cat("\nClosest to reference:", x$closest, "\n")
+  invisible(x)
 }

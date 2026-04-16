@@ -93,7 +93,8 @@ ngme_replicate <- function(
 #' @param x ngme object
 #' @param ... ignored
 #'
-#' @return a list (noise specifications)
+#' @return Invisibly returns \code{x}, an \code{ngme_replicate} object. The
+#'   method is called for its side effect of printing a replicate summary.
 #' @export
 print.ngme_replicate <- function(x, ...) {
   ngme_rep <- x
@@ -128,4 +129,5 @@ print.ngme_replicate <- function(x, ...) {
     cat(ngme_rep$log_likelihood)
     cat("\n\n")
   }
+  invisible(x)
 }

@@ -354,7 +354,7 @@ ngme_format <- function(param, val, model = NULL, ...) {
       "matern" = paste0("theta_kappa = ", paste0(format(val, digits = 3), collapse = ", ")),
       "ou" = paste0("theta_K = ", paste0(format(val, digits = 3), collapse = ", ")),
       "re" = {
-        invisible(print(vecK_to_Sigma(val, list(...)[[1]])))
+        paste(capture.output(vecK_to_Sigma(val, list(...)[[1]])), collapse = "\n")
       }
     )
   }
@@ -610,7 +610,11 @@ length_map <- function(map) {
 # vectorize a matrix
 veci <- function(v, n, m) {
   if (length(v) != n * m) {
-    cat("Wrong dimensions in reshape:", length(v), "(", n, ",", m, ")\n")
+    stop(
+      "Wrong dimensions in reshape: ", length(v),
+      " (", n, ", ", m, ")",
+      call. = FALSE
+    )
   }
   M <- matrix(0, nrow = n, ncol = m)
   count <- 1
@@ -1221,17 +1225,19 @@ ngme_update <- function() {
 #'
 #' This function checks if OpenMP is available in the current R environment
 #' and, if so, reports the number of OpenMP threads detected.
-#' If OpenMP is not available, it prints a corresponding message.
+#' If OpenMP is not available, it reports a corresponding message.
 #' It relies on an internal or external function `get_openmp_threads()`
 #' which is assumed to return the number of threads or 0 if unavailable.
 #'
-#' @return Invisible NULL. This function is called for its side effects (printing messages).
+#' @return Invisibly returns the detected number of OpenMP threads. A value of
+#'   zero means OpenMP is not available.
 #' @export
 openmp_test <- function() {
   num_threads <- get_openmp_threads()
   if (num_threads == 0) {
-    print("OpenMP not available.")
+    message("OpenMP not available.")
   } else {
-    print(paste0("OpenMP is available, the default thread number is ", num_threads, "."))
+    message("OpenMP is available, the default thread number is ", num_threads, ".")
   }
+  invisible(num_threads)
 }

@@ -17,6 +17,14 @@ arma11(mesh = NULL, ar = 0, ma = 0, fix_ar = FALSE, fix_ma = FALSE)
 
 \item{fix_ma}{Logical or length-q logical vector to fix MA coefficients.}
 }
+\value{
+An \code{ngme_operator} object describing an ARMA(1,1) latent
+  operator. The object contains the AR precision component \code{K}, the MA
+  filter component \code{Z}, integration weights \code{h}, and the
+  unconstrained AR and MA parameters used by the optimizer. If \code{mesh} is
+  \code{NULL}, returns an \code{ngme_operator_def} specification for delayed
+  construction inside \code{f()}.
+}
 \description{
 Convenience wrapper for ARMA(1,1)
 }

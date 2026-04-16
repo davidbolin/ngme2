@@ -12,7 +12,8 @@
 \item{...}{...}
 }
 \value{
-a list (model specifications)
+Invisibly returns \code{x}, an \code{ngme} object. The method is
+  called for its side effect of printing a model summary.
 }
 \description{
 Print an ngme model

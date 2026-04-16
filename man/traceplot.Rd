@@ -32,7 +32,8 @@ a list of ggplot objects and print them one by one.}
 }
 \value{
 A ggplot object when \code{combine = TRUE}; otherwise a list of ggplot
-  objects.
+  objects. The mean parameter trajectories are stored in the \code{avg_lines}
+  attribute of the returned object.
 }
 \description{
 Trace plot of ngme fitting

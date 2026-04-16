@@ -44,6 +44,15 @@ generic_ns(
 
 \item{...}{Additional arguments (ignored)}
 }
+\value{
+An object of class \code{ngme_operator}. The object stores the sparse
+  non-stationary precision matrix \code{K}, integration weights \code{h}, the
+  flattened parameter vector \code{theta_K}, basis matrices
+  \code{B_theta_K}, parameter grouping metadata \code{param_map}, matrix
+  combination rules \code{position}, and an update function for rebuilding
+  \code{K}. It is intended for use as the latent \code{model} inside
+  \code{f()}.
+}
 \description{
 Creates a flexible non-stationary precision matrix K by allowing both linear combinations
 and matrix multiplications with parameter-dependent diagonal matrices. This enables modeling
@@ -72,7 +81,6 @@ The `position` parameter defines how matrices are combined:
 Spatially-varying parameters can be created using basis matrices in B_theta_K.
 }
 \examples{
-\dontrun{
 # Simple example with one parameter
 n <- 5
 A <- matrix(1, n, n)
@@ -122,6 +130,5 @@ ns_model <- generic_ns(
   position = list(c(1, 2), c(3)), # D_kappa * C + G
   mesh = mesh
 )
-}
 
 }

@@ -11,6 +11,12 @@
 
 \item{...}{additional arguments}
 }
+\value{
+Invisibly returns \code{x}, a \code{noise_kld_comparison} object. The
+  method is called for its side effect of printing the reference noise object,
+  the Kullback-Leibler divergence values for each comparison noise, and the
+  closest comparison.
+}
 \description{
 Print method for noise_kld_comparison
 }

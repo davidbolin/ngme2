@@ -11,6 +11,12 @@
 
 \item{...}{additional arguments for ggplot}
 }
+\value{
+A \code{ggplot} object showing the parameter-distance trajectory over
+  optimization iterations. The y-axis is the stored distance
+  \eqn{||theta - \hat{theta}||}; plot annotations report the norm and
+  across-chain summary used when \code{x} was computed.
+}
 \description{
 Plot method for parameter_distance
 }

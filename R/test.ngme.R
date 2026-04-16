@@ -49,7 +49,9 @@ test_ngme <- function(
       max.edge = c(0.4, 10),
       max.n = max.n
     )
-    print(paste("nodes of mesh = ", mesh$n))
+    if (isTRUE(debug)) {
+      message("nodes of mesh = ", mesh$n)
+    }
   }
 
   stopifnot(length(f_noise$noise_type) == 1)
@@ -356,7 +358,9 @@ test_ngme <- function(
     debug = debug
   )
 
-  print(proc.time() - start_time)
+  if (isTRUE(debug)) {
+    message("elapsed time: ", paste(proc.time() - start_time, collapse = " "))
+  }
   list(
     out = out,
     time = proc.time() - start_time,

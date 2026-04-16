@@ -12,7 +12,8 @@
 \item{...}{ignored}
 }
 \value{
-a list (noise specifications)
+Invisibly returns \code{x}, an \code{ngme_replicate} object. The
+  method is called for its side effect of printing a replicate summary.
 }
 \description{
 Print ngme object

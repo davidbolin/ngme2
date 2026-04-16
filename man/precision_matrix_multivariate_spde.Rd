@@ -80,6 +80,7 @@ r33 <- Sigma[(2 * mesh$n + 1):(3 * mesh$n)]
 
 proj <- fm_evaluator(mesh)
 
+oldpar <- par(no.readonly = TRUE)
 par(mfrow = c(3, 3))
 image.plot(fm_evaluate(proj, r11), main = "Cov(X_1(s0),X_1(s)")
 plot.new()
@@ -90,6 +91,7 @@ plot.new()
 image.plot(fm_evaluate(proj, r13), main = "Cov(X_1(s0),X_3(s)")
 image.plot(fm_evaluate(proj, r23), main = "Cov(X_2(s0),X_3(s)")
 image.plot(fm_evaluate(proj, r33), main = "Cov(X_3(s0),X_3(s)")
+par(oldpar)
 }
 \references{
 Bolin, D. and Wallin, J. (2020), Multivariate type G Matérn stochastic partial differential equation random fields. J. R. Stat. Soc. B, 82: 215-239. https://doi.org/10.1111/rssb.12351

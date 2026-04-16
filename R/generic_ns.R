@@ -38,8 +38,15 @@
 #'
 #' Spatially-varying parameters can be created using basis matrices in B_theta_K.
 #'
+#' @return An object of class \code{ngme_operator}. The object stores the sparse
+#'   non-stationary precision matrix \code{K}, integration weights \code{h}, the
+#'   flattened parameter vector \code{theta_K}, basis matrices
+#'   \code{B_theta_K}, parameter grouping metadata \code{param_map}, matrix
+#'   combination rules \code{position}, and an update function for rebuilding
+#'   \code{K}. It is intended for use as the latent \code{model} inside
+#'   \code{f()}.
+#'
 #' @examples
-#' \dontrun{
 #' # Simple example with one parameter
 #' n <- 5
 #' A <- matrix(1, n, n)
@@ -89,7 +96,6 @@
 #'   position = list(c(1, 2), c(3)), # D_kappa * C + G
 #'   mesh = mesh
 #' )
-#' }
 #'
 #' @export
 generic_ns <- function(

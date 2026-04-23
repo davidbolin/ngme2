@@ -71,21 +71,6 @@ calibrate_inv_exp_lambda_driven_nig <- function(
     stop("Gaussian tail probability underflows for this c; use a smaller c.")
   }
 
-  had_rng <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
-  if (had_rng) {
-    old_rng <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
-  }
-  on.exit(
-    {
-      if (had_rng) {
-        assign(".Random.seed", old_rng, envir = .GlobalEnv)
-      } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
-        rm(".Random.seed", envir = .GlobalEnv)
-      }
-    },
-    add = TRUE
-  )
-
   normalize_seed <- function(x, offset = 0L) {
     as.integer((abs(as.double(x)) + as.double(offset)) %%
       (.Machine$integer.max - 1L) + 1L)
@@ -108,8 +93,11 @@ calibrate_inv_exp_lambda_driven_nig <- function(
     }
 
     V <- rgig(n = n_samples, p = -0.5, a = nu_value, b = nu_value * h * h, seed = seed_v)
-    if (!is.null(seed_z)) set.seed(seed_z)
-    Z <- stats::rnorm(n_samples)
+    Z <- if (!is.null(seed_z)) {
+      withr::with_seed(seed_z, stats::rnorm(n_samples))
+    } else {
+      stats::rnorm(n_samples)
+    }
 
     U <- (mu * (V - h) + sigma * sqrt(V) * Z) / (sigma * sqrt(h))
     rc <- mean(abs(U) > c) / gaussian_tail

@@ -67,7 +67,6 @@ Suggests:
     MetricGraph,
     rSPDE,
     sf,
-    withr,
     zoo,
     mvtnorm
 VignetteBuilder: knitr

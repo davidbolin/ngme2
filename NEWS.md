@@ -1,3 +1,8 @@
+# ngme2 0.9.7 (2026-04-23)
+
+* Prepare CRAN resubmission after policy-related fixes.
+* Avoid modifying `.GlobalEnv` in prior calibration helpers.
+
 # ngme2 0.9.5 (2026-03-17)
 
 ## New feature: VAR(1) bivariate latent model

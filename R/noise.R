@@ -352,6 +352,158 @@ noise_gal <- gal <- function(
   )
 }
 
+#' Moments of stationary NIG and GAL noise
+#'
+#' @description
+#' Compute the mean, variance, skewness, kurtosis, and excess kurtosis for
+#' stationary NIG and GAL noise. The distribution is evaluated through the
+#' normal mean-variance mixture
+#' \deqn{X = \delta + \mu V + \sigma \sqrt{V} Z,}
+#' where \eqn{Z \sim N(0, 1)}. For the package's stationary noise
+#' parameterization, \code{delta = -mu}, so the mean is zero.
+#'
+#' @param noise An \code{ngme_noise} object created by \code{noise_nig()} or
+#'   \code{noise_gal()}.
+#' @param delta Location parameter. Defaults to \code{-mu}, matching the
+#'   stationary ngme noise convention.
+#' @param mu Shift/skewness parameter in the mixture mean.
+#' @param sigma Positive Gaussian scale parameter.
+#' @param nu Positive mixing-distribution shape parameter.
+#' @param ... Currently unused.
+#'
+#' @return A named numeric vector with entries \code{skewness},
+#'   \code{kurtosis}, \code{excess_kurtosis}, \code{variance}, \code{sd},
+#'   \code{central_moment3}, and \code{central_moment4}.
+#'
+#' @examples
+#' noise_nig_moments(mu = 1, sigma = 2, nu = 3)
+#' noise_gal_moments(mu = 1, sigma = 2, nu = 3)
+#' noise_moments(noise_nig(mu = 1, sigma = 2, nu = 3))
+#'
+#' @export
+noise_moments <- function(noise, ...) {
+  UseMethod("noise_moments")
+}
+
+#' @rdname noise_moments
+#' @export
+noise_moments.ngme_noise <- function(noise, ...) {
+  if (length(noise$noise_type) != 1) {
+    stop("noise_moments() only supports univariate stationary noise.")
+  }
+
+  mu <- .stationary_noise_parameter(noise, "mu")
+  sigma <- .stationary_noise_parameter(noise, "sigma")
+  nu <- .stationary_noise_parameter(noise, "nu")
+
+  switch(noise$noise_type,
+    "nig" = noise_nig_moments(mu = mu, sigma = sigma, nu = nu),
+    "gal" = noise_gal_moments(mu = mu, sigma = sigma, nu = nu),
+    stop("noise_moments() currently supports only NIG and GAL noise.")
+  )
+}
+
+#' @rdname noise_moments
+#' @export
+noise_nig_moments <- function(delta = -mu, mu = 0, sigma = 1, nu = 1) {
+  .check_stationary_moment_params(delta, mu, sigma, nu)
+  mixing_moments <- .gig_moments(p = -0.5, a = nu, b = nu, k = 1:4)
+  .normal_mean_variance_mixture_moments(delta, mu, sigma, mixing_moments)
+}
+
+#' @rdname noise_moments
+#' @export
+noise_gal_moments <- function(delta = -mu, mu = 0, sigma = 1, nu = 1) {
+  .check_stationary_moment_params(delta, mu, sigma, nu)
+  mixing_moments <- vapply(1:4, function(k) {
+    prod(nu + seq_len(k) - 1) / nu^k
+  }, numeric(1))
+  .normal_mean_variance_mixture_moments(delta, mu, sigma, mixing_moments)
+}
+
+.stationary_noise_parameter <- function(noise, parameter) {
+  if (parameter == "mu") {
+    basis <- noise$B_mu
+    theta <- noise$theta_mu
+    transform <- identity
+  } else if (parameter == "sigma") {
+    basis <- noise$B_sigma
+    theta <- noise$theta_sigma
+    transform <- exp
+  } else if (parameter == "nu") {
+    basis <- noise$B_nu
+    theta <- noise$theta_nu
+    transform <- function(x) noise$nu_lower_bound + exp(x)
+  } else {
+    stop("Unknown noise parameter.")
+  }
+
+  value <- as.numeric(transform(basis %*% theta))
+  if (length(value) < 1) {
+    stop("noise_moments() requires a non-empty stationary noise parameter.")
+  }
+  if (any(!is.finite(value)) || any(abs(value - value[[1]]) > sqrt(.Machine$double.eps))) {
+    stop("noise_moments() only supports stationary noise parameters.")
+  }
+  value[[1]]
+}
+
+.check_stationary_moment_params <- function(delta, mu, sigma, nu) {
+  stopifnot(
+    "delta must be a finite scalar." = length(delta) == 1 && is.finite(delta),
+    "mu must be a finite scalar." = length(mu) == 1 && is.finite(mu),
+    "sigma must be a positive finite scalar." = length(sigma) == 1 && is.finite(sigma) && sigma > 0,
+    "nu must be a positive finite scalar." = length(nu) == 1 && is.finite(nu) && nu > 0
+  )
+}
+
+.gig_moments <- function(p, a, b, k) {
+  stopifnot(
+    "GIG parameter a must be positive." = length(a) == 1 && is.finite(a) && a > 0,
+    "GIG parameter b must be positive." = length(b) == 1 && is.finite(b) && b > 0
+  )
+
+  z <- sqrt(a * b)
+  log_kp <- log(besselK(z, nu = p, expon.scaled = TRUE)) - z
+
+  vapply(k, function(ki) {
+    log_kp_ki <- log(besselK(z, nu = p + ki, expon.scaled = TRUE)) - z
+    (b / a)^(ki / 2) * exp(log_kp_ki - log_kp)
+  }, numeric(1))
+}
+
+.normal_mean_variance_mixture_moments <- function(delta, beta, sigma, mixing_moments) {
+  m1 <- mixing_moments[[1]]
+  m2 <- mixing_moments[[2]]
+  m3 <- mixing_moments[[3]]
+  m4 <- mixing_moments[[4]]
+
+  variance_v <- m2 - m1^2
+  central_v3 <- m3 - 3 * m1 * m2 + 2 * m1^3
+  central_v4 <- m4 - 4 * m1 * m3 + 6 * m1^2 * m2 - 3 * m1^4
+  v_weighted_central_v2 <- m3 - 2 * m1 * m2 + m1^3
+
+  variance <- sigma^2 * m1 + beta^2 * variance_v
+  central_moment3 <- beta^3 * central_v3 + 3 * beta * sigma^2 * variance_v
+  central_moment4 <- beta^4 * central_v4 +
+    6 * beta^2 * sigma^2 * v_weighted_central_v2 +
+    3 * sigma^4 * m2
+
+  if (!is.finite(variance) || variance <= 0) {
+    stop("Computed variance is not positive and finite.")
+  }
+
+  c(
+    skewness = central_moment3 / variance^(3 / 2),
+    kurtosis = central_moment4 / variance^2,
+    excess_kurtosis = central_moment4 / variance^2 - 3,
+    variance = variance,
+    sd = sqrt(variance),
+    central_moment3 = central_moment3,
+    central_moment4 = central_moment4
+  )
+}
+
 #' @rdname ngme_noise
 #' @export
 #' @examples

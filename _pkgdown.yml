@@ -105,6 +105,10 @@ reference:
     - noise_normal
     - noise_normal_nig
     - compare_noise_kld
+    - noise_moments
+    - noise_moments.ngme_noise
+    - noise_nig_moments
+    - noise_gal_moments
     - print.noise_kld_comparison
   - title: Priors
     contents:

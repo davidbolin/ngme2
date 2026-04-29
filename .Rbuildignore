@@ -15,7 +15,6 @@
 ^Figures/.*
 ^\.github$
 ^\.vscode$
-^\.claude$
 ^index\.md$
 ^doc$
 ^Meta$

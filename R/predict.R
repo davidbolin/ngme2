@@ -156,7 +156,13 @@ predict_ngme_param_mean <- function(
     samples_W <- do.call(cbind, samples_W)
   }
 
-  use_output_samples <- identical(type, "response") || isTRUE(return_samples)
+  use_output_samples <- identical(type, "response") ||
+    isTRUE(return_samples) ||
+    prediction_needs_output_samples_for_composite_noise(
+      type_names = type_names,
+      estimator = estimator,
+      ngme = ngme
+    )
 
   if (use_output_samples) {
     output_samples <- build_prediction_output_samples(
@@ -251,6 +257,7 @@ predict_ngme_param_mean <- function(
           group_use,
           group_levels = levels(ngme$group)
         )
+        A <- expand_prediction_A_for_composite_noise(A, model)
 
         AW[[model_name]] <- as.numeric(A %*% model[[estimator]])
       }
@@ -364,6 +371,7 @@ build_prediction_output_samples <- function(
           group,
           group_levels = levels(ngme$group)
         )
+        A <- expand_prediction_A_for_composite_noise(A, model)
 
         model_draws[[model$name]] <- A %*% samples_W[j:(j + sz - 1), , drop = FALSE]
         if (is.null(n_pred)) n_pred <- nrow(model_draws[[model$name]])
@@ -388,6 +396,35 @@ build_prediction_output_samples <- function(
   }
 
   ensure_prediction_sample_matrix(output_samples)
+}
+
+
+expand_prediction_A_for_composite_noise <- function(A, model) {
+  composite_noise <- all(model$noise$noise_type %in% c(
+    "normal_nig", "normal_gal", "nig_gal"
+  ))
+
+  if (composite_noise && ncol(A) * 2 == model$W_size) {
+    return(cbind(A, A))
+  }
+
+  A
+}
+
+
+prediction_needs_output_samples_for_composite_noise <- function(
+    type_names,
+    estimator,
+    ngme) {
+  if (all(estimator == "mean")) {
+    return(FALSE)
+  }
+
+  requested_model_names <- prediction_requested_model_names(type_names, ngme)
+  any(vapply(requested_model_names, function(model_name) {
+    model <- ngme$models[[model_name]]
+    all(model$noise$noise_type %in% c("normal_nig", "normal_gal", "nig_gal"))
+  }, logical(1)))
 }
 
 

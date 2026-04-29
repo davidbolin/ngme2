@@ -5,6 +5,7 @@
 ^pkgdown$
 ^\.github$
 ^\.vscode$
+^\.claude$
 ^index\.md$
 ^doc$
 ^Meta$

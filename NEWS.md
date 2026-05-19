@@ -1,3 +1,39 @@
+# ngme2 0.9.8 (2026-05-19)
+
+* Add `pm25_quarterly_2022`, a processed example dataset of quarterly
+  PM2.5 monitor averages from EPA AQS/AirData for the contiguous United States
+  in 2022. The dataset includes monitor location, quarter, quarterly average
+  PM2.5, contributing day counts, and a replicate index for quarterly models.
+
+# ngme2 0.9.7 (2026-04-29)
+
+* Add `noise_moments()` for stationary `ngme_noise` objects, with direct
+  helpers `noise_nig_moments()` and `noise_gal_moments()` returning variance,
+  standard deviation, skewness, kurtosis, excess kurtosis, and central moments.
+* Improve prediction for composite latent noises (`normal_nig`, `normal_gal`,
+  and `nig_gal`) by expanding prediction projection matrices when required and
+  using the output-sample prediction path for non-mean estimators.
+* Make inverse-exponential prior calibration less intrusive to the global RNG
+  state by using local seeding for generated Gaussian samples.
+* Update pkgdown configuration for the current reference site.
+
+# ngme2 0.9.6 (2026-04-17)
+
+* Improve estimation and sampling console output: `ngme()` now respects
+  `control_opt(verbose = ...)` more consistently and uses messages instead of
+  unconditional `cat()` output.
+* Improve C++ estimation robustness for serial/OpenMP builds, including
+  single-chain variance handling and guarded OpenMP-only calls.
+* Make print and plotting helpers more S3-friendly: print methods now return
+  their input invisibly, and `traceplot()` no longer prints last estimates as a
+  side effect.
+* Make `simulate.ngme()` compatible with the S3 `simulate()` interface by
+  accepting `posterior` and `m_noise` through `...`.
+* Export `get_data_from_formula()` and improve diagnostics that depend on
+  captured model/design output.
+* Refresh package metadata, examples, and roxygen documentation, including
+  SuiteSparse attribution and a fuller package description.
+
 # ngme2 0.9.5 (2026-03-17)
 
 ## New feature: VAR(1) bivariate latent model

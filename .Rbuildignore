@@ -29,6 +29,7 @@
 ^jss-ngme2/.*
 ^tests/archive$
 ^tmp_files$
+^Rplots\.pdf$
 ^application/.*\.(o|so|a)$
 ^src/.*\.(o|so|a)$
 ^\.aider\.chat\.history\.md$

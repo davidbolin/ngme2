@@ -1168,48 +1168,20 @@ precision_matrix_multivariate <- function(p,
 #' @export
 #' @examples
 #' library(fmesher)
-#' library(fields)
-#' # Define mesh
-#' x <- seq(from = 0, to = 1, length.out = 40)
+#'
+#' # Use a small mesh so the example stays lightweight.
+#' x <- seq(from = 0, to = 1, length.out = 6)
 #' mesh <- fm_rcdt_2d_inla(lattice = fm_lattice_2d(x, x), extend = FALSE)
-#' # Set parameters
-#' p <- 3 # number of fields
-#' rho <- c(-0.5, 0.5, -0.25) # correlation parameters
-#' log_kappa <- list(2, 2, 2) # log(kappa)
-#' variances <- list(1, 1, 1) # set marginal variances to 1
-#' alpha <- list(2, 2, 2) # smoothness parameters
-#' # Compute precision
-#' Q <- precision_matrix_multivariate_spde(p,
-#'   mesh = mesh, rho = rho,
-#'   alpha = alpha, theta_K_list = log_kappa,
-#'   variance_list = variances
+#'
+#' Q <- precision_matrix_multivariate_spde(
+#'   p = 2,
+#'   mesh = mesh,
+#'   rho = 0.25,
+#'   alpha_list = list(2, 2),
+#'   theta_K_list = list(0, 0),
+#'   variance_list = list(1, 1)
 #' )
-#' # Plot the cross covariances
-#' A <- as.vector(fm_basis(mesh, loc = matrix(c(0.5, 0.5), 1, 2)))
-#' Sigma <- as.vector(solve(Q, c(A, rep(0, 2 * mesh$n))))
-#' r11 <- Sigma[1:mesh$n]
-#' r12 <- Sigma[(mesh$n + 1):(2 * mesh$n)]
-#' r13 <- Sigma[(2 * mesh$n + 1):(3 * mesh$n)]
-#' Sigma <- as.vector(solve(Q, c(rep(0, mesh$n), A, rep(0, mesh$n))))
-#' r22 <- Sigma[(mesh$n + 1):(2 * mesh$n)]
-#' r23 <- Sigma[(2 * mesh$n + 1):(3 * mesh$n)]
-#' Sigma <- as.vector(solve(Q, v <- c(rep(0, 2 * mesh$n), A)))
-#' r33 <- Sigma[(2 * mesh$n + 1):(3 * mesh$n)]
-#'
-#' proj <- fm_evaluator(mesh)
-#'
-#' oldpar <- par(no.readonly = TRUE)
-#' par(mfrow = c(3, 3))
-#' image.plot(fm_evaluate(proj, r11), main = "Cov(X_1(s0),X_1(s)")
-#' plot.new()
-#' plot.new()
-#' image.plot(fm_evaluate(proj, r12), main = "Cov(X_1(s0),X_2(s)")
-#' image.plot(fm_evaluate(proj, r22), main = "Cov(X_2(s0),X_2(s)")
-#' plot.new()
-#' image.plot(fm_evaluate(proj, r13), main = "Cov(X_1(s0),X_3(s)")
-#' image.plot(fm_evaluate(proj, r23), main = "Cov(X_2(s0),X_3(s)")
-#' image.plot(fm_evaluate(proj, r33), main = "Cov(X_3(s0),X_3(s)")
-#' par(oldpar)
+#' dim(Q)
 precision_matrix_multivariate_spde <- function(
     p,
     mesh,

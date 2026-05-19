@@ -1,7 +1,7 @@
 Package: ngme2
 Type: Package
 Title: Linear Latent Non-Gaussian Models with Flexible Distributions
-Version: 0.9.7
+Version: 0.9.8
 Authors@R: c(
     person("David", "Bolin", email = "davidbolin@gmail.com", role = c("aut", "cph")),
     person("Xiaotian", "Jin", email = "xiaotian.jin@kaust.edu.sa", role =c("aut", "cre")),

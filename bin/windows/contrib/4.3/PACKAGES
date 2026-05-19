@@ -1,5 +1,5 @@
 Package: ngme2
-Version: 0.9.7
+Version: 0.9.8
 Depends: R (>= 3.5.0)
 Imports: Matrix, Rcpp, methods, rlang, ggplot2, graphics, fmesher,
         stats, gridExtra, withr

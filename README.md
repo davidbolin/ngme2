@@ -1,5 +1,8 @@
 # The `ngme2` Package  <img src="man/figures/logo.png" align="right" width="80" height="80" />
 
+[![CRAN status](https://www.r-pkg.org/badges/version/ngme2)](https://CRAN.R-project.org/package=ngme2)
+[![CRAN downloads per month](https://cranlogs.r-pkg.org/badges/ngme2)](https://CRAN.R-project.org/package=ngme2)
+
 ## Description
 `ngme2` (https://davidbolin.github.io/ngme2/) is a unified, efficient, and flexible framework for fitting latent **non-Gaussian** models in R. It extends the SPDE-based Gaussian modeling toolkit to handle skewness, heavy tails, and non-smooth behavior while keeping familiar workflows for estimation, prediction, and model assessment.
 

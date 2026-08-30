@@ -1,3 +1,38 @@
+# Name the component a trajectory belongs to, for error messages.
+trace_component_label <- function(name, ngme_rep) {
+  if (identical(name, "all")) {
+    "this model"
+  } else if (name %in% names(ngme_rep$models)) {
+    paste0("f(", name, ")")
+  } else {
+    "the measurement noise"
+  }
+}
+
+# Trajectory rows and parameter names must line up: one recorded row per free
+# parameter. A component whose parameters are all fixed contributes no rows,
+# which is a clear error rather than an obscure out-of-bounds a few lines on.
+check_trace_alignment <- function(traj, ts, what) {
+  n_rows <- nrow(traj[[1]])
+  if (n_rows == 0 || length(ts$name) == 0) {
+    stop(
+      "Nothing to plot for ", what, ": all of its parameters are fixed, so no ",
+      "trajectory was recorded. Leave at least one of them free (for example ",
+      "drop fix_theta_sigma) to trace it.",
+      call. = FALSE
+    )
+  }
+  if (n_rows != length(ts$name)) {
+    stop(
+      "Recorded ", n_rows, " trajectory rows for ", what, " but ",
+      length(ts$name), " parameter name(s). This is a bug in ngme2 -- please ",
+      "report it at https://github.com/davidbolin/ngme2/issues.",
+      call. = FALSE
+    )
+  }
+  invisible(NULL)
+}
+
 get_noise_info <- function(noise) {
   if (length(noise$noise_type) == 1) {
     # mu
@@ -182,6 +217,7 @@ get_trace_trajectories <- function(
     ts$trans <- c(ts$trans, trans_feff)
   }
   ts$name <- disambiguate_trace_param_names(ts$name)
+  check_trace_alignment(traj, ts, trace_component_label(name, ngme))
 
   n_parameters <- nrow(traj[[1]])
   n_chains <- length(traj)
@@ -433,8 +469,8 @@ traceplot <- function(
 
     # Special handling for ARMA(p,q<=2): convert raw (PACF) to AR/MA coefficients
     if (!is.null(latent_obj$operator) && identical(latent_obj$operator$model, "arma")) {
-      p <- latent_obj$operator$p %||% 0L
-      q <- latent_obj$operator$q %||% 0L
+      p <- if (is.null(latent_obj$operator$p)) 0L else latent_obj$operator$p
+      q <- if (is.null(latent_obj$operator$q)) 0L else latent_obj$operator$q
       if (p <= 2 && q <= 2) {
         # Helper: map raw -> coeff per time column
         map_ar_coeff <- function(raw_ar) {
@@ -576,6 +612,7 @@ traceplot <- function(
     ts$trans <- c(ts$trans, trans_feff)
   }
   ts$name <- disambiguate_trace_param_names(ts$name)
+  check_trace_alignment(traj, ts, trace_component_label(name, ngme))
 
   # Record mean trajectories for comparison later.
   avg_lines <- NULL

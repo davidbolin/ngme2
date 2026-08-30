@@ -222,10 +222,17 @@ arma <- function(
   # Attach spec for MA part (names for MA params now 'ma1..ma_q')
   Z_spec <- list(type = "ma", order = q, param = paste0("ma", 1:q))
 
-  # Build MA shift matrices L^k = -Cs[[k]] (since Cs has -1 on sub-diagonal positions)
+  # Build MA shift matrices L^j (1 on the j-th sub-diagonal), matching the Lpow
+  # the backend builds. These cannot be taken from Cs: Cs is indexed by the AR
+  # order and its band starts at row p + 1, so reusing it drops rows when q < p
+  # and is out of bounds altogether when q > p.
   Ls <- vector("list", max(1, q))
   if (q > 0) {
-    for (j in 1:q) Ls[[j]] <- -Cs[[j]]
+    for (j in 1:q) {
+      Ls[[j]] <- Matrix::sparseMatrix(
+        i = (j + 1):n, j = 1:(n - j), x = 1, dims = c(n, n)
+      )
+    }
   } else {
     Ls[[1]] <- Matrix::sparseMatrix(i = 1, j = 1, x = 0, dims = c(n, n))
   }

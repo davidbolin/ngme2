@@ -10,7 +10,7 @@
 \usage{
 dnig(x, delta, mu, nu, sigma, h = NULL, log = FALSE)
 
-rnig(n, delta, mu, nu, sigma, h = NULL, seed = 0)
+rnig(n, delta, mu, nu, sigma, h = NULL, seed = ngme_random_seed())
 
 pnig(q, delta, mu, nu, sigma, h = NULL, lower.tail = TRUE, log.p = FALSE)
 
@@ -34,7 +34,9 @@ returned as \eqn{log(p)}.}
 
 \item{n, }{number of observations.}
 
-\item{seed}{Seed for the random generation.}
+\item{seed}{Positive integer seed for the sampler. Defaults to a draw from
+R's random number stream, so `set.seed()` makes the result reproducible.
+A value of 0 seeds from the system clock, which is *not* reproducible.}
 
 \item{lower.tail}{logical; if \code{TRUE}, probabilities are \eqn{P[X\leq x]},
 otherwise, \eqn{P[X>x]}.}

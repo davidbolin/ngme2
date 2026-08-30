@@ -10,7 +10,7 @@
 \usage{
 dig(x, a, b, log = FALSE)
 
-rig(n, a, b, seed = 0)
+rig(n, a, b, seed = ngme_random_seed())
 
 pig(q, a, b, lower.tail = TRUE, log.p = FALSE)
 
@@ -26,7 +26,9 @@ returned as \eqn{log(p)}.}
 
 \item{n, }{number of observations.}
 
-\item{seed}{Seed for the random generation.}
+\item{seed}{Positive integer seed for the sampler. Defaults to a draw from
+R's random number stream, so `set.seed()` makes the result reproducible.
+A value of 0 seeds from the system clock, which is *not* reproducible.}
 
 \item{lower.tail}{logical; if \code{TRUE}, probabilities are \eqn{P[X\leq x]},
 otherwise, \eqn{P[X>x]}.}

@@ -78,7 +78,8 @@ Suggests:
     MetricGraph (>= 1.1.2),
     zoo,
     mvtnorm,
-    kableExtra
+    kableExtra,
+    reshape2
 Additional_repositories: https://inla.r-inla-download.org/R/testing
 VignetteBuilder: knitr
 Config/testthat/edition: 3

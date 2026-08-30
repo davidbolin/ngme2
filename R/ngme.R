@@ -121,6 +121,8 @@ ngme <- function(
   attr(ngme_model, "fit") <- fit
   attr(ngme_model, "estimation_enabled") <- control_opt$estimation
 
+  if (isTRUE(control_opt$estimation)) check_arma_identifiable(ngme_model)
+
   # Check if using bfgs for non-Gaussian model
   if (control_opt$sgd_method == "bfgs") {
     stopifnot(
@@ -280,12 +282,13 @@ ngme <- function(
     if (isTRUE(control_opt$verbose)) {
       message("Starting posterior sampling...")
     }
+    post_burnin <- if (is.null(control_ngme$post_burnin)) 100L else control_ngme$post_burnin
     for (i in seq_along(ngme_model$replicates)) {
       res <- tryCatch(
         sampling_cpp(
           ngme_model$replicates[[i]],
           n = control_ngme$n_post_samples,
-          n_burnin = control_ngme$post_burnin %||% 100L,
+          n_burnin = post_burnin,
           posterior = TRUE,
           seed = control_opt$seed
         ),
@@ -333,13 +336,18 @@ ngme <- function(
     if (isTRUE(control_opt$store_traj)) {
       # Transform trajectory
       traj_df_chains <- transform_traj(attr(outputs, "opt_traj"))
-      # dispatch trajs to each latent and block
+      # dispatch trajs to each latent and block. The trajectory holds one row
+      # per *free* parameter, so a component all of whose parameters are fixed
+      # owns no rows at all -- use seq_len() rather than `a:b`, which counts
+      # backwards when the range is empty and would hand the component a bogus
+      # out-of-range row plus a row belonging to its neighbour.
       idx <- 0
       for (i in seq_along(ngme_model$replicates[[1]]$models)) {
         n_params <- ngme_model$replicates[[1]]$models[[i]]$n_params
+        lat_rows <- idx + seq_len(n_params)
         lat_traj_chains <- list()
         for (j in seq_along(traj_df_chains)) {
-          lat_traj_chains[[j]] <- traj_df_chains[[j]][idx + 1:n_params, ]
+          lat_traj_chains[[j]] <- traj_df_chains[[j]][lat_rows, , drop = FALSE]
         }
 
         attr(ngme_model$replicates[[1]]$models[[i]], "lat_traj") <- lat_traj_chains
@@ -350,8 +358,9 @@ ngme <- function(
       block_traj <- list()
       n_feff <- length(ngme_model$replicates[[1]]$feff)
       n_chains <- length(traj_df_chains)
+      block_rows <- idx + seq_len(max(0, ngme_model$replicates[[1]]$n_params - idx))
       for (j in seq_len(n_chains)) {
-        block_traj[[j]] <- traj_df_chains[[j]][(idx + 1):ngme_model$replicates[[1]]$n_params, ]
+        block_traj[[j]] <- traj_df_chains[[j]][block_rows, , drop = FALSE]
       }
 
       n_block_params <- nrow(block_traj[[1]])

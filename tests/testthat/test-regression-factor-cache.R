@@ -94,9 +94,12 @@ test_that("caching does not change results for time series models", {
   expect_cache_invariant(ngme(
     y ~ x1 + f(idx, model = ou(seq_len(n)), noise = noise_normal()),
     data = d, family = "normal", control_opt = ctl), "ou")
-  expect_cache_invariant(ngme(
+  # Gaussian ARMA(1,1) against free Gaussian measurement noise is not
+  # identifiable and ngme() says so; irrelevant here, this only checks that
+  # caching does not change the numbers.
+  expect_cache_invariant(suppressWarnings(ngme(
     y ~ x1 + f(idx, model = arma11(seq_len(n)), noise = noise_normal()),
-    data = d, family = "normal", control_opt = ctl), "arma(1,1)")
+    data = d, family = "normal", control_opt = ctl)), "arma(1,1)")
   expect_cache_invariant(ngme(
     y ~ x1 + f(idx, model = iid(seq_len(n)), noise = noise_normal()),
     data = d, family = "normal", control_opt = ctl), "iid")

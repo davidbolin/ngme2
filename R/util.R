@@ -1351,3 +1351,58 @@ openmp_test <- function() {
 ngme_random_seed <- function() {
   sample.int(.Machine$integer.max %/% 2L, 1L)
 }
+
+# Warn about ARMA(p, q) latent fields whose parameters are not identifiable.
+#
+# Observed under independent Gaussian measurement noise, a Gaussian latent
+# ARMA(p, q) is second-order equivalent to an ARMA(p, max(p, q)): writing
+# (1 - sum rho_j B^j) y = (1 + sum phi_k B^k) eps + (1 - sum rho_j B^j) e, the
+# right hand side is an MA(max(p, q)). The likelihood therefore depends on only
+# p + max(p, q) + 1 quantities while the model carries p + q + 2 free
+# parameters, so for q >= p exactly one direction is flat: the latent sigma
+# trades against the measurement sigma with the MA coefficients absorbing the
+# difference, at identical likelihood. Estimates of the individual parameters
+# are then arbitrary along that ridge even though the fitted process is right.
+#
+# Non-Gaussian latent or measurement noise pins the ridge down through the
+# higher moments, and fixing either sigma (or the MA coefficients) removes the
+# free direction, so none of those cases warn.
+arma_gaussian_ridge <- function(latent, meas_noise) {
+  op <- latent$operator
+  if (is.null(op) || !identical(op$model, "arma")) return(FALSE)
+
+  p <- op$p; q <- op$q
+  if (is.null(p) || is.null(q) || q < p) return(FALSE)
+
+  if (!identical(latent$noise$noise_type, "normal")) return(FALSE)
+  if (!identical(meas_noise$noise_type, "normal")) return(FALSE)
+
+  # Any of these being fixed makes the remaining parameters identifiable.
+  if (q > 0 && length(op$fix_phi) > 0 && all(op$fix_phi)) return(FALSE)
+  if (all(latent$noise$fix_theta_sigma)) return(FALSE)
+  if (all(meas_noise$fix_theta_sigma)) return(FALSE)
+
+  TRUE
+}
+
+check_arma_identifiable <- function(ngme_model) {
+  repl <- ngme_model$replicates[[1]]
+  for (latent in repl$models) {
+    if (!arma_gaussian_ridge(latent, repl$noise)) next
+    p <- latent$operator$p; q <- latent$operator$q
+    warning(
+      "f(", latent$name, "): a Gaussian ARMA(", p, ", ", q, ") field observed ",
+      "under Gaussian measurement noise is not identifiable. The observed ",
+      "process is second-order equivalent to an ARMA(", p, ", ", max(p, q),
+      "), so the latent 'sigma', the MA coefficients and the measurement ",
+      "'sigma' are determined only up to a one-dimensional ridge along which ",
+      "the likelihood is exactly flat -- predictions are fine, but the ",
+      "individual parameter estimates are not meaningful. Use ar_order > ",
+      "ma_order, fix one of the scales (e.g. noise = noise_normal(",
+      "fix_theta_sigma = TRUE) for the measurement noise, or fix_ma = TRUE in ",
+      "arma()), or use non-Gaussian noise.",
+      call. = FALSE
+    )
+  }
+  invisible(NULL)
+}

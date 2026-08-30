@@ -14,7 +14,9 @@
 #' returned as \eqn{log(p)}.
 #' @param lower.tail logical; if \code{TRUE}, probabilities are \eqn{P[X\leq x]},
 #' otherwise, \eqn{P[X>x]}.
-#' @param seed Seed for the random generation.
+#' @param seed Positive integer seed for the sampler. Defaults to a draw from
+#'   R's random number stream, so `set.seed()` makes the result reproducible.
+#'   A value of 0 seeds from the system clock, which is *not* reproducible.
 #' @return
 #' dgig gives the density, pgig gives the distribution function,
 #' qgig gives the quantile function, and rgig generates random deviates.
@@ -135,7 +137,7 @@ dgig <- function(x, p, a ,b, log=FALSE){
 
 #' @rdname gig
 #' @export
-rgig <- function (n, p, a, b, seed = 0)
+rgig <- function (n, p, a, b, seed = ngme_random_seed())
 {
   if(missing(p)){
     stop('argument "p" missing, with no default')
@@ -408,7 +410,9 @@ qgig <- function(prob, p, a, b, lower.tail = TRUE, log.p = FALSE){
 #' returned as \eqn{log(p)}.
 #' @param lower.tail logical; if \code{TRUE}, probabilities are \eqn{P[X\leq x]},
 #' otherwise, \eqn{P[X>x]}.
-#' @param seed Seed for the random generation.
+#' @param seed Positive integer seed for the sampler. Defaults to a draw from
+#'   R's random number stream, so `set.seed()` makes the result reproducible.
+#'   A value of 0 seeds from the system clock, which is *not* reproducible.
 #' @return
 #' dig gives the density, pig gives the distribution function,
 #' qig gives the quantile function, and rig generates random deviates.
@@ -497,7 +501,7 @@ dig <- function(x, a ,b, log=FALSE){
 
 #' @rdname ig
 #' @export
-rig <- function (n, a, b, seed = 0)
+rig <- function (n, a, b, seed = ngme_random_seed())
 {
   if(missing(a)){
     stop('argument "a" missing, with no default')
@@ -765,7 +769,9 @@ qigam <- function(p, a, b, lower.tail = TRUE, log.p = FALSE){
 #' returned as \eqn{log(p)}.
 #' @param lower.tail logical; if \code{TRUE}, probabilities are \eqn{P[X\leq x]},
 #' otherwise, \eqn{P[X>x]}.
-#' @param seed Seed for the random generation.
+#' @param seed Positive integer seed for the sampler. Defaults to a draw from
+#'   R's random number stream, so `set.seed()` makes the result reproducible.
+#'   A value of 0 seeds from the system clock, which is *not* reproducible.
 #' @return
 #' dnig gives the density, pnig gives the distribution function,
 #' qnig gives the quantile function, and rnig generates random deviates.
@@ -912,7 +918,7 @@ dnig <- function(x, delta, mu, nu, sigma, h=NULL, log=FALSE){
 
 #' @rdname nig
 #' @export
-rnig <- function (n, delta, mu, nu, sigma, h=NULL, seed = 0)
+rnig <- function (n, delta, mu, nu, sigma, h=NULL, seed = ngme_random_seed())
 {
   if (is.numeric(h)) {
     delta = h * delta

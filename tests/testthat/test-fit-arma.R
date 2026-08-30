@@ -32,8 +32,9 @@ simulate_armapq <- function(
   if (noise == "normal") {
     e <- rnorm(n, mean = 0, sd = sigma)
   } else if (noise == "nig") {
-    # Using the exact call provided in the original code
-    e <- rnig(n, delta = -mu, mu = mu, sigma = sigma, nu = nu)
+    # pass the seed explicitly: rnig() draws its own stream, so relying on the
+    # ambient set.seed() above would leave the innovations unreproducible.
+    e <- rnig(n, delta = -mu, mu = mu, sigma = sigma, nu = nu, seed = seed)
   } else {
     stop("noise must be either 'normal' or 'nig'")
   }
@@ -115,12 +116,18 @@ test_that("test fit ARMA(2,2) with normal noise (precond)", {
   mean(w)
   y <- w + rnorm(n, mean = 0, sd = sigma_e)
 
+  # A Gaussian ARMA(p, q) with q >= p is not identifiable against free Gaussian
+  # measurement noise (see check_arma_identifiable): the observed process is
+  # second-order equivalent to an ARMA(2, 2) either way, so latent sigma trades
+  # against measurement sigma at identical likelihood. Fixing the measurement
+  # scale removes that ridge and makes the parameters recoverable.
   fit <- ngme(
     formula = y ~ 0 + f(
       x,
       model = arma(ar_order = 2, ma_order = 2),
       noise = noise_normal()
     ),
+    family = noise_normal(theta_sigma = log(sigma_e), fix_theta_sigma = TRUE),
     data = data.frame(x = 1:n, y = y),
     control_ngme = control_ngme(n_gibbs_samples = 4),
     control_opt = control_opt(
@@ -137,12 +144,13 @@ test_that("test fit ARMA(2,2) with normal noise (precond)", {
     )
   )
   fit
-  traceplot(fit, hline = sigma_e)
+  # sigma_e is fixed here, so there is no measurement-noise trajectory to plot.
   traceplot(fit, "field1", hline = c(rho, phi, sigma))
 
   arma_result <- as.numeric(ngme_result(fit)$field1)
   score <- abs((arma_result - c(rho, phi, sigma)) / c(rho, phi, sigma))
   expect_true(all(score < 0.4))
+  expect_equal(as.numeric(ngme_result(fit)$data$sigma), sigma_e)
 })
 
 

@@ -62,7 +62,7 @@ test_that("tp-bv-matern operator structure and simulation", {
   expect_equal(ncol(op$second$K), expected_bv_size)
   expect_equal(nrow(op$K), time_len * expected_bv_size)
 
-  sim <- simulate(f_model)
+  sim <- simulate(f_model, seed = 42)
   expect_length(sim, 1)
 
   W <- sim[[1]]

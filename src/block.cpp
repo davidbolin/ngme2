@@ -1,16 +1,44 @@
 // Implementation for block model and block_rep
 
 #include "block.h"
+#include "include/factor_counters.h"
 #include "include/solver.h"
 #include "prior.h"
 #include "sample_rGIG.h"
+#include <algorithm>
 #include <chrono>
+#include <cstdlib>
 #include <cmath>
 #include <iterator>
 #include <random>
 #include <stdexcept>
 
 using std::pow;
+
+namespace ngme_counters {
+std::atomic<long long> QQ_builds{0};
+std::atomic<long long> QQ_analyzes{0};
+std::atomic<long long> K_analyzes{0};
+void reset_all() {
+  QQ_builds.store(0, std::memory_order_relaxed);
+  QQ_analyzes.store(0, std::memory_order_relaxed);
+  K_analyzes.store(0, std::memory_order_relaxed);
+}
+namespace {
+bool env_flag(const char *name) {
+  const char *v = std::getenv(name);
+  if (v == nullptr || v[0] == '\0')
+    return false;
+  const std::string s(v);
+  return !(s == "0" || s == "false" || s == "FALSE");
+}
+} // namespace
+bool cache_disabled() {
+  // Re-read every call so that a test can toggle it with Sys.setenv() inside a
+  // running session. getenv() costs nothing next to a sparse factorization.
+  return env_flag("NGME2_DISABLE_FACTOR_CACHE");
+}
+} // namespace ngme_counters
 
 namespace {
 std::string parse_prior_target(const Rcpp::List &prior_list,
@@ -92,6 +120,11 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
                           ? Rcpp::as<int>(control_ngme["solver_factor"])
                           : 0;
   int solver_type = map_solver_type(solver_backend, solver_factor);
+  // 0 = LU of K, 1 = Cholesky of the normal equations, for non-symmetric
+  // operators; see control_opt(nonsym_solver=).
+  int nonsym_solver = control_ngme.containsElementNamed("nonsym_solver")
+                          ? Rcpp::as<int>(control_ngme["nonsym_solver"])
+                          : 0;
   robust = control_ngme.containsElementNamed("robust")
                ? Rcpp::as<bool>(control_ngme["robust"])
                : false;
@@ -157,6 +190,7 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
     // construct acoording to models
     Rcpp::List latent_in = Rcpp::as<Rcpp::List>(latents_in[i]);
     latent_in["solver_type"] = solver_type;
+    latent_in["nonsym_solver"] = nonsym_solver;
     latent_in["n_trace_iter"] = n_trace_iter;
     latent_in["robust"] = robust;
     unsigned long latent_seed = seed + (i + 1) * 1000;
@@ -289,13 +323,7 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
     VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
     Q = K.transpose() * inv_SV.asDiagonal() * K;
     // Build AZ for measurement term
-    SparseMatrix<double> AZ(n_obs, W_sizes);
-    int col0 = 0;
-    for (int li = 0; li < n_latent; ++li) {
-      SparseMatrix<double> AiZi = latents[li]->getA() * latents[li]->getZ();
-      setSparseBlock(&AZ, 0, col0, AiZi);
-      col0 += latents[li]->get_W_size();
-    }
+    const SparseMatrix<double> &AZ = get_AZ();
     if (!corr_measure) {
       QQ = Q + AZ.transpose() *
                    noise_sigma.array()
@@ -311,7 +339,13 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
     // Initialize solver with requested backend and Hutchinson iters; QQ is SPD
     chol_QQ.init(QQ.rows(), n_trace_iter, /*symmetric*/ true, solver_type);
     chol_QQ.analyze(QQ);
+    record_QQ_pattern();
     chol_QQ.compute(QQ);
+    // Deliberately leave QQ_valid == false: this initial assembly is not
+    // identical to update_QQ(), which additionally clamps inv_SV from below
+    // and, under `robust`, symmetrizes and jitters QQ. The first sampleW_VY()
+    // therefore still does a full update_QQ(), exactly as before caching; the
+    // recorded pattern only spares that call a redundant symbolic phase.
   }
 
   // 8. optimizer related
@@ -403,21 +437,16 @@ void BlockModel::sampleW_VY(bool burn_in) {
   if (n_latent == 0)
     return;
   // Ensure QQ is consistent with current K, Z, and measurement precision before
-  // sampling
-  update_QQ();
+  // sampling. Nothing that enters QQ changes between the Gibbs draws of a
+  // Gaussian model, so this is a no-op after the first draw of an iteration.
+  ensure_QQ();
   VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
 
   // M = K' * inv(SV) * mean + Z'^ A'^ inv(Sigma) * (Y - X * beta - (1 - V) mu)
   VectorXd M = K.transpose() * inv_SV.asDiagonal() * getMean();
 
+  const SparseMatrix<double> &AZ = get_AZ();
   if (!corr_measure) {
-    SparseMatrix<double> AZ(n_obs, W_sizes);
-    int col = 0;
-    for (int li = 0; li < n_latent; ++li) {
-      SparseMatrix<double> AiZi = latents[li]->getA() * latents[li]->getZ();
-      setSparseBlock(&AZ, 0, col, AiZi);
-      col += latents[li]->get_W_size();
-    }
     M += AZ.transpose() *
          noise_sigma.array()
              .pow(-2)
@@ -426,18 +455,11 @@ void BlockModel::sampleW_VY(bool burn_in) {
              .asDiagonal() *
          get_residual_part();
   } else {
-    SparseMatrix<double> AZ(n_obs, W_sizes);
-    int col = 0;
-    for (int li = 0; li < n_latent; ++li) {
-      SparseMatrix<double> AiZi = latents[li]->getA() * latents[li]->getZ();
-      setSparseBlock(&AZ, 0, col, AiZi);
-      col += latents[li]->get_W_size();
-    }
     M += AZ.transpose() * Q_eps * get_residual_part();
   }
 
-  SparseMatrix<double> G = inv_SV.cwiseSqrt().asDiagonal() * K;
-  SparseMatrix<double> H = get_sqrt_AtSVA();
+  const SparseMatrix<double> &G = get_G(inv_SV);
+  const SparseMatrix<double> &H = get_sqrt_AtSVA();
   unsigned long seed1 = rng();
   unsigned long seed2 = rng();
   VectorXd z1 = NoiseUtil::rnorm_vec(G.rows(), 0, 1, seed1);
@@ -512,6 +534,9 @@ void BlockModel::set_parameter_and_update(const VectorXd &Theta,
   }
 
   assemble(); // update K,dK,d2K after
+  // K, Z, the latent sigmas and the measurement precision may all have moved,
+  // so both the AZ block matrix and QQ have to be rebuilt on next use.
+  invalidate_AZ();
   // endTime = std::chrono::steady_clock::now(); update_time =
   // std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
   // std::cout << "block set time (ms): " <<
@@ -681,6 +706,8 @@ VectorXd BlockModel::grad_theta_merr() {
 
 void BlockModel::set_theta_merr(const VectorXd &theta_merr) {
   // if (debug) std::cout << "start set theta_merr" << std::endl;
+  // noise_sigma / Q_eps feed the measurement block of QQ.
+  invalidate_measurement();
   if (!fix_flag[block_fix_theta_mu])
     theta_mu = theta_merr.segment(0, n_theta_mu);
   if (!fix_flag[block_fix_theta_sigma]) {
@@ -717,6 +744,9 @@ void BlockModel::set_theta_merr(const VectorXd &theta_merr) {
 void BlockModel::sample_cond_noise_V(bool posterior) {
   if (family == "normal" || fix_flag[blcok_fix_V])
     return;
+  // noise_V enters QQ and H through the measurement precision, so redrawing it
+  // makes them stale. (Gaussian families return above and keep them.)
+  invalidate_measurement();
   noise_prevV = noise_V;
 
   if (posterior) {
@@ -1477,32 +1507,75 @@ Rcpp::List BlockModel::output() const {
   return out;
 }
 
-SparseMatrix<double> BlockModel::get_sqrt_AtSVA() const {
+// AZ = [A_1 Z_1, ..., A_L Z_L]; depends on the parameters only, so it is
+// cached and rebuilt by invalidate_AZ() when set_parameter_and_update() runs.
+const SparseMatrix<double> &BlockModel::get_AZ() const {
+  if (!AZ_valid || ngme_counters::cache_disabled()) {
+    SparseMatrix<double> AZ(n_obs, W_sizes);
+    int col = 0;
+    for (int li = 0; li < n_latent; ++li) {
+      SparseMatrix<double> AiZi = latents[li]->getA() * latents[li]->getZ();
+      setSparseBlock(&AZ, 0, col, AiZi);
+      col += latents[li]->get_W_size();
+    }
+    AZ_cached = AZ;
+    AZ_valid = true;
+  }
+  return AZ_cached;
+}
+
+// H = sqrt(D) A Z, with D the measurement precision (and an extra sqrt_Rinv
+// factor in the correlated case). Depends on AZ and on the measurement
+// precision only, so it survives the latent V samplers untouched.
+const SparseMatrix<double> &BlockModel::get_sqrt_AtSVA() const {
+  if (sqrt_AtSVA_valid && !ngme_counters::cache_disabled())
+    return sqrt_AtSVA_cached;
   VectorXd inv_noise_SV =
       noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V);
+
+  const VectorXd sqrt_inv_noise_SV = inv_noise_SV.cwiseSqrt();
+  const SparseMatrix<double> &AZ = get_AZ();
   if (!corr_measure) {
-    SparseMatrix<double> AZ(n_obs, W_sizes);
-    int col = 0;
-    for (int li = 0; li < n_latent; ++li) {
-      SparseMatrix<double> AiZi = latents[li]->getA() * latents[li]->getZ();
-      setSparseBlock(&AZ, 0, col, AiZi);
-      col += latents[li]->get_W_size();
-    }
-    return inv_noise_SV.cwiseSqrt().asDiagonal() * AZ;
+    sqrt_AtSVA_cached = sqrt_inv_noise_SV.asDiagonal() * AZ;
   } else {
-    SparseMatrix<double> AZ(n_obs, W_sizes);
-    int col = 0;
-    for (int li = 0; li < n_latent; ++li) {
-      SparseMatrix<double> AiZi = latents[li]->getA() * latents[li]->getZ();
-      setSparseBlock(&AZ, 0, col, AiZi);
-      col += latents[li]->get_W_size();
-    }
-    return sqrt_Rinv * inv_noise_SV.cwiseSqrt().asDiagonal() * AZ;
+    sqrt_AtSVA_cached = sqrt_Rinv * sqrt_inv_noise_SV.asDiagonal() * AZ;
   }
+  sqrt_AtSVA_valid = true;
+  return sqrt_AtSVA_cached;
+}
+
+// G = sqrt(1/SV) K. Note this uses the *un-clamped* 1/SV that sampleW_VY()
+// forms, not the floored one update_QQ() uses, so the caller passes it in.
+const SparseMatrix<double> &BlockModel::get_G(const VectorXd &inv_SV) const {
+  if (G_valid && !ngme_counters::cache_disabled())
+    return G_cached;
+  // As in get_sqrt_AtSVA(), evaluate the square root eagerly rather than
+  // letting asDiagonal() hold a lazy expression across the sparse product.
+  const VectorXd sqrt_inv_SV = inv_SV.cwiseSqrt();
+  G_cached = sqrt_inv_SV.asDiagonal() * K;
+  G_valid = true;
+  return G_cached;
+}
+
+// Measurement block of QQ: H'H in the uncorrelated case (H as above), and
+// (AZ)' Q_eps (AZ) in the correlated one. Same dependencies as H.
+const SparseMatrix<double> &BlockModel::get_QQ_measure() const {
+  if (QQ_measure_valid && !ngme_counters::cache_disabled())
+    return QQ_measure;
+  if (!corr_measure) {
+    const SparseMatrix<double> &H = get_sqrt_AtSVA();
+    QQ_measure = H.transpose() * H;
+  } else {
+    const SparseMatrix<double> &AZ = get_AZ();
+    QQ_measure = AZ.transpose() * Q_eps * AZ;
+  }
+  QQ_measure_valid = true;
+  return QQ_measure;
 }
 
 // update Q_eps, dQ_eps, and compute trace as sum_ij dQ_ij * Q^-1_ij
 void BlockModel::update_Q_eps(double rho) {
+  invalidate_measurement();
   // update Q_eps
   for (int i = 0; i < Q_eps.outerSize(); i++) {
     for (SparseMatrix<double>::InnerIterator it(Q_eps, i); it; ++it) {
@@ -1568,40 +1641,63 @@ void BlockModel::update_Q_eps(double rho) {
   // double rhs = res.dot(Q_eps * res);
 }
 
+// Structural signature of the QQ that chol_QQ.analyze() last saw. Comparing it
+// is O(nnz) and far cheaper than redoing the fill-reducing ordering and the
+// symbolic factorization.
+void BlockModel::record_QQ_pattern() {
+  const int outer = QQ.outerSize() + 1;
+  const int nnz = static_cast<int>(QQ.nonZeros());
+  QQ_pat_outer.assign(QQ.outerIndexPtr(), QQ.outerIndexPtr() + outer);
+  QQ_pat_inner.assign(QQ.innerIndexPtr(), QQ.innerIndexPtr() + nnz);
+  QQ_analyzed = true;
+}
+
+bool BlockModel::QQ_pattern_changed() const {
+  if (!QQ_analyzed)
+    return true;
+  if (QQ_pat_outer.size() != static_cast<size_t>(QQ.outerSize()) + 1)
+    return true;
+  if (QQ_pat_inner.size() != static_cast<size_t>(QQ.nonZeros()))
+    return true;
+  if (!std::equal(QQ_pat_outer.begin(), QQ_pat_outer.end(),
+                  QQ.outerIndexPtr()))
+    return true;
+  return !std::equal(QQ_pat_inner.begin(), QQ_pat_inner.end(),
+                     QQ.innerIndexPtr());
+}
+
 void BlockModel::update_QQ() {
+  ngme_counters::bump(ngme_counters::QQ_builds);
   VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
   inv_SV = inv_SV.cwiseMax(1e-8);
 
-  // update Q and QQ
+  // update Q and QQ. Only the latent block K' diag(1/SV) K has to be redone on
+  // every draw; the measurement block is cached and reused.
   Q = K.transpose() * inv_SV.asDiagonal() * K;
-  // Build H = sqrt(D) * A Z consistent with get_sqrt_AtSVA(), then QQ = Q + H^T
-  // H
-  SparseMatrix<double> AZ(n_obs, W_sizes);
-  int col = 0;
-  for (int li = 0; li < n_latent; ++li) {
-    SparseMatrix<double> AiZi = latents[li]->getA() * latents[li]->getZ();
-    setSparseBlock(&AZ, 0, col, AiZi);
-    col += latents[li]->get_W_size();
-  }
-  if (!corr_measure) {
-    // D = diag(1 / (sigma^2 V))
-    VectorXd inv_noise_SV =
-        noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V);
-    SparseMatrix<double> H = inv_noise_SV.cwiseSqrt().asDiagonal() * AZ;
-    QQ = Q + H.transpose() * H;
-  } else {
-    // Correlated case: D = Q_eps
-    QQ = Q + AZ.transpose() * Q_eps * AZ;
-  }
+  QQ = Q + get_QQ_measure();
   if (robust) {
     QQ = 0.5 * (QQ + SparseMatrix<double>(QQ.transpose()));
     // double mean_diag = QQ.diagonal().mean();
     // double jitter = std::max(1e-8, 1e-3 * mean_diag);
     double jitter = 1e-8;
     QQ.diagonal().array() += jitter;
+  }
+  // Storage must be packed before the pattern below can be compared (and
+  // before the solvers see it); this is a no-op unless the robust branch above
+  // had to insert a missing diagonal entry.
+  if (!QQ.isCompressed())
+    QQ.makeCompressed();
+  // The symbolic phase is only needed when the sparsity pattern really moved.
+  // It does for rational (fractional) approximations, where the number of
+  // operator factors is a step function of the smoothness; for every other
+  // model the pattern is fixed and analyze() runs exactly once.
+  if (QQ_pattern_changed()) {
+    ngme_counters::bump(ngme_counters::QQ_analyzes);
     chol_QQ.analyze(QQ);
+    record_QQ_pattern();
   }
   chol_QQ.compute(QQ);
+  QQ_valid = true;
   if (!chol_QQ.factorization_success()) {
     // Basic diagnostics for SPD failures
     double min_diag = QQ.diagonal().minCoeff();
@@ -1610,6 +1706,7 @@ void BlockModel::update_QQ() {
                 << " min_diag=" << min_diag << " asym_norm=" << asym_norm
                 << std::endl;
     // [QQ SPD fail] iter=414 min_diag=4.71135e+08 asym_norm=0
+    QQ_valid = false;
     throw std::runtime_error("Measurement precision QQ is not SPD");
   }
 }

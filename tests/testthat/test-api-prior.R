@@ -78,17 +78,34 @@ test_that("f compiles operator priors from new API", {
   )
 })
 
-test_that("f sets default nu prior to inv.exponential using median(h)", {
+test_that("f sets default nu prior to inv.exponential using sum(h)", {
   fit <- f(
     map = 1:20,
     model = ar1(),
     noise = noise_nig()
   )
+  h <- fit$operator$h
 
   expect_equal(fit$noise$prior_nu$type, "inv.exponential")
   expect_equal(fit$noise$prior_nu$target, "coef")
-  expect_equal(fit$noise$prior_nu$param[1], log(2), tolerance = 1e-12)
+  expect_equal(fit$noise$prior_nu$param[1], log(2) / sum(h), tolerance = 1e-12)
   expect_equal(fit$noise$prior_nu$param[2], 0)
+})
+
+test_that("the default nu prior is invariant to mesh refinement", {
+  skip_on_cran()
+  skip_if_not_installed("fmesher")
+  # The same domain at three resolutions must give (nearly) the same lambda.
+  loc <- withr::with_seed(3, matrix(runif(600 * 2), 600, 2))
+  d <- data.frame(c1 = loc[, 1], c2 = loc[, 2])
+  lams <- vapply(c(0.13, 0.075, 0.045), function(ct) {
+    msh <- fmesher::fm_mesh_2d(loc = loc, cutoff = ct,
+                               max.edge = c(ct * 2.5, ct * 8))
+    fit <- f(~ c1 + c2, model = matern(mesh = msh), noise = noise_nig(), data = d)
+    fit$noise$prior_nu$param[1]
+  }, numeric(1))
+  # node counts differ several-fold, so this is a real test of the invariance
+  expect_lt(max(lams) / min(lams), 1.1)
 })
 
 test_that("f keeps explicit nu prior and does not override it", {

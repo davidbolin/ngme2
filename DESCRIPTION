@@ -81,10 +81,10 @@ Suggests:
     kableExtra
 Additional_repositories: https://inla.r-inla-download.org/R/testing
 VignetteBuilder: knitr
-RoxygenNote: 7.3.2
 Config/testthat/edition: 3
 URL: https://davidbolin.github.io/ngme2/, https://github.com/davidbolin/ngme2
 Depends:
     R (>= 3.5.0)
 BugReports: https://github.com/davidbolin/ngme2/issues
 Copyright: The R package and code, and the main programs, were written by and are Copyright by David Bolin, Xiaotian Jin, Alexandre Simas, and Jonas Wallin, and are redistributable under the GNU Public License, version 3 or later. The package also includes bundled SuiteSparse components. For details see inst/COPYRIGHTS.
+Config/roxygen2/version: 8.0.0

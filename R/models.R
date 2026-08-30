@@ -51,18 +51,29 @@ ar1 <- function(mesh = NULL, rho = 0) {
   mesh <- ngme_build_mesh(mesh)
   n <- mesh$n
   h <- c(diff(mesh$loc), 1)
+  # K = rho C + G + sqrt(1 - rho^2) E11.
+  #
+  # The (1,1) entry is the stationary initial condition of the AR(1): the first
+  # observation has marginal sd 1/sqrt(1 - rho^2), so K[1,1] must track the
+  # *current* rho. It is carried as its own matrix because the generic operator
+  # builds K as a linear combination of fixed matrices, so a coefficient is the
+  # only place a non-linear function of theta_K can live -- see the "sech"
+  # transformation, sqrt(1 - tanh(theta/2)^2).
   G <- Matrix::Diagonal(n)
-  G[1, 1] <- sqrt(1 - rho**2)
+  G[1, 1] <- 0
   C <- Matrix::sparseMatrix(j = 1:(n - 1), i = 2:n, x = -1, dims = c(n, n))
+  E11 <- Matrix::sparseMatrix(i = 1, j = 1, x = 1, dims = c(n, n))
   G <- ngme_as_sparse(G)
   C <- ngme_as_sparse(C)
+  E11 <- ngme_as_sparse(E11)
   stopifnot("The mesh should be 1d and has gap 1." = all(h == 1))
 
   theta_K <- ar1_a2th(rho)
   stopifnot("The length of rho(theta_K) should be 1." = length(theta_K) == 1)
 
   update_K <- function(theta_K) {
-    ar1_th2a(theta_K) * C + G
+    a <- ar1_th2a(theta_K)
+    a * C + G + sqrt(1 - a^2) * E11
   }
 
   # Create a generic model internally
@@ -72,11 +83,12 @@ ar1 <- function(mesh = NULL, rho = 0) {
     mesh = mesh,
     model = "ar1",
     theta_K = c(rho = g(rho)),
-    trans = c(rho = "tanh"),
-    matrices = list(C, G),
+    trans = list(rho = c("tanh", "null", "sech")),
+    matrices = list(C, G, E11),
     h = h,
     C = C,
     G = G,
+    E11 = E11,
     update_K = update_K,
     K = ngme_as_sparse(update_K(theta_K)),
     symmetric = FALSE,

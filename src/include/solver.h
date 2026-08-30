@@ -14,6 +14,7 @@
 #include <string.h>
 
 #include <Eigen/CholmodSupport>
+#include <Eigen/SparseLU>
 #ifdef __APPLE__
 #include <Eigen/AccelerateSupport>
 #endif
@@ -36,6 +37,12 @@ private:
   Eigen::PardisoLLT<Eigen::SparseMatrix<double, 0, int>> R_pardiso;
   Eigen::PardisoLDLT<Eigen::SparseMatrix<double, 0, int>> R_pardiso_ldlt;
 #endif
+  // Direct LU of K, used instead of a Cholesky of K^T K when the operator is
+  // not symmetric.
+  Eigen::SparseLU<Eigen::SparseMatrix<double, 0, int>, Eigen::COLAMDOrdering<int>>
+      R_lu;
+  bool use_lu{false};
+
   int solver_type{0};
   int n{0}; // dimension of the factorized system (rows of Q)
   int N_iter{10};
@@ -43,6 +50,21 @@ private:
   Eigen::SparseMatrix<double, 0, int> Qi;
   Eigen::MatrixXd U, QU;
   bool Qi_computed{false}, QU_computed{false};
+  // Hutchinson probe vectors. They depend only on the seed and on the
+  // dimensions, never on the matrix, so they are kept across factorizations
+  // and regenerated only when one of those changes. The operator traces always
+  // pass seed 0, so for them this is the same U for the whole optimization.
+  bool U_computed{false};
+  unsigned int U_seed{0};
+  // Set when U is the scaled identity rather than random probes, i.e. when the
+  // probe budget is at least the dimension (n <= N_iter) and the trace is
+  // therefore computed exactly. Reached when a caller asks for more probes than
+  // the system has rows -- in practice a tensor-product factor, whose budget is
+  // min(dim, n_trace_iter * dim_other). It also decides whether U may be
+  // reused: the exact U does not depend on the seed, while random probes are
+  // redrawn whenever it advances.
+  bool exact_trace{false};
+  void ensure_U(unsigned int seed);
   // For non-symmetric mode we keep the last K to build normal equations and to
   // apply K^T on RHS when required
   Eigen::SparseMatrix<double, 0, int> K_last;
@@ -60,7 +82,11 @@ public:
                    int stype) {
     init(nin, Ntrace, /*symmetric*/ true, stype);
   }
-  inline void init(int nin, int Ntrace, bool symmetric, int stype) {
+  // nonsym_mode: 0 = LU of K (default), 1 = Cholesky of the normal equations
+  // K^T K (the historical path). Chosen by control_opt(nonsym_solver = ).
+  inline void init(int nin, int Ntrace, bool symmetric, int stype,
+                   int nonsym_mode = 0) {
+    use_lu = !symmetric && nonsym_mode == 0;
     n = nin;
     N_iter = Ntrace;
     solver_type = stype;
@@ -68,8 +94,15 @@ public:
     U.resize(n, N_iter);
     QU.resize(n, N_iter);
     Qi_computed = QU_computed = false;
+    U_computed = false;
+    exact_trace = false;
   }
   void analyze(const Eigen::SparseMatrix<double, 0, int> &M) {
+    if (use_lu) {
+      R_lu.analyzePattern(M);
+      QU_computed = false;
+      return;
+    }
     switch (solver_type) {
     case 0:
       if (isSymmetric) {
@@ -142,6 +175,19 @@ public:
   }
 
   void compute(const Eigen::SparseMatrix<double, 0, int> &M) {
+    if (use_lu) {
+      K_last = M;
+      R_lu.factorize(M);
+      Qi_computed = false;
+      QU_computed = false;
+      const int new_n = M.cols();
+      if (new_n != n)
+        U_computed = false;
+      n = new_n;
+      U.resize(n, N_iter);
+      QU.resize(n, N_iter);
+      return;
+    }
     switch (solver_type) {
     case 0:
       if (isSymmetric) {
@@ -219,12 +265,17 @@ public:
     }
     Qi_computed = false;
     QU_computed = false;
-    n = isSymmetric ? M.rows() : M.cols();
+    const int new_n = isSymmetric ? M.rows() : M.cols();
+    if (new_n != n)
+      U_computed = false; // resize below invalidates the probe vectors
+    n = new_n;
     U.resize(n, N_iter);
     QU.resize(n, N_iter);
   }
 
   inline Eigen::ComputationInfo factorization_info() const {
+    if (use_lu)
+      return R_lu.info();
     switch (solver_type) {
     case 0:
       return R_eigen.info();
@@ -256,8 +307,8 @@ public:
   }
 
   // sample from N(Q^-1 mu, Q^-1), Q = G^T G + H^T H
-  inline Eigen::VectorXd rMVN(SparseMatrix<double, 0, int> &G,
-                              SparseMatrix<double, 0, int> &H,
+  inline Eigen::VectorXd rMVN(const SparseMatrix<double, 0, int> &G,
+                              const SparseMatrix<double, 0, int> &H,
                               Eigen::VectorXd &mu, Eigen::VectorXd &z1,
                               Eigen::VectorXd &z2) {
     Eigen::VectorXd x = G.transpose() * z1 + H.transpose() * z2 + mu;
@@ -265,6 +316,8 @@ public:
   }
 
   inline Eigen::VectorXd solve(Eigen::VectorXd &v) {
+    if (use_lu)
+      return R_lu.solve(v);
     if (!isSymmetric && K_last.rows() > 0) {
       Eigen::VectorXd rhs = K_last.transpose() * v; // solve (K^T K) y = K^T v
       return solve_raw(rhs);
@@ -273,6 +326,8 @@ public:
   }
 
   inline Eigen::VectorXd solve_raw(Eigen::VectorXd &rhs) {
+    if (use_lu)
+      return R_lu.solve(rhs);
     switch (solver_type) {
     case 0:
       return R_eigen.solve(rhs);
@@ -301,6 +356,8 @@ public:
   }
 
   inline Eigen::MatrixXd solve(Eigen::MatrixXd &v) {
+    if (use_lu)
+      return R_lu.solve(v);
     if (!isSymmetric && K_last.rows() > 0) {
       Eigen::MatrixXd rhs = K_last.transpose() * v;
       return solve_raw(rhs);
@@ -309,6 +366,8 @@ public:
   }
 
   inline Eigen::MatrixXd solve_raw(Eigen::MatrixXd &rhs) {
+    if (use_lu)
+      return R_lu.solve(rhs);
     switch (solver_type) {
     case 0:
       return R_eigen.solve(rhs);

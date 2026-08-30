@@ -14,7 +14,8 @@
 #' Checks are evaluated every \code{iters_per_check = iterations / n_batch}. A parameter is marked
 #' converged if any enabled parameter-level diagnostic (R-hat or Trend/Std) passes; the run stops
 #' when all parameters converge or when the Pflug diagnostic triggers.
-#' @param seed  set the seed for pesudo random number generator
+#' @param seed  random seed. Defaults to a seed drawn from the current R
+#'   random number stream, so \code{set.seed()} makes the result reproducible.
 #' @param burnin          interations for burn-in periods (before optimization)
 #' @param iterations      optimization iterations
 #' @param estimation      run the estimation process (call C++ in backend)
@@ -48,6 +49,11 @@
 #' @param trend_std_conv_check enable the trend/std diagnostic (uses \code{std_lim}, \code{trend_lim}, \code{n_slope_check})
 #' @param solver_backend backend in ("eigen", "cholmod", "accelerate", "pardiso")
 #' @param solver_type factorization type: "llt" or "ldlt"
+#' @param nonsym_solver how the operator matrix \code{K} of a non-symmetric
+#'   modelis factorized when estimating \code{tr(K^-1 dK)}. "lu" (default) takes a sparse
+#'   LU of \code{K}; "normal_equations" takes a Cholesky of \code{t(K) K}, which was the
+#'   behaviour before version 0.9.9. This latter is only kept for reproducability and the
+#'   default is strongly recommended.
 #' @param rao_blackwellization  use rao_blackwellization
 #' @param n_trace_iter  use how many iterations to approximate the trace (Hutchinson’s trick)
 #'
@@ -69,7 +75,7 @@
 #' @return list of control variables
 #' @export
 control_opt <- function(
-    seed = Sys.time(),
+    seed = ngme_random_seed(),
     burnin = 100,
     iterations = 500,
     estimation = TRUE,
@@ -90,6 +96,7 @@ control_opt <- function(
     sampling_strategy = "all",
     solver_backend = if (Sys.info()["sysname"] == "Darwin") "accelerate" else "cholmod",
     solver_type = "llt",
+    nonsym_solver = "lu",
     # opt print
     verbose = FALSE,
     store_traj = TRUE,
@@ -108,6 +115,7 @@ control_opt <- function(
   preconditioner_list <- c("none", "fast", "full")
   solver_backend_list <- c("eigen", "cholmod", "accelerate", "pardiso")
   solver_factor_list <- c("llt", "ldlt")
+  nonsym_solver_list <- c("lu", "normal_equations")
   stepsize_decay_list <- c("none", "grad_norm_plateau")
   stepsize_schedule_list <- c("constant", "poly")
 
@@ -159,10 +167,12 @@ control_opt <- function(
   # resolve solver backend + factorization; send both to C++ and let it map
   solver_backend <- match.arg(solver_backend, solver_backend_list)
   solver_factor <- match.arg(solver_type, solver_factor_list)
+  nonsym_solver <- match.arg(nonsym_solver, nonsym_solver_list)
   stepsize_decay_method <- match.arg(stepsize_decay_method, stepsize_decay_list)
   stepsize_schedule_method <- match.arg(stepsize_schedule_method, stepsize_schedule_list)
   solver_backend_idx <- match(solver_backend, solver_backend_list) - 1L
   solver_factor_idx <- match(solver_factor, solver_factor_list) - 1L
+  nonsym_solver_idx <- match(nonsym_solver, nonsym_solver_list) - 1L
 
   if (identical(optimizer$method, "sgld") &&
       identical(stepsize_schedule_method, "constant") &&
@@ -308,6 +318,7 @@ control_opt <- function(
     # solver related
     solver_backend = solver_backend_idx,
     solver_factor = solver_factor_idx,
+    nonsym_solver = nonsym_solver_idx,
 
     # stepsize decay
     stepsize_decay = stepsize_decay_method,
@@ -403,6 +414,11 @@ control_opt_batch_ci <- function(
 #' Generate control specifications for the ngme model
 #'
 #' @param n_gibbs_samples    number of gibbs samples at each iteration
+#' @param post_burnin number of Gibbs sweeps to discard before recording the
+#'   posterior samples of W and V returned by \code{ngme()}. A burn-in is
+#'   needed because the chain is restarted from the stored W and V, which are
+#'   averaged over the parallel chains and so are not themselves a draw from
+#'   the posterior. Set to 0 only if you know the stored state is a valid draw.
 #' @param fix_beta       logical, fix fixed effect estimation
 #' @param beta_init      fixed effect initial value on the original design
 #'   scale. If \code{control_opt(standardize_fixed = TRUE)} (the default), the
@@ -418,6 +434,7 @@ control_opt_batch_ci <- function(
 #' @export
 control_ngme <- function(
     n_gibbs_samples = 5,
+    post_burnin = 100,
     fix_beta = FALSE,
     n_post_samples = 100,
     beta_init = NULL,
@@ -430,6 +447,7 @@ control_ngme <- function(
 
   control <- list(
     n_gibbs_samples = n_gibbs_samples,
+    post_burnin = post_burnin,
     fix_beta = fix_beta,
     beta_init = beta_init,
     # legacy names preserved for downstream code until fully migrated
@@ -449,6 +467,7 @@ update_control_ngme <- function(control_ngme, control_opt) {
   control_ngme$stepsize <- control_opt$stepsize
   control_ngme$solver_backend <- control_opt$solver_backend
   control_ngme$solver_factor <- control_opt$solver_factor
+  control_ngme$nonsym_solver <- control_opt$nonsym_solver
   control_ngme$robust <- control_opt$robust
 
   control_ngme

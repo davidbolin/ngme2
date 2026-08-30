@@ -5,6 +5,7 @@ BlockModel - for ngme each replicate
 #define NGME_BLOCK_H
 
 #include "include/MatrixAlgebra.h"
+#include "include/factor_counters.h"
 #include "include/solver.h"
 #include "include/timer.h"
 #include "latent.h"
@@ -130,6 +131,46 @@ protected:
 
   sparse_llt_solver chol_QQ;
 
+  // caching of QQ, its Cholesky factor, and the A*Z block matrix
+  // QQ = K' diag(1/SV) K + (AZ)' D (AZ) only depends on the current
+  // parameters (through K, Z, sigma, noise_sigma, Q_eps) and on the latent /
+  // measurement variance vectors V. None of those change between the Gibbs
+  // draws of a Gaussian model, so assembling and refactorizing QQ once per
+  // optimizer iteration is enough. QQ_valid records whether the cached QQ and
+  // chol_QQ still match the current state; every mutator that can invalidate
+  // them calls invalidate_QQ() / invalidate_AZ().
+  bool QQ_valid{false};
+  // Sparsity pattern QQ had when chol_QQ.analyze() was last run. The symbolic
+  // phase only has to be redone when the pattern actually changes, which for
+  // rational (fractional) approximations happens when the smoothness crosses
+  // an integer and the operator gains or loses factors.
+  bool QQ_analyzed{false};
+  std::vector<int> QQ_pat_outer, QQ_pat_inner;
+  // Remember / compare the sparsity pattern chol_QQ was last analyzed for.
+  void record_QQ_pattern();
+  bool QQ_pattern_changed() const;
+  // AZ = [A_1 Z_1, ..., A_L Z_L] is rebuilt three times per Gibbs draw in the
+  // uncached code; it only depends on the parameters, so cache it alongside QQ.
+  mutable SparseMatrix<double> AZ_cached;
+  mutable bool AZ_valid{false};
+  // Measurement-side pieces. H = sqrt(D) A Z (times sqrt_Rinv in the
+  // correlated case) and the measurement block of QQ -- H'H, or
+  // (AZ)' Q_eps (AZ). This depend on AZ and on the measurement precision only,
+  // never on the latent V. They are therefore constant across the Gibbs draws
+  // of any model with gaussian measurement noise, even when the latent noise
+  // is non-gaussian, where the latent block K' diag(1/SV) K does change every
+  // draw. Splitting the two halves lets the expensive n_obs-sized product be
+  // reused for NIG/GAL/t latent fields.
+  mutable SparseMatrix<double> sqrt_AtSVA_cached;
+  mutable bool sqrt_AtSVA_valid{false};
+  mutable SparseMatrix<double> QQ_measure;
+  mutable bool QQ_measure_valid{false};
+  // G = sqrt(1/SV) K, the latent half of the rMVN draw. Same dependencies as
+  // the latent block of QQ (K and the latent V), so it is rebuilt on exactly
+  // the same occasions
+  mutable SparseMatrix<double> G_cached;
+  mutable bool G_valid{false};
+
   // clock
   std::chrono::milliseconds sampling_time{0}, update_time{0};
 
@@ -148,23 +189,61 @@ public:
 
   void sample_cond_V() {
     if (n_latent > 0) {
-      for (unsigned i = 0; i < n_latent; i++) {
-        (*latents[i]).sample_cond_V();
+      for (int i = 0; i < n_latent; i++) {
+        if (latents[i]->V_may_change())
+          invalidate_QQ();
+        latents[i]->sample_cond_V();
       }
     }
   }
 
   void sample_uncond_V() {
     if (n_latent > 0) {
-      for (unsigned i = 0; i < n_latent; i++) {
-        (*latents[i]).sample_uncond_V();
+      for (int i = 0; i < n_latent; i++) {
+        if (latents[i]->V_may_change())
+          invalidate_QQ();
+        latents[i]->sample_uncond_V();
       }
     }
   }
 
+  // Mark the latent-side caches out of date. Called from the latent V
+  // samplers, which change SV and hence the latent block of QQ and G.
+  void invalidate_QQ() {
+    QQ_valid = false;
+    G_valid = false;
+  }
+  // The measurement precision moved (noise_sigma, noise_V, Q_eps or rho), so
+  // H and the measurement block of QQ have to be rebuilt as well.
+  void invalidate_measurement() {
+    sqrt_AtSVA_valid = false;
+    QQ_measure_valid = false;
+    QQ_valid = false;
+  }
+  // The parameters moved, so K, Z and everything downstream is stale.
+  void invalidate_AZ() {
+    AZ_valid = false;
+    G_valid = false;
+    invalidate_measurement();
+  }
+
+  // AZ = [A_1 Z_1, ..., A_L Z_L], rebuilt only when the parameters changed.
+  const SparseMatrix<double> &get_AZ() const;
+  // Measurement block of QQ, rebuilt only when the measurement precision or
+  // the parameters changed.
+  const SparseMatrix<double> &get_QQ_measure() const;
+  // G = sqrt(1/SV) K, with the same un-clamped 1/SV that sampleW_VY() uses.
+  const SparseMatrix<double> &get_G(const VectorXd &inv_SV) const;
+
+  // Reassemble + refactorize QQ only if the cache is stale.
+  void ensure_QQ() {
+    if (!QQ_valid || ngme_counters::cache_disabled())
+      update_QQ();
+  }
+
   void update_QQ();
   void update_Q_eps(double rho);
-  SparseMatrix<double> get_sqrt_AtSVA() const;
+  const SparseMatrix<double> &get_sqrt_AtSVA() const;
 
   void setW(const VectorXd &);
   void setPrevW(const VectorXd &);

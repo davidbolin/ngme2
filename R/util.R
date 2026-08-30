@@ -683,6 +683,99 @@ is_stationary <- function(B) {
   ncol(B) == 1 && all(B == 1)
 }
 
+# classes accepted as a single mesh throughout the package
+NGME_MESH_CLASSES <- c(
+  "inla.mesh.1d", "inla.mesh", "fm_mesh_1d", "fm_mesh_2d", "metric_graph"
+)
+
+is_ngme_mesh <- function(x) {
+  inherits(x, NGME_MESH_CLASSES)
+}
+
+# a list of meshes, i.g. the output of ngme_make_mesh_repls()
+is_ngme_mesh_list <- function(x) {
+  is.list(x) && !is_ngme_mesh(x) && length(x) > 0 &&
+    all(vapply(x, is_ngme_mesh, logical(1)))
+}
+
+# TRUE if `mesh` given to operator `model` means "one mesh per replicate".
+# For tensor product models the mesh argument is itself a list of meshes,
+# so a per-replicate specification is a list of such lists.
+is_replicate_mesh_arg <- function(mesh, model) {
+  if (isTRUE(model %in% c("tp", "spacetime"))) {
+    return(
+      is.list(mesh) && !is_ngme_mesh(mesh) && length(mesh) > 0 &&
+        all(vapply(mesh, is_ngme_mesh_list, logical(1)))
+    )
+  }
+  is_ngme_mesh_list(mesh)
+}
+
+# Resolve the `mesh` argument of the operator supplied to f().
+# `model_expr` is the (unevaluated) `model=` argument of a parsed f() call,
+# e.g. rw1(mesh = mesh_list), matern(mesh_list) or a symbol bound to an
+# ngme_operator_def. Returns NULL when no mesh can be resolved, otherwise a list
+# with the evaluated mesh, the operator name and a setter returning a model
+# argument with the mesh replaced.
+resolve_f_model_mesh <- function(model_expr, data = NULL, enclos = parent.frame()) {
+  if (is.call(model_expr)) {
+    fname <- as.character(model_expr[[1]])
+    fname <- fname[length(fname)] # strip ngme2:: prefix
+    fn <- tryCatch(
+      get(fname, envir = asNamespace("ngme2"), mode = "function"),
+      error = function(e) NULL
+    )
+    if (is.null(fn)) return(NULL)
+    # match.call() so that a positional mesh, i.g. rw1(mesh_list), is found too
+    matched <- tryCatch(match.call(fn, model_expr), error = function(e) NULL)
+    if (is.null(matched) || is.null(matched[["mesh"]])) return(NULL)
+    mesh <- tryCatch(
+      eval(matched[["mesh"]], envir = data, enclos = enclos),
+      error = function(e) NULL
+    )
+    if (is.null(mesh)) return(NULL)
+    return(list(
+      mesh = mesh,
+      model = fname,
+      set = function(new_mesh) {
+        matched[["mesh"]] <- new_mesh
+        matched
+      }
+    ))
+  }
+
+  # model given as a symbol (or already an object) bound to an operator def
+  obj <- tryCatch(
+    eval(model_expr, envir = data, enclos = enclos),
+    error = function(e) NULL
+  )
+  if (!inherits(obj, "ngme_operator_def") || is.null(obj$args$mesh)) return(NULL)
+  list(
+    mesh = obj$args$mesh,
+    model = obj$model,
+    set = function(new_mesh) {
+      obj$args$mesh <- new_mesh
+      obj
+    }
+  )
+}
+
+# pick the mesh of one replicate out of a per-replicate mesh list
+select_replicate_mesh <- function(mesh_list, level, level_idx, field_name = "") {
+  nms <- names(mesh_list)
+  if (!is.null(nms) && as.character(level) %in% nms) {
+    return(mesh_list[[as.character(level)]])
+  }
+  if (level_idx > length(mesh_list)) {
+    stop(
+      "Not enough meshes provided for field '", field_name, "' at replicate ",
+      level, ". Expected at least ", level_idx, " meshes, but only ",
+      length(mesh_list), " provided."
+    )
+  }
+  mesh_list[[level_idx]]
+}
+
 
 #' @title ngme make mesh for different replicates
 #' @description
@@ -710,21 +803,27 @@ ngme_make_mesh_repls <- function(
 
   stopifnot(length_map(map) == length(replicate))
 
-  mesh_repls <- NULL
-  for (repl in replicate) {
-    map_repl <- subset(map, replicate == repl)
+  if (!dim_map(map) %in% c(1, 2)) {
+    stop("The dimension of the mesh should be 1 or 2.")
+  }
+
+  # one mesh per replicate level, in the same order as levels(as.factor())
+  # used by ngme() to split the data
+  repl_levels <- levels(as.factor(replicate))
+
+  mesh_repls <- list()
+  for (repl in repl_levels) {
+    map_repl <- sub_map(map, as.character(replicate) == repl)
     if (dim_map(map) == 1) {
-      mesh_repls[[as.character(repl)]] <- tryCatch(
+      mesh_repls[[repl]] <- tryCatch(
         fmesher::fm_mesh_1d(map_repl),
         error = function(e) {
           stop("The nodes for making mesh is not valid for replicate id=", repl)
         }
       )
-    } else if (dim_map(map) == 2) {
+    } else {
       stop("Not implemented yet.")
       mesh_repls[[repl]] <- fmesher::fm_mesh_2d(map_repl)
-    } else {
-      stop("The dimension of the mesh should be 1 or 2.")
     }
   }
 
@@ -1240,4 +1339,15 @@ openmp_test <- function() {
     message("OpenMP is available, the default thread number is ", num_threads, ".")
   }
   invisible(num_threads)
+}
+
+# Draw a seed from the ambient R random number stream.
+#
+# Used as the fallback whenever the user does not supply a seed, so that
+# set.seed() controls ngme2's simulation and sampling in the usual R way.
+# The upper bound leaves room for the offsets that callers add to the seed
+# (e.g. seed + 2000, or seed + nn inside an nsim loop) before handing it to
+# set.seed() or to the C++ backend, both of which need a valid integer.
+ngme_random_seed <- function() {
+  sample.int(.Machine$integer.max %/% 2L, 1L)
 }

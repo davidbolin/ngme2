@@ -28,7 +28,11 @@ f(
 \item{model}{an \code{ngme_operator} or \code{ngme_operator_def} created by
 model constructors such as \code{ar1()}, \code{matern()}, \code{bv()}, etc.}
 
-\item{noise}{ngme_noise object, noise_nig() or noise_gal()}
+\item{noise}{ngme_noise object, noise_nig() or noise_gal()
+For a stationary \code{nig} or \code{normal_nig} noise whose \code{nu}
+prior was not set by the user, \code{f()} installs an inverse-exponential
+prior on \code{nu}: \eqn{1/\nu \sim \mathrm{Exp}(\lambda)} with
+\eqn{\lambda = \log(2)/\sum_i h_i}. This is invariant under mesh refinement.}
 
 \item{name}{name of the field, for later use, if not provided, will be "field1" etc.}
 

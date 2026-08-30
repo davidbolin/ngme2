@@ -40,7 +40,9 @@ loo is leave-one-out,
 lpo is leave-percent-out, provide \code{percent} from 1 to 100
 custom is user-defined group, provide \code{target} and \code{data}}
 
-\item{seed}{random seed}
+\item{seed}{random seed. If \code{NULL} (the default), a seed is drawn
+from the current R random number stream, so \code{set.seed()} makes the
+result reproducible.}
 
 \item{print}{print information during computation}
 

@@ -9,7 +9,9 @@
 #' loo is leave-one-out,
 #' lpo is leave-percent-out, provide \code{percent} from 1 to 100
 #' custom is user-defined group, provide \code{target} and \code{data}
-#' @param seed random seed
+#' @param seed random seed. If \code{NULL} (the default), a seed is drawn
+#'   from the current R random number stream, so \code{set.seed()} makes the
+#'   result reproducible.
 #' @param N_sim integer, number of simulations (e.g., estimate MAE, MSE, .. N times)
 #' @param k integer (only for k-fold type)
 #' @param print print information during computation
@@ -643,7 +645,7 @@ compute_err_merged_reps <- function(
     merged_group_name = NULL,
     chain_models = NULL,
     chain_combine = "param_mean") {
-  if (is.null(seed)) seed <- Sys.time()
+  if (is.null(seed)) seed <- ngme_random_seed()
   stopifnot("Not a ngme object." = inherits(ngme, "ngme"))
 
   test_idx <- sort(test_idx)
@@ -873,7 +875,7 @@ compute_err_1rep <- function(
   # extract A and cbind!
   A_pred_block <- Reduce(cbind, x = A_preds)
 
-  if (is.null(seed)) seed <- as.integer(Sys.time())
+  if (is.null(seed)) seed <- ngme_random_seed()
 
   scores <- pred_1 <- pred_2 <- Y_1 <- Y_2 <- list()
 

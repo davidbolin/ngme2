@@ -63,7 +63,7 @@ test_that("test ar1 + normal measurement noise", {
     1:n_obs,
     model = ar1(rho = rho),
     noise = noise_nig(mu = mu, sigma = sigma, nu = nu)
-  ))[[1]]
+  ), seed = 100)[[1]]
   sd(W)
 
   x <- rexp(n_obs)
@@ -73,6 +73,7 @@ test_that("test ar1 + normal measurement noise", {
   fit <- ngme(y ~ 0 + f(1:n_obs, model = ar1(rho = rho), noise = noise_nig()),
     data = data.frame(x = x, y = y),
     control_opt = control_opt(
+      seed = 100,
       rao_blackwellization = TRUE,
       iterations = 500,
       optimizer = sgd(),
@@ -105,7 +106,7 @@ test_that("test ar1 (normal) + NIG noise", {
     model = ar1(rho = rho),
     noise = noise_normal(sigma = sigma_ar)
   )
-  W <- simulate(model)[[1]]
+  W <- simulate(model, seed = 100)[[1]]
   sd(W)
 
   x <- rexp(n_obs)
@@ -126,6 +127,7 @@ test_that("test ar1 (normal) + NIG noise", {
     data = data.frame(x = x, y = y),
     family = noise_nig(),
     control_opt = control_opt(
+      seed = 100,
       iterations = 1000,
       n_parallel_chain = 4,
       # optimizer = precond_sgd(),

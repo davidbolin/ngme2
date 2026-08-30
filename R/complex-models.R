@@ -390,7 +390,8 @@ spacetime <- function(
     return(structure(list(model = "spacetime", args = as.list(environment())), class = "ngme_operator_def"))
   }
   method <- "euler" # for now only support implicit euler
-  if (theta_gamma_x == 0 && theta_gamma_y == 0 && fix_gamma) {
+
+  if (all(theta_gamma_x == 0) && all(theta_gamma_y == 0) && fix_gamma) {
     stabilization <- FALSE
   }
 

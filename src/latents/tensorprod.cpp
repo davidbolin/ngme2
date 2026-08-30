@@ -5,6 +5,7 @@
 // dKtx_x = kt %x% dKx_x
 
 #include "../operator.h"
+#include <algorithm>
 #include "MatrixAlgebra.h"
 #include <unsupported/Eigen/KroneckerProduct>
 
@@ -42,27 +43,98 @@ void Tensor_prod::build_KZ(const VectorXd &theta_K) {
   // Operator base)
 }
 
-bool Tensor_prod::update_dKdZ(const VectorXd &theta_K) {
-  // VectorXd theta_K_1 = theta_K.segment(0, n_theta_1);
-  // VectorXd theta_K_2 = theta_K.segment(n_theta_1, n_theta_2);
-  // // assume K is already updated!!
-  // first->update_dKdZ(theta_K_1);
-  // second->update_dKdZ(theta_K_2);
-  // for (int index=0; index < n_theta_1 + n_theta_2; index++) {
-  //   if (index < n_theta_1) {
-  //     // return kroneckerEigen(dK_1, K_2);
-  //     KroneckerProductSparse<SparseMatrix<double>, SparseMatrix<double> >
-  //     kroneckerEigen(first->get_dK(index), second->getK());
-  //     kroneckerEigen.evalTo(dK[index]);
-  //   } else {
-  //     // return kroneckerEigen(K_1, dK_2);
-  //     KroneckerProductSparse<SparseMatrix<double>, SparseMatrix<double> >
-  //     kroneckerEigen(first->getK(), second->get_dK(index - n_theta_1));
-  //     kroneckerEigen.evalTo(dK[index]);
-  //   }
-  // }
-  // return true;
-  return false;
+
+// Traces of a tensor product operator, without ever factorizing K.
+//
+// With K = K_1 (x) K_2 the derivatives keep the Kronecker structure,
+//     dK/dtheta_1j = (dK_1/dtheta_1j) (x) K_2,
+//     dK/dtheta_2j = K_1 (x) (dK_2/dtheta_2j),
+// and (A (x) B)^-1 = A^-1 (x) B^-1, (A (x) B)(C (x) D) = AC (x) BD give
+//     tr(K^-1 (dK_1 (x) K_2)) = tr(K_1^-1 dK_1) tr(I_n2) = n_2 tr(K_1^-1 dK_1)
+//     tr(K^-1 (K_1 (x) dK_2)) = n_1 tr(K_2^-1 dK_2).
+// The same algebra closes the H_K block. For j, k in the same factor,
+//     tr(K^-1 dK_k K^-1 dK_j) = n_other tr(F^-1 dF_k F^-1 dF_j)
+//     tr(K^-1 d2K_jk)         = n_other tr(F^-1 d2F_jk),
+// so that block is just n_other times the factor's own H_K block. For j in one
+// factor and k in the other the two terms are equal and opposite,
+//     tr(K^-1 dK_k K^-1 dK_j) = tr(K_1^-1 dK_1j) tr(K_2^-1 dK_2k)
+//     d2K/dtheta_1j dtheta_2k = dK_1j (x) dK_2k, same trace,
+// so the cross block vanishes identically.
+bool Tensor_prod::compute_traces_structured(const VectorXd &theta,
+                                            const UpdateOptions &opts) {
+  const int n1 = static_cast<int>(first->getK().rows());
+  const int n2 = static_cast<int>(second->getK().rows());
+  if (n1 <= 0 || n2 <= 0 || n_theta_1 + n_theta_2 != n_theta_K)
+    return false;
+
+  auto budget = [&](int n_self, int n_other) {
+    const long long want =
+        static_cast<long long>(std::max(1, opts.n_trace_iter)) * n_other;
+    return static_cast<int>(std::min<long long>(want, n_self));
+  };
+
+  UpdateOptions sub = opts;
+  sub.compute_K = true;
+  sub.compute_Z = true;
+  sub.compute_dK = true;
+  sub.compute_dZ = false;
+  sub.compute_d2K = opts.compute_HK_trace;
+  sub.compute_d2Z = false;
+  sub.compute_trace = true;
+
+  const bool have_mask =
+      static_cast<int>(opts.fix_mask_thetaK.size()) == n_theta_K;
+
+  UpdateOptions o1 = sub;
+  o1.n_trace_iter = budget(n1, n2);
+  if (have_mask)
+    o1.fix_mask_thetaK.assign(opts.fix_mask_thetaK.begin(),
+                              opts.fix_mask_thetaK.begin() + n_theta_1);
+  else
+    o1.fix_mask_thetaK.clear();
+
+  UpdateOptions o2 = sub;
+  o2.n_trace_iter = budget(n2, n1);
+  if (have_mask)
+    o2.fix_mask_thetaK.assign(opts.fix_mask_thetaK.begin() + n_theta_1,
+                              opts.fix_mask_thetaK.end());
+  else
+    o2.fix_mask_thetaK.clear();
+
+  // Also restores each factor's K to base theta: the numeric differencing in
+  // Operator::update_all rebuilds the composite from perturbed factors and
+  // restores only the composite, leaving the factors at the last perturbed
+  // value.
+  first->update_all(theta.segment(0, n_theta_1), o1);
+  second->update_all(theta.segment(n_theta_1, n_theta_2), o2);
+
+  if (!first->traces_ready() || !second->traces_ready())
+    return false;
+  const VectorXd &t1 = first->get_trace_trK();
+  const VectorXd &t2 = second->get_trace_trK();
+  if (t1.size() != n_theta_1 || t2.size() != n_theta_2)
+    return false;
+
+  if (trace_vals.size() != n_theta_K)
+    trace_vals = VectorXd::Zero(n_theta_K);
+  for (int j = 0; j < n_theta_1; ++j)
+    trace_vals(j) = n2 * t1(j);
+  for (int j = 0; j < n_theta_2; ++j)
+    trace_vals(n_theta_1 + j) = n1 * t2(j);
+
+  if (opts.compute_HK_trace) {
+    const MatrixXd &H1 = first->get_HK_trace();
+    const MatrixXd &H2 = second->get_HK_trace();
+    if (H1.rows() != n_theta_1 || H2.rows() != n_theta_2)
+      return false;
+    if (HK_trace.rows() != n_theta_K || HK_trace.cols() != n_theta_K)
+      HK_trace = MatrixXd::Zero(n_theta_K, n_theta_K);
+    else
+      HK_trace.setZero(); // cross blocks stay zero
+    HK_trace.topLeftCorner(n_theta_1, n_theta_1) = n2 * H1;
+    HK_trace.bottomRightCorner(n_theta_2, n_theta_2) = n1 * H2;
+  }
+  return true;
 }
 
 // Non-separable Space-time model

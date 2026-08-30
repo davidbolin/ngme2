@@ -3,6 +3,7 @@ test_that("test fractional model", {
   skip_if_not_installed("rSPDE")
   skip_if_not_installed("inlabru")
   skip_if_not_installed("sf")
+  set.seed(2024)
   library(fmesher)
   library(rSPDE)
   n_loc <- 1000

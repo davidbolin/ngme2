@@ -24,6 +24,7 @@ Useful links:
 
 Authors:
 \itemize{
+  \item Xiaotian Jin \email{xiaotian.jin@kaust.edu.sa}
   \item David Bolin \email{davidbolin@gmail.com} [copyright holder]
   \item Alexandre Simas \email{alexandre.impa@gmail.com}
   \item Jonas Wallin \email{jonas.wallin81@gmail.com}

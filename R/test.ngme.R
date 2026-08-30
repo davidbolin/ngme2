@@ -12,7 +12,8 @@
 #' @param f_noise noise function
 #' @param n_gibbs_samples number of gibbs samples
 #' @param family family of noise
-#' @param seed seed
+#' @param seed random seed. Defaults to a seed drawn from the current R
+#'   random number stream, so \code{set.seed()} makes the result reproducible.
 #' @param start start value for optimization
 #' @param fix_theta_K fix theta_K
 #' @param fix_theta_mu fix theta_mu
@@ -37,7 +38,7 @@ test_ngme <- function(
     fix_theta_mu = FALSE,
     fix_theta_sigma = FALSE,
     fix_theta_nu = FALSE,
-    seed = Sys.time()) {
+    seed = ngme_random_seed()) {
   if (is.null(control_opt)) control_opt <- control_opt()
 
   set.seed(seed)

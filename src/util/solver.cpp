@@ -10,18 +10,47 @@ double myround(double x) {
   }
 }
 
+// Probe vectors for the Hutchinson estimators.
+//
+// Normally these are N_iter Rademacher vectors and the estimators average
+// u^T A u over them. When the system is no larger than the probe budget
+// (n <= N_iter) that is wasteful and needlessly noisy: n probes along the
+// coordinate axes give the trace exactly, for no more work. Scaling them by
+// sqrt(n) makes the exact case fall out of the same 1/N_iter averaging the
+// stochastic case uses, so no estimator code has to know which mode it is in:
+//     sum_i (sqrt(n) e_i)^T A (sqrt(n) e_i) / n = sum_i A_ii = tr(A).
+void sparse_llt_solver::ensure_U(unsigned int seed) {
+  if (n > 0 && N_iter >= n) {
+    if (U_computed && exact_trace && U.rows() == n && U.cols() == n)
+      return;
+    N_iter = n;
+    U = Eigen::MatrixXd::Identity(n, n) * std::sqrt(static_cast<double>(n));
+    exact_trace = true;
+    U_seed = seed;
+    U_computed = true;
+    return;
+  }
+  if (U_computed && !exact_trace && U_seed == seed && U.rows() == n &&
+      U.cols() == N_iter)
+    return;
+  std::mt19937 rng(seed);
+  std::uniform_real_distribution<double> dist(-1.0, 1.0);
+  U.resize(n, N_iter);
+  for (int i = 0; i < n; ++i)
+    for (int j = 0; j < N_iter; ++j)
+      U(i, j) = dist(rng);
+  U = U.unaryExpr(std::ref(myround));
+  exact_trace = false;
+  U_seed = seed;
+  U_computed = true;
+}
+
 double sparse_llt_solver::trace(const SparseMatrix<double, 0, int> &M,
                                 unsigned int seed) {
   if (QU_computed == 0) {
-    std::mt19937 rng(seed);
-    std::uniform_real_distribution<double> dist(-1.0, 1.0);
-    for (int i = 0; i < n; ++i) {
-      for (int j = 0; j < N_iter; ++j) {
-        U(i, j) = dist(rng);
-      }
-    }
-    U = U.unaryExpr(std::ref(myround));
-    if (isSymmetric) {
+    ensure_U(seed);
+    if (isSymmetric || use_lu) {
+      // Symmetric: QU = K^{-1} U. LU mode: solve() is already K^{-1}.
       QU = solve(U);
     } else {
       // For non-symmetric mode, factorization is on Q = K^T K; we need Q^{-1} U
@@ -54,9 +83,11 @@ double sparse_llt_solver::trace(const SparseMatrix<double, 0, int> &M,
   }
 
   Eigen::MatrixXd MQU;
-  if (isSymmetric || K_last.rows() == 0) {
+  if (isSymmetric || use_lu || K_last.rows() == 0) {
+    // QU is already K^{-1} U, so u^T M K^{-1} u estimates tr(K^{-1} M).
     MQU = M * QU;
   } else {
+    // Normal equations: QU = (K^T K)^{-1} U, and (K^T K)^{-1} K^T = K^{-1}.
     MQU = (K_last.transpose() * M) * QU;
   }
   double t = 0;
@@ -79,16 +110,9 @@ double sparse_llt_solver::trace2(const SparseMatrix<double, 0, int> &A,
                                  unsigned int seed) {
   // Prepare Hutchinson vectors and their Q^{-1} images
   if (QU_computed == 0) {
-    std::mt19937 rng(seed);
-    std::uniform_real_distribution<double> dist(-1.0, 1.0);
-    for (int i = 0; i < n; ++i) {
-      for (int j = 0; j < N_iter; ++j) {
-        U(i, j) = dist(rng);
-      }
-    }
-    U = U.unaryExpr(std::ref(myround));
-    if (isSymmetric) {
-      QU = solve(U); // Q^{-1} U where Q=K
+    ensure_U(seed);
+    if (isSymmetric || use_lu) {
+      QU = solve(U); // K^{-1} U
     } else {
       // For non-symmetric mode, QU = (K^T K)^{-1} U (no K^T on RHS here)
       if (solver_type == 0)

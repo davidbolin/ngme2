@@ -23,10 +23,13 @@ test_that("generic model == AR1 model", {
   ar1$param_name
   ar1$param_trans
 
+  # K = rho C + G + sqrt(1 - rho^2) E11: the last term is the stationary
+  # initial condition, which has to travel as its own matrix because the
+  # coefficient is not linear in theta_K.
   generic_ar1 <- generic(
     theta_K = c(x = g(0.5)), # trans(X) = rho
-    trans = c(x = "tanh"),
-    matrices = list(ar1$C, ar1$G),
+    trans = list(x = c("tanh", "null", "sech")),
+    matrices = list(ar1$C, ar1$G, ar1$E11),
     h = ar1$h,
     mesh = 1:n_obs
   )
@@ -34,9 +37,9 @@ test_that("generic model == AR1 model", {
   generic_ar1$param_name
   generic_ar1$param_trans
 
-  expect_equal(ar1$K, ar1$C * 0.5 + ar1$G)
+  expect_equal(ar1$K, ar1$C * 0.5 + ar1$G + sqrt(1 - 0.5^2) * ar1$E11)
   expect_equal(generic_ar1$K, ar1$K)
-  expect_equal(generic_ar1$matrices, list(ar1$C, ar1$G))
+  expect_equal(generic_ar1$matrices, list(ar1$C, ar1$G, ar1$E11))
 
   control <- control_opt(
     seed = seed,

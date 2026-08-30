@@ -95,7 +95,9 @@ model <- generic_ns(
   h = rep(1, n)
 )
 
-# AR1 model representation: rho * C + G
+# AR1 model representation: rho * C + G (without the stationary (1,1) entry,
+# which is not a linear coefficient -- see ar1_obj$E11 and the "sech"
+# transformation in name2fun())
 ar1_obj <- ar1(1:10, rho = 0.5)
 g <- name2fun("tanh", inv = TRUE)
 generic_ar1 <- generic_ns(

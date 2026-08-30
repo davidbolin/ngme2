@@ -6,6 +6,7 @@
 \usage{
 control_ngme(
   n_gibbs_samples = 5,
+  post_burnin = 100,
   fix_beta = FALSE,
   n_post_samples = 100,
   beta_init = NULL,
@@ -15,6 +16,12 @@ control_ngme(
 }
 \arguments{
 \item{n_gibbs_samples}{number of gibbs samples at each iteration}
+
+\item{post_burnin}{number of Gibbs sweeps to discard before recording the
+posterior samples of W and V returned by \code{ngme()}. A burn-in is
+needed because the chain is restarted from the stored W and V, which are
+averaged over the parallel chains and so are not themselves a draw from
+the posterior. Set to 0 only if you know the stored state is a valid draw.}
 
 \item{fix_beta}{logical, fix fixed effect estimation}
 

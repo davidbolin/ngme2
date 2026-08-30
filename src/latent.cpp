@@ -184,6 +184,9 @@ Latent::Latent(const Rcpp::List &model_list, unsigned long seed)
   int solver_type = Rcpp::as<int>(model_list["solver_type"]);
   n_trace_iter_ = n_trace_iter;
   solver_type_ = solver_type;
+  nonsym_solver_ = model_list.containsElementNamed("nonsym_solver")
+                       ? Rcpp::as<int>(model_list["nonsym_solver"])
+                       : 0;
   robust_ = model_list.containsElementNamed("robust")
                 ? Rcpp::as<bool>(model_list["robust"])
                 : false;
@@ -695,10 +698,16 @@ void Latent::update_each_iter(bool need_precond) {
   uopts.compute_d2K = need_precond;
   uopts.compute_d2Z = need_precond;
   uopts.compute_HK_trace = need_precond && !zero_trace;
+  // The operator trace is read below only under these same conditions; saying
+  // so lets update_all skip factorizing K when nothing will use it.
+  uopts.compute_trace = !fix_flag[latent_fix_theta_K] && !zero_trace;
   uopts.robust_reanalyze = robust_;
   uopts.n_trace_iter = n_trace_iter_;
   uopts.solver_type = solver_type_;
+  uopts.nonsym_solver = nonsym_solver_;
   uopts.fix_mask_thetaK = ope->get_fix_mask_K();
+  // Fresh probes each iteration.
+  uopts.trace_seed = static_cast<unsigned int>(latent_rng());
   ope->update_all(theta_K, uopts);
 
   mu = B_mu * theta_mu;

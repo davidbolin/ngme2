@@ -11,7 +11,7 @@ test_that("test sum of ar1 and matern", {
   # AR1 process
   rho_true <- 0.7
   ar1_model <- f(time_points, model = ar1(rho = rho_true), noise = noise_normal(sigma = 1.5))
-  W_ar1 <- simulate(ar1_model)[[1]]
+  W_ar1 <- simulate(ar1_model, seed = 123)[[1]]
   sd(W_ar1)
 
   # Matern process
@@ -19,7 +19,7 @@ test_that("test sum of ar1 and matern", {
   mesh <- fm_mesh_1d(seq(1, n_obs, length.out = 50))
   kappa_true <- 0.3
   matern_model <- f(time_points, model = matern(mesh, kappa = kappa_true), noise = noise_normal(sigma = 4.0))
-  W_matern <- simulate(matern_model)[[1]]
+  W_matern <- simulate(matern_model, seed = 124)[[1]]
   sd(W_matern)
 
   # Measurement noise

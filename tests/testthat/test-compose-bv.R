@@ -130,7 +130,7 @@ test_that("test on bv(matern, matern)", {
     noise = list(A = noise_nig(), B = noise_nig())
   )
 
-  W <- simulate(true_model)[[1]]
+  W <- simulate(true_model, seed = 2)[[1]]
   n_obs <- length(W)
   Y <- W + rnorm(n_obs, sd = 0.5)
   length(Y)
@@ -225,7 +225,7 @@ test_that("test on bv matern NIG", {
   )
   true_model
 
-  sim_fields <- simulate(true_model)[[1]]
+  sim_fields <- simulate(true_model, seed = 3)[[1]]
 
   sd_1 <- 0.6
   sd_2 <- 0.9

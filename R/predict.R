@@ -18,7 +18,8 @@
 #'   - "0.XXXq": any quantile specified as probability (e.g., "0.025q", "0.5q", "0.975q")
 #' @param sampling_size size of posterior sampling
 #' @param burnin_size size of posterior burnin
-#' @param seed random seed
+#' @param seed random seed. Defaults to a seed drawn from the current R
+#'   random number stream, so \code{set.seed()} makes the result reproducible.
 #' @param train_idx optional vector of training indices to use for posterior sampling.
 #'   If provided, only these indices from the original data will be used for training,
 #'   similar to cross-validation. If NULL, uses all original training data.
@@ -44,7 +45,7 @@ predict.ngme <- function(
     estimator = c("mean", "sd", "0.05q", "0.95q", "median", "mode"),
     sampling_size = 500,
     burnin_size = 100,
-    seed = Sys.time(),
+    seed = ngme_random_seed(),
     train_idx = NULL,
     chain_combine = c("param_mean", "predictive_average"),
     return_samples = FALSE,
@@ -113,7 +114,7 @@ predict_ngme_param_mean <- function(
     estimator = c("mean", "sd", "0.05q", "0.95q", "median", "mode"),
     sampling_size = 500,
     burnin_size = 100,
-    seed = Sys.time(),
+    seed = ngme_random_seed(),
     train_idx = NULL,
     return_samples = FALSE) {
   fm <- attr(object, "fit")$formula

@@ -14,7 +14,7 @@ compute_ngme_sgld_samples(
   alpha = 0.6,
   t0 = 10,
   start_sd = 0.2,
-  seed = Sys.time(),
+  seed = ngme_random_seed(),
   verbose = FALSE,
   name = "all",
   burnin_iter = 0,
@@ -45,7 +45,9 @@ compute_ngme_sgld_samples(
 
 \item{start_sd}{standard deviation for randomized chain initialization.}
 
-\item{seed}{random seed for SGLD stage.}
+\item{seed}{random seed for SGLD stage. Defaults to a seed drawn from the
+current R random number stream, so \code{set.seed()} makes the result
+reproducible.}
 
 \item{verbose}{logical; print optimization progress.}
 

@@ -17,6 +17,10 @@ has_pardiso <- function() {
     .Call(`_ngme2_has_pardiso`)
 }
 
+ngme_factor_counters <- function(reset = FALSE) {
+    .Call(`_ngme2_ngme_factor_counters`, reset)
+}
+
 compute_log_like_cpp <- function(R_ngme) {
     .Call(`_ngme2_compute_log_like_cpp`, R_ngme)
 }

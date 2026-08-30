@@ -9,6 +9,10 @@
 #' @param model  an \code{ngme_operator} or \code{ngme_operator_def} created by
 #'   model constructors such as \code{ar1()}, \code{matern()}, \code{bv()}, etc.
 #' @param noise  ngme_noise object, noise_nig() or noise_gal()
+#'   For a stationary \code{nig} or \code{normal_nig} noise whose \code{nu}
+#'   prior was not set by the user, \code{f()} installs an inverse-exponential
+#'   prior on \code{nu}: \eqn{1/\nu \sim \mathrm{Exp}(\lambda)} with
+#'   \eqn{\lambda = \log(2)/\sum_i h_i}. This is invariant under mesh refinement.
 #' @param name   name of the field, for later use, if not provided, will be "field1" etc.
 #' @param data      specifed or inherit from ngme() function
 #' @param group   group factor indicate resposne variable, can be inherited from ngme() function, (used for bivariate model)
@@ -89,7 +93,12 @@ f <- function(
       return(noise_obj)
     }
 
-    h_star <- stats::median(h_vec, na.rm = TRUE)
+    # nu carries units of inverse volume: V_i ~ IG(mean = h_i, var = h_i / nu),
+    # so [nu] = 1/[h]. The scale it must be referred to is therefore the domain
+    # measure sum(h).
+    # The prior is 1/nu ~ Exp(lambda), i.e. prior median nu = lambda/log(2),
+    # here placing it at nu * (domain measure) = 1.
+    h_star <- sum(h_vec, na.rm = TRUE)
     if (!is.finite(h_star) || h_star <= 0) {
       return(noise_obj)
     }
@@ -255,8 +264,16 @@ f <- function(
 
   # Build A matrix
   A <- if (is.null(A)) {
-    # If mesh_list is present, we defer A matrix construction for replicates
+    # If mesh_list is present, A is built per replicate further below
     if (!is.null(mesh_list)) {
+      if (is.null(replicate)) {
+        stop(
+          "A list of meshes was given to f() without replicate information, ",
+          "so the observation matrix cannot be built. Either pass ",
+          "replicate= to f(), or use ngme(..., replicate=) which selects one ",
+          "mesh of the list per replicate."
+        )
+      }
       NULL
     } else {
       ngme_build_A(model_name, mesh, map, operator, group)

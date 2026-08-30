@@ -350,7 +350,9 @@ ngme_batch_ci <- function(
 #' @param t0 non-negative schedule offset in
 #'   \eqn{\eta_t = \eta_0 (t + t0)^{-\alpha}}.
 #' @param start_sd standard deviation for randomized chain initialization.
-#' @param seed random seed for CI-stage optimization.
+#' @param seed random seed for CI-stage optimization. Defaults to a seed drawn
+#'   from the current R random number stream, so \code{set.seed()} makes the
+#'   result reproducible.
 #' @param verbose logical; print optimization progress.
 #' @param level confidence level for CI.
 #' @param name parameter block for CI (`"all"`, latent name, or `"general"`).
@@ -380,7 +382,7 @@ compute_ngme_ci <- function(
     n_parallel_chain = 4,
     t0 = 1,
     start_sd = 0.2,
-    seed = Sys.time(),
+    seed = ngme_random_seed(),
     verbose = FALSE,
     level = 0.95,
     name = "all",
@@ -517,7 +519,9 @@ compute_ngme_CI <- compute_ngme_ci
 #' @param alpha polynomial schedule exponent used by `poly_decay(alpha, t0)`.
 #' @param t0 non-negative schedule offset.
 #' @param start_sd standard deviation for randomized chain initialization.
-#' @param seed random seed for SGLD stage.
+#' @param seed random seed for SGLD stage. Defaults to a seed drawn from the
+#'   current R random number stream, so \code{set.seed()} makes the result
+#'   reproducible.
 #' @param verbose logical; print optimization progress.
 #' @param name parameter block to extract: `"all"` (default), latent model name,
 #'   or `"general"`.
@@ -550,7 +554,7 @@ compute_ngme_sgld_samples <- function(
     alpha = 0.6,
     t0 = 10,
     start_sd = 0.2,
-    seed = Sys.time(),
+    seed = ngme_random_seed(),
     verbose = FALSE,
     name = "all",
     burnin_iter = 0,

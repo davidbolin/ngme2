@@ -188,7 +188,15 @@ parametrization is \eqn{nu = nu_lower_bound + \exp(B_\nu \theta_\nu)} so
 \item{rho}{used when corr_measurement=TRUE, starting point for correlation}
 
 \item{prior}{prior specification created by \code{priors(...)}. Supported
-keys are \code{mu}, \code{sigma}, and \code{nu}.}
+keys are \code{mu}, \code{sigma}, and \code{nu}. Any key left unset gets
+a weakly-informative normal prior on the coefficient scale, \emph{except}
+that for a stationary \code{nig} or \code{normal_nig} latent noise
+\code{f()} replaces the \code{nu} prior with an inverse-exponential one
+once the mesh is known: \eqn{1/\nu \sim \mathrm{Exp}(\lambda)} with
+\eqn{\lambda = \log(2) / \sum_i h_i}, placing the prior median of
+\eqn{\nu} at one over the domain measure. The \code{prior_nu} field of a
+bare noise object is therefore only a placeholder until it is passed to
+\code{f()}; supplying \code{nu} here suppresses that substitution.}
 
 \item{...}{additional arguments}
 

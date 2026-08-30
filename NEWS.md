@@ -1,3 +1,28 @@
+# ngme2 (development version)
+
+* Update estimation code to only reassemble and refactorize the latent precision
+  matrix `QQ` when it can actually have changed. The matrix is also split into 
+  `K' diag(1/SV) K` and its measurement block `(AZ)' D (AZ)`, and these are 
+  caches separately. Results are unchanged by the caching and setting the 
+  environment variable `NGME2_DISABLE_FACTOR_CACHE` restores the uncached behaviour.
+* Fixed a bug for non-symmetric operators, which made the preconditioner Hessian
+  incorrect and the first-order trace far noisier than necessary. These are now 
+  handled by factorizing `K` directly with a sparse LU. The new 
+  `control_opt(nonsym_solver = )` selects it: `"lu"` (default) or `"normal_equations"` 
+  to reproduce results from 0.9.8 and earlier. 
+* Fixed the default prior on the NIG/GAL `nu` parameter, which was strongly
+  biasing every non-Gaussian latent field on a fine mesh. The prior is now 
+  mesh dependent so that it is equally uninformative independently of mesh width.
+* Increased the burnin for the Gibbs chain for the posterior samples of `W` and `V` 
+  that `ngme()` returns from 1 to 100, and before a posterior `simulate()` draw. 
+* Default random seeds are now drawn from the ambient R random number stream
+  instead of the system clock, so `set.seed()` makes `simulate()`,
+  `control_opt()`, `ngme()`, `predict()`, `cross_validation()`,
+  `compute_ngme_ci()`, `compute_ngme_sgld_samples()` and `test_ngme()`
+  reproducible in the usual R way. 
+* Restore AR1 model to use stationary initial conditions and fix all models with 
+  triangular operators to use exact trace calculations. 
+
 # ngme2 0.9.8 (2026-05-19)
 
 * Add `pm25_quarterly_2022`, a processed example dataset of quarterly

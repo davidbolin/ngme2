@@ -285,7 +285,7 @@ ngme <- function(
         sampling_cpp(
           ngme_model$replicates[[i]],
           n = control_ngme$n_post_samples,
-          n_burnin = 1,
+          n_burnin = control_ngme$post_burnin %||% 100L,
           posterior = TRUE,
           seed = control_opt$seed
         ),
@@ -1119,19 +1119,26 @@ ngme_parse_formula <- function(
   levels <- levels(replicate)
   blocks_rep <- list() # of length n_repl
 
-  # Validate mesh lists if any f() calls use them
-  for (tmp in pre_model) {
-    if (!is.null(tmp$mesh) && is.list(tmp$mesh) && !inherits(tmp$mesh, c("inla.mesh.1d", "inla.mesh", "fm_mesh_1d", "fm_mesh_2d", "metric_graph"))) {
-      n_meshes <- length(tmp$mesh)
-      n_repls <- length(levels)
-      if (n_meshes < n_repls) {
-        stop(paste("Insufficient meshes provided for field '", tmp$name, "'. ",
-          "Expected ", n_repls, " meshes for ", n_repls, " replicates, ",
-          "but only ", n_meshes, " meshes were provided.",
-          sep = ""
-        ))
-      }
+  # Resolve and validate per-replicate mesh lists, i.g.
+  # f(t, model = rw1(mesh = ngme_make_mesh_repls(...))).
+  # The mesh lives in the operator call inside f(), so it is resolved here once
+  # and the mesh of the replicate at hand is substituted before evaluating f().
+  repl_mesh <- list()
+  for (f_name in names(pre_model)) {
+    tmp <- pre_model[[f_name]]
+    info <- resolve_f_model_mesh(tmp$model, data, global_env_first)
+    if (is.null(info) || !is_replicate_mesh_arg(info$mesh, info$model)) next
+
+    n_meshes <- length(info$mesh)
+    n_repls <- length(levels)
+    if (n_meshes < n_repls) {
+      stop(paste("Insufficient meshes provided for field '", f_name, "'. ",
+        "Expected ", n_repls, " meshes for ", n_repls, " replicates, ",
+        "but only ", n_meshes, " meshes were provided.",
+        sep = ""
+      ))
     }
+    repl_mesh[[f_name]] <- info
   }
 
   noise_new <- update_noise(noise, n = length(ngme_response))
@@ -1159,36 +1166,20 @@ ngme_parse_formula <- function(
 
     # re-evaluate each f model using idx
     models_rep <- list()
-    for (tmp in pre_model) {
+    for (f_name in names(pre_model)) {
+      tmp <- pre_model[[f_name]]
       tmp$subset <- idx
 
-      # Evaluate mesh parameter to get actual value
-      actual_mesh <- if (is.null(tmp$mesh)) NULL else eval(tmp$mesh, envir = data, enclos = global_env_first)
-
-      # Handle mesh selection for different replicates
-      if (
-        tmp$model != "spacetime" &&
-          !is.null(actual_mesh) &&
-          is.list(actual_mesh) &&
-          !inherits(actual_mesh, c("inla.mesh.1d", "inla.mesh", "fm_mesh_1d", "fm_mesh_2d", "metric_graph"))
-      ) {
-        # mesh is a list of meshes for different replicates
-        mesh_list <- actual_mesh
-
-        # Convert level to numeric index if needed
-        replicate_idx <- which(levels == level)
-
-        # Check if we have enough meshes for this replicate
-        if (replicate_idx <= length(mesh_list)) {
-          selected_mesh <- mesh_list[[replicate_idx]]
-        } else {
-          stop(paste("Not enough meshes provided for replicate", level, ". Expected at least", replicate_idx, "meshes, but only", length(mesh_list), "provided."))
-        }
-
-        # Replace the mesh parameter in the call with the selected mesh
-        tmp$mesh <- selected_mesh
-
-        # Force A matrix to be NULL so it gets rebuilt with the correct mesh
+      # Give this replicate its own mesh, so that the operator and the A matrix
+      # are built against it instead of against the whole list of meshes.
+      if (!is.null(repl_mesh[[f_name]])) {
+        info <- repl_mesh[[f_name]]
+        tmp$model <- info$set(
+          select_replicate_mesh(
+            info$mesh, level, which(levels == level), f_name
+          )
+        )
+        # the A matrix has to be rebuilt against this replicate's mesh
         tmp$A <- NULL
       }
 

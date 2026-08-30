@@ -11,7 +11,9 @@
 
 \item{nsim}{number of simulations}
 
-\item{seed}{seed}
+\item{seed}{random seed. If \code{NULL} (the default), a seed is drawn
+from the current R random number stream, so \code{set.seed()} makes the
+result reproducible.}
 
 \item{...}{ignored}
 }

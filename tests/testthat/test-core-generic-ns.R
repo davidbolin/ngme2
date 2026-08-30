@@ -236,8 +236,12 @@ test_that("generic_ns model == AR1 model", {
   generic_ar1$param_name
   generic_ar1$param_trans
 
-  expect_equal(ar1$K, ar1$C * 0.5 + ar1$G)
-  expect_equal(generic_ar1$K, ar1$K)
+  # ar1() carries the stationary initial condition sqrt(1 - rho^2) at (1,1).
+  # generic_ns applies ONE transformation per parameter (a diagonal coefficient
+  # built by basis expansion), so it can represent the linear part rho C + G
+  # but not that entry, whose coefficient is not linear in theta_K.
+  expect_equal(ar1$K, ar1$C * 0.5 + ar1$G + sqrt(1 - 0.5^2) * ar1$E11)
+  expect_equal(generic_ar1$K, ar1$C * 0.5 + ar1$G)
   expect_equal(generic_ar1$matrices, list(ar1$C, ar1$G))
 
   control <- control_opt(
@@ -284,7 +288,13 @@ test_that("generic_ns model == AR1 model", {
   est_rho_generic <- ar1_th2a(ngme_result(fit_generic, "generic")$rho)
   print(est_rho_generic)
 
-  expect_equal(est_rho_generic[[1]][1], est_rho_ar1[[1]][1])
+  # ar1() and this generic_ns model are no longer the same operator -- ar1
+  # carries the stationary sqrt(1 - rho^2) at (1,1), which generic_ns cannot
+  # express -- so their rho estimates need not coincide. What is still exact,
+  # and is checked above, is that generic_ns assembles rho C + G. On n_obs = 5
+  # that one entry moves rho substantially, so no tolerance is asserted here.
+  expect_true(is.finite(est_rho_generic[[1]][1]))
+  expect_true(is.finite(est_rho_ar1[[1]][1]))
 })
 
 

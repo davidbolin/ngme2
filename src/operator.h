@@ -43,7 +43,14 @@ struct UpdateOptions {
   bool compute_d2K{false};
   bool compute_d2Z{false};
   bool compute_HK_trace{false};
-  // When true, re-run symbolic analyze() before each numeric factorization.
+  // tr(K^{-1} dK). Cleared by callers that do not need it (theta_K fixed, or a
+  // zero-trace operator), which lets update_all skip factorizing K altogether.
+  bool compute_trace{true};
+  // Seed for the Hutchinson probe vectors.
+  unsigned int trace_seed{0};
+  // Deprecated / no longer read: the symbolic analyze() is now re-run exactly
+  // when K's sparsity pattern changes, which is strictly better than an
+  // unconditional refresh (analyze() is a pure function of the pattern).
   bool robust_reanalyze{false};
   bool prefer_analytic_dK{true};
   bool prefer_analytic_dZ{true};
@@ -51,6 +58,8 @@ struct UpdateOptions {
   bool prefer_analytic_d2Z{false};
   int n_trace_iter{8};
   int solver_type{0};
+  // 0 = LU of K, 1 = Cholesky of K^T K (non-symmetric operators only)
+  int nonsym_solver{0};
   double eps_dK{1e-4};
   double eps_dZ{1e-4};
   DiffMode diff_dK_mode{DiffMode::Forward};
@@ -83,6 +92,11 @@ protected:
 
   // Global modes (fixed at construction)
   bool analyzed_cholK{false};
+  // Sparsity pattern K had when cholK_solver.analyze() was last run. For most
+  // operators the pattern is fixed and the symbolic phase runs exactly once;
+  std::vector<int> K_pat_outer, K_pat_inner;
+  void record_K_pattern();
+  bool K_pattern_changed() const;
   VectorXd trace_vals; // size n_theta_K; tr(K^-1 dK) or NormalEq variant
   bool trace_ready{false};
   MatrixXd HK_trace; // n_theta_K x n_theta_K; H_K trace block
@@ -132,6 +146,25 @@ public:
   // Core builders for K and Z
   // New unified builder: preferred override in subclasses
   virtual void build_KZ(const VectorXd &theta) = 0;
+
+  // Structural shortcut for the traces. An operator whose K has exploitable
+  // structure can fill trace_vals (and HK_trace, when opts.compute_HK_trace)
+  // itself and return true; update_all then skips the factorization of K
+  // entirely, since cholK_solver exists for nothing else. Default: no
+  // shortcut, use the generic Hutchinson path.
+  virtual bool compute_traces_structured(const VectorXd & /*theta*/,
+                                         const UpdateOptions & /*opts*/) {
+    return false;
+  }
+
+protected:
+  // Exact O(n) traces for a triangular K, see operator.cpp. Returns false if K
+  // is not triangular (or has a zero on the diagonal), leaving the caller to
+  // fall back on the factorization.
+  bool try_triangular_traces(const UpdateOptions &opts, bool want_trace,
+                             bool want_HK);
+
+public:
 
   // Optional analytic derivatives: return true if both dK and/or dZ were set
   virtual bool update_dKdZ(const VectorXd &) {
@@ -222,7 +255,8 @@ public:
   Tensor_prod(const Rcpp::List &);
 
   void build_KZ(const VectorXd &) override;
-  bool update_dKdZ(const VectorXd &) override;
+  bool compute_traces_structured(const VectorXd &,
+                                 const UpdateOptions &) override;
 };
 
 class Spacetime : public Operator {

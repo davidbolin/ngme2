@@ -1,7 +1,144 @@
 #include "operator.h"
+#include "include/factor_counters.h"
+#include <algorithm>
+#include <cmath>
 
 // for initialize Latent models
 Operator::~Operator() = default;
+
+void Operator::record_K_pattern() {
+  const int outer = K.outerSize() + 1;
+  const int nnz = static_cast<int>(K.nonZeros());
+  K_pat_outer.assign(K.outerIndexPtr(), K.outerIndexPtr() + outer);
+  K_pat_inner.assign(K.innerIndexPtr(), K.innerIndexPtr() + nnz);
+  analyzed_cholK = true;
+}
+
+bool Operator::K_pattern_changed() const {
+  if (!analyzed_cholK)
+    return true;
+  if (K_pat_outer.size() != static_cast<size_t>(K.outerSize()) + 1)
+    return true;
+  if (K_pat_inner.size() != static_cast<size_t>(K.nonZeros()))
+    return true;
+  if (!std::equal(K_pat_outer.begin(), K_pat_outer.end(), K.outerIndexPtr()))
+    return true;
+  return !std::equal(K_pat_inner.begin(), K_pat_inner.end(),
+                     K.innerIndexPtr());
+}
+
+// Exact traces for a triangular operator, in O(n) and with no factorization.
+//
+// If K is triangular then so is K^{-1}, and for lower-triangular K and dK the
+// only term surviving on the diagonal of the product is k = i:
+//     (K^{-1} dK)_ii = sum_k (K^{-1})_ik (dK)_ki = (dK)_ii / K_ii,
+// since (K^{-1})_ik = 0 for k > i and (dK)_ki = 0 for k < i (and symmetrically
+// for upper-triangular). Hence
+//     tr(K^{-1} dK)              = sum_i (dK)_ii / K_ii
+//     tr(K^{-1} dK_k K^{-1} dK_j) = sum_i (dK_k)_ii (dK_j)_ii / K_ii^2
+bool Operator::try_triangular_traces(const UpdateOptions &opts, bool want_trace,
+                                     bool want_HK) {
+  const int n = static_cast<int>(K.rows());
+  if (n == 0 || K.rows() != K.cols())
+    return false;
+
+  // Orientations a matrix is compatible with: bit 0 = no entries above the
+  // diagonal, bit 1 = none below. A diagonal matrix sets both.
+  auto orient = [](const SparseMatrix<double> &M, int n) {
+    if (M.rows() != n || M.cols() != n)
+      return 0;
+    int o = 3;
+    for (int c = 0; c < M.outerSize() && o; ++c) {
+      for (SparseMatrix<double>::InnerIterator it(M, c); it; ++it) {
+        if (it.value() == 0.0)
+          continue;
+        if (it.row() < it.col())
+          o &= ~1;
+        if (it.row() > it.col())
+          o &= ~2;
+        if (!o)
+          break;
+      }
+    }
+    return o;
+  };
+
+  // The cancellation that makes the diagonal formula exact needs K and every
+  // derivative used to share one orientation: (K^{-1})_ik = 0 for k > i kills
+  // the sum only when (dK)_ki = 0 for k < i as well. Checking K alone would be
+  // wrong for an operator whose K happens to be diagonal at the current theta
+  // while dK is not triangular.
+  int o = orient(K, n);
+  if (!o)
+    return false;
+  for (int j = 0; j < n_theta_K && o; ++j) {
+    if (!opts.fix_mask_thetaK.empty() && opts.fix_mask_thetaK[j])
+      continue;
+    if ((int)dK.size() <= j)
+      return false;
+    o &= orient(dK[j], n);
+  }
+  if (want_HK && !d2K.empty()) {
+    for (int j = 0; j < n_theta_K && o; ++j)
+      for (int k = j; k < n_theta_K && o; ++k)
+        if (d2K[j][k].rows() == n)
+          o &= orient(d2K[j][k], n);
+  }
+  if (!o)
+    return false;
+
+  VectorXd d(n);
+  for (int i = 0; i < n; ++i) {
+    const double v = K.coeff(i, i);
+    if (!(std::abs(v) > 0.0))
+      return false; // singular; let the generic path deal with it
+    d(i) = v;
+  }
+
+  auto diag_ratio = [&](const SparseMatrix<double> &M) {
+    double t = 0.0;
+    for (int i = 0; i < n; ++i)
+      t += M.coeff(i, i) / d(i);
+    return t;
+  };
+
+  if (want_trace) {
+    if (trace_vals.size() != n_theta_K)
+      trace_vals = VectorXd::Zero(n_theta_K);
+    for (int j = 0; j < n_theta_K; ++j) {
+      if (!opts.fix_mask_thetaK.empty() && opts.fix_mask_thetaK[j]) {
+        trace_vals(j) = 0.0;
+        continue;
+      }
+      trace_vals(j) = diag_ratio(dK[j]);
+    }
+  }
+
+  if (want_HK) {
+    if (HK_trace.rows() != n_theta_K || HK_trace.cols() != n_theta_K)
+      HK_trace = MatrixXd::Zero(n_theta_K, n_theta_K);
+    else
+      HK_trace.setZero();
+    MatrixXd r(n, n_theta_K); // (dK_j)_ii / K_ii
+    for (int j = 0; j < n_theta_K; ++j)
+      for (int i = 0; i < n; ++i)
+        r(i, j) = dK[j].coeff(i, i) / d(i);
+    for (int j = 0; j < n_theta_K; ++j) {
+      for (int k = j; k < n_theta_K; ++k) {
+        double t1 = 0.0;
+        for (int i = 0; i < n; ++i)
+          t1 -= r(i, k) * r(i, j);
+        double t2 = 0.0;
+        if (!d2K.empty() && d2K[j][k].rows() == n)
+          t2 = diag_ratio(d2K[j][k]);
+        HK_trace(j, k) = t1 + t2;
+        if (j != k)
+          HK_trace(k, j) = HK_trace(j, k);
+      }
+    }
+  }
+  return true;
+}
 
 // Unified updater: update K, Z, (optionally) dK, dZ, factorization, and traces
 void Operator::update_all(const VectorXd &theta, const UpdateOptions &opts) {
@@ -152,16 +289,42 @@ void Operator::update_all(const VectorXd &theta, const UpdateOptions &opts) {
     }
   }
 
-  // 3) Factorization (init once with symmetric flag and control params)
+  // 3) Factorization. cholK_solver is used for nothing but the traces below,
+  // so it is only worth building when a trace is actually wanted and no
+  // structural shortcut supplies it.
+  trace_ready = false;
+  HK_trace_ready = false;
+  const bool want_trace =
+      opts.compute_trace && !dK.empty() && n_theta_K > 0;
+  const bool want_HK = opts.compute_HK_trace && n_theta_K > 0;
+  if (!want_trace && !want_HK)
+    return;
+  if (try_triangular_traces(opts, want_trace, want_HK)) {
+    trace_ready = want_trace;
+    HK_trace_ready = want_HK;
+    return;
+  }
+  if (compute_traces_structured(theta, opts)) {
+    trace_ready = want_trace;
+    HK_trace_ready = want_HK;
+    return;
+  }
+
   if (!llt_inited) {
     // If opts.solver_type not set by caller, stays default 0
-    cholK_solver.init(K.rows(), opts.n_trace_iter, symmetric, opts.solver_type);
+    cholK_solver.init(K.rows(), opts.n_trace_iter, symmetric, opts.solver_type,
+                      opts.nonsym_solver);
     llt_inited = true;
   }
-  if (opts.robust_reanalyze || !analyzed_cholK) {
-    // Re-run symbolic phase when the sparsity pattern might change with theta
+  // Storage must be packed before the pattern can be compared (and before the
+  // solvers see it).
+  if (!K.isCompressed())
+    K.makeCompressed();
+  // Re-run the symbolic phase exactly when the sparsity pattern moved.
+  if (K_pattern_changed() || ngme_counters::cache_disabled()) {
+    ngme_counters::bump(ngme_counters::K_analyzes);
     cholK_solver.analyze(K);
-    analyzed_cholK = true;
+    record_K_pattern();
   }
   cholK_solver.compute(K);
   // if (!cholK_solver.factorization_success()) {
@@ -170,8 +333,7 @@ void Operator::update_all(const VectorXd &theta, const UpdateOptions &opts) {
   // }
 
   // 4) Traces (only if dK available)
-  trace_ready = false;
-  if (!dK.empty() && n_theta_K > 0) {
+  if (want_trace) {
     if (trace_vals.size() != n_theta_K)
       trace_vals = VectorXd::Zero(n_theta_K);
     // tr(K^{-1} dK)
@@ -180,15 +342,13 @@ void Operator::update_all(const VectorXd &theta, const UpdateOptions &opts) {
         trace_vals(j) = 0.0;
         continue;
       }
-      trace_vals(j) = cholK_solver.trace(dK[j]);
+      trace_vals(j) = cholK_solver.trace(dK[j], opts.trace_seed);
     }
   }
-  // global trace mode used; no per-call state needed
-  trace_ready = true;
+  trace_ready = want_trace;
 
   // 5) H_K trace block: -tr(K^{-1}K_k K^{-1}K_j) + tr(K^{-1}K_{jk})
-  HK_trace_ready = false;
-  if (opts.compute_HK_trace && n_theta_K > 0) {
+  if (want_HK) {
     if (HK_trace.rows() != n_theta_K || HK_trace.cols() != n_theta_K)
       HK_trace = MatrixXd::Zero(n_theta_K, n_theta_K);
     else
@@ -198,11 +358,11 @@ void Operator::update_all(const VectorXd &theta, const UpdateOptions &opts) {
         double t1 = 0.0, t2 = 0.0;
         // -tr(K^{-1} K_k K^{-1} K_j)
         if (dK[k].rows() > 0 && dK[j].rows() > 0) {
-          t1 = -cholK_solver.trace2(dK[k], dK[j]);
+          t1 = -cholK_solver.trace2(dK[k], dK[j], opts.trace_seed);
         }
         // + tr(K^{-1} K_{jk})
         if (!d2K.empty() && d2K[j][k].rows() > 0) {
-          t2 = cholK_solver.trace(d2K[j][k]);
+          t2 = cholK_solver.trace(d2K[j][k], opts.trace_seed);
         }
         double val = t1 + t2;
         HK_trace(j, k) = val;

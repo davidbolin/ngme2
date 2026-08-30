@@ -22,6 +22,9 @@ Available transformations:
   \item \code{exp4}: \eqn{exp(4x)}, inverse is \eqn{log(x)/4}
   \item \code{exp2}: \eqn{exp(2x)}, inverse is \eqn{log(x)/2}
   \item \code{tanh}: Hyperbolic tangent transformation used for AR1 parameter, uses ar1_th2a and ar1_a2th
+  \item \code{sech}: \eqn{sqrt(1 - tanh(x)^2)} for the \code{tanh} above, i.e.
+    the AR(1) stationary standard deviation \eqn{sqrt(1 - rho^2)}. Not
+    invertible, so it has no inverse
   \item \code{identity}: Identity function, no transformation
   \item \code{exp}: \eqn{exp(x)}, inverse is \eqn{log(x)}
   \item \code{sqrt}: \eqn{sqrt(x)}, inverse is \eqn{x^2}

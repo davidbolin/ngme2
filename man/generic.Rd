@@ -28,7 +28,7 @@ generic(
 is a character vector defining transformations for each matrix.
 For example, `trans=list(kappa=c("exp2", "identity", "null"))` means parameter 'kappa'
 affects matrix 1 with exp2 transformation, matrix 2 with identity, and doesn't affect matrix 3.
-Available transformations: "identity", "exp", "exp2", "exp4", "sqrt", "square", "log", "tanh"}
+Available transformations: "identity", "exp", "exp2", "exp4", "sqrt", "square", "log", "tanh", "sech"}
 
 \item{mesh}{The mesh object}
 
@@ -79,8 +79,9 @@ ar1_obj <- ar1(1:10, rho = 0.5)
 g <- name2fun("tanh", inv = TRUE)
 generic_ar1 <- generic(
   theta_K = c(rho = g(0.5)),  # Transform from real scale
-  trans = list(rho = c("tanh", "null")),  # Apply tanh to first matrix
-  matrices = list(ar1_obj$C, ar1_obj$G),
+  # rho on C, nothing on G, sqrt(1 - rho^2) on the stationary (1,1) entry
+  trans = list(rho = c("tanh", "null", "sech")),
+  matrices = list(ar1_obj$C, ar1_obj$G, ar1_obj$E11),
   h = ar1_obj$h
 )
 

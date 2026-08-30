@@ -15,7 +15,7 @@ compute_ngme_ci(
   n_parallel_chain = 4,
   t0 = 1,
   start_sd = 0.2,
-  seed = Sys.time(),
+  seed = ngme_random_seed(),
   verbose = FALSE,
   level = 0.95,
   name = "all",
@@ -38,7 +38,7 @@ compute_ngme_CI(
   n_parallel_chain = 4,
   t0 = 1,
   start_sd = 0.2,
-  seed = Sys.time(),
+  seed = ngme_random_seed(),
   verbose = FALSE,
   level = 0.95,
   name = "all",
@@ -72,7 +72,9 @@ batch-means inference.}
 
 \item{start_sd}{standard deviation for randomized chain initialization.}
 
-\item{seed}{random seed for CI-stage optimization.}
+\item{seed}{random seed for CI-stage optimization. Defaults to a seed drawn
+from the current R random number stream, so \code{set.seed()} makes the
+result reproducible.}
 
 \item{verbose}{logical; print optimization progress.}
 

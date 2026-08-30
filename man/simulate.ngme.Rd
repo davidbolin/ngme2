@@ -11,11 +11,15 @@
 
 \item{nsim}{number of simulations}
 
-\item{seed}{seed}
+\item{seed}{random seed. If \code{NULL} (the default), a seed is drawn
+from the current R random number stream, so \code{set.seed()} makes the
+result reproducible.}
 
 \item{...}{optional arguments. Supported names are \code{posterior}
-(whether to simulate from posterior sampling of latent fields) and
-\code{m_noise} (whether to add the measurement noise).}
+(whether to simulate from posterior sampling of latent fields),
+\code{m_noise} (whether to add the measurement noise) and
+\code{n_burnin} (Gibbs sweeps discarded before the draw is taken, used
+only when \code{posterior = TRUE}; defaults to 100).}
 }
 \value{
 a realization of ngme object

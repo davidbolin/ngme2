@@ -21,7 +21,7 @@ test_ngme(
   fix_theta_mu = FALSE,
   fix_theta_sigma = FALSE,
   fix_theta_nu = FALSE,
-  seed = Sys.time()
+  seed = ngme_random_seed()
 )
 }
 \arguments{
@@ -57,7 +57,8 @@ test_ngme(
 
 \item{fix_theta_nu}{fix nu}
 
-\item{seed}{seed}
+\item{seed}{random seed. Defaults to a seed drawn from the current R
+random number stream, so \code{set.seed()} makes the result reproducible.}
 }
 \description{
 Test ngme function for different models

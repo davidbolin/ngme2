@@ -13,7 +13,7 @@
 #'   is a character vector defining transformations for each matrix.
 #'   For example, `trans=list(kappa=c("exp2", "identity", "null"))` means parameter 'kappa'
 #'   affects matrix 1 with exp2 transformation, matrix 2 with identity, and doesn't affect matrix 3.
-#'   Available transformations: "identity", "exp", "exp2", "exp4", "sqrt", "square", "log", "tanh"
+#'   Available transformations: "identity", "exp", "exp2", "exp4", "sqrt", "square", "log", "tanh", "sech"
 #' @param mesh The mesh object
 #' @param model The model type name
 #' @param zero_trace Whether the trace of K should be zero
@@ -49,8 +49,9 @@
 #' g <- name2fun("tanh", inv = TRUE)
 #' generic_ar1 <- generic(
 #'   theta_K = c(rho = g(0.5)),  # Transform from real scale
-#'   trans = list(rho = c("tanh", "null")),  # Apply tanh to first matrix
-#'   matrices = list(ar1_obj$C, ar1_obj$G),
+#'   # rho on C, nothing on G, sqrt(1 - rho^2) on the stationary (1,1) entry
+#'   trans = list(rho = c("tanh", "null", "sech")),
+#'   matrices = list(ar1_obj$C, ar1_obj$G, ar1_obj$E11),
 #'   h = ar1_obj$h
 #' )
 #' 
@@ -240,6 +241,9 @@ compute_coef_new <- function(theta_K, trans, n_matrices) {
 #'   \item \code{exp4}: \eqn{exp(4x)}, inverse is \eqn{log(x)/4}
 #'   \item \code{exp2}: \eqn{exp(2x)}, inverse is \eqn{log(x)/2}
 #'   \item \code{tanh}: Hyperbolic tangent transformation used for AR1 parameter, uses ar1_th2a and ar1_a2th
+#'   \item \code{sech}: \eqn{sqrt(1 - tanh(x)^2)} for the \code{tanh} above, i.e.
+#'     the AR(1) stationary standard deviation \eqn{sqrt(1 - rho^2)}. Not
+#'     invertible, so it has no inverse
 #'   \item \code{identity}: Identity function, no transformation
 #'   \item \code{exp}: \eqn{exp(x)}, inverse is \eqn{log(x)}
 #'   \item \code{sqrt}: \eqn{sqrt(x)}, inverse is \eqn{x^2}
@@ -266,6 +270,12 @@ name2fun <- function(trans, inv = FALSE) {
     tanh = list(
       forward = ar1_th2a,  # restrict the range of rho to (-1, 1)
       inverse = ar1_a2th
+    ),
+    # sqrt(1 - tanh(x)^2) for the tanh above: the AR(1) stationary sd
+    # sqrt(1 - rho^2). Not injective, so it has no inverse.
+    sech = list(
+      forward = function(x) sqrt(1 - ar1_th2a(x)^2),
+      inverse = function(x) stop("'sech' transformation is not invertible")
     ),
     identity = list(
       forward = function(x) x,

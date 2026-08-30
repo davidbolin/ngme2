@@ -7,6 +7,7 @@
 #include <RcppEigen.h>
 #undef COMPLEX
 
+#include "include/factor_counters.h"
 #include "include/timer.h"
 #include "ngme.h"
 #include "optimizer.h"
@@ -195,6 +196,11 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   // for Gelman-Rubin statistic
   MatrixXd batch_sum(n_chains, n_params);
   MatrixXd batch_sq_sum(n_chains, n_params);
+  // Non-overlapping sub-batch sums, used to estimate the variance of each
+  // chain's batch mean without assuming the iterates are independent.
+  int n_sub_batch = 0;
+  std::vector<MatrixXd> sub_batch_sum;
+  std::vector<int> sub_batch_count;
   VectorXd final_R_hat(n_params);
   final_R_hat.setZero();
   // keep last-diagnostics for reporting
@@ -212,6 +218,14 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   bool all_converge = false;
   int steps = 0;
   int batch_steps = (iterations / n_batch);
+  // sqrt(n) blocks of sqrt(n) iterates is the standard batch-means split; it
+  // needs enough blocks for a usable variance, so fall back to the naive
+  // estimator on very short batches.
+  if (batch_steps >= 8) {
+    n_sub_batch = std::max(2, (int)std::floor(std::sqrt((double)batch_steps)));
+    sub_batch_sum.assign(n_sub_batch, MatrixXd::Zero(n_chains, n_params));
+    sub_batch_count.assign(n_sub_batch, 0);
+  }
 
   int curr_batch = 0;
   double stepsize_decay_scale = 1.0;
@@ -226,6 +240,10 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
     MatrixXd mat(n_chains, n_params);
     batch_sum.setZero();
     batch_sq_sum.setZero();
+    for (int b = 0; b < n_sub_batch; ++b) {
+      sub_batch_sum[b].setZero();
+      sub_batch_count[b] = 0;
+    }
 
     // Store max_pflug_sum before batch
     std::vector<double> max_pflug_sum_before(n_chains);
@@ -263,6 +281,14 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
             mat.row(i) = param;
             batch_sum.row(i) += param;
             batch_sq_sum.row(i) += param.array().square().matrix();
+            if (n_sub_batch > 0) {
+              int sb = (step * n_sub_batch) / batch_steps;
+              if (sb >= n_sub_batch)
+                sb = n_sub_batch - 1;
+              sub_batch_sum[sb].row(i) += param;
+              if (i == 0)
+                sub_batch_count[sb] += 1;
+            }
           }
           // }
         } catch (const std::exception &e) {
@@ -339,8 +365,64 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
       }
       B *= ((double)n / (m - 1));
 
-      Eigen::RowVectorXd var_hat = ((double)(n - 1) / n) * W + (1.0 / n) * B;
-      R_hat = (var_hat.array() / W.array()).sqrt().transpose();
+      // W above is the marginal variance of the iterates. Gelman-Rubin needs
+      // the variance the chain mean would have, times n -- i.e. the asymptotic
+      // variance sigma^2 * tau. For independent draws the two coincide and
+      // R_hat -> 1; for SGD iterates they differ by the integrated
+      // autocorrelation time, so using the marginal variance biases R_hat up
+      // by sqrt(1 + (tau-1)/n) no matter how well the chains agree.
+      //
+      // Estimate the asymptotic variance by non-overlapping batch means:
+      // split each chain's batch into n_sub_batch blocks, and take
+      //     var_hat(chain mean) = var(block means) / n_sub_batch,
+      //     W_asym               = n * var_hat(chain mean).
+      Eigen::RowVectorXd W_eff = W;
+      if (n_sub_batch >= 2) {
+        Eigen::RowVectorXd var_of_chain_mean =
+            Eigen::RowVectorXd::Zero(n_params);
+        int usable_chains = 0;
+        for (int i = 0; i < n_chains; i++) {
+          Eigen::RowVectorXd blk_mean_sum =
+              Eigen::RowVectorXd::Zero(n_params);
+          Eigen::RowVectorXd blk_mean_sq =
+              Eigen::RowVectorXd::Zero(n_params);
+          int n_blk = 0;
+          for (int b = 0; b < n_sub_batch; ++b) {
+            if (sub_batch_count[b] <= 0)
+              continue;
+            Eigen::RowVectorXd bm =
+                sub_batch_sum[b].row(i) / (double)sub_batch_count[b];
+            blk_mean_sum += bm;
+            blk_mean_sq += bm.array().square().matrix();
+            ++n_blk;
+          }
+          if (n_blk < 2)
+            continue;
+          Eigen::RowVectorXd bmean = blk_mean_sum / n_blk;
+          Eigen::RowVectorXd s2_blk =
+              (blk_mean_sq - n_blk * bmean.array().square().matrix()) /
+              (n_blk - 1);
+          // variance of the mean of n_blk block means
+          var_of_chain_mean += s2_blk / n_blk;
+          ++usable_chains;
+        }
+        if (usable_chains > 0) {
+          var_of_chain_mean /= usable_chains;
+          W_eff = (double)n * var_of_chain_mean;
+        }
+      }
+
+      Eigen::RowVectorXd var_hat =
+          ((double)(n - 1) / n) * W_eff + (1.0 / n) * B;
+      R_hat = (var_hat.array() / W_eff.array()).sqrt().transpose();
+      // A degenerate denominator means the chains produced no usable within-
+      // chain variation (e.g. a frozen chain). That is not evidence of
+      // convergence, so report it as failing rather than as NaN, which every
+      // subsequent comparison would silently treat as a pass.
+      for (int k = 0; k < n_params; k++) {
+        if (!(W_eff(k) > 0.0) || !std::isfinite(R_hat(k)))
+          R_hat(k) = std::numeric_limits<double>::infinity();
+      }
       final_R_hat = R_hat;
 
       if (param_conv_check && curr_batch + 1 >= n_min_batch) {
@@ -721,4 +803,22 @@ bool has_pardiso() {
 #else
   return false;
 #endif
+}
+
+// Read (and optionally reset) the factorization counters. Used by the test
+// suite to check that QQ is assembled/factorized once per optimizer iteration
+// instead of once per Gibbs draw, and that the symbolic phase only reruns when
+// a sparsity pattern actually changes.
+// [[Rcpp::export]]
+Rcpp::List ngme_factor_counters(bool reset = false) {
+  Rcpp::List out = Rcpp::List::create(
+      Rcpp::Named("QQ_builds") = static_cast<double>(
+          ngme_counters::QQ_builds.load(std::memory_order_relaxed)),
+      Rcpp::Named("QQ_analyzes") = static_cast<double>(
+          ngme_counters::QQ_analyzes.load(std::memory_order_relaxed)),
+      Rcpp::Named("K_analyzes") = static_cast<double>(
+          ngme_counters::K_analyzes.load(std::memory_order_relaxed)));
+  if (reset)
+    ngme_counters::reset_all();
+  return out;
 }

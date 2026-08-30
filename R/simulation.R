@@ -2,7 +2,9 @@
 #'
 #' @param object ngme model specified by f() function
 #' @param nsim number of simulations
-#' @param seed seed
+#' @param seed random seed. If \code{NULL} (the default), a seed is drawn
+#'   from the current R random number stream, so \code{set.seed()} makes the
+#'   result reproducible.
 #' @param ... ignored
 #'
 #' @return a realization of latent model
@@ -17,7 +19,7 @@ simulate.ngme_model <- function(
     nsim = 1,
     seed = NULL,
     ...) {
-  if (is.null(seed)) seed <- Sys.time()
+  if (is.null(seed)) seed <- ngme_random_seed()
   model <- object
   noise <- model$noise
 
@@ -122,7 +124,9 @@ simulate_noise <- function(
 #'
 #' @param object  ngme noise object
 #' @param h should be of same length as nsim
-#' @param seed seed
+#' @param seed random seed. If \code{NULL} (the default), a seed is drawn
+#'   from the current R random number stream, so \code{set.seed()} makes the
+#'   result reproducible.
 #' @param nsim number of simulations
 #' @param ... ignored
 #'
@@ -135,7 +139,7 @@ simulate.ngme_noise <- function(
     h = NULL,
     ...) {
   n_noise <- max(nrow(object$B_mu), nrow(object$B_sigma), nrow(object$B_nu))
-  if (is.null(seed)) seed <- Sys.time()
+  if (is.null(seed)) seed <- ngme_random_seed()
   if (is.null(h)) h <- rep(1, n_noise)
   if (length(h) > n_noise) n_noise <- length(h)
   stopifnot(length(h) == n_noise)
@@ -198,10 +202,14 @@ simulate.ngme_noise <- function(
 #'
 #' @param object  ngme object
 #' @param nsim number of simulations
-#' @param seed seed
+#' @param seed random seed. If \code{NULL} (the default), a seed is drawn
+#'   from the current R random number stream, so \code{set.seed()} makes the
+#'   result reproducible.
 #' @param ... optional arguments. Supported names are \code{posterior}
-#'   (whether to simulate from posterior sampling of latent fields) and
-#'   \code{m_noise} (whether to add the measurement noise).
+#'   (whether to simulate from posterior sampling of latent fields),
+#'   \code{m_noise} (whether to add the measurement noise) and
+#'   \code{n_burnin} (Gibbs sweeps discarded before the draw is taken, used
+#'   only when \code{posterior = TRUE}; defaults to 100).
 #'
 #' @return a realization of ngme object
 #' @export
@@ -213,8 +221,12 @@ simulate.ngme <- function(
   dots <- list(...)
   posterior <- if (!is.null(dots$posterior)) dots$posterior else TRUE
   m_noise <- if (!is.null(dots$m_noise)) dots$m_noise else TRUE
+  # Posterior simulation restarts the Gibbs chain from the stored W and V.
+  # Those are averaged over the parallel chains, so they are not a draw from
+  # the posterior and the chain has to burn in before a sample is taken.
+  n_burnin <- if (!is.null(dots$n_burnin)) dots$n_burnin else 100L
 
-  if (is.null(seed)) seed <- Sys.time()
+  if (is.null(seed)) seed <- ngme_random_seed()
   attr <- attributes(object)
   sims <- list()
 
@@ -226,7 +238,7 @@ simulate.ngme <- function(
     for (repl in levels(replicate)) {
       repl_idx <- replicate == repl
       this_repl <- object$replicates[[repl]]
-      Y[repl_idx] <- simulate_1rep(this_repl, posterior, seed)
+      Y[repl_idx] <- simulate_1rep(this_repl, posterior, seed, n_burnin)
 
       sim_noise <- simulate(this_repl$noise, nsim = 1, seed = seed)[[1]]
       # add measurement noise
@@ -251,7 +263,8 @@ simulate.ngme <- function(
 }
 
 # simulate from one replicate
-simulate_1rep <- function(ngme_1rep, posterior = TRUE, seed = NULL) {
+simulate_1rep <- function(ngme_1rep, posterior = TRUE, seed = NULL,
+                          n_burnin = 100L) {
   # extract A and cbind!
   As <- list()
   for (i in seq_along(ngme_1rep$models)) {
@@ -259,8 +272,12 @@ simulate_1rep <- function(ngme_1rep, posterior = TRUE, seed = NULL) {
   }
   A_block <- Reduce(cbind, x = As)
 
-  if (is.null(seed)) seed <- Sys.time()
-  Ws <- sampling_cpp(ngme_1rep, n = 1, n_burnin = 1, posterior = posterior, seed = seed)[["W"]][[1]]
+  if (is.null(seed)) seed <- ngme_random_seed()
+  # burn_in() runs POSTERIOR sweeps, so it is only meaningful when sampling
+  # from the posterior; the prior path draws V unconditionally and needs none.
+  nb <- if (isTRUE(posterior)) max(1L, as.integer(n_burnin)) else 1L
+  Ws <- sampling_cpp(ngme_1rep, n = 1, n_burnin = nb, posterior = posterior,
+                     seed = seed)[["W"]][[1]]
 
   # return A W + X beta
   if (!is.null(A_block)) {

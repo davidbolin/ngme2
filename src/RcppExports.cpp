@@ -58,6 +58,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// ngme_factor_counters
+Rcpp::List ngme_factor_counters(bool reset);
+RcppExport SEXP _ngme2_ngme_factor_counters(SEXP resetSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< bool >::type reset(resetSEXP);
+    rcpp_result_gen = Rcpp::wrap(ngme_factor_counters(reset));
+    return rcpp_result_gen;
+END_RCPP
+}
 // compute_log_like_cpp
 double compute_log_like_cpp(const Rcpp::List& R_ngme);
 RcppExport SEXP _ngme2_compute_log_like_cpp(SEXP R_ngmeSEXP) {
@@ -89,6 +100,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ngme2_sampling_cpp", (DL_FUNC) &_ngme2_sampling_cpp, 5},
     {"_ngme2_get_openmp_threads", (DL_FUNC) &_ngme2_get_openmp_threads, 0},
     {"_ngme2_has_pardiso", (DL_FUNC) &_ngme2_has_pardiso, 0},
+    {"_ngme2_ngme_factor_counters", (DL_FUNC) &_ngme2_ngme_factor_counters, 1},
     {"_ngme2_compute_log_like_cpp", (DL_FUNC) &_ngme2_compute_log_like_cpp, 1},
     {"_ngme2_rGIG_cpp", (DL_FUNC) &_ngme2_rGIG_cpp, 4},
     {NULL, NULL, 0}

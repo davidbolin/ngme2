@@ -27,7 +27,7 @@ test_that("test fit matern", {
     noise = true_noise
   )
 
-  W <- simulate(true_model)[[1]]
+  W <- simulate(true_model, seed = 42)[[1]]
   Y <- W + rnorm(n_obs, sd = 0.5)
 
   control_opt <- control_opt(

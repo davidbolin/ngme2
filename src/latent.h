@@ -100,7 +100,7 @@ protected:
     double eps {1e-5};
 
     bool fix_flag[LATENT_FIX_FLAG_SIZE] {0}, numer_grad {false}, use_iterative_solver {false}, use_same_V {false};
-    
+
     vector<bool> fix_theta_sigma_vec;  // Vector-based fixing for theta_sigma parameters
 
     // mu and sigma, and sigma_normal (special case when using nig_normal case)
@@ -126,6 +126,7 @@ protected:
 
     // Solver controls propagated from control_opt via Block/Latent constructor
     int solver_type_ {0};
+    int nonsym_solver_ {0};
     int n_trace_iter_ {8};
     bool robust_ {false};
 
@@ -153,7 +154,7 @@ public:
     int get_n_theta_sigma() const      {return n_theta_sigma; }
     int get_n_theta_mu() const         {return n_theta_mu; }
     int get_n_theta_nu() const         {return n_theta_nu; }
-    
+
     vector<bool> get_theta_unfixed_sigma() const {return fix_theta_sigma_vec; }
 
     const VectorXd& get_theta_K() const {return theta_K; }
@@ -201,10 +202,24 @@ public:
         prevV = V;
         invalidate_derivatives();
     }
-    
+
     void update_each_iter(bool need_precond = false);
     void sample_cond_V();
     void sample_uncond_V();
+
+    // True when a call to sample_cond_V() / sample_uncond_V() can actually
+    // change V. For a purely Gaussian (and non-fixed-V) latent both samplers
+    // skip every component, so V is left untouched. Used by BlockModel to decide
+    // whether QQ has to be reassembled and refactorized between Gibbs draws.
+    bool V_may_change() const {
+        if (fix_flag[latent_fix_V]) return false;
+        // the single_V + share_V branch of sample_cond_V() redraws V without
+        // consulting noise_type, so treat it as always changing.
+        if (single_V && share_V) return true;
+        for (const string& nt : noise_type)
+            if (nt != "normal") return true;
+        return false;
+    }
 
     void invalidate_derivatives();
     void update_derivatives(

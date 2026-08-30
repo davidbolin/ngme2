@@ -5,7 +5,7 @@
 \title{Generate control specifications for \code{ngme()} function.}
 \usage{
 control_opt(
-  seed = Sys.time(),
+  seed = ngme_random_seed(),
   burnin = 100,
   iterations = 500,
   estimation = TRUE,
@@ -25,6 +25,7 @@ control_opt(
   sampling_strategy = "all",
   solver_backend = if (Sys.info()["sysname"] == "Darwin") "accelerate" else "cholmod",
   solver_type = "llt",
+  nonsym_solver = "lu",
   verbose = FALSE,
   store_traj = TRUE,
   robust = FALSE,
@@ -41,7 +42,8 @@ control_opt(
 )
 }
 \arguments{
-\item{seed}{set the seed for pesudo random number generator}
+\item{seed}{random seed. Defaults to a seed drawn from the current R
+random number stream, so \code{set.seed()} makes the result reproducible.}
 
 \item{burnin}{interations for burn-in periods (before optimization)}
 
@@ -92,6 +94,12 @@ If it is more than n_parallel_chain, the rest will be used to parallel different
 \item{solver_backend}{backend in ("eigen", "cholmod", "accelerate", "pardiso")}
 
 \item{solver_type}{factorization type: "llt" or "ldlt"}
+
+\item{nonsym_solver}{how the operator matrix \code{K} of a non-symmetric
+modelis factorized when estimating \code{tr(K^-1 dK)}. "lu" (default) takes a sparse
+LU of \code{K}; "normal_equations" takes a Cholesky of \code{t(K) K}, which was the
+behaviour before version 0.9.9. This latter is only kept for reproducability and the
+default is strongly recommended.}
 
 \item{verbose}{print estimation}
 

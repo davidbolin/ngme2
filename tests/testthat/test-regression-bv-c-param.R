@@ -20,7 +20,8 @@ test_that("bv model with c1, c2 parameters works", {
       ),
       group = group,
       noise = list(W1 = noise_normal(), W2 = noise_normal())
-    )
+    ),
+    seed = 1
   )[[1]]
 
   # Fit

@@ -50,7 +50,6 @@ This helper enforces trajectory-friendly defaults:
   \item \code{store_traj = TRUE}
   \item \code{trend_std_conv_check = FALSE}
   \item \code{R_hat_conv_check = FALSE}
-  \item \code{pflug_conv_check = FALSE}
   \item \code{stepsize_control = poly_decay(alpha, t0, schedule_burnin_iter)}
 }
 Any of these can still be overridden through \code{...}.

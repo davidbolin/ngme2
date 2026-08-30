@@ -52,10 +52,6 @@ private:
   int stepsize_schedule_burnin_iter{0};
   double last_grad_norm{0.0};
 
-  // Pflug diagnostic
-  bool pflug_conv_check{false};
-  double pflug_sum{0.0};
-  double max_pflug_sum{0.0};
   std::mt19937 sgld_rng;
   std::normal_distribution<double> sgld_std_normal{0.0, 1.0};
 
@@ -74,11 +70,9 @@ public:
   void set_verbose(bool value) { verbose = value; }
   bool is_verbose() const { return verbose; }
 
-  void set_pflug_conv_check(bool value) { pflug_conv_check = value; }
-  bool get_pflug_conv_check() const { return pflug_conv_check; }
-  double get_pflug_sum() const { return pflug_sum; }
-  double get_max_pflug_sum() const { return max_pflug_sum; }
   double get_last_grad_norm() const { return last_grad_norm; }
+  void set_stepsize_decay_enabled(bool value) { stepsize_decay_enabled = value; }
+  double get_stepsize_decay_scale() const { return stepsize_decay_scale; }
   void set_stepsize_decay_scale(double scale) {
     stepsize_decay_scale = scale;
     if (stepsize_decay_min_stepsize > 0.0 &&

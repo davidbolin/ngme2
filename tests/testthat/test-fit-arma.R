@@ -124,6 +124,7 @@ test_that("test fit ARMA(2,2) with normal noise (precond)", {
     data = data.frame(x = 1:n, y = y),
     control_ngme = control_ngme(n_gibbs_samples = 4),
     control_opt = control_opt(
+    warn_no_convergence = FALSE,
       seed = 123,
       burnin = 100,
       iterations = 2000,
@@ -172,6 +173,7 @@ test_that("test fit ARMA(1,1) with nig noise (RB, preconditioner)", {
     data = data.frame(x = 1:n, y = y),
     control_ngme = control_ngme(n_gibbs_samples = 4),
     control_opt = control_opt(
+    warn_no_convergence = FALSE,
       seed = 123,
       burnin = 100,
       iterations = 500,

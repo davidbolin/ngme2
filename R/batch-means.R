@@ -446,8 +446,7 @@ compute_ngme_ci <- function(
   )
 
   if (isTRUE(control_opt$trend_std_conv_check) ||
-    isTRUE(control_opt$R_hat_conv_check) ||
-    isTRUE(control_opt$pflug_conv_check)) {
+    isTRUE(control_opt$R_hat_conv_check)) {
     warning(
       "Convergence diagnostics are enabled in `control_opt`; early stopping may reduce fixed-iteration Xi-style validity.",
       call. = FALSE
@@ -605,7 +604,6 @@ compute_ngme_sgld_samples <- function(
           store_traj = TRUE,
           trend_std_conv_check = FALSE,
           R_hat_conv_check = FALSE,
-          pflug_conv_check = FALSE,
           stepsize_control = poly_decay(
             alpha = alpha,
             t0 = t0,
@@ -632,8 +630,7 @@ compute_ngme_sgld_samples <- function(
   )
 
   if (isTRUE(control_opt$trend_std_conv_check) ||
-    isTRUE(control_opt$R_hat_conv_check) ||
-    isTRUE(control_opt$pflug_conv_check)) {
+    isTRUE(control_opt$R_hat_conv_check)) {
     warning(
       "Convergence diagnostics are enabled in `control_opt`; early stopping may reduce fixed-iteration sampling consistency.",
       call. = FALSE

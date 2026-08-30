@@ -15,7 +15,6 @@ test_that("compute_ngme_ci refits from existing object and returns CI", {
       n_batch = 2,
       n_parallel_chain = 1,
       optimizer = adam(stepsize = 0.01),
-      pflug_conv_check = FALSE,
       R_hat_conv_check = FALSE,
       trend_std_conv_check = FALSE,
       store_traj = FALSE
@@ -69,7 +68,6 @@ test_that("compute_ngme_ci disallows separate schedule_burnin_iter in dots", {
       n_batch = 2,
       n_parallel_chain = 1,
       optimizer = adam(stepsize = 0.01),
-      pflug_conv_check = FALSE,
       R_hat_conv_check = FALSE,
       trend_std_conv_check = FALSE,
       store_traj = FALSE

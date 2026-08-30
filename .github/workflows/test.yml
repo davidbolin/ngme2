@@ -40,12 +40,21 @@ jobs:
         with:
           dependencies: '"all"'
 
+      # Build first, from the clean checkout, and work from the tarball after
+      # that. R CMD check requires a literal Author field in DESCRIPTION, which
+      # R CMD build generates from Authors@R -- checking "." skips that step and
+      # fails immediately. Building before installing also keeps the object
+      # files an in-place install leaves in src/ out of the tarball.
+      - name: Build package tarball
+        run: R CMD build --no-build-vignettes --no-manual .
+        shell: bash
+
       - name: Install package
-        run: R CMD INSTALL .
+        run: R CMD INSTALL ngme2_*.tar.gz
         shell: bash
 
       - name: Run R CMD check
-        run: R CMD check --no-manual --no-build-vignettes --as-cran .
+        run: R CMD check --no-manual --no-build-vignettes --as-cran ngme2_*.tar.gz
         shell: bash
 
       - name: Print session info

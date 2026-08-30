@@ -76,9 +76,17 @@ void Ngme::compute(bool with_precond, double eps) {
     int idx = weighted_sampler(gen);
     sync_repl_if_needed(idx, with_precond);
     ngme_repls[idx]->compute_grad_and_hessian(with_precond, eps);
-    last_grad_ = ngme_repls[idx]->get_gradient();
+    // Replicate idx is drawn with probability p_idx = n_idx / N, so the raw
+    // single-replicate gradient estimates sum_i p_i g_i, not sum_i g_i as the
+    // "all" branch does. Without the 1/p_idx importance weight the two
+    // strategies differ in scale by roughly n_repl, which silently rescales the
+    // effective step size when the strategy is switched.
+    double w = 1.0;
+    if (num_each_repl[idx] > 0 && sum_num_each_repl > 0)
+      w = sum_num_each_repl / num_each_repl[idx];
+    last_grad_ = w * ngme_repls[idx]->get_gradient();
     if (with_precond)
-      last_precond_ = ngme_repls[idx]->get_preconditioner();
+      last_precond_ = w * ngme_repls[idx]->get_preconditioner();
   }
   grad_valid_ = true;
   if (with_precond) {

@@ -10,6 +10,7 @@ test_that("test basic mn", {
     y ~ x,
     data = data.frame(x = x, y = y),
     control_opt = control_opt(
+    warn_no_convergence = FALSE,
       iterations = 100,
       # optimizer = precond_sgd(),
       print_check_info = FALSE,
@@ -37,6 +38,7 @@ test_that("test basic mn", {
     y ~ 0,
     data = data.frame(x = x, y = y), family = noise_nig(),
     control_opt = control_opt(
+    warn_no_convergence = FALSE,
       iterations = 100,
       n_parallel_chain = 4,
       n_min_batch = 10,
@@ -73,6 +75,7 @@ test_that("test ar1 + normal measurement noise", {
   fit <- ngme(y ~ 0 + f(1:n_obs, model = ar1(rho = rho), noise = noise_nig()),
     data = data.frame(x = x, y = y),
     control_opt = control_opt(
+    warn_no_convergence = FALSE,
       seed = 100,
       rao_blackwellization = TRUE,
       iterations = 500,
@@ -127,6 +130,7 @@ test_that("test ar1 (normal) + NIG noise", {
     data = data.frame(x = x, y = y),
     family = noise_nig(),
     control_opt = control_opt(
+    warn_no_convergence = FALSE,
       seed = 100,
       iterations = 1000,
       n_parallel_chain = 4,

@@ -31,6 +31,7 @@ test_that("test fit matern", {
   Y <- W + rnorm(n_obs, sd = 0.5)
 
   control_opt <- control_opt(
+    warn_no_convergence = FALSE,
     n_min_batch = 1,
     optimizer = precond_sgd(),
     iterations = 1000,

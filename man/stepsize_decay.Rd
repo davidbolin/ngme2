@@ -5,7 +5,7 @@
 \title{Stepsize decay schedule}
 \usage{
 stepsize_decay(
-  method = c("none", "grad_norm_plateau"),
+  method = c("none", "grad_norm_plateau", "trend"),
   patience = 3,
   gamma = 0.5,
   min_delta = 0,

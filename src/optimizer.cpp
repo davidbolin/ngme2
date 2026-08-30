@@ -145,13 +145,6 @@ VectorXd Ngme_optimizer::sgd(double eps, int iterations,
 
     last_grad_norm = grad.norm();
 
-    // Pflug diagnostic
-    if (pflug_conv_check && curr_iter > 0) {
-      double inner_prod = grad.dot(prev_grad);
-      pflug_sum += inner_prod;
-      max_pflug_sum = std::max(max_pflug_sum, pflug_sum);
-    }
-
     // which SGD step
     // default: one step = stepsize * H^-1 * grad
     VectorXd one_step;
@@ -336,10 +329,6 @@ VectorXd Ngme_optimizer::sgd(double eps, int iterations,
       }
       // oss << "parameter = : " << x << '\n';
       // oss << "marginal likelihood := " <<  -model->log_likelihood() << '\n';
-      if (pflug_conv_check) {
-        oss << "pflug_sum = " << pflug_sum
-            << ", max_pflug_sum = " << max_pflug_sum << '\n';
-      }
       oss << "---------------------------\n";
       log_verbose_message(oss.str());
     }

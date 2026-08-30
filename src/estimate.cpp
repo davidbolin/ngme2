@@ -37,10 +37,13 @@ using namespace Rcpp;
 std::vector<bool> check_conv(const MatrixXd &, const MatrixXd &, int, int,
                              double, double, const std::vector<std::string> &,
                              bool, int, double, const VectorXd &, bool, bool,
+                             int n_chains, bool trend_use_tstat,
+                             bool use_std_check,
                              std::vector<bool> *conv_rhat_out,
                              std::vector<bool> *conv_trend_std_out,
                              std::vector<double> *std_ratio_out,
                              std::vector<double> *slopes_out,
+                             std::vector<double> *tstats_out,
                              bool *trend_ready_out);
 
 // [[Rcpp::plugins(openmp)]]
@@ -60,13 +63,18 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   const bool store_traj = control_opt.containsElementNamed("store_traj")
                               ? Rcpp::as<bool>(control_opt["store_traj"])
                               : true;
-  const bool pflug_conv_check =
-      control_opt.containsElementNamed("pflug_conv_check")
-          ? Rcpp::as<bool>(control_opt["pflug_conv_check"])
+
+  const bool trend_use_tstat =
+      control_opt.containsElementNamed("trend_use_tstat")
+          ? Rcpp::as<bool>(control_opt["trend_use_tstat"])
           : false;
-  const double pflug_alpha = control_opt.containsElementNamed("pflug_alpha")
-                                 ? Rcpp::as<double>(control_opt["pflug_alpha"])
-                                 : 1.0;
+  const bool use_std_check = control_opt.containsElementNamed("use_std_check")
+                                 ? Rcpp::as<bool>(control_opt["use_std_check"])
+                                 : true;
+  // number of consecutive checkpoints that must pass before stopping
+  const int n_conv_batch = control_opt.containsElementNamed("n_conv_batch")
+                               ? Rcpp::as<int>(control_opt["n_conv_batch"])
+                               : 1;
 
   Rcpp::List output = R_NilValue;
 
@@ -80,6 +88,8 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
       Rcpp::as<std::string>(control_opt["sgd_method"]);
 
   bool stepsize_decay_enabled = false;
+  bool stepsize_decay_on_trend = false;
+  int trend_decay_cooldown = 0;
   int stepsize_decay_patience = 0;
   double stepsize_decay_gamma = 1.0;
   double stepsize_decay_min_delta = 0.0;
@@ -87,6 +97,11 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   if (control_opt.containsElementNamed("stepsize_decay")) {
     std::string decay = Rcpp::as<std::string>(control_opt["stepsize_decay"]);
     stepsize_decay_enabled = (decay == "grad_norm_plateau");
+    stepsize_decay_on_trend = (decay == "trend");
+  }
+  if (stepsize_decay_on_trend) {
+    stepsize_decay_gamma =
+        Rcpp::as<double>(control_opt["stepsize_decay_gamma"]);
   }
   if (stepsize_decay_enabled) {
     stepsize_decay_patience =
@@ -143,7 +158,8 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
     ngmes.push_back(std::make_shared<Ngme>(R_ngme, seed + i, sampling_strategy,
                                            num_threads[1], sd));
     opt_vec.push_back(Ngme_optimizer(control_opt, ngmes[i], seed + i));
-    opt_vec.back().set_pflug_conv_check(pflug_conv_check);
+    if (stepsize_decay_on_trend)
+      opt_vec.back().set_stepsize_decay_enabled(true);
     if (verbose_enabled && i > 0) {
       opt_vec.back().set_verbose(false);
     }
@@ -204,15 +220,14 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   VectorXd final_R_hat(n_params);
   final_R_hat.setZero();
   // keep last-diagnostics for reporting
+  std::vector<double> last_tstats(n_params, 0.0);
+  int consec_converged = 0;
   std::vector<bool> last_conv_rhat(n_params, false);
   std::vector<bool> last_conv_trend_std(n_params, false);
   std::vector<double> last_std_ratio(n_params, 0.0);
   std::vector<double> last_slopes(n_params, 0.0);
   bool last_trend_ready = false;
-  bool pflug_triggered = false;
   bool converged_by_param = false;
-  std::vector<double> last_pflug_sum(n_chains, 0.0);
-  std::vector<double> last_pflug_max(n_chains, 0.0);
 
   std::vector<bool> converge(n_params, false);
   bool all_converge = false;
@@ -227,6 +242,15 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
     sub_batch_count.assign(n_sub_batch, 0);
   }
 
+  const int polish_iterations =
+      control_opt.containsElementNamed("polish_iterations")
+          ? Rcpp::as<int>(control_opt["polish_iterations"])
+          : 50;
+  const double polish_stepsize_factor =
+      control_opt.containsElementNamed("polish_stepsize_factor")
+          ? Rcpp::as<double>(control_opt["polish_stepsize_factor"])
+          : 0.3;
+
   int curr_batch = 0;
   double stepsize_decay_scale = 1.0;
   double stepsize_decay_prev_norm = std::numeric_limits<double>::infinity();
@@ -234,7 +258,7 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
 
   // Enable convergence only when at least one diagnostic is requested.
   const bool param_conv_check = trend_std_conv_check || R_hat_conv_check;
-  const bool any_conv_check = param_conv_check || pflug_conv_check;
+  const bool any_conv_check = param_conv_check;
 
   while (steps < iterations && !all_converge) {
     MatrixXd mat(n_chains, n_params);
@@ -245,13 +269,6 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
       sub_batch_count[b] = 0;
     }
 
-    // Store max_pflug_sum before batch
-    std::vector<double> max_pflug_sum_before(n_chains);
-    if (pflug_conv_check) {
-      for (int i = 0; i < n_chains; i++) {
-        max_pflug_sum_before[i] = opt_vec[i].get_max_pflug_sum();
-      }
-    }
 
     // Run batch_steps iterations using unified SGD step (computes grad and,
     // optionally, precond)
@@ -430,12 +447,39 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
             check_conv(means, vars, curr_batch, n_slope_check, std_lim,
                        trend_lim, par_names, print_check_info, batch_steps,
                        max_R_hat, R_hat, trend_std_conv_check, R_hat_conv_check,
+                       n_chains, trend_use_tstat, use_std_check,
                        &last_conv_rhat, &last_conv_trend_std, &last_std_ratio,
-                       &last_slopes, &last_trend_ready);
-        batch_converged =
+                       &last_slopes, &last_tstats, &last_trend_ready);
+        bool all_params_ok =
             std::find(begin(converge), end(converge), false) == end(converge);
+        // Require the criteria to hold on n_conv_batch consecutive checkpoints.
+        // A single passing checkpoint is weak evidence: R-hat bounces around
+        // its threshold from batch to batch even long after the chains mix.
+        consec_converged = all_params_ok ? consec_converged + 1 : 0;
+        batch_converged = (consec_converged >= n_conv_batch);
         if (batch_converged)
           converged_by_param = true;
+
+        // Trend-triggered step-size reduction.  d
+        if (stepsize_decay_on_trend && last_trend_ready &&
+            trend_decay_cooldown <= 0) {
+          bool no_drift = true;
+          for (int i = 0; i < n_params; i++)
+            if (!(std::abs(last_tstats[i]) <= trend_lim))
+              no_drift = false;
+          if (no_drift) {
+            stepsize_decay_scale *= stepsize_decay_gamma;
+            for (int i = 0; i < n_chains; i++)
+              opt_vec[i].set_stepsize_decay_scale(stepsize_decay_scale);
+            trend_decay_cooldown = n_slope_check; // let a fresh window build
+            if (verbose_enabled)
+              Rcpp::Rcout << "Trend-triggered stepsize decay at batch "
+                          << (curr_batch + 1) << ": scale = "
+                          << stepsize_decay_scale << "\n";
+          }
+        }
+        if (trend_decay_cooldown > 0)
+          trend_decay_cooldown--;
       }
 
       // 2. if some parameter converge, stop compute gradient, or slow down the
@@ -443,33 +487,6 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
       //     for (int i=0; i < n_chains; i++) {
       //         ngmes[i]->check_converge(converge);
       //     }
-      // Pflug diagnostic check for parallel chains
-      if (pflug_conv_check && curr_batch + 1 >= n_min_batch) {
-        bool pflug_converged = true;
-        for (int i = 0; i < n_chains; i++) {
-          last_pflug_sum[i] = opt_vec[i].get_pflug_sum();
-          last_pflug_max[i] = opt_vec[i].get_max_pflug_sum();
-        }
-        for (int i = 0; i < n_chains; i++) {
-          double curr_sum = opt_vec[i].get_pflug_sum();
-          double curr_max = opt_vec[i].get_max_pflug_sum();
-          double threshold = pflug_alpha * curr_max;
-          // Require curr_sum < threshold; if curr_max == 0, treat as not yet
-          // converged
-          if (curr_max <= 0 || curr_sum >= threshold) {
-            pflug_converged = false;
-            break;
-          }
-        }
-        if (pflug_converged) {
-          batch_converged = true;
-          pflug_triggered = true;
-          if (verbose_enabled)
-            Rcpp::Rcout << "Pflug diagnostic satisfied: pflug_sum < "
-                        << pflug_alpha << " * max_pflug_sum for all chains.\n"
-                        << std::endl;
-        }
-      }
       // Only allow early stop when any diagnostic is active.
       all_converge = any_conv_check && batch_converged;
     }
@@ -521,10 +538,75 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   // for testing in the end
   // ngmes[0]->test_in_the_end();
 
+  // ---------------------------------------------------------------------
+  // Post-convergence polish.
+  //
+  // The average is Polyak-Ruppert: the mean of the iterates over the window,
+  MatrixXd polish_sum = MatrixXd::Zero(n_chains, n_params);
+  int polish_done = 0;
+  // steps grows during the polish phase too, so remember where the stopping
+  // rule actually fired
+  const int steps_at_convergence = steps;
+  // Never polish for longer than the fit itself ran. The budget is a fixed
+  // count, which is the right shape for a normal fit but disproportionate for a
+  // very short one.
+  const int polish_budget = std::min(polish_iterations, steps);
+  if (polish_budget > 0 && n_chains > 0) {
+    double polish_scale = stepsize_decay_scale * polish_stepsize_factor;
+    for (i = 0; i < n_chains; i++) {
+      opt_vec[i].set_stepsize_decay_enabled(true);
+      opt_vec[i].set_stepsize_decay_scale(polish_scale);
+    }
+    std::atomic<bool> polish_failed(false);
+    std::string polish_error;
+    for (int step = 0; step < polish_budget; step++) {
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(n_threads_chain)
+#endif
+      for (i = 0; i < n_chains; i++) {
+        if (polish_failed.load(std::memory_order_relaxed))
+          continue;
+        try {
+          VectorXd param = opt_vec[i].sgd(0.1, 1, max_relative_step,
+                                          max_absolute_step,
+                                          compute_precond_each_iter);
+#ifdef _OPENMP
+#pragma omp critical
+#endif
+          { polish_sum.row(i) += param; }
+        } catch (const std::exception &e) {
+#ifdef _OPENMP
+#pragma omp critical(ngme_parallel_exception)
+#endif
+          {
+            if (!polish_failed.load(std::memory_order_relaxed)) {
+              polish_failed.store(true, std::memory_order_relaxed);
+              polish_error = e.what();
+            }
+          }
+        }
+      }
+      if (polish_failed.load(std::memory_order_relaxed))
+        break;
+      polish_done++;
+      steps++;
+    }
+    if (polish_failed.load(std::memory_order_relaxed))
+      Rcpp::warning("ngme: post-convergence polish stopped early: %s",
+                    polish_error.c_str());
+    if (verbose_enabled && polish_done > 0)
+      Rcpp::Rcout << "Polish phase: " << polish_done
+                  << " iterations at stepsize scale " << polish_scale << "\n";
+  }
+
   // generate outputs
   for (i = 0; i < n_chains; i++) {
-    // use last batch average parameter instead of last step value
-    Eigen::VectorXd avg_param = (batch_sum.row(i) / batch_steps).transpose();
+    // Average of the iterates: over the polish window when there was one,
+    // otherwise over the last batch as before.
+    Eigen::VectorXd avg_param =
+        (polish_done > 0)
+            ? (polish_sum.row(i) / polish_done).transpose()
+            : (batch_sum.row(i) / batch_steps).transpose();
     ngmes[i]->set_parameter_and_update(avg_param, false);
 
     outputs.push_back(ngmes[i]->output());
@@ -533,24 +615,49 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
       trajs_chains.push_back(opt_vec[i].get_trajs());
     }
   }
-  if (all_converge)
-    std::cout << "Reach convergence in " << steps << " iterations."
-              << std::endl;
+  if (all_converge) {
+    std::cout << "Reach convergence in " << steps_at_convergence
+              << " iterations." << std::endl;
+    if (polish_done > 0)
+      std::cout << "Polish: " << polish_done
+                << " further iterations averaged at stepsize scale "
+                << (stepsize_decay_scale * polish_stepsize_factor) << ".\n";
+  }
+
+  // A run that exhausts its budget without converging used to end silently,
+  // which is the dangerous failure mode: the estimates look like any other
+  // result. Say so, and name the parameters that were still failing.
+  const bool warn_no_convergence =
+      control_opt.containsElementNamed("warn_no_convergence")
+          ? Rcpp::as<bool>(control_opt["warn_no_convergence"])
+          : true;
+  if (!all_converge && any_conv_check && n_chains > 1 && warn_no_convergence) {
+    std::string failing;
+    for (int i = 0; i < n_params && i < (int)par_names.size(); i++) {
+      bool ok = true;
+      if (R_hat_conv_check && !last_conv_rhat[i])
+        ok = false;
+      if (trend_std_conv_check && (!last_trend_ready || !last_conv_trend_std[i]))
+        ok = false;
+      if (!ok) {
+        if (!failing.empty())
+          failing += ", ";
+        failing += par_names[i];
+      }
+    }
+    if (failing.empty())
+      failing = "(criteria never held on " + std::to_string(n_conv_batch) +
+                " consecutive checkpoints)";
+    Rcpp::warning("ngme: convergence was NOT reached in %d iterations. Still "
+                  "failing: %s. Estimates may be unreliable -- increase "
+                  "'iterations', or inspect traceplot().",
+                  steps_at_convergence, failing.c_str());
+  }
 
   if (all_converge && n_chains > 1) {
-    bool converged_by_pflug_only = pflug_triggered && !converged_by_param;
     std::cout << "Convergence criteria summary:\n";
 
-    if (converged_by_pflug_only) {
-      std::cout << "  - Pflug diagnostic satisfied (pflug_sum < " << pflug_alpha
-                << " * max_pflug_sum for all chains)\n";
-      std::cout << "  Per-chain Pflug stats (sum / max):\n";
-      for (int i = 0; i < n_chains; i++) {
-        std::cout << "    * chain " << i + 1 << ": " << std::fixed
-                  << std::setprecision(4) << last_pflug_sum[i] << " / "
-                  << last_pflug_max[i] << "\n";
-      }
-    } else {
+    {
       if (R_hat_conv_check) {
         std::cout << "  - R_hat threshold: max_R_hat = " << max_R_hat << "\n";
       }
@@ -575,7 +682,8 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
             std::cout << "; ";
           std::cout << "std/mean=" << std::setprecision(3) << last_std_ratio[i]
                     << (last_conv_trend_std[i] ? " (ok)" : " (fail)") << ", ";
-          std::cout << "slope=" << std::setprecision(3) << last_slopes[i]
+          std::cout << "t=" << std::setprecision(3) << last_tstats[i] << ", ";
+        std::cout << "slope=" << std::setprecision(3) << last_slopes[i]
                     << (std::abs(last_slopes[i]) <= trend_lim ? " (ok)"
                                                               : " (fail)");
         }
@@ -620,11 +728,12 @@ check_conv(const MatrixXd &means, const MatrixXd &vars, int curr_batch,
            int n_slope_check, double std_lim, double trend_lim,
            const std::vector<std::string> &par_names, bool print_check_info,
            int batch_steps, double max_R_hat, const VectorXd &R_hat,
-           bool trend_std_conv_check, bool R_hat_conv_check,
+           bool trend_std_conv_check, bool R_hat_conv_check, int n_chains,
+           bool trend_use_tstat, bool use_std_check,
            std::vector<bool> *conv_rhat_out,
            std::vector<bool> *conv_trend_std_out,
            std::vector<double> *std_ratio_out, std::vector<double> *slopes_out,
-           bool *trend_ready_out) {
+           std::vector<double> *tstats_out, bool *trend_ready_out) {
   int n_params = means.cols();
   std::vector<bool> conv(n_params, false);
 
@@ -632,6 +741,7 @@ check_conv(const MatrixXd &means, const MatrixXd &vars, int curr_batch,
   std::vector<bool> conv_trend_std(n_params, true);
   std::vector<double> std_ratio(n_params, 0.0);
   std::vector<double> slopes(n_params, 0.0);
+  std::vector<double> tstats(n_params, 0.0);
 
   bool trend_ready = (curr_batch + 1 >= n_slope_check);
 
@@ -647,6 +757,8 @@ check_conv(const MatrixXd &means, const MatrixXd &vars, int curr_batch,
       *std_ratio_out = std_ratio;
     if (slopes_out)
       *slopes_out = slopes;
+    if (tstats_out)
+      *tstats_out = tstats;
     if (trend_ready_out)
       *trend_ready_out = trend_ready;
     return conv;
@@ -662,7 +774,12 @@ check_conv(const MatrixXd &means, const MatrixXd &vars, int curr_batch,
     for (int i = 0; i < n_params; i++) {
       std_ratio[i] = std::sqrt(vars(curr_batch, i)) /
                      (std::abs(means(curr_batch, i)) + 1e-5);
-      if (std_ratio[i] > std_lim) {
+      // The raw coefficient of variation is not a convergence statistic: it
+      // conflates "the chains disagree" with "this parameter is imprecisely
+      // determined", so a weakly identified parameter (nu) can never pass no
+      // matter how well mixed the chains are. Off by default; R-hat already
+      // measures between- vs within-chain disagreement in a scale-free way.
+      if (use_std_check && std_ratio[i] > std_lim) {
         conv_trend_std[i] = false;
       }
     }
@@ -686,18 +803,39 @@ check_conv(const MatrixXd &means, const MatrixXd &vars, int curr_batch,
           Q.llt().solve(B.transpose() * Sigma_inv.asDiagonal() * mean);
 
       slopes[i] = beta(1);
-      if (std::abs(beta(1)) > trend_lim) {
+
+      // means(b, i) is the average over chains, so its sampling variance is
+      // vars(b, i) / n_chains; Sigma_inv above omits that factor. It cancels in
+      // beta but not in its covariance, so put it back here.
+      // cov(beta) = Q^{-1} with the corrected weights => scale Q by n_chains.
+      Matrix2d Qs = Q * (double)n_chains;
+      double var_slope = Qs.inverse()(1, 1);
+      tstats[i] = (var_slope > 0 && std::isfinite(var_slope))
+                      ? beta(1) / std::sqrt(var_slope)
+                      : std::numeric_limits<double>::infinity();
+
+      // Scale-free drift test: is the slope distinguishable from zero relative
+      // to its own standard error? Unlike |slope| <= trend_lim this does not
+      // depend on the parameter's units, nor on n_batch (which sets how much a
+      // parameter can move between checkpoints).
+      double stat = trend_use_tstat ? std::abs(tstats[i]) : std::abs(beta(1));
+      if (stat > trend_lim) {
         conv_trend_std[i] = false;
       }
     }
   }
 
+  // Every enabled diagnostic must pass: a single lenient check should not be
+  // able to declare convergence on its own. The both-disabled case returned
+  // early above, so starting from true here cannot mark an unchecked parameter
+  // as converged. Note that an enabled trend/std check also requires
+  // trend_ready, i.e. no convergence before the slope window is filled.
   for (int i = 0; i < n_params; i++) {
-    bool passed = false;
-    if (trend_std_conv_check && trend_ready && conv_trend_std[i])
-      passed = true;
-    if (R_hat_conv_check && conv_rhat[i])
-      passed = true;
+    bool passed = true;
+    if (trend_std_conv_check)
+      passed = passed && trend_ready && conv_trend_std[i];
+    if (R_hat_conv_check)
+      passed = passed && conv_rhat[i];
     conv[i] = passed;
   }
 
@@ -710,6 +848,8 @@ check_conv(const MatrixXd &means, const MatrixXd &vars, int curr_batch,
     *std_ratio_out = std_ratio;
   if (slopes_out)
     *slopes_out = slopes;
+  if (tstats_out)
+    *tstats_out = tstats;
   if (trend_ready_out)
     *trend_ready_out = trend_ready;
 
@@ -755,6 +895,13 @@ check_conv(const MatrixXd &means, const MatrixXd &vars, int curr_batch,
       for (int i = 0; i < n_params; i++) {
         std::cout << " " << std::setw(col_width) << std::fixed
                   << std::setprecision(3) << std::left << slopes[i];
+      }
+      std::cout << "\n";
+
+      std::cout << std::setw(label_width) << std::left << "t_slope:";
+      for (int i = 0; i < n_params; i++) {
+        std::cout << " " << std::setw(col_width) << std::fixed
+                  << std::setprecision(3) << std::left << tstats[i];
       }
       std::cout << "\n";
     }

@@ -90,7 +90,6 @@ test_that("ngme runs with polynomial stepsize schedule", {
       n_parallel_chain = 1,
       optimizer = sgd(stepsize = 0.01),
       stepsize_control = poly_decay(alpha = 0.6, t0 = 1),
-      pflug_conv_check = FALSE,
       R_hat_conv_check = FALSE,
       trend_std_conv_check = FALSE,
       store_traj = FALSE

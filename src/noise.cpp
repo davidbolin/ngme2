@@ -55,12 +55,12 @@ VectorXd NoiseUtil::grad_theta_nu(
         if (noise_type == "gal") {
             VectorXd pg (n);
             for (int j=0; j < n; j++) pg(j) = R::digamma(nu[j]*h[j]);
-            
+
             VectorXd tmp = h - V
                 + h.cwiseProduct(V.array().log().matrix())
                 - h.cwiseProduct(nu.cwiseInverse().array().log().matrix())
                 - h.cwiseProduct(pg);
-            
+
             VectorXd jac = nu.array() - nu_lower_bound;
             grad = B_nu.transpose() * tmp.cwiseProduct(jac);
         } else if (noise_type == "t" || noise_type == "skew_t") {
@@ -89,22 +89,28 @@ VectorXd NoiseUtil::grad_theta_nu(
         if (noise_type == "nig") {
             // theV ~ IG(nu, nu)
             // V_i = h_i * theV
+            // theV = V/h ~ GIG(-1/2, nu, nu), i.e. inverse Gaussian with mean
+            // 1 and shape nu.  d/dnu log p(theV) = 1/(2 nu) - (theV-1)^2/(2 theV).
             double theV = V(0) / h(0);
             double jac = nu(0) - nu_lower_bound;
-            grad(0) = - 0.1 * (nu(0) - 3*theV - nu(0)*theV*theV)/(2*theV*theV) * jac / nu(0);
+            grad(0) = (1.0 / (2.0 * nu(0))
+                       - (theV - 1.0) * (theV - 1.0) / (2.0 * theV)) * jac;
         } else if (noise_type == "gal") {
             // theV ~ Gam(nu, nu)
             throw std::runtime_error("Not implemented");
         } else if (noise_type == "t") {
             // theV ~ IG(nu/2, nu/2)
+            // theV = V/h ~ InverseGamma(nu/2, nu/2), so
+            // d/dnu log p(theV) = 0.5*(log(nu/2) + 1 - digamma(nu/2)
+            //                          - log(theV) - 1/theV).
             double theV = V(0) / h(0);
             double nu_val = nu(0);
             double jac = nu_val - nu_lower_bound;
-            grad(0) = - 0.5 * (R::digamma((nu_val + 1)/2) - R::digamma(nu_val/2) 
-                             - 1/nu_val - log(theV) + theV) * jac;
+            grad(0) = 0.5 * (std::log(nu_val / 2.0) + 1.0
+                             - R::digamma(nu_val / 2.0)
+                             - std::log(theV) - 1.0 / theV) * jac;
         }
     }
-    // grad /= n;
     return -grad;
 }
 

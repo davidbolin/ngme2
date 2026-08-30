@@ -429,7 +429,7 @@ test_that("caching does not change results on the platform default backend", {
   d <- make_ts_data()
   ctl <- control_opt(seed = 4321, burnin = 8, iterations = 20, n_batch = 1,
     n_parallel_chain = 2, max_num_threads = 2, verbose = FALSE,
-    R_hat_conv_check = FALSE, pflug_conv_check = FALSE,
+    R_hat_conv_check = FALSE,
     trend_std_conv_check = FALSE)
   fit_expr <- quote(ngme(
     y ~ x1 + x2 + f(idx, model = ar1(), noise = noise_normal()),

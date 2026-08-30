@@ -100,6 +100,27 @@ protected:
       use_iterative_solver; // No need for gibbs sampling
   std::vector<std::string> par_names;
   VectorXd rb_trace_noise_sigma;
+  // Per-parameter variance contributed by the Hutchinson trace estimators
+  // (probe variance / N_iter), in the same layout as the per-latent traces.
+  std::vector<VectorXd> rb_probe_var_K_latent, rb_probe_var_sigma_latent;
+  VectorXd rb_probe_var_noise_sigma;
+  // Running (Welford) variance of the gradient across iterations, used to size
+  // the probe budget against the Gibbs noise rather than fixing it a priori.
+  // Lag-1 differences rather than a plain running variance: during optimization
+  // the gradient's mean is moving, and a raw variance charges that drift to the
+  // sampling noise, which makes the Gibbs term look larger than it is and
+  // under-provisions probes. E[(g_t - g_{t-1})^2] / 2 is unaffected by a slowly
+  // moving mean.
+  VectorXd grad_prev_, grad_diff_sq_;
+  VectorXd probe_var_ewma_;  // smoothed raw probe variance, parameter layout
+  long grad_run_n_{0};
+  int trace_adapt_countdown_{0};
+  int last_trace_N_{0};
+  int selinv_state_{-1}; // -1 undecided, 0 probing, 1 selected inverse
+  double selinv_max_fill{4.0};
+  bool trace_adapt{false};
+  double trace_adapt_frac{0.1};
+  int trace_adapt_every{50}, trace_adapt_min{5}, trace_adapt_max{200};
   // Store per-latent RB trace terms at Block level
   std::vector<Eigen::VectorXd> rb_trace_K_latent;
   std::vector<Eigen::VectorXd> rb_trace_sigma_latent;
@@ -288,6 +309,12 @@ public:
 
   // tr(QQ^-1 dK^T diag(1/SV) K)
   void compute_rb_trace();
+  void adapt_trace_probes();
+  // tr(QQ^{-1} T): exact via the selected inverse when the factor is cheap
+  // enough, Hutchinson otherwise. Records the probe variance either way (zero
+  // for the exact path) so the probe adapter keeps working.
+  double qq_trace(const Eigen::SparseMatrix<double, 0, int> &T, double &probe_var);
+  int get_trace_N() const { return chol_QQ.get_N_iter(); }
 
   // return mean = mu*(V-h)
   VectorXd getMean() const {

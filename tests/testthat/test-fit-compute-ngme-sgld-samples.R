@@ -15,7 +15,6 @@ test_that("compute_ngme_sgld_samples refits and returns samples", {
       n_batch = 2,
       n_parallel_chain = 1,
       optimizer = adam(stepsize = 0.01),
-      pflug_conv_check = FALSE,
       R_hat_conv_check = FALSE,
       trend_std_conv_check = FALSE,
       store_traj = FALSE
@@ -66,7 +65,6 @@ test_that("compute_ngme_sgld_samples disallows separate schedule_burnin_iter in 
       n_batch = 2,
       n_parallel_chain = 1,
       optimizer = adam(stepsize = 0.01),
-      pflug_conv_check = FALSE,
       R_hat_conv_check = FALSE,
       trend_std_conv_check = FALSE,
       store_traj = FALSE
@@ -102,7 +100,6 @@ test_that("compute_ngme_sgld_samples can override n_gibbs_samples for refit", {
       n_batch = 2,
       n_parallel_chain = 1,
       optimizer = adam(stepsize = 0.01),
-      pflug_conv_check = FALSE,
       R_hat_conv_check = FALSE,
       trend_std_conv_check = FALSE,
       store_traj = FALSE

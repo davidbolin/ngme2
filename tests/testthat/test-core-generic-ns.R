@@ -224,10 +224,19 @@ test_that("generic_ns model == AR1 model", {
   ar1$param_name
   ar1$param_trans
 
+  # ar1() carries the stationary initial condition sqrt(1 - rho^2) at (1,1).
+  # generic_ns applies ONE transformation per parameter (a diagonal coefficient
+  # built by basis expansion), so it cannot represent that entry, whose
+  # coefficient is not linear in theta_K. ar1$G is therefore zero at (1,1) and
+  # rho C + G on its own is singular -- which no operator may be, since the
+  # sampler factorizes K. Use the unit initial condition instead, i.e. the
+  # identity in place of G.
+  G1 <- ar1$G + ar1$E11
+
   generic_ar1 <- generic_ns(
     theta_K = list(x = c(g(0.5))), # trans(X) = rho
     trans = list(x = "tanh"),
-    matrices = list(ar1$C, ar1$G),
+    matrices = list(ar1$C, G1),
     position = list(c(1, 2), c(3)),
     h = ar1$h,
     mesh = 1:n_obs
@@ -236,15 +245,12 @@ test_that("generic_ns model == AR1 model", {
   generic_ar1$param_name
   generic_ar1$param_trans
 
-  # ar1() carries the stationary initial condition sqrt(1 - rho^2) at (1,1).
-  # generic_ns applies ONE transformation per parameter (a diagonal coefficient
-  # built by basis expansion), so it can represent the linear part rho C + G
-  # but not that entry, whose coefficient is not linear in theta_K.
   expect_equal(ar1$K, ar1$C * 0.5 + ar1$G + sqrt(1 - 0.5^2) * ar1$E11)
-  expect_equal(generic_ar1$K, ar1$C * 0.5 + ar1$G)
-  expect_equal(generic_ar1$matrices, list(ar1$C, ar1$G))
+  expect_equal(generic_ar1$K, ar1$C * 0.5 + G1)
+  expect_equal(generic_ar1$matrices, list(ar1$C, G1))
 
   control <- control_opt(
+    warn_no_convergence = FALSE,
     seed = seed,
     iterations = 100,
     n_parallel_chain = 4,
@@ -275,7 +281,7 @@ test_that("generic_ns model == AR1 model", {
       model = generic_ns(
         theta_K = list(rho = g(0.5)),
         trans = list(rho = "tanh"),
-        matrices = list(ar1$C, ar1$G),
+        matrices = list(ar1$C, G1),
         h = ar1$h,
         position = list(c(1, 2), c(3))
       )
@@ -348,6 +354,7 @@ test_that("generic model == Matern model (alpha == 2 or 4)", {
 
   # Fitting the matern model
   control <- control_opt(
+    warn_no_convergence = FALSE,
     seed = 10,
     iterations = 50,
     n_parallel_chain = 4,
@@ -504,6 +511,7 @@ test_that("generic_ns model == bv_matern_nig model", {
     ),
     data = data.frame(Y, long, lat),
     control_opt = control_opt(
+    warn_no_convergence = FALSE,
       iterations = 10,
       n_parallel_chain = 4,
       rao_blackwellization = TRUE,
@@ -519,8 +527,12 @@ test_that("generic_ns model == bv_matern_nig model", {
 
 test_that("Simulation and fitting", {
   n <- 5
-  A <- matrix(1, n, n)
-  B <- matrix(2, n, n)
+  # The sampler factorizes K, so whatever these assemble to has to be
+  # invertible: matrix(1, n, n) and matrix(2, n, n) are both rank 1 and every
+  # combination of them is singular. The diagonal makes them full rank without
+  # changing what the test exercises.
+  A <- matrix(1, n, n) + diag(n)
+  B <- matrix(2, n, n) + diag(n)
   A
   B
   alpha <- 0.4
@@ -551,6 +563,7 @@ test_that("Simulation and fitting", {
     ),
     data = data.frame(y),
     control_opt = control_opt(
+    warn_no_convergence = FALSE,
       iterations = 10
     )
   )

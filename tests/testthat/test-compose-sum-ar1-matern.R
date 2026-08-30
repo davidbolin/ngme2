@@ -35,6 +35,7 @@ test_that("test sum of ar1 and matern", {
       f(time_points, model = matern(mesh), name = "matern_comp"),
     data = data.frame(Y = Y),
     control_opt = control_opt(
+    warn_no_convergence = FALSE,
       seed = 123,
       iterations = 1000,
       optimizer = adamW(),

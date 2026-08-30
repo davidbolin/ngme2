@@ -251,6 +251,27 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
                        : 0.0,
 
   family = Rcpp::as<string>(noise_in["noise_type"]);
+  {
+    Rcpp::List cn = block_model["control_ngme"];
+    // BlockModel::debug was never read from the control list, which left the
+    // per-stage timing instrumentation below unreachable.
+    if (cn.containsElementNamed("debug"))
+      debug = Rcpp::as<bool>(cn["debug"]);
+    if (cn.containsElementNamed("selinv_max_fill"))
+      selinv_max_fill = Rcpp::as<double>(cn["selinv_max_fill"]);
+    if (cn.containsElementNamed("trace_adapt"))
+      trace_adapt = Rcpp::as<bool>(cn["trace_adapt"]);
+    if (cn.containsElementNamed("trace_adapt_frac"))
+      trace_adapt_frac = Rcpp::as<double>(cn["trace_adapt_frac"]);
+    if (cn.containsElementNamed("trace_adapt_every"))
+      trace_adapt_every = Rcpp::as<int>(cn["trace_adapt_every"]);
+    if (cn.containsElementNamed("trace_adapt_min"))
+      trace_adapt_min = Rcpp::as<int>(cn["trace_adapt_min"]);
+    if (cn.containsElementNamed("trace_adapt_max"))
+      trace_adapt_max = Rcpp::as<int>(cn["trace_adapt_max"]);
+    trace_adapt_countdown_ = trace_adapt_every;
+  }
+
   noise_mu = B_mu * theta_mu;
   noise_sigma = (B_sigma * theta_sigma).array().exp();
   noise_nu = nu_lower_bound + (B_nu * theta_nu).array().exp();
@@ -562,11 +583,6 @@ VectorXd BlockModel::grad_beta() {
   // shared_sigma removed: keep generic form only
   //  * residual.cwiseQuotient(noise_sigma);
 
-  // MatrixXd hess = X.transpose() * noise_inv_SV.asDiagonal() * X;
-  // grads = grads / A.rows();
-  // grads = hess.ldlt().solve(grads);
-
-  // std::cout << "grads of beta=" << grads << std::endl;
   return grads;
 }
 
@@ -918,7 +934,8 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
                             std::chrono::steady_clock::now() - t_sw)
                             .count();
         auto t_rb = std::chrono::steady_clock::now();
-        compute_rb_trace(); // RB trace once (depends on QQ)
+        compute_rb_trace();
+        adapt_trace_probes(); // RB trace once (depends on QQ)
         t_rbtrace_ms += std::chrono::duration_cast<std::chrono::milliseconds>(
                             std::chrono::steady_clock::now() - t_rb)
                             .count();
@@ -927,6 +944,8 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
       auto t_sv = std::chrono::steady_clock::now();
       // Avoid duplicating QQ factorization here; sampleW_VY() updates QQ
       sample_cond_V();
+      // Both V blocks are drawn before W.
+      sample_cond_noise_V();
       t_sampleV_ms += std::chrono::duration_cast<std::chrono::milliseconds>(
                           std::chrono::steady_clock::now() - t_sv)
                           .count();
@@ -935,14 +954,10 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
       t_sampleW_ms += std::chrono::duration_cast<std::chrono::milliseconds>(
                           std::chrono::steady_clock::now() - t_sw)
                           .count();
-      t_sv = std::chrono::steady_clock::now();
-      sample_cond_noise_V();
-      t_sampleV_ms += std::chrono::duration_cast<std::chrono::milliseconds>(
-                          std::chrono::steady_clock::now() - t_sv)
-                          .count();
       if (rao_blackwell) {
         auto t_rb = std::chrono::steady_clock::now();
         compute_rb_trace();
+        adapt_trace_probes();
         t_rbtrace_ms += std::chrono::duration_cast<std::chrono::milliseconds>(
                             std::chrono::steady_clock::now() - t_rb)
                             .count();
@@ -1021,6 +1036,26 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
     t_grad_ms += std::chrono::duration_cast<std::chrono::milliseconds>(
                      std::chrono::steady_clock::now() - t_g)
                      .count();
+
+    // Running (Welford) variance of each gradient component. Combined with the
+    // Hutchinson probe variance below this separates the two noise sources:
+    //   Var(total) = Var(Gibbs) + Var(Hutchinson),  Var(Hutch) = probe_var / N.
+    if (grad_diff_sq_.size() != n_params) {
+      grad_prev_ = current_grad;
+      grad_diff_sq_ = VectorXd::Zero(n_params);
+      grad_run_n_ = 0;
+    } else {
+      // Exponentially weighted, never reset: a fresh window after every change
+      // is short and noisy, which is what made the budget oscillate.
+      const double a = 0.005; // ~200-iteration memory
+      VectorXd d = current_grad - grad_prev_;
+      if (grad_run_n_ == 0)
+        grad_diff_sq_ = d.cwiseProduct(d);
+      else
+        grad_diff_sq_ = (1.0 - a) * grad_diff_sq_ + a * d.cwiseProduct(d);
+      grad_prev_ = current_grad;
+      grad_run_n_ += 1;
+    }
 
     // Store gradient sample for covariance
     if (n_pass > 1)
@@ -1364,6 +1399,124 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
   }
 }
 
+// Size the Hutchinson probe budget so the trace estimator's contribution to the
+// gradient variance is a small fraction of the Gibbs sampling noise it sits on
+// top of. Var(Hutch) = probe_var / N falls as 1/N, so the N that reaches
+// Var(Hutch) = frac * Var(Gibbs) is  N = probe_var / (frac * Var(Gibbs)).
+// Taking the max over the affected parameters keeps the worst one in budget.
+// Probe variance is measured within an iteration and the total across
+// iterations, so the two sources are separable without extra work.
+void BlockModel::adapt_trace_probes() {
+  if (!rao_blackwell || !trace_adapt || grad_run_n_ < 30)
+    return;
+  if (--trace_adapt_countdown_ > 0)
+    return;
+  trace_adapt_countdown_ = trace_adapt_every;
+  if (chol_QQ.is_exact_trace())
+    return; // already exact, nothing to gain
+
+  // Per-iteration gradient variance, robust to the mean drifting under the
+  // optimizer: E[(g_t - g_{t-1})^2] / 2.
+  VectorXd var_tot = grad_diff_sq_ / 2.0;
+
+  // Raw probe variances in the parameter layout (Var(Hutchinson) = pv / N).
+  VectorXd pv = VectorXd::Zero(n_params);
+  int pos = 0;
+  for (int li = 0; li < n_latent; ++li) {
+    int n_k = latents[li]->get_n_theta_K();
+    int n_mu = latents[li]->get_n_theta_mu();
+    int n_sig = latents[li]->get_n_theta_sigma();
+    if (li < (int)rb_probe_var_K_latent.size() &&
+        rb_probe_var_K_latent[li].size() == n_k)
+      pv.segment(pos, n_k) = rb_probe_var_K_latent[li];
+    if (li < (int)rb_probe_var_sigma_latent.size() &&
+        rb_probe_var_sigma_latent[li].size() == n_sig)
+      pv.segment(pos + n_k + n_mu, n_sig) = rb_probe_var_sigma_latent[li];
+    pos += latents[li]->get_n_params();
+  }
+  if (rb_probe_var_noise_sigma.size() == n_theta_sigma)
+    pv.segment(n_la_params + n_theta_mu, n_theta_sigma) =
+        rb_probe_var_noise_sigma;
+
+  // Smooth the probe variances too. Each is a sample variance over as few as
+  // five probes, so a single reading is far too noisy to steer on -- leaving it
+  // unsmoothed was the main reason the budget oscillated.
+  if (probe_var_ewma_.size() != n_params)
+    probe_var_ewma_ = pv;
+  else
+    probe_var_ewma_ = 0.9 * probe_var_ewma_ + 0.1 * pv;
+  pv = probe_var_ewma_;
+
+  const int N_cur = std::max(1, chol_QQ.get_N_iter());
+
+  // Work with the BOUNDED share r = Var(Hutchinson) / Var(total) in [0,1)
+  // rather than solving for N directly.
+  double r_max = 0.0;
+  for (int j = 0; j < n_params; ++j) {
+    if (!(pv(j) > 0.0) || !(var_tot(j) > 0.0))
+      continue;
+    double r = (pv(j) / (double)N_cur) / var_tot(j);
+    if (r > 0.95)
+      r = 0.95; // beyond this the split is not measurable; do not extrapolate
+    r_max = std::max(r_max, r);
+  }
+  if (!(r_max > 0.0))
+    return;
+
+  const double r_t = std::min(std::max(trace_adapt_frac, 1e-3), 0.9);
+  // Deadband: leave the budget alone while the share is in the right region.
+  // Without it the estimate's own noise is enough to keep moving N every time.
+  if (r_max > 0.5 * r_t && r_max < 2.0 * r_t)
+    return;
+
+  // Var(Hutch) falls as 1/N, so the exact multiplier for r_max -> r_t is
+  //   N_new/N_cur = [r_max/(1-r_max)] * [(1-r_t)/r_t].
+  double factor = (r_max / (1.0 - r_max)) * ((1.0 - r_t) / r_t);
+  // Take only a fraction of that step, in log space, and cap it. The budget
+  // then approaches its target geometrically over several updates instead of
+  // jumping to the solved value on one reading and bouncing off the opposite
+  // bound next time.
+  factor = std::pow(factor, 0.3);
+  factor = std::min(std::max(factor, 0.8), 1.25);
+
+  int N_new = (int)std::lround(N_cur * factor);
+  N_new = std::min(std::max(N_new, trace_adapt_min), trace_adapt_max);
+  if (N_new != N_cur) {
+    if (debug)
+      std::cout << "[trace_adapt] r=" << r_max << " probes " << N_cur << " -> "
+                << N_new << "\n";
+    last_trace_N_ = N_new;
+    chol_QQ.set_N_iter(N_new);
+    // statistics are exponentially weighted and stay valid across the change
+  }
+}
+
+// Selected inversion is exact and, for a low-fill factor, cheaper than even a
+// handful of probes. The fill ratio is the operational test and is decided once per fit.
+double BlockModel::qq_trace(const SparseMatrix<double> &T, double &probe_var) {
+  if (selinv_state_ < 0) {
+    double fr = chol_QQ.fill_ratio();
+    selinv_state_ =
+        (chol_QQ.selinv_supported() && fr <= selinv_max_fill) ? 1 : 0;
+    if (debug)
+      std::cout << "[selinv] fill_ratio=" << fr
+                << " -> " << (selinv_state_ ? "exact selected inverse"
+                                            : "Hutchinson probes")
+                << "\n";
+  }
+  if (selinv_state_ == 1) {
+    double v = 0.0;
+    if (chol_QQ.selinv_trace(T, v)) {
+      probe_var = 0.0; // exact: contributes no estimation variance
+      return v;
+    }
+    selinv_state_ = 0; // pattern not covered; fall back for the rest of the fit
+  }
+  double v = chol_QQ.trace(T, rng());
+  probe_var = chol_QQ.last_probe_var();
+  return v;
+}
+
 void BlockModel::compute_rb_trace() {
   if (debug)
     std::cout << "start compute trace" << std::endl;
@@ -1374,16 +1527,21 @@ void BlockModel::compute_rb_trace() {
   // Ensure storage is sized for all latents
   rb_trace_K_latent.resize(n_latent);
   rb_trace_sigma_latent.resize(n_latent);
+  rb_probe_var_K_latent.resize(n_latent);
+  rb_probe_var_sigma_latent.resize(n_latent);
 
   for (int i = 0; i < n_latent; i++) {
     VectorXd rb_trace_K(latents[i]->get_n_theta_K());
     VectorXd rb_trace_sigma(latents[i]->get_n_theta_sigma());
+    VectorXd pv_K = VectorXd::Zero(latents[i]->get_n_theta_K());
+    VectorXd pv_sigma = VectorXd::Zero(latents[i]->get_n_theta_sigma());
+
 
     // compute for K: tr(QQ^-1 dK^T diag(1/SV) K)
     for (int j = 0; j < latents[i]->get_n_theta_K(); j++) {
       SparseMatrix<double> T =
           block_dK[i][j].transpose() * inv_SV.asDiagonal() * K;
-      rb_trace_K[j] = -chol_QQ.trace(T, rng());
+      { double pvj = 0.0; rb_trace_K[j] = -qq_trace(T, pvj); pv_K[j] += pvj; }
     }
 
     // compute for sigma: tr(Q^-1 K B_sigma.col(j)/SV K^T) for non-fixed
@@ -1402,7 +1560,7 @@ void BlockModel::compute_rb_trace() {
 
       SparseMatrix<double> T =
           K.transpose() * BSigma_col_over_SV.asDiagonal() * K;
-      rb_trace_sigma[j] = chol_QQ.trace(T, rng());
+      { double pvj = 0.0; rb_trace_sigma[j] = qq_trace(T, pvj); pv_sigma[j] = pvj; }
       pos += 1;
     }
 
@@ -1438,12 +1596,14 @@ void BlockModel::compute_rb_trace() {
       setSparseBlock(&T, woff, woff, Tloc);
       // Accumulate into rb_trace_K (same sign as K-term; Block compensates
       // later)
-      rb_trace_K[j] -= chol_QQ.trace(T, rng());
+      { double pvj = 0.0; rb_trace_K[j] -= qq_trace(T, pvj); pv_K[j] += pvj; }
     }
 
     // Save per-latent RB traces at Block level for later gradient compensation
     rb_trace_K_latent[i] = rb_trace_K;
     rb_trace_sigma_latent[i] = rb_trace_sigma;
+    rb_probe_var_K_latent[i] = pv_K;
+    rb_probe_var_sigma_latent[i] = pv_sigma;
     n += latents[i]->get_V_size();
     woff += latents[i]->get_W_size();
   }
@@ -1462,7 +1622,10 @@ void BlockModel::compute_rb_trace() {
     SparseMatrix<double> T =
         AZ.transpose() * B_sigma.col(j).cwiseQuotient(noise_SV).asDiagonal() *
         AZ;
-    rb_trace_noise_sigma[j] = chol_QQ.trace(T, rng());
+    { double pvj = 0.0; rb_trace_noise_sigma[j] = qq_trace(T, pvj);
+      if (rb_probe_var_noise_sigma.size() != n_theta_sigma)
+        rb_probe_var_noise_sigma = VectorXd::Zero(n_theta_sigma);
+      rb_probe_var_noise_sigma[j] = pvj; }
   }
   if (debug) {
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(

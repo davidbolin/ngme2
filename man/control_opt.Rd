@@ -20,8 +20,16 @@ control_opt(
   print_check_info = FALSE,
   max_relative_step = 0.5,
   max_absolute_step = 0.5,
-  rao_blackwellization = FALSE,
+  rao_blackwellization = TRUE,
   n_trace_iter = 10,
+  polish_iterations = 50L,
+  polish_stepsize_factor = 0.3,
+  selinv_max_fill = 4,
+  trace_adapt = TRUE,
+  trace_adapt_frac = 0.1,
+  trace_adapt_every = 100L,
+  trace_adapt_min = 5L,
+  trace_adapt_max = 200L,
   sampling_strategy = "all",
   solver_backend = if (Sys.info()["sysname"] == "Darwin") "accelerate" else "cholmod",
   solver_type = "llt",
@@ -34,11 +42,13 @@ control_opt(
   n_slope_check = min(n_batch, 3),
   trend_std_conv_check = TRUE,
   std_lim = 0.01,
-  trend_lim = 0.01,
+  trend_lim = 2,
+  trend_use_tstat = TRUE,
+  use_std_check = FALSE,
+  n_conv_batch = 1,
+  warn_no_convergence = TRUE,
   R_hat_conv_check = TRUE,
-  max_R_hat = 1.1,
-  pflug_conv_check = TRUE,
-  pflug_alpha = 0.9
+  max_R_hat = 1.1
 )
 }
 \arguments{
@@ -83,9 +93,47 @@ If it is more than n_parallel_chain, the rest will be used to parallel different
 
 \item{max_absolute_step}{max absolute step allowed in 1 iteration}
 
-\item{rao_blackwellization}{use rao_blackwellization}
+\item{rao_blackwellization}{replace the sampled latent field by its conditional
+expectation \code{E[W | Y, V]} in the gradient (default \code{TRUE}).}
 
-\item{n_trace_iter}{use how many iterations to approximate the trace (Hutchinson’s trick)}
+\item{n_trace_iter}{use how many iterations to approximate the trace (Hutchinson’s trick).
+The starting probe budget; with \code{trace_adapt = TRUE} it is retuned during the run.}
+
+\item{polish_iterations}{iterations of a post-convergence polish phase, run once the
+stopping rule has fired (or the budget is spent) with the step size scaled by
+\code{polish_stepsize_factor}. The reported estimate is the average of the iterates over
+this window (Polyak-Ruppert), which is what reduces its variance; the smaller step only
+shrinks the ball being averaged over. Capped at the number of iterations the fit actually
+ran, so a very short fit is not handed a disproportionate tail.}
+
+\item{polish_stepsize_factor}{multiplier applied to the step size during the polish phase.
+Measured over six optimizer seeds at fixed data, 0.3 cut the estimator's standard
+deviation by about a quarter; too small a factor freezes the chains so there is little
+left to average over, and no reduction at all lets them keep wandering.}
+
+\item{selinv_max_fill}{use the exact selected (Takahashi) inverse for the
+Rao-Blackwell traces when the Cholesky factor of QQ has \code{nnz(L)/n} at or below
+this, and Hutchinson probes otherwise. Triangular operators (ar1, ou, arma) and 1-d
+meshes give a banded QQ with a ratio near 2-3, where the exact route is both cheaper
+and free of probe noise; a 2-d mesh is nearer 35, where it is far slower. Set to 0 to
+always probe.}
+
+\item{trace_adapt}{size the Hutchinson probe count automatically (default \code{TRUE}).
+The estimator's own variance falls as 1/N and is measured from the spread of the probes,
+while the Gibbs sampling noise is measured across iterations; the budget is set so the
+former is \code{trace_adapt_frac} of the latter. Only active when Rao-Blackwellisation
+is on, since that is where the trace estimators feed the gradient.}
+
+\item{trace_adapt_frac}{target share of the total gradient variance carried by the trace
+estimator (default 0.1, i.e. it adds about 5\% to the gradient standard deviation). A
+deadband leaves the budget alone while the measured share is within a factor of two of
+this, so the achieved share settles between roughly \code{0.5 * trace_adapt_frac} and
+\code{2 * trace_adapt_frac}. Updates are damped and capped at 25\% per step, so the
+budget approaches its target over several updates rather than jumping.}
+
+\item{trace_adapt_every}{how many iterations between probe-budget updates.}
+
+\item{trace_adapt_min, trace_adapt_max}{bounds on the adapted probe count.}
 
 \item{sampling_strategy}{subsampling method of replicates of model, c("all", "ws")
 "all" means using all replicates in each iteration,
@@ -121,15 +169,28 @@ with reset local time index.}
 
 \item{std_lim}{maximum allowed standard deviation}
 
-\item{trend_lim}{maximum allowed slope}
+\item{trend_lim}{maximum allowed drift. With \code{trend_use_tstat = TRUE}
+(default) this is a t-value on the fitted slope (2 ~ "not distinguishable from no
+drift"); with \code{trend_use_tstat = FALSE} it is an absolute bound on the slope.}
+
+\item{trend_use_tstat}{compare the fitted slope to its own standard error
+(\code{|slope| / se(slope) <= trend_lim}) instead of to an absolute bound. Scale-free
+and independent of \code{n_batch}; with this on, \code{trend_lim} is a t-value (~2-3).}
+
+\item{use_std_check}{include the relative-standard-deviation part of the trend/std
+diagnostic. The raw coefficient of variation conflates chain disagreement with
+parameter imprecision, so weakly identified parameters can never pass it.}
+
+\item{n_conv_batch}{number of consecutive checkpoints that must satisfy the criteria
+before convergence is declared. Guards against a single lucky checkpoint.}
+
+\item{warn_no_convergence}{emit a warning when the iteration budget is exhausted without
+the convergence criteria being met. Set \code{FALSE} for short runs where convergence
+is not expected (e.g. fast unit tests).}
 
 \item{R_hat_conv_check}{use the R-hat diagnostic for convergence checking}
 
 \item{max_R_hat}{maximum allowed R_hat}
-
-\item{pflug_conv_check}{use Pflug diagnostic for convergence check}
-
-\item{pflug_alpha}{scaling factor (0-1] for Pflug criterion: require \code{pflug_sum < pflug_alpha * max_pflug_sum}}
 }
 \value{
 list of control variables
@@ -141,12 +202,16 @@ optimization process.
 \details{
 Convergence diagnostics (multi-chain):
 * R-hat: per-parameter Gelman–Rubin statistic; passes if \code{R_hat <= max_R_hat}.
-* Trend/Std: uses the last \code{n_slope_check} checkpoints after at least \code{n_min_batch} batches.
-  Passes when both the relative std (\code{sqrt(var)/|mean| <= std_lim}) and linear trend
-  of the means (\code{|slope| <= trend_lim}) satisfy their thresholds.
-* Pflug: per-chain criterion \code{pflug_sum < pflug_alpha * max_pflug_sum} in the latest batch;
-  if all chains satisfy it, overall convergence is declared.
+* Trend: fits a weighted linear trend to the last \code{n_slope_check} checkpoints and
+  passes when the slope is not distinguishable from zero, \code{|slope| / se(slope) <=
+  trend_lim}. This is scale-free and independent of \code{n_batch}. Setting
+  \code{trend_use_tstat = FALSE} recovers the absolute test \code{|slope| <= trend_lim},
+  and \code{use_std_check = TRUE} additionally requires \code{sqrt(var)/|mean| <= std_lim}.
 Checks are evaluated every \code{iters_per_check = iterations / n_batch}. A parameter is marked
-converged if any enabled parameter-level diagnostic (R-hat or Trend/Std) passes; the run stops
-when all parameters converge or when the Pflug diagnostic triggers.
+converged only if every enabled parameter-level diagnostic (R-hat and Trend/Std) passes, so a
+single diagnostic cannot declare convergence on its own; the run stops when all parameters
+converge. Disable a diagnostic
+(\code{R_hat_conv_check = FALSE} or \code{trend_std_conv_check = FALSE}) to drop it from the
+requirement. The criteria must hold on \code{n_conv_batch} consecutive checkpoints, since a
+single passing checkpoint is weak evidence.
 }

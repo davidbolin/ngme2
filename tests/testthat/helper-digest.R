@@ -95,8 +95,10 @@ ngme_reproducible_control <- function(iterations = 20, burnin = 8, ...) {
     verbose = FALSE,
     print_check_info = FALSE,
     R_hat_conv_check = FALSE,
-    pflug_conv_check = FALSE,
     trend_std_conv_check = FALSE,
+    # These fits pin exact iteration and factorization counts, so the
+    # post-convergence polish phase (which adds iterations of its own) is off.
+    polish_iterations = 0L,
     ...
   )
 }

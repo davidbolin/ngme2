@@ -8,6 +8,7 @@ test_that("predict and cross_validation support predictive_average over chains",
     y ~ 0 + f(1:n, model = ar1(), name = "ar1_field"),
     data = data.frame(y = y),
     control_opt = control_opt(
+    warn_no_convergence = FALSE,
       iterations = 30,
       n_batch = 3,
       n_parallel_chain = 3,

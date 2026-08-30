@@ -312,12 +312,10 @@ We can turn the `estimation = TRUE` to start estimating the model.
   - `sqrt(var) / |mean| <= std_lim` (default 0.01)  
   - |linear slope over last `n_slope_check` means| `<= trend_lim` (default 0.01).
 
-- **Pflug diagnostic (`pflug_conv_check`, `pflug_alpha`)**  
-  For each chain, checks `pflug_sum < pflug_alpha * max_pflug_sum` in the latest batch (default `pflug_alpha = 1`). If all chains satisfy this, convergence is declared regardless of the other two checks.
 
 Combination rule:
 - A parameter is considered converged if **any** enabled diagnostic passes for it (R̂ or Trend/Std).  
-- Overall convergence is reached when all parameters are converged, or when the Pflug diagnostic passes for all chains.
+- Overall convergence is reached when all parameters are converged.
 
 Key control knobs (set via `control_opt()`):
 
@@ -331,16 +329,13 @@ ctrl <- control_opt(
   trend_std_conv_check = TRUE,
   std_lim = 0.01,
   trend_lim = 0.01,
-  pflug_conv_check = TRUE,
-  pflug_alpha = 1,
   print_check_info = TRUE     # print per-check diagnostics
 )
 ```
 
 Recommendations:
-- Use at least two chains for R̂; with one chain only Trend/Std and Pflug can run.
+- Use at least two chains for R̂; with one chain only Trend/Std can run.
 - If checks trigger too early, increase `n_min_batch` or loosen `std_lim` / `trend_lim`.
-- Pflug is inexpensive; keep it on unless it yields false positives in your model.
 
 
 ## A simple example - AR1 process with nig noise
@@ -409,9 +404,7 @@ fit_nig <- ngme(
     burnin = 100,
     iterations = 2000,
     n_parallel_chain = 4,
-    seed = 3,
-    pflug_conv_check = TRUE,
-    pflug_alpha = 1
+    seed = 3
   )
 )
 ```

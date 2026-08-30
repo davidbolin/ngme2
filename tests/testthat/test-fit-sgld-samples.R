@@ -16,7 +16,6 @@ test_that("ngme_sgld_samples returns thinned samples as data.frame", {
       n_parallel_chain = 2,
       optimizer = sgld(stepsize = 0.001, temperature = 1),
       stepsize_control = poly_decay(alpha = 0.6, t0 = 10),
-      pflug_conv_check = FALSE,
       R_hat_conv_check = FALSE,
       trend_std_conv_check = FALSE,
       store_traj = TRUE
@@ -74,7 +73,6 @@ test_that("ngme_sgld_samples validates burnin_iter", {
       n_parallel_chain = 1,
       optimizer = sgld(stepsize = 0.001, temperature = 1),
       stepsize_control = poly_decay(alpha = 0.6, t0 = 10),
-      pflug_conv_check = FALSE,
       R_hat_conv_check = FALSE,
       trend_std_conv_check = FALSE,
       store_traj = TRUE
@@ -111,7 +109,6 @@ test_that("ngme_sgld_ci returns quantile intervals and covariance", {
       n_parallel_chain = 2,
       optimizer = sgld(stepsize = 0.001, temperature = 1),
       stepsize_control = poly_decay(alpha = 0.6, t0 = 10),
-      pflug_conv_check = FALSE,
       R_hat_conv_check = FALSE,
       trend_std_conv_check = FALSE,
       store_traj = TRUE

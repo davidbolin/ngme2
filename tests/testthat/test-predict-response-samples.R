@@ -10,6 +10,7 @@ test_that("predict supports response draws and output-level samples", {
     data = data.frame(y = y),
     family = noise_normal(),
     control_opt = control_opt(
+    warn_no_convergence = FALSE,
       iterations = 30,
       burnin = 1,
       n_batch = 3,
@@ -70,6 +71,7 @@ test_that("predict only requires maps for requested latent fields", {
     data = data.frame(y = y),
     family = noise_normal(),
     control_opt = control_opt(
+    warn_no_convergence = FALSE,
       iterations = 20,
       burnin = 1,
       n_batch = 2,

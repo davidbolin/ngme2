@@ -327,10 +327,21 @@ void Operator::update_all(const VectorXd &theta, const UpdateOptions &opts) {
     record_K_pattern();
   }
   cholK_solver.compute(K);
-  // if (!cholK_solver.factorization_success()) {
-  //     throw std::runtime_error("Latent operator factorization failed: K is
-  //     not SPD");
-  // }
+  // A failed SparseLU factorization leaves the decomposition unusable: Eigen
+  // returns from factorize() before setting up its L store and only guards the
+  // solve path with eigen_assert, which is compiled out here, so going on to
+  // the traces below would read uninitialised memory and crash the R session.
+  // Report it as an ordinary error instead. The Cholesky paths keep their
+  // historical behaviour: a failed factorization there is memory-safe, and
+  // during SGD it is usually a transient excursion the next iterate recovers
+  // from.
+  if (cholK_solver.uses_lu() && !cholK_solver.factorization_success()) {
+    throw std::runtime_error(
+        "Factorization of the operator matrix K failed for model '" +
+        generic_type +
+        "': K is singular or numerically rank-deficient at the current "
+        "parameter values");
+  }
 
   // 4) Traces (only if dK available)
   if (want_trace) {

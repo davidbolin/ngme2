@@ -46,8 +46,11 @@ test_that("K stays lower triangular and its trace is analytic (-rho/2)", {
 
 test_that("an ar1 fit is invariant to the Hutchinson probe count", {
   skip_on_cran()
-  # The trace is taken analytically, so n_trace_iter cannot move the fit. It
-  # used to: the trace was estimated stochastically and rho moved by ~0.05.
+  # The *operator* trace is taken analytically, so n_trace_iter cannot move the
+  # fit. It used to: the trace was estimated stochastically and rho moved by
+  # ~0.05. This holds with Rao-Blackwellisation on too: for a banded QQ its
+  # conditional-variance corrections are taken from the selected inverse rather
+  # than estimated, so no probes enter the fit at all.
   d <- withr::with_seed(8, {
     n <- 400
     w <- as.numeric(stats::arima.sim(n = n, list(ar = 0.6)))
@@ -57,7 +60,7 @@ test_that("an ar1 fit is invariant to the Hutchinson probe count", {
     seed = 5, burnin = 20, iterations = 60, n_batch = 10, n_parallel_chain = 1,
     max_num_threads = 1, n_trace_iter = nti, start_sd = 0, verbose = FALSE,
     print_check_info = FALSE, R_hat_conv_check = FALSE,
-    pflug_conv_check = FALSE, trend_std_conv_check = FALSE)
+    trend_std_conv_check = FALSE)
   a <- ngme(y ~ 0 + f(idx, model = ar1(), noise = noise_normal()),
             data = d, family = "normal", control_opt = ctl(5))
   b <- ngme(y ~ 0 + f(idx, model = ar1(), noise = noise_normal()),

@@ -16,7 +16,6 @@ test_that("control_opt_batch_ci sets recommended CI defaults", {
   expect_true(isTRUE(ctl$store_traj))
   expect_false(isTRUE(ctl$trend_std_conv_check))
   expect_false(isTRUE(ctl$R_hat_conv_check))
-  expect_false(isTRUE(ctl$pflug_conv_check))
   expect_equal(ctl$stepsize_decay, "none")
 
   expect_equal(ctl$stepsize_schedule, "poly")

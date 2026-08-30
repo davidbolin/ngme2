@@ -11,16 +11,27 @@ load_cpp_bindings <- function() {
     skip("C++ binding file not found")
   }
 
-  src_dir <- normalizePath(
-    file.path(testthat::test_path("..", "..", "src")),
-    mustWork = FALSE
+  # The bindings #include the operator implementation straight from the package
+  # sources, which are not part of the installed package. Look wherever those
+  # sources can be: alongside tests/ in a source tree, and in the copy R CMD
+  # check unpacks into <pkg>.Rcheck/00_pkg_src/ when checking a tarball.
+  candidates <- c(
+    testthat::test_path("..", "..", "src"),
+    testthat::test_path("..", "..", "00_pkg_src", "ngme2", "src"),
+    file.path(dirname(cpp_file), "..", "..", "..", "src")
   )
-
-  if (!dir.exists(src_dir)) {
-    src_dir <- normalizePath(
-      file.path(dirname(cpp_file), "..", "..", "..", "src"),
-      mustWork = FALSE
+  src_dir <- NULL
+  for (candidate in candidates) {
+    impl <- file.path(
+      candidate, "latents", "fractional", "fractional_operators.cpp"
     )
+    if (file.exists(impl)) {
+      src_dir <- normalizePath(candidate, mustWork = FALSE)
+      break
+    }
+  }
+  if (is.null(src_dir)) {
+    skip("package C++ sources not available")
   }
 
   rcpp_eigen_include <- system.file("include", package = "RcppEigen")

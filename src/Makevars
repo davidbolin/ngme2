@@ -11,7 +11,7 @@ UNAME := $(shell uname)
 # 	@echo "BLAS and LAPACK and FLIBS found."
 
 # Make the shared object
-$(SHLIB): $(OBJECTS) 
+$(SHLIB): $(OBJECTS)
 
 # Compile Suitesparse
 ssdir = SuiteSparse
@@ -39,6 +39,7 @@ PKG_LIBS += $(SHLIB_OPENMP_CXXFLAGS)
 
 PKG_CPPFLAGS += -Iinclude -I../inst/include # -DNDEBUG -DDEBUG
 PKG_CXXFLAGS += $(SHLIB_OPENMP_CXXFLAGS)
+
 
 ## NB: INSTALL does not clean subdirectories between subarchitectures
 $(sslib1):
@@ -129,8 +130,12 @@ OBJECTS = $(sslib) RcppExports.o prior.o noise.o sample_rGIG.o estimate.o optimi
    $(UTILS) $(TESTS) $(LATENTS)
 
 
+DEPFILES = $(filter %.d,$(OBJECTS:.o=.d))
+-include $(DEPFILES)
+
 # Provide recipe to remove all objects
 clean:
-	@rm -f *.o util/*.o latents/*.o
+	@rm -f *.o util/*.o latents/*.o latents/fractional/*.o
+	@rm -f *.d util/*.d latents/*.d latents/fractional/*.d
 
 .PHONY: clean

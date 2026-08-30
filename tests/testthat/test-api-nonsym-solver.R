@@ -17,7 +17,7 @@ nonsym_control <- function(mode, iterations = 15) {
               n_parallel_chain = 1, max_num_threads = 1,
               solver_backend = "cholmod", nonsym_solver = mode,
               verbose = FALSE, print_check_info = FALSE,
-              R_hat_conv_check = FALSE, pflug_conv_check = FALSE,
+              R_hat_conv_check = FALSE,
               trend_std_conv_check = FALSE)
 }
 

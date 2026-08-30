@@ -1,5 +1,46 @@
 # ngme2 (development version)
 
+* Rao-Blackwellisation is now on by default (`control_opt(rao_blackwellization = )`).
+* Fixed the Gibbs sweep order that made Rao-Blackwellisation unusable with a non-Gaussian
+  `family`. The measurement `V` was redrawn after `W`, which left `QQ` and `cond_W`
+  conditioned on the previous `V` while the gradient used the new one; the fit diverged until
+  `QQ` lost positive-definiteness. Both `V` blocks are now drawn before `W`. Gaussian
+  families were unaffected, since there `V` is fixed.
+* The Rao-Blackwell traces are taken from an exact selected (Takahashi) inverse when the
+  Cholesky factor of `QQ` is cheap enough, and from Hutchinson probes otherwise, controlled
+  by `control_opt(selinv_max_fill = )`. Triangular operators (`ar1`, `ou`, `arma`) and 1-d
+  meshes qualify; a 2-d mesh does not. For those models the traces are now exact and the fit
+  no longer depends on `n_trace_iter` at all.
+* The Hutchinson probe count adapts during the run (`control_opt(trace_adapt = )`) so that
+  the trace estimator contributes a target share of the gradient variance instead of being
+  fixed a priori. 
+* The convergence trend test is now scale-free: it compares the fitted slope to its own
+  standard error rather than to an absolute bound, so `trend_lim` is a t-value (default 2)
+  and no longer depends on the parameter's units or on `n_batch`. The old absolute test never
+  passed on any model tried; `trend_use_tstat = FALSE` restores it. The relative-standard-
+  deviation part is off by default (`use_std_check`), as it conflates chain disagreement with
+  parameter imprecision.
+* A run that exhausts its iteration budget without converging now warns and names the
+  parameters still failing, instead of returning silently. Set
+  `control_opt(warn_no_convergence = FALSE)` for short runs where convergence is not expected.
+* New post-convergence polish phase (`control_opt(polish_iterations = )`, default 50, capped
+  at the number of iterations the fit ran). Once the stopping rule fires the step size is
+  scaled by `polish_stepsize_factor` and the reported estimate becomes the average of the
+  iterates over that window (Polyak-Ruppert), which cut the estimator's standard deviation by
+  about a fifth in testing. Set to 0 for the previous last-batch average.
+* Removed the Pflug convergence diagnostic (`pflug_conv_check`, `pflug_alpha`). It could
+  never fire: the rule looks for sign changes in the running sum of `<g_t, g_{t-1}>`, but the
+  gradient is evaluated on a Gibbs sample of the latent field, so consecutive gradients stay
+  positively correlated however close the optimum is. Its intent -- detect that systematic
+  progress has stopped -- is served by the slope t-statistic, which asks the same question of
+  the parameter trajectory.
+* `src/Makevars` now tracks header dependencies, so editing a header rebuilds every object
+  that includes it. Previously only each source file was compared against its own object,
+  which could leave objects compiled against two different layouts of the same class.
+* Fixed `single_V` gradients for the NIG and t noise types, which did not match the score of
+  the corresponding density and had the wrong sign over part of the range.
+* The `"ws"` replicate sampling strategy now applies the importance weight it was missing, so
+  it no longer differs in scale from `"all"` by roughly the number of replicates.
 * Update estimation code to only reassemble and refactorize the latent precision
   matrix `QQ` when it can actually have changed. The matrix is also split into 
   `K' diag(1/SV) K` and its measurement block `(AZ)' D (AZ)`, and these are 

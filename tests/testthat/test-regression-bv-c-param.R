@@ -38,6 +38,7 @@ test_that("bv model with c1, c2 parameters works", {
     ),
     data = data.frame(Y = sim_fields),
     control_opt = control_opt(
+    warn_no_convergence = FALSE,
       estimation = TRUE,
       iterations = 10,
       print_check_info = FALSE

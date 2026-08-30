@@ -70,7 +70,7 @@ test_that("a tp fit no longer depends on the non-symmetric solver choice", {
     seed = 4321, burnin = 10, iterations = 20, n_batch = 10,
     n_parallel_chain = 2, max_num_threads = 2, nonsym_solver = ns,
     verbose = FALSE, print_check_info = FALSE, R_hat_conv_check = FALSE,
-    pflug_conv_check = FALSE, trend_std_conv_check = FALSE)
+    trend_std_conv_check = FALSE)
   a <- ngme(y ~ f(list(time, cbind(c1, c2)),
       model = tp(first = ar1(mesh = 1:5), second = matern(mesh = msh)),
       noise = noise_normal()),
@@ -176,7 +176,7 @@ test_that("operator traces redraw their probes every iteration", {
     seed = sd, burnin = 20, iterations = 60, n_batch = 10, n_parallel_chain = 1,
     max_num_threads = 1, n_trace_iter = 10, start_sd = 0, verbose = FALSE,
     print_check_info = FALSE, R_hat_conv_check = FALSE,
-    pflug_conv_check = FALSE, trend_std_conv_check = FALSE)
+    trend_std_conv_check = FALSE)
   k1 <- as.numeric(ngme_result(ngme(
     y ~ 0 + f(~ c1 + c2, model = matern(mesh = msh), noise = noise_normal()),
     data = dat, family = "normal", control_opt = ctl(11)))$field1$kappa)
@@ -202,7 +202,7 @@ test_that("a fit is still reproducible from control_opt(seed = )", {
   ctl <- control_opt(seed = 77, burnin = 10, iterations = 30, n_batch = 10,
     n_parallel_chain = 1, max_num_threads = 1, verbose = FALSE,
     print_check_info = FALSE, R_hat_conv_check = FALSE,
-    pflug_conv_check = FALSE, trend_std_conv_check = FALSE)
+    trend_std_conv_check = FALSE)
   a <- ngme(y ~ 0 + f(~ c1 + c2, model = matern(mesh = msh), noise = noise_normal()),
             data = d, family = "normal", control_opt = ctl)
   b <- ngme(y ~ 0 + f(~ c1 + c2, model = matern(mesh = msh), noise = noise_normal()),

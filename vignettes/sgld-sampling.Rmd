@@ -70,8 +70,7 @@ ctl <- control_opt(
   store_traj = TRUE,
   # fixed-iteration SGLD runs are usually preferred for sampling workflows
   trend_std_conv_check = FALSE,
-  R_hat_conv_check = FALSE,
-  pflug_conv_check = FALSE
+  R_hat_conv_check = FALSE
 )
 ```
 
@@ -99,8 +98,7 @@ fit_sgld <- ngme(
     n_parallel_chain = 2,
     store_traj = TRUE,
     trend_std_conv_check = FALSE,
-    R_hat_conv_check = FALSE,
-    pflug_conv_check = FALSE
+    R_hat_conv_check = FALSE
   ),
   control_ngme = control_ngme(n_gibbs_samples = 3)
 )

@@ -59,6 +59,7 @@ test_that("test fractional model", {
     family = noise_normal(sigma = 0.1, fix_sigma = FALSE),
     # debug = TRUE,
     control_opt = control_opt(
+    warn_no_convergence = FALSE,
       n_parallel_chain = 4,
       start_sd = 0.01,
       optimizer = precond_sgd(),

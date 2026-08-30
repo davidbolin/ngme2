@@ -27,7 +27,6 @@ test_that("ngme runs with sgld and stores trajectories", {
       n_parallel_chain = 1,
       optimizer = sgld(stepsize = 0.001, temperature = 1),
       stepsize_control = poly_decay(alpha = 0.6, t0 = 10),
-      pflug_conv_check = FALSE,
       R_hat_conv_check = FALSE,
       trend_std_conv_check = FALSE,
       store_traj = TRUE

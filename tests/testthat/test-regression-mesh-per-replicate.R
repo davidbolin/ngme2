@@ -55,6 +55,7 @@ test_that("per-replicate 1D mesh list gives each replicate its own operator", {
     replicate = dm$rep,
     family = "normal",
     control_opt = control_opt(
+    warn_no_convergence = FALSE,
       seed = 1, burnin = 5, iterations = 10, n_batch = 1
     )
   )
@@ -96,6 +97,7 @@ test_that("per-replicate 2D mesh list gives each replicate its own operator", {
     replicate = dm$rep,
     family = "normal",
     control_opt = control_opt(
+    warn_no_convergence = FALSE,
       seed = 1, burnin = 5, iterations = 10, n_batch = 1
     )
   )
@@ -122,7 +124,8 @@ test_that("per-replicate mesh list is picked up from a pre-built operator def", 
     data = dm,
     replicate = dm$rep,
     family = "normal",
-    control_opt = control_opt(estimation = FALSE)
+    control_opt = control_opt(
+    warn_no_convergence = FALSE,estimation = FALSE)
   )
 
   for (i in seq_along(n_per)) {
@@ -143,7 +146,8 @@ test_that("too few meshes for the number of replicates is reported", {
       data = dm,
       replicate = dm$rep,
       family = "normal",
-      control_opt = control_opt(estimation = FALSE)
+      control_opt = control_opt(
+    warn_no_convergence = FALSE,estimation = FALSE)
     ),
     "Insufficient meshes"
   )

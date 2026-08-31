@@ -123,6 +123,15 @@ scale.
 - `nu`: `prior_inv_exponential(...)` corresponds to
   `kappa = 1 / nu ~ Exp(lambda)`, which can encode preference toward larger
   `nu` (Gaussian-like behavior).
+- `nu`: `prior_pc_nu(U, alpha)` is the same family with `lambda` set by the
+  penalised-complexity calibration of Cabral, Bolin and Rue (2023),
+  `P(1/nu > U) = alpha`. This is what `f()` installs by default for stationary
+  NIG latent noise (`U = 2.5`, `alpha = 0.01`). Since `1/nu` is the distance to
+  the Gaussian base model, `U` is read most easily through the excess kurtosis
+  of a unit-`h` increment, which is `3/nu`: the default puts 1% of the prior
+  mass above an excess kurtosis of 7.5, i.e. `P(nu < 0.4) = 0.01`. The
+  calibration does not involve the mesh, because `nu` describes the process
+  rather than the discretisation.
 
 ```{r}
 noise_stationary <- noise_nig(

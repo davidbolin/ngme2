@@ -10,9 +10,13 @@
 #'   model constructors such as \code{ar1()}, \code{matern()}, \code{bv()}, etc.
 #' @param noise  ngme_noise object, noise_nig() or noise_gal()
 #'   For a stationary \code{nig} or \code{normal_nig} noise whose \code{nu}
-#'   prior was not set by the user, \code{f()} installs an inverse-exponential
-#'   prior on \code{nu}: \eqn{1/\nu \sim \mathrm{Exp}(\lambda)} with
-#'   \eqn{\lambda = \log(2)/\sum_i h_i}. This is invariant under mesh refinement.
+#'   prior was not set by the user, \code{f()} installs the penalised-complexity
+#'   prior of \code{\link{prior_pc_nu}} on \code{nu}, that is
+#'   \eqn{1/\nu \sim \mathrm{Exp}(\lambda)} with \eqn{\lambda} calibrated from
+#'   \eqn{\Pr(1/\nu > U) = \alpha}. The rate does not depend on the mesh or on
+#'   the size of the domain; change it with
+#'   \code{options(ngme2.pc_nu_U =, ngme2.pc_nu_alpha =)} or by passing
+#'   \code{priors(nu = prior_pc_nu(...))} to the noise.
 #' @param name   name of the field, for later use, if not provided, will be "field1" etc.
 #' @param data      specifed or inherit from ngme() function
 #' @param group   group factor indicate resposne variable, can be inherited from ngme() function, (used for bivariate model)
@@ -78,7 +82,7 @@ f <- function(
     FALSE
   }
 
-  maybe_apply_default_nu_prior <- function(noise_obj, h_vec) {
+  maybe_apply_default_nu_prior <- function(noise_obj) {
     if (isTRUE(noise_obj$fix_theta_nu) || noise_obj$n_theta_nu == 0) {
       return(noise_obj)
     }
@@ -93,25 +97,11 @@ f <- function(
       return(noise_obj)
     }
 
-    # nu carries units of inverse volume: V_i ~ IG(mean = h_i, var = h_i / nu),
-    # so [nu] = 1/[h]. The scale it must be referred to is therefore the domain
-    # measure sum(h).
-    # The prior is 1/nu ~ Exp(lambda), i.e. prior median nu = lambda/log(2),
-    # here placing it at nu * (domain measure) = 1.
-    h_star <- sum(h_vec, na.rm = TRUE)
-    if (!is.finite(h_star) || h_star <= 0) {
-      return(noise_obj)
-    }
-
-    lambda <- log(2) / h_star
-    if (!is.finite(lambda) || lambda <= 0) {
-      return(noise_obj)
-    }
-
+    # PC prior of Cabral, Bolin and Rue (2023) for the flexibility parameter
+    # eta = 1/nu: their Corollary 3.1.1 gives distance-to-Gaussian proportional
+    # to eta, hence eta ~ Exp(lambda), calibrated from P(eta > U) = alpha.
     lower <- if (!is.null(noise_obj$nu_lower_bound)) noise_obj$nu_lower_bound else 0
-    noise_obj$prior_nu <- as_internal_prior(
-      prior_inv_exp(lambda = lambda, lower = lower, target = "coef")
-    )
+    noise_obj$prior_nu <- as_internal_prior(prior_pc_nu(lower = lower))
     noise_obj
   }
 
@@ -599,7 +589,7 @@ f <- function(
     W <- c(W, W)
   }
 
-  noise <- maybe_apply_default_nu_prior(noise, operator$h)
+  noise <- maybe_apply_default_nu_prior(noise)
 
   operator_prior_names <- operator$param_name
   if (is.null(operator_prior_names) ||

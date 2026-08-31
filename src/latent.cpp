@@ -1,4 +1,5 @@
 #include "latent.h"
+#include "include/thread_io.h"
 #include "prior.h"
 #include <algorithm>
 #include <chrono>
@@ -90,7 +91,7 @@ Latent::Latent(const Rcpp::List &model_list, unsigned long seed)
 
       p_vec(V_size), a_vec(V_size), b_vec(V_size) {
   if (debug)
-    std::cout << "begin constructor of latent" << std::endl;
+    ngme_io::out() << "begin constructor of latent" << std::endl;
   assert(W_size == V_size);
 
   // construct from ngme_noise
@@ -210,7 +211,7 @@ Latent::Latent(const Rcpp::List &model_list, unsigned long seed)
   }
 
   if (debug)
-    std::cout << "End constructor of latent" << std::endl;
+    ngme_io::out() << "End constructor of latent" << std::endl;
   last_gradient_ = VectorXd::Zero(n_params);
   last_precond_ = MatrixXd::Zero(n_params, n_params);
   invalidate_derivatives();
@@ -252,7 +253,7 @@ const VectorXd Latent::get_parameter() {
   if (debug) {
     if (std::isnan(parameter(0)) || std::isnan(-parameter(0)))
       throw std::runtime_error("isnan");
-    std::cout << "parameter= " << parameter << std::endl;
+    ngme_io::out() << "parameter= " << parameter << std::endl;
   }
 
   return parameter;
@@ -283,7 +284,7 @@ void Latent::compute_grad_and_hessian(bool rao_blackwell, bool with_precond) {
 
   if (need_grad) {
     if (debug)
-      std::cout << "Start latent gradient compute" << std::endl;
+      ngme_io::out() << "Start latent gradient compute" << std::endl;
     VectorXd grad = VectorXd::Zero(n_params);
 
     bool need_K = !fix_flag[latent_fix_theta_K];
@@ -308,7 +309,7 @@ void Latent::compute_grad_and_hessian(bool rao_blackwell, bool with_precond) {
     grad_cache_valid_ = true;
     grad_cache_rb_mode_ = rao_blackwell;
     if (debug)
-      std::cout << "finish latent gradient" << std::endl;
+      ngme_io::out() << "finish latent gradient" << std::endl;
   }
 
   if (need_precond) {
@@ -364,9 +365,9 @@ void Latent::compute_grad_and_hessian(bool rao_blackwell, bool with_precond) {
       auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                     std::chrono::steady_clock::now() - t_start)
                     .count();
-      std::cout << "[latent] compute_precond_matrix (analytic skeleton) timing "
-                   "(ms): total="
-                << ms << std::endl;
+      ngme_io::out() << "[latent] compute_precond_matrix (analytic skeleton) "
+                     "timing (ms): total="
+                  << ms << std::endl;
     }
   }
 }
@@ -543,8 +544,8 @@ void Latent::compute_theta_K(bool need_grad, bool rao_blackwell) {
     auto t_total_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                           std::chrono::steady_clock::now() - t_total_start)
                           .count();
-    std::cout << "[latent] compute_theta_K timing (ms): total=" << t_total_ms
-              << ", Z-chain=" << t_chain_ms << std::endl;
+    ngme_io::out() << "[latent] compute_theta_K timing (ms): total=" << t_total_ms
+                << ", Z-chain=" << t_chain_ms << std::endl;
   }
   deriv_cache.grad_theta_K = grad;
   deriv_cache.grad_K_ready = true;
@@ -753,9 +754,9 @@ void Latent::update_each_iter(bool need_precond) {
     auto t_total_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                           std::chrono::steady_clock::now() - t_total_start)
                           .count();
-    std::cout << "[latent] update_each_iter timing (ms): total=" << t_total_ms
-              << ", noise_update=" << t_noise_ms << ", trace=" << t_trace_ms
-              << std::endl;
+    ngme_io::out() << "[latent] update_each_iter timing (ms): total=" << t_total_ms
+                << ", noise_update=" << t_noise_ms << ", trace=" << t_trace_ms
+                << std::endl;
   }
 }
 

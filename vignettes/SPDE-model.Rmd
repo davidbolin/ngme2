@@ -452,10 +452,10 @@ ggplot(sim_data, aes(x = x, y = y, color = value)) +
   labs(
     title = "Simulated NIG Matérn SPDE Field",
     subtitle = paste0(
-      "κ = ", kappa_true,
-      ", NIG(μ=",
-      mu_true, ", σ=", sigma_true,
-      ", ν=", nu_true, ")"
+      "kappa = ", kappa_true,
+      ", NIG(mu=",
+      mu_true, ", sigma=", sigma_true,
+      ", nu=", nu_true, ")"
     ),
     x = "Longitude",
     y = "Latitude",
@@ -923,11 +923,11 @@ ggplot(kappa_df, aes(x = x, y = y, color = kappa)) +
   scale_color_viridis(option = "plasma") +
   coord_fixed() +
   labs(
-    title = "True Spatial Variation in κ",
-    subtitle = "log(κ) = 0.5 + 1.5x - 0.8x²",
+    title = "True Spatial Variation in kappa",
+    subtitle = "log(kappa) = 0.5 + 1.5x - 0.8x^2",
     x = "Longitude",
     y = "Latitude",
-    color = "κ value"
+    color = "kappa value"
   ) +
   theme_minimal()
 
@@ -937,7 +937,7 @@ ggplot(kappa_df, aes(x = x, y = y, color = range)) +
   coord_fixed() +
   labs(
     title = "True Correlation Range Variation",
-    subtitle = "Range = √8/κ",
+    subtitle = "Range = sqrt(8)/kappa",
     x = "Longitude",
     y = "Latitude",
     color = "Range"

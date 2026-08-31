@@ -116,7 +116,7 @@ ggplot(plot_data, aes(x = time)) +
   labs(
     title = "Simulated OU Time Series with NIG Noise",
     subtitle = sprintf(
-      "θ = %.2f, NIG(μ=%.1f, σ=%.1f, ν=%.1f)",
+      "theta = %.2f, NIG(mu=%.1f, sigma=%.1f, nu=%.1f)",
       theta_true, mu_true, sigma_true, nu_true
     ),
     x = "Time",
@@ -562,7 +562,7 @@ p_kappa <- ggplot(param_df, aes(x = x, y = y, colour = kappa)) +
   coord_fixed() +
   labs(
     title = "Spatial variation in kappa",
-    subtitle = "Larger kappa → shorter correlation range",
+    subtitle = "Larger kappa -> shorter correlation range",
     x = "Longitude", y = "Latitude", colour = "kappa"
   ) +
   theme_minimal()

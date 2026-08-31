@@ -406,7 +406,8 @@ spacetime <- function(
     "First mesh should be 1d" = fmesher::fm_manifold_dim(mesh_t) == 1,
     "Second mesh should be 2d" =
       fmesher::fm_manifold_dim(mesh_s) == 2,
-    "require package rSPDE" = requireNamespace("rSPDE", quietly = TRUE)
+    "require package rSPDE" = requireNamespace("rSPDE", quietly = TRUE),
+    "require package sf" = requireNamespace("sf", quietly = TRUE)
   )
 
   # Additional validation for shared_theta_gamma

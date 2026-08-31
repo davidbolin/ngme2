@@ -82,6 +82,54 @@ prior_inv_exp <- function(lambda = 1, lower = 0, target = "coef") {
   prior_inv_exponential(lambda = lambda, lower = lower, target = target)
 }
 
+#' @title PC Prior for the NIG Flexibility Parameter
+#' @description
+#' Penalised-complexity prior for the flexibility parameter
+#' \eqn{\eta = 1/\nu} of NIG driving noise, following Cabral, Bolin and Rue
+#' (2023). The distance to the Gaussian base model is proportional to
+#' \eqn{\eta} (their Corollary 3.1.1), so the PC prior is
+#' \eqn{\eta \sim \mathrm{Exp}(\lambda)}, which is exactly
+#' \code{\link{prior_inv_exponential}} on \eqn{\nu}.
+#'
+#' For symmetric noise the excess kurtosis of a unit-\eqn{h} increment is
+#' \eqn{3\eta}, which is the easiest way to read the defaults: \eqn{U = 2.5}
+#' is an excess kurtosis of 7.5 (equivalently \eqn{\nu = 0.4}), and
+#' \eqn{\alpha = 0.01} puts 1\% of the prior mass above it. That gives
+#' \eqn{\lambda \approx 1.84}, a mild contraction: the prior median is
+#' \eqn{\nu \approx 2.7} (excess kurtosis 1.1), and the prior is close to
+#' neutral over the range of \eqn{\nu} these models typically occupy.
+#'
+#' The defaults are read from \code{getOption("ngme2.pc_nu_U")} and
+#' \code{getOption("ngme2.pc_nu_alpha")}, so the package-wide default used by
+#' \code{\link{f}} can be changed without passing a prior to every model.
+#'
+#' @param U upper value \eqn{U > 0} for \eqn{\eta = 1/\nu} in the calibration
+#'   statement \eqn{\Pr(\eta > U) = \alpha}
+#' @param alpha prior probability \eqn{\alpha \in (0, 1)} of exceeding \code{U}
+#' @param lower lower shift used in \eqn{\nu = \mathrm{lower} + \exp(\theta)}
+#' @param target apply prior on coefficient scale (`"coef"`) or field scale (`"field"`)
+#' @return prior specification
+#' @references
+#' Cabral, R., Bolin, D., and Rue, H. (2023). Controlling the Flexibility of
+#' Non-Gaussian Processes Through Shrinkage Priors. \emph{Bayesian Analysis},
+#' 18(4), 1223-1246. \doi{10.1214/22-BA1342}
+#' @seealso \code{\link{prior_inv_exponential}}
+#' @export
+prior_pc_nu <- function(
+    U = getOption("ngme2.pc_nu_U", 2.5),
+    alpha = getOption("ngme2.pc_nu_alpha", 0.01),
+    lower = 0,
+    target = "coef") {
+  stopifnot(
+    is.numeric(U), length(U) == 1, is.finite(U), U > 0,
+    is.numeric(alpha), length(alpha) == 1, is.finite(alpha),
+    alpha > 0, alpha < 1
+  )
+  prior_inv_exponential(
+    lambda = -log(alpha) / U, lower = lower, target = target
+  )
+}
+
 #' @title Prior None
 #' @param target apply prior on coefficient scale (`"coef"`) or field scale (`"field"`)
 #' @return prior specification

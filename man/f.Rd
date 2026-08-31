@@ -30,9 +30,13 @@ model constructors such as \code{ar1()}, \code{matern()}, \code{bv()}, etc.}
 
 \item{noise}{ngme_noise object, noise_nig() or noise_gal()
 For a stationary \code{nig} or \code{normal_nig} noise whose \code{nu}
-prior was not set by the user, \code{f()} installs an inverse-exponential
-prior on \code{nu}: \eqn{1/\nu \sim \mathrm{Exp}(\lambda)} with
-\eqn{\lambda = \log(2)/\sum_i h_i}. This is invariant under mesh refinement.}
+prior was not set by the user, \code{f()} installs the penalised-complexity
+prior of \code{\link{prior_pc_nu}} on \code{nu}, that is
+\eqn{1/\nu \sim \mathrm{Exp}(\lambda)} with \eqn{\lambda} calibrated from
+\eqn{\Pr(1/\nu > U) = \alpha}. The rate does not depend on the mesh or on
+the size of the domain; change it with
+\code{options(ngme2.pc_nu_U =, ngme2.pc_nu_alpha =)} or by passing
+\code{priors(nu = prior_pc_nu(...))} to the noise.}
 
 \item{name}{name of the field, for later use, if not provided, will be "field1" etc.}
 

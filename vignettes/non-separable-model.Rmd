@@ -336,7 +336,7 @@ model_nonsep <- ngme(
   data = obs_data,
   family = "normal", # Observation distribution
   control_opt = control_opt(
-    iterations = 1000,
+    iterations = 500,
     optimizer = adamW(),
     n_parallel_chain = 1,
     verbose = FALSE,

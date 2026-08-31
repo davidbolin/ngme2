@@ -1,5 +1,19 @@
 # ngme2 (development version)
 
+* The default `nu` prior for stationary NIG latent noise is now the penalised-complexity
+  prior of Cabral, Bolin and Rue (2023) calibrated as in their Section 3.3, from
+  `P(1/nu > U) = alpha` with `U = 2.5` and `alpha = 0.01`, i.e. `P(nu < 0.4) = 0.01`.
+* A failed Cholesky of the measurement precision `QQ` no longer aborts the fit outright.
+  Such a failure is nearly always a transient SGD excursion -- the diagonal is still
+  strictly positive and the asymmetry sits at round-off level -- so the diagonal is now
+  nudged by an escalating amount (from 1e-10 of the diagonal scale, six attempts) and the
+  factorization retried. Only if that fails does estimation stop, and the error now reports
+  the iteration, the smallest diagonal entry and the asymmetry instead of printing them to
+  the console from inside the parallel SGD region.
+* `sf` and `inlabru` are declared in `Suggests`; `spacetime()` now checks for `sf`
+  up front rather than failing inside `sf::st_coordinates()`.
+* The `Parana` section of the introductory vignette is skipped when `INLA` cannot be loaded,
+  instead of failing the whole vignette.
 * Rao-Blackwellisation is now on by default (`control_opt(rao_blackwellization = )`).
 * Fixed the Gibbs sweep order that made Rao-Blackwellisation unusable with a non-Gaussian
   `family`. The measurement `V` was redrawn after `W`, which left `QQ` and `cond_W`
@@ -51,9 +65,6 @@
   handled by factorizing `K` directly with a sparse LU. The new 
   `control_opt(nonsym_solver = )` selects it: `"lu"` (default) or `"normal_equations"` 
   to reproduce results from 0.9.8 and earlier. 
-* Fixed the default prior on the NIG/GAL `nu` parameter, which was strongly
-  biasing every non-Gaussian latent field on a fine mesh. The prior is now 
-  mesh dependent so that it is equally uninformative independently of mesh width.
 * Increased the burnin for the Gibbs chain for the posterior samples of `W` and `V` 
   that `ngme()` returns from 1 to 100, and before a posterior `simulate()` draw. 
 * Default random seeds are now drawn from the ambient R random number stream

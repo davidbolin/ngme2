@@ -78,18 +78,44 @@ test_that("f compiles operator priors from new API", {
   )
 })
 
-test_that("f sets default nu prior to inv.exponential using sum(h)", {
+test_that("prior_pc_nu calibrates lambda from P(1/nu > U) = alpha", {
+  # Cabral, Bolin & Rue (2023), Sec 3.3: lambda = -log(alpha) / U.
+  expect_equal(prior_pc_nu(U = 1, alpha = 0.05)$hyper[["lambda"]], -log(0.05))
+  expect_equal(prior_pc_nu(U = 2, alpha = 0.01)$hyper[["lambda"]], -log(0.01) / 2)
+  expect_equal(prior_pc_nu()$dist, "inv.exponential")
+  expect_error(prior_pc_nu(U = 0))
+  expect_error(prior_pc_nu(alpha = 0))
+  expect_error(prior_pc_nu(alpha = 1))
+})
+
+test_that("prior_pc_nu defaults are settable through options", {
+  withr::with_options(
+    list(ngme2.pc_nu_U = 2, ngme2.pc_nu_alpha = 0.01),
+    expect_equal(prior_pc_nu()$hyper[["lambda"]], -log(0.01) / 2)
+  )
+  # and revert once the option is gone
+  expect_equal(prior_pc_nu()$hyper[["lambda"]], -log(0.01) / 2.5)
+})
+
+test_that("f sets the default nu prior from the PC calibration, not from h", {
   fit <- f(
     map = 1:20,
     model = ar1(),
     noise = noise_nig()
   )
-  h <- fit$operator$h
-
   expect_equal(fit$noise$prior_nu$type, "inv.exponential")
   expect_equal(fit$noise$prior_nu$target, "coef")
-  expect_equal(fit$noise$prior_nu$param[1], log(2) / sum(h), tolerance = 1e-12)
+  expect_equal(fit$noise$prior_nu$param[1], -log(0.01) / 2.5, tolerance = 1e-12)
   expect_equal(fit$noise$prior_nu$param[2], 0)
+})
+
+test_that("the default nu prior does not depend on the size of the domain", {
+  # nu is a property of the process: observing more of it must not move the
+  # prior, so lambda has to be free of any domain-extent term.
+  lams <- vapply(c(20, 40, 80, 160), function(n) {
+    f(map = 1:n, model = ar1(), noise = noise_nig())$noise$prior_nu$param[1]
+  }, numeric(1))
+  expect_equal(max(lams) / min(lams), 1, tolerance = 1e-12)
 })
 
 test_that("the default nu prior is invariant to mesh refinement", {

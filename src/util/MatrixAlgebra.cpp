@@ -1,5 +1,10 @@
 #include "../include/MatrixAlgebra.h"
 
+// ngme_io::out() writes to the R console; the C++ streams must not be used in a
+// package (R CMD check "checking compiled code").
+#include <Rcpp.h>
+#include "../include/thread_io.h"
+
 typedef Eigen::Triplet<double> T;
 using namespace Eigen;
 using namespace std;
@@ -22,7 +27,7 @@ void get_submatrix(const MatrixXd &M, const VectorXi &ind, MatrixXd &Msub)
 {
 	if (ind.size() != M.rows())
 	{
-		std::cout << "get_submatrix:: number of rows in M does not match length of index vector\n";
+		ngme_io::out() << "get_submatrix:: number of rows in M does not match length of index vector\n";
 	}
 	Msub.setZero(ind.sum(), M.cols());
 	int k = 0;
@@ -38,7 +43,7 @@ MatrixXd get_submatrix(const MatrixXd &M, const VectorXi &ind)
 {
 	if (ind.size() != M.rows())
 	{
-		std::cout << "get_submatrix:: number of rows in M does not match length of index vector\n";
+		ngme_io::out() << "get_submatrix:: number of rows in M does not match length of index vector\n";
 	}
 	MatrixXd Msub(ind.sum(), M.cols());
 	int k = 0;
@@ -54,7 +59,7 @@ MatrixXi get_submatrix(const MatrixXi &M, const VectorXi &ind)
 {
 	if (ind.size() != M.rows())
 	{
-		std::cout << "get_submatrix:: number of rows in M does not match length of index vector\n";
+		ngme_io::out() << "get_submatrix:: number of rows in M does not match length of index vector\n";
 	}
 	MatrixXi Msub(ind.sum(), M.cols());
 	int k = 0;
@@ -73,7 +78,7 @@ void get_submatrix(SparseMatrix<double, 0, int> &M, const VectorXi &ind, SparseM
 {
 	if (ind.size() != M.rows())
 	{
-		std::cout << "get_submatrix:: number of rows in M does not match length of index vector\n";
+		ngme_io::out() << "get_submatrix:: number of rows in M does not match length of index vector\n";
 	}
 	Msub->resize(ind.sum(), M.cols());
 	// create vector with row indices for Msub
@@ -100,7 +105,7 @@ void get_subvector(const VectorXd &Y, const VectorXi &ind, VectorXd &Ysub)
 	Ysub.resize(ind.sum());
 	if (ind.size() != Y.size())
 	{
-		std::cout << "get_subvector:: number of rows in Y does not match length of index vector\n";
+		ngme_io::out() << "get_subvector:: number of rows in Y does not match length of index vector\n";
 	}
 	int k = 0;
 	for (int i = 0; i < Y.size(); i++)
@@ -116,7 +121,7 @@ void set_submatrix(MatrixXd &M, const MatrixXd &Msub, const VectorXi &ind)
 	int k = 0;
 	if (ind.size() != M.rows())
 	{
-		std::cout << "set_submatrix:: number of rows in M does not match length of index vector\n";
+		ngme_io::out() << "set_submatrix:: number of rows in M does not match length of index vector\n";
 	}
 	for (int i = 0; i < ind.size(); i++)
 	{
@@ -132,7 +137,7 @@ void set_submatrix(MatrixXi &M, const MatrixXi &Msub, const VectorXi &ind)
 {
 	if (ind.size() != M.rows())
 	{
-		std::cout << "set_submatrix:: number of rows in M does not match length of index vector\n";
+		ngme_io::out() << "set_submatrix:: number of rows in M does not match length of index vector\n";
 	}
 	int k = 0;
 	for (int i = 0; i < ind.size(); i++)
@@ -150,7 +155,7 @@ void set_subcol(MatrixXd &M, const int r, const VectorXi &ind, const VectorXd &v
 	int k = 0;
 	if (ind.size() != M.rows())
 	{
-		std::cout << "set_subcol:: number of rows in M does not match length of index vector\n";
+		ngme_io::out() << "set_subcol:: number of rows in M does not match length of index vector\n";
 	}
 	for (int i = 0; i < ind.size(); i++)
 	{
@@ -168,7 +173,7 @@ void add_submatrix(MatrixXd &M, const MatrixXd &Msub, const VectorXi &ind)
 	int k = 0;
 	if (ind.size() != M.rows())
 	{
-		std::cout << "add_submatrix:: number of rows in M does not match length of index vector\n";
+		ngme_io::out() << "add_submatrix:: number of rows in M does not match length of index vector\n";
 	}
 	for (int i = 0; i < ind.size(); i++)
 	{
@@ -214,7 +219,7 @@ MatrixXd veci(VectorXd &v, int n, int m)
 {
 	if (v.size() != n * m)
 	{
-		std::cout << "Wrong dimensions in reshape: " << v.size() << " (" << n << "," << m << ")" << std::endl;
+		ngme_io::out() << "Wrong dimensions in reshape: " << v.size() << " (" << n << "," << m << ")" << std::endl;
 	}
 	MatrixXd M;
 	M.setZero(n, m);

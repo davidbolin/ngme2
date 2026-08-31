@@ -317,10 +317,16 @@ class AccelerateImpl : public SparseSolverBase<AccelerateImpl<MatrixType_, UpLo_
   SparseOrder_t m_order;
 };
 
+// NOTE(ngme2): the three `if (EnforceSquare_)` bodies below are braced
+// relative to upstream Eigen. Under NDEBUG eigen_assert() expands to nothing and
+// clang reports -Wempty-body, which R CMD check flags as a significant install
+// warning on macOS. Re-apply or drop when this file is updated from upstream.
 /** Computes the symbolic and numeric decomposition of matrix \a a */
 template <typename MatrixType_, int UpLo_, SparseFactorization_t Solver_, bool EnforceSquare_>
 void AccelerateImpl<MatrixType_, UpLo_, Solver_, EnforceSquare_>::compute(const MatrixType& a) {
-  if (EnforceSquare_) eigen_assert(a.rows() == a.cols());
+  if (EnforceSquare_) {
+    eigen_assert(a.rows() == a.cols());
+  }
 
   m_nRows = a.rows();
   m_nCols = a.cols();
@@ -345,7 +351,9 @@ void AccelerateImpl<MatrixType_, UpLo_, Solver_, EnforceSquare_>::compute(const 
  */
 template <typename MatrixType_, int UpLo_, SparseFactorization_t Solver_, bool EnforceSquare_>
 void AccelerateImpl<MatrixType_, UpLo_, Solver_, EnforceSquare_>::analyzePattern(const MatrixType& a) {
-  if (EnforceSquare_) eigen_assert(a.rows() == a.cols());
+  if (EnforceSquare_) {
+    eigen_assert(a.rows() == a.cols());
+  }
 
   m_nRows = a.rows();
   m_nCols = a.cols();
@@ -372,7 +380,9 @@ void AccelerateImpl<MatrixType_, UpLo_, Solver_, EnforceSquare_>::factorize(cons
   eigen_assert(m_symbolicFactorization && "You must first call analyzePattern()");
   eigen_assert(m_nRows == a.rows() && m_nCols == a.cols());
 
-  if (EnforceSquare_) eigen_assert(a.rows() == a.cols());
+  if (EnforceSquare_) {
+    eigen_assert(a.rows() == a.cols());
+  }
 
   AccelSparseMatrix A{};
   std::vector<long> columnStarts;

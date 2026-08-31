@@ -1,7 +1,7 @@
 Package: ngme2
 Type: Package
 Title: Linear Latent Non-Gaussian Models with Flexible Distributions
-Version: 0.9.8
+Version: 0.9.8.9000
 Authors@R: c(
     person("David", "Bolin", email = "davidbolin@gmail.com", role = c("aut", "cph")),
     person("Xiaotian", "Jin", email = "xiaotian.jin@kaust.edu.sa", role =c("aut", "cre")),
@@ -59,6 +59,9 @@ Suggests:
     knitr,
     rmarkdown,
     INLA,
+    RcppEigen,
+    sf,
+    inlabru,
     dplyr,
     plyr,
     MASS,
@@ -81,6 +84,7 @@ Suggests:
     kableExtra,
     reshape2
 Additional_repositories: https://inla.r-inla-download.org/R/testing
+SystemRequirements: GNU make
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 URL: https://davidbolin.github.io/ngme2/, https://github.com/davidbolin/ngme2

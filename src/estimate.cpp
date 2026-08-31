@@ -616,12 +616,12 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
     }
   }
   if (all_converge) {
-    std::cout << "Reach convergence in " << steps_at_convergence
-              << " iterations." << std::endl;
+    Rcpp::Rcout << "Reach convergence in " << steps_at_convergence
+                << " iterations." << std::endl;
     if (polish_done > 0)
-      std::cout << "Polish: " << polish_done
-                << " further iterations averaged at stepsize scale "
-                << (stepsize_decay_scale * polish_stepsize_factor) << ".\n";
+      Rcpp::Rcout << "Polish: " << polish_done
+                  << " further iterations averaged at stepsize scale "
+                  << (stepsize_decay_scale * polish_stepsize_factor) << ".\n";
   }
 
   // A run that exhausts its budget without converging used to end silently,
@@ -655,39 +655,40 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   }
 
   if (all_converge && n_chains > 1) {
-    std::cout << "Convergence criteria summary:\n";
+    Rcpp::Rcout << "Convergence criteria summary:\n";
 
     {
       if (R_hat_conv_check) {
-        std::cout << "  - R_hat threshold: max_R_hat = " << max_R_hat << "\n";
+        Rcpp::Rcout << "  - R_hat threshold: max_R_hat = " << max_R_hat << "\n";
       }
       if (trend_std_conv_check) {
-        std::cout << "  - Trend/Std thresholds: std_lim = " << std_lim
-                  << ", trend_lim = " << trend_lim
-                  << ", window (stop points) = " << n_slope_check << "\n";
+        Rcpp::Rcout << "  - Trend/Std thresholds: std_lim = " << std_lim
+                    << ", trend_lim = " << trend_lim
+                    << ", window (stop points) = " << n_slope_check << "\n";
       }
 
-      std::cout << "  Per-parameter status (R_hat | std/mean | slope):\n";
+      Rcpp::Rcout << "  Per-parameter status (R_hat | std/mean | slope):\n";
       for (int i = 0; i < n_params; i++) {
-        std::cout << "    * " << par_names[i] << ": ";
+        Rcpp::Rcout << "    * " << par_names[i] << ": ";
         bool printed_any = false;
         if (R_hat_conv_check) {
-          std::cout << "R_hat=" << std::fixed << std::setprecision(3)
-                    << final_R_hat(i)
-                    << (last_conv_rhat[i] ? " (ok)" : " (fail)");
+          Rcpp::Rcout << "R_hat=" << std::fixed << std::setprecision(3)
+                      << final_R_hat(i)
+                      << (last_conv_rhat[i] ? " (ok)" : " (fail)");
           printed_any = true;
         }
         if (trend_std_conv_check && last_trend_ready) {
           if (printed_any)
-            std::cout << "; ";
-          std::cout << "std/mean=" << std::setprecision(3) << last_std_ratio[i]
-                    << (last_conv_trend_std[i] ? " (ok)" : " (fail)") << ", ";
-          std::cout << "t=" << std::setprecision(3) << last_tstats[i] << ", ";
-        std::cout << "slope=" << std::setprecision(3) << last_slopes[i]
+            Rcpp::Rcout << "; ";
+          Rcpp::Rcout << "std/mean=" << std::setprecision(3)
+                      << last_std_ratio[i]
+                      << (last_conv_trend_std[i] ? " (ok)" : " (fail)") << ", ";
+          Rcpp::Rcout << "t=" << std::setprecision(3) << last_tstats[i] << ", ";
+        Rcpp::Rcout << "slope=" << std::setprecision(3) << last_slopes[i]
                     << (std::abs(last_slopes[i]) <= trend_lim ? " (ok)"
                                                               : " (fail)");
         }
-        std::cout << "\n";
+        Rcpp::Rcout << "\n";
       }
     }
   }
@@ -854,60 +855,60 @@ check_conv(const MatrixXd &means, const MatrixXd &vars, int curr_batch,
     *trend_ready_out = trend_ready;
 
   if (print_check_info) {
-    std::cout << "\nstop " << curr_batch + 1 << ":\n";
+    Rcpp::Rcout << "\nstop " << curr_batch + 1 << ":\n";
 
     const int label_width = 11; // width for the row label (e.g., "R_hat:")
     const int col_width = 10;   // width for each value/parameter name
     int line_width = label_width + n_params * (col_width + 1);
 
     auto print_separator = [&]() {
-      std::cout << std::string(line_width, '-') << "\n";
+      Rcpp::Rcout << std::string(line_width, '-') << "\n";
     };
 
     print_separator();
 
-    std::cout << std::setw(label_width) << std::left << "Param:";
+    Rcpp::Rcout << std::setw(label_width) << std::left << "Param:";
     for (const auto &name : par_names) {
-      std::cout << " " << std::setw(col_width) << std::left << name;
+      Rcpp::Rcout << " " << std::setw(col_width) << std::left << name;
     }
-    std::cout << "\n";
+    Rcpp::Rcout << "\n";
 
     print_separator();
 
     if (R_hat_conv_check) {
-      std::cout << std::setw(label_width) << std::left << "R_hat:";
+      Rcpp::Rcout << std::setw(label_width) << std::left << "R_hat:";
       for (int i = 0; i < n_params; i++) {
-        std::cout << " " << std::setw(col_width) << std::fixed
-                  << std::setprecision(3) << std::left << R_hat(i);
+        Rcpp::Rcout << " " << std::setw(col_width) << std::fixed
+                    << std::setprecision(3) << std::left << R_hat(i);
       }
-      std::cout << "\n";
+      Rcpp::Rcout << "\n";
     }
 
     if (trend_std_conv_check && trend_ready) {
-      std::cout << std::setw(label_width) << std::left << "std/mean:";
+      Rcpp::Rcout << std::setw(label_width) << std::left << "std/mean:";
       for (int i = 0; i < n_params; i++) {
-        std::cout << " " << std::setw(col_width) << std::fixed
-                  << std::setprecision(3) << std::left << std_ratio[i];
+        Rcpp::Rcout << " " << std::setw(col_width) << std::fixed
+                    << std::setprecision(3) << std::left << std_ratio[i];
       }
-      std::cout << "\n";
+      Rcpp::Rcout << "\n";
 
-      std::cout << std::setw(label_width) << std::left << "trend:";
+      Rcpp::Rcout << std::setw(label_width) << std::left << "trend:";
       for (int i = 0; i < n_params; i++) {
-        std::cout << " " << std::setw(col_width) << std::fixed
-                  << std::setprecision(3) << std::left << slopes[i];
+        Rcpp::Rcout << " " << std::setw(col_width) << std::fixed
+                    << std::setprecision(3) << std::left << slopes[i];
       }
-      std::cout << "\n";
+      Rcpp::Rcout << "\n";
 
-      std::cout << std::setw(label_width) << std::left << "t_slope:";
+      Rcpp::Rcout << std::setw(label_width) << std::left << "t_slope:";
       for (int i = 0; i < n_params; i++) {
-        std::cout << " " << std::setw(col_width) << std::fixed
-                  << std::setprecision(3) << std::left << tstats[i];
+        Rcpp::Rcout << " " << std::setw(col_width) << std::fixed
+                    << std::setprecision(3) << std::left << tstats[i];
       }
-      std::cout << "\n";
+      Rcpp::Rcout << "\n";
     }
 
     print_separator();
-    std::cout << "\n";
+    Rcpp::Rcout << "\n";
   }
 
   return conv;

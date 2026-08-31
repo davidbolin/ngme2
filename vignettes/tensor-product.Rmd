@@ -461,7 +461,7 @@ We now fit the model to estimate the parameters. The estimation uses stochastic 
 Key estimation settings:
 
 - **Optimizer**: AdamW with adaptive learning rates
-- **Iterations**: 1000 optimization steps
+- **Iterations**: 500 optimization steps
 - **Parallel chains**: 4 independent chains for robustness
 - **Rao-Blackwellization**: Variance reduction for gradient estimates
 
@@ -484,7 +484,7 @@ fit_tp <- ngme(
   data = data_sim,
   family = "normal", # Gaussian measurement noise
   control_opt = control_opt(
-    iterations = 1000,
+    iterations = 500,
     n_parallel_chain = 4,
     optimizer = precond_sgd(),
     rao_blackwellization = TRUE,
@@ -916,7 +916,7 @@ fit_tp_train <- ngme(
   data = data_train,
   family = "normal",
   control_opt = control_opt(
-    iterations = 1000,
+    iterations = 500,
     n_parallel_chain = 4,
     optimizer = adamW(),
     rao_blackwellization = TRUE,

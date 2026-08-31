@@ -3,6 +3,7 @@
 #include "block.h"
 #include "include/factor_counters.h"
 #include "include/solver.h"
+#include "include/thread_io.h"
 #include "prior.h"
 #include "sample_rGIG.h"
 #include <algorithm>
@@ -11,6 +12,7 @@
 #include <cmath>
 #include <iterator>
 #include <random>
+#include <sstream>
 #include <stdexcept>
 
 using std::pow;
@@ -134,7 +136,7 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
   // threshold   =  Rcpp::as<double> (control_ngme["threshold"]);
 
   if (debug)
-    std::cout << "Begin Block Constructor" << std::endl;
+    ngme_io::out() << "Begin Block Constructor" << std::endl;
 
   // 2. Init Fixed effects
   bool fix_beta = control_ngme.containsElementNamed("fix_beta")
@@ -198,7 +200,7 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
   }
 
   if (debug)
-    std::cout << "before set block A" << std::endl;
+    ngme_io::out() << "before set block A" << std::endl;
   /* Init A */
   int n = 0;
   for (std::vector<std::shared_ptr<Latent>>::iterator it = latents.begin();
@@ -207,7 +209,7 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
     n += (*it)->get_W_size();
   }
   if (debug)
-    std::cout << "After set block K" << std::endl;
+    ngme_io::out() << "After set block K" << std::endl;
 
   // 5. Init measurement noise (consider corr_measure)
   Rcpp::List noise_in = block_model["noise"];
@@ -327,7 +329,7 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
   }
 
   if (debug)
-    std::cout << "After block construct noise" << std::endl;
+    ngme_io::out() << "After block construct noise" << std::endl;
 
   // 6. Fix V and init V
   if (noise_in.containsElementNamed("V") && !Rf_isNull(noise_in["V"])) {
@@ -338,7 +340,7 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
   // 7. Init solvers
   assemble();
   if (debug)
-    std::cout << "After assemble" << std::endl;
+    ngme_io::out() << "After assemble" << std::endl;
 
   if (n_latent > 0) {
     VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
@@ -393,20 +395,20 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
   grad_covariance = MatrixXd::Zero(n_params, n_params);
 
   if (debug)
-    std::cout << "End Block Constructor" << std::endl;
+    ngme_io::out() << "End Block Constructor" << std::endl;
 }
 
 void BlockModel::burn_in(int iterations) {
   if (debug)
-    std::cout << "Start burn-in for " << iterations << " iterations of burn-in"
-              << std::endl;
+    ngme_io::out() << "Start burn-in for " << iterations
+                << " iterations of burn-in" << std::endl;
   for (int i = 0; i < iterations; i++) {
     sample_cond_V();
     sampleW_VY(true);
     sample_cond_noise_V();
   }
   if (debug)
-    std::cout << "End burn-in" << std::endl;
+    ngme_io::out() << "End burn-in" << std::endl;
 }
 
 void BlockModel::setW(const VectorXd &W) {
@@ -509,7 +511,7 @@ void BlockModel::sampleW_VY(bool burn_in) {
 // order is Latent, merr, feff
 VectorXd BlockModel::get_parameter() {
   if (debug)
-    std::cout << "Start block get_parameter" << std::endl;
+    ngme_io::out() << "Start block get_parameter" << std::endl;
   VectorXd thetas(n_params);
   int pos = 0;
   for (std::vector<std::shared_ptr<Latent>>::const_iterator it =
@@ -525,14 +527,14 @@ VectorXd BlockModel::get_parameter() {
     thetas.segment(n_la_params + n_merr, n_feff) = beta;
 
   if (debug)
-    std::cout << "Finish block get_parameter" << std::endl;
+    ngme_io::out() << "Finish block get_parameter" << std::endl;
   return thetas;
 }
 
 void BlockModel::set_parameter_and_update(const VectorXd &Theta,
                                           bool with_precond) {
   if (debug)
-    std::cout << "Start block set_parameter" << std::endl;
+    ngme_io::out() << "Start block set_parameter" << std::endl;
   // std::chrono::steady_clock::time_point startTime, endTime; startTime =
   // std::chrono::steady_clock::now();
   int pos = 0;
@@ -894,7 +896,7 @@ MatrixXd BlockModel::get_preconditioner() {
 // Main function for computing
 void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
   if (debug)
-    std::cout << "Start compute_grad_and_hessian" << std::endl;
+    ngme_io::out() << "Start compute_grad_and_hessian" << std::endl;
   auto t_total_start = std::chrono::steady_clock::now();
   long long t_sampleV_ms = 0, t_sampleW_ms = 0, t_rbtrace_ms = 0;
   long long t_build_s_ms = 0, t_set_s_ms = 0, t_dZ_ms = 0, t_grad_ms = 0;
@@ -1388,14 +1390,14 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
     auto total_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                         std::chrono::steady_clock::now() - t_total_start)
                         .count();
-    std::cout << "[block] compute_grad_and_hessian timing (ms): total="
-              << total_ms << ", sampleV=" << t_sampleV_ms
-              << ", sampleW=" << t_sampleW_ms << ", rb_trace=" << t_rbtrace_ms
-              << ", build_s=" << t_build_s_ms << ", set_s=" << t_set_s_ms
-              << ", dZ=" << t_dZ_ms << ", grad=" << t_grad_ms
-              << ", prec_latent=" << t_prec_latent_ms
-              << ", prec_ZGN=" << t_prec_ZGN_ms
-              << ", prec_merr=" << t_prec_merr_ms << std::endl;
+    ngme_io::out() << "[block] compute_grad_and_hessian timing (ms): total="
+                << total_ms << ", sampleV=" << t_sampleV_ms
+                << ", sampleW=" << t_sampleW_ms << ", rb_trace=" << t_rbtrace_ms
+                << ", build_s=" << t_build_s_ms << ", set_s=" << t_set_s_ms
+                << ", dZ=" << t_dZ_ms << ", grad=" << t_grad_ms
+                << ", prec_latent=" << t_prec_latent_ms
+                << ", prec_ZGN=" << t_prec_ZGN_ms
+                << ", prec_merr=" << t_prec_merr_ms << std::endl;
   }
 }
 
@@ -1483,8 +1485,8 @@ void BlockModel::adapt_trace_probes() {
   N_new = std::min(std::max(N_new, trace_adapt_min), trace_adapt_max);
   if (N_new != N_cur) {
     if (debug)
-      std::cout << "[trace_adapt] r=" << r_max << " probes " << N_cur << " -> "
-                << N_new << "\n";
+      ngme_io::out() << "[trace_adapt] r=" << r_max << " probes " << N_cur
+                  << " -> " << N_new << "\n";
     last_trace_N_ = N_new;
     chol_QQ.set_N_iter(N_new);
     // statistics are exponentially weighted and stay valid across the change
@@ -1499,8 +1501,8 @@ double BlockModel::qq_trace(const SparseMatrix<double> &T, double &probe_var) {
     selinv_state_ =
         (chol_QQ.selinv_supported() && fr <= selinv_max_fill) ? 1 : 0;
     if (debug)
-      std::cout << "[selinv] fill_ratio=" << fr
-                << " -> " << (selinv_state_ ? "exact selected inverse"
+      ngme_io::out() << "[selinv] fill_ratio=" << fr
+                  << " -> " << (selinv_state_ ? "exact selected inverse"
                                             : "Hutchinson probes")
                 << "\n";
   }
@@ -1519,7 +1521,7 @@ double BlockModel::qq_trace(const SparseMatrix<double> &T, double &probe_var) {
 
 void BlockModel::compute_rb_trace() {
   if (debug)
-    std::cout << "start compute trace" << std::endl;
+    ngme_io::out() << "start compute trace" << std::endl;
   auto t_start = std::chrono::steady_clock::now();
   int n = 0;
   int woff = 0; // offset in W-space for embedding latent-local pieces
@@ -1631,7 +1633,7 @@ void BlockModel::compute_rb_trace() {
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                   std::chrono::steady_clock::now() - t_start)
                   .count();
-    std::cout << "after compute trace (" << ms << " ms)" << std::endl;
+    ngme_io::out() << "after compute trace (" << ms << " ms)" << std::endl;
   }
 }
 
@@ -1829,6 +1831,14 @@ bool BlockModel::QQ_pattern_changed() const {
                      QQ.innerIndexPtr());
 }
 
+namespace {
+// Diagonal nudge used to rescue a QQ Cholesky that failed on a transient SGD
+// excursion; relative to the largest diagonal entry of QQ, escalating by a
+// factor of ten per attempt (1e-10 up to 1e-5 of the diagonal scale).
+constexpr double QQ_JITTER_BASE = 1e-10;
+constexpr int QQ_JITTER_ATTEMPTS = 6;
+} // namespace
+
 void BlockModel::update_QQ() {
   ngme_counters::bump(ngme_counters::QQ_builds);
   VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
@@ -1845,31 +1855,69 @@ void BlockModel::update_QQ() {
     double jitter = 1e-8;
     QQ.diagonal().array() += jitter;
   }
-  // Storage must be packed before the pattern below can be compared (and
-  // before the solvers see it); this is a no-op unless the robust branch above
-  // had to insert a missing diagonal entry.
-  if (!QQ.isCompressed())
-    QQ.makeCompressed();
-  // The symbolic phase is only needed when the sparsity pattern really moved.
-  // It does for rational (fractional) approximations, where the number of
-  // operator factors is a step function of the smoothness; for every other
-  // model the pattern is fixed and analyze() runs exactly once.
-  if (QQ_pattern_changed()) {
-    ngme_counters::bump(ngme_counters::QQ_analyzes);
-    chol_QQ.analyze(QQ);
-    record_QQ_pattern();
+  // Pack, re-run the symbolic phase if the pattern moved, and factorize.
+  // Storage must be packed before the pattern can be compared (and before the
+  // solvers see it); that is a no-op unless the robust branch above had to
+  // insert a missing diagonal entry. The symbolic phase is only needed when
+  // the sparsity pattern really moved. It does for rational (fractional)
+  // approximations, where the number of operator factors is a step function of
+  // the smoothness; for every other model the pattern is fixed and analyze()
+  // runs exactly once.
+  auto factorize = [this]() {
+    if (!QQ.isCompressed())
+      QQ.makeCompressed();
+    if (QQ_pattern_changed()) {
+      ngme_counters::bump(ngme_counters::QQ_analyzes);
+      chol_QQ.analyze(QQ);
+      record_QQ_pattern();
+    }
+    chol_QQ.compute(QQ);
+    return chol_QQ.factorization_success();
+  };
+
+  QQ_valid = factorize();
+  if (QQ_valid)
+    return;
+
+  // A Cholesky failure here is almost always a transient SGD excursion rather
+  // than a genuinely indefinite QQ: the diagonal is still strictly positive
+  // and the asymmetry sits at round-off level, but the iterate has drifted
+  // close enough to singular that the factorization gives up. Nudging the
+  // diagonal recovers it, and a perturbation this small is orders of magnitude
+  // below the Monte Carlo error of the sampled gradient, so escalate the nudge
+  // a few times before declaring the fit dead. Aborting instead would throw
+  // away a run that the next iterate usually recovers from on its own -- the
+  // same view the operator's K factorization takes, see Operator::update_all().
+  const double scale = std::max(1.0, QQ.diagonal().cwiseAbs().maxCoeff());
+  SparseMatrix<double> Id(QQ.rows(), QQ.cols());
+  Id.setIdentity();
+  double applied = 0.0;
+  for (int attempt = 0; attempt < QQ_JITTER_ATTEMPTS && !QQ_valid; ++attempt) {
+    // QQ_JITTER_BASE, 10x that, 100x that, ... relative to the largest
+    // diagonal entry. Going through the identity rather than
+    // QQ.diagonal().array() += ... inserts any structurally absent diagonal
+    // entry instead of silently skipping it.
+    const double target = scale * QQ_JITTER_BASE * pow(10.0, attempt);
+    SparseMatrix<double> jittered = QQ + (target - applied) * Id;
+    QQ.swap(jittered);
+    applied = target;
+    QQ_valid = factorize();
   }
-  chol_QQ.compute(QQ);
-  QQ_valid = true;
-  if (!chol_QQ.factorization_success()) {
-    // Basic diagnostics for SPD failures
-    double min_diag = QQ.diagonal().minCoeff();
-    double asym_norm = (QQ - SparseMatrix<double>(QQ.transpose())).norm();
-    Rcpp::Rcerr << "[QQ SPD fail] iter=" << curr_iter
-                << " min_diag=" << min_diag << " asym_norm=" << asym_norm
-                << std::endl;
-    // [QQ SPD fail] iter=414 min_diag=4.71135e+08 asym_norm=0
-    QQ_valid = false;
-    throw std::runtime_error("Measurement precision QQ is not SPD");
-  }
+  if (QQ_valid)
+    return;
+
+  // Out of options. Report the diagnostics through the exception instead of
+  // printing them here: update_QQ() runs inside the OpenMP region of the
+  // parallel SGD loop, and Rcpp's output streams are R API calls that must not
+  // be made off the main thread. estimate.cpp captures the message per chain
+  // and re-raises it on the main thread.
+  std::ostringstream msg;
+  msg << "Measurement precision QQ is not SPD at iteration " << curr_iter
+      << " (smallest diagonal entry " << QQ.diagonal().minCoeff()
+      << ", asymmetry " << (QQ - SparseMatrix<double>(QQ.transpose())).norm()
+      << "); adding up to " << applied
+      << " to the diagonal did not restore positive definiteness. The model is "
+         "probably unidentifiable at these parameter values, or the optimizer "
+         "step size is too large.";
+  throw std::runtime_error(msg.str());
 }

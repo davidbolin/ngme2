@@ -338,7 +338,7 @@ fit_ex1 <- ngme(
   group = data_ex1$group,
   family = noise_normal(),
   control_opt = control_opt(
-    iterations = 1000,
+    iterations = 500,
     n_parallel_chain = 1,
     rao_blackwellization = TRUE,
     seed = 42
@@ -440,7 +440,7 @@ out <- ngme(
   data = data.frame(Y, x1, x2),
   control_opt = control_opt(
     optimizer = adam(),
-    iterations = 1000,
+    iterations = 500,
     n_parallel_chain = 1,
     seed = 113
   )

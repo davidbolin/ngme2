@@ -46,6 +46,21 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 set.seed(10)
+
+# The Parana section at the end of this vignette uses datasets (PRprec,
+# PRborder) and helpers (spDists) that come from INLA. INLA is not on CRAN and
+# is only Suggested here, and its fmesher dependency is version sensitive, so
+# loading it can fail even where it is installed -- requireNamespace() returns
+# FALSE in both cases. Each chunk down there carries the same probe in its
+# `eval` option, which is what actually skips them; this copy only drives the
+# note printed at the top of the section. The probe has to be repeated per
+# chunk rather than set once via opts_chunk$set(): R CMD check tangles the
+# vignette with knitr::purl(), and purl only evaluates chunk options that are
+# self-contained, so a variable defined in an earlier chunk would break it.
+have_inla <- isTRUE(tryCatch(
+  suppressWarnings(requireNamespace("INLA", quietly = TRUE)),
+  error = function(e) FALSE
+))
 ```
 
 ## Introduction
@@ -302,20 +317,18 @@ We can turn the `estimation = TRUE` to start estimating the model.
 
 ## Convergence check methods
 
-`ngme2` can monitor convergence with three optional diagnostics. They all run at each checkpoint (every `iters_per_check` iterations, default `iterations / n_batch`). Checks only begin after `n_min_batch` checkpoints have accumulated.
+`ngme2` monitors convergence with two diagnostics, both enabled by default. They run at each checkpoint (every `iters_per_check` iterations, default `iterations / n_batch`) and only begin after `n_min_batch` checkpoints have accumulated. All of this needs more than one chain: with `n_parallel_chain = 1` no convergence checking runs at all, and the optimizer always uses the full `iterations` budget.
 
 - **Gelman–Rubin R̂ (`R_hat_conv_check`, `max_R_hat`)**  
-  Compares between- and within-chain variance for each parameter; pass if `R_hat <= max_R_hat` (default 1.1). Requires at least 2 chains (`n_parallel_chain >= 2`).
+  Compares between- and within-chain variance for each parameter; passes if `R_hat <= max_R_hat` (default 1.1). A degenerate within-chain variance (a frozen chain, say) is reported as failing rather than as `NaN`.
 
-- **Trend/Std diagnostic (`trend_std_conv_check`)**  
-  Uses the last `n_slope_check` checkpoints (default 3). Passes when both hold for each parameter:
-  - `sqrt(var) / |mean| <= std_lim` (default 0.01)  
-  - |linear slope over last `n_slope_check` means| `<= trend_lim` (default 0.01).
-
+- **Trend diagnostic (`trend_std_conv_check`)**  
+  Fits a weighted linear trend to the last `n_slope_check` checkpoints (default 3) and passes when the slope is not distinguishable from zero, `|slope| / se(slope) <= trend_lim` (default 2). This is scale-free: it depends neither on the parameter's units nor on `n_batch`. Setting `trend_use_tstat = FALSE` recovers the absolute test `|slope| <= trend_lim`. The check cannot pass before the slope window is full.  
+  Its relative-standard-deviation part, `sqrt(var) / |mean| <= std_lim` (default 0.01), is **off by default** (`use_std_check = FALSE`). The coefficient of variation conflates "the chains disagree" with "this parameter is imprecisely determined", so a weakly identified parameter such as `nu` could never pass it, and R̂ already measures between- vs within-chain disagreement in a scale-free way.
 
 Combination rule:
-- A parameter is considered converged if **any** enabled diagnostic passes for it (R̂ or Trend/Std).  
-- Overall convergence is reached when all parameters are converged.
+- A parameter is marked converged only if **every** enabled diagnostic passes for it, so a single lenient check cannot declare convergence on its own. Drop one from the requirement with `R_hat_conv_check = FALSE` or `trend_std_conv_check = FALSE`.  
+- Overall convergence is reached when all parameters are converged, and the criteria must hold on `n_conv_batch` consecutive checkpoints (default 1), since a single passing checkpoint is weak evidence.
 
 Key control knobs (set via `control_opt()`):
 
@@ -324,18 +337,21 @@ ctrl <- control_opt(
   n_batch = 10,               # number of checkpoints
   n_min_batch = 3,            # don't check before this many checkpoints
   n_slope_check = 3,          # window for trend regression
+  n_conv_batch = 1,           # consecutive passing checkpoints required
   R_hat_conv_check = TRUE,
   max_R_hat = 1.1,
   trend_std_conv_check = TRUE,
+  trend_use_tstat = TRUE,     # test |slope| / se(slope), not |slope|
+  trend_lim = 2,
+  use_std_check = FALSE,      # also require sqrt(var)/|mean| <= std_lim
   std_lim = 0.01,
-  trend_lim = 0.01,
   print_check_info = TRUE     # print per-check diagnostics
 )
 ```
 
 Recommendations:
-- Use at least two chains for R̂; with one chain only Trend/Std can run.
-- If checks trigger too early, increase `n_min_batch` or loosen `std_lim` / `trend_lim`.
+- Use at least two chains. With one chain there is no convergence checking, no early stopping, and no `warn_no_convergence` warning -- the run simply uses the whole budget.
+- If checks trigger too early, increase `n_min_batch` or `n_conv_batch`; if they never trigger, loosen `trend_lim` and `max_R_hat`.
 
 
 ## A simple example - AR1 process with nig noise
@@ -434,12 +450,19 @@ plot(
 
 ## Paraná dataset
 
+```{r parana-note, echo = FALSE, eval = TRUE, results = "asis"}
+if (!have_inla) {
+  cat("> **Note:** INLA is not available, so the code in this section is",
+      "shown but not evaluated.\n")
+}
+```
+
 The rainfall data from Paraná (Brazil) is collected by the National Water Agency in Brazil (Agencia Nacional de Águas, ANA, in Portuguese).
 ANA collects data from many locations over Brazil, and all these data are freely available from the ANA website (http://www3.ana.gov.br/portal/ANA).
 
 We will briefly illustrate the command we use, and the result of the estimation.
 
-```{r read-parana}
+```{r read-parana, eval = requireNamespace("INLA", quietly = TRUE)}
 library(INLA)
 data(PRprec)
 data(PRborder)
@@ -462,7 +485,7 @@ seaDist <- apply(spDists(coords, PRborder[1034:1078, ],
 
 Plot the data:
 
-```{r plot-data, message=FALSE,fig.width=6,fig.height=6,fig.align='center', echo=FALSE, fig.cap="Mean of the rainfall in Octobor 2012 in Paraná"}
+```{r plot-data, message=FALSE,fig.width=6,fig.height=6,fig.align='center', echo=FALSE, fig.cap="Mean of the rainfall in Octobor 2012 in Paraná", eval = requireNamespace("INLA", quietly = TRUE)}
 ggplot() +
   geom_point(aes(
     x = coords[, 1], y = coords[, 2],
@@ -484,7 +507,7 @@ ggplot() +
   )
 ```
 
-```{r fit-parana, cache=TRUE}
+```{r fit-parana, cache=TRUE, eval = requireNamespace("INLA", quietly = TRUE)}
 # Define the control options
 control <- control_opt(
   iterations = 2000,
@@ -511,7 +534,7 @@ parana_fit <- ngme(
 )
 ```
 
-```{r}
+```{r traceplot-parana, eval = requireNamespace("INLA", quietly = TRUE)}
 # traceplots
 ## fixed effects and measurement error
 traceplot(parana_fit, "data")
@@ -522,7 +545,7 @@ traceplot(parana_fit, "spde")
 
 Parameter estimation results:
 
-```{r est-result, echo=FALSE}
+```{r est-result, echo=FALSE, eval = requireNamespace("INLA", quietly = TRUE)}
 ngme_result(parana_fit, "data")
 ngme_result(parana_fit, "spde")
 ```
@@ -531,7 +554,7 @@ ngme_result(parana_fit, "spde")
 
 Now we can use the fitted model to do prediction by generating the prediction grid and giving the predict location.
 
-```{r predict, cache=TRUE}
+```{r predict, cache=TRUE, eval = requireNamespace("INLA", quietly = TRUE)}
 nxy <- c(150, 100)
 projgrid <- rSPDE::rspde.mesh.projector(prmesh,
   xlim = range(PRborder[, 1]),
@@ -570,7 +593,7 @@ ggplot() +
 We can also fit a latent Gaussian model and compare it with the NIG model via cross-validation.
 The following code shows how to do it. For the details of the cross-validation, see the [cross-validation vignette](articles/cross-validation.html).
 
-```{r fit-gauss, cache=TRUE}
+```{r fit-gauss, cache=TRUE, eval = requireNamespace("INLA", quietly = TRUE)}
 parana_fit_gauss <- ngme(
   formula = Y ~ 1 +
     f(coords,
@@ -586,7 +609,7 @@ parana_fit_gauss <- ngme(
 )
 ```
 
-```{r cv-gauss, cache=TRUE}
+```{r cv-gauss, cache=TRUE, eval = requireNamespace("INLA", quietly = TRUE)}
 cv <- cross_validation(
   list(
     gauss = parana_fit_gauss,

@@ -21,7 +21,7 @@ public:
     virtual void                 compute(bool with_precond=false, double eps=1e-5)=0;
     // Accessors: return the last computed results
     virtual VectorXd             grad()=0;
-    // Preconditioner getter: strategy is set via model->set_precond_strategy(...)
+    // Preconditioner getter.
     virtual MatrixXd             precond()=0;
 
     virtual int                  get_n_params() const = 0;

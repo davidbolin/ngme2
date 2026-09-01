@@ -1,5 +1,59 @@
 # ngme2 (development version)
 
+* `ngme(start = previous_fit)` is now a true continuation. `start_sd` is no
+  longer applied on a warm start at all. On top of that, each chain resumes
+  from its own final parameters instead of from the chain-averaged fit. 
+  Each chain's endpoint is now stored on the fit (`attr(fit, "chain_params")`) 
+  and handed back to the optimizer, and the storedoptimisation trajectory is 
+  concatenated across the restarts rather than replaced, so `traceplot()` and any 
+  convergence diagnostic see the whole path.
+  Each chain's own latent state (`W`, and the mixing variables `V`) is carried
+  over too: `start` holds the chain AVERAGE of those, and an average of
+  posterior draws is not a draw.
+  `control_opt(continue_chains = FALSE)` restores the previous behaviour.
+* R-hat is now computed over the same window as the trend test (sub-batch means
+  spanning the second half of the run) instead of over the current batch alone, and
+  `n_conv_batch` defaults to 2 rather than 1. 
+* The convergence trend test gained a magnitude floor, `control_opt(trend_rel_lim = )`
+  (default 0.01). A parameter now fails the test only when its drift is both
+  statistically detectable (`|slope|/se > trend_lim`) and materially fast, moving more
+  than `trend_rel_lim` of its own scale (`|mean| + sd`) per 100 iterations. It is a rate,
+  not a movement per regression window.
+* The trend window is now built from sub-batch means spread evenly over the second half
+  of the run so far, instead of the last `n_slope_check` whole checkpoints. It is
+  therefore available at the FIRST checkpoint rather than the `n_slope_check`-th. 
+  `n_min_batch` now defaults to 1 rather than `min(n_batch, 3)`, since it is no 
+  longer what holds a converged fit back.
+* With `verbose = TRUE` and `print_check_info = FALSE`, each convergence checkpoint now
+  prints a one-line progress summary -- how many parameters have converged, and the worst
+  R-hat, t-statistic and drift rate with the parameter responsible. A full table at every
+  checkpoint is unreadable when checkpoints are 50 iterations apart, but a run that may go
+  to 10,000 iterations still has to say how close it is; the drift rate falling towards
+  `trend_rel_lim` is the quantity to watch.
+* The post-convergence polish phase now runs ONLY when the stopping rule
+  actually fired.
+* `predict()` gained a `replicate` argument. Every prediction previously came
+  from the first replicate whatever the caller asked for, since the latent field
+  `W` is per-replicate. The argument takes a replicate level (the name used in
+  the fit) or a position, and an unmatched value is an error listing what the
+  fit actually has.
+* A namespace-qualified `ngme2::f(...)` in a model formula is now recognised as
+  a latent term. `terms.formula(specials = )` matches specials by name, so the
+  qualified call fell through to the fixed-effect path and the latent field was
+  dropped from the model silently. The qualification is stripped from the
+  function position only, and the bare name is bound for evaluation, so this
+  keeps working when `ngme2` is not attached.
+* Fixed `f(model = ngme2::<constructor>(...), noise = noise_normal())`, which
+  failed with "the condition has length > 1". `f()` read the constructor name as
+  `as.character(model_expr[[1]])`, which is `c("::", "ngme2", "tp")` for a
+  qualified call, so the `%in%` test that follows was not a single logical.
+* Removed the dead preconditioner plumbing from `control_opt()`
+  (`precond_strategy`, `precond_by_diff_chain`, `compute_precond_each_iter`).
+  `precond_sgd()` has not carried a `preconditioner` field since the
+  preconditioner became the analytic second-order Hessian, so `control_opt()`
+  overwrote its own default with `NULL` and passed `precond_strategy =
+  numeric(0)` to C++ -- which never read it. `numerical_eps` is unaffected.
+
 * The default `nu` prior for stationary NIG latent noise is now the penalised-complexity
   prior of Cabral, Bolin and Rue (2023) calibrated as in their Section 3.3, from
   `P(1/nu > U) = alpha` with `U = 2.5` and `alpha = 0.01`, i.e. `P(nu < 0.4) = 0.01`.

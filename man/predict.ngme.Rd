@@ -15,6 +15,7 @@ predict using ngme after estimation}
   sampling_size = 500,
   burnin_size = 100,
   seed = ngme_random_seed(),
+  replicate = NULL,
   train_idx = NULL,
   chain_combine = c("param_mean", "predictive_average"),
   return_samples = FALSE,
@@ -49,6 +50,10 @@ vector or matrix (n * 2) for spatial coords}
 
 \item{seed}{random seed. Defaults to a seed drawn from the current R
 random number stream, so \code{set.seed()} makes the result reproducible.}
+
+\item{replicate}{which replicate to predict for. A replicate LEVEL (the name
+used in the fit, e.g. `2007` or `"site_a"`) or a positive integer position
+in `object$replicates`. Defaults to the first replicate.}
 
 \item{train_idx}{optional vector of training indices to use for posterior sampling.
 If provided, only these indices from the original data will be used for training,

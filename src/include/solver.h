@@ -9,6 +9,7 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <cholmod.h>
+#include <cstdio>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -18,9 +19,59 @@
 #include <Eigen/SparseLU>
 #ifdef __APPLE__
 #include <Eigen/AccelerateSupport>
+#include <unistd.h>
 #endif
 #ifdef USEMKL
 #include <Eigen/PardisoSupport>
+#endif
+
+#ifdef __APPLE__
+// ---------------------------------------------------------------------------
+// Apple's Accelerate sparse solvers are NOT fork-safe.
+//
+// Eigen's AccelerateSupport wraps Apple's Sparse Solvers, which parallelise
+// internally through libdispatch (GCD). GCD is documented as unusable in a
+// process forked from one that has already initialised it: the child must
+// exec() first. R's `parallel::mclapply()` forks and does not exec, so ANY use
+// of an Accelerate factorization inside an mclapply worker aborts the child --
+// and, because R's fork workers share the session's error handling, takes the
+// whole R session down with it. Measured on this build: forked workers survive
+// 3/3 with `solver_backend = "cholmod"` and 3/3 with `"eigen"`, and abort with
+// `"accelerate"`, for Gaussian and non-Gaussian models alike.
+//
+// This is not something the caller can be expected to know, and the failure is
+// a crash rather than an error, so the library declines to walk into it: a
+// solver constructed in a forked child silently uses the equivalent CHOLMOD
+// factorization instead. The two compute the same Cholesky; only the library
+// differs, so results are unchanged up to floating-point associativity, and a
+// forked worker is doing per-fold work where the solver's speed is not what
+// dominates anyway.
+//
+// The child is detected by comparing the current pid against the one recorded
+// when the shared library was loaded. `inline` gives one shared copy across
+// translation units (C++17), initialised at load time.
+inline const pid_t ngme_origin_pid = ::getpid();
+inline bool ngme_in_forked_child() { return ::getpid() != ngme_origin_pid; }
+
+// Map an Accelerate backend index to its CHOLMOD equivalent when -- and only
+// when -- we are running in a forked child. 4 (Accelerate LLT) -> 2 (CHOLMOD
+// supernodal LLT); 5 (Accelerate LDLT) -> 3 (CHOLMOD LDLT). Every other index
+// is returned unchanged.
+inline int ngme_fork_safe_stype(int stype) {
+  if (!ngme_in_forked_child() || (stype != 4 && stype != 5))
+    return stype;
+  static thread_local bool warned = false;
+  if (!warned) {
+    warned = true;
+    std::fprintf(stderr,
+                 "ngme2: Apple Accelerate is not fork-safe; this forked worker "
+                 "is using CHOLMOD instead. Use a PSOCK cluster "
+                 "(parallel::makePSOCKcluster) to keep Accelerate.\n");
+  }
+  return (stype == 4) ? 2 : 3;
+}
+#else
+inline int ngme_fork_safe_stype(int stype) { return stype; }
 #endif
 
 class sparse_llt_solver {
@@ -112,7 +163,8 @@ private:
 public:
   sparse_llt_solver() = default;
   sparse_llt_solver(int stype, int nin, int Ntrace, bool symmetric)
-      : solver_type(stype), n(nin), N_iter(Ntrace), isSymmetric(symmetric) {}
+      : solver_type(ngme_fork_safe_stype(stype)), n(nin), N_iter(Ntrace),
+        isSymmetric(symmetric) {}
 
   // Backward-compatible init plus symmetric toggle
   inline void init(int nin, int Ntrace, int /*max_iter*/, double /*tol*/,
@@ -127,7 +179,9 @@ public:
     lu_ok = false;
     n = nin;
     N_iter = Ntrace;
-    solver_type = stype;
+    // Accelerate is not fork-safe; in a forked child this returns the CHOLMOD
+    // equivalent instead. See ngme_fork_safe_stype() above.
+    solver_type = ngme_fork_safe_stype(stype);
     isSymmetric = symmetric;
     // U / QU are the n x N_iter Hutchinson probe blocks. ensure_U() sizes them
     // on the first trace() / trace2() call, so a solver that is never asked for

@@ -16,12 +16,11 @@ control_ngme(
 }
 \arguments{
 \item{n_gibbs_samples}{number of gibbs samples at each iteration.
-This is an accuracy dial, not a speed dial: raising it lowers the
-variance of each gradient but costs proportionally more per
+Raising it lowers the variance of each gradient but costs proportionally more per
 iteration, so the number of iterations needed to satisfy the
 convergence checks is largely unchanged and the wall-clock time to
 converge goes up. Raise it when the estimates are noisy at
-convergence, not to converge sooner.}
+convergence.}
 
 \item{post_burnin}{number of Gibbs sweeps to discard before recording the
 posterior samples of W and V returned by \code{ngme()}. A burn-in is
@@ -43,12 +42,7 @@ design scale; no manual rescaling is required.}
 
 \item{...}{additional arguments. Legacy aliases \code{feff} and
 \code{fix_feff} are still recognized and mapped to \code{beta_init} and
-\code{fix_beta}. Anything else is ignored with a warning naming it, since
-silently dropping it hides real mistakes -- most often reaching for a
-\code{\link{control_opt}} argument such as \code{iterations} or
-\code{rao_blackwellization}, which the warning points out. Note that R
-matches partial names against the formals above before \code{...}, so
-\code{beta = } reaches \code{beta_init} and does not warn.}
+\code{fix_beta}. Anything else is ignored with a warning naming it.}
 }
 \value{
 a list of control variables for ngme

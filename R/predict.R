@@ -20,6 +20,9 @@
 #' @param burnin_size size of posterior burnin
 #' @param seed random seed. Defaults to a seed drawn from the current R
 #'   random number stream, so \code{set.seed()} makes the result reproducible.
+#' @param replicate which replicate to predict for. A replicate LEVEL (the name
+#'   used in the fit, e.g. `2007` or `"site_a"`) or a positive integer position
+#'   in `object$replicates`. Defaults to the first replicate.
 #' @param train_idx optional vector of training indices to use for posterior sampling.
 #'   If provided, only these indices from the original data will be used for training,
 #'   similar to cross-validation. If NULL, uses all original training data.
@@ -46,6 +49,7 @@ predict.ngme <- function(
     sampling_size = 500,
     burnin_size = 100,
     seed = ngme_random_seed(),
+    replicate = NULL,
     train_idx = NULL,
     chain_combine = c("param_mean", "predictive_average"),
     return_samples = FALSE,
@@ -70,6 +74,7 @@ predict.ngme <- function(
           sampling_size = sampling_size,
           burnin_size = burnin_size,
           seed = seed + i - 1L,
+          replicate = replicate,
           train_idx = train_idx,
           return_samples = return_samples
         )
@@ -99,11 +104,45 @@ predict.ngme <- function(
     sampling_size = sampling_size,
     burnin_size = burnin_size,
     seed = seed,
+    replicate = replicate,
     train_idx = train_idx,
     return_samples = return_samples
   )
 }
 
+
+# Resolve a user-supplied `replicate` to an index into object$replicates.
+resolve_predict_replicate <- function(object, replicate) {
+  levels_avail <- names(object$replicates)
+  n <- length(object$replicates)
+  if (is.null(replicate)) return(1L)
+  if (length(replicate) != 1L) {
+    stop("`replicate` must be a single replicate level or position.", call. = FALSE)
+  }
+  # a whole number is a position; anything else is matched as a level
+  if (is.numeric(replicate) && !is.na(replicate) &&
+      isTRUE(all.equal(replicate, round(replicate)))) {
+    idx <- as.integer(round(replicate))
+    if (idx < 1L || idx > n) {
+      stop("`replicate` position ", idx, " is out of range: the fit has ", n,
+           " replicate(s)",
+           if (!is.null(levels_avail)) paste0(" (", paste(levels_avail, collapse = ", "), ")"),
+           ".", call. = FALSE)
+    }
+    return(idx)
+  }
+  if (is.null(levels_avail)) {
+    stop("This fit's replicates are unnamed; pass `replicate` as a position.",
+         call. = FALSE)
+  }
+  idx <- match(as.character(replicate), levels_avail)
+  if (is.na(idx)) {
+    stop("`replicate` = ", sQuote(as.character(replicate)),
+         " is not a replicate of this fit. Available: ",
+         paste(levels_avail, collapse = ", "), ".", call. = FALSE)
+  }
+  idx
+}
 
 predict_ngme_param_mean <- function(
     object,
@@ -115,10 +154,11 @@ predict_ngme_param_mean <- function(
     sampling_size = 500,
     burnin_size = 100,
     seed = ngme_random_seed(),
+    replicate = NULL,
     train_idx = NULL,
     return_samples = FALSE) {
   fm <- attr(object, "fit")$formula
-  ngme <- object$replicates[[1]]
+  ngme <- object$replicates[[resolve_predict_replicate(object, replicate)]]
   seed_int <- normalize_prediction_seed(seed)
   type_names <- prediction_type_names(type, ngme)
   requested_model_names <- prediction_requested_model_names(type_names, ngme)

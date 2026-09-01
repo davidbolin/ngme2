@@ -256,6 +256,57 @@ ngme <- function(
     message(paste(capture.output(str(ngme_model$replicates[[1]])), collapse = "\n"))
   }
 
+  # TRUE CONTINUATION OF EACH CHAIN.
+  # The block above seeds the model with `start`'s parameters, but that object
+  # holds the AVERAGE over chains -- and estimate_cpp then re-scatters chains
+  # 2..n by N(0, start_sd). Continuing a fit therefore threw away the chains'
+  # own positions and restarted them at new points. Hand C++ each chain's own
+  # final parameter vector instead; it uses no jitter when this is present.
+  #
+  # Only when the parameterisation matches: a fit of a different model, or of
+  # the same model with a parameter newly fixed or freed, has a vector of a
+  # different length or meaning, and silently reusing it would be worse than
+  # not continuing at all.
+  continue_chains <- if (is.null(control_opt$continue_chains)) TRUE else
+    isTRUE(control_opt$continue_chains)
+  if (inherits(start, "ngme") && continue_chains) {
+    # Suppress the cold-start dispersion for EVERY warm start, whether or not
+    # the previous fit carried per-chain parameters. Continuity first; the
+    # per-chain state below is an improvement on top of that, not the condition
+    # for it.
+    control_opt$warm_start_no_jitter <- TRUE
+    cp <- attr(start, "chain_params")
+    if (is.matrix(cp) && nrow(cp) >= 1) {
+      if (ncol(cp) == ngme_model$n_params) {
+        n_ch <- control_opt$n_parallel_chain
+        # fewer chains stored than requested: recycle, so the extra chains still
+        # start from real fitted states rather than from jitter
+        pick <- rep_len(seq_len(nrow(cp)), n_ch)
+        control_opt$chain_start <- cp[pick, , drop = FALSE]
+
+        # The LATENT STATE is per chain too. `start` carries the chain AVERAGE
+        # of W and V, and an average of posterior draws is not a draw: it is
+        # over-smoothed (roughly 1/n_chains of the right variance), so restarting
+        # every chain from it biases the first gradients towards too little
+        # field variance. The per-chain states are in `chain_outputs`; hand each
+        # chain its own.
+        cout <- attr(start, "chain_outputs")
+        if (is.list(cout) && length(cout) >= 1) {
+          control_opt$chain_ngme <- lapply(pick, function(k) {
+            m <- ngme_model
+            m$replicates <- .seed_chain_state(ngme_model$replicates, cout[[k]])
+            m
+          })
+        }
+      } else {
+        warning("`start` was fitted under a different parameterization (",
+                ncol(cp), " parameters vs ", ngme_model$n_params,
+                "); its chains cannot be continued, so the chains are ",
+                "re-initialized from the fitted values.", call. = FALSE)
+      }
+    }
+  }
+
   # configuration of controls
 
   # check all f has the same replicate
@@ -350,7 +401,11 @@ ngme <- function(
           lat_traj_chains[[j]] <- traj_df_chains[[j]][lat_rows, , drop = FALSE]
         }
 
-        attr(ngme_model$replicates[[1]]$models[[i]], "lat_traj") <- lat_traj_chains
+        attr(ngme_model$replicates[[1]]$models[[i]], "lat_traj") <-
+          .continue_traj(
+            if (inherits(start, "ngme"))
+              attr(start$replicates[[1]]$models[[i]], "lat_traj") else NULL,
+            lat_traj_chains)
         idx <- idx + n_params
       }
 
@@ -395,7 +450,11 @@ ngme <- function(
         }
       }
 
-      attr(ngme_model$replicates[[1]], "block_traj") <- block_traj
+      attr(ngme_model$replicates[[1]], "block_traj") <-
+        .continue_traj(
+          if (inherits(start, "ngme"))
+            attr(start$replicates[[1]], "block_traj") else NULL,
+          block_traj)
       attr(outputs, "opt_traj") <- NULL
     } else {
       attr(outputs, "opt_traj") <- NULL
@@ -406,6 +465,11 @@ ngme <- function(
     } else {
       attr(ngme_model, "chain_outputs") <- NULL
     }
+    # Each chain's own final parameter vector, so a later
+    # `ngme(..., start = this)` can resume the chains where they actually are
+    # rather than at a re-jittered average of them.
+    attr(ngme_model, "chain_params") <- attr(outputs, "chain_params")
+    attr(ngme_model, "par_names") <- attr(outputs, "par_names")
   } else {
     # Estimation skipped: map fixed effects and X back to the raw covariate
     # scale so outputs are comparable to pre-demean runs.
@@ -415,6 +479,108 @@ ngme <- function(
     }
   }
   ngme_model
+}
+
+# Rewrite `pkg::f(...)` to `f(...)` in a formula's function positions, for the
+# names in `specials`.
+#
+# WHY. terms.formula(specials = ) identifies a special by the NAME of the
+# function being called, so `ngme2::f(x, model = ar1())` is not seen as a
+# special: its function position is a call to `::`, not the symbol `f`. The
+# term then goes down the fixed-effect path, which is a wrong answer as
+# the latent field is quietly dropped from the model.
+#
+# Only the function position is touched, so `model = ngme2::ar1()` and any
+# other qualified call inside the arguments is left exactly as written.
+#
+# Returns the (possibly unchanged) formula and the names actually rewritten, so
+# the caller can bind them for evaluation.
+.unqualify_formula_specials <- function(fm, specials) {
+  rewritten <- character(0)
+  walk <- function(x) {
+    if (!is.call(x)) return(x)
+    nm <- .call_fun_name(x)
+    if (nm %in% specials && is.call(x[[1]])) {
+      # x[[1]] is a `::`/`:::` call; replace it with the bare symbol
+      x[[1]] <- as.symbol(nm)
+      rewritten <<- c(rewritten, nm)
+    }
+    for (i in seq_along(x)) {
+      if (!is.null(x[[i]]) && !identical(x[[i]], quote(expr = ))) {
+        x[[i]] <- walk(x[[i]])
+      }
+    }
+    x
+  }
+  env <- environment(fm)
+  fm2 <- walk(fm)
+  fm2 <- stats::as.formula(fm2, env = env)
+  list(formula = fm2, rewritten = unique(rewritten))
+}
+
+# Concatenate a previous fit's trajectory with this run's, chain by chain.
+#
+# A trajectory is a list with one (parameters x iterations) matrix per chain,
+# and each ngme() call used to return only ITS OWN path -- so warm-restarting
+# in chunks silently discarded everything before the last chunk. A fit run as
+# 4 x 500 iterations kept 500 and threw away 1500, which is a problem because
+# the optimisation history IS the evidence for convergence, and because the
+# convergence rule could then never see across a chunk boundary.
+#
+# Binding is refused rather than forced when the two do not line up (a
+# different number of chains, or of parameters): a fit whose model changed is
+# not a continuation of the earlier one, and gluing the paths together would
+# produce a trajectory that never happened. In that case only the new path is
+# kept. `n_prev_iters` records where the previous path ended, so a reader can
+# tell the chunks apart.
+.continue_traj <- function(prev, new) {
+  if (!is.list(new) || !length(new)) return(new)
+  if (!is.list(prev) || !length(prev)) return(new)
+  if (length(prev) != length(new)) return(new)
+  prev_m <- lapply(prev, as.matrix)
+  new_m <- lapply(new, as.matrix)
+  if (!all(vapply(prev_m, nrow, 1L) == vapply(new_m, nrow, 1L))) return(new)
+  out <- lapply(seq_along(new_m), function(j) cbind(prev_m[[j]], new_m[[j]]))
+  names(out) <- names(new)
+  attr(out, "n_prev_iters") <-
+    c(attr(prev, "n_prev_iters"), ncol(prev_m[[1]]))
+  out
+}
+
+# Copy ONE chain's latent state (W, and the mixing variables V) into a set of
+# replicates, leaving everything else alone.
+#
+# Deliberately NOT update_ngme_est(): that function also runs
+# ngme_restore_fixed_effect_scale(), which rewrites `feff` and `X` and is NOT
+# idempotent, so applying it to replicates that have already been seeded from
+# `start` would double-transform the fixed effects.
+#
+# Every copy is length-guarded: a mismatch means the chain state does not belong
+# to this model, and keeping the model's own W is better than pasting in a
+# vector of the wrong shape.
+.seed_chain_state <- function(repls, chain_out) {
+  if (!is.list(chain_out)) return(repls)
+  for (i in seq_along(repls)) {
+    co <- chain_out[[i]]
+    if (is.null(co)) next
+    if (!is.null(co$noise$V) &&
+        length(co$noise$V) == length(repls[[i]]$noise$V)) {
+      repls[[i]]$noise$V <- co$noise$V
+    }
+    for (j in seq_along(repls[[i]]$models)) {
+      cm <- co$models[[j]]
+      if (is.null(cm)) next
+      if (!is.null(cm$W) &&
+          length(cm$W) == length(repls[[i]]$models[[j]]$W)) {
+        repls[[i]]$models[[j]]$W <- cm$W
+      }
+      if (!is.null(cm$V) &&
+          length(cm$V) == length(repls[[i]]$models[[j]]$noise$V)) {
+        repls[[i]]$models[[j]]$noise$V <- cm$V
+      }
+    }
+  }
+  repls
 }
 
 # helper function
@@ -930,6 +1096,21 @@ ngme_parse_formula <- function(
     standardize) {
   enclos_env <- list2env(as.list(parent.frame()), parent = parent.frame(2))
   global_env_first <- list2env(as.list(parent.frame(2)), parent = parent.frame())
+
+  # `terms.formula(specials =)` matches specials BY NAME, so `ngme2::f(...)`
+  # was not recognised as a latent term at all: it fell through to the
+  # fixed-effect path and the model was fitted without the field, silently and
+  # without error. Strip the qualification from the function position of any
+  # `ngme2::f` / `ngme2::fe` call, and bind the bare name in the environments
+  # the terms are evaluated in -- so the rewrite cannot break the very case it
+  # exists for, a caller who wrote `ngme2::f` because ngme2 is not attached.
+  .unq <- .unqualify_formula_specials(fm, c("f", "fe"))
+  fm <- .unq$formula
+  for (.nm in .unq$rewritten) {
+    .fun <- get(.nm, envir = asNamespace("ngme2"))
+    assign(.nm, .fun, envir = global_env_first)
+    assign(.nm, .fun, envir = enclos_env)
+  }
 
   tf <- terms.formula(fm, specials = c("f", "fe"))
   terms <- attr(tf, "term.labels")

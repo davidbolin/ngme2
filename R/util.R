@@ -719,8 +719,8 @@ is_replicate_mesh_arg <- function(mesh, model) {
 # argument with the mesh replaced.
 resolve_f_model_mesh <- function(model_expr, data = NULL, enclos = parent.frame()) {
   if (is.call(model_expr)) {
-    fname <- as.character(model_expr[[1]])
-    fname <- fname[length(fname)] # strip ngme2:: prefix
+    fname <- .call_fun_name(model_expr) # bare name, ngme2:: prefix stripped
+    if (!nzchar(fname)) return(NULL)
     fn <- tryCatch(
       get(fname, envir = asNamespace("ngme2"), mode = "function"),
       error = function(e) NULL

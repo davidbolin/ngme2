@@ -20,9 +20,7 @@
 #' @export
 precond_sgd <- function(
     stepsize = 1,
-    numerical_eps = 1e-5
-    # precond_by_diff_chain = FALSE
-    ) {
+    numerical_eps = 1e-5) {
   ret <- list(
     # sgd related
     method = "precond_sgd",

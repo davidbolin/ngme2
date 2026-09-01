@@ -34,10 +34,6 @@ Penalised-complexity prior for the flexibility parameter
 
 The rate is calibrated as in their Section 3.3, from the statement
 \eqn{\Pr(\eta > U) = \alpha}, giving \eqn{\lambda = -\log(\alpha)/U}.
-The calibration describes the process and does not involve the mesh:
-\eqn{\eta} is invariant to how the domain is discretised, since the
-\eqn{h}-dependence is absorbed by \eqn{V_i \sim
-\mathrm{IG}(h_i, \nu h_i^2)}.
 
 For symmetric noise the excess kurtosis of a unit-\eqn{h} increment is
 \eqn{3\eta}, which is the easiest way to read the defaults: \eqn{U = 2.5}

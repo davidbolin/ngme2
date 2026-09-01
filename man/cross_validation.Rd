@@ -18,6 +18,7 @@ cross_validation(
   percent = 0.2,
   times = 10,
   metric = NULL,
+  transform = identity,
   test_idx = NULL,
   train_idx = NULL,
   keep_pred = FALSE,
@@ -69,6 +70,9 @@ components \code{samples1}, \code{samples2}, and \code{label}. When
 \code{NULL}, the original per-group scores are computed. Example:
 \code{metric = function(data) 2 * data$y["A"] + data$y["B"]}. To sum all
 groups, return \code{sum(data$y)}.}
+
+\item{transform}{maps each value to a comparison scale, element-wise, applied
+to the observations and to every posterior draw.}
 
 \item{test_idx}{a list of indices of the data (which data points to be predicted) (only for custom type)}
 

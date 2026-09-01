@@ -6,11 +6,15 @@
 #' @details
 #' Convergence diagnostics (multi-chain):
 #' * R-hat: per-parameter Gelman–Rubin statistic; passes if \code{R_hat <= max_R_hat}.
-#' * Trend: fits a weighted linear trend to the last \code{n_slope_check} checkpoints and
-#'   passes when the slope is not distinguishable from zero, \code{|slope| / se(slope) <=
-#'   trend_lim}. This is scale-free and independent of \code{n_batch}. Setting
+#' * Trend: fits a weighted linear trend over a window of \code{n_slope_check} points and
+#'   passes unless the drift is both distinguishable from zero (\code{|slope| / se(slope) >
+#'   trend_lim}) and materially fast (relative movement per 100 iterations \code{>
+#'   trend_rel_lim}). This is scale-free and independent of \code{n_batch}. Setting
 #'   \code{trend_use_tstat = FALSE} recovers the absolute test \code{|slope| <= trend_lim},
 #'   and \code{use_std_check = TRUE} additionally requires \code{sqrt(var)/|mean| <= std_lim}.
+#'   The window points are sub-batch means spread evenly over the SECOND HALF of the run so
+#'   far, so the test is available from the first checkpoint and never regresses through the
+#'   optimiser's initial transient.
 #' Checks are evaluated every \code{iters_per_check = iterations / n_batch}. A parameter is marked
 #' converged only if every enabled parameter-level diagnostic (R-hat and Trend/Std) passes, so a
 #' single diagnostic cannot declare convergence on its own; the run stops when all parameters
@@ -28,13 +32,13 @@
 #'   any user-supplied \code{control_ngme(beta_init = ...)} is automatically
 #'   mapped from the original design scale to that standardized basis. Set to
 #'   \code{FALSE} to keep both the design matrix and any provided
-#'   \code{beta_init} on
-#'   their original scale.
+#'   \code{beta_init} on their original scale.
 #'
 #' @param n_parallel_chain number of parallel chains
 #' @param n_batch     number of checkpoints; optimization is split into \code{n_batch} equal batches
 #' @param iters_per_check run how many iterations between each check point (or specify \code{n_batch})
-#' @param n_min_batch   minimum number of checkpoints before any convergence diagnostic is attempted
+#' @param n_min_batch   minimum number of checkpoints before any convergence
+#'   diagnostic is attempted (default 1).
 #' @param n_slope_check number of checkpoints used as the regression window for the trend test
 #' @param trend_use_tstat compare the fitted slope to its own standard error
 #'   (\code{|slope| / se(slope) <= trend_lim}) instead of to an absolute bound. Scale-free
@@ -43,7 +47,8 @@
 #'   diagnostic. The raw coefficient of variation conflates chain disagreement with
 #'   parameter imprecision, so weakly identified parameters can never pass it.
 #' @param n_conv_batch number of consecutive checkpoints that must satisfy the criteria
-#'   before convergence is declared. Guards against a single lucky checkpoint.
+#'   before convergence is declared (default 2). Guards against a single lucky
+#'   checkpoint.
 #' @param warn_no_convergence emit a warning when the iteration budget is exhausted without
 #'   the convergence criteria being met. Set \code{FALSE} for short runs where convergence
 #'   is not expected (e.g. fast unit tests).
@@ -51,6 +56,11 @@
 #' @param trend_lim       maximum allowed drift. With \code{trend_use_tstat = TRUE}
 #'   (default) this is a t-value on the fitted slope (2 ~ "not distinguishable from no
 #'   drift"); with \code{trend_use_tstat = FALSE} it is an absolute bound on the slope.
+#' @param trend_rel_lim how fast a parameter must actually be MOVING before a
+#'   detectable drift counts as non-convergence, as a fraction of the parameter's
+#'   own scale per 100 iterations The default 0.01 reads as "1\% of itself per
+#'   100 iterations". A parameter fails the trend test only when its drift is
+#'   both statistically detectable and faster than this.
 #' @param print_check_info print the convergence information
 #' @param start deprecated guard argument. Do not pass model starts through
 #'   \code{control_opt()}; use \code{ngme(..., start = previous_fit)} instead.
@@ -143,6 +153,21 @@
 #'       keeps the skewness coordinate unbounded and better scaled (default)}
 #'   }
 #' @param robust use robust mode in the backend optimizer/model updates
+#' @param continue_chains make \code{ngme(start = previous_fit)} a true
+#'   continuation (default \code{TRUE}). Three things follow from it:
+#'   \code{start_sd} is not applied,  each chain resumes
+#'   from its OWN final parameters and its own latent state (\code{W} and the
+#'   mixing variables \code{V}); and
+#'   the stored optimisation trajectory is concatenated across the restarts
+#'   instead of replaced. A run split into chunks is then the same optimisation
+#'   as one long run.
+#'
+#'   Set \code{FALSE} to recover the old behaviour, which is what you want if
+#'   you are deliberately re-dispersing chains from a fitted point to test
+#'   whether they return to it. The per-chain part is skipped, with a warning,
+#'   when the previous fit has a different parameterization; the no-jitter part
+#'   still applies, since it needs nothing from the previous fit but the fact
+#'   that it is one.
 #' @param R_hat_conv_check use the R-hat diagnostic for convergence checking
 #' @param max_R_hat maximum allowed R_hat
 #' @return list of control variables
@@ -184,19 +209,20 @@ control_opt <- function(
     robust = FALSE,
     nig_param_std = 3,
     stepsize_control = NULL,
-    n_min_batch = min(n_batch, 3),
+    n_min_batch = 1,
     n_slope_check = min(n_batch, 3),
     trend_std_conv_check = TRUE,
     std_lim = 0.01,
     trend_lim = 2,
+    trend_rel_lim = 0.01,
     trend_use_tstat = TRUE,
     use_std_check = FALSE,
-    n_conv_batch = 1,
+    n_conv_batch = 2,
     warn_no_convergence = TRUE,
+    continue_chains = TRUE,
     R_hat_conv_check = TRUE,
     max_R_hat = 1.1) {
   strategy_list <- c("all", "ws")
-  preconditioner_list <- c("none", "fast", "full")
   solver_backend_list <- c("eigen", "cholmod", "accelerate", "pardiso")
   solver_factor_list <- c("llt", "ldlt")
   nonsym_solver_list <- c("lu", "normal_equations")
@@ -226,16 +252,9 @@ control_opt <- function(
   stepsize_schedule_t0 <- stepsize_control$schedule$t0
   stepsize_schedule_burnin_iter <- stepsize_control$schedule$burnin_iter
 
-  # read preconditioner from optimizer
-  preconditioner <- "none"
   numerical_eps <- 1e-5
-  precond_by_diff_chain <- FALSE
-  compute_precond_each_iter <- FALSE
   if (optimizer$method == "precond_sgd") {
-    preconditioner <- optimizer$preconditioner
     numerical_eps <- optimizer$numerical_eps
-    precond_by_diff_chain <- optimizer$precond_by_diff_chain
-    compute_precond_each_iter <- optimizer$compute_precond_each_iter
   }
 
   # if user inputs iters_per_check
@@ -286,7 +305,6 @@ control_opt <- function(
 
   stopifnot(
     sampling_strategy %in% strategy_list,
-    preconditioner %in% preconditioner_list,
     "start_sd must be a numeric scalar" =
       is.numeric(start_sd) && length(start_sd) == 1 && is.finite(start_sd),
     is.numeric(max_num_threads) && length(max_num_threads) == 1,
@@ -342,10 +360,6 @@ control_opt <- function(
         (stepsize_schedule_alpha > 0.5 && stepsize_schedule_alpha < 1)
   )
 
-  if (n_parallel_chain == 1) {
-    precond_by_diff_chain <- FALSE
-  }
-
   # variance reduction techniques (not used for now)
   {
     reduce_var <- FALSE
@@ -371,10 +385,12 @@ control_opt <- function(
     n_slope_check = n_slope_check, # window for trend regression
     std_lim = std_lim,
     trend_lim = trend_lim,
+    trend_rel_lim = trend_rel_lim,
     trend_use_tstat = trend_use_tstat,
     use_std_check = use_std_check,
     n_conv_batch = n_conv_batch,
     warn_no_convergence = warn_no_convergence,
+    continue_chains = continue_chains,
     num_threads = c(
       max(n_parallel_chain, 1),
       max(floor(max_num_threads / n_parallel_chain), 1)
@@ -400,9 +416,6 @@ control_opt <- function(
 
     # preconditioner related
     numerical_eps = numerical_eps,
-    precond_by_diff_chain = precond_by_diff_chain,
-    compute_precond_each_iter = compute_precond_each_iter,
-    precond_strategy = which(preconditioner_list == preconditioner) - 1, # start from 0
 
     # optimization method related
     stepsize = optimizer$stepsize,

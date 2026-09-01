@@ -11,7 +11,8 @@ compute_score_given_pred(
   group_data,
   merge_groups = FALSE,
   merged_group_name = NULL,
-  metric = NULL
+  metric = NULL,
+  transform = identity
 )
 }
 \arguments{
@@ -29,6 +30,11 @@ combine them into a vector-valued score}
 \item{merged_group_name}{optional label for the merged group}
 
 \item{metric}{optional custom metric function used to combine group-wise values before scoring}
+
+\item{transform}{element-wise map applied to the observations and to every
+posterior draw before scoring, so the scores are on the transformed scale.
+Applied BEFORE `metric`: `transform` changes the SCALE of each value,
+`metric` combines values ACROSS GROUPS, and the two compose in that order.}
 }
 \description{
 Compute the scores given the prediction

@@ -38,7 +38,10 @@ std::vector<bool> check_conv(const MatrixXd &, const MatrixXd &, int, int,
                              double, double, const std::vector<std::string> &,
                              bool, int, double, const VectorXd &, bool, bool,
                              int n_chains, bool trend_use_tstat,
-                             bool use_std_check,
+                             bool use_std_check, double trend_rel_lim,
+                             double win_span_iters, bool window_ready,
+                             int report_batch,
+                             std::vector<double> *rel_drift_out,
                              std::vector<bool> *conv_rhat_out,
                              std::vector<bool> *conv_trend_std_out,
                              std::vector<double> *std_ratio_out,
@@ -132,6 +135,10 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   double start_sd = (control_opt["start_sd"]);
   double print_check_info = (control_opt["print_check_info"]);
   double max_R_hat = (control_opt["max_R_hat"]);
+  const double trend_rel_lim =
+      control_opt.containsElementNamed("trend_rel_lim")
+          ? Rcpp::as<double>(control_opt["trend_rel_lim"])
+          : 1e-3;
   const bool R_hat_conv_check =
       control_opt.containsElementNamed("R_hat_conv_check")
           ? Rcpp::as<bool>(control_opt["R_hat_conv_check"])
@@ -147,16 +154,60 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   (void)n_threads_chain;
 #endif
 
+  // When `chain_start` is supplied (one row per chain, in chain order) each
+  // chain resumes at its OWN previous endpoint and no jitter is applied.
+  MatrixXd chain_start;
+  bool has_chain_start = false;
+  if (control_opt.containsElementNamed("chain_start") &&
+      !Rf_isNull(control_opt["chain_start"])) {
+    chain_start = Rcpp::as<MatrixXd>(control_opt["chain_start"]);
+    has_chain_start = (chain_start.rows() >= n_chains);
+    if (!has_chain_start && chain_start.rows() > 0) {
+      Rcpp::warning("chain_start has %d rows but %d chains were requested; "
+                    "ignoring it and starting from the fitted parameters.",
+                    (int)chain_start.rows(), n_chains);
+    }
+  }
+  // Per-chain LATENT STATE: one model list per chain, differing from R_ngme
+  // only in each replicate's W and V. The parameters still come from
+  // chain_start; this is what keeps a chain's field and mixing variables its
+  // own instead of the chain average.
+  Rcpp::List chain_ngme;
+  bool has_chain_ngme = false;
+  if (control_opt.containsElementNamed("chain_ngme") &&
+      !Rf_isNull(control_opt["chain_ngme"])) {
+    chain_ngme = Rcpp::as<Rcpp::List>(control_opt["chain_ngme"]);
+    has_chain_ngme = (chain_ngme.size() >= n_chains);
+  }
+
+  // start_sd exists to disperse chains from a COLD start, so that agreement
+  // between them is evidence. Applying it to a continuation destroys exactly
+  // the continuity the continuation is for.
+  const bool warm_start_no_jitter =
+      control_opt.containsElementNamed("warm_start_no_jitter") &&
+      Rcpp::as<bool>(control_opt["warm_start_no_jitter"]);
+
   // init model and optimizer
   vector<std::shared_ptr<Ngme>> ngmes;
   vector<Ngme_optimizer> opt_vec;
   int i = 0;
   for (i = 0; i < n_chains; i++) {
-    double sd = (i == 0) ? 0 : start_sd;
+    double sd = (has_chain_start || warm_start_no_jitter || i == 0) ? 0 : start_sd;
 
     // Not thread-safe using Rcpp::List to init optimizer
-    ngmes.push_back(std::make_shared<Ngme>(R_ngme, seed + i, sampling_strategy,
-                                           num_threads[1], sd));
+    Rcpp::List R_ngme_i =
+        has_chain_ngme ? Rcpp::as<Rcpp::List>(chain_ngme[i]) : R_ngme;
+    ngmes.push_back(std::make_shared<Ngme>(R_ngme_i, seed + i,
+                                           sampling_strategy, num_threads[1],
+                                           sd));
+    if (has_chain_start) {
+      if (chain_start.cols() != ngmes[i]->get_n_params()) {
+        Rcpp::stop("chain_start has %d columns but the model has %d "
+                   "parameters; the previous fit is not this model.",
+                   (int)chain_start.cols(), ngmes[i]->get_n_params());
+      }
+      ngmes[i]->set_parameter_and_update(chain_start.row(i).transpose(), true);
+    }
     opt_vec.push_back(Ngme_optimizer(control_opt, ngmes[i], seed + i));
     if (stepsize_decay_on_trend)
       opt_vec.back().set_stepsize_decay_enabled(true);
@@ -219,8 +270,17 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   std::vector<int> sub_batch_count;
   VectorXd final_R_hat(n_params);
   final_R_hat.setZero();
+
+  std::vector<Eigen::RowVectorXd> hist_mean;
+  std::vector<Eigen::RowVectorXd> hist_var;
+  // Per-chain sub-batch means, so R-hat can be computed over the same window
+  // the trend test uses instead of over the current batch alone.
+  std::vector<MatrixXd> hist_chain_mean;
+  // Iteration each history point ends at, so the drift can be expressed as a rate.
+  std::vector<int> hist_iter;
   // keep last-diagnostics for reporting
   std::vector<double> last_tstats(n_params, 0.0);
+  std::vector<double> last_rel_drift(n_params, 0.0);
   int consec_converged = 0;
   std::vector<bool> last_conv_rhat(n_params, false);
   std::vector<bool> last_conv_trend_std(n_params, false);
@@ -442,14 +502,167 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
       }
       final_R_hat = R_hat;
 
+      // Record this batch's sub-batch means (and their across-chain variance)
+      // so the trend window can be built from them. With too short a batch to
+      // sub-divide, fall back to one point per batch, which is what the test
+      // used before.
+      if (n_sub_batch >= 2) {
+        for (int b = 0; b < n_sub_batch; ++b) {
+          if (sub_batch_count[b] <= 0)
+            continue;
+          Eigen::RowVectorXd m = Eigen::RowVectorXd::Zero(n_params);
+          for (int c = 0; c < n_chains; ++c)
+            m += sub_batch_sum[b].row(c) / (double)sub_batch_count[b];
+          m /= (double)n_chains;
+          Eigen::RowVectorXd v = Eigen::RowVectorXd::Zero(n_params);
+          for (int c = 0; c < n_chains; ++c) {
+            Eigen::RowVectorXd d =
+                sub_batch_sum[b].row(c) / (double)sub_batch_count[b] - m;
+            v += d.array().square().matrix();
+          }
+          v /= (double)std::max(1, n_chains - 1);
+          MatrixXd cm(n_chains, n_params);
+          for (int c = 0; c < n_chains; ++c)
+            cm.row(c) = sub_batch_sum[b].row(c) / (double)sub_batch_count[b];
+          hist_chain_mean.push_back(cm);
+          hist_mean.push_back(m);
+          hist_var.push_back(v);
+          hist_iter.push_back(steps - batch_steps +
+                              (int)std::llround((double)(b + 1) *
+                                                (double)batch_steps /
+                                                (double)n_sub_batch));
+        }
+      } else {
+        hist_mean.push_back(means.row(curr_batch));
+        hist_var.push_back(vars.row(curr_batch));
+        hist_chain_mean.push_back(mat);
+        hist_iter.push_back(steps);
+      }
+
+      // Select the regression window: n_slope_check points, evenly spaced,
+      // over the second half of the history.
+      const int hist_len = (int)hist_mean.size();
+      const bool window_ready = (hist_len >= n_slope_check);
+      MatrixXd win_means(n_slope_check, n_params);
+      MatrixXd win_vars(n_slope_check, n_params);
+      double win_span_iters = 0.0;
+      if (window_ready) {
+        int lo = hist_len / 2;
+        if (hist_len - lo < n_slope_check)
+          lo = std::max(0, hist_len - n_slope_check);
+        for (int k = 0; k < n_slope_check; ++k) {
+          int id = (n_slope_check == 1)
+                       ? (hist_len - 1)
+                       : lo + (int)std::llround((double)k *
+                                                (double)(hist_len - 1 - lo) /
+                                                (double)(n_slope_check - 1));
+          id = std::min(std::max(id, 0), hist_len - 1);
+          win_means.row(k) = hist_mean[id];
+          win_vars.row(k) = hist_var[id];
+          if (k == 0)
+            win_span_iters = -(double)hist_iter[id];
+          if (k == n_slope_check - 1)
+            win_span_iters += (double)hist_iter[id];
+        }
+      } else {
+        win_means.setZero();
+        win_vars.setOnes();
+      }
+
+
+      // Recompute R-hat from the per-chain sub-batch means spanning the second
+      // half of the run, rather than from the current batch alone. Same
+      // Gelman-Rubin estimator, same batch-means correction for the asymptotic
+      // variance -- only the window is longer, which is what makes it stable.
+      if (window_ready && (int)hist_chain_mean.size() >= n_slope_check) {
+        int L = (int)hist_chain_mean.size();
+        int lo = L / 2;
+        if (L - lo < n_slope_check)
+          lo = std::max(0, L - n_slope_check);
+        int n_blk = L - lo;
+        int n_win_iter = hist_iter[L - 1] - hist_iter[lo] +
+                         (hist_iter.size() > 1
+                              ? (hist_iter[1] - hist_iter[0])
+                              : 1);
+        if (n_blk >= 2 && n_win_iter > 1) {
+          MatrixXd chain_mean = MatrixXd::Zero(n_chains, n_params);
+          for (int b = lo; b < L; ++b)
+            chain_mean += hist_chain_mean[b];
+          chain_mean /= (double)n_blk;
+          Eigen::RowVectorXd grand = chain_mean.colwise().mean();
+          // between-chain: n * variance of the chain means
+          Eigen::RowVectorXd Bw = Eigen::RowVectorXd::Zero(n_params);
+          for (int c = 0; c < n_chains; ++c)
+            Bw += (chain_mean.row(c) - grand).array().square().matrix();
+          Bw *= ((double)n_win_iter / (double)(n_chains - 1));
+          // within-chain asymptotic variance, by non-overlapping batch means
+          Eigen::RowVectorXd W_eff = Eigen::RowVectorXd::Zero(n_params);
+          for (int c = 0; c < n_chains; ++c) {
+            Eigen::RowVectorXd s2 = Eigen::RowVectorXd::Zero(n_params);
+            for (int b = lo; b < L; ++b)
+              s2 += (hist_chain_mean[b].row(c) - chain_mean.row(c))
+                        .array().square().matrix();
+            s2 /= (double)(n_blk - 1);
+            W_eff += s2 / (double)n_blk; // var of the chain mean
+          }
+          W_eff /= (double)n_chains;
+          W_eff *= (double)n_win_iter; // -> asymptotic variance
+          Eigen::RowVectorXd var_hat =
+              ((double)(n_win_iter - 1) / (double)n_win_iter) * W_eff +
+              Bw / (double)n_win_iter;
+          for (int k = 0; k < n_params; k++) {
+            double r = std::sqrt(var_hat(k) / W_eff(k));
+            R_hat(k) = (W_eff(k) > 0.0 && std::isfinite(r))
+                           ? r
+                           : std::numeric_limits<double>::infinity();
+          }
+          final_R_hat = R_hat;
+        }
+      }
+
       if (param_conv_check && curr_batch + 1 >= n_min_batch) {
         converge =
-            check_conv(means, vars, curr_batch, n_slope_check, std_lim,
-                       trend_lim, par_names, print_check_info, batch_steps,
-                       max_R_hat, R_hat, trend_std_conv_check, R_hat_conv_check,
-                       n_chains, trend_use_tstat, use_std_check,
+            check_conv(win_means, win_vars, n_slope_check - 1, n_slope_check,
+                       std_lim, trend_lim, par_names, print_check_info,
+                       batch_steps, max_R_hat, R_hat, trend_std_conv_check,
+                       R_hat_conv_check, n_chains, trend_use_tstat,
+                       use_std_check, trend_rel_lim, win_span_iters,
+                       window_ready, curr_batch + 1, &last_rel_drift,
                        &last_conv_rhat, &last_conv_trend_std, &last_std_ratio,
                        &last_slopes, &last_tstats, &last_trend_ready);
+        // COMPACT PROGRESS, for long single runs.
+        if (verbose_enabled && !print_check_info) {
+          int n_ok = 0;
+          int i_rhat = 0, i_t = 0, i_dr = 0;
+          for (int i = 0; i < n_params; i++) {
+            if (converge[i])
+              n_ok++;
+            if (final_R_hat(i) > final_R_hat(i_rhat))
+              i_rhat = i;
+            if (std::abs(last_tstats[i]) > std::abs(last_tstats[i_t]))
+              i_t = i;
+            if (last_rel_drift[i] > last_rel_drift[i_dr])
+              i_dr = i;
+          }
+          auto nm = [&](int i) {
+            return (i < (int)par_names.size()) ? par_names[i] : std::string("?");
+          };
+          Rcpp::Rcout << "[iter " << steps << "] " << n_ok << "/" << n_params
+                      << " converged";
+          if (n_ok < n_params) {
+            Rcpp::Rcout << "  worst: R_hat " << std::fixed
+                        << std::setprecision(3) << final_R_hat(i_rhat) << " ("
+                        << nm(i_rhat) << ")";
+            if (last_trend_ready) {
+              Rcpp::Rcout << ", |t| " << std::setprecision(2)
+                          << std::abs(last_tstats[i_t]) << " (" << nm(i_t)
+                          << "), drift/100 " << std::setprecision(2)
+                          << (100.0 * last_rel_drift[i_dr]) << "% (" << nm(i_dr)
+                          << ")";
+            }
+          }
+          Rcpp::Rcout << std::endl;
+        }
         bool all_params_ok =
             std::find(begin(converge), end(converge), false) == end(converge);
         // Require the criteria to hold on n_conv_batch consecutive checkpoints.
@@ -550,7 +763,8 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   // Never polish for longer than the fit itself ran. The budget is a fixed
   // count, which is the right shape for a normal fit but disproportionate for a
   // very short one.
-  const int polish_budget = std::min(polish_iterations, steps);
+  // Also, only polish a run that actually converged.
+  const int polish_budget = all_converge ? std::min(polish_iterations, steps) : 0;
   if (polish_budget > 0 && n_chains > 0) {
     double polish_scale = stepsize_decay_scale * polish_stepsize_factor;
     for (i = 0; i < n_chains; i++) {
@@ -600,6 +814,9 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   }
 
   // generate outputs
+  // final_params keeps each chain's own parameter vector, which is what a later
+  // call needs to resume that chain
+  MatrixXd final_params(n_chains, n_params);
   for (i = 0; i < n_chains; i++) {
     // Average of the iterates: over the polish window when there was one,
     // otherwise over the last batch as before.
@@ -608,6 +825,7 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
             ? (polish_sum.row(i) / polish_done).transpose()
             : (batch_sum.row(i) / batch_steps).transpose();
     ngmes[i]->set_parameter_and_update(avg_param, false);
+    final_params.row(i) = avg_param.transpose();
 
     outputs.push_back(ngmes[i]->output());
     if (store_traj) {
@@ -700,6 +918,8 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   }
   if (n_chains > 1)
     outputs.attr("R_hat") = final_R_hat;
+  outputs.attr("chain_params") = Rcpp::wrap(final_params);
+  outputs.attr("par_names") = Rcpp::wrap(par_names);
   return outputs;
 }
 
@@ -730,8 +950,9 @@ check_conv(const MatrixXd &means, const MatrixXd &vars, int curr_batch,
            const std::vector<std::string> &par_names, bool print_check_info,
            int batch_steps, double max_R_hat, const VectorXd &R_hat,
            bool trend_std_conv_check, bool R_hat_conv_check, int n_chains,
-           bool trend_use_tstat, bool use_std_check,
-           std::vector<bool> *conv_rhat_out,
+           bool trend_use_tstat, bool use_std_check, double trend_rel_lim,
+           double win_span_iters, bool window_ready, int report_batch,
+           std::vector<double> *rel_drift_out, std::vector<bool> *conv_rhat_out,
            std::vector<bool> *conv_trend_std_out,
            std::vector<double> *std_ratio_out, std::vector<double> *slopes_out,
            std::vector<double> *tstats_out, bool *trend_ready_out) {
@@ -743,8 +964,9 @@ check_conv(const MatrixXd &means, const MatrixXd &vars, int curr_batch,
   std::vector<double> std_ratio(n_params, 0.0);
   std::vector<double> slopes(n_params, 0.0);
   std::vector<double> tstats(n_params, 0.0);
+  std::vector<double> rel_drift(n_params, 0.0);
 
-  bool trend_ready = (curr_batch + 1 >= n_slope_check);
+  bool trend_ready = window_ready && (curr_batch + 1 >= n_slope_check);
 
   (void)batch_steps; // currently unused but kept for signature stability
 
@@ -816,21 +1038,24 @@ check_conv(const MatrixXd &means, const MatrixXd &vars, int curr_batch,
                       : std::numeric_limits<double>::infinity();
 
       // Scale-free drift test: is the slope distinguishable from zero relative
-      // to its own standard error? Unlike |slope| <= trend_lim this does not
-      // depend on the parameter's units, nor on n_batch (which sets how much a
-      // parameter can move between checkpoints).
+      // to its own standard error?
       double stat = trend_use_tstat ? std::abs(tstats[i]) : std::abs(beta(1));
-      if (stat > trend_lim) {
+
+      // Also require the drift to be material as a rate per 100 iterations.
+      double span_pts = (double)(n_slope_check - 1);
+      double scale = std::abs(means(curr_batch, i)) +
+                     std::sqrt(std::max(0.0, vars(curr_batch, i))) + 1e-10;
+      double per_iter = (win_span_iters > 0.0)
+                            ? (std::abs(beta(1)) * span_pts / win_span_iters)
+                            : 0.0;
+      rel_drift[i] = 100.0 * per_iter / scale; // fraction of scale per 100 iters
+      if (stat > trend_lim && rel_drift[i] > trend_rel_lim) {
         conv_trend_std[i] = false;
       }
     }
   }
 
-  // Every enabled diagnostic must pass: a single lenient check should not be
-  // able to declare convergence on its own. The both-disabled case returned
-  // early above, so starting from true here cannot mark an unchecked parameter
-  // as converged. Note that an enabled trend/std check also requires
-  // trend_ready, i.e. no convergence before the slope window is filled.
+  // Every enabled diagnostic must pass
   for (int i = 0; i < n_params; i++) {
     bool passed = true;
     if (trend_std_conv_check)
@@ -851,11 +1076,17 @@ check_conv(const MatrixXd &means, const MatrixXd &vars, int curr_batch,
     *slopes_out = slopes;
   if (tstats_out)
     *tstats_out = tstats;
+  if (rel_drift_out)
+    *rel_drift_out = rel_drift;
   if (trend_ready_out)
     *trend_ready_out = trend_ready;
 
   if (print_check_info) {
-    Rcpp::Rcout << "\nstop " << curr_batch + 1 << ":\n";
+    // curr_batch indexes the regression WINDOW (the caller passes the selected
+    // points, not the whole history), so the checkpoint number for the reader
+    // has to be handed in separately. Otherwise every checkpoint prints as
+    // "stop n_slope_check".
+    Rcpp::Rcout << "\nstop " << report_batch << ":\n";
 
     const int label_width = 11; // width for the row label (e.g., "R_hat:")
     const int col_width = 10;   // width for each value/parameter name
@@ -898,6 +1129,13 @@ check_conv(const MatrixXd &means, const MatrixXd &vars, int curr_batch,
                     << std::setprecision(3) << std::left << slopes[i];
       }
       Rcpp::Rcout << "\n";
+
+      Rcpp::Rcout << std::setw(label_width) << std::left << "drift/100:";
+      for (int i = 0; i < n_params; i++) {
+        Rcpp::Rcout << " " << std::setw(col_width) << std::scientific
+                    << std::setprecision(2) << std::left << rel_drift[i];
+      }
+      Rcpp::Rcout << std::fixed << "\n";
 
       Rcpp::Rcout << std::setw(label_width) << std::left << "t_slope:";
       for (int i = 0; i < n_params; i++) {

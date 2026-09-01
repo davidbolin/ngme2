@@ -28,6 +28,8 @@
 #'   \code{NULL}, the original per-group scores are computed. Example:
 #'   \code{metric = function(data) 2 * data$y["A"] + data$y["B"]}. To sum all
 #'   groups, return \code{sum(data$y)}.
+#' @param transform  maps each value to a comparison scale, element-wise, applied
+#' to the observations and to every posterior draw.
 #' @param n_gibbs_samples number of gibbs samples of latent process, used for computing CRPS, sCRPS
 #' @param n_burnin number of burnin
 #' @param test_idx a list of indices of the data (which data points to be predicted) (only for custom type)
@@ -68,6 +70,7 @@ cross_validation <- function(
     percent = 0.2,
     times = 10,
     metric = NULL,
+    transform = identity,
     test_idx = NULL,
     train_idx = NULL,
     keep_pred = FALSE,
@@ -108,6 +111,19 @@ cross_validation <- function(
     ngme <- lapply(ngme_chain_sets, function(chain_models) chain_models[[1]])
   } else if (!is.null(data)) {
     ngme <- lapply(ngme, rebuild_cv_model_with_data, data = data)
+  }
+
+  if (is.list(transform)) {
+    if (length(transform) != length(ngme)) {
+      stop("If transform is a list, its length must equal number of models (length(ngme)).")
+    }
+    if (!all(vapply(transform, is.function, logical(1)))) {
+      stop("All entries of `transform` must be functions.")
+    }
+  } else if (is.function(transform)) {
+    transform <- rep(list(transform), length(ngme))
+  } else {
+    stop("transform must be a function or a list of functions")
   }
 
   # Handle metric argument: allow NULL, function, or list of functions (one per model)
@@ -232,7 +248,8 @@ cross_validation <- function(
                     merge_groups = merge_groups,
                     merged_group_name = merged_group_name,
                     chain_models = chain_models,
-                    chain_combine = chain_combine
+                    chain_combine = chain_combine,
+                    transform = transform[[idx]]
                   )
                   cv_message("In test batch ", i, ":")
                   cv_message_table(result$scores)
@@ -284,7 +301,8 @@ cross_validation <- function(
               merge_groups = merge_groups,
               merged_group_name = merged_group_name,
               chain_models = chain_models,
-              chain_combine = chain_combine
+              chain_combine = chain_combine,
+              transform = transform[[idx]]
             )
             scores[[i]] <- result$scores
             sd_scores[[i]] <- result$sd_scores
@@ -720,7 +738,8 @@ compute_err_reps <- function(
     merge_groups = FALSE,
     merged_group_name = NULL,
     chain_models = NULL,
-    chain_combine = "param_mean") {
+    chain_combine = "param_mean",
+    transform = identity) {
   test_idx <- sort(test_idx)
   stopifnot("Not a ngme object." = inherits(ngme, "ngme"))
   repls <- attr(ngme, "fit")$replicate
@@ -766,7 +785,8 @@ compute_err_reps <- function(
       merge_groups = merge_groups,
       merged_group_name = merged_group_name,
       ngme_chain_reps = ngme_chain_reps,
-      chain_combine = chain_combine
+      chain_combine = chain_combine,
+      transform = transform
     )
     scores[[n_scores]] <- result_1rep$mean_scores
     sd_scores[[n_scores]] <- result_1rep$sd_scores
@@ -817,7 +837,8 @@ compute_err_1rep <- function(
     merge_groups = FALSE,
     merged_group_name = NULL,
     ngme_chain_reps = NULL,
-    chain_combine = "param_mean") {
+    chain_combine = "param_mean",
+    transform = identity) {
   stopifnot(
     "bool_<..>_idx should be a logical vector" =
       is.logical(bool_test_idx) && is.logical(bool_train_idx)
@@ -882,7 +903,7 @@ compute_err_1rep <- function(
   if (parallel && requireNamespace("parallel", quietly = TRUE)) {
     scores <- parallel::mclapply(1:N_sim, function(nn) {
       s <- compute_scores(
-        ngme_1rep, n_gibbs_samples, n_burnin, seed + nn, A_pred_block, noise_test_idx, y_data, group_data, X_pred, metric, thining_gap, merge_groups, merged_group_name, ngme_chain_reps, chain_combine
+        ngme_1rep, n_gibbs_samples, n_burnin, seed + nn, A_pred_block, noise_test_idx, y_data, group_data, X_pred, metric, thining_gap, merge_groups, merged_group_name, ngme_chain_reps, chain_combine, transform
       )
       s
     }, mc.cores = num_cores)
@@ -892,7 +913,7 @@ compute_err_1rep <- function(
         {
           scores[[nn]] <- compute_scores(
             ngme_1rep, n_gibbs_samples, n_burnin, seed + nn, A_pred_block,
-            noise_test_idx, y_data, group_data, X_pred, metric, thining_gap, merge_groups, merged_group_name, ngme_chain_reps, chain_combine
+            noise_test_idx, y_data, group_data, X_pred, metric, thining_gap, merge_groups, merged_group_name, ngme_chain_reps, chain_combine, transform
           )
         },
         error = function(e) {
@@ -1026,7 +1047,8 @@ compute_scores <- function(
     merge_groups = FALSE,
     merged_group_name = NULL,
     ngme_chain_reps = NULL,
-    chain_combine = "param_mean") {
+    chain_combine = "param_mean",
+    transform = identity) {
   tryCatch(
     {
       seed_int <- as.integer(abs(seed) %% 2147483647)
@@ -1119,7 +1141,8 @@ compute_scores <- function(
         group_data,
         merge_groups = merge_groups,
         merged_group_name = merged_group_name,
-        metric = metric
+        metric = metric,
+        transform = transform
       )
     },
     error = function(e) {
@@ -1220,12 +1243,27 @@ compute_pred_N <- function(
 #'   combine them into a vector-valued score
 #' @param merged_group_name optional label for the merged group
 #' @param metric optional custom metric function used to combine group-wise values before scoring
+#' @param transform element-wise map applied to the observations and to every
+#'   posterior draw before scoring, so the scores are on the transformed scale.
+#'   Applied BEFORE `metric`: `transform` changes the SCALE of each value,
+#'   `metric` combines values ACROSS GROUPS, and the two compose in that order.
 compute_score_given_pred <- function(
     Y_N_1_thin, Y_N_2_thin,
     y_data, group_data,
     merge_groups = FALSE,
     merged_group_name = NULL,
-    metric = NULL) {
+    metric = NULL,
+    transform = identity) {
+  # Scale first, then aggregate. Scoring on a transformed scale means scoring
+  # transform(y) against transform(draw) for every draw -- not transforming a
+  # summary afterwards, which is a different (and wrong) quantity whenever the
+  # transform is non-linear: E[exp(X)] != exp(E[X]).
+  if (!identical(transform, identity)) {
+    if (!is.function(transform)) stop("`transform` must be a function.")
+    y_data <- transform(y_data)
+    Y_N_1_thin <- apply_elementwise_transform(transform, Y_N_1_thin)
+    Y_N_2_thin <- apply_elementwise_transform(transform, Y_N_2_thin)
+  }
   metric_data <- prepare_metric_data(metric, y_data, Y_N_1_thin, Y_N_2_thin, group_data)
 
   y_data <- metric_data$y
@@ -1349,6 +1387,22 @@ compute_score_given_pred <- function(
   scores
 }
 
+
+# Apply an element-wise transform to a matrix of posterior draws, keeping its
+# shape. A transform that changes the number of elements is a user error worth
+# naming, since it would otherwise surface as a confusing dimension mismatch
+# deep inside the scoring code.
+apply_elementwise_transform <- function(transform, m) {
+  m <- as.matrix(m)
+  out <- transform(m)
+  out <- as.matrix(out)
+  if (!identical(dim(out), dim(m))) {
+    stop("`transform` must be element-wise: it returned a ",
+         paste(dim(out), collapse = "x"), " object for a ",
+         paste(dim(m), collapse = "x"), " input.", call. = FALSE)
+  }
+  out
+}
 
 prepare_metric_data <- function(metric, y_data, Y_N_1_thin, Y_N_2_thin, group_data) {
   samples1 <- as.matrix(Y_N_1_thin)

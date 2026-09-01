@@ -39,15 +39,17 @@ control_opt(
   robust = FALSE,
   nig_param_std = 3,
   stepsize_control = NULL,
-  n_min_batch = min(n_batch, 3),
+  n_min_batch = 1,
   n_slope_check = min(n_batch, 3),
   trend_std_conv_check = TRUE,
   std_lim = 0.01,
   trend_lim = 2,
+  trend_rel_lim = 0.01,
   trend_use_tstat = TRUE,
   use_std_check = FALSE,
-  n_conv_batch = 1,
+  n_conv_batch = 2,
   warn_no_convergence = TRUE,
+  continue_chains = TRUE,
   R_hat_conv_check = TRUE,
   max_R_hat = 1.1
 )
@@ -67,8 +69,7 @@ random number stream, so \code{set.seed()} makes the result reproducible.}
 any user-supplied \code{control_ngme(beta_init = ...)} is automatically
 mapped from the original design scale to that standardized basis. Set to
 \code{FALSE} to keep both the design matrix and any provided
-\code{beta_init} on
-their original scale.}
+\code{beta_init} on their original scale.}
 
 \item{n_batch}{number of checkpoints; optimization is split into \code{n_batch} equal batches}
 
@@ -141,22 +142,11 @@ budget approaches its target over several updates rather than jumping.}
 "ws" means weighted sampling (each iteration use 1 replicate to compute the gradient, the sample probability is proption to its number of observations)}
 
 \item{solver_backend}{backend in ("eigen", "cholmod", "accelerate", "pardiso").
-  Defaults to "accelerate" on macOS and "cholmod" elsewhere.
-
-  \strong{On a non-macOS machine the speed of "cholmod" is set by the BLAS R
-  itself is linked against, not by anything in this package.} CHOLMOD's
-  supernodal factorization spends most of its time in dense \code{dgemm} /
-  \code{dsyrk} / \code{dtrsm} calls, and an R package resolves those symbols
-  at run time from whatever BLAS R has already loaded. With R's bundled
-  reference BLAS those kernels run one to two orders of magnitude below a
-  tuned one, and because the share of the work that is dense BLAS3 grows with
-  the fill of the factor, the penalty grows with the model: on a space-time
-  fit measured here it was 2x at 6,708 basis functions and 25x at 47,640.
-  Link R against OpenBLAS or MKL before fitting large models. Check with
-  \code{sessionInfo()$BLAS}, and measure with
-  \code{n <- 2000; A <- matrix(rnorm(n * n), n); 2 * n^3 / system.time(A \%*\% A)[3] / 1e9}
-  for GFLOP/s -- single digits means the reference BLAS, tens to hundreds a
-  tuned one.}
+Defaults to "accelerate" on macOS and "cholmod" elsewhere.
+Note that the speed of "cholmod" is set by the BLAS R itself is linked against,
+and with R's bundled reference BLAS those kernels run one to two orders of
+magnitude below a tuned one. Thus, link R against OpenBLAS or MKL before fitting
+large models.}
 
 \item{solver_type}{factorization type: "llt" or "ldlt"}
 
@@ -164,17 +154,10 @@ budget approaches its target over several updates rather than jumping.}
 model is factorized when estimating \code{tr(K^-1 dK)}.
 "normal_equations" (default) takes a Cholesky of \code{t(K) K} and applies
 \code{K^-1} as \code{(t(K) K)^-1 t(K)}; "lu" takes a sparse LU of
-\code{K}. Both feed the same \code{K^-1} to the trace estimators, so with
-the same seed they agree to round-off: the choice is one of cost, not of
-estimator. The Cholesky is the cheaper of the two for every non-symmetric
-operator here -- it exploits the symmetry of \code{t(K) K} where the LU
-cannot, giving a sparser factor and a supernodal backend -- and for a
-space-time model the gap is large. Its one cost is that it squares the
+\code{K}. The Cholesky is the cheaper of the two for every non-symmetric
+operator here. Its one cost is that it squares the
 condition number of \code{K}, so switch to "lu" for an operator so
-ill-conditioned that the Cholesky of \code{t(K) K} fails; the error raised
-in that case says so. Operators with an exact trace (\code{ar1},
-\code{ou}, \code{arma}, tensor products) never factorize \code{K} and
-ignore this setting entirely.}
+ill-conditioned that the Cholesky of \code{t(K) K} fails.}
 
 \item{verbose}{print estimation}
 
@@ -186,32 +169,21 @@ ignore this setting entirely.}
   noise, following Cabral, Bolin and Rue (2023). In the native parameters the
   variance \code{h(sigma^2 + mu^2/nu)} is shared by all three, giving a long
   flat ridge; these coordinates turn that ridge into an axis. Only the
-  optimiser's coordinates change -- the objective, the priors and the
+  optimiser's coordinates change and the objective, the priors and the
   reported estimates stay native, so fits remain comparable across settings.
 
   \describe{
     \item{0}{native \code{(theta_mu, log sigma, log nu)}}
-    \item{1}{standardised, their sec 2.1: \code{(log sigma_marg, zeta,
+    \item{1}{standardised \code{(log sigma_marg, zeta,
       log eta)} with \code{eta = 1/nu}, \code{zeta = mu/sigma} and
       \code{sigma_marg = sqrt(sigma^2 + mu^2/nu)} the marginal SD}
-    \item{2}{additionally orthogonalised, their sec 2.2:
+    \item{2}{additionally orthogonalised,
       \code{zeta* = zeta sqrt(eta)}, \code{eta* = eta / xi^2} with
       \code{xi = 1 + zeta*^2 - |zeta*| sqrt(1 + zeta*^2)}, which makes the
       kurtosis invariant to skewness}
     \item{3}{as 2 with \code{zeta*} carried as \code{asinh(zeta*)}, which
       keeps the skewness coordinate unbounded and better scaled (default)}
-  }
-
-  The default is 3. Measured over 24 simulated data sets (14 ar1, 10 two-
-  dimensional Matern, four chains, convergence checks on), the orthogonalised
-  coordinates satisfy the convergence criteria about three times as often as
-  native -- 13/24 and 12/24 for modes 3 and 2 against 4/24 (Fisher exact
-  \eqn{p = 0.015} and \eqn{0.031}) -- while the final estimates are
-  statistically indistinguishable (paired, all \eqn{|t| \le 1.04}). They are
-  also slightly faster in wall-clock, since they stop early rather than
-  exhausting the iteration budget. Native never met the criteria on the
-  two-dimensional Matern (0/10). Modes 2 and 3 are within noise of each
-  other; set 0 to recover the pre-0.9.9 behaviour.}
+  }}
 
 \item{stepsize_control}{unified stepsize configuration created by
 \code{stepsize_control()}, \code{poly_decay()}, or \code{batch_decay()}.
@@ -219,7 +191,8 @@ For polynomial schedule, \code{poly_decay(..., burnin_iter = B)} keeps
 schedule scale at 1 for the first \code{B} iterations, then starts decay
 with reset local time index.}
 
-\item{n_min_batch}{minimum number of checkpoints before any convergence diagnostic is attempted}
+\item{n_min_batch}{minimum number of checkpoints before any convergence
+diagnostic is attempted (default 1).}
 
 \item{n_slope_check}{number of checkpoints used as the regression window for the trend test}
 
@@ -231,6 +204,12 @@ with reset local time index.}
 (default) this is a t-value on the fitted slope (2 ~ "not distinguishable from no
 drift"); with \code{trend_use_tstat = FALSE} it is an absolute bound on the slope.}
 
+\item{trend_rel_lim}{how fast a parameter must actually be MOVING before a
+detectable drift counts as non-convergence, as a fraction of the parameter's
+own scale per 100 iterations The default 0.01 reads as "1\% of itself per
+100 iterations". A parameter fails the trend test only when its drift is
+both statistically detectable and faster than this.}
+
 \item{trend_use_tstat}{compare the fitted slope to its own standard error
 (\code{|slope| / se(slope) <= trend_lim}) instead of to an absolute bound. Scale-free
 and independent of \code{n_batch}; with this on, \code{trend_lim} is a t-value (~2-3).}
@@ -240,11 +219,28 @@ diagnostic. The raw coefficient of variation conflates chain disagreement with
 parameter imprecision, so weakly identified parameters can never pass it.}
 
 \item{n_conv_batch}{number of consecutive checkpoints that must satisfy the criteria
-before convergence is declared. Guards against a single lucky checkpoint.}
+before convergence is declared (default 2). Guards against a single lucky
+checkpoint.}
 
 \item{warn_no_convergence}{emit a warning when the iteration budget is exhausted without
 the convergence criteria being met. Set \code{FALSE} for short runs where convergence
 is not expected (e.g. fast unit tests).}
+
+\item{continue_chains}{make \code{ngme(start = previous_fit)} a true
+  continuation (default \code{TRUE}). Three things follow from it:
+  \code{start_sd} is not applied,  each chain resumes
+  from its OWN final parameters and its own latent state (\code{W} and the
+  mixing variables \code{V}); and
+  the stored optimisation trajectory is concatenated across the restarts
+  instead of replaced. A run split into chunks is then the same optimisation
+  as one long run.
+
+  Set \code{FALSE} to recover the old behaviour, which is what you want if
+  you are deliberately re-dispersing chains from a fitted point to test
+  whether they return to it. The per-chain part is skipped, with a warning,
+  when the previous fit has a different parameterization; the no-jitter part
+  still applies, since it needs nothing from the previous fit but the fact
+  that it is one.}
 
 \item{R_hat_conv_check}{use the R-hat diagnostic for convergence checking}
 
@@ -260,11 +256,15 @@ optimization process.
 \details{
 Convergence diagnostics (multi-chain):
 * R-hat: per-parameter Gelman–Rubin statistic; passes if \code{R_hat <= max_R_hat}.
-* Trend: fits a weighted linear trend to the last \code{n_slope_check} checkpoints and
-  passes when the slope is not distinguishable from zero, \code{|slope| / se(slope) <=
-  trend_lim}. This is scale-free and independent of \code{n_batch}. Setting
+* Trend: fits a weighted linear trend over a window of \code{n_slope_check} points and
+  passes unless the drift is both distinguishable from zero (\code{|slope| / se(slope) >
+  trend_lim}) and materially fast (relative movement per 100 iterations \code{>
+  trend_rel_lim}). This is scale-free and independent of \code{n_batch}. Setting
   \code{trend_use_tstat = FALSE} recovers the absolute test \code{|slope| <= trend_lim},
   and \code{use_std_check = TRUE} additionally requires \code{sqrt(var)/|mean| <= std_lim}.
+  The window points are sub-batch means spread evenly over the SECOND HALF of the run so
+  far, so the test is available from the first checkpoint and never regresses through the
+  optimiser's initial transient.
 Checks are evaluated every \code{iters_per_check = iterations / n_batch}. A parameter is marked
 converged only if every enabled parameter-level diagnostic (R-hat and Trend/Std) passes, so a
 single diagnostic cannot declare convergence on its own; the run stops when all parameters

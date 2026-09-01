@@ -1,3 +1,21 @@
+#' Name of the function a call invokes, unqualified.
+#'
+#' `quote(bv(...))[[1]]` is the symbol `bv`, but `quote(ngme2::bv(...))[[1]]` is
+#' a call to `::`, and `as.character()` on that yields three elements. This
+#' returns the bare function name for both forms, and `""` for anything else
+#' (an anonymous function, a call built by `do.call`, ...), so callers can
+#' compare it against a name with `%in%` and get a single logical.
+#' @noRd
+.call_fun_name <- function(cl) {
+  if (!is.call(cl)) return("")
+  fn <- cl[[1]]
+  if (is.call(fn) && length(fn) == 3L &&
+      as.character(fn[[1]]) %in% c("::", ":::")) {
+    fn <- fn[[3]]
+  }
+  if (is.symbol(fn)) as.character(fn) else ""
+}
+
 #' Specifying a latent process model (wrapper function for each model)
 #'
 #' Function used for defining of smooth and spatial terms
@@ -110,9 +128,14 @@ f <- function(
   # If the user builds a bv/bv2/bv_matern model inline and all noises are normal,
   # ensure fix_theta = TRUE in that model call.
   model_expr <- substitute(model)
-  # Check if model is a call to bv/bv2/bv_matern
+  # Check if model is a call to bv/bv2/bv_matern.
+  # `.call_fun_name()` rather than as.character(): the function position of a
+  # namespace-qualified call such as `ngme2::tp(...)` is itself a call to `::`,
+  # so as.character() returns c("::", "ngme2", "tp") and the `%in%` below became
+  # a length-3 condition, which `if` rejects outright. Any qualified constructor
+  # with all-normal noise therefore failed with "the condition has length > 1".
   if (noise_all_normal && is.call(model_expr)) {
-    op_name <- tryCatch(as.character(model_expr[[1]]), error = function(e) "")
+    op_name <- .call_fun_name(model_expr)
     if (op_name %in% c("bv", "bv2", "bv_matern")) {
       model_list <- as.list(model_expr)
       name_vec <- names(model_list)

@@ -1,4 +1,5 @@
 #include "noise.h"
+#include <limits>
 
 void NoiseUtil::update_gig(
     const string& noise_type,
@@ -34,6 +35,16 @@ void NoiseUtil::update_gig(
 }
 
 // compute dlog pi(V) / dtheta_nu
+// Note on Rao-Blackwellising this gradient over V.
+//
+// It is exactly available: the gradient is affine in V and 1/V, and V | W is
+// GIG(-1, a, b), so E[.|W] is closed form and cuts this gradient's variance
+// about tenfold. It was implemented, measured and removed, because it does not
+// pay for itself. Raising n_gibbs_samples buys more per unit of compute.
+//
+// Two traps if this is ever revisited: this function returns -grad (see the
+// end), and a replacement must match that; and it must condition on the a, b
+// actually used to draw V, not on values rebuilt from a later nu.
 VectorXd NoiseUtil::grad_theta_nu(
     const string& noise_type,
     const MatrixXd& B_nu,

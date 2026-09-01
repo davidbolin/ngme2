@@ -10,6 +10,7 @@
 #include <Eigen/Sparse>
 #include <cholmod.h>
 #include <iostream>
+#include <memory>
 #include <stdexcept>
 #include <string.h>
 
@@ -87,12 +88,23 @@ private:
   // factor, so the selected inverse keeps its own simplicial factorization.
   // That is an extra factorization, but it is only ever taken when the factor
   // is low-fill, where it costs far less than the probe solves it replaces.
-  Eigen::SimplicialLLT<Eigen::SparseMatrix<double, 0, int>> selinv_llt;
+  // Held by pointer so disable_selinv() can hand the factor's memory back;
+  // Eigen's solvers are noncopyable, so there is no way to reset one in place.
+  using selinv_llt_t = Eigen::SimplicialLLT<Eigen::SparseMatrix<double, 0, int>>;
+  std::unique_ptr<selinv_llt_t> selinv_llt;
   Eigen::SparseMatrix<double, 0, int> M_sym_;
   bool M_sym_ready{false};
   bool selinv_llt_ready{false};
   int selinv_viable_{-1}; // -1 undecided, 0 fill too high, 1 usable
+  // Set once the caller has ruled the selected inverse out for this fit.
+  // Everything the selinv path owns -- its private factorization, the
+  // symmetric copy of the matrix it factorizes, and the selected inverse
+  // itself -- is then dead weight, and for a 2-d mesh the private factor
+  // alone is the same order as the solver's own. See disable_selinv().
+  bool selinv_off_{false};
   void ensure_U(unsigned int seed);
+  void ensure_QU(unsigned int seed);
+  double reduce_probes(const Eigen::MatrixXd &MQU);
   // For non-symmetric mode we keep the last K to build normal equations and to
   // apply K^T on RHS when required
   Eigen::SparseMatrix<double, 0, int> K_last;
@@ -100,10 +112,7 @@ private:
 public:
   sparse_llt_solver() = default;
   sparse_llt_solver(int stype, int nin, int Ntrace, bool symmetric)
-      : solver_type(stype), n(nin), N_iter(Ntrace), isSymmetric(symmetric) {
-    U.resize(n, N_iter);
-    QU.resize(n, N_iter);
-  }
+      : solver_type(stype), n(nin), N_iter(Ntrace), isSymmetric(symmetric) {}
 
   // Backward-compatible init plus symmetric toggle
   inline void init(int nin, int Ntrace, int /*max_iter*/, double /*tol*/,
@@ -120,8 +129,9 @@ public:
     N_iter = Ntrace;
     solver_type = stype;
     isSymmetric = symmetric;
-    U.resize(n, N_iter);
-    QU.resize(n, N_iter);
+    // U / QU are the n x N_iter Hutchinson probe blocks. ensure_U() sizes them
+    // on the first trace() / trace2() call, so a solver that is never asked for
+    // a trace -- or a fit with Rao-Blackwellisation off -- never pays for them.
     Qi_computed = QU_computed = false;
     S_sel_ready = false;
     U_computed = false;
@@ -202,13 +212,16 @@ public:
     }
     QU_computed = false;
     S_sel_ready = false;
-    n = isSymmetric ? M.rows() : M.cols();
-    U.resize(n, N_iter);
-    QU.resize(n, N_iter);
+    {
+      const int new_n = isSymmetric ? M.rows() : M.cols();
+      if (new_n != n)
+        U_computed = false; // probes are sized for the old dimension
+      n = new_n;
+    }
   }
 
   void compute(const Eigen::SparseMatrix<double, 0, int> &M) {
-    if (!use_lu && isSymmetric) {
+    if (!use_lu && isSymmetric && !selinv_off_) {
       M_sym_ = M;
       M_sym_ready = true;
       selinv_llt_ready = false;
@@ -224,8 +237,6 @@ public:
       if (new_n != n)
         U_computed = false;
       n = new_n;
-      U.resize(n, N_iter);
-      QU.resize(n, N_iter);
       return;
     }
     switch (solver_type) {
@@ -308,10 +319,8 @@ public:
     S_sel_ready = false;
     const int new_n = isSymmetric ? M.rows() : M.cols();
     if (new_n != n)
-      U_computed = false; // resize below invalidates the probe vectors
+      U_computed = false; // probes are sized for the old dimension
     n = new_n;
-    U.resize(n, N_iter);
-    QU.resize(n, N_iter);
   }
 
   inline Eigen::ComputationInfo factorization_info() const {
@@ -495,15 +504,57 @@ public:
                 unsigned int seed = 0);
   double trace(const Eigen::SparseMatrix<double, 0, int> &,
                unsigned int seed = 0);
+  // tr(Q^-1 A^T diag(d) B) without ever forming A^T diag(d) B. The estimator
+  // only ever needs that product applied to the probe block, and
+  // (A^T diag(d) B) QU = A^T (d .* (B QU)) is three sparse-times-dense products
+  // on an n x N_iter block instead of a sparse-sparse-sparse product whose
+  // result is as dense as Q itself.
+  double trace_factored(const Eigen::SparseMatrix<double, 0, int> &A,
+                        const Eigen::VectorXd &d,
+                        const Eigen::SparseMatrix<double, 0, int> &B,
+                        unsigned int seed = 0);
   // Variance of the individual probe values in the last trace call (0 if exact).
   double last_probe_var() const { return last_probe_var_; }
   // Simplicial factorizations expose matrixL(); the CHOLMOD ones do not, and
   // the LU path is not a Cholesky at all.
-  bool selinv_supported() const { return !use_lu && isSymmetric; }
+  bool selinv_supported() const {
+    return !use_lu && isSymmetric && !selinv_off_;
+  }
+  // Release the selected-inverse machinery for good. Called once the fill
+  // test has come out against it, so neither the private factor nor the
+  // per-compute() copy of the matrix is carried for the rest of the run.
+  void disable_selinv() {
+    selinv_off_ = true;
+    selinv_llt_ready = false;
+    S_sel_ready = false;
+    M_sym_ready = false;
+    selinv_llt.reset();
+    S_sel = Eigen::SparseMatrix<double, 0, int>();
+    M_sym_ = Eigen::SparseMatrix<double, 0, int>();
+  }
   // nnz(L)/n. The cost of the selected inverse scales with the fill of the
   // factor, so this is what decides whether it beats probing.
   bool ensure_selinv_factor();
+  // nnz(L)/n, which requires the factor and so, on a backend that does not
+  // expose one, a private factorization of its own.
   double fill_ratio();
+  // A lower bound on what fill_ratio() would return, read straight off the
+  // matrix. The pattern of the Cholesky factor always contains the lower
+  // triangle of the matrix it factorizes, so nnz(L) >= nnz(tril(M)). When even
+  // that exceeds the threshold -- which it does for any 2-d spatial mesh -- the
+  // selected inverse can be ruled out without factorizing anything. Returns 0
+  // (i.e. rules nothing out) when the matrix is not held.
+  double fill_lower_bound() const {
+    if (!M_sym_ready || n <= 0)
+      return 0.0;
+    Eigen::Index cnt = 0;
+    for (int c = 0; c < M_sym_.outerSize(); ++c)
+      for (Eigen::SparseMatrix<double, 0, int>::InnerIterator it(M_sym_, c); it;
+           ++it)
+        if (it.row() >= c)
+          ++cnt;
+    return (double)cnt / (double)n;
+  }
   bool build_selinv();
   // tr(Q^{-1} M) from the selected inverse. False when an entry M needs falls
   // outside the factor's pattern, leaving the caller to fall back to probing.
@@ -517,8 +568,6 @@ public:
     if (Ntrace < 1 || Ntrace == N_iter)
       return;
     N_iter = Ntrace;
-    U.resize(n, N_iter);
-    QU.resize(n, N_iter);
     U_computed = false;
     QU_computed = false;
     S_sel_ready = false;

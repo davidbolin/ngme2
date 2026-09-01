@@ -72,6 +72,13 @@ with_factor_cache_disabled <- function(expr) {
   withr::with_envvar(c(NGME2_DISABLE_FACTOR_CACHE = "1"), expr)
 }
 
+# Run `expr` with the Rao-Blackwell traces assembling the matrix they trace,
+# i.e. forming A' diag(d) B explicitly instead of applying it to the probe
+# block, the way the code behaved before that was factored out.
+with_assembled_traces <- function(expr) {
+  withr::with_envvar(c(NGME2_NO_FACTORED_TRACE = "1"), expr)
+}
+
 # Read the factorization counters, resetting them for the next measurement.
 ngme_read_factor_counters <- function(reset = TRUE) {
   unlist(ngme2:::ngme_factor_counters(reset = reset))

@@ -39,6 +39,12 @@ PKG_LIBS += $(SHLIB_OPENMP_CXXFLAGS)
 
 PKG_CPPFLAGS += -Iinclude -I../inst/include # -DNDEBUG -DDEBUG
 PKG_CXXFLAGS += $(SHLIB_OPENMP_CXXFLAGS)
+# Emit the .d files that DEPFILES below -includes. Without this nothing ever
+# generates them, so editing a header does not rebuild the sources that include
+# it: an incremental build then links objects compiled against two different
+# definitions of the same class, which corrupts memory at run time rather than
+# failing to build. -MP keeps a deleted header from breaking the next build.
+PKG_CXXFLAGS += -MMD -MP
 
 
 ## NB: INSTALL does not clean subdirectories between subarchitectures

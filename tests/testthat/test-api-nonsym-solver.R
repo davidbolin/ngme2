@@ -1,10 +1,11 @@
 # control_opt(nonsym_solver = ) chooses how the operator matrix K of a
 # non-symmetric model is factorized when estimating tr(K^-1 dK):
-#   "lu"               a sparse LU of K            (default)
-#   "normal_equations" a Cholesky of t(K) K        (the behaviour before 0.9.9)
-# The two are different unbiased estimators of the same trace, so they give
-# different numbers for a non-symmetric operator -- and must give identical
-# ones for a symmetric operator, where the option does not apply at all.
+#   "normal_equations" a Cholesky of t(K) K       (default)
+#   "lu"               a sparse LU of K
+# Both apply K^-1 -- the second as (t(K) K)^-1 t(K) -- so the trace estimators
+# see the same operator and, given the same seed and hence the same probe
+# vectors, must agree to round-off. The setting is a choice of factorization,
+# not of estimator, and for a symmetric operator it does not apply at all.
 
 library(ngme2)
 library(testthat)
@@ -21,19 +22,21 @@ nonsym_control <- function(mode, iterations = 15) {
               trend_std_conv_check = FALSE)
 }
 
-test_that("nonsym_solver is validated and defaults to lu", {
-  expect_equal(control_opt()$nonsym_solver, 0L)
+test_that("nonsym_solver is validated and defaults to normal_equations", {
+  expect_equal(control_opt()$nonsym_solver, 1L)
   expect_equal(control_opt(nonsym_solver = "lu")$nonsym_solver, 0L)
   expect_equal(control_opt(nonsym_solver = "normal_equations")$nonsym_solver, 1L)
   expect_error(control_opt(nonsym_solver = "bogus"))
 })
 
-test_that("nonsym_solver changes a non-symmetric fit and not a symmetric one", {
+test_that("nonsym_solver picks a factorization, not an estimator", {
   skip_on_cran()
   skip_if_not_installed("fmesher")
   # The operator must be non-symmetric AND have no exact-trace shortcut for the
   # option to bite: ar1/ou are triangular and tensor products use the Kronecker
   # identities, so neither factorizes K at all any more. spacetime does.
+  # The two routes then run the whole optimization on the same numbers, so the
+  # agreement below holds over the entire trajectory, not just the estimates.
   st <- withr::with_seed(1, {
     n <- 250
     loc <- matrix(runif(n * 2), n, 2)
@@ -57,7 +60,7 @@ test_that("nonsym_solver changes a non-symmetric fit and not a symmetric one", {
     data = st_data, family = "normal",
     control_opt = nonsym_control("normal_equations"))))
   expect_identical(names(a), names(b))
-  expect_gt(ngme_digest_max_diff(a, b), 0)
+  expect_equal(ngme_digest_max_diff(a, b), 0, tolerance = 1e-6)
 
   # matern (alpha = 2) IS symmetric, so the option must be inert
   sp <- withr::with_seed(2, {

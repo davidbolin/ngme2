@@ -82,6 +82,7 @@ protected:
   int n_gibbs;
   bool debug, reduce_var;
   bool robust{false};
+  int nig_param_std{0};
   double reduce_power, threshold;
 
   SparseMatrix<double> A, K, Q, QQ, pmat, pmat_inv;
@@ -106,11 +107,6 @@ protected:
   VectorXd rb_probe_var_noise_sigma;
   // Running (Welford) variance of the gradient across iterations, used to size
   // the probe budget against the Gibbs noise rather than fixing it a priori.
-  // Lag-1 differences rather than a plain running variance: during optimization
-  // the gradient's mean is moving, and a raw variance charges that drift to the
-  // sampling noise, which makes the Gibbs term look larger than it is and
-  // under-provisions probes. E[(g_t - g_{t-1})^2] / 2 is unaffected by a slowly
-  // moving mean.
   VectorXd grad_prev_, grad_diff_sq_;
   VectorXd probe_var_ewma_;  // smoothed raw probe variance, parameter layout
   long grad_run_n_{0};
@@ -314,6 +310,15 @@ public:
   // enough, Hutchinson otherwise. Records the probe variance either way (zero
   // for the exact path) so the probe adapter keeps working.
   double qq_trace(const Eigen::SparseMatrix<double, 0, int> &T, double &probe_var);
+  // tr(QQ^-1 A^T diag(d) B). Same quantity as qq_trace() on the assembled
+  // triple product, but it hands the three factors to the probe estimator
+  // instead of multiplying them out first -- the product is as dense as QQ and
+  // is built once per parameter per iteration. Falls back to assembling it when
+  // the selected inverse is in use, since that route reads T's entries.
+  double qq_trace_factored(const Eigen::SparseMatrix<double, 0, int> &A,
+                           const Eigen::VectorXd &d,
+                           const Eigen::SparseMatrix<double, 0, int> &B,
+                           double &probe_var);
   int get_trace_N() const { return chol_QQ.get_N_iter(); }
 
   // return mean = mu*(V-h)

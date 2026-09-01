@@ -91,6 +91,9 @@ prior_inv_exp <- function(lambda = 1, lower = 0, target = "coef") {
 #' \eqn{\eta \sim \mathrm{Exp}(\lambda)}, which is exactly
 #' \code{\link{prior_inv_exponential}} on \eqn{\nu}.
 #'
+#' The rate is calibrated as in their Section 3.3, from the statement
+#' \eqn{\Pr(\eta > U) = \alpha}, giving \eqn{\lambda = -\log(\alpha)/U}.
+#'
 #' For symmetric noise the excess kurtosis of a unit-\eqn{h} increment is
 #' \eqn{3\eta}, which is the easiest way to read the defaults: \eqn{U = 2.5}
 #' is an excess kurtosis of 7.5 (equivalently \eqn{\nu = 0.4}), and

@@ -135,10 +135,21 @@ public:
   const SparseMatrix<double, 0, int> &get_dK(int i) const { return dK[i]; }
   const SparseMatrix<double, 0, int> &getZ() const { return Z; }
   const SparseMatrix<double, 0, int> &get_dZ(int i) const { return dZ[i]; }
+  // d2K / d2Z are allocated only when second derivatives are actually asked
+  // for, so these have to answer for an operator that was never asked. Callers
+  // test the returned matrix (rows() > 0) to decide whether a second-derivative
+  // term exists; returning an empty one keeps that test correct rather than
+  // indexing an empty vector.
   const SparseMatrix<double, 0, int> &get_d2K(int i, int j) const {
+    static const SparseMatrix<double, 0, int> empty;
+    if (i < 0 || j < 0 || (int)d2K.size() <= i || (int)d2K[i].size() <= j)
+      return empty;
     return d2K[i][j];
   }
   const SparseMatrix<double, 0, int> &get_d2Z(int i, int j) const {
+    static const SparseMatrix<double, 0, int> empty;
+    if (i < 0 || j < 0 || (int)d2Z.size() <= i || (int)d2Z[i].size() <= j)
+      return empty;
     return d2Z[i][j];
   }
   const MatrixXd &get_HK_trace() const { return HK_trace; }
@@ -273,6 +284,12 @@ private:
   bool stabilization, fix_gamma, shared_theta_gamma;
   int nt;
   std::vector<MatrixXd> B_gamma_x_list, B_gamma_y_list;
+  // True when every entry of B_gamma_x_list is the same matrix, and likewise
+  // for y. The advection field is then the same at every time node, so all
+  // nt - 1 spatial blocks of K are the same matrix and build_KZ() assembles one
+  // instead of nt - 1. Decided once in the constructor: the B lists are fixed
+  // data, not parameters, so this cannot change as theta moves.
+  bool gamma_time_invariant{false};
 
 public:
   Spacetime(const Rcpp::List &);

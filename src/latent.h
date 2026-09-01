@@ -80,7 +80,7 @@ protected:
         MatrixXd H_K;      // n_theta_K x n_theta_K
         MatrixXd H_mu;     // n_theta_mu x n_theta_mu
         MatrixXd H_sigma;  // n_theta_sigma x n_theta_sigma
-        MatrixXd H_nu;     // n_theta_nu x n_theta_nu (no cross terms with others)
+        MatrixXd H_nu;     // n_theta_nu x n_theta_nu
         // Cross blocks (upper-right by convention)
         MatrixXd H_K_mu;       // n_theta_K x n_theta_mu
         MatrixXd H_K_sigma;    // n_theta_K x n_theta_sigma
@@ -129,6 +129,29 @@ protected:
     int nonsym_solver_ {0};
     int n_trace_iter_ {8};
     bool robust_ {false};
+    // Standardised (Cabral, Bolin & Rue 2023, sec 2.1) coordinates for the
+    // stationary NIG noise. The optimiser works in
+    //     t = (log sigma_marg, zeta, log eta),
+    //     eta = 1/nu,  zeta = mu/sigma,  sigma_marg = sqrt(sigma^2 + mu^2 eta),
+    // where sigma_marg is the marginal SD, since Var = h (sigma^2 + mu^2/nu).
+    // In the native coordinates that variance is shared by all three
+    // parameters, so the likelihood has a long flat ridge along
+    // sigma^2 + mu^2/nu = const; here that ridge is the sigma_marg axis.
+    // 0 = native, 1 = standardised, 2 = additionally
+    // orthogonalised zeta* = zeta sqrt(eta), eta* = eta / xi^2 with
+    // xi = 1 + zeta*^2 - |zeta*| sqrt(1 + zeta*^2), which makes the large-
+    // deviation rate (hence the kurtosis) invariant to skewness.
+    int nig_param_mode_ {0};
+    bool nig_std_active() const;
+    VectorXd nig_std_from_native() const;
+    // t -> (theta_mu, theta_sigma, theta_nu)
+    VectorXd nig_native_from_t(const VectorXd &t) const;
+    void nig_std_to_native(const VectorXd &t, double &theta_mu_out,
+                           double &theta_sigma_out, double &theta_nu_out) const;
+    // d(native)/d(t), by central differences on nig_native_from_t. The map is a
+    // handful of flops, so this is far cheaper than the likelihood and avoids a
+    // second hand-derivation for each mode.
+    MatrixXd nig_std_jacobian() const;
 
     // priors
     std::vector<string> prior_K_type;
@@ -150,6 +173,12 @@ public:
     int get_W_size() const             {return W_size; }
     int get_V_size() const             {return V_size; }
     int get_n_params() const           {return n_params; }
+    // Empty unless the standardised coordinates are active. Block applies this
+    // once the whole native gradient (including its own RB and dZ terms) is
+    // assembled -- transforming earlier would mix coordinate systems.
+    MatrixXd get_nig_std_jacobian() const {
+      return nig_std_active() ? nig_std_jacobian() : MatrixXd();
+    }
     int get_n_theta_K() const          {return n_theta_K; }
     int get_n_theta_sigma() const      {return n_theta_sigma; }
     int get_n_theta_mu() const         {return n_theta_mu; }

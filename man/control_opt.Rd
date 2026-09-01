@@ -33,10 +33,11 @@ control_opt(
   sampling_strategy = "all",
   solver_backend = if (Sys.info()["sysname"] == "Darwin") "accelerate" else "cholmod",
   solver_type = "llt",
-  nonsym_solver = "lu",
+  nonsym_solver = "normal_equations",
   verbose = FALSE,
   store_traj = TRUE,
   robust = FALSE,
+  nig_param_std = 3,
   stepsize_control = NULL,
   n_min_batch = min(n_batch, 3),
   n_slope_check = min(n_batch, 3),
@@ -139,21 +140,78 @@ budget approaches its target over several updates rather than jumping.}
 "all" means using all replicates in each iteration,
 "ws" means weighted sampling (each iteration use 1 replicate to compute the gradient, the sample probability is proption to its number of observations)}
 
-\item{solver_backend}{backend in ("eigen", "cholmod", "accelerate", "pardiso")}
+\item{solver_backend}{backend in ("eigen", "cholmod", "accelerate", "pardiso").
+  Defaults to "accelerate" on macOS and "cholmod" elsewhere.
+
+  \strong{On a non-macOS machine the speed of "cholmod" is set by the BLAS R
+  itself is linked against, not by anything in this package.} CHOLMOD's
+  supernodal factorization spends most of its time in dense \code{dgemm} /
+  \code{dsyrk} / \code{dtrsm} calls, and an R package resolves those symbols
+  at run time from whatever BLAS R has already loaded. With R's bundled
+  reference BLAS those kernels run one to two orders of magnitude below a
+  tuned one, and because the share of the work that is dense BLAS3 grows with
+  the fill of the factor, the penalty grows with the model: on a space-time
+  fit measured here it was 2x at 6,708 basis functions and 25x at 47,640.
+  Link R against OpenBLAS or MKL before fitting large models. Check with
+  \code{sessionInfo()$BLAS}, and measure with
+  \code{n <- 2000; A <- matrix(rnorm(n * n), n); 2 * n^3 / system.time(A \%*\% A)[3] / 1e9}
+  for GFLOP/s -- single digits means the reference BLAS, tens to hundreds a
+  tuned one.}
 
 \item{solver_type}{factorization type: "llt" or "ldlt"}
 
 \item{nonsym_solver}{how the operator matrix \code{K} of a non-symmetric
-modelis factorized when estimating \code{tr(K^-1 dK)}. "lu" (default) takes a sparse
-LU of \code{K}; "normal_equations" takes a Cholesky of \code{t(K) K}, which was the
-behaviour before version 0.9.9. This latter is only kept for reproducability and the
-default is strongly recommended.}
+model is factorized when estimating \code{tr(K^-1 dK)}.
+"normal_equations" (default) takes a Cholesky of \code{t(K) K} and applies
+\code{K^-1} as \code{(t(K) K)^-1 t(K)}; "lu" takes a sparse LU of
+\code{K}. Both feed the same \code{K^-1} to the trace estimators, so with
+the same seed they agree to round-off: the choice is one of cost, not of
+estimator. The Cholesky is the cheaper of the two for every non-symmetric
+operator here -- it exploits the symmetry of \code{t(K) K} where the LU
+cannot, giving a sparser factor and a supernodal backend -- and for a
+space-time model the gap is large. Its one cost is that it squares the
+condition number of \code{K}, so switch to "lu" for an operator so
+ill-conditioned that the Cholesky of \code{t(K) K} fails; the error raised
+in that case says so. Operators with an exact trace (\code{ar1},
+\code{ou}, \code{arma}, tensor products) never factorize \code{K} and
+ignore this setting entirely.}
 
 \item{verbose}{print estimation}
 
 \item{store_traj}{store the optimizer trajectory for diagnostics (set FALSE to reduce memory)}
 
 \item{robust}{use robust mode in the backend optimizer/model updates}
+
+\item{nig_param_std}{coordinates the optimiser uses for stationary NIG
+  noise, following Cabral, Bolin and Rue (2023). In the native parameters the
+  variance \code{h(sigma^2 + mu^2/nu)} is shared by all three, giving a long
+  flat ridge; these coordinates turn that ridge into an axis. Only the
+  optimiser's coordinates change -- the objective, the priors and the
+  reported estimates stay native, so fits remain comparable across settings.
+
+  \describe{
+    \item{0}{native \code{(theta_mu, log sigma, log nu)}}
+    \item{1}{standardised, their sec 2.1: \code{(log sigma_marg, zeta,
+      log eta)} with \code{eta = 1/nu}, \code{zeta = mu/sigma} and
+      \code{sigma_marg = sqrt(sigma^2 + mu^2/nu)} the marginal SD}
+    \item{2}{additionally orthogonalised, their sec 2.2:
+      \code{zeta* = zeta sqrt(eta)}, \code{eta* = eta / xi^2} with
+      \code{xi = 1 + zeta*^2 - |zeta*| sqrt(1 + zeta*^2)}, which makes the
+      kurtosis invariant to skewness}
+    \item{3}{as 2 with \code{zeta*} carried as \code{asinh(zeta*)}, which
+      keeps the skewness coordinate unbounded and better scaled (default)}
+  }
+
+  The default is 3. Measured over 24 simulated data sets (14 ar1, 10 two-
+  dimensional Matern, four chains, convergence checks on), the orthogonalised
+  coordinates satisfy the convergence criteria about three times as often as
+  native -- 13/24 and 12/24 for modes 3 and 2 against 4/24 (Fisher exact
+  \eqn{p = 0.015} and \eqn{0.031}) -- while the final estimates are
+  statistically indistinguishable (paired, all \eqn{|t| \le 1.04}). They are
+  also slightly faster in wall-clock, since they stop early rather than
+  exhausting the iteration budget. Native never met the criteria on the
+  two-dimensional Matern (0/10). Modes 2 and 3 are within noise of each
+  other; set 0 to recover the pre-0.9.9 behaviour.}
 
 \item{stepsize_control}{unified stepsize configuration created by
 \code{stepsize_control()}, \code{poly_decay()}, or \code{batch_decay()}.

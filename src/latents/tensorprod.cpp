@@ -179,6 +179,18 @@ Spacetime::Spacetime(const Rcpp::List &operator_list)
       B_gamma_x_list[i] = Rcpp::as<MatrixXd>(B_gamma_x_list_input[i]);
       B_gamma_y_list[i] = Rcpp::as<MatrixXd>(B_gamma_y_list_input[i]);
     }
+    // Does the advection design actually vary over time? With the default
+    // B_gamma_x / B_gamma_y it does not -- the same matrix is repeated at every
+    // time node -- and then so does every spatial block of K.
+    gamma_time_invariant = true;
+    for (int i = 1; i < nt - 1 && gamma_time_invariant; i++)
+      gamma_time_invariant =
+          B_gamma_x_list[i].rows() == B_gamma_x_list[0].rows() &&
+          B_gamma_x_list[i].cols() == B_gamma_x_list[0].cols() &&
+          B_gamma_y_list[i].rows() == B_gamma_y_list[0].rows() &&
+          B_gamma_y_list[i].cols() == B_gamma_y_list[0].cols() &&
+          B_gamma_x_list[i] == B_gamma_x_list[0] &&
+          B_gamma_y_list[i] == B_gamma_y_list[0];
   }
 }
 
@@ -196,58 +208,50 @@ void Spacetime::build_KZ(const VectorXd &theta_K) {
       theta_gamma_y = theta_K.segment(2 + n_theta_gamma_x, n_theta_gamma_y);
     }
 
-    std::vector<VectorXd> gamma_x_list(nt - 1);
-    std::vector<VectorXd> gamma_y_list(nt - 1);
-    for (int i = 0; i < nt - 1; i++) {
-      gamma_x_list[i] = B_gamma_x_list[i] * theta_gamma_x;
-      gamma_y_list[i] = B_gamma_y_list[i] * theta_gamma_y;
-    }
+    // One spatial block of K for the advection field at time node i. When the
+    // advection design does not vary over time this is called once and the
+    // result reused for every block, rather than rebuilt nt - 1 times: each
+    // call is several diagonal-scaled sparse products, and build_KZ() itself
+    // runs once per parameter per iteration under numeric differencing, so the
+    // repeat was the dominant cost of assembling K.
+    auto build_Ls = [&](int i) {
+      const VectorXd gamma_x = B_gamma_x_list[i] * theta_gamma_x;
+      const VectorXd gamma_y = B_gamma_y_list[i] * theta_gamma_y;
 
-    // Build Bs_list, S_list, Ls_list
-    std::vector<SparseMatrix<double, 0, int>> Bs_list(nt - 1);
-    std::vector<SparseMatrix<double, 0, int>> S_list(nt - 1);
-    std::vector<SparseMatrix<double, 0, int>> Ls_list(nt - 1);
-    for (int i = 0; i < nt - 1; i++) {
-      Bs_list[i] =
-          gamma_x_list[i].asDiagonal() * Bx * gamma_x_list[i].asDiagonal() +
-          gamma_y_list[i].asDiagonal() * By * gamma_y_list[i].asDiagonal();
+      SparseMatrix<double, 0, int> Ls =
+          kappa * kappa * Cs + lambda * Gs +
+          (gamma_x.asDiagonal() * Bx * gamma_x.asDiagonal() +
+           gamma_y.asDiagonal() * By * gamma_y.asDiagonal());
 
-      Ls_list[i] = kappa * kappa * Cs + lambda * Gs + Bs_list[i];
+      if (alpha == 4)
+        Ls = Ls * Cs_diag.cwiseInverse().asDiagonal() * Ls.transpose();
 
-      if (alpha == 4) {
-        Ls_list[i] = Ls_list[i] * Cs_diag.cwiseInverse().asDiagonal() *
-                     Ls_list[i].transpose();
+      if (stabilization && !(gamma_x.norm() < 1e-8 && gamma_y.norm() < 1e-8)) {
+        VectorXd gamma_xx = gamma_x.array().square();
+        VectorXd gamma_yy = gamma_y.array().square();
+        VectorXd gamma_xy = gamma_x.array() * gamma_y.array();
+
+        SparseMatrix<double, 0, int> Si =
+            gamma_xx.asDiagonal() * Hxx * gamma_xx.asDiagonal() +
+            gamma_yy.asDiagonal() * Hyy * gamma_yy.asDiagonal() +
+            gamma_xy.asDiagonal() * (Hxy + Hyx) * gamma_xy.asDiagonal();
+
+        const double gamma_norm =
+            sqrt((gamma_x.array().square() + gamma_y.array().square()).sum());
+        Ls = Ls + Cs_diag.asDiagonal() * Si / gamma_norm;
       }
+      return Ls;
+    };
 
-      if (stabilization) {
-        // Compute S_list[i]
-        if (gamma_x_list[i].norm() < 1e-8 && gamma_y_list[i].norm() < 1e-8) {
-          S_list[i] = SparseMatrix<double, 0, int>(Ls_list[i].rows(),
-                                                   Ls_list[i].cols());
-          S_list[i].setZero();
-        } else {
-          VectorXd gamma_xx = gamma_x_list[i].array().square();
-          VectorXd gamma_yy = gamma_y_list[i].array().square();
-          VectorXd gamma_xy = gamma_x_list[i].array() * gamma_y_list[i].array();
-
-          S_list[i] =
-              gamma_xx.asDiagonal() * Hxx * gamma_xx.asDiagonal() +
-              gamma_yy.asDiagonal() * Hyy * gamma_yy.asDiagonal() +
-              gamma_xy.asDiagonal() * (Hxy + Hyx) * gamma_xy.asDiagonal();
-
-          double gamma_norm = sqrt((gamma_x_list[i].array().square() +
-                                    gamma_y_list[i].array().square())
-                                       .sum());
-          S_list[i] = Cs_diag.asDiagonal() * S_list[i] / gamma_norm;
-        }
-        // Add S_list[i] to Ls_list[i]
-        Ls_list[i] = Ls_list[i] + S_list[i];
+    if (gamma_time_invariant) {
+      const SparseMatrix<double, 0, int> Ls = build_Ls(0);
+      for (int i = 1; i < Ct.rows(); ++i)
+        setSparseBlock(&K, i * Ls.rows(), i * Ls.cols(), Ls);
+    } else {
+      for (int i = 1; i < Ct.rows(); ++i) {
+        const SparseMatrix<double, 0, int> Ls = build_Ls(i - 1);
+        setSparseBlock(&K, i * Ls.rows(), i * Ls.cols(), Ls);
       }
-    }
-
-    for (int i = 1; i < Ct.rows(); ++i) {
-      setSparseBlock(&K, i * Ls_list[i - 1].rows(), i * Ls_list[i - 1].cols(),
-                     Ls_list[i - 1]);
     }
   } else { // fix_gamma = TRUE
     SparseMatrix<double> Ls = (kappa * kappa * Cs + lambda * Gs + Bs);

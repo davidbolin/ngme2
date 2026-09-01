@@ -4,8 +4,7 @@
   prior of Cabral, Bolin and Rue (2023) calibrated as in their Section 3.3, from
   `P(1/nu > U) = alpha` with `U = 2.5` and `alpha = 0.01`, i.e. `P(nu < 0.4) = 0.01`.
 * A failed Cholesky of the measurement precision `QQ` no longer aborts the fit outright.
-  Such a failure is nearly always a transient SGD excursion -- the diagonal is still
-  strictly positive and the asymmetry sits at round-off level -- so the diagonal is now
+  Such a failure is nearly always a transient SGD excursion so the diagonal is now
   nudged by an escalating amount (from 1e-10 of the diagonal scale, six attempts) and the
   factorization retried. Only if that fails does estimation stop, and the error now reports
   the iteration, the smallest diagonal entry and the asymmetry instead of printing them to
@@ -60,11 +59,23 @@
   `K' diag(1/SV) K` and its measurement block `(AZ)' D (AZ)`, and these are 
   caches separately. Results are unchanged by the caching and setting the 
   environment variable `NGME2_DISABLE_FACTOR_CACHE` restores the uncached behaviour.
-* Fixed a bug for non-symmetric operators, which made the preconditioner Hessian
-  incorrect and the first-order trace far noisier than necessary. These are now 
-  handled by factorizing `K` directly with a sparse LU. The new 
-  `control_opt(nonsym_solver = )` selects it: `"lu"` (default) or `"normal_equations"` 
-  to reproduce results from 0.9.8 and earlier. 
+* Fixed the trace estimators for non-symmetric operators, which made the
+  preconditioner Hessian incorrect and the first-order trace far noisier than
+  necessary. `control_opt(nonsym_solver = )` chooses the factorization for this case.
+  `"normal_equations"` (default) for a Cholesky of `t(K) K`, or `"lu"` for a sparse LU 
+  of `K`. The Cholesky is cheaper for every non-symmetric operator in the package. 
+  Use `"lu"` if `K` is so ill-conditioned that the Cholesky of `t(K) K` fails.
+* A failed factorization of `K` for a non-symmetric operator is now reported for
+  both routes, not only for the LU. 
+* Speed-ups for space-time models. `spacetime()` builds its spatial block once per
+  assembly of `K` rather than once per time node: with the default `B_gamma_x` /
+  `B_gamma_y` the advection field is the same at every time node, so all `nt - 1`
+  blocks are the same matrix. The Rao-Blackwell traces no longer assemble the
+  matrix they trace either -- `tr(QQ^-1 A' diag(d) B)` is now taken as
+  `A' (d * (B QU))` on the probe block instead of forming the triple product,
+  which is as dense as `QQ` and was built once per parameter per iteration.
+  Both change results only by round-off; `NGME2_NO_FACTORED_TRACE` restores the
+  assembled trace for comparison.
 * Increased the burnin for the Gibbs chain for the posterior samples of `W` and `V` 
   that `ngme()` returns from 1 to 100, and before a posterior `simulate()` draw. 
 * Default random seeds are now drawn from the ambient R random number stream

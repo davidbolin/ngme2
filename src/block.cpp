@@ -131,6 +131,9 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
                ? Rcpp::as<bool>(control_ngme["robust"])
                : false;
 
+  nig_param_std = control_ngme.containsElementNamed("nig_param_std")
+                      ? Rcpp::as<int>(control_ngme["nig_param_std"])
+                      : 0;
   // reduce_var    =  Rcpp::as<bool>   (control_ngme["reduce_var"]);
   // reduce_power  =  Rcpp::as<double> (control_ngme["reduce_power"]);
   // threshold   =  Rcpp::as<double> (control_ngme["threshold"]);
@@ -195,6 +198,7 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
     latent_in["nonsym_solver"] = nonsym_solver;
     latent_in["n_trace_iter"] = n_trace_iter;
     latent_in["robust"] = robust;
+    latent_in["nig_param_std"] = nig_param_std;
     unsigned long latent_seed = seed + (i + 1) * 1000;
     latents.push_back(std::make_shared<Latent>(latent_in, latent_seed));
   }
@@ -625,8 +629,6 @@ VectorXd BlockModel::grad_theta_sigma() {
     }
   }
 
-  // shared_sigma branch removed; keep generic gradient form
-
   // Rao-Blackwell term from log|QQ|: keep sign consistent with theta_K path
   // theta_K: grad_accum -= rb_trace_K; then return -grad_accum
   // Here: do grad -= rb_trace_noise_sigma; then return -grad
@@ -1022,6 +1024,18 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
           }
         }
       }
+      // Standardised NIG coordinates: the optimiser works in
+      // t = (log sigma_marg, zeta, log eta). Everything above is native, so the
+      // chain rule is applied here, once, on the complete native gradient --
+      // the RB and dZ terms added just above are native too and must be
+      // included. grad_t = J^T grad_native, exactly (pure change of variables).
+      {
+        MatrixXd Jstd = L->get_nig_std_jacobian();
+        if (Jstd.size() > 0) {
+          int off = L->get_n_theta_K();
+          gi.segment(off, 3) = Jstd.transpose() * gi.segment(off, 3).eval();
+        }
+      }
       current_grad.segment(pos, theta_len) = gi;
       latent_grad.segment(pos, theta_len) += gi;
       pos += theta_len;
@@ -1105,8 +1119,7 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
       // Z-chain Hessian (measurement part):
       // H_{jk} = (Z_{jk} W)^T A^T D e  - (dZ_k W)^T A^T D A (dZ_j W)
       // We add the full (j,k) matrix per latent. If Z_{jk} is unavailable, we
-      // fall back to the Gauss–Newton term (second term only). This replaces
-      // the older diagonal-only GN.
+      // fall back to the Gauss–Newton term (second term only).
       auto t_pz = std::chrono::steady_clock::now();
       for (int li = 0; li < n_latent; ++li) {
         SparseMatrix<double> ADA_i;
@@ -1376,7 +1389,10 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
       last_precond = (1.0 / precond_count) * precond_sum;
       // Louis identity: observed info = complete info + grad covariance
       // last_precond += grad_covariance;
-      last_precond += VectorXd::Constant(n_params, 1e-5).asDiagonal();
+      // last_precond is the Hessian; Ngme::precond() negates it into the
+      // information. Subtract so the ridge actually increases the
+      // information diagonal that llt() factorises.
+      last_precond -= VectorXd::Constant(n_params, 1e-5).asDiagonal();
       last_precond_valid = true;
     } else {
       last_precond_valid = false;
@@ -1497,14 +1513,24 @@ void BlockModel::adapt_trace_probes() {
 // handful of probes. The fill ratio is the operational test and is decided once per fit.
 double BlockModel::qq_trace(const SparseMatrix<double> &T, double &probe_var) {
   if (selinv_state_ < 0) {
-    double fr = chol_QQ.fill_ratio();
-    selinv_state_ =
-        (chol_QQ.selinv_supported() && fr <= selinv_max_fill) ? 1 : 0;
+    // Decided once per fit. Take the free lower bound on the fill first
+    double fr = chol_QQ.fill_lower_bound();
+    bool ruled_out = !chol_QQ.selinv_supported() || fr > selinv_max_fill;
+    if (!ruled_out) {
+      fr = chol_QQ.fill_ratio();
+      ruled_out = fr > selinv_max_fill;
+    }
+    selinv_state_ = ruled_out ? 0 : 1;
     if (debug)
       ngme_io::out() << "[selinv] fill_ratio=" << fr
                   << " -> " << (selinv_state_ ? "exact selected inverse"
                                             : "Hutchinson probes")
                 << "\n";
+    // Nothing on the selected-inverse path will be touched again, so hand back
+    // everything it owns: its private factor, the symmetric copy of QQ it
+    // factorizes, and the selected inverse itself.
+    if (selinv_state_ == 0)
+      chol_QQ.disable_selinv();
   }
   if (selinv_state_ == 1) {
     double v = 0.0;
@@ -1513,8 +1539,29 @@ double BlockModel::qq_trace(const SparseMatrix<double> &T, double &probe_var) {
       return v;
     }
     selinv_state_ = 0; // pattern not covered; fall back for the rest of the fit
+    chol_QQ.disable_selinv();
   }
   double v = chol_QQ.trace(T, rng());
+  probe_var = chol_QQ.last_probe_var();
+  return v;
+}
+
+double BlockModel::qq_trace_factored(const SparseMatrix<double> &A,
+                                     const VectorXd &d,
+                                     const SparseMatrix<double> &B,
+                                     double &probe_var) {
+  // selinv_state_ is -1 until the fill test has run and 1 when the selected
+  // inverse won it; both need the assembled matrix, so build it and take the
+  // ordinary path. Once probing is settled on the product is never formed.
+  static const bool force_assemble = [] {
+    const char *e = std::getenv("NGME2_NO_FACTORED_TRACE");
+    return e && *e && std::string(e) != "0" && std::string(e) != "false";
+  }();
+  if (selinv_state_ != 0 || force_assemble) {
+    SparseMatrix<double> T = A.transpose() * d.asDiagonal() * B;
+    return qq_trace(T, probe_var);
+  }
+  double v = chol_QQ.trace_factored(A, d, B, rng());
   probe_var = chol_QQ.last_probe_var();
   return v;
 }
@@ -1541,9 +1588,10 @@ void BlockModel::compute_rb_trace() {
 
     // compute for K: tr(QQ^-1 dK^T diag(1/SV) K)
     for (int j = 0; j < latents[i]->get_n_theta_K(); j++) {
-      SparseMatrix<double> T =
-          block_dK[i][j].transpose() * inv_SV.asDiagonal() * K;
-      { double pvj = 0.0; rb_trace_K[j] = -qq_trace(T, pvj); pv_K[j] += pvj; }
+      { double pvj = 0.0;
+        rb_trace_K[j] =
+            -qq_trace_factored(block_dK[i][j], inv_SV, K, pvj);
+        pv_K[j] += pvj; }
     }
 
     // compute for sigma: tr(Q^-1 K B_sigma.col(j)/SV K^T) for non-fixed
@@ -1560,9 +1608,10 @@ void BlockModel::compute_rb_trace() {
           latents[i]->get_BSigma_col(pos);
       BSigma_col_over_SV = BSigma_col_over_SV.cwiseProduct(inv_SV);
 
-      SparseMatrix<double> T =
-          K.transpose() * BSigma_col_over_SV.asDiagonal() * K;
-      { double pvj = 0.0; rb_trace_sigma[j] = qq_trace(T, pvj); pv_sigma[j] = pvj; }
+      { double pvj = 0.0;
+        rb_trace_sigma[j] =
+            qq_trace_factored(K, BSigma_col_over_SV, K, pvj);
+        pv_sigma[j] = pvj; }
       pos += 1;
     }
 
@@ -1859,10 +1908,8 @@ void BlockModel::update_QQ() {
   // Storage must be packed before the pattern can be compared (and before the
   // solvers see it); that is a no-op unless the robust branch above had to
   // insert a missing diagonal entry. The symbolic phase is only needed when
-  // the sparsity pattern really moved. It does for rational (fractional)
-  // approximations, where the number of operator factors is a step function of
-  // the smoothness; for every other model the pattern is fixed and analyze()
-  // runs exactly once.
+  // the sparsity pattern really moved. It does for rational approximations only.
+  // For every other model the pattern is fixed and analyze() runs exactly once.
   auto factorize = [this]() {
     if (!QQ.isCompressed())
       QQ.makeCompressed();
@@ -1886,8 +1933,7 @@ void BlockModel::update_QQ() {
   // diagonal recovers it, and a perturbation this small is orders of magnitude
   // below the Monte Carlo error of the sampled gradient, so escalate the nudge
   // a few times before declaring the fit dead. Aborting instead would throw
-  // away a run that the next iterate usually recovers from on its own -- the
-  // same view the operator's K factorization takes, see Operator::update_all().
+  // away a run that the next iterate usually recovers from on its own.
   const double scale = std::max(1.0, QQ.diagonal().cwiseAbs().maxCoeff());
   SparseMatrix<double> Id(QQ.rows(), QQ.cols());
   Id.setIdentity();

@@ -45,51 +45,22 @@ void sparse_llt_solver::ensure_U(unsigned int seed) {
   U_computed = true;
 }
 
-double sparse_llt_solver::trace(const SparseMatrix<double, 0, int> &M,
-                                unsigned int seed) {
-  if (QU_computed == 0) {
-    ensure_U(seed);
-    if (isSymmetric || use_lu) {
-      // Symmetric: QU = K^{-1} U. LU mode: solve() is already K^{-1}.
-      QU = solve(U);
-    } else {
-      // For non-symmetric mode, factorization is on Q = K^T K; we need Q^{-1} U
-      // (no K^T RHS)
-      if (solver_type == 0)
-        QU = R_eigen.solve(U);
-      else if (solver_type == 1)
-        QU = R_ldlt.solve(U);
-      else if (solver_type == 2)
-        QU = R_supernodal.solve(U);
-      else if (solver_type == 3)
-        QU = R_cholmod_ldlt.solve(U);
-#ifdef __APPLE__
-      else if (solver_type == 4)
-        QU = R_accelerate.solve(U);
-      else if (solver_type == 5)
-        QU = R_accelerate_ldlt.solve(U);
-#endif
-#ifdef USEMKL
-      else if (solver_type == 6)
-        QU = R_pardiso.solve(U);
-      else if (solver_type == 7)
-        QU = R_pardiso_ldlt.solve(U);
-#endif
-      else
-        throw std::runtime_error("Pardiso solver not available (recompile with "
-                                 "USEMKL) or invalid solver_type");
-    }
-    QU_computed = 1;
-  }
+// QU = K^{-1} U, shared by every estimator below.
+//
+// solve() is K^{-1} in every mode: the Cholesky of K when K is symmetric, the
+// LU of K, or (K^T K)^{-1} K^T when the normal equations are used. So QU is the
+// same object however K was factorized, and one formula serves all of them.
+// See the note in trace2() for why that matters.
+void sparse_llt_solver::ensure_QU(unsigned int seed) {
+  if (QU_computed != 0)
+    return;
+  ensure_U(seed);
+  QU = solve(U);
+  QU_computed = 1;
+}
 
-  Eigen::MatrixXd MQU;
-  if (isSymmetric || use_lu || K_last.rows() == 0) {
-    // QU is already K^{-1} U, so u^T M K^{-1} u estimates tr(K^{-1} M).
-    MQU = M * QU;
-  } else {
-    // Normal equations: QU = (K^T K)^{-1} U, and (K^T K)^{-1} K^T = K^{-1}.
-    MQU = (K_last.transpose() * M) * QU;
-  }
+// Reduce a block MQU = M QU against the probes: mean_i u_i^T (M QU)_i.
+double sparse_llt_solver::reduce_probes(const Eigen::MatrixXd &MQU) {
   double t = 0, t2 = 0;
   for (int i = 0; i < N_iter; i++) {
     double probe = U.col(i).dot(MQU.col(i));
@@ -107,55 +78,51 @@ double sparse_llt_solver::trace(const SparseMatrix<double, 0, int> &M,
   return mean;
 }
 
-// Hutchinson estimator for tr(K^{-1} A K^{-1} B).
-// Symmetric case (Q=K):
-//   Use QU = Q^{-1} U. Then S = Q^{-1}(A QU) via solve(A*QU).
-//   Estimate tr = E[z^T B S z] = mean_i (u_i^T (B * S_i)).
-// Non-symmetric case (Q=K^T K):
-//   solve(X) internally applies K^T to the RHS before Q^{-1}, i.e.,
-//   solve(X) = Q^{-1}(K^T X). Thus S = Q^{-1}(K^T A QU) which yields
-//   tr(B Q^{-1} K^T A Q^{-1}) = tr((K^T K)^{-1} K^T A (K^T K)^{-1} B).
+double sparse_llt_solver::trace(const SparseMatrix<double, 0, int> &M,
+                                unsigned int seed) {
+  ensure_QU(seed);
+  // QU is K^{-1} U, so u^T M K^{-1} u estimates tr(K^{-1} M).
+  return reduce_probes(M * QU);
+}
+
+double sparse_llt_solver::trace_factored(const SparseMatrix<double, 0, int> &A,
+                                         const Eigen::VectorXd &d,
+                                         const SparseMatrix<double, 0, int> &B,
+                                         unsigned int seed) {
+  ensure_QU(seed);
+  // (A^T diag(d) B) QU, right to left, so nothing bigger than n x N_iter is
+  // ever built. Mathematically identical to trace(A.transpose() * d.asDiagonal()
+  // * B); the association differs, so the two agree to round-off, not bitwise.
+  Eigen::MatrixXd X = B * QU;
+  X = d.asDiagonal() * X;
+  return reduce_probes(A.transpose() * X);
+}
+
+// Hutchinson estimator for tr(K^{-1} A K^{-1} B), as
+//   QU = K^{-1} U,  S = K^{-1} (A QU),  mean_i u_i^T (B S)_i.
+//
+// solve() is K^{-1} whichever way K was factorized -- a Cholesky of K when K is
+// symmetric, an LU of K, or (K^T K)^{-1} K^T when the normal equations are used
+// -- so the same three lines serve every mode and all of them estimate the same
+// quantity.
+//
+// This used to take QU = (K^T K)^{-1} U in the normal-equations mode, which is
+// not K^{-1} U: it left an extra K^{-T} in the estimator, so trace2() returned
+// tr(K^{-1} A K^{-1} K^{-T} B) rather than the trace asked for, and trace()
+// -- which compensated with a K^T A product -- was unbiased but carried around
+// a hundred times the standard deviation of this form. Both are why the
+// normal-equations mode was previously unusable for a non-symmetric operator.
 double sparse_llt_solver::trace2(const SparseMatrix<double, 0, int> &A,
                                  const SparseMatrix<double, 0, int> &B,
                                  unsigned int seed) {
-  // Prepare Hutchinson vectors and their Q^{-1} images
   if (QU_computed == 0) {
     ensure_U(seed);
-    if (isSymmetric || use_lu) {
-      QU = solve(U); // K^{-1} U
-    } else {
-      // For non-symmetric mode, QU = (K^T K)^{-1} U (no K^T on RHS here)
-      if (solver_type == 0)
-        QU = R_eigen.solve(U);
-      else if (solver_type == 1)
-        QU = R_ldlt.solve(U);
-      else if (solver_type == 2)
-        QU = R_supernodal.solve(U);
-      else if (solver_type == 3)
-        QU = R_cholmod_ldlt.solve(U);
-#ifdef __APPLE__
-      else if (solver_type == 4)
-        QU = R_accelerate.solve(U);
-      else if (solver_type == 5)
-        QU = R_accelerate_ldlt.solve(U);
-#endif
-#ifdef USEMKL
-      else if (solver_type == 6)
-        QU = R_pardiso.solve(U);
-      else if (solver_type == 7)
-        QU = R_pardiso_ldlt.solve(U);
-#endif
-      else
-        throw std::runtime_error("Pardiso solver not available (recompile with "
-                                 "USEMKL) or invalid solver_type");
-    }
+    QU = solve(U); // K^{-1} U
     QU_computed = 1;
   }
 
-  // First apply A to QU, then one more Q^{-1} using solve().
-  // In the non-symmetric case, solve() internally applies K^T to the RHS.
-  Eigen::MatrixXd A_QU = A * QU;   // n x N_iter
-  Eigen::MatrixXd S = solve(A_QU); // Q^{-1} A_eff Q^{-1} U
+  Eigen::MatrixXd A_QU = A * QU;   // A K^{-1} U
+  Eigen::MatrixXd S = solve(A_QU); // K^{-1} A K^{-1} U
   Eigen::MatrixXd BS = B * S;      // n x N_iter
 
   double t = 0.0;
@@ -191,8 +158,10 @@ bool sparse_llt_solver::ensure_selinv_factor() {
     return false;
   if (selinv_llt_ready)
     return true;
-  selinv_llt.compute(M_sym_);
-  if (selinv_llt.info() != Eigen::Success)
+  if (!selinv_llt)
+    selinv_llt.reset(new selinv_llt_t());
+  selinv_llt->compute(M_sym_);
+  if (selinv_llt->info() != Eigen::Success)
     return false;
   selinv_llt_ready = true;
   return true;
@@ -201,10 +170,13 @@ bool sparse_llt_solver::ensure_selinv_factor() {
 double sparse_llt_solver::fill_ratio() {
   if (!ensure_selinv_factor() || n <= 0)
     return std::numeric_limits<double>::infinity();
-  Eigen::SparseMatrix<double, 0, int> L(
-      solver_type == 0 ? Eigen::SparseMatrix<double, 0, int>(R_eigen.matrixL())
-                       : Eigen::SparseMatrix<double, 0, int>(selinv_llt.matrixL()));
-  return (double)L.nonZeros() / (double)n;
+  // Count through the triangular view's nested expression rather than
+  // materialising L: a copy here is the size of the factor itself, and the
+  // whole point of this call is to find out whether that size is prohibitive.
+  const Eigen::Index nnz =
+      solver_type == 0 ? R_eigen.matrixL().nestedExpression().nonZeros()
+                       : selinv_llt->matrixL().nestedExpression().nonZeros();
+  return (double)nnz / (double)n;
 }
 
 bool sparse_llt_solver::build_selinv() {
@@ -215,7 +187,7 @@ bool sparse_llt_solver::build_selinv() {
 
   Eigen::SparseMatrix<double, 0, int> L(
       solver_type == 0 ? Eigen::SparseMatrix<double, 0, int>(R_eigen.matrixL())
-                       : Eigen::SparseMatrix<double, 0, int>(selinv_llt.matrixL()));
+                       : Eigen::SparseMatrix<double, 0, int>(selinv_llt->matrixL()));
   Eigen::VectorXd D(n);
   for (int j = 0; j < n; ++j) {
     double d = L.coeff(j, j);
@@ -282,7 +254,7 @@ bool sparse_llt_solver::selinv_trace(
   // Q^{-1} = P^T B P, so (Q^{-1})_{rc} = B_{P(r),P(c)}.
   const int *pi = (solver_type == 0)
                       ? R_eigen.permutationP().indices().data()
-                      : selinv_llt.permutationP().indices().data();
+                      : selinv_llt->permutationP().indices().data();
   double acc = 0.0;
   for (int c = 0; c < M.outerSize(); ++c) {
     for (Eigen::SparseMatrix<double, 0, int>::InnerIterator it(M, c); it; ++it) {

@@ -150,11 +150,16 @@ void Operator::update_all(const VectorXd &theta, const UpdateOptions &opts) {
     dK.assign(n_theta_K, SparseMatrix<double>(h.size(), h.size()));
   if ((int)dZ.size() != n_theta_K)
     dZ.assign(n_theta_K, SparseMatrix<double>(h.size(), h.size()));
-  if ((int)d2K.size() != n_theta_K)
+  // d2K / d2Z are n_theta_K^2 matrices of size n x n. Even empty, each one
+  // carries an outer-index array of n + 1 ints, so allocating them for an
+  // operator that is never asked for second derivatives costs
+  // 4 * n_theta_K^2 * n bytes for nothing. Allocate on demand instead.
+  const bool want_d2 = opts.compute_d2K || opts.compute_d2Z;
+  if (want_d2 && (int)d2K.size() != n_theta_K)
     d2K.assign(n_theta_K,
                std::vector<SparseMatrix<double>>(
                    n_theta_K, SparseMatrix<double>(h.size(), h.size())));
-  if ((int)d2Z.size() != n_theta_K)
+  if (want_d2 && (int)d2Z.size() != n_theta_K)
     d2Z.assign(n_theta_K, std::vector<SparseMatrix<double, 0, int>>(
                               n_theta_K, SparseMatrix<double, 0, int>(
                                              h.size(), h.size())));
@@ -327,20 +332,28 @@ void Operator::update_all(const VectorXd &theta, const UpdateOptions &opts) {
     record_K_pattern();
   }
   cholK_solver.compute(K);
-  // A failed SparseLU factorization leaves the decomposition unusable: Eigen
-  // returns from factorize() before setting up its L store and only guards the
-  // solve path with eigen_assert, which is compiled out here, so going on to
-  // the traces below would read uninitialised memory and crash the R session.
-  // Report it as an ordinary error instead. The Cholesky paths keep their
-  // historical behaviour: a failed factorization there is memory-safe, and
-  // during SGD it is usually a transient excursion the next iterate recovers
-  // from.
-  if (cholK_solver.uses_lu() && !cholK_solver.factorization_success()) {
-    throw std::runtime_error(
-        "Factorization of the operator matrix K failed for model '" +
-        generic_type +
-        "': K is singular or numerically rank-deficient at the current "
-        "parameter values");
+  // Either route to K^{-1} for a non-symmetric operator -- the LU of K, or the
+  // Cholesky of K^T K -- is factorizing something that is singular only if K
+  // itself is degenerate at the current parameters, so a failure means the same
+  // thing in both and the traces below would be meaningless either way. It is
+  // also unsafe in the LU case: Eigen returns from factorize() before setting
+  // up its L store and guards the solve path only with eigen_assert, which is
+  // compiled out here, so continuing would read uninitialised memory. Report it
+  // as an ordinary error.
+  //
+  // A symmetric operator keeps its historical behaviour: a failed Cholesky
+  // there is memory-safe, and during SGD it is usually a transient excursion
+  // the next iterate recovers from.
+  if (!symmetric && !cholK_solver.factorization_success()) {
+    std::string msg = "Factorization of the operator matrix K failed for model '" +
+                      generic_type +
+                      "': K is singular or numerically rank-deficient at the "
+                      "current parameter values.";
+    if (!cholK_solver.uses_lu())
+      msg += " If K is merely ill-conditioned rather than singular, "
+             "control_opt(nonsym_solver = \"lu\") factorizes K directly "
+             "instead of K^T K and does not square its condition number.";
+    throw std::runtime_error(msg);
   }
 
   // 4) Traces (only if dK available)

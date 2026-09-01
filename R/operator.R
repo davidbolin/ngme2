@@ -11,7 +11,7 @@ ngme_operator <- function(
     ...) {
   if (is.null(K)) stop("K is NULL.")
   if (nrow(K) != ncol(K)) stop("K is not a square matrix.")
-  if (is.null(Z)) Z <- diag(nrow(K))
+  if (is.null(Z)) Z <- ngme_as_sparse(Matrix::Diagonal(nrow(K)))
 
   structure(
     list(

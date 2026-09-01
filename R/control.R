@@ -64,13 +64,21 @@
 #' @param max_relative_step   max relative step allowed in 1 iteration
 #' @param max_absolute_step   max absolute step allowed in 1 iteration
 #' @param trend_std_conv_check enable the trend/std diagnostic (uses \code{std_lim}, \code{trend_lim}, \code{n_slope_check})
-#' @param solver_backend backend in ("eigen", "cholmod", "accelerate", "pardiso")
+#' @param solver_backend backend in ("eigen", "cholmod", "accelerate", "pardiso").
+#'   Defaults to "accelerate" on macOS and "cholmod" elsewhere.
+#'   Note that the speed of "cholmod" is set by the BLAS R itself is linked against,
+#'   and with R's bundled reference BLAS those kernels run one to two orders of
+#'   magnitude below a tuned one. Thus, link R against OpenBLAS or MKL before fitting
+#'   large models.
 #' @param solver_type factorization type: "llt" or "ldlt"
 #' @param nonsym_solver how the operator matrix \code{K} of a non-symmetric
-#'   modelis factorized when estimating \code{tr(K^-1 dK)}. "lu" (default) takes a sparse
-#'   LU of \code{K}; "normal_equations" takes a Cholesky of \code{t(K) K}, which was the
-#'   behaviour before version 0.9.9. This latter is only kept for reproducability and the
-#'   default is strongly recommended.
+#'   model is factorized when estimating \code{tr(K^-1 dK)}.
+#'   "normal_equations" (default) takes a Cholesky of \code{t(K) K} and applies
+#'   \code{K^-1} as \code{(t(K) K)^-1 t(K)}; "lu" takes a sparse LU of
+#'   \code{K}. The Cholesky is the cheaper of the two for every non-symmetric
+#'   operator here. Its one cost is that it squares the
+#'   condition number of \code{K}, so switch to "lu" for an operator so
+#'   ill-conditioned that the Cholesky of \code{t(K) K} fails.
 #' @param rao_blackwellization  replace the sampled latent field by its conditional
 #'   expectation \code{E[W | Y, V]} in the gradient (default \code{TRUE}).
 #' @param n_trace_iter  use how many iterations to approximate the trace (Hutchinson’s trick).
@@ -115,6 +123,25 @@
 #'   For polynomial schedule, \code{poly_decay(..., burnin_iter = B)} keeps
 #'   schedule scale at 1 for the first \code{B} iterations, then starts decay
 #'   with reset local time index.
+#' @param nig_param_std coordinates the optimiser uses for stationary NIG
+#'   noise, following Cabral, Bolin and Rue (2023). In the native parameters the
+#'   variance \code{h(sigma^2 + mu^2/nu)} is shared by all three, giving a long
+#'   flat ridge; these coordinates turn that ridge into an axis. Only the
+#'   optimiser's coordinates change and the objective, the priors and the
+#'   reported estimates stay native, so fits remain comparable across settings.
+#'
+#'   \describe{
+#'     \item{0}{native \code{(theta_mu, log sigma, log nu)}}
+#'     \item{1}{standardised \code{(log sigma_marg, zeta,
+#'       log eta)} with \code{eta = 1/nu}, \code{zeta = mu/sigma} and
+#'       \code{sigma_marg = sqrt(sigma^2 + mu^2/nu)} the marginal SD}
+#'     \item{2}{additionally orthogonalised,
+#'       \code{zeta* = zeta sqrt(eta)}, \code{eta* = eta / xi^2} with
+#'       \code{xi = 1 + zeta*^2 - |zeta*| sqrt(1 + zeta*^2)}, which makes the
+#'       kurtosis invariant to skewness}
+#'     \item{3}{as 2 with \code{zeta*} carried as \code{asinh(zeta*)}, which
+#'       keeps the skewness coordinate unbounded and better scaled (default)}
+#'   }
 #' @param robust use robust mode in the backend optimizer/model updates
 #' @param R_hat_conv_check use the R-hat diagnostic for convergence checking
 #' @param max_R_hat maximum allowed R_hat
@@ -150,11 +177,12 @@ control_opt <- function(
     sampling_strategy = "all",
     solver_backend = if (Sys.info()["sysname"] == "Darwin") "accelerate" else "cholmod",
     solver_type = "llt",
-    nonsym_solver = "lu",
+    nonsym_solver = "normal_equations",
     # opt print
     verbose = FALSE,
     store_traj = TRUE,
     robust = FALSE,
+    nig_param_std = 3,
     stepsize_control = NULL,
     n_min_batch = min(n_batch, 3),
     n_slope_check = min(n_batch, 3),
@@ -405,6 +433,7 @@ control_opt <- function(
     threshold = threshold,
     window_size = window_size,
     robust = robust,
+    nig_param_std = nig_param_std,
     R_hat_conv_check = R_hat_conv_check,
     max_R_hat = max_R_hat
   )
@@ -476,7 +505,12 @@ control_opt_batch_ci <- function(
 
 #' Generate control specifications for the ngme model
 #'
-#' @param n_gibbs_samples    number of gibbs samples at each iteration
+#' @param n_gibbs_samples    number of gibbs samples at each iteration.
+#'   Raising it lowers the variance of each gradient but costs proportionally more per
+#'   iteration, so the number of iterations needed to satisfy the
+#'   convergence checks is largely unchanged and the wall-clock time to
+#'   converge goes up. Raise it when the estimates are noisy at
+#'   convergence.
 #' @param post_burnin number of Gibbs sweeps to discard before recording the
 #'   posterior samples of W and V returned by \code{ngme()}. A burn-in is
 #'   needed because the chain is restarted from the stored W and V, which are
@@ -492,7 +526,7 @@ control_opt_batch_ci <- function(
 #' @param debug          debug mode
 #' @param ... additional arguments. Legacy aliases \code{feff} and
 #'   \code{fix_feff} are still recognized and mapped to \code{beta_init} and
-#'   \code{fix_beta}.
+#'   \code{fix_beta}. Anything else is ignored with a warning naming it.
 #' @return a list of control variables for ngme
 #' @export
 control_ngme <- function(
@@ -507,6 +541,43 @@ control_ngme <- function(
   # backward compatibility for legacy arguments
   if (!is.null(dots$feff)) beta_init <- dots$feff
   if (!is.null(dots$fix_feff)) fix_beta <- dots$fix_feff
+
+  # Anything else in ... used to be dropped without a word, which quietly hides
+  # real mistakes: control_ngme(rao_blackwellization = FALSE) looks like it
+  # works but does nothing, since that argument belongs to control_opt(). Warn
+  # rather than stop, so existing scripts keep running.
+  legacy <- c("feff", "fix_feff")
+  nms <- names(dots)
+  if (is.null(nms)) nms <- rep("", length(dots))
+  unknown <- setdiff(nms[nzchar(nms)], legacy)
+  n_unnamed <- sum(!nzchar(nms))
+  if (length(unknown) || n_unnamed) {
+    bits <- character(0)
+    if (length(unknown))
+      bits <- c(bits, paste0("unrecognised argument(s) ",
+                             paste0("`", unknown, "`", collapse = ", ")))
+    if (n_unnamed)
+      bits <- c(bits, sprintf("%d unnamed argument(s)", n_unnamed))
+    msg <- paste0("control_ngme(): ", paste(bits, collapse = " and "),
+                  " ignored.")
+    # The most likely mistake is reaching for a control_opt() argument.
+    opt_args <- setdiff(names(formals(control_opt)), "...")
+    in_opt <- intersect(unknown, opt_args)
+    if (length(in_opt))
+      msg <- paste0(msg, "\n  ", paste0("`", in_opt, "`", collapse = ", "),
+                    if (length(in_opt) == 1L) " is an argument of"
+                    else " are arguments of",
+                    " control_opt(), not control_ngme().")
+    # Otherwise offer the nearest formal, which catches plain typos.
+    own <- setdiff(names(formals(control_ngme)), "...")
+    rest <- setdiff(unknown, in_opt)
+    near <- unlist(lapply(rest, function(u) {
+      cand <- agrep(u, own, max.distance = 0.3, value = TRUE)
+      if (length(cand)) sprintf("`%s` -> did you mean `%s`?", u, cand[1]) else NULL
+    }))
+    if (length(near)) msg <- paste0(msg, "\n  ", paste(near, collapse = "\n  "))
+    warning(msg, call. = FALSE)
+  }
 
   control <- list(
     n_gibbs_samples = n_gibbs_samples,
@@ -538,6 +609,7 @@ update_control_ngme <- function(control_ngme, control_opt) {
   control_ngme$solver_factor <- control_opt$solver_factor
   control_ngme$nonsym_solver <- control_opt$nonsym_solver
   control_ngme$robust <- control_opt$robust
+  control_ngme$nig_param_std <- control_opt$nig_param_std
 
   control_ngme
 }
